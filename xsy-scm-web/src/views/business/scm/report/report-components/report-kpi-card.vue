@@ -2,9 +2,6 @@
   <a-card size="small" class="report-kpi">
     <div class="report-kpi-label">
       <span>{{ label }}</span>
-      <a-tooltip v-if="hint" :title="hint">
-        <InfoCircleOutlined class="report-kpi-info" aria-hidden="true"/>
-      </a-tooltip>
       <a-tag v-if="currentPoint">当前时点</a-tag>
     </div>
     <div class="report-kpi-value" :class="tone ? `report-kpi-value--${tone}` : ''">{{ value }}</div>
@@ -14,8 +11,6 @@
 </template>
 
 <script setup lang="ts">
-import {InfoCircleOutlined} from '@ant-design/icons-vue';
-
 /**
  * 报表指标卡（的「重要金额/数量先展示指标卡」）。
  *
@@ -30,8 +25,6 @@ import {InfoCircleOutlined} from '@ant-design/icons-vue';
 defineProps<{
     label: string;
     value: string;
-    /** 口径解释（tooltip），例如「SUM(settlement_total_amount)：结算口径，非下单口径」。 */
-    hint?: string;
     /** 第二行说明文本，如「截至 2026-09-23 18:20:31」。 */
     sub?: string;
     /** 数据不完整的提示，如「已跳过 3 行无成本流水」。 */
@@ -54,10 +47,6 @@ defineProps<{
   gap: 6px;
   color: var(--scm-text-secondary);
   font-size: 13px;
-}
-
-.report-kpi-info {
-  color: var(--scm-text-secondary);
 }
 
 .report-kpi-value {

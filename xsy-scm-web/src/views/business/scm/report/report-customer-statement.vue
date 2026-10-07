@@ -7,7 +7,6 @@
       <a-space>
         <a-button v-privilege="PERM.CUSTOMER_STATEMENT_FREEZE" type="primary" :loading="busy" @click="freeze">生成并冻结新版本</a-button>
         <a-button v-privilege="PERM.CUSTOMER_STATEMENT_QUERY" :disabled="!settlementCustomerId" @click="loadHistory">查看历史版本</a-button>
-        <ReportNote title="对账口径" :sections="statementNoteSections"/>
       </a-space>
     </a-form-item>
   </a-form>
@@ -62,33 +61,10 @@ import {reportError} from './report-errors';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
-import type {ReportNoteSection} from '/@/components/business/scm/report-note/index.vue';
 
 const settlementCustomerId = ref<ReportId>(), customerId = ref<ReportId>();
 const dateRange = ref<DateRange>(defaultDateRange());
 
-// 口径说明：只讲「数字是什么意思」，不讲实现。
-const statementNoteSections: ReportNoteSection[] = [
-  {
-    label: '指标定义',
-    items: [
-      '期末净应收 = 期初净应收 + 新增应收 − 红字 − 有效核销',
-      '收款不是再次抵扣应收，退款实际付款单列'
-    ]
-  },
-  {
-    label: '统计范围',
-    items: [
-      '集团按财务事实中的历史结算方归集',
-      '原客户筛选或授权受限时标记为部分范围，未分配资金不展示'
-    ]
-  },
-  {
-    label: '特殊情况',
-    items: ['完整范围的净额可能为负', '打印可在浏览器选择另存为 PDF']
-  }
-];
 const selected = ref<CustomerStatement>(), history = ref<CustomerStatement[]>([]);
 const printArea = ref<HTMLElement>(), busy = ref(false), error = ref('');
 const factLabels: Record<string, string> = {

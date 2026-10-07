@@ -59,7 +59,6 @@
       <ReportKpiCard
           :label="card.label"
           :value="card.value"
-          :hint="card.hint"
           :sub="card.sub"
           :warning="card.warning"
           :current-point="card.currentPoint"
@@ -72,15 +71,12 @@
       title="每日金额趋势"
       :x-axis="trendAxis"
       :series="trendSeries"
-      extra="已确认订单金额 / 已完成退款金额 / 采购入库成本金额，按日；无单据的日也是零值"
   />
 
   <a-card size="small" :bordered="false" class="smart-margin-top10">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="PERM.EXPORT" @click="exportDaily">导出</a-button>
-        <ReportNote title="口径说明"
-                    :points="['每行的数与上方指标卡同一口径', '点击行末链接可跳到对应分析页']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -159,7 +155,6 @@ import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue'
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import ReportLineChart from './report-components/report-line-chart.vue';
 import {reportOverviewApi} from '/@/api/business/scm/report-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
@@ -249,7 +244,6 @@ const kpiCards = computed(() => {
     const cards: Array<{
         label: string;
         value: string;
-        hint?: string;
         sub?: string;
         warning?: string;
         currentPoint?: boolean;
@@ -258,27 +252,22 @@ const kpiCards = computed(() => {
         {
             label: '已确认订单数',
             value: countText(data.confirmedOrderCount),
-            hint: 'status=CONFIRMED 且确认时间落在区间内；不含待确认与已取消',
         },
         {
             label: '下单客户数',
             value: countText(data.customerCount),
-            hint: '同一确认范围内的去重客户数',
         },
         {
             label: '已确认订单金额',
             value: moneyText(data.confirmedOrderAmount),
-            hint: 'SUM(settlement_total_amount)：结算口径，不是下单口径，也不是收入',
         },
         {
             label: '已完成退款金额',
             value: moneyText(data.completedRefundAmount),
-            hint: 'order_refund 中 COMPLETED 的退款额；独立展示，不冲减已确认订单金额',
         },
         {
             label: '已提交采购金额',
             value: moneyText(data.submittedPurchaseAmount),
-            hint: '已提交 / 部分收货 / 已收货 / 少关单的采购单 SUM(total_amount)；不含草稿与取消',
             sub: data.submittedPurchaseOrderCount === undefined
                 ? undefined
                 : `已提交采购单 ${countText(data.submittedPurchaseOrderCount)} 张`,
@@ -286,14 +275,12 @@ const kpiCards = computed(() => {
         {
             label: '采购入库成本金额',
             value: costText(data.purchaseInCostAmount, canViewCost.value),
-            hint: 'PURCHASE_IN 流水的 SUM(quantity × unit_cost)，以入库时冻结的单位成本计',
             warning: incompleteCostHint(data.purchaseInCostMissingCount, '采购入库成本金额'),
             cost: true,
         },
         {
             label: '当前库存账面金额',
             value: costText(data.inventoryBookValue, canViewCost.value),
-            hint: 'SUM(inventory_balance.quantity × avg_cost)：当前时点值，不受查询日期区间影响',
             sub: `截至 ${datetime(data.snapshotAt)}｜有账面库存 ${countText(data.stockedSkuCount)} 行`,
             currentPoint: true,
             cost: true,

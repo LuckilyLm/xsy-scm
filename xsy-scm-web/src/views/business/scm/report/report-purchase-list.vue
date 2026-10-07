@@ -68,7 +68,6 @@
           <ReportKpiCard
               :label="card.label"
               :value="card.value"
-              :hint="card.hint"
               :warning="card.warning"
           />
         </a-col>
@@ -314,34 +313,29 @@ const visibleDrilldownColumns = computed(() =>
 
 const overviewCards = computed(() => {
     const data = overview.value ?? {};
-    const cards: Array<{label: string; value: string; hint?: string; warning?: string; cost?: boolean}> = [
+    const cards: Array<{label: string; value: string; warning?: string; cost?: boolean}> = [
         {
             label: '已提交采购单',
             value: countText(data.submittedOrderCount),
-            hint: 'SUBMITTED / PARTIALLY_RECEIVED / RECEIVED / SHORT_CLOSED；不含草稿与取消',
         },
         {
             label: '已提交采购金额',
             value: moneyText(data.submittedAmount),
-            hint: 'SUM(purchase_order.total_amount)：这是采购承诺，不是应付',
         },
-        {label: '已确认收货单', value: countText(data.confirmedReceiptCount), hint: 'receipt.status = CONFIRMED'},
+        {label: '已确认收货单', value: countText(data.confirmedReceiptCount)},
         {
             label: '收货参考金额',
             value: moneyText(data.receiptReferenceAmount),
-            hint: '收货数量 × 采购单价，只用于交叉核对价格与数量，不等于应付',
         },
         {
             label: '采购入库成本金额',
             value: costText(data.purchaseInCostAmount, canViewCost.value),
-            hint: 'PURCHASE_IN 流水的 SUM(quantity × unit_cost)',
             warning: incompleteCostHint(data.purchaseInCostMissingCount, '采购入库成本金额'),
             cost: true,
         },
         {
             label: '待入库收货单',
             value: countText(data.pendingPutawayReceiptCount),
-            hint: 'WAREHOUSE_CONFIRM + 已确认收货 + 入库状态 PENDING；入库动作在采购收货页办理',
         },
     ];
     return cards.filter((card) => !card.cost || canViewCost.value);

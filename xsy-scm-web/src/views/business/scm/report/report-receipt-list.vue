@@ -53,8 +53,6 @@
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-button v-privilege="PERM.EXPORT" @click="exportReceipt">导出</a-button>
-            <ReportNote title="口径说明"
-                        :points="['日期筛选的是「收货确认时间」', '每一行是收货单行，不是库存入账记录', '「收货参考金额」= 本次收货数量 × 采购单价，不是应付金额']"/>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -102,9 +100,6 @@
             </template>
             <template v-else-if="column.dataIndex === 'cumulativeReceivedQuantity'">
               <span class="scm-quantity">{{ quantityText(record.cumulativeReceivedQuantity) }}</span>
-              <a-tooltip title="该采购行在全部收货单上的累计已收量，不能在本页逐行相加">
-                <InfoCircleOutlined class="report-hint-icon" aria-hidden="true"/>
-              </a-tooltip>
             </template>
             <template v-else-if="column.dataIndex === 'remainingQuantity'">
               <span class="scm-quantity">{{ quantityText(record.remainingQuantity) }}</span>
@@ -144,8 +139,6 @@
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-button v-privilege="PERM.EXPORT" @click="exportInbound">导出</a-button>
-            <ReportNote title="口径说明"
-                        :points="['日期筛选的是「入库时间」', '未做仓库二次入库的收货单不会出现', '单位成本缺失的行显示 — 而不是 0']"/>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -211,8 +204,6 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <ReportNote title="口径说明"
-                        :points="['只列「仓库确认入库 + 收货已确认 + 待入库」的收货单', '收货数量按采购单位分组，不做跨单位合计', '本页只读，办理入库请到采购收货页']"/>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -278,7 +269,6 @@
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
-import {InfoCircleOutlined} from '@ant-design/icons-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
@@ -304,7 +294,6 @@ import {
 import {moneyText, quantityText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
 import {useReportPermission} from './use-report-permission';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {createTabLoader} from './use-report-query';
 import type {DateRange} from './report-model';
 
@@ -472,10 +461,3 @@ onMounted(() => {
     queryActiveTab();
 });
 </script>
-
-<style scoped>
-.report-hint-icon {
-  color: var(--scm-text-secondary);
-  margin-left: 4px;
-}
-</style>

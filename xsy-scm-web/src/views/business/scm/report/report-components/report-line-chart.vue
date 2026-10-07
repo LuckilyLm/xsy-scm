@@ -1,9 +1,6 @@
 <template>
   <a-card size="small" class="report-chart">
     <template #title>{{ title }}</template>
-    <template v-if="extra" #extra>
-      <a-typography-text type="secondary">{{ extra }}</a-typography-text>
-    </template>
     <a-empty
         v-if="!hasPoint"
         :image-style="{height: '40px'}"
@@ -33,11 +30,10 @@ const props = withDefaults(
         /** x 轴类目：按日的 `yyyy-MM-dd`（日期轴由后端补齐，不跳天）。 */
         xAxis: string[];
         series: ReportChartLine[];
-        extra?: string;
         emptyText?: string;
         height?: string;
     }>(),
-    {extra: '', emptyText: '暂无趋势数据', height: REPORT_CHART_HEIGHT}
+    {emptyText: '暂无趋势数据', height: REPORT_CHART_HEIGHT}
 );
 
 const chartEl = ref<HTMLElement>();

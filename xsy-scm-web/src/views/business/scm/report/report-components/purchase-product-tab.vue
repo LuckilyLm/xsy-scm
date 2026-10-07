@@ -3,7 +3,6 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
-        <ReportNote title="口径说明" :points="['入库数量按库存记账单位分组，与采购单位可能不同', '因此是文本，不做合计']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -79,7 +78,6 @@ import {computed} from 'vue';
 import {ExclamationCircleOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {costText, countText, filterCostColumns, incompleteCostHint, textOrDash} from '../report-model';

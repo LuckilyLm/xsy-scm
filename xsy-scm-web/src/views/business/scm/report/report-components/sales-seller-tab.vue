@@ -3,7 +3,6 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
-        <ReportNote title="口径说明" :points="['「销售员订单业绩」不是收入、利润或提成', '未分配销售员的订单单独归集']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_SELLER" :refresh="refresh"/>
@@ -63,7 +62,6 @@
 import {ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {countText} from '../report-model';

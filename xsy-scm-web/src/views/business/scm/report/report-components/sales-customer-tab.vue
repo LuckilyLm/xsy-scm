@@ -4,7 +4,6 @@
       title="客户确认订单金额 TOP5"
       :items="items"
       series-name="确认订单金额"
-      extra="退款按退款单所属客户独立聚合"
   />
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">

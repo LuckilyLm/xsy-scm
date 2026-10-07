@@ -7,7 +7,6 @@
       <a-space>
         <a-button v-privilege="PERM.SUPPLIER_STATEMENT_FREEZE" type="primary" :loading="busy" @click="freeze">生成并冻结新版本</a-button>
         <a-button v-privilege="PERM.SUPPLIER_STATEMENT_QUERY" :disabled="!supplierId" @click="loadHistory">查看历史版本</a-button>
-        <ReportNote title="对账口径" :sections="statementNoteSections"/>
       </a-space>
     </a-form-item>
   </a-form>
@@ -64,33 +63,10 @@ import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-co
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
-import type {ReportNoteSection} from '/@/components/business/scm/report-note/index.vue';
 
 const supplierId = ref<ReportId>(), warehouseId = ref<ReportId>();
 const dateRange = ref<DateRange>(defaultDateRange());
 
-// 口径说明：只讲「数字是什么意思」，不讲实现。
-const statementNoteSections: ReportNoteSection[] = [
-  {
-    label: '指标定义',
-    items: [
-      '期末净应付 = 期初净应付 + 收货形成的应付 − 手工红字 − 有效核销',
-      '采购单金额不是应付，实际付款不会再次抵减应付'
-    ]
-  },
-  {
-    label: '统计范围',
-    items: [
-      '应付按采购员和仓库授权；付款属于全供应商资金，不拆到采购仓库',
-      '受限范围不可与全额付款勾稽，未分配资金留空'
-    ]
-  },
-  {
-    label: '特殊情况',
-    items: ['打印可在浏览器选择另存为 PDF']
-  }
-];
 const selected = ref<SupplierStatement>(), history = ref<SupplierStatement[]>([]);
 const printArea = ref<HTMLElement>(), busy = ref(false), error = ref('');
 watch(supplierId, () => { selected.value = undefined; history.value = []; });

@@ -1,9 +1,6 @@
 <template>
   <a-card size="small" class="report-chart">
     <template #title>{{ title }}</template>
-    <template v-if="extra" #extra>
-      <a-typography-text type="secondary">{{ extra }}</a-typography-text>
-    </template>
     <a-empty
         v-if="!items.length"
         :image-style="{height: '40px'}"
@@ -38,14 +35,11 @@ const props = withDefaults(
     defineProps<{
         title: string;
         items: ReportChartBar[];
-        /** 卡片右上角的口径说明。 */
-        extra?: string;
         seriesName?: string;
         emptyText?: string;
         height?: string;
     }>(),
     {
-        extra: '',
         seriesName: '金额',
         emptyText: '暂无排名数据',
         height: REPORT_CHART_HEIGHT,

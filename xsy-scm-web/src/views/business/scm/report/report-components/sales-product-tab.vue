@@ -4,13 +4,11 @@
       title="商品确认订单金额 TOP5"
       :items="items"
       series-name="确认订单金额"
-      extra="按已确认订单金额取前 5 名"
   />
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
-        <ReportNote title="口径说明" :points="['一行 = 商品规格 × 销售单位', '数量按各自单位统计，不做跨单位合计']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_PRODUCT" :refresh="refresh"/>
@@ -73,7 +71,6 @@
 import {ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import ReportBarChart from './report-bar-chart.vue';

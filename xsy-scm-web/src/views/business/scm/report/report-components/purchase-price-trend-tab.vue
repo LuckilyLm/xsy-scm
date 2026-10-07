@@ -9,7 +9,6 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
-        <ReportNote title="口径说明" :points="['一行 = 业务日 × 商品规格 × 采购单位', '同一天多笔按数量加权平均，不同采购单位不合并', '曲线太多时先用商品规格筛选收窄']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -57,7 +56,6 @@ import {computed, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import ReportLineChart from './report-line-chart.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {dateOnly} from '../../common/scm-display';

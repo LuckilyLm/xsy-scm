@@ -342,8 +342,6 @@ const BASELINE = {
   secondaryType: 32,
   hintClass: 54,
   reportResidentInfoAlert: 0,
-  // 24 → 23：采购概览那两条讲的是导出范围与无授权仓库时的表现（机制），不是数字口径，已删。
-  reportNoteUsers: 23,
 };
 
 const REPORT_FILES = SCM_VIEW_FILES.filter((file) => rel(file).includes('/report/'));
@@ -442,16 +440,37 @@ test('report 下不再有常驻 info alert', () => {
   );
 });
 
+/** 属性名命中即计入，不区分静态与绑定。 */
+const hasNamedAttribute = (name) => (node) =>
+    node.type === 'VElement' &&
+    (node.startTag?.attributes ?? []).some((attribute) => attributeName(attribute) === name);
+
 test('report-note 组件存在且自带硬规则护栏', () => {
   const component = `${SCM_COMPONENTS}report-note/index.vue`;
   const source = readFileSync(component, 'utf8');
   assert.match(source, /props\.points\.length > 3/, 'report-note 未约束 Popover 条数（最多 3 条）');
   assert.match(source, /point\.length > 40/, 'report-note 未约束单条长度（每条 ≤ 40 字）');
   assert.match(source, /sections/, 'report-note 未提供分组（Drawer）形态，长口径只能塞进 Popover');
+});
 
-  const users = countShape(SCM_VIEW_FILES, (node) => isElement('report-note')(node)).total;
-  assert.ok(
-      users >= BASELINE.reportNoteUsers,
-      `report-note 使用点从 ${BASELINE.reportNoteUsers} 降到 ${users}；口径说明不应退回常驻正文。`,
+/**
+ * 报表模块不再常驻口径说明：`report-note`（Popover / Drawer）与指标卡 ⓘ（`hint`）都算常驻解释。
+ *
+ * 它们讲的多是 SQL、枚举名与推导过程（§8.2 黑名单），而不是「不告知就会操作错误」的信息。
+ * 数据缺失、权限受限与操作不可逆仍走 Warning / 操作时确认，不受这条约束。
+ */
+test('报表模块不再常驻口径说明', () => {
+  const note = countShape(REPORT_FILES, isElement('report-note'));
+  assert.equal(
+      note.total, 0,
+      `报表模块仍有 ${note.total} 处 report-note：${JSON.stringify(note.offenders)}；` +
+      '口径不常驻正文，也不做 ⓘ。',
+  );
+
+  const hint = countShape(REPORT_FILES, hasNamedAttribute('hint'));
+  assert.equal(
+      hint.total, 0,
+      `报表模块仍有 ${hint.total} 处 hint：${JSON.stringify(hint.offenders)}；` +
+      '`hint` 渲染成 ⓘ Tooltip，属常驻解释，需要提示时用数据异常 / 权限 Warning。',
   );
 });

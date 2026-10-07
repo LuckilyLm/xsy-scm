@@ -165,15 +165,13 @@
     <a-tab-pane v-if="canViewCost" key="value" tab="当前库存价值">
       <a-row v-if="hasValueSummary" :gutter="[12, 12]">
         <a-col v-for="card in valueCards" :key="card.label" :xs="24" :sm="12" :md="8">
-          <ReportKpiCard :label="card.label" :value="card.value" :hint="card.hint" :sub="card.sub" current-point/>
+          <ReportKpiCard :label="card.label" :value="card.value" :sub="card.sub" current-point/>
         </a-col>
       </a-row>
       <a-card size="small" :bordered="false" :class="hasValueSummary ? 'smart-margin-top10' : ''">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-button v-privilege="PERM.EXPORT" @click="exportValue">导出</a-button>
-            <ReportNote title="口径说明"
-                        :points="['账面金额 = 当前数量 × 移动加权均价', '数值是此刻快照，不是所选区间的期末值']"/>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -238,8 +236,6 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <ReportNote title="口径说明"
-                        :points="['一行 = 仓库 + 商品规格 + 记账单位', '数量按单位分组，不做跨单位合计']"/>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -299,7 +295,6 @@ import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.v
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import InventoryLossAnalysisTab from './report-components/inventory-loss-analysis-tab.vue';
 import {reportInventoryApi} from '/@/api/business/scm/report-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -440,11 +435,10 @@ const valueCards = computed(() => {
         {
             label: '当前库存账面金额',
             value: costText(data.bookValue, canViewCost.value),
-            hint: 'SUM(inventory_balance.quantity × avg_cost)，当前时点',
             sub: data.snapshotAt ? `截至 ${datetime(data.snapshotAt)}` : undefined,
         },
-        {label: '有库存商品规格数', value: countText(data.stockedSkuCount), hint: '余额行数量大于 0 的（仓库，商品规格）行数'},
-        {label: '零库存商品规格数', value: countText(data.zeroStockSkuCount), hint: '余额行存在但数量为 0'},
+        {label: '有库存商品规格数', value: countText(data.stockedSkuCount)},
+        {label: '零库存商品规格数', value: countText(data.zeroStockSkuCount)},
     ];
 });
 

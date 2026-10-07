@@ -1,9 +1,6 @@
 <template>
   <a-card size="small" class="report-chart">
     <template #title>{{ title }}</template>
-    <template v-if="extra" #extra>
-      <a-typography-text type="secondary">{{ extra }}</a-typography-text>
-    </template>
     <a-empty
         v-if="!hasData"
         :image-style="{height: '40px'}"
@@ -32,11 +29,10 @@ const props = withDefaults(
     defineProps<{
         title: string;
         slices: ReportChartSlice[];
-        extra?: string;
         emptyText?: string;
         height?: string;
     }>(),
-    {extra: '', emptyText: '暂无占比数据', height: REPORT_CHART_HEIGHT}
+    {emptyText: '暂无占比数据', height: REPORT_CHART_HEIGHT}
 );
 
 const chartEl = ref<HTMLElement>();

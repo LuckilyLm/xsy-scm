@@ -13,7 +13,6 @@
     <a-form-item><a-space>
       <a-button type="primary" :loading="loading" v-privilege="QUERY_PERMISSION" @click="search">查询</a-button>
       <a-button @click="reset">重置</a-button>
-      <ReportNote title="口径说明" :sections="exceptionNoteSections"/>
     </a-space></a-form-item>
   </a-form>
   <a-alert v-if="error" class="report-note" type="error" :message="error" show-icon>
@@ -63,8 +62,6 @@ import {SCM_REPORT_PERMISSION} from '/@/constants/business/scm/report-const';
 import {SCM_SORTING_RESULT_ENUM} from '/@/constants/business/scm/sorting-const';
 import {SCM_ORDER_RETURN_STATUS_ENUM} from '/@/constants/business/scm/order-const';
 import {fulfillmentStatuses, type FulfillmentStatus} from '../delivery/delivery-types';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
-import type {ReportNoteSection} from '/@/components/business/scm/report-note/index.vue';
 
 const QUERY_PERMISSION = SCM_REPORT_PERMISSION.ORDER_EXCEPTION_QUERY;
 const labels: Record<OrderExceptionType, string> = {
@@ -79,23 +76,6 @@ const sources: Record<OrderExceptionType, {path: string; key: string; permission
 const defaultRange = (): [string, string] => [dayjs().subtract(6, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')];
 const dateRange = ref<[string, string]>(defaultRange());
 
-// 口径说明：只讲「数字是什么意思」，不讲实现。
-const exceptionNoteSections: ReportNoteSection[] = [
-  {
-    label: '统计口径',
-    items: [
-      '只读聚合当前来源单据的事实，处理请进入来源单据',
-      '发生时间依次取分拣录入、异常签收、售后驳回时间'
-    ]
-  },
-  {
-    label: '统计范围',
-    items: [
-      '仓库筛选不包含未绑定仓库的售后拒绝',
-      '数量不跨单位合计，同一订单可能出现在多个类别中'
-    ]
-  }
-];
 const filters = reactive<Pick<OrderExceptionQuery, 'exceptionType' | 'warehouseId' | 'keyword'>>({});
 const rows = ref<OrderExceptionRow[]>([]), summary = ref<OrderExceptionSummary[]>([]);
 const pageNum = ref(1), pageSize = ref(20), total = ref(0);

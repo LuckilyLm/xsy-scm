@@ -12,7 +12,6 @@
           </a-button-group>
           <a-button class="smart-margin-left10" v-privilege="PERM.EXPORT" :loading="exportingOverview"
                     @click="exportOverview">导出概览</a-button>
-          <ReportNote title="口径说明" :sections="overviewNoteSections"/>
         </a-form-item>
       </a-row>
     </a-form>
@@ -24,7 +23,7 @@
 
     <a-row :gutter="[12, 12]" class="smart-margin-top10">
       <a-col v-for="card in kpiCards" :key="card.label" :xs="24" :sm="12" :lg="8">
-        <ReportKpiCard :label="card.label" :value="card.value" :hint="card.hint"/>
+        <ReportKpiCard :label="card.label" :value="card.value"/>
       </a-col>
     </a-row>
 
@@ -177,8 +176,6 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
-import type {ReportNoteSection} from '/@/components/business/scm/report-note/index.vue';
 import {reportError} from './report-errors';
 import type {
     FinanceOverviewQuery,
@@ -201,29 +198,6 @@ import {datetime} from '../common/scm-display';
 
 const dateRange = ref<DateRange>(defaultDateRange());
 
-// 口径说明：只讲「数字是什么意思」，不讲实现。
-const overviewNoteSections: ReportNoteSection[] = [
-  {
-    label: '指标定义',
-    items: [
-      '发生额与已核销金额按所选区间统计',
-      '期末待收 / 待付按结束日结算，包含起始日前形成的单据'
-    ]
-  },
-  {
-    label: '统计范围',
-    items: [
-      '已核销来自收付款与应收应付之间的分配关系，不代表实际现金收付',
-      '明细按结束日列示普通单据，红字按原单汇总，超额核销单独显示'
-    ]
-  },
-  {
-    label: '明细列示',
-    items: [
-      '应收、应付列表均按期末日期列示，红字金额与核销余额逐单计算'
-    ]
-  }
-];
 const activeTab = ref<'receivable' | 'payable'>('receivable');
 const keyword = ref('');
 const overview = ref<FinanceReportOverview | null>(null);
@@ -254,18 +228,12 @@ const overviewLoader = createGuardedLoader<FinanceReportOverview>(
 const overviewExportQuery = () => ({startDate: dateRange.value[0], endDate: dateRange.value[1]});
 const detailExportQuery = () => ({...overviewExportQuery(), keyword: keyword.value.trim() || undefined});
 const kpiCards = computed(() => [
-    {label: '应收发生额', value: moneyText(overview.value?.receivableOccurredAmount),
-        hint: '所选期间新形成的净应收：正常应收减红字应收。它是发生额，不含核销。'},
-    {label: '应收已核销', value: moneyText(overview.value?.receivableWrittenOffAmount),
-        hint: '所选期间的应收核销：正常核销减反向核销。核销是分配关系，不等于实际收款。'},
-    {label: '期末待收', value: moneyText(overview.value?.endingReceivableAmount),
-        hint: '截至结束日按每张应收逐单计算 max(净应收−有效核销, 0)，包含起始日前的未结单据。'},
-    {label: '应付发生额', value: moneyText(overview.value?.payableOccurredAmount),
-        hint: '所选期间新形成的净应付：正常应付减红字应付。它是发生额，不含核销。'},
-    {label: '应付已核销', value: moneyText(overview.value?.payableWrittenOffAmount),
-        hint: '所选期间的应付核销：正常核销减反向核销。核销是分配关系，不等于实际付款。'},
-    {label: '期末待付', value: moneyText(overview.value?.endingPayableAmount),
-        hint: '截至结束日按每张应付逐单计算 max(净应付−有效核销, 0)，包含起始日前的未结单据。'},
+    {label: '应收发生额', value: moneyText(overview.value?.receivableOccurredAmount)},
+    {label: '应收已核销（非实收）', value: moneyText(overview.value?.receivableWrittenOffAmount)},
+    {label: '期末待收（含期初未结）', value: moneyText(overview.value?.endingReceivableAmount)},
+    {label: '应付发生额', value: moneyText(overview.value?.payableOccurredAmount)},
+    {label: '应付已核销（非实付）', value: moneyText(overview.value?.payableWrittenOffAmount)},
+    {label: '期末待付（含期初未结）', value: moneyText(overview.value?.endingPayableAmount)},
 ]);
 
 const receivableColumns = ref<TableColumnsType<FinanceReceivableDetailRow>>([
@@ -390,8 +358,6 @@ onUnmounted(() => window.removeEventListener('resize', updateViewportHeight));
 
 <style scoped>
 .report-error { margin: 10px 0; }
-.report-table-hint { color: var(--scm-text-secondary); font-size: 12px; margin: 8px 0; }
-.report-metric-note { line-height: 1.8; }
 .smart-table-operate-block { display: flex; align-items: center; gap: 8px; }
 .smart-table-operate-block :deep(.ant-input) { width: 260px; }
 .finance-detail-mobile-list { display: none; }

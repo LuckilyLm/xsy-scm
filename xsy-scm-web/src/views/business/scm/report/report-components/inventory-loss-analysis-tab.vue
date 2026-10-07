@@ -1,7 +1,7 @@
 <template>
   <a-row :gutter="[12, 12]">
     <a-col v-for="card in lossCards" :key="card.label" :xs="24" :sm="12" :md="8" :lg="6" :xl="4">
-      <ReportKpiCard :label="card.label" :value="card.value" :hint="card.hint" :warning="card.warning"/>
+      <ReportKpiCard :label="card.label" :value="card.value" :warning="card.warning"/>
     </a-col>
   </a-row>
   <a-row :gutter="[12, 12]" class="smart-margin-top10">
@@ -9,7 +9,6 @@
       <ReportPieChart
           title="损耗类型金额占比"
           :slices="lossPieSlices"
-          extra="只统计盘亏与手工报损；盘盈与报溢是增益，不进损耗成本"
       />
     </a-col>
     <a-col :xs="24" :lg="12">
@@ -25,7 +24,6 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" @click="emit('export')">导出</a-button>
-        <ReportNote title="口径说明" :points="['只统计盘亏与手工报损两类损耗']"/>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -89,7 +87,6 @@
 import {computed, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
-import ReportNote from '/@/components/business/scm/report-note/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
   SCM_REPORT_LOSS_TYPE_ENUM,
@@ -138,33 +135,28 @@ const columns = ref<TableColumnsType<InventoryLossRow>>([
 const visibleColumns = computed(() => filterCostColumns(columns.value, ['unitCost', 'costAmount'], props.canViewCost));
 const lossCards = computed(() => {
   const data = props.summary ?? {};
-  const cards: Array<{label: string; value: string; hint?: string; warning?: string; cost?: boolean}> = [
+  const cards: Array<{label: string; value: string; warning?: string; cost?: boolean}> = [
     {
       label: '盘亏数量（按单位）',
       value: data.stocktakeLossQuantityText || '—',
-      hint: 'STOCKTAKE_LOSS 流水的数量，按记账单位分组，不做跨单位相加',
     },
     {
       label: '盘亏成本金额',
       value: costText(data.stocktakeLossCostAmount, props.canViewCost),
-      hint: 'SUM(quantity × unit_cost)',
       cost: true,
     },
     {
       label: '报损数量（按单位）',
       value: data.lossReportQuantityText || '—',
-      hint: 'LOSS_REPORT 流水的数量，按记账单位分组',
     },
     {
       label: '报损成本金额',
       value: costText(data.lossReportCostAmount, props.canViewCost),
-      hint: 'SUM(quantity × unit_cost)',
       cost: true,
     },
     {
       label: '损耗总成本金额',
       value: costText(data.totalLossCostAmount, props.canViewCost),
-      hint: '盘亏 + 报损的合计，由后端聚合；不含盘盈与报溢',
       warning: incompleteCostHint(data.missingCostCount, '损耗成本金额'),
       cost: true,
     },
