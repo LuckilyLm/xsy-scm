@@ -4,6 +4,12 @@ import {planRoadRoute, type DrivingSdk} from './amap-driving-provider';
 
 const coordinate = (value: number) => value.toFixed(8);
 
+/** label.content 只收字符串且按 HTML 解析；标签文本来自业务数据，需要转义成文本再拼。 */
+const escapeHtml = (value: string) =>
+    value.replace(/[&<>"]/g, (character) =>
+        ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[character] as string)
+    );
+
 interface LngLat {
     getLng(): number;
 
@@ -163,10 +169,13 @@ export async function createMap(
         );
 
     function addPolylines(paths: RoutePosition[][]) {
-        const lines = paths
-            .filter((path) => path.length)
-            .map((path) => new sdk.Polyline({path, strokeColor: '#00B96B', strokeWeight: 4, showDir: true}));
-        if (!lines.length) return;
+        const usable = paths.filter((path) => path.length);
+        if (!usable.length) return;
+        // 底图自带同色系的绿色道路，单画绿线会混进去；先铺白色描边再叠绿线，保证任何底图上都可辨识。
+        const lines = usable.flatMap((path) => [
+            new sdk.Polyline({path, strokeColor: '#FFFFFF', strokeWeight: 9, zIndex: 49}),
+            new sdk.Polyline({path, strokeColor: '#00B96B', strokeWeight: 5, zIndex: 50, showDir: true}),
+        ]);
         overlays.push(...lines);
         map.add(lines);
         map.setFitView();
@@ -241,13 +250,10 @@ export async function createMap(
             positions.forEach((p, index) => {
                 if (!p) return;
                 const point = points[index];
-                const label = document.createElement('span');
-                label.className = 'scm-map-label';
-                label.textContent = point.label;
                 const marker = new sdk.Marker({
                     position: p,
                     title: point.label,
-                    label: {content: label, direction: 'top'},
+                    label: {content: `<span class="scm-map-label">${escapeHtml(point.label)}</span>`, direction: 'top'},
                     draggable: Boolean(onPick)
                 });
                 marker.on('click', () => {
