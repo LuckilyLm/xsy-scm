@@ -10,7 +10,7 @@
 
 - 需求：[产品功能需求基线](requirements/产品功能需求基线.md)、[负责人确认口径](requirements/2026-09-09-负责人确认口径.md)。
 - 架构：[SmartAdmin 底座](architecture/smartadmin-foundation.md)、[SCM UI 规范](architecture/scm-ui-guidelines.md)、[源码注释规范](architecture/code-comment-guidelines.md)、[地图部署](architecture/map-deployment.md)、[采购快照矩阵](architecture/purchase-snapshot.md)。
-- 正式设计：[Finance R1](plan/active/finance-r1-design.md)、[余额支付、订单资金核销与售后返还](plan/active/balance-payment-order-settlement-design.md)。
+- 正式设计：[Finance R1](plan/active/finance-r1-design.md)、[余额支付、订单资金核销与售后返还](plan/active/balance-payment-order-settlement-design.md)、[首页供应链工作台](plan/active/home-workbench-design.md)。
 - 尚未补齐的接口字段：[前端所需后端字段缺口](plan/active/frontend-ui-backend-gap-inventory.md)。
 - 工程规则：[Java 工程规范与质量基线](quality/java-code-quality-remediation-plan.md)、[贡献与验证指南](../CONTRIBUTING.md)。
 
