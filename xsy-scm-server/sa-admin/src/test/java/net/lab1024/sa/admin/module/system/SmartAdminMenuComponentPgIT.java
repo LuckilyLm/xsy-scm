@@ -1,6 +1,8 @@
 package net.lab1024.sa.admin.module.system;
 
 import net.lab1024.sa.admin.AdminApplication;
+import net.lab1024.sa.admin.module.system.menu.domain.vo.MenuTreeVO;
+import net.lab1024.sa.admin.module.system.menu.service.MenuService;
 import net.lab1024.sa.admin.test.PgITPaths;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +46,42 @@ class SmartAdminMenuComponentPgIT {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @Autowired
+    private MenuService menuService;
+
+    /**
+     * 隐藏的详情页路由必须能被「新建角色」授出去。
+     *
+     * <p>权限管理页的菜单树取 {@code MenuService.queryMenuTree}，它不过滤 {@code visible_flag}；
+     * 勾选父菜单时前端会把子级一并勾上。因此隐藏详情路由只要挂在可见父菜单下，新角色勾了
+     * 「线路管理」就同时拿到隐藏的「线路详情」，不需要迁移去复制角色权限。
+     *
+     * <p>一旦有人给菜单树加上 {@code visible_flag = TRUE} 过滤，这条链路会在「新建角色」上断掉，
+     * 表现为能看列表、点详情空白，且迁移当时的角色仍然正常 —— 这里把它钉住。
+     */
+    @Test
+    @DisplayName("隐藏的详情页路由出现在权限菜单树里，可随父菜单一起授出")
+    void hiddenDetailRoutesStayGrantable() {
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id = 1004 AND menu_type = 2"
+                        + " AND parent_id = 1001 AND visible_flag = FALSE AND deleted_flag = FALSE",
+                Integer.class)).as("线路详情应当是线路管理下的隐藏页面菜单").isEqualTo(1);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM t_role_menu WHERE role_id = 1 AND menu_id = 1004",
+                Integer.class)).as("迁移已把线路详情授给既有角色").isEqualTo(1);
+
+        assertThat(containsMenu(menuService.queryMenuTree(false).getData(), 1004L))
+                .as("权限菜单树若过滤 visible_flag，新建角色勾「线路管理」就拿不到隐藏的「线路详情」")
+                .isTrue();
+    }
+
+    private boolean containsMenu(List<MenuTreeVO> nodes, Long menuId) {
+        if (nodes == null) {
+            return false;
+        }
+        return nodes.stream().anyMatch(node -> menuId.equals(node.getMenuId()) || containsMenu(node.getChildren(), menuId));
+    }
 
     @Test
     @DisplayName("每个已发布页面菜单的 component 都能在 xsy-scm-web/src/views 下找到（既有缺口走显式基线）")

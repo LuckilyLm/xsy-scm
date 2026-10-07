@@ -3,22 +3,14 @@ package com.xsy.scm.supplier.manager;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * 供应商字段归一化。
+ * 供应商字段归一化：名称仅 trim，可选文本空白视作未填写。
  *
  * <p>
- * 规则与客户域一致：编码 trim + upper，名称仅 trim，可选文本空白视作未填写。之所以不复用 {@code CustomerValidator} 的静态方法，是为了让两个域可以独立演进
- * （例如未来供应商编码需要带前缀校验时，不需要动客户域）。
+ * 这里没有编码归一化 —— 供应商编码由服务端生成，客户端不再提交它（客户类型编码仍由人工录入，归一化留在客户域）。
  */
 public final class SupplierValidator {
 
     private SupplierValidator() {
-    }
-
-    /**
-     * 编码归一化：去空白 + 转大写。
-     */
-    public static String normalizeCode(String raw) {
-        return raw == null ? null : raw.trim().toUpperCase();
     }
 
     /**

@@ -12,14 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SupplierValidatorTest {
 
     @Test
-    @DisplayName("编码归一化：trim + upper")
-    void normalizesCode() {
-        assertThat(SupplierValidator.normalizeCode("  gys001 ")).isEqualTo("GYS001");
-        assertThat(SupplierValidator.normalizeCode("Sup-01")).isEqualTo("SUP-01");
-        assertThat(SupplierValidator.normalizeCode(null)).isNull();
-    }
-
-    @Test
     @DisplayName("名称归一化：仅 trim，保留大小写")
     void normalizesName() {
         assertThat(SupplierValidator.normalizeName("  鲜蔬源基地  ")).isEqualTo("鲜蔬源基地");
