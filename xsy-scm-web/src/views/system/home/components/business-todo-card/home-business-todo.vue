@@ -7,7 +7,7 @@
 -->
 <template>
   <default-home-card icon="CheckSquareOutlined" title="业务待办">
-    <div style="height: 240px">
+    <div style="height: 332px">
       <a-spin :spinning="loading">
         <div class="center column">
           <a-empty v-if="!loading && todos.length === 0" description="暂无待办事项"/>

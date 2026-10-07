@@ -334,6 +334,12 @@ ScmBusinessMetricsService
 - `inventory-health` 除入口权限外还要求 `scm:inventory:warning:query`（看到分档等于看到库存状况）。
 - 「进入运营大屏」入口仍需 `scm:screen:query`，前端按权限显隐。
 
+### 4.3 不做的事
+
+- 不在首页做地图（地图留在大屏）。
+- 不在首页做明细列表（明细留在各业务列表页，首页只给数字与跳转）。
+- 不为首页新写任何统计 SQL。
+
 ### 4.4 已知优化（P2，不阻塞）
 
 `overviewFor` 目前无论用户持有哪些领域权限，都会先取齐销售 / 采购两组指标与库存预警总数，再按权限裁卡。
@@ -341,31 +347,35 @@ ScmBusinessMetricsService
 优化方向是**按可见卡片惰性取数**（`ScmTodoQueryService.todosFor` 已是这个范式），需要加一层按组记忆，
 避免两张卡共用一组指标时重复取数。
 
-### 4.3 不做的事
-
-- 不在首页做地图（地图留在大屏）。
-- 不在首页做明细列表（明细留在各业务列表页，首页只给数字与跳转）。
-- 不为首页新写任何统计 SQL。
-
 ## 5. 前端需求
 
 ### 5.1 目录
 
 ```
 views/system/home/
-├── index.vue                 # 装配
-├── home-header.vue           # 欢迎区：问候 + 日期 + 部门 + 快捷入口 + [刷新数据] [进入运营大屏]
+├── index.vue                 # 装配：按权限决定发不发请求、区块显不显示
+├── home-header.vue           # 欢迎区：问候 + 日期 + 部门 + [运营大屏] [刷新数据]
+├── home-metric-meta.ts       # KPI / 趋势 / 排行 / 库存五档的中文名、图标与语义色
 ├── components/
+│   ├── use-region-data.ts    # 每个区块各自的 loading / error / 重试（不做全局一把抓）
+│   ├── region-error.vue      # 区块失败的统一提示 + 重试入口
 │   ├── metric-cards.vue      # KPI 卡（列数自适应，见 §5.5）
-│   ├── business-trend.vue    # 唯一主图（7d/30d 切换）
-│   ├── business-todo.vue     # 由 business-todo-card/home-business-todo.vue 迁入并强化
-│   ├── customer-ranking.vue  # 客户销售 TOP5
-│   ├── product-ranking.vue   # 商品销售 TOP5
-│   ├── inventory-health.vue  # 库存健康分档
-│   ├── home-notice.vue       # 补 title prop
-│   └── system-changelog.vue  # 由 changelog-card.vue 迁入
-└── styles/home.less
+│   ├── business-trend.vue    # 唯一主图（指标 tab 只列有权项，7d/30d 切换）
+│   ├── ranking-card.vue      # 客户 / 商品销售 TOP5（同一组件按 dimension 复用）
+│   ├── inventory-health.vue  # 库存健康五档
+│   ├── business-todo-card/home-business-todo.vue   # 业务待办（保留原路径，强化留 4a）
+│   ├── default-home-card.vue # 卡片壳（原有）
+│   ├── changelog-card.vue    # 系统更新（迁名留 4a）
+│   └── echarts/、quick-entry/、to-be-done-card/     # 待 4a / 4b 清理
+└── index.less
 ```
+
+客户与商品排行没有拆成两个文件：两者的数据形状、空态与展示方式完全一致，只有标题与
+空态文案不同，拆开就是两份只差一个字符串的重复代码。`ranking-card.vue` 收一个 `dimension`
+参数，两个实例各自持有独立的加载状态。
+
+`home-notice.vue` 的 `title` 死 prop 与第二张通知卡、欢迎区右侧的快捷入口、以及 `echarts/*`、
+`heart-sentence.ts` 的物理删除，一并留到批次 4a；批次 3 只解除它们的 import 与渲染。
 
 ### 5.2 首屏布局
 
@@ -454,7 +464,7 @@ views/system/home/
 | `ToBeDoneCard` | **整套功能删除**，不是只从首页移走（清单见 §6 批次 4b） |
 | 快捷入口 | 保留机制，默认项全部换成 SCM 业务入口并按权限过滤 |
 
-已无待定夺项。批次顺序：0（已完成）→ 1A（已完成）→ 1B（已完成）→ 2（已完成）→ 2A（已完成）→ 3 → 4a → 4b。
+已无待定夺项。批次顺序：0（已完成）→ 1A（已完成）→ 1B（已完成）→ 2（已完成）→ 2A（已完成）→ 3（已完成）→ 4a → 4b。
 
 批次 1B 的两点补充说明：
 

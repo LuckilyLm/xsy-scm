@@ -1,167 +1,117 @@
 <!--
-  * 首页 用户头部信息
+  * 首页欢迎区
   *
-  *
+  * 只保留「现在是谁、今天几号、能去哪里」：问候语、日期与部门、刷新数据、运营大屏。
+  * 天气、农历节气、毒鸡汤、上次登录与 IP 属于个人兴趣或安全信息，不占工作台首屏。
+  * 运营大屏入口按 scm:screen:query 显隐 —— 它的路由不拦人，只有接口会拒绝。
 -->
 <template>
-  <a-card class="user-header">
-    <a-page-header :title="welcomeSentence">
-      <template #subTitle>
-        <a-typography-text type="secondary" style="margin-left: 20px">所属部门： {{ departmentName }}</a-typography-text>
-      </template>
-      <template #extra>
-        <a-typography-text type="secondary">{{ dayInfo }}</a-typography-text>
-      </template>
-      <a-row class="content">
-        <span class="left-content">
-          <p class="last-login-info"><AlertOutlined/>{{ lastLoginInfo }}</p>
-          <a class="sentence" href="#" target="_blank"> <smile-outlined spin/> {{ heartSentence }} </a>
-        </span>
-        <div class="weather">
-          <iframe
-              width="100%"
-              scrolling="no"
-              height="50"
-              frameborder="0"
-              allowtransparency="true"
-              src="//i.tianqi.com/index.php?c=code&id=12&icon=1&num=3&site=12"
-          ></iframe>
-        </div>
-      </a-row>
-    </a-page-header>
+  <a-card class="home-welcome" :bordered="false">
+    <div class="home-welcome__row">
+      <div class="home-welcome__text">
+        <h2 class="home-welcome__title">{{ welcomeSentence }}</h2>
+        <p class="home-welcome__meta">{{ dayInfo }}</p>
+      </div>
+      <div class="home-welcome__actions">
+        <a-button v-if="canScreen" @click="gotoScreen">
+          <template #icon>
+            <bar-chart-outlined/>
+          </template>
+          运营大屏
+        </a-button>
+        <a-button type="primary" :loading="refreshing" @click="emit('refresh')">
+          <template #icon>
+            <reload-outlined/>
+          </template>
+          刷新数据
+        </a-button>
+      </div>
+    </div>
   </a-card>
 </template>
+
 <script setup lang="ts">
 import {computed} from 'vue';
+import {useRouter} from 'vue-router';
 import {useUserStore} from '/@/store/modules/system/user';
-import uaparser from 'ua-parser-js';
-import {Solar, Lunar} from 'lunar-javascript';
-import _ from 'lodash';
-import heartSentenceArray from './heart-sentence';
 
+defineProps<{canScreen: boolean; refreshing: boolean}>();
+const emit = defineEmits(['refresh']);
+
+const router = useRouter();
 const userStore = useUserStore();
 
 const departmentName = computed(() => userStore.departmentName);
 
-// 欢迎语
 const welcomeSentence = computed(() => {
-  let sentence = '';
-  let now = new Date().getHours();
-  if (now > 0 && now <= 6) {
-    sentence = '午夜好，';
-  } else if (now > 6 && now <= 11) {
-    sentence = '早上好，';
-  } else if (now > 11 && now <= 14) {
-    sentence = '中午好，';
-  } else if (now > 14 && now <= 18) {
-    sentence = '下午好，';
-  } else {
-    sentence = '晚上好，';
+  const hour = new Date().getHours();
+  let greeting = '晚上好';
+  if (hour < 6) {
+    greeting = '午夜好';
+  } else if (hour < 12) {
+    greeting = '早上好';
+  } else if (hour < 14) {
+    greeting = '中午好';
+  } else if (hour < 18) {
+    greeting = '下午好';
   }
-  return sentence + userStore.$state.actualName;
+  return `${greeting}，${userStore.$state.actualName ?? ''}`;
 });
 
-//上次登录信息
-const lastLoginInfo = computed(() => {
-  let info = '';
-  if (userStore.$state.lastLoginTime) {
-    info = info + '上次登录:' + userStore.$state.lastLoginTime;
-  }
+function pad(value: number): string {
+  return String(value).padStart(2, '0');
+}
 
-  if (userStore.$state.lastLoginUserAgent) {
-    let ua = uaparser(userStore.$state.lastLoginUserAgent);
-    info = info + '; 设备:';
-    if (ua.browser.name) {
-      info = info + ' ' + ua.browser.name;
-    }
-    if (ua.os.name) {
-      info = info + ' ' + ua.os.name;
-    }
-    let device = ua.device.vendor ? ua.device.vendor + ua.device.model : null;
-    if (device) {
-      info = info + ' ' + device + ';';
-    }
-  }
-
-  if (userStore.$state.lastLoginIpRegion) {
-    info = info + '; ' + userStore.$state.lastLoginIpRegion;
-  }
-  if (userStore.$state.lastLoginIp) {
-    info = info + '; ' + userStore.$state.lastLoginIp;
-  }
-  return info;
-});
-
-//日期、节日、节气
 const dayInfo = computed(() => {
-  //阳历
-  let solar = Solar.fromDate(new Date());
-  let day = solar.toString();
-  let week = solar.getWeekInChinese();
-  //阴历
-  let lunar = Lunar.fromDate(new Date());
-  let lunarMonth = lunar.getMonthInChinese();
-  let lunarDay = lunar.getDayInChinese();
-  //节气
-  let jieqi = lunar.getJieQi();
-  let next = lunar.getNextJieQi();
-  let nextJieqi = next.getName() + ' ' + next.getSolar().toYmd();
-
-  return `${day} 星期${week}，农历${lunarMonth}月${lunarDay}（当前${jieqi}，${nextJieqi} ）`;
+  const now = new Date();
+  const week = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()];
+  const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const parts = [`${date} 星期${week}`];
+  if (departmentName.value) {
+    parts.push(departmentName.value);
+  }
+  return parts.join(' · ');
 });
 
-// 毒鸡汤
-const heartSentence = computed(() => {
-  return heartSentenceArray[_.random(0, heartSentenceArray.length - 1)];
-});
+function gotoScreen() {
+  void router.push('/screen');
+}
 </script>
-<style scoped lang="less">
-.user-header {
-  width: 100%;
-  margin-bottom: 5px;
-  padding: 0;
+
+<style lang="less" scoped>
+.home-welcome {
+  border: 1px solid var(--scm-border);
+  border-radius: 12px;
 
   :deep(.ant-card-body) {
-    padding: 0;
+    padding: 20px;
   }
 
-  .left-content {
-    width: calc(100% - 420px);
-
-    h3 {
-      color: rgba(0, 0, 0, 0.75);
-    }
-  }
-
-  .content {
+  .home-welcome__row {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-
-    .weather {
-      width: 400px;
-    }
+    gap: 16px;
+    flex-wrap: wrap;
   }
 
-  .last-login-info {
+  .home-welcome__title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--scm-text);
+  }
+
+  .home-welcome__meta {
+    margin: 4px 0 0;
     font-size: 13px;
-    color: #333;
-    overflow-wrap: break-word;
-    padding: 0;
-    margin: 1px 0 0 0;
+    color: var(--scm-text-secondary);
   }
 
-  .sentence {
-    display: block;
-    font-size: 12px;
-    color: #acacac;
-    overflow-wrap: break-word;
-    padding: 5px 0 0 0;
-    margin: 6px 0 0 0;
-  }
-
-  .sentence:hover {
-    cursor: pointer;
-    text-decoration: underline;
+  .home-welcome__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 }
 </style>
