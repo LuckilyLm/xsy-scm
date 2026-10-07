@@ -382,7 +382,7 @@ const BASELINE = {
   // 32 = 收口后的 31 + `purchase-demand-summary-preview.vue` 那句「不是最终净采购建议」
   // （会改变用户决策的免责声明，按 guidelines §8.1 保留，不是回归）。
   secondaryType: 32,
-  hintClass: 38,
+  hintClass: 33,
   reportResidentInfoAlert: 0,
   residentLongText: 0,
 };

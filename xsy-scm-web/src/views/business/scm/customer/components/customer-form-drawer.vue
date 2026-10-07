@@ -126,7 +126,6 @@
         <section class="scm-form-section">
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">授信与账期</h3>
-            <span class="scm-form-section__hint">账期三种形态互斥：不设置 / 按金额 / 按时间。</span>
           </div>
           <a-row :gutter="20">
             <!-- 额度与阈值都是后端的 4 位定点字符串，必须 string-mode：走 number 会丢精度、也会改掉提交类型 -->

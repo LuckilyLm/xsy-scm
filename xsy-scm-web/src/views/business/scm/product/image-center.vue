@@ -45,7 +45,7 @@
           <a-empty v-if="!view" description="请从左侧选择一个商品"/>
           <template v-else>
             <a-alert v-if="imageError" :message="imageError" type="error" show-icon class="gap"/>
-            <p class="hint">单个商品最多一张主图。拖动或用按钮调整详情图顺序。</p>
+            <p class="hint">主图最多一张；详情图可拖动排序</p>
             <a-spin :spinning="imageLoading">
               <div class="images">
                 <figure v-for="(image, index) in view.images" :key="String(image.imageId)" :draggable="canWrite"

@@ -175,7 +175,7 @@
                   :precision="2"
                   :step="1"
                   addon-after="%"
-                  placeholder="95"
+                  placeholder="95 即 9.5 折"
                   style="width: 100%"
               />
               <a-input-number
@@ -190,9 +190,6 @@
               />
             </a-form-item>
           </a-col>
-          <a-col v-if="form.discountType === 'RATE'" :span="24">
-            <span class="scm-cell-hint">填 95 表示按原价的 95% 计价（即 9.5 折）。</span>
-          </a-col>
           <a-col :span="12">
             <a-form-item label="门槛金额">
               <a-input-number
@@ -201,13 +198,10 @@
                   :precision="4"
                   :step="1"
                   addon-before="¥"
-                  placeholder="0.0000"
+                  placeholder="0 表示无门槛"
                   style="width: 100%"
               />
             </a-form-item>
-          </a-col>
-          <a-col :span="12">
-            <span class="scm-cell-hint">填 0 表示无门槛。</span>
           </a-col>
         </a-row>
       </section>

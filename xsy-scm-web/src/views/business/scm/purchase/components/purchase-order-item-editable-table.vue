@@ -95,7 +95,7 @@
           </a-button>
           <span v-if="!asItem(slot.record).skuId" class="hint">请先选择采购商品</span>
           <span v-else-if="!(asItem(slot.record).allocations ?? []).length" class="hint">
-            该行没有需求来源：可以只按采购数量下单（采购量 ≠ 需求量）
+            无需求来源，按采购量下单（采购量 ≠ 需求量）
           </span>
         </a-space>
       </div>

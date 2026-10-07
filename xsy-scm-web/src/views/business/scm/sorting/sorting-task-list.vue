@@ -46,7 +46,7 @@
     <div class="smart-table-btn-block">
       <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
       <a-typography-text type="secondary" class="toolbar-hint">
-        一个订单行同一时刻只属于一个活动任务；建单时按仓库与授权范围取候选订单行。
+        一个订单行同一时刻只属于一个活动任务
       </a-typography-text>
     </div>
     <div class="smart-table-setting-block">

@@ -155,13 +155,10 @@
                     :precision="2"
                     :step="1"
                     addon-after="%"
-                    placeholder="95"
+                    placeholder="95 即 9.5 折"
                     style="width: 100%"
                 />
               </a-form-item>
-            </a-col>
-            <a-col :span="24">
-              <span class="scm-cell-hint">填 95 表示按原价的 95% 计价（即 9.5 折）。</span>
             </a-col>
           </template>
           <template v-else-if="form.activityType === 'SPECIAL_PRICE'">
@@ -265,7 +262,7 @@
       <section class="scm-form-section">
         <div class="scm-form-section__head">
           <h3 class="scm-form-section__title">叠加与互斥</h3>
-          <span class="scm-form-section__hint">同组内不可叠加，可留空</span>
+          <span class="scm-form-section__hint">同组内不可叠加</span>
         </div>
         <a-row :gutter="20">
           <a-col :span="12">

@@ -2,7 +2,6 @@
   <div class="scm-metric" :class="[`is-${size}`, tone && `tone-${tone}`]">
     <div class="scm-metric-label">
       {{ label }}
-      <span v-if="hint" class="scm-metric-hint">{{ hint }}</span>
     </div>
     <div class="scm-metric-value">
       <span v-if="prefix" class="scm-metric-prefix">{{ prefix }}</span>
@@ -56,8 +55,6 @@ const props = withDefaults(
       size?: 'hero' | 'lg' | 'md' | 'sm';
       /** 语义色；不传则用默认一级文字色 */
       tone?: 'primary' | 'ok' | 'warn' | 'danger';
-      /** 标签右侧的补充说明 */
-      hint?: string;
     }>(),
     {
       size: 'md',
@@ -88,11 +85,6 @@ const deltaText = computed(() => formatDeltaText(props.delta ?? null));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .scm-metric-hint {
-    font-size: 11px;
-    color: @text-3;
   }
 
   .scm-metric-value {
