@@ -1,7 +1,7 @@
-import type {MapPoint, ScmLocation} from './types';
+import type {MapPoint, RouteDrivingResult, RouteMapStatus, RoutePosition, ScmLocation} from './types';
 import {isLocated} from './types';
+import {planRoadRoute, type DrivingSdk} from './amap-driving-provider';
 
-type Position = [number, number];
 const coordinate = (value: number) => value.toFixed(8);
 
 interface LngLat {
@@ -27,19 +27,19 @@ interface MapInstance {
 
     setFitView(): void;
 
-    setCenter(position: Position): void;
+    setCenter(position: RoutePosition): void;
 
     setZoom(zoom: number): void;
 
     destroy(): void;
 }
 
-interface Sdk {
+interface Sdk extends DrivingSdk {
     Map: new (element: HTMLElement, options: object) => MapInstance;
     Marker: new (options: object) => Overlay;
     Polyline: new (options: object) => Overlay;
     Pixel: new (x: number, y: number) => unknown;
-    InfoWindow: new (options: object) => { open(map: MapInstance, position: Position): void };
+    InfoWindow: new (options: object) => { open(map: MapInstance, position: RoutePosition): void };
     Geocoder: new (options: object) => {
         getLocation(
             address: string,
@@ -50,7 +50,7 @@ interface Sdk {
         ): void;
     };
 
-    convertFrom(position: Position, crs: string, callback: (status: string, result: {
+    convertFrom(position: RoutePosition, crs: string, callback: (status: string, result: {
         locations?: LngLat[]
     }) => void): void;
 }
@@ -81,7 +81,7 @@ async function load(): Promise<Sdk> {
             reject(new Error('地图加载失败，请检查网络或地图配置后重试。'));
         }
 
-        script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(import.meta.env.VITE_AMAP_KEY)}&plugin=AMap.Geocoder`;
+        script.src = `https://webapi.amap.com/maps?v=2.0&key=${encodeURIComponent(import.meta.env.VITE_AMAP_KEY)}&plugin=AMap.Geocoder,AMap.Driving`;
         script.onerror = fail;
         script.onload = () => {
             window.clearTimeout(timer);
@@ -109,8 +109,8 @@ function timeout<T>(work: Promise<T>): Promise<T> {
     });
 }
 
-async function position(sdk: Sdk, point: ScmLocation): Promise<Position> {
-    const raw: Position = [Number(point.longitude), Number(point.latitude)];
+async function position(sdk: Sdk, point: ScmLocation): Promise<RoutePosition> {
+    const raw: RoutePosition = [Number(point.longitude), Number(point.latitude)];
     if (point.geomCrs === 'GCJ02') return raw;
     // Conversion is display-only. Stored WGS84 snapshots are never relabelled as GCJ02.
     return timeout(
@@ -143,7 +143,11 @@ export async function geocode(address: string): Promise<ScmLocation> {
     );
 }
 
-export async function createMap(element: HTMLElement, onPick?: (location: ScmLocation) => void) {
+export async function createMap(
+    element: HTMLElement,
+    onPick?: (location: ScmLocation) => void,
+    onRouteStatus?: (status: RouteMapStatus) => void
+) {
     const sdk = await load();
     const map = new sdk.Map(element, {zoom: 5, center: [105, 35], viewMode: '2D'});
     let overlays: Overlay[] = [];
@@ -157,6 +161,76 @@ export async function createMap(element: HTMLElement, onPick?: (location: ScmLoc
                 geomCrs: 'GCJ02'
             })
         );
+
+    function addPolylines(paths: RoutePosition[][]) {
+        const lines = paths
+            .filter((path) => path.length)
+            .map((path) => new sdk.Polyline({path, strokeColor: '#00B96B', strokeWeight: 4, showDir: true}));
+        if (!lines.length) return;
+        overlays.push(...lines);
+        map.add(lines);
+        map.setFitView();
+    }
+
+    /** Missing locations break the polyline; never imply a route skipping an unlocated stop. */
+    function straightLines(positions: (RoutePosition | null)[]) {
+        const lines: RoutePosition[][] = [];
+        positions.forEach((point, index) => {
+            const previous = positions[index - 1];
+            if (index > 0 && point && previous) lines.push([previous, point]);
+        });
+        return lines;
+    }
+
+    function combined(results: RouteDrivingResult[]): RouteDrivingResult {
+        let distanceMeters = 0;
+        let durationSeconds = 0;
+        let segmentCount = 0;
+        const paths: RoutePosition[][] = [];
+        for (const result of results) {
+            distanceMeters += result.distanceMeters;
+            durationSeconds += result.durationSeconds;
+            segmentCount += result.segmentCount;
+            paths.push(...result.paths);
+        }
+        return {distanceMeters, durationSeconds, paths, segmentCount, provider: 'AMAP', fallback: false};
+    }
+
+    async function drawRoute(positions: (RoutePosition | null)[], current: number) {
+        // 未定位的点把路线切成多段，算路只在首尾都定位的连续段内进行。
+        const runs: RoutePosition[][] = [];
+        let run: RoutePosition[] = [];
+        for (const point of positions) {
+            if (point) run.push(point);
+            else if (run.length) {
+                runs.push(run);
+                run = [];
+            }
+        }
+        if (run.length) runs.push(run);
+
+        const legs = runs.filter((points) => points.length > 1);
+        if (!legs.length) {
+            onRouteStatus?.({state: 'idle'});
+            return;
+        }
+        onRouteStatus?.({state: 'planning'});
+        const results: RouteDrivingResult[] = [];
+        for (const points of legs) {
+            const result = await planRoadRoute(sdk, points);
+            if (destroyed || current !== revision) return;
+            if (result.fallback) {
+                // 任一段算不出道路路线就整体回退直线，避免一段道路一段直线被读成完整路线。
+                addPolylines(straightLines(positions));
+                onRouteStatus?.({state: 'fallback'});
+                return;
+            }
+            results.push(result);
+        }
+        addPolylines(results.flatMap((result) => result.paths));
+        onRouteStatus?.({state: 'ready', result: combined(results)});
+    }
+
     return {
         async draw(points: MapPoint[], route = false) {
             const current = ++revision;
@@ -191,14 +265,6 @@ export async function createMap(element: HTMLElement, onPick?: (location: ScmLoc
                         })
                     );
                 overlays.push(marker);
-                // Missing locations break the polyline; never imply a route skipping an unlocated stop.
-                if (route && index > 0 && positions[index - 1])
-                    overlays.push(new sdk.Polyline({
-                        path: [positions[index - 1], p],
-                        strokeColor: '#00B96B',
-                        strokeWeight: 4,
-                        showDir: true
-                    }));
             });
             map.add(overlays);
             if (overlays.length) map.setFitView();
@@ -206,6 +272,8 @@ export async function createMap(element: HTMLElement, onPick?: (location: ScmLoc
                 map.setCenter(positions[0]);
                 map.setZoom(16);
             }
+            // 先落 Marker 再异步补路线：算路期间地图上已经能看到起点与停靠点。
+            if (route) await drawRoute(positions, current);
         },
         destroy() {
             destroyed = true;

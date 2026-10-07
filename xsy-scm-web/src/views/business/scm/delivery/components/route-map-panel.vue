@@ -7,6 +7,20 @@
       type="warning"
       show-icon
   />
+  <div v-if="routeStatus.state !== 'idle'" class="route-plan-summary">
+    <strong>计划配送路线</strong>
+    <p v-if="routeStatus.state === 'planning'"><a-spin size="small"/> 正在规划道路路线...</p>
+    <template v-else-if="drivingResult">
+      <p>起点仓库 → {{ route.stopCount }} 个停靠点</p>
+      <p class="route-plan-metrics">
+        <span class="scm-quantity">路程 {{ distanceText }}</span>
+        <span class="scm-quantity">预计 {{ durationText }}</span>
+        <span>高德驾车规划</span>
+      </p>
+      <p v-if="!allLocated" class="route-plan-note">未定位停靠点处线路中断，未计入路程与耗时。</p>
+    </template>
+    <p v-else>道路路线暂时不可用，当前显示停靠点直线示意。</p>
+  </div>
   <div class="route-map-layout">
     <div class="route-stops">
       <div class="warehouse-stop">
@@ -54,14 +68,14 @@
         </li>
       </ol>
     </div>
-    <ScmMap :points="mapPoints" route/>
+    <ScmMap :points="mapPoints" route @route-status="routeStatus = $event"/>
   </div>
 </template>
 
 <script setup lang="ts">
-import {ref} from 'vue';
+import {computed, ref} from 'vue';
 import ScmMap from '/@/components/business/scm/map/scm-map.vue';
-import {isLocated, type MapPoint} from '/@/components/business/scm/map/types';
+import {isLocated, type MapPoint, type RouteMapStatus} from '/@/components/business/scm/map/types';
 import {datetime} from '../../common/scm-display';
 import {money} from '../delivery-display';
 import type {DeliveryRoute, DeliveryStop} from '../delivery-types';
@@ -82,6 +96,21 @@ const emit = defineEmits<{
   editStop: [stop: DeliveryStop];
 }>();
 
+const routeStatus = ref<RouteMapStatus>({state: 'idle'});
+const drivingResult = computed(() => (routeStatus.value.state === 'ready' ? routeStatus.value.result : undefined));
+const distanceText = computed(() => (drivingResult.value ? `${(drivingResult.value.distanceMeters / 1000).toFixed(1)} km` : ''));
+const durationText = computed(() => (drivingResult.value ? formatDuration(drivingResult.value.durationSeconds) : ''));
+
+/** 耗时按分钟取整；跨小时给出「X 小时 Y 分」。 */
+function formatDuration(seconds: number): string {
+  const minutes = Math.round(seconds / 60);
+  if (minutes <= 0) return '1 分钟内';
+  if (minutes < 60) return `${minutes} 分钟`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} 小时 ${rest} 分` : `${hours} 小时`;
+}
+
 const dragFrom = ref<number>();
 
 function drop(index: number) {
@@ -100,6 +129,30 @@ function move(from: number, to: number) {
   gap: 16px;
   grid-template-columns: 360px minmax(0, 1fr);
   margin-top: 16px;
+}
+
+.route-plan-summary {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--scm-border, #e5e6eb);
+  border-radius: 8px;
+}
+
+.route-plan-summary strong {
+  display: block;
+}
+
+.route-plan-summary p {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 8px 0 0;
+  flex-wrap: wrap;
+}
+
+.route-plan-note {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
 }
 
 .route-stops {

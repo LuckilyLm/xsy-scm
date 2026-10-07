@@ -15,10 +15,10 @@
 <script setup lang="ts">
 import {onBeforeUnmount, onMounted, ref, watch} from 'vue';
 import {createMap, mapConfigured} from './map-provider';
-import type {MapPoint, ScmLocation} from './types';
+import type {MapPoint, RouteMapStatus, ScmLocation} from './types';
 
 const props = defineProps<{ points: MapPoint[]; route?: boolean; pickable?: boolean }>();
-const emit = defineEmits<{ pick: [ScmLocation] }>();
+const emit = defineEmits<{ pick: [ScmLocation]; 'route-status': [RouteMapStatus] }>();
 const container = ref<HTMLElement>();
 const loading = ref(false);
 const error = ref('');
@@ -33,6 +33,7 @@ async function draw() {
     error.value = '';
   } catch (e) {
     error.value = e instanceof Error ? e.message : '地图绘制失败';
+    emit('route-status', {state: 'idle'});
   }
 }
 
@@ -43,7 +44,11 @@ async function initialize() {
   error.value = '';
   loading.value = true;
   try {
-    const result = await createMap(container.value!, props.pickable ? (point) => emit('pick', point) : undefined);
+    const result = await createMap(
+        container.value!,
+        props.pickable ? (point) => emit('pick', point) : undefined,
+        (status) => emit('route-status', status)
+    );
     if (disposed || current !== generation) {
       result.destroy();
       return;
@@ -51,7 +56,10 @@ async function initialize() {
     map = result;
     await draw();
   } catch (e) {
-    if (current === generation) error.value = e instanceof Error ? e.message : '地图加载失败';
+    if (current === generation) {
+      error.value = e instanceof Error ? e.message : '地图加载失败';
+      emit('route-status', {state: 'idle'});
+    }
   } finally {
     if (current === generation) loading.value = false;
   }
