@@ -373,8 +373,8 @@ const hasHintClass = (node) =>
  * 提高基线必须在 PR 里说明「不告知会导致什么操作错误」，否则应改为
  * Tooltip / 口径说明 / 操作时确认（见 scm-ui-guidelines.md §8.1）。
  *
- * 清理是分批做的（见 `docs/plan/active/frontend-ui-copy-declutter.md`）：每清完一批就把
- * 受影响的基线降到新的实测值，别留旧数字 —— 留下的差额会被下一轮「顺手补一句」吃掉。
+ * 清理是分批做的：每清完一批就把受影响的基线降到新的实测值，别留旧数字 —— 留下的差额
+ * 会被下一轮「顺手补一句」吃掉。
  */
 const BASELINE = {
   residentInfoAlert: 19,
