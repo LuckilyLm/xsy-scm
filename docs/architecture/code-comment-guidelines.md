@@ -154,6 +154,8 @@
    - **反向验证新规则**：临时注入一处坏形态（或清空白名单），确认测试变红，再还原。注意 `body` 对 `//` **已剥掉 `//`**，所以匹配「行注释以标点开头」的正则里不能再写 `\/\/`，否则永远匹配不上；要写 `/^[ \t]*(?:\*+[ \t]*)?[：、，。；][^\n]/m` 才能同时覆盖 `//`（已剥离）与块注释（保留 `*`）两种形态。
    - **别指望 Eclipse formatter 修折行残迹**：给 `eclipse-formatter.xml` 开 `comment.join_lines_in_comments` 再全量 `spotless:apply`，「中文标点 + 空格」反而**变多** —— JDT 的 `join_lines` 只合并以 `.`/`;` 结尾的行，重排时又在行尾留下空格。**已回退**，这类残迹只能靠脚本 + 契约。
 5. **行尾**：前端 `xsy-scm-web/src` 是 CRLF，Java 源码是 LF。脚本写 Java 时若按「有 `\r\n` 就用 CRLF」判断会写成 CRLF，`spotless:check`（`lineEndings=UNIX`）会在 `validate` 阶段直接失败。后端批次以 `mvn -o spotless:apply` 收尾（eclipse formatter 还会重排 Javadoc、把短行合并填满行宽）。
+   - **改了 Javadoc 的折行就必须跑 apply**：手工折成多行的中文段落会被合并成一行，`spotless:check` 因此在 `validate` 阶段判红 —— 只跑 `mvn compile` 看不出来。
+   - **合并会在中文接缝留下标点空格**（`权限点， 否则`、`（ADM-12）； 这条链路`）。这是 §2 要删的残迹，处理办法是在 apply 之后再删掉这些空格：段落已经是单行时 formatter 不再插入空格，删完 `spotless:check` 仍绿（实测是它的不动点）。
 6. **`.vue` 的文件头只能用 `<!-- -->`**：它不是 `<script>` 的一部分，写 `/* */` 会被 SFC 解析器当成块外文本。
 7. **按「注释区间」替换，绝不全局替换**。前端源码里 `'**'`（脱敏掩码字符串）、`import.meta.glob('../views/**/**.vue')`（glob 模式）都含 `**`，全局 sed/正则会毁代码。正确姿势：先算出注释 spans（JS/TS 块注释与行注释、Vue 模板 `<!-- -->`、SQL `--`、XML `<!-- -->`），只在 span 内替换；校验时用**同一套 span** 剥离后再比非注释体。注意 `.less` 里的 `****/`（`/**` 紧邻 `*/`）不是粗体，靠 `(?<![/])\*\*(?![/])` 排除。
 8. **⚠️ MyBatis XML 里的 SQL 文本区绝不能插入 `<b>`**。XML mapper 的 `<select>` 标签内容里，`--` 是 **SQL 注释而不是 XML 注释** —— 往那里写 `<b>` 会被 XML 解析器当成**未闭合元素**，`sqlSessionFactory` 直接创建失败，整个 Spring 上下文起不来（表现为成百上千个 IT 全部 `ApplicationContext failure threshold exceeded`）。`xml.dom.minidom.parse` 也拦截不到（它只看 XML 语法，不看 MyBatis 语义）。**mapper XML 的排版残迹一律去标记留纯文本。**
