@@ -101,7 +101,7 @@ public class ScreenDataService {
     }
 
     public ScreenPurchaseVO getPurchaseData() {
-        PurchaseMetrics metrics = metricsService.purchase(dataScopeService.resolve());
+        PurchaseMetrics metrics = metricsService.todayPurchase(dataScopeService.resolve());
         ScreenPurchaseVO vo = new ScreenPurchaseVO();
         vo.setTodayPurchaseOrderCount(metrics.todayPurchaseOrderCount());
         vo.setTodayPurchaseAmount(metrics.todayPurchaseAmount());

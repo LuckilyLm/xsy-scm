@@ -9,9 +9,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmValueScope;
-import com.xsy.scm.metrics.domain.SalesFilter;
-import com.xsy.scm.metrics.domain.SalesRangeMetrics;
-import com.xsy.scm.metrics.service.ScmBusinessMetricsService;
+import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import com.xsy.scm.report.dao.ReportDao;
 import com.xsy.scm.report.domain.form.ScmOverviewReportQueryForm;
 import com.xsy.scm.report.domain.vo.ReportDailyStatVO;
@@ -28,8 +26,9 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
  * 会把它谎报成「这些仓库里没有数据」，而真实原因是「你没有可看的仓库」。两个方法抹的字段必须一致，否则指标卡与趋势图会对不上。
  *
  * <p>
- * <b>销售三件套不在这里算</b>：订单数 / 成交客户 / 销售额向 {@link ScmBusinessMetricsService#salesRange} 取，与首页、大屏同源同轴
- * （{@code confirmed_at}）。它们是「订单自身的业务维度」而非仓库维度，所以按调用者的<b>业务员范围</b>收窄 —— 与大屏经营面板一致； 一个只被授权看自己客户的业务员，不该在概览上读到全公司的销售额。
+ * <b>口径同源、范围策略不同</b>：销售三件套与采购提交金额的时间轴、状态、金额列与首页 / 大屏完全一致（见 {@code ScmBusinessMetricsService}），但本页不做归属维度的行级收窄 ——
+ * {@code sales_order} 没有仓库列， 销售侧的可见性由页面权限承担，采购侧只按仓库收窄。大屏按「归属 ∩ 仓库」收窄，那是另一处的策略。 要统一，必须整页一起改（byCustomer / byProduct /
+ * bySeller / bySupplier 都得跟着动）。
  */
 @Service
 @RequiredArgsConstructor
@@ -40,22 +39,14 @@ public class OverviewReportService {
 
     private final ScmDataScopeService dataScopeService;
 
-    private final ScmBusinessMetricsService metricsService;
-
     public ReportOverviewVO overview(ScmOverviewReportQueryForm form) {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
-        ReportOverviewVO vo = reportDao.overviewKpi(range.startAt(), range.endAt(), form, warehousePredicate(context));
+        ReportOverviewVO vo = reportDao.overviewKpi(range.startAt(), range.endAt(), form,
+                ScmPurchaseStatusEnum.committedNames(), warehousePredicate(context));
         if (vo == null) {
             return null;
         }
-        // 销售三件套（订单数 / 成交客户 / 销售额）向 metrics 取：与首页、大屏共用同一份定义与同一条时间轴。
-        // 报表的筛选表单原样传下去，不在这里另写一份带筛选的销售 SQL。
-        SalesRangeMetrics sales = metricsService.salesRange(range.startDate(), range.endDate(),
-                new SalesFilter(form.getCustomerId(), form.getSellerId(), form.getOrderSource()), context);
-        vo.setConfirmedOrderCount(sales.orderCount());
-        vo.setConfirmedOrderAmount(sales.settlementAmount());
-        vo.setCustomerCount(sales.customerCount());
         if (context.warehouseNowhere()) {
             clearWarehouseMetrics(vo);
         }

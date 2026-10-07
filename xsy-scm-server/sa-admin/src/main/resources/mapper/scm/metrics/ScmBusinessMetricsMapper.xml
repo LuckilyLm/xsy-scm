@@ -324,25 +324,47 @@
     </select>
 
     <!--
-      ================= 采购：创建轴、不过滤状态 =================
-      这里<b>不是</b>报表的「已提交采购金额」（那边是 submitted_at + 已提交状态集合）。
-      今日采购额包含草稿与已取消，是「今天新建了多少采购单」的口径；两者命名必须能区分开。
+      ================= 采购：提交轴 + 已提交状态 =================
+      提交（`submitted_at`）是采购单的业务生效点：草稿只是本地的，取消的已经退出履约链路。
+      状态清单由调用方从 ScmPurchaseStatusEnum.committedNames() 传入，<b>不在这里硬编码</b> ——
+      抄一份状态数组的副本，新增状态时就会静默少算（数字看起来正常，只是偏小）。
+
+      「今日采购建单金额 / 建单数」如果以后有业务价值，另加方法（created_at 轴），不要复用这里的名字：
+      同一屏上两个都叫「采购额」的数，比没有这个指标更糟。
     -->
-    <select id="countPurchaseOrdersByCreatedAt" resultType="long">
+    <sql id="committedPoStatus">
+        AND po.status IN
+        <foreach collection="committedStatuses" item="committedStatus" open="(" separator="," close=")">
+            #{committedStatus}
+        </foreach>
+    </sql>
+
+    <!-- 采购指标的附加筛选（供应商 / 采购员 / 仓库）。报表的采购分析用它，首页与大屏传空对象。 -->
+    <sql id="purchaseFilter">
+        <if test="filter != null and filter.supplierId != null">AND po.supplier_id = #{filter.supplierId}</if>
+        <if test="filter != null and filter.purchaserId != null">AND po.purchaser_id = #{filter.purchaserId}</if>
+        <if test="filter != null and filter.warehouseId != null">AND po.warehouse_id = #{filter.warehouseId}</if>
+    </sql>
+
+    <select id="countPurchaseOrdersBySubmittedAt" resultType="long">
         SELECT COUNT(*)
         FROM purchase_order po
         WHERE po.deleted = FALSE
-        AND po.created_at &gt;= #{startTime}
-        AND po.created_at &lt; #{endTime}
+        <include refid="committedPoStatus"/>
+        AND po.submitted_at &gt;= #{startTime}
+        AND po.submitted_at &lt; #{endTime}
+        <include refid="purchaseFilter"/>
         <include refid="scopePo"/>
     </select>
 
-    <select id="sumPurchaseAmountByCreatedAt" resultType="java.math.BigDecimal">
+    <select id="sumPurchaseAmountBySubmittedAt" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(po.total_amount), 0)
         FROM purchase_order po
         WHERE po.deleted = FALSE
-        AND po.created_at &gt;= #{startTime}
-        AND po.created_at &lt; #{endTime}
+        <include refid="committedPoStatus"/>
+        AND po.submitted_at &gt;= #{startTime}
+        AND po.submitted_at &lt; #{endTime}
+        <include refid="purchaseFilter"/>
         <include refid="scopePo"/>
     </select>
 
@@ -350,6 +372,7 @@
         SELECT COUNT(*)
         FROM purchase_order po
         WHERE po.deleted = FALSE
+        <include refid="committedPoStatus"/>
         <include refid="scopePo"/>
     </select>
 
@@ -357,24 +380,28 @@
         SELECT COALESCE(SUM(po.total_amount), 0)
         FROM purchase_order po
         WHERE po.deleted = FALSE
+        <include refid="committedPoStatus"/>
         <include refid="scopePo"/>
     </select>
 
+    <!-- 收货单：确认轴 + CONFIRMED。草稿收货单还没提交，不属于「今天收了多少货」。 -->
     <select id="countReceipts" resultType="long">
         SELECT COUNT(*)
         FROM purchase_receipt pr
         WHERE pr.deleted = FALSE
-        AND pr.created_at &gt;= #{startTime}
-        AND pr.created_at &lt; #{endTime}
+        AND pr.status = 'CONFIRMED'
+        AND pr.confirmed_at &gt;= #{startTime}
+        AND pr.confirmed_at &lt; #{endTime}
         <include refid="scopePr"/>
     </select>
 
-    <select id="countSuppliersWithOrdersByCreatedAt" resultType="long">
+    <select id="countSuppliersWithOrdersBySubmittedAt" resultType="long">
         SELECT COUNT(DISTINCT po.supplier_id)
         FROM purchase_order po
         WHERE po.deleted = FALSE
-        AND po.created_at &gt;= #{startTime}
-        AND po.created_at &lt; #{endTime}
+        <include refid="committedPoStatus"/>
+        AND po.submitted_at &gt;= #{startTime}
+        AND po.submitted_at &lt; #{endTime}
         <include refid="scopePo"/>
     </select>
 
@@ -385,6 +412,7 @@
       日期口径一律 Asia/Shanghai：用 UTC 日界会把窗口整体平移 8 小时（变成 08:00→次日 08:00），
       早上下的单会被算到前一天。
       sales / orders 走确认轴，与今日销售额 / 今日订单同口径 —— 大屏的环比正是拿这两者相减。
+      purchaseAmounts / purchaseOrders 走提交轴且只算已提交状态，与今日采购额 / 今日采购单同口径（同一条理由）。
       inventoryQuantity 是当日期末库存量（当日及之前所有流水净额累加），不是当日变动量。
       出入库方向的类型清单不在这里硬编码，由调用方从 ScmInventoryMovementTypeEnum 的
       方向位派生后传入 —— 类型清单只有一处来源，新增流水类型时不会静默少算。
@@ -409,12 +437,14 @@
         COALESCE((SELECT COUNT(*)
         FROM purchase_order po
         WHERE po.deleted = FALSE
-        AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
+        <include refid="committedPoStatus"/>
+        AND (po.submitted_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
         <include refid="scopePo"/>), 0) AS purchaseOrders,
         COALESCE((SELECT SUM(po.total_amount)
         FROM purchase_order po
         WHERE po.deleted = FALSE
-        AND (po.created_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
+        <include refid="committedPoStatus"/>
+        AND (po.submitted_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
         <include refid="scopePo"/>), 0) AS purchaseAmounts,
         COALESCE((SELECT SUM(CASE WHEN m.movement_type IN
         <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>

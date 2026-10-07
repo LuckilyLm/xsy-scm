@@ -62,12 +62,12 @@ const MOVED_METRICS = [
   'countEnabledWarehouses',
   'countMovementsByTypeAndRange',
   'inventoryHealthRows',
-  'countPurchaseOrdersByCreatedAt',
-  'sumPurchaseAmountByCreatedAt',
+  'countPurchaseOrdersBySubmittedAt',
+  'sumPurchaseAmountBySubmittedAt',
   'countTotalPurchaseOrders',
   'sumTotalPurchaseAmount',
   'countReceipts',
-  'countSuppliersWithOrdersByCreatedAt',
+  'countSuppliersWithOrdersBySubmittedAt',
   'trendByDay',
 ];
 
@@ -92,15 +92,26 @@ test('大屏 mapper 不再重复定义经营类指标', () => {
   }
 });
 
-test('报表概览不再自己实现已迁入 metrics 的销售 KPI', () => {
+test('报表概览的销售三件套与 metrics 同口径（同轴、同列、同状态）', () => {
+  // 报表与大屏的范围策略不同（报表销售不做归属收窄，可见性由页面权限承担），
+  // 但口径必须一致：同一根时间轴、同一个金额列、同一个状态。
   const xml = read(REPORT_MAPPER);
   const overview = /<select id="overviewKpi"[\s\S]*?<\/select>/.exec(xml);
-  assert.ok(overview, 'ReportDao.xml 必须保留 overviewKpi：采购 / 退款 / 库值仍由报表自己取');
-  for (const token of ['sales_order', 'settlement_total_amount', 'confirmed_at']) {
-    assert.ok(
-      !overview[0].includes(token),
-      `overviewKpi 不应再出现 ${token}：销售三件套已迁入 ScmBusinessMetricsService.salesRange`,
-    );
+  assert.ok(overview, 'ReportDao.xml 必须保留 overviewKpi');
+  assert.ok(overview[0].includes('o.confirmed_at'), '销售额必须走确认轴，与首页 / 大屏同轴');
+  assert.ok(overview[0].includes('SUM(o.settlement_total_amount)'), '销售额必须取结算金额列');
+  assert.ok(overview[0].includes("o.status = 'CONFIRMED'"), '销售额只算已确认订单');
+});
+
+test('报表的采购状态清单也从采购枚举派生，不硬编码', () => {
+  const xml = read(REPORT_MAPPER);
+  for (const id of ['overviewKpi', 'purchaseOverview']) {
+    const block = new RegExp(`<select id="${id}"[\\s\\S]*?<\\/select>`).exec(xml);
+    assert.ok(block, `ReportDao.xml 缺少 ${id}`);
+    assert.ok(block[0].includes('committedStatuses'), `${id} 的采购状态必须由参数传入，而不是写死在 SQL 里`);
+    for (const status of ['SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED']) {
+      assert.ok(!block[0].includes(`'${status}'`), `${id} 不应硬编码采购状态 ${status}`);
+    }
   }
 });
 

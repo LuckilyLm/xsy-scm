@@ -9,12 +9,15 @@ import com.xsy.scm.metrics.domain.InventoryHealth;
 import com.xsy.scm.metrics.domain.InventoryHealthRow;
 import com.xsy.scm.metrics.domain.InventoryMetrics;
 import com.xsy.scm.metrics.domain.MasterDataMetrics;
+import com.xsy.scm.metrics.domain.PurchaseFilter;
 import com.xsy.scm.metrics.domain.PurchaseMetrics;
+import com.xsy.scm.metrics.domain.PurchaseRangeMetrics;
 import com.xsy.scm.metrics.domain.SalesFilter;
 import com.xsy.scm.metrics.domain.SalesMetrics;
 import com.xsy.scm.metrics.domain.SalesRangeMetrics;
 import com.xsy.scm.metrics.domain.TrendMetrics;
 import com.xsy.scm.metrics.domain.TrendPoint;
+import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -95,26 +98,52 @@ public class ScmBusinessMetricsService {
                 orZero(metricsDao.countSkus()));
     }
 
-    public PurchaseMetrics purchase(ScmDataScopeContext scope) {
+    /**
+     * 区间内的已提交采购事实：报表采购分析与首页 / 大屏共用同一份定义。
+     *
+     * <p>
+     * 两个字段同轴（{@code submitted_at}）且只算已提交状态。报表按表单筛选收窄（供应商 / 采购员 / 仓库）， 首页与大屏传
+     * {@link PurchaseFilter#NONE}；两者都按调用者的数据范围收窄。
+     */
+    public PurchaseRangeMetrics purchaseRange(LocalDate startDate, LocalDate endDate, PurchaseFilter filter,
+            ScmDataScopeContext scope) {
+        OffsetDateTime[] range = dayRange(startDate, endDate);
+        List<String> committed = ScmPurchaseStatusEnum.committedNames();
+        return new PurchaseRangeMetrics(
+                orZero(metricsDao.countPurchaseOrdersBySubmittedAt(committed, range[0], range[1], filter, scope)),
+                orZero(metricsDao.sumPurchaseAmountBySubmittedAt(committed, range[0], range[1], filter, scope)));
+    }
+
+    /**
+     * 今日采购经营指标（首页 / 大屏）。
+     *
+     * <p>
+     * 区间内的两个数直接复用 {@link #purchaseRange}，不另写一份 SQL；累计口径与今日同源（也是已提交）。
+     */
+    public PurchaseMetrics todayPurchase(ScmDataScopeContext scope) {
         OffsetDateTime[] range = todayRange();
-        return new PurchaseMetrics(orZero(metricsDao.countPurchaseOrdersByCreatedAt(range[0], range[1], scope)),
-                orZero(metricsDao.sumPurchaseAmountByCreatedAt(range[0], range[1], scope)),
-                orZero(metricsDao.countTotalPurchaseOrders(scope)), orZero(metricsDao.sumTotalPurchaseAmount(scope)),
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        List<String> committed = ScmPurchaseStatusEnum.committedNames();
+        PurchaseRangeMetrics todayFacts = purchaseRange(today, today, PurchaseFilter.NONE, scope);
+        return new PurchaseMetrics(todayFacts.orderCount(), todayFacts.amount(),
+                orZero(metricsDao.countTotalPurchaseOrders(committed, scope)),
+                orZero(metricsDao.sumTotalPurchaseAmount(committed, scope)),
                 orZero(metricsDao.countReceipts(range[0], range[1], scope)), activeSupplierCount(scope, range));
     }
 
     /**
-     * 今日活跃供应商数（有采购单的供应商去重）。
+     * 今日活跃供应商数（有已提交采购单的供应商去重）。
      *
      * <p>
-     * 单独暴露给只需要这一个数字的调用方（大屏经营面板就是）：它不必为了一个值去跑整组采购指标。 与 {@link #purchase} 内部走的是同一条 SQL，不存在第二个口径。
+     * 单独暴露给只需要这一个数字的调用方（大屏经营面板就是）：它不必为了一个值去跑整组采购指标。 与 {@link #todayPurchase} 内部走的是同一条 SQL，不存在第二个口径。
      */
     public long activeSupplierCount(ScmDataScopeContext scope) {
         return activeSupplierCount(scope, todayRange());
     }
 
     private long activeSupplierCount(ScmDataScopeContext scope, OffsetDateTime[] range) {
-        return orZero(metricsDao.countSuppliersWithOrdersByCreatedAt(range[0], range[1], scope));
+        return orZero(metricsDao.countSuppliersWithOrdersBySubmittedAt(ScmPurchaseStatusEnum.committedNames(), range[0],
+                range[1], scope));
     }
 
     public InventoryMetrics inventory(ScmDataScopeContext scope) {
@@ -140,7 +169,7 @@ public class ScmBusinessMetricsService {
         LocalDate start = end.minusDays(thirty ? 29L : 6L);
 
         List<TrendPoint> points = nullToEmpty(metricsDao.trendByDay(start, end, ScmMovementDirections.inboundTypes(),
-                ScmMovementDirections.outboundTypes(), scope));
+                ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope));
 
         List<String> dates = new ArrayList<>(points.size());
         List<String> fullDates = new ArrayList<>(points.size());

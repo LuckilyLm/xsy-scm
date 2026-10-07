@@ -41,7 +41,8 @@ public interface ReportDao {
     // ---------- 经营概览 ----------
 
     ReportOverviewVO overviewKpi(@Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
-            @Param("query") ScmOverviewReportQueryForm query, @Param("scope") ScmValueScope scope);
+            @Param("query") ScmOverviewReportQueryForm query,
+            @Param("committedStatuses") List<String> committedStatuses, @Param("scope") ScmValueScope scope);
 
     List<ReportDailyStatVO> dailyStat(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
             @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
@@ -83,7 +84,7 @@ public interface ReportDao {
 
     PurchaseReportVO.Overview purchaseOverview(@Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,
-            @Param("scope") ScmValueScope scope);
+            @Param("committedStatuses") List<String> committedStatuses, @Param("scope") ScmValueScope scope);
 
     List<PurchaseReportVO.ProductRow> purchaseByProduct(Page<?> page, @Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,

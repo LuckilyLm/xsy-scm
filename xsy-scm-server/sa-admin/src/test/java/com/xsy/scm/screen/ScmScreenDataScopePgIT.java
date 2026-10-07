@@ -244,7 +244,8 @@ class ScmScreenDataScopePgIT extends ScmW5PgITBase {
         Long skuId = newOnShelfSku(suffix);
         Long supplierId = newPurchasableSupplier(suffix, skuId);
         PurchaseOrderAddForm form = orderForm(supplierId, warehouseId, skuId, "4.0000", "6.2000");
-        purchaseOrderService.create(form, prefix + ":" + suffix + ":po");
+        // 必须提交：采购指标只算已提交的单（草稿还没进入履约链路），本用例验的是范围不是状态。
+        submitOrder(purchaseOrderService.create(form, prefix + ":" + suffix + ":po").getId());
     }
 
     private Long newEmployee(String suffix) {

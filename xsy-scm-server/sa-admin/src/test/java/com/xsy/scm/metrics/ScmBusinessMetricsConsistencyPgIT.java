@@ -12,11 +12,9 @@ import com.xsy.scm.report.service.OverviewReportService;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
-import org.apache.ibatis.session.SqlSessionFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mybatis.spring.SqlSessionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
@@ -52,9 +50,6 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
     @Autowired
     private OverviewReportService overviewReportService;
 
-    @Autowired
-    private SqlSessionFactory sqlSessionFactory;
-
     @BeforeEach
     void loginAsAdministrator() {
         RequestEmployee employee = new RequestEmployee();
@@ -87,7 +82,7 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
         // 销售额与订单数走确认轴，都不受影响；下单金额走创建轴，少掉这一单。
         assertThat(jdbc.update("UPDATE sales_order SET created_at = now() - interval '1 day' WHERE id = ?", orderId))
                 .isEqualTo(1);
-        evictMyBatisCache();
+        evictMybatisCache();
         SalesMetrics afterCreatedMove = metricsService.todaySales(scope);
         assertThat(afterCreatedMove.todayOrderCount()).as("订单数按确认轴，创建时间变化不应影响它")
                 .isEqualTo(before.todayOrderCount());
@@ -99,7 +94,7 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
         // 再把确认时间也挪到昨天：销售额与订单数这才少掉这一单。
         assertThat(jdbc.update("UPDATE sales_order SET confirmed_at = now() - interval '1 day' WHERE id = ?", orderId))
                 .isEqualTo(1);
-        evictMyBatisCache();
+        evictMybatisCache();
         SalesMetrics afterConfirmedMove = metricsService.todaySales(scope);
         assertThat(afterConfirmedMove.todayOrderCount()).as("订单数按确认轴，确认时间挪走后才应少这一单")
                 .isEqualTo(before.todayOrderCount() - 1);
@@ -138,7 +133,7 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
                 + " AT TIME ZONE 'Asia/Shanghai',"
                 + " confirmed_at = (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai') + interval '9 hours')"
                 + " AT TIME ZONE 'Asia/Shanghai' WHERE id = ?", orderId);
-        evictMyBatisCache();
+        evictMybatisCache();
 
         BigDecimal metricsToday = metricsService.todaySales(scope).todaySettlementAmount();
         ReportOverviewVO overview = overviewReportService.overview(todayForm());
@@ -171,13 +166,4 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
         return form;
     }
 
-    /**
-     * 让下一次 MyBatis 查询重新读库。
-     *
-     * <p>本用例用 {@code JdbcTemplate} 直接改时间列，而 MyBatis 的一级缓存不会因为一次绕过它的 UPDATE 失效 ——
-     * 不清理就会读到改动前的旧值，把「口径正确」误判成「口径没生效」。
-     */
-    private void evictMyBatisCache() {
-        SqlSessionUtils.getSqlSession(sqlSessionFactory).clearCache();
-    }
 }

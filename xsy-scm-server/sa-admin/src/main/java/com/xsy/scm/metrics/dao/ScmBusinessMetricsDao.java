@@ -2,6 +2,7 @@ package com.xsy.scm.metrics.dao;
 
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.metrics.domain.InventoryHealthRow;
+import com.xsy.scm.metrics.domain.PurchaseFilter;
 import com.xsy.scm.metrics.domain.RankItem;
 import com.xsy.scm.metrics.domain.SalesFilter;
 import com.xsy.scm.metrics.domain.TrendPoint;
@@ -105,25 +106,41 @@ public interface ScmBusinessMetricsDao {
      */
     List<InventoryHealthRow> inventoryHealthRows(@Param("scope") ScmDataScopeContext scope);
 
-    // ---------- 采购（创建轴，不过滤状态） ----------
+    // ---------- 采购（提交轴 + 已提交状态） ----------
 
-    Long countPurchaseOrdersByCreatedAt(@Param("startTime") OffsetDateTime startTime,
-            @Param("endTime") OffsetDateTime endTime, @Param("scope") ScmDataScopeContext scope);
+    /**
+     * 区间内已提交的采购单数。时间轴 {@code submitted_at}。
+     *
+     * <p>
+     * 状态清单由调用方从 {@code ScmPurchaseStatusEnum.committedNames()} 传入，<b>不在 SQL 里硬编码</b> —— 抄一份状态数组的副本，新增状态时就会静默少算。
+     */
+    Long countPurchaseOrdersBySubmittedAt(@Param("committedStatuses") List<String> committedStatuses,
+            @Param("startTime") OffsetDateTime startTime, @Param("endTime") OffsetDateTime endTime,
+            @Param("filter") PurchaseFilter filter, @Param("scope") ScmDataScopeContext scope);
 
-    BigDecimal sumPurchaseAmountByCreatedAt(@Param("startTime") OffsetDateTime startTime,
-            @Param("endTime") OffsetDateTime endTime, @Param("scope") ScmDataScopeContext scope);
+    /** 区间内已提交采购单的金额，即「今日采购额」。时间轴 {@code submitted_at}。 */
+    BigDecimal sumPurchaseAmountBySubmittedAt(@Param("committedStatuses") List<String> committedStatuses,
+            @Param("startTime") OffsetDateTime startTime, @Param("endTime") OffsetDateTime endTime,
+            @Param("filter") PurchaseFilter filter, @Param("scope") ScmDataScopeContext scope);
 
-    Long countTotalPurchaseOrders(@Param("scope") ScmDataScopeContext scope);
+    /** 累计已提交采购单数（无时间轴）。 */
+    Long countTotalPurchaseOrders(@Param("committedStatuses") List<String> committedStatuses,
+            @Param("scope") ScmDataScopeContext scope);
 
-    BigDecimal sumTotalPurchaseAmount(@Param("scope") ScmDataScopeContext scope);
+    /** 累计已提交采购单金额（无时间轴）。 */
+    BigDecimal sumTotalPurchaseAmount(@Param("committedStatuses") List<String> committedStatuses,
+            @Param("scope") ScmDataScopeContext scope);
 
-    /** 收货单数。{@code purchase_receipt} 有仓库列但没有采购员列，仓库是唯一可用的范围维度。 */
+    /**
+     * 收货单数。<b>确认轴 + {@code status = 'CONFIRMED'}</b>：草稿收货单只是还没提交的草稿， 与报表的「已确认收货单数」同一个口径。
+     */
     Long countReceipts(@Param("startTime") OffsetDateTime startTime, @Param("endTime") OffsetDateTime endTime,
             @Param("scope") ScmDataScopeContext scope);
 
-    /** 区间内有采购单的供应商去重数。时间轴 {@code created_at}。 */
-    Long countSuppliersWithOrdersByCreatedAt(@Param("startTime") OffsetDateTime startTime,
-            @Param("endTime") OffsetDateTime endTime, @Param("scope") ScmDataScopeContext scope);
+    /** 区间内有已提交采购单的供应商去重数。时间轴与状态与采购单一致。 */
+    Long countSuppliersWithOrdersBySubmittedAt(@Param("committedStatuses") List<String> committedStatuses,
+            @Param("startTime") OffsetDateTime startTime, @Param("endTime") OffsetDateTime endTime,
+            @Param("scope") ScmDataScopeContext scope);
 
     // ---------- 趋势 ----------
 
@@ -131,10 +148,11 @@ public interface ScmBusinessMetricsDao {
      * 按天聚合的趋势行：一天一行、八条序列。
      *
      * <p>
-     * 日期口径一律 Asia/Shanghai。{@code sales} / {@code orders} 走确认轴，与今日销售额 / 今日订单同口径。 {@code inventoryQuantity}
+     * 日期口径一律 Asia/Shanghai。<b>每条序列与它对应的今日 KPI 同口径</b>：{@code sales} / {@code orders} 走确认轴； {@code purchaseAmounts} /
+     * {@code purchaseOrders} 走提交轴且只算已提交状态 —— 大屏的环比正是拿这两组相减， 不同轴就会算出一个无意义的百分比。{@code inventoryQuantity}
      * 是当日期末库存量（当日及之前所有流水净额累加），不是当日变动量。
      */
     List<TrendPoint> trendByDay(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
             @Param("inboundTypes") List<String> inboundTypes, @Param("outboundTypes") List<String> outboundTypes,
-            @Param("scope") ScmDataScopeContext scope);
+            @Param("committedStatuses") List<String> committedStatuses, @Param("scope") ScmDataScopeContext scope);
 }

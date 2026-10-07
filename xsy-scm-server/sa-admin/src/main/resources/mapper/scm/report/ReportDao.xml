@@ -123,13 +123,17 @@
       采购与库存指标本来就不带这些维度，因此页面必须让人看清「卡片之间筛选范围不同」。
     -->
     <!--
-      经营概览里「采购 / 退款 / 库值」这几块。
-      销售三件套（订单数 / 成交客户 / 销售额）不在这里 —— 它们与首页、大屏共用同一份定义，
-      由 ScmBusinessMetricsService.salesRange 提供，报表只负责装进 VO。
-      同一件事在两处各写一份 SQL，漂移后不会报错，只会给出三个不同的数。
+      经营概览：销售三件套 + 退款 + 采购提交 + 入库成本 + 库存价值。
+      销售与采购的口径（时间轴、状态、金额列）与首页 / 大屏同源，但范围策略不同：
+      报表概览的销售不做归属收窄（sales_order 没有仓库列，可见性由页面权限承担），采购只按仓库收窄；
+      大屏则按「归属 ∩ 仓库」收窄。这是两处刻意不同的可见性策略，不是漏判 ——
+      要统一，必须整页一起改（byCustomer / byProduct / bySeller / bySupplier / byPurchaser 都要跟着动）。
     -->
     <select id="overviewKpi" resultType="com.xsy.scm.report.domain.vo.ReportOverviewVO">
-        SELECT rf.completedRefundAmount,
+        SELECT ord.confirmedOrderCount,
+               ord.customerCount,
+               ord.confirmedOrderAmount,
+               rf.completedRefundAmount,
                po.submittedOrderCount,
                po.submittedAmount                       AS submittedPurchaseAmount,
                mv.purchaseInCostAmount,
@@ -137,7 +141,20 @@
                bal.inventoryBookValue,
                bal.stockedSkuCount,
                CURRENT_TIMESTAMP                        AS snapshotAt
-        FROM (SELECT COALESCE(SUM(r.refund_amount), 0) AS completedRefundAmount
+        FROM (SELECT COUNT(*)                            AS confirmedOrderCount,
+                     COUNT(DISTINCT o.customer_id)      AS customerCount,
+                     COALESCE(SUM(o.settlement_total_amount), 0) AS confirmedOrderAmount
+              FROM sales_order o
+              WHERE o.deleted = FALSE
+                AND o.status = 'CONFIRMED'
+                AND o.confirmed_at &gt;= #{startAt}
+                AND o.confirmed_at &lt; #{endAt}
+                <if test="query.customerId != null">AND o.customer_id = #{query.customerId}</if>
+                <if test="query.sellerId != null">AND o.seller_id = #{query.sellerId}</if>
+                <if test="query.orderSource != null and query.orderSource != ''">
+                    AND o.order_source = #{query.orderSource}
+                </if>) ord
+                 CROSS JOIN (SELECT COALESCE(SUM(r.refund_amount), 0) AS completedRefundAmount
                              FROM order_refund r
                              WHERE r.deleted = FALSE
                                AND r.status = 'COMPLETED'
@@ -147,7 +164,9 @@
                                       COALESCE(SUM(o2.total_amount), 0) AS submittedAmount
                                FROM purchase_order o2
                                WHERE o2.deleted = FALSE
-                                 AND o2.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
+                                 AND o2.status IN
+                                 <foreach collection="committedStatuses" item="committedStatus" open="(" separator=","
+                                          close=")">#{committedStatus}</foreach>
                                  AND o2.submitted_at &gt;= #{startAt}
                                  AND o2.submitted_at &lt; #{endAt}
                                <if test="query.warehouseId != null">AND o2.warehouse_id = #{query.warehouseId}</if>
@@ -555,6 +574,11 @@
 
     <!-- ============ 采购分析 ============ -->
 
+    <!--
+      采购分析里报表专有的三块：已提交采购单数 / 金额 + 收货参考金额 + 采购入库成本 + 待入库单数。
+      「已提交」的状态清单由调用方从 ScmPurchaseStatusEnum.committedNames() 传入，不在这里硬编码 ——
+      抄一份状态数组的副本，新增状态时就会静默少算。
+    -->
     <select id="purchaseOverview"
             resultType="com.xsy.scm.report.domain.vo.PurchaseReportVO$Overview">
         SELECT po.submittedOrderCount,
@@ -568,7 +592,9 @@
                      COALESCE(SUM(o.total_amount), 0)   AS submittedAmount
               FROM purchase_order o
               WHERE o.deleted = FALSE
-                AND o.status IN ('SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED')
+                AND o.status IN
+                <foreach collection="committedStatuses" item="committedStatus" open="(" separator=","
+                         close=")">#{committedStatus}</foreach>
                 AND o.submitted_at &gt;= #{startAt}
                 AND o.submitted_at &lt; #{endAt}
                 <if test="query.supplierId != null">AND o.supplier_id = #{query.supplierId}</if>
