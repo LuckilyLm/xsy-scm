@@ -31,7 +31,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '当前授权范围内没有匹配的客户可见性配置'}"
-        :scroll="{x: 1425}"
+        :scroll="{x: 1385}"
         size="small"
       >
         <template #bodyCell="{column, record}">

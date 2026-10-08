@@ -208,7 +208,7 @@
           <span class="smart-font-size12 smart-color-gray">按商品规格＋单位分组，数量为订购量（非实重／结算量），不跨单位求和</span>
         </a-space>
         <a-table :data-source="frequent.rows.value" :columns="frequentCols" :row-key="(r: CustomerFrequentSku) => `${r.skuId}-${r.unit}`" size="small" bordered
-                 :loading="frequent.loading.value" :pagination="false" :scroll="{ x: 1130 }">
+                 :loading="frequent.loading.value" :pagination="false" :scroll="{ x: 1090 }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'productName'">
               <span>{{ record.productName || '—' }}</span>
@@ -226,7 +226,7 @@
       <!-- 协议价 -->
       <a-tab-pane key="agreement" tab="协议价">
         <a-table :data-source="agreement.rows.value" :columns="agreementCols" row-key="agreementPriceId" size="small" bordered
-                 :loading="agreement.loading.value" :pagination="false" :scroll="{ x: 1010 }">
+                 :loading="agreement.loading.value" :pagination="false" :scroll="{ x: 970 }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'productName'">
               <span>{{ record.productName || '—' }}</span>
@@ -248,7 +248,7 @@
       <a-tab-pane key="visibility" tab="可售商品">
         <a-alert v-if="visPolicyText" :message="visPolicyText" type="info" show-icon class="smart-margin-bottom10" />
         <a-table :data-source="visRows" :columns="visibilityCols" :row-key="(r: VisibilityRow) => String(r.skuId)" size="small" bordered
-                 :loading="visibility.loading.value" :pagination="false" :scroll="{ x: 830 }">
+                 :loading="visibility.loading.value" :pagination="false" :scroll="{ x: 790 }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'productName'">
               <span>{{ record.productName || '—' }}</span>
