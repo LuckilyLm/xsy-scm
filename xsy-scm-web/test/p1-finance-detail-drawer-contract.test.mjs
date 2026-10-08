@@ -11,8 +11,7 @@
  *
  * 1. 段标题存在且顺序正确：段名是用户找信息的唯一锚点，缺一段就等于丢掉一类事实。
  * 2. 金额组成用独立的高权重结构与 .scm-money：不能退回 descriptions 里的普通一行。
- * 3. 系统信息不得凭空编造：后端 VO 不暴露 createTime / updateTime / 创建人，
- *    因此第 7 段必须不渲染（而不是编字段）。后端补齐后再启用。
+ * 3. 系统信息只显示单据表头实际审计列，不使用业务事件时间或操作日志替代。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -29,7 +28,7 @@ function code(relative) {
 const drawer = code('../src/views/business/scm/finance/finance-detail-drawer.vue');
 
 test('抽屉按固定顺序分区', () => {
-    const expected = ['单据概要', '对象信息', '金额组成', '来源单据', '核销 / 红字关系', '流水记录'];
+    const expected = ['单据概要', '对象信息', '金额组成', '来源单据', '核销 / 红字关系', '流水记录', '系统信息'];
     const positions = expected.map((title) => {
         // h3 可能带 class（金额组成就是 detail-section--nested），不能写死 `<h3>`
         const index = drawer.search(new RegExp(`<h3[^>]*>${title}</h3>`));
@@ -53,12 +52,27 @@ test('金额组成比 ID / 编码更突出', () => {
     assert.ok(!/label="金额"/.test(header), '单据概要段仍有「金额」行，金额未迁到金额组成段');
 });
 
-test('第 7 段系统信息不编造后端没有的字段', () => {
-    // 后端 VO（FinanceReceivableVO 等）只有业务字段，没有审计字段
-    assert.ok(!/title>系统信息/.test(drawer), '渲染了系统信息段，但后端未提供审计字段');
-    for (const fabricated of ['createTime', 'updateTime', 'creatorName', '创建时间', '更新时间', '创建人']) {
-        assert.ok(!drawer.includes(fabricated), `抽屉编造了后端未提供的系统字段：${fabricated}`);
+test('系统信息使用四类财务单据的真实表头审计列', () => {
+    const section = drawer.slice(drawer.indexOf('<h3>系统信息</h3>'), drawer.indexOf('</section>', drawer.indexOf('<h3>系统信息</h3>')));
+    const root = '../../xsy-scm-server/sa-admin/src/main/';
+    for (const [vo, dao, alias] of [
+        ['FinanceReceivableVO', 'FinanceReceivableDao', 'r'],
+        ['FinancePayableVO', 'FinancePayableDao', 'p'],
+        ['FinanceReceiptQueryVO', 'FinanceReceiptDao', 'r'],
+        ['FinancePaymentQueryVO', 'FinancePaymentDao', 'p'],
+    ]) {
+        const model = code(`${root}java/com/xsy/scm/finance/domain/vo/${vo}.java`);
+        const mapper = code(`${root}resources/mapper/scm/finance/${dao}.xml`);
+        for (const [column, field] of [['created_at', 'createdAt'], ['updated_at', 'updatedAt'],
+            ['created_by', 'createdBy'], ['updated_by', 'updatedBy']]) {
+            assert.ok(model.includes(` ${field};`), `${vo} 缺少 ${field}`);
+            assert.ok(mapper.includes(`${alias}.${column} AS ${field}`), `${dao} 未读取单据的 ${column}`);
+            assert.ok(section.includes(`header.${field}`), `系统信息未展示 ${field}`);
+        }
     }
+    assert.doesNotMatch(section, /operationLogs|eventAt|receivedAt|paidAt|createTime|updateTime|creatorName/);
+    assert.match(drawer, /:row-key="redEntryKey"/);
+    assert.match(drawer, /'receivableId' in row \? row.receivableId : row.payableId/);
 });
 
 test('核销与红字合为同一段，仍各自带小标题', () => {

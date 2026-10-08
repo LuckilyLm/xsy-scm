@@ -1,65 +1,56 @@
-<!--
-  * 首页 card 插槽
-  * 
-  *
--->
 <template>
-  <div class="card-container">
-    <a-card size="small">
-      <template #title>
-        <div class="title">
-          <component :is="$antIcons[props.icon]" v-if="props.icon"
-                     :style="{ fontSize: '18px', color: token.colorPrimary }"/>
-          <slot name="title"></slot>
-          <span v-if="!$slots.title" class="smart-margin-left10">{{ props.title }} </span>
-        </div>
-      </template>
-      <template v-if="props.extra" #extra>
-        <slot name="extra"></slot>
-        <a v-if="!$slots.extra" @click="extraClick">{{ props.extra }}</a>
-      </template>
-      <slot></slot>
-    </a-card>
-  </div>
+  <a-card class="home-card" :bordered="false">
+    <template #title>
+      <div class="home-card__title">
+        <component :is="$antIcons[icon]" v-if="icon" class="home-card__icon" aria-hidden="true"/>
+        <slot name="title"><span>{{ title }}</span></slot>
+      </div>
+    </template>
+    <template v-if="extra || $slots.extra" #extra>
+      <slot name="extra">
+        <a-button type="link" size="small" @click="emit('extraClick')">{{ extra }}</a-button>
+      </slot>
+    </template>
+    <slot/>
+  </a-card>
 </template>
+
 <script setup lang="ts">
-import {theme} from 'ant-design-vue';
-import {computed} from 'vue';
+defineProps<{icon?: string; title?: string; extra?: string}>();
+const emit = defineEmits<{extraClick: []}>();
+</script>
 
-let props = defineProps({
-  icon: String,
-  title: String,
-  extra: String,
-});
-let emits = defineEmits(['extraClick']);
+<style lang="less" scoped>
+.home-card {
+  height: 100%;
+  min-width: 0;
+  border: 1px solid var(--scm-border);
+  border-radius: 12px;
+  color: var(--scm-text);
+  background: var(--scm-bg-container);
 
-function extraClick() {
-  emits('extraClick');
+  :deep(.ant-card-head) {
+    min-height: 52px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--scm-border);
+    color: var(--scm-text);
+  }
+
+  :deep(.ant-card-body) {
+    padding: 20px;
+  }
 }
 
-const {useToken} = theme;
-const {token} = useToken();
-const color = computed(() => {
-  return token.colorPrimary;
-});
-</script>
-<style lang="less" scoped>
-.card-container {
-  height: 100%;
+.home-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
 
-  .title {
-    display: flex;
-    align-items: center;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 3px;
-      left: 0;
-      width: 3px;
-      height: 30px;
-      background-color: v-bind('token.colorPrimary');
-    }
-  }
+.home-card__icon {
+  font-size: 18px;
+  color: var(--scm-primary);
 }
 </style>

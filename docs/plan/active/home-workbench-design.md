@@ -1,19 +1,19 @@
 # 首页「供应链工作台」改造设计
 
-> 状态：设计已定稿，待开工（按评审意见修订过一次）
-> 依据版本：`4f10ee0c`。文中行号、SQL、字段名、组件名均来自该版本实际代码。
-> 规则依据：[SCM UI 长期规范](../architecture/scm-ui-guidelines.md) §8；注释与文案约束见 [code-comment-guidelines](../architecture/code-comment-guidelines.md)。
+> 状态：批次 0～3 已有代码；3A / 4a / 4b 收尾已写入工作区，尚未运行验收（2026-10-08）。
+> 已提交基线：`main @ b3df08d0`，Flyway 源码 V115。§1～4 的设计推导以 `4f10ee0c` 为初始依据，不代表当前仍未实施；实际交付与验证边界以[项目状态](../../status.md)为准。
+> 规则依据：[SCM UI 长期规范](../../architecture/scm-ui-guidelines.md) §8；注释与文案约束见 [code-comment-guidelines](../../architecture/code-comment-guidelines.md)。
 
 ## 0. 结论摘要
 
-1. 首页现在是 SmartAdmin 示例骨架（加班统计 / 代码提交量 / 假销量 / 毒鸡汤 / 天气 iframe），与 SCM 业务无关，**整体换成「供应链工作台」**。
+1. 首页已从 SmartAdmin 示例骨架改为「供应链工作台」，本设计保留指标、数据范围与交互契约；代码实施状态与运行验收状态分别记录。
 2. 首页要的数据后端**已经有了**（`screen` 模块 + `/scm/dashboard/todo`），不需要新写统计 SQL。
 3. 但**不能直接让首页调 `/scm/screen/*`**：它挂 `scm:screen:query`，语义与授权范围都不对。
 4. **真正的风险不是首页好不好看，而是口径已经分叉**：大屏与报表对「今日销售额」用的是**同一列、不同时间轴**（见 §2 实测）。首页如果自己再写一份，就是第三个数字。
 5. 因此先收口径，再做界面：抽 `ScmBusinessMetricsService`，**一个业务指标只有一处口径定义**（不是「所有查询都必须走一个万能 Service」）。
 6. 口径命名成为长期规则（见 §3.4）：`今日销售额 / 今日订单` 走**确认轴**，`今日下单金额 / 今日下单数` 走**创建轴**；**不得把 `created_at + CONFIRMED` 叫「今日销售额」**。
 
-## 1. 现状核对
+## 1. 实施前核对（初始设计依据）
 
 ### 1.1 首页（`xsy-scm-web/src/views/system/home/`）
 
@@ -354,7 +354,8 @@ ScmBusinessMetricsService
 ```
 views/system/home/
 ├── index.vue                 # 装配：按权限决定发不发请求、区块显不显示
-├── home-header.vue           # 欢迎区：问候 + 日期 + 部门 + [运营大屏] [刷新数据]
+├── home-header.vue           # 欢迎区：问候 + 日期 + 部门 + 业务快捷入口 + [运营大屏] [刷新数据]
+├── home-notice.vue           # 合并展示当前员工可见的全部通知类型，独立错误与重试
 ├── home-metric-meta.ts       # KPI / 趋势 / 排行 / 库存五档的中文名、图标与语义色
 ├── components/
 │   ├── use-region-data.ts    # 每个区块各自的 loading / error / 重试（不做全局一把抓）
@@ -363,10 +364,11 @@ views/system/home/
 │   ├── business-trend.vue    # 唯一主图（指标 tab 只列有权项，7d/30d 切换）
 │   ├── ranking-card.vue      # 客户 / 商品销售 TOP5（同一组件按 dimension 复用）
 │   ├── inventory-health.vue  # 库存健康五档
-│   ├── business-todo-card/home-business-todo.vue   # 业务待办（保留原路径，强化留 4a）
-│   ├── default-home-card.vue # 卡片壳（原有）
-│   ├── changelog-card.vue    # 系统更新（迁名留 4a）
-│   └── echarts/、quick-entry/、to-be-done-card/     # 待 4a / 4b 清理
+│   ├── business-todo-card/home-business-todo.vue   # 业务待办，使用 useRegionData 与区块重试
+│   ├── default-home-card.vue # 统一 SCM 主题的卡片壳
+│   ├── quick-entries.ts     # 六类业务入口白名单、权限与缓存标识
+│   ├── quick-entries.vue    # 欢迎区轻量入口与勾选设置
+│   └── changelog-card.vue   # 系统更新，独立加载/失败重试并接入首页刷新
 └── index.less
 ```
 
@@ -374,8 +376,11 @@ views/system/home/
 空态文案不同，拆开就是两份只差一个字符串的重复代码。`ranking-card.vue` 收一个 `dimension`
 参数，两个实例各自持有独立的加载状态。
 
-`home-notice.vue` 的 `title` 死 prop 与第二张通知卡、欢迎区右侧的快捷入口、以及 `echarts/*`、
-`heart-sentence.ts` 的物理删除，一并留到批次 4a；批次 3 只解除它们的 import 与渲染。
+通知公告保留一张合并卡，调用员工可见性接口时不传类型筛选，标题固定为「通知公告」，与「更多」列表语义一致。
+快捷入口只从 SCM 目录勾选，缓存保存入口标识，旧版任意路径配置不再生效；清空全部勾选会保留为空，不恢复默认项。
+示例图表、心语、旧快捷入口组件及本地待办组件已物理删除；SmartAdmin 正式消息能力保留。
+
+业务待办在首页通过 `v-if` 权限判断挂载；无入口权限时不创建组件、不发送请求。趋势只展示与当前指标和区间匹配的响应，图例、轴与格式化均依据响应的 `metric`；错误时保留图表容器，以便重试后继续使用同一实例。
 
 ### 5.2 首屏布局
 
@@ -398,6 +403,7 @@ views/system/home/
 - **快捷入口不再单独占一张大卡**，放欢迎区右侧，4~6 个轻量入口。
 - `home-header.vue` 只保留：问候语、日期、所属部门、快捷入口、[刷新数据] [进入运营大屏]。删掉天气 iframe、毒鸡汤、农历节气、上次登录 / IP（后两者属个人中心 / 安全信息）。
 - 快捷入口**能力保留、入口全部换掉**：默认项从「菜单 / 请求 / 缓存 / 字典 / 单号」换成 SCM 业务入口（新建销售订单 / 采购需求 / 采购收货 / 库存预警 / 配送线路 / 经营报表），并**按当前用户权限过滤**（无权限的入口不出现）。
+- 新建销售订单要求查询与新增权限，进入订单列表后一次性消费 `action=create` 并打开现有新建表单；其他入口使用正式列表路由与查询权限。
 
 ### 5.3 视觉
 
@@ -420,6 +426,8 @@ views/system/home/
 5 个 → 5 列    4 个 → 4 列    3 个 → 3 列    2 个 → 2 列
 1 个 → 1 列，但限制最大宽度（避免一个数字横铺整屏）
 ```
+
+上述列数适用于宽屏（≥1600px）；较窄桌面最多 3 列，≤991px 最多 2 列，≤575px 为 1 列。
 
 ## 6. 分批与验收
 
@@ -464,7 +472,7 @@ views/system/home/
 | `ToBeDoneCard` | **整套功能删除**，不是只从首页移走（清单见 §6 批次 4b） |
 | 快捷入口 | 保留机制，默认项全部换成 SCM 业务入口并按权限过滤 |
 
-已无待定夺项。批次顺序：0（已完成）→ 1A（已完成）→ 1B（已完成）→ 2（已完成）→ 2A（已完成）→ 3（已完成）→ 4a → 4b。
+首页设计已无待定夺项。批次 0 / 1A / 1B / 2 / 2A / 3 已有提交；3A（待办与趋势修复）、4a、4b 已在工作区实施，尚未提交或运行验证。按负责人要求，本轮仅开发，不执行验收或处理 GitHub CI；本设计保留至待验收项完成。
 
 批次 1B 的两点补充说明：
 

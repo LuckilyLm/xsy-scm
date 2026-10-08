@@ -85,7 +85,7 @@ const REGION_REQUEST_OPTIONS = {suppressGlobalErrorMessage: true};
 
 export const scmDashboardApi = {
     /** 当前人的业务待办卡片（无权限的卡片后端直接省略，不返回 0）。 */
-    todo: () => getRequest('/scm/dashboard/todo', {}) as unknown as Promise<ScmResponse<ScmTodo[]>>,
+    todo: () => getRequest('/scm/dashboard/todo', {}, REGION_REQUEST_OPTIONS) as unknown as Promise<ScmResponse<ScmTodo[]>>,
 
     /** 当前人可见的 KPI 卡：入口权限与各卡领域权限两层裁剪都由后端完成。 */
     overview: () =>

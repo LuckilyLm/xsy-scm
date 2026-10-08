@@ -13,32 +13,32 @@
     <metric-cards v-if="canDashboard" ref="metricCards"/>
 
     <a-row v-if="showTrend || canTodo" :gutter="[16, 16]">
-      <a-col v-if="showTrend" :xs="24" :xl="16">
+      <a-col v-if="showTrend" :xs="24" :xl="canTodo ? 16 : 24">
         <business-trend ref="businessTrend" :metrics="trendMetrics"/>
       </a-col>
-      <a-col v-privilege="'scm:todo:query'" :xs="24" :xl="showTrend ? 8 : 24">
+      <a-col v-if="canTodo" :xs="24" :xl="showTrend ? 8 : 24">
         <HomeBusinessTodo ref="businessTodo"/>
       </a-col>
     </a-row>
 
     <a-row v-if="canRanking || canHealth" :gutter="[16, 16]">
-      <a-col v-if="canRanking" :xs="24" :md="12" :xl="8">
+      <a-col v-if="canRanking" :xs="24" :md="12" :xl="canHealth ? 8 : 12">
         <ranking-card ref="customerRank" dimension="customer"/>
       </a-col>
-      <a-col v-if="canRanking" :xs="24" :md="12" :xl="8">
+      <a-col v-if="canRanking" :xs="24" :md="12" :xl="canHealth ? 8 : 12">
         <ranking-card ref="productRank" dimension="product"/>
       </a-col>
-      <a-col v-if="canHealth" :xs="24" :md="12" :xl="8">
+      <a-col v-if="canHealth" :xs="24" :md="canRanking ? 12 : 24" :xl="canRanking ? 8 : 24">
         <inventory-health ref="inventoryHealth"/>
       </a-col>
     </a-row>
 
     <a-row :gutter="[16, 16]">
       <a-col :xs="24" :xl="12">
-        <HomeNotice :notice-type-id="1"/>
+        <HomeNotice ref="homeNotice"/>
       </a-col>
       <a-col :xs="24" :xl="12">
-        <ChangelogCard/>
+        <ChangelogCard ref="changelogCard"/>
       </a-col>
     </a-row>
   </div>
@@ -100,13 +100,16 @@ const businessTodo = ref();
 const customerRank = ref();
 const productRank = ref();
 const inventoryHealth = ref();
+const homeNotice = ref();
+const changelogCard = ref();
 
 /** 只刷新当前真正挂载的区块：无权限的区块不会渲染，引用自然为空。 */
 async function refreshVisible() {
+  if (refreshing.value) return;
   refreshing.value = true;
   try {
     await Promise.all(
-      [metricCards, businessTrend, businessTodo, customerRank, productRank, inventoryHealth].map((region) =>
+      [metricCards, businessTrend, businessTodo, customerRank, productRank, inventoryHealth, homeNotice, changelogCard].map((region) =>
         region.value?.load?.()
       )
     );

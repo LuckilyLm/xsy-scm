@@ -8,9 +8,9 @@
 <template>
   <default-home-card icon="DatabaseOutlined" title="库存健康">
     <region-error v-if="error" :message="error" @retry="load"/>
-    <a-spin v-else :spinning="loading">
+    <a-spin v-else class="home-health__content" :spinning="loading">
       <a-empty v-if="!loading && !health" class="home-health__empty" description="暂无库存记录"/>
-      <div v-else class="home-health__body">
+      <div v-else-if="health" class="home-health__body">
         <div class="home-health__total">参与评估 {{ formatInt(health?.total) }} 项</div>
         <ul class="home-health__list">
           <li v-for="bucket in INVENTORY_HEALTH_BUCKETS" :key="bucket.key" class="home-health__item">
@@ -69,6 +69,10 @@ defineExpose({load});
 </script>
 
 <style lang="less" scoped>
+.home-health__content {
+    min-height: 300px;
+}
+
 .home-health__empty {
     display: flex;
     flex-direction: column;

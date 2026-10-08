@@ -1,7 +1,7 @@
 <!--
   * 首页欢迎区
   *
-  * 只保留「现在是谁、今天几号、能去哪里」：问候语、日期与部门、刷新数据、运营大屏。
+  * 只保留「现在是谁、今天几号、能去哪里」：问候语、日期与部门、业务快捷入口、刷新数据、运营大屏。
   * 天气、农历节气、毒鸡汤、上次登录与 IP 属于个人兴趣或安全信息，不占工作台首屏。
   * 运营大屏入口按 scm:screen:query 显隐 —— 它的路由不拦人，只有接口会拒绝。
 -->
@@ -12,19 +12,22 @@
         <h2 class="home-welcome__title">{{ welcomeSentence }}</h2>
         <p class="home-welcome__meta">{{ dayInfo }}</p>
       </div>
-      <div class="home-welcome__actions">
-        <a-button v-if="canScreen" @click="gotoScreen">
-          <template #icon>
-            <bar-chart-outlined/>
-          </template>
-          运营大屏
-        </a-button>
-        <a-button type="primary" :loading="refreshing" @click="emit('refresh')">
-          <template #icon>
-            <reload-outlined/>
-          </template>
-          刷新数据
-        </a-button>
+      <div class="home-welcome__tools">
+        <quick-entries/>
+        <div class="home-welcome__actions">
+          <a-button v-if="canScreen" @click="gotoScreen">
+            <template #icon>
+              <bar-chart-outlined/>
+            </template>
+            运营大屏
+          </a-button>
+          <a-button type="primary" :loading="refreshing" @click="emit('refresh')">
+            <template #icon>
+              <reload-outlined/>
+            </template>
+            刷新数据
+          </a-button>
+        </div>
       </div>
     </div>
   </a-card>
@@ -34,6 +37,7 @@
 import {computed} from 'vue';
 import {useRouter} from 'vue-router';
 import {useUserStore} from '/@/store/modules/system/user';
+import QuickEntries from './components/quick-entries.vue';
 
 defineProps<{canScreen: boolean; refreshing: boolean}>();
 const emit = defineEmits(['refresh']);
@@ -82,6 +86,7 @@ function gotoScreen() {
 .home-welcome {
   border: 1px solid var(--scm-border);
   border-radius: 12px;
+  background: var(--scm-bg-container);
 
   :deep(.ant-card-body) {
     padding: 20px;
@@ -112,6 +117,20 @@ function gotoScreen() {
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .home-welcome__tools {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  @media (max-width: 767px) {
+    .home-welcome__tools {
+      align-items: flex-start;
+    }
   }
 }
 </style>

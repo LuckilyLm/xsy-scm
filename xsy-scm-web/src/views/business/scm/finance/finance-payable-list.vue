@@ -69,44 +69,50 @@
     </div>
   </a-card>
 
-  <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYABLE" :loading="detailLoading" :detail="detailData"/>
+  <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYABLE" :loading="detailLoading" :detail="detailData"
+                       :error="detailError" @retry="reloadDetail"/>
 
-  <a-drawer v-model:open="redOpen" title="登记红字应付" :width="scmDrawerWidth('l')" :destroy-on-close="true">
+  <a-drawer v-model:open="redOpen" title="登记红字应付" :width="scmDrawerWidth('l')" :destroy-on-close="true"
+            :closable="!redSaving" :keyboard="!redSaving" :mask-closable="!redSaving">
     <a-spin :spinning="redLoading">
       <a-alert type="info" show-icon message="红字金额必须等于数量 × 单价，累计不超过原单金额。"/>
-      <a-alert v-if="redError" class="form-error" type="error" show-icon :message="redError"/>
+      <a-alert v-if="redError" class="form-error" type="error" show-icon :message="redError">
+        <template v-if="!redDrafts.length && redSource" #action>
+          <a-button :loading="redLoading" @click="retryRed">重试</a-button>
+        </template>
+      </a-alert>
       <a-descriptions v-if="redSource" class="red-source" bordered size="small" :column="2">
         <a-descriptions-item label="原应付单">{{ redSource.payableNo }}</a-descriptions-item>
         <a-descriptions-item label="供应商">{{ redSource.supplierName }}</a-descriptions-item>
         <a-descriptions-item label="原应付金额">{{ moneyText(redSource.amount) }}</a-descriptions-item>
       </a-descriptions>
       <a-form layout="vertical">
-        <a-form-item label="红字原因" required><a-textarea v-model:value="redReason" :maxlength="500" :rows="2" show-count/></a-form-item>
+        <a-form-item label="红字原因" required><a-textarea v-model:value="redReason" :disabled="redSaving || redLoading" :maxlength="500" :rows="2" show-count/></a-form-item>
       </a-form>
       <a-table size="small" :data-source="redDrafts" :columns="redDraftColumns" row-key="purchaseOrderItemId"
                :pagination="false" :scroll="{x:850}">
         <template #bodyCell="{record,column}">
           <template v-if="column.dataIndex==='redQuantity'">
-            <a-input-number v-model:value="record.redQuantity" string-mode :min="0" :precision="4" :max="99999999999999" style="width:125px"/>
+            <a-input-number v-model:value="record.redQuantity" :disabled="redSaving" string-mode :min="0" :precision="4" :max="99999999999999" style="width:125px"/>
           </template>
           <template v-else-if="column.dataIndex==='redUnitPrice'">
-            <a-input-number v-model:value="record.redUnitPrice" string-mode :min="0" :precision="4" :max="99999999999999" style="width:125px"/>
+            <a-input-number v-model:value="record.redUnitPrice" :disabled="redSaving" string-mode :min="0" :precision="4" :max="99999999999999" style="width:125px"/>
           </template>
           <template v-else-if="column.dataIndex==='redAmount'">
-            <a-input-number v-model:value="record.redAmount" string-mode :min="0" :precision="4" :max="99999999999999" style="width:135px"/>
+            <a-input-number v-model:value="record.redAmount" :disabled="redSaving" string-mode :min="0" :precision="4" :max="99999999999999" style="width:135px"/>
           </template>
         </template>
       </a-table>
     </a-spin>
     <div class="drawer-footer">
-      <a-button @click="redOpen=false">取消</a-button>
-      <a-button type="primary" :loading="redSaving" @click="submitRed">提交红字</a-button>
+      <a-button :disabled="redSaving" @click="redOpen=false">取消</a-button>
+      <a-button type="primary" :loading="redSaving" :disabled="redLoading || !redDrafts.length" @click="submitRed">提交红字</a-button>
     </div>
   </a-drawer>
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {onDeactivated, onMounted, onScopeDispose, reactive, ref, watch} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {financeApi} from '/@/api/business/scm/finance-api';
@@ -119,6 +125,7 @@ import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyClass, moneyT
 import {financeError} from './finance-errors';
 import type {FinancePayable, FinancePayableDetail, FinancePayableItem, PayableQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
+import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
@@ -130,10 +137,24 @@ interface RedDraft extends FinancePayableItem {
 
 const query = reactive<PayableQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinancePayable, PayableQuery>(financeApi.payableQuery, financeApi.payableExport);
-const detailOpen = ref(false), detailLoading = ref(false), detailData = ref<FinancePayableDetail | null>(null);
+const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
+    show: openDetail, load: reloadDetail} = useFinanceDetail<FinancePayableDetail>(
+    (id) => financeApi.payableDetail(id, {suppressGlobalErrorMessage: true})
+);
 const redOpen = ref(false), redLoading = ref(false), redSaving = ref(false), redError = ref(''), redReason = ref('');
 const redSource = ref<FinancePayable | null>(null);
 const redDrafts = ref<RedDraft[]>([]);
+let redRequestId = 0;
+watch(redOpen, (open) => {
+    if (!open) {
+        redRequestId += 1;
+        redLoading.value = false;
+        redDrafts.value = [];
+        redSource.value = null;
+    }
+}, {flush: 'sync'});
+onDeactivated(() => { redOpen.value = false; });
+onScopeDispose(() => { redRequestId += 1; });
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const settleOptions = Object.values(SCM_FINANCE_SETTLE_STATE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
@@ -167,16 +188,13 @@ function resetQuery() {
 }
 async function exportData() { await page.exportData(query); }
 
-async function showDetail(row: FinancePayable) {
-    detailOpen.value = true;
-    detailLoading.value = true;
-    detailData.value = null;
-    try { detailData.value = (await financeApi.payableDetail(row.payableId)).data; }
-    catch (cause) { page.error.value = financeError(cause); detailOpen.value = false; }
-    finally { detailLoading.value = false; }
+function showDetail(row: FinancePayable) {
+    return openDetail(row.payableId);
 }
 
 async function openRed(row: FinancePayable) {
+    if (redSaving.value) return;
+    const generation = ++redRequestId;
     redOpen.value = true;
     redLoading.value = true;
     redError.value = '';
@@ -184,16 +202,22 @@ async function openRed(row: FinancePayable) {
     redSource.value = row;
     redDrafts.value = [];
     try {
-        const detail = (await financeApi.payableDetail(row.payableId)).data;
+        const detail = (await financeApi.payableDetail(row.payableId, {suppressGlobalErrorMessage: true})).data;
+        if (generation !== redRequestId || !redOpen.value) return;
         redDrafts.value = detail.items.map((item) => ({...item, redQuantity: '', redUnitPrice: item.unitPrice, redAmount: ''}));
     } catch (cause) {
-        redError.value = financeError(cause);
+        if (generation === redRequestId) redError.value = financeError(cause);
     } finally {
-        redLoading.value = false;
+        if (generation === redRequestId) redLoading.value = false;
     }
 }
 
+function retryRed() {
+    if (redSource.value) void openRed(redSource.value);
+}
+
 async function submitRed() {
+    if (redSaving.value || redLoading.value || !redOpen.value) return;
     const lines = redDrafts.value.filter((item) => item.redQuantity && item.redAmount).map((item) => ({
         purchaseOrderItemId: item.purchaseOrderItemId,
         quantity: item.redQuantity,
@@ -205,14 +229,16 @@ async function submitRed() {
         return;
     }
     redSaving.value = true;
+    const generation = redRequestId;
     redError.value = '';
     try {
         await financeApi.payableRed({originalPayableId: redSource.value.payableId, reason: redReason.value.trim(), items: lines});
+        if (generation !== redRequestId) return;
         message.success('红字应付已登记');
         redOpen.value = false;
         await queryData();
     } catch (cause) {
-        redError.value = financeError(cause);
+        if (generation === redRequestId) redError.value = financeError(cause);
     } finally {
         redSaving.value = false;
     }

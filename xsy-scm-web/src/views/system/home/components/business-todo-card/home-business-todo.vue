@@ -1,89 +1,78 @@
-<!--
-  * 业务待办卡片
-  *
-  * 首页右侧的只读入口：把各业务域「当前待处理量」聚合成几张卡片，点击带条件跳转到对应列表页。
-  * 卡片可见性与数字全部来自后端 `GET /scm/dashboard/todo`（按登录人权限过滤），
-  * 前端不判断权限、不缓存计数、不写任何业务表 —— 刷新即最新。
--->
 <template>
   <default-home-card icon="CheckSquareOutlined" title="业务待办">
-    <div style="height: 332px">
-      <a-spin :spinning="loading">
-        <div class="center column">
-          <a-empty v-if="!loading && todos.length === 0" description="暂无待办事项"/>
-          <div v-for="todo in todos" :key="todo.key" class="todo-row" @click="goto(todo)">
-            <span class="label">{{ todo.label }}</span>
-            <a-badge :count="todo.count" :overflow-count="999" :number-style="badgeStyle(todo.count)"/>
-          </div>
-        </div>
-      </a-spin>
-    </div>
+    <region-error v-if="error" :message="error" @retry="load"/>
+    <a-spin v-else :spinning="loading">
+      <div class="home-todos">
+        <a-empty v-if="!loading && todos.length === 0" description="暂无待办事项"/>
+        <router-link v-for="todo in todos" :key="todo.key" class="todo-row" :to="todo.route">
+          <span class="todo-row__label">{{ todo.label }}</span>
+          <span class="todo-row__count" :class="{'has-tasks': todo.count > 0}">
+            {{ formatInt(todo.count) }}
+          </span>
+        </router-link>
+      </div>
+    </a-spin>
   </default-home-card>
 </template>
+
 <script setup lang="ts">
-import {onMounted, ref} from 'vue';
-import {useRouter} from 'vue-router';
-import DefaultHomeCard from '/@/views/system/home/components/default-home-card.vue';
+import {computed, onMounted} from 'vue';
+import DefaultHomeCard from '../default-home-card.vue';
+import RegionError from '../region-error.vue';
+import {useRegionData} from '../use-region-data';
 import {scmDashboardApi, type ScmTodo} from '/@/api/business/scm/dashboard-api';
+import {formatInt} from '/@/views/business/scm/screen/format';
 
-const router = useRouter();
-const todos = ref<ScmTodo[]>([]);
-const loading = ref(false);
-
-// 计数为 0 时用中性灰，避免把「有权限但当前无任务」误读成异常。
-function badgeStyle(count: number) {
-  return {backgroundColor: count > 0 ? '#ff4d4f' : '#d9d9d9', color: '#fff'};
-}
-
-async function load() {
-  loading.value = true;
-  try {
-    const r = await scmDashboardApi.todo();
-    todos.value = r.data ?? [];
-  } finally {
-    loading.value = false;
-  }
-}
-
-// route 已带查询条件；vue-router 接受含 query 的完整路径字符串。
-function goto(todo: ScmTodo) {
-  void router.push(todo.route);
-}
+const {data, loading, error, load} = useRegionData<ScmTodo[]>(scmDashboardApi.todo, '待办加载失败');
+const todos = computed(() => data.value ?? []);
 
 onMounted(load);
-
 defineExpose({load});
 </script>
-<style lang="less" scoped>
-.center {
-  display: flex;
-  justify-content: center;
-  height: 100%;
-  overflow-y: auto;
 
-  &.column {
-    flex-direction: column;
-    width: 100%;
-    padding: 0 10px;
-    justify-content: flex-start;
-  }
+<style lang="less" scoped>
+.home-todos {
+  min-height: 332px;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .todo-row {
-  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 4px;
-  cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
+  gap: 12px;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--scm-border);
+  color: var(--scm-text);
 
   &:hover {
-    background-color: #e8f8f0;
+    background: var(--scm-fill);
+    color: var(--scm-primary);
   }
 
-  .label {
-    color: #1f2329;
+  &:focus-visible {
+    outline: 2px solid var(--scm-primary);
+    outline-offset: -2px;
+  }
+}
+
+.todo-row__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.todo-row__count {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--scm-fill);
+  color: var(--scm-text-secondary);
+  font-variant-numeric: tabular-nums;
+
+  &.has-tasks {
+    color: var(--scm-error);
+    background: var(--scm-error-bg);
   }
 }
 </style>

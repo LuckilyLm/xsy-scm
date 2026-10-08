@@ -3,6 +3,7 @@
  * @version:
  */
 import {postRequest, getRequest} from '/@/lib/axios';
+import type {RequestOptions} from '/@/lib/axios';
 
 export const noticeApi = {
     // ---------------- 通知公告类型 -----------------------
@@ -61,8 +62,8 @@ export const noticeApi = {
     },
 
     // 通知公告-员工-查询
-    queryEmployeeNotice(param) {
-        return postRequest('/oa/notice/employee/query', param);
+    queryEmployeeNotice(param, options?: RequestOptions) {
+        return postRequest('/oa/notice/employee/query', param, options);
     },
 
     // 【员工】通知公告-查询 查看记录

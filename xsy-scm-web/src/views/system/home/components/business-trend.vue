@@ -29,7 +29,7 @@
     </div>
 
     <region-error v-if="error" :message="error" @retry="load"/>
-    <a-spin v-else :spinning="loading">
+    <a-spin v-show="!error" class="home-trend__content" :spinning="loading">
       <!-- 容器必须一直存在：隐藏时尺寸为 0，图表的尺寸观察者要等它出现后才初始化 -->
       <div v-show="hasData" ref="chartEl" class="home-trend__chart"/>
       <a-empty v-if="!loading && !hasData" class="home-trend__empty" description="暂无趋势数据"/>
@@ -66,7 +66,10 @@ const {data, loading, error, load} = useRegionData<ScmDashboardTrend>(
 const chartEl = ref<HTMLElement>();
 const {setOption} = useEcharts(chartEl);
 
-const hasData = computed(() => (data.value?.dates.length ?? 0) > 0);
+const hasData = computed(() => {
+    const trend = data.value;
+    return !!trend && trend.metric === active.value && trend.range === range.value && trend.dates.length > 0;
+});
 
 /** 金额轴按「万」缩写，否则七位数会把轴标签挤成两行。 */
 function valueAxis(splitLine: boolean, money: boolean) {
@@ -81,7 +84,7 @@ function valueAxis(splitLine: boolean, money: boolean) {
 }
 
 function seriesOf(index: number, trend: ScmDashboardTrend) {
-    const meta = TREND_META[active.value];
+    const meta = TREND_META[trend.metric];
     const color = index === 0 ? REPORT_CHART_COLORS.primary : REPORT_CHART_COLORS.secondary;
     return {
         name: index === 0 ? meta.primaryLabel : meta.secondaryLabel,
@@ -102,8 +105,8 @@ function render() {
     if (!trend || trend.dates.length === 0) {
         return;
     }
-    const meta = TREND_META[active.value];
-    const money = active.value !== 'inventory';
+    const meta = TREND_META[trend.metric];
+    const money = trend.metric !== 'inventory';
     setOption({
         animation: false,
         color: [REPORT_CHART_COLORS.primary, REPORT_CHART_COLORS.secondary],
@@ -139,7 +142,7 @@ function render() {
     });
 }
 
-watch([() => data.value, active], render);
+watch(() => data.value, render, {flush: 'post'});
 
 onMounted(load);
 
@@ -152,6 +155,7 @@ defineExpose({load});
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    flex-wrap: wrap;
     margin-bottom: 8px;
 }
 
@@ -162,6 +166,10 @@ defineExpose({load});
 
 .home-trend__chart {
     height: 300px;
+}
+
+.home-trend__content {
+    min-height: 300px;
 }
 
 .home-trend__empty {

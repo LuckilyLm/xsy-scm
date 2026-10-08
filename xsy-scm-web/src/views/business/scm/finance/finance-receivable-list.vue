@@ -73,7 +73,8 @@
     </div>
   </a-card>
 
-  <FinanceDetailDrawer v-model:open="detailOpen" kind="RECEIVABLE" :loading="detailLoading" :detail="detailData"/>
+  <FinanceDetailDrawer v-model:open="detailOpen" kind="RECEIVABLE" :loading="detailLoading" :detail="detailData"
+                       :error="detailError" @retry="reloadDetail"/>
 </template>
 
 <script setup lang="ts">
@@ -89,13 +90,17 @@ import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyClass, moneyT
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import type {FinanceReceivable, FinanceReceivableDetail, ReceivableQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
+import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
 import {SCM_FINANCE_PERMISSION as PERM} from '/@/constants/business/scm/finance-const';
 
 const query = reactive<ReceivableQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinanceReceivable, ReceivableQuery>(financeApi.receivableQuery, financeApi.receivableExport);
 const customerOptions = ref<Array<{label: string; value: string | number}>>([]);
-const detailOpen = ref(false), detailLoading = ref(false), detailData = ref<FinanceReceivableDetail | null>(null);
+const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
+    show: openDetail, load: reloadDetail} = useFinanceDetail<FinanceReceivableDetail>(
+    (id) => financeApi.receivableDetail(id, {suppressGlobalErrorMessage: true})
+);
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const settleOptions = Object.values(SCM_FINANCE_SETTLE_STATE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
@@ -134,18 +139,8 @@ async function exportData() {
     await page.exportData(query);
 }
 
-async function showDetail(row: FinanceReceivable) {
-    detailOpen.value = true;
-    detailLoading.value = true;
-    detailData.value = null;
-    try {
-        detailData.value = (await financeApi.receivableDetail(row.receivableId)).data;
-    } catch (cause) {
-        page.error.value = (await import('./finance-errors')).financeError(cause);
-        detailOpen.value = false;
-    } finally {
-        detailLoading.value = false;
-    }
+function showDetail(row: FinanceReceivable) {
+    return openDetail(row.receivableId);
 }
 
 onMounted(async () => {

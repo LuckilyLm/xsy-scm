@@ -1,5 +1,6 @@
 /** 财务域查询、导出与只追加命令。 */
 import {getRequest, postDownload, postRequest, request} from '/@/lib/axios';
+import type {RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     FinanceBusinessType,
@@ -49,23 +50,23 @@ async function command<T>(path: string, data: unknown): Promise<ScmResponse<T>> 
 export const financeApi = {
     receivableQuery: (data: ReceivableQuery) =>
         postRequest(`${BASE}/receivable/query`, data) as unknown as Promise<ScmResponse<ScmPage<FinanceReceivable>>>,
-    receivableDetail: (id: FinanceId) =>
-        getRequest(`${BASE}/receivable/${id}`, {}) as unknown as Promise<ScmResponse<FinanceReceivableDetail>>,
+    receivableDetail: (id: FinanceId, options?: RequestOptions) =>
+        getRequest(`${BASE}/receivable/${id}`, {}, options) as unknown as Promise<ScmResponse<FinanceReceivableDetail>>,
     receivableExport: (data: Partial<FinancePageQuery> & Omit<ReceivableQuery, 'pageNum' | 'pageSize'>) =>
         postDownload(`${BASE}/receivable/export`, data),
 
     payableQuery: (data: PayableQuery) =>
         postRequest(`${BASE}/payable/query`, data) as unknown as Promise<ScmResponse<ScmPage<FinancePayable>>>,
-    payableDetail: (id: FinanceId) =>
-        getRequest(`${BASE}/payable/${id}`, {}) as unknown as Promise<ScmResponse<FinancePayableDetail>>,
+    payableDetail: (id: FinanceId, options?: RequestOptions) =>
+        getRequest(`${BASE}/payable/${id}`, {}, options) as unknown as Promise<ScmResponse<FinancePayableDetail>>,
     payableRed: (data: FinancePayableRedForm) => command(`${BASE}/payable/red`, data),
     payableExport: (data: Partial<FinancePageQuery> & Omit<PayableQuery, 'pageNum' | 'pageSize'>) =>
         postDownload(`${BASE}/payable/export`, data),
 
     receiptQuery: (data: ReceiptQuery) =>
         postRequest(`${BASE}/receipt/query`, data) as unknown as Promise<ScmResponse<ScmPage<FinanceReceipt>>>,
-    receiptDetail: (id: FinanceId) =>
-        getRequest(`${BASE}/receipt/${id}`, {}) as unknown as Promise<ScmResponse<FinanceReceiptDetail>>,
+    receiptDetail: (id: FinanceId, options?: RequestOptions) =>
+        getRequest(`${BASE}/receipt/${id}`, {}, options) as unknown as Promise<ScmResponse<FinanceReceiptDetail>>,
     receiptAdd: (data: FinanceReceiptAddForm) => command(`${BASE}/receipt/add`, data),
     receiptReverse: (data: FinanceReceiptReverseForm) => command(`${BASE}/receipt/reverse`, data),
     receiptExport: (data: Partial<FinancePageQuery> & Omit<ReceiptQuery, 'pageNum' | 'pageSize'>) =>
@@ -73,8 +74,8 @@ export const financeApi = {
 
     paymentQuery: (data: PaymentQuery) =>
         postRequest(`${BASE}/payment/query`, data) as unknown as Promise<ScmResponse<ScmPage<FinancePayment>>>,
-    paymentDetail: (id: FinanceId) =>
-        getRequest(`${BASE}/payment/${id}`, {}) as unknown as Promise<ScmResponse<FinancePaymentDetail>>,
+    paymentDetail: (id: FinanceId, options?: RequestOptions) =>
+        getRequest(`${BASE}/payment/${id}`, {}, options) as unknown as Promise<ScmResponse<FinancePaymentDetail>>,
     refundOptions: (data: FinanceRefundOptionQuery) =>
         postRequest(`${BASE}/payment/refund-options`, data) as unknown as Promise<ScmResponse<ScmPage<FinanceRefundOption>>>,
     paymentAdd: (data: FinancePaymentAddForm) => command(`${BASE}/payment/add`, data),

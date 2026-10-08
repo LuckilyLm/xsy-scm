@@ -77,7 +77,8 @@
     </div>
   </a-card>
 
-  <FinanceDetailDrawer v-model:open="detailOpen" kind="RECEIPT" :loading="detailLoading" :detail="detailData"/>
+  <FinanceDetailDrawer v-model:open="detailOpen" kind="RECEIPT" :loading="detailLoading" :detail="detailData"
+                       :error="detailError" @retry="reloadDetail"/>
 
   <a-modal v-model:open="addOpen" title="登记收款" :confirm-loading="addSaving" @ok="submitAdd">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
@@ -120,12 +121,16 @@ import {financeError} from './finance-errors';
 import type {FinanceReceipt, FinanceReceiptDetail, ReceiptQuery} from './finance-types';
 import type {CustomerOption} from '/@/types/business/scm/customer';
 import {useFinancePage} from './use-finance-page';
+import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
 
 const query = reactive<ReceiptQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinanceReceipt, ReceiptQuery>(financeApi.receiptQuery, financeApi.receiptExport);
 const customerOptions = ref<Array<{label: string; value: string | number}>>([]);
-const detailOpen = ref(false), detailLoading = ref(false), detailData = ref<FinanceReceiptDetail | null>(null);
+const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
+    show: openDetail, load: reloadDetail} = useFinanceDetail<FinanceReceiptDetail>(
+    (id) => financeApi.receiptDetail(id, {suppressGlobalErrorMessage: true})
+);
 const addOpen = ref(false), addSaving = ref(false), addError = ref('');
 const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinanceReceipt | null>(null);
 const addForm = reactive({customerId: undefined as string | number | undefined, amount: '', method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
@@ -159,11 +164,8 @@ function resetQuery() {
 }
 async function exportData() { await page.exportData(query); }
 
-async function showDetail(row: FinanceReceipt) {
-    detailOpen.value = true; detailLoading.value = true; detailData.value = null;
-    try { detailData.value = (await financeApi.receiptDetail(row.receiptId)).data; }
-    catch (cause) { page.error.value = financeError(cause); detailOpen.value = false; }
-    finally { detailLoading.value = false; }
+function showDetail(row: FinanceReceipt) {
+    return openDetail(row.receiptId);
 }
 
 function openAdd() {

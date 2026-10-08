@@ -23,6 +23,4 @@ export default {
     HOME_QUICK_ENTRY: `${KEY_PREFIX}home_quick_entry`,
     // 通知信息已读
     NOTICE_READ: `${KEY_PREFIX}notice_read`,
-    // 待办
-    TO_BE_DONE: `${KEY_PREFIX}to_be_done`,
 };

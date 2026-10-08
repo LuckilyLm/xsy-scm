@@ -58,8 +58,6 @@ export const useUserStore = defineStore({
         keepAliveIncludes: [],
         // 未读消息数量
         unreadMessageCount: 0,
-        // 待办工作数
-        toBeDoneCount: 0,
     }),
     getters: {
         getToken(state) {
@@ -113,7 +111,9 @@ export const useUserStore = defineStore({
     actions: {
         logout() {
             this.token = '';
-            this.menuList = [];
+            this.menuTree = [];
+            this.menuRouterList = [];
+            this.menuRouterInitFlag = false;
             this.tagNav = [];
             this.unreadMessageCount = 0;
             localRemove(localKey.USER_TOKEN);
@@ -122,7 +122,6 @@ export const useUserStore = defineStore({
             localRemove(localKey.APP_CONFIG);
             localRemove(localKey.HOME_QUICK_ENTRY);
             localRemove(localKey.NOTICE_READ);
-            localRemove(localKey.TO_BE_DONE);
         },
         // 查询未读消息数量
         async queryUnreadMessageCount() {
@@ -131,16 +130,6 @@ export const useUserStore = defineStore({
                 this.unreadMessageCount = result.data;
             } catch (e) {
                 smartSentry.captureError(e);
-            }
-        },
-        async queryToBeDoneList() {
-            try {
-                let localToBeDoneList = localRead(localKey.TO_BE_DONE);
-                if (localToBeDoneList) {
-                    this.toBeDoneCount = JSON.parse(localToBeDoneList).filter((e) => !e.doneFlag).length;
-                }
-            } catch (err) {
-                smartSentry.captureError(err);
             }
         },
         //设置登录信息
@@ -175,8 +164,6 @@ export const useUserStore = defineStore({
 
             // 获取用户未读消息
             this.queryUnreadMessageCount();
-            // 获取待办工作数
-            this.queryToBeDoneList();
         },
 
         setToken(token) {

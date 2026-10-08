@@ -45,10 +45,7 @@ function declaredIds() {
 test('盘点文档存在且声明了 B 系列缺口编号', () => {
     assert.ok(existsSync(docPath), '缺少 docs/plan/active/frontend-ui-backend-gap-inventory.md');
     const ids = declaredIds();
-    assert.ok(ids.length >= 5, `盘点文档只声明了 ${ids.length} 个缺口编号，疑似结构被破坏`);
-    for (const expected of ['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8']) {
-        assert.ok(ids.includes(expected), `盘点文档缺少编号 ${expected}`);
-    }
+    assert.deepEqual(ids, ['B1', 'B4', 'B5', 'B7'], '缺口清单必须与当前未实现项一致');
 });
 
 test('缺口编号不重复', () => {
@@ -62,10 +59,7 @@ test('缺口编号不重复', () => {
 
 test('代码注释引用的 B 编号必须在盘点文档中存在', () => {
     const registered = [
-        ['src/views/business/scm/order/order-return-list.vue', 'B6'],
         ['src/views/business/scm/promotion/promotion-coupon-list.vue', 'B7'],
-        ['src/views/business/scm/inventory/inventory-reservation-list.vue', 'B8'],
-        ['src/views/business/scm/finance/finance-detail-drawer.vue', 'B3'],
     ];
     for (const [file, id] of registered) {
         const source = readFileSync(`${webRoot}/${file}`, 'utf8');
@@ -79,7 +73,6 @@ test('代码注释引用的 B 编号必须在盘点文档中存在', () => {
 
 test('登记过的缺口文件不得退化为无指向的模糊说法', () => {
     for (const file of [
-        'src/views/business/scm/order/order-return-list.vue',
         'src/views/business/scm/promotion/promotion-coupon-list.vue',
     ]) {
         const source = readFileSync(`${webRoot}/${file}`, 'utf8');

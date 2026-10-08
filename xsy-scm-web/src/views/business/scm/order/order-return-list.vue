@@ -1,8 +1,8 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
-      <a-form-item label="单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" @pressEnter="onSearch" allow-clear/>
+      <a-form-item label="单号 / 客户" class="smart-query-form-item">
+        <a-input v-model:value="queryForm.keyword" placeholder="退货单号、原订单号或客户名称" @pressEnter="onSearch" allow-clear/>
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
         <SmartEnumSelect enum-name="SCM_ORDER_RETURN_STATUS_ENUM" v-model:value="queryForm.status" width="160px"/>
@@ -28,9 +28,15 @@
       </div>
     </a-row>
     <a-table id="order-return-table" size="small" :data-source="tableData" :columns="columns" row-key="returnId"
-             :loading="loading" bordered :pagination="false" :scroll="{x:890}">
+             :loading="loading" bordered :pagination="false" :scroll="{x:1160}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='status'">{{ SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc }}</template>
+        <template v-else-if="column.dataIndex==='orderNo'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.customerName || '—' }}</span>
+            <span class="scm-cell-stack__sub scm-mono">{{ record.orderNo || '—' }}</span>
+          </div>
+        </template>
         <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
           <!-- 常驻「详情」与当前状态唯一的推进动作（待审核=批准、已批准=实物接收）；
@@ -64,6 +70,8 @@
       <template v-if="detail">
         <a-descriptions bordered :column="1" size="small">
           <a-descriptions-item label="退货单号">{{ detail.returnNo }}</a-descriptions-item>
+          <a-descriptions-item label="原订单号">{{ detail.orderNo || '—' }}</a-descriptions-item>
+          <a-descriptions-item label="客户">{{ detail.customerName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="状态">{{ SCM_ORDER_RETURN_STATUS_ENUM[detail.status]?.desc ?? detail.status }}</a-descriptions-item>
           <a-descriptions-item label="申请原因">{{ detail.reason || '—' }}</a-descriptions-item>
           <a-descriptions-item label="处理原因">{{ detail.decisionReason || '—' }}</a-descriptions-item>
@@ -76,39 +84,46 @@
     </a-spin>
   </a-drawer>
   <a-modal :open="visible" :title="action==='approve'?'审核退货':action==='receive'?'退货实物接收':action==='reject'?'驳回退货':'取消退货'" width="min(800px,96vw)"
-           :confirm-loading="saving" @ok="save" @cancel="visible=false">
+           :confirm-loading="saving" :ok-button-props="{disabled: editLoading || !active}"
+           :cancel-button-props="{disabled: saving}" :closable="!saving" :keyboard="!saving" :mask-closable="!saving"
+           @ok="save" @cancel="closeEdit">
+    <a-alert v-if="editError" :message="editError" type="error" show-icon>
+      <template v-if="!active" #action><a-button :loading="editLoading" @click="retryEdit">重试</a-button></template>
+    </a-alert>
+    <a-spin class="return-edit-content" :spinning="editLoading">
     <template v-if="active">
-      <a-alert v-if="error" :message="error" type="error"/>
+      <fieldset :disabled="saving" class="return-edit-fields">
       <a-table v-if="action==='approve'" :data-source="active.items"
                :columns="[{title:'申请数量',dataIndex:'requestedQuantity'},{title:'锁定单价',dataIndex:'lockedUnitPrice'},{title:'批准数量',dataIndex:'approvedQuantity'}]"
                row-key="orderItemId" :pagination="false">
         <template #bodyCell="{record,column}">
           <a-input-number v-if="column.dataIndex==='approvedQuantity'" v-model:value="record.approvedQuantity"
-                          string-mode :precision="4" :min="'0'" :max="record.requestedQuantity" aria-label="批准数量"/>
+                          :disabled="saving" string-mode :precision="4" :min="'0'" :max="record.requestedQuantity" aria-label="批准数量"/>
         </template>
       </a-table>
       <template v-else-if="action==='receive'">
         <a-alert message="只登记本次实际验收数量。" type="info" show-icon/>
-        <a-form-item label="接收仓库" required><WarehouseSelect v-model:value="warehouseId"/></a-form-item>
+        <a-form-item label="接收仓库" required><WarehouseSelect v-model:value="warehouseId" :disabled="saving"/></a-form-item>
         <a-table :data-source="active.items" :scroll="{x: 650}" :columns="[{title:'商品',dataIndex:'productName',width:150},{title:'单位',dataIndex:'unit',width:65},{title:'批准数量',dataIndex:'approvedQuantity'},{title:'已接收',dataIndex:'receivedQuantity'},{title:'本次接收',dataIndex:'receiptQuantity'},{title:'处置',dataIndex:'disposition'}]" row-key="returnItemId" :pagination="false">
           <template #bodyCell="{record,column}">
-            <a-input-number v-if="column.dataIndex==='receiptQuantity'" v-model:value="record.receiptQuantity" string-mode :precision="4" :min="'0'" :max="remainingQuantity(record)" aria-label="本次接收数量"/>
-            <a-select v-else-if="column.dataIndex==='disposition'" v-model:value="record.disposition" aria-label="实物处置方式" :options="[{value:'RETURN_TO_STOCK',label:'可售回库'},{value:'DAMAGE',label:'报损'}]"/>
+            <a-input-number v-if="column.dataIndex==='receiptQuantity'" v-model:value="record.receiptQuantity" :disabled="saving" string-mode :precision="4" :min="'0'" :max="remainingQuantity(record)" aria-label="本次接收数量"/>
+            <a-select v-else-if="column.dataIndex==='disposition'" v-model:value="record.disposition" :disabled="saving" aria-label="实物处置方式" :options="[{value:'RETURN_TO_STOCK',label:'可售回库'},{value:'DAMAGE',label:'报损'}]"/>
           </template>
         </a-table>
       </template>
       <a-form-item v-else label="处理原因" required>
-        <a-input v-model:value="decisionReason" maxlength="500"/>
+        <a-input v-model:value="decisionReason" :disabled="saving" maxlength="500"/>
       </a-form-item>
+      </fieldset>
     </template>
+    </a-spin>
   </a-modal>
 </template>
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref, watch} from 'vue';
+import {computed, onDeactivated, onMounted, onScopeDispose, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import Decimal from 'decimal.js';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
-import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderReturnApi as api} from '/@/api/business/scm/order-return-api';
 import {SCM_ORDER_RETURN_STATUS_ENUM} from '/@/constants/business/scm/order-const';
@@ -127,21 +142,15 @@ const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<R
     loading = ref(false), error = ref(''), visible = ref(false), saving = ref(false), active = ref<ReturnRow>();
 let requestId = 0;
 /**
- * 退货列（§14.5）。
- *
  * 退货原因可能很长（业务人员会写整句），列表里给它固定宽度 + ellipsis，
  * 完整原因在详情抽屉里看；不设 ellipsis 会让长原因把行撑成两行、破坏表格节奏。
- *
- * 注意 `ReturnRow` 只有 `orderId`，没有订单号与客户名（`OrderReturnVO` 不带），
- * 所以 §14.5 里「原订单/客户（若 VO 已有）」这一条当前无法满足 —— 属后端字段缺口
- * （登记于 docs/plan/active/frontend-ui-backend-gap-inventory.md 的 B6），
- * 不在这里用 `orderId` 冒充单号显示。
  */
 const columns = ref<TableColumnsType<ReturnRow>>([{
   title: '退货单号',
   dataIndex: 'returnNo',
   width: 220
-}, {title: '退货原因', dataIndex: 'reason', width: 260, ellipsis: true}, {
+}, {title: '客户 / 原订单', dataIndex: 'orderNo', width: 270},
+{title: '退货原因', dataIndex: 'reason', width: 260, ellipsis: true}, {
   title: '状态',
   dataIndex: 'status',
   width: 120
@@ -202,23 +211,49 @@ function resetQuery() {
 }
 
 const action = ref<'approve' | 'receive' | 'reject' | 'cancel'>('approve'), decisionReason = ref(''), warehouseId = ref<Id>();
+const editLoading = ref(false), editError = ref(''), editRow = ref<ReturnRow>();
+let editRequestId = 0;
 
 async function edit(row: ReturnRow, mode: 'approve' | 'receive' | 'reject' | 'cancel') {
+  if (saving.value) return;
+  const generation = ++editRequestId;
+  editRow.value = row;
+  active.value = undefined;
+  action.value = mode;
+  warehouseId.value = undefined;
+  decisionReason.value = '';
+  editError.value = '';
+  editLoading.value = true;
+  visible.value = true;
   try {
-    active.value = (await api.detail(row.returnId)).data;
+    const response = await api.detail(row.returnId, {suppressGlobalErrorMessage: true});
+    if (generation !== editRequestId || !visible.value) return;
+    active.value = response.data;
     active.value.items.forEach(i => {
       if (mode === 'approve') i.approvedQuantity = i.requestedQuantity;
       (i as ReturnItemWithDisposition).receiptQuantity = remainingQuantity(i);
       (i as ReturnItemWithDisposition).disposition = 'RETURN_TO_STOCK';
     });
-    warehouseId.value = undefined;
-    action.value = mode;
-    decisionReason.value = '';
-    error.value = '';
-    visible.value = true;
   } catch (e) {
-    error.value = orderError(e);
+    if (generation === editRequestId) {
+      active.value = undefined;
+      editError.value = orderError(e);
+    }
+  } finally {
+    if (generation === editRequestId) editLoading.value = false;
   }
+}
+
+function retryEdit() {
+  if (editRow.value) void edit(editRow.value, action.value);
+}
+
+function closeEdit() {
+  if (saving.value) return;
+  editRequestId += 1;
+  visible.value = false;
+  editLoading.value = false;
+  active.value = undefined;
 }
 
 function remainingQuantity(item: ReturnItem): string {
@@ -226,12 +261,14 @@ function remainingQuantity(item: ReturnItem): string {
 }
 
 async function save() {
-  if (!active.value || saving.value) return;
+  if (!active.value || saving.value || editLoading.value) return;
   if (['reject', 'cancel'].includes(action.value) && !decisionReason.value.trim()) {
-    message.error('请填写处理原因');
+    editError.value = '请填写处理原因';
     return;
   }
   saving.value = true;
+  editError.value = '';
+  const generation = editRequestId;
   try {
     const r = active.value;
     if (action.value === 'receive') {
@@ -255,10 +292,11 @@ async function save() {
         } : {decisionReason: decisionReason.value})
       });
     }
+    if (generation !== editRequestId) return;
     visible.value = false;
     await queryData();
   } catch (e) {
-    error.value = orderError(e);
+    if (generation === editRequestId) editError.value = orderError(e);
   } finally {
     saving.value = false;
   }
@@ -276,12 +314,32 @@ async function showDetail(id?: Id) {
   detailError.value = '';
   detail.value = undefined;
   try {
-    const response = await api.detail(id);
+    const response = await api.detail(id, {suppressGlobalErrorMessage: true});
     if (generation === detailRequestId) detail.value = response.data;
   } catch (e) { if (generation === detailRequestId) detailError.value = orderError(e); }
   finally { if (generation === detailRequestId) detailLoading.value = false; }
 }
 const route = useRoute();
+watch(detailOpen, (open) => {
+  if (!open) {
+    detailRequestId += 1;
+    detailLoading.value = false;
+    detail.value = undefined;
+  }
+}, {flush: 'sync'});
+
+function invalidatePanels() {
+  editRequestId += 1;
+  detailRequestId += 1;
+  visible.value = false;
+  detailOpen.value = false;
+  editLoading.value = false;
+  detailLoading.value = false;
+  active.value = undefined;
+  detail.value = undefined;
+}
+onDeactivated(invalidatePanels);
+onScopeDispose(invalidatePanels);
 const returnRouteName = route.name;
 watch([() => route.name, () => route.query.returnId], ([name, id]) => {
   if (name === returnRouteName && typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) void showDetail(id);
@@ -289,7 +347,18 @@ watch([() => route.name, () => route.query.returnId], ([name, id]) => {
 
 onMounted(queryData);
 </script>
-<style scoped>pre {
+<style scoped>
+.return-edit-content {
+  min-height: 96px;
+}
+
+.return-edit-fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }</style>

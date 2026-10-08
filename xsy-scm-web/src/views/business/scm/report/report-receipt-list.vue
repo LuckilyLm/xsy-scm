@@ -77,7 +77,7 @@
             :loading="receipt.loading"
             :pagination="false"
             :locale="{emptyText: '暂无收货明细'}"
-            :scroll="{x: 2490}"
+            :scroll="{x: 2620}"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'confirmedAt'">
@@ -315,6 +315,7 @@ const pending = reactive(createTabView<PendingPutawayRow>());
 
 const receiptColumns = ref<TableColumnsType<ReceiptRow>>([
     {title: '收货确认时间', dataIndex: 'confirmedAt', width: 190},
+    {title: '收货确认人', dataIndex: 'confirmedBy', width: 130},
     {title: '收货单号', dataIndex: 'receiptNo', width: 190},
     {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 190},
     {title: '供应商', dataIndex: 'supplierName', width: 180},

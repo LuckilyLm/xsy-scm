@@ -6,8 +6,8 @@
 <template>
   <div>
     <a-popover v-model:open="show" trigger="click" placement="bottomLeft" :getPopupContainer="getPopupContainer">
-      <a-button type="text" @click="showMessage" style="padding: 4px 5px">
-        <a-badge :count="unreadMessageCount + toBeDoneCount">
+      <a-button type="text" aria-label="查看未读消息" @click="showMessage" style="padding: 4px 5px">
+        <a-badge :count="unreadMessageCount">
           <div style="width: 26px; height: 26px">
             <BellOutlined :style="{ fontSize: '16px' }"/>
           </div>
@@ -42,23 +42,6 @@
                 </a-list-item>
               </a-list>
             </a-tab-pane>
-            <a-tab-pane key="to_be_done">
-              <template #tab>
-                待办工作
-                <a-badge :count="toBeDoneCount" :show-zero="false" :offset="[-5, -15]"/>
-              </template>
-              <a-list class="tab-pane" size="small" :locale="{ emptyText: '暂无待办' }">
-                <a-list-item v-for="(item, index) in toBeDoneList" :key="index">
-                  <a-list-item-meta>
-                    <template #title>
-                      <a-badge status="error"/>
-                      <a-tag v-if="item.starFlag" color="red">重要</a-tag>
-                      <span>{{ item.title }}</span>
-                    </template>
-                  </a-list-item-meta>
-                </a-list-item>
-              </a-list>
-            </a-tab-pane>
           </a-tabs>
         </a-spin>
       </template>
@@ -77,8 +60,6 @@ import dayjs from 'dayjs';
 import {theme} from 'ant-design-vue';
 import {useRouter} from 'vue-router';
 import MessageDetailModal from './header-message-detail-modal.vue';
-import localKey from '/@/constants/local-storage-key-const';
-import {localRead} from '/@/utils/local-util';
 
 const {useToken} = theme;
 const {token} = useToken();
@@ -94,7 +75,6 @@ const show = ref(false);
 function showMessage() {
   show.value = true;
   queryMessage();
-  loadToBeDoneList();
 }
 
 function closeMessage() {
@@ -143,30 +123,6 @@ function gotoMessage() {
   show.value = false;
   router.push({path: '/account', query: {menuId: 'message'}});
 }
-
-// ------------------------- 待办工作  -------------------------
-
-// 待办工作数
-const toBeDoneCount = computed(() => {
-  return useUserStore().toBeDoneCount;
-});
-
-// 待办工作列表
-const toBeDoneList = ref([]);
-
-const loadToBeDoneList = async () => {
-  try {
-    loading.value = true;
-    let localToBeDoneList = localRead(localKey.TO_BE_DONE);
-    if (localToBeDoneList) {
-      toBeDoneList.value = JSON.parse(localToBeDoneList).filter((e) => !e.doneFlag);
-    }
-  } catch (err) {
-    smartSentry.captureError(err);
-  } finally {
-    loading.value = false;
-  }
-};
 
 // ------------------------- 时间计算  -------------------------
 function timeago(dateStr) {

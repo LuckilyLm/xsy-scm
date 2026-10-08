@@ -438,6 +438,7 @@ export interface ReceiptRow {
     /** `PENDING` / `COMPLETED`，即库存入账状态；不得把已确认收货显示成已入库。 */
     putawayStatus?: string | null;
     confirmedAt?: string | null;
+    confirmedBy?: string | null;
     spuCode?: string | null;
     productName?: string | null;
     skuCode?: string | null;

@@ -213,24 +213,9 @@ const DOC_REFERENCE = /[\w./-]+\.md/;
 /** 显式白名单：确需保留的过程标记逐条登记，`reason` 为空即失败。 */
 const WHITELIST = [
   {
-    file: 'xsy-scm-web/src/views/business/scm/order/order-return-list.vue',
-    marker: 'Bn 批次号（非缺口溯源）',
-    reason: '指向 docs/plan/active/frontend-ui-backend-gap-inventory.md 的 B6 缺口溯源，是活契约',
-  },
-  {
     file: 'xsy-scm-web/src/views/business/scm/promotion/promotion-coupon-list.vue',
     marker: 'Bn 批次号（非缺口溯源）',
-    reason: '同上，B7 缺口溯源',
-  },
-  {
-    file: 'xsy-scm-web/src/views/business/scm/inventory/inventory-reservation-list.vue',
-    marker: 'Bn 批次号（非缺口溯源）',
-    reason: '同上，B8 缺口溯源',
-  },
-  {
-    file: 'xsy-scm-web/src/views/business/scm/finance/finance-detail-drawer.vue',
-    marker: 'Bn 批次号（非缺口溯源）',
-    reason: '同上，B3 缺口溯源',
+    reason: '指向 docs/plan/active/frontend-ui-backend-gap-inventory.md 的 B7 缺口溯源，是活契约',
   },
   {
     file: 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintPaperEnum.java',
@@ -293,7 +278,8 @@ const WHITELIST = [
  * 实际数量由「长注释计数」那条测试在运行时从扫描结果打印。
  */
 const REPORT_BASELINE = {
-  'xsy-scm-web/src': {anchoredSection: 4},
+  // order-return-list 的 2 个 §14.5 引用随 B6 缺口补齐（原订单号/客户快照已入 VO）一并移除，基线 4→2。
+  'xsy-scm-web/src': {anchoredSection: 2},
   'xsy-scm-web/test': {anchoredSection: 0},
   'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm': {anchoredSection: 0},
   'xsy-scm-server/sa-admin/src/main/resources': {anchoredSection: 0},

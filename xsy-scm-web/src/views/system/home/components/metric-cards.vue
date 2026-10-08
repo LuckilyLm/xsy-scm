@@ -11,7 +11,13 @@
     <region-error v-if="error" :message="error" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <a-empty v-if="!loading && rows.length === 0" description="当前账号暂无可查看的指标"/>
-      <div v-else class="home-metrics__grid" :class="{'is-single': rows.length === 1}">
+      <a-skeleton v-else-if="loading && rows.length === 0" active :paragraph="{rows: 2}"/>
+      <div v-else class="home-metrics__grid" :class="{'is-single': rows.length === 1}"
+           :style="{
+             '--kpi-columns': Math.min(rows.length || 1, 5),
+             '--kpi-compact-columns': Math.min(rows.length || 1, 3),
+             '--kpi-tablet-columns': Math.min(rows.length || 1, 2),
+           }">
         <a-card
           v-for="row in rows"
           :key="row.key"
@@ -19,7 +25,11 @@
           :class="`tone-${row.tone}`"
           :bordered="false"
           hoverable
+          role="link"
+          tabindex="0"
+          :aria-label="`${row.label}，${row.money ? '¥ ' : ''}${row.text}，查看明细`"
           @click="goto(row.route)"
+          @keydown.enter="goto(row.route)"
         >
           <div class="home-kpi__head">
             <component :is="row.icon" class="home-kpi__icon"/>
@@ -81,14 +91,14 @@ defineExpose({load});
 .home-metrics__grid {
     display: grid;
     gap: 16px;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(var(--kpi-columns), minmax(0, 1fr));
 
     &.is-single {
         grid-template-columns: minmax(0, 320px);
     }
 
     @media (max-width: 1599px) {
-        grid-template-columns: repeat(auto-fit, minmax(calc((100% - 32px) / 3), 1fr));
+        grid-template-columns: repeat(var(--kpi-compact-columns), minmax(0, 1fr));
 
         &.is-single {
             grid-template-columns: minmax(0, 320px);
@@ -96,7 +106,7 @@ defineExpose({load});
     }
 
     @media (max-width: 991px) {
-        grid-template-columns: repeat(auto-fit, minmax(calc((100% - 16px) / 2), 1fr));
+        grid-template-columns: repeat(var(--kpi-tablet-columns), minmax(0, 1fr));
 
         &.is-single {
             grid-template-columns: minmax(0, 320px);
@@ -104,18 +114,27 @@ defineExpose({load});
     }
 
     @media (max-width: 575px) {
-        grid-template-columns: minmax(0, 1fr);
+        &, &.is-single {
+            grid-template-columns: minmax(0, 1fr);
+        }
     }
 }
 
 .home-kpi {
+    min-width: 0;
     border: 1px solid var(--scm-border);
     border-radius: 12px;
     cursor: pointer;
-    transition: box-shadow 0.2s ease;
+    background: var(--scm-bg-container);
 
     &:hover {
-        box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
+        border-color: var(--scm-primary);
+        box-shadow: none;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--scm-primary);
+        outline-offset: 2px;
     }
 
     :deep(.ant-card-body) {
@@ -151,7 +170,7 @@ defineExpose({load});
         gap: 3px;
         font-weight: 700;
         line-height: 1.1;
-        white-space: nowrap;
+        flex-wrap: wrap;
     }
 
     .home-kpi__prefix {
@@ -160,6 +179,8 @@ defineExpose({load});
     }
 
     .home-kpi__number {
+        min-width: 0;
+        overflow-wrap: anywhere;
         font-size: 28px;
         font-variant-numeric: tabular-nums;
         color: var(--scm-text);

@@ -1,11 +1,14 @@
 <template>
   <a-drawer :open="open" :title="title" :width="scmDrawerWidth('xl')" :destroy-on-close="true" @close="close">
-    <a-spin :spinning="loading">
+    <a-alert v-if="error" :message="error" type="error" show-icon>
+      <template #action><a-button :loading="loading" @click="emit('retry')">重试</a-button></template>
+    </a-alert>
+    <a-spin class="finance-detail-content" :spinning="loading">
       <template v-if="detail">
         <!-- 1. 单据概要：只放「这是什么单」。金额不在这里，见「金额组成」。 -->
         <section class="detail-section">
           <h3>单据概要</h3>
-          <a-descriptions bordered size="small" :column="2">
+          <a-descriptions bordered size="small" :column="{xs: 1, sm: 2}">
             <a-descriptions-item label="单号">{{ headerNo }}</a-descriptions-item>
             <a-descriptions-item label="方向">{{ entryTypeText(header.entryType) }}</a-descriptions-item>
             <a-descriptions-item label="业务时点">{{ dateTimeText(header.eventAt ?? header.receivedAt ?? header.paidAt) }}</a-descriptions-item>
@@ -17,7 +20,7 @@
         <!-- 2. 对象信息：跟谁发生关系、挂在哪张业务单上。 -->
         <section class="detail-section">
           <h3>对象信息</h3>
-          <a-descriptions bordered size="small" :column="2">
+          <a-descriptions bordered size="small" :column="{xs: 1, sm: 2}">
             <a-descriptions-item label="往来方">{{ partyName }}</a-descriptions-item>
             <a-descriptions-item v-if="header.settlementCustomerName" label="单据结算方">{{ header.settlementCustomerName }}</a-descriptions-item>
             <a-descriptions-item label="关联单号">{{ linkedNo }}</a-descriptions-item>
@@ -73,7 +76,7 @@
                    row-key="writeOffId" :pagination="false" :scroll="{x:900}"/>
           <h4 v-if="redEntries.length" class="detail-subtitle">红字关联</h4>
           <a-table v-if="redEntries.length" size="small" :data-source="redEntries" :columns="redColumns"
-                   row-key="id" :pagination="false"/>
+                   :row-key="redEntryKey" :pagination="false"/>
         </section>
 
         <!-- 6. 流水记录：财务操作审计流水。 -->
@@ -93,15 +96,19 @@
           </a-table>
         </section>
 
-        <!--
-          7. 系统信息。`FinanceReceivableVO` / `FinanceReceiptVO` 等后端 VO
-          表头不暴露 createTime / updateTime / 创建人（见前端后端缺口盘点 B3），前端没有可渲染的事实，
-          因此本段暂不渲染 —— 不编造系统字段。补后端字段后再启用。
-          注意：流水「行」本身是带 operator / createdAt 的（第 6 段已可渲染），缺的只是表头单据级信息。
-        -->
+        <section class="detail-section">
+          <h3>系统信息</h3>
+          <a-descriptions bordered size="small" :column="{xs: 1, sm: 2}">
+            <a-descriptions-item label="创建时间">{{ dateTimeText(header.createdAt) }}</a-descriptions-item>
+            <a-descriptions-item label="创建人">{{ header.createdBy || '—' }}</a-descriptions-item>
+            <a-descriptions-item label="更新时间">{{ dateTimeText(header.updatedAt) }}</a-descriptions-item>
+            <a-descriptions-item label="更新人">{{ header.updatedBy || '—' }}</a-descriptions-item>
+          </a-descriptions>
+        </section>
 
         <a-empty v-if="!writeOffs.length && !operationLogs.length && !redEntries.length" description="暂无核销或操作记录"/>
       </template>
+      <a-empty v-else-if="!loading && !error" description="暂无单据详情"/>
     </a-spin>
   </a-drawer>
 </template>
@@ -125,8 +132,8 @@ import {dateTimeText, entryTypeText, moneyText, numberText} from './finance-form
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 type FinanceDetail = FinanceReceivableDetail | FinancePayableDetail | FinanceReceiptDetail | FinancePaymentDetail;
-const props = defineProps<{open: boolean; loading: boolean; kind: 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT'; detail?: FinanceDetail | null}>();
-const emit = defineEmits<{(event: 'update:open', value: boolean): void}>();
+const props = defineProps<{open: boolean; loading: boolean; error?: string; kind: 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT'; detail?: FinanceDetail | null}>();
+const emit = defineEmits<{(event: 'update:open', value: boolean): void; (event: 'retry'): void}>();
 const detail = computed(() => props.detail ?? null);
 const isReceivable = computed(() => props.kind === 'RECEIVABLE');
 const isPayable = computed(() => props.kind === 'PAYABLE');
@@ -183,6 +190,10 @@ const redColumns: TableColumnsType<FinanceReceivable | FinancePayable> = [
     {title: '金额', dataIndex: 'amount', align: 'right', customRender: ({text}) => moneyText(text)},
     {title: '原因', dataIndex: 'reason'}, {title: '业务时点', dataIndex: 'eventAt', customRender: ({text}) => dateTimeText(text)},
 ];
+
+function redEntryKey(row: FinanceReceivable | FinancePayable) {
+    return 'receivableId' in row ? row.receivableId : row.payableId;
+}
 const writeOffColumns: TableColumnsType<FinanceWriteOff> = [
     {title: '核销单号', dataIndex: 'writeOffNo', width: 190}, {title: '资金单', dataIndex: 'sourceNo', width: 180},
     {title: '目标单', dataIndex: 'targetNo', width: 180}, {title: '方向', dataIndex: 'entryType', width: 90, customRender: ({text}) => entryTypeText(text)},
@@ -201,6 +212,10 @@ function close() {
 </script>
 
 <style scoped>
+.finance-detail-content {
+  min-height: 160px;
+}
+
 .detail-section {
   margin-bottom: 24px;
 }
@@ -223,6 +238,7 @@ function close() {
 }
 
 .amount-cell {
+  min-width: 0;
   background: var(--scm-fill, #fafafa);
   border-radius: 6px;
   padding: 10px 12px;
@@ -235,6 +251,7 @@ function close() {
 }
 
 .amount-cell__value {
+  overflow-wrap: anywhere;
   display: block;
   font-size: 18px;
   line-height: 1.5;

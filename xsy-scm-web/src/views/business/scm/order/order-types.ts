@@ -111,6 +111,8 @@ export interface ReturnItem {
 export interface ReturnRow {
     returnId: Id;
     orderId: Id;
+    orderNo?: string | null;
+    customerName?: string | null;
     returnNo: string;
     status: string;
     version: number;

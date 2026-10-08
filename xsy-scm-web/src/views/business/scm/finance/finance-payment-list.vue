@@ -82,7 +82,8 @@
     </div>
   </a-card>
 
-  <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYMENT" :loading="detailLoading" :detail="detailData"/>
+  <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYMENT" :loading="detailLoading" :detail="detailData"
+                       :error="detailError" @retry="reloadDetail"/>
 
   <a-modal v-model:open="addOpen" title="登记付款" :confirm-loading="addSaving" @ok="submitAdd">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
@@ -135,11 +136,15 @@ import {dateTimeText, entryTypeText, initialFinanceDateRange, isValidPositiveAmo
 import {financeError} from './finance-errors';
 import type {FinancePayment, FinancePaymentAddForm, FinancePaymentDetail, FinanceRefundOption, PaymentQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
+import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
 
 const query = reactive<PaymentQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinancePayment, PaymentQuery>(financeApi.paymentQuery, financeApi.paymentExport);
-const detailOpen = ref(false), detailLoading = ref(false), detailData = ref<FinancePaymentDetail | null>(null);
+const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
+    show: openDetail, load: reloadDetail} = useFinanceDetail<FinancePaymentDetail>(
+    (id) => financeApi.paymentDetail(id, {suppressGlobalErrorMessage: true})
+);
 const addOpen = ref(false), addSaving = ref(false), addError = ref(''), refundPickerOpen = ref(false);
 const selectedRefund = ref<FinanceRefundOption | null>(null);
 const supplierId = ref<number>();
@@ -185,11 +190,8 @@ function resetQuery() {
 }
 async function exportData() { await page.exportData(query); }
 
-async function showDetail(row: FinancePayment) {
-    detailOpen.value = true; detailLoading.value = true; detailData.value = null;
-    try { detailData.value = (await financeApi.paymentDetail(row.paymentId)).data; }
-    catch (cause) { page.error.value = financeError(cause); detailOpen.value = false; }
-    finally { detailLoading.value = false; }
+function showDetail(row: FinancePayment) {
+    return openDetail(row.paymentId);
 }
 
 function openAdd() {

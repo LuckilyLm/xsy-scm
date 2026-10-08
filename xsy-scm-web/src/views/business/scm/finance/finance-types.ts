@@ -86,7 +86,14 @@ export interface WriteOffQuery extends FinancePageQuery {
     sourceType?: 'RECEIPT' | 'PAYMENT' | 'BALANCE_MOVEMENT';
 }
 
-export interface FinanceReceivable {
+export interface FinanceAuditFields {
+    createdAt?: string | null;
+    updatedAt?: string | null;
+    createdBy?: string | null;
+    updatedBy?: string | null;
+}
+
+export interface FinanceReceivable extends FinanceAuditFields {
     receivableId: FinanceId;
     receivableNo: string;
     orderId: FinanceId;
@@ -111,7 +118,7 @@ export interface FinanceReceivable {
     reason?: string | null;
 }
 
-export interface FinancePayable {
+export interface FinancePayable extends FinanceAuditFields {
     payableId: FinanceId;
     payableNo: string;
     purchaseOrderId: FinanceId;
@@ -134,7 +141,7 @@ export interface FinancePayable {
     reason?: string | null;
 }
 
-export interface FinanceReceipt {
+export interface FinanceReceipt extends FinanceAuditFields {
     walletFunding?: boolean;
     receiptId: FinanceId;
     receiptNo: string;
@@ -156,7 +163,7 @@ export interface FinanceReceipt {
     remark?: string | null;
 }
 
-export interface FinancePayment {
+export interface FinancePayment extends FinanceAuditFields {
     paymentId: FinanceId;
     paymentNo: string;
     counterpartyType: 'CUSTOMER' | 'SUPPLIER';

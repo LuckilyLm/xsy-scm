@@ -3,13 +3,14 @@
  *
  */
 import {postRequest, getRequest} from '/@/lib/axios';
+import type {RequestOptions} from '/@/lib/axios';
 
 export const changeLogApi = {
     /**
      * 分页查询
      */
-    queryPage: (param) => {
-        return postRequest('/support/changeLog/queryPage', param);
+    queryPage: (param, options?: RequestOptions) => {
+        return postRequest('/support/changeLog/queryPage', param, options);
     },
 
     /**

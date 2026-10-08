@@ -10,7 +10,7 @@
     <a-spin v-else :spinning="loading">
       <a-empty v-if="!loading && items.length === 0" class="home-rank__empty" :description="meta.emptyText"/>
       <ul v-else class="home-rank__list">
-        <li v-for="(item, index) in items" :key="item.name" class="home-rank__item">
+        <li v-for="(item, index) in items" :key="`${dimension}-${index}-${item.name}`" class="home-rank__item">
           <div class="home-rank__line">
             <span class="home-rank__index" :class="{'is-top1': index === 0}">
               {{ index + 1 }}

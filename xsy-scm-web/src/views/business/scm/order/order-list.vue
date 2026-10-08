@@ -96,7 +96,8 @@
   <OrderDetail ref="detail" @saved="queryData"/>
 </template>
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref} from 'vue';
+import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue';
+import {useRoute, useRouter} from 'vue-router';
 import {Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
@@ -119,6 +120,20 @@ const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<O
     loading = ref(false), error = ref(''), selected = ref<(string | number)[]>([]);
 const drawer = ref<InstanceType<typeof OrderForm>>(), importModal = ref<InstanceType<typeof OrderImportModal>>(),
     detail = ref<InstanceType<typeof OrderDetail>>();
+const route = useRoute();
+const router = useRouter();
+
+// 消费一次快捷入口动作，避免刷新或返回列表时再次打开新建表单。
+watch(() => route.query.action, async (action) => {
+  if (route.path !== '/order/order-list' || action !== 'create') return;
+  const query = {...route.query};
+  delete query.action;
+  await router.replace({path: route.path, query});
+  await nextTick();
+  if (hasPermission('scm:order:query') && hasPermission('scm:order:add')) {
+    drawer.value?.open();
+  }
+}, {immediate: true, flush: 'post'});
 let requestId = 0;
 const columns = ref<TableColumnsType<Order>>([
   {title: '订单号', dataIndex: 'orderNo', width: 190},

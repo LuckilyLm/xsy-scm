@@ -209,6 +209,7 @@ export interface InventoryReservation {
     skuId?: Id;
     skuCode?: string;
     skuName?: string;
+    specValues?: Record<string, string> | null;
     productName?: string;
     sourceDocumentType?: string;
     sourceDocumentId?: Id;

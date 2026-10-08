@@ -88,14 +88,11 @@
 ## 5. 绝对不动
 
 - **已应用的 Flyway migration**（`db/migration/V*.sql`）：一律不改。已应用的 migration 是历史事实，改字节会让校验和与已部署环境不一致。
-- **指向 `docs/plan/active/frontend-ui-backend-gap-inventory.md` 的 `Bn` 溯源注释**：这是活契约，`p3-backend-gap-inventory-contract.test.mjs` 正向钉住它们。
+- **指向 `docs/plan/active/frontend-ui-backend-gap-inventory.md` 的未解决 `Bn` 溯源注释**：这是活契约，`p3-backend-gap-inventory-contract.test.mjs` 正向钉住它们。字段和页面接入补齐后，应同步删除已失效的缺口条目、注释与白名单，并让契约断言实际字段来源。
 
   | 文件 | 引用 |
   | --- | --- |
-  | `order/order-return-list.vue` | `frontend-ui-backend-gap-inventory.md` 的 `B6` |
-  | `promotion/promotion-coupon-list.vue` | 同上 `B7` |
-  | `inventory/inventory-reservation-list.vue` | 前端后端缺口盘点 `B8` |
-  | `finance/finance-detail-drawer.vue` | 前端后端缺口盘点 `B3` |
+  | `promotion/promotion-coupon-list.vue` | `frontend-ui-backend-gap-inventory.md` 的 `B7` |
 
 - **被契约测试断言到的注释文本**：先 `grep -l <文件名> test/*.test.mjs`，再判断「删掉这句注释，测试还想保护什么」：
   1. 测试真正保护业务约束 → 保留约束，允许重写注释并同步更新测试；
