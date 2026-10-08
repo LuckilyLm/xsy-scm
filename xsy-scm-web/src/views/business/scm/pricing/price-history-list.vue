@@ -33,7 +33,7 @@
       <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load"/>
     </div>
     <a-table :data-source="rows" :columns="columns" :row-key="(r:HistoryRow)=>`${r.source}-${r.historyId}`"
-             :loading="loading" :pagination="false" size="small" bordered :scroll="{x:1940}">
+             :loading="loading" :pagination="false" size="small" bordered :scroll="{x:1900}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='source'">
           {{ historyLabel(HISTORY_SOURCE_LABEL, record.source) }}

@@ -41,7 +41,7 @@ const columns: TableColumnsType<ImportError> = [{title: '行号', dataIndex: 'ro
   title: '订单标识',
   dataIndex: 'orderKey',
   width: 130
-}, {title: '字段', dataIndex: 'column', width: 120}, {title: '问题', dataIndex: 'message'}];
+}, {title: '字段', dataIndex: 'column', width: 120}, {title: '问题', dataIndex: 'message', ellipsis: true}];
 
 function open() {
   reset();

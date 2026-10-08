@@ -40,7 +40,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1560 }"
+        :scroll="{ x: 1520 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'activityCode'">

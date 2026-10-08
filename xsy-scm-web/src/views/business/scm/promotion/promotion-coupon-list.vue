@@ -44,7 +44,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1380 }"
+        :scroll="{ x: 1340 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'couponCode'">

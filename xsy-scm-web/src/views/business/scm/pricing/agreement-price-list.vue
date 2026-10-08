@@ -10,7 +10,7 @@
  </a-form>
  <a-card size="small" :bordered="false">
   <a-row class="smart-table-btn-block"><div class="smart-table-operate-block"><a-button type="primary" v-privilege="'scm:pricing:agreement:add'" @click="drawer?.open()">新增客户协议价</a-button></div><div class="smart-table-setting-block"><TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_AGREEMENT" :refresh="load" /></div></a-row>
-  <a-table :data-source="rows" :columns="columns" row-key="agreementPriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{x:1470}">
+  <a-table :data-source="rows" :columns="columns" row-key="agreementPriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{x:1430}">
    <template #bodyCell="{record,column}">
     <template v-if="column.dataIndex==='customerName'"><span>{{record.customerName || '—'}}</span></template>
     <template v-else-if="column.dataIndex==='customerCode'"><span class="scm-mono">{{record.customerCode || '—'}}</span></template>

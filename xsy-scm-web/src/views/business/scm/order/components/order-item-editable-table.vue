@@ -42,7 +42,9 @@
         </div>
       </template>
       <template v-else-if="column.dataIndex==='override'">
-        <a-space direction="vertical">
+        <!-- 一格里叠三个输入控件（勾选 / 单价 / 改价原因），不是「值 + 标识」，
+             用 scm-cell-wrap 退出单元格的省略号裁剪，否则控件会被裁掉 -->
+        <a-space direction="vertical" class="scm-cell-wrap">
           <a-checkbox v-privilege="'scm:order:price-override'" v-model:checked="record.manualPriceOverride">人工改价
           </a-checkbox>
           <template v-if="record.manualPriceOverride">

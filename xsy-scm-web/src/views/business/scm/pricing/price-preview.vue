@@ -22,7 +22,7 @@
       解析时点：{{ result.at }} · 客户类型：{{ result.customerTypeName }}
     </p>
     <a-table :columns="columns" :data-source="result?.items||[]" row-key="skuId" :loading="loading"
-             :pagination="false" size="small" bordered :scroll="{x:1250}">
+             :pagination="false" size="small" bordered :scroll="{x:1210}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='skuCode'">
           <span class="scm-mono">{{ record.skuCode || '—' }}</span>
