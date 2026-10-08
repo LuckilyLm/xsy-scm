@@ -36,7 +36,7 @@
           :pagination="false"
           size="small"
           bordered
-          :scroll="{ x: 970 }""
+          :scroll="{ x: 1010 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
