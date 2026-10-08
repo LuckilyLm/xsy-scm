@@ -71,12 +71,24 @@ test('侧栏宽度四处口径一致，默认值落在设置控件允许的区�
 test('改默认侧栏宽度必须同时升级 configVersion', () => {
   const version = num(appConfig, /configVersion:\s*(\d+)/, '配置版本号');
   // 迁移逻辑是「版本不等就整体回落新默认值」，版本不升，已有浏览器会一直用 localStorage 里的旧宽度
-  assert.ok(version >= 3, '侧栏宽度已从 200 改为 184，configVersion 必须 ≥ 3 才能迁移老用户');
+  assert.ok(version >= 8, '侧栏宽度已从 184 收到 168，configVersion 必须 ≥ 8 才能迁移老用户');
   assert.match(
       code('../src/store/modules/system/app-config.ts'),
       /cached\.configVersion === appDefaultConfig\.configVersion/,
       '配置迁移逻辑被改动，本断言的前提失效，请重新核对',
   );
+});
+
+test('侧栏用单档固定宽度，不随子菜单展开变化', () => {
+  // 曾经试过「收起时窄、展开二级时放宽」的两档方案，实测下来切换会让内容区左右跳动，
+  // 已放弃：侧栏只认用户设置的那一个宽度。这条断言防止两档逻辑被无意中重新引入。
+  assert.doesNotMatch(sideLayout, /SIDE_MENU_EXPANDED_WIDTH|menuExpanded/,
+      '侧栏不应再按展开状态改宽度');
+  assert.match(sideLayout, /const sideMenuWidth = computed\(\(\) => useAppConfigStore\(\)\.\$state\.sideMenuWidth\)/,
+      '侧栏宽度应直接取用户设置值');
+  // 子菜单展开后的缩进保持 antd 默认（24/48）：收窄缩进虽然能换来更窄的侧栏，
+  // 但展开后二级几乎贴着左边，层级感丢失 —— 已按使用反馈还原。
+  assert.doesNotMatch(code(RECURSION_MENU), /inline-indent/, '子菜单缩进应保持 antd 默认，不再收窄');
 });
 
 test('侧栏滚动条不常驻：auto + 透明轨道 + hover 才显形', () => {
@@ -109,6 +121,17 @@ test('菜单图标三档配色：普通深色 / hover 主题色 / 当前主题�
   // 不写死色值：主题色可切换
   const styleBlock = recursionMenu.slice(recursionMenu.indexOf('<style'));
   assert.doesNotMatch(styleBlock, /#333|#00b96b|#515a6e/, '菜单样式里不应出现写死的主题色');
+});
+
+test('侧边栏隐藏一级菜单的展开箭头，顶部菜单不受影响', () => {
+  // 箭头是 antd 默认的 <i class="ant-menu-submenu-arrow">。菜单项本身点一下就能展开，
+  // 箭头在窄侧栏里只是重复占位，去掉后标题才有横向空间让侧栏收窄而不换行。
+  // 必须走 :deep()：scoped 样式不会给 antd 子组件内部的节点加 data-v 属性。
+  assert.match(recursionMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{[\s\S]{0,80}display:\s*none/,
+      '侧边栏应隐藏 .ant-menu-submenu-arrow');
+  // 顶部菜单复用同一个 .smart-menu 类，但它是横向布局、子菜单靠浮层展开，箭头在那里是必要提示
+  assert.doesNotMatch(code('../src/layout/components/top-menu/recursion-menu.vue'),
+      /submenu-arrow/, '顶部菜单不应跟着隐藏箭头');
 });
 
 test('V110 只调整一级菜单的 sort，不动层级 / 路径 / 权限 / 可见性', () => {

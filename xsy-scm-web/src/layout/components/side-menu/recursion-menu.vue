@@ -117,6 +117,22 @@ defineExpose({
 }
 
 /*
+ * 去掉一级菜单右侧的展开箭头。
+ *
+ * 箭头是 `<i class="ant-menu-submenu-arrow">`（antd 默认用 ::before/::after 画 V 形）。
+ * 菜单项本身点一下就能展开，箭头在窄侧栏里只是重复占位；去掉后标题多出横向空间，
+ * 侧栏才能收窄而不让「供应商管理」这类 5 字标题换行。
+ *
+ * 只作用于侧边栏这一份菜单：顶部菜单（top-menu）复用同一个 .smart-menu 类，
+ * 但它是横向布局、子菜单靠浮层展开，箭头在那里是必要的位置提示。
+ */
+.smart-menu {
+  :deep(.ant-menu-submenu-arrow) {
+    display: none;
+  }
+}
+
+/*
  * 菜单图标配色
  *
  * antd 的菜单项图标是 `color: inherit`（`resetIcon()`），跟着菜单项自身的状态色走。
