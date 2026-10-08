@@ -36,16 +36,16 @@ function actionWidth(source, name) {
   return Number(matched[1]);
 }
 
-test('采购需求：来源与批次合为一格、单位跟数字走、scroll.x 与列宽之和一致', () => {
-  // 来源单号与冻结批次合为一格：批次降为 secondary text，不再独立占列
-  assert.ok(!demand.includes(`title: '来源冻结批次'`), '采购需求仍有独立的冻结批次列');
-  assert.ok(!demand.includes(`title: '需求单位'`), '采购需求仍有独立的需求单位列');
-  assert.match(demand, /dataIndex === 'salesOrderNoSnapshot'[\s\S]{0,600}record\.calculationBatchId/);
+test('采购需求：来源与批次各自成列、单位跟数字走、scroll.x 与列宽之和一致', () => {
+  // 一格一值：来源单号与冻结批次不再合成一格，批次独立成列
+  assert.match(demand, /title: '来源冻结批次'/);
+  assert.match(demand, /record\.calculationBatchId/);
   // 单位跟在每个数量后面（量纲注脚），三个数量列都要有
   assert.match(demand, /dataIndex === 'requiredQuantity'[\s\S]{0,200}record\.demandUnit/);
   assert.match(demand, /dataIndex === 'unallocatedQuantity'[\s\S]{0,200}record\.demandUnit/);
-  // 商品规格编码下沉为商品名的次要行
-  assert.match(demand, /dataIndex === 'productName'[\s\S]{0,300}record\.skuCode/);
+  // 商品规格编码独立成列，不折进商品名的副行
+  assert.doesNotMatch(demand, /scm-cell-stack/, '采购需求页仍把两个值叠进一个单元格');
+  assert.match(demand, /record\.skuCode/);
   // scroll.x 必须与各列宽度之和一致：1700 是加列时顺手写下的陈旧值，与列宽无关
   const sum = [...demand.matchAll(/width: (\d+)/g)].map((m) => Number(m[1])).reduce((a, b) => a + b, 0);
   const scrollX = /:scroll="\{ x: (\d+) \}"/.exec(demand);
@@ -83,7 +83,8 @@ test('仓库：创建时间下沉，定位状态可见，启停进「更多」',
   // 仓库编码是运营配置识别字段，保留
   assert.match(warehouse, /title: '仓库编码'/);
   // 地址不能因为「省市区能定位」就整列删掉：它是库管实际找货的凭据
-  assert.match(warehouse, /title: '区域 \/ 地址'/);
+  assert.match(warehouse, /title: '所在地区'/);
+  assert.match(warehouse, /title: '详细地址'/);
   assert.match(warehouse, /record\.address/);
   // 定位状态是「一眼要挑出来」的信号，用图标 + Tooltip
   assert.match(warehouse, /title: '定位'/);

@@ -334,8 +334,9 @@ test('履约面板具备加载 / 空 / 错三态，与打印面板同一套做�
   assert.match(fulfillmentPane, /:loading="loading"/);
   assert.match(fulfillmentPane, /:locale="\{emptyText\}"/);
   assert.match(view, /const fulfillmentEmptyText = computed\(\(\) =>[\s\S]*?线路已取消[\s\S]*?线路还没有订单/);
-  // 错误统一进顶部横幅（与打印的 loadPrint 一致），并由横幅的刷新动作恢复。
-  assert.match(view, /<a-alert v-if="error" :message="error" type="error" show-icon/);
+  // 失败提示走统一 toast（状态仍留在 `error` 里供恢复判断），不留常驻红条。
+  assert.match(view, /const error = useScmErrorToast\(\)/);
+  assert.doesNotMatch(view, /<a-alert[^>]*type="error"/);
   assert.match(view, /<a-button @click="reload">刷新线路<\/a-button>/);
   // 面板是第五个 pane：不改动既有 base / orders / map / print 四个 pane 的键。
   const paneKeys = [...view.matchAll(/<a-tab-pane key="(\w+)"/g)].map((m) => m[1]);
@@ -344,12 +345,12 @@ test('履约面板具备加载 / 空 / 错三态，与打印面板同一套做�
 
 // ------------------------------------------------------------------ 列表展示
 
-test('配送线路列表把编号折进名称、把定位覆盖率收成图标', () => {
+test('配送线路列表把编号独立成列、把定位覆盖率收成图标', () => {
   const list = code('../src/views/business/scm/delivery/route-list.vue');
-  // 线路编号是业务识别信息，但不独占一列：作为线路名称下方的次要文本
-  assert.doesNotMatch(list, /title: '线路编号'/);
+  // 线路编号是业务识别信息，独立成列而不是折在名称下方
+  assert.match(list, /title: '线路编号'/);
   assert.match(list, /title: '线路名称', dataIndex: 'routeName'/);
-  assert.match(list, /column\.dataIndex === 'routeName'[\s\S]{0,260}record\.routeNo/);
+  assert.doesNotMatch(list, /scm-cell-stack/, '线路列表仍把两个值叠进一个单元格');
   // 定位覆盖率是质量信息：图标 + Tooltip，不再占一列文字、也不再靠内联色名判断
   assert.match(list, /coverageOk\(record\)/);
   assert.match(list, /coverageText\(record\)/);

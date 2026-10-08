@@ -8,7 +8,7 @@
  *    必须逐字回到原值 —— 差一个 0.0001 就是「95 折」变成「95.01 折」。
  * 2. 规则是受控键值：切换活动类型必须清空规则，否则残留的键会被服务端当成未知键拒收（41324）。
  * 3. 空值不进规则载荷：多带一个当前类型用不上的键同样会被 41324 拒收。
- * 4. 编码下沉：活动编码 / 券编码作为名称的 secondary text，不再各占一列。
+ * 4. 一格一值：活动编码 / 券编码 与名称各自成列，生效与失效时间也各自成列。
  * 5. 门槛 0 是「无门槛」这个业务事实，不是缺值。
  *
  * 扫描前剥掉注释：这些文件里大量出现反例说明，不剥注释会把纪律文档本身判成违规。
@@ -61,14 +61,12 @@ test('折扣率的展示换算在 4 位比率的全值域上无损往返', () =>
 // 活动
 // ------------------------------------------------------------------
 
-test('活动列表把编码折进名称、把生效与失效时间合成一格', () => {
-  assert.doesNotMatch(activity, /title: '活动编码'/);
+test('活动列表把编码与生效、失效时间各自拆成独立列', () => {
+  assert.match(activity, /title: '活动编码'/);
   assert.match(activity, /title: '活动名称', dataIndex: 'activityName'/);
-  assert.match(activity, /column\.dataIndex === 'activityName'[\s\S]{0,240}record\.activityCode/);
-  assert.doesNotMatch(activity, /title: '生效时间'/);
-  assert.doesNotMatch(activity, /title: '失效时间'/);
-  assert.match(activity, /title: '有效期', dataIndex: 'validity'/);
-  assert.match(activity, /column\.dataIndex === 'validity'[\s\S]{0,240}record\.validTo/);
+  assert.doesNotMatch(activity, /scm-cell-stack/);
+  assert.match(activity, /title: '生效时间', dataIndex: 'validFrom'/);
+  assert.match(activity, /title: '失效时间', dataIndex: 'validTo'/);
   // 状态走统一档位映射
   assert.match(activity, /DRAFT: 'warning'/);
   assert.match(activity, /ACTIVE: 'success'/);
@@ -110,17 +108,18 @@ test('切换活动类型必须清空规则，空值不进载荷', () => {
 // 优惠券
 // ------------------------------------------------------------------
 
-test('优惠券列表把券编码折进名称，并把「无门槛」与「门槛 0」讲清楚', () => {
-  assert.doesNotMatch(coupon, /title: '券编码'/);
+test('优惠券列表把券编码独立成列，并把「无门槛」与「门槛 0」讲清楚', () => {
+  assert.match(coupon, /title: '券编码'/);
   assert.match(coupon, /title: '券名称', dataIndex: 'couponName'/);
-  assert.match(coupon, /column\.dataIndex === 'couponName'[\s\S]{0,240}record\.couponCode/);
+  assert.doesNotMatch(coupon, /scm-cell-stack/);
   // 券类型独立成列（原来只混在「优惠」文字里）
   assert.match(coupon, /title: '券类型', dataIndex: 'discountType'/);
   // 门槛 0 = 无门槛，是业务事实而不是缺值
   assert.match(coupon, /function isNoThreshold/);
   assert.match(coupon, /无门槛/);
   // 生效与失效时间合成一格
-  assert.match(coupon, /title: '有效期', dataIndex: 'validity'/);
+  assert.match(coupon, /title: '生效时间', dataIndex: 'validFrom'/);
+  assert.match(coupon, /title: '失效时间', dataIndex: 'validTo'/);
   // 状态走统一档位映射
   assert.match(coupon, /ScmStatusTag/);
   assert.match(coupon, /DRAFT: 'warning'/);

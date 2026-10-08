@@ -408,10 +408,10 @@ test('报表错误码有可执行文案且未吞掉后端消息', () => {
   assert.match(errors, /e\?\.msg \?\? e\?\.message/, '未登记的码要回落到后端消息');
 });
 
-test('每页都有 error 横幅与重试入口', () => {
+test('每页的查询失败都走 toast，不保留常驻红条', () => {
   for (const [name, source] of Object.entries(PAGES)) {
-    assert.match(source, /type="error"/, `${name} 页缺错误提示`);
-    assert.match(source, /重试/, `${name} 页缺重试入口`);
+    assert.doesNotMatch(source, /type="error"/, `${name} 页仍用常驻 Alert 承载失败提示`);
+    assert.match(source, /useScmErrorToast/, `${name} 页未接入统一的错误 toast`);
   }
 });
 

@@ -3,9 +3,9 @@
  *
  * 只钉「违背之后页面照样能跑、但事实已经错了」的那一类：
  *
- * 1. 打印记录是审计凭据：必须能说清当初用的是哪一版模板，但模板编码 / 版本
- *    不该各占一列 —— 它们下沉为模板名的次要行。
- * 2. 「谁在什么时候打的」是同一件事的两面，合成一格。
+ * 1. 打印记录是审计凭据：必须能说清当初用的是哪一版模板，模板编码 / 版本 / 操作人
+ *    各自成列，一格一个值。
+ * 2. 打印时间与操作人同样各自成列，不叠进同一格。
  * 3. 模板配置页的编码有维护价值，与普通主数据不同。
  * 4. 操作列统一居中固定，不再右对齐。
  */
@@ -24,16 +24,13 @@ function code(relative) {
 const templateList = code('../src/views/business/scm/print/print-template-list.vue');
 const recordList = code('../src/views/business/scm/print/print-record-list.vue');
 
-test('打印记录把模板编码与版本折进模板名、把操作人折进打印时间', () => {
-  // 编码 / 版本不再各占一列，但必须仍能在列表上核出来（审计场景）
-  assert.ok(!recordList.includes(`title: '模板编码'`), '打印记录仍有独立的模板编码列');
-  assert.ok(!recordList.includes(`title: '模板版本'`), '打印记录仍有独立的模板版本列');
-  assert.ok(!recordList.includes(`title: '操作人'`), '打印记录仍有独立的操作人列');
-  assert.match(recordList, /title: '模板', dataIndex: 'template'/);
-  assert.match(recordList, /column\.dataIndex === 'template'[\s\S]{0,400}record\.templateCode/);
-  assert.match(recordList, /column\.dataIndex === 'template'[\s\S]{0,400}record\.templateVersion/);
-  assert.match(recordList, /title: '打印', dataIndex: 'printed'/);
-  assert.match(recordList, /column\.dataIndex === 'printed'[\s\S]{0,400}record\.printedBy/);
+test('打印记录把模板编码、版本与打印人各自拆成独立列', () => {
+  // 一格一值：编码 / 版本 / 操作人各自成列，且审计要能在列表上直接核出来
+  assert.match(recordList, /title: '模板编码', dataIndex: 'templateCode'/);
+  assert.match(recordList, /title: '模板版本', dataIndex: 'templateVersion'/);
+  assert.match(recordList, /title: '打印人', dataIndex: 'printedBy'/);
+  assert.match(recordList, /title: '模板名称', dataIndex: 'templateName'/);
+  assert.doesNotMatch(recordList, /scm-cell-stack/, '打印记录仍把两个值叠进一个单元格');
   // 时间字段例外：打印时间属于历史记录页的核心信息，不能隐藏
   assert.match(recordList, /record\.printedAt/);
 });

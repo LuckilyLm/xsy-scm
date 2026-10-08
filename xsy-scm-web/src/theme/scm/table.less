@@ -1,5 +1,5 @@
 /*
- * SCM 表格单元视觉：操作列居中、复合单元、金额/数量排版、标签折叠、表头对齐。
+ * SCM 表格单元视觉：操作列居中、单元格不换行、金额/数量排版、标签折叠、表头对齐。
  */
 
 /*
@@ -29,54 +29,17 @@
 }
 
 /*
- * 复合单元：业务名称在上、内部编码作为 secondary text 在下，不再各占一列。
- *
- * 两行是有层级的两个信息，不是一句话换行，所以字号 / 字重 / 颜色三样都要拉开：
- * 主行 14px / 500 / 20px 主文字色，副行 12px / 16px secondary。
- * 只靠颜色区分的话，低分辨率屏和投屏上两行会糊成一片。
- *
- * `justify-content: center` + `min-height` 是为「副行可能缺失」的行准备的
- * （比如没有登记电话的联系人）：不撑住高度，同一张表里就会出现忽高忽低的行。
+ * 「双行复合单元」（名称在上、编码在下的两行单元格）已整体退役：
+ * 一格塞两行会把行高拉齐到最高那条、列宽按最宽那条给，整张表又高又空。
+ * 两个值各自成列，见 docs/architecture/scm-ui-guidelines.md §2。
  */
-.scm-cell-stack {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-  min-height: 38px;
-  min-width: 0;
-}
-
-.scm-cell-stack__main {
-  overflow: hidden;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--scm-text, rgba(0, 0, 0, 0.88));
-}
-
-.scm-cell-stack__sub {
-  overflow: hidden;
-  font-size: 12px;
-  line-height: 16px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-}
-
-/* 副行是纯数字时（电话）对齐位数：默认字体的数字是变宽的，一列电话会参差不齐 */
-.scm-cell-stack__sub--num {
-  font-variant-numeric: tabular-nums;
-}
 
 /*
  * 复合单元里的「名称入口」（点进详情）。
  *
- * 默认是主行那一档的普通深色文字，不是链接色 —— 一列品牌绿会让「名称」和状态标签
+ * 默认是普通深色文字，不是链接色 —— 一列品牌绿会让「名称」和状态标签
  * 抢层级，也让主文本看起来像个操作按钮。悬停 / 聚焦才给链接反馈。
- * 也不额外加 padding：它和 `.scm-cell-stack__main` 要在同一条左轴线上。
+ * 也不额外加 padding：它要和同一格里其余文字在同一条左轴线上。
  *
  * 选择器故意把类名写两遍（0,2,0）：antd 的链接按钮样式是 `:where(.css-xxx).ant-btn-link`，
  * `:where` 零特异性 → 实得 (0,1,0)，而它在运行时注入 <head>、排在构建产物之后，同特异性下会赢。
@@ -160,15 +123,20 @@
  * 单元格默认不换行：一个格子塞两行，行高被拉齐到最高那条、列宽又按最宽那条给，
  * 结果是整张表既高又空。信息该分列就分列，放不下就省略号 + Tooltip。
  *
- * 长文本（备注、地址、多行明细）确实需要换行的，加 `.scm-cell-wrap` 显式退出。
+ * 两类例外由选择器本身排除，不需要页面配合：
+ * - 展开行（`#expandedRowRender`）装的是明细区块，不是单个字段；
+ * - 单元格里内嵌表格时，裁剪会连带吃掉内嵌表自己的横向滚动。
+ *
+ * 长文本（备注、地址、多行说明）确实需要换行的，给文本加 `.scm-cell-wrap`。
  */
-.ant-table-tbody > tr > td > .ant-table-cell {
+.ant-table-tbody > tr:not(.ant-table-expanded-row) > td > .ant-table-cell {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.ant-table-tbody > tr > td > .ant-table-cell .scm-cell-wrap {
+.ant-table-tbody > tr > td > .ant-table-cell:has(.scm-cell-wrap),
+.ant-table-tbody > tr > td > .ant-table-cell:has(> .ant-table) {
   white-space: normal;
   overflow: visible;
   text-overflow: unset;
