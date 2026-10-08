@@ -1,7 +1,6 @@
 <template>
   <a-modal v-model:open="visible" :title="form.categoryId ? '编辑分类' : '新增分类'" :confirm-loading="saving"
            @ok="submit" @cancel="visible = false">
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
     <a-form ref="formRef" :model="form" layout="vertical">
       <a-form-item label="上级分类" name="parentId">
         <CategorySelect v-model:value="form.parentId" :categories="categories" mode="parent"
@@ -40,10 +39,11 @@ import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {ENABLE_STATUS_ENUM} from '/@/constants/business/scm/product-const';
 import type {ProductCategory, ProductCategoryForm, ProductId} from '/@/types/business/scm/product';
 import {productError} from '../product-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 defineProps<{ categories: ProductCategory[] }>();
 const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), saving = ref(false), error = ref('');
+const visible = ref(false), saving = ref(false), error = useScmErrorToast();
 const formRef = ref<FormInstance>();
 const defaults = (): ProductCategoryForm => ({
   categoryCode: '',

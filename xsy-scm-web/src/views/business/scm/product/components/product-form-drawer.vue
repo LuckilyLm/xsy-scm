@@ -3,11 +3,6 @@
             :mask-closable="!saving" :closable="!saving" :destroy-on-close="true">
     <a-spin :spinning="loading">
       <div class="drawer-body">
-        <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button v-if="loadFailed" size="small" @click="load(form.spuId)">重新加载</a-button>
-          </template>
-        </a-alert>
         <a-form v-if="!loadFailed" ref="formRef" :model="form" layout="vertical">
           <section class="scm-form-section">
             <div class="scm-form-section__head">
@@ -154,7 +149,6 @@
             <ImageUpload v-model="form.images" :can-edit="canEditImages" @uploading="uploading = $event">
               <template #head>
                 <h3 class="scm-form-section__title">商品图片</h3>
-                <span class="scm-form-section__hint">最多 20 张，可拖动排序。</span>
               </template>
             </ImageUpload>
           </section>
@@ -202,11 +196,12 @@ import SkuEditor from './product-sku-editable-table.vue';
 import {emptyProduct, productFormOf, validateProduct} from '../product-form-model';
 import {productError} from '../product-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const emit = defineEmits<{ saved: [] }>();
 const form = ref<ProductForm>(emptyProduct()), categories = ref<ProductCategory[]>([]), formRef = ref<FormInstance>();
 const units = ref<ProductUom[]>([]), tagChoices = ref<ProductTag[]>([]), boundTags = ref<ProductTagRef[]>([]);
-const visible = ref(false), loading = ref(false), saving = ref(false), uploading = ref(false), error = ref(''),
+const visible = ref(false), loading = ref(false), saving = ref(false), uploading = ref(false), error = useScmErrorToast(),
     loadFailed = ref(false);
 const tagPickerOpen = ref(false), tagKeyword = ref('');
 // 停用标签仍要出现在下拉里：编辑只校验新增绑定，摘不掉就等于历史标签永远清不掉。

@@ -10,17 +10,15 @@
             <a-form-item><a-space><a-button type="primary" @click="search">查询</a-button>
               <a-button @click="resetPick">重置</a-button></a-space></a-form-item>
           </a-form>
-          <a-alert v-if="pickError" :message="pickError" type="error" show-icon class="gap"/>
           <a-table :data-source="products" :columns="pickColumns" row-key="spuId" size="small"
                    :loading="pickLoading" :pagination="false" :scroll="{ y: 420 }"
                    :custom-row="(row: ProductRow) => ({ onClick: () => select(row.spuId), style: { cursor: 'pointer' } })">
             <template #bodyCell="{ column, record }">
-              <template v-if="column.dataIndex === 'name'">
-                <!-- 名称是主信息，商品编码下沉为次行，不再单独占一个大列 -->
-                <div class="scm-cell-stack">
-                  <span class="scm-cell-stack__main">{{ record.name || '—' }}</span>
-                  <span v-if="record.spuCode" class="scm-cell-stack__sub">{{ record.spuCode }}</span>
-                </div>
+              <template v-if="column.dataIndex === 'spuCode'">
+                <span class="scm-mono">{{ record.spuCode || '—' }}</span>
+              </template>
+              <template v-else-if="column.dataIndex === 'name'">
+                <span>{{ record.name || '—' }}</span>
               </template>
               <template v-else-if="column.dataIndex === 'primary'">
                 <a-tag v-if="record.primaryImageUrl" color="green">有主图</a-tag>
@@ -44,8 +42,6 @@
           </template>
           <a-empty v-if="!view" description="请从左侧选择一个商品"/>
           <template v-else>
-            <a-alert v-if="imageError" :message="imageError" type="error" show-icon class="gap"/>
-            <p class="hint">主图最多一张；详情图可拖动排序</p>
             <a-spin :spinning="imageLoading">
               <div class="images">
                 <figure v-for="(image, index) in view.images" :key="String(image.imageId)" :draggable="canWrite"
@@ -126,6 +122,7 @@ import type { ImageCenterView, ProductId, ProductImage, ProductRow, ScmResponse 
 import type { FileMatchResult, SpuTarget, UploadedImageFile } from './product-import-model';
 import { matchFilesBySpuCode } from './product-import-model';
 import { productError } from './product-errors';
+import { useScmErrorToast } from '../common/scm-error-toast';
 
 type Uploaded = ScmResponse<{ fileKey: string; fileUrl: string; fileName?: string; fileSize?: number }>;
 
@@ -133,14 +130,15 @@ const user = useUserStore();
 const canWrite = computed(() => user.administratorFlag
     || user.getPointList?.some((p: { webPerms: string }) => p.webPerms === 'scm:product:image:batch'));
 
-const keyword = ref(''), onlyNoPrimary = ref(false), products = ref<ProductRow[]>([]), pickLoading = ref(false), pickError = ref('');
-// 列定义：左侧只保留「名称（编码次行）/ 主图状态」，编码不再单独占列
+const keyword = ref(''), onlyNoPrimary = ref(false), products = ref<ProductRow[]>([]), pickLoading = ref(false), pickError = useScmErrorToast();
+// 列定义：商品编码与名称各占一列（不再上下叠行），主图状态单独成列。
 const pickColumns = [
-  { title: '商品', dataIndex: 'name' },
+  { title: '商品编码', dataIndex: 'spuCode', width: 130 },
+  { title: '商品名称', dataIndex: 'name' },
   { title: '主图', dataIndex: 'primary', width: 90 },
 ];
 
-const view = ref<ImageCenterView | null>(null), imageLoading = ref(false), imageError = ref(''), busy = ref(false),
+const view = ref<ImageCenterView | null>(null), imageLoading = ref(false), imageError = useScmErrorToast(), busy = ref(false),
     uploading = ref(false), dragIndex = ref(-1);
 
 async function search() {
@@ -321,11 +319,6 @@ function statusColor(status: string) {
 
 .pick-form {
   margin-bottom: 8px;
-}
-
-.hint {
-  color: var(--scm-text-secondary, #666);
-  margin: 0 0 12px;
 }
 
 .images {

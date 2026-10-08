@@ -3,12 +3,7 @@
     <a-space class="smart-margin-bottom10">
       <a-button @click="router.push('/product/product-list')">返回商品列表</a-button>
     </a-space>
-    <a-alert v-if="error" :message="error" type="error" show-icon>
-      <template #action>
-        <a-button size="small" @click="load">重新加载</a-button>
-      </template>
-    </a-alert>
-    <template v-else-if="product">
+    <template v-if="product">
       <a-descriptions :title="product.name" bordered :column="{ xs: 1, sm: 2, lg: 3 }">
         <a-descriptions-item label="商品编码">{{ product.spuCode }}</a-descriptions-item>
         <a-descriptions-item label="分类">{{ product.categoryPath }}</a-descriptions-item>
@@ -99,9 +94,10 @@ import {
 import SkuTable from './components/product-sku-table.vue';
 import {productError} from './product-errors';
 import {datetime} from '../common/scm-display';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const route = useRoute(), router = useRouter();
-const product = ref<ProductRow>(), loading = ref(false), error = ref('');
+const product = ref<ProductRow>(), loading = ref(false), error = useScmErrorToast();
 let requestId = 0;
 
 /** 深链 spuId 是详情页唯一的上下文来源；非纯数字视为无效。 */

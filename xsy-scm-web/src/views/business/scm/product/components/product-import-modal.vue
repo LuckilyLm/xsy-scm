@@ -31,7 +31,7 @@
                :pagination="false" :scroll="{ y: 320 }">
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'cells'">
-            <div v-for="(cell, i) in record.cells" :key="i" class="cell-error">
+            <div v-for="(cell, i) in record.cells" :key="i" class="cell-error scm-cell-wrap">
               <b>{{ cell.column }}</b>：{{ cell.message }}
               <a-tag size="small">{{ cell.code }}</a-tag>
             </div>

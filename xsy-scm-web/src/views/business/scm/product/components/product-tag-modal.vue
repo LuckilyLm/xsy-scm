@@ -2,7 +2,6 @@
 <template>
   <a-modal v-model:open="visible" :title="form.tagId ? '编辑商品标签' : '新增商品标签'" :confirm-loading="saving"
            @ok="submit" @cancel="visible = false">
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
     <a-form ref="formRef" :model="form" layout="vertical">
       <a-row :gutter="16">
         <a-col :span="12">
@@ -39,9 +38,10 @@ import {productTagApi} from '/@/api/business/scm/product-assistant-api';
 import type {AssistantStatus, ProductTag} from '/@/types/business/scm/product';
 import {ENABLE_STATUS_ENUM} from '/@/constants/business/scm/product-const';
 import {productError} from '../product-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), saving = ref(false), error = ref(''), formRef = ref<FormInstance>();
+const visible = ref(false), saving = ref(false), error = useScmErrorToast(), formRef = ref<FormInstance>();
 const form = reactive({
   tagId: undefined as ProductTag['tagId'] | undefined,
   version: 0,
