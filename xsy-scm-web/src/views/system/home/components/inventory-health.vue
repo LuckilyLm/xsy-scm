@@ -6,7 +6,7 @@
   * 所以两个数字不互相求和、也不对齐。
 -->
 <template>
-  <default-home-card asset="icons/inventory-health.png" title="库存健康">
+  <default-home-card icon-name="section-inventory-health" title="库存健康">
     <region-error v-if="error" :message="error" @retry="load"/>
     <a-spin v-else class="home-health__content" :spinning="loading">
       <a-empty v-if="!loading && !health" class="home-health__empty" description="暂无库存记录"/>

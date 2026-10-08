@@ -5,7 +5,9 @@
   * 而不是两份只差一个字符串的文件。条形长度按本列表最大值取相对比例，不表达绝对量级。
 -->
 <template>
-  <default-home-card icon="TrophyOutlined" :title="meta.title">
+  <default-home-card
+    :icon-name="dimension === 'customer' ? 'section-customer-ranking' : 'section-product-ranking'"
+    :title="meta.title">
     <region-error v-if="error" :message="error" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <a-empty v-if="!loading && items.length === 0" class="home-rank__empty" :description="meta.emptyText"/>

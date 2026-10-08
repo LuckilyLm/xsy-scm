@@ -1,5 +1,5 @@
 <template>
-  <default-home-card extra="更多" asset="icons/notice-announcement.png" title="通知公告" @extraClick="onMore">
+  <default-home-card extra="更多" icon-name="section-notice" title="通知公告" @extraClick="onMore">
     <region-error v-if="error" :message="error" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <div class="home-notices">

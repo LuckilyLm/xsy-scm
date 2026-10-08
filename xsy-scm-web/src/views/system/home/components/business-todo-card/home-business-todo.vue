@@ -1,12 +1,12 @@
 <template>
-  <default-home-card icon="CheckSquareOutlined" title="业务待办">
+  <default-home-card icon-name="section-business-todo" title="业务待办">
     <region-error v-if="error" :message="error" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <div class="home-todos">
         <a-empty v-if="!loading && todos.length === 0" description="暂无待办事项"/>
         <router-link v-for="todo in todos" :key="todo.key" class="todo-row" :to="todo.route">
           <span class="todo-row__visual" :class="`tone-${todoTone(todo.key)}`">
-            <img :src="homeAsset(todoAsset(todo.key))" alt="" aria-hidden="true"/>
+            <scm-icon :name="todoIcon(todo.key)" :size="36"/>
           </span>
           <span class="todo-row__copy">
           <span class="todo-row__label">{{ todo.label }}</span>
@@ -28,35 +28,35 @@ import RegionError from '../region-error.vue';
 import {useRegionData} from '../use-region-data';
 import {scmDashboardApi, type ScmTodo} from '/@/api/business/scm/dashboard-api';
 import {formatInt} from '/@/views/business/scm/screen/format';
-import {homeAsset} from '../../home-assets';
+import ScmIcon from '../scm-icon.vue';
 
 interface TodoMeta {
-  asset: string;
+  iconName: string;
   tone: 'ok' | 'warn' | 'danger' | 'primary';
   hint: string;
 }
 
 const TODO_META: Record<string, TodoMeta> = {
   'inventory-warning': {
-    asset: 'icons/todo-inventory-error.png', tone: 'danger', hint: '库存不足、超配或临界预警',
+    iconName: 'todo-inventory-error', tone: 'danger', hint: '库存不足、超配或临界预警',
   },
   'receipt-putaway': {
-    asset: 'icons/todo-pending-receipt.png', tone: 'warn', hint: '采购到货待确认入库',
+    iconName: 'todo-pending-receipt', tone: 'warn', hint: '采购到货待确认入库',
   },
   'loss-gain-audit': {
-    asset: 'icons/todo-pending-approval.png', tone: 'primary', hint: '待审批的报损报溢单据',
+    iconName: 'todo-pending-approval', tone: 'primary', hint: '待审批的报损报溢单据',
   },
   'delivery-route-draft': {
-    asset: 'icons/todo-draft-delivery.png', tone: 'ok', hint: '待完善的配送线路',
+    iconName: 'todo-draft-delivery', tone: 'ok', hint: '待完善的配送线路',
   },
 };
 
 function todoMeta(key: string) {
-  return TODO_META[key] ?? {asset: 'icons/todo-pending-approval.png', tone: 'ok' as const, hint: '待处理业务事项'};
+  return TODO_META[key] ?? {iconName: 'todo-pending-approval', tone: 'ok' as const, hint: '待处理业务事项'};
 }
 
-function todoAsset(key: string) {
-  return todoMeta(key).asset;
+function todoIcon(key: string) {
+  return todoMeta(key).iconName;
 }
 
 function todoTone(key: string) {

@@ -2,7 +2,7 @@
   <a-card class="home-card" :bordered="false">
     <template #title>
       <div class="home-card__title">
-        <img v-if="asset" :src="homeAsset(asset)" alt="" aria-hidden="true" class="home-card__asset"/>
+        <scm-icon v-if="iconName" :name="iconName" :size="28"/>
         <component :is="$antIcons[icon]" v-else-if="icon" class="home-card__icon" aria-hidden="true"/>
         <slot name="title"><span>{{ title }}</span></slot>
       </div>
@@ -17,9 +17,9 @@
 </template>
 
 <script setup lang="ts">
-import {homeAsset} from '../home-assets';
+import ScmIcon from './scm-icon.vue';
 
-defineProps<{icon?: string; asset?: string; title?: string; extra?: string}>();
+defineProps<{icon?: string; iconName?: string; title?: string; extra?: string}>();
 const emit = defineEmits<{extraClick: []}>();
 </script>
 
@@ -57,9 +57,4 @@ const emit = defineEmits<{extraClick: []}>();
   color: var(--scm-primary);
 }
 
-.home-card__asset {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-}
 </style>
