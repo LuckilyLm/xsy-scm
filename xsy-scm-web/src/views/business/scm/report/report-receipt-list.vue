@@ -62,11 +62,6 @@
             />
           </div>
         </a-row>
-        <a-alert v-if="receipt.error" :message="receipt.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadReceipt">重试</a-button>
-          </template>
-        </a-alert>
         <a-table
             :id="SCM_REPORT_TABLE_ID.RECEIPT"
             size="small"
@@ -148,11 +143,6 @@
             />
           </div>
         </a-row>
-        <a-alert v-if="inbound.error" :message="inbound.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadInbound">重试</a-button>
-          </template>
-        </a-alert>
         <a-table
             :id="SCM_REPORT_TABLE_ID.INBOUND"
             size="small"
@@ -203,8 +193,6 @@
     <a-tab-pane key="pending" tab="待入库">
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-          </div>
           <div class="smart-table-setting-block">
             <TableOperator
                 v-model="pendingColumns"
@@ -213,11 +201,6 @@
             />
           </div>
         </a-row>
-        <a-alert v-if="pending.error" :message="pending.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadPending">重试</a-button>
-          </template>
-        </a-alert>
         <a-table
             :id="SCM_REPORT_TABLE_ID.PENDING_PUTAWAY"
             size="small"
@@ -282,7 +265,6 @@ import type {InboundRow, PendingPutawayRow, ReceiptQuery, ReceiptRow} from './re
 import {
     buildReportQuery,
     countText,
-    createTabView,
     defaultDateRange,
     enumDescText,
     enterTab,
@@ -294,7 +276,7 @@ import {
 import {moneyText, quantityText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
 import {useReportPermission} from './use-report-permission';
-import {createTabLoader} from './use-report-query';
+import {createTabLoader, createToastingTabView} from './use-report-query';
 import type {DateRange} from './report-model';
 
 const PERM = SCM_REPORT_PERMISSION;
@@ -309,9 +291,9 @@ const dateRange = ref<DateRange | undefined>();
 const filters = reactive<Omit<ReceiptQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
 
-const receipt = reactive(createTabView<ReceiptRow>());
-const inbound = reactive(createTabView<InboundRow>());
-const pending = reactive(createTabView<PendingPutawayRow>());
+const receipt = reactive(createToastingTabView<ReceiptRow>());
+const inbound = reactive(createToastingTabView<InboundRow>());
+const pending = reactive(createToastingTabView<PendingPutawayRow>());
 
 const receiptColumns = ref<TableColumnsType<ReceiptRow>>([
     {title: '收货确认时间', dataIndex: 'confirmedAt', width: 190},
@@ -392,9 +374,9 @@ function costAmountText(value: string | null | undefined, costMissing: boolean |
 function queryActiveTab() {
     const overLimit = rangeOverLimitError(dateRange.value);
     if (overLimit) {
-        receipt.error = overLimit;
-        inbound.error = overLimit;
-        pending.error = overLimit;
+        // 只记当前 Tab：三个视图都写会让同一条提示连着弹三次
+        const target = activeTab.value === 'inbound' ? inbound : activeTab.value === 'pending' ? pending : receipt;
+        target.error = overLimit;
         return;
     }
     switch (activeTab.value) {

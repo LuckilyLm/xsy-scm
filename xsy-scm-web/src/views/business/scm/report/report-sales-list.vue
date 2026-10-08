@@ -45,12 +45,6 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="chartError" :message="chartError" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryActiveTab">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
     <!-- ==================== 按商品 ==================== -->
     <a-tab-pane key="product" tab="按商品">
@@ -184,14 +178,14 @@ import type {Id} from '../inventory/inventory-types';
 import {
     buildReportQuery,
     chartValue,
-    createTabView,
     defaultDateRange,
     enterTab,
     rangeFromQuery,
     rangeOverLimitError,
 } from './report-model';
 import {moneyText} from '../inventory/inventory-model';
-import {createGuardedLoader, createTabLoader} from './use-report-query';
+import {createGuardedLoader, createTabLoader, createToastingTabView} from './use-report-query';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import type {DateRange} from './report-model';
 
 const PERM = SCM_REPORT_PERMISSION;
@@ -204,7 +198,7 @@ const dateRange = ref<DateRange | undefined>();
 /** 共享筛选：五个维度共用同一个后端表单，切 Tab 不重置它，只各自归页码。 */
 const filters = reactive<Omit<SalesQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
-const chartError = ref('');
+const chartError = useScmErrorToast();
 const categories = ref<ProductCategory[]>([]);
 
 /** TOP5 图的原始行（后端已按金额降序 LIMIT）。 */
@@ -212,12 +206,12 @@ const productTop = ref<SalesTopItem[]>([]);
 const categoryTop = ref<SalesTopItem[]>([]);
 const customerTop = ref<SalesTopItem[]>([]);
 
-const product = reactive(createTabView<SalesProductRow>());
-const category = reactive(createTabView<SalesCategoryRow>());
-const customer = reactive(createTabView<SalesCustomerRow>());
-const seller = reactive(createTabView<SalesSellerRow>());
-const item = reactive(createTabView<SalesItemRow>());
-const order = reactive(createTabView<SalesOrderRow>());
+const product = reactive(createToastingTabView<SalesProductRow>());
+const category = reactive(createToastingTabView<SalesCategoryRow>());
+const customer = reactive(createToastingTabView<SalesCustomerRow>());
+const seller = reactive(createToastingTabView<SalesSellerRow>());
+const item = reactive(createToastingTabView<SalesItemRow>());
+const order = reactive(createToastingTabView<SalesOrderRow>());
 
 /** 六个 Tab 都有对应导出端点（后端逐个 AND 上 `scm:report:export`），按钮按 `PERM.EXPORT` 显示。 */
 

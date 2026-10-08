@@ -51,8 +51,10 @@ function render() {
     setOption({
         animation: false,
         color: [...REPORT_CHART_SERIES],
-        grid: {top: 40, right: 20, bottom: 30, left: 10, containLabel: true},
-        legend: {top: 4, left: 'center', textStyle: {color: REPORT_CHART_COLORS.axisText}},
+        // 图例单独占一条带（top 4），绘图区从 48 起：多条曲线时图例不再压在折线上
+        grid: {top: 48, right: 20, bottom: 30, left: 10, containLabel: true},
+        // scroll：图例只占一行，放不下的用左右翻页，不再叠成多行盖住绘图区
+        legend: {type: 'scroll', top: 4, left: 'center', textStyle: {color: REPORT_CHART_COLORS.axisText}},
         tooltip: {
             trigger: 'axis',
             formatter: (params: unknown) => {

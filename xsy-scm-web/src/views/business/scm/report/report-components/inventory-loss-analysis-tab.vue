@@ -1,9 +1,8 @@
 <template>
-  <a-row :gutter="[12, 12]">
-    <a-col v-for="card in lossCards" :key="card.label" :xs="24" :sm="12" :md="8" :lg="6" :xl="4">
-      <ReportKpiCard :label="card.label" :value="card.value" :warning="card.warning"/>
-    </a-col>
-  </a-row>
+  <div class="loss-kpis">
+    <ReportKpiCard v-for="card in lossCards" :key="card.label"
+                   :label="card.label" :value="card.value" :warning="card.warning"/>
+  </div>
   <a-row :gutter="[12, 12]" class="smart-margin-top10">
     <a-col :xs="24" :lg="12">
       <ReportPieChart
@@ -33,11 +32,6 @@
         />
       </div>
     </a-row>
-    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
-      <template #action>
-        <a-button @click="refresh">重试</a-button>
-      </template>
-    </a-alert>
     <a-table
         :id="SCM_REPORT_TABLE_ID.INVENTORY_LOSS"
         size="small"
@@ -192,3 +186,12 @@ function changePage(page: number, pageSize: number) {
   emit('pageChange', page, pageSize);
 }
 </script>
+
+<style scoped>
+/* 卡数不整除固定列数时会留下几乎整行空白的大卡，列宽交给内容自己决定。 */
+.loss-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+</style>

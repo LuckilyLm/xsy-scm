@@ -17,15 +17,10 @@
     </a-form>
 
     <a-alert v-if="rangeError" class="report-error" type="warning" show-icon :message="rangeError"/>
-    <a-alert v-if="overviewError" class="report-error" type="error" show-icon :message="overviewError">
-      <template #action><a-button @click="loadOverview">重试</a-button></template>
-    </a-alert>
 
-    <a-row :gutter="[12, 12]" class="smart-margin-top10">
-      <a-col v-for="card in kpiCards" :key="card.label" :xs="24" :sm="12" :lg="8">
-        <ReportKpiCard :label="card.label" :value="card.value"/>
-      </a-col>
-    </a-row>
+    <div class="finance-kpis">
+      <ReportKpiCard v-for="card in kpiCards" :key="card.label" :label="card.label" :value="card.value"/>
+    </div>
 
     <a-card size="small" :bordered="false" class="smart-margin-top10">
       <a-tabs v-model:active-key="activeTab" @change="onTabChange">
@@ -45,14 +40,10 @@
               </div>
             </div>
           </a-row>
-          <a-alert v-if="receivableView.error" class="report-error" type="error" show-icon
-                   :message="receivableView.error">
-            <template #action><a-button @click="loadReceivables">重试</a-button></template>
-          </a-alert>
           <a-table :id="SCM_REPORT_TABLE_ID.FINANCE_RECEIVABLE" class="finance-detail-table" size="small"
                    :data-source="receivableView.rows" :columns="receivableColumns"
                    row-key="receivableId" :loading="receivableView.loading" :pagination="false"
-                   bordered :scroll="{x: 1500, y: tableBodyHeight}">
+                   bordered :scroll="{x: 1580, y: tableBodyHeight}">
             <template #bodyCell="{column,text}">
               <template v-if="['amount','redAmount','netAmount','writtenOffAmount','openAmount','overAppliedAmount'].includes(column.dataIndex)">
                 <span class="scm-money">{{ moneyText(text) }}</span>
@@ -112,13 +103,10 @@
               </div>
             </div>
           </a-row>
-          <a-alert v-if="payableView.error" class="report-error" type="error" show-icon :message="payableView.error">
-            <template #action><a-button @click="loadPayables">重试</a-button></template>
-          </a-alert>
           <a-table :id="SCM_REPORT_TABLE_ID.FINANCE_PAYABLE" class="finance-detail-table" size="small"
                    :data-source="payableView.rows" :columns="payableColumns"
                    row-key="payableId" :loading="payableView.loading" :pagination="false"
-                   bordered :scroll="{x: 1500, y: tableBodyHeight}">
+                   bordered :scroll="{x: 1580, y: tableBodyHeight}">
             <template #bodyCell="{column,text}">
               <template v-if="['amount','redAmount','netAmount','writtenOffAmount','openAmount','overAppliedAmount'].includes(column.dataIndex)">
                 <span class="scm-money">{{ moneyText(text) }}</span>
@@ -177,6 +165,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import ReportKpiCard from './report-components/report-kpi-card.vue';
 import {reportError} from './report-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import type {
     FinanceOverviewQuery,
     FinancePayableDetailRow,
@@ -186,13 +175,12 @@ import type {
 } from './report-types';
 import {
     buildReportQuery,
-    createTabView,
     defaultDateRange,
     rangeOverLimitError,
     type DateRange,
     type TabView,
 } from './report-model';
-import {createGuardedLoader, createTabLoader} from './use-report-query';
+import {createGuardedLoader, createTabLoader, createToastingTabView} from './use-report-query';
 import {moneyText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
 
@@ -201,11 +189,11 @@ const dateRange = ref<DateRange>(defaultDateRange());
 const activeTab = ref<'receivable' | 'payable'>('receivable');
 const keyword = ref('');
 const overview = ref<FinanceReportOverview | null>(null);
-const overviewError = ref('');
+const overviewError = useScmErrorToast();
 const rangeError = ref('');
 const exportingOverview = ref(false), exportingReceivable = ref(false), exportingPayable = ref(false);
-const receivableView = reactive(createTabView<FinanceReceivableDetailRow>(10));
-const payableView = reactive(createTabView<FinancePayableDetailRow>(10));
+const receivableView = reactive(createToastingTabView<FinanceReceivableDetailRow>(10));
+const payableView = reactive(createToastingTabView<FinancePayableDetailRow>(10));
 const viewportHeight = ref(window.innerHeight);
 const tableBodyHeight = computed(() => Math.max(220, viewportHeight.value - 650));
 
@@ -245,7 +233,7 @@ const receivableColumns = ref<TableColumnsType<FinanceReceivableDetailRow>>([
     {title: '净应收', dataIndex: 'netAmount', align: 'right', width: 115},
     {title: '已核销金额', dataIndex: 'writtenOffAmount', align: 'right', width: 125},
     {title: '期末待收', dataIndex: 'openAmount', align: 'right', width: 125},
-    {title: '超额核销待处理', dataIndex: 'overAppliedAmount', align: 'right', width: 160},
+    {title: '超额核销待处理', dataIndex: 'overAppliedAmount', align: 'right', width: 240},
     {title: '事件时点', dataIndex: 'eventAt', width: 170},
 ]);
 const payableColumns = ref<TableColumnsType<FinancePayableDetailRow>>([
@@ -257,7 +245,7 @@ const payableColumns = ref<TableColumnsType<FinancePayableDetailRow>>([
     {title: '净应付', dataIndex: 'netAmount', align: 'right', width: 115},
     {title: '已核销金额', dataIndex: 'writtenOffAmount', align: 'right', width: 125},
     {title: '期末待付', dataIndex: 'openAmount', align: 'right', width: 125},
-    {title: '超额核销待处理', dataIndex: 'overAppliedAmount', align: 'right', width: 160},
+    {title: '超额核销待处理', dataIndex: 'overAppliedAmount', align: 'right', width: 240},
     {title: '事件时点', dataIndex: 'eventAt', width: 170},
 ]);
 
@@ -358,6 +346,13 @@ onUnmounted(() => window.removeEventListener('resize', updateViewportHeight));
 
 <style scoped>
 .report-error { margin: 10px 0; }
+/* 六张卡按内容自适应排布：写死三列会让最后一行的卡几乎空着。 */
+.finance-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 10px 0;
+}
 .smart-table-operate-block { display: flex; align-items: center; gap: 8px; }
 .smart-table-operate-block :deep(.ant-input) { width: 260px; }
 .finance-detail-mobile-list { display: none; }

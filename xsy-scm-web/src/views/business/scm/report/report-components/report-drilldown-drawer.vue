@@ -7,12 +7,6 @@
       :width="scmDrawerWidth('workspace')"
       @close="emit('update:open', false)"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
-      <template #action>
-        <a-button size="small" @click="emit('change')">重试</a-button>
-      </template>
-    </a-alert>
-
     <a-table
         :id="SCM_REPORT_TABLE_ID.PURCHASE_DRILLDOWN"
         size="small"
@@ -40,9 +34,8 @@
           :current="pageNum"
           :page-size="pageSize"
           :total="total"
-          @change="(page: number) => emit('update:pageNum', page)"
-          @showSizeChange="(_: unknown, size: number) => emit('update:pageSize', size)"
           :show-total="(n: number) => `共${n}条`"
+          @change="changePage"
       />
     </div>
   </a-drawer>
@@ -83,4 +76,11 @@ const emit = defineEmits<{
     /** 分页变化即重查（与列表页的 `@change="queryData"` 同语义）。 */
     change: [];
 }>();
+
+/** 先落页码再通知重查：调用方按当前的 `pageNum` / `pageSize` 装配请求。 */
+function changePage(page: number, size: number) {
+    emit('update:pageNum', page);
+    emit('update:pageSize', size);
+    emit('change');
+}
 </script>

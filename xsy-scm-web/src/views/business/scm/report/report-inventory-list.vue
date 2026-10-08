@@ -58,12 +58,6 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="chartError" :message="chartError" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryActiveTab">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
     <!-- ==================== 库存流水 ==================== -->
     <a-tab-pane key="movement" tab="库存流水">
@@ -80,11 +74,6 @@
             />
           </div>
         </a-row>
-        <a-alert v-if="movement.error" :message="movement.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadMovement">重试</a-button>
-          </template>
-        </a-alert>
         <a-table
             :id="SCM_REPORT_TABLE_ID.INVENTORY_MOVEMENT"
             size="small"
@@ -163,11 +152,10 @@
 
     <!-- ==================== 当前库存价值（成本权限可见） ==================== -->
     <a-tab-pane v-if="canViewCost" key="value" tab="当前库存价值">
-      <a-row v-if="hasValueSummary" :gutter="[12, 12]">
-        <a-col v-for="card in valueCards" :key="card.label" :xs="24" :sm="12" :md="8">
-          <ReportKpiCard :label="card.label" :value="card.value" :sub="card.sub" current-point/>
-        </a-col>
-      </a-row>
+      <div v-if="hasValueSummary" class="value-kpis">
+        <ReportKpiCard v-for="card in valueCards" :key="card.label"
+                       :label="card.label" :value="card.value" :sub="card.sub" current-point/>
+      </div>
       <a-card size="small" :bordered="false" :class="hasValueSummary ? 'smart-margin-top10' : ''">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
@@ -181,11 +169,6 @@
             />
           </div>
         </a-row>
-        <a-alert v-if="value.error" :message="value.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadValue">重试</a-button>
-          </template>
-        </a-alert>
         <a-table
             :id="SCM_REPORT_TABLE_ID.INVENTORY_VALUE"
             size="small"
@@ -235,8 +218,6 @@
     <a-tab-pane key="flow" tab="收发存（数量版）">
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-          </div>
           <div class="smart-table-setting-block">
             <TableOperator
                 v-model="flowColumns"
@@ -245,11 +226,6 @@
             />
           </div>
         </a-row>
-        <a-alert v-if="flow.error" :message="flow.error" type="error" show-icon class="smart-margin-bottom10">
-          <template #action>
-            <a-button @click="loadFlow">重试</a-button>
-          </template>
-        </a-alert>
         <a-table
             :id="SCM_REPORT_TABLE_ID.INVENTORY_FLOW_SUMMARY"
             size="small"
@@ -317,7 +293,6 @@ import {
     buildReportQuery,
     costText,
     countText,
-    createTabView,
     defaultDateRange,
     directionText,
     enumDescText,
@@ -330,7 +305,8 @@ import {
 import {moneyText, quantityText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
 import {useReportPermission} from './use-report-permission';
-import {createGuardedLoader, createTabLoader} from './use-report-query';
+import {createGuardedLoader, createTabLoader, createToastingTabView} from './use-report-query';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import type {DateRange} from './report-model';
 
 const PERM = SCM_REPORT_PERMISSION;
@@ -343,15 +319,15 @@ const activeTab = ref<InventoryTab>('movement');
 const dateRange = ref<DateRange | undefined>();
 const filters = reactive<Omit<InventoryReportQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
-const chartError = ref('');
+const chartError = useScmErrorToast();
 
 const lossSummary = ref<InventoryLossSummary>();
 const valueSummary = ref<{bookValue?: string | null; stockedSkuCount?: number | null; zeroStockSkuCount?: number | null; snapshotAt?: string | null}>({});
 
-const movement = reactive(createTabView<InventoryMovementRow>());
-const loss = reactive(createTabView<InventoryLossRow>());
-const value = reactive(createTabView<InventoryValueRow>());
-const flow = reactive(createTabView<InventoryFlowSummaryRow>());
+const movement = reactive(createToastingTabView<InventoryMovementRow>());
+const loss = reactive(createToastingTabView<InventoryLossRow>());
+const value = reactive(createToastingTabView<InventoryValueRow>());
+const flow = reactive(createToastingTabView<InventoryFlowSummaryRow>());
 
 /** 无成本权限时不展示价值 Tab；此时如果正停在价值 Tab，回落到流水（见 `onTabChange`）。 */
 const COST_INDEXES = ['unitCost', 'costAmount'];
@@ -567,3 +543,12 @@ onMounted(() => {
     queryActiveTab();
 });
 </script>
+
+<style scoped>
+/* 价值卡的金额带「截至 …」副行，写死三列在宽屏上会留下大片空白。 */
+.value-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+</style>

@@ -10,7 +10,6 @@
       </a-space>
     </a-form-item>
   </a-form>
-  <a-alert v-if="error" class="statement-note" type="error" show-icon :message="error"/>
   <a-card title="历史对账版本（当前操作人）" size="small" :bordered="false" class="statement-card">
     <a-table :columns="historyColumns" :data-source="history" row-key="id" size="small" :pagination="{pageSize: 10}" :loading="busy">
       <template #bodyCell="{record,column}">
@@ -59,6 +58,7 @@ import type {ReportId} from './report-types';
 import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-model';
 import {moneyText} from '../inventory/inventory-model';
 import {reportError} from './report-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -68,7 +68,7 @@ const supplierId = ref<ReportId>(), warehouseId = ref<ReportId>();
 const dateRange = ref<DateRange>(defaultDateRange());
 
 const selected = ref<SupplierStatement>(), history = ref<SupplierStatement[]>([]);
-const printArea = ref<HTMLElement>(), busy = ref(false), error = ref('');
+const printArea = ref<HTMLElement>(), busy = ref(false), error = useScmErrorToast();
 watch(supplierId, () => { selected.value = undefined; history.value = []; });
 const factLabels: Record<string, string> = {
   PAYABLE: '确认收货应付', RED: '手工红字', PAYMENT: '实际付款', PAYMENT_REVERSE: '反向付款',

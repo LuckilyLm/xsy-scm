@@ -1,14 +1,14 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
     <a-row class="smart-query-form-row">
-      <a-form-item label="分析日期"><ReportDateRangePicker v-model:value="dateRange"/></a-form-item>
-      <a-form-item label="分析维度">
+      <a-form-item label="分析日期" class="smart-query-form-item"><ReportDateRangePicker v-model:value="dateRange"/></a-form-item>
+      <a-form-item label="分析维度" class="smart-query-form-item">
         <a-select v-model:value="filters.dimension" :options="dimensionOptions" style="width: 130px"/>
       </a-form-item>
-      <a-form-item label="客户"><CustomerSelect v-model:value="filters.customerId" width="190px"/></a-form-item>
-      <a-form-item label="销售员"><EmployeeSelect v-model:value="filters.sellerId" width="150px"/></a-form-item>
-      <a-form-item label="仓库"><WarehouseSelect v-model:value="filters.warehouseId" width="170px"/></a-form-item>
-      <a-form-item>
+      <a-form-item label="客户" class="smart-query-form-item"><CustomerSelect v-model:value="filters.customerId" width="190px"/></a-form-item>
+      <a-form-item label="销售员" class="smart-query-form-item"><EmployeeSelect v-model:value="filters.sellerId" width="150px"/></a-form-item>
+      <a-form-item label="仓库" class="smart-query-form-item"><WarehouseSelect v-model:value="filters.warehouseId" width="170px"/></a-form-item>
+      <a-form-item class="smart-query-form-item">
         <a-space>
           <a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_PROFIT_QUERY" @click="search">查询</a-button>
           <a-button @click="reset">重置</a-button>
@@ -16,27 +16,24 @@
       </a-form-item>
     </a-row>
     <a-row class="smart-query-form-row">
-      <a-form-item label="商品分类">
+      <a-form-item label="商品分类" class="smart-query-form-item">
         <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px"/>
       </a-form-item>
-      <a-form-item label="商品 / 单号"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称、商品规格编码或订单号" @pressEnter="search"/></a-form-item>
+      <a-form-item label="商品 / 单号" class="smart-query-form-item"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称、商品规格编码或订单号" @pressEnter="search"/></a-form-item>
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon class="profit-alert">
-    <template #action><a-button @click="load">重试</a-button></template>
-  </a-alert>
   <a-alert v-if="(summary?.costMissingCount ?? 0) > 0" type="warning" show-icon class="profit-alert"
            :message="`有 ${summary?.costMissingCount} 行历史销售成本缺失，毛利和毛利率暂不完整`"
            description="销售成本金额仅显示已知部分；毛利相关指标显示为 —，请先核对对应出库流水的成本事实。"/>
 
-  <a-row :gutter="12" class="profit-kpis">
-    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">销售收入</div><div class="kpi-value">{{ moneyText(summary?.revenueAmount) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">商品销售成本（净额）</div><div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">促销赠品成本</div><div class="kpi-value">{{ moneyText(summary?.giftCostAmount) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">销售毛利</div><div class="kpi-value">{{ moneyText(summary?.grossProfit) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">毛利率</div><div class="kpi-value">{{ rateText(summary?.grossMarginRate) }}</div></a-card></a-col>
-  </a-row>
+  <div class="profit-kpis">
+    <a-card size="small" class="kpi-card"><div class="kpi-label">销售收入</div><div class="kpi-value">{{ moneyText(summary?.revenueAmount) }}</div></a-card>
+    <a-card size="small" class="kpi-card"><div class="kpi-label">商品销售成本（净额）</div><div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div></a-card>
+    <a-card size="small" class="kpi-card"><div class="kpi-label">促销赠品成本</div><div class="kpi-value">{{ moneyText(summary?.giftCostAmount) }}</div></a-card>
+    <a-card size="small" class="kpi-card"><div class="kpi-label">销售毛利</div><div class="kpi-value">{{ moneyText(summary?.grossProfit) }}</div></a-card>
+    <a-card size="small" class="kpi-card"><div class="kpi-label">毛利率</div><div class="kpi-value">{{ rateText(summary?.grossMarginRate) }}</div></a-card>
+  </div>
 
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
@@ -80,6 +77,7 @@ import ReportDateRangePicker from './report-components/report-date-range-picker.
 import {buildReportQuery, defaultDateRange, rangeOverLimitError} from './report-model';
 import type {DateRange} from './report-model';
 import {moneyText} from '../inventory/inventory-model';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {reportError} from './report-errors';
 
 const dimensionOptions: Array<{value: FinanceProfitDimension; label: string}> = [
@@ -91,7 +89,7 @@ const filters = reactive<Omit<FinanceProfitQuery, 'startDate' | 'endDate' | 'pag
 const pageNum = ref(1), pageSize = ref(20), total = ref(0);
 const rows = ref<FinanceProfitRow[]>([]), summary = ref<FinanceProfitSummary>();
 const categories = ref<ProductCategory[]>([]);
-const loading = ref(false), exporting = ref(false), error = ref('');
+const loading = ref(false), exporting = ref(false), error = useScmErrorToast();
 const applied = ref<FinanceProfitQuery>();
 let requestId = 0;
 
@@ -176,7 +174,9 @@ onMounted(async () => {
 
 <style scoped>
 .profit-alert { margin-bottom: 14px; }
-.profit-kpis { margin-bottom: 14px; }
+/* 五张卡都要在一行读完：列宽交给内容，写死 :lg 会让第五张掉到第二行了无内容。 */
+.profit-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.kpi-card { min-width: 0; }
 .kpi-label { color: rgba(0, 0, 0, .65); font-size: 13px; }
 .kpi-value { font-size: 22px; font-weight: 600; margin-top: 8px; font-variant-numeric: tabular-nums; }
 </style>

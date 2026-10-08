@@ -8,11 +8,6 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_ITEM" :refresh="refresh"/>
       </div>
     </a-row>
-    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
-      <template #action>
-        <a-button @click="refresh">重试</a-button>
-      </template>
-    </a-alert>
     <a-table
         :id="SCM_REPORT_TABLE_ID.SALES_ITEM"
         size="small"

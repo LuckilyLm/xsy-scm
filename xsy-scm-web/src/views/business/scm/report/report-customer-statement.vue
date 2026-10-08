@@ -10,7 +10,6 @@
       </a-space>
     </a-form-item>
   </a-form>
-  <a-alert v-if="error" class="statement-note" type="error" show-icon :message="error"/>
   <a-card title="历史对账版本（当前操作人）" size="small" :bordered="false" class="statement-card">
     <a-table :columns="historyColumns" :data-source="history" row-key="id" size="small" :pagination="{pageSize: 10}" :loading="busy">
       <template #bodyCell="{record,column}">
@@ -58,6 +57,7 @@ import type {ReportId} from './report-types';
 import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-model';
 import {moneyText} from '../inventory/inventory-model';
 import {reportError} from './report-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
@@ -66,7 +66,7 @@ const settlementCustomerId = ref<ReportId>(), customerId = ref<ReportId>();
 const dateRange = ref<DateRange>(defaultDateRange());
 
 const selected = ref<CustomerStatement>(), history = ref<CustomerStatement[]>([]);
-const printArea = ref<HTMLElement>(), busy = ref(false), error = ref('');
+const printArea = ref<HTMLElement>(), busy = ref(false), error = useScmErrorToast();
 const factLabels: Record<string, string> = {
   RECEIVABLE: '销售应收', RED: '退货红字', RECEIPT: '实际收款', RECEIPT_REVERSE: '反向收款',
   WRITE_OFF: '核销分配', WRITE_OFF_REVERSE: '反向核销', REFUND: '实际退款', REFUND_REVERSE: '反向退款',

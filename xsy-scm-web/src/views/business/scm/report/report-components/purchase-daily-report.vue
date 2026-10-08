@@ -26,9 +26,6 @@
       <router-link v-privilege="'support:job:query'" to="/job/list">配置执行时间</router-link>
     </p>
 
-    <a-alert v-if="error" type="error" show-icon :message="error" class="smart-margin-bottom10">
-      <template #action><a-button @click="search">重试</a-button></template>
-    </a-alert>
     <p v-if="report?.generatedAt" class="daily-meta">
       <strong>{{ report.reportDate }} 采购商品清单</strong>
       <span>生成时间：{{ datetime(report.generatedAt) }}</span>
@@ -62,6 +59,7 @@ import type {PurchaseDailyProduct, PurchaseDailyQuery, PurchaseDailyReport} from
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import {quantityText, moneyText} from '../../inventory/inventory-model';
 import {datetime} from '../../common/scm-display';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 function todayInShanghai() {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -82,7 +80,7 @@ const pageSize = ref(20);
 const report = ref<PurchaseDailyReport>();
 const loading = ref(false);
 const exporting = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 let requestSequence = 0;
 let appliedQuery: PurchaseDailyQuery | undefined;
 

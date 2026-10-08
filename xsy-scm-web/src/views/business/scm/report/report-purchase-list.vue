@@ -46,12 +46,6 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="chartError && activeTab !== 'daily'" :message="chartError" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryActiveTab">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
     <a-tab-pane key="daily" tab="每日清单">
       <PurchaseDailyReport/>
@@ -63,15 +57,10 @@
           <a-button v-privilege="PERM.EXPORT" @click="exportOverview">导出</a-button>
         </div>
       </a-row>
-      <a-row :gutter="[12, 12]">
-        <a-col v-for="card in overviewCards" :key="card.label" :xs="24" :sm="12" :md="8" :lg="6" :xl="4">
-          <ReportKpiCard
-              :label="card.label"
-              :value="card.value"
-              :warning="card.warning"
-          />
-        </a-col>
-      </a-row>
+      <div class="overview-kpis">
+        <ReportKpiCard v-for="card in overviewCards" :key="card.label"
+                       :label="card.label" :value="card.value" :warning="card.warning"/>
+      </div>
       <ReportBarChart
           class="smart-margin-top10"
           title="供应商采购入库成本 TOP10"
@@ -241,7 +230,6 @@ import {
     chartValue,
     costText,
     countText,
-    createTabView,
     defaultDateRange,
     enterTab,
     filterCostColumns,
@@ -253,7 +241,8 @@ import {
 import {moneyText, quantityText} from '../inventory/inventory-model';
 import type {TabView} from './report-model';
 import {useReportPermission} from './use-report-permission';
-import {createGuardedLoader, createTabLoader} from './use-report-query';
+import {createGuardedLoader, createTabLoader, createToastingTabView} from './use-report-query';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import type {DateRange} from './report-model';
 
 const PERM = SCM_REPORT_PERMISSION;
@@ -267,19 +256,19 @@ const dateRange = ref<DateRange | undefined>();
 /** 共享筛选：六个维度共用同一张后端表单。 */
 const filters = reactive<Omit<PurchaseQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
-const chartError = ref('');
+const chartError = useScmErrorToast();
 
 const overview = ref<PurchaseOverview>();
 const supplierTopRows = ref<PurchaseTopItem[]>([]);
 
-const product = reactive(createTabView<PurchaseProductRow>());
-const supplier = reactive(createTabView<PurchaseSupplierRow>());
-const purchaser = reactive(createTabView<PurchasePurchaserRow>());
-const item = reactive(createTabView<PurchaseItemRow>());
-const trend = reactive(createTabView<PurchasePriceTrendPoint>());
+const product = reactive(createToastingTabView<PurchaseProductRow>());
+const supplier = reactive(createToastingTabView<PurchaseSupplierRow>());
+const purchaser = reactive(createToastingTabView<PurchasePurchaserRow>());
+const item = reactive(createToastingTabView<PurchaseItemRow>());
+const trend = reactive(createToastingTabView<PurchasePriceTrendPoint>());
 
 /** 下钻抽屉的商品明细：带一个实体筛选（供应商或采购员），与主表分页彼此独立。 */
-const drilldown = reactive({...createTabView<PurchaseProductRow>(), open: false, title: ''});
+const drilldown = reactive({...createToastingTabView<PurchaseProductRow>(), open: false, title: ''});
 /**
  * 下钻实体筛选。
  *
@@ -559,6 +548,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* 概览卡（含成本权限才有的那张）按内容自适应，写死四列会让多出来的卡占满一整行。 */
+.overview-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
 .report-warn-icon {
   color: var(--scm-warning);
   margin-left: 4px;

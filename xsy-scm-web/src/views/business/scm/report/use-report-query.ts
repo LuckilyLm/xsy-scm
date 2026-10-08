@@ -12,7 +12,24 @@
 import {type Ref} from 'vue';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {TabView} from './report-model';
+import {createTabView} from './report-model';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {reportError} from './report-errors';
+
+/**
+ * 建一个 Tab 视图，其 `error` 写入即 toast。
+ *
+ * `report-model.ts` 的 `createTabView` 刻意不依赖 Vue，这里补上提示形态：
+ * 一次失败的查询会在表格上方留下整幅红条，用户改条件重试后仍然挂在那里，
+ * 把首屏业务内容往下推。`error` 的值仍可读（导出按钮的 disabled 判断依赖它），
+ * 只是不再渲染成横幅。
+ *
+ * 返回类型仍声明为 `TabView`：`reactive()` 会在运行时把这层 ref 拆成字符串，
+ * 模板与装载器读写的都是 `string`，所以这里只做一次收口断言。
+ */
+export function createToastingTabView<T>(pageSize?: number): TabView<T> {
+    return {...createTabView<T>(pageSize), error: useScmErrorToast()} as unknown as TabView<T>;
+}
 
 /**
  * 生成一个 Tab 的分页查询函数。
