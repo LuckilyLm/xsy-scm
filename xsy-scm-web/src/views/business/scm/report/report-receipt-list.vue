@@ -277,6 +277,7 @@ import {moneyText, quantityText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
 import {useReportPermission} from './use-report-permission';
 import {createTabLoader, createToastingTabView} from './use-report-query';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import type {DateRange} from './report-model';
 
 const PERM = SCM_REPORT_PERMISSION;
@@ -290,6 +291,7 @@ const activeTab = ref<ReceiptTab>('receipt');
 const dateRange = ref<DateRange | undefined>();
 const filters = reactive<Omit<ReceiptQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
+const queryError = useScmErrorToast();
 
 const receipt = reactive(createToastingTabView<ReceiptRow>());
 const inbound = reactive(createToastingTabView<InboundRow>());
@@ -374,9 +376,8 @@ function costAmountText(value: string | null | undefined, costMissing: boolean |
 function queryActiveTab() {
     const overLimit = rangeOverLimitError(dateRange.value);
     if (overLimit) {
-        // 只记当前 Tab：三个视图都写会让同一条提示连着弹三次
-        const target = activeTab.value === 'inbound' ? inbound : activeTab.value === 'pending' ? pending : receipt;
-        target.error = overLimit;
+        // 区间跨度是页面级条件，三个 Tab 一起被挡，提示也只给一次
+        queryError.value = overLimit;
         return;
     }
     switch (activeTab.value) {
