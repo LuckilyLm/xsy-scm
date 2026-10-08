@@ -3,13 +3,6 @@
     <a-button type="link" class="scm-detail-header__back" @click="backToList">
       <ArrowLeftOutlined/> 返回线路管理
     </a-button>
-    <a-alert v-if="error" :message="error" type="error" show-icon
-    >
-      <template #action>
-        <a-button @click="reload">刷新线路</a-button>
-      </template>
-    </a-alert
-    >
     <a-spin :spinning="loading">
       <template v-if="detail">
         <div class="scm-detail-header">
@@ -71,6 +64,7 @@
               >取消线路
               </a-button
               >
+              <a-button :disabled="routeId == null" @click="reload">刷新线路</a-button>
               <a-button v-privilege="'support:operateLog:query'" :disabled="routeId == null" @click="openOperateLog">操作日志</a-button>
             </a-space>
           </div>
@@ -173,7 +167,6 @@
                 :can-edit="canEdit"
                 :loading="planLoading"
                 :busy="planBusy"
-                :error="planError"
                 :disabled-reason="planDisabledReason"
                 :proposal="proposal"
                 :history="planHistory"
@@ -208,7 +201,6 @@
       </a-form-item
       >
     </a-form>
-    <a-alert v-if="reasonError" type="error" :message="reasonError" show-icon/>
   </a-modal>
   <a-modal v-model:open="stopVisible" title="停靠点定位与备注" :width="640" :confirm-loading="busy" @ok="saveStop">
     <template v-if="stopForm"
@@ -228,8 +220,6 @@
         >
       </a-form
       >
-      <a-alert v-if="stopError" type="error" :message="stopError" show-icon
-      />
     </template>
   </a-modal>
   <a-modal
@@ -257,7 +247,6 @@
           />
         </a-form-item>
       </a-form>
-      <a-alert v-if="signError" type="error" :message="signError" show-icon/>
     </template>
   </a-modal>
 </template>
@@ -282,6 +271,7 @@ import RouteOrdersPanel from './components/route-orders-panel.vue';
 import RouteBasePanel from './components/route-base-panel.vue';
 import RoutePrint from './route-print.vue';
 import {money} from './delivery-display';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {DELIVERY_PERM, useDeliveryPermission} from './use-delivery-permission';
 import {
   deliveryError,
@@ -316,8 +306,8 @@ const route = useRoute();
 const router = useRouter();
 const loading = ref(false),
     busy = ref(false),
-    error = ref(''),
     tab = ref('base');
+const error = useScmErrorToast();
 const routeId = ref<Id>(),
     detail = ref<RouteDetail>();
 const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
@@ -352,7 +342,7 @@ const mapPoints = computed<MapPoint[]>(() => [
 const planBusy = ref(false);
 const planLoading = ref(false);
 let planContext = 0, planRequest = 0;
-const planError = ref('');
+const planError = useScmErrorToast();
 /** 当前展示的建议（默认取最新一条）。 */
 const proposal = ref<DeliveryPlanProposal>();
 const planHistory = ref<DeliveryPlanProposal[]>([]);
@@ -727,7 +717,7 @@ function goOutbound(outboundNo: string) {
 }
 
 const signVisible = ref(false),
-    signError = ref(''),
+    signError = useScmErrorToast(),
     signForm = ref<{ result: SignResult; reason: string }>({result: 'SIGNED', reason: ''}),
     signTarget = ref<RouteOrder & { customerName: string }>();
 
@@ -763,7 +753,7 @@ async function submitSign() {
     signVisible.value = false;
     await refreshAfterMutation();
   } catch (e) {
-    // 版本冲突写进弹窗而不是全局横幅：用户大概率还想补那句原因。
+    // 版本冲突不关弹窗：那句原因还在输入框里，改完可以直接重提。
     signError.value = deliveryError(e);
   } finally {
     busy.value = false;
@@ -837,7 +827,7 @@ async function move(from: number, to: number) {
 const reasonVisible = ref(false),
     reasonAction = ref<'cancel' | 'remove'>('cancel'),
     reason = ref(''),
-    reasonError = ref(''),
+    reasonError = useScmErrorToast(),
     removeId = ref<Id>();
 
 function openReason(action: 'cancel' | 'remove', id?: Id) {
@@ -871,7 +861,7 @@ async function submitReason() {
 
 const stopVisible = ref(false),
     stopForm = ref<DeliveryStop>(),
-    stopError = ref(''),
+    stopError = useScmErrorToast(),
     arrival = ref<string>();
 
 function editStop(stop: DeliveryStop) {

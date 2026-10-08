@@ -337,7 +337,7 @@ test('履约面板具备加载 / 空 / 错三态，与打印面板同一套做�
   // 失败提示走统一 toast（状态仍留在 `error` 里供恢复判断），不留常驻红条。
   assert.match(view, /const error = useScmErrorToast\(\)/);
   assert.doesNotMatch(view, /<a-alert[^>]*type="error"/);
-  assert.match(view, /<a-button @click="reload">刷新线路<\/a-button>/);
+  assert.match(view, /<a-button[^>]*@click="reload"[^>]*>刷新线路<\/a-button>/);
   // 面板是第五个 pane：不改动既有 base / orders / map / print 四个 pane 的键。
   const paneKeys = [...view.matchAll(/<a-tab-pane key="(\w+)"/g)].map((m) => m[1]);
   assert.deepEqual(paneKeys, ['base', 'orders', 'map', 'print', 'fulfillment']);

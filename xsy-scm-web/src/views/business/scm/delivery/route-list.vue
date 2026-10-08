@@ -52,13 +52,6 @@
     </a-form-item
     >
   </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon
-  >
-    <template #action>
-      <a-button @click="load">重试</a-button>
-    </template>
-  </a-alert
-  >
   <a-alert v-if="optionsError" :message="optionsError" type="warning" show-icon
   >
     <template #action>
@@ -80,15 +73,15 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1350 }"
+        :scroll="{ x: 1500 }"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'routeName'">
-          <!-- 线路编号与名称组合展示：编号是业务识别信息，但不值得独占一列 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.routeName || '—' }}</span>
-            <span v-if="record.routeNo" class="scm-cell-stack__sub">{{ record.routeNo }}</span>
-          </div>
+          {{ record.routeName || '—' }}
+        </template>
+        <template v-else-if="column.dataIndex === 'routeNo'">
+          <span v-if="record.routeNo" class="scm-mono">{{ record.routeNo }}</span>
+          <span v-else>—</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag
@@ -149,6 +142,7 @@ import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/act
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf, areaNodesOf} from '../common/scm-area';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {deepLinkFilters} from '/@/lib/query-deep-link';
 import type {Warehouse} from '../purchase/purchase-types';
 import {
@@ -178,8 +172,8 @@ const emptyText = computed(() =>
 const rows = ref<DeliveryRoute[]>([]),
     total = ref(0),
     loading = ref(false),
-    error = ref(''),
     optionsError = ref('');
+const error = useScmErrorToast();
 const warehouses = ref<Warehouse[]>([]),
     drivers = ref<Driver[]>([]),
     vehicles = ref<Vehicle[]>([]),
@@ -188,11 +182,12 @@ const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
 const statusOptions = Object.entries(routeStatuses).map(([value, state]) => ({value, label: state.label}));
 // 金额列按权限出现：服务端已把无权限的 totalAmount 抹成 null，这里决定要不要留这一格。
-// 线路编号不进独立列，改为「线路名称」下方的 secondary text。
+// 线路编号单独成列，与线路名称各占一格。
 // 操作列收到三个槽位（详情 / 路线 / 更多）：编辑与打印是低频动作，进「更多」。
 const columns = computed<TableColumnsType>(() => [
   {title: '配送日期', dataIndex: 'deliveryDate', width: 120},
-  {title: '线路名称', dataIndex: 'routeName', width: 200},
+  {title: '线路名称', dataIndex: 'routeName', width: 180},
+  {title: '线路编号', dataIndex: 'routeNo', width: 130},
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 150},
   {title: '司机', dataIndex: 'driverNameSnapshot', width: 110},
   {title: '车辆', dataIndex: 'vehicleNoSnapshot', width: 120},

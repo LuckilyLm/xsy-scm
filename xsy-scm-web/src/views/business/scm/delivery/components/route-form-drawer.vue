@@ -1,7 +1,6 @@
 <template>
   <a-drawer v-model:open="visible" :title="routeId == null ? '新建配送线路' : '编辑配送线路'"
             :width="scmDrawerWidth('s')" :mask-closable="!saving">
-    <a-alert v-if="error" type="error" :message="error" show-icon class="drawer-error"/>
     <a-spin :spinning="loading">
       <a-form layout="vertical">
         <section class="scm-form-section">
@@ -88,6 +87,7 @@ import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import {isLocated} from '/@/components/business/scm/map/types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import type {Warehouse} from '../../purchase/purchase-types';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 import {deliveryError, type Id, type RouteForm, type Driver, type Vehicle, type DeliveryRoute} from '../delivery-types';
 
 const emit = defineEmits<{ saved: [Id] }>();
@@ -95,7 +95,7 @@ const visible = ref(false),
     loading = ref(false),
     saving = ref(false),
     optionsReady = ref(false),
-    error = ref('');
+    error = useScmErrorToast();
 const routeId = ref<Id>();
 const form = ref<RouteForm>({routeName: '', deliveryDate: dayjs().format('YYYY-MM-DD')});
 const departure = ref<string>();
@@ -164,11 +164,7 @@ async function save() {
 defineExpose({open});
 </script>
 <style scoped>
-/* 抽屉顶部的错误条与字段内联提示：都不参与表单纵向节奏 */
-.drawer-error {
-  margin-bottom: 12px;
-}
-
+/* 字段内联提示紧贴字段，不额外撑开表单节奏 */
 .field-warning {
   margin: -12px 0 20px;
 }

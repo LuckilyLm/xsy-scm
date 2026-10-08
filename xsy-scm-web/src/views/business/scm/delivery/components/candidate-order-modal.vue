@@ -8,7 +8,6 @@
       :ok-text="`加入线路（${selected.length}）`"
       @ok="save"
   >
-    <a-alert v-if="error" type="error" :message="error" show-icon/>
     <a-form layout="inline" class="candidate-filters" @submit.prevent="search">
       <a-form-item label="配送日期">
         <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD"/>
@@ -69,6 +68,10 @@
         </template
         >
         <template v-else-if="column.dataIndex === 'orderAmount'">{{ money(record.orderAmount) }}</template>
+        <template v-else-if="column.dataIndex === 'address'">
+          <span v-if="record.address" class="scm-cell-wrap">{{ record.address }}</span>
+          <span v-else>—</span>
+        </template>
         <template v-else-if="column.dataIndex === 'expectDeliveryTime'">{{
             datetime(record.expectDeliveryTime)
           }}
@@ -86,7 +89,7 @@
       </a-form-item
       >
     </a-form>
-    <p>同一客户、相同地址的订单会合并为一个停靠点；仅展示已确认且尚未分配的订单。</p>
+    <p>同一客户、相同地址的订单会合并为一个停靠点。</p>
   </a-modal>
 </template>
 <script setup lang="ts">
@@ -98,6 +101,7 @@ import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf} from '../../common/scm-area';
 import {isLocated} from '/@/components/business/scm/map/types';
 import {datetime} from '../../common/scm-display';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 import {money} from '../delivery-display';
 import {useDeliveryPermission} from '../use-delivery-permission';
 import {deliveryError, type CandidateOrder, type DeliveryRoute, type Id, type Query} from '../delivery-types';
@@ -107,7 +111,7 @@ const {canViewAmount} = useDeliveryPermission();
 const visible = ref(false),
     loading = ref(false),
     saving = ref(false),
-    error = ref('');
+    error = useScmErrorToast();
 const query = reactive<Query>({pageNum: 1, pageSize: 20});
 const rows = ref<CandidateOrder[]>([]),
     selected = ref<Id[]>([]),
