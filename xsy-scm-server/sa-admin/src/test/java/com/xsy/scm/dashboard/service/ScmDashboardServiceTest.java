@@ -9,7 +9,7 @@ import com.xsy.scm.inventory.service.InventoryWarningQueryService;
 import com.xsy.scm.metrics.domain.InventoryHealth;
 import com.xsy.scm.metrics.domain.InventoryMetrics;
 import com.xsy.scm.metrics.domain.PurchaseMetrics;
-import com.xsy.scm.metrics.domain.SalesMetrics;
+import com.xsy.scm.metrics.domain.SalesRangeMetrics;
 import com.xsy.scm.metrics.service.ScmBusinessMetricsService;
 import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.purchase.permission.PurchasePermission;
@@ -52,9 +52,8 @@ class ScmDashboardServiceTest {
 
     @BeforeEach
     void stubMetrics() {
-        when(metrics.todaySales(any())).thenReturn(
-                new SalesMetrics(3L, new BigDecimal("100.0000"), new BigDecimal("120.0000"), 30L,
-                        new BigDecimal("1000.0000"), 2L, List.of(), List.of()));
+        when(metrics.todaySalesRange(any())).thenReturn(
+                new SalesRangeMetrics(3L, new BigDecimal("120.0000"), 2L));
         when(metrics.todayPurchase(any())).thenReturn(
                 new PurchaseMetrics(4L, new BigDecimal("200.0000"), 40L, new BigDecimal("2000.0000"), 1L, 3L));
     }
@@ -99,7 +98,7 @@ class ScmDashboardServiceTest {
         service.overviewFor(List.of(InventoryPermission.WARNING_QUERY));
 
         verify(warning).queryWarningPage(any());
-        verify(metrics, never()).todaySales(any());
+        verify(metrics, never()).todaySalesRange(any());
         verify(metrics, never()).todayPurchase(any());
     }
 
@@ -108,7 +107,7 @@ class ScmDashboardServiceTest {
     void onlyVisibleGroupIsQueried() {
         service.overviewFor(List.of(OrderPermission.QUERY));
 
-        verify(metrics).todaySales(any());
+        verify(metrics).todaySalesRange(any());
         verify(metrics, never()).todayPurchase(any());
         verify(warning, never()).queryWarningPage(any());
     }
@@ -119,7 +118,7 @@ class ScmDashboardServiceTest {
         service.overviewFor(List.of(PurchasePermission.QUERY));
 
         verify(metrics).todayPurchase(any());
-        verify(metrics, never()).todaySales(any());
+        verify(metrics, never()).todaySalesRange(any());
         verify(warning, never()).queryWarningPage(any());
     }
 

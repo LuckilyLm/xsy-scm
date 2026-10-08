@@ -15,7 +15,7 @@
         <div>{{ record.browser }} / {{ record.os }} / {{ record.device }}</div>
       </template>
       <template v-if="column.dataIndex === 'content'">
-        <div class="operate-content" v-html="record.content"></div>
+        <div class="operate-content">{{ record.contentText ?? record.content }}</div>
       </template>
       <template v-else-if="column.dataIndex === 'action'">
         <a-button v-if="record.diffOld || record.diffNew" @click="showDetail(record)" type="link">详情</a-button>
@@ -25,16 +25,13 @@
 </template>
 <script setup lang="ts">
 import {reactive} from 'vue';
+import type {DataTracerRecord} from './data-tracer-types';
 
-const props = defineProps({
-  tableData: {
-    type: Array,
-  },
-});
+defineProps<{tableData?: DataTracerRecord[]}>();
 
 const emit = defineEmits(['showDetail']);
 
-function showDetail(record) {
+function showDetail(record: DataTracerRecord) {
   emit('showDetail', record);
 }
 
@@ -87,6 +84,7 @@ const columns = reactive([
 </script>
 <style scoped lang="less">
 .operate-content {
+  white-space: pre-wrap;
   font-size: 14px;
   display: inline;
 }

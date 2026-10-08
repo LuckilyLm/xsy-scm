@@ -45,7 +45,12 @@ class Verification:
         print(f"[{label}] exit {result.returncode}", flush=True)
         if result.returncode:
             self.failed.append(f"{label}: exit {result.returncode}; {log}")
-            tail = "\n".join(log.read_text(encoding="utf-8", errors="replace").splitlines()[-20:])
+            lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
+            if label == "frontend-test":
+                # Node's summary omits failed assertions; CI must retain their diagnostics.
+                tail = "\n".join(lines)
+            else:
+                tail = "\n".join(lines[-20:])
             encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
             print(tail.encode(encoding, errors="replace").decode(encoding))
         return result.returncode == 0

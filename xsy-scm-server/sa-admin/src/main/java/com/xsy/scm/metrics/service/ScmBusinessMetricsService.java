@@ -12,11 +12,13 @@ import com.xsy.scm.metrics.domain.MasterDataMetrics;
 import com.xsy.scm.metrics.domain.PurchaseFilter;
 import com.xsy.scm.metrics.domain.PurchaseMetrics;
 import com.xsy.scm.metrics.domain.PurchaseRangeMetrics;
+import com.xsy.scm.metrics.domain.RankItem;
 import com.xsy.scm.metrics.domain.SalesFilter;
 import com.xsy.scm.metrics.domain.SalesMetrics;
 import com.xsy.scm.metrics.domain.SalesRangeMetrics;
 import com.xsy.scm.metrics.domain.TrendMetrics;
 import com.xsy.scm.metrics.domain.TrendPoint;
+import com.xsy.scm.metrics.domain.TrendSeriesSelection;
 import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,9 +100,28 @@ public class ScmBusinessMetricsService {
                 nullToEmpty(metricsDao.topProductsByConfirmedAt(range[0], range[1], TOP_RANK_LIMIT, scope)));
     }
 
+    public SalesRangeMetrics todaySalesRange(ScmDataScopeContext scope) {
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        return salesRange(today, today, SalesFilter.NONE, scope);
+    }
+
     public MasterDataMetrics masterData(ScmDataScopeContext scope) {
         return new MasterDataMetrics(orZero(metricsDao.countCustomers(scope)), orZero(metricsDao.countSuppliers()),
                 orZero(metricsDao.countSkus()));
+    }
+
+    public List<RankItem> todayTopCustomers(int limit, ScmDataScopeContext scope) {
+        OffsetDateTime[] range = todayRange();
+        return nullToEmpty(metricsDao.topCustomersByConfirmedAt(range[0], range[1], boundedRankLimit(limit), scope));
+    }
+
+    public List<RankItem> todayTopProducts(int limit, ScmDataScopeContext scope) {
+        OffsetDateTime[] range = todayRange();
+        return nullToEmpty(metricsDao.topProductsByConfirmedAt(range[0], range[1], boundedRankLimit(limit), scope));
+    }
+
+    private static int boundedRankLimit(int limit) {
+        return Math.max(1, Math.min(limit, TOP_RANK_LIMIT));
     }
 
     /**
@@ -169,12 +190,20 @@ public class ScmBusinessMetricsService {
      * 转置放在服务层，SQL 保持「一天一行」这种最好读也最好核对的形状。{@code range} 取非 30d 一律按 7d 处理， 不抛错 —— URL 上的取值不该让整个面板失败。
      */
     public TrendMetrics trend(String range, ScmDataScopeContext scope) {
+        return trend(range, scope, TrendSeriesSelection.ALL);
+    }
+
+    public TrendMetrics trend(String range, ScmDataScopeContext scope, TrendSeriesSelection selection) {
+        Objects.requireNonNull(selection, "趋势序列选择不能为空");
         boolean thirty = RANGE_30D.equalsIgnoreCase(range);
         LocalDate end = LocalDate.now(BUSINESS_ZONE);
         LocalDate start = end.minusDays(thirty ? 29L : 6L);
 
-        List<TrendPoint> points = nullToEmpty(metricsDao.trendByDay(start, end, ScmMovementDirections.inboundTypes(),
-                ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope));
+        List<TrendPoint> points = nullToEmpty(TrendSeriesSelection.ALL.equals(selection)
+                ? metricsDao.trendByDay(start, end, ScmMovementDirections.inboundTypes(),
+                        ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope)
+                : metricsDao.selectedTrendByDay(start, end, ScmMovementDirections.inboundTypes(),
+                        ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope, selection));
 
         List<String> dates = new ArrayList<>(points.size());
         List<String> fullDates = new ArrayList<>(points.size());

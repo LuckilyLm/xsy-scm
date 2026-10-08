@@ -13,7 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.base.common.util.SmartBigDecimalUtil;
 import net.lab1024.sa.base.common.util.SmartEnumUtil;
 import net.lab1024.sa.base.common.util.SmartStringUtil;
-import net.lab1024.sa.base.module.support.datatracer.annoation.*;
+import net.lab1024.sa.base.module.support.datatracer.annoation.DataTracerFieldBigDecimal;
+import net.lab1024.sa.base.module.support.datatracer.annoation.DataTracerFieldDict;
+import net.lab1024.sa.base.module.support.datatracer.annoation.DataTracerFieldEnum;
+import net.lab1024.sa.base.module.support.datatracer.annoation.DataTracerFieldLabel;
+import net.lab1024.sa.base.module.support.datatracer.annoation.DataTracerFieldSql;
 import net.lab1024.sa.base.module.support.datatracer.constant.DataTracerConst;
 import net.lab1024.sa.base.module.support.datatracer.domain.bo.DataTracerContentBO;
 import net.lab1024.sa.base.module.support.dict.domain.vo.DictDataVO;
@@ -22,6 +26,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
@@ -29,7 +34,12 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -190,11 +200,11 @@ public class DataTracerChangeContentService {
         for (Entry<String, DataTracerContentBO> entry : beanParseMap.entrySet()) {
             DataTracerContentBO dataTracerContentBO = entry.getValue();
             boolean jsonFlag = JSONUtil.isTypeJSON(dataTracerContentBO.getFieldContent());
-            String filedDesc = dataTracerContentBO.getFieldDesc();
+            String filedDesc = HtmlUtils.htmlEscape(dataTracerContentBO.getFieldDesc());
             if (jsonFlag) {
                 contentList.add(filedDesc + "(请进入详情查看)");
             } else {
-                contentList.add(dataTracerContentBO.getFieldDesc() + ":" + dataTracerContentBO.getFieldContent());
+                contentList.add(filedDesc + ":" + HtmlUtils.htmlEscape(dataTracerContentBO.getFieldContent()));
             }
         }
         String operateContent = StringUtils.join(contentList, "<br/>");
@@ -230,14 +240,15 @@ public class DataTracerChangeContentService {
             if (oldContent.equals(newContent)) {
                 continue;
             }
-            String fieldDesc = oldContentBO.getFieldDesc();
+            String fieldDesc = HtmlUtils.htmlEscape(oldContentBO.getFieldDesc());
             boolean jsonFlag = JSONUtil.isTypeJSON(oldContent) || JSONUtil.isTypeJSON(newContent);
             if (jsonFlag) {
                 String content = fieldDesc + "【进入详情查看】";
                 contentList.add(content);
                 continue;
             }
-            String content = fieldDesc + ":" + "由【" + oldContent + "】变更为【" + newContent + "】";
+            String content = fieldDesc + ":" + "由【" + HtmlUtils.htmlEscape(oldContent)
+                    + "】变更为【" + HtmlUtils.htmlEscape(newContent) + "】";
             contentList.add(content);
         }
         if (CollectionUtils.isEmpty(contentList)) {

@@ -12,7 +12,7 @@
         * scope == null 或该维度没有任何授权值 → AND FALSE。这里没有「参数为空即全部」。
         * scope.*.all 为真时不拼谓词，因此 seller_id IS NULL / purchaser_id IS NULL 的未分配行
           对该维度持全部范围者照常可见，对普通业务员天然不可见（IN 排除 NULL）。
-      每段的 foreach item 名互不相同：trendByDay 一条语句要拼 7 段，重名会互相遮蔽。
+      趋势查询的各事实聚合独立应用范围谓词，不能只在日期轴上过滤。
 
       scopeC / scopeB / scopeW 与 screen 的 ScreenDataMapper 各存一份（那边的大屏专属聚合
       仍要用），两处内容必须逐字一致 —— scm-metrics-scope-fragment-contract 钉住了这一点。
@@ -201,16 +201,19 @@
     </select>
 
     <select id="topCustomersByConfirmedAt" resultType="com.xsy.scm.metrics.domain.RankItem">
-        SELECT so.customer_name_snapshot AS name,
-        COALESCE(SUM(so.settlement_total_amount), 0) AS amount
-        FROM sales_order so
-        WHERE so.deleted = FALSE
-        AND so.status = 'CONFIRMED'
-        AND so.confirmed_at &gt;= #{startTime}
-        AND so.confirmed_at &lt; #{endTime}
-        <include refid="scopeSo"/>
-        GROUP BY so.customer_id, so.customer_name_snapshot
-        ORDER BY amount DESC
+        SELECT COALESCE(c.name, '客户 #' || ranked.customer_id) AS name, ranked.amount
+        FROM (
+            SELECT so.customer_id, COALESCE(SUM(so.settlement_total_amount), 0) AS amount
+            FROM sales_order so
+            WHERE so.deleted = FALSE
+            AND so.status = 'CONFIRMED'
+            AND so.confirmed_at &gt;= #{startTime}
+            AND so.confirmed_at &lt; #{endTime}
+            <include refid="scopeSo"/>
+            GROUP BY so.customer_id
+        ) ranked
+        LEFT JOIN customer c ON c.id = ranked.customer_id AND c.deleted = FALSE
+        ORDER BY ranked.amount DESC, ranked.customer_id
         LIMIT #{limit}
     </select>
 
@@ -219,22 +222,25 @@
       一个 SPU 下可以有多个 SKU（如「智利车厘子」有 5 斤装 / 10 斤装），
       按 sku_id 分组会让同一个商品名在榜单里出现两次（两条各带自己的金额），
       看起来像数据重复。榜单的口径是「商品」，所以按 spu_id 合并金额。
-      展示名用快照列 product_name_snapshot（历史单据的商品名可能已被改名）。
+      展示名用当前主数据名称；主数据缺失时显示对象编号，不丢失历史成交金额。
       范围谓词落在父单 so 上：明细行自己没有业务员列，归属只随父单走。
     -->
     <select id="topProductsByConfirmedAt" resultType="com.xsy.scm.metrics.domain.RankItem">
-        SELECT item.product_name_snapshot AS name,
-        COALESCE(SUM(item.settlement_line_amount), 0) AS amount
-        FROM sales_order_item item
-        JOIN sales_order so ON so.id = item.order_id
-        WHERE item.deleted = FALSE
-        AND so.deleted = FALSE
-        AND so.status = 'CONFIRMED'
-        AND so.confirmed_at &gt;= #{startTime}
-        AND so.confirmed_at &lt; #{endTime}
-        <include refid="scopeSo"/>
-        GROUP BY item.spu_id, item.product_name_snapshot
-        ORDER BY amount DESC
+        SELECT COALESCE(p.name, '商品 #' || ranked.spu_id) AS name, ranked.amount
+        FROM (
+            SELECT item.spu_id, COALESCE(SUM(item.settlement_line_amount), 0) AS amount
+            FROM sales_order_item item
+            JOIN sales_order so ON so.id = item.order_id
+            WHERE item.deleted = FALSE
+            AND so.deleted = FALSE
+            AND so.status = 'CONFIRMED'
+            AND so.confirmed_at &gt;= #{startTime}
+            AND so.confirmed_at &lt; #{endTime}
+            <include refid="scopeSo"/>
+            GROUP BY item.spu_id
+        ) ranked
+        LEFT JOIN product_spu p ON p.id = ranked.spu_id AND p.deleted = FALSE
+        ORDER BY ranked.amount DESC, ranked.spu_id
         LIMIT #{limit}
     </select>
 
@@ -405,70 +411,106 @@
         <include refid="scopePo"/>
     </select>
 
-    <!--
-      ================= 趋势：一天一行、八条序列 =================
-      日期轴由 generate_series 生成 —— 没有任何单据的日期也必须占一行（全 0），
-      否则前端折线会在缺数据的日期上错位。
-      日期口径一律 Asia/Shanghai：用 UTC 日界会把窗口整体平移 8 小时（变成 08:00→次日 08:00），
-      早上下的单会被算到前一天。
-      sales / orders 走确认轴，与今日销售额 / 今日订单同口径 —— 大屏的环比正是拿这两者相减。
-      purchaseAmounts / purchaseOrders 走提交轴且只算已提交状态，与今日采购额 / 今日采购单同口径（同一条理由）。
-      inventoryQuantity 是当日期末库存量（当日及之前所有流水净额累加），不是当日变动量。
-      出入库方向的类型清单不在这里硬编码，由调用方从 ScmInventoryMovementTypeEnum 的
-      方向位派生后传入 —— 类型清单只有一处来源，新增流水类型时不会静默少算。
-      外层是 generate_series，没有任何 WHERE 可写：范围谓词只能落进 7 个标量子查询各自内部。
-      收范围后 inventoryQuantity 的口径变为「授权仓的期末累计库存」，与其余序列同一条边界。
-    -->
+    <!-- 各指标只扫描所需事实；时间范围比较原始时间列，日期转换只用于分组。 -->
+    <sql id="trendQuery">
+        WITH dates AS (
+            SELECT d::date AS day
+            FROM generate_series(#{startDate}::date, #{endDate}::date, INTERVAL '1 day') AS gs(d)
+        )
+        <if test="selection.sales">
+            , sales_daily AS (
+                SELECT (so.confirmed_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                       COUNT(*) AS orders, SUM(so.settlement_total_amount) AS sales
+                FROM sales_order so
+                WHERE so.deleted = FALSE AND so.status = 'CONFIRMED'
+                AND so.confirmed_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
+                AND so.confirmed_at &lt; ((#{endDate}::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')
+                <include refid="scopeSo"/>
+                GROUP BY 1
+            )
+        </if>
+        <if test="selection.purchase">
+            , purchase_daily AS (
+                SELECT (po.submitted_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                       COUNT(*) AS orders, SUM(po.total_amount) AS amount
+                FROM purchase_order po
+                WHERE po.deleted = FALSE
+                <include refid="committedPoStatus"/>
+                AND po.submitted_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
+                AND po.submitted_at &lt; ((#{endDate}::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')
+                <include refid="scopePo"/>
+                GROUP BY 1
+            )
+        </if>
+        <if test="selection.inventory or selection.closingInventory">
+            , inventory_daily AS (
+                SELECT (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                       SUM(CASE WHEN m.movement_type IN
+                           <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+                           THEN m.quantity ELSE 0 END) AS inbound,
+                       SUM(CASE WHEN m.movement_type IN
+                           <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+                           THEN m.quantity ELSE 0 END) AS outbound
+                <if test="selection.closingInventory">
+                       , SUM(CASE WHEN m.movement_type IN
+                           <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+                           THEN m.quantity ELSE -m.quantity END) AS delta
+                </if>
+                FROM inventory_movement m
+                WHERE m.deleted = FALSE
+                AND m.occurred_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
+                AND m.occurred_at &lt; ((#{endDate}::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')
+                <include refid="scopeM"/>
+                GROUP BY 1
+            )
+        </if>
+        <if test="selection.closingInventory">
+            , opening_inventory AS (
+                SELECT COALESCE(SUM(CASE WHEN m.movement_type IN
+                    <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
+                    THEN m.quantity ELSE -m.quantity END), 0) AS quantity
+                FROM inventory_movement m
+                WHERE m.deleted = FALSE
+                AND m.occurred_at &lt; (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
+                <include refid="scopeM"/>
+            )
+        </if>
+        SELECT to_char(d.day, 'YYYY-MM-DD') AS date, to_char(d.day, 'MM-DD') AS label,
+        <choose>
+            <when test="selection.sales">COALESCE(s.orders, 0) AS orders, COALESCE(s.sales, 0) AS sales,</when>
+            <otherwise>0::bigint AS orders, 0::numeric AS sales,</otherwise>
+        </choose>
+        <choose>
+            <when test="selection.purchase">COALESCE(p.orders, 0) AS purchaseOrders, COALESCE(p.amount, 0) AS purchaseAmounts,</when>
+            <otherwise>0::bigint AS purchaseOrders, 0::numeric AS purchaseAmounts,</otherwise>
+        </choose>
+        <choose>
+            <when test="selection.closingInventory">
+                opening.quantity + SUM(COALESCE(i.delta, 0)) OVER (ORDER BY d.day ROWS UNBOUNDED PRECEDING) AS inventoryQuantity,
+            </when>
+            <otherwise>0::numeric AS inventoryQuantity,</otherwise>
+        </choose>
+        <choose>
+            <when test="selection.inventory">
+                COALESCE(i.inbound, 0) AS inboundQuantity, COALESCE(i.outbound, 0) AS outboundQuantity
+            </when>
+            <otherwise>0::numeric AS inboundQuantity, 0::numeric AS outboundQuantity</otherwise>
+        </choose>
+        FROM dates d
+        <if test="selection.sales">LEFT JOIN sales_daily s ON s.day = d.day</if>
+        <if test="selection.purchase">LEFT JOIN purchase_daily p ON p.day = d.day</if>
+        <if test="selection.inventory or selection.closingInventory">LEFT JOIN inventory_daily i ON i.day = d.day</if>
+        <if test="selection.closingInventory">CROSS JOIN opening_inventory opening</if>
+        ORDER BY d.day
+    </sql>
+
     <select id="trendByDay" resultType="com.xsy.scm.metrics.domain.TrendPoint">
-        SELECT to_char(d, 'YYYY-MM-DD') AS date,
-        to_char(d, 'MM-DD') AS label,
-        COALESCE((SELECT COUNT(*)
-        FROM sales_order so
-        WHERE so.deleted = FALSE
-        AND so.status = 'CONFIRMED'
-        AND (so.confirmed_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
-        <include refid="scopeSo"/>), 0) AS orders,
-        COALESCE((SELECT SUM(so.settlement_total_amount)
-        FROM sales_order so
-        WHERE so.deleted = FALSE
-        AND so.status = 'CONFIRMED'
-        AND (so.confirmed_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
-        <include refid="scopeSo"/>), 0) AS sales,
-        COALESCE((SELECT COUNT(*)
-        FROM purchase_order po
-        WHERE po.deleted = FALSE
-        <include refid="committedPoStatus"/>
-        AND (po.submitted_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
-        <include refid="scopePo"/>), 0) AS purchaseOrders,
-        COALESCE((SELECT SUM(po.total_amount)
-        FROM purchase_order po
-        WHERE po.deleted = FALSE
-        <include refid="committedPoStatus"/>
-        AND (po.submitted_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
-        <include refid="scopePo"/>), 0) AS purchaseAmounts,
-        COALESCE((SELECT SUM(CASE WHEN m.movement_type IN
-        <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-        THEN m.quantity ELSE -m.quantity END)
-        FROM inventory_movement m
-        WHERE m.deleted = FALSE
-        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date &lt;= d::date
-        <include refid="scopeM"/>), 0) AS inventoryQuantity,
-        COALESCE((SELECT SUM(m.quantity)
-        FROM inventory_movement m
-        WHERE m.deleted = FALSE
-        AND m.movement_type IN
-        <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
-        <include refid="scopeM"/>), 0) AS inboundQuantity,
-        COALESCE((SELECT SUM(m.quantity)
-        FROM inventory_movement m
-        WHERE m.deleted = FALSE
-        AND m.movement_type IN
-        <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
-        AND (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::date = d::date
-        <include refid="scopeM"/>), 0) AS outboundQuantity
-        FROM generate_series(#{startDate}::date, #{endDate}::date, INTERVAL '1 day') AS gs(d)
-        ORDER BY d
+        <bind name="selection" value="@com.xsy.scm.metrics.domain.TrendSeriesSelection@ALL"/>
+        <include refid="trendQuery"/>
+    </select>
+
+    <select id="selectedTrendByDay" resultType="com.xsy.scm.metrics.domain.TrendPoint">
+        <include refid="trendQuery"/>
     </select>
 
 </mapper>

@@ -225,6 +225,8 @@ public class NoticeService {
         }
 
         NoticeUpdateFormVO updateFormVO = SmartBeanUtil.copy(noticeEntity, NoticeUpdateFormVO.class);
+        // 编辑表单与员工查看共用此出口，也须覆盖写入清洗启用前的历史正文。
+        updateFormVO.setContentHtml(SmartHtmlSanitizeUtil.clean(updateFormVO.getContentHtml()));
         NoticeTypeVO noticeType = noticeTypeService.getByNoticeTypeId(noticeEntity.getNoticeTypeId());
         updateFormVO.setNoticeTypeName(noticeType.getNoticeTypeName());
         updateFormVO.setPublishFlag(updateFormVO.getPublishTime() != null && updateFormVO.getPublishTime().isBefore(LocalDateTime.now()));

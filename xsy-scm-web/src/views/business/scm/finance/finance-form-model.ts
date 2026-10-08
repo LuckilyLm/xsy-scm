@@ -2,6 +2,9 @@ import Decimal from 'decimal.js';
 import dayjs from 'dayjs';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 
+// 两个最多 18 位有效数字的输入相乘，先保留完整乘积再按金额精度舍入。
+const LineAmountDecimal = Decimal.clone({precision: 40});
+
 export function initialFinanceDateRange() {
     return {
         startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
@@ -97,14 +100,13 @@ export function isValidPositiveAmount(value: string | null | undefined): boolean
 /**
  * 金额 = 数量 × 单价（定点四位小数，不经浮点）。
  *
- * <p>用于红字明细这类「金额本应由数量与单价算出来」的场景。返回 `''` 表示还算不出来
- * （任一侧缺失或非法），调用方据此放弃这一行，而不是用 0 顶上 —— 0 是合法金额，
- * 拿它当「没填」的替身会把一行空明细提交成一条零元红字。
+ * 红字金额舍入后仍须为正且在金额字段范围内；返回空串的行不提交。
  */
 export function lineAmount(quantity: string | null | undefined, unitPrice: string | null | undefined): string {
-    if (!isValidPositiveAmount(quantity) || !isValidPositiveAmount(unitPrice)) return '';
+    if (quantity == null || unitPrice == null || !isValidPositiveAmount(quantity) || !isValidPositiveAmount(unitPrice)) return '';
     try {
-        return new Decimal(quantity).times(new Decimal(unitPrice)).toFixed(4);
+        const amount = new LineAmountDecimal(quantity).times(unitPrice).toFixed(4, Decimal.ROUND_HALF_UP);
+        return isValidPositiveAmount(amount) ? amount : '';
     } catch {
         return '';
     }

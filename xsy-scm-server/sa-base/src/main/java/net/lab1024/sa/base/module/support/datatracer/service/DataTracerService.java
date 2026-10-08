@@ -21,6 +21,7 @@ import net.lab1024.sa.base.module.support.datatracer.domain.vo.DataTracerVO;
 import net.lab1024.sa.base.module.support.datatracer.manager.DataTracerManger;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -215,6 +216,14 @@ public class DataTracerService {
     public ResponseDTO<PageResult<DataTracerVO>> query(DataTracerQueryForm queryForm) {
         Page page = SmartPageUtil.convert2PageQuery(queryForm);
         List<DataTracerVO> list = dataTracerDao.query(page, queryForm);
+        for (DataTracerVO record : list) {
+            if (record.getContent() != null) {
+                // 仅还原约定的换行和实体；历史日志中的 HTML 也必须作为字面文本展示。
+                String text = HtmlUtils.htmlUnescape(record.getContent().replaceAll("(?i)<br\\s*/?>", "\n"));
+                record.setContentText(text);
+                record.setContent(HtmlUtils.htmlEscape(text).replace("\n", "<br/>"));
+            }
+        }
         PageResult<DataTracerVO> pageResult = SmartPageUtil.convert2PageResult(page, list);
         return ResponseDTO.ok(pageResult);
     }

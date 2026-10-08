@@ -6,6 +6,7 @@ import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.RequestUser;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.util.SmartBeanUtil;
+import net.lab1024.sa.base.common.util.SmartHtmlSanitizeUtil;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import net.lab1024.sa.base.module.support.helpdoc.dao.HelpDocDao;
 import net.lab1024.sa.base.module.support.helpdoc.domain.entity.HelpDocEntity;
@@ -50,6 +51,7 @@ public class HelpDocUserService {
         }
 
         HelpDocDetailVO helpDocDetailVO = SmartBeanUtil.copy(helpDocEntity, HelpDocDetailVO.class);
+        helpDocDetailVO.setContentHtml(SmartHtmlSanitizeUtil.clean(helpDocDetailVO.getContentHtml()));
         long viewCount = helpDocDao.viewRecordCount(helpDocId, requestUser.getUserId());
         if (viewCount == 0) {
             helpDocDao.insertViewRecord(helpDocId, requestUser.getUserId(), requestUser.getUserName(), requestUser.getIp(), requestUser.getUserAgent(), 1);

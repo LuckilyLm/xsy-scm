@@ -6,6 +6,7 @@ import com.xsy.scm.metrics.domain.PurchaseFilter;
 import com.xsy.scm.metrics.domain.RankItem;
 import com.xsy.scm.metrics.domain.SalesFilter;
 import com.xsy.scm.metrics.domain.TrendPoint;
+import com.xsy.scm.metrics.domain.TrendSeriesSelection;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -155,4 +156,9 @@ public interface ScmBusinessMetricsDao {
     List<TrendPoint> trendByDay(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
             @Param("inboundTypes") List<String> inboundTypes, @Param("outboundTypes") List<String> outboundTypes,
             @Param("committedStatuses") List<String> committedStatuses, @Param("scope") ScmDataScopeContext scope);
+
+    List<TrendPoint> selectedTrendByDay(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
+            @Param("inboundTypes") List<String> inboundTypes, @Param("outboundTypes") List<String> outboundTypes,
+            @Param("committedStatuses") List<String> committedStatuses, @Param("scope") ScmDataScopeContext scope,
+            @Param("selection") TrendSeriesSelection selection);
 }

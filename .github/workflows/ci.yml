@@ -83,6 +83,15 @@ jobs:
       - name: Run frontend checks
         run: python tools/verify.py frontend
 
+      - name: Preserve frontend failure logs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-verification-logs
+          path: .runtime/verify/**/*.log
+          include-hidden-files: true
+          retention-days: 14
+
   backend:
     name: Backend tests on PostgreSQL and Redis
     runs-on: ubuntu-latest

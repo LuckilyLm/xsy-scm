@@ -117,6 +117,8 @@ public class HelpDocService {
         HelpDocEntity helpDaoEntity = helpDocDao.selectById(helpDocId);
         HelpDocDetailVO detail = SmartBeanUtil.copy(helpDaoEntity, HelpDocDetailVO.class);
         if (detail != null) {
+            // 历史正文可能早于写入清洗规则，返回编辑器之前也须清洗。
+            detail.setContentHtml(SmartHtmlSanitizeUtil.clean(detail.getContentHtml()));
             detail.setRelationList(helpDocDao.queryRelationByHelpDoc(helpDocId));
         }
         return detail;

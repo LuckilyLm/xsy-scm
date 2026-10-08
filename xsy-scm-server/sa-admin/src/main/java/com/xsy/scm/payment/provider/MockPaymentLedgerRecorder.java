@@ -5,6 +5,7 @@ import com.xsy.scm.payment.dao.PaymentMockLedgerDao;
 import com.xsy.scm.payment.domain.entity.PaymentMockLedgerEntity;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
@@ -22,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MockPaymentLedgerRecorder {
 
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
+
     private final PaymentMockLedgerDao paymentMockLedgerDao;
 
     /**
@@ -35,8 +38,9 @@ public class MockPaymentLedgerRecorder {
         row.setProviderRefundNo(providerRefundNo);
         row.setDirection(direction);
         row.setAmount(amount);
-        row.setBizDate(OffsetDateTime.now().toLocalDate());
-        row.setOccurredAt(OffsetDateTime.now());
+        OffsetDateTime occurredAt = OffsetDateTime.now(BUSINESS_ZONE);
+        row.setBizDate(occurredAt.toLocalDate());
+        row.setOccurredAt(occurredAt);
         row.setCreatedBy("MOCK_PROVIDER");
         paymentMockLedgerDao.insert(row);
     }

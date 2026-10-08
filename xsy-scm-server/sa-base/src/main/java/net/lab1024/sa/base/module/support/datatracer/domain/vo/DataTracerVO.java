@@ -27,6 +27,9 @@ public class DataTracerVO {
     @Schema(description = "操作内容")
     private String content;
 
+    @Schema(description = "操作内容纯文本，保留换行")
+    private String contentText;
+
     @Schema(description = "diff 差异：旧的数据")
     private String diffOld;
 

@@ -17,8 +17,9 @@ import com.xsy.scm.inventory.service.InventoryWarningQueryService;
 import com.xsy.scm.metrics.domain.InventoryHealth;
 import com.xsy.scm.metrics.domain.PurchaseMetrics;
 import com.xsy.scm.metrics.domain.RankItem;
-import com.xsy.scm.metrics.domain.SalesMetrics;
+import com.xsy.scm.metrics.domain.SalesRangeMetrics;
 import com.xsy.scm.metrics.domain.TrendMetrics;
+import com.xsy.scm.metrics.domain.TrendSeriesSelection;
 import com.xsy.scm.metrics.service.ScmBusinessMetricsService;
 import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.purchase.permission.PurchasePermission;
@@ -53,7 +54,7 @@ public class ScmDashboardService {
     /** 首页排行默认取前 5。 */
     public static final int HOME_RANK_LIMIT = 5;
 
-    /** 排行上限：metrics 已经取回 TOP10，这里只截断，不为了省几行去改 SQL 的 limit。 */
+    /** 首页与大屏共用指标层的排行上限。 */
     public static final int MAX_RANK_LIMIT = ScmBusinessMetricsService.TOP_RANK_LIMIT;
 
     private final LoginManager loginManager;
@@ -99,7 +100,7 @@ public class ScmDashboardService {
             return List.of();
         }
         ScmDataScopeContext scope = dataScopeService.resolve();
-        SalesMetrics sales = needsSales ? metricsService.todaySales(scope) : null;
+        SalesRangeMetrics sales = needsSales ? metricsService.todaySalesRange(scope) : null;
         PurchaseMetrics purchase = needsPurchase ? metricsService.todayPurchase(scope) : null;
         long warningTotal = needsWarning ? warningTotal() : 0L;
         return cardsFor(visibleCards, sales, purchase, warningTotal);
@@ -111,7 +112,7 @@ public class ScmDashboardService {
      * <p>
      * 只接受<b>已经筛好</b>的卡片集合，可见性判断不在这里重复做一遍 —— 两次判断就有两处可能漂移。
      */
-    public List<ScmDashboardCardVO> cardsFor(List<ScmDashboardCardEnum> visibleCards, SalesMetrics sales,
+    public List<ScmDashboardCardVO> cardsFor(List<ScmDashboardCardEnum> visibleCards, SalesRangeMetrics sales,
             PurchaseMetrics purchase, long warningTotal) {
         List<ScmDashboardCardVO> cards = new ArrayList<>(visibleCards.size());
         for (ScmDashboardCardEnum card : visibleCards) {
@@ -128,11 +129,11 @@ public class ScmDashboardService {
      * 某组聚合为 {@code null} 表示「没有卡片用到它」（调用方已按可见卡片裁剪）。 真被用到却是 null 属于调用方的编排错误，直接抛出来而不是静默给 0 —— 0
      * 是合法金额，拿它兜底会把「漏查」伪装成「今天没有业务」。
      */
-    private static BigDecimal valueOf(ScmDashboardCardEnum card, SalesMetrics sales, PurchaseMetrics purchase,
+    private static BigDecimal valueOf(ScmDashboardCardEnum card, SalesRangeMetrics sales, PurchaseMetrics purchase,
             long warningTotal) {
         return switch (card) {
-            case SALES_AMOUNT -> require(sales, card).todaySettlementAmount();
-            case ORDER_COUNT -> BigDecimal.valueOf(require(sales, card).todayOrderCount());
+            case SALES_AMOUNT -> require(sales, card).settlementAmount();
+            case ORDER_COUNT -> BigDecimal.valueOf(require(sales, card).orderCount());
             case PURCHASE_AMOUNT -> require(purchase, card).todayPurchaseAmount();
             case RECEIPT_COUNT -> BigDecimal.valueOf(require(purchase, card).todayReceiptCount());
             case INVENTORY_WARNING -> BigDecimal.valueOf(warningTotal);
@@ -178,7 +179,12 @@ public class ScmDashboardService {
     public ScmDashboardTrendVO trend(String metric, String range) {
         ScmDashboardTrendMetric target = ScmDashboardTrendMetric.parse(metric);
         requireQueryPermission(target);
-        TrendMetrics trend = metricsService.trend(range, dataScopeService.resolve());
+        TrendSeriesSelection selection = switch (target) {
+            case SALES -> TrendSeriesSelection.SALES;
+            case PURCHASE -> TrendSeriesSelection.PURCHASE;
+            case INVENTORY -> TrendSeriesSelection.INVENTORY;
+        };
+        TrendMetrics trend = metricsService.trend(range, dataScopeService.resolve(), selection);
         return switch (target) {
             case SALES -> new ScmDashboardTrendVO(target.getCode(), trend.range(), trend.dates(), trend.sales(),
                     toAmounts(trend.orders()));
@@ -203,16 +209,16 @@ public class ScmDashboardService {
         }
     }
 
-    /** 排行：按维度校验领域权限后再取数，limit 由调用方给，上限就是 metrics 已经取回的条数。 */
+    /** 排行仅查询所选维度，数据范围与销售指标一致。 */
     public List<RankItem> ranking(String dimension, Integer limit) {
         ScmDashboardRankDimension target = ScmDashboardRankDimension.parse(dimension);
         requireQueryPermission(target);
-        SalesMetrics sales = metricsService.todaySales(dataScopeService.resolve());
-        List<RankItem> source = switch (target) {
-            case CUSTOMER -> sales.topCustomers();
-            case PRODUCT -> sales.topProducts();
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        int requestedLimit = rankLimit(limit);
+        return switch (target) {
+            case CUSTOMER -> metricsService.todayTopCustomers(requestedLimit, scope);
+            case PRODUCT -> metricsService.todayTopProducts(requestedLimit, scope);
         };
-        return source.stream().limit(rankLimit(limit)).toList();
     }
 
     /** 两个排行维度都来自销售事实，因此都需要订单查询权。 */
