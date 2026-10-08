@@ -1,22 +1,24 @@
 <!--  新写，参照 legacy 批量调价行为；整批提交，逐行错误。 -->
 <template>
  <a-card title="客户类型价批量调价" size="small" :bordered="false">
-  <a-alert type="info" show-icon message="任一行失败则整批不写入；最多 500 行。" />
   <a-form layout="inline" class="smart-query-form">
    <a-row class="smart-query-form-row">
     <a-form-item label="批次号" required class="smart-query-form-item"><a-input v-model:value="batchKey" aria-label="批次号" :maxlength="100" style="width:320px" /></a-form-item>
     <a-form-item class="smart-query-form-item"><a-button @click="add" :disabled="rows.length>=500||saving">新增行</a-button></a-form-item>
-    <a-form-item class="smart-query-form-item"><a-button type="primary" :loading="saving" v-privilege="'scm:pricing:type-price:batch'" @click="submit">提交整批</a-button></a-form-item>
+    <a-form-item class="smart-query-form-item">
+     <a-tooltip title="任一行失败则整批不写入；单批最多 500 行">
+      <a-button type="primary" :loading="saving" v-privilege="'scm:pricing:type-price:batch'" @click="submit">提交整批</a-button>
+     </a-tooltip>
+    </a-form-item>
    </a-row>
   </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon />
   <a-table :data-source="rows" :columns="columns" row-key="rowNumber" :pagination="false" size="small" bordered :scroll="{x:1300}" :row-class-name="(r:BatchRow)=>failures.some(f=>f.rowNumber===r.rowNumber)?'failed-row':''">
    <template #bodyCell="{record,column}">
     <template v-if="column.dataIndex==='customerTypeId'"><CustomerTypeSelect v-model:value="record.customerTypeId" width="180px" /></template>
     <template v-else-if="column.dataIndex==='skuId'"><SkuSelect v-model:value="record.skuId" width="260px" /></template>
     <template v-else-if="column.dataIndex==='unitPrice'"><a-input v-model:value="record.unitPrice" aria-label="单价" inputmode="decimal" /></template>
     <template v-else-if="column.dataIndex==='effectiveFrom'"><a-range-picker :value="[record.effectiveFrom,record.effectiveTo||'']" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[false,true]" @change="(v:unknown)=>setPeriod(record,v)" /></template>
-    <template v-else-if="column.dataIndex==='error'"><span class="row-error">{{failures.filter(f=>f.rowNumber===record.rowNumber).map(f=>f.message).join('；')}}</span></template>
+    <template v-else-if="column.dataIndex==='error'"><span class="row-error scm-cell-wrap">{{failures.filter(f=>f.rowNumber===record.rowNumber).map(f=>f.message).join('；')}}</span></template>
     <template v-else-if="column.dataIndex==='action'"><a-button type="link" danger :disabled="saving" @click="rows=rows.filter(r=>r.rowNumber!==record.rowNumber)">移除</a-button></template>
    </template>
   </a-table>
@@ -34,9 +36,11 @@ import {pricingApi} from '/@/api/business/scm/pricing-api';
 import type {BatchRow} from '/@/types/business/scm/pricing';
 import {emptyPrice, validateBatch} from './pricing-form-model';
 import {pricingError} from './pricing-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const router = useRouter(), batchKey = ref('PRICE-' + dayjs().format('YYYYMMDD-HHmmss')), rows = ref<BatchRow[]>([]),
-    failures = ref<{ rowNumber: number; message: string }[]>([]), saving = ref(false), error = ref('');
+    failures = ref<{ rowNumber: number; message: string }[]>([]), saving = ref(false);
+const error = useScmErrorToast();
 let number = 0;
 const columns: TableColumnsType<BatchRow> = [{title: '行号', dataIndex: 'rowNumber', width: 65}, {
   title: '客户类型',
