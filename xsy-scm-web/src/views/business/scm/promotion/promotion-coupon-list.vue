@@ -29,12 +29,6 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
@@ -50,16 +44,13 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1160 }"
+        :scroll="{ x: 1380 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'couponName'">
-          <!-- 券编码是业务识别信息，但不值得独占一列：作为名称下方的 secondary text -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.couponName || '—' }}</span>
-            <span v-if="record.couponCode" class="scm-cell-stack__sub">{{ record.couponCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'couponCode'">
+          <span class="scm-mono">{{ record.couponCode || '—' }}</span>
         </template>
+        <span v-else-if="column.dataIndex === 'couponName'">{{ record.couponName || '—' }}</span>
         <template v-else-if="column.dataIndex === 'discountType'">
           <ScmStatusTag tone="processing" :label="discountTypeLabel(record.discountType)"/>
         </template>
@@ -69,12 +60,8 @@
           <span v-if="isNoThreshold(record.minOrderAmount)" class="scm-cell-hint">无门槛</span>
           <span v-else class="scm-money">¥ {{ record.minOrderAmount }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'validity'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.validFrom) }}</span>
-            <span class="scm-cell-stack__sub">至 {{ datetime(record.validTo) }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex === 'validFrom'">{{ datetime(record.validFrom) }}</template>
+        <template v-else-if="column.dataIndex === 'validTo'">{{ datetime(record.validTo) }}</template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="statusLabelOf(record.status)"/>
         </template>
@@ -134,7 +121,6 @@
       @ok="submit"
       @cancel="editOpen = false"
   >
-    <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner"/>
     <a-form layout="vertical">
       <section class="scm-form-section">
         <div class="scm-form-section__head">
@@ -238,7 +224,6 @@
   </a-modal>
 
   <a-modal v-model:open="issueOpen" title="发券" :confirm-loading="saving" @ok="submitIssue">
-    <a-alert v-if="issueError" :message="issueError" type="error" show-icon class="banner"/>
     <a-form layout="vertical">
       <a-form-item label="客户" required>
         <CustomerSelect v-model:value="issueForm.customerId" width="100%"/>
@@ -272,17 +257,18 @@ import {
   type PromotionCouponSave,
   type PromotionStatus,
 } from './promotion-types';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const queryForm = reactive<PromotionCouponQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<PromotionCoupon[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const editOpen = ref(false);
 const issueOpen = ref(false);
 const saving = ref(false);
-const editError = ref('');
-const issueError = ref('');
+const editError = useScmErrorToast();
+const issueError = useScmErrorToast();
 
 const statusOptions = Object.entries(promotionStatuses).map(([value, item]) => ({value, label: item.label}));
 const discountTypeOptions = [
@@ -311,17 +297,19 @@ function discountTypeLabel(value: PromotionCouponDiscountType): string {
 }
 
 /**
- * 列按「叫什么 / 什么券 / 优惠多少 / 什么门槛 / 什么时候有效 / 上没上线」排列。
- * 券编码下沉为名称的次要行；生效与失效时间合成一格（它们回答同一个问题）。
+ * 列按「叫什么 / 什么券 / 优惠多少 / 什么门槛 / 什么时候有效 / 上没上线」排列，一列一个值：
+ * 券编码、生效时间与失效时间各自成列。
  * 「发放量 / 已领取 / 已使用」当前 VO 不返回，属于后端缺口
  * （登记于 docs/plan/active/frontend-ui-backend-gap-inventory.md 的 B7），前端不臆造。
  */
 const columns: TableColumnsType<PromotionCoupon> = [
-  {title: '券名称', dataIndex: 'couponName', width: 200},
+  {title: '券编码', dataIndex: 'couponCode', width: 130},
+  {title: '券名称', dataIndex: 'couponName', width: 180},
   {title: '券类型', dataIndex: 'discountType', width: 130},
   {title: '优惠规则', dataIndex: 'discountText', width: 180},
   {title: '门槛金额', dataIndex: 'minOrderAmount', align: 'right', width: 130},
-  {title: '有效期', dataIndex: 'validity', width: 220},
+  {title: '生效时间', dataIndex: 'validFrom', width: 170},
+  {title: '失效时间', dataIndex: 'validTo', width: 170},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
@@ -502,9 +490,5 @@ onMounted(queryData);
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
   font-size: 12px;
   margin-left: 8px;
-}
-
-.banner {
-  margin-bottom: 12px;
 }
 </style>

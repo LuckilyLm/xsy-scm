@@ -25,8 +25,6 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon/>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
@@ -42,26 +40,19 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1290 }"
+        :scroll="{ x: 1560 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'activityName'">
-          <!-- 活动编码是业务识别信息，但不值得独占一列：作为名称下方的 secondary text -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.activityName || '—' }}</span>
-            <span v-if="record.activityCode" class="scm-cell-stack__sub">{{ record.activityCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'activityCode'">
+          <span class="scm-mono">{{ record.activityCode || '—' }}</span>
         </template>
+        <span v-else-if="column.dataIndex === 'activityName'">{{ record.activityName || '—' }}</span>
         <template v-else-if="column.dataIndex === 'activityType'">
           <ScmStatusTag :color="typeColorOf(record.activityType)" :label="typeLabelOf(record.activityType)"/>
         </template>
         <template v-else-if="column.dataIndex === 'ruleText'">{{ ruleText(record.rule) }}</template>
-        <template v-else-if="column.dataIndex === 'validity'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.validFrom) }}</span>
-            <span class="scm-cell-stack__sub">至 {{ datetime(record.validTo) }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex === 'validFrom'">{{ datetime(record.validFrom) }}</template>
+        <template v-else-if="column.dataIndex === 'validTo'">{{ datetime(record.validTo) }}</template>
         <template v-else-if="column.dataIndex === 'exclusiveGroup'">{{ record.exclusiveGroup || '—' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="statusLabelOf(record.status)"/>
@@ -114,7 +105,6 @@
       @ok="submit"
       @cancel="editOpen = false"
   >
-    <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner"/>
     <a-form layout="vertical">
       <section class="scm-form-section">
         <div class="scm-form-section__head">
@@ -314,15 +304,16 @@ import {
   type PromotionRule,
   type PromotionStatus,
 } from './promotion-types';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const queryForm = reactive<PromotionActivityQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<PromotionActivity[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const editOpen = ref(false);
 const saving = ref(false);
-const editError = ref('');
+const editError = useScmErrorToast();
 
 const typeOptions = Object.entries(activityTypes).map(([value, item]) => ({value, label: item.label}));
 const statusOptions = Object.entries(promotionStatuses).map(([value, item]) => ({value, label: item.label}));
@@ -353,15 +344,17 @@ function statusLabelOf(value: string): string {
 }
 
 /**
- * 列按「叫什么 / 什么类型 / 怎么算 / 什么时候有效 / 能不能叠加 / 上没上线」排列。
- * 活动编码下沉为名称的次要行；生效与失效时间合成一格（它们回答同一个问题）。
+ * 列按「叫什么 / 什么类型 / 怎么算 / 什么时候有效 / 能不能叠加 / 上没上线」排列，一列一个值：
+ * 活动编码、生效时间与失效时间各自成列。
  */
 const columns: TableColumnsType<PromotionActivity> = [
-  {title: '活动名称', dataIndex: 'activityName', width: 220},
+  {title: '活动编码', dataIndex: 'activityCode', width: 130},
+  {title: '活动名称', dataIndex: 'activityName', width: 200},
   {title: '类型', dataIndex: 'activityType', align: 'center', width: 110},
   {title: '规则摘要', dataIndex: 'ruleText', width: 260},
   {title: '优先级', dataIndex: 'priority', align: 'right', width: 90},
-  {title: '有效期', dataIndex: 'validity', width: 220},
+  {title: '生效时间', dataIndex: 'validFrom', width: 170},
+  {title: '失效时间', dataIndex: 'validTo', width: 170},
   {title: '互斥组', dataIndex: 'exclusiveGroup', width: 130},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
@@ -563,9 +556,5 @@ onMounted(queryData);
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
   font-size: 12px;
   margin-left: 8px;
-}
-
-.banner {
-  margin-bottom: 12px;
 }
 </style>
