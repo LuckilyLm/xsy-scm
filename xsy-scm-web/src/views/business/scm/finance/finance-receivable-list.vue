@@ -26,15 +26,12 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
-    <template #action><a-button @click="queryData">重试</a-button></template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">应收明细</div>
-      <div class="smart-table-setting-block">
+      <div class="smart-table-operate-block">
         <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
+      </div>
+      <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_RECEIVABLE" :refresh="queryData"/>
       </div>
     </a-row>
@@ -73,8 +70,7 @@
     </div>
   </a-card>
 
-  <FinanceDetailDrawer v-model:open="detailOpen" kind="RECEIVABLE" :loading="detailLoading" :detail="detailData"
-                       :error="detailError" @retry="reloadDetail"/>
+  <FinanceDetailDrawer v-model:open="detailOpen" kind="RECEIVABLE" :loading="detailLoading" :detail="detailData"/>
 </template>
 
 <script setup lang="ts">
@@ -97,8 +93,7 @@ import {SCM_FINANCE_PERMISSION as PERM} from '/@/constants/business/scm/finance-
 const query = reactive<ReceivableQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinanceReceivable, ReceivableQuery>(financeApi.receivableQuery, financeApi.receivableExport);
 const customerOptions = ref<Array<{label: string; value: string | number}>>([]);
-const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
-    show: openDetail, load: reloadDetail} = useFinanceDetail<FinanceReceivableDetail>(
+const {open: detailOpen, loading: detailLoading, data: detailData, show: openDetail} = useFinanceDetail<FinanceReceivableDetail>(
     (id) => financeApi.receivableDetail(id, {suppressGlobalErrorMessage: true})
 );
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
@@ -156,7 +151,6 @@ onMounted(async () => {
 
 <style scoped>
 .date-separator { margin: 0 8px; color: #667085; }
-.page-error { margin-bottom: 12px; }
 .money-alert { font-weight: 600; }
 .finance-mobile-balance-list { display: none; }
 

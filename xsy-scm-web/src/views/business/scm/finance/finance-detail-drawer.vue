@@ -1,8 +1,5 @@
 <template>
   <a-drawer :open="open" :title="title" :width="scmDrawerWidth('xl')" :destroy-on-close="true" @close="close">
-    <a-alert v-if="error" :message="error" type="error" show-icon>
-      <template #action><a-button :loading="loading" @click="emit('retry')">重试</a-button></template>
-    </a-alert>
     <a-spin class="finance-detail-content" :spinning="loading">
       <template v-if="detail">
         <!-- 1. 单据概要：只放「这是什么单」。金额不在这里，见「金额组成」。 -->
@@ -54,7 +51,8 @@
                    class="over-applied" type="warning" show-icon :message="`超额核销 ${moneyText(header.overAppliedAmount)}，不代表已退款或钱包余额。`"/>
           <a-tag v-if="isReceivable && header.overAppliedAmount && header.overAppliedAmount !== '0.0000'"
                  color="orange">超额核销待处理</a-tag>
-          <a-alert v-if="header.netAmount?.startsWith('-')" class="over-applied" type="error" show-icon
+          <!-- 净应收为负是这张单的数据异常，不是某次请求失败：要留在纸上供对账复核，所以不走 toast。 -->
+          <a-alert v-if="header.netAmount?.startsWith('-')" class="over-applied" type="warning" show-icon
                    message="净应收为负数，请结合红字和核销记录核对。"/>
         </section>
 
@@ -108,7 +106,7 @@
 
         <a-empty v-if="!writeOffs.length && !operationLogs.length && !redEntries.length" description="暂无核销或操作记录"/>
       </template>
-      <a-empty v-else-if="!loading && !error" description="暂无单据详情"/>
+      <a-empty v-else-if="!loading" description="暂无单据详情"/>
     </a-spin>
   </a-drawer>
 </template>
@@ -132,8 +130,8 @@ import {dateTimeText, entryTypeText, moneyText, numberText} from './finance-form
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 type FinanceDetail = FinanceReceivableDetail | FinancePayableDetail | FinanceReceiptDetail | FinancePaymentDetail;
-const props = defineProps<{open: boolean; loading: boolean; error?: string; kind: 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT'; detail?: FinanceDetail | null}>();
-const emit = defineEmits<{(event: 'update:open', value: boolean): void; (event: 'retry'): void}>();
+const props = defineProps<{open: boolean; loading: boolean; kind: 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT'; detail?: FinanceDetail | null}>();
+const emit = defineEmits<{(event: 'update:open', value: boolean): void}>();
 const detail = computed(() => props.detail ?? null);
 const isReceivable = computed(() => props.kind === 'RECEIVABLE');
 const isPayable = computed(() => props.kind === 'PAYABLE');

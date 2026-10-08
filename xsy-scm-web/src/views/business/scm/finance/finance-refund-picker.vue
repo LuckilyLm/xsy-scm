@@ -10,11 +10,8 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-alert v-if="error" class="picker-error" type="error" show-icon :message="error">
-      <template #action><a-button @click="queryData">重试</a-button></template>
-    </a-alert>
     <a-table size="small" row-key="refundId" :data-source="rows" :columns="columns" :loading="loading"
-             :pagination="false" :scroll="{x:1040}">
+             :pagination="false" :scroll="{x:1140}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='refundAmount'">{{ moneyText(text) }}</template>
         <template v-else-if="column.dataIndex==='completedAt'">{{ dateTimeText(text) }}</template>
@@ -35,6 +32,7 @@ import type {TableColumnsType} from 'ant-design-vue';
 import {financeApi} from '/@/api/business/scm/finance-api';
 import {financeError} from './finance-errors';
 import {dateTimeText, moneyText} from './finance-form-model';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import type {FinanceRefundOption} from './finance-types';
 
 const props = defineProps<{open: boolean}>();
@@ -45,7 +43,7 @@ const pageSize = ref(10);
 const rows = ref<FinanceRefundOption[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const columns = computed<TableColumnsType<FinanceRefundOption>>(() => [
     {title: '退款单号', dataIndex: 'refundNo', width: 180},
     {title: '退货单号', dataIndex: 'returnNo', width: 170},
@@ -92,7 +90,3 @@ watch(() => props.open, (isOpen) => {
     }
 });
 </script>
-
-<style scoped>
-.picker-error { margin-bottom: 12px; }
-</style>

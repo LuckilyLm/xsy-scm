@@ -23,15 +23,12 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
-    <template #action><a-button @click="queryData">重试</a-button></template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">应付明细</div>
-      <div class="smart-table-setting-block">
+      <div class="smart-table-operate-block">
         <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
+      </div>
+      <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_PAYABLE" :refresh="queryData"/>
       </div>
     </a-row>
@@ -69,18 +66,11 @@
     </div>
   </a-card>
 
-  <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYABLE" :loading="detailLoading" :detail="detailData"
-                       :error="detailError" @retry="reloadDetail"/>
+  <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYABLE" :loading="detailLoading" :detail="detailData"/>
 
   <a-drawer v-model:open="redOpen" title="登记红字应付" :width="scmDrawerWidth('l')" :destroy-on-close="true"
             :closable="!redSaving" :keyboard="!redSaving" :mask-closable="!redSaving">
     <a-spin :spinning="redLoading">
-      <a-alert type="info" show-icon message="红字金额必须等于数量 × 单价，累计不超过原单金额。"/>
-      <a-alert v-if="redError" class="form-error" type="error" show-icon :message="redError">
-        <template v-if="!redDrafts.length && redSource" #action>
-          <a-button :loading="redLoading" @click="retryRed">重试</a-button>
-        </template>
-      </a-alert>
       <a-descriptions v-if="redSource" class="red-source" bordered size="small" :column="2">
         <a-descriptions-item label="原应付单">{{ redSource.payableNo }}</a-descriptions-item>
         <a-descriptions-item label="供应商">{{ redSource.supplierName }}</a-descriptions-item>
@@ -132,6 +122,7 @@ import type {FinancePayable, FinancePayableDetail, FinancePayableItem, PayableQu
 import {useFinancePage} from './use-finance-page';
 import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 interface RedDraft extends FinancePayableItem {
@@ -141,11 +132,11 @@ interface RedDraft extends FinancePayableItem {
 
 const query = reactive<PayableQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinancePayable, PayableQuery>(financeApi.payableQuery, financeApi.payableExport);
-const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
-    show: openDetail, load: reloadDetail} = useFinanceDetail<FinancePayableDetail>(
+const {open: detailOpen, loading: detailLoading, data: detailData,
+    show: openDetail} = useFinanceDetail<FinancePayableDetail>(
     (id) => financeApi.payableDetail(id, {suppressGlobalErrorMessage: true})
 );
-const redOpen = ref(false), redLoading = ref(false), redSaving = ref(false), redError = ref(''), redReason = ref('');
+const redOpen = ref(false), redLoading = ref(false), redSaving = ref(false), redError = useScmErrorToast(), redReason = ref('');
 const redSource = ref<FinancePayable | null>(null);
 const redDrafts = ref<RedDraft[]>([]);
 let redRequestId = 0;
@@ -216,10 +207,6 @@ async function openRed(row: FinancePayable) {
     }
 }
 
-function retryRed() {
-    if (redSource.value) void openRed(redSource.value);
-}
-
 /**
  * 一行的红字金额，由数量 × 单价算出。
  *
@@ -267,7 +254,6 @@ onMounted(queryData);
 
 <style scoped>
 .date-separator { margin: 0 8px; color: #667085; }
-.page-error,.form-error { margin-bottom: 12px; }
 .money-alert { font-weight: 600; }
 .red-source { margin: 16px 0; }
 .drawer-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }

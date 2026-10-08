@@ -23,16 +23,13 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
-    <template #action><a-button @click="queryData">重试</a-button></template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">付款明细</div>
-      <div class="smart-table-setting-block">
+      <div class="smart-table-operate-block">
         <a-button v-privilege="PERM.PAYMENT_ADD" type="primary" @click="openAdd">登记付款</a-button>
         <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
+      </div>
+      <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_PAYMENT" :refresh="queryData"/>
       </div>
     </a-row>
@@ -44,20 +41,13 @@
       </div>
     </div>
     <a-table id="scm-finance-payment-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="paymentId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1290}">
+             row-key="paymentId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1405}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='entryType'">
           <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
         </template>
-        <template v-else-if="column.dataIndex==='counterparty'">
-          <!-- 往来方是客户还是供应商决定这笔付款的性质，作次要行而不是独占一列 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.counterpartyName || '—' }}</span>
-            <span v-if="record.counterpartyType" class="scm-cell-stack__sub">
-              {{ record.counterpartyType==='CUSTOMER'?'客户':'供应商' }}
-            </span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex==='counterpartyName'">{{ record.counterpartyName || '—' }}</template>
+        <template v-else-if="column.dataIndex==='counterpartyType'">{{ counterpartyTypeText(record.counterpartyType) }}</template>
         <template v-else-if="column.dataIndex==='method'">{{ paymentMethodText(text) }}</template>
         <template v-else-if="column.dataIndex==='sourceType'">
           <span v-if="text==='ORDER_REFUND'">退款</span>
@@ -82,12 +72,9 @@
     </div>
   </a-card>
 
-  <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYMENT" :loading="detailLoading" :detail="detailData"
-                       :error="detailError" @retry="reloadDetail"/>
+  <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYMENT" :loading="detailLoading" :detail="detailData"/>
 
   <a-modal v-model:open="addOpen" title="登记付款" :confirm-loading="addSaving" @ok="submitAdd">
-    <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
-    <a-alert class="form-hint" type="info" show-icon message="客户付款只能登记已完成退款。"/>
     <a-form layout="vertical">
       <a-form-item label="往来方类型" required>
         <a-select v-model:value="addForm.counterpartyType" :options="partyTypeOptions" @change="onPartyTypeChange"/>
@@ -114,7 +101,6 @@
 
   <a-modal v-model:open="reverseOpen" title="反向付款" :confirm-loading="reverseSaving" @ok="submitReverse">
     <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一笔反向付款，金额 ${moneyText(reverseRow.amount)}。原付款事实会保留。`"/>
-    <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError"/>
     <a-form layout="vertical"><a-form-item label="反向原因" required><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/></a-form-item></a-form>
   </a-modal>
 
@@ -138,17 +124,20 @@ import type {FinancePayment, FinancePaymentAddForm, FinancePaymentDetail, Financ
 import {useFinancePage} from './use-finance-page';
 import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const query = reactive<PaymentQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinancePayment, PaymentQuery>(financeApi.paymentQuery, financeApi.paymentExport);
-const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
-    show: openDetail, load: reloadDetail} = useFinanceDetail<FinancePaymentDetail>(
+const {open: detailOpen, loading: detailLoading, data: detailData,
+    show: openDetail} = useFinanceDetail<FinancePaymentDetail>(
     (id) => financeApi.paymentDetail(id, {suppressGlobalErrorMessage: true})
 );
-const addOpen = ref(false), addSaving = ref(false), addError = ref(''), refundPickerOpen = ref(false);
+const addOpen = ref(false), addSaving = ref(false), refundPickerOpen = ref(false);
+const addError = useScmErrorToast();
 const selectedRefund = ref<FinanceRefundOption | null>(null);
 const supplierId = ref<number>();
-const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinancePayment | null>(null);
+const reverseOpen = ref(false), reverseSaving = ref(false), reverseReason = ref(''), reverseRow = ref<FinancePayment | null>(null);
+const reverseError = useScmErrorToast();
 const addForm = reactive<Omit<FinancePaymentAddForm, 'counterpartyId'> & {counterpartyType: 'CUSTOMER' | 'SUPPLIER'}>({
     counterpartyType: 'SUPPLIER', amount: '', method: 'BANK_TRANSFER', paidAt: nowDateTimeValue(), externalReference: '',
     sourceType: undefined, sourceId: undefined, remark: '',
@@ -166,10 +155,17 @@ const sourceOptions = [{label: '退款', value: 'ORDER_REFUND'}];
 const pendingOptions = [{label: '仅待核销', value: true}, {label: '全部', value: false}];
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
+/** 往来方类型决定这笔付款是付给供应商还是退给客户，与名称并列为独立列。 */
+function counterpartyTypeText(value?: string | null): string {
+    return value ? SCM_FINANCE_COUNTERPARTY_TYPE_ENUM[value]?.desc ?? value : '—';
+}
+
 const columns = ref<TableColumnsType<FinancePayment>>([
     {title: '付款单号', dataIndex: 'paymentNo', fixed: 'left', width: 110, ellipsis: true},
     {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '往来方', dataIndex: 'counterparty', width: 190}, {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
+    {title: '往来方', dataIndex: 'counterpartyName', width: 170},
+    {title: '往来方类型', dataIndex: 'counterpartyType', align: 'center', width: 95},
+    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
     {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 120},
     {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 110},
     {title: '方式', dataIndex: 'method', width: 105}, {title: '来源', dataIndex: 'sourceType', align: 'center', width: 95},
@@ -249,8 +245,7 @@ onMounted(queryData);
 
 <style scoped>
 .date-separator { margin: 0 8px; color: #667085; }
-.page-error,.form-error { margin-bottom: 12px; }
-.form-hint { margin-bottom: 16px; }
+.form-error { margin-bottom: 12px; }
 .finance-mobile-balance-list { display: none; }
 
 .finance-mobile-balance-row { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
