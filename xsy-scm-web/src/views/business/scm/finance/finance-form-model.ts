@@ -94,6 +94,22 @@ export function isValidPositiveAmount(value: string | null | undefined): boolean
     }
 }
 
+/**
+ * 金额 = 数量 × 单价（定点四位小数，不经浮点）。
+ *
+ * <p>用于红字明细这类「金额本应由数量与单价算出来」的场景。返回 `''` 表示还算不出来
+ * （任一侧缺失或非法），调用方据此放弃这一行，而不是用 0 顶上 —— 0 是合法金额，
+ * 拿它当「没填」的替身会把一行空明细提交成一条零元红字。
+ */
+export function lineAmount(quantity: string | null | undefined, unitPrice: string | null | undefined): string {
+    if (!isValidPositiveAmount(quantity) || !isValidPositiveAmount(unitPrice)) return '';
+    try {
+        return new Decimal(quantity).times(new Decimal(unitPrice)).toFixed(4);
+    } catch {
+        return '';
+    }
+}
+
 export function trimOptional(value: string | null | undefined): string | null {
     const trimmed = value?.trim();
     return trimmed ? trimmed : null;

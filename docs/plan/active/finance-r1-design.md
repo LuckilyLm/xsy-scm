@@ -507,9 +507,14 @@ writtenOffAmount（已核销额）
 openAmount（未核销额，只读派生）        = max(netAmount − writtenOffAmount, 0)
 overAppliedAmount（超额核销，只读派生） = max(writtenOffAmount − netAmount, 0)
 
-settleState = writtenOffAmount = 0                    → OPEN
-              openAmount = 0 且 overAppliedAmount = 0 → SETTLED
+settleState = openAmount = 0 且 overAppliedAmount = 0 → SETTLED
+              writtenOffAmount = 0                    → OPEN
               其余                                    → PARTIAL
+
+**净额为零的语义**：完全红冲（netAmount = 0）且无任何核销时，openAmount 与 overAppliedAmount
+同为 0 → SETTLED。单据已经没有任何待收 / 待付金额，它是「关闭」而不是「未结清」——
+判 OPEN 会让一张净额为零的单据永远挂在未结清列表里，状态与金额自相矛盾。
+判定分支因此必须先算 SETTLED，再算 OPEN（不能用 writtenOffAmount = 0 短路）。
 overAppliedAmount > 0 时页面**另外**标注「超额核销待处理」，它覆盖三态标签的展示，
 但不是第四个状态值（settleState 仍取 PARTIAL）。
 

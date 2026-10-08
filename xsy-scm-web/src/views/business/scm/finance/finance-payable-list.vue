@@ -99,7 +99,12 @@
             <a-input-number v-model:value="record.redUnitPrice" :disabled="redSaving" string-mode :min="0" :precision="4" :max="99999999999999" style="width:125px"/>
           </template>
           <template v-else-if="column.dataIndex==='redAmount'">
-            <a-input-number v-model:value="record.redAmount" :disabled="redSaving" string-mode :min="0" :precision="4" :max="99999999999999" style="width:135px"/>
+            <!--
+              红字金额是派生的，不给手输：它必须等于「红字数量 × 红字单价」。
+              让用户填一个本该算出来的值，等于把「两者可以不一致」写进界面 ——
+              后端只校验格式与正数，不一致的金额会被照单收下。
+            -->
+            <span class="red-amount-value">{{ redLineAmount(record) }}</span>
           </template>
         </template>
       </a-table>
@@ -121,7 +126,7 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
-import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyClass, moneyText, settleStateText, settleStateTone} from './finance-form-model';
+import {dateTimeText, entryTypeText, initialFinanceDateRange, lineAmount, moneyClass, moneyText, settleStateText, settleStateTone} from './finance-form-model';
 import {financeError} from './finance-errors';
 import type {FinancePayable, FinancePayableDetail, FinancePayableItem, PayableQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
@@ -132,7 +137,6 @@ import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 interface RedDraft extends FinancePayableItem {
     redQuantity: string;
     redUnitPrice: string;
-    redAmount: string;
 }
 
 const query = reactive<PayableQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
@@ -204,7 +208,7 @@ async function openRed(row: FinancePayable) {
     try {
         const detail = (await financeApi.payableDetail(row.payableId, {suppressGlobalErrorMessage: true})).data;
         if (generation !== redRequestId || !redOpen.value) return;
-        redDrafts.value = detail.items.map((item) => ({...item, redQuantity: '', redUnitPrice: item.unitPrice, redAmount: ''}));
+        redDrafts.value = detail.items.map((item) => ({...item, redQuantity: '', redUnitPrice: item.unitPrice}));
     } catch (cause) {
         if (generation === redRequestId) redError.value = financeError(cause);
     } finally {
@@ -216,14 +220,28 @@ function retryRed() {
     if (redSource.value) void openRed(redSource.value);
 }
 
+/**
+ * 一行的红字金额，由数量 × 单价算出。
+ *
+ * <p>金额不再是可编辑字段：让用户填一个本该算出来的值，等于把「两者可以不一致」写进界面，
+ * 而后端只校验格式与正数，不一致的金额会被照单收下。算不出来时显示占位符并把该行排除在提交之外。
+ */
+function redLineAmount(record: RedDraft): string {
+    const amount = lineAmount(record.redQuantity, record.redUnitPrice);
+    return amount ? moneyText(amount) : '—';
+}
+
 async function submitRed() {
     if (redSaving.value || redLoading.value || !redOpen.value) return;
-    const lines = redDrafts.value.filter((item) => item.redQuantity && item.redAmount).map((item) => ({
-        purchaseOrderItemId: item.purchaseOrderItemId,
-        quantity: item.redQuantity,
-        unitPrice: item.redUnitPrice,
-        amount: item.redAmount,
-    }));
+    // 只提交能算出金额的行：数量缺失、单价缺失或金额非正的行都不构成一条有效红字。
+    const lines = redDrafts.value
+        .map((item) => ({
+            purchaseOrderItemId: item.purchaseOrderItemId,
+            quantity: item.redQuantity,
+            unitPrice: item.redUnitPrice,
+            amount: lineAmount(item.redQuantity, item.redUnitPrice),
+        }))
+        .filter((item) => item.amount);
     if (!redSource.value || !redReason.value.trim() || !lines.length) {
         redError.value = '请填写原因，并至少录入一条红字明细。';
         return;
@@ -253,6 +271,7 @@ onMounted(queryData);
 .money-alert { font-weight: 600; }
 .red-source { margin: 16px 0; }
 .drawer-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.red-amount-value { font-variant-numeric: tabular-nums; color: #1d2939; }
 .finance-mobile-balance-list { display: none; }
 
 .finance-mobile-balance-row { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }

@@ -33,7 +33,10 @@ export const useUserStore = defineStore({
         //是否需要修改密码
         needUpdatePwdFlag: false,
         //是否为超级管理员
-        administratorFlag: true,
+        // 初值必须是 false：它是权限放行的总开关（指令、插件、各域 permission 组合式函数
+        // 都写成「是超管就直接 true」）。初值给 true 等于「登录信息到达前一律放行」，
+        // 页面在登录态未就绪时渲染就会短暂露出本无权限的操作。授权只能由登录响应显式授予。
+        administratorFlag: false,
         //上次登录ip
         lastLoginIp: '',
         //上次登录ip地区
@@ -109,13 +112,47 @@ export const useUserStore = defineStore({
     },
 
     actions: {
+        /**
+         * 登出：把「身份」与「权限」两类状态一并清干净。
+         *
+         * <p>只清 token 是不够的：这是一份会被下一个登录者复用的内存状态，
+         * 而多个权限判断直接读 `administratorFlag` / `pointsList`（不经过 localStorage）。
+         * 若残留上一个人的超管标记或功能点，换人登录后、登录响应到达前的那一小段时间里，
+         * 页面会按上一个人的权限渲染 —— 真正的越权入口，而不是显示问题。
+         *
+         * <p>因此这里按 state 的字段逐个复位到初始值，而不是只挑几个「看起来重要」的。
+         * 清空后再删 localStorage：顺序反了会留下一个「内存已清、下次刷新又读回来」的窗口。
+         * 每个字段的初值以 state() 的定义为准，两边必须同步维护。
+         */
         logout() {
+            // —— 身份 ——
             this.token = '';
+            this.employeeId = '';
+            this.avatar = '';
+            this.loginName = '';
+            this.actualName = '';
+            this.phone = '';
+            this.departmentId = '';
+            this.departmentName = '';
+            this.needUpdatePwdFlag = false;
+            this.administratorFlag = false;
+            this.lastLoginIp = '';
+            this.lastLoginIpRegion = '';
+            this.lastLoginUserAgent = '';
+            this.lastLoginTime = '';
+            // —— 权限与菜单 ——
             this.menuTree = [];
             this.menuRouterList = [];
             this.menuRouterInitFlag = false;
-            this.tagNav = [];
+            this.menuParentIdListMap = new Map();
+            this.pointsList = [];
+            // —— 界面状态 ——
+            // 置 null 而不是 []：getTagNav 用 _.isNull 判断「还没从本地读过」，
+            // 给 [] 会让它跳过本地读取，行为与初始值不一致。
+            this.tagNav = null;
+            this.keepAliveIncludes = [];
             this.unreadMessageCount = 0;
+
             localRemove(localKey.USER_TOKEN);
             localRemove(localKey.USER_POINTS);
             localRemove(localKey.USER_TAG_NAV);

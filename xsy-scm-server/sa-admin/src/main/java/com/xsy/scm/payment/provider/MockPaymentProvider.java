@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
@@ -18,8 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 本地模拟支付渠道。
@@ -48,6 +45,11 @@ public class MockPaymentProvider implements ScmPaymentProvider {
     private final PaymentMockLedgerDao paymentMockLedgerDao;
 
     /**
+     * 渠道账本写入口。<b>必须经由这个独立 Bean</b>：{@code REQUIRES_NEW} 只有经过 Spring 代理才生效， 在同类内自调用会让渠道账并入本地业务事务一起回滚。
+     */
+    private final MockPaymentLedgerRecorder ledgerRecorder;
+
+    /**
      * 模拟渠道的签名密钥。<b>只在这里读</b>：渠道密钥不进业务规则、不进客户端、不落库。
      */
     @Value("${scm.payment.mock.secret:scm-local-mock-secret}")
@@ -68,7 +70,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
         return switch (scenario) {
             case SUCCESS -> {
                 // 渠道先记账（独立事务），再告诉本地「成功了」
-                recordLedger(providerTransactionNo, null, "IN", request.amount());
+                ledgerRecorder.record(providerTransactionNo, null, "IN", request.amount());
                 yield new IntentResult(externalIntentId, providerTransactionNo, Outcome.SUCCEEDED, request.amount(),
                         null, null);
             }
@@ -89,7 +91,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
         if (scenario == ScmPaymentMockScenarioEnum.FAILURE) {
             return new RefundResult(providerRefundNo, Outcome.FAILED, null, "MOCK_REFUND_REJECTED", "模拟渠道拒绝退款");
         }
-        recordLedger(request.providerTransactionNo(), providerRefundNo, "OUT", request.amount());
+        ledgerRecorder.record(request.providerTransactionNo(), providerRefundNo, "OUT", request.amount());
         return new RefundResult(providerRefundNo, Outcome.SUCCEEDED, request.amount(), null, null);
     }
 
@@ -173,24 +175,6 @@ public class MockPaymentProvider implements ScmPaymentProvider {
         } catch (java.security.GeneralSecurityException e) {
             throw new IllegalStateException("模拟渠道签名失败", e);
         }
-    }
-
-    /**
-     * 渠道记账。<b>独立事务</b>（见类注释）：渠道的账不随本地事务回滚。
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void recordLedger(String providerTransactionNo, String providerRefundNo, String direction,
-            BigDecimal amount) {
-        PaymentMockLedgerEntity row = new PaymentMockLedgerEntity();
-        row.setProvider(ScmPaymentProviderEnum.MOCK.name());
-        row.setProviderTransactionNo(providerTransactionNo);
-        row.setProviderRefundNo(providerRefundNo);
-        row.setDirection(direction);
-        row.setAmount(amount);
-        row.setBizDate(OffsetDateTime.now().toLocalDate());
-        row.setOccurredAt(OffsetDateTime.now());
-        row.setCreatedBy("MOCK_PROVIDER");
-        paymentMockLedgerDao.insert(row);
     }
 
     /** 渠道交易号：由本地意图号稳定派生，因此同一意图重发得到同一个渠道号（便于幂等验证）。 */

@@ -132,10 +132,13 @@
                CASE WHEN r.entry_type = 'NORMAL'
                     THEN GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0)
                     ELSE 0 END AS overAppliedAmount,
+               -- 分支顺序即语义：先判「无未结净额且无超额核销」= 已结清（覆盖核销额恰等于净额、
+               -- 以及全额红冲后净额为零两种关闭形态），再判未核销，其余为部分结清。
+               -- 全额红冲的单据没有任何待收金额，判 OPEN 会让它永远挂在未结清列表里。
                CASE WHEN r.entry_type &lt;&gt; 'NORMAL' THEN NULL
-                    WHEN written.writtenOffAmount = 0 THEN 'OPEN'
                     WHEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0) = 0
                          AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0) = 0 THEN 'SETTLED'
+                    WHEN written.writtenOffAmount = 0 THEN 'OPEN'
                     ELSE 'PARTIAL' END AS settleState,
                r.event_at AS eventAt, r.due_date AS dueDate,
                r.reason
@@ -202,9 +205,9 @@
             </if>
             <if test="query.settleState != null and query.settleState != ''">
                 AND r.entry_type = 'NORMAL'
-                AND CASE WHEN written.writtenOffAmount = 0 THEN 'OPEN'
-                         WHEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0) = 0
+                AND CASE WHEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0) = 0
                               AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0) = 0 THEN 'SETTLED'
+                         WHEN written.writtenOffAmount = 0 THEN 'OPEN'
                          ELSE 'PARTIAL' END = #{query.settleState}
             </if>
         </where>

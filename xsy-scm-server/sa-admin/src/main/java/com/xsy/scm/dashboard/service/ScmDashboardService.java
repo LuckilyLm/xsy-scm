@@ -73,24 +73,48 @@ public class ScmDashboardService {
      * 按给定权限集合算卡片（与登录态解耦，便于负向夹具直接验证「省略」与「范围」的组合）。
      *
      * <p>
-     * 三组数据一次取齐：它们是同一批走索引的聚合，比按卡片分组惰性取数少一层分支；代价是只有一种卡片权限的人 也会触发另外几组查询（都已按范围收窄，不构成越权）。要优化就按可见卡片惰性取数，见设计文档的待办项。
+     * <b>只为可见卡片取数</b>：先按权限筛出这批人要看的卡片，再回头判断「哪几组聚合真的需要」。 三组聚合各自独立，谁都不依赖谁，所以能给多少给多少 —— 一个只有库存预警权的人 不该为销售额与采购额付两次查询的钱。
+     *
+     * <p>
+     * 用 {@code null} 表示「本组聚合不需要」：它能与「取了但结果为空」区分开。 早先的写法是三组无条件取齐（代价写在注释里、留作待办），现在按待办收掉。
      */
     public List<ScmDashboardCardVO> overviewFor(List<String> heldPermissions) {
-        ScmDataScopeContext scope = dataScopeService.resolve();
-        return cardsFor(heldPermissions, metricsService.todaySales(scope), metricsService.todayPurchase(scope),
-                warningTotal());
-    }
-
-    /**
-     * 按给定权限集合与指标计算卡片（与登录态解耦，便于负向夹具直接验证省略语义）。
-     */
-    public List<ScmDashboardCardVO> cardsFor(List<String> heldPermissions, SalesMetrics sales, PurchaseMetrics purchase,
-            long warningTotal) {
-        List<ScmDashboardCardVO> cards = new ArrayList<>();
+        List<ScmDashboardCardEnum> visibleCards = new ArrayList<>();
+        boolean needsSales = false;
+        boolean needsPurchase = false;
+        boolean needsWarning = false;
         for (ScmDashboardCardEnum card : ScmDashboardCardEnum.values()) {
             if (!card.visibleTo(heldPermissions)) {
                 continue;
             }
+            visibleCards.add(card);
+            switch (card.group()) {
+                case SALES -> needsSales = true;
+                case PURCHASE -> needsPurchase = true;
+                case INVENTORY_WARNING -> needsWarning = true;
+            }
+        }
+        if (visibleCards.isEmpty()) {
+            // 一张卡都不可见时连范围都不必解析：解析范围本身也是一次依赖上下文的调用。
+            return List.of();
+        }
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        SalesMetrics sales = needsSales ? metricsService.todaySales(scope) : null;
+        PurchaseMetrics purchase = needsPurchase ? metricsService.todayPurchase(scope) : null;
+        long warningTotal = needsWarning ? warningTotal() : 0L;
+        return cardsFor(visibleCards, sales, purchase, warningTotal);
+    }
+
+    /**
+     * 按给定权限集合与指标计算卡片（与登录态解耦，便于负向夹具直接验证省略语义）。
+     *
+     * <p>
+     * 只接受<b>已经筛好</b>的卡片集合，可见性判断不在这里重复做一遍 —— 两次判断就有两处可能漂移。
+     */
+    public List<ScmDashboardCardVO> cardsFor(List<ScmDashboardCardEnum> visibleCards, SalesMetrics sales,
+            PurchaseMetrics purchase, long warningTotal) {
+        List<ScmDashboardCardVO> cards = new ArrayList<>(visibleCards.size());
+        for (ScmDashboardCardEnum card : visibleCards) {
             cards.add(new ScmDashboardCardVO(card.getKey(), valueOf(card, sales, purchase, warningTotal),
                     card.getUnit(), card.getRoute()));
         }
@@ -101,17 +125,26 @@ public class ScmDashboardService {
      * 卡片取值：穷尽 switch、不写 default —— 新增卡片时这里会直接编译不过，逼着补上取值口径。
      *
      * <p>
-     * 三组数据一定非 null：调用方只为可见卡片取数，见 {@link #cardsFor}。
+     * 某组聚合为 {@code null} 表示「没有卡片用到它」（调用方已按可见卡片裁剪）。 真被用到却是 null 属于调用方的编排错误，直接抛出来而不是静默给 0 —— 0
+     * 是合法金额，拿它兜底会把「漏查」伪装成「今天没有业务」。
      */
     private static BigDecimal valueOf(ScmDashboardCardEnum card, SalesMetrics sales, PurchaseMetrics purchase,
             long warningTotal) {
         return switch (card) {
-            case SALES_AMOUNT -> sales.todaySettlementAmount();
-            case ORDER_COUNT -> BigDecimal.valueOf(sales.todayOrderCount());
-            case PURCHASE_AMOUNT -> purchase.todayPurchaseAmount();
-            case RECEIPT_COUNT -> BigDecimal.valueOf(purchase.todayReceiptCount());
+            case SALES_AMOUNT -> require(sales, card).todaySettlementAmount();
+            case ORDER_COUNT -> BigDecimal.valueOf(require(sales, card).todayOrderCount());
+            case PURCHASE_AMOUNT -> require(purchase, card).todayPurchaseAmount();
+            case RECEIPT_COUNT -> BigDecimal.valueOf(require(purchase, card).todayReceiptCount());
             case INVENTORY_WARNING -> BigDecimal.valueOf(warningTotal);
         };
+    }
+
+    /** 卡片要求的那组聚合必须取过；取不到说明可见卡片与取数编排对不上，属于编码错误。 */
+    private static <T> T require(T metrics, ScmDashboardCardEnum card) {
+        if (metrics == null) {
+            throw new IllegalStateException("卡片 " + card.getKey() + " 可见，但其所属聚合未取数");
+        }
+        return metrics;
     }
 
     /**

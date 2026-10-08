@@ -11,6 +11,8 @@ import com.xsy.scm.metrics.domain.InventoryMetrics;
 import com.xsy.scm.metrics.domain.PurchaseMetrics;
 import com.xsy.scm.metrics.domain.SalesMetrics;
 import com.xsy.scm.metrics.service.ScmBusinessMetricsService;
+import com.xsy.scm.order.permission.OrderPermission;
+import com.xsy.scm.purchase.permission.PurchasePermission;
 import net.lab1024.sa.admin.module.system.login.manager.LoginManager;
 import net.lab1024.sa.base.common.domain.PageResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +28,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -85,6 +89,57 @@ class ScmDashboardServiceTest {
         assertThat(service.overviewFor(List.of())).isEmpty();
         assertThat(service.overviewFor(List.of("scm:todo:query"))).as("入口权限之外的无关权限不构成卡片可见性")
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("按可见卡片惰性取数：只有库存预警权时，销售与采购聚合一次都不查")
+    void invisibleGroupsAreNotQueried() {
+        when(warning.queryWarningPage(any())).thenReturn(withTotal(12));
+
+        service.overviewFor(List.of(InventoryPermission.WARNING_QUERY));
+
+        verify(warning).queryWarningPage(any());
+        verify(metrics, never()).todaySales(any());
+        verify(metrics, never()).todayPurchase(any());
+    }
+
+    @Test
+    @DisplayName("按可见卡片惰性取数：只有订单权时只查销售聚合，不查采购与预警")
+    void onlyVisibleGroupIsQueried() {
+        service.overviewFor(List.of(OrderPermission.QUERY));
+
+        verify(metrics).todaySales(any());
+        verify(metrics, never()).todayPurchase(any());
+        verify(warning, never()).queryWarningPage(any());
+    }
+
+    @Test
+    @DisplayName("按可见卡片惰性取数：采购权只查采购聚合，不查销售与预警")
+    void purchaseOnlyQueriesPurchaseGroup() {
+        service.overviewFor(List.of(PurchasePermission.QUERY));
+
+        verify(metrics).todayPurchase(any());
+        verify(metrics, never()).todaySales(any());
+        verify(warning, never()).queryWarningPage(any());
+    }
+
+    @Test
+    @DisplayName("一张卡都不可见时连数据范围都不解析：解析范围本身也是一次依赖上下文的调用")
+    void noVisibleCardSkipsScopeResolution() {
+        assertThat(service.overviewFor(List.of())).isEmpty();
+
+        verifyNoInteractions(scopeService);
+        verifyNoInteractions(metrics);
+        verifyNoInteractions(warning);
+    }
+
+    @Test
+    @DisplayName("可见卡片与其聚合必须配套：编排漏取数时直接报错，不静默给 0")
+    void missingAggregationForVisibleCardFailsLoudly() {
+        assertThatThrownBy(() -> service.cardsFor(
+                List.of(com.xsy.scm.dashboard.constant.ScmDashboardCardEnum.SALES_AMOUNT), null, null, 0L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("sales-amount");
     }
 
     @Test

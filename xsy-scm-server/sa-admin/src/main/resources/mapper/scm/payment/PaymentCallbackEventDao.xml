@@ -2,7 +2,13 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.payment.dao.PaymentCallbackEventDao">
 
-    <insert id="insertIgnoreDuplicate">
+    <!--
+      useGeneratedKeys 必须回填主键：落完事件后要靠 row.id 才能 markProcessed。
+      漏了它 event.getId() 恒为 null，回填结论会执行 WHERE id = NULL（更新 0 行），
+      于是 process_status 永远停在 RECEIVED —— 「伪造回调记 REJECTED 留证」的设计意图落不了地。
+      ON CONFLICT DO NOTHING 命中时不回填，此分支由 Service 用受影响行数（0）提前 return，不依赖 id。
+    -->
+    <insert id="insertIgnoreDuplicate" useGeneratedKeys="true" keyProperty="row.id">
         INSERT INTO payment_callback_event (provider, provider_event_id, event_type, signature_verified,
                                             payload_hash, payload, transaction_id, process_status,
                                             reject_reason, received_at, created_by)

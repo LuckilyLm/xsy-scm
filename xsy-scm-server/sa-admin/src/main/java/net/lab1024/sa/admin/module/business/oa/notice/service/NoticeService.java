@@ -25,6 +25,7 @@ import net.lab1024.sa.base.common.constant.StringConst;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.util.SmartBeanUtil;
+import net.lab1024.sa.base.common.util.SmartHtmlSanitizeUtil;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import net.lab1024.sa.base.module.support.datatracer.constant.DataTracerTypeEnum;
 import net.lab1024.sa.base.module.support.datatracer.service.DataTracerService;
@@ -97,6 +98,9 @@ public class NoticeService {
 
         // build 资讯
         NoticeEntity noticeEntity = SmartBeanUtil.copy(addForm, NoticeEntity.class);
+        // 正文按不可信 HTML 处理：它会被前端 v-html 注入 DOM，对所有可见者执行。
+        // 落库前统一走白名单清洗（去脚本、去事件属性、去危险协议），存储侧不留可执行内容。
+        noticeEntity.setContentHtml(SmartHtmlSanitizeUtil.clean(noticeEntity.getContentHtml()));
         // 发布时间：不是定时发布时 默认为 当前
         if (!addForm.getScheduledPublishFlag()) {
             noticeEntity.setPublishTime(LocalDateTime.now());
@@ -184,6 +188,8 @@ public class NoticeService {
 
         // 更新
         NoticeEntity noticeEntity = SmartBeanUtil.copy(updateForm, NoticeEntity.class);
+        // 与新增同一口径：更新路径也必须清洗，否则「先建干净的、再改成带脚本的」就能绕过写入侧校验。
+        noticeEntity.setContentHtml(SmartHtmlSanitizeUtil.clean(noticeEntity.getContentHtml()));
         noticeManager.update(oldNoticeEntity, noticeEntity, updateForm.getVisibleRangeList());
         // 用 rebind 而不是 bind：更新可以删掉附件，被删掉的 key 必须同时失去授权。
         // updateById 跳过 null 列，所以按实际落库值换绑，否则未提交该列时会误收回旧附件的读取权。
