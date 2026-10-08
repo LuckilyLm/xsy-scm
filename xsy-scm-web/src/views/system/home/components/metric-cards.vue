@@ -32,7 +32,10 @@
           @keydown.enter="goto(row.route)"
         >
           <div class="home-kpi__head">
-            <component :is="row.icon" class="home-kpi__icon"/>
+            <span class="home-kpi__visual" :class="`tone-${row.tone}`">
+              <img :src="homeAsset(row.asset)" alt="" aria-hidden="true" class="home-kpi__asset"/>
+              <component :is="row.icon" class="home-kpi__icon" aria-hidden="true"/>
+            </span>
             <span class="home-kpi__label">{{ row.label }}</span>
           </div>
           <div class="home-kpi__value">
@@ -51,6 +54,7 @@ import {useRouter} from 'vue-router';
 import {scmDashboardApi, type ScmDashboardCard} from '/@/api/business/scm/dashboard-api';
 import {formatAmount, formatInt, toNumber} from '/@/views/business/scm/screen/format';
 import {kpiMetaOf, kpiTone} from '../home-metric-meta';
+import {homeAsset} from '../home-assets';
 import RegionError from './region-error.vue';
 import {useRegionData} from './use-region-data';
 
@@ -71,6 +75,7 @@ const rows = computed(() =>
             route: card.route,
             label: meta.label,
             icon: meta.icon,
+            asset: meta.asset,
             tone: kpiTone(card.key, toNumber(card.value)),
             money,
             text: money ? formatAmount(card.value) : formatInt(card.value),
@@ -152,8 +157,29 @@ defineExpose({load});
     }
 
     .home-kpi__icon {
-        font-size: 16px;
-        color: var(--scm-text-secondary);
+        display: none;
+    }
+
+    .home-kpi__visual {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: var(--scm-fill);
+
+        &.tone-primary { background: #e7f7ef; }
+        &.tone-ok { background: #e8f8f0; }
+        &.tone-warn { background: #fff6e1; }
+        &.tone-danger { background: #ffeded; }
+    }
+
+    .home-kpi__asset {
+        width: 42px;
+        height: 42px;
+        object-fit: contain;
     }
 
     .home-kpi__label {

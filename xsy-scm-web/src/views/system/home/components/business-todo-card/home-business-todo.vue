@@ -5,7 +5,13 @@
       <div class="home-todos">
         <a-empty v-if="!loading && todos.length === 0" description="暂无待办事项"/>
         <router-link v-for="todo in todos" :key="todo.key" class="todo-row" :to="todo.route">
+          <span class="todo-row__visual" :class="`tone-${todoTone(todo.key)}`">
+            <img :src="homeAsset(todoAsset(todo.key))" alt="" aria-hidden="true"/>
+          </span>
+          <span class="todo-row__copy">
           <span class="todo-row__label">{{ todo.label }}</span>
+          <span class="todo-row__hint">{{ todoHint(todo.key) }}</span>
+          </span>
           <span class="todo-row__count" :class="{'has-tasks': todo.count > 0}">
             {{ formatInt(todo.count) }}
           </span>
@@ -22,6 +28,44 @@ import RegionError from '../region-error.vue';
 import {useRegionData} from '../use-region-data';
 import {scmDashboardApi, type ScmTodo} from '/@/api/business/scm/dashboard-api';
 import {formatInt} from '/@/views/business/scm/screen/format';
+import {homeAsset} from '../../home-assets';
+
+interface TodoMeta {
+  asset: string;
+  tone: 'ok' | 'warn' | 'danger' | 'primary';
+  hint: string;
+}
+
+const TODO_META: Record<string, TodoMeta> = {
+  'inventory-warning': {
+    asset: 'icons/todo-inventory-error.png', tone: 'danger', hint: '库存不足、超配或临界预警',
+  },
+  'receipt-putaway': {
+    asset: 'icons/todo-pending-receipt.png', tone: 'warn', hint: '采购到货待确认入库',
+  },
+  'loss-gain-audit': {
+    asset: 'icons/todo-pending-approval.png', tone: 'primary', hint: '待审批的报损报溢单据',
+  },
+  'delivery-route-draft': {
+    asset: 'icons/todo-draft-delivery.png', tone: 'ok', hint: '待完善的配送线路',
+  },
+};
+
+function todoMeta(key: string) {
+  return TODO_META[key] ?? {asset: 'icons/todo-pending-approval.png', tone: 'ok' as const, hint: '待处理业务事项'};
+}
+
+function todoAsset(key: string) {
+  return todoMeta(key).asset;
+}
+
+function todoTone(key: string) {
+  return todoMeta(key).tone;
+}
+
+function todoHint(key: string) {
+  return todoMeta(key).hint;
+}
 
 const {data, loading, error, load} = useRegionData<ScmTodo[]>(scmDashboardApi.todo, '待办加载失败');
 const todos = computed(() => data.value ?? []);
@@ -41,8 +85,8 @@ defineExpose({load});
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 8px;
+  gap: 10px;
+  padding: 10px 8px;
   border-bottom: 1px solid var(--scm-border);
   color: var(--scm-text);
 
@@ -57,9 +101,42 @@ defineExpose({load});
   }
 }
 
+.todo-row__visual {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 11px;
+
+  &.tone-ok { background: #e7f8ef; }
+  &.tone-warn { background: #fff5df; }
+  &.tone-danger { background: #ffeded; }
+  &.tone-primary { background: #eaf4ff; }
+
+  img { width: 36px; height: 36px; object-fit: contain; }
+}
+
+.todo-row__copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .todo-row__label {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.todo-row__hint {
+  overflow: hidden;
+  color: var(--scm-text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .todo-row__count {

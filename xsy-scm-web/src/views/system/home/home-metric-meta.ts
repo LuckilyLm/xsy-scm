@@ -21,20 +21,21 @@ export type MetricTone = 'primary' | 'ok' | 'warn' | 'danger' | 'muted';
 interface KpiMeta {
     label: string;
     icon: Component;
+    asset: string;
 }
 
 /** KPI 卡标识 → 展示信息。 */
 export const KPI_META: Record<string, KpiMeta> = {
-    'sales-amount': {label: '今日销售额', icon: AccountBookOutlined},
-    'order-count': {label: '今日订单', icon: ProfileOutlined},
-    'purchase-amount': {label: '今日采购额', icon: ShoppingCartOutlined},
-    'receipt-count': {label: '今日收货', icon: InboxOutlined},
-    'inventory-warning': {label: '库存预警', icon: WarningOutlined},
+    'sales-amount': {label: '今日销售额', icon: AccountBookOutlined, asset: 'icons/kpi-sales-amount.png'},
+    'order-count': {label: '今日订单', icon: ProfileOutlined, asset: 'icons/kpi-order-count.png'},
+    'purchase-amount': {label: '今日采购额', icon: ShoppingCartOutlined, asset: 'icons/kpi-purchase-amount.png'},
+    'receipt-count': {label: '今日收货', icon: InboxOutlined, asset: 'icons/kpi-receipt-count.png'},
+    'inventory-warning': {label: '库存预警', icon: WarningOutlined, asset: 'icons/kpi-inventory-warning.png'},
 };
 
 /** 后端新增卡片时前端还没映射，退化成标识本身，不因为缺一项映射就整块不显示。 */
 export function kpiMetaOf(key: string): KpiMeta {
-    return KPI_META[key] ?? {label: key, icon: AppstoreOutlined};
+    return KPI_META[key] ?? {label: key, icon: AppstoreOutlined, asset: 'icons/kpi-order-count.png'};
 }
 
 /**
