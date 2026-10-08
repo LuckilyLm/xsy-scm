@@ -18,7 +18,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无订单明细'}"
-        :scroll="{x: 2150}"
+        :scroll="{x: 2360}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'orderNo'">

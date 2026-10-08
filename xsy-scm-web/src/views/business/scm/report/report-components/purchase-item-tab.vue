@@ -18,7 +18,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无采购明细'}"
-        :scroll="{x: 1990}"
+        :scroll="{x: 2030}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'submittedAt'">

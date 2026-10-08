@@ -112,7 +112,7 @@ test('单表页面的 scroll.x 不小于列宽之和', () => {
     if (scrolls.length !== 1) {
       continue;
     }
-    const blocks = [...source.matchAll(/const\s+\w*[Cc]olumns\w*\s*=[^\n]*\[\([\s\S]*?\n\]\s*[;)]/g)];
+    const blocks = [...source.matchAll(/const\s+\w*[Cc]olumns\w*\s*=[\s\S]*?\n\]\s*\)/g)];
     if (blocks.length !== 1) {
       continue;
     }
