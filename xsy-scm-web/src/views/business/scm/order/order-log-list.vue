@@ -13,14 +13,8 @@
       </a-form-item>
     </a-row>
   </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">操作日志</div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="605" :refresh="queryData"/>
       </div>
@@ -58,10 +52,11 @@ import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import type {LogRow, Query} from './order-types';
 import {amount} from './order-form-model';
 import {orderError} from './order-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {datetime} from '../common/scm-display';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<LogRow[]>([]), total = ref(0),
-    loading = ref(false), error = ref(''), visible = ref(false), active = ref<LogRow>();
+    loading = ref(false), error = useScmErrorToast(), visible = ref(false), active = ref<LogRow>();
 let requestId = 0;
 /**
  * 日志列。

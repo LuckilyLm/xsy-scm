@@ -82,7 +82,7 @@ import {orderError} from '../order-errors';
 const props = defineProps<{ items: Item[]; customerId?: Id }>();
 const emit = defineEmits<{ price: [] }>();
 const columns: TableColumnsType<Item> = [{
-  title: '商品 / 商品规格',
+  title: '商品规格',
   dataIndex: 'skuId',
   width: 300
 }, {title: '下单数量', dataIndex: 'orderedQuantity', align: 'right', width: 165}, {

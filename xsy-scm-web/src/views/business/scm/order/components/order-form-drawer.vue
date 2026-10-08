@@ -1,7 +1,6 @@
 <template>
   <a-drawer :title="form.orderId?'编辑销售订单':'新建销售订单'" :open="visible" :width="scmDrawerWidth('xl')"
             @close="closeDrawer">
-    <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <a-form :model="form" layout="vertical">
         <a-row :gutter="20">
@@ -82,13 +81,14 @@ import {newOrder, payload, validateOrder, fixed, draftKey, serializeDraft, apply
 import {localSave, localRead, localRemove} from '/@/utils/local-util';
 import {useUserStore} from '/@/store/modules/system/user';
 import {orderError} from '../order-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 import type {Order, Id} from '../order-types';
 import ItemTable from './order-item-editable-table.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ saved: [] }>();
 const form = ref<Order>(newOrder()), visible = ref(false), loading = ref(false), saving = ref(false),
-    pricing = ref(false), error = ref(''), originals = ref<{ value: Id; label: string }[]>([]);
+    pricing = ref(false), error = useScmErrorToast(), originals = ref<{ value: Id; label: string }[]>([]);
 const userStore = useUserStore();
 let requestId = 0;
 

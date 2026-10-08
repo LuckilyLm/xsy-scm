@@ -3,32 +3,20 @@
            :ok-button-props="{disabled: loading || imported}" :cancel-button-props="{disabled: loading}"
            :closable="!loading" :mask-closable="!loading" :keyboard="!loading" ok-text="开始导入" @ok="submit"
            @cancel="reset">
-    <a-alert type="info" show-icon class="import-tip">
-      <template #message>导入规则</template>
-      <template #description>
-        <ul class="import-rules">
-          <li>同一「导入订单标识」的多行会合并为一张订单；请删除或替换模板示例行。</li>
-          <li>人工单价留空用系统定价；填写时必须同时填写改价原因并具备改价权限。</li>
-          <li>纯标品自动确认；含非标品时整单待确认，等待电子秤回写实重。</li>
-        </ul>
-      </template>
-    </a-alert>
     <a-space direction="vertical" size="middle" style="width:100%">
       <a-space>
         <a-button :loading="downloading" :disabled="loading" @click="downloadTemplate">下载 Excel 模板</a-button>
-        <span class="hint">仅支持 .xlsx，最大 5 MiB；任一错误均不会创建订单</span>
+        <span class="hint">仅支持 .xlsx，最大 5 MiB；同一「导入订单标识」的多行合并为一张订单；任一错误均不会创建订单</span>
       </a-space>
       <a-upload-dragger :file-list="fileList" :before-upload="beforeUpload" :disabled="loading" :max-count="1"
                         accept=".xlsx" @remove="removeFile">
         <p class="ant-upload-text">点击或拖拽订单 Excel 到此处</p>
         <p class="ant-upload-hint">请使用最新模板，按客户编码与商品规格编码填写</p>
       </a-upload-dragger>
-      <a-alert v-if="error" type="error" show-icon :message="error"/>
       <a-result v-if="result && !result.totalErrors" status="success" title="订单导入完成"
                 :sub-title="`共 ${result.totalOrders} 张：已确认 ${result.confirmedOrders} 张，待称重 ${result.pendingOrders} 张`"/>
       <div v-else-if="result?.totalErrors">
-        <a-alert type="error" show-icon :message="`发现 ${result.totalErrors} 个问题，订单未写入`"
-                 class="error-summary"/>
+        <p class="error-summary">{{ result.totalErrors }} 个问题，订单未写入</p>
         <a-table size="small" bordered :pagination="false" :data-source="result.errors" :columns="columns"
                  :scroll="{y:300}" :row-key="(row:ImportError)=>`${row.rowNumber}-${row.column}-${row.code}`"/>
       </div>
@@ -42,9 +30,10 @@ import type {UploadFile, UploadProps, TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
 import type {ImportError, ImportResult} from '../order-types';
 import {orderError} from '../order-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), loading = ref(false), downloading = ref(false), error = ref(''),
+const visible = ref(false), loading = ref(false), downloading = ref(false), error = useScmErrorToast(),
     result = ref<ImportResult>(), fileList = ref<UploadFile[]>([]);
 const selectedFile = ref<File>();
 const imported = computed(() => !!result.value && result.value.totalErrors === 0);
@@ -130,15 +119,12 @@ async function submit() {
 defineExpose({open});
 </script>
 <style scoped>
-.import-tip {
-  margin-bottom: 16px
-}
-
 .hint {
   color: #4e5969
 }
 
 .error-summary {
-  margin-bottom: 12px
+  margin-bottom: 12px;
+  color: var(--scm-error, #ff4d4f);
 }
 </style>

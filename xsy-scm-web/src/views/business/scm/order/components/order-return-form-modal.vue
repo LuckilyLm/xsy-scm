@@ -1,6 +1,5 @@
 <template>
   <a-modal :open="visible" title="申请退货" :confirm-loading="saving" @ok="save" @cancel="visible=false" width="760px">
-    <a-alert v-if="error" :message="error" type="error"/>
     <a-form layout="vertical">
       <a-form-item label="退货原因" required>
         <a-input v-model:value="reason" maxlength="500"/>
@@ -22,9 +21,10 @@ import {orderReturnApi} from '/@/api/business/scm/order-return-api';
 import type {Order, Item, Id} from '../order-types';
 import {fixed} from '../order-form-model';
 import {orderError} from '../order-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), saving = ref(false), reason = ref(''), error = ref(''), orderId = ref<Id>(),
+const visible = ref(false), saving = ref(false), reason = ref(''), error = useScmErrorToast(), orderId = ref<Id>(),
     rows = ref<(Item & { quantity: string })[]>([]);
 const columns = [{title: '商品', dataIndex: 'productNameSnapshot'}, {
   title: '实数量',

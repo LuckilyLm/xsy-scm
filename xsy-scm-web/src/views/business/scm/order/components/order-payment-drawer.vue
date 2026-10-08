@@ -1,7 +1,6 @@
 <template>
   <a-drawer v-model:open="visible" :title="`订单支付 · ${order?.orderNo || ''}`" :width="scmDrawerWidth('m')"
             :closable="!saving" :mask-closable="!saving" :keyboard="!saving">
-    <a-alert v-if="error" type="error" show-icon :message="error" class="payment-message"/>
     <a-alert v-if="created" type="success" show-icon
              :message="`${created.intentNo}：${statusText(created.status)}`" class="payment-message"/>
     <a-form v-if="order?.status === 'CONFIRMED'" v-privilege="'scm:payment:intent:create'" layout="vertical">
@@ -21,9 +20,10 @@
     <a-divider/>
     <a-button v-privilege="'scm:payment:transaction:query'" :loading="loading" @click="load(1)">查询支付记录</a-button>
     <a-table v-if="queried" class="payment-records" size="small" :columns="columns" :data-source="rows"
-             row-key="id" :loading="loading" :scroll="{x: 680}" :pagination="false">
+             row-key="id" :loading="loading" :scroll="{x: 840}" :pagination="false">
       <template #bodyCell="{record, column}">
-        <template v-if="column.dataIndex === 'method'">{{ record.method === 'BALANCE' ? '余额 / 内部结算' : '在线 / ' + providerText(record.provider) }}</template>
+        <template v-if="column.dataIndex === 'method'">{{ record.method === 'BALANCE' ? '余额支付' : '在线支付' }}</template>
+        <template v-else-if="column.dataIndex === 'provider'">{{ providerText(record.provider) }}</template>
         <template v-else-if="column.dataIndex === 'status'">{{ statusText(record.status) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-button type="link" v-privilege="'scm:payment:transaction:query'" @click="showDetail(record)">交易</a-button>
@@ -49,15 +49,17 @@ import type {Order} from '../order-types';
 import {financeError} from '../../finance/finance-errors';
 import {isValidPositiveAmount} from '../../finance/finance-form-model';
 import BalanceMovementDetail from '../../finance/balance-movement-detail.vue';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
-const visible = ref(false), saving = ref(false), loading = ref(false), error = ref(''), queried = ref(false);
+const visible = ref(false), saving = ref(false), loading = ref(false), error = useScmErrorToast(), queried = ref(false);
 const order = ref<Order>(), amount = ref(''), method = ref<'BALANCE' | 'ONLINE'>('BALANCE');
 const created = ref<PaymentIntent>(), detail = ref<PaymentIntent>(), rows = ref<PaymentIntent[]>([]);
 const pageNum = ref(1), total = ref(0), movement = ref<InstanceType<typeof BalanceMovementDetail>>();
 const keys = new Map<string, string>();
 let generation = 0;
 const columns: TableColumnsType<PaymentIntent> = [
-  {title: '支付单号', dataIndex: 'intentNo', width: 200}, {title: '方式 / 渠道', dataIndex: 'method', width: 170},
+  {title: '支付单号', dataIndex: 'intentNo', width: 200}, {title: '支付方式', dataIndex: 'method', width: 100},
+  {title: '渠道', dataIndex: 'provider', width: 130},
   {title: '申请金额', dataIndex: 'amount', width: 120, align: 'right'},
   {title: '状态', dataIndex: 'status', width: 100}, {title: '追溯', dataIndex: 'action', width: 150, align: 'center'},
 ];

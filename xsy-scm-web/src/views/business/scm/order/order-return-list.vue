@@ -15,27 +15,19 @@
       </a-form-item>
     </a-row>
   </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">退货</div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="603" :refresh="queryData"/>
       </div>
     </a-row>
     <a-table id="order-return-table" size="small" :data-source="tableData" :columns="columns" row-key="returnId"
-             :loading="loading" bordered :pagination="false" :scroll="{x:1160}">
+             :loading="loading" bordered :pagination="false" :scroll="{x:1270}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='status'">{{ SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc }}</template>
+        <template v-else-if="column.dataIndex==='customerName'">{{ record.customerName || '—' }}</template>
         <template v-else-if="column.dataIndex==='orderNo'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.customerName || '—' }}</span>
-            <span class="scm-cell-stack__sub scm-mono">{{ record.orderNo || '—' }}</span>
-          </div>
+          <span class="scm-mono">{{ record.orderNo || '—' }}</span>
         </template>
         <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
@@ -63,9 +55,6 @@
     </div>
   </a-card>
   <a-drawer v-model:open="detailOpen" title="退货单详情" :width="scmDrawerWidth('m')">
-    <a-alert v-if="detailError" type="error" show-icon :message="detailError">
-      <template #action><a-button @click="showDetail(detailId)">重试</a-button></template>
-    </a-alert>
     <a-spin :spinning="detailLoading">
       <template v-if="detail">
         <a-descriptions bordered :column="1" size="small">
@@ -81,15 +70,15 @@
                    {title:'申请数量',dataIndex:'requestedQuantity'},{title:'批准数量',dataIndex:'approvedQuantity'},
                    {title:'已接收数量',dataIndex:'receivedQuantity'}]"/>
       </template>
+      <a-empty v-else-if="!detailLoading" description="退货单信息加载失败">
+        <a-button @click="showDetail(detailId)">重新加载</a-button>
+      </a-empty>
     </a-spin>
   </a-drawer>
   <a-modal :open="visible" :title="action==='approve'?'审核退货':action==='receive'?'退货实物接收':action==='reject'?'驳回退货':'取消退货'" width="min(800px,96vw)"
            :confirm-loading="saving" :ok-button-props="{disabled: editLoading || !active}"
            :cancel-button-props="{disabled: saving}" :closable="!saving" :keyboard="!saving" :mask-closable="!saving"
            @ok="save" @cancel="closeEdit">
-    <a-alert v-if="editError" :message="editError" type="error" show-icon>
-      <template v-if="!active" #action><a-button :loading="editLoading" @click="retryEdit">重试</a-button></template>
-    </a-alert>
     <a-spin class="return-edit-content" :spinning="editLoading">
     <template v-if="active">
       <fieldset :disabled="saving" class="return-edit-fields">
@@ -102,7 +91,6 @@
         </template>
       </a-table>
       <template v-else-if="action==='receive'">
-        <a-alert message="只登记本次实际验收数量。" type="info" show-icon/>
         <a-form-item label="接收仓库" required><WarehouseSelect v-model:value="warehouseId" :disabled="saving"/></a-form-item>
         <a-table :data-source="active.items" :scroll="{x: 650}" :columns="[{title:'商品',dataIndex:'productName',width:150},{title:'单位',dataIndex:'unit',width:65},{title:'批准数量',dataIndex:'approvedQuantity'},{title:'已接收',dataIndex:'receivedQuantity'},{title:'本次接收',dataIndex:'receiptQuantity'},{title:'处置',dataIndex:'disposition'}]" row-key="returnItemId" :pagination="false">
           <template #bodyCell="{record,column}">
@@ -116,6 +104,9 @@
       </a-form-item>
       </fieldset>
     </template>
+    <a-empty v-else-if="!editLoading" description="退货单信息加载失败">
+      <a-button :loading="editLoading" @click="retryEdit">重新加载</a-button>
+    </a-empty>
     </a-spin>
   </a-modal>
 </template>
@@ -137,9 +128,10 @@ type ReturnItemWithDisposition = ReturnItem & { disposition: 'RETURN_TO_STOCK' |
 import {amount, fixed} from './order-form-model';
 import {orderError} from './order-errors';
 import {hasPermission} from '../common/scm-permission';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<ReturnRow[]>([]), total = ref(0),
-    loading = ref(false), error = ref(''), visible = ref(false), saving = ref(false), active = ref<ReturnRow>();
+    loading = ref(false), error = useScmErrorToast(), visible = ref(false), saving = ref(false), active = ref<ReturnRow>();
 let requestId = 0;
 /**
  * 退货原因可能很长（业务人员会写整句），列表里给它固定宽度 + ellipsis，
@@ -149,8 +141,11 @@ const columns = ref<TableColumnsType<ReturnRow>>([{
   title: '退货单号',
   dataIndex: 'returnNo',
   width: 220
-}, {title: '客户 / 原订单', dataIndex: 'orderNo', width: 270},
-{title: '退货原因', dataIndex: 'reason', width: 260, ellipsis: true}, {
+}, {title: '客户', dataIndex: 'customerName', width: 150}, {
+  title: '原订单号',
+  dataIndex: 'orderNo',
+  width: 190
+}, {title: '退货原因', dataIndex: 'reason', width: 260, ellipsis: true}, {
   title: '状态',
   dataIndex: 'status',
   width: 120
@@ -211,7 +206,7 @@ function resetQuery() {
 }
 
 const action = ref<'approve' | 'receive' | 'reject' | 'cancel'>('approve'), decisionReason = ref(''), warehouseId = ref<Id>();
-const editLoading = ref(false), editError = ref(''), editRow = ref<ReturnRow>();
+const editLoading = ref(false), editError = useScmErrorToast(), editRow = ref<ReturnRow>();
 let editRequestId = 0;
 
 async function edit(row: ReturnRow, mode: 'approve' | 'receive' | 'reject' | 'cancel') {
@@ -302,7 +297,7 @@ async function save() {
   }
 }
 
-const detailOpen = ref(false), detailLoading = ref(false), detailError = ref('');
+const detailOpen = ref(false), detailLoading = ref(false), detailError = useScmErrorToast();
 const detail = ref<ReturnRow>(), detailId = ref<Id>();
 let detailRequestId = 0;
 async function showDetail(id?: Id) {

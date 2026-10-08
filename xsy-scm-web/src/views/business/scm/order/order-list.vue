@@ -18,11 +18,6 @@
       </a-form-item>
     </a-row>
   </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
@@ -37,16 +32,16 @@
       </div>
     </a-row>
     <a-table id="order-table" size="small" :data-source="tableData" :columns="columns" row-key="orderId" bordered
-             :loading="loading" :pagination="false" :scroll="{x:1190}"
+             :loading="loading" :pagination="false" :scroll="{x:1320}"
              :row-selection="{selectedRowKeys:selected,onChange:(keys:(string|number)[])=>selected=keys,getCheckboxProps:(r:Order)=>({disabled:r.status!=='DRAFT'})}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='orderNo'"><a @click="detail?.open(record.orderId)">{{ record.orderNo }}</a>
         </template>
         <template v-else-if="column.dataIndex==='customerNameSnapshot'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.customerNameSnapshot || '—' }}</span>
-            <span v-if="record.customerCodeSnapshot" class="scm-cell-stack__sub">{{ record.customerCodeSnapshot }}</span>
-          </div>
+          {{ record.customerNameSnapshot || '—' }}
+        </template>
+        <template v-else-if="column.dataIndex==='customerCodeSnapshot'">
+          <span class="scm-mono">{{ record.customerCodeSnapshot || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex==='status'">
           <ScmStatusTag :tone="statusTone(record.status)"
@@ -112,12 +107,13 @@ import type {Order, Query} from './order-types';
 import {amount} from './order-form-model';
 import {orderError} from './order-errors';
 import {hasPermission} from '../common/scm-permission';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import OrderForm from './components/order-form-drawer.vue';
 import OrderImportModal from './components/order-import-modal.vue';
 import OrderDetail from './order-detail.vue';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<Order[]>([]), total = ref(0),
-    loading = ref(false), error = ref(''), selected = ref<(string | number)[]>([]);
+    loading = ref(false), error = useScmErrorToast(), selected = ref<(string | number)[]>([]);
 const drawer = ref<InstanceType<typeof OrderForm>>(), importModal = ref<InstanceType<typeof OrderImportModal>>(),
     detail = ref<InstanceType<typeof OrderDetail>>();
 const route = useRoute();
@@ -137,7 +133,8 @@ watch(() => route.query.action, async (action) => {
 let requestId = 0;
 const columns = ref<TableColumnsType<Order>>([
   {title: '订单号', dataIndex: 'orderNo', width: 190},
-  {title: '客户', dataIndex: 'customerNameSnapshot', width: 200},
+  {title: '客户名称', dataIndex: 'customerNameSnapshot', width: 160},
+  {title: '客户编码', dataIndex: 'customerCodeSnapshot', width: 130},
   {title: '来源', dataIndex: 'orderSource', align: 'center', width: 100},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '下单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 130},
