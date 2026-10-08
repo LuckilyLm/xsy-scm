@@ -73,8 +73,12 @@
   float: right;
 }
 
+/*
+  查询表单一行放不下会换行，换行后两行之间的呼吸空间必须由行距提供。
+  8px 在两行都带按钮时看起来是贴在一起的，16px 才能读出「这是两行筛选条件」。
+*/
 .smart-query-form-row:not(:first-child) {
-  margin-top: 8px;
+  margin-top: 16px;
 }
 
 /*
@@ -88,8 +92,8 @@
 
 .smart-query-form-row .smart-query-form-item {
   margin-right: 8px;
-  margin-top: 5px;
-  margin-bottom: 5px;
+  margin-top: 6px;
+  margin-bottom: 6px;
 }
 
 /*
@@ -100,8 +104,8 @@
 */
 .smart-query-form.ant-form-inline > .smart-query-form-item {
   margin-right: 8px;
-  margin-top: 5px;
-  margin-bottom: 5px;
+  margin-top: 6px;
+  margin-bottom: 6px;
 }
 
 .smart-query-table-page {
@@ -110,19 +114,28 @@
   justify-content: flex-end;
 }
 
+/*
+  表格工具栏：左侧动作、右侧列设置在窄屏会换行，用 gap 统一提供左右与换行后的上下间距。
+  按钮直接挂在 .smart-table-btn-block 下的页面很多，只给 .smart-table-operate-block 内的按钮
+  加 margin 会让这些页面相邻按钮贴在一起。
+*/
 .smart-table-btn-block {
   margin-bottom: 15px;
   display: flex;
   flex-direction: row;
+  align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
 
   .smart-table-operate-block {
-    .ant-btn {
-      margin-right: 12px;
-    }
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
   }
 
   .smart-table-setting-block {
-    float: right;
+    margin-left: auto;
   }
 }

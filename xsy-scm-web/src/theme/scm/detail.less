@@ -77,9 +77,13 @@
   margin-bottom: 16px;
 }
 
+/*
+ * 摘要卡按内容宽度自适应铺满一行：固定 4 列时，5 个指标会拆成 4 + 1，
+ * 多出来的那张卡几乎整行空白。指标数量本来就不固定，列数不该由样式写死。
+ */
 .scm-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
 }
 

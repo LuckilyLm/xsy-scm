@@ -155,3 +155,21 @@
   font-size: 12px;
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
 }
+
+/*
+ * 单元格默认不换行：一个格子塞两行，行高被拉齐到最高那条、列宽又按最宽那条给，
+ * 结果是整张表既高又空。信息该分列就分列，放不下就省略号 + Tooltip。
+ *
+ * 长文本（备注、地址、多行明细）确实需要换行的，加 `.scm-cell-wrap` 显式退出。
+ */
+.ant-table-tbody > tr > td > .ant-table-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ant-table-tbody > tr > td > .ant-table-cell .scm-cell-wrap {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+}
