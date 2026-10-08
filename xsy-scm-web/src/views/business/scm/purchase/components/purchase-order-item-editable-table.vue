@@ -106,7 +106,6 @@
 
   <!-- 需求选择：只列同一 SKU且仍有可分配余量的需求（跨 SKU → 40995） -->
   <a-modal :open="picker.open" title="选择采购需求" width="900px" :footer="null" @cancel="picker.open = false">
-    <a-alert v-if="picker.error" :message="picker.error" type="error" show-icon/>
     <a-spin :spinning="picker.loading">
       <a-table size="small" :data-source="picker.rows" :columns="pickerColumns" :pagination="false" row-key="id">
         <template #bodyCell="{ record: demand, column }">
@@ -141,11 +140,12 @@ import {
   unitMismatch,
 } from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 defineProps<{ items: OrderItem[] }>();
 
 const columns: TableColumnsType<OrderItem> = [
-  {title: '商品 / 商品规格', dataIndex: 'skuId', width: 300},
+  {title: '商品规格', dataIndex: 'skuId', width: 300},
   {title: '采购数量', dataIndex: 'plannedQuantity', align: 'right', width: 150},
   {title: '采购单价', dataIndex: 'purchasePrice', align: 'right', width: 150},
   {title: '已分配合计', dataIndex: 'allocated', align: 'right', width: 140},
@@ -173,7 +173,7 @@ const pickerColumns: TableColumnsType<Demand> = [
 const picker = reactive({
   open: false,
   loading: false,
-  error: '',
+  error: useScmErrorToast(),
   rows: [] as Demand[],
   item: undefined as OrderItem | undefined,
 });

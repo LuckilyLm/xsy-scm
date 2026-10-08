@@ -5,7 +5,6 @@
       :width="scmDrawerWidth('xl')"
       @close="visible = false"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <a-form :model="form" layout="vertical">
         <a-row :gutter="20">
@@ -75,6 +74,7 @@ import type {Id, Order} from '../purchase-types';
 import {newOrder, payload, validateOrder} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 import {hasPermission} from '../../common/scm-permission';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 import ItemTable from './purchase-order-item-editable-table.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
@@ -84,7 +84,7 @@ const form = ref<Order>(newOrder());
 const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const warehouseLoading = ref(false);
 const warehouses = ref<{ id: Id; warehouseCode?: string; name?: string }[]>([]);
 /** 竞态保护：慢的旧详情不得覆盖新打开的单。 */

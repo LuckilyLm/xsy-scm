@@ -32,15 +32,7 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
-    <a-tag color="blue">只读预览</a-tag>
-    <a-typography-text type="secondary">预览不是最终净采购建议，也不生成采购单。</a-typography-text>
     <a-table
         id="scm-purchase-demand-summary-preview-table"
         size="small"
@@ -93,6 +85,7 @@ import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/
 import type {DemandSummaryRow, Id} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 /** 这些列是后端下发的四位定点字符串，统一走 `quantity` 渲染（null → —）。 */
 const numericColumns = [
@@ -117,7 +110,7 @@ const total = ref(0);
 const pageNum = ref(1);
 const pageSize = ref(20);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 let requestId = 0;
 
 const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [

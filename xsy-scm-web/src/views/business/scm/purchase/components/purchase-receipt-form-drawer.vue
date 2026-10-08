@@ -11,7 +11,6 @@
       :width="scmDrawerWidth('m')"
       @close="visible = false"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <a-form :model="form" layout="vertical">
         <a-form-item label="采购单" name="purchaseOrderId" required>
@@ -38,13 +37,6 @@
             直接入库：确认收货即入账；仓库确认入库：确认后由仓库二次确认才入账。
           </div>
         </a-form-item>
-
-        <a-alert
-            v-if="!form.id"
-            type="info"
-            show-icon
-            message="收货明细会根据采购单当前明细自动生成，无需手工添加"
-        />
 
         <a-form-item label="备注" name="remark">
           <a-input v-model:value="form.remark" maxlength="500"/>
@@ -89,6 +81,7 @@ import {
 } from '/@/constants/business/scm/purchase-const';
 import type {Id, Receipt} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ saved: [] }>();
@@ -100,7 +93,7 @@ const form = ref<Receipt>({});
 const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const orderLoading = ref(false);
 const orderOptions = ref<{ value: Id; label: string }[]>([]);
 let requestId = 0;

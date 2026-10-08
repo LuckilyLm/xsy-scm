@@ -13,12 +13,6 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
       :width="scmDrawerWidth('workspace')"
       @close="close"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon>
-      <template #action>
-        <a-button @click="load">重试</a-button>
-      </template>
-    </a-alert>
-
     <a-spin :spinning="loading">
       <template v-if="detail">
         <a-descriptions bordered size="small" :column="3" class="head">
@@ -87,7 +81,9 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
           </template>
         </a-table>
       </template>
-      <a-empty v-else-if="!loading && !error" description="请选择一个冻结批次"/>
+      <a-empty v-else-if="!loading" :description="error ? '冻结批次加载失败' : '请选择一个冻结批次'">
+        <a-button v-if="error" @click="load">重新加载</a-button>
+      </a-empty>
     </a-spin>
   </a-drawer>
 </template>
@@ -100,6 +96,7 @@ import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/
 import type {DemandBatchDetail, DemandBatchItem, DemandBatchSummaryRow, Id} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const props = defineProps<{ open: boolean; batchId?: Id }>();
@@ -122,7 +119,7 @@ const numericColumns = [
 
 const detail = ref<DemandBatchDetail>();
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 let requestId = 0;
 
 const summaryColumns: TableColumnsType<DemandBatchSummaryRow> = [

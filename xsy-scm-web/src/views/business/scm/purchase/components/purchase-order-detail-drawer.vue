@@ -5,11 +5,6 @@
 -->
 <template>
   <a-drawer :open="visible" :title="order?.orderNo || '采购单详情'" :width="scmDrawerWidth('xl')" @close="visible = false">
-    <a-alert v-if="error" :message="error" type="error" show-icon>
-      <template #action>
-        <a-button @click="load">重试</a-button>
-      </template>
-    </a-alert>
     <a-spin :spinning="loading">
       <template v-if="order">
         <div class="actions">
@@ -208,6 +203,7 @@ import type {Allocation, Id, LogRow, Order, OrderItem} from '../purchase-types';
 import {amount, progress, quantity} from '../purchase-form-model';
 import {datetime} from '../../common/scm-display';
 import {purchaseError} from '../purchase-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const emit = defineEmits<{ saved: [] }>();
@@ -244,7 +240,7 @@ const logsLoading = ref(false);
 /** 区分「还没查过」与「查过了但没有记录」，否则空态会在未查询时误报。 */
 const logsLoaded = ref(false);
 const saving = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const order = ref<Order>();
 const logs = ref<LogRow[]>([]);
 const cancelOpen = ref(false);

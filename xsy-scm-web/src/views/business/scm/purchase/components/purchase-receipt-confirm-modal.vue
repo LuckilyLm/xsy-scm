@@ -14,12 +14,6 @@
       @ok="confirm"
       @cancel="visible = false"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon>
-      <template #action>
-        <a-button @click="load">重试</a-button>
-      </template>
-    </a-alert>
-
     <a-spin :spinning="loading">
       <a-descriptions v-if="receipt" bordered size="small" :column="3">
         <a-descriptions-item label="采购单号">{{ receipt.purchaseOrderNo || '—' }}</a-descriptions-item>
@@ -72,7 +66,7 @@
                 v-model:value="lineOf(record.id).actualWeight"
                 aria-label="实重"
             />
-            <span v-else class="hint">标品按声明数量结算</span>
+            <span v-else>—</span>
           </template>
           <template v-else-if="column.dataIndex === 'correctionReason'">
             <a-input
@@ -90,8 +84,7 @@
           class="hint-block"
           type="info"
           show-icon
-          message="超收容差"
-          description="超出剩余可收量的比例由「采购超收容差」配置决定；本次可收上限超出容差时整笔确认会被拒绝，不会部分入库。"
+          message="超出剩余可收量时按「采购超收容差」配置整笔拒绝，不会部分入库"
       />
     </a-spin>
   </a-modal>
@@ -111,19 +104,20 @@ import {
   validateConfirm,
 } from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const emit = defineEmits<{ saved: [] }>();
 
 const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const receipt = ref<Receipt>();
 const lines = ref<ReceiptConfirmItemPayload[]>([]);
 let requestId = 0;
 
 const columns: TableColumnsType<ReceiptItem> = [
-  {title: '商品', dataIndex: 'skuName', width: 150},
+  {title: '商品规格', dataIndex: 'skuName', width: 150},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 90},
   {title: '计划数量', dataIndex: 'plannedQuantity', align: 'right', width: 105},
   {title: '累计已收', dataIndex: 'cumulativeReceivedQuantity', align: 'right', width: 105},
@@ -177,12 +171,6 @@ async function open(id: Id) {
   }
 }
 
-async function load() {
-  if (receipt.value?.id) {
-    await open(receipt.value.id);
-  }
-}
-
 async function confirm() {
   const target = receipt.value;
   if (!target) {
@@ -213,11 +201,6 @@ defineExpose({open});
 <style scoped>
 .lines {
   margin: 16px 0;
-}
-
-.hint {
-  color: var(--scm-text-secondary);
-  font-size: 12px;
 }
 
 .hint-block {

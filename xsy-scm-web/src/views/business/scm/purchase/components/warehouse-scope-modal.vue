@@ -16,8 +16,6 @@
       :confirm-loading="saving"
       @ok="save"
   >
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
-
     <template v-if="isView">
       <p>仓库：<strong>{{ viewWarehouseName }}</strong></p>
       <a-table
@@ -75,10 +73,11 @@ import type {
     WarehouseScopeEmployee,
 } from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const visible = ref(false);
 const saving = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 
 const isView = ref(false);
 const viewWarehouseName = ref('');
@@ -189,9 +188,3 @@ async function save() {
 
 defineExpose({open, openEmployees});
 </script>
-
-<style scoped>
-.smart-margin-bottom10 {
-  margin-bottom: 10px;
-}
-</style>

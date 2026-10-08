@@ -22,16 +22,10 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        操作日志<span v-if="orderNo">：{{ orderNo }}</span>
+        <span v-if="orderNo">采购单：{{ orderNo }}</span>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_LOG" :refresh="queryData"/>
@@ -84,13 +78,14 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_PURCHASE_OPERATION_ENUM, SCM_PURCHASE_TABLE_ID} from '/@/constants/business/scm/purchase-const';
 import type {LogRow} from './purchase-types';
 import {purchaseError} from './purchase-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {datetime} from '../common/scm-display';
 
 const orderNo = ref<string | undefined>(undefined);
 const operationType = ref<string | undefined>(undefined);
 const tableData = ref<LogRow[]>([]);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const visible = ref(false);
 const active = ref<LogRow>();
 let requestId = 0;

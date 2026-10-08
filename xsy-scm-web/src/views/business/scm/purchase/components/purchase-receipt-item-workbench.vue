@@ -28,12 +28,6 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-table
         id="scm-purchase-receipt-item-workbench-table"
@@ -82,6 +76,7 @@ import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
 import type {Id, ReceiptItemWorkbenchRow} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 /** 后端下发的四位定点字符串列，统一走 `quantity` 渲染（null → —）。 */
 const numericColumns = ['plannedQuantity', 'receivedQuantity', 'pendingQuantity', 'overReceiptQuantity'];
@@ -95,7 +90,7 @@ const total = ref(0);
 const pageNum = ref(1);
 const pageSize = ref(20);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 let requestId = 0;
 
 /** 聚合行按 `skuId + 采购单位` 归并，故 row-key 是二者复合，单靠 skuId 不唯一。 */
