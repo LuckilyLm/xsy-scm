@@ -28,15 +28,9 @@
     </a-form>
 
     <a-card size="small" :bordered="false">
-      <a-row class="smart-table-btn-block" justify="space-between" align="middle">
-        <a-typography-text type="secondary">本页为只读反查；维护关联请到「供应商档案」→「关联商品」。</a-typography-text>
+      <a-row class="smart-table-btn-block" justify="end" align="middle">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER_SKU" :refresh="load"/>
       </a-row>
-      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
-        <template #action>
-          <a-button size="small" @click="load">重新加载</a-button>
-        </template>
-      </a-alert>
       <a-table
           :data-source="rows"
           :columns="columns"
@@ -90,12 +84,13 @@ import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const filters = reactive<SupplierSkuQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<SupplierSkuRow[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 
 const statusText = (value: EnableStatus): string => SUPPLIER_SKU_STATUS_ENUM[value]?.desc || value;
 const specText = (spec: Record<string, string> | undefined): string => {

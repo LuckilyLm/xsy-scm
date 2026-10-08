@@ -8,7 +8,6 @@
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('m')" @close="close">
     <a-spin :spinning="loading">
-      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
       <a-form ref="formRef" :model="form" layout="vertical">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
@@ -113,13 +112,14 @@ import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf, areaNodesOf} from '../../common/scm-area';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {supplierError} from '../supplier-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const emit = defineEmits<{ saved: [] }>();
 
 const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const formRef = ref<FormInstance>();
 
 const form = reactive<SupplierFormModel>(emptySupplier());

@@ -12,12 +12,7 @@
       <a-button @click="router.push('/supplier/supplier-list')">返回供应商列表</a-button>
       <a-button @click="load">刷新详情</a-button>
     </a-space>
-    <a-alert v-if="error" :message="error" type="error" show-icon>
-      <template #action>
-        <a-button size="small" @click="load">重新加载</a-button>
-      </template>
-    </a-alert>
-    <template v-else-if="supplier">
+    <template v-if="supplier">
       <div class="detail-doc-title">{{ supplier.name }}</div>
 
       <!-- 1. 概览 -->
@@ -107,13 +102,14 @@ import {SUPPLIER_SKU_STATUS_ENUM, SUPPLIER_STATUS_ENUM} from '/@/constants/busin
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
 import {isLocated} from '/@/components/business/scm/map/types';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const route = useRoute();
 const router = useRouter();
 const supplier = ref<SupplierDetail>();
 const relations = ref<SupplierSkuRow[]>([]);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 
 const statusText = (value: EnableStatus): string => SUPPLIER_STATUS_ENUM[value]?.desc || value;
 const skuStatusText = (value: EnableStatus): string => SUPPLIER_SKU_STATUS_ENUM[value]?.desc || value;
