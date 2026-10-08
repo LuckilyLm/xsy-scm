@@ -28,17 +28,10 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:print:template:add'" @click="openCreate">新建模板</a-button>
-        <span class="hint">每种单据至多一个默认模板</span>
       </div>
     </a-row>
 
@@ -53,7 +46,10 @@
         :scroll="{ x: 1100 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'defaultFlag'">
+        <template v-if="column.dataIndex === 'templateCode'">
+          <span class="scm-mono">{{ record.templateCode || '—' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'defaultFlag'">
           <ScmStatusTag v-if="record.defaultFlag" tone="processing" label="默认"/>
           <span v-else class="scm-cell-hint">—</span>
         </template>
@@ -93,7 +89,6 @@
       @ok="submit"
       @cancel="editOpen = false"
   >
-    <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner"/>
     <a-form layout="vertical">
       <a-row :gutter="12">
         <a-col :span="12">
@@ -190,18 +185,19 @@ import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue'
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import {hasPermission} from '../common/scm-permission';
 import {printError} from './print-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const queryForm = reactive<PrintTemplateQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<PrintTemplate[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 
 const documentTypes = ref<PrintDocumentTypeOption[]>([]);
 const catalog = ref<PrintFieldCatalog>();
 const editOpen = ref(false);
 const saving = ref(false);
-const editError = ref('');
+const editError = useScmErrorToast();
 let requestId = 0;
 
 const typeOptions = computed(() =>
@@ -440,12 +436,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.hint {
-  color: var(--scm-text-secondary);
-  font-size: 12px;
-  margin-left: 8px;
-}
-
 .banner {
   margin-bottom: 12px;
 }
