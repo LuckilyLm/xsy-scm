@@ -42,7 +42,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 2000 }"
+        :scroll="{ x: 2425 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'calculationStatus'">

@@ -50,7 +50,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1775 }"
+        :scroll="{ x: 1835 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'salesOrderNoSnapshot'">
