@@ -167,6 +167,20 @@ onBeforeUnmount(() => {
   background: @screen-bg;
 }
 
+// 设计稿容器必须绝对定位，不能是 wrapper 的普通 flex 子项。
+// 原因（2026-10-08 实测定位）：flex 子项的 width 只是 flex-basis，
+// 默认 flex-shrink 为 1，会在视口窄于 1920 时把它压缩到 wrapper 宽度，
+// 于是三列（420 + 1000 + 420）被挤进 1680px，右列内容需要 1224px 却只分到 720px，
+// 面板内行列表格向外溢出、压到底部趋势带上（截图里的「排版错乱」）。
+// 绝对定位让它脱离 flex 布局，布局尺寸恒为 1920 × 1080；
+// 适配交给 useScreenScale 的 transform scale，缩放在 wrapper 里居中。
+.scm-screen {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-origin: center center;
+}
+
 // 中列核心指标固定高度，剩余空间全部给供应链分布地图
 .scm-core-slot {
   flex: 0 0 @core-h;

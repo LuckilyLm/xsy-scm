@@ -7,7 +7,7 @@
       <span>暂无库存</span>
     </div>
 
-    <div v-else class="scm-wh-list">
+    <div v-else class="scm-wh-list scm-scroll">
       <div v-for="row in rows" :key="row.name" class="scm-wh-row">
         <div class="scm-wh-line">
           <span class="scm-wh-name" :title="row.name">{{ row.name }}</span>
@@ -64,12 +64,17 @@ const rows = computed(() => {
 <style lang="less" scoped>
 @import '../styles/variables.less';
 
+// 仓库数量不受控（演示库 7 个、生产可能更多），固定 167px 的面板体放不下时必须
+// 自己滚动，而不是把行撑出面板边界 —— 溢出会让行列表格压到底部趋势带上，
+// 表现为「排版错乱」（2026-10-08 实测：7 行需要 696px，容器仅 167px，溢出 529px）。
+// 这里不再用 justify-content: space-around：它只分配剩余空间，不会压缩内容，
+// 内容超出时照样溢出。改为正常堆叠 + overflow-y: auto（.scm-scroll 提供细滚动条）。
 .scm-wh-list {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  gap: 8px;
 }
 
 .scm-wh-row {

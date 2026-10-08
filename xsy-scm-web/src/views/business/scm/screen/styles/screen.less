@@ -12,7 +12,9 @@
 @import './variables.less';
 
 .scm-screen {
-  position: relative;
+  // position / 居中 / transform-origin 由 index.vue 的 scoped 样式负责
+  // （必须是 absolute 才能脱离 wrapper 的 flex 布局、保持 1920×1080 布局尺寸）。
+  // 这里只放尺寸与盒模型。
   width: @screen-w;
   height: @screen-h;
   padding: @screen-pad;
