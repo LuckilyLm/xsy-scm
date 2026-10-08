@@ -1,5 +1,5 @@
 <template>
-  <default-home-card extra="更多" icon="FlagOutlined" title="更新日志" @extraClick="onMore">
+  <default-home-card extra="更多" asset="icons/notice-changelog.png" title="更新日志" @extraClick="onMore">
     <region-error v-if="error" :message="error" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <div class="home-changelog">

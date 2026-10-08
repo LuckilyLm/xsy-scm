@@ -56,7 +56,7 @@ export interface ScmDashboardTrend {
 /** 排行维度：两个维度都来自销售事实。 */
 export type ScmRankDimension = 'customer' | 'product';
 
-/** 排行项：名称取自单据快照列，主数据改名后历史单据仍显示当时的名称。 */
+/** 排行项：金额按业务对象 ID 合并，名称由服务端补当前主数据名称或对象编号。 */
 export interface ScmRankItem {
     name: string;
     amount: string;

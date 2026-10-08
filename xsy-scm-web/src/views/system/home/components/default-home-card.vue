@@ -2,7 +2,8 @@
   <a-card class="home-card" :bordered="false">
     <template #title>
       <div class="home-card__title">
-        <component :is="$antIcons[icon]" v-if="icon" class="home-card__icon" aria-hidden="true"/>
+        <img v-if="asset" :src="homeAsset(asset)" alt="" aria-hidden="true" class="home-card__asset"/>
+        <component :is="$antIcons[icon]" v-else-if="icon" class="home-card__icon" aria-hidden="true"/>
         <slot name="title"><span>{{ title }}</span></slot>
       </div>
     </template>
@@ -16,7 +17,9 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{icon?: string; title?: string; extra?: string}>();
+import {homeAsset} from '../home-assets';
+
+defineProps<{icon?: string; asset?: string; title?: string; extra?: string}>();
 const emit = defineEmits<{extraClick: []}>();
 </script>
 
@@ -52,5 +55,11 @@ const emit = defineEmits<{extraClick: []}>();
 .home-card__icon {
   font-size: 18px;
   color: var(--scm-primary);
+}
+
+.home-card__asset {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
 </style>
