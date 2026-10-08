@@ -68,7 +68,7 @@
             size="small"
             bordered
             :pagination="false"
-            :scroll="{ x: 1000 }"
+            :scroll="{ x: 1120 }"
         >
           <template #bodyCell="{ column, record }">
             <span v-if="column.dataIndex === 'skuNameSnapshot'">{{ record.skuNameSnapshot }}</span>
