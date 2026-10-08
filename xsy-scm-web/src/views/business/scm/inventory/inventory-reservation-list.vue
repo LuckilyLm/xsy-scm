@@ -5,8 +5,8 @@
   因此本页只有查询与释放，没有「新建」。
   释放把占用归还可用量；重复释放会被拒绝（41016），不会把可用量虚增。
 
-  列按「哪张单 / 哪个仓 / 什么货 / 占了多少 / 还在不在占」排列：仓库与商品规格的编码
-  作为名称下方的 secondary text。来源单号取不到时显示破折号，不回落成裸 ID ——
+  列按「哪张单 / 哪个仓 / 什么货 / 占了多少 / 还在不在占」排列。
+  来源单号取不到时显示破折号，不回落成裸 ID ——
   `sourceDocumentId` 是技术主键，对使用者没有信息量。
 -->
 <template>
@@ -35,19 +35,8 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <a-typography-text type="secondary">
-          预留占用「可用量」但不改变物理库存；可用量 = 现有量 − 预留量。
-        </a-typography-text>
-      </div>
       <div class="smart-table-setting-block">
         <TableOperator
             v-model="columns"
@@ -67,21 +56,19 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无预留记录' }"
-        :scroll="{ x: 1260 }"
+        :scroll="{ x: 1520 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'sourceDocumentNo'">{{ record.sourceDocumentNo || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'sourceDocumentNo'">
+          <span class="scm-mono">{{ record.sourceDocumentNo || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'sku'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -145,12 +132,13 @@ import type {Warehouse} from '../purchase/purchase-types';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const queryForm = reactive<InventoryReservationQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryReservation[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
@@ -161,9 +149,11 @@ const statusOptions = Object.values(SCM_INVENTORY_RESERVATION_STATUS_ENUM).map((
 
 const columns = ref<TableColumnsType<InventoryReservation>>([
   {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 180},
-  {title: '仓库', dataIndex: 'warehouse', width: 160},
-  {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '仓库', dataIndex: 'warehouseName', width: 140},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
+  {title: '商品', dataIndex: 'productName', width: 150},
+  {title: '商品规格', dataIndex: 'sku', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '预留数量', dataIndex: 'quantity', align: 'right', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 80},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},

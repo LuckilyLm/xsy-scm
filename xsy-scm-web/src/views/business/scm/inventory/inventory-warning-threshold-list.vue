@@ -26,21 +26,12 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:threshold:add'">
           新建阈值配置
         </a-button>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          只有配置了阈值的仓库 + 商品规格才会进入预警列表；上下限至少填一个。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -61,20 +52,16 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无阈值配置' }"
-        :scroll="{ x: 1090 }"
+        :scroll="{ x: 1370 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'sku'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'warnMin'">
           <span class="scm-quantity">{{ quantityText(record.warnMin) }}</span>
@@ -127,12 +114,6 @@
       :width="scmDrawerWidth('s')"
       @close="closeDrawer"
   >
-    <a-alert
-        type="info"
-        show-icon
-        style="margin-bottom: 12px"
-        message="预警按可用量（现有量 − 预留量）判定。"
-    />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
@@ -198,22 +179,25 @@ import type {Warehouse} from '../purchase/purchase-types';
 import {fixed4} from '../common/scm-fixed';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryWarningThresholdQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarningThreshold[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
-// 配置页只关心「哪个仓 + 哪个商品规格 + 上下限是多少 + 备注」。
+// 配置页只关心「哪个仓 + 哪个商品规格 + 上下限是多少 + 备注」，一格一个值，名称与编码各自成列。
 // 更新时间是技术字段（改配置立即生效，没有需要追溯的业务时刻），不上列。
 const columns = ref<TableColumnsType<InventoryWarningThreshold>>([
-  {title: '仓库', dataIndex: 'warehouse', width: 160},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
   {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '商品规格', dataIndex: 'sku', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 120},
   {title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 120},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},

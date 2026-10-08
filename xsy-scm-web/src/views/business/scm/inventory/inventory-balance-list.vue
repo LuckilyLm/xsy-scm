@@ -23,19 +23,8 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <a-typography-text type="secondary">
-          余额由「收货确认 → 采购入库」的流水累加而来，本页不提供修改入口。
-        </a-typography-text>
-      </div>
       <div class="smart-table-setting-block">
         <TableOperator
             v-model="columns"
@@ -55,20 +44,16 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无库存余额' }"
-        :scroll="{ x: 1240 }"
+        :scroll="{ x: 1480 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'sku'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unit'">{{ record.unit || '—' }}</template>
         <template v-else-if="column.dataIndex === 'quantity'">
@@ -117,22 +102,25 @@ import type {InventoryBalance, InventoryBalanceQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {moneyText, quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const queryForm = reactive<InventoryBalanceQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryBalance[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 // 与选择器共享仓库列表，避免默认值判定重复请求。
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
-// 余额按「仓库 + 商品规格」定位，编码作为名称下方的次要信息，不再各占一列。
+// 余额按「仓库 + 商品规格」定位：名称与编码各自成列，一格只放一个值。
 // 库存/预留/可用/均价/金额是一组要横向比较的数值，统一右对齐 + 等宽数字。
 const columns = ref<TableColumnsType<InventoryBalance>>([
-  {title: '仓库', dataIndex: 'warehouse', width: 180},
-  {title: '商品', dataIndex: 'productName', width: 200},
-  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
+  {title: '商品', dataIndex: 'productName', width: 180},
+  {title: '商品规格', dataIndex: 'sku', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
   {title: '库存', dataIndex: 'quantity', align: 'right', width: 110},
   {title: '预留', dataIndex: 'reservedQuantity', align: 'right', width: 100},

@@ -1,8 +1,6 @@
 <!--
   库存流水只读查询，来源单号可跳转至收货单列表。
   时间筛选使用业务发生时刻 occurred_at，区间左闭右开；历史回填的写入时刻不参与筛选。
-  列按「谁 / 什么货 / 动了多少 / 动完剩多少」组织：仓库与商品规格的编码作为名称下方的
-  secondary text，期初量收进结存格的次要行，不再各占一列。
 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
@@ -37,19 +35,8 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <a-typography-text type="secondary">
-          流水是只追加的账本：不可编辑、不可删除，冲销以新增反向流水实现。
-        </a-typography-text>
-      </div>
       <div class="smart-table-setting-block">
         <TableOperator
             v-model="columns"
@@ -69,7 +56,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无库存流水' }"
-        :scroll="{ x: 1400 }"
+        :scroll="{ x: 1760 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'occurredAt'">{{ datetime(record.occurredAt) }}</template>
@@ -86,21 +73,17 @@
         </template>
         <template v-else-if="column.dataIndex === 'receiptNo'">
           <!-- 入库显示收货单号、出库显示出库单号；两者是不同的跳转目标，故分开字段而非合并 -->
-          <a v-if="record.receiptNo" @click="openReceipt(record.receiptNo)">{{ record.receiptNo }}</a>
-          <span v-else-if="record.sourceDocumentNo">{{ record.sourceDocumentNo }}</span>
+          <a v-if="record.receiptNo" class="scm-mono" @click="openReceipt(record.receiptNo)">{{ record.receiptNo }}</a>
+          <span v-else-if="record.sourceDocumentNo" class="scm-mono">{{ record.sourceDocumentNo }}</span>
           <span v-else>—</span>
         </template>
-        <template v-else-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'sku'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -109,12 +92,11 @@
         <template v-else-if="column.dataIndex === 'unitCost'">
           <span class="scm-money">{{ moneyText(record.unitCost) }}</span>
         </template>
+        <template v-else-if="column.dataIndex === 'beforeQuantity'">
+          <span class="scm-quantity">{{ quantityText(record.beforeQuantity) }}</span>
+        </template>
         <template v-else-if="column.dataIndex === 'afterQuantity'">
-          <!-- 结存：期末在上（本次动完的账面量），期初在下（同一格内的对照值） -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main scm-quantity">{{ quantityText(record.afterQuantity) }}</span>
-            <span class="scm-cell-stack__sub scm-quantity">期初 {{ quantityText(record.beforeQuantity) }}</span>
-          </div>
+          <span class="scm-quantity">{{ quantityText(record.afterQuantity) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -154,6 +136,7 @@ import type {InventoryMovement, InventoryMovementQuery} from './inventory-types'
 import {moneyText, movementTypeText, quantityText, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const router = useRouter();
 const queryForm = reactive<InventoryMovementQuery>({pageNum: 1, pageSize: 20});
@@ -161,21 +144,24 @@ const occurredRange = ref<[string, string] | undefined>();
 const tableData = ref<InventoryMovement[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 let requestId = 0;
 
 // 流水一行 = 一次库存变动。列按「何时 / 什么业务 / 哪张单 / 哪个仓 / 什么货 / 动多少 / 动完剩多少」排列；
-// 仓库与商品规格的编码是名称下方的次要信息，期初量是结存的对照行，都不再各占一列。
+// 每列一个值，编码、期初与结存各自成列。
 const columns = ref<TableColumnsType<InventoryMovement>>([
   {title: '发生时间', dataIndex: 'occurredAt', width: 170},
   {title: '类型', dataIndex: 'movementType', width: 150},
   {title: '业务单号', dataIndex: 'receiptNo', width: 170},
-  {title: '仓库', dataIndex: 'warehouse', width: 150},
-  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '仓库', dataIndex: 'warehouseName', width: 140},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
+  {title: '商品规格', dataIndex: 'sku', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 80},
   {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 120},
-  {title: '结存', dataIndex: 'afterQuantity', align: 'right', width: 140},
+  {title: '期初量', dataIndex: 'beforeQuantity', align: 'right', width: 110},
+  {title: '结存量', dataIndex: 'afterQuantity', align: 'right', width: 110},
   {title: '操作者', dataIndex: 'operator', width: 110},
 ]);
 
