@@ -29,11 +29,6 @@
         <a-button v-privilege="'scm:customer:type:add'" type="primary" @click="modal?.open()">新增客户类型</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER_TYPE" :refresh="load"/>
       </a-row>
-      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
-        <template #action>
-          <a-button size="small" @click="load">重新加载</a-button>
-        </template>
-      </a-alert>
       <a-table
           :data-source="rows"
           :columns="columns"
@@ -87,12 +82,13 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import CustomerTypeModal from './components/customer-type-form-modal.vue';
 import {customerError} from './customer-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 const filters = reactive<CustomerTypeQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<CustomerType[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const modal = ref<InstanceType<typeof CustomerTypeModal>>();
 
 /** 枚举值 → 中文；查不到时退回原值，避免表格出现空白单元格。 */

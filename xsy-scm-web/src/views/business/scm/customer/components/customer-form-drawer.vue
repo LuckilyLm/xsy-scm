@@ -7,7 +7,6 @@
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('l')" @close="close">
     <a-spin :spinning="loading">
-      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
       <a-form ref="formRef" :model="form" layout="vertical">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
@@ -231,13 +230,14 @@ import {
 } from '../customer-form-model';
 import {customerError} from '../customer-errors';
 import {hasPermission} from '../../common/scm-permission';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const emit = defineEmits<{ saved: [] }>();
 
 const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const formRef = ref<FormInstance>();
 
 /** 详情里的状态（只读展示用）。新建时后端固定给「潜在」。 */

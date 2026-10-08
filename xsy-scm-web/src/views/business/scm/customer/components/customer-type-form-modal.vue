@@ -11,7 +11,6 @@
       @ok="submit"
       @cancel="visible = false"
   >
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
     <a-form ref="formRef" :model="form" layout="vertical">
       <a-form-item label="类型编码" name="typeCode"
                    :rules="[{ required: true, whitespace: true, message: '请输入类型编码' }]">
@@ -37,12 +36,13 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import {customerTypeApi} from '/@/api/business/scm/customer-type-api';
 import type {CustomerType, CustomerTypeForm} from '/@/types/business/scm/customer';
 import {customerError} from '../customer-errors';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const emit = defineEmits<{ saved: [] }>();
 
 const visible = ref(false);
 const saving = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const formRef = ref<FormInstance>();
 
 function defaults(): CustomerTypeForm {

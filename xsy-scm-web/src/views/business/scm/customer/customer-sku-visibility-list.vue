@@ -24,12 +24,6 @@
     </a-form>
 
     <a-card size="small" :bordered="false">
-      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
-        <template #action>
-          <a-button size="small" @click="load">重新加载</a-button>
-        </template>
-      </a-alert>
-
       <a-table
         :data-source="rows"
         :columns="columns"
@@ -37,24 +31,19 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '当前授权范围内没有匹配的客户可见性配置'}"
-        :scroll="{x: 1165}"
+        :scroll="{x: 1425}"
         size="small"
       >
         <template #bodyCell="{column, record}">
-          <template v-if="column.dataIndex === 'customerName'">
-            <div class="scm-cell-stack">
-              <span class="scm-cell-stack__main">{{ record.customerName || '—' }}</span>
-              <span class="scm-cell-stack__sub">{{ record.customerCode || '—' }}</span>
-            </div>
+          <span v-if="column.dataIndex === 'customerName'">{{ record.customerName || '—' }}</span>
+          <template v-else-if="column.dataIndex === 'customerCode'">
+            <span class="scm-mono">{{ record.customerCode || '—' }}</span>
           </template>
           <span v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'productName'">{{ record.productName || '—' }}</span>
-          <template v-else-if="column.dataIndex === 'specName'">
-            <div v-if="record.specName || record.skuCode" class="scm-cell-stack">
-              <span class="scm-cell-stack__main">{{ record.specName || '—' }}</span>
-              <span class="scm-cell-stack__sub">{{ record.skuCode || '—' }}</span>
-            </div>
-            <span v-else>—</span>
+          <span v-else-if="column.dataIndex === 'specName'">{{ record.specName || '—' }}</span>
+          <template v-else-if="column.dataIndex === 'skuCode'">
+            <span class="scm-mono">{{ record.skuCode || '—' }}</span>
           </template>
           <template v-else-if="column.key === 'visibilityPolicy'">
             <a-tag :color="record.visibilityPolicy === 'ALLOWLIST' ? 'blue' : 'default'">
@@ -107,6 +96,7 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {VisibilityRow} from '/@/types/business/scm/pricing';
 import {customerError} from './customer-errors';
+import {useScmErrorToast} from '../common/scm-error-toast';
 
 interface VisibilityQuery {
   pageNum: number;
@@ -121,15 +111,17 @@ const filters = reactive<VisibilityQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<VisibilityRow[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 let requestId = 0;
 
-// 客户编码、商品规格编码折成对应名称下方的次要文字，不再各占一列。
+// 一列一个值：客户编码与商品规格编码各自成列，便于逐位核对与横向排序。
 const columns = ref<TableColumnsType<VisibilityRow>>([
-  {title: '客户名称', dataIndex: 'customerName', width: 220},
+  {title: '客户名称', dataIndex: 'customerName', width: 200},
+  {title: '客户编码', dataIndex: 'customerCode', width: 130},
   {title: '客户类型', dataIndex: 'customerTypeName', width: 130},
-  {title: '商品名称', dataIndex: 'productName', width: 220},
-  {title: '商品规格', dataIndex: 'specName', width: 180},
+  {title: '商品名称', dataIndex: 'productName', width: 200},
+  {title: '商品规格', dataIndex: 'specName', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '可见策略', key: 'visibilityPolicy', width: 125},
   {title: '商品状态', key: 'status', width: 190},
   {title: '操作', key: 'action', width: 100, fixed: 'right', align: 'center'},

@@ -40,11 +40,6 @@
         <a-button v-privilege="'scm:customer:add'" type="primary" @click="drawer?.open()">新增客户</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER" :refresh="load"/>
       </a-row>
-      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
-        <template #action>
-          <a-button size="small" @click="load">重新加载</a-button>
-        </template>
-      </a-alert>
       <a-table
           class="customer-table"
           :data-source="rows"
@@ -55,28 +50,23 @@
           :locale="{ emptyText }"
           size="small"
           bordered
-          :scroll="{ x: 1090 }"
+          :scroll="{ x: 1295 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'name'">
-            <div class="scm-cell-stack">
-              <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.customerId)">
-                {{ record.name }}
-              </a-button>
-              <span class="scm-cell-stack__sub scm-mono">{{ record.customerCode }}</span>
-            </div>
+          <template v-if="column.dataIndex === 'customerCode'">
+            <span class="scm-mono">{{ record.customerCode || '—' }}</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'name'">
+            <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.customerId)">
+              {{ record.name }}
+            </a-button>
           </template>
           <span v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'sellerName'">{{ record.sellerName || '—' }}</span>
-          <template v-else-if="column.dataIndex === 'contact'">
-            <div v-if="record.contactName || record.contactPhone" class="scm-cell-stack">
-              <span v-if="record.contactName" class="scm-cell-stack__main">{{ record.contactName }}</span>
-              <span v-if="record.contactPhone" class="scm-cell-stack__sub scm-cell-stack__sub--num">
-                {{ record.contactPhone }}
-              </span>
-            </div>
-            <span v-else>—</span>
+          <span v-else-if="column.dataIndex === 'contactName'">{{ record.contactName || '—' }}</span>
+          <template v-else-if="column.dataIndex === 'contactPhone'">
+            <span class="scm-mono">{{ record.contactPhone || '—' }}</span>
           </template>
           <span v-else-if="column.dataIndex === 'settleMode'">{{ settleModeText(record.settleMode) }}</span>
           <span v-else-if="column.dataIndex === 'creditLimit'" class="scm-money">{{ formatAmountOrDash(record.creditLimit) }}</span>
@@ -126,7 +116,6 @@
         :ok-button-props="{ disabled: reassignSaving }"
         @ok="submitReassign"
     >
-      <a-alert v-if="reassignError" type="error" :message="reassignError" show-icon class="smart-margin-bottom10"/>
       <p>客户：<strong>{{ reassignTarget?.name }}</strong>（{{ reassignTarget?.customerCode }}）</p>
       <p class="reassign-current">当前负责人：{{ reassignTarget?.sellerName || '未分配' }}</p>
       <a-form layout="vertical">
@@ -159,6 +148,7 @@ import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerDrawer from './components/customer-form-drawer.vue';
 import {customerError} from './customer-errors';
 import {hasPermission} from '../common/scm-permission';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {formatAmountOrDash} from '/@/utils/scm-amount';
 import {useQueryFilterMemory} from '/@/lib/query-filter-memory';
 
@@ -167,7 +157,7 @@ const filters = reactive<CustomerQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<CustomerRow[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = ref('');
+const error = useScmErrorToast();
 const advanced = ref(false);
 const drawer = ref<InstanceType<typeof CustomerDrawer>>();
 // 查询条件按「登录用户 + 本页」本地记忆；仅存浏览器，不落业务表。
@@ -176,7 +166,7 @@ const queryMemory = useQueryFilterMemory<CustomerQuery>('scm:customer:list');
 /** 改派归属：独立动作、独立权限（scm:customer:assign），带乐观锁 version。 */
 const reassignVisible = ref(false);
 const reassignSaving = ref(false);
-const reassignError = ref('');
+const reassignError = useScmErrorToast();
 const reassignTarget = ref<CustomerRow>();
 /** EmployeeSelect 的 value prop 不接受 null（声明 [Number, Array]），用 undefined 桥接「收回为未分配」。 */
 const reassignSeller = ref<number | undefined>(undefined);
@@ -232,14 +222,15 @@ const statusColor = (value: CustomerStatus): string => {
   return 'default';
 };
 
-// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。
-// 客户编码折成名称下方的次要文字；上级集团、更新时间仍在搜索、详情、编辑与导出里，不默认摊在列表上。
-// 联系人与联系电话合并成一列，避免两个半空列挤占业务字段。
+// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列，一列一个值。
+// 上级集团、更新时间仍在搜索、详情、编辑与导出里，不默认摊在列表上。
 const columns = ref<TableColumnsType<CustomerRow>>([
-  {title: '客户名称', dataIndex: 'name', width: 205, sorter: true},
+  {title: '客户编码', dataIndex: 'customerCode', width: 130},
+  {title: '客户名称', dataIndex: 'name', width: 205, sorter: true, ellipsis: true},
   {title: '客户类型', dataIndex: 'customerTypeName', width: 105},
   {title: '业务员', dataIndex: 'sellerName', width: 105},
-  {title: '联系方式', dataIndex: 'contact', width: 175},
+  {title: '联系人', dataIndex: 'contactName', width: 110},
+  {title: '联系电话', dataIndex: 'contactPhone', width: 140},
   {title: '结算方式', dataIndex: 'settleMode', width: 110, align: 'center'},
   {title: '授信额度', dataIndex: 'creditLimit', width: 150, align: 'right'},
   {title: '状态', dataIndex: 'status', width: 90, align: 'center', sorter: true},
@@ -368,14 +359,15 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 行高收到 48~52px：本表有两处双行复合单元（名称+编码、联系人+电话），
-   size="small" 默认内边距（8px）叠上两行内容会到 55px+，整屏能看到的客户数变少。
-   两行的字号 / 字重 / 行距由公共类 .scm-cell-stack 统一（14px/500/20px 与 12px/16px），
-   这里只收紧单元格内边距，不重写行内排版 —— 否则客户、供应商两个列表会长得不一样。
-
-   名称入口的样式走公共类 .scm-cell-link：它同时保证名称是主行那一档的深色文字
-   （而不是 antd 默认的链接绿），且悬停才给链接反馈。 */
+/* 一屏多看几家客户：垂直内边距收到 6px。
+   名称入口走公共类 .scm-cell-link（主文本档的深色文字，悬停才给链接反馈）；
+   按钮默认按内容撑宽，撑满单元格才截得出省略号。 */
 .customer-table :deep(.ant-table-tbody > tr > td) {
   padding: 6px 12px;
+}
+
+.customer-table .scm-cell-link {
+  display: block;
+  max-width: 100%;
 }
 </style>
