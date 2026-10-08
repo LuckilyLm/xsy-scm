@@ -6,7 +6,6 @@
         type="info"
         show-icon
     />
-    <a-alert v-if="scaleError" type="error" show-icon :message="scaleError" class="scale-banner"/>
     <a-table
         size="small"
         :data-source="scaleEvents"
@@ -62,7 +61,6 @@
                     placeholder="例如读数未稳定 / 与实物明显不符 / 秤未校准"/>
       </a-form-item>
     </a-form>
-    <a-alert v-if="scaleError" type="error" show-icon :message="scaleError"/>
   </a-modal>
 </template>
 
@@ -71,6 +69,7 @@ import {ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
 import {datetime} from '../../common/scm-display';
+import {useScmErrorToast} from '../../common/scm-error-toast';
 import {quantityText, sortingError, sortingScaleStatuses} from '../sorting-types';
 import type {Id, SortingScaleEvent, SortingScaleStatus} from '../sorting-types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -80,7 +79,7 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>();
 
 const scaleLoading = ref(false);
 const scaleBusy = ref(false);
-const scaleError = ref('');
+const scaleError = useScmErrorToast();
 const scaleEvents = ref<SortingScaleEvent[]>([]);
 const rejectOpen = ref(false);
 const rejectReason = ref('');
@@ -182,10 +181,6 @@ function close() {
 .accepted {
   font-variant-numeric: tabular-nums;
   color: var(--scm-success, #52c41a);
-}
-
-.scale-banner {
-  margin: 12px 0;
 }
 
 .hint {

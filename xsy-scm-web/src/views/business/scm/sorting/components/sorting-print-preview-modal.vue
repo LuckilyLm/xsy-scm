@@ -1,10 +1,6 @@
 <template>
   <a-modal :open="open" title="分拣单打印预览" :width="1000" :footer="null" @cancel="close">
-    <a-alert v-if="printError" type="error" show-icon :message="printError"/>
     <div class="print-toolbar">
-      <a-typography-text type="secondary">
-        预览不累加打印次数；确认已实际出单后再登记，登记只代表出单动作发生，不代表库存或状态变化。
-      </a-typography-text>
       <a-space>
         <a-button :disabled="printLoading || !print" @click="emit('open-ticket', printTaskId)"
                   v-privilege="'scm:sorting:task:query'">选择模板并打印小票</a-button>
@@ -87,7 +83,6 @@ defineProps<{
   printVersion?: number;
   printLoading: boolean;
   printing: boolean;
-  printError: string;
   print?: SortingPrint;
   statusDesc: (status?: string | null) => string;
   resultDesc: (result?: string | null) => string;

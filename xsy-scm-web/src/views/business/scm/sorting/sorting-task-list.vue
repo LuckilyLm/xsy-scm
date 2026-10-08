@@ -36,18 +36,9 @@
     @reset="resetQuery"
   />
 
-  <a-alert v-if="listError" :message="listError" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
-
   <a-card size="small" :bordered="false">
     <div class="smart-table-btn-block">
       <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
-      <a-typography-text type="secondary" class="toolbar-hint">
-        一个订单行同一时刻只属于一个活动任务
-      </a-typography-text>
     </div>
     <div class="smart-table-setting-block">
       <TableOperator
@@ -139,7 +130,6 @@
     v-model:keyword="candidateQuery.keyword"
     :creating="creating"
     :loading="createLoading"
-    :error="createError"
     :rows="candidateRows"
     :total="candidateTotal"
     v-model:selected-ids="candidateSelected"
@@ -156,8 +146,6 @@
     v-model:open="detailOpen"
     :detail="detail"
     :detail-loading="detailLoading"
-    :detail-error="detailError"
-    :entry-error="entryError"
     :busy="busy"
     :can-edit-items="canEditItems"
     :read-only-reason="readOnlyReason"
@@ -170,7 +158,6 @@
     :result-desc="resultDesc"
     :is-gift-row="isGiftRow"
     :can-edit-row="canEditRow"
-    @reload="reloadDetail"
     @open-ticket="openTicket"
     @open-print="openPrint"
     @action="openAction"
@@ -185,7 +172,6 @@
     v-model:reason="actionReason"
     :mode="actionMode"
     :busy="busy"
-    :error="actionError"
     @submit="submitAction"
   />
 
@@ -199,7 +185,6 @@
       :print-version="printVersion"
       :print-loading="printLoading"
       :printing="printing"
-      :print-error="printError"
       :print="print"
       :status-desc="statusDesc"
       :result-desc="resultDesc"
@@ -233,6 +218,7 @@ import {
 } from '/@/constants/business/scm/sorting-const';
 import {hasPermission} from '../common/scm-permission';
 import {datetime} from '../common/scm-display';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import SortingScaleDrawer from './components/sorting-scale-drawer.vue';
 import SortingPrintPreviewModal from './components/sorting-print-preview-modal.vue';
 import SortingTaskDetailDrawer from './components/sorting-task-detail-drawer.vue';
@@ -272,7 +258,7 @@ const assigneeFilter = ref<number | undefined>(undefined);
 const rows = ref<SortingTask[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const listError = ref('');
+const listError = useScmErrorToast();
 let listGeneration = 0;
 
 /** 持指派权即队列管理者（后端 `SortingAccess.crossAssignee()` 同一口径）。 */
@@ -372,13 +358,11 @@ const {
     canEditItems,
     canEditRow,
     detail,
-    detailError,
     detailId,
     detailLoading,
     detailOpen,
     dirtyCount,
     drafts,
-    entryError,
     entryErrors,
     isGiftRow,
     openDetail,
@@ -440,7 +424,7 @@ const actionOpen = ref(false);
 const actionMode = ref<ActionMode>('assign');
 const actionAssignee = ref<number | undefined>(undefined);
 const actionReason = ref('');
-const actionError = ref('');
+const actionError = useScmErrorToast();
 const actionRecord = ref<SortingTask>();
 
 function openAction(mode: ActionMode, record: SortingTask) {
@@ -528,7 +512,7 @@ async function afterTaskChanged(id: Id) {
 const createOpen = ref(false);
 const creating = ref(false);
 const createLoading = ref(false);
-const createError = ref('');
+const createError = useScmErrorToast();
 // `EmployeeSelect` 的 value prop 声明为 `[Number, Array]`，所以这里不收 `null`：
 // 「不指派」用 undefined 表达，提交时再落成后端要的 `null`（载荷类型见 sorting-types）。
 const createForm = reactive<{ warehouseId?: Id; assigneeEmployeeId?: number; remark?: string }>({});
@@ -622,7 +606,7 @@ const ticketOpen = ref(false);
 const ticketTaskId = ref<Id>();
 const printLoading = ref(false);
 const printing = ref(false);
-const printError = ref('');
+const printError = useScmErrorToast();
 const print = ref<SortingPrint>();
 /**
  * 登记命令要的 `version` 不在预览载荷里（预览 VO 刻意不带任务版本，防止被误当成可提交版本），
@@ -689,9 +673,3 @@ watch([() => route.name, () => route.query.taskId], ([name, id]) => {
 
 onMounted(queryData);
 </script>
-
-<style scoped>
-.toolbar-hint {
-  margin-left: 12px;
-}
-</style>

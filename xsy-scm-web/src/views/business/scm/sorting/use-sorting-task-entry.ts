@@ -8,6 +8,7 @@ import {
     SCM_SORTING_WORKING_STATUS,
 } from '/@/constants/business/scm/sorting-const';
 import {hasPermission} from '../common/scm-permission';
+import {useScmErrorToast} from '../common/scm-error-toast';
 import {sortingError} from './sorting-types';
 import type {
     Id,
@@ -34,8 +35,8 @@ export function useSortingTaskEntry(options: {
     const userStore = useUserStore();
     const detailOpen = ref(false);
     const detailLoading = ref(false);
-    const detailError = ref('');
-    const entryError = ref('');
+    const detailError = useScmErrorToast();
+    const entryError = useScmErrorToast();
     const detail = ref<SortingTaskDetail>();
     const drafts = reactive<Record<string, EntryDraft>>({});
     const entryErrors = reactive<Record<string, string>>({});

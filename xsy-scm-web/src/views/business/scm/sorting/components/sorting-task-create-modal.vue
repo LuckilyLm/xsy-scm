@@ -14,7 +14,6 @@
         show-icon
         message="候选行是已确认订单上未被占用的明细。"
     />
-    <a-alert v-if="error" type="error" show-icon :message="error"/>
     <a-form layout="inline" class="create-form" @submit.prevent="emit('search')">
       <a-form-item label="仓库" required>
         <WarehouseSelect
@@ -108,7 +107,6 @@ defineProps<{
   open: boolean;
   creating: boolean;
   loading: boolean;
-  error: string;
   warehouseId?: Id;
   assigneeEmployeeId?: number;
   remark?: string;
