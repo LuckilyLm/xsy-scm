@@ -79,19 +79,30 @@ defineExpose({load});
   min-height: 332px;
   max-height: 400px;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .todo-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 8px;
+  gap: 12px;
+  padding: 12px 10px;
+  border-radius: 10px;
   border-bottom: 1px solid var(--scm-border);
   color: var(--scm-text);
+  transition: background 0.16s ease;
+
+  &:last-child {
+    border-bottom: 0;
+  }
 
   &:hover {
     background: var(--scm-fill);
+  }
+
+  &:hover .todo-row__count {
     color: var(--scm-primary);
   }
 
@@ -101,21 +112,22 @@ defineExpose({load});
   }
 }
 
+/* 圆形图标底：与右侧数字形成左右对称的视觉锚点 */
 .todo-row__visual {
   display: inline-flex;
   flex: 0 0 auto;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   align-items: center;
   justify-content: center;
-  border-radius: 11px;
+  border-radius: 50%;
 
   &.tone-ok { background: #e7f8ef; }
   &.tone-warn { background: #fff5df; }
   &.tone-danger { background: #ffeded; }
   &.tone-primary { background: #eaf4ff; }
 
-  img { width: 36px; height: 36px; object-fit: contain; }
+  img { width: 26px; height: 26px; object-fit: contain; }
 }
 
 .todo-row__copy {
@@ -123,11 +135,14 @@ defineExpose({load});
   flex: 1;
   min-width: 0;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .todo-row__label {
   min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--scm-text);
   overflow-wrap: anywhere;
 }
 
@@ -140,16 +155,19 @@ defineExpose({load});
 }
 
 .todo-row__count {
-  flex-shrink: 0;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: var(--scm-fill);
-  color: var(--scm-text-secondary);
+  flex: 0 0 auto;
+  align-self: center;
+  min-width: 30px;
+  text-align: right;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+  color: var(--scm-text-disabled);
+  transition: color 0.16s ease;
 
   &.has-tasks {
     color: var(--scm-error);
-    background: var(--scm-error-bg);
   }
 }
 </style>

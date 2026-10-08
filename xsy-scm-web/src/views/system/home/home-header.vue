@@ -12,8 +12,14 @@
     :style="{backgroundImage: `url('${homeAsset('banner/home-hero-banner.webp')}')`}">
     <div class="home-welcome__row">
       <div class="home-welcome__text">
-        <h2 class="home-welcome__title">{{ welcomeSentence }}</h2>
-        <p class="home-welcome__meta">{{ dayInfo }}</p>
+        <span class="home-welcome__brand" aria-hidden="true">
+          <img :src="homeAsset('brand/xsy-logo-mark.png')" alt=""/>
+        </span>
+        <div class="home-welcome__copy">
+          <h2 class="home-welcome__title">{{ welcomeSentence }}</h2>
+          <p class="home-welcome__meta">{{ dayInfo }}</p>
+          <p class="home-welcome__slogan">{{ slogan }}</p>
+        </div>
       </div>
       <div class="home-welcome__tools">
         <quick-entries/>
@@ -84,24 +90,33 @@ const dayInfo = computed(() => {
 function gotoScreen() {
   void router.push('/screen');
 }
+
+/** 静态文案，不表达任何业务数字，只是让欢迎区右半边的留白有内容。 */
+const slogan = '从田间到餐桌，让新鲜更简单';
 </script>
 
 <style lang="less" scoped>
 .home-welcome {
   position: relative;
-  min-height: 164px;
+  min-height: 168px;
   border: 1px solid var(--scm-border);
-  border-radius: 12px;
-  background-color: #effcf5;
+  border-radius: 14px;
+  background-color: #e9f8f0;
   background-repeat: no-repeat;
   background-position: center right;
   background-size: cover;
   overflow: hidden;
 
+  /* 左实右透：文字永远压在接近不透明的底色上，插画只在右侧露出 */
   &::before {
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, rgba(245, 255, 249, 0.98) 0%, rgba(245, 255, 249, 0.9) 38%, rgba(245, 255, 249, 0.42) 72%, rgba(245, 255, 249, 0.04) 100%);
+    background: linear-gradient(94deg,
+      rgba(244, 255, 250, 0.98) 0%,
+      rgba(244, 255, 250, 0.95) 34%,
+      rgba(244, 255, 250, 0.72) 52%,
+      rgba(244, 255, 250, 0.18) 74%,
+      rgba(244, 255, 250, 0) 100%);
     content: '';
     pointer-events: none;
   }
@@ -109,8 +124,8 @@ function gotoScreen() {
   :deep(.ant-card-body) {
     position: relative;
     z-index: 1;
-    padding: 20px;
-    min-height: 164px;
+    padding: 24px;
+    min-height: 168px;
     display: flex;
     align-items: center;
   }
@@ -120,25 +135,61 @@ function gotoScreen() {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 20px;
     flex-wrap: wrap;
+  }
+
+  .home-welcome__text {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 0;
+    max-width: 620px;
+  }
+
+  /* 品牌圆标：轻描边 + 白底，压在彩色插画前也有边界感 */
+  .home-welcome__brand {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    border: 1px solid rgba(8, 169, 102, 0.16);
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 6px 16px rgba(8, 120, 74, 0.1);
+
+    img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+    }
+  }
+
+  .home-welcome__copy {
+    min-width: 0;
   }
 
   .home-welcome__title {
     margin: 0;
     font-size: clamp(20px, 2vw, 28px);
     font-weight: 600;
+    line-height: 1.25;
     color: var(--scm-text);
   }
 
   .home-welcome__meta {
-    margin: 4px 0 0;
+    margin: 6px 0 0;
     font-size: 13px;
     color: var(--scm-text-secondary);
   }
 
-  .home-welcome__text {
-    max-width: 560px;
+  .home-welcome__slogan {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #0f9e63;
+    letter-spacing: 0.4px;
   }
 
   .home-welcome__actions {
@@ -151,21 +202,26 @@ function gotoScreen() {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 8px;
+    gap: 10px;
     min-width: 0;
+    max-width: 100%;
   }
 
   @media (max-width: 767px) {
-    min-height: 208px;
-    background-position: 66% center;
+    min-height: 212px;
+    background-position: 68% center;
 
     &::before {
-      background: linear-gradient(90deg, rgba(245, 255, 249, 0.98) 0%, rgba(245, 255, 249, 0.86) 62%, rgba(245, 255, 249, 0.28) 100%);
+      background: linear-gradient(180deg,
+        rgba(244, 255, 250, 0.98) 0%,
+        rgba(244, 255, 250, 0.94) 56%,
+        rgba(244, 255, 250, 0.6) 100%);
     }
 
     :deep(.ant-card-body) {
-      min-height: 208px;
+      min-height: 212px;
       align-items: flex-start;
+      padding: 20px;
     }
 
     .home-welcome__tools {

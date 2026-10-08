@@ -14,7 +14,7 @@
       <ul v-else class="home-rank__list">
         <li v-for="(item, index) in items" :key="`${dimension}-${index}-${item.name}`" class="home-rank__item">
           <div class="home-rank__line">
-            <span class="home-rank__index" :class="{'is-top1': index === 0}">
+            <span class="home-rank__index" :class="`is-rank-${Math.min(index + 1, 4)}`">
               {{ index + 1 }}
             </span>
             <span class="home-rank__name" :title="item.name">{{ item.name }}</span>
@@ -87,40 +87,53 @@ defineExpose({load});
 .home-rank__item {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 4px 0;
+    gap: 6px;
+    padding: 5px 0;
 }
 
 .home-rank__line {
     display: flex;
-    align-items: baseline;
-    gap: 8px;
+    align-items: center;
+    gap: 10px;
     font-size: 13px;
     line-height: 1.2;
 }
 
+/* 名次徽章：前三名给金银铜，其余保持中性，避免五条都抢眼 */
 .home-rank__index {
     flex: 0 0 auto;
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 11px;
-    font-weight: 600;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
     color: var(--scm-text-secondary);
     background: var(--scm-fill);
 
-    &.is-top1 {
+    &.is-rank-1 {
         color: #fff;
-        background: var(--scm-warning);
+        background: linear-gradient(135deg, #f7b733, #e58a12);
+    }
+
+    &.is-rank-2 {
+        color: #fff;
+        background: linear-gradient(135deg, #a9b7c6, #7d8b9b);
+    }
+
+    &.is-rank-3 {
+        color: #fff;
+        background: linear-gradient(135deg, #d99a6c, #bd7440);
     }
 }
 
 .home-rank__name {
     flex: 1;
     min-width: 0;
+    font-weight: 500;
     color: var(--scm-text);
     white-space: nowrap;
     overflow: hidden;
@@ -136,17 +149,17 @@ defineExpose({load});
 }
 
 .home-rank__bar {
-    height: 4px;
-    margin-left: 26px;
-    border-radius: 2px;
+    height: 6px;
+    margin-left: 30px;
+    border-radius: 3px;
     background: var(--scm-fill);
     overflow: hidden;
 
     .home-rank__fill {
         display: block;
         height: 100%;
-        border-radius: 2px;
-        background: var(--scm-primary);
+        border-radius: 3px;
+        background: linear-gradient(90deg, #35d29a, #0f9e63);
         transition: width 0.6s ease;
     }
 }

@@ -83,20 +83,35 @@ function valueAxis(splitLine: boolean, money: boolean) {
     };
 }
 
+/**
+ * 第一条序列恒为柱、第二条恒为折线：主量级（金额/入库量）看柱，辅量级（笔数/出库量）看线。
+ * 同量纲时（库存流转）两条轴合并，柱线仍用两种形状区分，不靠颜色单打独斗。
+ */
 function seriesOf(index: number, trend: ScmDashboardTrend) {
     const meta = TREND_META[trend.metric];
     const color = index === 0 ? REPORT_CHART_COLORS.primary : REPORT_CHART_COLORS.secondary;
-    return {
+    const common = {
         name: index === 0 ? meta.primaryLabel : meta.secondaryLabel,
-        type: 'line',
-        smooth: false,
-        symbol: 'circle',
-        symbolSize: 5,
         yAxisIndex: meta.dualAxis ? index : 0,
-        lineStyle: {width: 2, color},
-        itemStyle: {color},
         // 后端小数是 string，画图前转成 number，否则类目轴上的比较会退化成字符串
         data: (index === 0 ? trend.primarySeries : trend.secondarySeries).map(toNumber),
+    };
+    if (index === 0) {
+        return {
+            ...common,
+            type: 'bar',
+            barMaxWidth: 22,
+            itemStyle: {color, borderRadius: [4, 4, 0, 0]},
+        };
+    }
+    return {
+        ...common,
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: {width: 2, color},
+        itemStyle: {color},
     };
 }
 
@@ -110,10 +125,11 @@ function render() {
     setOption({
         animation: false,
         color: [REPORT_CHART_COLORS.primary, REPORT_CHART_COLORS.secondary],
-        grid: {top: 40, right: meta.dualAxis ? 56 : 24, bottom: 28, left: 8, containLabel: true},
-        legend: {top: 4, left: 'center', textStyle: {color: REPORT_CHART_COLORS.axisText}},
+        grid: {top: 44, right: meta.dualAxis ? 56 : 24, bottom: 28, left: 8, containLabel: true},
+        legend: {top: 4, left: 'center', icon: 'roundRect', textStyle: {color: REPORT_CHART_COLORS.axisText}},
         tooltip: {
             trigger: 'axis',
+            axisPointer: {type: 'shadow'},
             formatter: (params: unknown) => {
                 const points = params as Array<{seriesIndex?: number; dataIndex?: number; axisValue?: string}>;
                 if (!points.length) {
@@ -131,8 +147,9 @@ function render() {
         },
         xAxis: {
             type: 'category',
-            boundaryGap: false,
+            boundaryGap: true,
             data: trend.dates,
+            axisTick: {show: false},
             axisLabel: {color: REPORT_CHART_COLORS.axisText},
         },
         yAxis: meta.dualAxis

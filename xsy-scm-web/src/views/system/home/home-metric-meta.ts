@@ -12,20 +12,23 @@ export type MetricTone = 'primary' | 'ok' | 'warn' | 'danger' | 'muted';
 interface KpiMeta {
     label: string;
     iconName: string;
+    /** 三色主题：图标底色 / 数字与强调色。只做视觉区分，不表达业务告警。 */
+    accent: string;
+    accentSoft: string;
 }
 
 /** KPI 卡标识 → 展示信息。 */
 export const KPI_META: Record<string, KpiMeta> = {
-    'sales-amount': {label: '今日销售额', iconName: 'kpi-sales-amount'},
-    'order-count': {label: '今日订单', iconName: 'kpi-order-count'},
-    'purchase-amount': {label: '今日采购额', iconName: 'kpi-purchase-amount'},
-    'receipt-count': {label: '今日收货', iconName: 'kpi-receipt-count'},
-    'inventory-warning': {label: '库存预警', iconName: 'kpi-inventory-warning'},
+    'sales-amount': {label: '今日销售额', iconName: 'kpi-sales-amount', accent: '#0f9e63', accentSoft: '#e4f7ee'},
+    'order-count': {label: '今日订单', iconName: 'kpi-order-count', accent: '#2b7fe0', accentSoft: '#e6f1fd'},
+    'purchase-amount': {label: '今日采购额', iconName: 'kpi-purchase-amount', accent: '#e08b1f', accentSoft: '#fdf1de'},
+    'receipt-count': {label: '今日收货', iconName: 'kpi-receipt-count', accent: '#6a4fd8', accentSoft: '#eeebfd'},
+    'inventory-warning': {label: '库存预警', iconName: 'kpi-inventory-warning', accent: '#d94b4b', accentSoft: '#fdeaea'},
 };
 
 /** 后端新增卡片时前端还没映射，退化成标识本身，不因为缺一项映射就整块不显示。 */
 export function kpiMetaOf(key: string): KpiMeta {
-    return KPI_META[key] ?? {label: key, iconName: 'kpi-order-count'};
+    return KPI_META[key] ?? {label: key, iconName: 'kpi-order-count', accent: '#0f9e63', accentSoft: '#e4f7ee'};
 }
 
 /**

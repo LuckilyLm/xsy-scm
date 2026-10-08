@@ -2,9 +2,11 @@
   <a-card class="home-card" :bordered="false">
     <template #title>
       <div class="home-card__title">
-        <scm-icon v-if="iconName" :name="iconName" :size="28"/>
-        <component :is="$antIcons[icon]" v-else-if="icon" class="home-card__icon" aria-hidden="true"/>
-        <slot name="title"><span>{{ title }}</span></slot>
+        <span v-if="iconName" class="home-card__title-visual">
+          <scm-icon :name="iconName" :size="20"/>
+        </span>
+        <component v-else-if="icon" :is="$antIcons[icon]" class="home-card__icon" aria-hidden="true"/>
+        <slot name="title"><span class="home-card__title-text">{{ title }}</span></slot>
       </div>
     </template>
     <template v-if="extra || $slots.extra" #extra>
@@ -28,15 +30,20 @@ const emit = defineEmits<{extraClick: []}>();
   height: 100%;
   min-width: 0;
   border: 1px solid var(--scm-border);
-  border-radius: 12px;
+  border-radius: 14px;
   color: var(--scm-text);
   background: var(--scm-bg-container);
+  box-shadow: 0 1px 2px rgba(15, 44, 32, 0.03);
 
   :deep(.ant-card-head) {
-    min-height: 52px;
+    min-height: 56px;
     padding: 0 20px;
     border-bottom: 1px solid var(--scm-border);
     color: var(--scm-text);
+  }
+
+  :deep(.ant-card-head-title) {
+    padding: 14px 0;
   }
 
   :deep(.ant-card-body) {
@@ -47,14 +54,29 @@ const emit = defineEmits<{extraClick: []}>();
 .home-card__title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 15px;
   font-weight: 600;
+}
+
+/* 标题图标统一收进浅色圆角容器：不同来源的图标（彩绘 SVG / 单色 ant）都能融进同一条基线 */
+.home-card__title-visual {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--scm-fill);
+}
+
+.home-card__title-text {
+  letter-spacing: 0.2px;
 }
 
 .home-card__icon {
   font-size: 18px;
   color: var(--scm-primary);
 }
-
 </style>
