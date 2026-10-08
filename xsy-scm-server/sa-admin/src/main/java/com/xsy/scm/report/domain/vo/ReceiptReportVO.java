@@ -33,6 +33,8 @@ public class ReceiptReportVO {
         /** {@code PENDING} / {@code COMPLETED}，即库存入账状态。 */
         private String putawayStatus;
         private OffsetDateTime confirmedAt;
+        /** 收货商业确认时记录的操作者，与仓库入库操作人分开。 */
+        private String confirmedBy;
         private String spuCode;
         private String productName;
         private String skuCode;

@@ -6,6 +6,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 /**
  * 库存预留行。
@@ -29,6 +30,8 @@ public class InventoryReservationVO {
     private String skuCode;
 
     private String skuName;
+
+    private Map<String, String> specValues;
 
     private String productName;
 

@@ -20,16 +20,18 @@ import java.util.List;
 public enum ScmDashboardCardEnum {
 
     /** 今日销售额（确认口径）。 */
-    SALES_AMOUNT("sales-amount", OrderPermission.QUERY, "CNY", "/order/order-list"),
+    SALES_AMOUNT("sales-amount", OrderPermission.QUERY, ScmDashboardValueType.CNY, "/order/order-list"),
 
     /** 今日订单（确认口径）。 */
-    ORDER_COUNT("order-count", OrderPermission.QUERY, "COUNT", "/order/order-list"),
+    ORDER_COUNT("order-count", OrderPermission.QUERY, ScmDashboardValueType.COUNT, "/order/order-list"),
 
     /** 今日采购额（提交口径）。 */
-    PURCHASE_AMOUNT("purchase-amount", PurchasePermission.QUERY, "CNY", "/purchase/purchase-order-list"),
+    PURCHASE_AMOUNT("purchase-amount", PurchasePermission.QUERY, ScmDashboardValueType.CNY,
+            "/purchase/purchase-order-list"),
 
     /** 今日收货单（确认口径）。 */
-    RECEIPT_COUNT("receipt-count", PurchasePermission.RECEIPT_QUERY, "COUNT", "/purchase/purchase-receipt-list"),
+    RECEIPT_COUNT("receipt-count", PurchasePermission.RECEIPT_QUERY, ScmDashboardValueType.COUNT,
+            "/purchase/purchase-receipt-list"),
 
     /**
      * 库存预警：取值就是库存预警列表的分页总数。
@@ -38,15 +40,15 @@ public enum ScmDashboardCardEnum {
      * <b>刻意不用指标层的健康度分档求和</b>：那张分档表更宽（含缺货与未配置阈值），而预警列表默认只收「低于下限 / 高于上限」 两档。用分档求和当卡片数字会出现「首页 12、点进去只有 8」——
      * 数字与明细对不上，比数字本身更伤信任。 分档数据另走 {@code /scm/dashboard/inventory-health}，供首页的库存健康卡使用。
      */
-    INVENTORY_WARNING("inventory-warning", InventoryPermission.WARNING_QUERY, "COUNT",
+    INVENTORY_WARNING("inventory-warning", InventoryPermission.WARNING_QUERY, ScmDashboardValueType.COUNT,
             "/inventory/inventory-warning-list");
 
     private final String key;
     private final String queryPermission;
-    private final String unit;
+    private final ScmDashboardValueType unit;
     private final String route;
 
-    ScmDashboardCardEnum(String key, String queryPermission, String unit, String route) {
+    ScmDashboardCardEnum(String key, String queryPermission, ScmDashboardValueType unit, String route) {
         this.key = key;
         this.queryPermission = queryPermission;
         this.unit = unit;
@@ -66,7 +68,7 @@ public enum ScmDashboardCardEnum {
         return queryPermission;
     }
 
-    public String getUnit() {
+    public ScmDashboardValueType getUnit() {
         return unit;
     }
 

@@ -79,6 +79,8 @@
 
     <sql id="paymentQuerySelect">
         SELECT p.id AS paymentId,
+               p.created_at AS createdAt, p.updated_at AS updatedAt,
+               p.created_by AS createdBy, p.updated_by AS updatedBy,
                p.payment_no AS paymentNo,
                p.counterparty_type AS counterpartyType,
                p.counterparty_id AS counterpartyId,

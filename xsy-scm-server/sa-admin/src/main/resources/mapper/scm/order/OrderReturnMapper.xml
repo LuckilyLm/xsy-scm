@@ -24,24 +24,34 @@
                                       FROM order_return
                                       WHERE id = #{id}
                                         AND deleted = FALSE FOR UPDATE</select>
-    <!-- order_return 没有自己的 owner 列，可见性一律跟随父订单的 sales_order.seller_id。
-         用 order_id IN (子查询) 而不是 JOIN：so.id 是主键，既不会放大行数，也不必为锁路径改语句。 -->
-    <select id="query" resultMap="row">SELECT * FROM order_return WHERE deleted=FALSE
-        <if test="scope != null and scope.all == false">
-            AND order_id IN (SELECT so.id FROM sales_order so WHERE so.deleted = FALSE AND so.seller_id IN
-            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
-            )
+    <!-- 父订单按主键联接，不放大分页行数；名称使用订单快照，可见性仍跟随订单归属。 -->
+    <select id="query" resultType="com.xsy.scm.order.domain.vo.OrderReturnVO">
+        SELECT r.id AS return_id, r.return_no, r.order_id, so.order_no,
+               r.customer_id, so.customer_name_snapshot AS customer_name,
+               r.status, r.reason, r.decision_reason, r.approved_amount,
+               r.approved_at, r.rejected_at, r.cancelled_at, r.version, r.deleted,
+               r.created_at, r.updated_at, r.created_by, r.updated_by
+        FROM order_return r
+        LEFT JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        WHERE r.deleted = FALSE
+        <choose>
+            <when test="scope != null and scope.all"/>
+            <when test="scope != null and scope.ids != null and scope.ids.size() > 0">
+                AND so.seller_id IN
+                <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+            </when>
+            <otherwise>AND FALSE</otherwise>
+        </choose>
+        <if test="query.customerId != null">AND r.customer_id=#{query.customerId}</if>
+        <if test="query.status != null and query.status != ''">AND r.status=#{query.status}</if>
+        <if test="query.orderId != null">AND r.order_id=#{query.orderId}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (r.return_no ILIKE '%' || #{query.keyword} || '%'
+              OR so.order_no ILIKE '%' || #{query.keyword} || '%'
+              OR so.customer_name_snapshot ILIKE '%' || #{query.keyword} || '%')
         </if>
-        <if test="scope == null">
-            AND FALSE
-        </if>
-        <if test="query.customerId != null and query.customerId != ''">AND customer_id=#{query.customerId}</if>
-        <if test="query.status != null and query.status != ''">AND status=#{query.status}</if>
-        <if test="query.orderId != null">AND order_id=#{query.orderId}</if>
-        <if test="query.keyword != null and query.keyword != ''">AND (return_no ILIKE '%' || #{query.keyword} || '%')
-        </if>
-        <if test="query.startTime != null">AND created_at &gt;= #{query.startTime}</if>
-        <if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if>
-        ORDER BY created_at DESC,id DESC
+        <if test="query.startTime != null">AND r.created_at &gt;= #{query.startTime}</if>
+        <if test="query.endTime != null">AND r.created_at &lt; #{query.endTime}</if>
+        ORDER BY r.created_at DESC,r.id DESC
     </select>
 </mapper>

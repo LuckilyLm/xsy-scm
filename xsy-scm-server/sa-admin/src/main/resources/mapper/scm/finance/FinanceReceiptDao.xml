@@ -53,6 +53,8 @@
 
     <sql id="receiptQuerySelect">
         SELECT r.id AS receiptId,
+               r.created_at AS createdAt, r.updated_at AS updatedAt,
+               r.created_by AS createdBy, r.updated_by AS updatedBy,
                r.receipt_no AS receiptNo,
                r.customer_id AS customerId,
                r.customer_name_snapshot AS customerName,

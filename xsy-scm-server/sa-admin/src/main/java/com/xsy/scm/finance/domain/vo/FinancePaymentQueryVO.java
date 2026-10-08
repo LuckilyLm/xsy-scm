@@ -52,4 +52,9 @@ public class FinancePaymentQueryVO {
     private Long sourceId;
 
     private String remark;
+
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
+    private String createdBy;
+    private String updatedBy;
 }

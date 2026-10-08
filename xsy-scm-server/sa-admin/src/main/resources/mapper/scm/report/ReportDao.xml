@@ -992,6 +992,7 @@
                r.receipt_mode                  AS receiptMode,
                r.putaway_status                AS putawayStatus,
                r.confirmed_at                  AS confirmedAt,
+               r.operator                      AS confirmedBy,
                ri.spu_code_snapshot            AS spuCode,
                ri.product_name_snapshot        AS productName,
                ri.sku_code_snapshot            AS skuCode,

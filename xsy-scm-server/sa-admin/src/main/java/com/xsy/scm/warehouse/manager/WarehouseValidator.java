@@ -10,7 +10,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
  * 仓库单条业务规则（纯函数，无 Spring 依赖）。
  *
  * <p>
- * 编码由服务端生成（{@code ScmBusinessNoService}），不参与表单校验；「编码重复」由 {@code uk_warehouse_code_active} 唯一索引兜底。 本类保留名称归一化、名称必填与状态取值域三条规则。
+ * 编码由服务端生成，不参与表单校验；重复编码由 {@code uk_warehouse_code_active} 唯一索引拒绝。
  */
 public final class WarehouseValidator {
 

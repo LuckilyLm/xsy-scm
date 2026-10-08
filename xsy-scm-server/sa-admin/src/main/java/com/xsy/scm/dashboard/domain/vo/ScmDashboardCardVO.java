@@ -1,5 +1,6 @@
 package com.xsy.scm.dashboard.domain.vo;
 
+import com.xsy.scm.dashboard.constant.ScmDashboardValueType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
@@ -13,6 +14,6 @@ import java.math.BigDecimal;
  */
 @Schema(description = "首页 KPI 卡片")
 public record ScmDashboardCardVO(@Schema(description = "卡片标识，前端据此映射文案与样式") String key,
-        @Schema(description = "指标值") BigDecimal value, @Schema(description = "单位：CNY / COUNT") String unit,
+        @Schema(description = "指标值") BigDecimal value, @Schema(description = "单位") ScmDashboardValueType unit,
         @Schema(description = "点击跳转的前端路由") String route) {
 }

@@ -88,6 +88,8 @@
 
     <sql id="payableSummarySelect">
         SELECT p.id AS payableId,
+               p.created_at AS createdAt, p.updated_at AS updatedAt,
+               p.created_by AS createdBy, p.updated_by AS updatedBy,
                p.payable_no AS payableNo,
                p.purchase_order_id AS purchaseOrderId,
                po.order_no AS purchaseOrderNo,

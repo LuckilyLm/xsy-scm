@@ -109,6 +109,8 @@
 
     <sql id="receivableSummarySelect">
         SELECT r.id AS receivableId,
+               r.created_at AS createdAt, r.updated_at AS updatedAt,
+               r.created_by AS createdBy, r.updated_by AS updatedBy,
                r.receivable_no AS receivableNo,
                r.order_id AS orderId,
                so.order_no AS orderNo,

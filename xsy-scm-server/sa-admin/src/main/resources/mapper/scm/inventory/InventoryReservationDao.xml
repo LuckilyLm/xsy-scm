@@ -3,7 +3,11 @@
 <mapper namespace="com.xsy.scm.inventory.dao.InventoryReservationDao">
 
     <resultMap id="reservationVoMap"
-               type="com.xsy.scm.inventory.domain.vo.InventoryReservationVO"/>
+               type="com.xsy.scm.inventory.domain.vo.InventoryReservationVO">
+        <id column="id" property="id"/>
+        <result column="spec_values" property="specValues"
+                typeHandler="com.xsy.scm.common.json.JsonbStringMapTypeHandler"/>
+    </resultMap>
 
     <!--
       冲突目标与部分唯一索引 uk_inventory_reservation_source_active 完全匹配
@@ -119,6 +123,7 @@
         w.name AS warehouse_name,
         k.sku_code,
         k.spec_name AS sku_name,
+        k.spec_values,
         p.name AS product_name,
         s.order_no AS source_document_no
         FROM inventory_reservation r

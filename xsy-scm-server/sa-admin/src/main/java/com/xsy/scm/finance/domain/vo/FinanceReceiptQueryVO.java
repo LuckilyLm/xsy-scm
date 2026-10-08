@@ -11,7 +11,6 @@ import lombok.Data;
 public class FinanceReceiptQueryVO {
     private Boolean walletFunding;
 
-
     private Long receiptId;
 
     private String receiptNo;
@@ -49,4 +48,9 @@ public class FinanceReceiptQueryVO {
     private String externalReference;
 
     private String remark;
+
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
+    private String createdBy;
+    private String updatedBy;
 }

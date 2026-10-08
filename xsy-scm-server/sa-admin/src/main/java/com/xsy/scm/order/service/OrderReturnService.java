@@ -85,14 +85,18 @@ public class OrderReturnService {
             return ScmDataScopeService.emptyPage(orderReturnQueryForm);
         var page = SmartPageUtil.convert2PageQuery(orderReturnQueryForm);
         return SmartPageUtil.convert2PageResult(page,
-                orderReturnDao.query(page, orderReturnQueryForm, dataScopeContext.getOrderSellerScope()).stream()
-                        .map(this::vo).toList());
+                orderReturnDao.query(page, orderReturnQueryForm, dataScopeContext.getOrderSellerScope()));
     }
 
     private OrderReturnVO vo(OrderReturnEntity orderReturnEntity) {
         var orderReturnResultVO = new OrderReturnVO();
         BeanUtils.copyProperties(orderReturnEntity, orderReturnResultVO);
         orderReturnResultVO.setReturnId(orderReturnEntity.getId());
+        var order = salesOrderDao.selectById(orderReturnEntity.getOrderId());
+        if (order != null && !Boolean.TRUE.equals(order.getDeleted())) {
+            orderReturnResultVO.setOrderNo(order.getOrderNo());
+            orderReturnResultVO.setCustomerName(order.getCustomerNameSnapshot());
+        }
         return orderReturnResultVO;
     }
 

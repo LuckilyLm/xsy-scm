@@ -56,4 +56,9 @@ public class FinanceReceivableVO {
 
     private LocalDate dueDate;
     private String reason;
+
+    private OffsetDateTime createdAt;
+    private OffsetDateTime updatedAt;
+    private String createdBy;
+    private String updatedBy;
 }
