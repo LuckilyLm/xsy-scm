@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none" role="img" aria-label="通知公告">
+<defs>
+  <linearGradient id="xsy-green" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#43E3A6"/><stop offset="100%" stop-color="#08A966"/></linearGradient>
+  <linearGradient id="xsy-blue" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#69C6FF"/><stop offset="100%" stop-color="#2585EE"/></linearGradient>
+  <linearGradient id="xsy-orange" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFD27E"/><stop offset="100%" stop-color="#FB9029"/></linearGradient>
+  <linearGradient id="xsy-purple" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#CAA8FF"/><stop offset="100%" stop-color="#8761F2"/></linearGradient>
+  <linearGradient id="xsy-red" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF9BA0"/><stop offset="100%" stop-color="#F54E62"/></linearGradient>
+  <linearGradient id="xsy-teal" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7BE5DA"/><stop offset="100%" stop-color="#10AEA6"/></linearGradient>
+  <linearGradient id="xsy-gold" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFE89E"/><stop offset="100%" stop-color="#F4B52F"/></linearGradient>
+  <filter id="xsy-shadow" x="-25%" y="-25%" width="150%" height="165%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.1" flood-color="#22374D" flood-opacity="0.15"/></filter>
+</defs>
+<g stroke-linejoin="round" stroke-linecap="round">
+<path d="M9 20h9L36 9v26L18 28H9z" fill="url(#xsy-teal)" filter="url(#xsy-shadow)"/>
+<path d="m18 20 18-11v26L18 28" fill="#87E7D7" opacity=".62"/>
+<path d="M13 29.3 16 40h7l-4-11.5" fill="#16AD9D" stroke="#168F87" stroke-width="1.4"/>
+<path d="M39 15.4 42.5 12M40.3 23h4M39 30.6l3.5 3.4" stroke="#0B9C8F" stroke-width="2.5" stroke-linecap="round"/>
+</g>
+</svg>

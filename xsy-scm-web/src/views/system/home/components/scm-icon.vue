@@ -1,21 +1,20 @@
 <template>
-  <svg
+  <img
     class="scm-icon"
     :width="size"
     :height="size"
-    viewBox="0 0 48 48"
     :role="title ? 'img' : undefined"
-    :aria-label="title || undefined"
+    :alt="title"
     :aria-hidden="title ? undefined : true"
-    focusable="false"
-  >
-    <use :href="`${homeAsset('icons/xsy-icons.svg')}#icon-${name}`" />
-  </svg>
+    :src="homeAsset(`icons/svg/${name}.svg`)"
+    draggable="false"
+  />
 </template>
 
 <script setup lang="ts">
 import {homeAsset} from '../home-assets';
 
+/** Use the standalone SVG so each icon remains directly addressable and editable. */
 withDefaults(defineProps<{
   name: string;
   size?: number | string;

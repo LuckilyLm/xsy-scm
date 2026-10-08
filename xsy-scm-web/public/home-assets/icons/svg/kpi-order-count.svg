@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none" role="img" aria-label="今日订单">
+<defs>
+  <linearGradient id="xsy-green" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#43E3A6"/><stop offset="100%" stop-color="#08A966"/></linearGradient>
+  <linearGradient id="xsy-blue" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#69C6FF"/><stop offset="100%" stop-color="#2585EE"/></linearGradient>
+  <linearGradient id="xsy-orange" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFD27E"/><stop offset="100%" stop-color="#FB9029"/></linearGradient>
+  <linearGradient id="xsy-purple" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#CAA8FF"/><stop offset="100%" stop-color="#8761F2"/></linearGradient>
+  <linearGradient id="xsy-red" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF9BA0"/><stop offset="100%" stop-color="#F54E62"/></linearGradient>
+  <linearGradient id="xsy-teal" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7BE5DA"/><stop offset="100%" stop-color="#10AEA6"/></linearGradient>
+  <linearGradient id="xsy-gold" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFE89E"/><stop offset="100%" stop-color="#F4B52F"/></linearGradient>
+  <filter id="xsy-shadow" x="-25%" y="-25%" width="150%" height="165%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.1" flood-color="#22374D" flood-opacity="0.15"/></filter>
+</defs>
+<g stroke-linejoin="round" stroke-linecap="round">
+<rect x="11" y="6.5" width="26" height="35" rx="6.2" fill="url(#xsy-blue)" filter="url(#xsy-shadow)"/>
+<path d="M28.7 6.5v7.2a3 3 0 0 0 3 3H37" fill="#B6E8FF" opacity=".75"/>
+<path d="M16.6 18.5H29.5 M16.6 24H26.8 M16.6 29.4H24" stroke="#F5FCFF" stroke-width="2.4" stroke-linecap="round"/>
+<circle cx="33.5" cy="34.2" r="8.5" fill="#E9FAFF" stroke="#2789ED" stroke-width="1.5"/>
+<path d="m29.3 34.2 2.7 2.6 5-5.4" stroke="#1689EA" stroke-width="2.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>
