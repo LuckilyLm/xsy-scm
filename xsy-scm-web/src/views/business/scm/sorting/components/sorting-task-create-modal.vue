@@ -64,7 +64,7 @@
         row-key="salesOrderItemId"
         :loading="loading"
         :pagination="false"
-        :scroll="{x: 940, y: 320}"
+        :scroll="{x: 1020, y: 320}"
         :row-selection="{selectedRowKeys: selectedIds, onChange: onSelectionChange, preserveSelectedRowKeys: true}"
         :locale="{emptyText: '暂无可分拣的订单行'}"
     >
