@@ -39,7 +39,7 @@
           :pagination="false"
           size="small"
           bordered
-          :scroll="{ x: 1620 }"
+          :scroll="{ x: 1580 }""
       >
         <template #bodyCell="{ column, record }">
           <span v-if="column.dataIndex === 'supplierNameSnapshot'">{{ record.supplierNameSnapshot }}</span>
