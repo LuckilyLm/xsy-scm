@@ -6,7 +6,7 @@
   * 共用一根轴。
 -->
 <template>
-  <default-home-card icon="LineChartOutlined" title="经营趋势">
+  <default-home-card icon-name="section-business-trend" title="经营趋势">
     <div class="home-trend__bar">
       <a-radio-group
         v-if="metrics.length > 1"

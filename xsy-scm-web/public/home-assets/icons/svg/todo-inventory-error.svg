@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none" role="img" aria-label="库存异常">
+<defs>
+  <linearGradient id="xsy-green" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#43E3A6"/><stop offset="100%" stop-color="#08A966"/></linearGradient>
+  <linearGradient id="xsy-blue" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#69C6FF"/><stop offset="100%" stop-color="#2585EE"/></linearGradient>
+  <linearGradient id="xsy-orange" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFD27E"/><stop offset="100%" stop-color="#FB9029"/></linearGradient>
+  <linearGradient id="xsy-purple" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#CAA8FF"/><stop offset="100%" stop-color="#8761F2"/></linearGradient>
+  <linearGradient id="xsy-red" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FF9BA0"/><stop offset="100%" stop-color="#F54E62"/></linearGradient>
+  <linearGradient id="xsy-teal" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7BE5DA"/><stop offset="100%" stop-color="#10AEA6"/></linearGradient>
+  <linearGradient id="xsy-gold" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFE89E"/><stop offset="100%" stop-color="#F4B52F"/></linearGradient>
+  <filter id="xsy-shadow" x="-25%" y="-25%" width="150%" height="165%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.1" flood-color="#22374D" flood-opacity="0.15"/></filter>
+</defs>
+<g stroke-linejoin="round" stroke-linecap="round">
+<path d="M9 16.8 22.3 9l13.1 7.8v14.5L22.3 39 9 31.3z" fill="url(#xsy-red)" filter="url(#xsy-shadow)"/>
+<path d="m9 16.8 13.3 7.7 13.1-7.7M22.3 24.5V39" fill="none" stroke="#FFE5E8" stroke-width="1.8"/>
+<path d="m15.4 13 13.1 7.7v4.5" stroke="#FFE9ED" stroke-width="3.2" fill="none"/>
+<circle cx="35.3" cy="34.3" r="8" fill="#FFF1F1" stroke="#F75C68" stroke-width="1.6"/>
+<path d="m32.5 31.5 5.6 5.6m0-5.6-5.6 5.6" stroke="#EF5865" stroke-width="2.4" stroke-linecap="round"/>
+</g>
+</svg>

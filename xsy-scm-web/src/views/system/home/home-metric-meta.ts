@@ -4,15 +4,6 @@
  * 放在前端是刻意的 —— 接口只回答「该不该给 / 多少 / 跳哪里」，
  * 把 label / icon / color 写进接口等于把界面设计固化进服务端。
  */
-import type {Component} from 'vue';
-import {
-    AccountBookOutlined,
-    AppstoreOutlined,
-    InboxOutlined,
-    ProfileOutlined,
-    ShoppingCartOutlined,
-    WarningOutlined,
-} from '@ant-design/icons-vue';
 import type {ScmRankDimension, ScmTrendMetric, ScmTrendRange} from '/@/api/business/scm/dashboard-api';
 
 /** 语义色：只表达业务含义，不表达装饰。 */
@@ -20,22 +11,21 @@ export type MetricTone = 'primary' | 'ok' | 'warn' | 'danger' | 'muted';
 
 interface KpiMeta {
     label: string;
-    icon: Component;
-    asset: string;
+    iconName: string;
 }
 
 /** KPI 卡标识 → 展示信息。 */
 export const KPI_META: Record<string, KpiMeta> = {
-    'sales-amount': {label: '今日销售额', icon: AccountBookOutlined, asset: 'icons/kpi-sales-amount.png'},
-    'order-count': {label: '今日订单', icon: ProfileOutlined, asset: 'icons/kpi-order-count.png'},
-    'purchase-amount': {label: '今日采购额', icon: ShoppingCartOutlined, asset: 'icons/kpi-purchase-amount.png'},
-    'receipt-count': {label: '今日收货', icon: InboxOutlined, asset: 'icons/kpi-receipt-count.png'},
-    'inventory-warning': {label: '库存预警', icon: WarningOutlined, asset: 'icons/kpi-inventory-warning.png'},
+    'sales-amount': {label: '今日销售额', iconName: 'kpi-sales-amount'},
+    'order-count': {label: '今日订单', iconName: 'kpi-order-count'},
+    'purchase-amount': {label: '今日采购额', iconName: 'kpi-purchase-amount'},
+    'receipt-count': {label: '今日收货', iconName: 'kpi-receipt-count'},
+    'inventory-warning': {label: '库存预警', iconName: 'kpi-inventory-warning'},
 };
 
 /** 后端新增卡片时前端还没映射，退化成标识本身，不因为缺一项映射就整块不显示。 */
 export function kpiMetaOf(key: string): KpiMeta {
-    return KPI_META[key] ?? {label: key, icon: AppstoreOutlined, asset: 'icons/kpi-order-count.png'};
+    return KPI_META[key] ?? {label: key, iconName: 'kpi-order-count'};
 }
 
 /**
