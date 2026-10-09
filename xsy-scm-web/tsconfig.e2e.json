@@ -7,8 +7,8 @@
     "noImplicitAny": true,
     "types": ["node"],
     "paths": {
-      "/@/plugins/smart-enums-plugin": ["e2e/types/smart-enums-plugin.d.ts"],
-      "/@/*": ["src/*"]
+      "/@/plugins/smart-enums-plugin": ["./e2e/types/smart-enums-plugin.d.ts"],
+      "/@/*": ["./src/*"]
     }
   },
   "include": ["e2e/**/*.ts", "playwright.config.ts"]
