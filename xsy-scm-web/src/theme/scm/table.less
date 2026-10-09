@@ -166,9 +166,12 @@
  * 常驻提示（一句话的规则 / 数据范围说明，例如「可见范围：全部已启用商品」）。
  *
  * 这类提示原来用 `<a-alert type="info">`，一条浅色横条铺满整行、信息密度很低。
- * 改成 `width: fit-content` 的胶囊块：**宽度跟着文字走**，文字多长就多宽，
- * 不再占满一行，也不再抢视觉层级（中性底色，不是 alert 的蓝）。
+ * 改成 `width: fit-content` 的胶囊块：**宽度跟着文字走**，文字多长就多宽，不再占满一行。
+ * 底色用主题色浅底 + 前面的信息图标，保证在密集页面里仍然醒目（不是 alert 那种重蓝条）。
  * `max-width: 100%` 兜底：文案很长时仍会换行，不会顶破容器。
+ *
+ * 图标走 mask 而不是再引一个 icon 组件：这里只是装饰，10 处调用点不用各加一个 import；
+ * 颜色由 `background-color` 给，跟随「网站设置」的主题色。mask 路径取自 antd 的 InfoCircleOutlined。
  */
 .scm-note {
   display: inline-flex;
@@ -179,8 +182,18 @@
   margin: 0 0 8px;
   padding: 3px 10px;
   border-radius: 6px;
-  background: var(--scm-fill, rgba(0, 0, 0, 0.04));
+  background: var(--scm-primary-bg, rgba(0, 185, 107, 0.08));
   font-size: 12px;
   line-height: 18px;
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+.scm-note::before {
+  content: '';
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background-color: var(--scm-primary, #00b96b);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath d='M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z'/%3E%3Cpath d='M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath d='M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z'/%3E%3Cpath d='M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z'/%3E%3C/svg%3E") center / contain no-repeat;
 }
