@@ -1,7 +1,7 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="业务日期">
+  <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
+    <div class="scm-filter-fields">
+      <a-form-item class="scm-filter-range" label="业务日期">
         <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期"/>
         <span class="date-separator">至</span>
         <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期"/>
@@ -14,13 +14,11 @@
       <a-form-item label="结清状态">
         <a-select v-model:value="query.settleState" allow-clear :options="settleOptions" placeholder="全部" style="width: 140px"/>
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button-group>
-          <a-button type="primary" v-privilege="PERM.PAYABLE_QUERY" @click="onSearch">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-button-group>
-      </a-form-item>
-    </a-row>
+    </div>
+    <div class="scm-filter-actions">
+      <a-button type="primary" v-privilege="PERM.PAYABLE_QUERY" @click="onSearch">查询</a-button>
+      <a-button @click="resetQuery">重置</a-button>
+    </div>
   </a-form>
 
   <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
@@ -28,7 +26,7 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">应付明细</div>
       <div class="smart-table-setting-block">
         <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>

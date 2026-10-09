@@ -9,21 +9,19 @@
   因此没有「确认 / 审批」这类动作，改配置立即生效（预警是读时计算的，天然实时）。
 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="仓库" class="smart-query-form-item">
+  <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
+    <div class="scm-filter-fields">
+      <a-form-item label="仓库">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px"/>
       </a-form-item>
-      <a-form-item label="商品规格编码" class="smart-query-form-item">
+      <a-form-item label="商品规格编码">
         <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button-group>
-          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-button-group>
-      </a-form-item>
-    </a-row>
+    </div>
+    <div class="scm-filter-actions">
+      <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
+      <a-button @click="resetQuery">重置</a-button>
+    </div>
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
@@ -33,7 +31,7 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:threshold:add'">
           新建阈值配置
