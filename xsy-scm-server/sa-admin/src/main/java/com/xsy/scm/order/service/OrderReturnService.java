@@ -270,24 +270,35 @@ public class OrderReturnService {
         // 红字应收与退款单共用订单确认时冻结的优惠分摊和净额算法。
         // 这一步仍在退货批准事务内；正常应收尚未生成时先计算退款净额，签收生成正常应收后再补红字。
         BigDecimal refundAmount = financeReceivableService.generateRedOnReturnApproved(orderReturnEntity.getId());
-        var refund = new OrderRefundEntity();
-        refund.setRefundNo(numbers.refund());
-        refund.setReturnId(orderReturnEntity.getId());
-        refund.setOrderId(orderReturnEntity.getOrderId());
-        refund.setCustomerId(orderReturnEntity.getCustomerId());
-        refund.setRefundAmount(refundAmount);
-        refund.setStatus(ScmOrderRefundStatusEnum.PENDING.name());
-        refund.setCreatedAt(OffsetDateTime.now());
-        refund.setUpdatedAt(refund.getCreatedAt());
-        refund.setCreatedBy(ScmOperator.current());
-        refund.setUpdatedBy(refund.getCreatedBy());
-        orderRefundDao.insert(refund);
         var result = detailSnapshot(orderReturnEntity.getId());
-        orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
-                "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
-                Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
-                Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(total), "refundAmount",
-                        String.valueOf(refund.getRefundAmount())));
+        if (refundAmount.signum() > 0) {
+            var refund = new OrderRefundEntity();
+            refund.setRefundNo(numbers.refund());
+            refund.setReturnId(orderReturnEntity.getId());
+            refund.setOrderId(orderReturnEntity.getOrderId());
+            refund.setCustomerId(orderReturnEntity.getCustomerId());
+            refund.setRefundAmount(refundAmount);
+            refund.setStatus(ScmOrderRefundStatusEnum.PENDING.name());
+            refund.setCreatedAt(OffsetDateTime.now());
+            refund.setUpdatedAt(refund.getCreatedAt());
+            refund.setCreatedBy(ScmOperator.current());
+            refund.setUpdatedBy(refund.getCreatedBy());
+            orderRefundDao.insert(refund);
+            orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
+                    "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
+                    Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
+                    Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(total), "refundAmount",
+                            String.valueOf(refund.getRefundAmount())));
+        } else {
+            // 优惠抵满订单金额时退款净额为 0：退货本身仍然成立，只是没有可退的钱。
+            // 不建退款单（order_refund.refund_amount 恒 > 0），也不留 0 元事实，
+            // 因此这里是「允许退货、无需退款」而不是失败。
+            orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
+                    "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，退款净额为 0，无需退款",
+                    Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
+                    Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(total), "refundAmount",
+                            refundAmount.toPlainString()));
+        }
 
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
                 orderReturnEntity.getId(), result);

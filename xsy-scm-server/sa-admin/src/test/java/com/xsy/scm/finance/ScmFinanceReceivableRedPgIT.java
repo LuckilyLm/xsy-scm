@@ -467,6 +467,23 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     }
 
     @Test
+    @DisplayName("优惠抵满订单金额：允许退货、无需退款，不生成 0 元退款单")
+    void fullyDiscountedReturnApprovesWithoutRefund() {
+        Chain chain = plannedWithFixedAmountCoupon("RDF", "1.0000", "100.0000", "1.0000", "100.0000");
+
+        OrderReturnDetailVO returned = approvedReturn("RDF", chain.orderId(), List.of(chain.orderItemId()),
+                List.of("1.0000"), List.of("1.0000"));
+
+        assertThat(returned.getStatus()).as("退款净额为 0 不阻塞退货批准").isEqualTo("APPROVED");
+        assertThat(returned.getApprovedAmount()).as("审批金额仍是退货毛额，不退化成净额").isEqualByComparingTo("100.0000");
+        assertThat(count("SELECT count(*) FROM order_refund WHERE return_id = ?", returned.getReturnId()))
+                .as("没有可退的钱就不建退款单，order_refund.refund_amount 恒 > 0").isZero();
+        assertThat(count("SELECT count(*) FROM order_operation_log WHERE order_id = ? AND operation_type = 'RETURN'"
+                + " AND reason LIKE '%无需退款%'", chain.orderId())).as("无需退款仍要留痕").isEqualTo(1);
+        assertThat(redsOfOrder(chain.orderId())).as("净额为 0 的退货不生成红字").isZero();
+    }
+
+    @Test
     @DisplayName("先签后退：RED 挂原 NORMAL，对方与快照继承原应收，时点与原因继承退货事实")
     void returnApprovedAfterSignGeneratesRedReceivable() {
         Chain chain = planned("RDA", "10.0000", "3.5000", "10.0000");

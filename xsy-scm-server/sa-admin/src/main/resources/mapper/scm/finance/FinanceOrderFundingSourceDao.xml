@@ -25,10 +25,15 @@
         LEFT JOIN customer_balance_movement m ON m.source_type = 'PAYMENT_INTENT' AND m.source_id = i.id
             AND m.deleted = FALSE
     </sql>
+    <!--
+      正常订单资金只来自「支付意图已成功」的支付。渠道交易成功、但意图仍停在 PENDING 的是
+      「差异交易」（渠道实收 ≠ 本地应付），它只在渠道与对账域等待人工处理，不参与订单资金、
+      核销与退款；若让它以「交易已成功」的身份进入本查询，签收会在资金校验处整笔回滚。
+    -->
     <select id="selectOrderFunding" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderFundingDto">
         <include refid="funding"/>
         WHERE i.source_type = 'SALES_ORDER' AND i.source_id = #{orderId} AND i.deleted = FALSE
-            AND (i.status = 'SUCCEEDED' OR t.status = 'SUCCEEDED')
+            AND i.status = 'SUCCEEDED'
         ORDER BY i.id, t.id
     </select>
     <select id="selectTransaction" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderFundingDto">
