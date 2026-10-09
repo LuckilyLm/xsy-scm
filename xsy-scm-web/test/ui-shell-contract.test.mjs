@@ -70,13 +70,27 @@ test('侧栏宽度四处口径一致，默认值落在设置控件允许的区�
 
 test('改默认侧栏宽度必须同时升级 configVersion', () => {
   const version = num(appConfig, /configVersion:\s*(\d+)/, '配置版本号');
-  // 迁移逻辑是「版本不等就整体回落新默认值」，版本不升，已有浏览器会一直用 localStorage 里的旧宽度
-  assert.ok(version >= 3, '侧栏宽度已从 200 改为 184，configVersion 必须 ≥ 3 才能迁移老用户');
+  assert.ok(version >= 4, '侧栏默认宽度调整后，configVersion 必须升级到 4 或更高');
   assert.match(
       code('../src/store/modules/system/app-config.ts'),
       /cached\.configVersion === appDefaultConfig\.configVersion/,
       '配置迁移逻辑被改动，本断言的前提失效，请重新核对',
   );
+  const configStore = code('../src/store/modules/system/app-config.ts');
+  assert.match(configStore, /cached\.configVersion === 3[\s\S]{0,350}sideMenuWidth:\s*appDefaultConfig\.sideMenuWidth/,
+      '版本 3 → 4 应迁移侧栏宽度并保留其他缓存偏好');
+});
+
+test('两种侧栏布局隐藏子菜单箭头但保留内联菜单交互', () => {
+  const sideExpandMenu = code('../src/layout/components/side-expand-menu/recursion-menu.vue');
+  assert.match(recursionMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/,
+      '传统侧栏只应在菜单作用域内隐藏子菜单箭头');
+  assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/,
+      '展开式侧栏只应在子菜单作用域内隐藏子菜单箭头');
+  assert.match(recursionMenu, /mode="inline"/, '传统侧栏必须保留内联子菜单');
+  assert.match(sideExpandMenu, /mode="inline"/, '展开式侧栏必须保留内联子菜单');
+  assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/,
+      '菜单图标配色规则仍须排除暗色菜单');
 });
 
 test('侧栏滚动条不常驻：auto + 透明轨道 + hover 才显形', () => {

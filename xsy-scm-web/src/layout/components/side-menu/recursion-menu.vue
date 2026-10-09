@@ -3,7 +3,7 @@
   * 
 -->
 <template>
-  <a-menu :open-keys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu" mode="inline" :theme="theme"
+  <a-menu :open-keys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu" mode="inline" :inline-indent="18" :theme="theme"
           @openChange="onOpenChange">
     <template v-for="item in menuTree" :key="item.menuId">
       <template v-if="item.visibleFlag && !item.disabledFlag">
@@ -114,6 +114,20 @@ defineExpose({
 <style lang="less" scoped>
 .smart-menu {
   position: relative;
+
+  :deep(.ant-menu-item),
+  :deep(.ant-menu-submenu-title) {
+    height: 42px;
+    line-height: 42px;
+  }
+
+  :deep(.ant-menu-submenu-arrow) {
+    display: none;
+  }
+
+  :deep(.ant-menu-submenu-title) {
+    padding-inline-end: 14px;
+  }
 }
 
 /*
