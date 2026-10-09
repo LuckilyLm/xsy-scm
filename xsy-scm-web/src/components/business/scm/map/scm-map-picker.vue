@@ -1,42 +1,51 @@
 <template>
   <div class="location-field">
-    <a-space wrap>
+    <div class="location-field__status">
       <a-tag :color="isLocated(value) ? 'green' : 'default'">{{ isLocated(value) ? '已定位' : '未定位' }}</a-tag>
       <a-button @click="openPicker">地图定位</a-button>
       <a-button v-if="value.longitude != null || value.latitude != null" @click="emit('change', emptyLocation())">
         清空定位
       </a-button>
-    </a-space>
-    <div class="location-inputs">
-      <a-input-number
-          :value="value.longitude"
-          :min="-180"
-          :max="180"
-          :precision="8"
-          string-mode
-          aria-label="经度"
-          placeholder="经度"
-          @update:value="update('longitude', $event)"
-      />
-      <a-input-number
-          :value="value.latitude"
-          :min="-90"
-          :max="90"
-          :precision="8"
-          string-mode
-          aria-label="纬度"
-          placeholder="纬度"
-          @update:value="update('latitude', $event)"
-      />
-      <a-select
-          :value="value.geomCrs ?? undefined"
-          placeholder="坐标系"
-          aria-label="坐标系"
-          :options="crsOptions"
-          @update:value="update('geomCrs', $event)"
-      />
     </div>
-    <div class="ant-form-item-extra">地址变更后请重新定位。经纬度与坐标系须成组保存。</div>
+    <div class="location-field__inputs">
+      <label class="location-input">
+        <span class="location-input__label">经度</span>
+        <a-input-number
+            :value="value.longitude"
+            :min="-180"
+            :max="180"
+            :precision="8"
+            string-mode
+            aria-label="经度"
+            placeholder="例如 121.47370100"
+            @update:value="update('longitude', $event)"
+        />
+      </label>
+      <label class="location-input">
+        <span class="location-input__label">纬度</span>
+        <a-input-number
+            :value="value.latitude"
+            :min="-90"
+            :max="90"
+            :precision="8"
+            string-mode
+            aria-label="纬度"
+            placeholder="例如 31.23041600"
+            @update:value="update('latitude', $event)"
+        />
+      </label>
+      <label class="location-input location-input--wide">
+        <span class="location-input__label">坐标系</span>
+        <a-select
+            :value="value.geomCrs ?? undefined"
+            placeholder="选择经纬度所属坐标系"
+            aria-label="坐标系"
+            :options="crsOptions"
+            @update:value="update('geomCrs', $event)"
+        />
+      </label>
+    </div>
+    <p class="location-field__hint">地址变更后请重新定位；经纬度与坐标系须成套保存。</p>
   </div>
   <a-modal v-model:open="visible" title="确认地址定位" :width="800" :destroy-on-close="true" @ok="confirm">
     <a-space direction="vertical" class="picker-content">
@@ -106,19 +115,59 @@ function confirm() {
 }
 </script>
 <style scoped>
+/*
+ * 地图定位字段组。
+ *
+ * 原来经度 / 纬度 / 坐标系挤在 `1fr 1fr 150px` 三列里：窄弹窗下前两列各约 86px，
+ * 输入框只能看到一个数字，坐标系又独占 150px，三者宽度既不齐也不平衡。
+ * 改成「一行两列放经纬度、坐标系独占一行」，每个输入框带自己的小标题 ——
+ * 占位符在填了值之后就消失了，靠它标字段名不可靠。
+ */
 .location-field {
   display: grid;
+  gap: 10px;
+}
+
+.location-field__status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.location-inputs {
+.location-field__inputs {
   display: grid;
-  grid-template-columns: 1fr 1fr 150px;
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
 }
 
-.location-inputs :deep(.ant-input-number) {
+.location-input {
+  display: block;
+  min-width: 0;
+}
+
+.location-input--wide {
+  grid-column: 1 / -1;
+}
+
+.location-input__label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+.location-input :deep(.ant-input-number),
+.location-input :deep(.ant-select) {
   width: 100%;
+}
+
+.location-field__hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
 }
 
 .picker-content {
@@ -126,8 +175,8 @@ function confirm() {
 }
 
 @media (max-width: 600px) {
-  .location-inputs {
-    grid-template-columns: 1fr;
+  .location-field__inputs {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>
