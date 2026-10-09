@@ -12,7 +12,11 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  outline: none !important;
+}
+
+:where(a, button, input, select, textarea, [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 2px solid var(--scm-primary, #1677ff);
+  outline-offset: 2px;
 }
 
 html,
@@ -89,7 +93,7 @@ body {
 
   blockquote {
     display: block;
-    border-left: 8px solid #d0e5f2;
+    border-left: 1px solid #d0e5f2;
     padding: 5px 10px;
     margin: 10px 0;
     line-height: 1.4;

@@ -1,6 +1,6 @@
 <template>
   <default-home-card icon-name="section-business-todo" title="业务待办">
-    <region-error v-if="error" :message="error" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="332" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <div class="home-todos">
         <a-empty v-if="!loading && todos.length === 0" description="暂无待办事项"/>

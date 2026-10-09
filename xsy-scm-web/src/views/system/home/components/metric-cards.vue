@@ -8,7 +8,7 @@
 -->
 <template>
   <section class="home-metrics">
-    <region-error v-if="error" :message="error" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="100" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <a-empty v-if="!loading && rows.length === 0" description="当前账号暂无可查看的指标"/>
       <a-skeleton v-else-if="loading && rows.length === 0" active :paragraph="{rows: 2}"/>

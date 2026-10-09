@@ -44,7 +44,7 @@ test('卡片点击直接跳转后端给的条件路由，不在前端拼接查�
 });
 
 test('首页入口用 scm:todo:query 门禁，复用既有 home 卡片容器', () => {
-  assert.match(home, /const canTodo = hasPermission\('scm:todo:query'\)/);
+  assert.match(home, /const canTodo = computed\(\(\) => hasPermission\('scm:todo:query'\)\)/);
   assert.match(home, /<a-col\b[^>]*v-if="canTodo"[^>]*>\s*<HomeBusinessTodo\b/);
   // 允许带属性：首页的刷新按钮通过模板引用调用卡片的 load，所以会挂 ref
   assert.match(home, /<HomeBusinessTodo\b[^>]*\/>/);

@@ -1,6 +1,6 @@
 <template>
   <default-home-card extra="更多" icon-name="section-notice" title="通知公告" @extraClick="onMore">
-    <region-error v-if="error" :message="error" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="150" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <div class="home-notices">
         <a-empty v-if="!loading && notices.length === 0" description="暂无通知公告"/>
@@ -10,10 +10,10 @@
               class="home-notices__link"
               :class="{'is-read': item.viewFlag}"
               :to="{path: '/oa/notice/notice-employee-detail', query: {noticeId: item.noticeId}}"
-              :title="item.title"
+              :title="noticeTitle(item)"
             >
               <a-badge :status="item.viewFlag ? 'default' : 'error'"/>
-              {{ item.title }}
+              {{ noticeTitle(item) }}
             </router-link>
             <span class="home-notices__time">{{ item.publishDate }}</span>
           </li>
@@ -49,6 +49,10 @@ const {data, loading, error, load} = useRegionData<{list: HomeNotice[]}>(
   '通知公告加载失败'
 );
 const notices = computed(() => data.value?.list ?? []);
+
+function noticeTitle(item: HomeNotice): string {
+  return item.title?.trim() || '未命名通知';
+}
 
 function onMore() {
   void router.push('/oa/notice/notice-employee-list');

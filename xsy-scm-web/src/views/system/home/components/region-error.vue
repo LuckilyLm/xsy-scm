@@ -5,20 +5,49 @@
   * 不弹全局提示、不把整页变成错误页。
 -->
 <template>
-  <a-alert class="home-region-error" type="warning" show-icon :message="message">
-    <template #action>
-      <a-button size="small" @click="emit('retry')">重试</a-button>
+  <a-empty
+    class="home-region-error"
+    role="alert"
+    aria-live="polite"
+    :description="message"
+    :style="{minHeight: minHeight + 'px'}"
+  >
+    <template #image>
+      <exclamation-circle-outlined class="home-region-error__icon" aria-hidden="true"/>
     </template>
-  </a-alert>
+    <a-button size="small" @click="emit('retry')">重试</a-button>
+  </a-empty>
 </template>
 
 <script setup lang="ts">
-defineProps<{message: string}>();
+withDefaults(defineProps<{message: string; minHeight?: number}>(), {minHeight: 200});
 const emit = defineEmits(['retry']);
 </script>
 
 <style lang="less" scoped>
 .home-region-error {
-  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0;
+}
+
+:deep(.ant-empty-image) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  margin-bottom: 8px;
+  font-size: 32px;
+  color: var(--scm-error);
+}
+
+:deep(.ant-empty-description) {
+  max-width: 100%;
+  margin-bottom: 8px;
+  color: var(--scm-text-secondary);
+  overflow-wrap: anywhere;
 }
 </style>

@@ -12,13 +12,9 @@
     :style="{backgroundImage: `url('${homeAsset('banner/home-hero-banner.webp')}')`}">
     <div class="home-welcome__row">
       <div class="home-welcome__text">
-        <span class="home-welcome__brand" aria-hidden="true">
-          <img :src="homeAsset('brand/xsy-logo-mark.png')" alt=""/>
-        </span>
         <div class="home-welcome__copy">
           <h2 class="home-welcome__title">{{ welcomeSentence }}</h2>
           <p class="home-welcome__meta">{{ dayInfo }}</p>
-          <p class="home-welcome__slogan">{{ slogan }}</p>
         </div>
       </div>
       <div class="home-welcome__tools">
@@ -91,14 +87,12 @@ function gotoScreen() {
   void router.push('/screen');
 }
 
-/** 静态文案，不表达任何业务数字，只是让欢迎区右半边的留白有内容。 */
-const slogan = '从田间到餐桌，让新鲜更简单';
 </script>
 
 <style lang="less" scoped>
 .home-welcome {
   position: relative;
-  min-height: 168px;
+  min-height: 148px;
   border: 1px solid var(--scm-border);
   border-radius: 14px;
   background-color: #e9f8f0;
@@ -125,7 +119,7 @@ const slogan = '从田间到餐桌，让新鲜更简单';
     position: relative;
     z-index: 1;
     padding: 24px;
-    min-height: 168px;
+    min-height: 148px;
     display: flex;
     align-items: center;
   }
@@ -142,29 +136,8 @@ const slogan = '从田间到餐桌，让新鲜更简单';
   .home-welcome__text {
     display: flex;
     align-items: center;
-    gap: 14px;
     min-width: 0;
     max-width: 620px;
-  }
-
-  /* 品牌圆标：轻描边 + 白底，压在彩色插画前也有边界感 */
-  .home-welcome__brand {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
-    border: 1px solid rgba(8, 169, 102, 0.16);
-    background: rgba(255, 255, 255, 0.86);
-    box-shadow: 0 6px 16px rgba(8, 120, 74, 0.1);
-
-    img {
-      width: 32px;
-      height: 32px;
-      object-fit: contain;
-    }
   }
 
   .home-welcome__copy {
@@ -173,7 +146,7 @@ const slogan = '从田间到餐桌，让新鲜更简单';
 
   .home-welcome__title {
     margin: 0;
-    font-size: clamp(20px, 2vw, 28px);
+    font-size: 24px;
     font-weight: 600;
     line-height: 1.25;
     color: var(--scm-text);
@@ -183,13 +156,6 @@ const slogan = '从田间到餐桌，让新鲜更简单';
     margin: 6px 0 0;
     font-size: 13px;
     color: var(--scm-text-secondary);
-  }
-
-  .home-welcome__slogan {
-    margin: 4px 0 0;
-    font-size: 13px;
-    color: #0f9e63;
-    letter-spacing: 0.4px;
   }
 
   .home-welcome__actions {
@@ -226,6 +192,10 @@ const slogan = '从田间到餐桌，让新鲜更简单';
 
     .home-welcome__tools {
       align-items: flex-start;
+    }
+
+    .home-welcome__title {
+      font-size: 20px;
     }
   }
 }

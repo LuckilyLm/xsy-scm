@@ -28,15 +28,20 @@
             }"
           >
             <div class="layout-header-box">
-              <span class="collapsed-button">
-                <menu-unfold-outlined v-if="collapsed" class="trigger" @click="() => (collapsed = !collapsed)"/>
-                <menu-fold-outlined v-else class="trigger" @click="() => (collapsed = !collapsed)"/>
-              </span>
+              <button
+                type="button"
+                class="collapsed-button"
+                :aria-label="collapsed ? '展开侧栏' : '收起侧栏'"
+                @click="collapsed = !collapsed"
+              >
+                <menu-unfold-outlined v-if="collapsed" class="trigger"/>
+                <menu-fold-outlined v-else class="trigger"/>
+              </button>
               <a-tooltip placement="bottom">
                 <template #title>首页</template>
-                <span class="home-button" @click="goHome">
+                <button class="home-button" type="button" aria-label="首页" @click="goHome">
                   <home-outlined class="trigger"/>
-                </span>
+                </button>
               </a-tooltip>
               <span class="location-breadcrumb">
                 <PageTag v-if="pageTagLocation === 'top'"/>
@@ -271,6 +276,14 @@ const {token} = useToken();
 
   .collapsed-button {
     margin-left: 10px;
+    padding: 0 4px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    font: inherit;
     line-height: @header-user-height;
   }
 
@@ -278,6 +291,12 @@ const {token} = useToken();
     margin-left: 15px;
     cursor: pointer;
     padding: 0 5px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    font: inherit;
     line-height: @header-user-height;
   }
 

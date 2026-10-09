@@ -11,10 +11,17 @@
                 @tabClick="selectTab">
           <a-tab-pane v-for="item in tagNav" :key="item.menuName">
             <template #tab>
-              <span>
-                {{ item.menuTitle }}
-                <close-outlined @click.stop="closeTag(item, false)" v-if="item.menuName !== HOME_PAGE_NAME"
-                                class="smart-page-tag-close"/>
+              <span class="smart-page-tag-content">
+                <span class="smart-page-tag-title" :title="item.menuTitle">{{ item.menuTitle }}</span>
+                <button
+                  v-if="item.menuName !== HOME_PAGE_NAME"
+                  type="button"
+                  class="smart-page-tag-close"
+                  :aria-label="`关闭${item.menuTitle}`"
+                  @click.stop="closeTag(item, false)"
+                >
+                  <close-outlined aria-hidden="true"/>
+                </button>
               </span>
             </template>
           </a-tab-pane>
@@ -195,18 +202,63 @@ const borderRadius = computed(() => {
     }
   }
 
+  :deep(.ant-tabs-nav-wrap),
+  :deep(.ant-tabs-nav-list) {
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+
 
   :deep(.ant-tabs-small > .ant-tabs-nav .ant-tabs-tab) {
     padding: 5px 8px 3px 15px;
     margin: 8px 0 0 5px;
-    min-width: 60px;
+    flex: 0 0 168px;
+    min-width: 96px;
+    max-width: 220px;
     height: 32px;
     border-radius: v-bind(borderRadius) v-bind(borderRadius) 0 0;
     border-bottom: 0;
+    overflow: hidden;
+  }
+
+  :deep(.ant-tabs-tab-btn) {
+    display: flex;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .smart-page-tag-content {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .smart-page-tag-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .smart-page-tag-close {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
   }
 
   :deep(.ant-tabs-tab-active) {
     background-color: @color-primary-bg;
+    font-weight: 600;
+    color: @color-primary;
 
     .smart-page-tag-close {
       color: @color-primary;
@@ -215,6 +267,11 @@ const borderRadius = computed(() => {
 
   :deep(.ant-tabs-nav .ant-tabs-tab:hover) {
     background-color: @color-primary-bg;
+    color: @color-primary;
+
+    .smart-page-tag-title {
+      color: @color-primary;
+    }
 
     .smart-page-tag-close {
       color: @color-primary;

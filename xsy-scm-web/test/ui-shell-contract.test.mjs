@@ -32,6 +32,17 @@ const SETTING = '../src/layout/components/header-user-space/header-setting.vue';
 const SIDE_LAYOUT = '../src/layout/side-layout.vue';
 const SIDE_MENU = '../src/layout/components/side-menu/index.vue';
 const RECURSION_MENU = '../src/layout/components/side-menu/recursion-menu.vue';
+const GLOBAL_THEME = '../src/theme/index.less';
+const PAGE_TAGS = [
+  '../src/layout/components/page-tag/components/default-tab.vue',
+  '../src/layout/components/page-tag/components/chrome-tab.vue',
+  '../src/layout/components/page-tag/components/antd-tab.vue',
+];
+const LAYOUTS = [
+  '../src/layout/side-layout.vue',
+  '../src/layout/side-expand-layout.vue',
+  '../src/layout/top-expand-layout.vue',
+];
 const V110 = '../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V110__scm_reorder_root_navigation.sql';
 
 const appConfig = code(APP_CONFIG);
@@ -123,6 +134,31 @@ test('菜单图标三档配色：普通深色 / hover 主题色 / 当前主题�
   // 不写死色值：主题色可切换
   const styleBlock = recursionMenu.slice(recursionMenu.indexOf('<style'));
   assert.doesNotMatch(styleBlock, /#333|#00b96b|#515a6e/, '菜单样式里不应出现写死的主题色');
+});
+
+test('全局键盘焦点清晰可见，导航控件可由键盘操作', () => {
+  const globalTheme = code(GLOBAL_THEME);
+  assert.doesNotMatch(globalTheme, /\*\s*\{[^}]*outline:\s*none\s*!important/);
+  assert.match(globalTheme, /:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--scm-primary/);
+  for (const path of LAYOUTS) {
+    const layout = code(path);
+    assert.match(layout, /<button[\s\S]{0,100}class="collapsed-button"[\s\S]{0,180}aria-label=/);
+    assert.match(layout, /<button class="home-button"[^>]*aria-label="首页"/);
+  }
+});
+
+test('all page-tag styles keep labels ellipsized, scrollable and closable by keyboard', () => {
+  for (const path of PAGE_TAGS) {
+    const pageTag = code(path);
+    assert.match(pageTag, /class="smart-page-tag-title"/);
+    assert.match(pageTag, /min-width:\s*96px/);
+    assert.match(pageTag, /max-width:\s*220px/);
+    assert.match(pageTag, /text-overflow:\s*ellipsis/);
+    assert.match(pageTag, /flex-wrap:\s*nowrap/);
+    assert.match(pageTag, /:aria-label="`关闭\$\{item\.menuTitle\}`"/);
+    assert.match(pageTag, /<button[\s\S]{0,180}class="smart-page-tag-close"/);
+    assert.match(pageTag, /:deep\(\.ant-tabs-tab-active\)[\s\S]{0,120}color:\s*@color-primary/);
+  }
 });
 
 test('V110 只调整一级菜单的 sort，不动层级 / 路径 / 权限 / 可见性', () => {

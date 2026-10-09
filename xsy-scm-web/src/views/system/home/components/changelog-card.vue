@@ -1,6 +1,6 @@
 <template>
   <default-home-card extra="更多" icon-name="section-changelog" title="更新日志" @extraClick="onMore">
-    <region-error v-if="error" :message="error" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="150" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <div class="home-changelog">
         <a-empty v-if="!loading && entries.length === 0" description="暂无更新日志"/>
