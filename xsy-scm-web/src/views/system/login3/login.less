@@ -73,7 +73,9 @@
 .xsy-login__brand {
   // 55%：4 个特性标签要在一行放下（需 ~314px），52% 时品牌栏内宽只有 ~304px
   width: 55%;
-  padding: 40px 40px 36px;
+  // 左右 24px（原 40px）：全链路流程图是宽幅图，40px 内边距在窄列里会把它压掉近三成宽度，
+  // 图里的环节文字跟着变小。标题与特性标签不需要那么宽的留白，收窄后仍有余量。
+  padding: 40px 24px 36px;
   display: flex;
   flex-direction: column;
   background:
@@ -168,7 +170,7 @@
 .xsy-login__scene {
   display: block;
   width: 100%;
-  max-width: 700px;
+  max-width: 820px;
   height: auto;
   user-select: none;
 }
