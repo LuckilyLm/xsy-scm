@@ -7,7 +7,7 @@
   >
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
-      <a-form :model="form" layout="vertical" class="app-drawer-form">
+      <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="供应商" name="supplierId" required>
@@ -85,6 +85,12 @@ import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 const emit = defineEmits<{ saved: [] }>();
 
 const form = ref<Order>(newOrder());
+const formRef = ref();
+/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  supplierId: [{required: true, message: '请选择供应商', trigger: 'change'}],
+  warehouseId: [{required: true, message: '请选择收货仓库', trigger: 'change'}],
+};
 const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
@@ -175,9 +181,16 @@ async function open(id?: Id) {
 
 async function save() {
   error.value = '';
+  // 必填项走表单校验：错误显示在对应输入框下方
+  try {
+    await formRef.value?.validate();
+  } catch {
+    return;
+  }
+  // 明细行（不是表单字段）与其余业务规则用 toast
   const invalid = validateOrder(form.value);
   if (invalid) {
-    error.value = invalid;
+    message.warning(invalid);
     return;
   }
   saving.value = true;

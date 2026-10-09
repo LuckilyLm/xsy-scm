@@ -108,25 +108,25 @@
       @cancel="editOpen = false"
   >
     <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner"/>
-    <a-form layout="vertical">
+    <a-form ref="formRef" :model="{...form, ...rule}" :rules="formRules" layout="vertical">
       <section class="scm-form-section">
         <div class="scm-form-section__head">
           <h3 class="scm-form-section__title">活动基础</h3>
         </div>
         <a-row :gutter="20">
           <a-col :span="12">
-            <a-form-item label="活动编码" required>
+            <a-form-item label="活动编码" name="activityCode">
               <a-input v-model:value="form.activityCode" :disabled="!!form.id"
                        placeholder="字母、数字、下划线或连字符"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="活动名称" required>
+            <a-form-item label="活动名称" name="activityName">
               <a-input v-model:value="form.activityName"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="活动类型" required>
+            <a-form-item label="活动类型" name="activityType">
               <a-select v-model:value="form.activityType" :options="typeOptions" @change="onTypeChange"/>
             </a-form-item>
           </a-col>
@@ -140,7 +140,7 @@
         <a-row :gutter="20">
           <template v-if="form.activityType === 'DISCOUNT'">
             <a-col :span="12">
-              <a-form-item label="折扣率" required>
+              <a-form-item label="折扣率" name="discountPercent">
                 <a-input-number
                     v-model:value="rule.discountPercent"
                     :min="0.01"
@@ -156,7 +156,7 @@
           </template>
           <template v-else-if="form.activityType === 'SPECIAL_PRICE'">
             <a-col :span="12">
-              <a-form-item label="特价商品规格" required>
+              <a-form-item label="特价商品规格" name="skuId">
                 <SkuSelect
                     :value="rule.skuId ?? null"
                     width="100%"
@@ -165,7 +165,7 @@
               </a-form-item>
             </a-col>
             <a-col :span="12">
-              <a-form-item label="特价单价" required>
+              <a-form-item label="特价单价" name="specialPrice">
                 <a-input-number
                     v-model:value="rule.specialPrice"
                     :min="0"
@@ -180,7 +180,7 @@
           </template>
           <template v-else>
             <a-col :span="12">
-              <a-form-item label="门槛金额" required>
+              <a-form-item label="门槛金额" name="thresholdAmount">
                 <a-input-number
                     v-model:value="rule.thresholdAmount"
                     :min="0"
@@ -193,7 +193,7 @@
               </a-form-item>
             </a-col>
             <a-col v-if="form.activityType === 'FULL_REDUCE'" :span="12">
-              <a-form-item label="减免金额" required>
+              <a-form-item label="减免金额" name="reduceAmount">
                 <a-input-number
                     v-model:value="rule.reduceAmount"
                     :min="0"
@@ -207,7 +207,7 @@
             </a-col>
             <template v-if="form.activityType === 'FULL_GIFT'">
               <a-col :span="12">
-                <a-form-item label="赠送商品规格" required>
+                <a-form-item label="赠送商品规格" name="giftSkuId">
                   <SkuSelect
                       :value="rule.giftSkuId ?? null"
                       width="100%"
@@ -216,7 +216,7 @@
                 </a-form-item>
               </a-col>
               <a-col :span="12">
-                <a-form-item label="赠品数量" required>
+                <a-form-item label="赠品数量" name="giftQuantity">
                   <a-input-number
                       v-model:value="rule.giftQuantity"
                       :min="0"
@@ -238,13 +238,13 @@
         </div>
         <a-row :gutter="20">
           <a-col :span="12">
-            <a-form-item label="生效时间" required>
+            <a-form-item label="生效时间" name="validFrom">
               <a-date-picker v-model:value="form.validFrom" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
                              style="width: 100%"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="失效时间" required>
+            <a-form-item label="失效时间" name="validTo">
               <a-date-picker v-model:value="form.validTo" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
                              style="width: 100%"/>
             </a-form-item>
@@ -391,6 +391,25 @@ const emptyRule = (): RuleForm => ({
 });
 
 const rule = reactive<RuleForm>(emptyRule());
+const formRef = ref();
+/**
+ * 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。
+ * 规则区的字段按活动类型条件渲染，未挂载的 form-item 不会被校验，所以这里可以一次列全。
+ */
+const formRules = {
+  activityCode: [{required: true, message: '请填写活动编码', trigger: 'blur'}],
+  activityName: [{required: true, message: '请填写活动名称', trigger: 'blur'}],
+  activityType: [{required: true, message: '请选择活动类型', trigger: 'change'}],
+  discountPercent: [{required: true, message: '请填写折扣率', trigger: 'blur'}],
+  skuId: [{required: true, message: '请选择特价商品规格', trigger: 'change'}],
+  specialPrice: [{required: true, message: '请填写特价单价', trigger: 'blur'}],
+  thresholdAmount: [{required: true, message: '请填写门槛金额', trigger: 'blur'}],
+  reduceAmount: [{required: true, message: '请填写减免金额', trigger: 'blur'}],
+  giftSkuId: [{required: true, message: '请选择赠送商品规格', trigger: 'change'}],
+  giftQuantity: [{required: true, message: '请填写赠品数量', trigger: 'blur'}],
+  validFrom: [{required: true, message: '请选择生效时间', trigger: 'change'}],
+  validTo: [{required: true, message: '请选择失效时间', trigger: 'change'}],
+};
 
 const form = reactive<PromotionActivitySave>({
   activityCode: '',
@@ -527,8 +546,10 @@ function onTypeChange() {
 
 async function submit() {
   editError.value = '';
-  if (!form.activityCode || !form.activityName || !form.validFrom || !form.validTo) {
-    editError.value = '活动编码、名称与生效时间都必须填写';
+  // 必填项走表单校验：缺哪个就在哪个输入框下方提示（规则区字段按活动类型条件渲染，只会校验当前挂载的）
+  try {
+    await formRef.value?.validate();
+  } catch {
     return;
   }
   saving.value = true;

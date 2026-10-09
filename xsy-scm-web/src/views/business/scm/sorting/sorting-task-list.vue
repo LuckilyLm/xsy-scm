@@ -463,11 +463,11 @@ async function submitAction() {
     actionError.value = '';
     const reason = actionReason.value.trim();
     if (actionMode.value !== 'assign' && !reason) {
-        actionError.value = '请填写原因。';
+        message.warning('请填写原因');
         return;
     }
     if (actionMode.value === 'assign' && actionAssignee.value == null) {
-        actionError.value = '请选择受指派人。';
+        message.warning('请选择受指派人');
         return;
     }
     busy.value = true;
@@ -589,7 +589,7 @@ function openCreate() {
 
 async function submitCreate() {
     if (createForm.warehouseId === undefined || createForm.warehouseId === null || createForm.warehouseId === '') {
-        createError.value = '请选择分拣仓库。';
+        message.warning('请选择分拣仓库');
         return;
     }
     if (!candidateSelected.value.length) {

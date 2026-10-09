@@ -838,7 +838,7 @@ function openReason(action: 'cancel' | 'remove', id?: Id) {
 
 async function submitReason() {
   if (!reason.value.trim()) {
-    reasonError.value = '请填写原因';
+    message.warning('请填写原因');
     return;
   }
   if (!detail.value) return;

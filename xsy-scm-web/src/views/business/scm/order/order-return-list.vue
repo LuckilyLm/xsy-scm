@@ -121,7 +121,7 @@ import {computed, onDeactivated, onMounted, onScopeDispose, reactive, ref, watch
 import {useRoute} from 'vue-router';
 import Decimal from 'decimal.js';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import {orderReturnApi as api} from '/@/api/business/scm/order-return-api';
 import {SCM_ORDER_RETURN_STATUS_ENUM} from '/@/constants/business/scm/order-const';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
@@ -262,7 +262,7 @@ function remainingQuantity(item: ReturnItem): string {
 async function save() {
   if (!active.value || saving.value || editLoading.value) return;
   if (['reject', 'cancel'].includes(action.value) && !decisionReason.value.trim()) {
-    editError.value = '请填写处理原因';
+    message.warning('请填写处理原因');
     return;
   }
   saving.value = true;

@@ -94,22 +94,22 @@
       @cancel="editOpen = false"
   >
     <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner"/>
-    <a-form layout="vertical">
+    <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical">
       <a-row :gutter="12">
         <a-col :span="12">
-          <a-form-item label="单据类型" required>
+          <a-form-item label="单据类型" name="documentType">
             <a-select v-model:value="form.documentType" :options="typeOptions" :disabled="!!form.id"
                       @change="loadCatalog"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item label="模板编码" required>
+          <a-form-item label="模板编码" name="templateCode">
             <a-input v-model:value="form.templateCode" :disabled="!!form.id"
                      placeholder="字母、数字、下划线或连字符"/>
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item label="模板名称" required>
+          <a-form-item label="模板名称" name="templateName">
             <a-input v-model:value="form.templateName"/>
           </a-form-item>
         </a-col>
@@ -133,7 +133,7 @@
       <a-divider orientation="left">版式</a-divider>
       <a-row :gutter="12">
         <a-col :span="8">
-          <a-form-item label="标题" required>
+          <a-form-item label="标题" name="title">
             <a-input v-model:value="form.model.title" placeholder="纯文本，不能含尖括号"/>
           </a-form-item>
         </a-col>
@@ -257,6 +257,16 @@ const form = reactive<PrintTemplateSave & { id?: Id }>({
     footerNote: null,
   },
 });
+const formRef = ref();
+/** 标题在 `form.model.title` 里，展平一份只给表单校验用，避免用数组路径配 rules。 */
+const flatModel = computed(() => ({...form, title: form.model.title}));
+/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  documentType: [{required: true, message: '请选择单据类型', trigger: 'change'}],
+  templateCode: [{required: true, message: '请填写模板编码', trigger: 'blur'}],
+  templateName: [{required: true, message: '请填写模板名称', trigger: 'blur'}],
+  title: [{required: true, message: '请填写标题', trigger: 'blur'}],
+};
 
 async function queryData() {
   const id = ++requestId;
@@ -367,12 +377,15 @@ function onPaperChange(paper: PrintPaper) {
 
 async function submit() {
   editError.value = '';
-  if (!form.templateCode || !form.templateName || !form.model.title) {
-    editError.value = '模板编码、模板名称与标题都必须填写';
+  // 必填项走表单校验：错误显示在对应输入框下方
+  try {
+    await formRef.value?.validate();
+  } catch {
     return;
   }
+  // 明细字段是列表选择，不是表单字段，用 toast
   if (!form.model.columns?.length) {
-    editError.value = '至少要选择一列明细字段';
+    message.warning('至少要选择一列明细字段');
     return;
   }
   saving.value = true;

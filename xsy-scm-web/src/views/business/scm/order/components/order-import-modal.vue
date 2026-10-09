@@ -84,11 +84,11 @@ async function downloadTemplate() {
 const beforeUpload: UploadProps['beforeUpload'] = (file) => {
   reset();
   if (!file.name.toLowerCase().endsWith('.xlsx')) {
-    error.value = '仅支持 .xlsx 文件';
+    message.warning('仅支持 .xlsx 文件');
     return Upload.LIST_IGNORE;
   }
   if (file.size > 5 * 1024 * 1024) {
-    error.value = '导入文件不能超过 5 MiB';
+    message.warning('导入文件不能超过 5 MiB');
     return Upload.LIST_IGNORE;
   }
   selectedFile.value = file;

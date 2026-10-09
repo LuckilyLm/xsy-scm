@@ -250,7 +250,7 @@ async function submitRed() {
         }))
         .filter((item) => item.amount);
     if (!redSource.value || !redReason.value.trim() || !lines.length) {
-        redError.value = '请填写原因，并至少录入一条红字明细。';
+        message.warning('请填写原因，并至少录入一条红字明细');
         return;
     }
     redSaving.value = true;
