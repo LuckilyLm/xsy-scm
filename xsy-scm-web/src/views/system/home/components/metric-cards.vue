@@ -35,7 +35,7 @@
           <span class="home-kpi__accent" aria-hidden="true"/>
           <div class="home-kpi__head">
             <span class="home-kpi__visual">
-              <scm-icon :name="row.iconName" :size="26"/>
+              <scm-icon :name="row.iconName" :size="23"/>
             </span>
             <span class="home-kpi__label">{{ row.label }}</span>
           </div>
@@ -188,6 +188,7 @@ defineExpose({load});
     height: 40px;
     border-radius: 12px;
     background: var(--kpi-accent-soft);
+    color: var(--kpi-accent);
 }
 
 .home-kpi .home-kpi__label {

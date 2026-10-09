@@ -59,7 +59,6 @@ const emit = defineEmits<{extraClick: []}>();
   font-weight: 600;
 }
 
-/* 标题图标统一收进浅色圆角容器：不同来源的图标（彩绘 SVG / 单色 ant）都能融进同一条基线 */
 .home-card__title-visual {
   display: inline-flex;
   flex: 0 0 auto;
@@ -69,6 +68,7 @@ const emit = defineEmits<{extraClick: []}>();
   height: 30px;
   border-radius: 9px;
   background: var(--scm-fill);
+  color: var(--scm-primary);
 }
 
 .home-card__title-text {

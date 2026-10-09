@@ -9,7 +9,7 @@
   <a-card
     class="home-welcome"
     :bordered="false"
-    :style="{backgroundImage: `url('${homeAsset('banner/home-hero-banner.webp')}')`}">
+    :style="{backgroundImage: `url('${homeAsset('banner/home-hero-harvest.webp')}')`}">
     <div class="home-welcome__row">
       <div class="home-welcome__text">
         <div class="home-welcome__copy">
@@ -97,7 +97,7 @@ function gotoScreen() {
   border-radius: 14px;
   background-color: #e9f8f0;
   background-repeat: no-repeat;
-  background-position: center right;
+  background-position: right 68%;
   background-size: cover;
   overflow: hidden;
 
