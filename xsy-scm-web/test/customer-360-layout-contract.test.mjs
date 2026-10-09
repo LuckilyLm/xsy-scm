@@ -81,12 +81,14 @@ test('名称入口走公共类 .scm-cell-link，且不与 antd 同特异性打�
   const linkDecls = THEME.slice(linkStart, THEME.indexOf('}', linkStart));
   // antd 给链接按钮加了 text-align:center，不覆盖就会在格里居中
   assert.match(linkDecls, /text-align:\s*left/);
-  assert.match(linkDecls, /color:\s*var\(--scm-text/);
+  // 能点进详情的名称入口默认就用主题色（跟随「网站设置」里的主题色），
+  // 不用先悬停才变色。
+  assert.match(linkDecls, /color:\s*var\(--scm-primary\)/);
   // 省略号规则不能丢：长客户名要能截断，而不是顶破单元格
   assert.match(linkDecls, /text-overflow:\s*ellipsis/);
   assert.match(linkDecls, /white-space:\s*nowrap/);
 
-  // 悬停 / 聚焦才给链接反馈（默认态是一行普通深色文本，不与状态标签抢层级）
+  // 悬停 / 聚焦再补下划线，强化可点反馈
   assert.match(
       THEME,
       /\.scm-cell-link\.scm-cell-link:hover,\s*\.scm-cell-link\.scm-cell-link:focus\s*\{[\s\S]{0,120}?color:\s*var\(--scm-primary\)/

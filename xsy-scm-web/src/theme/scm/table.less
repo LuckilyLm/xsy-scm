@@ -77,11 +77,12 @@
 }
 
 /*
- * 复合单元里的「名称入口」（点进详情）。
+ * 「名称入口」（点进详情）。
  *
- * 默认是主行那一档的普通深色文字，不是链接色 —— 一列品牌绿会让「名称」和状态标签
- * 抢层级，也让主文本看起来像个操作按钮。悬停 / 聚焦才给链接反馈。
- * 也不额外加 padding：它和 `.scm-cell-stack__main` 要在同一条左轴线上。
+ * 默认就用主题色：能点进详情的字段直接是可点的样子，不用先悬停才变色。
+ * 颜色走 `var(--scm-primary)`，跟随「网站设置」里选的主题色。
+ * 悬停 / 聚焦再补一条下划线，强化可点反馈。
+ * 也不额外加 padding：它和同一格里其余文字要在同一条左轴线上。
  *
  * 选择器故意把类名写两遍（0,2,0）：antd 的链接按钮样式是 `:where(.css-xxx).ant-btn-link`，
  * `:where` 零特异性 → 实得 (0,1,0)，而它在运行时注入 <head>、排在构建产物之后，同特异性下会赢。
@@ -93,7 +94,7 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
-  color: var(--scm-text, rgba(0, 0, 0, 0.88));
+  color: var(--scm-primary);
   text-align: left;
   overflow: hidden;
   white-space: nowrap;
