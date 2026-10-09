@@ -1,7 +1,6 @@
 <template>
   <a-modal
       :open="open"
-      title="新建分拣任务"
       :width="1100"
       :confirm-loading="creating"
       :ok-button-props="{disabled: !selectedIds.length || loading || rows.length === 0}"
@@ -9,7 +8,12 @@
       @cancel="emit('update:open', false)"
       @ok="emit('create')"
   >
-    <p class="scm-note">候选行是已确认订单上未被占用的明细。</p>
+    <template #title>
+      <div class="create-title">
+        <span>新建分拣任务</span>
+        <p class="scm-note">候选行是已确认订单上未被占用的明细。</p>
+      </div>
+    </template>
     <a-alert v-if="error" type="error" show-icon :message="error"/>
     <a-form layout="inline" class="create-form" @submit.prevent="emit('search')">
       <a-form-item label="仓库" required>
@@ -154,6 +158,23 @@ function onPageChange(pageNum: number, pageSize: number) {
 </script>
 
 <style scoped>
+/*
+ * 标题行右侧放说明：提示与标题同一行，右对齐，避免在标题下多占一行。
+ * padding-right 给右上角的关闭按钮让位。
+ */
+.create-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-right: 28px;
+}
+
+.create-title .scm-note {
+  margin: 0;
+  font-weight: 400;
+}
+
 .create-form {
   gap: 12px 0;
   margin: 16px 0;
