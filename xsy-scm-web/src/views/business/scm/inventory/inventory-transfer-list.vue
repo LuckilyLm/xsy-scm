@@ -152,12 +152,7 @@
       :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
-    <a-alert
-        type="info"
-        show-icon
-        style="margin-bottom: 12px"
-        message="调拨分两步：先发出，再由目标仓收货。"
-    />
+    <p class="scm-note">调拨分两步：先发出，再由目标仓收货。</p>
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="源仓库（转出）" name="fromWarehouseId">
         <WarehouseSelect v-model:value="form.fromWarehouseId" :options="warehouses" width="260px"/>
@@ -227,7 +222,7 @@
       :footer="null"
       @cancel="inTransitOpen = false"
   >
-    <p class="scm-table-caption">在途量不在任何仓库的余额里，对账时需单独计入。</p>
+    <p class="scm-note">在途量不在任何仓库的余额里，对账时需单独计入。</p>
     <a-table
         size="small"
         :data-source="inTransitRows"

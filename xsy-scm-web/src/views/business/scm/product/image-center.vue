@@ -84,8 +84,7 @@
     </a-row>
 
     <a-modal v-model:open="batchOpen" title="按文件名批量导入图片" :width="760" :mask-closable="false" @cancel="closeBatch">
-      <a-alert type="info" show-icon class="gap"
-               message="文件名（去扩展名）需等于目标商品的商品编码；预览确认后才写入。"/>
+      <p class="scm-note">文件名（去扩展名）需等于目标商品的商品编码；预览确认后才写入。</p>
       <a-upload :file-list="[]" :before-upload="stageFiles" accept="image/*" multiple :show-upload-list="false">
         <a-button :loading="staging">选择多张图片</a-button>
       </a-upload>

@@ -9,7 +9,7 @@
       @cancel="emit('update:open', false)"
       @ok="emit('create')"
   >
-    <p class="scm-table-caption">候选行是已确认订单上未被占用的明细。</p>
+    <p class="scm-note">候选行是已确认订单上未被占用的明细。</p>
     <a-alert v-if="error" type="error" show-icon :message="error"/>
     <a-form layout="inline" class="create-form" @submit.prevent="emit('search')">
       <a-form-item label="仓库" required>

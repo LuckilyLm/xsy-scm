@@ -122,12 +122,7 @@
       :width="scmDrawerWidth('s')"
       @close="closeDrawer"
   >
-    <a-alert
-        type="info"
-        show-icon
-        style="margin-bottom: 12px"
-        message="预警按可用量（现有量 − 预留量）判定。"
-    />
+    <p class="scm-note">预警按可用量（现有量 − 预留量）判定。</p>
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>

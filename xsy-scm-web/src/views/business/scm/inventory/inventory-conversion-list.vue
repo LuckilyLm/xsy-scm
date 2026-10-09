@@ -141,12 +141,7 @@
       :width="scmDrawerWidth('xl')"
       @close="closeDrawer"
   >
-    <a-alert
-        type="info"
-        show-icon
-        style="margin-bottom: 12px"
-        message="折算率由本单声明，两个单位须与商品规格的库存记账单位一致。"
-    />
+    <p class="scm-note">折算率由本单声明，两个单位须与商品规格的库存记账单位一致。</p>
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>

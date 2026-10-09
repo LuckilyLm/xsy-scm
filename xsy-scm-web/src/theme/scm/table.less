@@ -163,14 +163,23 @@
 }
 
 /*
- * 表格上方的数据范围说明（一句话，例如「可见范围：全部已启用商品」）。
+ * 常驻提示（一句话的规则 / 数据范围说明，例如「可见范围：全部已启用商品」）。
  *
- * 这类说明原来用整行 `a-alert type="info"`，一条浅蓝横条占满整行、信息密度很低，
- * 和它说明的那张表还隔着一段距离。改成紧贴表头的一行 12px 次要文字：
- * 不抢视觉层级，也仍然常驻可见（不需要用户去悬停才发现）。
+ * 这类提示原来用 `<a-alert type="info">`，一条浅色横条铺满整行、信息密度很低。
+ * 改成 `width: fit-content` 的胶囊块：**宽度跟着文字走**，文字多长就多宽，
+ * 不再占满一行，也不再抢视觉层级（中性底色，不是 alert 的蓝）。
+ * `max-width: 100%` 兜底：文案很长时仍会换行，不会顶破容器。
  */
-.scm-table-caption {
+.scm-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
   margin: 0 0 8px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: var(--scm-fill, rgba(0, 0, 0, 0.04));
   font-size: 12px;
   line-height: 18px;
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));

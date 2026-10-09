@@ -142,12 +142,7 @@
       :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
-    <a-alert
-        type="info"
-        show-icon
-        style="margin-bottom: 12px"
-        message="报损减库存、报溢加库存；原因必填。"
-    />
+    <p class="scm-note">报损减库存、报溢加库存；原因必填。</p>
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="调整类型" name="adjustType">
         <a-radio-group v-model:value="form.adjustType" button-style="solid">
