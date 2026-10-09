@@ -20,12 +20,19 @@
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+  // 卡片与页脚共用同一宽度与对齐：卡片靠右后，页脚若仍居中就会跟卡片错开。
+  // 上限 780px；左侧按视口宽度留出背景蔬菜的安全区（约 38vw）。
+  --login-shell-max: min(780px, calc(100vw - 38vw - 64px));
 }
 
 // 卡片与页脚
 .xsy-login__footer {
   position: relative;
   z-index: 1;
+  align-self: flex-end;
+  width: 100%;
+  max-width: var(--login-shell-max);
+  text-align: center;
 }
 
 .xsy-login__shell {
@@ -35,9 +42,8 @@
   // 卡片靠右：背景图左下角那簇蔬菜（西兰花 / 玉米 / 彩椒 / 番茄）在居中布局下会被整块盖住。
   align-self: flex-end;
   width: 100%;
-  // 左侧按视口宽度留出背景蔬菜的安全区（约 38vw），剩下的才给卡片；
-  // 上限 780px：再宽卡片就把左下角那簇蔬菜压住了，也显得笨重。
-  max-width: min(780px, calc(100vw - 38vw - 64px));
+  // 与页脚共用 --login-shell-max（见 .xsy-login）
+  max-width: var(--login-shell-max);
   // 用 min() 而不是固定 500px：矮视口（<=700px 高）时必须让卡片跟着缩，
   // 否则卡片 + 页脚会顶破视口触发滚动条，右下角露出一条浅色带。
   min-height: min(500px, calc(100vh - 140px));
@@ -65,7 +71,8 @@
 // ---------------- 左侧品牌区 ----------------
 
 .xsy-login__brand {
-  width: 52%;
+  // 55%：4 个特性标签要在一行放下（需 ~314px），52% 时品牌栏内宽只有 ~304px
+  width: 55%;
   padding: 40px 40px 36px;
   display: flex;
   flex-direction: column;
@@ -101,28 +108,28 @@
   letter-spacing: 2px;
 }
 
-.xsy-login__intro {
-  margin: 14px 0 0;
-  font-size: 14px;
-  color: @xsy-text-secondary;
-  letter-spacing: 0.5px;
-}
-
 // 品牌特性标签
 .xsy-login__features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
+  display: grid;
+  // 用 grid 而不是 flex-wrap：4 个标签自然换行会出现「3 + 1」，最难看。
+  // 默认 2×2；品牌栏够宽（>=1280，内宽 >=325）时才铺成一行。
+  grid-template-columns: repeat(2, max-content);
+  justify-content: start;
+  gap: 10px 10px;
   margin: 22px 0 0;
   padding: 0;
   list-style: none;
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, max-content);
+  }
 }
 
 .xsy-login__feature {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 14px;
+  gap: 5px;
+  font-size: 12px;
   color: @xsy-text;
   white-space: nowrap;
   animation: xsy-login-fade 0.4s ease-out both;
@@ -138,15 +145,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   flex: none;
   border-radius: 50%;
   background: rgba(0, 185, 107, 0.12);
 }
 
 .xsy-login__feature-icon {
-  font-size: 13px;
+  font-size: 11px;
   color: @xsy-primary;
 }
 
@@ -180,7 +187,7 @@
 // ---------------- 右侧登录区 ----------------
 
 .xsy-login__panel {
-  width: 48%;
+  width: 45%;
   padding: 40px 38px;
   display: flex;
   flex-direction: column;
@@ -422,11 +429,22 @@
 }
 
 @media (max-width: 900px) {
+  .xsy-login {
+    --login-shell-max: min(440px, calc(100vw - 40px));
+    background-image: var(--login-mobile-background-image), linear-gradient(180deg, #e0faf6 0%, #f8fff3 72%);
+    background-position: center bottom;
+    background-size: 100% auto, cover;
+  }
+
   .xsy-login__shell {
-    width: min(440px, calc(100vw - 40px));
+    width: 100%;
     // 窄屏只剩表单一张卡，回到居中（背景也换成了移动端底图）
     align-self: center;
     min-height: 0;
+  }
+
+  .xsy-login__footer {
+    align-self: center;
   }
 
   .xsy-login__brand {
@@ -436,12 +454,6 @@
   .xsy-login__panel {
     width: 100%;
     padding: 40px 40px 32px;
-  }
-
-  .xsy-login {
-    background-image: var(--login-mobile-background-image), linear-gradient(180deg, #e0faf6 0%, #f8fff3 72%);
-    background-position: center bottom;
-    background-size: 100% auto, cover;
   }
 }
 

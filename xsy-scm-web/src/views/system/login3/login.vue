@@ -16,7 +16,6 @@
         <div class="xsy-login__brand-copy">
           <h1 class="xsy-login__headline">鲜蔬源智链</h1>
           <p class="xsy-login__tagline">智慧供应链管理平台</p>
-          <p class="xsy-login__intro">一套系统，贯通商品、订单、采购、库存、配送与结算。</p>
         </div>
 
         <ul class="xsy-login__features">
