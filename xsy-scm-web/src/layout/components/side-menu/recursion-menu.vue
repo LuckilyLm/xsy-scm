@@ -3,7 +3,7 @@
   * 
 -->
 <template>
-  <a-menu :open-keys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu" mode="inline" :inline-indent="18" :theme="theme"
+  <a-menu :open-keys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu" mode="inline" :inline-indent="16" :theme="theme"
           @openChange="onOpenChange">
     <template v-for="item in menuTree" :key="item.menuId">
       <template v-if="item.visibleFlag && !item.disabledFlag">
@@ -117,16 +117,21 @@ defineExpose({
 
   :deep(.ant-menu-item),
   :deep(.ant-menu-submenu-title) {
-    height: 42px;
-    line-height: 42px;
+    height: 44px;
+    line-height: 44px;
+    margin-block: 3px;
   }
 
   :deep(.ant-menu-submenu-arrow) {
-    display: none;
+    inset-inline-end: 14px;
   }
 
   :deep(.ant-menu-submenu-title) {
-    padding-inline-end: 14px;
+    padding-inline-end: 34px;
+  }
+
+  :deep(.ant-menu-item) {
+    padding-inline-end: 12px;
   }
 }
 
