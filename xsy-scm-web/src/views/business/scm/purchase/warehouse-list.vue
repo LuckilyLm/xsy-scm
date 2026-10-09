@@ -51,7 +51,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1180 }"
+        :scroll="{ x: 1330 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
@@ -59,14 +59,7 @@
             {{ SCM_WAREHOUSE_STATUS_ENUM[record.status]?.desc || record.status }}
           </a-tag>
         </template>
-        <template v-else-if="column.dataIndex === 'areaText'">
-          <!-- 复合单元：区域在上、详细地址在下。地址是库管实际找货的凭据，
-               不能因为"省市区能定位"就整列删掉，但也不该再占一列 260px -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ areaText(record) }}</span>
-            <span v-if="record.address" class="scm-cell-stack__sub">{{ record.address }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex === 'areaText'">{{ areaText(record) }}</template>
         <template v-else-if="column.dataIndex === 'located'">
           <!-- 未定位的仓库无法参与路线规划，用图标 + Tooltip 表达，不占一整列文字 -->
           <a-tooltip :title="isLocated(record) ? '已定位，可参与路线规划' : '未定位，无法参与路线规划'">
@@ -190,7 +183,8 @@ let requestId = 0;
 const columns = ref<TableColumnsType<Warehouse>>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 160},
   {title: '仓库名称', dataIndex: 'name', width: 200},
-  {title: '区域 / 地址', dataIndex: 'areaText', width: 280},
+  {title: '所在地区', dataIndex: 'areaText', width: 190},
+  {title: '详细地址', dataIndex: 'address', width: 240},
   {title: '定位', dataIndex: 'located', align: 'center', width: 80},
   {title: '状态', dataIndex: 'status', align: 'center', width: 110},
   {title: '备注', dataIndex: 'remark', width: 200},

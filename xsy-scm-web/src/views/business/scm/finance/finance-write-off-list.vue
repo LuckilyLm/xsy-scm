@@ -34,24 +34,21 @@
       </div>
     </a-row>
     <a-table id="scm-finance-write-off-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1295}">
+             row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1785}">
       <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='source'">
-          <!-- 资金方作主行，「类型 + 单号」作次要行：三者回答的是同一个问题（钱从哪来） -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.sourceName || '—' }}</span>
-            <span class="scm-cell-stack__sub">
-              {{ sourceTypeText(record.sourceType) }} {{ record.sourceNo || '—' }}
-              <a v-if="record.sourceType==='BALANCE_MOVEMENT'" v-privilege="'scm:balance:movement:query'"
-                 @click="movementDetail?.open({movementId: record.sourceId})">来源流水</a>
-            </span>
-          </div>
+        <template v-if="column.dataIndex==='sourceName'">{{ record.sourceName || '—' }}</template>
+        <template v-else-if="column.dataIndex==='sourceType'">{{ sourceTypeText(record.sourceType) }}</template>
+        <template v-else-if="column.dataIndex==='sourceNo'">
+          <span v-if="record.sourceNo" class="scm-mono">{{ record.sourceNo }}</span>
+          <span v-else>—</span>
+          <a v-if="record.sourceType==='BALANCE_MOVEMENT'" v-privilege="'scm:balance:movement:query'"
+             @click="movementDetail?.open({movementId: record.sourceId})">来源流水</a>
         </template>
-        <template v-else-if="column.dataIndex==='target'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.targetName || '—' }}</span>
-            <span class="scm-cell-stack__sub">{{ targetTypeText(record.targetType) }} {{ record.targetNo || '—' }}</span>
-          </div>
+        <template v-else-if="column.dataIndex==='targetName'">{{ record.targetName || '—' }}</template>
+        <template v-else-if="column.dataIndex==='targetType'">{{ targetTypeText(record.targetType) }}</template>
+        <template v-else-if="column.dataIndex==='targetNo'">
+          <span v-if="record.targetNo" class="scm-mono">{{ record.targetNo }}</span>
+          <span v-else>—</span>
         </template>
         <template v-else-if="column.dataIndex==='entryType'">
           <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
@@ -59,13 +56,8 @@
         <template v-else-if="column.dataIndex==='amount'">
           <span class="scm-money">{{ moneyText(text) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='writtenOffAt'">
-          <!-- 「谁在什么时候撤销/核销的」是同一件事的两面，合成一格 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ dateTimeText(text) }}</span>
-            <span v-if="record.operator" class="scm-cell-stack__sub">{{ record.operator }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex==='writtenOffAt'">{{ dateTimeText(text) }}</template>
+        <template v-else-if="column.dataIndex==='operator'">{{ record.operator || '—' }}</template>
         <template v-else-if="column.dataIndex==='action'">
           <!-- 撤销核销是追加反向事实，不是编辑：保持 danger 视觉 + 独立的二次确认弹窗 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -189,13 +181,18 @@ function targetTypeText(value?: string | null): string {
 // 资金与目标各带一组「类型 + 单号 + 往来方」，合并成来源 / 对象两格（13 列 → 8 列）；
 // 核销时点与操作人合成一格。
 const columns = ref<TableColumnsType<FinanceWriteOff>>([
-    {title: '核销单号', dataIndex: 'writeOffNo', width: 190},
-    {title: '来源', dataIndex: 'source', width: 220},
-    {title: '对象', dataIndex: 'target', width: 220},
+    {title: '核销单号', dataIndex: 'writeOffNo', width: 175},
+    {title: '资金方', dataIndex: 'sourceName', width: 150},
+    {title: '资金类型', dataIndex: 'sourceType', align: 'center', width: 90},
+    {title: '资金单号', dataIndex: 'sourceNo', width: 180},
+    {title: '核销目标', dataIndex: 'targetName', width: 150},
+    {title: '目标类型', dataIndex: 'targetType', align: 'center', width: 90},
+    {title: '目标单号', dataIndex: 'targetNo', width: 175},
     {title: '核销金额', dataIndex: 'amount', align: 'right', width: 130},
     {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
     {title: '原因', dataIndex: 'reason', width: 180},
     {title: '核销时点', dataIndex: 'writtenOffAt', width: 165},
+    {title: '操作人', dataIndex: 'operator', width: 110},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
 const targetColumns: TableColumnsType<AllocationDraft> = [

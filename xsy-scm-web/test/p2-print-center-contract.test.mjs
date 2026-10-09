@@ -24,18 +24,17 @@ function code(relative) {
 const templateList = code('../src/views/business/scm/print/print-template-list.vue');
 const recordList = code('../src/views/business/scm/print/print-record-list.vue');
 
-test('打印记录把模板编码与版本折进模板名、把操作人折进打印时间', () => {
-  // 编码 / 版本不再各占一列，但必须仍能在列表上核出来（审计场景）
-  assert.ok(!recordList.includes(`title: '模板编码'`), '打印记录仍有独立的模板编码列');
-  assert.ok(!recordList.includes(`title: '模板版本'`), '打印记录仍有独立的模板版本列');
-  assert.ok(!recordList.includes(`title: '操作人'`), '打印记录仍有独立的操作人列');
-  assert.match(recordList, /title: '模板', dataIndex: 'template'/);
-  assert.match(recordList, /column\.dataIndex === 'template'[\s\S]{0,400}record\.templateCode/);
-  assert.match(recordList, /column\.dataIndex === 'template'[\s\S]{0,400}record\.templateVersion/);
-  assert.match(recordList, /title: '打印', dataIndex: 'printed'/);
-  assert.match(recordList, /column\.dataIndex === 'printed'[\s\S]{0,400}record\.printedBy/);
-  // 时间字段例外：打印时间属于历史记录页的核心信息，不能隐藏
+test('打印记录把模板名称 / 编码 / 版本与打印人各自成列', () => {
+  // 审计场景要能逐项核对：模板名、编码、版本、打印时间、打印人各自成列
+  assert.match(recordList, /title: '模板名称', dataIndex: 'templateName'/);
+  assert.match(recordList, /title: '模板编码', dataIndex: 'templateCode'/);
+  assert.match(recordList, /title: '模板版本', dataIndex: 'templateVersion'/);
+  assert.match(recordList, /title: '打印时间', dataIndex: 'printedAt'/);
+  assert.match(recordList, /title: '打印人', dataIndex: 'printedBy'/);
+  assert.match(recordList, /record\.templateCode/);
+  assert.match(recordList, /record\.templateVersion/);
   assert.match(recordList, /record\.printedAt/);
+  assert.match(recordList, /record\.printedBy/);
 });
 
 test('打印模板配置页保留模板编码（与普通主数据的口径不同）', () => {

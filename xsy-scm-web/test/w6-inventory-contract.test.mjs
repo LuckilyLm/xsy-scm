@@ -582,17 +582,16 @@ test('the transfer page wires its own DOM id, six privileges and a two-step acti
   assert.match(page, /不在任何仓库的余额/);
 });
 
-test('the transfer page folds the four actor/time columns into two and keeps the arrow direction', () => {
+test('the transfer page keeps the four actor/time values as separate columns and keeps the arrow direction', () => {
   const page = code('../src/views/business/scm/inventory/inventory-transfer-list.vue');
 
   // 调拨的业务时刻是发出与收货；创建时间是技术字段
   assert.doesNotMatch(page, /title: '创建时间'/);
-  assert.doesNotMatch(page, /title: '发出人'|title: '收货人'/);
-  // 「谁」与「何时」同格：时间作主行，操作者作次要行
-  assert.match(page, /title: '发出', dataIndex: 'shippedAt'/);
-  assert.match(page, /title: '收货', dataIndex: 'receivedAt'/);
-  assert.match(page, /column\.dataIndex === 'shippedAt'[\s\S]{0,200}record\.shippedBy/);
-  assert.match(page, /column\.dataIndex === 'receivedAt'[\s\S]{0,200}record\.receivedBy/);
+  // 时间与操作者各自成列（一格一值）
+  assert.match(page, /title: '发出时间', dataIndex: 'shippedAt'/);
+  assert.match(page, /title: '发出人', dataIndex: 'shippedBy'/);
+  assert.match(page, /title: '收货时间', dataIndex: 'receivedAt'/);
+  assert.match(page, /title: '收货人', dataIndex: 'receivedBy'/);
 
   // 方向是一格：源仓 → 目标仓，箭头弱化（不再用行内 style）
   assert.match(page, /class="transfer-direction__arrow"/);
@@ -612,7 +611,9 @@ test('the transfer page folds the four actor/time columns into two and keeps the
   assert.match(page, /<a-input-number[\s\S]{0,120}record\.quantity/);
   assert.match(page, /quantity: fixed4\(i\.quantity\) as string/);
   assert.doesNotMatch(page, /toFixed\(/);
-  assert.match(page, /column\.dataIndex === 'sku'[\s\S]{0,200}record\.skuCode/);
+  // 在途报表：商品规格与规格编码各自成列
+  assert.match(page, /title: '商品规格编码', dataIndex: 'skuCode'/);
+  assert.match(page, /column\.dataIndex === 'skuCode'[\s\S]{0,120}record\.skuCode/);
 });
 
 test('transfer error codes all have actionable Chinese text', () => {
@@ -737,9 +738,9 @@ test('the warning page keeps all three quantities and colours the level, not the
   assert.match(page, /LOW: 'error'/);
   assert.match(page, /HIGH: 'warning'/);
   assert.match(page, /NORMAL: 'neutral'/);
-  // 阈值上下限合成一格：两行都带标签，各自可空
-  assert.match(page, /下限 \{\{ quantityText\(record\.warnMin\) \}\}/);
-  assert.match(page, /上限 \{\{ quantityText\(record\.warnMax\) \}\}/);
+  // 预警下限与上限各自成列（各自可空）
+  assert.match(page, /title: '预警下限', dataIndex: 'warnMin'/);
+  assert.match(page, /title: '预警上限', dataIndex: 'warnMax'/);
   // 状态列不是操作列，不该固定在右侧
   assert.doesNotMatch(page, /dataIndex: 'status'[^}]*fixed/);
 });
@@ -883,10 +884,9 @@ test('the loss/gain page colours the direction and folds the auditor into the au
   assert.match(page, /PENDING: 'warning'/);
   assert.match(page, /COMPLETED: 'success'/);
   assert.match(page, /REJECTED: 'error'/);
-  // 审核人与审核时间合成一格
-  assert.doesNotMatch(page, /title: '审核人'|title: '审核时间'/);
-  assert.match(page, /title: '审核', dataIndex: 'auditedAt'/);
-  assert.match(page, /column\.dataIndex === 'auditedAt'[\s\S]{0,200}record\.auditor/);
+  // 审核时间与审核人各自成列
+  assert.match(page, /title: '审核时间', dataIndex: 'auditedAt'/);
+  assert.match(page, /title: '审核人', dataIndex: 'auditor'/);
   // 数量恒为正：InputNumber 的下限是 0.0001（方向由单据类型表达）
   assert.match(page, /<a-input-number[\s\S]{0,140}record\.quantity/);
   assert.match(page, /:min="0.0001"/);

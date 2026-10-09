@@ -27,14 +27,11 @@
       解析时点：{{ result.at }} · 客户类型：{{ result.customerTypeName }}
     </p>
     <a-table :columns="columns" :data-source="result?.items||[]" row-key="skuId" :loading="loading"
-             :pagination="false" size="small" bordered :scroll="{x:1100}">
+             :pagination="false" size="small" bordered :scroll="{x:1210}">
       <template #bodyCell="{record,column}">
-        <template v-if="column.dataIndex==='sku'">
-          <!-- 规格名作主行、编码作次要行：编码只是核对用的，不该和名称抢同一行 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.specName || '—' }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-if="column.dataIndex==='specName'">{{ record.specName || '—' }}</template>
+        <template v-else-if="column.dataIndex==='skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex==='unitPrice'">
           <!-- 本页要回答的就是「最终多少钱」：这个数字必须是全表最重的 -->
@@ -101,7 +98,8 @@ const PRICE_SOURCE_TONE: Record<string, ScmStatusTone> = {
  */
 const columns: TableColumnsType<ResolvedPrice> = [
   {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '商品规格', dataIndex: 'specName', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '最终价格', dataIndex: 'unitPrice', align: 'right', width: 160},
   {title: '价格来源', dataIndex: 'priceSource', width: 150, align: 'center'},
   {title: '价格状态', dataIndex: 'priceStatus', align: 'center', width: 110},

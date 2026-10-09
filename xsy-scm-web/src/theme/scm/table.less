@@ -34,47 +34,12 @@
 }
 
 /*
- * 复合单元：仅用于窄屏合并字段或明确的主次关系；桌面可独立比较的属性应分列。
+ * 「双行复合单元」（名称在上、编码在下的两行单元格）已整体退役。
  *
- * 两行是有层级的两个信息，不是一句话换行，所以字号 / 字重 / 颜色三样都要拉开：
- * 主行 14px / 500 / 20px 主文字色，副行 12px / 16px secondary。
- * 只靠颜色区分的话，低分辨率屏和投屏上两行会糊成一片。
- *
- * `justify-content: center` + `min-height` 是为「副行可能缺失」的行准备的
- * （比如没有登记电话的联系人）：不撑住高度，同一张表里就会出现忽高忽低的行。
+ * 一格塞两行会把行高拉齐到最高那条、列宽按最宽那条给，整张表又高又空；
+ * 名称与编码这类可独立比较的属性一律各自成列（列宽之和同步写进 `:scroll.x`）。
+ * 原 `.scm-cell-stack` / `__main` / `__sub` / `__sub--num` 四条规则随调用点一起删除。
  */
-.scm-cell-stack {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-  min-height: 38px;
-  min-width: 0;
-}
-
-.scm-cell-stack__main {
-  overflow: hidden;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--scm-text, rgba(0, 0, 0, 0.88));
-}
-
-.scm-cell-stack__sub {
-  overflow: hidden;
-  font-size: 12px;
-  line-height: 16px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-}
-
-/* 副行是纯数字时（电话）对齐位数：默认字体的数字是变宽的，一列电话会参差不齐 */
-.scm-cell-stack__sub--num {
-  font-variant-numeric: tabular-nums;
-}
 
 /*
  * 「名称入口」（点进详情）。
@@ -196,4 +161,27 @@
   background-color: var(--scm-primary, #00b96b);
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath d='M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z'/%3E%3Cpath d='M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z'/%3E%3C/svg%3E") center / contain no-repeat;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath d='M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z'/%3E%3Cpath d='M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/*
+ * 单元格默认不换行：内容超宽用省略号收尾，不靠换行把行高撑成两行。
+ * 一格两行会让整行高度对齐到最高那条、列宽按最宽那条给，整张表又高又空。
+ *
+ * 两类例外由选择器本身排除，不需要页面配合：
+ * - 展开行（`#expandedRowRender`）装的是明细区块，不是单个字段；
+ * - 单元格里内嵌表格时，裁剪会连带吃掉内嵌表自己的横向滚动。
+ *
+ * 备注 / 地址这类确实需要整段换行的长文本，给文本加 `.scm-cell-wrap` 显式退出。
+ */
+.ant-table-tbody > tr:not(.ant-table-expanded-row) > td.ant-table-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ant-table-tbody > tr > td.ant-table-cell:has(.scm-cell-wrap),
+.ant-table-tbody > tr > td.ant-table-cell:has(> .ant-table) {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
 }

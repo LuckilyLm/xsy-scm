@@ -58,20 +58,16 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1120 }"
+        :scroll="{ x: 1350 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'product'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.productNameSnapshot || '—' }}</span>
-            <span v-if="record.spuCodeSnapshot" class="scm-cell-stack__sub">{{ record.spuCodeSnapshot }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'product'">{{ record.productNameSnapshot || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'spuCodeSnapshot'">
+          <span class="scm-mono">{{ record.spuCodeSnapshot || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.specNameSnapshot || '—' }}</span>
-            <span v-if="record.skuCodeSnapshot" class="scm-cell-stack__sub">{{ record.skuCodeSnapshot }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'sku'">{{ record.specNameSnapshot || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'skuCodeSnapshot'">
+          <span class="scm-mono">{{ record.skuCodeSnapshot || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'plannedQuantity'">
           <span class="scm-quantity">{{ quantityText(record.plannedQuantity) }}</span>
@@ -145,8 +141,10 @@ const emptyText = computed(() =>
  * 本页每行是「商品 + 规格 + 单位」的聚合，两列编码会把 11 列挤成 11 列纯技术字段。
  */
 const columns = ref<TableColumnsType<SortingSkuSummary>>([
-  {title: '商品', dataIndex: 'product', width: 190},
-  {title: '商品规格', dataIndex: 'sku', width: 190},
+  {title: '商品', dataIndex: 'product', width: 170},
+  {title: '商品编码', dataIndex: 'spuCodeSnapshot', width: 140},
+  {title: '商品规格', dataIndex: 'sku', width: 150},
+  {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 150},
   {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 90},
   {title: '涉及订单数', dataIndex: 'orderCount', align: 'right', width: 110},
   {title: '任务数', dataIndex: 'taskCount', align: 'right', width: 90},

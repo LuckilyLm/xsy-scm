@@ -211,13 +211,13 @@
           </template>
         </a-alert>
         <a-table v-else :data-source="frequent.rows.value" :columns="frequentCols" :row-key="(r: CustomerFrequentSku) => `${r.skuId}-${r.unit}`" size="small" bordered
-                 :loading="frequent.loading.value" :pagination="false" :scroll="{ x: 950 }">
+                 :loading="frequent.loading.value" :pagination="false" :scroll="{ x: 1090 }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'productName'">
-              <div class="scm-cell-stack">
-                <span class="scm-cell-stack__main">{{ record.productName || '—' }}</span>
-                <span v-if="record.skuCode" class="scm-cell-stack__sub scm-mono">{{ record.skuCode }}</span>
-              </div>
+              <span>{{ record.productName || '—' }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'skuCode'">
+              <span class="scm-mono">{{ record.skuCode || '—' }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'orderedQuantity'"><span class="scm-quantity">{{ record.orderedQuantity }}</span></template>
             <template v-else-if="column.dataIndex === 'recentUnitPrice'"><span class="scm-money">{{ formatAmountOrDash(record.recentUnitPrice) }}</span></template>
@@ -234,13 +234,13 @@
           </template>
         </a-alert>
         <a-table v-else :data-source="agreement.rows.value" :columns="agreementCols" row-key="agreementPriceId" size="small" bordered
-                 :loading="agreement.loading.value" :pagination="false" :scroll="{ x: 790 }">
+                 :loading="agreement.loading.value" :pagination="false" :scroll="{ x: 930 }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'productName'">
-              <div class="scm-cell-stack">
-                <span class="scm-cell-stack__main">{{ record.productName || '—' }}</span>
-                <span v-if="record.skuCode" class="scm-cell-stack__sub scm-mono">{{ record.skuCode }}</span>
-              </div>
+              <span>{{ record.productName || '—' }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'skuCode'">
+              <span class="scm-mono">{{ record.skuCode || '—' }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'unitPrice'"><span class="scm-money">{{ formatAmount(record.unitPrice) }}</span></template>
             <template v-else-if="column.dataIndex === 'effectivePeriod'">{{ effectivePeriodText(record) }}</template>
@@ -265,10 +265,10 @@
                    :loading="visibility.loading.value" :pagination="false" :scroll="{ x: 650 }">
             <template #bodyCell="{ record, column }">
               <template v-if="column.dataIndex === 'productName'">
-                <div class="scm-cell-stack">
-                  <span class="scm-cell-stack__main">{{ record.productName || '—' }}</span>
-                  <span v-if="record.skuCode" class="scm-cell-stack__sub scm-mono">{{ record.skuCode }}</span>
-                </div>
+                <span>{{ record.productName || '—' }}</span>
+              </template>
+              <template v-else-if="column.dataIndex === 'skuCode'">
+                <span class="scm-mono">{{ record.skuCode || '—' }}</span>
               </template>
               <template v-else-if="column.dataIndex === 'skuStatus'">
                 <ScmStatusTag :tone="shelfStatusTone(record.skuStatus)" :label="shelfStatusLabel(record.skuStatus)"/>
@@ -535,6 +535,7 @@ const orderCols: TableColumnsType<Order> = [
 const frequentCols: TableColumnsType<CustomerFrequentSku> = [
   {title: '商品', dataIndex: 'productName', width: 220},
   {title: '商品规格', dataIndex: 'specName', width: 140},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
   {title: '订购次数', dataIndex: 'orderCount', align: 'right', width: 100},
   {title: '订购量', dataIndex: 'orderedQuantity', align: 'right', width: 110},
@@ -544,6 +545,7 @@ const frequentCols: TableColumnsType<CustomerFrequentSku> = [
 const agreementCols: TableColumnsType<PriceRow> = [
   {title: '商品', dataIndex: 'productName', width: 220},
   {title: '商品规格', dataIndex: 'specName', width: 140},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '协议单价', dataIndex: 'unitPrice', align: 'right', width: 130},
   {title: '有效期', dataIndex: 'effectivePeriod', width: 300}
 ];

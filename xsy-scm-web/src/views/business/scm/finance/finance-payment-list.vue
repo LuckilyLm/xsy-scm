@@ -44,20 +44,13 @@
       </div>
     </div>
     <a-table id="scm-finance-payment-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="paymentId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1290}">
+             row-key="paymentId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1365}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='entryType'">
           <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
         </template>
-        <template v-else-if="column.dataIndex==='counterparty'">
-          <!-- 往来方是客户还是供应商决定这笔付款的性质，作次要行而不是独占一列 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.counterpartyName || '—' }}</span>
-            <span v-if="record.counterpartyType" class="scm-cell-stack__sub">
-              {{ record.counterpartyType==='CUSTOMER'?'客户':'供应商' }}
-            </span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex==='counterpartyName'">{{ record.counterpartyName || '—' }}</template>
+        <template v-else-if="column.dataIndex==='counterpartyType'">{{ counterpartyTypeText(record.counterpartyType) }}</template>
         <template v-else-if="column.dataIndex==='method'">{{ paymentMethodText(text) }}</template>
         <template v-else-if="column.dataIndex==='sourceType'">
           <span v-if="text==='ORDER_REFUND'">退款</span>
@@ -170,10 +163,17 @@ const sourceOptions = [{label: '退款', value: 'ORDER_REFUND'}];
 const pendingOptions = [{label: '仅待核销', value: true}, {label: '全部', value: false}];
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
+/** 往来方类型（客户 / 供应商）决定这笔付款的性质，与名称并列成独立列。 */
+function counterpartyTypeText(value?: string | null): string {
+    return value ? SCM_FINANCE_COUNTERPARTY_TYPE_ENUM[value]?.desc ?? value : '—';
+}
+
 const columns = ref<TableColumnsType<FinancePayment>>([
     {title: '付款单号', dataIndex: 'paymentNo', fixed: 'left', width: 110, ellipsis: true},
     {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '往来方', dataIndex: 'counterparty', width: 190}, {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
+    {title: '往来方', dataIndex: 'counterpartyName', width: 170},
+    {title: '往来方类型', dataIndex: 'counterpartyType', align: 'center', width: 95},
+    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
     {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 120},
     {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 110},
     {title: '方式', dataIndex: 'method', width: 105, align: 'center'}, {title: '来源', dataIndex: 'sourceType', align: 'center', width: 95},

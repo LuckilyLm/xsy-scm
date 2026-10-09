@@ -94,13 +94,8 @@
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
-        <template v-else-if="column.dataIndex === 'auditedAt'">
-          <!-- 审核的「谁」和「何时」是同一件事的两面，合成一格 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.auditedAt) }}</span>
-            <span v-if="record.auditor" class="scm-cell-stack__sub">{{ record.auditor }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex === 'auditedAt'">{{ datetime(record.auditedAt) }}</template>
+        <template v-else-if="column.dataIndex === 'auditor'">{{ record.auditor || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 行内常驻「详情」与待审核态的「审批」；驳回 / 编辑 / 删除收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -337,7 +332,8 @@ const columns = ref<ScmListColumn[]>([
   {title: '类型', dataIndex: 'convertType', align: 'center', width: 110},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '原因', dataIndex: 'reason', width: 220, ellipsis: true},
-  {title: '审核', dataIndex: 'auditedAt', width: 180},
+  {title: '审核时间', dataIndex: 'auditedAt', width: 170},
+  {title: '审核人', dataIndex: 'auditor', width: 110},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value));

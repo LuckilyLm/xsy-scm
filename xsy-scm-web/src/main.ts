@@ -23,6 +23,7 @@ import {store} from '/@/store';
 import {useUserStore} from '/@/store/modules/system/user';
 import 'ant-design-vue/dist/reset.css';
 import '/@/theme/index.less';
+import {installTableCellTooltip} from '/@/theme/scm/table-cell-tooltip';
 import {localRead} from '/@/utils/local-util';
 import LocalStorageKeyConst from '/@/constants/local-storage-key-const';
 import '/@/utils/ployfill';
@@ -89,6 +90,8 @@ async function initVue() {
     //全局
     app.config.globalProperties.$antIcons = antIcons;
     app.config.globalProperties.$lodash = lodash;
+    // 表格单元格被省略号截断时，悬浮给出全文提示（主题层让单元格默认不换行）
+    installTableCellTooltip();
     //挂载
     app.mount('#app');
 }

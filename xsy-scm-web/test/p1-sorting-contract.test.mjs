@@ -293,7 +293,7 @@ test('列表分页上限受后端约束（pageSize > 100 会被 30001 拒绝）'
 
 // ------------------------------------------------------------------ 列表与汇总的展示收敛
 
-test('分拣列表与汇总页按「少列、编码下沉」收敛', () => {
+test('分拣列表与汇总页按「少列」收敛，编码各自成列', () => {
     // 任务列表：打印次数与创建时间下沉详情；「明细行数 + 已处理」合成一格进度
     // （两列分开读起来要来回对照，而它们回答的是同一个问题：这单做到哪了）
     assert.doesNotMatch(taskList, /title: '打印次数'/);
@@ -312,9 +312,9 @@ test('分拣列表与汇总页按「少列、编码下沉」收敛', () => {
     assert.match(taskList, /dataIndex: 'action', fixed: 'right', align: 'center', width: 150/);
     assert.match(taskList, /ScmActionMore/);
 
-    // 汇总页：两个编码折进名称下方，未处理行数走 tag 档位
-    assert.doesNotMatch(summary, /title: '商品编码'/);
-    assert.doesNotMatch(summary, /title: '商品规格编码'/);
+    // 汇总页：商品编码与商品规格编码各自成列，未处理行数走 tag 档位
+    assert.match(summary, /title: '商品编码', dataIndex: 'spuCodeSnapshot'/);
+    assert.match(summary, /title: '商品规格编码', dataIndex: 'skuCodeSnapshot'/);
     assert.match(summary, /title: '商品', dataIndex: 'product'/);
     assert.match(summary, /title: '商品规格', dataIndex: 'sku'/);
     assert.match(summary, /record\.spuCodeSnapshot/);

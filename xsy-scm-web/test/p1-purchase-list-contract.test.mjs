@@ -83,9 +83,9 @@ test('仓库：创建时间下沉，定位状态可见，启停进「更多」',
   assert.ok(width <= 160, `仓库操作列 ${width}px 超出 160px`);
   // 仓库编码是运营配置识别字段，保留
   assert.match(warehouse, /title: '仓库编码'/);
-  // 地址不能因为「省市区能定位」就整列删掉：它是库管实际找货的凭据
-  assert.match(warehouse, /title: '区域 \/ 地址'/);
-  assert.match(warehouse, /record\.address/);
+  // 所在地区与详细地址各自成列：地址是库管实际找货的凭据
+  assert.match(warehouse, /title: '所在地区', dataIndex: 'areaText'/);
+  assert.match(warehouse, /title: '详细地址', dataIndex: 'address'/);
   // 定位状态是「一眼要挑出来」的信号，用图标 + Tooltip
   assert.match(warehouse, /title: '定位'/);
   assert.match(warehouse, /isLocated\(record\)/);

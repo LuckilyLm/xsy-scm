@@ -94,37 +94,11 @@ test('名称入口走公共类 .scm-cell-link，且不与 antd 同特异性打�
       /\.scm-cell-link\.scm-cell-link:hover,\s*\.scm-cell-link\.scm-cell-link:focus\s*\{[\s\S]{0,120}?color:\s*var\(--scm-primary\)/
   );
 
-  // 容器本身不能改成 align-items: flex-start —— 那样主副行会退化成 max-content 宽度，
-  // 两个 __main/__sub 的 text-overflow: ellipsis 就永远不触发。
-  const stackStart = THEME.indexOf('.scm-cell-stack {');
-  const stackDecls = THEME.slice(stackStart, THEME.indexOf('}', stackStart));
-  assert.doesNotMatch(stackDecls, /align-items/);
+  // 复合单元已整体退役：主题里不得再有 .scm-cell-stack 及其 __main/__sub 规则。
+  assert.doesNotMatch(THEME, /\.scm-cell-stack/);
 });
 
-test('复合单元保留通用样式，客户与供应商独立字段不再叠行', () => {
-  // 容器：纵向两行 + 居中 + 撑住最小高度（副行可能缺失，如没登记电话的联系人）
-  const stackStart = THEME.indexOf('.scm-cell-stack {');
-  assert.ok(stackStart >= 0, '主题缺少 .scm-cell-stack 规则');
-  const stackDecls = THEME.slice(stackStart, THEME.indexOf('}', stackStart));
-  assert.match(stackDecls, /flex-direction:\s*column/);
-  assert.match(stackDecls, /justify-content:\s*center/);
-  assert.match(stackDecls, /gap:\s*3px/);
-  assert.match(stackDecls, /min-height:\s*38px/);
-
-  // 主行 14px / 500 / 20px；副行 12px / 16px —— 只靠颜色区分在投屏上会糊成一片
-  const mainSrc = THEME.slice(THEME.indexOf('.scm-cell-stack__main {'));
-  const mainDecls = mainSrc.slice(0, mainSrc.indexOf('}'));
-  assert.match(mainDecls, /font-size:\s*14px/);
-  assert.match(mainDecls, /font-weight:\s*500/);
-  assert.match(mainDecls, /line-height:\s*20px/);
-
-  const subSrc = THEME.slice(THEME.indexOf('.scm-cell-stack__sub {'));
-  const subDecls = subSrc.slice(0, subSrc.indexOf('}'));
-  assert.match(subDecls, /font-size:\s*12px/);
-  assert.match(subDecls, /line-height:\s*16px/);
-  // 电话这类纯数字副行要对齐位数
-  assert.match(THEME, /\.scm-cell-stack__sub--num\s*\{[\s\S]{0,60}?font-variant-numeric:\s*tabular-nums/);
-
+test('客户与供应商的独立字段各自成列，不再叠进同一个单元格', () => {
   // 客户和供应商名称、编码、联系人和电话应各有数据列
   for (const title of ['供应商名称', '供应商编码', '联系人', '联系电话']) {
     assert.match(SUPPLIER, new RegExp(`title:\\s*'${title}'`));
@@ -210,7 +184,7 @@ test('常购窗口用 segmented 四档，协议价合并有效期，可售商品
   // 只在 frequentCols 块内取列（商品 / 商品规格在协议价与可售商品里也有）
   const freqBlock = DETAIL.slice(DETAIL.indexOf('const frequentCols'), DETAIL.indexOf('const agreementCols'));
   const frequentTitles = [...freqBlock.matchAll(/\{\s*title:\s*'([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(frequentTitles, ['商品', '商品规格', '单位', '订购次数', '订购量', '最近成交价', '最近购买']);
+  assert.deepEqual(frequentTitles, ['商品', '商品规格', '商品规格编码', '单位', '订购次数', '订购量', '最近成交价', '最近购买']);
 
   assert.match(DETAIL, /\{\s*title:\s*'有效期',\s*dataIndex:\s*'effectivePeriod'/);
   assert.match(DETAIL, /长期有效/);
@@ -221,6 +195,7 @@ test('常购窗口用 segmented 四档，协议价合并有效期，可售商品
   const visTitles = [...visBlock.matchAll(/\{\s*title:\s*'([^']+)'/g)].map((m) => m[1]);
   assert.deepEqual(visTitles, ['商品', '商品规格', '状态', '加入时间']);
 
-  assert.doesNotMatch(DETAIL, /title:\s*'商品规格编码'/);
+  // 常购商品与协议价的「商品规格编码」都独立成列（一格一值）
+  assert.match(DETAIL, /title:\s*'商品规格编码'/);
   assert.doesNotMatch(DETAIL, /title:\s*'商品规格状态'/);
 });

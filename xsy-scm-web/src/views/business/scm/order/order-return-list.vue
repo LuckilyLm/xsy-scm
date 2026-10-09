@@ -28,14 +28,12 @@
       </div>
     </a-row>
     <a-table id="order-return-table" size="small" :data-source="tableData" :columns="columns" row-key="returnId"
-             :loading="loading" bordered :pagination="false" :scroll="{x:1160}">
+             :loading="loading" bordered :pagination="false" :scroll="{x:1230}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='status'">{{ SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc }}</template>
+        <template v-else-if="column.dataIndex==='customerName'">{{ record.customerName || '—' }}</template>
         <template v-else-if="column.dataIndex==='orderNo'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.customerName || '—' }}</span>
-            <span class="scm-cell-stack__sub scm-mono">{{ record.orderNo || '—' }}</span>
-          </div>
+          <span class="scm-mono">{{ record.orderNo || '—' }}</span>
         </template>
         <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
         <template v-else-if="column.dataIndex==='action'">
@@ -148,7 +146,8 @@ const columns = ref<TableColumnsType<ReturnRow>>([{
   title: '退货单号',
   dataIndex: 'returnNo',
   width: 220
-}, {title: '客户 / 原订单', dataIndex: 'orderNo', width: 270},
+}, {title: '客户', dataIndex: 'customerName', width: 150},
+{title: '原订单号', dataIndex: 'orderNo', width: 190},
 {title: '退货原因', dataIndex: 'reason', width: 260, ellipsis: true}, {
   title: '状态',
   dataIndex: 'status',

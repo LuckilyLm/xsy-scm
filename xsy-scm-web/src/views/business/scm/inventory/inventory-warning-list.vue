@@ -97,12 +97,11 @@
           <!-- 判定基准，加粗以便与「现有量」一眼区分 -->
           <span class="scm-quantity available">{{ quantityText(record.availableQuantity) }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'warnRange'">
-          <!-- 上下限各自可空（不设该边界），因此两行都带标签，缺哪个就显示破折号 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main scm-quantity">下限 {{ quantityText(record.warnMin) }}</span>
-            <span class="scm-cell-stack__sub scm-quantity">上限 {{ quantityText(record.warnMax) }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'warnMin'">
+          <span class="scm-quantity">{{ quantityText(record.warnMin) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'warnMax'">
+          <span class="scm-quantity">{{ quantityText(record.warnMax) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
@@ -187,7 +186,8 @@ const columns = ref<InventoryWarningColumn[]>([
   {title: '现有量', dataIndex: 'quantity', align: 'right', width: 100},
   {title: '已预留', dataIndex: 'reservedQuantity', align: 'right', width: 100},
   {title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110},
-  {title: '预警阈值', dataIndex: 'warnRange', align: 'right', width: 150},
+  {title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 100},
+  {title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 100},
   {title: '状态', dataIndex: 'status', align: 'center', width: 110},
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value));

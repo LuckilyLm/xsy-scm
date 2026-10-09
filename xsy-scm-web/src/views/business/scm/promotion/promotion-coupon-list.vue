@@ -50,16 +50,13 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1160 }"
+        :scroll="{ x: 1340 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'couponName'">
-          <!-- 券编码是业务识别信息，但不值得独占一列：作为名称下方的 secondary text -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.couponName || '—' }}</span>
-            <span v-if="record.couponCode" class="scm-cell-stack__sub">{{ record.couponCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'couponCode'">
+          <span class="scm-mono">{{ record.couponCode || '—' }}</span>
         </template>
+        <template v-else-if="column.dataIndex === 'couponName'">{{ record.couponName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'discountType'">
           <ScmStatusTag tone="processing" :label="discountTypeLabel(record.discountType)"/>
         </template>
@@ -69,12 +66,8 @@
           <span v-if="isNoThreshold(record.minOrderAmount)" class="scm-cell-hint">无门槛</span>
           <span v-else class="scm-money">¥ {{ record.minOrderAmount }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'validity'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.validFrom) }}</span>
-            <span class="scm-cell-stack__sub">至 {{ datetime(record.validTo) }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex === 'validFrom'">{{ datetime(record.validFrom) }}</template>
+        <template v-else-if="column.dataIndex === 'validTo'">{{ datetime(record.validTo) }}</template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="statusLabelOf(record.status)"/>
         </template>
@@ -317,11 +310,13 @@ function discountTypeLabel(value: PromotionCouponDiscountType): string {
  * （登记于 docs/plan/active/frontend-ui-backend-gap-inventory.md 的 B7），前端不臆造。
  */
 const columns: TableColumnsType<PromotionCoupon> = [
-  {title: '券名称', dataIndex: 'couponName', width: 200},
+  {title: '券编码', dataIndex: 'couponCode', width: 130},
+  {title: '券名称', dataIndex: 'couponName', width: 180},
   {title: '券类型', dataIndex: 'discountType', width: 130, align: 'center'},
   {title: '优惠规则', dataIndex: 'discountText', width: 180},
   {title: '门槛金额', dataIndex: 'minOrderAmount', align: 'right', width: 130},
-  {title: '有效期', dataIndex: 'validity', width: 220},
+  {title: '生效时间', dataIndex: 'validFrom', width: 170},
+  {title: '失效时间', dataIndex: 'validTo', width: 170},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
