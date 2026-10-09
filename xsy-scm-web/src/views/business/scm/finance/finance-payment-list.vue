@@ -102,7 +102,7 @@
         <a-input v-else :value="selectedRefund ? moneyText(selectedRefund.refundAmount) : ''" disabled placeholder="选择退款来源后自动带入"/>
       </a-form-item>
       <a-form-item label="付款方式" name="method"><a-select v-model:value="addForm.method" :options="addMethodOptions" placeholder="选择方式"/></a-form-item>
-      <a-form-item label="付款时间" name="paidAt"><a-date-picker v-model:value="addForm.paidAt" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" style="width:100%"/></a-form-item>
+      <a-form-item label="付款时间" name="paidAt"><a-date-picker v-model:value="addForm.paidAt" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width:100%"/></a-form-item>
       <a-form-item label="资金凭据号"><a-input v-model:value="addForm.externalReference" :maxlength="128"/></a-form-item>
       <a-form-item label="备注"><a-textarea v-model:value="addForm.remark" :maxlength="500" :rows="2" show-count/></a-form-item>
     </a-form>

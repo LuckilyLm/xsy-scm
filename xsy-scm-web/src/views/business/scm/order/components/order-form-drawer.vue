@@ -31,7 +31,7 @@
           </a-col>
           <a-col :span="12">
             <a-form-item label="期望配送时间" name="expectDeliveryTime">
-              <a-date-picker v-model:value="form.expectDeliveryTime" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
+              <a-date-picker v-model:value="form.expectDeliveryTime" show-time value-format="YYYY-MM-DD HH:mm:ss"
                              style="width:100%"/>
             </a-form-item>
           </a-col>
@@ -57,7 +57,9 @@
           </a-col>
         </a-row>
         <ItemTable ref="itemTableRef" :items="form.items" :customer-id="form.customerId" @price="preview"/>
-        <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
+        <div class="item-actions">
+          <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
+        </div>
       </a-form>
     </a-spin>
     <template #footer>
@@ -342,3 +344,20 @@ async function save(draft = false) {
 
 defineExpose({open, openFromHistory});
 </script>
+
+<style scoped>
+/*
+ * 明细区两个动作：「添加商品」在 ItemTable 内部、这里只放「重新解析价格」，
+ * 两者原本只是挨着排，没有统一间距。这里把容器做成 inline-flex，
+ * 并给 ItemTable 的按钮补右间距，让它们成为间距一致的同一行动作。
+ */
+.item-actions {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.app-drawer-form :deep(.add-line) {
+  margin: 12px 8px 0 0;
+}
+</style>

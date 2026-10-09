@@ -21,7 +21,7 @@
       </a-form-item>
       <a-form-item label="期望配送时间"
       >
-        <a-range-picker v-model:value="timeRange" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" @change="changeTime"
+        <a-range-picker v-model:value="timeRange" show-time value-format="YYYY-MM-DD HH:mm:ss" @change="changeTime"
         />
       </a-form-item>
       <a-form-item v-if="canViewAmount" label="金额"

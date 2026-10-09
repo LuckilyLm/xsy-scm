@@ -210,7 +210,7 @@
           />
         </a-form-item>
         <a-form-item label="计划到达">
-          <a-date-picker v-model:value="arrival" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"/>
+          <a-date-picker v-model:value="arrival" show-time value-format="YYYY-MM-DD HH:mm:ss"/>
         </a-form-item>
         <a-form-item label="备注">
           <a-textarea v-model:value="stopForm.remark" :maxlength="500"/>
@@ -864,7 +864,7 @@ const stopVisible = ref(false),
 
 function editStop(stop: DeliveryStop) {
   stopForm.value = {...stop};
-  arrival.value = stop.plannedArrivalTime ? dayjs(stop.plannedArrivalTime).format('YYYY-MM-DDTHH:mm:ssZ') : undefined;
+  arrival.value = stop.plannedArrivalTime ? dayjs(stop.plannedArrivalTime).format('YYYY-MM-DD HH:mm:ss') : undefined;
   stopError.value = '';
   stopVisible.value = true;
 }

@@ -48,7 +48,7 @@
       <a-range-picker
           v-model:value="deliveryRangeModel"
           show-time
-          value-format="YYYY-MM-DDTHH:mm:ssZ"
+          value-format="YYYY-MM-DD HH:mm:ss"
           style="width: 340px"
       />
     </a-form-item>

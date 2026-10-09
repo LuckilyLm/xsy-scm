@@ -90,7 +90,7 @@
         <a-input-number v-model:value="addForm.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width:100%"/>
       </a-form-item>
       <a-form-item label="收款方式" name="method"><a-select v-model:value="addForm.method" :options="methodOptions" placeholder="选择方式"/></a-form-item>
-      <a-form-item label="收款时间" name="receivedAt"><a-date-picker v-model:value="addForm.receivedAt" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" style="width:100%"/></a-form-item>
+      <a-form-item label="收款时间" name="receivedAt"><a-date-picker v-model:value="addForm.receivedAt" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width:100%"/></a-form-item>
       <a-form-item label="资金凭据号"><a-input v-model:value="addForm.externalReference" :maxlength="128"/></a-form-item>
       <a-form-item label="备注"><a-textarea v-model:value="addForm.remark" :maxlength="500" :rows="2" show-count/></a-form-item>
     </a-form>

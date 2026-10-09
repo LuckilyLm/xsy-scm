@@ -19,7 +19,7 @@
             </a-col>
             <a-col :span="12">
               <a-form-item label="计划发车时间">
-                <a-date-picker v-model:value="departure" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"/>
+                <a-date-picker v-model:value="departure" show-time value-format="YYYY-MM-DD HH:mm:ss"/>
               </a-form-item>
             </a-col>
           </a-row>
@@ -129,7 +129,7 @@ async function open(route?: DeliveryRoute) {
         remark: route.remark,
       }
       : {routeName: '', deliveryDate: dayjs().format('YYYY-MM-DD')};
-  departure.value = route?.plannedDepartureTime ? dayjs(route.plannedDepartureTime).format('YYYY-MM-DDTHH:mm:ssZ') : undefined;
+  departure.value = route?.plannedDepartureTime ? dayjs(route.plannedDepartureTime).format('YYYY-MM-DD HH:mm:ss') : undefined;
   try {
     const [w, d, v] = await Promise.all([deliveryApi.warehouses(), deliveryApi.drivers(), deliveryApi.vehicles()]);
     warehouses.value = w.data;

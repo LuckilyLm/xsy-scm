@@ -206,13 +206,13 @@
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="生效时间" name="validFrom">
-              <a-date-picker v-model:value="form.validFrom" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
+              <a-date-picker v-model:value="form.validFrom" show-time value-format="YYYY-MM-DD HH:mm:ss"
                              style="width: 100%"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="失效时间" name="validTo">
-              <a-date-picker v-model:value="form.validTo" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
+              <a-date-picker v-model:value="form.validTo" show-time value-format="YYYY-MM-DD HH:mm:ss"
                              style="width: 100%"/>
             </a-form-item>
           </a-col>

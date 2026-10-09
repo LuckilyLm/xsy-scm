@@ -15,7 +15,7 @@
     <template v-if="column.dataIndex==='customerTypeId'"><CustomerTypeSelect v-model:value="record.customerTypeId" width="180px" /></template>
     <template v-else-if="column.dataIndex==='skuId'"><SkuSelect v-model:value="record.skuId" width="260px" /></template>
     <template v-else-if="column.dataIndex==='unitPrice'"><a-input v-model:value="record.unitPrice" aria-label="单价" inputmode="decimal" /></template>
-    <template v-else-if="column.dataIndex==='effectiveFrom'"><a-range-picker :value="[record.effectiveFrom,record.effectiveTo||'']" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[false,true]" @change="(v:unknown)=>setPeriod(record,v)" /></template>
+    <template v-else-if="column.dataIndex==='effectiveFrom'"><a-range-picker :value="[record.effectiveFrom,record.effectiveTo||'']" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[false,true]" @change="(v:unknown)=>setPeriod(record,v)" /></template>
     <template v-else-if="column.dataIndex==='error'"><span class="row-error">{{failures.filter(f=>f.rowNumber===record.rowNumber).map(f=>f.message).join('；')}}</span></template>
     <template v-else-if="column.dataIndex==='action'"><a-button type="link" danger :disabled="saving" @click="rows=rows.filter(r=>r.rowNumber!==record.rowNumber)">移除</a-button></template>
    </template>

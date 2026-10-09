@@ -18,10 +18,10 @@
         <a-select v-model:value="query.operationType" allow-clear style="width:110px" :options="operationOptions"/>
       </a-form-item>
       <a-form-item label="有效区间" class="smart-query-form-item">
-        <a-range-picker v-model:value="effective" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]"/>
+        <a-range-picker v-model:value="effective" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true,true]"/>
       </a-form-item>
       <a-form-item label="变更区间" class="smart-query-form-item">
-        <a-range-picker v-model:value="operated" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]"/>
+        <a-range-picker v-model:value="operated" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true,true]"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button type="primary" @click="search" v-privilege="'scm:pricing:history:query'">查询</a-button>

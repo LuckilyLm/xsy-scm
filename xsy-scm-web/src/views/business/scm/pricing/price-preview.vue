@@ -14,7 +14,7 @@
           <SkuSelect v-model:value="skuIds" mode="multiple" width="380px" :disabled-statuses="[]"/>
         </a-form-item>
         <a-form-item label="时点" class="smart-query-form-item">
-          <a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" placeholder="当前时点"/>
+          <a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DD HH:mm:ss" placeholder="当前时点"/>
         </a-form-item>
         <a-form-item class="smart-query-form-item">
           <a-button type="primary" @click="resolve" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算

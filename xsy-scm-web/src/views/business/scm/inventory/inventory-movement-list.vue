@@ -28,7 +28,7 @@
         <a-range-picker
             v-model:value="occurredRange"
             show-time
-            value-format="YYYY-MM-DDTHH:mm:ssZ"
+            value-format="YYYY-MM-DD HH:mm:ss"
             :allow-empty="[true, true]"
         />
       </a-form-item>

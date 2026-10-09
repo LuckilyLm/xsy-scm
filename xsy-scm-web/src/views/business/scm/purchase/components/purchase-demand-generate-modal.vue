@@ -27,7 +27,7 @@
         <a-range-picker
             v-model:value="range"
             show-time
-            value-format="YYYY-MM-DDTHH:mm:ssZ"
+            value-format="YYYY-MM-DD HH:mm:ss"
             style="width: 100%"
         />
       </a-form-item>

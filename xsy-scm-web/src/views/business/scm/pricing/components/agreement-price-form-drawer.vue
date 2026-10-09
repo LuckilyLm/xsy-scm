@@ -57,7 +57,7 @@
                   有效区间
                   <ScmFieldHelp label="有效区间" text="开始时间包含，结束时间不包含；结束留空表示长期有效"/>
                 </template>
-                <a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
+                <a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss"
                                 :allow-empty="[false,true]" style="width:100%"/>
               </a-form-item>
             </a-col>

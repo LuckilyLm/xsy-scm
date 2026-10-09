@@ -4,7 +4,7 @@
    <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="query.keyword" placeholder="名称或编码" allow-clear /></a-form-item>
    <a-form-item label="客户类型" class="smart-query-form-item"><CustomerTypeSelect v-model:value="query.customerTypeId" width="190px" /></a-form-item>
    <a-form-item label="商品规格" class="smart-query-form-item"><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" /></a-form-item>
-   <a-form-item label="有效区间" class="smart-query-form-item"><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]" /></a-form-item>
+   <a-form-item label="有效区间" class="smart-query-form-item"><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true,true]" /></a-form-item>
    <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search" v-privilege="'scm:pricing:type-price:query'">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
   </a-row>
  </a-form>
