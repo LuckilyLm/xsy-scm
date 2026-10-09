@@ -128,7 +128,6 @@
 <script setup lang="ts">
 import {computed, reactive, ref, watch} from 'vue';
 import {message} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -146,6 +145,7 @@ import type {Id, InventoryWarning, InventoryWarningQuery} from './inventory-type
 import type {Warehouse} from '../purchase/purchase-types';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 
 const queryForm = reactive<InventoryWarningQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarning[]>([]);
@@ -176,7 +176,7 @@ const statusOptions = [
 // 列按「哪个仓 / 什么货 / 还够不够发 / 阈值是多少」排列。三个数量都保留：
 // 判定基准是可用量，只给一个数字会让用户看不懂预警为什么触发。
 // 仓库与商品规格编码单独保留并默认收起；上下限仍合成一格（各自可空）。
-type InventoryWarningColumn = TableColumnsType<InventoryWarning>[number] & {showFlag?: boolean};
+type InventoryWarningColumn = ScmListColumn;
 const columns = ref<InventoryWarningColumn[]>([
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
@@ -190,7 +190,7 @@ const columns = ref<InventoryWarningColumn[]>([
   {title: '预警阈值', dataIndex: 'warnRange', align: 'right', width: 150},
   {title: '状态', dataIndex: 'status', align: 'center', width: 110},
 ]);
-const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 /** 低于下限是断货风险（红），高于上限是积压（橙），正常不强调。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {

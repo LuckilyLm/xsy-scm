@@ -133,7 +133,6 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
-import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
@@ -150,6 +149,7 @@ import type {InventoryMovement, InventoryMovementQuery} from './inventory-types'
 import {moneyText, movementTypeText, quantityText, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 
 const router = useRouter();
 const queryForm = reactive<InventoryMovementQuery>({pageNum: 1, pageSize: 20});
@@ -162,7 +162,7 @@ let requestId = 0;
 
 // 流水一行 = 一次库存变动。列按「何时 / 什么业务 / 哪张单 / 哪个仓 / 什么货 / 动多少 / 动完剩多少」排列；
 // 仓库与商品规格编码单独保留并默认收起；期初量仍是结存的对照行。
-type InventoryMovementColumn = TableColumnsType<InventoryMovement>[number] & {showFlag?: boolean};
+type InventoryMovementColumn = ScmListColumn;
 const columns = ref<InventoryMovementColumn[]>([
   {title: '发生时间', dataIndex: 'occurredAt', width: 170},
   {title: '类型', dataIndex: 'movementType', width: 150, align: 'center'},
@@ -177,7 +177,7 @@ const columns = ref<InventoryMovementColumn[]>([
   {title: '结存', dataIndex: 'afterQuantity', align: 'right', width: 140},
   {title: '操作者', dataIndex: 'operator', width: 110},
 ]);
-const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 /**
  * 入 / 出方向。

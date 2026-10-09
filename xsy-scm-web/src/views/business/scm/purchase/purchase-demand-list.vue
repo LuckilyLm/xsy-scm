@@ -187,7 +187,6 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -201,6 +200,7 @@ import {purchaseError} from './purchase-errors';
 import DemandGenerateModal from './components/purchase-demand-generate-modal.vue';
 import PurchaseDemandSummaryPreview from './components/purchase-demand-summary-preview.vue';
 import PurchaseDemandBatchDetailDrawer from './components/purchase-demand-batch-detail-drawer.vue';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
@@ -246,7 +246,7 @@ const alloc = reactive({
 /**
  * 常用列保持在首屏；编码、已分配量、供应商、仓库和日期仍可通过列设置打开。
  */
-type DemandListColumn = TableColumnsType<Demand>[number] & {showFlag?: boolean};
+type DemandListColumn = ScmListColumn;
 const columns = ref<DemandListColumn[]>([
   {title: '来源单号', dataIndex: 'salesOrderNoSnapshot', width: 150},
   {title: '需求来源 / 批次', dataIndex: 'calculationBatchId', width: 145},
@@ -262,7 +262,7 @@ const columns = ref<DemandListColumn[]>([
   {title: '需求日期', dataIndex: 'demandDate', width: 120, showFlag: false},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
-const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 async function queryData() {
   const id = ++requestId;

@@ -203,7 +203,8 @@ public class ScmBusinessMetricsService {
                 ? metricsDao.trendByDay(start, end, ScmMovementDirections.inboundTypes(),
                         ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope)
                 : metricsDao.selectedTrendByDay(start, end, ScmMovementDirections.inboundTypes(),
-                        ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope, selection));
+                        ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope,
+                        selection));
 
         List<String> dates = new ArrayList<>(points.size());
         List<String> fullDates = new ArrayList<>(points.size());

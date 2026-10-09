@@ -124,7 +124,6 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
@@ -141,6 +140,7 @@ import type {Warehouse} from '../purchase/purchase-types';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 
 const queryForm = reactive<InventoryReservationQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryReservation[]>([]);
@@ -155,7 +155,7 @@ const statusOptions = Object.values(SCM_INVENTORY_RESERVATION_STATUS_ENUM).map((
   label: i.desc,
 }));
 
-type InventoryReservationColumn = TableColumnsType<InventoryReservation>[number] & {showFlag?: boolean};
+type InventoryReservationColumn = ScmListColumn;
 const columns = ref<InventoryReservationColumn[]>([
   {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 180},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
@@ -169,7 +169,7 @@ const columns = ref<InventoryReservationColumn[]>([
   {title: '发生时间', dataIndex: 'occurredAt', width: 170},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 100},
 ]);
-const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 /** 生效中 = 还占着可用量（橙）；已消耗 = 正常走到出库（绿）；已释放 = 占用已归还（灰）。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {

@@ -245,6 +245,7 @@ import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-mod
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryOutboundQuery>({pageNum: 1, pageSize: 20});
@@ -262,7 +263,7 @@ const statusOptions = Object.values(SCM_INVENTORY_OUTBOUND_STATUS_ENUM).map((i) 
 
 // 列表按「哪张单 / 哪个仓 / 什么状态 / 谁在什么时候出的」排列。创建时间是技术字段：
 // 出库单的业务时刻是确认时间，草稿态的创建时间对使用者没有决策价值，不上列。
-type InventoryOutboundColumn = TableColumnsType<InventoryOutbound>[number] & {showFlag?: boolean};
+type InventoryOutboundColumn = ScmListColumn;
 const columns = ref<InventoryOutboundColumn[]>([
   {title: '出库单号', dataIndex: 'outboundNo', width: 200},
   {title: '仓库', dataIndex: 'warehouseName', width: 140},
@@ -273,7 +274,7 @@ const columns = ref<InventoryOutboundColumn[]>([
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
-const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 /** 草稿 = 待处理（橙），已确认 = 已完成（绿），已取消 = 失效（灰）。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {

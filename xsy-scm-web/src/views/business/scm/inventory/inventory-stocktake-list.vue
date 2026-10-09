@@ -275,6 +275,7 @@ import {resolveStocktakeCopyUnits, singleWarehouseDefault} from './inventory-mod
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryStocktakeQuery>({pageNum: 1, pageSize: 20});
@@ -292,7 +293,7 @@ const statusOptions = Object.values(SCM_INVENTORY_STOCKTAKE_STATUS_ENUM).map((i)
 
 // 列表按「哪张单 / 哪个仓 / 什么状态 / 谁在什么时候盘的」排列。创建时间是技术字段，
 // 盘点单的业务时刻是确认时间，不上列。
-type InventoryStocktakeColumn = TableColumnsType<InventoryStocktake>[number] & {showFlag?: boolean};
+type InventoryStocktakeColumn = ScmListColumn;
 const columns = ref<InventoryStocktakeColumn[]>([
   {title: '盘点单号', dataIndex: 'stocktakeNo', width: 200},
   {title: '仓库', dataIndex: 'warehouseName', width: 140},
@@ -303,7 +304,7 @@ const columns = ref<InventoryStocktakeColumn[]>([
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
-const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},

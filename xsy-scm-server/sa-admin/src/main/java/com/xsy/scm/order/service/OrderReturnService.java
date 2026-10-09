@@ -295,9 +295,8 @@ public class OrderReturnService {
             // 因此这里是「允许退货、无需退款」而不是失败。
             orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
                     "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，退款净额为 0，无需退款",
-                    Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
-                    Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(total), "refundAmount",
-                            refundAmount.toPlainString()));
+                    Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()), Map.of("status", result.getStatus(),
+                            "approvedAmount", String.valueOf(total), "refundAmount", refundAmount.toPlainString()));
         }
 
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),

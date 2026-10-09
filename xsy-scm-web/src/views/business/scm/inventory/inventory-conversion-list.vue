@@ -290,6 +290,7 @@ import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.v
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import {scmColumnsWidth, type ScmListColumn} from '/@/views/business/scm/common/scm-column';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import InventoryConversionDetailDrawer from './components/inventory-conversion-detail-drawer.vue';
@@ -334,8 +335,7 @@ const statusOptions = Object.values(SCM_INVENTORY_CONVERSION_STATUS_ENUM).map((i
 
 // 列表按「哪张单 / 哪个仓 / 什么类型 / 什么状态 / 为什么」排列。创建时间是技术字段，
 // 转换单的业务时刻是审核时间，不上列；审核人与审核时间合成一格。
-type InventoryConversionColumn = TableColumnsType<InventoryConversion>[number] & {showFlag?: boolean};
-const columns = ref<InventoryConversionColumn[]>([
+const columns = ref<ScmListColumn[]>([
   {title: '转换单号', dataIndex: 'conversionNo', width: 200},
   {title: '仓库', dataIndex: 'warehouseName', width: 140},
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
@@ -345,7 +345,7 @@ const columns = ref<InventoryConversionColumn[]>([
   {title: '审核', dataIndex: 'auditedAt', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
-const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 const itemColumns: TableColumnsType = [
   {title: '源商品规格（转出）', dataIndex: 'sourceSkuId', width: 220},

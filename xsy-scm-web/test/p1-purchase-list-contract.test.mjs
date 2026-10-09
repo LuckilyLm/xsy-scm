@@ -47,7 +47,8 @@ test('采购需求：来源、批次、商品和编码分列，常用列前置',
   assert.match(demand, /dataIndex === 'unallocatedQuantity'[\s\S]{0,200}record\.demandUnit/);
   assert.match(demand, /dataIndex === 'skuCode'[\s\S]{0,100}record\.skuCode/);
   assert.match(demand, /const columns = ref<DemandListColumn\[\]>\(/);
-  assert.match(demand, /const scrollX = computed\(\(\) => columns\.value\.reduce/);
+  // scrollX 必须由列宽派生，不能写死数字；具体实现经共享的 scmColumnsWidth 计算。
+  assert.match(demand, /const scrollX = computed\(\(\) => scmColumnsWidth\(columns\.value\)\)/);
   assert.match(demand, /:scroll="\{ x: scrollX \}"/);
   assert.match(demand, /dataIndex: 'requiredQuantity'[\s\S]{0,300}dataIndex: 'unallocatedQuantity'[\s\S]{0,300}dataIndex: 'status'/);
   assert.match(demand, /<TableOperator v-model="columns"/);

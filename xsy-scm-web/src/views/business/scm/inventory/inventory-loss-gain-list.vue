@@ -294,6 +294,7 @@ import {singleWarehouseDefault} from './inventory-model';
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryLossGainQuery>({pageNum: 1, pageSize: 20});
@@ -316,7 +317,7 @@ const statusOptions = Object.values(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM).map((i)
 
 // 列表按「哪张单 / 什么类型 / 哪个仓 / 什么状态 / 为什么」排列。创建时间是技术字段，
 // 报损报溢的业务时刻是审核时间，不上列。
-type InventoryLossGainColumn = TableColumnsType<InventoryLossGain>[number] & {showFlag?: boolean};
+type InventoryLossGainColumn = ScmListColumn;
 const columns = ref<InventoryLossGainColumn[]>([
   {title: '单据号', dataIndex: 'lossGainNo', width: 200},
   {title: '类型', dataIndex: 'adjustType', align: 'center', width: 100},
@@ -327,7 +328,7 @@ const columns = ref<InventoryLossGainColumn[]>([
   {title: '审核', dataIndex: 'auditedAt', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
-const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},

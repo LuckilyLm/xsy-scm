@@ -28,12 +28,22 @@ class Verification:
         self.logs = ROOT / ".runtime" / "verify" / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         self.logs.mkdir(parents=True, exist_ok=True)
 
+    @staticmethod
+    def log_filename(label):
+        """把 label 转成跨平台安全的日志文件名。
+
+        label 里可能出现 `typecheck:e2e` 这类带冒号的名字，而冒号在 Windows 与
+        GitHub Actions Artifact 上传中都是非法字符，会让失败日志整体上传失败。
+        显示用的 label 保持原样，只有文件名做替换。
+        """
+        return "".join("_" if char in ':*?"<>|\\/' else char for char in label) + ".log"
+
     def run(self, label, command, cwd):
         executable = shutil.which(command[0])
         if not executable:
             self.failed.append(f"{label}: missing {command[0]}")
             return False
-        log = self.logs / f"{label}.log"
+        log = self.logs / self.log_filename(label)
         print(f"[{label}] {' '.join(command)}\n  log: {log}", flush=True)
         try:
             with log.open("w", encoding="utf-8") as output:
