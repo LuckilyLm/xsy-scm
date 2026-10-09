@@ -28,8 +28,8 @@ public class LoginFailVO {
     @Schema(description = "连续登录失败次数")
     private Integer loginFailCount;
 
-    @Schema(description = "锁定状态:1锁定，0未锁定")
-    private Integer lockFlag;
+    @Schema(description = "锁定状态")
+    private Boolean lockFlag;
 
     @Schema(description = "连续登录失败锁定开始时间")
     private LocalDateTime loginLockBeginTime;
