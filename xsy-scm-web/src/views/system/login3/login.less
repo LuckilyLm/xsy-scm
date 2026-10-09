@@ -35,9 +35,9 @@
   // 卡片靠右：背景图左下角那簇蔬菜（西兰花 / 玉米 / 彩椒 / 番茄）在居中布局下会被整块盖住。
   align-self: flex-end;
   width: 100%;
-  // 左侧按视口宽度留出背景蔬菜的安全区（约 32vw），剩下的才给卡片；
-  // 上限 900px 避免宽屏下卡片被拉长。
-  max-width: min(900px, calc(100vw - 32vw - 64px));
+  // 左侧按视口宽度留出背景蔬菜的安全区（约 38vw），剩下的才给卡片；
+  // 上限 780px：再宽卡片就把左下角那簇蔬菜压住了，也显得笨重。
+  max-width: min(780px, calc(100vw - 38vw - 64px));
   // 用 min() 而不是固定 500px：矮视口（<=700px 高）时必须让卡片跟着缩，
   // 否则卡片 + 页脚会顶破视口触发滚动条，右下角露出一条浅色带。
   min-height: min(500px, calc(100vh - 140px));
@@ -65,8 +65,8 @@
 // ---------------- 左侧品牌区 ----------------
 
 .xsy-login__brand {
-  width: 54%;
-  padding: 44px 48px 40px;
+  width: 52%;
+  padding: 40px 40px 36px;
   display: flex;
   flex-direction: column;
   background:
@@ -180,8 +180,8 @@
 // ---------------- 右侧登录区 ----------------
 
 .xsy-login__panel {
-  width: 46%;
-  padding: 44px 46px;
+  width: 48%;
+  padding: 40px 38px;
   display: flex;
   flex-direction: column;
   justify-content: center;
