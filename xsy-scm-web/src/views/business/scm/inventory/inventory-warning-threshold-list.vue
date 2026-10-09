@@ -61,20 +61,20 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无阈值配置' }"
-        :scroll="{ x: 1090 }"
+        :scroll="{ x: 1315 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'skuName'">
+          {{ skuMainText(record.specValues, record.skuName) }}
+        </template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'productName'">
+          {{ record.productName || '—' }}
         </template>
         <template v-else-if="column.dataIndex === 'warnMin'">
           <span class="scm-quantity">{{ quantityText(record.warnMin) }}</span>
@@ -208,12 +208,13 @@ const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
-// 配置页只关心「哪个仓 + 哪个商品规格 + 上下限是多少 + 备注」。
-// 更新时间是技术字段（改配置立即生效，没有需要追溯的业务时刻），不上列。
+// 配置页将仓库、商品、规格和编码分列；更新时间不上列。
 const columns = ref<TableColumnsType<InventoryWarningThreshold>>([
-  {title: '仓库', dataIndex: 'warehouse', width: 160},
-  {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150, ellipsis: true},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120},
+  {title: '商品', dataIndex: 'productName', width: 160, ellipsis: true},
+  {title: '商品规格', dataIndex: 'skuName', width: 170, ellipsis: true},
+  {title: '规格编码', dataIndex: 'skuCode', width: 135},
   {title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 120},
   {title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 120},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},

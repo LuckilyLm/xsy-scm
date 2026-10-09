@@ -12,8 +12,8 @@
  * 4. 五个 Tab 与 lazy load 口径不变（由 w7-customer-360 覆盖取数口径，这里只钉展示层）。
  * 5. 枚举不得直接摊给用户：商品规格状态必须走翻译 + ScmStatusTag，订单状态走 ScmStatusTag。
  * 6. 常购窗口只有 30/90/180/365 四档，用 segmented 而非 Select。
- * 7. 客户 / 供应商列表的复合单元保持双行层级：主行 14px/500/20px、副行 12px/16px，
- *    编码走 `.scm-mono` 而非胶囊标签，也不恢复独立列；列宽与 `scroll.x` 必须同步。
+ * 7. 客户列表的复合单元保持双行层级；供应商列表在桌面把名称、编码、联系人与电话分列，
+ *    编码走 `.scm-mono` 而非胶囊标签，列宽与 `scroll.x` 必须同步。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -99,7 +99,7 @@ test('名称入口走公共类 .scm-cell-link，且不与 antd 同特异性打�
   assert.doesNotMatch(stackDecls, /align-items/);
 });
 
-test('双行复合单元有明确层级，不退回单行也不退回胶囊标签', () => {
+test('复合单元有明确层级，供应商独立字段不再叠行', () => {
   // 容器：纵向两行 + 居中 + 撑住最小高度（副行可能缺失，如没登记电话的联系人）
   const stackStart = THEME.indexOf('.scm-cell-stack {');
   assert.ok(stackStart >= 0, '主题缺少 .scm-cell-stack 规则');
@@ -123,12 +123,16 @@ test('双行复合单元有明确层级，不退回单行也不退回胶囊标�
   // 电话这类纯数字副行要对齐位数
   assert.match(THEME, /\.scm-cell-stack__sub--num\s*\{[\s\S]{0,60}?font-variant-numeric:\s*tabular-nums/);
 
-  // 客户与供应商列表都用双行复合单元，联系方式都走「联系人主行 + 电话副行」
+  // 客户列表的联系信息仍按主次关系叠行
   assert.match(LIST, /<div class="scm-cell-stack">/);
-  assert.match(SUPPLIER, /<div class="scm-cell-stack">/);
   assert.match(LIST, /scm-cell-stack__sub scm-cell-stack__sub--num/);
-  assert.match(SUPPLIER, /scm-cell-stack__sub scm-cell-stack__sub--num/);
-  // 不得退回横向单行容器
+  // 供应商名称、编码、联系人和电话应各有数据列
+  for (const title of ['供应商名称', '供应商编码', '联系人', '联系电话']) {
+    assert.match(SUPPLIER, new RegExp(`title:\\s*'${title}'`));
+  }
+  assert.doesNotMatch(SUPPLIER, /class="scm-cell-stack/);
+  assert.match(SUPPLIER, /dataIndex === 'contactPhone'[\s\S]{0,120}class="scm-mono"/);
+  // 不得引入只靠横向单行容器替代层级信息的旧样式
   assert.doesNotMatch(THEME, /\.scm-cell-inline/);
   assert.doesNotMatch(LIST, /class="scm-cell-inline/);
   assert.doesNotMatch(SUPPLIER, /class="scm-cell-inline/);
@@ -143,6 +147,13 @@ test('列宽收紧后 scroll.x 仍等于各列 width 之和', () => {
   // 陈旧值与列宽脱钩是这张表最常见的回归：改了列宽却忘了 scroll.x，窄屏就出现无意义横向滚动
   assert.equal(widths.reduce((a, b) => a + b, 0), Number(scrollX[1]),
       `scroll.x=${scrollX[1]} 与列宽之和 ${widths.reduce((a, b) => a + b, 0)} 不一致`);
+
+  const supplierWidths = [...SUPPLIER.matchAll(/\{title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)/g)]
+      .map((m) => Number(m[1]));
+  const supplierScrollX = /:scroll="\{ x: (\d+) \}"/.exec(SUPPLIER);
+  assert.ok(supplierScrollX, '供应商列表没有声明 scroll.x');
+  assert.equal(supplierWidths.reduce((a, b) => a + b, 0), Number(supplierScrollX[1]),
+      `供应商 scroll.x=${supplierScrollX[1]} 与列宽之和 ${supplierWidths.reduce((a, b) => a + b, 0)} 不一致`);
 });
 
 test('详情页客户名与编码在 Tabs 之上，切 Tab 后始终可见', () => {

@@ -41,22 +41,21 @@
           :pagination="false"
           size="small"
           bordered
-          :scroll="{ x: 810 }"
+          :scroll="{ x: 990 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'name'">
-            <div class="scm-cell-stack">
-              <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.supplierId)">{{ record.name }}</a-button>
-              <span class="scm-cell-stack__sub">{{ record.supplierCode }}</span>
-            </div>
+            <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.supplierId)">{{ record.name }}</a-button>
           </template>
-          <template v-else-if="column.dataIndex === 'contact'">
-            <div v-if="record.contactName || record.contactPhone" class="scm-cell-stack">
-              <span v-if="record.contactName" class="scm-cell-stack__main">{{ record.contactName }}</span>
-              <span v-if="record.contactPhone" class="scm-cell-stack__sub scm-cell-stack__sub--num">{{ record.contactPhone }}</span>
-            </div>
-            <span v-else>—</span>
+          <template v-else-if="column.dataIndex === 'supplierCode'">
+            <span class="scm-mono">{{ record.supplierCode || '—' }}</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'contactName'">
+            {{ record.contactName || '—' }}
+          </template>
+          <template v-else-if="column.dataIndex === 'contactPhone'">
+            <span class="scm-mono">{{ record.contactPhone || '—' }}</span>
           </template>
           <a-button
               v-else-if="column.dataIndex === 'skuCount'"
@@ -131,15 +130,15 @@ const statusText = (value: EnableStatus): string => SUPPLIER_STATUS_ENUM[value]?
 /** 启用=正常（绿），停用=失效（灰）。 */
 const statusTone = (value: EnableStatus): ScmStatusTone => (value === 'ENABLED' ? 'success' : 'neutral');
 
-// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。
-// 供应商编码折成名称下方的次要文字；更新时间仍在搜索、详情、编辑与导出里，不默认摊在列表上。
-// 联系人与联系电话合并成一列，避免两个半空列挤占业务字段。
+// 名称、编码、联系人和电话可独立查看、比较；更新时间仍由搜索、详情、编辑与导出承载。
 const columns = ref<TableColumnsType<SupplierRow>>([
-  {title: '供应商名称', dataIndex: 'name', width: 220, sorter: true},
-  {title: '联系方式', dataIndex: 'contact', width: 220},
+  {title: '供应商名称', dataIndex: 'name', width: 190, sorter: true, ellipsis: true},
+  {title: '供应商编码', dataIndex: 'supplierCode', width: 140},
+  {title: '联系人', dataIndex: 'contactName', width: 130, ellipsis: true},
+  {title: '联系电话', dataIndex: 'contactPhone', width: 140},
   {title: '关联商品数', dataIndex: 'skuCount', width: 120, align: 'center'},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
-  {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},
+  {title: '操作', dataIndex: 'action', width: 170, align: 'center', fixed: 'right'},
 ]);
 
 let requestId = 0;
