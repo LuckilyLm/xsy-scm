@@ -17,9 +17,6 @@
             placeholder="选择分拣员"
             @update:value="emit('update:assignee', $event)"
         />
-        <a-typography-text type="secondary">
-          改派只换人，已录入的分拣量与原因全部保留 —— 上一位称过的重量不会因为换人而重称。
-        </a-typography-text>
       </a-form-item>
       <a-form-item v-if="mode !== 'assign'" label="原因" required>
         <a-textarea

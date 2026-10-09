@@ -29,7 +29,7 @@
 
     <a-card size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
-        <a-typography-text type="secondary">本页为只读反查；维护关联请到「供应商档案」→「关联商品」。</a-typography-text>
+        <p class="scm-note scm-note--block">本页为只读反查；维护关联请到「供应商档案」→「关联商品」。</p>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER_SKU" :refresh="load"/>
       </a-row>
       <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">

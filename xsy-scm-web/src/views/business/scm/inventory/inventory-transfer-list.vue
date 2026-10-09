@@ -54,9 +54,6 @@
         <a-button style="margin-left: 8px" @click="openInTransit" v-privilege="'scm:inventory:transfer:query'">
           在途库存
         </a-button>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          发出后进入「在途」：源仓已扣、目标仓未加，需由目标仓收货才完成。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -143,7 +140,6 @@
       :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
-    <p class="scm-note">调拨分两步：先发出，再由目标仓收货。</p>
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="源仓库（转出）" name="fromWarehouseId">
         <WarehouseSelect v-model:value="form.fromWarehouseId" :options="warehouses" width="260px"/>
@@ -191,9 +187,6 @@
           </template>
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
-        <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一个商品规格只能出现一次。两仓的记账单位必须一致 —— 库存不做自动换算。
-        </a-typography-text>
       </a-form-item>
     </a-form>
     <template #footer>
@@ -213,7 +206,7 @@
       :footer="null"
       @cancel="inTransitOpen = false"
   >
-    <p class="scm-note">在途量不在任何仓库的余额里，对账时需单独计入。</p>
+    <p class="scm-note scm-note--block">在途量不在任何仓库的余额里，对账时需单独计入。</p>
     <a-table
         size="small"
         :data-source="inTransitRows"

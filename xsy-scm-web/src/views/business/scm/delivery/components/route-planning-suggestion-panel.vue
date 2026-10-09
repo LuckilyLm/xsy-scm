@@ -1,5 +1,5 @@
 <template>
-  <p class="plan-intro">根据当前停靠点提供配送顺序建议。建议不会自动修改线路，需要人工确认应用。</p>
+  <p class="scm-note scm-note--block">根据当前停靠点提供配送顺序建议。建议不会自动修改线路，需要人工确认应用。</p>
   <a-space class="plan-actions">
     <a-button
         type="primary"

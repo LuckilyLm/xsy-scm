@@ -50,9 +50,6 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-typography-text type="secondary">
-          流水是只追加的账本：不可编辑、不可删除，冲销以新增反向流水实现。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator

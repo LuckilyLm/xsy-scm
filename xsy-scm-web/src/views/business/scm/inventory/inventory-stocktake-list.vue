@@ -63,9 +63,6 @@
         >
           <a-button :loading="importing" v-privilege="'scm:inventory:stocktake:import'">导入盘点</a-button>
         </a-upload>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          确认盘点会把差异转成不可删除的盘盈 / 盘亏流水。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -138,7 +135,6 @@
       :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
-    <p class="scm-note">保存草稿前不产生单据；账面量保存时自动快照。</p>
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="盘点仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
@@ -186,9 +182,6 @@
           </template>
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
-        <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一个商品规格只能出现一次 —— 重复行会让同一份差异被调整两次。
-        </a-typography-text>
       </a-form-item>
     </a-form>
     <template #footer>

@@ -58,9 +58,6 @@
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:conversion:add'">
           新建转换单
         </a-button>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          审批通过才调库存，流水不可删除
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -212,10 +209,6 @@
           </template>
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
-        <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一商品规格可以在多行里出现（既是某行的源、又是另一行的目标，用于链式转换），
-          但同一行的源与目标不能是同一个商品规格。
-        </a-typography-text>
       </a-form-item>
     </a-form>
     <template #footer>
@@ -265,9 +258,6 @@
         />
       </a-form-item>
     </a-form>
-    <a-typography-text type="secondary">
-      提交时会带上打开本单时读到的版本号；若期间折算关系已被修改，系统会要求你刷新后重新审批。
-    </a-typography-text>
   </a-modal>
 </template>
 

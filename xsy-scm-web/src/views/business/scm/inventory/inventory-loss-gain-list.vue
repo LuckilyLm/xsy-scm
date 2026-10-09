@@ -59,9 +59,6 @@
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:loss-gain:add'">
           新建报损报溢单
         </a-button>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          创建后进入待审核；审批通过才调整库存并生成不可删除的流水。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -137,7 +134,6 @@
       :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
-    <p class="scm-note">报损减库存、报溢加库存；原因必填。</p>
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="调整类型" name="adjustType">
         <a-radio-group v-model:value="form.adjustType" button-style="solid">
@@ -192,9 +188,6 @@
           </template>
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
-        <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一个商品规格只能出现一次 —— 重复行会让同一份数量被调整两次。
-        </a-typography-text>
       </a-form-item>
     </a-form>
     <template #footer>
@@ -244,9 +237,6 @@
         />
       </a-form-item>
     </a-form>
-    <a-typography-text type="secondary">
-      提交时会带上打开本单时读到的版本号；若期间单据已被修改，系统会要求你刷新后重新审批。
-    </a-typography-text>
   </a-modal>
 </template>
 

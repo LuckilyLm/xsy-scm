@@ -16,7 +16,7 @@
     <a-space direction="vertical" size="middle" style="width:100%">
       <a-space>
         <a-button :loading="downloading" :disabled="loading" @click="downloadTemplate">下载 Excel 模板</a-button>
-        <span class="hint">仅支持 .xlsx，最大 5 MiB；任一错误均不会创建订单</span>
+        <p class="scm-note scm-note--block">仅支持 .xlsx，最大 5 MiB；任一错误均不会创建订单</p>
       </a-space>
       <a-upload-dragger :file-list="fileList" :before-upload="beforeUpload" :disabled="loading" :max-count="1"
                         accept=".xlsx" @remove="removeFile">

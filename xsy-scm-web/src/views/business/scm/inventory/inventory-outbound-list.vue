@@ -44,9 +44,6 @@
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:outbound:add'">
           新建出库单
         </a-button>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          确认出库会扣减库存并生成不可删除的销售出库流水。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator

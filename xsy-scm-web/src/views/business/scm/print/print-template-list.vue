@@ -38,7 +38,7 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:print:template:add'" @click="openCreate">新建模板</a-button>
-        <span class="hint">每种单据至多一个默认模板</span>
+        <p class="scm-note">每种单据至多一个默认模板</p>
       </div>
     </a-row>
 
