@@ -679,7 +679,8 @@ test('the threshold config page is not a stock-mutating page and validates the r
     assert.match(page, new RegExp(perm), page + ' 缺少权限 ' + perm);
   }
   // 三条区间判据必须在提交前拦一道（后端 41051 会再判一次）
-  assert.match(page, /上下限至少填写一个/);
+  assert.match(page, /下限和上限至少填写一个/);
+  assert.match(page, /validator: validateAtLeastOneThreshold/);
   assert.match(page, /不得大于上限/);
   // 数值控件是 InputNumber（:min=0 + :precision=4），不是自由文本
   assert.match(page, /<a-input-number[\s\S]{0,120}form\.warnMin/);

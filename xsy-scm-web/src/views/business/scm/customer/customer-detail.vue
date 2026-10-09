@@ -282,9 +282,7 @@
                 </div>
               </template>
               <template v-else-if="column.dataIndex === 'skuStatus'">
-                <ScmStatusTag v-if="shelfStatusLabel(record.skuStatus)" :tone="shelfStatusTone(record.skuStatus)"
-                              :label="shelfStatusLabel(record.skuStatus)"/>
-                <span v-else>—</span>
+                <ScmStatusTag :tone="shelfStatusTone(record.skuStatus)" :label="shelfStatusLabel(record.skuStatus)"/>
               </template>
               <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
             </template>
@@ -321,7 +319,7 @@ import {
   SETTLE_MODE_ENUM
 } from '/@/constants/business/scm/customer-const';
 import {SCM_ORDER_SOURCE_ENUM, SCM_ORDER_STATUS_ENUM} from '/@/constants/business/scm/order-const';
-import {SHELF_STATUS_ENUM} from '/@/constants/business/scm/product-const';
+import {shelfStatusLabel} from '/@/constants/business/scm/product-const';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
@@ -564,10 +562,8 @@ const visRows = computed(() => visibility.rows.value.filter((r) => r.skuId != nu
 // 枚举翻译与列定义（静态）
 // ---------------------------------------------------------------------------
 
-/** 商品规格状态：后端给的是枚举码，展示必须走翻译，不能把 `ON_SHELF` 直接摊给用户。 */
-const shelfStatusLabel = (value?: string | null): string =>
-    SHELF_STATUS_ENUM.find((item) => item.value === value)?.label ?? '';
-const shelfStatusTone = (value?: string | null): ScmStatusTone => (value === 'ON_SHELF' ? 'success' : 'neutral');
+const shelfStatusTone = (value?: string | null): ScmStatusTone =>
+    value === 'ON_SHELF' ? 'success' : value === 'OFF_SHELF' ? 'neutral' : 'warning';
 
 /** 草稿/待确认=待处理，已确认=处理中，已取消=失效（与订单列表同一套档位）。 */
 const ORDER_STATUS_TONE: Record<string, ScmStatusTone> = {

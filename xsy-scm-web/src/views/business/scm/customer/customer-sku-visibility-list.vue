@@ -64,8 +64,10 @@
           <template v-else-if="column.key === 'status'">
             <span v-if="record.skuId == null">适用于全部可售商品规格</span>
             <a-space v-else size="small">
-              <a-tag>{{ record.spuStatus || '商品状态未知' }}</a-tag>
-              <a-tag>{{ record.skuStatus || '商品规格状态未知' }}</a-tag>
+              <ScmStatusTag :tone="shelfStatusTone(record.spuStatus)"
+                            :label="`商品${shelfStatusLabel(record.spuStatus)}`"/>
+              <ScmStatusTag :tone="shelfStatusTone(record.skuStatus)"
+                            :label="`规格${shelfStatusLabel(record.skuStatus)}`"/>
             </a-space>
           </template>
           <template v-else-if="column.key === 'action'">
@@ -107,6 +109,9 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {VisibilityRow} from '/@/types/business/scm/pricing';
 import {customerError} from './customer-errors';
+import {shelfStatusLabel} from '/@/constants/business/scm/product-const';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 
 interface VisibilityQuery {
   pageNum: number;
@@ -123,6 +128,9 @@ const total = ref(0);
 const loading = ref(false);
 const error = ref('');
 let requestId = 0;
+
+const shelfStatusTone = (value?: string | null): ScmStatusTone =>
+    value === 'ON_SHELF' ? 'success' : value === 'OFF_SHELF' ? 'neutral' : 'warning';
 
 // 客户编码、商品规格编码折成对应名称下方的次要文字，不再各占一列。
 const columns = ref<TableColumnsType<VisibilityRow>>([

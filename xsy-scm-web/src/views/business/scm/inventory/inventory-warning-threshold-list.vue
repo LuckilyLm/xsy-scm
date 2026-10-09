@@ -38,9 +38,6 @@
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:threshold:add'">
           新建阈值配置
         </a-button>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          只有配置了阈值的仓库 + 商品规格才会进入预警列表；上下限至少填一个。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -287,9 +284,17 @@ const form = reactive<{
   remark?: string;
 }>({});
 
+async function validateAtLeastOneThreshold() {
+  if (form.warnMin != null || form.warnMax != null) {
+    return;
+  }
+  throw new Error('预警下限和上限至少填写一个');
+}
+
 const formRules = {
   warehouseId: [{required: true, message: '请选择仓库'}],
   skuId: [{required: true, message: '请选择商品规格'}],
+  warnMin: [{validator: validateAtLeastOneThreshold}],
 };
 
 function openCreate() {
@@ -326,11 +331,11 @@ function buildPayload(): InventoryWarningThresholdAdd | null {
   const min = fixed4(form.warnMin);
   const max = fixed4(form.warnMax);
   if (min === undefined && max === undefined) {
-    message.warning('预警上下限至少填写一个 —— 都没有的配置没有任何判断依据');
+    message.warning('预警下限和上限至少填写一个');
     return null;
   }
   if (form.warnMin != null && form.warnMax != null && form.warnMin > form.warnMax) {
-    message.warning('预警下限不得大于上限 —— 否则所有状态都会异常，预警会失去意义');
+    message.warning('预警下限不得大于上限');
     return null;
   }
   return {

@@ -193,7 +193,9 @@ test('五个 Tab 保持且 lazy 取数口径不变', () => {
 });
 
 test('枚举不直接摊给用户：规格状态走翻译 + ScmStatusTag，订单状态走 ScmStatusTag', () => {
-  assert.match(DETAIL, /SHELF_STATUS_ENUM\.find/);
+  assert.match(DETAIL, /shelfStatusLabel\(record\.skuStatus\)/);
+  assert.match(DETAIL, /import \{shelfStatusLabel\} from '\/@\/constants\/business\/scm\/product-const'/);
+  assert.match(DETAIL, /value === 'ON_SHELF'[\s\S]{0,100}\? 'success'[\s\S]{0,100}: 'warning'/);
   assert.match(DETAIL, /<ScmStatusTag[^>]*:tone="shelfStatusTone\(record\.skuStatus\)"/);
   assert.doesNotMatch(DETAIL, /<a-tag>\{\{\s*record\.skuStatus/);
   assert.match(DETAIL, /<ScmStatusTag[^>]*:tone="orderStatusTone\(record\.status\)"/);

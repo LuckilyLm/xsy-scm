@@ -28,4 +28,16 @@ export const enumLabel = (options: {
     value: string;
     label: string
 }[], value?: string | null) => options.find((item) => item.value === value)?.label || '—';
+const reportedUnknownShelfStatuses = new Set<string>();
+export const shelfStatusLabel = (value?: string | null): string => {
+    const label = enumLabel(SHELF_STATUS_ENUM, value);
+    if (label !== '—') {
+        return label;
+    }
+    if (value && import.meta.env.DEV && !reportedUnknownShelfStatuses.has(value)) {
+        reportedUnknownShelfStatuses.add(value);
+        console.warn(`[shelfStatusLabel] 未映射的商品状态：${value}`);
+    }
+    return '未知状态';
+};
 export const priceRange = (min: string | null, max: string | null) => min === null ? '未定价' : min === max || max === null ? `¥ ${min}` : `¥ ${min} ～ ${max}`;
