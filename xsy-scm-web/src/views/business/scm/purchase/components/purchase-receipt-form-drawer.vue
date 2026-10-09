@@ -13,8 +13,8 @@
   >
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
-      <a-form :model="form" layout="vertical" class="app-drawer-form">
-        <a-form-item name="purchaseOrderId" required>
+      <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
+        <a-form-item name="purchaseOrderId">
           <template #label>
             采购单
             <ScmFieldHelp label="采购单" text="收货明细会按所选采购单自动带入"/>
@@ -33,7 +33,7 @@
           <a-input v-else :value="form.purchaseOrderNo" disabled/>
         </a-form-item>
 
-        <a-form-item v-if="!form.id" name="receiptMode" required>
+        <a-form-item v-if="!form.id" name="receiptMode">
           <template #label>
             入库方式
             <ScmFieldHelp label="入库方式" text="直接入库在确认收货后入账；仓库确认入库需再由仓库确认"/>
@@ -96,6 +96,12 @@ const emit = defineEmits<{ saved: [] }>();
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
 const form = ref<Receipt>({});
+const formRef = ref();
+/** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  purchaseOrderId: [{required: true, message: '请选择采购单', trigger: 'change'}],
+  receiptMode: [{required: true, message: '请选择入库方式', trigger: 'change'}],
+};
 const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
@@ -146,12 +152,10 @@ async function open(id?: Id) {
 
 async function save() {
   error.value = '';
-  if (!form.value.id && !form.value.purchaseOrderId) {
-    error.value = '请选择采购单';
-    return;
-  }
-  if (!form.value.id && !form.value.receiptMode) {
-    error.value = '请选择入库方式';
+  // 必填项走表单校验：错误显示在对应输入框下方
+  try {
+    await formRef.value?.validate();
+  } catch {
     return;
   }
   saving.value = true;

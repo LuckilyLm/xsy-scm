@@ -56,8 +56,8 @@
   </a-drawer>
 
   <a-modal v-model:open="rejectOpen" title="驳回秤读数" :confirm-loading="scaleBusy" @ok="submitReject">
-    <a-form layout="vertical">
-      <a-form-item label="驳回原因" required>
+    <a-form ref="rejectFormRef" :model="{rejectReason}" :rules="rejectRules" layout="vertical">
+      <a-form-item label="驳回原因" name="rejectReason">
         <a-textarea v-model:value="rejectReason" :maxlength="200" :rows="3"
                     placeholder="例如读数未稳定 / 与实物明显不符 / 秤未校准"/>
       </a-form-item>
@@ -84,6 +84,9 @@ const scaleError = ref('');
 const scaleEvents = ref<SortingScaleEvent[]>([]);
 const rejectOpen = ref(false);
 const rejectReason = ref('');
+const rejectFormRef = ref();
+/** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
+const rejectRules = {rejectReason: [{required: true, message: '请填写驳回原因', trigger: 'blur'}]};
 const rejectTarget = ref<SortingScaleEvent>();
 
 const scaleColumns: TableColumnsType = [
@@ -146,8 +149,10 @@ function openReject(record: SortingScaleEvent) {
 async function submitReject() {
   const target = rejectTarget.value;
   if (!target || props.taskId === undefined) return;
-  if (!rejectReason.value.trim()) {
-    scaleError.value = '请填写驳回原因';
+  // 必填项走表单校验：错误显示在输入框下方
+  try {
+    await rejectFormRef.value?.validate();
+  } catch {
     return;
   }
   scaleBusy.value = true;
