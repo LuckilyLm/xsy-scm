@@ -227,12 +227,7 @@
       :footer="null"
       @cancel="inTransitOpen = false"
   >
-    <a-alert
-        type="info"
-        show-icon
-        style="margin-bottom: 12px"
-        message="在途量不在任何仓库的余额里，对账时需单独计入。"
-    />
+    <p class="scm-table-caption">在途量不在任何仓库的余额里，对账时需单独计入。</p>
     <a-table
         size="small"
         :data-source="inTransitRows"
