@@ -16,6 +16,7 @@ const NOTICE = source('../src/views/system/home/home-notice.vue');
 const HOME = source('../src/views/system/home/index.vue');
 const METRIC_CARDS = source('../src/views/system/home/components/metric-cards.vue');
 const REGION_ERROR = source('../src/views/system/home/components/region-error.vue');
+const USE_ECHARTS = source('../src/views/business/scm/screen/composables/use-echarts.ts');
 
 test('home trend distinguishes valid zero series from unavailable trend data', () => {
   assert.match(TREND, /const hasData = computed\(/);
@@ -57,4 +58,25 @@ test('home request failures appear centered in their own region with retry', () 
   for (const component of [TREND, RANKING, NOTICE, REGION_ERROR]) {
     assert.match(component, /retry|重试/);
   }
+});
+
+/*
+ * 「切换了但图不变」回归锁。
+ *
+ * 首页趋势卡的容器是 v-show 控制的：点指标时 active 先变、data 还是旧响应，
+ * hasData 立即转 false，容器短暂 0×0。此刻 render() 已经带着新数据跑过一次，
+ * 但 useEcharts.ensure() 见尺寸为 0 就把配置丢进了 pending。
+ * 若 ResizeObserver 在元素恢复尺寸时只调 resize()，画布就会用旧配置重绘 —— 五个指标
+ * 画出来一模一样。修复点是在有实例时也把 pending 重新 setOption 一次。
+ */
+test('chart composable replays the latest option when a hidden container becomes visible again', () => {
+  // 尺寸为 0 时必须早退，不能进 resize 分支（否则会在隐藏态白跑一次重绘）
+  assert.match(
+    USE_ECHARTS,
+    /new ResizeObserver\(\(\) => \{[\s\S]{0,400}if \(!el\.clientWidth \|\| !el\.clientHeight\) \{[\s\S]{0,80}return;/
+  );
+  // 已有实例 + 有 pending ⇒ 必须重新应用配置，而不是只 resize()
+  assert.match(USE_ECHARTS, /if \(pending\) \{[\s\S]{0,80}chart\.setOption\(pending, true\);/);
+  // setOption 必须同时记住 pending，供上面那条分支消费
+  assert.match(USE_ECHARTS, /function setOption\(option: ChartOption, notMerge = true\) \{[\s\S]{0,120}pending = option;/);
 });
