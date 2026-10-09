@@ -153,3 +153,33 @@
 - 不需要 `COALESCE(provider_amount, amount)` 兜底：V101 的
   `ck_payment_refund_success_provider_amount` 已保证 `SUCCEEDED ⇒ provider_amount NOT NULL`。
   该不变量本身由 `PaymentRefundSumBasisPgIT` 断言。
+
+### SEC-01 / SEC-02：订单族与退货族写入口的归属门禁
+
+- **缺陷是「读收窄、写不设防」的错配**：列表与详情早就按 `orderSellerScope` 只给出本人负责的行，
+  但订单的 `update / submit / actualQuantity / cancel / delete / reserveStock` 与退货的
+  `create / approve / reject / cancel` 只判「单据存在 + 状态合法」。于是持有功能点权限的普通人员
+  **猜到 id 就能改别人的单、动别人的数量、占别人的库存、替别人批退货退款** —— 行级范围退化成「藏起来」。
+  反向验证：只回退这两处改动，新 IT 14 条里 **13 条失败**，失败形态正是「本该抛异常却成功了」；
+  `reserveStock` 那条甚至真的写出了预留行（报「可用库存不足」），证明当时确实已经占了别人的货。
+- **功能点权限 ≠ 行级归属**：`@SaCheckPermission` 回答「能不能用这个功能」，
+  `orderSellerScope.allows()` 回答「能不能对这个单用」，两者不可互相替代，写入口两者都要过。
+- **门禁刻意不放进 `SalesOrderService#lock`**：`lock` 还被退货、退款等模块调用，
+  在那层加守卫会顺带改掉这些路径的语义（退款读的是同一张单，但它有自己的读侧收窄）。
+  门禁加在**对外写命令入口**，与既有的 `confirmOrder` 用同一套判定，形成一致口径。
+- **SEC-02 放在 `OrderReturnService#lock`**：退货单自身没有负责人列，归属完全由父销售订单决定；
+  `create / approve / reject / cancel` 全部经过这个私有 `lock`，一处收口即全覆盖。
+  `lockForReceipt` 的唯一调用方 `OrderReturnReceiptService.receive` 在入口已调过带范围的 `detail()`，
+  重复判定不改变其语义。
+- **幂等重放也必须过范围，且要分两层看**：`ScmIdempotencyService` 的 scope 是
+  `operator + ":" + scope`，operator 取 `ScmOperator.current()` = `userType:userId`，
+  因此 A 与 B 的重放键在存储层就是两行 —— **跨人重放结构上不可能**。
+  真正要堵的是另一条：**同一个人换了负责范围后重放同一个旧键**会直接命中 `replay` 分支、
+  跳过写命令里的门禁。所以每个 `claim.replay()` 分支都在 `replay` **之前**补一次带范围的读
+  （订单走 `salesOrderQueryService.detail`，退货走 `OrderReturnService#detail`）
+  —— 后者本身会重新判 `orderSellerScope`。`replay` 只做 JSON 反序列化、不做任何重校验，这一点不能依赖。
+- **回归用例** `ScmOrderWriteScopePgIT`（真实 PG + 真服务 + 真事务）：
+  双销售员 A/B，功能权限相同、数据范围不同，逐一覆盖 6 个订单写入口 + 4 个退货写入口，
+  每条都断「他人的单拒绝（且业务数据零留痕）+ 自己的单成功 + 幂等重放不绕开」；
+  另覆盖 `seller_id IS NULL` 的未分配单：普通销售不可写、持 `ORDER_ALL_PERM` 者可写。
+  不用 Mockito 打桩 DAO：缝隙正在「读用的范围」与「写用的范围」两条路径之间，打桩会把它擦掉。

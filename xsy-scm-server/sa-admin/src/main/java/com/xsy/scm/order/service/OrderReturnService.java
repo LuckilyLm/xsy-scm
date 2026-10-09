@@ -171,9 +171,16 @@ public class OrderReturnService {
     @Transactional(rollbackFor = Exception.class)
     public OrderReturnDetailVO create(OrderReturnAddForm orderReturnAddForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_RETURN_CREATE", key, orderReturnAddForm);
-        if (claim.replay())
+        if (claim.replay()) {
+            // 重放同样要过范围：幂等 scope 含 operator，B 拿不到 A 的记录；
+            // 但同一个人换了负责范围后重放旧键仍会绕开写命令内的门禁。
+            requireParentOrderVisible(orderReturnAddForm.getOrderId(),
+                    dataScopeService.resolve().getOrderSellerScope());
             return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
+        }
         var order = salesOrderService.lock(orderReturnAddForm.getOrderId());
+        if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
+            throw new ScmDataScopeException();
         if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus()))
             throw new ScmBusinessException(ORDER_RETURN_ORDER_NOT_CONFIRMED);
         OrderValidator.reason(orderReturnAddForm.getReason(), ORDER_RETURN_ITEM_INVALID);
@@ -230,8 +237,10 @@ public class OrderReturnService {
     public OrderReturnDetailVO approve(OrderReturnApproveForm orderReturnApproveForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_RETURN_APPROVE:" + orderReturnApproveForm.getReturnId(), key,
                 orderReturnApproveForm);
-        if (claim.replay())
+        if (claim.replay()) {
+            detail(orderReturnApproveForm.getReturnId());
             return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
+        }
         var orderReturnEntity = lock(orderReturnApproveForm.getReturnId());
         SalesOrderService.version(orderReturnEntity.getVersion(), orderReturnApproveForm.getVersion());
         pending(orderReturnEntity);
@@ -319,8 +328,10 @@ public class OrderReturnService {
         var claim = orderIdempotencyService.claim(
                 "ORDER_RETURN_" + state.name() + ":" + orderReturnDecisionForm.getReturnId(), key,
                 orderReturnDecisionForm);
-        if (claim.replay())
+        if (claim.replay()) {
+            detail(orderReturnDecisionForm.getReturnId());
             return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
+        }
         var orderReturnEntity = lock(orderReturnDecisionForm.getReturnId());
         SalesOrderService.version(orderReturnEntity.getVersion(), orderReturnDecisionForm.getVersion());
         pending(orderReturnEntity);
@@ -348,11 +359,22 @@ public class OrderReturnService {
         return lock(orderReturnId);
     }
 
+    /**
+     * 锁退货单及其父订单、订单行（锁序：采购/销售的既有约定是<b>先单据后明细</b>，这里沿用）。
+     *
+     * <p>
+     * <b>顺带做归属门禁</b>：退货单自身没有负责人字段，归属完全由父销售订单决定。读接口 {@code detail()} 早就按 {@code orderSellerScope} 收窄，写入口却只判「退货单存在 +
+     * 父订单存在」—— 于是持有退货功能权限的普通人员只要猜到退货单 id，就能替别人的订单批退货、退款、放额度。 放在 {@code lock()} 而不是各命令里，是因为 create/approve/reject/cancel
+     * 全部经过它， 一处收口即可覆盖；{@code lockForReceipt} 的唯一调用方 {@code OrderReturnReceiptService.receive} 在入口已调过带范围的
+     * {@code detail()}，这里的重复判定不会改变它的语义。
+     */
     private OrderReturnEntity lock(Long orderReturnId) {
         var orderReturnEntity = orderReturnDao.selectById(orderReturnId);
         if (orderReturnEntity == null)
             throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
-        salesOrderService.lock(orderReturnEntity.getOrderId());
+        var order = salesOrderService.lock(orderReturnEntity.getOrderId());
+        if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
+            throw new ScmDataScopeException();
         for (var salesOrderItem : salesOrderItemDao.list(orderReturnEntity.getOrderId())) {
             salesOrderItemDao.lock(salesOrderItem.getId());
         }
