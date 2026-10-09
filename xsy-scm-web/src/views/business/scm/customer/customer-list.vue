@@ -55,29 +55,20 @@
           :locale="{ emptyText }"
           size="small"
           bordered
-          :scroll="{ x: 1090 }"
+          :scroll="{ x: 1180 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'name'">
-            <div class="scm-cell-stack">
-              <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.customerId)">
-                {{ record.name }}
-              </a-button>
-              <span class="scm-cell-stack__sub scm-mono">{{ record.customerCode }}</span>
-            </div>
+            <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.customerId)">
+              {{ record.name }}
+            </a-button>
           </template>
+          <span v-else-if="column.dataIndex === 'customerCode'" class="scm-mono">{{ record.customerCode || '—' }}</span>
           <span v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'sellerName'">{{ record.sellerName || '—' }}</span>
-          <template v-else-if="column.dataIndex === 'contact'">
-            <div v-if="record.contactName || record.contactPhone" class="scm-cell-stack">
-              <span v-if="record.contactName" class="scm-cell-stack__main">{{ record.contactName }}</span>
-              <span v-if="record.contactPhone" class="scm-cell-stack__sub scm-cell-stack__sub--num">
-                {{ record.contactPhone }}
-              </span>
-            </div>
-            <span v-else>—</span>
-          </template>
+          <span v-else-if="column.dataIndex === 'contactName'">{{ record.contactName || '—' }}</span>
+          <span v-else-if="column.dataIndex === 'contactPhone'" class="scm-mono">{{ record.contactPhone || '—' }}</span>
           <span v-else-if="column.dataIndex === 'settleMode'">{{ settleModeText(record.settleMode) }}</span>
           <span v-else-if="column.dataIndex === 'creditLimit'" class="scm-money">{{ formatAmountOrDash(record.creditLimit) }}</span>
           <ScmStatusTag v-else-if="column.dataIndex === 'status'" :color="statusColor(record.status)"
@@ -232,17 +223,18 @@ const statusColor = (value: CustomerStatus): string => {
   return 'default';
 };
 
-// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。
-// 客户编码折成名称下方的次要文字；上级集团、更新时间仍在搜索、详情、编辑与导出里，不默认摊在列表上。
-// 联系人与联系电话合并成一列，避免两个半空列挤占业务字段。
-const columns = ref<TableColumnsType<CustomerRow>>([
-  {title: '客户名称', dataIndex: 'name', width: 205, sorter: true},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 105},
-  {title: '业务员', dataIndex: 'sellerName', width: 105},
-  {title: '联系方式', dataIndex: 'contact', width: 175},
-  {title: '结算方式', dataIndex: 'settleMode', width: 110, align: 'center'},
-  {title: '授信额度', dataIndex: 'creditLimit', width: 150, align: 'right'},
-  {title: '状态', dataIndex: 'status', width: 90, align: 'center', sorter: true},
+// 名称、编码、联系人与电话可独立查看；客户编码默认收起，仍可通过列设置打开。
+type CustomerListColumn = TableColumnsType<CustomerRow>[number] & {showFlag?: boolean};
+const columns = ref<CustomerListColumn[]>([
+  {title: '客户名称', dataIndex: 'name', width: 180, sorter: true},
+  {title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false},
+  {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
+  {title: '业务员', dataIndex: 'sellerName', width: 110},
+  {title: '联系人', dataIndex: 'contactName', width: 120},
+  {title: '联系电话', dataIndex: 'contactPhone', width: 140},
+  {title: '结算方式', dataIndex: 'settleMode', width: 130, align: 'center'},
+  {title: '授信额度', dataIndex: 'creditLimit', width: 130, align: 'right'},
+  {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
   {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},
 ]);
 
@@ -368,13 +360,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 行高收到 48~52px：本表有两处双行复合单元（名称+编码、联系人+电话），
-   size="small" 默认内边距（8px）叠上两行内容会到 55px+，整屏能看到的客户数变少。
-   两行的字号 / 字重 / 行距由公共类 .scm-cell-stack 统一（14px/500/20px 与 12px/16px），
-   这里只收紧单元格内边距，不重写行内排版 —— 否则客户、供应商两个列表会长得不一样。
-
-   名称入口的样式走公共类 .scm-cell-link：它同时保证名称是主行那一档的深色文字
-   （而不是 antd 默认的链接绿），且悬停才给链接反馈。 */
+/* 名称入口复用 .scm-cell-link；表格单元格稍微收紧内边距，保持桌面单行阅读密度。 */
 .customer-table :deep(.ant-table-tbody > tr > td) {
   padding: 6px 12px;
 }

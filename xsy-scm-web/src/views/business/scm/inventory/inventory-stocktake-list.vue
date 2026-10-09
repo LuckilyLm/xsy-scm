@@ -86,14 +86,12 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无盘点单' }"
-        :scroll="{ x: 1160 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
@@ -294,15 +292,18 @@ const statusOptions = Object.values(SCM_INVENTORY_STOCKTAKE_STATUS_ENUM).map((i)
 
 // 列表按「哪张单 / 哪个仓 / 什么状态 / 谁在什么时候盘的」排列。创建时间是技术字段，
 // 盘点单的业务时刻是确认时间，不上列。
-const columns = ref<TableColumnsType<InventoryStocktake>>([
+type InventoryStocktakeColumn = TableColumnsType<InventoryStocktake>[number] & {showFlag?: boolean};
+const columns = ref<InventoryStocktakeColumn[]>([
   {title: '盘点单号', dataIndex: 'stocktakeNo', width: 200},
-  {title: '仓库', dataIndex: 'warehouse', width: 160},
+  {title: '仓库', dataIndex: 'warehouseName', width: 140},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '确认人', dataIndex: 'operator', width: 130},
   {title: '确认时间', dataIndex: 'confirmedAt', width: 170},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
+const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},

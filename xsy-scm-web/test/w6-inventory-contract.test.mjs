@@ -722,9 +722,9 @@ test('the reservation page shows the source document number, never a raw technic
   assert.match(page, /CONSUMED: 'success'/);
   assert.doesNotMatch(page, /'orange'|'green'|'red'/, '状态色应由 tone 档位给出');
 
-  // 数量与规格编码的展示口径与余额 / 流水页一致
+  // 数量与规格编码分列，编码可用等宽字形逐位核对
   assert.match(page, /class="scm-quantity"/);
-  assert.match(page, /scm-cell-stack__sub/);
+  assert.match(page, /dataIndex === 'skuCode'[\s\S]{0,120}class="scm-mono"/);
 });
 
 test('the warning page keeps all three quantities and colours the level, not the row', () => {

@@ -47,7 +47,7 @@ export function priceEffectiveness(
     return 'EFFECTIVE';
 }
 
-/** 有效期单元主行：有结束时间给完整区间，无结束时间只给起始，第二行由调用方补「长期有效」。 */
+/** 有效期文本：有结束时间返回完整区间；无结束时间返回起始时点，调用方可同一行补「长期有效」。 */
 export function effectiveRangeText(effectiveFrom?: string | null, effectiveTo?: string | null): string {
     return effectiveTo ? `${datetime(effectiveFrom)} ～ ${datetime(effectiveTo)}` : datetime(effectiveFrom);
 }

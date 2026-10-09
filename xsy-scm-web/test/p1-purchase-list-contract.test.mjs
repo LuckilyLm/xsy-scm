@@ -36,21 +36,21 @@ function actionWidth(source, name) {
   return Number(matched[1]);
 }
 
-test('采购需求：来源与批次合为一格、单位跟数字走、scroll.x 与列宽之和一致', () => {
-  // 来源单号与冻结批次合为一格：批次降为 secondary text，不再独立占列
-  assert.ok(!demand.includes(`title: '来源冻结批次'`), '采购需求仍有独立的冻结批次列');
+test('采购需求：来源、批次、商品和编码分列，常用列前置', () => {
+  assert.match(demand, /title: '来源单号', dataIndex: 'salesOrderNoSnapshot'/);
+  assert.match(demand, /title: '需求来源 \/ 批次', dataIndex: 'calculationBatchId'/);
+  assert.match(demand, /title: '商品名称', dataIndex: 'productName'/);
+  assert.match(demand, /title: '规格编码', dataIndex: 'skuCode'[\s\S]{0,80}showFlag: false/);
   assert.ok(!demand.includes(`title: '需求单位'`), '采购需求仍有独立的需求单位列');
-  assert.match(demand, /dataIndex === 'salesOrderNoSnapshot'[\s\S]{0,600}record\.calculationBatchId/);
   // 单位跟在每个数量后面（量纲注脚），三个数量列都要有
   assert.match(demand, /dataIndex === 'requiredQuantity'[\s\S]{0,200}record\.demandUnit/);
   assert.match(demand, /dataIndex === 'unallocatedQuantity'[\s\S]{0,200}record\.demandUnit/);
-  // 商品规格编码下沉为商品名的次要行
-  assert.match(demand, /dataIndex === 'productName'[\s\S]{0,300}record\.skuCode/);
-  // scroll.x 必须与各列宽度之和一致：1700 是加列时顺手写下的陈旧值，与列宽无关
-  const sum = [...demand.matchAll(/width: (\d+)/g)].map((m) => Number(m[1])).reduce((a, b) => a + b, 0);
-  const scrollX = /:scroll="\{ x: (\d+) \}"/.exec(demand);
-  assert.ok(scrollX, '采购需求没有声明 scroll.x');
-  assert.equal(Number(scrollX[1]), sum, `采购需求 scroll.x=${scrollX[1]} 与列宽之和 ${sum} 不一致`);
+  assert.match(demand, /dataIndex === 'skuCode'[\s\S]{0,100}record\.skuCode/);
+  assert.match(demand, /const columns = ref<DemandListColumn\[\]>\(/);
+  assert.match(demand, /const scrollX = computed\(\(\) => columns\.value\.reduce/);
+  assert.match(demand, /:scroll="\{ x: scrollX \}"/);
+  assert.match(demand, /dataIndex: 'requiredQuantity'[\s\S]{0,300}dataIndex: 'unallocatedQuantity'[\s\S]{0,300}dataIndex: 'status'/);
+  assert.match(demand, /<TableOperator v-model="columns"/);
 });
 
 test('采购收货：操作列收到 160px 以内，编辑与删除进「更多」', () => {

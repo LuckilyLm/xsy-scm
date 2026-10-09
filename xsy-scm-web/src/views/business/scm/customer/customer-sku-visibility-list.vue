@@ -30,6 +30,16 @@
         </template>
       </a-alert>
 
+      <a-row class="smart-table-btn-block scm-table-toolbar">
+        <div class="smart-table-setting-block">
+          <TableOperator
+              v-model="columns"
+              :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER_SKU_VISIBILITY"
+              :refresh="load"
+          />
+        </div>
+      </a-row>
+
       <a-table
         :data-source="rows"
         :columns="columns"
@@ -37,31 +47,22 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '当前授权范围内没有匹配的客户可见性配置'}"
-        :scroll="{x: 1165}"
+        :scroll="{x: 1045}"
         size="small"
       >
         <template #bodyCell="{column, record}">
-          <template v-if="column.dataIndex === 'customerName'">
-            <div class="scm-cell-stack">
-              <span class="scm-cell-stack__main">{{ record.customerName || '—' }}</span>
-              <span class="scm-cell-stack__sub">{{ record.customerCode || '—' }}</span>
-            </div>
-          </template>
+          <span v-if="column.dataIndex === 'customerName'">{{ record.customerName || '—' }}</span>
+          <span v-else-if="column.dataIndex === 'customerCode'" class="scm-mono">{{ record.customerCode || '—' }}</span>
           <span v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'productName'">{{ record.productName || '—' }}</span>
-          <template v-else-if="column.dataIndex === 'specName'">
-            <div v-if="record.specName || record.skuCode" class="scm-cell-stack">
-              <span class="scm-cell-stack__main">{{ record.specName || '—' }}</span>
-              <span class="scm-cell-stack__sub">{{ record.skuCode || '—' }}</span>
-            </div>
-            <span v-else>—</span>
-          </template>
-          <template v-else-if="column.key === 'visibilityPolicy'">
+          <span v-else-if="column.dataIndex === 'specName'">{{ record.specName || '—' }}</span>
+          <span v-else-if="column.dataIndex === 'skuCode'" class="scm-mono">{{ record.skuCode || '—' }}</span>
+          <template v-else-if="column.dataIndex === 'visibilityPolicy'">
             <a-tag :color="record.visibilityPolicy === 'ALLOWLIST' ? 'blue' : 'default'">
               {{ visibilityPolicyLabel(record.visibilityPolicy) }}
             </a-tag>
           </template>
-          <template v-else-if="column.key === 'status'">
+          <template v-else-if="column.dataIndex === 'status'">
             <span v-if="record.skuId == null">适用于全部可售商品规格</span>
             <a-space v-else size="small">
               <ScmStatusTag :tone="shelfStatusTone(record.spuStatus)"
@@ -70,7 +71,7 @@
                             :label="`规格${shelfStatusLabel(record.skuStatus)}`"/>
             </a-space>
           </template>
-          <template v-else-if="column.key === 'action'">
+          <template v-else-if="column.dataIndex === 'action'">
             <div class="scm-table-actions">
               <a-button
                 v-privilege="'scm:customer:query'"
@@ -108,6 +109,8 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {VisibilityRow} from '/@/types/business/scm/pricing';
+import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import TableOperator from '/@/components/support/table-operator/index.vue';
 import {customerError} from './customer-errors';
 import {shelfStatusLabel} from '/@/constants/business/scm/product-const';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
@@ -132,15 +135,18 @@ let requestId = 0;
 const shelfStatusTone = (value?: string | null): ScmStatusTone =>
     value === 'ON_SHELF' ? 'success' : value === 'OFF_SHELF' ? 'neutral' : 'warning';
 
-// 客户编码、商品规格编码折成对应名称下方的次要文字，不再各占一列。
-const columns = ref<TableColumnsType<VisibilityRow>>([
-  {title: '客户名称', dataIndex: 'customerName', width: 220},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 130},
-  {title: '商品名称', dataIndex: 'productName', width: 220},
-  {title: '商品规格', dataIndex: 'specName', width: 180},
-  {title: '可见策略', key: 'visibilityPolicy', width: 125},
-  {title: '商品状态', key: 'status', width: 190},
-  {title: '操作', key: 'action', width: 100, fixed: 'right', align: 'center'},
+// 编码列单独保留，但默认收起；列设置仍可打开这两项。
+type VisibilityListColumn = TableColumnsType<VisibilityRow>[number] & {showFlag?: boolean};
+const columns = ref<VisibilityListColumn[]>([
+  {title: '客户名称', dataIndex: 'customerName', width: 180},
+  {title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false},
+  {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
+  {title: '商品名称', dataIndex: 'productName', width: 180},
+  {title: '商品规格', dataIndex: 'specName', width: 150},
+  {title: '规格编码', dataIndex: 'skuCode', width: 135, showFlag: false},
+  {title: '可见策略', dataIndex: 'visibilityPolicy', width: 125},
+  {title: '商品状态', dataIndex: 'status', width: 190},
+  {title: '操作', dataIndex: 'action', width: 100, fixed: 'right', align: 'center'},
 ]);
 
 function visibilityPolicyLabel(policy: string): string {

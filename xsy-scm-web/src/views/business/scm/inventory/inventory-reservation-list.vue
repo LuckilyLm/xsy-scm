@@ -67,21 +67,17 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无预留记录' }"
-        :scroll="{ x: 1260 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'sourceDocumentNo'">{{ record.sourceDocumentNo || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'skuName'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -126,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -159,17 +155,21 @@ const statusOptions = Object.values(SCM_INVENTORY_RESERVATION_STATUS_ENUM).map((
   label: i.desc,
 }));
 
-const columns = ref<TableColumnsType<InventoryReservation>>([
+type InventoryReservationColumn = TableColumnsType<InventoryReservation>[number] & {showFlag?: boolean};
+const columns = ref<InventoryReservationColumn[]>([
   {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 180},
-  {title: '仓库', dataIndex: 'warehouse', width: 160},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '商品规格', dataIndex: 'skuName', width: 150},
+  {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '预留数量', dataIndex: 'quantity', align: 'right', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 80},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '发生时间', dataIndex: 'occurredAt', width: 170},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 100},
 ]);
+const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
 
 /** 生效中 = 还占着可用量（橙）；已消耗 = 正常走到出库（绿）；已释放 = 占用已归还（灰）。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {

@@ -5,15 +5,15 @@
  * 并把列表里的金额、编码收口到统一 formatter 与 `.scm-mono`。
  * 这类改动最容易在后续迭代里被悄悄改回去（视觉回归不报错、单测也不报错），因此钉住：
  *
- * 1. 列表列结构不得回退：不恢复「客户编码」独立列，不把「上级集团 / 更新时间」摊回列表；
- *    授信额度走 `formatAmountOrDash` + `.scm-money`。
+ * 1. 客户列表把名称、编码、联系人和电话分列，客户编码可由 TableOperator 打开；
+ *    不把「上级集团 / 更新时间」摊回列表，授信额度走 `formatAmountOrDash` + `.scm-money`。
  * 2. 详情页客户名必须在 Tabs 之上（切 Tab 后始终可见），且页头提供返回 / 编辑 / 刷新 / 更多。
  * 3. 详情页不得回退到大面积 `a-descriptions bordered`：基础资料走 label/value 字段结构。
  * 4. 五个 Tab 与 lazy load 口径不变（由 w7-customer-360 覆盖取数口径，这里只钉展示层）。
  * 5. 枚举不得直接摊给用户：商品规格状态必须走翻译 + ScmStatusTag，订单状态走 ScmStatusTag。
  * 6. 常购窗口只有 30/90/180/365 四档，用 segmented 而非 Select。
- * 7. 客户列表的复合单元保持双行层级；供应商列表在桌面把名称、编码、联系人与电话分列，
- *    编码走 `.scm-mono` 而非胶囊标签，列宽与 `scroll.x` 必须同步。
+ * 7. 客户与供应商列表在桌面把名称、编码、联系人与电话分列；编码走 `.scm-mono`，
+ *    低频编码可默认收起，列宽与 `scroll.x` 必须同步。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,25 +33,25 @@ const SUPPLIER = code('../src/views/business/scm/supplier/supplier-list.vue');
 const THEME = code('../src/theme/scm/table.less');
 const DETAIL_THEME = code('../src/theme/scm/detail.less');
 
-test('列表列结构保持 8 列，不恢复客户编码独立列与主数据时间列', () => {
+test('客户列表将独立识别字段分列，且不摊开主数据时间列', () => {
   const titles = [...LIST.matchAll(/\{\s*title:\s*'([^']+)',\s*dataIndex:\s*'([^']+)'/g)]
       .map((m) => m[1]);
   assert.deepEqual(
       titles,
-      ['客户名称', '客户类型', '业务员', '联系方式', '结算方式', '授信额度', '状态', '操作'],
+      ['客户名称', '客户编码', '客户类型', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
       '客户列表列结构被改动'
   );
-  // 客户编码折在名称下方，不是独立列
-  assert.doesNotMatch(LIST, /title:\s*'客户编码'/);
+  assert.match(LIST, /title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false/);
   assert.doesNotMatch(LIST, /title:\s*'上级集团'/);
   assert.doesNotMatch(LIST, /title:\s*'更新时间'/);
 });
 
-test('列表金额走统一 formatter，客户编码下沉为副行等宽文本', () => {
+test('列表金额走统一 formatter，客户编码独立列默认收起', () => {
   // 授信额度：千分位 + ¥ + 当前业务精度（formatAmountOrDash 内部调 formatAmount）
   assert.match(LIST, /dataIndex === 'creditLimit'[^>]*class="scm-money">\{\{\s*formatAmountOrDash\(record\.creditLimit\)\s*\}\}/);
-  // 客户编码折在名称下方、等宽字形；不做胶囊标签，也不恢复独立列
-  assert.match(LIST, /class="scm-cell-stack__sub scm-mono">\{\{\s*record\.customerCode\s*\}\}/);
+  // 客户编码有独立列，默认收起；显示时使用等宽字形，不做胶囊标签。
+  assert.match(LIST, /dataIndex === 'customerCode'[^>]*class="scm-mono">\{\{\s*record\.customerCode/);
+  assert.match(LIST, /dataIndex === 'contactPhone'[^>]*class="scm-mono">\{\{\s*record\.contactPhone/);
   assert.doesNotMatch(LIST, /<a-(tag|badge)[\s\S]{0,120}?record\.customerCode/);
   // 操作列仍是 编辑 / 状态 / 更多，宽度不扩大
   assert.match(LIST, /title:\s*'操作',\s*dataIndex:\s*'action',\s*width:\s*150,\s*align:\s*'center'/);
@@ -99,7 +99,7 @@ test('名称入口走公共类 .scm-cell-link，且不与 antd 同特异性打�
   assert.doesNotMatch(stackDecls, /align-items/);
 });
 
-test('复合单元有明确层级，供应商独立字段不再叠行', () => {
+test('复合单元保留通用样式，客户与供应商独立字段不再叠行', () => {
   // 容器：纵向两行 + 居中 + 撑住最小高度（副行可能缺失，如没登记电话的联系人）
   const stackStart = THEME.indexOf('.scm-cell-stack {');
   assert.ok(stackStart >= 0, '主题缺少 .scm-cell-stack 规则');
@@ -123,13 +123,14 @@ test('复合单元有明确层级，供应商独立字段不再叠行', () => {
   // 电话这类纯数字副行要对齐位数
   assert.match(THEME, /\.scm-cell-stack__sub--num\s*\{[\s\S]{0,60}?font-variant-numeric:\s*tabular-nums/);
 
-  // 客户列表的联系信息仍按主次关系叠行
-  assert.match(LIST, /<div class="scm-cell-stack">/);
-  assert.match(LIST, /scm-cell-stack__sub scm-cell-stack__sub--num/);
-  // 供应商名称、编码、联系人和电话应各有数据列
+  // 客户和供应商名称、编码、联系人和电话应各有数据列
   for (const title of ['供应商名称', '供应商编码', '联系人', '联系电话']) {
     assert.match(SUPPLIER, new RegExp(`title:\\s*'${title}'`));
   }
+  for (const title of ['客户名称', '客户编码', '联系人', '联系电话']) {
+    assert.match(LIST, new RegExp(`title:\\s*'${title}'`));
+  }
+  assert.doesNotMatch(LIST, /class="scm-cell-stack/);
   assert.doesNotMatch(SUPPLIER, /class="scm-cell-stack/);
   assert.match(SUPPLIER, /dataIndex === 'contactPhone'[\s\S]{0,120}class="scm-mono"/);
   // 不得引入只靠横向单行容器替代层级信息的旧样式
@@ -139,14 +140,14 @@ test('复合单元有明确层级，供应商独立字段不再叠行', () => {
 });
 
 test('列宽收紧后 scroll.x 仍等于各列 width 之和', () => {
-  const widths = [...LIST.matchAll(/\{\s*title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)/g)]
-      .map((m) => Number(m[1]));
-  assert.equal(widths.length, 8, '客户列表列数被改动');
+  const columns = [...LIST.matchAll(/\{\s*title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)([^}]*)\}/g)]
+      .map((m) => ({width: Number(m[1]), hiddenByDefault: /showFlag:\s*false/.test(m[2])}));
+  assert.equal(columns.length, 10, '客户列表列数被改动');
+  const visibleWidth = columns.filter((column) => !column.hiddenByDefault).reduce((sum, column) => sum + column.width, 0);
   const scrollX = /:scroll="\{ x: (\d+) \}"/.exec(LIST);
   assert.ok(scrollX, '客户列表没有声明 scroll.x');
-  // 陈旧值与列宽脱钩是这张表最常见的回归：改了列宽却忘了 scroll.x，窄屏就出现无意义横向滚动
-  assert.equal(widths.reduce((a, b) => a + b, 0), Number(scrollX[1]),
-      `scroll.x=${scrollX[1]} 与列宽之和 ${widths.reduce((a, b) => a + b, 0)} 不一致`);
+  assert.equal(visibleWidth, Number(scrollX[1]),
+      `scroll.x=${scrollX[1]} 与默认显示列宽之和 ${visibleWidth} 不一致`);
 
   const supplierWidths = [...SUPPLIER.matchAll(/\{title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)/g)]
       .map((m) => Number(m[1]));

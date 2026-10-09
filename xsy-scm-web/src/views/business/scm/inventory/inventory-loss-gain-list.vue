@@ -82,17 +82,15 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无报损报溢单' }"
-        :scroll="{ x: 1170 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'adjustType'">
           <ScmStatusTag :tone="typeTone(record.adjustType)" :label="record.adjustTypeDesc || record.adjustType"/>
         </template>
-        <template v-else-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
@@ -318,15 +316,18 @@ const statusOptions = Object.values(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM).map((i)
 
 // 列表按「哪张单 / 什么类型 / 哪个仓 / 什么状态 / 为什么」排列。创建时间是技术字段，
 // 报损报溢的业务时刻是审核时间，不上列。
-const columns = ref<TableColumnsType<InventoryLossGain>>([
+type InventoryLossGainColumn = TableColumnsType<InventoryLossGain>[number] & {showFlag?: boolean};
+const columns = ref<InventoryLossGainColumn[]>([
   {title: '单据号', dataIndex: 'lossGainNo', width: 200},
   {title: '类型', dataIndex: 'adjustType', align: 'center', width: 100},
-  {title: '仓库', dataIndex: 'warehouse', width: 150},
+  {title: '仓库', dataIndex: 'warehouseName', width: 140},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '原因', dataIndex: 'reason', width: 240, ellipsis: true},
   {title: '审核', dataIndex: 'auditedAt', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
+const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},

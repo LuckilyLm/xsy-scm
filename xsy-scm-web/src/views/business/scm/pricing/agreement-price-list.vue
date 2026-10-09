@@ -13,10 +13,11 @@
   <a-row class="smart-table-btn-block"><div class="smart-table-operate-block"><a-button type="primary" v-privilege="'scm:pricing:agreement:add'" @click="drawer?.open()">新增客户协议价</a-button></div><div class="smart-table-setting-block"><TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_AGREEMENT" :refresh="load" /></div></a-row>
   <a-table :data-source="rows" :columns="columns" row-key="agreementPriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{x:1250}">
    <template #bodyCell="{record,column}">
-    <template v-if="column.dataIndex==='customerName'"><div class="scm-cell-stack"><span class="scm-cell-stack__main">{{record.customerName || '—'}}</span><span v-if="record.customerCode" class="scm-cell-stack__sub">{{record.customerCode}}</span></div></template>
-    <template v-else-if="column.dataIndex==='specName'"><div class="scm-cell-stack"><span class="scm-cell-stack__main">{{record.specName || '—'}}</span><span v-if="record.skuCode" class="scm-cell-stack__sub">{{record.skuCode}}</span></div></template>
+    <template v-if="column.dataIndex==='customerName'">{{record.customerName || '—'}}</template>
+    <template v-else-if="column.dataIndex==='customerCode'"><span class="scm-mono">{{record.customerCode || '—'}}</span></template>
+    <template v-else-if="column.dataIndex==='skuCode'"><span class="scm-mono">{{record.skuCode || '—'}}</span></template>
     <template v-else-if="column.dataIndex==='unitPrice'"><span class="scm-money">{{formatAmount(record.unitPrice)}}</span></template>
-    <template v-else-if="column.dataIndex==='effectiveRange'"><div class="scm-cell-stack"><span class="scm-cell-stack__main">{{effectiveRangeText(record.effectiveFrom, record.effectiveTo)}}</span><span v-if="!record.effectiveTo" class="scm-cell-stack__sub">长期有效</span></div></template>
+    <template v-else-if="column.dataIndex==='effectiveRange'">{{effectiveRangeText(record.effectiveFrom, record.effectiveTo)}}<span v-if="!record.effectiveTo" class="scm-cell-hint">（长期有效）</span></template>
     <ScmStatusTag v-else-if="column.dataIndex==='effectiveness'" v-bind="effectiveness(record)" />
     <template v-else-if="column.dataIndex==='action'"><div class="smart-table-operate scm-table-actions"><a-button type="link" v-privilege="'scm:pricing:agreement:update'" @click="drawer?.open(record.agreementPriceId)">编辑</a-button><a-button type="link" danger v-privilege="'scm:pricing:agreement:delete'" @click="remove(record)">删除</a-button></div></template>
    </template>
@@ -47,12 +48,15 @@ const range = ref<[string, string] | undefined>();
 const rows = ref<PriceRow[]>([]), total = ref(0), loading = ref(false), error = ref('');
 const drawer = ref<InstanceType<typeof PriceDrawer>>();
 let requestId = 0;
-// 编码折成名称下方的次要文字；更新时间由「价格变更历史」的变更时间承担，不默认摊在列表上。
+// 编码独立成列并默认收起；更新时间由「价格变更历史」的变更时间承担，不默认摊在列表上。
 // 客户编码与商品规格编码仍可用「关键字」筛出来（后端 keyword 同时匹配名称与两类编码）。
-const columns = ref<TableColumnsType<PriceRow>>([
+type AgreementPriceColumn = TableColumnsType<PriceRow>[number] & {showFlag?: boolean};
+const columns = ref<AgreementPriceColumn[]>([
   {title: '客户', dataIndex: 'customerName', width: 180},
+  {title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'specName', width: 200},
+  {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '协议价', dataIndex: 'unitPrice', align: 'right', width: 130},
   {title: '有效期', dataIndex: 'effectiveRange', width: 340},
   {title: '状态', dataIndex: 'effectiveness', align: 'center', width: 100},

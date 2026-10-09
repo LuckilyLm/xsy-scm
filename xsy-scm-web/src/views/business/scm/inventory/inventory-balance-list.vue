@@ -55,20 +55,16 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无库存余额' }"
-        :scroll="{ x: 1240 }"
+        :scroll="{ x: 1130 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'skuName'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'unit'">{{ record.unit || '—' }}</template>
         <template v-else-if="column.dataIndex === 'quantity'">
@@ -127,12 +123,15 @@ const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
-// 余额按「仓库 + 商品规格」定位，编码作为名称下方的次要信息，不再各占一列。
+// 余额按「仓库 + 商品规格」定位；低频编码单独保留并默认收起。
 // 库存/预留/可用/均价/金额是一组要横向比较的数值，统一右对齐 + 等宽数字。
-const columns = ref<TableColumnsType<InventoryBalance>>([
-  {title: '仓库', dataIndex: 'warehouse', width: 180},
-  {title: '商品', dataIndex: 'productName', width: 200},
-  {title: '商品规格', dataIndex: 'sku', width: 200},
+type InventoryBalanceColumn = TableColumnsType<InventoryBalance>[number] & {showFlag?: boolean};
+const columns = ref<InventoryBalanceColumn[]>([
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
+  {title: '商品', dataIndex: 'productName', width: 160},
+  {title: '商品规格', dataIndex: 'skuName', width: 160},
+  {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
   {title: '库存', dataIndex: 'quantity', align: 'right', width: 110},
   {title: '预留', dataIndex: 'reservedQuantity', align: 'right', width: 100},

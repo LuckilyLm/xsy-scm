@@ -344,12 +344,13 @@ test('履约面板具备加载 / 空 / 错三态，与打印面板同一套做�
 
 // ------------------------------------------------------------------ 列表展示
 
-test('配送线路列表把编号折进名称、把定位覆盖率收成图标', () => {
+test('配送线路列表把名称与编号分列、把定位覆盖率收成图标', () => {
   const list = code('../src/views/business/scm/delivery/route-list.vue');
-  // 线路编号是业务识别信息，但不独占一列：作为线路名称下方的次要文本
-  assert.doesNotMatch(list, /title: '线路编号'/);
+  // 名称与编号可独立阅读；操作列仍按当前权限动态生成。
+  assert.match(list, /title: '线路编号', dataIndex: 'routeNo'/);
   assert.match(list, /title: '线路名称', dataIndex: 'routeName'/);
-  assert.match(list, /column\.dataIndex === 'routeName'[\s\S]{0,260}record\.routeNo/);
+  assert.doesNotMatch(list, /class="scm-cell-stack/);
+  assert.match(list, /const tableScrollX = computed\(/);
   // 定位覆盖率是质量信息：图标 + Tooltip，不再占一列文字、也不再靠内联色名判断
   assert.match(list, /coverageOk\(record\)/);
   assert.match(list, /coverageText\(record\)/);

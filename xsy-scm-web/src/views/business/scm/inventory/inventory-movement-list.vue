@@ -69,7 +69,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无库存流水' }"
-        :scroll="{ x: 1400 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'occurredAt'">{{ datetime(record.occurredAt) }}</template>
@@ -90,17 +90,13 @@
           <span v-else-if="record.sourceDocumentNo">{{ record.sourceDocumentNo }}</span>
           <span v-else>—</span>
         </template>
-        <template v-else-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'skuName'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -135,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -165,19 +161,23 @@ const error = ref('');
 let requestId = 0;
 
 // 流水一行 = 一次库存变动。列按「何时 / 什么业务 / 哪张单 / 哪个仓 / 什么货 / 动多少 / 动完剩多少」排列；
-// 仓库与商品规格的编码是名称下方的次要信息，期初量是结存的对照行，都不再各占一列。
-const columns = ref<TableColumnsType<InventoryMovement>>([
+// 仓库与商品规格编码单独保留并默认收起；期初量仍是结存的对照行。
+type InventoryMovementColumn = TableColumnsType<InventoryMovement>[number] & {showFlag?: boolean};
+const columns = ref<InventoryMovementColumn[]>([
   {title: '发生时间', dataIndex: 'occurredAt', width: 170},
   {title: '类型', dataIndex: 'movementType', width: 150},
   {title: '业务单号', dataIndex: 'receiptNo', width: 170},
-  {title: '仓库', dataIndex: 'warehouse', width: 150},
-  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
+  {title: '商品规格', dataIndex: 'skuName', width: 150},
+  {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 80},
   {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 120},
   {title: '结存', dataIndex: 'afterQuantity', align: 'right', width: 140},
   {title: '操作者', dataIndex: 'operator', width: 110},
 ]);
+const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
 
 /**
  * 入 / 出方向。

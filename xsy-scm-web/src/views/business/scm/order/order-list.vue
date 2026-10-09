@@ -42,11 +42,9 @@
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='orderNo'"><a @click="detail?.open(record.orderId)">{{ record.orderNo }}</a>
         </template>
-        <template v-else-if="column.dataIndex==='customerNameSnapshot'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.customerNameSnapshot || '—' }}</span>
-            <span v-if="record.customerCodeSnapshot" class="scm-cell-stack__sub">{{ record.customerCodeSnapshot }}</span>
-          </div>
+        <template v-else-if="column.dataIndex==='customerNameSnapshot'">{{ record.customerNameSnapshot || '—' }}</template>
+        <template v-else-if="column.dataIndex==='customerCodeSnapshot'">
+          <span class="scm-mono">{{ record.customerCodeSnapshot || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex==='status'">
           <ScmStatusTag :tone="statusTone(record.status)"
@@ -135,9 +133,11 @@ watch(() => route.query.action, async (action) => {
   }
 }, {immediate: true, flush: 'post'});
 let requestId = 0;
-const columns = ref<TableColumnsType<Order>>([
+type OrderListColumn = TableColumnsType<Order>[number] & {showFlag?: boolean};
+const columns = ref<OrderListColumn[]>([
   {title: '订单号', dataIndex: 'orderNo', width: 190},
-  {title: '客户', dataIndex: 'customerNameSnapshot', width: 200},
+  {title: '客户名称', dataIndex: 'customerNameSnapshot', width: 200},
+  {title: '客户编码', dataIndex: 'customerCodeSnapshot', width: 125, showFlag: false},
   {title: '来源', dataIndex: 'orderSource', align: 'center', width: 100},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '下单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 130},

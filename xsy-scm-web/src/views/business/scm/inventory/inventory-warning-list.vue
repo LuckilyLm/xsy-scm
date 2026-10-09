@@ -76,20 +76,16 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '没有需要处理的库存预警' }"
-        :scroll="{ x: 1150 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'warehouse'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.warehouseName || '—' }}</span>
-            <span v-if="record.warehouseCode" class="scm-cell-stack__sub">{{ record.warehouseCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'warehouseCode'">
+          <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'skuName'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -130,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import {reactive, ref, watch} from 'vue';
+import {computed, reactive, ref, watch} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
@@ -179,11 +175,14 @@ const statusOptions = [
 
 // 列按「哪个仓 / 什么货 / 还够不够发 / 阈值是多少」排列。三个数量都保留：
 // 判定基准是可用量，只给一个数字会让用户看不懂预警为什么触发。
-// 仓库与商品规格的编码作为名称下方的 secondary text；上下限合成一格（各自可空）。
-const columns = ref<TableColumnsType<InventoryWarning>>([
-  {title: '仓库', dataIndex: 'warehouse', width: 150},
+// 仓库与商品规格编码单独保留并默认收起；上下限仍合成一格（各自可空）。
+type InventoryWarningColumn = TableColumnsType<InventoryWarning>[number] & {showFlag?: boolean};
+const columns = ref<InventoryWarningColumn[]>([
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '商品规格', dataIndex: 'skuName', width: 150},
+  {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
   {title: '现有量', dataIndex: 'quantity', align: 'right', width: 100},
   {title: '已预留', dataIndex: 'reservedQuantity', align: 'right', width: 100},
@@ -191,6 +190,7 @@ const columns = ref<TableColumnsType<InventoryWarning>>([
   {title: '预警阈值', dataIndex: 'warnRange', align: 'right', width: 150},
   {title: '状态', dataIndex: 'status', align: 'center', width: 110},
 ]);
+const scrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
 
 /** 低于下限是断货风险（红），高于上限是积压（橙），正常不强调。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {

@@ -80,16 +80,10 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1350 }"
+        :scroll="{ x: tableScrollX }"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'routeName'">
-          <!-- 线路编号与名称组合展示：编号是业务识别信息，但不值得独占一列 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.routeName || '—' }}</span>
-            <span v-if="record.routeNo" class="scm-cell-stack__sub">{{ record.routeNo }}</span>
-          </div>
-        </template>
+        <template v-if="column.dataIndex === 'routeName'">{{ record.routeName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag
               :tone="ROUTE_STATUS_TONE[record.status as RouteStatus]"
@@ -188,11 +182,12 @@ const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
 const statusOptions = Object.entries(routeStatuses).map(([value, state]) => ({value, label: state.label}));
 // 金额列按权限出现：服务端已把无权限的 totalAmount 抹成 null，这里决定要不要留这一格。
-// 线路编号不进独立列，改为「线路名称」下方的 secondary text。
+// 线路名称与编号分列；金额列仍按权限出现。
 // 操作列收到三个槽位（详情 / 路线 / 更多）：编辑与打印是低频动作，进「更多」。
 const columns = computed<TableColumnsType>(() => [
   {title: '配送日期', dataIndex: 'deliveryDate', width: 120},
-  {title: '线路名称', dataIndex: 'routeName', width: 200},
+  {title: '线路名称', dataIndex: 'routeName', width: 180},
+  {title: '线路编号', dataIndex: 'routeNo', width: 130},
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 150},
   {title: '司机', dataIndex: 'driverNameSnapshot', width: 110},
   {title: '车辆', dataIndex: 'vehicleNoSnapshot', width: 120},
@@ -205,6 +200,7 @@ const columns = computed<TableColumnsType>(() => [
   {title: '状态', dataIndex: 'status', align: 'center' as const, width: 100},
   {title: '操作', dataIndex: 'action', fixed: 'right' as const, align: 'center' as const, width: 160},
 ]);
+const tableScrollX = computed(() => columns.value.reduce((width, column) => width + Number(column.width ?? 0), 0));
 
 /** 状态视觉：草稿 = 待处理（橙），已规划 / 已发车 = 处理中（蓝），已完成 = 绿，已取消 = 灰。 */
 const ROUTE_STATUS_TONE: Record<RouteStatus, ScmStatusTone> = {
