@@ -31,7 +31,6 @@
       <!--非iframe使用router-view-->
       <div
           v-show="!iframeNotKeepAlivePageFlag && keepAliveIframePages.every((e) => route.name !== e.name)"
-          :style="{ height: contentBoxHeight + 'px' }"
           class="admin-content"
       >
         <router-view v-slot="{ Component }">
@@ -91,41 +90,23 @@ const breadCrumbFlag = computed(() => useAppConfigStore().$state.breadCrumbFlag)
 // 页面宽度
 const pageWidth = computed(() => useAppConfigStore().$state.pageWidth);
 
-let contentBoxHeight = ref();
-// 页面内容区域的高度
+// 顶部固定区（顶栏 + 页签行 + 面包屑行）的总高度。
+// 原来写成 `due + 数量*40`（due 取 45 或 40），比实际固定区少 8px，
+// 内容会被面包屑压住 8px；这里按真实高度累加：顶栏 48，页签 40，面包屑 40。
 const contentTop = computed(() => {
-  let due = 45;
-  let existComponentCount = 0;
+  let height = 48;
   if (useAppConfigStore().$state.pageTagFlag) {
-    existComponentCount++;
+    height += 40;
   }
   if (useAppConfigStore().$state.breadCrumbFlag) {
-    existComponentCount++;
-    due = 40;
+    height += 40;
   }
-  return due + existComponentCount * 40 + 'px';
+  return height + 'px';
 });
 
-// 面包屑高度
+// 面包屑行的 top：紧跟在顶栏（+ 页签行）之后
 const breadCrumbTop = computed(() => {
-  if (useAppConfigStore().$state.pageTagFlag) {
-    return '88px';
-  } else {
-    return '45px';
-  }
-});
-
-watch(
-    () => contentTop.value,
-    () => {
-      let dom = document.querySelector('.admin-layout-content');
-      contentBoxHeight.value = dom.offsetHeight - 20 - contentTop.value.split('px')[0];
-    }
-);
-
-onMounted(() => {
-  let dom = document.querySelector('.admin-layout-content');
-  contentBoxHeight.value = dom.offsetHeight - 20 - contentTop.value.split('px')[0];
+  return 48 + (useAppConfigStore().$state.pageTagFlag ? 40 : 0) + 'px';
 });
 
 //页面初始化的时候加载水印
@@ -174,7 +155,8 @@ const {token} = useToken();
 @color-border-secondary: v-bind('token.colorBorderSecondary');
 @color-bg-container: v-bind('token.colorBgContainer');
 .admin-layout {
-  min-height: 100%;
+  // 原来是 min-height:100%：父级没有确定高度时它不生效，内容短时页脚不会贴底。
+  min-height: 100vh;
 
   .top-menu {
     padding: 0px;
@@ -188,8 +170,11 @@ const {token} = useToken();
   }
 
   .admin-layout-content {
+    // a-layout 本身是 flex column：让内容区吃掉剩余高度，页脚自然贴底。
+    // min-height 必须是 0（flex 项默认 auto 会撑住内容，整页还是会滚）。
+    flex: 1 1 auto;
+    min-height: 0;
     background-color: inherit;
-    min-height: auto;
     position: relative;
     overflow-x: hidden;
     padding: 10px 0;
