@@ -43,18 +43,20 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <div class="smart-table-btn-block">
-      <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
-      <a-typography-text type="secondary" class="toolbar-hint">
-        一个订单行同一时刻只属于一个活动任务
-      </a-typography-text>
-    </div>
-    <div class="smart-table-setting-block">
-      <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK"
-          :refresh="queryData"
-      />
+    <div class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-operate-block">
+        <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
+      </div>
+      <div class="smart-table-setting-block">
+        <a-typography-text type="secondary" class="toolbar-hint">
+          一个订单行同一时刻只属于一个活动任务
+        </a-typography-text>
+        <TableOperator
+            v-model="columns"
+            :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK"
+            :refresh="queryData"
+        />
+      </div>
     </div>
 
     <a-table

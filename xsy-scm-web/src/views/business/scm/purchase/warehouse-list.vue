@@ -104,8 +104,8 @@
       @cancel="visible = false"
   >
     <a-alert v-if="formError" :message="formError" type="error" show-icon/>
-    <a-form :model="form" layout="vertical">
-      <a-form-item label="仓库名称" name="name" required>
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
+      <a-form-item label="仓库名称" name="name">
         <a-input v-model:value="form.name" maxlength="150"/>
       </a-form-item>
       <a-form-item label="所在地区">
@@ -164,6 +164,12 @@ const visible = ref(false);
 const saving = ref(false);
 const formError = ref('');
 const form = ref<WarehouseFormModel>({warehouseCode: '', name: ''});
+const formRef = ref();
+
+/** 逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  name: [{required: true, message: '请填写仓库名称', trigger: 'blur'}],
+};
 /** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
 const area = ref<AreaNode[]>([]);
 /** 员工—仓库授权维护（独立权限点，与仓库主数据编辑分开）。 */
@@ -283,12 +289,14 @@ async function open(row?: Warehouse) {
 }
 
 async function save() {
-  formError.value = locationError(form.value) ?? '';
-  if (formError.value) return;
-  if (!form.value.name.trim()) {
-    formError.value = '请填写仓库名称';
+  // 必填项走表单校验（错误显示在字段下方）；定位是跨字段的业务前置条件，仍用顶部提示
+  try {
+    await formRef.value?.validate();
+  } catch {
     return;
   }
+  formError.value = locationError(form.value) ?? '';
+  if (formError.value) return;
   saving.value = true;
   try {
     const payload = toWarehousePayload(form.value);

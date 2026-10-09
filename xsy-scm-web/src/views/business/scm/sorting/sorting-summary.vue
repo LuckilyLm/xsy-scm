@@ -41,12 +41,14 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <div class="smart-table-setting-block">
-      <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_SUMMARY"
-          :refresh="queryData"
-      />
+    <div class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-setting-block">
+        <TableOperator
+            v-model="columns"
+            :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_SUMMARY"
+            :refresh="queryData"
+        />
+      </div>
     </div>
     <a-table
         :id="SCM_SORTING_TABLE_ID.SUMMARY"

@@ -30,8 +30,10 @@
   </a-form>
   <a-alert v-if="error" type="error" :message="error"/>
   <a-card size="small" :bordered="false">
-    <div class="smart-table-setting-block">
-      <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load"/>
+    <div class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load"/>
+      </div>
     </div>
     <a-table :data-source="rows" :columns="columns" :row-key="(r:HistoryRow)=>`${r.source}-${r.historyId}`"
              :loading="loading" :pagination="false" size="small" bordered :scroll="{x:1850}">
