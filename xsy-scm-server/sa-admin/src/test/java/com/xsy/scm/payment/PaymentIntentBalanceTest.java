@@ -196,6 +196,7 @@ class PaymentIntentBalanceTest {
         when(intents.updateStatus(1L, "PENDING", "SUCCEEDED", "1:1")).thenReturn(1);
         var intent = new PaymentIntentEntity();
         intent.setId(1L); intent.setCustomerId(2L); intent.setMethod("ONLINE"); intent.setProvider("MOCK");
+        intent.setAmount(new BigDecimal("100.0000"));
         intent.setSourceType("BALANCE_RECHARGE"); intent.setSourceId(9L); intent.setStatus("PENDING");
         when(intents.selectById(1L)).thenReturn(intent);
         when(intents.lockById(1L)).thenReturn(intent);

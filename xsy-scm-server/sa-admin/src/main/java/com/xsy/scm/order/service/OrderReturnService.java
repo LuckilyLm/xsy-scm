@@ -267,12 +267,15 @@ public class OrderReturnService {
         stamp(orderReturnEntity, false);
         if (orderReturnDao.updateById(orderReturnEntity) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
+        // 红字应收与退款单共用订单确认时冻结的优惠分摊和净额算法。
+        // 这一步仍在退货批准事务内；正常应收尚未生成时先计算退款净额，签收生成正常应收后再补红字。
+        BigDecimal refundAmount = financeReceivableService.generateRedOnReturnApproved(orderReturnEntity.getId());
         var refund = new OrderRefundEntity();
         refund.setRefundNo(numbers.refund());
         refund.setReturnId(orderReturnEntity.getId());
         refund.setOrderId(orderReturnEntity.getOrderId());
         refund.setCustomerId(orderReturnEntity.getCustomerId());
-        refund.setRefundAmount(total);
+        refund.setRefundAmount(refundAmount);
         refund.setStatus(ScmOrderRefundStatusEnum.PENDING.name());
         refund.setCreatedAt(OffsetDateTime.now());
         refund.setUpdatedAt(refund.getCreatedAt());
@@ -283,14 +286,8 @@ public class OrderReturnService {
         orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
                 "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
                 Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
-                Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(refund.getRefundAmount())));
-
-        // 退货批准是红字应收的业务来源，在退货事实与退款单都已成立后、幂等 complete 前生成。
-        // 红字生成失败会让整笔 approve 回滚，
-        // 但「正常应收还不存在」是成功跳过（签收时补生成），绝不阻塞这里。
-        // 生成器不做任何金额上限校验：财务规则不得反向控制订单域状态机。
-        // 本类持有的 sales_order 行锁（lock() 里 salesOrderService.lock）就是它与签收之间的串行点。
-        financeReceivableService.generateRedOnReturnApproved(orderReturnEntity.getId());
+                Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(total), "refundAmount",
+                        String.valueOf(refund.getRefundAmount())));
 
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
                 orderReturnEntity.getId(), result);

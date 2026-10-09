@@ -99,10 +99,16 @@ public class PaymentReconciliationService {
                         ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
                 continue;
             }
-            BigDecimal localAmount = receivedOf(local);
-            if (localAmount.compareTo(line.amount().setScale(SCALE, RoundingMode.HALF_UP)) != 0) {
+            BigDecimal receivedAmount = receivedOf(local);
+            BigDecimal intentAmount = local.getAmount().setScale(SCALE, RoundingMode.HALF_UP);
+            BigDecimal settlementAmount = line.amount().setScale(SCALE, RoundingMode.HALF_UP);
+            boolean intentMismatch = intentAmount.compareTo(receivedAmount) != 0;
+            if (intentMismatch || receivedAmount.compareTo(settlementAmount) != 0) {
+                // 同时检查本地支付意图与渠道实收：渠道对账单可能与回调金额一致，
+                // 但这仍不能把偏离本地应付金额的交易算作平账。
                 items.add(item(ScmPaymentReconciliationCategoryEnum.AMOUNT_MISMATCH, line.providerTransactionNo(),
-                        local.getId(), localAmount, line.amount(), local.getStatus(),
+                        local.getId(), intentMismatch ? intentAmount : receivedAmount,
+                        intentMismatch ? receivedAmount : settlementAmount, local.getStatus(),
                         ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
             }
         }

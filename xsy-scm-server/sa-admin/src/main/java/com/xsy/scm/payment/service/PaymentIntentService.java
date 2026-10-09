@@ -278,15 +278,21 @@ public class PaymentIntentService {
         }
         switch (outcome) {
             case SUCCEEDED -> {
+                boolean amountMatchesIntent = intent.getAmount() != null
+                        && providerAmount.compareTo(intent.getAmount()) == 0;
                 boolean firstTime = paymentTransactionDao.markSucceeded(transactionId, providerAmount, operator) == 1;
-                if (firstTime) {
+                if (firstTime && amountMatchesIntent) {
                     transition(intentId, ScmPaymentIntentStatusEnum.PENDING, ScmPaymentIntentStatusEnum.SUCCEEDED,
                             operator);
                 }
-                // <b>无论是否首次都确保 Finance 收款事实存在</b>：
+                // 金额不符时保留渠道成功交易和 provider_amount，等待对账；不完成支付意图，
+                // 也不派生 Finance 收款、订单资金关联或余额权益。
+                // <b>金额一致时，无论是否首次都确保 Finance 收款事实存在</b>：
                 // 「渠道已成功、本地事务当时失败」的场景靠下一次回调 / 对账重新驱动恢复，
                 // 而恢复的入口就是这一句。注册本身按来源键幂等，重复调用不会多记一笔收款。
-                registerFinanceReceipt(intentId, transactionId, operator);
+                if (amountMatchesIntent) {
+                    registerFinanceReceipt(intentId, transactionId, operator);
+                }
             }
             case FAILED -> {
                 if (paymentTransactionDao.markFailed(transactionId, failureCode, failureMessage, operator) != 1) {
