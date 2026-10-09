@@ -81,7 +81,6 @@
         </a-form-item>
         <a-form-item label="绑定员工" required>
           <EmployeeSelect v-model:value="employeeValue" placeholder="请选择绑定的系统员工" width="100%"/>
-          <div class="ant-form-item-extra">启用司机必须绑定员工：它把登录人映射回司机档案，是其线路数据范围的唯一依据。</div>
         </a-form-item>
       </template>
       <template v-else>

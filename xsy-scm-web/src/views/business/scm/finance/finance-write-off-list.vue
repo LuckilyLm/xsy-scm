@@ -83,10 +83,13 @@
   </a-card>
 
   <a-drawer v-model:open="addOpen" title="登记多目标核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
-    <a-alert class="form-hint" type="info" show-icon message="收款只核销应收，付款只核销应付。"/>
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
     <a-form layout="vertical">
-      <a-form-item label="资金类型" required>
+      <a-form-item required>
+        <template #label>
+          资金类型
+          <ScmFieldHelp label="资金类型" text="收款核销应收，付款核销应付"/>
+        </template>
         <a-select v-model:value="sourceType" :options="sourceOptions" placeholder="选择资金类型" @change="resetAllocation"/>
       </a-form-item>
       <a-form-item label="资金单" required>
@@ -139,6 +142,7 @@ import {SCM_FINANCE_BUSINESS_TYPE_ENUM, SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENT
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import FinanceRecordPicker from './finance-record-picker.vue';
 import BalanceMovementDetail from './balance-movement-detail.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -269,7 +273,6 @@ onMounted(queryData);
 <style scoped>
 .date-separator { margin: 0 8px; color: #667085; }
 .page-error,.form-error { margin-bottom: 12px; }
-.form-hint { margin-bottom: 16px; }
 @media (max-width: 768px) {
   .finance-table :deep(.ant-table-cell-fix-right) { position: static !important; right: auto !important; }
 }

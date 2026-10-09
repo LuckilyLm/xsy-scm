@@ -1,6 +1,10 @@
 <!--  新能力：取价试算。价格状态与可售状态独立展示。 -->
 <template>
-  <a-card title="取价试算" size="small" :bordered="false">
+  <a-card size="small" :bordered="false">
+    <template #title>
+      取价试算
+      <ScmFieldHelp label="取价试算" text="0 元也是有效价格"/>
+    </template>
     <a-form layout="inline" class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="客户" required class="smart-query-form-item">
@@ -19,7 +23,6 @@
       </a-row>
     </a-form>
     <a-alert v-if="error" :message="error" type="error" show-icon/>
-    <a-alert message="零价是有效价格。" type="info" show-icon/>
     <p v-if="result" class="resolve-meta">
       解析时点：{{ result.at }} · 客户类型：{{ result.customerTypeName }}
     </p>
@@ -66,6 +69,7 @@ import type {TableColumnsType} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {formatAmount} from '/@/utils/scm-amount';

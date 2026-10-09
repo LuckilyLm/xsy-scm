@@ -8,7 +8,7 @@
     <a-form class="smart-query-form" layout="inline">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
+          <a-input v-model:value="filters.keyword" allow-clear placeholder="客户名称 / 联系人 / 电话" style="width: 240px" />
         </a-form-item>
         <a-form-item label="客户类型" class="smart-query-form-item">
           <CustomerTypeSelect v-model:value="filters.customerTypeId" width="180px" />
@@ -17,7 +17,7 @@
           <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_STATUS_ENUM" width="130px" />
         </a-form-item>
         <a-form-item class="smart-query-form-item">
-          <a-space>
+          <a-space :size="10" wrap>
             <a-button type="primary" @click="search">查询</a-button>
             <a-button @click="reset">重置</a-button>
             <a-button type="link" @click="advanced = !advanced">{{ advanced ? '收起筛选' : '高级筛选' }}</a-button>
@@ -55,7 +55,7 @@
           :locale="{ emptyText }"
           size="small"
           bordered
-          :scroll="{ x: 1180 }"
+          :scroll="{ x: 1190 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
@@ -73,7 +73,7 @@
           <span v-else-if="column.dataIndex === 'creditLimit'" class="scm-money">{{ formatAmountOrDash(record.creditLimit) }}</span>
           <ScmStatusTag v-else-if="column.dataIndex === 'status'" :color="statusColor(record.status)"
                         :label="statusText(record.status)"/>
-          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
+          <a-space v-else-if="column.dataIndex === 'action'" :size="4" class="smart-table-operate scm-table-actions">
             <a-button v-privilege="'scm:customer:update'" type="link" size="small"
                       @click="drawer?.open(record.customerId)">编辑
             </a-button>
@@ -121,9 +121,12 @@
       <p>客户：<strong>{{ reassignTarget?.name }}</strong>（{{ reassignTarget?.customerCode }}）</p>
       <p class="reassign-current">当前负责人：{{ reassignTarget?.sellerName || '未分配' }}</p>
       <a-form layout="vertical">
-        <a-form-item label="新负责人">
+        <a-form-item>
+          <template #label>
+            新负责人
+            <ScmFieldHelp label="新负责人" text="留空会收回分配；未分配客户仅有分配权或全量权限的人员可见"/>
+          </template>
           <EmployeeSelect v-model:value="reassignSeller" placeholder="留空即收回为未分配" width="100%"/>
-          <div class="ant-form-item-extra">留空表示收回为未分配，未分配客户仅持分配权或全量范围者可见。</div>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -148,6 +151,7 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerDrawer from './components/customer-form-drawer.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {customerError} from './customer-errors';
 import {hasPermission} from '../common/scm-permission';
 import {formatAmountOrDash} from '/@/utils/scm-amount';
@@ -235,7 +239,7 @@ const columns = ref<CustomerListColumn[]>([
   {title: '结算方式', dataIndex: 'settleMode', width: 130, align: 'center'},
   {title: '授信额度', dataIndex: 'creditLimit', width: 130, align: 'right'},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
-  {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},
+  {title: '操作', dataIndex: 'action', width: 160, align: 'center', fixed: 'right'},
 ]);
 
 let requestId = 0;

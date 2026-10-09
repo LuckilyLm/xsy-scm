@@ -20,7 +20,11 @@
             width="140px"
         />
       </a-form-item>
-      <a-form-item label="发生区间" class="smart-query-form-item" extra="结束时间不包含">
+      <a-form-item class="smart-query-form-item">
+        <template #label>
+          发生区间
+          <ScmFieldHelp label="发生区间" text="结束时间不包含"/>
+        </template>
         <a-range-picker
             v-model:value="occurredRange"
             show-time
@@ -135,6 +139,7 @@ import {computed, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';

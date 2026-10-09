@@ -40,11 +40,18 @@
     </template>
 
     <a-form v-else layout="vertical">
-      <a-form-item label="员工" required>
+      <a-form-item required>
+        <template #label>
+          员工
+          <ScmFieldHelp label="员工" text="选择后载入当前仓库授权；保存时按勾选结果整体替换"/>
+        </template>
         <EmployeeSelect v-model:value="employeeValue" placeholder="请选择要维护授权的员工" width="100%"/>
-        <div class="ant-form-item-extra">选择后自动带出该员工当前可见的仓库，提交即整体替换。</div>
       </a-form-item>
-      <a-form-item label="可见仓库">
+      <a-form-item>
+        <template #label>
+          可见仓库
+          <ScmFieldHelp label="可见仓库" text="保留已停用仓库的勾选即维持授权，取消勾选即回收"/>
+        </template>
         <a-select
             v-model:value="warehouseIds"
             mode="multiple"
@@ -53,11 +60,8 @@
             :disabled="employeeId == null"
             show-search
             option-filter-prop="label"
-            :placeholder="employeeId == null ? '请先选择员工' : '选择该员工可见的仓库；清空即回收全部授权'"
+            :placeholder="employeeId == null ? '请先选择员工' : '请选择可见仓库'"
         />
-        <div class="ant-form-item-extra">
-          带「已停用」的是仍被授权但当前停用的仓库；保留即维持授权，取消勾选即回收。
-        </div>
       </a-form-item>
     </a-form>
   </a-modal>
@@ -65,9 +69,10 @@
 
 <script setup lang="ts">
 import {computed, ref} from 'vue';
-import {message} from 'ant-design-vue';
+import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import type {
     Id,
@@ -167,12 +172,21 @@ async function openEmployees(warehouseId: Id, warehouseName: string) {
   }
 }
 
-async function save() {
+function save() {
   const target = employeeId.value;
   if (target == null) {
     error.value = '请先选择员工';
     return;
   }
+  Modal.confirm({
+    title: '确认更新仓库授权',
+    content: '当前勾选将替换该员工的全部仓库授权；未勾选的授权会被收回。',
+    okText: '确认更新',
+    onOk: () => saveConfirmed(target),
+  });
+}
+
+async function saveConfirmed(target: number) {
   saving.value = true;
   error.value = '';
   try {

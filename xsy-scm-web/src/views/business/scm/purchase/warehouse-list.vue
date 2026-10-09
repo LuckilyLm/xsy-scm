@@ -112,10 +112,6 @@
   >
     <a-alert v-if="formError" :message="formError" type="error" show-icon/>
     <a-form :model="form" layout="vertical">
-      <a-form-item label="仓库编码">
-        <span v-if="form.id" class="scm-form-readonly">{{ form.warehouseCode || '—' }}</span>
-        <span v-else class="scm-form-readonly">保存后由系统自动生成</span>
-      </a-form-item>
       <a-form-item label="仓库名称" name="name" required>
         <a-input v-model:value="form.name" maxlength="150"/>
       </a-form-item>
@@ -127,7 +123,6 @@
             placeholder="省 / 市 / 区"
             @change="onAreaChange"
         />
-        <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
       </a-form-item>
       <a-form-item label="地址" name="address">
         <a-input v-model:value="form.address" maxlength="255" @change="Object.assign(form, emptyLocation())"/>

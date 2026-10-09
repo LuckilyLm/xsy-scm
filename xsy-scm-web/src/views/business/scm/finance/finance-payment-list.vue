@@ -87,9 +87,12 @@
 
   <a-modal v-model:open="addOpen" title="登记付款" :confirm-loading="addSaving" @ok="submitAdd">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
-    <a-alert class="form-hint" type="info" show-icon message="客户付款只能登记已完成退款。"/>
     <a-form layout="vertical">
-      <a-form-item label="往来方类型" required>
+      <a-form-item required>
+        <template #label>
+          往来方类型
+          <ScmFieldHelp label="往来方类型" text="客户付款仅可关联已完成的退款"/>
+        </template>
         <a-select v-model:value="addForm.counterpartyType" :options="partyTypeOptions" @change="onPartyTypeChange"/>
       </a-form-item>
       <a-form-item v-if="addForm.counterpartyType==='SUPPLIER'" label="供应商 ID" required>
@@ -132,6 +135,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import FinanceRefundPicker from './finance-refund-picker.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {dateTimeText, entryTypeText, initialFinanceDateRange, isValidPositiveAmount, moneyText, nowDateTimeValue, paymentMethodText, trimOptional} from './finance-form-model';
 import {financeError} from './finance-errors';
 import type {FinancePayment, FinancePaymentAddForm, FinancePaymentDetail, FinanceRefundOption, PaymentQuery} from './finance-types';
@@ -250,7 +254,6 @@ onMounted(queryData);
 <style scoped>
 .date-separator { margin: 0 8px; color: #667085; }
 .page-error,.form-error { margin-bottom: 12px; }
-.form-hint { margin-bottom: 16px; }
 .finance-mobile-balance-list { display: none; }
 
 .finance-mobile-balance-row { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }

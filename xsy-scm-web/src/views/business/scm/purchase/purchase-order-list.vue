@@ -130,9 +130,12 @@
     <p>采购单：<strong>{{ reassignTarget?.orderNo }}</strong>（{{ reassignTarget?.supplierName }}）</p>
     <p>当前采购员：{{ reassignTarget?.purchaserName || '未分配' }}</p>
     <a-form layout="vertical">
-      <a-form-item label="新采购员">
+      <a-form-item>
+        <template #label>
+          新采购员
+          <ScmFieldHelp label="新采购员" text="留空会收回分配；未分配单据仅有分配权或全量权限的人员可见"/>
+        </template>
         <EmployeeSelect v-model:value="reassignPurchaser" placeholder="留空即收回为未分配" width="100%"/>
-        <div class="ant-form-item-extra">留空表示收回为未分配，未分配单据仅持分配权或全量范围者可见。</div>
       </a-form-item>
       <a-form-item label="改派原因">
         <a-textarea v-model:value="reassignReason" :maxlength="500" :rows="2" placeholder="选填，用于审计留痕"/>
@@ -165,6 +168,7 @@ import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue'
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {useUserStore} from '/@/store/modules/system/user';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {

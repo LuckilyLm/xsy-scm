@@ -154,7 +154,7 @@
             <ImageUpload v-model="form.images" :can-edit="canEditImages" @uploading="uploading = $event">
               <template #head>
                 <h3 class="scm-form-section__title">商品图片</h3>
-                <span class="scm-form-section__hint">最多 20 张，可拖动排序。</span>
+                <ScmFieldHelp label="商品图片" text="最多上传 20 张，可拖动排序"/>
               </template>
             </ImageUpload>
           </section>
@@ -198,6 +198,7 @@ import type {
 } from '/@/types/business/scm/product';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
 import ImageUpload from './product-image-upload.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import SkuEditor from './product-sku-editable-table.vue';
 import {emptyProduct, productFormOf, validateProduct} from '../product-form-model';
 import {productError} from '../product-errors';

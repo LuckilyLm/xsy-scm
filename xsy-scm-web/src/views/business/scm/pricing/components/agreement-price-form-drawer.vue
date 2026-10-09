@@ -24,11 +24,14 @@
         <section class="scm-form-section">
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">价格</h3>
-            <span class="scm-form-section__hint">零价也是有效价格</span>
           </div>
           <a-row :gutter="20">
             <a-col :span="24">
-              <a-form-item label="单价" required>
+              <a-form-item required>
+                <template #label>
+                  单价
+                  <ScmFieldHelp label="单价" text="0 元也是有效价格"/>
+                </template>
                 <a-input-number
                     v-model:value="unitPrice"
                     :min="0"
@@ -46,11 +49,14 @@
         <section class="scm-form-section">
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">有效期</h3>
-            <span class="scm-form-section__hint">开始时间包含，结束时间不包含；结束留空表示长期有效</span>
           </div>
           <a-row :gutter="20">
             <a-col :span="24">
-              <a-form-item label="有效区间" required>
+              <a-form-item required>
+                <template #label>
+                  有效区间
+                  <ScmFieldHelp label="有效区间" text="开始时间包含，结束时间不包含；结束留空表示长期有效"/>
+                </template>
                 <a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
                                 :allow-empty="[false,true]" style="width:100%"/>
               </a-form-item>
@@ -78,6 +84,7 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {emptyPrice, validatePrice} from '../pricing-form-model';
 import {pricingError} from '../pricing-errors';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {fixed4} from '../../common/scm-fixed';
 
 const emit = defineEmits<{ saved: [] }>();

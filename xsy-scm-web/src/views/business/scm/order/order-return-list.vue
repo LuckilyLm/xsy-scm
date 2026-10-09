@@ -102,7 +102,6 @@
         </template>
       </a-table>
       <template v-else-if="action==='receive'">
-        <a-alert message="只登记本次实际验收数量。" type="info" show-icon/>
         <a-form-item label="接收仓库" required><WarehouseSelect v-model:value="warehouseId" :disabled="saving"/></a-form-item>
         <a-table :data-source="active.items" :scroll="{x: 650}" :columns="[{title:'商品',dataIndex:'productName',width:150},{title:'单位',dataIndex:'unit',width:65},{title:'批准数量',dataIndex:'approvedQuantity'},{title:'已接收',dataIndex:'receivedQuantity'},{title:'本次接收',dataIndex:'receiptQuantity'},{title:'处置',dataIndex:'disposition'}]" row-key="returnItemId" :pagination="false">
           <template #bodyCell="{record,column}">

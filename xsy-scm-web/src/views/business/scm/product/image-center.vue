@@ -34,7 +34,10 @@
       <a-col :xs="24" :md="15">
         <a-card size="small" :bordered="false">
           <template #title>
-            <span v-if="view">{{ view.name }}（{{ view.spuCode }}）</span>
+            <span v-if="view">
+              {{ view.name }}（{{ view.spuCode }}）
+              <ScmFieldHelp label="商品图片" text="主图最多一张；详情图可拖动排序"/>
+            </span>
             <span v-else>图片维护</span>
           </template>
           <template #extra>
@@ -45,7 +48,6 @@
           <a-empty v-if="!view" description="请从左侧选择一个商品"/>
           <template v-else>
             <a-alert v-if="imageError" :message="imageError" type="error" show-icon class="gap"/>
-            <p class="hint">主图最多一张；详情图可拖动排序</p>
             <a-spin :spinning="imageLoading">
               <div class="images">
                 <figure v-for="(image, index) in view.images" :key="String(image.imageId)" :draggable="canWrite"
@@ -126,6 +128,7 @@ import type { ImageCenterView, ProductId, ProductImage, ProductRow, ScmResponse 
 import type { FileMatchResult, SpuTarget, UploadedImageFile } from './product-import-model';
 import { matchFilesBySpuCode } from './product-import-model';
 import { productError } from './product-errors';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 type Uploaded = ScmResponse<{ fileKey: string; fileUrl: string; fileName?: string; fileSize?: number }>;
 
@@ -321,11 +324,6 @@ function statusColor(status: string) {
 
 .pick-form {
   margin-bottom: 8px;
-}
-
-.hint {
-  color: var(--scm-text-secondary, #666);
-  margin: 0 0 12px;
 }
 
 .images {

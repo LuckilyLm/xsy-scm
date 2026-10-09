@@ -3,10 +3,13 @@
            @ok="submit" @cancel="visible = false">
     <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
     <a-form ref="formRef" :model="form" layout="vertical">
-      <a-form-item label="上级分类" name="parentId">
+      <a-form-item name="parentId">
+        <template #label>
+          上级分类
+          <ScmFieldHelp label="上级分类" text="不选上级时创建一级分类"/>
+        </template>
         <CategorySelect v-model:value="form.parentId" :categories="categories" mode="parent"
                         :exclude-id="form.categoryId"/>
-        <div class="ant-form-item-extra">不选上级时创建一级分类</div>
       </a-form-item>
       <a-form-item label="分类编码" name="categoryCode"
                    :rules="[{ required: true, whitespace: true, message: '请输入分类编码' }]">
@@ -40,6 +43,7 @@ import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {ENABLE_STATUS_ENUM} from '/@/constants/business/scm/product-const';
 import type {ProductCategory, ProductCategoryForm, ProductId} from '/@/types/business/scm/product';
 import {productError} from '../product-errors';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 defineProps<{ categories: ProductCategory[] }>();
 const emit = defineEmits<{ saved: [] }>();

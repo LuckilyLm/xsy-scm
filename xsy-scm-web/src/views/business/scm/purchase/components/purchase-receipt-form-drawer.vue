@@ -14,7 +14,11 @@
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <a-form :model="form" layout="vertical">
-        <a-form-item label="采购单" name="purchaseOrderId" required>
+        <a-form-item name="purchaseOrderId" required>
+          <template #label>
+            采购单
+            <ScmFieldHelp label="采购单" text="收货明细会按所选采购单自动带入"/>
+          </template>
           <a-select
               v-if="!form.id"
               v-model:value="form.purchaseOrderId"
@@ -29,22 +33,16 @@
           <a-input v-else :value="form.purchaseOrderNo" disabled/>
         </a-form-item>
 
-        <a-form-item v-if="!form.id" label="入库方式" name="receiptMode" required>
+        <a-form-item v-if="!form.id" name="receiptMode" required>
+          <template #label>
+            入库方式
+            <ScmFieldHelp label="入库方式" text="直接入库在确认收货后入账；仓库确认入库需再由仓库确认"/>
+          </template>
           <a-radio-group v-model:value="form.receiptMode">
             <a-radio value="DIRECT">直接入库</a-radio>
             <a-radio value="WAREHOUSE_CONFIRM">仓库确认入库</a-radio>
           </a-radio-group>
-          <div class="form-tip">
-            直接入库：确认收货即入账；仓库确认入库：确认后由仓库二次确认才入账。
-          </div>
         </a-form-item>
-
-        <a-alert
-            v-if="!form.id"
-            type="info"
-            show-icon
-            message="收货明细会根据采购单当前明细自动生成，无需手工添加"
-        />
 
         <a-form-item label="备注" name="remark">
           <a-input v-model:value="form.remark" maxlength="500"/>
@@ -90,6 +88,7 @@ import {
 import type {Id, Receipt} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 const emit = defineEmits<{ saved: [] }>();
 
@@ -183,10 +182,3 @@ async function save() {
 
 defineExpose({open});
 </script>
-
-<style scoped>
-.form-tip {
-  color: var(--scm-text-secondary);
-  font-size: 12px;
-}
-</style>

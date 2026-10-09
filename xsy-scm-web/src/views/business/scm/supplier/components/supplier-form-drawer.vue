@@ -22,12 +22,6 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
-              <a-form-item label="供应商编码">
-                <span v-if="form.supplierId" class="scm-form-readonly">{{ form.supplierCode || '—' }}</span>
-                <span v-else class="scm-form-readonly">保存后由系统自动生成</span>
-              </a-form-item>
-            </a-col>
-            <a-col :xs="24" :sm="12">
               <a-form-item label="联系人" name="contactName">
                 <a-input v-model:value="form.contactName" :maxlength="100"/>
               </a-form-item>
@@ -52,16 +46,12 @@
                 placeholder="省 / 市 / 区"
                 @change="onAreaChange"
             />
-            <div class="scm-form-section__extra">留空则不参与地图分布统计</div>
           </a-form-item>
           <a-form-item label="地址" name="address">
             <a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())"/>
           </a-form-item>
           <a-form-item label="地图定位">
             <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)"/>
-            <div class="scm-form-section__extra">
-              点位用于地图分布与供应商位置查询；经纬度与坐标系必须同时填写或同时清空
-            </div>
           </a-form-item>
         </section>
 
@@ -71,10 +61,13 @@
           </div>
           <a-row :gutter="20">
             <a-col :xs="24" :sm="12">
-              <a-form-item label="付款账期" name="paymentPeriodDays">
+              <a-form-item name="paymentPeriodDays">
+                <template #label>
+                  付款账期
+                  <ScmFieldHelp label="付款账期" text="0 表示当日到期；修改只影响新产生的应付款"/>
+                </template>
                 <a-input-number v-model:value="form.paymentPeriodDays" :min="0" :max="3650" :precision="0"
                                 addon-after="天" style="width: 100%"/>
-                <div class="scm-form-section__extra">应付形成时冻结到期日；0 表示当日到期，修改只影响新应付。</div>
               </a-form-item>
             </a-col>
           </a-row>
@@ -113,6 +106,7 @@ import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf, areaNodesOf} from '../../common/scm-area';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {supplierError} from '../supplier-errors';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 const emit = defineEmits<{ saved: [] }>();
 

@@ -70,10 +70,13 @@
   <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYABLE" :loading="detailLoading" :detail="detailData"
                        :error="detailError" @retry="reloadDetail"/>
 
-  <a-drawer v-model:open="redOpen" title="登记红字应付" :width="scmDrawerWidth('l')" :destroy-on-close="true"
+  <a-drawer v-model:open="redOpen" :width="scmDrawerWidth('l')" :destroy-on-close="true"
             :closable="!redSaving" :keyboard="!redSaving" :mask-closable="!redSaving">
+    <template #title>
+      登记红字应付
+      <ScmFieldHelp label="红字应付" text="红字金额等于数量乘单价，累计不能超过原单金额"/>
+    </template>
     <a-spin :spinning="redLoading">
-      <a-alert type="info" show-icon message="红字金额必须等于数量 × 单价，累计不超过原单金额。"/>
       <a-alert v-if="redError" class="form-error" type="error" show-icon :message="redError">
         <template v-if="!redDrafts.length && redSource" #action>
           <a-button :loading="redLoading" @click="retryRed">重试</a-button>
@@ -123,6 +126,7 @@ import {SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_PERMIS
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import {dateTimeText, entryTypeText, initialFinanceDateRange, lineAmount, moneyClass, moneyText, settleStateText, settleStateTone} from './finance-form-model';
 import {financeError} from './finance-errors';

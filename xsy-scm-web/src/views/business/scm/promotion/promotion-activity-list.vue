@@ -262,11 +262,14 @@
       <section class="scm-form-section">
         <div class="scm-form-section__head">
           <h3 class="scm-form-section__title">叠加与互斥</h3>
-          <span class="scm-form-section__hint">同组内不可叠加</span>
         </div>
         <a-row :gutter="20">
           <a-col :span="12">
-            <a-form-item label="互斥组">
+            <a-form-item>
+              <template #label>
+                互斥组
+                <ScmFieldHelp label="互斥组" text="同一互斥组内的活动不能叠加"/>
+              </template>
               <a-input v-model:value="form.exclusiveGroup" placeholder="例如 SUMMER"/>
             </a-form-item>
           </a-col>
@@ -295,6 +298,7 @@ import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {fixed4} from '../common/scm-fixed';
