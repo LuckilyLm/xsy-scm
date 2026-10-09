@@ -260,7 +260,7 @@
           </template>
         </a-alert>
         <template v-else>
-          <a-alert v-if="visPolicyText" :message="visPolicyText" type="info" show-icon class="smart-margin-bottom10" />
+          <p v-if="visPolicyText" class="scm-table-caption">{{ visPolicyText }}</p>
           <a-table :data-source="visRows" :columns="visibilityCols" :row-key="(r: VisibilityRow) => String(r.skuId)" size="small" bordered
                    :loading="visibility.loading.value" :pagination="false" :scroll="{ x: 650 }">
             <template #bodyCell="{ record, column }">

@@ -161,3 +161,17 @@
   font-size: 12px;
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
 }
+
+/*
+ * 表格上方的数据范围说明（一句话，例如「可见范围：全部已启用商品」）。
+ *
+ * 这类说明原来用整行 `a-alert type="info"`，一条浅蓝横条占满整行、信息密度很低，
+ * 和它说明的那张表还隔着一段距离。改成紧贴表头的一行 12px 次要文字：
+ * 不抢视觉层级，也仍然常驻可见（不需要用户去悬停才发现）。
+ */
+.scm-table-caption {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
