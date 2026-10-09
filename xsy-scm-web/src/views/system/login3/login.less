@@ -146,18 +146,19 @@
   color: @xsy-primary;
 }
 
-// 品牌区蔬菜插画
+// 全链路主插画（商品 → 供应商 → 仓库 → 分拣 → 配送 → 客户 → 财务）
 .xsy-login__visual {
   margin-top: auto;
   padding-top: 20px;
   animation: xsy-login-fade 0.5s ease-out 0.3s both;
 }
 
+// 宽度驱动：插画是宽幅流程图（1060×565），按高度缩放会在窄列里被 max-width 压扁。
 .xsy-login__scene {
   display: block;
-  width: auto;
-  max-width: 100%;
-  height: clamp(180px, 26vh, 260px);
+  width: 100%;
+  max-width: 700px;
+  height: auto;
   user-select: none;
 }
 
@@ -382,12 +383,18 @@
     margin-bottom: 8px;
   }
 
+  // 主插画是左列最高的块（约 337px）：矮屏下它才是卡片撑高的真因。
+  // min-height 拦不住内容，必须直接压插画本身。
   .xsy-login__visual {
     padding-top: 12px;
+    max-height: 200px;
+    overflow: hidden;
   }
 
   .xsy-login__scene {
-    height: 150px;
+    max-height: 200px;
+    width: auto;
+    max-width: 100%;
   }
 
 }

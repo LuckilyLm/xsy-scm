@@ -41,7 +41,7 @@
         </ul>
 
         <div class="xsy-login__visual">
-          <img class="xsy-login__scene" :src="harvestVegetables" alt=""/>
+          <img class="xsy-login__scene" :src="supplyChainScene" alt="商品、供应商、仓库、分拣、配送、客户、财务全链路"/>
         </div>
       </aside>
 
@@ -131,7 +131,7 @@ import {loginApi} from '/@/api/system/login-api';
 import logoImg from '/@/assets/images/logo/xsy-logo.png';
 import harvestMorning from '/@/assets/images/login-illustration/harvest-morning.webp';
 import harvestLandscape from '/@/assets/images/login-illustration/harvest-landscape.webp';
-import harvestVegetables from '/@/assets/images/login-illustration/harvest-vegetables.webp';
+import supplyChainScene from '/@/assets/images/login-illustration/supply-chain-scene.png';
 import {SmartLoading} from '/@/components/framework/smart-loading';
 import {LOGIN_DEVICE_ENUM} from '/@/constants/system/login-device-const';
 import {useUserStore} from '/@/store/modules/system/user';
