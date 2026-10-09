@@ -180,6 +180,25 @@
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
 }
 
+/*
+ * 「标签：值」是读的内容，标签后统一补一个全角冒号。
+ * 放在公共样式里而不是逐个页面写：客户详情、线路基础信息都走这个类，
+ * 新页面复用也不用再记着加。
+ */
+.scm-field__label::after {
+  content: '：';
+}
+
+/*
+ * antd Descriptions 自带冒号但用的是半角 `:`，和上面 .scm-field 的全角不一致，
+ * 同一屏里两种冒号混着出现。这里统一成全角。
+ * 比 antd 自身规则多一层 .ant-descriptions 提升特异性，不用 !important；
+ * `-item-no-colon`（显式 colon=false）的仍然不给冒号。
+ */
+.ant-descriptions .ant-descriptions-item-label:not(.ant-descriptions-item-no-colon)::after {
+  content: '：';
+}
+
 .scm-field__value {
   margin: 0;
   font-size: 14px;
