@@ -76,15 +76,15 @@
 
   <a-drawer v-model:open="addOpen" title="登记多目标核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
-    <a-form layout="vertical" class="app-drawer-form">
-      <a-form-item required>
+    <a-form ref="addFormRef" :model="{sourceType, source}" :rules="addRules" layout="vertical" class="app-drawer-form">
+      <a-form-item name="sourceType">
         <template #label>
           资金类型
           <ScmFieldHelp label="资金类型" text="收款核销应收，付款核销应付"/>
         </template>
         <a-select v-model:value="sourceType" :options="sourceOptions" placeholder="选择资金类型" @change="resetAllocation"/>
       </a-form-item>
-      <a-form-item label="资金单" required>
+      <a-form-item label="资金单" name="source">
         <a-input :value="source?.documentNo || ''" readonly placeholder="选择可核销资金单">
           <template #addonAfter><a-button type="link" :disabled="!sourceType" @click="openSourcePicker">选择</a-button></template>
         </a-input>
@@ -118,7 +118,7 @@
   <a-modal v-model:open="reverseOpen" title="撤销核销" :confirm-loading="reverseSaving" @ok="submitReverse">
     <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一条反向核销，金额 ${moneyText(reverseRow.amount)}。`"/>
     <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError"/>
-    <a-form layout="vertical"><a-form-item label="撤销原因" required><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/></a-form-item></a-form>
+    <a-form ref="reverseFormRef" :model="{reverseReason}" :rules="reverseRules" layout="vertical"><a-form-item label="撤销原因" name="reverseReason"><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/></a-form-item></a-form>
   </a-modal>
 
   <BalanceMovementDetail ref="movementDetail"/>
@@ -152,6 +152,17 @@ const addOpen = ref(false), addSaving = ref(false), addError = ref(''), sourceTy
 const source = ref<FinanceCandidate | null>(null), targets = ref<AllocationDraft[]>([]);
 const pickerOpen = ref(false), pickerKind = ref<'RECEIPT'|'PAYMENT'|'RECEIVABLE'|'PAYABLE'>('RECEIPT'), picking = ref<'SOURCE'|'TARGET'>('SOURCE');
 const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinanceWriteOff | null>(null);
+const addFormRef = ref();
+const reverseFormRef = ref();
+/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const addRules = {
+    sourceType: [{required: true, message: '请选择资金类型', trigger: 'change'}],
+    source: [{
+        validator: () => (source.value ? Promise.resolve() : Promise.reject(new Error('请选择资金单'))),
+        trigger: 'change',
+    }],
+};
+const reverseRules = {reverseReason: [{required: true, message: '请填写撤销原因', trigger: 'blur'}]};
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const sourceOptions = Object.values(SCM_FINANCE_SOURCE_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
@@ -240,9 +251,15 @@ function onCandidateSelected(candidate: FinanceCandidate) {
 function removeTarget(id: FinanceCandidate['id']) { targets.value = targets.value.filter((item) => String(item.id) !== String(id)); }
 
 async function submitAdd() {
+    // 资金类型 / 资金单走字段校验；「至少一条目标有正数金额」是跨行的业务规则，用 toast
+    try {
+        await addFormRef.value?.validate();
+    } catch {
+        return;
+    }
     const items = targets.value.filter((item) => isValidPositiveAmount(item.amount)).map((item) => ({targetId: item.id, amount: item.amount}));
-    if (!sourceType.value || !source.value || !items.length) {
-        addError.value = '请选择资金单和目标单，并为至少一条目标填写正数金额（最多 4 位小数）。';
+    if (!items.length) {
+        message.warning('请为至少一条目标填写正数金额（最多 4 位小数）');
         return;
     }
     addSaving.value = true; addError.value = '';
@@ -255,7 +272,13 @@ async function submitAdd() {
 
 function openReverse(row: FinanceWriteOff) { reverseRow.value = row; reverseReason.value = ''; reverseError.value = ''; reverseOpen.value = true; }
 async function submitReverse() {
-    if (!reverseRow.value || !reverseReason.value.trim()) { reverseError.value = '请填写撤销原因。'; return; }
+    if (!reverseRow.value) return;
+    // 必填项走表单校验：错误显示在输入框下方
+    try {
+        await reverseFormRef.value?.validate();
+    } catch {
+        return;
+    }
     reverseSaving.value = true; reverseError.value = '';
     try {
         await financeApi.writeOffReverse({writeOffId: reverseRow.value.writeOffId, reason: reverseReason.value.trim()});

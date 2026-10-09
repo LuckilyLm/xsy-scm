@@ -106,7 +106,7 @@ async function submit() {
   if (loading.value || imported.value) return;
   const file = selectedFile.value;
   if (!file) {
-    error.value = '请先选择订单 Excel 文件';
+    message.warning('请先选择订单 Excel 文件');
     return;
   }
   loading.value = true;

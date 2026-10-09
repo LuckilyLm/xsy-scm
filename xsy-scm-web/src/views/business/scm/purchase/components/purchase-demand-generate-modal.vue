@@ -22,7 +22,7 @@
         message="含开始日，不含结束日"
         description="只汇总区间内「已确认」的销售订单行"
     />
-    <a-form layout="vertical" class="form">
+    <a-form ref="formRef" :model="{...form, range}" :rules="formRules" layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>
         <a-range-picker
             v-model:value="range"
@@ -84,6 +84,17 @@ const emit = defineEmits<{ close: []; generated: []; viewBatch: [batchId: Id] }>
 
 const range = ref<[string, string] | undefined>(undefined);
 const form = ref<{ warehouseId?: Id; supplierId?: Id; purchaserId?: Id }>({});
+const formRef = ref();
+/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  range: [{
+    validator: () => (range.value?.[0] && range.value?.[1]
+        ? Promise.resolve()
+        : Promise.reject(new Error('请选择统计时间段'))),
+    trigger: 'change',
+  }],
+  warehouseId: [{required: true, message: '请选择收货仓库', trigger: 'change'}],
+};
 const saving = ref(false);
 const error = ref('');
 const result = ref<GenerateResult>();
@@ -142,12 +153,10 @@ watch(
 
 async function generate() {
   error.value = '';
-  if (!range.value || range.value.length !== 2) {
-    error.value = '请选择统计时间段';
-    return;
-  }
-  if (!form.value.warehouseId) {
-    error.value = '请选择收货仓库';
+  // 必填项走表单校验：错误显示在对应输入框下方
+  try {
+    await formRef.value?.validate();
+  } catch {
     return;
   }
   saving.value = true;

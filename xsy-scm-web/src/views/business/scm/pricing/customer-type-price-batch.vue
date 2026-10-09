@@ -2,9 +2,9 @@
 <template>
  <a-card title="客户类型价批量调价" size="small" :bordered="false">
   <p class="scm-note">任一行失败则整批不写入；最多 500 行。</p>
-  <a-form layout="inline" class="smart-query-form">
+  <a-form ref="formRef" :model="{batchKey}" :rules="formRules" layout="inline" class="smart-query-form">
    <a-row class="smart-query-form-row">
-    <a-form-item label="批次号" required class="smart-query-form-item"><a-input v-model:value="batchKey" aria-label="批次号" :maxlength="100" style="width:320px" /></a-form-item>
+    <a-form-item label="批次号" name="batchKey" class="smart-query-form-item"><a-input v-model:value="batchKey" aria-label="批次号" :maxlength="100" style="width:320px" /></a-form-item>
     <a-form-item class="smart-query-form-item"><a-button @click="add" :disabled="rows.length>=500||saving">新增行</a-button></a-form-item>
     <a-form-item class="smart-query-form-item"><a-button type="primary" :loading="saving" v-privilege="'scm:pricing:type-price:batch'" @click="submit">提交整批</a-button></a-form-item>
    </a-row>
@@ -38,6 +38,9 @@ import {pricingError} from './pricing-errors';
 const router = useRouter(), batchKey = ref('PRICE-' + dayjs().format('YYYYMMDD-HHmmss')), rows = ref<BatchRow[]>([]),
     failures = ref<{ rowNumber: number; message: string }[]>([]), saving = ref(false), error = ref('');
 let number = 0;
+const formRef = ref();
+/** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {batchKey: [{required: true, message: '请填写批次号', trigger: 'blur'}]};
 const columns: TableColumnsType<BatchRow> = [{title: '行号', dataIndex: 'rowNumber', width: 65}, {
   title: '客户类型',
   dataIndex: 'customerTypeId',
@@ -67,8 +70,14 @@ function setPeriod(row: BatchRow, value: unknown) {
 async function submit() {
   error.value = '';
   failures.value = validateBatch(rows.value);
-  if (!batchKey.value.trim() || !rows.value.length) {
-    error.value = '请填写批次号并至少添加一行';
+  // 批次号走字段校验；「至少一行」是列表状态，用 toast
+  try {
+    await formRef.value?.validate();
+  } catch {
+    return;
+  }
+  if (!rows.value.length) {
+    message.warning('请至少添加一行');
     return;
   }
   if (failures.value.length) {

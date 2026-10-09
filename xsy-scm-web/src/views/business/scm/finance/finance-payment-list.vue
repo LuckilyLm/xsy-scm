@@ -80,29 +80,29 @@
 
   <a-modal v-model:open="addOpen" title="登记付款" :confirm-loading="addSaving" @ok="submitAdd">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
-    <a-form layout="vertical">
-      <a-form-item required>
+    <a-form ref="addFormRef" :model="{...addForm, supplierId, selectedRefund}" :rules="addRules" layout="vertical">
+      <a-form-item name="counterpartyType">
         <template #label>
           往来方类型
           <ScmFieldHelp label="往来方类型" text="客户付款仅可关联已完成的退款"/>
         </template>
         <a-select v-model:value="addForm.counterpartyType" :options="partyTypeOptions" @change="onPartyTypeChange"/>
       </a-form-item>
-      <a-form-item v-if="addForm.counterpartyType==='SUPPLIER'" label="供应商 ID" required>
+      <a-form-item v-if="addForm.counterpartyType==='SUPPLIER'" label="供应商 ID" name="supplierId">
         <a-input-number v-model:value="supplierId" :min="1" :precision="0" placeholder="输入供应商编号" style="width:100%"/>
       </a-form-item>
-      <a-form-item v-if="addForm.counterpartyType==='CUSTOMER'" label="已完成退款来源" required>
+      <a-form-item v-if="addForm.counterpartyType==='CUSTOMER'" label="已完成退款来源" name="selectedRefund">
         <a-input :value="selectedRefund ? `${selectedRefund.refundNo} · ${selectedRefund.customerName} · ${moneyText(selectedRefund.refundAmount)}` : ''"
                  readonly placeholder="选择已完成退款">
           <template #addonAfter><a-button type="link" @click="refundPickerOpen=true">选择退款</a-button></template>
         </a-input>
       </a-form-item>
-      <a-form-item label="付款金额" required>
+      <a-form-item label="付款金额" name="amount">
         <a-input-number v-if="addForm.counterpartyType==='SUPPLIER'" v-model:value="addForm.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width:100%"/>
         <a-input v-else :value="selectedRefund ? moneyText(selectedRefund.refundAmount) : ''" disabled placeholder="选择退款来源后自动带入"/>
       </a-form-item>
-      <a-form-item label="付款方式" required><a-select v-model:value="addForm.method" :options="addMethodOptions" placeholder="选择方式"/></a-form-item>
-      <a-form-item label="付款时间" required><a-date-picker v-model:value="addForm.paidAt" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" style="width:100%"/></a-form-item>
+      <a-form-item label="付款方式" name="method"><a-select v-model:value="addForm.method" :options="addMethodOptions" placeholder="选择方式"/></a-form-item>
+      <a-form-item label="付款时间" name="paidAt"><a-date-picker v-model:value="addForm.paidAt" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" style="width:100%"/></a-form-item>
       <a-form-item label="资金凭据号"><a-input v-model:value="addForm.externalReference" :maxlength="128"/></a-form-item>
       <a-form-item label="备注"><a-textarea v-model:value="addForm.remark" :maxlength="500" :rows="2" show-count/></a-form-item>
     </a-form>
@@ -150,6 +150,25 @@ const addForm = reactive<Omit<FinancePaymentAddForm, 'counterpartyId'> & {counte
     counterpartyType: 'SUPPLIER', amount: '', method: 'BANK_TRANSFER', paidAt: nowDateTimeValue(), externalReference: '',
     sourceType: undefined, sourceId: undefined, remark: '',
 });
+const addFormRef = ref();
+/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const addRules = {
+    counterpartyType: [{required: true, message: '请选择往来方类型', trigger: 'change'}],
+    supplierId: [{required: true, message: '请输入供应商编号', trigger: 'blur'}],
+    selectedRefund: [{
+        validator: () => (selectedRefund.value ? Promise.resolve() : Promise.reject(new Error('请选择已完成退款'))),
+        trigger: 'change',
+    }],
+    amount: [{
+        // 客户付款的金额由退款来源带入，不走这里校验
+        validator: () => (addForm.counterpartyType !== 'SUPPLIER' || isValidPositiveAmount(addForm.amount)
+            ? Promise.resolve()
+            : Promise.reject(new Error('请输入大于 0 的金额，最多 4 位小数'))),
+        trigger: 'blur',
+    }],
+    method: [{required: true, message: '请选择付款方式', trigger: 'change'}],
+    paidAt: [{required: true, message: '请选择付款时间', trigger: 'change'}],
+};
 // 查询是跨对手方的：两组方式都要给，否则筛选不到客户退款的在线支付
 const methodOptions = Object.values({...SCM_FINANCE_PAYMENT_METHOD_ENUM, ...SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM})
     .map((item) => ({label: item.desc, value: item.value}));
@@ -216,13 +235,14 @@ function selectRefund(option: FinanceRefundOption) {
 }
 
 async function submitAdd() {
-    const counterpartyId = addForm.counterpartyType === 'CUSTOMER' ? selectedRefund.value?.customerId : supplierId.value;
-    const amount = addForm.counterpartyType === 'CUSTOMER' ? selectedRefund.value?.refundAmount : addForm.amount;
-    if (counterpartyId == null || !isValidPositiveAmount(amount) || !addForm.method || !addForm.paidAt ||
-        (addForm.counterpartyType === 'CUSTOMER' && selectedRefund.value == null)) {
-        addError.value = '请填写往来方、正数金额、方式、付款时间和退款来源；金额最多四位小数。';
+    // 必填项走表单校验：错误显示在对应输入框下方，顶部 alert 只留服务端错误
+    try {
+        await addFormRef.value?.validate();
+    } catch {
         return;
     }
+    const counterpartyId = addForm.counterpartyType === 'CUSTOMER' ? selectedRefund.value?.customerId : supplierId.value;
+    const amount = addForm.counterpartyType === 'CUSTOMER' ? selectedRefund.value?.refundAmount : addForm.amount;
     addSaving.value = true; addError.value = '';
     try {
         const payload: FinancePaymentAddForm = {

@@ -477,7 +477,7 @@ function remove(row: Order) {
 function batchDelete() {
   const targets = draftSelected.value;
   if (!targets.length) {
-    error.value = '请勾选至少一张「草稿」采购单';
+    message.warning('请勾选至少一张「草稿」采购单');
     return;
   }
   Modal.confirm({
@@ -499,7 +499,7 @@ function batchDelete() {
 function batchShortClose() {
   const targets = partialSelected.value;
   if (!targets.length) {
-    error.value = '请勾选至少一张「部分收货」的采购单';
+    message.warning('请勾选至少一张「部分收货」的采购单');
     return;
   }
   let reason = '';
