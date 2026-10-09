@@ -73,12 +73,8 @@
   float: right;
 }
 
-/*
-  查询表单一行放不下会换行，换行后两行之间的呼吸空间必须由行距提供。
-  8px 在两行都带按钮时看起来是贴在一起的，16px 才能读出「这是两行筛选条件」。
-*/
 .smart-query-form-row:not(:first-child) {
-  margin-top: 16px;
+  margin-top: 8px;
 }
 
 /*
@@ -90,30 +86,22 @@
   flex: 1 0 100%;
 }
 
-/*
-  表单项自身的行距。
-  必须同时命中 `.ant-form-item`：只写 `.smart-query-form-item` 时，漏加该类名的页面
-  （财务五页都是这种写法）margin 归零，筛选区一换行两行就贴死成 0px。
-  间距由主题统一提供，不要求页面记得加类名。
-*/
-.smart-query-form-row .smart-query-form-item,
-.smart-query-form-row .ant-form-item {
+.smart-query-form-row .smart-query-form-item {
   margin-right: 8px;
-  margin-top: 6px;
-  margin-bottom: 6px;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 /*
-  扁平写法兜底：直接把表单项挂在 a-form 下（不套 .smart-query-form-row）的页面，
+  扁平写法兜底：直接把 .smart-query-form-item 挂在 a-form 下（不套 .smart-query-form-row）的页面，
   上面两条规则都不命中 —— 表单项 margin 归零，一旦换行（窗口变窄或高级筛选展开）两行会贴死成 0px。
   限定 .ant-form-inline + 子选择器：只命中「inline 表单的直接子项」，
   套了 row 的页面、以及三级等保这类纵向表单（依赖 antd 默认 16px 行距）都不受影响。
 */
-.smart-query-form.ant-form-inline > .smart-query-form-item,
-.smart-query-form.ant-form-inline > .ant-form-item {
+.smart-query-form.ant-form-inline > .smart-query-form-item {
   margin-right: 8px;
-  margin-top: 6px;
-  margin-bottom: 6px;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 .smart-query-table-page {
@@ -122,28 +110,19 @@
   justify-content: flex-end;
 }
 
-/*
-  表格工具栏：左侧动作、右侧列设置在窄屏会换行，用 gap 统一提供左右与换行后的上下间距。
-  按钮直接挂在 .smart-table-btn-block 下的页面很多，只给 .smart-table-operate-block 内的按钮
-  加 margin 会让这些页面相邻按钮贴在一起。
-*/
 .smart-table-btn-block {
   margin-bottom: 15px;
   display: flex;
   flex-direction: row;
-  align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
 
   .smart-table-operate-block {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
+    .ant-btn {
+      margin-right: 12px;
+    }
   }
 
   .smart-table-setting-block {
-    margin-left: auto;
+    float: right;
   }
 }

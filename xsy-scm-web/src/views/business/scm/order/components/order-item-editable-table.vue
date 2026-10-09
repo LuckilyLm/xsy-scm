@@ -42,9 +42,7 @@
         </div>
       </template>
       <template v-else-if="column.dataIndex==='override'">
-        <!-- 一格里叠三个输入控件（勾选 / 单价 / 改价原因），不是「值 + 标识」，
-             用 scm-cell-wrap 退出单元格的省略号裁剪，否则控件会被裁掉 -->
-        <a-space direction="vertical" class="scm-cell-wrap">
+        <a-space direction="vertical">
           <a-checkbox v-privilege="'scm:order:price-override'" v-model:checked="record.manualPriceOverride">人工改价
           </a-checkbox>
           <template v-if="record.manualPriceOverride">
@@ -84,7 +82,7 @@ import {orderError} from '../order-errors';
 const props = defineProps<{ items: Item[]; customerId?: Id }>();
 const emit = defineEmits<{ price: [] }>();
 const columns: TableColumnsType<Item> = [{
-  title: '商品规格',
+  title: '商品 / 商品规格',
   dataIndex: 'skuId',
   width: 300
 }, {title: '下单数量', dataIndex: 'orderedQuantity', align: 'right', width: 165}, {

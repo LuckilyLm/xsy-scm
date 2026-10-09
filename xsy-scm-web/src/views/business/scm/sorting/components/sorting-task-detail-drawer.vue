@@ -1,7 +1,12 @@
 <template>
-  <!-- workspace：分拣工作台 —— 明细表 scroll.x 1790，且录入时要把任务头、进度与明细行
+  <!-- workspace：分拣工作台 —— 明细表 scroll.x 1420，且录入时要把任务头、进度与明细行
        放在同一屏里对照，横向空间即作业面。 -->
   <a-drawer :open="open" title="分拣任务详情" :width="scmDrawerWidth('workspace')" :destroy-on-close="true" @close="emit('update:open', false)">
+    <a-alert v-if="detailError" :message="detailError" type="error" show-icon>
+      <template #action>
+        <a-button @click="emit('reload')">刷新任务</a-button>
+      </template>
+    </a-alert>
     <a-spin :spinning="detailLoading">
       <template v-if="detail">
         <div class="task-heading">
@@ -64,6 +69,7 @@
         </a-descriptions>
 
         <a-alert v-if="!canEditItems" type="warning" show-icon :message="readOnlyReason"/>
+        <a-alert v-if="entryError" type="error" show-icon :message="entryError"/>
 
         <a-table
             :id="SCM_SORTING_TABLE_ID.TASK_ITEM"
@@ -73,22 +79,19 @@
             row-key="id"
             bordered
             :pagination="false"
-            :scroll="{x: 1790}"
+            :scroll="{x: 1420}"
         >
           <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'product'">
-              <span class="product-name">
-                <span>{{ record.productNameSnapshot || '—' }}</span>
-                <a-tooltip v-if="isGiftRow(record)" title="满赠赠品，无需录入实分量">
-                  <a-tag color="purple">赠品</a-tag>
-                </a-tooltip>
-              </span>
-            </template>
-            <template v-else-if="column.dataIndex === 'specNameSnapshot'">
-              {{ record.specNameSnapshot || '—' }}
-            </template>
-            <template v-else-if="column.dataIndex === 'productTypeSnapshot'">
-              {{ productTypeDesc(record.productTypeSnapshot) }}
+              <div>
+                {{ record.productNameSnapshot }}
+                <a-tag v-if="isGiftRow(record)" color="purple">赠品</a-tag>
+              </div>
+              <a-typography-text type="secondary">
+                {{ record.specNameSnapshot || '—' }} · {{ productTypeDesc(record.productTypeSnapshot) }}
+                <template v-if="isGiftRow(record)"> · 满赠赠品，无需录入实分量</template>
+                <template v-else-if="record.occupationStatus === 'RELEASED'"> · 占用已释放</template>
+              </a-typography-text>
             </template>
             <template v-else-if="column.dataIndex === 'plannedQuantitySnapshot'">
               <span class="scm-quantity">{{ quantityText(record.plannedQuantitySnapshot) }}</span>
@@ -132,16 +135,11 @@
                     :aria-label="`分拣原因 ${record.productNameSnapshot}`"
                     @update:value="updateDraft(record.id, 'reason', $event)"
                 />
-                <a-typography-text
-                    v-if="entryErrors[String(record.id)]"
-                    type="danger"
-                    class="cell-error scm-cell-wrap"
-                >
+                <a-typography-text v-if="entryErrors[String(record.id)]" type="danger" class="cell-error">
                   {{ entryErrors[String(record.id)] }}
                 </a-typography-text>
               </template>
-              <!-- 原因是整句话，允许换行，否则被单元格的 nowrap 裁掉 -->
-              <span v-else class="scm-cell-wrap">{{ record.reason || '—' }}</span>
+              <span v-else>{{ record.reason || '—' }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'sortedAt'">{{ datetime(record.sortedAt) }}</template>
             <template v-else-if="column.dataIndex === 'occupationStatus'">
@@ -155,6 +153,9 @@
         </a-table>
 
         <div class="entry-footer">
+          <a-typography-text type="secondary">
+            只提交改动过的行；若某行在录入期间被他人改动，提交会被拒绝，请刷新后重试。
+          </a-typography-text>
           <a-button
               type="primary"
               v-privilege="'scm:sorting:item:update'"
@@ -194,6 +195,8 @@ defineProps<{
   open: boolean;
   detail?: SortingTaskDetail;
   detailLoading: boolean;
+  detailError: string;
+  entryError: string;
   busy: boolean;
   canEditItems: boolean;
   readOnlyReason: string;
@@ -210,6 +213,7 @@ defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean];
+  reload: [];
   openTicket: [taskId: Id];
   openPrint: [task: SortingTask];
   action: [mode: ActionMode, task: SortingTask];
@@ -220,19 +224,16 @@ const emit = defineEmits<{
 
 const resultOptions = Object.values(SCM_SORTING_RESULT_ENUM).map((item) => ({value: item.value, label: item.desc}));
 
-// 一格一个值：商品、商品规格与商品类型各自成列；赠品的额外说明挂在标签的悬停提示上。
 const itemColumns = ref<TableColumnsType<SortingTaskItem>>([
-  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 160},
-  {title: '客户', dataIndex: 'customerNameSnapshot', width: 130},
-  {title: '商品', dataIndex: 'product', width: 170},
-  {title: '商品规格', dataIndex: 'specNameSnapshot', width: 120},
-  {title: '商品类型', dataIndex: 'productTypeSnapshot', align: 'center', width: 90},
+  {title: '订单号', dataIndex: 'orderNoSnapshot', width: 170},
+  {title: '客户', dataIndex: 'customerNameSnapshot', width: 150},
+  {title: '商品 / 商品规格', dataIndex: 'product', width: 220},
   {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 80},
   {title: '计划量', dataIndex: 'plannedQuantitySnapshot', align: 'right', width: 110},
   {title: '分拣量', dataIndex: 'sortedQuantity', align: 'right', width: 150},
   {title: '结果', dataIndex: 'result', align: 'center', width: 140},
   {title: '原因', dataIndex: 'reason', width: 220},
-  {title: '录入人', dataIndex: 'sortedBy', width: 110},
+  {title: '录入人', dataIndex: 'sortedBy', width: 120},
   {title: '录入时间', dataIndex: 'sortedAt', width: 170},
   {title: '占用', dataIndex: 'occupationStatus', align: 'center', width: 100},
 ]);
@@ -274,28 +275,9 @@ function updateDraft(itemId: Id, field: DraftField, value: unknown) {
   font-size: 12px;
 }
 
-/* 商品名与赠品标签一行放完：标签不参与压缩，名称溢出省略 */
-.product-name {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.product-name > span:first-child {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.product-name :deep(.ant-tag) {
-  flex: none;
-  margin-inline-end: 0;
-}
-
 .entry-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;

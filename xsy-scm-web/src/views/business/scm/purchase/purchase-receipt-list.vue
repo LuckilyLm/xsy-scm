@@ -39,6 +39,12 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
@@ -153,7 +159,6 @@ import {
 import type {Receipt, ReceiptQuery} from './purchase-types';
 import {purchaseError} from './purchase-errors';
 import {hasPermission} from '../common/scm-permission';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import {deepLinkFilters} from '/@/lib/query-deep-link';
 import PurchaseReceiptForm from './components/purchase-receipt-form-drawer.vue';
 import PurchaseReceiptConfirm from './components/purchase-receipt-confirm-modal.vue';
@@ -169,7 +174,7 @@ const orderNoInput = ref<string | undefined>(undefined);
 const tableData = ref<Receipt[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const selected = ref<(string | number)[]>([]);
 const form = ref<InstanceType<typeof PurchaseReceiptForm>>();
 const confirmModal = ref<InstanceType<typeof PurchaseReceiptConfirm>>();

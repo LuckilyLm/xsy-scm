@@ -15,8 +15,13 @@
       @ok="generate"
       @cancel="close"
   >
-    <a-alert type="info" show-icon
-             message="含开始日、不含结束日，只汇总区间内「已确认」的销售订单行"/>
+    <a-alert v-if="error" :message="error" type="error" show-icon/>
+    <a-alert
+        type="info"
+        show-icon
+        message="含开始日，不含结束日"
+        description="只汇总区间内「已确认」的销售订单行"
+    />
     <a-form layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>
         <a-range-picker
@@ -73,7 +78,6 @@ import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import type {DemandCalculationBatch, GenerateResult, Id} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: []; generated: []; viewBatch: [batchId: Id] }>();
@@ -81,7 +85,7 @@ const emit = defineEmits<{ close: []; generated: []; viewBatch: [batchId: Id] }>
 const range = ref<[string, string] | undefined>(undefined);
 const form = ref<{ warehouseId?: Id; supplierId?: Id; purchaserId?: Id }>({});
 const saving = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const result = ref<GenerateResult>();
 const batch = ref<DemandCalculationBatch>();
 const warehouseLoading = ref(false);

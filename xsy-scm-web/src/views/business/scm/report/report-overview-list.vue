@@ -48,11 +48,23 @@
     </a-row>
   </a-form>
 
-  <div class="overview-kpis smart-margin-top10">
-    <ReportKpiCard v-for="card in kpiCards" :key="card.label"
-                   :label="card.label" :value="card.value" :sub="card.sub" :warning="card.warning"
-                   :current-point="card.currentPoint"/>
-  </div>
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryAll">重试</a-button>
+    </template>
+  </a-alert>
+
+  <a-row :gutter="[12, 12]" class="smart-margin-top10">
+    <a-col v-for="card in kpiCards" :key="card.label" :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+      <ReportKpiCard
+          :label="card.label"
+          :value="card.value"
+          :sub="card.sub"
+          :warning="card.warning"
+          :current-point="card.currentPoint"
+      />
+    </a-col>
+  </a-row>
 
   <ReportLineChart
       class="smart-margin-top10"
@@ -78,7 +90,7 @@
     <a-table
         :id="SCM_REPORT_TABLE_ID.OVERVIEW_DAILY"
         size="small"
-        :data-source="pagedDailyRows"
+        :data-source="dailyRows"
         :columns="visibleColumns"
         row-key="bizDate"
         bordered
@@ -125,22 +137,11 @@
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
     </a-table>
-    <div class="smart-query-table-page">
-      <a-pagination
-          show-size-changer
-          show-quick-jumper
-          :current="pageNum"
-          :page-size="pageSize"
-          :total="dailyRows.length"
-          :show-total="(n: number) => `共${n}条`"
-          @change="changePage"
-      />
-    </div>
   </a-card>
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref, watch} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
 import {ExclamationCircleOutlined} from '@ant-design/icons-vue';
@@ -175,7 +176,6 @@ import {
 } from './report-model';
 import {moneyText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import {reportError} from './report-errors';
 import {useReportPermission} from './use-report-permission';
 import type {DateRange} from './report-model';
@@ -200,25 +200,7 @@ const overview = ref<ReportOverview>();
 const dailyRows = ref<ReportDailyStat[]>([]);
 const trendRows = ref<ReportDailyStat[]>([]);
 const loading = ref(false);
-const error = useScmErrorToast();
-
-/** 每日统计由后端整段返回（一天一行），分页在前端切片，总数就是返回行数。 */
-const pageNum = ref(1);
-const pageSize = ref(20);
-const pagedDailyRows = computed(() => {
-    const start = (pageNum.value - 1) * pageSize.value;
-    return dailyRows.value.slice(start, start + pageSize.value);
-});
-
-// 重新查询后留在上一页会看到空表
-watch(dailyRows, () => {
-    pageNum.value = 1;
-});
-
-function changePage(page: number, size: number) {
-    pageNum.value = page;
-    pageSize.value = size;
-}
+const error = ref('');
 
 /** 竞态保护：慢的旧响应不得覆盖新结果（三个请求共用一次刷新令牌）。 */
 let requestId = 0;
@@ -418,12 +400,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 七张卡（含成本权限才有的两张）按内容自适应，写死四列会让多出来的卡占满一整行。 */
-.overview-kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-}
 .report-warn-icon {
   color: var(--scm-warning);
   margin-left: 4px;

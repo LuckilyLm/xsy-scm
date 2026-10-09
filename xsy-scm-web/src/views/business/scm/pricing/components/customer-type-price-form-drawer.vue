@@ -2,6 +2,7 @@
   <a-drawer :title="form.customerTypePriceId?'编辑客户类型价':'新增客户类型价'" :open="visible" :width="scmDrawerWidth('s')"
             @close="visible=false">
     <a-spin :spinning="loading">
+      <a-alert v-if="error" :message="error" type="error" show-icon/>
       <a-form layout="vertical" :model="form">
         <a-form-item label="客户类型" required>
           <CustomerTypeSelect v-model:value="form.customerTypeId"/>
@@ -37,11 +38,9 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {emptyPrice, validatePrice} from '../pricing-form-model';
 import {pricingError} from '../pricing-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), loading = ref(false), saving = ref(false);
-const error = useScmErrorToast();
+const visible = ref(false), loading = ref(false), saving = ref(false), error = ref('');
 const form = reactive<PriceForm>(emptyPrice());
 const range = ref<[string, string] | undefined>();
 const api = pricingApi.typePrice;

@@ -73,9 +73,9 @@ export function specText(specValues: Record<string, unknown> | null | undefined)
 }
 
 /**
- * 商品规格列的文本：优先规格值组合（`规格：散装`），无规格值时回落到规格名称。
+ * 商品规格复合单元的主行文本：优先规格值组合（`规格：散装`），无规格值时回落到规格名称。
  *
- * 商品规格编码是独立的一列，不并进本函数的返回值。
+ * 编码不进主行 —— 它作为 `.scm-cell-stack__sub` 展示在名称下方，不再各占一列。
  *
  * 不要写成 `specText(specValues) || skuName`：specText 无值时返回的是 `'—'`，
  * 那是 truthy，回落分支永远不会执行，结果是无规格的商品在列表里只显示一个破折号。

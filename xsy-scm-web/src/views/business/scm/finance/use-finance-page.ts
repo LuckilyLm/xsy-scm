@@ -2,7 +2,6 @@ import {reactive, ref, shallowRef} from 'vue';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {FinancePageQuery} from './finance-types';
 import {financeError} from './finance-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 export type FinancePageExport<Q> = (query: Omit<Q, 'pageNum' | 'pageSize'>) => Promise<unknown>;
 
@@ -14,7 +13,7 @@ export function useFinancePage<T, Q extends FinancePageQuery>(
     const total = ref(0);
     const loading = ref(false);
     const exporting = ref(false);
-    const error = useScmErrorToast();
+    const error = ref('');
     const queryState = reactive({requestId: 0});
 
     async function queryData(query: Q) {

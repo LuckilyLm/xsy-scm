@@ -46,24 +46,15 @@
       :data-source="orders"
       row-key="id"
       :pagination="false"
-      :scroll="{ x: 1170 }"
+      :scroll="{ x: 1100 }"
       bordered
   >
     <template #bodyCell="{ column, record }">
-      <template v-if="column.dataIndex === 'orderNoSnapshot'">
-        <span class="scm-mono">{{ record.orderNoSnapshot || '—' }}</span>
-      </template>
-      <template v-else-if="column.dataIndex === 'stop'">
-        {{ stopOf(record.stopId)?.stopSeq ?? '—' }}
-      </template>
-      <template v-else-if="column.dataIndex === 'customer'">
-        {{ stopOf(record.stopId)?.customerNameSnapshot || '—' }}
+      <template v-if="column.dataIndex === 'stop'">
+        {{ stopOf(record.stopId)?.stopSeq }} · {{ stopOf(record.stopId)?.customerNameSnapshot }}
       </template>
       <template v-else-if="column.dataIndex === 'address'">
-        <span v-if="stopOf(record.stopId)?.addressSnapshot" class="scm-cell-wrap">
-          {{ stopOf(record.stopId)?.addressSnapshot }}
-        </span>
-        <span v-else>—</span>
+        {{ stopOf(record.stopId)?.addressSnapshot }}
       </template>
       <template v-else-if="column.dataIndex === 'orderAmountSnapshot'">
         {{ money(record.orderAmountSnapshot) }}
@@ -114,8 +105,7 @@ const emit = defineEmits<{
 
 const orderColumns = computed<TableColumnsType<RouteOrder>>(() => [
   {title: '订单号', dataIndex: 'orderNoSnapshot', width: 170},
-  {title: '停靠点', dataIndex: 'stop', width: 80, align: 'center' as const},
-  {title: '客户', dataIndex: 'customer', width: 170},
+  {title: '停靠点 / 客户', dataIndex: 'stop', width: 200},
   {title: '配送地址', dataIndex: 'address', width: 240},
   {title: '期望配送', dataIndex: 'expectDeliveryTimeSnapshot', width: 180},
   ...(props.canViewAmount
@@ -132,6 +122,7 @@ function stopOf(id: Id) {
 
 <style scoped>
 .order-count {
+  margin-left: 12px;
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
   font-size: 13px;
 }

@@ -2,6 +2,7 @@
 <template>
   <a-modal v-model:open="visible" :title="TITLES[command]" :confirm-loading="saving" :width="620" @ok="submit"
            @cancel="visible = false">
+    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
     <a-alert v-if="failures.length" type="warning" show-icon class="smart-margin-bottom10"
              :message="`本次未做任何修改：${failures.length} 个商品未通过校验`">
       <template #description>
@@ -58,13 +59,12 @@ import type {
 } from '/@/types/business/scm/product';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
 import {productError} from '../product-errors';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 
 type BatchCommand = 'STATUS' | 'CATEGORY' | 'TAG';
 const TITLES: Record<BatchCommand, string> = {STATUS: '批量维护状态', CATEGORY: '批量修改分类', TAG: '批量维护标签'};
 defineProps<{ categories: ProductCategory[]; tagOptions: { value: ProductId; label: string }[] }>();
 const emit = defineEmits<{ done: [] }>();
-const visible = ref(false), saving = ref(false), error = useScmErrorToast(), command = ref<BatchCommand>('STATUS');
+const visible = ref(false), saving = ref(false), error = ref(''), command = ref<BatchCommand>('STATUS');
 const formRef = ref<FormInstance>();
 const items = ref<ProductBatchItem[]>([]), failures = ref<ProductBatchResult['failures']>([]);
 const hiddenFailures = ref(0);

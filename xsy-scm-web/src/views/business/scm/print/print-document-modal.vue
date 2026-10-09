@@ -24,6 +24,8 @@
       @ok="print"
       @cancel="close"
   >
+    <a-alert v-if="error" :message="error" type="error" show-icon/>
+
     <a-form layout="inline" class="toolbar">
       <a-form-item label="模板">
         <a-select
@@ -72,7 +74,6 @@ import {printApi} from '/@/api/business/scm/print-api';
 import type {Id, PrintDocumentType, PrintRender, PrintTemplate} from './print-types';
 import {renderPrintHtml, printRenders} from './print-render';
 import {printError} from './print-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 const props = defineProps<{
   open: boolean;
@@ -88,7 +89,7 @@ const templateId = ref<Id | undefined>(undefined);
 const renders = ref<PrintRender[]>([]);
 const loading = ref(false);
 const printing = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 let requestId = 0;
 const frozenByBusiness = new Map<string, PrintRender>();
 

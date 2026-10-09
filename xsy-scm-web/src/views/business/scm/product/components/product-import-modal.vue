@@ -22,7 +22,7 @@
               :sub-title="`共 ${result?.totalProducts ?? 0} 个商品、${result?.totalRows ?? 0} 行数据`" />
 
     <template v-if="result && hasErrors">
-      <a-alert type="warning" show-icon class="hint"
+      <a-alert type="error" show-icon class="hint"
                :message="`校验未通过：${groups.length} 行 / ${result.totalErrors} 处错误，本次没有任何商品写入`" />
       <div class="detail-actions">
         <a-button size="small" @click="downloadErrors">下载失败明细</a-button>
@@ -31,7 +31,7 @@
                :pagination="false" :scroll="{ y: 320 }">
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'cells'">
-            <div v-for="(cell, i) in record.cells" :key="i" class="cell-error scm-cell-wrap">
+            <div v-for="(cell, i) in record.cells" :key="i" class="cell-error">
               <b>{{ cell.column }}</b>：{{ cell.message }}
               <a-tag size="small">{{ cell.code }}</a-tag>
             </div>

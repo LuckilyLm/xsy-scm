@@ -42,7 +42,7 @@
         <a-slider v-model:value="formState.borderRadius" :min="0" :max="6" @change="changeBorderRadius"/>
       </a-form-item>
       <a-form-item :label="$t('setting.menu.width')" v-if="formState.layout === LAYOUT_ENUM.SIDE.value">
-        <!-- 收紧上下限：168 是含余量的实测下限：最长的二级菜单也能完整显示，宽过 240 会白吃掉内容区 -->
+        <!-- 收紧上下限：侧栏窄到几十像素会把布局压坏，宽过 240 会白吃掉内容区 -->
         <a-input-number
             @change="changeSideMenuWidth"
             v-model:value="formState.sideMenuWidth"

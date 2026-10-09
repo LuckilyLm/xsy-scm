@@ -87,10 +87,9 @@ test('汇总页没有任何录入 / 写命令入口（裁决补充第 19 条）'
     // 按「可点的动作」判，不按词判：页面提示文案里出现「录入 / 完成」是正确指引
     assert.ok(!/<a-button[^>]*>(确认入库|提交分拣|登记打印|新建)/.test(summary), '汇总页不得有动作按钮');
     assert.ok(!/a-drawer|a-modal|row-selection|Idempotency-Key/.test(summary), '汇总页不得有编辑弹窗或批量选择');
-    // 按钮只允许查询 / 重置 / 重新加载三类；数量不钉死
-    // （错误横幅改 toast 后，横幅里的重试按钮随之消失，只读约束由下面的 @click 白名单保证）
+    // 只有查询、重置与错误横幅重试三个按钮，没有任何其它可点动作
     const buttons = [...summary.matchAll(/<a-button(\s[^>]*)>/g)].map((m) => m[1]);
-    assert.ok(buttons.length <= 3, `汇总页按钮过多（${buttons.length}），疑似混入动作入口`);
+    assert.equal(buttons.length, 3, `汇总页只该有查询 / 重置 / 重试三个按钮，实际 ${buttons.length}`);
     assert.ok(buttons.every((attrs) => /@click="(onSearch|resetQuery|queryData)"/.test(attrs)));
 });
 
@@ -313,10 +312,11 @@ test('分拣列表与汇总页按「少列、编码下沉」收敛', () => {
     assert.match(taskList, /dataIndex: 'action', fixed: 'right', align: 'center', width: 150/);
     assert.match(taskList, /ScmActionMore/);
 
-    // 汇总页：两个编码各自成列，未处理行数走 tag 档位
-    assert.match(summary, /title: '商品编码'/);
-    assert.match(summary, /title: '商品规格编码'/);
-    assert.doesNotMatch(summary, /scm-cell-stack/);
+    // 汇总页：两个编码折进名称下方，未处理行数走 tag 档位
+    assert.doesNotMatch(summary, /title: '商品编码'/);
+    assert.doesNotMatch(summary, /title: '商品规格编码'/);
+    assert.match(summary, /title: '商品', dataIndex: 'product'/);
+    assert.match(summary, /title: '商品规格', dataIndex: 'sku'/);
     assert.match(summary, /record\.spuCodeSnapshot/);
     assert.match(summary, /record\.skuCodeSnapshot/);
     assert.match(summary, /record\.unprocessedCount \? 'warning' : 'neutral'/);

@@ -45,7 +45,7 @@
       :loading="loading"
       :pagination="false"
       :locale="{emptyText}"
-      :scroll="{x: 1200}"
+      :scroll="{x: 1160}"
       bordered
   >
     <template #bodyCell="{column, record}">

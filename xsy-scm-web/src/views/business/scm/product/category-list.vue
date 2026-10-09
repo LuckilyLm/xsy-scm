@@ -4,6 +4,11 @@
       <a-button v-privilege="'scm:product:category:add'" type="primary" @click="modal?.open()">新增分类</a-button>
       <a-button :loading="loading" @click="load">刷新</a-button>
     </a-row>
+    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10">
+      <template #action>
+        <a-button size="small" @click="load">重新加载</a-button>
+      </template>
+    </a-alert>
     <CategoryTable :rows="rows" :loading="loading" @add="row => modal?.open(undefined, row.categoryId)"
                    @edit="row => modal?.open(row)" @remove="remove"/>
     <CategoryModal ref="modal" :categories="rows" @saved="load"/>
@@ -17,9 +22,8 @@ import type {ProductCategory} from '/@/types/business/scm/product';
 import CategoryTable from './components/category-tree-table.vue';
 import CategoryModal from './components/category-form-modal.vue';
 import {productError} from './product-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
-const rows = ref<ProductCategory[]>([]), loading = ref(false), error = useScmErrorToast();
+const rows = ref<ProductCategory[]>([]), loading = ref(false), error = ref('');
 const modal = ref<InstanceType<typeof CategoryModal>>();
 
 async function load() {

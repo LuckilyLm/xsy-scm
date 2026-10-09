@@ -2,13 +2,12 @@ import {onDeactivated, onScopeDispose, ref, shallowRef, watch} from 'vue';
 import type {ScmResponse} from '/@/types/business/scm/customer';
 import type {FinanceId} from './finance-types';
 import {financeError} from './finance-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 /** 详情只接收最后一次请求；关闭或离开页面后，迟到响应不能回填。 */
 export function useFinanceDetail<T>(fetcher: (id: FinanceId) => Promise<ScmResponse<T>>) {
     const open = ref(false);
     const loading = ref(false);
-    const error = useScmErrorToast();
+    const error = ref('');
     const data = shallowRef<T | null>(null);
     let selectedId: FinanceId | undefined;
     let sequence = 0;

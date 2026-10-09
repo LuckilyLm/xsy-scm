@@ -18,8 +18,9 @@
         </a-form-item>
       </a-row>
     </a-form>
+    <a-alert v-if="error" class="picker-error" type="error" show-icon :message="error"/>
     <a-table size="small" row-key="id" :data-source="rows" :columns="columns" :loading="loading"
-             :pagination="false" :scroll="{x:830}">
+             :pagination="false" :scroll="{x:700}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='availableAmount'">{{ moneyText(record.availableAmount) }}</template>
         <template v-else-if="column.dataIndex==='select'">
@@ -41,7 +42,6 @@ import {financeApi} from '/@/api/business/scm/finance-api';
 import {SCM_FINANCE_SETTLE_STATE_ENUM} from '/@/constants/business/scm/finance-const';
 import {financeError} from './finance-errors';
 import {entryTypeText, initialFinanceDateRange, moneyText} from './finance-form-model';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import type {FinanceCandidate, FinancePayable, FinancePayment, FinanceReceivable, FinanceReceipt} from './finance-types';
 
 type PickKind = 'RECEIPT' | 'PAYMENT' | 'RECEIVABLE' | 'PAYABLE';
@@ -58,7 +58,7 @@ const pageSize = ref(10);
 const rows = ref<FinanceCandidate[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 
 const title = computed(() => ({
     RECEIPT: '选择待核销收款',
@@ -144,5 +144,9 @@ watch(() => props.open, (isOpen) => {
 .date-separator {
   margin: 0 8px;
   color: #667085;
+}
+
+.picker-error {
+  margin-bottom: 12px;
 }
 </style>

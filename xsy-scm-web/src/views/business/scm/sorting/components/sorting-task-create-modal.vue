@@ -14,6 +14,7 @@
         show-icon
         message="候选行是已确认订单上未被占用的明细。"
     />
+    <a-alert v-if="error" type="error" show-icon :message="error"/>
     <a-form layout="inline" class="create-form" @submit.prevent="emit('search')">
       <a-form-item label="仓库" required>
         <WarehouseSelect
@@ -64,7 +65,7 @@
         row-key="salesOrderItemId"
         :loading="loading"
         :pagination="false"
-        :scroll="{x: 1020, y: 320}"
+        :scroll="{x: 940, y: 320}"
         :row-selection="{selectedRowKeys: selectedIds, onChange: onSelectionChange, preserveSelectedRowKeys: true}"
         :locale="{emptyText: '暂无可分拣的订单行'}"
     >
@@ -107,6 +108,7 @@ defineProps<{
   open: boolean;
   creating: boolean;
   loading: boolean;
+  error: string;
   warehouseId?: Id;
   assigneeEmployeeId?: number;
   remark?: string;

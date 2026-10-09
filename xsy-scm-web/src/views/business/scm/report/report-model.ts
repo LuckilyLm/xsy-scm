@@ -94,7 +94,7 @@ export function datePresets(today?: Date | string): Array<{label: string; value:
 /**
  * 区间跨度是否超过 MAX_REPORT_RANGE_DAYS（含首尾两天）。
  *
- * 返回错误文案而不是抛异常：页面把它接到 `error` 状态上，既挡住请求又给出可读原因。
+ * 返回错误文案而不是抛异常：页面把它接到 `error` ref 上，既挡住请求又能就地重试。
  * 区间不完整时返回 `''`（交给后端日期校验，前端不猜）。
  */
 export function rangeOverLimitError(range: DateRange | undefined | null, maxDays = MAX_REPORT_RANGE_DAYS): string {
@@ -261,7 +261,7 @@ export function yesNoText(value: boolean | null | undefined): string {
  *
  * 每个 Tab 一份（不是共享一个对象）：共用 `pageNum` 时，A Tab 翻到第 3 页再切到 B Tab，
  * B 会直接落在第 3 页甚至空态 —— 这就是「Tab 串条件」。`rows` / `error` / `loading`
- * 分开也是同一个道理：A Tab 的失败不该提示到 B Tab 的表格上。
+ * 分开也是同一个道理：A Tab 的报错横幅不该盖在 B Tab 的表格上。
  *
  * 共享的是筛选（日期区间 + 常用条件），它留在页面级对象上。
  */

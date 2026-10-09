@@ -11,6 +11,11 @@
     <a-button v-privilege="'scm:product:tag:add'" type="primary" @click="modal?.open()">新增标签</a-button>
     <a-button :loading="loading" @click="load">刷新</a-button>
   </a-row>
+  <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10">
+    <template #action>
+      <a-button size="small" @click="load">重新加载</a-button>
+    </template>
+  </a-alert>
   <a-table :data-source="rows" :columns="columns" row-key="tagId" :loading="loading" :pagination="false" size="small"
            bordered>
     <template #bodyCell="{ column, record }">
@@ -42,9 +47,8 @@ import type {AssistantQuery, ProductTag} from '/@/types/business/scm/product';
 import {ENABLE_STATUS_ENUM, enumLabel} from '/@/constants/business/scm/product-const';
 import {productError} from '../product-errors';
 import TagModal from './product-tag-modal.vue';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 
-const query = reactive<AssistantQuery>({}), rows = ref<ProductTag[]>([]), loading = ref(false), error = useScmErrorToast();
+const query = reactive<AssistantQuery>({}), rows = ref<ProductTag[]>([]), loading = ref(false), error = ref('');
 const modal = ref<InstanceType<typeof TagModal>>();
 const columns: TableColumnsType<ProductTag> = [
   {title: '排序', dataIndex: 'sortOrder', width: 70, align: 'right'}, {

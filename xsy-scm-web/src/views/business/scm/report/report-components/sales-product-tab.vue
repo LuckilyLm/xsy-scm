@@ -14,6 +14,11 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_PRODUCT" :refresh="refresh"/>
       </div>
     </a-row>
+    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+      <template #action>
+        <a-button @click="refresh">重试</a-button>
+      </template>
+    </a-alert>
     <a-table
         :id="SCM_REPORT_TABLE_ID.SALES_PRODUCT"
         size="small"
@@ -24,7 +29,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无商品销售数据'}"
-        :scroll="{x: 1460}"
+        :scroll="{x: 1400}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'orderCount'">

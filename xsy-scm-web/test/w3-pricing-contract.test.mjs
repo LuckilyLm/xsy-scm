@@ -67,16 +67,14 @@ test('价格历史：英文枚举必须落成中文，时间不上隐藏', () =>
   // 查询下拉与列表列共用同一份中文，不再各写一份字面量
   assert.match(page, /Object\.entries\(HISTORY_SOURCE_LABEL\)/);
   assert.match(page, /Object\.entries\(HISTORY_OPERATION_LABEL\)/);
-  // 历史页是变更账本：生效与结束、变更时间就是它要回答的问题，各自成列不能折叠
-  assert.match(page, /title: '当前生效时间'/);
-  assert.match(page, /title: '当前结束时间'/);
+  // 历史页是变更账本：生效时间与变更时间就是它要回答的问题，不能隐藏
+  assert.match(page, /title: '当前有效期'/);
   assert.match(page, /title: '变更时间'/);
   assert.match(page, /datetime\(record\.currentEffectiveFrom\)/);
   assert.match(page, /datetime\(record\.operatedAt\)/);
-  // 商品规格编码与操作人各自成列，不叠进副行
-  assert.doesNotMatch(page, /scm-cell-stack/, '价格历史页仍把两个值叠进一个单元格');
-  assert.match(page, /record\.skuCode/);
-  assert.match(page, /title: '操作人', dataIndex: 'operator'/);
+  // 商品规格编码与操作人下沉为次要行，不再各占一列
+  assert.match(page, /column\.dataIndex==='sku'[\s\S]{0,240}record\.skuCode/);
+  assert.match(page, /column\.dataIndex==='operatedAt'[\s\S]{0,240}record\.operator/);
 });
 
 test('价格预览：突出最终价格与来源，不展示命中的记录主键', () => {
@@ -91,7 +89,6 @@ test('价格预览：突出最终价格与来源，不展示命中的记录主�
   // 需要追溯时走价格历史页
   assert.doesNotMatch(page, /sourceRecordId/);
   assert.doesNotMatch(page, /title: '来源记录'/);
-  // 规格编码独立成列，不折进规格名的副行
-  assert.doesNotMatch(page, /scm-cell-stack/, '价格预览仍把两个值叠进一个单元格');
-  assert.match(page, /record\.skuCode/);
+  // 规格编码下沉为规格名的次要行
+  assert.match(page, /column\.dataIndex==='sku'[\s\S]{0,240}record\.skuCode/);
 });

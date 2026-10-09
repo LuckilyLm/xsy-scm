@@ -61,10 +61,8 @@ test('preview component renders backend-derived quantities and never recomputes 
   assert.match(src, /otherReservedQuantity/);
   assert.match(src, /stockAvailableForSelectedOrders/);
   assert.doesNotMatch(src, /shortageAgainstAvailable/);
-  // 差额不是采购建议：靠指标名自解释，不靠页面里挂一句口径说明
-  // （「该口径尚未裁决」这类推导说明归源码注释，见 purchase-types.ts）
-  assert.match(src, /title: '净采购缺口'/);
-  assert.doesNotMatch(src, /净采购建议|推荐采购量|建议采购/);
+  // 差额不是采购建议：文案必须显性说明
+  assert.match(src, /不是最终净采购建议/);
 });
 
 test('undecided in-transit deduction stays out of the frontend contract', () => {

@@ -28,18 +28,33 @@
       </a-form-item>
     </a-row>
   </a-form>
+  <a-alert v-if="error" type="error" :message="error"/>
   <a-card size="small" :bordered="false">
     <div class="smart-table-setting-block">
       <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load"/>
     </div>
     <a-table :data-source="rows" :columns="columns" :row-key="(r:HistoryRow)=>`${r.source}-${r.historyId}`"
-             :loading="loading" :pagination="false" size="small" bordered :scroll="{x:1900}">
+             :loading="loading" :pagination="false" size="small" bordered :scroll="{x:1450}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='source'">
           {{ historyLabel(HISTORY_SOURCE_LABEL, record.source) }}
         </template>
-        <template v-else-if="column.dataIndex==='skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
+        <template v-else-if="column.dataIndex==='target'">
+          <!-- 协议价按客户定位，类型价按客户类型定位：主行放实际维度，次行补另一维 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">
+              {{ record.customerName || record.customerTypeName || '—' }}
+            </span>
+            <span v-if="record.customerName && record.customerTypeName" class="scm-cell-stack__sub">
+              {{ record.customerTypeName }}
+            </span>
+          </div>
+        </template>
+        <template v-else-if="column.dataIndex==='sku'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.specName || '—' }}</span>
+            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex==='operationType'">
           <ScmStatusTag
@@ -50,15 +65,20 @@
         <template v-else-if="column.dataIndex==='currentUnitPrice'">
           <span class="scm-money">{{ formatAmount(record.currentUnitPrice) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='currentEffectiveFrom'">
-          <!-- 生效 / 结束时间属于价格本身的事实，必须留在列表上 -->
-          {{ datetime(record.currentEffectiveFrom) }}
-        </template>
-        <template v-else-if="column.dataIndex==='currentEffectiveTo'">
-          {{ record.currentEffectiveTo ? datetime(record.currentEffectiveTo) : '长期有效' }}
+        <template v-else-if="column.dataIndex==='currentEffective'">
+          <!-- 时间字段例外：生效 / 结束时间属于价格本身的事实，必须留在列表上 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ datetime(record.currentEffectiveFrom) }}</span>
+            <span class="scm-cell-stack__sub">
+              {{ record.currentEffectiveTo ? `至 ${datetime(record.currentEffectiveTo)}` : '长期有效' }}
+            </span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex==='operatedAt'">
-          {{ datetime(record.operatedAt) }}
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ datetime(record.operatedAt) }}</span>
+            <span v-if="record.operator" class="scm-cell-stack__sub">{{ record.operator }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex==='currentDeleted'">
           <ScmStatusTag :tone="record.currentDeleted ? 'error' : 'neutral'"
@@ -102,12 +122,10 @@ import {
 } from './pricing-display';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import {datetime} from '../common/scm-display';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 const query = reactive<PriceQuery & { source?: string; operationType?: string }>({pageNum: 1, pageSize: 20}),
     effective = ref<[string, string]>(), operated = ref<[string, string]>(), rows = ref<HistoryRow[]>([]),
-    total = ref(0), loading = ref(false), selected = ref<HistoryRow>();
-const error = useScmErrorToast();
+    total = ref(0), loading = ref(false), error = ref(''), selected = ref<HistoryRow>();
 let requestId = 0;
 
 // 下拉与列表列共用同一份中文（pricing-display），避免两处各写一份
@@ -115,24 +133,20 @@ const sourceOptions = Object.entries(HISTORY_SOURCE_LABEL).map(([value, label]) 
 const operationOptions = Object.entries(HISTORY_OPERATION_LABEL).map(([value, label]) => ({value, label}));
 
 /**
- * 列按「哪来的 / 谁的价格 / 什么货 / 改了什么 / 现在是什么价、有效期到什么时候 / 谁在什么时候改的」排列，
- * 一列一个值：客户与客户类型、规格名与规格编码、生效与结束时间、变更时间与操作人各自成列。
+ * 列按「哪来的 / 谁的价格 / 什么货 / 改了什么 / 现在是什么价、有效期到什么时候 / 谁在什么时候改的」排列。
  *
  * 时间不能隐藏：本页是变更账本，生效时间与变更时间就是它要回答的问题本身。
+ * 编码（商品规格）与操作人各自下沉为名称 / 时间的次要行，不再各占一列。
  */
 const columns = ref<TableColumnsType<HistoryRow>>([
   {title: '来源', dataIndex: 'source', width: 120},
-  {title: '客户', dataIndex: 'customerName', width: 170},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 150},
+  {title: '对象', dataIndex: 'target', width: 200},
   {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'specName', width: 170},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
+  {title: '商品规格', dataIndex: 'sku', width: 190},
   {title: '变更', dataIndex: 'operationType', align: 'center', width: 100},
   {title: '当前价格', dataIndex: 'currentUnitPrice', align: 'right', width: 120},
-  {title: '当前生效时间', dataIndex: 'currentEffectiveFrom', width: 170},
-  {title: '当前结束时间', dataIndex: 'currentEffectiveTo', width: 130},
+  {title: '当前有效期', dataIndex: 'currentEffective', width: 200},
   {title: '变更时间', dataIndex: 'operatedAt', width: 170},
-  {title: '操作人', dataIndex: 'operator', width: 110},
   {title: '记录', dataIndex: 'currentDeleted', align: 'center', width: 100},
   {title: '详情', dataIndex: 'action', align: 'center', fixed: 'right', width: 100},
 ]);
