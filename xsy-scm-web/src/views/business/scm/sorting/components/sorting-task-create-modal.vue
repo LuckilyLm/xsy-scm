@@ -158,16 +158,11 @@ function onPageChange(pageNum: number, pageSize: number) {
 </script>
 
 <style scoped>
-/*
- * 标题行右侧放说明：提示与标题同一行，右对齐，避免在标题下多占一行。
- * padding-right 给右上角的关闭按钮让位。
- */
+/* 说明紧跟标题同一行、左对齐，不另起一行 */
 .create-title {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding-right: 28px;
+  gap: 12px;
 }
 
 .create-title .scm-note {

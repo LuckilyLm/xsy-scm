@@ -46,9 +46,9 @@
     <div class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
+        <p class="scm-note">一个订单行同一时刻只属于一个活动任务</p>
       </div>
       <div class="smart-table-setting-block">
-        <p class="scm-note">一个订单行同一时刻只属于一个活动任务</p>
         <TableOperator
             v-model="columns"
             :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK"
