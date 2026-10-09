@@ -32,8 +32,8 @@ class Verification:
     def log_filename(label):
         """把 label 转成跨平台安全的日志文件名。
 
-        label 里可能出现 `typecheck:e2e` 这类带冒号的名字，而冒号在 Windows 与
-        GitHub Actions Artifact 上传中都是非法字符，会让失败日志整体上传失败。
+        label 里可能出现 `typecheck:e2e` 这类带冒号的名字，而冒号在 Windows
+        文件名中是非法字符，会让失败日志无法写入。
         显示用的 label 保持原样，只有文件名做替换。
         """
         return "".join("_" if char in ':*?"<>|\\/' else char for char in label) + ".log"
@@ -57,7 +57,7 @@ class Verification:
             self.failed.append(f"{label}: exit {result.returncode}; {log}")
             lines = log.read_text(encoding="utf-8", errors="replace").splitlines()
             if label == "frontend-test":
-                # Node's summary omits failed assertions; CI must retain their diagnostics.
+                # Node's summary omits failed assertions; retain the full diagnostics in the local log.
                 tail = "\n".join(lines)
             else:
                 tail = "\n".join(lines[-20:])
@@ -115,7 +115,7 @@ class Verification:
 
         `frontend` 只覆盖前端自身的类型棘轮、lint、单测与构建。E2E 需要后端、
         Vite 与建号脚本等外部前置，把它绑进 `frontend` 会让任何没有这些服务的
-        环境（例如 CI 的前端 job）必然以未覆盖退出。需要连跑时用 `all`，或显式
+        环境（例如只配置前端依赖的本地环境）必然以未覆盖退出。需要连跑时用 `all`，或显式
         再执行一次 `e2e`。
         """
         self.spotless_coverage()

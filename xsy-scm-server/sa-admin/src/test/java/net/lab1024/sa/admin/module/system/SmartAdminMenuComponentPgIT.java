@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code import.meta.glob} 对 {@code ../views} 下全部 {@code .vue} 的扫描（构建期静态生成）。
  * 文件不存在时 {@code modules[relativePath]} 是 {@code undefined}，于是路由照样注册成功、
  * 菜单照样出现在侧栏，用户点进去才是一片空白 —— 构建、类型检查、后端测试全绿，
- * 没有任何一处会报错。把菜单种子与前端文件放进同一条断言，才能让这种漂移在 CI 就失败。
+ * 没有任何一处会报错。把菜单种子与前端文件放进同一条断言，才能在执行该集成测试时发现这种漂移。
  *
  * <p>{@code visible_flag = false} 不是解法：它只映射到 {@code meta.hideInMenu}，
  * 路由与 {@code component} 依然注册，深链依然落到空白页。因此本契约不接受

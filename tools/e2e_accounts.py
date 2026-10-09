@@ -23,7 +23,7 @@ SmartAdmin 口令规则（从正式源码反推，勿凭记忆猜）：
 可用环境变量覆盖：XSY_V2_PG_CONTAINER / XSY_V2_PG_DB（必填）/ XSY_V2_PG_SCHEMA / XSY_V2_PG_USER
 
 容器名与数据库用户由 Compose 按项目名自动生成（项目名一变，容器名就跟着变），所以这两个默认值只是
-本仓库当前 Compose 的便利值；启动脚本与 CI 应显式传 XSY_V2_PG_CONTAINER / XSY_V2_PG_USER 覆盖。
+本仓库当前 Compose 的便利值；调用方应按实际容器显式传 XSY_V2_PG_CONTAINER / XSY_V2_PG_USER 覆盖。
 
 命令行：
     python tools/e2e_accounts.py setup   --prefix w1_e2e_ --name NAME --password PASS

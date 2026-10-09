@@ -14,6 +14,8 @@
 - 尚未补齐的接口字段：[前端所需后端字段缺口](plan/active/frontend-ui-backend-gap-inventory.md)。
 - 工程规则：[Java 工程规范与质量基线](quality/java-code-quality-remediation-plan.md)、[贡献与验证指南](../CONTRIBUTING.md)。
 
+仓库已移除 GitHub Actions CI 工作流；验证入口为 `tools/verify.ps1`、`tools/verify.sh` 和 `tools/verify.py`，实际执行结果以[项目状态](status.md)和当次交付记录为准。
+
 ## 文档治理
 
 - `status.md` 只写“现在是什么状态”，不堆开发过程。
