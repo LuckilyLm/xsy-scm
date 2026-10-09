@@ -134,6 +134,7 @@ const columns = ref([
     dataIndex: 'action',
     fixed: 'right',
     width: 90,
+    align: 'center',
   },
 ]);
 

@@ -26,6 +26,12 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-table
         size="small"
@@ -36,28 +42,25 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '还没有正式打印记录' }"
-        :scroll="{ x: 1145 }"
+        :scroll="{ x: 820 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'businessNo'">
-          <span v-if="record.businessNo" class="scm-mono">{{ record.businessNo }}</span>
-          <span v-else>—</span>
+        <template v-if="column.dataIndex === 'template'">
+          <!-- 模板名作主行，「编码 + 版本」作次要行：打印记录是审计凭据，
+               必须能说清当初用的是哪一版模板，但不需要为它多占两列 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.templateName || '—' }}</span>
+            <span class="scm-cell-stack__sub">
+              {{ record.templateCode || '—' }}<template v-if="record.templateVersion != null"> · v{{ record.templateVersion }}</template>
+            </span>
+          </div>
         </template>
-        <template v-else-if="column.dataIndex === 'templateName'">
-          {{ record.templateName || '—' }}
-        </template>
-        <template v-else-if="column.dataIndex === 'templateCode'">
-          <span v-if="record.templateCode" class="scm-mono">{{ record.templateCode }}</span>
-          <span v-else>—</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'templateVersion'">
-          {{ record.templateVersion ?? '—' }}
-        </template>
-        <template v-else-if="column.dataIndex === 'printedAt'">
-          {{ record.printedAt || '—' }}
-        </template>
-        <template v-else-if="column.dataIndex === 'printedBy'">
-          {{ record.printedBy || '—' }}
+        <template v-else-if="column.dataIndex === 'printed'">
+          <!-- 「谁在什么时候打的」是同一件事的两面，合成一格 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.printedAt || '—' }}</span>
+            <span v-if="record.printedBy" class="scm-cell-stack__sub">{{ record.printedBy }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -89,13 +92,12 @@ import {printApi} from '/@/api/business/scm/print-api';
 import type {Id, PrintDocumentTypeOption, PrintRecord, PrintRecordQuery} from './print-types';
 import {printRenders} from './print-render';
 import {printError} from './print-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 const queryForm = reactive<PrintRecordQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<PrintRecord[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const reprinting = ref<Id | undefined>(undefined);
 const documentTypes = ref<PrintDocumentTypeOption[]>([]);
 let requestId = 0;
@@ -105,13 +107,10 @@ const typeOptions = computed(() =>
 );
 
 const columns: TableColumnsType<PrintRecord> = [
-  {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130},
+  {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130, align: 'center'},
   {title: '业务单号', dataIndex: 'businessNo', width: 190},
-  {title: '模板名称', dataIndex: 'templateName', width: 170},
-  {title: '模板编码', dataIndex: 'templateCode', width: 150},
-  {title: '模板版本', dataIndex: 'templateVersion', align: 'right', width: 90},
-  {title: '打印时间', dataIndex: 'printedAt', width: 165},
-  {title: '打印人', dataIndex: 'printedBy', width: 110},
+  {title: '模板', dataIndex: 'template', width: 220},
+  {title: '打印', dataIndex: 'printed', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 100},
 ];
 

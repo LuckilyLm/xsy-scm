@@ -33,6 +33,12 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-alert
         v-if="anchorThresholdId"
@@ -70,18 +76,17 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '没有需要处理的库存预警' }"
-        :scroll="{ x: 1450 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuName'">{{ skuMainText(record.specValues, record.skuName) }}</template>
         <template v-else-if="column.dataIndex === 'skuCode'">
           <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'unit'">{{ record.unit || '—' }}</template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
@@ -92,12 +97,12 @@
           <!-- 判定基准，加粗以便与「现有量」一眼区分 -->
           <span class="scm-quantity available">{{ quantityText(record.availableQuantity) }}</span>
         </template>
-        <!-- 上下限各自可空：不设该边界时显示破折号 -->
-        <template v-else-if="column.dataIndex === 'warnMin'">
-          <span class="scm-quantity">{{ quantityText(record.warnMin) }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'warnMax'">
-          <span class="scm-quantity">{{ quantityText(record.warnMax) }}</span>
+        <template v-else-if="column.dataIndex === 'warnRange'">
+          <!-- 上下限各自可空（不设该边界），因此两行都带标签，缺哪个就显示破折号 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main scm-quantity">下限 {{ quantityText(record.warnMin) }}</span>
+            <span class="scm-cell-stack__sub scm-quantity">上限 {{ quantityText(record.warnMax) }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
@@ -121,9 +126,8 @@
 </template>
 
 <script setup lang="ts">
-import {reactive, ref, watch} from 'vue';
+import {computed, reactive, ref, watch} from 'vue';
 import {message} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -141,14 +145,14 @@ import type {Id, InventoryWarning, InventoryWarningQuery} from './inventory-type
 import type {Warehouse} from '../purchase/purchase-types';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 
 const queryForm = reactive<InventoryWarningQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarning[]>([]);
 const total = ref(0);
 const loading = ref(false);
 const scanning = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 /** 来自站内信的阈值配置锚点；非空时页面顶部提示「已定位到某一条」。 */
 const anchorThresholdId = ref<Id | undefined>(undefined);
@@ -169,22 +173,24 @@ const statusOptions = [
   })),
 ];
 
-// 列按「哪个仓 / 什么货 / 还够不够发 / 阈值是多少」排列，一格一个值。三个数量都保留：
+// 列按「哪个仓 / 什么货 / 还够不够发 / 阈值是多少」排列。三个数量都保留：
 // 判定基准是可用量，只给一个数字会让用户看不懂预警为什么触发。
-const columns = ref<TableColumnsType<InventoryWarning>>([
-  {title: '仓库', dataIndex: 'warehouseName', width: 140},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120},
-  {title: '商品', dataIndex: 'productName', width: 140},
-  {title: '商品规格', dataIndex: 'sku', width: 160},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
+// 仓库与商品规格编码单独保留并默认收起；上下限仍合成一格（各自可空）。
+type InventoryWarningColumn = ScmListColumn;
+const columns = ref<InventoryWarningColumn[]>([
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
+  {title: '商品', dataIndex: 'productName', width: 150},
+  {title: '商品规格', dataIndex: 'skuName', width: 150},
+  {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
   {title: '现有量', dataIndex: 'quantity', align: 'right', width: 100},
   {title: '已预留', dataIndex: 'reservedQuantity', align: 'right', width: 100},
   {title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110},
-  {title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 100},
-  {title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 100},
+  {title: '预警阈值', dataIndex: 'warnRange', align: 'right', width: 150},
   {title: '状态', dataIndex: 'status', align: 'center', width: 110},
 ]);
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 /** 低于下限是断货风险（红），高于上限是积压（橙），正常不强调。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {

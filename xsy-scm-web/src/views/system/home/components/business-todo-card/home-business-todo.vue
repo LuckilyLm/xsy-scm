@@ -1,12 +1,12 @@
 <template>
   <default-home-card icon-name="section-business-todo" title="业务待办">
-    <region-error v-if="error" :message="error" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="332" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <div class="home-todos">
         <a-empty v-if="!loading && todos.length === 0" description="暂无待办事项"/>
         <router-link v-for="todo in todos" :key="todo.key" class="todo-row" :to="todo.route">
           <span class="todo-row__visual" :class="`tone-${todoTone(todo.key)}`">
-            <scm-icon :name="todoIcon(todo.key)" :size="36"/>
+            <scm-icon :name="todoIcon(todo.key)" :size="22"/>
           </span>
           <span class="todo-row__copy">
           <span class="todo-row__label">{{ todo.label }}</span>
@@ -122,12 +122,10 @@ defineExpose({load});
   justify-content: center;
   border-radius: 50%;
 
-  &.tone-ok { background: #e7f8ef; }
-  &.tone-warn { background: #fff5df; }
-  &.tone-danger { background: #ffeded; }
-  &.tone-primary { background: #eaf4ff; }
-
-  img { width: 26px; height: 26px; object-fit: contain; }
+  &.tone-ok { background: #e7f8ef; color: #0f9e63; }
+  &.tone-warn { background: #fff5df; color: #b66b08; }
+  &.tone-danger { background: #ffeded; color: #d94b4b; }
+  &.tone-primary { background: #eaf4ff; color: #2b7fe0; }
 }
 
 .todo-row__copy {

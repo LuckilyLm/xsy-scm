@@ -5,6 +5,7 @@
       :width="scmDrawerWidth('xl')"
       @close="visible = false"
   >
+    <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <a-form :model="form" layout="vertical">
         <a-row :gutter="20">
@@ -26,11 +27,14 @@
               />
             </a-form-item>
           </a-col>
-          <a-col :span="12">
-            <a-form-item label="采购员">
-              <a-input v-if="form.id" :value="form.purchaserName || '未分配'" disabled/>
-              <EmployeeSelect v-else v-model:value="purchaserValue" :disabled="!canAssign"/>
-              <div class="ant-form-item-extra">{{ purchaserHint }}</div>
+          <a-col v-if="form.id || canAssign" :span="12">
+            <a-form-item>
+              <template #label>
+                采购员
+                <ScmFieldHelp label="采购员" :text="form.id ? '请在采购单列表中改派采购员' : '可留空，保存后暂不分配'"/>
+              </template>
+              <span v-if="form.id" class="scm-form-readonly">{{ form.purchaserName || '未分配' }}</span>
+              <EmployeeSelect v-else v-model:value="purchaserValue" placeholder="请选择采购员"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -74,9 +78,9 @@ import type {Id, Order} from '../purchase-types';
 import {newOrder, payload, validateOrder} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 import {hasPermission} from '../../common/scm-permission';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 import ItemTable from './purchase-order-item-editable-table.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 const emit = defineEmits<{ saved: [] }>();
 
@@ -84,7 +88,7 @@ const form = ref<Order>(newOrder());
 const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const warehouseLoading = ref(false);
 const warehouses = ref<{ id: Id; warehouseCode?: string; name?: string }[]>([]);
 /** 竞态保护：慢的旧详情不得覆盖新打开的单。 */
@@ -114,17 +118,6 @@ const purchaserValue = computed<number | undefined>({
 
 /** 分配/改派权：与服务端 PurchaseOwnerResolver 同一口径 —— 无此权者新建一律落自己名下。 */
 const canAssign = computed(() => hasPermission('scm:purchase:assign'));
-
-/** 采购员字段的形态说明：编辑只读（/update 永不动归属）、无分配权自动归属自己、有分配权可指定或留空。 */
-const purchaserHint = computed(() => {
-  if (form.value.id) {
-    return '归属变更请使用列表中的「改派采购员」；编辑保存不会改动采购员。';
-  }
-  if (!canAssign.value) {
-    return '无分配权限，新建后将自动归属当前账号。';
-  }
-  return '留空表示暂不分配（未分配单据仅持分配权或全量范围者可见）。';
-});
 
 async function loadWarehouses() {
   if (warehouses.value.length) {

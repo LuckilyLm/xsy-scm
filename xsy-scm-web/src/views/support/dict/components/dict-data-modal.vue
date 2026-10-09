@@ -132,6 +132,7 @@ const columns = reactive([
     title: '状态',
     width: 90,
     dataIndex: 'disabledFlag',
+    align: 'center',
   },
   {
     title: '排序',
@@ -153,6 +154,7 @@ const columns = reactive([
     title: '操作',
     width: 70,
     dataIndex: 'action',
+    align: 'center',
   },
 ]);
 

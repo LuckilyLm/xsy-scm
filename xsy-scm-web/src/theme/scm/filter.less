@@ -1,0 +1,126 @@
+/* SCM 列表筛选区与工具栏；SmartAdmin 系统页继续使用自己的表单规则。 */
+.scm-filter-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.scm-filter-fields {
+  display: flex;
+  flex: 1 1 720px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+
+  .ant-form-item {
+    flex: 0 1 auto;
+    align-items: center;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .ant-form-item-label {
+    padding-inline-end: 8px;
+  }
+
+  .ant-form-item-label > label {
+    height: 32px;
+    line-height: 32px;
+  }
+
+  .ant-input,
+  .ant-input-affix-wrapper,
+  .ant-picker,
+  .ant-select {
+    max-width: 100%;
+    min-height: 32px;
+  }
+
+  .ant-select-selector {
+    min-height: 32px;
+  }
+}
+
+.scm-filter-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+
+  .ant-btn {
+    height: 32px;
+    margin: 0;
+    padding-inline: 12px;
+  }
+}
+
+.scm-filter-range {
+  .ant-form-item-control-input-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .ant-picker {
+    flex: 1 1 0;
+    width: 0;
+    min-width: 0;
+  }
+}
+
+.scm-table-toolbar.smart-table-btn-block {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 12px;
+
+  .smart-table-operate-block {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    .ant-btn {
+      margin-right: 0;
+    }
+  }
+
+  .smart-table-setting-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    float: none;
+    margin-left: auto;
+
+    .ant-btn {
+      margin-right: 0;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .scm-filter-bar {
+    align-items: stretch;
+  }
+
+  .scm-filter-fields {
+    flex: 1 1 100%;
+    width: 100%;
+
+    .ant-form-item {
+      flex: 1 1 100%;
+    }
+  }
+
+  .scm-filter-actions {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    margin-left: 0;
+  }
+}

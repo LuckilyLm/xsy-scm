@@ -4,16 +4,10 @@
   *
 -->
 <template>
-  <main class="xsy-login">
-    <!-- 纯装饰背景层：叶片 / 仓储场景 / 连接线 / 点阵，全部 pointer-events:none -->
-    <div class="xsy-login__decor" aria-hidden="true">
-      <img class="xsy-login__decor-img xsy-login__decor-img--wave" :src="bgLeafWave" alt=""/>
-      <img class="xsy-login__decor-img xsy-login__decor-img--ribbon" :src="bgLeafRibbon" alt=""/>
-      <img class="xsy-login__decor-img xsy-login__decor-img--logistics" :src="bgLogistics" alt=""/>
-      <img class="xsy-login__decor-img xsy-login__decor-img--connectors" :src="bgConnectors" alt=""/>
-      <img class="xsy-login__decor-img xsy-login__decor-img--leaves" :src="bgLeaves" alt=""/>
-      <img class="xsy-login__decor-img xsy-login__decor-img--dots" :src="bgDots" alt=""/>
-    </div>
+  <main class="xsy-login" :style="{
+    '--login-background-image': `url('${harvestMorning}')`,
+    '--login-mobile-background-image': `url('${harvestLandscape}')`,
+  }">
 
     <section class="xsy-login__shell">
       <aside class="xsy-login__brand">
@@ -28,11 +22,7 @@
         <ul class="xsy-login__features">
           <li class="xsy-login__feature">
             <span class="xsy-login__feature-badge">
-              <svg class="xsy-login__feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M5 21c.5 -4.5 2.5 -8 7 -10"/>
-                <path d="M9 18c6.218 0 10.5 -3.288 11 -12v-2h-4.014c-9 0 -11.986 4 -12 9c0 1 0 3 2 5c3 2 6 3 6 3"/>
-              </svg>
+              <EnvironmentOutlined class="xsy-login__feature-icon"/>
             </span>
             <span>新鲜高效</span>
           </li>
@@ -51,7 +41,7 @@
         </ul>
 
         <div class="xsy-login__visual">
-          <img class="xsy-login__scene" :src="supplyChainScene" alt="商品、供应商、仓库、分拣、配送、客户、财务全链路"/>
+          <img class="xsy-login__scene" :src="harvestVegetables" alt=""/>
         </div>
       </aside>
 
@@ -128,6 +118,7 @@
 defineOptions({name: "SystemLoginThree"});
 import {
   BarChartOutlined,
+  EnvironmentOutlined,
   LinkOutlined,
   LockOutlined,
   SafetyCertificateOutlined,
@@ -138,13 +129,9 @@ import {onMounted, onUnmounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {loginApi} from '/@/api/system/login-api';
 import logoImg from '/@/assets/images/logo/xsy-logo.png';
-import supplyChainScene from '/@/assets/images/login-illustration/supply-chain-scene.png';
-import bgLeafWave from '/@/assets/images/login-illustration/bg-leaf-wave-bottom-left.png';
-import bgLeafRibbon from '/@/assets/images/login-illustration/bg-leaf-ribbon-top-right.png';
-import bgLogistics from '/@/assets/images/login-illustration/bg-warehouse-logistics-scene.png';
-import bgConnectors from '/@/assets/images/login-illustration/bg-supply-chain-connectors.png';
-import bgLeaves from '/@/assets/images/login-illustration/bg-floating-leaves.png';
-import bgDots from '/@/assets/images/login-illustration/bg-dot-pattern.png';
+import harvestMorning from '/@/assets/images/login-illustration/harvest-morning.webp';
+import harvestLandscape from '/@/assets/images/login-illustration/harvest-landscape.webp';
+import harvestVegetables from '/@/assets/images/login-illustration/harvest-vegetables.webp';
 import {SmartLoading} from '/@/components/framework/smart-loading';
 import {LOGIN_DEVICE_ENUM} from '/@/constants/system/login-device-const';
 import {useUserStore} from '/@/store/modules/system/user';

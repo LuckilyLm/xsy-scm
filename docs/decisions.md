@@ -116,3 +116,70 @@
 - 负责人确认采用全额关联：支付 100、正常应收 70 时，订单专属资金核销 100，超额 30 单独显示，不自动退款或增加钱包。售后 RED 不改历史核销，人工 REVERSE 保持整笔纠错语义。
 - 纯余额售后返还属于 c3，已完成代码实施。退款完成与原钱包 CREDIT 同事务；每退款来源唯一，累计不超原消费本金，与整单渠道 / 人工退款互斥。混合及多交易退款来源分摊仍属 d 阶段，不预设分摊顺序或比例。
 - 实现、权限迁移及未验证边界见[余额支付与订单资金核销](plan/active/balance-payment-order-settlement-design.md)。
+
+## 外部评审 P1/P2 修复：并发锁序与财务口径（2026-10-09）
+
+来源：外部代码评审 `XSY-SCM-Frontend-Backend-Review-2026-10-09-latest.md`（基线 `a9b98f80`）。本批只处理评审给出的发布门禁与三类正确性缺陷。
+
+### PUR-01：需求分配 vs 采购单取消
+
+- **根因是锁序不一致，不是「少读一次」**。`update` / `cancel` / `delete` 全是「锁采购单 → 锁需求」，
+  而 `allocate` 原本是「锁需求 → 无锁读采购单」。这个反向让 `cancel` 出现幻读窗口：
+  cancel 读「本单没有分配」→（无分配时早退，不取需求锁）→ allocate 插入并提交 → cancel 提交 CANCELLED，
+  于是分配永久悬挂在已取消的单上、需求 `allocated_quantity` 不回落。
+  实测时间戳可证：分配 `created_at` 比单据 `cancelled_at` **早 294ms**，即分配先落库、取消后提交，取消侧却什么都没删。
+- **修法：把 `allocate` 改成与其它命令同向 —— 先锁采购单行，再锁需求行**。
+  这样分配与取消在单据行上串行，幻读窗口不存在。
+  早期误判「先取单锁会与 `update` 成环」是错的：`update` 本来就是「单 → 需求」，
+  同向才是对齐；`create` 虽先锁需求再插新单，但新单行尚不存在、无人可与之竞争，不参与成环。
+- `releaseAllocations` 随之回到**单次读**：所有写分配的命令都持单据锁，读到什么删什么即可，
+  无需加锁重读。此前试过的「锁前发现 + 锁内重读」在「首次读为空 → 早退」时依然漏判，已被证伪。
+- **回归用例**`PurchaseAllocationCancelRacePgIT`（PG，无外层事务，真两线程）：
+  顺序版断言「已取消单再分配 → 40982」；并发版断言「无论谁先赢，单据必为 CANCELLED、
+  该单无任何活动分配、需求 `allocated_quantity` 回落 0 且退回 PENDING」。
+  反向验证：只回退 `allocate` 的锁序改动即复现失败（活分配 `allocatedQuantity=5.0000` 悬挂在 CANCELLED 单上）。
+
+### PAY-01：跨午夜对账漏配
+
+- 对账**双窗口取数**，不改成「只查成功交易」：已成功按 `paid_at` 落结算日，未成功（含 `INITIATED`）
+  按 `created_at` 落发起日，两个窗口的结果按 `provider_transaction_no` 合并去重。
+- **为什么不简单换成 `listSucceededBetween`**：那会丢掉 `STATUS_MISMATCH`（渠道成功、本地仍挂 INITIATED）
+  的检出能力，DAO 注释已明确警告不能只看成功笔。`provider_transaction_no` 非空且唯一，按它合并安全。
+
+### PAY-02：退款累计额口径
+
+- `sumSucceededByTransaction` 改按 **`provider_amount`**（渠道实退）而非 `amount`（本地请求额）求和，
+  否则部分退款 / 渠道改额后累计额虚高。
+- 不需要 `COALESCE(provider_amount, amount)` 兜底：V101 的
+  `ck_payment_refund_success_provider_amount` 已保证 `SUCCEEDED ⇒ provider_amount NOT NULL`。
+  该不变量本身由 `PaymentRefundSumBasisPgIT` 断言。
+
+### SEC-01 / SEC-02：订单族与退货族写入口的归属门禁
+
+- **缺陷是「读收窄、写不设防」的错配**：列表与详情早就按 `orderSellerScope` 只给出本人负责的行，
+  但订单的 `update / submit / actualQuantity / cancel / delete / reserveStock` 与退货的
+  `create / approve / reject / cancel` 只判「单据存在 + 状态合法」。于是持有功能点权限的普通人员
+  **猜到 id 就能改别人的单、动别人的数量、占别人的库存、替别人批退货退款** —— 行级范围退化成「藏起来」。
+  反向验证：只回退这两处改动，新 IT 14 条里 **13 条失败**，失败形态正是「本该抛异常却成功了」；
+  `reserveStock` 那条甚至真的写出了预留行（报「可用库存不足」），证明当时确实已经占了别人的货。
+- **功能点权限 ≠ 行级归属**：`@SaCheckPermission` 回答「能不能用这个功能」，
+  `orderSellerScope.allows()` 回答「能不能对这个单用」，两者不可互相替代，写入口两者都要过。
+- **门禁刻意不放进 `SalesOrderService#lock`**：`lock` 还被退货、退款等模块调用，
+  在那层加守卫会顺带改掉这些路径的语义（退款读的是同一张单，但它有自己的读侧收窄）。
+  门禁加在**对外写命令入口**，与既有的 `confirmOrder` 用同一套判定，形成一致口径。
+- **SEC-02 放在 `OrderReturnService#lock`**：退货单自身没有负责人列，归属完全由父销售订单决定；
+  `create / approve / reject / cancel` 全部经过这个私有 `lock`，一处收口即全覆盖。
+  `lockForReceipt` 的唯一调用方 `OrderReturnReceiptService.receive` 在入口已调过带范围的 `detail()`，
+  重复判定不改变其语义。
+- **幂等重放也必须过范围，且要分两层看**：`ScmIdempotencyService` 的 scope 是
+  `operator + ":" + scope`，operator 取 `ScmOperator.current()` = `userType:userId`，
+  因此 A 与 B 的重放键在存储层就是两行 —— **跨人重放结构上不可能**。
+  真正要堵的是另一条：**同一个人换了负责范围后重放同一个旧键**会直接命中 `replay` 分支、
+  跳过写命令里的门禁。所以每个 `claim.replay()` 分支都在 `replay` **之前**补一次带范围的读
+  （订单走 `salesOrderQueryService.detail`，退货走 `OrderReturnService#detail`）
+  —— 后者本身会重新判 `orderSellerScope`。`replay` 只做 JSON 反序列化、不做任何重校验，这一点不能依赖。
+- **回归用例** `ScmOrderWriteScopePgIT`（真实 PG + 真服务 + 真事务）：
+  双销售员 A/B，功能权限相同、数据范围不同，逐一覆盖 6 个订单写入口 + 4 个退货写入口，
+  每条都断「他人的单拒绝（且业务数据零留痕）+ 自己的单成功 + 幂等重放不绕开」；
+  另覆盖 `seller_id IS NULL` 的未分配单：普通销售不可写、持 `ORDER_ALL_PERM` 者可写。
+  不用 Mockito 打桩 DAO：缝隙正在「读用的范围」与「写用的范围」两条路径之间，打桩会把它擦掉。

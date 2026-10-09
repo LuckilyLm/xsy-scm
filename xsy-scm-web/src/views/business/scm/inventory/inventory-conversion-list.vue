@@ -2,12 +2,12 @@
   库存规格转换。
 
   状态机：PENDING → COMPLETED | REJECTED，两个终态都不可回退（流水 append-only）。
-  创建即提交待审核：转换会把两个商品规格的余额同时改掉，而折算率是人工声明的，
+  创建即提交待审核：转换会把两个 SKU 的余额同时改掉，而折算率是人工声明的，
   没有审批等于录单人可以单方面决定「一箱等于多少 kg」。
 
-  跨商品规格、同仓库：源规格 → 目标规格（整件 → 散装）。跨仓搬运是「调拨」，不是转换。
+  跨 SKU、同仓库：源规格 → 目标规格（整件 → 散装）。跨仓搬运是「调拨」，不是转换。
 
-  两个单位都由单据声明，后端会与各自商品规格的余额记账单位比对，
+  页面上要讲清楚的一件事：两个单位都由单据声明，后端会与各自 SKU 的余额记账单位比对，
   不一致直接失败（41059 / 41060）—— 库存不做自动换算。
 -->
 <template>
@@ -46,12 +46,21 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:conversion:add'">
           新建转换单
         </a-button>
+        <a-typography-text type="secondary" style="margin-left: 12px">
+          审批通过才调库存，流水不可删除
+        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -72,13 +81,10 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无规格转换单' }"
-        :scroll="{ x: 1390 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'conversionNo'">
-          <span class="scm-mono">{{ record.conversionNo || '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'convertType'">
+        <template v-if="column.dataIndex === 'convertType'">
           <ScmStatusTag tone="processing" :label="record.convertTypeDesc || record.convertType"/>
         </template>
         <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
@@ -88,8 +94,13 @@
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
-        <template v-else-if="column.dataIndex === 'auditedAt'">{{ datetime(record.auditedAt) }}</template>
-        <template v-else-if="column.dataIndex === 'auditor'">{{ record.auditor || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'auditedAt'">
+          <!-- 审核的「谁」和「何时」是同一件事的两面，合成一格 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ datetime(record.auditedAt) }}</span>
+            <span v-if="record.auditor" class="scm-cell-stack__sub">{{ record.auditor }}</span>
+          </div>
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 行内常驻「详情」与待审核态的「审批」；驳回 / 编辑 / 删除收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -130,6 +141,12 @@
       :width="scmDrawerWidth('xl')"
       @close="closeDrawer"
   >
+    <a-alert
+        type="info"
+        show-icon
+        style="margin-bottom: 12px"
+        message="折算率由本单声明，两个单位须与商品规格的库存记账单位一致。"
+    />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
@@ -206,7 +223,8 @@
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
         <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一行的源与目标不能是同一个商品规格；跨行链式转换允许。
+          同一商品规格可以在多行里出现（既是某行的源、又是另一行的目标，用于链式转换），
+          但同一行的源与目标不能是同一个商品规格。
         </a-typography-text>
       </a-form-item>
     </a-form>
@@ -257,6 +275,9 @@
         />
       </a-form-item>
     </a-form>
+    <a-typography-text type="secondary">
+      提交时会带上打开本单时读到的版本号；若期间折算关系已被修改，系统会要求你刷新后重新审批。
+    </a-typography-text>
   </a-modal>
 </template>
 
@@ -269,6 +290,7 @@ import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.v
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import {scmColumnsWidth, type ScmListColumn} from '/@/views/business/scm/common/scm-column';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import InventoryConversionDetailDrawer from './components/inventory-conversion-detail-drawer.vue';
@@ -291,14 +313,13 @@ import {singleWarehouseDefault} from './inventory-model';
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryConversionQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryConversion[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
@@ -312,27 +333,27 @@ const statusOptions = Object.values(SCM_INVENTORY_CONVERSION_STATUS_ENUM).map((i
   label: i.desc,
 }));
 
-// 列表按「哪张单 / 哪个仓 / 什么类型 / 什么状态 / 为什么 / 谁在什么时候审核」排列，一格一个值。
-// 创建时间是技术字段，转换单的业务时刻是审核时间，不上列。
-const columns = ref<TableColumnsType<InventoryConversion>>([
+// 列表按「哪张单 / 哪个仓 / 什么类型 / 什么状态 / 为什么」排列。创建时间是技术字段，
+// 转换单的业务时刻是审核时间，不上列；审核人与审核时间合成一格。
+const columns = ref<ScmListColumn[]>([
   {title: '转换单号', dataIndex: 'conversionNo', width: 200},
-  {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
+  {title: '仓库', dataIndex: 'warehouseName', width: 140},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '类型', dataIndex: 'convertType', align: 'center', width: 110},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '原因', dataIndex: 'reason', width: 220, ellipsis: true},
-  {title: '审核时间', dataIndex: 'auditedAt', width: 170},
-  {title: '审核人', dataIndex: 'auditor', width: 110},
+  {title: '审核', dataIndex: 'auditedAt', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 const itemColumns: TableColumnsType = [
   {title: '源商品规格（转出）', dataIndex: 'sourceSkuId', width: 220},
-  {title: '源数量', dataIndex: 'sourceQuantity', width: 120},
-  {title: '源单位', dataIndex: 'sourceUnit', width: 90},
+  {title: '源数量', dataIndex: 'sourceQuantity', width: 120, align: 'right'},
+  {title: '源单位', dataIndex: 'sourceUnit', width: 90, align: 'center'},
   {title: '目标商品规格（转入）', dataIndex: 'targetSkuId', width: 220},
-  {title: '目标数量', dataIndex: 'targetQuantity', width: 120},
-  {title: '目标单位', dataIndex: 'targetUnit', width: 90},
+  {title: '目标数量', dataIndex: 'targetQuantity', width: 120, align: 'right'},
+  {title: '目标单位', dataIndex: 'targetUnit', width: 90, align: 'center'},
   {title: '操作', dataIndex: 'action', width: 70, align: 'center'},
 ];
 

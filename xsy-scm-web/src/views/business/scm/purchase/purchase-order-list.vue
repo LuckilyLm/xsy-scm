@@ -19,6 +19,12 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
@@ -120,10 +126,15 @@
       :ok-button-props="{ disabled: reassignSaving }"
       @ok="submitReassign"
   >
+    <a-alert v-if="reassignError" type="error" :message="reassignError" show-icon class="smart-margin-bottom10"/>
     <p>采购单：<strong>{{ reassignTarget?.orderNo }}</strong>（{{ reassignTarget?.supplierName }}）</p>
     <p>当前采购员：{{ reassignTarget?.purchaserName || '未分配' }}</p>
     <a-form layout="vertical">
-      <a-form-item label="新采购员">
+      <a-form-item>
+        <template #label>
+          新采购员
+          <ScmFieldHelp label="新采购员" text="留空会收回分配；未分配单据仅有分配权或全量权限的人员可见"/>
+        </template>
         <EmployeeSelect v-model:value="reassignPurchaser" placeholder="留空即收回为未分配" width="100%"/>
       </a-form-item>
       <a-form-item label="改派原因">
@@ -157,6 +168,7 @@ import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue'
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {useUserStore} from '/@/store/modules/system/user';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {
@@ -167,7 +179,6 @@ import {
 import type {Order, OrderQuery} from './purchase-types';
 import {amount, progress} from './purchase-form-model';
 import {hasPermission} from '../common/scm-permission';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import {dateOnly} from '../common/scm-display';
 import {purchaseError} from './purchase-errors';
 import PrintDocumentModal from '../print/print-document-modal.vue';import PurchaseOrderForm from './components/purchase-order-form-drawer.vue';
@@ -177,7 +188,7 @@ const queryForm = reactive<OrderQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<Order[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const selected = ref<(string | number)[]>([]);
 const drawer = ref<InstanceType<typeof PurchaseOrderForm>>();
 const detail = ref<InstanceType<typeof PurchaseOrderDetail>>();
@@ -188,7 +199,7 @@ const printBatch = reactive({open: false, ids: [] as (string | number)[]});
 /** 改派采购归属：独立动作、独立权限（scm:purchase:assign），带乐观锁 version；reason 可选留痕。 */
 const reassignVisible = ref(false);
 const reassignSaving = ref(false);
-const reassignError = useScmErrorToast();
+const reassignError = ref('');
 const reassignTarget = ref<Order>();
 /** EmployeeSelect 的 value 不接受 null（[Number, Array]），用 undefined 桥接「收回为未分配」。 */
 const reassignPurchaser = ref<number | undefined>(undefined);

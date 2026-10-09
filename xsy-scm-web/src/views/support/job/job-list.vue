@@ -203,6 +203,7 @@ const columns = ref([
     title: '触发类型',
     dataIndex: 'triggerType',
     width: 110,
+    align: 'center',
   },
   {
     title: '触发配置',
@@ -223,6 +224,7 @@ const columns = ref([
     title: '启用状态',
     dataIndex: 'enabledFlag',
     width: 100,
+    align: 'center',
   },
   {
     title: '执行参数',
@@ -254,6 +256,7 @@ const columns = ref([
     dataIndex: 'action',
     fixed: 'right',
     width: 170,
+    align: 'center',
   },
 ]);
 

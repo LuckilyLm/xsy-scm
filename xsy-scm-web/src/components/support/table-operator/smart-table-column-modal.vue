@@ -176,6 +176,7 @@ const tableColumns = [
     dataIndex: 'operate',
     width: 150,
     rowDrag: true,
+    align: 'center',
   },
 ];
 

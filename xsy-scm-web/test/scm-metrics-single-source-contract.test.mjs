@@ -21,7 +21,7 @@ const SCREEN_MAPPER = path.join(MAPPERS, 'screen/ScreenDataMapper.xml');
 const REPORT_MAPPER = path.join(MAPPERS, 'report/ReportDao.xml');
 const DASHBOARD_SRC = path.join(ROOT, 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard');
 
-const read = (file) => readFileSync(file, 'utf8');
+const read = (file) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
 
 /** 取出一个 mapper 里全部 <select id="..."> 的 id。 */
 const selectIds = (xml) => [...xml.matchAll(/<select\s+id="([^"]+)"/g)].map((m) => m[1]);

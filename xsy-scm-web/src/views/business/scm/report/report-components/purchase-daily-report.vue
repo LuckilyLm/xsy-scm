@@ -26,6 +26,9 @@
       <router-link v-privilege="'support:job:query'" to="/job/list">配置执行时间</router-link>
     </p>
 
+    <a-alert v-if="error" type="error" show-icon :message="error" class="smart-margin-bottom10">
+      <template #action><a-button @click="search">重试</a-button></template>
+    </a-alert>
     <p v-if="report?.generatedAt" class="daily-meta">
       <strong>{{ report.reportDate }} 采购商品清单</strong>
       <span>生成时间：{{ datetime(report.generatedAt) }}</span>
@@ -59,7 +62,6 @@ import type {PurchaseDailyProduct, PurchaseDailyQuery, PurchaseDailyReport} from
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import {quantityText, moneyText} from '../../inventory/inventory-model';
 import {datetime} from '../../common/scm-display';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 
 function todayInShanghai() {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -80,14 +82,14 @@ const pageSize = ref(20);
 const report = ref<PurchaseDailyReport>();
 const loading = ref(false);
 const exporting = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 let requestSequence = 0;
 let appliedQuery: PurchaseDailyQuery | undefined;
 
 const columns: TableColumnsType<PurchaseDailyProduct> = [
   {title: '商品名称', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'skuName', width: 160},
-  {title: '采购单位', dataIndex: 'purchaseUnit', width: 90},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 90, align: 'center'},
   {title: '采购单数', dataIndex: 'orderCount', width: 100, align: 'right'},
   {title: '采购数量', dataIndex: 'plannedQuantity', width: 130, align: 'right'},
   {title: '采购金额（元）', dataIndex: 'orderAmount', width: 140, align: 'right'},

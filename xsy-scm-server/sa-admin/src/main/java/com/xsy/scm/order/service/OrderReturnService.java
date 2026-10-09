@@ -171,9 +171,16 @@ public class OrderReturnService {
     @Transactional(rollbackFor = Exception.class)
     public OrderReturnDetailVO create(OrderReturnAddForm orderReturnAddForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_RETURN_CREATE", key, orderReturnAddForm);
-        if (claim.replay())
+        if (claim.replay()) {
+            // 重放同样要过范围：幂等 scope 含 operator，B 拿不到 A 的记录；
+            // 但同一个人换了负责范围后重放旧键仍会绕开写命令内的门禁。
+            requireParentOrderVisible(orderReturnAddForm.getOrderId(),
+                    dataScopeService.resolve().getOrderSellerScope());
             return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
+        }
         var order = salesOrderService.lock(orderReturnAddForm.getOrderId());
+        if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
+            throw new ScmDataScopeException();
         if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus()))
             throw new ScmBusinessException(ORDER_RETURN_ORDER_NOT_CONFIRMED);
         OrderValidator.reason(orderReturnAddForm.getReason(), ORDER_RETURN_ITEM_INVALID);
@@ -230,8 +237,10 @@ public class OrderReturnService {
     public OrderReturnDetailVO approve(OrderReturnApproveForm orderReturnApproveForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_RETURN_APPROVE:" + orderReturnApproveForm.getReturnId(), key,
                 orderReturnApproveForm);
-        if (claim.replay())
+        if (claim.replay()) {
+            detail(orderReturnApproveForm.getReturnId());
             return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
+        }
         var orderReturnEntity = lock(orderReturnApproveForm.getReturnId());
         SalesOrderService.version(orderReturnEntity.getVersion(), orderReturnApproveForm.getVersion());
         pending(orderReturnEntity);
@@ -267,30 +276,37 @@ public class OrderReturnService {
         stamp(orderReturnEntity, false);
         if (orderReturnDao.updateById(orderReturnEntity) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
-        var refund = new OrderRefundEntity();
-        refund.setRefundNo(numbers.refund());
-        refund.setReturnId(orderReturnEntity.getId());
-        refund.setOrderId(orderReturnEntity.getOrderId());
-        refund.setCustomerId(orderReturnEntity.getCustomerId());
-        refund.setRefundAmount(total);
-        refund.setStatus(ScmOrderRefundStatusEnum.PENDING.name());
-        refund.setCreatedAt(OffsetDateTime.now());
-        refund.setUpdatedAt(refund.getCreatedAt());
-        refund.setCreatedBy(ScmOperator.current());
-        refund.setUpdatedBy(refund.getCreatedBy());
-        orderRefundDao.insert(refund);
+        // 红字应收与退款单共用订单确认时冻结的优惠分摊和净额算法。
+        // 这一步仍在退货批准事务内；正常应收尚未生成时先计算退款净额，签收生成正常应收后再补红字。
+        BigDecimal refundAmount = financeReceivableService.generateRedOnReturnApproved(orderReturnEntity.getId());
         var result = detailSnapshot(orderReturnEntity.getId());
-        orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
-                "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
-                Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
-                Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(refund.getRefundAmount())));
-
-        // 退货批准是红字应收的业务来源，在退货事实与退款单都已成立后、幂等 complete 前生成。
-        // 红字生成失败会让整笔 approve 回滚，
-        // 但「正常应收还不存在」是成功跳过（签收时补生成），绝不阻塞这里。
-        // 生成器不做任何金额上限校验：财务规则不得反向控制订单域状态机。
-        // 本类持有的 sales_order 行锁（lock() 里 salesOrderService.lock）就是它与签收之间的串行点。
-        financeReceivableService.generateRedOnReturnApproved(orderReturnEntity.getId());
+        if (refundAmount.signum() > 0) {
+            var refund = new OrderRefundEntity();
+            refund.setRefundNo(numbers.refund());
+            refund.setReturnId(orderReturnEntity.getId());
+            refund.setOrderId(orderReturnEntity.getOrderId());
+            refund.setCustomerId(orderReturnEntity.getCustomerId());
+            refund.setRefundAmount(refundAmount);
+            refund.setStatus(ScmOrderRefundStatusEnum.PENDING.name());
+            refund.setCreatedAt(OffsetDateTime.now());
+            refund.setUpdatedAt(refund.getCreatedAt());
+            refund.setCreatedBy(ScmOperator.current());
+            refund.setUpdatedBy(refund.getCreatedBy());
+            orderRefundDao.insert(refund);
+            orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
+                    "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
+                    Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
+                    Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(total), "refundAmount",
+                            String.valueOf(refund.getRefundAmount())));
+        } else {
+            // 优惠抵满订单金额时退款净额为 0：退货本身仍然成立，只是没有可退的钱。
+            // 不建退款单（order_refund.refund_amount 恒 > 0），也不留 0 元事实，
+            // 因此这里是「允许退货、无需退款」而不是失败。
+            orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
+                    "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，退款净额为 0，无需退款",
+                    Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()), Map.of("status", result.getStatus(),
+                            "approvedAmount", String.valueOf(total), "refundAmount", refundAmount.toPlainString()));
+        }
 
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
                 orderReturnEntity.getId(), result);
@@ -312,8 +328,10 @@ public class OrderReturnService {
         var claim = orderIdempotencyService.claim(
                 "ORDER_RETURN_" + state.name() + ":" + orderReturnDecisionForm.getReturnId(), key,
                 orderReturnDecisionForm);
-        if (claim.replay())
+        if (claim.replay()) {
+            detail(orderReturnDecisionForm.getReturnId());
             return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
+        }
         var orderReturnEntity = lock(orderReturnDecisionForm.getReturnId());
         SalesOrderService.version(orderReturnEntity.getVersion(), orderReturnDecisionForm.getVersion());
         pending(orderReturnEntity);
@@ -341,11 +359,22 @@ public class OrderReturnService {
         return lock(orderReturnId);
     }
 
+    /**
+     * 锁退货单及其父订单、订单行（锁序：采购/销售的既有约定是<b>先单据后明细</b>，这里沿用）。
+     *
+     * <p>
+     * <b>顺带做归属门禁</b>：退货单自身没有负责人字段，归属完全由父销售订单决定。读接口 {@code detail()} 早就按 {@code orderSellerScope} 收窄，写入口却只判「退货单存在 +
+     * 父订单存在」—— 于是持有退货功能权限的普通人员只要猜到退货单 id，就能替别人的订单批退货、退款、放额度。 放在 {@code lock()} 而不是各命令里，是因为 create/approve/reject/cancel
+     * 全部经过它， 一处收口即可覆盖；{@code lockForReceipt} 的唯一调用方 {@code OrderReturnReceiptService.receive} 在入口已调过带范围的
+     * {@code detail()}，这里的重复判定不会改变它的语义。
+     */
     private OrderReturnEntity lock(Long orderReturnId) {
         var orderReturnEntity = orderReturnDao.selectById(orderReturnId);
         if (orderReturnEntity == null)
             throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
-        salesOrderService.lock(orderReturnEntity.getOrderId());
+        var order = salesOrderService.lock(orderReturnEntity.getOrderId());
+        if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
+            throw new ScmDataScopeException();
         for (var salesOrderItem : salesOrderItemDao.list(orderReturnEntity.getOrderId())) {
             salesOrderItemDao.lock(salesOrderItem.getId());
         }

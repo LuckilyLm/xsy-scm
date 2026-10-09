@@ -35,6 +35,12 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
@@ -57,6 +63,9 @@
         >
           <a-button :loading="importing" v-privilege="'scm:inventory:stocktake:import'">导入盘点</a-button>
         </a-upload>
+        <a-typography-text type="secondary" style="margin-left: 12px">
+          确认盘点会把差异转成不可删除的盘盈 / 盘亏流水。
+        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -77,13 +86,10 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无盘点单' }"
-        :scroll="{ x: 1270 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'stocktakeNo'">
-          <span class="scm-mono">{{ record.stocktakeNo || '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
@@ -132,6 +138,12 @@
       :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
+    <a-alert
+        type="info"
+        show-icon
+        style="margin-bottom: 12px"
+        message="保存草稿前不产生单据；账面量保存时自动快照。"
+    />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="盘点仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
@@ -210,7 +222,7 @@
     />
     <a-alert
         v-else-if="importResult"
-        type="warning"
+        type="error"
         show-icon
         :message="`整批未导入：${importResult.totalErrors} / ${importResult.totalRows} 行存在问题，未生成任何草稿`"
         description="来源行由导出快照锁定，不能增删 / 替换；实盘量不能为空；快照过期或账面版本已变动需重新导出并核对。"
@@ -224,15 +236,7 @@
         :row-key="(_r: unknown, i: number) => i"
         :pagination="false"
         :scroll="{ y: 320 }"
-    >
-      <template #bodyCell="{ record, column }">
-        <!-- 拒绝原因是整句话，不换行就会被裁掉 -->
-        <template v-if="column.dataIndex === 'message'">
-          <span class="scm-cell-wrap">{{ record.message }}</span>
-        </template>
-        <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
-      </template>
-    </a-table>
+    />
     <template #footer>
       <a-button type="primary" @click="importResultOpen = false">知道了</a-button>
     </template>
@@ -271,14 +275,14 @@ import {resolveStocktakeCopyUnits, singleWarehouseDefault} from './inventory-mod
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
-import {useScmErrorToast} from '../common/scm-error-toast';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryStocktakeQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryStocktake[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
@@ -287,23 +291,25 @@ const statusOptions = Object.values(SCM_INVENTORY_STOCKTAKE_STATUS_ENUM).map((i)
   label: i.desc,
 }));
 
-// 列表按「哪张单 / 哪个仓 / 什么状态 / 谁在什么时候盘的」排列，仓库名与仓库编码各自成列。
-// 创建时间是技术字段，盘点单的业务时刻是确认时间，不上列。
-const columns = ref<TableColumnsType<InventoryStocktake>>([
+// 列表按「哪张单 / 哪个仓 / 什么状态 / 谁在什么时候盘的」排列。创建时间是技术字段，
+// 盘点单的业务时刻是确认时间，不上列。
+type InventoryStocktakeColumn = ScmListColumn;
+const columns = ref<InventoryStocktakeColumn[]>([
   {title: '盘点单号', dataIndex: 'stocktakeNo', width: 200},
-  {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
+  {title: '仓库', dataIndex: 'warehouseName', width: 140},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '确认人', dataIndex: 'operator', width: 130},
   {title: '确认时间', dataIndex: 'confirmedAt', width: 170},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
   {title: '记账单位', dataIndex: 'unit', align: 'center', width: 100},
-  {title: '实盘量', dataIndex: 'actualQuantity', width: 160},
+  {title: '实盘量', dataIndex: 'actualQuantity', width: 160, align: 'right'},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];

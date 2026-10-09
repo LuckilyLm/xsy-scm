@@ -32,7 +32,15 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
+    <a-tag color="blue">只读预览</a-tag>
+    <a-typography-text type="secondary">预览不是最终净采购建议，也不生成采购单。</a-typography-text>
     <a-table
         id="scm-purchase-demand-summary-preview-table"
         size="small"
@@ -42,7 +50,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 2425 }"
+        :scroll="{ x: 2000 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'calculationStatus'">
@@ -85,7 +93,6 @@ import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/
 import type {DemandSummaryRow, Id} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 
 /** 这些列是后端下发的四位定点字符串，统一走 `quantity` 渲染（null → —）。 */
 const numericColumns = [
@@ -110,7 +117,7 @@ const total = ref(0);
 const pageNum = ref(1);
 const pageSize = ref(20);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 let requestId = 0;
 
 const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
@@ -120,9 +127,9 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
   {title: '分类', dataIndex: 'categoryName', width: 130},
   {title: '来源订单数', dataIndex: 'sourceOrderCount', align: 'right', width: 110},
   {title: '来源行数', dataIndex: 'sourceLineCount', align: 'right', width: 100},
-  {title: '需求单位', dataIndex: 'demandUnit', width: 95},
+  {title: '需求单位', dataIndex: 'demandUnit', width: 95, align: 'center'},
   {title: '订单需求量', dataIndex: 'orderDemandQuantity', align: 'right', width: 120},
-  {title: '库存单位', dataIndex: 'inventoryUnit', width: 95},
+  {title: '库存单位', dataIndex: 'inventoryUnit', width: 95, align: 'center'},
   {title: '现有量', dataIndex: 'onHandQuantity', align: 'right', width: 110},
   {title: '全仓预留', dataIndex: 'reservedQuantity', align: 'right', width: 110},
   {title: '其中本批预留', dataIndex: 'selectedOrderReservedQuantity', align: 'right', width: 130},

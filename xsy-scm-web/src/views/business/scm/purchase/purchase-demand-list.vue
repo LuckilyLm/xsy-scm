@@ -6,31 +6,35 @@
 <template>
   <a-tabs v-model:activeKey="activeTab">
     <a-tab-pane key="list" tab="采购需求">
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="来源销售单号" class="smart-query-form-item">
+  <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
+    <div class="scm-filter-fields">
+      <a-form-item label="来源销售单号">
         <a-input v-model:value="queryForm.salesOrderNo" placeholder="销售单号" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
-      <a-form-item label="商品" class="smart-query-form-item">
+      <a-form-item label="商品">
         <SkuSelect v-model:value="queryForm.skuId" width="240px"/>
       </a-form-item>
-      <a-form-item label="需求状态" class="smart-query-form-item">
+      <a-form-item label="需求状态">
         <SmartEnumSelect enum-name="SCM_DEMAND_STATUS_ENUM" v-model:value="queryForm.status" width="150px"/>
       </a-form-item>
-      <a-form-item label="需求日期" class="smart-query-form-item">
+      <a-form-item label="需求日期">
         <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD"/>
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button-group>
-          <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-button-group>
-      </a-form-item>
-    </a-row>
+    </div>
+    <div class="scm-filter-actions">
+      <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询</a-button>
+      <a-button @click="resetQuery">重置</a-button>
+    </div>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:purchase:demand:batch:create'" @click="generateOpen = true">
           冻结批次生成需求
@@ -50,28 +54,30 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1835 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'salesOrderNoSnapshot'">
-          <span class="scm-mono">{{ record.salesOrderNoSnapshot || '—' }}</span>
+          {{ record.salesOrderNoSnapshot || '—' }}
+        </template>
+        <template v-else-if="column.dataIndex === 'productName'">
+          {{ record.productName || '—' }}
+        </template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'calculationBatchId'">
           <a-button
               v-if="record.calculationBatchId"
               type="link"
               size="small"
-              class="batch-link scm-mono"
+              class="batch-link"
               v-privilege="'scm:purchase:demand:batch:query'"
               @click="openBatch(record.calculationBatchId)"
           >
-            {{ record.calculationBatchId }}
+            批次 {{ record.calculationBatchId }}
           </a-button>
           <span v-else>手工毛需求</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'productName'">{{ record.productName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
           <a-tag>{{ SCM_DEMAND_STATUS_ENUM[record.status]?.desc }}</a-tag>
@@ -147,6 +153,7 @@
       @ok="submitAllocate"
       @cancel="alloc.open = false"
   >
+    <a-alert v-if="alloc.error" :message="alloc.error" type="error" show-icon/>
     <a-form layout="vertical">
       <a-form-item label="采购单（仅已提交 / 部分收货）" name="orderId" required>
         <a-select
@@ -180,7 +187,6 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -191,10 +197,10 @@ import {SCM_DEMAND_STATUS_ENUM, SCM_PURCHASE_TABLE_ID} from '/@/constants/busine
 import type {Demand, DemandQuery, Id} from './purchase-types';
 import {fixed, quantity} from './purchase-form-model';
 import {purchaseError} from './purchase-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import DemandGenerateModal from './components/purchase-demand-generate-modal.vue';
 import PurchaseDemandSummaryPreview from './components/purchase-demand-summary-preview.vue';
 import PurchaseDemandBatchDetailDrawer from './components/purchase-demand-batch-detail-drawer.vue';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
@@ -206,7 +212,7 @@ const dateRange = ref<[string, string] | undefined>(undefined);
 const tableData = ref<Demand[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const generateOpen = ref(false);
 let requestId = 0;
 
@@ -224,7 +230,7 @@ function openBatch(batchId: Id) {
 const alloc = reactive({
   open: false,
   saving: false,
-  error: useScmErrorToast(),
+  error: '',
   demand: undefined as Demand | undefined,
   orderLoading: false,
   itemLoading: false,
@@ -238,30 +244,25 @@ const alloc = reactive({
 });
 
 /**
- * 列表列：一格一个值。
- *
- * - 来源销售单号与来源冻结批次各自成列：批次是这条需求的计算出处，
- *   点得开就能回看当时的建议量解释，点不开的是手工毛需求；
- * - 商品名、商品规格名、商品规格编码是三个不同字段，各自成列，
- *   编码是收货与对账要逐位比对的对象，不给省略号以外的处理；
- * - 「需求单位」不单独成列 —— 单位是数量的量纲，跟在数量后面比另起一列更省横向空间；
- * - 三个数量列保留：判定「要不要分配」看的是未分配量，只留一个数字看不懂为什么触发。
+ * 常用列保持在首屏；编码、已分配量、供应商、仓库和日期仍可通过列设置打开。
  */
-const columns = computed<TableColumnsType<Demand>>(() => [
-  {title: '来源销售单号', dataIndex: 'salesOrderNoSnapshot', width: 170},
-  {title: '来源冻结批次', dataIndex: 'calculationBatchId', width: 130},
-  {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'skuName', width: 140},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
-  {title: '需求量', dataIndex: 'requiredQuantity', align: 'right', width: 115},
-  {title: '已分配', dataIndex: 'allocatedQuantity', align: 'right', width: 115},
-  {title: '未分配', dataIndex: 'unallocatedQuantity', align: 'right', width: 115},
+type DemandListColumn = ScmListColumn;
+const columns = ref<DemandListColumn[]>([
+  {title: '来源单号', dataIndex: 'salesOrderNoSnapshot', width: 150},
+  {title: '需求来源 / 批次', dataIndex: 'calculationBatchId', width: 145},
+  {title: '商品名称', dataIndex: 'productName', width: 150},
+  {title: '商品规格', dataIndex: 'skuName', width: 150},
+  {title: '规格编码', dataIndex: 'skuCode', width: 135, showFlag: false},
+  {title: '需求量', dataIndex: 'requiredQuantity', align: 'right', width: 120},
+  {title: '已分配', dataIndex: 'allocatedQuantity', align: 'right', width: 120, showFlag: false},
+  {title: '未分配', dataIndex: 'unallocatedQuantity', align: 'right', width: 120},
   {title: '状态', dataIndex: 'status', align: 'center', width: 110},
-  {title: '供应商', dataIndex: 'supplierName', width: 150},
-  {title: '仓库', dataIndex: 'warehouseName', width: 130},
-  {title: '需求日期', dataIndex: 'demandDate', width: 120},
+  {title: '供应商', dataIndex: 'supplierName', width: 150, showFlag: false},
+  {title: '仓库', dataIndex: 'warehouseName', width: 130, showFlag: false},
+  {title: '需求日期', dataIndex: 'demandDate', width: 120, showFlag: false},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 async function queryData() {
   const id = ++requestId;
@@ -403,12 +404,10 @@ onMounted(queryData);
   color: var(--scm-text-secondary);
 }
 
-/* 批次链接：按钮自带内边距，压平后批次号才与本列其余文字左对齐 */
+/* 批次链接不增加额外内边距，保持与同列文本对齐。 */
 .batch-link {
   height: auto;
   padding: 0;
-  font-size: 12px;
-  line-height: 1.5;
 }
 
 .hint {

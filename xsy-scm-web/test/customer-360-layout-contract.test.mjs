@@ -5,15 +5,15 @@
  * 并把列表里的金额、编码收口到统一 formatter 与 `.scm-mono`。
  * 这类改动最容易在后续迭代里被悄悄改回去（视觉回归不报错、单测也不报错），因此钉住：
  *
- * 1. 列表一格一值：编码、联系人、电话各自成列，不恢复双行复合单元，也不把
- *    「上级集团 / 更新时间」摊回列表；授信额度走 `formatAmountOrDash` + `.scm-money`。
+ * 1. 客户列表把名称、编码、联系人和电话分列，客户编码可由 TableOperator 打开；
+ *    不把「上级集团 / 更新时间」摊回列表，授信额度走 `formatAmountOrDash` + `.scm-money`。
  * 2. 详情页客户名必须在 Tabs 之上（切 Tab 后始终可见），且页头提供返回 / 编辑 / 刷新 / 更多。
  * 3. 详情页不得回退到大面积 `a-descriptions bordered`：基础资料走 label/value 字段结构。
  * 4. 五个 Tab 与 lazy load 口径不变（由 w7-customer-360 覆盖取数口径，这里只钉展示层）。
  * 5. 枚举不得直接摊给用户：商品规格状态必须走翻译 + ScmStatusTag，订单状态走 ScmStatusTag。
  * 6. 常购窗口只有 30/90/180/365 四档，用 segmented 而非 Select。
- * 7. 主题让普通单元格默认不换行（长文本用 `.scm-cell-wrap` 显式退出），名称入口走公共类
- *    `.scm-cell-link`；列宽与 `scroll.x` 必须同步。
+ * 7. 客户与供应商列表在桌面把名称、编码、联系人与电话分列；编码走 `.scm-mono`，
+ *    低频编码可默认收起，列宽与 `scroll.x` 必须同步。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,25 +33,25 @@ const SUPPLIER = code('../src/views/business/scm/supplier/supplier-list.vue');
 const THEME = code('../src/theme/scm/table.less');
 const DETAIL_THEME = code('../src/theme/scm/detail.less');
 
-test('列表一格一值：编码、联系人、电话各自成列，不恢复双行复合单元', () => {
-  // 客户编码 / 联系人 / 联系电话 都必须是独立列，而不是折在别的单元格的副行里
-  for (const dataIndex of ['customerCode', 'contactName', 'contactPhone']) {
-    assert.match(
-        LIST,
-        new RegExp(`\\{\\s*title:\\s*'[^']+',\\s*dataIndex:\\s*'${dataIndex}'`),
-        `客户列表缺少 ${dataIndex} 独立列`
-    );
-  }
-  assert.doesNotMatch(LIST, /scm-cell-stack/, '客户列表退回双行复合单元');
+test('客户列表将独立识别字段分列，且不摊开主数据时间列', () => {
+  const titles = [...LIST.matchAll(/\{\s*title:\s*'([^']+)',\s*dataIndex:\s*'([^']+)'/g)]
+      .map((m) => m[1]);
+  assert.deepEqual(
+      titles,
+      ['客户名称', '客户编码', '客户类型', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
+      '客户列表列结构被改动'
+  );
+  assert.match(LIST, /title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false/);
   assert.doesNotMatch(LIST, /title:\s*'上级集团'/);
   assert.doesNotMatch(LIST, /title:\s*'更新时间'/);
 });
 
-test('列表金额走统一 formatter，编码用等宽字形而不是胶囊标签', () => {
+test('列表金额走统一 formatter，客户编码独立列默认收起', () => {
   // 授信额度：千分位 + ¥ + 当前业务精度（formatAmountOrDash 内部调 formatAmount）
   assert.match(LIST, /dataIndex === 'creditLimit'[^>]*class="scm-money">\{\{\s*formatAmountOrDash\(record\.creditLimit\)\s*\}\}/);
-  // 编码保持等宽，方便逐位比对；不做成标签，也不因为拆列而丢掉
-  assert.match(LIST, /class="scm-mono">\{\{\s*record\.customerCode\b/);
+  // 客户编码有独立列，默认收起；显示时使用等宽字形，不做胶囊标签。
+  assert.match(LIST, /dataIndex === 'customerCode'[^>]*class="scm-mono">\{\{\s*record\.customerCode/);
+  assert.match(LIST, /dataIndex === 'contactPhone'[^>]*class="scm-mono">\{\{\s*record\.contactPhone/);
   assert.doesNotMatch(LIST, /<a-(tag|badge)[\s\S]{0,120}?record\.customerCode/);
   // 操作列仍是 编辑 / 状态 / 更多，宽度不扩大
   assert.match(LIST, /title:\s*'操作',\s*dataIndex:\s*'action',\s*width:\s*150,\s*align:\s*'center'/);
@@ -91,35 +91,70 @@ test('名称入口走公共类 .scm-cell-link，且不与 antd 同特异性打�
       THEME,
       /\.scm-cell-link\.scm-cell-link:hover,\s*\.scm-cell-link\.scm-cell-link:focus\s*\{[\s\S]{0,120}?color:\s*var\(--scm-primary\)/
   );
+
+  // 容器本身不能改成 align-items: flex-start —— 那样主副行会退化成 max-content 宽度，
+  // 两个 __main/__sub 的 text-overflow: ellipsis 就永远不触发。
+  const stackStart = THEME.indexOf('.scm-cell-stack {');
+  const stackDecls = THEME.slice(stackStart, THEME.indexOf('}', stackStart));
+  assert.doesNotMatch(stackDecls, /align-items/);
 });
 
-test('主题让单元格默认不换行，长文本靠省略号或显式退出', () => {
-  // 一格塞两行会把行高拉齐到最高那条、列宽按最宽那条给，整张表又高又空。
-  assert.doesNotMatch(THEME, /\.scm-cell-stack/, '双行复合单元已退役，不得复活');
-  assert.match(
-      THEME,
-      /\.ant-table-tbody > tr:not\(\.ant-table-expanded-row\) > td\.ant-table-cell\s*\{[\s\S]{0,160}?white-space:\s*nowrap/,
-      '主题缺少「单元格默认不换行」规则，或选择器写成了匹配不到的后代形式'
-  );
-  // 展开行与内嵌表格不能被裁掉
-  assert.match(THEME, /:has\(\.scm-cell-wrap\)/, '换行退出方式没有回退单元格自身的裁剪');
-  assert.match(THEME, /:has\([^)\n]*\.ant-table\)/, '内嵌表格未被排除在裁剪之外');
+test('复合单元保留通用样式，客户与供应商独立字段不再叠行', () => {
+  // 容器：纵向两行 + 居中 + 撑住最小高度（副行可能缺失，如没登记电话的联系人）
+  const stackStart = THEME.indexOf('.scm-cell-stack {');
+  assert.ok(stackStart >= 0, '主题缺少 .scm-cell-stack 规则');
+  const stackDecls = THEME.slice(stackStart, THEME.indexOf('}', stackStart));
+  assert.match(stackDecls, /flex-direction:\s*column/);
+  assert.match(stackDecls, /justify-content:\s*center/);
+  assert.match(stackDecls, /gap:\s*3px/);
+  assert.match(stackDecls, /min-height:\s*38px/);
 
-  // 客户与供应商列表都不再叠副行，也不退回横向单行容器
-  assert.doesNotMatch(LIST, /scm-cell-stack/);
-  assert.doesNotMatch(SUPPLIER, /scm-cell-stack/);
+  // 主行 14px / 500 / 20px；副行 12px / 16px —— 只靠颜色区分在投屏上会糊成一片
+  const mainSrc = THEME.slice(THEME.indexOf('.scm-cell-stack__main {'));
+  const mainDecls = mainSrc.slice(0, mainSrc.indexOf('}'));
+  assert.match(mainDecls, /font-size:\s*14px/);
+  assert.match(mainDecls, /font-weight:\s*500/);
+  assert.match(mainDecls, /line-height:\s*20px/);
+
+  const subSrc = THEME.slice(THEME.indexOf('.scm-cell-stack__sub {'));
+  const subDecls = subSrc.slice(0, subSrc.indexOf('}'));
+  assert.match(subDecls, /font-size:\s*12px/);
+  assert.match(subDecls, /line-height:\s*16px/);
+  // 电话这类纯数字副行要对齐位数
+  assert.match(THEME, /\.scm-cell-stack__sub--num\s*\{[\s\S]{0,60}?font-variant-numeric:\s*tabular-nums/);
+
+  // 客户和供应商名称、编码、联系人和电话应各有数据列
+  for (const title of ['供应商名称', '供应商编码', '联系人', '联系电话']) {
+    assert.match(SUPPLIER, new RegExp(`title:\\s*'${title}'`));
+  }
+  for (const title of ['客户名称', '客户编码', '联系人', '联系电话']) {
+    assert.match(LIST, new RegExp(`title:\\s*'${title}'`));
+  }
+  assert.doesNotMatch(LIST, /class="scm-cell-stack/);
+  assert.doesNotMatch(SUPPLIER, /class="scm-cell-stack/);
+  assert.match(SUPPLIER, /dataIndex === 'contactPhone'[\s\S]{0,120}class="scm-mono"/);
+  // 不得引入只靠横向单行容器替代层级信息的旧样式
   assert.doesNotMatch(THEME, /\.scm-cell-inline/);
+  assert.doesNotMatch(LIST, /class="scm-cell-inline/);
+  assert.doesNotMatch(SUPPLIER, /class="scm-cell-inline/);
 });
 
-test('scroll.x 与各列 width 之和保持同步', () => {
-  const widths = [...LIST.matchAll(/\{\s*title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)/g)]
-      .map((m) => Number(m[1]));
-  assert.ok(widths.length >= 8, `客户列表列数异常：${widths.length}`);
+test('列宽收紧后 scroll.x 仍等于各列 width 之和', () => {
+  const columns = [...LIST.matchAll(/\{\s*title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)([^}]*)\}/g)]
+      .map((m) => ({width: Number(m[1]), hiddenByDefault: /showFlag:\s*false/.test(m[2])}));
+  assert.equal(columns.length, 10, '客户列表列数被改动');
+  const visibleWidth = columns.filter((column) => !column.hiddenByDefault).reduce((sum, column) => sum + column.width, 0);
   const scrollX = /:scroll="\{ x: (\d+) \}"/.exec(LIST);
   assert.ok(scrollX, '客户列表没有声明 scroll.x');
-  // 陈旧值与列宽脱钩是这张表最常见的回归：改了列宽却忘了 scroll.x，窄屏就出现无意义横向滚动
-  assert.equal(widths.reduce((a, b) => a + b, 0), Number(scrollX[1]),
-      `scroll.x=${scrollX[1]} 与列宽之和 ${widths.reduce((a, b) => a + b, 0)} 不一致`);
+  assert.equal(visibleWidth, Number(scrollX[1]),
+      `scroll.x=${scrollX[1]} 与默认显示列宽之和 ${visibleWidth} 不一致`);
+
+  const supplierWidths = [...SUPPLIER.matchAll(/\{title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)/g)]
+      .map((m) => Number(m[1]));
+  const supplierScrollX = /:scroll="\{ x: (\d+) \}"/.exec(SUPPLIER);
+  assert.ok(supplierScrollX, '供应商列表没有声明 scroll.x');
+  assert.equal(supplierWidths.reduce((a, b) => a + b, 0), Number(supplierScrollX[1]),
+      `供应商 scroll.x=${supplierScrollX[1]} 与列宽之和 ${supplierWidths.reduce((a, b) => a + b, 0)} 不一致`);
 });
 
 test('详情页客户名与编码在 Tabs 之上，切 Tab 后始终可见', () => {
@@ -159,7 +194,9 @@ test('五个 Tab 保持且 lazy 取数口径不变', () => {
 });
 
 test('枚举不直接摊给用户：规格状态走翻译 + ScmStatusTag，订单状态走 ScmStatusTag', () => {
-  assert.match(DETAIL, /SHELF_STATUS_ENUM\.find/);
+  assert.match(DETAIL, /shelfStatusLabel\(record\.skuStatus\)/);
+  assert.match(DETAIL, /import \{shelfStatusLabel\} from '\/@\/constants\/business\/scm\/product-const'/);
+  assert.match(DETAIL, /value === 'ON_SHELF'[\s\S]{0,100}\? 'success'[\s\S]{0,100}: 'warning'/);
   assert.match(DETAIL, /<ScmStatusTag[^>]*:tone="shelfStatusTone\(record\.skuStatus\)"/);
   assert.doesNotMatch(DETAIL, /<a-tag>\{\{\s*record\.skuStatus/);
   assert.match(DETAIL, /<ScmStatusTag[^>]*:tone="orderStatusTone\(record\.status\)"/);
@@ -175,7 +212,7 @@ test('常购窗口用 segmented 四档，协议价合并有效期，可售商品
   // 只在 frequentCols 块内取列（商品 / 商品规格在协议价与可售商品里也有）
   const freqBlock = DETAIL.slice(DETAIL.indexOf('const frequentCols'), DETAIL.indexOf('const agreementCols'));
   const frequentTitles = [...freqBlock.matchAll(/\{\s*title:\s*'([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(frequentTitles, ['商品', '商品规格', '商品规格编码', '单位', '订购次数', '订购量', '最近成交价', '最近购买']);
+  assert.deepEqual(frequentTitles, ['商品', '商品规格', '单位', '订购次数', '订购量', '最近成交价', '最近购买']);
 
   assert.match(DETAIL, /\{\s*title:\s*'有效期',\s*dataIndex:\s*'effectivePeriod'/);
   assert.match(DETAIL, /长期有效/);
@@ -184,9 +221,8 @@ test('常购窗口用 segmented 四档，协议价合并有效期，可售商品
 
   const visBlock = DETAIL.slice(DETAIL.indexOf('const visibilityCols'));
   const visTitles = [...visBlock.matchAll(/\{\s*title:\s*'([^']+)'/g)].map((m) => m[1]);
-  assert.deepEqual(visTitles, ['商品', '商品规格', '商品规格编码', '状态', '加入时间']);
+  assert.deepEqual(visTitles, ['商品', '商品规格', '状态', '加入时间']);
 
-  // 规格编码独立成列，而不是折在规格名的副行
-  assert.match(DETAIL, /title:\s*'商品规格编码'/);
-  assert.doesNotMatch(DETAIL, /scm-cell-stack/);
+  assert.doesNotMatch(DETAIL, /title:\s*'商品规格编码'/);
+  assert.doesNotMatch(DETAIL, /title:\s*'商品规格状态'/);
 });

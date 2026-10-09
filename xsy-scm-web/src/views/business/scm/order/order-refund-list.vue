@@ -15,8 +15,14 @@
       </a-form-item>
     </a-row>
   </a-form>
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
+      <div class="smart-table-operate-block">退款</div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="604" :refresh="queryData"/>
       </div>
@@ -52,12 +58,14 @@
     </div>
   </a-card>
   <a-modal :open="visible" title="登记退款完成" :confirm-loading="saving" :closable="!saving" :mask-closable="!saving" :keyboard="!saving" @ok="save" @cancel="visible=false">
+    <a-alert v-if="error" :message="error" type="error"/>
     <p>登记售后退款业务完成。纯余额订单将同时返还原钱包；其他支付方式仍需单独处理资金退款。</p>
     <a-form-item label="外部凭证（可选）">
       <a-input v-model:value="externalReference" maxlength="128"/>
     </a-form-item>
   </a-modal>
   <a-modal v-model:open="balanceRefundOpen" title="返还原订单余额" :confirm-loading="returning" :closable="!returning" :mask-closable="!returning" :keyboard="!returning" @ok="returnBalance">
+    <a-alert v-if="balanceRefundError" type="error" show-icon :message="balanceRefundError"/>
     <p>将退款单 {{ active?.refundNo }} 的 {{ amount(active?.refundAmount) }} 返还至原消费钱包。</p>
     <p>仅支持纯余额订单。已存在渠道或人工退款、混合支付或超过可退本金时，系统会拒绝返还。</p>
   </a-modal>
@@ -74,12 +82,11 @@ import type {RefundRow, Query} from './order-types';
 import {amount} from './order-form-model';
 import {orderError} from './order-errors';
 import {financeError} from '../finance/finance-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import BalanceMovementDetail from '../finance/balance-movement-detail.vue';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<RefundRow[]>([]), total = ref(0),
-    loading = ref(false), error = useScmErrorToast(), visible = ref(false), saving = ref(false), active = ref<RefundRow>();
-const balanceRefundOpen = ref(false), returning = ref(false), balanceRefundError = useScmErrorToast();
+    loading = ref(false), error = ref(''), visible = ref(false), saving = ref(false), active = ref<RefundRow>();
+const balanceRefundOpen = ref(false), returning = ref(false), balanceRefundError = ref('');
 const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 let requestId = 0;
 /**
@@ -95,12 +102,12 @@ const columns = ref<TableColumnsType<RefundRow>>([{
   title: '退款单号',
   dataIndex: 'refundNo',
   width: 220
-}, {title: '状态', dataIndex: 'status', width: 120}, {
+}, {title: '状态', dataIndex: 'status', width: 120, align: 'center'}, {
   title: '退款金额',
   dataIndex: 'refundAmount',
   align: 'right',
   width: 140
-}, {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200}, {
+}, {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200, align: 'right'}, {
   title: '外部凭证',
   dataIndex: 'externalReference',
   width: 200,

@@ -28,9 +28,15 @@
     </a-form>
 
     <a-card size="small" :bordered="false">
-      <a-row class="smart-table-btn-block" justify="end" align="middle">
+      <a-row class="smart-table-btn-block" justify="space-between" align="middle">
+        <a-typography-text type="secondary">本页为只读反查；维护关联请到「供应商档案」→「关联商品」。</a-typography-text>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER_SKU" :refresh="load"/>
       </a-row>
+      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+        <template #action>
+          <a-button size="small" @click="load">重新加载</a-button>
+        </template>
+      </a-alert>
       <a-table
           :data-source="rows"
           :columns="columns"
@@ -39,7 +45,7 @@
           :pagination="false"
           size="small"
           bordered
-          :scroll="{ x: 1620 }"
+          :scroll="{ x: 1400 }"
       >
         <template #bodyCell="{ column, record }">
           <span v-if="column.dataIndex === 'supplierNameSnapshot'">{{ record.supplierNameSnapshot }}</span>
@@ -84,13 +90,12 @@ import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 const filters = reactive<SupplierSkuQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<SupplierSkuRow[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 
 const statusText = (value: EnableStatus): string => SUPPLIER_SKU_STATUS_ENUM[value]?.desc || value;
 const specText = (spec: Record<string, string> | undefined): string => {
@@ -104,7 +109,7 @@ const columns = ref<TableColumnsType<SupplierSkuRow>>([
   {title: '商品名称（快照）', dataIndex: 'skuNameSnapshot', width: 200},
   {title: '商品规格', dataIndex: 'spec', width: 150},
   {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 160},
-  {title: '采购单位', dataIndex: 'purchaseUnit', width: 100},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 100, align: 'center'},
   {title: '参考价', dataIndex: 'referencePrice', width: 120, align: 'right'},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},
   {title: '默认来源', dataIndex: 'defaultFlag', width: 110, align: 'center'},

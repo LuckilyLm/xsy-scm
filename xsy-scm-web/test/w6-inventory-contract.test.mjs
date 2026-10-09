@@ -582,16 +582,17 @@ test('the transfer page wires its own DOM id, six privileges and a two-step acti
   assert.match(page, /不在任何仓库的余额/);
 });
 
-test('the transfer page keeps the four actor/time values as separate columns and keeps the arrow direction', () => {
+test('the transfer page folds the four actor/time columns into two and keeps the arrow direction', () => {
   const page = code('../src/views/business/scm/inventory/inventory-transfer-list.vue');
 
   // 调拨的业务时刻是发出与收货；创建时间是技术字段
   assert.doesNotMatch(page, /title: '创建时间'/);
-  // 「谁」与「何时」各自成列，不叠进同一个单元格
-  assert.doesNotMatch(page, /scm-cell-stack/, '调拨页仍把两个值叠进一个单元格');
-  for (const dataIndex of ['shippedAt', 'shippedBy', 'receivedAt', 'receivedBy']) {
-    assert.match(page, new RegExp(`record\\.${dataIndex}`), `调拨页缺少 ${dataIndex}`);
-  }
+  assert.doesNotMatch(page, /title: '发出人'|title: '收货人'/);
+  // 「谁」与「何时」同格：时间作主行，操作者作次要行
+  assert.match(page, /title: '发出', dataIndex: 'shippedAt'/);
+  assert.match(page, /title: '收货', dataIndex: 'receivedAt'/);
+  assert.match(page, /column\.dataIndex === 'shippedAt'[\s\S]{0,200}record\.shippedBy/);
+  assert.match(page, /column\.dataIndex === 'receivedAt'[\s\S]{0,200}record\.receivedBy/);
 
   // 方向是一格：源仓 → 目标仓，箭头弱化（不再用行内 style）
   assert.match(page, /class="transfer-direction__arrow"/);
@@ -611,8 +612,7 @@ test('the transfer page keeps the four actor/time values as separate columns and
   assert.match(page, /<a-input-number[\s\S]{0,120}record\.quantity/);
   assert.match(page, /quantity: fixed4\(i\.quantity\) as string/);
   assert.doesNotMatch(page, /toFixed\(/);
-  assert.match(page, /title: '商品规格编码'/);
-  assert.match(page, /record\.skuCode/);
+  assert.match(page, /column\.dataIndex === 'sku'[\s\S]{0,200}record\.skuCode/);
 });
 
 test('transfer error codes all have actionable Chinese text', () => {
@@ -679,7 +679,8 @@ test('the threshold config page is not a stock-mutating page and validates the r
     assert.match(page, new RegExp(perm), page + ' 缺少权限 ' + perm);
   }
   // 三条区间判据必须在提交前拦一道（后端 41051 会再判一次）
-  assert.match(page, /上下限至少填写一个/);
+  assert.match(page, /下限和上限至少填写一个/);
+  assert.match(page, /validator: validateAtLeastOneThreshold/);
   assert.match(page, /不得大于上限/);
   // 数值控件是 InputNumber（:min=0 + :precision=4），不是自由文本
   assert.match(page, /<a-input-number[\s\S]{0,120}form\.warnMin/);
@@ -721,10 +722,9 @@ test('the reservation page shows the source document number, never a raw technic
   assert.match(page, /CONSUMED: 'success'/);
   assert.doesNotMatch(page, /'orange'|'green'|'red'/, '状态色应由 tone 档位给出');
 
-  // 数量与规格编码的展示口径与余额 / 流水页一致
+  // 数量与规格编码分列，编码可用等宽字形逐位核对
   assert.match(page, /class="scm-quantity"/);
-  assert.doesNotMatch(page, /scm-cell-stack/, '调拨页仍用双行复合单元');
-  assert.match(page, /record\.skuCode/);
+  assert.match(page, /dataIndex === 'skuCode'[\s\S]{0,120}class="scm-mono"/);
 });
 
 test('the warning page keeps all three quantities and colours the level, not the row', () => {
@@ -738,8 +738,8 @@ test('the warning page keeps all three quantities and colours the level, not the
   assert.match(page, /HIGH: 'warning'/);
   assert.match(page, /NORMAL: 'neutral'/);
   // 阈值上下限合成一格：两行都带标签，各自可空
-  assert.match(page, /title: '预警下限'[\s\S]{0,80}warnMin/);
-  assert.match(page, /title: '预警上限'[\s\S]{0,80}warnMax/);
+  assert.match(page, /下限 \{\{ quantityText\(record\.warnMin\) \}\}/);
+  assert.match(page, /上限 \{\{ quantityText\(record\.warnMax\) \}\}/);
   // 状态列不是操作列，不该固定在右侧
   assert.doesNotMatch(page, /dataIndex: 'status'[^}]*fixed/);
 });
@@ -883,10 +883,9 @@ test('the loss/gain page colours the direction and folds the auditor into the au
   assert.match(page, /PENDING: 'warning'/);
   assert.match(page, /COMPLETED: 'success'/);
   assert.match(page, /REJECTED: 'error'/);
-  // 审核人与审核时间各自成列，不叠进一格
-  assert.match(page, /title: '审核人'|title: '审核时间'/);
-  assert.doesNotMatch(page, /scm-cell-stack/);
-  assert.match(page, /title: '审核人', dataIndex: 'auditor'/);
+  // 审核人与审核时间合成一格
+  assert.doesNotMatch(page, /title: '审核人'|title: '审核时间'/);
+  assert.match(page, /title: '审核', dataIndex: 'auditedAt'/);
   assert.match(page, /column\.dataIndex === 'auditedAt'[\s\S]{0,200}record\.auditor/);
   // 数量恒为正：InputNumber 的下限是 0.0001（方向由单据类型表达）
   assert.match(page, /<a-input-number[\s\S]{0,140}record\.quantity/);

@@ -47,12 +47,21 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:loss-gain:add'">
           新建报损报溢单
         </a-button>
+        <a-typography-text type="secondary" style="margin-left: 12px">
+          创建后进入待审核；审批通过才调整库存并生成不可删除的流水。
+        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -73,13 +82,10 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无报损报溢单' }"
-        :scroll="{ x: 1390 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'lossGainNo'">
-          <span class="scm-mono">{{ record.lossGainNo || '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'adjustType'">
+        <template v-if="column.dataIndex === 'adjustType'">
           <ScmStatusTag :tone="typeTone(record.adjustType)" :label="record.adjustTypeDesc || record.adjustType"/>
         </template>
         <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
@@ -89,8 +95,13 @@
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
-        <template v-else-if="column.dataIndex === 'auditedAt'">{{ datetime(record.auditedAt) }}</template>
-        <template v-else-if="column.dataIndex === 'auditor'">{{ record.auditor || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'auditedAt'">
+          <!-- 审核的「谁」和「何时」是同一件事的两面，合成一格 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ datetime(record.auditedAt) }}</span>
+            <span v-if="record.auditor" class="scm-cell-stack__sub">{{ record.auditor }}</span>
+          </div>
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 行内常驻「详情」与待审核态的「审批」；驳回 / 编辑 / 删除收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -131,6 +142,12 @@
       :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
+    <a-alert
+        type="info"
+        show-icon
+        style="margin-bottom: 12px"
+        message="报损减库存、报溢加库存；原因必填。"
+    />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="调整类型" name="adjustType">
         <a-radio-group v-model:value="form.adjustType" button-style="solid">
@@ -237,6 +254,9 @@
         />
       </a-form-item>
     </a-form>
+    <a-typography-text type="secondary">
+      提交时会带上打开本单时读到的版本号；若期间单据已被修改，系统会要求你刷新后重新审批。
+    </a-typography-text>
   </a-modal>
 </template>
 
@@ -274,14 +294,14 @@ import {singleWarehouseDefault} from './inventory-model';
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
-import {useScmErrorToast} from '../common/scm-error-toast';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryLossGainQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryLossGain[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
@@ -295,23 +315,24 @@ const statusOptions = Object.values(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM).map((i)
   label: i.desc,
 }));
 
-// 列表按「哪张单 / 什么类型 / 哪个仓 / 什么状态 / 为什么 / 谁在什么时候审核」排列，一格一个值。
-// 创建时间是技术字段，报损报溢的业务时刻是审核时间，不上列。
-const columns = ref<TableColumnsType<InventoryLossGain>>([
+// 列表按「哪张单 / 什么类型 / 哪个仓 / 什么状态 / 为什么」排列。创建时间是技术字段，
+// 报损报溢的业务时刻是审核时间，不上列。
+type InventoryLossGainColumn = ScmListColumn;
+const columns = ref<InventoryLossGainColumn[]>([
   {title: '单据号', dataIndex: 'lossGainNo', width: 200},
   {title: '类型', dataIndex: 'adjustType', align: 'center', width: 100},
-  {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
+  {title: '仓库', dataIndex: 'warehouseName', width: 140},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '原因', dataIndex: 'reason', width: 240, ellipsis: true},
-  {title: '审核时间', dataIndex: 'auditedAt', width: 170},
-  {title: '审核人', dataIndex: 'auditor', width: 110},
+  {title: '审核', dataIndex: 'auditedAt', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
-  {title: '数量', dataIndex: 'quantity', width: 160},
+  {title: '数量', dataIndex: 'quantity', width: 160, align: 'right'},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];

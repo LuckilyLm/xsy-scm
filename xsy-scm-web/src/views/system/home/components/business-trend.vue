@@ -28,11 +28,12 @@
       </a-radio-group>
     </div>
 
-    <region-error v-if="error" :message="error" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="264" @retry="load"/>
     <a-spin v-show="!error" class="home-trend__content" :spinning="loading">
       <!-- 容器必须一直存在：隐藏时尺寸为 0，图表的尺寸观察者要等它出现后才初始化 -->
-      <div v-show="hasData" ref="chartEl" class="home-trend__chart"/>
+      <div v-show="hasData && !allZero" ref="chartEl" class="home-trend__chart"/>
       <a-empty v-if="!loading && !hasData" class="home-trend__empty" description="暂无趋势数据"/>
+      <a-empty v-else-if="!loading && allZero" class="home-trend__empty" :description="allZeroDescription"/>
     </a-spin>
   </default-home-card>
 </template>
@@ -69,6 +70,26 @@ const {setOption} = useEcharts(chartEl);
 const hasData = computed(() => {
     const trend = data.value;
     return !!trend && trend.metric === active.value && trend.range === range.value && trend.dates.length > 0;
+});
+
+const allZero = computed(() => {
+    const trend = data.value;
+    if (!hasData.value || !trend || trend.primarySeries.length !== trend.dates.length ||
+        trend.secondarySeries.length !== trend.dates.length) {
+        return false;
+    }
+    const values = [...trend.primarySeries, ...trend.secondarySeries];
+    return values.every((value) => value.trim() !== '' && Number.isFinite(Number(value)) && Number(value) === 0);
+});
+
+const allZeroDescription = computed(() => {
+    const period = range.value === '7d' ? '近 7 天' : '近 30 天';
+    const description: Record<ScmTrendMetric, string> = {
+        sales: '暂无成交记录',
+        purchase: '暂无采购记录',
+        inventory: '暂无库存流转记录',
+    };
+    return `${period}${description[active.value]}`;
 });
 
 /** 金额轴按「万」缩写，否则七位数会把轴标签挤成两行。 */
@@ -182,17 +203,26 @@ defineExpose({load});
 }
 
 .home-trend__chart {
-    height: 300px;
+    height: 264px;
 }
 
 .home-trend__content {
-    min-height: 300px;
+    min-height: 264px;
 }
 
 .home-trend__empty {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    height: 300px;
+    height: 264px;
+}
+
+@media (max-width: 767px) {
+    .home-trend__chart,
+    .home-trend__content,
+    .home-trend__empty {
+        height: 232px;
+        min-height: 232px;
+    }
 }
 </style>

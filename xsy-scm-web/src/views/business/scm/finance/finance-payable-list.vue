@@ -1,7 +1,7 @@
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="业务日期">
+  <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
+    <div class="scm-filter-fields">
+      <a-form-item class="scm-filter-range" label="业务日期">
         <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期"/>
         <span class="date-separator">至</span>
         <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期"/>
@@ -14,21 +14,22 @@
       <a-form-item label="结清状态">
         <a-select v-model:value="query.settleState" allow-clear :options="settleOptions" placeholder="全部" style="width: 140px"/>
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button-group>
-          <a-button type="primary" v-privilege="PERM.PAYABLE_QUERY" @click="onSearch">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-button-group>
-      </a-form-item>
-    </a-row>
+    </div>
+    <div class="scm-filter-actions">
+      <a-button type="primary" v-privilege="PERM.PAYABLE_QUERY" @click="onSearch">查询</a-button>
+      <a-button @click="resetQuery">重置</a-button>
+    </div>
   </a-form>
 
+  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
+    <template #action><a-button @click="queryData">重试</a-button></template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
-      </div>
+    <a-row class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-operate-block">应付明细</div>
       <div class="smart-table-setting-block">
+        <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_PAYABLE" :refresh="queryData"/>
       </div>
     </a-row>
@@ -66,11 +67,21 @@
     </div>
   </a-card>
 
-  <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYABLE" :loading="detailLoading" :detail="detailData"/>
+  <FinanceDetailDrawer v-model:open="detailOpen" kind="PAYABLE" :loading="detailLoading" :detail="detailData"
+                       :error="detailError" @retry="reloadDetail"/>
 
-  <a-drawer v-model:open="redOpen" title="登记红字应付" :width="scmDrawerWidth('l')" :destroy-on-close="true"
+  <a-drawer v-model:open="redOpen" :width="scmDrawerWidth('l')" :destroy-on-close="true"
             :closable="!redSaving" :keyboard="!redSaving" :mask-closable="!redSaving">
+    <template #title>
+      登记红字应付
+      <ScmFieldHelp label="红字应付" text="红字金额等于数量乘单价，累计不能超过原单金额"/>
+    </template>
     <a-spin :spinning="redLoading">
+      <a-alert v-if="redError" class="form-error" type="error" show-icon :message="redError">
+        <template v-if="!redDrafts.length && redSource" #action>
+          <a-button :loading="redLoading" @click="retryRed">重试</a-button>
+        </template>
+      </a-alert>
       <a-descriptions v-if="redSource" class="red-source" bordered size="small" :column="2">
         <a-descriptions-item label="原应付单">{{ redSource.payableNo }}</a-descriptions-item>
         <a-descriptions-item label="供应商">{{ redSource.supplierName }}</a-descriptions-item>
@@ -115,6 +126,7 @@ import {SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_PERMIS
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import {dateTimeText, entryTypeText, initialFinanceDateRange, lineAmount, moneyClass, moneyText, settleStateText, settleStateTone} from './finance-form-model';
 import {financeError} from './finance-errors';
@@ -122,7 +134,6 @@ import type {FinancePayable, FinancePayableDetail, FinancePayableItem, PayableQu
 import {useFinancePage} from './use-finance-page';
 import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 interface RedDraft extends FinancePayableItem {
@@ -132,11 +143,11 @@ interface RedDraft extends FinancePayableItem {
 
 const query = reactive<PayableQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinancePayable, PayableQuery>(financeApi.payableQuery, financeApi.payableExport);
-const {open: detailOpen, loading: detailLoading, data: detailData,
-    show: openDetail} = useFinanceDetail<FinancePayableDetail>(
+const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
+    show: openDetail, load: reloadDetail} = useFinanceDetail<FinancePayableDetail>(
     (id) => financeApi.payableDetail(id, {suppressGlobalErrorMessage: true})
 );
-const redOpen = ref(false), redLoading = ref(false), redSaving = ref(false), redError = useScmErrorToast(), redReason = ref('');
+const redOpen = ref(false), redLoading = ref(false), redSaving = ref(false), redError = ref(''), redReason = ref('');
 const redSource = ref<FinancePayable | null>(null);
 const redDrafts = ref<RedDraft[]>([]);
 let redRequestId = 0;
@@ -155,19 +166,24 @@ const settleOptions = Object.values(SCM_FINANCE_SETTLE_STATE_ENUM).map((item) =>
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
 const columns = ref<TableColumnsType<FinancePayable>>([
-    {title: '应付单号', dataIndex: 'payableNo', fixed: 'left', width: 110, ellipsis: true},
+    {title: '应付单号', dataIndex: 'payableNo', fixed: 'left', width: 110, ellipsis: true, align: 'left'},
     {title: '未核销', dataIndex: 'openAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '供应商', dataIndex: 'supplierName', width: 150}, {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 150},
+    {title: '供应商', dataIndex: 'supplierName', width: 150, align: 'left'},
+    {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 150, align: 'left'},
     {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
     {title: '已核销', dataIndex: 'writtenOffAmount', align: 'right', width: 110},
     {title: '超额核销', dataIndex: 'overAppliedAmount', align: 'right', width: 120},
-    {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110}, {title: '事件时点', dataIndex: 'eventAt', width: 165},
+    {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},
+    {title: '事件时点', dataIndex: 'eventAt', width: 165, align: 'left'},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 130},
 ]);
 const redDraftColumns: TableColumnsType<RedDraft> = [
-    {title: '商品', dataIndex: 'skuName', width: 190}, {title: '单位', dataIndex: 'unit', width: 90},
-    {title: '原数量', dataIndex: 'quantity', width: 130, customRender: ({text}) => text},
-    {title: '红字数量', dataIndex: 'redQuantity'}, {title: '红字单价', dataIndex: 'redUnitPrice'}, {title: '红字金额', dataIndex: 'redAmount'},
+    {title: '商品', dataIndex: 'skuName', width: 190, align: 'left'},
+    {title: '单位', dataIndex: 'unit', width: 90, align: 'center'},
+    {title: '原数量', dataIndex: 'quantity', width: 130, align: 'right', customRender: ({text}) => text},
+    {title: '红字数量', dataIndex: 'redQuantity', align: 'right'},
+    {title: '红字单价', dataIndex: 'redUnitPrice', align: 'right'},
+    {title: '红字金额', dataIndex: 'redAmount', align: 'right'},
 ];
 useFinanceMobileActionColumn((compact) => {
     const action = columns.value[columns.value.length - 1];
@@ -205,6 +221,10 @@ async function openRed(row: FinancePayable) {
     } finally {
         if (generation === redRequestId) redLoading.value = false;
     }
+}
+
+function retryRed() {
+    if (redSource.value) void openRed(redSource.value);
 }
 
 /**
@@ -254,6 +274,7 @@ onMounted(queryData);
 
 <style scoped>
 .date-separator { margin: 0 8px; color: #667085; }
+.page-error,.form-error { margin-bottom: 12px; }
 .money-alert { font-weight: 600; }
 .red-source { margin: 16px 0; }
 .drawer-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }

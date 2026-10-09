@@ -8,7 +8,7 @@
 -->
 <template>
   <section class="home-metrics">
-    <region-error v-if="error" :message="error" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="100" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <a-empty v-if="!loading && rows.length === 0" description="当前账号暂无可查看的指标"/>
       <a-skeleton v-else-if="loading && rows.length === 0" active :paragraph="{rows: 2}"/>
@@ -35,7 +35,7 @@
           <span class="home-kpi__accent" aria-hidden="true"/>
           <div class="home-kpi__head">
             <span class="home-kpi__visual">
-              <scm-icon :name="row.iconName" :size="26"/>
+              <scm-icon :name="row.iconName" :size="23"/>
             </span>
             <span class="home-kpi__label">{{ row.label }}</span>
           </div>
@@ -188,6 +188,7 @@ defineExpose({load});
     height: 40px;
     border-radius: 12px;
     background: var(--kpi-accent-soft);
+    color: var(--kpi-accent);
 }
 
 .home-kpi .home-kpi__label {

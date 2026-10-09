@@ -45,7 +45,12 @@
       <!-- 基础资料 -->
       <a-tab-pane key="base" tab="基础资料">
         <a-spin :spinning="baseLoading">
-          <template v-if="customer">
+          <a-alert v-if="baseError" :message="baseError" type="error" show-icon>
+            <template #action>
+              <a-button size="small" @click="loadBase">重新加载</a-button>
+            </template>
+          </a-alert>
+          <template v-else-if="customer">
             <!-- 阅读宽度：基础资料不铺满超宽屏；表格类 Tab 仍用完整宽度 -->
             <div class="scm-detail-read">
               <!-- 1. 客户经营概览：仅用详情接口已有字段 -->
@@ -176,13 +181,17 @@
               </section>
             </div>
           </template>
-          <a-empty v-else-if="!baseLoading" description="没有可显示的客户资料"/>
         </a-spin>
       </a-tab-pane>
 
       <!-- 最近订单 -->
       <a-tab-pane key="orders" tab="最近订单">
-        <a-table :data-source="orders.rows.value" :columns="orderCols" row-key="orderId" size="small" bordered
+        <a-alert v-if="orders.error.value" :message="orders.error.value" type="error" show-icon>
+          <template #action>
+            <a-button size="small" @click="orders.reload()">重新加载</a-button>
+          </template>
+        </a-alert>
+        <a-table v-else :data-source="orders.rows.value" :columns="orderCols" row-key="orderId" size="small" bordered
                  :loading="orders.loading.value" :pagination="false" :scroll="{ x: 710 }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'orderNo'"><span class="scm-mono">{{ record.orderNo }}</span></template>
@@ -207,14 +216,19 @@
           <a-segmented v-model:value="freqDays" :options="freqDayOptions" @change="onFreqDaysChange"/>
           <span class="smart-font-size12 smart-color-gray">按商品规格＋单位分组，数量为订购量（非实重／结算量），不跨单位求和</span>
         </a-space>
-        <a-table :data-source="frequent.rows.value" :columns="frequentCols" :row-key="(r: CustomerFrequentSku) => `${r.skuId}-${r.unit}`" size="small" bordered
-                 :loading="frequent.loading.value" :pagination="false" :scroll="{ x: 1090 }">
+        <a-alert v-if="frequent.error.value" :message="frequent.error.value" type="error" show-icon>
+          <template #action>
+            <a-button size="small" @click="frequent.reload()">重新加载</a-button>
+          </template>
+        </a-alert>
+        <a-table v-else :data-source="frequent.rows.value" :columns="frequentCols" :row-key="(r: CustomerFrequentSku) => `${r.skuId}-${r.unit}`" size="small" bordered
+                 :loading="frequent.loading.value" :pagination="false" :scroll="{ x: 950 }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'productName'">
-              <span>{{ record.productName || '—' }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'skuCode'">
-              <span class="scm-mono">{{ record.skuCode || '—' }}</span>
+              <div class="scm-cell-stack">
+                <span class="scm-cell-stack__main">{{ record.productName || '—' }}</span>
+                <span v-if="record.skuCode" class="scm-cell-stack__sub scm-mono">{{ record.skuCode }}</span>
+              </div>
             </template>
             <template v-else-if="column.dataIndex === 'orderedQuantity'"><span class="scm-quantity">{{ record.orderedQuantity }}</span></template>
             <template v-else-if="column.dataIndex === 'recentUnitPrice'"><span class="scm-money">{{ formatAmountOrDash(record.recentUnitPrice) }}</span></template>
@@ -225,14 +239,19 @@
 
       <!-- 协议价 -->
       <a-tab-pane key="agreement" tab="协议价">
-        <a-table :data-source="agreement.rows.value" :columns="agreementCols" row-key="agreementPriceId" size="small" bordered
-                 :loading="agreement.loading.value" :pagination="false" :scroll="{ x: 970 }">
+        <a-alert v-if="agreement.error.value" :message="agreement.error.value" type="error" show-icon>
+          <template #action>
+            <a-button size="small" @click="agreement.reload()">重新加载</a-button>
+          </template>
+        </a-alert>
+        <a-table v-else :data-source="agreement.rows.value" :columns="agreementCols" row-key="agreementPriceId" size="small" bordered
+                 :loading="agreement.loading.value" :pagination="false" :scroll="{ x: 790 }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'productName'">
-              <span>{{ record.productName || '—' }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'skuCode'">
-              <span class="scm-mono">{{ record.skuCode || '—' }}</span>
+              <div class="scm-cell-stack">
+                <span class="scm-cell-stack__main">{{ record.productName || '—' }}</span>
+                <span v-if="record.skuCode" class="scm-cell-stack__sub scm-mono">{{ record.skuCode }}</span>
+              </div>
             </template>
             <template v-else-if="column.dataIndex === 'unitPrice'"><span class="scm-money">{{ formatAmount(record.unitPrice) }}</span></template>
             <template v-else-if="column.dataIndex === 'effectivePeriod'">{{ effectivePeriodText(record) }}</template>
@@ -246,29 +265,33 @@
 
       <!-- 可售商品 -->
       <a-tab-pane key="visibility" tab="可售商品">
-        <a-alert v-if="visPolicyText" :message="visPolicyText" type="info" show-icon class="smart-margin-bottom10" />
-        <a-table :data-source="visRows" :columns="visibilityCols" :row-key="(r: VisibilityRow) => String(r.skuId)" size="small" bordered
-                 :loading="visibility.loading.value" :pagination="false" :scroll="{ x: 790 }">
-          <template #bodyCell="{ record, column }">
-            <template v-if="column.dataIndex === 'productName'">
-              <span>{{ record.productName || '—' }}</span>
-            </template>
-            <span v-else-if="column.dataIndex === 'specName'">{{ record.specName || '—' }}</span>
-            <template v-else-if="column.dataIndex === 'skuCode'">
-              <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'skuStatus'">
-              <ScmStatusTag v-if="shelfStatusLabel(record.skuStatus)" :tone="shelfStatusTone(record.skuStatus)"
-                            :label="shelfStatusLabel(record.skuStatus)"/>
-              <span v-else>—</span>
-            </template>
-            <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
+        <a-alert v-if="visibility.error.value" :message="visibility.error.value" type="error" show-icon>
+          <template #action>
+            <a-button size="small" @click="visibility.reload()">重新加载</a-button>
           </template>
-        </a-table>
-        <div v-if="!visibility.error.value" class="smart-query-table-page">
-          <a-pagination v-model:current="visibilityPage.pageNum" v-model:page-size="visibilityPage.pageSize" :total="visibility.total.value"
-                        size="small" show-size-changer :page-size-options="['20', '50']" @change="visibility.reload()" :show-total="(n: number) => `共 ${n} 条`" />
-        </div>
+        </a-alert>
+        <template v-else>
+          <a-alert v-if="visPolicyText" :message="visPolicyText" type="info" show-icon class="smart-margin-bottom10" />
+          <a-table :data-source="visRows" :columns="visibilityCols" :row-key="(r: VisibilityRow) => String(r.skuId)" size="small" bordered
+                   :loading="visibility.loading.value" :pagination="false" :scroll="{ x: 650 }">
+            <template #bodyCell="{ record, column }">
+              <template v-if="column.dataIndex === 'productName'">
+                <div class="scm-cell-stack">
+                  <span class="scm-cell-stack__main">{{ record.productName || '—' }}</span>
+                  <span v-if="record.skuCode" class="scm-cell-stack__sub scm-mono">{{ record.skuCode }}</span>
+                </div>
+              </template>
+              <template v-else-if="column.dataIndex === 'skuStatus'">
+                <ScmStatusTag :tone="shelfStatusTone(record.skuStatus)" :label="shelfStatusLabel(record.skuStatus)"/>
+              </template>
+              <template v-else-if="column.dataIndex === 'createdAt'">{{ datetime(record.createdAt) }}</template>
+            </template>
+          </a-table>
+          <div class="smart-query-table-page">
+            <a-pagination v-model:current="visibilityPage.pageNum" v-model:page-size="visibilityPage.pageSize" :total="visibility.total.value"
+                          size="small" show-size-changer :page-size-options="['20', '50']" @change="visibility.reload()" :show-total="(n: number) => `共 ${n} 条`" />
+          </div>
+        </template>
       </a-tab-pane>
     </a-tabs>
 
@@ -296,7 +319,7 @@ import {
   SETTLE_MODE_ENUM
 } from '/@/constants/business/scm/customer-const';
 import {SCM_ORDER_SOURCE_ENUM, SCM_ORDER_STATUS_ENUM} from '/@/constants/business/scm/order-const';
-import {SHELF_STATUS_ENUM} from '/@/constants/business/scm/product-const';
+import {shelfStatusLabel} from '/@/constants/business/scm/product-const';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
@@ -305,7 +328,6 @@ import {customerError} from './customer-errors';
 import {orderError} from '../order/order-errors';
 import {pricingError} from '../pricing/pricing-errors';
 import {hasPermission} from '../common/scm-permission';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import {formatAmount, formatAmountOrDash} from '/@/utils/scm-amount';
 import {datetime} from '../common/scm-display';
 import CustomerDrawer from './components/customer-form-drawer.vue';
@@ -330,7 +352,7 @@ function backToList(): void {
 // ---------------------------------------------------------------------------
 const customer = ref<CustomerDetail>();
 const baseLoading = ref(false);
-const baseError = useScmErrorToast();
+const baseError = ref('');
 let baseReq = 0;
 
 /** 编辑入口复用列表的同一只抽屉：只暴露 open(customerId)，写命令仍由抽屉自己发起。 */
@@ -416,7 +438,7 @@ function useTab<T>(fetch: () => Promise<{ list: T[]; total: number }>, toError: 
   const rows = shallowRef<T[]>([]);
   const total = ref(0);
   const loading = ref(false);
-  const error = useScmErrorToast();
+  const error = ref('');
   const loaded = ref(false);
   let seq = 0;
   async function reload(): Promise<void> {
@@ -540,10 +562,8 @@ const visRows = computed(() => visibility.rows.value.filter((r) => r.skuId != nu
 // 枚举翻译与列定义（静态）
 // ---------------------------------------------------------------------------
 
-/** 商品规格状态：后端给的是枚举码，展示必须走翻译，不能把 `ON_SHELF` 直接摊给用户。 */
-const shelfStatusLabel = (value?: string | null): string =>
-    SHELF_STATUS_ENUM.find((item) => item.value === value)?.label ?? '';
-const shelfStatusTone = (value?: string | null): ScmStatusTone => (value === 'ON_SHELF' ? 'success' : 'neutral');
+const shelfStatusTone = (value?: string | null): ScmStatusTone =>
+    value === 'ON_SHELF' ? 'success' : value === 'OFF_SHELF' ? 'neutral' : 'warning';
 
 /** 草稿/待确认=待处理，已确认=处理中，已取消=失效（与订单列表同一套档位）。 */
 const ORDER_STATUS_TONE: Record<string, ScmStatusTone> = {
@@ -560,7 +580,7 @@ const effectivePeriodText = (row: PriceRow): string =>
 
 const orderCols: TableColumnsType<Order> = [
   {title: '订单号', dataIndex: 'orderNo', width: 180},
-  {title: '来源', dataIndex: 'orderSource', width: 110},
+  {title: '来源', dataIndex: 'orderSource', width: 110, align: 'center'},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '订单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 140},
   {title: '创建时间', dataIndex: 'createdAt', width: 180}
@@ -568,7 +588,6 @@ const orderCols: TableColumnsType<Order> = [
 const frequentCols: TableColumnsType<CustomerFrequentSku> = [
   {title: '商品', dataIndex: 'productName', width: 220},
   {title: '商品规格', dataIndex: 'specName', width: 140},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
   {title: '订购次数', dataIndex: 'orderCount', align: 'right', width: 100},
   {title: '订购量', dataIndex: 'orderedQuantity', align: 'right', width: 110},
@@ -578,14 +597,12 @@ const frequentCols: TableColumnsType<CustomerFrequentSku> = [
 const agreementCols: TableColumnsType<PriceRow> = [
   {title: '商品', dataIndex: 'productName', width: 220},
   {title: '商品规格', dataIndex: 'specName', width: 140},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '协议单价', dataIndex: 'unitPrice', align: 'right', width: 130},
-  {title: '有效期', dataIndex: 'effectivePeriod', width: 340}
+  {title: '有效期', dataIndex: 'effectivePeriod', width: 300}
 ];
 const visibilityCols: TableColumnsType<VisibilityRow> = [
   {title: '商品', dataIndex: 'productName', width: 220},
   {title: '商品规格', dataIndex: 'specName', width: 140},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '状态', dataIndex: 'skuStatus', align: 'center', width: 110},
   {title: '加入时间', dataIndex: 'createdAt', width: 180}
 ];

@@ -4,7 +4,7 @@
 Flyway 的 validate 比较的是 `flyway_schema_history.checksum`，而该值只由文件字节决定，
 与 SQL 语义无关：把迁移重新排版（换行合并、缩进、缩进字符）就会改变它，
 于是任何**已经建过库**的环境启动即 `FlywayValidateException`，全部 `*PgIT` 在容器加载期失败。
-本守卫在没有数据库的场合（提交前、CI、纯代码审阅）先把这条不变量钉住。
+本守卫在没有数据库的场合（提交前、本地验证、纯代码审阅）先把这条不变量钉住。
 
 校验和按 Flyway 11 的实现复刻：`BufferedReader.readLine()` 逐行取内容（分隔符只认
 `\\r\\n` / `\\r` / `\\n`），去掉首行 BOM，按 UTF-8 做 CRC32，最后 `long → int` 截断为**有符号** 32 位。

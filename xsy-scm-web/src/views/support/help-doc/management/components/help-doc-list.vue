@@ -149,11 +149,13 @@ const tableColumns = ref([
     title: '页面浏览量',
     dataIndex: 'pageViewCount',
     width: 90,
+    align: 'right',
   },
   {
     title: '用户浏览量',
     dataIndex: 'userViewCount',
     width: 90,
+    align: 'right',
   },
   {
     title: '创建时间',
@@ -165,6 +167,7 @@ const tableColumns = ref([
     dataIndex: 'action',
     fixed: 'right',
     width: 90,
+    align: 'center',
   },
 ]);
 

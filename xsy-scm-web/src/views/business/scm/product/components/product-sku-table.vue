@@ -24,7 +24,7 @@ defineProps<{ rows: ProductSku[] }>();
 const columns: TableColumnsType<ProductSku> = [
   {title: '商品规格编码', dataIndex: 'skuCode', width: 160}, {title: '商品规格', dataIndex: 'specName', width: 120},
   {title: '规格值', dataIndex: 'specValues', width: 160}, {title: '条码', dataIndex: 'barcode', width: 130},
-  {title: '单位', dataIndex: 'saleUnit', width: 70}, {title: '类型', dataIndex: 'productType', width: 80},
+  {title: '单位', dataIndex: 'saleUnit', width: 70, align: 'center'}, {title: '类型', dataIndex: 'productType', width: 80, align: 'center'},
   {title: '市场价', dataIndex: 'marketPrice', width: 130, align: 'right'}, {
     title: '状态',
     dataIndex: 'status',

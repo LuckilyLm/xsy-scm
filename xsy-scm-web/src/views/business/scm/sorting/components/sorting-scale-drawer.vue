@@ -6,6 +6,7 @@
         type="info"
         show-icon
     />
+    <a-alert v-if="scaleError" type="error" show-icon :message="scaleError" class="scale-banner"/>
     <a-table
         size="small"
         :data-source="scaleEvents"
@@ -61,6 +62,7 @@
                     placeholder="例如读数未稳定 / 与实物明显不符 / 秤未校准"/>
       </a-form-item>
     </a-form>
+    <a-alert v-if="scaleError" type="error" show-icon :message="scaleError"/>
   </a-modal>
 </template>
 
@@ -69,7 +71,6 @@ import {ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
 import {datetime} from '../../common/scm-display';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 import {quantityText, sortingError, sortingScaleStatuses} from '../sorting-types';
 import type {Id, SortingScaleEvent, SortingScaleStatus} from '../sorting-types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -79,17 +80,17 @@ const emit = defineEmits<{ 'update:open': [value: boolean] }>();
 
 const scaleLoading = ref(false);
 const scaleBusy = ref(false);
-const scaleError = useScmErrorToast();
+const scaleError = ref('');
 const scaleEvents = ref<SortingScaleEvent[]>([]);
 const rejectOpen = ref(false);
 const rejectReason = ref('');
 const rejectTarget = ref<SortingScaleEvent>();
 
 const scaleColumns: TableColumnsType = [
-    {title: '状态', dataIndex: 'status', width: 90},
+    {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
     {title: '设备', dataIndex: 'deviceCode', width: 130},
     {title: '原始读数', dataIndex: 'rawReading', align: 'right', width: 110},
-    {title: '单位', dataIndex: 'unit', width: 80},
+    {title: '单位', dataIndex: 'unit', width: 80, align: 'center'},
     {title: '稳定', dataIndex: 'stableFlag', align: 'center', width: 90},
     {title: '商品', dataIndex: 'productNameSnapshot', width: 160},
     {title: '商品规格', dataIndex: 'skuCodeSnapshot', width: 140},
@@ -181,6 +182,10 @@ function close() {
 .accepted {
   font-variant-numeric: tabular-nums;
   color: var(--scm-success, #52c41a);
+}
+
+.scale-banner {
+  margin: 12px 0;
 }
 
 .hint {

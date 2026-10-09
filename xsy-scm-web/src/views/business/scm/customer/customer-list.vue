@@ -8,7 +8,7 @@
     <a-form class="smart-query-form" layout="inline">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input v-model:value="filters.keyword" allow-clear placeholder="编码 / 名称 / 联系人 / 电话" style="width: 240px" />
+          <a-input v-model:value="filters.keyword" allow-clear placeholder="客户名称 / 联系人 / 电话" style="width: 240px" />
         </a-form-item>
         <a-form-item label="客户类型" class="smart-query-form-item">
           <CustomerTypeSelect v-model:value="filters.customerTypeId" width="180px" />
@@ -17,7 +17,7 @@
           <SmartEnumSelect v-model:value="filters.status" enum-name="CUSTOMER_STATUS_ENUM" width="130px" />
         </a-form-item>
         <a-form-item class="smart-query-form-item">
-          <a-space>
+          <a-space :size="10" wrap>
             <a-button type="primary" @click="search">查询</a-button>
             <a-button @click="reset">重置</a-button>
             <a-button type="link" @click="advanced = !advanced">{{ advanced ? '收起筛选' : '高级筛选' }}</a-button>
@@ -40,6 +40,11 @@
         <a-button v-privilege="'scm:customer:add'" type="primary" @click="drawer?.open()">新增客户</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER" :refresh="load"/>
       </a-row>
+      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+        <template #action>
+          <a-button size="small" @click="load">重新加载</a-button>
+        </template>
+      </a-alert>
       <a-table
           class="customer-table"
           :data-source="rows"
@@ -50,29 +55,25 @@
           :locale="{ emptyText }"
           size="small"
           bordered
-          :scroll="{ x: 1295 }"
+          :scroll="{ x: 1190 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'customerCode'">
-            <span class="scm-mono">{{ record.customerCode || '—' }}</span>
-          </template>
-          <template v-else-if="column.dataIndex === 'name'">
+          <template v-if="column.dataIndex === 'name'">
             <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.customerId)">
               {{ record.name }}
             </a-button>
           </template>
+          <span v-else-if="column.dataIndex === 'customerCode'" class="scm-mono">{{ record.customerCode || '—' }}</span>
           <span v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'sellerName'">{{ record.sellerName || '—' }}</span>
           <span v-else-if="column.dataIndex === 'contactName'">{{ record.contactName || '—' }}</span>
-          <template v-else-if="column.dataIndex === 'contactPhone'">
-            <span class="scm-mono">{{ record.contactPhone || '—' }}</span>
-          </template>
+          <span v-else-if="column.dataIndex === 'contactPhone'" class="scm-mono">{{ record.contactPhone || '—' }}</span>
           <span v-else-if="column.dataIndex === 'settleMode'">{{ settleModeText(record.settleMode) }}</span>
           <span v-else-if="column.dataIndex === 'creditLimit'" class="scm-money">{{ formatAmountOrDash(record.creditLimit) }}</span>
           <ScmStatusTag v-else-if="column.dataIndex === 'status'" :color="statusColor(record.status)"
                         :label="statusText(record.status)"/>
-          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
+          <a-space v-else-if="column.dataIndex === 'action'" :size="4" class="smart-table-operate scm-table-actions">
             <a-button v-privilege="'scm:customer:update'" type="link" size="small"
                       @click="drawer?.open(record.customerId)">编辑
             </a-button>
@@ -116,12 +117,16 @@
         :ok-button-props="{ disabled: reassignSaving }"
         @ok="submitReassign"
     >
+      <a-alert v-if="reassignError" type="error" :message="reassignError" show-icon class="smart-margin-bottom10"/>
       <p>客户：<strong>{{ reassignTarget?.name }}</strong>（{{ reassignTarget?.customerCode }}）</p>
       <p class="reassign-current">当前负责人：{{ reassignTarget?.sellerName || '未分配' }}</p>
       <a-form layout="vertical">
-        <a-form-item label="新负责人">
+        <a-form-item>
+          <template #label>
+            新负责人
+            <ScmFieldHelp label="新负责人" text="留空会收回分配；未分配客户仅有分配权或全量权限的人员可见"/>
+          </template>
           <EmployeeSelect v-model:value="reassignSeller" placeholder="留空即收回为未分配" width="100%"/>
-          <div class="ant-form-item-extra">留空表示收回为未分配，未分配客户仅持分配权或全量范围者可见。</div>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -146,9 +151,9 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerDrawer from './components/customer-form-drawer.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {customerError} from './customer-errors';
 import {hasPermission} from '../common/scm-permission';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import {formatAmountOrDash} from '/@/utils/scm-amount';
 import {useQueryFilterMemory} from '/@/lib/query-filter-memory';
 
@@ -157,7 +162,7 @@ const filters = reactive<CustomerQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<CustomerRow[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const advanced = ref(false);
 const drawer = ref<InstanceType<typeof CustomerDrawer>>();
 // 查询条件按「登录用户 + 本页」本地记忆；仅存浏览器，不落业务表。
@@ -166,7 +171,7 @@ const queryMemory = useQueryFilterMemory<CustomerQuery>('scm:customer:list');
 /** 改派归属：独立动作、独立权限（scm:customer:assign），带乐观锁 version。 */
 const reassignVisible = ref(false);
 const reassignSaving = ref(false);
-const reassignError = useScmErrorToast();
+const reassignError = ref('');
 const reassignTarget = ref<CustomerRow>();
 /** EmployeeSelect 的 value prop 不接受 null（声明 [Number, Array]），用 undefined 桥接「收回为未分配」。 */
 const reassignSeller = ref<number | undefined>(undefined);
@@ -222,19 +227,19 @@ const statusColor = (value: CustomerStatus): string => {
   return 'default';
 };
 
-// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列，一列一个值。
-// 上级集团、更新时间仍在搜索、详情、编辑与导出里，不默认摊在列表上。
-const columns = ref<TableColumnsType<CustomerRow>>([
-  {title: '客户编码', dataIndex: 'customerCode', width: 130},
-  {title: '客户名称', dataIndex: 'name', width: 205, sorter: true, ellipsis: true},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 105},
-  {title: '业务员', dataIndex: 'sellerName', width: 105},
-  {title: '联系人', dataIndex: 'contactName', width: 110},
+// 名称、编码、联系人与电话可独立查看；客户编码默认收起，仍可通过列设置打开。
+type CustomerListColumn = TableColumnsType<CustomerRow>[number] & {showFlag?: boolean};
+const columns = ref<CustomerListColumn[]>([
+  {title: '客户名称', dataIndex: 'name', width: 180, sorter: true},
+  {title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false},
+  {title: '客户类型', dataIndex: 'customerTypeName', width: 120, align: 'center'},
+  {title: '业务员', dataIndex: 'sellerName', width: 110},
+  {title: '联系人', dataIndex: 'contactName', width: 120},
   {title: '联系电话', dataIndex: 'contactPhone', width: 140},
-  {title: '结算方式', dataIndex: 'settleMode', width: 110, align: 'center'},
-  {title: '授信额度', dataIndex: 'creditLimit', width: 150, align: 'right'},
-  {title: '状态', dataIndex: 'status', width: 90, align: 'center', sorter: true},
-  {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},
+  {title: '结算方式', dataIndex: 'settleMode', width: 130, align: 'center'},
+  {title: '授信额度', dataIndex: 'creditLimit', width: 130, align: 'right'},
+  {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
+  {title: '操作', dataIndex: 'action', width: 160, align: 'center', fixed: 'right'},
 ]);
 
 let requestId = 0;
@@ -359,15 +364,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 一屏多看几家客户：垂直内边距收到 6px。
-   名称入口走公共类 .scm-cell-link（主文本档的深色文字，悬停才给链接反馈）；
-   按钮默认按内容撑宽，撑满单元格才截得出省略号。 */
+/* 名称入口复用 .scm-cell-link；表格单元格稍微收紧内边距，保持桌面单行阅读密度。 */
 .customer-table :deep(.ant-table-tbody > tr > td) {
   padding: 6px 12px;
-}
-
-.customer-table .scm-cell-link {
-  display: block;
-  max-width: 100%;
 }
 </style>

@@ -8,6 +8,7 @@ import com.xsy.scm.delivery.domain.form.DeliveryVersionForm;
 import com.xsy.scm.delivery.service.DeliveryRouteService;
 import com.xsy.scm.finance.service.FinanceReceivableService;
 import com.xsy.scm.order.domain.form.OrderAddressForm;
+import com.xsy.scm.order.domain.form.OrderConfirmForm;
 import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
 import com.xsy.scm.order.domain.form.OrderReturnAddForm;
 import com.xsy.scm.order.domain.form.OrderReturnApproveForm;
@@ -20,6 +21,10 @@ import com.xsy.scm.order.domain.vo.OrderReturnDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
 import com.xsy.scm.order.service.OrderReturnService;
+import com.xsy.scm.promotion.domain.form.PromotionCouponForm;
+import com.xsy.scm.promotion.domain.form.PromotionCouponIssueForm;
+import com.xsy.scm.promotion.domain.form.PromotionStatusForm;
+import com.xsy.scm.promotion.service.PromotionCouponService;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import com.xsy.scm.sorting.domain.form.SortingActionForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryForm;
@@ -31,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +69,9 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
 
     @Autowired
     private FinanceReceivableService financeReceivableService;
+
+    @Autowired
+    private PromotionCouponService promotionCouponService;
 
     // ------------------------------------------------------------------
     // 夹具
@@ -133,6 +142,11 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     /** 已确认订单：下单 → 提交 → 逐行实数量 → 确认（非标品的 confirm 前置）。 */
     private Long confirmedOrder(String tag, Long customerId, List<SalesOrderItemForm> lines,
                                 String actualQuantity) {
+        return confirmedOrder(tag, customerId, lines, actualQuantity, null);
+    }
+
+    private Long confirmedOrder(String tag, Long customerId, List<SalesOrderItemForm> lines,
+                                String actualQuantity, Long couponInstanceId) {
         var form = new SalesOrderAddForm();
         form.setCustomerId(customerId);
         form.setOrderSource("ADMIN");
@@ -156,9 +170,57 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
             actual.setReason("F1-2C IT 实重");
             order = salesOrderService.actualQuantity(actual, scope + ":actual:" + item.getItemId());
         }
-        Long orderId = salesOrderService.confirm(versionOf(order), scope + ":confirm").getOrderId();
+        var confirmation = new OrderConfirmForm();
+        confirmation.setOrderId(order.getOrderId());
+        confirmation.setVersion(order.getVersion());
+        confirmation.setCouponInstanceId(couponInstanceId);
+        Long orderId = salesOrderService.confirm(confirmation, scope + ":confirm").getOrderId();
         evictMybatisCache();
         return orderId;
+    }
+
+    private Chain plannedWithFixedAmountCoupon(String tag, String ordered, String price, String sorted,
+                                               String discountAmount) {
+        Long warehouseId = locatedWarehouse(tag);
+        Long skuId = newOnShelfSku(tag);
+        stockIn(warehouseId, skuId, tag, "1000.0000");
+        Long customerId = addressedCustomer(tag);
+        Long couponInstanceId = issueFixedAmountCoupon(tag, customerId, discountAmount);
+        Long orderId = confirmedOrder(tag, customerId, List.of(line(skuId, ordered, price)), ordered,
+                couponInstanceId);
+        sortLines(orderId, List.of(sorted), warehouseId);
+        Long routeId = newRoute(warehouseId);
+        attach(routeId, orderId);
+        locateAllStops(routeId);
+        plan(routeId);
+        Long orderItemId = confirmedSalesOrderItemId(orderId);
+        return new Chain(routeId, warehouseId, skuId, customerId, orderId, orderItemId);
+    }
+
+    private Long issueFixedAmountCoupon(String tag, Long customerId, String discountAmount) {
+        var coupon = new PromotionCouponForm();
+        coupon.setCouponCode(prefix + "-" + tag + "-COUPON");
+        coupon.setCouponName("退货金额口径 " + tag);
+        coupon.setDiscountType("AMOUNT");
+        coupon.setDiscountValue(new BigDecimal(discountAmount));
+        coupon.setMinOrderAmount(BigDecimal.ZERO);
+        coupon.setValidFrom(OffsetDateTime.now().minusMinutes(1));
+        coupon.setValidTo(OffsetDateTime.now().plusDays(1));
+        Long couponId = promotionCouponService.save(coupon);
+
+        var activation = new PromotionStatusForm();
+        activation.setVersion(0);
+        activation.setStatus("ACTIVE");
+        promotionCouponService.updateStatus(couponId, activation);
+
+        var issue = new PromotionCouponIssueForm();
+        issue.setCouponId(couponId);
+        issue.setCustomerId(customerId);
+        issue.setQuantity(1);
+        promotionCouponService.issue(issue, key("coupon-issue:" + tag));
+        return jdbc.queryForObject(
+                "SELECT id FROM promotion_coupon_instance WHERE coupon_id = ? AND customer_id = ?",
+                Long.class, couponId, customerId);
     }
 
     private OrderVersionForm versionOf(SalesOrderDetailVO order) {
@@ -372,6 +434,54 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
     // A / E. 先签后退：红字正常生成并挂对原应收
     // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("优惠退货：退款单金额按冻结优惠净额计算，与红字应收一致")
+    void refundAmountUsesTheFrozenOrderDiscount() {
+        Chain chain = plannedWithFixedAmountCoupon("RDN", "1.0000", "100.0000", "1.0000", "10.0000");
+        BigDecimal frozenDiscount = jdbc.queryForObject(
+                "SELECT discount_amount FROM order_discount WHERE sales_order_id = ?",
+                BigDecimal.class, chain.orderId());
+        assertThat(frozenDiscount).isEqualByComparingTo("10.0000");
+
+        OrderReturnDetailVO returned = approvedReturn("RDN", chain.orderId(), List.of(chain.orderItemId()),
+                List.of("1.0000"), List.of("1.0000"));
+        BigDecimal refundAmount = jdbc.queryForObject(
+                "SELECT refund_amount FROM order_refund WHERE return_id = ?", BigDecimal.class,
+                returned.getReturnId());
+
+        assertThat(returned.getApprovedAmount()).isEqualByComparingTo("100.0000");
+        assertThat(refundAmount).as("正常应收尚未生成时，退款单也按已冻结优惠折算净额")
+                .isEqualByComparingTo("90.0000");
+        assertThat(redsOfOrder(chain.orderId())).as("先退后签时不生成孤立红字").isZero();
+
+        dispatch(chain.routeId());
+        sign(chain.routeId(), chain.orderId(), "SIGNED", null);
+
+        Map<String, Object> red = redOf(returned.getReturnId());
+        assertThat(decimalOf(red, "amount")).isLessThan(new BigDecimal("100.0000"));
+        assertThat(refundAmount).as("签收补生成的红字金额必须与已建退款单逐值一致")
+                .isEqualByComparingTo(decimalOf(red, "amount"));
+        assertThat(decimalOf(itemsOf(longOf(red, "id")).getFirst(), "discount_amount"))
+                .isEqualByComparingTo(frozenDiscount);
+    }
+
+    @Test
+    @DisplayName("优惠抵满订单金额：允许退货、无需退款，不生成 0 元退款单")
+    void fullyDiscountedReturnApprovesWithoutRefund() {
+        Chain chain = plannedWithFixedAmountCoupon("RDF", "1.0000", "100.0000", "1.0000", "100.0000");
+
+        OrderReturnDetailVO returned = approvedReturn("RDF", chain.orderId(), List.of(chain.orderItemId()),
+                List.of("1.0000"), List.of("1.0000"));
+
+        assertThat(returned.getStatus()).as("退款净额为 0 不阻塞退货批准").isEqualTo("APPROVED");
+        assertThat(returned.getApprovedAmount()).as("审批金额仍是退货毛额，不退化成净额").isEqualByComparingTo("100.0000");
+        assertThat(count("SELECT count(*) FROM order_refund WHERE return_id = ?", returned.getReturnId()))
+                .as("没有可退的钱就不建退款单，order_refund.refund_amount 恒 > 0").isZero();
+        assertThat(count("SELECT count(*) FROM order_operation_log WHERE order_id = ? AND operation_type = 'RETURN'"
+                + " AND reason LIKE '%无需退款%'", chain.orderId())).as("无需退款仍要留痕").isEqualTo(1);
+        assertThat(redsOfOrder(chain.orderId())).as("净额为 0 的退货不生成红字").isZero();
+    }
 
     @Test
     @DisplayName("先签后退：RED 挂原 NORMAL，对方与快照继承原应收，时点与原因继承退货事实")

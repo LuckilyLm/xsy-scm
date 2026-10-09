@@ -1,12 +1,13 @@
 <!--
   客户 新建 / 编辑 抽屉。
-  - 表单不含 status：新建固定「潜在」，变更走独立的 `updateStatus` 端点，因此这里只读展示；
+  - 表单不含 status：新建固定「潜在」，编辑时只读展示；变更走独立的 `updateStatus` 端点。
   - 上级客户只接受集团且拒绝环形（后端 `CustomerValidator.validateParent`），
     前端提前挡掉必然失败的选项。
 -->
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('l')" @close="close">
     <a-spin :spinning="loading">
+      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
       <a-form ref="formRef" :model="form" layout="vertical">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
@@ -20,23 +21,20 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
-              <a-form-item label="客户编码">
-                <span v-if="isEdit" class="scm-form-readonly">{{ form.customerCode || '—' }}</span>
-                <span v-else class="scm-form-readonly">保存后由系统自动生成</span>
-              </a-form-item>
-            </a-col>
-            <a-col :xs="24" :sm="12">
               <a-form-item label="客户类型" name="customerTypeId"
                            :rules="[{ required: true, message: '请选择客户类型' }]">
                 <CustomerTypeSelect v-model:value="form.customerTypeId"/>
               </a-form-item>
             </a-col>
-            <a-col :xs="24" :sm="12">
-              <a-form-item label="客户状态">
+            <a-col v-if="isEdit" :xs="24" :sm="12">
+              <a-form-item>
+                <template #label>
+                  客户状态
+                  <ScmFieldHelp label="客户状态" text="请在客户列表中变更状态"/>
+                </template>
                 <div class="scm-form-readonly">
                   <ScmStatusTag :color="STATUS_COLOR[status]" :label="statusText"/>
                 </div>
-                <div class="ant-form-item-extra">新建固定为「潜在」，后续通过「状态变更」维护</div>
               </a-form-item>
             </a-col>
           </a-row>
@@ -47,11 +45,14 @@
             <h3 class="scm-form-section__title">归属与结算</h3>
           </div>
           <a-row :gutter="20">
-            <a-col :xs="24" :sm="12">
-              <a-form-item label="归属业务员">
-                <a-input v-if="isEdit" :value="sellerName || '未分配'" disabled/>
-                <EmployeeSelect v-else v-model:value="sellerValue" :disabled="!canAssign" placeholder="请选择业务员" width="100%"/>
-                <div class="ant-form-item-extra">{{ sellerHint }}</div>
+            <a-col v-if="isEdit || canAssign" :xs="24" :sm="12">
+              <a-form-item>
+                <template #label>
+                  归属业务员
+                  <ScmFieldHelp label="归属业务员" :text="isEdit ? '请在客户列表中改派业务员' : '可留空，保存后暂不分配'"/>
+                </template>
+                <span v-if="isEdit" class="scm-form-readonly">{{ sellerName || '未分配' }}</span>
+                <EmployeeSelect v-else v-model:value="sellerValue" placeholder="请选择业务员" width="100%"/>
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
@@ -65,8 +66,12 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
-              <a-form-item label="统一结算方" name="settlementCustomerId">
-                <CustomerSelect v-model:value="form.settlementCustomerId" placeholder="留空则独立结算；集团客户请选择结算主体"/>
+              <a-form-item name="settlementCustomerId">
+                <template #label>
+                  统一结算方
+                  <ScmFieldHelp label="统一结算方" text="留空则独立结算；集团客户请选择结算主体"/>
+                </template>
+                <CustomerSelect v-model:value="form.settlementCustomerId" placeholder="请选择结算方"/>
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
@@ -106,7 +111,6 @@
                     placeholder="省 / 市 / 区"
                     @change="onAreaChange"
                 />
-                <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
@@ -129,10 +133,13 @@
           <a-row :gutter="20">
             <!-- 额度与阈值都是后端的 4 位定点字符串，必须 string-mode：走 number 会丢精度、也会改掉提交类型 -->
             <a-col :xs="24" :sm="12">
-              <a-form-item label="授信额度" name="creditLimit">
+              <a-form-item name="creditLimit">
+                <template #label>
+                  授信额度
+                  <ScmFieldHelp label="授信额度" text="0 表示不设置额度上限；逾期仍可能阻断订单"/>
+                </template>
                 <a-input-number v-model:value="form.creditLimit" string-mode :min="0" :max="99999999999999"
                                 :precision="4" addon-before="¥" style="width: 100%"/>
-                <div class="ant-form-item-extra">0 表示未设置额度；逾期仍阻断</div>
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
@@ -188,7 +195,7 @@
       </a-form>
     </a-spin>
     <template #footer>
-      <a-space>
+      <a-space :size="12">
         <a-button @click="visible = false">取消</a-button>
         <a-button type="primary" :loading="saving" @click="submit">保存</a-button>
       </a-space>
@@ -202,6 +209,7 @@ import {emptyLocation, locationError} from '/@/components/business/scm/map/types
 import {computed, nextTick, reactive, ref} from 'vue';
 import type {FormInstance} from 'ant-design-vue';
 import {message} from 'ant-design-vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import type {
   CreditPeriodType,
@@ -230,14 +238,13 @@ import {
 } from '../customer-form-model';
 import {customerError} from '../customer-errors';
 import {hasPermission} from '../../common/scm-permission';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 
 const emit = defineEmits<{ saved: [] }>();
 
 const visible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const formRef = ref<FormInstance>();
 
 /** 详情里的状态（只读展示用）。新建时后端固定给「潜在」。 */
@@ -255,17 +262,6 @@ const sellerName = ref('');
 /** 分配/改派权：与服务端 resolveSellerOnCreate 同一口径 —— 无此权者新建一律落自己名下。 */
 const canAssign = computed(() => hasPermission('scm:customer:assign'));
 const isEdit = computed(() => form.customerId != null);
-
-/** 业务员字段的形态说明：编辑只读、无分配权自动归属自己、有分配权可指定或留空。 */
-const sellerHint = computed(() => {
-  if (isEdit.value) {
-    return '归属变更请使用列表中的「改派业务员」；编辑保存不会改动负责人。';
-  }
-  if (!canAssign.value) {
-    return '无分配权限，新建后将自动归属当前账号。';
-  }
-  return '留空表示暂不分配（未分配客户仅持分配权或全量范围者可见）。';
-});
 
 const form = reactive<CustomerFormModel>(emptyCustomer());
 

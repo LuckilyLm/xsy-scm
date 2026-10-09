@@ -37,6 +37,11 @@
         </a-space>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRODUCT" :refresh="load"/>
       </a-row>
+      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+        <template #action>
+          <a-button size="small" @click="load">重新加载</a-button>
+        </template>
+      </a-alert>
       <a-table :data-source="rows" :columns="columns" row-key="spuId" :loading="loading" :pagination="false"
                size="small" bordered :scroll="{ x: 1280 }" :row-selection="canBatch ? rowSelection : undefined"
                @change="sortChanged">
@@ -140,12 +145,11 @@ import ProductBatchModal from './components/product-batch-modal.vue';
 import ProductImportModal from './components/product-import-modal.vue';
 import SkuTable from './components/product-sku-table.vue';
 import {productError} from './product-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 const router = useRouter();
 const filters = reactive<ProductQuery>({pageNum: 1, pageSize: 20});
 const categories = ref<ProductCategory[]>([]), rows = ref<ProductRow[]>([]), total = ref(0), loading = ref(false),
-    error = useScmErrorToast(), advanced = ref(false);
+    error = ref(''), advanced = ref(false);
 const tagChoices = ref<ProductTag[]>([]), createdRange = ref<[string, string]>();
 const selectedKeys = ref<ProductId[]>([]);
 const drawer = ref<InstanceType<typeof ProductDrawer>>(), batch = ref<InstanceType<typeof ProductBatchModal>>();
@@ -162,7 +166,7 @@ const columns = ref<TableColumnsType<ProductRow>>([
   {title: '分类', dataIndex: 'categoryPath', width: 210},
   {title: '单位', dataIndex: 'saleUnit', width: 70, align: 'center'},
   {title: '市场价', dataIndex: 'price', width: 180, align: 'right'},
-  {title: '规格数', dataIndex: 'skuCount', width: 76, align: 'center'},
+  {title: '规格数', dataIndex: 'skuCount', width: 76, align: 'right'},
   {title: '在售状态', dataIndex: 'status', width: 84, align: 'center', sorter: true},
   {title: '主档状态', dataIndex: 'masterStatus', width: 88, align: 'center'},
   {title: '标签', dataIndex: 'tags', width: 150},

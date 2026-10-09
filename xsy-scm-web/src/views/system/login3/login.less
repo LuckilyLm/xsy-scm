@@ -8,9 +8,6 @@
 
 .xsy-login {
   position: relative;
-  // 必须用视口单位而不是 100%：body 高度是 auto，min-height:100% 解析不出视口高度，
-  // 内容比视口略高时（矮屏 + 500px 卡片）会溢出 ~11px，触发纵向滚动条，
-  // 滚动条占掉右侧 ~15px 使右下角露出一条浅色带。
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -18,144 +15,14 @@
   justify-content: center;
   padding: 40px 32px 20px;
   overflow: hidden;
-  background:
-          radial-gradient(circle at 10% 22%, rgba(22, 163, 74, 0.13), transparent 36%),
-          radial-gradient(circle at 90% 10%, rgba(20, 184, 166, 0.10), transparent 32%),
-          radial-gradient(circle at 6% 92%, rgba(34, 197, 94, 0.16), transparent 36%),
-          radial-gradient(circle at 94% 94%, rgba(45, 212, 191, 0.12), transparent 34%),
-          linear-gradient(135deg, #f6fbf8 0%, #f1f8f4 48%, #f7faf8 100%);
-
-  // 大型有机弧面：只露出屏幕边缘的一小段柔光。
-  // 两个关键点，缺一个就会露出「圆盘」硬边：
-  //   1. 用 ellipse 而非 circle + transform: scale —— scale 会把淡出区一起压扁，
-  //      圆周上的渐隐被压缩成一条可见的硬轮廓；
-  //   2. 淡出必须走满全程（0% → 100%），峰值透明度放在 0%，越往边缘越淡。
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  // 左下：浅绿叶片感的弧面
-  &::before {
-    width: 900px;
-    height: 620px;
-    left: -470px;
-    bottom: -340px;
-    background: radial-gradient(
-            ellipse 50% 50% at 72% 28%,
-            rgba(74, 222, 128, 0.26) 0%,
-            rgba(74, 222, 128, 0.15) 38%,
-            rgba(74, 222, 128, 0.04) 68%,
-            rgba(74, 222, 128, 0) 100%
-    );
-    transform: rotate(-10deg);
-  }
-
-  // 右上：浅青弧面
-  &::after {
-    width: 760px;
-    height: 540px;
-    right: -400px;
-    top: -300px;
-    background: radial-gradient(
-            ellipse 50% 50% at 30% 72%,
-            rgba(45, 212, 191, 0.22) 0%,
-            rgba(45, 212, 191, 0.13) 38%,
-            rgba(45, 212, 191, 0.04) 68%,
-            rgba(45, 212, 191, 0) 100%
-    );
-    transform: rotate(14deg);
-  }
+  background-color: #e9f8f0;
+  background-image: var(--login-background-image);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
-// ---------------- 装饰层 ----------------
-
-.xsy-login__decor {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.xsy-login__decor-img {
-  position: absolute;
-  user-select: none;
-  animation: xsy-login-decor-in 1.2s ease-out both;
-}
-
-// 左下叶片波浪：参考图里左下是最浓的一块绿，是整个背景的视觉锚点
-.xsy-login__decor-img--wave {
-  left: -2%;
-  bottom: -3%;
-  width: 860px;
-  max-width: 58vw;
-  opacity: 0.88;
-}
-
-// 右上叶片飘带：参考图右上偏青、浓度中等，不要压过左下
-.xsy-login__decor-img--ribbon {
-  right: -2%;
-  top: -2%;
-  width: 700px;
-  max-width: 48vw;
-  opacity: 0.46;
-  animation-delay: 0.1s;
-}
-
-// 右下仓储物流场景：参考图右下的绿度约是左下的四成，单靠这张淡图撑不住，
-// 所以提高透明度并把它推满右下角，让右下不显得比其它三角空。
-.xsy-login__decor-img--logistics {
-  right: -3%;
-  bottom: -4%;
-  width: 620px;
-  opacity: 0.62;
-  animation-delay: 0.2s;
-}
-
-// 供应链网络：圆底节点（叶片 / 车辆 / 数据）+ 连接曲线。
-// 素材是 650x183 的扁长条，参考图里它横贯页面顶部、卡片上沿之上且节点圆点清晰可辨。
-// 素材本身是很浅的薄荷绿，opacity 给低会直接融进背景，所以实色显示。
-// 垂直定位必须跟着卡片走：卡片随视口垂直居中，固定 top 只在一个视口高度上正确，
-// 故用 50vh 偏移让叶片节点圆始终悬在卡片上沿上方。
-.xsy-login__decor-img--connectors {
-  left: 72%;
-  top: calc(50vh - 455px);
-  width: 1150px;
-  max-width: 80vw;
-  opacity: 1;
-  transform: translateX(-50%);
-  animation-delay: 0.3s;
-}
-
-// 独立浮动叶片：右下偏上，补右下的稀疏感
-.xsy-login__decor-img--leaves {
-  right: 1%;
-  bottom: 26%;
-  width: 340px;
-  opacity: 0.62;
-  animation-delay: 0.4s;
-}
-
-// 局部点阵：左上角，补参考图左上那一小片规则点阵
-.xsy-login__decor-img--dots {
-  left: 3%;
-  top: 14%;
-  width: 240px;
-  opacity: 0.58;
-  animation-delay: 0.5s;
-}
-
-@keyframes xsy-login-decor-in {
-  from {
-    opacity: 0;
-  }
-}
-
-// 装饰层之上：卡片与页脚
+// 卡片与页脚
 .xsy-login__footer {
   position: relative;
   z-index: 1;
@@ -277,12 +144,9 @@
 .xsy-login__feature-icon {
   font-size: 13px;
   color: @xsy-primary;
-  // antd 图标经 font-size 定尺寸；内联 SVG（叶片）需显式宽高
-  width: 13px;
-  height: 13px;
 }
 
-// 全链路主插画
+// 品牌区蔬菜插画
 .xsy-login__visual {
   margin-top: auto;
   padding-top: 20px;
@@ -291,9 +155,9 @@
 
 .xsy-login__scene {
   display: block;
-  width: 100%;
-  max-width: 700px;
-  height: auto;
+  width: auto;
+  max-width: 100%;
+  height: clamp(180px, 26vh, 260px);
   user-select: none;
 }
 
@@ -518,24 +382,14 @@
     margin-bottom: 8px;
   }
 
-  // 主插画是左列最高的块（约 337px）：矮屏下它才是卡片撑到 580px 的真因。
-  // min-height 拦不住内容，必须直接压插画本身。
   .xsy-login__visual {
     padding-top: 12px;
-    max-height: 200px;
-    overflow: hidden;
   }
 
   .xsy-login__scene {
-    max-height: 200px;
-    width: auto;
-    max-width: 100%;
+    height: 150px;
   }
 
-  // 640px 以下卡片上沿贴近视口顶，连接线条带会压到卡片，直接隐藏
-  .xsy-login__decor-img--connectors {
-    display: none;
-  }
 }
 
 @media (max-width: 1199px) {
@@ -571,17 +425,10 @@
     padding: 40px 40px 32px;
   }
 
-  // 窄屏装饰整体退弱，只留角落的叶片层
-  .xsy-login__decor-img--connectors,
-  .xsy-login__decor-img--leaves,
-  .xsy-login__decor-img--dots,
-  .xsy-login__decor-img--logistics {
-    display: none;
-  }
-
-  .xsy-login__decor-img--wave,
-  .xsy-login__decor-img--ribbon {
-    opacity: 0.3;
+  .xsy-login {
+    background-image: var(--login-mobile-background-image), linear-gradient(180deg, #e0faf6 0%, #f8fff3 72%);
+    background-position: center bottom;
+    background-size: 100% auto, cover;
   }
 }
 
@@ -605,10 +452,6 @@
   .xsy-login__footer {
     margin-top: 16px;
   }
-
-  .xsy-login__decor-img {
-    display: none;
-  }
 }
 
 // ---------------- 减少动态偏好 ----------------
@@ -616,8 +459,7 @@
 @media (prefers-reduced-motion: reduce) {
   .xsy-login__shell,
   .xsy-login__feature,
-  .xsy-login__visual,
-  .xsy-login__decor-img {
+  .xsy-login__visual {
     animation: none;
   }
 }

@@ -166,6 +166,7 @@ const columns = ref([
     dataIndex: 'dataType',
     width: 100,
     ellipsis: true,
+    align: 'center',
   },
   {
     title: '非空',

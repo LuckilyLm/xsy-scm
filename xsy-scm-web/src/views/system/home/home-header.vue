@@ -9,30 +9,30 @@
   <a-card
     class="home-welcome"
     :bordered="false"
-    :style="{backgroundImage: `url('${homeAsset('banner/home-hero-banner.webp')}')`}">
+    :style="{backgroundImage: `url('${homeAsset('banner/home-hero-harvest.webp')}')`}">
     <div class="home-welcome__row">
       <div class="home-welcome__text">
-        <span class="home-welcome__brand" aria-hidden="true">
-          <img :src="homeAsset('brand/xsy-logo-mark.png')" alt=""/>
-        </span>
         <div class="home-welcome__copy">
           <h2 class="home-welcome__title">{{ welcomeSentence }}</h2>
-          <p class="home-welcome__meta">{{ subtitle }}</p>
+          <p class="home-welcome__meta">{{ dayInfo }}</p>
         </div>
       </div>
-      <div class="home-welcome__actions">
-        <a-button v-if="canScreen" @click="gotoScreen">
-          <template #icon>
-            <bar-chart-outlined/>
-          </template>
-          运营大屏
-        </a-button>
-        <a-button type="primary" :loading="refreshing" @click="emit('refresh')">
-          <template #icon>
-            <reload-outlined/>
-          </template>
-          刷新数据
-        </a-button>
+      <div class="home-welcome__tools">
+        <quick-entries/>
+        <div class="home-welcome__actions">
+          <a-button v-if="canScreen" @click="gotoScreen">
+            <template #icon>
+              <bar-chart-outlined/>
+            </template>
+            运营大屏
+          </a-button>
+          <a-button type="primary" :loading="refreshing" @click="emit('refresh')">
+            <template #icon>
+              <reload-outlined/>
+            </template>
+            刷新数据
+          </a-button>
+        </div>
       </div>
     </div>
   </a-card>
@@ -42,6 +42,7 @@
 import {computed} from 'vue';
 import {useRouter} from 'vue-router';
 import {useUserStore} from '/@/store/modules/system/user';
+import QuickEntries from './components/quick-entries.vue';
 import {homeAsset} from './home-assets';
 
 defineProps<{canScreen: boolean; refreshing: boolean}>();
@@ -71,38 +72,32 @@ function pad(value: number): string {
   return String(value).padStart(2, '0');
 }
 
-/** 静态文案，不表达任何业务数字，只是让欢迎区右半边的留白有内容。 */
-const slogan = '从田间到餐桌，让新鲜更简单';
-
-/**
- * 日期、星期与部门一行说完，再接品牌口号。
- *
- * <p>原来拆成「日期·部门」+「口号」两行，欢迎区因此白白高出一行；设计稿是一行。
- */
-const subtitle = computed(() => {
+const dayInfo = computed(() => {
   const now = new Date();
   const week = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()];
-  const parts = [`${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} 星期${week}`];
+  const date = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const parts = [`${date} 星期${week}`];
   if (departmentName.value) {
     parts.push(departmentName.value);
   }
-  return `${parts.join(' · ')}　|　${slogan}`;
+  return parts.join(' · ');
 });
 
 function gotoScreen() {
   void router.push('/screen');
 }
+
 </script>
 
 <style lang="less" scoped>
 .home-welcome {
   position: relative;
-  min-height: 88px;
+  min-height: 148px;
   border: 1px solid var(--scm-border);
   border-radius: 14px;
   background-color: #e9f8f0;
   background-repeat: no-repeat;
-  background-position: center right;
+  background-position: right 68%;
   background-size: cover;
   overflow: hidden;
 
@@ -123,8 +118,8 @@ function gotoScreen() {
   :deep(.ant-card-body) {
     position: relative;
     z-index: 1;
-    padding: 16px 20px;
-    min-height: 88px;
+    padding: 24px;
+    min-height: 148px;
     display: flex;
     align-items: center;
   }
@@ -141,29 +136,8 @@ function gotoScreen() {
   .home-welcome__text {
     display: flex;
     align-items: center;
-    gap: 14px;
     min-width: 0;
     max-width: 620px;
-  }
-
-  /* 品牌圆标：轻描边 + 白底，压在彩色插画前也有边界感 */
-  .home-welcome__brand {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 14px;
-    border: 1px solid rgba(8, 169, 102, 0.16);
-    background: rgba(255, 255, 255, 0.86);
-    box-shadow: 0 6px 16px rgba(8, 120, 74, 0.1);
-
-    img {
-      width: 26px;
-      height: 26px;
-      object-fit: contain;
-    }
   }
 
   .home-welcome__copy {
@@ -172,14 +146,14 @@ function gotoScreen() {
 
   .home-welcome__title {
     margin: 0;
-    font-size: clamp(18px, 1.6vw, 24px);
+    font-size: 24px;
     font-weight: 600;
     line-height: 1.25;
     color: var(--scm-text);
   }
 
   .home-welcome__meta {
-    margin: 4px 0 0;
+    margin: 6px 0 0;
     font-size: 13px;
     color: var(--scm-text-secondary);
   }
@@ -190,8 +164,17 @@ function gotoScreen() {
     gap: 8px;
   }
 
+  .home-welcome__tools {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   @media (max-width: 767px) {
-    min-height: 132px;
+    min-height: 212px;
     background-position: 68% center;
 
     &::before {
@@ -202,9 +185,17 @@ function gotoScreen() {
     }
 
     :deep(.ant-card-body) {
-      min-height: 132px;
+      min-height: 212px;
       align-items: flex-start;
-      padding: 16px;
+      padding: 20px;
+    }
+
+    .home-welcome__tools {
+      align-items: flex-start;
+    }
+
+    .home-welcome__title {
+      font-size: 20px;
     }
   }
 }

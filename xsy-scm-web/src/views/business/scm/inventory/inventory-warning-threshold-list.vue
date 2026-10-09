@@ -9,25 +9,29 @@
   因此没有「确认 / 审批」这类动作，改配置立即生效（预警是读时计算的，天然实时）。
 -->
 <template>
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="仓库" class="smart-query-form-item">
+  <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
+    <div class="scm-filter-fields">
+      <a-form-item label="仓库">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px"/>
       </a-form-item>
-      <a-form-item label="商品规格编码" class="smart-query-form-item">
+      <a-form-item label="商品规格编码">
         <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button-group>
-          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-button-group>
-      </a-form-item>
-    </a-row>
+    </div>
+    <div class="scm-filter-actions">
+      <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
+      <a-button @click="resetQuery">重置</a-button>
+    </div>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
+    <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:threshold:add'">
           新建阈值配置
@@ -52,16 +56,20 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无阈值配置' }"
-        :scroll="{ x: 1370 }"
+        :scroll="{ x: 1315 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouseCode'">
+        <template v-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuName'">
+          {{ skuMainText(record.specValues, record.skuName) }}
+        </template>
         <template v-else-if="column.dataIndex === 'skuCode'">
           <span class="scm-mono">{{ record.skuCode || '—' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'productName'">
+          {{ record.productName || '—' }}
         </template>
         <template v-else-if="column.dataIndex === 'warnMin'">
           <span class="scm-quantity">{{ quantityText(record.warnMin) }}</span>
@@ -114,6 +122,12 @@
       :width="scmDrawerWidth('s')"
       @close="closeDrawer"
   >
+    <a-alert
+        type="info"
+        show-icon
+        style="margin-bottom: 12px"
+        message="预警按可用量（现有量 − 预留量）判定。"
+    />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
@@ -179,25 +193,23 @@ import type {Warehouse} from '../purchase/purchase-types';
 import {fixed4} from '../common/scm-fixed';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryWarningThresholdQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryWarningThreshold[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
-// 配置页只关心「哪个仓 + 哪个商品规格 + 上下限是多少 + 备注」，一格一个值，名称与编码各自成列。
-// 更新时间是技术字段（改配置立即生效，没有需要追溯的业务时刻），不上列。
+// 配置页将仓库、商品、规格和编码分列；更新时间不上列。
 const columns = ref<TableColumnsType<InventoryWarningThreshold>>([
-  {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
-  {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'sku', width: 170},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150, ellipsis: true},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120},
+  {title: '商品', dataIndex: 'productName', width: 160, ellipsis: true},
+  {title: '商品规格', dataIndex: 'skuName', width: 170, ellipsis: true},
+  {title: '规格编码', dataIndex: 'skuCode', width: 135},
   {title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 120},
   {title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 120},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
@@ -270,9 +282,17 @@ const form = reactive<{
   remark?: string;
 }>({});
 
+async function validateAtLeastOneThreshold() {
+  if (form.warnMin != null || form.warnMax != null) {
+    return;
+  }
+  throw new Error('预警下限和上限至少填写一个');
+}
+
 const formRules = {
   warehouseId: [{required: true, message: '请选择仓库'}],
   skuId: [{required: true, message: '请选择商品规格'}],
+  warnMin: [{validator: validateAtLeastOneThreshold}],
 };
 
 function openCreate() {
@@ -309,11 +329,11 @@ function buildPayload(): InventoryWarningThresholdAdd | null {
   const min = fixed4(form.warnMin);
   const max = fixed4(form.warnMax);
   if (min === undefined && max === undefined) {
-    message.warning('预警上下限至少填写一个 —— 都没有的配置没有任何判断依据');
+    message.warning('预警下限和上限至少填写一个');
     return null;
   }
   if (form.warnMin != null && form.warnMax != null && form.warnMin > form.warnMax) {
-    message.warning('预警下限不得大于上限 —— 否则所有状态都会异常，预警会失去意义');
+    message.warning('预警下限不得大于上限');
     return null;
   }
   return {

@@ -39,24 +39,20 @@
   color: var(--scm-text, rgba(0, 0, 0, 0.88));
 }
 
-.scm-form-section__hint {
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+/* 行距由布局提供，校验信息只在需要时占用表单项自身高度。 */
+.scm-form-section > .ant-row {
+  row-gap: 20px;
 }
 
-.scm-form-section__extra {
-  margin-left: auto;
+.scm-form-section > .ant-row > .ant-col > .ant-form-item {
+  margin-bottom: 0;
 }
 
-/* 纵向节奏：相邻两行之间留出清晰空白，最后一行不留尾距，底部空白交给卡片内边距。
-   必须用「直接子级 > .ant-row」限定，否则会连带命中子组件里同样处于末行的表单项并把间距清零。 */
-.scm-form-section > .ant-row .ant-form-item {
+.scm-form-section > .ant-form-item {
   margin-bottom: 20px;
 }
 
-.scm-form-section > .ant-row:last-child > .ant-col .ant-form-item {
+.scm-form-section > .ant-form-item:last-child {
   margin-bottom: 0;
 }
 

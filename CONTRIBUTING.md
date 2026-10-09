@@ -143,7 +143,7 @@ PR 模板里的「验证证据」要求粘贴**实际命令与实际输出**，�
 
 ## 七、一键验证
 
-前置工具：Python 3.10+、Java 21、Maven、满足 `xsy-scm-web/package.json` engines（当前为 Node >=18）的 Node.js，以及已安装的前端依赖；CI 当前以 Node 22 作为参考环境。运行前按部署目录配置本地依赖服务，脚本不会自动启动或清理容器。
+前置工具：Python 3.10+、Java 21、Maven、满足 `xsy-scm-web/package.json` engines（当前为 Node >=18）的 Node.js，以及已安装的前端依赖。验证通过仓库本地脚本执行；运行前按部署目录配置本地依赖服务，脚本不会自动启动或清理容器。
 
 Python 依赖需显式安装一次（上传类 E2E 用 `openpyxl` 生成 xlsx 夹具，缺它会在用例中途报 `ModuleNotFoundError`，看起来像用例坏了）：
 

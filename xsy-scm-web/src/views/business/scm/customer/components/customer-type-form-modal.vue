@@ -11,11 +11,15 @@
       @ok="submit"
       @cancel="visible = false"
   >
+    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
     <a-form ref="formRef" :model="form" layout="vertical">
-      <a-form-item label="类型编码" name="typeCode"
+      <a-form-item name="typeCode"
                    :rules="[{ required: true, whitespace: true, message: '请输入类型编码' }]">
+        <template #label>
+          类型编码
+          <ScmFieldHelp label="类型编码" text="编码需全局唯一，保存时自动转为大写"/>
+        </template>
         <a-input v-model:value="form.typeCode" :maxlength="64" placeholder="例如 GROUP"/>
-        <div class="ant-form-item-extra">编码全局唯一，保存时自动转为大写</div>
       </a-form-item>
       <a-form-item label="类型名称" name="name"
                    :rules="[{ required: true, whitespace: true, message: '请输入类型名称' }]">
@@ -36,13 +40,13 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import {customerTypeApi} from '/@/api/business/scm/customer-type-api';
 import type {CustomerType, CustomerTypeForm} from '/@/types/business/scm/customer';
 import {customerError} from '../customer-errors';
-import {useScmErrorToast} from '../../common/scm-error-toast';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 const emit = defineEmits<{ saved: [] }>();
 
 const visible = ref(false);
 const saving = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const formRef = ref<FormInstance>();
 
 function defaults(): CustomerTypeForm {

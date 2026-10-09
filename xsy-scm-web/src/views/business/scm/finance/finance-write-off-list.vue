@@ -20,35 +20,38 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
+    <template #action><a-button @click="queryData">重试</a-button></template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+      <div class="smart-table-operate-block">核销流水</div>
+      <div class="smart-table-setting-block">
         <a-button v-privilege="PERM.WRITE_OFF_ADD" type="primary" @click="openAdd">登记核销</a-button>
         <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
-      </div>
-      <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_WRITE_OFF" :refresh="queryData"/>
       </div>
     </a-row>
     <a-table id="scm-finance-write-off-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1825}">
+             row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1295}">
       <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='writeOffNo'">
-          <span class="scm-mono">{{ record.writeOffNo || '—' }}</span>
+        <template v-if="column.dataIndex==='source'">
+          <!-- 资金方作主行，「类型 + 单号」作次要行：三者回答的是同一个问题（钱从哪来） -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.sourceName || '—' }}</span>
+            <span class="scm-cell-stack__sub">
+              {{ sourceTypeText(record.sourceType) }} {{ record.sourceNo || '—' }}
+              <a v-if="record.sourceType==='BALANCE_MOVEMENT'" v-privilege="'scm:balance:movement:query'"
+                 @click="movementDetail?.open({movementId: record.sourceId})">来源流水</a>
+            </span>
+          </div>
         </template>
-        <template v-else-if="column.dataIndex==='sourceName'">{{ record.sourceName || '—' }}</template>
-        <template v-else-if="column.dataIndex==='sourceType'">{{ sourceTypeText(record.sourceType) }}</template>
-        <template v-else-if="column.dataIndex==='sourceNo'">
-          <span v-if="record.sourceNo" class="scm-mono">{{ record.sourceNo }}</span>
-          <span v-else>—</span>
-          <a v-if="record.sourceType==='BALANCE_MOVEMENT'" v-privilege="'scm:balance:movement:query'"
-             class="movement-link" @click="movementDetail?.open({movementId: record.sourceId})">来源流水</a>
-        </template>
-        <template v-else-if="column.dataIndex==='targetName'">{{ record.targetName || '—' }}</template>
-        <template v-else-if="column.dataIndex==='targetType'">{{ targetTypeText(record.targetType) }}</template>
-        <template v-else-if="column.dataIndex==='targetNo'">
-          <span v-if="record.targetNo" class="scm-mono">{{ record.targetNo }}</span>
-          <span v-else>—</span>
+        <template v-else-if="column.dataIndex==='target'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.targetName || '—' }}</span>
+            <span class="scm-cell-stack__sub">{{ targetTypeText(record.targetType) }} {{ record.targetNo || '—' }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex==='entryType'">
           <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
@@ -56,12 +59,13 @@
         <template v-else-if="column.dataIndex==='amount'">
           <span class="scm-money">{{ moneyText(text) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='reason'">
-          <span v-if="record.reason" class="scm-cell-wrap">{{ record.reason }}</span>
-          <span v-else>—</span>
+        <template v-else-if="column.dataIndex==='writtenOffAt'">
+          <!-- 「谁在什么时候撤销/核销的」是同一件事的两面，合成一格 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ dateTimeText(text) }}</span>
+            <span v-if="record.operator" class="scm-cell-stack__sub">{{ record.operator }}</span>
+          </div>
         </template>
-        <template v-else-if="column.dataIndex==='writtenOffAt'">{{ dateTimeText(text) }}</template>
-        <template v-else-if="column.dataIndex==='operator'">{{ record.operator || '—' }}</template>
         <template v-else-if="column.dataIndex==='action'">
           <!-- 撤销核销是追加反向事实，不是编辑：保持 danger 视觉 + 独立的二次确认弹窗 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -79,8 +83,13 @@
   </a-card>
 
   <a-drawer v-model:open="addOpen" title="登记多目标核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
+    <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
     <a-form layout="vertical">
-      <a-form-item label="资金类型" required>
+      <a-form-item required>
+        <template #label>
+          资金类型
+          <ScmFieldHelp label="资金类型" text="收款核销应收，付款核销应付"/>
+        </template>
         <a-select v-model:value="sourceType" :options="sourceOptions" placeholder="选择资金类型" @change="resetAllocation"/>
       </a-form-item>
       <a-form-item label="资金单" required>
@@ -116,6 +125,7 @@
 
   <a-modal v-model:open="reverseOpen" title="撤销核销" :confirm-loading="reverseSaving" @ok="submitReverse">
     <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一条反向核销，金额 ${moneyText(reverseRow.amount)}。`"/>
+    <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError"/>
     <a-form layout="vertical"><a-form-item label="撤销原因" required><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/></a-form-item></a-form>
   </a-modal>
 
@@ -132,6 +142,7 @@ import {SCM_FINANCE_BUSINESS_TYPE_ENUM, SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENT
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import FinanceRecordPicker from './finance-record-picker.vue';
 import BalanceMovementDetail from './balance-movement-detail.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -141,15 +152,14 @@ import {financeError} from './finance-errors';
 import type {FinanceCandidate, FinanceWriteOff, WriteOffQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 interface AllocationDraft extends FinanceCandidate { amount: string; }
 const query = reactive<WriteOffQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinanceWriteOff, WriteOffQuery>(financeApi.writeOffQuery, financeApi.writeOffExport);
-const addOpen = ref(false), addSaving = ref(false), addError = useScmErrorToast(), sourceType = ref<'RECEIPT'|'PAYMENT'>();
+const addOpen = ref(false), addSaving = ref(false), addError = ref(''), sourceType = ref<'RECEIPT'|'PAYMENT'>();
 const source = ref<FinanceCandidate | null>(null), targets = ref<AllocationDraft[]>([]);
 const pickerOpen = ref(false), pickerKind = ref<'RECEIPT'|'PAYMENT'|'RECEIVABLE'|'PAYABLE'>('RECEIPT'), picking = ref<'SOURCE'|'TARGET'>('SOURCE');
-const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = useScmErrorToast(), reverseReason = ref(''), reverseRow = ref<FinanceWriteOff | null>(null);
+const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinanceWriteOff | null>(null);
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const sourceOptions = Object.values(SCM_FINANCE_SOURCE_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
@@ -176,20 +186,16 @@ function targetTypeText(value?: string | null): string {
 }
 
 // 列按「哪张核销单 / 钱从哪来 / 核到哪去 / 多少钱 / 什么方向 / 为什么 / 谁在什么时候做的」排列。
-// 一格一个值：资金来源拆成资金方 / 资金类型 / 资金单号三列，核销目标同构，核销时点与操作人分列。
+// 资金与目标各带一组「类型 + 单号 + 往来方」，合并成来源 / 对象两格（13 列 → 8 列）；
+// 核销时点与操作人合成一格。
 const columns = ref<TableColumnsType<FinanceWriteOff>>([
-    {title: '核销单号', dataIndex: 'writeOffNo', width: 175},
-    {title: '资金方', dataIndex: 'sourceName', width: 150},
-    {title: '资金类型', dataIndex: 'sourceType', align: 'center', width: 90},
-    {title: '资金单号', dataIndex: 'sourceNo', width: 180},
-    {title: '核销目标', dataIndex: 'targetName', width: 150},
-    {title: '目标类型', dataIndex: 'targetType', align: 'center', width: 90},
-    {title: '目标单号', dataIndex: 'targetNo', width: 175},
+    {title: '核销单号', dataIndex: 'writeOffNo', width: 190},
+    {title: '来源', dataIndex: 'source', width: 220},
+    {title: '对象', dataIndex: 'target', width: 220},
     {title: '核销金额', dataIndex: 'amount', align: 'right', width: 130},
     {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
     {title: '原因', dataIndex: 'reason', width: 180},
     {title: '核销时点', dataIndex: 'writtenOffAt', width: 165},
-    {title: '操作人', dataIndex: 'operator', width: 110},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
 const targetColumns: TableColumnsType<AllocationDraft> = [
@@ -266,7 +272,7 @@ onMounted(queryData);
 
 <style scoped>
 .date-separator { margin: 0 8px; color: #667085; }
-.movement-link { margin-left: 6px; }
+.page-error,.form-error { margin-bottom: 12px; }
 @media (max-width: 768px) {
   .finance-table :deep(.ant-table-cell-fix-right) { position: static !important; right: auto !important; }
 }

@@ -199,6 +199,7 @@ const tableColumns = ref([
     title: '发布状态',
     dataIndex: 'publishFlag',
     width: 80,
+    align: 'center',
   },
   {
     title: '删除',
@@ -214,11 +215,13 @@ const tableColumns = ref([
     title: '页面浏览量',
     dataIndex: 'pageViewCount',
     width: 90,
+    align: 'right',
   },
   {
     title: '用户浏览量',
     dataIndex: 'userViewCount',
     width: 90,
+    align: 'right',
   },
   {
     title: '创建人',
@@ -235,6 +238,7 @@ const tableColumns = ref([
     dataIndex: 'action',
     fixed: 'right',
     width: 90,
+    align: 'center',
   },
 ]);
 

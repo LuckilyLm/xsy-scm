@@ -192,6 +192,7 @@ const columns = [
   {
     title: '状态',
     dataIndex: 'disabledFlag',
+    align: 'center',
   },
 ];
 </script>

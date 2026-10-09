@@ -34,6 +34,12 @@
     </a-form-item>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <div class="smart-table-setting-block">
       <TableOperator
@@ -52,16 +58,20 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1390 }"
+        :scroll="{ x: 1120 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'product'">{{ record.productNameSnapshot || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'spuCodeSnapshot'">
-          <span class="scm-mono">{{ record.spuCodeSnapshot || '—' }}</span>
+        <template v-if="column.dataIndex === 'product'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.productNameSnapshot || '—' }}</span>
+            <span v-if="record.spuCodeSnapshot" class="scm-cell-stack__sub">{{ record.spuCodeSnapshot }}</span>
+          </div>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">{{ record.specNameSnapshot || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'skuCodeSnapshot'">
-          <span class="scm-mono">{{ record.skuCodeSnapshot || '—' }}</span>
+        <template v-else-if="column.dataIndex === 'sku'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.specNameSnapshot || '—' }}</span>
+            <span v-if="record.skuCodeSnapshot" class="scm-cell-stack__sub">{{ record.skuCodeSnapshot }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex === 'plannedQuantity'">
           <span class="scm-quantity">{{ quantityText(record.plannedQuantity) }}</span>
@@ -109,7 +119,6 @@ import {
     SCM_SORTING_TASK_STATUS_ENUM,
 } from '/@/constants/business/scm/sorting-const';
 import {hasPermission} from '../common/scm-permission';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import type {SortingSkuSummary, SortingSummaryQuery} from './sorting-types';
 import {quantityText, sortingError} from './sorting-types';
 
@@ -117,7 +126,7 @@ const queryForm = reactive<SortingSummaryQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<SortingSkuSummary[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 let generation = 0;
 
 const statusOptions = Object.values(SCM_SORTING_TASK_STATUS_ENUM).map((item) => ({value: item.value, label: item.desc}));
@@ -132,18 +141,17 @@ const emptyText = computed(() =>
 /**
  * 列即口径：数量列只有本行同单位内的合计，绝不出现跨行的「合计」列。
  *
- * 一格一个值：名称与编码各自成列（商品 / 商品编码、商品规格 / 商品规格编码）。
+ * 两个编码（商品编码 / 商品规格编码）不再各占一列，改为名称下方的 secondary text ——
+ * 本页每行是「商品 + 规格 + 单位」的聚合，两列编码会把 11 列挤成 11 列纯技术字段。
  */
 const columns = ref<TableColumnsType<SortingSkuSummary>>([
-  {title: '商品', dataIndex: 'product', width: 170},
-  {title: '商品编码', dataIndex: 'spuCodeSnapshot', width: 140},
-  {title: '商品规格', dataIndex: 'sku', width: 150},
-  {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 150},
+  {title: '商品', dataIndex: 'product', width: 190},
+  {title: '商品规格', dataIndex: 'sku', width: 190},
   {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 90},
   {title: '涉及订单数', dataIndex: 'orderCount', align: 'right', width: 110},
   {title: '任务数', dataIndex: 'taskCount', align: 'right', width: 90},
   {title: '明细行数', dataIndex: 'lineCount', align: 'right', width: 100},
-  {title: '未处理行数', dataIndex: 'unprocessedCount', align: 'center', width: 110},
+  {title: '未处理行数', dataIndex: 'unprocessedCount', align: 'right', width: 110},
   {title: '计划量合计', dataIndex: 'plannedQuantity', align: 'right', width: 120},
   {title: '已分量合计', dataIndex: 'sortedQuantity', align: 'right', width: 120},
 ]);

@@ -32,12 +32,21 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:outbound:add'">
           新建出库单
         </a-button>
+        <a-typography-text type="secondary" style="margin-left: 12px">
+          确认出库会扣减库存并生成不可删除的销售出库流水。
+        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -58,13 +67,10 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无出库单' }"
-        :scroll="{ x: 1250 }"
+        :scroll="{ x: scrollX }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'outboundNo'">
-          <span class="scm-mono">{{ record.outboundNo || '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+        <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
@@ -190,9 +196,11 @@
         :pagination="false"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'sku'">{{ skuMainText(record.specValues, record.skuName) }}</template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
+        <template v-if="column.dataIndex === 'sku'">
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
+            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -237,14 +245,14 @@ import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-mod
 import {hasPermission} from '../common/scm-permission';
 import {inventoryError} from './inventory-errors';
 import {datetime} from '../common/scm-display';
-import {useScmErrorToast} from '../common/scm-error-toast';
+import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const queryForm = reactive<InventoryOutboundQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryOutbound[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const warehouses = ref<Warehouse[]>([]);
 let requestId = 0;
 
@@ -253,18 +261,20 @@ const statusOptions = Object.values(SCM_INVENTORY_OUTBOUND_STATUS_ENUM).map((i) 
   label: i.desc,
 }));
 
-// 列表按「哪张单 / 哪个仓 / 什么状态 / 谁在什么时候出的」排列，仓库名与仓库编码各自成列。
-// 创建时间是技术字段：出库单的业务时刻是确认时间，草稿态的创建时间对使用者没有决策价值，不上列。
-const columns = ref<TableColumnsType<InventoryOutbound>>([
-  {title: '出库单号', dataIndex: 'outboundNo', width: 190},
-  {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '仓库编码', dataIndex: 'warehouseCode', width: 130},
+// 列表按「哪张单 / 哪个仓 / 什么状态 / 谁在什么时候出的」排列。创建时间是技术字段：
+// 出库单的业务时刻是确认时间，草稿态的创建时间对使用者没有决策价值，不上列。
+type InventoryOutboundColumn = ScmListColumn;
+const columns = ref<InventoryOutboundColumn[]>([
+  {title: '出库单号', dataIndex: 'outboundNo', width: 200},
+  {title: '仓库', dataIndex: 'warehouseName', width: 140},
+  {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '确认人', dataIndex: 'operator', width: 120},
   {title: '出库时间', dataIndex: 'confirmedAt', width: 170},
   {title: '备注', dataIndex: 'remark', width: 200, ellipsis: true},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
+const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 /** 草稿 = 待处理（橙），已确认 = 已完成（绿），已取消 = 失效（灰）。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {
@@ -276,16 +286,15 @@ const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
-  {title: '出库数量', dataIndex: 'quantity', width: 160},
+  {title: '出库数量', dataIndex: 'quantity', width: 160, align: 'right'},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
 
-// 明细的名称与编码各自成列（与列表页同一口径）。
+// 明细的规格编码是名称下方的次要信息，不再各占一列（与列表页同一口径）。
 const detailItemColumns: TableColumnsType = [
   {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'sku', width: 170},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
+  {title: '商品规格', dataIndex: 'sku', width: 220},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 110},
 ];

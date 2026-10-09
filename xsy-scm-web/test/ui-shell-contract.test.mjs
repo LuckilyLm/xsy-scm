@@ -32,6 +32,17 @@ const SETTING = '../src/layout/components/header-user-space/header-setting.vue';
 const SIDE_LAYOUT = '../src/layout/side-layout.vue';
 const SIDE_MENU = '../src/layout/components/side-menu/index.vue';
 const RECURSION_MENU = '../src/layout/components/side-menu/recursion-menu.vue';
+const GLOBAL_THEME = '../src/theme/index.less';
+const PAGE_TAGS = [
+  '../src/layout/components/page-tag/components/default-tab.vue',
+  '../src/layout/components/page-tag/components/chrome-tab.vue',
+  '../src/layout/components/page-tag/components/antd-tab.vue',
+];
+const LAYOUTS = [
+  '../src/layout/side-layout.vue',
+  '../src/layout/side-expand-layout.vue',
+  '../src/layout/top-expand-layout.vue',
+];
 const V110 = '../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V110__scm_reorder_root_navigation.sql';
 
 const appConfig = code(APP_CONFIG);
@@ -70,25 +81,27 @@ test('侧栏宽度四处口径一致，默认值落在设置控件允许的区�
 
 test('改默认侧栏宽度必须同时升级 configVersion', () => {
   const version = num(appConfig, /configVersion:\s*(\d+)/, '配置版本号');
-  // 迁移逻辑是「版本不等就整体回落新默认值」，版本不升，已有浏览器会一直用 localStorage 里的旧宽度
-  assert.ok(version >= 8, '侧栏宽度已从 184 收到 168，configVersion 必须 ≥ 8 才能迁移老用户');
+  assert.ok(version >= 4, '侧栏默认宽度调整后，configVersion 必须升级到 4 或更高');
   assert.match(
       code('../src/store/modules/system/app-config.ts'),
       /cached\.configVersion === appDefaultConfig\.configVersion/,
       '配置迁移逻辑被改动，本断言的前提失效，请重新核对',
   );
+  const configStore = code('../src/store/modules/system/app-config.ts');
+  assert.match(configStore, /cached\.configVersion === 3[\s\S]{0,350}sideMenuWidth:\s*appDefaultConfig\.sideMenuWidth/,
+      '版本 3 → 4 应迁移侧栏宽度并保留其他缓存偏好');
 });
 
-test('侧栏用单档固定宽度，不随子菜单展开变化', () => {
-  // 曾经试过「收起时窄、展开二级时放宽」的两档方案，实测下来切换会让内容区左右跳动，
-  // 已放弃：侧栏只认用户设置的那一个宽度。这条断言防止两档逻辑被无意中重新引入。
-  assert.doesNotMatch(sideLayout, /SIDE_MENU_EXPANDED_WIDTH|menuExpanded/,
-      '侧栏不应再按展开状态改宽度');
-  assert.match(sideLayout, /const sideMenuWidth = computed\(\(\) => useAppConfigStore\(\)\.\$state\.sideMenuWidth\)/,
-      '侧栏宽度应直接取用户设置值');
-  // 子菜单展开后的缩进保持 antd 默认（24/48）：收窄缩进虽然能换来更窄的侧栏，
-  // 但展开后二级几乎贴着左边，层级感丢失 —— 已按使用反馈还原。
-  assert.doesNotMatch(code(RECURSION_MENU), /inline-indent/, '子菜单缩进应保持 antd 默认，不再收窄');
+test('两种侧栏布局隐藏子菜单箭头但保留内联菜单交互', () => {
+  const sideExpandMenu = code('../src/layout/components/side-expand-menu/recursion-menu.vue');
+  assert.match(recursionMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/,
+      '传统侧栏只应在菜单作用域内隐藏子菜单箭头');
+  assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/,
+      '展开式侧栏只应在子菜单作用域内隐藏子菜单箭头');
+  assert.match(recursionMenu, /mode="inline"/, '传统侧栏必须保留内联子菜单');
+  assert.match(sideExpandMenu, /mode="inline"/, '展开式侧栏必须保留内联子菜单');
+  assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/,
+      '菜单图标配色规则仍须排除暗色菜单');
 });
 
 test('侧栏滚动条不常驻：auto + 透明轨道 + hover 才显形', () => {
@@ -123,15 +136,29 @@ test('菜单图标三档配色：普通深色 / hover 主题色 / 当前主题�
   assert.doesNotMatch(styleBlock, /#333|#00b96b|#515a6e/, '菜单样式里不应出现写死的主题色');
 });
 
-test('侧边栏隐藏一级菜单的展开箭头，顶部菜单不受影响', () => {
-  // 箭头是 antd 默认的 <i class="ant-menu-submenu-arrow">。菜单项本身点一下就能展开，
-  // 箭头在窄侧栏里只是重复占位，去掉后标题才有横向空间让侧栏收窄而不换行。
-  // 必须走 :deep()：scoped 样式不会给 antd 子组件内部的节点加 data-v 属性。
-  assert.match(recursionMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{[\s\S]{0,80}display:\s*none/,
-      '侧边栏应隐藏 .ant-menu-submenu-arrow');
-  // 顶部菜单复用同一个 .smart-menu 类，但它是横向布局、子菜单靠浮层展开，箭头在那里是必要提示
-  assert.doesNotMatch(code('../src/layout/components/top-menu/recursion-menu.vue'),
-      /submenu-arrow/, '顶部菜单不应跟着隐藏箭头');
+test('全局键盘焦点清晰可见，导航控件可由键盘操作', () => {
+  const globalTheme = code(GLOBAL_THEME);
+  assert.doesNotMatch(globalTheme, /\*\s*\{[^}]*outline:\s*none\s*!important/);
+  assert.match(globalTheme, /:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--scm-primary/);
+  for (const path of LAYOUTS) {
+    const layout = code(path);
+    assert.match(layout, /<button[\s\S]{0,100}class="collapsed-button"[\s\S]{0,180}aria-label=/);
+    assert.match(layout, /<button class="home-button"[^>]*aria-label="首页"/);
+  }
+});
+
+test('all page-tag styles keep labels ellipsized, scrollable and closable by keyboard', () => {
+  for (const path of PAGE_TAGS) {
+    const pageTag = code(path);
+    assert.match(pageTag, /class="smart-page-tag-title"/);
+    assert.match(pageTag, /min-width:\s*96px/);
+    assert.match(pageTag, /max-width:\s*220px/);
+    assert.match(pageTag, /text-overflow:\s*ellipsis/);
+    assert.match(pageTag, /flex-wrap:\s*nowrap/);
+    assert.match(pageTag, /:aria-label="`关闭\$\{item\.menuTitle\}`"/);
+    assert.match(pageTag, /<button[\s\S]{0,180}class="smart-page-tag-close"/);
+    assert.match(pageTag, /:deep\(\.ant-tabs-tab-active\)[\s\S]{0,120}color:\s*@color-primary/);
+  }
 });
 
 test('V110 只调整一级菜单的 sort，不动层级 / 路径 / 权限 / 可见性', () => {

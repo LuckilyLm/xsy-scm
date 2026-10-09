@@ -13,6 +13,12 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
       :width="scmDrawerWidth('workspace')"
       @close="close"
   >
+    <a-alert v-if="error" :message="error" type="error" show-icon>
+      <template #action>
+        <a-button @click="load">重试</a-button>
+      </template>
+    </a-alert>
+
     <a-spin :spinning="loading">
       <template v-if="detail">
         <a-descriptions bordered size="small" :column="3" class="head">
@@ -81,9 +87,7 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
           </template>
         </a-table>
       </template>
-      <a-empty v-else-if="!loading" :description="error ? '冻结批次加载失败' : '请选择一个冻结批次'">
-        <a-button v-if="error" @click="load">重新加载</a-button>
-      </a-empty>
+      <a-empty v-else-if="!loading && !error" description="请选择一个冻结批次"/>
     </a-spin>
   </a-drawer>
 </template>
@@ -96,7 +100,6 @@ import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/
 import type {DemandBatchDetail, DemandBatchItem, DemandBatchSummaryRow, Id} from '../purchase-types';
 import {quantity} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const props = defineProps<{ open: boolean; batchId?: Id }>();
@@ -119,14 +122,14 @@ const numericColumns = [
 
 const detail = ref<DemandBatchDetail>();
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 let requestId = 0;
 
 const summaryColumns: TableColumnsType<DemandBatchSummaryRow> = [
   {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
-  {title: '需求单位', dataIndex: 'demandUnit', width: 95},
+  {title: '需求单位', dataIndex: 'demandUnit', width: 95, align: 'center'},
   {title: '订单需求量', dataIndex: 'orderDemandQuantity', align: 'right', width: 120},
   {title: '现有量', dataIndex: 'onHandQuantity', align: 'right', width: 110},
   {title: '全仓预留', dataIndex: 'reservedQuantity', align: 'right', width: 110},
@@ -148,7 +151,7 @@ const itemColumns: TableColumnsType<DemandBatchItem> = [
   {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
-  {title: '需求单位', dataIndex: 'demandUnit', width: 95},
+  {title: '需求单位', dataIndex: 'demandUnit', width: 95, align: 'center'},
   {title: '来源实发量', dataIndex: 'sourceQuantity', align: 'right', width: 120},
   {title: '本批建议量', dataIndex: 'requiredQuantity', align: 'right', width: 120},
   {title: '冻结时已有需求', dataIndex: 'existingDemandId', width: 150},

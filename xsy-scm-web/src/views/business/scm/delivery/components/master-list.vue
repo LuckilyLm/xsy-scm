@@ -15,6 +15,13 @@
     </a-form-item
     >
   </a-form>
+  <a-alert v-if="error" :message="error" type="error" show-icon
+  >
+    <template #action>
+      <a-button @click="load">重试</a-button>
+    </template>
+  </a-alert
+  >
   <a-card size="small" :bordered="false">
     <div class="smart-table-btn-block">
       <a-button type="primary" v-privilege="editPermission" @click="open()">新建{{ label }}</a-button>
@@ -28,7 +35,7 @@
         bordered
         :pagination="false"
         :loading="loading"
-        :scroll="{ x: 1370 }"
+        :scroll="{ x: 900 }"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'status'">
@@ -40,22 +47,6 @@
         <template v-else-if="column.dataIndex === 'employeeName'">
           <span v-if="record.employeeName">{{ record.employeeName }}</span>
           <ScmStatusTag v-else tone="warning" label="未绑定"/>
-        </template>
-        <template v-else-if="column.dataIndex === 'phone'">
-          <span class="scm-mono">{{ record.phone || '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'vehicleType'">
-          {{ record.vehicleType || '—' }}
-        </template>
-        <template v-else-if="column.dataIndex === 'loadWeight'">
-          {{ record.loadWeight ?? '—' }}
-        </template>
-        <template v-else-if="column.dataIndex === 'loadVolume'">
-          {{ record.loadVolume ?? '—' }}
-        </template>
-        <template v-else-if="column.dataIndex === 'remark'">
-          <span v-if="record.remark" class="scm-cell-wrap">{{ record.remark }}</span>
-          <span v-else>—</span>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -76,6 +67,7 @@
     </div>
   </a-card>
   <a-modal v-model:open="visible" :title="`${form.id ? '编辑' : '新建'}${label}`" :confirm-loading="saving" @ok="save">
+    <a-alert v-if="formError" :message="formError" type="error" show-icon/>
     <a-form layout="vertical">
       <template v-if="isDriver">
         <a-form-item label="司机编码" required>
@@ -89,7 +81,6 @@
         </a-form-item>
         <a-form-item label="绑定员工" required>
           <EmployeeSelect v-model:value="employeeValue" placeholder="请选择绑定的系统员工" width="100%"/>
-          <div class="ant-form-item-extra">启用司机必须绑定员工：它把登录人映射回司机档案，是其线路数据范围的唯一依据。</div>
         </a-form-item>
       </template>
       <template v-else>
@@ -133,7 +124,6 @@ import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 import {deliveryError, type Driver, type Vehicle, type Query} from '../delivery-types';
 
 const props = defineProps<{ kind: 'driver' | 'vehicle' }>();
@@ -147,11 +137,11 @@ const statusOptions = [
 const query = reactive<Query>({pageNum: 1, pageSize: 20});
 const rows = ref<(Driver | Vehicle)[]>([]),
     total = ref(0),
-    loading = ref(false);
-const error = useScmErrorToast();
+    loading = ref(false),
+    error = ref('');
 const visible = ref(false),
     saving = ref(false),
-    formError = useScmErrorToast();
+    formError = ref('');
 const form = ref<Partial<Driver & Vehicle>>({status: 'ENABLED'});
 let originalStatus = '',
     generation = 0;
@@ -186,7 +176,7 @@ const columns = computed<TableColumnsType>(() => [
         {title: '容积（m³）', dataIndex: 'loadVolume', align: 'right' as const, width: 120},
       ]),
   {title: '状态', dataIndex: 'status', align: 'center' as const, width: 90},
-  {title: '备注', dataIndex: 'remark', width: 220},
+  {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', align: 'center' as const, width: 90},
 ]);
 

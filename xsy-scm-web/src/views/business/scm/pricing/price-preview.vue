@@ -1,6 +1,10 @@
 <!--  新能力：取价试算。价格状态与可售状态独立展示。 -->
 <template>
-  <a-card title="取价试算" size="small" :bordered="false">
+  <a-card size="small" :bordered="false">
+    <template #title>
+      取价试算
+      <ScmFieldHelp label="取价试算" text="0 元也是有效价格"/>
+    </template>
     <a-form layout="inline" class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="客户" required class="smart-query-form-item">
@@ -18,14 +22,19 @@
         </a-form-item>
       </a-row>
     </a-form>
+    <a-alert v-if="error" :message="error" type="error" show-icon/>
     <p v-if="result" class="resolve-meta">
       解析时点：{{ result.at }} · 客户类型：{{ result.customerTypeName }}
     </p>
     <a-table :columns="columns" :data-source="result?.items||[]" row-key="skuId" :loading="loading"
-             :pagination="false" size="small" bordered :scroll="{x:1210}">
+             :pagination="false" size="small" bordered :scroll="{x:1100}">
       <template #bodyCell="{record,column}">
-        <template v-if="column.dataIndex==='skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
+        <template v-if="column.dataIndex==='sku'">
+          <!-- 规格名作主行、编码作次要行：编码只是核对用的，不该和名称抢同一行 -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ record.specName || '—' }}</span>
+            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex==='unitPrice'">
           <!-- 本页要回答的就是「最终多少钱」：这个数字必须是全表最重的 -->
@@ -60,6 +69,7 @@ import type {TableColumnsType} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {formatAmount} from '/@/utils/scm-amount';
@@ -67,11 +77,9 @@ import {UNAVAILABLE_REASON_ENUM, SCM_PRICE_SOURCE_ENUM} from '/@/constants/busin
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {ResolveResult, ResolvedPrice} from '/@/types/business/scm/pricing';
 import {pricingError} from './pricing-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 const customerId = ref<ScmId>(), skuIds = ref<ScmId[]>([]), at = ref<string>(), result = ref<ResolveResult>(),
-    loading = ref(false);
-const error = useScmErrorToast();
+    loading = ref(false), error = ref('');
 let requestId = 0;
 
 /**
@@ -93,10 +101,9 @@ const PRICE_SOURCE_TONE: Record<string, ScmStatusTone> = {
  */
 const columns: TableColumnsType<ResolvedPrice> = [
   {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'specName', width: 170},
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
+  {title: '商品规格', dataIndex: 'sku', width: 200},
   {title: '最终价格', dataIndex: 'unitPrice', align: 'right', width: 160},
-  {title: '价格来源', dataIndex: 'priceSource', width: 150},
+  {title: '价格来源', dataIndex: 'priceSource', width: 150, align: 'center'},
   {title: '价格状态', dataIndex: 'priceStatus', align: 'center', width: 110},
   {title: '可售', dataIndex: 'sellable', align: 'center', width: 110},
   {title: '说明', dataIndex: 'hint', width: 220},

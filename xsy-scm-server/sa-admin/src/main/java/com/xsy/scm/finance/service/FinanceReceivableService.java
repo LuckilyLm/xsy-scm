@@ -95,19 +95,18 @@ public class FinanceReceivableService {
      *
      * @param orderReturnId
      *            刚被置为 {@code APPROVED} 的 {@code order_return.id}
+     * @return 按冻结优惠分摊计算的退货净额
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
-    public void generateRedOnReturnApproved(Long orderReturnId) {
+    public BigDecimal generateRedOnReturnApproved(Long orderReturnId) {
         FinanceReturnSourceDto returned = financeReceivableSourceDao.selectApprovedReturn(orderReturnId);
         if (returned == null) {
             throw new IllegalStateException("退货单未处于 APPROVED 状态，不能生成红字应收: " + orderReturnId);
         }
         FinanceReceivableEntity normal = financeReceivableDao.selectNormalByOrder(returned.getOrderId());
-        if (normal == null) {
-            // 退货先于签收时成功跳过，等签收时补生成。
-            return;
-        }
-        generateRed(returned, normal);
+        // 同一个红字算法既计算退款净额，也在正常应收已存在时生成红字；
+        // 退货先于签收时只返回净额，等签收时仍由同一算法补生成红字。
+        return generateRed(returned, normal);
     }
 
     /**
@@ -167,27 +166,28 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 红字生成算法本体（唯一实现）。
+     * 红字金额计算与生成（唯一实现）。
      *
      * <p>
-     * 结算对方与名称快照一律继承原正常应收：红字与正常必须落在同一个客户账上，从订单或退货行重新解析快照会让同一笔债权出现两个对方身份 （「必须引用原 {@code Receivable}」的含意之一）。
+     * 结算对方与名称快照一律继承原正常应收：红字与正常必须落在同一个客户账上，从订单或退货行重新解析快照会让同一笔债权出现两个对方身份 （「必须引用原
+     * {@code Receivable}」的含意之一）。正常应收尚未生成时，本方法仍返回相同净额，签收后再补生成红字。
      */
-    private void generateRed(FinanceReturnSourceDto returned, FinanceReceivableEntity normal) {
+    private BigDecimal generateRed(FinanceReturnSourceDto returned, FinanceReceivableEntity normal) {
         List<FinanceReceivableItemEntity> items = toRedItems(returned,
                 financeReceivableSourceDao.selectApprovedReturnLines(returned.getOrderReturnId()),
                 orderLineDiscounts(returned.getOrderId()));
         BigDecimal amount = items.stream().map(FinanceReceivableItemEntity::getAmount).reduce(BigDecimal.ZERO,
                 BigDecimal::add);
 
-        if (amount.signum() <= 0) {
+        if (amount.signum() <= 0 || normal == null) {
             // 整张退货没有有效红字行（全部非正金额行）：成功跳过，
-            // 不生成红字单头 / 明细 / 日志，也不影响已经合法成立的 Return APPROVED。
-            return;
+            // 或正常应收尚未生成；两种情况都不生成红字，但退款仍按冻结优惠口径计算。
+            return amount;
         }
 
         FinanceReceivableEntity red = redHeader(returned, normal, amount);
         if (financeReceivableDao.insertOnConflictDoNothing(red) == 0) {
-            return;
+            return amount;
         }
         for (FinanceReceivableItemEntity item : items) {
             item.setReceivableId(red.getId());
@@ -199,6 +199,7 @@ public class FinanceReceivableService {
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIVABLE, red.getId(),
                 ScmFinanceOperationTypeEnum.RED_GENERATE, returned.getReason(), null,
                 redGeneratedSnapshot(red, returned, items.size()), returned.getApprovedBy());
+        return amount;
     }
 
     /**

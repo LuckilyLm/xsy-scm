@@ -13,11 +13,18 @@
             <template #tab>
               <span class="smart-page-tag-content">
                 <home-outlined style="font-size: 12px" v-if="item.menuName === HOME_PAGE_NAME"
-                               class="smart-page-tag-close"/>
+                               class="smart-page-tag-icon"/>
                 <component class="smart-page-tag-icon" v-else :is="$antIcons[item.menuIcon]"/>
-                {{ item.menuTitle }}
-                <close-outlined @click.stop="closeTag(item, false)" v-if="item.menuName !== HOME_PAGE_NAME"
-                                class="smart-page-tag-close"/>
+                <span class="smart-page-tag-title" :title="item.menuTitle">{{ item.menuTitle }}</span>
+                <button
+                  v-if="item.menuName !== HOME_PAGE_NAME"
+                  type="button"
+                  class="smart-page-tag-close"
+                  :aria-label="`关闭${item.menuTitle}`"
+                  @click.stop="closeTag(item, false)"
+                >
+                  <close-outlined aria-hidden="true"/>
+                </button>
               </span>
             </template>
           </a-tab-pane>
@@ -180,6 +187,14 @@ const borderRadius = 8 + 'px';
   width: calc(100% - @smart-page-tag-operate-width);
 
   .smart-page-tag-close {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
     margin-left: 5px;
     font-size: 12px;
     color: #666666;
@@ -199,23 +214,50 @@ const borderRadius = 8 + 'px';
     }
   }
 
+  :deep(.ant-tabs-nav-wrap),
+  :deep(.ant-tabs-nav-list) {
+    min-width: 0;
+    flex-wrap: nowrap;
+  }
+
+  :deep(.ant-tabs-tab-btn) {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   :deep(.ant-tabs-small > .ant-tabs-nav .ant-tabs-tab) {
-    padding: 5px 18px 3px 24px;
+    display: flex;
+    padding: 5px 10px;
     border-radius: v-bind(borderRadius) v-bind(borderRadius) 0 0;
-    margin: 0 -10px;
-
-    &:nth-child(1) {
-      margin-left: 0 !important;
-    }
-
-    &:nth-last-child(2) {
-      margin-right: 0 !important;
-    }
+    margin: 0 4px 0 0;
+    flex: 0 0 168px;
+    min-width: 96px;
+    max-width: 220px;
+    overflow: hidden;
   }
 
   .smart-page-tag-content {
-    display: inline-block;
-    min-width: 100px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+
+    .smart-page-tag-title {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .smart-page-tag-icon,
+    .smart-page-tag-close {
+      flex: 0 0 auto;
+    }
 
     &::after {
       content: '';
@@ -236,6 +278,8 @@ const borderRadius = 8 + 'px';
 
   :deep(.ant-tabs-tab-active) {
     position: relative;
+    color: @color-primary;
+    font-weight: 600;
     background-size: 60% 100%;
 
     & + .ant-tabs-tab {

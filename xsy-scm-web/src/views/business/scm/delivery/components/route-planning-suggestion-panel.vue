@@ -1,4 +1,5 @@
 <template>
+  <p class="plan-intro">根据当前停靠点提供配送顺序建议。建议不会自动修改线路，需要人工确认应用。</p>
   <a-space class="plan-actions">
     <a-button
         type="primary"
@@ -11,6 +12,7 @@
     </a-button>
     <span class="plan-note" v-if="disabledReason">{{ disabledReason }}</span>
   </a-space>
+  <a-alert v-if="error" type="error" :message="error" show-icon/>
 
   <template v-if="proposal">
     <a-descriptions bordered size="small" :column="3" class="plan-meta">
@@ -41,14 +43,7 @@
         :scroll="{ x: 900 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'customerNameSnapshot'">
-          {{ record.customerNameSnapshot || '—' }}
-        </template>
-        <template v-else-if="column.dataIndex === 'addressSnapshot'">
-          <span v-if="record.addressSnapshot" class="scm-cell-wrap">{{ record.addressSnapshot }}</span>
-          <span v-else>—</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'legDistance' || column.dataIndex === 'cumulativeDistance'">
+        <template v-if="column.dataIndex === 'legDistance' || column.dataIndex === 'cumulativeDistance'">
           <span class="scm-quantity">{{ record[column.dataIndex] }}</span>
         </template>
       </template>
@@ -119,6 +114,7 @@ defineProps<{
   canEdit: boolean;
   loading: boolean;
   busy: boolean;
+  error: string;
   disabledReason?: string;
   proposal?: DeliveryPlanProposal;
   history: DeliveryPlanProposal[];
@@ -133,7 +129,7 @@ const emit = defineEmits<{
 
 const planColumns: TableColumnsType = [
   {title: '顺序', dataIndex: 'seq', align: 'right', width: 70},
-  {title: '客户', dataIndex: 'customerNameSnapshot', width: 200},
+  {title: '停靠点 / 客户', dataIndex: 'customerNameSnapshot', width: 200},
   {title: '配送地址', dataIndex: 'addressSnapshot', width: 280},
   {title: '本段距离（米）', dataIndex: 'legDistance', align: 'right', width: 130},
   {title: '累计距离（米）', dataIndex: 'cumulativeDistance', align: 'right', width: 130},
@@ -141,7 +137,7 @@ const planColumns: TableColumnsType = [
 
 const planHistoryColumns: TableColumnsType = [
   {title: '生成时间', dataIndex: 'createdAt', width: 180},
-  {title: '状态', dataIndex: 'status', width: 100},
+  {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
   {title: '停靠点数', dataIndex: 'stopCount', align: 'right', width: 100},
   {title: '总距离（米）', dataIndex: 'totalDistance', align: 'right', width: 130},
   {title: '算路来源', dataIndex: 'providerCode', width: 220},
@@ -150,6 +146,11 @@ const planHistoryColumns: TableColumnsType = [
 </script>
 
 <style scoped>
+.plan-intro {
+  margin: 0 0 12px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
 .plan-actions {
   margin: 12px 0;
 }

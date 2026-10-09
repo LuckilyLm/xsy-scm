@@ -58,7 +58,9 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_QUANTITY_
  * </ul>
  *
  * <p>
- * <b>锁序</b>：本类只锁 {@code purchase_demand}（单条，或按 id 升序）。它是全局锁序的第 1 层，因此<b>不会</b>与 {@code receipt.confirm}（2→3→4→5）交叉成环。
+ * <b>锁序</b>：与 {@code PurchaseOrderService} 的 {@code update} / {@code cancel} / {@code delete} 同向 —— <b>采购单 → 需求</b>。
+ * {@code allocate} 先锁采购单行、再锁需求行，因此与「取消」在单据行上串行，不存在「取消读到本单没有分配、随后分配又插进来」的幻读窗口。 {@code generate} 不锁单据，只按来源行做 INSERT
+ * 竞争，不参与本锁序。
  */
 @Service
 @RequiredArgsConstructor
@@ -202,7 +204,25 @@ public class PurchaseDemandService {
             return purchaseIdempotencyService.replay(claim, PurchaseDemandVO.class);
         }
 
-        // 锁序第 1 层：purchase_demand（单条）
+        // 锁序与 PurchaseOrderService 的 update / cancel / delete 一致：采购单 → 需求。
+        //
+        // 早期版本先锁需求、再<b>无锁</b>读采购单，理由是「需求是锁序第 1 层，反着取单锁会
+        // 与 update 成环」。那个判断是错的：update / cancel / delete 全都是「单 → 需求」，
+        // allocate 跟它们同向才是对齐；反倒是它原来的「需求 → 单（无锁读）」制造了下面的幻读窗口 ——
+        // cancel 先读「本单没有分配」→ 早退（没有分配时不取需求锁）→ allocate 插入并提交 →
+        // cancel 提交 CANCELLED，于是分配永久悬挂在已取消的单上、需求 allocated_quantity 不回落。
+        // 先取采购单行锁后，cancel 与 allocate 在单据行上串行，该窗口不存在。
+        PurchaseOrderItemEntity orderItem = purchaseOrderItemDao.selectById(form.getPurchaseOrderItemId());
+        if (orderItem == null) {
+            throw new ScmBusinessException(PURCHASE_ORDER_ITEM_NOT_FOUND);
+        }
+        PurchaseOrderEntity order = purchaseOrderDao.lock(orderItem.getPurchaseOrderId());
+        if (order == null) {
+            throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
+        }
+        requireSubmitted(order.getStatus());
+        purchaseOwnerResolver.requireVisible(order.getPurchaserId());
+
         PurchaseDemandEntity demand = purchaseDemandDao.lock(form.getDemandId());
         if (demand == null) {
             throw new ScmBusinessException(PURCHASE_DEMAND_NOT_FOUND);
@@ -212,22 +232,6 @@ public class PurchaseDemandService {
         // 归属守卫：分配会把需求量并进别人名下的采购单，两头都必须在调用者范围内。
         // 只判需求会留下一条侧门——用自己的采购单接住别人的需求，两边数字同时被改。
         purchaseOwnerResolver.requireVisible(demand.getPurchaserId());
-
-        PurchaseOrderItemEntity orderItem = purchaseOrderItemDao.selectById(form.getPurchaseOrderItemId());
-        if (orderItem == null) {
-            throw new ScmBusinessException(PURCHASE_ORDER_ITEM_NOT_FOUND);
-        }
-        PurchaseOrderEntity order = purchaseOrderDao.selectById(orderItem.getPurchaseOrderId());
-        if (order == null) {
-            throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
-        }
-        purchaseOwnerResolver.requireVisible(order.getPurchaserId());
-        // 只有 SUBMITTED 的采购单可以继续接需求：DRAFT 还没定稿，RECEIVED/SHORT_CLOSED/CANCELLED 已结束。
-        // 这里沿用设计指定的 40980（PURCHASE_DEMAND_SOURCE_INVALID）——
-        // 语义上「来源不允许再产生/变更需求关联」，与来源订单状态校验同源。
-        if (!ScmPurchaseStatusEnum.SUBMITTED.name().equals(order.getStatus())) {
-            throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
-        }
 
         // 需求单位（销售单位快照）必须等于采购单位（supplier_sku.purchase_unit 快照）
         PurchaseDemandAllocator.unitCompatible(demand.getDemandUnitSnapshot(), orderItem.getPurchaseUnitSnapshot());
@@ -288,6 +292,22 @@ public class PurchaseDemandService {
     // ------------------------------------------------------------------
     // 内部
     // ------------------------------------------------------------------
+
+    /**
+     * 采购单状态必须是 {@code SUBMITTED}（{@code null} 视为单据不存在）。
+     *
+     * <p>
+     * 抽成独立方法是为了让「单据不存在」与「状态不允许」两种拒绝各自对应明确的对外码 （40480 / 40982），而不是把两者揉成一个布尔判定。
+     */
+    private static void requireSubmitted(String status) {
+        if (status == null) {
+            throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
+        }
+        // 只有 SUBMITTED 的采购单可以继续接需求：DRAFT 还没定稿，RECEIVED/SHORT_CLOSED/CANCELLED 已结束。
+        if (!ScmPurchaseStatusEnum.SUBMITTED.name().equals(status)) {
+            throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
+        }
+    }
 
     private static void validateWindow(PurchaseDemandGenerateForm form) {
         OffsetDateTime startAt = form.getStartAt();

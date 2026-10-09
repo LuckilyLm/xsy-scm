@@ -12,7 +12,12 @@
       <a-button @click="router.push('/supplier/supplier-list')">返回供应商列表</a-button>
       <a-button @click="load">刷新详情</a-button>
     </a-space>
-    <template v-if="supplier">
+    <a-alert v-if="error" :message="error" type="error" show-icon>
+      <template #action>
+        <a-button size="small" @click="load">重新加载</a-button>
+      </template>
+    </a-alert>
+    <template v-else-if="supplier">
       <div class="detail-doc-title">{{ supplier.name }}</div>
 
       <!-- 1. 概览 -->
@@ -68,7 +73,7 @@
             size="small"
             bordered
             :pagination="false"
-            :scroll="{ x: 1120 }"
+            :scroll="{ x: 1000 }"
         >
           <template #bodyCell="{ column, record }">
             <span v-if="column.dataIndex === 'skuNameSnapshot'">{{ record.skuNameSnapshot }}</span>
@@ -102,14 +107,13 @@ import {SUPPLIER_SKU_STATUS_ENUM, SUPPLIER_STATUS_ENUM} from '/@/constants/busin
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
 import {isLocated} from '/@/components/business/scm/map/types';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 const route = useRoute();
 const router = useRouter();
 const supplier = ref<SupplierDetail>();
 const relations = ref<SupplierSkuRow[]>([]);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 
 const statusText = (value: EnableStatus): string => SUPPLIER_STATUS_ENUM[value]?.desc || value;
 const skuStatusText = (value: EnableStatus): string => SUPPLIER_SKU_STATUS_ENUM[value]?.desc || value;
@@ -122,7 +126,7 @@ const relationColumns: TableColumnsType<SupplierSkuRow> = [
   {title: '商品名称（快照）', dataIndex: 'skuNameSnapshot', width: 220},
   {title: '商品规格', dataIndex: 'spec', width: 160},
   {title: '商品规格编码（快照）', dataIndex: 'skuCodeSnapshot', width: 170},
-  {title: '采购单位', dataIndex: 'purchaseUnit', width: 100},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 100, align: 'center'},
   {title: '参考价', dataIndex: 'referencePrice', width: 120, align: 'right'},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},
   {title: '默认来源', dataIndex: 'defaultFlag', width: 110, align: 'center'},

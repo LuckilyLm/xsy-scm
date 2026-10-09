@@ -13,7 +13,7 @@ COPY xsy-scm-server/ ./
 
 # 镜像构建只负责产出可运行产物，不承担代码质量门禁：
 # checkstyle 与 spotless 都绑在 validate 阶段，依赖 tools/quality/ 下的配置；
-# 镜像构建上下文不含该目录，且样式检查属于本地/CI 门禁职责（tools/verify.py quality）。
+# 镜像构建上下文不含该目录，样式检查由本地验证入口负责（tools/verify.py quality）。
 ARG MAVEN_PROFILE=prod
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B -ntp -P${MAVEN_PROFILE} clean package -DskipTests \

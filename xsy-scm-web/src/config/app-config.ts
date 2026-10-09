@@ -8,18 +8,14 @@ export const appDefaultConfig: Omit<AppConfig, 'fullScreenFlag'> = {
     // 默认配置版本号：只要本文件的默认值发生变更，就把它 +1，
     // 已有浏览器里 localStorage 缓存的旧配置会被自动迁移到新默认值，
     // 否则老用户永远停留在旧样式上（详见 store/modules/system/app-config.ts）。
-    configVersion: 8,
+    configVersion: 4,
     // i18n 语言选择
     language: 'zh_CN',
     // 布局: side 或者 side-expand 或者 top
     layout: 'side',
-    // 侧边菜单宽度（px）。168 是实测下限（含余量）：一级最长的「供应商管理」、二级最长的
-    // 「客户商品管理」（6 字）都能完整显示并留有富余 —— 不同浏览器中文字体宽度有差异，
-    // 零余量的宽度在别人机器上就会截成「客户商品…」。
-    // 子菜单缩进保持 antd 默认（24/48），展开后的层级观感与原来一致 —— 缩进是侧栏宽度的
-    // 主要来源（二级 padding-left 48px），收窄它能省 16px，但展开后层级感会明显变弱。
-    // 改这里必须同时把 configVersion +1，否则已有浏览器会继续用 localStorage 里的旧宽度。
-    sideMenuWidth: 168,
+    // 侧边菜单宽度（px）。176 保留长菜单名的阅读空间，同时减少主内容区被侧栏占用的宽度。
+    // 默认宽度变化时升级 configVersion；对应迁移只重置此项，保留用户的其他界面偏好。
+    sideMenuWidth: 176,
     //标签页位置
     pageTagLocation: 'center',
     // 夜间模式

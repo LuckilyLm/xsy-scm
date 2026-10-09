@@ -25,6 +25,12 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action>
+      <a-button @click="queryData">重试</a-button>
+    </template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
@@ -45,7 +51,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1370 }"
+        :scroll="{ x: 1180 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
@@ -53,10 +59,13 @@
             {{ SCM_WAREHOUSE_STATUS_ENUM[record.status]?.desc || record.status }}
           </a-tag>
         </template>
-        <template v-else-if="column.dataIndex === 'areaText'">{{ areaText(record) }}</template>
-        <template v-else-if="column.dataIndex === 'address'">
-          <span v-if="record.address" class="scm-cell-wrap">{{ record.address }}</span>
-          <span v-else>—</span>
+        <template v-else-if="column.dataIndex === 'areaText'">
+          <!-- 复合单元：区域在上、详细地址在下。地址是库管实际找货的凭据，
+               不能因为"省市区能定位"就整列删掉，但也不该再占一列 260px -->
+          <div class="scm-cell-stack">
+            <span class="scm-cell-stack__main">{{ areaText(record) }}</span>
+            <span v-if="record.address" class="scm-cell-stack__sub">{{ record.address }}</span>
+          </div>
         </template>
         <template v-else-if="column.dataIndex === 'located'">
           <!-- 未定位的仓库无法参与路线规划，用图标 + Tooltip 表达，不占一整列文字 -->
@@ -101,11 +110,8 @@
       @ok="save"
       @cancel="visible = false"
   >
+    <a-alert v-if="formError" :message="formError" type="error" show-icon/>
     <a-form :model="form" layout="vertical">
-      <a-form-item label="仓库编码">
-        <span v-if="form.id" class="scm-form-readonly">{{ form.warehouseCode || '—' }}</span>
-        <span v-else class="scm-form-readonly">保存后由系统自动生成</span>
-      </a-form-item>
       <a-form-item label="仓库名称" name="name" required>
         <a-input v-model:value="form.name" maxlength="150"/>
       </a-form-item>
@@ -117,7 +123,6 @@
             placeholder="省 / 市 / 区"
             @change="onAreaChange"
         />
-        <div class="ant-form-item-extra">留空则不参与地图分布统计</div>
       </a-form-item>
       <a-form-item label="地址" name="address">
         <a-input v-model:value="form.address" maxlength="255" @change="Object.assign(form, emptyLocation())"/>
@@ -155,17 +160,16 @@ import type {Warehouse, WarehouseFormModel, WarehouseQuery} from './purchase-typ
 import {toWarehousePayload} from './warehouse-form-model';
 import {purchaseError} from './purchase-errors';
 import {hasPermission} from '../common/scm-permission';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import {areaColumnsOf, areaNodesOf} from '../common/scm-area';
 
 const queryForm = reactive<WarehouseQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<Warehouse[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const visible = ref(false);
 const saving = ref(false);
-const formError = useScmErrorToast();
+const formError = ref('');
 const form = ref<WarehouseFormModel>({warehouseCode: '', name: ''});
 /** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
 const area = ref<AreaNode[]>([]);
@@ -181,15 +185,12 @@ let requestId = 0;
 /**
  * 列表列。仓库是配置类主数据，与普通主数据口径不同：
  * 编码保留成独立列（对账、盘点、接口对接都用它）；创建时间下沉到详情；
- * 「所在地区」与「详细地址」各自成列，地址是库管实际找货的凭据，整段可读优先于行高一致，
- * 因此用 `.scm-cell-wrap` 显式退出单元格的省略号裁剪；
  * 「未定位」是唯一要一眼挑出来的信号（未定位无法参与路线规划），用图标 + Tooltip。
  */
 const columns = ref<TableColumnsType<Warehouse>>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 160},
   {title: '仓库名称', dataIndex: 'name', width: 200},
-  {title: '所在地区', dataIndex: 'areaText', width: 190},
-  {title: '详细地址', dataIndex: 'address', width: 240},
+  {title: '区域 / 地址', dataIndex: 'areaText', width: 280},
   {title: '定位', dataIndex: 'located', align: 'center', width: 80},
   {title: '状态', dataIndex: 'status', align: 'center', width: 110},
   {title: '备注', dataIndex: 'remark', width: 200},

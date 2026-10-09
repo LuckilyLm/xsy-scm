@@ -124,14 +124,17 @@ const columns = ref([
   {
     title: '用户类型',
     dataIndex: 'userType',
+    align: 'center',
   },
   {
     title: '登录失败次数',
     dataIndex: 'loginFailCount',
+    align: 'right',
   },
   {
     title: '锁定状态',
     dataIndex: 'lockFlag',
+    align: 'center',
   },
   {
     title: '锁定开始时间',

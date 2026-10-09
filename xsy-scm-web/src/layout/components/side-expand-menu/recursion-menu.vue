@@ -10,7 +10,7 @@
     </div>
     <!-- 次级菜单展示 -->
     <div class="bottom-menu">
-      <a-menu :selectedKeys="selectedKeys" :openKeys="openKeys" mode="inline">
+      <a-menu class="smart-expand-submenu" :selectedKeys="selectedKeys" :openKeys="openKeys" mode="inline" :inline-indent="18">
         <template v-for="item in topMenu.children" :key="item.menuId">
           <template v-if="item.visibleFlag">
             <template v-if="$lodash.isEmpty(item.children)">
@@ -101,6 +101,24 @@ const {token} = useToken();
   display: flex;
   height: 90%;
   color: #515a6e;
+}
+
+.smart-expand-submenu {
+  width: 100%;
+
+  :deep(.ant-menu-submenu-arrow) {
+    display: none;
+  }
+
+  :deep(.ant-menu-item),
+  :deep(.ant-menu-submenu-title) {
+    height: 42px;
+    line-height: 42px;
+  }
+
+  :deep(.ant-menu-submenu-title) {
+    padding-inline-end: 14px;
+  }
 }
 
 .top-menu {

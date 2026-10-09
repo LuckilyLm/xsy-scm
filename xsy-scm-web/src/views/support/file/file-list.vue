@@ -163,6 +163,7 @@ const columns = ref([
     dataIndex: 'fileType',
     ellipsis: true,
     width: 80,
+    align: 'center',
   },
   {
     title: '上传时间',
@@ -181,6 +182,7 @@ const columns = ref([
     dataIndex: 'action',
     width: 120,
     fixed: 'right',
+    align: 'center',
   },
 ]);
 

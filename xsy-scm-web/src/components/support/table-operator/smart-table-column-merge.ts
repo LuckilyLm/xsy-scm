@@ -26,9 +26,9 @@ export function mergeColumn(originalTableColumnArray, userTableColumnArray) {
     let fontColumnSort = 1;
     let newColumns = [];
     for (const fontColumn of originalTableColumnArray) {
-        //原始表格列默认显示
+        // 页面可用原始 showFlag=false 设置默认隐藏项；用户保存的显隐偏好优先。
         fontColumn.columnKey = fontColumn.dataIndex;
-        fontColumn.showFlag = true;
+        fontColumn.showFlag = fontColumn.showFlag ?? true;
         fontColumn.sort = fontColumnSort;
 
         // 如果用户存在此列，则覆盖 sort和width、showFlag字段

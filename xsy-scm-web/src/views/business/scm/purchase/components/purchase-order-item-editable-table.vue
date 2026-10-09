@@ -106,6 +106,7 @@
 
   <!-- 需求选择：只列同一 SKU且仍有可分配余量的需求（跨 SKU → 40995） -->
   <a-modal :open="picker.open" title="选择采购需求" width="900px" :footer="null" @cancel="picker.open = false">
+    <a-alert v-if="picker.error" :message="picker.error" type="error" show-icon/>
     <a-spin :spinning="picker.loading">
       <a-table size="small" :data-source="picker.rows" :columns="pickerColumns" :pagination="false" row-key="id">
         <template #bodyCell="{ record: demand, column }">
@@ -140,22 +141,21 @@ import {
   unitMismatch,
 } from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
-import {useScmErrorToast} from '../../common/scm-error-toast';
 
 defineProps<{ items: OrderItem[] }>();
 
 const columns: TableColumnsType<OrderItem> = [
-  {title: '商品规格', dataIndex: 'skuId', width: 300},
+  {title: '商品 / 商品规格', dataIndex: 'skuId', width: 300},
   {title: '采购数量', dataIndex: 'plannedQuantity', align: 'right', width: 150},
   {title: '采购单价', dataIndex: 'purchasePrice', align: 'right', width: 150},
   {title: '已分配合计', dataIndex: 'allocated', align: 'right', width: 140},
-  {title: '需求来源', dataIndex: 'allocationCount', align: 'center', width: 120},
+  {title: '需求来源', dataIndex: 'allocationCount', align: 'right', width: 120},
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ];
 
 const allocationColumns: TableColumnsType<Allocation> = [
   {title: '来源销售单', dataIndex: 'salesOrderNo', width: 200},
-  {title: '需求单位', dataIndex: 'demandUnit', width: 100},
+  {title: '需求单位', dataIndex: 'demandUnit', width: 100, align: 'center'},
   {title: '本次分配数量', dataIndex: 'quantity', align: 'right', width: 170},
   {title: '需求状态', dataIndex: 'demandStatus', align: 'center', width: 120},
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},
@@ -164,7 +164,7 @@ const allocationColumns: TableColumnsType<Allocation> = [
 const pickerColumns: TableColumnsType<Demand> = [
   {title: '来源销售单', dataIndex: 'salesOrderNoSnapshot', width: 210},
   {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '需求单位', dataIndex: 'demandUnit', width: 100},
+  {title: '需求单位', dataIndex: 'demandUnit', width: 100, align: 'center'},
   {title: '剩余可分配', dataIndex: 'unallocatedQuantity', align: 'right', width: 140},
   {title: '需求日期', dataIndex: 'demandDate', width: 120},
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},
@@ -173,7 +173,7 @@ const pickerColumns: TableColumnsType<Demand> = [
 const picker = reactive({
   open: false,
   loading: false,
-  error: useScmErrorToast(),
+  error: '',
   rows: [] as Demand[],
   item: undefined as OrderItem | undefined,
 });

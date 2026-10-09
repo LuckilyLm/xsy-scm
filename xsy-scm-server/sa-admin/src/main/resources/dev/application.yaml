@@ -12,7 +12,7 @@
 project:
   name: xsy-scm-v2-admin
   # 默认值不写死盘符：原基线硬编码 D:/Browser Download/...，遇到没有 D 盘的机器直接不可用。
-  # XSY_V2_LOG_DIR 存在时优先（部署 / CI 用绝对路径），否则落到仓库内 .runtime/logs。
+  # XSY_V2_LOG_DIR 存在时优先（部署或本地验证可用绝对路径），否则落到仓库内 .runtime/logs。
   log-directory: ${XSY_V2_LOG_DIR:../.runtime/logs}/xsy-scm-v2-admin/${spring.profiles.active}
 
 # 项目端口和url根路径

@@ -21,6 +21,7 @@ export const columns = ref([
         title: '图标',
         dataIndex: 'icon',
         width: 50,
+        align: 'center',
     },
     {
         title: '路径',

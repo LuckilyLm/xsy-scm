@@ -139,6 +139,7 @@ const columns = ref([
     title: '企业类型',
     dataIndex: 'type',
     width: 100,
+    align: 'center',
   },
   {
     title: '联系人',
@@ -162,6 +163,7 @@ const columns = ref([
     title: '状态',
     width: 50,
     dataIndex: 'disabledFlag',
+    align: 'center',
   },
   {
     title: '创建人',
@@ -178,6 +180,7 @@ const columns = ref([
     dataIndex: 'action',
     // fixed: 'right',
     width: 100,
+    align: 'center',
   },
 ]);
 

@@ -28,13 +28,16 @@
     </a-row>
   </a-form>
 
+  <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
+    <template #action><a-button @click="queryData">重试</a-button></template>
+  </a-alert>
+
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
+      <div class="smart-table-operate-block">收款明细</div>
+      <div class="smart-table-setting-block">
         <a-button v-privilege="PERM.RECEIPT_ADD" type="primary" @click="openAdd">登记收款</a-button>
         <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
-      </div>
-      <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_RECEIPT" :refresh="queryData"/>
       </div>
     </a-row>
@@ -59,10 +62,6 @@
           <span class="scm-money">{{ moneyText(text) }}</span>
         </template>
         <template v-else-if="column.dataIndex==='receivedAt'">{{ dateTimeText(text) }}</template>
-        <template v-else-if="column.dataIndex==='externalReference'">
-          <span v-if="text" class="scm-mono">{{ text }}</span>
-          <span v-else>—</span>
-        </template>
         <template v-else-if="column.dataIndex==='action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="showDetail(record)">明细</a-button>
@@ -78,9 +77,11 @@
     </div>
   </a-card>
 
-  <FinanceDetailDrawer v-model:open="detailOpen" kind="RECEIPT" :loading="detailLoading" :detail="detailData"/>
+  <FinanceDetailDrawer v-model:open="detailOpen" kind="RECEIPT" :loading="detailLoading" :detail="detailData"
+                       :error="detailError" @retry="reloadDetail"/>
 
   <a-modal v-model:open="addOpen" title="登记收款" :confirm-loading="addSaving" @ok="submitAdd">
+    <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
     <a-form layout="vertical">
       <a-form-item label="客户" required>
         <a-select v-model:value="addForm.customerId" show-search option-filter-prop="label" :options="customerOptions" placeholder="选择客户"/>
@@ -97,6 +98,7 @@
 
   <a-modal v-model:open="reverseOpen" title="反向收款" :confirm-loading="reverseSaving" @ok="submitReverse">
     <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一笔反向收款，金额 ${moneyText(reverseRow.amount)}。原收款事实会保留。`"/>
+    <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError"/>
     <a-form layout="vertical"><a-form-item label="反向原因" required>
       <a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/>
     </a-form-item></a-form>
@@ -121,19 +123,16 @@ import type {CustomerOption} from '/@/types/business/scm/customer';
 import {useFinancePage} from './use-finance-page';
 import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 const query = reactive<ReceiptQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinanceReceipt, ReceiptQuery>(financeApi.receiptQuery, financeApi.receiptExport);
 const customerOptions = ref<Array<{label: string; value: string | number}>>([]);
-const {open: detailOpen, loading: detailLoading, data: detailData,
-    show: openDetail} = useFinanceDetail<FinanceReceiptDetail>(
+const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
+    show: openDetail, load: reloadDetail} = useFinanceDetail<FinanceReceiptDetail>(
     (id) => financeApi.receiptDetail(id, {suppressGlobalErrorMessage: true})
 );
-const addOpen = ref(false), addSaving = ref(false);
-const addError = useScmErrorToast();
-const reverseOpen = ref(false), reverseSaving = ref(false), reverseReason = ref(''), reverseRow = ref<FinanceReceipt | null>(null);
-const reverseError = useScmErrorToast();
+const addOpen = ref(false), addSaving = ref(false), addError = ref('');
+const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinanceReceipt | null>(null);
 const addForm = reactive({customerId: undefined as string | number | undefined, amount: '', method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
     receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
 const methodOptions = Object.values(SCM_FINANCE_RECEIPT_METHOD_ENUM).map((item) => ({label: item.desc, value: item.value}));
@@ -144,10 +143,10 @@ const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 76
 const columns = ref<TableColumnsType<FinanceReceipt>>([
     {title: '收款单号', dataIndex: 'receiptNo', fixed: 'left', width: 110, ellipsis: true},
     {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '客户', dataIndex: 'customerName', width: 170}, {title: '方向', dataIndex: 'entryType', width: 80},
+    {title: '客户', dataIndex: 'customerName', width: 170}, {title: '方向', dataIndex: 'entryType', width: 80, align: 'center'},
     {title: '金额', dataIndex: 'amount', align: 'right', width: 125},
     {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 125},
-    {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 115}, {title: '方式', dataIndex: 'method', width: 110},
+    {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 115}, {title: '方式', dataIndex: 'method', width: 110, align: 'center'},
     {title: '凭据号', dataIndex: 'externalReference', width: 160}, {title: '收款时点', dataIndex: 'receivedAt', width: 165},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
@@ -216,6 +215,7 @@ onMounted(async () => {
 
 <style scoped>
 .date-separator { margin: 0 8px; color: #667085; }
+.page-error,.form-error { margin-bottom: 12px; }
 .finance-mobile-balance-list { display: none; }
 
 .finance-mobile-balance-row { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }

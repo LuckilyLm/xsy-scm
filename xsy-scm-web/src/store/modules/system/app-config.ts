@@ -18,12 +18,20 @@ let language = appDefaultConfig.language;
 if (appConfigStr) {
     try {
         const cached = JSON.parse(appConfigStr);
-        // 缓存配置版本低于当前默认配置版本时，说明 app-config.ts 的默认值已更新，
-        // 直接采用新默认值（老用户会平滑升级到新配置，而不是一直停留在旧配置上）。
+        // 版本 3 → 4 只调整默认侧栏宽度：迁移该项时保留其他用户偏好。
         if (cached && cached.configVersion === appDefaultConfig.configVersion) {
             state = cached;
             language = state.language;
+        } else if (cached && cached.configVersion === 3 && appDefaultConfig.configVersion === 4) {
+            state = {
+                ...appDefaultConfig,
+                ...cached,
+                configVersion: appDefaultConfig.configVersion,
+                sideMenuWidth: appDefaultConfig.sideMenuWidth,
+            };
+            language = state.language;
         } else {
+            // 其他版本沿用默认配置，避免把未知旧结构当作当前结构继续使用。
             state = {...appDefaultConfig};
             language = appDefaultConfig.language;
         }

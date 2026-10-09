@@ -114,7 +114,7 @@ th,
 td {
   padding: 8px;
   border: 1px solid var(--scm-border, #f0f0f0);
-  vertical-align: top;
+  vertical-align: middle;
   text-align: left;
 }
 

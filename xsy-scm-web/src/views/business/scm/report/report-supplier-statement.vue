@@ -10,6 +10,7 @@
       </a-space>
     </a-form-item>
   </a-form>
+  <a-alert v-if="error" class="statement-note" type="error" show-icon :message="error"/>
   <a-card title="历史对账版本（当前操作人）" size="small" :bordered="false" class="statement-card">
     <a-table :columns="historyColumns" :data-source="history" row-key="id" size="small" :pagination="{pageSize: 10}" :loading="busy">
       <template #bodyCell="{record,column}">
@@ -58,7 +59,6 @@ import type {ReportId} from './report-types';
 import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-model';
 import {moneyText} from '../inventory/inventory-model';
 import {reportError} from './report-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -68,7 +68,7 @@ const supplierId = ref<ReportId>(), warehouseId = ref<ReportId>();
 const dateRange = ref<DateRange>(defaultDateRange());
 
 const selected = ref<SupplierStatement>(), history = ref<SupplierStatement[]>([]);
-const printArea = ref<HTMLElement>(), busy = ref(false), error = useScmErrorToast();
+const printArea = ref<HTMLElement>(), busy = ref(false), error = ref('');
 watch(supplierId, () => { selected.value = undefined; history.value = []; });
 const factLabels: Record<string, string> = {
   PAYABLE: '确认收货应付', RED: '手工红字', PAYMENT: '实际付款', PAYMENT_REVERSE: '反向付款',
@@ -82,7 +82,7 @@ const historyColumns: TableColumnsType<SupplierStatement> = [
   {title: '操作', dataIndex: 'action', align: 'center', width: 130},
 ];
 const lineColumns: TableColumnsType<SupplierStatementLine> = [
-  {title: '业务时间', dataIndex: 'eventAt', width: 170}, {title: '类型', dataIndex: 'factType', width: 120},
+  {title: '业务时间', dataIndex: 'eventAt', width: 170}, {title: '类型', dataIndex: 'factType', width: 120, align: 'center'},
   {title: '单号', dataIndex: 'documentNo', width: 170}, {title: '关联单号', dataIndex: 'relatedNo', width: 170},
   ...moneyColumns.map((key, index) => ({title: ['应付变动', '付款变动', '核销变动', '滚动净应付'][index], dataIndex: key, width: 135, align: 'right' as const})),
 ];

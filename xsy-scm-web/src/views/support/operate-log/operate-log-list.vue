@@ -133,6 +133,7 @@ const columns = ref([
     dataIndex: 'operateUserType',
     width: 50,
     ellipsis: true,
+    align: 'center',
   },
   {
     title: '操作模块',
@@ -174,12 +175,14 @@ const columns = ref([
     title: '状态',
     dataIndex: 'successFlag',
     width: 60,
+    align: 'center',
   },
   {
     title: '操作',
     dataIndex: 'action',
     fixed: 'right',
     width: 60,
+    align: 'center',
   },
 ]);
 

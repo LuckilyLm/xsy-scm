@@ -37,7 +37,7 @@ public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {
     PurchaseOrderVO detail(@Param("id") Long id);
 
     /**
-     * 单条 {@code FOR UPDATE}（锁序：purchase_demand → purchase_order → purchase_order_item）。
+     * 单条 {@code FOR UPDATE}（锁序：purchase_order → purchase_demand）。
      */
     PurchaseOrderEntity lock(@Param("id") Long id);
 

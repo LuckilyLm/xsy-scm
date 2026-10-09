@@ -8,7 +8,7 @@
   <default-home-card
     :icon-name="dimension === 'customer' ? 'section-customer-ranking' : 'section-product-ranking'"
     :title="meta.title">
-    <region-error v-if="error" :message="error" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="200" @retry="load"/>
     <a-spin v-else :spinning="loading">
       <a-empty v-if="!loading && items.length === 0" class="home-rank__empty" :description="meta.emptyText"/>
       <ul v-else class="home-rank__list">
@@ -71,7 +71,7 @@ defineExpose({load});
     display: flex;
     flex-direction: column;
     justify-content: center;
-    min-height: 300px;
+    min-height: 200px;
 }
 
 .home-rank__list {
@@ -160,7 +160,6 @@ defineExpose({load});
         height: 100%;
         border-radius: 3px;
         background: linear-gradient(90deg, #35d29a, #0f9e63);
-        transition: width 0.6s ease;
     }
 }
 </style>

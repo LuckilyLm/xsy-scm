@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-截至 2026-10-07，管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前事实与最近一次完整验收见[项目状态](docs/status.md)，只剩未闭环工作见[后续开发路线图](docs/plan/active/admin-development-roadmap.md)。仓库 Flyway 源码已到 V110，但最近一次完整后端/E2E 数据库基线仍是 V109，不能把源码版本等同于已部署版本。客户商城仍未开始，legacy 小程序保持冻结。
+截至 2026-10-09，管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前事实与最近一次完整验收见[项目状态](docs/status.md)，未闭环工作见[后续开发路线图](docs/plan/active/admin-development-roadmap.md)。仓库 Flyway 源码已到 V115，但最近一次完整后端/E2E 数据库基线仍是 V109，不能把源码版本等同于已部署版本。客户商城仍未开始，legacy 小程序保持冻结。
 
 业务需求和旧系统语义以 [参考项目目录](project-reference-examples/xsy-scm/) 为主，当前边界见 [项目决策](docs/decisions.md)。
 
@@ -68,6 +68,8 @@ npm run build
 `npm run lint` 覆盖 `src/`、`e2e/**/*.ts` 与 `playwright.config.ts`；`typecheck:e2e` 使用独立 TypeScript 配置检查 Playwright 用例与夹具。
 
 浏览器验证须先启动 PostgreSQL、Redis、后端与前端；`tools/verify.ps1` / `tools/verify.sh` 只执行门禁，不管理服务生命周期。完整入口从仓库根目录运行 `./tools/verify.ps1`，结果保存在 `.runtime/verify/<timestamp>/summary.json` 与 `.runtime/playwright-result.json`。没有执行或因环境跳过的检查不能报告为通过。
+
+仓库不再配置 GitHub Actions CI；需要验证时使用上述本地入口，并在交付记录中写明实际执行范围与结果。
 
 ## Docker 第一版部署
 

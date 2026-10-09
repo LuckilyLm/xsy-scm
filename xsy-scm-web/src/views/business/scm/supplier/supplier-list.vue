@@ -28,6 +28,11 @@
         <a-button v-privilege="'scm:supplier:add'" type="primary" @click="drawer?.open()">新增供应商</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER" :refresh="load"/>
       </a-row>
+      <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+        <template #action>
+          <a-button size="small" @click="load">重新加载</a-button>
+        </template>
+      </a-alert>
       <a-table
           :data-source="rows"
           :columns="columns"
@@ -36,23 +41,21 @@
           :pagination="false"
           size="small"
           bordered
-          :scroll="{ x: 1010 }"
+          :scroll="{ x: 990 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
-          <template v-if="column.dataIndex === 'supplierCode'">
-            <span class="scm-mono">{{ record.supplierCode || '—' }}</span>
-          </template>
-          <template v-else-if="column.dataIndex === 'name'">
+          <template v-if="column.dataIndex === 'name'">
             <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.supplierId)">{{ record.name }}</a-button>
           </template>
+          <template v-else-if="column.dataIndex === 'supplierCode'">
+            <span class="scm-mono">{{ record.supplierCode || '—' }}</span>
+          </template>
           <template v-else-if="column.dataIndex === 'contactName'">
-            <span v-if="record.contactName">{{ record.contactName }}</span>
-            <span v-else>—</span>
+            {{ record.contactName || '—' }}
           </template>
           <template v-else-if="column.dataIndex === 'contactPhone'">
-            <span v-if="record.contactPhone" class="scm-mono">{{ record.contactPhone }}</span>
-            <span v-else>—</span>
+            <span class="scm-mono">{{ record.contactPhone || '—' }}</span>
           </template>
           <a-button
               v-else-if="column.dataIndex === 'skuCount'"
@@ -113,14 +116,13 @@ import SupplierDrawer from './components/supplier-form-drawer.vue';
 import SupplierSkuDrawer from './components/supplier-sku-drawer.vue';
 import {supplierError} from './supplier-errors';
 import {hasPermission} from '../common/scm-permission';
-import {useScmErrorToast} from '../common/scm-error-toast';
 
 const router = useRouter();
 const filters = reactive<SupplierQuery>({pageNum: 1, pageSize: 20});
 const rows = ref<SupplierRow[]>([]);
 const total = ref(0);
 const loading = ref(false);
-const error = useScmErrorToast();
+const error = ref('');
 const drawer = ref<InstanceType<typeof SupplierDrawer>>();
 const skuDrawer = ref<InstanceType<typeof SupplierSkuDrawer>>();
 
@@ -128,16 +130,15 @@ const statusText = (value: EnableStatus): string => SUPPLIER_STATUS_ENUM[value]?
 /** 启用=正常（绿），停用=失效（灰）。 */
 const statusTone = (value: EnableStatus): ScmStatusTone => (value === 'ENABLED' ? 'success' : 'neutral');
 
-// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。
-// 编码、名称、联系人、联系电话各自成列，单元格不再上下叠两行；更新时间仍在搜索、详情、编辑与导出里，不默认摊在列表上。
+// 名称、编码、联系人和电话可独立查看、比较；更新时间仍由搜索、详情、编辑与导出承载。
 const columns = ref<TableColumnsType<SupplierRow>>([
-  {title: '供应商编码', dataIndex: 'supplierCode', width: 130},
-  {title: '供应商名称', dataIndex: 'name', width: 220, sorter: true, ellipsis: true},
-  {title: '联系人', dataIndex: 'contactName', width: 110},
-  {title: '联系电话', dataIndex: 'contactPhone', width: 140},
-  {title: '关联商品数', dataIndex: 'skuCount', width: 120, align: 'center'},
+  {title: '供应商名称', dataIndex: 'name', width: 190, sorter: true, ellipsis: true, align: 'left'},
+  {title: '供应商编码', dataIndex: 'supplierCode', width: 140, align: 'left'},
+  {title: '联系人', dataIndex: 'contactName', width: 130, ellipsis: true, align: 'left'},
+  {title: '联系电话', dataIndex: 'contactPhone', width: 140, align: 'left'},
+  {title: '关联商品数', dataIndex: 'skuCount', width: 120, align: 'right'},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
-  {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},
+  {title: '操作', dataIndex: 'action', width: 170, align: 'center', fixed: 'right'},
 ]);
 
 let requestId = 0;

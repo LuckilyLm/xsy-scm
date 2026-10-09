@@ -37,6 +37,11 @@ import org.springframework.transaction.annotation.Transactional;
  * / {@code AMOUNT_MISMATCH} / {@code STATUS_MISMATCH}。
  *
  * <p>
+ * 本地侧分<b>两个窗口</b>取数：成功交易按 {@code paid_at} 落结算日（渠道按收款时刻记账）， 未决交易按 {@code created_at} 落创建日。只用 {@code created_at} 会在跨午夜时误判
+ * —— 10-08 23:55 创建、10-09 00:05 成功的那笔，在 10-09 的对账里被当成渠道多出来的钱 （{@code LOCAL_MISSING}），在 10-08
+ * 又成了本地多出来的钱（{@code PROVIDER_MISSING}）。 两个窗口都取，是为了在不丢 {@code STATUS_MISMATCH} 的前提下修正归属。
+ *
+ * <p>
  * 本地侧取全部状态的交易，不只看成功的：只看成功交易就永远发现不了 {@code STATUS_MISMATCH}。 首版只对收款；退款对账口径不对称，是后续独立一项。
  */
 @Service
@@ -74,11 +79,17 @@ public class PaymentReconciliationService {
         ScmPaymentProvider.Settlement settlement = provider.fetchSettlement(bizDate);
         OffsetDateTime startAt = bizDate.atStartOfDay(BIZ_ZONE).toOffsetDateTime();
         OffsetDateTime endAt = bizDate.plusDays(1).atStartOfDay(BIZ_ZONE).toOffsetDateTime();
-        List<PaymentTransactionEntity> locals = paymentTransactionDao.listByWindow(providerCode, startAt, endAt);
+        // 成功交易按 paid_at 归结算日，未决交易按 created_at 归创建日；两窗口合并后按交易号去重。
+        // 同一笔若两边都命中（当天创建、当天成功），成功那条优先 —— 它才是与渠道对应的收款事实。
         Map<String, PaymentTransactionEntity> localByNo = new LinkedHashMap<>();
-        for (PaymentTransactionEntity local : locals) {
+        for (PaymentTransactionEntity local : paymentTransactionDao.listByWindow(providerCode, startAt, endAt)) {
             localByNo.put(local.getProviderTransactionNo(), local);
         }
+        for (PaymentTransactionEntity succeeded : paymentTransactionDao.listSucceededBetween(providerCode, startAt,
+                endAt)) {
+            localByNo.put(succeeded.getProviderTransactionNo(), succeeded);
+        }
+        List<PaymentTransactionEntity> locals = new ArrayList<>(localByNo.values());
 
         String operator = ScmOperator.current();
         List<PaymentReconciliationItemEntity> items = new ArrayList<>();
@@ -99,10 +110,16 @@ public class PaymentReconciliationService {
                         ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
                 continue;
             }
-            BigDecimal localAmount = receivedOf(local);
-            if (localAmount.compareTo(line.amount().setScale(SCALE, RoundingMode.HALF_UP)) != 0) {
+            BigDecimal receivedAmount = receivedOf(local);
+            BigDecimal intentAmount = local.getAmount().setScale(SCALE, RoundingMode.HALF_UP);
+            BigDecimal settlementAmount = line.amount().setScale(SCALE, RoundingMode.HALF_UP);
+            boolean intentMismatch = intentAmount.compareTo(receivedAmount) != 0;
+            if (intentMismatch || receivedAmount.compareTo(settlementAmount) != 0) {
+                // 同时检查本地支付意图与渠道实收：渠道对账单可能与回调金额一致，
+                // 但这仍不能把偏离本地应付金额的交易算作平账。
                 items.add(item(ScmPaymentReconciliationCategoryEnum.AMOUNT_MISMATCH, line.providerTransactionNo(),
-                        local.getId(), localAmount, line.amount(), local.getStatus(),
+                        local.getId(), intentMismatch ? intentAmount : receivedAmount,
+                        intentMismatch ? receivedAmount : settlementAmount, local.getStatus(),
                         ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
             }
         }

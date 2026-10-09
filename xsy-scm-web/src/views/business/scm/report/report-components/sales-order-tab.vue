@@ -8,6 +8,11 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_ORDER" :refresh="refresh"/>
       </div>
     </a-row>
+    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+      <template #action>
+        <a-button @click="refresh">重试</a-button>
+      </template>
+    </a-alert>
     <a-table
         :id="SCM_REPORT_TABLE_ID.SALES_ORDER"
         size="small"
@@ -18,7 +23,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无客户订单明细'}"
-        :scroll="{x: 1460}"
+        :scroll="{x: 1450}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'orderNo'">
@@ -97,8 +102,8 @@ const columns = ref<TableColumnsType<SalesOrderRow>>([
   {title: '订单号', dataIndex: 'orderNo', width: 190},
   {title: '客户名称', dataIndex: 'customerName', width: 200},
   {title: '销售员', dataIndex: 'sellerName', width: 120},
-  {title: '订单来源', dataIndex: 'orderSource', width: 110},
-  {title: '结算方式', dataIndex: 'settleMode', width: 120},
+  {title: '订单来源', dataIndex: 'orderSource', width: 110, align: 'center'},
+  {title: '结算方式', dataIndex: 'settleMode', width: 120, align: 'center'},
   {title: '订单行数', dataIndex: 'lineCount', align: 'right', width: 110},
   {title: '商品规格数', dataIndex: 'skuKindCount', align: 'right', width: 120},
   {title: '结算金额', dataIndex: 'settlementAmount', align: 'right', width: 150},

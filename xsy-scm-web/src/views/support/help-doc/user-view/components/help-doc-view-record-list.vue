@@ -76,6 +76,7 @@ const tableColumns = [
     title: '查看次数',
     dataIndex: 'pageViewCount',
     with: 100,
+    align: 'right',
   },
   {
     title: '首次查看设备',

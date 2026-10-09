@@ -1,8 +1,9 @@
 <template>
-  <div class="loss-kpis">
-    <ReportKpiCard v-for="card in lossCards" :key="card.label"
-                   :label="card.label" :value="card.value" :warning="card.warning"/>
-  </div>
+  <a-row :gutter="[12, 12]">
+    <a-col v-for="card in lossCards" :key="card.label" :xs="24" :sm="12" :md="8" :lg="6" :xl="4">
+      <ReportKpiCard :label="card.label" :value="card.value" :warning="card.warning"/>
+    </a-col>
+  </a-row>
   <a-row :gutter="[12, 12]" class="smart-margin-top10">
     <a-col :xs="24" :lg="12">
       <ReportPieChart
@@ -32,6 +33,11 @@
         />
       </div>
     </a-row>
+    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+      <template #action>
+        <a-button @click="refresh">重试</a-button>
+      </template>
+    </a-alert>
     <a-table
         :id="SCM_REPORT_TABLE_ID.INVENTORY_LOSS"
         size="small"
@@ -116,7 +122,7 @@ const columns = ref<TableColumnsType<InventoryLossRow>>([
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'skuName', width: 170},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '损耗类型', dataIndex: 'movementType', width: 110},
+  {title: '损耗类型', dataIndex: 'movementType', width: 110, align: 'center'},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 120},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 90},
   {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 130},
@@ -186,12 +192,3 @@ function changePage(page: number, pageSize: number) {
   emit('pageChange', page, pageSize);
 }
 </script>
-
-<style scoped>
-/* 卡数不整除固定列数时会留下几乎整行空白的大卡，列宽交给内容自己决定。 */
-.loss-kpis {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-}
-</style>

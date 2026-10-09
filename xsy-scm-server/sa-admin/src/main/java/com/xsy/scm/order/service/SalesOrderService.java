@@ -234,6 +234,7 @@ public class SalesOrderService {
     public SalesOrderDetailVO update(SalesOrderUpdateForm salesOrderUpdateForm) {
         OrderValidator.draft(salesOrderUpdateForm);
         var salesOrder = lock(salesOrderUpdateForm.getOrderId());
+        requireOrderSellerScope(salesOrder);
         version(salesOrder.getVersion(), salesOrderUpdateForm.getVersion());
         OrderStateMachine.editable(salesOrder.getStatus());
         // Customer and address identity belong to the creation snapshot; editing cannot replace it.
@@ -271,8 +272,12 @@ public class SalesOrderService {
     public SalesOrderDetailVO submit(OrderVersionForm orderVersionForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_SUBMIT:" + orderVersionForm.getOrderId(), key,
                 orderVersionForm);
-        if (claim.replay())
+        if (claim.replay()) {
+            // 重放也要过范围：幂等 scope 含 operator，A 与 B 的键本就不同（跨人重放不可能），
+            // 但同一个人换了负责范围后再重放同一个键仍会绕开写命令里的守卫。detail 会重新判范围。
+            salesOrderQueryService.detail(orderVersionForm.getOrderId());
             return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        }
         var result = submitOrder(orderVersionForm.getOrderId(), orderVersionForm.getVersion());
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
                 result.getOrderId(), result);
@@ -281,6 +286,7 @@ public class SalesOrderService {
 
     private SalesOrderDetailVO submitOrder(Long orderId, Integer expectedVersion) {
         var salesOrder = lock(orderId);
+        requireOrderSellerScope(salesOrder);
         version(salesOrder.getVersion(), expectedVersion);
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.PENDING.name());
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
@@ -328,9 +334,12 @@ public class SalesOrderService {
         var claim = orderIdempotencyService.claim(
                 "ORDER_ACTUAL:" + orderActualQuantityForm.getOrderId() + ":" + orderActualQuantityForm.getItemId(), key,
                 orderActualQuantityForm);
-        if (claim.replay())
+        if (claim.replay()) {
+            salesOrderQueryService.detail(orderActualQuantityForm.getOrderId());
             return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        }
         var salesOrder = lock(orderActualQuantityForm.getOrderId());
+        requireOrderSellerScope(salesOrder);
         OrderStateMachine.actualQuantity(salesOrder.getStatus());
         var row = salesOrderItemDao.list(salesOrder.getId()).stream()
                 .filter(salesOrderItem -> Objects.equals(salesOrderItem.getId(), orderActualQuantityForm.getItemId()))
@@ -457,9 +466,12 @@ public class SalesOrderService {
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO cancel(OrderCancelForm orderCancelForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_CANCEL:" + orderCancelForm.getOrderId(), key, orderCancelForm);
-        if (claim.replay())
+        if (claim.replay()) {
+            salesOrderQueryService.detail(orderCancelForm.getOrderId());
             return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        }
         var salesOrder = lock(orderCancelForm.getOrderId());
+        requireOrderSellerScope(salesOrder);
         version(salesOrder.getVersion(), orderCancelForm.getVersion());
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.CANCELLED.name());
         OrderValidator.reason(orderCancelForm.getReason(), ORDER_CANCEL_REASON_REQUIRED);
@@ -483,6 +495,7 @@ public class SalesOrderService {
         var salesOrder = salesOrderDao.lock(orderVersionForm.getOrderId());
         if (salesOrder == null)
             return;
+        requireOrderSellerScope(salesOrder);
         version(salesOrder.getVersion(), orderVersionForm.getVersion());
         if (!ScmOrderStatusEnum.DRAFT.name().equals(salesOrder.getStatus())) {
             throw new ScmBusinessException(ORDER_DELETE_STATE_INVALID);
@@ -519,6 +532,7 @@ public class SalesOrderService {
     @Transactional(rollbackFor = Exception.class)
     public void reserveStock(Long orderId) {
         var salesOrder = lock(orderId);
+        requireOrderSellerScope(salesOrder);
         if (!ScmOrderStatusEnum.CONFIRMED.name().equals(salesOrder.getStatus())) {
             throw new ScmBusinessException(ORDER_RESERVE_STATE_INVALID);
         }
@@ -538,6 +552,21 @@ public class SalesOrderService {
         if (salesOrder == null)
             throw new ScmBusinessException(ORDER_NOT_FOUND);
         return salesOrder;
+    }
+
+    /**
+     * 写入侧的归属门禁：当前操作员必须在该订单销售负责人的范围内。
+     *
+     * <p>
+     * 查询与详情早就按 {@code orderSellerScope} 收窄，但那只保护读路径 —— 能看见的少了， 「看不见却仍能改」这条路还得在写命令里单独堵。否则持有功能权限的普通人员只要猜到订单 id，
+     * 就能改别人的单、动别人的数量、占别人的库存。功能点权限（{@code @SaCheckPermission}）回答的是 「能不能用这个功能」，这里回答的是「能不能对这个单用」，两者不能互相替代。
+     *
+     * <p>
+     * 刻意不放进 {@link #lock}：它还被退货、退款等模块调用，在那层加守卫会把这些路径的语义一起改掉。 门禁加在<b>对外写命令入口</b>，与 {@code confirmOrder} 用同一套判定。
+     */
+    private void requireOrderSellerScope(SalesOrderEntity salesOrder) {
+        if (!dataScopeService.resolve().getOrderSellerScope().allows(salesOrder.getSellerId()))
+            throw new ScmDataScopeException();
     }
 
     public static void version(Integer actual, Integer expected) {

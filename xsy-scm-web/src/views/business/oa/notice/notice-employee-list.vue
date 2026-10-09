@@ -96,6 +96,7 @@ const tableColumns = reactive([
     title: '访问量',
     dataIndex: 'pageViewCount',
     width: 90,
+    align: 'right',
   },
   {
     title: `来源`,

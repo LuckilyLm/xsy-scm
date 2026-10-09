@@ -8,6 +8,11 @@
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_ITEM" :refresh="refresh"/>
       </div>
     </a-row>
+    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
+      <template #action>
+        <a-button @click="refresh">重试</a-button>
+      </template>
+    </a-alert>
     <a-table
         :id="SCM_REPORT_TABLE_ID.SALES_ITEM"
         size="small"
@@ -18,7 +23,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无订单明细'}"
-        :scroll="{x: 2360}"
+        :scroll="{x: 2150}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'orderNo'">
@@ -107,16 +112,16 @@ const columns = ref<TableColumnsType<SalesItemRow>>([
   {title: '订单号', dataIndex: 'orderNo', width: 190},
   {title: '客户名称', dataIndex: 'customerName', width: 180},
   {title: '销售员', dataIndex: 'sellerName', width: 110},
-  {title: '订单来源', dataIndex: 'orderSource', width: 110},
-  {title: '结算方式', dataIndex: 'settleMode', width: 110},
+  {title: '订单来源', dataIndex: 'orderSource', width: 110, align: 'center'},
+  {title: '结算方式', dataIndex: 'settleMode', width: 110, align: 'center'},
   {title: '商品名称', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'specName', width: 130},
-  {title: '商品类型', dataIndex: 'productType', width: 100},
+  {title: '商品类型', dataIndex: 'productType', width: 100, align: 'center'},
   {title: '销售单位', dataIndex: 'saleUnit', align: 'center', width: 90},
   {title: '订购数量', dataIndex: 'orderedQuantity', align: 'right', width: 120},
   {title: '实际数量', dataIndex: 'actualQuantity', align: 'right', width: 120},
   {title: '锁定成交单价', dataIndex: 'lockedUnitPrice', align: 'right', width: 140},
-  {title: '价格来源', dataIndex: 'lockedPriceSource', width: 130},
+  {title: '价格来源', dataIndex: 'lockedPriceSource', width: 130, align: 'center'},
   {title: '结算金额', dataIndex: 'settlementLineAmount', align: 'right', width: 140},
   {title: '是否手工改价', dataIndex: 'manualPriceOverride', align: 'center', width: 120},
   {title: '手工改价原因', dataIndex: 'manualPriceReason', width: 200},

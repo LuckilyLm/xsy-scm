@@ -1,5 +1,6 @@
 <template>
   <a-drawer :open="visible" :title="order?.orderNo||'订单详情'" :width="scmDrawerWidth('xl')" @close="visible=false">
+    <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <template v-if="order">
         <a-space class="actions">
@@ -134,6 +135,7 @@
     </a-modal>
     <a-modal :open="creditOpen" title="确认订单与授信检查" :confirm-loading="saving"
              @ok="confirmWithCredit" @cancel="creditOpen=false" :ok-button-props="{disabled: !creditCheck?.allowed && !creditOverride}">
+      <a-alert v-if="error" :message="error" type="error" show-icon/>
       <template v-if="creditCheck">
         <a-alert :type="creditCheck.allowed ? 'success' : 'warning'" show-icon
                  :message="creditCheck.allowed ? '当前授信检查通过，提交时将再次校验' : '额度不足或存在逾期，订单暂不能确认'"/>
@@ -196,14 +198,13 @@ import {amount, fixed} from './order-form-model';
 import {datetime} from '../common/scm-display';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import {orderError} from './order-errors';
-import {useScmErrorToast} from '../common/scm-error-toast';
 import ReturnForm from './components/order-return-form-modal.vue';
 import OrderPaymentDrawer from './components/order-payment-drawer.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const paymentDrawer = ref<InstanceType<typeof OrderPaymentDrawer>>();
 
 const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), loading = ref(false), saving = ref(false), error = useScmErrorToast(), order = ref<Order>(),
+const visible = ref(false), loading = ref(false), saving = ref(false), error = ref(''), order = ref<Order>(),
     logs = ref<LogRow[]>([]), returnForm = ref<InstanceType<typeof ReturnForm>>();
 const actualOpen = ref(false), cancelOpen = ref(false), actualQuantity = ref('1.0000'), actualReason = ref(''),
     cancelReason = ref(''), activeItem = ref<Item>();
@@ -211,7 +212,7 @@ const columns: TableColumnsType<Item> = [{title: '商品', dataIndex: 'productNa
   title: '商品规格',
   dataIndex: 'specNameSnapshot',
   width: 100
-}, {title: '单位', dataIndex: 'saleUnitSnapshot', width: 65}, {
+}, {title: '单位', dataIndex: 'saleUnitSnapshot', width: 65, align: 'center'}, {
   title: '下单量',
   dataIndex: 'orderedQuantity',
   align: 'right',

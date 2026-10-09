@@ -89,7 +89,7 @@ class VerificationTest(unittest.TestCase):
 
     def test_frontend_scope_does_not_run_e2e(self):
         # E2E 需要后端、Vite 与建号脚本等外部前置。若 `frontend` 连带跑 E2E，任何
-        # 没有这些服务的环境（例如 CI 的前端 job）都会以「未覆盖」退出 2。
+        # 没有这些服务的环境（例如只配置前端依赖的本地环境）都会以「未覆盖」退出 2。
         self.assertEqual({"frontend": 1}, self.dispatch("frontend"))
 
     def test_e2e_scope_runs_e2e_only(self):
