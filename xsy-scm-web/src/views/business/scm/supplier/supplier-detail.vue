@@ -10,7 +10,6 @@
   <a-card size="small" :bordered="false" :loading="loading">
     <a-space class="smart-margin-bottom10">
       <a-button @click="router.push('/supplier/supplier-list')">返回供应商列表</a-button>
-      <a-button @click="load">刷新详情</a-button>
     </a-space>
     <a-alert v-if="error" :message="error" type="error" show-icon>
       <template #action>

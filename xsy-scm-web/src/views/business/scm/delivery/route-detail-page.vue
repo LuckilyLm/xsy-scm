@@ -25,14 +25,6 @@
           </div>
           <div class="scm-detail-header__actions">
             <a-space wrap>
-              <a-button
-                  v-if="detail.route.status === 'DRAFT'"
-                  v-privilege="'scm:delivery:route:update'"
-                  :disabled="busy"
-                  @click="formDrawer?.open(detail.route)"
-              >编辑信息
-              </a-button
-              >
               <a-button v-if="detail.route.status === 'DRAFT'" type="primary" v-privilege="'scm:delivery:route:plan'"
                         :disabled="busy" @click="plan"
               >确认规划
@@ -71,7 +63,6 @@
               >取消线路
               </a-button
               >
-              <a-button v-privilege="'support:operateLog:query'" :disabled="routeId == null" @click="openOperateLog">操作日志</a-button>
             </a-space>
           </div>
         </div>
@@ -188,7 +179,6 @@
       <a-empty v-else-if="!loading" description="线路尚未加载"/>
     </a-spin>
   </div>
-  <RouteFormDrawer ref="formDrawer" @saved="refreshAfterMutation"/>
   <CandidateOrderModal ref="candidates" @saved="refreshAfterMutation"/>
   <RoutePrint ref="printer"/>
   <a-modal
@@ -272,7 +262,6 @@ import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {isLocated, locationError, type MapPoint} from '/@/components/business/scm/map/types';
-import RouteFormDrawer from './components/route-form-drawer.vue';
 import CandidateOrderModal from './components/candidate-order-modal.vue';
 import RoutePlanningSuggestionPanel from './components/route-planning-suggestion-panel.vue';
 import RouteMapPanel from './components/route-map-panel.vue';
@@ -320,8 +309,7 @@ const loading = ref(false),
     tab = ref('base');
 const routeId = ref<Id>(),
     detail = ref<RouteDetail>();
-const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
-    candidates = ref<InstanceType<typeof CandidateOrderModal>>(),
+const candidates = ref<InstanceType<typeof CandidateOrderModal>>(),
     printer = ref<InstanceType<typeof RoutePrint>>();
 const {canViewAmount, canSign, hasPerm} = useDeliveryPermission();
 // 编辑权 = 草稿态 ∧ route:update；权限判定与 v-privilege 共用 hasPerm 一份口径
@@ -904,14 +892,6 @@ async function saveStop() {
   }
 }
 
-// 携带业务上下文跳到通用操作日志页，按线路 id 精确筛选。
-function openOperateLog() {
-  if (routeId.value == null) return;
-  void router.push({
-    path: '/support/operate-log/operate-log-list',
-    query: {businessType: 'DELIVERY_ROUTE', businessId: String(routeId.value)},
-  });
-}
 </script>
 <style scoped>
 .route-detail-page {

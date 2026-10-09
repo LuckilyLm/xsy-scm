@@ -16,12 +16,6 @@
           <a-tag :color="STATUS_COLOR[order.status ?? '']">
             {{ SCM_PURCHASE_STATUS_ENUM[order.status ?? '']?.desc }}
           </a-tag>
-          <a-divider type="vertical"/>
-          <!--
-            查询类动作（刷新）与状态流转类动作（提交 / 取消 / 少收关单）分组：
-            后者是有副作用的命令，与刷新混在一排容易误点，因此用竖线隔开。
-          -->
-          <a-button :loading="loading" @click="load">刷新</a-button>
           <template v-if="order.status === 'DRAFT'">
             <a-button
                 type="primary"

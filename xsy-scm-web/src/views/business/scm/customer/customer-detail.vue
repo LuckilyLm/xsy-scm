@@ -6,7 +6,7 @@
   （无订单权限时订单 / 常购 Tab 退化为错误提示）。非基础资料 Tab 首次进入才加载，
   切换客户时整体复位。
 
-  只读口径：本页不发起任何客户写命令，编辑走列表同一只 `CustomerDrawer`。
+  只读口径：本页不发起客户写命令，编辑入口留在客户列表。
   经营概览只用详情接口已有字段，不臆造接口没有的指标。
 -->
 <template>
@@ -27,17 +27,6 @@
           <span v-if="customer.customerTypeName"> · {{ customer.customerTypeName }}</span>
           <span v-if="customer.sellerName"> · {{ customer.sellerName }}</span>
         </p>
-      </div>
-      <div class="scm-detail-header__actions">
-        <a-button v-privilege="'scm:customer:update'" :disabled="!customerId" @click="openEditDrawer">
-          编辑客户
-        </a-button>
-        <a-tooltip title="刷新">
-          <a-button :disabled="!customerId" aria-label="刷新" @click="reloadActive">
-            <ReloadOutlined/>
-          </a-button>
-        </a-tooltip>
-        <ScmActionMore :actions="headerActions" @select="onHeaderAction"/>
       </div>
     </header>
 
@@ -294,16 +283,13 @@
         </template>
       </a-tab-pane>
     </a-tabs>
-
-    <!-- 编辑入口复用列表的同一只抽屉：本页不新增写端点，也不改表单口径 -->
-    <CustomerDrawer ref="editDrawer" @saved="loadBase"/>
   </a-card>
 </template>
 
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref, shallowRef, watch, type Ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
-import {ArrowLeftOutlined, ReloadOutlined} from '@ant-design/icons-vue';
+import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {orderApi} from '/@/api/business/scm/order-api';
@@ -321,16 +307,12 @@ import {
 import {SCM_ORDER_SOURCE_ENUM, SCM_ORDER_STATUS_ENUM} from '/@/constants/business/scm/order-const';
 import {shelfStatusLabel} from '/@/constants/business/scm/product-const';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
-import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
-import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {customerError} from './customer-errors';
 import {orderError} from '../order/order-errors';
 import {pricingError} from '../pricing/pricing-errors';
-import {hasPermission} from '../common/scm-permission';
 import {formatAmount, formatAmountOrDash} from '/@/utils/scm-amount';
 import {datetime} from '../common/scm-display';
-import CustomerDrawer from './components/customer-form-drawer.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -354,13 +336,6 @@ const customer = ref<CustomerDetail>();
 const baseLoading = ref(false);
 const baseError = ref('');
 let baseReq = 0;
-
-/** 编辑入口复用列表的同一只抽屉：只暴露 open(customerId)，写命令仍由抽屉自己发起。 */
-const editDrawer = ref<InstanceType<typeof CustomerDrawer>>();
-
-function openEditDrawer(): void {
-  if (customerId.value) editDrawer.value?.open(customerId.value);
-}
 
 const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;
 const settleModeText = (value: string): string => SETTLE_MODE_ENUM[value]?.desc || value;
@@ -516,36 +491,8 @@ function resetAllTabs(): void {
   visibility.reset();
 }
 
-function reloadActive(): void {
-  const key = activeTab.value;
-  if (key === 'base') void loadBase();
-  else if (key === 'orders') void orders.reload();
-  else if (key === 'frequent') void frequent.reload();
-  else if (key === 'agreement') void agreement.reload();
-  else void visibility.reload();
-}
-
 function onFreqDaysChange(): void {
   if (customerId.value) void frequent.reload();
-}
-
-/** 页头「更多」：本页唯一低频动作是操作日志，与列表一样用同一口径的权限裁剪。 */
-const canViewOperateLog = computed(() => hasPermission('support:operateLog:query'));
-const headerActions = computed<ScmActionItem[]>(() => [
-  {key: 'operateLog', label: '操作日志', hidden: !canViewOperateLog.value || !customerId.value},
-]);
-
-function onHeaderAction(key: string): void {
-  if (key === 'operateLog') openOperateLog();
-}
-
-// 携带业务上下文跳到通用操作日志页，按 customerId 精确筛选。
-function openOperateLog(): void {
-  if (!customerId.value) return;
-  void router.push({
-    path: '/support/operate-log/operate-log-list',
-    query: {businessType: 'CUSTOMER', businessId: customerId.value},
-  });
 }
 
 // 可售商品反查对「全部可见」客户返回一行 SKU 为空的策略行，这里据实拆开：策略文案 + 白名单 SKU 明细。
