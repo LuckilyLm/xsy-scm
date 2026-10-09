@@ -162,19 +162,24 @@ const settleOptions = Object.values(SCM_FINANCE_SETTLE_STATE_ENUM).map((item) =>
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
 const columns = ref<TableColumnsType<FinancePayable>>([
-    {title: '应付单号', dataIndex: 'payableNo', fixed: 'left', width: 110, ellipsis: true},
+    {title: '应付单号', dataIndex: 'payableNo', fixed: 'left', width: 110, ellipsis: true, align: 'left'},
     {title: '未核销', dataIndex: 'openAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '供应商', dataIndex: 'supplierName', width: 150}, {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 150},
+    {title: '供应商', dataIndex: 'supplierName', width: 150, align: 'left'},
+    {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 150, align: 'left'},
     {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
     {title: '已核销', dataIndex: 'writtenOffAmount', align: 'right', width: 110},
     {title: '超额核销', dataIndex: 'overAppliedAmount', align: 'right', width: 120},
-    {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110}, {title: '事件时点', dataIndex: 'eventAt', width: 165},
+    {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},
+    {title: '事件时点', dataIndex: 'eventAt', width: 165, align: 'left'},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 130},
 ]);
 const redDraftColumns: TableColumnsType<RedDraft> = [
-    {title: '商品', dataIndex: 'skuName', width: 190}, {title: '单位', dataIndex: 'unit', width: 90},
-    {title: '原数量', dataIndex: 'quantity', width: 130, customRender: ({text}) => text},
-    {title: '红字数量', dataIndex: 'redQuantity'}, {title: '红字单价', dataIndex: 'redUnitPrice'}, {title: '红字金额', dataIndex: 'redAmount'},
+    {title: '商品', dataIndex: 'skuName', width: 190, align: 'left'},
+    {title: '单位', dataIndex: 'unit', width: 90, align: 'center'},
+    {title: '原数量', dataIndex: 'quantity', width: 130, align: 'right', customRender: ({text}) => text},
+    {title: '红字数量', dataIndex: 'redQuantity', align: 'right'},
+    {title: '红字单价', dataIndex: 'redUnitPrice', align: 'right'},
+    {title: '红字金额', dataIndex: 'redAmount', align: 'right'},
 ];
 useFinanceMobileActionColumn((compact) => {
     const action = columns.value[columns.value.length - 1];
