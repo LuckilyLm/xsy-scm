@@ -158,7 +158,7 @@
         style="margin-bottom: 12px"
         message="调拨分两步：先发出，再由目标仓收货。"
     />
-    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="源仓库（转出）" name="fromWarehouseId">
         <WarehouseSelect v-model:value="form.fromWarehouseId" :options="warehouses" width="260px"/>
       </a-form-item>

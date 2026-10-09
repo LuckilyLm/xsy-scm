@@ -3,7 +3,7 @@
             :open="visible" :width="scmDrawerWidth('s')" @close="visible=false">
     <a-spin :spinning="loading">
       <a-alert v-if="error" :message="error" type="error" show-icon class="drawer-error"/>
-      <a-form layout="vertical" :model="form">
+      <a-form layout="vertical" :model="form" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">定价对象</h3>

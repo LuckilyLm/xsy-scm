@@ -7,7 +7,7 @@
   >
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
-      <a-form :model="form" layout="vertical">
+      <a-form :model="form" layout="vertical" class="app-drawer-form">
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="供应商" name="supplierId" required>
@@ -48,7 +48,7 @@
           </a-col>
           <a-col :span="24">
             <a-form-item label="备注" name="remark">
-              <a-input v-model:value="form.remark" maxlength="500"/>
+              <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count/>
             </a-form-item>
           </a-col>
         </a-row>

@@ -8,7 +8,7 @@
             <a-button v-if="loadFailed" size="small" @click="load(form.spuId)">重新加载</a-button>
           </template>
         </a-alert>
-        <a-form v-if="!loadFailed" ref="formRef" :model="form" layout="vertical">
+        <a-form v-if="!loadFailed" ref="formRef" :model="form" layout="vertical" class="app-drawer-form">
           <section class="scm-form-section">
             <div class="scm-form-section__head">
               <h3 class="scm-form-section__title">基础信息</h3>
@@ -48,7 +48,7 @@
                 </a-form-item>
               </a-col>
               <a-col :span="24">
-                <a-form-item label="商品简介" name="description">
+                <a-form-item label="商品简介" name="description" class="app-drawer-field--wide">
                   <a-textarea v-model:value="form.description" :maxlength="1000" :rows="2" show-count/>
                 </a-form-item>
               </a-col>
@@ -121,7 +121,7 @@
                 </a-form-item>
               </a-col>
               <a-col :span="24">
-                <a-form-item label="商品标签" name="tagIds">
+                <a-form-item label="商品标签" name="tagIds" class="app-drawer-field--multi">
                   <div class="tag-picker">
                     <a-tag v-for="tagId in form.tagIds" :key="tagId" closable class="tag-picker__tag"
                            @close="removeTag(tagId)">{{ tagLabel(tagId) }}</a-tag>

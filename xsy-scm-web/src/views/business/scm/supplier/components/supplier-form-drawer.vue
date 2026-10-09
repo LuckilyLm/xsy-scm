@@ -6,10 +6,10 @@
     地址仍是收货与展示口径。
 -->
 <template>
-  <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('m')" @close="close">
+  <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('s')" @close="close">
     <a-spin :spinning="loading">
       <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
-      <a-form ref="formRef" :model="form" layout="vertical">
+      <a-form ref="formRef" :model="form" layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">基础信息</h3>
@@ -27,7 +27,7 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
-              <a-form-item label="联系电话" name="contactPhone">
+              <a-form-item label="联系电话" name="contactPhone" class="app-drawer-field--compact">
                 <a-input v-model:value="form.contactPhone" :maxlength="32"/>
               </a-form-item>
             </a-col>
@@ -47,7 +47,7 @@
                 @change="onAreaChange"
             />
           </a-form-item>
-          <a-form-item label="地址" name="address">
+          <a-form-item label="地址" name="address" class="app-drawer-field--wide">
             <a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())"/>
           </a-form-item>
           <a-form-item label="地图定位">

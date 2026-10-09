@@ -5,7 +5,6 @@
       <template v-if="order">
         <a-space class="actions">
           <a-tag>{{ SCM_ORDER_STATUS_ENUM[order.status!]?.desc }}</a-tag>
-          <a-button @click="load">刷新</a-button>
           <a-button v-if="order.status==='PENDING'" type="primary" v-privilege="'scm:order:confirm'" @click="confirm">
             确认订单
           </a-button>
@@ -124,7 +123,7 @@
     <ReturnForm ref="returnForm" @saved="load"/>
     <a-modal :open="actualOpen" title="录入实际数量" :confirm-loading="saving" @ok="saveActual"
              @cancel="actualOpen=false">
-      <a-form layout="vertical">
+      <a-form layout="vertical" class="app-drawer-form">
         <a-form-item label="实际数量" name="actualQuantity" required>
           <a-input-number v-model:value="actualQuantity" string-mode :precision="4" :min="'0.0001'"/>
         </a-form-item>

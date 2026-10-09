@@ -7,7 +7,7 @@
  *
  * 1. 客户列表把名称、编码、联系人和电话分列，客户编码可由 TableOperator 打开；
  *    不把「上级集团 / 更新时间」摊回列表，授信额度走 `formatAmountOrDash` + `.scm-money`。
- * 2. 详情页客户名必须在 Tabs 之上（切 Tab 后始终可见），且页头提供返回 / 编辑 / 刷新 / 更多。
+ * 2. 详情页客户名必须在 Tabs 之上（切 Tab 后始终可见），页头只保留返回入口。
  * 3. 详情页不得回退到大面积 `a-descriptions bordered`：基础资料走 label/value 字段结构。
  * 4. 五个 Tab 与 lazy load 口径不变（由 w7-customer-360 覆盖取数口径，这里只钉展示层）。
  * 5. 枚举不得直接摊给用户：商品规格状态必须走翻译 + ScmStatusTag，订单状态走 ScmStatusTag。
@@ -165,14 +165,10 @@ test('详情页客户名与编码在 Tabs 之上，切 Tab 后始终可见', () 
   assert.ok(headerIndex >= 0, '缺少页头客户名');
   assert.ok(tabsIndex >= 0, '缺少 Tabs');
   assert.ok(headerIndex < tabsIndex, '客户名必须落在 Tabs 之前');
-  // 页头四件套：返回 / 编辑 / 刷新（icon）/ 更多
+  // 详情页只保留返回；编辑由列表承担，失败重试留在对应内容区。
   assert.match(DETAIL, /客户档案/);
-  assert.match(DETAIL, /v-privilege="'scm:customer:update'"[\s\S]{0,80}编辑客户/);
-  assert.match(DETAIL, /<ReloadOutlined\/>/);
-  assert.match(DETAIL, /<ScmActionMore\s+:actions="headerActions"/);
-  // 操作日志收进「更多」，不再是页头常驻按钮
-  assert.match(DETAIL, /label:\s*'操作日志'/);
-  assert.doesNotMatch(DETAIL, /<a-button[^>]*>\s*操作日志\s*<\/a-button>/);
+  assert.doesNotMatch(DETAIL, /<ReloadOutlined\/>|<ScmActionMore|openEditDrawer|openOperateLog/);
+  assert.match(DETAIL, /<a-button size="small" @click="loadBase">重新加载<\/a-button>/);
 });
 
 test('基础资料不得回退到 bordered descriptions，字段走 label/value', () => {

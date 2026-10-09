@@ -8,12 +8,12 @@
   <a-drawer
       :title="form.id ? '编辑收货单备注' : '新建收货单'"
       :open="visible"
-      :width="scmDrawerWidth('m')"
+      :width="scmDrawerWidth('s')"
       @close="visible = false"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
-      <a-form :model="form" layout="vertical">
+      <a-form :model="form" layout="vertical" class="app-drawer-form">
         <a-form-item name="purchaseOrderId" required>
           <template #label>
             采购单
@@ -45,7 +45,7 @@
         </a-form-item>
 
         <a-form-item label="备注" name="remark">
-          <a-input v-model:value="form.remark" maxlength="500"/>
+          <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count/>
         </a-form-item>
 
         <a-descriptions v-if="form.id" bordered size="small" :column="1">

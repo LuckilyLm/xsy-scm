@@ -147,7 +147,7 @@
         style="margin-bottom: 12px"
         message="折算率由本单声明，两个单位须与商品规格的库存记账单位一致。"
     />
-    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
       </a-form-item>
@@ -193,7 +193,7 @@
               />
             </template>
             <template v-else-if="column.dataIndex === 'sourceUnit'">
-              <a-input v-model:value="record.sourceUnit" placeholder="如 箱" style="width: 80px"/>
+              <a-input v-model:value="record.sourceUnit" :maxlength="32" placeholder="如 箱" style="width: 80px"/>
             </template>
             <template v-else-if="column.dataIndex === 'targetSkuId'">
               <SkuSelect
@@ -214,7 +214,7 @@
               />
             </template>
             <template v-else-if="column.dataIndex === 'targetUnit'">
-              <a-input v-model:value="record.targetUnit" placeholder="如 kg" style="width: 80px"/>
+              <a-input v-model:value="record.targetUnit" :maxlength="32" placeholder="如 kg" style="width: 80px"/>
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <a-button type="link" size="small" danger @click="removeItem(index)">删除</a-button>
