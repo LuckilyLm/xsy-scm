@@ -84,7 +84,7 @@
 
   <a-drawer v-model:open="addOpen" title="登记多目标核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
-    <a-form layout="vertical">
+    <a-form layout="vertical" class="app-drawer-form">
       <a-form-item required>
         <template #label>
           资金类型

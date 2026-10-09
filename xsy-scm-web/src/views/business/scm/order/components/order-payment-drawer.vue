@@ -4,7 +4,7 @@
     <a-alert v-if="error" type="error" show-icon :message="error" class="payment-message"/>
     <a-alert v-if="created" type="success" show-icon
              :message="`${created.intentNo}：${statusText(created.status)}`" class="payment-message"/>
-    <a-form v-if="order?.status === 'CONFIRMED'" v-privilege="'scm:payment:intent:create'" layout="vertical">
+    <a-form v-if="order?.status === 'CONFIRMED'" v-privilege="'scm:payment:intent:create'" layout="vertical" class="app-drawer-form">
       <a-form-item label="支付方式">
         <a-radio-group v-model:value="method" :disabled="saving">
           <a-radio value="BALANCE">余额支付</a-radio><a-radio value="ONLINE">在线支付（模拟渠道）</a-radio>

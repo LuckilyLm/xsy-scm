@@ -5,10 +5,10 @@
     前端提前挡掉必然失败的选项。
 -->
 <template>
-  <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('l')" @close="close">
+  <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('m')" @close="close">
     <a-spin :spinning="loading">
       <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
-      <a-form ref="formRef" :model="form" layout="vertical">
+      <a-form ref="formRef" :model="form" layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">基础信息</h3>
@@ -98,7 +98,7 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
-              <a-form-item label="联系电话" name="contactPhone">
+              <a-form-item label="联系电话" name="contactPhone" class="app-drawer-field--compact">
                 <a-input v-model:value="form.contactPhone" :maxlength="32"/>
               </a-form-item>
             </a-col>
@@ -114,7 +114,7 @@
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
-              <a-form-item label="地址" name="address">
+              <a-form-item label="地址" name="address" class="app-drawer-field--wide">
                 <a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())"/>
               </a-form-item>
             </a-col>
@@ -138,7 +138,7 @@
                   授信额度
                   <ScmFieldHelp label="授信额度" text="0 表示不设置额度上限；逾期仍可能阻断订单"/>
                 </template>
-                <a-input-number v-model:value="form.creditLimit" string-mode :min="0" :max="99999999999999"
+                <a-input-number v-model:value="form.creditLimit" string-mode :min="0" :max="'99999999999999.9999'"
                                 :precision="4" addon-before="¥" style="width: 100%"/>
               </a-form-item>
             </a-col>
@@ -155,7 +155,7 @@
             <a-col v-if="form.creditPeriodType === 'BY_AMOUNT'" :xs="24" :sm="12">
               <a-form-item label="金额阈值" name="creditAmountThreshold">
                 <a-input-number v-model:value="form.creditAmountThreshold" string-mode :min="0"
-                                :max="99999999999999" :precision="4" addon-before="¥" style="width: 100%"
+                                :max="'99999999999999.9999'" :precision="4" addon-before="¥" style="width: 100%"
                                 placeholder="例如 5000.0000"/>
               </a-form-item>
             </a-col>

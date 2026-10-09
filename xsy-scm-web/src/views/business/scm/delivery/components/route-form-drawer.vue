@@ -3,7 +3,7 @@
             :width="scmDrawerWidth('s')" :mask-closable="!saving">
     <a-alert v-if="error" type="error" :message="error" show-icon class="drawer-error"/>
     <a-spin :spinning="loading">
-      <a-form layout="vertical">
+      <a-form layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">基础信息</h3>

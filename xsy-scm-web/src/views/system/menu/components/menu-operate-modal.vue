@@ -12,7 +12,7 @@
       @close="onClose"
       destroyOnClose
   >
-    <a-form ref="formRef" :labelCol="{ span: 5 }" :labelWrap="true" :model="form" :rules="rules">
+    <a-form ref="formRef" :labelCol="{ span: 5 }" :labelWrap="true" :model="form" :rules="rules" class="app-drawer-form">
       <a-form-item label="菜单类型" name="menuType">
         <a-radio-group v-model:value="form.menuType" button-style="solid">
           <a-radio-button v-for="item in MENU_TYPE_ENUM" :key="item.value" :value="item.value">
@@ -26,25 +26,31 @@
       <!--      目录 菜单 start   -->
       <template v-if="form.menuType === MENU_TYPE_ENUM.CATALOG.value || form.menuType === MENU_TYPE_ENUM.MENU.value">
         <a-form-item label="菜单名称" name="menuName">
-          <a-input v-model:value="form.menuName" placeholder="请输入菜单名称"/>
+          <a-input v-model:value="form.menuName" :maxlength="30" placeholder="请输入菜单名称"/>
         </a-form-item>
         <a-form-item label="菜单图标" name="icon">
           <IconSelect @updateIcon="selectIcon">
             <template #iconSelect>
-              <a-input v-model:value="form.icon" placeholder="请输入菜单图标" style="width: 200px"/>
+              <a-input v-model:value="form.icon" :maxlength="100" placeholder="请输入菜单图标" style="width: 200px"/>
               <component :is="$antIcons[form.icon]" class="smart-margin-left15" style="font-size: 20px"/>
             </template>
           </IconSelect>
         </a-form-item>
-        <a-form-item v-if="form.menuType === MENU_TYPE_ENUM.MENU.value" label="路由地址" name="path">
-          <a-input v-model:value="form.path" placeholder="请输入路由地址"/>
+        <a-form-item v-if="form.menuType === MENU_TYPE_ENUM.MENU.value" label="路由地址" name="path" class="app-drawer-field--wide">
+          <a-input v-model:value="form.path" :maxlength="100" placeholder="请输入路由地址"/>
         </a-form-item>
         <template v-if="form.menuType === MENU_TYPE_ENUM.MENU.value">
-          <a-form-item v-if="form.frameFlag" label="外链地址" name="frameUrl">
-            <a-input v-model:value="form.frameUrl" placeholder="请输入外链地址"/>
+          <a-form-item v-if="form.frameFlag" label="外链地址" name="frameUrl" class="app-drawer-field--wide">
+            <a-input v-model:value="form.frameUrl" :maxlength="500" placeholder="请输入外链地址"/>
           </a-form-item>
-          <a-form-item v-else label="组件地址" name="component" help="比如 员工管理：/system/employee/index.vue">
-            <a-input v-model:value="form.component" placeholder="请输入组件地址 默认带有开头/@/views"/>
+          <a-form-item v-else name="component" class="app-drawer-field--wide">
+            <template #label>
+              组件地址
+              <a-tooltip title="例如 /system/employee/index.vue" :trigger="['hover', 'focus']">
+                <InfoCircleOutlined class="app-drawer-form__help" tabindex="0" aria-label="组件地址说明"/>
+              </a-tooltip>
+            </template>
+            <a-input v-model:value="form.component" :maxlength="255" placeholder="请输入组件地址 默认带有开头/@/views"/>
           </a-form-item>
         </template>
         <a-form-item v-if="form.menuType === MENU_TYPE_ENUM.MENU.value" label="是否缓存" name="cacheFlag">
@@ -70,7 +76,7 @@
       <!--      功能点 start   -->
       <template v-if="form.menuType === MENU_TYPE_ENUM.POINTS.value">
         <a-form-item label="功能点名称" name="menuName">
-          <a-input v-model:value="form.menuName" placeholder="请输入功能点名称"/>
+          <a-input v-model:value="form.menuName" :maxlength="30" placeholder="请输入功能点名称"/>
         </a-form-item>
         <a-form-item label="功能点关联菜单">
           <MenuTreeSelect ref="contextMenuTreeSelect" v-model:value="form.contextMenuId"/>
@@ -91,16 +97,34 @@
             </a-radio>
           </a-radio-group>
         </a-form-item>
-        <a-form-item label="前端权限" name="webPerms" help="用于前端按钮等功能的展示和隐藏，搭配v-privilege使用">
-          <a-input v-model:value="form.webPerms" placeholder="请输入前端权限"/>
+        <a-form-item name="webPerms">
+          <template #label>
+            前端权限
+            <a-tooltip title="控制前端按钮等功能的可见性" :trigger="['hover', 'focus']">
+              <InfoCircleOutlined class="app-drawer-form__help" tabindex="0" aria-label="前端权限说明"/>
+            </a-tooltip>
+          </template>
+          <a-input v-model:value="form.webPerms" :maxlength="5000" placeholder="请输入前端权限"/>
         </a-form-item>
-        <a-form-item label="后端权限" name="apiPerms" help="后端@SaCheckPermission中的权限字符串，多个以英文逗号,分割">
-          <a-input v-model:value="form.apiPerms" placeholder="请输入后端权限"/>
+        <a-form-item name="apiPerms">
+          <template #label>
+            后端权限
+            <a-tooltip title="多个权限以英文逗号分隔" :trigger="['hover', 'focus']">
+              <InfoCircleOutlined class="app-drawer-form__help" tabindex="0" aria-label="后端权限说明"/>
+            </a-tooltip>
+          </template>
+          <a-input v-model:value="form.apiPerms" :maxlength="5000" placeholder="请输入后端权限"/>
         </a-form-item>
       </template>
       <!--      功能点 end   -->
-      <a-form-item label="排序" name="sort" help="值越小越靠前">
-        <a-input-number v-model:value="form.sort" :min="0" placeholder="请输入排序" style="width: 100px"/>
+      <a-form-item name="sort">
+        <template #label>
+          排序
+          <a-tooltip title="数值越小，显示越靠前" :trigger="['hover', 'focus']">
+            <InfoCircleOutlined class="app-drawer-form__help" tabindex="0" aria-label="排序说明"/>
+          </a-tooltip>
+        </template>
+        <a-input-number v-model:value="form.sort" :min="0" :precision="0" placeholder="请输入排序" style="width: 100px"/>
       </a-form-item>
     </a-form>
     <div class="footer">
@@ -112,6 +136,7 @@
 </template>
 <script setup lang="ts">
 import {message} from 'ant-design-vue';
+import {InfoCircleOutlined} from '@ant-design/icons-vue';
 import _ from 'lodash';
 import {nextTick, reactive, ref} from 'vue';
 import MenuTreeSelect from './menu-tree-select.vue';
@@ -211,7 +236,7 @@ const rules = {
   permsType: [{required: true, message: '权限类型不能为空'}],
   menuName: [
     {required: true, message: '菜单名称不能为空'},
-    {max: 20, message: '菜单名称不能大于20个字符', trigger: 'blur'},
+    {max: 30, message: '菜单名称不能大于30个字符', trigger: 'blur'},
   ],
   frameUrl: [
     {required: true, message: '外链地址不能为空'},
@@ -221,6 +246,10 @@ const rules = {
     {required: true, message: '路由地址不能为空'},
     {max: 100, message: '路由地址不能大于100个字符', trigger: 'blur'},
   ],
+  icon: [{max: 100, message: '菜单图标最多100个字符'}],
+  component: [{max: 255, message: '组件地址最多255个字符'}],
+  webPerms: [{max: 5000, message: '前端权限最多5000个字符'}],
+  apiPerms: [{max: 5000, message: '后端权限最多5000个字符'}],
 };
 
 function validateForm(formRef) {

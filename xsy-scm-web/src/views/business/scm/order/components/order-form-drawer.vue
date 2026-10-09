@@ -3,7 +3,7 @@
             @close="closeDrawer">
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
-      <a-form :model="form" layout="vertical">
+      <a-form :model="form" layout="vertical" class="app-drawer-form">
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="客户" name="customerId" required>
@@ -25,8 +25,8 @@
             </a-form-item>
           </a-col>
           <a-col :span="12" v-if="form.orderSource==='SUPPLEMENT'">
-            <a-form-item label="补单原因" name="supplementReason" required>
-              <a-input v-model:value="form.supplementReason" maxlength="500"/>
+              <a-form-item label="补单原因" name="supplementReason" required>
+                <a-textarea v-model:value="form.supplementReason" :maxlength="500" :rows="2" show-count/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -35,9 +35,9 @@
                              style="width:100%"/>
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="24">
             <a-form-item label="备注" name="remark">
-              <a-input v-model:value="form.remark" maxlength="500"/>
+              <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -46,12 +46,12 @@
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="联系电话" name="receiverPhone" required>
+            <a-form-item label="联系电话" name="receiverPhone" required class="app-drawer-field--compact">
               <a-input v-model:value="form.address.receiverPhone" :disabled="!!form.orderId" maxlength="32"/>
             </a-form-item>
           </a-col>
           <a-col :span="24">
-            <a-form-item label="收货地址" name="address" required>
+            <a-form-item label="收货地址" name="address" required class="app-drawer-field--wide">
               <a-input v-model:value="form.address.address" :disabled="!!form.orderId" maxlength="500"/>
             </a-form-item>
           </a-col>

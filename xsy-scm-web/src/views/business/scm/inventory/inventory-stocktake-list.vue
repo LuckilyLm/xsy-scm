@@ -144,7 +144,7 @@
         style="margin-bottom: 12px"
         message="保存草稿前不产生单据；账面量保存时自动快照。"
     />
-    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="盘点仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
       </a-form-item>
