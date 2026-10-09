@@ -52,7 +52,7 @@ const drawer = ref<InstanceType<typeof PriceDrawer>>();
 let requestId = 0;
 type CustomerTypePriceColumn = TableColumnsType<PriceRow>[number] & {showFlag?: boolean};
 const columns = ref<CustomerTypePriceColumn[]>([
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 160},
+  {title: '客户类型', dataIndex: 'customerTypeName', width: 160, align: 'center'},
   {title: '客户类型编码', dataIndex: 'customerTypeCode', width: 120, showFlag: false},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'specName', width: 200},

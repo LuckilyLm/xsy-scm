@@ -131,6 +131,7 @@ const columns = ref([
     title: '状态',
     width: 80,
     dataIndex: 'disabledFlag',
+    align: 'center',
   },
   {
     title: '备注',
@@ -152,6 +153,7 @@ const columns = ref([
     dataIndex: 'action',
     fixed: 'right',
     width: 100,
+    align: 'center',
   },
 ]);
 

@@ -173,6 +173,7 @@ const columns = ref([
     title: '状态',
     dataIndex: 'disabledFlag',
     width: 60,
+    align: 'center',
   },
   {
     title: '职务',
@@ -195,6 +196,7 @@ const columns = ref([
     title: '操作',
     dataIndex: 'operate',
     width: 140,
+    align: 'center',
   },
 ]);
 const tableData = ref();

@@ -107,7 +107,7 @@ const columns = computed<TableColumnsType<ReceiptItemWorkbenchRow>>(() => [
   {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
-  {title: '采购单位', dataIndex: 'purchaseUnit', width: 95},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 95, align: 'center'},
   {title: '商品类型', dataIndex: 'productType', align: 'center', width: 100},
   {title: '命中采购单数', dataIndex: 'orderCount', align: 'right', width: 120},
   {title: '命中行数', dataIndex: 'lineCount', align: 'right', width: 100},

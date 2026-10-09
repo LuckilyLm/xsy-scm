@@ -108,7 +108,7 @@ const columns = [
   {
     title: '手机号',
     dataIndex: 'phone',
-    align: 'center',
+    align: 'left',
   },
 ];
 

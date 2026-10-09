@@ -230,7 +230,7 @@ function toOptions(fields?: { key: string; label: string; money: boolean }[]) {
 }
 
 const columns: TableColumnsType<PrintTemplate> = [
-  {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130},
+  {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130, align: 'center'},
   {title: '模板编码', dataIndex: 'templateCode', width: 200},
   {title: '模板名称', dataIndex: 'templateName', width: 180},
   {title: '默认', dataIndex: 'defaultFlag', align: 'center', width: 90},

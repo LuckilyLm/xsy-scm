@@ -137,7 +137,7 @@ const keyword = ref(''), onlyNoPrimary = ref(false), products = ref<ProductRow[]
 // 列定义：左侧只保留「名称（编码次行）/ 主图状态」，编码不再单独占列
 const pickColumns = [
   { title: '商品', dataIndex: 'name' },
-  { title: '主图', dataIndex: 'primary', width: 90 },
+  { title: '主图', dataIndex: 'primary', width: 90, align: 'center' },
 ];
 
 const view = ref<ImageCenterView | null>(null), imageLoading = ref(false), imageError = ref(''), busy = ref(false),
@@ -251,7 +251,7 @@ const batchOpen = ref(false), staging = ref(false), binding = ref(false), matche
 const stagedFiles = ref<UploadedImageFile[]>([]);
 const matchColumns = [
   { title: '文件', dataIndex: 'fileName', width: 220, customRender: ({ record }: { record: FileMatchResult }) => record.file.fileName },
-  { title: '状态', dataIndex: 'status', width: 90 },
+  { title: '状态', dataIndex: 'status', width: 90, align: 'center' },
   { title: '目标商品', dataIndex: 'target' },
 ];
 const matchedCount = computed(() => matches.value.filter(m => m.status === 'matched').length);

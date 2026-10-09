@@ -124,7 +124,7 @@ let requestId = 0;
 
 const columns: TableColumnsType<ReceiptItem> = [
   {title: '商品', dataIndex: 'skuName', width: 150},
-  {title: '采购单位', dataIndex: 'purchaseUnit', width: 90},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 90, align: 'center'},
   {title: '计划数量', dataIndex: 'plannedQuantity', align: 'right', width: 105},
   {title: '累计已收', dataIndex: 'cumulativeReceivedQuantity', align: 'right', width: 105},
   {title: '剩余可收', dataIndex: 'remainingQuantity', align: 'right', width: 105},

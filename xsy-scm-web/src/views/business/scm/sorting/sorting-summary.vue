@@ -151,7 +151,7 @@ const columns = ref<TableColumnsType<SortingSkuSummary>>([
   {title: '涉及订单数', dataIndex: 'orderCount', align: 'right', width: 110},
   {title: '任务数', dataIndex: 'taskCount', align: 'right', width: 90},
   {title: '明细行数', dataIndex: 'lineCount', align: 'right', width: 100},
-  {title: '未处理行数', dataIndex: 'unprocessedCount', align: 'center', width: 110},
+  {title: '未处理行数', dataIndex: 'unprocessedCount', align: 'right', width: 110},
   {title: '计划量合计', dataIndex: 'plannedQuantity', align: 'right', width: 120},
   {title: '已分量合计', dataIndex: 'sortedQuantity', align: 'right', width: 120},
 ]);

@@ -119,6 +119,7 @@ const columns = ref([
     title: '状态',
     dataIndex: 'disabledFlag',
     width: 80,
+    align: 'center',
   },
   {
     title: '操作',

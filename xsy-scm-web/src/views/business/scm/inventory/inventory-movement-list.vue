@@ -165,7 +165,7 @@ let requestId = 0;
 type InventoryMovementColumn = TableColumnsType<InventoryMovement>[number] & {showFlag?: boolean};
 const columns = ref<InventoryMovementColumn[]>([
   {title: '发生时间', dataIndex: 'occurredAt', width: 170},
-  {title: '类型', dataIndex: 'movementType', width: 150},
+  {title: '类型', dataIndex: 'movementType', width: 150, align: 'center'},
   {title: '业务单号', dataIndex: 'receiptNo', width: 170},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},

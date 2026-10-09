@@ -122,7 +122,7 @@ const columns = ref<TableColumnsType<InventoryLossRow>>([
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'skuName', width: 170},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '损耗类型', dataIndex: 'movementType', width: 110},
+  {title: '损耗类型', dataIndex: 'movementType', width: 110, align: 'center'},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 120},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 90},
   {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 130},

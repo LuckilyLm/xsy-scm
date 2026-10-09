@@ -115,14 +115,12 @@ test('没有页面在抽屉 footer 上私自改回左对齐', () => {
 // 表格表头对齐
 // ------------------------------------------------------------------
 
-test('表头统一居中，且只动表头、不动列内容', () => {
+test('表头服从列语义，数据单元格垂直居中', () => {
   const table = readFileSync(new URL('../src/theme/scm/table.less', import.meta.url), 'utf8');
-  // antd 把 column.align 写成 <th>/<td> 的行内样式，普通选择器压不过它，必须 !important
-  assert.match(table, /\.ant-table-thead > tr > th \{[\s\S]{0,160}text-align: center !important/,
-      '表头未统一居中（或漏了 !important，行内样式会盖住它）');
-  // 只动表头：把 tbody 一起拉进来会废掉「数量 / 金额右对齐」
-  assert.doesNotMatch(table, /\.ant-table-tbody[\s\S]{0,120}text-align: center !important/,
-      '不得改动列内容的对齐');
+  assert.doesNotMatch(table, /\.ant-table-thead\s*>\s*tr\s*>\s*th\s*\{[^}]*text-align:\s*center\s*!important/s,
+      '表头必须保留 column.align 的语义轴');
+  assert.match(table, /\.ant-table-tbody\s*>\s*tr\s*>\s*td\s*\{[^}]*vertical-align:\s*middle/s,
+      '所有表格数据单元格必须垂直居中');
   // 规则必须真的被引进来
   const index = readFileSync(new URL('../src/theme/scm/index.less', import.meta.url), 'utf8');
   assert.match(index, /@import '\.\/table\.less';/);

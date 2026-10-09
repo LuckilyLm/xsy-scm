@@ -82,7 +82,7 @@ const historyColumns: TableColumnsType<SupplierStatement> = [
   {title: '操作', dataIndex: 'action', align: 'center', width: 130},
 ];
 const lineColumns: TableColumnsType<SupplierStatementLine> = [
-  {title: '业务时间', dataIndex: 'eventAt', width: 170}, {title: '类型', dataIndex: 'factType', width: 120},
+  {title: '业务时间', dataIndex: 'eventAt', width: 170}, {title: '类型', dataIndex: 'factType', width: 120, align: 'center'},
   {title: '单号', dataIndex: 'documentNo', width: 170}, {title: '关联单号', dataIndex: 'relatedNo', width: 170},
   ...moneyColumns.map((key, index) => ({title: ['应付变动', '付款变动', '核销变动', '滚动净应付'][index], dataIndex: key, width: 135, align: 'right' as const})),
 ];

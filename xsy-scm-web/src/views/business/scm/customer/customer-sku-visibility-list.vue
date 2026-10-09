@@ -140,12 +140,12 @@ type VisibilityListColumn = TableColumnsType<VisibilityRow>[number] & {showFlag?
 const columns = ref<VisibilityListColumn[]>([
   {title: '客户名称', dataIndex: 'customerName', width: 180},
   {title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
+  {title: '客户类型', dataIndex: 'customerTypeName', width: 120, align: 'center'},
   {title: '商品名称', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'specName', width: 150},
   {title: '规格编码', dataIndex: 'skuCode', width: 135, showFlag: false},
-  {title: '可见策略', dataIndex: 'visibilityPolicy', width: 125},
-  {title: '商品状态', dataIndex: 'status', width: 190},
+  {title: '可见策略', dataIndex: 'visibilityPolicy', width: 125, align: 'center'},
+  {title: '商品状态', dataIndex: 'status', width: 190, align: 'center'},
   {title: '操作', dataIndex: 'action', width: 100, fixed: 'right', align: 'center'},
 ]);
 

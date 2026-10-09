@@ -87,10 +87,10 @@ const rejectReason = ref('');
 const rejectTarget = ref<SortingScaleEvent>();
 
 const scaleColumns: TableColumnsType = [
-    {title: '状态', dataIndex: 'status', width: 90},
+    {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
     {title: '设备', dataIndex: 'deviceCode', width: 130},
     {title: '原始读数', dataIndex: 'rawReading', align: 'right', width: 110},
-    {title: '单位', dataIndex: 'unit', width: 80},
+    {title: '单位', dataIndex: 'unit', width: 80, align: 'center'},
     {title: '稳定', dataIndex: 'stableFlag', align: 'center', width: 90},
     {title: '商品', dataIndex: 'productNameSnapshot', width: 160},
     {title: '商品规格', dataIndex: 'skuCodeSnapshot', width: 140},

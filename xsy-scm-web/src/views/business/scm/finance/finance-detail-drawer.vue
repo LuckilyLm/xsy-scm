@@ -196,7 +196,7 @@ function redEntryKey(row: FinanceReceivable | FinancePayable) {
 }
 const writeOffColumns: TableColumnsType<FinanceWriteOff> = [
     {title: '核销单号', dataIndex: 'writeOffNo', width: 190}, {title: '资金单', dataIndex: 'sourceNo', width: 180},
-    {title: '目标单', dataIndex: 'targetNo', width: 180}, {title: '方向', dataIndex: 'entryType', width: 90, customRender: ({text}) => entryTypeText(text)},
+    {title: '目标单', dataIndex: 'targetNo', width: 180}, {title: '方向', dataIndex: 'entryType', width: 90, customRender: ({text}) => entryTypeText(text), align: 'center'},
     {title: '金额', dataIndex: 'amount', align: 'right', customRender: ({text}) => moneyText(text)},
     {title: '原因', dataIndex: 'reason'},
 ];

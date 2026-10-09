@@ -166,7 +166,7 @@ const columns = ref<TableColumnsType<ProductRow>>([
   {title: '分类', dataIndex: 'categoryPath', width: 210},
   {title: '单位', dataIndex: 'saleUnit', width: 70, align: 'center'},
   {title: '市场价', dataIndex: 'price', width: 180, align: 'right'},
-  {title: '规格数', dataIndex: 'skuCount', width: 76, align: 'center'},
+  {title: '规格数', dataIndex: 'skuCount', width: 76, align: 'right'},
   {title: '在售状态', dataIndex: 'status', width: 84, align: 'center', sorter: true},
   {title: '主档状态', dataIndex: 'masterStatus', width: 88, align: 'center'},
   {title: '标签', dataIndex: 'tags', width: 150},

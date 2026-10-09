@@ -318,7 +318,7 @@ function discountTypeLabel(value: PromotionCouponDiscountType): string {
  */
 const columns: TableColumnsType<PromotionCoupon> = [
   {title: '券名称', dataIndex: 'couponName', width: 200},
-  {title: '券类型', dataIndex: 'discountType', width: 130},
+  {title: '券类型', dataIndex: 'discountType', width: 130, align: 'center'},
   {title: '优惠规则', dataIndex: 'discountText', width: 180},
   {title: '门槛金额', dataIndex: 'minOrderAmount', align: 'right', width: 130},
   {title: '有效期', dataIndex: 'validity', width: 220},

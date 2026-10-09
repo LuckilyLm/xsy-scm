@@ -85,6 +85,7 @@ const columns = ref([
     dataIndex: 'remark',
     ellipsis: true,
     width: 90,
+    align: 'center',
   },
   {
     title: '登录设备',

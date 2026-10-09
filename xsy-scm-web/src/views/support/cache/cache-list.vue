@@ -87,6 +87,7 @@ const columns = reactive([
     dataIndex: 'action',
     fixed: 'right',
     width: 160,
+    align: 'center',
   },
 ]);
 

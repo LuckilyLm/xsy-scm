@@ -92,8 +92,8 @@ const bucketLabel = (bucket: AgingBucket) => bucketOptions.find(option => option
 const summaryRows = computed(() => summary.value.map(row => ({...row, label: bucketLabel(row.agingBucket)}))
   .sort((a, b) => bucketOptions.findIndex(option => option.value === a.agingBucket) - bucketOptions.findIndex(option => option.value === b.agingBucket)));
 const summaryColumns = [
-  {title: '账龄分组', dataIndex: 'label'}, {title: '单据数', dataIndex: 'documentCount'},
-  {title: '未核销余额', dataIndex: 'openAmount', customRender: ({text}: {text: string}) => moneyText(text)},
+  {title: '账龄分组', dataIndex: 'label'}, {title: '单据数', dataIndex: 'documentCount', align: 'right'},
+  {title: '未核销余额', dataIndex: 'openAmount', customRender: ({text}: {text: string}) => moneyText(text), align: 'right'},
 ];
 const columns: TableColumnsType<AgingRow> = [
   {title: '财务单号', dataIndex: 'documentNo', width: 190}, {title: '来源单号', dataIndex: 'sourceNo', width: 190},

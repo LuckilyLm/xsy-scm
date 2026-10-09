@@ -99,7 +99,7 @@ const columns: TableColumnsType<ResolvedPrice> = [
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'sku', width: 200},
   {title: '最终价格', dataIndex: 'unitPrice', align: 'right', width: 160},
-  {title: '价格来源', dataIndex: 'priceSource', width: 150},
+  {title: '价格来源', dataIndex: 'priceSource', width: 150, align: 'center'},
   {title: '价格状态', dataIndex: 'priceStatus', align: 'center', width: 110},
   {title: '可售', dataIndex: 'sellable', align: 'center', width: 110},
   {title: '说明', dataIndex: 'hint', width: 220},

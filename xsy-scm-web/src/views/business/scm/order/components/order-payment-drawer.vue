@@ -57,9 +57,9 @@ const pageNum = ref(1), total = ref(0), movement = ref<InstanceType<typeof Balan
 const keys = new Map<string, string>();
 let generation = 0;
 const columns: TableColumnsType<PaymentIntent> = [
-  {title: '支付单号', dataIndex: 'intentNo', width: 200}, {title: '方式 / 渠道', dataIndex: 'method', width: 170},
+  {title: '支付单号', dataIndex: 'intentNo', width: 200}, {title: '方式 / 渠道', dataIndex: 'method', width: 170, align: 'center'},
   {title: '申请金额', dataIndex: 'amount', width: 120, align: 'right'},
-  {title: '状态', dataIndex: 'status', width: 100}, {title: '追溯', dataIndex: 'action', width: 150, align: 'center'},
+  {title: '状态', dataIndex: 'status', width: 100, align: 'center'}, {title: '追溯', dataIndex: 'action', width: 150, align: 'center'},
 ];
 function statusText(value: string) {
   return ({CREATED: '已创建', PENDING: '待支付', SUCCEEDED: '支付成功', FAILED: '支付失败', CLOSED: '已关闭'} as Record<string, string>)[value] || value;

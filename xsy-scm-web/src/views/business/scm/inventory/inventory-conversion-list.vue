@@ -349,11 +349,11 @@ const scrollX = computed(() => columns.value.reduce((width, column) => width + N
 
 const itemColumns: TableColumnsType = [
   {title: '源商品规格（转出）', dataIndex: 'sourceSkuId', width: 220},
-  {title: '源数量', dataIndex: 'sourceQuantity', width: 120},
-  {title: '源单位', dataIndex: 'sourceUnit', width: 90},
+  {title: '源数量', dataIndex: 'sourceQuantity', width: 120, align: 'right'},
+  {title: '源单位', dataIndex: 'sourceUnit', width: 90, align: 'center'},
   {title: '目标商品规格（转入）', dataIndex: 'targetSkuId', width: 220},
-  {title: '目标数量', dataIndex: 'targetQuantity', width: 120},
-  {title: '目标单位', dataIndex: 'targetUnit', width: 90},
+  {title: '目标数量', dataIndex: 'targetQuantity', width: 120, align: 'right'},
+  {title: '目标单位', dataIndex: 'targetUnit', width: 90, align: 'center'},
   {title: '操作', dataIndex: 'action', width: 70, align: 'center'},
 ];
 

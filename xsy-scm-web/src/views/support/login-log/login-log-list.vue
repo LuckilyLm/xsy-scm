@@ -119,6 +119,7 @@ const columns = ref([
     dataIndex: 'userType',
     width: 50,
     ellipsis: true,
+    align: 'center',
   },
   {
     title: 'IP',

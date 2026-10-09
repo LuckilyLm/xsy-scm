@@ -107,7 +107,7 @@ const typeOptions = computed(() =>
 );
 
 const columns: TableColumnsType<PrintRecord> = [
-  {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130},
+  {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130, align: 'center'},
   {title: '业务单号', dataIndex: 'businessNo', width: 190},
   {title: '模板', dataIndex: 'template', width: 220},
   {title: '打印', dataIndex: 'printed', width: 180},

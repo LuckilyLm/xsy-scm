@@ -41,11 +41,13 @@ let number = 0;
 const columns: TableColumnsType<BatchRow> = [{title: '行号', dataIndex: 'rowNumber', width: 65}, {
   title: '客户类型',
   dataIndex: 'customerTypeId',
-  width: 200
+  width: 200,
+  align: 'center'
 }, {title: '商品规格', dataIndex: 'skuId', width: 280}, {
   title: '单价',
   dataIndex: 'unitPrice',
-  width: 140
+  width: 140,
+  align: 'right'
 }, {title: '有效区间', dataIndex: 'effectiveFrom', width: 400}, {
   title: '错误',
   dataIndex: 'error',

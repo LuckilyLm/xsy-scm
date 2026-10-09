@@ -108,6 +108,7 @@ const columns = ref([
     dataIndex: 'messageType',
     ellipsis: true,
     width: 100,
+    align: 'center',
   },
   {
     title: '消息标题',
@@ -145,6 +146,7 @@ const columns = ref([
     dataIndex: 'action',
     fixed: 'right',
     width: 60,
+    align: 'center',
   },
 ]);
 

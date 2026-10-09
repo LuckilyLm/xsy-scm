@@ -79,7 +79,7 @@ const historyColumns: TableColumnsType<CustomerStatement> = [
   {title: '操作', dataIndex: 'action', align: 'center', width: 130},
 ];
 const lineColumns: TableColumnsType<CustomerStatementLine> = [
-  {title: '业务时间', dataIndex: 'eventAt', width: 175}, {title: '类型', dataIndex: 'factType', width: 110},
+  {title: '业务时间', dataIndex: 'eventAt', width: 175}, {title: '类型', dataIndex: 'factType', width: 110, align: 'center'},
   {title: '单号', dataIndex: 'documentNo', width: 170}, {title: '关联单号', dataIndex: 'relatedNo', width: 170},
   {title: '原客户', dataIndex: 'customerName', width: 150},
   ...moneyColumns.map((key, index) => ({title: ['应收变动', '收款变动', '核销变动', '退款变动', '滚动净应收'][index], dataIndex: key, width: 135, align: 'right' as const})),

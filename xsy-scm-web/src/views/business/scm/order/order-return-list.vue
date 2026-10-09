@@ -153,7 +153,8 @@ const columns = ref<TableColumnsType<ReturnRow>>([{
 {title: '退货原因', dataIndex: 'reason', width: 260, ellipsis: true}, {
   title: '状态',
   dataIndex: 'status',
-  width: 120
+  width: 120,
+  align: 'center'
 }, {title: '批准金额', dataIndex: 'approvedAmount', align: 'right', width: 140}, {
   title: '操作',
   dataIndex: 'action',

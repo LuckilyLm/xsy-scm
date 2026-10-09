@@ -580,7 +580,7 @@ const effectivePeriodText = (row: PriceRow): string =>
 
 const orderCols: TableColumnsType<Order> = [
   {title: '订单号', dataIndex: 'orderNo', width: 180},
-  {title: '来源', dataIndex: 'orderSource', width: 110},
+  {title: '来源', dataIndex: 'orderSource', width: 110, align: 'center'},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '订单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 140},
   {title: '创建时间', dataIndex: 'createdAt', width: 180}

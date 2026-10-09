@@ -28,8 +28,9 @@ const visible = ref(false), saving = ref(false), reason = ref(''), error = ref('
     rows = ref<(Item & { quantity: string })[]>([]);
 const columns = [{title: '商品', dataIndex: 'productNameSnapshot'}, {
   title: '实数量',
-  dataIndex: 'actualQuantity'
-}, {title: '本次申请数量', dataIndex: 'quantity'}];
+  dataIndex: 'actualQuantity',
+  align: 'right'
+}, {title: '本次申请数量', dataIndex: 'quantity', align: 'right'}];
 
 function open(order: Order) {
   orderId.value = order.orderId;

@@ -317,7 +317,7 @@ const statusOptions = Object.values(SCM_INVENTORY_TRANSFER_STATUS_ENUM).map((i) 
 // 创建时间是技术字段，不上列 —— 调拨的业务时刻是发出与收货。
 const columns = ref<TableColumnsType<InventoryTransfer>>([
   {title: '调拨单号', dataIndex: 'transferNo', width: 190},
-  {title: '调拨方向', dataIndex: 'direction', width: 260},
+  {title: '调拨方向', dataIndex: 'direction', width: 260, align: 'center'},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '发出', dataIndex: 'shippedAt', width: 170},
   {title: '收货', dataIndex: 'receivedAt', width: 170},
@@ -326,7 +326,7 @@ const columns = ref<TableColumnsType<InventoryTransfer>>([
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
-  {title: '调拨数量', dataIndex: 'quantity', width: 160},
+  {title: '调拨数量', dataIndex: 'quantity', width: 160, align: 'right'},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
@@ -655,7 +655,7 @@ const inTransitRows = ref<Array<InventoryInTransit & { rowKey: string }>>([]);
 
 const inTransitColumns: TableColumnsType = [
   {title: '调拨单号', dataIndex: 'transferNo', width: 190},
-  {title: '调拨方向', dataIndex: 'direction', width: 240},
+  {title: '调拨方向', dataIndex: 'direction', width: 240, align: 'center'},
   {title: '商品规格', dataIndex: 'sku', width: 200},
   {title: '在途数量', dataIndex: 'quantity', align: 'right', width: 120},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 90},

@@ -119,6 +119,7 @@ const columns = ref([
     dataIndex: 'dataType',
     width: 100,
     ellipsis: true,
+    align: 'center',
   },
   {
     title: '非空',
@@ -140,11 +141,13 @@ const columns = ref([
     title: 'Java类型',
     dataIndex: 'javaType',
     width: 150,
+    align: 'center',
   },
   {
     title: '前端类型',
     dataIndex: 'jsType',
     width: 130,
+    align: 'center',
   },
   {
     title: '字典',

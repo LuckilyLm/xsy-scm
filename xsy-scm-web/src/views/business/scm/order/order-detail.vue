@@ -212,7 +212,7 @@ const columns: TableColumnsType<Item> = [{title: '商品', dataIndex: 'productNa
   title: '商品规格',
   dataIndex: 'specNameSnapshot',
   width: 100
-}, {title: '单位', dataIndex: 'saleUnitSnapshot', width: 65}, {
+}, {title: '单位', dataIndex: 'saleUnitSnapshot', width: 65, align: 'center'}, {
   title: '下单量',
   dataIndex: 'orderedQuantity',
   align: 'right',

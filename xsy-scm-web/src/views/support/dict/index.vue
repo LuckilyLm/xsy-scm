@@ -139,6 +139,7 @@ const columns = ref([
     title: '状态',
     width: 90,
     dataIndex: 'disabledFlag',
+    align: 'center',
   },
   {
     title: '更新时间',
@@ -150,6 +151,7 @@ const columns = ref([
     dataIndex: 'action',
     fixed: 'right',
     width: 50,
+    align: 'center',
   },
 ]);
 

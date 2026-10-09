@@ -137,7 +137,7 @@ const planColumns: TableColumnsType = [
 
 const planHistoryColumns: TableColumnsType = [
   {title: '生成时间', dataIndex: 'createdAt', width: 180},
-  {title: '状态', dataIndex: 'status', width: 100},
+  {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
   {title: '停靠点数', dataIndex: 'stopCount', align: 'right', width: 100},
   {title: '总距离（米）', dataIndex: 'totalDistance', align: 'right', width: 130},
   {title: '算路来源', dataIndex: 'providerCode', width: 220},

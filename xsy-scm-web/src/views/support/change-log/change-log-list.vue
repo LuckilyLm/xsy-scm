@@ -142,6 +142,7 @@ const columns = ref([
     title: '更新类型',
     dataIndex: 'type',
     ellipsis: true,
+    align: 'center',
   },
   {
     title: '发布人',
@@ -178,6 +179,7 @@ const columns = ref([
     dataIndex: 'action',
     fixed: 'right',
     width: 90,
+    align: 'center',
   },
 ]);
 

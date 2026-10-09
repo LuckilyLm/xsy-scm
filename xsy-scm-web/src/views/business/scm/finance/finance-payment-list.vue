@@ -172,7 +172,7 @@ const columns = ref<TableColumnsType<FinancePayment>>([
     {title: '往来方', dataIndex: 'counterparty', width: 190}, {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
     {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 120},
     {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 110},
-    {title: '方式', dataIndex: 'method', width: 105}, {title: '来源', dataIndex: 'sourceType', align: 'center', width: 95},
+    {title: '方式', dataIndex: 'method', width: 105, align: 'center'}, {title: '来源', dataIndex: 'sourceType', align: 'center', width: 95},
     {title: '付款时点', dataIndex: 'paidAt', width: 160},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);

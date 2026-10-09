@@ -285,7 +285,7 @@ const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
-  {title: '出库数量', dataIndex: 'quantity', width: 160},
+  {title: '出库数量', dataIndex: 'quantity', width: 160, align: 'right'},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];

@@ -228,7 +228,7 @@ type CustomerListColumn = TableColumnsType<CustomerRow>[number] & {showFlag?: bo
 const columns = ref<CustomerListColumn[]>([
   {title: '客户名称', dataIndex: 'name', width: 180, sorter: true},
   {title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
+  {title: '客户类型', dataIndex: 'customerTypeName', width: 120, align: 'center'},
   {title: '业务员', dataIndex: 'sellerName', width: 110},
   {title: '联系人', dataIndex: 'contactName', width: 120},
   {title: '联系电话', dataIndex: 'contactPhone', width: 140},

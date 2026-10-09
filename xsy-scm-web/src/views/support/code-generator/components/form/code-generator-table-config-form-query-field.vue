@@ -93,6 +93,7 @@ const columns = ref([
     title: '查询类型',
     dataIndex: 'queryTypeEnum',
     width: 130,
+    align: 'center',
   },
   {
     title: '查询列',
@@ -118,6 +119,7 @@ const columns = ref([
     title: '操作',
     dataIndex: 'operate',
     width: 60,
+    align: 'center',
   },
 ]);
 

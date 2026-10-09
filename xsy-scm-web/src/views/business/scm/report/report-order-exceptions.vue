@@ -84,18 +84,18 @@ const router = useRouter();
 let requestId = 0;
 const rowKey = (row: OrderExceptionRow) => `${row.exceptionType}:${row.sourceRowId}`;
 const summaryColumns = [
-  {title: '异常类别', dataIndex: 'exceptionType'}, {title: '异常条数', dataIndex: 'exceptionCount'},
-  {title: '该类别关联订单数', dataIndex: 'orderCount'},
+  {title: '异常类别', dataIndex: 'exceptionType'}, {title: '异常条数', dataIndex: 'exceptionCount', align: 'right'},
+  {title: '该类别关联订单数', dataIndex: 'orderCount', align: 'right'},
 ];
 const columns: TableColumnsType<OrderExceptionRow> = [
   {title: '异常类别', dataIndex: 'exceptionType', width: 145}, {title: '发生时间', dataIndex: 'occurredAt', width: 180},
   {title: '来源单号', dataIndex: 'sourceNo', width: 180}, {title: '订单号', dataIndex: 'orderNo', width: 180},
   {title: '客户', dataIndex: 'customerName', width: 150}, {title: '仓库', dataIndex: 'warehouseName', width: 140},
-  {title: '商品', dataIndex: 'productName', width: 140}, {title: '单位', dataIndex: 'unit', width: 70},
+  {title: '商品', dataIndex: 'productName', width: 140}, {title: '单位', dataIndex: 'unit', width: 70, align: 'center'},
   {title: '计划量', dataIndex: 'plannedQuantity', width: 110, align: 'right'},
   {title: '实际量', dataIndex: 'actualQuantity', width: 110, align: 'right'},
   {title: '差异（实际−计划）', dataIndex: 'differenceQuantity', width: 150, align: 'right'},
-  {title: '源状态', dataIndex: 'sourceStatus', width: 100}, {title: '原因', dataIndex: 'reason', width: 260},
+  {title: '源状态', dataIndex: 'sourceStatus', width: 100, align: 'center'}, {title: '原因', dataIndex: 'reason', width: 260},
   {title: '操作', dataIndex: 'action', fixed: 'right', width: 110, align: 'center'},
 ];
 function statusLabel(row: OrderExceptionRow) {
