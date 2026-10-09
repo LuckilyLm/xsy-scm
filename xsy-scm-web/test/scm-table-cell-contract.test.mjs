@@ -49,10 +49,17 @@ test('SCM 页面不再使用双行复合单元 .scm-cell-stack', () => {
 
 test('主题层退役 .scm-cell-stack，同时保留单元格不换行的默认与退出方式', () => {
   assert.doesNotMatch(THEME, /\.scm-cell-stack/);
+  // antd 把 `ant-table-cell` 挂在 `<td>` 自己身上。写成 `td > .ant-table-cell`（后代选择器）
+  // 匹配数是 0，规则静默失效、单元格照旧换行 —— 这里必须钉住「同一个元素」的写法。
   assert.match(
       THEME,
-      /\.ant-table-tbody > tr:not\(\.ant-table-expanded-row\) > td > \.ant-table-cell\s*\{[\s\S]{0,160}?white-space:\s*nowrap/,
-      '主题缺少「单元格默认不换行」规则'
+      /\.ant-table-tbody > tr:not\(\.ant-table-expanded-row\) > td\.ant-table-cell\s*\{[\s\S]{0,160}?white-space:\s*nowrap/,
+      '主题缺少「单元格默认不换行」规则，或选择器写成了匹配不到的后代形式'
+  );
+  assert.doesNotMatch(
+      THEME,
+      /td\s*>\s*\.ant-table-cell/,
+      '`td > .ant-table-cell` 在 antd 里匹配数为 0（类名在 td 自身），这条规则不会生效'
   );
   assert.match(THEME, /\.scm-cell-wrap/, '缺少长文本换行的退出方式');
   // 展开行与内嵌表格不能被裁掉
@@ -76,6 +83,13 @@ test('查询表单换行后由主题提供行距，表格工具栏用 gap 提供
       SMART,
       /\.smart-query-form-row:not\(:first-child\)\s*\{[\s\S]{0,80}?margin-top:\s*16px/,
       '查询表单换行后的行距被改小，两行筛选条件会贴在一起'
+  );
+  // 行距不能只认 `.smart-query-form-item` 类名：漏加类名的页面（财务五页）margin 归零，
+  // 筛选区一换行两行就贴死。必须同时命中 `.ant-form-item`。
+  assert.match(
+      SMART,
+      /\.smart-query-form-row \.ant-form-item[\s\S]{0,160}?margin-top:\s*6px/,
+      '筛选区行距只认 .smart-query-form-item 类名，漏加类名的页面换行后会贴死'
   );
   assert.match(
       SMART,

@@ -128,15 +128,18 @@
  * - 单元格里内嵌表格时，裁剪会连带吃掉内嵌表自己的横向滚动。
  *
  * 长文本（备注、地址、多行说明）确实需要换行的，给文本加 `.scm-cell-wrap`。
+ *
+ * 选择器必须落在 `<td>` 自身（`td.ant-table-cell`）：antd 把类名挂在 td 上，
+ * 若写成「td 与 .ant-table-cell 之间的子选择器」，匹配数是 0 —— 规则静默失效，单元格照旧换行。
  */
-.ant-table-tbody > tr:not(.ant-table-expanded-row) > td > .ant-table-cell {
+.ant-table-tbody > tr:not(.ant-table-expanded-row) > td.ant-table-cell {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.ant-table-tbody > tr > td > .ant-table-cell:has(.scm-cell-wrap),
-.ant-table-tbody > tr > td > .ant-table-cell:has(> .ant-table) {
+.ant-table-tbody > tr > td.ant-table-cell:has(.scm-cell-wrap),
+.ant-table-tbody > tr > td.ant-table-cell:has(> .ant-table) {
   white-space: normal;
   overflow: visible;
   text-overflow: unset;

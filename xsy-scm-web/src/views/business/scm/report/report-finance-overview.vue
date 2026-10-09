@@ -354,7 +354,9 @@ onUnmounted(() => window.removeEventListener('resize', updateViewportHeight));
   margin: 10px 0;
 }
 .smart-table-operate-block { display: flex; align-items: center; gap: 8px; }
-.smart-table-operate-block :deep(.ant-input) { width: 260px; }
+/* allow-clear 会把输入包进 .ant-input-affix-wrapper：宽度要设在它身上，
+   只设内层 .ant-input 时外层仍按 100% 撑开（实测 441px），工具栏被挤到换行。 */
+.smart-table-operate-block :deep(.ant-input-affix-wrapper) { width: 260px; }
 .finance-detail-mobile-list { display: none; }
 .finance-detail-mobile-heading { display: flex; justify-content: space-between; gap: 12px; }
 .finance-detail-mobile-heading > div { min-width: 0; }
@@ -370,7 +372,7 @@ onUnmounted(() => window.removeEventListener('resize', updateViewportHeight));
 .finance-detail-mobile-over-applied dd { color: var(--scm-warning); font-weight: 600; }
 @media (max-width: 768px) {
   .smart-table-operate-block { align-items: stretch; flex-wrap: wrap; }
-  .smart-table-operate-block :deep(.ant-input) { width: min(260px, 100%); }
+  .smart-table-operate-block :deep(.ant-input-affix-wrapper) { width: min(260px, 100%); }
   .finance-detail-table,
   .finance-table-operator { display: none; }
   .finance-detail-mobile-list { display: grid; gap: 10px; }

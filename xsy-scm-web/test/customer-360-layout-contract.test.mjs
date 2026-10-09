@@ -98,8 +98,8 @@ test('主题让单元格默认不换行，长文本靠省略号或显式退出',
   assert.doesNotMatch(THEME, /\.scm-cell-stack/, '双行复合单元已退役，不得复活');
   assert.match(
       THEME,
-      /\.ant-table-tbody > tr:not\(\.ant-table-expanded-row\) > td > \.ant-table-cell\s*\{[\s\S]{0,160}?white-space:\s*nowrap/,
-      '主题缺少「单元格默认不换行」规则'
+      /\.ant-table-tbody > tr:not\(\.ant-table-expanded-row\) > td\.ant-table-cell\s*\{[\s\S]{0,160}?white-space:\s*nowrap/,
+      '主题缺少「单元格默认不换行」规则，或选择器写成了匹配不到的后代形式'
   );
   // 展开行与内嵌表格不能被裁掉
   assert.match(THEME, /:has\(\.scm-cell-wrap\)/, '换行退出方式没有回退单元格自身的裁剪');
