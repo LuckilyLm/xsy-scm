@@ -52,7 +52,7 @@
 </template>
 <script setup lang="ts">
 import {ref} from 'vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import {customerStatementApi, type CustomerStatement, type CustomerStatementLine} from '/@/api/business/scm/customer-statement-api';
 import type {ReportId} from './report-types';
 import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-model';
@@ -93,10 +93,10 @@ async function loadHistory() {
 }
 async function freeze() {
   if (!settlementCustomerId.value || !dateRange.value?.[0] || !dateRange.value?.[1]) {
-    error.value = '请选择结算方和完整对账期间'; return;
+    message.warning('请选择结算方和完整对账期间'); return;
   }
   const limitError = rangeOverLimitError(dateRange.value);
-  if (limitError) { error.value = limitError; return; }
+  if (limitError) { message.warning(limitError); return; }
   busy.value = true; error.value = '';
   try {
     selected.value = (await customerStatementApi.freeze({settlementCustomerId: settlementCustomerId.value,

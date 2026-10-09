@@ -53,7 +53,7 @@
 import {onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import dayjs from 'dayjs';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {orderExceptionApi, type OrderExceptionQuery, type OrderExceptionRow, type OrderExceptionSummary,
   type OrderExceptionType} from '/@/api/business/scm/order-exception-api';
@@ -124,7 +124,7 @@ function search() {
   if (!dateRange.value?.[0] || !dateRange.value?.[1]) {
     ++requestId;
     loading.value = false;
-    error.value = '请选择完整的发生日期范围';
+    message.warning('请选择完整的发生日期范围');
     return;
   }
   pageNum.value = 1;

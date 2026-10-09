@@ -82,15 +82,15 @@
 
   <a-modal v-model:open="addOpen" title="登记收款" :confirm-loading="addSaving" @ok="submitAdd">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
-    <a-form layout="vertical">
-      <a-form-item label="客户" required>
+    <a-form ref="addFormRef" :model="addForm" :rules="addRules" layout="vertical">
+      <a-form-item label="客户" name="customerId">
         <a-select v-model:value="addForm.customerId" show-search option-filter-prop="label" :options="customerOptions" placeholder="选择客户"/>
       </a-form-item>
-      <a-form-item label="收款金额" required>
+      <a-form-item label="收款金额" name="amount">
         <a-input-number v-model:value="addForm.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width:100%"/>
       </a-form-item>
-      <a-form-item label="收款方式" required><a-select v-model:value="addForm.method" :options="methodOptions" placeholder="选择方式"/></a-form-item>
-      <a-form-item label="收款时间" required><a-date-picker v-model:value="addForm.receivedAt" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" style="width:100%"/></a-form-item>
+      <a-form-item label="收款方式" name="method"><a-select v-model:value="addForm.method" :options="methodOptions" placeholder="选择方式"/></a-form-item>
+      <a-form-item label="收款时间" name="receivedAt"><a-date-picker v-model:value="addForm.receivedAt" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" style="width:100%"/></a-form-item>
       <a-form-item label="资金凭据号"><a-input v-model:value="addForm.externalReference" :maxlength="128"/></a-form-item>
       <a-form-item label="备注"><a-textarea v-model:value="addForm.remark" :maxlength="500" :rows="2" show-count/></a-form-item>
     </a-form>
@@ -135,6 +135,19 @@ const addOpen = ref(false), addSaving = ref(false), addError = ref('');
 const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinanceReceipt | null>(null);
 const addForm = reactive({customerId: undefined as string | number | undefined, amount: '', method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
     receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
+const addFormRef = ref();
+/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const addRules = {
+    customerId: [{required: true, message: '请选择客户', trigger: 'change'}],
+    amount: [{
+        validator: () => (isValidPositiveAmount(addForm.amount)
+            ? Promise.resolve()
+            : Promise.reject(new Error('请输入大于 0 的金额，最多 4 位小数'))),
+        trigger: 'blur',
+    }],
+    method: [{required: true, message: '请选择收款方式', trigger: 'change'}],
+    receivedAt: [{required: true, message: '请选择收款时间', trigger: 'change'}],
+};
 const methodOptions = Object.values(SCM_FINANCE_RECEIPT_METHOD_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const pendingOptions = [{label: '仅待核销', value: true}, {label: '全部', value: false}];
@@ -175,8 +188,10 @@ function openAdd() {
 }
 
 async function submitAdd() {
-    if (addForm.customerId == null || !isValidPositiveAmount(addForm.amount) || !addForm.method || !addForm.receivedAt) {
-        addError.value = '请完整填写客户、正数金额、方式和收款时间。金额最多四位小数。';
+    // 必填项走表单校验：错误显示在对应输入框下方，顶部 alert 只留服务端错误
+    try {
+        await addFormRef.value?.validate();
+    } catch {
         return;
     }
     addSaving.value = true; addError.value = '';

@@ -86,7 +86,7 @@
 
 <script setup lang="ts">
 import {computed, ref} from 'vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
@@ -145,11 +145,11 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
 
 async function queryData() {
   if (!range.value || range.value.length !== 2) {
-    error.value = '请选择统计时间段';
+    message.warning('请选择统计时间段');
     return;
   }
   if (!warehouseId.value) {
-    error.value = '请选择仓库';
+    message.warning('请选择仓库');
     return;
   }
   const id = ++requestId;

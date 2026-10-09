@@ -66,7 +66,7 @@
 
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import {financeProfitApi} from '/@/api/business/scm/finance-profit-api';
 import type {FinanceProfitDimension, FinanceProfitQuery, FinanceProfitRow, FinanceProfitSummary} from '/@/api/business/scm/finance-profit-api';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
@@ -121,8 +121,8 @@ function rateText(value?: string | null): string {
 
 async function load() {
   const overLimit = rangeOverLimitError(dateRange.value);
-  if (overLimit) { error.value = overLimit; rows.value = []; summary.value = undefined; return; }
-  if (!dateRange.value?.[0] || !dateRange.value?.[1]) { error.value = '请选择完整日期范围'; return; }
+  if (overLimit) { message.warning(overLimit); rows.value = []; summary.value = undefined; return; }
+  if (!dateRange.value?.[0] || !dateRange.value?.[1]) { message.warning('请选择完整日期范围'); return; }
   const id = ++requestId;
   const payload = queryPayload();
   loading.value = true;

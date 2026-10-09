@@ -62,7 +62,7 @@
 </template>
 <script setup lang="ts">
 import {ref} from 'vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
@@ -124,7 +124,7 @@ function hintText(record: ResolvedPrice): string {
 
 async function resolve() {
   if (customerId.value == null || !skuIds.value?.length) {
-    error.value = '请选择客户和商品规格';
+    message.warning('请选择客户和商品规格');
     return;
   }
   const id = ++requestId;
