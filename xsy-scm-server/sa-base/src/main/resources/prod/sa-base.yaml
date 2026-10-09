@@ -166,7 +166,9 @@ sa-token:
   # 连续空闲 30 分钟后冻结 token；成功访问只续签空闲期限，不延长上面的绝对有效期。
   active-timeout: 1800
   # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
-  is-concurrent: false
+  # 演示/共用账号（admin 等）多人同时用时，false 会让后登录的人把先登录的人顶下线，
+  # 表现为「刷一下就要重新登录」。生产按现场要求放开并发登录。
+  is-concurrent: true
   # 在多人登录同一账号时，是否共用一个 token （为 true 时所有登录共用一个 token, 为 false 时每次登录新建一个 token）(jwt模式下恒false)
   is-share: false
   # token 风格（默认可取值：uuid、simple-uuid、random-32、random-64、random-128、tik）(jwt模式下无用)
