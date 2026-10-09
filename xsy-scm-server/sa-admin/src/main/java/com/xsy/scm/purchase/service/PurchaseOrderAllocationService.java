@@ -240,6 +240,11 @@ public class PurchaseOrderAllocationService {
      *
      * <p>
      * 见类注释：不释放会让需求永久卡在 {@code ALLOCATED}。<b>不删任何行、不删任何单据</b> —— 只把分配软删、把需求的 {@code allocated_quantity} 减回去。
+     *
+     * <p>
+     * <b>读到什么就删什么，不需要加锁重读</b>：所有会改动「既有单据分配集合」的命令 （{@code PurchaseOrderService.update}、以及唯一往既有单据插分配的
+     * {@code PurchaseDemandService.allocate}） 都<b>先锁采购单行</b>再动分配，本方法的调用方（{@code cancel} / {@code delete}）也已持有同一把单据锁。
+     * 因此「读分配」与「写分配」在单据行上完全串行，不存在「读完才发现并发插进来一条」的窗口。
      */
     public void releaseAllocations(PurchaseOrderEntity order) {
         List<PurchaseOrderItemEntity> items = purchaseOrderItemDao.listByOrderId(order.getId());

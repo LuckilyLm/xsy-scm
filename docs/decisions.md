@@ -116,3 +116,40 @@
 - 负责人确认采用全额关联：支付 100、正常应收 70 时，订单专属资金核销 100，超额 30 单独显示，不自动退款或增加钱包。售后 RED 不改历史核销，人工 REVERSE 保持整笔纠错语义。
 - 纯余额售后返还属于 c3，已完成代码实施。退款完成与原钱包 CREDIT 同事务；每退款来源唯一，累计不超原消费本金，与整单渠道 / 人工退款互斥。混合及多交易退款来源分摊仍属 d 阶段，不预设分摊顺序或比例。
 - 实现、权限迁移及未验证边界见[余额支付与订单资金核销](plan/active/balance-payment-order-settlement-design.md)。
+
+## 外部评审 P1/P2 修复：并发锁序与财务口径（2026-10-09）
+
+来源：外部代码评审 `XSY-SCM-Frontend-Backend-Review-2026-10-09-latest.md`（基线 `a9b98f80`）。本批只处理评审给出的发布门禁与三类正确性缺陷。
+
+### PUR-01：需求分配 vs 采购单取消
+
+- **根因是锁序不一致，不是「少读一次」**。`update` / `cancel` / `delete` 全是「锁采购单 → 锁需求」，
+  而 `allocate` 原本是「锁需求 → 无锁读采购单」。这个反向让 `cancel` 出现幻读窗口：
+  cancel 读「本单没有分配」→（无分配时早退，不取需求锁）→ allocate 插入并提交 → cancel 提交 CANCELLED，
+  于是分配永久悬挂在已取消的单上、需求 `allocated_quantity` 不回落。
+  实测时间戳可证：分配 `created_at` 比单据 `cancelled_at` **早 294ms**，即分配先落库、取消后提交，取消侧却什么都没删。
+- **修法：把 `allocate` 改成与其它命令同向 —— 先锁采购单行，再锁需求行**。
+  这样分配与取消在单据行上串行，幻读窗口不存在。
+  早期误判「先取单锁会与 `update` 成环」是错的：`update` 本来就是「单 → 需求」，
+  同向才是对齐；`create` 虽先锁需求再插新单，但新单行尚不存在、无人可与之竞争，不参与成环。
+- `releaseAllocations` 随之回到**单次读**：所有写分配的命令都持单据锁，读到什么删什么即可，
+  无需加锁重读。此前试过的「锁前发现 + 锁内重读」在「首次读为空 → 早退」时依然漏判，已被证伪。
+- **回归用例**`PurchaseAllocationCancelRacePgIT`（PG，无外层事务，真两线程）：
+  顺序版断言「已取消单再分配 → 40982」；并发版断言「无论谁先赢，单据必为 CANCELLED、
+  该单无任何活动分配、需求 `allocated_quantity` 回落 0 且退回 PENDING」。
+  反向验证：只回退 `allocate` 的锁序改动即复现失败（活分配 `allocatedQuantity=5.0000` 悬挂在 CANCELLED 单上）。
+
+### PAY-01：跨午夜对账漏配
+
+- 对账**双窗口取数**，不改成「只查成功交易」：已成功按 `paid_at` 落结算日，未成功（含 `INITIATED`）
+  按 `created_at` 落发起日，两个窗口的结果按 `provider_transaction_no` 合并去重。
+- **为什么不简单换成 `listSucceededBetween`**：那会丢掉 `STATUS_MISMATCH`（渠道成功、本地仍挂 INITIATED）
+  的检出能力，DAO 注释已明确警告不能只看成功笔。`provider_transaction_no` 非空且唯一，按它合并安全。
+
+### PAY-02：退款累计额口径
+
+- `sumSucceededByTransaction` 改按 **`provider_amount`**（渠道实退）而非 `amount`（本地请求额）求和，
+  否则部分退款 / 渠道改额后累计额虚高。
+- 不需要 `COALESCE(provider_amount, amount)` 兜底：V101 的
+  `ck_payment_refund_success_provider_amount` 已保证 `SUCCEEDED ⇒ provider_amount NOT NULL`。
+  该不变量本身由 `PaymentRefundSumBasisPgIT` 断言。

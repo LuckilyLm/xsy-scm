@@ -84,4 +84,55 @@ class PaymentReconciliationServiceTest {
         assertThat(savedItem.get().getLocalAmount()).isEqualByComparingTo("100.0000");
         assertThat(savedItem.get().getProviderAmount()).isEqualByComparingTo("90.0000");
     }
+
+    /**
+     * 跨午夜交易必须按 paid_at 归入结算日。
+     *
+     * <p>
+     * 10-08 23:55 创建、10-09 00:05 成功的那笔：渠道把款记在 10-09。若本地仍按 created_at 取数，
+     * 10-09 的对账只从 10-08 窗口查它、从 10-09 窗口漏掉它，于是把渠道的钱误判成 {@code LOCAL_MISSING}。
+     * 修复后按 paid_at 取成功交易，10-09 能匹配上，结论应是平账。
+     */
+    @Test
+    void succeededTransactionIsMatchedByPaidAtOnItsSettlementDate() {
+        LocalDate bizDate = LocalDate.parse("2026-10-09");
+        PaymentTransactionEntity transaction = new PaymentTransactionEntity();
+        transaction.setId(21L);
+        transaction.setProvider("MOCK");
+        transaction.setProviderTransactionNo("WX21");
+        transaction.setAmount(new BigDecimal("100.0000"));
+        transaction.setProviderAmount(new BigDecimal("100.0000"));
+        transaction.setStatus("SUCCEEDED");
+
+        when(reconciliations.selectByProviderAndDate("MOCK", bizDate)).thenReturn(null);
+        when(providers.require("MOCK")).thenReturn(provider);
+        when(provider.fetchSettlement(bizDate)).thenReturn(new ScmPaymentProvider.Settlement(bizDate,
+                new BigDecimal("100.0000"), 1,
+                List.of(new ScmPaymentProvider.SettlementLine("WX21", new BigDecimal("100.0000")))));
+        // 创建于前一日（created_at 窗口取不到），但成功于本结算日（paid_at 窗口能取到）。
+        when(transactions.listByWindow(eq("MOCK"), any(OffsetDateTime.class), any(OffsetDateTime.class)))
+                .thenReturn(List.of());
+        when(transactions.listSucceededBetween(eq("MOCK"), any(OffsetDateTime.class), any(OffsetDateTime.class)))
+                .thenReturn(List.of(transaction));
+        when(numbers.nextReconciliationNo()).thenReturn("RECON-2");
+
+        AtomicReference<PaymentReconciliationEntity> saved = new AtomicReference<>();
+        when(reconciliations.insert(any(PaymentReconciliationEntity.class))).thenAnswer(invocation -> {
+            PaymentReconciliationEntity row = invocation.getArgument(0);
+            row.setId(6L);
+            saved.set(row);
+            return 1;
+        });
+        when(reconciliations.selectById(6L)).thenAnswer(invocation -> saved.get());
+
+        try (var operator = mockStatic(ScmOperator.class)) {
+            operator.when(ScmOperator::current).thenReturn("1:1");
+            PaymentReconciliationEntity result = service.run("MOCK", bizDate);
+
+            assertThat(result.getStatus()).isEqualTo("MATCHED");
+            assertThat(result.getDifferenceCount()).isZero();
+            assertThat(result.getLocalTotal()).isEqualByComparingTo("100.0000");
+            assertThat(result.getLocalCount()).isEqualTo(1);
+        }
+    }
 }

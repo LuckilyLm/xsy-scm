@@ -36,8 +36,14 @@
         WHERE provider = #{provider} AND provider_refund_no = #{providerRefundNo} AND deleted = FALSE
     </select>
 
+    <!--
+      已成功退款的累计口径是「渠道实退额」而不是「申请额」：退款服务允许渠道实退
+      (provider_amount) 与申请金额 (amount) 不一致，按申请额累计会让可退本金算错方向
+      —— 渠道少退时高估可退额度，多退时低估。成功态必有 provider_amount，
+      由 ck_payment_refund_success_provider_amount（V101）保证，因此这里无需回退。
+    -->
     <select id="sumSucceededByTransaction" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(amount), 0)
+        SELECT COALESCE(SUM(provider_amount), 0)
         FROM payment_refund
         WHERE transaction_id = #{transactionId} AND status = 'SUCCEEDED' AND deleted = FALSE
     </select>
