@@ -2,14 +2,14 @@
 
 最后更新：2026-10-10。本次同步代码复审修复源码；下方历史验证数字仍按原记录日期阅读。
 
-2026-10-08 的审查记录以 `main @ 058ff5a6`（FIX-01～FIX-09）为起点；此后仍有本地提交与当天未提交工作区，尚未完成新一轮整体验收。当前仓库 Flyway 源码最大版本为 **V119**（V118 退款资金分摊、V119 商城账号基础表均为未提交新增）；V116/V117 已在新建隔离库验证空库全链与 V115→V117 升级，V118/V119 尚未在任何库演练。最近一次完整后端与主 E2E 基线仍是 2026-10-05 的 **V109** 验收；本轮定向验证不代替整体验收。
+2026-10-08 的审查记录以 `main @ 058ff5a6`（FIX-01～FIX-09）为起点；此后仍有本地提交与当天未提交工作区，尚未完成新一轮整体验收。当前仓库 Flyway 源码最大版本为 **V122**（V118 退款资金分摊、V119 商城账号基础表、V120 多采购账号、V121 购物车、V122 收货地址）；V116/V117 已在新建隔离库验证空库全链与 V115→V117 升级，V118～V122 尚未在任何库演练。最近一次完整后端与主 E2E 基线仍是 2026-10-05 的 **V109** 验收；本轮定向验证不代替整体验收。
 
 SCM V2 管理后台已经覆盖商品、客户、供应商、定价、销售订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额主干。当前规则见[决策索引](decisions.md)，剩余工作见[后续开发路线图](plan/active/admin-development-roadmap.md)。
 
 ## 当前代码事实
 
-- **2026-10-10 未提交工作区（本轮新增，尚未联调与验收）**：ADM-12 退款资金来源分摊（`payment` 包 `RefundFundingAllocationService` / `RefundFundingAllocator` / `RefundBalanceSink` / `RefundFundingAllocationDao` / `Entity` / `VO` / `Form`、`ScmRefundFundingAllocationStatusEnum`；`PaymentRefundController` 新增 `POST /scm/payment/refund/funding/execute`、`/funding/detail`；V118 `refund_funding_allocation`）；充值到账调整（验签后渠道成功同事务派生 Finance Receipt 与创建时冻结钱包的唯一 CREDIT）；商城账号后端（`com.xsy.scm.mall.account`，`/scm/mall/auth/**` 与后台 `/scm/customer/mall-account/**`；V119 `mall_customer_account` / `mall_wechat_binding` 及菜单 591～594）；商品目录后端（`com.xsy.scm.mall.catalog`，`/scm/mall/catalog/**` 分类 / 分页 / 详情 / 常购 / 热词，复用 `PriceResolver`）；客户身份接入（`MallCustomerInterceptor` 注册于 `/scm/mall/**`、`UserTypeEnum.MALL_CUSTOMER`、`MvcConfig` 将 `/scm/mall/**` 排除出管理端拦截器）；后台账号 UI（客户详情「商城账号」卡片 + `customer-api.ts` 的 `mallAccountApi`）；以及新增前端工作区 `xsy-scm-customer-app/`（uni-app + Vue 3 + Vite，当前仅登录 / 改密 / 首页 / 分类 / 搜索 / 商品详情 / 我的，API 仅 `auth-api` 与 `catalog-api`）。以上均为源码层面，未运行构建、测试、迁移或浏览器验收。
-- **常购契约不一致（待裁决）**：`GET /scm/mall/catalog/frequent` 后端返回裸数组 `List<MallProductVO>`、参数为 `days/limit`；前端 `getFavorites` 读 `response.data.list` 且传 `pageNum/pageSize`；包装类 `MallFrequentProductVO`（含 `list`）已定义但无任何引用。三者需统一，否则常购在真实数据下恒为空。
+- **2026-10-10 商城阶段推进（已提交，未运行验证）**：未提交工作区已按工作包拆成独立提交（充值/退款分摊、商城后端、后台账号 UI、商城前端、文档）。随后完成：① 常购接口按后端数组结构对齐（前端改传 `days/limit` 并直读数组，mock 同步，补契约测试，删除未引用的 `MallFrequentProductVO`）；② 一客户多采购账号（V120 放开 V119 一客一号唯一索引，后台账号接口由单条改列表，客户详情改为账号表格）；③ 新增 `product-adapter` 把后端 `MallProductVO` 字段映射为页面展示模型（修复真实接口下价格/规格/图片为空），mock fixtures 与后端同构；④ 服务端购物车（V121 `mall_cart_item`、`/scm/mall/cart/**`，按登录账号隔离，失效/无价行保留并标记 `availability`）与前端购物车页，商品卡片与详情页「加购」已改为真实写入；⑤ 收货地址后端（V122 `mall_customer_address`、`/scm/mall/addresses/**`，一客一默认地址）。**以上均未运行构建、测试、迁移或浏览器验收；地址前端页面尚未实现。**
+- **常购契约不一致（已修复）**：`GET /scm/mall/catalog/frequent` 后端返回裸数组 `List<MallProductVO>`、参数为 `days/limit`；前端原读 `response.data.list` 且传 `pageNum/pageSize`，会导致常购恒为空，现已按后端结构对齐。
 - 2026-10-10 复审修复已分阶段本地提交：`pre/prod` 不注册模拟支付渠道；客户写入、钱包人工更正、余额充值及采购收货重放补齐对应当前范围；支付退款列表和客户下拉按授权范围收窄；充值成功按创建时钱包快照入账；拒绝回调不再占后续合法事件 ID；客户列表关联数据改为每页取一次。
 - **定向后端验证**：新建隔离库 `xsy_review_20261010_01` 空库迁移至 V117 后，余额、客户与回调相关 45/45 通过；新增真实 PG 客户/余额范围用例 2/2、退款列表交集范围用例 1/1、采购收货旧键重放范围用例 1/1 通过。另一隔离库 `xsy_review_upgrade_20261010_01` 先迁至 V115（客户 IT 19/19），再升级至 V117（回调 IT 5/5）；Flyway 记录中 V116/V117 均成功，菜单 435/464 分别为“客户商品管理”“商品供应商”。初次 Maven 执行因 Windows CRLF 被 Spotless 拦截，后续定向测试仅跳过该格式检查；完整质量门禁未运行。
 - **前端契约**：本地复现 442 项中 439 通过、3 失败，断言分别为配送页“缺发车 / 完成 / 签收按钮”、注释扫描发现 3 处 markdown 粗体残迹、传统侧栏的子菜单箭头隐藏范围不符。相关前端和采购测试文件从 `41c46e3` 到本轮提交没有改动，均属本轮修复前已有的失败；尚未修复。主 E2E、支付与财务联合验收、浏览器人工验收和 CI 均未执行。
@@ -98,7 +98,7 @@ SCM V2 管理后台已经覆盖商品、客户、供应商、定价、销售订�
 - **充值到账链回归：** “验签后的渠道成功即到账”已冻结并有 callback / 同步成功 → Finance Receipt + wallet CREDIT 的代码链；仍需运行重写后的黄金链，验证延迟回调前后、重复回调、余额消费不重复登记收款及失败恢复。详见[余额支付设计](plan/active/balance-payment-order-settlement-design.md)。
 - **退款来源分摊：** V118 与 `RefundFundingAllocation*` 已写入工作区（未提交、未联调）；来源选择/分配规则仍未冻结，不得默认余额优先、在线优先、按比例或按时间顺序。落地前先补运行证据。
 - **现场验收：** 真实地图服务、电子秤设备/协议、支付渠道沙箱或生产回调。
-- **客户商城（ADM-16）：** 商城账号、目录后端与 `xsy-scm-customer-app` 均为未提交源码，尚未完成前后端联调；常购返回结构前后端不一致（见上）；「一客户是否支持多采购账号」待产品裁决；购物车 / 结算 / 下单 / 订单 / 地址后端与页面均未开始。
+- **客户商城（ADM-16）：** 账号、目录、购物车与地址（仅后端）已完成代码并提交，常购契约已按后端结构对齐、账号已支持一客户多采购账号；**尚未完成前后端联调与运行验证**。仍缺：地址前端页面、结算预览、订单提交与订单查询；「一账号切换多个企业」为后续独立功能。
 - **后续产品：** ADM-13～17（推广、订单助手、溯源、客户商城、员工移动端）按路线图推进。
 - **后端字段缺口：** B1（收货/入库全量汇总）、B4（订单履约聚合）、B5（订单售后聚合）、B7（优惠券统计）继续按[字段缺口](plan/active/frontend-ui-backend-gap-inventory.md)处理；已补字段从开发缺口中移除，运行验收仍未执行。
 
