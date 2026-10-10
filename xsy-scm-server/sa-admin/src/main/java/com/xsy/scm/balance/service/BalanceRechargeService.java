@@ -67,6 +67,13 @@ public class BalanceRechargeService {
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity create(BalanceRechargeCreateForm form, String idempotencyKey) {
+        CustomerEntity customer = customerService.require(form.getCustomerId());
+        CustomerEntity settlement = customerBalanceService.settlementCustomerOf(form.getCustomerId());
+        var customerScope = dataScopeService.resolve().getCustomerSellerScope();
+        if (!customerScope.allows(customer.getSellerId()) || !customerScope.allows(settlement.getSellerId())) {
+            throw new ScmDataScopeException();
+        }
+
         var claim = idempotencyService.claim(CREATE_SCOPE, idempotencyKey, form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, PaymentIntentEntity.class);
@@ -76,13 +83,6 @@ public class BalanceRechargeService {
         if (amount.signum() <= 0) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_RECHARGE_AMOUNT_INVALID);
         }
-        CustomerEntity customer = customerService.require(form.getCustomerId());
-        CustomerEntity settlement = customerBalanceService.settlementCustomerOf(form.getCustomerId());
-        // 数据范围 fail-closed：越权与「客户不存在」共用 30005，避免把主键探测变成可用信号
-        if (!dataScopeService.resolve().getCustomerSellerScope().allows(settlement.getSellerId())) {
-            throw new ScmDataScopeException();
-        }
-
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         CustomerBalanceRechargeEntity recharge = new CustomerBalanceRechargeEntity();
