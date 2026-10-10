@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.Data;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 /**
  * 库存分析返回行（库存流水 / 损耗分析 / 当前库存价值 / 收发存数量版）。
@@ -47,6 +48,7 @@ public class InventoryReportVO {
         private BigDecimal beforeQuantity;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal afterQuantity;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String operator;
     }
 
@@ -83,6 +85,7 @@ public class InventoryReportVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal costAmount;
         private String sourceDocumentNo;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String operator;
     }
 

@@ -2,6 +2,7 @@ package com.xsy.scm.order.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import lombok.Data;
@@ -25,6 +26,8 @@ public class OrderRefundVO {
     private Boolean deleted;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String updatedBy;
 }

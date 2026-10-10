@@ -2,6 +2,7 @@ package com.xsy.scm.delivery.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -13,12 +14,10 @@ import lombok.Data;
  *
  * <p>
  * {@code estimated} 与 {@code providerCode} / {@code providerVersion} / {@code ruleCode} 必须一起展示：
- * 它们共同回答「这个顺序是按什么、用哪一版算法、在什么前提下算出来的」。只给一个总距离的
- * 排线结果不可复核。
+ * 它们共同回答「这个顺序是按什么、用哪一版算法、在什么前提下算出来的」。只给一个总距离的 排线结果不可复核。
  *
  * <p>
- * {@code applied} 状态由建议自己带，线路侧不另存「当前建议」指针 —— 线路的停靠顺序本身就是
- * 应用结果，再加一个指针会出现两者不一致。
+ * {@code applied} 状态由建议自己带，线路侧不另存「当前建议」指针 —— 线路的停靠顺序本身就是 应用结果，再加一个指针会出现两者不一致。
  */
 @Data
 public class DeliveryPlanProposalVO {
@@ -48,6 +47,7 @@ public class DeliveryPlanProposalVO {
 
     private OffsetDateTime createdAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
 
     private OffsetDateTime appliedAt;

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.Data;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 /**
  * 收货与入库三张报表行（收货明细 / 入库明细 / 待入库）。
@@ -78,6 +79,7 @@ public class ReceiptReportVO {
         private BigDecimal costAmount;
         /** {@code unit_cost} 缺失或调用者无成本权限时为 true，页面据此显示 {@code —} 而不是 0。 */
         private Boolean costMissing;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String operator;
     }
 
