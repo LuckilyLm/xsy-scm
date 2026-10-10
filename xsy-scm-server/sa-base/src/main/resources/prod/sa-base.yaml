@@ -27,6 +27,10 @@ spring:
     min-evictable-idle-time-millis: 300000
     filters: stat
     druid:
+      # DataSourceConfig 用 @Value 无默认值注入这两项，缺失会导致上下文启动失败；
+      # 它们是 Druid 监控台账号（非数据库账号），login.enabled=false 时不生效。
+      username: druid
+      password: 1024
       login:
         enabled: false
       method:
