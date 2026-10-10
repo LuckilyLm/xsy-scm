@@ -1,6 +1,8 @@
 package com.xsy.scm.print.domain.vo;
 
 import com.xsy.scm.print.domain.model.ScmPrintTemplateModel;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.time.OffsetDateTime;
 import lombok.Data;
 
@@ -40,7 +42,9 @@ public class ScmPrintTemplateVO {
 
     private OffsetDateTime updatedAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String updatedBy;
 }

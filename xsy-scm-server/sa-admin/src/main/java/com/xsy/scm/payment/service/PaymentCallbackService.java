@@ -23,14 +23,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 支付回调唯一入口。顺序：验签 → 落事件（渠道事件 id 唯一）→ 匹配交易 → 推进支付域状态机 → 派生唯一 Finance 收款事实。顺序不可调换。
+ * 支付回调唯一入口。顺序：验签 → 落事件（有效事件的渠道 id 唯一）→ 匹配交易 → 推进支付域状态机 → 派生唯一 Finance 收款事实。顺序不可调换。
  *
  * <p>
  * 回调只推进支付域自己的状态，不直接改订单、改库存或写财务表；收款事实由支付成功派生，带唯一来源键，重复回调不会重复记收款。
  *
  * <p>
  * 幂等靠唯一索引而不是「先查后写」：并发回调下先查后写两边都会查到「不存在」，于是都执行副作用。这里先 {@code INSERT ... ON CONFLICT DO NOTHING}，返回 0 即判重复并直接返回，不执行任何副作用。
- * 未通过验签的回调照样落库（{@code REJECTED}）—— 伪造回调必须留证据。
+ * 未通过验签的回调照样落库（{@code REJECTED}）—— 伪造回调必须留证据，但拒绝记录不占后续有效事件的 id。
  */
 @Slf4j
 @Service
@@ -78,7 +78,7 @@ public class PaymentCallbackService {
         // 2) 幂等：已存在则静默返回「重复事件」，<b>不做任何状态转换</b>
         if (paymentCallbackEventDao.insertIgnoreDuplicate(event) != 1) {
             log.info("支付回调重复投递，已忽略：provider={} eventId={}", providerCode, callback.providerEventId());
-            return paymentCallbackEventDao.selectByProviderEventId(providerCode, callback.providerEventId());
+            return paymentCallbackEventDao.selectClaimedByProviderEventId(providerCode, callback.providerEventId());
         }
 
         // 3) 验签：不通过只留证，绝不进入状态转换

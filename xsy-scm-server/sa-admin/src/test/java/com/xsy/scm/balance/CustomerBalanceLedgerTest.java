@@ -53,6 +53,8 @@ class CustomerBalanceLedgerTest {
         var settlement = new CustomerEntity(); settlement.setId(3L); settlement.setName("集团");
         when(customers.require(2L)).thenReturn(customer);
         when(customers.requireSettlementAccount(customer)).thenReturn(settlement);
+        when(customers.requireInCurrentScope(2L)).thenReturn(customer);
+        when(customers.requireInCurrentScope(3L)).thenReturn(settlement);
         var account = new CustomerBalanceAccountEntity(); account.setId(4L); account.setSettlementCustomerId(3L);
         when(accounts.lockBySettlementCustomerId(3L)).thenReturn(account);
     }
@@ -122,6 +124,28 @@ class CustomerBalanceLedgerTest {
         assertSourceInvalid(() -> service.rechargeFromPayment(9L, 2L, new BigDecimal("101"), 20L, PAID_AT));
         verify(movements, never()).insertOnConflictDoNothing(any());
         verify(movements, never()).sumSignedByAccount(anyLong(), anyString());
+    }
+
+    @Test
+    void rechargeUsesTheFrozenWalletAfterTheCustomerSettlementChanges() {
+        var moved = new CustomerEntity(); moved.setId(2L); moved.setSettlementCustomerId(99L);
+        when(customers.require(2L)).thenReturn(moved);
+        when(recharges.selectByIdForUpdate(9L)).thenReturn(recharge(9L, 2L, 3L, "100"));
+        when(movements.nextMovementNo()).thenReturn(12L);
+        when(movements.insertOnConflictDoNothing(any())).thenAnswer(invocation -> {
+            CustomerBalanceMovementEntity row = invocation.getArgument(0); row.setId(8L); return 1;
+        });
+
+        try (var operator = mockStatic(ScmOperator.class)) {
+            operator.when(ScmOperator::current).thenReturn("1:1");
+            service.rechargeFromPayment(9L, 2L, new BigDecimal("100"), 20L, PAID_AT);
+        }
+
+        var appended = ArgumentCaptor.forClass(CustomerBalanceMovementEntity.class);
+        verify(movements).insertOnConflictDoNothing(appended.capture());
+        assertThat(appended.getValue().getSettlementCustomerId()).isEqualTo(3L);
+        verify(customers, never()).require(2L);
+        verify(customers, never()).requireSettlementAccount(any());
     }
 
     @Test
@@ -209,8 +233,10 @@ class CustomerBalanceLedgerTest {
         // 充值的业务客户不是发起支付的客户：来源身份已经分叉
         when(recharges.selectByIdForUpdate(9L)).thenReturn(recharge(9L, 999L, 3L, "100"));
         assertSourceInvalid(() -> service.rechargeFromPayment(9L, 2L, new BigDecimal("100"), 20L, PAID_AT));
-        // 充值事实挂的钱包与当前解析出的结算主体不一致
-        when(recharges.selectByIdForUpdate(9L)).thenReturn(recharge(9L, 2L, 999L, "100"));
+        // 缺少创建时的钱包快照，不能猜测当前结算主体
+        var withoutSnapshot = recharge(9L, 2L, 3L, "100");
+        withoutSnapshot.setSettlementCustomerNameSnapshot(null);
+        when(recharges.selectByIdForUpdate(9L)).thenReturn(withoutSnapshot);
         assertSourceInvalid(() -> service.rechargeFromPayment(9L, 2L, new BigDecimal("100"), 20L, PAID_AT));
         assertSourceInvalid(() -> service.rechargeFromPayment(9L, 2L, new BigDecimal("100"), 20L, null));
         verify(movements, never()).insertOnConflictDoNothing(any());
@@ -261,7 +287,8 @@ class CustomerBalanceLedgerTest {
             String amount) {
         var row = new CustomerBalanceRechargeEntity();
         row.setId(id); row.setRechargeNo("CBR20261004000009"); row.setCustomerId(customerId);
-        row.setSettlementCustomerId(settlementCustomerId); row.setAmount(new BigDecimal(amount));
+        row.setSettlementCustomerId(settlementCustomerId); row.setSettlementCustomerNameSnapshot("集团");
+        row.setAmount(new BigDecimal(amount));
         return row;
     }
 

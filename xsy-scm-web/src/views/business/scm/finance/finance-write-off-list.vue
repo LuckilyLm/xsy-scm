@@ -262,6 +262,10 @@ async function submitAdd() {
         message.warning('请为至少一条目标填写正数金额（最多 4 位小数）');
         return;
     }
+    if (!source.value || !sourceType.value) {
+        addError.value = '请选择核销来源';
+        return;
+    }
     addSaving.value = true; addError.value = '';
     try {
         await financeApi.writeOffAdd({sourceType: sourceType.value, sourceId: source.value.id, items});

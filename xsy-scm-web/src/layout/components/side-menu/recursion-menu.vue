@@ -123,7 +123,7 @@ defineExpose({
   }
 
   :deep(.ant-menu-submenu-arrow) {
-    inset-inline-end: 14px;
+    display: none;
   }
 
   :deep(.ant-menu-submenu-title) {

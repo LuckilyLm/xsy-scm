@@ -3,7 +3,7 @@
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <template v-if="order">
-        <a-space class="actions">
+        <a-space class="actions scm-detail-actions">
           <a-tag>{{ SCM_ORDER_STATUS_ENUM[order.status!]?.desc }}</a-tag>
           <a-button v-if="order.status==='PENDING'" type="primary" v-privilege="'scm:order:confirm'" @click="confirm">
             确认订单
@@ -101,8 +101,13 @@
           <a-button v-privilege="'scm:order:log:query'" @click="loadLogs">查看操作记录</a-button>
           <a-timeline class="smart-margin-top10">
             <a-timeline-item v-for="log in logs" :key="log.logId">
-              {{ datetime(log.createdAt) }} · {{ log.operatorName }} ·
-              {{ SCM_ORDER_OPERATION_ENUM[log.operationType]?.desc }}
+              <span class="scm-log-line">
+                <span>{{ datetime(log.createdAt) }}</span>
+                <span class="scm-log-line__sep">·</span>
+                <span>{{ log.operatorName }}</span>
+                <span class="scm-log-line__sep">·</span>
+                <span>{{ SCM_ORDER_OPERATION_ENUM[log.operationType]?.desc }}</span>
+              </span>
               <a-collapse>
                 <a-collapse-panel key="audit" header="变更前后">
                   <ScmDiffTable :before="log.beforeData" :after="log.afterData"/>
@@ -443,6 +448,24 @@ defineExpose({open});
 
 .detail-section--nested {
   margin-top: 20px;
+}
+
+/*
+ * 操作日志行：时间 / 操作人 / 动作 三段用统一间距隔开。
+ *
+ * 原来是行内拼 `·`，前后各一个西文空格；中英混排下那点空隙只有约 4px，
+ * 三段挤成一串「14:39:29 ·系统管理员 ·取消」，读起来分不出边界。
+ * 改成 flex + gap 后间距均匀可控，分隔点弱化，不跟内容抢注意力。
+ */
+.scm-log-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.scm-log-line__sep {
+  color: rgba(0, 0, 0, 0.25);
 }
 
 pre {

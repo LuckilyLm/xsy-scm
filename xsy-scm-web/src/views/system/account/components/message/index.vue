@@ -55,8 +55,7 @@
       <template v-if="column.dataIndex === 'title'">
         <span v-show="record.readFlag">
           <a @click="toDetail(record)" style="color: #8c8c8c"
-          >【{{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', record.messageType) }}】{{ text }}</a
-          >
+          >【{{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', record.messageType) }}】{{ text }}</a>
         </span>
         <span v-show="!record.readFlag">
           <a @click="toDetail(record)">【{{

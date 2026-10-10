@@ -30,8 +30,7 @@
                 class="radio-style"
                 :value="scope.viewType"
             >{{ scope.viewTypeName }}
-            </a-radio
-            >
+            </a-radio>
           </a-radio-group>
         </a-col>
         <a-col class="tab-margin tab-desc" :span="12">

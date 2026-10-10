@@ -242,6 +242,10 @@ async function submitAdd() {
         return;
     }
     const counterpartyId = addForm.counterpartyType === 'CUSTOMER' ? selectedRefund.value?.customerId : supplierId.value;
+    if (counterpartyId === undefined) {
+        addError.value = '请选择付款对象';
+        return;
+    }
     const amount = addForm.counterpartyType === 'CUSTOMER' ? selectedRefund.value?.refundAmount : addForm.amount;
     addSaving.value = true; addError.value = '';
     try {

@@ -150,7 +150,8 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         return returned;
     }
 
-    private CustomerBalanceMovementEntity creditAt(ScmBalanceMovementTypeEnum type, Long customerId, BigDecimal amount,
+    private CustomerBalanceMovementEntity creditAt(ScmBalanceMovementTypeEnum type, Long customerId,
+            Long settlementCustomerId, String settlementCustomerName, BigDecimal amount,
             ScmBalanceSourceTypeEnum sourceType, Long sourceId, String reason, OffsetDateTime occurredAt) {
         if (!((type == ScmBalanceMovementTypeEnum.RECHARGE
                 && sourceType == ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION)
@@ -159,7 +160,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
         }
         BigDecimal value = positiveAmount(amount);
-        CustomerBalanceAccountEntity account = lockAccount(settlementCustomerOf(customerId));
+        CustomerBalanceAccountEntity account = lockAccount(settlementCustomerId, settlementCustomerName);
         CustomerBalanceMovementEntity existing = customerBalanceMovementDao.selectBySource(sourceType.name(), sourceId);
         if (existing != null) {
             requireMatchingMovement(existing, account, customerId, type, type.getFixedDirection(), value);
@@ -187,12 +188,15 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REASON_REQUIRED);
         }
 
+        CustomerEntity customer = customerService.requireInCurrentScope(form.getCustomerId());
+        CustomerEntity settlement = customerService.requireSettlementAccount(customer);
+        customerService.requireInCurrentScope(settlement.getId());
+
         var claim = idempotencyService.claim(CORRECTION_SCOPE + ":" + form.getCustomerId(), idempotencyKey, form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, CustomerBalanceMovementEntity.class);
         }
 
-        CustomerEntity settlement = settlementCustomerOf(form.getCustomerId());
         CustomerBalanceAccountEntity account = lockAccount(settlement);
         if (direction == ScmBalanceDirectionEnum.DEBIT) {
             // 更正也不能把余额扣成负数：否则「不允许负余额」这条纪律可以从更正绕过去
@@ -237,11 +241,12 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
             log.warn("充值实收与申请金额不一致，按实收入账：rechargeNo={} 申请={} 实收={}", recharge.getRechargeNo(), recharge.getAmount(),
                     providerAmount);
         }
-        if (!recharge.getSettlementCustomerId().equals(settlementCustomerOf(customerId).getId())
+        if (recharge.getSettlementCustomerId() == null || recharge.getSettlementCustomerNameSnapshot() == null
                 || succeededAt == null) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
         }
-        creditAt(ScmBalanceMovementTypeEnum.RECHARGE, customerId, providerAmount,
+        creditAt(ScmBalanceMovementTypeEnum.RECHARGE, customerId, recharge.getSettlementCustomerId(),
+                recharge.getSettlementCustomerNameSnapshot(), providerAmount,
                 ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION, transactionId, "在线充值 " + recharge.getRechargeNo(),
                 succeededAt);
     }
@@ -299,22 +304,26 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
      * 创建放在锁路径里而不是读路径里：读余额不该写库，而真正要动钱时必须有一个可锁的行。唯一索引保证同一结算主体只有一个账户；并发下第二个事务会命中冲突，因此先查再插，冲突时读回已有行。
      */
     private CustomerBalanceAccountEntity lockAccount(CustomerEntity settlement) {
+        return lockAccount(settlement.getId(), settlement.getName());
+    }
+
+    private CustomerBalanceAccountEntity lockAccount(Long settlementCustomerId, String settlementCustomerName) {
         CustomerBalanceAccountEntity existing = customerBalanceAccountDao
-                .lockBySettlementCustomerId(settlement.getId());
+                .lockBySettlementCustomerId(settlementCustomerId);
         if (existing != null) {
             return existing;
         }
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         CustomerBalanceAccountEntity account = new CustomerBalanceAccountEntity();
-        account.setSettlementCustomerId(settlement.getId());
-        account.setSettlementCustomerNameSnapshot(settlement.getName());
+        account.setSettlementCustomerId(settlementCustomerId);
+        account.setSettlementCustomerNameSnapshot(settlementCustomerName);
         account.setCreatedAt(now);
         account.setUpdatedAt(now);
         account.setCreatedBy(operator);
         account.setUpdatedBy(operator);
         customerBalanceAccountDao.insertOnConflictDoNothing(account);
-        return customerBalanceAccountDao.lockBySettlementCustomerId(settlement.getId());
+        return customerBalanceAccountDao.lockBySettlementCustomerId(settlementCustomerId);
     }
 
     private static void requireMatchingMovement(CustomerBalanceMovementEntity movement,

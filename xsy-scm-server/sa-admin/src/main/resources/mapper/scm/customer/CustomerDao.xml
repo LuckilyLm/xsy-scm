@@ -46,6 +46,20 @@
         </if>
     </select>
 
+    <select id="selectOptions" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
+        SELECT <include refid="customerColumns"/>
+        FROM customer c
+        WHERE c.deleted = FALSE
+        <choose>
+            <when test="scope == null or scope.empty">AND FALSE</when>
+            <when test="scope.all"></when>
+            <otherwise>AND c.seller_id IN
+                <foreach collection="scope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </otherwise>
+        </choose>
+        ORDER BY c.name ASC, c.id ASC
+    </select>
+
     <update id="softDelete">
         UPDATE customer
         SET deleted    = TRUE,

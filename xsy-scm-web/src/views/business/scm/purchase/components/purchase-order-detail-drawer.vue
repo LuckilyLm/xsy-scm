@@ -12,7 +12,7 @@
     </a-alert>
     <a-spin :spinning="loading">
       <template v-if="order">
-        <div class="actions">
+        <div class="actions scm-detail-actions">
           <a-tag :color="STATUS_COLOR[order.status ?? '']">
             {{ SCM_PURCHASE_STATUS_ENUM[order.status ?? '']?.desc }}
           </a-tag>

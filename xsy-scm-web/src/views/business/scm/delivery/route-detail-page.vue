@@ -8,8 +8,7 @@
       <template #action>
         <a-button @click="reload">刷新线路</a-button>
       </template>
-    </a-alert
-    >
+    </a-alert>
     <a-spin :spinning="loading">
       <template v-if="detail">
         <div class="scm-detail-header">
@@ -28,8 +27,7 @@
               <a-button v-if="detail.route.status === 'DRAFT'" type="primary" v-privilege="'scm:delivery:route:plan'"
                         :disabled="busy" @click="plan"
               >确认规划
-              </a-button
-              >
+              </a-button>
               <a-button
                   v-if="detail.route.status === 'PLANNED'"
                   type="primary"
@@ -37,23 +35,20 @@
                   :disabled="busy"
                   @click="dispatch"
               >发车
-              </a-button
-              >
+              </a-button>
               <a-button
                   v-if="['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.route.status)"
                   v-privilege="'scm:delivery:route:query'"
                   @click="printer?.open(detail.route.id)"
               >打印发货单
-              </a-button
-              >
+              </a-button>
               <a-button
                   v-if="detail.route.status === 'DISPATCHED'"
                   v-privilege="DELIVERY_PERM.ROUTE_COMPLETE"
                   :disabled="busy"
                   @click="complete"
               >完成线路
-              </a-button
-              >
+              </a-button>
               <a-button
                   v-if="['DRAFT', 'PLANNED'].includes(detail.route.status)"
                   danger
@@ -61,8 +56,7 @@
                   :disabled="busy"
                   @click="openReason('cancel')"
               >取消线路
-              </a-button
-              >
+              </a-button>
             </a-space>
           </div>
         </div>
@@ -195,8 +189,7 @@
     >
       <a-form-item label="原因" required>
         <a-textarea v-model:value="reason" :maxlength="500" :rows="3"/>
-      </a-form-item
-      >
+      </a-form-item>
     </a-form>
     <a-alert v-if="reasonError" type="error" :message="reasonError" show-icon/>
   </a-modal>
@@ -214,10 +207,8 @@
         </a-form-item>
         <a-form-item label="备注">
           <a-textarea v-model:value="stopForm.remark" :maxlength="500"/>
-        </a-form-item
-        >
-      </a-form
-      >
+        </a-form-item>
+      </a-form>
       <a-alert v-if="stopError" type="error" :message="stopError" show-icon
       />
     </template>

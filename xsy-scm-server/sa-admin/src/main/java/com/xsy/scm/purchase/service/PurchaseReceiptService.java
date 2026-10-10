@@ -151,6 +151,11 @@ public class PurchaseReceiptService {
         var claim = purchaseIdempotencyService.claim("PURCHASE_RECEIPT_CREATE:" + form.getPurchaseOrderId(),
                 idempotencyKey, form);
         if (claim.replay()) {
+            PurchaseOrderEntity order = purchaseOrderDao.selectById(form.getPurchaseOrderId());
+            if (order == null) {
+                throw new ScmBusinessException(PURCHASE_ORDER_NOT_FOUND);
+            }
+            purchaseOwnerResolver.requireVisible(order.getPurchaserId());
             return purchaseIdempotencyService.replay(claim, PurchaseReceiptVO.class);
         }
 
@@ -236,6 +241,14 @@ public class PurchaseReceiptService {
     public PurchaseReceiptVO confirm(PurchaseReceiptConfirmForm form, String idempotencyKey) {
         var claim = purchaseIdempotencyService.claim("PURCHASE_RECEIPT_CONFIRM:" + form.getId(), idempotencyKey, form);
         if (claim.replay()) {
+            PurchaseReceiptEntity receipt = purchaseReceiptDao.selectById(form.getId());
+            if (receipt == null) {
+                throw new ScmBusinessException(PURCHASE_RECEIPT_NOT_FOUND);
+            }
+            purchaseOwnerResolver.requireVisible(orderPurchaserId(receipt));
+            if (ScmReceiptModeEnum.DIRECT.name().equals(receipt.getReceiptMode())) {
+                warehouseScopeGuard.require(receipt.getWarehouseId());
+            }
             return purchaseIdempotencyService.replay(claim, PurchaseReceiptVO.class);
         }
 
@@ -431,6 +444,11 @@ public class PurchaseReceiptService {
     public PurchaseReceiptVO putaway(PurchaseReceiptPutawayForm form, String idempotencyKey) {
         var claim = purchaseIdempotencyService.claim("PURCHASE_RECEIPT_PUTAWAY:" + form.getId(), idempotencyKey, form);
         if (claim.replay()) {
+            PurchaseReceiptEntity receipt = purchaseReceiptDao.selectById(form.getId());
+            if (receipt == null) {
+                throw new ScmBusinessException(PURCHASE_RECEIPT_NOT_FOUND);
+            }
+            warehouseScopeGuard.require(receipt.getWarehouseId());
             return purchaseIdempotencyService.replay(claim, PurchaseReceiptVO.class);
         }
 

@@ -179,7 +179,7 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("详情不存在 → 40430；下拉返回全部活动客户并带状态")
+    @DisplayName("详情不存在 → 40430；下拉返回授权范围内的活动客户并带状态")
     void detailMissingAndOptionList() {
         expectCode(() -> queryService.detail(-1L), 40430);
 

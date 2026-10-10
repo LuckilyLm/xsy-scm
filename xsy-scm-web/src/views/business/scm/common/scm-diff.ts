@@ -6,6 +6,9 @@
  * 实时查询，把 `DRAFT` 猜成中文词会在枚举演进后失真 —— 展示层拿 `fields` 里的字段名
  * 自行交给枚举去翻。`null` / `undefined` 一律渲染 `—`，不做值猜测性解析；
  * 数组按行比较（逐元素铺平会炸行数），配不上的标为新增 / 移除。
+ *
+ * 对象值（如订单的地址快照）展开成多行「键: 值」，不再甩一行 JSON —— 同样不翻译内容，
+ * 只是把 17 个键的压缩 JSON 换成能逐行扫读的排版，空的键合并计数。
  */
 
 /** 差异表的一行：一个标量字段，或一个数组字段。 */
@@ -55,11 +58,40 @@ function show(value: unknown): string {
         return '—';
     }
     if (typeof value === 'object') {
-        // 对象/嵌套数组落到这里说明它没被上层按数组处理（如 `Map` 里塞了个对象）。
-        // 不递归展开，直接给紧凑 JSON，避免展示层出现 `[object Object]`。
-        return JSON.stringify(value);
+        // 对象值不再甩成一行三百多字的 JSON（如订单的地址快照：17 个键、大半是 null）。
+        return objectLines(value as Record<string, unknown>);
     }
     return String(value);
+}
+
+/**
+ * 对象值展开成多行「键: 值」。
+ *
+ * 只换排版、不换内容：审计证据仍逐字可见，也不做任何值翻译。
+ * 空的键不逐行占位（地址快照 17 个键里 9 个是 null，逐行铺开只会把表格撑高），
+ * 合并成一句「（其余 N 项为空）」——信息没丢，但一眼能扫到有值的部分。
+ *
+ * 单元格的 `.scm-diff-value` 是 `white-space: pre-wrap`，这里的 `\n` 会逐行渲染。
+ */
+function objectLines(value: Record<string, unknown>): string {
+    const entries = Object.entries(value);
+    if (!entries.length) {
+        return '—';
+    }
+    const lines: string[] = [];
+    let emptyCount = 0;
+    for (const [key, raw] of entries) {
+        if (raw === null || raw === undefined || raw === '') {
+            emptyCount += 1;
+            continue;
+        }
+        // 再往里嵌套的对象 / 数组仍给紧凑 JSON：不递归，免得把表格撑成一棵树。
+        lines.push(`${key}: ${typeof raw === 'object' ? JSON.stringify(raw) : String(raw)}`);
+    }
+    if (emptyCount) {
+        lines.push(`（其余 ${emptyCount} 项为空）`);
+    }
+    return lines.length ? lines.join('\n') : '—';
 }
 
 /** 值是否变化。走 `JSON.stringify` 而非 `!==`，以覆盖对象与数组的内容比较。 */

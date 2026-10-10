@@ -44,28 +44,23 @@
       <a-space
       >
         <a-button type="primary" @click="search" v-privilege="'scm:delivery:route:query'">查询
-        </a-button
-        >
+        </a-button>
         <a-button @click="reset">重置</a-button>
-      </a-space
-      >
-    </a-form-item
-    >
+      </a-space>
+    </a-form-item>
   </a-form>
   <a-alert v-if="error" :message="error" type="error" show-icon
   >
     <template #action>
       <a-button @click="load">重试</a-button>
     </template>
-  </a-alert
-  >
+  </a-alert>
   <a-alert v-if="optionsError" :message="optionsError" type="warning" show-icon
   >
     <template #action>
       <a-button @click="loadOptions">重载筛选项</a-button>
     </template>
-  </a-alert
-  >
+  </a-alert>
   <a-card size="small" :bordered="false">
     <div class="smart-table-btn-block">
       <a-button type="primary" v-privilege="'scm:delivery:route:add'" @click="formDrawer?.open()">新建线路</a-button>

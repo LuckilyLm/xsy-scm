@@ -97,6 +97,28 @@ class PaymentCallbackEventPersistPgIT extends ScmW5PgITBase {
         assertThat(reloaded.getId()).isEqualTo(first.getId());
     }
 
+    @Test
+    @DisplayName("拒绝事件保留证据，同 ID 合法事件仍可处理且不能重复应用")
+    void rejectedEventDoesNotClaimTheValidEventId() {
+        PaymentCallbackEventEntity rejected = newEvent("RETRY-AFTER-REJECT");
+        rejected.setSignatureVerified(false);
+        assertThat(paymentCallbackEventDao.insertIgnoreDuplicate(rejected)).isEqualTo(1);
+        assertThat(paymentCallbackEventDao.markProcessed(rejected.getId(), "REJECTED", null, "验签失败"))
+                .isEqualTo(1);
+
+        PaymentCallbackEventEntity valid = newEvent("RETRY-VALID");
+        valid.setProviderEventId(rejected.getProviderEventId());
+        assertThat(paymentCallbackEventDao.insertIgnoreDuplicate(valid)).isEqualTo(1);
+        assertThat(paymentCallbackEventDao.markProcessed(valid.getId(), "APPLIED", null, null)).isEqualTo(1);
+
+        PaymentCallbackEventEntity duplicate = newEvent("RETRY-DUPLICATE");
+        duplicate.setProviderEventId(rejected.getProviderEventId());
+        assertThat(paymentCallbackEventDao.insertIgnoreDuplicate(duplicate)).isZero();
+        assertThat(paymentCallbackEventDao.selectById(rejected.getId()).getProcessStatus()).isEqualTo("REJECTED");
+        assertThat(paymentCallbackEventDao.selectClaimedByProviderEventId("MOCK", rejected.getProviderEventId())
+                .getId()).isEqualTo(valid.getId());
+    }
+
     private PaymentCallbackEventEntity newEvent(String marker) {
         PaymentCallbackEventEntity event = new PaymentCallbackEventEntity();
         event.setProvider("MOCK");

@@ -50,6 +50,13 @@ services:
       SPRING_DATA_REDIS_PORT: 6379
       SPRING_DATA_REDIS_DATABASE: ${REDIS_DATABASE:-1}
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+      # prod profile 的 spring.mail 无默认值，缺失会导致上下文启动失败；健康检查里 mail 已关闭。
+      XSY_MAIL_HOST: ${XSY_MAIL_HOST:-127.0.0.1}
+      XSY_MAIL_PORT: ${XSY_MAIL_PORT:-465}
+      XSY_MAIL_USERNAME: ${XSY_MAIL_USERNAME:-xsy-scm@localhost}
+      XSY_MAIL_PASSWORD: ${XSY_MAIL_PASSWORD:-unset}
+      # prod 下盘点快照签名密钥必须显式配置，否则 StocktakeSnapshotSigner 拒绝启动。
+      SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET: ${SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET:?Set SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET in .env}
       XSY_FILE_STORAGE_MODE: cloud
       XSY_FILE_REGION: us-east-1
       # S3 client 和 Presigner 共用地址，必须同时对浏览器和容器可达。
@@ -116,7 +123,10 @@ services:
 
   minio:
     # 受限测试环境必须显式选择固定镜像；生产环境应使用经安全评审的对象存储方案。
+    # Bitnami 版默认以非 root（uid 1001）运行，而卷由 root 创建；这里显式以 root 运行以匹配
+    # 官方 minio 镜像的行为，否则启动时报 "Unable to initialize backend: file access denied"。
     image: ${MINIO_IMAGE:?Set MINIO_IMAGE to a reviewed fixed image; see README}
+    user: "0:0"
     command: server /data --console-address ":9001"
     restart: unless-stopped
     environment:
@@ -135,11 +145,9 @@ services:
       start_period: 20s
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
 
   minio-bootstrap:
-    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    image: ${MINIO_MC_IMAGE:?Set MINIO_MC_IMAGE in .env}
     depends_on:
       minio:
         condition: service_healthy

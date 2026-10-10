@@ -22,6 +22,8 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
     List<CustomerEntity> queryPage(Page<?> page, @Param("query") CustomerQueryForm query,
             @Param("scope") ScmValueScope scope);
 
+    List<CustomerEntity> selectOptions(@Param("scope") ScmValueScope scope);
+
     /**
      * 原子软删：{@code id + version} 双谓词，返回 0 表示版本冲突。
      *

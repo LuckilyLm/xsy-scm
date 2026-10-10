@@ -2,6 +2,7 @@ package com.xsy.scm.promotion.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -92,6 +93,7 @@ public class PromotionDiscountVO {
 
     private OffsetDateTime createdAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
 
     /** 活动规则原文（受控键值），便于界面解释「按什么规则算的」。 */

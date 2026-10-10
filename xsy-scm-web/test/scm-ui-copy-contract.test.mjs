@@ -379,9 +379,11 @@ const hasHintClass = (node) =>
 const BASELINE = {
   residentInfoAlert: 19,
   formHelp: 2,
-  // 32 = 收口后的 31 + `purchase-demand-summary-preview.vue` 那句「不是最终净采购建议」
-  // （会改变用户决策的免责声明，按 guidelines §8.1 保留，不是回归）。
-  secondaryType: 32,
+  // 31 = 上一轮收口后的 32 再减 1：`purchase-demand-summary-preview.vue` 那句
+  // 「预览不是最终净采购建议，也不生成采购单。」已从页面常驻改成「净采购缺口」表头的问号提示。
+  // 免责本身要留（避免把缺口读成采购建议），但它只在有人看那一列时才需要 —— 按 guidelines §8.1
+  // 改成 Tooltip，不再占一行正文。
+  secondaryType: 31,
   hintClass: 33,
   reportResidentInfoAlert: 0,
   residentLongText: 0,
