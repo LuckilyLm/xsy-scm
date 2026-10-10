@@ -75,6 +75,17 @@ public class MallCatalogService {
     }
 
     @Transactional(readOnly = true)
+    public List<MallProductVO> visibleProducts(RequestMallCustomer customer, List<Long> skuIds) {
+        if (skuIds == null || skuIds.isEmpty()) {
+            return List.of();
+        }
+        List<MallProductVO> rows = catalogDao.productsBySkuIds(customer.getCustomerId(),
+                skuIds.stream().distinct().toList());
+        enrich(customer, rows);
+        return rows;
+    }
+
+    @Transactional(readOnly = true)
     public List<MallProductVO> frequent(RequestMallCustomer customer, int days, int limit) {
         int window = Math.min(Math.max(days, 1), 365);
         int size = Math.min(Math.max(limit, 1), 100);

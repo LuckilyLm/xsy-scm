@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.mall.address.dao.MallCustomerAddressDao">
+    <sql id="columns">
+        id AS address_id, receiver_name, receiver_phone,
+        province_code, province_name, city_code, city_name,
+        district_code, district_name, detail_address,
+        longitude, latitude, is_default
+    </sql>
+    <select id="listByCustomer" resultType="com.xsy.scm.mall.address.domain.vo.MallAddressVO">
+        SELECT <include refid="columns"/> FROM mall_customer_address
+        WHERE customer_id = #{customerId} AND deleted = FALSE
+        ORDER BY is_default DESC, id
+    </select>
+    <select id="detailById" resultType="com.xsy.scm.mall.address.domain.vo.MallAddressVO">
+        SELECT <include refid="columns"/> FROM mall_customer_address
+        WHERE customer_id = #{customerId} AND id = #{id} AND deleted = FALSE
+    </select>
+    <select id="selectByIdForUpdate" resultType="com.xsy.scm.mall.address.domain.entity.MallCustomerAddressEntity">
+        SELECT * FROM mall_customer_address WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+    </select>
+    <select id="countByCustomer" resultType="int">
+        SELECT COUNT(*) FROM mall_customer_address WHERE customer_id = #{customerId} AND deleted = FALSE
+    </select>
+    <select id="firstAddressId" resultType="java.lang.Long">
+        SELECT id FROM mall_customer_address WHERE customer_id = #{customerId} AND deleted = FALSE ORDER BY id LIMIT 1
+    </select>
+    <insert id="insert" parameterType="com.xsy.scm.mall.address.domain.entity.MallCustomerAddressEntity"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO mall_customer_address(customer_id, receiver_name, receiver_phone,
+                                          province_code, province_name, city_code, city_name,
+                                          district_code, district_name, detail_address,
+                                          longitude, latitude, geom_crs, is_default, version, deleted,
+                                          created_at, updated_at, created_by, updated_by)
+        VALUES (#{customerId}, #{receiverName}, #{receiverPhone},
+                #{provinceCode}, #{provinceName}, #{cityCode}, #{cityName},
+                #{districtCode}, #{districtName}, #{detailAddress},
+                #{longitude}, #{latitude}, #{geomCrs}, #{isDefault}, 0, FALSE,
+                #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+    </insert>
+    <update id="update" parameterType="com.xsy.scm.mall.address.domain.entity.MallCustomerAddressEntity">
+        UPDATE mall_customer_address
+        SET receiver_name = #{receiverName}, receiver_phone = #{receiverPhone},
+            province_code = #{provinceCode}, province_name = #{provinceName},
+            city_code = #{cityCode}, city_name = #{cityName},
+            district_code = #{districtCode}, district_name = #{districtName},
+            detail_address = #{detailAddress},
+            longitude = #{longitude}, latitude = #{latitude}, geom_crs = #{geomCrs},
+            is_default = #{isDefault}, version = version + 1,
+            updated_at = #{updatedAt}, updated_by = #{updatedBy}
+        WHERE id = #{id} AND customer_id = #{customerId} AND deleted = FALSE
+    </update>
+    <update id="remove">
+        UPDATE mall_customer_address
+        SET deleted = TRUE, is_default = FALSE, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE customer_id = #{customerId} AND id = #{id} AND deleted = FALSE
+    </update>
+    <update id="clearDefault">
+        UPDATE mall_customer_address
+        SET is_default = FALSE, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE customer_id = #{customerId} AND deleted = FALSE AND is_default = TRUE
+    </update>
+    <update id="setDefault">
+        UPDATE mall_customer_address
+        SET is_default = TRUE, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE customer_id = #{customerId} AND id = #{id} AND deleted = FALSE
+    </update>
+</mapper>

@@ -10,11 +10,13 @@ public class MallProductVO {
     private Long skuId;
     private Long spuId;
     private Long categoryId;
+    private String categoryName;
     private String productName;
     private String skuCode;
     private String specName;
     private String saleUnit;
     private String productType;
+    private Boolean nonStandard;
     private String description;
     private String primaryImageKey;
     private String primaryImageUrl;

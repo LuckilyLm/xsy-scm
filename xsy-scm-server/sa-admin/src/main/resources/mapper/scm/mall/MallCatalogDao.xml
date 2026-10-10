@@ -16,8 +16,10 @@
         )
     </sql>
     <sql id="productColumns">
-        s.id AS sku_id, p.id AS spu_id, p.category_id, p.name AS product_name, s.sku_code,
-        s.spec_name, s.sale_unit, s.product_type, p.description,
+        s.id AS sku_id, p.id AS spu_id, p.category_id, c.name AS category_name,
+        p.name AS product_name, s.sku_code,
+        s.spec_name, s.sale_unit, s.product_type, (s.product_type = 'NON_STANDARD') AS non_standard,
+        p.description,
         image.file_key AS primary_image_key,
         'UNAVAILABLE' AS stock_status
     </sql>
