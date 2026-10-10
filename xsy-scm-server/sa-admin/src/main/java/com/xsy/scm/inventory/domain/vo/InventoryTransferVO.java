@@ -3,6 +3,7 @@ package com.xsy.scm.inventory.domain.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -52,6 +53,7 @@ public class InventoryTransferVO {
     /**
      * 发出人；草稿与已取消为空。
      */
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String shippedBy;
 
     /**
@@ -62,6 +64,7 @@ public class InventoryTransferVO {
     /**
      * 收货人；仅已完成非空。
      */
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String receivedBy;
 
     private Integer version;

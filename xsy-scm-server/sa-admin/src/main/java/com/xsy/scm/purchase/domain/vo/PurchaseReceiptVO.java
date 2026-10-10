@@ -27,6 +27,7 @@ public class PurchaseReceiptVO {
     private String receiptMode;
     private String putawayStatus;
     private OffsetDateTime putawayAt;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String putawayBy;
     private OffsetDateTime receivedAt;
     private OffsetDateTime confirmedAt;

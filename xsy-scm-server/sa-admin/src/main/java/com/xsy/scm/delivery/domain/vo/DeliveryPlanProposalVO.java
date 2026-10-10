@@ -52,10 +52,12 @@ public class DeliveryPlanProposalVO {
 
     private OffsetDateTime appliedAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String appliedBy;
 
     private OffsetDateTime discardedAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String discardedBy;
 
     private Integer version;

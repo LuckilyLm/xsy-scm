@@ -3,6 +3,7 @@ package com.xsy.scm.sorting.domain.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -47,6 +48,7 @@ public class SortingTaskItemVO {
     private BigDecimal sortedQuantity;
     private String result;
     private String reason;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String sortedBy;
     private OffsetDateTime sortedAt;
     private String occupationStatus;

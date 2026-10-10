@@ -35,6 +35,7 @@ public class ReceiptReportVO {
         private String putawayStatus;
         private OffsetDateTime confirmedAt;
         /** 收货商业确认时记录的操作者，与仓库入库操作人分开。 */
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String confirmedBy;
         private String spuCode;
         private String productName;
