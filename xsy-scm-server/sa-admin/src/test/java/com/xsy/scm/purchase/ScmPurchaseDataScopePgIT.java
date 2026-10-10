@@ -264,6 +264,19 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
                 () -> purchaseQueryService.receiptDetail(receiptOfA).getId())).isEqualTo(receiptOfA);
     }
 
+    @Test
+    @DisplayName("收货单创建重放仍按采购单当前负责人授权")
+    void receiptCreateReplayRechecksCurrentPurchaser() {
+        Purchasable goods = purchasable("RPR");
+        Long orderId = createSubmittedOrderAt(goods, "RPR", purchaserB, seedWarehouseId(), "4.0000");
+        Long receiptId = as(purchaserB, Set.of(), () -> createReceipt(orderId).getId());
+
+        jdbc.update("UPDATE purchase_order SET purchaser_id = ? WHERE id = ?", purchaserA, orderId);
+        evictMybatisCache();
+        assertNoPermission(() -> as(purchaserB, Set.of(), () -> createReceipt(orderId)));
+        assertThat(receiptDeleted(receiptId)).isFalse();
+    }
+
     // ==================== 4. 写入侧归属收口 ====================
 
     @Test
