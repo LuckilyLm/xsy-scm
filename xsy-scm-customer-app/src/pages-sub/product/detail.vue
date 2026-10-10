@@ -118,6 +118,7 @@
   import { mallCatalogApi } from '@/api/mall';
   import { isApiError } from '@/lib/smart-request';
   import { smartSentry } from '@/lib/smart-sentry';
+  import { useMallCart } from '@/composables/use-mall-cart';
   import { PLATFORM_ERROR_CODE } from '@/constants/error-code-const';
   import {
     hasPrice,
@@ -136,6 +137,7 @@
   const product = ref(null);
   const loading = ref(true);
   const quantity = ref(1);
+  const { addToCart } = useMallCart();
 
   /*
    * 展示口径一律来自 @/utils/product-display，与 ProductCard 同源，
@@ -219,7 +221,7 @@
     if (submitKind.value === 'disabled') {
       return '暂时缺货';
     }
-    return '购物车暂未开放';
+    return '加入购物车';
   });
 
   function decrease() {
@@ -240,7 +242,8 @@
 
   function onAdd() {
     if (!orderable.value) return;
-    uni.showToast({ title: '购物车将在下一阶段开放', icon: 'none' });
+    // 数量以字符串定点传给服务端，客户端不做金额/数量运算
+    addToCart(product.value, String(quantity.value));
   }
 
   /** 无客户价商品的引导（与 Home / Category / Search 逐字一致） */

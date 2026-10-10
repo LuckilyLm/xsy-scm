@@ -19,7 +19,7 @@
         <text class="home__section-link" @click="goCategory">全部商品</text>
       </view>
       <view v-if="frequentProducts.length" class="home__list">
-        <ProductCard v-for="item in frequentProducts" :key="item.skuId" :product="item" @click="goDetail" @unavailable="cartUnavailable" @inquiry="inquiry" />
+        <ProductCard v-for="item in frequentProducts" :key="item.skuId" :product="item" @click="goDetail" @add="addToCart" @inquiry="inquiry" />
       </view>
       <text v-else class="home__empty">{{ userStore.isLogin ? '暂无常购商品' : '登录后展示常购商品' }}</text>
     </view>
@@ -27,7 +27,7 @@
     <view class="home__section">
       <view class="home__section-head"><text class="home__section-title">商品目录</text></view>
       <view v-if="products.length" class="home__list">
-        <ProductCard v-for="item in products" :key="item.skuId" :product="item" @click="goDetail" @unavailable="cartUnavailable" @inquiry="inquiry" />
+        <ProductCard v-for="item in products" :key="item.skuId" :product="item" @click="goDetail" @add="addToCart" @inquiry="inquiry" />
       </view>
       <text v-else-if="!loading" class="home__empty">暂无可见商品</text>
       <text class="home__loading">{{ loading ? '加载中…' : hasMore ? '上拉加载更多' : products.length ? '没有更多了' : '' }}</text>
@@ -42,6 +42,7 @@
   import { mallCatalogApi } from '@/api/mall';
   import { useUserStore } from '@/store/modules/system/user';
   import { useSystemLayout } from '@/composables/use-system-layout';
+  import { useMallCart } from '@/composables/use-mall-cart';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
@@ -89,7 +90,7 @@
   function goSearch() { uni.navigateTo({ url: '/pages-sub/product/search' }); }
   function goCategory() { uni.switchTab({ url: '/pages/category/index' }); }
   function goDetail(item) { uni.navigateTo({ url: `/pages-sub/product/detail?skuId=${item.skuId}` }); }
-  function cartUnavailable() { uni.showToast({ title: '购物车将在下一阶段开放', icon: 'none' }); }
+  const { addToCart } = useMallCart();
   function inquiry(item) { uni.showToast({ title: `${item.productName} 暂无客户价，请联系业务员`, icon: 'none' }); }
 
   onReachBottom(() => { if (hasMore.value) loadProducts(); });

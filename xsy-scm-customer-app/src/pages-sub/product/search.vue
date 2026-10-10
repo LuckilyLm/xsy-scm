@@ -50,7 +50,7 @@
     <!-- 搜索结果 -->
     <view v-else class="search__result">
       <view v-if="products.length" class="search__list">
-        <ProductCard v-for="p in products" :key="p.skuId" :product="p" @click="goDetail" @unavailable="cartUnavailable" @inquiry="onInquiry" />
+        <ProductCard v-for="p in products" :key="p.skuId" :product="p" @click="goDetail" @add="addToCart" @inquiry="onInquiry" />
         <view class="search__more">
           <text class="search__more-text">{{ loadMoreText }}</text>
         </view>
@@ -78,6 +78,7 @@
   import { mallCatalogApi } from '@/api/mall';
   import { SEARCH_HISTORY } from '@/constants/local-storage-key-const';
   import { smartSentry } from '@/lib/smart-sentry';
+  import { useMallCart } from '@/composables/use-mall-cart';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
   const PAGE_SIZE = 10;
@@ -203,9 +204,7 @@
     uni.navigateTo({ url: `/pages-sub/product/detail?skuId=${product.skuId}` });
   }
 
-  function cartUnavailable() {
-    uni.showToast({ title: '购物车将在下一阶段开放', icon: 'none' });
-  }
+  const { addToCart } = useMallCart();
 
   /** 无客户价商品不进入加购，改为引导询价（与 Home / Category 保持同一交互，不新增接口/页面） */
   function onInquiry(product) {

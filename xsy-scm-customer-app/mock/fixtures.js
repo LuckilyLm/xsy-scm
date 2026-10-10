@@ -211,38 +211,35 @@ const PRODUCT_TABLE = [
   ['干辣椒八角', '500g/袋', '袋', '香辛料', false, '24.00', 'STANDARD', 'AVAILABLE', 120, 'ganlajiao'],
 ];
 
-/** 价格来源文案（与后端 PriceResolver 的优先级一致） */
-export const PRICE_SOURCE_LABEL = {
-  AGREEMENT: '客户协议价',
-  CUSTOMER_TYPE: '客户类型价',
-  STANDARD: '标准价',
-  UNPRICED: '暂无报价',
-};
-
 export const MOCK_PRODUCTS = PRODUCT_TABLE.map((row, i) => {
   const [productName, spec, unit, categoryName, isNonStandard, price, priceSource, stockStatus, availableQty, imageKey] = row;
   const category = MOCK_CATEGORIES.find((c) => c.categoryName === categoryName);
   const skuId = 5000 + i;
 
+  // 字段与后端 MallProductVO 保持一致；页面展示模型由 src/api/mall/product-adapter.js 映射。
   return {
     skuId,
     spuId: 4000 + i,
+    skuCode: `SKU${skuId}`,
     productName,
-    skuName: spec,
-    spec,
-    unit,
+    specName: spec,
+    saleUnit: unit,
     categoryId: category ? category.categoryId : null,
     categoryName,
-    // 商城图片待业主提供后替换为真实 fileKey 派生的 URL；
-    // 这里先用业主提供的测试图占位，imageKey 为空的商品走无图 fallback
-    imageUrl: '',
-    isNonStandard,
-    price,
+    productType: isNonStandard ? 'NON_STANDARD' : 'STANDARD',
+    nonStandard: isNonStandard,
+    description: '',
+    // 商城图片待业主提供后替换为真实 fileKey 派生的 URL；imageKey 为空的商品走无图 fallback
+    primaryImageKey: imageKey || null,
+    primaryImageUrl: '',
+    unitPrice: price,
+    priceStatus: price === null ? 'UNPRICED' : 'PRICED',
     priceSource,
-    priceSourceLabel: PRICE_SOURCE_LABEL[priceSource],
+    sellable: price !== null,
+    unavailableReason: null,
     stockStatus,
     availableQty,
-    minOrderQty: isNonStandard ? 1 : 1,
+    minOrderQty: 1,
     stepQty: 1,
     // 常购标记：接常购接口后由后端返回
     favorite: i % 7 === 0,

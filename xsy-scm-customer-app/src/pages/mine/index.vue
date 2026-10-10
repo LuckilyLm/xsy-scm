@@ -9,8 +9,9 @@
       <text v-if="!userStore.isLogin" class="mine__login" @click="goLogin">登录</text>
     </view>
     <view class="mine__card">
+      <view class="mine__row" @click="goCart"><text>购物车</text><text>›</text></view>
       <view class="mine__row" @click="changePassword"><text>修改登录密码</text><text>›</text></view>
-      <view class="mine__row mine__row--disabled"><text>购物车、订单与结算</text><text>下一阶段开放</text></view>
+      <view class="mine__row mine__row--disabled"><text>订单、结算与收货地址</text><text>下一阶段开放</text></view>
     </view>
     <view v-if="userStore.isLogin" class="mine__logout" @click="logout">退出登录</view>
   </view>
@@ -26,6 +27,7 @@
   const avatarText = computed(() => (userStore.customerName || userStore.contactName || '客').slice(0, 1));
   const metaLine = computed(() => userStore.isLogin ? [userStore.customerCode, userStore.phone].filter(Boolean).join(' · ') : '登录后查看客户信息');
   function goLogin() { uni.navigateTo({ url: '/pages/login/login' }); }
+  function goCart() { uni.switchTab({ url: '/pages/cart/index' }); }
   function changePassword() { userStore.isLogin ? uni.navigateTo({ url: '/pages/account/password' }) : goLogin(); }
   function logout() {
     uni.showModal({ title: '退出登录', content: '确认退出当前账号？', success: async ({ confirm }) => {

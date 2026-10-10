@@ -52,7 +52,7 @@ export const catalogRoutes = [
         const lower = kw.toLowerCase();
         list = list.filter(
           (p) =>
-            p.productName.toLowerCase().includes(lower) || p.skuName.toLowerCase().includes(lower) || p.categoryName.toLowerCase().includes(lower)
+            p.productName.toLowerCase().includes(lower) || p.specName.toLowerCase().includes(lower) || p.categoryName.toLowerCase().includes(lower)
         );
       }
 
@@ -72,8 +72,8 @@ export const catalogRoutes = [
       return ok({
         ...product,
         deliveryTip: '当日 20:00 前下单，次日 06:00–10:00 配送',
-        nonStandardTip: product.isNonStandard ? '本商品按实际称重结算，下单量为预估量，最终金额以出库实重为准。' : '',
-        description: `${product.productName}（${product.spec}），产地直采，冷链配送。`,
+        nonStandardTip: product.nonStandard ? '本商品按实际称重结算，下单量为预估量，最终金额以出库实重为准。' : '',
+        description: `${product.productName}（${product.specName}），产地直采，冷链配送。`,
       });
     },
   },

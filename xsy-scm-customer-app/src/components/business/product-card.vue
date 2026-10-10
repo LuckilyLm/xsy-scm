@@ -82,7 +82,7 @@
     },
   });
 
-  const emit = defineEmits(['click', 'unavailable', 'inquiry']);
+  const emit = defineEmits(['click', 'add', 'inquiry']);
 
   /*
    * 库存文案 / 价格口径 / 按钮可用性统一来自 @/utils/product-display，
@@ -97,7 +97,7 @@
   const actionLabel = computed(() => {
     if (!priced.value) return '询价';
     if (!orderable.value) return '缺货';
-    return '暂未开放加购';
+    return '加购';
   });
   const thumb = computed(() => thumbText(props.product));
   const sourceLabel = computed(() => priceSourceLabel(props.product));
@@ -110,14 +110,14 @@
 
   const actionKind = computed(() => {
     if (!priced.value) return 'inquiry';
-    return orderable.value ? 'unavailable' : 'disabled';
+    return orderable.value ? 'add' : 'disabled';
   });
 
   function onAction() {
     if (actionKind.value === 'inquiry') {
       emit('inquiry', props.product);
-    } else if (actionKind.value === 'unavailable') {
-      emit('unavailable', props.product);
+    } else if (actionKind.value === 'add') {
+      emit('add', props.product);
     }
   }
 
