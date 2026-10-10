@@ -20,6 +20,13 @@
         { "path": "search", "style": { "navigationBarTitleText": "搜索", "onReachBottomDistance": 80 } },
         { "path": "detail", "style": { "navigationBarTitleText": "商品详情" } }
       ]
+    },
+    {
+      "root": "pages-sub/address",
+      "pages": [
+        { "path": "list", "style": { "navigationBarTitleText": "收货地址" } },
+        { "path": "edit", "style": { "navigationBarTitleText": "编辑地址" } }
+      ]
     }
   ],
   "preloadRule": {

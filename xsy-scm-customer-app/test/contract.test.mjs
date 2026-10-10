@@ -11,14 +11,27 @@ test('SmartAdmin success contract uses code zero', () => {
   assert.match(request, /code === SUCCESS_CODE && res\?\.ok !== false/);
 });
 
-test('release only exposes password authentication, catalog and cart APIs', () => {
+test('release only exposes authentication, catalog, cart and address APIs', () => {
   const auth = read('../src/api/mall/auth-api.js');
   const api = read('../src/api/mall/index.js');
   assert.match(auth, /auth\/login/);
   assert.match(auth, /password\/change/);
   assert.doesNotMatch(auth, /sms|wechat/i);
   assert.match(api, /Cart/);
-  assert.doesNotMatch(api, /Checkout|Order|Address|Account|Home/);
+  assert.match(api, /Address/);
+  assert.doesNotMatch(api, /Checkout|Order|Account|Home/);
+});
+
+test('address form posts the field names the backend expects', () => {
+  const api = read('../src/api/mall/address-api.js');
+  const edit = read('../src/pages-sub/address/edit.vue');
+  assert.match(api, /\/scm\/mall\/addresses/);
+  assert.match(api, /setDefault/);
+  assert.match(edit, /receiverName/);
+  assert.match(edit, /receiverPhone/);
+  assert.match(edit, /detailAddress/);
+  // 归属只由服务端从登录身份派生，客户端不提交 customerId
+  assert.doesNotMatch(edit, /customerId/);
 });
 
 test('login and password forms match the backend payload', () => {
