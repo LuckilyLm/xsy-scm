@@ -1,0 +1,44 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+    }
+  },
+  "pages": [
+    { "path": "pages/home/index", "style": { "navigationStyle": "custom", "navigationBarTitleText": "首页", "onReachBottomDistance": 80 } },
+    { "path": "pages/category/index", "style": { "navigationStyle": "custom", "navigationBarTitleText": "分类" } },
+    { "path": "pages/mine/index", "style": { "navigationStyle": "custom", "navigationBarTitleText": "我的" } },
+    { "path": "pages/login/login", "style": { "navigationStyle": "custom", "navigationBarTitleText": "登录" } },
+    { "path": "pages/account/password", "style": { "navigationBarTitleText": "修改密码" } }
+  ],
+  "subPackages": [
+    {
+      "root": "pages-sub/product",
+      "pages": [
+        { "path": "search", "style": { "navigationBarTitleText": "搜索", "onReachBottomDistance": 80 } },
+        { "path": "detail", "style": { "navigationBarTitleText": "商品详情" } }
+      ]
+    }
+  ],
+  "preloadRule": {
+    "pages/home/index": { "network": "all", "packages": ["pages-sub/product"] }
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "鲜蔬源商城",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F5F6F8"
+  },
+  "tabBar": {
+    "color": "#8F959E",
+    "selectedColor": "#16A34A",
+    "borderStyle": "white",
+    "backgroundColor": "#FFFFFF",
+    "list": [
+      { "pagePath": "pages/home/index", "iconPath": "static/images/tabbar/home.png", "selectedIconPath": "static/images/tabbar/home-h.png", "text": "首页" },
+      { "pagePath": "pages/category/index", "iconPath": "static/images/tabbar/category.png", "selectedIconPath": "static/images/tabbar/category-h.png", "text": "分类" },
+      { "pagePath": "pages/mine/index", "iconPath": "static/images/tabbar/mine.png", "selectedIconPath": "static/images/tabbar/mine-h.png", "text": "我的" }
+    ]
+  }
+}

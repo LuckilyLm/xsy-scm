@@ -1,0 +1,24 @@
+{
+    "name" : "鲜蔬源商城",
+    "appid" : "",
+    "description" : "鲜蔬源智链 · 客户商城小程序",
+    "versionName" : "1.0.0",
+    "versionCode" : "100",
+    "transformPx" : false,
+    /* 小程序特有相关 */
+    "mp-weixin" : {
+        /* 业主提供的小程序 AppID；未填写时微信开发者工具只能用测试号打开 */
+        "appid" : "",
+        "setting" : {
+            "urlCheck" : false
+        },
+        "usingComponents" : true
+    },
+    "h5" : {
+        "title" : "鲜蔬源商城"
+    },
+    "uniStatistics" : {
+        "enable" : false
+    },
+    "vueVersion" : "3"
+}
