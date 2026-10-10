@@ -4,8 +4,9 @@
 
 ## 项目范围
 
-- V2 正式项目位于 `xsy-scm-server/` 与 `xsy-scm-web/`；管理后台采用 Vue 3 + TypeScript。
+- V2 正式项目位于 `xsy-scm-server/`、`xsy-scm-web/` 与 `xsy-scm-customer-app/`；管理后台采用 Vue 3 + TypeScript，客户商城采用 uni-app + Vue 3。
 - SmartAdmin 是登录、认证、用户、员工、部门、角色、菜单、权限、数据权限、日志、字典、文件、统一异常和后台 Layout 的正式底座。具体边界见 [SmartAdmin 底座规则](docs/architecture/smartadmin-foundation.md)。
+- `xsy-scm-customer-app/` 只承载客户身份和客户商城页面；后续员工端使用独立工作区，不与客户权限和路由混用。
 - `xsy-scm-miniapp/` 是冻结的 legacy 目录。不要迁移旧 `auth` / `system` 实现，也不要机械复制旧代码或把 React 翻译成 Vue。
 - 业务主线是客户与商品 → 销售订单 → 采购与收货 → 库存 → 分拣 → 配送 → 财务。当前交付状态和待办以 [项目状态](docs/status.md) 为准。
 

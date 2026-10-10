@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-截至 2026-10-09，管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前事实与最近一次完整验收见[项目状态](docs/status.md)，未闭环工作见[后续开发路线图](docs/plan/active/admin-development-roadmap.md)。仓库 Flyway 源码已到 V115，但最近一次完整后端/E2E 数据库基线仍是 V109，不能把源码版本等同于已部署版本。客户商城仍未开始，legacy 小程序保持冻结。
+管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前事实与最近一次完整验收见[项目状态](docs/status.md)，未闭环工作见[后续开发路线图](docs/plan/active/admin-development-roadmap.md)。客户商城已建立正式 uni-app 工作区并进入认证与商品目录阶段，legacy 小程序保持冻结。
 
 业务需求和旧系统语义以 [参考项目目录](project-reference-examples/xsy-scm/) 为主，当前边界见 [项目决策](docs/decisions.md)。
 
@@ -14,11 +14,12 @@
 | --- | --- |
 | `xsy-scm-server/` | 正式后端：Java 21、Spring Boot、MyBatis-Plus、Sa-Token、Redis、PostgreSQL、Flyway |
 | `xsy-scm-web/` | 正式后台：Vue3、TypeScript、Ant Design Vue、Vite、Pinia |
+| `xsy-scm-customer-app/` | 正式客户商城：uni-app、Vue3、Vite、Pinia |
 | `docs/` | 状态、架构、需求、决策、计划、质量和归档文档 |
 | `tools/` | 版本控制的质量、迁移、E2E 与验证工具 |
 | `deploy/minio/` | F0 本地对象存储与集成验证环境 |
 | `deploy/postgres/` | 本地 PostgreSQL 容器配置与操作说明 |
-| `xsy-scm-miniapp/` | 冻结的 Taro + React legacy 小程序，后续目标为 uni-app + Vue3 |
+| `xsy-scm-miniapp/` | 冻结的 Taro + React legacy 小程序，不再继续开发 |
 | `project-reference-examples/` | 纳入 Git 的只读上游参考；含凭据的环境配置仍忽略 |
 
 系统登录、权限、菜单、日志、字典、文件和后台 Layout 使用 SmartAdmin 原生实现。规则见 [AGENTS.md](AGENTS.md) 与 [SmartAdmin 底座规则](docs/architecture/smartadmin-foundation.md)。
@@ -50,6 +51,16 @@ npm run dev
 ```
 
 Vite 默认端口为 `18081`，可通过 `VITE_DEV_PORT` 覆盖。API 地址由 `VITE_APP_API_URL` 配置；开发环境默认连接 `http://127.0.0.1:18080`，不是 Vite 代理。
+
+客户商城：
+
+```powershell
+cd xsy-scm-customer-app
+npm ci
+npm run dev:mp-weixin:api
+```
+
+当前正式切片为手机号密码认证、首次改密与商品目录；购物车、结算和下单尚未开放。详细契约见该目录 README。
 
 ## 验证
 

@@ -24,7 +24,7 @@
 8. 业务金额一律 BigDecimal，对外定点数契约不变
 9. 不引入 Spring Cloud、微服务、分布式事务、独立搜索引擎
 10. 不引入数据库外键
-11. V2 正式工作区固定为根目录 `xsy-scm-server/`、`xsy-scm-web/`、`tools/` 与 `docs/`
+11. V2 正式工作区固定为根目录 `xsy-scm-server/`、`xsy-scm-web/`、`xsy-scm-customer-app/`、`tools/` 与 `docs/`
 ```
 
 ## 1. 工作区与仓库定位
@@ -35,7 +35,8 @@
 xsy-scm/
 ├── xsy-scm-server/              ← V2 正式后端
 ├── xsy-scm-web/                 ← V2 正式后台
-├── xsy-scm-miniapp/             ← LEGACY，冻结只读（后续迁 uni-app）
+├── xsy-scm-customer-app/        ← V2 正式客户商城（uni-app + Vue3）
+├── xsy-scm-miniapp/             ← LEGACY，冻结只读
 ├── tools/                       ← 工程工具（验证入口按白名单跟踪，其余本机脚本忽略）
 ├── project-reference-examples/
 │   └── xsy-scm/                 ← 上游源码参考（只读，用于同步与比对）
@@ -47,7 +48,8 @@ xsy-scm/
 | 目录 | 状态 | 允许操作 |
 |---|---|---|
 | `xsy-scm-server/**` | **正式** | 后端开发、重构、提交 |
-| `xsy-scm-web/**` | **正式** | 前端开发、重构、提交 |
+| `xsy-scm-web/**` | **正式** | 后台前端开发、重构、提交 |
+| `xsy-scm-customer-app/**` | **正式** | 客户商城开发、重构、提交 |
 | `tools/**` | **工程工具** | 验证入口、TS 门禁及其测试按 `.gitignore` 白名单跟踪；其他本机脚本保持忽略 |
 | `docs/**` | **正式** | 产品、架构、验收与验证文档 |
 | `project-reference-examples/xsy-scm/**` | **上游只读** | 只读、比对、提取设计 |
@@ -91,7 +93,7 @@ SCM 业务模块放入：
 com.xsy.scm.<domain>
 ```
 
-当前业务域包括 `product | customer | supplier | pricing | order | purchase | inventory | warehouse | sorting | delivery | finance | promotion | payment | balance | report | dashboard | screen`，共用能力位于 `common`。`mall` 尚未在正式主线形成完整模块，不能把规划包名当成实现状态。
+当前业务域包括 `product | customer | supplier | pricing | order | purchase | inventory | warehouse | sorting | delivery | finance | promotion | payment | balance | report | dashboard | screen | mall`，共用能力位于 `common`。`mall` 当前只覆盖客户认证与商品目录适配，购物车、结算和下单不能从包名推定为已实现。
 
 ### 2.2 前端
 
@@ -106,8 +108,9 @@ Vue 3 + TypeScript + Ant Design Vue + Vite + Pinia + Vue Router
 ### 2.3 小程序
 
 ```text
-目标：uni-app + Vue3
-当前：xsy-scm-miniapp（Taro + React）冻结只读，W6 迁移
+正式客户商城：xsy-scm-customer-app（uni-app + Vue3）
+冻结旧目录：xsy-scm-miniapp（Taro + React）
+后续员工端：独立工作区，不与客户商城共用身份、路由和页面
 ```
 
 ## 3. 系统能力归属

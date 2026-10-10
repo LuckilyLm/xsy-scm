@@ -1,6 +1,6 @@
 # 余额支付、订单资金核销与售后返还
 
-状态（2026-10-07）：c1 / c2 / c3 已进入现有自动化基线；充值回调钱包入账时点仍待裁决，混合及多交易退款分摊 d 未实现。最新代码与验证边界统一见[项目状态](../../status.md)。
+状态（2026-10-10）：c1 / c2 / c3 已进入现有自动化基线；在线充值已按“验签后的渠道成功即到账”落地，代码具备 Finance Receipt 与钱包 CREDIT 的同事务、幂等派生，黄金链回归尚未运行；混合及多交易退款分摊 d 未实现。最新代码与验证边界统一见[项目状态](../../status.md)。
 
 ## 范围与金额裁决
 
@@ -21,6 +21,14 @@
 - 消费时点、Transaction.paidAt 与 Intent.succeededAt 使用同一时点；内部交易编号使用本地 transactionNo。
 - 并发开户与来源冲突使用 `ON CONFLICT DO NOTHING`，读取冲突事实后逐项校验；删除原无来源消费入口。
 - ONLINE 成功仍按实际渠道实收登记 Receipt。系统收款重新读取交易并校验 ONLINE、成功状态、客户、实收与时点，结算主体继承订单或充值请求冻结身份。
+
+## 在线充值到账
+
+- 到账时点固定为验签后的渠道成功事实；`DELAYED` 场景在合法成功回调之前既不登记 Finance Receipt，也不增加钱包，缺省 `SUCCESS` 场景则在创建意图时同步完成同一条成功链。
+- `PaymentIntentService.applyOutcome` 在交易金额与意图一致时统一调用成功派生；`registerFinanceReceipt` 先按 `PAYMENT_TRANSACTION` 唯一来源登记 Finance Receipt，再由 `BalanceRechargeSink` 向创建充值时冻结的结算主体钱包追加 `RECHARGE / CREDIT`。
+- 钱包金额取渠道实收，发生时间取交易成功时点。Finance Receipt 与钱包 CREDIT 在同一业务事务内完成；任一落账失败都回滚本地成功状态，渠道事实由下一次合法回调或受控恢复驱动重放。
+- 回调事件唯一键与 Receipt / BalanceMovement 的来源唯一键共同保证重复投递不重复到账。充值创建、幂等重放和到账均不根据客户之后的集团关系改派钱包。
+- 当前代码链已具备上述行为；黄金支付/财务 E2E-07 已改为用 `DELAYED` 场景验证“成功前无资金事实、成功后两类事实同时出现、余额消费不再开 Receipt”，但本次未运行，不能报告为验证通过。
 
 ## 自动核销
 
@@ -72,6 +80,6 @@
 
 ## 验证状态
 
-2026-10-05 当前 V109 隔离库后端全套 **1,384 tests / 0 failures / 0 errors / 0 skipped**，主 Playwright **158 passed / 0 skipped / 0 unexpected / 0 flaky**；黄金支付/财务链 **36 passed / 1 skipped / 0 failed**。唯一 skip 为充值回调后的钱包入账链（D-39/J-18），因到账时点仍需业务方裁决。数据库测试使用 Docker Desktop 新建隔离库，未改原 `xsy_scm` V76。
+2026-10-05 的 V109 隔离库历史基线为后端全套 **1,384 tests / 0 failures / 0 errors / 0 skipped**、主 Playwright **158 passed / 0 skipped / 0 unexpected / 0 flaky**、黄金支付/财务链 **36 passed / 1 skipped / 0 failed**；当时唯一 skip 是旧版充值到账用例（D-39/J-18）。数据库测试使用 Docker Desktop 新建隔离库，未改原 `xsy_scm` V76。
 
-测试证明的是本地 PostgreSQL、Redis、mock 支付与 MinIO 环境中的代码行为，不代表真实支付渠道回调或生产部署。d 混合 / 多交易退款来源分摊仍未实现；不得推断退款优先级或比例。
+此后代码已补齐渠道成功到钱包 CREDIT 的派生、冻结钱包快照与回调事件主键/拒绝重试问题；E2E-07 的旧 `fixme` 已按当前契约重写，但本次未运行，不能把源码修改写成新验证证据。历史结果只证明当时本地 PostgreSQL、Redis、mock 支付与 MinIO 环境中的代码行为，不代表真实支付渠道回调或生产部署。d 混合 / 多交易退款来源分摊仍未实现；不得推断退款优先级或比例。
