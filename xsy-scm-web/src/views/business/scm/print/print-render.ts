@@ -38,14 +38,18 @@ function bodyClass(render: PrintRender): string {
     return render.paper === 'TICKET_80' ? 'ticket' : 'a4';
 }
 
-/** 页脚溯源行：模板编码 + 版本 +（冻结时的）打印时间，让重印件与原件可分辨。 */
+/**
+ * 页脚溯源行：模板名 + 版本 +（冻结时的）打印时间，让重印件与原件可分辨。
+ *
+ * 用模板的中文名而不是编码：编码是给程序看的标识，印在纸上对收件人没有意义。
+ * 也不打印操作人：`printedBy` 是 `userType:userId`（形如 `1:1`），
+ * 那不是人名；真正的操作人留在打印记录里可查，不必印到纸上。
+ */
 function traceLine(render: PrintRender): string {
-    const parts = [`模板 ${render.templateCode ?? '—'} v${render.templateVersion ?? '—'}`];
+    const template = render.templateName || render.templateCode;
+    const parts = [`模板 ${template ?? '—'} v${render.templateVersion ?? '—'}`];
     if (render.frozen && render.printedAt) {
         parts.push(`打印于 ${render.printedAt}`);
-    }
-    if (render.printedBy) {
-        parts.push(`操作人 ${render.printedBy}`);
     }
     return `<p class="trace">${esc(parts.join('　'))}</p>`;
 }

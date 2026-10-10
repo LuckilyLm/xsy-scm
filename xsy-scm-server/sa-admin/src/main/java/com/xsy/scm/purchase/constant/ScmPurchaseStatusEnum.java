@@ -1,5 +1,8 @@
 package com.xsy.scm.purchase.constant;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -13,13 +16,33 @@ import java.util.List;
  * 终态为 {@code RECEIVED} / {@code SHORT_CLOSED} / {@code CANCELLED}； {@code PARTIALLY_RECEIVED} 不允许 cancel，需要终止时使用
  * {@code shortClose}。
  */
+@Getter
+@RequiredArgsConstructor
 public enum ScmPurchaseStatusEnum {
-    DRAFT,
-    SUBMITTED,
-    PARTIALLY_RECEIVED,
-    RECEIVED,
-    SHORT_CLOSED,
-    CANCELLED;
+    DRAFT("草稿"),
+    SUBMITTED("已提交"),
+    PARTIALLY_RECEIVED("部分收货"),
+    RECEIVED("已收货"),
+    SHORT_CLOSED("少收关单"),
+    CANCELLED("已取消");
+
+    /**
+     * 界面与导出用的中文名，与前端 {@code SCM_PURCHASE_STATUS_ENUM} 的 desc 逐字一致。
+     *
+     * <p>
+     * 服务端生成的产物（导出 xlsx、打印件）没有前端可翻译，只能由后端给出中文； 枚举名 {@code SUBMITTED} 对业务用户没有意义。
+     */
+    private final String desc;
+
+    /** 按枚举名解析；未知值返回 {@code null}，由调用方决定回落策略。 */
+    public static ScmPurchaseStatusEnum of(String value) {
+        for (ScmPurchaseStatusEnum item : values()) {
+            if (item.name().equals(value)) {
+                return item;
+            }
+        }
+        return null;
+    }
 
     /**
      * 是否已进入正式采购履约链路（「已提交」口径，提交时间见 {@code submitted_at}）。

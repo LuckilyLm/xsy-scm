@@ -1,5 +1,6 @@
 package com.xsy.scm.purchase.service;
 
+import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public final class PurchaseOrderExportSupport {
             new Column("warehouseName", "收货仓库", PurchaseOrderVO::getWarehouseName),
             new Column("warehouseCode", "仓库编码", PurchaseOrderVO::getWarehouseCode),
             new Column("plannedArrivalDate", "计划到货日期", PurchaseOrderVO::getPlannedArrivalDate),
-            new Column("status", "状态", PurchaseOrderVO::getStatus),
+            new Column("status", "状态", order -> statusLabel(order.getStatus())),
             new Column("totalAmount", "采购金额", PurchaseOrderVO::getTotalAmount),
             new Column("receivedProgress", "收货进度", PurchaseOrderVO::getReceivedProgress),
             new Column("remark", "备注", PurchaseOrderVO::getRemark),
@@ -76,5 +77,16 @@ public final class PurchaseOrderExportSupport {
 
     private static String text(Object exportValue) {
         return exportValue == null ? "" : String.valueOf(exportValue);
+    }
+
+    /**
+     * 状态列导出中文名。
+     *
+     * <p>
+     * 导出是服务端生成的 xlsx，没有前端可以翻译，直接落 {@code SUBMITTED} 这类枚举名对业务用户没有意义。 认不出的值原样回落，不吞掉数据。
+     */
+    private static String statusLabel(String status) {
+        ScmPurchaseStatusEnum value = ScmPurchaseStatusEnum.of(status);
+        return value == null ? status : value.getDesc();
     }
 }
