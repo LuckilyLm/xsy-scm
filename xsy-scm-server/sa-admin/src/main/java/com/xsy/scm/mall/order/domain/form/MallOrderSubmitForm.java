@@ -1,0 +1,29 @@
+package com.xsy.scm.mall.order.domain.form;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+import java.util.List;
+import lombok.Data;
+
+@Data
+public class MallOrderSubmitForm {
+    @Valid
+    @NotEmpty(message = "请选择要结算的商品")
+    private List<MallCheckoutItemForm> items;
+    @NotNull(message = "请选择收货地址")
+    private Long addressId;
+    /**
+     * 结算预览返回的价格指纹。提交时服务端按当前价格重算，不一致即拒绝，避免按旧价静默下单。
+     */
+    @NotBlank(message = "缺少价格指纹，请重新结算")
+    private String priceFingerprint;
+    @Size(max = 500, message = "订单备注不能超过500个字符")
+    private String remark;
+    /** 期望配送日期 yyyy-MM-dd，可空；服务端按当日 00:00（Asia/Shanghai）落库 */
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "期望配送日期格式应为 yyyy-MM-dd")
+    private String expectDeliveryDate;
+}

@@ -130,6 +130,30 @@ public class SalesOrderService {
         return result;
     }
 
+    /**
+     * 商城客户下单入口：建单 → 提交 → （全标品）确认，与管理端共用同一套订单状态机、编号、快照、价格重解析与库存预留。
+     *
+     * <p>
+     * 与管理端的关键差别只有一个：**不套用员工负责人数据范围**。商城客户不是员工，没有 {@code orderSellerScope}；
+     * 归属由商城适配器在入口按登录客户判定，表单里的 {@code customerId} 必须由适配器从登录身份写入，不得采信客户端提交值。
+     * 管理端入口（{@link #create}、{@link #createAndProgress}）的范围判定不受影响。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SalesOrderDetailVO createFromMall(SalesOrderAddForm salesOrderAddForm, String key) {
+        var claim = orderIdempotencyService.claim("ORDER_CREATE_MALL", key, salesOrderAddForm);
+        if (claim.replay())
+            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        var result = createDraft(salesOrderAddForm, false);
+        result = submitOrder(result.getOrderId(), result.getVersion(), false);
+        if (result.getItems().stream()
+                .allMatch(orderItem -> ScmProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot()))) {
+            result = confirmOrder(result.getOrderId(), result.getVersion(), null, false);
+        }
+        orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
+                result.getOrderId(), result);
+        return result;
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderImportResultVO importOrders(List<SalesOrderAddForm> forms, String fileHash, String key,
             int totalRows) {
@@ -178,13 +202,21 @@ public class SalesOrderService {
     }
 
     private SalesOrderDetailVO createDraft(SalesOrderAddForm salesOrderAddForm) {
+        return createDraft(salesOrderAddForm, true);
+    }
+
+    /**
+     * @param enforceEmployeeScope 是否套用员工负责人范围；商城入口传 {@code false}，由适配器按登录客户判定归属
+     */
+    private SalesOrderDetailVO createDraft(SalesOrderAddForm salesOrderAddForm, boolean enforceEmployeeScope) {
         OrderValidator.draft(salesOrderAddForm);
         var customer = customerService.requireTradable(salesOrderAddForm.getCustomerId());
         // 新建订单前必须确认当前调用者能读取该客户；订单负责人取自客户快照，
         // 只收窄列表等于「看不见但仍然能往别人名下塞单」，行级范围就不成立；因此新建入口按同一范围判定。
         // 分配权（scm:customer:assign）与全量订单范围同等放行：主管刚把客户指定给某人，
         // 就该能替他录单，否则「主管建客户 + 指定负责人」这条路会把主管自己挡在门外。
-        if (!dataScopeService.resolve().getOrderSellerScope().allows(customer.getSellerId())
+        if (enforceEmployeeScope
+                && !dataScopeService.resolve().getOrderSellerScope().allows(customer.getSellerId())
                 && !ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM))
             throw new ScmDataScopeException();
         validateOriginal(salesOrderAddForm);
@@ -285,8 +317,12 @@ public class SalesOrderService {
     }
 
     private SalesOrderDetailVO submitOrder(Long orderId, Integer expectedVersion) {
+        return submitOrder(orderId, expectedVersion, true);
+    }
+
+    private SalesOrderDetailVO submitOrder(Long orderId, Integer expectedVersion, boolean enforceEmployeeScope) {
         var salesOrder = lock(orderId);
-        requireOrderSellerScope(salesOrder);
+        requireOrderSellerScope(salesOrder, enforceEmployeeScope);
         version(salesOrder.getVersion(), expectedVersion);
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.PENDING.name());
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
@@ -404,16 +440,19 @@ public class SalesOrderService {
     }
 
     private SalesOrderDetailVO confirmOrder(Long orderId, Integer expectedVersion) {
-        return confirmOrder(orderId, expectedVersion, null);
+        return confirmOrder(orderId, expectedVersion, null, true);
     }
 
     private SalesOrderDetailVO confirmOrder(Long orderId, Integer expectedVersion, OrderConfirmForm confirmation) {
+        return confirmOrder(orderId, expectedVersion, confirmation, true);
+    }
+
+    private SalesOrderDetailVO confirmOrder(Long orderId, Integer expectedVersion, OrderConfirmForm confirmation,
+            boolean enforceEmployeeScope) {
         var salesOrder = lock(orderId);
         version(salesOrder.getVersion(), expectedVersion);
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.CONFIRMED.name());
-        if (!dataScopeService.resolve().getOrderSellerScope().allows(salesOrder.getSellerId())) {
-            throw new ScmDataScopeException();
-        }
+        requireOrderSellerScope(salesOrder, enforceEmployeeScope);
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
         var rows = salesOrderItemDao.list(salesOrder.getId());
         for (var row : rows) {
@@ -565,6 +604,15 @@ public class SalesOrderService {
      * 刻意不放进 {@link #lock}：它还被退货、退款等模块调用，在那层加守卫会把这些路径的语义一起改掉。 门禁加在<b>对外写命令入口</b>，与 {@code confirmOrder} 用同一套判定。
      */
     private void requireOrderSellerScope(SalesOrderEntity salesOrder) {
+        requireOrderSellerScope(salesOrder, true);
+    }
+
+    /**
+     * @param enforceEmployeeScope 商城入口传 {@code false}：商城客户没有员工负责人范围，归属由商城适配器按登录客户判定
+     */
+    private void requireOrderSellerScope(SalesOrderEntity salesOrder, boolean enforceEmployeeScope) {
+        if (!enforceEmployeeScope)
+            return;
         if (!dataScopeService.resolve().getOrderSellerScope().allows(salesOrder.getSellerId()))
             throw new ScmDataScopeException();
     }

@@ -18,7 +18,12 @@ public enum MallErrorCode implements ScmErrorCode {
     CART_ITEM_NOT_FOUND(40483, "购物车中没有该商品"),
     CART_QUANTITY_INVALID(40082, "数量必须为大于0、最多4位小数的数字"),
     ADDRESS_NOT_FOUND(40484, "收货地址不存在"),
-    ADDRESS_COORDINATE_INVALID(40083, "经纬度必须成对提供");
+    ADDRESS_COORDINATE_INVALID(40083, "经纬度必须成对提供"),
+    CHECKOUT_EMPTY(40084, "请选择要结算的商品"),
+    CHECKOUT_ADDRESS_REQUIRED(40085, "请选择收货地址"),
+    CHECKOUT_IDEMPOTENCY_REQUIRED(40086, "缺少幂等键，无法安全提交订单"),
+    CHECKOUT_ITEM_UNAVAILABLE(40984, "所选商品中有不可售项，请返回购物车调整"),
+    CHECKOUT_PRICE_CHANGED(40985, "商品价格已变化，请重新确认结算金额");
 
     private final int code;
     private final String msg;
