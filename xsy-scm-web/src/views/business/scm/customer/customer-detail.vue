@@ -146,6 +146,26 @@
                 </section>
               </div>
 
+              <section class="scm-detail-card scm-detail-card--full scm-detail-block" v-privilege="'scm:mall:account:query'">
+                <h3 class="scm-detail-card__title">商城账号</h3>
+                <a-spin :spinning="mallAccountLoading">
+                  <a-alert v-if="mallAccountError" type="error" show-icon :message="mallAccountError"/>
+                  <template v-else-if="mallAccount">
+                    <dl class="scm-field-list scm-field-list--3">
+                      <div class="scm-field"><dt class="scm-field__label">登录手机号</dt><dd class="scm-field__value">{{ mallAccount.loginPhone }}</dd></div>
+                      <div class="scm-field"><dt class="scm-field__label">账号状态</dt><dd class="scm-field__value">{{ mallAccount.status === 'ENABLED' ? '已启用' : '已禁用' }}</dd></div>
+                      <div class="scm-field"><dt class="scm-field__label">临时密码</dt><dd class="scm-field__value">{{ mallAccount.firstPasswordChange ? '等待客户修改' : '已修改' }}</dd></div>
+                      <div class="scm-field"><dt class="scm-field__label">最近登录</dt><dd class="scm-field__value">{{ datetime(mallAccount.lastLoginAt) }}</dd></div>
+                    </dl>
+                    <a-space>
+                      <a-button v-privilege="'scm:mall:account:status'" @click="toggleMallAccount">{{ mallAccount.status === 'ENABLED' ? '禁用账号' : '启用账号' }}</a-button>
+                      <a-button v-privilege="'scm:mall:account:password:reset'" @click="openMallAccount('reset')">重置临时密码</a-button>
+                    </a-space>
+                  </template>
+                  <a-button v-else v-privilege="'scm:mall:account:create'" type="primary" @click="openMallAccount('create')">开通商城账号</a-button>
+                </a-spin>
+              </section>
+
               <!-- 5. 系统信息：弱化卡片，编码与时间不占核心区域 -->
               <section class="scm-detail-card scm-detail-card--muted scm-detail-block">
                 <h3 class="scm-detail-card__title">系统信息</h3>
@@ -283,15 +303,27 @@
         </template>
       </a-tab-pane>
     </a-tabs>
+    <a-modal v-model:open="mallAccountModal" :title="mallAccountMode === 'create' ? '开通商城账号' : '重置临时密码'"
+             :confirm-loading="mallAccountSaving" @ok="saveMallAccount">
+      <a-form layout="vertical">
+        <a-form-item v-if="mallAccountMode === 'create'" label="登录手机号" required>
+          <a-input v-model:value="mallAccountForm.loginPhone" :maxlength="32"/>
+        </a-form-item>
+        <a-form-item label="临时密码" required>
+          <a-input-password v-model:value="mallAccountForm.temporaryPassword" :maxlength="64" placeholder="至少8个字符"/>
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </a-card>
 </template>
 
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref, shallowRef, watch, type Ref} from 'vue';
+import {message} from 'ant-design-vue';
 import {useRoute, useRouter} from 'vue-router';
 import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
-import {customerApi} from '/@/api/business/scm/customer-api';
+import {customerApi, mallAccountApi, type MallAccount} from '/@/api/business/scm/customer-api';
 import {orderApi} from '/@/api/business/scm/order-api';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {customerVisibilityApi} from '/@/api/business/scm/customer-visibility-api';
@@ -313,6 +345,7 @@ import {orderError} from '../order/order-errors';
 import {pricingError} from '../pricing/pricing-errors';
 import {formatAmount, formatAmountOrDash} from '/@/utils/scm-amount';
 import {datetime} from '../common/scm-display';
+import {hasPermission} from '../common/scm-permission';
 
 const route = useRoute();
 const router = useRouter();
@@ -335,6 +368,13 @@ function backToList(): void {
 const customer = ref<CustomerDetail>();
 const baseLoading = ref(false);
 const baseError = ref('');
+const mallAccount = ref<MallAccount | null>(null);
+const mallAccountLoading = ref(false);
+const mallAccountError = ref('');
+const mallAccountModal = ref(false);
+const mallAccountMode = ref<'create' | 'reset'>('create');
+const mallAccountSaving = ref(false);
+const mallAccountForm = reactive({loginPhone: '', temporaryPassword: ''});
 let baseReq = 0;
 
 const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;
@@ -374,6 +414,60 @@ const creditPeriodSummary = computed(() => {
   return `${type} · ${current.creditPeriodValue}${unit}`;
 });
 
+async function loadMallAccount(): Promise<void> {
+  if (!customerId.value) return;
+  mallAccountLoading.value = true;
+  mallAccountError.value = '';
+  try {
+    const response = await mallAccountApi.detail(customerId.value);
+    mallAccount.value = response.data;
+  } catch (e) {
+    mallAccountError.value = customerError(e);
+  } finally {
+    mallAccountLoading.value = false;
+  }
+}
+
+function openMallAccount(mode: 'create' | 'reset'): void {
+  mallAccountMode.value = mode;
+  mallAccountForm.loginPhone = customer.value?.contactPhone || '';
+  mallAccountForm.temporaryPassword = '';
+  mallAccountModal.value = true;
+}
+
+async function saveMallAccount(): Promise<void> {
+  if (mallAccountForm.temporaryPassword.length < 8) {
+    void message.warning('临时密码至少8个字符');
+    return;
+  }
+  mallAccountSaving.value = true;
+  try {
+    if (mallAccountMode.value === 'create') {
+      await mallAccountApi.create({customerId: customerId.value, ...mallAccountForm});
+    } else if (mallAccount.value) {
+      await mallAccountApi.resetPassword({accountId: mallAccount.value.accountId, temporaryPassword: mallAccountForm.temporaryPassword});
+    }
+    mallAccountModal.value = false;
+    await loadMallAccount();
+    void message.success(mallAccountMode.value === 'create' ? '商城账号已开通' : '临时密码已重置');
+  } catch (error) {
+    void message.error(customerError(error));
+  } finally {
+    mallAccountSaving.value = false;
+  }
+}
+
+async function toggleMallAccount(): Promise<void> {
+  if (!mallAccount.value) return;
+  try {
+    await mallAccountApi.status({accountId: mallAccount.value.accountId, enabled: mallAccount.value.status !== 'ENABLED'});
+    await loadMallAccount();
+    void message.success('账号状态已更新');
+  } catch (error) {
+    void message.error(customerError(error));
+  }
+}
+
 async function loadBase() {
   const request = ++baseReq;
   if (!customerId.value) {
@@ -386,7 +480,10 @@ async function loadBase() {
   customer.value = undefined;
   try {
     const response = await customerApi.detail(customerId.value);
-    if (request === baseReq) customer.value = response.data;
+    if (request === baseReq) {
+      customer.value = response.data;
+      if (hasPermission('scm:mall:account:query')) void loadMallAccount();
+    }
   } catch (e) {
     if (request === baseReq) baseError.value = customerError(e);
   } finally {

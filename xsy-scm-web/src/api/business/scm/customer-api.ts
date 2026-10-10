@@ -15,6 +15,26 @@ import type {
 } from '/@/types/business/scm/customer';
 
 // SmartAdmin 拦截器已解包 ResponseDTO，与 Axios 声明的返回类型不符，因此逐个断言。
+export interface MallAccount {
+    accountId: string | number;
+    customerId: string | number;
+    customerName: string;
+    loginPhone: string;
+    status: 'ENABLED' | 'DISABLED';
+    firstPasswordChange: boolean;
+    lastLoginAt?: string;
+    version: number;
+}
+
+export const mallAccountApi = {
+    detail: (customerId: ScmId) => getRequest(`/scm/customer/mall-account/${customerId}`, {}) as unknown as Promise<ScmResponse<MallAccount | null>>,
+    create: (form: {customerId: ScmId; loginPhone: string; temporaryPassword: string}) =>
+        postRequest('/scm/customer/mall-account/create', form) as unknown as Promise<ScmResponse<MallAccount>>,
+    status: (form: {accountId: ScmId; enabled: boolean}) => postRequest('/scm/customer/mall-account/status', form),
+    resetPassword: (form: {accountId: ScmId; temporaryPassword: string}) =>
+        postRequest('/scm/customer/mall-account/password/reset', form),
+};
+
 export const customerApi = {
     query: (form: CustomerQuery) =>
         postRequest('/scm/customer/query', form) as unknown as Promise<ScmResponse<ScmPage<CustomerRow>>>,
