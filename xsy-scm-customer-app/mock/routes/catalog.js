@@ -86,12 +86,9 @@ export const catalogRoutes = [
       if (!session) {
         return fail(PLATFORM_ERROR_CODE.LOGIN_STATE_INVALID, '登录已失效，请重新登录');
       }
-      return ok(
-        paginate(
-          MOCK_PRODUCTS.filter((p) => p.favorite),
-          data || {}
-        )
-      );
+      // 与后端一致：返回商品数组（非分页包装），limit 控制条数
+      const limit = Math.min(Math.max(Number(data?.limit) || 20, 1), 100);
+      return ok(MOCK_PRODUCTS.filter((p) => p.favorite).slice(0, limit));
     },
   },
 

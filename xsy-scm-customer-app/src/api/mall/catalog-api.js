@@ -28,7 +28,12 @@ export const mallCatalogApi = {
 
   /**
    * 常购商品（规划文档 §14：优先于「猜你喜欢」）
-   * @param {{pageNum: number, pageSize: number}} param
+   *
+   * 后端契约：`GET /scm/mall/catalog/frequent` 返回 **MallProductVO 数组**（不是分页包装），
+   * 查询参数为 days（统计窗口天数，1–365）与 limit（返回条数，1–100）。
+   * 调用方直接读 `response.data`，不要读 `data.list`，也不要传 pageNum/pageSize。
+   *
+   * @param {{days?: number, limit?: number}} param
    */
   getFavorites: (param) => getRequest('/scm/mall/catalog/frequent', param),
 

@@ -12,6 +12,7 @@ import com.xsy.scm.mall.account.domain.form.MallAccountStatusForm;
 import com.xsy.scm.mall.account.domain.form.MallPasswordResetForm;
 import com.xsy.scm.mall.account.domain.vo.MallAccountVO;
 import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.module.support.securityprotect.service.SecurityPasswordService;
 import org.springframework.dao.DuplicateKeyException;
@@ -25,9 +26,9 @@ public class MallAccountService {
     private final CustomerService customerService;
 
     @Transactional(readOnly = true)
-    public MallAccountVO detail(Long customerId) {
+    public List<MallAccountVO> list(Long customerId) {
         customerService.requireInCurrentScope(customerId);
-        return accountDao.detailByCustomerId(customerId);
+        return accountDao.listByCustomerId(customerId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -52,12 +53,9 @@ public class MallAccountService {
         try {
             accountDao.insert(row);
         } catch (DuplicateKeyException exception) {
-            if (accountDao.selectByCustomerId(form.getCustomerId()) != null) {
-                throw new ScmBusinessException(MallErrorCode.CUSTOMER_ACCOUNT_DUPLICATE);
-            }
             throw new ScmBusinessException(MallErrorCode.PHONE_DUPLICATE);
         }
-        return accountDao.detailByCustomerId(form.getCustomerId());
+        return accountDao.detailById(row.getId());
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -4,18 +4,23 @@
     <select id="selectByPhone" resultType="com.xsy.scm.mall.account.domain.entity.MallCustomerAccountEntity">
         SELECT * FROM mall_customer_account WHERE login_phone = #{phone} AND deleted = FALSE
     </select>
-    <select id="selectByCustomerId" resultType="com.xsy.scm.mall.account.domain.entity.MallCustomerAccountEntity">
-        SELECT * FROM mall_customer_account WHERE customer_id = #{customerId} AND deleted = FALSE
-    </select>
     <select id="selectByIdForUpdate" resultType="com.xsy.scm.mall.account.domain.entity.MallCustomerAccountEntity">
         SELECT * FROM mall_customer_account WHERE id = #{accountId} AND deleted = FALSE FOR UPDATE
     </select>
-    <select id="detailByCustomerId" resultType="com.xsy.scm.mall.account.domain.vo.MallAccountVO">
+    <select id="listByCustomerId" resultType="com.xsy.scm.mall.account.domain.vo.MallAccountVO">
         SELECT a.id AS account_id, a.customer_id, c.name AS customer_name, a.login_phone, a.status,
                a.first_password_change, a.last_login_at, a.version
         FROM mall_customer_account a
         JOIN customer c ON c.id = a.customer_id AND c.deleted = FALSE
         WHERE a.customer_id = #{customerId} AND a.deleted = FALSE
+        ORDER BY a.id
+    </select>
+    <select id="detailById" resultType="com.xsy.scm.mall.account.domain.vo.MallAccountVO">
+        SELECT a.id AS account_id, a.customer_id, c.name AS customer_name, a.login_phone, a.status,
+               a.first_password_change, a.last_login_at, a.version
+        FROM mall_customer_account a
+        JOIN customer c ON c.id = a.customer_id AND c.deleted = FALSE
+        WHERE a.id = #{accountId} AND a.deleted = FALSE
     </select>
     <update id="updateStatus">
         UPDATE mall_customer_account

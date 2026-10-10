@@ -42,3 +42,16 @@ test('production mock alias points at noop implementation', () => {
   const vite = read('../vite.config.js');
   assert.match(vite, /useMock \? 'mock\/index\.js' : 'mock\/noop\.js'/);
 });
+
+test('frequent products follow the backend array contract', () => {
+  const api = read('../src/api/mall/catalog-api.js');
+  const home = read('../src/pages/home/index.vue');
+  const mock = read('../mock/routes/catalog.js');
+  // 后端 /scm/mall/catalog/frequent 返回 MallProductVO 数组，参数是 days / limit
+  assert.match(api, /\/scm\/mall\/catalog\/frequent/);
+  assert.doesNotMatch(home, /getFavorites\(\{\s*pageNum/);
+  assert.match(home, /getFavorites\(\{\s*days/);
+  assert.doesNotMatch(home, /response\.data\?\.list/);
+  // mock 与后端一致：返回数组而不是分页包装
+  assert.match(mock, /MOCK_PRODUCTS\.filter\(\(p\) => p\.favorite\)\.slice\(0, limit\)/);
+});

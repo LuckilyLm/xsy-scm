@@ -77,8 +77,9 @@
   async function loadFrequent() {
     if (!userStore.isLogin) return;
     try {
-      const response = await mallCatalogApi.getFavorites({ pageNum: 1, pageSize: 5 });
-      frequentProducts.value = response.data?.list || [];
+      const response = await mallCatalogApi.getFavorites({ days: 90, limit: 5 });
+      // 后端 /scm/mall/catalog/frequent 返回商品数组，不是分页包装
+      frequentProducts.value = response.data || [];
     } catch (error) {
       smartSentry.captureError(error);
     }
