@@ -11,7 +11,6 @@
       @ok="submit"
       @cancel="visible = false"
   >
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
     <a-form ref="formRef" :model="form" layout="vertical">
       <a-form-item name="typeCode"
                    :rules="[{ required: true, whitespace: true, message: '请输入类型编码' }]">
@@ -39,14 +38,12 @@ import {message} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import {customerTypeApi} from '/@/api/business/scm/customer-type-api';
 import type {CustomerType, CustomerTypeForm} from '/@/types/business/scm/customer';
-import {customerError} from '../customer-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 const emit = defineEmits<{ saved: [] }>();
 
 const visible = ref(false);
 const saving = ref(false);
-const error = ref('');
 const formRef = ref<FormInstance>();
 
 function defaults(): CustomerTypeForm {
@@ -59,14 +56,12 @@ const form = reactive<CustomerTypeForm>(defaults());
 async function open(row?: CustomerType) {
   Object.assign(form, defaults(), row ?? {});
   visible.value = true;
-  error.value = '';
   await nextTick();
   formRef.value?.clearValidate();
 }
 
 async function save() {
   saving.value = true;
-  error.value = '';
   // 归一化后再提交：与后端 CustomerTypeValidator.normalizeCode / normalizeName 同构。
   const payload: CustomerTypeForm = {
     ...form,
@@ -78,8 +73,8 @@ async function save() {
     message.success('客户类型已保存');
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = customerError(e);
+  } catch {
+    // 保存失败只走全局 toast
   } finally {
     saving.value = false;
   }

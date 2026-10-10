@@ -1,4 +1,4 @@
-import {getRequest, postDownload, postRequest, request} from '/@/lib/axios';
+import {getRequest, postDownload, postRequest, request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -43,13 +43,13 @@ export async function purchaseCommand<T>(path: string, data: unknown): Promise<S
 }
 
 export const purchaseOrderApi = {
-    query: (data: OrderQuery) =>
-        postRequest('/scm/purchase/query', data) as unknown as Promise<ScmResponse<ScmPage<Order>>>,
-    detail: (id: Id) =>
-        getRequest(`/scm/purchase/detail/${id}`, {}) as unknown as Promise<ScmResponse<Order>>,
+    query: (data: OrderQuery, options?: RequestOptions) =>
+        postRequest('/scm/purchase/query', data, options) as unknown as Promise<ScmResponse<ScmPage<Order>>>,
+    detail: (id: Id, options?: RequestOptions) =>
+        getRequest(`/scm/purchase/detail/${id}`, {}, options) as unknown as Promise<ScmResponse<Order>>,
     /** 单张采购单的操作日志（按 `created_at DESC` 返回，最新在前）。 */
-    logs: (orderId: Id) =>
-        getRequest(`/scm/purchase/log/${orderId}`, {}) as unknown as Promise<ScmResponse<LogRow[]>>,
+    logs: (orderId: Id, options?: RequestOptions) =>
+        getRequest(`/scm/purchase/log/${orderId}`, {}, options) as unknown as Promise<ScmResponse<LogRow[]>>,
     /** 采购单列表导出（只读）：当前筛选 + 勾选列落 xlsx，绝不改变采购状态。 */
     export: (data: OrderExportPayload) => postDownload('/scm/purchase/export', data),
 

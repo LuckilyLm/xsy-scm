@@ -5,7 +5,8 @@ import type {ScmResponse, ScmPage} from '/@/types/business/scm/customer';
 import type {ReturnRow, Query, Id} from '/@/views/business/scm/order/order-types';
 
 export const orderReturnApi = {
-    query: (data: Query) => postRequest('/scm/order/return/query', data) as unknown as Promise<ScmResponse<ScmPage<ReturnRow>>>,
+    query: (data: Query, options?: RequestOptions) =>
+        postRequest('/scm/order/return/query', data, options) as unknown as Promise<ScmResponse<ScmPage<ReturnRow>>>,
     detail: (id: Id, options?: RequestOptions) => getRequest('/scm/order/return/detail/' + id, {}, options) as unknown as Promise<ScmResponse<ReturnRow>>,
     create: (data: unknown) => orderCommand<ReturnRow>('/scm/order/return/create', data),
     approve: (data: unknown) => orderCommand<ReturnRow>('/scm/order/return/approve', data),

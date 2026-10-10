@@ -273,7 +273,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await printApi.templateQuery({...queryForm});
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await printApi.templateQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list ?? [];
       total.value = r.data.total ?? 0;
@@ -291,7 +292,7 @@ async function queryData() {
 
 async function loadDocumentTypes() {
   try {
-    const r = await printApi.documentTypes();
+    const r = await printApi.documentTypes({suppressGlobalErrorMessage: true});
     documentTypes.value = r.data ?? [];
   } catch (e) {
     error.value = printError(e);
@@ -300,7 +301,7 @@ async function loadDocumentTypes() {
 
 async function loadCatalog() {
   try {
-    const r = await printApi.templateCatalog(form.documentType as PrintDocumentType);
+    const r = await printApi.templateCatalog(form.documentType as PrintDocumentType, {suppressGlobalErrorMessage: true});
     catalog.value = r.data;
   } catch (e) {
     editError.value = printError(e);
@@ -399,8 +400,8 @@ async function submit() {
     }
     editOpen.value = false;
     await queryData();
-  } catch (e) {
-    editError.value = printError(e);
+  } catch {
+    // 保存失败只走全局 toast；弹窗里的 editError 留给字段目录加载失败
   } finally {
     saving.value = false;
   }
@@ -428,8 +429,8 @@ async function setDefault(record: PrintTemplate) {
     await printApi.templateSetDefault(record.id);
     message.success('已设为默认模板');
     await queryData();
-  } catch (e) {
-    error.value = printError(e);
+  } catch {
+    // 设为默认失败只走全局 toast
   }
 }
 

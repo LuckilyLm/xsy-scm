@@ -148,14 +148,15 @@ async function load() {
   supplier.value = undefined;
   relations.value = [];
   try {
-    const response = await supplierApi.detail(id);
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    const response = await supplierApi.detail(id, {suppressGlobalErrorMessage: true});
     if (request !== requestId) {
       return;
     }
     supplier.value = response.data;
-    // 关联关系是次要信息：单独取，失败不影响主体信息展示。
+    // 关联关系是次要信息：单独取，失败不影响主体信息展示，也不弹全局提示。
     try {
-      const relationResponse = await supplierSkuApi.listBySupplierId(id);
+      const relationResponse = await supplierSkuApi.listBySupplierId(id, {suppressGlobalErrorMessage: true});
       if (request === requestId) relations.value = relationResponse.data ?? [];
     } catch {
       relations.value = [];
@@ -184,8 +185,9 @@ watch(() => route.query.supplierId, load, {immediate: true});
   font-weight: 600;
 }
 
-/* 同一段里的后续小标题（概览段串起 联系/地址/采购/系统信息/关联商品） */
-.detail-section--nested {
+/* 同一段里的后续小标题（概览段串起 联系/地址/采购/系统信息/关联商品）；
+   选择器必须压过 `.detail-section h3`，否则上边距被它的 margin 简写吃掉 */
+.detail-section h3.detail-section--nested {
   margin-top: 20px;
 }
 </style>

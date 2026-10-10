@@ -165,6 +165,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
+    // 加载失败由页内 Alert 承担（带重试），不再让全局 toast 重复说一遍
     const r = await purchaseDemandApi.summaryPreview({
       startAt: range.value[0],
       endAt: range.value[1],
@@ -172,7 +173,7 @@ async function queryData() {
       keyword: keyword.value || null,
       pageNum: pageNum.value,
       pageSize: pageSize.value,
-    });
+    }, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;

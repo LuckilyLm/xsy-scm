@@ -60,7 +60,10 @@ async function queryData() {
     loading.value = true;
     error.value = '';
     try {
-        const response = await financeApi.refundOptions({pageNum: pageNum.value, pageSize: pageSize.value, keyword: keyword.value.trim() || undefined});
+        // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+        const response = await financeApi.refundOptions(
+            {pageNum: pageNum.value, pageSize: pageSize.value, keyword: keyword.value.trim() || undefined},
+            {suppressGlobalErrorMessage: true});
         rows.value = response.data.list ?? [];
         total.value = response.data.total ?? 0;
     } catch (cause) {

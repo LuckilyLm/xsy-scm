@@ -21,7 +21,6 @@ import {ref} from 'vue';
 import {orderReturnApi} from '/@/api/business/scm/order-return-api';
 import type {Order, Item, Id} from '../order-types';
 import {fixed} from '../order-form-model';
-import {orderError} from '../order-errors';
 
 const emit = defineEmits<{ saved: [] }>();
 const visible = ref(false), saving = ref(false), reason = ref(''), error = ref(''), orderId = ref<Id>(),
@@ -64,8 +63,8 @@ async function save() {
     await orderReturnApi.create({orderId: orderId.value, reason: reason.value, items});
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = orderError(e);
+  } catch {
+    // 提交失败只走全局 toast；弹窗里的 error 留给本地校验
   } finally {
     saving.value = false;
   }

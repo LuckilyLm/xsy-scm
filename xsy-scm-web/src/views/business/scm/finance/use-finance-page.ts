@@ -1,4 +1,5 @@
 import {reactive, ref, shallowRef} from 'vue';
+import type {RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {FinancePageQuery} from './finance-types';
 import {financeError} from './finance-errors';
@@ -6,7 +7,7 @@ import {financeError} from './finance-errors';
 export type FinancePageExport<Q> = (query: Omit<Q, 'pageNum' | 'pageSize'>) => Promise<unknown>;
 
 export function useFinancePage<T, Q extends FinancePageQuery>(
-    queryApi: (query: Q) => Promise<ScmResponse<ScmPage<T>>>,
+    queryApi: (query: Q, options?: RequestOptions) => Promise<ScmResponse<ScmPage<T>>>,
     exportApi: FinancePageExport<Q>,
 ) {
     const tableData = shallowRef<T[]>([]);
@@ -21,7 +22,8 @@ export function useFinancePage<T, Q extends FinancePageQuery>(
         loading.value = true;
         error.value = '';
         try {
-            const response = await queryApi(query);
+            // 加载失败由页头 Alert 承担（含重试按钮），不再让全局 toast 重复说一遍
+            const response = await queryApi(query, {suppressGlobalErrorMessage: true});
             if (requestId === queryState.requestId) {
                 tableData.value = response.data.list ?? [];
                 total.value = response.data.total ?? 0;
@@ -41,8 +43,8 @@ export function useFinancePage<T, Q extends FinancePageQuery>(
         void _pageSize;
         try {
             await exportApi(filters as Omit<Q, 'pageNum' | 'pageSize'>);
-        } catch (cause) {
-            error.value = financeError(cause);
+        } catch {
+            // 导出失败只走全局 toast
         } finally {
             exporting.value = false;
         }

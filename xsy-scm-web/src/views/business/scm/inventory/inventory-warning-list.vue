@@ -205,7 +205,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await inventoryWarningApi.query({...queryForm});
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await inventoryWarningApi.query({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -223,7 +224,7 @@ async function queryData() {
 
 async function applySingleWarehouseDefault() {
   try {
-    const r = await warehouseApi.list();
+    const r = await warehouseApi.list({suppressGlobalErrorMessage: true});
     warehouses.value = r.data ?? [];
     const fallback = singleWarehouseDefault(warehouses.value);
     if (fallback !== undefined) {
@@ -252,8 +253,8 @@ async function scan() {
       message.info(`已检查 ${scannedCount} 条阈值配置，没有新的预警跃迁`);
     }
     await queryData();
-  } catch (e) {
-    error.value = inventoryError(e);
+  } catch {
+    // 扫描失败只走全局 toast
   } finally {
     scanning.value = false;
   }

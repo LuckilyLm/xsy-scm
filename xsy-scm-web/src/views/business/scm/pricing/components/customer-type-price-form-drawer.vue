@@ -77,7 +77,7 @@ async function open(id?: ScmId) {
   if (!id) return;
   loading.value = true;
   try {
-    const r = await api.detail(id);
+    const r = await api.detail(id, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       Object.assign(form, r.data);
       range.value = [r.data.effectiveFrom, r.data.effectiveTo || ''];
@@ -111,8 +111,8 @@ async function submit() {
     message.success('价格已保存');
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = pricingError(e);
+  } catch {
+    // 保存失败只走全局 toast；抽屉里的 error 留给加载失败
   } finally {
     saving.value = false;
   }

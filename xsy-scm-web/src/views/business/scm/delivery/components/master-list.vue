@@ -65,7 +65,6 @@
     </div>
   </a-card>
   <a-modal v-model:open="visible" :title="`${form.id ? '编辑' : '新建'}${label}`" :confirm-loading="saving" @ok="save">
-    <a-alert v-if="formError" :message="formError" type="error" show-icon/>
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <template v-if="isDriver">
         <a-form-item label="司机编码" name="driverCode">
@@ -136,8 +135,7 @@ const rows = ref<(Driver | Vehicle)[]>([]),
     loading = ref(false),
     error = ref('');
 const visible = ref(false),
-    saving = ref(false),
-    formError = ref('');
+    saving = ref(false);
 const form = ref<Partial<Driver & Vehicle>>({status: 'ENABLED'});
 const formRef = ref();
 
@@ -207,7 +205,10 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    const result = await (isDriver.value ? deliveryApi.queryDrivers(query) : deliveryApi.queryVehicles(query));
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const result = await (isDriver.value
+        ? deliveryApi.queryDrivers(query, {suppressGlobalErrorMessage: true})
+        : deliveryApi.queryVehicles(query, {suppressGlobalErrorMessage: true}));
     if (id === generation) {
       rows.value = result.data.list;
       total.value = result.data.total;
@@ -233,12 +234,10 @@ function reset() {
 function open(row?: Driver | Vehicle) {
   form.value = row ? {...row} : {status: 'ENABLED'};
   originalStatus = row?.status ?? '';
-  formError.value = '';
   visible.value = true;
 }
 
 function save() {
-  formError.value = '';
   // 校验交给 antd 表单：错误逐项显示在对应输入框下方，不再用顶部一条汇总红条。
   formRef.value?.validate().then(() => {
     if (originalStatus === 'ENABLED' && form.value.status === 'DISABLED')
@@ -254,8 +253,8 @@ async function submit() {
     visible.value = false;
     message.success('保存成功');
     await load();
-  } catch (e) {
-    formError.value = deliveryError(e);
+  } catch {
+    // 保存失败只走全局 toast
   } finally {
     saving.value = false;
   }

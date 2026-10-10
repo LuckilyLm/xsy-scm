@@ -1,4 +1,4 @@
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmId, ScmResponse, ScmPage} from '/@/types/business/scm/customer';
 import type {
     PriceForm,
@@ -12,8 +12,10 @@ import type {
 
 function resource(path: string) {
     return {
-        query: (form: PriceQuery) => postRequest(path + '/query', form) as unknown as Promise<ScmResponse<ScmPage<PriceRow>>>,
-        detail: (id: ScmId) => getRequest(path + '/detail/' + id, {}) as unknown as Promise<ScmResponse<PriceRow>>,
+        query: (form: PriceQuery, options?: RequestOptions) =>
+            postRequest(path + '/query', form, options) as unknown as Promise<ScmResponse<ScmPage<PriceRow>>>,
+        detail: (id: ScmId, options?: RequestOptions) =>
+            getRequest(path + '/detail/' + id, {}, options) as unknown as Promise<ScmResponse<PriceRow>>,
         add: (form: PriceForm) => postRequest(path + '/add', form),
         update: (form: PriceForm) => postRequest(path + '/update', form),
         delete: (form: PriceForm) => postRequest(path + '/delete', form),
@@ -31,10 +33,12 @@ export const pricingApi = {
         operationType?: string;
         operatedFrom?: string | null;
         operatedTo?: string | null
-    }) => postRequest('/scm/pricing/history/query', form) as unknown as Promise<ScmResponse<ScmPage<HistoryRow>>>,
+    }, options?: RequestOptions) =>
+        postRequest('/scm/pricing/history/query', form, options) as unknown as Promise<ScmResponse<ScmPage<HistoryRow>>>,
     resolve: (form: {
         customerId: ScmId;
         skuIds: ScmId[];
         at?: string | null
-    }) => postRequest('/scm/pricing/resolve', form) as unknown as Promise<ScmResponse<ResolveResult>>,
+    }, options?: RequestOptions) =>
+        postRequest('/scm/pricing/resolve', form, options) as unknown as Promise<ScmResponse<ResolveResult>>,
 };

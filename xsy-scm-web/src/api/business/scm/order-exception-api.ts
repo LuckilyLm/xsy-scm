@@ -1,4 +1,4 @@
-import {postDownload, postRequest} from '/@/lib/axios';
+import {postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {ReportId} from '/@/views/business/scm/report/report-types';
 
@@ -38,7 +38,9 @@ export interface OrderExceptionSummary {
 }
 const base = '/scm/report/order-exceptions';
 export const orderExceptionApi = {
-    query: (data: OrderExceptionQuery) => postRequest(`${base}/query`, data) as unknown as Promise<ScmResponse<ScmPage<OrderExceptionRow>>>,
-    summary: (data: OrderExceptionQuery) => postRequest(`${base}/summary`, data) as unknown as Promise<ScmResponse<OrderExceptionSummary[]>>,
+    query: (data: OrderExceptionQuery, options?: RequestOptions) =>
+        postRequest(`${base}/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<OrderExceptionRow>>>,
+    summary: (data: OrderExceptionQuery, options?: RequestOptions) =>
+        postRequest(`${base}/summary`, data, options) as unknown as Promise<ScmResponse<OrderExceptionSummary[]>>,
     export: (data: OrderExceptionQuery) => postDownload(`${base}/export`, data),
 };

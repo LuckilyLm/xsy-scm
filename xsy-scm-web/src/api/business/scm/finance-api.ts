@@ -48,23 +48,23 @@ async function command<T>(path: string, data: unknown): Promise<ScmResponse<T>> 
 }
 
 export const financeApi = {
-    receivableQuery: (data: ReceivableQuery) =>
-        postRequest(`${BASE}/receivable/query`, data) as unknown as Promise<ScmResponse<ScmPage<FinanceReceivable>>>,
+    receivableQuery: (data: ReceivableQuery, options?: RequestOptions) =>
+        postRequest(`${BASE}/receivable/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<FinanceReceivable>>>,
     receivableDetail: (id: FinanceId, options?: RequestOptions) =>
         getRequest(`${BASE}/receivable/${id}`, {}, options) as unknown as Promise<ScmResponse<FinanceReceivableDetail>>,
     receivableExport: (data: Partial<FinancePageQuery> & Omit<ReceivableQuery, 'pageNum' | 'pageSize'>) =>
         postDownload(`${BASE}/receivable/export`, data),
 
-    payableQuery: (data: PayableQuery) =>
-        postRequest(`${BASE}/payable/query`, data) as unknown as Promise<ScmResponse<ScmPage<FinancePayable>>>,
+    payableQuery: (data: PayableQuery, options?: RequestOptions) =>
+        postRequest(`${BASE}/payable/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<FinancePayable>>>,
     payableDetail: (id: FinanceId, options?: RequestOptions) =>
         getRequest(`${BASE}/payable/${id}`, {}, options) as unknown as Promise<ScmResponse<FinancePayableDetail>>,
     payableRed: (data: FinancePayableRedForm) => command(`${BASE}/payable/red`, data),
     payableExport: (data: Partial<FinancePageQuery> & Omit<PayableQuery, 'pageNum' | 'pageSize'>) =>
         postDownload(`${BASE}/payable/export`, data),
 
-    receiptQuery: (data: ReceiptQuery) =>
-        postRequest(`${BASE}/receipt/query`, data) as unknown as Promise<ScmResponse<ScmPage<FinanceReceipt>>>,
+    receiptQuery: (data: ReceiptQuery, options?: RequestOptions) =>
+        postRequest(`${BASE}/receipt/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<FinanceReceipt>>>,
     receiptDetail: (id: FinanceId, options?: RequestOptions) =>
         getRequest(`${BASE}/receipt/${id}`, {}, options) as unknown as Promise<ScmResponse<FinanceReceiptDetail>>,
     receiptAdd: (data: FinanceReceiptAddForm) => command(`${BASE}/receipt/add`, data),
@@ -72,25 +72,25 @@ export const financeApi = {
     receiptExport: (data: Partial<FinancePageQuery> & Omit<ReceiptQuery, 'pageNum' | 'pageSize'>) =>
         postDownload(`${BASE}/receipt/export`, data),
 
-    paymentQuery: (data: PaymentQuery) =>
-        postRequest(`${BASE}/payment/query`, data) as unknown as Promise<ScmResponse<ScmPage<FinancePayment>>>,
+    paymentQuery: (data: PaymentQuery, options?: RequestOptions) =>
+        postRequest(`${BASE}/payment/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<FinancePayment>>>,
     paymentDetail: (id: FinanceId, options?: RequestOptions) =>
         getRequest(`${BASE}/payment/${id}`, {}, options) as unknown as Promise<ScmResponse<FinancePaymentDetail>>,
-    refundOptions: (data: FinanceRefundOptionQuery) =>
-        postRequest(`${BASE}/payment/refund-options`, data) as unknown as Promise<ScmResponse<ScmPage<FinanceRefundOption>>>,
+    refundOptions: (data: FinanceRefundOptionQuery, options?: RequestOptions) =>
+        postRequest(`${BASE}/payment/refund-options`, data, options) as unknown as Promise<ScmResponse<ScmPage<FinanceRefundOption>>>,
     paymentAdd: (data: FinancePaymentAddForm) => command(`${BASE}/payment/add`, data),
     paymentReverse: (data: FinancePaymentReverseForm) => command(`${BASE}/payment/reverse`, data),
     paymentExport: (data: Partial<FinancePageQuery> & Omit<PaymentQuery, 'pageNum' | 'pageSize'>) =>
         postDownload(`${BASE}/payment/export`, data),
 
-    writeOffQuery: (data: WriteOffQuery) =>
-        postRequest(`${BASE}/write-off/query`, data) as unknown as Promise<ScmResponse<ScmPage<FinanceWriteOff>>>,
+    writeOffQuery: (data: WriteOffQuery, options?: RequestOptions) =>
+        postRequest(`${BASE}/write-off/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<FinanceWriteOff>>>,
     writeOffAdd: (data: FinanceWriteOffAddForm) => command(`${BASE}/write-off/add`, data),
     writeOffReverse: (data: FinanceWriteOffReverseForm) => command(`${BASE}/write-off/reverse`, data),
     writeOffExport: (data: Partial<FinancePageQuery> & Omit<WriteOffQuery, 'pageNum' | 'pageSize'>) =>
         postDownload(`${BASE}/write-off/export`, data),
-    operationLogs: (businessType: FinanceBusinessType, businessId: FinanceId) =>
-        getRequest(`${BASE}/log/query`, {businessType, businessId}) as unknown as Promise<ScmResponse<FinanceOperationLog[]>>,
+    operationLogs: (businessType: FinanceBusinessType, businessId: FinanceId, options?: RequestOptions) =>
+        getRequest(`${BASE}/log/query`, {businessType, businessId}, options) as unknown as Promise<ScmResponse<FinanceOperationLog[]>>,
 };
 
 export default financeApi;

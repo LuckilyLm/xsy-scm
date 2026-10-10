@@ -220,7 +220,7 @@ const receivableLoader = createTabLoader<FinanceReceivableDetailRow, FinanceRepo
 const payableLoader = createTabLoader<FinancePayableDetailRow, FinanceReportQuery>(
     payableView, () => detailQuery(payableView), reportFinanceApi.payableDetails);
 const overviewLoader = createGuardedLoader<FinanceReportOverview>(
-    () => reportFinanceApi.overview(overviewQuery()),
+    (options) => reportFinanceApi.overview(overviewQuery(), options),
     (data) => { overview.value = data; overviewError.value = ''; },
     overviewError,
 );

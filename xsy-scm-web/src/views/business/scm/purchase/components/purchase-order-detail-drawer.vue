@@ -153,7 +153,7 @@
             -->
             <a-collapse class="log-audit" ghost>
               <a-collapse-panel key="audit" header="变更前后">
-                <ScmDiffTable :before="log.beforeData" :after="log.afterData"/>
+                <ScmDiffTable :before="log.beforeData" :after="log.afterData" :scope="log.operationType"/>
               </a-collapse-panel>
             </a-collapse>
           </a-timeline-item>
@@ -285,7 +285,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    order.value = (await purchaseOrderApi.detail(order.value.id)).data;
+    // 详情 / 日志加载失败由抽屉内 Alert 承担，不再让全局 toast 重复说一遍
+    order.value = (await purchaseOrderApi.detail(order.value.id, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = purchaseError(e);
   } finally {
@@ -297,7 +298,7 @@ async function loadLogs() {
   logsLoading.value = true;
   error.value = '';
   try {
-    logs.value = (await purchaseOrderApi.logs(order.value!.id!)).data;
+    logs.value = (await purchaseOrderApi.logs(order.value!.id!, {suppressGlobalErrorMessage: true})).data;
     logsLoaded.value = true;
   } catch (e) {
     error.value = purchaseError(e);
@@ -315,10 +316,8 @@ function submit() {
         await purchaseOrderApi.submit({id: order.value!.id!, version: order.value!.version!});
         await load();
         emit('saved');
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
       } finally {
+        // 失败时 finally 仍会跑，异常向上抛出以保持确认框打开；原因由全局 toast 给出
         submitting.value = false;
       }
     },
@@ -340,8 +339,8 @@ async function cancel() {
     cancelOpen.value = false;
     await load();
     emit('saved');
-  } catch (e) {
-    error.value = purchaseError(e);
+  } catch {
+    // 操作失败只走全局 toast
   } finally {
     saving.value = false;
   }
@@ -362,8 +361,8 @@ async function shortClose() {
     shortCloseOpen.value = false;
     await load();
     emit('saved');
-  } catch (e) {
-    error.value = purchaseError(e);
+  } catch {
+    // 操作失败只走全局 toast
   } finally {
     saving.value = false;
   }

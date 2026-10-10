@@ -191,7 +191,6 @@
         <a-textarea v-model:value="reason" :maxlength="500" :rows="3"/>
       </a-form-item>
     </a-form>
-    <a-alert v-if="reasonError" type="error" :message="reasonError" show-icon/>
   </a-modal>
   <a-modal v-model:open="stopVisible" title="停靠点定位与备注" :width="640" :confirm-loading="busy" @ok="saveStop">
     <template v-if="stopForm"
@@ -359,7 +358,8 @@ async function loadPlan(id: Id) {
   planHistory.value = [];
   proposal.value = undefined;
   try {
-    const result = await deliveryPlanApi.history(id);
+    // 加载失败由建议面板内的 Alert 承担，不再让全局 toast 重复说一遍
+    const result = await deliveryPlanApi.history(id, {suppressGlobalErrorMessage: true});
     if (!currentPlanContext(id, context) || request !== planRequest) return;
     planHistory.value = result.data ?? [];
     proposal.value = planHistory.value[0];
@@ -380,8 +380,8 @@ async function proposePlan() {
     if (!currentPlanContext(id, context)) return;
     await loadPlan(id);
     if (currentPlanContext(id, context)) message.success(`已生成排线建议，共 ${created.stopCount} 个停靠点`);
-  } catch (e) {
-    if (currentPlanContext(id, context)) planError.value = deliveryError(e);
+  } catch {
+    // 生成建议失败只走全局 toast
   } finally {
     if (currentPlanContext(id, context)) planBusy.value = false;
   }
@@ -399,8 +399,8 @@ async function applyPlan() {
     if (!currentPlanContext(route.id, context)) return;
     await loadPlan(route.id);
     if (currentPlanContext(route.id, context)) message.success('已应用建议，停靠顺序已更新');
-  } catch (e) {
-    if (currentPlanContext(route.id, context)) planError.value = deliveryError(e);
+  } catch {
+    // 应用建议失败只走全局 toast
   } finally {
     if (currentPlanContext(route.id, context)) planBusy.value = false;
   }
@@ -416,8 +416,8 @@ async function discardPlan() {
     if (!currentPlanContext(id, context)) return;
     await loadPlan(id);
     if (currentPlanContext(id, context)) message.success('已放弃建议，线路未改动');
-  } catch (e) {
-    if (currentPlanContext(id, context)) planError.value = deliveryError(e);
+  } catch {
+    // 放弃建议失败只走全局 toast
   } finally {
     if (currentPlanContext(id, context)) planBusy.value = false;
   }
@@ -484,7 +484,11 @@ async function loadPrint() {
   if (routeId.value == null) return;
   printLoading.value = true;
   try {
-    const [o, c] = await Promise.all([deliveryApi.ordersView(routeId.value), deliveryApi.customersView(routeId.value)]);
+    // 打印视图加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    const [o, c] = await Promise.all([
+      deliveryApi.ordersView(routeId.value, {suppressGlobalErrorMessage: true}),
+      deliveryApi.customersView(routeId.value, {suppressGlobalErrorMessage: true}),
+    ]);
     ordersView.value = o.data;
     customersView.value = c.data;
     printLoaded.value = true;
@@ -528,8 +532,8 @@ async function recordPrint() {
     orderSelection.value = [];
     customerSelection.value = [];
     await reload();
-  } catch (e) {
-    error.value = deliveryError(e);
+  } catch {
+    // 登记打印失败只走全局 toast
   } finally {
     busy.value = false;
   }
@@ -543,7 +547,8 @@ async function reload() {
   loading.value = true;
   error.value = '';
   try {
-    const result = await deliveryApi.detail(routeId.value);
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    const result = await deliveryApi.detail(routeId.value, {suppressGlobalErrorMessage: true});
     if (current === generation) {
       detail.value = result.data;
       // 线路结构（ACTIVE 订单集合）变化后，已加载的打印视图与旧选中项即失效，一并刷新。
@@ -651,7 +656,6 @@ function dispatch() {
     okText: '确认发车',
     onOk: async () => {
       busy.value = true;
-      error.value = '';
       try {
         const result = await deliveryApi.dispatch(route.id, route.version);
         // 整条线路实发为 0 时不存在出库单，那是合法成功：文案必须说清「为什么没有单号」，
@@ -662,8 +666,6 @@ function dispatch() {
                 : '已发车：本线路实发为 0，未生成出库单'
         );
         await refreshAfterMutation();
-      } catch (e) {
-        error.value = deliveryError(e);
       } finally {
         busy.value = false;
       }
@@ -685,13 +687,10 @@ function complete() {
     okText: '确认完成',
     onOk: async () => {
       busy.value = true;
-      error.value = '';
       try {
         await deliveryApi.complete(route.id, route.version);
         message.success('线路已完成');
         await refreshAfterMutation();
-      } catch (e) {
-        error.value = deliveryError(e);
       } finally {
         busy.value = false;
       }
@@ -741,9 +740,8 @@ async function submitSign() {
     message.success(signForm.value.result === 'EXCEPTION' ? '已登记异常签收' : '已签收');
     signVisible.value = false;
     await refreshAfterMutation();
-  } catch (e) {
-    // 版本冲突写进弹窗而不是全局横幅：用户大概率还想补那句原因。
-    signError.value = deliveryError(e);
+  } catch {
+    // 签收失败只走全局 toast；弹窗里的 signError 留给上面的原因校验
   } finally {
     busy.value = false;
   }
@@ -787,9 +785,6 @@ function plan() {
         await deliveryApi.plan(detail.value.route.id, detail.value.route.version);
         message.success('线路已规划');
         await refreshAfterMutation();
-      } catch (e) {
-        error.value = deliveryError(e);
-        throw e;
       } finally {
         busy.value = false;
       }
@@ -806,8 +801,8 @@ async function move(from: number, to: number) {
   try {
     await deliveryApi.reorder(detail.value.route.id, detail.value.route.version, ids);
     await refreshAfterMutation();
-  } catch (e) {
-    error.value = deliveryError(e);
+  } catch {
+    // 调整顺序失败只走全局 toast
   } finally {
     busy.value = false;
   }
@@ -816,14 +811,12 @@ async function move(from: number, to: number) {
 const reasonVisible = ref(false),
     reasonAction = ref<'cancel' | 'remove'>('cancel'),
     reason = ref(''),
-    reasonError = ref(''),
     removeId = ref<Id>();
 
 function openReason(action: 'cancel' | 'remove', id?: Id) {
   reasonAction.value = action;
   removeId.value = id;
   reason.value = '';
-  reasonError.value = '';
   reasonVisible.value = true;
 }
 
@@ -834,15 +827,14 @@ async function submitReason() {
   }
   if (!detail.value) return;
   busy.value = true;
-  reasonError.value = '';
   try {
     const route = detail.value.route;
     if (reasonAction.value === 'cancel') await deliveryApi.cancel(route.id, route.version, reason.value);
     else await deliveryApi.removeOrder(route.id, removeId.value!, route.version, reason.value);
     reasonVisible.value = false;
     await refreshAfterMutation();
-  } catch (e) {
-    reasonError.value = deliveryError(e);
+  } catch {
+    // 取消 / 移除订单失败只走全局 toast
   } finally {
     busy.value = false;
   }
@@ -876,8 +868,8 @@ async function saveStop() {
     });
     stopVisible.value = false;
     await refreshAfterMutation();
-  } catch (e) {
-    stopError.value = deliveryError(e);
+  } catch {
+    // 定位保存失败只走全局 toast；弹窗里的 stopError 留给坐标校验
   } finally {
     busy.value = false;
   }

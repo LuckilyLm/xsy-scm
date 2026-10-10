@@ -2,7 +2,6 @@
 <template>
   <a-modal v-model:open="visible" :title="form.tagId ? '编辑商品标签' : '新增商品标签'" :confirm-loading="saving"
            @ok="submit" @cancel="visible = false">
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
     <a-form ref="formRef" :model="form" layout="vertical">
       <a-row :gutter="16">
         <a-col :span="12">
@@ -38,10 +37,9 @@ import type {FormInstance} from 'ant-design-vue';
 import {productTagApi} from '/@/api/business/scm/product-assistant-api';
 import type {AssistantStatus, ProductTag} from '/@/types/business/scm/product';
 import {ENABLE_STATUS_ENUM} from '/@/constants/business/scm/product-const';
-import {productError} from '../product-errors';
 
 const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), saving = ref(false), error = ref(''), formRef = ref<FormInstance>();
+const visible = ref(false), saving = ref(false), formRef = ref<FormInstance>();
 const form = reactive({
   tagId: undefined as ProductTag['tagId'] | undefined,
   version: 0,
@@ -61,13 +59,11 @@ function open(row?: ProductTag) {
     sortOrder: row?.sortOrder ?? 0
   });
   visible.value = true;
-  error.value = '';
   void nextTick(() => formRef.value?.clearValidate());
 }
 
 async function save() {
   saving.value = true;
-  error.value = '';
   try {
     // 新增不接受主键与版本，编辑必须带回乐观锁版本。
     if (form.tagId) await productTagApi.update({
@@ -87,8 +83,8 @@ async function save() {
     message.success('标签已保存');
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 保存失败只走全局 toast
   } finally {
     saving.value = false;
   }

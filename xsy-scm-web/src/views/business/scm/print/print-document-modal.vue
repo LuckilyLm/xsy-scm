@@ -116,7 +116,8 @@ const previewHtml = computed(() => renders.value.map(renderPrintHtml).join(''));
 async function loadTemplates(id: number) {
   const firstId = props.businessIds[0];
   if (firstId === undefined) return;
-  const r = await printApi.templateOptions(props.documentType, firstId);
+  // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+  const r = await printApi.templateOptions(props.documentType, firstId, {suppressGlobalErrorMessage: true});
   if (id !== requestId) return;
   templates.value = r.data ?? [];
   const preferred = templates.value.find((item) => item.defaultFlag) ?? templates.value[0];
@@ -139,7 +140,7 @@ async function reloadPreview() {
     const list: PrintRender[] = [];
     for (const businessId of props.businessIds) {
       if (id !== requestId) return;
-      const r = await printApi.preview(props.documentType, businessId, templateId.value);
+      const r = await printApi.preview(props.documentType, businessId, templateId.value, {suppressGlobalErrorMessage: true});
       list.push(r.data);
     }
     if (id === requestId) {
@@ -192,8 +193,8 @@ async function print() {
       message: `已生成 ${frozen.length} 张打印快照`,
       description: firstFrozen ? snapshotHint(firstFrozen) : undefined,
     });
-  } catch (e) {
-    error.value = printError(e);
+  } catch {
+    // 打印失败只走全局 toast
   } finally {
     printing.value = false;
   }

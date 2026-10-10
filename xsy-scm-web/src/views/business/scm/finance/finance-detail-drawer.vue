@@ -50,12 +50,14 @@
           <a-descriptions v-if="!isAccount && walletFunding" size="small" :column="1" class="smart-margin-top10">
             <a-descriptions-item label="资金用途">已转钱包权益，通过余额支付结算订单</a-descriptions-item>
           </a-descriptions>
-          <a-alert v-if="header.overAppliedAmount && header.overAppliedAmount !== '0.0000'"
-                   class="over-applied" type="warning" show-icon :message="`超额核销 ${moneyText(header.overAppliedAmount)}，不代表已退款或钱包余额。`"/>
-          <a-tag v-if="isReceivable && header.overAppliedAmount && header.overAppliedAmount !== '0.0000'"
-                 color="orange">超额核销待处理</a-tag>
-          <a-alert v-if="header.netAmount?.startsWith('-')" class="over-applied" type="error" show-icon
-                   message="净应收为负数，请结合红字和核销记录核对。"/>
+          <div v-if="overApplied" class="over-applied-row">
+            <a-alert class="over-applied" type="warning" show-icon
+                     :message="`超额核销 ${moneyText(header.overAppliedAmount)}，不代表已退款或钱包余额。`"/>
+            <a-tag v-if="isReceivable" color="orange">超额核销待处理</a-tag>
+          </div>
+          <div v-if="header.netAmount?.startsWith('-')" class="over-applied-row">
+            <a-alert class="over-applied" type="error" show-icon message="净应收为负数，请结合红字和核销记录核对。"/>
+          </div>
         </section>
 
         <!-- 4. 来源单据：这张财务单是从哪张业务单派生出来的明细。 -->
@@ -86,10 +88,8 @@
                    :pagination="false" :scroll="{x:960}">
             <template #bodyCell="{record,column}">
               <template v-if="column.dataIndex==='snapshot'">
-                <details v-if="record.beforeData || record.afterData">
-                  <summary>查看金额快照</summary>
-                  <pre>{{ JSON.stringify({before: record.beforeData, after: record.afterData}, null, 2) }}</pre>
-                </details>
+                <a-button v-if="record.beforeData || record.afterData" type="link"
+                          @click="openAudit(record)">变更前后</a-button>
                 <span v-else>—</span>
               </template>
             </template>
@@ -111,11 +111,17 @@
       <a-empty v-else-if="!loading && !error" description="暂无单据详情"/>
     </a-spin>
   </a-drawer>
+
+  <!-- 审计快照在抽屉里放不下：150px 的单元格塞不下字段级差异表，改弹窗按行读。 -->
+  <a-modal :open="auditOpen" title="变更前后" width="900px" :footer="null" @cancel="auditOpen = false">
+    <ScmDiffTable :before="auditLog?.beforeData" :after="auditLog?.afterData" :scope="auditLog?.operationType"/>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
-import {computed} from 'vue';
+import {computed, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
+import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import type {
     FinanceOperationLog,
     FinancePayable,
@@ -128,7 +134,7 @@ import type {
     FinanceReceiptDetail,
     FinanceWriteOff,
 } from './finance-types';
-import {dateTimeText, entryTypeText, moneyText, numberText} from './finance-form-model';
+import {dateTimeText, entryTypeText, moneyText, numberText, operationTypeText} from './finance-form-model';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 type FinanceDetail = FinanceReceivableDetail | FinancePayableDetail | FinanceReceiptDetail | FinancePaymentDetail;
@@ -139,6 +145,7 @@ const isReceivable = computed(() => props.kind === 'RECEIVABLE');
 const isPayable = computed(() => props.kind === 'PAYABLE');
 const walletFunding = computed(() => !!(detail.value && 'receipt' in detail.value && detail.value.receipt.walletFunding));
 const isAccount = computed(() => isReceivable.value || isPayable.value);
+const overApplied = computed(() => !!header.value.overAppliedAmount && header.value.overAppliedAmount !== '0.0000');
 const title = computed(() => ({RECEIVABLE: '应收明细', PAYABLE: '应付明细', RECEIPT: '收款明细', PAYMENT: '付款明细'}[props.kind]));
 const header = computed(() => {
     if (!detail.value) return {} as Record<string, string | null | undefined>;
@@ -202,9 +209,19 @@ const writeOffColumns: TableColumnsType<FinanceWriteOff> = [
 ];
 const logColumns: TableColumnsType<FinanceOperationLog> = [
     {title: '时间', dataIndex: 'createdAt', width: 180, customRender: ({text}) => dateTimeText(text)},
-    {title: '操作', dataIndex: 'operationType', width: 160}, {title: '操作人', dataIndex: 'operator', width: 130},
+    {title: '操作', dataIndex: 'operationType', width: 160, customRender: ({text}) => operationTypeText(text)},
+    {title: '操作人', dataIndex: 'operator', width: 130},
     {title: '原因', dataIndex: 'reason', width: 200}, {title: '快照', dataIndex: 'snapshot', width: 150},
 ];
+
+// 审计快照弹窗：整张表只共用一个，靠 auditLog 指向当前点开的那一行。
+const auditLog = ref<FinanceOperationLog | null>(null);
+const auditOpen = ref(false);
+
+function openAudit(record: FinanceOperationLog) {
+    auditLog.value = record;
+    auditOpen.value = true;
+}
 
 function close() {
     emit('update:open', false);
@@ -225,8 +242,9 @@ function close() {
   font-weight: 600;
 }
 
-/* 金额组成是同一段里的第二个小标题（要求金额比 ID、编码更突出） */
-.detail-section--nested {
+/* 金额组成是同一段里的第二个小标题（要求金额比 ID、编码更突出）；
+   选择器必须压过 `.detail-section h3`，否则上边距被它的 margin 简写吃掉 */
+.detail-section h3.detail-section--nested {
   margin-top: 20px;
 }
 
@@ -269,14 +287,17 @@ function close() {
   margin-bottom: 12px;
 }
 
-.over-applied {
-  margin-top: 12px;
+/* 提示宽度跟着文字走、不拉满整行；同行标签与提示居中对齐，外围间距统一收在行上 */
+.over-applied-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
 }
 
-pre {
-  max-width: 560px;
-  margin: 8px 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+.over-applied {
+  width: fit-content;
+  max-width: 100%;
 }
 </style>

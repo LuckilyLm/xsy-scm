@@ -58,14 +58,12 @@
     </div>
   </a-card>
   <a-modal :open="visible" title="登记退款完成" :confirm-loading="saving" :closable="!saving" :mask-closable="!saving" :keyboard="!saving" @ok="save" @cancel="visible=false">
-    <a-alert v-if="error" :message="error" type="error"/>
     <p>登记售后退款业务完成。纯余额订单将同时返还原钱包；其他支付方式仍需单独处理资金退款。</p>
     <a-form-item label="外部凭证（可选）">
       <a-input v-model:value="externalReference" maxlength="128"/>
     </a-form-item>
   </a-modal>
   <a-modal v-model:open="balanceRefundOpen" title="返还原订单余额" :confirm-loading="returning" :closable="!returning" :mask-closable="!returning" :keyboard="!returning" @ok="returnBalance">
-    <a-alert v-if="balanceRefundError" type="error" show-icon :message="balanceRefundError"/>
     <p>将退款单 {{ active?.refundNo }} 的 {{ amount(active?.refundAmount) }} 返还至原消费钱包。</p>
     <p>仅支持纯余额订单。已存在渠道或人工退款、混合支付或超过可退本金时，系统会拒绝返还。</p>
   </a-modal>
@@ -81,12 +79,11 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import type {RefundRow, Query} from './order-types';
 import {amount} from './order-form-model';
 import {orderError} from './order-errors';
-import {financeError} from '../finance/finance-errors';
 import BalanceMovementDetail from '../finance/balance-movement-detail.vue';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<RefundRow[]>([]), total = ref(0),
     loading = ref(false), error = ref(''), visible = ref(false), saving = ref(false), active = ref<RefundRow>();
-const balanceRefundOpen = ref(false), returning = ref(false), balanceRefundError = ref('');
+const balanceRefundOpen = ref(false), returning = ref(false);
 const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 let requestId = 0;
 /**
@@ -125,7 +122,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await api.query(queryForm);
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await api.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -170,8 +168,8 @@ async function save() {
     });
     visible.value = false;
     await queryData();
-  } catch (e) {
-    error.value = financeError(e);
+  } catch {
+    // 完成退款失败只走全局 toast
   } finally {
     saving.value = false;
   }
@@ -179,16 +177,18 @@ async function save() {
 
 function openBalanceRefund(row: RefundRow) {
   if (saving.value || returning.value) return;
-  active.value = row; balanceRefundError.value = ''; balanceRefundOpen.value = true;
+  active.value = row; balanceRefundOpen.value = true;
 }
 async function returnBalance() {
   if (returning.value || !active.value) return;
-  returning.value = true; balanceRefundError.value = '';
+  returning.value = true;
   try {
     await api.returnBalance(active.value.refundId);
     balanceRefundOpen.value = false;
     await queryData();
-  } catch (cause) { balanceRefundError.value = financeError(cause); }
+  } catch {
+    // 余额退回失败只走全局 toast
+  }
   finally { returning.value = false; }
 }
 

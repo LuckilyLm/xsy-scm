@@ -75,7 +75,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    rows.value = (await productUomApi.list({...query})).data;
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    rows.value = (await productUomApi.list({...query}, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = productError(e);
   } finally {
@@ -98,8 +99,8 @@ async function remove(row: ProductUom) {
     await productUomApi.delete(row.uomId, row.version);
     message.success('计量单位已删除');
     await load();
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 删除失败只走全局 toast
   }
 }
 

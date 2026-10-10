@@ -126,7 +126,6 @@
       :ok-button-props="{ disabled: reassignSaving }"
       @ok="submitReassign"
   >
-    <a-alert v-if="reassignError" type="error" :message="reassignError" show-icon class="smart-margin-bottom10"/>
     <p>采购单：<strong>{{ reassignTarget?.orderNo }}</strong>（{{ reassignTarget?.supplierName }}）</p>
     <p>当前采购员：{{ reassignTarget?.purchaserName || '未分配' }}</p>
     <a-form layout="vertical">
@@ -199,7 +198,6 @@ const printBatch = reactive({open: false, ids: [] as (string | number)[]});
 /** 改派采购归属：独立动作、独立权限（scm:purchase:assign），带乐观锁 version；reason 可选留痕。 */
 const reassignVisible = ref(false);
 const reassignSaving = ref(false);
-const reassignError = ref('');
 const reassignTarget = ref<Order>();
 /** EmployeeSelect 的 value 不接受 null（[Number, Array]），用 undefined 桥接「收回为未分配」。 */
 const reassignPurchaser = ref<number | undefined>(undefined);
@@ -217,7 +215,6 @@ function openReassign(row: Order) {
   reassignTarget.value = row;
   reassignPurchaser.value = row.purchaserId == null ? undefined : Number(row.purchaserId);
   reassignReason.value = '';
-  reassignError.value = '';
   reassignVisible.value = true;
 }
 
@@ -227,7 +224,6 @@ async function submitReassign() {
     return;
   }
   reassignSaving.value = true;
-  reassignError.value = '';
   try {
     await purchaseOrderApi.reassign({
       id: row.id!,
@@ -238,8 +234,8 @@ async function submitReassign() {
     message.success('归属已改派');
     reassignVisible.value = false;
     await queryData();
-  } catch (e) {
-    reassignError.value = purchaseError(e);
+  } catch {
+    // 失败原因由全局 toast 给出，弹窗里不再重复挂一条
   } finally {
     reassignSaving.value = false;
   }
@@ -355,7 +351,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await purchaseOrderApi.query(queryForm);
+    // 列表加载失败由页头 Alert 承担（带重试），不再让全局 toast 重复说一遍
+    const r = await purchaseOrderApi.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -384,18 +381,13 @@ function resetQuery() {
   onSearch();
 }
 
-/** 状态类命令：成功后重载，失败把错误码翻成中文并把错误留给用户重试。 */
+/** 状态类命令：成功后重载；失败由全局 toast 给出原因，确认框靠拒绝保持打开。 */
 function submit(row: Order) {
   Modal.confirm({
     title: '提交这张采购单？提交后不可再改行与分配。',
     onOk: async () => {
-      try {
-        await purchaseOrderApi.submit({id: row.id!, version: row.version!});
-        await queryData();
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
-      }
+      await purchaseOrderApi.submit({id: row.id!, version: row.version!});
+      await queryData();
     },
   });
 }
@@ -415,16 +407,12 @@ function cancel(row: Order) {
         ]),
     onOk: async () => {
       if (!reason.trim()) {
-        error.value = '请填写取消原因';
+        // 确认框盖着页面，页头 Alert 看不见，缺原因的提示只能走 message
+        message.warning('请填写取消原因');
         throw new Error('cancel reason required');
       }
-      try {
-        await purchaseOrderApi.cancel({id: row.id!, version: row.version!, cancelReason: reason});
-        await queryData();
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
-      }
+      await purchaseOrderApi.cancel({id: row.id!, version: row.version!, cancelReason: reason});
+      await queryData();
     },
   });
 }
@@ -444,16 +432,11 @@ function shortClose(row: Order) {
         ]),
     onOk: async () => {
       if (!reason.trim()) {
-        error.value = '请填写少收关单原因';
+        message.warning('请填写少收关单原因');
         throw new Error('short close reason required');
       }
-      try {
-        await purchaseOrderApi.shortClose({id: row.id!, version: row.version!, shortCloseReason: reason});
-        await queryData();
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
-      }
+      await purchaseOrderApi.shortClose({id: row.id!, version: row.version!, shortCloseReason: reason});
+      await queryData();
     },
   });
 }
@@ -463,13 +446,8 @@ function remove(row: Order) {
     title: '删除这张草稿采购单？',
     okType: 'danger',
     onOk: async () => {
-      try {
-        await purchaseOrderApi.delete({id: row.id!, version: row.version!});
-        await queryData();
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
-      }
+      await purchaseOrderApi.delete({id: row.id!, version: row.version!});
+      await queryData();
     },
   });
 }
@@ -484,13 +462,8 @@ function batchDelete() {
     title: `删除所选 ${targets.length} 张草稿采购单？`,
     okType: 'danger',
     onOk: async () => {
-      try {
-        await purchaseOrderApi.batchDelete(targets.map((o) => ({id: o.id!, version: o.version!})));
-        await queryData();
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
-      }
+      await purchaseOrderApi.batchDelete(targets.map((o) => ({id: o.id!, version: o.version!})));
+      await queryData();
     },
   });
 }
@@ -518,19 +491,14 @@ function batchShortClose() {
     okType: 'danger',
     onOk: async () => {
       if (!reason.trim()) {
-        error.value = '请填写少收关单原因';
+        message.warning('请填写少收关单原因');
         throw new Error('batch short close reason required');
       }
-      try {
-        await purchaseOrderApi.batchShortClose({
-          orders: targets.map((o) => ({id: o.id!, version: o.version!})),
-          shortCloseReason: reason,
-        });
-        await queryData();
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
-      }
+      await purchaseOrderApi.batchShortClose({
+        orders: targets.map((o) => ({id: o.id!, version: o.version!})),
+        shortCloseReason: reason,
+      });
+      await queryData();
     },
   });
 }
@@ -563,7 +531,7 @@ function printRow(row: Order) {
 async function batchPrint() {
   const rows = selectedOrders.value;
   if (!rows.length) {
-    error.value = '请先勾选要打印的采购单';
+    message.warning('请先勾选要打印的采购单');
     return;
   }
   printBatch.ids = rows.map((row) => row.id!);

@@ -275,17 +275,17 @@ function loadOrderPage(pageNum: number, pageSize: number) {
 }
 
 const loadProductTop = createGuardedLoader(
-    () => reportSalesApi.productTop(salesQuery(product)),
+    (options) => reportSalesApi.productTop(salesQuery(product), options),
     (rows) => (productTop.value = rows ?? []),
     chartError
 );
 const loadCategoryTop = createGuardedLoader(
-    () => reportSalesApi.categoryTop(salesQuery(category)),
+    (options) => reportSalesApi.categoryTop(salesQuery(category), options),
     (rows) => (categoryTop.value = rows ?? []),
     chartError
 );
 const loadCustomerTop = createGuardedLoader(
-    () => reportSalesApi.customerTop(salesQuery(customer)),
+    (options) => reportSalesApi.customerTop(salesQuery(customer), options),
     (rows) => (customerTop.value = rows ?? []),
     chartError
 );

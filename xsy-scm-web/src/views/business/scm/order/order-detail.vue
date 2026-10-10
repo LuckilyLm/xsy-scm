@@ -110,7 +110,7 @@
               </span>
               <a-collapse>
                 <a-collapse-panel key="audit" header="变更前后">
-                  <ScmDiffTable :before="log.beforeData" :after="log.afterData"/>
+                  <ScmDiffTable :before="log.beforeData" :after="log.afterData" :scope="log.operationType"/>
                 </a-collapse-panel>
               </a-collapse>
             </a-timeline-item>
@@ -250,7 +250,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    order.value = (await orderApi.detail(order.value.orderId)).data;
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    order.value = (await orderApi.detail(order.value.orderId, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = orderError(e);
   } finally {
@@ -260,7 +261,9 @@ async function load() {
 
 async function loadLogs() {
   try {
-    logs.value = (await orderLogApi.query({orderId: order.value!.orderId, pageNum: 1, pageSize: 100})).data.list;
+    logs.value = (await orderLogApi.query(
+        {orderId: order.value!.orderId, pageNum: 1, pageSize: 100},
+        {suppressGlobalErrorMessage: true})).data.list;
   } catch (e) {
     error.value = orderError(e);
   }
@@ -296,7 +299,8 @@ async function loadCoupons() {
   }
   couponLoading.value = true;
   try {
-    const rows: PromotionCouponInstance[] = (await promotionApi.couponInstances(customerId, 'AVAILABLE')).data ?? [];
+    const rows: PromotionCouponInstance[] =
+        (await promotionApi.couponInstances(customerId, 'AVAILABLE', {suppressGlobalErrorMessage: true})).data ?? [];
     couponOptions.value = rows.map((row) => ({
       value: row.id,
       label: `${row.couponName ?? row.couponCode ?? '优惠券'}（${row.instanceNo}）`,
@@ -335,7 +339,7 @@ async function loadPreview() {
       customerId,
       couponInstanceId: couponInstanceId.value ?? null,
       lines,
-    })).data;
+    }, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     previewError.value = orderError(e);
   }
@@ -350,7 +354,7 @@ async function confirm() {
   saving.value = true;
   error.value = '';
   try {
-    creditCheck.value = (await orderApi.orderCreditCheck(order.value.orderId)).data;
+    creditCheck.value = (await orderApi.orderCreditCheck(order.value.orderId, {suppressGlobalErrorMessage: true})).data;
     creditOverride.value = false;
     creditOverrideReason.value = '';
     creditOpen.value = true;
@@ -378,8 +382,8 @@ async function confirmWithCredit() {
     creditOpen.value = false;
     await load();
     emit('saved');
-  } catch (e) {
-    error.value = orderError(e);
+  } catch {
+    // 确认失败只走全局 toast
   } finally {
     saving.value = false;
   }
@@ -409,8 +413,8 @@ async function saveActual() {
     actualOpen.value = false;
     await load();
     emit('saved');
-  } catch (e) {
-    error.value = orderError(e);
+  } catch {
+    // 实重录入失败只走全局 toast
   } finally {
     saving.value = false;
   }
@@ -427,8 +431,8 @@ async function cancel() {
     cancelOpen.value = false;
     await load();
     emit('saved');
-  } catch (e) {
-    error.value = orderError(e);
+  } catch {
+    // 取消失败只走全局 toast
   } finally {
     saving.value = false;
   }
@@ -446,7 +450,8 @@ defineExpose({open});
   font-weight: 600;
 }
 
-.detail-section--nested {
+/* 选择器必须压过 `.detail-section h3`，否则上边距被它的 margin 简写吃掉 */
+.detail-section h3.detail-section--nested {
   margin-top: 20px;
 }
 

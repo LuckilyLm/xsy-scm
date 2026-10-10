@@ -1,7 +1,6 @@
 <template>
   <a-modal v-model:open="visible" :title="form.categoryId ? '编辑分类' : '新增分类'" :confirm-loading="saving"
            @ok="submit" @cancel="visible = false">
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
     <a-form ref="formRef" :model="form" layout="vertical">
       <a-form-item name="parentId">
         <template #label>
@@ -42,12 +41,11 @@ import CategorySelect from '/@/components/business/scm/product-category-tree-sel
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {ENABLE_STATUS_ENUM} from '/@/constants/business/scm/product-const';
 import type {ProductCategory, ProductCategoryForm, ProductId} from '/@/types/business/scm/product';
-import {productError} from '../product-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 defineProps<{ categories: ProductCategory[] }>();
 const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), saving = ref(false), error = ref('');
+const visible = ref(false), saving = ref(false);
 const formRef = ref<FormInstance>();
 const defaults = (): ProductCategoryForm => ({
   categoryCode: '',
@@ -63,22 +61,20 @@ const form = reactive<ProductCategoryForm>(defaults());
 async function open(row?: ProductCategory, parentId?: ProductId) {
   Object.assign(form, defaults(), row ?? {}, {parentId: row?.parentId ?? parentId});
   visible.value = true;
-  error.value = '';
   await nextTick();
   formRef.value?.clearValidate();
 }
 
 async function save() {
   saving.value = true;
-  error.value = '';
   try {
     const payload = {...form, parentId: form.parentId ?? null};
     await (form.categoryId ? productCategoryApi.update(payload) : productCategoryApi.add(payload));
     message.success('分类已保存');
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 保存失败只走全局 toast
   } finally {
     saving.value = false;
   }

@@ -169,7 +169,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    const result = await deliveryApi.candidates(query);
+    // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+    const result = await deliveryApi.candidates(query, {suppressGlobalErrorMessage: true});
     if (current === generation) {
       rows.value = result.data.list;
       total.value = result.data.total;
@@ -198,8 +199,8 @@ async function save() {
     await deliveryApi.addOrders(route.value.id, route.value.version, selected.value, reason.value);
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = deliveryError(e);
+  } catch {
+    // 加入线路失败只走全局 toast；弹窗里的 error 留给候选列表加载失败
   } finally {
     saving.value = false;
   }

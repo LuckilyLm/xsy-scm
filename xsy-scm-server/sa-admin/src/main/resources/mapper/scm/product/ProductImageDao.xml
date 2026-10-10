@@ -12,4 +12,23 @@
           AND deleted = FALSE
           AND is_primary = TRUE
     </update>
+
+    <!--
+      图片中心「未绑定图片」：公开图片里没有 product_image 活行引用的那些。
+      只读文件表，不写；folderType 由 FileFolderTypeEnum.PUBLIC_IMAGE 传入，避免在 SQL 里写死目录编号。
+    -->
+    <select id="selectUnboundPublicImages" resultType="com.xsy.scm.product.domain.vo.ProductUnboundImageVO">
+        SELECT f.file_key    AS fileKey,
+               f.file_name   AS fileName,
+               f.file_size   AS fileSize,
+               f.create_time AS createTime
+        FROM t_file f
+        WHERE f.folder_type = #{folderType}
+          AND NOT EXISTS (SELECT 1
+                          FROM product_image i
+                          WHERE i.file_key = f.file_key
+                            AND i.deleted = FALSE)
+        ORDER BY f.create_time DESC, f.file_id DESC
+        LIMIT #{limit}
+    </select>
 </mapper>

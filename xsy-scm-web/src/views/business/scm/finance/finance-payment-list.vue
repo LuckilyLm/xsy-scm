@@ -130,7 +130,6 @@ import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import FinanceRefundPicker from './finance-refund-picker.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {dateTimeText, entryTypeText, initialFinanceDateRange, isValidPositiveAmount, moneyText, nowDateTimeValue, paymentMethodText, trimOptional} from './finance-form-model';
-import {financeError} from './finance-errors';
 import type {FinancePayment, FinancePaymentAddForm, FinancePaymentDetail, FinanceRefundOption, PaymentQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
 import {useFinanceDetail} from './use-finance-detail';
@@ -257,18 +256,22 @@ async function submitAdd() {
         };
         await financeApi.paymentAdd(payload);
         message.success('付款已登记'); addOpen.value = false; await queryData();
-    } catch (cause) { addError.value = financeError(cause); }
+    } catch {
+        // 登记失败只走全局 toast；弹窗里的 addError 留给本地校验
+    }
     finally { addSaving.value = false; }
 }
 
-function openReverse(row: FinancePayment) { reverseRow.value = row; reverseReason.value = ''; reverseError.value = ''; reverseOpen.value = true; }
+function openReverse(row: FinancePayment) { reverseRow.value = row; reverseReason.value = ''; reverseOpen.value = true; }
 async function submitReverse() {
     if (!reverseRow.value || !reverseReason.value.trim()) { reverseError.value = '请填写反向原因。'; return; }
     reverseSaving.value = true; reverseError.value = '';
     try {
         await financeApi.paymentReverse({paymentId: reverseRow.value.paymentId, reason: reverseReason.value.trim()});
         message.success('反向付款已追加'); reverseOpen.value = false; await queryData();
-    } catch (cause) { reverseError.value = financeError(cause); }
+    } catch {
+        // 反向失败只走全局 toast；弹窗里的 reverseError 留给本地校验
+    }
     finally { reverseSaving.value = false; }
 }
 

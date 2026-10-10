@@ -140,7 +140,7 @@ async function open(id?: Id) {
   if (id) {
     loading.value = true;
     try {
-      form.value = (await orderApi.detail(id)).data;
+      form.value = (await orderApi.detail(id, {suppressGlobalErrorMessage: true})).data;
       form.value.items.forEach(i => {
         i.unitPrice = i.manualPriceOverride ? i.draftUnitPrice : null;
         i.overrideReason = i.manualPriceReason;
@@ -233,7 +233,7 @@ async function openFromHistory(id: Id) {
   visible.value = true;
   loading.value = true;
   try {
-    const detail = (await orderApi.detail(id)).data;
+    const detail = (await orderApi.detail(id, {suppressGlobalErrorMessage: true})).data;
     form.value = fromHistory(detail);
     await preview();
   } catch (e) {
@@ -247,7 +247,7 @@ async function customerChanged(id?: Id) {
   if (!id) return;
   const current = ++requestId;
   try {
-    const c = (await customerApi.detail(id)).data;
+    const c = (await customerApi.detail(id, {suppressGlobalErrorMessage: true})).data;
     if (current !== requestId) return;
     form.value.address = {
       receiverName: c.contactName ?? '',
@@ -268,7 +268,7 @@ async function preview() {
   if (!customerId || !skuIds.length) return;
   pricing.value = true;
   try {
-    const r = await orderApi.preview({customerId, skuIds});
+    const r = await orderApi.preview({customerId, skuIds}, {suppressGlobalErrorMessage: true});
     for (const i of form.value.items) {
       const p = r.data.items.find(p => String(p.skuId) === String(i.skuId));
       i.draftUnitPrice = p?.unitPrice ?? null;
@@ -289,7 +289,7 @@ async function loadOriginals(keyword: string) {
       status: 'CONFIRMED',
       customerId: form.value.customerId,
       keyword
-    });
+    }, {suppressGlobalErrorMessage: true});
     originals.value = r.data.list.map(o => ({value: o.orderId!, label: o.orderNo!}));
   } catch (e) {
     error.value = orderError(e);
@@ -335,8 +335,8 @@ async function save(draft = false) {
     if (isNew) clearDraft();
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = orderError(e);
+  } catch {
+    // 保存失败只走全局 toast；抽屉里的 error 留给加载失败
   } finally {
     saving.value = false;
   }

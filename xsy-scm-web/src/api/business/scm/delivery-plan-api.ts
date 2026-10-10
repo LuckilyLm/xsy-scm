@@ -5,7 +5,7 @@
  * 生成与应用在后端是两个独立权限：只看怎么排的人不该顺手获得改线路的能力。
  *
  */
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmResponse} from '/@/types/business/scm/customer';
 import type {DeliveryPlanProposal, Id} from '/@/views/business/scm/delivery/delivery-types';
 
@@ -17,8 +17,8 @@ export const deliveryPlanApi = {
         >,
 
     /** 建议历史（最新在前）。 */
-    history: (routeId: Id) =>
-        getRequest(`/scm/delivery/plan/route/${routeId}/history`, {}) as unknown as Promise<
+    history: (routeId: Id, options?: RequestOptions) =>
+        getRequest(`/scm/delivery/plan/route/${routeId}/history`, {}, options) as unknown as Promise<
             ScmResponse<DeliveryPlanProposal[]>
         >,
 

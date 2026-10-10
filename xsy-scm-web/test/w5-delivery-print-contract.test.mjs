@@ -26,8 +26,8 @@ const view = code('../src/views/business/scm/delivery/route-detail-page.vue');
 const printPanel = code('../src/views/business/scm/delivery/components/route-print-panel.vue');
 
 test('dual views are read-only GETs while formal printing is an idempotent POST', () => {
-  assert.match(api, /call<RouteOrderView\[\]>\('get', `\/routes\/\$\{id\}\/orders-view`\)/);
-  assert.match(api, /call<RouteCustomerView\[\]>\('get', `\/routes\/\$\{id\}\/customers-view`\)/);
+  assert.match(api, /call<RouteOrderView\[\]>\('get', `\/routes\/\$\{id\}\/orders-view`/);
+  assert.match(api, /call<RouteCustomerView\[\]>\('get', `\/routes\/\$\{id\}\/customers-view`/);
   assert.match(api, /printCommand<PrintResult>\(`\/routes\/\$\{id\}\/print\/orders`/);
   assert.match(api, /printCommand<PrintResult>\(`\/routes\/\$\{id\}\/print\/customers`/);
   // 命令必须带 Idempotency-Key，失败保留同一 UUID、成功后换新键（与订单域一致）。

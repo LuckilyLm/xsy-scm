@@ -117,7 +117,9 @@ async function load() {
   summary.value = [];
   total.value = 0;
   try {
-    const [page, totals] = await Promise.all([financeAgingApi.query(payload), financeAgingApi.summary(payload)]);
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    const quiet = {suppressGlobalErrorMessage: true};
+    const [page, totals] = await Promise.all([financeAgingApi.query(payload, quiet), financeAgingApi.summary(payload, quiet)]);
     if (id !== requestId) return;
     rows.value = page.data.list;
     total.value = page.data.total;
@@ -149,7 +151,9 @@ async function exportRows() {
   if (!applied.value || exporting.value) return;
   exporting.value = true;
   try { await financeAgingApi.export({...applied.value}); }
-  catch (e) { error.value = reportError(e); }
+  catch {
+    // 导出失败只走全局 toast
+  }
   finally { exporting.value = false; }
 }
 async function openDetail(row: AgingRow) {
@@ -160,7 +164,8 @@ async function openDetail(row: AgingRow) {
   detailKind.value = row.accountType;
   try {
     const response = row.accountType === 'RECEIVABLE'
-      ? await financeApi.receivableDetail(row.documentId) : await financeApi.payableDetail(row.documentId);
+      ? await financeApi.receivableDetail(row.documentId, {suppressGlobalErrorMessage: true})
+      : await financeApi.payableDetail(row.documentId, {suppressGlobalErrorMessage: true});
     if (id === detailRequestId) detail.value = response.data;
   } catch (e) {
     if (id === detailRequestId) { error.value = reportError(e); detailOpen.value = false; }

@@ -10,7 +10,7 @@
  *
  * `confirm` 失败时整单回滚，不存在「盘一半」；重复确认会被状态机拒绝（41020）。
  */
-import {getRequest, postRequest, request, getDownload} from '/@/lib/axios';
+import {getRequest, postRequest, request, getDownload, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -44,8 +44,8 @@ async function importStocktake(file: File): Promise<ScmResponse<StocktakeImportR
 }
 
 export const inventoryStocktakeApi = {
-    query: (data: InventoryStocktakeQuery) =>
-        postRequest('/scm/inventory/stocktake/query', data) as unknown as Promise<
+    query: (data: InventoryStocktakeQuery, options?: RequestOptions) =>
+        postRequest('/scm/inventory/stocktake/query', data, options) as unknown as Promise<
             ScmResponse<ScmPage<InventoryStocktake>>
         >,
     detail: (id: Id) =>

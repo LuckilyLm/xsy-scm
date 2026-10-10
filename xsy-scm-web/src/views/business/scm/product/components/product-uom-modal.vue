@@ -2,7 +2,6 @@
 <template>
   <a-modal v-model:open="visible" :title="form.uomId ? '编辑计量单位' : '新增计量单位'" :confirm-loading="saving"
            @ok="submit" @cancel="visible = false">
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
     <a-form ref="formRef" :model="form" layout="vertical">
       <a-row :gutter="16">
         <a-col :span="12">
@@ -48,10 +47,9 @@ import type {FormInstance} from 'ant-design-vue';
 import {productUomApi} from '/@/api/business/scm/product-assistant-api';
 import type {AssistantStatus, ProductUom, UomCategory} from '/@/types/business/scm/product';
 import {ENABLE_STATUS_ENUM, UOM_CATEGORY_ENUM} from '/@/constants/business/scm/product-const';
-import {productError} from '../product-errors';
 
 const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), saving = ref(false), error = ref(''), formRef = ref<FormInstance>();
+const visible = ref(false), saving = ref(false), formRef = ref<FormInstance>();
 // uomId 决定新增还是编辑；编码与名称只在新增时可填，编辑时后端表单根本没有这两个字段。
 const form = reactive({
   uomId: undefined as ProductUom['uomId'] | undefined,
@@ -86,13 +84,11 @@ function open(row?: ProductUom) {
         sortOrder: row.sortOrder
       } : {});
   visible.value = true;
-  error.value = '';
   void nextTick(() => formRef.value?.clearValidate());
 }
 
 async function save() {
   saving.value = true;
-  error.value = '';
   try {
     if (form.uomId) await productUomApi.update({
       uomId: form.uomId,
@@ -113,8 +109,8 @@ async function save() {
     message.success('计量单位已保存');
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 保存失败只走全局 toast
   } finally {
     saving.value = false;
   }

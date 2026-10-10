@@ -167,7 +167,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await purchaseDemandApi.batchDetail({batchId});
+    // 加载失败由抽屉内的 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await purchaseDemandApi.batchDetail({batchId}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       detail.value = r.data;
     }

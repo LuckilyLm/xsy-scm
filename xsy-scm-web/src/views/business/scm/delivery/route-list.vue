@@ -304,7 +304,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    const result = await deliveryApi.routes(query);
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const result = await deliveryApi.routes(query, {suppressGlobalErrorMessage: true});
     if (current === generation) {
       rows.value = result.data.list;
       total.value = result.data.total;
@@ -319,7 +320,11 @@ async function load() {
 async function loadOptions() {
   optionsError.value = '';
   try {
-    const [w, d, v] = await Promise.all([deliveryApi.warehouses(), deliveryApi.drivers(), deliveryApi.vehicles()]);
+    const [w, d, v] = await Promise.all([
+      deliveryApi.warehouses({suppressGlobalErrorMessage: true}),
+      deliveryApi.drivers({suppressGlobalErrorMessage: true}),
+      deliveryApi.vehicles({suppressGlobalErrorMessage: true}),
+    ]);
     warehouses.value = w.data;
     drivers.value = d.data;
     vehicles.value = v.data;

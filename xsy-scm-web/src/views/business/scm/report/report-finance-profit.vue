@@ -131,7 +131,9 @@ async function load() {
   summary.value = undefined;
   total.value = 0;
   try {
-    const [page, totals] = await Promise.all([financeProfitApi.query(payload), financeProfitApi.summary(payload)]);
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    const quiet = {suppressGlobalErrorMessage: true};
+    const [page, totals] = await Promise.all([financeProfitApi.query(payload, quiet), financeProfitApi.summary(payload, quiet)]);
     if (id !== requestId) return;
     rows.value = page.data.list ?? [];
     total.value = page.data.total ?? 0;
@@ -162,13 +164,18 @@ async function exportRows() {
   if (!applied.value || exporting.value) return;
   exporting.value = true;
   try { await financeProfitApi.export(applied.value); }
-  catch (e) { error.value = reportError(e); }
+  catch {
+    // 导出失败只走全局 toast
+  }
   finally { exporting.value = false; }
 }
 
 onMounted(async () => {
   dateRange.value = defaultDateRange();
-  try { categories.value = (await productCategoryApi.tree()).data ?? []; }
+  try {
+    // 分类下拉是可选增强：拉不到就静默降级
+    categories.value = (await productCategoryApi.tree({suppressGlobalErrorMessage: true})).data ?? [];
+  }
   catch { categories.value = []; }
   void load();
 });

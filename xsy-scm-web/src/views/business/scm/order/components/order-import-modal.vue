@@ -23,7 +23,6 @@
         <p class="ant-upload-text">点击或拖拽订单 Excel 到此处</p>
         <p class="ant-upload-hint">请使用最新模板，按客户编码与商品规格编码填写</p>
       </a-upload-dragger>
-      <a-alert v-if="error" type="error" show-icon :message="error"/>
       <a-result v-if="result && !result.totalErrors" status="success" title="订单导入完成"
                 :sub-title="`共 ${result.totalOrders} 张：已确认 ${result.confirmedOrders} 张，待称重 ${result.pendingOrders} 张`"/>
       <div v-else-if="result?.totalErrors">
@@ -41,10 +40,8 @@ import {message, Upload} from 'ant-design-vue';
 import type {UploadFile, UploadProps, TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
 import type {ImportError, ImportResult} from '../order-types';
-import {orderError} from '../order-errors';
-
 const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), loading = ref(false), downloading = ref(false), error = ref(''),
+const visible = ref(false), loading = ref(false), downloading = ref(false),
     result = ref<ImportResult>(), fileList = ref<UploadFile[]>([]);
 const selectedFile = ref<File>();
 const imported = computed(() => !!result.value && result.value.totalErrors === 0);
@@ -62,7 +59,6 @@ function open() {
 function reset() {
   fileList.value = [];
   selectedFile.value = undefined;
-  error.value = '';
   result.value = undefined;
   loading.value = false;
 }
@@ -110,7 +106,6 @@ async function submit() {
     return;
   }
   loading.value = true;
-  error.value = '';
   try {
     const response = await orderApi.importOrders(file);
     result.value = response.data;
@@ -120,8 +115,8 @@ async function submit() {
     }
     message.success('订单导入完成');
     emit('saved');
-  } catch (e) {
-    error.value = orderError(e);
+  } catch {
+    // 导入失败只走全局 toast
   } finally {
     loading.value = false;
   }

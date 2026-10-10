@@ -1,4 +1,4 @@
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {
     CustomerDeletePayload,
     CustomerDetail,
@@ -16,17 +16,17 @@ import type {
 
 // SmartAdmin 拦截器已解包 ResponseDTO，与 Axios 声明的返回类型不符，因此逐个断言。
 export const customerApi = {
-    query: (form: CustomerQuery) =>
-        postRequest('/scm/customer/query', form) as unknown as Promise<ScmResponse<ScmPage<CustomerRow>>>,
-    detail: (customerId: ScmId) =>
-        getRequest(`/scm/customer/detail/${customerId}`, {}) as unknown as Promise<ScmResponse<CustomerDetail>>,
+    query: (form: CustomerQuery, options?: RequestOptions) =>
+        postRequest('/scm/customer/query', form, options) as unknown as Promise<ScmResponse<ScmPage<CustomerRow>>>,
+    detail: (customerId: ScmId, options?: RequestOptions) =>
+        getRequest(`/scm/customer/detail/${customerId}`, {}, options) as unknown as Promise<ScmResponse<CustomerDetail>>,
     /** 常购商品（只读聚合）：近 days 天已确认订单按 (SKU, 单位) 现算，后端裁剪 days/limit 上限。 */
     frequentSkus: (customerId: ScmId, days = 90, limit = 20) =>
         getRequest(`/scm/customer/${customerId}/frequent-skus`, {days, limit}) as unknown as Promise<
             ScmResponse<CustomerFrequentSku[]>
         >,
-    optionList: () =>
-        postRequest('/scm/customer/option/list', {}) as unknown as Promise<ScmResponse<CustomerOption[]>>,
+    optionList: (options?: RequestOptions) =>
+        postRequest('/scm/customer/option/list', {}, options) as unknown as Promise<ScmResponse<CustomerOption[]>>,
     add: (form: CustomerPayload) => postRequest('/scm/customer/add', form) as unknown as Promise<ScmResponse<ScmId>>,
     update: (form: CustomerPayload) =>
         postRequest('/scm/customer/update', form) as unknown as Promise<ScmResponse<null>>,

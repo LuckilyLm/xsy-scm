@@ -1,4 +1,4 @@
-import {getDownload, getRequest, postDownload, postRequest} from '/@/lib/axios';
+import {getDownload, getRequest, postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {
     ImageBatchBindForm,
     ImageBatchRemoveForm,
@@ -18,12 +18,15 @@ import type {
     ScmResponse,
     ShelfStatus,
     TagMode,
+    UnboundImage,
 } from '/@/types/business/scm/product';
 
 // SmartAdmin interceptor resolves ResponseDTO directly, despite Axios's declared return type.
 export const productApi = {
-    query: (form: ProductQuery) => postRequest('/scm/product/query', form) as unknown as Promise<ScmResponse<ProductPage<ProductRow>>>,
-    detail: (id: ProductId) => getRequest(`/scm/product/detail/${id}`, {}) as unknown as Promise<ScmResponse<ProductRow>>,
+    query: (form: ProductQuery, options?: RequestOptions) =>
+        postRequest('/scm/product/query', form, options) as unknown as Promise<ScmResponse<ProductPage<ProductRow>>>,
+    detail: (id: ProductId, options?: RequestOptions) =>
+        getRequest(`/scm/product/detail/${id}`, {}, options) as unknown as Promise<ScmResponse<ProductRow>>,
     add: (form: ProductForm) => postRequest('/scm/product/add', form) as unknown as Promise<ScmResponse<ProductId>>,
     update: (form: ProductForm) => postRequest('/scm/product/update', form) as unknown as Promise<ScmResponse<null>>,
     status: (spuId: ProductId, version: number, status: ShelfStatus) => postRequest('/scm/product/updateStatus', {
@@ -66,4 +69,5 @@ export const productImageApi = {
     batchRemove: (form: ImageBatchRemoveForm) => postRequest('/scm/product/image/batch-remove', form) as unknown as Promise<ScmResponse<null>>,
     setPrimary: (form: ImageSetPrimaryForm) => postRequest('/scm/product/image/set-primary', form) as unknown as Promise<ScmResponse<null>>,
     reorder: (form: ImageReorderForm) => postRequest('/scm/product/image/reorder', form) as unknown as Promise<ScmResponse<null>>,
+    unboundImages: (limit = 100) => getRequest(`/scm/product/image/unbound?limit=${limit}`, {}) as unknown as Promise<ScmResponse<UnboundImage[]>>,
 };

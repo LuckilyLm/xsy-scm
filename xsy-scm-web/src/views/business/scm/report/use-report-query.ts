@@ -10,6 +10,7 @@
  * 共享一个计数器会互相把对方的结果判成「过期」，表现为图有数、表格空白。
  */
 import {type Ref} from 'vue';
+import type {RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {TabView} from './report-model';
 import {reportError} from './report-errors';
@@ -26,7 +27,7 @@ import {reportError} from './report-errors';
 export function createTabLoader<T, Q extends object>(
     view: TabView<T>,
     buildQuery: () => Q,
-    fetch: (query: Q) => Promise<ScmResponse<ScmPage<T>>>
+    fetch: (query: Q, options?: RequestOptions) => Promise<ScmResponse<ScmPage<T>>>
 ): () => Promise<void> {
     let request = 0;
     return async function load(): Promise<void> {
@@ -34,7 +35,8 @@ export function createTabLoader<T, Q extends object>(
         view.loading = true;
         view.error = '';
         try {
-            const response = await fetch(buildQuery());
+            // 失败原因写在本 Tab 内联 Alert 上，不再让全局 toast 重复说一遍
+            const response = await fetch(buildQuery(), {suppressGlobalErrorMessage: true});
             if (id !== request) {
                 return;
             }
@@ -59,7 +61,7 @@ export function createTabLoader<T, Q extends object>(
  * 静默留白会被读成「这个区间没有数据」。
  */
 export function createGuardedLoader<T>(
-    task: () => Promise<ScmResponse<T>>,
+    task: (options?: RequestOptions) => Promise<ScmResponse<T>>,
     apply: (data: T) => void,
     error: Ref<string>
 ): () => Promise<void> {
@@ -67,7 +69,8 @@ export function createGuardedLoader<T>(
     return async function load(): Promise<void> {
         const id = ++request;
         try {
-            const response = await task();
+            // 同上：图表拉不到数的原因写在内联 Alert 上，不重复弹全局提示
+            const response = await task({suppressGlobalErrorMessage: true});
             if (id === request) {
                 apply(response.data);
             }

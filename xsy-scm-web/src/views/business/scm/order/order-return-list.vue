@@ -185,7 +185,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await api.query(queryForm);
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await api.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -265,19 +266,30 @@ async function save() {
     message.warning('请填写处理原因');
     return;
   }
-  saving.value = true;
+  const r = active.value;
+  // 行级前置校验先跑完：弹窗正开着，这类提示留在弹窗里；提交失败则只走全局 toast
   editError.value = '';
+  let receiveItems: ReturnItemWithDisposition[] = [];
+  if (action.value === 'receive') {
+    if (!warehouseId.value) {
+      editError.value = '请选择接收仓库';
+      return;
+    }
+    receiveItems = (r.items as ReturnItemWithDisposition[]).filter(i => new Decimal(i.receiptQuantity ?? 0).gt(0));
+    if (!receiveItems.length) {
+      editError.value = '请填写至少一行本次接收数量';
+      return;
+    }
+    if (receiveItems.some(i => new Decimal(i.receiptQuantity).gt(remainingQuantity(i)))) {
+      editError.value = '本次接收数量不能超过剩余可接收数量';
+      return;
+    }
+  }
   const generation = editRequestId;
+  saving.value = true;
   try {
-    const r = active.value;
     if (action.value === 'receive') {
-      if (!warehouseId.value) throw new Error('请选择接收仓库');
-      const items = (r.items as ReturnItemWithDisposition[]).filter(i => new Decimal(i.receiptQuantity ?? 0).gt(0));
-      if (!items.length) throw new Error('请填写至少一行本次接收数量');
-      if (items.some(i => new Decimal(i.receiptQuantity).gt(remainingQuantity(i)))) {
-        throw new Error('本次接收数量不能超过剩余可接收数量');
-      }
-      await api.receive({returnId: r.returnId, version: r.version, warehouseId: warehouseId.value, items: items.map(i => ({
+      await api.receive({returnId: r.returnId, version: r.version, warehouseId: warehouseId.value, items: receiveItems.map(i => ({
         returnItemId: i.returnItemId, quantity: fixed(i.receiptQuantity), disposition: i.disposition
       }))});
     } else {
@@ -294,8 +306,8 @@ async function save() {
     if (generation !== editRequestId) return;
     visible.value = false;
     await queryData();
-  } catch (e) {
-    if (generation === editRequestId) editError.value = orderError(e);
+  } catch {
+    // 提交失败只走全局 toast
   } finally {
     saving.value = false;
   }

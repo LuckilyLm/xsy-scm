@@ -145,7 +145,8 @@ function showDetail(row: FinanceReceivable) {
 
 onMounted(async () => {
     try {
-        const response = await customerApi.optionList();
+        // 客户筛选是可选增强：拉不到就静默降级，不弹全局提示
+        const response = await customerApi.optionList({suppressGlobalErrorMessage: true});
         customerOptions.value = response.data.map((item) => ({label: `${item.customerCode} · ${item.name}`, value: item.customerId}));
     } catch {
         // Customer filter is optional; the scoped AR list remains available without it.

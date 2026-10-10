@@ -160,7 +160,7 @@ async function open(id: Id) {
   lines.value = [];
   loading.value = true;
   try {
-    const r = await purchaseReceiptApi.detail(id);
+    const r = await purchaseReceiptApi.detail(id, {suppressGlobalErrorMessage: true});
     if (current !== requestId) {
       return;
     }
@@ -200,8 +200,8 @@ async function confirm() {
     message.success('收货已确认');
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = purchaseError(e);
+  } catch {
+    // 确认失败只走全局 toast；弹窗里的 error 留给提交前的逐行校验
   } finally {
     saving.value = false;
   }

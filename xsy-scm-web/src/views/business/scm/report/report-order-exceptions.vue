@@ -111,7 +111,9 @@ async function load(payload: OrderExceptionQuery) {
   summary.value = [];
   total.value = 0;
   try {
-    const [page, counts] = await Promise.all([orderExceptionApi.query(payload), orderExceptionApi.summary(payload)]);
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    const quiet = {suppressGlobalErrorMessage: true};
+    const [page, counts] = await Promise.all([orderExceptionApi.query(payload, quiet), orderExceptionApi.summary(payload, quiet)]);
     if (id !== requestId) return;
     rows.value = page.data.list;
     total.value = page.data.total;
@@ -143,7 +145,9 @@ async function exportRows() {
   if (!applied.value || exporting.value) return;
   exporting.value = true;
   try { await orderExceptionApi.export({...applied.value}); }
-  catch (e) { error.value = reportError(e); }
+  catch {
+    // 导出失败只走全局 toast
+  }
   finally { exporting.value = false; }
 }
 function openSource(row: OrderExceptionRow) {

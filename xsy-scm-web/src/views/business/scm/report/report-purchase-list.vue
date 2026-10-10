@@ -392,18 +392,18 @@ function loadPurchaserPage(pageNum: number, pageSize: number) {
 }
 
 const loadOverview = createGuardedLoader(
-    () => reportPurchaseApi.overview(purchaseFilterQuery()),
+    (options) => reportPurchaseApi.overview(purchaseFilterQuery(), options),
     (data) => (overview.value = data),
     chartError
 );
 const loadSupplierTop = createGuardedLoader(
-    () => reportPurchaseApi.supplierTop(purchaseFilterQuery()),
+    (options) => reportPurchaseApi.supplierTop(purchaseFilterQuery(), options),
     (rows) => (supplierTopRows.value = rows ?? []),
     chartError
 );
 /** 价格波动不分页（一次给完整个区间的按日点），表格只渲染返回的行。 */
 const loadTrend = createGuardedLoader(
-    () => reportPurchaseApi.priceTrend(purchaseFilterQuery()),
+    (options) => reportPurchaseApi.priceTrend(purchaseFilterQuery(), options),
     (rows) => {
         trend.rows = rows ?? [];
         trend.total = (rows ?? []).length;

@@ -161,7 +161,8 @@ async function queryData() {
     loading.value = true;
     error.value = '';
     try {
-        const result = await sortingApi.summary({...queryForm});
+        // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+        const result = await sortingApi.summary({...queryForm}, {suppressGlobalErrorMessage: true});
         if (current === generation) {
             rows.value = result.data.list;
             total.value = result.data.total;

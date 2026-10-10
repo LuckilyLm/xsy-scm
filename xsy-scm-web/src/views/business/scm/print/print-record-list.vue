@@ -112,7 +112,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await printApi.recordQuery({...queryForm});
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await printApi.recordQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list ?? [];
       total.value = r.data.total ?? 0;
@@ -130,7 +131,8 @@ async function queryData() {
 
 async function loadDocumentTypes() {
   try {
-    const r = await printApi.documentTypes();
+    // 单据类型下拉是可选增强：拉不到就静默降级，不弹全局提示
+    const r = await printApi.documentTypes({suppressGlobalErrorMessage: true});
     documentTypes.value = r.data ?? [];
   } catch {
     documentTypes.value = [];
@@ -158,8 +160,8 @@ async function reprint(record: PrintRecord) {
     if ((r.data.hiddenFields ?? []).length) {
       message.warning(`已重印，但 ${r.data.hiddenFields?.length} 个金额字段因权限未打印`);
     }
-  } catch (e) {
-    error.value = printError(e);
+  } catch {
+    // 重印失败只走全局 toast
   } finally {
     reprinting.value = undefined;
   }

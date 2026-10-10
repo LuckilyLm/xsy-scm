@@ -28,7 +28,8 @@ async function open(filter: {movementId?: Id; sourceType?: string; sourceId?: Id
   const current = ++generation;
   visible.value = true; loading.value = true; error.value = ''; rows.value = [];
   try {
-    const response = await paymentApi.movements(filter);
+    // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+    const response = await paymentApi.movements(filter, {suppressGlobalErrorMessage: true});
     if (current === generation) rows.value = response.data.list;
   } catch (cause) { if (current === generation) error.value = financeError(cause); }
   finally { if (current === generation) loading.value = false; }

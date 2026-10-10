@@ -11,7 +11,7 @@
  * 审批必须带 `version`（乐观锁）：审批人必须批准自己读到的内容。
  * 若在「打开单据 → 点审批」之间单据被改过，后端返回 40921 并要求刷新。
  */
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -22,8 +22,8 @@ import type {
 } from '/@/views/business/scm/inventory/inventory-types';
 
 export const inventoryLossGainApi = {
-    query: (data: InventoryLossGainQuery) =>
-        postRequest('/scm/inventory/loss-gain/query', data) as unknown as Promise<
+    query: (data: InventoryLossGainQuery, options?: RequestOptions) =>
+        postRequest('/scm/inventory/loss-gain/query', data, options) as unknown as Promise<
             ScmResponse<ScmPage<InventoryLossGain>>
         >,
     detail: (id: Id) =>

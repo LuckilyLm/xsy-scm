@@ -1,4 +1,4 @@
-import {postRequest} from '/@/lib/axios';
+import {postRequest, type RequestOptions} from '/@/lib/axios';
 import type {
     CustomerType,
     CustomerTypeForm,
@@ -9,8 +9,8 @@ import type {
 } from '/@/types/business/scm/customer';
 
 export const customerTypeApi = {
-    query: (form: CustomerTypeQuery) =>
-        postRequest('/scm/customer/type/query', form) as unknown as Promise<ScmResponse<ScmPage<CustomerType>>>,
+    query: (form: CustomerTypeQuery, options?: RequestOptions) =>
+        postRequest('/scm/customer/type/query', form, options) as unknown as Promise<ScmResponse<ScmPage<CustomerType>>>,
     optionList: () =>
         postRequest('/scm/customer/type/option/list', {}) as unknown as Promise<ScmResponse<CustomerType[]>>,
     add: (form: CustomerTypeForm) =>

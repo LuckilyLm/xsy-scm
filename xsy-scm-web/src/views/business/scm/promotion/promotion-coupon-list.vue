@@ -127,7 +127,6 @@
       @ok="submit"
       @cancel="editOpen = false"
   >
-    <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner"/>
     <a-form ref="formRef" :model="{...form, discountValue}" :rules="formRules" layout="vertical">
       <section class="scm-form-section">
         <div class="scm-form-section__head">
@@ -274,7 +273,6 @@ const error = ref('');
 const editOpen = ref(false);
 const issueOpen = ref(false);
 const saving = ref(false);
-const editError = ref('');
 const issueError = ref('');
 
 const statusOptions = Object.entries(promotionStatuses).map(([value, item]) => ({value, label: item.label}));
@@ -379,7 +377,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await promotionApi.couponQuery({...queryForm});
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await promotionApi.couponQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     tableData.value = r.data.list ?? [];
     total.value = r.data.total ?? 0;
   } catch (e) {
@@ -415,7 +414,6 @@ function openCreate() {
   });
   discountValue.value = null;
   minOrderAmount.value = 0;
-  editError.value = '';
   editOpen.value = true;
 }
 
@@ -438,12 +436,10 @@ function openEdit(record: PromotionCoupon) {
           ? rateToPercent(record.discountValue)
           : Number(record.discountValue);
   minOrderAmount.value = record.minOrderAmount == null ? null : Number(record.minOrderAmount);
-  editError.value = '';
   editOpen.value = true;
 }
 
 async function submit() {
-  editError.value = '';
   form.discountValue = form.discountType === 'RATE'
       ? percentToRate(discountValue.value) ?? ''
       : fixed4(discountValue.value) ?? '';
@@ -460,8 +456,8 @@ async function submit() {
     message.success('优惠券已保存');
     editOpen.value = false;
     await queryData();
-  } catch (e) {
-    editError.value = promotionError(e);
+  } catch {
+    // 保存失败只走全局 toast
   } finally {
     saving.value = false;
   }
@@ -483,8 +479,8 @@ async function changeStatus(record: PromotionCoupon, status: 'ACTIVE' | 'STOPPED
     await promotionApi.couponStatus(record.id, record.version, status);
     message.success(status === 'ACTIVE' ? '优惠券已启用' : '优惠券已停用');
     await queryData();
-  } catch (e) {
-    error.value = promotionError(e);
+  } catch {
+    // 启停失败只走全局 toast
   }
 }
 
@@ -499,8 +495,8 @@ async function submitIssue() {
     const count = (await promotionApi.couponIssue(issueForm.couponId, issueForm.customerId, issueForm.quantity)).data;
     message.success(`已发出 ${count} 张券`);
     issueOpen.value = false;
-  } catch (e) {
-    issueError.value = promotionError(e);
+  } catch {
+    // 发券失败只走全局 toast；弹窗里的 issueError 留给本地校验
   } finally {
     saving.value = false;
   }

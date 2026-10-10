@@ -324,10 +324,12 @@ async function queryAll() {
     error.value = '';
     const payload = query.value;
     try {
+        // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+        const quiet = {suppressGlobalErrorMessage: true};
         const [overviewResponse, trendResponse, dailyResponse] = await Promise.all([
-            reportOverviewApi.overview(payload),
-            reportOverviewApi.trend(payload),
-            reportOverviewApi.daily(payload),
+            reportOverviewApi.overview(payload, quiet),
+            reportOverviewApi.trend(payload, quiet),
+            reportOverviewApi.daily(payload, quiet),
         ]);
         if (id !== requestId) {
             return;

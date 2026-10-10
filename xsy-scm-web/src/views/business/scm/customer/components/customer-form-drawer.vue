@@ -303,7 +303,8 @@ async function open(customerId?: ScmId) {
   }
   loading.value = true;
   try {
-    const response = await customerApi.detail(customerId);
+    // 加载失败由抽屉内 Alert 承担，不再让全局 toast 重复说一遍
+    const response = await customerApi.detail(customerId, {suppressGlobalErrorMessage: true});
     const detail = response.data;
     // 列表 VO 不含地址 / 账期 / 备注，因此编辑必须先取详情，不能直接复用列表行。
     Object.assign(form, {
@@ -405,8 +406,8 @@ async function submit() {
     }
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = customerError(e);
+  } catch {
+    // 保存失败只走全局 toast；抽屉里的 error 留给本地校验与加载失败
   } finally {
     saving.value = false;
   }

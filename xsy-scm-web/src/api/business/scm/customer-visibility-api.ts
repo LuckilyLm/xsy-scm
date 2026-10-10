@@ -1,4 +1,4 @@
-import {postRequest} from '/@/lib/axios';
+import {postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmId, ScmResponse, ScmPage} from '/@/types/business/scm/customer';
 import type {VisibilityRow} from '/@/types/business/scm/pricing';
 
@@ -9,5 +9,6 @@ export const customerVisibilityApi = {
         customerId?: ScmId;
         skuId?: ScmId;
         visibilityPolicy?: string
-    }) => postRequest('/scm/customer/visibility/reverse/query', form) as unknown as Promise<ScmResponse<ScmPage<VisibilityRow>>>
+    }, options?: RequestOptions) =>
+        postRequest('/scm/customer/visibility/reverse/query', form, options) as unknown as Promise<ScmResponse<ScmPage<VisibilityRow>>>
 };

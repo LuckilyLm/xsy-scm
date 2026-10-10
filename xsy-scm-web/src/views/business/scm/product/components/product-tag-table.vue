@@ -74,7 +74,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    rows.value = (await productTagApi.list({...query})).data;
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    rows.value = (await productTagApi.list({...query}, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = productError(e);
   } finally {
@@ -97,8 +98,8 @@ async function remove(row: ProductTag) {
     await productTagApi.delete(row.tagId, row.version);
     message.success('标签已删除');
     await load();
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 删除失败只走全局 toast
   }
 }
 

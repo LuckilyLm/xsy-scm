@@ -1,4 +1,4 @@
-import {request, getRequest, postRequest, getDownload} from '/@/lib/axios';
+import {request, getRequest, postRequest, getDownload, type RequestOptions} from '/@/lib/axios';
 import type {ScmResponse, ScmPage} from '/@/types/business/scm/customer';
 import type {Order, Query, Id, ImportResult, RecentPrice} from '/@/views/business/scm/order/order-types';
 import type {ResolveResult} from '/@/types/business/scm/pricing';
@@ -55,8 +55,10 @@ export interface CreditCheck {
 }
 
 export const orderApi = {
-    query: (data: Query) => postRequest('/scm/order/query', data) as unknown as Promise<ScmResponse<ScmPage<Order>>>,
-    detail: (id: Id) => getRequest('/scm/order/detail/' + id, {}) as unknown as Promise<ScmResponse<Order>>,
+    query: (data: Query, options?: RequestOptions) =>
+        postRequest('/scm/order/query', data, options) as unknown as Promise<ScmResponse<ScmPage<Order>>>,
+    detail: (id: Id, options?: RequestOptions) =>
+        getRequest('/scm/order/detail/' + id, {}, options) as unknown as Promise<ScmResponse<Order>>,
     create: (data: Order) => orderCommand<Order>('/scm/order/create', data),
     createAndProgress: (data: Order) => orderCommand<Order>('/scm/order/create-and-progress', data),
     downloadImportTemplate: () => getDownload('/scm/order/import/template', {}),
@@ -65,7 +67,8 @@ export const orderApi = {
     submit: (data: unknown) => orderCommand<Order>('/scm/order/submit', data),
     confirm: (data: unknown) => orderCommand<Order>('/scm/order/confirm', data),
     creditCheck: (customerId: Id, requestedAmount?: string) => getRequest('/scm/order/credit-check/' + customerId, {requestedAmount}) as unknown as Promise<ScmResponse<{allowed: boolean; overLimit: boolean; overdue: boolean; creditLimit: string; projectedExposure: string; amountThresholdHint?: string | null}>>,
-    orderCreditCheck: (orderId: Id) => getRequest('/scm/order/credit-check/order/' + orderId, {}) as unknown as Promise<ScmResponse<CreditCheck>>,
+    orderCreditCheck: (orderId: Id, options?: RequestOptions) =>
+        getRequest('/scm/order/credit-check/order/' + orderId, {}, options) as unknown as Promise<ScmResponse<CreditCheck>>,
     cancel: (data: unknown) => orderCommand<Order>('/scm/order/cancel', data),
     actual: (data: unknown) => orderCommand<Order>('/scm/order/item/actual-quantity', data),
     delete: (data: unknown) => postRequest('/scm/order/delete', data),
@@ -73,7 +76,8 @@ export const orderApi = {
     preview: (data: {
         customerId: Id;
         skuIds: Id[]
-    }) => postRequest('/scm/order/price/preview', data) as unknown as Promise<ScmResponse<ResolveResult>>,
+    }, options?: RequestOptions) =>
+        postRequest('/scm/order/price/preview', data, options) as unknown as Promise<ScmResponse<ResolveResult>>,
     /**
      * 为已确认订单预留库存。
      *

@@ -461,7 +461,7 @@ function loadLossPage(pageNum: number, pageSize: number) {
 }
 
 const loadLossSummary = createGuardedLoader(
-    () => reportInventoryApi.lossSummary(buildReportQuery<ReportFilterQuery<InventoryReportQuery>>(dateRange.value, {...filters})),
+    (options) => reportInventoryApi.lossSummary(buildReportQuery<ReportFilterQuery<InventoryReportQuery>>(dateRange.value, {...filters}), options),
     (data) => (lossSummary.value = data),
     chartError
 );

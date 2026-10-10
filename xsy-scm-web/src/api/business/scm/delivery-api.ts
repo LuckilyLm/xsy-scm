@@ -1,4 +1,4 @@
-import {request} from '/@/lib/axios';
+import {request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {Warehouse} from '/@/views/business/scm/purchase/purchase-types';
 import type {ScmLocation} from '/@/components/business/scm/map/types';
@@ -19,10 +19,10 @@ import type {
     Vehicle,
 } from '/@/views/business/scm/delivery/delivery-types';
 
-function call<T>(method: string, path: string, data?: unknown): Promise<ScmResponse<T>> {
+function call<T>(method: string, path: string, data?: unknown, options?: RequestOptions): Promise<ScmResponse<T>> {
     return request({
         url: `/scm/delivery${path}`,
-        method, ...(method === 'get' ? {params: data} : {data})
+        method, ...(method === 'get' ? {params: data} : {data}), ...options
     }) as unknown as Promise<ScmResponse<T>>;
 }
 
@@ -53,8 +53,8 @@ function printCommand<T>(path: string, data: unknown): Promise<ScmResponse<T>> {
 }
 
 export const deliveryApi = {
-    routes: (query: Query) => call<ScmPage<DeliveryRoute>>('get', '/routes', query),
-    detail: (id: Id) => call<RouteDetail>('get', `/routes/${id}`),
+    routes: (query: Query, options?: RequestOptions) => call<ScmPage<DeliveryRoute>>('get', '/routes', query, options),
+    detail: (id: Id, options?: RequestOptions) => call<RouteDetail>('get', `/routes/${id}`, undefined, options),
     create: (form: RouteForm) => call<Id>('post', '/routes', form),
     update: (id: Id, form: RouteForm) => call<string>('put', `/routes/${id}`, form),
     plan: (id: Id, version: number) => call<string>('post', `/routes/${id}/plan`, {version}),
@@ -76,7 +76,8 @@ export const deliveryApi = {
     sign: (id: Id, orderId: Id, form: SignPayload) => call<string>('post', `/routes/${id}/orders/${orderId}/sign`, form),
     /** L3 完成线路：DISPATCHED → COMPLETED；仍有活动订单未签收时服务端返回 41117。 */
     complete: (id: Id, version: number) => call<string>('post', `/routes/${id}/complete`, {version}),
-    candidates: (query: Query) => call<ScmPage<CandidateOrder>>('get', '/candidate-orders', query),
+    candidates: (query: Query, options?: RequestOptions) =>
+        call<ScmPage<CandidateOrder>>('get', '/candidate-orders', query, options),
     addOrders: (id: Id, version: number, orderIds: Id[], reason: string) => call<string>('post', `/routes/${id}/orders`, {
         version,
         orderIds,
@@ -94,9 +95,11 @@ export const deliveryApi = {
         remark?: string | null
     }) =>
         call<string>('put', `/routes/${id}/stops/${stopId}`, form),
-    print: (id: Id) => call<RoutePrint>('get', `/routes/${id}/print`),
-    ordersView: (id: Id) => call<RouteOrderView[]>('get', `/routes/${id}/orders-view`),
-    customersView: (id: Id) => call<RouteCustomerView[]>('get', `/routes/${id}/customers-view`),
+    print: (id: Id, options?: RequestOptions) => call<RoutePrint>('get', `/routes/${id}/print`, undefined, options),
+    ordersView: (id: Id, options?: RequestOptions) =>
+        call<RouteOrderView[]>('get', `/routes/${id}/orders-view`, undefined, options),
+    customersView: (id: Id, options?: RequestOptions) =>
+        call<RouteCustomerView[]>('get', `/routes/${id}/customers-view`, undefined, options),
     printOrders: (id: Id, version: number, orderIds: Id[]) =>
         printCommand<PrintResult>(`/routes/${id}/print/orders`, {version, orderIds}),
     printCustomers: (id: Id,
@@ -106,11 +109,13 @@ export const deliveryApi = {
                      orderPrintFilter: 'ALL' | 'PRINTED' | 'UNPRINTED') =>
         printCommand<PrintResult>(`/routes/${id}/print/customers`,
             {version, customerIds, customerStatusFilter, orderPrintFilter}),
-    warehouses: () => call<Warehouse[]>('get', '/options/warehouses'),
-    drivers: () => call<Driver[]>('get', '/options/drivers'),
-    vehicles: () => call<Vehicle[]>('get', '/options/vehicles'),
-    queryDrivers: (query: Query) => call<ScmPage<Driver>>('get', '/drivers', query),
+    warehouses: (options?: RequestOptions) => call<Warehouse[]>('get', '/options/warehouses', undefined, options),
+    drivers: (options?: RequestOptions) => call<Driver[]>('get', '/options/drivers', undefined, options),
+    vehicles: (options?: RequestOptions) => call<Vehicle[]>('get', '/options/vehicles', undefined, options),
+    queryDrivers: (query: Query, options?: RequestOptions) =>
+        call<ScmPage<Driver>>('get', '/drivers', query, options),
     saveDriver: (form: Partial<Driver>) => call<Id>('post', '/drivers', form),
-    queryVehicles: (query: Query) => call<ScmPage<Vehicle>>('get', '/vehicles', query),
+    queryVehicles: (query: Query, options?: RequestOptions) =>
+        call<ScmPage<Vehicle>>('get', '/vehicles', query, options),
     saveVehicle: (form: Partial<Vehicle>) => call<Id>('post', '/vehicles', form),
 };

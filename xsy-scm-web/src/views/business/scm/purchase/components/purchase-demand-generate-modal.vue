@@ -127,7 +127,7 @@ async function loadWarehouses() {
   }
   warehouseLoading.value = true;
   try {
-    warehouses.value = (await warehouseApi.list()).data ?? [];
+    warehouses.value = (await warehouseApi.list({suppressGlobalErrorMessage: true})).data ?? [];
   } catch (e) {
     error.value = purchaseError(e);
   } finally {
@@ -177,8 +177,8 @@ async function generate() {
     result.value = generated.data;
     message.success(`冻结批次 ${r.data.batchId} 已生成 ${generated.data.createdCount} 条需求，跳过 ${generated.data.skippedCount} 条`);
     emit('generated');
-  } catch (e) {
-    error.value = purchaseError(e);
+  } catch {
+    // 生成失败只走全局 toast；弹窗里的 error 留给本地校验
   } finally {
     saving.value = false;
   }

@@ -11,7 +11,7 @@
  * `ship` 从源仓扣减（进入在途），`receive` 向目标仓累加（单据完成）。
  * 两步各自只影响一个仓库，因此不存在跨仓的并发问题。
  */
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -22,8 +22,8 @@ import type {
 } from '/@/views/business/scm/inventory/inventory-types';
 
 export const inventoryTransferApi = {
-    query: (data: InventoryTransferQuery) =>
-        postRequest('/scm/inventory/transfer/query', data) as unknown as Promise<
+    query: (data: InventoryTransferQuery, options?: RequestOptions) =>
+        postRequest('/scm/inventory/transfer/query', data, options) as unknown as Promise<
             ScmResponse<ScmPage<InventoryTransfer>>
         >,
     detail: (id: Id) =>

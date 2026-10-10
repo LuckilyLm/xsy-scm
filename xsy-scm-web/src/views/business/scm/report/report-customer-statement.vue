@@ -22,8 +22,8 @@
   <a-card v-if="selected" :title="`客户对账单 · 版本 #${selected.id}`" size="small" :bordered="false">
     <template #extra>
       <a-space>
-        <a-button v-privilege="PERM.EXPORT" @click="exportVersion">导出 Excel</a-button>
-        <a-button @click="printVersion">打印 / 保存 PDF</a-button>
+        <a-button v-privilege="PERM.EXPORT" size="small" @click="exportVersion">导出 Excel</a-button>
+        <a-button size="small" @click="printVersion">打印 / 保存 PDF</a-button>
       </a-space>
     </template>
     <div ref="printArea" class="statement-print">
@@ -87,7 +87,7 @@ const lineColumns: TableColumnsType<CustomerStatementLine> = [
 async function loadHistory() {
   if (!settlementCustomerId.value) return;
   busy.value = true; error.value = '';
-  try { history.value = (await customerStatementApi.history(settlementCustomerId.value)).data ?? []; }
+  try { history.value = (await customerStatementApi.history(settlementCustomerId.value, {suppressGlobalErrorMessage: true})).data ?? []; }
   catch (e) { error.value = reportError(e); }
   finally { busy.value = false; }
 }
@@ -102,12 +102,14 @@ async function freeze() {
     selected.value = (await customerStatementApi.freeze({settlementCustomerId: settlementCustomerId.value,
       customerId: customerId.value, startDate: dateRange.value[0], endDate: dateRange.value[1]})).data;
     await loadHistory();
-  } catch (e) { error.value = reportError(e); }
+  } catch {
+    // 生成对账单失败只走全局 toast
+  }
   finally { busy.value = false; }
 }
 async function openVersion(id: ReportId) {
   busy.value = true; error.value = '';
-  try { selected.value = (await customerStatementApi.detail(id)).data; }
+  try { selected.value = (await customerStatementApi.detail(id, {suppressGlobalErrorMessage: true})).data; }
   catch (e) { error.value = reportError(e); }
   finally { busy.value = false; }
 }

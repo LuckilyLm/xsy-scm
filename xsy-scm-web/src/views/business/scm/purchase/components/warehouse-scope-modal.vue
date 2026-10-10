@@ -120,14 +120,17 @@ const employeeValue = computed<number | undefined>({
   },
 });
 
-/** 仓库主数据不套数据范围（scm:warehouse:query 即可读全量），一次取全含停用，避免授权到停用仓时选项缺失。 */
+/**
+ * 仓库主数据不套数据范围（scm:warehouse:query 即可读全量），一次取全含停用，避免授权到停用仓时选项缺失。
+ * 条数取接口上限 100：`WarehouseQueryForm.pageSize` 的 `@Max` 就是 100，写更大值会被参数校验挡回来。
+ */
 async function ensureWarehouses() {
   if (warehouses.value.length) {
     return;
   }
   warehouseLoading.value = true;
   try {
-    const r = await warehouseApi.query({pageNum: 1, pageSize: 1000});
+    const r = await warehouseApi.query({pageNum: 1, pageSize: 100}, {suppressGlobalErrorMessage: true});
     warehouses.value = r.data.list;
   } catch (e) {
     error.value = purchaseError(e);
@@ -142,7 +145,7 @@ async function loadEmployeeWarehouses(id?: number) {
     return;
   }
   try {
-    const r = await warehouseApi.scopeWarehouses(id);
+    const r = await warehouseApi.scopeWarehouses(id, {suppressGlobalErrorMessage: true});
     warehouseIds.value = r.data.map((row) => row.warehouseId);
   } catch (e) {
     error.value = purchaseError(e);
@@ -166,7 +169,7 @@ async function openEmployees(warehouseId: Id, warehouseName: string) {
   visible.value = true;
   viewLoading.value = true;
   try {
-    const r = await warehouseApi.scopeEmployees(warehouseId);
+    const r = await warehouseApi.scopeEmployees(warehouseId, {suppressGlobalErrorMessage: true});
     employees.value = r.data;
   } catch (e) {
     error.value = purchaseError(e);
@@ -193,14 +196,13 @@ async function save() {
 
 async function saveConfirmed(target: number) {
   saving.value = true;
-  error.value = '';
   try {
     // 整体替换：提交当前勾选的全集，空数组即回收该员工全部仓库授权。
     await warehouseApi.scopeUpdate({employeeId: target, warehouseIds: warehouseIds.value});
     message.success('授权已更新');
     visible.value = false;
-  } catch (e) {
-    error.value = purchaseError(e);
+  } catch {
+    // 保存失败只走全局 toast：弹窗里再挂一条同样的话，等于让用户读两遍
   } finally {
     saving.value = false;
   }
