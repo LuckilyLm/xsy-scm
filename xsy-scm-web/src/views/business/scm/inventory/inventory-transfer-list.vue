@@ -54,9 +54,6 @@
         <a-button style="margin-left: 8px" @click="openInTransit" v-privilege="'scm:inventory:transfer:query'">
           在途库存
         </a-button>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          发出后进入「在途」：源仓已扣、目标仓未加，需由目标仓收货才完成。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -77,7 +74,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无调拨单' }"
-        :scroll="{ x: 1070 }"
+        :scroll="{ x: 1290 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'direction'">
@@ -90,19 +87,10 @@
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
-        <template v-else-if="column.dataIndex === 'shippedAt'">
-          <!-- 发出/收货的「谁」和「何时」是同一件事的两面，合成一格 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.shippedAt) }}</span>
-            <span v-if="record.shippedBy" class="scm-cell-stack__sub">{{ record.shippedBy }}</span>
-          </div>
-        </template>
-        <template v-else-if="column.dataIndex === 'receivedAt'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.receivedAt) }}</span>
-            <span v-if="record.receivedBy" class="scm-cell-stack__sub">{{ record.receivedBy }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex === 'shippedAt'">{{ datetime(record.shippedAt) }}</template>
+        <template v-else-if="column.dataIndex === 'shippedBy'">{{ record.shippedBy || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'receivedAt'">{{ datetime(record.receivedAt) }}</template>
+        <template v-else-if="column.dataIndex === 'receivedBy'">{{ record.receivedBy || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 行内常驻「详情」与本状态唯一的推进动作（草稿→发出，在途→收货），其余收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -152,13 +140,7 @@
       :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
-    <a-alert
-        type="info"
-        show-icon
-        style="margin-bottom: 12px"
-        message="调拨分两步：先发出，再由目标仓收货。"
-    />
-    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="源仓库（转出）" name="fromWarehouseId">
         <WarehouseSelect v-model:value="form.fromWarehouseId" :options="warehouses" width="260px"/>
       </a-form-item>
@@ -205,9 +187,6 @@
           </template>
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
-        <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一个商品规格只能出现一次。两仓的记账单位必须一致 —— 库存不做自动换算。
-        </a-typography-text>
       </a-form-item>
     </a-form>
     <template #footer>
@@ -227,12 +206,7 @@
       :footer="null"
       @cancel="inTransitOpen = false"
   >
-    <a-alert
-        type="info"
-        show-icon
-        style="margin-bottom: 12px"
-        message="在途量不在任何仓库的余额里，对账时需单独计入。"
-    />
+    <p class="scm-note scm-note--block">在途量不在任何仓库的余额里，对账时需单独计入。</p>
     <a-table
         size="small"
         :data-source="inTransitRows"
@@ -242,7 +216,7 @@
         :loading="inTransitLoading"
         :pagination="false"
         :locale="{ emptyText: '当前没有在途调拨' }"
-        :scroll="{ x: 840 }"
+        :scroll="{ x: 990 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'direction'">
@@ -252,11 +226,9 @@
             <span>{{ record.toWarehouseName || '—' }}</span>
           </span>
         </template>
-        <template v-else-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.skuName || '—' }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex === 'sku'">{{ record.skuName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -319,8 +291,10 @@ const columns = ref<TableColumnsType<InventoryTransfer>>([
   {title: '调拨单号', dataIndex: 'transferNo', width: 190},
   {title: '调拨方向', dataIndex: 'direction', width: 260, align: 'center'},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '发出', dataIndex: 'shippedAt', width: 170},
-  {title: '收货', dataIndex: 'receivedAt', width: 170},
+  {title: '发出时间', dataIndex: 'shippedAt', width: 170},
+  {title: '发出人', dataIndex: 'shippedBy', width: 110},
+  {title: '收货时间', dataIndex: 'receivedAt', width: 170},
+  {title: '收货人', dataIndex: 'receivedBy', width: 110},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 180},
 ]);
 
@@ -657,6 +631,7 @@ const inTransitColumns: TableColumnsType = [
   {title: '调拨单号', dataIndex: 'transferNo', width: 190},
   {title: '调拨方向', dataIndex: 'direction', width: 240, align: 'center'},
   {title: '商品规格', dataIndex: 'sku', width: 200},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '在途数量', dataIndex: 'quantity', align: 'right', width: 120},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
 ];

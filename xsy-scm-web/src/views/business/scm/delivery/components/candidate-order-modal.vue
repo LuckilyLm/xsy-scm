@@ -21,7 +21,7 @@
       </a-form-item>
       <a-form-item label="期望配送时间"
       >
-        <a-range-picker v-model:value="timeRange" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" @change="changeTime"
+        <a-range-picker v-model:value="timeRange" show-time value-format="YYYY-MM-DD HH:mm:ss" @change="changeTime"
         />
       </a-form-item>
       <a-form-item v-if="canViewAmount" label="金额"
@@ -79,9 +79,9 @@
       <a-pagination v-model:current="query.pageNum" v-model:page-size="query.pageSize" :total="total" show-size-changer
                     @change="load"/>
     </div>
-    <a-form layout="vertical"
+    <a-form ref="formRef" :model="{reason}" :rules="formRules" layout="vertical"
     >
-      <a-form-item label="组单原因" required>
+      <a-form-item label="组单原因" name="reason">
         <a-input v-model:value="reason" :maxlength="500" placeholder="例如：本次城区配送安排"/>
       </a-form-item
       >
@@ -91,7 +91,7 @@
 </template>
 <script setup lang="ts">
 import {computed, reactive, ref} from 'vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import type {AreaNode} from '/@/types/business/scm/area';
@@ -117,6 +117,9 @@ const rows = ref<CandidateOrder[]>([]),
 const route = ref<DeliveryRoute>(),
     reason = ref('');
 let generation = 0;
+const formRef = ref();
+/** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {reason: [{required: true, message: '请填写组单原因', trigger: 'blur'}]};
 // 候选池是调度能力，金额列仍按调用者的金额权限出现（服务端已把无权时的值抹成 null）。
 const columns = computed<TableColumnsType>(() => [
   {title: '订单号', dataIndex: 'orderNo', width: 170},
@@ -184,8 +187,14 @@ async function load() {
 }
 
 async function save() {
-  if (!route.value || !selected.value.length || !reason.value.trim()) {
-    error.value = '请选择订单并填写组单原因';
+  // 组单原因走字段校验；「至少选一单」是列表选择，用 toast
+  try {
+    await formRef.value?.validate();
+  } catch {
+    return;
+  }
+  if (!route.value || !selected.value.length) {
+    message.warning('请先勾选要加入线路的订单');
     return;
   }
   saving.value = true;

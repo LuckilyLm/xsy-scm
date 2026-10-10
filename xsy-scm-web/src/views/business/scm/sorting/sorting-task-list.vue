@@ -43,18 +43,18 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <div class="smart-table-btn-block">
-      <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
-      <a-typography-text type="secondary" class="toolbar-hint">
-        一个订单行同一时刻只属于一个活动任务
-      </a-typography-text>
-    </div>
-    <div class="smart-table-setting-block">
-      <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK"
-          :refresh="queryData"
-      />
+    <div class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-operate-block">
+        <a-button type="primary" v-privilege="'scm:sorting:task:add'" @click="openCreate">新建分拣任务</a-button>
+        <p class="scm-note">一个订单行同一时刻只属于一个活动任务</p>
+      </div>
+      <div class="smart-table-setting-block">
+        <TableOperator
+            v-model="columns"
+            :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK"
+            :refresh="queryData"
+        />
+      </div>
     </div>
 
     <a-table
@@ -461,11 +461,11 @@ async function submitAction() {
     actionError.value = '';
     const reason = actionReason.value.trim();
     if (actionMode.value !== 'assign' && !reason) {
-        actionError.value = '请填写原因。';
+        message.warning('请填写原因');
         return;
     }
     if (actionMode.value === 'assign' && actionAssignee.value == null) {
-        actionError.value = '请选择受指派人。';
+        message.warning('请选择受指派人');
         return;
     }
     busy.value = true;
@@ -587,7 +587,7 @@ function openCreate() {
 
 async function submitCreate() {
     if (createForm.warehouseId === undefined || createForm.warehouseId === null || createForm.warehouseId === '') {
-        createError.value = '请选择分拣仓库。';
+        message.warning('请选择分拣仓库');
         return;
     }
     if (!candidateSelected.value.length) {

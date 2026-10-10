@@ -3,19 +3,19 @@
             :open="visible" :width="scmDrawerWidth('s')" @close="visible=false">
     <a-spin :spinning="loading">
       <a-alert v-if="error" :message="error" type="error" show-icon class="drawer-error"/>
-      <a-form layout="vertical" :model="form">
+      <a-form ref="formRef" :model="{...form, unitPrice, range}" :rules="formRules" layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">定价对象</h3>
           </div>
           <a-row :gutter="20">
             <a-col :span="24">
-              <a-form-item label="客户" required>
+              <a-form-item label="客户" name="customerId">
                 <CustomerSelect v-model:value="form.customerId"/>
               </a-form-item>
             </a-col>
             <a-col :span="24">
-              <a-form-item label="商品规格" required>
+              <a-form-item label="商品规格" name="skuId">
                 <SkuSelect v-model:value="form.skuId"/>
               </a-form-item>
             </a-col>
@@ -27,7 +27,7 @@
           </div>
           <a-row :gutter="20">
             <a-col :span="24">
-              <a-form-item required>
+              <a-form-item name="unitPrice">
                 <template #label>
                   单价
                   <ScmFieldHelp label="单价" text="0 元也是有效价格"/>
@@ -52,12 +52,12 @@
           </div>
           <a-row :gutter="20">
             <a-col :span="24">
-              <a-form-item required>
+              <a-form-item name="range">
                 <template #label>
                   有效区间
                   <ScmFieldHelp label="有效区间" text="开始时间包含，结束时间不包含；结束留空表示长期有效"/>
                 </template>
-                <a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
+                <a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss"
                                 :allow-empty="[false,true]" style="width:100%"/>
               </a-form-item>
             </a-col>
@@ -90,6 +90,22 @@ import {fixed4} from '../../common/scm-fixed';
 const emit = defineEmits<{ saved: [] }>();
 const visible = ref(false), loading = ref(false), saving = ref(false), error = ref('');
 const form = reactive<PriceForm>(emptyPrice());
+const formRef = ref();
+/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  customerId: [{required: true, message: '请选择客户', trigger: 'change'}],
+  skuId: [{required: true, message: '请选择商品规格', trigger: 'change'}],
+  unitPrice: [{
+    validator: () => (unitPrice.value == null
+        ? Promise.reject(new Error('请填写单价（零价也是有效价格，填 0 即可）'))
+        : Promise.resolve()),
+    trigger: 'blur',
+  }],
+  range: [{
+    validator: () => (range.value?.[0] ? Promise.resolve() : Promise.reject(new Error('请选择生效时间'))),
+    trigger: 'change',
+  }],
+};
 const range = ref<[string, string] | undefined>();
 /**
  * 单价在表单里是 `number`（InputNumber 只接受数字），而 `PriceForm.unitPrice` 是
@@ -126,16 +142,19 @@ async function open(id?: ScmId) {
 }
 
 async function submit() {
-  if (unitPrice.value === null) {
-    error.value = '请填写单价（零价也是有效价格，填 0 即可）';
+  // 必填项走表单校验：错误显示在对应输入框下方
+  try {
+    await formRef.value?.validate();
+  } catch {
     return;
   }
   form.unitPrice = fixed4(unitPrice.value) as string;
   form.effectiveFrom = range.value?.[0] || '';
   form.effectiveTo = range.value?.[1] || null;
+  // 剩下的跨字段业务规则（结束时间必须晚于开始时间）不是字段必填，用 toast
   const problems = validatePrice(form, 'customerId');
   if (problems.length) {
-    error.value = problems.join('；');
+    message.warning(problems.join('；'));
     return;
   }
   saving.value = true;

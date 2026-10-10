@@ -34,24 +34,21 @@
       </div>
     </a-row>
     <a-table id="scm-finance-write-off-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1295}">
+             row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1785}">
       <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='source'">
-          <!-- 资金方作主行，「类型 + 单号」作次要行：三者回答的是同一个问题（钱从哪来） -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.sourceName || '—' }}</span>
-            <span class="scm-cell-stack__sub">
-              {{ sourceTypeText(record.sourceType) }} {{ record.sourceNo || '—' }}
-              <a v-if="record.sourceType==='BALANCE_MOVEMENT'" v-privilege="'scm:balance:movement:query'"
-                 @click="movementDetail?.open({movementId: record.sourceId})">来源流水</a>
-            </span>
-          </div>
+        <template v-if="column.dataIndex==='sourceName'">{{ record.sourceName || '—' }}</template>
+        <template v-else-if="column.dataIndex==='sourceType'">{{ sourceTypeText(record.sourceType) }}</template>
+        <template v-else-if="column.dataIndex==='sourceNo'">
+          <span v-if="record.sourceNo" class="scm-mono">{{ record.sourceNo }}</span>
+          <span v-else>—</span>
+          <a v-if="record.sourceType==='BALANCE_MOVEMENT'" v-privilege="'scm:balance:movement:query'"
+             @click="movementDetail?.open({movementId: record.sourceId})">来源流水</a>
         </template>
-        <template v-else-if="column.dataIndex==='target'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.targetName || '—' }}</span>
-            <span class="scm-cell-stack__sub">{{ targetTypeText(record.targetType) }} {{ record.targetNo || '—' }}</span>
-          </div>
+        <template v-else-if="column.dataIndex==='targetName'">{{ record.targetName || '—' }}</template>
+        <template v-else-if="column.dataIndex==='targetType'">{{ targetTypeText(record.targetType) }}</template>
+        <template v-else-if="column.dataIndex==='targetNo'">
+          <span v-if="record.targetNo" class="scm-mono">{{ record.targetNo }}</span>
+          <span v-else>—</span>
         </template>
         <template v-else-if="column.dataIndex==='entryType'">
           <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
@@ -59,13 +56,8 @@
         <template v-else-if="column.dataIndex==='amount'">
           <span class="scm-money">{{ moneyText(text) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='writtenOffAt'">
-          <!-- 「谁在什么时候撤销/核销的」是同一件事的两面，合成一格 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ dateTimeText(text) }}</span>
-            <span v-if="record.operator" class="scm-cell-stack__sub">{{ record.operator }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex==='writtenOffAt'">{{ dateTimeText(text) }}</template>
+        <template v-else-if="column.dataIndex==='operator'">{{ record.operator || '—' }}</template>
         <template v-else-if="column.dataIndex==='action'">
           <!-- 撤销核销是追加反向事实，不是编辑：保持 danger 视觉 + 独立的二次确认弹窗 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -84,15 +76,15 @@
 
   <a-drawer v-model:open="addOpen" title="登记多目标核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
-    <a-form layout="vertical">
-      <a-form-item required>
+    <a-form ref="addFormRef" :model="{sourceType, source}" :rules="addRules" layout="vertical" class="app-drawer-form">
+      <a-form-item name="sourceType">
         <template #label>
           资金类型
           <ScmFieldHelp label="资金类型" text="收款核销应收，付款核销应付"/>
         </template>
         <a-select v-model:value="sourceType" :options="sourceOptions" placeholder="选择资金类型" @change="resetAllocation"/>
       </a-form-item>
-      <a-form-item label="资金单" required>
+      <a-form-item label="资金单" name="source">
         <a-input :value="source?.documentNo || ''" readonly placeholder="选择可核销资金单">
           <template #addonAfter><a-button type="link" :disabled="!sourceType" @click="openSourcePicker">选择</a-button></template>
         </a-input>
@@ -126,7 +118,7 @@
   <a-modal v-model:open="reverseOpen" title="撤销核销" :confirm-loading="reverseSaving" @ok="submitReverse">
     <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一条反向核销，金额 ${moneyText(reverseRow.amount)}。`"/>
     <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError"/>
-    <a-form layout="vertical"><a-form-item label="撤销原因" required><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/></a-form-item></a-form>
+    <a-form ref="reverseFormRef" :model="{reverseReason}" :rules="reverseRules" layout="vertical"><a-form-item label="撤销原因" name="reverseReason"><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/></a-form-item></a-form>
   </a-modal>
 
   <BalanceMovementDetail ref="movementDetail"/>
@@ -160,6 +152,17 @@ const addOpen = ref(false), addSaving = ref(false), addError = ref(''), sourceTy
 const source = ref<FinanceCandidate | null>(null), targets = ref<AllocationDraft[]>([]);
 const pickerOpen = ref(false), pickerKind = ref<'RECEIPT'|'PAYMENT'|'RECEIVABLE'|'PAYABLE'>('RECEIPT'), picking = ref<'SOURCE'|'TARGET'>('SOURCE');
 const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinanceWriteOff | null>(null);
+const addFormRef = ref();
+const reverseFormRef = ref();
+/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const addRules = {
+    sourceType: [{required: true, message: '请选择资金类型', trigger: 'change'}],
+    source: [{
+        validator: () => (source.value ? Promise.resolve() : Promise.reject(new Error('请选择资金单'))),
+        trigger: 'change',
+    }],
+};
+const reverseRules = {reverseReason: [{required: true, message: '请填写撤销原因', trigger: 'blur'}]};
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const sourceOptions = Object.values(SCM_FINANCE_SOURCE_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
@@ -189,13 +192,18 @@ function targetTypeText(value?: string | null): string {
 // 资金与目标各带一组「类型 + 单号 + 往来方」，合并成来源 / 对象两格（13 列 → 8 列）；
 // 核销时点与操作人合成一格。
 const columns = ref<TableColumnsType<FinanceWriteOff>>([
-    {title: '核销单号', dataIndex: 'writeOffNo', width: 190},
-    {title: '来源', dataIndex: 'source', width: 220},
-    {title: '对象', dataIndex: 'target', width: 220},
+    {title: '核销单号', dataIndex: 'writeOffNo', width: 175},
+    {title: '资金方', dataIndex: 'sourceName', width: 150},
+    {title: '资金类型', dataIndex: 'sourceType', align: 'center', width: 90},
+    {title: '资金单号', dataIndex: 'sourceNo', width: 180},
+    {title: '核销目标', dataIndex: 'targetName', width: 150},
+    {title: '目标类型', dataIndex: 'targetType', align: 'center', width: 90},
+    {title: '目标单号', dataIndex: 'targetNo', width: 175},
     {title: '核销金额', dataIndex: 'amount', align: 'right', width: 130},
     {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
     {title: '原因', dataIndex: 'reason', width: 180},
     {title: '核销时点', dataIndex: 'writtenOffAt', width: 165},
+    {title: '操作人', dataIndex: 'operator', width: 110},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
 const targetColumns: TableColumnsType<AllocationDraft> = [
@@ -243,9 +251,15 @@ function onCandidateSelected(candidate: FinanceCandidate) {
 function removeTarget(id: FinanceCandidate['id']) { targets.value = targets.value.filter((item) => String(item.id) !== String(id)); }
 
 async function submitAdd() {
+    // 资金类型 / 资金单走字段校验；「至少一条目标有正数金额」是跨行的业务规则，用 toast
+    try {
+        await addFormRef.value?.validate();
+    } catch {
+        return;
+    }
     const items = targets.value.filter((item) => isValidPositiveAmount(item.amount)).map((item) => ({targetId: item.id, amount: item.amount}));
-    if (!sourceType.value || !source.value || !items.length) {
-        addError.value = '请选择资金单和目标单，并为至少一条目标填写正数金额（最多 4 位小数）。';
+    if (!items.length) {
+        message.warning('请为至少一条目标填写正数金额（最多 4 位小数）');
         return;
     }
     addSaving.value = true; addError.value = '';
@@ -258,7 +272,13 @@ async function submitAdd() {
 
 function openReverse(row: FinanceWriteOff) { reverseRow.value = row; reverseReason.value = ''; reverseError.value = ''; reverseOpen.value = true; }
 async function submitReverse() {
-    if (!reverseRow.value || !reverseReason.value.trim()) { reverseError.value = '请填写撤销原因。'; return; }
+    if (!reverseRow.value) return;
+    // 必填项走表单校验：错误显示在输入框下方
+    try {
+        await reverseFormRef.value?.validate();
+    } catch {
+        return;
+    }
     reverseSaving.value = true; reverseError.value = '';
     try {
         await financeApi.writeOffReverse({writeOffId: reverseRow.value.writeOffId, reason: reverseReason.value.trim()});

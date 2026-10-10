@@ -28,7 +28,7 @@
         <a-range-picker
             v-model:value="occurredRange"
             show-time
-            value-format="YYYY-MM-DDTHH:mm:ssZ"
+            value-format="YYYY-MM-DD HH:mm:ss"
             :allow-empty="[true, true]"
         />
       </a-form-item>
@@ -50,9 +50,6 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-typography-text type="secondary">
-          流水是只追加的账本：不可编辑、不可删除，冲销以新增反向流水实现。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -109,12 +106,11 @@
         <template v-else-if="column.dataIndex === 'unitCost'">
           <span class="scm-money">{{ moneyText(record.unitCost) }}</span>
         </template>
+        <template v-else-if="column.dataIndex === 'beforeQuantity'">
+          <span class="scm-quantity">{{ quantityText(record.beforeQuantity) }}</span>
+        </template>
         <template v-else-if="column.dataIndex === 'afterQuantity'">
-          <!-- 结存：期末在上（本次动完的账面量），期初在下（同一格内的对照值） -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main scm-quantity">{{ quantityText(record.afterQuantity) }}</span>
-            <span class="scm-cell-stack__sub scm-quantity">期初 {{ quantityText(record.beforeQuantity) }}</span>
-          </div>
+          <span class="scm-quantity">{{ quantityText(record.afterQuantity) }}</span>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -179,7 +175,8 @@ const columns = ref<InventoryMovementColumn[]>([
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 80},
   {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 120},
-  {title: '结存', dataIndex: 'afterQuantity', align: 'right', width: 140},
+  {title: '期初量', dataIndex: 'beforeQuantity', align: 'right', width: 110},
+  {title: '结存量', dataIndex: 'afterQuantity', align: 'right', width: 110},
   {title: '操作者', dataIndex: 'operator', width: 110},
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value));

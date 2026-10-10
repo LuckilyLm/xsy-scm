@@ -13,22 +13,27 @@
   >
     <a-alert message="超管需要直接在数据库表 t_employee修改哦" type="error" closable/>
     <br/>
-    <a-form ref="formRef" :model="form" :rules="rules" layout="vertical">
-      <a-form-item label="姓名" name="actualName">
-        <a-input v-model:value.trim="form.actualName" placeholder="请输入姓名"/>
+    <a-form ref="formRef" :model="form" :rules="rules" layout="vertical" class="app-drawer-form">
+      <a-form-item label="姓名" name="actualName" class="app-drawer-field--compact">
+        <a-input v-model:value.trim="form.actualName" :maxlength="30" placeholder="请输入姓名"/>
       </a-form-item>
-      <a-form-item label="手机号" name="phone">
-        <a-input v-model:value.trim="form.phone" placeholder="请输入手机号"/>
+      <a-form-item label="手机号" name="phone" class="app-drawer-field--compact">
+        <a-input v-model:value.trim="form.phone" :maxlength="11" placeholder="请输入手机号"/>
       </a-form-item>
       <a-form-item label="部门" name="departmentId">
         <DepartmentTreeSelect ref="departmentTreeSelect" width="100%" :init="false" v-model:value="form.departmentId"/>
       </a-form-item>
-      <a-form-item label="登录名" name="loginName">
-        <a-input v-model:value.trim="form.loginName" placeholder="请输入登录名"/>
-        <p class="hint">初始密码默认为：随机</p>
+      <a-form-item name="loginName">
+        <template #label>
+          登录名
+          <a-tooltip title="新员工的初始密码随机生成" :trigger="['hover', 'focus']">
+            <InfoCircleOutlined class="app-drawer-form__help" tabindex="0" aria-label="初始密码说明"/>
+          </a-tooltip>
+        </template>
+        <a-input v-model:value.trim="form.loginName" :maxlength="30" placeholder="请输入登录名"/>
       </a-form-item>
       <a-form-item label="邮箱" name="email">
-        <a-input v-model:value.trim="form.email" placeholder="请输入邮箱"/>
+        <a-input v-model:value.trim="form.email" :maxlength="100" placeholder="请输入邮箱"/>
       </a-form-item>
       <a-form-item label="性别" name="gender">
         <smart-enum-select style="width: 100%" v-model:value="form.gender" placeholder="请选择性别"
@@ -44,7 +49,7 @@
         <PositionSelect v-model:value="form.positionId" placeholder="请选择职务"/>
       </a-form-item>
 
-      <a-form-item label="角色" name="roleIdList">
+      <a-form-item label="角色" name="roleIdList" class="app-drawer-field--multi">
         <a-select mode="multiple" v-model:value="form.roleIdList" optionFilterProp="title" placeholder="请选择角色">
           <a-select-option v-for="item in roleList" :key="item.roleId" :title="item.roleName">{{
               item.roleName
@@ -62,6 +67,7 @@
 </template>
 <script setup lang="ts">
 import {message} from 'ant-design-vue';
+import {InfoCircleOutlined} from '@ant-design/icons-vue';
 import _ from 'lodash';
 import {nextTick, reactive, ref} from 'vue';
 import {employeeApi} from '/@/api/system/employee-api';
@@ -148,7 +154,11 @@ const rules = {
   departmentId: [{required: true, message: '部门不能为空'}],
   disabledFlag: [{required: true, message: '状态不能为空'}],
   leaveFlag: [{required: true, message: '在职状态不能为空'}],
-  email: [{required: true, message: '请输入邮箱'}],
+  email: [
+    {required: true, message: '请输入邮箱'},
+    {type: 'email', message: '邮箱格式不正确'},
+    {max: 100, message: '邮箱最多 100 个字符'},
+  ],
 };
 
 // 校验表单
@@ -233,8 +243,4 @@ defineExpose({
   z-index: 1;
 }
 
-.hint {
-  margin-top: 5px;
-  color: #bfbfbf;
-}
 </style>

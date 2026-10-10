@@ -5,12 +5,11 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "jsx": "preserve",
-    "baseUrl": ".",
     "sourceMap": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
@@ -22,7 +21,7 @@
     "typeRoots": ["./node_modules/@types/", "./types"],
     "skipLibCheck": true,
     "paths": {
-      "/@/*": ["src/*"]
+      "/@/*": ["./src/*"]
     }
   },
   "include": [

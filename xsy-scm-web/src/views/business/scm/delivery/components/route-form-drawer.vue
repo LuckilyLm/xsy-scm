@@ -3,23 +3,23 @@
             :width="scmDrawerWidth('s')" :mask-closable="!saving">
     <a-alert v-if="error" type="error" :message="error" show-icon class="drawer-error"/>
     <a-spin :spinning="loading">
-      <a-form layout="vertical">
+      <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">基础信息</h3>
           </div>
-          <a-form-item label="线路名称" required>
+          <a-form-item label="线路名称" name="routeName">
             <a-input v-model:value="form.routeName" :maxlength="100" placeholder="例如：南山 1 线"/>
           </a-form-item>
           <a-row :gutter="16">
             <a-col :span="12">
-              <a-form-item label="配送日期" required>
+              <a-form-item label="配送日期" name="deliveryDate">
                 <a-date-picker v-model:value="form.deliveryDate" value-format="YYYY-MM-DD"/>
               </a-form-item>
             </a-col>
             <a-col :span="12">
               <a-form-item label="计划发车时间">
-                <a-date-picker v-model:value="departure" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"/>
+                <a-date-picker v-model:value="departure" show-time value-format="YYYY-MM-DD HH:mm:ss"/>
               </a-form-item>
             </a-col>
           </a-row>
@@ -28,7 +28,7 @@
           <div class="scm-form-section__head">
             <h3 class="scm-form-section__title">运力</h3>
           </div>
-          <a-form-item label="起点仓库" required>
+          <a-form-item label="起点仓库" name="warehouseId">
             <a-select v-model:value="form.warehouseId" :options="warehouses.map((w) => ({ value: w.id, label: w.name }))"
                       placeholder="选择启用仓库"
             />
@@ -98,6 +98,14 @@ const visible = ref(false),
     error = ref('');
 const routeId = ref<Id>();
 const form = ref<RouteForm>({routeName: '', deliveryDate: dayjs().format('YYYY-MM-DD')});
+const formRef = ref();
+
+/** 逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  routeName: [{required: true, message: '请填写线路名称', trigger: 'blur'}],
+  deliveryDate: [{required: true, message: '请选择配送日期', trigger: 'change'}],
+  warehouseId: [{required: true, message: '请选择起点仓库', trigger: 'change'}],
+};
 const departure = ref<string>();
 const warehouses = ref<Warehouse[]>([]),
     drivers = ref<Driver[]>([]),
@@ -121,7 +129,7 @@ async function open(route?: DeliveryRoute) {
         remark: route.remark,
       }
       : {routeName: '', deliveryDate: dayjs().format('YYYY-MM-DD')};
-  departure.value = route?.plannedDepartureTime ? dayjs(route.plannedDepartureTime).format('YYYY-MM-DDTHH:mm:ssZ') : undefined;
+  departure.value = route?.plannedDepartureTime ? dayjs(route.plannedDepartureTime).format('YYYY-MM-DD HH:mm:ss') : undefined;
   try {
     const [w, d, v] = await Promise.all([deliveryApi.warehouses(), deliveryApi.drivers(), deliveryApi.vehicles()]);
     warehouses.value = w.data;
@@ -136,8 +144,10 @@ async function open(route?: DeliveryRoute) {
 }
 
 async function save() {
-  if (!form.value.routeName.trim() || !form.value.deliveryDate || !form.value.warehouseId) {
-    error.value = '请填写线路名称、配送日期并选择仓库';
+  // 校验交给 antd 表单：缺哪个必填项就在哪个输入框下方提示
+  try {
+    await formRef.value?.validate();
+  } catch {
     return;
   }
   error.value = '';

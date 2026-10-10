@@ -1,0 +1,62 @@
+/* 抽屉表单按控件语义控制宽度，长文本和多选按需放宽。 */
+.app-drawer-form {
+  --drawer-text-width: 320px;
+  --drawer-select-width: 280px;
+  --drawer-number-width: 220px;
+  --drawer-date-width: 240px;
+  --drawer-range-width: 440px;
+
+  .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper) {
+    max-width: min(100%, var(--drawer-text-width));
+  }
+
+  .ant-form-item-control-input-content > .ant-select {
+    max-width: min(100%, var(--drawer-select-width));
+  }
+
+  .ant-form-item-control-input-content > :is(.ant-input-number, .ant-input-number-group-wrapper) {
+    max-width: min(100%, var(--drawer-number-width));
+  }
+
+  .ant-form-item-control-input-content > .ant-picker:not(.ant-picker-range) {
+    max-width: min(100%, var(--drawer-date-width));
+  }
+
+  .ant-form-item-control-input-content > .ant-picker-range {
+    max-width: min(100%, var(--drawer-range-width));
+  }
+
+  .ant-form-item-control-input-content > :is(.ant-input-textarea, textarea.ant-input) {
+    max-width: min(100%, 720px);
+  }
+
+  .app-drawer-field--wide .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-textarea, textarea.ant-input) {
+    max-width: 100%;
+  }
+
+  .app-drawer-field--compact .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-number, .ant-input-number-group-wrapper) {
+    max-width: min(100%, 240px);
+  }
+
+  .app-drawer-field--multi .ant-form-item-control-input-content > .ant-select {
+    max-width: min(100%, 520px);
+  }
+
+  @media (max-width: 767px) {
+    .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-number, .ant-input-number-group-wrapper, .ant-picker, .ant-input-textarea, textarea.ant-input) {
+      max-width: 100%;
+    }
+  }
+}
+
+.app-drawer-form__help {
+  margin-inline-start: 4px;
+  color: var(--scm-text-secondary, #667085);
+  cursor: help;
+}
+
+.app-drawer-form__help:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--scm-primary, #1677ff);
+  outline-offset: 2px;
+}

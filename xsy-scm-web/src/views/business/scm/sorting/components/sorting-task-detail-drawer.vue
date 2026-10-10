@@ -153,9 +153,6 @@
         </a-table>
 
         <div class="entry-footer">
-          <a-typography-text type="secondary">
-            只提交改动过的行；若某行在录入期间被他人改动，提交会被拒绝，请刷新后重试。
-          </a-typography-text>
           <a-button
               type="primary"
               v-privilege="'scm:sorting:item:update'"

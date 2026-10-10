@@ -78,6 +78,12 @@ defineExpose({
 <style lang="less" scoped>
 .smart-menu {
   position: relative;
+  // 顶部菜单是 header-main（flex）里的一段。不给宽度约束时它会按内容撑到 1723px，
+  // 视口一变窄就整段溢出、连右侧图标一起被挤出屏幕，且没有滚动条。
+  // flex + min-width:0 让它可收缩，antd 横向菜单的 overflow 逻辑才会把
+  // 放不下的菜单项折叠成「…」下拉。
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
 }
-
 </style>

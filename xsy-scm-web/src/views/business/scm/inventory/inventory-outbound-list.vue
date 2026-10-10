@@ -44,9 +44,6 @@
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:outbound:add'">
           新建出库单
         </a-button>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          确认出库会扣减库存并生成不可删除的销售出库流水。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -119,7 +116,7 @@
       :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
-    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="出库仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
       </a-form-item>
@@ -196,11 +193,9 @@
         :pagination="false"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ skuMainText(record.specValues, record.skuName) }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'sku'">{{ skuMainText(record.specValues, record.skuName) }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -294,7 +289,8 @@ const itemColumns: TableColumnsType = [
 // 明细的规格编码是名称下方的次要信息，不再各占一列（与列表页同一口径）。
 const detailItemColumns: TableColumnsType = [
   {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'sku', width: 220},
+  {title: '商品规格', dataIndex: 'sku', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
   {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 110},
 ];

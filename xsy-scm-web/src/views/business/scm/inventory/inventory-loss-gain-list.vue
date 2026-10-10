@@ -59,9 +59,6 @@
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:loss-gain:add'">
           新建报损报溢单
         </a-button>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          创建后进入待审核；审批通过才调整库存并生成不可删除的流水。
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -95,13 +92,8 @@
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
-        <template v-else-if="column.dataIndex === 'auditedAt'">
-          <!-- 审核的「谁」和「何时」是同一件事的两面，合成一格 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.auditedAt) }}</span>
-            <span v-if="record.auditor" class="scm-cell-stack__sub">{{ record.auditor }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex === 'auditedAt'">{{ datetime(record.auditedAt) }}</template>
+        <template v-else-if="column.dataIndex === 'auditor'">{{ record.auditor || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 行内常驻「详情」与待审核态的「审批」；驳回 / 编辑 / 删除收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -142,13 +134,7 @@
       :width="scmDrawerWidth('l')"
       @close="closeDrawer"
   >
-    <a-alert
-        type="info"
-        show-icon
-        style="margin-bottom: 12px"
-        message="报损减库存、报溢加库存；原因必填。"
-    />
-    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="调整类型" name="adjustType">
         <a-radio-group v-model:value="form.adjustType" button-style="solid">
           <a-radio-button value="LOSS">报损（减少库存）</a-radio-button>
@@ -202,9 +188,6 @@
           </template>
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
-        <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一个商品规格只能出现一次 —— 重复行会让同一份数量被调整两次。
-        </a-typography-text>
       </a-form-item>
     </a-form>
     <template #footer>
@@ -254,9 +237,6 @@
         />
       </a-form-item>
     </a-form>
-    <a-typography-text type="secondary">
-      提交时会带上打开本单时读到的版本号；若期间单据已被修改，系统会要求你刷新后重新审批。
-    </a-typography-text>
   </a-modal>
 </template>
 
@@ -325,7 +305,8 @@ const columns = ref<InventoryLossGainColumn[]>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '原因', dataIndex: 'reason', width: 240, ellipsis: true},
-  {title: '审核', dataIndex: 'auditedAt', width: 180},
+  {title: '审核时间', dataIndex: 'auditedAt', width: 170},
+  {title: '审核人', dataIndex: 'auditor', width: 110},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value));

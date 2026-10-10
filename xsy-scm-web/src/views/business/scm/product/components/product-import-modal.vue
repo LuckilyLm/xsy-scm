@@ -1,7 +1,7 @@
 <template>
   <a-modal v-model:open="open" title="导入商品" :width="720" :mask-closable="false"
            :footer="null" @cancel="reset">
-    <a-alert type="info" show-icon class="hint" :message="hint" />
+    <p class="scm-note scm-note--block">{{ hint }}</p>
     <a-space class="toolbar">
       <a-radio-group v-model:value="mode" button-style="solid">
         <a-radio-button value="CREATE">新增商品</a-radio-button>

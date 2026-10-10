@@ -50,16 +50,13 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1160 }"
+        :scroll="{ x: 1340 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'couponName'">
-          <!-- 券编码是业务识别信息，但不值得独占一列：作为名称下方的 secondary text -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.couponName || '—' }}</span>
-            <span v-if="record.couponCode" class="scm-cell-stack__sub">{{ record.couponCode }}</span>
-          </div>
+        <template v-if="column.dataIndex === 'couponCode'">
+          <span class="scm-mono">{{ record.couponCode || '—' }}</span>
         </template>
+        <template v-else-if="column.dataIndex === 'couponName'">{{ record.couponName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'discountType'">
           <ScmStatusTag tone="processing" :label="discountTypeLabel(record.discountType)"/>
         </template>
@@ -69,12 +66,8 @@
           <span v-if="isNoThreshold(record.minOrderAmount)" class="scm-cell-hint">无门槛</span>
           <span v-else class="scm-money">¥ {{ record.minOrderAmount }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'validity'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.validFrom) }}</span>
-            <span class="scm-cell-stack__sub">至 {{ datetime(record.validTo) }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex === 'validFrom'">{{ datetime(record.validFrom) }}</template>
+        <template v-else-if="column.dataIndex === 'validTo'">{{ datetime(record.validTo) }}</template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="statusLabelOf(record.status)"/>
         </template>
@@ -135,19 +128,19 @@
       @cancel="editOpen = false"
   >
     <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner"/>
-    <a-form layout="vertical">
+    <a-form ref="formRef" :model="{...form, discountValue}" :rules="formRules" layout="vertical">
       <section class="scm-form-section">
         <div class="scm-form-section__head">
           <h3 class="scm-form-section__title">券基础</h3>
         </div>
         <a-row :gutter="20">
           <a-col :span="12">
-            <a-form-item label="券编码" required>
+            <a-form-item label="券编码" name="couponCode">
               <a-input v-model:value="form.couponCode" :disabled="!!form.id"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="券名称" required>
+            <a-form-item label="券名称" name="couponName">
               <a-input v-model:value="form.couponName"/>
             </a-form-item>
           </a-col>
@@ -160,13 +153,13 @@
         </div>
         <a-row :gutter="20">
           <a-col :span="12">
-            <a-form-item label="优惠类型" required>
+            <a-form-item label="优惠类型" name="discountType">
               <a-select v-model:value="form.discountType" :options="discountTypeOptions"
                         @change="onDiscountTypeChange"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item :label="form.discountType === 'RATE' ? '折扣率' : '减免金额'" required>
+            <a-form-item :label="form.discountType === 'RATE' ? '折扣率' : '减免金额'" name="discountValue">
               <a-input-number
                   v-if="form.discountType === 'RATE'"
                   v-model:value="discountValue"
@@ -212,14 +205,14 @@
         </div>
         <a-row :gutter="20">
           <a-col :span="12">
-            <a-form-item label="生效时间" required>
-              <a-date-picker v-model:value="form.validFrom" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
+            <a-form-item label="生效时间" name="validFrom">
+              <a-date-picker v-model:value="form.validFrom" show-time value-format="YYYY-MM-DD HH:mm:ss"
                              style="width: 100%"/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="失效时间" required>
-              <a-date-picker v-model:value="form.validTo" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
+            <a-form-item label="失效时间" name="validTo">
+              <a-date-picker v-model:value="form.validTo" show-time value-format="YYYY-MM-DD HH:mm:ss"
                              style="width: 100%"/>
             </a-form-item>
           </a-col>
@@ -317,11 +310,13 @@ function discountTypeLabel(value: PromotionCouponDiscountType): string {
  * （登记于 docs/plan/active/frontend-ui-backend-gap-inventory.md 的 B7），前端不臆造。
  */
 const columns: TableColumnsType<PromotionCoupon> = [
-  {title: '券名称', dataIndex: 'couponName', width: 200},
+  {title: '券编码', dataIndex: 'couponCode', width: 130},
+  {title: '券名称', dataIndex: 'couponName', width: 180},
   {title: '券类型', dataIndex: 'discountType', width: 130, align: 'center'},
   {title: '优惠规则', dataIndex: 'discountText', width: 180},
   {title: '门槛金额', dataIndex: 'minOrderAmount', align: 'right', width: 130},
-  {title: '有效期', dataIndex: 'validity', width: 220},
+  {title: '生效时间', dataIndex: 'validFrom', width: 170},
+  {title: '失效时间', dataIndex: 'validTo', width: 170},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
@@ -336,6 +331,21 @@ const form = reactive<PromotionCouponSave>({
   validTo: '',
   remark: null,
 });
+const formRef = ref();
+/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  couponCode: [{required: true, message: '请填写券编码', trigger: 'blur'}],
+  couponName: [{required: true, message: '请填写券名称', trigger: 'blur'}],
+  discountType: [{required: true, message: '请选择优惠类型', trigger: 'change'}],
+  discountValue: [{
+    validator: () => (discountValue.value == null
+        ? Promise.reject(new Error(form.discountType === 'RATE' ? '请填写折扣率' : '请填写减免金额'))
+        : Promise.resolve()),
+    trigger: 'blur',
+  }],
+  validFrom: [{required: true, message: '请选择生效时间', trigger: 'change'}],
+  validTo: [{required: true, message: '请选择失效时间', trigger: 'change'}],
+};
 
 /**
  * 优惠值与门槛金额在表单里是 `number`（InputNumber 只接受数字），
@@ -438,8 +448,10 @@ async function submit() {
       ? percentToRate(discountValue.value) ?? ''
       : fixed4(discountValue.value) ?? '';
   form.minOrderAmount = fixed4(minOrderAmount.value) ?? '0';
-  if (!form.couponCode || !form.couponName || !form.discountValue || !form.validFrom || !form.validTo) {
-    editError.value = '券编码、名称、优惠值与生效时间都必须填写';
+  // 必填项走表单校验：错误显示在对应输入框下方
+  try {
+    await formRef.value?.validate();
+  } catch {
     return;
   }
   saving.value = true;

@@ -39,8 +39,8 @@
       </a-table>
     </template>
 
-    <a-form v-else layout="vertical">
-      <a-form-item required>
+    <a-form ref="formRef" v-else :model="{employeeId}" :rules="formRules" layout="vertical">
+      <a-form-item name="employeeId">
         <template #label>
           员工
           <ScmFieldHelp label="员工" text="选择后载入当前仓库授权；保存时按勾选结果整体替换"/>
@@ -92,6 +92,9 @@ const employees = ref<WarehouseScopeEmployee[]>([]);
 
 /** 员工维度的编辑目标；EmployeeSelect 的 value 不接受 null（[Number, Array]），用 undefined 桥接未选。 */
 const employeeId = ref<number | undefined>(undefined);
+const formRef = ref();
+/** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {employeeId: [{required: true, message: '请先选择员工', trigger: 'change'}]};
 const warehouseIds = ref<Id[]>([]);
 const warehouses = ref<Warehouse[]>([]);
 const warehouseLoading = ref(false);
@@ -172,12 +175,14 @@ async function openEmployees(warehouseId: Id, warehouseName: string) {
   }
 }
 
-function save() {
-  const target = employeeId.value;
-  if (target == null) {
-    error.value = '请先选择员工';
+async function save() {
+  // 必填项走表单校验：错误显示在输入框下方
+  try {
+    await formRef.value?.validate();
+  } catch {
     return;
   }
+  const target = employeeId.value!;
   Modal.confirm({
     title: '确认更新仓库授权',
     content: '当前勾选将替换该员工的全部仓库授权；未勾选的授权会被收回。',

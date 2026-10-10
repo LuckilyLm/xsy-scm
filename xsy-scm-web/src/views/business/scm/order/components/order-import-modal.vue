@@ -16,7 +16,7 @@
     <a-space direction="vertical" size="middle" style="width:100%">
       <a-space>
         <a-button :loading="downloading" :disabled="loading" @click="downloadTemplate">下载 Excel 模板</a-button>
-        <span class="hint">仅支持 .xlsx，最大 5 MiB；任一错误均不会创建订单</span>
+        <p class="scm-note scm-note--block">仅支持 .xlsx，最大 5 MiB；任一错误均不会创建订单</p>
       </a-space>
       <a-upload-dragger :file-list="fileList" :before-upload="beforeUpload" :disabled="loading" :max-count="1"
                         accept=".xlsx" @remove="removeFile">
@@ -84,11 +84,11 @@ async function downloadTemplate() {
 const beforeUpload: UploadProps['beforeUpload'] = (file) => {
   reset();
   if (!file.name.toLowerCase().endsWith('.xlsx')) {
-    error.value = '仅支持 .xlsx 文件';
+    message.warning('仅支持 .xlsx 文件');
     return Upload.LIST_IGNORE;
   }
   if (file.size > 5 * 1024 * 1024) {
-    error.value = '导入文件不能超过 5 MiB';
+    message.warning('导入文件不能超过 5 MiB');
     return Upload.LIST_IGNORE;
   }
   selectedFile.value = file;
@@ -106,7 +106,7 @@ async function submit() {
   if (loading.value || imported.value) return;
   const file = selectedFile.value;
   if (!file) {
-    error.value = '请先选择订单 Excel 文件';
+    message.warning('请先选择订单 Excel 文件');
     return;
   }
   loading.value = true;

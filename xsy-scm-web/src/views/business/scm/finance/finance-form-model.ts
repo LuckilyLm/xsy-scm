@@ -39,7 +39,7 @@ export function dateTimeText(value: string | null | undefined): string {
 }
 
 export function nowDateTimeValue(): string {
-    return dayjs().format('YYYY-MM-DDTHH:mm:ssZ');
+    return dayjs().format('YYYY-MM-DD HH:mm:ss');
 }
 
 export function entryTypeText(value: string | null | undefined): string {

@@ -51,7 +51,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1180 }"
+        :scroll="{ x: 1330 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
@@ -59,14 +59,7 @@
             {{ SCM_WAREHOUSE_STATUS_ENUM[record.status]?.desc || record.status }}
           </a-tag>
         </template>
-        <template v-else-if="column.dataIndex === 'areaText'">
-          <!-- 复合单元：区域在上、详细地址在下。地址是库管实际找货的凭据，
-               不能因为"省市区能定位"就整列删掉，但也不该再占一列 260px -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ areaText(record) }}</span>
-            <span v-if="record.address" class="scm-cell-stack__sub">{{ record.address }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex === 'areaText'">{{ areaText(record) }}</template>
         <template v-else-if="column.dataIndex === 'located'">
           <!-- 未定位的仓库无法参与路线规划，用图标 + Tooltip 表达，不占一整列文字 -->
           <a-tooltip :title="isLocated(record) ? '已定位，可参与路线规划' : '未定位，无法参与路线规划'">
@@ -111,8 +104,8 @@
       @cancel="visible = false"
   >
     <a-alert v-if="formError" :message="formError" type="error" show-icon/>
-    <a-form :model="form" layout="vertical">
-      <a-form-item label="仓库名称" name="name" required>
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
+      <a-form-item label="仓库名称" name="name">
         <a-input v-model:value="form.name" maxlength="150"/>
       </a-form-item>
       <a-form-item label="所在地区">
@@ -171,6 +164,12 @@ const visible = ref(false);
 const saving = ref(false);
 const formError = ref('');
 const form = ref<WarehouseFormModel>({warehouseCode: '', name: ''});
+const formRef = ref();
+
+/** 逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  name: [{required: true, message: '请填写仓库名称', trigger: 'blur'}],
+};
 /** 省 / 市 / 区的选中路径，与 form 的 6 列之间由 scm-area 互转。 */
 const area = ref<AreaNode[]>([]);
 /** 员工—仓库授权维护（独立权限点，与仓库主数据编辑分开）。 */
@@ -190,7 +189,8 @@ let requestId = 0;
 const columns = ref<TableColumnsType<Warehouse>>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 160},
   {title: '仓库名称', dataIndex: 'name', width: 200},
-  {title: '区域 / 地址', dataIndex: 'areaText', width: 280},
+  {title: '所在地区', dataIndex: 'areaText', width: 190},
+  {title: '详细地址', dataIndex: 'address', width: 240},
   {title: '定位', dataIndex: 'located', align: 'center', width: 80},
   {title: '状态', dataIndex: 'status', align: 'center', width: 110},
   {title: '备注', dataIndex: 'remark', width: 200},
@@ -289,12 +289,14 @@ async function open(row?: Warehouse) {
 }
 
 async function save() {
-  formError.value = locationError(form.value) ?? '';
-  if (formError.value) return;
-  if (!form.value.name.trim()) {
-    formError.value = '请填写仓库名称';
+  // 必填项走表单校验（错误显示在字段下方）；定位是跨字段的业务前置条件，仍用顶部提示
+  try {
+    await formRef.value?.validate();
+  } catch {
     return;
   }
+  formError.value = locationError(form.value) ?? '';
+  if (formError.value) return;
   saving.value = true;
   try {
     const payload = toWarehousePayload(form.value);

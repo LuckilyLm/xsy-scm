@@ -55,7 +55,7 @@
           :locale="{ emptyText }"
           size="small"
           bordered
-          :scroll="{ x: 1190 }"
+          :scroll="{ x: 1180 }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
@@ -239,7 +239,7 @@ const columns = ref<CustomerListColumn[]>([
   {title: '结算方式', dataIndex: 'settleMode', width: 130, align: 'center'},
   {title: '授信额度', dataIndex: 'creditLimit', width: 130, align: 'right'},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
-  {title: '操作', dataIndex: 'action', width: 160, align: 'center', fixed: 'right'},
+  {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},
 ]);
 
 let requestId = 0;

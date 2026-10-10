@@ -53,7 +53,7 @@
 </template>
 <script setup lang="ts">
 import {ref, watch} from 'vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import {supplierStatementApi, type SupplierStatement, type SupplierStatementLine} from '/@/api/business/scm/supplier-statement-api';
 import type {ReportId} from './report-types';
 import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-model';
@@ -99,10 +99,10 @@ async function loadHistory() {
 async function freeze() {
   const id = supplierId.value;
   if (!id || !dateRange.value?.[0] || !dateRange.value?.[1]) {
-    error.value = '请选择供应商和完整对账期间'; return;
+    message.warning('请选择供应商和完整对账期间'); return;
   }
   const limitError = rangeOverLimitError(dateRange.value);
-  if (limitError) { error.value = limitError; return; }
+  if (limitError) { message.warning(limitError); return; }
   busy.value = true; error.value = '';
   try {
     const version = (await supplierStatementApi.freeze({supplierId: id, warehouseId: warehouseId.value,

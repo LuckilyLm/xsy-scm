@@ -232,7 +232,8 @@ const borderRadius = 8 + 'px';
     padding: 5px 10px;
     border-radius: v-bind(borderRadius) v-bind(borderRadius) 0 0;
     margin: 0 4px 0 0;
-    flex: 0 0 168px;
+    // 宽度按标签文字自适应（固定 168px 会让短名字右边空一大块）
+    flex: 0 0 auto;
     min-width: 96px;
     max-width: 220px;
     overflow: hidden;

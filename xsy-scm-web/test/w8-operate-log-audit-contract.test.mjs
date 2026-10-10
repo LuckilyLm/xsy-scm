@@ -8,9 +8,8 @@
  * 2. 列表页接收并校验路由里的 businessType/businessId（白名单 + 正整数），
  *    首次加载、刷新、对象切换都重新套用，且重置不会残留业务上下文；
  * 3. 单个脏 response / userAgent 只退化该行，不整页失败；
- * 4. 客户 / 配送线路两个详情入口携带各自 businessType 跳到同一操作日志页。
- *    商品详情的入口已按产品要求移除（见下方用例注释），下钻机制本身仍有覆盖：
- *    `operate-log-list.vue` 的白名单与查询载荷校验未改动，客户与配送线路两条链路照常断言。
+ * 4. 详情页不重复放操作日志按钮；日志列表统一受查询权限保护，
+ *    businessType/businessId 的白名单与查询载荷校验仍由列表页断言。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -92,25 +91,9 @@ test('详情弹窗展示前脱敏：参数与返回结果都过 maskSensitive', 
   assert.match(vue, /return maskSensitive\(JSON\.parse\(raw\)\)/);
 });
 
-test('客户 / 配送线路详情各自带业务类型跳转到统一操作日志页', () => {
-  // 商品详情曾有一个「操作日志」入口，已按产品要求连同「刷新详情」一起移除
-  // （卡片自带 loading，出错时另有「重新加载」，刷新按钮冗余；操作日志则改由侧边栏进入）。
-  // 因此这里不再把 PRODUCT 列为入口 —— 但不是把这条业务约束删掉：
-  // 下钻机制、白名单与查询载荷校验仍由本文件其它用例 + E2E 覆盖。
-  const entries = [
-    [CUSTOMER, 'CUSTOMER'],
-    [ROUTE_DETAIL, 'DELIVERY_ROUTE'],
-  ];
-  for (const [file, businessType] of entries) {
-    const vue = code(file);
-    assert.match(vue, /function openOperateLog\(\)/, `${file} 应有操作日志入口`);
-    assert.match(vue, /path: '\/support\/operate-log\/operate-log-list'/, `${file} 应跳到操作日志列表`);
-    assert.match(vue, new RegExp(`query: \\{businessType: '${businessType}'`), `${file} 业务类型应为 ${businessType}`);
-    // 入口受操作日志查询权限约束。常驻按钮走 v-privilege；收进 ScmActionMore「更多」的
-    // 菜单项挂不上指令（项目既有约定：菜单项一律用同一口径的 hasPermission 裁剪），
-    // 因此两种写法都算合规，约束本身（必须受该权限码约束）不变。
-    const gated = /v-privilege="'support:operateLog:query'/.test(vue)
-      || /hasPermission\('support:operateLog:query'\)/.test(vue);
-    assert.ok(gated, `${file} 操作日志入口未受权限约束`);
+test('详情页不重复操作日志入口，统一日志列表仍受查询权限保护', () => {
+  for (const file of [CUSTOMER, ROUTE_DETAIL]) {
+    assert.doesNotMatch(code(file), /openOperateLog|support:operateLog:query/, `${file} 不应重复提供操作日志入口`);
   }
+  assert.match(code(LIST), /v-privilege="'support:operateLog:query'"/);
 });

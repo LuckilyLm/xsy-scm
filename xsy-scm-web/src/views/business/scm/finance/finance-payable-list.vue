@@ -87,7 +87,7 @@
         <a-descriptions-item label="供应商">{{ redSource.supplierName }}</a-descriptions-item>
         <a-descriptions-item label="原应付金额">{{ moneyText(redSource.amount) }}</a-descriptions-item>
       </a-descriptions>
-      <a-form layout="vertical">
+      <a-form layout="vertical" class="app-drawer-form">
         <a-form-item label="红字原因" required><a-textarea v-model:value="redReason" :disabled="redSaving || redLoading" :maxlength="500" :rows="2" show-count/></a-form-item>
       </a-form>
       <a-table size="small" :data-source="redDrafts" :columns="redDraftColumns" row-key="purchaseOrderItemId"
@@ -250,7 +250,7 @@ async function submitRed() {
         }))
         .filter((item) => item.amount);
     if (!redSource.value || !redReason.value.trim() || !lines.length) {
-        redError.value = '请填写原因，并至少录入一条红字明细。';
+        message.warning('请填写原因，并至少录入一条红字明细');
         return;
     }
     redSaving.value = true;

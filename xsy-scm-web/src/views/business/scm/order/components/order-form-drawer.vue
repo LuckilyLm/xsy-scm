@@ -3,7 +3,7 @@
             @close="closeDrawer">
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
-      <a-form :model="form" layout="vertical">
+      <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="客户" name="customerId" required>
@@ -25,19 +25,19 @@
             </a-form-item>
           </a-col>
           <a-col :span="12" v-if="form.orderSource==='SUPPLEMENT'">
-            <a-form-item label="补单原因" name="supplementReason" required>
-              <a-input v-model:value="form.supplementReason" maxlength="500"/>
+              <a-form-item label="补单原因" name="supplementReason" required>
+                <a-textarea v-model:value="form.supplementReason" :maxlength="500" :rows="2" show-count/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="期望配送时间" name="expectDeliveryTime">
-              <a-date-picker v-model:value="form.expectDeliveryTime" show-time value-format="YYYY-MM-DDTHH:mm:ssZ"
+              <a-date-picker v-model:value="form.expectDeliveryTime" show-time value-format="YYYY-MM-DD HH:mm:ss"
                              style="width:100%"/>
             </a-form-item>
           </a-col>
-          <a-col :span="12">
+          <a-col :span="24">
             <a-form-item label="备注" name="remark">
-              <a-input v-model:value="form.remark" maxlength="500"/>
+              <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
@@ -46,18 +46,20 @@
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item label="联系电话" name="receiverPhone" required>
+            <a-form-item label="联系电话" name="receiverPhone" required class="app-drawer-field--compact">
               <a-input v-model:value="form.address.receiverPhone" :disabled="!!form.orderId" maxlength="32"/>
             </a-form-item>
           </a-col>
           <a-col :span="24">
-            <a-form-item label="收货地址" name="address" required>
+            <a-form-item label="收货地址" name="address" required class="app-drawer-field--wide">
               <a-input v-model:value="form.address.address" :disabled="!!form.orderId" maxlength="500"/>
             </a-form-item>
           </a-col>
         </a-row>
         <ItemTable ref="itemTableRef" :items="form.items" :customer-id="form.customerId" @price="preview"/>
-        <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
+        <div class="item-actions">
+          <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
+        </div>
       </a-form>
     </a-spin>
     <template #footer>
@@ -72,7 +74,7 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
-import {onBeforeUnmount, ref, watch} from 'vue';
+import {computed, onBeforeUnmount, ref, watch} from 'vue';
 import {onBeforeRouteLeave} from 'vue-router';
 import {message, Modal} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
@@ -89,6 +91,22 @@ import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const emit = defineEmits<{ saved: [] }>();
 const form = ref<Order>(newOrder()), visible = ref(false), loading = ref(false), saving = ref(false),
     pricing = ref(false), error = ref(''), originals = ref<{ value: Id; label: string }[]>([]);
+const formRef = ref();
+/** 收货信息在 `form.address.*` 里，展平一份给表单校验用（顶层 `address` 就是详细地址）。 */
+const flatModel = computed(() => ({...form.value, ...form.value.address}));
+/** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  customerId: [{required: true, message: '请选择客户', trigger: 'change'}],
+  receiverName: [{required: true, message: '请填写收货人', trigger: 'blur'}],
+  receiverPhone: [{required: true, message: '请填写联系电话', trigger: 'blur'}],
+  address: [{required: true, message: '请填写收货地址', trigger: 'blur'}],
+  supplementReason: [{
+    validator: () => (form.value.orderSource !== 'SUPPLEMENT' || form.value.supplementReason?.trim()
+        ? Promise.resolve()
+        : Promise.reject(new Error('请填写补单原因'))),
+    trigger: 'blur',
+  }],
+};
 const userStore = useUserStore();
 let requestId = 0;
 
@@ -285,9 +303,16 @@ async function save(draft = false) {
       i.orderedQuantity = fixed(i.orderedQuantity);
       if (i.unitPrice != null) i.unitPrice = fixed(i.unitPrice);
     });
+    // 必填项走表单校验：错误显示在对应输入框下方
+    try {
+      await formRef.value?.validate();
+    } catch {
+      return;
+    }
+    // 明细行（不是表单字段）与其余业务规则用 toast
     const invalid = validateOrder(form.value);
     if (invalid) {
-      error.value = invalid;
+      message.warning(invalid);
       return;
     }
     saving.value = true;
@@ -319,3 +344,20 @@ async function save(draft = false) {
 
 defineExpose({open, openFromHistory});
 </script>
+
+<style scoped>
+/*
+ * 明细区两个动作：「添加商品」在 ItemTable 内部、这里只放「重新解析价格」，
+ * 两者原本只是挨着排，没有统一间距。这里把容器做成 inline-flex，
+ * 并给 ItemTable 的按钮补右间距，让它们成为间距一致的同一行动作。
+ */
+.item-actions {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.app-drawer-form :deep(.add-line) {
+  margin: 12px 8px 0 0;
+}
+</style>

@@ -13,7 +13,7 @@
         <a-range-picker
             v-model:value="range"
             show-time
-            value-format="YYYY-MM-DDTHH:mm:ssZ"
+            value-format="YYYY-MM-DD HH:mm:ss"
             style="width: 380px"
         />
       </a-form-item>
@@ -40,7 +40,7 @@
 
   <a-card size="small" :bordered="false">
     <a-tag color="blue">只读预览</a-tag>
-    <a-typography-text type="secondary">预览不是最终净采购建议，也不生成采购单。</a-typography-text>
+    <p class="scm-note scm-note--block">预览不是最终净采购建议，也不生成采购单。</p>
     <a-table
         id="scm-purchase-demand-summary-preview-table"
         size="small"
@@ -86,7 +86,7 @@
 
 <script setup lang="ts">
 import {computed, ref} from 'vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
@@ -145,11 +145,11 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
 
 async function queryData() {
   if (!range.value || range.value.length !== 2) {
-    error.value = '请选择统计时间段';
+    message.warning('请选择统计时间段');
     return;
   }
   if (!warehouseId.value) {
-    error.value = '请选择仓库';
+    message.warning('请选择仓库');
     return;
   }
   const id = ++requestId;

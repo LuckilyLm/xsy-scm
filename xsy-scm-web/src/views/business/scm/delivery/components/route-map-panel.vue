@@ -35,7 +35,7 @@
         <p class="stop-card__name">{{ route.warehouseNameSnapshot }}</p>
         <p class="stop-card__line stop-card__line--muted">{{ route.warehouseAddressSnapshot || '暂无详细地址' }}</p>
       </div>
-      <p v-if="canEdit" class="stop-edit-note">拖动停靠点排序，或使用上移 / 下移。顺序调整后自动保存。</p>
+      <p v-if="canEdit" class="scm-note scm-note--block">拖动停靠点排序，或使用上移 / 下移。顺序调整后自动保存。</p>
       <a-empty v-if="!stops.length" description="还没有停靠点，请先在线路订单中加入订单"/>
       <div
           v-for="(stop, index) in stops"

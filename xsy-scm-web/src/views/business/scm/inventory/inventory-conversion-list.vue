@@ -58,9 +58,6 @@
         <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:conversion:add'">
           新建转换单
         </a-button>
-        <a-typography-text type="secondary" style="margin-left: 12px">
-          审批通过才调库存，流水不可删除
-        </a-typography-text>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -94,13 +91,8 @@
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
         </template>
-        <template v-else-if="column.dataIndex === 'auditedAt'">
-          <!-- 审核的「谁」和「何时」是同一件事的两面，合成一格 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.auditedAt) }}</span>
-            <span v-if="record.auditor" class="scm-cell-stack__sub">{{ record.auditor }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex === 'auditedAt'">{{ datetime(record.auditedAt) }}</template>
+        <template v-else-if="column.dataIndex === 'auditor'">{{ record.auditor || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 行内常驻「详情」与待审核态的「审批」；驳回 / 编辑 / 删除收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -141,13 +133,8 @@
       :width="scmDrawerWidth('xl')"
       @close="closeDrawer"
   >
-    <a-alert
-        type="info"
-        show-icon
-        style="margin-bottom: 12px"
-        message="折算率由本单声明，两个单位须与商品规格的库存记账单位一致。"
-    />
-    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
+    <p class="scm-note">折算率由本单声明，两个单位须与商品规格的库存记账单位一致。</p>
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="仓库" name="warehouseId">
         <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
       </a-form-item>
@@ -193,7 +180,7 @@
               />
             </template>
             <template v-else-if="column.dataIndex === 'sourceUnit'">
-              <a-input v-model:value="record.sourceUnit" placeholder="如 箱" style="width: 80px"/>
+              <a-input v-model:value="record.sourceUnit" :maxlength="32" placeholder="如 箱" style="width: 80px"/>
             </template>
             <template v-else-if="column.dataIndex === 'targetSkuId'">
               <SkuSelect
@@ -214,7 +201,7 @@
               />
             </template>
             <template v-else-if="column.dataIndex === 'targetUnit'">
-              <a-input v-model:value="record.targetUnit" placeholder="如 kg" style="width: 80px"/>
+              <a-input v-model:value="record.targetUnit" :maxlength="32" placeholder="如 kg" style="width: 80px"/>
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <a-button type="link" size="small" danger @click="removeItem(index)">删除</a-button>
@@ -222,10 +209,6 @@
           </template>
         </a-table>
         <a-button type="dashed" block style="margin-top: 8px" @click="addItem">+ 添加明细</a-button>
-        <a-typography-text type="secondary" style="display: block; margin-top: 8px">
-          同一商品规格可以在多行里出现（既是某行的源、又是另一行的目标，用于链式转换），
-          但同一行的源与目标不能是同一个商品规格。
-        </a-typography-text>
       </a-form-item>
     </a-form>
     <template #footer>
@@ -275,9 +258,6 @@
         />
       </a-form-item>
     </a-form>
-    <a-typography-text type="secondary">
-      提交时会带上打开本单时读到的版本号；若期间折算关系已被修改，系统会要求你刷新后重新审批。
-    </a-typography-text>
   </a-modal>
 </template>
 
@@ -342,7 +322,8 @@ const columns = ref<ScmListColumn[]>([
   {title: '类型', dataIndex: 'convertType', align: 'center', width: 110},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '原因', dataIndex: 'reason', width: 220, ellipsis: true},
-  {title: '审核', dataIndex: 'auditedAt', width: 180},
+  {title: '审核时间', dataIndex: 'auditedAt', width: 170},
+  {title: '审核人', dataIndex: 'auditor', width: 110},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value));

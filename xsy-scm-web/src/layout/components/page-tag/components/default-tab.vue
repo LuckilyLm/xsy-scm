@@ -258,7 +258,9 @@ const borderRadius = token.value.borderRadius + 'px';
     padding: 5px 8px 3px 20px;
     border-radius: v-bind(borderRadius);
     margin: 0 4px 0 0 !important;
-    flex: 0 0 168px;
+    // 宽度按标签文字自适应：固定 168px 时短名字（首页/退货单）右边会空一大块，
+    // 长名字又被截断。min/max 只做兜底（极短/极长）。
+    flex: 0 0 auto;
     min-width: 96px;
     max-width: 220px;
     overflow: hidden;

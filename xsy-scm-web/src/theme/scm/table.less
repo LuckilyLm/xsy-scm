@@ -34,54 +34,20 @@
 }
 
 /*
- * 复合单元：仅用于窄屏合并字段或明确的主次关系；桌面可独立比较的属性应分列。
+ * 「双行复合单元」（名称在上、编码在下的两行单元格）已整体退役。
  *
- * 两行是有层级的两个信息，不是一句话换行，所以字号 / 字重 / 颜色三样都要拉开：
- * 主行 14px / 500 / 20px 主文字色，副行 12px / 16px secondary。
- * 只靠颜色区分的话，低分辨率屏和投屏上两行会糊成一片。
- *
- * `justify-content: center` + `min-height` 是为「副行可能缺失」的行准备的
- * （比如没有登记电话的联系人）：不撑住高度，同一张表里就会出现忽高忽低的行。
+ * 一格塞两行会把行高拉齐到最高那条、列宽按最宽那条给，整张表又高又空；
+ * 名称与编码这类可独立比较的属性一律各自成列（列宽之和同步写进 `:scroll.x`）。
+ * 原 `.scm-cell-stack` / `__main` / `__sub` / `__sub--num` 四条规则随调用点一起删除。
  */
-.scm-cell-stack {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-  min-height: 38px;
-  min-width: 0;
-}
-
-.scm-cell-stack__main {
-  overflow: hidden;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--scm-text, rgba(0, 0, 0, 0.88));
-}
-
-.scm-cell-stack__sub {
-  overflow: hidden;
-  font-size: 12px;
-  line-height: 16px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-}
-
-/* 副行是纯数字时（电话）对齐位数：默认字体的数字是变宽的，一列电话会参差不齐 */
-.scm-cell-stack__sub--num {
-  font-variant-numeric: tabular-nums;
-}
 
 /*
- * 复合单元里的「名称入口」（点进详情）。
+ * 「名称入口」（点进详情）。
  *
- * 默认是主行那一档的普通深色文字，不是链接色 —— 一列品牌绿会让「名称」和状态标签
- * 抢层级，也让主文本看起来像个操作按钮。悬停 / 聚焦才给链接反馈。
- * 也不额外加 padding：它和 `.scm-cell-stack__main` 要在同一条左轴线上。
+ * 默认就用主题色：能点进详情的字段直接是可点的样子，不用先悬停才变色。
+ * 颜色走 `var(--scm-primary)`，跟随「网站设置」里选的主题色。
+ * 悬停 / 聚焦再补一条下划线，强化可点反馈。
+ * 也不额外加 padding：它和同一格里其余文字要在同一条左轴线上。
  *
  * 选择器故意把类名写两遍（0,2,0）：antd 的链接按钮样式是 `:where(.css-xxx).ant-btn-link`，
  * `:where` 零特异性 → 实得 (0,1,0)，而它在运行时注入 <head>、排在构建产物之后，同特异性下会赢。
@@ -93,7 +59,7 @@
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
-  color: var(--scm-text, rgba(0, 0, 0, 0.88));
+  color: var(--scm-primary);
   text-align: left;
   overflow: hidden;
   white-space: nowrap;
@@ -159,4 +125,75 @@
 .scm-cell-hint {
   font-size: 12px;
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+/*
+ * 常驻提示（一句话的规则 / 数据范围说明，例如「可见范围：全部已启用商品」）。
+ *
+ * 这类提示原来用 `<a-alert type="info">`，一条浅色横条铺满整行、信息密度很低。
+ * 改成 `width: fit-content` 的胶囊块：**宽度跟着文字走**，文字多长就多宽，不再占满一行。
+ * 底色用主题色浅底 + 前面的信息图标，保证在密集页面里仍然醒目（不是 alert 那种重蓝条）。
+ * `max-width: 100%` 兜底：文案很长时仍会换行，不会顶破容器。
+ *
+ * 图标走 mask 而不是再引一个 icon 组件：这里只是装饰，10 处调用点不用各加一个 import；
+ * 颜色由 `background-color` 给，跟随「网站设置」的主题色。mask 路径取自 antd 的 InfoCircleOutlined。
+ */
+.scm-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 8px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  background: var(--scm-primary-bg, rgba(0, 185, 107, 0.08));
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+}
+
+.scm-note::before {
+  content: '';
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background-color: var(--scm-primary, #00b96b);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath d='M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z'/%3E%3Cpath d='M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath d='M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64zm0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z'/%3E%3Cpath d='M464 336a48 48 0 1 0 96 0 48 48 0 1 0-96 0zm72 112h-48c-4.4 0-8 3.6-8 8v272c0 4.4 3.6 8 8 8h48c4.4 0 8-3.6 8-8V456c0-4.4-3.6-8-8-8z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* 整行提示：跟在输入组 / 表格下面，独占一行 */
+.scm-note--block {
+  display: flex;
+  margin: 8px 0 0;
+}
+
+/* 工具栏里的提示与按钮同排，不要下方留白 */
+.smart-table-operate-block .scm-note,
+.smart-table-setting-block .scm-note {
+  margin: 0;
+}
+
+/*
+ * 单元格默认不换行：内容超宽用省略号收尾，不靠换行把行高撑成两行。
+ * 一格两行会让整行高度对齐到最高那条、列宽按最宽那条给，整张表又高又空。
+ *
+ * 两类例外由选择器本身排除，不需要页面配合：
+ * - 展开行（`#expandedRowRender`）装的是明细区块，不是单个字段；
+ * - 单元格里内嵌表格时，裁剪会连带吃掉内嵌表自己的横向滚动。
+ *
+ * 备注 / 地址这类确实需要整段换行的长文本，给文本加 `.scm-cell-wrap` 显式退出。
+ */
+.ant-table-tbody > tr:not(.ant-table-expanded-row) > td.ant-table-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ant-table-tbody > tr > td.ant-table-cell:has(.scm-cell-wrap),
+.ant-table-tbody > tr > td.ant-table-cell:has(> .ant-table) {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
 }

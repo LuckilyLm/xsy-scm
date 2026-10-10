@@ -20,20 +20,30 @@
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
+  // 卡片与页脚共用同一宽度与对齐：卡片靠右后，页脚若仍居中就会跟卡片错开。
+  // 上限 780px；左侧按视口宽度留出背景蔬菜的安全区（约 38vw）。
+  --login-shell-max: min(780px, calc(100vw - 38vw - 64px));
 }
 
 // 卡片与页脚
 .xsy-login__footer {
   position: relative;
   z-index: 1;
+  align-self: flex-end;
+  width: 100%;
+  max-width: var(--login-shell-max);
+  text-align: center;
 }
 
 .xsy-login__shell {
   position: relative;
   z-index: 1;
   display: flex;
+  // 卡片靠右：背景图左下角那簇蔬菜（西兰花 / 玉米 / 彩椒 / 番茄）在居中布局下会被整块盖住。
+  align-self: flex-end;
   width: 100%;
-  max-width: 1160px;
+  // 与页脚共用 --login-shell-max（见 .xsy-login）
+  max-width: var(--login-shell-max);
   // 用 min() 而不是固定 500px：矮视口（<=700px 高）时必须让卡片跟着缩，
   // 否则卡片 + 页脚会顶破视口触发滚动条，右下角露出一条浅色带。
   min-height: min(500px, calc(100vh - 140px));
@@ -61,8 +71,11 @@
 // ---------------- 左侧品牌区 ----------------
 
 .xsy-login__brand {
-  width: 61%;
-  padding: 44px 48px 40px;
+  // 55%：4 个特性标签要在一行放下（需 ~314px），52% 时品牌栏内宽只有 ~304px
+  width: 55%;
+  // 左右 24px（原 40px）：全链路流程图是宽幅图，40px 内边距在窄列里会把它压掉近三成宽度，
+  // 图里的环节文字跟着变小。标题与特性标签不需要那么宽的留白，收窄后仍有余量。
+  padding: 40px 24px 36px;
   display: flex;
   flex-direction: column;
   background:
@@ -97,28 +110,28 @@
   letter-spacing: 2px;
 }
 
-.xsy-login__intro {
-  margin: 14px 0 0;
-  font-size: 14px;
-  color: @xsy-text-secondary;
-  letter-spacing: 0.5px;
-}
-
 // 品牌特性标签
 .xsy-login__features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 20px;
+  display: grid;
+  // 用 grid 而不是 flex-wrap：4 个标签自然换行会出现「3 + 1」，最难看。
+  // 默认 2×2；品牌栏够宽（>=1280，内宽 >=325）时才铺成一行。
+  grid-template-columns: repeat(2, max-content);
+  justify-content: start;
+  gap: 10px 10px;
   margin: 22px 0 0;
   padding: 0;
   list-style: none;
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, max-content);
+  }
 }
 
 .xsy-login__feature {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: 14px;
+  gap: 5px;
+  font-size: 12px;
   color: @xsy-text;
   white-space: nowrap;
   animation: xsy-login-fade 0.4s ease-out both;
@@ -134,30 +147,31 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   flex: none;
   border-radius: 50%;
   background: rgba(0, 185, 107, 0.12);
 }
 
 .xsy-login__feature-icon {
-  font-size: 13px;
+  font-size: 11px;
   color: @xsy-primary;
 }
 
-// 品牌区蔬菜插画
+// 全链路主插画（商品 → 供应商 → 仓库 → 分拣 → 配送 → 客户 → 财务）
 .xsy-login__visual {
   margin-top: auto;
   padding-top: 20px;
   animation: xsy-login-fade 0.5s ease-out 0.3s both;
 }
 
+// 宽度驱动：插画是宽幅流程图（1060×565），按高度缩放会在窄列里被 max-width 压扁。
 .xsy-login__scene {
   display: block;
-  width: auto;
-  max-width: 100%;
-  height: clamp(180px, 26vh, 260px);
+  width: 100%;
+  max-width: 820px;
+  height: auto;
   user-select: none;
 }
 
@@ -175,8 +189,8 @@
 // ---------------- 右侧登录区 ----------------
 
 .xsy-login__panel {
-  width: 39%;
-  padding: 44px 46px;
+  width: 45%;
+  padding: 40px 38px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -382,12 +396,18 @@
     margin-bottom: 8px;
   }
 
+  // 主插画是左列最高的块（约 337px）：矮屏下它才是卡片撑高的真因。
+  // min-height 拦不住内容，必须直接压插画本身。
   .xsy-login__visual {
     padding-top: 12px;
+    max-height: 200px;
+    overflow: hidden;
   }
 
   .xsy-login__scene {
-    height: 150px;
+    max-height: 200px;
+    width: auto;
+    max-width: 100%;
   }
 
 }
@@ -411,9 +431,22 @@
 }
 
 @media (max-width: 900px) {
+  .xsy-login {
+    --login-shell-max: min(440px, calc(100vw - 40px));
+    background-image: var(--login-mobile-background-image), linear-gradient(180deg, #e0faf6 0%, #f8fff3 72%);
+    background-position: center bottom;
+    background-size: 100% auto, cover;
+  }
+
   .xsy-login__shell {
-    width: min(440px, calc(100vw - 40px));
+    width: 100%;
+    // 窄屏只剩表单一张卡，回到居中（背景也换成了移动端底图）
+    align-self: center;
     min-height: 0;
+  }
+
+  .xsy-login__footer {
+    align-self: center;
   }
 
   .xsy-login__brand {
@@ -423,12 +456,6 @@
   .xsy-login__panel {
     width: 100%;
     padding: 40px 40px 32px;
-  }
-
-  .xsy-login {
-    background-image: var(--login-mobile-background-image), linear-gradient(180deg, #e0faf6 0%, #f8fff3 72%);
-    background-position: center bottom;
-    background-size: 100% auto, cover;
   }
 }
 

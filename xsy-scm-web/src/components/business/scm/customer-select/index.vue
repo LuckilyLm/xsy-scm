@@ -6,14 +6,14 @@
       :show-search="true"
       :allow-clear="true"
       :size="size"
-      option-filter-prop="label"
+      :filter-option="filterOption"
       @change="onChange"
   >
     <a-select-option
         v-for="item in visibleList"
         :key="item.customerId"
         :value="item.customerId"
-        :label="`${item.name}（${item.customerCode}）`"
+        :label="item.name"
     >
       {{ item.name }}
       <template v-if="item.customerCode"> （{{ item.customerCode }}）</template>
@@ -60,6 +60,11 @@ const visibleList = computed(() =>
       return props.excludeId == null || String(item.customerId) !== String(props.excludeId);
     })
 );
+
+function filterOption(input: string, option?: {value?: ScmId | null}): boolean {
+  const customer = visibleList.value.find((item) => String(item.customerId) === String(option?.value));
+  return `${customer?.name ?? ''} ${customer?.customerCode ?? ''}`.toLowerCase().includes(input.trim().toLowerCase());
+}
 
 async function query() {
   try {

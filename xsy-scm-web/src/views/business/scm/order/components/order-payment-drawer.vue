@@ -4,13 +4,14 @@
     <a-alert v-if="error" type="error" show-icon :message="error" class="payment-message"/>
     <a-alert v-if="created" type="success" show-icon
              :message="`${created.intentNo}：${statusText(created.status)}`" class="payment-message"/>
-    <a-form v-if="order?.status === 'CONFIRMED'" v-privilege="'scm:payment:intent:create'" layout="vertical">
+    <a-form ref="formRef" v-if="order?.status === 'CONFIRMED'" v-privilege="'scm:payment:intent:create'"
+            :model="{amount}" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="支付方式">
         <a-radio-group v-model:value="method" :disabled="saving">
           <a-radio value="BALANCE">余额支付</a-radio><a-radio value="ONLINE">在线支付（模拟渠道）</a-radio>
         </a-radio-group>
       </a-form-item>
-      <a-form-item label="本次支付金额" required>
+      <a-form-item label="本次支付金额" name="amount">
         <a-input-number v-model:value="amount" string-mode :min="'0.0001'" :max="'99999999999999.9999'"
                         :precision="4" :disabled="saving" placeholder="输入本次金额"/>
       </a-form-item>
@@ -52,6 +53,16 @@ import BalanceMovementDetail from '../../finance/balance-movement-detail.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const visible = ref(false), saving = ref(false), loading = ref(false), error = ref(''), queried = ref(false);
 const order = ref<Order>(), amount = ref(''), method = ref<'BALANCE' | 'ONLINE'>('BALANCE');
+const formRef = ref();
+/** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
+const formRules = {
+  amount: [{
+    validator: () => (isValidPositiveAmount(amount.value)
+        ? Promise.resolve()
+        : Promise.reject(new Error('请输入大于 0 的金额，最多 4 位小数'))),
+    trigger: 'blur',
+  }],
+};
 const created = ref<PaymentIntent>(), detail = ref<PaymentIntent>(), rows = ref<PaymentIntent[]>([]);
 const pageNum = ref(1), total = ref(0), movement = ref<InstanceType<typeof BalanceMovementDetail>>();
 const keys = new Map<string, string>();
@@ -72,7 +83,11 @@ function open(value: Order) {
 }
 async function submit() {
   if (saving.value || !order.value?.orderId || !order.value.customerId) return;
-  if (!isValidPositiveAmount(amount.value)) { error.value = '请输入大于 0 的金额，最多 4 位小数。'; return; }
+  try {
+    await formRef.value?.validate();
+  } catch {
+    return;
+  }
   const data: PaymentCreate = {customerId: order.value.customerId, sourceType: 'SALES_ORDER', sourceId: order.value.orderId,
     amount: amount.value, method: method.value, provider: method.value === 'BALANCE' ? 'INTERNAL_BALANCE' : 'MOCK'};
   const signature = JSON.stringify(data);

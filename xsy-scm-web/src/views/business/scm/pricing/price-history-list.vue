@@ -18,10 +18,10 @@
         <a-select v-model:value="query.operationType" allow-clear style="width:110px" :options="operationOptions"/>
       </a-form-item>
       <a-form-item label="有效区间" class="smart-query-form-item">
-        <a-range-picker v-model:value="effective" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]"/>
+        <a-range-picker v-model:value="effective" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true,true]"/>
       </a-form-item>
       <a-form-item label="变更区间" class="smart-query-form-item">
-        <a-range-picker v-model:value="operated" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true,true]"/>
+        <a-range-picker v-model:value="operated" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true,true]"/>
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button type="primary" @click="search" v-privilege="'scm:pricing:history:query'">查询</a-button>
@@ -30,31 +30,22 @@
   </a-form>
   <a-alert v-if="error" type="error" :message="error"/>
   <a-card size="small" :bordered="false">
-    <div class="smart-table-setting-block">
-      <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load"/>
+    <div class="smart-table-btn-block scm-table-toolbar">
+      <div class="smart-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load"/>
+      </div>
     </div>
     <a-table :data-source="rows" :columns="columns" :row-key="(r:HistoryRow)=>`${r.source}-${r.historyId}`"
-             :loading="loading" :pagination="false" size="small" bordered :scroll="{x:1450}">
+             :loading="loading" :pagination="false" size="small" bordered :scroll="{x:1850}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='source'">
           {{ historyLabel(HISTORY_SOURCE_LABEL, record.source) }}
         </template>
-        <template v-else-if="column.dataIndex==='target'">
-          <!-- 协议价按客户定位，类型价按客户类型定位：主行放实际维度，次行补另一维 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">
-              {{ record.customerName || record.customerTypeName || '—' }}
-            </span>
-            <span v-if="record.customerName && record.customerTypeName" class="scm-cell-stack__sub">
-              {{ record.customerTypeName }}
-            </span>
-          </div>
-        </template>
-        <template v-else-if="column.dataIndex==='sku'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ record.specName || '—' }}</span>
-            <span v-if="record.skuCode" class="scm-cell-stack__sub">{{ record.skuCode }}</span>
-          </div>
+        <template v-else-if="column.dataIndex==='customerName'">{{ record.customerName || record.customerTypeName || '—' }}</template>
+        <template v-else-if="column.dataIndex==='customerTypeName'">{{ record.customerTypeName || '—' }}</template>
+        <template v-else-if="column.dataIndex==='specName'">{{ record.specName || '—' }}</template>
+        <template v-else-if="column.dataIndex==='skuCode'">
+          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex==='operationType'">
           <ScmStatusTag
@@ -65,21 +56,10 @@
         <template v-else-if="column.dataIndex==='currentUnitPrice'">
           <span class="scm-money">{{ formatAmount(record.currentUnitPrice) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='currentEffective'">
-          <!-- 时间字段例外：生效 / 结束时间属于价格本身的事实，必须留在列表上 -->
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.currentEffectiveFrom) }}</span>
-            <span class="scm-cell-stack__sub">
-              {{ record.currentEffectiveTo ? `至 ${datetime(record.currentEffectiveTo)}` : '长期有效' }}
-            </span>
-          </div>
-        </template>
-        <template v-else-if="column.dataIndex==='operatedAt'">
-          <div class="scm-cell-stack">
-            <span class="scm-cell-stack__main">{{ datetime(record.operatedAt) }}</span>
-            <span v-if="record.operator" class="scm-cell-stack__sub">{{ record.operator }}</span>
-          </div>
-        </template>
+        <template v-else-if="column.dataIndex==='currentEffectiveFrom'">{{ datetime(record.currentEffectiveFrom) }}</template>
+        <template v-else-if="column.dataIndex==='currentEffectiveTo'">{{ record.currentEffectiveTo ? datetime(record.currentEffectiveTo) : '长期有效' }}</template>
+        <template v-else-if="column.dataIndex==='operatedAt'">{{ datetime(record.operatedAt) }}</template>
+        <template v-else-if="column.dataIndex==='operator'">{{ record.operator || '—' }}</template>
         <template v-else-if="column.dataIndex==='currentDeleted'">
           <ScmStatusTag :tone="record.currentDeleted ? 'error' : 'neutral'"
                         :label="record.currentDeleted ? '已删除' : '有效记录'"/>
@@ -140,13 +120,17 @@ const operationOptions = Object.entries(HISTORY_OPERATION_LABEL).map(([value, la
  */
 const columns = ref<TableColumnsType<HistoryRow>>([
   {title: '来源', dataIndex: 'source', width: 120},
-  {title: '对象', dataIndex: 'target', width: 200},
+  {title: '客户', dataIndex: 'customerName', width: 170},
+  {title: '客户类型', dataIndex: 'customerTypeName', align: 'center', width: 150},
   {title: '商品', dataIndex: 'productName', width: 150},
-  {title: '商品规格', dataIndex: 'sku', width: 190},
+  {title: '商品规格', dataIndex: 'specName', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '变更', dataIndex: 'operationType', align: 'center', width: 100},
   {title: '当前价格', dataIndex: 'currentUnitPrice', align: 'right', width: 120},
-  {title: '当前有效期', dataIndex: 'currentEffective', width: 200},
+  {title: '当前生效时间', dataIndex: 'currentEffectiveFrom', width: 170},
+  {title: '当前结束时间', dataIndex: 'currentEffectiveTo', width: 130},
   {title: '变更时间', dataIndex: 'operatedAt', width: 170},
+  {title: '操作人', dataIndex: 'operator', width: 110},
   {title: '记录', dataIndex: 'currentDeleted', align: 'center', width: 100},
   {title: '详情', dataIndex: 'action', align: 'center', fixed: 'right', width: 100},
 ]);

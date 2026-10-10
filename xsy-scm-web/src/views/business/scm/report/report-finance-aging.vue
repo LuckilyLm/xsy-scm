@@ -62,7 +62,7 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref} from 'vue';
 import dayjs from 'dayjs';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import {financeAgingApi, type AgingAccountType, type AgingBucket, type AgingQuery, type AgingRow, type AgingSummary} from '/@/api/business/scm/finance-aging-api';
 import {financeApi} from '/@/api/business/scm/finance-api';
 import type {FinancePayableDetail, FinanceReceivableDetail} from '../finance/finance-types';
@@ -109,7 +109,7 @@ const columns: TableColumnsType<AgingRow> = [
 
 async function load() {
   const id = ++requestId;
-  if (!query.asOfDate) { loading.value = false; error.value = '请选择截止日'; return; }
+  if (!query.asOfDate) { loading.value = false; message.warning('请选择截止日'); return; }
   const payload = {...query};
   loading.value = true;
   error.value = '';

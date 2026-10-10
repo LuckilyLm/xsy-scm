@@ -15,7 +15,7 @@
         <a-form-item label="标签" class="smart-query-form-item"><a-select v-model:value="filters.tagIds" mode="multiple" allow-clear :options="tagFilterOptions" option-filter-prop="label" placeholder="命中任一标签" style="width: 220px" /></a-form-item>
         <a-form-item label="主图" class="smart-query-form-item"><a-select v-model:value="filters.hasPrimaryImage" allow-clear :options="YES_NO_ENUM" style="width: 90px" /></a-form-item>
         <a-form-item label="条码" class="smart-query-form-item"><a-select v-model:value="filters.hasBarcode" allow-clear :options="YES_NO_ENUM" style="width: 90px" /></a-form-item>
-        <a-form-item label="创建时间" class="smart-query-form-item"><a-range-picker v-model:value="createdRange" show-time value-format="YYYY-MM-DDTHH:mm:ssZ" :allow-empty="[true, true]" /></a-form-item>
+        <a-form-item label="创建时间" class="smart-query-form-item"><a-range-picker v-model:value="createdRange" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" /></a-form-item>
       </a-row>
     </a-form>
     <a-card size="small" :bordered="false">

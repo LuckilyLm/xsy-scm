@@ -68,23 +68,23 @@
   </a-card>
   <a-modal v-model:open="visible" :title="`${form.id ? '编辑' : '新建'}${label}`" :confirm-loading="saving" @ok="save">
     <a-alert v-if="formError" :message="formError" type="error" show-icon/>
-    <a-form layout="vertical">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <template v-if="isDriver">
-        <a-form-item label="司机编码" required>
+        <a-form-item label="司机编码" name="driverCode">
           <a-input v-model:value="form.driverCode" :maxlength="64"/>
         </a-form-item>
-        <a-form-item label="司机姓名" required>
+        <a-form-item label="司机姓名" name="driverName">
           <a-input v-model:value="form.driverName" :maxlength="100"/>
         </a-form-item>
-        <a-form-item label="联系电话" required>
+        <a-form-item label="联系电话" name="phone">
           <a-input v-model:value="form.phone" :maxlength="32"/>
         </a-form-item>
-        <a-form-item label="绑定员工" required>
+        <a-form-item label="绑定员工" name="employeeId">
           <EmployeeSelect v-model:value="employeeValue" placeholder="请选择绑定的系统员工" width="100%"/>
         </a-form-item>
       </template>
       <template v-else>
-        <a-form-item label="车牌号" required>
+        <a-form-item label="车牌号" name="vehicleNo">
           <a-input v-model:value="form.vehicleNo" :maxlength="32"/>
         </a-form-item>
         <a-form-item label="车型">
@@ -143,6 +143,32 @@ const visible = ref(false),
     saving = ref(false),
     formError = ref('');
 const form = ref<Partial<Driver & Vehicle>>({status: 'ENABLED'});
+const formRef = ref();
+
+/**
+ * 逐项校验规则：错误显示在对应输入框下方，而不是顶部一条汇总红条。
+ *
+ * 「启用司机必须绑定系统员工」是跨字段约束（仅启用时要求），与服务端 requireBindableEmployee 同口径，
+ * 放在这里提前挡掉必然失败的提交。
+ */
+const formRules = computed(() => (isDriver.value
+    ? {
+      driverCode: [{required: true, message: '请填写司机编码', trigger: 'blur'}],
+      driverName: [{required: true, message: '请填写司机姓名', trigger: 'blur'}],
+      phone: [
+        {required: true, message: '请填写联系电话', trigger: 'blur'},
+        {pattern: /^[0-9+() -]{5,32}$/, message: '联系电话格式不正确', trigger: 'blur'},
+      ],
+      employeeId: [{
+        validator: () => (form.value.status === 'ENABLED' && form.value.employeeId == null
+            ? Promise.reject(new Error('启用司机必须绑定系统员工'))
+            : Promise.resolve()),
+        trigger: 'change',
+      }],
+    }
+    : {
+      vehicleNo: [{required: true, message: '请填写车牌号', trigger: 'blur'}],
+    }));
 let originalStatus = '',
     generation = 0;
 
@@ -217,22 +243,12 @@ function open(row?: Driver | Vehicle) {
 
 function save() {
   formError.value = '';
-  if (isDriver.value && (!form.value.driverCode?.trim() || !form.value.driverName?.trim() || !/^[0-9+() -]{5,32}$/.test(form.value.phone ?? ''))) {
-    formError.value = '请填写司机编码、姓名及有效联系电话';
-    return;
-  }
-  // 启用即要求绑定：与服务端 requireBindableEmployee 同一口径，提前挡掉必然失败的提交。
-  if (isDriver.value && form.value.status === 'ENABLED' && form.value.employeeId == null) {
-    formError.value = '启用司机必须绑定系统员工';
-    return;
-  }
-  if (!isDriver.value && !form.value.vehicleNo?.trim()) {
-    formError.value = '请填写车牌号';
-    return;
-  }
-  if (originalStatus === 'ENABLED' && form.value.status === 'DISABLED')
-    Modal.confirm({title: `停用该${label.value}？`, content: '停用后不能分配到新线路，历史计划保留快照。', onOk: submit});
-  else submit();
+  // 校验交给 antd 表单：错误逐项显示在对应输入框下方，不再用顶部一条汇总红条。
+  formRef.value?.validate().then(() => {
+    if (originalStatus === 'ENABLED' && form.value.status === 'DISABLED')
+      Modal.confirm({title: `停用该${label.value}？`, content: '停用后不能分配到新线路，历史计划保留快照。', onOk: submit});
+    else submit();
+  }).catch(() => undefined);
 }
 
 async function submit() {

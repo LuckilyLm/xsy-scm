@@ -44,9 +44,7 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-typography-text type="secondary">
-          预留占用「可用量」但不改变物理库存；可用量 = 现有量 − 预留量。
-        </a-typography-text>
+<p class="scm-note scm-note--block">预留占用「可用量」但不改变物理库存；可用量 = 现有量 − 预留量。</p>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator

@@ -6,14 +6,14 @@
       :show-search="true"
       :allow-clear="true"
       :size="size"
-      option-filter-prop="label"
+      :filter-option="filterOption"
       @change="onChange"
   >
     <a-select-option
         v-for="item in supplierList"
         :key="item.supplierId"
         :value="item.supplierId"
-        :label="`${item.name}（${item.supplierCode}）`"
+        :label="item.name"
     >
       {{ item.name }}
       <template v-if="item.supplierCode"> （{{ item.supplierCode }}）</template>
@@ -40,6 +40,11 @@ const props = withDefaults(
 const emit = defineEmits<{ 'update:value': [value: ScmId | undefined]; change: [value: ScmId | undefined] }>();
 
 const supplierList = ref<SupplierOption[]>([]);
+
+function filterOption(input: string, option?: {value?: ScmId | null}): boolean {
+  const supplier = supplierList.value.find((item) => String(item.supplierId) === String(option?.value));
+  return `${supplier?.name ?? ''} ${supplier?.supplierCode ?? ''}`.toLowerCase().includes(input.trim().toLowerCase());
+}
 
 async function query() {
   try {

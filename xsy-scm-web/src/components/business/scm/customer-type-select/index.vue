@@ -7,14 +7,14 @@
       :show-search="true"
       :allow-clear="true"
       :size="size"
-      option-filter-prop="label"
+      :filter-option="filterOption"
       @change="onChange"
   >
     <a-select-option
         v-for="item in typeList"
         :key="item.typeId"
         :value="item.typeId"
-        :label="`${item.name}（${item.typeCode}）`"
+        :label="item.name"
     >
       {{ item.name }}
       <template v-if="item.typeCode"> （{{ item.typeCode }}）</template>
@@ -41,6 +41,11 @@ const props = withDefaults(
 const emit = defineEmits<{ 'update:value': [value: ScmId | undefined]; change: [value: ScmId | undefined] }>();
 
 const typeList = ref<CustomerType[]>([]);
+
+function filterOption(input: string, option?: {value?: ScmId | null}): boolean {
+  const customerType = typeList.value.find((item) => String(item.typeId) === String(option?.value));
+  return `${customerType?.name ?? ''} ${customerType?.typeCode ?? ''}`.toLowerCase().includes(input.trim().toLowerCase());
+}
 
 async function query() {
   try {

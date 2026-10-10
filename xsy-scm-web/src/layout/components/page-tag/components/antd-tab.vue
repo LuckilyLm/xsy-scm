@@ -212,7 +212,8 @@ const borderRadius = computed(() => {
   :deep(.ant-tabs-small > .ant-tabs-nav .ant-tabs-tab) {
     padding: 5px 8px 3px 15px;
     margin: 8px 0 0 5px;
-    flex: 0 0 168px;
+    // 宽度按标签文字自适应（固定 168px 会让短名字右边空一大块）
+    flex: 0 0 auto;
     min-width: 96px;
     max-width: 220px;
     height: 32px;
