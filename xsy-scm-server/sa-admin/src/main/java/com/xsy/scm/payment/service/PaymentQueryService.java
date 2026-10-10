@@ -107,7 +107,8 @@ public class PaymentQueryService {
     public PageResult<PaymentRefundVO> refundPage(PaymentRefundQueryForm form) {
         Page<?> page = new Page<>(form.getPageNum(), form.getPageSize());
         return SmartPageUtil.convert2PageResult(page,
-                paymentRefundDao.queryPage(page, form).stream().map(PaymentVoAssembler::toRefund).toList());
+                paymentRefundDao.queryPage(page, form, dataScopeService.resolve()).stream()
+                        .map(PaymentVoAssembler::toRefund).toList());
     }
 
     /**

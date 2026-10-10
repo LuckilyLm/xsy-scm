@@ -73,6 +73,12 @@ public class CustomerService {
         return entity;
     }
 
+    public CustomerEntity requireInCurrentScope(Long customerId) {
+        CustomerEntity entity = require(customerId);
+        requireCurrentCustomerScope(entity);
+        return entity;
+    }
+
     /**
      * 读取客户并校验乐观锁版本：不存在 → 40430，版本不一致 → 40921。
      */
@@ -170,6 +176,7 @@ public class CustomerService {
         customerValidator.validateCreditPeriod(form);
         customerSkuVisibilityDao.lockCustomer(form.getCustomerId());
         CustomerEntity entity = require(form.getCustomerId(), form.getVersion());
+        requireCurrentCustomerScope(entity);
         customerTypeService.requireSelectableType(form.getCustomerTypeId());
         customerValidator.validateParent(form.getParentCustomerId(), form.getCustomerId());
 
@@ -237,6 +244,7 @@ public class CustomerService {
     @Transactional(rollbackFor = Exception.class)
     public void updateStatus(CustomerStatusForm form) {
         CustomerEntity entity = require(form.getCustomerId(), form.getVersion());
+        requireCurrentCustomerScope(entity);
         entity.setStatus(form.getStatus());
         entity.setVersion(form.getVersion());
         stamp(entity, false);
@@ -254,10 +262,17 @@ public class CustomerService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(CustomerDeleteForm form) {
         customerSkuVisibilityDao.lockCustomer(form.getCustomerId());
-        require(form.getCustomerId(), form.getVersion());
+        CustomerEntity entity = require(form.getCustomerId(), form.getVersion());
+        requireCurrentCustomerScope(entity);
         assertNotReferenced(form.getCustomerId());
         if (customerDao.softDelete(form.getCustomerId(), form.getVersion(), ScmOperator.current()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+    }
+
+    private void requireCurrentCustomerScope(CustomerEntity entity) {
+        if (!dataScopeService.resolve().getCustomerSellerScope().allows(entity.getSellerId())) {
+            throw new ScmDataScopeException();
         }
     }
 

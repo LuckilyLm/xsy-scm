@@ -187,12 +187,15 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REASON_REQUIRED);
         }
 
+        CustomerEntity customer = customerService.requireInCurrentScope(form.getCustomerId());
+        CustomerEntity settlement = customerService.requireSettlementAccount(customer);
+        customerService.requireInCurrentScope(settlement.getId());
+
         var claim = idempotencyService.claim(CORRECTION_SCOPE + ":" + form.getCustomerId(), idempotencyKey, form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, CustomerBalanceMovementEntity.class);
         }
 
-        CustomerEntity settlement = settlementCustomerOf(form.getCustomerId());
         CustomerBalanceAccountEntity account = lockAccount(settlement);
         if (direction == ScmBalanceDirectionEnum.DEBIT) {
             // 更正也不能把余额扣成负数：否则「不允许负余额」这条纪律可以从更正绕过去
