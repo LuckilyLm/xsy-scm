@@ -15,6 +15,8 @@ export const STOCK_STATUS = {
   AVAILABLE: 'AVAILABLE',
   INSUFFICIENT: 'INSUFFICIENT',
   OUT_OF_STOCK: 'OUT_OF_STOCK',
+  /** 商城尚未确定可售库存口径时服务端显式返回，页面如实显示「库存未知」 */
+  UNKNOWN: 'UNKNOWN',
 };
 
 /**
@@ -26,6 +28,7 @@ const STOCK_MAP = {
   [STOCK_STATUS.AVAILABLE]: { text: '有货', level: 'ok' },
   [STOCK_STATUS.INSUFFICIENT]: { text: '库存不足', level: 'warn' },
   [STOCK_STATUS.OUT_OF_STOCK]: { text: '暂时缺货', level: 'off' },
+  [STOCK_STATUS.UNKNOWN]: { text: '库存未知', level: 'off' },
 };
 
 const UNKNOWN_STOCK = { text: '库存未知', level: 'off' };

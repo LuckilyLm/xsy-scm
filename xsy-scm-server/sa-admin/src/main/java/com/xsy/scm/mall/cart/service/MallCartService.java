@@ -10,6 +10,7 @@ import com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity;
 import com.xsy.scm.mall.cart.domain.form.MallCartAddForm;
 import com.xsy.scm.mall.cart.domain.form.MallCartQuantityForm;
 import com.xsy.scm.mall.cart.domain.form.MallCartRemoveForm;
+import com.xsy.scm.mall.cart.domain.vo.MallCartEstimateVO;
 import com.xsy.scm.mall.cart.domain.vo.MallCartItemVO;
 import com.xsy.scm.mall.cart.domain.vo.MallCartVO;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
@@ -19,8 +20,11 @@ import com.xsy.scm.pricing.constant.ScmUnpricedReasonEnum;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +45,38 @@ public class MallCartService {
     @Transactional(readOnly = true)
     public MallCartVO cart(RequestMallCustomer customer) {
         return assemble(customer);
+    }
+
+    /**
+     * 所选商品的预估金额与可结算行数。
+     *
+     * <p>
+     * 客户端不得自行累计业务金额，勾选变化后由本接口给出权威结果。
+     */
+    @Transactional(readOnly = true)
+    public MallCartEstimateVO estimate(RequestMallCustomer customer, List<Long> skuIds) {
+        MallCartVO cart = assemble(customer);
+        Set<Long> selected = new HashSet<>(skuIds);
+        BigDecimal amount = BigDecimal.ZERO.setScale(SCALE);
+        List<Long> unavailable = new ArrayList<>();
+        int available = 0;
+        for (MallCartItemVO item : cart.getItems()) {
+            if (!selected.contains(item.getSkuId())) {
+                continue;
+            }
+            if (MallCartAvailabilityEnum.AVAILABLE.name().equals(item.getAvailability())) {
+                available++;
+                amount = amount.add(item.getLineAmount());
+            } else {
+                unavailable.add(item.getSkuId());
+            }
+        }
+        MallCartEstimateVO result = new MallCartEstimateVO();
+        result.setEstimatedAmount(amount);
+        result.setAvailableCount(available);
+        result.setSelectedCount(selected.size());
+        result.setUnavailableSkuIds(unavailable);
+        return result;
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -131,6 +131,26 @@ export const cartRoutes = [
     },
   },
   {
+    method: 'POST',
+    path: '/scm/mall/cart/estimate',
+    handler: async ({ data, session }) => {
+      const denied = guard(session);
+      if (denied) return denied;
+      const selected = new Set((data?.skuIds || []).map(Number));
+      const items = [...cartOf(session).entries()]
+        .filter(([skuId]) => selected.has(skuId))
+        .map(([skuId, quantity]) => toItem(skuId, quantity));
+      const available = items.filter((item) => item.availability === 'AVAILABLE');
+      const estimated = available.reduce((sum, item) => sum + Number(item.lineAmount), 0);
+      return ok({
+        estimatedAmount: estimated.toFixed(4),
+        availableCount: available.length,
+        selectedCount: selected.size,
+        unavailableSkuIds: items.filter((item) => item.availability !== 'AVAILABLE').map((item) => item.skuId),
+      });
+    },
+  },
+  {
     method: 'DELETE',
     path: '/scm/mall/cart',
     handler: async ({ session }) => {

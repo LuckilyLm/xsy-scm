@@ -45,7 +45,7 @@
             <view class="cart-item__foot">
               <view class="stepper">
                 <view class="stepper__btn" @click="step(item, -1)">−</view>
-                <text class="stepper__value">{{ item.quantity }}</text>
+                <text class="stepper__value">{{ displayQuantity(item) }}</text>
                 <view class="stepper__btn" @click="step(item, 1)">+</view>
               </view>
               <text class="cart-item__remove" @click="remove(item)">移除</text>
@@ -62,7 +62,7 @@
         </view>
         <view class="cart__amount">
           <text class="cart__amount-label">合计</text>
-          <text class="cart__amount-value">¥{{ estimatedAmount }}</text>
+          <text class="cart__amount-value">¥{{ selectedAmount }}</text>
         </view>
         <view class="cart__submit" :class="{ 'cart__submit--disabled': !checkedCount || submitting }" @click="goCheckout">
           去结算{{ checkedCount ? `(${checkedCount})` : '' }}
@@ -84,11 +84,14 @@
   } from '@/constants/theme-color-const';
 
   const items = ref([]);
-  const estimatedAmount = ref('0.00');
+  /** 所选商品的预估金额，**一律来自服务端** /scm/mall/cart/estimate，客户端不做金额累计 */
+  const selectedAmount = ref('0.00');
   const loading = ref(false);
   const submitting = ref(false);
   const checked = reactive({});
   const failed = reactive({});
+  /** 预估请求序号，避免旧响应覆盖新选择 */
+  let estimateSeq = 0;
 
   const settleable = computed(() => items.value.filter((item) => isSettleable(item)));
   const checkedItems = computed(() => settleable.value.filter((item) => checked[item.skuId]));
@@ -127,27 +130,64 @@
   /** 服务端返回整车快照；勾选状态按可结算行保留，失效行自动取消勾选 */
   function apply(cart) {
     items.value = cart?.items || [];
-    estimatedAmount.value = cart?.estimatedAmount || '0.00';
     items.value.forEach((item) => {
       if (!isSettleable(item)) checked[item.skuId] = false;
     });
+    refreshEstimate();
+  }
+
+  /** 勾选变化后向服务端要权威预估金额；序号防止旧响应覆盖新选择 */
+  async function refreshEstimate() {
+    const skuIds = checkedItems.value.map((item) => item.skuId);
+    const seq = ++estimateSeq;
+    if (!skuIds.length) {
+      selectedAmount.value = '0.00';
+      return;
+    }
+    try {
+      const response = await mallCartApi.estimate(skuIds);
+      if (seq === estimateSeq) {
+        selectedAmount.value = response.data?.estimatedAmount || '0.00';
+      }
+    } catch (error) {
+      smartSentry.captureError(error);
+    }
   }
 
   function toggle(item) {
     if (!isSettleable(item)) return;
     checked[item.skuId] = !checked[item.skuId];
+    refreshEstimate();
   }
   function toggleAll() {
     const next = !allChecked.value;
     settleable.value.forEach((item) => {
       checked[item.skuId] = next;
     });
+    refreshEstimate();
+  }
+
+  /*
+   * 数量一律按四位小数定点做**整数**运算，再格式化成字符串，避免浮点误差。
+   * 服务端也按四位小数校验，两端口径一致。
+   * 递增单位当前固定为 1；按商品配置起订量与递增单位需要先有商品主档配置，见路线图。
+   */
+  function scaled(value) {
+    return Math.round(Number(value) * 10000);
+  }
+  function formatQuantity(scaledValue) {
+    const int = Math.floor(scaledValue / 10000);
+    const frac = String(scaledValue % 10000).padStart(4, '0').replace(/0+$/, '');
+    return frac ? `${int}.${frac}` : `${int}`;
+  }
+  function displayQuantity(item) {
+    return formatQuantity(scaled(item.quantity));
   }
 
   async function step(item, delta) {
-    const next = Number(item.quantity) + delta;
+    const next = scaled(item.quantity) + delta * 10000;
     if (next <= 0) return;
-    await mutate(() => mallCartApi.updateItem(item.skuId, String(next)));
+    await mutate(() => mallCartApi.updateItem(item.skuId, formatQuantity(next)));
   }
 
   async function remove(item) {

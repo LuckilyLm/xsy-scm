@@ -38,4 +38,10 @@ export const mallCartApi = {
 
   /** 清空购物车 */
   clear: () => deleteRequest('/scm/mall/cart'),
+
+  /**
+   * 所选商品的预估金额（勾选变化后调用；金额一律由服务端计算）
+   * @param {number[]} skuIds
+   */
+  estimate: (skuIds) => postRequest('/scm/mall/cart/estimate', { skuIds }),
 };

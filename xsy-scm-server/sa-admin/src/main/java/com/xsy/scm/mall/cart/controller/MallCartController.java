@@ -2,8 +2,10 @@ package com.xsy.scm.mall.cart.controller;
 
 import com.xsy.scm.mall.account.support.MallRequestSupport;
 import com.xsy.scm.mall.cart.domain.form.MallCartAddForm;
+import com.xsy.scm.mall.cart.domain.form.MallCartEstimateForm;
 import com.xsy.scm.mall.cart.domain.form.MallCartQuantityForm;
 import com.xsy.scm.mall.cart.domain.form.MallCartRemoveForm;
+import com.xsy.scm.mall.cart.domain.vo.MallCartEstimateVO;
 import com.xsy.scm.mall.cart.domain.vo.MallCartVO;
 import com.xsy.scm.mall.cart.service.MallCartService;
 import jakarta.validation.Valid;
@@ -52,6 +54,12 @@ public class MallCartController {
     public ResponseDTO<MallCartVO> removeBatch(@Valid @RequestBody MallCartRemoveForm form) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(cartService.removeBatch(MallRequestSupport.current(), form));
+    }
+
+    @PostMapping("/estimate")
+    public ResponseDTO<MallCartEstimateVO> estimate(@Valid @RequestBody MallCartEstimateForm form) {
+        MallRequestSupport.requirePasswordChanged();
+        return ResponseDTO.ok(cartService.estimate(MallRequestSupport.current(), form.getSkuIds()));
     }
 
     @DeleteMapping

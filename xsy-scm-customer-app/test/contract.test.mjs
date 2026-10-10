@@ -49,6 +49,18 @@ test('cart quantities travel as strings, never summed on the client', () => {
   assert.doesNotMatch(page, /Number\(item\.unitPrice\)/);
 });
 
+test('checked-cart total comes from the server estimate endpoint', () => {
+  const api = read('../src/api/mall/cart-api.js');
+  const page = read('../src/pages/cart/index.vue');
+  const mock = read('../mock/routes/cart.js');
+  assert.match(api, /\/scm\/mall\/cart\/estimate/);
+  assert.match(page, /mallCartApi\.estimate/);
+  // 底部合计不得直接用整车金额，也不得用浮点数累加
+  assert.doesNotMatch(page, /estimatedAmount\.value = cart/);
+  assert.doesNotMatch(page, /reduce\(.*Number\(item\.lineAmount\)/);
+  assert.match(mock, /\/scm\/mall\/cart\/estimate/);
+});
+
 test('production mock alias points at noop implementation', () => {
   const vite = read('../vite.config.js');
   assert.match(vite, /useMock \? 'mock\/index\.js' : 'mock\/noop\.js'/);
