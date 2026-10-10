@@ -62,6 +62,17 @@ function guard(session) {
   return session ? null : fail(PLATFORM_ERROR_CODE.LOGIN_STATE_INVALID, '登录已失效，请重新登录');
 }
 
+/** 供结算 mock 复用：读取某会话的购物车行（与列表接口同一构造） */
+export function mockCartItems(session) {
+  return [...cartOf(session).entries()].map(([skuId, quantity]) => toItem(skuId, quantity));
+}
+
+/** 供结算 mock 复用：下单成功后移除已下单规格 */
+export function mockCartRemove(session, skuIds) {
+  const cart = cartOf(session);
+  skuIds.forEach((skuId) => cart.delete(Number(skuId)));
+}
+
 /** 数量校验与后端一致：大于 0、最多 4 位小数 */
 function validQuantity(raw) {
   return typeof raw === 'string' && /^\d{1,10}(\.\d{1,4})?$/.test(raw) && Number(raw) > 0;

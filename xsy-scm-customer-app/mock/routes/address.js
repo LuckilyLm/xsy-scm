@@ -28,6 +28,11 @@ function sorted(session) {
   return [...bookOf(session)].sort((a, b) => Number(b.isDefault) - Number(a.isDefault) || a.addressId - b.addressId);
 }
 
+/** 供结算 mock 复用：某会话的地址列表（默认在前） */
+export function mockAddressList(session) {
+  return sorted(session);
+}
+
 function guard(session) {
   return session ? null : fail(PLATFORM_ERROR_CODE.LOGIN_STATE_INVALID, '登录已失效，请重新登录');
 }

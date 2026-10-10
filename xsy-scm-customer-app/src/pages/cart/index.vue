@@ -241,7 +241,8 @@
       uni.showToast({ title: '金额获取失败，请先点击重试', icon: 'none' });
       return;
     }
-    uni.showToast({ title: '结算将在下一阶段开放', icon: 'none' });
+    const skus = checkedItems.value.map((item) => item.skuId).join(',');
+    uni.navigateTo({ url: `/pages-sub/checkout/index?skus=${skus}` });
   }
 
   onShow(() => {

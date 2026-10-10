@@ -11,7 +11,7 @@ test('SmartAdmin success contract uses code zero', () => {
   assert.match(request, /code === SUCCESS_CODE && res\?\.ok !== false/);
 });
 
-test('release only exposes authentication, catalog, cart and address APIs', () => {
+test('release only exposes authentication, catalog, cart, address and order APIs', () => {
   const auth = read('../src/api/mall/auth-api.js');
   const api = read('../src/api/mall/index.js');
   assert.match(auth, /auth\/login/);
@@ -19,7 +19,22 @@ test('release only exposes authentication, catalog, cart and address APIs', () =
   assert.doesNotMatch(auth, /sms|wechat/i);
   assert.match(api, /Cart/);
   assert.match(api, /Address/);
-  assert.doesNotMatch(api, /Checkout|Order|Account|Home/);
+  assert.match(api, /Order/);
+  assert.doesNotMatch(api, /Account|Home/);
+});
+
+test('checkout submits a price fingerprint and an idempotency key', () => {
+  const api = read('../src/api/mall/order-api.js');
+  const page = read('../src/pages-sub/checkout/index.vue');
+  assert.match(api, /\/scm\/mall\/orders\/preview/);
+  assert.match(api, /idempotencyKey/);
+  // 提交必须回传服务端下发的指纹
+  assert.match(page, /priceFingerprint/);
+  // 变价必须让客户重新确认，不能静默重试
+  assert.match(page, /40985/);
+  // 客户端不提交 customerId，也不自行改价
+  assert.doesNotMatch(page, /customerId/);
+  assert.doesNotMatch(page, /manualPriceOverride: true/);
 });
 
 test('address form posts the field names the backend expects', () => {

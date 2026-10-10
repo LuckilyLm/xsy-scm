@@ -18,3 +18,9 @@ export const USER_TOKEN = `${KEY_PREFIX}token`;
  * 热词来自服务端，历史词只存本机，不上报。
  */
 export const SEARCH_HISTORY = `${KEY_PREFIX}search_history`;
+/**
+ * 结算页临时选中的收货地址 id。
+ * 地址列表页被结算页以「选择」模式打开时写入，结算页 onShow 读取后清除；
+ * 只存 id，地址内容仍以服务端列表为准。
+ */
+export const CHECKOUT_ADDRESS = `${KEY_PREFIX}checkout_address`;

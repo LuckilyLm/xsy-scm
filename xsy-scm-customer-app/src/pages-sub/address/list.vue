@@ -9,11 +9,12 @@
     </view>
 
     <view v-else class="addr__list">
-      <view v-for="item in list" :key="item.addressId" class="addr-item" @click="edit(item)">
+      <view v-for="item in list" :key="item.addressId" class="addr-item" @click="onItemTap(item)">
         <view class="addr-item__head">
           <text class="addr-item__receiver">{{ item.receiverName }}</text>
           <text class="addr-item__phone">{{ item.receiverPhone }}</text>
           <text v-if="item.isDefault" class="addr-item__tag">默认</text>
+          <text v-if="selectMode" class="addr-item__tag addr-item__tag--pick">点击选择</text>
         </view>
         <text class="addr-item__detail">{{ fullAddress(item) }}</text>
         <view class="addr-item__actions">
@@ -32,13 +33,29 @@
 
 <script setup>
   import { ref } from 'vue';
-  import { onShow } from '@dcloudio/uni-app';
+  import { onLoad, onShow } from '@dcloudio/uni-app';
   import { mallAddressApi } from '@/api/mall/address-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
+  import { CHECKOUT_ADDRESS } from '@/constants/local-storage-key-const';
 
   const list = ref([]);
   const loading = ref(false);
+  /** 由结算页以 ?select=1 打开时，点选地址即回传并返回，不做编辑 */
+  const selectMode = ref(false);
+
+  onLoad((options) => {
+    selectMode.value = String(options?.select || '') === '1';
+  });
+
+  function onItemTap(item) {
+    if (!selectMode.value) {
+      edit(item);
+      return;
+    }
+    uni.setStorageSync(CHECKOUT_ADDRESS, item.addressId);
+    uni.navigateBack();
+  }
 
   function fullAddress(item) {
     return [item.provinceName, item.cityName, item.districtName, item.detailAddress].filter(Boolean).join(' ');
@@ -109,6 +126,7 @@
   .addr-item__phone { margin-left: $space-3; font-size: $font-size-base; color: $color-text-secondary; }
   .addr-item__tag { margin-left: $space-2; padding: 2rpx 12rpx; border-radius: $radius-pill;
     background-color: $color-primary-light; color: $color-primary; font-size: $font-size-xs; }
+  .addr-item__tag--pick { background-color: $color-bg-hover; color: $color-text-secondary; }
   .addr-item__detail { display: block; margin-top: $space-2; font-size: $font-size-sm; color: $color-text-secondary; }
   .addr-item__actions { @include flex-start; justify-content: flex-end; margin-top: $space-2; }
   .addr-item__action { margin-left: $space-4; font-size: $font-size-sm; color: $color-text-secondary; }

@@ -27,6 +27,13 @@
         { "path": "list", "style": { "navigationBarTitleText": "收货地址" } },
         { "path": "edit", "style": { "navigationBarTitleText": "编辑地址" } }
       ]
+    },
+    {
+      "root": "pages-sub/checkout",
+      "pages": [
+        { "path": "index", "style": { "navigationBarTitleText": "确认订单" } },
+        { "path": "success", "style": { "navigationBarTitleText": "下单成功" } }
+      ]
     }
   ],
   "preloadRule": {
