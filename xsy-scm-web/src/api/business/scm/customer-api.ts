@@ -27,7 +27,8 @@ export interface MallAccount {
 }
 
 export const mallAccountApi = {
-    detail: (customerId: ScmId) => getRequest(`/scm/customer/mall-account/${customerId}`, {}) as unknown as Promise<ScmResponse<MallAccount | null>>,
+    // 一个客户可绑定多个采购账号，接口返回账号列表。
+    list: (customerId: ScmId) => getRequest(`/scm/customer/mall-account/${customerId}`, {}) as unknown as Promise<ScmResponse<MallAccount[]>>,
     create: (form: {customerId: ScmId; loginPhone: string; temporaryPassword: string}) =>
         postRequest('/scm/customer/mall-account/create', form) as unknown as Promise<ScmResponse<MallAccount>>,
     status: (form: {accountId: ScmId; enabled: boolean}) => postRequest('/scm/customer/mall-account/status', form),

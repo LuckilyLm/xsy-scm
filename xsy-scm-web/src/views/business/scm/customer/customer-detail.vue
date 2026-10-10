@@ -147,22 +147,30 @@
               </div>
 
               <section class="scm-detail-card scm-detail-card--full scm-detail-block" v-privilege="'scm:mall:account:query'">
-                <h3 class="scm-detail-card__title">商城账号</h3>
+                <div class="scm-detail-card__head">
+                  <h3 class="scm-detail-card__title">商城账号</h3>
+                  <a-button v-privilege="'scm:mall:account:create'" type="primary" size="small" @click="openMallAccount('create')">开通商城账号</a-button>
+                </div>
                 <a-spin :spinning="mallAccountLoading">
                   <a-alert v-if="mallAccountError" type="error" show-icon :message="mallAccountError"/>
-                  <template v-else-if="mallAccount">
-                    <dl class="scm-field-list scm-field-list--3">
-                      <div class="scm-field"><dt class="scm-field__label">登录手机号</dt><dd class="scm-field__value">{{ mallAccount.loginPhone }}</dd></div>
-                      <div class="scm-field"><dt class="scm-field__label">账号状态</dt><dd class="scm-field__value">{{ mallAccount.status === 'ENABLED' ? '已启用' : '已禁用' }}</dd></div>
-                      <div class="scm-field"><dt class="scm-field__label">临时密码</dt><dd class="scm-field__value">{{ mallAccount.firstPasswordChange ? '等待客户修改' : '已修改' }}</dd></div>
-                      <div class="scm-field"><dt class="scm-field__label">最近登录</dt><dd class="scm-field__value">{{ datetime(mallAccount.lastLoginAt) }}</dd></div>
-                    </dl>
-                    <a-space>
-                      <a-button v-privilege="'scm:mall:account:status'" @click="toggleMallAccount">{{ mallAccount.status === 'ENABLED' ? '禁用账号' : '启用账号' }}</a-button>
-                      <a-button v-privilege="'scm:mall:account:password:reset'" @click="openMallAccount('reset')">重置临时密码</a-button>
-                    </a-space>
-                  </template>
-                  <a-button v-else v-privilege="'scm:mall:account:create'" type="primary" @click="openMallAccount('create')">开通商城账号</a-button>
+                  <a-table v-else-if="mallAccounts.length" :data-source="mallAccounts" :columns="mallAccountCols" row-key="accountId"
+                           size="small" bordered :pagination="false" :scroll="{ x: 720 }">
+                    <template #bodyCell="{ record, column }">
+                      <template v-if="column.dataIndex === 'loginPhone'"><span class="scm-mono">{{ record.loginPhone }}</span></template>
+                      <template v-else-if="column.dataIndex === 'status'">{{ record.status === 'ENABLED' ? '已启用' : '已禁用' }}</template>
+                      <template v-else-if="column.dataIndex === 'firstPasswordChange'">{{ record.firstPasswordChange ? '等待客户修改' : '已修改' }}</template>
+                      <template v-else-if="column.dataIndex === 'lastLoginAt'">{{ datetime(record.lastLoginAt) }}</template>
+                      <template v-else-if="column.dataIndex === 'action'">
+                        <a-space>
+                          <a-button type="link" size="small" v-privilege="'scm:mall:account:status'"
+                                    @click="toggleMallAccount(record)">{{ record.status === 'ENABLED' ? '禁用账号' : '启用账号' }}</a-button>
+                          <a-button type="link" size="small" v-privilege="'scm:mall:account:password:reset'"
+                                    @click="openMallAccount('reset', record)">重置临时密码</a-button>
+                        </a-space>
+                      </template>
+                    </template>
+                  </a-table>
+                  <a-empty v-else description="该客户尚未开通商城账号"/>
                 </a-spin>
               </section>
 
@@ -368,14 +376,23 @@ function backToList(): void {
 const customer = ref<CustomerDetail>();
 const baseLoading = ref(false);
 const baseError = ref('');
-const mallAccount = ref<MallAccount | null>(null);
+const mallAccounts = ref<MallAccount[]>([]);
 const mallAccountLoading = ref(false);
 const mallAccountError = ref('');
 const mallAccountModal = ref(false);
 const mallAccountMode = ref<'create' | 'reset'>('create');
 const mallAccountSaving = ref(false);
 const mallAccountForm = reactive({loginPhone: '', temporaryPassword: ''});
+const mallAccountTarget = ref<MallAccount | null>(null);
 let baseReq = 0;
+
+const mallAccountCols: TableColumnsType<MallAccount> = [
+  {title: '登录手机号', dataIndex: 'loginPhone', width: 160},
+  {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
+  {title: '临时密码', dataIndex: 'firstPasswordChange', width: 140, align: 'center'},
+  {title: '最近登录', dataIndex: 'lastLoginAt', width: 180},
+  {title: '操作', dataIndex: 'action', width: 200, align: 'center'}
+];
 
 const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;
 const settleModeText = (value: string): string => SETTLE_MODE_ENUM[value]?.desc || value;
@@ -419,8 +436,8 @@ async function loadMallAccount(): Promise<void> {
   mallAccountLoading.value = true;
   mallAccountError.value = '';
   try {
-    const response = await mallAccountApi.detail(customerId.value);
-    mallAccount.value = response.data;
+    const response = await mallAccountApi.list(customerId.value);
+    mallAccounts.value = response.data || [];
   } catch (e) {
     mallAccountError.value = customerError(e);
   } finally {
@@ -428,8 +445,9 @@ async function loadMallAccount(): Promise<void> {
   }
 }
 
-function openMallAccount(mode: 'create' | 'reset'): void {
+function openMallAccount(mode: 'create' | 'reset', account: MallAccount | null = null): void {
   mallAccountMode.value = mode;
+  mallAccountTarget.value = account;
   mallAccountForm.loginPhone = customer.value?.contactPhone || '';
   mallAccountForm.temporaryPassword = '';
   mallAccountModal.value = true;
@@ -444,8 +462,8 @@ async function saveMallAccount(): Promise<void> {
   try {
     if (mallAccountMode.value === 'create') {
       await mallAccountApi.create({customerId: customerId.value, ...mallAccountForm});
-    } else if (mallAccount.value) {
-      await mallAccountApi.resetPassword({accountId: mallAccount.value.accountId, temporaryPassword: mallAccountForm.temporaryPassword});
+    } else if (mallAccountTarget.value) {
+      await mallAccountApi.resetPassword({accountId: mallAccountTarget.value.accountId, temporaryPassword: mallAccountForm.temporaryPassword});
     }
     mallAccountModal.value = false;
     await loadMallAccount();
@@ -457,10 +475,9 @@ async function saveMallAccount(): Promise<void> {
   }
 }
 
-async function toggleMallAccount(): Promise<void> {
-  if (!mallAccount.value) return;
+async function toggleMallAccount(account: MallAccount): Promise<void> {
   try {
-    await mallAccountApi.status({accountId: mallAccount.value.accountId, enabled: mallAccount.value.status !== 'ENABLED'});
+    await mallAccountApi.status({accountId: account.accountId, enabled: account.status !== 'ENABLED'});
     await loadMallAccount();
     void message.success('账号状态已更新');
   } catch (error) {
