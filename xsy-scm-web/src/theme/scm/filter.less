@@ -39,6 +39,16 @@
     min-height: 32px;
   }
 
+  /*
+   * 带 allow-clear / 前后缀的输入框是 `affix-wrapper > input` 两层结构，
+   * 上面那条 `min-height` 会同时命中两层：内层 input 先被撑到 32px，
+   * 外层再叠自己的 padding 与边框 ⇒ 实测整格 40px，比同排的下拉、日期控件高一截。
+   * 外层已经保证 32px，内层的高度交回给外层排版。
+   */
+  .ant-input-affix-wrapper > .ant-input {
+    min-height: 0;
+  }
+
   .ant-select-selector {
     min-height: 32px;
   }
