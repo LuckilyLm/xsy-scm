@@ -194,6 +194,10 @@ async function submitAdd() {
     } catch {
         return;
     }
+    if (addForm.customerId === undefined || addForm.method === undefined) {
+        addError.value = '请选择客户与收款方式';
+        return;
+    }
     addSaving.value = true; addError.value = '';
     try {
         await financeApi.receiptAdd({customerId: addForm.customerId, amount: addForm.amount, method: addForm.method,

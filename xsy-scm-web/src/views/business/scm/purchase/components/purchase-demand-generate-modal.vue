@@ -159,6 +159,10 @@ async function generate() {
   } catch {
     return;
   }
+  if (!range.value || form.value.warehouseId === undefined) {
+    error.value = '请选择时间范围与仓库';
+    return;
+  }
   saving.value = true;
   try {
     const r = await purchaseDemandApi.createBatch({

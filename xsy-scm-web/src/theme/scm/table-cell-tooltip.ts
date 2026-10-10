@@ -2,16 +2,16 @@
  * 表格单元格的「按列宽自适应截断 + 悬浮看全文」。
  *
  * 截断本身交给 CSS（`theme/scm/table.less` 里单元格默认 `nowrap` + 省略号），
- * 它天然是**按列宽**生效的：放得下就完整显示，放不下才用 `…` 收尾，
+ * 它天然是按列宽生效的：放得下就完整显示，放不下才用 `…` 收尾，
  * 列宽变了也不需要 JS 参与。
  *
- * 这个模块只补一件事：**真的被省略号截断时**给单元格挂原生 `title`，让用户悬浮能看全文。
+ * 这个模块只补一件事：真的被省略号截断时给单元格挂原生 `title`，让用户悬浮能看全文。
  * 判断依据是渲染后的真实溢出 `scrollWidth > clientWidth`。
  *
  * ⚠️ 早期版本按「正文最多 15 个字符」硬截，已移除：那是写死的阈值，列宽明明放得下也会砍掉文字。
  * 同一个分类路径「生鲜蔬菜 / 根茎类 / 葱蒜类」在 210px 的列里完整可见，却被砍成
  * 「生鲜蔬菜 / 根茎类 / 葱蒜…」，而只短一个字的「生鲜蔬菜 / 根茎类 / 薯类」反而完整显示 ——
- * **字符数不等于可见性，只有浏览器知道自己放不放得下**，所以判断权交回给布局。
+ * 字符数不等于可见性，只有浏览器知道自己放不放得下，所以判断权交回给布局。
  *
  * 只挂一次、只读 DOM，不参与渲染，因此不需要在每个列表页各写一遍。
  */
@@ -81,7 +81,7 @@ export function installTableCellTooltip() {
     // 表格是异步渲染的：只在真的插入了单元格时补扫，不跟着页面其它 DOM 变更空转。
     const observer = new MutationObserver((records) => {
         for (const record of records) {
-            for (const node of record.addedNodes) {
+            for (const node of Array.from(record.addedNodes)) {
                 if (!(node instanceof HTMLElement)) {
                     continue;
                 }
