@@ -6,7 +6,7 @@
       useGeneratedKeys 必须回填主键：落完事件后要靠 row.id 才能 markProcessed。
       漏了它 event.getId() 恒为 null，回填结论会执行 WHERE id = NULL（更新 0 行），
       于是 process_status 永远停在 RECEIVED —— 「伪造回调记 REJECTED 留证」的设计意图落不了地。
-      ON CONFLICT DO NOTHING 命中时不回填，此分支由 Service 用受影响行数（0）提前 return，不依赖 id。
+      ON CONFLICT DO NOTHING 仅在有效事件占据渠道 id 时命中；此分支由 Service 用受影响行数（0）提前 return，不依赖 id。
     -->
     <insert id="insertIgnoreDuplicate" useGeneratedKeys="true" keyProperty="row.id">
         INSERT INTO payment_callback_event (provider, provider_event_id, event_type, signature_verified,
@@ -17,7 +17,9 @@
                 #{row.payload,typeHandler=com.xsy.scm.common.json.JsonbObjectMapTypeHandler},
                 #{row.transactionId}, #{row.processStatus}, #{row.rejectReason},
                 CURRENT_TIMESTAMP, #{row.createdBy})
-        ON CONFLICT (provider, provider_event_id) DO NOTHING
+        ON CONFLICT (provider, provider_event_id)
+            WHERE signature_verified = TRUE AND process_status IN ('RECEIVED', 'APPLIED')
+            DO NOTHING
     </insert>
 
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity">
@@ -38,6 +40,14 @@
             resultType="com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity">
         SELECT * FROM payment_callback_event
         WHERE provider = #{provider} AND provider_event_id = #{providerEventId}
+        ORDER BY id DESC LIMIT 1
+    </select>
+
+    <select id="selectClaimedByProviderEventId"
+            resultType="com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity">
+        SELECT * FROM payment_callback_event
+        WHERE provider = #{provider} AND provider_event_id = #{providerEventId}
+          AND signature_verified = TRUE AND process_status IN ('RECEIVED', 'APPLIED')
     </select>
 
     <update id="markProcessed">

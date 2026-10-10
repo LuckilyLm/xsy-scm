@@ -19,7 +19,7 @@ import org.apache.ibatis.annotations.Param;
 public interface PaymentCallbackEventDao extends BaseMapper<PaymentCallbackEventEntity> {
 
     /**
-     * 落事件；同一 {@code (provider, provider_event_id)} 已存在时<b>不报错、返回 0</b>。
+     * 落事件；同一渠道事件已有有效的待处理或已应用记录时返回 0。拒绝记录只留证，不占幂等键。
      *
      * @return 1 = 本次新落；0 = 重复事件
      */
@@ -28,6 +28,9 @@ public interface PaymentCallbackEventDao extends BaseMapper<PaymentCallbackEvent
     List<PaymentCallbackEventEntity> queryPage(Page<?> page, @Param("query") PaymentCallbackQueryForm query);
 
     PaymentCallbackEventEntity selectByProviderEventId(@Param("provider") String provider,
+            @Param("providerEventId") String providerEventId);
+
+    PaymentCallbackEventEntity selectClaimedByProviderEventId(@Param("provider") String provider,
             @Param("providerEventId") String providerEventId);
 
     /** 处理完成后回填结论（只改处理结果，不改事实本身）。 */

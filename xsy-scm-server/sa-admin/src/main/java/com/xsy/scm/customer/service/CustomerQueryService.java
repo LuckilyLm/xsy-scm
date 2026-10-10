@@ -103,7 +103,8 @@ public class CustomerQueryService {
         }
         List<CustomerEntity> rows = customerDao.queryPage(page, form, scope.getCustomerSellerScope());
         List<CustomerVO> list = new ArrayList<>(rows.size());
-        rows.forEach(row -> list.add(toVO(row, context(rows))));
+        EnrichmentContext context = context(rows);
+        rows.forEach(row -> list.add(toVO(row, context)));
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
@@ -178,14 +179,17 @@ public class CustomerQueryService {
      * 客户下拉选项。
      *
      * <p>
-     * 返回全部活动客户（按名称排序）。客户状态是四态业务状态而不是启用位，因此不像供应商那样只筛 {@code ENABLED}；调用方（例如「上级集团客户」选择器）按 {@code customerTypeCode} 过滤。
+     * 返回当前范围内的活动客户（按名称排序）。客户状态是四态业务状态而不是启用位，因此不像供应商那样只筛 {@code ENABLED}；调用方（例如「上级集团客户」选择器）按 {@code customerTypeCode} 过滤。
      *
      * <p>
-     * <b>刻意不按数据范围收窄</b>：它是「选一个客户」的选择器入口（上级集团、订单录入等都用它），收窄会让主数据下拉在某些角色下整框落空。真正的读边界在列表与详情上，且「能否对该客户建单」在服务端另有归属判定。
+     * 与列表和详情共用客户负责人范围；全量选择由现有全量客户权限决定。
      */
     public List<CustomerOptionVO> optionList() {
-        List<CustomerEntity> rows = customerDao.selectList(
-                new LambdaQueryWrapper<CustomerEntity>().orderByAsc(CustomerEntity::getName, CustomerEntity::getId));
+        var customerScope = dataScopeService.resolve().getCustomerSellerScope();
+        if (customerScope.isEmpty()) {
+            return List.of();
+        }
+        List<CustomerEntity> rows = customerDao.selectOptions(customerScope);
 
         // 一次批量取回类型编码，避免在循环里查库。
         Map<Long, String> typeCodes = new HashMap<>();
