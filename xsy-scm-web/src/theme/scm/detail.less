@@ -167,8 +167,19 @@
 
 .scm-field {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
-  gap: 8px;
+  /*
+   * 标签列按内容取宽，**不能写死固定宽**。
+   *
+   * 原来这里是 `88px`：标签 `<dt>` 会铺满整条轨道，于是「电话：」（文字约 39px）
+   * 后面留下近 50px 空白，而且标签长短不一 ⇒ 每行空隙忽大忽小，
+   * 看上去又空又不规则。用户要的是「标签和值之间大约一个空格的距离」。
+   *
+   * 取值列用 `minmax(0, 1fr)`：地址、备注这类长文本要能换行，且不把卡片顶宽。
+   * 窄屏（≤768px）下面会整体塌成单列、标签在上，所以不用担心长标签挤掉取值。
+   */
+  grid-template-columns: max-content minmax(0, 1fr);
+  /* 约一个空格；标签自带全角冒号，本身已经提供了视觉分隔 */
+  gap: 4px;
   align-items: baseline;
   min-width: 0;
 }
