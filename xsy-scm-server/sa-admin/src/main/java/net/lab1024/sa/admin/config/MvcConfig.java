@@ -2,6 +2,7 @@ package net.lab1024.sa.admin.config;
 
 import jakarta.annotation.Resource;
 import net.lab1024.sa.admin.interceptor.AdminInterceptor;
+import net.lab1024.sa.admin.interceptor.MallCustomerInterceptor;
 import net.lab1024.sa.base.config.SwaggerConfig;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -18,11 +19,16 @@ public class MvcConfig implements WebMvcConfigurer {
     @Resource
     private AdminInterceptor adminInterceptor;
 
+    @Resource
+    private MallCustomerInterceptor mallCustomerInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(mallCustomerInterceptor)
+                .addPathPatterns("/scm/mall/**");
         registry.addInterceptor(adminInterceptor)
                 .excludePathPatterns(SwaggerConfig.SWAGGER_WHITELIST)
+                .excludePathPatterns("/scm/mall/**")
                 .addPathPatterns("/**");
     }
 

@@ -293,7 +293,11 @@ public class LoginService implements StpInterface {
             if (loginId.startsWith(SUPER_PASSWORD_LOGIN_ID_PREFIX)) {
                 employeeIdStr = loginId.split(StringConst.COLON)[2];
             } else {
-                employeeIdStr = loginId.substring(2);
+                String adminPrefix = UserTypeEnum.ADMIN_EMPLOYEE.getValue() + StringConst.COLON;
+                if (!loginId.startsWith(adminPrefix)) {
+                    return null;
+                }
+                employeeIdStr = loginId.substring(adminPrefix.length());
             }
 
             return Long.parseLong(employeeIdStr);
