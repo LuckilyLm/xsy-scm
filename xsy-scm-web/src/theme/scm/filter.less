@@ -9,7 +9,14 @@
 
 .scm-filter-fields {
   display: flex;
-  flex: 1 1 720px;
+  /*
+   * 只占内容需要的宽度，不吃掉整行剩余空间。
+   *
+   * 原来是 `flex: 1 1 720px`：字段容器会把整行撑满，于是查询 / 重置被顶到最右边，
+   * 最后一个字段和按钮之间留下一大片空档（实测采购需求 264px、预警阈值 853px），
+   * 看起来像是「没对齐」。按钮跟在字段后面即可。
+   */
+  flex: 0 1 auto;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px 12px;
@@ -59,7 +66,7 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
+  /* 不再 `margin-left: auto`：那会把按钮推到最右，和字段之间空出一大截 */
 
   .ant-btn {
     height: 32px;
