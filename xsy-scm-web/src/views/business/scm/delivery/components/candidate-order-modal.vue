@@ -27,16 +27,14 @@
       <a-form-item v-if="canViewAmount" label="金额"
       >
         <a-input-number v-model:value="query.minAmount" string-mode :min="0" placeholder="最低"/>
-        <span>至</span
-        >
+        <span>至</span>
         <a-input-number v-model:value="query.maxAmount" string-mode :min="0" placeholder="最高"
         />
       </a-form-item>
       <a-form-item label="商品行数"
       >
         <a-input-number v-model:value="query.minItemCount" :min="0" :precision="0" placeholder="最少"/>
-        <span>至</span
-        >
+        <span>至</span>
         <a-input-number v-model:value="query.maxItemCount" :min="0" :precision="0" placeholder="最多"
         />
       </a-form-item>
@@ -49,8 +47,7 @@
           <a-button type="primary" @click="search">查询</a-button>
           <a-button @click="reset()">重置</a-button>
         </a-space>
-      </a-form-item
-      >
+      </a-form-item>
     </a-form>
     <a-table
         size="small"
@@ -66,8 +63,7 @@
         <template v-if="column.dataIndex === 'location'"
         >
           <a-tag :color="isLocated(record) ? 'green' : 'default'">{{ isLocated(record) ? '已定位' : '未定位' }}</a-tag>
-        </template
-        >
+        </template>
         <template v-else-if="column.dataIndex === 'orderAmount'">{{ money(record.orderAmount) }}</template>
         <template v-else-if="column.dataIndex === 'expectDeliveryTime'">{{
             datetime(record.expectDeliveryTime)
@@ -83,8 +79,7 @@
     >
       <a-form-item label="组单原因" name="reason">
         <a-input v-model:value="reason" :maxlength="500" placeholder="例如：本次城区配送安排"/>
-      </a-form-item
-      >
+      </a-form-item>
     </a-form>
     <p>同一客户、相同地址的订单会合并为一个停靠点；仅展示已确认且尚未分配的订单。</p>
   </a-modal>

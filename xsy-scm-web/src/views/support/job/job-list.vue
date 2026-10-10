@@ -132,8 +132,7 @@
                   <a-button danger v-privilege="'support:job:log:delete'"
                             @click="confirmDelete(record.jobId, record.jobName)" type="link"
                   >删除
-                  </a-button
-                  >
+                  </a-button>
                 </div>
               </template>
             </template>

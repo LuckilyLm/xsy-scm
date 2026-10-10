@@ -15,8 +15,7 @@ Caffeine ：
 - Caffeine是一个进程内部缓存框架，使用了Java 8最新的[StampedLock]乐观锁技术，极大提高缓存并发吞吐量，一个高性能的 Java 缓存库，被称为最快缓存。
 其他：
 · 对于分布式、集群等应用实现方式可以改为 Redis、CouchBase等
-</pre
->
+</pre>
       </template>
     </a-alert>
 

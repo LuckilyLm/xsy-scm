@@ -18,8 +18,7 @@
           size="middle"
           @click="copy"
       >复制密码并关闭
-      </a-button
-      >
+      </a-button>
     </template>
   </a-modal>
 </template>

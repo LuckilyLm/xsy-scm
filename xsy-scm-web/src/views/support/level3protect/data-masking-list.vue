@@ -17,8 +17,7 @@
 使用方式：
 1）脱敏注解 @DataMasking ，支持数据类型如：用户ID、手机号、密码、地址、银行卡、车牌号等；
 2）脱敏工具类： SmartDataMaskingUtil ；
-</pre
->
+</pre>
       </template>
     </a-alert>
 

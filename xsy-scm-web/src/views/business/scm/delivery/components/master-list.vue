@@ -12,16 +12,14 @@
         <a-button type="primary" @click="search">查询</a-button>
         <a-button @click="reset">重置</a-button>
       </a-space>
-    </a-form-item
-    >
+    </a-form-item>
   </a-form>
   <a-alert v-if="error" :message="error" type="error" show-icon
   >
     <template #action>
       <a-button @click="load">重试</a-button>
     </template>
-  </a-alert
-  >
+  </a-alert>
   <a-card size="small" :bordered="false">
     <div class="smart-table-btn-block">
       <a-button type="primary" v-privilege="editPermission" @click="open()">新建{{ label }}</a-button>
@@ -96,8 +94,7 @@
           >
             <a-form-item label="载重（kg）">
               <a-input-number v-model:value="form.loadWeight" string-mode :min="0" :precision="4"/>
-            </a-form-item
-            >
+            </a-form-item>
           </a-col>
           <a-col :span="12"
           >
@@ -105,8 +102,7 @@
             >
               <a-input-number v-model:value="form.loadVolume" string-mode :min="0" :precision="4"/>
             </a-form-item>
-          </a-col
-          >
+          </a-col>
         </a-row>
       </template>
       <a-form-item label="状态">
