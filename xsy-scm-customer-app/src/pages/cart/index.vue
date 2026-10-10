@@ -62,9 +62,11 @@
         </view>
         <view class="cart__amount">
           <text class="cart__amount-label">合计</text>
-          <text class="cart__amount-value">¥{{ selectedAmount }}</text>
+          <text v-if="estimateState === 'loading'" class="cart__amount-hint">计算中…</text>
+          <text v-else-if="estimateState === 'error'" class="cart__amount-error" @click="retryEstimate">金额获取失败，点击重试</text>
+          <text v-else class="cart__amount-value">¥{{ selectedAmount }}</text>
         </view>
-        <view class="cart__submit" :class="{ 'cart__submit--disabled': !checkedCount || submitting }" @click="goCheckout">
+        <view class="cart__submit" :class="{ 'cart__submit--disabled': !checkedCount || submitting || estimateState !== 'idle' }" @click="goCheckout">
           去结算{{ checkedCount ? `(${checkedCount})` : '' }}
         </view>
       </view>
@@ -86,6 +88,8 @@
   const items = ref([]);
   /** 所选商品的预估金额，**一律来自服务端** /scm/mall/cart/estimate，客户端不做金额累计 */
   const selectedAmount = ref('0.00');
+  /** 预估金额状态：idle / loading / error。请求中与失败时都不能沿用旧金额误导客户 */
+  const estimateState = ref('idle');
   const loading = ref(false);
   const submitting = ref(false);
   const checked = reactive({});
@@ -142,15 +146,27 @@
     const seq = ++estimateSeq;
     if (!skuIds.length) {
       selectedAmount.value = '0.00';
+      estimateState.value = 'idle';
       return;
     }
+    // 先清掉旧金额：请求中与失败时都不能继续显示上一组选择的合计
+    selectedAmount.value = '';
+    estimateState.value = 'loading';
     try {
       const response = await mallCartApi.estimate(skuIds);
-      if (seq === estimateSeq) {
-        selectedAmount.value = response.data?.estimatedAmount || '0.00';
-      }
+      if (seq !== estimateSeq) return;
+      selectedAmount.value = response.data?.estimatedAmount || '0.00';
+      estimateState.value = 'idle';
     } catch (error) {
+      if (seq !== estimateSeq) return;
       smartSentry.captureError(error);
+      estimateState.value = 'error';
+    }
+  }
+
+  function retryEstimate() {
+    if (estimateState.value === 'error') {
+      refreshEstimate();
     }
   }
 
@@ -217,6 +233,14 @@
       uni.showToast({ title: '请先选择要结算的商品', icon: 'none' });
       return;
     }
+    if (estimateState.value === 'loading') {
+      uni.showToast({ title: '正在计算金额，请稍候', icon: 'none' });
+      return;
+    }
+    if (estimateState.value === 'error') {
+      uni.showToast({ title: '金额获取失败，请先点击重试', icon: 'none' });
+      return;
+    }
     uni.showToast({ title: '结算将在下一阶段开放', icon: 'none' });
   }
 
@@ -263,6 +287,8 @@
   .cart__amount { flex: 1; @include flex-start; justify-content: flex-end; margin-right: $space-3; align-items: baseline; }
   .cart__amount-label { font-size: $font-size-sm; color: $color-text-secondary; }
   .cart__amount-value { margin-left: $space-1; font-size: $font-size-xl; font-weight: $font-weight-bold; color: $color-danger; }
+  .cart__amount-hint { margin-left: $space-1; font-size: $font-size-sm; color: $color-text-tertiary; }
+  .cart__amount-error { margin-left: $space-1; font-size: $font-size-sm; color: $color-danger; }
   .cart__submit { flex-shrink: 0; padding: 0 $space-6; height: 72rpx; @include flex-center; border-radius: $radius-pill;
     background-color: $color-primary; color: white; font-size: $font-size-base; }
   .cart__submit--disabled { background-color: $color-primary-disabled; }

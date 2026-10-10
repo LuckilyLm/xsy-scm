@@ -74,6 +74,14 @@ test('checked-cart total comes from the server estimate endpoint', () => {
   assert.match(mock, /\/scm\/mall\/cart\/estimate/);
 });
 
+test('cart total never shows a stale amount while estimating or after failure', () => {
+  const page = read('../src/pages/cart/index.vue');
+  assert.match(page, /estimateState\.value = 'loading'/);
+  assert.match(page, /estimateState\.value = 'error'/);
+  assert.match(page, /金额获取失败/);
+  assert.match(page, /计算中/);
+});
+
 test('production mock alias points at noop implementation', () => {
   const vite = read('../vite.config.js');
   assert.match(vite, /useMock \? 'mock\/index\.js' : 'mock\/noop\.js'/);

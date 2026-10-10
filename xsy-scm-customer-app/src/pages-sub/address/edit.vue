@@ -7,7 +7,8 @@
       </view>
       <view class="field">
         <text class="field__label">联系电话</text>
-        <input class="field__input" type="number" v-model="form.receiverPhone" :maxlength="32" placeholder="请输入联系电话" />
+        <!-- 座机含区号/分机与 +，需要文本键盘；用 type="number" 会打不出这些字符，与校验规则冲突 -->
+        <input class="field__input" type="text" v-model="form.receiverPhone" :maxlength="32" placeholder="手机或座机号码" />
       </view>
       <picker mode="region" :value="region" @change="onRegionChange">
         <view class="field">
