@@ -24,8 +24,11 @@ public enum ScmFinanceCustomerRefundMethodEnum {
     /** 银行转账退还。 */
     BANK_TRANSFER("银行转账"),
 
-    /** 在线支付原路退回（系统生成的退款付款固定用它）。 */
+    /** 在线支付原路退回。 */
     ONLINE_PAYMENT("在线支付"),
+
+    /** 混合资金按原来源返还后的聚合财务事实。 */
+    ORIGINAL_FUNDING("原资金返还"),
 
     /** 其它。 */
     OTHER("其它");

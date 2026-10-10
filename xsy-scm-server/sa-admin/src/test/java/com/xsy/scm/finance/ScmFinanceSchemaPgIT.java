@@ -508,10 +508,10 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertThat(without(literalsOf(supplierBranch), "SUPPLIER"))
                 .containsExactlyInAnyOrder("CASH", "BANK_TRANSFER", "OTHER");
         assertThat(without(literalsOf(customerBranch), "CUSTOMER"))
-                .containsExactlyInAnyOrder("CASH", "BANK_TRANSFER", "ONLINE_PAYMENT", "OTHER");
-        // 两组各自的值域用枚举尺寸钉住：供应商三值、客户退款四值
+                .containsExactlyInAnyOrder("CASH", "BANK_TRANSFER", "ONLINE_PAYMENT", "ORIGINAL_FUNDING", "OTHER");
+        // 两组各自的值域用枚举尺寸钉住：供应商三值、客户退款五值
         assertThat(ScmFinancePaymentMethodEnum.values()).hasSize(3);
-        assertThat(ScmFinanceCustomerRefundMethodEnum.values()).hasSize(4);
+        assertThat(ScmFinanceCustomerRefundMethodEnum.values()).hasSize(5);
 
         // NORMAL / RED 用于应收应付，NORMAL / REVERSE 用于收付款与核销；两套不合并。
         assertWhitelist("finance_receivable", "ck_finance_receivable_entry_type", ScmFinanceEntryTypeEnum.class);

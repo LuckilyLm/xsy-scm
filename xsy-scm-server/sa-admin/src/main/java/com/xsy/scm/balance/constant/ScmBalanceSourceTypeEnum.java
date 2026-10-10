@@ -19,8 +19,11 @@ public enum ScmBalanceSourceTypeEnum {
 
     PAYMENT_INTENT("订单余额支付"),
 
-    /** 来源是售后退款单：{@code source_id = order_refund.id}（余额返还用）。 */
-    ORDER_REFUND("售后退款单");
+    /** 来源是售后退款单：{@code source_id = order_refund.id}（旧纯余额返还用）。 */
+    ORDER_REFUND("售后退款单"),
+
+    /** 来源是退款资金分摊行：{@code source_id = refund_funding_allocation.id}。 */
+    REFUND_FUNDING_ALLOCATION("退款资金分摊");
 
     private final String desc;
 

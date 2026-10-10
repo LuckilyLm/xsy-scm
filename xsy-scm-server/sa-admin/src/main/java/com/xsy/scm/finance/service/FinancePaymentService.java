@@ -301,7 +301,9 @@ public class FinancePaymentService {
         if (amount.compareTo(refund.getRefundAmount()) != 0) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
-        financeOrderFundingPolicy.requireCashRefundAllowed(refund.getOrderId(), true);
+        if (!fact.allocatedFunding()) {
+            financeOrderFundingPolicy.requireCashRefundAllowed(refund.getOrderId(), true);
+        }
         FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(refund.getCustomerId());
         if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
@@ -316,8 +318,9 @@ public class FinancePaymentService {
         payment.setCounterpartyId(refund.getCustomerId());
         payment.setCounterpartyNameSnapshot(customer.getCustomerName());
         payment.setAmount(amount);
-        // 系统退款固定原路退回
-        payment.setMethod(ScmFinanceCustomerRefundMethodEnum.ONLINE_PAYMENT.name());
+        payment.setMethod(fact.allocatedFunding()
+                ? ScmFinanceCustomerRefundMethodEnum.ORIGINAL_FUNDING.name()
+                : ScmFinanceCustomerRefundMethodEnum.ONLINE_PAYMENT.name());
         payment.setPaidAt(fact.refundedAt());
         payment.setEntryType(ScmFinanceReverseEntryTypeEnum.NORMAL.name());
         payment.setReverseOfId(null);

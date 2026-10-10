@@ -37,11 +37,18 @@
                r.order_id      AS order_id,
                r.customer_id   AS customer_id,
                r.refund_amount AS refund_amount,
-               r.status        AS status
+               r.status        AS status,
+               r.completed_at  AS completed_at
         FROM order_refund r
         WHERE r.id = #{refundId}
           AND r.deleted = FALSE
         FOR UPDATE
+    </select>
+
+    <select id="selectOrderRefund" resultType="com.xsy.scm.payment.domain.dto.PaymentOrderRefundFact">
+        SELECT r.id AS refund_id, r.refund_no, r.order_id, r.customer_id, r.refund_amount,
+               r.status, r.completed_at
+        FROM order_refund r WHERE r.id = #{refundId} AND r.deleted = FALSE
     </select>
 
     <select id="selectActiveRefundPayment" resultType="java.lang.Long">
@@ -56,6 +63,13 @@
 
     <select id="lockOrderRefunds" resultType="java.lang.Long">
         SELECT id FROM order_refund WHERE order_id = #{orderId} AND deleted = FALSE ORDER BY id FOR UPDATE
+    </select>
+    <select id="lockOrderFunding" resultType="java.lang.Long">
+        SELECT t.id FROM payment_transaction t
+        JOIN payment_intent i ON i.id = t.intent_id AND i.deleted = FALSE
+        WHERE i.source_type = 'SALES_ORDER' AND i.source_id = #{orderId}
+          AND i.status = 'SUCCEEDED' AND t.status = 'SUCCEEDED' AND t.deleted = FALSE
+        ORDER BY t.paid_at, i.method, t.id FOR UPDATE OF t
     </select>
     <select id="hasOrderRefundFunding" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM order_refund r WHERE r.order_id = #{orderId} AND r.deleted = FALSE

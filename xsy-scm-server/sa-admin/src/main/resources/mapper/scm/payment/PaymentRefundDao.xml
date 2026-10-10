@@ -31,6 +31,8 @@
     <select id="selectBySource" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
         SELECT * FROM payment_refund
         WHERE source_type = #{sourceType} AND source_id = #{sourceId} AND deleted = FALSE
+        ORDER BY id
+        LIMIT 1
     </select>
 
     <select id="selectByProviderRefundNo" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
@@ -89,6 +91,14 @@
         WHERE id = #{id}
           AND status = 'CREATED'
           AND deleted = FALSE
+    </update>
+
+    <update id="resetFailed">
+        UPDATE payment_refund
+        SET status = 'CREATED', provider_refund_no = NULL, provider_amount = NULL,
+            refunded_at = NULL, failure_code = NULL, failure_message = NULL,
+            version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id} AND status = 'FAILED' AND deleted = FALSE
     </update>
 
 </mapper>

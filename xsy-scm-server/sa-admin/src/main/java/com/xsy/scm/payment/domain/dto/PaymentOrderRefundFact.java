@@ -2,6 +2,7 @@ package com.xsy.scm.payment.domain.dto;
 
 import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 /**
  * 支付域读取的业务退款单事实（只读，来源 {@code order_refund}）。
@@ -11,7 +12,7 @@ import java.math.BigDecimal;
  * 由服务层给出可解释的拒绝原因。
  */
 public record PaymentOrderRefundFact(Long refundId, String refundNo, Long orderId, Long customerId,
-        BigDecimal refundAmount, String status) {
+        BigDecimal refundAmount, String status, OffsetDateTime completedAt) {
 
     public boolean completed() {
         // 用订单域的枚举判等，而不是写 "COMPLETED" 字面量：状态值只有一个来源

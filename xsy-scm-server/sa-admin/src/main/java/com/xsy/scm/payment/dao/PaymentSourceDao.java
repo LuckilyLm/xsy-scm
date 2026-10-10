@@ -17,6 +17,9 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface PaymentSourceDao {
     List<Long> lockOrderRefunds(@Param("orderId") Long orderId);
+
+    List<Long> lockOrderFunding(@Param("orderId") Long orderId);
+
     boolean hasBalanceRefunds(@Param("orderId") Long orderId);
 
     boolean hasOrderRefundFunding(@Param("orderId") Long orderId);
@@ -39,6 +42,8 @@ public interface PaymentSourceDao {
      * <b>必须加锁</b>：线上退款（本域）与人工退款付款（财务域）要<b>互斥</b>， 两边都锁同一行 {@code order_refund} 才能把「先查后写」的窗口关掉。
      */
     PaymentOrderRefundFact lockOrderRefund(@Param("refundId") Long refundId);
+
+    PaymentOrderRefundFact selectOrderRefund(@Param("refundId") Long refundId);
 
     /**
      * 该业务退款单是否已有人工登记的退款付款（财务域 {@code finance_payment}）。

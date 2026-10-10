@@ -82,7 +82,13 @@ public enum PaymentErrorCode implements ScmErrorCode {
      * <b>来源身份不能由客户端自己拼</b>：意图必须按订单 id 解析出正式事实（订单号、客户、业务员）， 否则 {@code customer_name_snapshot} 里会躺着一个客户 id 字符串，支付成功后又顺着它进
      * Finance。
      */
-    PAYMENT_INTENT_SOURCE_INVALID(41359, "支付意图的业务来源不合法：请确认订单存在且属于该客户");
+    PAYMENT_INTENT_SOURCE_INVALID(41359, "支付意图的业务来源不合法：请确认订单存在且属于该客户"),
+
+    REFUND_FUNDING_INVALID(41360, "退款资金来源不完整或可退本金不足"),
+
+    REFUND_FUNDING_PENDING(41361, "退款资金仍在处理中，请稍后重试"),
+
+    REFUND_FUNDING_FAILED(41362, "部分退款资金执行失败，可重试失败来源");
 
     private final int code;
 

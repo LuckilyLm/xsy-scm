@@ -11,4 +11,13 @@ import java.time.OffsetDateTime;
  */
 public record FinancePaymentRefundFact(Long paymentRefundId, Long orderRefundId, Long customerId,
         BigDecimal providerAmount, OffsetDateTime refundedAt, String providerRefundNo) {
+
+    public static FinancePaymentRefundFact allocated(Long orderRefundId, Long customerId, BigDecimal amount,
+            OffsetDateTime refundedAt, String reference) {
+        return new FinancePaymentRefundFact(null, orderRefundId, customerId, amount, refundedAt, reference);
+    }
+
+    public boolean allocatedFunding() {
+        return paymentRefundId == null;
+    }
 }

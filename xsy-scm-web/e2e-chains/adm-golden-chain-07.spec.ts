@@ -7,15 +7,16 @@
  *   它只能以 BALANCE 身份去核销应收。
  * 只验钱包不验 Receipt 数量，就测不出「重复计收」这个最危险的不变量破坏。
  *
- * 关键契约（本轮实测得到，写在 §7d）：模拟渠道的充值是**两阶段**的 ——
- * /scm/balance/recharge/create 只建支付意向，钱包入账要等一次**合法签名的渠道回调**。
+ * 关键契约：本链显式使用 `DELAYED` 模拟场景，把渠道确认与创建意图分成两步。
+ * `/scm/balance/recharge/create` 只建立待支付意图；验签成功的渠道成功回调在同一事务中
+ * 派生 Finance Receipt 与钱包 CREDIT。缺省 `SUCCESS` 场景会在创建时同步走完这条成功链，
+ * 不能用来验证「渠道确认前不得到账」。
  * 回调报文用 `X-Scm-Mock-Signature` 携带 `HmacSHA256(rawBody, secret)` 的小写十六进制，
  * secret 取 `scm.payment.mock.secret`（dev 默认 `scm-local-mock-secret`）；
  * 签名不匹配时业务侧不会抛错，而是如实落一条 REJECTED 事件 —— 所以这里必须自己算签名，
  * 不能指望"随便发一发就算渠道回调"。
  */
 import {expect, test} from '../e2e/scm-test-base';
-import {authenticate} from '../e2e/scm-e2e-account';
 import {
     call,
     createSignedOrder,
@@ -46,12 +47,20 @@ test.afterAll(async () => {
     if (harness) await harness.close();
 });
 
-const receiptCount = async () => {
+const receiptRows = async () => {
     const range = financeDateRange();
     const list = await call<Row>(harness.finance, 'post', '/scm/finance/receipt/query',
         {pageNum: 1, pageSize: 100, customerId: Number(facts.customerId),
          startDate: range.startDate, endDate: range.endDate});
-    return ((list.list ?? []) as Row[]).length;
+    return (list.list ?? []) as Row[];
+};
+
+const writeOffRows = async () => {
+    const range = financeDateRange();
+    const rows = await call<Row>(harness.finance, 'post', '/scm/finance/write-off/query',
+        {pageNum: 1, pageSize: 100, targetId: Number(facts.receivable.receivableId),
+         startDate: range.startDate, endDate: range.endDate});
+    return (rows.list ?? []) as Row[];
 };
 
 const wallet = async () => {
@@ -81,28 +90,74 @@ test('1 订单 → 签收 → NORMAL 应收（余额支付要核销的对象）'
         {quantity: '10.0000', sortedQuantity: '10.0000', sortedResult: 'NORMAL'},
     ]);
     expect(Number(facts.receivable.amount) > 0).toBe(true);
-    receiptsBefore = await receiptCount();
+    receiptsBefore = (await receiptRows()).length;
     expect(await wallet(), '新客户的钱包期初余额应为 0').toBe(0);
 });
 
-test('2 充值建意向即开 Receipt，但钱包入账必须等渠道回调', async () => {
+test('2 延迟充值只建待支付意图，渠道确认前没有 Receipt 或钱包 CREDIT', async () => {
     rechargeIntent = await call<Row>(harness.admin, 'post', '/scm/balance/recharge/create',
-        {customerId: Number(facts.customerId), amount: RECHARGE, provider: 'MOCK',
+        {customerId: Number(facts.customerId), amount: RECHARGE, provider: 'MOCK', mockScenario: 'DELAYED',
          remark: `${harness.runTag} GOLDEN07 充值`});
-    expect(rechargeIntent !== undefined).toBe(true);
-    // 实测：/recharge/create 当场就开一张 Receipt（收款单先立，钱后到），
-    // 而钱包余额仍是 0 —— 这条才是本链要守的不变量：**没收到渠道确认就不能有钱入账**。
-    // 「Receipt 必须在回调之后才出现」不是清单或代码声明过的要求，故不在此钉。
-    expect(await wallet(), '还没收到渠道回调就入账 = 凭空生钱').toBe(0);
-    expect(await receiptCount(), '充值应当场立起收款单（Receipt 先于到账）').toBe(receiptsBefore + 1);
+    expect(String(rechargeIntent.status)).toBe('PENDING');
+    expect(await wallet(), '还没收到渠道确认就入账 = 凭空生钱').toBe(0);
+    expect((await receiptRows()).length, '渠道成功前不能登记真实收款').toBe(receiptsBefore);
 });
 
-// 步骤 3~5 停在**服务端缺陷 D-39**上，用 test.fixme 显式标注（不伪装通过、也不删断言）：
-// 实测签名正确（signatureVerified=true）、交易号也取自真实交易行（MOCK-TXN-PYI…），
-// 但回调事件落成 processStatus=RECEIVED / transactionId=null / processedAt=null，
-// 且充值意向在**建单当场就已经是 SUCCEEDED**、钱包 availableBalance 始终为 0。
-// 也就是「意向已成功 + 财务 Receipt 已立 + 钱包权益没记」三者并存，
-// 说明 BALANCE_RECHARGE 的钱包入账没有被这条路径驱动。详见证据档 §7e 与缺陷 D-39。
-test.fixme('3~5 渠道回调 → 钱包 CREDIT → 余额支付不开新 Receipt → 应收以 BALANCE 核销（阻塞于 D-39）', async () => {
-    expect(true).toBe(false);
+test('3 合法成功回调同时形成 Receipt 与钱包 CREDIT，重复回调不重复入账', async () => {
+    const intent = await call<Row>(harness.admin, 'get', `/scm/payment/intent/detail/${rechargeIntent.id}`);
+    const transaction = (intent.transactions as Row[])[0];
+    expect(transaction?.providerTransactionNo, '充值意图没有可供回调匹配的渠道交易号').toBeTruthy();
+    const eventId = `${harness.runTag}-GOLDEN07-SUCCESS`;
+    const payload = {
+        eventId,
+        eventType: 'PAYMENT_SUCCEEDED',
+        providerTransactionNo: transaction.providerTransactionNo,
+        amount: RECHARGE,
+    };
+    const applied = await deliverMockCallback(payload);
+    expect(String(applied.processStatus)).toBe('APPLIED');
+    expect(Number(applied.transactionId)).toBe(Number(transaction.id));
+
+    const receipts = await receiptRows();
+    expect(receipts.length, '渠道成功必须登记一张真实收款').toBe(receiptsBefore + 1);
+    const rechargeReceipt = receipts.find((row) => String(row.method) === 'ONLINE_PAYMENT') as Row;
+    expect(rechargeReceipt !== undefined, '充值没有形成 ONLINE_PAYMENT 收款').toBe(true);
+    expect(Number(rechargeReceipt.amount)).toBe(Number(RECHARGE));
+    expect(Boolean(rechargeReceipt.walletFunding), '充值收款必须标记为钱包权益来源').toBe(true);
+    expect(await wallet(), '渠道成功后钱包没有增加权益').toBe(Number(RECHARGE));
+
+    await deliverMockCallback(payload);
+    expect((await receiptRows()).length, '重复回调产生了第二张收款').toBe(receiptsBefore + 1);
+    expect(await wallet(), '重复回调产生了第二笔钱包 CREDIT').toBe(Number(RECHARGE));
+});
+
+test('4 余额支付只消费钱包，不产生第二张 Receipt', async () => {
+    receiptsAtPayment = (await receiptRows()).length;
+    const paid = String(facts.receivable.amount);
+    const intent = await call<Row>(harness.admin, 'post', '/scm/payment/intent/create', {
+        customerId: Number(facts.customerId),
+        sourceType: 'SALES_ORDER',
+        sourceId: Number(facts.orderId),
+        amount: paid,
+        method: 'BALANCE',
+        provider: 'INTERNAL_BALANCE',
+        remark: `${harness.runTag} GOLDEN07 余额支付`,
+    });
+    expect(String(intent.status)).toBe('SUCCEEDED');
+    expect((await receiptRows()).length, '余额支付把已收的钱重复登记为收款').toBe(receiptsAtPayment);
+    expect(await wallet(), '余额支付没有扣减钱包').toBeCloseTo(Number(RECHARGE) - Number(paid), 4);
+});
+
+test('5 余额消费以 BALANCE_MOVEMENT 自动核销订单应收', async () => {
+    const rows = await writeOffRows();
+    const balanceWriteOff = rows.find((row) => String(row.sourceType) === 'BALANCE_MOVEMENT') as Row;
+    expect(balanceWriteOff !== undefined, '余额支付没有产生 BALANCE_MOVEMENT 核销').toBe(true);
+    expect(Number(balanceWriteOff.amount)).toBe(Number(facts.receivable.amount));
+    expect(String(balanceWriteOff.entryType)).toBe('NORMAL');
+
+    const detail = await call<Row>(harness.finance, 'get',
+        `/scm/finance/receivable/${facts.receivable.receivableId}`);
+    const receivable = (detail.receivable ?? detail) as Row;
+    expect(Number(receivable.writtenOffAmount)).toBe(Number(facts.receivable.amount));
+    expect(Number(receivable.openAmount)).toBe(0);
 });

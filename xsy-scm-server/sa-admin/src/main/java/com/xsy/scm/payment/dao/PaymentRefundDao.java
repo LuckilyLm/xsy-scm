@@ -39,4 +39,6 @@ public interface PaymentRefundDao extends BaseMapper<PaymentRefundEntity> {
     /** 发起成功：CREATED → PROCESSING，并回填渠道退款号（回调靠它匹配）。 */
     int markProcessing(@Param("id") Long id, @Param("providerRefundNo") String providerRefundNo,
             @Param("operator") String operator);
+
+    int resetFailed(@Param("id") Long id, @Param("operator") String operator);
 }

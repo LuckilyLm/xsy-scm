@@ -18,6 +18,7 @@ import com.xsy.scm.payment.constant.ScmPaymentSourceTypeEnum;
 import com.xsy.scm.payment.constant.ScmPaymentTransactionStatusEnum;
 import com.xsy.scm.payment.dao.PaymentIntentDao;
 import com.xsy.scm.payment.dao.PaymentRefundDao;
+import com.xsy.scm.payment.dao.RefundFundingAllocationDao;
 import com.xsy.scm.payment.dao.PaymentSourceDao;
 import com.xsy.scm.payment.dao.PaymentTransactionDao;
 import com.xsy.scm.payment.domain.dto.PaymentOrderRefundFact;
@@ -53,6 +54,8 @@ public class PaymentRefundService {
     private static final String IDEMPOTENCY_SCOPE = "PAYMENT_REFUND_CREATE";
 
     private final PaymentRefundDao paymentRefundDao;
+
+    private final RefundFundingAllocationDao refundFundingAllocationDao;
 
     private final PaymentTransactionDao paymentTransactionDao;
 
@@ -183,7 +186,10 @@ public class PaymentRefundService {
                 // 可以靠下一次回调恢复 —— 与收款的 registerFinanceReceipt 同一条纪律。
                 registerFinancePayment(refundId, operator);
             }
-            case FAILED -> paymentRefundDao.markFailed(refundId, failureCode, failureMessage, operator);
+            case FAILED -> {
+                paymentRefundDao.markFailed(refundId, failureCode, failureMessage, operator);
+                syncFundingAllocation(refundId, operator);
+            }
             case PENDING -> {
                 // 渠道还没给结果：停在 PROCESSING，等回调
             }
@@ -259,9 +265,12 @@ public class PaymentRefundService {
                 || refund.getProviderAmount() == null) {
             return;
         }
+        if ("REFUND_FUNDING_ALLOCATION".equals(refund.getSourceType())) {
+            syncFundingAllocation(refund, operator);
+            return;
+        }
         if (!ScmPaymentSourceTypeEnum.ORDER_REFUND.name().equals(refund.getSourceType())
                 || refund.getSourceId() == null) {
-            // 没有业务退款单就落不下付款事实（付款必须挂来源）；当前入口已强制要求来源，这里只是兜底
             return;
         }
         if (refund.getProviderAmount().compareTo(refund.getAmount()) != 0) {
@@ -276,6 +285,79 @@ public class PaymentRefundService {
         financePaymentService.registerFromPaymentRefund(
                 new FinancePaymentRefundFact(refund.getId(), refund.getSourceId(), intent.getCustomerId(),
                         refund.getProviderAmount(), refund.getRefundedAt(), refund.getProviderRefundNo()));
+    }
+
+    private void syncFundingAllocation(Long paymentRefundId, String operator) {
+        syncFundingAllocation(paymentRefundDao.selectById(paymentRefundId), operator);
+    }
+
+    private void syncFundingAllocation(PaymentRefundEntity refund, String operator) {
+        if (refund == null || !"REFUND_FUNDING_ALLOCATION".equals(refund.getSourceType())
+                || refund.getSourceId() == null) {
+            return;
+        }
+        var allocation = refundFundingAllocationDao.selectById(refund.getSourceId());
+        if (allocation == null) {
+            return;
+        }
+        if (ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(refund.getStatus())) {
+            refundFundingAllocationDao.markSucceeded(allocation.getId(), refund.getId(), operator);
+        } else if (ScmPaymentRefundStatusEnum.FAILED.name().equals(refund.getStatus())) {
+            refundFundingAllocationDao.markFailed(allocation.getId(), refund.getFailureCode(),
+                    refund.getFailureMessage(), operator);
+        }
+    }
+
+    /** 执行一条已冻结的 ONLINE 资金分摊；调用方负责锁订单与分摊行。 */
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY,
+            rollbackFor = Exception.class)
+    public PaymentRefundEntity executeAllocation(Long allocationId, Long orderRefundId,
+            PaymentTransactionEntity transaction, BigDecimal amount, String reason, String mockScenario) {
+        String sourceType = "REFUND_FUNDING_ALLOCATION";
+        PaymentRefundEntity existing = paymentRefundDao.selectBySource(sourceType, allocationId);
+        if (existing != null && ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(existing.getStatus())) {
+            return existing;
+        }
+        if (transaction == null || !ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
+        }
+        BigDecimal value = amount.setScale(SCALE, RoundingMode.UNNECESSARY);
+        if (value.signum() <= 0 || value.compareTo(refundableOf(transaction)) > 0) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_AMOUNT_EXCEEDED);
+        }
+        String operator = ScmOperator.current();
+        PaymentRefundEntity refund = existing;
+        if (refund == null) {
+            refund = new PaymentRefundEntity();
+            refund.setRefundNo(paymentNumberGenerator.nextRefundNo());
+            refund.setIntentId(transaction.getIntentId());
+            refund.setTransactionId(transaction.getId());
+            refund.setProvider(transaction.getProvider());
+            refund.setAmount(value);
+            refund.setSourceType(sourceType);
+            refund.setSourceId(allocationId);
+            refund.setStatus(ScmPaymentRefundStatusEnum.CREATED.name());
+            refund.setMockScenario(resolveScenario(transaction.getProvider(), mockScenario));
+            refund.setReason(reason);
+            refund.setCreatedBy(operator);
+            refund.setUpdatedBy(operator);
+            paymentRefundDao.insert(refund);
+        } else if (ScmPaymentRefundStatusEnum.FAILED.name().equals(refund.getStatus())) {
+            paymentRefundDao.resetFailed(refund.getId(), operator);
+            refund = paymentRefundDao.lockById(refund.getId());
+        } else {
+            return refund;
+        }
+        ScmPaymentProvider.RefundResult result = providerRegistry.require(transaction.getProvider())
+                .refund(new ScmPaymentProvider.RefundRequest(refund.getRefundNo(),
+                        transaction.getProviderTransactionNo(), value, reason,
+                        ScmPaymentMockScenarioEnum.of(refund.getMockScenario())));
+        if (paymentRefundDao.markProcessing(refund.getId(), result.providerRefundNo(), operator) != 1) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
+        }
+        applyOutcome(refund.getId(), result.outcome(), result.providerRefundNo(), result.amount(), result.failureCode(),
+                result.failureMessage(), operator);
+        return paymentRefundDao.selectById(refund.getId());
     }
 
     /** 按渠道退款号定位退款（退款回调的匹配入口）。 */

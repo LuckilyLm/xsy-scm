@@ -4,9 +4,13 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.payment.constant.ScmPaymentPermission;
 import com.xsy.scm.payment.domain.form.PaymentRefundCreateForm;
 import com.xsy.scm.payment.domain.form.PaymentRefundQueryForm;
+import com.xsy.scm.payment.domain.form.RefundFundingDetailForm;
+import com.xsy.scm.payment.domain.form.RefundFundingExecuteForm;
 import com.xsy.scm.payment.domain.vo.PaymentRefundVO;
+import com.xsy.scm.payment.domain.vo.RefundFundingResultVO;
 import com.xsy.scm.payment.service.PaymentQueryService;
 import com.xsy.scm.payment.service.PaymentRefundService;
+import com.xsy.scm.payment.service.RefundFundingAllocationService;
 import com.xsy.scm.payment.support.PaymentVoAssembler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +33,8 @@ public class PaymentRefundController {
 
     private final PaymentQueryService paymentQueryService;
 
+    private final RefundFundingAllocationService refundFundingAllocationService;
+
     /**
      * 发起退款。
      *
@@ -42,6 +48,20 @@ public class PaymentRefundController {
     public ResponseDTO<PaymentRefundVO> create(@Valid @RequestBody PaymentRefundCreateForm form,
             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(PaymentVoAssembler.toRefund(paymentRefundService.create(form, key)));
+    }
+
+    @PostMapping("/funding/execute")
+    @SaCheckPermission(ScmPaymentPermission.REFUND_CREATE)
+    @OperateLog
+    public ResponseDTO<RefundFundingResultVO> executeFunding(@Valid @RequestBody RefundFundingExecuteForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(refundFundingAllocationService.execute(form, key));
+    }
+
+    @PostMapping("/funding/detail")
+    @SaCheckPermission(ScmPaymentPermission.REFUND_QUERY)
+    public ResponseDTO<RefundFundingResultVO> fundingDetail(@Valid @RequestBody RefundFundingDetailForm form) {
+        return ResponseDTO.ok(refundFundingAllocationService.detail(form.getRefundId()));
     }
 
     @PostMapping("/query")
