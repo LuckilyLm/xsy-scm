@@ -14,7 +14,7 @@
     <select id="queryPage" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
         SELECT
         <include refid="customerColumns"/>
-        FROM customer c
+        FROM xsy_customer c
         WHERE c.deleted = FALSE
         <!-- 数据范围（裁决「P0 基线收口裁决」第 2、6 条）：scope 缺省即失败关闭。
              scope.all 时不拼谓词，因此 seller_id IS NULL 的未分配客户只对持全量/分配权者可见。 -->
@@ -48,7 +48,7 @@
 
     <select id="selectOptions" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
         SELECT <include refid="customerColumns"/>
-        FROM customer c
+        FROM xsy_customer c
         WHERE c.deleted = FALSE
         <choose>
             <when test="scope == null or scope.empty">AND FALSE</when>
@@ -61,7 +61,7 @@
     </select>
 
     <update id="softDelete">
-        UPDATE customer
+        UPDATE xsy_customer
         SET deleted    = TRUE,
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
@@ -73,14 +73,14 @@
 
     <select id="countActiveByTypeId" resultType="long">
         SELECT COUNT(*)
-        FROM customer
+        FROM xsy_customer
         WHERE customer_type_id = #{typeId}
           AND deleted = FALSE
     </select>
 
     <select id="lock" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
         SELECT <include refid="customerColumns"/>
-        FROM customer c
+        FROM xsy_customer c
         WHERE c.id = #{customerId} AND c.deleted = FALSE
         FOR UPDATE
     </select>
@@ -88,7 +88,7 @@
     <select id="selectActiveByCodes" resultType="com.xsy.scm.customer.domain.entity.CustomerEntity">
         SELECT
         <include refid="customerColumns"/>
-        FROM customer c
+        FROM xsy_customer c
         WHERE c.deleted = FALSE AND c.customer_code IN
         <foreach collection="codes" item="code" open="(" separator="," close=")">#{code}</foreach>
     </select>

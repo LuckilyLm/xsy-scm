@@ -22,7 +22,7 @@ public interface CustomerSkuVisibilityDao extends BaseMapper<CustomerSkuVisibili
 
     long typeReferences(@Param("id") Long id);
 
-    /** 反向白名单列表读；范围按客户归属（{@code customer.seller_id}）收窄，传 null 即恒假谓词。 */
+    /** 反向白名单列表读；范围按客户归属（{@code xsy_customer.seller_id}）收窄，传 null 即恒假谓词。 */
     List<CustomerSkuVisibilityReverseVO> reverse(Page<?> page, @Param("query") CustomerVisibilityQueryForm query,
             @Param("scope") ScmValueScope scope);
 

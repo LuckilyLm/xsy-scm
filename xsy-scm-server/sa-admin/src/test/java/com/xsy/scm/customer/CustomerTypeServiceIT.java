@@ -61,7 +61,7 @@ class CustomerTypeServiceIT extends ScmW2PgITBase {
 
         Map<String, Object> row = jdbc.queryForMap(
                 "SELECT type_code, name, status, version, deleted, created_by, updated_by "
-                        + "FROM customer_type WHERE id = ?", id);
+                        + "FROM xsy_customer_type WHERE id = ?", id);
         assertThat(row.get("type_code")).isEqualTo((prefix + "-a").toUpperCase(Locale.ROOT));
         assertThat(row.get("name")).isEqualTo("类型a");
         assertThat(row.get("status")).isEqualTo("ENABLED");
@@ -114,9 +114,9 @@ class CustomerTypeServiceIT extends ScmW2PgITBase {
         update.setStatus("DISABLED");
         service.update(update);
 
-        assertThat(jdbc.queryForObject("SELECT version FROM customer_type WHERE id = ?", Integer.class, id))
+        assertThat(jdbc.queryForObject("SELECT version FROM xsy_customer_type WHERE id = ?", Integer.class, id))
                 .isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT name FROM customer_type WHERE id = ?", String.class, id))
+        assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer_type WHERE id = ?", String.class, id))
                 .isEqualTo("改名");
 
         expectCode(() -> service.update(update), 40921);
@@ -139,7 +139,7 @@ class CustomerTypeServiceIT extends ScmW2PgITBase {
         customerService.delete(customerDeletion);
 
         service.delete(deletion);
-        assertThat(jdbc.queryForObject("SELECT deleted FROM customer_type WHERE id = ?", Boolean.class, typeId))
+        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_customer_type WHERE id = ?", Boolean.class, typeId))
                 .isTrue();
     }
 
@@ -166,7 +166,7 @@ class CustomerTypeServiceIT extends ScmW2PgITBase {
 
         PageParam.SortItem illegal = new PageParam.SortItem();
         illegal.setIsAsc(true);
-        illegal.setColumn("name; DROP TABLE customer_type");
+        illegal.setColumn("name; DROP TABLE xsy_customer_type");
         CustomerTypeQueryForm badSort = new CustomerTypeQueryForm();
         badSort.setPageNum(1L);
         badSort.setPageSize(10L);

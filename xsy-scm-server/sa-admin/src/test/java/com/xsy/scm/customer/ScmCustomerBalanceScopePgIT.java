@@ -55,7 +55,7 @@ class ScmCustomerBalanceScopePgIT extends ScmW2PgITBase {
     @Test
     void customerWritesAndOptionsUseTheSameOwnerScope() {
         Long customerId = as(sellerB, () -> customerService.add(customerForm()));
-        Integer version = jdbc.queryForObject("SELECT version FROM customer WHERE id = ?", Integer.class, customerId);
+        Integer version = jdbc.queryForObject("SELECT version FROM xsy_customer WHERE id = ?", Integer.class, customerId);
 
         assertThat(as(sellerA, () -> customerQueryService.optionList())).noneMatch(option -> customerId.equals(option.getCustomerId()));
         assertThat(as(sellerB, () -> customerQueryService.optionList())).anyMatch(option -> customerId.equals(option.getCustomerId()));
@@ -83,7 +83,7 @@ class ScmCustomerBalanceScopePgIT extends ScmW2PgITBase {
             return null;
         }))
                 .isInstanceOf(ScmDataScopeException.class);
-        assertThat(jdbc.queryForObject("SELECT version FROM customer WHERE id = ?", Integer.class, customerId))
+        assertThat(jdbc.queryForObject("SELECT version FROM xsy_customer WHERE id = ?", Integer.class, customerId))
                 .isEqualTo(version);
     }
 
@@ -100,10 +100,10 @@ class ScmCustomerBalanceScopePgIT extends ScmW2PgITBase {
         assertThatThrownBy(() -> as(sellerA, () -> customerBalanceService.correct(form, key)))
                 .isInstanceOf(ScmDataScopeException.class);
         as(sellerB, () -> customerBalanceService.correct(form, key));
-        jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", sellerA, customerId);
+        jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", sellerA, customerId);
         assertThatThrownBy(() -> as(sellerB, () -> customerBalanceService.correct(form, key)))
                 .isInstanceOf(ScmDataScopeException.class);
-        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM customer_balance_movement WHERE customer_id = ?",
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM xsy_customer_balance_movement WHERE customer_id = ?",
                 Integer.class, customerId)).isEqualTo(1);
     }
 
@@ -127,9 +127,9 @@ class ScmCustomerBalanceScopePgIT extends ScmW2PgITBase {
     }
 
     private Long order(Long customerId, Long sellerId, String suffix) {
-        String customerCode = jdbc.queryForObject("SELECT customer_code FROM customer WHERE id = ?", String.class,
+        String customerCode = jdbc.queryForObject("SELECT customer_code FROM xsy_customer WHERE id = ?", String.class,
                 customerId);
-        return jdbc.queryForObject("INSERT INTO sales_order (order_no, customer_id, customer_code_snapshot,"
+        return jdbc.queryForObject("INSERT INTO xsy_sales_order (order_no, customer_id, customer_code_snapshot,"
                         + " customer_name_snapshot, settle_mode_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, seller_id)"
                         + " VALUES (?, ?, ?, ?, 'INDEPENDENT', ?, ?, ?) RETURNING id",
@@ -138,12 +138,12 @@ class ScmCustomerBalanceScopePgIT extends ScmW2PgITBase {
     }
 
     private Long refund(Long customerId, Long orderId, String suffix) {
-        Long intentId = jdbc.queryForObject("INSERT INTO payment_intent (intent_no, customer_id,"
+        Long intentId = jdbc.queryForObject("INSERT INTO xsy_payment_intent (intent_no, customer_id,"
                         + " customer_name_snapshot, source_type, source_id, source_no_snapshot, amount, method, provider)"
                         + " VALUES (?, ?, ?, 'SALES_ORDER', ?, ?, 10, 'ONLINE', 'MOCK') RETURNING id",
                 Long.class, prefix + "-INTENT-" + suffix, customerId, prefix + "客户", orderId,
                 prefix + "-ORDER-" + suffix);
-        return jdbc.queryForObject("INSERT INTO payment_refund (refund_no, intent_id, transaction_id, provider, amount)"
+        return jdbc.queryForObject("INSERT INTO xsy_payment_refund (refund_no, intent_id, transaction_id, provider, amount)"
                         + " VALUES (?, ?, ?, 'MOCK', 10) RETURNING id",
                 Long.class, prefix + "-REFUND-" + suffix, intentId, 100000L + intentId);
     }
