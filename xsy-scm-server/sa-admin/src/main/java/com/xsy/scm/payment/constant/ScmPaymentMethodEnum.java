@@ -3,7 +3,7 @@ package com.xsy.scm.payment.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 支付方式（渠道大类）。持久化到 {@code payment_intent.method}。 */
+/** 支付方式（渠道大类）。持久化到 {@code xsy_payment_intent.method}。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPaymentMethodEnum {

@@ -4,12 +4,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 交易状态。持久化到 {@code payment_transaction.status}。
+ * 交易状态。持久化到 {@code xsy_payment_transaction.status}。
  *
  * <p>
- * 与意图状态分开：意图是「打算收多少」，交易是「渠道那一次流水」。
- * 一个意图可能先失败一次、再成功一次（用户换了支付方式），因此交易是多条、
- * 意图只有一个最终状态。
+ * 与意图状态分开：意图是「打算收多少」，交易是「渠道那一次流水」。 一个意图可能先失败一次、再成功一次（用户换了支付方式），因此交易是多条、 意图只有一个最终状态。
  */
 @Getter
 @RequiredArgsConstructor

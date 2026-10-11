@@ -9,7 +9,7 @@
       ON CONFLICT DO NOTHING 仅在有效事件占据渠道 id 时命中；此分支由 Service 用受影响行数（0）提前 return，不依赖 id。
     -->
     <insert id="insertIgnoreDuplicate" useGeneratedKeys="true" keyProperty="row.id">
-        INSERT INTO payment_callback_event (provider, provider_event_id, event_type, signature_verified,
+        INSERT INTO xsy_payment_callback_event (provider, provider_event_id, event_type, signature_verified,
                                             payload_hash, payload, transaction_id, process_status,
                                             reject_reason, received_at, created_by)
         VALUES (#{row.provider}, #{row.providerEventId}, #{row.eventType}, #{row.signatureVerified},
@@ -23,7 +23,7 @@
     </insert>
 
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity">
-        SELECT * FROM payment_callback_event
+        SELECT * FROM xsy_payment_callback_event
         WHERE 1 = 1
         <if test="query.provider != null and query.provider != ''">AND provider = #{query.provider}</if>
         <if test="query.processStatus != null and query.processStatus != ''">
@@ -38,20 +38,20 @@
 
     <select id="selectByProviderEventId"
             resultType="com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity">
-        SELECT * FROM payment_callback_event
+        SELECT * FROM xsy_payment_callback_event
         WHERE provider = #{provider} AND provider_event_id = #{providerEventId}
         ORDER BY id DESC LIMIT 1
     </select>
 
     <select id="selectClaimedByProviderEventId"
             resultType="com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity">
-        SELECT * FROM payment_callback_event
+        SELECT * FROM xsy_payment_callback_event
         WHERE provider = #{provider} AND provider_event_id = #{providerEventId}
           AND signature_verified = TRUE AND process_status IN ('RECEIVED', 'APPLIED')
     </select>
 
     <update id="markProcessed">
-        UPDATE payment_callback_event
+        UPDATE xsy_payment_callback_event
         SET process_status = #{processStatus},
             transaction_id = #{transactionId},
             reject_reason  = #{rejectReason},

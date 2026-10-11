@@ -78,7 +78,7 @@ class PaymentRefundSumBasisPgIT extends ScmW5PgITBase {
         String marker = UUID.randomUUID().toString().replace("-", "");
         // ck_payment_transaction_paid_pairing：SUCCEEDED 必须带 paid_at。
         return jdbc.queryForObject("""
-                INSERT INTO xsy_v2.payment_transaction
+                INSERT INTO xsy_v2.xsy_payment_transaction
                     (transaction_no, intent_id, provider, provider_transaction_no, amount, provider_amount, status,
                      paid_at, created_by)
                 VALUES (?, 1, 'MOCK', ?, 1000.0000, 1000.0000, 'SUCCEEDED', ?, 'IT-PAY02')
@@ -90,7 +90,7 @@ class PaymentRefundSumBasisPgIT extends ScmW5PgITBase {
     /** 直接插入退款事实行，绕开服务层以确保测的是 SQL 口径本身。 */
     private void insertRefund(long transactionId, BigDecimal amount, BigDecimal providerAmount, String status) {
         jdbc.update("""
-                INSERT INTO xsy_v2.payment_refund
+                INSERT INTO xsy_v2.xsy_payment_refund
                     (refund_no, intent_id, transaction_id, provider, amount, status, provider_amount,
                      refunded_at, created_by)
                 VALUES (?, 1, ?, 'MOCK', ?, ?, ?, ?, 'IT-PAY02')

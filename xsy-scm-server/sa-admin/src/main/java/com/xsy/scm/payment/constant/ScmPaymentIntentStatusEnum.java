@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 支付意图状态机。持久化到 {@code payment_intent.status}，与 DDL 的 CHECK 白名单逐字一致。
+ * 支付意图状态机。持久化到 {@code xsy_payment_intent.status}，与 DDL 的 CHECK 白名单逐字一致。
  *
  * <pre>
  * CREATED ──发起支付──▶ PENDING ──渠道成功──▶ SUCCEEDED   （终态）

@@ -21,7 +21,7 @@ import lombok.Data;
  * 差额<b>落库</b>而不是每次现算：对账结论是要被审计的历史事实，不能随之后的交易变动而变。 表上有 CHECK 保证 {@code MATCHED} 当且仅当差额为 0。
  */
 @Data
-@TableName(value = "payment_reconciliation", autoResultMap = true)
+@TableName(value = "xsy_payment_reconciliation", autoResultMap = true)
 public class PaymentReconciliationEntity {
 
     @TableId(type = IdType.AUTO)

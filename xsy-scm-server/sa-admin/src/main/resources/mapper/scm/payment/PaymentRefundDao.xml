@@ -3,8 +3,8 @@
 <mapper namespace="com.xsy.scm.payment.dao.PaymentRefundDao">
 
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
-        SELECT r.* FROM payment_refund r
-        JOIN payment_intent i ON i.id = r.intent_id AND i.deleted = FALSE
+        SELECT r.* FROM xsy_payment_refund r
+        JOIN xsy_payment_intent i ON i.id = r.intent_id AND i.deleted = FALSE
         WHERE r.deleted = FALSE
         <include refid="com.xsy.scm.payment.dao.PaymentIntentDao.visibleIntent"/>
         <if test="query.transactionId != null">AND r.transaction_id = #{query.transactionId}</if>
@@ -21,20 +21,20 @@
     </select>
 
     <select id="lockById" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
-        SELECT * FROM payment_refund WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT * FROM xsy_payment_refund WHERE id = #{id} AND deleted = FALSE FOR UPDATE
     </select>
 
     <select id="selectByRefundNo" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
-        SELECT * FROM payment_refund WHERE refund_no = #{refundNo} AND deleted = FALSE
+        SELECT * FROM xsy_payment_refund WHERE refund_no = #{refundNo} AND deleted = FALSE
     </select>
 
     <select id="selectBySource" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
-        SELECT * FROM payment_refund
+        SELECT * FROM xsy_payment_refund
         WHERE source_type = #{sourceType} AND source_id = #{sourceId} AND deleted = FALSE
     </select>
 
     <select id="selectByProviderRefundNo" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
-        SELECT * FROM payment_refund
+        SELECT * FROM xsy_payment_refund
         WHERE provider = #{provider} AND provider_refund_no = #{providerRefundNo} AND deleted = FALSE
     </select>
 
@@ -46,12 +46,12 @@
     -->
     <select id="sumSucceededByTransaction" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(provider_amount), 0)
-        FROM payment_refund
+        FROM xsy_payment_refund
         WHERE transaction_id = #{transactionId} AND status = 'SUCCEEDED' AND deleted = FALSE
     </select>
 
     <update id="markSucceeded">
-        UPDATE payment_refund
+        UPDATE xsy_payment_refund
         SET status             = 'SUCCEEDED',
             provider_refund_no = #{providerRefundNo},
             provider_amount    = #{providerAmount},
@@ -67,7 +67,7 @@
     </update>
 
     <update id="markFailed">
-        UPDATE payment_refund
+        UPDATE xsy_payment_refund
         SET status          = 'FAILED',
             failure_code    = #{failureCode},
             failure_message = #{failureMessage},
@@ -80,7 +80,7 @@
     </update>
 
     <update id="markProcessing">
-        UPDATE payment_refund
+        UPDATE xsy_payment_refund
         SET status             = 'PROCESSING',
             provider_refund_no = #{providerRefundNo},
             version            = version + 1,

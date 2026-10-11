@@ -3,15 +3,15 @@
 <mapper namespace="com.xsy.scm.payment.dao.PaymentTransactionDao">
 
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
-        SELECT t.* FROM payment_transaction t
-        JOIN payment_intent i ON i.id = t.intent_id AND i.deleted = FALSE
+        SELECT t.* FROM xsy_payment_transaction t
+        JOIN xsy_payment_intent i ON i.id = t.intent_id AND i.deleted = FALSE
         WHERE t.deleted = FALSE
         <include refid="com.xsy.scm.payment.dao.PaymentIntentDao.visibleIntent"/>
         <if test="query.intentId != null">AND t.intent_id = #{query.intentId}</if>
         <if test="query.provider != null and query.provider != ''">AND t.provider = #{query.provider}</if>
         <if test="query.status != null and query.status != ''">AND t.status = #{query.status}</if>
         <if test="query.customerId != null">
-            AND EXISTS (SELECT 1 FROM payment_intent i
+            AND EXISTS (SELECT 1 FROM xsy_payment_intent i
                         WHERE i.id = t.intent_id AND i.customer_id = #{query.customerId})
         </if>
         <if test="query.keyword != null and query.keyword != ''">
@@ -23,25 +23,25 @@
 
     <select id="selectByProviderTransactionNo"
             resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
-        SELECT * FROM payment_transaction
+        SELECT * FROM xsy_payment_transaction
         WHERE provider = #{provider}
           AND provider_transaction_no = #{providerTransactionNo}
           AND deleted = FALSE
     </select>
 
     <select id="lockById" resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
-        SELECT * FROM payment_transaction WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT * FROM xsy_payment_transaction WHERE id = #{id} AND deleted = FALSE FOR UPDATE
     </select>
 
     <select id="selectByIntentId" resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
-        SELECT * FROM payment_transaction
+        SELECT * FROM xsy_payment_transaction
         WHERE intent_id = #{intentId} AND deleted = FALSE
         ORDER BY id DESC
         LIMIT 1
     </select>
 
     <update id="markSucceeded">
-        UPDATE payment_transaction
+        UPDATE xsy_payment_transaction
         SET status          = 'SUCCEEDED',
             provider_amount = #{providerAmount},
             paid_at         = CURRENT_TIMESTAMP,
@@ -56,13 +56,13 @@
     </update>
 
     <update id="markBalanceSucceeded">
-        UPDATE payment_transaction SET status = 'SUCCEEDED', provider_amount = #{amount}, paid_at = #{paidAt},
+        UPDATE xsy_payment_transaction SET status = 'SUCCEEDED', provider_amount = #{amount}, paid_at = #{paidAt},
             version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id} AND provider = 'INTERNAL_BALANCE' AND status = 'PENDING' AND deleted = FALSE
     </update>
 
     <update id="markFailed">
-        UPDATE payment_transaction
+        UPDATE xsy_payment_transaction
         SET status          = 'FAILED',
             failure_code    = #{failureCode},
             failure_message = #{failureMessage},
@@ -76,7 +76,7 @@
 
     <select id="listSucceededBetween"
             resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
-        SELECT * FROM payment_transaction
+        SELECT * FROM xsy_payment_transaction
         WHERE provider = #{provider}
           AND status = 'SUCCEEDED'
           AND paid_at &gt;= #{startAt}
@@ -86,7 +86,7 @@
     </select>
 
     <select id="listByWindow" resultType="com.xsy.scm.payment.domain.entity.PaymentTransactionEntity">
-        SELECT * FROM payment_transaction
+        SELECT * FROM xsy_payment_transaction
         WHERE provider = #{provider}
           AND created_at &gt;= #{startAt}
           AND created_at &lt; #{endAt}

@@ -21,7 +21,7 @@ import lombok.Data;
  * 表上有 append-only CHECK，因此这个实体不提供删除语义。
  */
 @Data
-@TableName("payment_transaction")
+@TableName("xsy_payment_transaction")
 public class PaymentTransactionEntity {
 
     @TableId(type = IdType.AUTO)

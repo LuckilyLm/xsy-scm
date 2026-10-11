@@ -30,7 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 对账服务：比较渠道账与本地账，把差异冻成 {@code payment_reconciliation_item} 事实供人工处理。
+ * 对账服务：比较渠道账与本地账，把差异冻成 {@code xsy_payment_reconciliation_item} 事实供人工处理。
  *
  * <p>
  * 首版只发现差异，绝不自动修复 —— 自动改交易状态会让审计链说不清「这条记录是渠道说的，还是对账程序改的」。 分类：{@code LOCAL_MISSING}（渠道有本地无，最危险）/ {@code PROVIDER_MISSING}

@@ -3,7 +3,7 @@ package com.xsy.scm.payment.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 对账状态。持久化到 {@code payment_reconciliation.status}。 */
+/** 对账状态。持久化到 {@code xsy_payment_reconciliation.status}。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPaymentReconciliationStatusEnum {

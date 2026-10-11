@@ -4,14 +4,14 @@
 
     <select id="selectInByProviderTransactionNo"
             resultType="com.xsy.scm.payment.domain.entity.PaymentMockLedgerEntity">
-        SELECT * FROM payment_mock_ledger
+        SELECT * FROM xsy_payment_mock_ledger
         WHERE provider_transaction_no = #{providerTransactionNo}
           AND direction = 'IN'
         LIMIT 1
     </select>
 
     <select id="listByBizDate" resultType="com.xsy.scm.payment.domain.entity.PaymentMockLedgerEntity">
-        SELECT * FROM payment_mock_ledger
+        SELECT * FROM xsy_payment_mock_ledger
         WHERE biz_date = #{bizDate}
         ORDER BY id
     </select>

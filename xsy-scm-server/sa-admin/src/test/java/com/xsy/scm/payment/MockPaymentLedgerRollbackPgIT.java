@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 模拟渠道账本的事务独立性（FIX-02，PG IT，无外层事务）。
  *
- * <p>渠道是另一个系统：它的账（{@code payment_mock_ledger}）用 {@code REQUIRES_NEW} 写，
+ * <p>渠道是另一个系统：它的账（{@code xsy_payment_mock_ledger}）用 {@code REQUIRES_NEW} 写，
  * 不随本地业务事务回滚 —— 否则「渠道扣了钱、本地没记上」这类对账差异根本模拟不出来。
  * 这个注解曾经挂在 {@code MockPaymentProvider} 自己身上，同类自调用绕过代理而静默失效；
  * 本类验证修复后：本地事务回滚，渠道账照常留下。因为验证依赖<b>真实提交</b>，
@@ -91,7 +91,7 @@ class MockPaymentLedgerRollbackPgIT extends ScmW5PgITBase {
 
     private int countRows(String column, String value) {
         Integer count = jdbc.queryForObject(
-                "SELECT count(*) FROM payment_mock_ledger WHERE " + column + " = ?", Integer.class, value);
+                "SELECT count(*) FROM xsy_payment_mock_ledger WHERE " + column + " = ?", Integer.class, value);
         return count == null ? 0 : count;
     }
 }

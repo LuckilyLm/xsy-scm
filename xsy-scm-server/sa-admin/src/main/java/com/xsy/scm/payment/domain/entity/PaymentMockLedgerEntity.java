@@ -18,7 +18,7 @@ import lombok.Data;
  * 这张表刻意没有 {@code deleted} / {@code version} / {@code updated_*}： 渠道的账本只有追加，结构上就没有改一行的入口。
  */
 @Data
-@TableName("payment_mock_ledger")
+@TableName("xsy_payment_mock_ledger")
 public class PaymentMockLedgerEntity {
 
     @TableId(type = IdType.AUTO)

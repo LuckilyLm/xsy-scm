@@ -36,12 +36,12 @@ public interface PaymentSourceDao {
      * 锁定业务退款单。
      *
      * <p>
-     * <b>必须加锁</b>：线上退款（本域）与人工退款付款（财务域）要<b>互斥</b>， 两边都锁同一行 {@code order_refund} 才能把「先查后写」的窗口关掉。
+     * <b>必须加锁</b>：线上退款（本域）与人工退款付款（财务域）要<b>互斥</b>， 两边都锁同一行 {@code xsy_order_refund} 才能把「先查后写」的窗口关掉。
      */
     PaymentOrderRefundFact lockOrderRefund(@Param("refundId") Long refundId);
 
     /**
-     * 该业务退款单是否已有人工登记的退款付款（财务域 {@code finance_payment}）。
+     * 该业务退款单是否已有人工登记的退款付款（财务域 {@code xsy_finance_payment}）。
      *
      * <p>
      * 返回付款单 id；没有则返回 {@code null}。有值时线上退款必须拒绝 —— 否则同一张退款单会被退两次（人工退一次、渠道再退一次）。

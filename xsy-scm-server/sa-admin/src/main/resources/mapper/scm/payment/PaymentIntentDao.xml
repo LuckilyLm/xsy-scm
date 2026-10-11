@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.payment.dao.PaymentIntentDao">
 
     <sql id="visibleIntent">
-        AND EXISTS (SELECT 1 FROM customer c WHERE c.id = i.customer_id AND c.deleted = FALSE
+        AND EXISTS (SELECT 1 FROM xsy_customer c WHERE c.id = i.customer_id AND c.deleted = FALSE
         <choose>
             <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
             <when test="scope.customerSellerScope.all"></when>
@@ -12,7 +12,7 @@
             </otherwise>
         </choose>)
         AND (i.source_type = 'BALANCE_RECHARGE' OR (i.source_type = 'SALES_ORDER' AND EXISTS (
-            SELECT 1 FROM sales_order so WHERE so.id = i.source_id AND so.deleted = FALSE
+            SELECT 1 FROM xsy_sales_order so WHERE so.id = i.source_id AND so.deleted = FALSE
             <choose>
                 <when test="scope == null or scope.orderSellerScope.empty">AND FALSE</when>
                 <when test="scope.orderSellerScope.all"></when>
@@ -23,7 +23,7 @@
     </sql>
 
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentIntentEntity">
-        SELECT i.* FROM payment_intent i
+        SELECT i.* FROM xsy_payment_intent i
         WHERE i.deleted = FALSE
         <include refid="visibleIntent"/>
         <if test="query.sourceType != null and query.sourceType != ''">AND i.source_type = #{query.sourceType}</if>
@@ -41,15 +41,15 @@
     </select>
 
     <select id="selectByIntentNo" resultType="com.xsy.scm.payment.domain.entity.PaymentIntentEntity">
-        SELECT * FROM payment_intent WHERE intent_no = #{intentNo} AND deleted = FALSE
+        SELECT * FROM xsy_payment_intent WHERE intent_no = #{intentNo} AND deleted = FALSE
     </select>
 
     <select id="lockById" resultType="com.xsy.scm.payment.domain.entity.PaymentIntentEntity">
-        SELECT * FROM payment_intent WHERE id = #{id} AND deleted = FALSE FOR UPDATE
+        SELECT * FROM xsy_payment_intent WHERE id = #{id} AND deleted = FALSE FOR UPDATE
     </select>
 
     <update id="updateStatus">
-        UPDATE payment_intent
+        UPDATE xsy_payment_intent
         SET status     = #{to},
             -- 成功时刻与关闭时刻由状态派生，与 ck_payment_intent_*_pairing 一一对应
             succeeded_at = CASE WHEN #{to} = 'SUCCEEDED' THEN CURRENT_TIMESTAMP ELSE succeeded_at END,
@@ -63,14 +63,14 @@
     </update>
 
     <update id="markBalanceSucceeded">
-        UPDATE payment_intent SET status = 'SUCCEEDED', succeeded_at = #{succeededAt},
+        UPDATE xsy_payment_intent SET status = 'SUCCEEDED', succeeded_at = #{succeededAt},
             version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id} AND method = 'BALANCE' AND provider = 'INTERNAL_BALANCE'
             AND status = 'PENDING' AND deleted = FALSE
     </update>
 
     <update id="bindExternalIntent">
-        UPDATE payment_intent
+        UPDATE xsy_payment_intent
         SET external_intent_id = #{externalIntentId},
             version            = version + 1,
             updated_at         = CURRENT_TIMESTAMP,
@@ -80,7 +80,7 @@
 
     <select id="sumSucceededBySource" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(amount), 0)
-        FROM payment_intent
+        FROM xsy_payment_intent
         WHERE source_type = #{sourceType}
           AND source_id = #{sourceId}
           AND status = 'SUCCEEDED'
