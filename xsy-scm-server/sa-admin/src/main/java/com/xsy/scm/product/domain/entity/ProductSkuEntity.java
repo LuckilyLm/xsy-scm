@@ -16,7 +16,7 @@ import java.util.Map;
 import com.xsy.scm.common.json.JsonbStringMapTypeHandler;
 
 @Data
-@TableName(value = "product_sku", autoResultMap = true)
+@TableName(value = "xsy_product_sku", autoResultMap = true)
 public class ProductSkuEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

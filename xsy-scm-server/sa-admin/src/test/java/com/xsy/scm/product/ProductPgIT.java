@@ -71,7 +71,7 @@ class ProductPgIT {
         form.setSpuCode(prefix);
         form.setName(prefix + "商品");
         form.setAlias(prefix + "别名");
-        form.setCategoryId(jdbc.queryForObject("SELECT id FROM product_category WHERE category_code='FRESH-FRUIT' AND deleted=FALSE", Long.class));
+        form.setCategoryId(jdbc.queryForObject("SELECT id FROM xsy_product_category WHERE category_code='FRESH-FRUIT' AND deleted=FALSE", Long.class));
         form.setStatus("OFF_SHELF");
         form.setSkuList(new ArrayList<>(List.of(sku("A", true, "大"), sku("B", false, "小"))));
         return form;
@@ -133,8 +133,8 @@ class ProductPgIT {
         assertThat(saved.getSkuList().getFirst().getSkuId()).isEqualTo(kept);
         assertThat(saved.getSkuList().getFirst().getVersion()).isEqualTo(1);
         assertThat(saved.getDefaultSku().getSkuCode()).isEqualTo(prefix + "C");
-        assertThat(jdbc.queryForObject("SELECT deleted FROM product_sku WHERE id=?", Boolean.class, removed)).isTrue();
-        assertThat(jdbc.queryForObject("SELECT created_by FROM product_spu WHERE id=?", String.class, id)).isEqualTo("1:1");
+        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_product_sku WHERE id=?", Boolean.class, removed)).isTrue();
+        assertThat(jdbc.queryForObject("SELECT created_by FROM xsy_product_spu WHERE id=?", String.class, id)).isEqualTo("1:1");
     }
 
     @Test
@@ -166,7 +166,7 @@ class ProductPgIT {
     void detectsIndependentSkuVersionConflict() {
         Long id = service.add(product());
         var form = update(id);
-        jdbc.update("UPDATE product_sku SET version=version+1 WHERE id=?", form.getSkuList().getFirst().getSkuId());
+        jdbc.update("UPDATE xsy_product_sku SET version=version+1 WHERE id=?", form.getSkuList().getFirst().getSkuId());
         conflict(() -> service.update(form), 40921);
     }
 
@@ -183,7 +183,7 @@ class ProductPgIT {
         var form = product();
         Long id = service.add(form);
         service.delete(deletion(id, 0));
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_sku WHERE spu_id=? AND deleted=TRUE", Integer.class, id)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_product_sku WHERE spu_id=? AND deleted=TRUE", Integer.class, id)).isEqualTo(2);
         conflict(() -> query.detail(id), 40420);
         assertThat(service.add(form)).isNotEqualTo(id);
     }
@@ -206,7 +206,7 @@ class ProductPgIT {
         form.setPageNum(1L);
         form.setPageSize(20L);
         form.setKeyword(prefix);
-        form.setCategoryId(jdbc.queryForObject("SELECT id FROM product_category WHERE category_code='FRESH' AND deleted=FALSE", Long.class));
+        form.setCategoryId(jdbc.queryForObject("SELECT id FROM xsy_product_category WHERE category_code='FRESH' AND deleted=FALSE", Long.class));
         var page = query.query(form);
         assertThat(page.getList()).extracting(ProductSpuVO::getSpuId).containsExactly(id);
         assertThat(page.getList().getFirst().getCategoryPath()).isEqualTo("生鲜 / 果蔬 / 水果");
@@ -277,7 +277,7 @@ class ProductPgIT {
         conflict(() -> service.update(rebind),40038);
         // 裸 SQL 探针放在最后：它会让本用例的 Spring 事务进入 25P02，之后的任何语句都只会拿到
         // "current transaction is aborted"，看起来像 CHECK 没生效
-        assertThatThrownBy(() -> jdbc.update("UPDATE product_image SET file_key=? WHERE spu_id=?",legacyKey,id))
+        assertThatThrownBy(() -> jdbc.update("UPDATE xsy_product_image SET file_key=? WHERE spu_id=?",legacyKey,id))
                 .hasMessageContaining("ck_product_image_public_file_key");
     }
     private Long category(Long parent,String suffix) {
@@ -314,10 +314,10 @@ class ProductPgIT {
         Long id = service.add(product());
         assertThatThrownBy(() -> {
             switch(type) {
-                case "default" -> jdbc.update("UPDATE product_sku SET is_default=TRUE WHERE spu_id=?",id);
-                case "price" -> jdbc.update("UPDATE product_sku SET market_price=-1 WHERE spu_id=?",id);
-                case "json" -> jdbc.update("UPDATE product_sku SET spec_values='[]'::jsonb WHERE spu_id=?",id);
-                case "primary" -> jdbc.update("INSERT INTO product_image(spu_id,file_key,is_primary) VALUES (?,'a',TRUE),(?,'b',TRUE)",id,id);
+                case "default" -> jdbc.update("UPDATE xsy_product_sku SET is_default=TRUE WHERE spu_id=?",id);
+                case "price" -> jdbc.update("UPDATE xsy_product_sku SET market_price=-1 WHERE spu_id=?",id);
+                case "json" -> jdbc.update("UPDATE xsy_product_sku SET spec_values='[]'::jsonb WHERE spu_id=?",id);
+                case "primary" -> jdbc.update("INSERT INTO xsy_product_image(spu_id,file_key,is_primary) VALUES (?,'a',TRUE),(?,'b',TRUE)",id,id);
                 default -> throw new AssertionError(type);
             }
         }).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);

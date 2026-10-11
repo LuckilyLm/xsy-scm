@@ -87,12 +87,12 @@ class ProductImportUpdatePgIT {
     void cleanUp() {
         SmartRequestUtil.remove();
         for (var spuId : createdSpuIds) {
-            jdbc.update("DELETE FROM product_tag_relation WHERE spu_id=?", spuId);
-            jdbc.update("DELETE FROM product_image WHERE spu_id=?", spuId);
-            jdbc.update("DELETE FROM product_sku WHERE spu_id=?", spuId);
-            jdbc.update("DELETE FROM product_spu WHERE id=?", spuId);
+            jdbc.update("DELETE FROM xsy_product_tag_relation WHERE spu_id=?", spuId);
+            jdbc.update("DELETE FROM xsy_product_image WHERE spu_id=?", spuId);
+            jdbc.update("DELETE FROM xsy_product_sku WHERE spu_id=?", spuId);
+            jdbc.update("DELETE FROM xsy_product_spu WHERE id=?", spuId);
         }
-        for (var tagId : createdTagIds) jdbc.update("DELETE FROM product_tag WHERE id=?", tagId);
+        for (var tagId : createdTagIds) jdbc.update("DELETE FROM xsy_product_tag WHERE id=?", tagId);
         // 本类不用测试事务回滚，上传行会真的提交；用例自建的商品图用完即回收，
         // 只留本地磁盘上的探针文件，不给库留下没有业务引用的附件
         for (var fileKey : createdFileKeys) jdbc.update("DELETE FROM t_file WHERE file_key=?", fileKey);
@@ -101,12 +101,12 @@ class ProductImportUpdatePgIT {
     @Test
     void priceOnlyUpdateKeepsDetailImageType() throws Exception {
         var product = product(true);
-        var image = jdbc.queryForList("SELECT id FROM product_image WHERE spu_id=? AND deleted=FALSE ORDER BY id",
+        var image = jdbc.queryForList("SELECT id FROM xsy_product_image WHERE spu_id=? AND deleted=FALSE ORDER BY id",
                 Long.class, product).getFirst();
-        assertThat(jdbc.queryForObject("SELECT image_type FROM product_image WHERE id=?", String.class, image))
+        assertThat(jdbc.queryForObject("SELECT image_type FROM xsy_product_image WHERE id=?", String.class, image))
                 .isEqualTo("GALLERY");
         // 详情图只可能来自历史行或专门的入口：这里用裸 SQL 造出该前置状态
-        assertThat(jdbc.update("UPDATE product_image SET image_type='DETAIL' WHERE id=?", image)).isEqualTo(1);
+        assertThat(jdbc.update("UPDATE xsy_product_image SET image_type='DETAIL' WHERE id=?", image)).isEqualTo(1);
 
         var target = skuIdOf(product, 0);
         var result = imports.importFile(updateRows(row(product, target, cell(MARKET_PRICE, "9.0000"))), ImportMode.UPDATE);
@@ -114,7 +114,7 @@ class ProductImportUpdatePgIT {
         assertThat(price(target)).isEqualByComparingTo("9.0000");
 
         // 改价会带着既有图片走同一条同步链：内容角色与主图事实都必须原样保留
-        var after = jdbc.queryForMap("SELECT image_type, is_primary, version FROM product_image WHERE id=?", image);
+        var after = jdbc.queryForMap("SELECT image_type, is_primary, version FROM xsy_product_image WHERE id=?", image);
         assertThat(after.get("image_type")).isEqualTo("DETAIL");
         assertThat(after.get("is_primary")).isEqualTo(true);
         assertThat((Integer) after.get("version")).isGreaterThan(0);
@@ -130,7 +130,7 @@ class ProductImportUpdatePgIT {
         assertThat(result.getMode()).isEqualTo("UPDATE");
 
         var sku = jdbc.queryForMap("SELECT market_price, sale_unit, product_type, status, is_default, spec_values::text AS specs,"
-                + " version FROM product_sku WHERE id=?", keepMe);
+                + " version FROM xsy_product_sku WHERE id=?", keepMe);
         assertThat((BigDecimal) sku.get("market_price")).isEqualByComparingTo("3.4500");
         // 文件里这些列全是空白：单位、类型、上下架、默认标记与规格快照都必须还是原值（本行是非默认 SKU）
         assertThat(sku.get("sale_unit")).isEqualTo("份");
@@ -140,7 +140,7 @@ class ProductImportUpdatePgIT {
         assertThat(String.valueOf(sku.get("specs"))).contains("1kg/箱");
         assertThat((Integer) sku.get("version")).isGreaterThan(0);
 
-        var spu = jdbc.queryForMap("SELECT name, alias, description, storage_method, master_status, version FROM product_spu WHERE id=?", product);
+        var spu = jdbc.queryForMap("SELECT name, alias, description, storage_method, master_status, version FROM xsy_product_spu WHERE id=?", product);
         assertThat(spu.get("name")).isEqualTo(lastProductName);
         assertThat(spu.get("alias")).isEqualTo("原别名");
         assertThat(spu.get("description")).isEqualTo("原详情描述，不能被只改市场价的导入清空");
@@ -149,10 +149,10 @@ class ProductImportUpdatePgIT {
         assertThat((Integer) spu.get("version")).isEqualTo(1);
 
         // 未出现在文件里的第二个 SKU 不能被删掉，默认标记也必须还留在它身上；标签关系同理
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_sku WHERE spu_id=? AND deleted=FALSE", Integer.class, product)).isEqualTo(2);
-        assertThat(jdbc.queryForList("SELECT id FROM product_sku WHERE spu_id=? AND deleted=FALSE AND is_default=TRUE", Long.class, product))
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_product_sku WHERE spu_id=? AND deleted=FALSE", Integer.class, product)).isEqualTo(2);
+        assertThat(jdbc.queryForList("SELECT id FROM xsy_product_sku WHERE spu_id=? AND deleted=FALSE AND is_default=TRUE", Long.class, product))
                 .containsExactly(skuIdOf(product, 0));
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_tag_relation WHERE spu_id=? AND deleted=FALSE", Integer.class, product)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_product_tag_relation WHERE spu_id=? AND deleted=FALSE", Integer.class, product)).isEqualTo(1);
     }
 
     @Test
@@ -177,7 +177,7 @@ class ProductImportUpdatePgIT {
         var firstPriceTarget = skuIdOf(first, 0);
         var secondPriceTarget = skuIdOf(second, 0);
         // 第二个商品的 SKU 改成第一个商品既有条码：唯一索引在写阶段才炸，整批必须一起回滚
-        var clash = jdbc.queryForObject("SELECT barcode FROM product_sku WHERE id=? AND deleted=FALSE", String.class, firstPriceTarget);
+        var clash = jdbc.queryForObject("SELECT barcode FROM xsy_product_sku WHERE id=? AND deleted=FALSE", String.class, firstPriceTarget);
         assertThat(clash).isNotBlank();
         var result = imports.importFile(updateRows(
                 row(first, firstPriceTarget, cell(MARKET_PRICE, "5.0000")),
@@ -201,12 +201,12 @@ class ProductImportUpdatePgIT {
                 cell(ALIAS, ProductImportService.CLEAR_TOKEN), cell(TAG_CODES, ProductImportService.CLEAR_TOKEN),
                 cell(BARCODE, ProductImportService.CLEAR_TOKEN))), ImportMode.UPDATE);
         assertThat(result.getTotalErrors()).isZero();
-        assertThat(jdbc.queryForObject("SELECT alias FROM product_spu WHERE id=?", String.class, product)).isNull();
-        assertThat(jdbc.queryForObject("SELECT barcode FROM product_sku WHERE id=?", String.class, target)).isNull();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_tag_relation WHERE spu_id=? AND deleted=FALSE",
+        assertThat(jdbc.queryForObject("SELECT alias FROM xsy_product_spu WHERE id=?", String.class, product)).isNull();
+        assertThat(jdbc.queryForObject("SELECT barcode FROM xsy_product_sku WHERE id=?", String.class, target)).isNull();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_product_tag_relation WHERE spu_id=? AND deleted=FALSE",
                 Integer.class, product)).isZero();
         // 未标记的列一个字都没动：描述与市场价仍是原值
-        assertThat(jdbc.queryForObject("SELECT description FROM product_spu WHERE id=?", String.class, product))
+        assertThat(jdbc.queryForObject("SELECT description FROM xsy_product_spu WHERE id=?", String.class, product))
                 .isEqualTo("原详情描述，不能被只改市场价的导入清空");
         assertThat(price(target)).isEqualByComparingTo("1.2000");
     }
@@ -229,7 +229,7 @@ class ProductImportUpdatePgIT {
         form.setAlias("原别名");
         form.setDescription("原详情描述，不能被只改市场价的导入清空");
         form.setStorageMethod("CHILLED");
-        form.setCategoryId(jdbc.queryForObject("SELECT id FROM product_category WHERE category_code='FRESH-FRUIT' AND deleted=FALSE", Long.class));
+        form.setCategoryId(jdbc.queryForObject("SELECT id FROM xsy_product_category WHERE category_code='FRESH-FRUIT' AND deleted=FALSE", Long.class));
         form.setStatus("OFF_SHELF");
         var tagId = tag();
         form.setTagIds(List.of(tagId));
@@ -288,19 +288,19 @@ class ProductImportUpdatePgIT {
 
     /** 商品 SKU 按 id 升序稳定定位，避免依赖插入顺序的不确定返回。 */
     private Long skuIdOf(Long spuId, int index) {
-        return jdbc.queryForList("SELECT id FROM product_sku WHERE spu_id=? AND deleted=FALSE ORDER BY id", Long.class, spuId).get(index);
+        return jdbc.queryForList("SELECT id FROM xsy_product_sku WHERE spu_id=? AND deleted=FALSE ORDER BY id", Long.class, spuId).get(index);
     }
 
     private Integer skuVersion(Long skuId) {
-        return jdbc.queryForObject("SELECT version FROM product_sku WHERE id=?", Integer.class, skuId);
+        return jdbc.queryForObject("SELECT version FROM xsy_product_sku WHERE id=?", Integer.class, skuId);
     }
 
     private int spuVersion(Long spuId) {
-        return jdbc.queryForObject("SELECT version FROM product_spu WHERE id=?", Integer.class, spuId);
+        return jdbc.queryForObject("SELECT version FROM xsy_product_spu WHERE id=?", Integer.class, spuId);
     }
 
     private BigDecimal price(Long skuId) {
-        return jdbc.queryForObject("SELECT market_price FROM product_sku WHERE id=?", BigDecimal.class, skuId);
+        return jdbc.queryForObject("SELECT market_price FROM xsy_product_sku WHERE id=?", BigDecimal.class, skuId);
     }
 
     private String[] row(Long spuId, Long skuId, String[]... overrides) {
@@ -311,7 +311,7 @@ class ProductImportUpdatePgIT {
         cells[SPU_VERSION] = String.valueOf(spuVersion(spuId));
         cells[SKU_ID] = String.valueOf(skuId);
         cells[SKU_VERSION] = String.valueOf(skuVersion(skuId));
-        cells[SKU_CODE] = jdbc.queryForObject("SELECT sku_code FROM product_sku WHERE id=?", String.class, skuId);
+        cells[SKU_CODE] = jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id=?", String.class, skuId);
         for (var override : overrides) cells[Integer.parseInt(override[0])] = override[1];
         return cells;
     }

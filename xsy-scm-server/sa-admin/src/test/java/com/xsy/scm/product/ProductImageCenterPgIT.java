@@ -81,7 +81,7 @@ class ProductImageCenterPgIT {
         form.setSpuCode(code);
         form.setName(code + "商品");
         form.setCategoryId(jdbc.queryForObject(
-                "SELECT id FROM product_category WHERE category_code='FRESH-FRUIT' AND deleted=FALSE", Long.class));
+                "SELECT id FROM xsy_product_category WHERE category_code='FRESH-FRUIT' AND deleted=FALSE", Long.class));
         form.setStatus("OFF_SHELF");
         var sku = new ProductSkuForm();
         sku.setSkuCode(code + "A");
@@ -124,10 +124,10 @@ class ProductImageCenterPgIT {
         assertThat(vo.getSpuCode()).isEqualTo(prefix);
         assertThat(vo.getImages()).hasSize(1);
         assertThat(vo.getImages().getFirst().getFileUrl()).isNotBlank();
-        String fileKey = jdbc.queryForObject("SELECT file_key FROM product_image WHERE spu_id=?", String.class, spuId);
+        String fileKey = jdbc.queryForObject("SELECT file_key FROM xsy_product_image WHERE spu_id=?", String.class, spuId);
         assertThat(fileKey).startsWith("public/image/");
         // file_url 列已被删除，URL 只能由 fileKey 现算、绝不入库
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_name='product_image' AND column_name='file_url'",
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM information_schema.columns WHERE table_name='xsy_product_image' AND column_name='file_url'",
                 Integer.class)).isZero();
     }
 
@@ -147,7 +147,7 @@ class ProductImageCenterPgIT {
         assertThat(after.getImages()).filteredOn(i -> Boolean.TRUE.equals(i.getPrimaryFlag())).hasSize(1);
         assertThat(after.getImages().getFirst().getPrimaryFlag()).isTrue();
         // 非主图的绑定行不再被降级成 DETAIL：图集 / 详情图是内容角色，与谁是主图无关
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND image_type='GALLERY' AND deleted=FALSE",
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_product_image WHERE spu_id=? AND image_type='GALLERY' AND deleted=FALSE",
                 Integer.class, spuId)).isEqualTo(2);
     }
 
@@ -171,10 +171,10 @@ class ProductImageCenterPgIT {
         assertThat(after.getImages().get(1).getPrimaryFlag()).isTrue();
         assertThat(after.getImages().get(0).getPrimaryFlag()).isFalse();
         // 降级后的旧主图仍是图集图：类型不随主图状态漂移，is_primary 是唯一主图事实
-        assertThat(jdbc.queryForObject("SELECT image_type FROM product_image WHERE id=?", String.class, second)).isEqualTo("GALLERY");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND image_type='GALLERY' AND deleted=FALSE",
+        assertThat(jdbc.queryForObject("SELECT image_type FROM xsy_product_image WHERE id=?", String.class, second)).isEqualTo("GALLERY");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_product_image WHERE spu_id=? AND image_type='GALLERY' AND deleted=FALSE",
                 Integer.class, spuId)).isEqualTo(2);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND is_primary AND deleted=FALSE",
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_product_image WHERE spu_id=? AND is_primary AND deleted=FALSE",
                 Integer.class, spuId)).isEqualTo(1);
     }
 
@@ -272,7 +272,7 @@ class ProductImageCenterPgIT {
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes WHERE indexname='uq_product_image_primary_spu'", Integer.class)).isEqualTo(1);
         Long spuId = newSpu();
-        assertThat(jdbc.queryForObject("SELECT image_type FROM product_image WHERE spu_id=? AND deleted=FALSE",
+        assertThat(jdbc.queryForObject("SELECT image_type FROM xsy_product_image WHERE spu_id=? AND deleted=FALSE",
                 String.class, spuId)).isEqualTo("GALLERY");
     }
 
@@ -281,9 +281,9 @@ class ProductImageCenterPgIT {
         Long spuId = newSpu();
         Long image = imageIds(spuId).getFirst();
         // 详情图仍是合法取值（类型只表达内容角色，与 is_primary 无关）
-        jdbc.update("UPDATE product_image SET image_type='DETAIL' WHERE id=?", image);
+        jdbc.update("UPDATE xsy_product_image SET image_type='DETAIL' WHERE id=?", image);
         // 迁移后写回 PRIMARY 必须直接失败，否则会悄悄出现第二个「主图事实」
-        assertThatThrownBy(() -> jdbc.update("UPDATE product_image SET image_type='PRIMARY' WHERE id=?", image))
+        assertThatThrownBy(() -> jdbc.update("UPDATE xsy_product_image SET image_type='PRIMARY' WHERE id=?", image))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -299,9 +299,9 @@ class ProductImageCenterPgIT {
         bind.setItems(new ArrayList<>(List.of(item)));
         service.batchBind(bind);
         Long second = imageIds(spuId).get(1);
-        jdbc.update("UPDATE product_image SET image_type='DETAIL' WHERE id=?", second);
+        jdbc.update("UPDATE xsy_product_image SET image_type='DETAIL' WHERE id=?", second);
         // 唯一索引只看 is_primary：图片归类成详情图也不能绕出「两张主图」
-        assertThatThrownBy(() -> jdbc.update("UPDATE product_image SET is_primary=TRUE WHERE id=?", second))
+        assertThatThrownBy(() -> jdbc.update("UPDATE xsy_product_image SET is_primary=TRUE WHERE id=?", second))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -310,11 +310,11 @@ class ProductImageCenterPgIT {
      * 走裸 SQL 是因为当前没有任何写入口会产出详情图，这正是要保护的现状。
      */
     private void markDetail(Long imageId) {
-        assertThat(jdbc.update("UPDATE product_image SET image_type='DETAIL' WHERE id=?", imageId)).isEqualTo(1);
+        assertThat(jdbc.update("UPDATE xsy_product_image SET image_type='DETAIL' WHERE id=?", imageId)).isEqualTo(1);
     }
 
     private String typeOf(Long imageId) {
-        return jdbc.queryForObject("SELECT image_type FROM product_image WHERE id=?", String.class, imageId);
+        return jdbc.queryForObject("SELECT image_type FROM xsy_product_image WHERE id=?", String.class, imageId);
     }
 
     private Long addImage(Long spuId, String name, int sortOrder) {
@@ -343,8 +343,8 @@ class ProductImageCenterPgIT {
         // 换主图只动 is_primary：详情图不能因为整批回写而被归类成图集
         assertThat(typeOf(detail)).isEqualTo("DETAIL");
         assertThat(typeOf(gallery)).isEqualTo("GALLERY");
-        assertThat(jdbc.queryForObject("SELECT is_primary FROM product_image WHERE id=?", Boolean.class, gallery)).isTrue();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM product_image WHERE spu_id=? AND image_type='DETAIL' AND deleted=FALSE",
+        assertThat(jdbc.queryForObject("SELECT is_primary FROM xsy_product_image WHERE id=?", Boolean.class, gallery)).isTrue();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_product_image WHERE spu_id=? AND image_type='DETAIL' AND deleted=FALSE",
                 Integer.class, spuId)).isEqualTo(1);
     }
 

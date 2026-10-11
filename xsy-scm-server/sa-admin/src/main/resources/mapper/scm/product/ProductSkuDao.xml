@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.product.dao.ProductSkuDao">
     <!-- Aggregate SPU version is claimed first. Child versions are checked by subsequent updateById. -->
     <update id="clearDefault">
-        UPDATE product_sku
+        UPDATE xsy_product_sku
         SET is_default= FALSE
         WHERE spu_id = #{spuId}
           AND deleted = FALSE

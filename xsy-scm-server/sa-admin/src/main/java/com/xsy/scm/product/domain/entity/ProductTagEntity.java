@@ -10,7 +10,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 @Data
-@TableName("product_tag")
+@TableName("xsy_product_tag")
 public class ProductTagEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

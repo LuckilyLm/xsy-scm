@@ -14,11 +14,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 商品图 key 搬运（V58）的库内事实取证。
  *
  * <p><b>为什么必须自己摆历史形态</b>：本环境的 {@code xsy_scm_b0} 与全部一次性 IT 库里，
- * 「活行且非 public 前缀」的 {@code product_image} 行数为 0 —— 搬运在真实库上是空操作，
+ * 「活行且非 public 前缀」的 {@code xsy_product_image} 行数为 0 —— 搬运在真实库上是空操作，
  * 「改写正确」这件事不可能靠跑一遍现网数据来证明。因此这里按迁移文件里的标记取出<b>同一段 SQL</b>
  * （不复制一份等价语句），在模拟的搬运前状态上执行。
  *
- * <p>本仓库不建外键，且 V58 的三条语句都不 join {@code product_spu}，所以夹具不需要一个真实商品：
+ * <p>本仓库不建外键，且 V58 的三条语句都不 join {@code xsy_product_spu}，所以夹具不需要一个真实商品：
  * 造真商品只会让这条迁移用例额外依赖商品聚合不变量。
  *
  * <p>软删行留在原地：CHECK 无法做成部分约束，V58 因此把 {@code deleted = TRUE} 写进约束，
@@ -59,7 +59,7 @@ class ScmProductImageKeyMigrationPgIT extends ScmW6PgITBase {
         assertThat(activeKeysOf(spu)).containsExactlyInAnyOrder(
                 "public/image/" + tail("flat"), "public/image/8f3d/notice/" + tail("nested"));
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM product_image WHERE deleted = FALSE AND file_key NOT LIKE 'public/%'",
+                "SELECT count(*) FROM xsy_product_image WHERE deleted = FALSE AND file_key NOT LIKE 'public/%'",
                 Integer.class)).as("活行里不再有任何非公开前缀的商品图").isZero();
         assertThat(jdbc.queryForObject("SELECT folder_type FROM t_file WHERE file_key = ?", Integer.class,
                 "public/image/" + tail("flat")))
@@ -120,7 +120,7 @@ class ScmProductImageKeyMigrationPgIT extends ScmW6PgITBase {
         seedFile(legacy);
         // 软删分支放在前面：CHECK 无法做成部分约束，历史行的原 key 就是靠这个分支留下来的
         seedImage(900006L, legacy, true, true);
-        assertThat(jdbc.queryForObject("SELECT deleted FROM product_image WHERE spu_id = ?", Boolean.class,
+        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_product_image WHERE spu_id = ?", Boolean.class,
                 900006L)).isTrue();
         // 越界探针放在最后（同上：25P02 之后没有可执行的语句）
         assertThatThrownBy(() -> seedImage(900005L, legacy, true))
@@ -144,7 +144,7 @@ class ScmProductImageKeyMigrationPgIT extends ScmW6PgITBase {
     }
 
     private void dropPublicPrefixCheck() {
-        jdbc.execute("ALTER TABLE product_image DROP CONSTRAINT ck_product_image_public_file_key");
+        jdbc.execute("ALTER TABLE xsy_product_image DROP CONSTRAINT ck_product_image_public_file_key");
     }
 
     /** 尾段带上用例前缀，避免与同库里其它数据相撞。 */
@@ -163,7 +163,7 @@ class ScmProductImageKeyMigrationPgIT extends ScmW6PgITBase {
     }
 
     private void seedImage(Long spuId, String fileKey, boolean primary, boolean deleted) {
-        jdbc.update("INSERT INTO product_image (spu_id, file_key, file_name, file_size, is_primary, sort_order, "
+        jdbc.update("INSERT INTO xsy_product_image (spu_id, file_key, file_name, file_size, is_primary, sort_order, "
                         + "version, deleted, created_at, updated_at, created_by, updated_by) "
                         + "VALUES (?, ?, ?, 1, ?, 0, 0, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'it', 'it')",
                 spuId, fileKey, fileKey.substring(fileKey.lastIndexOf('/') + 1), primary, deleted);
@@ -175,7 +175,7 @@ class ScmProductImageKeyMigrationPgIT extends ScmW6PgITBase {
     }
 
     private List<String> activeKeysOf(Long spuId) {
-        return jdbc.queryForList("SELECT file_key FROM product_image WHERE spu_id = ? AND deleted = FALSE "
+        return jdbc.queryForList("SELECT file_key FROM xsy_product_image WHERE spu_id = ? AND deleted = FALSE "
                 + "ORDER BY file_key", String.class, spuId);
     }
 

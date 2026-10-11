@@ -6,7 +6,7 @@
       不再随主图状态改写——顺带置成 DETAIL 会把一张图集图静默降级成详情图。
     -->
     <update id="clearPrimary">
-        UPDATE product_image
+        UPDATE xsy_product_image
         SET is_primary = FALSE
         WHERE spu_id = #{spuId}
           AND deleted = FALSE
@@ -14,7 +14,7 @@
     </update>
 
     <!--
-      图片中心「未绑定图片」：公开图片里没有 product_image 活行引用的那些。
+      图片中心「未绑定图片」：公开图片里没有 xsy_product_image 活行引用的那些。
       只读文件表，不写；folderType 由 FileFolderTypeEnum.PUBLIC_IMAGE 传入，避免在 SQL 里写死目录编号。
     -->
     <select id="selectUnboundPublicImages" resultType="com.xsy.scm.product.domain.vo.ProductUnboundImageVO">
@@ -25,7 +25,7 @@
         FROM t_file f
         WHERE f.folder_type = #{folderType}
           AND NOT EXISTS (SELECT 1
-                          FROM product_image i
+                          FROM xsy_product_image i
                           WHERE i.file_key = f.file_key
                             AND i.deleted = FALSE)
         ORDER BY f.create_time DESC, f.file_id DESC

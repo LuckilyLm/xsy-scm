@@ -16,7 +16,7 @@ public interface ProductImageDao extends BaseMapper<ProductImageEntity> {
      * 图片中心「还没挂到商品」的公开图片。
      *
      * <p>
-     * 「已绑定」的判据是 {@code product_image} 里有没有同一 fileKey 的活行，所以这条 SQL 必须同时看到文件表和商品图片表；
+     * 「已绑定」的判据是 {@code xsy_product_image} 里有没有同一 fileKey 的活行，所以这条 SQL 必须同时看到文件表和商品图片表；
      * 它是只读查询，不写文件表。上传但从未绑定过的图（含按文件名批量导入后未命中的）就靠这条查出来。
      */
     List<ProductUnboundImageVO> selectUnboundPublicImages(@Param("folderType") Integer folderType,

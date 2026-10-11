@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 import java.math.BigDecimal;
 
 @Data
-@TableName(value = "product_spu", autoResultMap = true)
+@TableName(value = "xsy_product_spu", autoResultMap = true)
 public class ProductSpuEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
