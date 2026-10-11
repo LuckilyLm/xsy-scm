@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "delivery_driver", autoResultMap = true)
+@TableName(value = "xsy_delivery_driver", autoResultMap = true)
 public class DeliveryDriverEntity extends DeliveryRecord {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String driverCode;

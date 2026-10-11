@@ -19,7 +19,7 @@
     <select id="lockActive" resultMap="proposalMap">
         SELECT
         <include refid="columns"/>
-        FROM delivery_plan_proposal
+        FROM xsy_delivery_plan_proposal
         WHERE route_id = #{routeId}
           AND status = 'PROPOSED'
             FOR UPDATE
@@ -28,25 +28,25 @@
     <select id="lockById" resultMap="proposalMap">
         SELECT
         <include refid="columns"/>
-        FROM delivery_plan_proposal
+        FROM xsy_delivery_plan_proposal
         WHERE id = #{id}
             FOR UPDATE
     </select>
     <select id="findById" resultMap="proposalMap">
-        SELECT <include refid="columns"/> FROM delivery_plan_proposal WHERE id = #{id}
+        SELECT <include refid="columns"/> FROM xsy_delivery_plan_proposal WHERE id = #{id}
     </select>
 
     <select id="listByRoute" resultMap="proposalMap">
         SELECT
         <include refid="columns"/>
-        FROM delivery_plan_proposal
+        FROM xsy_delivery_plan_proposal
         WHERE route_id = #{routeId}
         ORDER BY created_at DESC, id DESC
         LIMIT #{limit}
     </select>
 
     <insert id="insertProposal" useGeneratedKeys="true" keyProperty="row.id">
-        INSERT INTO delivery_plan_proposal (route_id, status, provider_code, provider_version, estimated_flag,
+        INSERT INTO xsy_delivery_plan_proposal (route_id, status, provider_code, provider_version, estimated_flag,
                                             rule_code, stop_count, total_distance, input_snapshot, result_snapshot,
                                             created_at, created_by, version)
         VALUES (#{row.routeId}, #{row.status}, #{row.providerCode}, #{row.providerVersion}, #{row.estimatedFlag},
@@ -57,7 +57,7 @@
     </insert>
 
     <update id="markApplied">
-        UPDATE delivery_plan_proposal
+        UPDATE xsy_delivery_plan_proposal
         SET status     = 'APPLIED',
             applied_at = CURRENT_TIMESTAMP,
             applied_by = #{operator},
@@ -68,7 +68,7 @@
     </update>
 
     <update id="markDiscarded">
-        UPDATE delivery_plan_proposal
+        UPDATE xsy_delivery_plan_proposal
         SET status       = 'DISCARDED',
             discarded_at = CURRENT_TIMESTAMP,
             discarded_by = #{operator},
@@ -79,7 +79,7 @@
     </update>
 
     <update id="discardActive">
-        UPDATE delivery_plan_proposal
+        UPDATE xsy_delivery_plan_proposal
         SET status       = 'DISCARDED',
             discarded_at = CURRENT_TIMESTAMP,
             discarded_by = #{operator},

@@ -65,7 +65,7 @@ class DeliveryPrintTrackingIT extends ScmW5PgITBase {
         delivery.printOrders(ctx.route(), ordersForm(ctx.route(), List.of(ctx.a())), "w5:reprint-a");
         assertThat(printCount(ctx.a())).isEqualTo(2);
         // 生成打印绝不扣库存 / 绝不推进线路状态
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM inventory_movement WHERE sku_id=?", Integer.class, ctx.sku())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_movement WHERE sku_id=?", Integer.class, ctx.sku())).isZero();
         assertThat(deliveryQuery.detail(ctx.route()).getRoute().getStatus()).isEqualTo("PLANNED");
     }
 
@@ -206,7 +206,7 @@ class DeliveryPrintTrackingIT extends ScmW5PgITBase {
         Long c2 = newCustomer();
         // 停靠点坐标来自订单冻结地址；缺失时按「客户地址 == 冻结地址」回落到客户坐标，
         // 故 customer.address 必须等于基类 fixture 硬编码的订单地址，且坐标在下单前写入。
-        jdbc.update("UPDATE customer SET address='W5 IT 地址',longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id IN (?,?)", c1, c2);
+        jdbc.update("UPDATE xsy_customer SET address='W5 IT 地址',longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id IN (?,?)", c1, c2);
         Long a = confirmedSalesOrder(c1, sku, "1.0000", "1.0000");
         Long b = confirmedSalesOrder(c1, sku, "2.0000", "2.0000");
         Long c = confirmedSalesOrder(c2, sku, "3.0000", "3.0000");
@@ -252,7 +252,7 @@ class DeliveryPrintTrackingIT extends ScmW5PgITBase {
     }
 
     private int printCount(Long orderId) {
-        return jdbc.queryForObject("SELECT print_count FROM delivery_route_order WHERE order_id=? AND assignment_status='ACTIVE' AND deleted=FALSE",
+        return jdbc.queryForObject("SELECT print_count FROM xsy_delivery_route_order WHERE order_id=? AND assignment_status='ACTIVE' AND deleted=FALSE",
                 Integer.class, orderId);
     }
 }

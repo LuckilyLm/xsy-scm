@@ -104,7 +104,7 @@ class DeliveryDispatchConcurrencyPgIT extends ScmW6PgITBase {
                 .as("存量只按 4 + 3 扣一次").isEqualByComparingTo(before.subtract(new BigDecimal("7.0000")));
         assertThat(reservedNeverGoesAboveOnHand(warehouseId, skuId)).isTrue();
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM delivery_route_order WHERE route_id = ? AND fulfillment_status = 'IN_TRANSIT'"
+                "SELECT count(*) FROM xsy_delivery_route_order WHERE route_id = ? AND fulfillment_status = 'IN_TRANSIT'"
                         + " AND deleted = FALSE", Integer.class, routeId)).isEqualTo(2);
     }
 
@@ -128,7 +128,7 @@ class DeliveryDispatchConcurrencyPgIT extends ScmW6PgITBase {
                 }));
 
         boolean dispatched = "DISPATCHED".equals(routeStatus(routeId));
-        String taskStatus = jdbc.queryForObject("SELECT status FROM sorting_task WHERE id = ?", String.class, taskId);
+        String taskStatus = jdbc.queryForObject("SELECT status FROM xsy_sorting_task WHERE id = ?", String.class, taskId);
 
         assertThat(outcomes.stream().filter(Outcome::ok).count())
                 .as("两个动作必须有一个被拒：%s", describe(outcomes)).isEqualTo(1);
@@ -204,7 +204,7 @@ class DeliveryDispatchConcurrencyPgIT extends ScmW6PgITBase {
 
     private Long locatedWarehouse(String tag) {
         Long warehouseId = newWarehouse(tag);
-        jdbc.update("UPDATE warehouse SET longitude = 113.90, latitude = 22.50, geom_crs = 'GCJ02' WHERE id = ?",
+        jdbc.update("UPDATE xsy_warehouse SET longitude = 113.90, latitude = 22.50, geom_crs = 'GCJ02' WHERE id = ?",
                 warehouseId);
         createdWarehouses.add(warehouseId);
         evictMybatisCache();
@@ -236,7 +236,7 @@ class DeliveryDispatchConcurrencyPgIT extends ScmW6PgITBase {
 
     private Long sortedOrder(String tag, Long skuId, Long warehouseId, String sortedQuantity) {
         Long customerId = newCustomer();
-        jdbc.update("UPDATE customer SET address=?,longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id = ?",
+        jdbc.update("UPDATE xsy_customer SET address=?,longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id = ?",
                 "并发 IT 地址" + tag, customerId);
         Long orderId = confirmedSalesOrder(customerId, skuId, "5.0000", "5.0000");
         Long orderItemId = confirmedSalesOrderItemId(orderId);
@@ -274,7 +274,7 @@ class DeliveryDispatchConcurrencyPgIT extends ScmW6PgITBase {
             attach.setReason("组单");
             routeService.addOrders(routeId, attach);
         }
-        jdbc.update("UPDATE delivery_route_stop SET longitude = 113.95, latitude = 22.55, geom_crs = 'GCJ02'"
+        jdbc.update("UPDATE xsy_delivery_route_stop SET longitude = 113.95, latitude = 22.55, geom_crs = 'GCJ02'"
                 + " WHERE route_id = ? AND deleted = FALSE", routeId);
         evictMybatisCache();
         routeService.plan(routeId, dispatchForm(routeId));
@@ -282,8 +282,8 @@ class DeliveryDispatchConcurrencyPgIT extends ScmW6PgITBase {
     }
 
     private Long taskOfOrderLine(Long orderId) {
-        return jdbc.queryForObject("SELECT si.task_id FROM sorting_task_item si"
-                        + " JOIN sales_order_item i ON i.id = si.sales_order_item_id"
+        return jdbc.queryForObject("SELECT si.task_id FROM xsy_sorting_task_item si"
+                        + " JOIN xsy_sales_order_item i ON i.id = si.sales_order_item_id"
                         + " WHERE i.order_id = ? AND si.deleted = FALSE AND si.occupation_status = 'ACTIVE'",
                 Long.class, orderId);
     }
@@ -296,13 +296,13 @@ class DeliveryDispatchConcurrencyPgIT extends ScmW6PgITBase {
 
     private SortingActionForm reopenForm(Long taskId) {
         var form = new SortingActionForm();
-        form.setVersion(jdbc.queryForObject("SELECT version FROM sorting_task WHERE id = ?", Integer.class, taskId));
+        form.setVersion(jdbc.queryForObject("SELECT version FROM xsy_sorting_task WHERE id = ?", Integer.class, taskId));
         form.setReason("并发重开");
         return form;
     }
 
     private Integer versionOf(Long routeId) {
-        return jdbc.queryForObject("SELECT version FROM delivery_route WHERE id = ?", Integer.class, routeId);
+        return jdbc.queryForObject("SELECT version FROM xsy_delivery_route WHERE id = ?", Integer.class, routeId);
     }
 
     private String key(String tag) {
@@ -310,17 +310,17 @@ class DeliveryDispatchConcurrencyPgIT extends ScmW6PgITBase {
     }
 
     private String routeStatus(Long routeId) {
-        return jdbc.queryForObject("SELECT status FROM delivery_route WHERE id = ?", String.class, routeId);
+        return jdbc.queryForObject("SELECT status FROM xsy_delivery_route WHERE id = ?", String.class, routeId);
     }
 
     private int outboundCountForRoute(Long routeId) {
-        return jdbc.queryForObject("SELECT count(*) FROM inventory_outbound WHERE source_document_id = ?"
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_outbound WHERE source_document_id = ?"
                 + " AND source_document_type = 'DELIVERY_ROUTE' AND deleted = FALSE", Integer.class, routeId);
     }
 
     private int movementCountForRoute(Long routeId) {
-        return jdbc.queryForObject("SELECT count(*) FROM inventory_movement m"
-                + " JOIN inventory_outbound o ON o.id = m.source_document_id"
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_movement m"
+                + " JOIN xsy_inventory_outbound o ON o.id = m.source_document_id"
                 + " WHERE o.source_document_id = ? AND o.source_document_type = 'DELIVERY_ROUTE'"
                 + " AND m.source_document_type = 'SALES_OUTBOUND_ITEM'", Integer.class, routeId);
     }

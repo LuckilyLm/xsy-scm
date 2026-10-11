@@ -3,15 +3,15 @@
 <mapper namespace="com.xsy.scm.delivery.dao.DeliveryQueryDao">
     <sql id="routeColumns">
         r.*,
-        (SELECT count(*) FROM delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE) AS stop_count,
-        (SELECT count(*) FROM delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE AND s.geom_crs IS NOT NULL) AS located_count,
-        (SELECT count(*) FROM delivery_route_order o WHERE o.route_id=r.id AND o.deleted=FALSE) AS order_count,
-        (SELECT sum(o.order_amount_snapshot) FROM delivery_route_order o WHERE o.route_id=r.id AND o.deleted=FALSE) AS total_amount,
+        (SELECT count(*) FROM xsy_delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE) AS stop_count,
+        (SELECT count(*) FROM xsy_delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE AND s.geom_crs IS NOT NULL) AS located_count,
+        (SELECT count(*) FROM xsy_delivery_route_order o WHERE o.route_id=r.id AND o.deleted=FALSE) AS order_count,
+        (SELECT sum(o.order_amount_snapshot) FROM xsy_delivery_route_order o WHERE o.route_id=r.id AND o.deleted=FALSE) AS total_amount,
         -- 发车后的出库单号：按主键取一条，只为让配送页能跳到库存出库单看 SALES_OUT，不参与任何判定
-        (SELECT b.outbound_no FROM inventory_outbound b WHERE b.id=r.outbound_id) AS outbound_no
+        (SELECT b.outbound_no FROM xsy_inventory_outbound b WHERE b.id=r.outbound_id) AS outbound_no
     </sql>
     <!--
-      司机维度收口（裁决「P0 基线收口裁决」第 9 条）：driver_id 来自 delivery_driver.employee_id 反查，
+      司机维度收口（裁决「P0 基线收口裁决」第 9 条）：driver_id 来自 xsy_delivery_driver.employee_id 反查，
       未分配司机（driver_id IS NULL）的线路天然不在 IN 列表里，因此普通司机看不到待排线的线路，
       而 all==true 的调度 / 超管不拼任何谓词，未分配线路照常可见。
       scope 为 null 时渲染 AND FALSE：漏传范围必须是「查不到」，不能是「查全部」。
@@ -28,7 +28,7 @@
     <select id="routes" resultType="com.xsy.scm.delivery.domain.vo.DeliveryRouteVO">
         SELECT
         <include refid="routeColumns"/>
-        FROM delivery_route r WHERE r.deleted=FALSE
+        FROM xsy_delivery_route r WHERE r.deleted=FALSE
         <if test="q.keyword != null and q.keyword != ''">AND (r.route_name ILIKE concat('%',#{q.keyword},'%') OR
             r.route_no ILIKE concat('%',#{q.keyword},'%'))
         </if>
@@ -38,7 +38,7 @@
         <if test="q.driverId != null">AND r.driver_id=#{q.driverId}</if>
         <if test="q.vehicleId != null">AND r.vehicle_id=#{q.vehicleId}</if>
         <if test="q.provinceCode != null or q.cityCode != null or q.districtCode != null">
-            AND EXISTS (SELECT 1 FROM delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE
+            AND EXISTS (SELECT 1 FROM xsy_delivery_route_stop s WHERE s.route_id=r.id AND s.deleted=FALSE
             <if test="q.provinceCode != null">AND s.province_code=#{q.provinceCode}</if>
             <if test="q.cityCode != null">AND s.city_code=#{q.cityCode}</if>
             <if test="q.districtCode != null">AND s.district_code=#{q.districtCode}</if>)
@@ -49,17 +49,17 @@
     <select id="route" resultType="com.xsy.scm.delivery.domain.vo.DeliveryRouteVO">
         SELECT
         <include refid="routeColumns"/>
-        FROM delivery_route r WHERE r.id=#{id} AND r.deleted=FALSE
+        FROM xsy_delivery_route r WHERE r.id=#{id} AND r.deleted=FALSE
         <include refid="driverScopeGuard"/>
     </select>
     <select id="lockRoute" resultType="com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity">
         SELECT *
-        FROM delivery_route
+        FROM xsy_delivery_route
         WHERE id = #{id}
           AND deleted = FALSE FOR UPDATE
     </select>
     <select id="lockScopedRoute" resultType="com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity">
-        SELECT r.* FROM delivery_route r WHERE r.id = #{id} AND r.deleted = FALSE
+        SELECT r.* FROM xsy_delivery_route r WHERE r.id = #{id} AND r.deleted = FALSE
         <choose>
             <when test="scope == null or scope.empty">AND FALSE</when>
             <otherwise><include refid="driverScopeGuard"/></otherwise>
@@ -68,8 +68,8 @@
     </select>
     <select id="stops" resultType="com.xsy.scm.delivery.domain.vo.DeliveryStopVO">
         SELECT s.*, count(o.id) AS order_count, sum(o.order_amount_snapshot) AS total_amount
-        FROM delivery_route_stop s
-                 LEFT JOIN delivery_route_order o ON o.stop_id = s.id AND o.deleted = FALSE
+        FROM xsy_delivery_route_stop s
+                 LEFT JOIN xsy_delivery_route_order o ON o.stop_id = s.id AND o.deleted = FALSE
         WHERE s.route_id = #{id}
           AND s.deleted = FALSE
         GROUP BY s.id
@@ -77,7 +77,7 @@
     </select>
     <select id="nextNumber" resultType="long">SELECT nextval('delivery_route_no_seq')</select>
     <update id="bumpStopSequences">
-        UPDATE delivery_route_stop
+        UPDATE xsy_delivery_route_stop
         SET stop_seq=stop_seq + 1000
         WHERE route_id = #{id}
           AND deleted = FALSE
@@ -93,8 +93,8 @@
                i.actual_quantity                                                        AS actualQuantity,
                i.ordered_line_amount                                                    AS orderedLineAmount,
                i.settlement_line_amount                                                 AS settlementLineAmount
-        FROM sales_order_item i
-                 JOIN delivery_route_order o ON o.order_id = i.order_id
+        FROM xsy_sales_order_item i
+                 JOIN xsy_delivery_route_order o ON o.order_id = i.order_id
         WHERE o.route_id = #{id}
           AND o.deleted = FALSE
           AND i.deleted = FALSE
@@ -111,7 +111,7 @@
                a.receiver_name,
                a.receiver_phone,
                a.address,
-               (SELECT count(*) FROM sales_order_item i WHERE i.order_id = o.id AND i.deleted = FALSE) AS item_count,
+               (SELECT count(*) FROM xsy_sales_order_item i WHERE i.order_id = o.id AND i.deleted = FALSE) AS item_count,
                CASE WHEN a.province_code IS NOT NULL THEN a.province_code ELSE c.province_code END     AS province_code,
                CASE WHEN a.province_code IS NOT NULL THEN a.province_name ELSE c.province_name END     AS province_name,
                CASE WHEN a.province_code IS NOT NULL THEN a.city_code ELSE c.city_code END             AS city_code,
@@ -121,10 +121,10 @@
                CASE WHEN a.geom_crs IS NOT NULL THEN a.longitude ELSE c.longitude END                  AS longitude,
                CASE WHEN a.geom_crs IS NOT NULL THEN a.latitude ELSE c.latitude END                    AS latitude,
                CASE WHEN a.geom_crs IS NOT NULL THEN a.geom_crs ELSE c.geom_crs END                    AS geom_crs
-        FROM sales_order o
-                 JOIN LATERAL (SELECT * FROM order_address_snapshot a WHERE a.order_id = o.id ORDER BY a.id LIMIT 1) a
+        FROM xsy_sales_order o
+                 JOIN LATERAL (SELECT * FROM xsy_order_address_snapshot a WHERE a.order_id = o.id ORDER BY a.id LIMIT 1) a
                       ON TRUE
-                 LEFT JOIN customer c ON c.id = o.customer_id AND c.deleted = FALSE AND c.address = a.address AND
+                 LEFT JOIN xsy_customer c ON c.id = o.customer_id AND c.deleted = FALSE AND c.address = a.address AND
                                          btrim(a.address) &lt;&gt; ''
         WHERE o.deleted = FALSE
           <!--
@@ -133,12 +133,12 @@
             与 DeliveryEligibilityPolicy#eligible 用的 unsortedItemCount 同一条口径。
           -->
           AND NOT EXISTS (SELECT 1
-                          FROM sales_order_item i
+                          FROM xsy_sales_order_item i
                           WHERE i.order_id = o.id
                             AND i.deleted = FALSE
                             AND NOT EXISTS (SELECT 1
-                                            FROM sorting_task_item si
-                                                     JOIN sorting_task t ON t.id = si.task_id
+                                            FROM xsy_sorting_task_item si
+                                                     JOIN xsy_sorting_task t ON t.id = si.task_id
                                             WHERE si.sales_order_item_id = i.id
                                               AND si.deleted = FALSE
                                               AND si.occupation_status = 'ACTIVE'
@@ -156,12 +156,12 @@
     <!-- 与 candidateSource 里的分拣覆盖谓词一一对应：服务侧要给出可分辨的拒绝理由时用计数版。 -->
     <select id="unsortedItemCount" resultType="int">
         SELECT count(*)
-        FROM sales_order_item i
+        FROM xsy_sales_order_item i
         WHERE i.order_id = #{orderId}
           AND i.deleted = FALSE
           AND NOT EXISTS (SELECT 1
-                          FROM sorting_task_item si
-                                   JOIN sorting_task t ON t.id = si.task_id
+                          FROM xsy_sorting_task_item si
+                                   JOIN xsy_sorting_task t ON t.id = si.task_id
                           WHERE si.sales_order_item_id = i.id
                             AND si.deleted = FALSE
                             AND si.occupation_status = 'ACTIVE'
@@ -180,10 +180,10 @@
                i.id                   AS salesOrderItemId,
                i.sku_id               AS skuId,
                si.sorted_quantity     AS sortedQuantity
-        FROM sales_order_item i
-                 JOIN sorting_task_item si
+        FROM xsy_sales_order_item i
+                 JOIN xsy_sorting_task_item si
                       ON si.sales_order_item_id = i.id AND si.deleted = FALSE AND si.occupation_status = 'ACTIVE'
-                 JOIN sorting_task t ON t.id = si.task_id AND t.deleted = FALSE AND t.status = 'COMPLETED'
+                 JOIN xsy_sorting_task t ON t.id = si.task_id AND t.deleted = FALSE AND t.status = 'COMPLETED'
         WHERE i.deleted = FALSE
           AND i.order_id IN
         <foreach collection="orderIds" item="orderId" open="(" close=")" separator=",">#{orderId}</foreach>
@@ -192,7 +192,7 @@
     <select id="candidates" resultType="com.xsy.scm.delivery.domain.vo.DeliveryCandidateVO">
         SELECT * FROM (<include refid="candidateSource"/>) c WHERE c.status IN
         <foreach collection="statuses" item="status" open="(" close=")" separator=",">#{status}</foreach>
-        AND NOT EXISTS (SELECT 1 FROM delivery_route_order d WHERE d.order_id=c.order_id AND
+        AND NOT EXISTS (SELECT 1 FROM xsy_delivery_route_order d WHERE d.order_id=c.order_id AND
         d.assignment_status='ACTIVE' AND d.deleted=FALSE)
         <if test="q.keyword != null and q.keyword != ''">AND (c.order_no ILIKE concat('%',#{q.keyword},'%') OR
             c.customer_name ILIKE concat('%',#{q.keyword},'%') OR c.address ILIKE concat('%',#{q.keyword},'%'))
@@ -217,7 +217,7 @@
             c.geom_crs IS NOT NULL
         </if>
         <!--
-          候选订单是「还没上线路的销售订单」，而 sales_order 没有仓库列（单仓口径见错误码 41018），
+          候选订单是「还没上线路的销售订单」，而 xsy_sales_order 没有仓库列（单仓口径见错误码 41018），
           因此仓库维度在这里没有可拼的行级谓词：它由 Service 作为「调用者必须至少有一个授权仓」的
           前置条件生效。本语句仍保留缺省范围即恒假的守卫，防止未来出现绕过 Service 的直接调用。
         -->
@@ -232,13 +232,13 @@
                o.stop_id,
                s.stop_seq,
                s.address_snapshot                                                    AS address,
-               (SELECT count(*) FROM sales_order_item i WHERE i.order_id = o.order_id AND i.deleted = FALSE) AS item_count,
+               (SELECT count(*) FROM xsy_sales_order_item i WHERE i.order_id = o.order_id AND i.deleted = FALSE) AS item_count,
                o.order_amount_snapshot                                               AS order_amount,
                o.print_count,
                o.last_printed_at,
                CASE WHEN o.print_count &gt; 0 THEN 'PRINTED' ELSE 'UNPRINTED' END     AS print_status
-        FROM delivery_route_order o
-                 JOIN delivery_route_stop s ON s.id = o.stop_id AND s.deleted = FALSE
+        FROM xsy_delivery_route_order o
+                 JOIN xsy_delivery_route_stop s ON s.id = o.stop_id AND s.deleted = FALSE
         WHERE o.route_id = #{id}
           AND o.deleted = FALSE
           AND o.assignment_status = 'ACTIVE'
@@ -248,15 +248,15 @@
         SELECT o.customer_id,
                min(s.customer_name_snapshot)                                       AS customer_name,
                count(*)                                                            AS order_count,
-               sum((SELECT count(*) FROM sales_order_item i WHERE i.order_id = o.order_id AND i.deleted = FALSE)) AS item_count,
+               sum((SELECT count(*) FROM xsy_sales_order_item i WHERE i.order_id = o.order_id AND i.deleted = FALSE)) AS item_count,
                sum(o.order_amount_snapshot)                                        AS total_amount,
                count(*) FILTER (WHERE o.print_count &gt; 0)                          AS printed_order_count,
                CASE
                    WHEN count(*) FILTER (WHERE o.print_count &gt; 0) = count(*) THEN 'PRINTED'
                    WHEN count(*) FILTER (WHERE o.print_count &gt; 0) = 0 THEN 'UNPRINTED'
                    ELSE 'PARTIAL' END                                              AS print_status
-        FROM delivery_route_order o
-                 JOIN delivery_route_stop s ON s.id = o.stop_id AND s.deleted = FALSE
+        FROM xsy_delivery_route_order o
+                 JOIN xsy_delivery_route_stop s ON s.id = o.stop_id AND s.deleted = FALSE
         WHERE o.route_id = #{id}
           AND o.deleted = FALSE
           AND o.assignment_status = 'ACTIVE'
@@ -264,7 +264,7 @@
         ORDER BY min(s.customer_name_snapshot), o.customer_id
     </select>
     <update id="markPrinted">
-        UPDATE delivery_route_order
+        UPDATE xsy_delivery_route_order
         SET print_count=print_count + 1, last_printed_at=now(), last_printed_by=#{operator}, updated_at=now(), updated_by=#{operator}
         WHERE deleted = FALSE
           AND assignment_status = 'ACTIVE'
@@ -273,7 +273,7 @@
     </update>
     <!-- 发车：整条线路的活动订单一起进在途。已 IN_TRANSIT 的行不重复推进（幂等重放走服务侧的回放分支） -->
     <update id="markInTransit">
-        UPDATE delivery_route_order
+        UPDATE xsy_delivery_route_order
         SET fulfillment_status = 'IN_TRANSIT',
             version            = version + 1,
             updated_at         = now(),
@@ -286,10 +286,10 @@
     <!--
       签收：version + 状态 + 仍在线路上三个条件都在 WHERE 里，所以并发重复签收只有一个能成功，
       不需要先 SELECT ... FOR UPDATE 再改。signed_at 用写入时刻：签收时刻就是这次登记发生的时刻，
-      与 inventory_movement 那条「occurred_at 必须来自单据而不是 now()」的纪律无关。
+      与 xsy_inventory_movement 那条「occurred_at 必须来自单据而不是 now()」的纪律无关。
     -->
     <update id="markSigned">
-        UPDATE delivery_route_order
+        UPDATE xsy_delivery_route_order
         SET fulfillment_status = #{result},
             signed_at          = now(),
             signed_by          = #{operator},
@@ -305,7 +305,7 @@
     </update>
     <select id="countUnfinished" resultType="int">
         SELECT count(*)
-        FROM delivery_route_order
+        FROM xsy_delivery_route_order
         WHERE route_id = #{routeId}
           AND deleted = FALSE
           AND assignment_status = 'ACTIVE'

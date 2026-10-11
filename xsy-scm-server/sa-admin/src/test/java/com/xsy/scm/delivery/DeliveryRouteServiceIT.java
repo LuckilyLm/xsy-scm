@@ -56,7 +56,7 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
         Long c1 = newCustomer();
         Long c2 = newCustomer();
         // The fixture order address is identical; coordinates must be frozen at order creation.
-        jdbc.update("UPDATE customer SET address='W5 IT 地址',longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id IN (?,?)", c1, c2);
+        jdbc.update("UPDATE xsy_customer SET address='W5 IT 地址',longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id IN (?,?)", c1, c2);
         Long a = confirmedSalesOrder(c1, sku, "1.0000", "1.0000");
         Long b = confirmedSalesOrder(c1, sku, "2.0000", "2.0000");
         Long c = confirmedSalesOrder(c2, sku, "3.0000", "3.0000");
@@ -91,7 +91,7 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
         cancelOrder.setReason("验证占用保护");
         // Existing order state machine already rejects cancellation of CONFIRMED orders; preserve its error code.
         expectCode(() -> salesOrderService.cancel(cancelOrder, prefix + ":cancel-assigned"), 40960);
-        jdbc.update("UPDATE customer SET address='新地址',longitude=120,latitude=30 WHERE id=?", c1);
+        jdbc.update("UPDATE xsy_customer SET address='新地址',longitude=120,latitude=30 WHERE id=?", c1);
         assertThat(deliveryQuery.detail(id).getStops()).allSatisfy(s -> assertThat(s.getAddressSnapshot()).isEqualTo("W5 IT 地址"));
         var items = deliveryQuery.print(id).getItems();
         assertThat(items).hasSize(3);
@@ -113,7 +113,7 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
                 .containsPattern("\"orderedQuantity\":\"\\d+\\.\\d{4}\"");
         assertThat(printedItems).doesNotContain("lockedUnitPrice", "manualPriceReason",
                 "draftPriceSourceId", "lockedPriceSourceId", "\"deleted\":", "\"version\":");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM inventory_movement WHERE sku_id=?", Integer.class, sku)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_movement WHERE sku_id=?", Integer.class, sku)).isZero();
         var cancel = version(id);
         cancel.setReason("调整配送计划");
         delivery.cancel(id, cancel);
@@ -133,7 +133,7 @@ class DeliveryRouteServiceIT extends ScmW5PgITBase {
         var detail = deliveryQuery.detail(id);
         Long stop = detail.getStops().getFirst().getId();
         expectCode(() -> delivery.plan(id, version(id)), 41104);
-        expectSqlFailure("UPDATE delivery_route_stop SET longitude=113.94 WHERE id=?", stop);
+        expectSqlFailure("UPDATE xsy_delivery_route_stop SET longitude=113.94 WHERE id=?", stop);
         var location = new DeliveryStopForm();
         location.setVersion(version(id).getVersion());
         location.setLongitude(new BigDecimal("113.94"));

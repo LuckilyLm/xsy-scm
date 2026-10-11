@@ -11,7 +11,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "delivery_vehicle", autoResultMap = true)
+@TableName(value = "xsy_delivery_vehicle", autoResultMap = true)
 public class DeliveryVehicleEntity extends DeliveryRecord {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String vehicleNo;

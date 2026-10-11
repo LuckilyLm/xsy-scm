@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.ser.std.NullSerializer;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "delivery_route", autoResultMap = true)
+@TableName(value = "xsy_delivery_route", autoResultMap = true)
 public class DeliveryRouteEntity extends DeliveryRecord {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String routeNo;

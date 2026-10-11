@@ -12,7 +12,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName(value = "delivery_route_order", autoResultMap = true)
+@TableName(value = "xsy_delivery_route_order", autoResultMap = true)
 public class DeliveryRouteOrderEntity extends DeliveryRecord {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long routeId;

@@ -61,9 +61,9 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
      * 本类新建并提交到测试库的仓库，用例结束后停用。
      *
      * <p><b>为什么必须停用</b>：{@code NOT_SUPPORTED} 让造数随各自事务提交，随机前缀能隔离业务数据，
-     * 但 {@code warehouse.status = ENABLED} 是全局判据 —— 库存 IT 按「唯一启用仓库」推导默认仓库，
+     * 但 {@code xsy_warehouse.status = ENABLED} 是全局判据 —— 库存 IT 按「唯一启用仓库」推导默认仓库，
      * 残留一个启用仓库就会让它们整批报「当前启用仓库不是唯一一个」。停用而非删行，
-     * 是为了不给 {@code delivery_route.warehouse_id} 留下悬空引用。
+     * 是为了不给 {@code xsy_delivery_route.warehouse_id} 留下悬空引用。
      */
     private final List<Long> committedWarehouseIds = new ArrayList<>();
 
@@ -90,7 +90,7 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
         // 只卷入选定订单：同线路同客户的另一订单不受并发影响
         assertThat(printCount(ctx.b())).isZero();
         // 两次各留一条已完成记录，没有卡在半途的 claim
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM idempotency_record WHERE result_data IS NULL "
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_idempotency_record WHERE result_data IS NULL "
                 + "AND idempotency_key LIKE 'w5c:%'", Integer.class)).isZero();
     }
 
@@ -121,7 +121,7 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
         Long customer = newCustomer();
         // 停靠点坐标来自订单冻结地址，缺失时按「客户地址 == 冻结地址」回落客户坐标，
         // 故必须在下单前把地址写成基类 fixture 的冻结地址，否则坐标为空、规划失败。
-        jdbc.update("UPDATE customer SET address='W5 IT 地址',longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id=?", customer);
+        jdbc.update("UPDATE xsy_customer SET address='W5 IT 地址',longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id=?", customer);
         Long a = confirmedSalesOrder(customer, sku, "1.0000", "1.0000");
         Long b = confirmedSalesOrder(customer, sku, "2.0000", "2.0000");
         Long route = plannedRoute(List.of(a, b));
@@ -180,7 +180,7 @@ class DeliveryPrintConcurrencyIT extends ScmW5PgITBase {
     }
 
     private int printCount(Long orderId) {
-        return jdbc.queryForObject("SELECT print_count FROM delivery_route_order WHERE order_id=?"
+        return jdbc.queryForObject("SELECT print_count FROM xsy_delivery_route_order WHERE order_id=?"
                         + " AND assignment_status='ACTIVE' AND deleted=FALSE", Integer.class, orderId);
     }
 
