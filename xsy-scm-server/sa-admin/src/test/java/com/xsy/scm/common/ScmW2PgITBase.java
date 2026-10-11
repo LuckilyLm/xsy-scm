@@ -36,10 +36,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * {@code FOR UPDATE} 锁序、{@code JSONB} 映射、{@code NUMERIC(18,4)} 精度。
  *
  * <p><b>事务策略：</b>整个用例包在一个事务里，结束时回滚，不向开发库留下任何数据。
- * 种子数据（{@code customer_type}）由 V8 迁移提供，只读使用。
+ * 种子数据（{@code xsy_customer_type}）由 V8 迁移提供，只读使用。
  *
- * <p><b>不 mock 商品域：</b>{@code supplier_sku} 的外键语义依赖真实存在的 {@code product_spu} /
- * {@code product_sku}，所以这里通过 {@link ProductSpuService} 造数，而不是直接插表——
+ * <p><b>不 mock 商品域：</b>{@code xsy_supplier_sku} 的外键语义依赖真实存在的 {@code xsy_product_spu} /
+ * {@code xsy_product_sku}，所以这里通过 {@link ProductSpuService} 造数，而不是直接插表——
  * 直接插表会绕过商品聚合的不变量，让 IT 验证到一份「现实中不可能出现」的商品数据。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
@@ -98,7 +98,7 @@ public abstract class ScmW2PgITBase {
 
     protected Long customerTypeId(String typeCode) {
         return jdbc.queryForObject(
-                "SELECT id FROM customer_type WHERE type_code = ? AND deleted = FALSE", Long.class, typeCode);
+                "SELECT id FROM xsy_customer_type WHERE type_code = ? AND deleted = FALSE", Long.class, typeCode);
     }
 
     /**
@@ -115,7 +115,7 @@ public abstract class ScmW2PgITBase {
     }
 
     /**
-     * 用商品聚合服务造一个真实 SKU，返回 {@code product_sku.id}。
+     * 用商品聚合服务造一个真实 SKU，返回 {@code xsy_product_sku.id}。
      *
      * @param spuStatus SPU 上下架状态（{@code ON_SHELF} / {@code OFF_SHELF}）
      * @param skuStatus SKU 上下架状态
@@ -126,7 +126,7 @@ public abstract class ScmW2PgITBase {
         form.setName(prefix + suffix + "商品");
         form.setStatus(spuStatus);
         form.setCategoryId(jdbc.queryForObject(
-                "SELECT id FROM product_category WHERE category_code = 'FRESH-FRUIT' AND deleted = FALSE", Long.class));
+                "SELECT id FROM xsy_product_category WHERE category_code = 'FRESH-FRUIT' AND deleted = FALSE", Long.class));
 
         ProductSkuForm sku = new ProductSkuForm();
         sku.setSkuCode(prefix + suffix + "-K");
@@ -141,6 +141,6 @@ public abstract class ScmW2PgITBase {
 
         Long spuId = productSpuService.add(form);
         return jdbc.queryForObject(
-                "SELECT id FROM product_sku WHERE spu_id = ? AND deleted = FALSE", Long.class, spuId);
+                "SELECT id FROM xsy_product_sku WHERE spu_id = ? AND deleted = FALSE", Long.class, spuId);
     }
 }

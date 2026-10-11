@@ -84,15 +84,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * {@code FOR UPDATE} 锁序、{@code JSONB} 映射、{@code NUMERIC(18,4)} 精度、PG sequence 单号。
  *
  * <p><b>事务策略：</b>整个用例包在一个事务里，结束时回滚，不向开发库留下数据。
- * 种子数据（{@code warehouse} 的 WH001、{@code t_config} 的采购容差）由 V15 迁移提供，只读使用。
+ * 种子数据（{@code xsy_warehouse} 的 WH001、{@code t_config} 的采购容差）由 V15 迁移提供，只读使用。
  *
- * <p><b>不 mock 上游域：</b>{@code supplier_sku} 依赖真实存在的 {@code product_spu} / {@code product_sku}，
+ * <p><b>不 mock 上游域：</b>{@code xsy_supplier_sku} 依赖真实存在的 {@code xsy_product_spu} / {@code xsy_product_sku}，
  * 所以用 {@link ProductSpuService} 造数，而不是直接插表 ——
  * 直接插表会绕过商品聚合的不变量，让 IT 验证到一份「现实中不可能出现」的商品数据。
  *
- * <p><b>不 mock 需求来源</b>：采购需求取自 {@code sales_order} / {@code sales_order_item}，
+ * <p><b>不 mock 需求来源</b>：采购需求取自 {@code xsy_sales_order} / {@code xsy_sales_order_item}，
  * 因此这里通过 {@code SalesOrderService} 造真实订单再驱动汇总，
- * 而不是往 {@code purchase_demand} 里直接插行。
+ * 而不是往 {@code xsy_purchase_demand} 里直接插行。
  */
 @SpringBootTest(classes = AdminApplication.class, properties = {
         "project.log-directory=" + PgITPaths.DEFAULT_LOG_DIR,
@@ -311,7 +311,7 @@ public abstract class ScmW5PgITBase {
 
     protected Long warehouseId(String warehouseCode) {
         return jdbc.queryForObject(
-                "SELECT id FROM warehouse WHERE warehouse_code = ? AND deleted = FALSE",
+                "SELECT id FROM xsy_warehouse WHERE warehouse_code = ? AND deleted = FALSE",
                 Long.class, warehouseCode);
     }
 
@@ -338,7 +338,7 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 用商品聚合服务造一个真实 SKU，返回 {@code product_sku.id}。
+     * 用商品聚合服务造一个真实 SKU，返回 {@code xsy_product_sku.id}。
      *
      * @param spuStatus SPU 上下架状态（{@code ON_SHELF} / {@code OFF_SHELF}）
      * @param skuStatus SKU 上下架状态
@@ -349,7 +349,7 @@ public abstract class ScmW5PgITBase {
         form.setName(prefix + suffix + "商品");
         form.setStatus(spuStatus);
         form.setCategoryId(jdbc.queryForObject(
-                "SELECT id FROM product_category WHERE category_code = 'FRESH-FRUIT' AND deleted = FALSE", Long.class));
+                "SELECT id FROM xsy_product_category WHERE category_code = 'FRESH-FRUIT' AND deleted = FALSE", Long.class));
 
         ProductSkuForm sku = new ProductSkuForm();
         sku.setSkuCode(prefix + suffix + "-K");
@@ -364,7 +364,7 @@ public abstract class ScmW5PgITBase {
 
         Long spuId = productSpuService.add(form);
         return jdbc.queryForObject(
-                "SELECT id FROM product_sku WHERE spu_id = ? AND deleted = FALSE", Long.class, spuId);
+                "SELECT id FROM xsy_product_sku WHERE spu_id = ? AND deleted = FALSE", Long.class, spuId);
     }
 
     /**
@@ -374,7 +374,7 @@ public abstract class ScmW5PgITBase {
      */
     protected void disableWarehouse(Long warehouseId) {
         int updated = jdbc.update(
-                "UPDATE warehouse SET status = 'DISABLED', version = version + 1, updated_at = CURRENT_TIMESTAMP "
+                "UPDATE xsy_warehouse SET status = 'DISABLED', version = version + 1, updated_at = CURRENT_TIMESTAMP "
                         + "WHERE id = ? AND deleted = FALSE", warehouseId);
         assertThat(updated).isEqualTo(1);
         evictMybatisCache();
@@ -396,9 +396,9 @@ public abstract class ScmW5PgITBase {
     /**
      * 把 SKU 挂到供应商上（唯一写入口 {@code replace}，空数组 = 清空）。
      *
-     * <p>{@code purchaseUnit} 就是采购单位的来源（{@code supplier_sku.purchase_unit} →
-     * {@code purchase_order_item.purchase_unit_snapshot}）。它必须与需求单位
-     * （{@code sales_order_item.sale_unit_snapshot}）一致才能自动分配，因此调用方要
+     * <p>{@code purchaseUnit} 就是采购单位的来源（{@code xsy_supplier_sku.purchase_unit} →
+     * {@code xsy_purchase_order_item.purchase_unit_snapshot}）。它必须与需求单位
+     * （{@code xsy_sales_order_item.sale_unit_snapshot}）一致才能自动分配，因此调用方要
      * 传 SKU 的 {@code sale_unit}（本基类造的 SKU 一律是 {@code kg}）。
      */
     protected void linkSupplierSku(Long supplierId, Long skuId, String purchaseUnit) {
@@ -445,13 +445,13 @@ public abstract class ScmW5PgITBase {
     /**
      * 客户类型 id（V2 的种子字典，{@code ENTERPRISE} 一定存在）。
      *
-     * <p>注意列名是 {@code id} 而不是 {@code customer_type_id}：{@code customer_type}
+     * <p>注意列名是 {@code id} 而不是 {@code customer_type_id}：{@code xsy_customer_type}
      * 表沿用「表名 = 实体名」的主键命名，没有前缀。写错会得到一个 {@code BadSqlGrammar}，
      * 而它的栈顶看起来像「fixture 造数失败」，很容易误判成需求生成的问题。
      */
     protected Long customerTypeId(String typeCode) {
         return jdbc.queryForObject(
-                "SELECT id FROM customer_type WHERE type_code = ? AND deleted = FALSE",
+                "SELECT id FROM xsy_customer_type WHERE type_code = ? AND deleted = FALSE",
                 Long.class, typeCode);
     }
 
@@ -486,7 +486,7 @@ public abstract class ScmW5PgITBase {
      * <p>幂等键带逐张递增的序号：同一用例造多张订单时必须各不相同，否则第二次会撞
      * 订单域的「同键不同内容」判定（40990）。见 {@link #salesOrderSequence}。
      *
-     * @return 该订单的 id（{@code sales_order.id}）
+     * @return 该订单的 id（{@code xsy_sales_order.id}）
      */
     protected Long confirmedSalesOrder(Long customerId, Long skuId,
                                        String orderedQuantity, String actualQuantity) {
@@ -521,11 +521,11 @@ public abstract class ScmW5PgITBase {
     }
 
     /**
-     * 已确认订单的来源行 id（{@code purchase_demand.sales_order_item_id} 的来源）。
+     * 已确认订单的来源行 id（{@code xsy_purchase_demand.sales_order_item_id} 的来源）。
      */
     protected Long confirmedSalesOrderItemId(Long orderId) {
         return jdbc.queryForObject(
-                "SELECT id FROM sales_order_item WHERE order_id = ? AND deleted = FALSE ORDER BY id LIMIT 1",
+                "SELECT id FROM xsy_sales_order_item WHERE order_id = ? AND deleted = FALSE ORDER BY id LIMIT 1",
                 Long.class, orderId);
     }
 
@@ -534,7 +534,7 @@ public abstract class ScmW5PgITBase {
      */
     protected java.time.OffsetDateTime salesOrderConfirmedAt(Long orderId) {
         return jdbc.queryForObject(
-                "SELECT confirmed_at FROM sales_order WHERE id = ?", java.time.OffsetDateTime.class, orderId);
+                "SELECT confirmed_at FROM xsy_sales_order WHERE id = ?", java.time.OffsetDateTime.class, orderId);
     }
 
     /**
@@ -956,7 +956,7 @@ public abstract class ScmW5PgITBase {
                                     PurchaseOrderVO order, PurchaseReceiptVO receipt) {
 
         /**
-         * 该采购单唯一活动行的 id（{@code purchase_receipt_item.purchase_order_item_id}）。
+         * 该采购单唯一活动行的 id（{@code xsy_purchase_receipt_item.purchase_order_item_id}）。
          *
          * <p>record 里的自定义方法（非组件 accessor）默认是包私有，而子类与本基类不在同一个包 ——
          * 因此这里必须显式声明 {@code public}，否则子类编译不过。
@@ -1009,11 +1009,11 @@ public abstract class ScmW5PgITBase {
         for (Long orderId : orderIds) {
             // 只挑「尚未被已完成任务覆盖、且订单仍处于可分拣状态」的行：
             // 同一张单被重复组单（移除后再加回、断言重复占用被拒）时，夹具不能去抢第二个任务。
-            var itemIds = jdbc.queryForList("SELECT i.id FROM sales_order_item i"
-                    + " JOIN sales_order o ON o.id = i.order_id"
+            var itemIds = jdbc.queryForList("SELECT i.id FROM xsy_sales_order_item i"
+                    + " JOIN xsy_sales_order o ON o.id = i.order_id"
                     + " WHERE i.order_id = ? AND i.deleted = FALSE AND o.deleted = FALSE"
-                    + " AND o.status = 'CONFIRMED' AND NOT EXISTS (SELECT 1 FROM sorting_task_item si"
-                    + " JOIN sorting_task t ON t.id = si.task_id WHERE si.sales_order_item_id = i.id"
+                    + " AND o.status = 'CONFIRMED' AND NOT EXISTS (SELECT 1 FROM xsy_sorting_task_item si"
+                    + " JOIN xsy_sorting_task t ON t.id = si.task_id WHERE si.sales_order_item_id = i.id"
                     + " AND si.deleted = FALSE AND si.occupation_status = 'ACTIVE'"
                     + " AND t.deleted = FALSE AND t.status = 'COMPLETED') ORDER BY i.id", Long.class, orderId);
             if (itemIds.isEmpty()) continue;
@@ -1038,7 +1038,7 @@ public abstract class ScmW5PgITBase {
             entryForm.setItems(entries);
             sortingTaskService.enter(taskId, entryForm);
             var complete = new com.xsy.scm.sorting.domain.form.SortingActionForm();
-            complete.setVersion(jdbc.queryForObject("SELECT version FROM sorting_task WHERE id = ?",
+            complete.setVersion(jdbc.queryForObject("SELECT version FROM xsy_sorting_task WHERE id = ?",
                     Integer.class, taskId));
             sortingTaskService.complete(taskId, complete);
         }

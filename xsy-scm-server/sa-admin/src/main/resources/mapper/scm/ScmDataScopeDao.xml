@@ -6,7 +6,7 @@
          这里必须带同样的 deleted_flag 条件，否则索引失效且会读到已回收的授权。 -->
     <select id="listAuthorizedWarehouseIds" resultType="java.lang.Long">
         SELECT warehouse_id
-        FROM employee_warehouse_scope
+        FROM xsy_employee_warehouse_scope
         WHERE deleted_flag = FALSE
           AND employee_id = #{employeeId}
         ORDER BY warehouse_id
@@ -14,7 +14,7 @@
 
     <select id="listDriverIdsByEmployee" resultType="java.lang.Long">
         SELECT id
-        FROM delivery_driver
+        FROM xsy_delivery_driver
         WHERE deleted = FALSE
           AND employee_id = #{employeeId}
         ORDER BY id

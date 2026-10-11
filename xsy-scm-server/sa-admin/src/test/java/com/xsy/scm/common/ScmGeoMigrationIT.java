@@ -27,7 +27,7 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
 
     private static final String V40 = "V40__scm_geo_region_and_master_location.sql";
 
-    private static final List<String> MASTER_TABLES = List.of("warehouse", "customer", "supplier");
+    private static final List<String> MASTER_TABLES = List.of("xsy_warehouse", "xsy_customer", "xsy_supplier");
 
     /**
      * V42 只给这三张表加了 {@code ck_…_location_complete}：配送链路用到的是仓库、客户与订单地址快照。
@@ -35,7 +35,7 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
      * 逐表不同，不能统一按「细粒度或聚合」两个名字判。
      */
     private static final List<String> LOCATION_COMPLETE_TABLES =
-            List.of("warehouse", "customer", "order_address_snapshot");
+            List.of("xsy_warehouse", "xsy_customer", "xsy_order_address_snapshot");
 
     // ------------------------------------------------------------------
     // 字典种子
@@ -44,27 +44,27 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
     @Test
     @DisplayName("区划字典：省市两级齐备、每个市都有质心、父子关系闭合")
     void regionSeedIsTwoLevelCompleteAndCentroidBearing() {
-        assertThat(count("SELECT count(*) FROM scm_region "
+        assertThat(count("SELECT count(*) FROM xsy_region "
                 + "WHERE deleted = FALSE AND region_level = 1")).isEqualTo(34);
-        assertThat(count("SELECT count(*) FROM scm_region "
+        assertThat(count("SELECT count(*) FROM xsy_region "
                 + "WHERE deleted = FALSE AND region_level = 2")).isEqualTo(414);
 
         // 气泡坐标完全来自质心：任何一行为空都会让那个市从地图上消失，且不产生任何错误
-        assertThat(count("SELECT count(*) FROM scm_region "
+        assertThat(count("SELECT count(*) FROM xsy_region "
                 + "WHERE deleted = FALSE AND (center_lng IS NULL OR center_lat IS NULL)")).isZero();
         // 取值域按中国陆地范围放宽到含南海诸岛：越界即坐标写错，不是数据缺省
-        assertThat(count("SELECT count(*) FROM scm_region WHERE deleted = FALSE "
+        assertThat(count("SELECT count(*) FROM xsy_region WHERE deleted = FALSE "
                 + "AND (center_lng NOT BETWEEN 73 AND 136 OR center_lat NOT BETWEEN 3 AND 54)")).isZero();
 
-        assertThat(count("SELECT count(*) FROM scm_region c WHERE c.deleted = FALSE AND c.region_level = 2 "
-                + "AND NOT EXISTS (SELECT 1 FROM scm_region p "
+        assertThat(count("SELECT count(*) FROM xsy_region c WHERE c.deleted = FALSE AND c.region_level = 2 "
+                + "AND NOT EXISTS (SELECT 1 FROM xsy_region p "
                 + "WHERE p.deleted = FALSE AND p.region_level = 1 AND p.region_code = c.parent_code)")).isZero();
         // 没有下辖市的省会永远不着色；省名一旦被改名，map series 按名称就匹配不上了
-        assertThat(count("SELECT count(*) FROM scm_region p WHERE p.deleted = FALSE AND p.region_level = 1 "
-                + "AND NOT EXISTS (SELECT 1 FROM scm_region c "
+        assertThat(count("SELECT count(*) FROM xsy_region p WHERE p.deleted = FALSE AND p.region_level = 1 "
+                + "AND NOT EXISTS (SELECT 1 FROM xsy_region c "
                 + "WHERE c.deleted = FALSE AND c.parent_code = p.region_code)")).isZero();
 
-        assertThat(count("SELECT count(*) FROM (SELECT region_code FROM scm_region "
+        assertThat(count("SELECT count(*) FROM (SELECT region_code FROM xsy_region "
                 + "WHERE deleted = FALSE GROUP BY region_code HAVING count(*) > 1) t")).isZero();
     }
 
@@ -79,13 +79,13 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
     @DisplayName("区划字典：市级重名只有重庆市，解析必须靠省名消歧")
     void duplicatedCityNamesAreExactlyTheDocumentedOne() {
         List<String> duplicated = jdbc.queryForList(
-                "SELECT region_name || '=' || count(*) FROM scm_region "
+                "SELECT region_name || '=' || count(*) FROM xsy_region "
                         + "WHERE deleted = FALSE AND region_level = 2 "
                         + "GROUP BY region_name HAVING count(*) > 1", String.class);
 
         assertThat(duplicated).containsExactly("重庆市=2");
         assertThat(jdbc.queryForList(
-                "SELECT region_code FROM scm_region WHERE deleted = FALSE AND region_level = 2 "
+                "SELECT region_code FROM xsy_region WHERE deleted = FALSE AND region_level = 2 "
                         + "AND region_name = '重庆市' ORDER BY region_code", Integer.class))
                 .containsExactly(500100, 500200);
     }
@@ -153,14 +153,14 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
                     String.class, table);
 
             assertThat(present).as("%s 的 V40 细粒度地理 CHECK 缺失", table).contains(
-                    "ck_" + table + "_geom_crs",
-                    "ck_" + table + "_longitude",
-                    "ck_" + table + "_latitude",
-                    "ck_" + table + "_coordinate_pair",
-                    "ck_" + table + "_crs_with_coordinate");
+                    "ck_" + constraintBase(table) + "_geom_crs",
+                    "ck_" + constraintBase(table) + "_longitude",
+                    "ck_" + constraintBase(table) + "_latitude",
+                    "ck_" + constraintBase(table) + "_coordinate_pair",
+                    "ck_" + constraintBase(table) + "_crs_with_coordinate");
 
             // 聚合约束决定负向用例允许哪些拒绝原因，所以它的有无也要钉住，不能只靠常量集合自证
-            String umbrella = "ck_" + table + "_location_complete";
+            String umbrella = "ck_" + constraintBase(table) + "_location_complete";
             if (LOCATION_COMPLETE_TABLES.contains(table)) {
                 assertThat(present).as("%s 缺少 V42 聚合约束 %s", table, umbrella).contains(umbrella);
             } else {
@@ -219,7 +219,7 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
         assertThat(geoColumnsOf(unparseable)).containsExactly(null, null, null, null);
 
         // 幂等：解析段只碰 city_code IS NULL 的行，已人工归属的绝不覆写
-        assertThat(jdbc.update("UPDATE customer SET province_code = 440000, city_code = 440100 WHERE id = ?",
+        assertThat(jdbc.update("UPDATE xsy_customer SET province_code = 440000, city_code = 440100 WHERE id = ?",
                 unparseable)).isEqualTo(1);
         runConservativeParseSection();
         assertThat(geoColumnsOf(unparseable)).containsExactly(440000, 440100, null, null);
@@ -230,14 +230,14 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
     void districtCodeIsNeverTouchedByTheParse() {
         Long customerId = newCustomer();
         address(customerId, "浙江省杭州市余杭区文一西路969号");
-        assertThat(jdbc.update("UPDATE customer SET district_code = 330110, district_name = '余杭区' "
+        assertThat(jdbc.update("UPDATE xsy_customer SET district_code = 330110, district_name = '余杭区' "
                 + "WHERE id = ?", customerId)).isEqualTo(1);
 
         runConservativeParseSection();
 
         assertThat(geoColumnsOf(customerId)).containsExactly(330000, 330100, "浙江省", "杭州市");
         assertThat(jdbc.queryForObject(
-                "SELECT district_code || '/' || district_name FROM customer WHERE id = ?",
+                "SELECT district_code || '/' || district_name FROM xsy_customer WHERE id = ?",
                 String.class, customerId)).isEqualTo("330110/余杭区");
     }
 
@@ -255,7 +255,7 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
         String sql = migrationSql(V40);
         int from = sql.indexOf("-- Step 4");
         assertThat(from).as("%s 中找不到 -- Step 4 段（标记被改名了？）", V40).isGreaterThanOrEqualTo(0);
-        jdbc.execute(sql.substring(from));
+        jdbc.execute(toCurrentTableNames(sql.substring(from)));
     }
 
     /**
@@ -283,10 +283,18 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
     }
 
     /** 某条细粒度规则的可接受拒绝原因：它自己，加上（该表有的话）覆盖同一条规则的 V42 聚合约束。 */
+    /**
+     * 约束名基于 V118 之前的表名：{@code ALTER TABLE ... RENAME} 不改约束名，
+     * 因此拼 {@code ck_…} 时要去掉 {@code xsy_} 前缀。
+     */
+    private static String constraintBase(String table) {
+        return table.startsWith("xsy_") ? table.substring(4) : table;
+    }
+
     private static List<String> rejectReasons(String table, String constraint) {
-        List<String> allowed = new ArrayList<>(List.of("ck_" + table + "_" + constraint));
+        List<String> allowed = new ArrayList<>(List.of("ck_" + constraintBase(table) + "_" + constraint));
         if (LOCATION_COMPLETE_TABLES.contains(table)) {
-            allowed.add("ck_" + table + "_location_complete");
+            allowed.add("ck_" + constraintBase(table) + "_location_complete");
         }
         return allowed;
     }
@@ -304,14 +312,14 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
      */
     private Long newMasterRow(String table) {
         return switch (table) {
-            case "warehouse" -> newWarehouse("GEO-W");
-            case "supplier" -> newSupplier("GEO-S");
+            case "xsy_warehouse" -> newWarehouse("GEO-W");
+            case "xsy_supplier" -> newSupplier("GEO-S");
             default -> newCustomer();
         };
     }
 
     private void address(Long customerId, String value) {
-        assertThat(jdbc.update("UPDATE customer SET address = ?, province_code = NULL, province_name = NULL, "
+        assertThat(jdbc.update("UPDATE xsy_customer SET address = ?, province_code = NULL, province_name = NULL, "
                 + "city_code = NULL, city_name = NULL WHERE id = ?", value, customerId)).isEqualTo(1);
         evictMybatisCache();
     }
@@ -322,7 +330,7 @@ class ScmGeoMigrationIT extends ScmW6PgITBase {
     private List<Object> geoColumnsOf(Long customerId) {
         evictMybatisCache();
         Map<String, Object> row = jdbc.queryForList(
-                "SELECT province_code, city_code, province_name, city_name FROM customer WHERE id = ?",
+                "SELECT province_code, city_code, province_name, city_name FROM xsy_customer WHERE id = ?",
                 customerId).stream().findFirst().orElseThrow();
         return Arrays.asList(row.get("province_code"), row.get("city_code"),
                 row.get("province_name"), row.get("city_name"));

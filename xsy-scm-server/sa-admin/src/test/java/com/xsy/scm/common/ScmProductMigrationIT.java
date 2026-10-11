@@ -25,7 +25,7 @@ class ScmProductMigrationIT {
                 result.next();
                 assertThat(result.getInt(1)).isEqualTo(2);
             }
-            try (var result = statement.executeQuery("SELECT count(*) FROM information_schema.tables WHERE table_schema='xsy_v2' AND table_name IN ('product_category','product_spu','product_sku','product_image')")) {
+            try (var result = statement.executeQuery("SELECT count(*) FROM information_schema.tables WHERE table_schema='xsy_v2' AND table_name IN ('xsy_product_category','xsy_product_spu','xsy_product_sku','xsy_product_image')")) {
                 result.next();
                 assertThat(result.getInt(1)).isEqualTo(4);
             }

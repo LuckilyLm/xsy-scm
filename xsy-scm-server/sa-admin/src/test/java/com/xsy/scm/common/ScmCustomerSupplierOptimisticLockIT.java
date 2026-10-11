@@ -112,14 +112,14 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
         assertThat(entity.getVersion()).isZero();
         entity.setName("第一次改名");
         assertThat(customerDao.updateById(entity)).isEqualTo(1);
-        assertVersion("customer", id, 1);
+        assertVersion("xsy_customer", id, 1);
         assertThat(entity.getVersion()).as("MP 会把新版本写回实体").isEqualTo(1);
 
         // 模拟「另一个会话已经改过」：把库里的版本推远
-        jdbc.update("UPDATE customer SET version = version + 10 WHERE id = ?", id);
+        jdbc.update("UPDATE xsy_customer SET version = version + 10 WHERE id = ?", id);
         entity.setName("落后版本的写入");
         assertThat(customerDao.updateById(entity)).as("落后版本必须更新 0 行").isZero();
-        assertThat(jdbc.queryForObject("SELECT name FROM customer WHERE id = ?", String.class, id))
+        assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, id))
                 .as("失败写入不得落库").isEqualTo("第一次改名");
     }
 
@@ -132,12 +132,12 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
         assertThat(entity.getVersion()).isZero();
         entity.setName("第一次改名");
         assertThat(customerTypeDao.updateById(entity)).isEqualTo(1);
-        assertVersion("customer_type", id, 1);
+        assertVersion("xsy_customer_type", id, 1);
 
-        jdbc.update("UPDATE customer_type SET version = version + 10 WHERE id = ?", id);
+        jdbc.update("UPDATE xsy_customer_type SET version = version + 10 WHERE id = ?", id);
         entity.setName("落后版本的写入");
         assertThat(customerTypeDao.updateById(entity)).isZero();
-        assertThat(jdbc.queryForObject("SELECT name FROM customer_type WHERE id = ?", String.class, id))
+        assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer_type WHERE id = ?", String.class, id))
                 .isEqualTo("第一次改名");
     }
 
@@ -150,12 +150,12 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
         assertThat(entity.getVersion()).isZero();
         entity.setName("第一次改名");
         assertThat(supplierDao.updateById(entity)).isEqualTo(1);
-        assertVersion("supplier", id, 1);
+        assertVersion("xsy_supplier", id, 1);
 
-        jdbc.update("UPDATE supplier SET version = version + 10 WHERE id = ?", id);
+        jdbc.update("UPDATE xsy_supplier SET version = version + 10 WHERE id = ?", id);
         entity.setName("落后版本的写入");
         assertThat(supplierDao.updateById(entity)).isZero();
-        assertThat(jdbc.queryForObject("SELECT name FROM supplier WHERE id = ?", String.class, id))
+        assertThat(jdbc.queryForObject("SELECT name FROM xsy_supplier WHERE id = ?", String.class, id))
                 .isEqualTo("第一次改名");
     }
 
@@ -170,12 +170,12 @@ class ScmCustomerSupplierOptimisticLockIT extends ScmW2PgITBase {
         assertThat(entity.getVersion()).isZero();
         entity.setPurchaseUnit("件");
         assertThat(supplierSkuDao.updateById(entity)).isEqualTo(1);
-        assertVersion("supplier_sku", rowId, 1);
+        assertVersion("xsy_supplier_sku", rowId, 1);
 
-        jdbc.update("UPDATE supplier_sku SET version = version + 10 WHERE id = ?", rowId);
+        jdbc.update("UPDATE xsy_supplier_sku SET version = version + 10 WHERE id = ?", rowId);
         entity.setPurchaseUnit("箱");
         assertThat(supplierSkuDao.updateById(entity)).isZero();
-        assertThat(jdbc.queryForObject("SELECT purchase_unit FROM supplier_sku WHERE id = ?", String.class, rowId))
+        assertThat(jdbc.queryForObject("SELECT purchase_unit FROM xsy_supplier_sku WHERE id = ?", String.class, rowId))
                 .isEqualTo("件");
     }
 }
