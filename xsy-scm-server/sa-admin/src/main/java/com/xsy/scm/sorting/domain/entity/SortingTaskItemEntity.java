@@ -20,7 +20,7 @@ import java.time.OffsetDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sorting_task_item")
+@TableName("xsy_sorting_task_item")
 public class SortingTaskItemEntity extends SortingRecord {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long taskId;

@@ -72,10 +72,10 @@ class SortingTaskConcurrencyPgIT extends ScmW6PgITBase {
                 () -> create(leadA, warehouse, "A", order.item()).id(),
                 () -> create(leadB, warehouse, "B", order.item()).id()));
 
-        assertThat(count("SELECT count(*) FROM sorting_task t JOIN sorting_task_item i ON i.task_id = t.id"
+        assertThat(count("SELECT count(*) FROM xsy_sorting_task t JOIN xsy_sorting_task_item i ON i.task_id = t.id"
                         + " WHERE i.sales_order_item_id = ? AND i.deleted = FALSE", order.item()))
                 .as("两次并发建单只允许落一个任务，失败那次不能留行").isEqualTo(1);
-        assertThat(count("SELECT count(*) FROM sorting_task_item WHERE sales_order_item_id = ?", order.item()))
+        assertThat(count("SELECT count(*) FROM xsy_sorting_task_item WHERE sales_order_item_id = ?", order.item()))
                 .as("占用明细也恰一条").isEqualTo(1);
         outcomes.stream().filter(o -> o.failed).forEach(o ->
                 assertThat(o.code).as("失败方必须是占用冲突，不能是死锁或超时").isEqualTo(41123));
@@ -89,7 +89,7 @@ class SortingTaskConcurrencyPgIT extends ScmW6PgITBase {
         grantWarehouseScope(sorter, warehouse);
         var order = order("cc2", "8.0000");
         Long taskId = create(sorter, warehouse, "T", order.item()).id();
-        Long itemId = jdbc.queryForObject("SELECT id FROM sorting_task_item WHERE task_id = ?", Long.class, taskId);
+        Long itemId = jdbc.queryForObject("SELECT id FROM xsy_sorting_task_item WHERE task_id = ?", Long.class, taskId);
         int version = itemVersion(itemId);
 
         var outcomes = runConcurrently(List.of(
@@ -113,7 +113,7 @@ class SortingTaskConcurrencyPgIT extends ScmW6PgITBase {
         grantWarehouseScope(sorter, warehouse);
         var order = order("cc3", "6.0000");
         Long taskId = create(sorter, warehouse, "U", order.item()).id();
-        Long itemId = jdbc.queryForObject("SELECT id FROM sorting_task_item WHERE task_id = ?", Long.class, taskId);
+        Long itemId = jdbc.queryForObject("SELECT id FROM xsy_sorting_task_item WHERE task_id = ?", Long.class, taskId);
         enter(taskId, sorter, itemId, itemVersion(itemId), "6.0000");
         int version = taskVersion(taskId);
 
@@ -243,7 +243,7 @@ class SortingTaskConcurrencyPgIT extends ScmW6PgITBase {
     }
 
     private void grantWarehouseScope(Long employeeId, Long warehouseId) {
-        jdbc.update("INSERT INTO employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
+        jdbc.update("INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 employeeId, warehouseId);
     }
 
@@ -252,19 +252,19 @@ class SortingTaskConcurrencyPgIT extends ScmW6PgITBase {
     }
 
     private int itemVersion(Long itemId) {
-        return jdbc.queryForObject("SELECT version FROM sorting_task_item WHERE id = ?", Integer.class, itemId);
+        return jdbc.queryForObject("SELECT version FROM xsy_sorting_task_item WHERE id = ?", Integer.class, itemId);
     }
 
     private int taskVersion(Long taskId) {
-        return jdbc.queryForObject("SELECT version FROM sorting_task WHERE id = ?", Integer.class, taskId);
+        return jdbc.queryForObject("SELECT version FROM xsy_sorting_task WHERE id = ?", Integer.class, taskId);
     }
 
     private String taskStatus(Long taskId) {
-        return jdbc.queryForObject("SELECT status FROM sorting_task WHERE id = ?", String.class, taskId);
+        return jdbc.queryForObject("SELECT status FROM xsy_sorting_task WHERE id = ?", String.class, taskId);
     }
 
     private BigDecimal sortedQuantity(Long itemId) {
-        return jdbc.queryForObject("SELECT sorted_quantity FROM sorting_task_item WHERE id = ?",
+        return jdbc.queryForObject("SELECT sorted_quantity FROM xsy_sorting_task_item WHERE id = ?",
                 BigDecimal.class, itemId);
     }
 

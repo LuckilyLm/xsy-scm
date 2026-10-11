@@ -40,10 +40,10 @@ public interface SortingQueryDao {
     List<SortingTaskItemVO> items(@Param("taskId") Long taskId);
 
     /**
-     * 任务内各订单的满赠赠品权益（只读，来源 {@code order_promotion_gift}）。
+     * 任务内各订单的满赠赠品权益（只读，来源 {@code xsy_order_promotion_gift}）。
      *
      * <p>
-     * 与 {@link #items(Long)} 合起来构成分拣清单：赠品<b>不写进</b> {@code sorting_task_item}
+     * 与 {@link #items(Long)} 合起来构成分拣清单：赠品<b>不写进</b> {@code xsy_sorting_task_item}
      * （那张表强制挂订单行，虚造订单行会污染销售数量、商品排行、采购分析与客户购买历史）， 而是每次读取时按「任务内订单」现合并。
      */
     List<SortingTaskItemVO> giftItems(@Param("taskId") Long taskId);

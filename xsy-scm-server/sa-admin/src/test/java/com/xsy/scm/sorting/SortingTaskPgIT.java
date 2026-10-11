@@ -56,7 +56,7 @@ import static org.mockito.Mockito.mockStatic;
  *
  * <p><b>身份与权限</b>：员工用裸 SQL 造且 {@code administrator_flag=false}（超管跑绿不算权限证据）；
  * 功能权限按既有做法用 {@code mockStatic(StpUtil)} 显式点名，未点名的取默认 false 即失败关闭；
- * 仓库授权走行配置表 {@code employee_warehouse_scope}，因为「范围是配置值」本身就是被测对象。
+ * 仓库授权走行配置表 {@code xsy_employee_warehouse_scope}，因为「范围是配置值」本身就是被测对象。
  * {@link #as} 不可嵌套调用。
  */
 @DisplayName("P1 分拣任务状态机、占用、范围与资格交接（PG IT）")
@@ -172,12 +172,12 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("未确认订单的行与不存在的明细 id 都不能进分拣")
     void createRejectsUnsortableLines() {
-        Long missing = jdbc.queryForObject("SELECT COALESCE(MAX(id), 0) + 900000 FROM sales_order_item", Long.class);
+        Long missing = jdbc.queryForObject("SELECT COALESCE(MAX(id), 0) + 900000 FROM xsy_sales_order_item", Long.class);
         expectCode(() -> as(lead, QUEUE_MANAGER,
                 () -> sorting.create(createForm("c3", List.of(missing), sorterA), key("c3"))), 41124);
 
         var pending = order("c4", "5.0000");
-        jdbc.update("UPDATE sales_order SET status = 'PENDING', confirmed_at = NULL WHERE id = ?", pending.order());
+        jdbc.update("UPDATE xsy_sales_order SET status = 'PENDING', confirmed_at = NULL WHERE id = ?", pending.order());
         evictMybatisCache();
         expectCode(() -> as(lead, QUEUE_MANAGER,
                 () -> sorting.create(createForm("c5", List.of(pending.item()), sorterA), key("c5"))), 41124);
@@ -187,17 +187,17 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     @DisplayName("整条分拣链不写库存：余额、流水与出库单一行都不动")
     void sortingChainTouchesNoInventoryFacts() {
         var order = order("c6", "6.0000");
-        int balances = count("SELECT count(*) FROM inventory_balance");
-        int movements = count("SELECT count(*) FROM inventory_movement");
-        int outbounds = count("SELECT count(*) FROM inventory_outbound");
+        int balances = count("SELECT count(*) FROM xsy_inventory_balance");
+        int movements = count("SELECT count(*) FROM xsy_inventory_movement");
+        int outbounds = count("SELECT count(*) FROM xsy_inventory_outbound");
 
         Long taskId = as(lead, QUEUE_MANAGER,
                 () -> sorting.create(createForm("c6", List.of(order.item()), sorterA), key("c6"))).getTask().getId();
         finish(taskId);
 
-        assertThat(count("SELECT count(*) FROM inventory_balance")).isEqualTo(balances);
-        assertThat(count("SELECT count(*) FROM inventory_movement")).isEqualTo(movements);
-        assertThat(count("SELECT count(*) FROM inventory_outbound")).isEqualTo(outbounds);
+        assertThat(count("SELECT count(*) FROM xsy_inventory_balance")).isEqualTo(balances);
+        assertThat(count("SELECT count(*) FROM xsy_inventory_movement")).isEqualTo(movements);
+        assertThat(count("SELECT count(*) FROM xsy_inventory_outbound")).isEqualTo(outbounds);
     }
 
     // ------------------------------------------------------------------
@@ -409,7 +409,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         var order = order("bg1", "2.0000");
         // 夹具默认身份是 administratorFlag=true 的员工 1，且不经过任何权限 mock。
         Long taskId = sorting.create(createForm("bg1", List.of(order.item()), null), key("bg1")).getTask().getId();
-        assertThat(jdbc.queryForObject("SELECT assignee_employee_id FROM sorting_task WHERE id = ?",
+        assertThat(jdbc.queryForObject("SELECT assignee_employee_id FROM xsy_sorting_task WHERE id = ?",
                 Long.class, taskId)).as("未指派").isNull();
 
         // 录入与完成都用夹具默认的超管身份，不经过任何权限 mock。
@@ -459,7 +459,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         Long taskId = as(lead, QUEUE_MANAGER,
                 () -> sorting.create(createForm("p1", List.of(order.item()), sorterA), key("p1"))).getTask().getId();
         finish(taskId);
-        int movements = count("SELECT count(*) FROM inventory_movement");
+        int movements = count("SELECT count(*) FROM xsy_inventory_movement");
         Integer version = currentVersion(taskId);
 
         var first = as(sorterA, Set.of(PRINT_PERM),
@@ -474,7 +474,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         assertThat(second.getPrintCount()).isEqualTo(2);
         assertThat(taskStatus(taskId)).isEqualTo("COMPLETED");
         assertThat(currentVersion(taskId)).as("打印不改版本，否则会把别人的编辑顶成假冲突").isEqualTo(version);
-        assertThat(count("SELECT count(*) FROM inventory_movement")).isEqualTo(movements);
+        assertThat(count("SELECT count(*) FROM xsy_inventory_movement")).isEqualTo(movements);
     }
 
     @Test
@@ -557,23 +557,23 @@ class SortingTaskPgIT extends ScmW6PgITBase {
                 () -> sorting.create(createForm("k1", List.of(order.item()), sorterA), key("k1"))).getTask().getId();
         Long itemId = itemIdOfTask(taskId);
 
-        expectSqlFailure("UPDATE sorting_task_item SET sorted_quantity = 1 WHERE id = ?", itemId);
-        expectSqlFailure("UPDATE sorting_task_item SET result = 'SHORT' WHERE id = ?", itemId);
-        expectSqlFailure("UPDATE sorting_task_item SET sorted_quantity = 1, result = 'OVER', reason = '  ' WHERE id = ?",
+        expectSqlFailure("UPDATE xsy_sorting_task_item SET sorted_quantity = 1 WHERE id = ?", itemId);
+        expectSqlFailure("UPDATE xsy_sorting_task_item SET result = 'SHORT' WHERE id = ?", itemId);
+        expectSqlFailure("UPDATE xsy_sorting_task_item SET sorted_quantity = 1, result = 'OVER', reason = '  ' WHERE id = ?",
                 itemId);
-        expectSqlFailure("UPDATE sorting_task_item SET occupation_status = 'BOGUS' WHERE id = ?", itemId);
+        expectSqlFailure("UPDATE xsy_sorting_task_item SET occupation_status = 'BOGUS' WHERE id = ?", itemId);
         // 同一订单行第二条活动占用：绕过服务层直接插，也必须被部分唯一索引拦住。
-        expectSqlFailure("INSERT INTO sorting_task_item (task_id, sales_order_id, sales_order_item_id,"
+        expectSqlFailure("INSERT INTO xsy_sorting_task_item (task_id, sales_order_id, sales_order_item_id,"
                         + " order_no_snapshot, customer_id, customer_name_snapshot, spu_id, sku_id,"
                         + " product_name_snapshot, sale_unit_snapshot, product_type_snapshot,"
                         + " planned_quantity_snapshot, occupation_status)"
                         + " SELECT t.id, i.order_id, i.id, 'X', 1, 'X', i.spu_id, i.sku_id, 'X', 'kg',"
-                        + " 'NON_STANDARD', 1, 'ACTIVE' FROM sorting_task t, sales_order_item i"
+                        + " 'NON_STANDARD', 1, 'ACTIVE' FROM xsy_sorting_task t, xsy_sales_order_item i"
                         + " WHERE t.id = ? AND i.id = ?", taskId, order.item());
         // 正常成对且带原因的写法必须通过，否则上面几条只是「什么都写不进去」。
-        jdbc.update("UPDATE sorting_task_item SET sorted_quantity = 1, result = 'SHORT', reason = '少拣' WHERE id = ?",
+        jdbc.update("UPDATE xsy_sorting_task_item SET sorted_quantity = 1, result = 'SHORT', reason = '少拣' WHERE id = ?",
                 itemId);
-        assertThat(jdbc.queryForObject("SELECT reason FROM sorting_task_item WHERE id = ?", String.class, itemId))
+        assertThat(jdbc.queryForObject("SELECT reason FROM xsy_sorting_task_item WHERE id = ?", String.class, itemId))
                 .isEqualTo("少拣");
     }
 
@@ -695,7 +695,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     }
 
     private void grantWarehouseScope(Long employeeId) {
-        jdbc.update("INSERT INTO employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
+        jdbc.update("INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 employeeId, warehouse);
     }
 
@@ -720,43 +720,43 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     }
 
     private Integer currentVersion(Long taskId) {
-        return jdbc.queryForObject("SELECT version FROM sorting_task WHERE id = ?", Integer.class, taskId);
+        return jdbc.queryForObject("SELECT version FROM xsy_sorting_task WHERE id = ?", Integer.class, taskId);
     }
 
     private Integer itemVersion(Long itemId) {
-        return jdbc.queryForObject("SELECT version FROM sorting_task_item WHERE id = ?", Integer.class, itemId);
+        return jdbc.queryForObject("SELECT version FROM xsy_sorting_task_item WHERE id = ?", Integer.class, itemId);
     }
 
     private String taskStatus(Long taskId) {
-        return jdbc.queryForObject("SELECT status FROM sorting_task WHERE id = ?", String.class, taskId);
+        return jdbc.queryForObject("SELECT status FROM xsy_sorting_task WHERE id = ?", String.class, taskId);
     }
 
     private Long itemIdOfTask(Long taskId) {
-        return jdbc.queryForObject("SELECT id FROM sorting_task_item WHERE task_id = ? ORDER BY id LIMIT 1",
+        return jdbc.queryForObject("SELECT id FROM xsy_sorting_task_item WHERE task_id = ? ORDER BY id LIMIT 1",
                 Long.class, taskId);
     }
 
     private String occupationOfTask(Long taskId) {
         return jdbc.queryForObject(
-                "SELECT occupation_status FROM sorting_task_item WHERE task_id = ? ORDER BY id LIMIT 1",
+                "SELECT occupation_status FROM xsy_sorting_task_item WHERE task_id = ? ORDER BY id LIMIT 1",
                 String.class, taskId);
     }
 
     private String itemResultOfTask(Long taskId) {
-        return jdbc.queryForObject("SELECT result FROM sorting_task_item WHERE task_id = ? ORDER BY id LIMIT 1",
+        return jdbc.queryForObject("SELECT result FROM xsy_sorting_task_item WHERE task_id = ? ORDER BY id LIMIT 1",
                 String.class, taskId);
     }
 
     private OffsetDateTime startedAt(Long taskId) {
-        return jdbc.queryForObject("SELECT started_at FROM sorting_task WHERE id = ?", OffsetDateTime.class, taskId);
+        return jdbc.queryForObject("SELECT started_at FROM xsy_sorting_task WHERE id = ?", OffsetDateTime.class, taskId);
     }
 
     private OffsetDateTime completedAt(Long taskId) {
-        return jdbc.queryForObject("SELECT completed_at FROM sorting_task WHERE id = ?", OffsetDateTime.class, taskId);
+        return jdbc.queryForObject("SELECT completed_at FROM xsy_sorting_task WHERE id = ?", OffsetDateTime.class, taskId);
     }
 
     private int printCount(Long taskId) {
-        return jdbc.queryForObject("SELECT print_count FROM sorting_task WHERE id = ?", Integer.class, taskId);
+        return jdbc.queryForObject("SELECT print_count FROM xsy_sorting_task WHERE id = ?", Integer.class, taskId);
     }
 
     private int count(String sql) {
@@ -768,7 +768,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
      * 并发类用例会在同一张表上提交真实行，全表计数只能测出「谁先跑」。
      */
     private int tasksOccupying(Long orderItemId) {
-        return jdbc.queryForObject("SELECT count(*) FROM sorting_task_item WHERE sales_order_item_id = ?"
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_sorting_task_item WHERE sales_order_item_id = ?"
                 + " AND occupation_status = 'ACTIVE' AND deleted = FALSE", Integer.class, orderItemId);
     }
 
@@ -777,12 +777,12 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     }
 
     private BigDecimal actualQuantity(OrderLine line) {
-        return jdbc.queryForObject("SELECT actual_quantity FROM sales_order_item WHERE id = ?",
+        return jdbc.queryForObject("SELECT actual_quantity FROM xsy_sales_order_item WHERE id = ?",
                 BigDecimal.class, line.item());
     }
 
     private BigDecimal settlementLineAmount(OrderLine line) {
-        return jdbc.queryForObject("SELECT settlement_line_amount FROM sales_order_item WHERE id = ?",
+        return jdbc.queryForObject("SELECT settlement_line_amount FROM xsy_sales_order_item WHERE id = ?",
                 BigDecimal.class, line.item());
     }
 

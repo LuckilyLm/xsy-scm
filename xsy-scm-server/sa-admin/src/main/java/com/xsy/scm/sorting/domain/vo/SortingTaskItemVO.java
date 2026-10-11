@@ -12,16 +12,16 @@ import java.time.OffsetDateTime;
  * 分拣任务明细行：计划量是冻结快照，分拣量与结果要么都还没有、要么都在。
  *
  * <p>
- * 这是一个<b>只读合并模型</b>，装两类来源：{@link #ORDER_ITEM}（订单行，落在 {@code sorting_task_item}） 与 {@link #PROMOTION_GIFT}（满赠赠品权益，落在
- * {@code order_promotion_gift}）。 赠品<b>不复制成订单行</b>：那会污染销售数量、商品销售排行、采购销售分析与客户购买历史。 赠品行没有订单行 id、也不写回分拣量（分拣只拣货，不改赠品事实）。
+ * 这是一个<b>只读合并模型</b>，装两类来源：{@link #ORDER_ITEM}（订单行，落在 {@code xsy_sorting_task_item}） 与 {@link #PROMOTION_GIFT}（满赠赠品权益，落在
+ * {@code xsy_order_promotion_gift}）。 赠品<b>不复制成订单行</b>：那会污染销售数量、商品销售排行、采购销售分析与客户购买历史。 赠品行没有订单行 id、也不写回分拣量（分拣只拣货，不改赠品事实）。
  */
 @Data
 public class SortingTaskItemVO {
 
-    /** 来源 = 订单行（{@code sorting_task_item}）。 */
+    /** 来源 = 订单行（{@code xsy_sorting_task_item}）。 */
     public static final String ORDER_ITEM = "ORDER_ITEM";
 
-    /** 来源 = 满赠赠品权益（{@code order_promotion_gift}）。 */
+    /** 来源 = 满赠赠品权益（{@code xsy_order_promotion_gift}）。 */
     public static final String PROMOTION_GIFT = "PROMOTION_GIFT";
 
     private Long id;
