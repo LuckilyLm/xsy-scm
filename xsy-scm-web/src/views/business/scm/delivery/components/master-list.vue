@@ -6,7 +6,7 @@
     <a-form-item label="状态">
       <a-select v-model:value="query.status" allow-clear :options="statusOptions" class="status-select"/>
     </a-form-item>
-    <a-form-item
+    <a-form-item class="smart-query-form-item"
     >
       <a-space>
         <a-button type="primary" @click="search">查询</a-button>

@@ -40,7 +40,6 @@ export function useScreenData() {
     const refreshing = ref(false);
     const error = ref('');
     const staleError = ref('');
-    const updatedAt = ref<Date | null>(null);
     const range = ref<ScreenRange>('7d');
 
     let timer: number | undefined;
@@ -86,7 +85,6 @@ export function useScreenData() {
         }
         error.value = '';
         staleError.value = failed > 0 ? `${failed} 个接口加载失败` : '';
-        updatedAt.value = new Date();
         return true;
     }
 
@@ -121,7 +119,6 @@ export function useScreenData() {
         range.value = next;
         try {
             await fetchTrend(next);
-            updatedAt.value = new Date();
             staleError.value = '';
         } catch (e: any) {
             staleError.value = String(e?.msg ?? '趋势数据加载失败');
@@ -168,7 +165,6 @@ export function useScreenData() {
         refreshing,
         error,
         staleError,
-        updatedAt,
         range,
         refresh,
         setRange,

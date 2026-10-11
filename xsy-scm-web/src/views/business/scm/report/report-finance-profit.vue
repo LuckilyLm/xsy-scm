@@ -8,18 +8,19 @@
       <a-form-item label="客户"><CustomerSelect v-model:value="filters.customerId" width="190px"/></a-form-item>
       <a-form-item label="销售员"><EmployeeSelect v-model:value="filters.sellerId" width="150px"/></a-form-item>
       <a-form-item label="仓库"><WarehouseSelect v-model:value="filters.warehouseId" width="170px"/></a-form-item>
-      <a-form-item>
-        <a-space>
-          <a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_PROFIT_QUERY" @click="search">查询</a-button>
-          <a-button @click="reset">重置</a-button>
-        </a-space>
-      </a-form-item>
     </a-row>
     <a-row class="smart-query-form-row">
       <a-form-item label="商品分类">
         <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px"/>
       </a-form-item>
       <a-form-item label="商品 / 单号"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称、商品规格编码或订单号" @pressEnter="search"/></a-form-item>
+      <!-- 操作项跟在本表单最后一项之后：放在第一行中间时，窄屏换行会把它夹在字段中间 -->
+      <a-form-item>
+        <a-space>
+          <a-button type="primary" :loading="loading" v-privilege="PERM.FINANCE_PROFIT_QUERY" @click="search">查询</a-button>
+          <a-button @click="reset">重置</a-button>
+        </a-space>
+      </a-form-item>
     </a-row>
   </a-form>
 

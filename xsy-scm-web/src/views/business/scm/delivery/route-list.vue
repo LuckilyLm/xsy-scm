@@ -1,53 +1,55 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
-    <a-form-item label="配送日期">
-      <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD"/>
-    </a-form-item>
-    <a-form-item label="线路">
-      <a-input v-model:value="query.keyword" placeholder="线路名称 / 编号" allow-clear @pressEnter="search"/>
-    </a-form-item>
-    <a-form-item label="状态">
-      <a-select v-model:value="query.status" :options="statusOptions" allow-clear class="filter-select"/>
-    </a-form-item>
-    <a-form-item label="仓库"
-    >
-      <a-select
-          v-model:value="query.warehouseId"
-          :options="warehouses.map((w) => ({ value: w.id, label: w.name }))"
-          allow-clear
-          class="filter-select"
-      />
-    </a-form-item>
-    <a-form-item label="司机"
-    >
-      <a-select
-          v-model:value="query.driverId"
-          :options="drivers.map((d) => ({ value: d.id, label: d.driverName }))"
-          allow-clear
-          class="filter-select"
-      />
-    </a-form-item>
-    <a-form-item label="车辆"
-    >
-      <a-select
-          v-model:value="query.vehicleId"
-          :options="vehicles.map((v) => ({ value: v.id, label: v.vehicleNo }))"
-          allow-clear
-          class="filter-select"
-      />
-    </a-form-item>
-    <a-form-item label="省市区">
-      <AreaCascader v-model:value="area" type="province_city_district" @change="changeArea"/>
-    </a-form-item>
-    <a-form-item
-    >
-      <a-space
+    <a-row class="smart-query-form-row">
+      <a-form-item label="配送日期">
+        <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD"/>
+      </a-form-item>
+      <a-form-item label="线路">
+        <a-input v-model:value="query.keyword" placeholder="线路名称 / 编号" allow-clear @pressEnter="search"/>
+      </a-form-item>
+      <a-form-item label="状态">
+        <a-select v-model:value="query.status" :options="statusOptions" allow-clear class="filter-select"/>
+      </a-form-item>
+      <a-form-item label="仓库"
       >
-        <a-button type="primary" @click="search" v-privilege="'scm:delivery:route:query'">查询
-        </a-button>
-        <a-button @click="reset">重置</a-button>
-      </a-space>
-    </a-form-item>
+        <a-select
+            v-model:value="query.warehouseId"
+            :options="warehouses.map((w) => ({ value: w.id, label: w.name }))"
+            allow-clear
+            class="filter-select"
+        />
+      </a-form-item>
+      <a-form-item label="司机"
+      >
+        <a-select
+            v-model:value="query.driverId"
+            :options="drivers.map((d) => ({ value: d.id, label: d.driverName }))"
+            allow-clear
+            class="filter-select"
+        />
+      </a-form-item>
+      <a-form-item label="车辆"
+      >
+        <a-select
+            v-model:value="query.vehicleId"
+            :options="vehicles.map((v) => ({ value: v.id, label: v.vehicleNo }))"
+            allow-clear
+            class="filter-select"
+        />
+      </a-form-item>
+      <a-form-item label="省市区">
+        <AreaCascader v-model:value="area" type="province_city_district" @change="changeArea"/>
+      </a-form-item>
+      <a-form-item class="smart-query-form-item"
+      >
+        <a-space
+        >
+          <a-button type="primary" @click="search" v-privilege="'scm:delivery:route:query'">查询
+          </a-button>
+          <a-button @click="reset">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-row>
   </a-form>
   <a-alert v-if="error" :message="error" type="error" show-icon
   >

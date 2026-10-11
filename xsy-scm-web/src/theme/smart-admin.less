@@ -78,27 +78,59 @@
 }
 
 /*
+  查询栏间距刻度 —— 与 `theme/scm/filter.less` 的 `.scm-filter-bar` 同一套：
+  行距 8 / 列距 12 / 上下留白 10（都是 4 的倍数，不出现孤立值）。
+
+  用容器的 gap + padding 表达，不再靠每个 item 的 margin：
+  margin 方案下「哪一项带 .smart-query-form-item」会直接决定整条栏的留白 ——
+  同一份设计稿在三种页面里渲出三个结果（配送三页 上5/下5、报表五页 上5/下5、
+  付款管理 上5/下10），而带类的单行页是 10/10。间距不该取决于模板里有没有写类名。
+*/
+.smart-query-form.ant-form-inline {
+  /* 换行时两行之间由 row-gap 提供，不再靠 item 的上下 margin 撑开 */
+  gap: 8px 12px;
+  padding: 10px;
+  align-items: center;
+}
+
+/*
   a-form 带 layout="inline" 时是 display:flex，a-row 就成了 flex 项 ——
-  两行的宽度加起来放得下时会被并排到同一行（第二行还会多出 8px margin-top 造成错位）。
-  强制每个 .smart-query-form-row 独占一行。
+  两行的宽度加起来放得下时会被并排到同一行。强制每个 .smart-query-form-row 独占一行。
 */
 .smart-query-form.ant-form-inline > .smart-query-form-row {
   flex: 1 0 100%;
 }
 
-.smart-query-form-row .smart-query-form-item {
-  margin-right: 8px;
-  margin-top: 5px;
-  margin-bottom: 5px;
+/* 行内筛选栏的行：横向间距同样交给 gap（row 是独立 flex 容器，拿不到外层 form 的 gap） */
+.smart-query-form.ant-form-inline .smart-query-form-row {
+  gap: 8px 12px;
+  align-items: center;
+}
+
+/* 行内筛选栏的 item 不再自带 margin，间距全部由上面的 gap / padding 决定 */
+.smart-query-form.ant-form-inline .ant-form-item {
+  margin: 0;
 }
 
 /*
-  扁平写法兜底：直接把 .smart-query-form-item 挂在 a-form 下（不套 .smart-query-form-row）的页面，
-  上面两条规则都不命中 —— 表单项 margin 归零，一旦换行（窗口变窄或高级筛选展开）两行会贴死成 0px。
-  限定 .ant-form-inline + 子选择器：只命中「inline 表单的直接子项」，
-  套了 row 的页面、以及三级等保这类纵向表单（依赖 antd 默认 16px 行距）都不受影响。
+  查询栏里的按钮组要占满控件高度。
+  antd 的 Space 在 wrap 模式下带内联 `margin-bottom: -gap`（这里 -10px）来抵消换行行距，
+  于是按钮盒子比 `.ant-form-item-control-input-content` 高 4px、又从内容盒顶部溢出，
+  表现为「查询/重置比同排的输入框低 2px」（客户档案）。
+  把内容盒垫到控件高度，按钮组就落回同一水平线。
+  28px = 本项目控件的基线高度（表格工具栏按钮 / 分页 / 表内按钮实测都是 28）。
 */
-.smart-query-form.ant-form-inline > .smart-query-form-item {
+.smart-query-form.ant-form-inline .ant-form-item-control-input-content {
+  min-height: 28px;
+}
+
+/*
+  非 inline 的框架筛选表单（support 域的更新日志 / 文件管理 / 心跳监控 / 数据脱敏等：
+  `<a-form class="smart-query-form">` 但没写 layout="inline"）继续按类命中。
+  ⚠️ 这条不能删：它们没有 .ant-form-inline，上面几条都不命中，
+  少了它这些页面会掉回 antd 默认的 margin-bottom: 16px，下留白变成 21px。
+*/
+.smart-query-form-row .smart-query-form-item {
   margin-right: 8px;
   margin-top: 5px;
   margin-bottom: 5px;

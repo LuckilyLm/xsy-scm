@@ -43,11 +43,3 @@ export function useScreenClock() {
 
     return {now, dateText, weekdayText, timeText};
 }
-
-/** 把时间戳格式化成「HH:mm」，用于「数据更新时间」。 */
-export function formatClock(value: Date | null): string {
-    if (!value) {
-        return '--:--';
-    }
-    return `${pad(value.getHours())}:${pad(value.getMinutes())}`;
-}

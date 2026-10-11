@@ -2,7 +2,6 @@
   <div ref="wrapperRef" class="scm-screen-wrapper">
     <div ref="containerRef" class="scm-screen">
       <screen-header
-          :updated-at="updatedAt"
           :stale-error="staleError"
           :refreshing="refreshing"
           :fullscreen="fullscreen"
@@ -106,7 +105,6 @@ const {
   refreshing,
   error,
   staleError,
-  updatedAt,
   range,
   refresh,
   setRange,

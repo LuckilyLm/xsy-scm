@@ -1,10 +1,18 @@
 <template>
   <header class="scm-header">
-    <!-- 左：品牌 -->
+    <!-- 左：品牌 + 运行状态 -->
     <div class="scm-header-side is-left">
       <div class="scm-brand">
         <span class="scm-brand-name">鲜蔬源智链</span>
       </div>
+      <span class="scm-brand-divider"/>
+      <!--
+        运行状态跟着品牌走：它是「系统级」信号，右侧 400px 留给「日期时间 + 更新时间 + 两个按钮」
+        已经刚好够用，再挤一个徽章就会把「2026-10-11 星期日」压成两行。
+      -->
+      <span class="scm-status-item" :class="statusClass">
+        <i class="scm-dot"/>{{ statusText }}
+      </span>
     </div>
 
     <!-- 中：中心标题（带左右引导线，不用龙纹/跑马灯） -->
@@ -14,29 +22,13 @@
       <span class="scm-header-line"/>
     </div>
 
-    <!-- 右：日期时钟 + 状态 -->
+    <!-- 右：日期时钟 + 更新时间 + 操作 -->
     <div class="scm-header-side is-right">
       <div class="scm-clock">
         <span class="scm-clock-date">{{ dateText }} {{ weekdayText }}</span>
         <span class="scm-clock-time">{{ timeText }}</span>
       </div>
       <div class="scm-status">
-        <span class="scm-status-item" :class="statusClass">
-          <i class="scm-dot"/>{{ statusText }}
-        </span>
-        <span class="scm-status-item is-muted">
-          <svg class="scm-icon" viewBox="0 0 16 16" aria-hidden="true">
-            <path
-                d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.4"
-                stroke-linecap="round"
-            />
-            <path d="M13.8 1.6v3.2h-3.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-          </svg>
-          数据更新时间 {{ updatedText }}
-        </span>
         <button class="scm-btn" type="button" title="立即刷新" @click="emit('refresh')">
           <svg class="scm-icon" viewBox="0 0 16 16" aria-hidden="true" :class="{ 'is-spin': refreshing }">
             <path
@@ -78,7 +70,7 @@
 
 <script setup lang="ts">
 import {computed} from 'vue';
-import {useScreenClock, formatClock} from '../composables/use-screen-clock';
+import {useScreenClock} from '../composables/use-screen-clock';
 
 /**
  * 大屏状态栏。
@@ -89,10 +81,12 @@ import {useScreenClock, formatClock} from '../composables/use-screen-clock';
  * 「系统运行正常」不是装饰：它的依据是「最近一次数据拉取是否成功」。
  * 静默刷新失败时这里变成黄色「数据可能已过期」，把问题放在用户视线里，
  * 而不是把已经渲染好的数据换成错误页。
+ *
+ * 职责分工：左侧状态点负责「取数是否新鲜」，右侧只放实时时钟与两个操作按钮。
+ * 不要再往右侧加「数据更新时间」这类时间 —— 它与紧挨着的实时时钟只差几十秒，
+ * 看上去就是同一个数字写了两遍。
  */
 const props = defineProps<{
-  /** 最近一次成功刷新的时间 */
-  updatedAt: Date | null;
   /** 静默刷新失败信息（空串表示正常） */
   staleError: string;
   /** 是否正在刷新 */
@@ -107,8 +101,6 @@ const emit = defineEmits<{
 }>();
 
 const {dateText, weekdayText, timeText} = useScreenClock();
-
-const updatedText = computed(() => formatClock(props.updatedAt));
 
 const statusText = computed(() => (props.staleError ? props.staleError : '系统运行正常'));
 const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
@@ -134,9 +126,27 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
   display: flex;
   align-items: center;
 
+  &.is-left {
+    gap: 12px;
+  }
+
+  /*
+    右侧装的是「日期 + 时间 + 更新时间 + 两个按钮」，比左侧的品牌长。
+    400px 是下限而不是定值：内容再长也不会把「2026-10-11 星期日」压成两行。
+  */
   &.is-right {
+    flex: 0 0 auto;
+    min-width: 400px;
     justify-content: flex-end;
   }
+}
+
+/* 品牌与运行状态之间的细分隔线：两件事，别被读成一句话 */
+.scm-brand-divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 16px;
+  background: @panel-border;
 }
 
 .scm-brand {
@@ -185,27 +195,35 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
 }
 
 .scm-clock {
+  flex: 0 0 auto;
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  /*
+    日期与时间排同一行。拆成上下两行会占掉 55px 顶栏高度（顶栏只有 64px），
+    而右侧本来就只有「现在几点」这一件事，一行说完更省地方也更像时钟。
+  */
+  align-items: baseline;
+  gap: 8px;
   line-height: 1.25;
   margin-right: 14px;
+  /*
+    字号 / 字重 / 字体 / 颜色写在容器上，两段共用：日期与时间是同一条信息的两半，
+    做成「小号弱色 + 大号粗体」会被读成主次关系，那不是这里要表达的。
+  */
+  font-family: @font-num;
+  font-size: 20px;
+  font-weight: 600;
+  color: @text-1;
+  letter-spacing: 1px;
 
-  .scm-clock-date {
-    font-size: 12px;
-    color: @text-2;
-  }
-
+  .scm-clock-date,
   .scm-clock-time {
-    font-family: @font-num;
-    font-size: 20px;
-    font-weight: 600;
-    color: @text-1;
-    letter-spacing: 1px;
+    /* 日期 + 星期是一个整体，折行会变成「…星期」+「日」，两行都不像话 */
+    white-space: nowrap;
   }
 }
 
 .scm-status {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -224,10 +242,6 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
 
   &.is-warn {
     color: @state-warn;
-  }
-
-  &.is-muted {
-    color: @text-3;
   }
 }
 
