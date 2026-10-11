@@ -22,7 +22,7 @@
   <a-card v-if="selected" :title="`供应商对账单 · 版本 #${selected.id}`" size="small" :bordered="false">
     <template #extra>
       <a-space>
-        <a-button v-privilege="PERM.EXPORT" size="small" @click="exportVersion">导出 Excel</a-button>
+        <a-button v-privilege="PERM.EXPORT" size="small" :loading="versionExport.exporting" @click="exportVersion">导出 Excel</a-button>
         <a-button size="small" @click="printVersion">打印 / 保存 PDF</a-button>
       </a-space>
     </template>
@@ -59,6 +59,7 @@ import type {ReportId} from './report-types';
 import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-model';
 import {moneyText} from '../inventory/inventory-model';
 import {reportError} from './report-errors';
+import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -68,6 +69,7 @@ const supplierId = ref<ReportId>(), warehouseId = ref<ReportId>();
 const dateRange = ref<DateRange>(defaultDateRange());
 
 const selected = ref<SupplierStatement>(), history = ref<SupplierStatement[]>([]);
+const versionExport = useScmExport();
 const printArea = ref<HTMLElement>(), busy = ref(false), error = ref('');
 watch(supplierId, () => { selected.value = undefined; history.value = []; });
 const factLabels: Record<string, string> = {
@@ -124,8 +126,10 @@ async function openVersion(id: ReportId) {
   } catch (e) { error.value = reportError(e); }
   finally { busy.value = false; }
 }
-async function exportVersion() {
-  if (selected.value) await supplierStatementApi.export(selected.value.id);
+function exportVersion() {
+  const target = selected.value;
+  if (!target) return;
+  void versionExport.run(() => supplierStatementApi.export(target.id));
 }
 function printVersion() {
   if (!selected.value || !printArea.value) return;

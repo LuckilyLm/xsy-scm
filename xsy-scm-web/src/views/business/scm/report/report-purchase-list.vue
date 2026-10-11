@@ -60,7 +60,7 @@
     <a-tab-pane key="overview" tab="采购概览">
       <a-row class="smart-table-btn-block">
         <div class="smart-table-operate-block">
-          <a-button v-privilege="PERM.EXPORT" @click="exportOverview">导出</a-button>
+          <a-button v-privilege="PERM.EXPORT" :loading="overviewExport.exporting" @click="exportOverview">导出</a-button>
         </div>
       </a-row>
       <a-row :gutter="[12, 12]">
@@ -91,6 +91,7 @@
           :page-num="product.pageNum"
           :page-size="product.pageSize"
           :total="product.total"
+          :exporting="product.exporting"
           @export="exportProduct"
           @reload="loadProduct"
           @page-change="loadProductPage"
@@ -108,6 +109,7 @@
       :page-num="supplier.pageNum"
       :page-size="supplier.pageSize"
       :total="supplier.total"
+      :exporting="supplier.exporting"
       @export="exportSupplier"
       @reload="loadSupplier"
       @page-change="loadSupplierPage"
@@ -125,6 +127,7 @@
           :page-num="purchaser.pageNum"
           :page-size="purchaser.pageSize"
           :total="purchaser.total"
+          :exporting="purchaser.exporting"
           @export="exportPurchaser"
           @reload="loadPurchaser"
           @page-change="loadPurchaserPage"
@@ -141,6 +144,7 @@
           :page-num="item.pageNum"
           :page-size="item.pageSize"
           :total="item.total"
+          :exporting="item.exporting"
           @export="exportItem"
           @reload="loadItem"
           @page-change="loadItemPage"
@@ -154,6 +158,7 @@
           :rows="trend.rows"
           :loading="trend.loading"
           :error="trend.error"
+          :exporting="trend.exporting"
           @export="exportPriceTrend"
           @reload="loadTrend"
       />
@@ -222,6 +227,7 @@ import PurchasePurchaserTab from './report-components/purchase-purchaser-tab.vue
 import PurchaseProductTab from './report-components/purchase-product-tab.vue';
 import PurchaseSupplierTab from './report-components/purchase-supplier-tab.vue';
 import {reportPurchaseApi} from '/@/api/business/scm/report-api';
+import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION} from '/@/constants/business/scm/report-const';
 import type {
     PurchaseItemRow,
@@ -277,6 +283,12 @@ const supplier = reactive(createTabView<PurchaseSupplierRow>());
 const purchaser = reactive(createTabView<PurchasePurchaserRow>());
 const item = reactive(createTabView<PurchaseItemRow>());
 const trend = reactive(createTabView<PurchasePriceTrendPoint>());
+const itemExport = useScmExport(item);
+const overviewExport = useScmExport();
+const priceTrendExport = useScmExport(trend);
+const productExport = useScmExport(product);
+const purchaserExport = useScmExport(purchaser);
+const supplierExport = useScmExport(supplier);
 
 /** 下钻抽屉的商品明细：带一个实体筛选（供应商或采购员），与主表分页彼此独立。 */
 const drilldown = reactive({...createTabView<PurchaseProductRow>(), open: false, title: ''});
@@ -523,27 +535,27 @@ function openPurchaserDrilldown(row: PurchasePurchaserRow) {
 }
 
 function exportProduct() {
-    void reportPurchaseApi.productExport(exportQuery());
+    void productExport.run(() => reportPurchaseApi.productExport(exportQuery()));
 }
 
 function exportSupplier() {
-    void reportPurchaseApi.supplierExport(exportQuery());
+    void supplierExport.run(() => reportPurchaseApi.supplierExport(exportQuery()));
 }
 
 function exportItem() {
-    void reportPurchaseApi.itemExport(exportQuery());
+    void itemExport.run(() => reportPurchaseApi.itemExport(exportQuery()));
 }
 
 function exportOverview() {
-    void reportPurchaseApi.overviewExport(exportQuery());
+    void overviewExport.run(() => reportPurchaseApi.overviewExport(exportQuery()));
 }
 
 function exportPurchaser() {
-    void reportPurchaseApi.purchaserExport(exportQuery());
+    void purchaserExport.run(() => reportPurchaseApi.purchaserExport(exportQuery()));
 }
 
 function exportPriceTrend() {
-    void reportPurchaseApi.priceTrendExport(exportQuery());
+    void priceTrendExport.run(() => reportPurchaseApi.priceTrendExport(exportQuery()));
 }
 
 const purchaseOrderDetail = ref<InstanceType<typeof PurchaseOrderDetail>>();

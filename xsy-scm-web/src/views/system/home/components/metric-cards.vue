@@ -33,15 +33,22 @@
           @keydown.enter="goto(row.route)"
         >
           <span class="home-kpi__accent" aria-hidden="true"/>
-          <div class="home-kpi__head">
+          <!--
+            图标移到右侧：五列时单卡有 268px，而「图标 + 标签」只占 110px，
+            原来把图标放在标签左边会让右侧 150px 全是空白。
+            现在左文字块、右图标块，宽度被两侧一起占满，卡片高度也从 146px 收到 ~92px。
+          -->
+          <div class="home-kpi__body">
+            <div class="home-kpi__text">
+              <span class="home-kpi__label">{{ row.label }}</span>
+              <div class="home-kpi__value">
+                <span v-if="row.money" class="home-kpi__prefix">¥</span>
+                <span class="home-kpi__number">{{ row.text }}</span>
+              </div>
+            </div>
             <span class="home-kpi__visual">
-              <scm-icon :name="row.iconName" :size="23"/>
+              <scm-icon :name="row.iconName" :size="32"/>
             </span>
-            <span class="home-kpi__label">{{ row.label }}</span>
-          </div>
-          <div class="home-kpi__value">
-            <span v-if="row.money" class="home-kpi__prefix">¥</span>
-            <span class="home-kpi__number">{{ row.text }}</span>
           </div>
         </a-card>
       </div>
@@ -156,9 +163,9 @@ defineExpose({load});
     :deep(.ant-card-body) {
         position: relative;
         display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 18px 20px 20px;
+        align-items: center;
+        /* 左边多留 4px 给色条让位 */
+        padding: 16px 18px 16px 22px;
     }
 }
 
@@ -172,10 +179,20 @@ defineExpose({load});
     opacity: 0.85;
 }
 
-.home-kpi .home-kpi__head {
+/* 左文字块 + 右图标块：两端对齐，卡片宽度被真正用满 */
+.home-kpi .home-kpi__body {
+    width: 100%;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+
+.home-kpi .home-kpi__text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
     min-width: 0;
 }
 
@@ -184,9 +201,9 @@ defineExpose({load});
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
     background: var(--kpi-accent-soft);
     color: var(--kpi-accent);
 }
@@ -219,7 +236,7 @@ defineExpose({load});
     min-width: 0;
     overflow-wrap: anywhere;
     /* 5 列时单卡只有 ~185px，用 clamp 让长金额自己缩，不靠换行撑高卡片 */
-    font-size: clamp(20px, 1.7vw, 30px);
+    font-size: clamp(24px, 2vw, 38px);
     letter-spacing: -0.5px;
     font-variant-numeric: tabular-nums;
     color: var(--scm-text);

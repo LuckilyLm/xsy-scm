@@ -62,6 +62,7 @@
           :page-num="product.pageNum"
           :page-size="product.pageSize"
           :total="product.total"
+          :exporting="product.exporting"
           @export="exportProduct"
           @reload="loadProduct"
           @page-change="loadProductPage"
@@ -78,6 +79,7 @@
           :page-num="category.pageNum"
           :page-size="category.pageSize"
           :total="category.total"
+          :exporting="category.exporting"
           @export="exportCategory"
           @reload="loadCategory"
           @page-change="loadCategoryPage"
@@ -94,6 +96,7 @@
           :page-num="customer.pageNum"
           :page-size="customer.pageSize"
           :total="customer.total"
+          :exporting="customer.exporting"
           @export="exportCustomer"
           @reload="loadCustomer"
           @page-change="loadCustomerPage"
@@ -109,6 +112,7 @@
           :page-num="seller.pageNum"
           :page-size="seller.pageSize"
           :total="seller.total"
+          :exporting="seller.exporting"
           @export="exportSeller"
           @reload="loadSeller"
           @page-change="loadSellerPage"
@@ -124,6 +128,7 @@
           :page-num="item.pageNum"
           :page-size="item.pageSize"
           :total="item.total"
+          :exporting="item.exporting"
           @export="exportItem"
           @reload="loadItem"
           @page-change="loadItemPage"
@@ -139,6 +144,7 @@
           :page-num="order.pageNum"
           :page-size="order.pageSize"
           :total="order.total"
+          :exporting="order.exporting"
           @export="exportOrder"
           @reload="loadOrder"
           @page-change="loadOrderPage"
@@ -166,6 +172,7 @@ import SalesSellerTab from './report-components/sales-seller-tab.vue';
 import SalesItemTab from './report-components/sales-item-tab.vue';
 import SalesOrderTab from './report-components/sales-order-tab.vue';
 import {reportSalesApi} from '/@/api/business/scm/report-api';
+import {useScmExport} from '../common/use-scm-export';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {SCM_REPORT_PERMISSION} from '/@/constants/business/scm/report-const';
 import type {ProductCategory} from '/@/types/business/scm/product';
@@ -218,6 +225,12 @@ const customer = reactive(createTabView<SalesCustomerRow>());
 const seller = reactive(createTabView<SalesSellerRow>());
 const item = reactive(createTabView<SalesItemRow>());
 const order = reactive(createTabView<SalesOrderRow>());
+const categoryExport = useScmExport(category);
+const customerExport = useScmExport(customer);
+const itemExport = useScmExport(item);
+const orderExport = useScmExport(order);
+const productExport = useScmExport(product);
+const sellerExport = useScmExport(seller);
 
 /** 六个 Tab 都有对应导出端点（后端逐个 AND 上 `scm:report:export`），按钮按 `PERM.EXPORT` 显示。 */
 
@@ -391,27 +404,27 @@ function resetAllTabsPage() {
 }
 
 function exportProduct() {
-    void reportSalesApi.productExport(exportQuery());
+    void productExport.run(() => reportSalesApi.productExport(exportQuery()));
 }
 
 function exportCategory() {
-    void reportSalesApi.categoryExport(exportQuery());
+    void categoryExport.run(() => reportSalesApi.categoryExport(exportQuery()));
 }
 
 function exportCustomer() {
-    void reportSalesApi.customerExport(exportQuery());
+    void customerExport.run(() => reportSalesApi.customerExport(exportQuery()));
 }
 
 function exportSeller() {
-    void reportSalesApi.sellerExport(exportQuery());
+    void sellerExport.run(() => reportSalesApi.sellerExport(exportQuery()));
 }
 
 function exportItem() {
-    void reportSalesApi.itemExport(exportQuery());
+    void itemExport.run(() => reportSalesApi.itemExport(exportQuery()));
 }
 
 function exportOrder() {
-    void reportSalesApi.orderExport(exportQuery());
+    void orderExport.run(() => reportSalesApi.orderExport(exportQuery()));
 }
 
 const orderDetail = ref<InstanceType<typeof OrderDetail>>();

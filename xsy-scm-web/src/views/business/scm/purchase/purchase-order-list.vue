@@ -36,7 +36,7 @@
           批量少收关单
         </a-button>
         <a-button :disabled="!selected.length" @click="batchPrint">批量打印</a-button>
-        <a-button v-privilege="'scm:purchase:query'" @click="onExport">导出</a-button>
+        <a-button v-privilege="'scm:purchase:query'" :loading="listExport.exporting" @click="onExport">导出</a-button>
         <a-button v-privilege="'scm:purchase:query'" @click="exportSettingsOpen = true">导出设置</a-button>
       </div>
       <div class="smart-table-setting-block">
@@ -178,6 +178,7 @@ import {
 import type {Order, OrderQuery} from './purchase-types';
 import {amount, progress} from './purchase-form-model';
 import {hasPermission} from '../common/scm-permission';
+import {useScmExport} from '../common/use-scm-export';
 import {dateOnly} from '../common/scm-display';
 import {purchaseError} from './purchase-errors';
 import PrintDocumentModal from '../print/print-document-modal.vue';import PurchaseOrderForm from './components/purchase-order-form-drawer.vue';
@@ -268,6 +269,7 @@ function loadExportColumns(): string[] {
 }
 const exportSettingsOpen = ref(false);
 const exportColumns = ref<string[]>(loadExportColumns());
+const listExport = useScmExport();
 /** 竞态保护：慢的旧请求不得覆盖新结果。 */
 let requestId = 0;
 
@@ -505,7 +507,8 @@ function batchShortClose() {
 
 /** 导出走当前筛选（后端强制第 1 页 + 上限行，分页参数会被覆盖），只回传勾选列 key。 */
 function onExport() {
-  purchaseOrderApi.export({...queryForm, exportColumns: exportColumns.value});
+  const payload = {...queryForm, exportColumns: exportColumns.value};
+  void listExport.run(() => purchaseOrderApi.export(payload));
 }
 
 function saveExportSettings() {

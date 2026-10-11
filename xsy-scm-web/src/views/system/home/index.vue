@@ -4,48 +4,48 @@
   * 装配顺序：欢迎区 → KPI 卡 → 经营趋势 + 业务待办 → 客户与商品排行 + 库存健康 → 通知公告 + 系统更新。
   *
   * 每个区块各自决定发不发请求：没有对应权限的区块既不渲染也不请求，因此不会出现
-  * 「打开首页先收到一串无权限失败」。刷新按钮只刷新当前真正挂载的区块。
+  * 「打开首页先收到一串无权限失败」。各区块挂载时自己取数，页面不再提供手动刷新入口。
 -->
 <template>
   <div class="home-workbench">
-    <home-header :can-screen="canScreen" :refreshing="refreshing" @refresh="refreshVisible"/>
+    <home-header/>
 
-    <metric-cards v-if="canDashboard" ref="metricCards"/>
+    <metric-cards v-if="canDashboard"/>
 
     <a-row v-if="showTrend || canTodo" :gutter="[16, 16]">
       <a-col v-if="showTrend" :xs="24" :xl="canTodo ? 16 : 24">
-        <business-trend ref="businessTrend" :metrics="trendMetrics"/>
+        <business-trend :metrics="trendMetrics"/>
       </a-col>
       <a-col v-if="canTodo" :xs="24" :xl="showTrend ? 8 : 24">
-        <HomeBusinessTodo ref="businessTodo"/>
+        <HomeBusinessTodo/>
       </a-col>
     </a-row>
 
     <a-row v-if="canRanking || canHealth" :gutter="[16, 16]">
       <a-col v-if="canRanking" :xs="24" :md="12" :xl="canHealth ? 8 : 12">
-        <ranking-card ref="customerRank" dimension="customer"/>
+        <ranking-card dimension="customer"/>
       </a-col>
       <a-col v-if="canRanking" :xs="24" :md="12" :xl="canHealth ? 8 : 12">
-        <ranking-card ref="productRank" dimension="product"/>
+        <ranking-card dimension="product"/>
       </a-col>
       <a-col v-if="canHealth" :xs="24" :md="canRanking ? 12 : 24" :xl="canRanking ? 8 : 24">
-        <inventory-health ref="inventoryHealth"/>
+        <inventory-health/>
       </a-col>
     </a-row>
 
     <a-row :gutter="[16, 16]">
       <a-col :xs="24" :xl="12">
-        <HomeNotice ref="homeNotice"/>
+        <HomeNotice/>
       </a-col>
       <a-col :xs="24" :xl="12">
-        <ChangelogCard ref="changelogCard"/>
+        <ChangelogCard/>
       </a-col>
     </a-row>
   </div>
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from 'vue';
+import {computed} from 'vue';
 import type {ScmTrendMetric} from '/@/api/business/scm/dashboard-api';
 import {hasPermission} from '/@/views/business/scm/common/scm-permission';
 import HomeHeader from './home-header.vue';
@@ -74,7 +74,6 @@ const canPurchase = computed(() => hasPermission('scm:purchase:query'));
 const canInventoryMovement = computed(() => hasPermission('scm:inventory:movement:query'));
 const canInventoryWarning = computed(() => hasPermission('scm:inventory:warning:query'));
 const canTodo = computed(() => hasPermission('scm:todo:query'));
-const canScreen = computed(() => hasPermission('scm:screen:query'));
 
 /**
  * 趋势里能切到哪些指标，由当前人持有的领域权限决定；默认选中第一个。
@@ -103,31 +102,6 @@ const showTrend = computed(() => canDashboard.value && trendMetrics.value.length
  */
 const canRanking = computed(() => canDashboard.value && canOrder.value);
 const canHealth = computed(() => canDashboard.value && canInventoryWarning.value);
-
-const refreshing = ref(false);
-const metricCards = ref();
-const businessTrend = ref();
-const businessTodo = ref();
-const customerRank = ref();
-const productRank = ref();
-const inventoryHealth = ref();
-const homeNotice = ref();
-const changelogCard = ref();
-
-/** 只刷新当前真正挂载的区块：无权限的区块不会渲染，引用自然为空。 */
-async function refreshVisible() {
-  if (refreshing.value) return;
-  refreshing.value = true;
-  try {
-    await Promise.all(
-      [metricCards, businessTrend, businessTodo, customerRank, productRank, inventoryHealth, homeNotice, changelogCard].map((region) =>
-        region.value?.load?.()
-      )
-    );
-  } finally {
-    refreshing.value = false;
-  }
-}
 </script>
 
 <style lang="less" scoped>

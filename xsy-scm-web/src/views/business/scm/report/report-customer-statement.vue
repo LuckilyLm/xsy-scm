@@ -22,7 +22,7 @@
   <a-card v-if="selected" :title="`客户对账单 · 版本 #${selected.id}`" size="small" :bordered="false">
     <template #extra>
       <a-space>
-        <a-button v-privilege="PERM.EXPORT" size="small" @click="exportVersion">导出 Excel</a-button>
+        <a-button v-privilege="PERM.EXPORT" size="small" :loading="versionExport.exporting" @click="exportVersion">导出 Excel</a-button>
         <a-button size="small" @click="printVersion">打印 / 保存 PDF</a-button>
       </a-space>
     </template>
@@ -58,6 +58,7 @@ import type {ReportId} from './report-types';
 import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-model';
 import {moneyText} from '../inventory/inventory-model';
 import {reportError} from './report-errors';
+import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
@@ -66,6 +67,7 @@ const settlementCustomerId = ref<ReportId>(), customerId = ref<ReportId>();
 const dateRange = ref<DateRange>(defaultDateRange());
 
 const selected = ref<CustomerStatement>(), history = ref<CustomerStatement[]>([]);
+const versionExport = useScmExport();
 const printArea = ref<HTMLElement>(), busy = ref(false), error = ref('');
 const factLabels: Record<string, string> = {
   RECEIVABLE: '销售应收', RED: '退货红字', RECEIPT: '实际收款', RECEIPT_REVERSE: '反向收款',
@@ -113,8 +115,10 @@ async function openVersion(id: ReportId) {
   catch (e) { error.value = reportError(e); }
   finally { busy.value = false; }
 }
-async function exportVersion() {
-  if (selected.value) await customerStatementApi.export(selected.value.id);
+function exportVersion() {
+  const target = selected.value;
+  if (!target) return;
+  void versionExport.run(() => customerStatementApi.export(target.id));
 }
 function printVersion() {
   if (!selected.value || !printArea.value) return;

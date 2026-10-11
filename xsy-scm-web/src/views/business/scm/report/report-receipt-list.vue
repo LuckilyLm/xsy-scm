@@ -52,7 +52,7 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportReceipt">导出</a-button>
+            <a-button v-privilege="PERM.EXPORT" :loading="receiptExport.exporting" @click="exportReceipt">导出</a-button>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -126,6 +126,7 @@
               v-model:current="receipt.pageNum"
               v-model:page-size="receipt.pageSize"
               :total="receipt.total"
+              :exporting="receipt.exporting"
               @change="loadReceipt"
               :show-total="(n: number) => `共${n}条`"
           />
@@ -138,7 +139,7 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportInbound">导出</a-button>
+            <a-button v-privilege="PERM.EXPORT" :loading="inboundExport.exporting" @click="exportInbound">导出</a-button>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -192,6 +193,7 @@
               v-model:current="inbound.pageNum"
               v-model:page-size="inbound.pageSize"
               :total="inbound.total"
+              :exporting="inbound.exporting"
               @change="loadInbound"
               :show-total="(n: number) => `共${n}条`"
           />
@@ -275,6 +277,7 @@ import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
 import {reportReceiptApi} from '/@/api/business/scm/report-api';
+import {useScmExport} from '../common/use-scm-export';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {SCM_PUTAWAY_STATUS_ENUM, SCM_RECEIPT_MODE_ENUM} from '/@/constants/business/scm/purchase-const';
@@ -312,6 +315,8 @@ const advanced = ref(false);
 const receipt = reactive(createTabView<ReceiptRow>());
 const inbound = reactive(createTabView<InboundRow>());
 const pending = reactive(createTabView<PendingPutawayRow>());
+const inboundExport = useScmExport(inbound);
+const receiptExport = useScmExport(receipt);
 
 const receiptColumns = ref<TableColumnsType<ReceiptRow>>([
     {title: '收货确认时间', dataIndex: 'confirmedAt', width: 190},
@@ -442,11 +447,11 @@ function resetQuery() {
 }
 
 function exportReceipt() {
-    void reportReceiptApi.receiptExport(exportQuery());
+    void receiptExport.run(() => reportReceiptApi.receiptExport(exportQuery()));
 }
 
 function exportInbound() {
-    void reportReceiptApi.inboundExport(exportQuery());
+    void inboundExport.run(() => reportReceiptApi.inboundExport(exportQuery()));
 }
 
 /** 复用采购收货页作为「原收货单」视图：不在报表里再造一张收货单详情页。 */
