@@ -40,7 +40,7 @@
         </choose>
     </sql>
 
-    <!-- warehouse 主档没有 warehouse_id 列，主键就是 id -->
+    <!-- xsy_warehouse 主档没有 warehouse_id 列，主键就是 id -->
     <sql id="scopeW">
         <choose>
             <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
@@ -59,8 +59,8 @@
             resultType="com.xsy.scm.screen.domain.vo.ScreenInventoryVO$WarehouseDistribution">
         SELECT w.name AS warehouseName,
         COALESCE(SUM(b.quantity), 0) AS quantity
-        FROM inventory_balance b
-        JOIN warehouse w ON w.id = b.warehouse_id
+        FROM xsy_inventory_balance b
+        JOIN xsy_warehouse w ON w.id = b.warehouse_id
         WHERE b.deleted = FALSE
         AND w.deleted = FALSE
         <include refid="scopeB"/>
@@ -78,15 +78,15 @@
         SELECT w.name AS warehouseName,
         COALESCE(SUM(b.quantity), 0) AS quantity,
         COALESCE((SELECT SUM(m.quantity)
-        FROM inventory_movement m
+        FROM xsy_inventory_movement m
         WHERE m.deleted = FALSE
         AND m.warehouse_id = w.id
         AND m.movement_type IN
         <foreach collection="outboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
         AND m.occurred_at &gt;= #{startTime}
         AND m.occurred_at &lt; #{endTime}), 0) AS todayOutboundQuantity
-        FROM warehouse w
-        LEFT JOIN inventory_balance b
+        FROM xsy_warehouse w
+        LEFT JOIN xsy_inventory_balance b
         ON b.warehouse_id = w.id
         AND b.deleted = FALSE
         WHERE w.deleted = FALSE
@@ -107,20 +107,20 @@
     -->
     <sql id="geoCustomerPopulation">
         SELECT c.city_code IS NOT NULL AS located, c.city_code AS city_code
-        FROM customer c
+        FROM xsy_customer c
         WHERE c.deleted = FALSE
         <include refid="scopeC"/>
     </sql>
 
     <sql id="geoSupplierPopulation">
         SELECT s.city_code IS NOT NULL AS located, s.city_code AS city_code
-        FROM supplier s
+        FROM xsy_supplier s
         WHERE s.deleted = FALSE
     </sql>
 
     <sql id="geoWarehousePopulation">
         SELECT w.city_code IS NOT NULL AS located, w.city_code AS city_code
-        FROM warehouse w
+        FROM xsy_warehouse w
         WHERE w.deleted = FALSE
         AND w.status = 'ENABLED'
         <include refid="scopeW"/>
@@ -148,11 +148,11 @@
         UNION ALL
         SELECT city_code, 'WAREHOUSE'::text FROM (<include refid="geoWarehousePopulation"/>) t WHERE t.located
         ) src
-        JOIN scm_region city
+        JOIN xsy_region city
         ON city.deleted = FALSE
         AND city.region_level = 2
         AND city.region_code = src.city_code
-        JOIN scm_region province
+        JOIN xsy_region province
         ON province.deleted = FALSE
         AND province.region_level = 1
         AND province.region_code = city.parent_code

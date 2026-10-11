@@ -42,7 +42,7 @@ import static org.mockito.Mockito.mockStatic;
  * 不是漏判」：
  * <ul>
  *   <li>库存面板 —— 仓库维度。未授权仓必须整行消失，而不是以「0 库存」的节点继续画在地图上。</li>
- *   <li>经营面板 —— 业务员维度（{@code customer.seller_id} / {@code sales_order.seller_id}）。</li>
+ *   <li>经营面板 —— 业务员维度（{@code xsy_customer.seller_id} / {@code xsy_sales_order.seller_id}）。</li>
  *   <li>采购面板 —— 采购归属 ∩ 仓库：只给全量采购范围的人仍然只能看到自己那个仓的量，
  *       与收货确认那条交集口径同源（裁决第 16 条）。</li>
  *   <li>地理面板 —— 与经营面板同一份人口片段，所以两侧数字必须恒等；只收一边就是两份 SQL 各自漂移。</li>
@@ -191,7 +191,7 @@ class ScmScreenDataScopePgIT extends ScmW5PgITBase {
             return null;
         });
         // 覆盖度里的「未归属」差额必须仍然存在：区划未解析的客户不会被静默丢掉
-        jdbc.update("UPDATE customer SET city_code = NULL, city_name = NULL WHERE seller_id = ?", seller);
+        jdbc.update("UPDATE xsy_customer SET city_code = NULL, city_name = NULL WHERE seller_id = ?", seller);
         evictMybatisCache();
 
         ScreenBusinessVO business = as(seller, Set.of(), screenDataService::getBusinessData);
@@ -273,13 +273,13 @@ class ScmScreenDataScopePgIT extends ScmW5PgITBase {
     private int employeeSequence;
 
     private void grantWarehouseScope(Long employeeId, Long warehouseId) {
-        jdbc.update("INSERT INTO employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
+        jdbc.update("INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 employeeId, warehouseId);
     }
 
     /** 余额行是既成的库存事实，直接落表：大屏只读它，不经收货入库链路。 */
     private void seedBalance(Long warehouseId, Long skuId, String quantity) {
-        jdbc.update("INSERT INTO inventory_balance (warehouse_id, sku_id, unit, quantity, reserved_quantity, "
+        jdbc.update("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, reserved_quantity, "
                         + "avg_cost, version, deleted, created_at, updated_at, created_by, updated_by) "
                         + "VALUES (?, ?, ?, ?, 0, 0, 0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'it', 'it')",
                 warehouseId, skuId, DEFAULT_PURCHASE_UNIT, new BigDecimal(quantity));
@@ -287,11 +287,11 @@ class ScmScreenDataScopePgIT extends ScmW5PgITBase {
     }
 
     private String warehouseName(Long warehouseId) {
-        return jdbc.queryForObject("SELECT name FROM warehouse WHERE id = ?", String.class, warehouseId);
+        return jdbc.queryForObject("SELECT name FROM xsy_warehouse WHERE id = ?", String.class, warehouseId);
     }
 
     private String customerName(Long customerId) {
-        return jdbc.queryForObject("SELECT name FROM customer WHERE id = ?", String.class, customerId);
+        return jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, customerId);
     }
 
     private void loginAs(Long employeeId) {

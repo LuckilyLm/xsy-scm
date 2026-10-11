@@ -231,18 +231,18 @@ class ScmScreenDataIT extends ScmW6PgITBase {
         newSupplier("GEO-S");
         newWarehouse("GEO-W");
 
-        jdbc.update("UPDATE customer SET province_code = 330000, city_code = 330100 WHERE deleted = FALSE");
-        jdbc.update("UPDATE customer SET province_code = 440000, city_code = 440100 WHERE id = ?",
+        jdbc.update("UPDATE xsy_customer SET province_code = 330000, city_code = 330100 WHERE deleted = FALSE");
+        jdbc.update("UPDATE xsy_customer SET province_code = 440000, city_code = 440100 WHERE id = ?",
                 customerInGuangzhou);
-        jdbc.update("UPDATE supplier SET province_code = 330000, city_code = 330100 WHERE deleted = FALSE");
-        jdbc.update("UPDATE warehouse SET province_code = 330000, city_code = 330100 WHERE deleted = FALSE");
+        jdbc.update("UPDATE xsy_supplier SET province_code = 330000, city_code = 330100 WHERE deleted = FALSE");
+        jdbc.update("UPDATE xsy_warehouse SET province_code = 330000, city_code = 330100 WHERE deleted = FALSE");
         // 前置守卫：杭州桶为空会让下面所有 {@code - 1} 断言在别处失败，看不出真正的原因
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM customer WHERE deleted = FALSE "
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_customer WHERE deleted = FALSE "
                 + "AND id <> ?", Integer.class, customerInGuangzhou)).isGreaterThan(0);
 
-        long customerTotal = jdbc.queryForObject("SELECT count(*) FROM customer WHERE deleted = FALSE", Long.class);
-        long supplierTotal = jdbc.queryForObject("SELECT count(*) FROM supplier WHERE deleted = FALSE", Long.class);
-        long warehouseTotal = jdbc.queryForObject("SELECT count(*) FROM warehouse "
+        long customerTotal = jdbc.queryForObject("SELECT count(*) FROM xsy_customer WHERE deleted = FALSE", Long.class);
+        long supplierTotal = jdbc.queryForObject("SELECT count(*) FROM xsy_supplier WHERE deleted = FALSE", Long.class);
+        long warehouseTotal = jdbc.queryForObject("SELECT count(*) FROM xsy_warehouse "
                 + "WHERE deleted = FALSE AND status = 'ENABLED'", Long.class);
 
         evictMybatisCache();
@@ -285,7 +285,7 @@ class ScmScreenDataIT extends ScmW6PgITBase {
         // 字典外编码：{@code located} 只问「有没有市码」，气泡却要 JOIN 字典才画得出来。
         // 于是这条客户被算进「已归属」，同时从图上消失 —— 差额只能在覆盖度里被看见，
         // 这正是 coverage 存在的理由，所以把它钉成断言而不是留在注释里。
-        jdbc.update("UPDATE customer SET city_code = 999999 WHERE id = ?", customerInGuangzhou);
+        jdbc.update("UPDATE xsy_customer SET city_code = 999999 WHERE id = ?", customerInGuangzhou);
         evictMybatisCache();
         ScreenGeoVO afterBogusCode = screenDataService.getGeoData();
         assertThat(afterBogusCode.getCities()).extracting(ScreenGeoVO.CityNode::getCityCode)
