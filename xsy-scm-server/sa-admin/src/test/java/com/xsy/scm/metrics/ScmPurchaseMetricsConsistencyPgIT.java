@@ -72,14 +72,14 @@ class ScmPurchaseMetricsConsistencyPgIT extends ScmW5PgITBase {
         Long supplierId = newPurchasableSupplier("PQA", skuId);
         PurchaseOrderVO draft = createDraftOrder("PQA", supplierId, skuId, "1.0000", "100.0000");
         submitOrder(draft.getId());
-        BigDecimal amount = jdbc.queryForObject("SELECT total_amount FROM purchase_order WHERE id = ?",
+        BigDecimal amount = jdbc.queryForObject("SELECT total_amount FROM xsy_purchase_order WHERE id = ?",
                 BigDecimal.class, draft.getId());
 
         ScmDataScopeContext scope = dataScopeService.resolve();
         BigDecimal before = metricsService.todayPurchase(scope).todayPurchaseAmount();
 
         // 变成「昨天 23:50 创建、今天 09:00 提交」：采购额按提交轴，仍算今天。
-        jdbc.update("UPDATE purchase_order SET created_at ="
+        jdbc.update("UPDATE xsy_purchase_order SET created_at ="
                 + " (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai') - interval '10 minutes')"
                 + " AT TIME ZONE 'Asia/Shanghai' WHERE id = ?", draft.getId());
         evictMybatisCache();
@@ -87,7 +87,7 @@ class ScmPurchaseMetricsConsistencyPgIT extends ScmW5PgITBase {
                 .as("采购额按提交轴，创建时间挪到昨天不应影响它").isEqualByComparingTo(before);
 
         // 再把提交时间也挪到昨天：采购额这才少掉这一单。
-        jdbc.update("UPDATE purchase_order SET submitted_at ="
+        jdbc.update("UPDATE xsy_purchase_order SET submitted_at ="
                 + " (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai') - interval '10 minutes')"
                 + " AT TIME ZONE 'Asia/Shanghai' WHERE id = ?", draft.getId());
         evictMybatisCache();
@@ -120,7 +120,7 @@ class ScmPurchaseMetricsConsistencyPgIT extends ScmW5PgITBase {
         Long supplierId = newPurchasableSupplier("PQC", skuId);
         PurchaseOrderVO draft = createDraftOrder("PQC", supplierId, skuId, "1.0000", "300.0000");
         submitOrder(draft.getId());
-        BigDecimal amount = jdbc.queryForObject("SELECT total_amount FROM purchase_order WHERE id = ?",
+        BigDecimal amount = jdbc.queryForObject("SELECT total_amount FROM xsy_purchase_order WHERE id = ?",
                 BigDecimal.class, draft.getId());
 
         ScmDataScopeContext scope = dataScopeService.resolve();

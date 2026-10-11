@@ -108,7 +108,7 @@
         </choose>
     </sql>
 
-    <!-- warehouse 主档没有 warehouse_id 列，主键就是 id -->
+    <!-- xsy_warehouse 主档没有 warehouse_id 列，主键就是 id -->
     <sql id="scopeW">
         <choose>
             <when test="scope == null or scope.warehouseScope.empty">AND FALSE</when>
@@ -142,7 +142,7 @@
     -->
     <select id="countOrdersByConfirmedAt" resultType="long">
         SELECT COUNT(*)
-        FROM sales_order so
+        FROM xsy_sales_order so
         WHERE so.deleted = FALSE
         AND so.status = 'CONFIRMED'
         AND so.confirmed_at &gt;= #{startTime}
@@ -153,7 +153,7 @@
 
     <select id="sumSettlementAmountByConfirmedAt" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(so.settlement_total_amount), 0)
-        FROM sales_order so
+        FROM xsy_sales_order so
         WHERE so.deleted = FALSE
         AND so.status = 'CONFIRMED'
         AND so.confirmed_at &gt;= #{startTime}
@@ -165,7 +165,7 @@
     <!-- 下单金额：创建轴。与上面的销售额不是同一个数，方法名与前端标签都必须区分开。 -->
     <select id="sumOrderedAmountByCreatedAt" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(so.ordered_total_amount), 0)
-        FROM sales_order so
+        FROM xsy_sales_order so
         WHERE so.deleted = FALSE
         AND so.status = 'CONFIRMED'
         AND so.created_at &gt;= #{startTime}
@@ -175,7 +175,7 @@
 
     <select id="countTotalOrders" resultType="long">
         SELECT COUNT(*)
-        FROM sales_order so
+        FROM xsy_sales_order so
         WHERE so.deleted = FALSE
         AND so.status = 'CONFIRMED'
         <include refid="scopeSo"/>
@@ -183,7 +183,7 @@
 
     <select id="sumTotalSettlementAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(so.settlement_total_amount), 0)
-        FROM sales_order so
+        FROM xsy_sales_order so
         WHERE so.deleted = FALSE
         AND so.status = 'CONFIRMED'
         <include refid="scopeSo"/>
@@ -191,7 +191,7 @@
 
     <select id="countCustomersWithOrdersByConfirmedAt" resultType="long">
         SELECT COUNT(DISTINCT so.customer_id)
-        FROM sales_order so
+        FROM xsy_sales_order so
         WHERE so.deleted = FALSE
         AND so.status = 'CONFIRMED'
         AND so.confirmed_at &gt;= #{startTime}
@@ -204,7 +204,7 @@
         SELECT COALESCE(c.name, '客户 #' || ranked.customer_id) AS name, ranked.amount
         FROM (
             SELECT so.customer_id, COALESCE(SUM(so.settlement_total_amount), 0) AS amount
-            FROM sales_order so
+            FROM xsy_sales_order so
             WHERE so.deleted = FALSE
             AND so.status = 'CONFIRMED'
             AND so.confirmed_at &gt;= #{startTime}
@@ -212,7 +212,7 @@
             <include refid="scopeSo"/>
             GROUP BY so.customer_id
         ) ranked
-        LEFT JOIN customer c ON c.id = ranked.customer_id AND c.deleted = FALSE
+        LEFT JOIN xsy_customer c ON c.id = ranked.customer_id AND c.deleted = FALSE
         ORDER BY ranked.amount DESC, ranked.customer_id
         LIMIT #{limit}
     </select>
@@ -229,8 +229,8 @@
         SELECT COALESCE(p.name, '商品 #' || ranked.spu_id) AS name, ranked.amount
         FROM (
             SELECT item.spu_id, COALESCE(SUM(item.settlement_line_amount), 0) AS amount
-            FROM sales_order_item item
-            JOIN sales_order so ON so.id = item.order_id
+            FROM xsy_sales_order_item item
+            JOIN xsy_sales_order so ON so.id = item.order_id
             WHERE item.deleted = FALSE
             AND so.deleted = FALSE
             AND so.status = 'CONFIRMED'
@@ -239,43 +239,43 @@
             <include refid="scopeSo"/>
             GROUP BY item.spu_id
         ) ranked
-        LEFT JOIN product_spu p ON p.id = ranked.spu_id AND p.deleted = FALSE
+        LEFT JOIN xsy_product_spu p ON p.id = ranked.spu_id AND p.deleted = FALSE
         ORDER BY ranked.amount DESC, ranked.spu_id
         LIMIT #{limit}
     </select>
 
     <!-- ================= 主档 ================= -->
     <select id="countCustomers" resultType="long">
-        SELECT COUNT(*) FROM customer c WHERE c.deleted = FALSE
+        SELECT COUNT(*) FROM xsy_customer c WHERE c.deleted = FALSE
         <include refid="scopeC"/>
     </select>
 
     <select id="countSuppliers" resultType="long">
-        SELECT COUNT(*) FROM supplier WHERE deleted = FALSE
+        SELECT COUNT(*) FROM xsy_supplier WHERE deleted = FALSE
     </select>
 
     <select id="countSkus" resultType="long">
-        SELECT COUNT(*) FROM product_sku WHERE deleted = FALSE
+        SELECT COUNT(*) FROM xsy_product_sku WHERE deleted = FALSE
     </select>
 
     <!-- ================= 库存 ================= -->
     <select id="sumInventoryQuantity" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(b.quantity), 0)
-        FROM inventory_balance b
+        FROM xsy_inventory_balance b
         WHERE b.deleted = FALSE
         <include refid="scopeB"/>
     </select>
 
     <select id="countInventorySkus" resultType="long">
         SELECT COUNT(DISTINCT b.sku_id)
-        FROM inventory_balance b
+        FROM xsy_inventory_balance b
         WHERE b.deleted = FALSE
         <include refid="scopeB"/>
     </select>
 
     <select id="countEnabledWarehouses" resultType="long">
         SELECT COUNT(*)
-        FROM warehouse w
+        FROM xsy_warehouse w
         WHERE w.deleted = FALSE
         AND w.status = 'ENABLED'
         <include refid="scopeW"/>
@@ -283,7 +283,7 @@
 
     <select id="countMovementsByTypeAndRange" resultType="long">
         SELECT COUNT(*)
-        FROM inventory_movement m
+        FROM xsy_inventory_movement m
         WHERE m.deleted = FALSE
         AND m.movement_type IN
         <foreach collection="movementTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
@@ -306,8 +306,8 @@
         SELECT (b.quantity - b.reserved_quantity) AS availableQuantity,
         t.warn_min AS warnMin,
         t.warn_max AS warnMax
-        FROM inventory_warning_threshold t
-        LEFT JOIN inventory_balance b
+        FROM xsy_inventory_warning_threshold t
+        LEFT JOIN xsy_inventory_balance b
         ON b.warehouse_id = t.warehouse_id
         AND b.sku_id = t.sku_id
         AND b.deleted = FALSE
@@ -317,12 +317,12 @@
         SELECT (b.quantity - b.reserved_quantity) AS availableQuantity,
         CAST(NULL AS numeric) AS warnMin,
         CAST(NULL AS numeric) AS warnMax
-        FROM inventory_balance b
+        FROM xsy_inventory_balance b
         WHERE b.deleted = FALSE
         <include refid="scopeB"/>
         AND NOT EXISTS (
         SELECT 1
-        FROM inventory_warning_threshold t
+        FROM xsy_inventory_warning_threshold t
         WHERE t.deleted = FALSE
         AND t.warehouse_id = b.warehouse_id
         AND t.sku_id = b.sku_id
@@ -354,7 +354,7 @@
 
     <select id="countPurchaseOrdersBySubmittedAt" resultType="long">
         SELECT COUNT(*)
-        FROM purchase_order po
+        FROM xsy_purchase_order po
         WHERE po.deleted = FALSE
         <include refid="committedPoStatus"/>
         AND po.submitted_at &gt;= #{startTime}
@@ -365,7 +365,7 @@
 
     <select id="sumPurchaseAmountBySubmittedAt" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(po.total_amount), 0)
-        FROM purchase_order po
+        FROM xsy_purchase_order po
         WHERE po.deleted = FALSE
         <include refid="committedPoStatus"/>
         AND po.submitted_at &gt;= #{startTime}
@@ -376,7 +376,7 @@
 
     <select id="countTotalPurchaseOrders" resultType="long">
         SELECT COUNT(*)
-        FROM purchase_order po
+        FROM xsy_purchase_order po
         WHERE po.deleted = FALSE
         <include refid="committedPoStatus"/>
         <include refid="scopePo"/>
@@ -384,7 +384,7 @@
 
     <select id="sumTotalPurchaseAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(po.total_amount), 0)
-        FROM purchase_order po
+        FROM xsy_purchase_order po
         WHERE po.deleted = FALSE
         <include refid="committedPoStatus"/>
         <include refid="scopePo"/>
@@ -393,7 +393,7 @@
     <!-- 收货单：确认轴 + CONFIRMED。草稿收货单还没提交，不属于「今天收了多少货」。 -->
     <select id="countReceipts" resultType="long">
         SELECT COUNT(*)
-        FROM purchase_receipt pr
+        FROM xsy_purchase_receipt pr
         WHERE pr.deleted = FALSE
         AND pr.status = 'CONFIRMED'
         AND pr.confirmed_at &gt;= #{startTime}
@@ -403,7 +403,7 @@
 
     <select id="countSuppliersWithOrdersBySubmittedAt" resultType="long">
         SELECT COUNT(DISTINCT po.supplier_id)
-        FROM purchase_order po
+        FROM xsy_purchase_order po
         WHERE po.deleted = FALSE
         <include refid="committedPoStatus"/>
         AND po.submitted_at &gt;= #{startTime}
@@ -421,7 +421,7 @@
             , sales_daily AS (
                 SELECT (so.confirmed_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
                        COUNT(*) AS orders, SUM(so.settlement_total_amount) AS sales
-                FROM sales_order so
+                FROM xsy_sales_order so
                 WHERE so.deleted = FALSE AND so.status = 'CONFIRMED'
                 AND so.confirmed_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
                 AND so.confirmed_at &lt; ((#{endDate}::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')
@@ -433,7 +433,7 @@
             , purchase_daily AS (
                 SELECT (po.submitted_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
                        COUNT(*) AS orders, SUM(po.total_amount) AS amount
-                FROM purchase_order po
+                FROM xsy_purchase_order po
                 WHERE po.deleted = FALSE
                 <include refid="committedPoStatus"/>
                 AND po.submitted_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
@@ -456,7 +456,7 @@
                            <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
                            THEN m.quantity ELSE -m.quantity END) AS delta
                 </if>
-                FROM inventory_movement m
+                FROM xsy_inventory_movement m
                 WHERE m.deleted = FALSE
                 AND m.occurred_at &gt;= (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
                 AND m.occurred_at &lt; ((#{endDate}::date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai')
@@ -469,7 +469,7 @@
                 SELECT COALESCE(SUM(CASE WHEN m.movement_type IN
                     <foreach collection="inboundTypes" item="mt" open="(" separator="," close=")">#{mt}</foreach>
                     THEN m.quantity ELSE -m.quantity END), 0) AS quantity
-                FROM inventory_movement m
+                FROM xsy_inventory_movement m
                 WHERE m.deleted = FALSE
                 AND m.occurred_at &lt; (#{startDate}::date::timestamp AT TIME ZONE 'Asia/Shanghai')
                 <include refid="scopeM"/>

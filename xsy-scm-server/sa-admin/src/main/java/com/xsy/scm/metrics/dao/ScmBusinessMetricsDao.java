@@ -25,7 +25,7 @@ import java.util.List;
  * <p>
  * <b>{@code scope} 是必填参数</b>：聚合值比明细更容易被误当成「已经授权过的数据」。上下文由调用方每个请求解析一次再下传，
  * 不要在这里解析。只有确实带仓库列或业务归属列的语句收该参数；{@link #countSuppliers()} 与 {@link #countSkus()} 两张主档 既无仓库列也无归属列（采购归属在
- * {@code supplier_sku} 上），按裁决属团队共享读，不收窄。
+ * {@code xsy_supplier_sku} 上），按裁决属团队共享读，不收窄。
  */
 @Mapper
 public interface ScmBusinessMetricsDao {
