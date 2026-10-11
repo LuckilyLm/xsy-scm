@@ -36,7 +36,7 @@ public interface EmployeeWarehouseScopeDao extends BaseMapper<EmployeeWarehouseS
     List<Long> listEnabledEmployeeIdsByWarehouse(@Param("warehouseId") Long warehouseId);
 
     /**
-     * 某员工被授权的仓库（联 {@code warehouse} 取展示字段）。
+     * 某员工被授权的仓库（联 {@code xsy_warehouse} 取展示字段）。
      */
     List<WarehouseScopeWarehouseVO> listWarehousesByEmployee(@Param("employeeId") Long employeeId);
 

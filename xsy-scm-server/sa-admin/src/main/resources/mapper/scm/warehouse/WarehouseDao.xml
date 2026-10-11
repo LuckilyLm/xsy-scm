@@ -8,7 +8,7 @@
         t.province_code, t.province_name, t.city_code, t.city_name,
         t.district_code, t.district_name, t.longitude, t.latitude, t.geom_crs,
         t.version, t.created_at, t.updated_at, t.created_by, t.updated_by
-        FROM warehouse t
+        FROM xsy_warehouse t
         WHERE t.deleted = FALSE
         <if test="query.warehouseCode != null and query.warehouseCode != ''">
             AND t.warehouse_code ILIKE CONCAT('%', #{query.warehouseCode}, '%')

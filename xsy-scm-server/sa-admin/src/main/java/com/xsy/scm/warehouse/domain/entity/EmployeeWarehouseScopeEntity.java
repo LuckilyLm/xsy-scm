@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
  * 不同，映射必须逐列写清。
  */
 @Data
-@TableName("employee_warehouse_scope")
+@TableName("xsy_employee_warehouse_scope")
 public class EmployeeWarehouseScopeEntity {
 
     @TableId(type = IdType.AUTO)
@@ -30,7 +30,7 @@ public class EmployeeWarehouseScopeEntity {
     private Long employeeId;
 
     /**
-     * 仓库 id，对应 {@code warehouse.id}；同样无外键。
+     * 仓库 id，对应 {@code xsy_warehouse.id}；同样无外键。
      */
     private Long warehouseId;
 

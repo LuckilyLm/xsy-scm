@@ -28,13 +28,13 @@ class PurchaseWarehouseIT extends ScmW5PgITBase {
         assertThat(id).isNotNull();
 
         String status = jdbc.queryForObject(
-                "SELECT status FROM warehouse WHERE id = ?", String.class, id);
+                "SELECT status FROM xsy_warehouse WHERE id = ?", String.class, id);
         assertThat(status).isEqualTo(ScmWarehouseStatusEnum.ENABLED.name());
         assertThat(warehouseService.enabled(id)).isTrue();
 
         // G-03 单仓库口径：种子表达「系统仅维护一个启用仓库」
         assertThat(jdbc.queryForObject(
-                "SELECT COUNT(*) FROM warehouse WHERE warehouse_code = ? AND deleted = FALSE",
+                "SELECT COUNT(*) FROM xsy_warehouse WHERE warehouse_code = ? AND deleted = FALSE",
                 Long.class, SEED_WAREHOUSE_CODE)).isEqualTo(1L);
     }
 
@@ -55,9 +55,9 @@ class PurchaseWarehouseIT extends ScmW5PgITBase {
 
         // 正常编辑成功；编码不可改，服务端不读写表单里的编码
         warehouseService.update(updateForm(first, "一号仓改名", 0));
-        assertThat(jdbc.queryForObject("SELECT name FROM warehouse WHERE id = ?", String.class, first))
+        assertThat(jdbc.queryForObject("SELECT name FROM xsy_warehouse WHERE id = ?", String.class, first))
                 .isEqualTo("一号仓改名");
-        assertThat(jdbc.queryForObject("SELECT version FROM warehouse WHERE id = ?", Integer.class, first))
+        assertThat(jdbc.queryForObject("SELECT version FROM xsy_warehouse WHERE id = ?", Integer.class, first))
                 .isEqualTo(1);
         assertThat(warehouseCode(first)).as("编辑不触碰编码").isEqualTo(firstCode);
     }
@@ -76,14 +76,14 @@ class PurchaseWarehouseIT extends ScmW5PgITBase {
 
         // 取值域由 DB CHECK 兜住，不只靠 Java 枚举
         assertThatThrownBy(() -> jdbc.update(
-                "UPDATE warehouse SET status = 'BROKEN' WHERE id = ?", id))
+                "UPDATE xsy_warehouse SET status = 'BROKEN' WHERE id = ?", id))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     // ------------------------------------------------------------------
 
     private String warehouseCode(Long id) {
-        return jdbc.queryForObject("SELECT warehouse_code FROM warehouse WHERE id = ?", String.class, id);
+        return jdbc.queryForObject("SELECT warehouse_code FROM xsy_warehouse WHERE id = ?", String.class, id);
     }
 
     private static com.xsy.scm.warehouse.domain.form.WarehouseAddForm addForm(String name) {

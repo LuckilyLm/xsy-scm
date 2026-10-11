@@ -35,12 +35,12 @@ class WarehouseLifecycleIT extends ScmW6PgITBase {
         WarehouseStatusForm form = new WarehouseStatusForm();
         form.setId(id);
         form.setVersion(jdbc.queryForObject(
-                "SELECT version FROM warehouse WHERE id = ?", Integer.class, id));
+                "SELECT version FROM xsy_warehouse WHERE id = ?", Integer.class, id));
         return form;
     }
 
     private String warehouseStatus(Long id) {
-        return jdbc.queryForObject("SELECT status FROM warehouse WHERE id = ?", String.class, id);
+        return jdbc.queryForObject("SELECT status FROM xsy_warehouse WHERE id = ?", String.class, id);
     }
 
     /**

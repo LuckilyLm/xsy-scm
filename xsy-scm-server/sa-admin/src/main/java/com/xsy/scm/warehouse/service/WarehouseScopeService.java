@@ -20,7 +20,7 @@ import java.util.Set;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * 员工—仓库授权维护（{@code employee_warehouse_scope}）。
+ * 员工—仓库授权维护（{@code xsy_employee_warehouse_scope}）。
  *
  * <p>
  * 这是「能看哪些仓」的唯一写入口：库存族的数据范围全部由 {@code ScmDataScopeService} 读本表得出，没有任何旁路默认值，因此这里写下的行就是运行时的可见范围。
