@@ -90,9 +90,7 @@
         @ok="confirmExecuteJob"
     >
       <br/>
-      <a-alert type="info" show-icon style="margin-left: 25px">
-        <template #message> 点击【执行】后会按照【任务参数】，无论任务是否开启，都会立即执行。</template>
-      </a-alert>
+      <FormNote :lines="['点击【执行】后会按照【任务参数】，无论任务是否开启，都会立即执行。']"/>
       <br/>
       <a-form :label-col="{ span: 4 }">
         <a-form-item label="任务名称" name="jobName">
@@ -121,6 +119,7 @@ import {jobApi} from '/@/api/support/job-api';
 import {smartSentry} from '/@/lib/smart-sentry';
 import {SmartLoading} from '/@/components/framework/smart-loading/index';
 import {TRIGGER_TYPE_ENUM} from '/@/constants/support/job-const';
+import FormNote from '/@/components/framework/form-note/index.vue';
 
 // emit
 const emit = defineEmits(['reloadList']);

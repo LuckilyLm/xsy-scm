@@ -48,13 +48,10 @@
     </a-row>
   </a-form>
 
-  <a-alert
+  <FormNote
       v-if="businessContextActive"
-      class="smart-margin-bottom10"
-      type="info"
-      show-icon
-      message="正在按当前业务对象查看操作记录"
-      description="该视图按业务类型与 ID 精确匹配；操作时未写入该 ID 的记录（如新建类操作或更早的历史数据）无法归属到本对象，因此此处不保证是该对象的全部历史。"
+      title="正在按当前业务对象查看操作记录"
+      :lines="['该视图按业务类型与 ID 精确匹配；操作时未写入该 ID 的记录（如新建类操作或更早的历史数据）无法归属到本对象，因此此处不保证是该对象的全部历史。']"
   />
 
   <a-card size="small" :bordered="false" :hoverable="true">
@@ -121,6 +118,7 @@ import uaparser from 'ua-parser-js';
 import {smartSentry} from '/@/lib/smart-sentry';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import FormNote from '/@/components/framework/form-note/index.vue';
 
 const columns = ref([
   {

@@ -3,18 +3,7 @@
            :ok-button-props="{disabled: loading || imported}" :cancel-button-props="{disabled: loading}"
            :closable="!loading" :mask-closable="!loading" :keyboard="!loading" ok-text="开始导入" @ok="submit"
            @cancel="reset">
-    <!--
-      导入规则做成紧凑面板，不用整块 a-alert：那个蓝底块有 16px 内边距 + 16px 外边距，
-      在 860px 宽的弹窗里占掉 133px 高，是弹窗里最重的元素，而它只是静态说明。
-    -->
-    <section class="import-rules">
-      <p class="import-rules__title">导入规则</p>
-      <ul class="import-rules__list">
-        <li>同一「导入订单标识」的多行会合并为一张订单；请删除或替换模板示例行。</li>
-        <li>人工单价留空用系统定价；填写时必须同时填写改价原因并具备改价权限。</li>
-        <li>纯标品自动确认；含非标品时整单待确认，等待电子秤回写实重。</li>
-      </ul>
-    </section>
+    <FormNote title="导入规则" :lines="IMPORT_RULES"/>
 
     <!-- 模板下载：按钮与说明同一水平线居中，说明不再做成绿色胶囊（和上面的信息色打架） -->
     <div class="import-template">
@@ -52,7 +41,15 @@ import {message, Upload} from 'ant-design-vue';
 import {DownloadOutlined, InboxOutlined} from '@ant-design/icons-vue';
 import type {UploadFile, UploadProps, TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
+import FormNote from '/@/components/framework/form-note/index.vue';
 import type {ImportError, ImportResult} from '../order-types';
+
+const IMPORT_RULES = [
+  '同一「导入订单标识」的多行会合并为一张订单；请删除或替换模板示例行。',
+  '人工单价留空用系统定价；填写时必须同时填写改价原因并具备改价权限。',
+  '纯标品自动确认；含非标品时整单待确认，等待电子秤回写实重。',
+];
+
 const emit = defineEmits<{ saved: [] }>();
 const visible = ref(false), loading = ref(false), downloading = ref(false),
     result = ref<ImportResult>(), fileList = ref<UploadFile[]>([]);
@@ -138,34 +135,6 @@ async function submit() {
 defineExpose({open});
 </script>
 <style scoped>
-.import-rules {
-  margin-bottom: 14px;
-  padding: 10px 14px 12px;
-  border: 1px solid var(--scm-border, rgba(0, 0, 0, 0.06));
-  border-left: 3px solid var(--scm-primary, #00b96b);
-  border-radius: 6px;
-  background: var(--scm-fill, rgba(0, 0, 0, 0.02));
-}
-
-.import-rules__title {
-  margin: 0 0 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--scm-text, rgba(0, 0, 0, 0.88));
-}
-
-.import-rules__list {
-  margin: 0;
-  padding-left: 16px;
-  font-size: 12px;
-  line-height: 20px;
-  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
-}
-
-.import-rules__list li + li {
-  margin-top: 2px;
-}
-
 .import-template {
   display: flex;
   align-items: center;

@@ -16,12 +16,7 @@
       @cancel="close"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon/>
-    <a-alert
-        type="info"
-        show-icon
-        message="含开始日，不含结束日"
-        description="只汇总区间内「已确认」的销售订单行"
-    />
+    <FormNote title="含开始日，不含结束日" :lines="['只汇总区间内「已确认」的销售订单行']"/>
     <a-form ref="formRef" :model="{...form, range}" :rules="formRules" layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>
         <a-range-picker
@@ -78,6 +73,7 @@ import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import type {DemandCalculationBatch, GenerateResult, Id} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
+import FormNote from '/@/components/framework/form-note/index.vue';
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: []; generated: []; viewBatch: [batchId: Id] }>();

@@ -86,13 +86,8 @@
         </template>
       </a-table>
 
-      <a-alert
-          class="hint-block"
-          type="info"
-          show-icon
-          message="超收容差"
-          description="超出剩余可收量的比例由「采购超收容差」配置决定；本次可收上限超出容差时整笔确认会被拒绝，不会部分入库。"
-      />
+      <FormNote title="超收容差"
+                     :lines="['超出剩余可收量的比例由「采购超收容差」配置决定；本次可收上限超出容差时整笔确认会被拒绝，不会部分入库。']"/>
     </a-spin>
   </a-modal>
 </template>
@@ -111,6 +106,7 @@ import {
   validateConfirm,
 } from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
+import FormNote from '/@/components/framework/form-note/index.vue';
 
 const emit = defineEmits<{ saved: [] }>();
 
@@ -218,9 +214,5 @@ defineExpose({open});
 .hint {
   color: var(--scm-text-secondary);
   font-size: 12px;
-}
-
-.hint-block {
-  margin-top: 8px;
 }
 </style>

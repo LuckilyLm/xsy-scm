@@ -33,31 +33,17 @@
     padding-inline-end: 8px;
   }
 
-  .ant-form-item-label > label {
-    height: 32px;
-    line-height: 32px;
-  }
-
+  /*
+   * 控件高度交给全站基线（28px），不再在这里单独拔到 32px。
+   * 同一个页面里筛选控件 32px、下面的导出按钮与分页 28px，视觉上会读成「两套控件」；
+   * 28px 是本项目表格工具栏按钮 / 分页 / 表内按钮的一致高度。
+   * 这里只保留「按内容限宽」，避免长下拉把整行撑开。
+   */
   .ant-input,
   .ant-input-affix-wrapper,
   .ant-picker,
   .ant-select {
     max-width: 100%;
-    min-height: 32px;
-  }
-
-  /*
-   * 带 allow-clear / 前后缀的输入框是 `affix-wrapper > input` 两层结构，
-   * 上面那条 `min-height` 会同时命中两层：内层 input 先被撑到 32px，
-   * 外层再叠自己的 padding 与边框 ⇒ 实测整格 40px，比同排的下拉、日期控件高一截。
-   * 外层已经保证 32px，内层的高度交回给外层排版。
-   */
-  .ant-input-affix-wrapper > .ant-input {
-    min-height: 0;
-  }
-
-  .ant-select-selector {
-    min-height: 32px;
   }
 }
 
@@ -69,7 +55,6 @@
   /* 不再 `margin-left: auto`：那会把按钮推到最右，和字段之间空出一大截 */
 
   .ant-btn {
-    height: 32px;
     margin: 0;
     padding-inline: 12px;
   }
@@ -139,5 +124,17 @@
     flex: 1 1 100%;
     justify-content: flex-end;
     margin-left: 0;
+  }
+}
+
+/*
+ * 工具栏右侧的图标按钮之间留一点缝。
+ * 它们各自是 21px 的 text 按钮、图标左右各内缩 4px，图标本身已经隔开 8px；
+ * 但按钮盒子是紧贴的 —— hover 时两块的背景会连成一条，看着像「粘在一起」。
+ * 只作用于相邻的独立按钮，button-group 内部的按钮不碰（那本来就该连体）。
+ */
+.smart-table-setting-block {
+  .ant-btn + .ant-btn:not(.ant-btn-group .ant-btn) {
+    margin-left: 4px;
   }
 }
