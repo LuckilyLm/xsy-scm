@@ -41,13 +41,13 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
         Long customerId = newCustomer();
         Long scopeOwnerId = jdbc.queryForObject(
                 "SELECT COALESCE(MAX(employee_id), 0) + 100000 FROM t_employee", Long.class);
-        jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", scopeOwnerId, customerId);
+        jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", scopeOwnerId, customerId);
         evictMybatisCache();
         Long saleSkuId = newOnShelfSku("RPT-AR");
         Long oldOrderId = confirmedSalesOrder(customerId, saleSkuId, "10.0000", "10.0000");
         Long currentOrderId = confirmedSalesOrder(customerId, saleSkuId, "8.0000", "8.0000");
         Long overAppliedOrderId = confirmedSalesOrder(customerId, saleSkuId, "1.0000", "1.0000");
-        String customerName = jdbc.queryForObject("SELECT name FROM customer WHERE id = ?", String.class, customerId);
+        String customerName = jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, customerId);
 
         LocalDate today = LocalDate.now(BUSINESS_ZONE);
         OffsetDateTime oldAt = at(today.minusDays(2));
@@ -77,7 +77,7 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
 
         Long purchaseSkuId = newOnShelfSku("RPT-AP");
         Long supplierId = newPurchasableSupplier("RPT-AP", purchaseSkuId);
-        String supplierName = jdbc.queryForObject("SELECT name FROM supplier WHERE id = ?", String.class, supplierId);
+        String supplierName = jdbc.queryForObject("SELECT name FROM xsy_supplier WHERE id = ?", String.class, supplierId);
         PurchaseFact oldPurchase = purchaseFact("AP-OLD", supplierId, purchaseSkuId, "10.0000", "10.0000",
                 scopeOwnerId);
         PurchaseFact currentPurchase = purchaseFact("AP-CURRENT", supplierId, purchaseSkuId, "10.0000", "8.0000",
@@ -179,7 +179,7 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
         // Keep immutable Finance facts as append-only test inserts so event dates can straddle the report window.
         String resolvedSourceType = "NORMAL".equals(entryType) ? "SALES_ORDER" : "ORDER_RETURN";
         Long resolvedSourceId = sourceId == null ? orderId : sourceId;
-        return jdbc.queryForObject("INSERT INTO finance_receivable "
+        return jdbc.queryForObject("INSERT INTO xsy_finance_receivable "
                         + "(receivable_no, source_type, source_id, order_id, customer_id, customer_name_snapshot, "
                         + "settlement_customer_id, settlement_customer_name_snapshot, "
                         + "entry_type, original_receivable_id, amount, event_at, reason) "
@@ -191,7 +191,7 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
     private PurchaseFact purchaseFact(String suffix, Long supplierId, Long skuId, String quantity, String price,
             Long scopeOwnerId) {
         PurchaseOrderVO order = createDraftOrder(suffix, supplierId, skuId, quantity, price);
-        jdbc.update("UPDATE purchase_order SET purchaser_id = ? WHERE id = ?", scopeOwnerId, order.getId());
+        jdbc.update("UPDATE xsy_purchase_order SET purchaser_id = ? WHERE id = ?", scopeOwnerId, order.getId());
         evictMybatisCache();
         submitOrder(order.getId());
         PurchaseReceiptVO receipt = createReceipt(order.getId());
@@ -203,7 +203,7 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
         // The source PO / receipt are real domain rows; the immutable header fixture supplies controlled event time.
         String resolvedSourceType = "NORMAL".equals(entryType) ? "PURCHASE_RECEIPT" : "MANUAL";
         Long sourceId = "NORMAL".equals(entryType) ? fact.receiptId() : null;
-        return jdbc.queryForObject("INSERT INTO finance_payable "
+        return jdbc.queryForObject("INSERT INTO xsy_finance_payable "
                         + "(payable_no, source_type, source_id, purchase_order_id, supplier_id, "
                         + "supplier_name_snapshot, entry_type, original_payable_id, amount, event_at, reason) "
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
@@ -212,7 +212,7 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
     }
 
     private Long receipt(Long customerId, String customerName, String amount, OffsetDateTime receivedAt) {
-        return jdbc.queryForObject("INSERT INTO finance_receipt "
+        return jdbc.queryForObject("INSERT INTO xsy_finance_receipt "
                         + "(receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, "
                         + "settlement_customer_name_snapshot, amount, method, received_at, entry_type) "
                         + "VALUES (?, ?, ?, ?, ?, ?, 'BANK_TRANSFER', ?, 'NORMAL') RETURNING id",
@@ -221,7 +221,7 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
     }
 
     private Long payment(Long supplierId, String supplierName, String amount, OffsetDateTime paidAt) {
-        return jdbc.queryForObject("INSERT INTO finance_payment "
+        return jdbc.queryForObject("INSERT INTO xsy_finance_payment "
                         + "(payment_no, counterparty_type, counterparty_id, counterparty_name_snapshot, amount, "
                         + "method, paid_at, entry_type) "
                         + "VALUES (?, 'SUPPLIER', ?, ?, ?, 'BANK_TRANSFER', ?, 'NORMAL') RETURNING id",
@@ -231,7 +231,7 @@ class ScmFinanceReportPgIT extends ScmW5PgITBase {
 
     private Long writeOff(String suffix, String sourceType, Long sourceId, String targetType, Long targetId,
             String amount, String entryType, Long reverseOfId, OffsetDateTime writtenOffAt, String reason) {
-        return jdbc.queryForObject("INSERT INTO finance_write_off "
+        return jdbc.queryForObject("INSERT INTO xsy_finance_write_off "
                         + "(write_off_no, source_type, source_id, target_type, target_id, amount, entry_type, "
                         + "reverse_of_id, reason, written_off_at, operator) "
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",

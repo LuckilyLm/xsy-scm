@@ -74,7 +74,7 @@ import static org.mockito.Mockito.mockStatic;
  *
  * <p><b>夹具用两个本次新建的仓库</b>：新仓里除了本用例写入的事实不可能有别的行，范围金额才能按
  * 精确值断言，不必退化成「包含 / 不包含」。库存事实一律走真实命令链（采购单 → 收货确认）造，
- * 直插 {@code inventory_movement} 会绕过 append-only 账本的快照约束。
+ * 直插 {@code xsy_inventory_movement} 会绕过 append-only 账本的快照约束。
  *
  * <p><b>身份与权限怎么造</b>：与 {@code ScmPurchaseDataScopePgIT} 同一套做法 —— 登录员工用
  * {@link SmartRequestUtil#setRequestUser}，功能权限用 {@code mockStatic(StpUtil.class)}（IT 线程里
@@ -514,7 +514,7 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
     }
 
     private void grantWarehouseScope(Long employeeId, Long warehouseId) {
-        jdbc.update("INSERT INTO employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
+        jdbc.update("INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 employeeId, warehouseId);
     }
 
@@ -588,16 +588,16 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
     }
 
     private String skuCodeOf(Long skuId) {
-        return jdbc.queryForObject("SELECT sku_code FROM product_sku WHERE id = ?", String.class, skuId);
+        return jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id = ?", String.class, skuId);
     }
 
     private String receiptNo(Long receiptId) {
-        return jdbc.queryForObject("SELECT receipt_no FROM purchase_receipt WHERE id = ?", String.class,
+        return jdbc.queryForObject("SELECT receipt_no FROM xsy_purchase_receipt WHERE id = ?", String.class,
                 receiptId);
     }
 
     private String warehouseName(Long warehouseId) {
-        return jdbc.queryForObject("SELECT name FROM warehouse WHERE id = ?", String.class, warehouseId);
+        return jdbc.queryForObject("SELECT name FROM xsy_warehouse WHERE id = ?", String.class, warehouseId);
     }
 
     private LocalDate end() {

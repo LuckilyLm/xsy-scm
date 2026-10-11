@@ -100,7 +100,7 @@ public class PurchaseReportVO {
         private OffsetDateTime lastSubmittedAt;
     }
 
-    /** 粒度 = {@code purchase_order_item}。 */
+    /** 粒度 = {@code xsy_purchase_order_item}。 */
     @Data
     public static class ItemRow {
         private Long purchaseOrderId;
@@ -111,7 +111,7 @@ public class PurchaseReportVO {
         private String supplierName;
         private String purchaserName;
         private String warehouseName;
-        /** {@code purchase_order.planned_arrival_date} 是 DATE，不是瞬间。 */
+        /** {@code xsy_purchase_order.planned_arrival_date} 是 DATE，不是瞬间。 */
         private java.time.LocalDate plannedArrivalDate;
         private String spuCode;
         private String productName;

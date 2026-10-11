@@ -19,7 +19,7 @@ import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 @Data
 public class ReceiptReportVO {
 
-    /** 粒度 = {@code purchase_receipt_item}。 */
+    /** 粒度 = {@code xsy_purchase_receipt_item}。 */
     @Data
     public static class ReceiptRow {
         private Long receiptId;
