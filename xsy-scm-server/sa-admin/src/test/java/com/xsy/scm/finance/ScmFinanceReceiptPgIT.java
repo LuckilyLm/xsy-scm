@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 收款登记（PG IT）。
  *
- * <p>这里钉的是「一笔钱就是一个事实」：登记收款只产生 {@code finance_receipt} + 一条
+ * <p>这里钉的是「一笔钱就是一个事实」：登记收款只产生 {@code xsy_finance_receipt} + 一条
  * {@code RECEIVE} 日志，<b>不</b>自动核销、<b>不</b>改应收、<b>不</b>改客户与订单，
  * 也<b>不</b>要求客户存在任何应收（预收是合法业务）。
  *
@@ -67,7 +67,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
 
     private Long customerOwnedBy(Long sellerId) {
         Long customerId = newCustomer();
-        jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", sellerId, customerId);
+        jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", sellerId, customerId);
         evictMybatisCache();
         return customerId;
     }
@@ -78,12 +78,12 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     }
 
     private Map<String, Object> receiptRow(Long receiptId) {
-        return jdbc.queryForMap("SELECT * FROM finance_receipt WHERE id = ?", receiptId);
+        return jdbc.queryForMap("SELECT * FROM xsy_finance_receipt WHERE id = ?", receiptId);
     }
 
     private List<Map<String, Object>> logsOf(Long receiptId) {
         return jdbc.queryForList(
-                "SELECT * FROM finance_operation_log WHERE business_type = 'RECEIPT' AND business_id = ?",
+                "SELECT * FROM xsy_finance_operation_log WHERE business_type = 'RECEIPT' AND business_id = ?",
                 receiptId);
     }
 
@@ -95,8 +95,8 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
      * 全表计数在那种顺序下不是「本次什么都没产生」的证据。
      */
     private int receiptLogsOfCustomer(Long customerId) {
-        return count("SELECT count(*) FROM finance_operation_log l"
-                + " JOIN finance_receipt r ON r.id = l.business_id"
+        return count("SELECT count(*) FROM xsy_finance_operation_log l"
+                + " JOIN xsy_finance_receipt r ON r.id = l.business_id"
                 + " WHERE l.business_type = 'RECEIPT' AND r.customer_id = ?", customerId);
     }
 
@@ -186,7 +186,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
                 .isEqualTo("BANK_TRANSFER");
         assertThat(add(form(customerId, "7.0000", "OTHER", PAST)).getMethod()).isEqualTo("OTHER");
 
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId))
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId))
                 .isEqualTo(2);
     }
 
@@ -203,14 +203,14 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         expectCode(() -> add(form(customerId, "10.0000", "WECHAT_PAY", PAST)), 41140);
         // 余额抵扣必须由余额流水驱动，人工登记会造出「账上有收款、余额没动」的假事实
         expectCode(() -> add(form(customerId, "10.0000", "BALANCE", PAST)), 41140);
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isZero();
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId)).isZero();
 
         // 在线支付是收款侧的合法方式（ADM-12）：人工登记一笔在线收款是允许的
         assertThat(add(form(customerId, "10.0000", "ONLINE_PAYMENT", PAST)).getMethod())
                 .isEqualTo("ONLINE_PAYMENT");
 
         // 库层第二道：即使绕过 Java 枚举也进不来
-        expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot,"
+        expectSqlFailure("INSERT INTO xsy_finance_receipt (receipt_no, customer_id, customer_name_snapshot,"
                 + " amount, method, received_at, entry_type) VALUES ('RC-D-1', ?, '客户', 10.0000,"
                 + " 'WECHAT_PAY', now(), 'NORMAL')", customerId);
     }
@@ -230,7 +230,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         expectCode(() -> add(form(customerId, "12.34567", "CASH", PAST)), 40000);
         expectCode(() -> add(form(customerId, "1e5", "CASH", PAST)), 40000);
         expectCode(() -> add(form(customerId, "NaN", "CASH", PAST)), 40000);
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isZero();
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId)).isZero();
 
         // 123.4567 原样保存（不四舍五入成 123.4567 → 123.4567，也不截断）
         Long preciseId = add(form(customerId, "123.4567", "CASH", PAST)).getReceiptId();
@@ -264,16 +264,16 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         Long secondId = add(second).getReceiptId();
 
         assertThat(firstId).isNotEqualTo(secondId);
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ? AND external_reference = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ? AND external_reference = ?",
                 customerId, "BANK-STATEMENT-001")).isEqualTo(2);
         // external_reference 上有普通索引、没有唯一约束（V65）：银行流水号跨客户重复是真实存在的
-        assertThat(count("SELECT count(*) FROM pg_indexes WHERE tablename = 'finance_receipt'"
+        assertThat(count("SELECT count(*) FROM pg_indexes WHERE tablename = 'xsy_finance_receipt'"
                 + " AND indexdef ILIKE '%unique%' AND indexdef ILIKE '%external_reference%'")).isZero();
         // 收款表的来源列 + 第二层幂等索引（ADM-12）：
         // 同一笔支付交易被驱动多少次，Finance 只留一条 NORMAL 且带来源的收款事实。
         // 它是「支付交易 → 收款」的幂等键，不是人工收款的自然唯一键，因此谓词必须收窄。
         assertThat(jdbc.queryForList(
-                "SELECT indexdef FROM pg_indexes WHERE tablename = 'finance_receipt'"
+                "SELECT indexdef FROM pg_indexes WHERE tablename = 'xsy_finance_receipt'"
                         + " AND indexdef ILIKE '%unique%'", String.class))
                 .as("finance_receipt 的全部唯一索引")
                 .allSatisfy(indexDef -> assertThat(indexDef)
@@ -293,15 +293,15 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     @DisplayName("预收：客户没有任何应收也能登记收款")
     void advanceReceiptWithoutAnyReceivableIsAllowed() {
         Long customerId = customerOwnedBy(null);
-        assertThat(count("SELECT count(*) FROM finance_receivable WHERE customer_id = ?", customerId)).isZero();
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable WHERE customer_id = ?", customerId)).isZero();
 
         FinanceReceiptVO result = add(form(customerId, "30.0000", "CASH", PAST));
 
         assertThat(result.getReceiptNo()).startsWith("RC");
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
                 result.getReceiptId())).as("这笔预收不自动生成核销").isZero();
         // 按客户收窄而不是全表：同一库里 NOT_SUPPORTED 的 IT 会提交真实的应收事实
-        assertThat(count("SELECT count(*) FROM finance_receivable WHERE customer_id = ?", customerId))
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable WHERE customer_id = ?", customerId))
                 .as("登记收款不产生任何应收").isZero();
     }
 
@@ -312,7 +312,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         Long orderId = confirmedSalesOrder(customerId, newOnShelfSku("RCT"), "10.0000", "10.0000");
         // 受控夹具：按 schema 直插一张正常应收事实，
         // 目的是证明「收款登记不会碰它」，核销仍只能由核销命令产生。
-        jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
+        jdbc.update("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,"
                         + " customer_id, customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, amount, event_at,"
                         + " created_at, updated_at, created_by)"
@@ -321,21 +321,21 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
                 orderId, orderId, customerId, customerId, currentOperator());
         evictMybatisCache();
         Map<String, Object> before = jdbc.queryForMap(
-                "SELECT * FROM finance_receivable WHERE source_id = ? AND entry_type = 'NORMAL'", orderId);
+                "SELECT * FROM xsy_finance_receivable WHERE source_id = ? AND entry_type = 'NORMAL'", orderId);
         BigDecimal orderSettlementBefore = jdbc.queryForObject(
-                "SELECT settlement_total_amount FROM sales_order WHERE id = ?", BigDecimal.class, orderId);
+                "SELECT settlement_total_amount FROM xsy_sales_order WHERE id = ?", BigDecimal.class, orderId);
 
         FinanceReceiptVO receipt = add(form(customerId, "5.0000", "CASH", PAST));
 
         Map<String, Object> after = jdbc.queryForMap(
-                "SELECT * FROM finance_receivable WHERE source_id = ? AND entry_type = 'NORMAL'", orderId);
+                "SELECT * FROM xsy_finance_receivable WHERE source_id = ? AND entry_type = 'NORMAL'", orderId);
         assertThat(after.get("amount")).isEqualTo(before.get("amount"));
         assertThat(after.get("version")).isEqualTo(before.get("version"));
         assertThat(after.get("updated_at")).isEqualTo(before.get("updated_at"));
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
                 receipt.getReceiptId())).as("这笔收款不自动生成核销").isZero();
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT settlement_total_amount FROM sales_order WHERE id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT settlement_total_amount FROM xsy_sales_order WHERE id = ?",
                 BigDecimal.class, orderId)).as("订单结算金额一字未改").isEqualByComparingTo(orderSettlementBefore);
     }
 
@@ -356,9 +356,9 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         assertThat(replay.getReceiptId()).isEqualTo(first.getReceiptId());
         assertThat(replay.getReceiptNo()).isEqualTo(first.getReceiptNo());
         assertThat(replay.getAmount()).isEqualByComparingTo(first.getAmount());
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId)).isEqualTo(1);
         assertThat(logsOf(first.getReceiptId())).hasSize(1);
-        assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+        assertThat(count("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key = ?", idempotencyKey))
                 .isEqualTo(1);
     }
 
@@ -377,7 +377,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
             FinanceReceiptVO replay = financeReceiptService.add(request, idempotencyKey);
             assertThat(replay.getReceiptId()).isEqualTo(first.getReceiptId());
 
-            assertThat(jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", employeeB, customerId))
+            assertThat(jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", employeeB, customerId))
                     .isEqualTo(1);
             evictMybatisCache();
 
@@ -387,9 +387,9 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
             asAdmin();
         }
 
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId)).isEqualTo(1);
         assertThat(receiptLogsOfCustomer(customerId)).isEqualTo(1);
-        assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+        assertThat(count("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key = ?", idempotencyKey))
                 .isEqualTo(1);
     }
 
@@ -403,7 +403,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         FinanceReceiptAddForm different = form(customerId, "99.0000", "CASH", PAST);
         expectCode(() -> financeReceiptService.add(different, idempotencyKey), 40966);
 
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId)).isEqualTo(1);
         assertThat(receiptLogsOfCustomer(customerId)).as("冲突的那一次没有追加日志").isEqualTo(1);
     }
 
@@ -414,7 +414,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
         FinanceReceiptAddForm form = form(customerId, "10.0000", "CASH", PAST);
 
         expectCode(() -> financeReceiptService.add(form, "  "), 40069);
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isZero();
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId)).isZero();
     }
 
     // ------------------------------------------------------------------
@@ -425,14 +425,14 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
     @DisplayName("登记后改客户名称：收款单上的名称快照不变（历史账不回读主档）")
     void customerNameSnapshotIsFrozenAtRegistration() {
         Long customerId = customerOwnedBy(null);
-        String original = jdbc.queryForObject("SELECT name FROM customer WHERE id = ?", String.class, customerId);
+        String original = jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, customerId);
 
         Long receiptId = add(form(customerId, "20.0000", "CASH", PAST)).getReceiptId();
-        jdbc.update("UPDATE customer SET name = ? WHERE id = ?", "改名后的客户" + UUID.randomUUID(), customerId);
+        jdbc.update("UPDATE xsy_customer SET name = ? WHERE id = ?", "改名后的客户" + UUID.randomUUID(), customerId);
         evictMybatisCache();
 
         assertThat(receiptRow(receiptId).get("customer_name_snapshot")).isEqualTo(original);
-        assertThat(jdbc.queryForObject("SELECT name FROM customer WHERE id = ?", String.class, customerId))
+        assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, customerId))
                 .as("主档确实已经改名，快照才有判别性").startsWith("改名后的客户");
     }
 
@@ -465,7 +465,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
             // 与「客户不存在」共用同一个异常：能分辨存在与否就等于把主键探测变成可用信号
             assertThatThrownBy(() -> add(form(customerId, "15.0000", "CASH", PAST)))
                     .isInstanceOf(ScmDataScopeException.class);
-            assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isZero();
+            assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId)).isZero();
             assertThat(receiptLogsOfCustomer(customerId)).isZero();
 
             // 不存在的客户必须是同一个异常
@@ -485,7 +485,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
             asEmployee(employeeId);
             assertThatThrownBy(() -> add(form(customerId, "15.0000", "CASH", PAST)))
                     .isInstanceOf(ScmDataScopeException.class);
-            assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId)).isZero();
+            assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId)).isZero();
         } finally {
             asAdmin();
             // 全范围账号（超管兜底路径）可以登记，证明拒绝来自范围而不是字段形态
@@ -507,7 +507,7 @@ class ScmFinanceReceiptPgIT extends ScmW5PgITBase {
                 .isEqualTo(PAST.toInstant());
         // 库侧逐值判等（不是「接近」）：服务端一旦改成 now()，这里立刻为 false
         assertThat(jdbc.queryForObject(
-                "SELECT received_at = ?::timestamptz FROM finance_receipt WHERE id = ?",
+                "SELECT received_at = ?::timestamptz FROM xsy_finance_receipt WHERE id = ?",
                 Boolean.class, PAST.toInstant().toString(), receiptId)).isTrue();
     }
 

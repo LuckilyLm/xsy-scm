@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
  * 红字应收所需的<b>退货批准事实</b>（单头维度），由 {@code FinanceReceivableSourceDao} 只读取得。
  *
  * <p>
- * {@code approvedAt} / {@code approvedBy} 取 {@code order_return} 上已落库的列：红字是「已经成立的 {@code OrderReturn APPROVED}
+ * {@code approvedAt} / {@code approvedBy} 取 {@code xsy_order_return} 上已落库的列：红字是「已经成立的 {@code OrderReturn APPROVED}
  * 在财务域中的事实映射」（原则），时点与操作人属于那个业务事实，不能由财务侧现取 {@code now()} 或现取请求上下文。
  */
 @Data
@@ -24,7 +24,7 @@ public class FinanceReturnSourceDto {
     private Long orderId;
 
     /**
-     * 红字的事件时点 = {@code order_return.approved_at}。
+     * 红字的事件时点 = {@code xsy_order_return.approved_at}。
      */
     private OffsetDateTime approvedAt;
 
@@ -35,7 +35,7 @@ public class FinanceReturnSourceDto {
     private String approvedBy;
 
     /**
-     * 红字原因 = {@code order_return.reason}（建单时填写的退货原因，已成立的业务事实）。
+     * 红字原因 = {@code xsy_order_return.reason}（建单时填写的退货原因，已成立的业务事实）。
      */
     private String reason;
 }

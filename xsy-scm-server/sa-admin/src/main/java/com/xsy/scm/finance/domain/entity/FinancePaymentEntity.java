@@ -11,8 +11,8 @@ import java.time.OffsetDateTime;
  * 付款：一笔钱一单，可无对应应付（预付）；退款付款带 {@code ORDER_REFUND} 来源。
  *
  * <p>
- * <b>{@code COMPLETED} 的退款不等于资金已付出</b>：{@code order_refund} 是订单域的业务事实，真实退付由本表表达。一张退款最多一笔正式付款、金额必须等于
- * {@code order_refund.refund_amount}，由 {@code uk_finance_payment_source_active} 在库级兜底。
+ * <b>{@code COMPLETED} 的退款不等于资金已付出</b>：{@code xsy_order_refund} 是订单域的业务事实，真实退付由本表表达。一张退款最多一笔正式付款、金额必须等于
+ * {@code xsy_order_refund.refund_amount}，由 {@code uk_finance_payment_source_active} 在库级兜底。
  *
  * <p>
  * <b>付款不冲减应收</b>：Return 负责红冲，Refund Payment 只负责真实资金退付，两者互不替代，避免双重冲减。
@@ -24,7 +24,7 @@ import java.time.OffsetDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("finance_payment")
+@TableName("xsy_finance_payment")
 public class FinancePaymentEntity extends FinanceRecord {
 
     private String paymentNo;
@@ -35,14 +35,14 @@ public class FinancePaymentEntity extends FinanceRecord {
     private String counterpartyType;
 
     /**
-     * 对方主键。{@code SUPPLIER} 侧不收窄范围（供应商主档按采购团队共享读取，无 supplier 维度）；{@code CUSTOMER} 侧按 {@code customer.seller_id} 收窄。
+     * 对方主键。{@code SUPPLIER} 侧不收窄范围（供应商主档按采购团队共享读取，无 supplier 维度）；{@code CUSTOMER} 侧按 {@code xsy_customer.seller_id} 收窄。
      */
     private Long counterpartyId;
 
     private String counterpartyNameSnapshot;
 
     /**
-     * 恒 &gt; 0；退款付款必须等于 {@code order_refund.refund_amount}。反向行金额同样为正。
+     * 恒 &gt; 0；退款付款必须等于 {@code xsy_order_refund.refund_amount}。反向行金额同样为正。
      */
     private BigDecimal amount;
 
@@ -78,7 +78,7 @@ public class FinancePaymentEntity extends FinanceRecord {
     private String sourceType;
 
     /**
-     * {@code order_refund.id}；反向行必须为 {@code null}。
+     * {@code xsy_order_refund.id}；反向行必须为 {@code null}。
      */
     private Long sourceId;
 

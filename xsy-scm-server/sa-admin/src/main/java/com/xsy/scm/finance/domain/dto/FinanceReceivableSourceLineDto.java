@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * 应收生成所需的<b>签收事实</b>（明细维度）：一条 {@code inventory_outbound_item} 一行应收明细。
+ * 应收生成所需的<b>签收事实</b>（明细维度）：一条 {@code xsy_inventory_outbound_item} 一行应收明细。
  *
  * <p>
  * 量与价刻意来自两张表：出库行是「实际发了多少」的唯一事实，订单行是「按什么价格结算」的唯一事实。两者都不允许被订单结算列或库存成本列替代。
@@ -31,17 +31,17 @@ public class FinanceReceivableSourceLineDto {
     private String unitSnapshot;
 
     /**
-     * 实际出库量 {@code inventory_outbound_item.quantity}，库级 CHECK 恒 &gt; 0。
+     * 实际出库量 {@code xsy_inventory_outbound_item.quantity}，库级 CHECK 恒 &gt; 0。
      */
     private BigDecimal quantity;
 
     /**
-     * 冻结售价 {@code sales_order_item.locked_unit_price}，允许合法为 0（赠品 / 0 元单）。
+     * 冻结售价 {@code xsy_sales_order_item.locked_unit_price}，允许合法为 0（赠品 / 0 元单）。
      */
     private BigDecimal unitPrice;
 
     /**
-     * 订单行的下单金额 {@code sales_order_item.ordered_line_amount}（下单量 × 锁定单价）。
+     * 订单行的下单金额 {@code xsy_sales_order_item.ordered_line_amount}（下单量 × 锁定单价）。
      *
      * <p>
      * 只用来把订单确认时冻结的行优惠分摊<b>等比折算</b>到本次实际出库量上：优惠是按下单金额冻结的， 少发时该行应承担的优惠也要按比例变小，不能整额落到部分出库行上。

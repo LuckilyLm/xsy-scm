@@ -9,7 +9,7 @@
     -->
     <insert id="insertOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinancePayableItemEntity">
-        INSERT INTO finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id,
+        INSERT INTO xsy_finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id,
                                           sku_id, sku_name_snapshot, unit_snapshot,
                                           quantity, unit_price, amount,
                                           version, deleted, created_at, updated_at, created_by, updated_by)
@@ -24,7 +24,7 @@
     <select id="selectOriginalItem"
             resultType="com.xsy.scm.finance.domain.entity.FinancePayableItemEntity">
         SELECT *
-        FROM finance_payable_item
+        FROM xsy_finance_payable_item
         WHERE payable_id = #{payableId}
           AND purchase_order_item_id = #{purchaseOrderItemId}
           AND source_type = 'PURCHASE_RECEIPT_ITEM'
@@ -35,7 +35,7 @@
 
     <select id="selectByPayableId" resultType="com.xsy.scm.finance.domain.entity.FinancePayableItemEntity">
         SELECT *
-        FROM finance_payable_item
+        FROM xsy_finance_payable_item
         WHERE payable_id = #{payableId}
           AND deleted = FALSE
         ORDER BY id

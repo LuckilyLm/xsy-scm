@@ -63,7 +63,7 @@ class ScmFinanceReceivableRollbackPgIT extends ScmW6PgITBase {
         Long skuId = newOnShelfSku(tag);
         stockIn(warehouseId, skuId, tag, "20.0000");
         Long customerId = newCustomer();
-        jdbc.update("UPDATE customer SET address = ?, longitude = 113.94, latitude = 22.54,"
+        jdbc.update("UPDATE xsy_customer SET address = ?, longitude = 113.94, latitude = 22.54,"
                 + " geom_crs = 'GCJ02' WHERE id = ?", "F1-2B rollback 地址", customerId);
         Long orderId = confirmedSalesOrder(customerId, skuId, "10.0000", "10.0000");
         sortOneLine(orderId, "10.0000", warehouseId);
@@ -78,7 +78,7 @@ class ScmFinanceReceivableRollbackPgIT extends ScmW6PgITBase {
 
     private Long locatedWarehouse(String tag) {
         Long warehouseId = newWarehouse(tag);
-        jdbc.update("UPDATE warehouse SET longitude = 113.90, latitude = 22.50, geom_crs = 'GCJ02' WHERE id = ?",
+        jdbc.update("UPDATE xsy_warehouse SET longitude = 113.90, latitude = 22.50, geom_crs = 'GCJ02' WHERE id = ?",
                 warehouseId);
         return warehouseId;
     }
@@ -111,7 +111,7 @@ class ScmFinanceReceivableRollbackPgIT extends ScmW6PgITBase {
         entryForm.setItems(entries);
         sortingTaskService.enter(taskId, entryForm);
         var action = new SortingActionForm();
-        action.setVersion(jdbc.queryForObject("SELECT version FROM sorting_task WHERE id = ?",
+        action.setVersion(jdbc.queryForObject("SELECT version FROM xsy_sorting_task WHERE id = ?",
                 Integer.class, taskId));
         sortingTaskService.complete(taskId, action);
     }
@@ -133,7 +133,7 @@ class ScmFinanceReceivableRollbackPgIT extends ScmW6PgITBase {
     }
 
     private void locateAllStops(Long routeId) {
-        jdbc.update("UPDATE delivery_route_stop SET longitude = 113.95, latitude = 22.55, geom_crs = 'GCJ02'"
+        jdbc.update("UPDATE xsy_delivery_route_stop SET longitude = 113.95, latitude = 22.55, geom_crs = 'GCJ02'"
                 + " WHERE route_id = ? AND deleted = FALSE", routeId);
     }
 
@@ -144,19 +144,19 @@ class ScmFinanceReceivableRollbackPgIT extends ScmW6PgITBase {
     }
 
     private Integer versionOf(Long routeId) {
-        return jdbc.queryForObject("SELECT version FROM delivery_route WHERE id = ?", Integer.class, routeId);
+        return jdbc.queryForObject("SELECT version FROM xsy_delivery_route WHERE id = ?", Integer.class, routeId);
     }
 
     private Long assignmentId(Long routeId, Long orderId) {
         return jdbc.queryForObject(
-                "SELECT id FROM delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
+                "SELECT id FROM xsy_delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
                 Long.class, routeId, orderId);
     }
 
     private void sign(Long routeId, Long orderId) {
         var form = new DeliverySignForm();
         form.setVersion(jdbc.queryForObject(
-                "SELECT version FROM delivery_route_order WHERE id = ?", Integer.class,
+                "SELECT version FROM xsy_delivery_route_order WHERE id = ?", Integer.class,
                 assignmentId(routeId, orderId)));
         form.setResult("SIGNED");
         routeService.sign(routeId, orderId, form);
@@ -176,11 +176,11 @@ class ScmFinanceReceivableRollbackPgIT extends ScmW6PgITBase {
         Chain chain = dispatchedChain("FRR1");
         Long assignment = assignmentId(chain.routeId(), chain.orderId());
         Long outboundItemId = jdbc.queryForObject(
-                "SELECT id FROM inventory_outbound_item WHERE sales_order_id = ? AND deleted = FALSE ORDER BY id LIMIT 1",
+                "SELECT id FROM xsy_inventory_outbound_item WHERE sales_order_id = ? AND deleted = FALSE ORDER BY id LIMIT 1",
                 Long.class, chain.orderId());
 
         // 先占掉这条出库行的应收来源键（模拟「同一出库行已被别的应收单记账」的数据异常）
-        jdbc.update("INSERT INTO finance_receivable_item (receivable_id, source_type, source_id,"
+        jdbc.update("INSERT INTO xsy_finance_receivable_item (receivable_id, source_type, source_id,"
                         + " order_item_id, sku_id, sku_name_snapshot, unit_snapshot,"
                         + " quantity, unit_price, amount, created_at, updated_at)"
                         + " VALUES (-1, 'INVENTORY_OUTBOUND_ITEM', ?, ?, ?, '占位', 'kg',"
@@ -194,36 +194,36 @@ class ScmFinanceReceivableRollbackPgIT extends ScmW6PgITBase {
 
             // 配送侧回到签收前：状态、时点、签收人、乐观锁版本全部未变
             assertThat(jdbc.queryForObject(
-                    "SELECT fulfillment_status FROM delivery_route_order WHERE id = ?",
+                    "SELECT fulfillment_status FROM xsy_delivery_route_order WHERE id = ?",
                     String.class, assignment)).isEqualTo("IN_TRANSIT");
-            assertThat(jdbc.queryForObject("SELECT signed_at FROM delivery_route_order WHERE id = ?",
+            assertThat(jdbc.queryForObject("SELECT signed_at FROM xsy_delivery_route_order WHERE id = ?",
                     Object.class, assignment)).isNull();
-            assertThat(jdbc.queryForObject("SELECT signed_by FROM delivery_route_order WHERE id = ?",
+            assertThat(jdbc.queryForObject("SELECT signed_by FROM xsy_delivery_route_order WHERE id = ?",
                     String.class, assignment)).isNull();
-            assertThat(jdbc.queryForObject("SELECT version FROM delivery_route_order WHERE id = ?",
+            assertThat(jdbc.queryForObject("SELECT version FROM xsy_delivery_route_order WHERE id = ?",
                     Integer.class, assignment)).as("回滚后不留下被消耗过的版本号").isEqualTo(1);
 
             // 财务侧没有半张单：单头 0 条、真实明细 0 条、日志 0 条
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM finance_receivable WHERE source_type = 'SALES_ORDER' AND source_id = ?",
+                    "SELECT count(*) FROM xsy_finance_receivable WHERE source_type = 'SALES_ORDER' AND source_id = ?",
                     Integer.class, chain.orderId())).isZero();
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM finance_receivable_item WHERE source_id = ? AND receivable_id > 0",
+                    "SELECT count(*) FROM xsy_finance_receivable_item WHERE source_id = ? AND receivable_id > 0",
                     Integer.class, outboundItemId)).isZero();
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM finance_operation_log l WHERE l.business_type = 'RECEIVABLE'"
-                            + " AND l.business_id IN (SELECT id FROM finance_receivable"
+                    "SELECT count(*) FROM xsy_finance_operation_log l WHERE l.business_type = 'RECEIVABLE'"
+                            + " AND l.business_id IN (SELECT id FROM xsy_finance_receivable"
                             + "                       WHERE source_type = 'SALES_ORDER' AND source_id = ?)",
                     Integer.class, chain.orderId())).as("应收未成立 → 不留生成日志").isZero();
 
             // 库存事实与出库单不因财务失败被改动：本 SKU 的 SALES_OUT 还是发车时那一条
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM inventory_movement WHERE movement_type = 'SALES_OUT'"
+                    "SELECT count(*) FROM xsy_inventory_movement WHERE movement_type = 'SALES_OUT'"
                             + " AND sku_id = ? AND deleted = FALSE", Integer.class, chain.skuId()))
                     .as("发车流水不受财务失败影响").isEqualTo(1);
         } finally {
             // 占位行是本用例故意造的假数据：append-only 表没有删除入口，测试负责物理清掉
-            jdbc.update("DELETE FROM finance_receivable_item WHERE receivable_id = -1");
+            jdbc.update("DELETE FROM xsy_finance_receivable_item WHERE receivable_id = -1");
             // 本用例新建的仓必须停用：NOT_SUPPORTED 让造数随各自事务提交，而「启用仓库恰好唯一一个」
             // 是订单默认仓库解析（41018）与 ScmInventoryOutboundIT 等既有用例的前置假设。
             // 停用是仓库既有做法（DeliveryPrintConcurrencyIT 同一处理），不是绕过断言。
@@ -242,6 +242,6 @@ class ScmFinanceReceivableRollbackPgIT extends ScmW6PgITBase {
                 .isInstanceOf(IllegalTransactionStateException.class);
 
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM finance_receivable WHERE source_id = -1", Integer.class)).isZero();
+                "SELECT count(*) FROM xsy_finance_receivable WHERE source_id = -1", Integer.class)).isZero();
     }
 }

@@ -61,7 +61,7 @@ class ScmFinanceOrderFundingSourcePgIT extends ScmW5PgITBase {
 
     /** 一条支付意图：本地应付 100。差异交易与正常交易的差别只在意图状态。 */
     private Long intent(Long orderId, String status) {
-        return jdbc.queryForObject("INSERT INTO payment_intent (intent_no, customer_id, customer_name_snapshot,"
+        return jdbc.queryForObject("INSERT INTO xsy_payment_intent (intent_no, customer_id, customer_name_snapshot,"
                         + " source_type, source_id, source_no_snapshot, amount, method, provider, status,"
                         + " succeeded_at, created_by, updated_by)"
                         + " VALUES (?, 1, '资金查询测试客户', 'SALES_ORDER', ?, ?, 100.0000, 'ONLINE', 'MOCK', ?,"
@@ -71,7 +71,7 @@ class ScmFinanceOrderFundingSourcePgIT extends ScmW5PgITBase {
 
     /** 一条渠道已成功的交易：本地应付保持 100，渠道实收单独记，不覆盖本地金额。 */
     private void succeededTransaction(Long intentId, String providerAmount) {
-        jdbc.update("INSERT INTO payment_transaction (transaction_no, intent_id, provider,"
+        jdbc.update("INSERT INTO xsy_payment_transaction (transaction_no, intent_id, provider,"
                         + " provider_transaction_no, amount, provider_amount, status, paid_at, created_by, updated_by)"
                         + " VALUES (?, ?, 'MOCK', ?, 100.0000, ?, 'SUCCEEDED', now(), '1:1', '1:1')",
                 "PT-FUND-" + prefix + "-" + UUID.randomUUID(), intentId, "WX-" + UUID.randomUUID(),

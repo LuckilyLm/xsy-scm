@@ -8,14 +8,14 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>
  * 两侧的<b>数据范围口径不同</b>：{@code SUPPLIER} 侧不收窄，供应商主档无 owner 列，按采购团队共享读取； {@code CUSTOMER} 侧与收款同口径，按
- * {@code customer.seller_id} 用 customerSellerScope 收窄。
+ * {@code xsy_customer.seller_id} 用 customerSellerScope 收窄。
  */
 @Getter
 @RequiredArgsConstructor
 public enum ScmFinanceCounterpartyTypeEnum {
 
     /**
-     * 供应商：对应 {@code finance_payable} 的核销与预付。
+     * 供应商：对应 {@code xsy_finance_payable} 的核销与预付。
      */
     SUPPLIER("供应商"),
 

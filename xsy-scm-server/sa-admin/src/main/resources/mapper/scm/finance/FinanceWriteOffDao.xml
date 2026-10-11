@@ -12,7 +12,7 @@
             WHEN entry_type = 'REVERSE' THEN -amount
             ELSE 0
         END), 0)
-        FROM finance_write_off
+        FROM xsy_finance_write_off
         WHERE source_type = #{sourceType}
           AND source_id = #{sourceId}
           AND deleted = FALSE
@@ -24,7 +24,7 @@
             WHEN entry_type = 'REVERSE' THEN -amount
             ELSE 0
         END), 0)
-        FROM finance_write_off
+        FROM xsy_finance_write_off
         WHERE target_type = #{targetType}
           AND target_id = #{targetId}
           AND deleted = FALSE
@@ -32,14 +32,14 @@
 
     <select id="selectActiveById" resultType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity">
         SELECT *
-        FROM finance_write_off
+        FROM xsy_finance_write_off
         WHERE id = #{writeOffId}
           AND deleted = FALSE
     </select>
 
     <select id="selectByIdForUpdate" resultType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity">
         SELECT *
-        FROM finance_write_off
+        FROM xsy_finance_write_off
         WHERE id = #{writeOffId}
           AND deleted = FALSE
         FOR UPDATE
@@ -48,7 +48,7 @@
     <insert id="insertReverseOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO finance_write_off (write_off_no, source_type, source_id, target_type, target_id,
+        INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type, target_id,
                                        amount, entry_type, reverse_of_id, reason, written_off_at,
                                        operator, version, deleted, created_at, updated_at, created_by, updated_by)
         VALUES (#{writeOffNo}, #{sourceType}, #{sourceId}, #{targetType}, #{targetId},
@@ -61,7 +61,7 @@
     <insert id="insertBalanceOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO finance_write_off (write_off_no, source_type, source_id, target_type, target_id,
+        INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type, target_id,
                                        amount, entry_type, reverse_of_id, reason, written_off_at,
                                        operator, version, deleted, created_at, updated_at, created_by, updated_by)
         VALUES (#{writeOffNo}, #{sourceType}, #{sourceId}, #{targetType}, #{targetId},
@@ -72,13 +72,13 @@
     </insert>
 
     <select id="selectNormalAllocation" resultType="com.xsy.scm.finance.domain.entity.FinanceWriteOffEntity">
-        SELECT * FROM finance_write_off WHERE source_type = #{sourceType} AND source_id = #{sourceId}
+        SELECT * FROM xsy_finance_write_off WHERE source_type = #{sourceType} AND source_id = #{sourceId}
             AND entry_type = 'NORMAL' AND deleted = FALSE
         <if test="targetId != null">AND target_type = 'RECEIVABLE' AND target_id = #{targetId}</if>
         ORDER BY id LIMIT 1
     </select>
     <select id="hasReversal" resultType="boolean">
-        SELECT EXISTS (SELECT 1 FROM finance_write_off WHERE reverse_of_id = #{writeOffId}
+        SELECT EXISTS (SELECT 1 FROM xsy_finance_write_off WHERE reverse_of_id = #{writeOffId}
             AND entry_type = 'REVERSE' AND deleted = FALSE)
     </select>
 
@@ -99,21 +99,21 @@
                wo.reason,
                wo.written_off_at AS writtenOffAt,
                wo.operator
-        FROM finance_write_off wo
-        LEFT JOIN finance_receipt r ON wo.source_type = 'RECEIPT'
+        FROM xsy_finance_write_off wo
+        LEFT JOIN xsy_finance_receipt r ON wo.source_type = 'RECEIPT'
             AND r.id = wo.source_id AND r.deleted = FALSE
-        LEFT JOIN finance_payment p ON wo.source_type = 'PAYMENT'
+        LEFT JOIN xsy_finance_payment p ON wo.source_type = 'PAYMENT'
             AND p.id = wo.source_id AND p.deleted = FALSE
-        LEFT JOIN customer_balance_movement m ON wo.source_type = 'BALANCE_MOVEMENT'
+        LEFT JOIN xsy_customer_balance_movement m ON wo.source_type = 'BALANCE_MOVEMENT'
             AND m.id = wo.source_id AND m.deleted = FALSE
-        LEFT JOIN customer mc ON mc.id = m.customer_id AND mc.deleted = FALSE
-        LEFT JOIN finance_receivable ar ON wo.target_type = 'RECEIVABLE'
+        LEFT JOIN xsy_customer mc ON mc.id = m.customer_id AND mc.deleted = FALSE
+        LEFT JOIN xsy_finance_receivable ar ON wo.target_type = 'RECEIVABLE'
             AND ar.id = wo.target_id AND ar.deleted = FALSE
-        LEFT JOIN sales_order so ON ar.order_id = so.id AND so.deleted = FALSE
-        LEFT JOIN finance_payable ap ON wo.target_type = 'PAYABLE'
+        LEFT JOIN xsy_sales_order so ON ar.order_id = so.id AND so.deleted = FALSE
+        LEFT JOIN xsy_finance_payable ap ON wo.target_type = 'PAYABLE'
             AND ap.id = wo.target_id AND ap.deleted = FALSE
-        LEFT JOIN purchase_receipt pr ON pr.id = ap.source_id AND pr.deleted = FALSE
-        LEFT JOIN purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+        LEFT JOIN xsy_purchase_receipt pr ON pr.id = ap.source_id AND pr.deleted = FALSE
+        LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
     </sql>
 
     <sql id="targetScopePredicate">

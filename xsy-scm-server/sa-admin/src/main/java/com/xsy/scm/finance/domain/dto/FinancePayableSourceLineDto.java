@@ -32,7 +32,7 @@ public class FinancePayableSourceLineDto {
     private BigDecimal quantity;
 
     /**
-     * 采购结算单价 {@code purchase_order_item.purchase_price}。
+     * 采购结算单价 {@code xsy_purchase_order_item.purchase_price}。
      */
     private BigDecimal unitPrice;
 }

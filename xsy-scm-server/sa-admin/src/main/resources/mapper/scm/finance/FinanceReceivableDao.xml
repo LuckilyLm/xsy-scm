@@ -21,7 +21,7 @@
     <insert id="insertOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinanceReceivableEntity"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,
+        INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,
                                         customer_id, customer_name_snapshot, settlement_customer_id,
                                         settlement_customer_name_snapshot, entry_type,
                                         original_receivable_id, amount, event_at, reason, due_date, credit_rule_snapshot,
@@ -43,7 +43,7 @@
                settlement_customer_id, settlement_customer_name_snapshot, due_date, credit_rule_snapshot,
                customer_name_snapshot, entry_type, original_receivable_id, amount, event_at,
                reason, version, deleted, created_at, updated_at, created_by, updated_by
-        FROM finance_receivable
+        FROM xsy_finance_receivable
         WHERE source_type = 'SALES_ORDER'
           AND source_id = #{salesOrderId}
           AND entry_type = 'NORMAL'
@@ -61,8 +61,8 @@
                r.entry_type AS entryType,
                r.amount,
                so.seller_id AS sellerId
-        FROM finance_receivable r
-        LEFT JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        FROM xsy_finance_receivable r
+        LEFT JOIN xsy_sales_order so ON so.id = r.order_id AND so.deleted = FALSE
         WHERE r.id IN
         <foreach collection="targetIds" item="targetId" open="(" separator="," close=")">
             #{targetId}
@@ -84,8 +84,8 @@
                r.entry_type AS entryType,
                r.amount,
                so.seller_id AS sellerId
-        FROM finance_receivable r
-        LEFT JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        FROM xsy_finance_receivable r
+        LEFT JOIN xsy_sales_order so ON so.id = r.order_id AND so.deleted = FALSE
         WHERE r.id = #{targetId}
           AND r.entry_type = 'NORMAL'
           AND r.deleted = FALSE
@@ -94,7 +94,7 @@
 
     <select id="selectRedAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(amount), 0)
-        FROM finance_receivable
+        FROM xsy_finance_receivable
         WHERE original_receivable_id = #{originalReceivableId}
           AND entry_type = 'RED'
           AND deleted = FALSE
@@ -102,7 +102,7 @@
 
     <select id="selectActiveById" resultMap="receivableEntity">
         SELECT *
-        FROM finance_receivable
+        FROM xsy_finance_receivable
         WHERE id = #{receivableId}
           AND deleted = FALSE
     </select>
@@ -142,13 +142,13 @@
                     ELSE 'PARTIAL' END AS settleState,
                r.event_at AS eventAt, r.due_date AS dueDate,
                r.reason
-        FROM finance_receivable r
-        JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
-        LEFT JOIN finance_receivable original ON original.id = r.original_receivable_id
+        FROM xsy_finance_receivable r
+        JOIN xsy_sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        LEFT JOIN xsy_finance_receivable original ON original.id = r.original_receivable_id
             AND original.deleted = FALSE
         LEFT JOIN LATERAL (
             SELECT COALESCE(SUM(red.amount), 0) AS redAmount
-            FROM finance_receivable red
+            FROM xsy_finance_receivable red
             WHERE red.original_receivable_id = r.id
               AND red.entry_type = 'RED'
               AND red.deleted = FALSE
@@ -159,7 +159,7 @@
                 WHEN wo.entry_type = 'REVERSE' THEN -wo.amount
                 ELSE 0
             END), 0) AS writtenOffAmount
-            FROM finance_write_off wo
+            FROM xsy_finance_write_off wo
             WHERE wo.target_type = 'RECEIVABLE'
               AND wo.target_id = r.id
               AND wo.deleted = FALSE

@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>这里的定序点是订单行锁：{@code OrderReturnService.lock} 一开始就 {@code orders.lock(orderId)}，
  * {@code DeliveryRouteService.sign} 在 {@code markSigned} 之前按
- * {@code route → sales_order} 锁同一行（与本域 dispatch / plan / addOrders 同序）。
+ * {@code route → xsy_sales_order} 锁同一行（与本域 dispatch / plan / addOrders 同序）。
  * 后拿到锁的一方在 {@code READ COMMITTED} 下必然看见先提交的一方，
  * 于是两条路径都调用同一个红字算法，其中一次真正生成、另一次命中来源唯一索引静默返回。
  *
@@ -77,7 +77,7 @@ class ScmFinanceReceivableRedRacePgIT extends ScmW6PgITBase {
     /** 真实链路建到「已发车在途 + 退货单待批准」，两条竞争事务的前置全部已提交。 */
     private Prepared prepared(String tag) {
         Long warehouseId = newWarehouse(tag);
-        jdbc.update("UPDATE warehouse SET longitude = 113.90, latitude = 22.50, geom_crs = 'GCJ02' WHERE id = ?",
+        jdbc.update("UPDATE xsy_warehouse SET longitude = 113.90, latitude = 22.50, geom_crs = 'GCJ02' WHERE id = ?",
                 warehouseId);
         Long skuId = newOnShelfSku(tag);
         Long supplierId = newPurchasableSupplier(tag, skuId);
@@ -87,7 +87,7 @@ class ScmFinanceReceivableRedRacePgIT extends ScmW6PgITBase {
         confirmReceipt(createReceipt(purchase.getId()).getId(), "1000.0000");
 
         Long customerId = newCustomer();
-        jdbc.update("UPDATE customer SET address = ?, longitude = 113.94, latitude = 22.54,"
+        jdbc.update("UPDATE xsy_customer SET address = ?, longitude = 113.94, latitude = 22.54,"
                 + " geom_crs = 'GCJ02' WHERE id = ?", "F1-2C 并发地址", customerId);
         Long orderId = confirmedSalesOrder(customerId, skuId, "10.0000", "10.0000");
         Long orderItemId = confirmedSalesOrderItemId(orderId);
@@ -108,7 +108,7 @@ class ScmFinanceReceivableRedRacePgIT extends ScmW6PgITBase {
         Long taskId = detail.getTask().getId();
         sortingTaskService.enter(taskId, entryForm);
         var action = new SortingActionForm();
-        action.setVersion(jdbc.queryForObject("SELECT version FROM sorting_task WHERE id = ?",
+        action.setVersion(jdbc.queryForObject("SELECT version FROM xsy_sorting_task WHERE id = ?",
                 Integer.class, taskId));
         sortingTaskService.complete(taskId, action);
 
@@ -122,7 +122,7 @@ class ScmFinanceReceivableRedRacePgIT extends ScmW6PgITBase {
         attach.setOrderIds(List.of(orderId));
         attach.setReason("组单");
         routeService.addOrders(routeId, attach);
-        jdbc.update("UPDATE delivery_route_stop SET longitude = 113.95, latitude = 22.55, geom_crs = 'GCJ02'"
+        jdbc.update("UPDATE xsy_delivery_route_stop SET longitude = 113.95, latitude = 22.55, geom_crs = 'GCJ02'"
                 + " WHERE route_id = ? AND deleted = FALSE", routeId);
         routeService.plan(routeId, routeForm2(routeId));
         routeService.dispatch(routeId, routeForm2(routeId), key("dispatch"));
@@ -137,14 +137,14 @@ class ScmFinanceReceivableRedRacePgIT extends ScmW6PgITBase {
         OrderReturnDetailVO created = returns.create(returnAdd, key("return-create"));
 
         Integer signVersion = jdbc.queryForObject(
-                "SELECT version FROM delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
+                "SELECT version FROM xsy_delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
                 Integer.class, routeId, orderId);
         return new Prepared(routeId, warehouseId, orderId, orderItemId, created.getReturnId(),
                 created.getVersion(), signVersion);
     }
 
     private Integer routeVersion(Long routeId) {
-        return jdbc.queryForObject("SELECT version FROM delivery_route WHERE id = ?", Integer.class, routeId);
+        return jdbc.queryForObject("SELECT version FROM xsy_delivery_route WHERE id = ?", Integer.class, routeId);
     }
 
     private DeliveryVersionForm routeForm2(Long routeId) {
@@ -229,41 +229,41 @@ class ScmFinanceReceivableRedRacePgIT extends ScmW6PgITBase {
 
             // 最终事实：一正一红，红字挂对原单、金额与来源正确
             Map<String, Object> normal = jdbc.queryForMap(
-                    "SELECT * FROM finance_receivable WHERE source_type = 'SALES_ORDER'"
+                    "SELECT * FROM xsy_finance_receivable WHERE source_type = 'SALES_ORDER'"
                             + " AND entry_type = 'NORMAL' AND source_id = ?", orderId);
             Map<String, Object> red = jdbc.queryForMap(
-                    "SELECT * FROM finance_receivable WHERE source_type = 'ORDER_RETURN'"
+                    "SELECT * FROM xsy_finance_receivable WHERE source_type = 'ORDER_RETURN'"
                             + " AND entry_type = 'RED' AND source_id = ?", prepared.returnId());
             assertThat(((Number) red.get("original_receivable_id")).longValue())
                     .isEqualTo(((Number) normal.get("id")).longValue());
             assertThat((BigDecimal) red.get("amount")).as("4 × 1.2000").isEqualByComparingTo("4.8000");
 
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM finance_receivable WHERE order_id = ?", Integer.class, orderId))
+                    "SELECT count(*) FROM xsy_finance_receivable WHERE order_id = ?", Integer.class, orderId))
                     .as("恰好一张正常 + 一张红字").isEqualTo(2);
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM finance_receivable_item WHERE receivable_id = ?",
+                    "SELECT count(*) FROM xsy_finance_receivable_item WHERE receivable_id = ?",
                     Integer.class, ((Number) red.get("id")).longValue())).isEqualTo(1);
 
             // 两边都尝试过派生，但每条事实只落一次
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM finance_operation_log WHERE business_type = 'RECEIVABLE'"
+                    "SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'RECEIVABLE'"
                             + " AND business_id = ? AND operation_type = 'GENERATE'",
                     Integer.class, ((Number) normal.get("id")).longValue())).isEqualTo(1);
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM finance_operation_log WHERE business_type = 'RECEIVABLE'"
+                    "SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'RECEIVABLE'"
                             + " AND business_id = ? AND operation_type = 'RED_GENERATE'",
                     Integer.class, ((Number) red.get("id")).longValue())).isEqualTo(1);
 
             // 业务侧终态：签收、批准、退款单三件都在
             assertThat(jdbc.queryForObject(
-                    "SELECT fulfillment_status FROM delivery_route_order WHERE route_id = ? AND order_id = ?"
+                    "SELECT fulfillment_status FROM xsy_delivery_route_order WHERE route_id = ? AND order_id = ?"
                             + " AND deleted = FALSE", String.class, prepared.routeId(), orderId))
                     .isEqualTo("SIGNED");
-            assertThat(jdbc.queryForObject("SELECT status FROM order_return WHERE id = ?", String.class,
+            assertThat(jdbc.queryForObject("SELECT status FROM xsy_order_return WHERE id = ?", String.class,
                     prepared.returnId())).isEqualTo("APPROVED");
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM order_refund WHERE return_id = ? AND status = 'PENDING'",
+                    "SELECT count(*) FROM xsy_order_refund WHERE return_id = ? AND status = 'PENDING'",
                     Integer.class, prepared.returnId())).isEqualTo(1);
         } finally {
             disableWarehouse(prepared.warehouseId());

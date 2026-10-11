@@ -24,7 +24,7 @@ import java.time.OffsetDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("finance_write_off")
+@TableName("xsy_finance_write_off")
 public class FinanceWriteOffEntity extends FinanceRecord {
 
     private String writeOffNo;
@@ -35,7 +35,7 @@ public class FinanceWriteOffEntity extends FinanceRecord {
     private String sourceType;
 
     /**
-     * {@code finance_receipt.id} 或 {@code finance_payment.id}。
+     * {@code xsy_finance_receipt.id} 或 {@code xsy_finance_payment.id}。
      */
     private Long sourceId;
 
@@ -45,7 +45,7 @@ public class FinanceWriteOffEntity extends FinanceRecord {
     private String targetType;
 
     /**
-     * {@code finance_receivable.id} 或 {@code finance_payable.id}。
+     * {@code xsy_finance_receivable.id} 或 {@code xsy_finance_payable.id}。
      */
     private Long targetId;
 

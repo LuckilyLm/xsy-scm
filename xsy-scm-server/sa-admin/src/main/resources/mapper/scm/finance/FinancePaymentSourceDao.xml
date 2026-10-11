@@ -3,10 +3,10 @@
 <mapper namespace="com.xsy.scm.finance.dao.FinancePaymentSourceDao">
 
     <!--
-      财务域对 order_refund 只读：本文件只有 SELECT。
+      财务域对 xsy_order_refund 只读：本文件只有 SELECT。
       不带 status 过滤，让服务层能把「退款尚未完成」和「退款不存在」区分成可解释的 41139，
       而不是让一条 SQL 悄悄把 PENDING 变成「查不到」。
-      刻意不读 order_refund.external_reference：那是订单侧的凭据文本，
+      刻意不读 xsy_order_refund.external_reference：那是订单侧的凭据文本，
       财务付款凭据号必须独立登记（/）。
     -->
     <select id="selectOrderRefund"
@@ -16,7 +16,7 @@
                r.customer_id    AS customerId,
                CASE WHEN r.status = 'COMPLETED' THEN TRUE ELSE FALSE END AS completed,
                r.refund_amount  AS refundAmount
-        FROM order_refund r
+        FROM xsy_order_refund r
         WHERE r.id = #{refundId}
           AND r.deleted = FALSE
     </select>
@@ -28,7 +28,7 @@
                r.customer_id    AS customerId,
                CASE WHEN r.status = 'COMPLETED' THEN TRUE ELSE FALSE END AS completed,
                r.refund_amount  AS refundAmount
-        FROM order_refund r
+        FROM xsy_order_refund r
         WHERE r.id = #{refundId}
           AND r.deleted = FALSE
         FOR UPDATE
@@ -36,8 +36,8 @@
 
     <!--
       Read-only picker for the payment form. It returns only COMPLETED refunds without a
-      NORMAL ORDER_REFUND payment source, and applies the same live customer seller scope
-      as customer payments. The unique source index remains the final concurrent guard.
+      NORMAL ORDER_REFUND payment source, and applies the same live xsy_customer seller scope
+      as xsy_customer payments. The unique source index remains the final concurrent guard.
     -->
     <select id="selectCompletedRefundOptions"
             resultType="com.xsy.scm.finance.domain.vo.FinanceRefundOptionVO">
@@ -49,11 +49,11 @@
                c.name        AS customerName,
                r.refund_amount AS refundAmount,
                r.completed_at AS completedAt
-        FROM order_refund r
-                 JOIN customer c ON c.id = r.customer_id AND c.deleted = FALSE
-                 LEFT JOIN order_return rt ON rt.id = r.return_id AND rt.deleted = FALSE
-                 LEFT JOIN sales_order o ON o.id = r.order_id AND o.deleted = FALSE
-                 LEFT JOIN finance_payment p ON p.source_type = 'ORDER_REFUND'
+        FROM xsy_order_refund r
+                 JOIN xsy_customer c ON c.id = r.customer_id AND c.deleted = FALSE
+                 LEFT JOIN xsy_order_return rt ON rt.id = r.return_id AND rt.deleted = FALSE
+                 LEFT JOIN xsy_sales_order o ON o.id = r.order_id AND o.deleted = FALSE
+                 LEFT JOIN xsy_finance_payment p ON p.source_type = 'ORDER_REFUND'
                     AND p.source_id = r.id AND p.entry_type = 'NORMAL' AND p.deleted = FALSE
         WHERE r.deleted = FALSE
           AND r.status = 'COMPLETED'
@@ -78,7 +78,7 @@
     </select>
     <select id="selectActivePaymentRefund" resultType="java.lang.Long">
         SELECT r.id
-        FROM payment_refund r
+        FROM xsy_payment_refund r
         WHERE r.source_type = 'ORDER_REFUND'
           AND r.source_id = #{orderRefundId}
           AND r.deleted = FALSE

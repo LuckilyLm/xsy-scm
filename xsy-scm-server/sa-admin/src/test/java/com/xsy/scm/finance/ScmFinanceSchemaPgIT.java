@@ -52,19 +52,19 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
      * V65 建的 8 张财务表。
      */
     private static final List<String> FINANCE_TABLES = List.of(
-            "finance_receivable", "finance_receivable_item",
-            "finance_payable", "finance_payable_item",
-            "finance_receipt", "finance_payment",
-            "finance_write_off", "finance_operation_log");
+            "xsy_finance_receivable", "xsy_finance_receivable_item",
+            "xsy_finance_payable", "xsy_finance_payable_item",
+            "xsy_finance_receipt", "xsy_finance_payment",
+            "xsy_finance_write_off", "xsy_finance_operation_log");
 
     /**
-     * 七张带 {@code deleted} 列的事实表；{@code finance_operation_log} 不在其中 ——
+     * 七张带 {@code deleted} 列的事实表；{@code xsy_finance_operation_log} 不在其中 ——
      * 它连 {@code deleted} 列都没有，append-only 是结构性的。
      */
     private static final List<String> APPEND_ONLY_TABLES = List.of(
-            "finance_receivable", "finance_receivable_item",
-            "finance_payable", "finance_payable_item",
-            "finance_receipt", "finance_payment", "finance_write_off");
+            "xsy_finance_receivable", "xsy_finance_receivable_item",
+            "xsy_finance_payable", "xsy_finance_payable_item",
+            "xsy_finance_receipt", "xsy_finance_payment", "xsy_finance_write_off");
 
     private static final List<String> FINANCE_SEQUENCES = List.of(
             "finance_receivable_no_seq", "finance_payable_no_seq", "finance_receipt_no_seq",
@@ -72,6 +72,14 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
     private String no(String prefix) {
         return prefix + UUID.randomUUID().toString().substring(0, 16).toUpperCase(java.util.Locale.ROOT);
+    }
+
+    /**
+     * 约束名基于 V118 之前的表名：{@code ALTER TABLE ... RENAME} 不改约束名，
+     * 因此拼 {@code ck_…} 时要去掉 {@code xsy_} 前缀。
+     */
+    private static String constraintBase(String table) {
+        return table.startsWith("xsy_") ? table.substring(4) : table;
     }
 
     private String constraintDef(String table, String constraint) {
@@ -162,12 +170,12 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @DisplayName("七张事实表带 append-only CHECK，软删在库级被拒（设计稿 §0 第 7 条）")
     void appendOnlyCheckRejectsSoftDelete() {
         for (String table : APPEND_ONLY_TABLES) {
-            assertThat(constraintDef(table, "ck_" + table + "_append_only"))
+            assertThat(constraintDef(table, "ck_" + constraintBase(table) + "_append_only"))
                     .as("%s 的 append-only CHECK", table)
                     .containsIgnoringCase("deleted = false");
         }
         // finance_operation_log 不设 deleted 列：没有可翻转的标记，就没有删除入口。
-        assertThat(columnsOf("finance_operation_log")).doesNotContain("deleted", "version");
+        assertThat(columnsOf("xsy_finance_operation_log")).doesNotContain("deleted", "version");
     }
 
     // ------------------------------------------------------------------
@@ -180,22 +188,22 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         long id = insertReceivable("AR", "SALES_ORDER", "NORMAL", null, null, new BigDecimal("100.0000"));
 
         // 金额与数量恒正：0 元事实不允许存在，这是「不生成 0 元财务事实」的库级兜底。
-        expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, "
                         + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at) "
                         + "VALUES (?, 'SALES_ORDER', 900001, 900001, 900001, '客户', 900001, '客户', 'NORMAL', 0, now())",
                 no("AR"));
-        expectSqlFailure("INSERT INTO finance_receivable_item (receivable_id, source_type, source_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_receivable_item (receivable_id, source_type, source_id, "
                         + "order_item_id, sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount) "
                         + "VALUES (?, 'INVENTORY_OUTBOUND_ITEM', 900001, 900001, 900001, '商品', 'kg', 0, 1, 0)",
                 id);
-        expectSqlFailure("INSERT INTO finance_receivable_item (receivable_id, source_type, source_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_receivable_item (receivable_id, source_type, source_id, "
                         + "order_item_id, sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount) "
                         + "VALUES (?, 'INVENTORY_OUTBOUND_ITEM', 900002, 900001, 900001, '商品', 'kg', 1, -1, -1)",
                 id);
-        expectSqlFailure("UPDATE finance_receivable SET version = -1 WHERE id = ?", id);
+        expectSqlFailure("UPDATE xsy_finance_receivable SET version = -1 WHERE id = ?", id);
 
         // 单价允许为 0（赠品口径），但明细金额因此为 0 时单头不会生成。
-        jdbc.update("INSERT INTO finance_receivable_item (receivable_id, source_type, source_id, order_item_id, "
+        jdbc.update("INSERT INTO xsy_finance_receivable_item (receivable_id, source_type, source_id, order_item_id, "
                         + "sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount) "
                         + "VALUES (?, 'INVENTORY_OUTBOUND_ITEM', 900003, 900001, 900001, '商品', 'kg', 1, 0, 0)",
                 id);
@@ -228,29 +236,29 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("应收 NORMAL/RED 配对：红字必须引用原单并填原因，正常应收两者必须为空")
     void receivableEntryPairing() {
-        assertThat(constraintDef("finance_receivable", "ck_finance_receivable_entry_pairing"))
+        assertThat(constraintDef("xsy_finance_receivable", "ck_finance_receivable_entry_pairing"))
                 .contains("NORMAL").contains("RED").contains("original_receivable_id");
-        assertThat(constraintDef("finance_receivable", "ck_finance_receivable_source_pairing"))
+        assertThat(constraintDef("xsy_finance_receivable", "ck_finance_receivable_source_pairing"))
                 .contains("SALES_ORDER").contains("ORDER_RETURN");
 
         // 红字缺原单引用 → 拒绝：红字必须可追溯到被冲的原应收。
-        expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, "
                         + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at, reason) "
                         + "VALUES (?, 'ORDER_RETURN', 900002, 900001, 900001, '客户', 900001, '客户', 'RED', 20, now(), '退货')",
                 no("AR"));
         // 红字缺原因 → 拒绝。
-        expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, "
                         + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at, "
                         + "original_receivable_id, reason) "
                         + "VALUES (?, 'ORDER_RETURN', 900003, 900001, 900001, '客户', 900001, '客户', 'RED', 20, now(), 1, '  ')",
                 no("AR"));
         // 正常应收却带原单引用 → 拒绝（方向与引用必须一致，否则读时派生会算错净额）。
-        expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, "
                         + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at, original_receivable_id) "
                         + "VALUES (?, 'SALES_ORDER', 900004, 900001, 900001, '客户', 900001, '客户', 'NORMAL', 30, now(), 1)",
                 no("AR"));
         // 方向与来源错配（NORMAL 却声明来源是退货）→ 拒绝。
-        expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, "
                         + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at) "
                         + "VALUES (?, 'ORDER_RETURN', 900005, 900001, 900001, '客户', 900001, '客户', 'NORMAL', 30, now())",
                 no("AR"));
@@ -259,30 +267,30 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("应付 MANUAL 红字配对：source_id 必须 NULL、原单与原因必填（设计稿 §3.1 修正）")
     void payableManualRedPairing() {
-        assertThat(constraintDef("finance_payable", "ck_finance_payable_source_pairing"))
+        assertThat(constraintDef("xsy_finance_payable", "ck_finance_payable_source_pairing"))
                 .contains("PURCHASE_RECEIPT").contains("MANUAL").contains("source_id IS NULL");
 
         // 手工红字却带 source_id → 拒绝：那会让它落进来源唯一索引的谓词内，
         // 与「手工事实没有外部业务行」的模型矛盾。
-        expectSqlFailure("INSERT INTO finance_payable (payable_no, source_type, source_id, purchase_order_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_payable (payable_no, source_type, source_id, purchase_order_id, "
                         + "supplier_id, supplier_name_snapshot, entry_type, original_payable_id, amount, event_at, "
                         + "reason) VALUES (?, 'MANUAL', 900009, 900001, 900001, '供应商', 'RED', 1, 10, now(), '录错')",
                 no("AP"));
         // 手工红字缺原因 → 拒绝。
-        expectSqlFailure("INSERT INTO finance_payable (payable_no, source_type, purchase_order_id, supplier_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_payable (payable_no, source_type, purchase_order_id, supplier_id, "
                         + "supplier_name_snapshot, entry_type, original_payable_id, amount, event_at) "
                         + "VALUES (?, 'MANUAL', 900001, 900001, '供应商', 'RED', 1, 10, now())",
                 no("AP"));
         // 正常应付缺 source_id → 拒绝：正常应付必须能追溯到收货单。
-        expectSqlFailure("INSERT INTO finance_payable (payable_no, source_type, purchase_order_id, supplier_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_payable (payable_no, source_type, purchase_order_id, supplier_id, "
                         + "supplier_name_snapshot, entry_type, amount, event_at) "
                         + "VALUES (?, 'PURCHASE_RECEIPT', 900001, 900001, '供应商', 'NORMAL', 10, now())",
                 no("AP"));
 
         // 明细同形：MANUAL 明细的 source_id 必须为 NULL。
-        assertThat(constraintDef("finance_payable_item", "ck_finance_payable_item_source_pairing"))
+        assertThat(constraintDef("xsy_finance_payable_item", "ck_finance_payable_item_source_pairing"))
                 .contains("PURCHASE_RECEIPT_ITEM").contains("MANUAL");
-        expectSqlFailure("INSERT INTO finance_payable_item (payable_id, source_type, source_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_payable_item (payable_id, source_type, source_id, "
                         + "purchase_order_item_id, sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, "
                         + "amount) VALUES (900001, 'MANUAL', 900009, 900001, 900001, '商品', 'kg', 1, 1, 1)",
                 no("AP"));
@@ -291,36 +299,36 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("D-3：收付款反向三列配对，且反向付款的来源必须为 NULL")
     void receiptPaymentReversePairing() {
-        for (String table : List.of("finance_receipt", "finance_payment")) {
-            assertThat(constraintDef(table, "ck_" + table + "_entry_pairing"))
+        for (String table : List.of("xsy_finance_receipt", "xsy_finance_payment")) {
+            assertThat(constraintDef(table, "ck_" + constraintBase(table) + "_entry_pairing"))
                     .as("%s 的反向配对 CHECK", table)
                     .contains("NORMAL").contains("REVERSE").contains("reverse_of_id");
         }
-        assertThat(constraintDef("finance_payment", "ck_finance_payment_reverse_no_source"))
+        assertThat(constraintDef("xsy_finance_payment", "ck_finance_payment_reverse_no_source"))
                 .contains("NORMAL").contains("source_type IS NULL");
-        assertThat(constraintDef("finance_payment", "ck_finance_payment_source_pairing"))
+        assertThat(constraintDef("xsy_finance_payment", "ck_finance_payment_source_pairing"))
                 .contains("ORDER_REFUND");
 
         long receipt = insertReceipt(no("RC"), "NORMAL", null, null, null);
         // 反向行缺原因 → 拒绝。
-        expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, "
+        expectSqlFailure("INSERT INTO xsy_finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, "
                         + "method, received_at, entry_type, reverse_of_id) "
                         + "VALUES (?, 900001, '客户', 900001, '客户', 100, 'CASH', now(), 'REVERSE', ?)", no("RC"), receipt);
         // 正常行却带 reverse_of_id → 拒绝。
-        expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, "
+        expectSqlFailure("INSERT INTO xsy_finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, "
                         + "method, received_at, entry_type, reverse_of_id, reason) "
                         + "VALUES (?, 900001, '客户', 900001, '客户', 100, 'CASH', now(), 'NORMAL', ?, '多余')", no("RC"), receipt);
 
         // 反向付款沿用 ORDER_REFUND 来源 → 拒绝。这条 CHECK 挡住的是「纠错路径被自己的
         // 防重索引锁死」：uk_finance_payment_source_active 的谓词是 source_id IS NOT NULL，
         // 反向行若带来源就会与原行抢同一个键，于是登错的退款付款再也反向不掉。
-        expectSqlFailure("INSERT INTO finance_payment (payment_no, counterparty_type, counterparty_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id, "
                         + "counterparty_name_snapshot, amount, method, paid_at, entry_type, reverse_of_id, reason, "
                         + "source_type, source_id) "
                         + "VALUES (?, 'CUSTOMER', 900001, '客户', 100, 'CASH', now(), 'REVERSE', 1, '登错', "
                         + "'ORDER_REFUND', 900001)", no("PM"));
         // source_type 与 source_id 只填一半 → 拒绝。
-        expectSqlFailure("INSERT INTO finance_payment (payment_no, counterparty_type, counterparty_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id, "
                         + "counterparty_name_snapshot, amount, method, paid_at, entry_type, source_type) "
                         + "VALUES (?, 'CUSTOMER', 900001, '客户', 100, 'CASH', now(), 'NORMAL', 'ORDER_REFUND')",
                 no("PM"));
@@ -329,15 +337,15 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("核销配对：收款只核应收、付款只核应付（Q17）")
     void writeOffPairing() {
-        assertThat(constraintDef("finance_write_off", "ck_finance_write_off_pairing"))
+        assertThat(constraintDef("xsy_finance_write_off", "ck_finance_write_off_pairing"))
                 .contains("RECEIPT").contains("RECEIVABLE").contains("PAYMENT").contains("PAYABLE");
-        assertThat(constraintDef("finance_write_off", "ck_finance_write_off_entry_pairing"))
+        assertThat(constraintDef("xsy_finance_write_off", "ck_finance_write_off_entry_pairing"))
                 .contains("NORMAL").contains("REVERSE");
 
-        expectSqlFailure("INSERT INTO finance_write_off (write_off_no, source_type, source_id, target_type, "
+        expectSqlFailure("INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type, "
                         + "target_id, amount, entry_type, written_off_at, operator) "
                         + "VALUES (?, 'RECEIPT', 1, 'PAYABLE', 1, 10, 'NORMAL', now(), '2:1')", no("WO"));
-        expectSqlFailure("INSERT INTO finance_write_off (write_off_no, source_type, source_id, target_type, "
+        expectSqlFailure("INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type, "
                         + "target_id, amount, entry_type, written_off_at, operator) "
                         + "VALUES (?, 'PAYMENT', 1, 'RECEIVABLE', 1, 10, 'NORMAL', now(), '2:1')", no("WO"));
     }
@@ -345,25 +353,25 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @Test
     @DisplayName("操作日志的 business_type / operation_type 白名单与 JSONB 形状")
     void operationLogWhitelist() {
-        assertThat(constraintDef("finance_operation_log", "ck_finance_operation_log_business_type"))
+        assertThat(constraintDef("xsy_finance_operation_log", "ck_finance_operation_log_business_type"))
                 .contains("RECEIVABLE").contains("PAYABLE").contains("RECEIPT").contains("PAYMENT")
                 .contains("WRITE_OFF");
-        String typeDef = constraintDef("finance_operation_log", "ck_finance_operation_log_type");
+        String typeDef = constraintDef("xsy_finance_operation_log", "ck_finance_operation_log_type");
         // 八个值是操作类型的完整值域，其中包含两个反向类型。
         assertThat(literalsOf(typeDef)).containsExactlyInAnyOrder(
                 Stream.of(ScmFinanceOperationTypeEnum.values())
                         .map(Enum::name).toArray(String[]::new));
-        assertThat(constraintDef("finance_operation_log", "ck_finance_operation_log_before_data"))
+        assertThat(constraintDef("xsy_finance_operation_log", "ck_finance_operation_log_before_data"))
                 .contains("jsonb_typeof");
-        assertThat(constraintDef("finance_operation_log", "ck_finance_operation_log_after_data"))
+        assertThat(constraintDef("xsy_finance_operation_log", "ck_finance_operation_log_after_data"))
                 .contains("jsonb_typeof");
 
-        expectSqlFailure("INSERT INTO finance_operation_log (business_type, business_id, operation_type, operator) "
+        expectSqlFailure("INSERT INTO xsy_finance_operation_log (business_type, business_id, operation_type, operator) "
                 + "VALUES ('RECEIVABLE', 1, 'DELETE', '2:1')");
-        expectSqlFailure("INSERT INTO finance_operation_log (business_type, business_id, operation_type, operator) "
+        expectSqlFailure("INSERT INTO xsy_finance_operation_log (business_type, business_id, operation_type, operator) "
                 + "VALUES ('INVOICE', 1, 'GENERATE', '2:1')");
         // JSONB 列只接受 object：数组或标量会让「改前 / 改后金额级证据」失去可比对的结构。
-        expectSqlFailure("INSERT INTO finance_operation_log (business_type, business_id, operation_type, operator, "
+        expectSqlFailure("INSERT INTO xsy_finance_operation_log (business_type, business_id, operation_type, operator, "
                 + "after_data) VALUES ('RECEIVABLE', 1, 'GENERATE', '2:1', '[1,2]'::jsonb)");
     }
 
@@ -394,11 +402,11 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     @DisplayName("来源唯一索引真的挡住重复财务事实")
     void sourceUniqueIndexRejectsDuplicateFact() {
         long first = insertReceivable("AR", "SALES_ORDER", "NORMAL", null, null, new BigDecimal("100.0000"));
-        Long sourceId = jdbc.queryForObject("SELECT source_id FROM finance_receivable WHERE id = ?",
+        Long sourceId = jdbc.queryForObject("SELECT source_id FROM xsy_finance_receivable WHERE id = ?",
                 Long.class, first);
         // 同一张订单第二次生成应收 → 拒绝。生成器据此走 insertOnConflictDoNothing，
         // 命中冲突即「已生成」并返回成功（可重放的派生，不是用户命令）。
-        expectSqlFailure("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, "
+        expectSqlFailure("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, "
                         + "customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, amount, event_at) "
                         + "VALUES (?, 'SALES_ORDER', ?, 900001, 900001, '客户', 900001, '客户', 'NORMAL', 100, now())",
                 no("AR"), sourceId);
@@ -423,7 +431,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         long receipt = insertReceipt(no("RC"), "NORMAL", null, null, null);
         insertReceipt(no("RC"), "REVERSE", receipt, "登错金额", null);
         // 第二条反向 → 撞库级唯一索引。重复撤销必须在这里失败，而不是靠服务层先查后判。
-        expectSqlFailure("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, "
+        expectSqlFailure("INSERT INTO xsy_finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, "
                         + "method, received_at, entry_type, reverse_of_id, reason) "
                         + "VALUES (?, 900001, '客户', 900001, '客户', 100, 'CASH', now(), 'REVERSE', ?, '再冲一次')",
                 no("RC"), receipt);
@@ -442,7 +450,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         // 同一凭据号的第二笔收款必须成功。
         insertReceipt(no("RC"), "NORMAL", null, null, shared);
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM finance_receipt WHERE external_reference = ?", Integer.class, shared))
+                "SELECT count(*) FROM xsy_finance_receipt WHERE external_reference = ?", Integer.class, shared))
                 .isEqualTo(2);
     }
 
@@ -453,7 +461,7 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         insertPayable("AP", "MANUAL", null, "RED", "录错单价");
         insertPayable("AP", "MANUAL", null, "RED", "录错数量");
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM finance_payable WHERE source_type = 'MANUAL' AND source_id IS NULL",
+                "SELECT count(*) FROM xsy_finance_payable WHERE source_type = 'MANUAL' AND source_id IS NULL",
                 Integer.class)).isGreaterThanOrEqualTo(2);
     }
 
@@ -467,36 +475,36 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         // 每个枚举都对应一条单列 CHECK，因此可以断言双向相等：
         // 少一个值意味着 Java 侧能造出库里不接受的事实，多一个值意味着库里放行了
         // 一个 Java 侧无法表达（因而也无法在页面上解释）的取值。
-        assertWhitelist("finance_receivable", "ck_finance_receivable_source_type",
+        assertWhitelist("xsy_finance_receivable", "ck_finance_receivable_source_type",
                 ScmFinanceReceivableSourceTypeEnum.class);
-        assertWhitelist("finance_receivable_item", "ck_finance_receivable_item_source_type",
+        assertWhitelist("xsy_finance_receivable_item", "ck_finance_receivable_item_source_type",
                 ScmFinanceReceivableItemSourceTypeEnum.class);
-        assertWhitelist("finance_payable", "ck_finance_payable_source_type",
+        assertWhitelist("xsy_finance_payable", "ck_finance_payable_source_type",
                 ScmFinancePayableSourceTypeEnum.class);
-        assertWhitelist("finance_payable_item", "ck_finance_payable_item_source_type",
+        assertWhitelist("xsy_finance_payable_item", "ck_finance_payable_item_source_type",
                 ScmFinancePayableItemSourceTypeEnum.class);
-        assertWhitelist("finance_payment", "ck_finance_payment_counterparty_type",
+        assertWhitelist("xsy_finance_payment", "ck_finance_payment_counterparty_type",
                 ScmFinanceCounterpartyTypeEnum.class);
-        assertWhitelist("finance_payment", "ck_finance_payment_source_type",
+        assertWhitelist("xsy_finance_payment", "ck_finance_payment_source_type",
                 ScmFinancePaymentSourceTypeEnum.class);
-        assertWhitelist("finance_write_off", "ck_finance_write_off_source_type",
+        assertWhitelist("xsy_finance_write_off", "ck_finance_write_off_source_type",
                 ScmFinanceWriteOffSourceTypeEnum.class);
-        assertWhitelist("finance_write_off", "ck_finance_write_off_target_type",
+        assertWhitelist("xsy_finance_write_off", "ck_finance_write_off_target_type",
                 ScmFinanceWriteOffTargetTypeEnum.class);
-        assertWhitelist("finance_operation_log", "ck_finance_operation_log_business_type",
+        assertWhitelist("xsy_finance_operation_log", "ck_finance_operation_log_business_type",
                 ScmFinanceBusinessTypeEnum.class);
-        assertWhitelist("finance_operation_log", "ck_finance_operation_log_type",
+        assertWhitelist("xsy_finance_operation_log", "ck_finance_operation_log_type",
                 ScmFinanceOperationTypeEnum.class);
 
         // 收款方式与付款方式分开（ADM-12）：在线支付与余额是收款侧才有的资金渠道，
         // 放进共用的付款枚举会让供应商付款入口也拿到它们，等于让支付域反向污染供应商付款语义。
-        assertWhitelist("finance_receipt", "ck_finance_receipt_method", ScmFinanceReceiptMethodEnum.class);
+        assertWhitelist("xsy_finance_receipt", "ck_finance_receipt_method", ScmFinanceReceiptMethodEnum.class);
         // 付款方式按对手方分组约束（ADM-12）：一条 CHECK 覆盖两组值域，
         // 因此不能再与单一枚举双向相等。分组本身也要断言 —— 否则它退化成一条扁平白名单时没人发现。
         // 不能按 counterparty_type = 'SUPPLIER' 这种字面子串匹配：PostgreSQL 会把约束规范化成
         // (counterparty_type)::text = 'SUPPLIER'::text，照字面写会随 PG 版本升级假失败。
         // 判定按结构：必须恰好是「SUPPLIER 分支 OR CUSTOMER 分支」，且 ONLINE_PAYMENT 只在客户分支。
-        String[] methodBranches = constraintDef("finance_payment", "ck_finance_payment_method")
+        String[] methodBranches = constraintDef("xsy_finance_payment", "ck_finance_payment_method")
                 .split("\\bOR\\b");
         assertThat(methodBranches).as("付款方式必须按对手方分成两条分支").hasSize(2);
         String supplierBranch = methodBranches[0].contains("SUPPLIER") ? methodBranches[0] : methodBranches[1];
@@ -514,22 +522,22 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
         assertThat(ScmFinanceCustomerRefundMethodEnum.values()).hasSize(4);
 
         // NORMAL / RED 用于应收应付，NORMAL / REVERSE 用于收付款与核销；两套不合并。
-        assertWhitelist("finance_receivable", "ck_finance_receivable_entry_type", ScmFinanceEntryTypeEnum.class);
-        assertWhitelist("finance_payable", "ck_finance_payable_entry_type", ScmFinanceEntryTypeEnum.class);
-        assertWhitelist("finance_receipt", "ck_finance_receipt_entry_type",
+        assertWhitelist("xsy_finance_receivable", "ck_finance_receivable_entry_type", ScmFinanceEntryTypeEnum.class);
+        assertWhitelist("xsy_finance_payable", "ck_finance_payable_entry_type", ScmFinanceEntryTypeEnum.class);
+        assertWhitelist("xsy_finance_receipt", "ck_finance_receipt_entry_type",
                 ScmFinanceReverseEntryTypeEnum.class);
-        assertWhitelist("finance_payment", "ck_finance_payment_entry_type",
+        assertWhitelist("xsy_finance_payment", "ck_finance_payment_entry_type",
                 ScmFinanceReverseEntryTypeEnum.class);
-        assertWhitelist("finance_write_off", "ck_finance_write_off_entry_type",
+        assertWhitelist("xsy_finance_write_off", "ck_finance_write_off_entry_type",
                 ScmFinanceReverseEntryTypeEnum.class);
 
         // ONLINE_PAYMENT 按对手方分组放行给客户退款；余额 / COD / 渠道名不得进入付款方式：
         // 余额抵扣不是付款渠道，COD 是结算时机，具体渠道名写在 external_reference。
-        assertThat(literalsOf(constraintDef("finance_payment", "ck_finance_payment_method")))
+        assertThat(literalsOf(constraintDef("xsy_finance_payment", "ck_finance_payment_method")))
                 .doesNotContain("BALANCE", "COD", "RECHARGE", "ALIPAY", "WECHAT_PAY");
         // 收款侧放行 ONLINE_PAYMENT 与 BALANCE，但下面几项不得进入：
         // COD 是「什么时候收钱」的结算时机，不是实际收款渠道；具体渠道名写在 external_reference。
-        assertThat(literalsOf(constraintDef("finance_receipt", "ck_finance_receipt_method")))
+        assertThat(literalsOf(constraintDef("xsy_finance_receipt", "ck_finance_receipt_method")))
                 .doesNotContain("COD", "RECHARGE", "ALIPAY", "WECHAT_PAY");
     }
 
@@ -710,16 +718,16 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
     private long insertReceivable(String prefix, String sourceType, String entryType,
                                   Long originalId, String reason, BigDecimal amount) {
         long sourceId = 900_000L + (System.nanoTime() % 1_000_000L);
-        jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, customer_id, "
+        jdbc.update("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, customer_id, "
                         + "customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, entry_type, original_receivable_id, amount, event_at, reason) "
                         + "VALUES (?, ?, ?, 900001, 900001, '客户', 900001, '客户', ?, ?, ?, now(), ?)",
                 no(prefix), sourceType, sourceId, entryType, originalId, amount, reason);
-        return jdbc.queryForObject("SELECT id FROM finance_receivable WHERE source_type = ? AND source_id = ?",
+        return jdbc.queryForObject("SELECT id FROM xsy_finance_receivable WHERE source_type = ? AND source_id = ?",
                 Long.class, sourceType, sourceId);
     }
 
     private void insertPayable(String prefix, String sourceType, Long sourceId, String entryType, String reason) {
-        jdbc.update("INSERT INTO finance_payable (payable_no, source_type, source_id, purchase_order_id, supplier_id, "
+        jdbc.update("INSERT INTO xsy_finance_payable (payable_no, source_type, source_id, purchase_order_id, supplier_id, "
                         + "supplier_name_snapshot, entry_type, original_payable_id, amount, event_at, reason) "
                         + "VALUES (?, ?, ?, 900001, 900001, '供应商', ?, "
                         + "CASE WHEN ? = 'RED' THEN 900001 ELSE NULL END, 100.0000, now(), ?)",
@@ -728,10 +736,10 @@ class ScmFinanceSchemaPgIT extends ScmW6PgITBase {
 
     private long insertReceipt(String receiptNo, String entryType, Long reverseOfId, String reason,
                                String externalReference) {
-        jdbc.update("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, method, "
+        jdbc.update("INSERT INTO xsy_finance_receipt (receipt_no, customer_id, customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot, amount, method, "
                         + "received_at, entry_type, reverse_of_id, reason, external_reference) "
                         + "VALUES (?, 900001, '客户', 900001, '客户', 100.0000, 'CASH', now(), ?, ?, ?, ?)",
                 receiptNo, entryType, reverseOfId, reason, externalReference);
-        return jdbc.queryForObject("SELECT id FROM finance_receipt WHERE receipt_no = ?", Long.class, receiptNo);
+        return jdbc.queryForObject("SELECT id FROM xsy_finance_receipt WHERE receipt_no = ?", Long.class, receiptNo);
     }
 }

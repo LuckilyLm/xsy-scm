@@ -75,7 +75,7 @@ class ScmFinanceConcurrencyPgIT extends ScmW5PgITBase {
                 .isTrue();
         Throwable loser = firstFailure.get() != null ? firstFailure.get() : secondFailure.get();
         assertBusinessCode(loser, 41143);
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE reverse_of_id = ? AND entry_type = 'REVERSE'",
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE reverse_of_id = ? AND entry_type = 'REVERSE'",
                 receipt.getReceiptId())).isEqualTo(1);
     }
 
@@ -106,10 +106,10 @@ class ScmFinanceConcurrencyPgIT extends ScmW5PgITBase {
                 .isTrue();
         Throwable loser = firstFailure.get() != null ? firstFailure.get() : secondFailure.get();
         assertBusinessCode(loser, 41135);
-        assertThat(count("SELECT count(*) FROM finance_write_off"
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off"
                 + " WHERE source_type = 'RECEIPT' AND source_id = ? AND target_type = 'RECEIVABLE' AND target_id = ?"
                 + " AND entry_type = 'NORMAL'", receipt.getReceiptId(), targetId)).isEqualTo(1);
-        assertThat(jdbc.queryForObject("SELECT SUM(amount) FROM finance_write_off"
+        assertThat(jdbc.queryForObject("SELECT SUM(amount) FROM xsy_finance_write_off"
                 + " WHERE target_type = 'RECEIVABLE' AND target_id = ? AND deleted = FALSE",
                 BigDecimal.class, targetId)).isEqualByComparingTo("70.0000");
     }
@@ -144,7 +144,7 @@ class ScmFinanceConcurrencyPgIT extends ScmW5PgITBase {
                 .isTrue();
         Throwable loser = firstFailure.get() != null ? firstFailure.get() : secondFailure.get();
         assertBusinessCode(loser, 41143);
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE reverse_of_id = ?"
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE reverse_of_id = ?"
                 + " AND entry_type = 'REVERSE'", normal.getWriteOffId())).isEqualTo(1);
     }
 
@@ -176,13 +176,13 @@ class ScmFinanceConcurrencyPgIT extends ScmW5PgITBase {
         assertThat(writeOffResult.get()).isNotNull();
         assertThat(writeOffFailure.get()).isNull();
         BigDecimal effectiveReceiptAmount = jdbc.queryForObject("SELECT amount - COALESCE((SELECT SUM(amount)"
-                        + " FROM finance_receipt reverse WHERE reverse.reverse_of_id = original.id"
+                        + " FROM xsy_finance_receipt reverse WHERE reverse.reverse_of_id = original.id"
                         + " AND reverse.entry_type = 'REVERSE' AND reverse.deleted = FALSE), 0)"
-                        + " FROM finance_receipt original WHERE original.id = ?",
+                        + " FROM xsy_finance_receipt original WHERE original.id = ?",
                 BigDecimal.class, receipt.getReceiptId());
         BigDecimal usedAmount = jdbc.queryForObject("SELECT COALESCE(SUM(CASE"
                         + " WHEN entry_type = 'NORMAL' THEN amount WHEN entry_type = 'REVERSE' THEN -amount ELSE 0 END), 0)"
-                        + " FROM finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ? AND deleted = FALSE",
+                        + " FROM xsy_finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ? AND deleted = FALSE",
                 BigDecimal.class, receipt.getReceiptId());
         assertThat(effectiveReceiptAmount.subtract(usedAmount)).isGreaterThanOrEqualTo(BigDecimal.ZERO);
         if (receiptResult.get() != null) {
@@ -209,7 +209,7 @@ class ScmFinanceConcurrencyPgIT extends ScmW5PgITBase {
 
     private Long normalReceivable(Long customerId, String amount) {
         long sourceId = uniqueNumber();
-        return jdbc.queryForObject("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
+        return jdbc.queryForObject("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,"
                         + " customer_id, customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, amount, event_at, created_at, updated_at)"
                         + " VALUES (?, 'SALES_ORDER', ?, 1, ?, '并发核销客户', ?, '并发核销客户', 'NORMAL', ?,"

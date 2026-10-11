@@ -14,15 +14,15 @@
             m.settlement_customer_id AS movementSettlementCustomerId, m.source_id AS movementIntentId,
             m.type AS movementType, m.direction AS movementDirection, m.source_type AS movementSourceType,
             m.amount AS movementAmount
-        FROM payment_intent i
-        LEFT JOIN sales_order o ON i.source_type = 'SALES_ORDER' AND o.id = i.source_id
+        FROM xsy_payment_intent i
+        LEFT JOIN xsy_sales_order o ON i.source_type = 'SALES_ORDER' AND o.id = i.source_id
             AND o.customer_id = i.customer_id AND o.deleted = FALSE
-        LEFT JOIN customer_balance_recharge recharge ON i.source_type = 'BALANCE_RECHARGE'
+        LEFT JOIN xsy_customer_balance_recharge recharge ON i.source_type = 'BALANCE_RECHARGE'
             AND recharge.id = i.source_id AND recharge.customer_id = i.customer_id AND recharge.deleted = FALSE
-        LEFT JOIN payment_transaction t ON t.intent_id = i.id AND t.deleted = FALSE
-        LEFT JOIN finance_receipt r ON r.source_type = 'PAYMENT_TRANSACTION' AND r.source_id = t.id
+        LEFT JOIN xsy_payment_transaction t ON t.intent_id = i.id AND t.deleted = FALSE
+        LEFT JOIN xsy_finance_receipt r ON r.source_type = 'PAYMENT_TRANSACTION' AND r.source_id = t.id
             AND r.entry_type = 'NORMAL' AND r.deleted = FALSE
-        LEFT JOIN customer_balance_movement m ON m.source_type = 'PAYMENT_INTENT' AND m.source_id = i.id
+        LEFT JOIN xsy_customer_balance_movement m ON m.source_type = 'PAYMENT_INTENT' AND m.source_id = i.id
             AND m.deleted = FALSE
     </sql>
     <!--
@@ -41,20 +41,20 @@
         WHERE t.id = #{transactionId} AND i.deleted = FALSE
     </select>
     <select id="lockMovement" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity">
-        SELECT * FROM customer_balance_movement WHERE id = #{movementId} AND deleted = FALSE FOR UPDATE
+        SELECT * FROM xsy_customer_balance_movement WHERE id = #{movementId} AND deleted = FALSE FOR UPDATE
     </select>
     <select id="isRechargeReceipt" resultType="boolean">
-        SELECT EXISTS (SELECT 1 FROM finance_receipt r
-            JOIN payment_transaction t ON r.source_type = 'PAYMENT_TRANSACTION' AND t.id = r.source_id
-            JOIN payment_intent i ON i.id = t.intent_id
+        SELECT EXISTS (SELECT 1 FROM xsy_finance_receipt r
+            JOIN xsy_payment_transaction t ON r.source_type = 'PAYMENT_TRANSACTION' AND t.id = r.source_id
+            JOIN xsy_payment_intent i ON i.id = t.intent_id
             WHERE r.id = #{receiptId} AND i.source_type = 'BALANCE_RECHARGE')
     </select>
     <select id="hasReceiptFunding" resultType="boolean">
-        SELECT EXISTS (SELECT 1 FROM finance_write_off w
-            JOIN finance_receivable ar ON w.target_type = 'RECEIVABLE' AND w.target_id = ar.id
+        SELECT EXISTS (SELECT 1 FROM xsy_finance_write_off w
+            JOIN xsy_finance_receivable ar ON w.target_type = 'RECEIVABLE' AND w.target_id = ar.id
             WHERE ar.order_id = #{orderId} AND ar.entry_type = 'NORMAL' AND ar.deleted = FALSE
                 AND w.source_type = 'RECEIPT' AND w.entry_type = 'NORMAL' AND w.deleted = FALSE
-                AND NOT EXISTS (SELECT 1 FROM finance_write_off reverse
+                AND NOT EXISTS (SELECT 1 FROM xsy_finance_write_off reverse
                     WHERE reverse.reverse_of_id = w.id AND reverse.entry_type = 'REVERSE' AND reverse.deleted = FALSE))
     </select>
 </mapper>

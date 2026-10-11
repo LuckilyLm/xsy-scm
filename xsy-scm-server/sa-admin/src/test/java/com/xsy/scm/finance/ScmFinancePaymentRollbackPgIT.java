@@ -108,9 +108,9 @@ class ScmFinancePaymentRollbackPgIT extends ScmW5PgITBase {
         // 那个分页读接口按 orderSellerScope 收窄（非超管身份下会拿不到行），
         // 而夹具要的只是「这一单的退款」，直查不依赖读侧范围也不依赖行序。
         Long refundId = jdbc.queryForObject(
-                "SELECT id FROM order_refund WHERE order_id = ? AND deleted = FALSE", Long.class, orderId);
+                "SELECT id FROM xsy_order_refund WHERE order_id = ? AND deleted = FALSE", Long.class, orderId);
         Integer refundVersion = jdbc.queryForObject(
-                "SELECT version FROM order_refund WHERE id = ?", Integer.class, refundId);
+                "SELECT version FROM xsy_order_refund WHERE id = ?", Integer.class, refundId);
         var complete = new OrderRefundCompleteForm();
         complete.setRefundId(refundId);
         complete.setVersion(refundVersion);
@@ -121,7 +121,7 @@ class ScmFinancePaymentRollbackPgIT extends ScmW5PgITBase {
         refunds.complete(complete, prefix + ":fc:" + tag + UUID.randomUUID());
 
         BigDecimal amount = jdbc.queryForObject(
-                "SELECT refund_amount FROM order_refund WHERE id = ?", BigDecimal.class, refundId);
+                "SELECT refund_amount FROM xsy_order_refund WHERE id = ?", BigDecimal.class, refundId);
         return new Object[]{refundId, customerId, amount};
     }
 
@@ -145,22 +145,22 @@ class ScmFinancePaymentRollbackPgIT extends ScmW5PgITBase {
                 + " RAISE EXCEPTION 'injected finance_operation_log failure'; END IF;"
                 + " RETURN NEW; END $BODY$ LANGUAGE plpgsql");
         jdbc.execute("CREATE TRIGGER trg_scm_f13b_break_payment_log"
-                + " BEFORE INSERT ON finance_operation_log"
+                + " BEFORE INSERT ON xsy_finance_operation_log"
                 + " FOR EACH ROW EXECUTE FUNCTION scm_f13b_break_payment_log()");
         try {
             assertThatThrownBy(() -> financePaymentService.add(
                     form(supplierId, "88.0000", MARKER, null, null), idempotencyKey))
                     .isInstanceOf(Throwable.class);
 
-            assertThat(count("SELECT count(*) FROM finance_payment WHERE counterparty_id = ?", supplierId))
+            assertThat(count("SELECT count(*) FROM xsy_finance_payment WHERE counterparty_id = ?", supplierId))
                     .as("付款单不得留下").isZero();
-            assertThat(count("SELECT count(*) FROM finance_operation_log WHERE business_type = 'PAYMENT'"
+            assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'PAYMENT'"
                     + " AND after_data->>'remark' = ?", MARKER))
                     .as("日志本身也没有").isZero();
-            assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+            assertThat(count("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key = ?", idempotencyKey))
                     .as("claim 随事务回滚，否则同一 key 的重放会读到空结果").isZero();
         } finally {
-            jdbc.execute("DROP TRIGGER IF EXISTS trg_scm_f13b_break_payment_log ON finance_operation_log");
+            jdbc.execute("DROP TRIGGER IF EXISTS trg_scm_f13b_break_payment_log ON xsy_finance_operation_log");
             jdbc.execute("DROP FUNCTION IF EXISTS scm_f13b_break_payment_log()");
         }
 
@@ -168,7 +168,7 @@ class ScmFinancePaymentRollbackPgIT extends ScmW5PgITBase {
         Long paymentId = financePaymentService.add(
                 form(supplierId, "88.0000", MARKER, null, null), idempotencyKey).getPaymentId();
         assertThat(paymentId).isNotNull();
-        assertThat(count("SELECT count(*) FROM finance_operation_log WHERE business_type = 'PAYMENT'"
+        assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'PAYMENT'"
                 + " AND business_id = ?", paymentId)).isEqualTo(1);
     }
 
@@ -189,21 +189,21 @@ class ScmFinancePaymentRollbackPgIT extends ScmW5PgITBase {
         Long firstId = financePaymentService.add(form(customerId, amount, "首次付款", "ORDER_REFUND", refundId),
                 firstKey).getPaymentId();
 
-        int paymentsBefore = count("SELECT count(*) FROM finance_payment");
-        int logsBefore = count("SELECT count(*) FROM finance_operation_log WHERE business_type = 'PAYMENT'");
+        int paymentsBefore = count("SELECT count(*) FROM xsy_finance_payment");
+        int logsBefore = count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'PAYMENT'");
 
         assertThatThrownBy(() -> financePaymentService.add(
                 form(customerId, amount, "重复付款", "ORDER_REFUND", refundId), secondKey))
                 .isInstanceOf(com.xsy.scm.common.exception.ScmBusinessException.class);
 
-        assertThat(count("SELECT count(*) FROM finance_payment")).isEqualTo(paymentsBefore);
-        assertThat(count("SELECT count(*) FROM finance_payment WHERE source_id = ?", refundId)).isEqualTo(1);
-        assertThat(count("SELECT count(*) FROM finance_operation_log WHERE business_type = 'PAYMENT'"))
+        assertThat(count("SELECT count(*) FROM xsy_finance_payment")).isEqualTo(paymentsBefore);
+        assertThat(count("SELECT count(*) FROM xsy_finance_payment WHERE source_id = ?", refundId)).isEqualTo(1);
+        assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'PAYMENT'"))
                 .as("失败的那一次一条日志都不留").isEqualTo(logsBefore);
-        assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", secondKey))
+        assertThat(count("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key = ?", secondKey))
                 .as("既有框架的真实语义：claim 与业务写同事务，整笔回滚后即 0 行，"
                         + "因此同一把失败 key 可以重放而不是留下一个空结果占位").isZero();
-        assertThat(count("SELECT count(*) FROM finance_payment WHERE id = ?", firstId))
+        assertThat(count("SELECT count(*) FROM xsy_finance_payment WHERE id = ?", firstId))
                 .as("原付款一字未动，付款是 append-only 事实").isEqualTo(1);
     }
 }

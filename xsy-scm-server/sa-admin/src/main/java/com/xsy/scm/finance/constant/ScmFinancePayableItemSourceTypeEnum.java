@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 public enum ScmFinancePayableItemSourceTypeEnum {
 
     /**
-     * 正常明细：{@code source_id} = {@code purchase_receipt_item.id}。
+     * 正常明细：{@code source_id} = {@code xsy_purchase_receipt_item.id}。
      */
     PURCHASE_RECEIPT_ITEM("采购收货明细"),
 

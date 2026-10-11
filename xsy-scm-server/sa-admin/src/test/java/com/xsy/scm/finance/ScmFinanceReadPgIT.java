@@ -198,7 +198,7 @@ class ScmFinanceReadPgIT extends ScmW5PgITBase {
 
         FinancePaymentQueryForm form = dateRange(new FinancePaymentQueryForm());
         form.setPaymentId(payment.getPaymentId());
-        form.setCounterpartyName(jdbc.queryForObject("SELECT counterparty_name_snapshot FROM finance_payment WHERE id = ?",
+        form.setCounterpartyName(jdbc.queryForObject("SELECT counterparty_name_snapshot FROM xsy_finance_payment WHERE id = ?",
                 String.class, payment.getPaymentId()));
         var page = paymentQueries.query(form);
 
@@ -216,7 +216,7 @@ class ScmFinanceReadPgIT extends ScmW5PgITBase {
         Long customerId = newCustomer();
         String refundNo = "RF-READ-" + prefix + "-" + UUID.randomUUID();
         Long refundId = jdbc.queryForObject(
-                "INSERT INTO order_refund (refund_no, return_id, order_id, customer_id, refund_amount, status, completed_at)"
+                "INSERT INTO xsy_order_refund (refund_no, return_id, order_id, customer_id, refund_amount, status, completed_at)"
                         + " VALUES (?, ?, ?, ?, 25.5000, 'COMPLETED', ?) RETURNING id",
                 Long.class, refundNo, uniqueNumber(), uniqueNumber(), customerId, NOW);
 
@@ -292,13 +292,13 @@ class ScmFinanceReadPgIT extends ScmW5PgITBase {
     private Long normalReceivable(Long customerId, String amount) {
         Long skuId = newOnShelfSku("READ-AR");
         Long orderId = confirmedSalesOrder(customerId, skuId, "1.0000", "1.0000");
-        Long receivableId = jdbc.queryForObject("INSERT INTO finance_receivable (receivable_no, source_type, source_id,"
+        Long receivableId = jdbc.queryForObject("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id,"
                         + " order_id, customer_id, customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, amount, event_at)"
                         + " VALUES (?, 'SALES_ORDER', ?, ?, ?, '只读测试客户', ?, '只读测试客户', 'NORMAL', ?, now()) RETURNING id",
                 Long.class, "AR-READ-" + prefix + "-" + UUID.randomUUID(), orderId, orderId, customerId, customerId,
                 new BigDecimal(amount));
-        jdbc.update("INSERT INTO finance_receivable_item (receivable_id, source_type, source_id, order_item_id,"
+        jdbc.update("INSERT INTO xsy_finance_receivable_item (receivable_id, source_type, source_id, order_item_id,"
                         + " sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount)"
                         + " VALUES (?, 'INVENTORY_OUTBOUND_ITEM', ?, 1, 1, '只读测试商品', 'kg', 1.0000, ?, ?)",
                 receivableId, uniqueNumber(), new BigDecimal(amount), new BigDecimal(amount));
@@ -306,23 +306,23 @@ class ScmFinanceReadPgIT extends ScmW5PgITBase {
     }
 
     private void insertRedReceivable(Long originalId, Long customerId, String amount) {
-        jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, customer_id,"
+        jdbc.update("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, customer_id,"
                         + " customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot,"
                         + " entry_type, original_receivable_id, amount, event_at, reason)"
                         + " VALUES (?, 'ORDER_RETURN', ?, ?, ?, '只读测试客户', ?, '只读测试客户', 'RED', ?, ?, now(), '只读测试红字')",
                 "AR-READ-RED-" + prefix + "-" + UUID.randomUUID(), uniqueNumber(),
-                jdbc.queryForObject("SELECT order_id FROM finance_receivable WHERE id = ?", Long.class, originalId),
+                jdbc.queryForObject("SELECT order_id FROM xsy_finance_receivable WHERE id = ?", Long.class, originalId),
                 customerId, customerId, originalId, new BigDecimal(amount));
     }
 
     private Long normalPayable(Long supplierId, String amount) {
         long receiptId = uniqueNumber();
-        Long payableId = jdbc.queryForObject("INSERT INTO finance_payable (payable_no, source_type, source_id,"
+        Long payableId = jdbc.queryForObject("INSERT INTO xsy_finance_payable (payable_no, source_type, source_id,"
                         + " purchase_order_id, supplier_id, supplier_name_snapshot, entry_type, amount, event_at)"
                         + " VALUES (?, 'PURCHASE_RECEIPT', ?, 1, ?, '只读测试供应商', 'NORMAL', ?, now()) RETURNING id",
                 Long.class, "AP-READ-" + prefix + "-" + UUID.randomUUID(), receiptId, supplierId,
                 new BigDecimal(amount));
-        jdbc.update("INSERT INTO finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id,"
+        jdbc.update("INSERT INTO xsy_finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id,"
                         + " sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount)"
                         + " VALUES (?, 'PURCHASE_RECEIPT_ITEM', ?, 44, 1, '只读测试商品', 'kg', 1.0000, ?, ?)",
                 payableId, uniqueNumber(), new BigDecimal(amount), new BigDecimal(amount));

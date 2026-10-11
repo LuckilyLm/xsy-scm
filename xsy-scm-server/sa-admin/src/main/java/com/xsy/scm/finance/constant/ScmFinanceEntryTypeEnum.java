@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 应收 / 应付的方向：{@code NORMAL} 正常事实，{@code RED} 红字（冲减）事实。
  *
  * <p>
- * <b>方向编码在类型里，金额恒为正</b>（全局不变量 7，照 {@code inventory_movement} 的纪律）：红字不是负数金额，而是另一条 {@code RED} 行，净值在读时按方向相减。因此库里没有
+ * <b>方向编码在类型里，金额恒为正</b>（全局不变量 7，照 {@code xsy_inventory_movement} 的纪律）：红字不是负数金额，而是另一条 {@code RED} 行，净值在读时按方向相减。因此库里没有
  * {@code direction} 列，也不可能出现「金额为负的红字」这种自相矛盾的行。
  *
  * <p>

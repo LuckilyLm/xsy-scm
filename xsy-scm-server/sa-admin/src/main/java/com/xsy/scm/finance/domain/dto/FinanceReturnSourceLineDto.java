@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * 红字应收所需的<b>退货批准事实</b>（明细维度）：一条 {@code order_return_item} 一行红字明细。
+ * 红字应收所需的<b>退货批准事实</b>（明细维度）：一条 {@code xsy_order_return_item} 一行红字明细。
  *
  * <p>
  * {@code amount} 直接取订单域已落库的 {@code approved_amount} （{@code OrderReturnService.approve} 按
@@ -19,7 +19,7 @@ public class FinanceReturnSourceLineDto {
     private Long orderItemId;
 
     /**
-     * {@code order_return_item} 不存商品快照，SKU 三件套从其来源订单行取。
+     * {@code xsy_order_return_item} 不存商品快照，SKU 三件套从其来源订单行取。
      */
     private Long skuId;
 
@@ -37,7 +37,7 @@ public class FinanceReturnSourceLineDto {
     private BigDecimal approvedAmount;
 
     /**
-     * 订单行的下单金额 {@code sales_order_item.ordered_line_amount}（下单量 × 锁定单价）。
+     * 订单行的下单金额 {@code xsy_sales_order_item.ordered_line_amount}（下单量 × 锁定单价）。
      *
      * <p>
      * 与正常应收同一把尺子：红字要反向的优惠 = 冻结行分摊 × 本次退货金额 / 下单金额。 该式与「已确认优惠 × 退货金额 / 已出库金额」恒等（优惠本就按下单金额等比冻结）， 因此不必回读正常应收明细就能得到一致的反向额。

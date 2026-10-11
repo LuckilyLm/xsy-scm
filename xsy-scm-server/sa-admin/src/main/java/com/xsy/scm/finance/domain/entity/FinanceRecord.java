@@ -20,7 +20,7 @@ import java.time.OffsetDateTime;
  * {@code deleted} 列本身保留，用于部分唯一索引的 {@code WHERE deleted = FALSE} 谓词。纠错一律走 {@code entry_type = 'REVERSE'/'RED'} 的反向事实。
  *
  * <p>
- * {@code finance_operation_log} 不继承本类：它连 {@code deleted} 与 {@code version} 都没有， append-only 是结构性的（没有任何删除或修改入口）。
+ * {@code xsy_finance_operation_log} 不继承本类：它连 {@code deleted} 与 {@code version} 都没有， append-only 是结构性的（没有任何删除或修改入口）。
  */
 @Data
 public abstract class FinanceRecord {

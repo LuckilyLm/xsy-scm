@@ -108,7 +108,7 @@ public final class FinanceConstant {
      * 这是并发安全校验「反向前已用额必须 = 0」的前提， 「先查再判断」的乐观写法在这里不成立。
      *
      * <p>
-     * 财务域<b>不获取</b>任何 {@code inventory_balance} 行锁（全局不变量 4）。
+     * 财务域<b>不获取</b>任何 {@code xsy_inventory_balance} 行锁（全局不变量 4）。
      */
     public static final int LOCK_RANK_RECEIPT = 1;
     public static final int LOCK_RANK_PAYMENT = 2;

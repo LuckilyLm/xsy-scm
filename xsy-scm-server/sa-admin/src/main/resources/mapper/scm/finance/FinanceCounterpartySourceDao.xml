@@ -8,10 +8,10 @@
       不在服务层再走 CustomerService（那会带来第二套校验与写能力）。
       收款与退款付款的 CUSTOMER 侧共用这一条，范围口径不留两处实现。
 
-      结算主体的 id 与名称必须来自同一行：customer.settlement_customer_id 是 NOT NULL，
+      结算主体的 id 与名称必须来自同一行：xsy_customer.settlement_customer_id 是 NOT NULL，
       自己结算自己时这一行就是付款客户本身。历史写法用 COALESCE(sc.name, c.name) 给名称兜底，
       会在结算父客户被软删（客户域删除只拦协议价/SKU 可见性，不拦「被别人当结算主体」）时
-      产出「结算 id 是父客户、名称是付款客户」的错配快照，而 finance_receipt 这两列都是
+      产出「结算 id 是父客户、名称是付款客户」的错配快照，而 xsy_finance_receipt 这两列都是
       NOT NULL、写进历史事实不可改。缺结算行时两列一并留空，由登记收款处拒绝写入；
       行本身仍然返回，收款列表/详情与审计日志只要 seller_id 判范围，不被主档悬空连带变成读不出来。
     -->
@@ -22,21 +22,21 @@
                c.seller_id  AS sellerId,
                sc.id        AS settlementCustomerId,
                sc.name      AS settlementCustomerName
-        FROM customer c
-        LEFT JOIN customer sc ON sc.id = c.settlement_customer_id AND sc.deleted = FALSE
+        FROM xsy_customer c
+        LEFT JOIN xsy_customer sc ON sc.id = c.settlement_customer_id AND sc.deleted = FALSE
         WHERE c.id = #{customerId}
           AND c.deleted = FALSE
     </select>
 
     <!--
-      供应商只读存在性与名称：D-5 不为此新增 supplier 范围维度（P0 裁决 7 共享读取），
+      供应商只读存在性与名称：D-5 不为此新增 xsy_supplier 范围维度（P0 裁决 7 共享读取），
       status 也不作为付款前置条件 —— 已停用供应商结清历史债务没有被裁决禁止。
     -->
     <select id="selectSupplier"
             resultType="com.xsy.scm.finance.domain.dto.FinanceSupplierFactDto">
         SELECT s.id   AS supplierId,
                s.name AS supplierName
-        FROM supplier s
+        FROM xsy_supplier s
         WHERE s.id = #{supplierId}
           AND s.deleted = FALSE
     </select>

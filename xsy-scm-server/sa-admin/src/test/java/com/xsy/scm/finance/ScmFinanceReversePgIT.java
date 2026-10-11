@@ -71,7 +71,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
         assertThat(originalAfter.get("reason")).isNull();
         assertThat(originalAfter.get("amount")).isEqualTo(originalBefore.get("amount"));
         assertThat(originalAfter.get("updated_at")).isEqualTo(originalBefore.get("updated_at"));
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE reverse_of_id = ? AND entry_type = 'REVERSE'",
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE reverse_of_id = ? AND entry_type = 'REVERSE'",
                 original.getReceiptId())).isEqualTo(1);
 
         List<Map<String, Object>> logs = receiptLogsOf(original.getReceiptId());
@@ -96,7 +96,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
         expectCode(() -> financeReceiptService.reverse(
                 receiptReverseForm(original.getReceiptId(), "冲正"), key("blocked-receipt")), 41142);
 
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE reverse_of_id = ?", original.getReceiptId()))
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE reverse_of_id = ?", original.getReceiptId()))
                 .isZero();
         assertThat(receiptLogsOf(original.getReceiptId())).extracting(row -> row.get("operation_type"))
                 .containsExactly("RECEIVE");
@@ -111,7 +111,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
         financeReceiptService.reverse(form, key("first-receipt-reverse"));
         expectCode(() -> financeReceiptService.reverse(form, key("second-receipt-reverse")), 41143);
 
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE reverse_of_id = ?", original.getReceiptId()))
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE reverse_of_id = ?", original.getReceiptId()))
                 .isEqualTo(1);
     }
 
@@ -123,7 +123,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
         expectCode(() -> financeReceiptService.reverse(receiptReverseForm(original.getReceiptId(), "  "),
                 key("missing-reason")), 41138);
 
-        assertThat(count("SELECT count(*) FROM finance_receipt WHERE reverse_of_id = ?", original.getReceiptId()))
+        assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE reverse_of_id = ?", original.getReceiptId()))
                 .isZero();
     }
 
@@ -149,7 +149,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
         assertThat(originalAfter.get("reason")).isNull();
         assertThat(originalAfter.get("amount")).isEqualTo(originalBefore.get("amount"));
         assertThat(originalAfter.get("updated_at")).isEqualTo(originalBefore.get("updated_at"));
-        assertThat(count("SELECT count(*) FROM finance_payment WHERE reverse_of_id = ?", original.getPaymentId()))
+        assertThat(count("SELECT count(*) FROM xsy_finance_payment WHERE reverse_of_id = ?", original.getPaymentId()))
                 .isEqualTo(1);
     }
 
@@ -170,7 +170,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
         Map<String, Object> reversalRow = paymentRow(reversal.getPaymentId());
         assertThat(reversalRow.get("source_type")).isNull();
         assertThat(reversalRow.get("source_id")).isNull();
-        assertThat(count("SELECT count(*) FROM finance_payment"
+        assertThat(count("SELECT count(*) FROM xsy_finance_payment"
                 + " WHERE source_type = 'ORDER_REFUND' AND source_id = ?", sourceId)).isEqualTo(1);
         assertThat(paymentLogsOf(originalId)).extracting(row -> row.get("operation_type"))
                 .containsExactly("PAYMENT_REVERSE");
@@ -185,7 +185,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
         expectCode(() -> financePaymentService.reverse(
                 paymentReverseForm(original.getPaymentId(), "先撤核销"), key("blocked-payment")), 41142);
 
-        assertThat(count("SELECT count(*) FROM finance_payment WHERE reverse_of_id = ?", original.getPaymentId()))
+        assertThat(count("SELECT count(*) FROM xsy_finance_payment WHERE reverse_of_id = ?", original.getPaymentId()))
                 .isZero();
         assertThat(paymentLogsOf(original.getPaymentId())).extracting(row -> row.get("operation_type"))
                 .containsExactly("PAY");
@@ -202,7 +202,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
                 paymentReverseForm(paymentId, "越权反向"), key("out-of-scope")))
                 .isInstanceOf(ScmDataScopeException.class);
 
-        assertThat(count("SELECT count(*) FROM finance_payment WHERE reverse_of_id = ?", paymentId)).isZero();
+        assertThat(count("SELECT count(*) FROM xsy_finance_payment WHERE reverse_of_id = ?", paymentId)).isZero();
         assertThat(paymentLogsOf(paymentId)).isEmpty();
     }
 
@@ -247,7 +247,7 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
     }
 
     private void insertWriteOff(String sourceType, Long sourceId, String amount) {
-        jdbc.update("INSERT INTO finance_write_off (write_off_no, source_type, source_id, target_type, target_id,"
+        jdbc.update("INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type, target_id,"
                         + " amount, entry_type, written_off_at, operator) VALUES (?, ?, ?, ?, 1, ?, 'NORMAL', now(), ?)",
                 "WO-" + prefix + "-" + UUID.randomUUID(), sourceType, sourceId,
                 "RECEIPT".equals(sourceType) ? "RECEIVABLE" : "PAYABLE", new BigDecimal(amount), currentOperator());
@@ -293,20 +293,20 @@ class ScmFinanceReversePgIT extends ScmW5PgITBase {
     }
 
     private Map<String, Object> receiptRow(Long receiptId) {
-        return jdbc.queryForMap("SELECT * FROM finance_receipt WHERE id = ?", receiptId);
+        return jdbc.queryForMap("SELECT * FROM xsy_finance_receipt WHERE id = ?", receiptId);
     }
 
     private Map<String, Object> paymentRow(Long paymentId) {
-        return jdbc.queryForMap("SELECT * FROM finance_payment WHERE id = ?", paymentId);
+        return jdbc.queryForMap("SELECT * FROM xsy_finance_payment WHERE id = ?", paymentId);
     }
 
     private List<Map<String, Object>> receiptLogsOf(Long receiptId) {
-        return jdbc.queryForList("SELECT * FROM finance_operation_log"
+        return jdbc.queryForList("SELECT * FROM xsy_finance_operation_log"
                 + " WHERE business_type = 'RECEIPT' AND business_id = ?", receiptId);
     }
 
     private List<Map<String, Object>> paymentLogsOf(Long paymentId) {
-        return jdbc.queryForList("SELECT * FROM finance_operation_log"
+        return jdbc.queryForList("SELECT * FROM xsy_finance_operation_log"
                 + " WHERE business_type = 'PAYMENT' AND business_id = ?", paymentId);
     }
 

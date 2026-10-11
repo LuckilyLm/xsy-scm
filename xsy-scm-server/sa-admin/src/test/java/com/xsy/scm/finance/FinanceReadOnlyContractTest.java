@@ -32,14 +32,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 class FinanceReadOnlyContractTest {
 
     /**
-     * 财务域不得写入的业务表，按前缀匹配：{@code sales_order*} / {@code order_return*} /
-     * {@code order_refund} / {@code purchase_*} / {@code inventory_*} / {@code delivery_*}。
+     * 财务域不得写入的业务表，按前缀匹配：{@code xsy_sales_order*} / {@code xsy_order_return*} /
+     * {@code xsy_order_refund} / {@code purchase_*} / {@code inventory_*} / {@code delivery_*}。
      *
-     * <p>{@code sorting_task} 也一并纳入：财务不消费分拣事实（应收数量只取出库量），
+     * <p>{@code xsy_sorting_task} 也一并纳入：财务不消费分拣事实（应收数量只取出库量），
      * 因此同样没有任何写它的理由。
      */
     private static final List<String> READ_ONLY_TABLE_PREFIXES = List.of(
-            "sales_order", "order_return", "order_refund",
+            "xsy_sales_order", "xsy_order_return", "xsy_order_refund",
             "purchase_", "inventory_", "delivery_", "sorting_");
 
     /**
@@ -53,7 +53,7 @@ class FinanceReadOnlyContractTest {
     /**
      * Java 字符串字面量（含文本块）。SQL 只可能出现在这里或 mapper XML 里，
      * 因此只扫描这两处就能覆盖全部越界写法，同时避免把 javadoc 里
-     * 「不得 UPDATE {@code sales_order}」这类说明性文字误判成违规。
+     * 「不得 UPDATE {@code xsy_sales_order}」这类说明性文字误判成违规。
      */
     private static final Pattern JAVA_TEXT_BLOCK = Pattern.compile("\"\"\"(.*?)\"\"\"", Pattern.DOTALL);
     private static final Pattern JAVA_STRING_LITERAL = Pattern.compile("\"((?:[^\"\\\\]|\\\\.)*)\"");
@@ -135,11 +135,11 @@ class FinanceReadOnlyContractTest {
         assertThat(mapped)
                 .as("财务域实体的 @TableName 取值")
                 .hasSize(8)
-                .allSatisfy(table -> assertThat(table).startsWith("finance_"))
-                .contains("finance_receivable", "finance_receivable_item",
-                        "finance_payable", "finance_payable_item",
-                        "finance_receipt", "finance_payment",
-                        "finance_write_off", "finance_operation_log");
+                .allSatisfy(table -> assertThat(table).startsWith("xsy_finance_"))
+                .contains("xsy_finance_receivable", "xsy_finance_receivable_item",
+                        "xsy_finance_payable", "xsy_finance_payable_item",
+                        "xsy_finance_receipt", "xsy_finance_payment",
+                        "xsy_finance_write_off", "xsy_finance_operation_log");
     }
 
     @Test

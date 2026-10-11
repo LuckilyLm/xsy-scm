@@ -69,7 +69,7 @@ public interface FinanceReceivableSourceDao {
      * 订单确认时冻结的行级优惠分摊（{@code orderItemId -> discountAmount}）。
      *
      * <p>
-     * 只读订单域已经冻结的 {@code order_discount.allocations}，<b>不重算优惠规则</b>： 应收净额与红字反向都必须与冻结时的分摊逐字一致，否则「当时减了多少」会有两个答案。
+     * 只读订单域已经冻结的 {@code xsy_order_discount.allocations}，<b>不重算优惠规则</b>： 应收净额与红字反向都必须与冻结时的分摊逐字一致，否则「当时减了多少」会有两个答案。
      * 没有冻结记录（订单无优惠）时返回空集。
      */
     List<FinanceOrderDiscountLineDto> selectOrderDiscountLines(@Param("salesOrderId") Long salesOrderId);

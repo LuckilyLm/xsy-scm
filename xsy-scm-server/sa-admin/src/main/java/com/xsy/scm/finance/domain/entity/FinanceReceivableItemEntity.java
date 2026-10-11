@@ -7,19 +7,19 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 
 /**
- * 应收明细：正常一条 {@code inventory_outbound_item} 一行，红字一条 {@code order_return_item} 一行。
+ * 应收明细：正常一条 {@code xsy_inventory_outbound_item} 一行，红字一条 {@code xsy_order_return_item} 一行。
  *
  * <p>
  * <b>来源锚点是出库行主键，不是 {@code sales_order_item_id}</b>：一条订单行可能对应多条出库行，因此唯一索引
- * {@code uk_finance_receivable_item_source_active} 按 {@code inventory_outbound_item.id} 去重。
+ * {@code uk_finance_receivable_item_source_active} 按 {@code xsy_inventory_outbound_item.id} 去重。
  *
  * <p>
- * <b>红字明细不存行级原明细指针</b>：一条 {@code sales_order_item} 可能对应多条出库行，不存在唯一的「原正常明细行」，假设 1:1 会造出一个指错行的外键语义。红字的行级追溯链是
- * {@code RED receivable → original_receivable_id（单头级）} + {@code RED item → order_return_item → orderItemId}。
+ * <b>红字明细不存行级原明细指针</b>：一条 {@code xsy_sales_order_item} 可能对应多条出库行，不存在唯一的「原正常明细行」，假设 1:1 会造出一个指错行的外键语义。红字的行级追溯链是
+ * {@code RED receivable → original_receivable_id（单头级）} + {@code RED item → xsy_order_return_item → orderItemId}。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("finance_receivable_item")
+@TableName("xsy_finance_receivable_item")
 public class FinanceReceivableItemEntity extends FinanceRecord {
 
     private Long receivableId;
@@ -30,7 +30,7 @@ public class FinanceReceivableItemEntity extends FinanceRecord {
     private String sourceType;
 
     /**
-     * 正常 = {@code inventory_outbound_item.id}；红字 = {@code order_return_item.id}。
+     * 正常 = {@code xsy_inventory_outbound_item.id}；红字 = {@code xsy_order_return_item.id}。
      */
     private Long sourceId;
 
@@ -54,8 +54,8 @@ public class FinanceReceivableItemEntity extends FinanceRecord {
     private BigDecimal quantity;
 
     /**
-     * 正常 = {@code sales_order_item.locked_unit_price}（唯一价格源）；红字 = 退货行锁定单价。 <b>禁止</b>取
-     * {@code inventory_movement.unit_cost} —— 那是出库时的库存移动加权均价，不是售价。
+     * 正常 = {@code xsy_sales_order_item.locked_unit_price}（唯一价格源）；红字 = 退货行锁定单价。 <b>禁止</b>取
+     * {@code xsy_inventory_movement.unit_cost} —— 那是出库时的库存移动加权均价，不是售价。
      */
     private BigDecimal unitPrice;
 
@@ -63,7 +63,7 @@ public class FinanceReceivableItemEntity extends FinanceRecord {
      * 该行承担的订单优惠分摊（正常为减免额；红字为按同一份冻结分摊反向的减免额）。恒 &gt;= 0。
      *
      * <p>
-     * 来源是订单确认时冻结的 {@code order_discount.allocations}，按「该行金额 / 订单行下单金额」等比折算； <b>不用</b>本次操作时的当前活动重算 ——
+     * 来源是订单确认时冻结的 {@code xsy_order_discount.allocations}，按「该行金额 / 订单行下单金额」等比折算； <b>不用</b>本次操作时的当前活动重算 ——
      * 否则双十一买的单在双十二退货会退成另一个数。
      */
     private BigDecimal discountAmount;

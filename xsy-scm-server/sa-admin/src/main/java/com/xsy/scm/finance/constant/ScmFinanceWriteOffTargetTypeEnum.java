@@ -14,12 +14,12 @@ import lombok.RequiredArgsConstructor;
 public enum ScmFinanceWriteOffTargetTypeEnum {
 
     /**
-     * 应收：{@code target_id} = {@code finance_receivable.id}。
+     * 应收：{@code target_id} = {@code xsy_finance_receivable.id}。
      */
     RECEIVABLE("应收"),
 
     /**
-     * 应付：{@code target_id} = {@code finance_payable.id}。
+     * 应付：{@code target_id} = {@code xsy_finance_payable.id}。
      */
     PAYABLE("应付");
 

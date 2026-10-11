@@ -215,14 +215,14 @@ class ScmFinanceSettleStatePgIT extends ScmW5PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * 直接插一条正常应收。汇总 SQL 与 {@code sales_order} 是 INNER JOIN，
+     * 直接插一条正常应收。汇总 SQL 与 {@code xsy_sales_order} 是 INNER JOIN，
      * 因此订单必须真实存在（走订单命令链造单，不用不存在的 id）。
      */
     private Long normalReceivable(Long customerId, String amount) {
         // SKU 编码含用例前缀但不含序号：同一用例造两条应收时必须各占一个后缀，否则撞唯一索引
         Long orderId = confirmedSalesOrder(customerId,
                 newOnShelfSku("SS-AR-" + UUID.randomUUID().toString().substring(0, 6)), "10.0000", "10.0000");
-        return jdbc.queryForObject("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
+        return jdbc.queryForObject("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,"
                         + " customer_id, customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, amount, event_at, created_at, updated_at)"
                         + " VALUES (?, 'SALES_ORDER', ?, ?, ?, '结清测试客户', ?, '结清测试客户', 'NORMAL', ?,"
@@ -232,9 +232,9 @@ class ScmFinanceSettleStatePgIT extends ScmW5PgITBase {
     }
 
     private void insertRedReceivable(Long originalId, Long customerId, String amount) {
-        Long orderId = jdbc.queryForObject("SELECT order_id FROM finance_receivable WHERE id = ?",
+        Long orderId = jdbc.queryForObject("SELECT order_id FROM xsy_finance_receivable WHERE id = ?",
                 Long.class, originalId);
-        jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, customer_id,"
+        jdbc.update("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, customer_id,"
                         + " customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, original_receivable_id, amount, event_at,"
                         + " reason)"
@@ -245,12 +245,12 @@ class ScmFinanceSettleStatePgIT extends ScmW5PgITBase {
     }
 
     private Long normalPayable(Long supplierId, String amount) {
-        Long payableId = jdbc.queryForObject("INSERT INTO finance_payable (payable_no, source_type, source_id,"
+        Long payableId = jdbc.queryForObject("INSERT INTO xsy_finance_payable (payable_no, source_type, source_id,"
                         + " purchase_order_id, supplier_id, supplier_name_snapshot, entry_type, amount, event_at)"
                         + " VALUES (?, 'PURCHASE_RECEIPT', ?, 1, ?, '结清测试供应商', 'NORMAL', ?, now()) RETURNING id",
                 Long.class, "AP-SS-" + prefix + "-" + UUID.randomUUID(), uniqueNumber(), supplierId,
                 new BigDecimal(amount));
-        jdbc.update("INSERT INTO finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id,"
+        jdbc.update("INSERT INTO xsy_finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id,"
                         + " sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount)"
                         + " VALUES (?, 'PURCHASE_RECEIPT_ITEM', ?, 44, 1, '测试商品', 'kg', 10.0000, 10.0000, 100.0000)",
                 payableId, uniqueNumber());
@@ -259,7 +259,7 @@ class ScmFinanceSettleStatePgIT extends ScmW5PgITBase {
 
     /** 红字应付的库级配对约束：MANUAL 来源、source_id 为空、必须引用原单并写原因。 */
     private void insertRedPayable(Long originalId, Long supplierId, String amount) {
-        jdbc.update("INSERT INTO finance_payable (payable_no, source_type, source_id, purchase_order_id,"
+        jdbc.update("INSERT INTO xsy_finance_payable (payable_no, source_type, source_id, purchase_order_id,"
                         + " supplier_id, supplier_name_snapshot, entry_type, original_payable_id, amount, event_at,"
                         + " reason)"
                         + " VALUES (?, 'MANUAL', NULL, 1, ?, '结清测试供应商', 'RED', ?, ?, now(), '测试红字')",

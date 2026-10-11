@@ -95,9 +95,9 @@ class ScmFinancePaymentRacePgIT extends ScmW5PgITBase {
         // 那个分页读接口按 orderSellerScope 收窄（非超管身份下会拿不到行），
         // 而夹具要的只是「这一单的退款」，直查不依赖读侧范围也不依赖行序。
         Long refundId = jdbc.queryForObject(
-                "SELECT id FROM order_refund WHERE order_id = ? AND deleted = FALSE", Long.class, orderId);
+                "SELECT id FROM xsy_order_refund WHERE order_id = ? AND deleted = FALSE", Long.class, orderId);
         Integer refundVersion = jdbc.queryForObject(
-                "SELECT version FROM order_refund WHERE id = ?", Integer.class, refundId);
+                "SELECT version FROM xsy_order_refund WHERE id = ?", Integer.class, refundId);
         var complete = new OrderRefundCompleteForm();
         complete.setRefundId(refundId);
         complete.setVersion(refundVersion);
@@ -108,7 +108,7 @@ class ScmFinancePaymentRacePgIT extends ScmW5PgITBase {
         refunds.complete(complete, key("fc:" + tag));
 
         return new Refund(refundId, customerId,
-                jdbc.queryForObject("SELECT refund_amount FROM order_refund WHERE id = ?",
+                jdbc.queryForObject("SELECT refund_amount FROM xsy_order_refund WHERE id = ?",
                         BigDecimal.class, refundId));
     }
 
@@ -195,15 +195,15 @@ class ScmFinancePaymentRacePgIT extends ScmW5PgITBase {
 
         // 最终事实：一笔付款、一条日志，两个 claim 各自成对（成功侧完成、失败侧随事务回滚）
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM finance_payment WHERE source_id = ?", Integer.class, refund.refundId()))
+                "SELECT count(*) FROM xsy_finance_payment WHERE source_id = ?", Integer.class, refund.refundId()))
                 .isEqualTo(1);
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM finance_operation_log l JOIN finance_payment p ON p.id = l.business_id"
+                "SELECT count(*) FROM xsy_finance_operation_log l JOIN xsy_finance_payment p ON p.id = l.business_id"
                         + " WHERE l.business_type = 'PAYMENT' AND l.operation_type = 'PAY'"
                         + " AND p.source_id = ?", Integer.class, refund.refundId()))
                 .as("付款与日志同事务，因此只可能有一条").isEqualTo(1);
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM finance_payment WHERE source_id = ? AND entry_type = 'NORMAL'"
+                "SELECT count(*) FROM xsy_finance_payment WHERE source_id = ? AND entry_type = 'NORMAL'"
                         + " AND amount = ?", Integer.class, refund.refundId(), refund.refundAmount()))
                 .as("留下的那一笔金额正是退款应退额").isEqualTo(1);
     }

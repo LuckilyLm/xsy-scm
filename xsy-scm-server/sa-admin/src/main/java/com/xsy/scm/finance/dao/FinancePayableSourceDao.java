@@ -32,7 +32,7 @@ public interface FinancePayableSourceDao {
      * 收货确认事实（明细维度），只含<b>有效量 &gt; 0</b> 的行，按收货行的录入顺序返回。
      *
      * <p>
-     * 一行都没收到就不该进应付明细（{@code finance_payable_item.quantity} 的库级 CHECK 是 {@code > 0}）；少收未交部分不产生任何财务事实。
+     * 一行都没收到就不该进应付明细（{@code xsy_finance_payable_item.quantity} 的库级 CHECK 是 {@code > 0}）；少收未交部分不产生任何财务事实。
      */
     List<FinancePayableSourceLineDto> selectConfirmedReceiptLines(@Param("purchaseReceiptId") Long purchaseReceiptId);
 

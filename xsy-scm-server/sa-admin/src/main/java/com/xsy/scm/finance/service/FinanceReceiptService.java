@@ -44,11 +44,11 @@ import org.springframework.transaction.annotation.Transactional;
  * 只登记 {@code NORMAL} 收款。更正错误收款应追加反向事实，不修改、作废或软删原记录。
  *
  * <p>
- * <b>收款登记与核销是两件事</b>：登记一笔钱只产生 「一笔待核销款」这一事实，绝不自动创建 {@code finance_write_off}、绝不改 {@code finance_receivable} /
- * {@code sales_order} / {@code customer.credit_limit}。允许预收：没有对应应收也可以登记收款。核销由单独命令完成。
+ * <b>收款登记与核销是两件事</b>：登记一笔钱只产生 「一笔待核销款」这一事实，绝不自动创建 {@code xsy_finance_write_off}、绝不改 {@code xsy_finance_receivable} /
+ * {@code xsy_sales_order} / {@code xsy_customer.credit_limit}。允许预收：没有对应应收也可以登记收款。核销由单独命令完成。
  *
  * <p>
- * <b>不设第二套幂等基建</b>：复用既有 {@code idempotency_record} 与 {@link ScmIdempotencyService}（三段式 {@code claim → 写 → complete}
+ * <b>不设第二套幂等基建</b>：复用既有 {@code xsy_idempotency_record} 与 {@link ScmIdempotencyService}（三段式 {@code claim → 写 → complete}
  * 同一事务），与 delivery / inventory / sorting 同一形态。 {@code external_reference} 只是资金凭据文本，不参与任何一层防重。
  */
 @Service
