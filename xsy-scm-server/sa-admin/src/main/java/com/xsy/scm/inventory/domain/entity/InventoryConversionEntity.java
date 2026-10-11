@@ -24,7 +24,7 @@ import java.time.OffsetDateTime;
  * <b>审批状态机与报损报溢同构</b>：转换会把两个 SKU 的余额同时改掉，且折算关系是人工声明的，没有审批等于录单人可以单方面决定「一箱等于多少 kg」。
  */
 @Data
-@TableName(value = "inventory_conversion", autoResultMap = true)
+@TableName(value = "xsy_inventory_conversion", autoResultMap = true)
 public class InventoryConversionEntity {
 
     @TableId(type = IdType.AUTO)

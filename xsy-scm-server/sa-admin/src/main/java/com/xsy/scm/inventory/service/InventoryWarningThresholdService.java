@@ -24,7 +24,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNIN
  * 预警阈值配置的命令侧：新建 / 编辑 / 删除。
  *
  * <p>
- * <b>本类不碰 {@code inventory_balance}</b>：阈值是配置，余额是派生状态。若阈值放在余额表上，这个类就必须为了写阈值而创建余额行 ——
+ * <b>本类不碰 {@code xsy_inventory_balance}</b>：阈值是配置，余额是派生状态。若阈值放在余额表上，这个类就必须为了写阈值而创建余额行 ——
  * 那会造出「没有任何流水支撑的余额行」，直接破坏「余额是流水的净和」这条不变量。单独建表让配置路径完全不必触碰余额表。
  *
  * <p>

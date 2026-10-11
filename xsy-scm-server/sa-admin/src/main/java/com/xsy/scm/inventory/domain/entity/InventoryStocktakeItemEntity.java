@@ -23,7 +23,7 @@ import java.time.OffsetDateTime;
  * {@code unitSnapshot} 在确认时写入（= 该 (仓库, SKU) 的余额记账单位），草稿态允许为空， 与出库单明细同一取向。
  */
 @Data
-@TableName(value = "inventory_stocktake_item", autoResultMap = true)
+@TableName(value = "xsy_inventory_stocktake_item", autoResultMap = true)
 public class InventoryStocktakeItemEntity {
 
     @TableId(type = IdType.AUTO)

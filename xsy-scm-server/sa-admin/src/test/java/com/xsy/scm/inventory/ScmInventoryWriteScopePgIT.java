@@ -134,30 +134,30 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
         Long mineId = as(keeper, Set.of(), () -> outboundService.create(outboundForm(mine, MOVE)));
         asRun(keeper, () -> outboundService.confirm(mineId));
-        assertThat(statusOf("inventory_outbound", mineId)).isEqualTo("CONFIRMED");
+        assertThat(statusOf("xsy_inventory_outbound", mineId)).isEqualTo("CONFIRMED");
         assertThat(quantityOf(mine)).as("授权仓的出库照常扣账").isEqualByComparingTo("6.0000");
         assertThat(movementTypes(mine)).containsExactly("PURCHASE_IN", "SALES_OUT");
 
         // 反例：乙仓一张状态合法、版本正确的草稿，只因为仓库不在范围内被挡
         Long foreignId = asAdmin(() -> outboundService.create(outboundForm(foreign, MOVE)));
         assertDataScopeDenied(() -> asRun(keeper, () -> outboundService.confirm(foreignId)));
-        assertThat(statusOf("inventory_outbound", foreignId)).as("确认没落进状态机").isEqualTo(DRAFT);
+        assertThat(statusOf("xsy_inventory_outbound", foreignId)).as("确认没落进状态机").isEqualTo(DRAFT);
         assertThat(movementTypes(foreign)).as("一条 SALES_OUT 都没写下").containsExactly("PURCHASE_IN");
         assertThat(quantityOf(foreign)).as("余额一分未动").isEqualByComparingTo(STOCKED);
         assertDataScopeDenied(() -> asRun(keeper, () -> outboundService.cancel(foreignId)));
         assertDataScopeDenied(() -> asRun(keeper, () -> outboundService.delete(foreignId)));
-        assertThat(activeRowCount("inventory_outbound", foreignId)).as("取消与删除也没碰到这张单").isEqualTo(1);
+        assertThat(activeRowCount("xsy_inventory_outbound", foreignId)).as("取消与删除也没碰到这张单").isEqualTo(1);
 
         // 未授权仓连草稿都建不出来：建单不是「读不到」，而是往别人仓里塞单据
         assertDataScopeDenied(() -> as(keeper, Set.of(), () -> outboundService.create(outboundForm(foreign, MOVE))));
-        assertThat(rowCount("inventory_outbound", "warehouse_id = ?", foreign.warehouseId()))
+        assertThat(rowCount("xsy_inventory_outbound", "warehouse_id = ?", foreign.warehouseId()))
                 .as("仍然只有夹具那一张").isEqualTo(1);
 
         // 改单会把仓库换掉：行上的旧仓与表单的新仓两端都要授权
         Long draftInMine = as(keeper, Set.of(), () -> outboundService.create(outboundForm(mine, MOVE)));
         assertDataScopeDenied(() -> asRun(keeper,
                 () -> outboundService.update(draftInMine, outboundForm(foreign, MOVE))));
-        assertThat(warehouseOf("inventory_outbound", draftInMine)).isEqualTo(mine.warehouseId());
+        assertThat(warehouseOf("xsy_inventory_outbound", draftInMine)).isEqualTo(mine.warehouseId());
 
         // 「行不存在」不能被范围判定吞成 30005，否则探测主键与探测权限混成一种结果
         expectCode(() -> asRun(keeper, () -> outboundService.confirm(foreignId + 9999999L)), 41013);
@@ -181,12 +181,12 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
         // 发出要求 from 仓权限：只授权 to 端的人发不出去，源仓余额与流水原样
         assertDataScopeDenied(() -> asRun(targetKeeper, () -> transferService.ship(transferId)));
-        assertThat(statusOf("inventory_transfer", transferId)).isEqualTo(DRAFT);
+        assertThat(statusOf("xsy_inventory_transfer", transferId)).isEqualTo(DRAFT);
         assertThat(movementTypes(source)).containsExactly("PURCHASE_IN");
         assertThat(quantityOf(source)).isEqualByComparingTo(STOCKED);
 
         asRun(sourceKeeper, () -> transferService.ship(transferId));
-        assertThat(statusOf("inventory_transfer", transferId)).isEqualTo("SHIPPED");
+        assertThat(statusOf("xsy_inventory_transfer", transferId)).isEqualTo("SHIPPED");
         assertThat(movementTypes(source)).containsExactly("PURCHASE_IN", "TRANSFER_OUT");
         assertThat(quantityOf(source)).isEqualByComparingTo("6.0000");
         assertThat(movementCount(target.warehouseId(), source.skuId()))
@@ -194,20 +194,20 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
         // 收货要求 to 仓权限：发出去的一方不能替目标仓入账
         assertDataScopeDenied(() -> asRun(sourceKeeper, () -> transferService.receive(transferId)));
-        assertThat(statusOf("inventory_transfer", transferId)).isEqualTo("SHIPPED");
+        assertThat(statusOf("xsy_inventory_transfer", transferId)).isEqualTo("SHIPPED");
         assertThat(movementCount(target.warehouseId(), source.skuId())).isZero();
         assertThat(quantityOf(target.warehouseId(), source.skuId()))
                 .as("目标仓的余额行还没被创建").isNull();
 
         asRun(targetKeeper, () -> transferService.receive(transferId));
-        assertThat(statusOf("inventory_transfer", transferId)).isEqualTo("RECEIVED");
+        assertThat(statusOf("xsy_inventory_transfer", transferId)).isEqualTo("RECEIVED");
         assertThat(movementTypes(target.warehouseId(), source.skuId())).containsExactly("TRANSFER_IN");
         assertThat(quantityOf(target.warehouseId(), source.skuId)).isEqualByComparingTo(MOVED);
         assertLedgerBalanced(source.warehouseId(), source.skuId());
         assertLedgerBalanced(target.warehouseId(), source.skuId());
 
         // 已经走完的两端授权人再撤销：在途/终态不可撤销是状态机的事，与本类无关，但状态不能变
-        assertThat(statusOf("inventory_transfer", transferId)).isEqualTo("RECEIVED");
+        assertThat(statusOf("xsy_inventory_transfer", transferId)).isEqualTo("RECEIVED");
     }
 
     // ------------------------------------------------------------------
@@ -229,7 +229,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
                 transferForm(mine.warehouseId(), foreign.warehouseId(), mine.skuId(), MOVE))));
         assertDataScopeDenied(() -> as(onlyMine, Set.of(), () -> transferService.create(
                 transferForm(foreign.warehouseId(), mine.warehouseId(), foreign.skuId(), MOVE))));
-        assertThat(rowCount("inventory_transfer",
+        assertThat(rowCount("xsy_inventory_transfer",
                 "(from_warehouse_id IN (?, ?) AND to_warehouse_id IN (?, ?))",
                 mine.warehouseId(), foreign.warehouseId(), mine.warehouseId(), foreign.warehouseId()))
                 .as("两个方向都没落下任何一张草稿").isZero();
@@ -239,24 +239,24 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
                 transferForm(mine.warehouseId(), alsoMine.warehouseId(), mine.skuId(), MOVE)));
         asRun(bothEnds, () -> transferService.update(allowed,
                 transferForm(mine.warehouseId(), alsoMine.warehouseId(), mine.skuId(), "2.0000")));
-        assertThat(quantityOfFirstItem("inventory_transfer_item", "transfer_id", allowed))
+        assertThat(quantityOfFirstItem("xsy_inventory_transfer_item", "transfer_id", allowed))
                 .as("两端都授权时改单照常写入").isEqualByComparingTo("2.0000");
 
         // 只授权 from 端的人想把 to 换成未授权仓：判掉，且旧值与明细都不留痕
         assertDataScopeDenied(() -> asRun(onlyMine, () -> transferService.update(allowed,
                 transferForm(mine.warehouseId(), foreign.warehouseId(), mine.skuId(), MOVE))));
-        assertThat(warehouseOf("inventory_transfer", "to_warehouse_id", allowed)).isEqualTo(alsoMine.warehouseId());
-        assertThat(quantityOfFirstItem("inventory_transfer_item", "transfer_id", allowed))
+        assertThat(warehouseOf("xsy_inventory_transfer", "to_warehouse_id", allowed)).isEqualTo(alsoMine.warehouseId());
+        assertThat(quantityOfFirstItem("xsy_inventory_transfer_item", "transfer_id", allowed))
                 .as("失败的改单没换掉明细数量").isEqualByComparingTo("2.0000");
 
         // 撤销草稿不碰余额，判据与查询同为 OR：两端都不授权的人撤不掉
         assertDataScopeDenied(() -> asRun(stranger, () -> transferService.cancel(allowed)));
         assertDataScopeDenied(() -> asRun(stranger, () -> transferService.delete(allowed)));
-        assertThat(statusOf("inventory_transfer", allowed)).isEqualTo(DRAFT);
-        assertThat(activeRowCount("inventory_transfer", allowed)).isEqualTo(1);
+        assertThat(statusOf("xsy_inventory_transfer", allowed)).isEqualTo(DRAFT);
+        assertThat(activeRowCount("xsy_inventory_transfer", allowed)).isEqualTo(1);
         // 命中任一端（这里是 from 端）就可以撤自己的草稿
         asRun(onlyMine, () -> transferService.cancel(allowed));
-        assertThat(statusOf("inventory_transfer", allowed)).isEqualTo("CANCELLED");
+        assertThat(statusOf("xsy_inventory_transfer", allowed)).isEqualTo("CANCELLED");
     }
 
     // ------------------------------------------------------------------
@@ -273,35 +273,35 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
         // 别人在乙仓录的单：keeper 与它既无仓库关系也无录单关系，两个禁令互不遮蔽
         Long foreignDoc = asAdmin(() -> lossGainService.create(lossGainForm(foreign, "1.0000")));
         assertDataScopeDenied(() -> asRun(keeper, () -> lossGainService.approve(
-                foreignDoc, lossGainAuditForm(versionOf("inventory_loss_gain", foreignDoc)))));
+                foreignDoc, lossGainAuditForm(versionOf("xsy_inventory_loss_gain", foreignDoc)))));
         assertDataScopeDenied(() -> asRun(keeper, () -> lossGainService.reject(
-                foreignDoc, lossGainAuditForm(versionOf("inventory_loss_gain", foreignDoc)))));
-        assertThat(statusOf("inventory_loss_gain", foreignDoc)).as("既没通过也没驳回").isEqualTo(PENDING);
+                foreignDoc, lossGainAuditForm(versionOf("xsy_inventory_loss_gain", foreignDoc)))));
+        assertThat(statusOf("xsy_inventory_loss_gain", foreignDoc)).as("既没通过也没驳回").isEqualTo(PENDING);
         assertThat(movementTypes(foreign)).containsExactly("PURCHASE_IN");
         assertThat(quantityOf(foreign)).isEqualByComparingTo(STOCKED);
         assertDataScopeDenied(() -> asRun(keeper, () -> lossGainService.delete(foreignDoc)));
-        assertThat(activeRowCount("inventory_loss_gain", foreignDoc)).isEqualTo(1);
+        assertThat(activeRowCount("xsy_inventory_loss_gain", foreignDoc)).isEqualTo(1);
 
         // 未授权仓连录单都不行
         assertDataScopeDenied(() -> as(keeper, Set.of(), () -> lossGainService.create(lossGainForm(foreign, "1.0000"))));
-        assertThat(rowCount("inventory_loss_gain", "warehouse_id = ?", foreign.warehouseId()))
+        assertThat(rowCount("xsy_inventory_loss_gain", "warehouse_id = ?", foreign.warehouseId()))
                 .as("只有夹具那一张").isEqualTo(1);
 
         // 自己在授权仓录的单：范围放行，41065 仍按身份拦下 —— 两条禁令各管各的
         Long ownDoc = as(keeper, Set.of(), () -> lossGainService.create(lossGainForm(mine, "1.0000")));
         expectCode(() -> asRun(keeper, () -> lossGainService.approve(
-                ownDoc, lossGainAuditForm(versionOf("inventory_loss_gain", ownDoc)))), 41065);
-        assertThat(statusOf("inventory_loss_gain", ownDoc)).isEqualTo(PENDING);
+                ownDoc, lossGainAuditForm(versionOf("xsy_inventory_loss_gain", ownDoc)))), 41065);
+        assertThat(statusOf("xsy_inventory_loss_gain", ownDoc)).isEqualTo(PENDING);
         assertThat(movementTypes(mine)).as("自审被拦下时同样不该留下流水").containsExactly("PURCHASE_IN");
 
         // 换一位同仓仓管审批：正常落账，说明范围收口没有把有效单据卡死
         Long mate = keeper("lg4mate", mine.warehouseId());
         asRun(mate, () -> lossGainService.approve(ownDoc,
-                lossGainAuditForm(versionOf("inventory_loss_gain", ownDoc))));
-        assertThat(statusOf("inventory_loss_gain", ownDoc)).isEqualTo("COMPLETED");
+                lossGainAuditForm(versionOf("xsy_inventory_loss_gain", ownDoc))));
+        assertThat(statusOf("xsy_inventory_loss_gain", ownDoc)).isEqualTo("COMPLETED");
         assertThat(movementTypes(mine)).containsExactly("PURCHASE_IN", "LOSS_REPORT");
         assertThat(quantityOf(mine)).isEqualByComparingTo("9.0000");
-        assertThat(jdbc.queryForObject("SELECT auditor FROM inventory_loss_gain WHERE id = ?", String.class, ownDoc))
+        assertThat(jdbc.queryForObject("SELECT auditor FROM xsy_inventory_loss_gain WHERE id = ?", String.class, ownDoc))
                 .isEqualTo(UserTypeEnum.ADMIN_EMPLOYEE.getValue() + ":" + mate);
     }
 
@@ -318,7 +318,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
         assertDataScopeDenied(() -> as(keeper, Set.of(),
                 () -> stocktakeService.create(stocktakeForm(foreign, "12.0000"))));
-        assertThat(rowCount("inventory_stocktake", "warehouse_id = ?", foreign.warehouseId())).isZero();
+        assertThat(rowCount("xsy_inventory_stocktake", "warehouse_id = ?", foreign.warehouseId())).isZero();
         // 导入：仓库取自签名凭证，但凭证不是授权依据，判定落在锁定余额之前
         assertDataScopeDenied(() -> as(keeper, Set.of(), () -> stocktakeService.createFromSnapshot(
                 foreign.warehouseId(), List.of())));
@@ -329,7 +329,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
         assertDataScopeDenied(() -> asRun(keeper, () -> stocktakeService.delete(foreignDoc)));
         assertDataScopeDenied(() -> asRun(keeper,
                 () -> stocktakeService.update(foreignDoc, stocktakeForm(foreign, "8.0000"))));
-        assertThat(statusOf("inventory_stocktake", foreignDoc)).isEqualTo(DRAFT);
+        assertThat(statusOf("xsy_inventory_stocktake", foreignDoc)).isEqualTo(DRAFT);
         assertThat(movementTypes(foreign)).as("盘盈/盘亏都没写进乙仓").containsExactly("PURCHASE_IN");
         assertThat(quantityOf(foreign)).isEqualByComparingTo(STOCKED);
         assertThat(bookQuantityOfFirstItem(foreignDoc)).as("失败的改单没换掉账面量快照")
@@ -338,7 +338,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
         Long ownDoc = as(keeper, Set.of(), () -> stocktakeService.create(stocktakeForm(mine, "12.0000")));
         assertThat(bookQuantityOfFirstItem(ownDoc)).as("授权仓的快照与改单照常").isEqualByComparingTo(STOCKED);
         asRun(keeper, () -> stocktakeService.confirm(ownDoc));
-        assertThat(statusOf("inventory_stocktake", ownDoc)).isEqualTo("CONFIRMED");
+        assertThat(statusOf("xsy_inventory_stocktake", ownDoc)).isEqualTo("CONFIRMED");
         assertThat(movementTypes(mine)).containsExactly("PURCHASE_IN", "STOCKTAKE_GAIN");
         assertThat(quantityOf(mine)).isEqualByComparingTo("12.0000");
     }
@@ -357,16 +357,16 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
         assertDataScopeDenied(() -> as(keeper, Set.of(), () -> conversionService.create(
                 conversionForm(foreign.warehouseId(), foreign.skuId(), extraSku))));
-        assertThat(rowCount("inventory_conversion", "warehouse_id = ?", foreign.warehouseId())).isZero();
+        assertThat(rowCount("xsy_inventory_conversion", "warehouse_id = ?", foreign.warehouseId())).isZero();
 
         Long foreignDoc = asAdmin(() -> conversionService.create(
                 conversionForm(foreign.warehouseId(), foreign.skuId(), extraSku)));
         assertDataScopeDenied(() -> asRun(keeper, () -> conversionService.approve(
-                foreignDoc, conversionAuditForm(versionOf("inventory_conversion", foreignDoc)))));
+                foreignDoc, conversionAuditForm(versionOf("xsy_inventory_conversion", foreignDoc)))));
         assertDataScopeDenied(() -> asRun(keeper, () -> conversionService.reject(
-                foreignDoc, conversionAuditForm(versionOf("inventory_conversion", foreignDoc)))));
+                foreignDoc, conversionAuditForm(versionOf("xsy_inventory_conversion", foreignDoc)))));
         assertDataScopeDenied(() -> asRun(keeper, () -> conversionService.delete(foreignDoc)));
-        assertThat(statusOf("inventory_conversion", foreignDoc)).isEqualTo(PENDING);
+        assertThat(statusOf("xsy_inventory_conversion", foreignDoc)).isEqualTo(PENDING);
         assertThat(movementTypes(foreign)).as("转出腿没写").containsExactly("PURCHASE_IN");
         assertThat(movementCount(foreign.warehouseId(), extraSku)).as("转入腿也没写").isZero();
         assertThat(quantityOf(foreign)).isEqualByComparingTo(STOCKED);
@@ -375,8 +375,8 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
         Long ownDoc = asAdmin(() -> conversionService.create(
                 conversionForm(mine.warehouseId(), mine.skuId(), extraSku)));
         asRun(keeper, () -> conversionService.approve(ownDoc,
-                conversionAuditForm(versionOf("inventory_conversion", ownDoc))));
-        assertThat(statusOf("inventory_conversion", ownDoc)).isEqualTo("COMPLETED");
+                conversionAuditForm(versionOf("xsy_inventory_conversion", ownDoc))));
+        assertThat(statusOf("xsy_inventory_conversion", ownDoc)).isEqualTo("COMPLETED");
         assertThat(movementTypes(mine)).containsExactly("PURCHASE_IN", "CONVERT_OUT");
         assertThat(movementTypes(mine.warehouseId(), extraSku)).containsExactly("CONVERT_IN");
         assertThat(quantityOf(mine)).isEqualByComparingTo("6.0000");
@@ -400,11 +400,11 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
         assertDataScopeDenied(() -> asRun(keeper, () -> reservationService.release(foreignReservation)));
         assertThat(reservedQuantityOf(foreign)).as("乙仓的占用一分未归还").isEqualByComparingTo("2.0000");
-        assertThat(statusOf("inventory_reservation", foreignReservation)).isEqualTo("ACTIVE");
+        assertThat(statusOf("xsy_inventory_reservation", foreignReservation)).isEqualTo("ACTIVE");
 
         asRun(keeper, () -> reservationService.release(mineReservation));
         assertThat(reservedQuantityOf(mine)).isEqualByComparingTo(ZERO);
-        assertThat(statusOf("inventory_reservation", mineReservation)).isEqualTo("RELEASED");
+        assertThat(statusOf("xsy_inventory_reservation", mineReservation)).isEqualTo("RELEASED");
 
         // 级联释放：取消订单的授权依据是订单归属（seller），预留只是副作用，不套仓库判据
         asRun(keeper, () -> reservationService.releaseBySource(
@@ -425,7 +425,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
         assertDataScopeDenied(() -> as(keeper, Set.of(), () -> thresholdService.create(
                 thresholdForm(foreign.warehouseId(), foreign.skuId(), "1"))));
-        assertThat(rowCount("inventory_warning_threshold", "warehouse_id = ?", foreign.warehouseId())).isZero();
+        assertThat(rowCount("xsy_inventory_warning_threshold", "warehouse_id = ?", foreign.warehouseId())).isZero();
 
         Long foreignRow = asAdmin(() -> thresholdService.create(
                 thresholdForm(foreign.warehouseId(), foreign.skuId(), "1")));
@@ -433,20 +433,20 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
                 thresholdForm(foreign.warehouseId(), foreign.skuId(), "5"))));
         assertDataScopeDenied(() -> asRun(keeper, () -> thresholdService.delete(foreignRow)));
         assertThat(warnMinOf(foreignRow)).as("阈值数值没被改动").isEqualByComparingTo("1");
-        assertThat(activeRowCount("inventory_warning_threshold", foreignRow)).isEqualTo(1);
+        assertThat(activeRowCount("xsy_inventory_warning_threshold", foreignRow)).isEqualTo(1);
 
         Long ownRow = as(keeper, Set.of(), () -> thresholdService.create(
                 thresholdForm(mine.warehouseId(), mine.skuId(), "1")));
         // 把自己仓的配置搬进别人仓：新仓也要判
         assertDataScopeDenied(() -> asRun(keeper, () -> thresholdService.update(ownRow,
                 thresholdForm(foreign.warehouseId(), mine.skuId(), "5"))));
-        assertThat(warehouseOf("inventory_warning_threshold", ownRow)).isEqualTo(mine.warehouseId());
+        assertThat(warehouseOf("xsy_inventory_warning_threshold", ownRow)).isEqualTo(mine.warehouseId());
 
         asRun(keeper, () -> thresholdService.update(ownRow,
                 thresholdForm(mine.warehouseId(), mine.skuId(), "5")));
         assertThat(warnMinOf(ownRow)).isEqualByComparingTo("5");
         asRun(keeper, () -> thresholdService.delete(ownRow));
-        assertThat(activeRowCount("inventory_warning_threshold", ownRow)).isZero();
+        assertThat(activeRowCount("xsy_inventory_warning_threshold", ownRow)).isZero();
     }
 
     // ------------------------------------------------------------------
@@ -464,11 +464,11 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
         // 混进来会让断言因「读不到」而通过，证不到「写之前就被挡」。
         PurchaseReceiptPutawayForm form = asAdmin(() -> putawayForm(pending.receiptId()));
         assertDataScopeDenied(() -> asRun(keeper, () -> purchaseReceiptService.putaway(form, putawayKey())));
-        assertThat(jdbc.queryForObject("SELECT putaway_status FROM purchase_receipt WHERE id = ?",
+        assertThat(jdbc.queryForObject("SELECT putaway_status FROM xsy_purchase_receipt WHERE id = ?",
                 String.class, pending.receiptId())).as("仍等着仓库二次确认").isEqualTo(PENDING);
-        assertThat(jdbc.queryForObject("SELECT putaway_at IS NULL FROM purchase_receipt WHERE id = ?",
+        assertThat(jdbc.queryForObject("SELECT putaway_at IS NULL FROM xsy_purchase_receipt WHERE id = ?",
                 Boolean.class, pending.receiptId())).isTrue();
-        assertThat(rowCount("inventory_movement", "warehouse_id = ?", pending.warehouseId()))
+        assertThat(rowCount("xsy_inventory_movement", "warehouse_id = ?", pending.warehouseId()))
                 .as("一条 PURCHASE_IN 都没写").isZero();
         assertThat(quantityOf(pending)).as("余额行还没被创建").isNull();
 
@@ -506,7 +506,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
             Long created = conversionService.create(
                     conversionForm(target.warehouseId(), target.skuId(), source.skuId()));
-            conversionService.approve(created, conversionAuditForm(versionOf("inventory_conversion", created)));
+            conversionService.approve(created, conversionAuditForm(versionOf("xsy_inventory_conversion", created)));
             return created;
         });
         Long threshold = asAdmin(() -> {
@@ -515,8 +515,8 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
             return id;
         });
 
-        assertThat(statusOf("inventory_conversion", conversion)).isEqualTo("COMPLETED");
-        assertThat(activeRowCount("inventory_warning_threshold", threshold))
+        assertThat(statusOf("xsy_inventory_conversion", conversion)).isEqualTo("COMPLETED");
+        assertThat(activeRowCount("xsy_inventory_warning_threshold", threshold))
                 .as("超管建了又删了那条配置").isZero();
         // 出库与转换都动「乙仓的乙 SKU」：10 - 4（SALES_OUT）- 4（CONVERT_OUT）= 2；
         // 调拨入与转换入落在「乙仓的甲 SKU」上，那是另一条余额记录，不参与上一行的算式
@@ -602,7 +602,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
     /** 直接插授权行：范围维护本身由读侧用例覆盖，本类只需要一个「只有某几个仓」的身份。 */
     private void authorize(Long employeeId, Long warehouseId) {
-        jdbc.update("INSERT INTO employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
+        jdbc.update("INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 employeeId, warehouseId);
         evictMybatisCache();
     }
@@ -730,7 +730,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
     private PurchaseReceiptPutawayForm putawayForm(Long receiptId) {
         PurchaseReceiptPutawayForm form = new PurchaseReceiptPutawayForm();
         form.setId(receiptId);
-        form.setVersion(versionOf("purchase_receipt", receiptId));
+        form.setVersion(versionOf("xsy_purchase_receipt", receiptId));
         return form;
     }
 
@@ -748,14 +748,14 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
     }
 
     private BigDecimal quantityOf(Long warehouseId, Long skuId) {
-        List<BigDecimal> rows = jdbc.queryForList("SELECT quantity FROM inventory_balance"
+        List<BigDecimal> rows = jdbc.queryForList("SELECT quantity FROM xsy_inventory_balance"
                         + " WHERE deleted = FALSE AND warehouse_id = ? AND sku_id = ?",
                 BigDecimal.class, warehouseId, skuId);
         return rows.isEmpty() ? null : rows.getFirst();
     }
 
     private BigDecimal reservedQuantityOf(StockedLike stocked) {
-        return jdbc.queryForObject("SELECT reserved_quantity FROM inventory_balance"
+        return jdbc.queryForObject("SELECT reserved_quantity FROM xsy_inventory_balance"
                         + " WHERE deleted = FALSE AND warehouse_id = ? AND sku_id = ?",
                 BigDecimal.class, stocked.warehouseId(), stocked.skuId());
     }
@@ -788,7 +788,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
     }
 
     private BigDecimal warnMinOf(Long id) {
-        return jdbc.queryForObject("SELECT warn_min FROM inventory_warning_threshold WHERE id = ?",
+        return jdbc.queryForObject("SELECT warn_min FROM xsy_inventory_warning_threshold WHERE id = ?",
                 BigDecimal.class, id);
     }
 
@@ -800,7 +800,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
 
     /** 盘点单首行的账面量快照：改草稿会重新快照，失败的改单不该换掉它。 */
     private BigDecimal bookQuantityOfFirstItem(Long stocktakeId) {
-        return jdbc.queryForObject("SELECT book_quantity FROM inventory_stocktake_item"
+        return jdbc.queryForObject("SELECT book_quantity FROM xsy_inventory_stocktake_item"
                         + " WHERE deleted = FALSE AND stocktake_id = ? ORDER BY id LIMIT 1",
                 BigDecimal.class, stocktakeId);
     }
@@ -819,7 +819,7 @@ class ScmInventoryWriteScopePgIT extends ScmW6PgITBase {
     }
 
     private int authorizedWarehouseRowCount(Long employeeId) {
-        return jdbc.queryForObject("SELECT count(*) FROM employee_warehouse_scope"
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_employee_warehouse_scope"
                         + " WHERE employee_id = ? AND deleted_flag = FALSE", Integer.class, employeeId);
     }
 

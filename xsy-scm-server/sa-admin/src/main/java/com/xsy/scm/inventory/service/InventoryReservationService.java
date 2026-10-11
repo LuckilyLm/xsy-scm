@@ -205,7 +205,7 @@ public class InventoryReservationService {
      * 订单域级联释放：不判仓库范围。
      *
      * <p>
-     * 取消订单的授权依据是订单归属（{@code sales_order.seller_id}），释放预留只是它的副作用；预留所在的那个默认启用仓未必在操作者的仓库范围内，套上仓库判据会让「取消自己的订单」变成
+     * 取消订单的授权依据是订单归属（{@code xsy_sales_order.seller_id}），释放预留只是它的副作用；预留所在的那个默认启用仓未必在操作者的仓库范围内，套上仓库判据会让「取消自己的订单」变成
      * 30005。仓管在预留页点名释放走 {@link #release}，那条必须判。
      */
     private void releaseCascade(Long reservationId) {

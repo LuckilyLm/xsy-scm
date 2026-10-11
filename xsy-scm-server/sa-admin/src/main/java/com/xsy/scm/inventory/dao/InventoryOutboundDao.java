@@ -16,7 +16,7 @@ import java.util.List;
  * 出库单头读写。
  *
  * <p>
- * 与余额 DAO 的关键差别：本表是<b>普通有状态单据</b>（草稿可改、可取消），因此有 update 方法。真正的不可变纪律在 {@code inventory_movement} 上，不在这里。
+ * 与余额 DAO 的关键差别：本表是<b>普通有状态单据</b>（草稿可改、可取消），因此有 update 方法。真正的不可变纪律在 {@code xsy_inventory_movement} 上，不在这里。
  */
 @Mapper
 public interface InventoryOutboundDao extends BaseMapper<InventoryOutboundEntity> {

@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 
 /**
- * 库存族的仓库数据范围（{@code employee_warehouse_scope} → Mapper 谓词）取证。
+ * 库存族的仓库数据范围（{@code xsy_employee_warehouse_scope} → Mapper 谓词）取证。
  *
  * <p>口径来自 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4、8 条，本类逐条钉住：
  * <ul>
@@ -63,7 +63,7 @@ import static org.mockito.Mockito.mockStatic;
  * 只有「数据确实在、只是不在对方范围内」的反证才用超管上下文。{@link #as} 不可嵌套。
  *
  * <p><b>夹具</b>：两个仓库各自经真实的「采购单 → 收货确认」路径入库，因此每个仓都同时留下
- * 一行 {@code inventory_balance} 与一条 {@code PURCHASE_IN} 流水。仓库用新建的独立仓，
+ * 一行 {@code xsy_inventory_balance} 与一条 {@code PURCHASE_IN} 流水。仓库用新建的独立仓，
  * 余额与流水的期望条数才是可精确断言的数字；流水一律由命令服务写入
  * —— 它是 append-only 账本（V21 的 DB 约束），测试不 UPDATE、不 DELETE。
  */
@@ -74,7 +74,7 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
     private static final String WAREHOUSE_ALL = ScmDataScopeService.WAREHOUSE_ALL_PERM;
     private static final String COST = ScmReportAccess.COST_QUERY_PERM;
 
-    /** 入库数量与采购单价：单价即 {@code inventory_movement.unit_cost} 与余额均价（无四舍五入分支）。 */
+    /** 入库数量与采购单价：单价即 {@code xsy_inventory_movement.unit_cost} 与余额均价（无四舍五入分支）。 */
     private static final String QUANTITY = "10.0000";
     private static final String PRICE = "6.2000";
     private static final BigDecimal EXPECTED_AVG_COST = new BigDecimal("6.2000");
@@ -218,7 +218,7 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
         draft.setItems(new ArrayList<>(List.of(line)));
         Long transferId = transferService.create(draft);
         String transferNo = jdbc.queryForObject(
-                "SELECT transfer_no FROM inventory_transfer WHERE id = ?", String.class, transferId);
+                "SELECT transfer_no FROM xsy_inventory_transfer WHERE id = ?", String.class, transferId);
         // 在途：货已离开源仓、尚未进入目标仓，此期间单据对双方都必须可见
         transferService.ship(transferId);
 
@@ -378,14 +378,14 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
         scopeMaintenance.update(scopeForm(keeper, List.of(pair.warehouseA())));
 
         // 绕过服务直接写同一组合的第二条活动授权：必须在库内失败，而不是靠 Java 去重
-        expectSqlFailure("INSERT INTO employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
+        expectSqlFailure("INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 keeper, pair.warehouseA());
         // 回收之后再写同一条是允许的（历史行不占唯一位）
-        jdbc.update("UPDATE employee_warehouse_scope SET deleted_flag = TRUE WHERE employee_id = ? AND warehouse_id = ?",
+        jdbc.update("UPDATE xsy_employee_warehouse_scope SET deleted_flag = TRUE WHERE employee_id = ? AND warehouse_id = ?",
                 keeper, pair.warehouseA());
         evictMybatisCache();
         assertThatCode(() -> jdbc.update(
-                "INSERT INTO employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
+                "INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 keeper, pair.warehouseA())).doesNotThrowAnyException();
 
         // 清单里重复的 id 由服务先去重：写成两行会撞上面的唯一索引，而语义上只是同一个仓
@@ -436,7 +436,7 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
 
     /** 直接插授权行：本类要测的是读侧按授权行收窄，写侧另有第 7 组用例。 */
     private void authorize(Long employeeId, Long warehouseId) {
-        jdbc.update("INSERT INTO employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
+        jdbc.update("INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 employeeId, warehouseId);
         evictMybatisCache();
     }
@@ -530,7 +530,7 @@ class ScmInventoryDataScopePgIT extends ScmW6PgITBase {
 
     private int activeScopeRowCount(Long employeeId) {
         evictMybatisCache();
-        return jdbc.queryForObject("SELECT count(*) FROM employee_warehouse_scope"
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_employee_warehouse_scope"
                         + " WHERE employee_id = ? AND deleted_flag = FALSE", Integer.class, employeeId);
     }
 

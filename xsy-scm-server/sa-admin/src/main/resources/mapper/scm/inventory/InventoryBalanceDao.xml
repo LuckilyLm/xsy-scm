@@ -15,7 +15,7 @@
       返回 0 = 并发输家，随后与赢家一起走 lockByWarehouseAndSku 拿同一把行锁。
     -->
     <insert id="insertOnConflictDoNothing">
-        INSERT INTO inventory_balance (warehouse_id, sku_id, unit, quantity,
+        INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity,
                                        version, deleted, created_at, updated_at, created_by, updated_by)
         VALUES (#{warehouseId}, #{skuId}, #{unit}, 0,
                 0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, #{operator}, #{operator})
@@ -27,7 +27,7 @@
     <select id="lockByWarehouseAndSku"
             resultType="com.xsy.scm.inventory.domain.entity.InventoryBalanceEntity">
         SELECT *
-        FROM inventory_balance
+        FROM xsy_inventory_balance
         WHERE warehouse_id = #{warehouseId}
           AND sku_id = #{skuId}
           AND deleted = FALSE
@@ -37,7 +37,7 @@
     <select id="selectByWarehouseAndSku"
             resultType="com.xsy.scm.inventory.domain.entity.InventoryBalanceEntity">
         SELECT *
-        FROM inventory_balance
+        FROM xsy_inventory_balance
         WHERE warehouse_id = #{warehouseId}
           AND sku_id = #{skuId}
           AND deleted = FALSE
@@ -45,7 +45,7 @@
 
     <!-- 持锁后的增量自增（不做「读-改-写」两步）；version 同步 +1 作为纵深防御 -->
     <update id="incrementQuantity">
-        UPDATE inventory_balance
+        UPDATE xsy_inventory_balance
         SET quantity   = quantity + #{quantity},
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
@@ -61,7 +61,7 @@
       即使业务层判断被绕过，也只会失败，不会写出负库存或吃掉预留。
     -->
     <update id="decrementQuantity">
-        UPDATE inventory_balance
+        UPDATE xsy_inventory_balance
         SET quantity   = quantity - #{quantity},
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
@@ -72,7 +72,7 @@
 
     <!-- 预留：占用量自增（不动 quantity）；reserved_quantity <= quantity 由 DB CHECK 兜底 -->
     <update id="incrementReserved">
-        UPDATE inventory_balance
+        UPDATE xsy_inventory_balance
         SET reserved_quantity = reserved_quantity + #{quantity},
             version           = version + 1,
             updated_at        = CURRENT_TIMESTAMP,
@@ -83,7 +83,7 @@
 
     <!-- 释放预留：占用量自减；reserved_quantity >= 0 由 DB CHECK 兜底 -->
     <update id="decrementReserved">
-        UPDATE inventory_balance
+        UPDATE xsy_inventory_balance
         SET reserved_quantity = reserved_quantity - #{quantity},
             version           = version + 1,
             updated_at        = CURRENT_TIMESTAMP,
@@ -105,7 +105,7 @@
       只有采购入库调用它 —— 其余入库按现有均价入账（均价不变），出库更不改均价。
     -->
     <update id="incrementQuantityAndSetAvgCost">
-        UPDATE inventory_balance
+        UPDATE xsy_inventory_balance
         SET quantity   = quantity + #{quantity},
             avg_cost   = #{avgCost},
             version    = version + 1,
@@ -144,10 +144,10 @@
         k.spec_name AS sku_name,
         k.spec_values,
         p.name AS product_name
-        FROM inventory_balance b
-        LEFT JOIN warehouse w ON w.id = b.warehouse_id
-        LEFT JOIN product_sku k ON k.id = b.sku_id
-        LEFT JOIN product_spu p ON p.id = k.spu_id
+        FROM xsy_inventory_balance b
+        LEFT JOIN xsy_warehouse w ON w.id = b.warehouse_id
+        LEFT JOIN xsy_product_sku k ON k.id = b.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE b.deleted = FALSE
         <!-- 仓库数据范围：scope 由 Service 显式下传。scope 缺失时必须是恒假而不是「不加条件」，
              否则任何漏传范围的调用点都会静默变成全仓可见。 -->
@@ -191,10 +191,10 @@
         k.spec_name AS sku_name,
         k.spec_values,
         p.name AS product_name
-        FROM inventory_balance b
-        LEFT JOIN warehouse w ON w.id = b.warehouse_id
-        LEFT JOIN product_sku k ON k.id = b.sku_id
-        LEFT JOIN product_spu p ON p.id = k.spu_id
+        FROM xsy_inventory_balance b
+        LEFT JOIN xsy_warehouse w ON w.id = b.warehouse_id
+        LEFT JOIN xsy_product_sku k ON k.id = b.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE b.deleted = FALSE
         AND b.id = #{id}
     </select>
@@ -219,10 +219,10 @@
         k.spec_name AS sku_name,
         k.spec_values,
         p.name AS product_name
-        FROM inventory_balance b
-        LEFT JOIN warehouse w ON w.id = b.warehouse_id
-        LEFT JOIN product_sku k ON k.id = b.sku_id
-        LEFT JOIN product_spu p ON p.id = k.spu_id
+        FROM xsy_inventory_balance b
+        LEFT JOIN xsy_warehouse w ON w.id = b.warehouse_id
+        LEFT JOIN xsy_product_sku k ON k.id = b.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE b.deleted = FALSE
         AND b.warehouse_id = #{warehouseId}
         ORDER BY b.sku_id

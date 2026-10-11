@@ -83,7 +83,7 @@ class ScmInventoryLossGainRollbackIT extends ScmW6PgITBase {
     private InventoryLossGainAuditForm audit(Long id) {
         InventoryLossGainAuditForm form = new InventoryLossGainAuditForm();
         form.setVersion(jdbc.queryForObject(
-                "SELECT version FROM inventory_loss_gain WHERE id = ?", Integer.class, id));
+                "SELECT version FROM xsy_inventory_loss_gain WHERE id = ?", Integer.class, id));
         return form;
     }
 
@@ -146,7 +146,7 @@ class ScmInventoryLossGainRollbackIT extends ScmW6PgITBase {
         assertThat(balanceRow(wh, second).getQuantity()).isEqualByComparingTo("10.0000");
         assertThat(lossGainMovements(wh, second)).isEmpty();
         assertThat(jdbc.queryForObject(
-                "SELECT status FROM inventory_loss_gain WHERE id = ?", String.class, id))
+                "SELECT status FROM xsy_inventory_loss_gain WHERE id = ?", String.class, id))
                 .isEqualTo("PENDING");
 
         // 失败原因是那一行，不是别的东西坏了：释放预留后重试即通过
@@ -158,7 +158,7 @@ class ScmInventoryLossGainRollbackIT extends ScmW6PgITBase {
         assertThat(lossGainMovements(wh, first)).hasSize(1);
         assertThat(lossGainMovements(wh, second)).hasSize(1);
         assertThat(jdbc.queryForObject(
-                "SELECT status FROM inventory_loss_gain WHERE id = ?", String.class, id))
+                "SELECT status FROM xsy_inventory_loss_gain WHERE id = ?", String.class, id))
                 .isEqualTo("COMPLETED");
     }
 }

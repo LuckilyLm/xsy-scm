@@ -52,7 +52,7 @@ class ScmInventoryTransferRollbackIT extends ScmW6PgITBase {
         for (Long warehouseId : createdWarehouses) {
             // 软删即可：warehouse 走 @TableLogic，all() / defaultEnabledWarehouse() 会自动过滤。
             // 硬删会破坏「历史记录保留可查」的口径，也没有必要。
-            jdbc.update("UPDATE warehouse SET deleted = TRUE, status = 'DISABLED' WHERE id = ?", warehouseId);
+            jdbc.update("UPDATE xsy_warehouse SET deleted = TRUE, status = 'DISABLED' WHERE id = ?", warehouseId);
         }
         createdWarehouses.clear();
     }
@@ -88,7 +88,7 @@ class ScmInventoryTransferRollbackIT extends ScmW6PgITBase {
 
     private String statusOf(Long id) {
         return jdbc.queryForObject(
-                "SELECT status FROM inventory_transfer WHERE id = ?", String.class, id);
+                "SELECT status FROM xsy_inventory_transfer WHERE id = ?", String.class, id);
     }
 
     @Test
@@ -116,7 +116,7 @@ class ScmInventoryTransferRollbackIT extends ScmW6PgITBase {
         // 单据仍是草稿、明细仍在 —— 用户修掉冲突行之后可以直接重试
         assertThat(statusOf(id)).isEqualTo("DRAFT");
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_transfer_item WHERE transfer_id = ? AND deleted = FALSE",
+                "SELECT count(*) FROM xsy_inventory_transfer_item WHERE transfer_id = ? AND deleted = FALSE",
                 Integer.class, id)).isEqualTo(2);
 
         // 失败原因是那一行，不是别的东西坏了：改成可行数量后整单可以正常发出

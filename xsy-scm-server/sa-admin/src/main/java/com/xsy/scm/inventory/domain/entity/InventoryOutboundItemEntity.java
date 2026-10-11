@@ -20,7 +20,7 @@ import java.time.OffsetDateTime;
  * 确认时若与余额记账单位不一致，直接失败（41001），不静默换算。
  */
 @Data
-@TableName(value = "inventory_outbound_item", autoResultMap = true)
+@TableName(value = "xsy_inventory_outbound_item", autoResultMap = true)
 public class InventoryOutboundItemEntity {
 
     @TableId(type = IdType.AUTO)

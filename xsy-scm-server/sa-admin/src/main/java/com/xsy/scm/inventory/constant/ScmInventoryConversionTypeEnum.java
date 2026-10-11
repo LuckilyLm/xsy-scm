@@ -29,7 +29,7 @@ public enum ScmInventoryConversionTypeEnum {
     private final String desc;
 
     /**
-     * 该值是否允许写入 {@code inventory_conversion.convert_type}（DB CHECK 白名单的同源判定）。
+     * 该值是否允许写入 {@code xsy_inventory_conversion.convert_type}（DB CHECK 白名单的同源判定）。
      */
     public static boolean isSupported(String conversionType) {
         for (ScmInventoryConversionTypeEnum item : values()) {

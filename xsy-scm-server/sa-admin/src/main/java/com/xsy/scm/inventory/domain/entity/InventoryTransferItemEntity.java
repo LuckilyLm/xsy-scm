@@ -23,7 +23,7 @@ import java.time.OffsetDateTime;
  * <b>{@code unitSnapshot} 在发出时写入</b>（= 源仓的记账单位）。收货时用它断言目标仓的记账单位一致（不做隐式换算），并在目标仓从未有过该 SKU 时用它建立新余额行的单位。
  */
 @Data
-@TableName(value = "inventory_transfer_item", autoResultMap = true)
+@TableName(value = "xsy_inventory_transfer_item", autoResultMap = true)
 public class InventoryTransferItemEntity {
 
     @TableId(type = IdType.AUTO)

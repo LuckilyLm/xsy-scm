@@ -25,9 +25,9 @@
                k.spec_name                           AS sku_name,
                k.spec_values,
                p.name                                AS product_name
-        FROM inventory_stocktake_item i
-                 LEFT JOIN product_sku k ON k.id = i.sku_id
-                 LEFT JOIN product_spu p ON p.id = k.spu_id
+        FROM xsy_inventory_stocktake_item i
+                 LEFT JOIN xsy_product_sku k ON k.id = i.sku_id
+                 LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE i.deleted = FALSE
           AND i.stocktake_id = #{stocktakeId}
         ORDER BY i.id ASC
@@ -35,7 +35,7 @@
 
     <!-- 草稿重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删口径一致） -->
     <update id="deleteByStocktakeId">
-        UPDATE inventory_stocktake_item
+        UPDATE xsy_inventory_stocktake_item
         SET deleted    = TRUE,
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
@@ -45,7 +45,7 @@
     </update>
 
     <update id="updateUnitSnapshot">
-        UPDATE inventory_stocktake_item
+        UPDATE xsy_inventory_stocktake_item
         SET unit_snapshot = #{unit},
             version       = version + 1,
             updated_at    = CURRENT_TIMESTAMP,

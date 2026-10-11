@@ -33,12 +33,12 @@ public class InventoryBalanceVO {
     private String skuCode;
 
     /**
-     * SKU 名称（来自 {@code product_sku.spec_name}）。
+     * SKU 名称（来自 {@code xsy_product_sku.spec_name}）。
      */
     private String skuName;
 
     /**
-     * 商品名称（来自 {@code product_spu.name}）。
+     * 商品名称（来自 {@code xsy_product_spu.name}）。
      */
     private String productName;
 

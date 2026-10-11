@@ -22,7 +22,7 @@ import java.time.OffsetDateTime;
  * {@code occurred_at} 与 {@code operator} 分别取自它们，禁止用 {@code now()} 或当前登录人顶替（否则「按业务时间查流水」会失真）。
  */
 @Data
-@TableName(value = "inventory_transfer", autoResultMap = true)
+@TableName(value = "xsy_inventory_transfer", autoResultMap = true)
 public class InventoryTransferEntity {
 
     @TableId(type = IdType.AUTO)

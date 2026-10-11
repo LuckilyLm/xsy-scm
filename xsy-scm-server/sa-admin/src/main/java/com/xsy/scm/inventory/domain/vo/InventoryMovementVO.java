@@ -14,7 +14,7 @@ import java.util.Map;
  *
  * <p>
  * 溯源字段分两组：{@code sourceDocumentType + sourceDocumentItemId} 是防重锚点（唯一索引列），{@code sourceDocumentId + receiptNo}
- * 是人类可读溯源（流水表不设 {@code movement_no}，来源单号由 {@code purchase_receipt.receipt_no} 承担），前端据此跳收货单详情。
+ * 是人类可读溯源（流水表不设 {@code movement_no}，来源单号由 {@code xsy_purchase_receipt.receipt_no} 承担），前端据此跳收货单详情。
  *
  * <p>
  * {@code unitSnapshot} / {@code unitCost} / {@code beforeQuantity} / {@code afterQuantity} / {@code occurredAt} /
@@ -56,12 +56,12 @@ public class InventoryMovementVO {
     private Long sourceDocumentItemId;
 
     /**
-     * 收货单号（联 {@code purchase_receipt}），前端跳详情用。仅 {@code PURCHASE_IN} 有值。
+     * 收货单号（联 {@code xsy_purchase_receipt}），前端跳详情用。仅 {@code PURCHASE_IN} 有值。
      */
     private String receiptNo;
 
     /**
-     * 出库单号，关联 {@code inventory_outbound}。
+     * 出库单号，关联 {@code xsy_inventory_outbound}。
      *
      * <p>
      * 仅 {@code SALES_OUT} 有值。与 {@code receiptNo} 分开两个字段而不是合并成 「来源单号」一个：两者的跳转目标不同（收货单 vs 出库单），前端要按类型渲染不同链接。

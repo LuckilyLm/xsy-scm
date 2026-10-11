@@ -44,7 +44,7 @@ public enum ScmInventoryReservationStatusEnum {
     }
 
     /**
-     * 该值是否允许写入 {@code inventory_reservation.status}（DB CHECK 白名单的同源判定）。
+     * 该值是否允许写入 {@code xsy_inventory_reservation.status}（DB CHECK 白名单的同源判定）。
      */
     public static boolean isSupported(String reservationStatus) {
         for (ScmInventoryReservationStatusEnum item : values()) {

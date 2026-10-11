@@ -219,7 +219,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
 
         // DB 侧兜底：绕过应用层直接插同源流水 → 撞 uk_inventory_movement_source_active
         expectSqlFailure(
-                "INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, source_document_type, "
+                "INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type, source_document_type, "
                         + "source_document_id, source_document_item_id, quantity, unit_snapshot, "
                         + "before_quantity, after_quantity, occurred_at, deleted) "
                         + "VALUES (?, ?, 'PURCHASE_IN', 'PURCHASE_RECEIPT_ITEM', ?, ?, 1, 'kg', 0, 1, "

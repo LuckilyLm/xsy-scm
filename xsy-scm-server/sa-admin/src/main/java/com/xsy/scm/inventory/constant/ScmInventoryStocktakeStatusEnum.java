@@ -59,7 +59,7 @@ public enum ScmInventoryStocktakeStatusEnum {
     }
 
     /**
-     * 该值是否允许写入 {@code inventory_stocktake.status}（DB CHECK 白名单的同源判定）。
+     * 该值是否允许写入 {@code xsy_inventory_stocktake.status}（DB CHECK 白名单的同源判定）。
      */
     public static boolean isSupported(String stocktakeStatus) {
         for (ScmInventoryStocktakeStatusEnum item : values()) {

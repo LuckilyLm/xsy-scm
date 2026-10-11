@@ -28,7 +28,7 @@ public class InventoryMovementQueryForm extends PageParam {
     private Long skuId;
 
     /**
-     * SKU 编码模糊匹配（联 {@code product_sku}）。
+     * SKU 编码模糊匹配（联 {@code xsy_product_sku}）。
      *
      * <p>
      * <b>为什么必须有它</b>：流水页的筛选不能只给 {@code skuId} —— 用户在页面上看到的是 SKU 编码，手上也只有编码。只提供 id 筛选等于要求用户先知道 id，那是一个只对开发者成立的筛选条件（#5

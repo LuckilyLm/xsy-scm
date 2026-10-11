@@ -32,7 +32,7 @@ public enum ScmInventoryLossGainTypeEnum {
     private final String desc;
 
     /**
-     * 审批通过时写入 {@code inventory_movement.movement_type} 的值。
+     * 审批通过时写入 {@code xsy_inventory_movement.movement_type} 的值。
      */
     private final ScmInventoryMovementTypeEnum movementType;
 
@@ -44,7 +44,7 @@ public enum ScmInventoryLossGainTypeEnum {
     }
 
     /**
-     * 该值是否允许写入 {@code inventory_loss_gain.adjust_type}（DB CHECK 白名单的同源判定）。
+     * 该值是否允许写入 {@code xsy_inventory_loss_gain.adjust_type}（DB CHECK 白名单的同源判定）。
      */
     public static boolean isSupported(String adjustmentType) {
         for (ScmInventoryLossGainTypeEnum item : values()) {

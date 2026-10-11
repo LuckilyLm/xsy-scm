@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 库存流水的来源单据类型。
  *
  * <p>
- * 该值持久化到 {@code inventory_movement.source_document_type}，并与 {@code source_document_item_id} 一起构成<b>稳定唯一源键</b>（TD
+ * 该值持久化到 {@code xsy_inventory_movement.source_document_type}，并与 {@code source_document_item_id} 一起构成<b>稳定唯一源键</b>（TD
  * 冻结的口径）， 由部分唯一索引 {@code uk_inventory_movement_source_active} 在 DB 层兜底防重。
  *
  * <p>
@@ -20,24 +20,24 @@ import lombok.RequiredArgsConstructor;
 public enum ScmInventorySourceDocumentTypeEnum {
 
     /**
-     * 采购收货行：{@code source_document_item_id = purchase_receipt_item.id}。
+     * 采购收货行：{@code source_document_item_id = xsy_purchase_receipt_item.id}。
      */
     PURCHASE_RECEIPT_ITEM("采购收货行"),
 
     /**
-     * 出库单行：{@code source_document_item_id = inventory_outbound_item.id}。
+     * 出库单行：{@code source_document_item_id = xsy_inventory_outbound_item.id}。
      */
     SALES_OUTBOUND_ITEM("出库单行"),
 
     SALES_RETURN_RECEIPT_ITEM("销售退货接收行"),
 
     /**
-     * 销售订单行（预留的来源）：{@code source_document_item_id = sales_order_item.id}。
+     * 销售订单行（预留的来源）：{@code source_document_item_id = xsy_sales_order_item.id}。
      */
     SALES_ORDER_ITEM("销售订单行"),
 
     /**
-     * 盘点单行：{@code source_document_item_id = inventory_stocktake_item.id}。
+     * 盘点单行：{@code source_document_item_id = xsy_inventory_stocktake_item.id}。
      *
      * <p>
      * 一条盘点明细行最多产生<b>一条</b>流水：{@code delta = 0} 的行不写流水 （数量恒为正，写不出「零差异」的流水），因此
@@ -46,7 +46,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
     STOCKTAKE_ITEM("盘点单行"),
 
     /**
-     * 报损报溢单行：{@code source_document_item_id = inventory_loss_gain_item.id}。
+     * 报损报溢单行：{@code source_document_item_id = xsy_inventory_loss_gain_item.id}。
      *
      * <p>
      * 报损与报溢<b>共用一个来源类型</b>（方向由流水的 {@code movement_type}
@@ -55,7 +55,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
     LOSS_GAIN_ITEM("报损报溢单行"),
 
     /**
-     * 调拨<b>转出</b>行的来源类型：{@code source_document_item_id = inventory_transfer_item.id}。
+     * 调拨<b>转出</b>行的来源类型：{@code source_document_item_id = xsy_inventory_transfer_item.id}。
      *
      * <p>
      * <b>为什么调拨要拆成两个来源类型</b>：这是全仓唯一「一条来源行会产生两条流水」的情况 （发出写转出、收货写转入）。而防重锚点是部分唯一索引
@@ -74,7 +74,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
     TRANSFER_IN_ITEM("调拨单行（转入）"),
 
     /**
-     * 规格转换<b>转出</b>行的来源类型：{@code source_document_item_id = inventory_conversion_item.id}。
+     * 规格转换<b>转出</b>行的来源类型：{@code source_document_item_id = xsy_inventory_conversion_item.id}。
      *
      * <p>
      * 与调拨<b>同一个原因</b>拆成两个来源类型：同一条明细行会产生两条流水 （转出写源 SKU、转入写目标 SKU），而防重锚点是部分唯一索引
@@ -89,20 +89,20 @@ public enum ScmInventorySourceDocumentTypeEnum {
     CONVERT_IN_ITEM("转换单行（转入）"),
 
     /**
-     * 配送线路：{@code source_document_item_id} 不用（本类型只出现在 {@code inventory_outbound.source_document_id = delivery_route.id}
-     * 上）。
+     * 配送线路：{@code source_document_item_id} 不用（本类型只出现在
+     * {@code xsy_inventory_outbound.source_document_id = xsy_delivery_route.id} 上）。
      *
      * <p>
      * <b>为什么流水里看不到它</b>：发车产生的仍然是 {@code SALES_OUT}，来源类型按 {@link #SALES_OUTBOUND_ITEM}（出库单行）记账 —— 流水的唯一锚点与成本口径都在出库单行上，
-     * 线路只是「谁创建了这张出库单」。多一条追溯走 {@code inventory_outbound_item.sales_order_item_id}，不给流水表再加第二套来源语义。
+     * 线路只是「谁创建了这张出库单」。多一条追溯走 {@code xsy_inventory_outbound_item.sales_order_item_id}，不给流水表再加第二套来源语义。
      */
     DELIVERY_ROUTE("配送线路"),
 
     /**
-     * 促销赠品权益：{@code source_document_item_id = order_promotion_gift.id}。
+     * 促销赠品权益：{@code source_document_item_id = xsy_order_promotion_gift.id}。
      *
      * <p>
-     * 赠品出库的源身份是<b>冻结的赠品权益</b>而不是出库单行：赠品不挂在任何订单行上 （{@code inventory_outbound_item.sales_order_item_id}
+     * 赠品出库的源身份是<b>冻结的赠品权益</b>而不是出库单行：赠品不挂在任何订单行上 （{@code xsy_inventory_outbound_item.sales_order_item_id}
      * 保持为空，不为兼容旧逻辑虚造订单行）， 因此「哪个活动赠了什么、出库多少」直接从流水追到权益行。 一行权益至多产生一条出库流水，{@code uk_inventory_movement_source_active}
      * 的一行一流水语义成立。
      */
@@ -111,7 +111,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
     private final String desc;
 
     /**
-     * 该值是否允许写入 {@code inventory_movement.source_document_type}。
+     * 该值是否允许写入 {@code xsy_inventory_movement.source_document_type}。
      */
     public static boolean isSupported(String sourceDocumentType) {
         for (ScmInventorySourceDocumentTypeEnum item : values()) {

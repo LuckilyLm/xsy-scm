@@ -20,10 +20,10 @@ import java.time.OffsetDateTime;
  *
  * <p>
  * <b>{@code operator} / {@code confirmed_at} 是流水的事实来源</b>：确认盘点时把这两个值传给 {@code InventoryCommandService}，作为
- * {@code inventory_movement.occurred_at} 与 {@code operator} —— 与入库/出库同纪律，禁止用 {@code now()} 或当前登录人顶替。
+ * {@code xsy_inventory_movement.occurred_at} 与 {@code operator} —— 与入库/出库同纪律，禁止用 {@code now()} 或当前登录人顶替。
  */
 @Data
-@TableName(value = "inventory_stocktake", autoResultMap = true)
+@TableName(value = "xsy_inventory_stocktake", autoResultMap = true)
 public class InventoryStocktakeEntity {
 
     @TableId(type = IdType.AUTO)

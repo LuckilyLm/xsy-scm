@@ -29,7 +29,7 @@ public class InventoryBalanceQueryForm extends PageParam {
     private String skuCode;
 
     /**
-     * 商品名称模糊匹配（{@code product_spu.name}）。
+     * 商品名称模糊匹配（{@code xsy_product_spu.name}）。
      */
     @Size(max = 150, message = "商品名称不能超过150个字符")
     private String productName;

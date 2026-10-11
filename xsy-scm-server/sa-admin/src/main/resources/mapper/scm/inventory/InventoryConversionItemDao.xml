@@ -6,7 +6,7 @@
                type="com.xsy.scm.inventory.domain.vo.InventoryConversionItemVO"/>
 
     <!--
-      product_sku / product_spu 各联两次（源 s* / 目标 t*）：
+      xsy_product_sku / xsy_product_spu 各联两次（源 s* / 目标 t*）：
       转换的语义天然是「从哪到哪」，只给一套 SKU 展示字段会让用户必须点进详情才能确认方向。
       LEFT JOIN 且不带 deleted 谓词 —— 按不可变 id 做展示解析，把已下架 SKU 藏起来比显示它更危险。
     -->
@@ -26,11 +26,11 @@
                tk.sku_code  AS target_sku_code,
                tk.spec_name AS target_sku_name,
                tp.name      AS target_product_name
-        FROM inventory_conversion_item i
-                 LEFT JOIN product_sku sk ON sk.id = i.source_sku_id
-                 LEFT JOIN product_spu sp ON sp.id = sk.spu_id
-                 LEFT JOIN product_sku tk ON tk.id = i.target_sku_id
-                 LEFT JOIN product_spu tp ON tp.id = tk.spu_id
+        FROM xsy_inventory_conversion_item i
+                 LEFT JOIN xsy_product_sku sk ON sk.id = i.source_sku_id
+                 LEFT JOIN xsy_product_spu sp ON sp.id = sk.spu_id
+                 LEFT JOIN xsy_product_sku tk ON tk.id = i.target_sku_id
+                 LEFT JOIN xsy_product_spu tp ON tp.id = tk.spu_id
         WHERE i.deleted = FALSE
           AND i.conversion_id = #{conversionId}
         ORDER BY i.id ASC
@@ -38,7 +38,7 @@
 
     <!-- 待审核重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删口径一致） -->
     <update id="deleteByConversionId">
-        UPDATE inventory_conversion_item
+        UPDATE xsy_inventory_conversion_item
         SET deleted    = TRUE,
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,

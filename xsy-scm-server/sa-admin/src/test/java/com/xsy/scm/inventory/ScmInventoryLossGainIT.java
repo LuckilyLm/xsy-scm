@@ -83,7 +83,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
      */
     private int versionOf(Long id) {
         return jdbc.queryForObject(
-                "SELECT version FROM inventory_loss_gain WHERE id = ?", Integer.class, id);
+                "SELECT version FROM xsy_inventory_loss_gain WHERE id = ?", Integer.class, id);
     }
 
     private InventoryLossGainAuditForm audit(Long id, String opinion) {
@@ -99,7 +99,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
 
     private String statusOf(Long id) {
         return jdbc.queryForObject(
-                "SELECT status FROM inventory_loss_gain WHERE id = ?", String.class, id);
+                "SELECT status FROM xsy_inventory_loss_gain WHERE id = ?", String.class, id);
     }
 
     /**
@@ -392,7 +392,7 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         lossGainService.delete(id);
 
         assertThat(jdbc.queryForObject(
-                "SELECT deleted FROM inventory_loss_gain WHERE id = ?", Boolean.class, id)).isTrue();
+                "SELECT deleted FROM xsy_inventory_loss_gain WHERE id = ?", Boolean.class, id)).isTrue();
         expectCode(() -> approveAsAuditor(id, audit(id, null)), 41028);
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("10.0000");
     }
@@ -443,9 +443,9 @@ class ScmInventoryLossGainIT extends ScmW6PgITBase {
         approveAsAuditor(id, audit(id, null));
 
         Long movementId = ((Number) lossGainMovements(wh, sku).getFirst().get("id")).longValue();
-        expectSqlFailure("UPDATE inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
-        expectSqlFailure("UPDATE inventory_movement SET quantity = 1, after_quantity = 9 WHERE id = ?", movementId);
-        expectSqlFailure("DELETE FROM inventory_movement WHERE id = ?", movementId);
+        expectSqlFailure("UPDATE xsy_inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
+        expectSqlFailure("UPDATE xsy_inventory_movement SET quantity = 1, after_quantity = 9 WHERE id = ?", movementId);
+        expectSqlFailure("DELETE FROM xsy_inventory_movement WHERE id = ?", movementId);
     }
 
     @Test

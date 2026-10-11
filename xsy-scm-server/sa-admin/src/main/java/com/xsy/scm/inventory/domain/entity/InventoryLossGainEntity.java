@@ -19,11 +19,11 @@ import java.time.OffsetDateTime;
  *
  * <p>
  * <b>{@code auditor} / {@code audited_at} 是流水的事实来源</b>：审批通过时把这两个值传给 {@code InventoryCommandService}，作为
- * {@code inventory_movement.occurred_at} 与 {@code operator} —— 与入库/出库/盘点同纪律，禁止用 {@code now()} 或当前登录人顶替。
+ * {@code xsy_inventory_movement.occurred_at} 与 {@code operator} —— 与入库/出库/盘点同纪律，禁止用 {@code now()} 或当前登录人顶替。
  * 注意取的是<b>审核时刻与审核人</b>，不是创建时刻与创建人：库存是在审核那一刻变的。
  */
 @Data
-@TableName(value = "inventory_loss_gain", autoResultMap = true)
+@TableName(value = "xsy_inventory_loss_gain", autoResultMap = true)
 public class InventoryLossGainEntity {
 
     @TableId(type = IdType.AUTO)

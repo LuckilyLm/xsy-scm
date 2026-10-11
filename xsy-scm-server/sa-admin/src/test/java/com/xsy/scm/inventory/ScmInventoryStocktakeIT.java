@@ -149,7 +149,7 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
 
         // 差异为 0 的行仍然回写单位快照（确认动作本身走完了）
         String unit = jdbc.queryForObject(
-                "SELECT unit_snapshot FROM inventory_stocktake_item WHERE stocktake_id = ?",
+                "SELECT unit_snapshot FROM xsy_inventory_stocktake_item WHERE stocktake_id = ?",
                 String.class, id);
         assertThat(unit).isEqualTo(balanceRow(wh, sku).getUnit());
     }
@@ -379,8 +379,8 @@ class ScmInventoryStocktakeIT extends ScmW6PgITBase {
         stocktakeService.confirm(stocktakeService.create(form(wh, sku, "8.0000")));
 
         Long movementId = ((Number) stocktakeMovements(wh, sku).getFirst().get("id")).longValue();
-        expectSqlFailure("UPDATE inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
-        expectSqlFailure("UPDATE inventory_movement SET quantity = 1, after_quantity = 9 WHERE id = ?", movementId);
-        expectSqlFailure("DELETE FROM inventory_movement WHERE id = ?", movementId);
+        expectSqlFailure("UPDATE xsy_inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
+        expectSqlFailure("UPDATE xsy_inventory_movement SET quantity = 1, after_quantity = 9 WHERE id = ?", movementId);
+        expectSqlFailure("DELETE FROM xsy_inventory_movement WHERE id = ?", movementId);
     }
 }

@@ -43,11 +43,11 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
      */
     private int confirmedLineWithoutMovementCount(Long skuId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM purchase_receipt_item ri "
-                        + "JOIN purchase_receipt r ON r.id = ri.purchase_receipt_id AND r.deleted = FALSE "
+                "SELECT count(*) FROM xsy_purchase_receipt_item ri "
+                        + "JOIN xsy_purchase_receipt r ON r.id = ri.purchase_receipt_id AND r.deleted = FALSE "
                         + "WHERE r.status = 'CONFIRMED' AND ri.deleted = FALSE AND ri.received_quantity > 0 "
                         + "  AND ri.sku_id = ? "
-                        + "  AND NOT EXISTS (SELECT 1 FROM inventory_movement m "
+                        + "  AND NOT EXISTS (SELECT 1 FROM xsy_inventory_movement m "
                         + "                  WHERE m.source_document_type = 'PURCHASE_RECEIPT_ITEM' "
                         + "                    AND m.source_document_item_id = ri.id AND m.deleted = FALSE)",
                 Integer.class, skuId);
@@ -88,7 +88,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
 
         // 本 (warehouse, sku) 的流水合计 = 收货合计
         assertThat(jdbc.queryForObject(
-                "SELECT sum(quantity) FROM inventory_movement "
+                "SELECT sum(quantity) FROM xsy_inventory_movement "
                         + "WHERE warehouse_id = ? AND sku_id = ? AND deleted = FALSE",
                 BigDecimal.class, warehouseId, skuId)).isEqualByComparingTo("10.0000");
     }
@@ -200,8 +200,8 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         // 所以这正是前置检查存在的理由 —— 迁移要处理的是实时路径上线之前就躺在库里的历史。
         overrideReceiptItemUnit(b.receiptItemId(), "box");
         assertThat(jdbc.queryForObject(
-                "SELECT count(DISTINCT ri.purchase_unit_snapshot) FROM purchase_receipt_item ri "
-                        + "JOIN purchase_receipt r ON r.id = ri.purchase_receipt_id AND r.deleted = FALSE "
+                "SELECT count(DISTINCT ri.purchase_unit_snapshot) FROM xsy_purchase_receipt_item ri "
+                        + "JOIN xsy_purchase_receipt r ON r.id = ri.purchase_receipt_id AND r.deleted = FALSE "
                         + "WHERE r.status = 'CONFIRMED' AND ri.deleted = FALSE AND ri.sku_id = ?",
                 Integer.class, skuId)).isEqualTo(2);
 
@@ -248,7 +248,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         // 把收货确认事实改成一个历史时刻 + 一个哨兵操作者，再让 backfill 回放
         OffsetDateTime historical = OffsetDateTime.parse("2020-03-15T08:30:00+08:00");
         overrideReceiptConfirmedAt(fx.receipt().getId(), historical);
-        jdbc.update("UPDATE purchase_receipt SET operator = ? WHERE id = ?",
+        jdbc.update("UPDATE xsy_purchase_receipt SET operator = ? WHERE id = ?",
                 "sentinel-operator", fx.receipt().getId());
         eraseMovementsFor(warehouseId, skuId);
         runBackfillMovements();
@@ -276,7 +276,7 @@ class ScmInventoryBackfillIT extends ScmW6PgITBase {
         assertLedgerBalanced(warehouseId, skuId);
 
         // 产品侧没有任何「改账面却不写流水」的入口，所以这条违规只能手工造
-        jdbc.update("UPDATE inventory_balance SET quantity = quantity + 1 "
+        jdbc.update("UPDATE xsy_inventory_balance SET quantity = quantity + 1 "
                         + "WHERE warehouse_id = ? AND sku_id = ? AND deleted = FALSE",
                 warehouseId, skuId);
         assertThatThrownBy(() -> assertLedgerBalanced(warehouseId, skuId))

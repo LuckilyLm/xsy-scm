@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>
  * <b>跃迁语义（ADR-007）</b>：只在「{@code NORMAL → LOW/HIGH}」时投递，异常持续期间不重复，回到 {@code NORMAL} 之后再次异常可以再提醒一次。判定「上次是什么状态」靠
- * {@code scm_inventory_warning_state}，而状态本身仍由 {@link ScmInventoryWarningStatusEnum#evaluate} 现算 —— 这里不复制一份阈值规则。
+ * {@code xsy_inventory_warning_state}，而状态本身仍由 {@link ScmInventoryWarningStatusEnum#evaluate} 现算 —— 这里不复制一份阈值规则。
  *
  * <p>
  * 每次跃迁的 {@code event_key} 由 {@code (仓库, SKU, 纪元, 状态, 接收人)} 组成：
@@ -86,7 +86,7 @@ public class InventoryWarningNotifier {
      * 向该仓的授权员工投递站内信。
      *
      * <p>
-     * 接收人来自 {@code employee_warehouse_scope}：授权行是「谁负责这个仓」的唯一正式来源。没有授权行时<b>不广播、不猜人</b>，只记一条日志 —— 把预警发给全公司比不发更糟。
+     * 接收人来自 {@code xsy_employee_warehouse_scope}：授权行是「谁负责这个仓」的唯一正式来源。没有授权行时<b>不广播、不猜人</b>，只记一条日志 —— 把预警发给全公司比不发更糟。
      */
     private int notify(InventoryWarningVO row, ScmInventoryWarningStatusEnum status, int epoch) {
         List<Long> receivers = employeeWarehouseScopeDao.listEnabledEmployeeIdsByWarehouse(row.getWarehouseId());

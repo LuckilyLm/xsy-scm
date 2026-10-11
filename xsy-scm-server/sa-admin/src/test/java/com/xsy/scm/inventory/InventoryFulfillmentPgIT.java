@@ -259,42 +259,42 @@ class InventoryFulfillmentPgIT extends ScmW6PgITBase {
     }
 
     private String reservationStatus(Long orderItemId) {
-        return jdbc.queryForObject("SELECT status FROM inventory_reservation WHERE source_document_item_id = ?",
+        return jdbc.queryForObject("SELECT status FROM xsy_inventory_reservation WHERE source_document_item_id = ?",
                 String.class, orderItemId);
     }
 
     private BigDecimal reservationQuantity(Long orderItemId) {
-        return jdbc.queryForObject("SELECT quantity FROM inventory_reservation WHERE source_document_item_id = ?",
+        return jdbc.queryForObject("SELECT quantity FROM xsy_inventory_reservation WHERE source_document_item_id = ?",
                 BigDecimal.class, orderItemId);
     }
 
     private int reservationRowCount(Long orderItemId) {
-        return jdbc.queryForObject("SELECT count(*) FROM inventory_reservation WHERE source_document_item_id = ?",
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_reservation WHERE source_document_item_id = ?",
                 Integer.class, orderItemId);
     }
 
     private int outboundItemCount(Long outboundId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_outbound_item WHERE outbound_id = ? AND deleted = FALSE",
+                "SELECT count(*) FROM xsy_inventory_outbound_item WHERE outbound_id = ? AND deleted = FALSE",
                 Integer.class, outboundId);
     }
 
     private Long outboundItemOrderLine(Long outboundId) {
         return jdbc.queryForObject(
-                "SELECT sales_order_item_id FROM inventory_outbound_item WHERE outbound_id = ?", Long.class, outboundId);
+                "SELECT sales_order_item_id FROM xsy_inventory_outbound_item WHERE outbound_id = ?", Long.class, outboundId);
     }
 
     private String outboundStatus(Long outboundId) {
-        return jdbc.queryForObject("SELECT status FROM inventory_outbound WHERE id = ?", String.class, outboundId);
+        return jdbc.queryForObject("SELECT status FROM xsy_inventory_outbound WHERE id = ?", String.class, outboundId);
     }
 
     private Map<String, Object> outboundSource(Long outboundId) {
-        return jdbc.queryForMap("SELECT source_document_type, source_document_id FROM inventory_outbound WHERE id = ?",
+        return jdbc.queryForMap("SELECT source_document_type, source_document_id FROM xsy_inventory_outbound WHERE id = ?",
                 outboundId);
     }
 
     private int outboundHeaderCount() {
-        return jdbc.queryForObject("SELECT count(*) FROM inventory_outbound WHERE deleted = FALSE", Integer.class);
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_outbound WHERE deleted = FALSE", Integer.class);
     }
 
     /**
@@ -302,13 +302,13 @@ class InventoryFulfillmentPgIT extends ScmW6PgITBase {
      * 本类每个用例都只有一行出库明细，所以取单值即可（多行时会抛 NonUniqueResult，正是我们想看到的）。
      */
     private BigDecimal movementQuantity(Long outboundId) {
-        return jdbc.queryForObject("SELECT quantity FROM inventory_movement"
+        return jdbc.queryForObject("SELECT quantity FROM xsy_inventory_movement"
                         + " WHERE source_document_type = ? AND source_document_id = ?",
                 BigDecimal.class, ScmInventorySourceDocumentTypeEnum.SALES_OUTBOUND_ITEM.name(), outboundId);
     }
 
     private Long movementWarehouse(Long outboundId) {
-        return jdbc.queryForObject("SELECT warehouse_id FROM inventory_movement"
+        return jdbc.queryForObject("SELECT warehouse_id FROM xsy_inventory_movement"
                         + " WHERE source_document_type = ? AND source_document_id = ?",
                 Long.class, ScmInventorySourceDocumentTypeEnum.SALES_OUTBOUND_ITEM.name(), outboundId);
     }

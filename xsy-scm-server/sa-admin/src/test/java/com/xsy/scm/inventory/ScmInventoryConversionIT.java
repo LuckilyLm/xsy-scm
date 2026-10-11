@@ -71,7 +71,7 @@ class ScmInventoryConversionIT extends ScmW6PgITBase {
 
     private int versionOf(Long id) {
         return jdbc.queryForObject(
-                "SELECT version FROM inventory_conversion WHERE id = ?", Integer.class, id);
+                "SELECT version FROM xsy_inventory_conversion WHERE id = ?", Integer.class, id);
     }
 
     private InventoryConversionAuditForm audit(Long id) {
@@ -82,7 +82,7 @@ class ScmInventoryConversionIT extends ScmW6PgITBase {
 
     private String statusOf(Long id) {
         return jdbc.queryForObject(
-                "SELECT status FROM inventory_conversion WHERE id = ?", String.class, id);
+                "SELECT status FROM xsy_inventory_conversion WHERE id = ?", String.class, id);
     }
 
     private List<Map<String, Object>> convertMovements(Long wh, Long sku) {
@@ -330,8 +330,8 @@ class ScmInventoryConversionIT extends ScmW6PgITBase {
         for (Long movementId : List.of(
                 ((Number) convertMovements(wh, source).getFirst().get("id")).longValue(),
                 ((Number) convertMovements(wh, target).getFirst().get("id")).longValue())) {
-            expectSqlFailure("UPDATE inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
-            expectSqlFailure("DELETE FROM inventory_movement WHERE id = ?", movementId);
+            expectSqlFailure("UPDATE xsy_inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
+            expectSqlFailure("DELETE FROM xsy_inventory_movement WHERE id = ?", movementId);
         }
     }
 }
