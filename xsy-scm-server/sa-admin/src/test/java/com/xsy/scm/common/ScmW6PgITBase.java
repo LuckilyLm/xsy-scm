@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -165,7 +167,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
         form.setName(prefix + suffix + "商品");
         form.setStatus(status);
         form.setCategoryId(jdbc.queryForObject(
-                "SELECT id FROM product_category WHERE category_code = 'FRESH-FRUIT' AND deleted = FALSE",
+                "SELECT id FROM xsy_product_category WHERE category_code = 'FRESH-FRUIT' AND deleted = FALSE",
                 Long.class));
 
         ProductSkuForm sku = new ProductSkuForm();
@@ -181,7 +183,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
 
         Long spuId = productSpuService.add(form);
         return jdbc.queryForObject(
-                "SELECT id FROM product_sku WHERE spu_id = ? AND deleted = FALSE", Long.class, spuId);
+                "SELECT id FROM xsy_product_sku WHERE spu_id = ? AND deleted = FALSE", Long.class, spuId);
     }
 
     // ------------------------------------------------------------------
@@ -232,7 +234,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
      */
     protected int balanceRowCount(Long warehouseId, Long skuId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_balance WHERE warehouse_id = ? AND sku_id = ?",
+                "SELECT count(*) FROM xsy_inventory_balance WHERE warehouse_id = ? AND sku_id = ?",
                 Integer.class, warehouseId, skuId);
     }
 
@@ -241,7 +243,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
      */
     protected int movementCount(Long warehouseId, Long skuId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_movement "
+                "SELECT count(*) FROM xsy_inventory_movement "
                         + "WHERE warehouse_id = ? AND sku_id = ? AND deleted = FALSE",
                 Integer.class, warehouseId, skuId);
     }
@@ -254,7 +256,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
      */
     protected List<Map<String, Object>> movementsOf(Long warehouseId, Long skuId) {
         return jdbc.queryForList(
-                "SELECT * FROM inventory_movement "
+                "SELECT * FROM xsy_inventory_movement "
                         + "WHERE warehouse_id = ? AND sku_id = ? AND deleted = FALSE "
                         + "ORDER BY occurred_at ASC, id ASC", warehouseId, skuId);
     }
@@ -268,19 +270,19 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     }
 
     /**
-     * 收货单的确认时刻（{@code purchase_receipt.confirmed_at}）。
+     * 收货单的确认时刻（{@code xsy_purchase_receipt.confirmed_at}）。
      */
     protected OffsetDateTime receiptConfirmedAt(Long receiptId) {
         return jdbc.queryForObject(
-                "SELECT confirmed_at FROM purchase_receipt WHERE id = ?", OffsetDateTime.class, receiptId);
+                "SELECT confirmed_at FROM xsy_purchase_receipt WHERE id = ?", OffsetDateTime.class, receiptId);
     }
 
     /**
-     * 收货单的操作者（{@code purchase_receipt.operator}）。
+     * 收货单的操作者（{@code xsy_purchase_receipt.operator}）。
      */
     protected String receiptOperator(Long receiptId) {
         return jdbc.queryForObject(
-                "SELECT operator FROM purchase_receipt WHERE id = ?", String.class, receiptId);
+                "SELECT operator FROM xsy_purchase_receipt WHERE id = ?", String.class, receiptId);
     }
 
     /**
@@ -289,7 +291,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     protected BigDecimal receivedQuantityOf(Long purchaseOrderItemId) {
         evictMybatisCache();
         return jdbc.queryForObject(
-                "SELECT received_quantity FROM purchase_order_item WHERE id = ?",
+                "SELECT received_quantity FROM xsy_purchase_order_item WHERE id = ?",
                 BigDecimal.class, purchaseOrderItemId);
     }
 
@@ -352,7 +354,105 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
         assertThat(to)
                 .as("%s 中找不到结束标记 %s（标记被改名了？）", fileName, toMarker)
                 .isGreaterThan(from);
-        return sql.substring(from, to);
+        return toCurrentTableNames(sql.substring(from, to));
+    }
+
+    /**
+     * V118 之前的物理表名。回放历史迁移正文时要映射到当前表名 ——
+     * 迁移文件本身不可改（已 apply），而 PostgreSQL 的 RENAME 也不会改写文件里的文本。
+     */
+    private static final String LEGACY_TABLE_NAMES =
+            "customer customer_agreement_price customer_agreement_price_operation_log customer_balance_account customer_balance_movement customer_balance_recharge customer_price_batch_audit customer_sku_visibility customer_type customer_type_price customer_type_price_operation_log delivery_driver delivery_gps_event delivery_plan_proposal delivery_route delivery_route_order delivery_route_stop delivery_vehicle employee_warehouse_scope finance_operation_log finance_payable finance_payable_item finance_payment finance_receipt finance_receivable finance_receivable_item finance_write_off idempotency_record inventory_balance inventory_conversion inventory_conversion_item inventory_loss_gain inventory_loss_gain_item inventory_movement inventory_outbound inventory_outbound_item inventory_reservation inventory_stocktake inventory_stocktake_item inventory_transfer inventory_transfer_item inventory_warning_threshold order_address_snapshot order_discount order_operation_log order_promotion_gift order_refund order_return order_return_item order_return_receipt order_return_receipt_item payment_callback_event payment_intent payment_mock_ledger payment_reconciliation payment_reconciliation_item payment_refund payment_transaction product_category product_image product_sku product_spu product_tag product_tag_relation promotion_activity promotion_coupon promotion_coupon_instance purchase_demand purchase_demand_allocation purchase_demand_calculation_batch purchase_demand_calculation_batch_item purchase_operation_log purchase_order purchase_order_item purchase_receipt purchase_receipt_item receipt_weighing_record report_purchase_daily report_purchase_daily_item sales_order sales_order_item scm_customer_statement scm_customer_statement_item scm_customer_statement_source scm_inventory_warning_state scm_notification_event scm_print_record scm_print_template scm_region scm_supplier_statement scm_supplier_statement_item scm_supplier_statement_source scm_uom sorting_scale_event sorting_task sorting_task_item supplier supplier_sku warehouse";
+
+    private static final Pattern LEGACY_TABLE =
+            Pattern.compile("\\b(?:" + LEGACY_TABLE_NAMES.replace(' ', '|') + ")\\b");
+
+    /** 判定单引号字面量是「SQL 片段」而不是消息文本：命中任一 SQL 关键字即可。 */
+    private static final Pattern SQL_KEYWORD =
+            Pattern.compile("(?i)\\b(select|from|join|into|update|delete|insert|where|values|set)\\b");
+
+    /**
+     * 把历史迁移正文里的旧表名映射到当前表名。
+     *
+     * <p>
+     * 只改代码位置：单引号字面量原样保留（RAISE 的消息文本不是表引用），
+     * 美元引用（{@code $$ ... $$}）内部仍是代码，递归处理。
+     */
+    protected static String toCurrentTableNames(String sql) {
+        StringBuilder out = new StringBuilder(sql.length() + 64);
+        int i = 0;
+        int n = sql.length();
+        while (i < n) {
+            char c = sql.charAt(i);
+            if (c == '\'') {
+                int j = i + 1;
+                while (j < n) {
+                    if (sql.charAt(j) == '\'') {
+                        if (j + 1 < n && sql.charAt(j + 1) == '\'') {
+                            j += 2;
+                            continue;
+                        }
+                        break;
+                    }
+                    j++;
+                }
+                j = Math.min(j + 1, n);
+                String inner = sql.substring(i + 1, j - 1);
+                if (LEGACY_TABLE.matcher(inner).matches()) {
+                    // 整体恰为旧表名的字面量是「把表名当值用」（如动态 SQL 的 ARRAY['warehouse', …]）。
+                    out.append('\'').append(currentTableName(inner)).append('\'');
+                } else if (SQL_KEYWORD.matcher(inner).find()) {
+                    // 内容是 SQL 的单引号字面量：{@code EXECUTE format('… JOIN scm_region …')} 这类动态 SQL。
+                    out.append('\'').append(toCurrentTableNames(inner)).append('\'');
+                } else {
+                    // 其余是消息文本（RAISE EXCEPTION / NOTICE），不是表引用，原样保留。
+                    out.append(sql, i, j);
+                }
+                i = j;
+            } else if (c == '$' && dollarQuoteAt(sql, i) != null) {
+                String tag = dollarQuoteAt(sql, i);
+                int close = sql.indexOf(tag, i + tag.length());
+                if (close < 0) {
+                    out.append(sql, i, n);
+                    i = n;
+                } else {
+                    out.append(tag)
+                            .append(toCurrentTableNames(sql.substring(i + tag.length(), close)))
+                            .append(tag);
+                    i = close + tag.length();
+                }
+            } else {
+                // 从 i + 1 起步：i 处要么是普通字符，要么是「不是美元引用开头的 $」，
+                // 两种情况都按普通字符处理；从 i 起步会让 $ 处原地打转。
+                int j = i + 1;
+                while (j < n && sql.charAt(j) != '\'' && sql.charAt(j) != '$') {
+                    j++;
+                }
+                Matcher m = LEGACY_TABLE.matcher(sql.substring(i, j));
+                StringBuilder seg = new StringBuilder();
+                while (m.find()) {
+                    m.appendReplacement(seg, Matcher.quoteReplacement(currentTableName(m.group())));
+                }
+                m.appendTail(seg);
+                out.append(seg);
+                i = j;
+            }
+        }
+        return out.toString();
+    }
+
+    /** 旧表名 -> 当前表名：{@code scm_x} 去前缀改 {@code xsy_}，其余直接加 {@code xsy_}。 */
+    private static String currentTableName(String legacy) {
+        return legacy.startsWith("scm_") ? "xsy_" + legacy.substring(4) : "xsy_" + legacy;
+    }
+
+    private static final Pattern DOLLAR_QUOTE_OPEN = Pattern.compile("\\$(?:[A-Za-z_][A-Za-z0-9_]*)?\\$");
+
+    /** 位置 i 处的美元引用开标记（{@code $$} 或 {@code $tag$}）；不是则返回 null。 */
+    private static String dollarQuoteAt(String sql, int i) {
+        Matcher m = DOLLAR_QUOTE_OPEN.matcher(sql);
+        m.region(i, sql.length());
+        return m.lookingAt() ? m.group() : null;
     }
 
     /**
@@ -399,10 +499,10 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
                 "SELECT count(*) FROM ("
                         + "  SELECT sum(CASE WHEN after_quantity = before_quantity + quantity"
                         + "                   THEN quantity ELSE -quantity END) AS net"
-                        + "  FROM inventory_movement"
+                        + "  FROM xsy_inventory_movement"
                         + "  WHERE deleted = FALSE AND warehouse_id = ? AND sku_id = ?) mv"
                         + " FULL OUTER JOIN ("
-                        + "  SELECT quantity AS bal FROM inventory_balance"
+                        + "  SELECT quantity AS bal FROM xsy_inventory_balance"
                         + "  WHERE deleted = FALSE AND warehouse_id = ? AND sku_id = ?) bal ON TRUE"
                         + " WHERE COALESCE(mv.net, 0) IS DISTINCT FROM bal.bal",
                 Integer.class, warehouseId, skuId, warehouseId, skuId))
@@ -421,7 +521,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
      */
     protected void overrideReceiptItemUnit(Long receiptItemId, String unit) {
         int updated = jdbc.update(
-                "UPDATE purchase_receipt_item SET purchase_unit_snapshot = ? WHERE id = ?",
+                "UPDATE xsy_purchase_receipt_item SET purchase_unit_snapshot = ? WHERE id = ?",
                 unit, receiptItemId);
         assertThat(updated).isEqualTo(1);
         evictMybatisCache();
@@ -435,7 +535,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
      */
     protected void overrideReceiptConfirmedAt(Long receiptId, OffsetDateTime confirmedAt) {
         int updated = jdbc.update(
-                "UPDATE purchase_receipt SET confirmed_at = ? WHERE id = ?", confirmedAt, receiptId);
+                "UPDATE xsy_purchase_receipt SET confirmed_at = ? WHERE id = ?", confirmedAt, receiptId);
         assertThat(updated).isEqualTo(1);
         evictMybatisCache();
     }
@@ -454,14 +554,14 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
      */
     protected void eraseMovementsFor(Long warehouseId, Long skuId) {
         jdbc.execute("CREATE TEMP TABLE w6_movement_replay "
-                + "(LIKE inventory_movement INCLUDING ALL) ON COMMIT DROP");
-        jdbc.execute("INSERT INTO pg_temp.w6_movement_replay SELECT * FROM inventory_movement");
-        jdbc.execute("ALTER TABLE pg_temp.w6_movement_replay RENAME TO inventory_movement");
-        jdbc.execute("SELECT setval(pg_get_serial_sequence('pg_temp.inventory_movement', 'id'), "
-                + "COALESCE((SELECT max(id) FROM pg_temp.inventory_movement), 1), "
-                + "EXISTS (SELECT 1 FROM pg_temp.inventory_movement))");
+                + "(LIKE xsy_inventory_movement INCLUDING ALL) ON COMMIT DROP");
+        jdbc.execute("INSERT INTO pg_temp.w6_movement_replay SELECT * FROM xsy_inventory_movement");
+        jdbc.execute("ALTER TABLE pg_temp.w6_movement_replay RENAME TO xsy_inventory_movement");
+        jdbc.execute("SELECT setval(pg_get_serial_sequence('pg_temp.xsy_inventory_movement', 'id'), "
+                + "COALESCE((SELECT max(id) FROM pg_temp.xsy_inventory_movement), 1), "
+                + "EXISTS (SELECT 1 FROM pg_temp.xsy_inventory_movement))");
         int deleted = jdbc.update(
-                "DELETE FROM pg_temp.inventory_movement WHERE warehouse_id = ? AND sku_id = ?",
+                "DELETE FROM pg_temp.xsy_inventory_movement WHERE warehouse_id = ? AND sku_id = ?",
                 warehouseId, skuId);
         assertThat(deleted).isGreaterThan(0);
         evictMybatisCache();

@@ -28,43 +28,43 @@
 
 1. **Finance R1 是财务事实的产生地**，不是第二套业务账：它只消费已经成立的业务事实
    （签收、收货确认、退货批准、退款业务事实），产生自己的事实（应收 / 应付 / 收款 / 付款 / 核销 / 日志）。
-2. **财务域对业务域只读**。`module/scm/finance` 内允许对 `sales_order(_item)`、`order_return(_item)`、
-   `order_refund`、`purchase_receipt(_item)`、`purchase_order(_item)`、`inventory_outbound(_item)`、
-   `delivery_route_order` 建**只读 DAO**（仅 SELECT）；**禁止**出现对这些表的任何 INSERT / UPDATE / DELETE，
-   也禁止对 `inventory_balance / inventory_movement / inventory_reservation` 的任何写。
+2. **财务域对业务域只读**。`module/scm/finance` 内允许对 `xsy_sales_order(_item)`、`xsy_order_return(_item)`、
+   `xsy_order_refund`、`xsy_purchase_receipt(_item)`、`xsy_purchase_order(_item)`、`xsy_inventory_outbound(_item)`、
+   `xsy_delivery_route_order` 建**只读 DAO**（仅 SELECT）；**禁止**出现对这些表的任何 INSERT / UPDATE / DELETE，
+   也禁止对 `xsy_inventory_balance / xsy_inventory_movement / xsy_inventory_reservation` 的任何写。
    理由：触发路径有两条（签收生成正常应收、签收补生成红字），若按「业务域装配金额」的契约形态，
    两条路径会各算一遍金额并可能不一致；把取数收进财务域、把防重交给库级唯一索引，才能保证单一口径。
    这与 `report` 域只读跨域表的既有形态同形，但比它多一条「只读」的库级纪律（见 §25 不变量 4/5）。
 3. **财务单据没有状态机**（第二批 Q17 / Q20）：已核销额、未核销额、结清状态、可冲金额全部
    由有效核销关系与红字关系**读时派生**，不落状态列、不落余额列。
-4. **方向编码在类型里，数量与金额恒为正**：沿用 `inventory_movement` 的纪律
+4. **方向编码在类型里，数量与金额恒为正**：沿用 `xsy_inventory_movement` 的纪律
    （「数量恒为正、方向编码在类型里」，`docs/decisions.md` 盘点段）。财务侧对应物是
    `entry_type IN ('NORMAL','RED')` 与 `entry_type IN ('NORMAL','REVERSE')`，金额列一律 `> 0`，
    净值在读时按方向相减。
 5. **不冗余业务归属列**：`seller_id` / `purchaser_id` 是**范围归属**，必须读时 join 业务表取活值
    （P0 裁决 2「没有授权范围就查不到数据」要求范围随授权即时生效，落库即会漂移）；
-   `customer_id` / `supplier_id` 是**结算对方**，属财务事实本身，落库（与 `purchase_receipt.supplier_id` 同形）；
+   `customer_id` / `supplier_id` 是**结算对方**，属财务事实本身，落库（与 `xsy_purchase_receipt.supplier_id` 同形）；
    名称一律快照列（与 `supplier_name_snapshot` 同形），只服务展示与导出。
 6. **零既有表改动**：本设计不 ALTER 任何现有表。所有关联都是新表上的新列指向既有主键。
    因此 F1-1 不触碰 `MIG/V13/V15/V25/V42/V60/V63` 的已应用字节，迁移校验和守卫不受影响。
 7. **append-only 由数据库 CHECK 兜底，不只靠 Java 纪律**：八张表全部带
    `CHECK (deleted = FALSE)`（照 `V19:83` 的 `ck_inventory_movement_append_only`），
-   软删历史财务事实在库层直接失败；`finance_operation_log` 不提供任何删除入口。
+   软删历史财务事实在库层直接失败；`xsy_finance_operation_log` 不提供任何删除入口。
    `deleted` 列保留只为与部分唯一索引的既有谓词形态一致。
    实体**不用** `@TableLogic`（它表达「可被软删的实体」，与财务事实语义相反，
    照 `InventoryMovementEntity` 的既有取舍），读取一律在 SQL 里显式写 `deleted = FALSE`。
 
 ### 0.1 调研结论摘要（2026-09-25 开工前调研，过程稿已并入本稿）
 
-**销售履约链**：`sales_order`（CONFIRMED 时冻结 `settlement_line_amount = actual_quantity × locked_unit_price`，
+**销售履约链**：`xsy_sales_order`（CONFIRMED 时冻结 `settlement_line_amount = actual_quantity × locked_unit_price`，
 `SalesOrderService.java:296`）→ 分拣（`sorted_quantity`，不回写订单）→ 发车单事务产生
-`inventory_outbound`（直生 CONFIRMED、一线路一单）与 `inventory_outbound_item`（带 `sales_order_item_id`、
-**无价格列**）→ `inventory_movement(SALES_OUT)`（`unit_cost` = 出库时库存均价，**不是售价**）
+`xsy_inventory_outbound`（直生 CONFIRMED、一线路一单）与 `xsy_inventory_outbound_item`（带 `sales_order_item_id`、
+**无价格列**）→ `xsy_inventory_movement(SALES_OUT)`（`unit_cost` = 出库时库存均价，**不是售价**）
 → 订单级 `SIGNED / EXCEPTION` 签收（只写履约四列，零金额零库存）。
 
-**采购入库链**：`purchase_order.total_amount` 按**下单量**算且收货不改 → `purchase_receipt` CONFIRMED
-（`received_at` 与 `confirmed_at` 同值）→ `purchase_receipt_item`（**无价格列**；有效量 = 标品申报量 /
-非标 `actual_weight`）→ `inventory_movement(PURCHASE_IN)`（`unit_cost` = `purchase_order_item.purchase_price`）。
+**采购入库链**：`xsy_purchase_order.total_amount` 按**下单量**算且收货不改 → `xsy_purchase_receipt` CONFIRMED
+（`received_at` 与 `confirmed_at` 同值）→ `xsy_purchase_receipt_item`（**无价格列**；有效量 = 标品申报量 /
+非标 `actual_weight`）→ `xsy_inventory_movement(PURCHASE_IN)`（`unit_cost` = `xsy_purchase_order_item.purchase_price`）。
 **采购退货全库不存在**；已确认收货单不可改不可删。
 
 **四个承重结论**：
@@ -73,7 +73,7 @@
 2. 订单结算量、分拣实发量、出库实发量三者天然不等；应付侧「收货确认」与「正式入库」金额相同、只差时点。
 3. 全库 64 个迁移逐关键词检索：应收 / 应付 / 收款 / 付款 / 核销 / 凭证 / 资金账户 **0 命中**，R1 是纯绿地；
    SmartAdmin 原生 `t_oa_invoice` / `t_oa_bank` 属 OA 示例域，不作财务地基。
-4. 数据范围现有五维全是负责人 / 仓库语义，**无结算对方维**；`purchase_receipt` 上无 `purchaser_id`
+4. 数据范围现有五维全是负责人 / 仓库语义，**无结算对方维**；`xsy_purchase_receipt` 上无 `purchaser_id`
    （应付按采购员收窄须回溯父采购单）。
 
 **R0 影子口径（不得改名、不得改读 finance 表）**：`confirmedOrderAmount`（`ReportDao.xml:139`）、
@@ -81,9 +81,9 @@
 报表 SQL 完全不读配送与分拣表；实测 37 个只读端点（26 查询 + 11 导出），
 上述端点数量仅是 2026-09-25 的调研快照；后续已新增财务往来和每日清单端点，当前数量以 Controller 为准，不再使用旧文档的「41 个只读端点」描述现状。
 
-**可复用基建**：`idempotency_record` 三段式（`claim → 写 → complete` 同事务，重放返回首次结果）、
+**可复用基建**：`xsy_idempotency_record` 三段式（`claim → 写 → complete` 同事务，重放返回首次结果）、
 `@Version` + `VERSION_CONFLICT(40921)`、`SELECT … FOR UPDATE` 与「单据锁先于余额锁、余额锁按
-`(warehouse_id, sku_id)` 升序」纪律、`order_operation_log` 的 JSONB before/after + 白名单 + 唯一写入口、
+`(warehouse_id, sku_id)` 升序」纪律、`xsy_order_operation_log` 的 JSONB before/after + 白名单 + 唯一写入口、
 `ScmDataScopeService` / `ScmValueScope` / `ScmWarehouseScopeGuard`、公共日期区间解析器 `ScmDateTimeRangeResolver`、
 FastExcel 导出层（`ScmReportExcel` 形态）、`ScmDocumentNumbers.format`（前缀 + 业务日 + `%06d`）、
 菜单种子四条约定（`menu_id == sort`、`context_menu_id == parent`、`api_perms == web_perms`、`perms_type = 1`）。
@@ -112,11 +112,11 @@ FastExcel 导出层（`ScmReportExcel` 形态）、`ScmDocumentNumbers.format`�
 | Q | 一句话结论 | 本稿落点 |
 | --- | --- | --- |
 | Q1 | 应收在订单 `SIGNED` 时形成；不新增财务确认环节 | §3.3 |
-| Q2 | 应收数量 = `inventory_outbound_item.quantity` | §3.3、§12 |
-| Q3 | 应收单价 = `sales_order_item.locked_unit_price`，无第二价格源 | §12 |
+| Q2 | 应收数量 = `xsy_inventory_outbound_item.quantity` | §3.3、§12 |
+| Q3 | 应收单价 = `xsy_sales_order_item.locked_unit_price`，无第二价格源 | §12 |
 | Q4 | 应收 = 订单级单头 + 行级明细（保留出库行来源） | §3 |
 | Q6 | `EXCEPTION` 不形成应收；不新增部分签收 | §3.3、§9 |
-| Q9 | 应付在 `purchase_receipt CONFIRMED` 时形成 | §4.3 |
+| Q9 | 应付在 `xsy_purchase_receipt CONFIRMED` 时形成 | §4.3 |
 | Q10 | 应付 = 收货单级单头 + 收货行级明细 | §4 |
 | Q11 | 合法容差内超收全额计入应付 | §4.2、§12 |
 | Q13 | 应付减少 = 红字应付（引用原单、必填原因、留日志） | §8.3 |
@@ -124,7 +124,7 @@ FastExcel 导出层（`ScmReportExcel` 形态）、`ScmDocumentNumbers.format`�
 | Q16 | 允许预收 / 预付；未核销部分 = 待核销款（≠ 余额 / 钱包） | §5、§6、§7 |
 | Q17 | 核销 M:N，独立 `WriteOff`；已核销 / 结清读时派生；禁跨客户 / 供应商 | §7 |
 | Q18 | 核销撤销 = 反向核销事实；无会计期间 / 关账 | §8.4 |
-| Q19 | `order_refund.COMPLETED` ≠ 资金付出；退款付款 = 独立 `Payment`，来源库级唯一 | §6、§9 |
+| Q19 | `xsy_order_refund.COMPLETED` ≠ 资金付出；退款付款 = 独立 `Payment`，来源库级唯一 | §6、§9 |
 | Q5 | 手工出库不产生应收，不建观察列表 | §3.3、§1.2 |
 | Q7 | 补单独立生成应收，不冗余 `original_order_id` | §3 |
 | Q8 | 签收但无出库行：不生成单头 / 明细 / 0 元事实 | §3.3 |
@@ -136,8 +136,8 @@ FastExcel 导出层（`ScmReportExcel` 形态）、`ScmDocumentNumbers.format`�
 | Q23 | 不新增范围维；应收 `orderSellerScope`、应付 `purchaserScope`（回溯父单） | §15 |
 | Q24 | 有单据查询权即可见金额；不新增字段级裁剪 | §16 |
 | Q25 | 本期不启用财务回单附件，只存文本凭据号 | §5、§6 |
-| Q26 | 复用 `idempotency_record`；请求级幂等 + 来源唯一索引双保险 | §11、§13 |
-| Q27 | `order_return APPROVED` = 红字应收来源；先退后签由签收补生成；Refund 不再冲应收 | §8.2、§9 |
+| Q26 | 复用 `xsy_idempotency_record`；请求级幂等 + 来源唯一索引双保险 | §11、§13 |
+| Q27 | `xsy_order_return APPROVED` = 红字应收来源；先退后签由签收补生成；Refund 不再冲应收 | §8.2、§9 |
 
 第三批 D-1…D-5（2026-09-26 负责人裁决，全部为 A）：
 
@@ -175,21 +175,21 @@ finance_payment（付款，人工登记 / 退款触发）───┤
 
 | 对象 | 表 | 粒度 | 触发方 | 方向字段 |
 | --- | --- | --- | --- | --- |
-| 应收单 | `finance_receivable` | 一张 `sales_order` 一单（第一批 Q4） | 签收事务内生成 | `entry_type NORMAL/RED` |
-| 应收明细 | `finance_receivable_item` | 一条 `inventory_outbound_item` 一行（正常）；一条 `order_return_item` 一行（红字） | 同上 | 随单头 |
-| 应付单 | `finance_payable` | 一张 `purchase_receipt` 一单（第一批 Q10）；红字应付是**另一张** `entry_type='RED'` 的单 | 收货确认事务内生成 / 手工登记 | `entry_type NORMAL/RED` |
-| 应付明细 | `finance_payable_item` | 一条 `purchase_receipt_item` 一行 | 同上 | 无 |
-| 收款 | `finance_receipt` | 一笔钱一单，可无应收（预收，第一批 Q16） | 财务人工登记 | `entry_type NORMAL/REVERSE`（D-3） |
-| 付款 | `finance_payment` | 一笔钱一单，可无应付（预付）；退款付款带来源 | 财务人工登记 | `entry_type NORMAL/REVERSE`（D-3） |
-| 核销 | `finance_write_off` | 一笔收/付款对一笔应收/应付的一次分配 | 财务人工 | `entry_type NORMAL/REVERSE` |
-| 财务日志 | `finance_operation_log` | 一次财务写动作一行 | 与业务写同事务 | `operation_type` 白名单 |
+| 应收单 | `xsy_finance_receivable` | 一张 `xsy_sales_order` 一单（第一批 Q4） | 签收事务内生成 | `entry_type NORMAL/RED` |
+| 应收明细 | `xsy_finance_receivable_item` | 一条 `xsy_inventory_outbound_item` 一行（正常）；一条 `xsy_order_return_item` 一行（红字） | 同上 | 随单头 |
+| 应付单 | `xsy_finance_payable` | 一张 `xsy_purchase_receipt` 一单（第一批 Q10）；红字应付是**另一张** `entry_type='RED'` 的单 | 收货确认事务内生成 / 手工登记 | `entry_type NORMAL/RED` |
+| 应付明细 | `xsy_finance_payable_item` | 一条 `xsy_purchase_receipt_item` 一行 | 同上 | 无 |
+| 收款 | `xsy_finance_receipt` | 一笔钱一单，可无应收（预收，第一批 Q16） | 财务人工登记 | `entry_type NORMAL/REVERSE`（D-3） |
+| 付款 | `xsy_finance_payment` | 一笔钱一单，可无应付（预付）；退款付款带来源 | 财务人工登记 | `entry_type NORMAL/REVERSE`（D-3） |
+| 核销 | `xsy_finance_write_off` | 一笔收/付款对一笔应收/应付的一次分配 | 财务人工 | `entry_type NORMAL/REVERSE` |
+| 财务日志 | `xsy_finance_operation_log` | 一次财务写动作一行 | 与业务写同事务 | `operation_type` 白名单 |
 
-应付的「红字」按第一批 Q13 是**一张新的 `finance_payable`（`entry_type='RED'`）**，
-与应收红字同形；因此 `finance_payable` 也带 `entry_type` 与 `original_payable_id`。
+应付的「红字」按第一批 Q13 是**一张新的 `xsy_finance_payable`（`entry_type='RED'`）**，
+与应收红字同形；因此 `xsy_finance_payable` 也带 `entry_type` 与 `original_payable_id`。
 
 ## 3. Receivable / ReceivableItem
 
-### 3.1 `finance_receivable`
+### 3.1 `xsy_finance_receivable`
 
 | 列 | 类型 / 约束 | 语义 |
 | --- | --- | --- |
@@ -216,22 +216,22 @@ idx_finance_receivable_customer_event ON (customer_id, event_at DESC) WHERE dele
 idx_finance_receivable_original       ON (original_receivable_id) WHERE deleted = FALSE AND entry_type = 'RED'
 ```
 
-**不存**：`seller_id`（范围归属，读时 join `sales_order`）、`status`（结清派生，Q17）、
+**不存**：`seller_id`（范围归属，读时 join `xsy_sales_order`）、`status`（结清派生，Q17）、
 `settled_amount`（第二权威源，Q17 禁止）、`due_date`（Q15）。
 
-### 3.2 `finance_receivable_item`
+### 3.2 `xsy_finance_receivable_item`
 
 | 列 | 类型 / 约束 | 语义 |
 | --- | --- | --- |
 | `id` | PK | |
 | `receivable_id` | `BIGINT NOT NULL` | |
 | `source_type` | `VARCHAR(32) NOT NULL CHECK IN ('INVENTORY_OUTBOUND_ITEM','ORDER_RETURN_ITEM')` | 正常 / 红字明细来源 |
-| `source_id` | `BIGINT NOT NULL` | `inventory_outbound_item.id` / `order_return_item.id` |
+| `source_id` | `BIGINT NOT NULL` | `xsy_inventory_outbound_item.id` / `xsy_order_return_item.id` |
 | `order_item_id` | `BIGINT NOT NULL` | 行级追溯（第一批 Q4） |
 | `sku_id` / `sku_name_snapshot` / `unit_snapshot` | 同既有快照范式 | 展示与对账 |
 | `quantity` | `NUMERIC(18,4) NOT NULL CHECK (quantity > 0)` | 正常 = 出库量；红字 = 退货批准量 |
 | `unit_price` | `NUMERIC(18,4) NOT NULL CHECK (unit_price >= 0)` | 正常 = `locked_unit_price`；红字 = 退货行锁定单价 |
-| `amount` | `NUMERIC(18,4) NOT NULL CHECK (amount >= 0)` | 正常 = `round(quantity × unit_price, 4)`；红字 = `order_return_item.approved_amount`（订单域已算，财务不重算） |
+| `amount` | `NUMERIC(18,4) NOT NULL CHECK (amount >= 0)` | 正常 = `round(quantity × unit_price, 4)`；红字 = `xsy_order_return_item.approved_amount`（订单域已算，财务不重算） |
 | `version` / `deleted` / 审计四列 | | |
 
 索引：`uk_finance_receivable_item_source_active ON (source_type, source_id) WHERE deleted = FALSE`、
@@ -239,15 +239,15 @@ idx_finance_receivable_original       ON (original_receivable_id) WHERE deleted 
 `idx_finance_receivable_item_order_item ON (order_item_id) WHERE deleted = FALSE`。
 
 **红字明细不存 `original_receivable_item_id`（2026-09-25 评审修订）**：
-P2 已明确一条 `sales_order_item` 未来可能对应多条 `inventory_outbound_item`
+P2 已明确一条 `xsy_sales_order_item` 未来可能对应多条 `xsy_inventory_outbound_item`
 （`V63:29-33` 刻意不建 `(sales_order_item_id)` 唯一索引），因此**不存在唯一的原正常明细行**，
 不得假设 1:1。红字明细的行级追溯链为
 `RED receivable → original_receivable_id（单头级）` +
-`RED receivable_item → source(order_return_item) → order_item_id`；
+`RED receivable_item → source(xsy_order_return_item) → order_item_id`；
 `order_item_id` 上的聚合只服务行级追溯与展示 —— 自动红字**不做可冲上限校验**（D-2 / D-4，见 §8.2）。
 **不新增 allocation 表**（评审意见三）。
 
-**来源锚点用 `inventory_outbound_item.id` 而不是 `sales_order_item_id`**：
+**来源锚点用 `xsy_inventory_outbound_item.id` 而不是 `sales_order_item_id`**：
 `V63:29-33` 注释明确出库行**刻意不建** `(sales_order_item_id)` 唯一索引
 （一条订单行将来可能被再出一行），所以行级唯一只能挂在出库行主键上。
 
@@ -260,19 +260,19 @@ P2 已明确一条 `sales_order_item` 未来可能对应多条 `inventory_outbou
 > **签名与规划稿不同，且刻意不同**：原写 `(orderId, signedAt, operator)`，但 `markSigned` 的
 > `signed_at` 是数据库时钟 `now()`，调用方手里没有这个值 —— 由 Java 侧传 `now()` 会让
 > `receivable.event_at` 成为一个比签收时刻更晚的近似值，违反 §3.1「event_at = 签收时刻」。
-> 因此入参只有 `delivery_route_order.id`，时点与签收人由财务侧只读 DAO 回读该行的
+> 因此入参只有 `xsy_delivery_route_order.id`，时点与签收人由财务侧只读 DAO 回读该行的
 > `signed_at` / `signed_by`。`markSigned` 返回 0 时既有 `VERSION_CONFLICT` 语义不变，
 > 不触发财务生成。
 
-1. 读 `delivery_route_order`（已 `SIGNED`）→ 取 `order_id`；
-2. 读该订单的 `inventory_outbound_item`（`sales_order_item_id IS NOT NULL`）；
+1. 读 `xsy_delivery_route_order`（已 `SIGNED`）→ 取 `order_id`；
+2. 读该订单的 `xsy_inventory_outbound_item`（`sales_order_item_id IS NOT NULL`）；
    **若为空：直接 return，不生成单头、不生成明细、不生成 0 元事实**（第二批 Q8，跳过是成功语义）；
-3. 逐行 join `sales_order_item` 取 `locked_unit_price`，`amount = round(quantity × locked_unit_price, 4, HALF_UP)`；
+3. 逐行 join `xsy_sales_order_item` 取 `locked_unit_price`，`amount = round(quantity × locked_unit_price, 4, HALF_UP)`；
 4. `单头 amount = Σ 明细 amount`；若合计为 0（全部单价 0 的极端情形）同样跳过，不生成 0 元事实；
 5. 插入单头 + 明细，`insertOnConflictDoNothing` 语义：来源唯一索引命中即视为已生成，直接返回（幂等）。
-6. 读该订单**此前已 `APPROVED` 且尚未生成红字应收**的 `order_return`，逐单执行 §8 的红字生成
+6. 读该订单**此前已 `APPROVED` 且尚未生成红字应收**的 `xsy_order_return`，逐单执行 §8 的红字生成
    （第二批 Q27 的 ①②③）。
-   **F1-2C 落地形态**：`generateOnSign` = 「确保正常应收」+「按 `order_return.id` 升序遍历该订单全部
+   **F1-2C 落地形态**：`generateOnSign` = 「确保正常应收」+「按 `xsy_order_return.id` 升序遍历该订单全部
    `APPROVED` 退货并逐张调用同一个 `generateRed` 实现」，红字算法只有一份；正常应收已存在时
    重跑 `generateOnSign` 会把漏掉的红字补回来（可重放即自然收敛，不是回填 API）。
 
@@ -280,23 +280,23 @@ P2 已明确一条 `sales_order_item` 未来可能对应多条 `inventory_outbou
 
 ## 4. Payable / PayableItem
 
-### 4.1 `finance_payable`
+### 4.1 `xsy_finance_payable`
 
-列与 `finance_receivable` 同形，差异：
+列与 `xsy_finance_receivable` 同形，差异：
 
 | 列 | 取值 |
 | --- | --- |
 | `payable_no` | 前缀 `AP` |
 | `entry_type` | `VARCHAR(8) NOT NULL CHECK IN ('NORMAL','RED')` |
 | `source_type` | `VARCHAR(32) NOT NULL CHECK IN ('PURCHASE_RECEIPT','MANUAL')`；与 `entry_type` 配对 CHECK：`NORMAL → 'PURCHASE_RECEIPT'`、`RED → 'MANUAL'`（2026-09-25 评审意见二） |
-| `source_id` | `BIGINT`；`NORMAL` 时 NOT NULL = `purchase_receipt.id`；`RED`（手工调整）时**必须 NULL** |
+| `source_id` | `BIGINT`；`NORMAL` 时 NOT NULL = `xsy_purchase_receipt.id`；`RED`（手工调整）时**必须 NULL** |
 | `original_payable_id` | `BIGINT`；`RED` 时 NOT NULL 指向被冲原应付，`NORMAL` 时必须 NULL |
 | `purchase_order_id` | `BIGINT NOT NULL`（红字也指向原采购单） |
 | `supplier_id` / `supplier_name_snapshot` | 结算对方 |
-| `amount` / `event_at` | 同应收；`event_at` = `purchase_receipt.confirmed_at` |
+| `amount` / `event_at` | 同应收；`event_at` = `xsy_purchase_receipt.confirmed_at` |
 | `reason` | `VARCHAR(500)`；`RED` 时必填非空（第一批 Q13） |
 
-**不存** `purchaser_id`（范围归属，读时 join `purchase_receipt → purchase_order`，第二批 Q23 指定路径）、
+**不存** `purchaser_id`（范围归属，读时 join `xsy_purchase_receipt → xsy_purchase_order`，第二批 Q23 指定路径）、
 `warehouse_id`（应付不按仓收窄）、`status`、`settled_amount`、`due_date`。
 
 索引：
@@ -313,17 +313,17 @@ idx_finance_payable_original        ON (original_payable_id)        WHERE delete
 手工红字应付的 `source_type='MANUAL'` 且 `source_id=NULL`，若谓词只写 `deleted = FALSE`，
 PostgreSQL 会因 `NULL` 不等于任何值而**放行任意多条手工红字**，索引形同不存在；
 反过来说，它本来也不该约束手工来源 —— 手工红字的防重由「可冲上限 + 请求级幂等键」承担（§8.3）。
-`finance_payable_item` 同形。
+`xsy_finance_payable_item` 同形。
 
-### 4.2 `finance_payable_item`
+### 4.2 `xsy_finance_payable_item`
 
 | 列 | 语义 |
 | --- | --- |
 | `source_type` | `CHECK IN ('PURCHASE_RECEIPT_ITEM','MANUAL')`；与单头 `entry_type` 配对 CHECK：`NORMAL → 'PURCHASE_RECEIPT_ITEM'`、`RED → 'MANUAL'` |
-| `source_id` | `purchase_receipt_item.id`；`MANUAL` 时**必须 NULL**，来源唯一索引的 `source_id IS NOT NULL` 谓词将其排除 |
+| `source_id` | `xsy_purchase_receipt_item.id`；`MANUAL` 时**必须 NULL**，来源唯一索引的 `source_id IS NOT NULL` 谓词将其排除 |
 | `purchase_order_item_id` | 回溯采购行（第一批 Q10） |
-| `quantity` | = `purchase_receipt_item.received_quantity`（有效量，含合法容差内超收，第一批 Q11） |
-| `unit_price` | = `purchase_order_item.purchase_price`（结算单价语义，第一批 Q14，不赋税务含义） |
+| `quantity` | = `xsy_purchase_receipt_item.received_quantity`（有效量，含合法容差内超收，第一批 Q11） |
+| `unit_price` | = `xsy_purchase_order_item.purchase_price`（结算单价语义，第一批 Q14，不赋税务含义） |
 | `amount` | `round(quantity × unit_price, 4)` |
 
 ### 4.3 生成规则
@@ -349,7 +349,7 @@ PostgreSQL 会因 `NULL` 不等于任何值而**放行任意多条手工红字**
 | `remark` | `VARCHAR(500)` | |
 | `version` / `deleted` / 审计四列 | | `deleted` 受 `CHECK (deleted = FALSE)` 锁死（§0 第 7 条） |
 
-**无来源列**：收款一律人工登记；与应收的关系只通过 `finance_write_off` 表达（Q16 允许无应收的预收）。
+**无来源列**：收款一律人工登记；与应收的关系只通过 `xsy_finance_write_off` 表达（Q16 允许无应收的预收）。
 **无状态列**：待核销余额读时派生（Q17）。
 
 索引：
@@ -382,7 +382,7 @@ uk_finance_receipt_single_reverse      ON (reverse_of_id)                  WHERE
 | `reason` | `VARCHAR(500)`；CHECK：`REVERSE` 时必填非空 | 纠错原因（D-3） |
 | `external_reference` | `VARCHAR(128)`，**普通索引**（不唯一，同收款） | 资金凭据文本 |
 | `source_type` | `VARCHAR(32) CHECK IN ('ORDER_REFUND')`，可空 | 退款付款的来源（第一批 Q19）；`REVERSE` 时**必须 NULL** |
-| `source_id` | `BIGINT`，与 `source_type` 成对 CHECK | `order_refund.id`；`REVERSE` 时**必须 NULL** |
+| `source_id` | `BIGINT`，与 `source_type` 成对 CHECK | `xsy_order_refund.id`；`REVERSE` 时**必须 NULL** |
 | `remark` / `version` / `deleted` / 审计四列 | | `deleted` 受 `CHECK (deleted = FALSE)` 锁死（§0 第 7 条） |
 
 索引：
@@ -404,12 +404,12 @@ uk_finance_payment_single_reverse      ON (reverse_of_id)
 纠错路径被自己的防重索引锁死。NULL 来源让反向行落在谓词之外，原行与反向行各自成立。
 
 `uk_finance_payment_source_active` 即第二批 Q26 要求的「退款付款库级唯一」：
-同一 `order_refund` 最多一笔正式退款 `Payment`（第一批 Q19）。
+同一 `xsy_order_refund` 最多一笔正式退款 `Payment`（第一批 Q19）。
 
-**退款付款的登记流程**：财务在付款页选择来源类型 `ORDER_REFUND` 与某张 `order_refund`，
-服务端校验该退款 `status = 'COMPLETED'`、金额等于 `order_refund.refund_amount`（第一批 Q19）、
-`counterparty_type = 'CUSTOMER'` 且 `counterparty_id = order_refund.customer_id`；
-随后插入 `finance_payment`，来源唯一索引兜底防重。
+**退款付款的登记流程**：财务在付款页选择来源类型 `ORDER_REFUND` 与某张 `xsy_order_refund`，
+服务端校验该退款 `status = 'COMPLETED'`、金额等于 `xsy_order_refund.refund_amount`（第一批 Q19）、
+`counterparty_type = 'CUSTOMER'` 且 `counterparty_id = xsy_order_refund.customer_id`；
+随后插入 `xsy_finance_payment`，来源唯一索引兜底防重。
 **`Payment` 不冲减应收**（第二批 Q27：Return 负责红冲，Refund Payment 只负责真实资金退付，避免双重冲减）。
 
 ### 6.3 收付款的 append-only 纠错（D-3 已裁决：采纳反向事实）
@@ -417,7 +417,7 @@ uk_finance_payment_single_reverse      ON (reverse_of_id)
 评审指出的缺口成立：「反向核销 + 重新登记」只能纠正**分配**，纠正不了**登错的 Receipt / Payment 本身**
 （金额错、对象错、凭据号错）。按全局不变量 1/2，纠错只能新增反向事实。正式模型即 §5 / §6 已列的三列：
 
-`finance_receipt` 与 `finance_payment` 各带三列：
+`xsy_finance_receipt` 与 `xsy_finance_payment` 各带三列：
 
 ```text
 entry_type   VARCHAR(8)  NOT NULL CHECK IN ('NORMAL','REVERSE')
@@ -470,9 +470,9 @@ uk_finance_payment_single_reverse ON finance_payment (reverse_of_id) WHERE delet
 | --- | --- | --- |
 | `write_off_no` | 前缀 `WO`，唯一 | |
 | `source_type` | `VARCHAR(16) NOT NULL CHECK IN ('RECEIPT','PAYMENT')` | 钱从哪来 |
-| `source_id` | `BIGINT NOT NULL` | `finance_receipt.id` / `finance_payment.id` |
+| `source_id` | `BIGINT NOT NULL` | `xsy_finance_receipt.id` / `xsy_finance_payment.id` |
 | `target_type` | `VARCHAR(16) NOT NULL CHECK IN ('RECEIVABLE','PAYABLE')` | 抵到哪去 |
-| `target_id` | `BIGINT NOT NULL` | `finance_receivable.id` / `finance_payable.id` |
+| `target_id` | `BIGINT NOT NULL` | `xsy_finance_receivable.id` / `xsy_finance_payable.id` |
 | 配对 CHECK | `(source_type='RECEIPT' AND target_type='RECEIVABLE') OR (source_type='PAYMENT' AND target_type='PAYABLE')` | 收款只核应收、付款只核应付 |
 | `amount` | `NUMERIC(18,4) NOT NULL CHECK (amount > 0)` | 本次核销金额 |
 | `entry_type` | `VARCHAR(8) NOT NULL CHECK IN ('NORMAL','REVERSE')` | 反向核销事实（第二批 Q18） |
@@ -552,7 +552,7 @@ overAppliedAmount > 0 时页面**另外**标注「超额核销待处理」，它
 触发：`OrderReturnService.approve` 将退货置 `APPROVED` 的**同一事务**内调用
 `FinanceReceivableService.generateRedOnReturnApproved(orderReturnId)`（F1-2C 落地形态）。
 
-> **签名与规划稿不同，理由与 §3.3 同一条**：`approved_at` 与批准人都是 `order_return` 行上
+> **签名与规划稿不同，理由与 §3.3 同一条**：`approved_at` 与批准人都是 `xsy_order_return` 行上
 > 已落库的列（`approve` 用 `stamp()` 把批准人写进 `updated_by`，而 `APPROVED` 之后没有任何
 > 命令再改这一行），由调用方传 `now()` 或传 `ScmOperator.current()` 都会造出第二个时点与人。
 > 位置固定在退货事实与退款单都已成立之后、幂等 `complete` 之前：写入失败（约束、数据异常）
@@ -560,15 +560,15 @@ overAppliedAmount > 0 时页面**另外**标注「超额核销待处理」，它
 
 生成规则：
 
-- **逐行跳过非正金额**：`approved_quantity <= 0` 或 `approved_amount <= 0` 的 `order_return_item`
+- **逐行跳过非正金额**：`approved_quantity <= 0` 或 `approved_amount <= 0` 的 `xsy_order_return_item`
   **不生成红字明细**（评审意见三）。
 - **整张退货无正金额明细时成功跳过**：不生成单头、不生成明细、不生成 0 元财务事实（与第二批 Q8 同纪律）。
 - **正常应收已存在**：单头 `source_type='ORDER_RETURN'`、`original_receivable_id` 指向原应收；
-  每条正金额退货行生成一条红字明细（`source_type='ORDER_RETURN_ITEM'`、`source_id=order_return_item.id`、
+  每条正金额退货行生成一条红字明细（`source_type='ORDER_RETURN_ITEM'`、`source_id=xsy_order_return_item.id`、
   `order_item_id` 回填）；**不修改原应收、不存行级原明细指针**（§3.2）。
 - **正常应收尚不存在**（退货先于签收）：**不创建孤立负数应收**，本调用直接 return；
   该订单后续 `SIGNED` 时由 §3.3 第 6 步补生成。
-- 红字金额来源 = `order_return_item.approved_amount`（订单域已按
+- 红字金额来源 = `xsy_order_return_item.approved_amount`（订单域已按
   `round(approved_quantity × locked_unit_price, 4)` 算好，`OrderReturnService.java:181`），
   财务不重算、不改写。
 
@@ -620,10 +620,10 @@ R1 只提供**手工登记入口**：`POST /scm/finance/payable/red`，
 
 | 业务事实 | R1 的处理 | 依据 |
 | --- | --- | --- |
-| `order_return APPROVED` | 生成红字应收（§8.2）；**不**产生库存事实、不改 `settlement_*` | 第二批 Q27 |
-| `order_return` 未签收即批准 | 不创建孤立负数应收；签收时补生成 | 第二批 Q27 |
-| `order_refund COMPLETED` | **不等于**资金已付出；不冲减应收 | 第一批 Q19、第二批 Q27 |
-| 退款真实付款 | 财务登记 `finance_payment`（`source_type='ORDER_REFUND'`），金额必须等于 `refund_amount`，来源库级唯一 | 第一批 Q19、第二批 Q26 |
+| `xsy_order_return APPROVED` | 生成红字应收（§8.2）；**不**产生库存事实、不改 `settlement_*` | 第二批 Q27 |
+| `xsy_order_return` 未签收即批准 | 不创建孤立负数应收；签收时补生成 | 第二批 Q27 |
+| `xsy_order_refund COMPLETED` | **不等于**资金已付出；不冲减应收 | 第一批 Q19、第二批 Q27 |
+| 退款真实付款 | 财务登记 `xsy_finance_payment`（`source_type='ORDER_REFUND'`），金额必须等于 `refund_amount`，来源库级唯一 | 第一批 Q19、第二批 Q26 |
 | 分期 / 部分 / 多渠道退款 | 本期不做 | 第一批 Q19 |
 | 退货库存处理、`RETURN_IN`、部分签收 | 本期不改 | 第二批 Q27 |
 
@@ -683,10 +683,10 @@ CREATE UNIQUE INDEX uk_finance_payment_single_reverse
 **append-only 的库级兜底（§0 第 7 条）**：八张表全部带 `CONSTRAINT ck_finance_<表>_append_only
 CHECK (deleted = FALSE)`，形态照 `V19:83`。它拒绝的是「用软删模拟删除历史财务事实」；
 不拒绝正常的列更新（例如 `version` 递增），因此与 `@Version` 乐观锁不冲突。
-仓库既有范式已验证可行：`inventory_movement` 同样带这条 CHECK，
+仓库既有范式已验证可行：`xsy_inventory_movement` 同样带这条 CHECK，
 其实体刻意**不用** `@TableLogic`、DAO 只有 insert + select，读取在 SQL 里显式写 `deleted = FALSE`。
 Finance 实体沿用同一取舍，**不存在需要回退 append-only 的技术冲突**。
-`finance_operation_log` 同样带该 CHECK，且不提供任何删除入口。
+`xsy_finance_operation_log` 同样带该 CHECK，且不提供任何删除入口。
 
 ## 12. 金额公式与精度
 
@@ -706,12 +706,12 @@ write_off.amount       = 登记值，CHECK > 0
 - **展示不改变事实**：页面 / 导出可以按 2 位格式化展示，但存储与对账口径恒为 4 位（第二批 Q22）。
 - **既有 2/4 位并存不在本期整理**：库存余额页 `ROUND(quantity × avg_cost, 2)`
   （`MAP/inventory/InventoryBalanceDao.xml:138,185`）与报表 4 位并存是历史现状，第二批 Q22 明确不重构。
-- **禁止**把 `inventory_movement.unit_cost`（出库时库存均价）用于应收金额；
-  **禁止**把 `sales_order.settlement_total_amount` 用于应收金额（第一批 Q1/Q2/Q3）。
+- **禁止**把 `xsy_inventory_movement.unit_cost`（出库时库存均价）用于应收金额；
+  **禁止**把 `xsy_sales_order.settlement_total_amount` 用于应收金额（第一批 Q1/Q2/Q3）。
 
 ## 13. 幂等
 
-- 复用现有 `idempotency_record` 与 `OrderIdempotencyService`（第二批 Q26：不移动包、不合并两套、不新增第三套）。
+- 复用现有 `xsy_idempotency_record` 与 `OrderIdempotencyService`（第二批 Q26：不移动包、不合并两套、不新增第三套）。
   财务域使用 `OrderIdempotencyService`（与 delivery / inventory / sorting 同形），
   scope 命名 `"<动作>:<业务主键>"`：`FINANCE_RECEIPT_ADD:<employeeId 由服务内拼>`、
   `FINANCE_PAYMENT_ADD:…`、`FINANCE_WRITE_OFF_ADD:…`、`FINANCE_WRITE_OFF_REVERSE:<write_off_id>`、
@@ -741,8 +741,8 @@ write_off.amount       = 登记值，CHECK > 0
   各自都可能看不到对方未提交的事实，于是签收方查不到已批准退货、批准方查不到正常应收，
   提交后红字永久缺失。因此两者必须共享一个串行点：`OrderReturnService.lock` 一开始就
   `orders.lock(orderId)`，F1-2C 让 `DeliveryRouteService.sign` 在 `markSigned` 之前按
-  `route → sales_order` 锁同一张订单（与本域 `addOrders / plan / dispatch` 完全同序；
-  订单 / 退货 / 退款域从不锁 `delivery_route`，因此不存在反向锁序）。
+  `route → xsy_sales_order` 锁同一张订单（与本域 `addOrders / plan / dispatch` 完全同序；
+  订单 / 退货 / 退款域从不锁 `xsy_delivery_route`，因此不存在反向锁序）。
   后拿到锁的一方在 `READ COMMITTED` 下必然看见先提交的一方，两条路径于是都调用同一个红字算法，
   一次真生成、另一次命中来源唯一索引静默返回。财务自身仍不做任何业务表 `SELECT … FOR UPDATE`。
 - 核销 / 反向核销 / 红字登记 / **收付款反向（D-3）**是**用户命令**，必须按上述 rank 升序
@@ -753,7 +753,7 @@ write_off.amount       = 登记值，CHECK > 0
   `uk_finance_payment_single_reverse` 双保险；它与核销**共用同一把原收付款行锁**，
   因此「反向收付款」与「核销该收付款」天然串行 —— 这正是 D-3「反向前已用额必须 = 0」
   能被并发安全校验的前提（先查再判的乐观写法在这里不成立）。
-- 财务域**不获取**任何 `inventory_balance` 行锁（全局不变量 4）。
+- 财务域**不获取**任何 `xsy_inventory_balance` 行锁（全局不变量 4）。
 - 所有写命令 `@Transactional(rollbackFor = Exception.class)`；version 冲突抛 `VERSION_CONFLICT(40921)`。
 
 并发用例必须覆盖（§22）：并发签收双生成、并发核销同目标、并发反向核销同行、
@@ -763,10 +763,10 @@ write_off.amount       = 登记值，CHECK > 0
 
 - 解析入口唯一：`ScmDataScopeService.resolve()`；无授权 fail-closed（`scope == null` 渲染 `AND FALSE`，
   读侧短路用 `ScmDataScopeService.emptyPage`）。
-- **应收**：`orderSellerScope`，谓词落在 join 出的 `sales_order.seller_id` 行上（第二批 Q23）。
-- **应付**：`purchaserScope`，谓词落在 `purchase_receipt → purchase_order → purchaser_id` 的 join 行上（第二批 Q23）。
+- **应收**：`orderSellerScope`，谓词落在 join 出的 `xsy_sales_order.seller_id` 行上（第二批 Q23）。
+- **应付**：`purchaserScope`，谓词落在 `xsy_purchase_receipt → xsy_purchase_order → purchaser_id` 的 join 行上（第二批 Q23）。
 - **收款 / 付款 / 核销（D-5 已裁决）**：
-  * **收款**：`customer_id → customer.seller_id → customerSellerScope`。
+  * **收款**：`customer_id → xsy_customer.seller_id → customerSellerScope`。
   * **付款**：`SUPPLIER` 侧**本期不新增 supplier scope**，沿用采购团队共享读取边界
     （P0 裁决 7：供应商主档无 owner 列，按采购团队共享读）；`CUSTOMER` 侧同收款，走 `customerSellerScope`。
   * **核销**：随其 **target** 的数据范围 —— `RECEIVABLE → orderSellerScope`、`PAYABLE → purchaserScope`。
@@ -864,7 +864,7 @@ write_off.amount       = 登记值，CHECK > 0
 
 ## 17. 操作日志
 
-新建 `finance_operation_log`，形态照 `order_operation_log`（`MIG/V13:114-129`）：
+新建 `xsy_finance_operation_log`，形态照 `xsy_order_operation_log`（`MIG/V13:114-129`）：
 
 | 列 | 约束 |
 | --- | --- |
@@ -908,7 +908,7 @@ POST /scm/finance/payable/red             GET  /scm/finance/log/query
 ```
 
 - 查询 VO 携带**派生列**：`netAmount / writtenOffAmount / openAmount / overAppliedAmount / settleState`，
-  由 SQL 内对 `finance_write_off` 的聚合子查询一次算出（避免 N+1），与明细列表同一次查询返回。
+  由 SQL 内对 `xsy_finance_write_off` 的聚合子查询一次算出（避免 N+1），与明细列表同一次查询返回。
   `openAmount` / `overAppliedAmount` 的公式见 §7（D-4）；两者都是**只读派生值**，不落库、不可写。
 - 收付款列表的派生列是 `effectiveAmount`（= `amount − Σ REVERSE.amount`，D-3）、`usedAmount`、
   `pendingWriteOffAmount`，同样读时算。
@@ -933,7 +933,7 @@ POST /scm/finance/payable/red             GET  /scm/finance/log/query
   这不是为回填留的后门，而是并发双触发与事务重试下的正确性要求（§11、§14）。
 - **将来如需历史迁移，单独立项、单独验收**：届时按 V37 的纪律执行
   （重放不出来的行 `RAISE EXCEPTION` 让迁移失败，不按 0 继续），并单独裁决
-  `event_at` 口径与 `finance_operation_log.operator` 记谁。本期不预设结论。
+  `event_at` 口径与 `xsy_finance_operation_log.operator` 记谁。本期不预设结论。
 - 已知后果（有意识接受）：财务页的「应收发生额」自上线日起算，
   与业务方记忆中的历史发货量对不上；历史往来仍回业务域（订单 / 收货 / 退货）查询。
   R0 的 A 类影子指标（§27.1）不受影响，它们本来就读业务表。
@@ -996,7 +996,7 @@ src/views/business/scm/finance/finance-write-off-list.vue
 
 | 版本 | 阶段 | 内容 |
 | --- | --- | --- |
-| **V65**（已落地） | F1-1 | `V65__scm_finance.sql`：**8 张表** + 5 条序列（`finance_receivable_no_seq` 等，全局非重置）+ 全部 CHECK（含**七张事实表**的 `CHECK (deleted = FALSE)` append-only 约束；`finance_operation_log` 刻意不设 `deleted` 列）/ 5 条来源唯一索引 / 3 条反向唯一索引 / 全列 COMMENT；形态照 `V60__scm_sorting_task.sql`。**纯 DDL，零 t_menu 写入** |
+| **V65**（已落地） | F1-1 | `V65__scm_finance.sql`：**8 张表** + 5 条序列（`finance_receivable_no_seq` 等，全局非重置）+ 全部 CHECK（含**七张事实表**的 `CHECK (deleted = FALSE)` append-only 约束；`xsy_finance_operation_log` 刻意不设 `deleted` 列）/ 5 条来源唯一索引 / 3 条反向唯一索引 / 全列 COMMENT；形态照 `V60__scm_sorting_task.sql`。**纯 DDL，零 t_menu 写入** |
 | **V66**（已落地） | F1-3A | `V66__scm_finance_receipt_permission.sql`：data-only，只发布 **1500 隐藏目录 + 1521 `scm:finance:receipt:add`**，按 `role_code` 授 SUPER_ADMIN 兜底与 `SCM_FINANCE`。**不发布**任何页面菜单、也不发布 `receipt:query`（1513）—— 本阶段唯一的端点是登记接口，它返回刚写入的那一张单 |
 | **V67**（已落地） | F1-3B | `V67__scm_finance_payment_permission.sql`：data-only，只补 **1522 `scm:finance:payment:add`**（父目录 1500 已在 V66 建好，不再新增目录行）。同样**不发布** `payment:query`（1514）与任何页面菜单 |
 | **V68**（本地验收通过） | F1-3C | `V68__scm_finance_reverse_permission.sql`：只发布 `receipt:reverse`(1526) 与 `payment:reverse`(1527)，分别由反向收款与反向付款端点使用；按 `role_code` 授给 `SCM_FINANCE` 与超管 |
@@ -1055,10 +1055,10 @@ F1-1 只交付 schema 与骨架，因此测试只钉契约，**不提前写 F1-2
 
 | 测试类 | 断言 |
 | --- | --- |
-| `ScmFinanceSchemaPgIT`（17 项，真实 PostgreSQL） | 8 张 `finance_*` 表 + 5 条序列存在、零外键；不得出现 `status` / `settled_amount` / `open_amount` / `due_date` / `approver` / 币种 / 税列；**七张事实表**的 `deleted = FALSE` append-only CHECK 实测拒绝软删，`finance_operation_log` 无 `deleted` 与 `version` 列；金额与数量恒正、单价非负、`version >= 0`、**全部 numeric 列逐列断言 (18,4)**；四类配对 CHECK 以 SAVEPOINT 隔离的坏数据实测拒绝（含「手工红字带 `source_id`」「反向付款沿用 `ORDER_REFUND` 来源」「来源与方向错配」「收付款跨侧核销」「日志类型越界」「JSONB 非 object」）；来源唯一索引谓词逐字核对且实测重复生成被拒；三条反向唯一索引实测「一条 NORMAL 只能反向一次」；实测 `external_reference` **不唯一**、手工红字可并存；**13 个 Java 枚举与 DB CHECK 白名单双向逐值相等**；**阶段边界**：财务段 `t_menu` 恰好是 1500（隐藏目录、`component IS NULL`、无 `menu_type = 2` 行）
+| `ScmFinanceSchemaPgIT`（17 项，真实 PostgreSQL） | 8 张 `finance_*` 表 + 5 条序列存在、零外键；不得出现 `status` / `settled_amount` / `open_amount` / `due_date` / `approver` / 币种 / 税列；**七张事实表**的 `deleted = FALSE` append-only CHECK 实测拒绝软删，`xsy_finance_operation_log` 无 `deleted` 与 `version` 列；金额与数量恒正、单价非负、`version >= 0`、**全部 numeric 列逐列断言 (18,4)**；四类配对 CHECK 以 SAVEPOINT 隔离的坏数据实测拒绝（含「手工红字带 `source_id`」「反向付款沿用 `ORDER_REFUND` 来源」「来源与方向错配」「收付款跨侧核销」「日志类型越界」「JSONB 非 object」）；来源唯一索引谓词逐字核对且实测重复生成被拒；三条反向唯一索引实测「一条 NORMAL 只能反向一次」；实测 `external_reference` **不唯一**、手工红字可并存；**13 个 Java 枚举与 DB CHECK 白名单双向逐值相等**；**阶段边界**：财务段 `t_menu` 恰好是 1500（隐藏目录、`component IS NULL`、无 `menu_type = 2` 行）
 与 1521 两行，`scm:finance:*` 权限串恰好只有 `receipt:add` 一个，授权行数 2 × 2；
 且全库 `*:scope:all:query` 仍恰好是 V55 的五个维度（D-5 未新增放宽点） |
-| `FinanceReadOnlyContractTest`（4 项，静态扫描，不依赖数据库） | `module/scm/finance` 的 Java 字符串字面量与 mapper XML 内**不存在**针对 `sales_order*` / `order_return*` / `order_refund` / `purchase_*` / `inventory_*` / `delivery_*` / `sorting_*` 的 INSERT / UPDATE / DELETE / TRUNCATE；mapper 注解里不写 SQL（AGENTS.md §8）；**8 个实体的 `@TableName` 全部以 `finance_` 开头**（最强边界证据：BaseMapper 的写方法因此够不到业务表）；不 `import` report 包 |
+| `FinanceReadOnlyContractTest`（4 项，静态扫描，不依赖数据库） | `module/scm/finance` 的 Java 字符串字面量与 mapper XML 内**不存在**针对 `xsy_sales_order*` / `xsy_order_return*` / `xsy_order_refund` / `purchase_*` / `inventory_*` / `delivery_*` / `sorting_*` 的 INSERT / UPDATE / DELETE / TRUNCATE；mapper 注解里不写 SQL（AGENTS.md §8）；**8 个实体的 `@TableName` 全部以 `finance_` 开头**（最强边界证据：BaseMapper 的写方法因此够不到业务表）；不 `import` report 包 |
 | `SmartAdminMenuComponentPgIT`（3 项，**全仓门禁**，非财务专属） | 每个已发布页面菜单（`menu_type = 2`、`component` 非空、未删除、非外链）的 `component` 都必须能在 `xsy-scm-web/src/views` 下找到；既有两处历史缺口走**只减不增**的显式基线，且基线条目一旦被修好就必须删除；财务段本阶段不存在任何页面菜单。这条门禁就是为防止「授权页面菜单 → `component` 不存在」再次发生而加的（§21 发布纪律） |
 
 **为什么只读契约做成静态扫描而不是运行时拦截**：F1-1 一条写路径都没有，运行时拦截抓不到任何东西；
@@ -1087,8 +1087,8 @@ F1-1 只交付 schema 与骨架，因此测试只钉契约，**不提前写 F1-2
 | --- | --- | --- | --- | --- |
 | F1-1 | **只有 V65（纯 DDL）** + 后端骨架（entity / dao / 常量 / 枚举 / 错误码 / 日志 recorder / Service 空骨架）。**不种任何菜单与权限**，不建 form / VO / 只读业务 DAO / mapper XML（随各自首个调用方与首个测试落地） | 迁移 + 骨架编译通过 + §22.1 三个契约测试类 | `migration_checksum_guard check` + `verify.py backend` + schema / 只读 / 菜单组件契约 IT | F1-0.5 收口（已完成） |
 | F1-2 | 生成器：签收 → 应收、收货确认 → 应付、退货批准 → 红字应收（含补生成） | 三个触发点接入 + `ScmFinanceReceivablePgIT` / `ScmFinancePayablePgIT` | IT 全绿；触发事务回滚时财务事实同回滚 | F1-1 |
-| F1-3A | 收款登记 | 写命令 + 幂等 + `finance_operation_log` + V66 | IT；权限负向 | F1-1 |
-| F1-3B | 付款登记（含退款付款来源校验） | 写命令 + 幂等 + `finance_operation_log` + V67 | IT；权限负向 | F1-1 |
+| F1-3A | 收款登记 | 写命令 + 幂等 + `xsy_finance_operation_log` + V66 | IT；权限负向 | F1-1 |
+| F1-3B | 付款登记（含退款付款来源校验） | 写命令 + 幂等 + `xsy_finance_operation_log` + V67 | IT；权限负向 | F1-1 |
 | F1-3C | 收款 / 付款反向（D-3） | 两个反向写命令 + 同源行锁 + 幂等 + 操作日志 + V68 | `ScmFinanceReversePgIT`；核销并发与重复反向取证 | F1-3A、F1-3B |
 | F1-4 | M:N 核销、反向核销、手工红字应付 + 核销流水查询 | 写命令 + 锁序 + 目标范围分页查询 + V69 | `ScmFinanceWriteOffPgIT` + `ScmFinanceReversePgIT` + `ScmFinanceConcurrencyPgIT` | F1-2、F1-3C |
 | **F1-5（已完成）** | 查询与导出（5 页后端 + Excel） | 只读端点 + 派生列（含 `openAmount` / `overAppliedAmount` / `effectiveAmount`）+ V70 | `ScmFinanceReadPgIT` 5/5；导出工作簿检查；schema / 日期 / 只读契约同组通过 | F1-4 |
@@ -1128,7 +1128,7 @@ V68–V73 仅应用到本地验收 / scratch 数据库，未应用到生产库�
 11. **自动红字应收忠实映射已成立的 `OrderReturn APPROVED`，不设金额上限、不扣已核销额、
     永不阻塞 approve**（D-2 / D-4）；净应收允许为负，负值只由 `openAmount` / `overAppliedAmount` 表达。
 12. **八张财务表的 `deleted` 被 `CHECK (deleted = FALSE)` 锁死**（§0 第 7 条），
-    实体不用 `@TableLogic`；`finance_operation_log` 无删除入口。
+    实体不用 `@TableLogic`；`xsy_finance_operation_log` 无删除入口。
 
 ### 25.2 风险
 
@@ -1183,9 +1183,9 @@ finance_payment / finance_write_off`，以及由它们读时派生的**已核销
 两类数字**必然不等**（A 按 `confirmed_at` + 订单结算量，B 按签收 / 收货确认时点 + 实发 / 实收量），
 页面与导出必须以 tooltip / 列名说明各自口径，不得让用户以为在核对同一件事（调研稿 §10.3 第 3 条）。
 
-**命名硬约束（§3.4 修正）**：数据源是 `finance_write_off` 的指标一律叫
+**命名硬约束（§3.4 修正）**：数据源是 `xsy_finance_write_off` 的指标一律叫
 **「已核销金额」**，**不得**叫「已收款」「已付款」——
-核销是**分配关系**，不是资金动作。真正的实际资金收付来自 `finance_receipt` / `finance_payment`，
+核销是**分配关系**，不是资金动作。真正的实际资金收付来自 `xsy_finance_receipt` / `xsy_finance_payment`，
 本期六指标**不含**它们（避免与核销额并列后被读成同一件事）。
 同理，「待收 / 待付」必须带**期末**限定词，因为它是存量而不是本期发生额（见 §27.2）。
 
@@ -1249,4 +1249,4 @@ POST /scm/report/finance/overview/export 等三个导出
 
 利润、毛利、账龄、客户对账、供应商对账、财务分析 —— 仍属 Finance R2（第一批 Q15、主线计划 §6）。
 本节的六个指标**不含**任何账龄分桶与对账单形态，也**不含**实际资金收付额
-（`finance_receipt` / `finance_payment` 的聚合），后者若需要属 R2 另行裁决。
+（`xsy_finance_receipt` / `xsy_finance_payment` 的聚合），后者若需要属 R2 另行裁决。

@@ -26,7 +26,7 @@ public interface FileBizVisibilityDao {
     /**
      * 商品 SPU 是否存在且未删除。
      *
-     * <p>删除商品时业务侧只软删 {@code product_image} 行，不回收 {@code t_file_relation}；
+     * <p>删除商品时业务侧只软删 {@code xsy_product_image} 行，不回收 {@code t_file_relation}；
      * 因此「有商品查看权」必须同时要求商品本身还活着，否则已删商品的私有图会对全体
      * 有查看权的人长期可读。
      */

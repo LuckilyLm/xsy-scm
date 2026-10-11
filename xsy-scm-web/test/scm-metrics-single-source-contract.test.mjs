@@ -132,7 +132,7 @@ test('dashboard 模块不得自己写经营统计 SQL', () => {
   const offenders = [];
   for (const file of sourceFiles(DASHBOARD_SRC)) {
     const text = read(file);
-    if (/\b(sales_order|purchase_order|inventory_balance)\b/.test(text)) {
+    if (/\b(xsy_sales_order|xsy_purchase_order|xsy_inventory_balance)\b/.test(text)) {
       offenders.push(path.relative(ROOT, file));
     }
   }

@@ -23,15 +23,15 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
      * V15 建出的 9 张采购域表。
      */
     private static final List<String> V15_TABLES = List.of(
-            "warehouse",
-            "purchase_demand",
-            "purchase_demand_allocation",
-            "purchase_order",
-            "purchase_order_item",
-            "purchase_receipt",
-            "purchase_receipt_item",
-            "receipt_weighing_record",
-            "purchase_operation_log");
+            "xsy_warehouse",
+            "xsy_purchase_demand",
+            "xsy_purchase_demand_allocation",
+            "xsy_purchase_order",
+            "xsy_purchase_order_item",
+            "xsy_purchase_receipt",
+            "xsy_purchase_receipt_item",
+            "xsy_receipt_weighing_record",
+            "xsy_purchase_operation_log");
 
     /**
      * 逗号分隔的表名清单，配合 {@code string_to_array(?, ',')} 使用。
@@ -92,7 +92,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
 
         // 2 条种子：默认仓库（单仓库口径）+ 超收容差配置
         assertThat(jdbc.queryForObject(
-                "SELECT status FROM warehouse WHERE warehouse_code = ? AND deleted = FALSE",
+                "SELECT status FROM xsy_warehouse WHERE warehouse_code = ? AND deleted = FALSE",
                 String.class, SEED_WAREHOUSE_CODE)).isEqualTo("ENABLED");
         assertThat(jdbc.queryForObject(
                 "SELECT config_value FROM t_config WHERE config_key = ?",
@@ -113,7 +113,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         //   3) 表注释带 V19 写入的库存域前缀（证明来自 V19 而不是别处）。
         // 形状（列 / 约束 / 索引）由库存域的 ScmInventoryMigrationIT 负责断言，
         // 本类不重复。
-        List<String> inventoryTables = List.of("inventory_balance", "inventory_movement");
+        List<String> inventoryTables = List.of("xsy_inventory_balance", "xsy_inventory_movement");
         assertThat(inventoryTables).doesNotContainAnyElementsOf(V15_TABLES);
         assertThat(jdbc.queryForList(
                 "SELECT obj_description(c.oid, 'pg_class') FROM pg_class c "
@@ -131,7 +131,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
         String definition = jdbc.queryForObject(
                 "SELECT pg_get_constraintdef(c.oid) FROM pg_constraint c "
                         + "JOIN pg_class t ON t.oid = c.conrelid "
-                        + "WHERE t.relname = 'purchase_operation_log' AND c.conname = 'ck_purchase_operation_log_owner'",
+                        + "WHERE t.relname = 'xsy_purchase_operation_log' AND c.conname = 'ck_purchase_operation_log_owner'",
                 String.class);
         assertThat(definition)
                 .contains("DEMAND_GENERATE")
@@ -142,26 +142,26 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
 
         // 正例：DEMAND_GENERATE 发生在采购单还不存在之前，两个 id 必须同时为空才写得进去
         int inserted = jdbc.update(
-                "INSERT INTO purchase_operation_log (purchase_order_id, purchase_receipt_id, operation_type, "
+                "INSERT INTO xsy_purchase_operation_log (purchase_order_id, purchase_receipt_id, operation_type, "
                         + "operator, after_data, created_by) VALUES (NULL, NULL, 'DEMAND_GENERATE', 'W5 IT', "
                         + "'{\"demandIds\":[]}'::JSONB, 'W5 IT')");
         assertThat(inserted).isEqualTo(1);
 
         // 反例：DEMAND_GENERATE 带采购单 id → 违反归属约束
         expectSqlFailure(
-                "INSERT INTO purchase_operation_log (purchase_order_id, operation_type, operator) "
+                "INSERT INTO xsy_purchase_operation_log (purchase_order_id, operation_type, operator) "
                         + "VALUES (1, 'DEMAND_GENERATE', 'W5 IT')");
         // 反例：DEMAND_ALLOCATE 没有采购单 id → 违反归属约束
         expectSqlFailure(
-                "INSERT INTO purchase_operation_log (operation_type, operator) "
+                "INSERT INTO xsy_purchase_operation_log (operation_type, operator) "
                         + "VALUES ('DEMAND_ALLOCATE', 'W5 IT')");
         // 反例：RECEIPT_CREATE 只有采购单 id、没有收货单 id → 违反归属约束
         expectSqlFailure(
-                "INSERT INTO purchase_operation_log (purchase_order_id, operation_type, operator) "
+                "INSERT INTO xsy_purchase_operation_log (purchase_order_id, operation_type, operator) "
                         + "VALUES (1, 'RECEIPT_CREATE', 'W5 IT')");
         // 反例：operation_type 不在白名单
         expectSqlFailure(
-                "INSERT INTO purchase_operation_log (purchase_order_id, operation_type, operator) "
+                "INSERT INTO xsy_purchase_operation_log (purchase_order_id, operation_type, operator) "
                         + "VALUES (1, 'UNKNOWN_OP', 'W5 IT')");
     }
 
@@ -208,7 +208,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     //
     // 注意：本用例只读 flyway_schema_history（DB 侧），不扫描磁盘上的迁移文件，
     // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。
-    @DisplayName("flyway_schema_history：V1–V115 全部 success，V15–V115 只追加（V1–V14 未被改写）")
+    @DisplayName("flyway_schema_history：V1–V118 全部 success，V15–V118 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
@@ -227,7 +227,13 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105",
                 "106", "107", "108", "109", "110", "111", "112", "113", "114", "115",
                 // 合并远程后本地保留的一版：菜单名去技术缩写（本地库 xsy_scm 已应用 116）。
-                "116");
+                "116",
+                // 支付回调拒绝事件可重试。
+                "117",
+                // SCM 自有表统一 xsy_ 前缀。
+                "118",
+                // 重建两个触发器函数（函数体里的表名不会被 RENAME 改写）。
+                "119");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
         // 除上面逐条列举的版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
