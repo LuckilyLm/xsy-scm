@@ -51,7 +51,7 @@ class SupplierServiceIT extends ScmW2PgITBase {
     }
 
     private String supplierCode(Long id) {
-        return jdbc.queryForObject("SELECT supplier_code FROM supplier WHERE id = ?", String.class, id);
+        return jdbc.queryForObject("SELECT supplier_code FROM xsy_supplier WHERE id = ?", String.class, id);
     }
 
     @Test
@@ -60,7 +60,7 @@ class SupplierServiceIT extends ScmW2PgITBase {
         Long id = service.add(form("a"));
 
         Map<String, Object> row = jdbc.queryForMap(
-                "SELECT supplier_code, status, version, deleted, created_by FROM supplier WHERE id = ?", id);
+                "SELECT supplier_code, status, version, deleted, created_by FROM xsy_supplier WHERE id = ?", id);
         assertThat((String) row.get("supplier_code")).matches("^SUP\\d{6,}$");
         assertThat(row.get("status")).isEqualTo("ENABLED");
         assertThat(((Number) row.get("version")).intValue()).isZero();
@@ -101,9 +101,9 @@ class SupplierServiceIT extends ScmW2PgITBase {
 
         service.update(updateForm(id, 1, "c"));
 
-        assertThat(jdbc.queryForObject("SELECT status FROM supplier WHERE id = ?", String.class, id))
+        assertThat(jdbc.queryForObject("SELECT status FROM xsy_supplier WHERE id = ?", String.class, id))
                 .isEqualTo("DISABLED");
-        assertThat(jdbc.queryForObject("SELECT name FROM supplier WHERE id = ?", String.class, id))
+        assertThat(jdbc.queryForObject("SELECT name FROM xsy_supplier WHERE id = ?", String.class, id))
                 .isEqualTo("改名c");
     }
 
@@ -149,7 +149,7 @@ class SupplierServiceIT extends ScmW2PgITBase {
         skuService.replace(replace);
 
         service.delete(deletion);
-        assertThat(jdbc.queryForObject("SELECT deleted FROM supplier WHERE id = ?", Boolean.class, id)).isTrue();
+        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_supplier WHERE id = ?", Boolean.class, id)).isTrue();
     }
 
     @Test

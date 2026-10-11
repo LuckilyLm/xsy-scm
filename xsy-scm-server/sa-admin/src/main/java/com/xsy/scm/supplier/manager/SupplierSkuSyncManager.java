@@ -34,12 +34,13 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_CONFL
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_PURCHASER_INVALID;
 
 /**
- * {@code supplier_sku} 的差量落库。
+ * {@code xsy_supplier_sku} 的差量落库。
  *
  * <p>
  * 整表替换分四段执行。校验段 A：请求内一致性（{@code skuId} 不重复、{@code id} 归属正确）， 由 {@link SupplierSkuChangeSet#between} 完成。锁段：先锁
- * {@code supplier} 行，再锁 {@code supplier_sku} 行， 锁序固定且 {@code supplier} 的启用状态在持有行锁之后才判断，避免「判断完状态、供应商刚好被停用」的窗口。 校验段
- * B：对每条待写行做外部校验（采购员存在、SKU 可下单、构造快照），只构造、不写库。 写段：校验段 A/B 全部通过后才开始更新 / 插入 / 软删。
+ * {@code xsy_supplier} 行，再锁 {@code xsy_supplier_sku} 行， 锁序固定且 {@code xsy_supplier}
+ * 的启用状态在持有行锁之后才判断，避免「判断完状态、供应商刚好被停用」的窗口。 校验段 B：对每条待写行做外部校验（采购员存在、SKU 可下单、构造快照），只构造、不写库。 写段：校验段 A/B 全部通过后才开始更新 / 插入 /
+ * 软删。
  *
  * <p>
  * Manager 不控制事务，事务边界在 {@code SupplierSkuService.replace}。

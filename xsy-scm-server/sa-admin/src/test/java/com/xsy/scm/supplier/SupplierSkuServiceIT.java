@@ -21,7 +21,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 商品-供应商关系（{@code supplier_sku}）在真实 PostgreSQL 上的行为。
+ * 商品-供应商关系（{@code xsy_supplier_sku}）在真实 PostgreSQL 上的行为。
  *
  * <p>这是规则密度最高的一张表，因此 IT 覆盖它的全部 legacy 不变量：
  * 整表替换的差量语义、快照冻结、
@@ -72,7 +72,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
                 "SELECT supplier_id, sku_id, supplier_code_snapshot, supplier_name_snapshot, "
                         + "sku_code_snapshot, sku_name_snapshot, purchase_unit, reference_price, "
                         + "purchaser_id, is_default, status, version, deleted, created_by "
-                        + "FROM supplier_sku WHERE id = ?", id);
+                        + "FROM xsy_supplier_sku WHERE id = ?", id);
     }
 
     @Test
@@ -88,12 +88,12 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         replace(supplierId, List.of(item));
 
         Long id = jdbc.queryForObject(
-                "SELECT id FROM supplier_sku WHERE supplier_id = ? AND sku_id = ? AND deleted = FALSE",
+                "SELECT id FROM xsy_supplier_sku WHERE supplier_id = ? AND sku_id = ? AND deleted = FALSE",
                 Long.class, supplierId, skuId);
         Map<String, Object> row = row(id);
 
         assertThat(row.get("supplier_code_snapshot")).isEqualTo(
-                jdbc.queryForObject("SELECT supplier_code FROM supplier WHERE id = ?", String.class, supplierId));
+                jdbc.queryForObject("SELECT supplier_code FROM xsy_supplier WHERE id = ?", String.class, supplierId));
         assertThat(row.get("supplier_name_snapshot")).isEqualTo("供应商a");
         assertThat(row.get("sku_code_snapshot")).isEqualTo(prefix + "A1-K");
         assertThat((String) row.get("sku_name_snapshot"))
@@ -117,10 +117,10 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         replace(supplierId, List.of(item(firstSku), item(secondSku)));
 
         Long keptId = jdbc.queryForObject(
-                "SELECT id FROM supplier_sku WHERE supplier_id = ? AND sku_id = ? AND deleted = FALSE",
+                "SELECT id FROM xsy_supplier_sku WHERE supplier_id = ? AND sku_id = ? AND deleted = FALSE",
                 Long.class, supplierId, firstSku);
         Long removedId = jdbc.queryForObject(
-                "SELECT id FROM supplier_sku WHERE supplier_id = ? AND sku_id = ? AND deleted = FALSE",
+                "SELECT id FROM xsy_supplier_sku WHERE supplier_id = ? AND sku_id = ? AND deleted = FALSE",
                 Long.class, supplierId, secondSku);
 
         SupplierSkuItemForm kept = item(keptId, 0, firstSku);
@@ -134,7 +134,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         assertThat(((Number) keptRow.get("version")).intValue()).as("保留行版本推进到 1").isEqualTo(1);
         assertThat(keptRow.get("deleted")).isEqualTo(false);
 
-        assertThat(jdbc.queryForObject("SELECT deleted FROM supplier_sku WHERE id = ?", Boolean.class, removedId))
+        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_supplier_sku WHERE id = ?", Boolean.class, removedId))
                 .isTrue();
         assertThat(skuService.listBySupplierId(supplierId)).extracting(SupplierSkuVO::getId)
                 .containsExactly(keptId);
@@ -150,7 +150,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
 
         assertThat(skuService.listBySupplierId(supplierId)).isEmpty();
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM supplier_sku WHERE supplier_id = ? AND deleted = FALSE",
+                "SELECT count(*) FROM xsy_supplier_sku WHERE supplier_id = ? AND deleted = FALSE",
                 Integer.class, supplierId)).isZero();
     }
 
@@ -168,7 +168,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         replace(supplierId, List.of(first, second));
 
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM supplier_sku WHERE supplier_id = ? AND is_default = TRUE AND deleted = FALSE",
+                "SELECT count(*) FROM xsy_supplier_sku WHERE supplier_id = ? AND is_default = TRUE AND deleted = FALSE",
                 Integer.class, supplierId)).isEqualTo(2);
 
         // 走服务读路径再断言一次：{@code is_default} 列名与实体属性 {@code defaultFlag} 不同源，
@@ -192,7 +192,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         replace(supplierId, List.of(item(skuId)));
 
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM supplier_sku WHERE supplier_id = ? AND sku_id = ? AND deleted = FALSE",
+                "SELECT count(*) FROM xsy_supplier_sku WHERE supplier_id = ? AND sku_id = ? AND deleted = FALSE",
                 Integer.class, supplierId, skuId)).isEqualTo(1);
     }
 
@@ -214,7 +214,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
 
         replace(first, List.of(item(skuId)));
         Long otherRowId = jdbc.queryForObject(
-                "SELECT id FROM supplier_sku WHERE supplier_id = ? AND deleted = FALSE", Long.class, first);
+                "SELECT id FROM xsy_supplier_sku WHERE supplier_id = ? AND deleted = FALSE", Long.class, first);
 
         expectCode(() -> replace(second, List.of(item(otherRowId, 0, skuId))), 40943);
     }
@@ -227,7 +227,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         Long secondSku = newOnShelfSku("H2");
         replace(supplierId, List.of(item(firstSku)));
         Long rowId = jdbc.queryForObject(
-                "SELECT id FROM supplier_sku WHERE supplier_id = ? AND deleted = FALSE", Long.class, supplierId);
+                "SELECT id FROM xsy_supplier_sku WHERE supplier_id = ? AND deleted = FALSE", Long.class, supplierId);
 
         expectCode(() -> replace(supplierId, List.of(item(rowId, 0, secondSku))), 40943);
     }
@@ -252,7 +252,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         item.setPurchaserId(anyEmployeeId());
         replace(supplierId, List.of(item));
         assertThat(jdbc.queryForObject(
-                "SELECT purchaser_id FROM supplier_sku WHERE supplier_id = ? AND deleted = FALSE",
+                "SELECT purchaser_id FROM xsy_supplier_sku WHERE supplier_id = ? AND deleted = FALSE",
                 Long.class, supplierId)).isNotNull();
     }
 
@@ -279,7 +279,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         Long skuId = newOnShelfSku("L1");
         replace(supplierId, List.of(item(skuId)));
         Long rowId = jdbc.queryForObject(
-                "SELECT id FROM supplier_sku WHERE supplier_id = ? AND deleted = FALSE", Long.class, supplierId);
+                "SELECT id FROM xsy_supplier_sku WHERE supplier_id = ? AND deleted = FALSE", Long.class, supplierId);
 
         expectCode(() -> replace(supplierId, List.of(item(rowId, 7, skuId))), 40921);
     }
@@ -303,7 +303,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         cleared.setReferencePrice(null);
         replace(supplierId, List.of(cleared));
         assertThat(jdbc.queryForObject(
-                "SELECT reference_price FROM supplier_sku WHERE id = ?", BigDecimal.class, vo.getId())).isNull();
+                "SELECT reference_price FROM xsy_supplier_sku WHERE id = ?", BigDecimal.class, vo.getId())).isNull();
         JsonNode after = objectMapper.readTree(objectMapper.writeValueAsString(
                 skuService.listBySupplierId(supplierId).getFirst()));
         assertThat(after.get("referencePrice").isNull()).as("null 不得被写成 0.0000").isTrue();
@@ -370,8 +370,8 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         Long skuId = newOnShelfSku("O3");
         replace(supplierId, List.of(item(skuId)));
 
-        jdbc.update("UPDATE product_spu SET status = 'OFF_SHELF' WHERE id = "
-                + "(SELECT spu_id FROM product_sku WHERE id = ?)", skuId);
+        jdbc.update("UPDATE xsy_product_spu SET status = 'OFF_SHELF' WHERE id = "
+                + "(SELECT spu_id FROM xsy_product_sku WHERE id = ?)", skuId);
 
         expectCode(() -> skuService.requireEnabledForPurchasing(supplierId, skuId), 40942);
     }

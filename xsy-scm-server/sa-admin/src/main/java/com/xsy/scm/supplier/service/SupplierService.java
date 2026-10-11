@@ -130,7 +130,7 @@ public class SupplierService {
      * 删除供应商。
      *
      * <p>
-     * 被活动 {@code supplier_sku} 引用时拒绝删除—— 否则商品关联会指向一个不存在的供应商。
+     * 被活动 {@code xsy_supplier_sku} 引用时拒绝删除—— 否则商品关联会指向一个不存在的供应商。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(SupplierDeleteForm form) {

@@ -21,7 +21,7 @@ import java.util.Map;
  * 关系以 SKU 为粒度；快照列冻结供应商与 SKU 的展示信息，使主数据改名后关联行仍然可读。
  */
 @Data
-@TableName(value = "supplier_sku", autoResultMap = true)
+@TableName(value = "xsy_supplier_sku", autoResultMap = true)
 public class SupplierSkuEntity {
 
     @TableId(type = IdType.AUTO)

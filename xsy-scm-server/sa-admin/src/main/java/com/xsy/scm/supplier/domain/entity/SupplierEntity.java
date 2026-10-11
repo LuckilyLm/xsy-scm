@@ -21,12 +21,11 @@ import java.time.OffsetDateTime;
  * 可空联系人、电话和地址使用 {@code FieldStrategy.ALWAYS}，以便编辑时通过 {@code null} 清空字段；MyBatis-Plus 默认 {@code NOT_NULL} 会忽略这些更新。
  *
  * <p>
- * <b>点位</b>（{@code longitude} / {@code latitude} / {@code geomCrs}）成组存在：DB 的
- * {@code ck_supplier_location_complete} 与表单的 {@code ScmLocationForm} 都要求「三列同时有或同时无」，
- * 不允许保存半组坐标。坐标系必须随点保存 —— 没有 CRS 的经纬度在换底图时会静默偏移几百米。
+ * <b>点位</b>（{@code longitude} / {@code latitude} / {@code geomCrs}）成组存在：DB 的 {@code ck_supplier_location_complete} 与表单的
+ * {@code ScmLocationForm} 都要求「三列同时有或同时无」， 不允许保存半组坐标。坐标系必须随点保存 —— 没有 CRS 的经纬度在换底图时会静默偏移几百米。
  */
 @Data
-@TableName(value = "supplier", autoResultMap = true)
+@TableName(value = "xsy_supplier", autoResultMap = true)
 public class SupplierEntity {
 
     /** {@code null} 序列化为 JSON {@code null} 而不是省略：前端要靠「字段存在且为 null」区分「未采集」。 */
