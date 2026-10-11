@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 @Data
-@TableName(value = "order_refund", autoResultMap = true)
+@TableName(value = "xsy_order_refund", autoResultMap = true)
 public class OrderRefundEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

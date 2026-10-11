@@ -13,7 +13,7 @@ import java.util.Map;
 import com.xsy.scm.order.support.OrderJsonbTypeHandler;
 
 @Data
-@TableName(value = "order_operation_log", autoResultMap = true)
+@TableName(value = "xsy_order_operation_log", autoResultMap = true)
 public class OrderOperationLogEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

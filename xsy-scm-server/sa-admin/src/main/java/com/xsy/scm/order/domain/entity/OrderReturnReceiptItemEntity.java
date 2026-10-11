@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Data
-@TableName("order_return_receipt_item")
+@TableName("xsy_order_return_receipt_item")
 public class OrderReturnReceiptItemEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

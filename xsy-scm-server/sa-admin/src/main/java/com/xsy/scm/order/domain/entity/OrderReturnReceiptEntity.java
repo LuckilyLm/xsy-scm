@@ -8,7 +8,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 @Data
-@TableName("order_return_receipt")
+@TableName("xsy_order_return_receipt")
 public class OrderReturnReceiptEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

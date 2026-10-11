@@ -72,7 +72,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         outbound.setItems(List.of(outboundItem));
         Long outboundId = inventoryOutboundService.create(outbound);
         // Link a real inventory command to its sales source, as the delivery adapter does.
-        jdbc.update("UPDATE inventory_outbound_item SET sales_order_id=?, sales_order_item_id=? WHERE outbound_id=?", orderId, orderItemId, outboundId);
+        jdbc.update("UPDATE xsy_inventory_outbound_item SET sales_order_id=?, sales_order_item_id=? WHERE outbound_id=?", orderId, orderItemId, outboundId);
         evictMybatisCache();
         inventoryOutboundService.confirm(outboundId);
         OrderReturnItemForm item = new OrderReturnItemForm();
@@ -136,19 +136,19 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         outboundItem.setQuantity(new BigDecimal(quantity));
         outbound.setItems(List.of(outboundItem));
         Long outboundId = inventoryOutboundService.create(outbound);
-        jdbc.update("UPDATE inventory_outbound_item SET sales_order_id=?, sales_order_item_id=? WHERE outbound_id=?",
+        jdbc.update("UPDATE xsy_inventory_outbound_item SET sales_order_id=?, sales_order_item_id=? WHERE outbound_id=?",
                 orderId, orderItemId, outboundId);
         evictMybatisCache();
         inventoryOutboundService.confirm(outboundId);
     }
 
     private void shadowInventoryMovements() {
-        jdbc.execute("CREATE TEMP TABLE movement_shadow (LIKE inventory_movement INCLUDING ALL) ON COMMIT DROP");
-        jdbc.execute("INSERT INTO pg_temp.movement_shadow SELECT * FROM inventory_movement");
-        jdbc.execute("ALTER TABLE pg_temp.movement_shadow RENAME TO inventory_movement");
-        jdbc.execute("SELECT setval(pg_get_serial_sequence('pg_temp.inventory_movement', 'id'), "
-                + "COALESCE((SELECT max(id) FROM pg_temp.inventory_movement), 1), "
-                + "EXISTS (SELECT 1 FROM pg_temp.inventory_movement))");
+        jdbc.execute("CREATE TEMP TABLE movement_shadow (LIKE xsy_inventory_movement INCLUDING ALL) ON COMMIT DROP");
+        jdbc.execute("INSERT INTO pg_temp.movement_shadow SELECT * FROM xsy_inventory_movement");
+        jdbc.execute("ALTER TABLE pg_temp.movement_shadow RENAME TO xsy_inventory_movement");
+        jdbc.execute("SELECT setval(pg_get_serial_sequence('pg_temp.xsy_inventory_movement', 'id'), "
+                + "COALESCE((SELECT max(id) FROM pg_temp.xsy_inventory_movement), 1), "
+                + "EXISTS (SELECT 1 FROM pg_temp.xsy_inventory_movement))");
         evictMybatisCache();
     }
 
@@ -172,7 +172,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         var first = orderReturnReceiptService.receive(form, key);
         assertThat(orderReturnReceiptService.receive(form, key).getReceiptId()).isEqualTo(first.getReceiptId());
         assertThat(balanceRow(fixture.warehouseId(), fixture.skuId()).getQuantity()).isEqualByComparingTo("7.0000");
-        assertThat(jdbc.queryForObject("SELECT unit_cost FROM order_return_receipt_item WHERE receipt_id=?",
+        assertThat(jdbc.queryForObject("SELECT unit_cost FROM xsy_order_return_receipt_item WHERE receipt_id=?",
                 BigDecimal.class, first.getReceiptId())).isEqualByComparingTo("6.2000");
         orderReturnReceiptService.receive(receiveForm(fixture, "1.0000", "DAMAGE"), key());
         assertThat(balanceRow(fixture.warehouseId(), fixture.skuId()).getQuantity()).isEqualByComparingTo("7.0000");
@@ -188,17 +188,17 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
                 .containsExactly("2.0000", "3.0000");
         assertThat(allocations).extracting(m -> m.getUnitCost().toPlainString())
                 .containsExactly("6.2000", "8.4000");
-        expectSqlFailure("UPDATE inventory_movement SET unit_cost=99 WHERE id=?", allocations.getFirst().getId());
+        expectSqlFailure("UPDATE xsy_inventory_movement SET unit_cost=99 WHERE id=?", allocations.getFirst().getId());
 
         var result = orderReturnReceiptService.receive(receiveForm(fixture, "4.0000", "RETURN_TO_STOCK"), key());
 
         assertThat(result.getItems()).extracting(i -> i.getQuantity().toPlainString())
                 .containsExactly("2.0000", "2.0000");
-        assertThat(jdbc.queryForList("SELECT unit_cost FROM order_return_receipt_item WHERE receipt_id=? ORDER BY id",
+        assertThat(jdbc.queryForList("SELECT unit_cost FROM xsy_order_return_receipt_item WHERE receipt_id=? ORDER BY id",
                 BigDecimal.class, result.getReceiptId())).containsExactly(new BigDecimal("6.2000"), new BigDecimal("8.4000"));
         assertThat(result.getItems()).extracting(i -> i.getSourceSalesOutMovementId())
                 .containsExactly(allocations.get(0).getId(), allocations.get(1).getId());
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM inventory_movement WHERE movement_type='SALES_RETURN_IN'"
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_inventory_movement WHERE movement_type='SALES_RETURN_IN'"
                 + " AND source_document_id=?", Integer.class, fixture.returned().getReturnId())).isEqualTo(2);
         assertThat(balanceRow(fixture.warehouseId(), fixture.skuId()).getQuantity()).isEqualByComparingTo("4.0000");
     }
@@ -210,7 +210,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         orderReturnReceiptService.receive(receiveForm(fixture, "4.0000", "DAMAGE"), key());
         assertThatThrownBy(() -> orderReturnReceiptService.receive(receiveForm(fixture, "2.0000", "RETURN_TO_STOCK"), key()))
                 .isInstanceOf(ScmBusinessException.class);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM order_return_receipt WHERE return_id=?", Integer.class,
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_return_receipt WHERE return_id=?", Integer.class,
                 fixture.returned().getReturnId())).isEqualTo(1);
         assertThat(balanceRow(fixture.warehouseId(), fixture.skuId()).getQuantity()).isEqualByComparingTo("5.0000");
     }
@@ -235,7 +235,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         var form = receiveForm(fixture, "1.0000", "RETURN_TO_STOCK");
         form.setVersion(form.getVersion() + 1);
         expectCode(() -> orderReturnReceiptService.receive(form, key()), 40921);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM order_return_receipt WHERE return_id=?", Integer.class,
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_return_receipt WHERE return_id=?", Integer.class,
                 fixture.returned().getReturnId())).isZero();
     }
 
@@ -246,7 +246,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         form.setWarehouseId(otherWarehouse);
         String key = key();
         orderReturnReceiptService.receive(form, key);
-        jdbc.update("UPDATE sales_order SET seller_id=1 WHERE id=?", fixture.returned().getOrderId());
+        jdbc.update("UPDATE xsy_sales_order SET seller_id=1 WHERE id=?", fixture.returned().getOrderId());
         evictMybatisCache();
         RequestEmployee employee = new RequestEmployee();
         employee.setEmployeeId(1L);
@@ -261,9 +261,9 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         var fixture = returned();
         Long orderItemId = fixture.returned().getItems().getFirst().getOrderItemId();
         Long movementId = inventoryMovementDao.listSalesOutAllocations(orderItemId).getFirst().getId();
-        expectSqlFailure("UPDATE inventory_movement SET unit_cost=NULL WHERE id=?", movementId);
+        expectSqlFailure("UPDATE xsy_inventory_movement SET unit_cost=NULL WHERE id=?", movementId);
         shadowInventoryMovements();
-        assertThat(jdbc.update("UPDATE pg_temp.inventory_movement SET unit_cost=NULL WHERE id=?", movementId)).isEqualTo(1);
+        assertThat(jdbc.update("UPDATE pg_temp.xsy_inventory_movement SET unit_cost=NULL WHERE id=?", movementId)).isEqualTo(1);
         evictMybatisCache();
         assertThat(inventoryMovementDao.listSalesOutAllocations(orderItemId)).anyMatch(m -> m.getUnitCost() == null);
         assertThatThrownBy(() -> orderReturnReceiptService.receive(receiveForm(fixture,"1.0000","RETURN_TO_STOCK"),key()))
@@ -302,7 +302,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
 
     private Long pricedSku(String type) {
         Long skuId = newSkuOfType("credit", type, "ON_SHELF");
-        jdbc.update("UPDATE product_sku SET market_price=10 WHERE id=?", skuId);
+        jdbc.update("UPDATE xsy_product_sku SET market_price=10 WHERE id=?", skuId);
         evictMybatisCache();
         return skuId;
     }
@@ -310,7 +310,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
     @Test void actualWeightAmountControlsCreditAndFailureLeavesOrderPending() {
         Long customerId = newCustomer();
         Long skuId = pricedSku("NON_STANDARD");
-        jdbc.update("UPDATE customer SET credit_limit=15 WHERE id=?", customerId);
+        jdbc.update("UPDATE xsy_customer SET credit_limit=15 WHERE id=?", customerId);
         evictMybatisCache();
         var order = pending(customerId, skuId, "1.0000", "2.0000");
         var check = salesOrderService.creditCheck(order.getOrderId());
@@ -325,10 +325,10 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
     void automaticStandardConfirmationCannotBypassCredit() {
         Long customerId = newCustomer();
         Long skuId = pricedSku("STANDARD");
-        jdbc.update("UPDATE customer SET credit_limit=5 WHERE id=?", customerId);
+        jdbc.update("UPDATE xsy_customer SET credit_limit=5 WHERE id=?", customerId);
         evictMybatisCache();
         expectCode(() -> salesOrderService.createAndProgress(orderForm(customerId, skuId, "1.0000"), key()), 41201);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM sales_order WHERE customer_id=?", Integer.class, customerId)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_sales_order WHERE customer_id=?", Integer.class, customerId)).isZero();
     }
 
     @Test void frozenSettlementSurvivesCustomerMasterChange() {
@@ -336,11 +336,11 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         Long otherId = newCustomer();
         Long skuId = pricedSku("NON_STANDARD");
         var order = pending(customerId, skuId, "1.0000", "1.0000");
-        jdbc.update("UPDATE customer SET settlement_customer_id=? WHERE id=?", otherId, customerId);
-        jdbc.update("UPDATE customer SET credit_limit=5 WHERE id=?", customerId);
+        jdbc.update("UPDATE xsy_customer SET settlement_customer_id=? WHERE id=?", otherId, customerId);
+        jdbc.update("UPDATE xsy_customer SET credit_limit=5 WHERE id=?", customerId);
         evictMybatisCache();
         expectCode(() -> salesOrderService.confirm(salesOrderVersion(order), key()), 41201);
-        assertThat(jdbc.queryForObject("SELECT settlement_customer_id FROM sales_order WHERE id=?", Long.class, order.getOrderId()))
+        assertThat(jdbc.queryForObject("SELECT settlement_customer_id FROM xsy_sales_order WHERE id=?", Long.class, order.getOrderId()))
                 .isEqualTo(customerId);
     }
 
@@ -348,7 +348,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         Long customerId = newCustomer();
         Long skuId = pricedSku("NON_STANDARD");
         var order = pending(customerId, skuId, "1.0000", "1.0000");
-        jdbc.update("UPDATE customer SET credit_limit=5 WHERE id=?", customerId);
+        jdbc.update("UPDATE xsy_customer SET credit_limit=5 WHERE id=?", customerId);
         evictMybatisCache();
         var form = new com.xsy.scm.order.domain.form.OrderConfirmForm();
         form.setOrderId(order.getOrderId());
@@ -360,9 +360,9 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
             permissions.verify(() -> cn.dev33.satoken.stp.StpUtil.checkPermission(
                     com.xsy.scm.order.permission.OrderPermission.CREDIT_OVERRIDE));
         }
-        assertThat(jdbc.queryForObject("SELECT credit_override_reason FROM sales_order WHERE id=?",String.class,order.getOrderId()))
+        assertThat(jdbc.queryForObject("SELECT credit_override_reason FROM xsy_sales_order WHERE id=?",String.class,order.getOrderId()))
                 .isEqualTo("主管批准临时额度");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM order_operation_log WHERE order_id=? AND operation_type='CREDIT_OVERRIDE'",
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_operation_log WHERE order_id=? AND operation_type='CREDIT_OVERRIDE'",
                 Integer.class,order.getOrderId())).isEqualTo(1);
     }
 
@@ -373,7 +373,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         Long skuId = pricedSku("NON_STANDARD");
         var first = pending(customerId, skuId, "1.0000", "1.0000");
         var second = pending(customerId, skuId, "1.0000", "1.0000");
-        jdbc.update("UPDATE customer SET credit_limit=15 WHERE id=?", customerId);
+        jdbc.update("UPDATE xsy_customer SET credit_limit=15 WHERE id=?", customerId);
         var start = new CountDownLatch(1);
         try (var executor = Executors.newFixedThreadPool(2)) {
             var results = List.of(first, second).stream().map(order -> executor.submit(() -> {

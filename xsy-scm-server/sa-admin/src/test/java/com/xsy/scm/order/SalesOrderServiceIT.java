@@ -101,13 +101,13 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         var updated = orders.update(u);
         assertThat(updated.getItems().getFirst().getItemId()).isEqualTo(o.getItems().getFirst().getItemId());
         expectCode(() -> orders.update(u), 40921);
-        jdbc.update("UPDATE product_sku SET market_price=2.5000 WHERE id=?", sku);
+        jdbc.update("UPDATE xsy_product_sku SET market_price=2.5000 WHERE id=?", sku);
         session.clearCache();
         o = orders.submit(version(updated), prefix + "s");
         assertThat(o.getOrderedTotalAmount()).isEqualByComparingTo("7.5000");
         assertThat(o.getItems().getFirst().getActualQuantity()).isNull();
-        jdbc.update("UPDATE product_sku SET market_price=8.0000 WHERE id=?", sku);
-        jdbc.update("UPDATE customer SET name='changed',settle_mode='GROUP',seller_id=NULL WHERE id=?", c);
+        jdbc.update("UPDATE xsy_product_sku SET market_price=8.0000 WHERE id=?", sku);
+        jdbc.update("UPDATE xsy_customer SET name='changed',settle_mode='GROUP',seller_id=NULL WHERE id=?", c);
         session.clearCache();
         var pending = o;
         expectCode(() -> orders.confirm(version(pending), prefix + "early"), 40963);
@@ -141,7 +141,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     void createAndProgressConfirmsStandardButKeepsNonStandardPending() {
         var customer = customer();
         var standardSku = newOnShelfSku("AUTO_STANDARD");
-        jdbc.update("UPDATE product_sku SET product_type='STANDARD' WHERE id=?", standardSku);
+        jdbc.update("UPDATE xsy_product_sku SET product_type='STANDARD' WHERE id=?", standardSku);
         session.clearCache();
         var standard = orders.createAndProgress(form(customer, standardSku), prefix + "standard");
         assertThat(standard.getStatus()).isEqualTo("CONFIRMED");
@@ -156,13 +156,13 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     @Test
     void excelImportIsAtomicAndKeepsNonStandardPending() throws Exception {
         var customerId = customer();
-        var customerCode = jdbc.queryForObject("SELECT customer_code FROM customer WHERE id=?", String.class, customerId);
+        var customerCode = jdbc.queryForObject("SELECT customer_code FROM xsy_customer WHERE id=?", String.class, customerId);
         var standardSku = newOnShelfSku("IMPORT_STANDARD");
-        jdbc.update("UPDATE product_sku SET product_type='STANDARD' WHERE id=?", standardSku);
+        jdbc.update("UPDATE xsy_product_sku SET product_type='STANDARD' WHERE id=?", standardSku);
         var nonStandardSku = newOnShelfSku("IMPORT_WEIGHT");
         session.clearCache();
-        var standardCode = jdbc.queryForObject("SELECT sku_code FROM product_sku WHERE id=?", String.class, standardSku);
-        var nonStandardCode = jdbc.queryForObject("SELECT sku_code FROM product_sku WHERE id=?", String.class, nonStandardSku);
+        var standardCode = jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id=?", String.class, standardSku);
+        var nonStandardCode = jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id=?", String.class, nonStandardSku);
         var first = importRow("A", customerCode, standardCode);
         var second = importRow("B", customerCode, nonStandardCode);
         var bytes = new java.io.ByteArrayOutputStream();
@@ -179,10 +179,10 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         bytes = new java.io.ByteArrayOutputStream();
         cn.idev.excel.FastExcel.write(bytes, com.xsy.scm.order.domain.dto.SalesOrderImportRow.class).sheet("销售订单").doWrite(List.of(bad));
         file = new org.springframework.mock.web.MockMultipartFile("file", "bad.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", bytes.toByteArray());
-        var before = jdbc.queryForObject("SELECT count(*) FROM sales_order WHERE order_source='IMPORT'", Integer.class);
+        var before = jdbc.queryForObject("SELECT count(*) FROM xsy_sales_order WHERE order_source='IMPORT'", Integer.class);
         var invalid = orderImports.importFile(file, prefix + "bad", true);
         assertThat(invalid.getTotalErrors()).isGreaterThanOrEqualTo(2);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM sales_order WHERE order_source='IMPORT'", Integer.class)).isEqualTo(before);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_sales_order WHERE order_source='IMPORT'", Integer.class)).isEqualTo(before);
     }
 
     private com.xsy.scm.order.domain.dto.SalesOrderImportRow importRow(String key, String customerCode, String skuCode) {
@@ -204,26 +204,26 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         var customerId = customer();
         var standardSku = newOnShelfSku("ROLLBACK_OK");
         var unavailableSku = newProductSku("ROLLBACK_BAD", "ON_SHELF", "OFF_SHELF");
-        jdbc.update("UPDATE product_sku SET product_type='STANDARD' WHERE id=?", standardSku);
+        jdbc.update("UPDATE xsy_product_sku SET product_type='STANDARD' WHERE id=?", standardSku);
         var first = form(customerId, standardSku);
         first.setOrderSource("IMPORT");
         var second = form(customerId, unavailableSku);
         second.setOrderSource("IMPORT");
-        var logCount = jdbc.queryForObject("SELECT count(*) FROM order_operation_log", Long.class);
+        var logCount = jdbc.queryForObject("SELECT count(*) FROM xsy_order_operation_log", Long.class);
         try {
             assertThatThrownBy(() -> orders.importOrders(List.of(first, second), "test-hash", prefix + "rollback", 2))
                     .isInstanceOfSatisfying(SalesOrderService.ImportOrderException.class, e -> assertThat(e.getOrderIndex()).isEqualTo(1));
-            assertThat(jdbc.queryForObject("SELECT count(*) FROM sales_order WHERE customer_id=?", Integer.class, customerId)).isZero();
-            assertThat(jdbc.queryForObject("SELECT count(*) FROM sales_order_item WHERE sku_id IN (?,?)", Integer.class, standardSku, unavailableSku)).isZero();
-            assertThat(jdbc.queryForObject("SELECT count(*) FROM order_address_snapshot WHERE customer_id=?", Integer.class, customerId)).isZero();
-            assertThat(jdbc.queryForObject("SELECT count(*) FROM order_operation_log", Long.class)).isEqualTo(logCount);
-            assertThat(jdbc.queryForObject("SELECT count(*) FROM idempotency_record WHERE idempotency_key=?", Integer.class, prefix + "rollback")).isZero();
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_sales_order WHERE customer_id=?", Integer.class, customerId)).isZero();
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_sales_order_item WHERE sku_id IN (?,?)", Integer.class, standardSku, unavailableSku)).isZero();
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_address_snapshot WHERE customer_id=?", Integer.class, customerId)).isZero();
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_operation_log", Long.class)).isEqualTo(logCount);
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key=?", Integer.class, prefix + "rollback")).isZero();
         } finally {
             // Only this test's fixture IDs are removed; no shared business data is touched.
-            var spuIds = jdbc.queryForList("SELECT spu_id FROM product_sku WHERE id IN (?,?)", Long.class, standardSku, unavailableSku);
-            jdbc.update("DELETE FROM product_sku WHERE id IN (?,?)", standardSku, unavailableSku);
-            for (var spuId : spuIds) jdbc.update("DELETE FROM product_spu WHERE id=?", spuId);
-            jdbc.update("DELETE FROM customer WHERE id=?", customerId);
+            var spuIds = jdbc.queryForList("SELECT spu_id FROM xsy_product_sku WHERE id IN (?,?)", Long.class, standardSku, unavailableSku);
+            jdbc.update("DELETE FROM xsy_product_sku WHERE id IN (?,?)", standardSku, unavailableSku);
+            for (var spuId : spuIds) jdbc.update("DELETE FROM xsy_product_spu WHERE id=?", spuId);
+            jdbc.update("DELETE FROM xsy_customer WHERE id=?", customerId);
         }
     }
 
@@ -232,7 +232,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         var customerId = customer();
         var standardSku = newOnShelfSku("MIX_STANDARD");
         var weightSku = newOnShelfSku("MIX_WEIGHT");
-        jdbc.update("UPDATE product_sku SET product_type='STANDARD' WHERE id=?", standardSku);
+        jdbc.update("UPDATE xsy_product_sku SET product_type='STANDARD' WHERE id=?", standardSku);
         session.clearCache();
         var request = form(customerId, standardSku);
         request.getItems().add(form(customerId, weightSku).getItems().getFirst());
@@ -249,7 +249,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
     void zeroIsPricedStandardQuantityAndIdempotentReplay() {
         var c = customer();
         var sku = newOnShelfSku("Z");
-        jdbc.update("UPDATE product_sku SET market_price=0,product_type='STANDARD' WHERE id=?", sku);
+        jdbc.update("UPDATE xsy_product_sku SET market_price=0,product_type='STANDARD' WHERE id=?", sku);
         var f = form(c, sku);
         var o = orders.create(f, prefix);
         assertThat(orders.create(f, prefix).getOrderId()).isEqualTo(o.getOrderId());
@@ -281,7 +281,7 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         item.setOverrideReason("协商");
         var o = orders.create(f, prefix);
         assertThat(o.getItems().getFirst().getDraftPriceSource()).isEqualTo("OVERRIDE");
-        jdbc.update("UPDATE customer SET visibility_policy='ALLOWLIST' WHERE id=?", c);
+        jdbc.update("UPDATE xsy_customer SET visibility_policy='ALLOWLIST' WHERE id=?", c);
         session.clearCache();
         var draft = o;
         expectCode(() -> orders.submit(version(draft), prefix + "s"), 40949);
@@ -349,13 +349,13 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         assertThat(returns.reject(decision, prefix + "reject").getStatus()).isEqualTo("REJECTED");
         assertThat(logCount(o.getOrderId(), "RETURN")).isEqualTo(2);
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM order_operation_log WHERE order_id = ? AND operation_type = 'RETURN'"
+                "SELECT count(*) FROM xsy_order_operation_log WHERE order_id = ? AND operation_type = 'RETURN'"
                         + " AND after_data ->> 'status' = 'REJECTED'",
                 Integer.class, o.getOrderId())).as("驳回这条要把状态迁移记进日志").isEqualTo(1);
     }
 
     private int logCount(Long orderId, String operation) {
-        return jdbc.queryForObject("SELECT count(*) FROM order_operation_log WHERE order_id = ?"
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_order_operation_log WHERE order_id = ?"
                 + " AND operation_type = ?", Integer.class, orderId, operation);
     }
 
@@ -369,8 +369,8 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         deleteCustomer.setVersion(1);
         expectCode(() -> customers.delete(deleteCustomer), 40939);
         orders.delete(version(o));
-        assertThat(jdbc.queryForObject("SELECT deleted FROM sales_order WHERE id=?", Boolean.class, o.getOrderId())).isTrue();
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM sales_order_item WHERE order_id=? AND NOT deleted", Integer.class, o.getOrderId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_sales_order WHERE id=?", Boolean.class, o.getOrderId())).isTrue();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_sales_order_item WHERE order_id=? AND NOT deleted", Integer.class, o.getOrderId())).isZero();
         orders.delete(version(o));
         o = orders.create(form(c, sku), prefix + "other");
         var cancel = new OrderCancelForm();
