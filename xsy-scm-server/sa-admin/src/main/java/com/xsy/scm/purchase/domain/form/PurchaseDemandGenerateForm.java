@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
  * 生成采购需求（汇总已确认销售订单行）。
  *
  * <p>
- * {@code startAt} / {@code endAt} 是<b>半开区间</b> {@code [startAt, endAt)}，按 {@code sales_order.confirmed_at} 过滤；
+ * {@code startAt} / {@code endAt} 是<b>半开区间</b> {@code [startAt, endAt)}，按 {@code xsy_sales_order.confirmed_at} 过滤；
  * {@code startAt < endAt} 由 Service 校验（否则 {@code PURCHASE_QUANTITY_INVALID}）。
  *
  * <p>

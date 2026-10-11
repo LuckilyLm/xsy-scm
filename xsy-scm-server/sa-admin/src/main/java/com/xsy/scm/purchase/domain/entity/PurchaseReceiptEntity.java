@@ -26,7 +26,7 @@ import java.time.OffsetDateTime;
  * 供应商 / 仓库快照在收货单创建时从采购单继承。
  */
 @Data
-@TableName(value = "purchase_receipt", autoResultMap = true)
+@TableName(value = "xsy_purchase_receipt", autoResultMap = true)
 public class PurchaseReceiptEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

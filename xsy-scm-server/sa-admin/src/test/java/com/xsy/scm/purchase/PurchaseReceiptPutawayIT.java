@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 入库方式 / 仓库确认入库（PG IT）。
  *
- * <p>核心不变量：{@code purchase_receipt.status=CONFIRMED} 与「库存已入账」解耦。
+ * <p>核心不变量：{@code xsy_purchase_receipt.status=CONFIRMED} 与「库存已入账」解耦。
  * <ul>
  *   <li>DIRECT：confirm 同事务完成 putaway（COMPLETED）+ PURCHASE_IN；</li>
  *   <li>WAREHOUSE_CONFIRM：confirm 只产生商业事实（PENDING、无流水、余额不变），
@@ -131,7 +131,7 @@ class PurchaseReceiptPutawayIT extends ScmW6PgITBase {
         Map<String, Object> mv = movementsOf(warehouseId, skuId).getFirst();
         OffsetDateTime occurredAt = timestampOf(mv.get("occurred_at"));
         OffsetDateTime putawayAt = jdbc.queryForObject(
-                "SELECT putaway_at FROM purchase_receipt WHERE id = ?", OffsetDateTime.class, receipt.getId());
+                "SELECT putaway_at FROM xsy_purchase_receipt WHERE id = ?", OffsetDateTime.class, receipt.getId());
         OffsetDateTime confirmedAt = receiptConfirmedAt(receipt.getId());
         assertThat(occurredAt.toInstant()).isEqualTo(putawayAt.toInstant());
         assertThat(mv.get("operator")).isEqualTo(putaway.getPutawayBy());

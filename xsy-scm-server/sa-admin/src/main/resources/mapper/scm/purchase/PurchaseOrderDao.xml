@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.purchase.dao.PurchaseOrderDao">
 
-    <!-- purchase_order 没有 JSONB 列，因此 resultMap 只声明 <id>，其余列自动驼峰映射。 -->
+    <!-- xsy_purchase_order 没有 JSONB 列，因此 resultMap 只声明 <id>，其余列自动驼峰映射。 -->
     <resultMap id="orderRowMap"
                type="com.xsy.scm.purchase.domain.entity.PurchaseOrderEntity">
         <id column="id" property="id"/>
@@ -30,13 +30,13 @@
         o.remark, o.cancel_reason, o.short_close_reason,
         o.submitted_at, o.cancelled_at, o.short_closed_at,
         o.version, o.created_at, o.updated_at
-        FROM purchase_order o
+        FROM xsy_purchase_order o
         LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id AND e.deleted_flag = FALSE
         LEFT JOIN (
         SELECT purchase_order_id,
         SUM(planned_quantity) AS planned_total,
         SUM(received_quantity) AS received_total
-        FROM purchase_order_item
+        FROM xsy_purchase_order_item
         WHERE deleted = FALSE
         GROUP BY purchase_order_id
         ) agg ON agg.purchase_order_id = o.id
@@ -102,12 +102,12 @@
                o.version,
                o.created_at,
                o.updated_at
-        FROM purchase_order o
+        FROM xsy_purchase_order o
                  LEFT JOIN t_employee e ON e.employee_id = o.purchaser_id AND e.deleted_flag = FALSE
                  LEFT JOIN (SELECT purchase_order_id,
                                    SUM(planned_quantity)  AS planned_total,
                                    SUM(received_quantity) AS received_total
-                            FROM purchase_order_item
+                            FROM xsy_purchase_order_item
                             WHERE deleted = FALSE
                             GROUP BY purchase_order_id) agg ON agg.purchase_order_id = o.id
         WHERE o.deleted = FALSE
@@ -116,7 +116,7 @@
 
     <select id="lock" resultMap="orderRowMap">
         SELECT *
-        FROM purchase_order
+        FROM xsy_purchase_order
         WHERE id = #{id}
           AND deleted = FALSE FOR UPDATE
     </select>
@@ -127,7 +127,7 @@
     </select>
 
     <update id="softDelete">
-        UPDATE purchase_order
+        UPDATE xsy_purchase_order
         SET deleted    = TRUE,
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,

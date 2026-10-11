@@ -67,11 +67,11 @@ import static org.mockito.Mockito.mockStatic;
  * 采购域的行级数据范围、写入侧归属收口，以及报损报溢的「禁止自建自审」。
  *
  * <p>被测口径来自 {@code docs/decisions.md}「P0 基线收口裁决」第 7、8 条：
- * 普通采购员默认只看 {@code purchase_order.purchaser_id} / {@code purchase_demand.purchaser_id}
+ * 普通采购员默认只看 {@code xsy_purchase_order.purchaser_id} / {@code xsy_purchase_demand.purchaser_id}
  * 等于本人的行；{@code purchaser_id IS NULL} 是「未分配」，普通采购员不可见、持全量范围者可见；
  * <b>新建时归属必须由服务端强制为当前员工</b> —— 没有这条写入侧收口，行级范围只是「藏起来」，
  * 谁都能先把单据建到别人名下再去读；供应商主档按采购团队<b>共享读取</b>，
- * 不为数据范围给 {@code supplier} 加归属列。第 8 条的自建自审禁令一并在这里取证：
+ * 不为数据范围给 {@code xsy_supplier} 加归属列。第 8 条的自建自审禁令一并在这里取证：
  * 库存侧只有报损报溢同时存在「录单 + 审批」两个动作。
  *
  * <p><b>身份与权限怎么造</b>：范围解析读两处外部状态 —— 登录员工（{@code SmartRequestUtil}，
@@ -271,7 +271,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
         Long orderId = createSubmittedOrderAt(goods, "RPR", purchaserB, seedWarehouseId(), "4.0000");
         Long receiptId = as(purchaserB, Set.of(), () -> createReceipt(orderId).getId());
 
-        jdbc.update("UPDATE purchase_order SET purchaser_id = ? WHERE id = ?", purchaserA, orderId);
+        jdbc.update("UPDATE xsy_purchase_order SET purchaser_id = ? WHERE id = ?", purchaserA, orderId);
         evictMybatisCache();
         assertNoPermission(() -> as(purchaserB, Set.of(), () -> createReceipt(orderId)));
         assertThat(receiptDeleted(receiptId)).isFalse();
@@ -629,7 +629,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
         as(caller, Set.of(), () -> confirmReceipt(receiptId, "4.0000"));
         assertThat(receiptStatus(receiptId)).isEqualTo("CONFIRMED");
         assertThat(balanceRowCount(otherWarehouse, goods.skuId())).as("确认阶段不产生余额").isZero();
-        assertThat(jdbc.queryForObject("SELECT putaway_status FROM purchase_receipt WHERE id = ?",
+        assertThat(jdbc.queryForObject("SELECT putaway_status FROM xsy_purchase_receipt WHERE id = ?",
                 String.class, receiptId)).isEqualTo("PENDING");
 
         assertNoPermission(() -> as(caller, Set.of(), () -> putaway(receiptId, "denied")));
@@ -742,7 +742,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
     }
 
     private void grantWarehouseScope(Long employeeId, Long warehouseId) {
-        jdbc.update("INSERT INTO employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
+        jdbc.update("INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 employeeId, warehouseId);
     }
 
@@ -774,7 +774,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
     private PurchaseReceiptPutawayForm putawayForm(Long receiptId) {
         PurchaseReceiptPutawayForm form = new PurchaseReceiptPutawayForm();
         form.setId(receiptId);
-        form.setVersion(jdbc.queryForObject("SELECT version FROM purchase_receipt WHERE id = ?",
+        form.setVersion(jdbc.queryForObject("SELECT version FROM xsy_purchase_receipt WHERE id = ?",
                 Integer.class, receiptId));
         return form;
     }
@@ -791,47 +791,47 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
     private PurchaseDemandAllocateForm allocateForm(Long demandId, Long orderId) {
         PurchaseDemandAllocateForm form = new PurchaseDemandAllocateForm();
         form.setDemandId(demandId);
-        form.setPurchaseOrderItemId(jdbc.queryForObject("SELECT id FROM purchase_order_item "
+        form.setPurchaseOrderItemId(jdbc.queryForObject("SELECT id FROM xsy_purchase_order_item "
                 + "WHERE purchase_order_id = ? AND deleted = FALSE ORDER BY id LIMIT 1", Long.class, orderId));
         form.setQuantity("4.0000");
         form.setSupplierId(
-                jdbc.queryForObject("SELECT supplier_id FROM purchase_order WHERE id = ?", Long.class, orderId));
+                jdbc.queryForObject("SELECT supplier_id FROM xsy_purchase_order WHERE id = ?", Long.class, orderId));
         form.setWarehouseId(seedWarehouseId());
-        form.setVersion(jdbc.queryForObject("SELECT version FROM purchase_demand WHERE id = ?",
+        form.setVersion(jdbc.queryForObject("SELECT version FROM xsy_purchase_demand WHERE id = ?",
                 Integer.class, demandId));
         return form;
     }
 
     private String receiptStatus(Long receiptId) {
         evictMybatisCache();
-        return jdbc.queryForObject("SELECT status FROM purchase_receipt WHERE id = ?", String.class, receiptId);
+        return jdbc.queryForObject("SELECT status FROM xsy_purchase_receipt WHERE id = ?", String.class, receiptId);
     }
 
     private Integer receiptVersion(Long receiptId) {
         evictMybatisCache();
-        return jdbc.queryForObject("SELECT version FROM purchase_receipt WHERE id = ?", Integer.class, receiptId);
+        return jdbc.queryForObject("SELECT version FROM xsy_purchase_receipt WHERE id = ?", Integer.class, receiptId);
     }
 
     private String receiptRemark(Long receiptId) {
         evictMybatisCache();
-        return jdbc.queryForObject("SELECT remark FROM purchase_receipt WHERE id = ?", String.class, receiptId);
+        return jdbc.queryForObject("SELECT remark FROM xsy_purchase_receipt WHERE id = ?", String.class, receiptId);
     }
 
     private boolean receiptDeleted(Long receiptId) {
         evictMybatisCache();
-        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT deleted FROM purchase_receipt WHERE id = ?",
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT deleted FROM xsy_purchase_receipt WHERE id = ?",
                 Boolean.class, receiptId));
     }
 
     private boolean orderDeleted(Long orderId) {
         evictMybatisCache();
-        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT deleted FROM purchase_order WHERE id = ?",
+        return Boolean.TRUE.equals(jdbc.queryForObject("SELECT deleted FROM xsy_purchase_order WHERE id = ?",
                 Boolean.class, orderId));
     }
 
     private BigDecimal allocatedQuantity(Long demandId) {
         evictMybatisCache();
-        return jdbc.queryForObject("SELECT allocated_quantity FROM purchase_demand WHERE id = ?",
+        return jdbc.queryForObject("SELECT allocated_quantity FROM xsy_purchase_demand WHERE id = ?",
                 BigDecimal.class, demandId);
     }
 
@@ -926,7 +926,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
      * 因此「已知库存事实」这一夹具直接落表就是它要构造的东西（与 {@code PurchaseDemandSummaryPreviewIT} 同）。
      */
     private void seedBalance(Long warehouseId, Long skuId, String quantity) {
-        jdbc.update("INSERT INTO inventory_balance (warehouse_id, sku_id, unit, quantity, reserved_quantity, "
+        jdbc.update("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, reserved_quantity, "
                         + "avg_cost, version, deleted, created_at, updated_at, created_by, updated_by) "
                         + "VALUES (?, ?, ?, ?, 0, 0, 0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'it', 'it')",
                 warehouseId, skuId, DEFAULT_PURCHASE_UNIT, new BigDecimal(quantity));
@@ -1055,7 +1055,7 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
     private InventoryLossGainAuditForm auditForm(Long documentId, String opinion) {
         InventoryLossGainAuditForm form = new InventoryLossGainAuditForm();
         form.setVersion(jdbc.queryForObject(
-                "SELECT version FROM inventory_loss_gain WHERE id = ?", Integer.class, documentId));
+                "SELECT version FROM xsy_inventory_loss_gain WHERE id = ?", Integer.class, documentId));
         form.setAuditOpinion(opinion);
         return form;
     }
@@ -1064,27 +1064,27 @@ class ScmPurchaseDataScopePgIT extends ScmW6PgITBase {
 
     private Long purchaserIdOf(Long orderId) {
         evictMybatisCache();
-        return jdbc.queryForObject("SELECT purchaser_id FROM purchase_order WHERE id = ?", Long.class, orderId);
+        return jdbc.queryForObject("SELECT purchaser_id FROM xsy_purchase_order WHERE id = ?", Long.class, orderId);
     }
 
     private Integer orderVersion(Long orderId) {
         evictMybatisCache();
-        return jdbc.queryForObject("SELECT version FROM purchase_order WHERE id = ?", Integer.class, orderId);
+        return jdbc.queryForObject("SELECT version FROM xsy_purchase_order WHERE id = ?", Integer.class, orderId);
     }
 
     private Long demandPurchaserId(Long demandId) {
         evictMybatisCache();
-        return jdbc.queryForObject("SELECT purchaser_id FROM purchase_demand WHERE id = ?", Long.class, demandId);
+        return jdbc.queryForObject("SELECT purchaser_id FROM xsy_purchase_demand WHERE id = ?", Long.class, demandId);
     }
 
     private String lossGainStatus(Long documentId) {
         evictMybatisCache();
-        return jdbc.queryForObject("SELECT status FROM inventory_loss_gain WHERE id = ?", String.class, documentId);
+        return jdbc.queryForObject("SELECT status FROM xsy_inventory_loss_gain WHERE id = ?", String.class, documentId);
     }
 
     private String lossGainAuditor(Long documentId) {
         evictMybatisCache();
-        return jdbc.queryForObject("SELECT auditor FROM inventory_loss_gain WHERE id = ?", String.class, documentId);
+        return jdbc.queryForObject("SELECT auditor FROM xsy_inventory_loss_gain WHERE id = ?", String.class, documentId);
     }
 
     private boolean roleHoldsPermission(String roleCode, String permission) {

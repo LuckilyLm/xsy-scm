@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.OffsetDateTime;
 
 /**
- * 采购写命令的幂等控制，复用共享表 {@code idempotency_record}。 {@code claim} 通过唯一索引竞争执行权；调用方须将认领、业务写入和结果保存置于同一事务。
+ * 采购写命令的幂等控制，复用共享表 {@code xsy_idempotency_record}。 {@code claim} 通过唯一索引竞争执行权；调用方须将认领、业务写入和结果保存置于同一事务。
  */
 @Service
 @RequiredArgsConstructor

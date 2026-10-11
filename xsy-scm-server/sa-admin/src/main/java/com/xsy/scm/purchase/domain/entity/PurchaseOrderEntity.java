@@ -28,7 +28,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  * 后永不回读主数据。
  */
 @Data
-@TableName(value = "purchase_order", autoResultMap = true)
+@TableName(value = "xsy_purchase_order", autoResultMap = true)
 public class PurchaseOrderEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

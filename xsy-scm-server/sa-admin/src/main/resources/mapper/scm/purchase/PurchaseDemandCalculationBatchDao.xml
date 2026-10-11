@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.purchase.dao.PurchaseDemandCalculationBatchDao">
     <select id="lock" resultType="com.xsy.scm.purchase.domain.entity.PurchaseDemandCalculationBatchEntity">
-        SELECT * FROM purchase_demand_calculation_batch WHERE id=#{batchId} FOR UPDATE
+        SELECT * FROM xsy_purchase_demand_calculation_batch WHERE id=#{batchId} FOR UPDATE
     </select>
 
     <!-- 回看用的批次头：联仓库 / 供应商 / 员工取当前名称（快照里没有名称，
@@ -27,15 +27,15 @@
                b.created_at,
                b.created_by,
                b.generated_at
-        FROM purchase_demand_calculation_batch b
-                 LEFT JOIN warehouse w ON w.id = b.warehouse_id AND w.deleted = FALSE
-                 LEFT JOIN supplier s ON s.id = b.supplier_id AND s.deleted = FALSE
+        FROM xsy_purchase_demand_calculation_batch b
+                 LEFT JOIN xsy_warehouse w ON w.id = b.warehouse_id AND w.deleted = FALSE
+                 LEFT JOIN xsy_supplier s ON s.id = b.supplier_id AND s.deleted = FALSE
                  LEFT JOIN t_employee e ON e.employee_id = b.purchaser_id AND e.deleted_flag = FALSE
         WHERE b.id = #{batchId}
     </select>
 
     <update id="markGenerated">
-        UPDATE purchase_demand_calculation_batch SET status='GENERATED', generated_count=#{generatedCount},
+        UPDATE xsy_purchase_demand_calculation_batch SET status='GENERATED', generated_count=#{generatedCount},
             skipped_count=#{skippedCount}, result_snapshot=#{resultSnapshot,typeHandler=com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler},
             generated_at=#{generatedAt}, updated_at=#{generatedAt}, updated_by=#{operator}
         WHERE id=#{batchId} AND status='READY'

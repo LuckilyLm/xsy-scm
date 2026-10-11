@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>两条命令的锁序原本不一致，这是本类存在的全部理由：
  * <ul>
  * <li>{@code demand.allocate}：修复前是「锁需求（第 1 层）→ 无锁读采购单」；</li>
- * <li>{@code purchase_order.cancel}：锁采购单 → 释放分配（内含锁需求，升序）→ 置 CANCELLED。</li>
+ * <li>{@code xsy_purchase_order.cancel}：锁采购单 → 释放分配（内含锁需求，升序）→ 置 CANCELLED。</li>
  * </ul>
  *
  * <p>修复前的幻读窗口：{@code cancel} 读「本单没有分配」→ 无分配时早退、不取需求锁 →

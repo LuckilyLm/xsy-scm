@@ -13,9 +13,10 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_WAREHOUSE
  * 仓库引用的服务层完整性守卫。
  *
  * <p>
- * {@code AGENTS.md} 明文禁止数据库外键，因此 {@code purchase_order.warehouse_id} · {@code purchase_receipt.warehouse_id} ·
- * {@code purchase_demand.warehouse_id} 三处引用只能由服务层保证。 本类是三处引用的唯一入口，集中两条不变量：存在性 → {@code WAREHOUSE_NOT_FOUND(40485)}（由
- * warehouse 域抛出）； 启用态 → {@code PURCHASE_WAREHOUSE_DISABLED(40987)}（采购侧规则，码留在 {@code PurchaseErrorCode}）。
+ * {@code AGENTS.md} 明文禁止数据库外键，因此 {@code xsy_purchase_order.warehouse_id} · {@code xsy_purchase_receipt.warehouse_id} ·
+ * {@code xsy_purchase_demand.warehouse_id} 三处引用只能由服务层保证。 本类是三处引用的唯一入口，集中两条不变量：存在性 →
+ * {@code WAREHOUSE_NOT_FOUND(40485)}（由 warehouse 域抛出）； 启用态 → {@code PURCHASE_WAREHOUSE_DISABLED(40987)}（采购侧规则，码留在
+ * {@code PurchaseErrorCode}）。
  *
  * <p>
  * 与 {@code PurchaseOrderValidator.requireEnabledWarehouse} 不共享实现：后者是采购单表单路径的校验，

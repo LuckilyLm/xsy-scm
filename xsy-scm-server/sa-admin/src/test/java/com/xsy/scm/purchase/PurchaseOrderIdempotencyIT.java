@@ -36,7 +36,7 @@ class PurchaseOrderIdempotencyIT extends ScmW5PgITBase {
 
     private int countActiveOrders(Long supplierId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM purchase_order WHERE supplier_id = ? AND deleted = FALSE",
+                "SELECT count(*) FROM xsy_purchase_order WHERE supplier_id = ? AND deleted = FALSE",
                 Integer.class, supplierId);
     }
 

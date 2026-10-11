@@ -113,7 +113,7 @@ public class PurchaseDemandService {
      * 汇总窗口内的已确认订单行 → 采购需求。
      *
      * <p>
-     * 半开区间 {@code [startAt, endAt)}；{@code demand_date} 按 <b>Asia/Shanghai</b> 取 {@code sales_order.confirmed_at}
+     * 半开区间 {@code [startAt, endAt)}；{@code demand_date} 按 <b>Asia/Shanghai</b> 取 {@code xsy_sales_order.confirmed_at}
      * 的日期，<b>不是</b> {@code date(startAt)}。
      */
     @Transactional(rollbackFor = Exception.class)

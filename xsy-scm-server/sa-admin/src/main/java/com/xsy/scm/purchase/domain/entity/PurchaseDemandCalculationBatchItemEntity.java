@@ -12,7 +12,7 @@ import lombok.Data;
 
 /** One frozen allocation of a SKU-level net gap to a sales-order source line. */
 @Data
-@TableName(value = "purchase_demand_calculation_batch_item", autoResultMap = true)
+@TableName(value = "xsy_purchase_demand_calculation_batch_item", autoResultMap = true)
 public class PurchaseDemandCalculationBatchItemEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

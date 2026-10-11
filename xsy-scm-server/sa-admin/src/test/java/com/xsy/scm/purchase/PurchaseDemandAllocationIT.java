@@ -33,10 +33,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 用 {@code Map<itemId, allocation>} 覆盖写的实现会让一行两需求在编辑时只剩最后一条，
  * 本类的每个用例都在防这件事回归。
  *
- * <p>同时覆盖单位一致性：需求单位（销售单位）与采购单位（{@code supplier_sku.purchase_unit}）
+ * <p>同时覆盖单位一致性：需求单位（销售单位）与采购单位（{@code xsy_supplier_sku.purchase_unit}）
  * 不一致时必须拒绝自动分配（40971），不允许猜换算系数、也不允许只换单位字符串。
  *
- * <p><b>「一行两 demand」怎么造</b>：需求来自 {@code sales_order_item}，一行一个需求
+ * <p><b>「一行两 demand」怎么造</b>：需求来自 {@code xsy_sales_order_item}，一行一个需求
  * （{@code uk_purchase_demand_source_active}）。因此同一 SKU 要有两个需求，
  * 需要两张已确认订单各含该 SKU，然后一次汇总生成两条需求，
  * 再把这两条需求分配到同一个采购行上。
@@ -405,7 +405,7 @@ class PurchaseDemandAllocationIT extends ScmW5PgITBase {
                 allocationOf(fx.purchaseOrderItemId(), fx.demandA());
 
         expectSqlFailure(
-                "INSERT INTO purchase_demand_allocation (purchase_demand_id, purchase_order_item_id, "
+                "INSERT INTO xsy_purchase_demand_allocation (purchase_demand_id, purchase_order_item_id, "
                         + "sales_order_id, sales_order_item_id, sku_id, allocated_quantity, created_by) "
                         + "VALUES (?, ?, ?, ?, ?, 1.0000, 'dup')",
                 existing.getPurchaseDemandId(), existing.getPurchaseOrderItemId(),

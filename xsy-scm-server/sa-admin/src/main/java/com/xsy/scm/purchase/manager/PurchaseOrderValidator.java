@@ -154,8 +154,8 @@ public class PurchaseOrderValidator {
      * 该 SKU 必须能由该供应商供货（的唯一判定入口）。
      *
      * <p>
-     * 返回的 {@code supplier_sku} 提供需要的 {@code purchase_unit}（→ {@code purchase_order_item.purchase_unit_snapshot}）与
-     * {@code reference_price}（只作建议值）。的失败码在这里被翻译成 40992。
+     * 返回的 {@code xsy_supplier_sku} 提供需要的 {@code purchase_unit}（→
+     * {@code xsy_purchase_order_item.purchase_unit_snapshot}）与 {@code reference_price}（只作建议值）。的失败码在这里被翻译成 40992。
      */
     public SupplierSkuEntity requirePurchasableSku(Long supplierId, Long skuId) {
         try {
