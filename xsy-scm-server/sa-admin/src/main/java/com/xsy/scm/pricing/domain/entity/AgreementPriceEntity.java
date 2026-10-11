@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Data
-@TableName(value = "customer_agreement_price", autoResultMap = true)
+@TableName(value = "xsy_customer_agreement_price", autoResultMap = true)
 public class AgreementPriceEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

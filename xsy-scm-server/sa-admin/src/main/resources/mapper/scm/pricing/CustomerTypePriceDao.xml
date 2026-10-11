@@ -20,10 +20,10 @@
                             s.spec_name,
                             s.spec_values,
                             sp.name     product_name
-                     FROM customer_type_price p
-                              LEFT JOIN customer_type d ON d.id = p.customer_type_id
-                              LEFT JOIN product_sku s ON s.id = p.sku_id
-                              LEFT JOIN product_spu sp ON sp.id = s.spu_id</sql>
+                     FROM xsy_customer_type_price p
+                              LEFT JOIN xsy_customer_type d ON d.id = p.customer_type_id
+                              LEFT JOIN xsy_product_sku s ON s.id = p.sku_id
+                              LEFT JOIN xsy_product_spu sp ON sp.id = s.spu_id</sql>
     <select id="queryPage" resultMap="vo">
         <include refid="joined"/>
         WHERE p.deleted=FALSE
@@ -50,11 +50,11 @@
         FALSE
     </select>
     <select id="lockParent" resultType="long">SELECT id
-                                              FROM customer_type
+                                              FROM xsy_customer_type
                                               WHERE id = #{id}
                                                 AND deleted = FALSE FOR UPDATE</select>
     <select id="countOverlapping" resultType="long">
-        SELECT count(*) FROM customer_type_price WHERE customer_type_id=#{dimension} AND sku_id=#{skuId} AND
+        SELECT count(*) FROM xsy_customer_type_price WHERE customer_type_id=#{dimension} AND sku_id=#{skuId} AND
         deleted=FALSE
         AND effective_from &lt; COALESCE(#{to,jdbcType=TIMESTAMP_WITH_TIMEZONE},'infinity'::timestamptz)
         AND (effective_to IS NULL OR effective_to &gt; #{from,jdbcType=TIMESTAMP_WITH_TIMEZONE})
@@ -63,14 +63,14 @@
     <select id="selectEffective"
             resultType="com.xsy.scm.pricing.domain.entity.CustomerTypePriceEntity">
         SELECT id,customer_type_id,sku_id,unit_price,effective_from,effective_to,version,deleted FROM
-        customer_type_price
+        xsy_customer_type_price
         WHERE deleted=FALSE AND customer_type_id=#{dimension} AND effective_from &lt;= #{at} AND (effective_to IS NULL
         OR effective_to &gt; #{at})
         AND sku_id IN
         <foreach collection="skuIds" item="sku" open="(" separator="," close=")">#{sku}</foreach>
         ORDER BY effective_from DESC,id DESC
     </select>
-    <update id="softDelete">UPDATE customer_type_price
+    <update id="softDelete">UPDATE xsy_customer_type_price
                             SET deleted= TRUE,
                                 version=version + 1,
                                 updated_at=CURRENT_TIMESTAMP,
@@ -78,7 +78,7 @@
                             WHERE id = #{id}
                               AND version = #{version}
                               AND deleted = FALSE</update>
-    <insert id="log">INSERT INTO customer_type_price_operation_log(customer_type_price_id, operation_type, operator,
+    <insert id="log">INSERT INTO xsy_customer_type_price_operation_log(customer_type_price_id, operation_type, operator,
                                                                    before_data, after_data, created_by)
                      VALUES (#{id}, #{operation}, #{operator}, CAST(#{before,jdbcType=VARCHAR} AS jsonb),
                              CAST(#{after,jdbcType=VARCHAR} AS jsonb), #{operator})</insert>
