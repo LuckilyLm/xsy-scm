@@ -17,11 +17,10 @@ import lombok.Data;
  * <b>预览不占用</b>（ADR-009：结算预览不等于最终占用）；只有确认下单才 {@code RESERVED}。
  *
  * <p>
- * 释放后不自动回到 {@code AVAILABLE}：{@code RELEASED} 是「这张券已经被释放过」的历史痕迹，
- * 直接改回 AVAILABLE 会让「同一张券被占用过几次」无从追溯。要复用就重新发一张。
+ * 释放后不自动回到 {@code AVAILABLE}：{@code RELEASED} 是「这张券已经被释放过」的历史痕迹， 直接改回 AVAILABLE 会让「同一张券被占用过几次」无从追溯。要复用就重新发一张。
  */
 @Data
-@TableName(value = "promotion_coupon_instance", autoResultMap = true)
+@TableName(value = "xsy_promotion_coupon_instance", autoResultMap = true)
 public class PromotionCouponInstanceEntity {
 
     @TableId(type = IdType.AUTO)

@@ -19,7 +19,7 @@ import lombok.Data;
  * 活动是<b>版本化的规则</b>：{@code version} 每次编辑自增，订单优惠冻结时把它一起记下来， 因此「这单当时按哪一版算的」永远可查 —— 只存活动 id 的话，改一次活动就会让历史订单的 优惠金额无法解释。
  */
 @Data
-@TableName(value = "promotion_activity", autoResultMap = true)
+@TableName(value = "xsy_promotion_activity", autoResultMap = true)
 public class PromotionActivityEntity {
 
     @TableId(type = IdType.AUTO)

@@ -10,7 +10,7 @@
     <select id="queryPage" resultType="com.xsy.scm.promotion.domain.entity.PromotionCouponEntity">
         SELECT
         <include refid="columns"/>
-        FROM promotion_coupon
+        FROM xsy_promotion_coupon
         WHERE deleted = FALSE
         <if test="query.status != null and query.status != ''">
             AND status = #{query.status}
@@ -25,7 +25,7 @@
     <select id="listActive" resultType="com.xsy.scm.promotion.domain.entity.PromotionCouponEntity">
         SELECT
         <include refid="columns"/>
-        FROM promotion_coupon
+        FROM xsy_promotion_coupon
         WHERE deleted = FALSE
           AND status = 'ACTIVE'
           AND valid_from &lt;= #{at}
@@ -36,7 +36,7 @@
     <select id="lockById" resultType="com.xsy.scm.promotion.domain.entity.PromotionCouponEntity">
         SELECT
         <include refid="columns"/>
-        FROM promotion_coupon
+        FROM xsy_promotion_coupon
         WHERE id = #{id}
           AND deleted = FALSE
             FOR UPDATE

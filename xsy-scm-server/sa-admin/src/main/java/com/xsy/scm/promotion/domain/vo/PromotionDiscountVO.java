@@ -84,7 +84,8 @@ public class PromotionDiscountVO {
     private List<AppliedActivityVO> appliedActivities = new ArrayList<>();
 
     /**
-     * 满赠赠品权益：<b>非金额权益</b>，不参与优惠分摊、不进 {@link #discountAmount}， 而是单独冻结成 {@code order_promotion_gift}，供出库、分拣、小票与成本归集读取。
+     * 满赠赠品权益：<b>非金额权益</b>，不参与优惠分摊、不进 {@link #discountAmount}， 而是单独冻结成
+     * {@code xsy_order_promotion_gift}，供出库、分拣、小票与成本归集读取。
      */
     private List<GiftEntitlementVO> gifts = new ArrayList<>();
 

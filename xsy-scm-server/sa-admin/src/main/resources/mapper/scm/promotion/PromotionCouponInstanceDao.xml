@@ -10,7 +10,7 @@
     <select id="lockById" resultType="com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity">
         SELECT
         <include refid="columns"/>
-        FROM promotion_coupon_instance
+        FROM xsy_promotion_coupon_instance
         WHERE id = #{id}
             FOR UPDATE
     </select>
@@ -18,7 +18,7 @@
     <select id="listByCustomer" resultType="com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity">
         SELECT
         <include refid="columns"/>
-        FROM promotion_coupon_instance
+        FROM xsy_promotion_coupon_instance
         WHERE customer_id = #{customerId}
         <if test="status != null and status != ''">
             AND status = #{status}
@@ -30,7 +30,7 @@
     <!-- 状态流转一律带 status 前置条件：并发下同一张券只能被占用一次，
          第二次影响 0 行，调用方据此回答「券已被占用」而不是覆盖别人的占用。 -->
     <update id="markReserved">
-        UPDATE promotion_coupon_instance
+        UPDATE xsy_promotion_coupon_instance
         SET status           = 'RESERVED',
             reserved_order_id = #{orderId},
             reserved_at      = CURRENT_TIMESTAMP,
@@ -41,7 +41,7 @@
     </update>
 
     <update id="markUsed">
-        UPDATE promotion_coupon_instance
+        UPDATE xsy_promotion_coupon_instance
         SET status       = 'USED',
             used_order_id = #{orderId},
             used_at      = CURRENT_TIMESTAMP,
@@ -53,7 +53,7 @@
 
     <!-- 释放：只从 RESERVED 释放。不回到 AVAILABLE（见实体说明），RELEASED 是历史痕迹。 -->
     <update id="markReleased">
-        UPDATE promotion_coupon_instance
+        UPDATE xsy_promotion_coupon_instance
         SET status         = 'RELEASED',
             released_at    = CURRENT_TIMESTAMP,
             release_reason = #{reason},
@@ -64,7 +64,7 @@
     </update>
 
     <insert id="insertBatch">
-        INSERT INTO promotion_coupon_instance (coupon_id, customer_id, instance_no, status, version)
+        INSERT INTO xsy_promotion_coupon_instance (coupon_id, customer_id, instance_no, status, version)
         VALUES
         <foreach collection="rows" item="r" separator=",">
             (#{r.couponId}, #{r.customerId}, #{r.instanceNo}, 'AVAILABLE', 0)
