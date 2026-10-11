@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 余额流水的业务来源类型。持久化到 {@code customer_balance_movement.source_type}。
+ * 余额流水的业务来源类型。持久化到 {@code xsy_customer_balance_movement.source_type}。
  *
  * <p>
  * 与库上的 {@code ck_customer_balance_movement_source_type} 逐字一致，且<b>不允许自由填写</b>： 来源类型一旦可随意填，来源唯一索引就形同虚设 ——
@@ -14,12 +14,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmBalanceSourceTypeEnum {
 
-    /** 来源是支付域的交易事实：{@code source_id = payment_transaction.id}（充值用）。 */
+    /** 来源是支付域的交易事实：{@code source_id = xsy_payment_transaction.id}（充值用）。 */
     PAYMENT_TRANSACTION("支付交易"),
 
     PAYMENT_INTENT("订单余额支付"),
 
-    /** 来源是售后退款单：{@code source_id = order_refund.id}（余额返还用）。 */
+    /** 来源是售后退款单：{@code source_id = xsy_order_refund.id}（余额返还用）。 */
     ORDER_REFUND("售后退款单");
 
     private final String desc;

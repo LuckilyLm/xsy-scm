@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.balance.dao.CustomerBalanceAccountDao">
 
     <insert id="insertOnConflictDoNothing">
-        INSERT INTO customer_balance_account (settlement_customer_id, settlement_customer_name_snapshot,
+        INSERT INTO xsy_customer_balance_account (settlement_customer_id, settlement_customer_name_snapshot,
             created_at, updated_at, created_by, updated_by)
         VALUES (#{settlementCustomerId}, #{settlementCustomerNameSnapshot},
             #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
@@ -12,14 +12,14 @@
 
     <select id="selectBySettlementCustomerId"
             resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceAccountEntity">
-        SELECT * FROM customer_balance_account
+        SELECT * FROM xsy_customer_balance_account
         WHERE settlement_customer_id = #{settlementCustomerId}
           AND deleted = FALSE
     </select>
 
     <select id="lockBySettlementCustomerId"
             resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceAccountEntity">
-        SELECT * FROM customer_balance_account
+        SELECT * FROM xsy_customer_balance_account
         WHERE settlement_customer_id = #{settlementCustomerId}
           AND deleted = FALSE
         FOR UPDATE
