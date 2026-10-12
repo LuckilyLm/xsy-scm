@@ -77,6 +77,38 @@ function saveOrders(session, rows) {
   ORDERS.set(accountKey(session), rows);
 }
 
+/** 配送进度节点：与后端 MallOrderQueryService.progressNodes 同形；done 只按事实是否存在判定 */
+function progressOf(order) {
+  const nodes = [{ code: 'SUBMITTED', text: '已提交订单', detail: null, time: order.submittedAt || order.createdAt, done: true }];
+  if (order.status === 'CANCELLED') {
+    // 取消之后不会再发车，只保留两格
+    nodes.push({
+      code: 'CANCELLED',
+      text: '订单已取消',
+      detail: order.cancelReason || null,
+      time: order.cancelledAt || null,
+      done: true,
+    });
+    return nodes;
+  }
+  nodes.push({
+    code: 'CONFIRMED',
+    text: '后台已接单',
+    detail: null,
+    time: order.confirmedAt || null,
+    done: !!order.confirmedAt,
+  });
+  nodes.push({ code: 'DISPATCHED', text: '已发车配送', detail: null, time: null, done: false });
+  nodes.push({
+    code: 'SIGNED',
+    text: order.fulfillmentStatus === 'EXCEPTION' ? '配送异常' : '已签收',
+    detail: order.signReason || null,
+    time: order.signedAt || null,
+    done: !!order.signedAt,
+  });
+  return nodes;
+}
+
 /** 读取时补齐派生字段，保证列表与详情字段一致（与后端 MallOrderVO 同形） */
 function decorate(order) {
   const items = order.items || [];
@@ -90,6 +122,8 @@ function decorate(order) {
       .filter(Boolean)
       .slice(0, 3),
     timeline: order.timeline || [],
+    delivery: order.delivery || null,
+    progress: progressOf(order),
   };
 }
 

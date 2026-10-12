@@ -138,6 +138,22 @@ test('checkout only applies the latest preview response', () => {
   assert.match(page, /if \(seq === previewSeq\) previewing\.value = false/);
 });
 
+test('order detail renders the server-provided delivery progress', () => {
+  const page = read('../src/pages-sub/order/detail.vue');
+  const mock = read('../mock/routes/order.js');
+  // 节点文案与 done 都由服务端按正式事实给出，客户端只渲染，不自己推导进度
+  assert.match(page, /v-for="\(node, index\) in order\.progress"/);
+  assert.match(page, /:class="\{ 'od-step--pending': !node\.done \}"/);
+  // 配送详情只读配送事实（线路 / 发车 / 司机），未排车时不编线路
+  assert.match(page, /order\.delivery\.routeName/);
+  assert.match(page, /order\.delivery\.dispatchedAt/);
+  assert.match(page, /后台尚未安排配送线路/);
+  // mock 与后端同形：同一套节点
+  assert.match(mock, /function progressOf\(order\)/);
+  assert.match(mock, /delivery: order\.delivery \|\| null/);
+  assert.match(mock, /progress: progressOf\(order\)/);
+});
+
 test('delivery date uses the Shanghai calendar instead of UTC', () => {
   const page = read('../src/pages-sub/checkout/index.vue');
   const util = read('../src/utils/mall-date.js');

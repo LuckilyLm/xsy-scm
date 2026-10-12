@@ -24,12 +24,67 @@
         <text class="od__sub">{{ order.address }}</text>
       </view>
 
+      <!-- 配送进度：节点与 done 都由服务端按正式事实给出，客户端不推导 -->
+      <view v-if="(order.progress || []).length" class="od-card">
+        <view class="od-card__title">配送进度</view>
+        <view v-for="(node, index) in order.progress" :key="node.code" class="od-step" :class="{ 'od-step--pending': !node.done }">
+          <view class="od-step__dot-wrap">
+            <view class="od-step__dot" :class="{ 'od-step__dot--done': node.done }" />
+            <view v-if="index < order.progress.length - 1" class="od-step__line" />
+          </view>
+          <view class="od-step__main">
+            <text class="od-step__title" :class="{ 'od-step__title--pending': !node.done }">{{ node.text }}</text>
+            <text v-if="node.time" class="od__sub">{{ formatDateTime(node.time) }}</text>
+            <text v-if="node.detail" class="od-step__detail">{{ node.detail }}</text>
+          </view>
+        </view>
+      </view>
+
       <view class="od-card">
         <view class="od-card__title">配送信息</view>
         <view class="od__row">
           <text class="od__row-label">期望配送时间</text>
           <text class="od__row-value">{{ formatDateTime(order.expectDeliveryTime) || '未指定' }}</text>
         </view>
+        <template v-if="order.delivery">
+          <view class="od__row">
+            <text class="od__row-label">配送线路</text>
+            <text class="od__row-value">{{ order.delivery.routeName || '—' }}</text>
+          </view>
+          <view v-if="order.delivery.deliveryDate" class="od__row">
+            <text class="od__row-label">配送日期</text>
+            <text class="od__row-value">{{ order.delivery.deliveryDate }}</text>
+          </view>
+          <view v-if="order.delivery.plannedDepartureTime" class="od__row">
+            <text class="od__row-label">计划发车</text>
+            <text class="od__row-value">{{ formatDateTime(order.delivery.plannedDepartureTime) }}</text>
+          </view>
+          <view v-if="order.delivery.dispatchedAt" class="od__row">
+            <text class="od__row-label">实际发车</text>
+            <text class="od__row-value">{{ formatDateTime(order.delivery.dispatchedAt) }}</text>
+          </view>
+          <view v-if="order.delivery.driverName" class="od__row">
+            <text class="od__row-label">配送司机</text>
+            <text class="od__row-value">{{ order.delivery.driverName }}</text>
+          </view>
+          <view v-if="order.delivery.driverPhone" class="od__row">
+            <text class="od__row-label">联系电话</text>
+            <text class="od__row-value od__row-value--link" @click="callDriver">{{ order.delivery.driverPhone }}</text>
+          </view>
+          <view v-if="order.delivery.vehicleNo" class="od__row">
+            <text class="od__row-label">配送车辆</text>
+            <text class="od__row-value">{{ order.delivery.vehicleNo }}</text>
+          </view>
+          <view v-if="order.delivery.warehouseName" class="od__row">
+            <text class="od__row-label">发货仓</text>
+            <text class="od__row-value">{{ order.delivery.warehouseName }}</text>
+          </view>
+          <view v-if="order.delivery.completedAt" class="od__row">
+            <text class="od__row-label">线路完成</text>
+            <text class="od__row-value">{{ formatDateTime(order.delivery.completedAt) }}</text>
+          </view>
+        </template>
+        <text v-else class="od__sub">后台尚未安排配送线路</text>
         <view class="od__row">
           <text class="od__row-label">签收时间</text>
           <text class="od__row-value">{{ formatDateTime(order.signedAt) || '未签收' }}</text>
@@ -169,6 +224,13 @@
     }
   }
 
+  /** 司机电话来自配送事实快照；点击直接拨号，方便客户在途沟通 */
+  function callDriver() {
+    const phone = order.value?.delivery?.driverPhone;
+    if (!phone) return;
+    uni.makePhoneCall({ phoneNumber: phone, fail: () => {} });
+  }
+
   function cancelOrder() {
     uni.showActionSheet({
       itemList: CANCEL_REASONS,
@@ -306,6 +368,59 @@
     color: $color-danger;
     font-size: $font-size-base;
     font-weight: $font-weight-bold;
+  }
+  .od__row-value--link {
+    color: $color-primary;
+    text-decoration: underline;
+  }
+  .od-step {
+    display: flex;
+    align-items: flex-start;
+    margin-top: $space-2;
+  }
+  .od-step__dot-wrap {
+    width: 24rpx;
+    flex-shrink: 0;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .od-step__dot {
+    width: 16rpx;
+    height: 16rpx;
+    margin-top: 8rpx;
+    border-radius: 50%;
+    background: $color-border;
+  }
+  .od-step__dot--done {
+    background: $color-primary;
+  }
+  .od-step__line {
+    flex: 1;
+    width: 2rpx;
+    margin-top: 4rpx;
+    background: $color-divider;
+  }
+  .od-step__main {
+    flex: 1;
+    min-width: 0;
+    margin-left: $space-3;
+  }
+  .od-step__title {
+    color: $color-text-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+  }
+  .od-step__title--pending {
+    color: $color-text-placeholder;
+    font-weight: $font-weight-regular;
+  }
+  .od-step__detail {
+    display: block;
+    margin-top: $space-1;
+    color: $color-text-secondary;
+    font-size: $font-size-xs;
   }
   .od__line,
   .od__sub {
