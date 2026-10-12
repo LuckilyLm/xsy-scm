@@ -13,6 +13,9 @@
         <text v-else-if="order.displayStatus === 'PREPARING'" class="od-head__hint">后台已接单，正在备货</text>
         <text v-else-if="order.displayStatus === 'PENDING'" class="od-head__hint">已提交，等待后台受理</text>
         <text v-else-if="order.displayStatus === 'CANCELLED' && order.cancelReason" class="od-head__hint"> 取消原因：{{ order.cancelReason }} </text>
+        <text v-if="isAbnormalFulfillment(order.fulfillmentStatus)" class="od-head__abnormal">
+          配送异常{{ order.signReason ? `：${order.signReason}` : '' }}，如有疑问请联系业务员
+        </text>
       </view>
 
       <view v-if="order.receiverName" class="od-card">
@@ -133,6 +136,7 @@
     displayStatusLevel,
     displayStatusText,
     formatDateTime,
+    isAbnormalFulfillment,
     operationText,
   } from '@/utils/order-display';
 
@@ -270,6 +274,15 @@
     display: block;
     margin-top: $space-2;
     color: $color-text-tertiary;
+    font-size: $font-size-xs;
+  }
+  .od-head__abnormal {
+    display: block;
+    margin-top: $space-2;
+    padding: $space-2 $space-3;
+    border-radius: $radius-sm;
+    background: #fdecec;
+    color: $color-danger;
     font-size: $font-size-xs;
   }
   .od__row {

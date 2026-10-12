@@ -52,6 +52,17 @@ export function operationText(operationType) {
   return OPERATION_MAP[operationType] || operationType || '状态更新';
 }
 
+/**
+ * 配送异常（拒收 / 破损 / 缺货争议等）。
+ *
+ * 展示分类暂时仍归入「已完成」——异常单必须有归属页签，否则客户在列表里找不到它；
+ * 但是否应该单独出一个状态与页签，属产品口径，待第二阶段配送功能统一裁决。
+ * 在那之前至少不能只说「已完成」：列表打标、详情给横幅，把真实履约状态说清楚。
+ */
+export function isAbnormalFulfillment(fulfillmentStatus) {
+  return fulfillmentStatus === 'EXCEPTION';
+}
+
 /** 数量按四位小数定点做整数运算，去掉无意义的尾随零（与购物车、结算页同一口径） */
 export function displayQuantity(quantity) {
   if (quantity === null || quantity === undefined || quantity === '') return '—';

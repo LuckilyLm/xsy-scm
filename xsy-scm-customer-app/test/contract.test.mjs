@@ -90,6 +90,25 @@ test('order actions only offer cancel when the server says it is cancelable', ()
   assert.match(detail, /v-if="order\.cancelable"/);
 });
 
+test('order list labels the amount as an estimate and drops stale tab responses', () => {
+  const page = read('../src/pages/order/index.vue');
+  // orderedTotalAmount 是订货金额，不等于实付；接入真实支付事实前不得写成「实付金额」
+  assert.match(page, /预计订单金额/);
+  assert.doesNotMatch(page, /实付金额/);
+  // 切分类要作废旧请求，否则会把上一分类的结果显示到新分类
+  assert.match(page, /let loadSeq = 0/);
+  assert.match(page, /if \(seq !== loadSeq\) return;/);
+});
+
+test('abnormal fulfillment is never presented as a plain completion', () => {
+  const util = read('../src/utils/order-display.js');
+  const page = read('../src/pages/order/index.vue');
+  const detail = read('../src/pages-sub/order/detail.vue');
+  assert.match(util, /isAbnormalFulfillment/);
+  assert.match(page, /isAbnormalFulfillment\(order\.fulfillmentStatus\)/);
+  assert.match(detail, /isAbnormalFulfillment\(order\.fulfillmentStatus\)/);
+});
+
 test('address form posts the field names the backend expects', () => {
   const api = read('../src/api/mall/address-api.js');
   const edit = read('../src/pages-sub/address/edit.vue');

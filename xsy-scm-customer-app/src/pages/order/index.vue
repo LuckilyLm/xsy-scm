@@ -18,9 +18,12 @@
     <view v-for="order in orders" :key="order.orderId" class="order-card">
       <view class="order-card__head" @click="goDetail(order.orderId)">
         <text class="order-card__no">订单号：{{ order.orderNo }}</text>
-        <text class="order-card__status" :class="`order-card__status--${displayStatusLevel(order.displayStatus)}`">
-          {{ displayStatusText(order.displayStatus) }}
-        </text>
+        <view class="order-card__badges">
+          <text v-if="isAbnormalFulfillment(order.fulfillmentStatus)" class="order-card__abnormal">配送异常</text>
+          <text class="order-card__status" :class="`order-card__status--${displayStatusLevel(order.displayStatus)}`">
+            {{ displayStatusText(order.displayStatus) }}
+          </text>
+        </view>
       </view>
 
       <view class="order-card__goods" @click="goDetail(order.orderId)">
@@ -36,7 +39,7 @@
       </view>
 
       <view class="order-card__foot" @click="goDetail(order.orderId)">
-        <text class="order-card__label">实付金额</text>
+        <text class="order-card__label">预计订单金额</text>
         <text class="order-card__amount">¥{{ displayAmount(order.orderedTotalAmount) }}</text>
       </view>
       <text class="order-card__time">下单时间：{{ formatDateTime(order.createdAt) }}</text>
@@ -58,7 +61,15 @@
   import { mallOrderApi } from '@/api/mall/order-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
-  import { CANCEL_REASONS, ORDER_TABS, displayAmount, displayStatusLevel, displayStatusText, formatDateTime } from '@/utils/order-display';
+  import {
+    CANCEL_REASONS,
+    ORDER_TABS,
+    displayAmount,
+    displayStatusLevel,
+    displayStatusText,
+    formatDateTime,
+    isAbnormalFulfillment,
+  } from '@/utils/order-display';
 
   const PAGE_SIZE = 10;
   const orders = ref([]);
@@ -67,6 +78,11 @@
   const loading = ref(false);
   /** 当前页签；空串为「全部」 */
   const displayStatus = ref('');
+  /**
+   * 请求序号：切页签时旧请求可能还在路上，谁最后发出谁作数，旧响应一律丢弃。
+   * 没有它会出现「切到配送中却显示上一分类结果」。
+   */
+  let loadSeq = 0;
 
   const emptyText = computed(() => (displayStatus.value ? `暂无${displayStatusText(displayStatus.value)}订单` : '暂无订单'));
 
@@ -76,34 +92,40 @@
     uni.stopPullDownRefresh();
   });
   onReachBottom(() => {
-    if (hasMore.value) load(false);
+    // 翻页要等上一页回来，否则会重复请求同一页；切页签不受此限制
+    if (hasMore.value && !loading.value) load(false);
   });
 
   function switchTab(value) {
     if (displayStatus.value === value) return;
     displayStatus.value = value;
+    // 切分类总是发出新请求，不被在途的上一分类请求挡住
     load(true);
   }
 
   async function load(reset) {
-    if (loading.value) return;
+    if (!reset && loading.value) return;
+    const seq = (loadSeq += 1);
+    const tabAtRequest = displayStatus.value;
     loading.value = true;
     try {
       const nextPage = reset ? 1 : pageNum.value + 1;
       const response = await mallOrderApi.getList({
         pageNum: nextPage,
         pageSize: PAGE_SIZE,
-        displayStatus: displayStatus.value || undefined,
+        displayStatus: tabAtRequest || undefined,
       });
+      if (seq !== loadSeq) return;
       const page = response.data || {};
       orders.value = reset ? page.list || [] : orders.value.concat(page.list || []);
       pageNum.value = nextPage;
       hasMore.value = nextPage < Number(page.pages || 0);
     } catch (error) {
+      if (seq !== loadSeq) return;
       smartSentry.captureError(error);
       uni.showToast({ title: error?.message || '订单加载失败', icon: 'none' });
     } finally {
-      loading.value = false;
+      if (seq === loadSeq) loading.value = false;
     }
   }
 
@@ -223,6 +245,18 @@
     color: $color-text-primary;
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
+  }
+  .order-card__badges {
+    display: flex;
+    align-items: center;
+  }
+  .order-card__abnormal {
+    margin-right: $space-2;
+    padding: 2rpx 12rpx;
+    border-radius: $radius-pill;
+    background: #fdecec;
+    color: $color-danger;
+    font-size: $font-size-xs;
   }
   .order-card__status {
     font-size: $font-size-sm;
