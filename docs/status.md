@@ -28,6 +28,12 @@ SCM V2 管理后台已经覆盖商品、客户、供应商、定价、销售订�
     ④ **切换分类竞态**：`switchTab` 会因在途请求被 `loading` 早退，且旧响应会覆盖新分类；现引入请求序号，切分类总发新请求、旧响应一律丢弃，翻页仍等待上一页。
     ⑤ **异常配送不再当正常完成**：`EXCEPTION` 仍归「已完成」页签（异常单必须有归属，否则客户在列表找不到），但列表打「配送异常」标、详情给横幅并展示签收原因；是否单独出一个状态与页签属产品口径，**留待第二阶段配送功能统一裁决**。
   - **复核修正后验证**：后端商城单测 **16/16**（`MallOrderServiceTest` 增到 6 项，含「已取消订单的幂等重放仍能到达幂等记录」）；小程序契约测试 **18/18**；`build:mp-weixin` 通过；改动文件 eslint 无告警。
+  - **第二轮复核修正（同日，幂等指纹与前端状态）**：
+    ① **取消幂等指纹去掉 `version`**：幂等组件除比对 `Idempotency-Key` 还比对请求内容哈希，而 `OrderCancelForm` 带 `version`；第一次取消成功后版本前进，同一键重试的哈希就变了，会报幂等冲突而不是重放。现商城入口改用只绑定「订单 + 原因」的指纹（客户身份已在幂等 scope 的操作者里），管理端仍按整表单参与指纹、版本规则不变。指纹用 `LinkedHashMap` 而非 `Map.of`——后者迭代顺序在不同 JVM 间会变，哈希会漂移。
+    ② **下单幂等预检提前到价格校验之前**：原顺序是「查价 → 校验指纹 → 幂等」，第一次下单成功但响应丢失时，重试若遇到变价会被 `CHECKOUT_PRICE_CHANGED` 挡住，客户以为没下成、实际订单已存在。现新增 `ScmIdempotencyService.peekCompleted`（只读、不占键），命中已成功的同键同指纹请求直接回放原订单；**新请求仍严格校验当前价格**。
+    ③ **结算预览失败不再允许提交**：新增 `previewReady`，重新预览先作废旧指纹与金额，失败时清空并提示「金额获取失败，点击重试」，`canSubmit` 与提交守卫都要求本次预览成功，避免拿旧金额下单。
+    ④ **配送日期改用 Asia/Shanghai**：原 `new Date().toISOString().slice(0, 10)` 取的是 UTC 日期，中国时间凌晨会少一天，客户能选到昨天；新增 `utils/mall-date.js` 的 `shanghaiDate()`（固定 +8，不依赖小程序支持不完整的 Intl）。
+  - **第二轮复核修正后验证**：后端定向单测 **20/20**（新增 `SalesOrderCancelFingerprintTest` 2 项、`MallCheckoutServiceTest` 增到 4 项）；小程序契约测试 **20/20**；`build:mp-weixin` 通过；改动文件 eslint 无告警（顺带修掉结算页既有的 `textarea` 自闭合告警）。
 - **2026-10-12 验证（本轮实跑，非静态推断）**：
   - **V118～V124 迁移演练 ✅**：新建隔离库 `xsy_mall_20261012_01`，空库迁移 `flyway_schema_history` **125 条全部 success、0 失败**，末条为 `124 scm mall customer address`；新表 `xsy_mall_customer_account` / `xsy_mall_wechat_binding` / `xsy_mall_cart_item` / `xsy_mall_customer_address` / `xsy_refund_funding_allocation` 均按 `xsy_` 前缀建出。
   - **后端定向测试 ✅ 8/8**：`ScmMigrationTargetPgIT`（断言 flyway 到 V124）1/1、`ScmPurchaseMigrationIT`（V1–V124 只追加）+ `RefundFundingAllocatorTest` + `SalesOrderQueryRecentPriceTest` 合计 7/7。
