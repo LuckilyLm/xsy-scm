@@ -21,6 +21,13 @@ SCM V2 管理后台已经覆盖商品、客户、供应商、定价、销售订�
   - **列表 UI 对齐效果图 06**：状态页签 + 订单号 + 状态徽标 + 三格缩略图 + 共 N 件 + 实付金额 + 下单时间 + 取消/再次购买。
   - **验证**：后端 `mvn compile` 通过；商城相关单测 **15/15 通过**（新增 `MallOrderServiceTest` 5 项、`MallOrderDisplayStatusEnumTest` 5 项，含「已确认不可取消」「在途不可取消」「再来一单不复制历史价」「未知状态不猜」）；小程序契约测试 16/16、`build:mp-weixin` 通过。**未做**：端到端联调、浏览器人工验收、商城订单在后台列表的可见性实测。
   - **发现并修正**：`MallOrderDisplayStatusEnum` 原实现把未知订单状态兜底成「备货中」，与注释声明的「待处理」不一致，会让客户以为后台已接单；已改为兜底「待处理」。
+  - **复核修正（同日，按负责人复核意见）**：
+    ① **取消幂等重放打通**：原实现在调用正式订单服务**之前**做状态机前置判定，首次取消成功后订单已 `CANCELLED`，同一幂等键重试会被前置判定挡成「不允许取消」；且 `SalesOrderService.cancel` 的重放分支无条件调用面向员工的 `salesOrderQueryService.detail()`，商城客户会被员工范围挡住。现改为：订单已 `CANCELLED` 时跳过前置判定、直接交给幂等记录与状态机回答；重放分支的归属校验按 `enforceEmployeeScope` 分流（管理端仍走员工范围，商城侧由 `MallOrderService.requireOwnedOrder` 先判归属）。
+    ② **签收信息回填**：`MallOrderQueryService` 原只取履约状态，`signedAt` / `signReason` 一直是空；现改为读取生效线路订单整行并回填，详情页不再出现「已签收却显示未签收」。
+    ③ **金额标签改正**：订单列表原写「实付金额」但取的是 `orderedTotalAmount`（订货金额），与账期/货到付款/实重结算都不同；改为「预计订单金额」，接入真实支付事实后再单独展示已付金额。
+    ④ **切换分类竞态**：`switchTab` 会因在途请求被 `loading` 早退，且旧响应会覆盖新分类；现引入请求序号，切分类总发新请求、旧响应一律丢弃，翻页仍等待上一页。
+    ⑤ **异常配送不再当正常完成**：`EXCEPTION` 仍归「已完成」页签（异常单必须有归属，否则客户在列表找不到），但列表打「配送异常」标、详情给横幅并展示签收原因；是否单独出一个状态与页签属产品口径，**留待第二阶段配送功能统一裁决**。
+  - **复核修正后验证**：后端商城单测 **16/16**（`MallOrderServiceTest` 增到 6 项，含「已取消订单的幂等重放仍能到达幂等记录」）；小程序契约测试 **18/18**；`build:mp-weixin` 通过；改动文件 eslint 无告警。
 - **2026-10-12 验证（本轮实跑，非静态推断）**：
   - **V118～V124 迁移演练 ✅**：新建隔离库 `xsy_mall_20261012_01`，空库迁移 `flyway_schema_history` **125 条全部 success、0 失败**，末条为 `124 scm mall customer address`；新表 `xsy_mall_customer_account` / `xsy_mall_wechat_binding` / `xsy_mall_cart_item` / `xsy_mall_customer_address` / `xsy_refund_funding_allocation` 均按 `xsy_` 前缀建出。
   - **后端定向测试 ✅ 8/8**：`ScmMigrationTargetPgIT`（断言 flyway 到 V124）1/1、`ScmPurchaseMigrationIT`（V1–V124 只追加）+ `RefundFundingAllocatorTest` + `SalesOrderQueryRecentPriceTest` 合计 7/7。
