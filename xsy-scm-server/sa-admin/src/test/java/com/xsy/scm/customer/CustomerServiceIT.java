@@ -177,6 +177,44 @@ class CustomerServiceIT extends ScmW2PgITBase {
     }
 
     @Test
+    @DisplayName("客户所属类型配过价不影响该客户删除：类型价是类型层共享配置，不是该客户的引用")
+    void deleteIsNotBlockedByPricesOfItsOwnCustomerType() {
+        Long id = service.add(form("TYPE-PRICED"));
+        Long typeId = jdbc.queryForObject("SELECT customer_type_id FROM xsy_customer WHERE id = ?",
+                Long.class, id);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_customer_type_price "
+                + "WHERE customer_type_id = ? AND deleted = FALSE", Integer.class, typeId))
+                .as("前提：该客户所属类型确实配过客户类型价")
+                .isPositive();
+
+        CustomerDeleteForm deletion = new CustomerDeleteForm();
+        deletion.setCustomerId(id);
+        deletion.setVersion(0);
+        service.delete(deletion);
+
+        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_customer WHERE id = ?", Boolean.class, id))
+                .as("类型有价不等于客户被引用，客户本身没有引用时必须能删")
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("客户自己持有可见性白名单时仍然拒绝删除（40939，守卫未被放宽）")
+    void deleteIsRejectedWhileTheCustomerOwnsVisibilityRows() {
+        Long id = service.add(form("VIS-REF"));
+        jdbc.update("INSERT INTO xsy_customer_sku_visibility (customer_id, sku_id, created_by, updated_by) "
+                + "VALUES (?, 1, '1:1', '1:1')", id);
+
+        CustomerDeleteForm deletion = new CustomerDeleteForm();
+        deletion.setCustomerId(id);
+        deletion.setVersion(0);
+        expectCode(() -> service.delete(deletion), 40939);
+
+        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_customer WHERE id = ?", Boolean.class, id))
+                .as("被拒时不得留下半删除状态")
+                .isFalse();
+    }
+
+    @Test
     @DisplayName("账期三种合法形态都能落库，数值按 NUMERIC(18,4) 保真")
     void creditPeriodThreeFormsPersist() {
         CustomerAddForm byAmount = form("A1");
