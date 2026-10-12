@@ -34,6 +34,11 @@ SCM V2 管理后台已经覆盖商品、客户、供应商、定价、销售订�
     ③ **结算预览失败不再允许提交**：新增 `previewReady`，重新预览先作废旧指纹与金额，失败时清空并提示「金额获取失败，点击重试」，`canSubmit` 与提交守卫都要求本次预览成功，避免拿旧金额下单。
     ④ **配送日期改用 Asia/Shanghai**：原 `new Date().toISOString().slice(0, 10)` 取的是 UTC 日期，中国时间凌晨会少一天，客户能选到昨天；新增 `utils/mall-date.js` 的 `shanghaiDate()`（固定 +8，不依赖小程序支持不完整的 Intl）。
   - **第二轮复核修正后验证**：后端定向单测 **20/20**（新增 `SalesOrderCancelFingerprintTest` 2 项、`MallCheckoutServiceTest` 增到 4 项）；小程序契约测试 **20/20**；`build:mp-weixin` 通过；改动文件 eslint 无告警（顺带修掉结算页既有的 `textarea` 自闭合告警）。
+  - **第三轮复核修正（同日，幂等身份与结算前端）**：
+    ① **下单幂等指纹不再依赖可变的收货地址**：原实现直接拿 `SalesOrderAddForm`（含地址内容快照）当幂等请求，而地址会被同一客户的其他采购账号编辑；第一次下单成功、响应丢失后重试，服务端重新读到的地址已变，哈希随之改变，原订单回放不出来。现由 `MallCheckoutService.idempotencyRequest` 构造只含稳定字段的指纹（客户、**地址 ID**、备注、期望配送日期、按 SKU 排序的规格与数量），`SalesOrderService.createFromMall` / `replayMallOrder` 改为接收该指纹；地址内容仍在建单时照常冻结进订单快照。
+    ② **预览发现不可售项时禁止提交**：`preview` 早已返回 `unavailableSkuIds` / `availableCount`，但页面只更新金额、未据此拦截，服务端金额已排除不可售行 → 客户可拿「少了钱的金额」提交。现新增 `unavailableItems`，预览结果里非 `AVAILABLE` 的项全部计入，`canSubmit` 与提交守卫都要求其为空，并展示不可售原因与「返回购物车」入口，明细行也标出不可售（不再显示 `¥` 空价）。
+    ③ **预览加请求序号**：连续触发预览时旧响应后到会覆盖新金额与价格指纹，与订单列表同类竞态。现引入 `previewSeq`，旧响应一律丢弃，且旧请求不会把仍在进行中的最新预览标记为已结束。
+  - **第三轮复核修正后验证**：后端定向单测 **21/21**（`MallCheckoutServiceTest` 增到 5 项，新增「地址被其他采购账号编辑后幂等身份不变、但建单快照确实变了」）；小程序契约测试 **22/22**（新增不可售拦截、预览请求序号两项）；`build:mp-weixin` 通过；改动文件 eslint 无告警。
 - **2026-10-12 验证（本轮实跑，非静态推断）**：
   - **V118～V124 迁移演练 ✅**：新建隔离库 `xsy_mall_20261012_01`，空库迁移 `flyway_schema_history` **125 条全部 success、0 失败**，末条为 `124 scm mall customer address`；新表 `xsy_mall_customer_account` / `xsy_mall_wechat_binding` / `xsy_mall_cart_item` / `xsy_mall_customer_address` / `xsy_refund_funding_allocation` 均按 `xsy_` 前缀建出。
   - **后端定向测试 ✅ 8/8**：`ScmMigrationTargetPgIT`（断言 flyway 到 V124）1/1、`ScmPurchaseMigrationIT`（V1–V124 只追加）+ `RefundFundingAllocatorTest` + `SalesOrderQueryRecentPriceTest` 合计 7/7。
