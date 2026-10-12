@@ -20,7 +20,7 @@
 | ADM-13～15、17 | 推广码、订单助手、批次包装溯源、员工移动端仍属后续需求 | 按下文阶段推进 |
 | B1/B4/B5/B7 | 缺口登记于 [前端所需后端字段缺口](frontend-ui-backend-gap-inventory.md) | 随相关页面单独补齐，不造第二套业务状态 |
 
-**2026-10-10 已按工作包拆成独立提交**：ADM-12 充值/退款分摊、商城后端、后台账号 UI、商城前端、文档。订单中心仍有未提交工作区；后续各阶段继续按独立功能提交，不把不同阶段改动混在同一次提交中。
+**2026-10-10 起已按工作包拆成独立提交**：ADM-12 充值/退款分摊、商城后端、后台账号 UI、商城前端、结算下单、订单中心、文档。当前工作区只剩迁移验证准备的测试改动，不混入功能提交。
 
 **账号模型已确认支持多账号**：V121 初建的一客一号唯一索引已由 V122 移除；登录手机号仍全局唯一。一账号切换多个企业为后续独立功能。
 
@@ -99,7 +99,7 @@
 - 商品分类树、搜索分页、SKU 详情、图片、常购列表与正式客户商品可见性、协议价→客户类型价→市场价对齐。
 - 商城页面从 mock 切到真实 API；不可售/价格待询/无可见 SKU 时有明确呈现。搜索热词可先为空，不把空热词当主链阻塞。
 - 账号已确认支持多采购账号（V122 移除 V121 的一客一号唯一索引）；一账号切换多个企业仍为后续独立功能。
-- **常购已定稿：以后端现有结构为准**（`GET /scm/mall/catalog/frequent` 返回 `List<MallProductVO>` 裸数组 + `days/limit` 参数）。前端 `getFavorites` 需改为传 `days/limit` 并直接读数组（当前误读 `response.data.list`、误传 `pageNum/pageSize`，会导致常购恒为空）。后端不新增包装 VO；未引用的 `MallFrequentProductVO` 一并清理。
+- **常购已定稿并已落地**：以后端现有结构为准（`GET /scm/mall/catalog/frequent` 返回 `List<MallProductVO>` 裸数组 + `days/limit` 参数）。前端已改为传 `days/limit` 并直接读数组，mock 同步，契约测试覆盖；后端未新增包装 VO，未引用的 `MallFrequentProductVO` 已清理。
 
 **页面**：客户详情商城账号卡；`pages/login/login`、`pages/account/password`、`pages/home/index`、`pages/category/index`、`pages-sub/product/search|detail`。
 **API**：`/scm/customer/mall-account/**`、`/scm/mall/auth/**`、`/scm/mall/catalog/**`。
