@@ -119,6 +119,25 @@ test('checkout blocks submission until the current preview succeeds', () => {
   assert.match(page, /!previewReady\.value \|\| !fingerprint\.value/);
 });
 
+test('checkout refuses to submit when the preview reports unavailable items', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  // 服务端已把不可售项的金额排除，前端不能只看金额：不可售项必须同时挡住提交
+  assert.match(page, /const unavailableItems = ref\(\[\]\)/);
+  assert.match(page, /unavailableItems\.value = nextItems\.filter\(\(item\) => !isAvailable\(item\)\)/);
+  assert.match(page, /unavailableItems\.value\.length === 0/);
+  assert.match(page, /if \(unavailableItems\.value\.length\) \{/);
+  assert.match(page, /返回购物车调整/);
+});
+
+test('checkout only applies the latest preview response', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  // 连续预览时旧响应后到会覆盖新金额与指纹，必须用请求序号丢弃
+  assert.match(page, /let previewSeq = 0/);
+  assert.match(page, /const seq = \+\+previewSeq/);
+  assert.match(page, /if \(seq !== previewSeq\) return;/);
+  assert.match(page, /if \(seq === previewSeq\) previewing\.value = false/);
+});
+
 test('delivery date uses the Shanghai calendar instead of UTC', () => {
   const page = read('../src/pages-sub/checkout/index.vue');
   const util = read('../src/utils/mall-date.js');

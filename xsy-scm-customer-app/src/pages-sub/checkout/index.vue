@@ -13,6 +13,12 @@
       <text class="co-address__arrow">›</text>
     </view>
 
+    <!-- 不可售提示：预览发现不可售项时不允许提交，先让客户回购物车调整 -->
+    <view v-if="unavailableItems.length" class="co-alert">
+      <text class="co-alert__text">{{ unavailableTip }}</text>
+      <text class="co-alert__action" @click="backToCart">返回购物车</text>
+    </view>
+
     <!-- 期望配送日期 -->
     <picker mode="date" :value="deliveryDate" :start="today" @change="onDateChange">
       <view class="co-card co-row">
@@ -26,7 +32,7 @@
     <!-- 商品明细 -->
     <view class="co-card">
       <view class="co-card__title">商品明细</view>
-      <view v-for="item in items" :key="item.skuId" class="co-item">
+      <view v-for="item in items" :key="item.skuId" class="co-item" :class="{ 'co-item--off': !isAvailable(item) }">
         <view class="co-item__thumb">
           <image v-if="item.primaryImageUrl" class="co-item__image" :src="item.primaryImageUrl" mode="aspectFill" />
           <view v-else class="co-item__thumb-fallback">{{ (item.productName || '商').slice(0, 1) }}</view>
@@ -35,12 +41,13 @@
           <text class="co-item__name">{{ item.productName }}</text>
           <text class="co-item__spec">{{ item.specName }}<text v-if="item.nonStandard"> · 按实重</text></text>
           <view class="co-item__price-row">
-            <text class="co-item__price">¥{{ item.unitPrice }}</text>
+            <text v-if="isAvailable(item)" class="co-item__price">¥{{ item.unitPrice }}</text>
+            <text v-else class="co-item__price co-item__price--off">不可售</text>
             <text class="co-item__unit">/{{ item.saleUnit }}</text>
             <text class="co-item__qty">×{{ displayQuantity(item.quantity) }}</text>
           </view>
         </view>
-        <text class="co-item__amount">¥{{ item.lineAmount }}</text>
+        <text v-if="isAvailable(item)" class="co-item__amount">¥{{ item.lineAmount }}</text>
       </view>
       <view v-if="nonStandardCount" class="co-tip"> 含 {{ nonStandardCount }} 项按实重结算，最终金额以出库实重为准 </view>
     </view>
@@ -87,6 +94,10 @@
   const fingerprint = ref('');
   /** 本次预览是否成功；失败时不允许提交，避免拿旧金额下单 */
   const previewReady = ref(false);
+  /** 预览发现的不可售项（含原因）；非空时禁止提交 */
+  const unavailableItems = ref([]);
+  /** 预览请求序号：只允许最后一次预览的响应更新页面，避免旧响应覆盖新金额与指纹 */
+  let previewSeq = 0;
   const today = shanghaiDate();
 
   /** 幂等键与内容绑定：内容不变时重试复用同一个键，内容变化才换新键 */
@@ -94,7 +105,29 @@
   let lastSignature = '';
 
   const nonStandardCount = computed(() => items.value.filter((item) => item.nonStandard === true).length);
-  const canSubmit = computed(() => !!address.value && items.value.length > 0 && previewReady.value && !previewing.value && !submitting.value);
+  const unavailableTip = computed(() => {
+    if (!unavailableItems.value.length) return '';
+    const names = unavailableItems.value.map((item) => item.productName || `SKU ${item.skuId}`);
+    const head = names.slice(0, 2).join('、');
+    const rest = names.length > 2 ? ` 等 ${names.length} 项` : '';
+    return `${head}${rest}：${unavailableText(unavailableItems.value[0])}。请返回购物车调整后再结算`;
+  });
+  const canSubmit = computed(
+    () =>
+      !!address.value && items.value.length > 0 && unavailableItems.value.length === 0 && previewReady.value && !previewing.value && !submitting.value
+  );
+
+  function isAvailable(item) {
+    return item.availability === 'AVAILABLE';
+  }
+  /** 与购物车页保持同一套不可售文案 */
+  function unavailableText(item) {
+    if (item.availability === 'NO_PRICE') return '暂无客户价，请联系业务员询价';
+    return '商品已下架或对当前客户不可见';
+  }
+  function backToCart() {
+    uni.switchTab({ url: '/pages/cart/index' });
+  }
 
   function fullAddress(item) {
     return [item.provinceName, item.cityName, item.districtName, item.detailAddress].filter(Boolean).join(' ');
@@ -160,9 +193,11 @@
 
   /** 结算预览：金额与价格指纹都来自服务端 */
   async function refreshPreview() {
+    const seq = ++previewSeq;
     // 每次重新预览先作废旧结果：失败时不能继续沿用上一次的金额与指纹
     previewReady.value = false;
     fingerprint.value = '';
+    unavailableItems.value = [];
     if (!items.value.length) {
       estimatedAmount.value = '0.00';
       return;
@@ -173,18 +208,25 @@
         items: payloadItems(),
         addressId: address.value ? address.value.addressId : null,
       });
+      // 只认最后一次预览：旧响应后到一律丢弃，否则会把新金额与指纹覆盖回旧的
+      if (seq !== previewSeq) return;
       const data = response.data || {};
-      items.value = data.items || items.value;
+      const nextItems = data.items || items.value;
+      items.value = nextItems;
+      // 服务端判定不可售的项：金额已被排除，必须同时禁止提交，不能只看金额
+      unavailableItems.value = nextItems.filter((item) => !isAvailable(item));
       estimatedAmount.value = data.estimatedAmount || '0.00';
       fingerprint.value = data.priceFingerprint || '';
       previewReady.value = !!fingerprint.value;
       syncIdempotencyKey();
     } catch (error) {
+      if (seq !== previewSeq) return;
       smartSentry.captureError(error);
       estimatedAmount.value = '';
       uni.showToast({ title: error?.message || '结算信息获取失败', icon: 'none' });
     } finally {
-      previewing.value = false;
+      // 旧请求不得把仍在进行中的最新预览标记成已结束
+      if (seq === previewSeq) previewing.value = false;
     }
   }
 
@@ -227,6 +269,10 @@
     }
     if (!previewReady.value || !fingerprint.value) {
       uni.showToast({ title: '结算金额获取失败，请点击金额处重试', icon: 'none' });
+      return;
+    }
+    if (unavailableItems.value.length) {
+      uni.showToast({ title: '有商品已不可售，请返回购物车调整', icon: 'none' });
       return;
     }
     submitting.value = true;
@@ -336,6 +382,13 @@
     @include flex-start;
     margin-top: $space-3;
   }
+  .co-item--off .co-item__name,
+  .co-item--off .co-item__spec {
+    color: $color-text-tertiary;
+  }
+  .co-item__price--off {
+    color: $color-text-tertiary;
+  }
   .co-item__thumb {
     width: 112rpx;
     height: 112rpx;
@@ -402,6 +455,26 @@
     background-color: #fff8e6;
     font-size: $font-size-xs;
     color: $color-warning;
+  }
+  .co-alert {
+    @include flex-between;
+    align-items: flex-start;
+    margin-top: $space-3;
+    padding: $space-3 $space-4;
+    background-color: #fdecec;
+  }
+  .co-alert__text {
+    flex: 1;
+    font-size: $font-size-xs;
+    color: $color-danger;
+    line-height: 1.5;
+  }
+  .co-alert__action {
+    flex-shrink: 0;
+    margin-left: $space-3;
+    font-size: $font-size-xs;
+    color: $color-danger;
+    text-decoration: underline;
   }
   .co-remark {
     width: 100%;
