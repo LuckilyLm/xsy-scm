@@ -54,6 +54,42 @@ test('order center exposes customer-scoped list and detail pages', () => {
   assert.doesNotMatch(success, /下一阶段开放/);
 });
 
+test('order center shows the server-derived display status, not a client state machine', () => {
+  const page = read('../src/pages/order/index.vue');
+  const detail = read('../src/pages-sub/order/detail.vue');
+  const util = read('../src/utils/order-display.js');
+  // 文案与档位来自服务端下发的 displayStatus
+  assert.match(util, /PENDING: \{ text: '待处理'/);
+  assert.match(page, /displayStatusText\(order\.displayStatus\)/);
+  assert.match(detail, /displayStatusText\(order\.displayStatus\)/);
+  // 客户端不得按订单原始状态自行推导阶段
+  assert.doesNotMatch(page, /order\.status === 'CONFIRMED'/);
+  assert.doesNotMatch(detail, /order\.status === 'CONFIRMED'/);
+});
+
+test('cancel and reorder both go through the server', () => {
+  const api = read('../src/api/mall/order-api.js');
+  const page = read('../src/pages/order/index.vue');
+  const detail = read('../src/pages-sub/order/detail.vue');
+  const mock = read('../mock/routes/order.js');
+  assert.match(api, /cancel: \(orderId, reason, idempotencyKey\)/);
+  assert.match(api, /reorder: \(orderId\)/);
+  assert.match(page, /mallOrderApi\.cancel\(/);
+  assert.match(page, /mallOrderApi\.reorder\(/);
+  assert.match(detail, /mallOrderApi\.cancel\(/);
+  // 再来一单只传订单号：不复制历史成交价
+  assert.doesNotMatch(api, /reorder[\s\S]{0,160}unitPrice/);
+  assert.match(mock, /\/scm\/mall\/orders\/:orderId\/cancel/);
+  assert.match(mock, /\/scm\/mall\/orders\/:orderId\/reorder/);
+});
+
+test('order actions only offer cancel when the server says it is cancelable', () => {
+  const page = read('../src/pages/order/index.vue');
+  const detail = read('../src/pages-sub/order/detail.vue');
+  assert.match(page, /v-if="order\.cancelable"/);
+  assert.match(detail, /v-if="order\.cancelable"/);
+});
+
 test('address form posts the field names the backend expects', () => {
   const api = read('../src/api/mall/address-api.js');
   const edit = read('../src/pages-sub/address/edit.vue');
@@ -77,7 +113,12 @@ test('login and password forms match the backend payload', () => {
 });
 
 test('product pages add to the server cart through the shared composable', () => {
-  for (const page of ['../src/pages/home/index.vue', '../src/pages/category/index.vue', '../src/pages-sub/product/search.vue', '../src/pages-sub/product/detail.vue']) {
+  for (const page of [
+    '../src/pages/home/index.vue',
+    '../src/pages/category/index.vue',
+    '../src/pages-sub/product/search.vue',
+    '../src/pages-sub/product/detail.vue',
+  ]) {
     const source = read(page);
     assert.match(source, /useMallCart/);
     assert.doesNotMatch(source, /购物车.*下一阶段开放|购物车暂未开放/);
