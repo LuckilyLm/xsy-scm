@@ -2,16 +2,21 @@ package com.xsy.scm.mall.order.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.delivery.constant.ScmDeliveryFulfillmentStatusEnum;
 import com.xsy.scm.delivery.dao.DeliveryRouteOrderDao;
 import com.xsy.scm.delivery.domain.entity.DeliveryRouteOrderEntity;
+import com.xsy.scm.delivery.domain.vo.DeliveryOrderProgressVO;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.catalog.dao.MallCatalogDao;
 import com.xsy.scm.mall.order.constant.MallOrderDisplayStatusEnum;
 import com.xsy.scm.mall.order.domain.form.MallOrderQueryForm;
+import com.xsy.scm.mall.order.domain.vo.MallOrderDeliveryVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderItemVO;
+import com.xsy.scm.mall.order.domain.vo.MallOrderProgressNodeVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderTimelineVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderVO;
+import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
 import com.xsy.scm.order.dao.OrderOperationLogDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
@@ -19,6 +24,8 @@ import com.xsy.scm.order.dao.SalesOrderItemDao;
 import com.xsy.scm.order.domain.entity.OrderOperationLogEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -98,6 +105,12 @@ public class MallOrderQueryService {
             result.setAddress(address.getAddress());
         });
         result.setTimeline(orderOperationLogDao.listByOrderId(orderId).stream().map(this::timeline).toList());
+        // 配送详情与进度只读配送域的正式事实：线路 / 司机 / 车辆 / 发车 / 完成 + 订单级签收。
+        // 线路被移出或逻辑删除时不返回投影，页面按「暂无配送信息」处理。
+        DeliveryOrderProgressVO deliveryProgress = deliveryRouteOrderDao.selectProgressByOrderIds(List.of(orderId))
+                .stream().findFirst().orElse(null);
+        result.setDelivery(delivery(deliveryProgress));
+        result.setProgress(progressNodes(order, deliveryProgress));
         return result;
     }
 
@@ -201,6 +214,63 @@ public class MallOrderQueryService {
         result.setUnitPrice(row.getLockedUnitPrice());
         result.setOrderedLineAmount(row.getOrderedLineAmount());
         result.setSettlementLineAmount(row.getSettlementLineAmount());
+        return result;
+    }
+
+    /**
+     * 线路尚未排车（或线路已逻辑删除）时返回 {@code null}：客户看到「暂无配送信息」， 而不是拿半条线路编出配送详情。
+     */
+    private static MallOrderDeliveryVO delivery(DeliveryOrderProgressVO row) {
+        if (row == null) {
+            return null;
+        }
+        MallOrderDeliveryVO result = new MallOrderDeliveryVO();
+        result.setRouteNo(row.getRouteNo());
+        result.setRouteName(row.getRouteName());
+        result.setDeliveryDate(row.getDeliveryDate());
+        result.setWarehouseName(row.getWarehouseNameSnapshot());
+        result.setDriverName(row.getDriverNameSnapshot());
+        result.setDriverPhone(row.getDriverPhoneSnapshot());
+        result.setVehicleNo(row.getVehicleNoSnapshot());
+        result.setPlannedDepartureTime(row.getPlannedDepartureTime());
+        result.setDispatchedAt(row.getDispatchedAt());
+        result.setCompletedAt(row.getCompletedAt());
+        return result;
+    }
+
+    /**
+     * 配送进度节点：{@code done} 只按「对应正式事实是否存在」判定，不推导状态、不预测下一步。
+     *
+     * <p>
+     * 已取消订单只保留「已提交 + 已取消」两格：取消之后不会再发车，继续列出后面几格会让客户以为还有后续。 异常签收（拒收/破损等）在最后一格显式写成「配送异常」并带上原因，不冒充正常签收。
+     */
+    private static List<MallOrderProgressNodeVO> progressNodes(SalesOrderEntity order, DeliveryOrderProgressVO row) {
+        List<MallOrderProgressNodeVO> nodes = new ArrayList<>();
+        nodes.add(node("SUBMITTED", "已提交订单", null,
+                order.getSubmittedAt() == null ? order.getCreatedAt() : order.getSubmittedAt(), true));
+        if (ScmOrderStatusEnum.CANCELLED.name().equals(order.getStatus())) {
+            nodes.add(node("CANCELLED", "订单已取消", order.getCancelReason(), order.getCancelledAt(), true));
+            return nodes;
+        }
+        nodes.add(node("CONFIRMED", "后台已接单", null, order.getConfirmedAt(), order.getConfirmedAt() != null));
+        OffsetDateTime dispatchedAt = row == null ? null : row.getDispatchedAt();
+        nodes.add(node("DISPATCHED", "已发车配送", null, dispatchedAt, dispatchedAt != null));
+        OffsetDateTime signedAt = row == null ? null : row.getSignedAt();
+        boolean abnormal = row != null
+                && ScmDeliveryFulfillmentStatusEnum.EXCEPTION.name().equals(row.getFulfillmentStatus());
+        nodes.add(node("SIGNED", abnormal ? "配送异常" : "已签收", row == null ? null : row.getSignReason(), signedAt,
+                signedAt != null));
+        return nodes;
+    }
+
+    private static MallOrderProgressNodeVO node(String code, String text, String detail, OffsetDateTime time,
+            boolean done) {
+        MallOrderProgressNodeVO result = new MallOrderProgressNodeVO();
+        result.setCode(code);
+        result.setText(text);
+        result.setDetail(detail);
+        result.setTime(time);
+        result.setDone(done);
         return result;
     }
 

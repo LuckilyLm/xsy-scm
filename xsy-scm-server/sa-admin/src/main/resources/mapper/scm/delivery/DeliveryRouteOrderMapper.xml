@@ -22,4 +22,17 @@
         WHERE deleted = FALSE AND assignment_status = 'ACTIVE' AND order_id IN
         <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">#{orderId}</foreach>
     </select>
+
+    <!-- 配送进度投影：线路侧的线路/司机/车辆/发车/完成 + 订单级的履约状态与签收事实。
+         线路被逻辑删除时整行不返回（客户看到的是「暂无配送信息」，而不是半条线路）。 -->
+    <select id="selectProgressByOrderIds" resultType="com.xsy.scm.delivery.domain.vo.DeliveryOrderProgressVO">
+        SELECT ro.order_id, ro.route_id, ro.fulfillment_status, ro.signed_at, ro.sign_reason,
+               r.route_no, r.route_name, r.delivery_date, r.status AS route_status,
+               r.warehouse_name_snapshot, r.driver_name_snapshot, r.driver_phone_snapshot,
+               r.vehicle_no_snapshot, r.planned_departure_time, r.dispatched_at, r.completed_at
+        FROM xsy_delivery_route_order ro
+                 JOIN xsy_delivery_route r ON r.id = ro.route_id AND r.deleted = FALSE
+        WHERE ro.deleted = FALSE AND ro.assignment_status = 'ACTIVE' AND ro.order_id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">#{orderId}</foreach>
+    </select>
 </mapper>

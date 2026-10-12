@@ -29,6 +29,7 @@ import com.xsy.scm.mall.order.domain.form.MallCheckoutPreviewForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderQueryForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
 import com.xsy.scm.mall.order.domain.vo.MallCheckoutPreviewVO;
+import com.xsy.scm.mall.order.domain.vo.MallOrderProgressNodeVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.mall.order.service.MallOrderQueryService;
@@ -171,19 +172,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         asEmployee(sellerEmployeeId, () -> {
             assertThat(mallOrderIdsVisibleToCurrentActor(customerId))
                     .as("订单业务员本人应能在后台看到该商城订单").contains(submitted.getOrderId());
-            // 非标品必须先生成实重再确认
-            SalesOrderDetailVO order = salesOrderQueryService.detail(submitted.getOrderId());
-            OrderActualQuantityForm actual = new OrderActualQuantityForm();
-            actual.setOrderId(order.getOrderId());
-            actual.setItemId(order.getItems().getFirst().getItemId());
-            actual.setVersion(order.getItems().getFirst().getVersion());
-            actual.setActualQuantity("2.0000");
-            actual.setReason("IT 实重");
-            SalesOrderDetailVO weighted = salesOrderService.actualQuantity(actual, prefix + ":actual");
-            OrderVersionForm confirm = new OrderVersionForm();
-            confirm.setOrderId(weighted.getOrderId());
-            confirm.setVersion(weighted.getVersion());
-            salesOrderService.confirm(confirm, prefix + ":confirm");
+            confirmOrder(submitted.getOrderId(), "2.0000");
             return null;
         });
 
@@ -235,6 +224,149 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
                     .as("未分配业务员的商城订单对普通业务员不可见（seller_id IN (...) 排除 NULL）").isEmpty();
             return null;
         });
+    }
+
+    /**
+     * 后台接单：非标品必须先生成实重再确认（与人工在后台录实重后接单同一条路径）。
+     */
+    private void confirmOrder(Long orderId, String actualQuantity) {
+        SalesOrderDetailVO order = salesOrderQueryService.detail(orderId);
+        OrderActualQuantityForm actual = new OrderActualQuantityForm();
+        actual.setOrderId(order.getOrderId());
+        actual.setItemId(order.getItems().getFirst().getItemId());
+        actual.setVersion(order.getItems().getFirst().getVersion());
+        actual.setActualQuantity(actualQuantity);
+        actual.setReason("IT 实重");
+        SalesOrderDetailVO weighted = salesOrderService.actualQuantity(actual, prefix + ":actual:" + orderId);
+        OrderVersionForm confirm = new OrderVersionForm();
+        confirm.setOrderId(weighted.getOrderId());
+        confirm.setVersion(weighted.getVersion());
+        salesOrderService.confirm(confirm, prefix + ":confirm:" + orderId);
+    }
+
+    /**
+     * 配送进度：商城的配送详情与进度节点只读配送域事实，不自己推导。
+     *
+     * <p>
+     * 线路的建线 / 定位 / 发车 / 签收正确性由配送域自己的 IT（{@code DeliveryDispatchPgIT}）覆盖，
+     * 本用例只验证商城这一侧的<b>只读投影</b>，因此线路与关联行用直插固定输入 —— 否则要把仓库坐标、入库、 分拣完成那一整套夹具复制过来，重复测别人已经测过的部分。
+     *
+     * <p>
+     * 直插之后必须 {@code evictMybatisCache()}：MyBatis 一级缓存与用例事务同生命周期， 否则会读到事务内的旧值，表现为「改了库但断言没变」。
+     */
+    @Test
+    void deliveryProgressReflectsRealRouteFacts() {
+        Long sellerEmployeeId = newEmployee("s3");
+        Long skuId = newOnShelfSku("delivery");
+        Long customerId = newCustomerAssignedTo(sellerEmployeeId);
+        MallAccount account = openMallAccount(customerId);
+        RequestMallCustomer customer = signIn(account);
+
+        Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
+        mallCartService.add(customer, cartAdd(skuId, "1.0000"));
+        MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
+        var submitted = mallCheckoutService.submit(customer, submitForm(skuId, addressId, preview.getPriceFingerprint()),
+                prefix + ":mall:delivery");
+        Long orderId = submitted.getOrderId();
+
+        // 尚未排车：没有配送信息，进度停在「已提交」，不伪造线路
+        MallOrderVO beforeRoute = mallOrderQueryService.detail(customer, orderId);
+        assertThat(beforeRoute.getDelivery()).as("未排车不得凭空返回线路").isNull();
+        assertThat(nodeCodes(beforeRoute)).containsExactly("SUBMITTED", "CONFIRMED", "DISPATCHED", "SIGNED");
+        assertThat(doneCodes(beforeRoute)).containsExactly("SUBMITTED");
+
+        // 后台接单后：确认节点点亮，展示分类进入「备货中」
+        asEmployee(sellerEmployeeId, () -> {
+            confirmOrder(orderId, "1.0000");
+            return null;
+        });
+        MallOrderVO confirmed = mallOrderQueryService.detail(customer, orderId);
+        assertThat(confirmed.getDisplayStatus()).isEqualTo(MallOrderDisplayStatusEnum.PREPARING.name());
+        assertThat(doneCodes(confirmed)).containsExactly("SUBMITTED", "CONFIRMED");
+
+        // 排车并已发车：线路信息与发车节点都来自配送事实
+        Long routeId = insertDispatchedRoute();
+        insertActiveRouteOrder(routeId, orderId, customerId, submitted.getOrderNo(), "IN_TRANSIT");
+        evictMybatisCache();
+
+        MallOrderVO inTransit = mallOrderQueryService.detail(customer, orderId);
+        assertThat(inTransit.getDisplayStatus()).isEqualTo(MallOrderDisplayStatusEnum.DELIVERING.name());
+        assertThat(inTransit.getDelivery()).isNotNull();
+        assertThat(inTransit.getDelivery().getRouteName()).isEqualTo(prefix + "线路");
+        assertThat(inTransit.getDelivery().getDriverName()).isEqualTo("IT 司机");
+        assertThat(inTransit.getDelivery().getDispatchedAt()).as("发车时刻来自线路行").isNotNull();
+        assertThat(doneCodes(inTransit)).containsExactly("SUBMITTED", "CONFIRMED", "DISPATCHED");
+
+        // 正常签收：进度走完，展示分类进入「已完成」
+        signRouteOrder(routeId, orderId, "SIGNED", "放前台代收");
+        MallOrderVO signed = mallOrderQueryService.detail(customer, orderId);
+        assertThat(signed.getDisplayStatus()).isEqualTo(MallOrderDisplayStatusEnum.COMPLETED.name());
+        assertThat(signed.getSignedAt()).isNotNull();
+        assertThat(doneCodes(signed)).containsExactly("SUBMITTED", "CONFIRMED", "DISPATCHED", "SIGNED");
+        assertThat(nodeText(signed, "SIGNED")).as("正常签收不写成异常").isEqualTo("已签收");
+
+        // 异常签收：最后一格显式写成「配送异常」并带原因，不冒充正常签收
+        signRouteOrder(routeId, orderId, "EXCEPTION", "客户拒收");
+        MallOrderVO abnormal = mallOrderQueryService.detail(customer, orderId);
+        assertThat(nodeText(abnormal, "SIGNED")).isEqualTo("配送异常");
+        assertThat(nodeDetail(abnormal, "SIGNED")).isEqualTo("客户拒收");
+    }
+
+    // ------------------------------------------------------------------
+    // 配送事实（直插固定输入，仅用于验证商城只读投影）
+    // ------------------------------------------------------------------
+
+    private Long insertDispatchedRoute() {
+        String routeNo = prefix + "-DR";
+        jdbc.update("INSERT INTO xsy_delivery_route (route_no, route_name, delivery_date, warehouse_id,"
+                + " warehouse_name_snapshot, driver_name_snapshot, driver_phone_snapshot, vehicle_no_snapshot,"
+                + " planned_departure_time, status, dispatched_at, dispatched_by, version, deleted,"
+                + " created_at, updated_at)"
+                + " VALUES (?, ?, CURRENT_DATE, ?, ?, ?, ?, ?, now(), 'DISPATCHED', now(), 'it', 0, FALSE,"
+                + " now(), now())",
+                routeNo, prefix + "线路", fixtureWarehouseId(), prefix + "仓", "IT 司机", "13900000000", "沪A00001");
+        return jdbc.queryForObject("SELECT id FROM xsy_delivery_route WHERE route_no = ?", Long.class, routeNo);
+    }
+
+    private void insertActiveRouteOrder(Long routeId, Long orderId, Long customerId, String orderNo,
+            String fulfillmentStatus) {
+        jdbc.update("INSERT INTO xsy_delivery_route_stop (route_id, stop_seq, customer_id,"
+                + " customer_name_snapshot, address_snapshot, version, deleted, created_at, updated_at)"
+                + " VALUES (?, 1, ?, ?, ?, 0, FALSE, now(), now())",
+                routeId, customerId, prefix + "客户", "IT 配送地址");
+        Long stopId = jdbc.queryForObject(
+                "SELECT id FROM xsy_delivery_route_stop WHERE route_id = ? AND stop_seq = 1", Long.class, routeId);
+        jdbc.update("INSERT INTO xsy_delivery_route_order (route_id, stop_id, order_id, customer_id,"
+                + " order_no_snapshot, assignment_status, fulfillment_status, version, deleted,"
+                + " created_at, updated_at)"
+                + " VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, 0, FALSE, now(), now())",
+                routeId, stopId, orderId, customerId, orderNo, fulfillmentStatus);
+    }
+
+    private void signRouteOrder(Long routeId, Long orderId, String result, String reason) {
+        jdbc.update("UPDATE xsy_delivery_route_order SET fulfillment_status = ?, signed_at = now(),"
+                + " signed_by = 'it', sign_reason = ? WHERE route_id = ? AND order_id = ?",
+                result, reason, routeId, orderId);
+        evictMybatisCache();
+    }
+
+    private static List<String> nodeCodes(MallOrderVO order) {
+        return order.getProgress().stream().map(MallOrderProgressNodeVO::getCode).toList();
+    }
+
+    private static List<String> doneCodes(MallOrderVO order) {
+        return order.getProgress().stream().filter(node -> Boolean.TRUE.equals(node.getDone()))
+                .map(MallOrderProgressNodeVO::getCode).toList();
+    }
+
+    private static String nodeText(MallOrderVO order, String code) {
+        return order.getProgress().stream().filter(node -> code.equals(node.getCode())).findFirst()
+                .map(MallOrderProgressNodeVO::getText).orElse(null);
+    }
+
+    private static String nodeDetail(MallOrderVO order, String code) {
+        return order.getProgress().stream().filter(node -> code.equals(node.getCode())).findFirst()
+                .map(MallOrderProgressNodeVO::getDetail).orElse(null);
     }
 
     // ------------------------------------------------------------------

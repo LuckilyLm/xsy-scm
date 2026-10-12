@@ -49,4 +49,8 @@ public class MallOrderVO {
     private List<MallOrderItemVO> items = new ArrayList<>();
     /** 真实处理记录，仅详情返回 */
     private List<MallOrderTimelineVO> timeline = new ArrayList<>();
+    /** 配送信息（线路 / 司机 / 发车 / 完成），仅详情返回；未排车时为 null */
+    private MallOrderDeliveryVO delivery;
+    /** 配送进度节点（已提交 → 已接单 → 已发车 → 已签收），仅详情返回；已取消订单只到「已取消」 */
+    private List<MallOrderProgressNodeVO> progress = new ArrayList<>();
 }
