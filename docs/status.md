@@ -39,6 +39,7 @@ SCM V2 管理后台已经覆盖商品、客户、供应商、定价、销售订�
     ② **预览发现不可售项时禁止提交**：`preview` 早已返回 `unavailableSkuIds` / `availableCount`，但页面只更新金额、未据此拦截，服务端金额已排除不可售行 → 客户可拿「少了钱的金额」提交。现新增 `unavailableItems`，预览结果里非 `AVAILABLE` 的项全部计入，`canSubmit` 与提交守卫都要求其为空，并展示不可售原因与「返回购物车」入口，明细行也标出不可售（不再显示 `¥` 空价）。
     ③ **预览加请求序号**：连续触发预览时旧响应后到会覆盖新金额与价格指纹，与订单列表同类竞态。现引入 `previewSeq`，旧响应一律丢弃，且旧请求不会把仍在进行中的最新预览标记为已结束。
   - **第三轮复核修正后验证**：后端定向单测 **21/21**（`MallCheckoutServiceTest` 增到 5 项，新增「地址被其他采购账号编辑后幂等身份不变、但建单快照确实变了」）；小程序契约测试 **22/22**（新增不可售拦截、预览请求序号两项）；`build:mp-weixin` 通过；改动文件 eslint 无告警。
+  - **第四轮复核修正（同日，幂等预检顺序）**：`submit()` 原顺序是「读地址 → 建表单 → 幂等预检」，因此**地址被删除**时同键重试会先抛 40484「地址不存在」，把一笔已成功的订单藏起来——与「排在价格校验之后」是同一类遗漏。现幂等指纹只取请求里的地址 ID、不需要先读出地址，预检整体前移到读地址之前；只有真正的新请求才继续校验地址与价格。后端定向单测 **20/20**（`MallCheckoutServiceTest` 增到 7 项，新增「地址被删除后同键重试仍回放原订单且不读地址/不读商品」与「无原订单时地址不存在仍拒绝」）。
 - **2026-10-12 验证（本轮实跑，非静态推断）**：
   - **V118～V124 迁移演练 ✅**：新建隔离库 `xsy_mall_20261012_01`，空库迁移 `flyway_schema_history` **125 条全部 success、0 失败**，末条为 `124 scm mall customer address`；新表 `xsy_mall_customer_account` / `xsy_mall_wechat_binding` / `xsy_mall_cart_item` / `xsy_mall_customer_address` / `xsy_refund_funding_allocation` 均按 `xsy_` 前缀建出。
   - **后端定向测试 ✅ 8/8**：`ScmMigrationTargetPgIT`（断言 flyway 到 V124）1/1、`ScmPurchaseMigrationIT`（V1–V124 只追加）+ `RefundFundingAllocatorTest` + `SalesOrderQueryRecentPriceTest` 合计 7/7。
