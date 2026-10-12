@@ -109,6 +109,25 @@ test('abnormal fulfillment is never presented as a plain completion', () => {
   assert.match(detail, /isAbnormalFulfillment\(order\.fulfillmentStatus\)/);
 });
 
+test('checkout blocks submission until the current preview succeeds', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  // 重新预览先作废旧结果：失败时不能继续沿用上一次的金额与指纹
+  assert.match(page, /const previewReady = ref\(false\)/);
+  assert.match(page, /previewReady\.value = false/);
+  assert.match(page, /previewReady\.value = !!fingerprint\.value/);
+  // 提交守卫必须同时看「本次预览成功」和「有指纹」
+  assert.match(page, /!previewReady\.value \|\| !fingerprint\.value/);
+});
+
+test('delivery date uses the Shanghai calendar instead of UTC', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  const util = read('../src/utils/mall-date.js');
+  // toISOString() 取 UTC 日期，中国时间凌晨会得到前一天
+  assert.doesNotMatch(page, /toISOString\(\)\.slice\(0, 10\)/);
+  assert.match(page, /shanghaiDate\(\)/);
+  assert.match(util, /SHANGHAI_OFFSET_MINUTES/);
+});
+
 test('address form posts the field names the backend expects', () => {
   const api = read('../src/api/mall/address-api.js');
   const edit = read('../src/pages-sub/address/edit.vue');
