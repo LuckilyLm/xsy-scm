@@ -43,4 +43,8 @@
         <if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if>
         ORDER BY created_at DESC,id DESC
     </select>
+    <!-- 按订单读全部记录，不拼范围：调用方必须先按归属校验订单（商城走 selectByIdAndCustomer）。 -->
+    <select id="listByOrderId" resultMap="row">
+        SELECT * FROM xsy_order_operation_log WHERE order_id = #{orderId} ORDER BY created_at, id
+    </select>
 </mapper>

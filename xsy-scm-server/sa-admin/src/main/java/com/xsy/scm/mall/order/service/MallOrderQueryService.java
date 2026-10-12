@@ -2,35 +2,75 @@ package com.xsy.scm.mall.order.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.delivery.dao.DeliveryRouteOrderDao;
+import com.xsy.scm.delivery.domain.entity.DeliveryRouteOrderEntity;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
+import com.xsy.scm.mall.catalog.dao.MallCatalogDao;
+import com.xsy.scm.mall.order.constant.MallOrderDisplayStatusEnum;
 import com.xsy.scm.mall.order.domain.form.MallOrderQueryForm;
 import com.xsy.scm.mall.order.domain.vo.MallOrderItemVO;
+import com.xsy.scm.mall.order.domain.vo.MallOrderTimelineVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderVO;
 import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
+import com.xsy.scm.order.dao.OrderOperationLogDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.dao.SalesOrderItemDao;
+import com.xsy.scm.order.domain.entity.OrderOperationLogEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
+import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
+import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 商城订单只读查询。
+ *
+ * <p>
+ * 订单事实只来自正式销售订单，履约进度只来自配送域的生效线路订单；本服务不写任何表， 也不做状态推导之外的业务判断。归属一律由 {@code customer_id + order_source='MALL'} 收窄，客户端传入的 id
+ * 不被信任。
+ */
 @Service
 @RequiredArgsConstructor
 public class MallOrderQueryService {
+    /** 列表卡片最多展示的缩略图数量，与设计图一致 */
+    private static final int THUMBNAIL_LIMIT = 3;
+    private static final String MALL_OPERATOR_PREFIX = UserTypeEnum.MALL_CUSTOMER.getValue() + ":";
+    private static final String NON_STANDARD = "NON_STANDARD";
+
     private final SalesOrderDao salesOrderDao;
     private final SalesOrderItemDao salesOrderItemDao;
     private final OrderAddressSnapshotDao addressSnapshotDao;
+    private final OrderOperationLogDao orderOperationLogDao;
+    private final DeliveryRouteOrderDao deliveryRouteOrderDao;
+    private final MallCatalogDao mallCatalogDao;
+    private final FileService fileService;
 
     @Transactional(readOnly = true)
     public PageResult<MallOrderVO> list(RequestMallCustomer customer, MallOrderQueryForm form) {
         Page<SalesOrderEntity> page = new Page<>(form.getPageNum(), form.getPageSize(), true);
-        List<MallOrderVO> rows = salesOrderDao.listByCustomer(page, customer.getCustomerId()).stream()
-                .map(this::summary)
+        List<SalesOrderEntity> orders = salesOrderDao.listByCustomer(page, customer.getCustomerId(),
+                form.getDisplayStatus());
+        List<Long> orderIds = orders.stream().map(SalesOrderEntity::getId).toList();
+        Map<Long,
+                List<SalesOrderItemEntity>> itemsByOrder = orderIds.isEmpty()
+                        ? Map.of()
+                        : salesOrderItemDao.listByOrderIds(orderIds).stream()
+                                .collect(Collectors.groupingBy(SalesOrderItemEntity::getOrderId));
+        Map<Long, String> fulfillmentByOrder = fulfillmentByOrder(orderIds);
+        Map<Long, String> imageUrls = imageUrls(itemsByOrder.values().stream().flatMap(List::stream).toList());
+
+        List<MallOrderVO> rows = orders.stream().map(order -> summary(order,
+                itemsByOrder.getOrDefault(order.getId(), List.of()), fulfillmentByOrder.get(order.getId()), imageUrls))
                 .toList();
         PageResult<MallOrderVO> result = new PageResult<>();
         result.setPageNum(page.getCurrent());
@@ -44,29 +84,85 @@ public class MallOrderQueryService {
 
     @Transactional(readOnly = true)
     public MallOrderVO detail(RequestMallCustomer customer, Long orderId) {
-        SalesOrderEntity order = salesOrderDao.selectByIdAndCustomer(orderId, customer.getCustomerId());
-        if (order == null) {
-            throw new ScmBusinessException(MallErrorCode.ORDER_NOT_FOUND);
-        }
-        MallOrderVO result = summary(order);
-        result.setItems(salesOrderItemDao.list(orderId).stream()
-                .sorted(Comparator.comparing(SalesOrderItemEntity::getSortOrder)
-                        .thenComparing(SalesOrderItemEntity::getId))
-                .map(this::item)
-                .toList());
+        SalesOrderEntity order = requireOwnedOrder(customer, orderId);
+        List<SalesOrderItemEntity> items = salesOrderItemDao.list(orderId);
+        Map<Long, String> imageUrls = imageUrls(items);
+        MallOrderVO result = summary(order, items, fulfillmentByOrder(List.of(orderId)).get(orderId), imageUrls);
+        result.setItems(items.stream().sorted(
+                Comparator.comparing(SalesOrderItemEntity::getSortOrder).thenComparing(SalesOrderItemEntity::getId))
+                .map(row -> item(row, imageUrls)).toList());
         addressSnapshotDao.list(orderId).stream().findFirst().ifPresent(address -> {
             result.setReceiverName(address.getReceiverName());
             result.setReceiverPhone(address.getReceiverPhone());
             result.setAddress(address.getAddress());
         });
+        result.setTimeline(orderOperationLogDao.listByOrderId(orderId).stream().map(this::timeline).toList());
         return result;
     }
 
-    private MallOrderVO summary(SalesOrderEntity order) {
+    /** 按归属取订单；取不到即 404。取消与再来一单复用同一条归属判定。 */
+    @Transactional(readOnly = true)
+    public SalesOrderEntity requireOwnedOrder(RequestMallCustomer customer, Long orderId) {
+        SalesOrderEntity order = salesOrderDao.selectByIdAndCustomer(orderId, customer.getCustomerId());
+        if (order == null) {
+            throw new ScmBusinessException(MallErrorCode.ORDER_NOT_FOUND);
+        }
+        return order;
+    }
+
+    /** 该订单当前生效的履约状态；未排车返回 null。 */
+    @Transactional(readOnly = true)
+    public String activeFulfillmentStatus(Long orderId) {
+        return fulfillmentByOrder(List.of(orderId)).get(orderId);
+    }
+
+    private Map<Long, String> fulfillmentByOrder(List<Long> orderIds) {
+        if (orderIds.isEmpty()) {
+            return Map.of();
+        }
+        return deliveryRouteOrderDao.selectActiveByOrderIds(orderIds).stream()
+                .collect(Collectors.toMap(DeliveryRouteOrderEntity::getOrderId,
+                        DeliveryRouteOrderEntity::getFulfillmentStatus, (first, ignored) -> first));
+    }
+
+    /** 订单行不存图，展示时按 SKU 回读主图；取不到图的 SKU 不进 map，由客户端兜底。 */
+    private Map<Long, String> imageUrls(List<SalesOrderItemEntity> items) {
+        List<Long> skuIds = items.stream().map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct()
+                .toList();
+        if (skuIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long,
+                String> fileKeys = mallCatalogDao.primaryImagesBySkuIds(skuIds).stream()
+                        .filter(row -> row.getPrimaryImageKey() != null).collect(Collectors.toMap(row -> row.getSkuId(),
+                                row -> row.getPrimaryImageKey(), (first, ignored) -> first));
+        if (fileKeys.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, String> urls = new HashMap<>();
+        fileService.getFileList(fileKeys.values().stream().distinct().toList())
+                .forEach(file -> urls.put(file.getFileKey(), file.getFileUrl()));
+        Map<Long, String> result = new HashMap<>();
+        fileKeys.forEach((skuId, key) -> {
+            String url = urls.get(key);
+            if (url != null) {
+                result.put(skuId, url);
+            }
+        });
+        return result;
+    }
+
+    private MallOrderVO summary(SalesOrderEntity order, List<SalesOrderItemEntity> items, String fulfillmentStatus,
+            Map<Long, String> imageUrls) {
+        MallOrderDisplayStatusEnum displayStatus = MallOrderDisplayStatusEnum.derive(order.getStatus(),
+                fulfillmentStatus);
         MallOrderVO result = new MallOrderVO();
         result.setOrderId(order.getId());
         result.setOrderNo(order.getOrderNo());
         result.setStatus(order.getStatus());
+        result.setDisplayStatus(displayStatus.name());
+        result.setFulfillmentStatus(fulfillmentStatus);
+        result.setCancelable(displayStatus.cancelable());
         result.setOrderedTotalAmount(order.getOrderedTotalAmount());
         result.setSettlementTotalAmount(order.getSettlementTotalAmount());
         result.setExpectDeliveryTime(order.getExpectDeliveryTime());
@@ -74,10 +170,15 @@ public class MallOrderQueryService {
         result.setCreatedAt(order.getCreatedAt());
         result.setSubmittedAt(order.getSubmittedAt());
         result.setConfirmedAt(order.getConfirmedAt());
+        result.setCancelledAt(order.getCancelledAt());
+        result.setCancelReason(order.getCancelReason());
+        result.setItemCount(items.size());
+        result.setItemThumbnails(items.stream().map(item -> imageUrls.get(item.getSkuId())).filter(Objects::nonNull)
+                .limit(THUMBNAIL_LIMIT).toList());
         return result;
     }
 
-    private MallOrderItemVO item(SalesOrderItemEntity row) {
+    private MallOrderItemVO item(SalesOrderItemEntity row, Map<Long, String> imageUrls) {
         MallOrderItemVO result = new MallOrderItemVO();
         result.setItemId(row.getId());
         result.setSkuId(row.getSkuId());
@@ -85,10 +186,36 @@ public class MallOrderQueryService {
         result.setSpecName(row.getSpecNameSnapshot());
         result.setSaleUnit(row.getSaleUnitSnapshot());
         result.setProductType(row.getProductTypeSnapshot());
+        result.setNonStandard(NON_STANDARD.equals(row.getProductTypeSnapshot()));
+        result.setPrimaryImageUrl(imageUrls.get(row.getSkuId()));
         result.setOrderedQuantity(row.getOrderedQuantity());
         result.setActualQuantity(row.getActualQuantity());
         result.setUnitPrice(row.getLockedUnitPrice());
         result.setOrderedLineAmount(row.getOrderedLineAmount());
+        result.setSettlementLineAmount(row.getSettlementLineAmount());
         return result;
+    }
+
+    private MallOrderTimelineVO timeline(OrderOperationLogEntity log) {
+        MallOrderTimelineVO result = new MallOrderTimelineVO();
+        result.setLogId(log.getId());
+        result.setOperationType(log.getOperationType());
+        result.setOperatorName(operatorLabel(log.getOperator()));
+        result.setReason(log.getReason());
+        result.setCreatedAt(log.getCreatedAt());
+        return result;
+    }
+
+    /**
+     * 客户侧只看「谁做的」这一层：本人操作显示「客户」，其余一律「平台」。
+     *
+     * <p>
+     * 刻意不把内部员工姓名透给客户：对客户没有意义，也属于内部人员信息；后台仍按原样显示员工姓名。
+     */
+    private static String operatorLabel(String operator) {
+        if (operator == null || operator.isBlank()) {
+            return "系统";
+        }
+        return operator.startsWith(MALL_OPERATOR_PREFIX) ? "客户" : "平台";
     }
 }

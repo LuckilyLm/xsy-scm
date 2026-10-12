@@ -32,8 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 服务端购物车：按登录账号隔离，商品可见性、客户价与库存读取时实时解析，不在此固化。
- * 库存与价格的最终校验在结算与下单时由服务端重验。
+ * 服务端购物车：按登录账号隔离，商品可见性、客户价与库存读取时实时解析，不在此固化。 库存与价格的最终校验在结算与下单时由服务端重验。
  */
 @Service
 @RequiredArgsConstructor
@@ -134,6 +133,32 @@ public class MallCartService {
         return assemble(customer);
     }
 
+    /**
+     * 把某规格的数量<b>设为</b>指定值（覆盖，不是累加）。「再来一单」用它。
+     *
+     * <p>
+     * 刻意不写成累加：再来一单重复点击必须得到同一结果，累加会让客户点两次就买两份。 可见性由调用方先按当前客户价重新校验，本方法只管数量落库。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void setQuantity(RequestMallCustomer customer, Long skuId, BigDecimal quantity) {
+        MallCartItemEntity existing = cartDao.selectByAccountAndSku(customer.getAccountId(), skuId);
+        if (existing == null) {
+            MallCartItemEntity row = new MallCartItemEntity();
+            row.setAccountId(customer.getAccountId());
+            row.setCustomerId(customer.getCustomerId());
+            row.setSkuId(skuId);
+            row.setQuantity(quantity);
+            OffsetDateTime now = OffsetDateTime.now();
+            row.setCreatedAt(now);
+            row.setUpdatedAt(now);
+            row.setCreatedBy(ScmOperator.current());
+            row.setUpdatedBy(ScmOperator.current());
+            cartDao.insert(row);
+            return;
+        }
+        cartDao.updateQuantity(customer.getAccountId(), skuId, quantity, ScmOperator.current());
+    }
+
     private void requireVisible(RequestMallCustomer customer, Long skuId) {
         if (catalogService.visibleProducts(customer, List.of(skuId)).isEmpty()) {
             throw new ScmBusinessException(MallErrorCode.CART_SKU_NOT_VISIBLE);
@@ -147,9 +172,10 @@ public class MallCartService {
         if (rows.isEmpty()) {
             return result;
         }
-        Map<Long, MallProductVO> products = catalogService
-                .visibleProducts(customer, rows.stream().map(MallCartItemEntity::getSkuId).toList()).stream()
-                .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity()));
+        Map<Long,
+                MallProductVO> products = catalogService
+                        .visibleProducts(customer, rows.stream().map(MallCartItemEntity::getSkuId).toList()).stream()
+                        .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity()));
         BigDecimal estimated = BigDecimal.ZERO.setScale(SCALE);
         int available = 0;
         for (MallCartItemEntity row : rows) {

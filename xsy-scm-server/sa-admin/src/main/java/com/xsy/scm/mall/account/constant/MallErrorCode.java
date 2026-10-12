@@ -24,7 +24,10 @@ public enum MallErrorCode implements ScmErrorCode {
     CHECKOUT_IDEMPOTENCY_REQUIRED(40086, "缺少幂等键，无法安全提交订单"),
     CHECKOUT_ITEM_UNAVAILABLE(40984, "所选商品中有不可售项，请返回购物车调整"),
     CHECKOUT_PRICE_CHANGED(40985, "商品价格已变化，请重新确认结算金额"),
-    ORDER_NOT_FOUND(40489, "订单不存在");
+    ORDER_NOT_FOUND(40489, "订单不存在"),
+    ORDER_NOT_CANCELABLE(40986, "当前订单状态不允许取消，请联系业务员处理"),
+    ORDER_ALREADY_FULFILLING(40987, "订单已进入配送流程，无法取消，请联系业务员处理"),
+    REORDER_NOTHING_ADDED(40988, "历史商品均已下架或暂无客户价，未能加入购物车");
 
     private final int code;
     private final String msg;

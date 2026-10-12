@@ -139,8 +139,7 @@ public class SalesOrderService {
     public MallOrderCreationResult createFromMall(SalesOrderAddForm salesOrderAddForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_CREATE_MALL", key, salesOrderAddForm);
         if (claim.replay()) {
-            return new MallOrderCreationResult(
-                    orderIdempotencyService.replay(claim, SalesOrderDetailVO.class), true);
+            return new MallOrderCreationResult(orderIdempotencyService.replay(claim, SalesOrderDetailVO.class), true);
         }
         var result = createDraft(salesOrderAddForm, false);
         result = submitOrderForMall(result.getOrderId(), result.getVersion());
@@ -205,7 +204,8 @@ public class SalesOrderService {
     }
 
     /**
-     * @param enforceEmployeeScope 是否套用员工负责人范围；商城入口传 {@code false}，由适配器按登录客户判定归属
+     * @param enforceEmployeeScope
+     *            是否套用员工负责人范围；商城入口传 {@code false}，由适配器按登录客户判定归属
      */
     private SalesOrderDetailVO createDraft(SalesOrderAddForm salesOrderAddForm, boolean enforceEmployeeScope) {
         OrderValidator.draft(salesOrderAddForm);
@@ -214,8 +214,7 @@ public class SalesOrderService {
         // 只收窄列表等于「看不见但仍然能往别人名下塞单」，行级范围就不成立；因此新建入口按同一范围判定。
         // 分配权（scm:customer:assign）与全量订单范围同等放行：主管刚把客户指定给某人，
         // 就该能替他录单，否则「主管建客户 + 指定负责人」这条路会把主管自己挡在门外。
-        if (enforceEmployeeScope
-                && !dataScopeService.resolve().getOrderSellerScope().allows(customer.getSellerId())
+        if (enforceEmployeeScope && !dataScopeService.resolve().getOrderSellerScope().allows(customer.getSellerId())
                 && !ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM))
             throw new ScmDataScopeException();
         validateOriginal(salesOrderAddForm);
@@ -511,13 +510,28 @@ public class SalesOrderService {
 
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO cancel(OrderCancelForm orderCancelForm, String key) {
+        return cancel(orderCancelForm, key, true);
+    }
+
+    /**
+     * 商城客户取消入口：与管理端共用同一条取消路径与同一套状态机，只跳过员工负责人范围（商城客户没有该范围）。
+     *
+     * <p>
+     * 状态机与取消原因校验一律不变：只有 {@code DRAFT} / {@code PENDING} 可取消，已确认订单一律拒绝， 客户不能绕过已确认、已履约、已支付订单的处理规则。归属由商城适配器在入口按登录客户判定。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SalesOrderDetailVO cancelFromMall(OrderCancelForm orderCancelForm, String key) {
+        return cancel(orderCancelForm, key, false);
+    }
+
+    private SalesOrderDetailVO cancel(OrderCancelForm orderCancelForm, String key, boolean enforceEmployeeScope) {
         var claim = orderIdempotencyService.claim("ORDER_CANCEL:" + orderCancelForm.getOrderId(), key, orderCancelForm);
         if (claim.replay()) {
             salesOrderQueryService.detail(orderCancelForm.getOrderId());
             return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
         }
         var salesOrder = lock(orderCancelForm.getOrderId());
-        requireOrderSellerScope(salesOrder);
+        requireEmployeeScopeIfNeeded(salesOrder, enforceEmployeeScope);
         version(salesOrder.getVersion(), orderCancelForm.getVersion());
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.CANCELLED.name());
         OrderValidator.reason(orderCancelForm.getReason(), ORDER_CANCEL_REASON_REQUIRED);

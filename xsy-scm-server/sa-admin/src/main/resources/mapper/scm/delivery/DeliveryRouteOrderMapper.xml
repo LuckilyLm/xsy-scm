@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.delivery.dao.DeliveryRouteOrderDao">
+    <resultMap id="row" type="com.xsy.scm.delivery.domain.entity.DeliveryRouteOrderEntity">
+        <id column="id" property="id"/>
+        <result column="route_id" property="routeId"/>
+        <result column="stop_id" property="stopId"/>
+        <result column="order_id" property="orderId"/>
+        <result column="customer_id" property="customerId"/>
+        <result column="order_no_snapshot" property="orderNoSnapshot"/>
+        <result column="assignment_status" property="assignmentStatus"/>
+        <result column="fulfillment_status" property="fulfillmentStatus"/>
+        <result column="signed_at" property="signedAt"/>
+        <result column="sign_reason" property="signReason"/>
+    </resultMap>
+
+    <!-- 只读聚合：调用方按订单号批量取履约状态，用于商城订单列表的阶段分类。 -->
+    <select id="selectActiveByOrderIds" resultMap="row">
+        SELECT id, route_id, stop_id, order_id, customer_id, order_no_snapshot,
+               assignment_status, fulfillment_status, signed_at, sign_reason
+        FROM xsy_delivery_route_order
+        WHERE deleted = FALSE AND assignment_status = 'ACTIVE' AND order_id IN
+        <foreach collection="orderIds" item="orderId" open="(" separator="," close=")">#{orderId}</foreach>
+    </select>
+</mapper>
