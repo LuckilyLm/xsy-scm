@@ -113,10 +113,11 @@ public class MallCheckoutService {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
         }
 
-        SalesOrderDetailVO created = salesOrderService.createFromMall(orderForm(customer, form, address, quantities),
-                idempotencyKey);
-        cartDao.removeBySkus(customer.getAccountId(), new ArrayList<>(quantities.keySet()), ScmOperator.current());
-        return toSubmitVO(created);
+        var creation = salesOrderService.createFromMall(orderForm(customer, form, address, quantities), idempotencyKey);
+        if (!creation.replayed()) {
+            cartDao.removeBySkus(customer.getAccountId(), new ArrayList<>(quantities.keySet()), ScmOperator.current());
+        }
+        return toSubmitVO(creation.order());
     }
 
     private SalesOrderAddForm orderForm(RequestMallCustomer customer, MallOrderSubmitForm form, MallAddressVO address,

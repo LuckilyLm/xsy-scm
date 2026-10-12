@@ -596,7 +596,7 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
         return jdbc.queryForObject("SELECT id FROM xsy_order_refund WHERE refund_no = ?", Long.class, refundNo);
     }
 
-    /** operator 必须是「前缀:数字员工id」形态：{@code SalesOrderQueryService#logs} 按冒号取员工名。 */
+    /** 管理端夹具使用员工操作者标识；日志查询会按用户类型分别解析员工与商城客户。 */
     private void insertLog(Long orderId, String operationType) {
         jdbc.update("INSERT INTO xsy_order_operation_log (order_id, operation_type, operator, created_by)"
                 + " VALUES (?, ?, ?, ?)", orderId, operationType, "admin:" + sellerA, "admin:" + sellerA);

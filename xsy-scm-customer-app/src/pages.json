@@ -9,6 +9,7 @@
     { "path": "pages/home/index", "style": { "navigationStyle": "custom", "navigationBarTitleText": "首页", "onReachBottomDistance": 80 } },
     { "path": "pages/category/index", "style": { "navigationStyle": "custom", "navigationBarTitleText": "分类" } },
     { "path": "pages/cart/index", "style": { "navigationBarTitleText": "购物车" } },
+    { "path": "pages/order/index", "style": { "navigationBarTitleText": "订单", "enablePullDownRefresh": true, "onReachBottomDistance": 80 } },
     { "path": "pages/mine/index", "style": { "navigationStyle": "custom", "navigationBarTitleText": "我的" } },
     { "path": "pages/login/login", "style": { "navigationStyle": "custom", "navigationBarTitleText": "登录" } },
     { "path": "pages/account/password", "style": { "navigationBarTitleText": "修改密码" } }
@@ -34,6 +35,12 @@
         { "path": "index", "style": { "navigationBarTitleText": "确认订单" } },
         { "path": "success", "style": { "navigationBarTitleText": "下单成功" } }
       ]
+    },
+    {
+      "root": "pages-sub/order",
+      "pages": [
+        { "path": "detail", "style": { "navigationBarTitleText": "订单详情", "enablePullDownRefresh": true } }
+      ]
     }
   ],
   "preloadRule": {
@@ -54,6 +61,7 @@
       { "pagePath": "pages/home/index", "iconPath": "static/images/tabbar/home.png", "selectedIconPath": "static/images/tabbar/home-h.png", "text": "首页" },
       { "pagePath": "pages/category/index", "iconPath": "static/images/tabbar/category.png", "selectedIconPath": "static/images/tabbar/category-h.png", "text": "分类" },
       { "pagePath": "pages/cart/index", "iconPath": "static/images/tabbar/cart.png", "selectedIconPath": "static/images/tabbar/cart-h.png", "text": "购物车" },
+      { "pagePath": "pages/order/index", "iconPath": "static/images/tabbar/order.png", "selectedIconPath": "static/images/tabbar/order-h.png", "text": "订单" },
       { "pagePath": "pages/mine/index", "iconPath": "static/images/tabbar/mine.png", "selectedIconPath": "static/images/tabbar/mine-h.png", "text": "我的" }
     ]
   }

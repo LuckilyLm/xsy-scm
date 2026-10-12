@@ -166,11 +166,7 @@
   const minQty = computed(() => Math.max(1, Number(product.value?.minOrderQty) || 1));
   const stepQty = computed(() => Math.max(1, Number(product.value?.stepQty) || 1));
 
-  /**
-   * 数量上限取服务端下发的可售量。
-   * 这只是**交互上限**（避免用户选出必然被拒的数量），不是权威判断：
-   * 真正的库存校验必须在服务端事务内完成（规划 §38.7）。
-   */
+  /** 数量上限仅用于目录交互；当前库存口径未知时回落到起订量，不作为下单门槛。 */
   const maxQty = computed(() => {
     const available = Number(product.value?.availableQty);
     if (!Number.isFinite(available) || available <= 0) {

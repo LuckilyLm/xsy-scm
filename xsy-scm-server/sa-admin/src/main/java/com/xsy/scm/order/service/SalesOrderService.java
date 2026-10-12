@@ -21,6 +21,7 @@ import com.xsy.scm.order.dao.SalesOrderItemDao;
 import com.xsy.scm.order.domain.entity.OrderAddressSnapshotEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
+import com.xsy.scm.order.domain.dto.MallOrderCreationResult;
 import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
 import com.xsy.scm.order.domain.form.OrderBatchDeleteForm;
 import com.xsy.scm.order.domain.form.OrderCancelForm;
@@ -88,9 +89,7 @@ public class SalesOrderService {
     private final ProductSpuDao productSpuDao;
     private final OrderNumberGenerator numbers;
     private final OrderIdempotencyService orderIdempotencyService;
-    /**
-     * 确认订单时预留库存、取消时释放；库存变更通过库存域服务完成。
-     */
+    /** 显式预留库存、取消时释放；库存变更通过库存域服务完成。 */
     private final InventoryReservationService inventoryReservationService;
     private final SalesOrderQueryService salesOrderQueryService;
     /** SCM 数据范围的唯一解析入口；只在「能否对这户客户开单」这类归属判定上用。 */
@@ -131,27 +130,27 @@ public class SalesOrderService {
     }
 
     /**
-     * 商城客户下单入口：建单 → 提交 → （全标品）确认，与管理端共用同一套订单状态机、编号、快照、价格重解析与库存预留。
+     * 商城客户下单入口：建单 → 提交 → 全标品自动尝试确认；授信不允许时按订单规则拒绝。库存预留仍由后台在货到后显式执行。
      *
      * <p>
-     * 与管理端的关键差别只有一个：**不套用员工负责人数据范围**。商城客户不是员工，没有 {@code orderSellerScope}；
-     * 归属由商城适配器在入口按登录客户判定，表单里的 {@code customerId} 必须由适配器从登录身份写入，不得采信客户端提交值。
-     * 管理端入口（{@link #create}、{@link #createAndProgress}）的范围判定不受影响。
+     * 商城入口不套用员工负责人数据范围；客户归属由商城适配器按登录身份判定。返回重放标记，供调用方只在首次建单时执行购物车清理。
      */
     @Transactional(rollbackFor = Exception.class)
-    public SalesOrderDetailVO createFromMall(SalesOrderAddForm salesOrderAddForm, String key) {
+    public MallOrderCreationResult createFromMall(SalesOrderAddForm salesOrderAddForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_CREATE_MALL", key, salesOrderAddForm);
-        if (claim.replay())
-            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        if (claim.replay()) {
+            return new MallOrderCreationResult(
+                    orderIdempotencyService.replay(claim, SalesOrderDetailVO.class), true);
+        }
         var result = createDraft(salesOrderAddForm, false);
-        result = submitOrder(result.getOrderId(), result.getVersion(), false);
+        result = submitOrderForMall(result.getOrderId(), result.getVersion());
         if (result.getItems().stream()
                 .allMatch(orderItem -> ScmProductTypeEnum.STANDARD.name().equals(orderItem.getProductTypeSnapshot()))) {
-            result = confirmOrder(result.getOrderId(), result.getVersion(), null, false);
+            result = confirmOrderForMall(result.getOrderId(), result.getVersion());
         }
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
                 result.getOrderId(), result);
-        return result;
+        return new MallOrderCreationResult(result, false);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -320,9 +319,13 @@ public class SalesOrderService {
         return submitOrder(orderId, expectedVersion, true);
     }
 
+    private SalesOrderDetailVO submitOrderForMall(Long orderId, Integer expectedVersion) {
+        return submitOrder(orderId, expectedVersion, false);
+    }
+
     private SalesOrderDetailVO submitOrder(Long orderId, Integer expectedVersion, boolean enforceEmployeeScope) {
         var salesOrder = lock(orderId);
-        requireOrderSellerScope(salesOrder, enforceEmployeeScope);
+        requireEmployeeScopeIfNeeded(salesOrder, enforceEmployeeScope);
         version(salesOrder.getVersion(), expectedVersion);
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.PENDING.name());
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
@@ -443,6 +446,10 @@ public class SalesOrderService {
         return confirmOrder(orderId, expectedVersion, null, true);
     }
 
+    private SalesOrderDetailVO confirmOrderForMall(Long orderId, Integer expectedVersion) {
+        return confirmOrder(orderId, expectedVersion, null, false);
+    }
+
     private SalesOrderDetailVO confirmOrder(Long orderId, Integer expectedVersion, OrderConfirmForm confirmation) {
         return confirmOrder(orderId, expectedVersion, confirmation, true);
     }
@@ -452,7 +459,7 @@ public class SalesOrderService {
         var salesOrder = lock(orderId);
         version(salesOrder.getVersion(), expectedVersion);
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.CONFIRMED.name());
-        requireOrderSellerScope(salesOrder, enforceEmployeeScope);
+        requireEmployeeScopeIfNeeded(salesOrder, enforceEmployeeScope);
         var before = salesOrderQueryService.detailSnapshot(salesOrder.getId());
         var rows = salesOrderItemDao.list(salesOrder.getId());
         for (var row : rows) {
@@ -604,17 +611,15 @@ public class SalesOrderService {
      * 刻意不放进 {@link #lock}：它还被退货、退款等模块调用，在那层加守卫会把这些路径的语义一起改掉。 门禁加在<b>对外写命令入口</b>，与 {@code confirmOrder} 用同一套判定。
      */
     private void requireOrderSellerScope(SalesOrderEntity salesOrder) {
-        requireOrderSellerScope(salesOrder, true);
-    }
-
-    /**
-     * @param enforceEmployeeScope 商城入口传 {@code false}：商城客户没有员工负责人范围，归属由商城适配器按登录客户判定
-     */
-    private void requireOrderSellerScope(SalesOrderEntity salesOrder, boolean enforceEmployeeScope) {
-        if (!enforceEmployeeScope)
-            return;
         if (!dataScopeService.resolve().getOrderSellerScope().allows(salesOrder.getSellerId()))
             throw new ScmDataScopeException();
+    }
+
+    /** 商城建单链按登录客户归属校验，不进入员工负责人范围。 */
+    private void requireEmployeeScopeIfNeeded(SalesOrderEntity salesOrder, boolean enforceEmployeeScope) {
+        if (enforceEmployeeScope) {
+            requireOrderSellerScope(salesOrder);
+        }
     }
 
     public static void version(Integer actual, Integer expected) {

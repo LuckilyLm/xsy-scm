@@ -222,6 +222,7 @@
     }
     submitting.value = true;
     try {
+      syncIdempotencyKey();
       const response = await mallOrderApi.submit(
         {
           items: payloadItems(),
@@ -234,7 +235,7 @@
       );
       const order = response.data || {};
       uni.redirectTo({
-        url: `/pages-sub/checkout/success?orderNo=${encodeURIComponent(order.orderNo || '')}&amount=${order.orderedTotalAmount || ''}`,
+        url: `/pages-sub/checkout/success?orderId=${order.orderId || ''}&orderNo=${encodeURIComponent(order.orderNo || '')}&amount=${order.orderedTotalAmount || ''}`,
       });
     } catch (error) {
       smartSentry.captureError(error);

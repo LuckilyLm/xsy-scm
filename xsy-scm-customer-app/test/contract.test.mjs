@@ -28,13 +28,30 @@ test('checkout submits a price fingerprint and an idempotency key', () => {
   const page = read('../src/pages-sub/checkout/index.vue');
   assert.match(api, /\/scm\/mall\/orders\/preview/);
   assert.match(api, /idempotencyKey/);
-  // 提交必须回传服务端下发的指纹
+  const request = read('../src/lib/smart-request.js');
+  const mock = read('../mock/routes/order.js');
+  assert.match(request, /dispatchMock\(url, method, data, \{ header \}\)/);
+  assert.match(mock, /Idempotency-Key/);
+  // 提交必须回传服务端下发的指纹，并在提交前按备注等最新内容同步幂等键
   assert.match(page, /priceFingerprint/);
+  assert.match(page, /async function submit\(\)[\s\S]*syncIdempotencyKey\(\);[\s\S]*mallOrderApi\.submit/);
   // 变价必须让客户重新确认，不能静默重试
   assert.match(page, /40985/);
   // 客户端不提交 customerId，也不自行改价
   assert.doesNotMatch(page, /customerId/);
   assert.doesNotMatch(page, /manualPriceOverride: true/);
+});
+
+test('order center exposes customer-scoped list and detail pages', () => {
+  const api = read('../src/api/mall/order-api.js');
+  const pages = read('../src/pages.json');
+  const success = read('../src/pages-sub/checkout/success.vue');
+  assert.match(api, /getList/);
+  assert.match(api, /getDetail/);
+  assert.match(pages, /pages\/order\/index/);
+  assert.match(pages, /pages-sub\/order/);
+  assert.match(success, /pages-sub\/order\/detail/);
+  assert.doesNotMatch(success, /下一阶段开放/);
 });
 
 test('address form posts the field names the backend expects', () => {

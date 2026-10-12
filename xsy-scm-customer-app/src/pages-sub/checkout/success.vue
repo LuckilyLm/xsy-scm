@@ -20,17 +20,22 @@
   import { onLoad } from '@dcloudio/uni-app';
   import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 
+  const orderId = ref('');
   const orderNo = ref('');
   const amount = ref('');
 
   onLoad((options) => {
+    orderId.value = options?.orderId || '';
     orderNo.value = options?.orderNo ? decodeURIComponent(options.orderNo) : '';
     amount.value = options?.amount || '';
   });
 
   function goOrders() {
-    // 订单中心尚未开放：如实提示，不做假跳转
-    uni.showToast({ title: '订单中心将在下一阶段开放', icon: 'none' });
+    if (orderId.value) {
+      uni.navigateTo({ url: `/pages-sub/order/detail?orderId=${orderId.value}` });
+      return;
+    }
+    uni.switchTab({ url: '/pages/order/index' });
   }
 
   function goHome() {

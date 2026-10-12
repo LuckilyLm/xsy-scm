@@ -67,6 +67,15 @@
         <if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if>
         ORDER BY created_at DESC,id DESC
     </select>
+    <select id="listByCustomer" resultMap="row">
+        SELECT * FROM xsy_sales_order
+        WHERE customer_id = #{customerId} AND order_source = 'MALL' AND deleted = FALSE
+        ORDER BY created_at DESC, id DESC
+    </select>
+    <select id="selectByIdAndCustomer" resultMap="row">
+        SELECT * FROM xsy_sales_order
+        WHERE id = #{orderId} AND customer_id = #{customerId} AND order_source = 'MALL' AND deleted = FALSE
+    </select>
     <select id="nextOrder" resultType="long">SELECT nextval('sales_order_no_seq')</select>
     <select id="nextReturn" resultType="long">SELECT nextval('order_return_no_seq')</select>
     <select id="nextRefund" resultType="long">SELECT nextval('order_refund_no_seq')</select>

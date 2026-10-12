@@ -5,6 +5,7 @@ import com.xsy.scm.order.dao.OrderOperationLogDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.dao.SalesOrderItemDao;
 import com.xsy.scm.order.domain.vo.OrderRecentPriceVO;
+import com.xsy.scm.mall.account.dao.MallCustomerAccountDao;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,7 @@ class SalesOrderQueryRecentPriceTest {
 
     private SalesOrderQueryService serviceWith(SalesOrderItemDao items) {
         return new SalesOrderQueryService(mock(SalesOrderDao.class), items, mock(OrderAddressSnapshotDao.class),
-                mock(OrderOperationLogDao.class), mock(EmployeeDao.class),
+                mock(OrderOperationLogDao.class), mock(EmployeeDao.class), mock(MallCustomerAccountDao.class),
                 mock(com.xsy.scm.common.scope.ScmDataScopeService.class),
                 mock(com.xsy.scm.promotion.service.PromotionDiscountService.class));
     }

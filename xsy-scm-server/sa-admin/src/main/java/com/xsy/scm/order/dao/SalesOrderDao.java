@@ -26,6 +26,10 @@ public interface SalesOrderDao extends BaseMapper<SalesOrderEntity> {
     List<SalesOrderEntity> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
             @Param("scope") ScmValueScope scope);
 
+    List<SalesOrderEntity> listByCustomer(Page<?> page, @Param("customerId") Long customerId);
+
+    SalesOrderEntity selectByIdAndCustomer(@Param("orderId") Long orderId, @Param("customerId") Long customerId);
+
     Long nextOrder();
 
     Long nextReturn();

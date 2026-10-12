@@ -80,7 +80,7 @@ public class WarehouseService {
      * 解析「默认仓库」= 当前<b>唯一启用</b>的仓库。
      *
      * <p>
-     * 销售订单没有仓库字段，而订单确认时要预留库存，必须落在一个具体仓库上。启用仓库恰好一个时直接返回；0 个或多个都<b>不猜</b>，抛 {@code WAREHOUSE_DEFAULT_AMBIGUOUS(41018)} ——
+     * 销售订单没有仓库字段，显式预留库存时必须落在一个具体仓库上。启用仓库恰好一个时直接返回；0 个或多个都<b>不猜</b>，抛 {@code WAREHOUSE_DEFAULT_AMBIGUOUS(41018)} ——
      * 猜错会把货占在错误的仓库，而且要到出库/盘点才暴露。
      */
     public WarehouseEntity defaultEnabledWarehouse() {

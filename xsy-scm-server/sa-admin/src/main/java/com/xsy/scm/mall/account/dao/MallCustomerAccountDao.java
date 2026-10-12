@@ -13,6 +13,7 @@ public interface MallCustomerAccountDao extends BaseMapper<MallCustomerAccountEn
     MallCustomerAccountEntity selectByIdForUpdate(@Param("accountId") Long accountId);
     List<MallAccountVO> listByCustomerId(@Param("customerId") Long customerId);
     MallAccountVO detailById(@Param("accountId") Long accountId);
+    List<MallAccountVO> listNamesByIds(@Param("accountIds") List<Long> accountIds);
     int updateStatus(@Param("accountId") Long accountId, @Param("status") String status,
             @Param("operator") String operator);
     int resetPassword(@Param("accountId") Long accountId, @Param("passwordHash") String passwordHash,

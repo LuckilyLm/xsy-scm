@@ -135,7 +135,7 @@ export const request = function (url, method, data, options = {}) {
     // mock 开关为编译期常量：关闭时整段被 tree-shake，且 mock 模块不会进生产包。
     // 未命中 mock 路由时回落真实请求，所以新增接口不必先补 mock。
     if (USE_MOCK) {
-      dispatchMock(url, method, data).then((mocked) => {
+      dispatchMock(url, method, data, { header }).then((mocked) => {
         if (mocked === null) {
           sendReal();
           return;

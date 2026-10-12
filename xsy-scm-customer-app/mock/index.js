@@ -65,7 +65,7 @@ function matchPath(pattern, url) {
  * @returns {Promise<object|null>} 命中的信封对象；**未命中返回 null**，
  *          调用方应回落到真实网络请求（这样新增接口不会因为没写 mock 而直接失败）。
  */
-export async function dispatchMock(url, method, data) {
+export async function dispatchMock(url, method, data, options = {}) {
   const route = ROUTES.find((r) => r.method === method.toUpperCase() && matchPath(r.path, url) !== null);
   if (!route) {
     return null;
@@ -78,7 +78,7 @@ export async function dispatchMock(url, method, data) {
   const session = findSession(token);
 
   try {
-    return await route.handler({ params, data: data || {}, session, token });
+    return await route.handler({ params, data: data || {}, session, token, header: options.header || {} });
   } catch (e) {
     // mock 自身写错时不要伪装成业务错误，直接把信息暴露出来便于定位
     return {

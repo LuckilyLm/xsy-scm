@@ -1,6 +1,8 @@
 package com.xsy.scm.order.service;
 
 import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.common.json.ScmOperatorNameResolver;
+import com.xsy.scm.mall.account.dao.MallCustomerAccountDao;
 import com.xsy.scm.order.domain.entity.OrderOperationLogEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
@@ -35,10 +37,12 @@ import org.springframework.beans.BeanUtils;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 import java.util.stream.Collectors;
 
 import net.lab1024.sa.base.common.domain.PageResult;
+import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
 @Service
@@ -48,7 +52,8 @@ public class SalesOrderQueryService {
     private final SalesOrderItemDao salesOrderItemDao;
     private final OrderAddressSnapshotDao orderAddressSnapshotDao;
     private final OrderOperationLogDao orderOperationLogDao;
-    private final net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao employeeDao;
+    private final ScmOperatorNameResolver operatorNameResolver;
+    private final MallCustomerAccountDao mallCustomerAccountDao;
     private final ScmDataScopeService dataScopeService;
 
     /**
@@ -157,19 +162,61 @@ public class SalesOrderQueryService {
             return ScmDataScopeService.emptyPage(logQueryForm);
         var page = SmartPageUtil.convert2PageQuery(logQueryForm);
         var operationLogs = orderOperationLogDao.query(page, logQueryForm, dataScopeContext.getOrderSellerScope());
-        var employeeIds = operationLogs.stream().map(OrderOperationLogEntity::getOperator)
-                .map(operator -> Long.valueOf(operator.substring(operator.indexOf(':') + 1))).distinct().toList();
-        var employeeNameById = employeeIds.isEmpty()
+        String mallCustomerPrefix = UserTypeEnum.MALL_CUSTOMER.getValue() + ":";
+        var mallAccountIds = operatorIds(operationLogs, mallCustomerPrefix);
+        var mallAccountNameById = mallAccountIds.isEmpty()
                 ? Map.<Long, String>of()
-                : employeeDao.selectBatchIds(employeeIds).stream().collect(
-                        Collectors.toMap(employee -> employee.getEmployeeId(), employee -> employee.getActualName()));
+                : mallCustomerAccountDao.listNamesByIds(mallAccountIds).stream().collect(Collectors.toMap(
+                        account -> account.getAccountId(),
+                        account -> account.getCustomerName() == null
+                                ? "商城客户（账号 " + account.getAccountId() + "）"
+                                : account.getCustomerName() + "（商城客户）",
+                        (first, ignored) -> first));
         return SmartPageUtil.convert2PageResult(page, operationLogs.stream().map(operationLog -> {
             var operationLogVO = new OrderOperationLogVO();
             BeanUtils.copyProperties(operationLog, operationLogVO);
             operationLogVO.setLogId(operationLog.getId());
-            operationLogVO.setOperatorName(employeeNameById
-                    .getOrDefault(Long.valueOf(operationLog.getOperator().split(":")[1]), operationLog.getOperator()));
+            operationLogVO.setOperatorName(operatorName(operationLog.getOperator(), mallAccountNameById,
+                    operatorNameResolver::display));
             return operationLogVO;
         }).toList());
+    }
+
+    static List<Long> operatorIds(List<OrderOperationLogEntity> logs, String prefix) {
+        return logs.stream().map(OrderOperationLogEntity::getOperator)
+                .map(operator -> operatorId(operator, prefix))
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
+    static String operatorName(String operator, Map<Long, String> mallAccountNames,
+            UnaryOperator<String> employeeDisplay) {
+        if (operator == null) {
+            return null;
+        }
+        int separator = operator.indexOf(':');
+        if (separator < 0) {
+            return operator;
+        }
+        Long id = operatorId(operator, operator.substring(0, separator + 1));
+        if (id == null) {
+            return operator;
+        }
+        if (operator.startsWith(UserTypeEnum.MALL_CUSTOMER.getValue() + ":")) {
+            return mallAccountNames.getOrDefault(id, "商城客户（账号 " + id + "）");
+        }
+        return employeeDisplay.apply(operator);
+    }
+
+    private static Long operatorId(String operator, String prefix) {
+        if (operator == null || !operator.startsWith(prefix) || operator.length() == prefix.length()) {
+            return null;
+        }
+        try {
+            return Long.valueOf(operator.substring(prefix.length()));
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 }

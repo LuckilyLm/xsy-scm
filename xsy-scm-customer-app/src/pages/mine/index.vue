@@ -12,7 +12,7 @@
       <view class="mine__row" @click="goCart"><text>购物车</text><text>›</text></view>
       <view class="mine__row" @click="goAddress"><text>收货地址</text><text>›</text></view>
       <view class="mine__row" @click="changePassword"><text>修改登录密码</text><text>›</text></view>
-      <view class="mine__row mine__row--disabled"><text>订单与结算</text><text>下一阶段开放</text></view>
+      <view class="mine__row" @click="goOrders"><text>我的订单</text><text>›</text></view>
     </view>
     <view v-if="userStore.isLogin" class="mine__logout" @click="logout">退出登录</view>
   </view>
@@ -29,6 +29,7 @@
   const metaLine = computed(() => userStore.isLogin ? [userStore.customerCode, userStore.phone].filter(Boolean).join(' · ') : '登录后查看客户信息');
   function goLogin() { uni.navigateTo({ url: '/pages/login/login' }); }
   function goCart() { uni.switchTab({ url: '/pages/cart/index' }); }
+  function goOrders() { uni.switchTab({ url: '/pages/order/index' }); }
   function goAddress() { uni.navigateTo({ url: '/pages-sub/address/list' }); }
   function changePassword() { userStore.isLogin ? uni.navigateTo({ url: '/pages/account/password' }) : goLogin(); }
   function logout() {
@@ -50,6 +51,5 @@
   .mine__login { padding: $space-1 $space-3; border: 1px solid rgba(255,255,255,.6); border-radius: $radius-pill; color: white; }
   .mine__card { margin: -$space-4 $space-4 0; @include card(0); overflow: hidden; }
   .mine__row { height: 100rpx; padding: 0 $space-4; @include flex-between; @include hairline-bottom; color: $color-text-primary; }
-  .mine__row--disabled { color: $color-text-tertiary; }
   .mine__logout { margin: $space-6 $space-4 0; height: 88rpx; @include flex-center; @include card(0); color: $color-danger; }
 </style>
