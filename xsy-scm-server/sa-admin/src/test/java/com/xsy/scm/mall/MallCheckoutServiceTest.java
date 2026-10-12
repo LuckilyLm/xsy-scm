@@ -127,6 +127,34 @@ class MallCheckoutServiceTest {
         verify(salesOrderService, never()).createFromMall(any(), any(), any());
     }
 
+    @Test
+    void replayedRequestStillReturnsWhenTheAddressWasDeleted() {
+        // 第一次下单成功后，同一客户的其他采购账号把该收货地址删了。
+        // 重试必须先回放原订单；若先读地址，就会抛「地址不存在」，把一笔已成功的订单藏起来。
+        when(salesOrderService.replayMallOrder(any(), eq("key")))
+                .thenReturn(Optional.of(new MallOrderCreationResult(order(), true)));
+        when(addressDao.detailById(9L, 3L)).thenReturn(null);
+
+        MallOrderSubmitVO result = service.submit(customer, form, "key");
+
+        assertThat(result.getOrderId()).isEqualTo(21L);
+        verify(addressDao, never()).detailById(any(), any());
+        verify(catalogService, never()).visibleProducts(any(), any());
+    }
+
+    @Test
+    void newRequestStillFailsWhenTheAddressIsGone() {
+        // 幂等预检提前不能把地址校验弄丢：没有已成功的原订单时，地址不存在仍要拒绝
+        when(salesOrderService.replayMallOrder(any(), eq("key"))).thenReturn(Optional.empty());
+        when(addressDao.detailById(9L, 3L)).thenReturn(null);
+
+        assertThatThrownBy(() -> service.submit(customer, form, "key"))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(MallErrorCode.ADDRESS_NOT_FOUND));
+        verify(salesOrderService, never()).createFromMall(any(), any(), any());
+    }
+
     private static RequestMallCustomer customer() {
         RequestMallCustomer customer = new RequestMallCustomer();
         customer.setAccountId(7L);

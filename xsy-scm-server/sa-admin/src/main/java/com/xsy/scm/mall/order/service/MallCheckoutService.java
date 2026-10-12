@@ -99,21 +99,25 @@ public class MallCheckoutService {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_IDEMPOTENCY_REQUIRED);
         }
         Map<Long, BigDecimal> quantities = normalize(form.getItems());
-        MallAddressVO address = addressDao.detailById(customer.getCustomerId(), form.getAddressId());
-        if (address == null) {
-            throw new ScmBusinessException(MallErrorCode.ADDRESS_NOT_FOUND);
-        }
-        SalesOrderAddForm orderForm = orderForm(customer, form, address, quantities);
         // 幂等指纹只绑稳定的客户请求（客户 / 地址 ID / 备注 / 期望配送时间 / 规格与数量），不含地址内容快照：
         // 地址会被同一客户的其他采购账号编辑，用快照算指纹会让「第一次已成功、重试时地址已改」认不出原订单。
+        // 它只取请求里的地址 ID，因此不需要先把地址读出来。
         Map<String, Object> idempotencyRequest = idempotencyRequest(customer, form, quantities);
-        // 幂等预检必须排在价格校验之前：第一次已下单成功但响应丢失时，重试要先拿回原订单，
-        // 否则会被「价格已变化」挡住，客户以为没下成，其实订单已经存在。
+        // 幂等预检必须排在所有「会被后续操作改变的前置校验」之前：
+        // ① 排在价格校验前——第一次已下单成功但响应丢失时，重试遇变价会被误报成「价格已变化」；
+        // ② 排在读地址前——重试期间地址可能已被同一客户的其他采购账号删除，
+        // 先读地址会直接抛「地址不存在」，把一笔已经成功的订单藏起来。
+        // 只有真正的新请求才继续校验地址与价格。
         Optional<MallOrderCreationResult> replayed = salesOrderService.replayMallOrder(idempotencyRequest,
                 idempotencyKey);
         if (replayed.isPresent()) {
             return toSubmitVO(replayed.get().order());
         }
+        MallAddressVO address = addressDao.detailById(customer.getCustomerId(), form.getAddressId());
+        if (address == null) {
+            throw new ScmBusinessException(MallErrorCode.ADDRESS_NOT_FOUND);
+        }
+        SalesOrderAddForm orderForm = orderForm(customer, form, address, quantities);
         // 只有新请求才按当前价格严格校验
         Map<Long, MallProductVO> products = resolveProducts(customer, quantities.keySet());
         for (Long skuId : quantities.keySet()) {
