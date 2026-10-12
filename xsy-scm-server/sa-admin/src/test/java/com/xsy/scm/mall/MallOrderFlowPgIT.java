@@ -455,16 +455,18 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
             MallPasswordChangeForm change = new MallPasswordChangeForm();
             change.setOldPassword(TEMPORARY_PASSWORD);
             change.setNewPassword(NEW_PASSWORD);
-            mallAuthService.changePassword(requestCustomer(account), change);
+            mallAuthService.changePassword(requestCustomer(account, 0), change);
+            login.setPassword(NEW_PASSWORD);
+            mallAuthService.login(login, "127.0.0.1");
         }
-        RequestMallCustomer customer = requestCustomer(account);
+        RequestMallCustomer customer = requestCustomer(account, 1);
         assertThat(customer.getFirstPasswordChange()).isFalse();
         SmartRequestUtil.setRequestUser(customer);
         return customer;
     }
 
-    private RequestMallCustomer requestCustomer(MallAccount account) {
-        RequestMallCustomer customer = mallAuthService.requestCustomer(MallAuthService.loginId(account.accountId()),
+    private RequestMallCustomer requestCustomer(MallAccount account, int version) {
+        RequestMallCustomer customer = mallAuthService.requestCustomer(MallAuthService.loginId(account.accountId(), version),
                 new MockHttpServletRequest());
         assertThat(customer).as("登录后必须能解析出商城客户身份").isNotNull();
         return customer;

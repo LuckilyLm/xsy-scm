@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 public enum MallErrorCode implements ScmErrorCode {
     ACCOUNT_NOT_FOUND(40480, "商城账号不存在"),
     LOGIN_FAILED(40080, "手机号或密码错误"),
+    LOGIN_LOCKED(42980, "登录失败次数过多，账号已暂时锁定，请稍后重试"),
     ACCOUNT_DISABLED(40980, "商城账号已禁用"),
     PHONE_DUPLICATE(40981, "登录手机号已被使用"),
     PASSWORD_CHANGE_REQUIRED(40983, "请先修改临时密码"),
