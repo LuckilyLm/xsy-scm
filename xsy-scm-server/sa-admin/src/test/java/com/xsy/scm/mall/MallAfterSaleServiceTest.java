@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
@@ -74,6 +75,22 @@ class MallAfterSaleServiceTest {
     }
 
     @Test
+    void cancelledRequestStillReachesTheSameIdempotencyKeyAfterVersionAdvances() {
+        when(afterSaleQueryService.requireOwnedReturn(customer, RETURN_ID))
+                .thenReturn(returnEntity("PENDING", 4), returnEntity("CANCELLED", 5));
+        MallAfterSaleVO projected = new MallAfterSaleVO();
+        when(afterSaleQueryService.detail(customer, RETURN_ID)).thenReturn(projected);
+
+        assertThat(service.cancel(customer, RETURN_ID, "same-key")).isSameAs(projected);
+        assertThat(service.cancel(customer, RETURN_ID, "same-key")).isSameAs(projected);
+
+        ArgumentCaptor<OrderReturnDecisionForm> captor = ArgumentCaptor.forClass(OrderReturnDecisionForm.class);
+        verify(orderReturnService, times(2)).cancelFromMall(captor.capture(), eq("same-key"));
+        assertThat(captor.getAllValues()).extracting(OrderReturnDecisionForm::getVersion)
+                .containsExactly(4, 5);
+    }
+
+    @Test
     void reviewedReturnCannotBeCancelledByTheCustomer() {
         when(afterSaleQueryService.requireOwnedReturn(customer, RETURN_ID)).thenReturn(returnEntity("APPROVED", 1));
 
@@ -92,6 +109,17 @@ class MallAfterSaleServiceTest {
                 .isInstanceOfSatisfying(ScmBusinessException.class, exception -> assertThat(exception.getErrorCode())
                         .isEqualTo(MallErrorCode.AFTERSALE_NOT_FOUND));
         verify(orderReturnService, never()).cancelFromMall(any(), any());
+    }
+
+    @Test
+    void otherCustomersOrderCannotCreateAnAfterSaleRequest() {
+        when(orderQueryService.requireOwnedOrder(customer, ORDER_ID))
+                .thenThrow(new ScmBusinessException(MallErrorCode.ORDER_NOT_FOUND));
+
+        assertThatThrownBy(() -> service.apply(customer, applyForm(), "key"))
+                .isInstanceOfSatisfying(ScmBusinessException.class, exception -> assertThat(exception.getErrorCode())
+                        .isEqualTo(MallErrorCode.ORDER_NOT_FOUND));
+        verify(orderReturnService, never()).createFromMall(any(), any());
     }
 
     private static RequestMallCustomer customer() {

@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
+import com.xsy.scm.mall.aftersale.dao.MallAfterSaleFundingSourceDao;
+import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleFundingTimeVO;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleRefundVO;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleVO;
 import com.xsy.scm.mall.aftersale.service.MallAfterSaleQueryService;
@@ -47,19 +49,26 @@ class MallAfterSaleQueryServiceTest {
     private final SalesOrderDao salesOrderDao = mock(SalesOrderDao.class);
     private final SalesOrderItemDao salesOrderItemDao = mock(SalesOrderItemDao.class);
     private final RefundFundingAllocationDao refundFundingAllocationDao = mock(RefundFundingAllocationDao.class);
+    private final MallAfterSaleFundingSourceDao fundingSourceDao = mock(MallAfterSaleFundingSourceDao.class);
     private final MallOrderQueryService orderQueryService = mock(MallOrderQueryService.class);
     private final MallAfterSaleQueryService service = new MallAfterSaleQueryService(orderReturnDao,
             orderReturnItemDao, orderRefundDao, orderRefundFundingSourceDao, salesOrderDao, salesOrderItemDao,
-            refundFundingAllocationDao, orderQueryService);
+            refundFundingAllocationDao, fundingSourceDao, orderQueryService);
     private final RequestMallCustomer customer = customer();
 
     @Test
     void detailProjectsAllocationRowsAsTheOriginalFundingBreakdown() {
         OrderRefundEntity refund = refund("PENDING");
         stubDetail(returnEntity("APPROVED"), refund);
-        when(refundFundingAllocationDao.listByRefund(refund.getId()))
-                .thenReturn(List.of(allocation("ONLINE", "20.0000", "SUCCEEDED"),
-                        allocation("BALANCE", "10.0000", "PROCESSING")));
+        RefundFundingAllocationEntity onlineRow = allocation("ONLINE", "20.0000", "SUCCEEDED");
+        onlineRow.setId(71L);
+        onlineRow.setSourceSucceededAt(OffsetDateTime.parse("2026-10-01T10:00:00+08:00"));
+        RefundFundingAllocationEntity balanceRow = allocation("BALANCE", "10.0000", "PROCESSING");
+        balanceRow.setId(72L);
+        when(refundFundingAllocationDao.listByRefund(refund.getId())).thenReturn(List.of(onlineRow, balanceRow));
+        OffsetDateTime actualRefundAt = OffsetDateTime.parse("2026-10-13T03:00:00+08:00");
+        when(fundingSourceDao.allocationSuccessTimes(refund.getId()))
+                .thenReturn(List.of(fundingTime(null, 71L, actualRefundAt)));
 
         MallAfterSaleVO result = service.detail(customer, RETURN_ID);
 
@@ -69,6 +78,8 @@ class MallAfterSaleQueryServiceTest {
         assertThat(online.getMethod()).isEqualTo("ONLINE");
         assertThat(online.getAllocatedAmount()).isEqualByComparingTo("20.0000");
         assertThat(online.getStatus()).isEqualTo("SUCCEEDED");
+        assertThat(online.getSucceededAt()).isEqualTo(actualRefundAt);
+        assertThat(result.getRefund().getAllocations().get(1).getSucceededAt()).isNull();
         // 进度：审核已通过、退款未完结
         assertThat(result.getProgress()).extracting("code").containsExactly("SUBMITTED", "REVIEW", "REFUND");
         assertThat(result.getProgress().get(2).getDone()).isFalse();
@@ -81,6 +92,9 @@ class MallAfterSaleQueryServiceTest {
         when(refundFundingAllocationDao.listByRefund(refund.getId())).thenReturn(List.of());
         when(orderRefundFundingSourceDao.selectBalanceReturns(List.of(refund.getId())))
                 .thenReturn(List.of(new OrderRefundBalanceFact(refund.getId(), 55L, new BigDecimal("30.0000"))));
+        OffsetDateTime returnedAt = OffsetDateTime.parse("2026-10-13T03:10:00+08:00");
+        when(fundingSourceDao.completedRefunds(List.of(refund.getId())))
+                .thenReturn(List.of(fundingTime(refund.getId(), null, returnedAt)));
 
         MallAfterSaleVO result = service.detail(customer, RETURN_ID);
 
@@ -90,7 +104,21 @@ class MallAfterSaleQueryServiceTest {
         assertThat(balance.getMethod()).isEqualTo("BALANCE");
         assertThat(balance.getAllocatedAmount()).isEqualByComparingTo("30.0000");
         assertThat(balance.getStatus()).isEqualTo("SUCCEEDED");
+        assertThat(balance.getSucceededAt()).isEqualTo(returnedAt);
+        assertThat(result.getRefund().getCompletedAt()).isEqualTo(returnedAt);
         assertThat(result.getProgress().get(2).getText()).isEqualTo("退款完成");
+    }
+
+    @Test
+    void completedBusinessRefundWithoutFundingStillShowsRefunding() {
+        OrderRefundEntity refund = refund("COMPLETED");
+        stubDetail(returnEntity("APPROVED"), refund);
+
+        MallAfterSaleVO result = service.detail(customer, RETURN_ID);
+
+        assertThat(result.getDisplayStatus()).isEqualTo("REFUNDING");
+        assertThat(result.getRefund().getCompletedAt()).isNull();
+        assertThat(result.getProgress().get(2).getDone()).isFalse();
     }
 
     @Test
@@ -200,5 +228,13 @@ class MallAfterSaleQueryServiceTest {
         allocation.setAllocatedAmount(new BigDecimal(amount));
         allocation.setStatus(status);
         return allocation;
+    }
+
+    private static MallAfterSaleFundingTimeVO fundingTime(Long refundId, Long allocationId, OffsetDateTime at) {
+        MallAfterSaleFundingTimeVO row = new MallAfterSaleFundingTimeVO();
+        row.setRefundId(refundId);
+        row.setAllocationId(allocationId);
+        row.setSucceededAt(at);
+        return row;
     }
 }

@@ -58,7 +58,7 @@
         </view>
         <view class="ad__row">
           <text class="ad__row-label">退款状态</text>
-          <text class="ad__row-value">{{ record.refund.status === 'COMPLETED' ? '已退款' : '退款处理中' }}</text>
+          <text class="ad__row-value">{{ record.displayStatus === 'REFUNDED' ? '已退款' : '退款处理中' }}</text>
         </view>
         <view v-if="record.refund.completedAt" class="ad__row">
           <text class="ad__row-label">退款完成时间</text>
@@ -70,6 +70,7 @@
             <text class="ad__row-label">{{ refundMethodText(allocation.method) }}</text>
             <text class="ad__row-value">
               ¥{{ displayAmount(allocation.allocatedAmount) }} · {{ allocationStatusText(allocation.status) }}
+              <text v-if="allocation.succeededAt"> · {{ formatDateTime(allocation.succeededAt) }}</text>
             </text>
           </view>
         </template>

@@ -22,6 +22,7 @@ public class MallAfterSaleRefundVO {
     private BigDecimal refundAmount;
     /** 正式退款单状态：PENDING / COMPLETED */
     private String status;
+    /** 实际 Finance 付款或余额返还时间；正式退款单完成但资金未到时为空。 */
     private OffsetDateTime completedAt;
     /** 原路退回明细：在线支付与余额各退多少、退到哪一步 */
     private List<Allocation> allocations = new ArrayList<>();
