@@ -162,8 +162,12 @@ public class MallOrderQueryService {
 
     /** 订单行不存图，展示时按 SKU 回读主图；取不到图的 SKU 不进 map，由客户端兜底。 */
     private Map<Long, String> imageUrls(List<SalesOrderItemEntity> items) {
-        List<Long> skuIds = items.stream().map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct()
-                .toList();
+        return skuImageUrls(items.stream().map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct()
+                .toList());
+    }
+
+    /** 按 SKU 批量取主图 URL；取不到图的 SKU 不进 map。订单与售后共用同一套图片解析。 */
+    public Map<Long, String> skuImageUrls(List<Long> skuIds) {
         if (skuIds.isEmpty()) {
             return Map.of();
         }

@@ -170,16 +170,35 @@ public class OrderReturnService {
 
     @Transactional(rollbackFor = Exception.class)
     public OrderReturnDetailVO create(OrderReturnAddForm orderReturnAddForm, String key) {
+        return create(orderReturnAddForm, key, true);
+    }
+
+    /**
+     * 商城客户申请售后入口：与管理端共用同一条建单路径与同一套数量上限，只跳过员工负责人范围（商城客户没有该范围）。
+     *
+     * <p>
+     * 仅已确认订单可退、累计申请不超过实数量的校验一律不变；归属由商城适配器在入口按登录客户判定。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public OrderReturnDetailVO createFromMall(OrderReturnAddForm orderReturnAddForm, String key) {
+        return create(orderReturnAddForm, key, false);
+    }
+
+    private OrderReturnDetailVO create(OrderReturnAddForm orderReturnAddForm, String key,
+            boolean enforceEmployeeScope) {
         var claim = orderIdempotencyService.claim("ORDER_RETURN_CREATE", key, orderReturnAddForm);
         if (claim.replay()) {
             // 重放同样要过范围：幂等 scope 含 operator，B 拿不到 A 的记录；
             // 但同一个人换了负责范围后重放旧键仍会绕开写命令内的门禁。
-            requireParentOrderVisible(orderReturnAddForm.getOrderId(),
-                    dataScopeService.resolve().getOrderSellerScope());
+            // 商城入口已由 MallAfterSaleService 按登录客户判过归属，不再套员工范围。
+            if (enforceEmployeeScope) {
+                requireParentOrderVisible(orderReturnAddForm.getOrderId(),
+                        dataScopeService.resolve().getOrderSellerScope());
+            }
             return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
         }
         var order = salesOrderService.lock(orderReturnAddForm.getOrderId());
-        if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
+        if (enforceEmployeeScope && !dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
             throw new ScmDataScopeException();
         if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus()))
             throw new ScmBusinessException(ORDER_RETURN_ORDER_NOT_CONFIRMED);
@@ -315,24 +334,38 @@ public class OrderReturnService {
 
     @Transactional(rollbackFor = Exception.class)
     public OrderReturnDetailVO reject(OrderReturnDecisionForm orderReturnDecisionForm, String key) {
-        return decide(orderReturnDecisionForm, key, ScmOrderReturnStatusEnum.REJECTED);
+        return decide(orderReturnDecisionForm, key, ScmOrderReturnStatusEnum.REJECTED, true);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public OrderReturnDetailVO cancel(OrderReturnDecisionForm orderReturnDecisionForm, String key) {
-        return decide(orderReturnDecisionForm, key, ScmOrderReturnStatusEnum.CANCELLED);
+        return decide(orderReturnDecisionForm, key, ScmOrderReturnStatusEnum.CANCELLED, true);
+    }
+
+    /**
+     * 商城客户撤销售后申请入口：与管理端共用同一条撤销路径与同一个待审核状态门槛，只跳过员工负责人范围（商城客户没有该范围）。
+     *
+     * <p>
+     * 只有 {@code PENDING} 可撤销；归属由商城适配器在入口按退货单的客户归属判定。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public OrderReturnDetailVO cancelFromMall(OrderReturnDecisionForm orderReturnDecisionForm, String key) {
+        return decide(orderReturnDecisionForm, key, ScmOrderReturnStatusEnum.CANCELLED, false);
     }
 
     private OrderReturnDetailVO decide(OrderReturnDecisionForm orderReturnDecisionForm, String key,
-            ScmOrderReturnStatusEnum state) {
+            ScmOrderReturnStatusEnum state, boolean enforceEmployeeScope) {
         var claim = orderIdempotencyService.claim(
                 "ORDER_RETURN_" + state.name() + ":" + orderReturnDecisionForm.getReturnId(), key,
                 orderReturnDecisionForm);
         if (claim.replay()) {
-            detail(orderReturnDecisionForm.getReturnId());
+            // 商城重放已由 MallAfterSaleService 按客户归属判过，不再套员工范围。
+            if (enforceEmployeeScope) {
+                detail(orderReturnDecisionForm.getReturnId());
+            }
             return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
         }
-        var orderReturnEntity = lock(orderReturnDecisionForm.getReturnId());
+        var orderReturnEntity = lock(orderReturnDecisionForm.getReturnId(), enforceEmployeeScope);
         SalesOrderService.version(orderReturnEntity.getVersion(), orderReturnDecisionForm.getVersion());
         pending(orderReturnEntity);
         OrderValidator.reason(orderReturnDecisionForm.getDecisionReason(), ORDER_RETURN_APPROVAL_INVALID);
@@ -369,11 +402,15 @@ public class OrderReturnService {
      * {@code detail()}，这里的重复判定不会改变它的语义。
      */
     private OrderReturnEntity lock(Long orderReturnId) {
+        return lock(orderReturnId, true);
+    }
+
+    private OrderReturnEntity lock(Long orderReturnId, boolean enforceEmployeeScope) {
         var orderReturnEntity = orderReturnDao.selectById(orderReturnId);
         if (orderReturnEntity == null)
             throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
         var order = salesOrderService.lock(orderReturnEntity.getOrderId());
-        if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
+        if (enforceEmployeeScope && !dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
             throw new ScmDataScopeException();
         for (var salesOrderItem : salesOrderItemDao.list(orderReturnEntity.getOrderId())) {
             salesOrderItemDao.lock(salesOrderItem.getId());
