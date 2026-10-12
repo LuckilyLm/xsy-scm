@@ -73,6 +73,12 @@ public class BalanceRefundService {
     }
 
     private CustomerBalanceMovementEntity apply(BalanceRefundFact refund, boolean explicit) {
+        if (balanceRefundSourceDao.hasFundingAllocations(refund.orderId())) {
+            if (explicit) {
+                throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_PATH_CONFLICT);
+            }
+            return null;
+        }
         // 共用支付成功事实的身份与金额校验；该 Policy 只读来源，不执行任何财务写入。
         var funding = financeOrderFundingPolicy.requireCompleteOrderFunding(refund.orderId());
         boolean balance = funding.stream().anyMatch(f -> ScmPaymentMethodEnum.BALANCE.name().equals(f.getMethod()));

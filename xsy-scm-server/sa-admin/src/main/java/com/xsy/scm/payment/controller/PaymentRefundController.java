@@ -3,6 +3,13 @@ package com.xsy.scm.payment.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.payment.constant.ScmPaymentPermission;
 import com.xsy.scm.payment.domain.form.PaymentRefundCreateForm;
+import com.xsy.scm.payment.domain.form.PaymentRefundRecoveryForm;
+import com.xsy.scm.payment.domain.vo.PaymentRefundRecoveryLogVO;
+import com.xsy.scm.payment.service.PaymentRefundRecoveryService;
+import com.xsy.scm.common.constant.ScmOperator;
+import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import com.xsy.scm.payment.domain.form.PaymentRefundQueryForm;
 import com.xsy.scm.payment.domain.form.RefundFundingDetailForm;
 import com.xsy.scm.payment.domain.form.RefundFundingExecuteForm;
@@ -35,12 +42,28 @@ public class PaymentRefundController {
 
     private final RefundFundingAllocationService refundFundingAllocationService;
 
+    private final PaymentRefundRecoveryService paymentRefundRecoveryService;
+
+    @PostMapping("/recover")
+    @SaCheckPermission(ScmPaymentPermission.REFUND_CREATE)
+    @OperateLog
+    public ResponseDTO<PaymentRefundVO> recover(@Valid @RequestBody PaymentRefundRecoveryForm form) {
+        paymentRefundService.requireVisibleRefund(form.getRefundId());
+        return ResponseDTO.ok(PaymentVoAssembler.toRefund(paymentRefundRecoveryService.recover(form.getRefundId(),
+                ScmOperator.current(), form.getReason(), true)));
+    }
+
+    @GetMapping("/{refundId}/recovery-log")
+    @SaCheckPermission(ScmPaymentPermission.REFUND_QUERY)
+    public ResponseDTO<List<PaymentRefundRecoveryLogVO>> recoveryLog(@PathVariable Long refundId) {
+        return ResponseDTO.ok(paymentRefundService.recoveryLogs(refundId));
+    }
+
     /**
      * 发起退款。
      *
      * <p>
-     * 需要 {@code Idempotency-Key}：退款是出款动作，重复提交的代价是真金白银。
-     * 同键同内容重放首次结果，不重复向渠道发起。
+     * 需要 {@code Idempotency-Key}：退款是出款动作，重复提交的代价是真金白银。 同键同内容重放首次结果，不重复向渠道发起。
      */
     @PostMapping("/create")
     @SaCheckPermission(ScmPaymentPermission.REFUND_CREATE)

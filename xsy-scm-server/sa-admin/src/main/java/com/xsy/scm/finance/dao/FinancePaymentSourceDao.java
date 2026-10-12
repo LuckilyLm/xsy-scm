@@ -6,6 +6,7 @@ import com.xsy.scm.finance.domain.dto.FinanceRefundFactDto;
 import com.xsy.scm.finance.domain.form.FinanceRefundOptionQueryForm;
 import com.xsy.scm.finance.domain.vo.FinanceRefundOptionVO;
 import java.util.List;
+import java.math.BigDecimal;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -27,6 +28,11 @@ public interface FinancePaymentSourceDao {
     FinanceRefundFactDto lockOrderRefund(@Param("refundId") Long refundId);
 
     FinanceRefundFactDto selectOrderRefund(@Param("refundId") Long refundId);
+
+    boolean hasRefundFundingAllocations(@Param("orderId") Long orderId);
+
+    boolean matchesSuccessfulRefund(@Param("refundId") Long refundId, @Param("paymentRefundId") Long paymentRefundId,
+            @Param("customerId") Long customerId, @Param("amount") BigDecimal amount);
 
     /**
      * 该业务退款单是否已有<b>线上退款事实</b>（支付域 {@code xsy_payment_refund}）。

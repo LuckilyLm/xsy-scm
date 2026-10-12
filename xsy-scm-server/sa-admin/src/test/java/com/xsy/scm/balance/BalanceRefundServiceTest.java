@@ -66,6 +66,15 @@ class BalanceRefundServiceTest {
     }
 
     @Test
+    void fundingAllocationOnTheOrderBlocksLegacyWalletReturn() {
+        when(sources.hasFundingAllocations(10L)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.refundOnCompletion(50L)).isInstanceOfSatisfying(ScmBusinessException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(BalanceErrorCode.BALANCE_REFUND_PATH_CONFLICT));
+        verifyNoInteractions(wallet);
+    }
+
+    @Test
     void anyCashRefundOnTheOrderBlocksWalletReturn() {
         when(sources.hasCashRefund(10L)).thenReturn(true);
         assertThatThrownBy(() -> service.refundOnCompletion(50L)).isInstanceOfSatisfying(ScmBusinessException.class,

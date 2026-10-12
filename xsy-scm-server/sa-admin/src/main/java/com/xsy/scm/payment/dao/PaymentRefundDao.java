@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.payment.domain.form.PaymentRefundQueryForm;
+import com.xsy.scm.payment.domain.vo.PaymentRefundRecoveryLogVO;
 import java.util.List;
 import com.xsy.scm.payment.domain.entity.PaymentRefundEntity;
 import java.math.BigDecimal;
@@ -12,6 +13,23 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface PaymentRefundDao extends BaseMapper<PaymentRefundEntity> {
+
+    List<Long> recoveryCandidates(@Param("limit") int limit);
+
+    List<PaymentRefundRecoveryLogVO> recoveryLogs(@Param("refundId") Long refundId);
+
+    int claimRecovery(@Param("id") Long id, @Param("force") boolean force);
+
+    int finishRecovery(@Param("id") Long id, @Param("result") String result, @Param("detail") String detail,
+            @Param("delaySeconds") long delaySeconds, @Param("attempt") int attempt);
+
+    int appendRecoveryLog(@Param("id") Long id, @Param("operator") String operator, @Param("reason") String reason,
+            @Param("result") String result, @Param("amount") BigDecimal amount, @Param("detail") String detail);
+
+    int updateProviderReference(@Param("id") Long id, @Param("providerRefundNo") String providerRefundNo,
+            @Param("operator") String operator);
+
+    BigDecimal sumReservedByTransaction(@Param("transactionId") Long transactionId);
 
     List<PaymentRefundEntity> queryPage(Page<?> page, @Param("query") PaymentRefundQueryForm query,
             @Param("scope") ScmDataScopeContext scope);
@@ -40,5 +58,6 @@ public interface PaymentRefundDao extends BaseMapper<PaymentRefundEntity> {
     int markProcessing(@Param("id") Long id, @Param("providerRefundNo") String providerRefundNo,
             @Param("operator") String operator);
 
-    int resetFailed(@Param("id") Long id, @Param("operator") String operator);
+    int resetFailed(@Param("id") Long id, @Param("operator") String operator,
+            @Param("mockScenario") String mockScenario);
 }

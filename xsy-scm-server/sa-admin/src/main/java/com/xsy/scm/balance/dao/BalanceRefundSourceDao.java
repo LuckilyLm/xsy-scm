@@ -13,6 +13,7 @@ public interface BalanceRefundSourceDao {
     Long lockOrder(@Param("orderId") Long orderId);
     List<Long> lockOrderRefunds(@Param("orderId") Long orderId);
     boolean hasCashRefund(@Param("orderId") Long orderId);
+    boolean hasFundingAllocations(@Param("orderId") Long orderId);
     boolean hasPendingFunding(@Param("orderId") Long orderId);
     boolean hasInvalidReturns(@Param("orderId") Long orderId);
     BigDecimal returnedAmount(@Param("orderId") Long orderId);

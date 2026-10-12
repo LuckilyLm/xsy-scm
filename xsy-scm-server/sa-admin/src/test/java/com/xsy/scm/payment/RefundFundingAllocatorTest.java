@@ -1,5 +1,6 @@
 package com.xsy.scm.payment;
 
+import com.xsy.scm.payment.service.RefundFundingAllocator;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;

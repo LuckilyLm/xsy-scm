@@ -22,6 +22,8 @@ public interface PaymentSourceDao {
 
     boolean hasBalanceRefunds(@Param("orderId") Long orderId);
 
+    boolean hasLegacyRefundFunding(@Param("orderId") Long orderId);
+
     boolean hasOrderRefundFunding(@Param("orderId") Long orderId);
     boolean customerVisible(@Param("customerId") Long customerId, @Param("scope") ScmValueScope scope);
 

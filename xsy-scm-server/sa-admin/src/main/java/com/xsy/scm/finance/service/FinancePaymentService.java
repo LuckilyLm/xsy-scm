@@ -279,12 +279,19 @@ public class FinancePaymentService {
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentEntity registerFromPaymentRefund(FinancePaymentRefundFact fact) {
+        return registerFromPaymentRefund(fact, ScmOperator.current());
+    }
+
+    /** 支付域已核实的退款事实可由回调或恢复任务派生，不依赖员工会话。 */
+    @Transactional(rollbackFor = Exception.class)
+    public FinancePaymentEntity registerFromPaymentRefund(FinancePaymentRefundFact fact, String operator) {
         if (fact == null || fact.orderRefundId() == null || fact.customerId() == null || fact.providerAmount() == null
                 || fact.refundedAt() == null) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         BigDecimal amount = fact.providerAmount().setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
-        if (amount.signum() <= 0) {
+        if (amount.signum() <= 0 || !financePaymentSourceDao.matchesSuccessfulRefund(fact.orderRefundId(),
+                fact.paymentRefundId(), fact.customerId(), amount)) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
 
@@ -305,12 +312,11 @@ public class FinancePaymentService {
             financeOrderFundingPolicy.requireCashRefundAllowed(refund.getOrderId(), true);
         }
         FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(refund.getCustomerId());
-        if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+        if (customer == null || StringUtils.isBlank(operator)) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
 
         OffsetDateTime now = OffsetDateTime.now();
-        String operator = ScmOperator.current();
         FinancePaymentEntity payment = new FinancePaymentEntity();
         payment.setPaymentNo(
                 ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
@@ -345,7 +351,7 @@ public class FinancePaymentService {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         operationLogs.record(ScmFinanceBusinessTypeEnum.PAYMENT, payment.getId(), ScmFinanceOperationTypeEnum.PAY, null,
-                null, snapshot(payment));
+                null, snapshot(payment), operator);
         return payment;
     }
 
@@ -378,7 +384,8 @@ public class FinancePaymentService {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         financeOrderFundingPolicy.requireCashRefundAllowed(refund.getOrderId(), false);
-        if (financePaymentSourceDao.selectActivePaymentRefund(refund.getRefundId()) != null) {
+        if (financePaymentSourceDao.selectActivePaymentRefund(refund.getRefundId()) != null
+                || financePaymentSourceDao.hasRefundFundingAllocations(refund.getOrderId())) {
             // 线上退款已发起/完成：再人工退一次，就是同一张退款单被退两遍。
             // 与支付域的 requireOrderRefundSource 构成<b>双向互斥</b>，两边都锁同一行 order_refund。
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);

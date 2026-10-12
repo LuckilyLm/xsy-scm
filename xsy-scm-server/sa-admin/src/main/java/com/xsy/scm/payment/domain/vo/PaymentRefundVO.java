@@ -24,6 +24,14 @@ public class PaymentRefundVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal amount;
 
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal providerAmount;
+
+    private Integer recoveryAttempts;
+    private String recoveryStatus;
+    private String recoveryMessage;
+    private OffsetDateTime nextRecoveryAt;
+
     /** 业务来源，当前只有 {@code ORDER_REFUND}。 */
     private String sourceType;
 

@@ -84,4 +84,10 @@ public class PaymentRefundEntity {
     private String createdBy;
 
     private String updatedBy;
+
+    private Integer recoveryAttempts;
+    private OffsetDateTime nextRecoveryAt;
+    private OffsetDateTime recoveryLeaseUntil;
+    private String recoveryStatus;
+    private String recoveryMessage;
 }

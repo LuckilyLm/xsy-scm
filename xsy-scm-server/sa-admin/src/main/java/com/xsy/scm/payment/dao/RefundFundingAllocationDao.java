@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface RefundFundingAllocationDao extends BaseMapper<RefundFundingAllocationEntity> {
+    boolean existsByOrder(@Param("orderId") Long orderId);
     int insertIgnoreDuplicate(RefundFundingAllocationEntity row);
 
     List<RefundFundingAllocationEntity> lockByRefund(@Param("refundId") Long refundId);

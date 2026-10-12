@@ -1,6 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.payment.dao.PaymentRefundDao">
+    <select id="recoveryLogs" resultType="com.xsy.scm.payment.domain.vo.PaymentRefundRecoveryLogVO">
+        SELECT * FROM xsy_payment_refund_recovery_log WHERE refund_id = #{refundId} ORDER BY id DESC LIMIT 100
+    </select>
+    <select id="recoveryCandidates" resultType="java.lang.Long">
+        SELECT r.id FROM xsy_payment_refund r
+        LEFT JOIN xsy_refund_funding_allocation a ON r.source_type = 'REFUND_FUNDING_ALLOCATION'
+            AND a.id = r.source_id AND a.deleted = FALSE
+        WHERE r.deleted = FALSE AND r.next_recovery_at &lt;= CURRENT_TIMESTAMP
+            AND (r.recovery_lease_until IS NULL OR r.recovery_lease_until &lt; CURRENT_TIMESTAMP)
+            AND (r.status IN ('CREATED', 'PROCESSING') OR (r.status = 'SUCCEEDED'
+                AND NOT EXISTS (SELECT 1 FROM xsy_finance_payment p
+                    WHERE p.source_type = 'ORDER_REFUND' AND p.entry_type = 'NORMAL' AND p.deleted = FALSE
+                    AND p.source_id = CASE WHEN r.source_type = 'ORDER_REFUND' THEN r.source_id
+                        ELSE a.order_refund_id END)))
+        ORDER BY r.next_recovery_at, r.id LIMIT #{limit}
+    </select>
+    <update id="claimRecovery">
+        UPDATE xsy_payment_refund SET recovery_lease_until = CURRENT_TIMESTAMP + INTERVAL '10 minutes',
+            recovery_attempts = recovery_attempts + 1
+        WHERE id = #{id} AND deleted = FALSE AND status IN ('CREATED', 'PROCESSING', 'SUCCEEDED', 'FAILED')
+            AND (recovery_lease_until IS NULL OR recovery_lease_until &lt; CURRENT_TIMESTAMP)
+            AND (#{force} OR next_recovery_at &lt;= CURRENT_TIMESTAMP)
+    </update>
+    <update id="finishRecovery">
+        UPDATE xsy_payment_refund SET recovery_lease_until = NULL, recovery_status = #{result},
+            recovery_message = #{detail}, next_recovery_at = CURRENT_TIMESTAMP + (#{delaySeconds} * INTERVAL '1 second')
+        WHERE id = #{id} AND deleted = FALSE AND recovery_attempts = #{attempt}
+    </update>
+    <insert id="appendRecoveryLog">
+        INSERT INTO xsy_payment_refund_recovery_log(refund_id, operator, reason, result, provider_amount, detail)
+        VALUES (#{id}, #{operator}, #{reason}, #{result}, #{amount}, #{detail})
+    </insert>
+    <update id="updateProviderReference">
+        UPDATE xsy_payment_refund SET provider_refund_no = #{providerRefundNo}, updated_by = #{operator}
+        WHERE id = #{id} AND deleted = FALSE
+            AND (provider_refund_no IS NULL OR provider_refund_no = #{providerRefundNo})
+    </update>
+    <select id="sumReservedByTransaction" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(CASE WHEN status = 'SUCCEEDED' THEN provider_amount ELSE amount END), 0)
+        FROM xsy_payment_refund WHERE transaction_id = #{transactionId} AND deleted = FALSE
+            AND status IN ('CREATED', 'PROCESSING', 'SUCCEEDED')
+    </select>
 
     <select id="queryPage" resultType="com.xsy.scm.payment.domain.entity.PaymentRefundEntity">
         SELECT r.* FROM xsy_payment_refund r
@@ -97,6 +139,8 @@
         UPDATE xsy_payment_refund
         SET status = 'CREATED', provider_refund_no = NULL, provider_amount = NULL,
             refunded_at = NULL, failure_code = NULL, failure_message = NULL,
+            mock_scenario = #{mockScenario}, next_recovery_at = CURRENT_TIMESTAMP,
+            recovery_status = NULL, recovery_message = NULL,
             version = version + 1, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
         WHERE id = #{id} AND status = 'FAILED' AND deleted = FALSE
     </update>

@@ -36,10 +36,11 @@ public interface ScmPaymentProvider {
      */
     IntentResult createIntent(IntentRequest request);
 
-    /**
-     * 向渠道发起退款。
-     */
+    /** 同一 refundNo 必须幂等；超时或本地落账失败后仍使用原编号，不得重复出款。 */
     RefundResult refund(RefundRequest request);
+
+    /** 按已提交的本地退款号查渠道；null 仅表示渠道明确确认不存在，查询失败必须抛异常。 */
+    RefundResult queryRefund(String refundNo, String providerRefundNo);
 
     /**
      * 验签并归一化回调。

@@ -1,6 +1,7 @@
 package com.xsy.scm.order.service;
 
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.balance.service.BalanceRefundService;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
@@ -36,6 +37,7 @@ import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_REFUND_STATUS_INVA
 @Service
 @RequiredArgsConstructor
 public class OrderRefundService {
+    private final BalanceRefundService balanceRefundService;
     private final OrderRefundDao orderRefundDao;
     private final OrderRefundFundingSourceDao orderRefundFundingSourceDao;
     private final SalesOrderDao salesOrderDao;
@@ -139,6 +141,7 @@ public class OrderRefundService {
         } catch (org.springframework.dao.DuplicateKeyException ex) {
             throw new ScmBusinessException(ORDER_REFUND_STATUS_INVALID);
         }
+        balanceRefundService.refundOnCompletion(refundEntity.getId());
         var result = detailSnapshot(refundEntity.getId());
         // 退款完成同样是必须留痕的订单状态变更。镜像取未收窄的 detailSnapshot，
         // 日志要记真实状态，而不是按调用者读范围裁过的视图。

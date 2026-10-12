@@ -18,5 +18,9 @@ public interface PaymentMockLedgerDao extends BaseMapper<PaymentMockLedgerEntity
 
     PaymentMockLedgerEntity selectInByProviderTransactionNo(@Param("providerTransactionNo") String no);
 
+    void lockRefundReference(@Param("providerRefundNo") String providerRefundNo);
+
+    List<PaymentMockLedgerEntity> selectOutByProviderRefundNo(@Param("providerRefundNo") String providerRefundNo);
+
     List<PaymentMockLedgerEntity> listByBizDate(@Param("bizDate") LocalDate bizDate);
 }

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.balance.dao.BalanceRefundSourceDao">
+    <select id="hasFundingAllocations" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM xsy_refund_funding_allocation
+            WHERE order_id = #{orderId} AND deleted = FALSE)
+    </select>
     <select id="selectRefund" resultType="com.xsy.scm.balance.domain.dto.BalanceRefundFact">
         SELECT r.id AS refundId, r.order_id AS orderId, r.customer_id AS customerId,
             o.settlement_customer_id AS settlementCustomerId, o.seller_id AS sellerId,
