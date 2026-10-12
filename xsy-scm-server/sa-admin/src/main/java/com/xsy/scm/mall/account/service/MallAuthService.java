@@ -13,6 +13,7 @@ import com.xsy.scm.mall.account.domain.form.MallPasswordChangeForm;
 import com.xsy.scm.mall.account.domain.vo.MallLoginVO;
 import com.xsy.scm.mall.account.domain.vo.MallProfileVO;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
+import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
@@ -28,7 +29,8 @@ public class MallAuthService {
 
     @Transactional(rollbackFor = Exception.class)
     public MallLoginVO login(MallLoginForm form, String ip) {
-        MallCustomerAccountEntity account = accountDao.selectByPhone(MallAccountService.normalizePhone(form.getPhone()));
+        MallCustomerAccountEntity account = accountDao
+                .selectByPhone(MallAccountService.normalizePhone(form.getPhone()));
         if (account == null || !SecurityPasswordService.matchesPwd(form.getPassword(), account.getPasswordHash())) {
             throw new ScmBusinessException(MallErrorCode.LOGIN_FAILED);
         }
@@ -37,7 +39,7 @@ public class MallAuthService {
         }
         CustomerEntity customer = customerService.requireTradable(account.getCustomerId());
         accountDao.recordLogin(account.getId(), ip);
-        StpUtil.login(loginId(account.getId()), "MALL");
+        StpUtil.login(loginId(account.getId()), ScmOrderSourceEnum.MALL.name());
         return new MallLoginVO(StpUtil.getTokenValue(), profile(account, customer));
     }
 

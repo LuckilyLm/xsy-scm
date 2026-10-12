@@ -1,5 +1,6 @@
 package com.xsy.scm.payment.service;
 
+import com.xsy.scm.balance.constant.ScmBalanceSourceTypeEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
@@ -33,6 +34,7 @@ import java.math.RoundingMode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -265,7 +267,7 @@ public class PaymentRefundService {
                 || refund.getProviderAmount() == null) {
             return;
         }
-        if ("REFUND_FUNDING_ALLOCATION".equals(refund.getSourceType())) {
+        if (ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION.name().equals(refund.getSourceType())) {
             syncFundingAllocation(refund, operator);
             return;
         }
@@ -292,7 +294,7 @@ public class PaymentRefundService {
     }
 
     private void syncFundingAllocation(PaymentRefundEntity refund, String operator) {
-        if (refund == null || !"REFUND_FUNDING_ALLOCATION".equals(refund.getSourceType())
+        if (refund == null || !ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION.name().equals(refund.getSourceType())
                 || refund.getSourceId() == null) {
             return;
         }
@@ -309,11 +311,10 @@ public class PaymentRefundService {
     }
 
     /** 执行一条已冻结的 ONLINE 资金分摊；调用方负责锁订单与分摊行。 */
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY,
-            rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public PaymentRefundEntity executeAllocation(Long allocationId, Long orderRefundId,
             PaymentTransactionEntity transaction, BigDecimal amount, String reason, String mockScenario) {
-        String sourceType = "REFUND_FUNDING_ALLOCATION";
+        String sourceType = ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION.name();
         PaymentRefundEntity existing = paymentRefundDao.selectBySource(sourceType, allocationId);
         if (existing != null && ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(existing.getStatus())) {
             return existing;
