@@ -144,6 +144,20 @@
         <text v-if="hasNonStandard" class="od__tip">含按实重结算商品，最终金额以出库实重为准</text>
       </view>
 
+      <!-- 售后：已接单即可申请（含配送异常）；已有售后单展示最新状态，点击进售后详情 -->
+      <view v-if="canApplyAfterSale(order) || afterSales.length" class="od-card">
+        <view class="od-card__title">售后服务</view>
+        <view v-for="record in afterSales" :key="record.returnId" class="od__row" @click="goAfterSaleDetail(record.returnId)">
+          <text class="od__row-label">售后单 {{ record.returnNo }}</text>
+          <text class="od__row-value od-aftersale__status" :class="`od-aftersale__status--${afterSaleStatusLevel(record.displayStatus)}`">
+            {{ afterSaleStatusText(record.displayStatus) }} ›
+          </text>
+        </view>
+        <view v-if="canApplyAfterSale(order)" class="od-aftersale__apply" @click="goAfterSaleApply">
+          申请售后（退货 / 退款）
+        </view>
+      </view>
+
       <view class="od-card">
         <view class="od-card__title">订单信息</view>
         <view class="od__row">
@@ -192,6 +206,7 @@
   import { computed, ref } from 'vue';
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
   import { mallOrderApi } from '@/api/mall/order-api';
+  import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import {
     CANCEL_REASONS,
@@ -203,9 +218,11 @@
     isAbnormalFulfillment,
     operationText,
   } from '@/utils/order-display';
+  import { afterSaleStatusLevel, afterSaleStatusText, canApplyAfterSale } from '@/utils/after-sale-display';
 
   const orderId = ref(null);
   const order = ref(null);
+  const afterSales = ref([]);
   const loading = ref(false);
 
   const hasNonStandard = computed(() => (order.value?.items || []).some((item) => item.nonStandard === true));
@@ -225,12 +242,32 @@
     try {
       const response = await mallOrderApi.getDetail(orderId.value);
       order.value = response.data || null;
+      loadAfterSales();
     } catch (error) {
       smartSentry.captureError(error);
       uni.showToast({ title: error?.message || '订单加载失败', icon: 'none' });
     } finally {
       loading.value = false;
     }
+  }
+
+  /** 售后状态独立加载：它失败不拖垮订单详情，只少一个售后区块 */
+  async function loadAfterSales() {
+    try {
+      const response = await mallAfterSaleApi.getList({ pageNum: 1, pageSize: 20, orderId: orderId.value });
+      afterSales.value = response.data?.list || [];
+    } catch (error) {
+      smartSentry.captureError(error);
+      afterSales.value = [];
+    }
+  }
+
+  function goAfterSaleApply() {
+    uni.navigateTo({ url: `/pages-sub/after-sale/apply?orderId=${orderId.value}` });
+  }
+
+  function goAfterSaleDetail(returnId) {
+    uni.navigateTo({ url: `/pages-sub/after-sale/detail?returnId=${returnId}` });
   }
 
   /** 司机电话来自配送事实快照；点击直接拨号，方便客户在途沟通 */
@@ -385,6 +422,30 @@
   .od__row-value--danger {
     color: $color-danger;
     font-weight: $font-weight-medium;
+  }
+  .od-aftersale__apply {
+    margin-top: $space-3;
+    padding: $space-2 0;
+    border: 1px solid $color-primary;
+    border-radius: $radius-pill;
+    text-align: center;
+    color: $color-primary;
+    font-size: $font-size-sm;
+  }
+  .od-aftersale__status--warn {
+    color: $color-warning;
+  }
+  .od-aftersale__status--primary {
+    color: $color-primary;
+  }
+  .od-aftersale__status--ok {
+    color: $color-success;
+  }
+  .od-aftersale__status--danger {
+    color: $color-danger;
+  }
+  .od-aftersale__status--off {
+    color: $color-text-tertiary;
   }
   .od-step {
     display: flex;

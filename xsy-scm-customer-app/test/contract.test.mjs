@@ -11,7 +11,7 @@ test('SmartAdmin success contract uses code zero', () => {
   assert.match(request, /code === SUCCESS_CODE && res\?\.ok !== false/);
 });
 
-test('release only exposes authentication, catalog, cart, address and order APIs', () => {
+test('release only exposes authentication, catalog, cart, address, order and after-sale APIs', () => {
   const auth = read('../src/api/mall/auth-api.js');
   const api = read('../src/api/mall/index.js');
   assert.match(auth, /auth\/login/);
@@ -20,7 +20,92 @@ test('release only exposes authentication, catalog, cart, address and order APIs
   assert.match(api, /Cart/);
   assert.match(api, /Address/);
   assert.match(api, /Order/);
+  assert.match(api, /AfterSale/);
   assert.doesNotMatch(api, /Account|Home/);
+});
+
+test('after-sale center exposes apply, list and detail pages', () => {
+  const api = read('../src/api/mall/after-sale-api.js');
+  const pages = read('../src/pages.json');
+  const mine = read('../src/pages/mine/index.vue');
+  assert.match(api, /\/scm\/mall\/after-sales/);
+  assert.match(api, /getList/);
+  assert.match(api, /getDetail/);
+  assert.match(api, /apply: \(param, idempotencyKey\)/);
+  assert.match(api, /cancel: \(returnId, idempotencyKey\)/);
+  assert.match(pages, /pages-sub\/after-sale/);
+  assert.match(mine, /pages-sub\/after-sale\/list/);
+});
+
+test('after-sale apply submits items and reason with an idempotency key', () => {
+  const page = read('../src/pages-sub/after-sale/apply.vue');
+  // 幂等键与「订单 + 明细 + 原因」绑定，重复提交不重复建单
+  assert.match(page, /mallAfterSaleApi\.apply\(\{ orderId: orderId\.value, reason: reason\.value, items \}, key\)/);
+  assert.match(page, /aftersale-\$\{orderId\.value\}/);
+  // 预估金额只是展示，核定以服务端审核为准
+  assert.match(page, /以平台审核为准/);
+  // 归属由服务端按登录身份判定，客户端不提交 customerId
+  assert.doesNotMatch(page, /customerId/);
+});
+
+test('after-sale estimates use fixed-point math, never float sums', () => {
+  const page = read('../src/pages-sub/after-sale/apply.vue');
+  const util = read('../src/utils/after-sale-display.js');
+  assert.match(page, /estimateLineAmount/);
+  assert.match(page, /sumAmounts/);
+  // 金额按四位小数定点整数运算
+  assert.match(util, /Math\.round\(Number\(quantity\) \* 10000\)/);
+  assert.doesNotMatch(util, /Number\(quantity\) \* Number\(unitPrice\)/);
+});
+
+test('after-sale status text maps the server-derived display status', () => {
+  const list = read('../src/pages-sub/after-sale/list.vue');
+  const util = read('../src/utils/after-sale-display.js');
+  assert.match(util, /REVIEWING: \{ text: '审核中'/);
+  assert.match(list, /afterSaleStatusText\(record\.displayStatus\)/);
+  // 客户端不按原始退货状态自行推导阶段
+  assert.doesNotMatch(list, /record\.status === 'APPROVED'/);
+});
+
+test('after-sale detail renders server progress and the original-funding breakdown', () => {
+  const detail = read('../src/pages-sub/after-sale/detail.vue');
+  const util = read('../src/utils/after-sale-display.js');
+  // 节点文案与 done 都由服务端给出，客户端只渲染
+  assert.match(detail, /v-for="\(node, index\) in record\.progress"/);
+  assert.match(detail, /:class="\{ 'ad-step--pending': !node\.done \}"/);
+  // 原路退回明细：方式与金额来自服务端分摊事实
+  assert.match(detail, /record\.refund\.allocations/);
+  assert.match(detail, /refundMethodText\(allocation\.method\)/);
+  assert.match(detail, /allocationStatusText\(allocation\.status\)/);
+  // 内部失败码不透出：失败只显示「退款异常，请联系客服」
+  assert.match(util, /FAILED: '退款异常，请联系客服'/);
+  assert.doesNotMatch(util, /failureCode|failureMessage/);
+});
+
+test('after-sale cancel only fires when the server says it is cancelable', () => {
+  const detail = read('../src/pages-sub/after-sale/detail.vue');
+  assert.match(detail, /v-if="record\.cancelable"/);
+  assert.match(detail, /mallAfterSaleApi\.cancel\(returnId\.value, `aftersale-cancel-\$\{returnId\.value\}`\)/);
+});
+
+test('order detail links to the after-sale center', () => {
+  const detail = read('../src/pages-sub/order/detail.vue');
+  assert.match(detail, /mallAfterSaleApi\.getList/);
+  assert.match(detail, /canApplyAfterSale\(order\)/);
+  assert.match(detail, /pages-sub\/after-sale\/apply/);
+  // 售后加载失败不能拖垮订单详情
+  assert.match(detail, /售后状态独立加载/);
+});
+
+test('after-sale mock mirrors the backend routes', () => {
+  const mock = read('../mock/routes/after-sale.js');
+  const index = read('../mock/index.js');
+  assert.match(mock, /\/scm\/mall\/after-sales/);
+  assert.match(mock, /\/scm\/mall\/after-sales\/:returnId\/cancel/);
+  assert.match(mock, /Idempotency-Key/);
+  assert.match(index, /afterSaleRoutes/);
+  // mock 与后端同构：撤销仅限待审核
+  assert.match(mock, /record\.status !== 'PENDING'/);
 });
 
 test('checkout submits a price fingerprint and an idempotency key', () => {
