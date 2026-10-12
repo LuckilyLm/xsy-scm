@@ -17,6 +17,7 @@ import com.xsy.scm.mall.order.domain.vo.MallCheckoutItemVO;
 import com.xsy.scm.mall.order.domain.vo.MallCheckoutPreviewVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
 import com.xsy.scm.order.constant.ScmOrderSourceEnum;
+import com.xsy.scm.order.domain.dto.MallOrderCreationResult;
 import com.xsy.scm.order.domain.form.OrderAddressForm;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.form.SalesOrderItemForm;
@@ -37,6 +38,7 @@ import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -101,6 +103,14 @@ public class MallCheckoutService {
         if (address == null) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_NOT_FOUND);
         }
+        SalesOrderAddForm orderForm = orderForm(customer, form, address, quantities);
+        // 幂等预检必须排在价格校验之前：第一次已下单成功但响应丢失时，重试要先拿回原订单，
+        // 否则会被「价格已变化」挡住，客户以为没下成，其实订单已经存在。
+        Optional<MallOrderCreationResult> replayed = salesOrderService.replayMallOrder(orderForm, idempotencyKey);
+        if (replayed.isPresent()) {
+            return toSubmitVO(replayed.get().order());
+        }
+        // 只有新请求才按当前价格严格校验
         Map<Long, MallProductVO> products = resolveProducts(customer, quantities.keySet());
         for (Long skuId : quantities.keySet()) {
             MallProductVO product = products.get(skuId);
@@ -113,7 +123,7 @@ public class MallCheckoutService {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
         }
 
-        var creation = salesOrderService.createFromMall(orderForm(customer, form, address, quantities), idempotencyKey);
+        var creation = salesOrderService.createFromMall(orderForm, idempotencyKey);
         if (!creation.replayed()) {
             cartDao.removeBySkus(customer.getAccountId(), new ArrayList<>(quantities.keySet()), ScmOperator.current());
         }
@@ -151,9 +161,8 @@ public class MallCheckoutService {
     private Map<Long, MallProductVO> resolveProducts(RequestMallCustomer customer, Iterable<Long> skuIds) {
         List<Long> ids = new ArrayList<>();
         skuIds.forEach(ids::add);
-        return catalogService.visibleProducts(customer, ids).stream()
-                .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity(), (left, right) -> left,
-                        LinkedHashMap::new));
+        return catalogService.visibleProducts(customer, ids).stream().collect(Collectors.toMap(MallProductVO::getSkuId,
+                Function.identity(), (left, right) -> left, LinkedHashMap::new));
     }
 
     /** 合并重复规格并校验数量；保持提交顺序 */
@@ -206,19 +215,16 @@ public class MallCheckoutService {
     }
 
     /**
-     * 价格指纹：按 SKU 排序的 {@code skuId:quantity:unitPrice} 摘要。
-     * 只用于判断「预览到提交之间价格或数量是否变了」，不是安全边界。
+     * 价格指纹：按 SKU 排序的 {@code skuId:quantity:unitPrice} 摘要。 只用于判断「预览到提交之间价格或数量是否变了」，不是安全边界。
      */
     private static String fingerprint(Map<Long, BigDecimal> quantities, Map<Long, MallProductVO> products) {
-        String canonical = quantities.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(entry -> {
-                    MallProductVO product = products.get(entry.getKey());
-                    String price = product == null || product.getUnitPrice() == null ? "null"
-                            : product.getUnitPrice().toPlainString();
-                    return entry.getKey() + ":" + entry.getValue().toPlainString() + ":" + price;
-                })
-                .collect(Collectors.joining(";"));
+        String canonical = quantities.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> {
+            MallProductVO product = products.get(entry.getKey());
+            String price = product == null || product.getUnitPrice() == null
+                    ? "null"
+                    : product.getUnitPrice().toPlainString();
+            return entry.getKey() + ":" + entry.getValue().toPlainString() + ":" + price;
+        }).collect(Collectors.joining(";"));
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(digest.digest(canonical.getBytes(StandardCharsets.UTF_8)));
@@ -238,8 +244,7 @@ public class MallCheckoutService {
         return java.util.stream.Stream
                 .of(address.getProvinceName(), address.getCityName(), address.getDistrictName(),
                         address.getDetailAddress())
-                .filter(part -> part != null && !part.isBlank())
-                .collect(Collectors.joining(" "));
+                .filter(part -> part != null && !part.isBlank()).collect(Collectors.joining(" "));
     }
 
     private static MallOrderSubmitVO toSubmitVO(SalesOrderDetailVO order) {

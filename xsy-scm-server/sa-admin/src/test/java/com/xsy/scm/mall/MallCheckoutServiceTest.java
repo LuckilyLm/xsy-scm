@@ -1,5 +1,7 @@
 package com.xsy.scm.mall;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -7,6 +9,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.address.dao.MallCustomerAddressDao;
 import com.xsy.scm.mall.address.domain.vo.MallAddressVO;
@@ -15,12 +19,14 @@ import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.service.MallCatalogService;
 import com.xsy.scm.mall.order.domain.form.MallCheckoutItemForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
+import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.order.domain.dto.MallOrderCreationResult;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.service.SalesOrderService;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +46,7 @@ class MallCheckoutServiceTest {
     void setUp() {
         SmartRequestUtil.setRequestUser(customer);
         when(addressDao.detailById(9L, 3L)).thenReturn(address());
-        when(catalogService.visibleProducts(eq(customer), any())).thenReturn(List.of(product()));
+        when(catalogService.visibleProducts(eq(customer), any())).thenReturn(List.of(product("5.0000")));
     }
 
     @AfterEach
@@ -66,6 +72,34 @@ class MallCheckoutServiceTest {
         service.submit(customer, form, "key");
 
         verify(cartDao, never()).removeBySkus(any(), any(), any());
+    }
+
+    @Test
+    void alreadySucceededRequestIsReturnedBeforeThePriceCheck() {
+        // 第一次下单已成功但响应丢失，客户重试前商品变了价：此时价格指纹与当前价都对不上，
+        // 但幂等预检必须先把原订单还回去，否则客户会收到「价格已变化」而以为没下成。
+        when(salesOrderService.replayMallOrder(any(), eq("key")))
+                .thenReturn(Optional.of(new MallOrderCreationResult(order(), true)));
+        when(catalogService.visibleProducts(eq(customer), any())).thenReturn(List.of(product("9.0000")));
+
+        MallOrderSubmitVO result = service.submit(customer, form, "key");
+
+        assertThat(result.getOrderId()).isEqualTo(21L);
+        // 命中重放：不再读商品、不再按当前价校验、也不再清购物车（首次提交已清过）
+        verify(catalogService, never()).visibleProducts(any(), any());
+        verify(cartDao, never()).removeBySkus(any(), any(), any());
+    }
+
+    @Test
+    void newRequestStillFailsWhenThePriceChanged() {
+        when(salesOrderService.replayMallOrder(any(), eq("key"))).thenReturn(Optional.empty());
+        when(catalogService.visibleProducts(eq(customer), any())).thenReturn(List.of(product("9.0000")));
+
+        assertThatThrownBy(() -> service.submit(customer, form, "key"))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(MallErrorCode.CHECKOUT_PRICE_CHANGED));
+        verify(salesOrderService, never()).createFromMall(any(), any());
     }
 
     private static RequestMallCustomer customer() {
@@ -95,10 +129,10 @@ class MallCheckoutServiceTest {
         return address;
     }
 
-    private static MallProductVO product() {
+    private static MallProductVO product(String unitPrice) {
         MallProductVO product = new MallProductVO();
         product.setSkuId(11L);
-        product.setUnitPrice(new BigDecimal("5.0000"));
+        product.setUnitPrice(new BigDecimal(unitPrice));
         return product;
     }
 

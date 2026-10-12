@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Shared persistence and replay mechanics for idempotent SCM commands. */
 @Service
@@ -64,10 +65,31 @@ public class ScmIdempotencyService {
         return new Claim(row, true);
     }
 
+    /**
+     * 只读预检：同键且请求指纹一致的<b>已完成</b>记录存在时返回它，否则返回空。
+     *
+     * <p>
+     * 给「先确认是否已经成功」的入口使用：调用方在易变校验（如价格）之前先回放原结果， 避免「第一次已成功、重试时外部数据变了」被误报成业务错误。不占用键、不写任何记录； 指纹不一致时返回空而不是抛冲突，交给正常路径的
+     * {@link #claim} 去报，错误语义不变。
+     */
+    public Optional<Claim> peekCompleted(String scope, String key, Object request) {
+        if (StringUtils.isBlank(key)) {
+            return Optional.empty();
+        }
+        var row = idempotencyRecordDao.find(ScmOperator.current() + ":" + scope, key.trim());
+        if (row == null || row.getResultData() == null) {
+            return Optional.empty();
+        }
+        String requestHash = new ScmIdempotencyRequestHasher(objectMapper).hash(request);
+        if (!Objects.equals(requestHash, row.getRequestHash())) {
+            return Optional.empty();
+        }
+        return Optional.of(new Claim(row, true));
+    }
+
     public <T> T replay(Claim claim, Class<T> resultType) {
         return replay(claim, resultType, objectMapper);
     }
-
     public <T> T replay(Claim claim, Class<T> resultType, ObjectMapper resultMapper) {
         return resultMapper.convertValue(claim.record().getResultData().get("value"), resultType);
     }
