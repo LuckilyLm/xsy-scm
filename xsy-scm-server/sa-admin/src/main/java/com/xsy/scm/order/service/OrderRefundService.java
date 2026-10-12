@@ -141,7 +141,12 @@ public class OrderRefundService {
         } catch (org.springframework.dao.DuplicateKeyException ex) {
             throw new ScmBusinessException(ORDER_REFUND_STATUS_INVALID);
         }
-        balanceRefundService.refundOnCompletion(refundEntity.getId());
+        if (!balanceRefundService.hasFundingAllocationPlan(refundEntity.getOrderId())) {
+            // 已有分摊计划的订单由分摊路径负责这笔钱，旧钱包返还整体让位。
+            // 必须在这里分流，而不是调用后再兜异常：refundOnCompletion 是 MANDATORY 传播，
+            // 它抛出的冲突会逃出本事务并把事务标记成 rollback-only，退款完成会整笔回滚。
+            balanceRefundService.refundOnCompletion(refundEntity.getId());
+        }
         var result = detailSnapshot(refundEntity.getId());
         // 退款完成同样是必须留痕的订单状态变更。镜像取未收窄的 detailSnapshot，
         // 日志要记真实状态，而不是按调用者读范围裁过的视图。

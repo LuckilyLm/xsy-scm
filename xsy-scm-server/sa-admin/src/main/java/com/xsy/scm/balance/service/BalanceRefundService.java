@@ -40,6 +40,18 @@ public class BalanceRefundService {
         apply(lockSource(refundId), false);
     }
 
+    /**
+     * 订单是否已有资金分摊计划。
+     *
+     * <p>
+     * 有分摊计划时这笔退款由分摊路径负责，旧钱包返还路径整体让位。调用方需要先分流再决定是否调用 {@link #refundOnCompletion(Long)}：那条路径在遇到分摊计划时直接抛冲突，而它是
+     * {@code MANDATORY} 传播， 异常一旦逃出外层事务就会把它标记成 rollback-only，让整笔退款完成回滚。
+     */
+    @Transactional(readOnly = true)
+    public boolean hasFundingAllocationPlan(Long orderId) {
+        return balanceRefundSourceDao.hasFundingAllocations(orderId);
+    }
+
     /** 历史完成单或响应丢失的显式重试入口；不能自行指定返还金额和钱包。 */
     @Transactional(rollbackFor = Exception.class)
     public CustomerBalanceMovementEntity refund(BalanceRefundForm form, String key) {
@@ -74,10 +86,7 @@ public class BalanceRefundService {
 
     private CustomerBalanceMovementEntity apply(BalanceRefundFact refund, boolean explicit) {
         if (balanceRefundSourceDao.hasFundingAllocations(refund.orderId())) {
-            if (explicit) {
-                throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_PATH_CONFLICT);
-            }
-            return null;
+            throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_PATH_CONFLICT);
         }
         // 共用支付成功事实的身份与金额校验；该 Policy 只读来源，不执行任何财务写入。
         var funding = financeOrderFundingPolicy.requireCompleteOrderFunding(refund.orderId());
