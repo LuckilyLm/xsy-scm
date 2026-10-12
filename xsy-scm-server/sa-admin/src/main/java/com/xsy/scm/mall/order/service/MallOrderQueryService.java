@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -66,7 +67,7 @@ public class MallOrderQueryService {
                         ? Map.of()
                         : salesOrderItemDao.listByOrderIds(orderIds).stream()
                                 .collect(Collectors.groupingBy(SalesOrderItemEntity::getOrderId));
-        Map<Long, String> fulfillmentByOrder = fulfillmentByOrder(orderIds);
+        Map<Long, DeliveryRouteOrderEntity> fulfillmentByOrder = fulfillmentByOrder(orderIds);
         Map<Long, String> imageUrls = imageUrls(itemsByOrder.values().stream().flatMap(List::stream).toList());
 
         List<MallOrderVO> rows = orders.stream().map(order -> summary(order,
@@ -113,16 +114,17 @@ public class MallOrderQueryService {
     /** 该订单当前生效的履约状态；未排车返回 null。 */
     @Transactional(readOnly = true)
     public String activeFulfillmentStatus(Long orderId) {
-        return fulfillmentByOrder(List.of(orderId)).get(orderId);
+        DeliveryRouteOrderEntity fulfillment = fulfillmentByOrder(List.of(orderId)).get(orderId);
+        return fulfillment == null ? null : fulfillment.getFulfillmentStatus();
     }
 
-    private Map<Long, String> fulfillmentByOrder(List<Long> orderIds) {
+    /** 取生效中的线路订单整行：状态、签收时刻与签收备注都来自同一条正式事实，不另外存快照。 */
+    private Map<Long, DeliveryRouteOrderEntity> fulfillmentByOrder(List<Long> orderIds) {
         if (orderIds.isEmpty()) {
             return Map.of();
         }
-        return deliveryRouteOrderDao.selectActiveByOrderIds(orderIds).stream()
-                .collect(Collectors.toMap(DeliveryRouteOrderEntity::getOrderId,
-                        DeliveryRouteOrderEntity::getFulfillmentStatus, (first, ignored) -> first));
+        return deliveryRouteOrderDao.selectActiveByOrderIds(orderIds).stream().collect(
+                Collectors.toMap(DeliveryRouteOrderEntity::getOrderId, Function.identity(), (first, ignored) -> first));
     }
 
     /** 订单行不存图，展示时按 SKU 回读主图；取不到图的 SKU 不进 map，由客户端兜底。 */
@@ -152,8 +154,9 @@ public class MallOrderQueryService {
         return result;
     }
 
-    private MallOrderVO summary(SalesOrderEntity order, List<SalesOrderItemEntity> items, String fulfillmentStatus,
-            Map<Long, String> imageUrls) {
+    private MallOrderVO summary(SalesOrderEntity order, List<SalesOrderItemEntity> items,
+            DeliveryRouteOrderEntity fulfillment, Map<Long, String> imageUrls) {
+        String fulfillmentStatus = fulfillment == null ? null : fulfillment.getFulfillmentStatus();
         MallOrderDisplayStatusEnum displayStatus = MallOrderDisplayStatusEnum.derive(order.getStatus(),
                 fulfillmentStatus);
         MallOrderVO result = new MallOrderVO();
@@ -172,6 +175,11 @@ public class MallOrderQueryService {
         result.setConfirmedAt(order.getConfirmedAt());
         result.setCancelledAt(order.getCancelledAt());
         result.setCancelReason(order.getCancelReason());
+        // 签收时刻与备注直接回读配送事实，不在订单侧另存快照，避免两处口径漂移
+        if (fulfillment != null) {
+            result.setSignedAt(fulfillment.getSignedAt());
+            result.setSignReason(fulfillment.getSignReason());
+        }
         result.setItemCount(items.size());
         result.setItemThumbnails(items.stream().map(item -> imageUrls.get(item.getSkuId())).filter(Objects::nonNull)
                 .limit(THUMBNAIL_LIMIT).toList());

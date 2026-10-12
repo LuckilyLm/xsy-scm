@@ -82,6 +82,19 @@ class MallOrderServiceTest {
     }
 
     @Test
+    void replayOfAnAlreadyCancelledOrderStillReachesTheIdempotencyRecord() {
+        // 首次取消成功后订单已是 CANCELLED。同一个幂等键重试必须能走到正式订单服务的幂等记录，
+        // 否则会被商城的前置状态检查挡成「当前状态不允许取消」，与「重复点击返回首次结果」不符。
+        when(queryService.requireOwnedOrder(customer, ORDER_ID)).thenReturn(order("CANCELLED", 5));
+
+        service.cancel(customer, ORDER_ID, cancelForm("下错单了"), "key");
+
+        verify(salesOrderService).cancelFromMall(any(), eq("key"));
+        // 已取消的单不再做前置判定，也就不该去读履约状态
+        verify(queryService, never()).activeFulfillmentStatus(any());
+    }
+
+    @Test
     void reorderSetsTheHistoricalQuantityWithoutCopyingTheHistoricalPrice() {
         when(queryService.requireOwnedOrder(customer, ORDER_ID)).thenReturn(order("CONFIRMED", 1));
         when(itemDao.list(ORDER_ID)).thenReturn(List.of(item(11L, "2.5000")));

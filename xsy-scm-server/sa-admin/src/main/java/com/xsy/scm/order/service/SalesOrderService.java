@@ -527,7 +527,11 @@ public class SalesOrderService {
     private SalesOrderDetailVO cancel(OrderCancelForm orderCancelForm, String key, boolean enforceEmployeeScope) {
         var claim = orderIdempotencyService.claim("ORDER_CANCEL:" + orderCancelForm.getOrderId(), key, orderCancelForm);
         if (claim.replay()) {
-            salesOrderQueryService.detail(orderCancelForm.getOrderId());
+            // 重放也要过归属：管理端用员工范围重新判一次；商城入口已在 MallOrderService 按登录客户校验过归属，
+            // 这里若再套员工范围，商城客户的重试会被自己挡掉，幂等就白做了。
+            if (enforceEmployeeScope) {
+                salesOrderQueryService.detail(orderCancelForm.getOrderId());
+            }
             return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
         }
         var salesOrder = lock(orderCancelForm.getOrderId());

@@ -44,19 +44,19 @@ public class MallOrderService {
      * 客户取消订单。
      *
      * <p>
-     * 三道门禁，缺一不可：① 订单必须属于当前客户；② 订单状态机必须允许进入 {@code CANCELLED} （即只有 {@code DRAFT} / {@code PENDING}，已确认订单一律拒绝）；③
-     * 不能已有生效线路订单在途或已签收。 最终状态转换仍由正式订单服务完成，这里只做前置判定，不自行改状态。
+     * 归属先判（任何状态都能判，包括已取消）。<b>已经取消的订单不再做前置判定</b>：那既可能是同一个幂等键的重放，也可能是别人先取消了；
+     * 两种情况都交给正式订单服务的幂等记录与状态机回答。前置检查挡在前面会把合法重放变成报错，与「重复点击返回首次结果」的承诺不符。
+     *
+     * <p>
+     * 非重放路径仍有前置判定，只为给出客户可读的失败原因；权威判定始终在 {@code OrderStateMachine}： 只有 {@code DRAFT} / {@code PENDING} 能进入
+     * {@code CANCELLED}，已确认订单一律拒绝。
      */
     @Transactional(rollbackFor = Exception.class)
     public MallOrderVO cancel(RequestMallCustomer customer, Long orderId, MallOrderCancelForm form,
             String idempotencyKey) {
         SalesOrderEntity order = orderQueryService.requireOwnedOrder(customer, orderId);
-        if (!OrderStateMachine.canTransition(order.getStatus(), ScmOrderStatusEnum.CANCELLED.name())) {
-            throw new ScmBusinessException(MallErrorCode.ORDER_NOT_CANCELABLE);
-        }
-        String fulfillmentStatus = orderQueryService.activeFulfillmentStatus(orderId);
-        if (fulfillmentStatus != null && !ScmDeliveryFulfillmentStatusEnum.PENDING.name().equals(fulfillmentStatus)) {
-            throw new ScmBusinessException(MallErrorCode.ORDER_ALREADY_FULFILLING);
+        if (!ScmOrderStatusEnum.CANCELLED.name().equals(order.getStatus())) {
+            requireCancellable(order, orderId);
         }
         OrderCancelForm cancelForm = new OrderCancelForm();
         cancelForm.setOrderId(orderId);
@@ -64,6 +64,17 @@ public class MallOrderService {
         cancelForm.setReason(form.getReason());
         salesOrderService.cancelFromMall(cancelForm, idempotencyKey);
         return orderQueryService.detail(customer, orderId);
+    }
+
+    /** 把「能不能取消」翻译成客户可读的原因；真正的门禁在订单状态机。 */
+    private void requireCancellable(SalesOrderEntity order, Long orderId) {
+        if (!OrderStateMachine.canTransition(order.getStatus(), ScmOrderStatusEnum.CANCELLED.name())) {
+            throw new ScmBusinessException(MallErrorCode.ORDER_NOT_CANCELABLE);
+        }
+        String fulfillmentStatus = orderQueryService.activeFulfillmentStatus(orderId);
+        if (fulfillmentStatus != null && !ScmDeliveryFulfillmentStatusEnum.PENDING.name().equals(fulfillmentStatus)) {
+            throw new ScmBusinessException(MallErrorCode.ORDER_ALREADY_FULFILLING);
+        }
     }
 
     /**
