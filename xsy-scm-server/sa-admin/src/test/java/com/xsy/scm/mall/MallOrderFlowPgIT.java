@@ -31,6 +31,8 @@ import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
 import com.xsy.scm.mall.order.domain.vo.MallCheckoutPreviewVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderItemVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderProgressNodeVO;
+import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
+import com.xsy.scm.mall.order.domain.vo.MallOrderTimelineVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.mall.order.service.MallOrderQueryService;
@@ -183,6 +185,19 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         assertThat(confirmed.getStatus()).isEqualTo("CONFIRMED");
         assertThat(confirmed.getDisplayStatus()).isEqualTo(MallOrderDisplayStatusEnum.PREPARING.name());
         assertThat(confirmed.getCancelable()).isFalse();
+
+        // 内部审计记录不进客户时间线：超额授信放行的审批原因留在库里，但客户看不到它
+        jdbc.update("INSERT INTO xsy_order_operation_log (order_id, operation_type, operator, reason)"
+                + " VALUES (?, 'CREDIT_OVERRIDE', '1', '内部审批：临时放宽额度')", submitted.getOrderId());
+        evictMybatisCache();
+        MallOrderVO withOverride = mallOrderQueryService.detail(customer, submitted.getOrderId());
+        assertThat(withOverride.getTimeline()).extracting(MallOrderTimelineVO::getOperationType)
+                .as("内部授信审批不得出现在客户时间线").doesNotContain("CREDIT_OVERRIDE");
+        assertThat(withOverride.getTimeline()).extracting(MallOrderTimelineVO::getOperationType)
+                .as("客户可见的生命周期节点仍在").contains("CREATE", "SUBMIT", "CONFIRM");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_operation_log WHERE order_id = ?"
+                + " AND operation_type = 'CREDIT_OVERRIDE'", Integer.class, submitted.getOrderId()))
+                .as("后台审计记录保持完整，商城只是收窄展示").isEqualTo(1);
     }
 
     /**
@@ -254,6 +269,10 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
      *
      * <p>
      * 直插之后必须 {@code evictMybatisCache()}：MyBatis 一级缓存与用例事务同生命周期， 否则会读到事务内的旧值，表现为「改了库但断言没变」。
+     *
+     * <p>
+     * <b>正常签收与异常签收各用一张订单</b>：正式签收只允许 {@code PENDING / IN_TRANSIT → SIGNED|EXCEPTION}
+     * （见 {@code DeliveryQueryDao.markSigned}），把同一行从 SIGNED 再改成 EXCEPTION 是正式业务做不到的序列。
      */
     @Test
     void deliveryProgressReflectsRealRouteFacts() {
@@ -262,12 +281,9 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         Long customerId = newCustomerAssignedTo(sellerEmployeeId);
         MallAccount account = openMallAccount(customerId);
         RequestMallCustomer customer = signIn(account);
-
         Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
-        mallCartService.add(customer, cartAdd(skuId, "1.0000"));
-        MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
-        var submitted = mallCheckoutService.submit(customer, submitForm(skuId, addressId, preview.getPriceFingerprint()),
-                prefix + ":mall:delivery");
+
+        MallOrderSubmitVO submitted = placeMallOrder(customer, skuId, addressId, "delivery-ok");
         Long orderId = submitted.getOrderId();
 
         // 尚未排车：没有配送信息，进度停在「已提交」，不伪造线路
@@ -296,7 +312,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         assertThat(confirmed.getSettlementTotalAmount()).isEqualByComparingTo("1.4400");
 
         // 排车并已发车：线路信息与发车节点都来自配送事实
-        Long routeId = insertDispatchedRoute();
+        Long routeId = insertDispatchedRoute("ok");
         insertActiveRouteOrder(routeId, orderId, customerId, submitted.getOrderNo(), "IN_TRANSIT");
         evictMybatisCache();
 
@@ -308,7 +324,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         assertThat(inTransit.getDelivery().getDispatchedAt()).as("发车时刻来自线路行").isNotNull();
         assertThat(doneCodes(inTransit)).containsExactly("SUBMITTED", "CONFIRMED", "DISPATCHED");
 
-        // 正常签收：进度走完，展示分类进入「已完成」
+        // 正常签收（在途 → 已签收）：进度走完，展示分类进入「已完成」
         signRouteOrder(routeId, orderId, "SIGNED", "放前台代收");
         MallOrderVO signed = mallOrderQueryService.detail(customer, orderId);
         assertThat(signed.getDisplayStatus()).isEqualTo(MallOrderDisplayStatusEnum.COMPLETED.name());
@@ -316,19 +332,44 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         assertThat(doneCodes(signed)).containsExactly("SUBMITTED", "CONFIRMED", "DISPATCHED", "SIGNED");
         assertThat(nodeText(signed, "SIGNED")).as("正常签收不写成异常").isEqualTo("已签收");
 
-        // 异常签收：最后一格显式写成「配送异常」并带原因，不冒充正常签收
-        signRouteOrder(routeId, orderId, "EXCEPTION", "客户拒收");
-        MallOrderVO abnormal = mallOrderQueryService.detail(customer, orderId);
+        // 异常签收另起一张订单，同样从「在途」出发：最后一格显式写成「配送异常」并带原因，不冒充正常签收
+        MallOrderSubmitVO abnormalOrder = placeMallOrder(customer, skuId, addressId, "delivery-abnormal");
+        asEmployee(sellerEmployeeId, () -> {
+            confirmOrder(abnormalOrder.getOrderId(), "2.0000");
+            return null;
+        });
+        Long abnormalRouteId = insertDispatchedRoute("abnormal");
+        insertActiveRouteOrder(abnormalRouteId, abnormalOrder.getOrderId(), customerId, abnormalOrder.getOrderNo(),
+                "IN_TRANSIT");
+        signRouteOrder(abnormalRouteId, abnormalOrder.getOrderId(), "EXCEPTION", "客户拒收");
+        MallOrderVO abnormal = mallOrderQueryService.detail(customer, abnormalOrder.getOrderId());
+        assertThat(doneCodes(abnormal)).containsExactly("SUBMITTED", "CONFIRMED", "DISPATCHED", "SIGNED");
         assertThat(nodeText(abnormal, "SIGNED")).isEqualTo("配送异常");
         assertThat(nodeDetail(abnormal, "SIGNED")).isEqualTo("客户拒收");
+    }
+
+    /**
+     * 走一遍商城下单：加购 → 预览 → 提交，返回提交结果（含订单号，线路快照要用）。
+     *
+     * <p>
+     * 自己先切回商城身份：{@code asEmployee(...)} 结束时会把请求上下文清空，之后直接调商城服务会以
+     * {@code SCM mutation requires an authenticated operator} 失败（{@code ScmOperator.current()} 拿不到操作者）。
+     */
+    private MallOrderSubmitVO placeMallOrder(RequestMallCustomer customer, Long skuId, Long addressId,
+            String keySuffix) {
+        SmartRequestUtil.setRequestUser(customer);
+        mallCartService.add(customer, cartAdd(skuId, "1.0000"));
+        MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
+        return mallCheckoutService.submit(customer, submitForm(skuId, addressId, preview.getPriceFingerprint()),
+                prefix + ":mall:" + keySuffix);
     }
 
     // ------------------------------------------------------------------
     // 配送事实（直插固定输入，仅用于验证商城只读投影）
     // ------------------------------------------------------------------
 
-    private Long insertDispatchedRoute() {
-        String routeNo = prefix + "-DR";
+    private Long insertDispatchedRoute(String suffix) {
+        String routeNo = prefix + "-DR-" + suffix;
         jdbc.update("INSERT INTO xsy_delivery_route (route_no, route_name, delivery_date, warehouse_id,"
                 + " warehouse_name_snapshot, driver_name_snapshot, driver_phone_snapshot, vehicle_no_snapshot,"
                 + " planned_departure_time, status, dispatched_at, dispatched_by, version, deleted,"

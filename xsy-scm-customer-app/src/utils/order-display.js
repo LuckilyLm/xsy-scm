@@ -6,6 +6,8 @@
  * 这样列表与详情不共享类名，样式仍各自独立。
  */
 
+import { shanghaiDateTime } from './mall-date';
+
 /** 展示分类文案（与后端 MallOrderDisplayStatusEnum 一一对应） */
 const DISPLAY_STATUS_MAP = {
   PENDING: { text: '待处理', level: 'warn' },
@@ -27,17 +29,13 @@ export const ORDER_TABS = [
 /** 取消原因快捷选项（仍允许自定义填写） */
 export const CANCEL_REASONS = ['下错单了', '数量需要调整', '暂时不需要了', '配送时间不合适', '其他原因'];
 
-/** 订单处理记录文案（与后端 OrderOperationType 一致；未覆盖的类型原样展示） */
+/** 订单处理记录文案（只覆盖服务端白名单内的类型；未覆盖的类型不原样透出内部枚举名） */
 const OPERATION_MAP = {
   CREATE: '提交订单',
   SUBMIT: '订单已受理',
   ACTUAL_QUANTITY: '录入实重',
   CONFIRM: '订单已确认',
-  CREDIT_OVERRIDE: '超额授信放行',
   CANCEL: '订单已取消',
-  RESERVE_STOCK: '已预留库存',
-  UPDATE: '订单已修改',
-  DELETE: '订单已删除',
 };
 
 export function displayStatusText(status) {
@@ -49,7 +47,8 @@ export function displayStatusLevel(status) {
 }
 
 export function operationText(operationType) {
-  return OPERATION_MAP[operationType] || operationType || '状态更新';
+  // 兜底不返回原始枚举名：内部操作类型（授信放行、改价等）不该出现在客户时间线上
+  return OPERATION_MAP[operationType] || '状态更新';
 }
 
 /**
@@ -81,7 +80,9 @@ export function displayAmount(amount) {
 }
 
 export function formatDateTime(value) {
-  return value ? String(value).replace('T', ' ').slice(0, 16) : '';
+  // 一律换算到 Asia/Shanghai：后端时间字段的偏移不保证是 +08:00（PG 会话时区是 UTC 时就是 +00:00），
+  // 直接截断字符串会让客户看到早 8 小时的时钟
+  return shanghaiDateTime(value);
 }
 
 export function formatDate(value) {

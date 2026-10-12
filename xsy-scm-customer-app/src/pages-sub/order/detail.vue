@@ -85,12 +85,21 @@
           </view>
         </template>
         <text v-else class="od__sub">后台尚未安排配送线路</text>
-        <view class="od__row">
-          <text class="od__row-label">签收时间</text>
-          <text class="od__row-value">{{ formatDateTime(order.signedAt) || '未签收' }}</text>
+        <view v-if="order.signedAt" class="od__row">
+          <text class="od__row-label">配送结果</text>
+          <text class="od__row-value" :class="{ 'od__row-value--danger': isAbnormalFulfillment(order.fulfillmentStatus) }">
+            {{ isAbnormalFulfillment(order.fulfillmentStatus) ? '配送异常' : '已签收' }}
+          </text>
+        </view>
+        <view v-if="order.signedAt" class="od__row">
+          <!-- 异常签收（拒收/破损）也是终态结果，用「配送结果记录时间」而不是「签收时间」，不把拒收说成签收 -->
+          <text class="od__row-label">配送结果记录时间</text>
+          <text class="od__row-value">{{ formatDateTime(order.signedAt) }}</text>
         </view>
         <view v-if="order.signReason" class="od__row">
-          <text class="od__row-label">签收备注</text>
+          <text class="od__row-label">
+            {{ isAbnormalFulfillment(order.fulfillmentStatus) ? '异常原因' : '签收备注' }}
+          </text>
           <text class="od__row-value">{{ order.signReason }}</text>
         </view>
       </view>
@@ -372,6 +381,10 @@
   .od__row-value--link {
     color: $color-primary;
     text-decoration: underline;
+  }
+  .od__row-value--danger {
+    color: $color-danger;
+    font-weight: $font-weight-medium;
   }
   .od-step {
     display: flex;

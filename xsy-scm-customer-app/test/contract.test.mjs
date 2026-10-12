@@ -154,6 +154,34 @@ test('order detail renders the server-provided delivery progress', () => {
   assert.match(mock, /progress: progressOf\(order\)/);
 });
 
+test('customer timeline never exposes internal operations', () => {
+  const util = read('../src/utils/order-display.js');
+  // 授信放行 / 改价 / 库存预留都是内部审计动作，不得出现在客户可见文案里
+  assert.doesNotMatch(util, /CREDIT_OVERRIDE/);
+  assert.doesNotMatch(util, /RESERVE_STOCK/);
+  assert.doesNotMatch(util, /超额授信/);
+  // 兜底也不能把原始枚举名透出去
+  assert.match(util, /\|\| '状态更新'/);
+});
+
+test('order timestamps are converted to Asia/Shanghai', () => {
+  const util = read('../src/utils/order-display.js');
+  const date = read('../src/utils/mall-date.js');
+  // 后端时间的偏移不保证是 +08:00（PG 会话时区是 UTC 时就是 +00:00），不能直接截字符串
+  assert.match(util, /shanghaiDateTime\(value\)/);
+  assert.doesNotMatch(util, /replace\('T', ' '\)\.slice\(0, 16\)/);
+  assert.match(date, /export function shanghaiDateTime/);
+  assert.match(date, /SHANGHAI_OFFSET_MINUTES/);
+});
+
+test('abnormal delivery result is labelled as an exception, not a signature', () => {
+  const page = read('../src/pages-sub/order/detail.vue');
+  // 异常签收也是终态：用「配送结果记录时间」，并把结果显式写成配送异常
+  assert.match(page, /配送结果记录时间/);
+  assert.match(page, /'配送异常' : '已签收'/);
+  assert.match(page, /异常原因/);
+});
+
 test('delivery date uses the Shanghai calendar instead of UTC', () => {
   const page = read('../src/pages-sub/checkout/index.vue');
   const util = read('../src/utils/mall-date.js');

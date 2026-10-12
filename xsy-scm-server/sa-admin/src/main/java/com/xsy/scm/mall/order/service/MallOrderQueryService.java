@@ -16,6 +16,7 @@ import com.xsy.scm.mall.order.domain.vo.MallOrderItemVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderProgressNodeVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderTimelineVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderVO;
+import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
 import com.xsy.scm.order.dao.OrderOperationLogDao;
@@ -31,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,21 @@ public class MallOrderQueryService {
     private static final int THUMBNAIL_LIMIT = 3;
     private static final String MALL_OPERATOR_PREFIX = UserTypeEnum.MALL_CUSTOMER.getValue() + ":";
     private static final String NON_STANDARD = "NON_STANDARD";
+
+    /**
+     * 客户可见的订单操作类型白名单。
+     *
+     * <p>
+     * 时间线直接回读 {@code xsy_order_operation_log}，但那张表是<b>内部审计日志</b>：
+     * {@code CREDIT_OVERRIDE}（超额授信放行）带的是内部审批原因，{@code UPDATE} 带改价/改量原因， {@code RESERVE_STOCK} 是仓库内部动作 ——
+     * 这些都不是给客户看的。后台审计记录保持完整， 商城侧只收窄展示，**不删除任何原始记录**。
+     *
+     * <p>
+     * 售后类操作（{@code RETURN} / {@code REFUND}）在售后功能落地、各自的原因口径定下来之后再逐个加入， 不预先放行。
+     */
+    private static final Set<String> CUSTOMER_VISIBLE_OPERATIONS = Set.of(ScmOrderOperationTypeEnum.CREATE.name(),
+            ScmOrderOperationTypeEnum.SUBMIT.name(), ScmOrderOperationTypeEnum.ACTUAL_QUANTITY.name(),
+            ScmOrderOperationTypeEnum.CONFIRM.name(), ScmOrderOperationTypeEnum.CANCEL.name());
 
     private final SalesOrderDao salesOrderDao;
     private final SalesOrderItemDao salesOrderItemDao;
@@ -104,7 +121,10 @@ public class MallOrderQueryService {
             result.setReceiverPhone(address.getReceiverPhone());
             result.setAddress(address.getAddress());
         });
-        result.setTimeline(orderOperationLogDao.listByOrderId(orderId).stream().map(this::timeline).toList());
+        // 处理记录按客户可见白名单收窄：内部审计日志（授信放行、改价原因、库存预留）不进客户时间线
+        result.setTimeline(orderOperationLogDao.listByOrderId(orderId).stream().filter(
+                log -> log.getOperationType() != null && CUSTOMER_VISIBLE_OPERATIONS.contains(log.getOperationType()))
+                .map(this::timeline).toList());
         // 配送详情与进度只读配送域的正式事实：线路 / 司机 / 车辆 / 发车 / 完成 + 订单级签收。
         // 线路被移出或逻辑删除时不返回投影，页面按「暂无配送信息」处理。
         DeliveryOrderProgressVO deliveryProgress = deliveryRouteOrderDao.selectProgressByOrderIds(List.of(orderId))
