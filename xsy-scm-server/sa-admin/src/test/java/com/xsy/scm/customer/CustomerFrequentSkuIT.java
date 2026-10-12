@@ -177,7 +177,7 @@ class CustomerFrequentSkuIT extends ScmW3PgITBase {
         Long sku = newOnShelfSku("D");
         SalesOrderDetailVO o = confirmed(c, sku, "d", false);
         // 把确认时间推到 200 天前，落在 90 天窗口外、365 天窗口内
-        jdbc.update("UPDATE sales_order SET confirmed_at = now() - interval '200 days' WHERE id = ?",
+        jdbc.update("UPDATE xsy_sales_order SET confirmed_at = now() - interval '200 days' WHERE id = ?",
                 o.getOrderId());
 
         assertThat(customerQuery.frequentSkus(c, 90, 20)).isEmpty();
@@ -189,7 +189,7 @@ class CustomerFrequentSkuIT extends ScmW3PgITBase {
         Long c = customer("E");
         Long sku = newOnShelfSku("E");
         SalesOrderDetailVO o = confirmed(c, sku, "e", false);
-        jdbc.update("UPDATE sales_order_item SET locked_unit_price = NULL WHERE order_id = ?",
+        jdbc.update("UPDATE xsy_sales_order_item SET locked_unit_price = NULL WHERE order_id = ?",
                 o.getOrderId());
 
         List<CustomerFrequentSkuVO> rows = customerQuery.frequentSkus(c, 90, 20);
@@ -202,7 +202,7 @@ class CustomerFrequentSkuIT extends ScmW3PgITBase {
 
     @Test
     void rejectsUnknownCustomer() {
-        Long absent = jdbc.queryForObject("SELECT COALESCE(MAX(id), 0) + 1 FROM customer", Long.class);
+        Long absent = jdbc.queryForObject("SELECT COALESCE(MAX(id), 0) + 1 FROM xsy_customer", Long.class);
         expectCode(() -> customerQuery.frequentSkus(absent, 90, 20), 40430);
     }
 }

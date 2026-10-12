@@ -4,7 +4,7 @@
     <!--
       分拣范围（裁决第 7 条与补充第 15 条）：授权仓 ∩ 可见指派人，两维取交集、失败关闭。
       * scope 为 null 渲染 AND FALSE：漏传范围必须是「查不到」，不能是「查全部」。
-      * 仓库维度只能来自 employee_warehouse_scope（或其显式放宽权限），没有授权行即无仓可看。
+      * 仓库维度只能来自 xsy_employee_warehouse_scope（或其显式放宽权限），没有授权行即无仓可看。
       * 持建单与指派权者（crossAssignee）跨指派人可见；否则恒等于派给本人。
         未指派任务（assignee_employee_id IS NULL）天然落在「= 本人」之外，因此只对前者可见。
     -->
@@ -24,13 +24,13 @@
     <sql id="taskColumns">
         t.*,
         e.actual_name AS assignee_name,
-        (SELECT count(*) FROM sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE) AS item_count,
-        (SELECT count(*) FROM sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE
+        (SELECT count(*) FROM xsy_sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE) AS item_count,
+        (SELECT count(*) FROM xsy_sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE
         AND i.occupation_status='ACTIVE' AND i.result IS NOT NULL) AS processed_count
     </sql>
     <select id="lockTask" resultType="com.xsy.scm.sorting.domain.entity.SortingTaskEntity">
         SELECT *
-        FROM sorting_task
+        FROM xsy_sorting_task
         WHERE id = #{id}
           AND deleted = FALSE FOR UPDATE
     </select>
@@ -40,7 +40,7 @@
     <select id="tasks" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskVO">
         SELECT
         <include refid="taskColumns"/>
-        FROM sorting_task t
+        FROM xsy_sorting_task t
         LEFT JOIN t_employee e ON e.employee_id=t.assignee_employee_id AND e.deleted_flag=FALSE
         WHERE t.deleted=FALSE
         <if test="q.status != null and q.status != ''">AND t.status=#{q.status}</if>
@@ -57,7 +57,7 @@
             AND (t.task_no ILIKE concat('%',#{q.keyword},'%')
             OR t.warehouse_name_snapshot ILIKE concat('%',#{q.keyword},'%')
             OR e.actual_name ILIKE concat('%',#{q.keyword},'%')
-            OR EXISTS (SELECT 1 FROM sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE
+            OR EXISTS (SELECT 1 FROM xsy_sorting_task_item i WHERE i.task_id=t.id AND i.deleted=FALSE
             AND (i.order_no_snapshot ILIKE concat('%',#{q.keyword},'%')
             OR i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%')
             OR i.customer_name_snapshot ILIKE concat('%',#{q.keyword},'%'))))
@@ -67,14 +67,14 @@
     <select id="task" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskVO">
         SELECT
         <include refid="taskColumns"/>
-        FROM sorting_task t
+        FROM xsy_sorting_task t
         LEFT JOIN t_employee e ON e.employee_id=t.assignee_employee_id AND e.deleted_flag=FALSE
         WHERE t.id=#{id} AND t.deleted=FALSE
         <include refid="taskScopeGuard"/>
     </select>
     <select id="items" resultType="com.xsy.scm.sorting.domain.vo.SortingTaskItemVO">
         SELECT i.*, 'ORDER_ITEM' AS source_type
-        FROM sorting_task_item i
+        FROM xsy_sorting_task_item i
         WHERE i.task_id = #{taskId}
           AND i.deleted = FALSE
         ORDER BY i.id
@@ -82,7 +82,7 @@
 
     <!--
       任务内各订单的满赠赠品权益（只读合并模型的第二类来源）。
-      赠品不落 sorting_task_item：那张表强制挂订单行，虚造订单行会污染销售数量、商品排行、
+      赠品不落 xsy_sorting_task_item：那张表强制挂订单行，虚造订单行会污染销售数量、商品排行、
       采购分析与客户购买历史。这里按「任务里出现的订单」现合并，任务取消后自然不再返回。
       赠品行刻意不填 sorted_quantity / result：分拣只拣货，不写回赠品事实。
     -->
@@ -92,7 +92,7 @@
                    MAX(i.order_no_snapshot)      AS order_no_snapshot,
                    MAX(i.customer_id)            AS customer_id,
                    MAX(i.customer_name_snapshot) AS customer_name_snapshot
-            FROM sorting_task_item i
+            FROM xsy_sorting_task_item i
             WHERE i.task_id = #{taskId}
               AND i.deleted = FALSE
             GROUP BY i.sales_order_id
@@ -121,10 +121,10 @@
                'ACTIVE'                   AS occupation_status,
                0                          AS version,
                'PROMOTION_GIFT'           AS source_type
-        FROM order_promotion_gift g
+        FROM xsy_order_promotion_gift g
                  JOIN task_orders o ON o.sales_order_id = g.sales_order_id
-                 JOIN product_sku sku ON sku.id = g.sku_id
-                 JOIN product_spu spu ON spu.id = sku.spu_id
+                 JOIN xsy_product_sku sku ON sku.id = g.sku_id
+                 JOIN xsy_product_spu spu ON spu.id = sku.spu_id
         ORDER BY g.sales_order_id, g.id
     </select>
     <!--
@@ -144,8 +144,8 @@
         sum(i.planned_quantity_snapshot) AS planned_quantity,
         sum(i.sorted_quantity) AS sorted_quantity,
         sum(CASE WHEN i.result IS NULL THEN 1 ELSE 0 END) AS unprocessed_count
-        FROM sorting_task_item i
-        JOIN sorting_task t ON t.id=i.task_id AND t.deleted=FALSE
+        FROM xsy_sorting_task_item i
+        JOIN xsy_sorting_task t ON t.id=i.task_id AND t.deleted=FALSE
         WHERE i.deleted=FALSE AND i.occupation_status='ACTIVE'
         <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status=#{q.taskStatus}</if>
         <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
@@ -186,10 +186,10 @@
         i.actual_quantity,
         o.confirmed_at,
         o.expect_delivery_time
-        FROM sales_order o
-        JOIN sales_order_item i ON i.order_id=o.id AND i.deleted=FALSE
+        FROM xsy_sales_order o
+        JOIN xsy_sales_order_item i ON i.order_id=o.id AND i.deleted=FALSE
         WHERE o.deleted=FALSE AND o.status='CONFIRMED' AND i.actual_quantity IS NOT NULL
-        AND NOT EXISTS (SELECT 1 FROM sorting_task_item si WHERE si.sales_order_item_id=i.id AND si.deleted=FALSE
+        AND NOT EXISTS (SELECT 1 FROM xsy_sorting_task_item si WHERE si.sales_order_item_id=i.id AND si.deleted=FALSE
         AND si.occupation_status='ACTIVE')
         <if test="q.customerId != null">AND o.customer_id=#{q.customerId}</if>
         <if test="q.orderId != null">AND o.id=#{q.orderId}</if>
@@ -218,8 +218,8 @@
         i.sale_unit_snapshot,
         i.product_type_snapshot,
         i.actual_quantity
-        FROM sales_order_item i
-        JOIN sales_order o ON o.id=i.order_id
+        FROM xsy_sales_order_item i
+        JOIN xsy_sales_order o ON o.id=i.order_id
         WHERE i.id IN
         <foreach collection="ids" item="lineId" open="(" separator="," close=")">#{lineId}</foreach>
     </select>
@@ -229,14 +229,14 @@
       计次累加由调用方的任务聚合锁串行化。
     -->
     <update id="markPrinted">
-        UPDATE sorting_task
+        UPDATE xsy_sorting_task
         SET print_count=print_count + 1, last_printed_at=now(), last_printed_by=#{operator},
             updated_at=now(), updated_by=#{operator}
         WHERE id = #{id}
           AND deleted = FALSE
     </update>
     <update id="releaseItems">
-        UPDATE sorting_task_item
+        UPDATE xsy_sorting_task_item
         SET occupation_status='RELEASED', version=version + 1, updated_at=now(), updated_by=#{operator}
         WHERE task_id = #{taskId}
           AND deleted = FALSE

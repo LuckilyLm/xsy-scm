@@ -1,5 +1,5 @@
 /* 收货行由服务端按采购单活动行生成，前端不提交行。 */
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import {purchaseCommand} from '/@/api/business/scm/purchase-order-api';
 import type {
@@ -18,17 +18,17 @@ import type {
 } from '/@/views/business/scm/purchase/purchase-types';
 
 export const purchaseReceiptApi = {
-    query: (data: ReceiptQuery) =>
-        postRequest('/scm/purchase/receipt/query', data) as unknown as Promise<ScmResponse<ScmPage<Receipt>>>,
-    detail: (id: Id) =>
-        getRequest(`/scm/purchase/receipt/detail/${id}`, {}) as unknown as Promise<ScmResponse<Receipt>>,
-    items: (receiptId: Id) =>
-        getRequest(`/scm/purchase/receipt/item/${receiptId}`, {}) as unknown as Promise<
+    query: (data: ReceiptQuery, options?: RequestOptions) =>
+        postRequest('/scm/purchase/receipt/query', data, options) as unknown as Promise<ScmResponse<ScmPage<Receipt>>>,
+    detail: (id: Id, options?: RequestOptions) =>
+        getRequest(`/scm/purchase/receipt/detail/${id}`, {}, options) as unknown as Promise<ScmResponse<Receipt>>,
+    items: (receiptId: Id, options?: RequestOptions) =>
+        getRequest(`/scm/purchase/receipt/item/${receiptId}`, {}, options) as unknown as Promise<
             ScmResponse<ReceiptItem[]>
         >,
     /** 按商品收货工作台（只读）：跨可收货采购单按 SKU×采购单位 归并，不新增收货事实。 */
-    itemWorkbench: (data: ReceiptItemWorkbenchQuery) =>
-        postRequest('/scm/purchase/receipt/item-workbench/query', data) as unknown as Promise<
+    itemWorkbench: (data: ReceiptItemWorkbenchQuery, options?: RequestOptions) =>
+        postRequest('/scm/purchase/receipt/item-workbench/query', data, options) as unknown as Promise<
             ScmResponse<ScmPage<ReceiptItemWorkbenchRow>>
         >,
 

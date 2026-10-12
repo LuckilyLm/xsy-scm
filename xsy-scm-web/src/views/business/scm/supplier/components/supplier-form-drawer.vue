@@ -141,7 +141,7 @@ async function open(supplierId?: ScmId) {
   }
   loading.value = true;
   try {
-    const response = await supplierApi.detail(supplierId);
+    const response = await supplierApi.detail(supplierId, {suppressGlobalErrorMessage: true});
     const detail = response.data;
     // 列表 VO 不含 address / remark，编辑必须走详情接口。
     Object.assign(form, {
@@ -205,8 +205,8 @@ async function submit() {
     }
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = supplierError(e);
+  } catch {
+    // 保存失败只走全局 toast；抽屉里的 error 留给本地校验与加载失败
   } finally {
     saving.value = false;
   }

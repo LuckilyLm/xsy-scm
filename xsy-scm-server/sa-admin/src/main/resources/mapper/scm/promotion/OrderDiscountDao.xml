@@ -17,12 +17,12 @@
                coupon_snapshot, base_amount, discount_amount, special_discount_amount,
                allocations::text AS allocations,
                rounding_target_item_id, created_at, created_by, version
-        FROM order_discount
+        FROM xsy_order_discount
         WHERE sales_order_id = #{salesOrderId}
     </select>
 
     <insert id="insertDiscount" useGeneratedKeys="true" keyProperty="row.id">
-        INSERT INTO order_discount (sales_order_id, activity_id, activity_version, activity_snapshot,
+        INSERT INTO xsy_order_discount (sales_order_id, activity_id, activity_version, activity_snapshot,
                                     coupon_instance_id, coupon_snapshot, base_amount, discount_amount,
                                     special_discount_amount, allocations, rounding_target_item_id, created_at,
                                     created_by, version)

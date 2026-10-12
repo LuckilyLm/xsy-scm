@@ -189,7 +189,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await orderApi.query(queryForm);
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await orderApi.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -217,13 +218,9 @@ function resetQuery() {
 function submit(r: Order) {
   Modal.confirm({
     title: '提交订单并锁定价格？', onOk: async () => {
-      try {
-        await orderApi.submit({orderId: r.orderId, version: r.version});
-        await queryData();
-      } catch (e) {
-        error.value = orderError(e);
-        throw e;
-      }
+      // 失败由全局 toast 给出原因；拒绝以保持确认框打开
+      await orderApi.submit({orderId: r.orderId, version: r.version});
+      await queryData();
     }
   });
 }
@@ -231,13 +228,8 @@ function submit(r: Order) {
 function remove(r: Order) {
   Modal.confirm({
     title: '删除这张草稿订单？', okType: 'danger', onOk: async () => {
-      try {
-        await orderApi.delete({orderId: r.orderId, version: r.version});
-        await queryData();
-      } catch (e) {
-        error.value = orderError(e);
-        throw e;
-      }
+      await orderApi.delete({orderId: r.orderId, version: r.version});
+      await queryData();
     }
   });
 }
@@ -255,13 +247,8 @@ function reserveStock(r: Order) {
     content: '将按订单明细的实数量占用可用量（可用量 = 现有量 − 预留量）。任一行不足则整体失败，不会只占一半。',
     okText: '预留',
     onOk: async () => {
-      try {
-        await orderApi.reserveStock(r.orderId!);
-        await queryData();
-      } catch (e) {
-        error.value = orderError(e);
-        throw e;
-      }
+      await orderApi.reserveStock(r.orderId!);
+      await queryData();
     }
   });
 }
@@ -269,16 +256,11 @@ function reserveStock(r: Order) {
 function batchDelete() {
   Modal.confirm({
     title: '删除所选草稿？', okType: 'danger', onOk: async () => {
-      try {
-        await orderApi.batchDelete(tableData.value.filter(o => selected.value.includes(o.orderId!)).map(o => ({
-          orderId: o.orderId,
-          version: o.version
-        })));
-        await queryData();
-      } catch (e) {
-        error.value = orderError(e);
-        throw e;
-      }
+      await orderApi.batchDelete(tableData.value.filter(o => selected.value.includes(o.orderId!)).map(o => ({
+        orderId: o.orderId,
+        version: o.version
+      })));
+      await queryData();
     }
   });
 }

@@ -41,7 +41,7 @@ import static org.mockito.Mockito.mockStatic;
  *
  * <p>钉住的口径：
  * <ul>
- *   <li>调度 / 线路规划员与司机不是同一个角色：司机维度经 {@code delivery_driver.employee_id}
+ *   <li>调度 / 线路规划员与司机不是同一个角色：司机维度经 {@code xsy_delivery_driver.employee_id}
  *       反查，没有绑定就是<b>零条线路</b>，不是全部线路；</li>
  *   <li>全量候选订单是调度能力，普通司机取不到；</li>
  *   <li>金额缺独立权限时由服务端抹成 {@code null}（前端渲染 {@code —}），绝不抹成 0；</li>
@@ -127,7 +127,7 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
     /** 一个地址与坐标齐备的客户：停靠点坐标来自下单时冻结的地址快照，故必须在下单前改客户地址。 */
     private Long newLocatedCustomer() {
         Long customerId = newCustomer();
-        jdbc.update("UPDATE customer SET address=?,longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id = ?",
+        jdbc.update("UPDATE xsy_customer SET address=?,longitude=113.94,latitude=22.54,geom_crs='GCJ02' WHERE id = ?",
                 ADDRESSED, customerId);
         return customerId;
     }
@@ -165,7 +165,7 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
     }
 
     private Integer versionOf(Long routeId) {
-        return jdbc.queryForObject("SELECT version FROM delivery_route WHERE id = ?", Integer.class, routeId);
+        return jdbc.queryForObject("SELECT version FROM xsy_delivery_route WHERE id = ?", Integer.class, routeId);
     }
 
     private DeliveryPrintOrdersForm printForm(Long routeId, Long orderId) {
@@ -317,11 +317,11 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
         // 整个测试事务置为 aborted，之后连 setSavepoint 都会连带失败（25P02）。
         // 约束不依赖 Java：绕过服务直接写同一张表也必须在库内失败。
         Long unbound = newDriver("D5", null, "DISABLED");
-        expectSqlFailure("UPDATE delivery_driver SET employee_id = ? WHERE id = ?", employee, unbound);
-        expectSqlFailure("INSERT INTO delivery_driver (driver_code, driver_name, phone, status, employee_id)"
+        expectSqlFailure("UPDATE xsy_delivery_driver SET employee_id = ? WHERE id = ?", employee, unbound);
+        expectSqlFailure("INSERT INTO xsy_delivery_driver (driver_code, driver_name, phone, status, employee_id)"
                 + " VALUES (?, ?, ?, 'ENABLED', ?)", prefix + "-D6", "绕过服务司机", "13800000002", employee);
         // 探针行随各自的 SAVEPOINT 回滚：留着第二行会让后面按员工反查线路的用例拿到错的角色
-        assertThat(jdbc.queryForList("SELECT id FROM delivery_driver WHERE employee_id = ? AND deleted = FALSE",
+        assertThat(jdbc.queryForList("SELECT id FROM xsy_delivery_driver WHERE employee_id = ? AND deleted = FALSE",
                 Long.class, employee)).containsExactly(first);
 
         var second = new DeliveryDriverForm();
@@ -464,7 +464,7 @@ class ScmDeliveryDataScopePgIT extends ScmW5PgITBase {
             assertDenied(() -> routeQuery.detail(foreignRoute));
             // 写侧：组单要锁线路、读候选、重排停靠点，任何一步被司机维度挡掉都会静默废掉调度。
             attach(foreignRoute, sortedOrder);
-            assertThat(jdbc.queryForObject("SELECT count(*) FROM delivery_route_order WHERE route_id = ?",
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_delivery_route_order WHERE route_id = ?",
                     Integer.class, foreignRoute)).isEqualTo(1);
             assertThat(routeQuery.detail(ownRoute)).isNotNull();
         }

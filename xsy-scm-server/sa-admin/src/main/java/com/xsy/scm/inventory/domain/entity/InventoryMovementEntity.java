@@ -22,10 +22,10 @@ import java.time.OffsetDateTime;
  *
  * <p>
  * 溯源三件套：{@code sourceDocumentType + sourceDocumentItemId} 是防重锚点，{@code sourceDocumentId}
- * 是头级溯源（列表页跳转收货单用，不参与唯一索引）。人类可读的来源单号由查询侧联 {@code purchase_receipt.receipt_no} 取得。
+ * 是头级溯源（列表页跳转收货单用，不参与唯一索引）。人类可读的来源单号由查询侧联 {@code xsy_purchase_receipt.receipt_no} 取得。
  */
 @Data
-@TableName(value = "inventory_movement", autoResultMap = true)
+@TableName(value = "xsy_inventory_movement", autoResultMap = true)
 public class InventoryMovementEntity {
 
     @TableId(type = IdType.AUTO)
@@ -75,7 +75,7 @@ public class InventoryMovementEntity {
     private BigDecimal afterQuantity;
 
     /**
-     * 发生时刻 —— <b>等于 {@code purchase_receipt.confirmed_at}</b>，不是写入时刻。
+     * 发生时刻 —— <b>等于 {@code xsy_purchase_receipt.confirmed_at}</b>，不是写入时刻。
      *
      * <p>
      * 实时路径与 backfill 路径同口径：都由收货确认事实传入，禁止 {@code now()} 替代。
@@ -83,7 +83,7 @@ public class InventoryMovementEntity {
     private OffsetDateTime occurredAt;
 
     /**
-     * 操作者 —— <b>等于 {@code purchase_receipt.operator}</b>（已冻结的收货确认事实）。
+     * 操作者 —— <b>等于 {@code xsy_purchase_receipt.operator}</b>（已冻结的收货确认事实）。
      */
     private String operator;
 

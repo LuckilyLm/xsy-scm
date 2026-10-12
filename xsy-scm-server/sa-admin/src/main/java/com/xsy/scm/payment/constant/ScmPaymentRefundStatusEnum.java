@@ -3,7 +3,7 @@ package com.xsy.scm.payment.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 退款状态。持久化到 {@code payment_refund.status}。 */
+/** 退款状态。持久化到 {@code xsy_payment_refund.status}。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPaymentRefundStatusEnum {

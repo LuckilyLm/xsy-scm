@@ -1,7 +1,12 @@
 <!--  新写，参照 legacy 批量调价行为；整批提交，逐行错误。 -->
 <template>
- <a-card title="客户类型价批量调价" size="small" :bordered="false">
-  <p class="scm-note">任一行失败则整批不写入；最多 500 行。</p>
+ <a-card size="small" :bordered="false">
+  <template #title>
+   <div class="batch-title">
+    <span>客户类型价批量调价</span>
+    <p class="scm-note">任一行失败则整批不写入；最多 500 行。</p>
+   </div>
+  </template>
   <a-form ref="formRef" :model="{batchKey}" :rules="formRules" layout="inline" class="smart-query-form">
    <a-row class="smart-query-form-row">
     <a-form-item label="批次号" name="batchKey" class="smart-query-form-item"><a-input v-model:value="batchKey" aria-label="批次号" :maxlength="100" style="width:320px" /></a-form-item>
@@ -103,7 +108,24 @@ async function submit() {
 
 add();
 </script>
-<style scoped>.row-error {
+<style scoped>
+/* 整批规则跟在标题同一行，不再单独占一行；标题的字重不传染给提示 */
+.batch-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 标题行里去掉胶囊底色，保留信息图标，文字改用主题色保持提示的辨识度 */
+.batch-title .scm-note {
+  background: none;
+  margin: 0;
+  padding: 0;
+  font-weight: 400;
+  color: var(--scm-primary, #00b96b);
+}
+
+.row-error {
   color: var(--scm-error);
 }
 

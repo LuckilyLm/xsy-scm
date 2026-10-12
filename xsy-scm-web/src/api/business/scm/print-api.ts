@@ -9,7 +9,7 @@
  * 重放返回的是当时那张冻结版面。幂等键的保留语义与 `purchaseCommand` 同源：
  * 失败的请求保留原键（重试被识别成重放），成功或载荷变化后换新键。
  */
-import {getRequest, postRequest, request} from '/@/lib/axios';
+import {getRequest, postRequest, request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -46,19 +46,19 @@ async function printCommand<T>(path: string, data: unknown): Promise<ScmResponse
 
 export const printApi = {
     // ---- 模板 ----
-    templateQuery: (data: PrintTemplateQuery) =>
-        postRequest('/scm/print/template/query', data) as unknown as Promise<
+    templateQuery: (data: PrintTemplateQuery, options?: RequestOptions) =>
+        postRequest('/scm/print/template/query', data, options) as unknown as Promise<
             ScmResponse<ScmPage<PrintTemplate>>
         >,
 
-    templateCatalog: (documentType: PrintDocumentType) =>
-        getRequest('/scm/print/template/catalog', {documentType}) as unknown as Promise<
+    templateCatalog: (documentType: PrintDocumentType, options?: RequestOptions) =>
+        getRequest('/scm/print/template/catalog', {documentType}, options) as unknown as Promise<
             ScmResponse<PrintFieldCatalog>
         >,
 
     /** 可配置打印的单据类型清单（类型下拉用，不硬编码）。 */
-    documentTypes: () =>
-        getRequest('/scm/print/template/document-types', {}) as unknown as Promise<
+    documentTypes: (options?: RequestOptions) =>
+        getRequest('/scm/print/template/document-types', {}, options) as unknown as Promise<
             ScmResponse<PrintDocumentTypeOption[]>
         >,
 
@@ -80,15 +80,15 @@ export const printApi = {
         >,
 
     // ---- 渲染与打印 ----
-    templateOptions: (documentType: PrintDocumentType, businessId: Id) =>
-        getRequest(`/scm/print/${documentType}/${businessId}/templates`, {}) as unknown as Promise<
+    templateOptions: (documentType: PrintDocumentType, businessId: Id, options?: RequestOptions) =>
+        getRequest(`/scm/print/${documentType}/${businessId}/templates`, {}, options) as unknown as Promise<
             ScmResponse<PrintTemplate[]>
         >,
 
     /** 预览：只读，不计次、不留痕。`templateId` 为空用默认模板。 */
-    preview: (documentType: PrintDocumentType, businessId: Id, templateId?: Id) => {
+    preview: (documentType: PrintDocumentType, businessId: Id, templateId?: Id, options?: RequestOptions) => {
         const query = templateId === undefined || templateId === null ? '' : `?templateId=${templateId}`;
-        return getRequest(`/scm/print/${documentType}/${businessId}/preview${query}`, {}) as unknown as Promise<
+        return getRequest(`/scm/print/${documentType}/${businessId}/preview${query}`, {}, options) as unknown as Promise<
             ScmResponse<PrintRender>
         >;
     },
@@ -103,8 +103,8 @@ export const printApi = {
     reprint: (recordId: Id) =>
         getRequest(`/scm/print/record/${recordId}/reprint`, {}) as unknown as Promise<ScmResponse<PrintRender>>,
 
-    recordQuery: (data: PrintRecordQuery) =>
-        postRequest('/scm/print/record/query', data) as unknown as Promise<ScmResponse<ScmPage<PrintRecord>>>,
+    recordQuery: (data: PrintRecordQuery, options?: RequestOptions) =>
+        postRequest('/scm/print/record/query', data, options) as unknown as Promise<ScmResponse<ScmPage<PrintRecord>>>,
 };
 
 export default printApi;

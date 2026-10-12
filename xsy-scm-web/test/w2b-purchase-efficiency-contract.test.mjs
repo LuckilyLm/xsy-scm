@@ -37,7 +37,7 @@ test('批量少收关单走只读 postRequest，不复用带幂等键的 purchas
 
 test('按商品收货工作台走只读 postRequest 的 item-workbench 端点', () => {
   const api = code('../src/api/business/scm/purchase-receipt-api.ts');
-  assert.match(api, /itemWorkbench:\s*\(data:\s*ReceiptItemWorkbenchQuery\)\s*=>\s*postRequest\('\/scm\/purchase\/receipt\/item-workbench\/query'/);
+  assert.match(api, /itemWorkbench:\s*\(data:\s*ReceiptItemWorkbenchQuery(,\s*options\?:\s*RequestOptions)?\)\s*=>\s*postRequest\('\/scm\/purchase\/receipt\/item-workbench\/query'/);
   assert.doesNotMatch(api, /itemWorkbench:[^\n]*purchaseCommand/);
 });
 

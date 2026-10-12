@@ -88,12 +88,12 @@ public enum ScmInventoryMovementTypeEnum {
      *
      * <p>
      * <b>为什么不复用 {@link #SALES_OUT}</b>：赠品是<b>非金额权益</b>，它不进订单金额、也不进应收， 但它的出库成本要计入该订单的履约成本。复用销售出库会让「这个月营销活动送掉多少成本」
-     * 只能回头拼订单行才能回答；独立类型让毛利报表能直接拆出赠品成本， 也让赠品流水可以按来源（{@code order_promotion_gift}）直接追溯「哪个活动赠了什么」。
+     * 只能回头拼订单行才能回答；独立类型让毛利报表能直接拆出赠品成本， 也让赠品流水可以按来源（{@code xsy_order_promotion_gift}）直接追溯「哪个活动赠了什么」。
      */
     PROMOTION_GIFT_OUT("促销赠品出库", false);
 
     /**
-     * 持久化到 {@code inventory_movement.movement_type} 的值。
+     * 持久化到 {@code xsy_inventory_movement.movement_type} 的值。
      */
     private final String desc;
 
@@ -106,7 +106,7 @@ public enum ScmInventoryMovementTypeEnum {
     private final boolean inbound;
 
     /**
-     * 该值是否允许写入 {@code inventory_movement.movement_type}（DB CHECK 白名单的同源判定）。
+     * 该值是否允许写入 {@code xsy_inventory_movement.movement_type}（DB CHECK 白名单的同源判定）。
      */
     public static boolean isSupported(String movementType) {
         for (ScmInventoryMovementTypeEnum item : values()) {

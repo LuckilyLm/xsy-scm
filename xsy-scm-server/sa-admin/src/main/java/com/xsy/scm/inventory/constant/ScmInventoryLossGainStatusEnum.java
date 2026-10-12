@@ -62,7 +62,7 @@ public enum ScmInventoryLossGainStatusEnum {
     }
 
     /**
-     * 该值是否允许写入 {@code inventory_loss_gain.status}（DB CHECK 白名单的同源判定）。
+     * 该值是否允许写入 {@code xsy_inventory_loss_gain.status}（DB CHECK 白名单的同源判定）。
      */
     public static boolean isSupported(String adjustmentStatus) {
         for (ScmInventoryLossGainStatusEnum item : values()) {

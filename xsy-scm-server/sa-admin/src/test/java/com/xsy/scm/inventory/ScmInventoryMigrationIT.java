@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("W6 库存域迁移与契约装配（PG IT）")
 class ScmInventoryMigrationIT extends ScmW6PgITBase {
 
-    private static final List<String> W6_TABLES = List.of("inventory_balance", "inventory_movement");
+    private static final List<String> W6_TABLES = List.of("xsy_inventory_balance", "xsy_inventory_movement");
 
     /**
      * 除余额与流水之外的库存表清单。
@@ -45,12 +45,12 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
      * 一个列表越加越长就失去了「范围锁定」的作用。
      */
     private static final List<String> POST_W6_TABLES = List.of(
-            "inventory_outbound", "inventory_outbound_item", "inventory_reservation",
-            "inventory_stocktake", "inventory_stocktake_item",
-            "inventory_loss_gain", "inventory_loss_gain_item",
-            "inventory_transfer", "inventory_transfer_item",
-            "inventory_warning_threshold",
-            "inventory_conversion", "inventory_conversion_item");
+            "xsy_inventory_outbound", "xsy_inventory_outbound_item", "xsy_inventory_reservation",
+            "xsy_inventory_stocktake", "xsy_inventory_stocktake_item",
+            "xsy_inventory_loss_gain", "xsy_inventory_loss_gain_item",
+            "xsy_inventory_transfer", "xsy_inventory_transfer_item",
+            "xsy_inventory_warning_threshold",
+            "xsy_inventory_conversion", "xsy_inventory_conversion_item");
 
     /**
      * 一个不可能与真实 id 冲突的哨兵（identity 从 1 起）。
@@ -78,7 +78,7 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
     private Long insertMovement(String unitSnapshot, String movementType, String quantity,
                                 String before, String after) {
         return jdbc.queryForObject(
-                "INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, source_document_type, "
+                "INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type, source_document_type, "
                         + "source_document_id, source_document_item_id, quantity, unit_snapshot, unit_cost, "
                         + "before_quantity, after_quantity, occurred_at, operator, deleted, created_by) "
                         + "VALUES (1, 1, ?, 'PURCHASE_RECEIPT_ITEM', 1, ?, ?::NUMERIC, ?, 1, "
@@ -106,7 +106,7 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
 
         // --- 列形状：余额带 unit、version 与 reserved_quantity；
         //     流水是纯 append-only（无 version / updated_*）---
-        assertThat(columnsOf("inventory_balance"))
+        assertThat(columnsOf("xsy_inventory_balance"))
                 .contains("id", "warehouse_id", "sku_id", "unit", "quantity", "reserved_quantity",
                         "version", "deleted",
                         "created_at", "updated_at", "created_by", "updated_by")
@@ -119,7 +119,7 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 // weight 属分拣域；warn_min / warn_max 不在余额表上（预警配置独立建表）；
                 // batch_id 不启用。total_cost 未采纳 —— 金额由 quantity × avg_cost 派生。
                 .doesNotContain("weight", "total_cost", "warn_min", "warn_max", "batch_id");
-        assertThat(columnsOf("inventory_movement"))
+        assertThat(columnsOf("xsy_inventory_movement"))
                 .contains("id", "warehouse_id", "sku_id", "movement_type", "source_document_type",
                         "source_document_id", "source_document_item_id", "quantity", "unit_snapshot",
                         "unit_cost", "before_quantity", "after_quantity", "occurred_at", "operator",
@@ -148,31 +148,31 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         // 快照约束必须是方向感知的：入库、出库、盘盈 / 盘亏、报损 / 报溢、转出 / 转入、
         // 转换出 / 转换入各自的分支都在同一条 CHECK 里，
         // 每个类型都必须落在自己的方向组里。
-        assertThat(constraintDef("inventory_movement", "ck_inventory_movement_snap"))
+        assertThat(constraintDef("xsy_inventory_movement", "ck_inventory_movement_snap"))
                 .contains("before_quantity").contains("after_quantity").contains("quantity")
                 .contains("PURCHASE_IN").contains("SALES_OUT")
                 .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS")
                 .contains("LOSS_REPORT").contains("GAIN_REPORT")
                 .contains("TRANSFER_OUT").contains("TRANSFER_IN")
                 .contains("CONVERT_OUT").contains("CONVERT_IN");
-        assertThat(constraintDef("inventory_movement", "ck_inventory_movement_append_only"))
+        assertThat(constraintDef("xsy_inventory_movement", "ck_inventory_movement_append_only"))
                 .containsIgnoringCase("deleted = false");
-        assertThat(constraintDef("inventory_movement", "ck_inventory_movement_type"))
+        assertThat(constraintDef("xsy_inventory_movement", "ck_inventory_movement_type"))
                 .contains("PURCHASE_IN").contains("SALES_OUT")
                 .contains("STOCKTAKE_GAIN").contains("STOCKTAKE_LOSS")
                 .contains("LOSS_REPORT").contains("GAIN_REPORT")
                 .contains("TRANSFER_OUT").contains("TRANSFER_IN")
                 .contains("CONVERT_OUT").contains("CONVERT_IN");
-        assertThat(constraintDef("inventory_balance", "ck_inventory_balance_quantity"))
+        assertThat(constraintDef("xsy_inventory_balance", "ck_inventory_balance_quantity"))
                 .contains("quantity");
         // 可用量不为负：已预留的货不能被出库吃掉
-        assertThat(constraintDef("inventory_balance", "ck_inventory_balance_available"))
+        assertThat(constraintDef("xsy_inventory_balance", "ck_inventory_balance_available"))
                 .contains("reserved_quantity").contains("quantity");
-        assertThat(constraintDef("inventory_balance", "ck_inventory_balance_reserved"))
+        assertThat(constraintDef("xsy_inventory_balance", "ck_inventory_balance_reserved"))
                 .contains("reserved_quantity");
         // V34：均价不得为负（服务层加权计算已保证，这里 DB 兜底）。
         // 注意没有 ck 约束禁止 avg_cost = 0 —— 0 是合法值（期初无采购历史时的默认）。
-        assertThat(constraintDef("inventory_balance", "ck_inventory_balance_avg_cost"))
+        assertThat(constraintDef("xsy_inventory_balance", "ck_inventory_balance_avg_cost"))
                 .contains("avg_cost");
 
         // --- 行为验证：约束真的会拒绝坏数据 ---
@@ -180,25 +180,25 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         assertThat(movementId).isNotNull();
 
         // soft delete 历史流水在数据库层失败（服务层纪律之外还有 DB 约束兜底）
-        expectSqlFailure("UPDATE inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
+        expectSqlFailure("UPDATE xsy_inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
         // V21 closes the gap left by CHECK (deleted = FALSE): valid-looking edits
         // and physical removal must also fail, even when every CHECK would pass.
-        expectSqlFailure("UPDATE inventory_movement SET unit_cost = 2 WHERE id = ?", movementId);
-        expectSqlFailure("UPDATE inventory_movement SET quantity = 6, after_quantity = 6 WHERE id = ?", movementId);
-        expectSqlFailure("DELETE FROM inventory_movement WHERE id = ?", movementId);
-        expectSqlFailure("TRUNCATE TABLE inventory_movement");
+        expectSqlFailure("UPDATE xsy_inventory_movement SET unit_cost = 2 WHERE id = ?", movementId);
+        expectSqlFailure("UPDATE xsy_inventory_movement SET quantity = 6, after_quantity = 6 WHERE id = ?", movementId);
+        expectSqlFailure("DELETE FROM xsy_inventory_movement WHERE id = ?", movementId);
+        expectSqlFailure("TRUNCATE TABLE xsy_inventory_movement");
         // 行仍然在，且仍是 deleted = FALSE
         assertThat(jdbc.queryForObject(
-                "SELECT deleted FROM inventory_movement WHERE id = ?", Boolean.class, movementId)).isFalse();
+                "SELECT deleted FROM xsy_inventory_movement WHERE id = ?", Boolean.class, movementId)).isFalse();
 
         // after ≠ before + quantity → 违反恒等式
-        expectSqlFailure("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "
+        expectSqlFailure("INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type, "
                 + "source_document_type, source_document_id, source_document_item_id, quantity, unit_snapshot, "
                 + "before_quantity, after_quantity, occurred_at, deleted) "
                 + "VALUES (1, 1, 'PURCHASE_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 5, 'kg', 0, 6, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 1);
         // quantity 必须 > 0（方向编码在类型里，数量恒为正）
-        expectSqlFailure("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "
+        expectSqlFailure("INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type, "
                 + "source_document_type, source_document_id, source_document_item_id, quantity, unit_snapshot, "
                 + "before_quantity, after_quantity, occurred_at, deleted) "
                 + "VALUES (1, 1, 'PURCHASE_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 0, 'kg', 0, 0, "
@@ -207,22 +207,22 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         // 明确不存在的名字 —— 真实类型已全部落地，再拿「未实现的业务类型」当反例
         // 会每落地一个就要改一次。
         // 也不用已放行的类型当反例：那会因快照方向不符而失败，就不是在验证白名单了。
-        expectSqlFailure("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "
+        expectSqlFailure("INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type, "
                 + "source_document_type, source_document_id, source_document_item_id, quantity, unit_snapshot, "
                 + "before_quantity, after_quantity, occurred_at, deleted) "
                 + "VALUES (1, 1, 'UNKNOWN_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, 'kg', 0, 1, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 3);
         // 单位快照不能是空白
-        expectSqlFailure("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "
+        expectSqlFailure("INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type, "
                 + "source_document_type, source_document_id, source_document_item_id, quantity, unit_snapshot, "
                 + "before_quantity, after_quantity, occurred_at, deleted) "
                 + "VALUES (1, 1, 'PURCHASE_IN', 'PURCHASE_RECEIPT_ITEM', 1, ?, 1, '  ', 0, 1, "
                 + "CURRENT_TIMESTAMP, FALSE)", SENTINEL_SOURCE_ITEM_ID + 4);
         // 余额数量 >= 0
-        expectSqlFailure("INSERT INTO inventory_balance (warehouse_id, sku_id, unit, quantity, version, deleted) "
+        expectSqlFailure("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, version, deleted) "
                 + "VALUES (1, 1, 'kg', -1, 0, FALSE)");
         // 余额单位不能是空白
-        expectSqlFailure("INSERT INTO inventory_balance (warehouse_id, sku_id, unit, quantity, version, deleted) "
+        expectSqlFailure("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, version, deleted) "
                 + "VALUES (1, 1, '', 1, 0, FALSE)");
 
         // --- append-only 在代码层的形态：DAO 只声明 insert + select ---
@@ -268,16 +268,16 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
     @DisplayName("V30 报损报溢 schema：类型 / 状态 / 原因 / 审核信息四条判据都在 DB 层生效")
     void lossGainSchemaIsEnforcedByTheDatabase() {
         // 白名单与枚举同源（前端枚举、后端枚举、DB CHECK 三处必须一致）
-        assertThat(constraintDef("inventory_loss_gain", "ck_inventory_loss_gain_type"))
+        assertThat(constraintDef("xsy_inventory_loss_gain", "ck_inventory_loss_gain_type"))
                 .contains("LOSS").contains("OVERFLOW");
-        assertThat(constraintDef("inventory_loss_gain", "ck_inventory_loss_gain_status"))
+        assertThat(constraintDef("xsy_inventory_loss_gain", "ck_inventory_loss_gain_status"))
                 .contains("PENDING").contains("COMPLETED").contains("REJECTED");
-        assertThat(constraintDef("inventory_loss_gain", "ck_inventory_loss_gain_reason"))
+        assertThat(constraintDef("xsy_inventory_loss_gain", "ck_inventory_loss_gain_reason"))
                 .contains("reason");
-        assertThat(constraintDef("inventory_loss_gain", "ck_inventory_loss_gain_audit"))
+        assertThat(constraintDef("xsy_inventory_loss_gain", "ck_inventory_loss_gain_audit"))
                 .contains("audited_at").contains("auditor");
 
-        String insert = "INSERT INTO inventory_loss_gain "
+        String insert = "INSERT INTO xsy_inventory_loss_gain "
                 + "(loss_gain_no, warehouse_id, adjust_type, status, reason, audited_at, auditor, version, deleted) "
                 + "VALUES (?, 1, ?, ?, ?, %s, %s, 0, FALSE)";
 
@@ -295,7 +295,7 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
 
         // 合法插入必须成功 —— 证明上面五次失败是判据生效，而不是表根本插不进去
         assertThat(jdbc.update(
-                "INSERT INTO inventory_loss_gain "
+                "INSERT INTO xsy_inventory_loss_gain "
                         + "(loss_gain_no, warehouse_id, adjust_type, status, reason, version, deleted) "
                         + "VALUES (?, 1, 'LOSS', 'PENDING', '到货变质', 0, FALSE)", "W30-IT-OK"))
                 .isEqualTo(1);
@@ -315,16 +315,16 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
     @Test
     @DisplayName("V31 调拨 schema：源仓≠目标仓、状态与发出/收货信息一致，都在 DB 层生效")
     void transferSchemaIsEnforcedByTheDatabase() {
-        assertThat(constraintDef("inventory_transfer", "ck_inventory_transfer_status"))
+        assertThat(constraintDef("xsy_inventory_transfer", "ck_inventory_transfer_status"))
                 .contains("DRAFT").contains("SHIPPED").contains("RECEIVED").contains("CANCELLED");
-        assertThat(constraintDef("inventory_transfer", "ck_inventory_transfer_distinct"))
+        assertThat(constraintDef("xsy_inventory_transfer", "ck_inventory_transfer_distinct"))
                 .contains("from_warehouse_id").contains("to_warehouse_id");
-        assertThat(constraintDef("inventory_transfer", "ck_inventory_transfer_shipped"))
+        assertThat(constraintDef("xsy_inventory_transfer", "ck_inventory_transfer_shipped"))
                 .contains("shipped_at").contains("shipped_by");
-        assertThat(constraintDef("inventory_transfer", "ck_inventory_transfer_received"))
+        assertThat(constraintDef("xsy_inventory_transfer", "ck_inventory_transfer_received"))
                 .contains("received_at").contains("received_by");
 
-        String insert = "INSERT INTO inventory_transfer "
+        String insert = "INSERT INTO xsy_inventory_transfer "
                 + "(transfer_no, from_warehouse_id, to_warehouse_id, status, "
                 + "shipped_at, shipped_by, received_at, received_by, version, deleted) "
                 + "VALUES (?, ?, ?, ?, %s, %s, %s, %s, 0, FALSE)";
@@ -346,7 +346,7 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
                 "W31-IT-5", 1L, 2L, "DRAFT");
 
         // 合法插入必须成功 —— 证明上面五次失败是判据生效，而不是表根本插不进去
-        assertThat(jdbc.update("INSERT INTO inventory_transfer "
+        assertThat(jdbc.update("INSERT INTO xsy_inventory_transfer "
                 + "(transfer_no, from_warehouse_id, to_warehouse_id, status, version, deleted) "
                 + "VALUES (?, 1, 2, 'DRAFT', 0, FALSE)", "W31-IT-OK")).isEqualTo(1);
     }
@@ -358,7 +358,7 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
     /**
      * V32 的两条结构性事实。
      *
-     * <p>第一条是阈值配置不在 {@code inventory_balance} 上。
+     * <p>第一条是阈值配置不在 {@code xsy_inventory_balance} 上。
      * 上面 {@link #ddlContract()} 里 {@code doesNotContain("warn_min", "warn_max")} 的断言与它互相印证：
      * 余额行只能由流水产生，配置路径不该造出「没有流水支撑的余额行」。
      */
@@ -366,9 +366,9 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
     @DisplayName("V32 预警阈值：配置表独立于余额表，且区间判据在 DB 层生效")
     void warningThresholdSchemaIsEnforcedByTheDatabase() {
         // 阈值配置表存在，且余额表上依然没有 warn_min / warn_max
-        assertThat(columnsOf("inventory_warning_threshold"))
+        assertThat(columnsOf("xsy_inventory_warning_threshold"))
                 .contains("warehouse_id", "sku_id", "warn_min", "warn_max", "version", "deleted");
-        assertThat(columnsOf("inventory_balance"))
+        assertThat(columnsOf("xsy_inventory_balance"))
                 .as("阈值是配置，不是余额状态：不得挪到余额表上")
                 .doesNotContain("warn_min", "warn_max");
 
@@ -381,10 +381,10 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         assertThat(index).contains("warehouse_id, sku_id");
         assertThat(index).containsIgnoringCase("deleted = false");
 
-        assertThat(constraintDef("inventory_warning_threshold", "ck_inventory_warning_threshold_range"))
+        assertThat(constraintDef("xsy_inventory_warning_threshold", "ck_inventory_warning_threshold_range"))
                 .contains("warn_min").contains("warn_max");
 
-        String insert = "INSERT INTO inventory_warning_threshold "
+        String insert = "INSERT INTO xsy_inventory_warning_threshold "
                 + "(warehouse_id, sku_id, warn_min, warn_max, version, deleted) "
                 + "VALUES (1, 1, %s, %s, 0, FALSE)";
 
@@ -403,7 +403,7 @@ class ScmInventoryMigrationIT extends ScmW6PgITBase {
         // 合法插入必须成功。两条用不同的 sku_id —— 唯一索引是 (warehouse_id, sku_id)，
         // 同一个 sku 插两次会撞索引，与这里的区间判据无关。
         assertThat(jdbc.update(insert.formatted("5", "100"))).isEqualTo(1);
-        assertThat(jdbc.update("INSERT INTO inventory_warning_threshold "
+        assertThat(jdbc.update("INSERT INTO xsy_inventory_warning_threshold "
                 + "(warehouse_id, sku_id, warn_min, warn_max, version, deleted) "
                 + "VALUES (1, 2, 5, 5, 0, FALSE)"))
                 .as("上下限相等是合法的（等价于精确值告警）").isEqualTo(1);

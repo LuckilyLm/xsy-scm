@@ -5,8 +5,8 @@ package com.xsy.scm.common.constant;
  * {@code credit_period_value} + {@code credit_period_unit} 计账期）。
  *
  * <p>
- * 两者互斥，且都可以不设置（{@code credit_period_type} 为 {@code NULL}）。互斥性由 {@code customer} 表的 {@code ck_customer_credit_period}
- * 约束与 {@code CustomerValidator} 双重保证。
+ * 两者互斥，且都可以不设置（{@code credit_period_type} 为 {@code NULL}）。互斥性由 {@code xsy_customer} 表的
+ * {@code ck_customer_credit_period} 约束与 {@code CustomerValidator} 双重保证。
  */
 public enum ScmCreditPeriodTypeEnum {
 

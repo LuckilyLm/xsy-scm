@@ -24,8 +24,8 @@ import java.math.BigDecimal;
  * {@link WarehouseDisableGuard} 实现。
  *
  * <p>
- * 放在 inventory 域是因为停用要同时读 {@code inventory_balance}、{@code purchase_order}、 {@code purchase_receipt} 与
- * {@code inventory_transfer}，而 inventory → purchase → warehouse 是本仓库既有的单向依赖方向，不会反向成环。
+ * 放在 inventory 域是因为停用要同时读 {@code xsy_inventory_balance}、{@code xsy_purchase_order}、 {@code xsy_purchase_receipt} 与
+ * {@code xsy_inventory_transfer}，而 inventory → purchase → warehouse 是本仓库既有的单向依赖方向，不会反向成环。
  *
  * <p>
  * 四条阻塞条件逐条短路：库存余额 &gt; 0；在途采购单；待入库收货单；在途调拨单。 在途调拨单的源仓与目标仓都计入 —— 源仓的货已经出去但账上还没落地到目标仓，目标仓还欠着一批要入库的货， 任一被停用都会让在途调拨无处可收 /

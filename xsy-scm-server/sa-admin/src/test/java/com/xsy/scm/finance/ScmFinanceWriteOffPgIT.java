@@ -75,11 +75,11 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
         assertThat(result.getItems()).hasSize(2);
         assertThat(replay.getItems()).extracting(FinanceWriteOffVO::getWriteOffId)
                 .containsExactlyElementsOf(result.getItems().stream().map(FinanceWriteOffVO::getWriteOffId).toList());
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?"
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?"
                 + " AND entry_type = 'NORMAL'", receipt.getReceiptId())).isEqualTo(2);
-        assertThat(count("SELECT count(*) FROM finance_operation_log WHERE business_type = 'WRITE_OFF'"
+        assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'WRITE_OFF'"
                 + " AND operation_type = 'WRITE_OFF' AND business_id IN"
-                + " (SELECT id FROM finance_write_off WHERE source_id = ? AND source_type = 'RECEIPT')",
+                + " (SELECT id FROM xsy_finance_write_off WHERE source_id = ? AND source_type = 'RECEIPT')",
                 receipt.getReceiptId())).isEqualTo(2);
         assertThat(result.getItems()).extracting(FinanceWriteOffVO::getSourceNo)
                 .containsOnly(receipt.getReceiptNo());
@@ -137,7 +137,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
                 writeOffForm("RECEIPT", receipt.getReceiptId(), writeOffItem(targetId, "10.0000")),
                 key("cross-customer")), 41136);
 
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
                 receipt.getReceiptId())).isZero();
     }
 
@@ -151,7 +151,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
                 writeOffForm("PAYMENT", payment.getPaymentId(), writeOffItem(payableId, "10.0000")),
                 key("cross-supplier")), 41136);
 
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
                 payment.getPaymentId())).isZero();
     }
 
@@ -166,7 +166,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
                 writeOffForm("PAYMENT", paymentId, writeOffItem(payableId, "10.0000")),
                 key("customer-payment-to-payable")), 41136);
 
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
                 paymentId)).isZero();
     }
 
@@ -184,7 +184,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
                 writeOffForm("RECEIPT", receipt.getReceiptId(), writeOffItem(targetId, "51.0000")),
                 key("source-limit")), 41135);
 
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
                 receipt.getReceiptId())).isZero();
     }
 
@@ -200,7 +200,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
                 writeOffForm("RECEIPT", receipt.getReceiptId(), writeOffItem(targetId, "1.0000")),
                 key("negative-open")), 41135);
 
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'RECEIPT' AND source_id = ?",
                 receipt.getReceiptId())).isZero();
     }
 
@@ -228,9 +228,9 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
         assertThat(originalAfter.get("reverse_of_id")).isNull();
         assertThat(originalAfter.get("reason")).isNull();
         assertThat(originalAfter.get("amount")).isEqualTo(originalBefore.get("amount"));
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE reverse_of_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE reverse_of_id = ?",
                 normal.getWriteOffId())).isEqualTo(1);
-        assertThat(count("SELECT count(*) FROM finance_operation_log WHERE business_type = 'WRITE_OFF'"
+        assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'WRITE_OFF'"
                 + " AND business_id = ? AND operation_type = 'WRITE_OFF_REVERSE'", normal.getWriteOffId()))
                 .isEqualTo(1);
     }
@@ -250,7 +250,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
                 writeOffForm("RECEIPT", receipt.getReceiptId(), writeOffItem(targetId, "10.0000")),
                 key("target-out-of-scope"))).isInstanceOf(ScmDataScopeException.class);
 
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_id = ? AND source_type = 'RECEIPT'",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_id = ? AND source_type = 'RECEIPT'",
                 receipt.getReceiptId())).isEqualTo(1);
         FinanceWriteOffQueryForm queryForm = writeOffQueryForm(receipt.getReceiptNo());
         assertThat(financeWriteOffQueryService.query(queryForm).getTotal()).isZero();
@@ -274,14 +274,14 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
         assertThat(red.getEntryType()).isEqualTo("RED");
         assertThat(red.getOriginalPayableId()).isEqualTo(originalId);
         assertThat(red.getAmount()).isEqualByComparingTo("20.0000");
-        assertThat(count("SELECT count(*) FROM finance_payable WHERE original_payable_id = ?"
+        assertThat(count("SELECT count(*) FROM xsy_finance_payable WHERE original_payable_id = ?"
                 + " AND entry_type = 'RED'", originalId)).isEqualTo(1);
         Map<String, Object> originalAfter = payableRow(originalId);
         assertThat(originalAfter.get("entry_type")).isEqualTo("NORMAL");
         assertThat(originalAfter.get("amount")).isEqualTo(originalBefore.get("amount"));
-        assertThat(count("SELECT count(*) FROM finance_payable_item WHERE payable_id = ?"
+        assertThat(count("SELECT count(*) FROM xsy_finance_payable_item WHERE payable_id = ?"
                 + " AND source_type = 'MANUAL' AND source_id IS NULL", red.getPayableId())).isEqualTo(1);
-        assertThat(count("SELECT count(*) FROM finance_operation_log WHERE business_type = 'PAYABLE'"
+        assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'PAYABLE'"
                 + " AND business_id = ? AND operation_type = 'RED_GENERATE'", red.getPayableId())).isEqualTo(1);
     }
 
@@ -299,9 +299,9 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
                 payableRedForm(originalId, "退货调整", redItem("2.0000", "10.0000")), key("red-after-write-off"));
 
         assertThat(red.getAmount()).isEqualByComparingTo("20.0000");
-        assertThat(jdbc.queryForObject("SELECT amount FROM finance_payable WHERE original_payable_id = ?"
+        assertThat(jdbc.queryForObject("SELECT amount FROM xsy_finance_payable WHERE original_payable_id = ?"
                 + " AND entry_type = 'RED'", BigDecimal.class, originalId)).isEqualByComparingTo("20.0000");
-        assertThat(jdbc.queryForObject("SELECT SUM(amount) FROM finance_write_off WHERE target_type = 'PAYABLE'"
+        assertThat(jdbc.queryForObject("SELECT SUM(amount) FROM xsy_finance_write_off WHERE target_type = 'PAYABLE'"
                 + " AND target_id = ? AND entry_type = 'NORMAL'", BigDecimal.class, originalId))
                 .isEqualByComparingTo("90.0000");
     }
@@ -316,7 +316,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
                 payableRedForm(originalId, "无范围红字", redItem("1.0000", "10.0000")), key("red-out-of-scope")))
                 .isInstanceOf(ScmDataScopeException.class);
 
-        assertThat(count("SELECT count(*) FROM finance_payable WHERE original_payable_id = ?"
+        assertThat(count("SELECT count(*) FROM xsy_finance_payable WHERE original_payable_id = ?"
                 + " AND entry_type = 'RED'", originalId)).isZero();
     }
 
@@ -341,7 +341,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
 
     private Long normalReceivable(Long customerId, String amount) {
         long sourceId = uniqueNumber();
-        return jdbc.queryForObject("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
+        return jdbc.queryForObject("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,"
                         + " customer_id, customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, amount, event_at, created_at, updated_at)"
                         + " VALUES (?, 'SALES_ORDER', ?, 1, ?, '核销测试客户', ?, '核销测试客户', 'NORMAL', ?,"
@@ -353,7 +353,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
 
     private void insertRedReceivable(Long originalId, Long customerId, String amount) {
         long sourceId = uniqueNumber();
-        jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id, customer_id,"
+        jdbc.update("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id, customer_id,"
                         + " customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, original_receivable_id, amount, event_at, reason)"
                         + " VALUES (?, 'ORDER_RETURN', ?, 1, ?, '核销测试客户', ?, '核销测试客户', 'RED', ?, ?, now(), '测试红字')",
@@ -363,12 +363,12 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
 
     private Long normalPayable(Long supplierId, String amount) {
         long receiptId = uniqueNumber();
-        Long payableId = jdbc.queryForObject("INSERT INTO finance_payable (payable_no, source_type, source_id,"
+        Long payableId = jdbc.queryForObject("INSERT INTO xsy_finance_payable (payable_no, source_type, source_id,"
                         + " purchase_order_id, supplier_id, supplier_name_snapshot, entry_type, amount, event_at)"
                         + " VALUES (?, 'PURCHASE_RECEIPT', ?, 1, ?, '核销测试供应商', 'NORMAL', ?, now()) RETURNING id",
                 Long.class, "AP-WO-" + prefix + "-" + UUID.randomUUID(), receiptId, supplierId,
                 new BigDecimal(amount));
-        jdbc.update("INSERT INTO finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id,"
+        jdbc.update("INSERT INTO xsy_finance_payable_item (payable_id, source_type, source_id, purchase_order_item_id,"
                         + " sku_id, sku_name_snapshot, unit_snapshot, quantity, unit_price, amount)"
                         + " VALUES (?, 'PURCHASE_RECEIPT_ITEM', ?, 44, 1, '测试商品', 'kg', 10.0000, 10.0000, 100.0000)",
                 payableId, uniqueNumber());
@@ -376,7 +376,7 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
     }
 
     private Long insertCustomerRefundPayment(Long customerId) {
-        return jdbc.queryForObject("INSERT INTO finance_payment (payment_no, counterparty_type, counterparty_id,"
+        return jdbc.queryForObject("INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id,"
                         + " counterparty_name_snapshot, amount, method, paid_at, entry_type, source_type, source_id)"
                         + " VALUES (?, 'CUSTOMER', ?, '核销测试客户', 100.0000, 'BANK_TRANSFER', now(),"
                         + " 'NORMAL', 'ORDER_REFUND', ?) RETURNING id",
@@ -454,11 +454,11 @@ class ScmFinanceWriteOffPgIT extends ScmW5PgITBase {
     }
 
     private Map<String, Object> writeOffRow(Long id) {
-        return jdbc.queryForMap("SELECT * FROM finance_write_off WHERE id = ?", id);
+        return jdbc.queryForMap("SELECT * FROM xsy_finance_write_off WHERE id = ?", id);
     }
 
     private Map<String, Object> payableRow(Long id) {
-        return jdbc.queryForMap("SELECT * FROM finance_payable WHERE id = ?", id);
+        return jdbc.queryForMap("SELECT * FROM xsy_finance_payable WHERE id = ?", id);
     }
 
     private String key(String tag) {

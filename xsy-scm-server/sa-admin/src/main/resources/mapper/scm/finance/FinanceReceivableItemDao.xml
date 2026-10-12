@@ -11,7 +11,7 @@
     -->
     <insert id="insertOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity">
-        INSERT INTO finance_receivable_item (receivable_id, source_type, source_id, order_item_id,
+        INSERT INTO xsy_finance_receivable_item (receivable_id, source_type, source_id, order_item_id,
                                              sku_id, sku_name_snapshot, unit_snapshot,
                                              quantity, unit_price, discount_amount, amount,
                                              version, deleted, created_at, updated_at, created_by, updated_by)
@@ -26,7 +26,7 @@
     <select id="selectByReceivableId"
             resultType="com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity">
         SELECT *
-        FROM finance_receivable_item
+        FROM xsy_finance_receivable_item
         WHERE receivable_id = #{receivableId}
           AND deleted = FALSE
         ORDER BY id

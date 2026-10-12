@@ -154,7 +154,7 @@ class WarehouseDataScopePgIT extends ScmW5PgITBase {
                 .isEqualTo(snapshotName);
 
         // 收回授权：选择器立刻空掉，但那张历史单上的仓库名仍然读得到 —— 历史事实不是查询授权
-        jdbc.update("DELETE FROM employee_warehouse_scope WHERE employee_id = ?", employee);
+        jdbc.update("DELETE FROM xsy_employee_warehouse_scope WHERE employee_id = ?", employee);
         evictMybatisCache();
         assertThat(as(employee, Set.of(), this::selectorCodes)).isEmpty();
         PurchaseOrderVO order = as(employee, Set.of(), () -> purchaseQueryService.orderDetail(orderId));
@@ -185,7 +185,7 @@ class WarehouseDataScopePgIT extends ScmW5PgITBase {
     }
 
     private void grantWarehouseScope(Long employeeId, Long warehouseId) {
-        jdbc.update("INSERT INTO employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
+        jdbc.update("INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id) VALUES (?, ?)",
                 employeeId, warehouseId);
     }
 
@@ -222,12 +222,12 @@ class WarehouseDataScopePgIT extends ScmW5PgITBase {
     }
 
     private String warehouseCode(Long warehouseId) {
-        return jdbc.queryForObject("SELECT warehouse_code FROM warehouse WHERE id = ?",
+        return jdbc.queryForObject("SELECT warehouse_code FROM xsy_warehouse WHERE id = ?",
                 String.class, warehouseId);
     }
 
     private String warehouseName(Long warehouseId) {
-        return jdbc.queryForObject("SELECT name FROM warehouse WHERE id = ?", String.class, warehouseId);
+        return jdbc.queryForObject("SELECT name FROM xsy_warehouse WHERE id = ?", String.class, warehouseId);
     }
 
     private void assertNoPermission(Runnable action) {

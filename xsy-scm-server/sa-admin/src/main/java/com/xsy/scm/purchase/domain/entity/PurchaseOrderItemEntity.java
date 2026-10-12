@@ -30,7 +30,7 @@ import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
  * {@code PurchaseReceiptQuantityCalculator} + 40989 在服务层强制。
  */
 @Data
-@TableName(value = "purchase_order_item", autoResultMap = true)
+@TableName(value = "xsy_purchase_order_item", autoResultMap = true)
 public class PurchaseOrderItemEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

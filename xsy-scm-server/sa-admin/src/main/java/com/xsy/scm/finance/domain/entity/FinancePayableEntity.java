@@ -16,7 +16,7 @@ import java.time.OffsetDateTime;
  * 谓词之外，防重由「可冲上限 + 请求级幂等键」承担。
  *
  * <p>
- * <b>没有 purchaser_id / warehouse_id</b>：范围归属读时 join {@code purchase_receipt → purchase_order → purchaser_id}
+ * <b>没有 purchaser_id / warehouse_id</b>：范围归属读时 join {@code xsy_purchase_receipt → xsy_purchase_order → purchaser_id}
  * 取活值（指定路径）；应付不按仓收窄。
  *
  * <p>
@@ -24,7 +24,7 @@ import java.time.OffsetDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("finance_payable")
+@TableName("xsy_finance_payable")
 public class FinancePayableEntity extends FinanceRecord {
 
     private String payableNo;
@@ -35,7 +35,7 @@ public class FinancePayableEntity extends FinanceRecord {
     private String sourceType;
 
     /**
-     * 正常 = {@code purchase_receipt.id}；手工红字<b>必须为 {@code null}</b>。
+     * 正常 = {@code xsy_purchase_receipt.id}；手工红字<b>必须为 {@code null}</b>。
      */
     private Long sourceId;
 
@@ -64,7 +64,7 @@ public class FinancePayableEntity extends FinanceRecord {
     private BigDecimal amount;
 
     /**
-     * 业务事件时点 = {@code purchase_receipt.confirmed_at}。{@code DIRECT} 与 {@code WAREHOUSE_CONFIRM} 同口径 —— putaway
+     * 业务事件时点 = {@code xsy_purchase_receipt.confirmed_at}。{@code DIRECT} 与 {@code WAREHOUSE_CONFIRM} 同口径 —— putaway
      * 是内部库存作业，不决定应付时点。
      */
     private OffsetDateTime eventAt;

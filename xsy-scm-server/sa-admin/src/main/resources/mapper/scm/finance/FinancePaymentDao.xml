@@ -18,7 +18,7 @@
     <insert id="insertNormalOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinancePaymentEntity"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO finance_payment (payment_no, counterparty_type, counterparty_id,
+        INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id,
                                      counterparty_name_snapshot, amount, method, paid_at,
                                      entry_type, reverse_of_id, reason,
                                      external_reference, source_type, source_id, remark,
@@ -34,7 +34,7 @@
 
     <select id="selectByIdForUpdate" resultType="com.xsy.scm.finance.domain.entity.FinancePaymentEntity">
         SELECT *
-        FROM finance_payment
+        FROM xsy_finance_payment
         WHERE id = #{paymentId}
           AND deleted = FALSE
         FOR UPDATE
@@ -46,7 +46,7 @@
             WHEN entry_type = 'REVERSE' THEN -amount
             ELSE 0
         END), 0)
-        FROM finance_write_off
+        FROM xsy_finance_write_off
         WHERE source_type = 'PAYMENT'
           AND source_id = #{paymentId}
           AND deleted = FALSE
@@ -55,7 +55,7 @@
     <insert id="insertReverseOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinancePaymentEntity"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO finance_payment (payment_no, counterparty_type, counterparty_id,
+        INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id,
                                      counterparty_name_snapshot, amount, method, paid_at,
                                      entry_type, reverse_of_id, reason, external_reference,
                                      source_type, source_id, remark, version, deleted,
@@ -71,7 +71,7 @@
 
     <select id="selectReversedAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(amount), 0)
-        FROM finance_payment
+        FROM xsy_finance_payment
         WHERE reverse_of_id = #{paymentId}
           AND entry_type = 'REVERSE'
           AND deleted = FALSE
@@ -101,13 +101,13 @@
                p.source_type AS sourceType,
                p.source_id AS sourceId,
                p.remark
-        FROM finance_payment p
-        LEFT JOIN customer c ON p.counterparty_type = 'CUSTOMER'
+        FROM xsy_finance_payment p
+        LEFT JOIN xsy_customer c ON p.counterparty_type = 'CUSTOMER'
             AND c.id = p.counterparty_id AND c.deleted = FALSE
-        LEFT JOIN finance_payment original ON original.id = p.reverse_of_id AND original.deleted = FALSE
+        LEFT JOIN xsy_finance_payment original ON original.id = p.reverse_of_id AND original.deleted = FALSE
         LEFT JOIN LATERAL (
             SELECT COALESCE(SUM(reverse.amount), 0) AS reversedAmount
-            FROM finance_payment reverse
+            FROM xsy_finance_payment reverse
             WHERE reverse.reverse_of_id = p.id
               AND reverse.entry_type = 'REVERSE'
               AND reverse.deleted = FALSE
@@ -118,7 +118,7 @@
                 WHEN wo.entry_type = 'REVERSE' THEN -wo.amount
                 ELSE 0
             END), 0) AS usedAmount
-            FROM finance_write_off wo
+            FROM xsy_finance_write_off wo
             WHERE wo.source_type = 'PAYMENT'
               AND wo.source_id = p.id
               AND wo.deleted = FALSE
@@ -175,7 +175,7 @@
         ORDER BY p.paid_at DESC, p.id DESC
     </select>
     <select id="selectBySource" resultType="com.xsy.scm.finance.domain.entity.FinancePaymentEntity">
-        SELECT * FROM finance_payment
+        SELECT * FROM xsy_finance_payment
         WHERE source_type = #{sourceType}
           AND source_id = #{sourceId}
           AND entry_type = 'NORMAL'

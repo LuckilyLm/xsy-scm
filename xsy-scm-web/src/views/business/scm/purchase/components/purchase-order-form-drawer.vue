@@ -131,7 +131,7 @@ async function loadWarehouses() {
   }
   warehouseLoading.value = true;
   try {
-    const r = await warehouseApi.list();
+    const r = await warehouseApi.list({suppressGlobalErrorMessage: true});
     warehouses.value = r.data ?? [];
   } catch (e) {
     error.value = purchaseError(e);
@@ -151,7 +151,7 @@ async function open(id?: Id) {
   }
   loading.value = true;
   try {
-    const r = await purchaseOrderApi.detail(id);
+    const r = await purchaseOrderApi.detail(id, {suppressGlobalErrorMessage: true});
     if (current !== requestId) {
       return;
     }
@@ -204,8 +204,8 @@ async function save() {
     message.success('草稿已保存');
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = purchaseError(e);
+  } catch {
+    // 保存失败只走全局 toast；抽屉里的 error 留给加载失败
   } finally {
     saving.value = false;
   }

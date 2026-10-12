@@ -77,7 +77,7 @@ class ScmFinancePayableRollbackPgIT extends ScmW6PgITBase {
         Long receiptItemId = receipt.getItems().getFirst().getId();
 
         // 先占掉这一行的应付来源键（模拟「同一收货行已被别的应付单记账」的数据异常）
-        jdbc.update("INSERT INTO finance_payable_item (payable_id, source_type, source_id, "
+        jdbc.update("INSERT INTO xsy_finance_payable_item (payable_id, source_type, source_id, "
                         + "purchase_order_item_id, sku_id, sku_name_snapshot, unit_snapshot, "
                         + "quantity, unit_price, amount, created_at, updated_at) "
                         + "VALUES (?, 'PURCHASE_RECEIPT_ITEM', ?, ?, ?, '占位', 'kg', "
@@ -100,14 +100,14 @@ class ScmFinancePayableRollbackPgIT extends ScmW6PgITBase {
 
             // 财务侧既没有单头也没有第二行明细，也没有「改了很多但没记下来」的日志
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM finance_payable WHERE source_type = 'PURCHASE_RECEIPT' AND source_id = ?",
+                    "SELECT count(*) FROM xsy_finance_payable WHERE source_type = 'PURCHASE_RECEIPT' AND source_id = ?",
                     Integer.class, receipt.getId())).isZero();
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM finance_payable_item WHERE source_type = 'PURCHASE_RECEIPT_ITEM' "
+                    "SELECT count(*) FROM xsy_finance_payable_item WHERE source_type = 'PURCHASE_RECEIPT_ITEM' "
                             + "AND source_id = ? AND payable_id > 0", Integer.class, receiptItemId)).isZero();
             assertThat(jdbc.queryForObject(
-                    "SELECT count(*) FROM finance_operation_log l WHERE l.business_type = 'PAYABLE' "
-                            + "AND l.business_id IN (SELECT id FROM finance_payable "
+                    "SELECT count(*) FROM xsy_finance_operation_log l WHERE l.business_type = 'PAYABLE' "
+                            + "AND l.business_id IN (SELECT id FROM xsy_finance_payable "
                             + "                   WHERE source_type = 'PURCHASE_RECEIPT' AND source_id = ?)",
                     Integer.class, receipt.getId()))
                     .as("应付未成立 → 不留生成日志").isZero();
@@ -117,7 +117,7 @@ class ScmFinancePayableRollbackPgIT extends ScmW6PgITBase {
             assertThat(balanceRowCount(seedWarehouseId(), skuId)).isZero();
         } finally {
             // 占位行是本用例故意造的假数据：append-only 表在库里没有删除入口，测试负责清干净
-            jdbc.update("DELETE FROM finance_payable_item WHERE payable_id = -1");
+            jdbc.update("DELETE FROM xsy_finance_payable_item WHERE payable_id = -1");
         }
     }
 
@@ -132,6 +132,6 @@ class ScmFinancePayableRollbackPgIT extends ScmW6PgITBase {
                 .isInstanceOf(IllegalTransactionStateException.class);
 
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM finance_payable WHERE source_id = -1", Integer.class)).isZero();
+                "SELECT count(*) FROM xsy_finance_payable WHERE source_id = -1", Integer.class)).isZero();
     }
 }

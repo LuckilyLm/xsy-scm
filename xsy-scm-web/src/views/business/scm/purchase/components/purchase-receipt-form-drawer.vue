@@ -113,7 +113,8 @@ let requestId = 0;
 async function loadOrders(keyword: string) {
   orderLoading.value = true;
   try {
-    const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 20, orderNo: keyword || undefined});
+    const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 20, orderNo: keyword || undefined},
+        {suppressGlobalErrorMessage: true});
     orderOptions.value = r.data.list
         .filter((o) => RECEIVABLE.includes(o.status ?? ''))
         .map((o) => ({value: o.id!, label: `${o.orderNo}（${o.supplierName ?? ''}）`}));
@@ -135,7 +136,7 @@ async function open(id?: Id) {
   }
   loading.value = true;
   try {
-    const r = await purchaseReceiptApi.detail(id);
+    const r = await purchaseReceiptApi.detail(id, {suppressGlobalErrorMessage: true});
     if (current === requestId) {
       form.value = r.data;
     }
@@ -177,8 +178,8 @@ async function save() {
     }
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = purchaseError(e);
+  } catch {
+    // 保存失败只走全局 toast；抽屉里的 error 留给加载失败
   } finally {
     saving.value = false;
   }

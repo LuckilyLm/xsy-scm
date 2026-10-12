@@ -14,19 +14,19 @@ public final class ScmDataScopeContext {
     /** 当前员工 id；{@link #denied()} 时为 {@code null}。 */
     private final Long employeeId;
 
-    /** 仓库维度：只来自 {@code employee_warehouse_scope} 授权行，不做隐式默认。 */
+    /** 仓库维度：只来自 {@code xsy_employee_warehouse_scope} 授权行，不做隐式默认。 */
     private final ScmValueScope warehouseScope;
 
-    /** 客户负责人维度：{@code customer.seller_id}。 */
+    /** 客户负责人维度：{@code xsy_customer.seller_id}。 */
     private final ScmValueScope customerSellerScope;
 
-    /** 销售订单负责人维度：{@code sales_order.seller_id}。 */
+    /** 销售订单负责人维度：{@code xsy_sales_order.seller_id}。 */
     private final ScmValueScope orderSellerScope;
 
-    /** 采购负责人维度：{@code purchase_order.purchaser_id} / {@code purchase_demand.purchaser_id}。 */
+    /** 采购负责人维度：{@code xsy_purchase_order.purchaser_id} / {@code xsy_purchase_demand.purchaser_id}。 */
     private final ScmValueScope purchaserScope;
 
-    /** 司机维度：{@code delivery_route.driver_id}，经 {@code delivery_driver.employee_id} 反查。 */
+    /** 司机维度：{@code xsy_delivery_route.driver_id}，经 {@code xsy_delivery_driver.employee_id} 反查。 */
     private final ScmValueScope driverScope;
 
     /** 成本字段是否可见；沿用 V50 已种下的独立成本权限，缺省时由调用方抹成 null 而非 0。 */

@@ -7,7 +7,7 @@
 
     <select id="countByConversionNo" resultType="int">
         SELECT COUNT(*)
-        FROM inventory_conversion
+        FROM xsy_inventory_conversion
         WHERE conversion_no = #{conversionNo}
           AND deleted = FALSE
     </select>
@@ -19,7 +19,7 @@
     <select id="selectById"
             resultType="com.xsy.scm.inventory.domain.entity.InventoryConversionEntity">
         SELECT *
-        FROM inventory_conversion
+        FROM xsy_inventory_conversion
         WHERE id = #{id}
           AND deleted = FALSE
     </select>
@@ -28,14 +28,14 @@
     <select id="lockById"
             resultType="com.xsy.scm.inventory.domain.entity.InventoryConversionEntity">
         SELECT *
-        FROM inventory_conversion
+        FROM xsy_inventory_conversion
         WHERE id = #{id}
           AND deleted = FALSE FOR UPDATE
     </select>
 
     <!-- 带状态 + 版本双重守卫：并发重复审批时只有一次能成功 -->
     <update id="markCompleted">
-        UPDATE inventory_conversion
+        UPDATE xsy_inventory_conversion
         SET status        = 'COMPLETED',
             audited_at    = #{auditedAt},
             auditor       = #{auditor},
@@ -50,7 +50,7 @@
     </update>
 
     <update id="markRejected">
-        UPDATE inventory_conversion
+        UPDATE xsy_inventory_conversion
         SET status        = 'REJECTED',
             audited_at    = #{auditedAt},
             auditor       = #{auditor},
@@ -65,7 +65,7 @@
     </update>
 
     <update id="updatePending">
-        UPDATE inventory_conversion
+        UPDATE xsy_inventory_conversion
         SET warehouse_id = #{warehouseId},
             convert_type = #{convertType},
             reason       = #{reason},
@@ -95,8 +95,8 @@
         t.updated_at,
         w.warehouse_code,
         w.name AS warehouse_name
-        FROM inventory_conversion t
-        LEFT JOIN warehouse w ON w.id = t.warehouse_id
+        FROM xsy_inventory_conversion t
+        LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
         WHERE t.deleted = FALSE
         <!-- 仓库数据范围：规格转换只发生在一个仓内，未授权仓的单据不可见；scope 缺失时恒假。 -->
         <if test="scope != null and scope.all == false">
@@ -137,8 +137,8 @@
                t.updated_at,
                w.warehouse_code,
                w.name AS warehouse_name
-        FROM inventory_conversion t
-                 LEFT JOIN warehouse w ON w.id = t.warehouse_id
+        FROM xsy_inventory_conversion t
+                 LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
         WHERE t.deleted = FALSE
           AND t.id = #{id}
     </select>

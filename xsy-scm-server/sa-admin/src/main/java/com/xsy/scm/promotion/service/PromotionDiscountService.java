@@ -171,7 +171,7 @@ public class PromotionDiscountService {
      * 订单冻结的赠品权益（只读）。
      *
      * <p>
-     * 与优惠分开读：赠品是<b>非金额权益</b>，只有赠品、没有金额优惠的订单不会有 {@code order_discount} 行，把赠品塞进优惠读模型会让这种订单看起来「什么都没有」。
+     * 与优惠分开读：赠品是<b>非金额权益</b>，只有赠品、没有金额优惠的订单不会有 {@code xsy_order_discount} 行，把赠品塞进优惠读模型会让这种订单看起来「什么都没有」。
      */
     @Transactional(readOnly = true)
     public List<PromotionDiscountVO.GiftEntitlementVO> listGifts(Long salesOrderId) {

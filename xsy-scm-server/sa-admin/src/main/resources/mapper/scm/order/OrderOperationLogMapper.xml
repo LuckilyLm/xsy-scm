@@ -14,7 +14,7 @@
         <result column="created_at" property="createdAt"/>
         <result column="created_by" property="createdBy"/>
     </resultMap>
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id">INSERT INTO order_operation_log(order_id,
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">INSERT INTO xsy_order_operation_log(order_id,
                                                                                                  operation_type,
                                                                                                  operator, reason,
                                                                                                  before_data,
@@ -25,11 +25,11 @@
                                                                          #{afterData,typeHandler=com.xsy.scm.order.support.OrderJsonbTypeHandler},
                                                                          #{createdBy})</insert>
     <!-- 操作日志行没有 owner 列（operator/created_by 只回答「谁按的按钮」，不是归属），
-         因此可见性一律跟随父订单：order_id IN (范围内的订单)。日志表与 sales_order 是
+         因此可见性一律跟随父订单：order_id IN (范围内的订单)。日志表与 xsy_sales_order 是
          多对一，用子查询而不是 JOIN，行数不会被放大、也不会因为订单被删而丢日志副本。 -->
-    <select id="query" resultMap="row">SELECT * FROM order_operation_log WHERE TRUE
+    <select id="query" resultMap="row">SELECT * FROM xsy_order_operation_log WHERE TRUE
         <if test="scope != null and scope.all == false">
-            AND order_id IN (SELECT so.id FROM sales_order so WHERE so.deleted = FALSE AND so.seller_id IN
+            AND order_id IN (SELECT so.id FROM xsy_sales_order so WHERE so.deleted = FALSE AND so.seller_id IN
             <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
             )
         </if>

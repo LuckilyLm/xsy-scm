@@ -18,7 +18,7 @@ import java.util.List;
  *
  * <p>
  * 退款付款的行级防重锚点是 {@code uk_finance_payment_source_active}
- * （{@code (source_type, source_id) WHERE deleted = FALSE AND source_id IS NOT NULL}）：同一张 {@code order_refund}
+ * （{@code (source_type, source_id) WHERE deleted = FALSE AND source_id IS NOT NULL}）：同一张 {@code xsy_order_refund}
  * 最多一笔正式退款付款。反向付款的 {@code source_id} 必须为 NULL，因此不与原行抢这个键。
  */
 @Mapper

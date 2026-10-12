@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 采购单乐观锁。
  *
- * <p>两个层级各自独立：采购单版本（{@code purchase_order.version}）挡「同一张单被两个人同时编辑」，
- * 采购行版本（{@code purchase_order_item.version}）挡「同一行被两个人同时改数量」。
+ * <p>两个层级各自独立：采购单版本（{@code xsy_purchase_order.version}）挡「同一张单被两个人同时编辑」，
+ * 采购行版本（{@code xsy_purchase_order_item.version}）挡「同一行被两个人同时改数量」。
  *
  * <p><b>为什么必须两层都有</b>：只校验单头版本时，一个客户端可以拿着「刚读到的单头版本 +
  * 过期的行版本」提交，把别人刚改过的行覆盖掉 —— 单头版本看起来完全合法。

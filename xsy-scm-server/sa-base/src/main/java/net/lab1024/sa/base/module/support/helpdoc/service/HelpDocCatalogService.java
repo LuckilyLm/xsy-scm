@@ -51,7 +51,12 @@ public class HelpDocCatalogService {
             return ResponseDTO.userErrorParam("存在相同名称的目录了");
         }
 
-        helpDocCatalogDao.insert(SmartBeanUtil.copy(helpDocCatalogAddForm, HelpDocCatalogEntity.class));
+        HelpDocCatalogEntity helpDocCatalogEntity = SmartBeanUtil.copy(helpDocCatalogAddForm, HelpDocCatalogEntity.class);
+        // 表结构 parent_id 非空，根目录按 SmartAdmin 约定存 0
+        if (helpDocCatalogEntity.getParentId() == null) {
+            helpDocCatalogEntity.setParentId(0L);
+        }
+        helpDocCatalogDao.insert(helpDocCatalogEntity);
         return ResponseDTO.ok();
     }
 

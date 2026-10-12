@@ -272,11 +272,13 @@ export interface TabView<T> {
     total: number;
     loading: boolean;
     error: string;
+    /** 该 Tab 的导出按钮是否在 loading；每个 Tab 各一份，避免一个 Tab 在导出让整排按钮都转 */
+    exporting: boolean;
 }
 
 /** 新建一个 Tab 的视图状态；初始 `rows` 为空数组而不是 `undefined`，模板因此不必到处判空。 */
 export function createTabView<T>(pageSize = 20): TabView<T> {
-    return {pageNum: 1, pageSize, rows: [], total: 0, loading: false, error: ''};
+    return {pageNum: 1, pageSize, rows: [], total: 0, loading: false, error: '', exporting: false};
 }
 
 /**

@@ -75,7 +75,7 @@ class OrderUnpricedIT extends ScmW3PgITBase {
         var connection = jdbc.getDataSource().getConnection();
         connection.close();
         var savepoint = jdbc.execute((org.springframework.jdbc.core.ConnectionCallback<java.sql.Savepoint>) con -> con.setSavepoint());
-        assertThatThrownBy(() -> jdbc.update("UPDATE sales_order_item SET manual_price_override=TRUE,draft_unit_price=NULL,draft_price_source=NULL,manual_price_reason='test' WHERE id=?", draft.getItems().getFirst().getItemId())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update("UPDATE xsy_sales_order_item SET manual_price_override=TRUE,draft_unit_price=NULL,draft_price_source=NULL,manual_price_reason='test' WHERE id=?", draft.getItems().getFirst().getItemId())).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         jdbc.execute((org.springframework.jdbc.core.ConnectionCallback<Void>) con -> {
             con.rollback(savepoint);
             return null;

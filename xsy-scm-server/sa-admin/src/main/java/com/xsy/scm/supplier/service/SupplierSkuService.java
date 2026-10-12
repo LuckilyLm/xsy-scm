@@ -85,7 +85,7 @@ public class SupplierSkuService {
      * 校验「某 SKU 可以由某供应商供货」。
      *
      * <p>
-     * 采购写路径通过此方法确认供应商与 SKU 均可采购，避免采购服务绕过主数据直接查 {@code supplier_sku} 表。
+     * 采购写路径通过此方法确认供应商与 SKU 均可采购，避免采购服务绕过主数据直接查 {@code xsy_supplier_sku} 表。
      */
     public SupplierSkuEntity requireEnabledForPurchasing(Long supplierId, Long skuId) {
         supplierService.requireEnabled(supplierId);

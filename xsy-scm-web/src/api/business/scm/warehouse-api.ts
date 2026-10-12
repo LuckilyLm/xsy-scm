@@ -22,8 +22,8 @@ export const warehouseApi = {
     /** 全量启用仓库（选择器用）。 */
     list: (options?: RequestOptions) =>
         getRequest('/scm/warehouse/list', {}, options) as unknown as Promise<ScmResponse<Warehouse[]>>,
-    query: (data: WarehouseQuery) =>
-        postRequest('/scm/warehouse/query', data) as unknown as Promise<ScmResponse<ScmPage<Warehouse>>>,
+    query: (data: WarehouseQuery, options?: RequestOptions) =>
+        postRequest('/scm/warehouse/query', data, options) as unknown as Promise<ScmResponse<ScmPage<Warehouse>>>,
     detail: (id: Id) =>
         getRequest(`/scm/warehouse/detail/${id}`, {}) as unknown as Promise<ScmResponse<Warehouse>>,
     create: (data: WarehousePayload) =>
@@ -39,13 +39,13 @@ export const warehouseApi = {
 
     // 员工—仓库授权维护（WarehouseScopeController）：与仓库主数据是两个独立权限点。
     /** 某仓库下被授权的员工（只读，scm:warehouse:scope:query）。 */
-    scopeEmployees: (warehouseId: Id) =>
-        getRequest('/scm/warehouse/scope/employees', {warehouseId}) as unknown as Promise<
+    scopeEmployees: (warehouseId: Id, options?: RequestOptions) =>
+        getRequest('/scm/warehouse/scope/employees', {warehouseId}, options) as unknown as Promise<
             ScmResponse<WarehouseScopeEmployee[]>
         >,
     /** 某员工被授权的仓库（只读，scm:warehouse:scope:query）。 */
-    scopeWarehouses: (employeeId: Id) =>
-        getRequest('/scm/warehouse/scope/warehouses', {employeeId}) as unknown as Promise<
+    scopeWarehouses: (employeeId: Id, options?: RequestOptions) =>
+        getRequest('/scm/warehouse/scope/warehouses', {employeeId}, options) as unknown as Promise<
             ScmResponse<WarehouseScopeWarehouse[]>
         >,
     /** 整体替换某员工的活动授权（scm:warehouse:scope:update）；空清单即全部回收。 */

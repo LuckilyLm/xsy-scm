@@ -7,6 +7,7 @@ import java.time.OffsetDateTime;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 @Data
 public class OrderReturnVO {
@@ -29,6 +30,8 @@ public class OrderReturnVO {
     private Boolean deleted;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String updatedBy;
 }

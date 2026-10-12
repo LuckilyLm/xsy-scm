@@ -16,7 +16,7 @@ import java.util.List;
  * 报损报溢单头读写。
  *
  * <p>
- * 本表是<b>有状态单据</b>，因此有 update 方法。真正的不可变纪律在 {@code inventory_movement} 上，不在这里。
+ * 本表是<b>有状态单据</b>，因此有 update 方法。真正的不可变纪律在 {@code xsy_inventory_movement} 上，不在这里。
  *
  * <p>
  * <b>每个写方法都带 {@code status = 'PENDING'} 守卫</b>：只有待审核的单据可改 / 可审。没有状态守卫会让「已完成（已写流水）」的单据被改内容或被删掉，账与单会因此不一致。状态守卫写入 SQL 的

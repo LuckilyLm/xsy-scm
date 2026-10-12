@@ -60,10 +60,10 @@ import static com.xsy.scm.sorting.constant.SortingErrorCode.TASK_NOT_FOUND;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.WAREHOUSE_INVALID;
 
 /**
- * 分拣任务的全部写侧动作。<b>任务行是聚合锁</b>：每个动作先锁 {@code sorting_task}，再动明细，因此「任务状态」与「明细占用位」不会各自漂移——后者是部分唯一索引成立的前提。
+ * 分拣任务的全部写侧动作。<b>任务行是聚合锁</b>：每个动作先锁 {@code xsy_sorting_task}，再动明细，因此「任务状态」与「明细占用位」不会各自漂移——后者是部分唯一索引成立的前提。
  *
  * <p>
- * 这个类不写订单、库存与配送：不回写 {@code sales_order_item} 的实发量与结算金额，不写余额与流水，不创建出库单，也不动预留；取消与重开的理由记录在通用操作日志中。
+ * 这个类不写订单、库存与配送：不回写 {@code xsy_sales_order_item} 的实发量与结算金额，不写余额与流水，不创建出库单，也不动预留；取消与重开的理由记录在通用操作日志中。
  *
  * <p>
  * 唯一的例外是<b>读</b>库存：重开前要查这些订单行是否已经过发车真实出库 （{@code reopen} 的只读守卫）。读侧不产生任何库存事实，方向也是单向的 —— 库存域不认识分拣，分拣只在守卫上读它。

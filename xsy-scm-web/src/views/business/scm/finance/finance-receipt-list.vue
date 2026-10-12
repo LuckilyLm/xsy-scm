@@ -117,7 +117,6 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import {dateTimeText, entryTypeText, initialFinanceDateRange, isValidPositiveAmount, moneyText, nowDateTimeValue, paymentMethodText, trimOptional} from './finance-form-model';
-import {financeError} from './finance-errors';
 import type {FinanceReceipt, FinanceReceiptDetail, ReceiptQuery} from './finance-types';
 import type {CustomerOption} from '/@/types/business/scm/customer';
 import {useFinancePage} from './use-finance-page';
@@ -194,12 +193,18 @@ async function submitAdd() {
     } catch {
         return;
     }
+    if (addForm.customerId === undefined || addForm.method === undefined) {
+        addError.value = '请选择客户与收款方式';
+        return;
+    }
     addSaving.value = true; addError.value = '';
     try {
         await financeApi.receiptAdd({customerId: addForm.customerId, amount: addForm.amount, method: addForm.method,
             receivedAt: addForm.receivedAt, externalReference: trimOptional(addForm.externalReference), remark: trimOptional(addForm.remark)});
         message.success('收款已登记'); addOpen.value = false; await queryData();
-    } catch (cause) { addError.value = financeError(cause); }
+    } catch {
+        // 登记失败只走全局 toast；弹窗里的 addError 留给本地校验
+    }
     finally { addSaving.value = false; }
 }
 
@@ -213,13 +218,16 @@ async function submitReverse() {
     try {
         await financeApi.receiptReverse({receiptId: reverseRow.value.receiptId, reason: reverseReason.value.trim()});
         message.success('反向收款已追加'); reverseOpen.value = false; await queryData();
-    } catch (cause) { reverseError.value = financeError(cause); }
+    } catch {
+        // 反向失败只走全局 toast；弹窗里的 reverseError 留给本地校验
+    }
     finally { reverseSaving.value = false; }
 }
 
 onMounted(async () => {
     try {
-        const response = await customerApi.optionList();
+        // 客户选项加载失败也由页头 Alert 承担
+        const response = await customerApi.optionList({suppressGlobalErrorMessage: true});
         customerOptions.value = response.data.map((item: CustomerOption) => ({label: `${item.customerCode} · ${item.name}`, value: item.customerId}));
     } catch {
         page.error.value = '客户选项暂不可用，请稍后重试。';

@@ -12,8 +12,8 @@
                COUNT(DISTINCT o.id) AS order_count,
                SUM(oi.planned_quantity) AS planned_quantity,
                SUM(oi.line_amount) AS order_amount
-        FROM purchase_order o
-        JOIN purchase_order_item oi ON oi.purchase_order_id = o.id AND oi.deleted = FALSE
+        FROM xsy_purchase_order o
+        JOIN xsy_purchase_order_item oi ON oi.purchase_order_id = o.id AND oi.deleted = FALSE
         WHERE o.deleted = FALSE
           AND o.submitted_at &gt;= #{startAt} AND o.submitted_at &lt; #{endAt}
           AND o.status IN

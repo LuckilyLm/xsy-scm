@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.payment.dao.PaymentReconciliationItemDao">
 
     <insert id="insertItem" useGeneratedKeys="true" keyProperty="row.id">
-        INSERT INTO payment_reconciliation_item (reconciliation_id, category, provider_transaction_no,
+        INSERT INTO xsy_payment_reconciliation_item (reconciliation_id, category, provider_transaction_no,
                                                  transaction_id, local_amount, provider_amount, local_status,
                                                  provider_status, created_at, created_by)
         VALUES (#{row.reconciliationId}, #{row.category}, #{row.providerTransactionNo}, #{row.transactionId},
@@ -13,7 +13,7 @@
 
     <select id="listByReconciliation"
             resultType="com.xsy.scm.payment.domain.entity.PaymentReconciliationItemEntity">
-        SELECT * FROM payment_reconciliation_item
+        SELECT * FROM xsy_payment_reconciliation_item
         WHERE reconciliation_id = #{reconciliationId}
         ORDER BY category, id
     </select>

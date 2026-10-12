@@ -2,6 +2,7 @@ package com.xsy.scm.sorting.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import lombok.Data;
@@ -10,8 +11,7 @@ import lombok.Data;
  * 秤读数（作业台展示与追溯）。
  *
  * <p>
- * 原始读数与接受数量都返回：两者不一致时（当前规则下不会发生，但历史数据可能有）
- * 必须能看出来，而不是只留一个「最终值」。
+ * 原始读数与接受数量都返回：两者不一致时（当前规则下不会发生，但历史数据可能有） 必须能看出来，而不是只留一个「最终值」。
  */
 @Data
 public class SortingScaleEventVO {
@@ -51,10 +51,12 @@ public class SortingScaleEventVO {
 
     private OffsetDateTime acceptedAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String acceptedBy;
 
     private OffsetDateTime rejectedAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String rejectedBy;
 
     private String rejectReason;

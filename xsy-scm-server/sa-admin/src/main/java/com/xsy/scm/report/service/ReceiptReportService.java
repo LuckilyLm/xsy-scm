@@ -15,7 +15,7 @@ import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
 /**
- * 收货与入库（只读）。三张表分别对应两条独立生命周期：收货明细看 {@code purchase_receipt.status=CONFIRMED}（商业确认），入库明细看 {@code PURCHASE_IN}
+ * 收货与入库（只读）。三张表分别对应两条独立生命周期：收货明细看 {@code xsy_purchase_receipt.status=CONFIRMED}（商业确认），入库明细看 {@code PURCHASE_IN}
  * 流水（库存真正入账），待入库看 {@code WAREHOUSE_CONFIRM + PENDING}。
  *
  * <p>

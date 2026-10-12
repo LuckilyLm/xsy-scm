@@ -14,12 +14,12 @@ import lombok.RequiredArgsConstructor;
 public enum ScmFinanceWriteOffSourceTypeEnum {
 
     /**
-     * 收款：{@code source_id} = {@code finance_receipt.id}，只能核 {@code RECEIVABLE}。
+     * 收款：{@code source_id} = {@code xsy_finance_receipt.id}，只能核 {@code RECEIVABLE}。
      */
     RECEIPT("收款"),
 
     /**
-     * 付款：{@code source_id} = {@code finance_payment.id}，只能核 {@code PAYABLE}。
+     * 付款：{@code source_id} = {@code xsy_finance_payment.id}，只能核 {@code PAYABLE}。
      */
     PAYMENT("付款"),
 

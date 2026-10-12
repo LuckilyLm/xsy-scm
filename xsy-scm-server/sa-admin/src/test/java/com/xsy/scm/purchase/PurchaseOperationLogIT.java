@@ -41,7 +41,7 @@ class PurchaseOperationLogIT extends ScmW5PgITBase {
     private Map<String, Object> latestLog(String operationType) {
         return jdbc.queryForMap(
                 "SELECT purchase_order_id, purchase_receipt_id, operation_type, operator, reason, "
-                        + "before_data, after_data FROM purchase_operation_log "
+                        + "before_data, after_data FROM xsy_purchase_operation_log "
                         + "WHERE operation_type = ? ORDER BY id DESC LIMIT 1", operationType);
     }
 

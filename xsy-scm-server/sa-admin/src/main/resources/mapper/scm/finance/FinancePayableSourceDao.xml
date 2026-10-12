@@ -13,7 +13,7 @@
                r.supplier_id            AS supplierId,
                r.supplier_name_snapshot AS supplierNameSnapshot,
                r.confirmed_at           AS confirmedAt
-        FROM purchase_receipt r
+        FROM xsy_purchase_receipt r
         WHERE r.id = #{purchaseReceiptId}
           AND r.deleted = FALSE
           AND r.status = 'CONFIRMED'
@@ -36,8 +36,8 @@
                ri.purchase_unit_snapshot AS unitSnapshot,
                ri.received_quantity      AS quantity,
                oi.purchase_price         AS unitPrice
-        FROM purchase_receipt_item ri
-                 JOIN purchase_order_item oi ON oi.id = ri.purchase_order_item_id
+        FROM xsy_purchase_receipt_item ri
+                 JOIN xsy_purchase_order_item oi ON oi.id = ri.purchase_order_item_id
         WHERE ri.purchase_receipt_id = #{purchaseReceiptId}
           AND ri.deleted = FALSE
           AND ri.received_quantity > 0
@@ -46,8 +46,8 @@
 
     <select id="selectPurchaserId" resultType="long">
         SELECT po.purchaser_id
-        FROM purchase_receipt pr
-        JOIN purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+        FROM xsy_purchase_receipt pr
+        JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
         WHERE pr.id = #{purchaseReceiptId}
           AND pr.deleted = FALSE
     </select>

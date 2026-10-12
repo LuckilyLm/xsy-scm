@@ -2,6 +2,7 @@ package com.xsy.scm.promotion.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -83,7 +84,8 @@ public class PromotionDiscountVO {
     private List<AppliedActivityVO> appliedActivities = new ArrayList<>();
 
     /**
-     * 满赠赠品权益：<b>非金额权益</b>，不参与优惠分摊、不进 {@link #discountAmount}， 而是单独冻结成 {@code order_promotion_gift}，供出库、分拣、小票与成本归集读取。
+     * 满赠赠品权益：<b>非金额权益</b>，不参与优惠分摊、不进 {@link #discountAmount}， 而是单独冻结成
+     * {@code xsy_order_promotion_gift}，供出库、分拣、小票与成本归集读取。
      */
     private List<GiftEntitlementVO> gifts = new ArrayList<>();
 
@@ -92,6 +94,7 @@ public class PromotionDiscountVO {
 
     private OffsetDateTime createdAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
 
     /** 活动规则原文（受控键值），便于界面解释「按什么规则算的」。 */

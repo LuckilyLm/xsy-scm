@@ -2,6 +2,7 @@ package com.xsy.scm.product.service;
 
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.product.dao.ProductImageDao;
 import com.xsy.scm.product.dao.ProductSpuDao;
 import com.xsy.scm.product.domain.entity.ProductImageEntity;
 import com.xsy.scm.product.domain.entity.ProductSpuEntity;
@@ -9,10 +10,12 @@ import com.xsy.scm.product.domain.form.ProductImageCenterForms;
 import com.xsy.scm.product.domain.form.ProductImageForm;
 import com.xsy.scm.product.domain.vo.ProductImageCenterVO;
 import com.xsy.scm.product.domain.vo.ProductImageVO;
+import com.xsy.scm.product.domain.vo.ProductUnboundImageVO;
 import com.xsy.scm.product.manager.ProductAggregateValidator;
 import com.xsy.scm.product.manager.ProductImageChangeSet;
 import com.xsy.scm.product.manager.ProductImageSyncManager;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
+import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.springframework.beans.BeanUtils;
@@ -39,7 +42,12 @@ import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 @Service
 @RequiredArgsConstructor
 public class ProductImageCenterService {
+
+    /** 未绑定图片池一次最多回多少张：这页是「挑图」而不是「翻库」，给到几百张已经够用。 */
+    private static final int MAX_UNBOUND_IMAGES = 300;
+
     private final ProductSpuDao productSpuDao;
+    private final ProductImageDao productImageDao;
     private final ProductImageSyncManager productImageSyncManager;
     private final ProductAggregateValidator productAggregateValidator;
     private final FileService fileService;
@@ -150,6 +158,29 @@ public class ProductImageCenterService {
 
     private List<ProductImageForm> formsOf(Long spuId) {
         return productImageSyncManager.existing(spuId).stream().map(this::toForm).collect(Collectors.toList());
+    }
+
+    /**
+     * 已上传但还没挂到任何商品的公开图片，供图片中心直接挑图绑定。
+     *
+     * <p>
+     * 只做展示，不改数据；绑定仍走 {@link #batchBind}，所以这里不做 public/image/ 之外的过滤 —— 能查出来的本来就只在那个目录。
+     */
+    public List<ProductUnboundImageVO> unboundImages(int limit) {
+        int capped = Math.min(Math.max(limit, 1), MAX_UNBOUND_IMAGES);
+        List<ProductUnboundImageVO> rows = productImageDao
+                .selectUnboundPublicImages((Integer) FileFolderTypeEnum.PUBLIC_IMAGE.getValue(), capped);
+        if (rows.isEmpty()) {
+            return rows;
+        }
+        Map<String,
+                String> urls = fileService
+                        .getFileList(rows.stream().map(ProductUnboundImageVO::getFileKey).distinct().toList(),
+                                SmartRequestUtil.getRequestUser())
+                        .stream().filter(Objects::nonNull)
+                        .collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
+        rows.forEach(row -> row.setFileUrl(urls.get(row.getFileKey())));
+        return rows;
     }
 
     private ProductImageForm toForm(ProductImageEntity e) {

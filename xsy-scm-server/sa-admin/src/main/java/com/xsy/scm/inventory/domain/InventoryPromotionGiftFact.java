@@ -8,7 +8,7 @@ import java.time.OffsetDateTime;
  *
  * <p>
  * 与 {@link InventoryOutboundFact} 的差别：赠品<b>不挂订单行</b>，因此源身份是冻结的赠品权益
- * （{@code order_promotion_gift.id}）而不是出库单行；出库单头只作发车事实的溯源，不参与防重。
+ * （{@code xsy_order_promotion_gift.id}）而不是出库单行；出库单头只作发车事实的溯源，不参与防重。
  *
  * <p>
  * 防重锚点是 {@code (source_document_type = ORDER_PROMOTION_GIFT, source_document_item_id = giftId)} ——

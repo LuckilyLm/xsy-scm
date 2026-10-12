@@ -103,15 +103,17 @@ async function search() {
     error.value = '';
     try {
         const base = {pageNum: pageNum.value, pageSize: pageSize.value, startDate: startDate.value, endDate: endDate.value};
+        // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+        const quiet = {suppressGlobalErrorMessage: true};
         let response;
         if (props.kind === 'RECEIPT') {
-            response = await financeApi.receiptQuery({...base, pendingOnly: true, receiptId: recordId.value});
+            response = await financeApi.receiptQuery({...base, pendingOnly: true, receiptId: recordId.value}, quiet);
         } else if (props.kind === 'PAYMENT') {
-            response = await financeApi.paymentQuery({...base, counterpartyType: 'SUPPLIER', pendingOnly: true, paymentId: recordId.value});
+            response = await financeApi.paymentQuery({...base, counterpartyType: 'SUPPLIER', pendingOnly: true, paymentId: recordId.value}, quiet);
         } else if (props.kind === 'RECEIVABLE') {
-            response = await financeApi.receivableQuery({...base, settleState: settleState.value, receivableId: recordId.value});
+            response = await financeApi.receivableQuery({...base, settleState: settleState.value, receivableId: recordId.value}, quiet);
         } else {
-            response = await financeApi.payableQuery({...base, settleState: settleState.value, payableId: recordId.value});
+            response = await financeApi.payableQuery({...base, settleState: settleState.value, payableId: recordId.value}, quiet);
         }
         rows.value = response.data.list.map(toCandidate);
         total.value = response.data.total;

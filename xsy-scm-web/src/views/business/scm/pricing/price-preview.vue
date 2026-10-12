@@ -132,7 +132,10 @@ async function resolve() {
   error.value = '';
   result.value = undefined;
   try {
-    const r = await pricingApi.resolve({customerId: customerId.value, skuIds: skuIds.value, at: at.value || null});
+    // 试算失败由页内 Alert 承担（不提示会被读成「没有价格」），不再让全局 toast 重复说一遍
+    const r = await pricingApi.resolve({
+      customerId: customerId.value, skuIds: skuIds.value, at: at.value || null
+    }, {suppressGlobalErrorMessage: true});
     if (id === requestId) result.value = r.data;
   } catch (e) {
     if (id === requestId) error.value = pricingError(e);

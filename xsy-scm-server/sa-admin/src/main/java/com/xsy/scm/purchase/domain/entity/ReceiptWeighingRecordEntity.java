@@ -17,7 +17,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  * 称重记录。
  *
  * <p>
- * <b>只追加的审计事实</b>：没有 {@code version} / {@code deleted} / {@code updated_*} —— 与 {@code inventory_movement}
+ * <b>只追加的审计事实</b>：没有 {@code version} / {@code deleted} / {@code updated_*} —— 与 {@code xsy_inventory_movement}
  * 的只追加纪律一致，也意味着 MP 不会对它加 {@code deleted} 过滤。
  *
  * <p>
@@ -25,7 +25,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  * 接入电子秤时的扩展点。{@code scale_precision} 已删除（无设备精度来源）。
  */
 @Data
-@TableName(value = "receipt_weighing_record", autoResultMap = true)
+@TableName(value = "xsy_receipt_weighing_record", autoResultMap = true)
 public class ReceiptWeighingRecordEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

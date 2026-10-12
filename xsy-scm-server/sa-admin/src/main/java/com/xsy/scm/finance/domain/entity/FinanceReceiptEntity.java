@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
  * 收款：一笔钱一单，可无对应应收（预收）。
  *
  * <p>
- * <b>没有来源列</b>：收款一律人工登记，与应收的关系只通过 {@code finance_write_off} 表达 （允许无应收的预收）。<b>没有状态列</b>：待核销余额读时派生。
+ * <b>没有来源列</b>：收款一律人工登记，与应收的关系只通过 {@code xsy_finance_write_off} 表达 （允许无应收的预收）。<b>没有状态列</b>：待核销余额读时派生。
  *
  * <p>
  * <b>纠错只能新增 {@code REVERSE} 行</b>：登错金额、登错客户、登错凭据号都不能改原行。反向行的金额<b>同样恒为正</b>，方向由 {@code entryType} 表达；反向前该单的已用额必须为 0
@@ -22,13 +22,13 @@ import java.time.OffsetDateTime;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("finance_receipt")
+@TableName("xsy_finance_receipt")
 public class FinanceReceiptEntity extends FinanceRecord {
 
     private String receiptNo;
 
     /**
-     * 收款对象恒为客户（预收也来自客户）；范围按 {@code customer.seller_id} 收窄。
+     * 收款对象恒为客户（预收也来自客户）；范围按 {@code xsy_customer.seller_id} 收窄。
      */
     private Long customerId;
 
@@ -82,6 +82,6 @@ public class FinanceReceiptEntity extends FinanceRecord {
      */
     private String sourceType;
 
-    /** 系统来源主键；{@code PAYMENT_TRANSACTION} 时是 {@code payment_transaction.id}。 */
+    /** 系统来源主键；{@code PAYMENT_TRANSACTION} 时是 {@code xsy_payment_transaction.id}。 */
     private Long sourceId;
 }

@@ -122,7 +122,8 @@ async function load() {
   error.value = '';
   product.value = undefined;
   try {
-    const response = await productApi.detail(id);
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    const response = await productApi.detail(id, {suppressGlobalErrorMessage: true});
     if (request === requestId) product.value = response.data;
   } catch (e) {
     if (request === requestId) error.value = productError(e);

@@ -71,10 +71,22 @@ class PurchaseOrderExportSupportTest {
                 List.of(order("PO-1", "SUBMITTED"), order(null, "RECEIVED")));
 
         assertThat(rows).hasSize(2);
-        assertThat(rows.get(0)).containsExactly("PO-1", "", "SUBMITTED");
+        // 状态列落中文名：导出是服务端生成的 xlsx，没有前端可翻译
+        assertThat(rows.get(0)).containsExactly("PO-1", "", "已提交");
         // orderNo 为 null → 空串，不是字符串 "null"；supplierName 未赋值同样落空串
-        assertThat(rows.get(1)).containsExactly("", "", "RECEIVED");
+        assertThat(rows.get(1)).containsExactly("", "", "已收货");
         assertThat(rows.getFirst()).hasSameSizeAs(PurchaseOrderExportSupport.head(
                 List.of("orderNo", "status", "supplierName")));
+    }
+
+    @Test
+    @DisplayName("状态列导出中文名；认不出的值原样回落，不吞数据")
+    void statusExportsChineseLabelAndKeepsUnknownValue() {
+        List<List<Object>> rows = PurchaseOrderExportSupport.rows(
+                List.of("status"),
+                List.of(order("PO-1", "PARTIALLY_RECEIVED"), order("PO-2", "LEGACY_VALUE")));
+
+        assertThat(rows.get(0)).containsExactly("部分收货");
+        assertThat(rows.get(1)).containsExactly("LEGACY_VALUE");
     }
 }

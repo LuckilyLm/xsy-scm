@@ -14,14 +14,14 @@ import java.time.OffsetDateTime;
  * 订单汇总 / 库存缺口预览查询条件（只读）。
  *
  * <p>
- * 沿用 {@link PurchaseDemandGenerateForm} 的窗口语义：{@code [startAt, endAt)} 按 {@code sales_order.confirmed_at}
+ * 沿用 {@link PurchaseDemandGenerateForm} 的窗口语义：{@code [startAt, endAt)} 按 {@code xsy_sales_order.confirmed_at}
  * 过滤已确认订单，{@code warehouseId} 决定比对哪个仓的余额。
  *
  * <p>
  * <b>为什么 warehouseId 必填</b>：预览要「同仓」比订单量与可用量，而订单行本身不带仓库 （仓库只存在于采购需求/库存侧），必须由调用方显式指定，服务端不替调用方选仓（与一致）。
  *
  * <p>
- * 本表单不提供 {@code supplierId} / {@code purchaserId}：{@code sales_order_item} 没有这两个维度，将它们作为筛选项会产生无事实依据的结果。
+ * 本表单不提供 {@code supplierId} / {@code purchaserId}：{@code xsy_sales_order_item} 没有这两个维度，将它们作为筛选项会产生无事实依据的结果。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -37,7 +37,7 @@ public class PurchaseDemandSummaryPreviewForm extends PageParam {
     private Long warehouseId;
 
     /**
-     * 可选：按三级分类过滤（命中 {@code product_spu.category_id}）。仅辅助决策，不改变聚合口径。
+     * 可选：按三级分类过滤（命中 {@code xsy_product_spu.category_id}）。仅辅助决策，不改变聚合口径。
      */
     private Long categoryId;
 

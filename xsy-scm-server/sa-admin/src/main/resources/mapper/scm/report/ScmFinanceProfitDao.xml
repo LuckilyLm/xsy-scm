@@ -33,12 +33,12 @@
     </sql>
 
     <sql id="businessJoins">
-        JOIN customer c ON c.id = so.customer_id AND c.deleted = FALSE
+        JOIN xsy_customer c ON c.id = so.customer_id AND c.deleted = FALSE
         LEFT JOIN t_employee e ON e.employee_id = so.seller_id AND e.deleted_flag = FALSE
-        LEFT JOIN product_spu ps ON ps.id = soi.spu_id AND ps.deleted = FALSE
-        LEFT JOIN product_category cat ON cat.id = ps.category_id AND cat.deleted = FALSE
-        LEFT JOIN product_category cat2 ON cat2.id = cat.parent_id AND cat2.deleted = FALSE
-        LEFT JOIN product_category cat3 ON cat3.id = cat2.parent_id AND cat3.deleted = FALSE
+        LEFT JOIN xsy_product_spu ps ON ps.id = soi.spu_id AND ps.deleted = FALSE
+        LEFT JOIN xsy_product_category cat ON cat.id = ps.category_id AND cat.deleted = FALSE
+        LEFT JOIN xsy_product_category cat2 ON cat2.id = cat.parent_id AND cat2.deleted = FALSE
+        LEFT JOIN xsy_product_category cat3 ON cat3.id = cat2.parent_id AND cat3.deleted = FALSE
     </sql>
 
     <sql id="businessFilters">
@@ -91,7 +91,7 @@
             SELECT receipt_item.return_item_id,
                    receipt_item.source_sales_out_movement_id,
                    SUM(receipt_item.quantity) AS allocated_quantity
-            FROM order_return_receipt_item receipt_item
+            FROM xsy_order_return_receipt_item receipt_item
             GROUP BY receipt_item.return_item_id, receipt_item.source_sales_out_movement_id
         ), return_allocation_totals AS (
             SELECT return_item_id, SUM(allocated_quantity) AS allocated_quantity
@@ -105,28 +105,28 @@
                    0::NUMERIC AS gift_cost_amount,
                    CASE WHEN sales_out.id IS NULL OR sales_out.unit_cost IS NULL
                         THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count
-            FROM finance_receivable receivable
-                     JOIN finance_receivable_item receivable_item
+            FROM xsy_finance_receivable receivable
+                     JOIN xsy_finance_receivable_item receivable_item
                           ON receivable_item.receivable_id = receivable.id
                          AND receivable_item.deleted = FALSE
                          AND receivable_item.source_type = 'INVENTORY_OUTBOUND_ITEM'
-                     JOIN inventory_outbound_item outbound_item
+                     JOIN xsy_inventory_outbound_item outbound_item
                           ON outbound_item.id = receivable_item.source_id
                          AND outbound_item.deleted = FALSE
-                     JOIN inventory_outbound outbound
+                     JOIN xsy_inventory_outbound outbound
                           ON outbound.id = outbound_item.outbound_id
                          AND outbound.deleted = FALSE
-                     JOIN sales_order so ON so.id = receivable.order_id AND so.deleted = FALSE
-                     JOIN sales_order_item soi
+                     JOIN xsy_sales_order so ON so.id = receivable.order_id AND so.deleted = FALSE
+                     JOIN xsy_sales_order_item soi
                           ON soi.id = receivable_item.order_item_id AND soi.deleted = FALSE
                      CROSS JOIN LATERAL (SELECT receivable.event_at AS event_at) fact_event
-                     LEFT JOIN inventory_movement sales_out
+                     LEFT JOIN xsy_inventory_movement sales_out
                           ON sales_out.source_document_type = 'SALES_OUTBOUND_ITEM'
                          AND sales_out.source_document_item_id = outbound_item.id
                          AND sales_out.movement_type = 'SALES_OUT'
                          AND sales_out.warehouse_id = outbound.warehouse_id
                          AND sales_out.deleted = FALSE
-                     LEFT JOIN warehouse w ON w.id = outbound.warehouse_id AND w.deleted = FALSE
+                     LEFT JOIN xsy_warehouse w ON w.id = outbound.warehouse_id AND w.deleted = FALSE
                      <include refid="businessJoins"/>
             WHERE receivable.deleted = FALSE
               AND receivable.entry_type = 'NORMAL'
@@ -142,33 +142,33 @@
 
             -- Approved red receivables reverse revenue. Allocate it only across physically received
             -- quantities with a traceable original outbound; the not-yet-received remainder is
-            -- unassigned to a warehouse and is visible only to an all-warehouse scope.
+            -- unassigned to a xsy_warehouse and is visible only to an all-xsy_warehouse scope.
             SELECT <include refid="dimensionFields"/>,
                    -receivable_item.amount * allocation.allocated_quantity
                        / NULLIF(return_item.approved_quantity, 0) AS revenue_amount,
                    0::NUMERIC AS sales_cost_amount,
                    0::NUMERIC AS gift_cost_amount,
                    0::BIGINT AS cost_missing_count
-            FROM finance_receivable receivable
-                     JOIN finance_receivable_item receivable_item
+            FROM xsy_finance_receivable receivable
+                     JOIN xsy_finance_receivable_item receivable_item
                           ON receivable_item.receivable_id = receivable.id
                          AND receivable_item.deleted = FALSE
                          AND receivable_item.source_type = 'ORDER_RETURN_ITEM'
-                     JOIN order_return_item return_item
+                     JOIN xsy_order_return_item return_item
                           ON return_item.id = receivable_item.source_id AND return_item.deleted = FALSE
                      JOIN return_allocations allocation ON allocation.return_item_id = return_item.id
-                     JOIN inventory_movement source_sales_out
+                     JOIN xsy_inventory_movement source_sales_out
                           ON source_sales_out.id = allocation.source_sales_out_movement_id
                          AND source_sales_out.source_document_type = 'SALES_OUTBOUND_ITEM'
                          AND source_sales_out.movement_type = 'SALES_OUT'
                          AND source_sales_out.deleted = FALSE
-                     JOIN inventory_outbound_item outbound_item
+                     JOIN xsy_inventory_outbound_item outbound_item
                           ON outbound_item.id = source_sales_out.source_document_item_id
                          AND outbound_item.deleted = FALSE
-                     JOIN sales_order so ON so.id = receivable.order_id AND so.deleted = FALSE
-                     JOIN sales_order_item soi ON soi.id = return_item.order_item_id AND soi.deleted = FALSE
+                     JOIN xsy_sales_order so ON so.id = receivable.order_id AND so.deleted = FALSE
+                     JOIN xsy_sales_order_item soi ON soi.id = return_item.order_item_id AND soi.deleted = FALSE
                      CROSS JOIN LATERAL (SELECT receivable.event_at AS event_at) fact_event
-                     LEFT JOIN warehouse w ON w.id = source_sales_out.warehouse_id AND w.deleted = FALSE
+                     LEFT JOIN xsy_warehouse w ON w.id = source_sales_out.warehouse_id AND w.deleted = FALSE
                      <include refid="businessJoins"/>
             WHERE receivable.deleted = FALSE
               AND receivable.entry_type = 'RED'
@@ -192,19 +192,19 @@
                    0::NUMERIC AS sales_cost_amount,
                    0::NUMERIC AS gift_cost_amount,
                    0::BIGINT AS cost_missing_count
-            FROM finance_receivable receivable
-                     JOIN finance_receivable_item receivable_item
+            FROM xsy_finance_receivable receivable
+                     JOIN xsy_finance_receivable_item receivable_item
                           ON receivable_item.receivable_id = receivable.id
                          AND receivable_item.deleted = FALSE
                          AND receivable_item.source_type = 'ORDER_RETURN_ITEM'
-                     JOIN order_return_item return_item
+                     JOIN xsy_order_return_item return_item
                           ON return_item.id = receivable_item.source_id AND return_item.deleted = FALSE
                      LEFT JOIN return_allocation_totals allocation_totals
                           ON allocation_totals.return_item_id = return_item.id
-                     JOIN sales_order so ON so.id = receivable.order_id AND so.deleted = FALSE
-                     JOIN sales_order_item soi ON soi.id = return_item.order_item_id AND soi.deleted = FALSE
+                     JOIN xsy_sales_order so ON so.id = receivable.order_id AND so.deleted = FALSE
+                     JOIN xsy_sales_order_item soi ON soi.id = return_item.order_item_id AND soi.deleted = FALSE
                      CROSS JOIN LATERAL (SELECT receivable.event_at AS event_at) fact_event
-                     LEFT JOIN warehouse w ON FALSE
+                     LEFT JOIN xsy_warehouse w ON FALSE
                      <include refid="businessJoins"/>
             WHERE receivable.deleted = FALSE
               AND receivable.entry_type = 'RED'
@@ -228,8 +228,8 @@
                    0::NUMERIC AS gift_cost_amount,
                    CASE WHEN sales_out.unit_cost IS NULL AND NOT EXISTS (
                        SELECT 1
-                       FROM finance_receivable receivable
-                                JOIN finance_receivable_item receivable_item
+                       FROM xsy_finance_receivable receivable
+                                JOIN xsy_finance_receivable_item receivable_item
                                      ON receivable_item.receivable_id = receivable.id
                                     AND receivable_item.deleted = FALSE
                                     AND receivable_item.source_type = 'INVENTORY_OUTBOUND_ITEM'
@@ -240,21 +240,21 @@
                          AND receivable.event_at &gt;= #{startAt}
                          AND receivable.event_at &lt; #{endAt}
                    ) THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count
-            FROM inventory_movement sales_out
-                     JOIN inventory_outbound_item outbound_item
+            FROM xsy_inventory_movement sales_out
+                     JOIN xsy_inventory_outbound_item outbound_item
                           ON outbound_item.id = sales_out.source_document_item_id
                          AND outbound_item.deleted = FALSE
                          AND outbound_item.sales_order_id IS NOT NULL
                          AND outbound_item.sales_order_item_id IS NOT NULL
-                     JOIN inventory_outbound outbound
+                     JOIN xsy_inventory_outbound outbound
                           ON outbound.id = outbound_item.outbound_id
                          AND outbound.deleted = FALSE
                          AND outbound.warehouse_id = sales_out.warehouse_id
-                     JOIN sales_order so ON so.id = outbound_item.sales_order_id AND so.deleted = FALSE
-                     JOIN sales_order_item soi
+                     JOIN xsy_sales_order so ON so.id = outbound_item.sales_order_id AND so.deleted = FALSE
+                     JOIN xsy_sales_order_item soi
                           ON soi.id = outbound_item.sales_order_item_id AND soi.deleted = FALSE
                      CROSS JOIN LATERAL (SELECT sales_out.occurred_at AS event_at) fact_event
-                     LEFT JOIN warehouse w ON w.id = sales_out.warehouse_id AND w.deleted = FALSE
+                     LEFT JOIN xsy_warehouse w ON w.id = sales_out.warehouse_id AND w.deleted = FALSE
                      <include refid="businessJoins"/>
             WHERE sales_out.deleted = FALSE
               AND sales_out.source_document_type = 'SALES_OUTBOUND_ITEM'
@@ -273,23 +273,23 @@
                    -(receipt_item.quantity * receipt_item.unit_cost) AS sales_cost_amount,
                    0::NUMERIC AS gift_cost_amount,
                    0::BIGINT AS cost_missing_count
-            FROM order_return_receipt_item receipt_item
-                     JOIN order_return_receipt return_receipt ON return_receipt.id = receipt_item.receipt_id
-                     JOIN order_return return_doc ON return_doc.id = return_receipt.return_id
-                     JOIN order_return_item return_item
+            FROM xsy_order_return_receipt_item receipt_item
+                     JOIN xsy_order_return_receipt return_receipt ON return_receipt.id = receipt_item.receipt_id
+                     JOIN xsy_order_return return_doc ON return_doc.id = return_receipt.return_id
+                     JOIN xsy_order_return_item return_item
                           ON return_item.id = receipt_item.return_item_id AND return_item.deleted = FALSE
-                     JOIN inventory_movement source_sales_out
+                     JOIN xsy_inventory_movement source_sales_out
                           ON source_sales_out.id = receipt_item.source_sales_out_movement_id
                          AND source_sales_out.source_document_type = 'SALES_OUTBOUND_ITEM'
                          AND source_sales_out.movement_type = 'SALES_OUT'
                          AND source_sales_out.deleted = FALSE
-                     JOIN inventory_outbound_item outbound_item
+                     JOIN xsy_inventory_outbound_item outbound_item
                           ON outbound_item.id = source_sales_out.source_document_item_id
                          AND outbound_item.deleted = FALSE
-                     JOIN sales_order so ON so.id = return_doc.order_id AND so.deleted = FALSE
-                     JOIN sales_order_item soi ON soi.id = return_item.order_item_id AND soi.deleted = FALSE
+                     JOIN xsy_sales_order so ON so.id = return_doc.order_id AND so.deleted = FALSE
+                     JOIN xsy_sales_order_item soi ON soi.id = return_item.order_item_id AND soi.deleted = FALSE
                      CROSS JOIN LATERAL (SELECT return_receipt.received_at AS event_at) fact_event
-                     LEFT JOIN warehouse w ON w.id = source_sales_out.warehouse_id AND w.deleted = FALSE
+                     LEFT JOIN xsy_warehouse w ON w.id = source_sales_out.warehouse_id AND w.deleted = FALSE
                      <include refid="businessJoins"/>
             WHERE return_receipt.received_at &gt;= #{startAt}
               AND return_receipt.received_at &lt; #{endAt}
@@ -310,10 +310,10 @@
                    0::NUMERIC AS sales_cost_amount,
                    COALESCE(gift_out.quantity * gift_out.unit_cost, 0) AS gift_cost_amount,
                    CASE WHEN gift_out.unit_cost IS NULL THEN 1::BIGINT ELSE 0::BIGINT END AS cost_missing_count
-            FROM inventory_movement gift_out
-                     JOIN order_promotion_gift gift
+            FROM xsy_inventory_movement gift_out
+                     JOIN xsy_order_promotion_gift gift
                           ON gift.id = gift_out.source_document_item_id
-                     JOIN sales_order so ON so.id = gift.sales_order_id AND so.deleted = FALSE
+                     JOIN xsy_sales_order so ON so.id = gift.sales_order_id AND so.deleted = FALSE
                      JOIN (
                          SELECT sku.id       AS id,
                                 sku.id       AS sku_id,
@@ -321,11 +321,11 @@
                                 spu.spu_code AS spu_code_snapshot,
                                 spu.name     AS product_name_snapshot,
                                 sku.sku_code AS sku_code_snapshot
-                         FROM product_sku sku
-                                  JOIN product_spu spu ON spu.id = sku.spu_id
+                         FROM xsy_product_sku sku
+                                  JOIN xsy_product_spu spu ON spu.id = sku.spu_id
                      ) soi ON soi.id = gift.sku_id
                      CROSS JOIN LATERAL (SELECT gift_out.occurred_at AS event_at) fact_event
-                     LEFT JOIN warehouse w ON w.id = gift_out.warehouse_id AND w.deleted = FALSE
+                     LEFT JOIN xsy_warehouse w ON w.id = gift_out.warehouse_id AND w.deleted = FALSE
                      <include refid="businessJoins"/>
             WHERE gift_out.deleted = FALSE
               AND gift_out.source_document_type = 'ORDER_PROMOTION_GIFT'

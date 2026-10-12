@@ -16,12 +16,7 @@
       @cancel="close"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon/>
-    <a-alert
-        type="info"
-        show-icon
-        message="含开始日，不含结束日"
-        description="只汇总区间内「已确认」的销售订单行"
-    />
+    <FormNote title="含开始日，不含结束日" :lines="['只汇总区间内「已确认」的销售订单行']"/>
     <a-form ref="formRef" :model="{...form, range}" :rules="formRules" layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>
         <a-range-picker
@@ -78,6 +73,7 @@ import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import type {DemandCalculationBatch, GenerateResult, Id} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
+import FormNote from '/@/components/framework/form-note/index.vue';
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: []; generated: []; viewBatch: [batchId: Id] }>();
@@ -127,7 +123,7 @@ async function loadWarehouses() {
   }
   warehouseLoading.value = true;
   try {
-    warehouses.value = (await warehouseApi.list()).data ?? [];
+    warehouses.value = (await warehouseApi.list({suppressGlobalErrorMessage: true})).data ?? [];
   } catch (e) {
     error.value = purchaseError(e);
   } finally {
@@ -159,6 +155,10 @@ async function generate() {
   } catch {
     return;
   }
+  if (!range.value || form.value.warehouseId === undefined) {
+    error.value = '请选择时间范围与仓库';
+    return;
+  }
   saving.value = true;
   try {
     const r = await purchaseDemandApi.createBatch({
@@ -173,8 +173,8 @@ async function generate() {
     result.value = generated.data;
     message.success(`冻结批次 ${r.data.batchId} 已生成 ${generated.data.createdCount} 条需求，跳过 ${generated.data.skippedCount} 条`);
     emit('generated');
-  } catch (e) {
-    error.value = purchaseError(e);
+  } catch {
+    // 生成失败只走全局 toast；弹窗里的 error 留给本地校验
   } finally {
     saving.value = false;
   }

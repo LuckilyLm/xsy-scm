@@ -15,7 +15,7 @@
                e.login_name,
                e.actual_name,
                e.disabled_flag
-        FROM employee_warehouse_scope s
+        FROM xsy_employee_warehouse_scope s
                  JOIN t_employee e ON e.employee_id = s.employee_id AND e.deleted_flag = FALSE
         WHERE s.deleted_flag = FALSE
           AND s.warehouse_id = #{warehouseId}
@@ -30,7 +30,7 @@
     -->
     <select id="listEnabledEmployeeIdsByWarehouse" resultType="java.lang.Long">
         SELECT e.employee_id
-        FROM employee_warehouse_scope s
+        FROM xsy_employee_warehouse_scope s
                  JOIN t_employee e ON e.employee_id = s.employee_id AND e.deleted_flag = FALSE
         WHERE s.deleted_flag = FALSE
           AND e.disabled_flag = FALSE
@@ -45,15 +45,15 @@
                w.warehouse_code,
                w.name          AS warehouse_name,
                w.status        AS warehouse_status
-        FROM employee_warehouse_scope s
-                 JOIN warehouse w ON w.id = s.warehouse_id AND w.deleted = FALSE
+        FROM xsy_employee_warehouse_scope s
+                 JOIN xsy_warehouse w ON w.id = s.warehouse_id AND w.deleted = FALSE
         WHERE s.deleted_flag = FALSE
           AND s.employee_id = #{employeeId}
         ORDER BY w.warehouse_code, w.id
     </select>
 
     <update id="deactivateByEmployee">
-        UPDATE employee_warehouse_scope
+        UPDATE xsy_employee_warehouse_scope
         SET deleted_flag = TRUE,
             update_time  = CURRENT_TIMESTAMP
         WHERE employee_id = #{employeeId}
@@ -66,7 +66,7 @@
       活动组合的唯一性由部分唯一索引兜底，重复 id 在服务层已先去重。
     -->
     <insert id="insertBatch">
-        INSERT INTO employee_warehouse_scope (employee_id, warehouse_id, deleted_flag, create_time, update_time)
+        INSERT INTO xsy_employee_warehouse_scope (employee_id, warehouse_id, deleted_flag, create_time, update_time)
         VALUES
         <foreach collection="warehouseIds" item="warehouseId" separator=",">
             (#{employeeId}, #{warehouseId}, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -75,7 +75,7 @@
 
     <select id="listExistingWarehouseIds" resultType="java.lang.Long">
         SELECT id
-        FROM warehouse
+        FROM xsy_warehouse
         WHERE deleted = FALSE
           AND id IN
         <foreach collection="warehouseIds" item="warehouseId" open="(" separator="," close=")">

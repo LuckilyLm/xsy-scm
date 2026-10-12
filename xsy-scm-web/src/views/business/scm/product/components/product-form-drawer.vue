@@ -253,8 +253,12 @@ async function load(id?: ProductId) {
   error.value = '';
   loadFailed.value = false;
   try {
+    // 加载失败由抽屉内 Alert 承担（loadFailed 决定是否给重试），不再让全局 toast 重复说一遍
     const [tree, detail, uomOptions, tagOptionsResponse] = await Promise.all([
-      productCategoryApi.tree(), id ? productApi.detail(id) : Promise.resolve(undefined), productUomApi.options(), productTagApi.options(),
+      productCategoryApi.tree({suppressGlobalErrorMessage: true}),
+      id ? productApi.detail(id, {suppressGlobalErrorMessage: true}) : Promise.resolve(undefined),
+      productUomApi.options({suppressGlobalErrorMessage: true}),
+      productTagApi.options({suppressGlobalErrorMessage: true}),
     ]);
     if (current !== session) return;
     categories.value = tree.data;
@@ -290,8 +294,8 @@ async function save() {
     message.success('商品已保存');
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 保存失败只走全局 toast；抽屉里的 error 留给本地校验与加载失败
   } finally {
     saving.value = false;
   }

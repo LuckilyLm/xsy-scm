@@ -76,7 +76,7 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
      * 分页 count 必须走聚合组数（调用方置 {@code optimizeCountSql=false}），排序固定，不接受客户端排序。
      *
      * <p>
-     * {@code scope} 是调用者的仓库授权范围，谓词落在 {@code purchase_order.warehouse_id} 上：收货单的仓库在建单时从采购单继承，因此这一列同时就是收货行所在的那个仓。
+     * {@code scope} 是调用者的仓库授权范围，谓词落在 {@code xsy_purchase_order.warehouse_id} 上：收货单的仓库在建单时从采购单继承，因此这一列同时就是收货行所在的那个仓。
      * {@code null} 在 Mapper 里失败关闭，不表示「全部」。
      */
     List<PurchaseReceiptItemWorkbenchVO> workbench(Page<?> page,

@@ -16,15 +16,15 @@ import java.time.OffsetDateTime;
  *
  * <p>
  * <b>两种产生方式</b>：仓库自己开草稿单再确认（{@code InventoryOutboundService}），以及配送发车一次性生成已确认单（{@code InventoryFulfillmentService}）。后者把
- * {@code sourceDocumentType = DELIVERY_ROUTE} 与 {@code sourceDocumentId = delivery_route.id} 写在头上，由部分唯一索引
+ * {@code sourceDocumentType = DELIVERY_ROUTE} 与 {@code sourceDocumentId = xsy_delivery_route.id} 写在头上，由部分唯一索引
  * {@code uk_inventory_outbound_source_active} 保证 「一条线路最多一张出库单」。
  *
  * <p>
  * <b>{@code operator} / {@code confirmed_at} 是流水的事实来源</b>：确认出库时把这两个值传给 {@code InventoryCommandService}，作为
- * {@code inventory_movement.occurred_at} 与 {@code operator} —— 与入库同纪律，禁止用 {@code now()} 或当前登录人顶替。
+ * {@code xsy_inventory_movement.occurred_at} 与 {@code operator} —— 与入库同纪律，禁止用 {@code now()} 或当前登录人顶替。
  */
 @Data
-@TableName(value = "inventory_outbound", autoResultMap = true)
+@TableName(value = "xsy_inventory_outbound", autoResultMap = true)
 public class InventoryOutboundEntity {
 
     @TableId(type = IdType.AUTO)
@@ -66,7 +66,7 @@ public class InventoryOutboundEntity {
     private String sourceDocumentType;
 
     /**
-     * 来源单据 id，如 {@code delivery_route.id}；与 {@link #sourceDocumentType} 成对（DB CHECK）。
+     * 来源单据 id，如 {@code xsy_delivery_route.id}；与 {@link #sourceDocumentType} 成对（DB CHECK）。
      */
     private Long sourceDocumentId;
 

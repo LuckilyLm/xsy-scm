@@ -13,12 +13,12 @@
     <select id="selectRecord" resultMap="recordMap">
         SELECT id, document_type, business_id, business_no, template_id, template_code, template_name,
                template_version, model_snapshot, data_snapshot, printed_at, printed_by
-        FROM scm_print_record
+        FROM xsy_print_record
         WHERE id = #{id}
     </select>
 
     <insert id="insertRecord" useGeneratedKeys="true" keyProperty="row.id">
-        INSERT INTO scm_print_record (document_type, business_id, business_no, template_id, template_code,
+        INSERT INTO xsy_print_record (document_type, business_id, business_no, template_id, template_code,
                                       template_name, template_version, model_snapshot, data_snapshot,
                                       printed_at, printed_by)
         VALUES (#{row.documentType}, #{row.businessId}, #{row.businessNo}, #{row.templateId}, #{row.templateCode},

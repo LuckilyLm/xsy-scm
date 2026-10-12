@@ -79,7 +79,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
 
     private String statusOf(Long id) {
         return jdbc.queryForObject(
-                "SELECT status FROM inventory_transfer WHERE id = ?", String.class, id);
+                "SELECT status FROM xsy_inventory_transfer WHERE id = ?", String.class, id);
     }
 
     /**
@@ -170,13 +170,13 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
 
         // 同一明细行 id 被两条流水引用 —— 若共用一个来源类型，第二条会撞唯一索引
         Long itemId = jdbc.queryForObject(
-                "SELECT id FROM inventory_transfer_item WHERE transfer_id = ? AND deleted = FALSE",
+                "SELECT id FROM xsy_inventory_transfer_item WHERE transfer_id = ? AND deleted = FALSE",
                 Long.class, id);
         // 必须带上来源类型：明细行 id 只在其来源表内唯一，共享开发库里其它单据表的明细行
         // 可能取到同一个数值。谓词与 uk_inventory_movement_source_active 的冲突域一致，
         // 断言语义不变 —— 两条腿若共用一个类型，这里只会拿到一行。
         List<Map<String, Object>> both = jdbc.queryForList(
-                "SELECT movement_type, source_document_type FROM inventory_movement "
+                "SELECT movement_type, source_document_type FROM xsy_inventory_movement "
                         + "WHERE source_document_item_id = ? "
                         + "AND source_document_type IN ('TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM') "
                         + "ORDER BY id", itemId);
@@ -255,7 +255,7 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         Long wh2 = newWarehouse("TF6B");
 
         // 目标仓已有该 SKU，但记账单位是「箱」（源仓是 kg）
-        jdbc.update("INSERT INTO inventory_balance "
+        jdbc.update("INSERT INTO xsy_inventory_balance "
                 + "(warehouse_id, sku_id, unit, quantity, reserved_quantity, version, deleted) "
                 + "VALUES (?, ?, '箱', 5, 0, 0, FALSE)", wh2, sku);
         evictMybatisCache();
@@ -385,11 +385,11 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         //
         // 注意必须同时清零 reserved_quantity：ck_inventory_balance_available 要求
         // reserved <= quantity，那些提交进库的行上带着预留量，只清 quantity 会直接违反约束。
-        jdbc.update("UPDATE inventory_balance SET quantity = 0, reserved_quantity = 0 "
+        jdbc.update("UPDATE xsy_inventory_balance SET quantity = 0, reserved_quantity = 0 "
                 + "WHERE warehouse_id = ? AND deleted = FALSE", wh1);
-        jdbc.update("UPDATE purchase_order SET status = 'RECEIVED' "
+        jdbc.update("UPDATE xsy_purchase_order SET status = 'RECEIVED' "
                 + "WHERE warehouse_id = ? AND status IN ('SUBMITTED', 'PARTIALLY_RECEIVED')", wh1);
-        jdbc.update("UPDATE purchase_receipt SET putaway_status = 'COMPLETED' "
+        jdbc.update("UPDATE xsy_purchase_receipt SET putaway_status = 'COMPLETED' "
                 + "WHERE warehouse_id = ? AND status = 'CONFIRMED' AND putaway_status = 'PENDING'", wh1);
         evictMybatisCache();
 
@@ -477,8 +477,8 @@ class ScmInventoryTransferIT extends ScmW6PgITBase {
         for (Long movementId : List.of(
                 ((Number) movementOf(wh1, sku, "TRANSFER_OUT").get("id")).longValue(),
                 ((Number) movementOf(wh2, sku, "TRANSFER_IN").get("id")).longValue())) {
-            expectSqlFailure("UPDATE inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
-            expectSqlFailure("DELETE FROM inventory_movement WHERE id = ?", movementId);
+            expectSqlFailure("UPDATE xsy_inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
+            expectSqlFailure("DELETE FROM xsy_inventory_movement WHERE id = ?", movementId);
         }
     }
 }

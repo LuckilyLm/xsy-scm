@@ -135,7 +135,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
 
     private List<Long> orderItemIds(Long orderId) {
         return jdbc.queryForList(
-                "SELECT id FROM sales_order_item WHERE order_id = ? AND deleted = FALSE ORDER BY id",
+                "SELECT id FROM xsy_sales_order_item WHERE order_id = ? AND deleted = FALSE ORDER BY id",
                 Long.class, orderId);
     }
 
@@ -219,7 +219,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         issue.setQuantity(1);
         promotionCouponService.issue(issue, key("coupon-issue:" + tag));
         return jdbc.queryForObject(
-                "SELECT id FROM promotion_coupon_instance WHERE coupon_id = ? AND customer_id = ?",
+                "SELECT id FROM xsy_promotion_coupon_instance WHERE coupon_id = ? AND customer_id = ?",
                 Long.class, couponId, customerId);
     }
 
@@ -262,7 +262,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
 
     private Long addressedCustomer(String tag) {
         Long customerId = newCustomer();
-        jdbc.update("UPDATE customer SET address = ?, longitude = 113.94, latitude = 22.54,"
+        jdbc.update("UPDATE xsy_customer SET address = ?, longitude = 113.94, latitude = 22.54,"
                 + " geom_crs = 'GCJ02' WHERE id = ?", "F1-2C IT 地址" + tag, customerId);
         evictMybatisCache();
         return customerId;
@@ -270,7 +270,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
 
     private Long locatedWarehouse(String tag) {
         Long warehouseId = newWarehouse(tag);
-        jdbc.update("UPDATE warehouse SET longitude = 113.90, latitude = 22.50, geom_crs = 'GCJ02' WHERE id = ?",
+        jdbc.update("UPDATE xsy_warehouse SET longitude = 113.90, latitude = 22.50, geom_crs = 'GCJ02' WHERE id = ?",
                 warehouseId);
         evictMybatisCache();
         return warehouseId;
@@ -310,7 +310,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         Long taskId = detail.getTask().getId();
         sortingTaskService.enter(taskId, entryForm);
         var action = new SortingActionForm();
-        action.setVersion(jdbc.queryForObject("SELECT version FROM sorting_task WHERE id = ?",
+        action.setVersion(jdbc.queryForObject("SELECT version FROM xsy_sorting_task WHERE id = ?",
                 Integer.class, taskId));
         sortingTaskService.complete(taskId, action);
         evictMybatisCache();
@@ -333,7 +333,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     }
 
     private void locateAllStops(Long routeId) {
-        jdbc.update("UPDATE delivery_route_stop SET longitude = 113.95, latitude = 22.55, geom_crs = 'GCJ02'"
+        jdbc.update("UPDATE xsy_delivery_route_stop SET longitude = 113.95, latitude = 22.55, geom_crs = 'GCJ02'"
                 + " WHERE route_id = ? AND deleted = FALSE", routeId);
         evictMybatisCache();
     }
@@ -349,7 +349,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     private void sign(Long routeId, Long orderId, String result, String reason) {
         var form = new DeliverySignForm();
         form.setVersion(jdbc.queryForObject(
-                "SELECT version FROM delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
+                "SELECT version FROM xsy_delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
                 Integer.class, routeId, orderId));
         form.setResult(result);
         form.setReason(reason);
@@ -364,7 +364,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     }
 
     private Integer versionOf(Long routeId) {
-        return jdbc.queryForObject("SELECT version FROM delivery_route WHERE id = ?", Integer.class, routeId);
+        return jdbc.queryForObject("SELECT version FROM xsy_delivery_route WHERE id = ?", Integer.class, routeId);
     }
 
     private String key(String tag) {
@@ -373,7 +373,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
 
     private Long assignmentId(Long routeId, Long orderId) {
         return jdbc.queryForObject(
-                "SELECT id FROM delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
+                "SELECT id FROM xsy_delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
                 Long.class, routeId, orderId);
     }
 
@@ -382,12 +382,12 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     private Map<String, Object> normalOf(Long orderId) {
-        return single("SELECT * FROM finance_receivable WHERE source_type = 'SALES_ORDER'"
+        return single("SELECT * FROM xsy_finance_receivable WHERE source_type = 'SALES_ORDER'"
                 + " AND entry_type = 'NORMAL' AND source_id = ?", orderId);
     }
 
     private Map<String, Object> redOf(Long returnId) {
-        return single("SELECT * FROM finance_receivable WHERE source_type = 'ORDER_RETURN'"
+        return single("SELECT * FROM xsy_finance_receivable WHERE source_type = 'ORDER_RETURN'"
                 + " AND entry_type = 'RED' AND source_id = ?", returnId);
     }
 
@@ -403,18 +403,18 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     }
 
     private int redsOfOrder(Long orderId) {
-        return count("SELECT count(*) FROM finance_receivable WHERE entry_type = 'RED' AND order_id = ?",
+        return count("SELECT count(*) FROM xsy_finance_receivable WHERE entry_type = 'RED' AND order_id = ?",
                 orderId);
     }
 
     private List<Map<String, Object>> itemsOf(Long receivableId) {
         return jdbc.queryForList(
-                "SELECT * FROM finance_receivable_item WHERE receivable_id = ? ORDER BY id", receivableId);
+                "SELECT * FROM xsy_finance_receivable_item WHERE receivable_id = ? ORDER BY id", receivableId);
     }
 
     private List<Map<String, Object>> logsOf(Long receivableId) {
         return jdbc.queryForList(
-                "SELECT * FROM finance_operation_log WHERE business_type = 'RECEIVABLE' AND business_id = ?"
+                "SELECT * FROM xsy_finance_operation_log WHERE business_type = 'RECEIVABLE' AND business_id = ?"
                         + " ORDER BY id", receivableId);
     }
 
@@ -440,14 +440,14 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
     void refundAmountUsesTheFrozenOrderDiscount() {
         Chain chain = plannedWithFixedAmountCoupon("RDN", "1.0000", "100.0000", "1.0000", "10.0000");
         BigDecimal frozenDiscount = jdbc.queryForObject(
-                "SELECT discount_amount FROM order_discount WHERE sales_order_id = ?",
+                "SELECT discount_amount FROM xsy_order_discount WHERE sales_order_id = ?",
                 BigDecimal.class, chain.orderId());
         assertThat(frozenDiscount).isEqualByComparingTo("10.0000");
 
         OrderReturnDetailVO returned = approvedReturn("RDN", chain.orderId(), List.of(chain.orderItemId()),
                 List.of("1.0000"), List.of("1.0000"));
         BigDecimal refundAmount = jdbc.queryForObject(
-                "SELECT refund_amount FROM order_refund WHERE return_id = ?", BigDecimal.class,
+                "SELECT refund_amount FROM xsy_order_refund WHERE return_id = ?", BigDecimal.class,
                 returned.getReturnId());
 
         assertThat(returned.getApprovedAmount()).isEqualByComparingTo("100.0000");
@@ -476,9 +476,9 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
 
         assertThat(returned.getStatus()).as("退款净额为 0 不阻塞退货批准").isEqualTo("APPROVED");
         assertThat(returned.getApprovedAmount()).as("审批金额仍是退货毛额，不退化成净额").isEqualByComparingTo("100.0000");
-        assertThat(count("SELECT count(*) FROM order_refund WHERE return_id = ?", returned.getReturnId()))
+        assertThat(count("SELECT count(*) FROM xsy_order_refund WHERE return_id = ?", returned.getReturnId()))
                 .as("没有可退的钱就不建退款单，order_refund.refund_amount 恒 > 0").isZero();
-        assertThat(count("SELECT count(*) FROM order_operation_log WHERE order_id = ? AND operation_type = 'RETURN'"
+        assertThat(count("SELECT count(*) FROM xsy_order_operation_log WHERE order_id = ? AND operation_type = 'RETURN'"
                 + " AND reason LIKE '%无需退款%'", chain.orderId())).as("无需退款仍要留痕").isEqualTo(1);
         assertThat(redsOfOrder(chain.orderId())).as("净额为 0 的退货不生成红字").isZero();
     }
@@ -504,13 +504,13 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         assertThat(red.get("customer_name_snapshot")).isEqualTo(normal.get("customer_name_snapshot"));
         assertThat(decimalOf(red, "amount")).as("4 × 3.5").isEqualByComparingTo("14.0000");
         assertThat(red.get("reason")).isEqualTo(jdbc.queryForObject(
-                "SELECT reason FROM order_return WHERE id = ?", String.class, returned.getReturnId()));
-        assertThat(sameAs("r.event_at = rt.approved_at FROM finance_receivable r"
-                        + " JOIN order_return rt ON rt.id = ? WHERE r.id = ?",
+                "SELECT reason FROM xsy_order_return WHERE id = ?", String.class, returned.getReturnId()));
+        assertThat(sameAs("r.event_at = rt.approved_at FROM xsy_finance_receivable r"
+                        + " JOIN xsy_order_return rt ON rt.id = ? WHERE r.id = ?",
                 returned.getReturnId(), longOf(red, "id")))
                 .as("红字时点必须逐值等于退货批准时刻").isTrue();
-        assertThat(sameAs("r.created_by = rt.updated_by FROM finance_receivable r"
-                        + " JOIN order_return rt ON rt.id = ? WHERE r.id = ?",
+        assertThat(sameAs("r.created_by = rt.updated_by FROM xsy_finance_receivable r"
+                        + " JOIN xsy_order_return rt ON rt.id = ? WHERE r.id = ?",
                 returned.getReturnId(), longOf(red, "id")))
                 .as("红字创建人必须是批准人本人（order_return.updated_by）").isTrue();
 
@@ -530,8 +530,8 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         // 操作人必须追溯到本次批准的人（order_return.updated_by），不是财务侧现取的请求身份。
         // 谓词必须带 business_type：business_id 只在同一 business_type 内唯一（各事实表各有自己的
         // id 序列），只按 business_id 查会把同号的 PAYABLE / RECEIPT 日志一起捞出来。
-        assertThat(sameAs("l.operator = rt.updated_by FROM finance_operation_log l"
-                        + " JOIN order_return rt ON rt.id = ?"
+        assertThat(sameAs("l.operator = rt.updated_by FROM xsy_finance_operation_log l"
+                        + " JOIN xsy_order_return rt ON rt.id = ?"
                         + " WHERE l.business_type = 'RECEIVABLE' AND l.business_id = ?",
                 returned.getReturnId(), longOf(red, "id")))
                 .as("红字日志的操作人必须是批准人本人").isTrue();
@@ -557,10 +557,10 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         // 批准成功、退款单已成立，但财务侧什么都没记（不造孤立红字）
         assertThat(first.getStatus()).isEqualTo("APPROVED");
         assertThat(second.getStatus()).isEqualTo("APPROVED");
-        assertThat(count("SELECT count(*) FROM finance_receivable WHERE entry_type = 'RED' AND order_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable WHERE entry_type = 'RED' AND order_id = ?",
                 chain.orderId()))
                 .as("没有正常应收时不得生成孤立红字").isZero();
-        assertThat(count("SELECT count(*) FROM order_refund WHERE order_id = ?", chain.orderId()))
+        assertThat(count("SELECT count(*) FROM xsy_order_refund WHERE order_id = ?", chain.orderId()))
                 .as("退款单是订单域事实，照常两张").isEqualTo(2);
 
         dispatch(chain.routeId());
@@ -593,16 +593,16 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
                 List.of("4.0000"), List.of("4.0000"));
         Long redId = longOf(redOf(returned.getReturnId()), "id");
         Long returnItemId = jdbc.queryForObject(
-                "SELECT id FROM order_return_item WHERE return_id = ?", Long.class, returned.getReturnId());
+                "SELECT id FROM xsy_order_return_item WHERE return_id = ?", Long.class, returned.getReturnId());
 
         // 判别性夹具：把 approved_amount 改成一个「与 quantity × price 不等」的合法值（CHECK 只要求 >= 0），
         // 再删掉本次红字并重跑生成器。重算实现会得到 14.0000，采用落库值得到 9.9900。
-        assertThat(jdbc.update("UPDATE order_return_item SET approved_amount = 9.9900 WHERE id = ?",
+        assertThat(jdbc.update("UPDATE xsy_order_return_item SET approved_amount = 9.9900 WHERE id = ?",
                 returnItemId)).isEqualTo(1);
-        jdbc.update("DELETE FROM finance_operation_log WHERE business_type = 'RECEIVABLE' AND business_id = ?",
+        jdbc.update("DELETE FROM xsy_finance_operation_log WHERE business_type = 'RECEIVABLE' AND business_id = ?",
                 redId);
-        jdbc.update("DELETE FROM finance_receivable_item WHERE receivable_id = ?", redId);
-        assertThat(jdbc.update("DELETE FROM finance_receivable WHERE id = ?", redId)).isEqualTo(1);
+        jdbc.update("DELETE FROM xsy_finance_receivable_item WHERE receivable_id = ?", redId);
+        assertThat(jdbc.update("DELETE FROM xsy_finance_receivable WHERE id = ?", redId)).isEqualTo(1);
         evictMybatisCache();
 
         financeReceivableService.generateRedOnReturnApproved(returned.getReturnId());
@@ -612,8 +612,8 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
                 .isEqualByComparingTo("9.9900");
         assertThat(decimalOf(line, "quantity")).isEqualByComparingTo("4.0000");
         assertThat(decimalOf(line, "unit_price")).isEqualByComparingTo("3.5000");
-        assertThat(sameAs("i.amount = ri.approved_amount FROM finance_receivable_item i"
-                        + " JOIN order_return_item ri ON ri.id = i.source_id WHERE i.id = ?",
+        assertThat(sameAs("i.amount = ri.approved_amount FROM xsy_finance_receivable_item i"
+                        + " JOIN xsy_order_return_item ri ON ri.id = i.source_id WHERE i.id = ?",
                 line.get("id"))).as("红字明细金额与订单域落库金额逐值相同").isTrue();
     }
 
@@ -641,7 +641,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         assertThat(decimalOf(red, "amount")).as("14.0000 + 0").isEqualByComparingTo("14.0000");
         // 行级来源指向那条正金额的退货行；0 批准行不占用来源唯一键
         assertThat(longOf(lines.getFirst(), "source_id")).isEqualTo(jdbc.queryForObject(
-                "SELECT id FROM order_return_item WHERE return_id = ? AND approved_quantity > 0",
+                "SELECT id FROM xsy_order_return_item WHERE return_id = ? AND approved_quantity > 0",
                 Long.class, returned.getReturnId()));
     }
 
@@ -660,7 +660,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
 
         // 受控夹具：按 V65 schema 直接落一条合法核销行
         //（source_id 不指向真实收款单，本用例只需要「存在一笔已核销额」这一判据）。
-        jdbc.update("INSERT INTO finance_write_off (write_off_no, source_type, source_id, target_type,"
+        jdbc.update("INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type,"
                         + " target_id, amount, entry_type, written_off_at, operator, created_at, updated_at)"
                         + " VALUES (?, 'RECEIPT', 900001, 'RECEIVABLE', ?, 100.0000, 'NORMAL',"
                         + " now(), '2:1', now(), now())",
@@ -676,7 +676,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         // 财务事实净额可直接用 SQL 读出，不经过读侧派生
         assertThat(jdbc.queryForObject(
                 "SELECT sum(CASE WHEN entry_type = 'NORMAL' THEN amount ELSE -amount END)"
-                        + " FROM finance_receivable WHERE order_id = ?", BigDecimal.class, chain.orderId()))
+                        + " FROM xsy_finance_receivable WHERE order_id = ?", BigDecimal.class, chain.orderId()))
                 .as("净应收 = 80").isEqualByComparingTo("80.0000");
         assertThat(returned.getStatus()).isEqualTo("APPROVED");
     }
@@ -701,14 +701,14 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         assertThat(decimalOf(red, "amount")).as("超额红字必须全额保留").isEqualByComparingTo("50.0000");
         assertThat(jdbc.queryForObject(
                 "SELECT sum(CASE WHEN entry_type = 'NORMAL' THEN amount ELSE -amount END)"
-                        + " FROM finance_receivable WHERE order_id = ?", BigDecimal.class, chain.orderId()))
+                        + " FROM xsy_finance_receivable WHERE order_id = ?", BigDecimal.class, chain.orderId()))
                 .as("允许净应收为负（D-4），表达属 F1-5 读侧派生").isEqualByComparingTo("-20.0000");
         // 订单域事实未被财务改动
         assertThat(jdbc.queryForObject(
-                "SELECT approved_amount FROM order_return WHERE id = ?", BigDecimal.class,
+                "SELECT approved_amount FROM xsy_order_return WHERE id = ?", BigDecimal.class,
                 returned.getReturnId())).isEqualByComparingTo("50.0000");
         assertThat(jdbc.queryForObject(
-                "SELECT approved_quantity FROM order_return_item WHERE return_id = ?", BigDecimal.class,
+                "SELECT approved_quantity FROM xsy_order_return_item WHERE return_id = ?", BigDecimal.class,
                 returned.getReturnId())).isEqualByComparingTo("10.0000");
     }
 
@@ -731,11 +731,11 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         financeReceivableService.generateOnSign(assignmentId(chain.routeId(), chain.orderId()));
 
         assertThat(longOf(redOf(returned.getReturnId()), "id")).as("重放不换单不换号").isEqualTo(redId);
-        assertThat(count("SELECT count(*) FROM finance_receivable WHERE source_type = 'ORDER_RETURN'"
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable WHERE source_type = 'ORDER_RETURN'"
                 + " AND source_id = ?", returned.getReturnId())).isEqualTo(1);
         assertThat(itemsOf(redId)).hasSize(1);
         assertThat(logsOf(redId)).as("红字重放不重复留痕").hasSize(1);
-        assertThat(count("SELECT count(*) FROM finance_receivable WHERE source_type = 'SALES_ORDER'"
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable WHERE source_type = 'SALES_ORDER'"
                 + " AND source_id = ?", chain.orderId())).isEqualTo(1);
         assertThat(logsOf(longOf(normalOf(chain.orderId()), "id"))).hasSize(1);
     }
@@ -755,10 +755,10 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         Long redId = longOf(redOf(returned.getReturnId()), "id");
 
         // 构造「红字丢了」的状态（例如那条派生事务被回滚掉，而两个事实都还在）
-        jdbc.update("DELETE FROM finance_operation_log WHERE business_type = 'RECEIVABLE' AND business_id = ?",
+        jdbc.update("DELETE FROM xsy_finance_operation_log WHERE business_type = 'RECEIVABLE' AND business_id = ?",
                 redId);
-        jdbc.update("DELETE FROM finance_receivable_item WHERE receivable_id = ?", redId);
-        assertThat(jdbc.update("DELETE FROM finance_receivable WHERE id = ?", redId)).isEqualTo(1);
+        jdbc.update("DELETE FROM xsy_finance_receivable_item WHERE receivable_id = ?", redId);
+        assertThat(jdbc.update("DELETE FROM xsy_finance_receivable WHERE id = ?", redId)).isEqualTo(1);
         evictMybatisCache();
         assertThat(redsOfOrder(chain.orderId())).isZero();
 
@@ -769,7 +769,7 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
         assertThat(decimalOf(red, "amount")).isEqualByComparingTo("14.0000");
         assertThat(decimalOf(normalOf(chain.orderId()), "amount")).as("正常应收不被改动").
                 isEqualByComparingTo("35.0000");
-        assertThat(count("SELECT count(*) FROM finance_receivable WHERE source_type = 'SALES_ORDER'"
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable WHERE source_type = 'SALES_ORDER'"
                 + " AND source_id = ?", chain.orderId())).isEqualTo(1);
     }
 
@@ -787,9 +787,9 @@ class ScmFinanceReceivableRedPgIT extends ScmW6PgITBase {
 
         sign(chain.routeId(), chain.orderId(), "EXCEPTION", "客户拒收");
 
-        assertThat(count("SELECT count(*) FROM finance_receivable WHERE order_id = ?", chain.orderId()))
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable WHERE order_id = ?", chain.orderId()))
                 .as("异常签收不形成应收（第二批 Q6）").isZero();
-        assertThat(count("SELECT count(*) FROM finance_receivable WHERE source_type = 'ORDER_RETURN'"
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable WHERE source_type = 'ORDER_RETURN'"
                 + " AND source_id = ?", returned.getReturnId()))
                 .as("没有正常应收就没有可挂的红字").isZero();
         assertThat(returned.getStatus()).isEqualTo("APPROVED");

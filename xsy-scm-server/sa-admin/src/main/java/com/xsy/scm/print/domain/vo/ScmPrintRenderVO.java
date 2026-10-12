@@ -1,5 +1,7 @@
 package com.xsy.scm.print.domain.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,5 +73,6 @@ public class ScmPrintRenderVO {
 
     private OffsetDateTime printedAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String printedBy;
 }

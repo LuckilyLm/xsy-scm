@@ -18,8 +18,7 @@
         <a-button class="button-style" v-if="selectRoleId" type="primary" @click="addRoleEmployee"
                   v-privilege="'system:role:employee:add'"
         >添加员工
-        </a-button
-        >
+        </a-button>
         <a-button
             class="button-style"
             v-if="selectRoleId"
@@ -28,8 +27,7 @@
             @click="batchDelete"
             v-privilege="'system:role:employee:batch:delete'"
         >批量移除
-        </a-button
-        >
+        </a-button>
       </div>
     </div>
 

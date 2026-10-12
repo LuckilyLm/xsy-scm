@@ -19,9 +19,9 @@
                k.spec_name AS sku_name,
                k.spec_values,
                p.name      AS product_name
-        FROM inventory_loss_gain_item i
-                 LEFT JOIN product_sku k ON k.id = i.sku_id
-                 LEFT JOIN product_spu p ON p.id = k.spu_id
+        FROM xsy_inventory_loss_gain_item i
+                 LEFT JOIN xsy_product_sku k ON k.id = i.sku_id
+                 LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE i.deleted = FALSE
           AND i.loss_gain_id = #{lossGainId}
         ORDER BY i.id ASC
@@ -29,7 +29,7 @@
 
     <!-- 待审核重存：逻辑删旧行，不物理删（保留审计痕迹，且与全仓软删口径一致） -->
     <update id="deleteByLossGainId">
-        UPDATE inventory_loss_gain_item
+        UPDATE xsy_inventory_loss_gain_item
         SET deleted    = TRUE,
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,
@@ -39,7 +39,7 @@
     </update>
 
     <update id="updateUnitSnapshot">
-        UPDATE inventory_loss_gain_item
+        UPDATE xsy_inventory_loss_gain_item
         SET unit_snapshot = #{unit},
             version       = version + 1,
             updated_at    = CURRENT_TIMESTAMP,

@@ -11,7 +11,7 @@
  * 打印预览是 GET：它与正式生成同源，但既不改状态也不计次。
  * 任何页面都不许用预览接口「顺手」计一次数。
  */
-import {request} from '/@/lib/axios';
+import {request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -33,11 +33,12 @@ import type {
 
 const BASE = '/scm/sorting';
 
-function call<T>(method: string, path: string, data?: unknown): Promise<ScmResponse<T>> {
+function call<T>(method: string, path: string, data?: unknown, options?: RequestOptions): Promise<ScmResponse<T>> {
     return request({
         url: `${BASE}${path}`,
         method,
         ...(method === 'get' ? {params: data} : {data}),
+        ...options,
     }) as unknown as Promise<ScmResponse<T>>;
 }
 
@@ -63,7 +64,8 @@ async function command<T>(path: string, data: unknown): Promise<ScmResponse<T>> 
 export const sortingApi = {
     tasks: (query: SortingTaskQuery) => call<ScmPage<SortingTask>>('get', '/tasks', query),
     detail: (id: Id) => call<SortingTaskDetail>('get', `/tasks/${id}`),
-    summary: (query: SortingSummaryQuery) => call<ScmPage<SortingSkuSummary>>('get', '/summary', query),
+    summary: (query: SortingSummaryQuery, options?: RequestOptions) =>
+        call<ScmPage<SortingSkuSummary>>('get', '/summary', query, options),
     candidateLines: (query: SortingCandidateQuery) => call<ScmPage<SortingCandidateLine>>('get', '/candidate-lines', query),
     /** 预览：只读、不计次；仅 SORTING / COMPLETED 可取，否则业务码 41121。 */
     printPreview: (id: Id) => call<SortingPrint>('get', `/tasks/${id}/print`),

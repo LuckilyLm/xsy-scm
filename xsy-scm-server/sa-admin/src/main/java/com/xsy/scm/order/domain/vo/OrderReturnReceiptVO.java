@@ -3,6 +3,7 @@ package com.xsy.scm.order.domain.vo;
 import lombok.Data;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -14,6 +15,7 @@ public class OrderReturnReceiptVO {
     private Long returnId;
     private Long warehouseId;
     private OffsetDateTime receivedAt;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String operator;
     private List<Item> items;
 

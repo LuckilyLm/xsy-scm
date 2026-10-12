@@ -1,5 +1,7 @@
 package com.xsy.scm.purchase.domain.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -25,9 +27,11 @@ public class PurchaseReceiptVO {
     private String receiptMode;
     private String putawayStatus;
     private OffsetDateTime putawayAt;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String putawayBy;
     private OffsetDateTime receivedAt;
     private OffsetDateTime confirmedAt;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String operator;
     private String remark;
     private Integer version;

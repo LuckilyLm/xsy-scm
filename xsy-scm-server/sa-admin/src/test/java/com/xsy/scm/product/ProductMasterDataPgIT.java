@@ -89,7 +89,7 @@ class ProductMasterDataPgIT {
         var code = code();
         form.setSpuCode(code);
         form.setName(code + "商品");
-        form.setCategoryId(jdbc.queryForObject("SELECT id FROM product_category WHERE category_code='FRESH-FRUIT' AND deleted=FALSE", Long.class));
+        form.setCategoryId(jdbc.queryForObject("SELECT id FROM xsy_product_category WHERE category_code='FRESH-FRUIT' AND deleted=FALSE", Long.class));
         form.setStatus("OFF_SHELF");
         var sku = ProductAggregateValidatorTest.sku(code + "A", true, "大");
         sku.setSpecName("大");
@@ -122,7 +122,7 @@ class ProductMasterDataPgIT {
     }
 
     private Long skuId(Long spuId) {
-        return jdbc.queryForObject("SELECT id FROM product_sku WHERE spu_id=? AND deleted=FALSE", Long.class, spuId);
+        return jdbc.queryForObject("SELECT id FROM xsy_product_sku WHERE spu_id=? AND deleted=FALSE", Long.class, spuId);
     }
 
     private Integer version(Long spuId) {
@@ -263,7 +263,7 @@ class ProductMasterDataPgIT {
     void dictionaryOnlyGuardsUnitsWrittenFromNowOn() {
         Long spu = service.add(product("kg"));
         // 字典晚于既有商品建立：历史值「板」不在字典里，原样保存必须继续通过。
-        jdbc.update("UPDATE product_sku SET sale_unit='板' WHERE spu_id=?", spu);
+        jdbc.update("UPDATE xsy_product_sku SET sale_unit='板' WHERE spu_id=?", spu);
         service.update(edit(spu));
         assertThat(query.detail(spu).getSkuList().getFirst().getSaleUnit()).isEqualTo("板");
         var unknown = edit(spu);
@@ -318,7 +318,7 @@ class ProductMasterDataPgIT {
         backOnline.setStatus("ON_SHELF");
         conflict(() -> service.updateStatus(backOnline), MASTER_STATUS_SALE_CONFLICT);
         // CHECK 是服务层之外的兜底。PG 的语句级错误会终止整个事务，所以这条必须放在最后。
-        assertThatThrownBy(() -> jdbc.update("UPDATE product_spu SET status='ON_SHELF' WHERE id=?", spu))
+        assertThatThrownBy(() -> jdbc.update("UPDATE xsy_product_spu SET status='ON_SHELF' WHERE id=?", spu))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
@@ -328,11 +328,11 @@ class ProductMasterDataPgIT {
         service.delete(deletion(clean));
         conflict(() -> query.detail(clean), PRODUCT_NOT_FOUND);
         Long priced = service.add(product("kg"));
-        jdbc.update("INSERT INTO customer_type_price(customer_type_id,sku_id,unit_price,effective_from,created_by) VALUES (?,?,1.5,?,?)",
+        jdbc.update("INSERT INTO xsy_customer_type_price(customer_type_id,sku_id,unit_price,effective_from,created_by) VALUES (?,?,1.5,?,?)",
                 1L, skuId(priced), OffsetDateTime.now(), "pco1-it");
         conflict(() -> service.delete(deletion(priced)), PRODUCT_BUSINESS_REFERENCED);
         // 撤销价格行也不解锁：删除保护看的是「是否产生过事实」，不是「现在还挂着价格」。
-        jdbc.update("UPDATE customer_type_price SET deleted=TRUE WHERE sku_id=?", skuId(priced));
+        jdbc.update("UPDATE xsy_customer_type_price SET deleted=TRUE WHERE sku_id=?", skuId(priced));
         conflict(() -> service.delete(deletion(priced)), PRODUCT_BUSINESS_REFERENCED);
     }
 
@@ -343,7 +343,7 @@ class ProductMasterDataPgIT {
     void supplierRelationDoesNotBlockProductDeletion() {
         Long linked = service.add(product("kg"));
         // 本库不建外键，关联行只需存在即可验证删除口径，不依赖 supplier 种子数据。
-        jdbc.update("INSERT INTO supplier_sku(supplier_id,sku_id,supplier_code_snapshot,supplier_name_snapshot,sku_code_snapshot,sku_name_snapshot,purchase_unit) "
+        jdbc.update("INSERT INTO xsy_supplier_sku(supplier_id,sku_id,supplier_code_snapshot,supplier_name_snapshot,sku_code_snapshot,sku_name_snapshot,purchase_unit) "
                 + "VALUES (999999,?, 'S-IT','IT 供应商','SKU','IT 规格','kg')", skuId(linked));
         service.delete(deletion(linked));
         conflict(() -> query.detail(linked), PRODUCT_NOT_FOUND);
@@ -505,10 +505,10 @@ class ProductMasterDataPgIT {
         assertThat(hits(otherStorage)).isEmpty();
         // 直连改库不会清 MyBatis 一级缓存，所以下面三个探测必须用互不相同的条件组合。
         assertThat(hits(flag(false, false))).containsExactly(spu);
-        jdbc.update("UPDATE product_sku SET barcode=? WHERE spu_id=?", prefix + "BAR", spu);
+        jdbc.update("UPDATE xsy_product_sku SET barcode=? WHERE spu_id=?", prefix + "BAR", spu);
         assertThat(hits(flag(true, false))).containsExactly(spu);
         assertThat(hits(flag(true, true))).isEmpty();
-        jdbc.update("UPDATE product_spu SET created_at=now()-interval '7 days' WHERE id=?", spu);
+        jdbc.update("UPDATE xsy_product_spu SET created_at=now()-interval '7 days' WHERE id=?", spu);
         var recent = search();
         recent.setCreatedFrom(OffsetDateTime.now().minusDays(1));
         assertThat(hits(recent)).isEmpty();

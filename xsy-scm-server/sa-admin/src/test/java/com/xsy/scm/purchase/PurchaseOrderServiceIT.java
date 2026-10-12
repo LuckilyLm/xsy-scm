@@ -149,14 +149,14 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         Long supplierId = newPurchasableSupplier("PO4", skuId);
 
         // 供应商：直改库置 DISABLED（供应商启停不经过采购侧）
-        assertThat(jdbc.update("UPDATE supplier SET status = 'DISABLED', version = version + 1 "
+        assertThat(jdbc.update("UPDATE xsy_supplier SET status = 'DISABLED', version = version + 1 "
                 + "WHERE id = ? AND deleted = FALSE", supplierId)).isEqualTo(1);
         evictMybatisCache();
         PurchaseOrderAddForm form = orderForm(supplierId, seedWarehouseId(), skuId, "1.0000", "1.0000");
         expectCode(() -> purchaseOrderService.create(form, prefix + ":PO4:po"), 40986);
 
         // 仓库：用基类的停用辅助，并把供应商改回 ENABLED
-        assertThat(jdbc.update("UPDATE supplier SET status = 'ENABLED', version = version + 1 "
+        assertThat(jdbc.update("UPDATE xsy_supplier SET status = 'ENABLED', version = version + 1 "
                 + "WHERE id = ? AND deleted = FALSE", supplierId)).isEqualTo(1);
         evictMybatisCache();
 
@@ -237,7 +237,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         assertThat(item.getAllocations().getFirst().getDemandId()).isEqualTo(demand.getId());
         assertThat(allocationOf(item.getId(), demand.getId()).getAllocatedQuantity())
                 .isEqualByComparingTo("2.0000");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM purchase_demand_allocation "
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_purchase_demand_allocation "
                 + "WHERE purchase_order_item_id = ? AND deleted = FALSE", Long.class, oldItemId)).isZero();
         assertThat(reloadDemand(demand.getId()).getAllocatedQuantity()).isEqualByComparingTo("2.0000");
     }
@@ -261,7 +261,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
 
         // DRAFT 单的已收量现实中恒为 0，这里写入一个非零值：
         // 若 update 依赖「DRAFT 已收恒为 0」这个可松动的隐含前提，就会把它静默清 0。
-        assertThat(jdbc.update("UPDATE purchase_order_item SET received_quantity = 1.5000 "
+        assertThat(jdbc.update("UPDATE xsy_purchase_order_item SET received_quantity = 1.5000 "
                 + "WHERE id = ? AND deleted = FALSE", itemId)).isEqualTo(1);
         evictMybatisCache();
 
@@ -430,7 +430,7 @@ class PurchaseOrderServiceIT extends ScmW5PgITBase {
         PurchaseDemandAllocationEntity existing =
                 allocationOf(submitted.getItems().getFirst().getId(), demand.getId());
         expectSqlFailure(
-                "INSERT INTO purchase_demand_allocation (purchase_demand_id, purchase_order_item_id, "
+                "INSERT INTO xsy_purchase_demand_allocation (purchase_demand_id, purchase_order_item_id, "
                         + "sales_order_id, sales_order_item_id, sku_id, allocated_quantity, created_by) "
                         + "VALUES (?, ?, ?, ?, ?, 1.0000, 'dup')",
                 existing.getPurchaseDemandId(), existing.getPurchaseOrderItemId(),

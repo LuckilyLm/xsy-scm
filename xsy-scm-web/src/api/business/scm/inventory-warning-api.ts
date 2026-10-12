@@ -8,7 +8,7 @@
  * 不是「全部」。`scan` 会给别人发站内信，因此单独用 `scm:inventory:warning:scan`
  * 授权；重复调用不会重复发信（同一次跃迁的 event_key 稳定）。
  */
-import {postRequest} from '/@/lib/axios';
+import {postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     InventoryWarning,
@@ -18,8 +18,8 @@ import type {
 
 export const inventoryWarningApi = {
     /** 预警列表；`status` 为空 → 只看异常。 */
-    query: (data: InventoryWarningQuery) =>
-        postRequest('/scm/inventory/warning/query', data) as unknown as Promise<
+    query: (data: InventoryWarningQuery, options?: RequestOptions) =>
+        postRequest('/scm/inventory/warning/query', data, options) as unknown as Promise<
             ScmResponse<ScmPage<InventoryWarning>>
         >,
 

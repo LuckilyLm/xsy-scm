@@ -127,15 +127,15 @@ class PricingIT extends ScmW3PgITBase {
     @Test
     void pricedButUnavailableAndGenuineMissingSku() {
         Long c = customer(), s = newOnShelfSku("B");
-        jdbc.update("UPDATE product_sku SET market_price=5,status='OFF_SHELF' WHERE id=?", s);
+        jdbc.update("UPDATE xsy_product_sku SET market_price=5,status='OFF_SHELF' WHERE id=?", s);
         var r = resolver.resolve(c, List.of(s), AT).getFirst();
         assertThat(r.getPriceStatus()).isEqualTo(ScmPriceStatusEnum.PRICED);
         assertThat(r.getUnitPrice()).isEqualByComparingTo("5");
         assertThat(r.getUnavailableReason()).isEqualTo(ScmUnavailableReasonEnum.SKU_OFF_SHELF);
         assertThat(r.getUnpricedReason()).isNull();
         expectCode(() -> resolver.requireResolvable(c, List.of(s), AT), 40949);
-        jdbc.update("UPDATE product_sku SET status='ON_SHELF' WHERE id=?", s);
-        jdbc.update("UPDATE customer SET visibility_policy='ALLOWLIST' WHERE id=?", c);
+        jdbc.update("UPDATE xsy_product_sku SET status='ON_SHELF' WHERE id=?", s);
+        jdbc.update("UPDATE xsy_customer SET visibility_policy='ALLOWLIST' WHERE id=?", c);
         sqlSession.clearCache();
         r = resolver.resolve(c, List.of(s), AT).getFirst();
         assertThat(r.getUnavailableReason()).isEqualTo(ScmUnavailableReasonEnum.NOT_VISIBLE);
@@ -203,7 +203,7 @@ class PricingIT extends ScmW3PgITBase {
         var rejected = service.submit(form);
         assertThat(rejected.committed()).isFalse();
         assertThat(rejected.failures()).extracting(PriceBatchRowFailureVO::code).contains(40030);
-        var count = jdbc.queryForObject("SELECT count(*) FROM customer_type_price WHERE customer_type_id=? AND sku_id=? AND deleted=FALSE", Long.class, typeId, sku);
+        var count = jdbc.queryForObject("SELECT count(*) FROM xsy_customer_type_price WHERE customer_type_id=? AND sku_id=? AND deleted=FALSE", Long.class, typeId, sku);
         assertThat(count).isZero();
         var successForm = new PriceBatchForm();
         successForm.setBatchKey(prefix + "-SUCCESS");

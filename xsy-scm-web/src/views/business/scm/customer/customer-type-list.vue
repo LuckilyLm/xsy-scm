@@ -114,7 +114,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    const response = await customerTypeApi.query({...filters});
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const response = await customerTypeApi.query({...filters}, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       rows.value = response.data.list;
       total.value = Number(response.data.total);
@@ -150,8 +151,8 @@ async function remove(row: CustomerType) {
     await customerTypeApi.delete(row.typeId, row.version);
     message.success('客户类型已删除');
     await load();
-  } catch (e) {
-    error.value = customerError(e);
+  } catch {
+    // 删除失败只走全局 toast
   }
 }
 

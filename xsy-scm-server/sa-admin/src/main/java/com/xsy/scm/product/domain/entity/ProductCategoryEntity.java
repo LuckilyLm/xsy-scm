@@ -12,7 +12,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 @Data
-@TableName(value = "product_category", autoResultMap = true)
+@TableName(value = "xsy_product_category", autoResultMap = true)
 public class ProductCategoryEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

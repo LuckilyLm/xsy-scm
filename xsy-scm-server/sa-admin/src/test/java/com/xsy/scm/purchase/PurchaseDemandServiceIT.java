@@ -29,14 +29,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <ul>
  *   <li><b>demand_date 派生</b>：{@code demand_date} = {@code source_confirmed_at} 在 Asia/Shanghai 下的日期，
  *       不是窗口起点（{@code date(startAt)}）；并由 V15 的 {@code ck_purchase_demand_date} 在库层复核；</li>
- *   <li><b>需求单位快照</b>：{@code demand_unit_snapshot} 来自 {@code sales_order_item.sale_unit_snapshot}（销售单位），
- *       与采购单位（{@code supplier_sku.purchase_unit}）是两个独立快照；</li>
+ *   <li><b>需求单位快照</b>：{@code demand_unit_snapshot} 来自 {@code xsy_sales_order_item.sale_unit_snapshot}（销售单位），
+ *       与采购单位（{@code xsy_supplier_sku.purchase_unit}）是两个独立快照；</li>
  *   <li><b>日志归属与重复汇总</b>：{@code DEMAND_GENERATE} 日志的两个 id 必须同时为空；
  *       同一来源行的重复汇总靠 {@code uk_purchase_demand_source_active} + {@code ON CONFLICT DO NOTHING} 收敛。</li>
  * </ul>
  *
  * <p><b>关于「并发 generate」</b>：本用例跑在一个 Spring 事务里，{@code generate} 的来源行
- * （{@code sales_order} / {@code sales_order_item}）是同一事务内新建的、对其它连接不可见，
+ * （{@code xsy_sales_order} / {@code xsy_sales_order_item}）是同一事务内新建的、对其它连接不可见，
  * 因此无法用两个线程真并发地驱动 {@code generate}（另一个线程查不到来源行）。
  * 这里改为确定性地验证收敛机制本身：唯一索引挡住第二条活动需求
  * （{@link #sourceUniqueIndexBlocksSecondActiveDemand}），
@@ -144,7 +144,7 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
 
         // 库层复核：V15 的 ck_purchase_demand_date 与 Java 侧派生口径必须逐行一致
         Integer mismatched = jdbc.queryForObject(
-                "SELECT count(*) FROM purchase_demand "
+                "SELECT count(*) FROM xsy_purchase_demand "
                         + "WHERE demand_date <> (source_confirmed_at AT TIME ZONE 'Asia/Shanghai')::date",
                 Integer.class);
         assertThat(mismatched).isZero();
@@ -243,7 +243,7 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
         PurchaseDemandEntity winner = myDemand(fixture);
 
         expectSqlFailure(
-                "INSERT INTO purchase_demand (sales_order_id, sales_order_item_id, spu_id, sku_id, "
+                "INSERT INTO xsy_purchase_demand (sales_order_id, sales_order_item_id, spu_id, sku_id, "
                         + "sales_order_no_snapshot, spu_code_snapshot, product_name_snapshot, sku_code_snapshot, "
                         + "sku_name_snapshot, demand_unit_snapshot, product_type_snapshot, required_quantity, "
                         + "allocated_quantity, warehouse_id, status, source_confirmed_at, demand_date, created_by) "
@@ -267,7 +267,7 @@ class PurchaseDemandServiceIT extends ScmW5PgITBase {
 
         Map<String, Object> log = jdbc.queryForMap(
                 "SELECT purchase_order_id, purchase_receipt_id, operation_type, operator, after_data "
-                        + "FROM purchase_operation_log WHERE operation_type = 'DEMAND_GENERATE' "
+                        + "FROM xsy_purchase_operation_log WHERE operation_type = 'DEMAND_GENERATE' "
                         + "ORDER BY id DESC LIMIT 1");
         assertThat(log.get("purchase_order_id")).isNull();
         assertThat(log.get("purchase_receipt_id")).isNull();

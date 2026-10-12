@@ -21,7 +21,7 @@
         <result column="updated_by" property="updatedBy"/>
     </resultMap>
     <select id="lock" resultMap="row">SELECT *
-                                      FROM order_return
+                                      FROM xsy_order_return
                                       WHERE id = #{id}
                                         AND deleted = FALSE FOR UPDATE</select>
     <!-- 父订单按主键联接，不放大分页行数；名称使用订单快照，可见性仍跟随订单归属。 -->
@@ -31,8 +31,8 @@
                r.status, r.reason, r.decision_reason, r.approved_amount,
                r.approved_at, r.rejected_at, r.cancelled_at, r.version, r.deleted,
                r.created_at, r.updated_at, r.created_by, r.updated_by
-        FROM order_return r
-        LEFT JOIN sales_order so ON so.id = r.order_id AND so.deleted = FALSE
+        FROM xsy_order_return r
+        LEFT JOIN xsy_sales_order so ON so.id = r.order_id AND so.deleted = FALSE
         WHERE r.deleted = FALSE
         <choose>
             <when test="scope != null and scope.all"/>

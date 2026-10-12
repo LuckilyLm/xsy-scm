@@ -34,7 +34,7 @@
     </select>
     <select id="countLiveSpu" resultType="int">
         SELECT count(*)
-        FROM product_spu p
+        FROM xsy_product_spu p
         WHERE p.id = #{spuId}
           AND p.deleted = FALSE
     </select>

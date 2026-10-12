@@ -17,11 +17,11 @@
         <result column="updated_by" property="updatedBy"/>
     </resultMap>
     <select id="lock" resultMap="row">SELECT *
-                                      FROM order_return_item
+                                      FROM xsy_order_return_item
                                       WHERE id = #{id}
                                         AND deleted = FALSE FOR UPDATE</select>
     <select id="list" resultMap="row">SELECT *
-                                      FROM order_return_item
+                                      FROM xsy_order_return_item
                                       WHERE return_id = #{id}
                                         AND deleted = FALSE
                                       ORDER BY id</select>
@@ -29,8 +29,8 @@
                                                                                     WHEN r.status = 'PENDING'
                                                                                         THEN i.requested_quantity
                                                                                     ELSE i.approved_quantity END), 0)
-                                                            FROM order_return_item i
-                                                                     JOIN order_return r ON r.id = i.return_id
+                                                            FROM xsy_order_return_item i
+                                                                     JOIN xsy_order_return r ON r.id = i.return_id
                                                             WHERE i.order_item_id = #{id}
                                                               AND i.deleted = FALSE
                                                               AND r.deleted = FALSE

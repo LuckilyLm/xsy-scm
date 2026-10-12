@@ -54,7 +54,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
     }
 
     private String customerCode(Long id) {
-        return jdbc.queryForObject("SELECT customer_code FROM customer WHERE id = ?", String.class, id);
+        return jdbc.queryForObject("SELECT customer_code FROM xsy_customer WHERE id = ?", String.class, id);
     }
 
     @Test
@@ -64,7 +64,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
 
         Map<String, Object> row = jdbc.queryForMap(
                 "SELECT status, version, deleted, settle_mode, credit_limit, created_by "
-                        + "FROM customer WHERE id = ?", id);
+                        + "FROM xsy_customer WHERE id = ?", id);
         assertThat(row.get("status")).isEqualTo("POTENTIAL");
         assertThat(((Number) row.get("version")).intValue()).isZero();
         assertThat(row.get("deleted")).isEqualTo(false);
@@ -109,9 +109,9 @@ class CustomerServiceIT extends ScmW2PgITBase {
 
         service.update(updateForm(id, 1));
 
-        assertThat(jdbc.queryForObject("SELECT status FROM customer WHERE id = ?", String.class, id))
+        assertThat(jdbc.queryForObject("SELECT status FROM xsy_customer WHERE id = ?", String.class, id))
                 .isEqualTo("SUSPENDED");
-        assertThat(jdbc.queryForObject("SELECT name FROM customer WHERE id = ?", String.class, id))
+        assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class, id))
                 .isEqualTo("改名");
     }
 
@@ -170,8 +170,8 @@ class CustomerServiceIT extends ScmW2PgITBase {
         deletion.setVersion(0);
         service.delete(deletion);
 
-        assertThat(jdbc.queryForObject("SELECT deleted FROM customer WHERE id = ?", Boolean.class, id)).isTrue();
-        assertThat(jdbc.queryForObject("SELECT version FROM customer WHERE id = ?", Integer.class, id))
+        assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_customer WHERE id = ?", Boolean.class, id)).isTrue();
+        assertThat(jdbc.queryForObject("SELECT version FROM xsy_customer WHERE id = ?", Integer.class, id))
                 .isEqualTo(1);
         expectCode(() -> service.require(id), 40430);
     }
@@ -184,7 +184,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
         byAmount.setCreditAmountThreshold("5000");
         Long amountId = service.add(byAmount);
         assertThat(jdbc.queryForObject(
-                "SELECT credit_amount_threshold FROM customer WHERE id = ?", BigDecimal.class, amountId))
+                "SELECT credit_amount_threshold FROM xsy_customer WHERE id = ?", BigDecimal.class, amountId))
                 .isEqualByComparingTo("5000.0000");
 
         CustomerAddForm byDay = form("A2");
@@ -193,9 +193,9 @@ class CustomerServiceIT extends ScmW2PgITBase {
         byDay.setCreditPeriodUnit("DAY");
         Long dayId = service.add(byDay);
         assertThat(jdbc.queryForObject(
-                "SELECT credit_period_value FROM customer WHERE id = ?", Integer.class, dayId)).isEqualTo(30);
+                "SELECT credit_period_value FROM xsy_customer WHERE id = ?", Integer.class, dayId)).isEqualTo(30);
         assertThat(jdbc.queryForObject(
-                "SELECT settle_day FROM customer WHERE id = ?", Integer.class, dayId)).isNull();
+                "SELECT settle_day FROM xsy_customer WHERE id = ?", Integer.class, dayId)).isNull();
 
         CustomerAddForm byMonth = form("A3");
         byMonth.setCreditPeriodType("BY_TIME");
@@ -204,7 +204,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
         byMonth.setSettleDay(15);
         Long monthId = service.add(byMonth);
         assertThat(jdbc.queryForObject(
-                "SELECT settle_day FROM customer WHERE id = ?", Integer.class, monthId)).isEqualTo(15);
+                "SELECT settle_day FROM xsy_customer WHERE id = ?", Integer.class, monthId)).isEqualTo(15);
     }
 
     @ParameterizedTest
@@ -252,7 +252,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
         CustomerUpdateForm child = updateForm(member, 0);
         child.setParentCustomerId(group);
         service.update(child);
-        assertThat(jdbc.queryForObject("SELECT parent_customer_id FROM customer WHERE id = ?", Long.class, member))
+        assertThat(jdbc.queryForObject("SELECT parent_customer_id FROM xsy_customer WHERE id = ?", Long.class, member))
                 .isEqualTo(group);
 
         // 自身作为上级
@@ -314,7 +314,7 @@ class CustomerServiceIT extends ScmW2PgITBase {
         form.setVisibilityPolicy("ALL_ENABLED");
         Long id = service.add(form);
         assertThat(jdbc.queryForObject(
-                "SELECT visibility_policy FROM customer WHERE id = ?", String.class, id)).isEqualTo("ALL_ENABLED");
+                "SELECT visibility_policy FROM xsy_customer WHERE id = ?", String.class, id)).isEqualTo("ALL_ENABLED");
     }
 
     @Test

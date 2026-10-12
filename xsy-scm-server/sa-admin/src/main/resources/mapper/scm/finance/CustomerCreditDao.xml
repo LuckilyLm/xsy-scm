@@ -5,21 +5,21 @@
         WITH balances AS (
             SELECT r.due_date,
                    GREATEST(r.amount - COALESCE(red.amount, 0) - COALESCE(wo.amount, 0), 0) AS open_amount
-            FROM finance_receivable r
-            LEFT JOIN LATERAL (SELECT SUM(amount) amount FROM finance_receivable x
+            FROM xsy_finance_receivable r
+            LEFT JOIN LATERAL (SELECT SUM(amount) amount FROM xsy_finance_receivable x
                 WHERE x.original_receivable_id=r.id AND x.entry_type='RED' AND x.deleted=FALSE) red ON TRUE
             LEFT JOIN LATERAL (SELECT SUM(CASE WHEN entry_type='NORMAL' THEN amount ELSE -amount END) amount
-                FROM finance_write_off x WHERE x.target_type='RECEIVABLE' AND x.target_id=r.id AND x.deleted=FALSE) wo ON TRUE
+                FROM xsy_finance_write_off x WHERE x.target_type='RECEIVABLE' AND x.target_id=r.id AND x.deleted=FALSE) wo ON TRUE
             WHERE r.settlement_customer_id=#{settlementCustomerId} AND r.entry_type='NORMAL' AND r.deleted=FALSE
         )
         SELECT COALESCE(SUM(open_amount),0) AS open_receivable_amount,
                MIN(due_date) FILTER (WHERE open_amount &gt; 0 AND due_date &lt;
                    (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date) AS earliest_overdue_date,
-               (SELECT COALESCE(SUM(o.settlement_total_amount),0) FROM sales_order o
+               (SELECT COALESCE(SUM(o.settlement_total_amount),0) FROM xsy_sales_order o
                 WHERE o.settlement_customer_id=#{settlementCustomerId} AND o.status='CONFIRMED' AND o.deleted=FALSE
-                  AND NOT EXISTS (SELECT 1 FROM finance_receivable r WHERE r.source_type='SALES_ORDER'
+                  AND NOT EXISTS (SELECT 1 FROM xsy_finance_receivable r WHERE r.source_type='SALES_ORDER'
                       AND r.source_id=o.id AND r.deleted=FALSE)) AS confirmed_order_amount,
-               NOT EXISTS (SELECT 1 FROM sales_order o
+               NOT EXISTS (SELECT 1 FROM xsy_sales_order o
                    WHERE o.settlement_customer_id=#{settlementCustomerId} AND o.deleted=FALSE
                    <choose>
                        <when test="scope.all">AND FALSE</when>

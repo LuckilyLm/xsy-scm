@@ -88,7 +88,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
     private Long sourceIdSeed() {
         return jdbc.queryForObject(
                 "SELECT GREATEST(nextval('inventory_reservation_id_seq'), "
-                        + "(SELECT COALESCE(MAX(source_document_item_id), 0) FROM inventory_reservation) / 100 + 1) * 100",
+                        + "(SELECT COALESCE(MAX(source_document_item_id), 0) FROM xsy_inventory_reservation) / 100 + 1) * 100",
                 Long.class);
     }
 
@@ -193,7 +193,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
 
     private int reservationCountByStatus(Long warehouseId, Long skuId, String status) {
         Integer count = jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_reservation "
+                "SELECT count(*) FROM xsy_inventory_reservation "
                         + "WHERE warehouse_id = ? AND sku_id = ? AND status = ? AND deleted = FALSE",
                 Integer.class, warehouseId, skuId, status);
         return count == null ? 0 : count;
@@ -205,7 +205,7 @@ class ScmInventoryReservationConcurrencyIT extends ScmW6PgITBase {
      */
     private int reservationRowsForItem(Long itemId) {
         Integer count = jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_reservation "
+                "SELECT count(*) FROM xsy_inventory_reservation "
                         + "WHERE source_document_type = 'SALES_ORDER_ITEM' "
                         + "AND source_document_item_id = ? AND deleted = FALSE",
                 Integer.class, itemId);

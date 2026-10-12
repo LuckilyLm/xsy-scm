@@ -254,7 +254,7 @@ ScmBusinessMetricsService
 
 1. **`screen/ScreenDataMapper.xml`**：不得再存在目标经营 KPI 的独立聚合 SQL（这些 `select` 应已删除，只留大屏专属的聚合）。
 2. **`report/ReportDao.xml`**：允许保留自己的 SQL（范围策略不同），但**口径必须与 metrics 一致** —— 断言销售聚合用 `confirmed_at` + 结算金额列 + `CONFIRMED`，采购状态必须来自 `committedStatuses` 参数而不是字面量。
-3. **`dashboard` 模块**：不得直接访问 `sales_order` / `purchase_order` 写统计 SQL（只许调 metrics service）。
+3. **`dashboard` 模块**：不得直接访问 `xsy_sales_order` / `xsy_purchase_order` 写统计 SQL（只许调 metrics service）。
 4. **PG IT 结果一致性守卫**：同一区间下，metrics service 与各消费端返回值必须相等；用例覆盖 0 值、跨日边界（23:50 创建 / 次日确认）与数据范围收窄。
 
 规则 1–3 走源码契约（可被注入违规打红），规则 4 走 IT。
@@ -272,7 +272,7 @@ ScmBusinessMetricsService
 | 出口 | 销售 | 采购 |
 | --- | --- | --- |
 | 大屏 | 按业务员收窄（`scopeSo`） | 按采购归属 ∩ 仓库收窄（`scopePo`） |
-| 报表概览 / 采购分析 | **完全不收窄**（`sales_order` 没有仓库列，可见性由页面权限承担） | **只按仓库收窄** |
+| 报表概览 / 采购分析 | **完全不收窄**（`xsy_sales_order` 没有仓库列，可见性由页面权限承担） | **只按仓库收窄** |
 
 强行统一到 metrics 的范围语义会撞两堵墙（都实测过）：
 
@@ -302,7 +302,7 @@ ScmBusinessMetricsService
 | --- | --- | --- |
 | `GET /scm/dashboard/overview` | KPI 卡列表 | 今日销售额 / 今日订单 / 今日采购额 / 今日收货 / 库存预警 |
 | `GET /scm/dashboard/trend?metric=sales\|purchase\|inventory&range=7d\|30d` | 薄 VO：`{metric, range, dates, primarySeries, secondarySeries}` | 主 / 次两条序列由 metric 决定；不再复制 `ScreenTrendVO` 的八条序列 |
-| `GET /scm/dashboard/ranking?dimension=customer\|product&limit=5` | `List<RankItem>` | metrics 已取回 TOP10，这里只截断（`limit` 默认 5、上限 10） |
+| `GET /scm/dashboard/ranking?dimension=xsy_customer\|product&limit=5` | `List<RankItem>` | metrics 已取回 TOP10，这里只截断（`limit` 默认 5、上限 10） |
 | `GET /scm/dashboard/inventory-health` | `{total, normal, low, high, unconfigured, outOfStock}` | 供首页的库存健康卡；直接取 `metricsService.inventory(scope).health()`，不新增 SQL |
 
 **「库存预警」卡片与「库存健康」是两个指标，不能互相替代**：

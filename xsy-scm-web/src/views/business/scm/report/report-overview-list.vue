@@ -76,7 +76,7 @@
   <a-card size="small" :bordered="false" class="smart-margin-top10">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button v-privilege="PERM.EXPORT" @click="exportDaily">导出</a-button>
+        <a-button v-privilege="PERM.EXPORT" :loading="dailyExport.exporting" @click="exportDaily">导出</a-button>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
@@ -176,6 +176,7 @@ import {
 } from './report-model';
 import {moneyText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
+import {useScmExport} from '../common/use-scm-export';
 import {reportError} from './report-errors';
 import {useReportPermission} from './use-report-permission';
 import type {DateRange} from './report-model';
@@ -238,6 +239,7 @@ const COST_INDEXES = ['purchaseInCostAmount'];
 const visibleColumns = computed(() => filterCostColumns(columns.value, COST_INDEXES, canViewCost.value));
 
 const query = computed(() => buildReportQuery<OverviewQuery>(dateRange.value, {...filters}));
+const dailyExport = useScmExport();
 
 const kpiCards = computed(() => {
     const data = overview.value ?? {};
@@ -324,10 +326,12 @@ async function queryAll() {
     error.value = '';
     const payload = query.value;
     try {
+        // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+        const quiet = {suppressGlobalErrorMessage: true};
         const [overviewResponse, trendResponse, dailyResponse] = await Promise.all([
-            reportOverviewApi.overview(payload),
-            reportOverviewApi.trend(payload),
-            reportOverviewApi.daily(payload),
+            reportOverviewApi.overview(payload, quiet),
+            reportOverviewApi.trend(payload, quiet),
+            reportOverviewApi.daily(payload, quiet),
         ]);
         if (id !== requestId) {
             return;
@@ -352,7 +356,7 @@ function onSearch() {
 
 /** 导出每日统计：与列表同一筛选、同一查询方法，成本 / 仓库字段按当前权限同样抹除。 */
 function exportDaily() {
-    void reportOverviewApi.dailyExport(query.value);
+    void dailyExport.run(() => reportOverviewApi.dailyExport(query.value));
 }
 
 function resetQuery() {

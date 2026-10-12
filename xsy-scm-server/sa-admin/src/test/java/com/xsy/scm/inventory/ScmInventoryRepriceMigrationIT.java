@@ -94,7 +94,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         Long id = conversionService.create(form);
         InventoryConversionAuditForm audit = new InventoryConversionAuditForm();
         audit.setVersion(jdbc.queryForObject(
-                "SELECT version FROM inventory_conversion WHERE id = ?", Integer.class, id));
+                "SELECT version FROM xsy_inventory_conversion WHERE id = ?", Integer.class, id));
         conversionService.approve(id, audit);
     }
 
@@ -109,13 +109,13 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         assertThat(keepSkuIds).as("候选集合必须留下至少一个本用例自己的行").isNotEmpty();
         String placeholders = keepSkuIds.stream().map(id -> "?").collect(Collectors.joining(","));
         // 拼进去的只有 "?" 占位符本身，SKU id 一律走绑定参数。
-        jdbc.update("UPDATE inventory_balance SET avg_cost = 0.0001 "
+        jdbc.update("UPDATE xsy_inventory_balance SET avg_cost = 0.0001 "
                 + "WHERE deleted = FALSE AND quantity > 0 AND avg_cost = 0 "
                 + "AND sku_id NOT IN (" + placeholders + ")", keepSkuIds.toArray());
     }
 
     private void setAvgCost(Long warehouseId, Long skuId, String avgCost) {
-        jdbc.update("UPDATE inventory_balance SET avg_cost = ? WHERE warehouse_id = ? AND sku_id = ? "
+        jdbc.update("UPDATE xsy_inventory_balance SET avg_cost = ? WHERE warehouse_id = ? AND sku_id = ? "
                 + "AND deleted = FALSE", new BigDecimal(avgCost), warehouseId, skuId);
         evictMybatisCache();
     }
@@ -135,7 +135,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         int from = sql.indexOf("-- Step 2");
         assertThat(from).as("%s 中找不到 %s（标记被改名了？）", V37, "-- Step 2")
                 .isGreaterThanOrEqualTo(0);
-        jdbc.execute(sql.substring(from));
+        jdbc.execute(toCurrentTableNames(sql.substring(from)));
     }
 
     private void runV37() {
@@ -156,7 +156,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
     private void insertMovement(Long warehouseId, Long skuId, String movementType,
                                 String sourceDocumentType, Long sourceItemId,
                                 String quantity, String unitCost) {
-        jdbc.update("INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type, "
+        jdbc.update("INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type, "
                         + "source_document_type, source_document_id, source_document_item_id, "
                         + "quantity, unit_snapshot, unit_cost, before_quantity, after_quantity, "
                         + "occurred_at, operator, deleted) "
@@ -168,7 +168,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
     }
 
     private void insertZeroCostBalance(Long warehouseId, Long skuId, String quantity) {
-        jdbc.update("INSERT INTO inventory_balance (warehouse_id, sku_id, unit, quantity, "
+        jdbc.update("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, "
                         + "reserved_quantity, avg_cost, version, deleted) "
                         + "VALUES (?, ?, 'kg', ?, 0, 0, 0, FALSE)", warehouseId, skuId,
                 new BigDecimal(quantity));
@@ -233,7 +233,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         Long wh2 = newWarehouse("V37C");
         Long sku = stockedInSeed("v37c", "10.0000");
         // 目标仓已有该 SKU、均价 1.0000（与源仓不同价）：调入后均价是被加权过的非零值。
-        jdbc.update("INSERT INTO inventory_balance (warehouse_id, sku_id, unit, quantity, "
+        jdbc.update("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, "
                 + "reserved_quantity, avg_cost, version, deleted) "
                 + "VALUES (?, ?, 'kg', 10, 0, 1.0000, 0, FALSE)", wh2, sku);
         evictMybatisCache();
@@ -264,7 +264,7 @@ class ScmInventoryRepriceMigrationIT extends ScmW6PgITBase {
         isolateCandidates(List.of(sku));
         setAvgCost(wh2, sku, "0.0000");
         // 把存量数量改成流水加不出来的值：这行已经坏到不能用账本定价。
-        jdbc.update("UPDATE inventory_balance SET quantity = quantity + 1 "
+        jdbc.update("UPDATE xsy_inventory_balance SET quantity = quantity + 1 "
                 + "WHERE warehouse_id = ? AND sku_id = ? AND deleted = FALSE", wh2, sku);
         evictMybatisCache();
 

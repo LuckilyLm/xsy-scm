@@ -47,11 +47,11 @@ import org.springframework.transaction.annotation.Transactional;
  * （客户退款付款）。客户付款必须对应退款来源；不接受无来源的客户付款。
  *
  * <p>
- * <b>退款付款不冲减应收</b>：Return 已经通过红字应收处理过应收，本命令只表达「钱真的付出去了」，因此绝不写 {@code finance_write_off}、绝不改任何
- * {@code finance_receivable} 行 —— 否则同一笔退货被冲减两次。
+ * <b>退款付款不冲减应收</b>：Return 已经通过红字应收处理过应收，本命令只表达「钱真的付出去了」，因此绝不写 {@code xsy_finance_write_off}、绝不改任何
+ * {@code xsy_finance_receivable} 行 —— 否则同一笔退货被冲减两次。
  *
  * <p>
- * <b>不设第二套幂等基建</b>：复用既有 {@code idempotency_record} 与 {@link ScmIdempotencyService}（三段式同一事务）。
+ * <b>不设第二套幂等基建</b>：复用既有 {@code xsy_idempotency_record} 与 {@link ScmIdempotencyService}（三段式同一事务）。
  */
 @Service
 @RequiredArgsConstructor
@@ -350,7 +350,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 模式 B：客户退款付款。来源必须是 {@code ORDER_REFUND}，退款必须 {@code COMPLETED}，金额与对方必须与 {@code order_refund} <b>逐值一致</b>。
+     * 模式 B：客户退款付款。来源必须是 {@code ORDER_REFUND}，退款必须 {@code COMPLETED}，金额与对方必须与 {@code xsy_order_refund} <b>逐值一致</b>。
      */
     private void fillCustomerRefund(FinancePaymentEntity payment, FinancePaymentAddForm form, BigDecimal amount) {
         if (!ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name().equals(StringUtils.trimToNull(form.getSourceType()))

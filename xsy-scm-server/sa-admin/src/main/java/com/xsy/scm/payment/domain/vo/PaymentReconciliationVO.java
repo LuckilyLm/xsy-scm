@@ -2,6 +2,7 @@ package com.xsy.scm.payment.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -55,6 +56,7 @@ public class PaymentReconciliationVO {
 
     private OffsetDateTime createdAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
 
     /** 逐条差异；平账批次为空。 */

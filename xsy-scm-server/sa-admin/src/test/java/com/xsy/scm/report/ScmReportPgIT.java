@@ -208,7 +208,7 @@ class ScmReportPgIT extends ScmW6PgITBase {
     /** 一级分类：它只能靠 {@code cat2 / cat3} 谓词命中，因此是分类筛选最有代表性的一条。 */
     private Long anyRootCategoryId() {
         List<Long> ids = jdbc.queryForList(
-                "SELECT id FROM product_category WHERE deleted = FALSE AND level = 1 ORDER BY id LIMIT 1",
+                "SELECT id FROM xsy_product_category WHERE deleted = FALSE AND level = 1 ORDER BY id LIMIT 1",
                 Long.class);
         return ids.isEmpty() ? null : ids.get(0);
     }
@@ -254,7 +254,7 @@ class ScmReportPgIT extends ScmW6PgITBase {
         assertThat(salesSettlementAmountOf(customerId)).isNull();
 
         // 确认之后：同一行数据翻成 CONFIRMED + confirmed_at 落在区间内即被统计
-        jdbc.update("UPDATE sales_order SET status = 'CONFIRMED', confirmed_at = ? WHERE id = ?",
+        jdbc.update("UPDATE xsy_sales_order SET status = 'CONFIRMED', confirmed_at = ? WHERE id = ?",
                 insideRange(), orderId);
         assertThat(confirmedOrderCountOf(customerId)).isEqualTo(1L);
         assertThat(salesSettlementAmountOf(customerId)).isEqualByComparingTo("100.0000");
@@ -275,8 +275,8 @@ class ScmReportPgIT extends ScmW6PgITBase {
     void avgPriceIsNullWhenConfirmedQuantityMissing() {
         Long customerId = 900_000_002L;
         Long orderId = insertSalesOrder("CONFIRMED", insideRange(), customerId);
-        jdbc.update("UPDATE sales_order_item i SET actual_quantity = NULL, settlement_line_amount = 0 "
-                + "FROM sales_order o WHERE i.order_id = o.id AND o.id = ?", orderId);
+        jdbc.update("UPDATE xsy_sales_order_item i SET actual_quantity = NULL, settlement_line_amount = 0 "
+                + "FROM xsy_sales_order o WHERE i.order_id = o.id AND o.id = ?", orderId);
 
         SalesReportVO.ProductRow row = salesProductRowOf(orderId);
         assertThat(row).isNotNull();
@@ -294,7 +294,7 @@ class ScmReportPgIT extends ScmW6PgITBase {
 
         assertThat(purchaseSubmittedAmountOf(supplierId)).isEqualByComparingTo("0.0000");
 
-        jdbc.update("UPDATE purchase_order SET status = 'SUBMITTED', submitted_at = ? WHERE id = ?",
+        jdbc.update("UPDATE xsy_purchase_order SET status = 'SUBMITTED', submitted_at = ? WHERE id = ?",
                 insideRange(), orderId);
         assertThat(purchaseSubmittedAmountOf(supplierId)).isEqualByComparingTo("88.0000");
 
@@ -444,13 +444,13 @@ class ScmReportPgIT extends ScmW6PgITBase {
 
     private Long insertSalesOrder(String status, OffsetDateTime confirmedAt, Long customerId) {
         jdbc.update("""
-                INSERT INTO sales_order(order_no, customer_id, customer_code_snapshot, customer_name_snapshot,
+                INSERT INTO xsy_sales_order(order_no, customer_id, customer_code_snapshot, customer_name_snapshot,
                                         settlement_customer_id, settlement_customer_name_snapshot,
                                         order_source, status, settle_mode_snapshot, ordered_total_amount,
                                         settlement_total_amount, confirmed_at)
                 VALUES (?, ?, ?, ?, ?, ?, 'ADMIN', ?, 'INDEPENDENT', 0, 0, ?)""",
                 tag + "-SO", customerId, tag + "-CODE", tag + "-客户", customerId, tag + "-客户", status, confirmedAt);
-        Long orderId = jdbc.queryForObject("SELECT id FROM sales_order WHERE order_no = ?", Long.class,
+        Long orderId = jdbc.queryForObject("SELECT id FROM xsy_sales_order WHERE order_no = ?", Long.class,
                 tag + "-SO");
         insertSalesItem(orderId, new BigDecimal("100.0000"));
         return orderId;
@@ -459,7 +459,7 @@ class ScmReportPgIT extends ScmW6PgITBase {
     private void insertSalesItem(Long orderId, BigDecimal settlementLineAmount) {
         long sku = 900_000_100L + fixtureSeq.incrementAndGet();
         jdbc.update("""
-                INSERT INTO sales_order_item(order_id, spu_id, sku_id, spu_code_snapshot, product_name_snapshot,
+                INSERT INTO xsy_sales_order_item(order_id, spu_id, sku_id, spu_code_snapshot, product_name_snapshot,
                                              sku_code_snapshot, spec_name_snapshot, sale_unit_snapshot,
                                              product_type_snapshot, ordered_quantity, actual_quantity,
                                              draft_unit_price, draft_price_source, manual_price_override,
@@ -473,7 +473,7 @@ class ScmReportPgIT extends ScmW6PgITBase {
     private void insertRefund(Long orderId, Long customerId, String status, OffsetDateTime completedAt) {
         long seq = fixtureSeq.incrementAndGet();
         jdbc.update("""
-                INSERT INTO order_refund(refund_no, return_id, order_id, customer_id, refund_amount, status,
+                INSERT INTO xsy_order_refund(refund_no, return_id, order_id, customer_id, refund_amount, status,
                                          completed_at)
                 VALUES (?, ?, ?, ?, 7.0000, ?, ?)""",
                 tag + "-RF-" + seq, 900_000_300L + seq, orderId, customerId, status, completedAt);
@@ -485,16 +485,16 @@ class ScmReportPgIT extends ScmW6PgITBase {
         boolean cancelled = "CANCELLED".equals(status);
         String orderNo = tag + "-PO-" + supplierId + "-" + status;
         jdbc.update("""
-                INSERT INTO purchase_order(order_no, supplier_id, supplier_code_snapshot, supplier_name_snapshot,
+                INSERT INTO xsy_purchase_order(order_no, supplier_id, supplier_code_snapshot, supplier_name_snapshot,
                                            warehouse_id, warehouse_code_snapshot, warehouse_name_snapshot,
                                            status, total_amount, submitted_at, planned_arrival_date,
                                            cancelled_at, cancel_reason)
                 VALUES (?, ?, ?, ?, 1, 'WH001', '默认仓库', ?, 88.0000, ?, ?, ?, ?)""",
                 orderNo, supplierId, tag + "-SC", tag + "-供应商", status, submittedAt, end(),
                 cancelled ? insideRange() : null, cancelled ? "报表测试取消" : null);
-        Long orderId = jdbc.queryForObject("SELECT id FROM purchase_order WHERE order_no = ?", Long.class, orderNo);
+        Long orderId = jdbc.queryForObject("SELECT id FROM xsy_purchase_order WHERE order_no = ?", Long.class, orderNo);
         jdbc.update("""
-                INSERT INTO purchase_order_item(purchase_order_id, spu_id, sku_id, spu_code_snapshot,
+                INSERT INTO xsy_purchase_order_item(purchase_order_id, spu_id, sku_id, spu_code_snapshot,
                                                 product_name_snapshot, sku_code_snapshot, sku_name_snapshot,
                                                 purchase_unit_snapshot, product_type_snapshot, planned_quantity,
                                                 received_quantity, purchase_price, line_amount)
@@ -537,7 +537,7 @@ class ScmReportPgIT extends ScmW6PgITBase {
 
     private SalesReportVO.ProductRow salesProductRowOf(Long orderId) {
         evictMybatisCache();
-        Long skuId = jdbc.queryForObject("SELECT sku_id FROM sales_order_item WHERE order_id = ? LIMIT 1",
+        Long skuId = jdbc.queryForObject("SELECT sku_id FROM xsy_sales_order_item WHERE order_id = ? LIMIT 1",
                 Long.class, orderId);
         ScmSalesReportQueryForm form = page(new ScmSalesReportQueryForm());
         form.setStartDate(start());

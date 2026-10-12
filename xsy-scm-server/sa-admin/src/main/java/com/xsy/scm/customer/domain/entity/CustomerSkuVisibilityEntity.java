@@ -10,7 +10,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 @Data
-@TableName("customer_sku_visibility")
+@TableName("xsy_customer_sku_visibility")
 public class CustomerSkuVisibilityEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

@@ -18,7 +18,7 @@ import lombok.Data;
  * {@code amount} 是<b>显式给出</b>的应付金额，不由订单金额推断：一张订单可能只收一部分， 也可能拆成「余额 + 在线支付」两条资金来源（各自一条意图）。
  */
 @Data
-@TableName("payment_intent")
+@TableName("xsy_payment_intent")
 public class PaymentIntentEntity {
 
     @TableId(type = IdType.AUTO)

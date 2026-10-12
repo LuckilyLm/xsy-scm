@@ -2,6 +2,7 @@ package com.xsy.scm.promotion.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -13,9 +14,7 @@ import lombok.Data;
  * 订单已冻结优惠的读模型。
  *
  * <p>
- * 只读：优惠一旦冻结就是不可变快照（表上有触发器），因此这里没有写入形态，也不提供「改优惠」的入口。
- * 订单详情嵌这个对象回答「这单当时按什么规则减了多少、用了哪张券」；退款反向与对账都从同一份快照读，
- * 不会按当前活动重算。
+ * 只读：优惠一旦冻结就是不可变快照（表上有触发器），因此这里没有写入形态，也不提供「改优惠」的入口。 订单详情嵌这个对象回答「这单当时按什么规则减了多少、用了哪张券」；退款反向与对账都从同一份快照读， 不会按当前活动重算。
  */
 @Data
 public class OrderDiscountVO {
@@ -48,8 +47,7 @@ public class OrderDiscountVO {
      * 其中的限时特价让利额。
      *
      * <p>
-     * 与 {@link #discountAmount} 是「其中」的关系（表上有 CHECK 保证不大于合计）：
-     * 单独暴露才能回答「原基础价多少、特价让了多少、最后多少」。
+     * 与 {@link #discountAmount} 是「其中」的关系（表上有 CHECK 保证不大于合计）： 单独暴露才能回答「原基础价多少、特价让了多少、最后多少」。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal specialDiscountAmount;
@@ -61,6 +59,7 @@ public class OrderDiscountVO {
 
     private OffsetDateTime createdAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
 
     /** 逐行分摊：退款按这份分摊反向，不用退款时的当前活动重算。 */

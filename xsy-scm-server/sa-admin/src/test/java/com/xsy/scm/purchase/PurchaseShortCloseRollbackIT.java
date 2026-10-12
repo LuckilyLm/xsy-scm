@@ -82,7 +82,7 @@ class PurchaseShortCloseRollbackIT extends ScmW5PgITBase {
      */
     private Map<String, Object> orderRow(Long orderId) {
         return jdbc.queryForMap("SELECT status, version, short_close_reason, short_closed_at"
-                + " FROM purchase_order WHERE id=?", orderId);
+                + " FROM xsy_purchase_order WHERE id=?", orderId);
     }
 
     private int shortCloseLogs(Long orderId) {
@@ -90,7 +90,7 @@ class PurchaseShortCloseRollbackIT extends ScmW5PgITBase {
     }
 
     private int logCount(Long orderId, String operationType) {
-        return jdbc.queryForObject("SELECT count(*) FROM purchase_operation_log"
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_purchase_operation_log"
                 + " WHERE purchase_order_id=? AND operation_type=?", Integer.class, orderId, operationType);
     }
 }

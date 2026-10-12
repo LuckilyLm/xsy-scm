@@ -27,14 +27,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>两条命令的锁序原本不一致，这是本类存在的全部理由：
  * <ul>
  * <li>{@code demand.allocate}：修复前是「锁需求（第 1 层）→ 无锁读采购单」；</li>
- * <li>{@code purchase_order.cancel}：锁采购单 → 释放分配（内含锁需求，升序）→ 置 CANCELLED。</li>
+ * <li>{@code xsy_purchase_order.cancel}：锁采购单 → 释放分配（内含锁需求，升序）→ 置 CANCELLED。</li>
  * </ul>
  *
  * <p>修复前的幻读窗口：{@code cancel} 读「本单没有分配」→ 无分配时早退、不取需求锁 →
  * {@code allocate} 插入并提交 → {@code cancel} 提交 CANCELLED。结果是一条挂在已 CANCELLED
  * 采购单上的活分配，且需求 {@code allocated_quantity} 只增不减。
  *
- * <p>修复方式是把 {@code allocate} 改成与其它命令**同向**：先锁采购单行、再锁需求行。
+ * <p>修复方式是把 {@code allocate} 改成与其它命令同向：先锁采购单行、再锁需求行。
  * 于是分配与取消在单据行上串行，窗口不存在。早期「先取单锁会与 update 成环」的判断是错的 ——
  * update 本来就是「单 → 需求」，同向才是对齐。
  *

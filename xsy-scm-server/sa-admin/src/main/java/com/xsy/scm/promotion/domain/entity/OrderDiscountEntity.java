@@ -15,14 +15,13 @@ import lombok.Data;
  * 订单优惠冻结。
  *
  * <p>
- * 一个订单至多一份（唯一约束）。活动快照与券快照一起冻结：退款按原分摊反向，不用退款时的
- * 当前活动重算 —— 否则「双十一买的单」在双十二退款会得到另一个优惠金额。
+ * 一个订单至多一份（唯一约束）。活动快照与券快照一起冻结：退款按原分摊反向，不用退款时的 当前活动重算 —— 否则「双十一买的单」在双十二退款会得到另一个优惠金额。
  *
  * <p>
  * 表上有触发器拒绝改动金额、分摊与快照。
  */
 @Data
-@TableName(value = "order_discount", autoResultMap = true)
+@TableName(value = "xsy_order_discount", autoResultMap = true)
 public class OrderDiscountEntity {
 
     @TableId(type = IdType.AUTO)
@@ -50,8 +49,8 @@ public class OrderDiscountEntity {
      * 其中的限时特价让利额（正数）。
      *
      * <p>
-     * 它已经包含在 {@link #discountAmount} 与 {@code allocations} 里，单独落一列是为了能直接回答
-     * 「这个月限时特价让利多少」，不必回读快照 JSON。表上有 CHECK：不得大于合计优惠。
+     * 它已经包含在 {@link #discountAmount} 与 {@code allocations} 里，单独落一列是为了能直接回答 「这个月限时特价让利多少」，不必回读快照 JSON。表上有
+     * CHECK：不得大于合计优惠。
      */
     private BigDecimal specialDiscountAmount;
 

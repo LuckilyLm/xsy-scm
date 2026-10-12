@@ -116,10 +116,10 @@ class ScmInventoryStocktakeRollbackIT extends ScmW6PgITBase {
 
         // 单据仍是草稿、明细仍在 —— 用户修掉冲突行之后可以直接重试
         assertThat(jdbc.queryForObject(
-                "SELECT status FROM inventory_stocktake WHERE id = ?", String.class, id))
+                "SELECT status FROM xsy_inventory_stocktake WHERE id = ?", String.class, id))
                 .isEqualTo("DRAFT");
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_stocktake_item WHERE stocktake_id = ? AND deleted = FALSE",
+                "SELECT count(*) FROM xsy_inventory_stocktake_item WHERE stocktake_id = ? AND deleted = FALSE",
                 Integer.class, id)).isEqualTo(2);
 
         // 失败原因是那一行，不是别的东西坏了：把实盘改成与预留兼容后整单可以正常确认
@@ -130,7 +130,7 @@ class ScmInventoryStocktakeRollbackIT extends ScmW6PgITBase {
         assertThat(balanceRow(wh, second).getQuantity()).isEqualByComparingTo("10.0000");
         assertThat(stocktakeMovements(wh, first)).hasSize(1);
         assertThat(jdbc.queryForObject(
-                "SELECT status FROM inventory_stocktake WHERE id = ?", String.class, id))
+                "SELECT status FROM xsy_inventory_stocktake WHERE id = ?", String.class, id))
                 .isEqualTo("CONFIRMED");
     }
 
@@ -148,7 +148,7 @@ class ScmInventoryStocktakeRollbackIT extends ScmW6PgITBase {
         Long id = stocktakeService.create(form);
 
         // 确认之前出库 7 → 确认瞬间账面 3，delta 仍以快照 10 为基线 = −10 → after = −7
-        jdbc.update("UPDATE inventory_balance SET quantity = 3 WHERE warehouse_id = ? AND sku_id = ?",
+        jdbc.update("UPDATE xsy_inventory_balance SET quantity = 3 WHERE warehouse_id = ? AND sku_id = ?",
                 wh, sku);
         evictMybatisCache();
 
@@ -157,7 +157,7 @@ class ScmInventoryStocktakeRollbackIT extends ScmW6PgITBase {
         assertThat(balanceRow(wh, sku).getQuantity()).isEqualByComparingTo("3.0000");
         assertThat(stocktakeMovements(wh, sku)).isEmpty();
         assertThat(jdbc.queryForObject(
-                "SELECT status FROM inventory_stocktake WHERE id = ?", String.class, id))
+                "SELECT status FROM xsy_inventory_stocktake WHERE id = ?", String.class, id))
                 .isEqualTo("DRAFT");
     }
 }

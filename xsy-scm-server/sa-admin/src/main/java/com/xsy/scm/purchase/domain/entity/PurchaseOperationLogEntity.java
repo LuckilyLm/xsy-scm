@@ -25,10 +25,10 @@ import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
  * {@code CREATE/UPDATE/SUBMIT/CANCEL/SHORT_CLOSE/DELETE} 只有采购单 id · {@code RECEIPT_*} 双 id 非空。
  *
  * <p>
- * {@code beforeData} / {@code afterData} 写<b>全量快照</b>，格式与订单域的 {@code order_operation_log} 一致。
+ * {@code beforeData} / {@code afterData} 写<b>全量快照</b>，格式与订单域的 {@code xsy_order_operation_log} 一致。
  */
 @Data
-@TableName(value = "purchase_operation_log", autoResultMap = true)
+@TableName(value = "xsy_purchase_operation_log", autoResultMap = true)
 public class PurchaseOperationLogEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

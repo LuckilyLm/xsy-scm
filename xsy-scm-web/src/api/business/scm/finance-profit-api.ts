@@ -1,4 +1,4 @@
-import {postDownload, postRequest} from '/@/lib/axios';
+import {postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {ReportDateQuery, ReportId, ReportPage} from '/@/views/business/scm/report/report-types';
 
@@ -40,9 +40,9 @@ export interface FinanceProfitSummary {
 
 const base = '/scm/report/finance/profit';
 export const financeProfitApi = {
-    query: (data: FinanceProfitQuery) =>
-        postRequest(`${base}/query`, data) as unknown as Promise<ScmResponse<ScmPage<FinanceProfitRow>>>,
-    summary: (data: Partial<FinanceProfitQuery>) =>
-        postRequest(`${base}/summary`, data) as unknown as Promise<ScmResponse<FinanceProfitSummary>>,
+    query: (data: FinanceProfitQuery, options?: RequestOptions) =>
+        postRequest(`${base}/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<FinanceProfitRow>>>,
+    summary: (data: Partial<FinanceProfitQuery>, options?: RequestOptions) =>
+        postRequest(`${base}/summary`, data, options) as unknown as Promise<ScmResponse<FinanceProfitSummary>>,
     export: (data: Partial<FinanceProfitQuery>) => postDownload(`${base}/export`, data),
 };

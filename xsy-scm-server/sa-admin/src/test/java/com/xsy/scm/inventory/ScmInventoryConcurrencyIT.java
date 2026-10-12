@@ -149,7 +149,7 @@ class ScmInventoryConcurrencyIT extends ScmW6PgITBase {
      */
     private List<Map<String, Object>> movementsInLockOrder(Long warehouseId, Long skuId) {
         return jdbc.queryForList(
-                "SELECT * FROM inventory_movement "
+                "SELECT * FROM xsy_inventory_movement "
                         + "WHERE warehouse_id = ? AND sku_id = ? AND deleted = FALSE ORDER BY id",
                 warehouseId, skuId);
     }

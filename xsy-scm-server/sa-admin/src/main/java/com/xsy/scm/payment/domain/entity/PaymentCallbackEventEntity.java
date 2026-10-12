@@ -23,7 +23,7 @@ import lombok.Data;
  * 这张表没有 {@code version} / {@code deleted}：事实表只有追加。
  */
 @Data
-@TableName(value = "payment_callback_event", autoResultMap = true)
+@TableName(value = "xsy_payment_callback_event", autoResultMap = true)
 public class PaymentCallbackEventEntity {
 
     @TableId(type = IdType.AUTO)

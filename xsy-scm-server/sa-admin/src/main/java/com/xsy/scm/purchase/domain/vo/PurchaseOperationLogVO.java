@@ -1,5 +1,8 @@
 package com.xsy.scm.purchase.domain.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+import com.xsy.scm.common.json.ScmOperatorSnapshotSerializer;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -18,9 +21,12 @@ public class PurchaseOperationLogVO {
     private Long purchaseOrderId;
     private Long purchaseReceiptId;
     private String operationType;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String operator;
     private String reason;
+    @JsonSerialize(using = ScmOperatorSnapshotSerializer.class)
     private Map<String, Object> beforeData;
+    @JsonSerialize(using = ScmOperatorSnapshotSerializer.class)
     private Map<String, Object> afterData;
     private OffsetDateTime createdAt;
 }

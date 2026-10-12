@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.balance.dao.CustomerBalanceRechargeDao">
 
     <select id="selectByIdForUpdate" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceRechargeEntity">
-        SELECT * FROM customer_balance_recharge
+        SELECT * FROM xsy_customer_balance_recharge
         WHERE id = #{rechargeId}
           AND deleted = FALSE
         FOR UPDATE

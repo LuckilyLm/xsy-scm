@@ -41,7 +41,7 @@ test('录单页把草稿恢复 / 历史复用接在既有 Drawer，创建成功�
 
 test('历史复用只读 GET detail，不引入后端复制命令', () => {
   const drawer = code('../src/views/business/scm/order/components/order-form-drawer.vue');
-  assert.match(drawer, /orderApi\.detail\(id\)/);
+  assert.match(drawer, /orderApi\.detail\(id\b/);
   assert.match(drawer, /fromHistory/);
   const api = code('../src/api/business/scm/order-api.ts');
   assert.doesNotMatch(api, /\bcopy\b|\bduplicate\b|\bclone\b/i);

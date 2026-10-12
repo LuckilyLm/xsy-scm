@@ -1,9 +1,11 @@
 <!--
   * 首页欢迎区
   *
-  * 只保留「现在是谁、今天几号、能去哪里」：问候语、日期与部门、业务快捷入口、刷新数据、运营大屏。
-  * 天气、农历节气、毒鸡汤、上次登录与 IP 属于个人兴趣或安全信息，不占工作台首屏。
-  * 运营大屏入口按 scm:screen:query 显隐 —— 它的路由不拦人，只有接口会拒绝。
+  * 只保留「现在是谁、今天几号」：问候语、日期与部门，右侧是品牌插画。
+  * 快捷入口（新建订单 / 客户 / 采购 / 商品）、运营大屏入口与手动刷新都不再占首屏 ——
+  * 前四个在左侧菜单与各列表页都有；大屏入口按 scm:screen:query 显隐，属于少数人的视图；
+  * 首页各区块挂载时自己取数，浏览器刷新即可重新拉取。
+  * 天气、农历节气、毒鸡汤、上次登录与 IP 属于个人兴趣或安全信息，同样不占工作台首屏。
 -->
 <template>
   <a-card
@@ -17,38 +19,15 @@
           <p class="home-welcome__meta">{{ dayInfo }}</p>
         </div>
       </div>
-      <div class="home-welcome__tools">
-        <quick-entries/>
-        <div class="home-welcome__actions">
-          <a-button v-if="canScreen" @click="gotoScreen">
-            <template #icon>
-              <bar-chart-outlined/>
-            </template>
-            运营大屏
-          </a-button>
-          <a-button type="primary" :loading="refreshing" @click="emit('refresh')">
-            <template #icon>
-              <reload-outlined/>
-            </template>
-            刷新数据
-          </a-button>
-        </div>
-      </div>
     </div>
   </a-card>
 </template>
 
 <script setup lang="ts">
 import {computed} from 'vue';
-import {useRouter} from 'vue-router';
 import {useUserStore} from '/@/store/modules/system/user';
-import QuickEntries from './components/quick-entries.vue';
 import {homeAsset} from './home-assets';
 
-defineProps<{canScreen: boolean; refreshing: boolean}>();
-const emit = defineEmits(['refresh']);
-
-const router = useRouter();
 const userStore = useUserStore();
 
 const departmentName = computed(() => userStore.departmentName);
@@ -82,11 +61,6 @@ const dayInfo = computed(() => {
   }
   return parts.join(' · ');
 });
-
-function gotoScreen() {
-  void router.push('/screen');
-}
-
 </script>
 
 <style lang="less" scoped>
@@ -128,7 +102,6 @@ function gotoScreen() {
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 20px;
     flex-wrap: wrap;
   }
@@ -158,21 +131,6 @@ function gotoScreen() {
     color: var(--scm-text-secondary);
   }
 
-  .home-welcome__actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .home-welcome__tools {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 10px;
-    min-width: 0;
-    max-width: 100%;
-  }
-
   @media (max-width: 767px) {
     min-height: 212px;
     background-position: 68% center;
@@ -188,10 +146,6 @@ function gotoScreen() {
       min-height: 212px;
       align-items: flex-start;
       padding: 20px;
-    }
-
-    .home-welcome__tools {
-      align-items: flex-start;
     }
 
     .home-welcome__title {

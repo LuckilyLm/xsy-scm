@@ -8,7 +8,7 @@
  * 配置路径不会、也不应该创建余额行（否则就会造出「没有任何流水支撑的余额行」）。
  * 因此这里没有「确认 / 审批」这类动作，改配置立即生效（预警是读时计算的，天然实时）。
  */
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -18,8 +18,8 @@ import type {
 } from '/@/views/business/scm/inventory/inventory-types';
 
 export const inventoryWarningThresholdApi = {
-    query: (data: InventoryWarningThresholdQuery) =>
-        postRequest('/scm/inventory/threshold/query', data) as unknown as Promise<
+    query: (data: InventoryWarningThresholdQuery, options?: RequestOptions) =>
+        postRequest('/scm/inventory/threshold/query', data, options) as unknown as Promise<
             ScmResponse<ScmPage<InventoryWarningThreshold>>
         >,
     detail: (id: Id) =>

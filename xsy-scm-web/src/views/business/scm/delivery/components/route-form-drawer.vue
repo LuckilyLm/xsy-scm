@@ -131,7 +131,12 @@ async function open(route?: DeliveryRoute) {
       : {routeName: '', deliveryDate: dayjs().format('YYYY-MM-DD')};
   departure.value = route?.plannedDepartureTime ? dayjs(route.plannedDepartureTime).format('YYYY-MM-DD HH:mm:ss') : undefined;
   try {
-    const [w, d, v] = await Promise.all([deliveryApi.warehouses(), deliveryApi.drivers(), deliveryApi.vehicles()]);
+    // 选项加载失败由抽屉内 Alert 承担，不再让全局 toast 重复说一遍
+    const [w, d, v] = await Promise.all([
+      deliveryApi.warehouses({suppressGlobalErrorMessage: true}),
+      deliveryApi.drivers({suppressGlobalErrorMessage: true}),
+      deliveryApi.vehicles({suppressGlobalErrorMessage: true}),
+    ]);
     warehouses.value = w.data;
     drivers.value = d.data;
     vehicles.value = v.data;
@@ -164,8 +169,8 @@ async function save() {
     visible.value = false;
     message.success('线路已保存');
     emit('saved', savedId);
-  } catch (e) {
-    error.value = deliveryError(e);
+  } catch {
+    // 保存失败只走全局 toast；抽屉里的 error 留给选项加载失败
   } finally {
     saving.value = false;
   }

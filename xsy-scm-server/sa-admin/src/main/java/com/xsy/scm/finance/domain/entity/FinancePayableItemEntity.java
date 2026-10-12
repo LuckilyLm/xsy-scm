@@ -7,11 +7,11 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 
 /**
- * 应付明细：一条 {@code purchase_receipt_item} 一行；手工红字明细来源为 {@code MANUAL} 且无来源行。
+ * 应付明细：一条 {@code xsy_purchase_receipt_item} 一行；手工红字明细来源为 {@code MANUAL} 且无来源行。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("finance_payable_item")
+@TableName("xsy_finance_payable_item")
 public class FinancePayableItemEntity extends FinanceRecord {
 
     private Long payableId;
@@ -23,7 +23,7 @@ public class FinancePayableItemEntity extends FinanceRecord {
     private String sourceType;
 
     /**
-     * 正常 = {@code purchase_receipt_item.id}；{@code MANUAL} 时<b>必须为 {@code null}</b>。
+     * 正常 = {@code xsy_purchase_receipt_item.id}；{@code MANUAL} 时<b>必须为 {@code null}</b>。
      */
     private Long sourceId;
 
@@ -44,7 +44,7 @@ public class FinancePayableItemEntity extends FinanceRecord {
     private BigDecimal quantity;
 
     /**
-     * = {@code purchase_order_item.purchase_price}，语义为「当前采购业务确认使用的结算单价」， <b>不含</b>含税 / 未税 / 税额 / 可抵扣税额中的任何含义。
+     * = {@code xsy_purchase_order_item.purchase_price}，语义为「当前采购业务确认使用的结算单价」， <b>不含</b>含税 / 未税 / 税额 / 可抵扣税额中的任何含义。
      */
     private BigDecimal unitPrice;
 

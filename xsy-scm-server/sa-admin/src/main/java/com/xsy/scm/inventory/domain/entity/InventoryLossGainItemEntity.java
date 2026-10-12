@@ -23,7 +23,7 @@ import java.time.OffsetDateTime;
  * <b>{@code unitSnapshot} 在审批通过时写入</b>（= 该 (仓库, SKU) 的余额记账单位），待审核态允许为空 —— 与出库单 / 盘点单明细同一取向。
  */
 @Data
-@TableName(value = "inventory_loss_gain_item", autoResultMap = true)
+@TableName(value = "xsy_inventory_loss_gain_item", autoResultMap = true)
 public class InventoryLossGainItemEntity {
 
     @TableId(type = IdType.AUTO)

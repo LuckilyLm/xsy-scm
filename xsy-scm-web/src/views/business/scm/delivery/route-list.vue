@@ -1,71 +1,68 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
-    <a-form-item label="配送日期">
-      <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD"/>
-    </a-form-item>
-    <a-form-item label="线路">
-      <a-input v-model:value="query.keyword" placeholder="线路名称 / 编号" allow-clear @pressEnter="search"/>
-    </a-form-item>
-    <a-form-item label="状态">
-      <a-select v-model:value="query.status" :options="statusOptions" allow-clear class="filter-select"/>
-    </a-form-item>
-    <a-form-item label="仓库"
-    >
-      <a-select
-          v-model:value="query.warehouseId"
-          :options="warehouses.map((w) => ({ value: w.id, label: w.name }))"
-          allow-clear
-          class="filter-select"
-      />
-    </a-form-item>
-    <a-form-item label="司机"
-    >
-      <a-select
-          v-model:value="query.driverId"
-          :options="drivers.map((d) => ({ value: d.id, label: d.driverName }))"
-          allow-clear
-          class="filter-select"
-      />
-    </a-form-item>
-    <a-form-item label="车辆"
-    >
-      <a-select
-          v-model:value="query.vehicleId"
-          :options="vehicles.map((v) => ({ value: v.id, label: v.vehicleNo }))"
-          allow-clear
-          class="filter-select"
-      />
-    </a-form-item>
-    <a-form-item label="省市区">
-      <AreaCascader v-model:value="area" type="province_city_district" @change="changeArea"/>
-    </a-form-item>
-    <a-form-item
-    >
-      <a-space
+    <a-row class="smart-query-form-row">
+      <a-form-item label="配送日期">
+        <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD"/>
+      </a-form-item>
+      <a-form-item label="线路">
+        <a-input v-model:value="query.keyword" placeholder="线路名称 / 编号" allow-clear @pressEnter="search"/>
+      </a-form-item>
+      <a-form-item label="状态">
+        <a-select v-model:value="query.status" :options="statusOptions" allow-clear class="filter-select"/>
+      </a-form-item>
+      <a-form-item label="仓库"
       >
-        <a-button type="primary" @click="search" v-privilege="'scm:delivery:route:query'">查询
-        </a-button
+        <a-select
+            v-model:value="query.warehouseId"
+            :options="warehouses.map((w) => ({ value: w.id, label: w.name }))"
+            allow-clear
+            class="filter-select"
+        />
+      </a-form-item>
+      <a-form-item label="司机"
+      >
+        <a-select
+            v-model:value="query.driverId"
+            :options="drivers.map((d) => ({ value: d.id, label: d.driverName }))"
+            allow-clear
+            class="filter-select"
+        />
+      </a-form-item>
+      <a-form-item label="车辆"
+      >
+        <a-select
+            v-model:value="query.vehicleId"
+            :options="vehicles.map((v) => ({ value: v.id, label: v.vehicleNo }))"
+            allow-clear
+            class="filter-select"
+        />
+      </a-form-item>
+      <a-form-item label="省市区">
+        <AreaCascader v-model:value="area" type="province_city_district" @change="changeArea"/>
+      </a-form-item>
+      <a-form-item class="smart-query-form-item"
+      >
+        <a-space
         >
-        <a-button @click="reset">重置</a-button>
-      </a-space
-      >
-    </a-form-item
-    >
+          <a-button type="primary" @click="search" v-privilege="'scm:delivery:route:query'">查询
+          </a-button>
+          <a-button @click="reset">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-row>
   </a-form>
   <a-alert v-if="error" :message="error" type="error" show-icon
   >
     <template #action>
       <a-button @click="load">重试</a-button>
     </template>
-  </a-alert
-  >
+  </a-alert>
   <a-alert v-if="optionsError" :message="optionsError" type="warning" show-icon
   >
     <template #action>
       <a-button @click="loadOptions">重载筛选项</a-button>
     </template>
-  </a-alert
-  >
+  </a-alert>
   <a-card size="small" :bordered="false">
     <div class="smart-table-btn-block">
       <a-button type="primary" v-privilege="'scm:delivery:route:add'" @click="formDrawer?.open()">新建线路</a-button>
@@ -309,7 +306,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    const result = await deliveryApi.routes(query);
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const result = await deliveryApi.routes(query, {suppressGlobalErrorMessage: true});
     if (current === generation) {
       rows.value = result.data.list;
       total.value = result.data.total;
@@ -324,7 +322,11 @@ async function load() {
 async function loadOptions() {
   optionsError.value = '';
   try {
-    const [w, d, v] = await Promise.all([deliveryApi.warehouses(), deliveryApi.drivers(), deliveryApi.vehicles()]);
+    const [w, d, v] = await Promise.all([
+      deliveryApi.warehouses({suppressGlobalErrorMessage: true}),
+      deliveryApi.drivers({suppressGlobalErrorMessage: true}),
+      deliveryApi.vehicles({suppressGlobalErrorMessage: true}),
+    ]);
     warehouses.value = w.data;
     drivers.value = d.data;
     vehicles.value = v.data;

@@ -231,7 +231,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await warehouseApi.query(queryForm);
+    // 列表加载失败由页头的 Alert 承担（带重试），不再让全局 toast 重复说一遍
+    const r = await warehouseApi.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -309,8 +310,8 @@ async function save() {
     }
     visible.value = false;
     await queryData();
-  } catch (e) {
-    formError.value = purchaseError(e);
+  } catch {
+    // 保存失败只走全局 toast；这里只保留「未定位」这类本地前置校验的提示
   } finally {
     saving.value = false;
   }
@@ -321,26 +322,22 @@ async function enable(row: Warehouse) {
     await warehouseApi.enable({id: row.id, version: row.version!});
     message.success('仓库已启用');
     await queryData();
-  } catch (e) {
-    error.value = purchaseError(e);
+  } catch {
+    // 状态机动作失败只走全局 toast，不往页头 Alert 上再写一条
   }
 }
 
-/** 停用失败会把后端真实原因（库存余额 / 在途采购单 / 待入库收货单）显示给用户。 */
+/** 停用是严格模式命令，后端会挡下仍有库存余额 / 在途采购单 / 待入库收货单的仓库。 */
 function disable(row: Warehouse) {
   Modal.confirm({
     title: '停用该仓库？',
     content: '停用后不能再用于新的采购需求、采购单与收货单。',
     okType: 'danger',
     onOk: async () => {
-      try {
-        await warehouseApi.disable({id: row.id, version: row.version!});
-        message.success('仓库已停用');
-        await queryData();
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
-      }
+      // 失败时拒绝以保留确认框，原因由全局 toast 给出（库存余额 / 在途采购单 / 待入库收货单）
+      await warehouseApi.disable({id: row.id, version: row.version!});
+      message.success('仓库已停用');
+      await queryData();
     },
   });
 }

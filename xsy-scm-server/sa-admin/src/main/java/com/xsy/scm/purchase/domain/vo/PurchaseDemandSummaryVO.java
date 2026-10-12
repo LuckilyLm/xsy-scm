@@ -31,14 +31,14 @@ public class PurchaseDemandSummaryVO {
     private String productName;
 
     /**
-     * 规格名（{@code product_sku.spec_name}）。
+     * 规格名（{@code xsy_product_sku.spec_name}）。
      */
     private String skuName;
 
     private String categoryName;
 
     /**
-     * 需求单位（订单销售单位快照，来自 {@code sales_order_item.sale_unit_snapshot}）。
+     * 需求单位（订单销售单位快照，来自 {@code xsy_sales_order_item.sale_unit_snapshot}）。
      */
     private String demandUnit;
 

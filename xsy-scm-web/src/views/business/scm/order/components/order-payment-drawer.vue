@@ -97,7 +97,9 @@ async function submit() {
     created.value = (await paymentApi.create(data, key)).data;
     keys.delete(signature); amount.value = '';
     if (queried.value) await load(1);
-  } catch (cause) { error.value = financeError(cause); }
+  } catch {
+    // 发起支付失败只走全局 toast
+  }
   finally { saving.value = false; }
 }
 async function load(page: number) {
@@ -105,14 +107,17 @@ async function load(page: number) {
   const current = ++generation;
   loading.value = true; error.value = ''; queried.value = true; detail.value = undefined;
   try {
-    const response = await paymentApi.query(order.value.orderId, page);
+    const response = await paymentApi.query(order.value.orderId, page, {suppressGlobalErrorMessage: true});
     if (current === generation) { rows.value = response.data.list; total.value = response.data.total; pageNum.value = page; }
   } catch (cause) { if (current === generation) error.value = financeError(cause); }
   finally { if (current === generation) loading.value = false; }
 }
 async function showDetail(row: PaymentIntent) {
   const current = ++generation; loading.value = false; error.value = ''; detail.value = undefined;
-  try { const response = await paymentApi.detail(row.id); if (current === generation) detail.value = response.data; }
+  try {
+    const response = await paymentApi.detail(row.id, {suppressGlobalErrorMessage: true});
+    if (current === generation) detail.value = response.data;
+  }
   catch (cause) { if (current === generation) error.value = financeError(cause); }
 }
 defineExpose({open});

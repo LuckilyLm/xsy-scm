@@ -78,7 +78,7 @@
     </div>
   </a-card>
   <a-modal title="价格变更详情" :open="!!selected" :footer="null" :width="760" @cancel="selected=undefined">
-    <ScmDiffTable :before="selected?.beforeData" :after="selected?.afterData"/>
+    <ScmDiffTable :before="selected?.beforeData" :after="selected?.afterData" :scope="selected?.operationType"/>
   </a-modal>
 </template>
 <script setup lang="ts">
@@ -140,13 +140,14 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
     const r = await pricingApi.history({
       ...query,
       effectiveFrom: effective.value?.[0] || null,
       effectiveTo: effective.value?.[1] || null,
       operatedFrom: operated.value?.[0] || null,
       operatedTo: operated.value?.[1] || null
-    });
+    }, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       rows.value = r.data.list;
       total.value = r.data.total;

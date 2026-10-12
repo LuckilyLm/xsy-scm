@@ -18,7 +18,7 @@ import lombok.Data;
  * 改余额靠追加反向流水，绝不修改历史行（库上有 append-only CHECK）。
  */
 @Data
-@TableName("customer_balance_movement")
+@TableName("xsy_customer_balance_movement")
 public class CustomerBalanceMovementEntity {
 
     @TableId(type = IdType.AUTO)

@@ -18,7 +18,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  *
  * <p>与 {@code FinanceReadOnlyContractTest} 的分工：那边扫源码文本，钉住「财务域不写业务表」
  * 这条 SQL 级事实；这里看编译产物的类型依赖，钉住分层方向与跨域引用。两者不重叠 ——
- * 一句 {@code UPDATE sales_order} 不产生任何类型依赖，而一次注入 DAO 也不产生任何 SQL 文本。
+ * 一句 {@code UPDATE xsy_sales_order} 不产生任何类型依赖，而一次注入 DAO 也不产生任何 SQL 文本。
  *
  * <p>The importer checks both the SmartAdmin SCM package and {@code com.xsy.scm};
  * {@link #importedSourceSetIsNotEmpty} prevents an empty or misconfigured import from

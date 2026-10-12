@@ -447,7 +447,7 @@ public class DeliveryRouteService {
      * 订单级签收：{@code IN_TRANSIT → SIGNED | EXCEPTION}。
      *
      * <p>
-     * 本方法先锁线路行，再按 {@code route → sales_order} 的顺序锁被签订单行。与退货批准共用订单行锁，确保签收与批准按同一顺序串行，避免遗漏红字应收。线路内某一单的行级并发另外由
+     * 本方法先锁线路行，再按 {@code route → xsy_sales_order} 的顺序锁被签订单行。与退货批准共用订单行锁，确保签收与批准按同一顺序串行，避免遗漏红字应收。线路内某一单的行级并发另外由
      * {@code version} 乐观锁 + 条件更新兜底 （{@code markSigned} 返回 0 即「有人比你先签了」）。签收是单向推进（{@code PENDING / IN_TRANSIT}
      * 只能走向终态），因此完成线路所要求的 「全部活动订单已终态」对并发签收是单调的。
      *

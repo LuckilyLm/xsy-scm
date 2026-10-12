@@ -14,17 +14,14 @@ import lombok.Data;
  * 电子秤事件：设备事件 → 稳定读数 → 人工接受。
  *
  * <p>
- * <b>设备读数不是分拣结果</b>：本表只是把设备上报的事实记下来（设备、原始读数、单位、
- * 稳定判定、采集与接收时间），只有人工 {@code accept} 才会写进分拣结果并回填
- * {@code acceptedQuantity} / {@code acceptedBy} / {@code acceptedAt}。把「设备说多少就多少」
- * 直接写进分拣结果，等于让一台未经校准的秤决定发货数量。
+ * <b>设备读数不是分拣结果</b>：本表只是把设备上报的事实记下来（设备、原始读数、单位、 稳定判定、采集与接收时间），只有人工 {@code accept} 才会写进分拣结果并回填 {@code acceptedQuantity}
+ * / {@code acceptedBy} / {@code acceptedAt}。把「设备说多少就多少」 直接写进分拣结果，等于让一台未经校准的秤决定发货数量。
  *
  * <p>
- * {@code eventKey} 唯一：同一读数重复上报只落一行，重复上报按成功返回既有记录 ——
- * 设备在弱网下会重试，把它当错误会让设备一直重试。
+ * {@code eventKey} 唯一：同一读数重复上报只落一行，重复上报按成功返回既有记录 —— 设备在弱网下会重试，把它当错误会让设备一直重试。
  */
 @Data
-@TableName(value = "sorting_scale_event")
+@TableName(value = "xsy_sorting_scale_event")
 public class SortingScaleEventEntity {
 
     @TableId(type = IdType.AUTO)

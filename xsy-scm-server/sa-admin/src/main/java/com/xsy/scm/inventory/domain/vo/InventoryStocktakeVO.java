@@ -3,6 +3,7 @@ package com.xsy.scm.inventory.domain.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -40,6 +41,7 @@ public class InventoryStocktakeVO {
 
     private OffsetDateTime confirmedAt;
 
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String operator;
 
     private Integer version;

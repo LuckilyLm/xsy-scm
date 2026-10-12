@@ -11,8 +11,8 @@ import java.util.List;
  * 称重记录（<b>只追加</b>；：无 {@code version} / {@code deleted}；：无 {@code scale_precision}）。
  *
  * <p>
- * <b>刻意只有 insert 与 select</b>：审计事实不可修改、不可删除。缺少 update / delete 方法本身就是「只追加」这一不变量的实现 （与 {@code purchase_operation_log}
- * 同一纪律）。
+ * <b>刻意只有 insert 与 select</b>：审计事实不可修改、不可删除。缺少 update / delete 方法本身就是「只追加」这一不变量的实现 （与
+ * {@code xsy_purchase_operation_log} 同一纪律）。
  */
 @Mapper
 public interface ReceiptWeighingRecordDao extends BaseMapper<ReceiptWeighingRecordEntity> {

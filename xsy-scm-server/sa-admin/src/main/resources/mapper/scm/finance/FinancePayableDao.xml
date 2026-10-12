@@ -17,7 +17,7 @@
     <insert id="insertOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinancePayableEntity"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO finance_payable (payable_no, source_type, source_id, purchase_order_id,
+        INSERT INTO xsy_finance_payable (payable_no, source_type, source_id, purchase_order_id,
                                      supplier_id, supplier_name_snapshot, entry_type,
                                      original_payable_id, amount, event_at, reason,
                                      version, deleted, created_at, updated_at, created_by, updated_by)
@@ -39,9 +39,9 @@
                p.entry_type AS entryType,
                p.amount,
                po.purchaser_id AS purchaserId
-        FROM finance_payable p
-        LEFT JOIN purchase_receipt pr ON pr.id = p.source_id AND pr.deleted = FALSE
-        LEFT JOIN purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+        FROM xsy_finance_payable p
+        LEFT JOIN xsy_purchase_receipt pr ON pr.id = p.source_id AND pr.deleted = FALSE
+        LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
         WHERE p.id IN
         <foreach collection="targetIds" item="targetId" open="(" separator="," close=")">
             #{targetId}
@@ -62,9 +62,9 @@
                p.entry_type AS entryType,
                p.amount,
                po.purchaser_id AS purchaserId
-        FROM finance_payable p
-        LEFT JOIN purchase_receipt pr ON pr.id = p.source_id AND pr.deleted = FALSE
-        LEFT JOIN purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+        FROM xsy_finance_payable p
+        LEFT JOIN xsy_purchase_receipt pr ON pr.id = p.source_id AND pr.deleted = FALSE
+        LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
         WHERE p.id = #{targetId}
           AND p.entry_type = 'NORMAL'
           AND p.deleted = FALSE
@@ -73,7 +73,7 @@
 
     <select id="selectRedAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(amount), 0)
-        FROM finance_payable
+        FROM xsy_finance_payable
         WHERE original_payable_id = #{originalPayableId}
           AND entry_type = 'RED'
           AND deleted = FALSE
@@ -81,7 +81,7 @@
 
     <select id="selectActiveById" resultType="com.xsy.scm.finance.domain.entity.FinancePayableEntity">
         SELECT *
-        FROM finance_payable
+        FROM xsy_finance_payable
         WHERE id = #{payableId}
           AND deleted = FALSE
     </select>
@@ -119,17 +119,17 @@
                     ELSE 'PARTIAL' END AS settleState,
                p.event_at AS eventAt, p.due_date AS dueDate,
                p.reason
-        FROM finance_payable p
-        LEFT JOIN finance_payable original ON original.id = p.original_payable_id
+        FROM xsy_finance_payable p
+        LEFT JOIN xsy_finance_payable original ON original.id = p.original_payable_id
             AND original.deleted = FALSE
-        LEFT JOIN finance_payable normalSource ON normalSource.id =
+        LEFT JOIN xsy_finance_payable normalSource ON normalSource.id =
             CASE WHEN p.entry_type = 'RED' THEN p.original_payable_id ELSE p.id END
             AND normalSource.entry_type = 'NORMAL' AND normalSource.deleted = FALSE
-        LEFT JOIN purchase_receipt pr ON pr.id = normalSource.source_id AND pr.deleted = FALSE
-        LEFT JOIN purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
+        LEFT JOIN xsy_purchase_receipt pr ON pr.id = normalSource.source_id AND pr.deleted = FALSE
+        LEFT JOIN xsy_purchase_order po ON po.id = pr.purchase_order_id AND po.deleted = FALSE
         LEFT JOIN LATERAL (
             SELECT COALESCE(SUM(red.amount), 0) AS redAmount
-            FROM finance_payable red
+            FROM xsy_finance_payable red
             WHERE red.original_payable_id = p.id
               AND red.entry_type = 'RED'
               AND red.deleted = FALSE
@@ -140,7 +140,7 @@
                 WHEN wo.entry_type = 'REVERSE' THEN -wo.amount
                 ELSE 0
             END), 0) AS writtenOffAmount
-            FROM finance_write_off wo
+            FROM xsy_finance_write_off wo
             WHERE wo.target_type = 'PAYABLE'
               AND wo.target_id = p.id
               AND wo.deleted = FALSE

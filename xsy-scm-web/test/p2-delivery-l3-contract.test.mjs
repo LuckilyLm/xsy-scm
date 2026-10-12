@@ -145,7 +145,7 @@ test('整条线路零实发时 outboundNo 为 null，那是成功不是失败', 
 
 test('打印保持原样：预览 GET + 两个计次 POST，面板里没有任何 L3 动作', () => {
   assert.ok(printPane, '缺打印面板');
-  assert.match(api, /print: \(id: Id\) => call<RoutePrint>\('get', `\/routes\/\$\{id\}\/print`\)/);
+  assert.match(api, /print: \(id: Id[^)]*\) => call<RoutePrint>\('get', `\/routes\/\$\{id\}\/print`/);
   assert.match(printPane, /@click="emit\('recordPrint'\)"/);
   for (const forbidden of [
     'dispatch',

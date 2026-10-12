@@ -18,7 +18,7 @@
     -->
     <insert id="insertOnConflictDoNothing"
             parameterType="com.xsy.scm.inventory.domain.entity.InventoryMovementEntity">
-        INSERT INTO inventory_movement (warehouse_id, sku_id, movement_type,
+        INSERT INTO xsy_inventory_movement (warehouse_id, sku_id, movement_type,
                                         source_document_type, source_document_id, source_document_item_id,
                                         quantity, unit_snapshot, unit_cost,
                                         before_quantity, after_quantity, occurred_at, operator,
@@ -65,44 +65,44 @@
         k.spec_name AS sku_name,
         k.spec_values,
         p.name AS product_name
-        FROM inventory_movement m
-        LEFT JOIN purchase_receipt r
+        FROM xsy_inventory_movement m
+        LEFT JOIN xsy_purchase_receipt r
         ON r.id = m.source_document_id
         AND m.source_document_type = 'PURCHASE_RECEIPT_ITEM'
         -- 出库波次：SALES_OUT 流水的来源单号取出库单号。
         -- 同样带类型判定 —— 否则一旦两条来源的 id 撞上，会把出库单号显示成收货单号。
-        LEFT JOIN inventory_outbound ob
+        LEFT JOIN xsy_inventory_outbound ob
         ON ob.id = m.source_document_id
         AND m.source_document_type = 'SALES_OUTBOUND_ITEM'
         -- 盘点波次：盘盈/盘亏流水的来源单号取盘点单号。
         -- 与上面两条 join 互斥（靠 source_document_type 判定），因此用 COALESCE 合并成一个展示列，
         -- 前端不必为三种来源各写一个「来源单号」字段。
-        LEFT JOIN inventory_stocktake st
+        LEFT JOIN xsy_inventory_stocktake st
         ON st.id = m.source_document_id
         AND m.source_document_type = 'STOCKTAKE_ITEM'
         -- 报损报溢波次：LOSS_REPORT / GAIN_REPORT 流水的来源单号取报损报溢单号。
         -- 报损与报溢共用同一个来源类型（LOSS_GAIN_ITEM），方向由 movement_type 区分。
-        LEFT JOIN inventory_loss_gain lg
+        LEFT JOIN xsy_inventory_loss_gain lg
         ON lg.id = m.source_document_id
         AND m.source_document_type = 'LOSS_GAIN_ITEM'
         -- 调拨波次：TRANSFER_OUT / TRANSFER_IN 流水的来源单号取调拨单号。
         -- 调拨占两个来源类型（同一条明细行产生两条流水），两个条件都要列上，
         -- 否则转出或转入会有一半查不到来源单号。
-        LEFT JOIN inventory_transfer tr
+        LEFT JOIN xsy_inventory_transfer tr
         ON tr.id = m.source_document_id
         AND m.source_document_type IN ('TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM')
         -- 规格转换波次：CONVERT_OUT / CONVERT_IN 流水的来源单号取转换单号。
         -- 同样占两个来源类型（同一条明细行产生两条流水），两个条件都要列上。
-        LEFT JOIN inventory_conversion cv
+        LEFT JOIN xsy_inventory_conversion cv
         ON cv.id = m.source_document_id
         AND m.source_document_type IN ('CONVERT_OUT_ITEM', 'CONVERT_IN_ITEM')
         -- 销售退货入库流水以退货单为头级来源，展示退货单号。
-        LEFT JOIN order_return returned
+        LEFT JOIN xsy_order_return returned
         ON returned.id = m.source_document_id
         AND m.source_document_type = 'SALES_RETURN_RECEIPT_ITEM'
-        LEFT JOIN warehouse w ON w.id = m.warehouse_id
-        LEFT JOIN product_sku k ON k.id = m.sku_id
-        LEFT JOIN product_spu p ON p.id = k.spu_id
+        LEFT JOIN xsy_warehouse w ON w.id = m.warehouse_id
+        LEFT JOIN xsy_product_sku k ON k.id = m.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE m.deleted = FALSE
         <!-- 仓库数据范围：流水按所属仓库判定，与 created_by 无关（历史回填行 created_by 为 NULL
              也照常可见）。scope 缺失时必须是恒假，否则漏传范围的调用点会静默变成全仓可见。 -->
@@ -152,7 +152,7 @@
     <select id="selectBySourceItem"
             resultType="com.xsy.scm.inventory.domain.entity.InventoryMovementEntity">
         SELECT *
-        FROM inventory_movement
+        FROM xsy_inventory_movement
         WHERE deleted = FALSE
           AND source_document_type = #{sourceDocumentType}
           AND source_document_item_id = #{sourceDocumentItemId}
@@ -160,7 +160,7 @@
 
     <select id="countActiveBySourceItem" resultType="int">
         SELECT count(*)
-        FROM inventory_movement
+        FROM xsy_inventory_movement
         WHERE deleted = FALSE
           AND source_document_type = #{sourceDocumentType}
           AND source_document_item_id = #{sourceDocumentItemId}
@@ -168,8 +168,8 @@
 
     <select id="listSalesOutAllocations" resultType="com.xsy.scm.inventory.domain.entity.InventoryMovementEntity">
         SELECT m.*
-        FROM inventory_movement m
-        JOIN inventory_outbound_item oi ON oi.id = m.source_document_item_id AND oi.deleted = FALSE
+        FROM xsy_inventory_movement m
+        JOIN xsy_inventory_outbound_item oi ON oi.id = m.source_document_item_id AND oi.deleted = FALSE
         WHERE m.deleted = FALSE
           AND m.movement_type = 'SALES_OUT'
           AND m.source_document_type = 'SALES_OUTBOUND_ITEM'

@@ -74,8 +74,7 @@
 &lt;!--
   * {{ formData.description }}
   *
---&gt;</pre
-            >
+--&gt;</pre>
           </div>
           <div class="preview-title">前端Js文件注释</div>
           <div>
@@ -84,8 +83,7 @@
  * {{ formData.description }}
  *
  */
-              </pre
-              >
+              </pre>
           </div>
         </a-tab-pane>
         <a-tab-pane key="2" tab="后端文件命名">
@@ -114,8 +112,7 @@
  * {{ formData.description }}
  *
  */
-              </pre
-              >
+              </pre>
           </div>
         </a-tab-pane>
       </a-tabs>

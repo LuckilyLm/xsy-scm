@@ -88,7 +88,7 @@ class ScmStocktakeImportPgIT extends ScmW6PgITBase {
     }
 
     private String skuCode(Long skuId) {
-        return jdbc.queryForObject("SELECT sku_code FROM product_sku WHERE id = ?", String.class, skuId);
+        return jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id = ?", String.class, skuId);
     }
 
     private interface SheetEditor {

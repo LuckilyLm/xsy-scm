@@ -58,7 +58,6 @@ import type {
   TagMode
 } from '/@/types/business/scm/product';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
-import {productError} from '../product-errors';
 
 type BatchCommand = 'STATUS' | 'CATEGORY' | 'TAG';
 const TITLES: Record<BatchCommand, string> = {STATUS: '批量维护状态', CATEGORY: '批量修改分类', TAG: '批量维护标签'};
@@ -127,8 +126,8 @@ async function submit() {
     message.success(`已更新 ${result.updatedCount} 个商品`);
     visible.value = false;
     emit('done');
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 批量维护失败只走全局 toast；弹窗里的 error 留给本地校验与逐行失败清单
   } finally {
     saving.value = false;
   }

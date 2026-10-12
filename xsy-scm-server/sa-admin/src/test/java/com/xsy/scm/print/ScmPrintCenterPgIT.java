@@ -68,13 +68,13 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
     }
 
     private int recordCount(Long orderId) {
-        return jdbc.queryForObject("SELECT count(*) FROM scm_print_record"
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_print_record"
                         + " WHERE document_type = ? AND business_id = ?",
                 Integer.class, PURCHASE_ORDER_TYPE, orderId);
     }
 
     private Long latestRecordId(Long orderId) {
-        return jdbc.queryForObject("SELECT max(id) FROM scm_print_record"
+        return jdbc.queryForObject("SELECT max(id) FROM xsy_print_record"
                         + " WHERE document_type = ? AND business_id = ?",
                 Long.class, PURCHASE_ORDER_TYPE, orderId);
     }
@@ -192,7 +192,7 @@ class ScmPrintCenterPgIT extends ScmW5PgITBase {
     }
 
     private int defaultCount() {
-        return jdbc.queryForObject("SELECT count(*) FROM scm_print_template"
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_print_template"
                         + " WHERE document_type = ? AND default_flag = TRUE AND deleted = FALSE",
                 Integer.class, PURCHASE_ORDER_TYPE);
     }

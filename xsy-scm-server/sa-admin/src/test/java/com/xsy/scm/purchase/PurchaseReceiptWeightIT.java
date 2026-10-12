@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 如果取声明数量，电子秤接入以后就会出现「称了但没用上」的静默错误 ——
  * 这里用「声明 5 / 实重 3 → 累计 3」直接把这个口径钉死。
  *
- * <p><b>实重必须留痕</b>：每次带实重的确认都要往 {@code receipt_weighing_record} 追一行审计事实
+ * <p><b>实重必须留痕</b>：每次带实重的确认都要往 {@code xsy_receipt_weighing_record} 追一行审计事实
  * （只追加，无 version / deleted），原始读数与确认读数同值（手工录入）。
  */
 @DisplayName("收货重量：非标品实重口径与过秤留痕（PG IT）")
@@ -45,13 +45,13 @@ class PurchaseReceiptWeightIT extends ScmW5PgITBase {
     private Map<String, Object> latestWeighingRecord(Long receiptItemId) {
         return jdbc.queryForMap(
                 "SELECT purchase_receipt_item_id, raw_reading, confirmed_reading, unit, source, "
-                        + "modification_reason, operator FROM receipt_weighing_record "
+                        + "modification_reason, operator FROM xsy_receipt_weighing_record "
                         + "WHERE purchase_receipt_item_id = ? ORDER BY id DESC LIMIT 1", receiptItemId);
     }
 
     private int weighingRecordCount(Long receiptItemId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM receipt_weighing_record WHERE purchase_receipt_item_id = ?",
+                "SELECT count(*) FROM xsy_receipt_weighing_record WHERE purchase_receipt_item_id = ?",
                 Integer.class, receiptItemId);
     }
 

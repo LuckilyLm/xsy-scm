@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <ol>
  *   <li>V8 / V9 已成功应用，且 V6 / V7 的历史未被改动；</li>
  *   <li>4 张表与 5 条关键 CHECK 约束存在；</li>
- *   <li><b>反陷阱</b>：{@code supplier_sku} 上不存在任何以 {@code is_default} 为键的唯一索引；</li>
+ *   <li><b>反陷阱</b>：{@code xsy_supplier_sku} 上不存在任何以 {@code is_default} 为键的唯一索引；</li>
  *   <li>菜单 / 权限点 / 角色授权 / 隐藏路由全部落库。</li>
  * </ol>
  */
@@ -67,7 +67,7 @@ class ScmCustomerSupplierMigrationIT {
             // ---- 2. 表与约束 ----
             assertThat(scalar(statement,
                     "SELECT count(*) FROM information_schema.tables WHERE table_schema='xsy_v2' "
-                            + "AND table_name IN ('customer_type','customer','supplier','supplier_sku')"))
+                            + "AND table_name IN ('xsy_customer_type','xsy_customer','xsy_supplier','xsy_supplier_sku')"))
                     .as("W2 四张表").isEqualTo(4);
             assertThat(scalar(statement,
                     "SELECT count(*) FROM pg_constraint WHERE connamespace = 'xsy_v2'::regnamespace "
@@ -85,13 +85,13 @@ class ScmCustomerSupplierMigrationIT {
 
             // ---- 3. 反陷阱：绝不存在「每个供应商只能有一条默认」的唯一索引 ----
             assertThat(scalar(statement,
-                    "SELECT count(*) FROM pg_indexes WHERE schemaname='xsy_v2' AND tablename='supplier_sku' "
+                    "SELECT count(*) FROM pg_indexes WHERE schemaname='xsy_v2' AND tablename='xsy_supplier_sku' "
                             + "AND indexdef ILIKE '%is_default%'"))
                     .as("R12：不得为 is_default 建任何唯一约束或索引").isZero();
 
             // ---- 4. 客户类型种子（legacy 的可维护字典，不是硬编码枚举）----
             assertThat(scalar(statement,
-                    "SELECT count(*) FROM customer_type WHERE deleted=FALSE "
+                    "SELECT count(*) FROM xsy_customer_type WHERE deleted=FALSE "
                             + "AND type_code IN ('ENTERPRISE','PERSONAL','GROUP')"))
                     .as("C 的 CustomerTypeEnum 落为种子数据").isEqualTo(3);
 

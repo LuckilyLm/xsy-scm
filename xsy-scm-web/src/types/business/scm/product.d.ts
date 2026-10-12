@@ -281,3 +281,12 @@ export interface ImageReorderForm {
     spuId: ProductId;
     orderedImageIds: ProductId[];
 }
+
+/** 已上传但还没挂到任何商品的公开图片；来自文件表，不是商品图片表。 */
+export interface UnboundImage {
+    fileKey: string;
+    fileUrl?: string;
+    fileName?: string;
+    fileSize?: number;
+    createTime?: string;
+}

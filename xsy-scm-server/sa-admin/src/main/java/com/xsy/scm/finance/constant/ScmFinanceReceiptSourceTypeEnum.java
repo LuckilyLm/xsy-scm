@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 收款事实的系统来源类型（{@code finance_receipt.source_type}）。
+ * 收款事实的系统来源类型（{@code xsy_finance_receipt.source_type}）。
  *
  * <p>
  * 与付款的 {@link ScmFinancePaymentSourceTypeEnum} <b>刻意分开</b>：收款与付款的来源是两组不同的事实 （「这笔钱从哪来」vs「这笔钱付给谁」），共用一个枚举只会让两边的值域互相牵制。
@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmFinanceReceiptSourceTypeEnum {
 
-    /** 来源是支付域的交易事实：{@code source_id = payment_transaction.id}（ADM-12）。 */
+    /** 来源是支付域的交易事实：{@code source_id = xsy_payment_transaction.id}（ADM-12）。 */
     PAYMENT_TRANSACTION("支付交易");
 
     private final String desc;

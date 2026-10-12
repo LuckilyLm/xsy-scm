@@ -199,8 +199,8 @@ class ScmInventoryOutboundIT extends ScmW6PgITBase {
                 .filter(m -> "SALES_OUT".equals(String.valueOf(m.get("movement_type"))))
                 .findFirst().orElseThrow().get("id")).longValue();
 
-        expectSqlFailure("UPDATE inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
-        expectSqlFailure("UPDATE inventory_movement SET quantity = 2, after_quantity = 8 WHERE id = ?", movementId);
-        expectSqlFailure("DELETE FROM inventory_movement WHERE id = ?", movementId);
+        expectSqlFailure("UPDATE xsy_inventory_movement SET deleted = TRUE WHERE id = ?", movementId);
+        expectSqlFailure("UPDATE xsy_inventory_movement SET quantity = 2, after_quantity = 8 WHERE id = ?", movementId);
+        expectSqlFailure("DELETE FROM xsy_inventory_movement WHERE id = ?", movementId);
     }
 }

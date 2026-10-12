@@ -66,7 +66,7 @@ import static org.mockito.Mockito.mockStatic;
  * 销售域（订单族 + 客户）的行级数据范围与其写入侧前提。
  *
  * <p>被测口径来自 {@code docs/decisions.md}「P0 基线收口裁决」第 2、4、6 条：
- * 销售默认只看 {@code customer.seller_id} / {@code sales_order.seller_id} 等于本人的行；
+ * 销售默认只看 {@code xsy_customer.seller_id} / {@code xsy_sales_order.seller_id} 等于本人的行；
  * {@code seller_id IS NULL} 是「未分配」，普通销售看不见、持全量范围者看得见；
  * 放宽只能通过显式权限点；<b>新建客户的负责人由服务端强制为当前员工</b>——
  * 没有这条写入侧收口，行级范围就只是「藏起来」：谁都能先把客户建在别人名下再去读。
@@ -555,50 +555,50 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
 
     private Long sellerIdOf(Long customerId) {
         evicted();
-        return jdbc.queryForObject("SELECT seller_id FROM customer WHERE id = ?", Long.class, customerId);
+        return jdbc.queryForObject("SELECT seller_id FROM xsy_customer WHERE id = ?", Long.class, customerId);
     }
 
     private Long sellerIdOfOrder(Long orderId) {
         evicted();
-        return jdbc.queryForObject("SELECT seller_id FROM sales_order WHERE id = ?", Long.class, orderId);
+        return jdbc.queryForObject("SELECT seller_id FROM xsy_sales_order WHERE id = ?", Long.class, orderId);
     }
 
     private Integer sellerVersion(Long customerId) {
         evicted();
-        return jdbc.queryForObject("SELECT version FROM customer WHERE id = ?", Integer.class, customerId);
+        return jdbc.queryForObject("SELECT version FROM xsy_customer WHERE id = ?", Integer.class, customerId);
     }
 
     /** 列表夹具一律带 {@code prefix} 自限：同一事务里库里还有别的用例与种子数据，不假设空库。 */
     private Long insertOrder(Long customerId, String suffix, Long sellerId) {
         String orderNo = prefix + "-SO" + suffix;
-        jdbc.update("INSERT INTO sales_order (order_no, customer_id, customer_code_snapshot,"
+        jdbc.update("INSERT INTO xsy_sales_order (order_no, customer_id, customer_code_snapshot,"
                         + " customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot,"
                         + " order_source, status, ordered_total_amount,"
                         + " settlement_total_amount, settle_mode_snapshot, seller_id)"
                         + " VALUES (?, ?, ?, ?, ?, ?, 'ADMIN', 'DRAFT', 0, 0, 'INDEPENDENT', ?)",
                 orderNo, customerId, "CODE-" + suffix, "范围测试客户", customerId, "范围测试客户", sellerId);
-        Long orderId = jdbc.queryForObject("SELECT id FROM sales_order WHERE order_no = ?", Long.class, orderNo);
+        Long orderId = jdbc.queryForObject("SELECT id FROM xsy_sales_order WHERE order_no = ?", Long.class, orderNo);
         evicted();
         return orderId;
     }
 
     private Long insertReturn(Long orderId, Long customerId, String suffix) {
         String returnNo = prefix + "-RT" + suffix;
-        jdbc.update("INSERT INTO order_return (return_no, order_id, customer_id, status, reason)"
+        jdbc.update("INSERT INTO xsy_order_return (return_no, order_id, customer_id, status, reason)"
                 + " VALUES (?, ?, ?, 'PENDING', '范围测试退货')", returnNo, orderId, customerId);
-        return jdbc.queryForObject("SELECT id FROM order_return WHERE return_no = ?", Long.class, returnNo);
+        return jdbc.queryForObject("SELECT id FROM xsy_order_return WHERE return_no = ?", Long.class, returnNo);
     }
 
     private Long insertRefund(Long returnId, Long orderId, Long customerId, String suffix) {
         String refundNo = prefix + "-RF" + suffix;
-        jdbc.update("INSERT INTO order_refund (refund_no, return_id, order_id, customer_id, refund_amount, status)"
+        jdbc.update("INSERT INTO xsy_order_refund (refund_no, return_id, order_id, customer_id, refund_amount, status)"
                 + " VALUES (?, ?, ?, ?, 1.0000, 'PENDING')", refundNo, returnId, orderId, customerId);
-        return jdbc.queryForObject("SELECT id FROM order_refund WHERE refund_no = ?", Long.class, refundNo);
+        return jdbc.queryForObject("SELECT id FROM xsy_order_refund WHERE refund_no = ?", Long.class, refundNo);
     }
 
     /** operator 必须是「前缀:数字员工id」形态：{@code SalesOrderQueryService#logs} 按冒号取员工名。 */
     private void insertLog(Long orderId, String operationType) {
-        jdbc.update("INSERT INTO order_operation_log (order_id, operation_type, operator, created_by)"
+        jdbc.update("INSERT INTO xsy_order_operation_log (order_id, operation_type, operator, created_by)"
                 + " VALUES (?, ?, ?, ?)", orderId, operationType, "admin:" + sellerA, "admin:" + sellerA);
     }
 

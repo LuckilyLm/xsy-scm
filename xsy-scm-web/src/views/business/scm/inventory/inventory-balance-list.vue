@@ -143,7 +143,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await inventoryBalanceApi.query({...queryForm});
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await inventoryBalanceApi.query({...queryForm}, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -164,7 +165,7 @@ async function queryData() {
  */
 async function applySingleWarehouseDefault() {
   try {
-    const r = await warehouseApi.list();
+    const r = await warehouseApi.list({suppressGlobalErrorMessage: true});
     warehouses.value = r.data ?? [];
     const fallback = singleWarehouseDefault(warehouses.value);
     if (fallback !== undefined) {

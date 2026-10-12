@@ -1,5 +1,7 @@
 package com.xsy.scm.customer.domain.vo;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import lombok.Data;
 
 import java.time.OffsetDateTime;
@@ -18,5 +20,6 @@ public class CustomerSkuVisibilityReverseVO {
     private String skuStatus;
     private String spuStatus;
     private OffsetDateTime createdAt;
+    @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
 }

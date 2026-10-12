@@ -3,7 +3,7 @@ package com.xsy.scm.balance.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 余额流水方向。持久化到 {@code customer_balance_movement.direction}。 */
+/** 余额流水方向。持久化到 {@code xsy_customer_balance_movement.direction}。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmBalanceDirectionEnum {

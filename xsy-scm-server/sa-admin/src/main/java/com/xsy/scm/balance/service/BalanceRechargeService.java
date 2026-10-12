@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 在线充值（ADM-12）。
  *
  * <p>
- * 链路：解析客户 → 解析结算主体 → 校验数据范围 → Idempotency-Key，落 {@code customer_balance_recharge}（谁往哪个钱包充多少），再创建
+ * 链路：解析客户 → 解析结算主体 → 校验数据范围 → Idempotency-Key，落 {@code xsy_customer_balance_recharge}（谁往哪个钱包充多少），再创建
  * {@code PaymentIntent}（{@code method=ONLINE}、{@code source_type=BALANCE_RECHARGE}、
  * {@code source_id=recharge.id}）。支付成功后由 {@code PaymentTransaction SUCCEEDED} 派生两条事实：
  * {@code FinanceReceipt}（{@code ONLINE_PAYMENT + PAYMENT_TRANSACTION}，公司实际进账）与

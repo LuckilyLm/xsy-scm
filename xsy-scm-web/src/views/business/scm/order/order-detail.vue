@@ -3,7 +3,7 @@
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <a-spin :spinning="loading">
       <template v-if="order">
-        <a-space class="actions">
+        <a-space class="actions scm-detail-actions">
           <a-tag>{{ SCM_ORDER_STATUS_ENUM[order.status!]?.desc }}</a-tag>
           <a-button v-if="order.status==='PENDING'" type="primary" v-privilege="'scm:order:confirm'" @click="confirm">
             确认订单
@@ -101,11 +101,16 @@
           <a-button v-privilege="'scm:order:log:query'" @click="loadLogs">查看操作记录</a-button>
           <a-timeline class="smart-margin-top10">
             <a-timeline-item v-for="log in logs" :key="log.logId">
-              {{ datetime(log.createdAt) }} · {{ log.operatorName }} ·
-              {{ SCM_ORDER_OPERATION_ENUM[log.operationType]?.desc }}
+              <span class="scm-log-line">
+                <span>{{ datetime(log.createdAt) }}</span>
+                <span class="scm-log-line__sep">·</span>
+                <span>{{ log.operatorName }}</span>
+                <span class="scm-log-line__sep">·</span>
+                <span>{{ SCM_ORDER_OPERATION_ENUM[log.operationType]?.desc }}</span>
+              </span>
               <a-collapse>
                 <a-collapse-panel key="audit" header="变更前后">
-                  <ScmDiffTable :before="log.beforeData" :after="log.afterData"/>
+                  <ScmDiffTable :before="log.beforeData" :after="log.afterData" :scope="log.operationType"/>
                 </a-collapse-panel>
               </a-collapse>
             </a-timeline-item>
@@ -245,7 +250,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    order.value = (await orderApi.detail(order.value.orderId)).data;
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
+    order.value = (await orderApi.detail(order.value.orderId, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = orderError(e);
   } finally {
@@ -255,7 +261,9 @@ async function load() {
 
 async function loadLogs() {
   try {
-    logs.value = (await orderLogApi.query({orderId: order.value!.orderId, pageNum: 1, pageSize: 100})).data.list;
+    logs.value = (await orderLogApi.query(
+        {orderId: order.value!.orderId, pageNum: 1, pageSize: 100},
+        {suppressGlobalErrorMessage: true})).data.list;
   } catch (e) {
     error.value = orderError(e);
   }
@@ -291,7 +299,8 @@ async function loadCoupons() {
   }
   couponLoading.value = true;
   try {
-    const rows: PromotionCouponInstance[] = (await promotionApi.couponInstances(customerId, 'AVAILABLE')).data ?? [];
+    const rows: PromotionCouponInstance[] =
+        (await promotionApi.couponInstances(customerId, 'AVAILABLE', {suppressGlobalErrorMessage: true})).data ?? [];
     couponOptions.value = rows.map((row) => ({
       value: row.id,
       label: `${row.couponName ?? row.couponCode ?? '优惠券'}（${row.instanceNo}）`,
@@ -330,7 +339,7 @@ async function loadPreview() {
       customerId,
       couponInstanceId: couponInstanceId.value ?? null,
       lines,
-    })).data;
+    }, {suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     previewError.value = orderError(e);
   }
@@ -345,7 +354,7 @@ async function confirm() {
   saving.value = true;
   error.value = '';
   try {
-    creditCheck.value = (await orderApi.orderCreditCheck(order.value.orderId)).data;
+    creditCheck.value = (await orderApi.orderCreditCheck(order.value.orderId, {suppressGlobalErrorMessage: true})).data;
     creditOverride.value = false;
     creditOverrideReason.value = '';
     creditOpen.value = true;
@@ -373,8 +382,8 @@ async function confirmWithCredit() {
     creditOpen.value = false;
     await load();
     emit('saved');
-  } catch (e) {
-    error.value = orderError(e);
+  } catch {
+    // 确认失败只走全局 toast
   } finally {
     saving.value = false;
   }
@@ -404,8 +413,8 @@ async function saveActual() {
     actualOpen.value = false;
     await load();
     emit('saved');
-  } catch (e) {
-    error.value = orderError(e);
+  } catch {
+    // 实重录入失败只走全局 toast
   } finally {
     saving.value = false;
   }
@@ -422,8 +431,8 @@ async function cancel() {
     cancelOpen.value = false;
     await load();
     emit('saved');
-  } catch (e) {
-    error.value = orderError(e);
+  } catch {
+    // 取消失败只走全局 toast
   } finally {
     saving.value = false;
   }
@@ -441,8 +450,27 @@ defineExpose({open});
   font-weight: 600;
 }
 
-.detail-section--nested {
+/* 选择器必须压过 `.detail-section h3`，否则上边距被它的 margin 简写吃掉 */
+.detail-section h3.detail-section--nested {
   margin-top: 20px;
+}
+
+/*
+ * 操作日志行：时间 / 操作人 / 动作 三段用统一间距隔开。
+ *
+ * 原来是行内拼 `·`，前后各一个西文空格；中英混排下那点空隙只有约 4px，
+ * 三段挤成一串「14:39:29 ·系统管理员 ·取消」，读起来分不出边界。
+ * 改成 flex + gap 后间距均匀可控，分隔点弱化，不跟内容抢注意力。
+ */
+.scm-log-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.scm-log-line__sep {
+  color: rgba(0, 0, 0, 0.25);
 }
 
 pre {

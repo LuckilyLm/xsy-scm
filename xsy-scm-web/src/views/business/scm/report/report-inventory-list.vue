@@ -70,7 +70,7 @@
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportMovement">导出</a-button>
+            <a-button v-privilege="PERM.EXPORT" :loading="movementExport.exporting" @click="exportMovement">导出</a-button>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -137,6 +137,7 @@
               v-model:current="movement.pageNum"
               v-model:page-size="movement.pageSize"
               :total="movement.total"
+              :exporting="movement.exporting"
               @change="loadMovement"
               :show-total="(n: number) => `共${n}条`"
           />
@@ -155,6 +156,7 @@
           :page-num="loss.pageNum"
           :page-size="loss.pageSize"
           :total="loss.total"
+          :exporting="loss.exporting"
           @export="exportLoss"
           @reload="loadLoss"
           @page-change="loadLossPage"
@@ -171,7 +173,7 @@
       <a-card size="small" :bordered="false" :class="hasValueSummary ? 'smart-margin-top10' : ''">
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
-            <a-button v-privilege="PERM.EXPORT" @click="exportValue">导出</a-button>
+            <a-button v-privilege="PERM.EXPORT" :loading="valueExport.exporting" @click="exportValue">导出</a-button>
           </div>
           <div class="smart-table-setting-block">
             <TableOperator
@@ -224,6 +226,7 @@
               v-model:current="value.pageNum"
               v-model:page-size="value.pageSize"
               :total="value.total"
+              :exporting="value.exporting"
               @change="loadValue"
               :show-total="(n: number) => `共${n}条`"
           />
@@ -297,6 +300,7 @@ import ReportDateRangePicker from './report-components/report-date-range-picker.
 import ReportKpiCard from './report-components/report-kpi-card.vue';
 import InventoryLossAnalysisTab from './report-components/inventory-loss-analysis-tab.vue';
 import {reportInventoryApi} from '/@/api/business/scm/report-api';
+import {useScmExport} from '../common/use-scm-export';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {
@@ -352,6 +356,9 @@ const movement = reactive(createTabView<InventoryMovementRow>());
 const loss = reactive(createTabView<InventoryLossRow>());
 const value = reactive(createTabView<InventoryValueRow>());
 const flow = reactive(createTabView<InventoryFlowSummaryRow>());
+const lossExport = useScmExport(loss);
+const movementExport = useScmExport(movement);
+const valueExport = useScmExport(value);
 
 /** 无成本权限时不展示价值 Tab；此时如果正停在价值 Tab，回落到流水（见 `onTabChange`）。 */
 const COST_INDEXES = ['unitCost', 'costAmount'];
@@ -461,7 +468,7 @@ function loadLossPage(pageNum: number, pageSize: number) {
 }
 
 const loadLossSummary = createGuardedLoader(
-    () => reportInventoryApi.lossSummary(buildReportQuery<ReportFilterQuery<InventoryReportQuery>>(dateRange.value, {...filters})),
+    (options) => reportInventoryApi.lossSummary(buildReportQuery<ReportFilterQuery<InventoryReportQuery>>(dateRange.value, {...filters}), options),
     (data) => (lossSummary.value = data),
     chartError
 );
@@ -551,15 +558,15 @@ function resetQuery() {
 }
 
 function exportMovement() {
-    void reportInventoryApi.movementExport(exportQuery());
+    void movementExport.run(() => reportInventoryApi.movementExport(exportQuery()));
 }
 
 function exportLoss() {
-    void reportInventoryApi.lossExport(exportQuery());
+    void lossExport.run(() => reportInventoryApi.lossExport(exportQuery()));
 }
 
 function exportValue() {
-    void reportInventoryApi.valueExport(exportQuery());
+    void valueExport.run(() => reportInventoryApi.valueExport(exportQuery()));
 }
 
 onMounted(() => {

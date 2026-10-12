@@ -203,7 +203,7 @@ public class PaymentRefundService {
      * <p>
      * 顺序即纪律，且<b>必须在 {@code provider.refund()} 之前</b>完成：
      * <ol>
-     * <li>锁 {@code order_refund} —— 线上退款与人工退款付款（财务域 {@code CUSTOMER + ORDER_REFUND}） 必须互斥，两边锁同一行才能关掉「先查后写」的窗口；</li>
+     * <li>锁 {@code xsy_order_refund} —— 线上退款与人工退款付款（财务域 {@code CUSTOMER + ORDER_REFUND}） 必须互斥，两边锁同一行才能关掉「先查后写」的窗口；</li>
      * <li>退款单必须存在且 {@code COMPLETED}；</li>
      * <li>退款对象必须与原支付客户一致（否则会把 A 的付款退给 B）；</li>
      * <li>提交金额必须与应退额<b>逐值一致</b>（差一分钱，两条路径就各退一部分）；</li>
@@ -251,8 +251,8 @@ public class PaymentRefundService {
      * 退款成功 → Finance 付款事实（ADM-12）。
      *
      * <p>
-     * 复用财务域 {@code finance_payment} 的 {@code CUSTOMER + ORDER_REFUND}，唯一来源键是
-     * {@code source_id = order_refund.id}：无论本地被驱动多少次，Finance 只有一条正常付款事实。
+     * 复用财务域 {@code xsy_finance_payment} 的 {@code CUSTOMER + ORDER_REFUND}，唯一来源键是
+     * {@code source_id = xsy_order_refund.id}：无论本地被驱动多少次，Finance 只有一条正常付款事实。
      *
      * <p>
      * <b>金额不一致时只保留渠道成功事实，不生成 Finance 付款、也不回滚。</b> 渠道实际退了 98 而业务应退 100 是可能发生的；若因此把整笔已验签的退款成功回滚，

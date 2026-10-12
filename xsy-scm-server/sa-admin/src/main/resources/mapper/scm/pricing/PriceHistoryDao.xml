@@ -13,14 +13,14 @@
         customer_type_id,p.sku_id,l.operation_type,l.operator,l.created_at
         operated_at,l.before_data,l.after_data,p.unit_price current_unit_price,p.effective_from
         current_effective_from,p.effective_to current_effective_to,COALESCE(p.deleted,TRUE) current_deleted FROM
-        customer_agreement_price_operation_log l LEFT JOIN customer_agreement_price p ON p.id=l.agreement_price_id UNION
+        xsy_customer_agreement_price_operation_log l LEFT JOIN xsy_customer_agreement_price p ON p.id=l.agreement_price_id UNION
         ALL SELECT l.id history_id,'CUSTOMER_TYPE' source,l.customer_type_price_id price_id,NULL::bigint
         customer_id,p.customer_type_id,p.sku_id,l.operation_type,l.operator,l.created_at
         operated_at,l.before_data,l.after_data,p.unit_price current_unit_price,p.effective_from
         current_effective_from,p.effective_to current_effective_to,COALESCE(p.deleted,TRUE) current_deleted FROM
-        customer_type_price_operation_log l LEFT JOIN customer_type_price p ON p.id=l.customer_type_price_id) h LEFT
-        JOIN customer c ON c.id=h.customer_id LEFT JOIN customer_type ct ON ct.id=h.customer_type_id LEFT JOIN
-        product_sku s ON s.id=h.sku_id LEFT JOIN product_spu sp ON sp.id=s.spu_id
+        xsy_customer_type_price_operation_log l LEFT JOIN xsy_customer_type_price p ON p.id=l.customer_type_price_id) h LEFT
+        JOIN xsy_customer c ON c.id=h.customer_id LEFT JOIN xsy_customer_type ct ON ct.id=h.customer_type_id LEFT JOIN
+        xsy_product_sku s ON s.id=h.sku_id LEFT JOIN xsy_product_spu sp ON sp.id=s.spu_id
         <where>
             <if test="query.source != null">AND h.source=#{query.source}</if>
             <if test="query.customerId != null">AND h.customer_id=#{query.customerId}</if>

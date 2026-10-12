@@ -31,14 +31,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * <p>本类盯的是「财务事实由收货事实派生」这条口径本身，而不是采购域的收货规则（那些已由
  * {@code PurchaseReceipt*IT} 覆盖）：金额必须 = 实际确认的有效量 × 采购行结算单价，
- * 时点必须 = {@code purchase_receipt.confirmed_at}，且两条入库模式下口径完全一致。
+ * 时点必须 = {@code xsy_purchase_receipt.confirmed_at}，且两条入库模式下口径完全一致。
  *
  * <p><b>为什么用真实 PostgreSQL</b>：{@code NUMERIC(18,4)} 的舍入、{@code ON CONFLICT} 与部分唯一
  * 索引谓词的逐字匹配、单头 {@code amount > 0} 与明细 {@code quantity > 0} 的 CHECK，
  * 全都只在真实数据库里有语义。
  *
  * <p><b>断言一律按来源作用域，不用全表计数</b>：本仓库的 IT 可能跑在长驻开发库上，
- * 「整张 {@code finance_payable} 只有一行」这种断言会把别的用例的数据算进来，
+ * 「整张 {@code xsy_finance_payable} 只有一行」这种断言会把别的用例的数据算进来，
  * 变成一个随执行顺序忽绿忽红的假阴性。
  *
  * <p><b>同事务失败的回滚证明不在本类</b>：要断言「财务写失败后收货单没留下 CONFIRMED」，
@@ -130,7 +130,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
 
     private Map<String, Object> payableOf(Long receiptId) {
         List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT * FROM finance_payable WHERE source_type = 'PURCHASE_RECEIPT' AND source_id = ?",
+                "SELECT * FROM xsy_finance_payable WHERE source_type = 'PURCHASE_RECEIPT' AND source_id = ?",
                 receiptId);
         assertThat(rows).as("收货单 %s 的应付单（恰好一张）", receiptId).hasSize(1);
         return rows.getFirst();
@@ -138,19 +138,19 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
 
     private List<Map<String, Object>> payablesOfReceipt(Long receiptId) {
         return jdbc.queryForList(
-                "SELECT * FROM finance_payable WHERE source_type = 'PURCHASE_RECEIPT' AND source_id = ?",
+                "SELECT * FROM xsy_finance_payable WHERE source_type = 'PURCHASE_RECEIPT' AND source_id = ?",
                 receiptId);
     }
 
     private int payablesOfOrder(Long purchaseOrderId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM finance_payable WHERE purchase_order_id = ?",
+                "SELECT count(*) FROM xsy_finance_payable WHERE purchase_order_id = ?",
                 Integer.class, purchaseOrderId);
     }
 
     private List<Map<String, Object>> payableItemsOf(Long payableId) {
         return jdbc.queryForList(
-                "SELECT * FROM finance_payable_item WHERE payable_id = ? ORDER BY id", payableId);
+                "SELECT * FROM xsy_finance_payable_item WHERE payable_id = ? ORDER BY id", payableId);
     }
 
     /**
@@ -158,14 +158,14 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
      */
     private int payableItemCountOfReceipt(Long receiptId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM finance_payable_item i WHERE i.source_type = 'PURCHASE_RECEIPT_ITEM' "
-                        + "AND i.source_id IN (SELECT id FROM purchase_receipt_item WHERE purchase_receipt_id = ?)",
+                "SELECT count(*) FROM xsy_finance_payable_item i WHERE i.source_type = 'PURCHASE_RECEIPT_ITEM' "
+                        + "AND i.source_id IN (SELECT id FROM xsy_purchase_receipt_item WHERE purchase_receipt_id = ?)",
                 Integer.class, receiptId);
     }
 
     private List<Map<String, Object>> payableLogsOf(Long payableId) {
         return jdbc.queryForList(
-                "SELECT * FROM finance_operation_log WHERE business_type = 'PAYABLE' AND business_id = ?",
+                "SELECT * FROM xsy_finance_operation_log WHERE business_type = 'PAYABLE' AND business_id = ?",
                 payableId);
     }
 
@@ -219,7 +219,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
                 .isEqualTo(receipt.getItems().getFirst().getPurchaseOrderItemId());
         assertThat(longOf(line, "sku_id")).isEqualTo(skuId);
         assertThat(line.get("sku_name_snapshot")).isEqualTo(jdbc.queryForObject(
-                "SELECT sku_name_snapshot FROM purchase_receipt_item WHERE id = ?", String.class, receiptItemId));
+                "SELECT sku_name_snapshot FROM xsy_purchase_receipt_item WHERE id = ?", String.class, receiptItemId));
         assertThat(line.get("unit_snapshot")).isEqualTo(DEFAULT_PURCHASE_UNIT);
         assertThat(decimalOf(line, "quantity")).isEqualByComparingTo("8.0000");
         assertThat(decimalOf(line, "unit_price")).isEqualByComparingTo("6.2000");
@@ -344,7 +344,7 @@ class ScmFinancePayablePgIT extends ScmW6PgITBase {
         assertThat(payableItemCountOfReceipt(receipt.getId()))
                 .as("本张收货单只留下一行应付明细").isEqualTo(1);
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM finance_payable WHERE purchase_order_id = ? AND entry_type = 'RED'",
+                "SELECT count(*) FROM xsy_finance_payable WHERE purchase_order_id = ? AND entry_type = 'RED'",
                 Integer.class, receipt.getPurchaseOrderId())).isZero();
     }
 

@@ -44,7 +44,7 @@
     </div>
   </a-card>
   <a-modal :open="visible" title="订单变更前后" width="900px" :footer="null" @cancel="visible=false">
-    <ScmDiffTable :before="active?.beforeData" :after="active?.afterData"/>
+    <ScmDiffTable :before="active?.beforeData" :after="active?.afterData" :scope="active?.operationType"/>
   </a-modal>
 </template>
 <script setup lang="ts">
@@ -95,7 +95,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await api.query(queryForm);
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await api.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;

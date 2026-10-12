@@ -9,7 +9,14 @@
 
 .scm-filter-fields {
   display: flex;
-  flex: 1 1 720px;
+  /*
+   * 只占内容需要的宽度，不吃掉整行剩余空间。
+   *
+   * 原来是 `flex: 1 1 720px`：字段容器会把整行撑满，于是查询 / 重置被顶到最右边，
+   * 最后一个字段和按钮之间留下一大片空档（实测采购需求 264px、预警阈值 853px），
+   * 看起来像是「没对齐」。按钮跟在字段后面即可。
+   */
+  flex: 0 1 auto;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px 12px;
@@ -26,21 +33,17 @@
     padding-inline-end: 8px;
   }
 
-  .ant-form-item-label > label {
-    height: 32px;
-    line-height: 32px;
-  }
-
+  /*
+   * 控件高度交给全站基线（28px），不再在这里单独拔到 32px。
+   * 同一个页面里筛选控件 32px、下面的导出按钮与分页 28px，视觉上会读成「两套控件」；
+   * 28px 是本项目表格工具栏按钮 / 分页 / 表内按钮的一致高度。
+   * 这里只保留「按内容限宽」，避免长下拉把整行撑开。
+   */
   .ant-input,
   .ant-input-affix-wrapper,
   .ant-picker,
   .ant-select {
     max-width: 100%;
-    min-height: 32px;
-  }
-
-  .ant-select-selector {
-    min-height: 32px;
   }
 }
 
@@ -49,10 +52,9 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
+  /* 不再 `margin-left: auto`：那会把按钮推到最右，和字段之间空出一大截 */
 
   .ant-btn {
-    height: 32px;
     margin: 0;
     padding-inline: 12px;
   }
@@ -122,5 +124,17 @@
     flex: 1 1 100%;
     justify-content: flex-end;
     margin-left: 0;
+  }
+}
+
+/*
+ * 工具栏右侧的图标按钮之间留一点缝。
+ * 它们各自是 21px 的 text 按钮、图标左右各内缩 4px，图标本身已经隔开 8px；
+ * 但按钮盒子是紧贴的 —— hover 时两块的背景会连成一条，看着像「粘在一起」。
+ * 只作用于相邻的独立按钮，button-group 内部的按钮不碰（那本来就该连体）。
+ */
+.smart-table-setting-block {
+  .ant-btn + .ant-btn:not(.ant-btn-group .ant-btn) {
+    margin-left: 4px;
   }
 }

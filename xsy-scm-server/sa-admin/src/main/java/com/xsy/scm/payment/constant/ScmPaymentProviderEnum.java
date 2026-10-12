@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 支付渠道。持久化到 {@code payment_intent.provider} 等列。
+ * 支付渠道。持久化到 {@code xsy_payment_intent.provider} 等列。
  *
  * <p>
  * <b>为什么要枚举而不是字符串</b>：渠道是「同一份业务规则跑在不同实现上」的开关， 换渠道只换 {@code ScmPaymentProvider} 实现，业务域不出现 {@code if ("wechat")}。

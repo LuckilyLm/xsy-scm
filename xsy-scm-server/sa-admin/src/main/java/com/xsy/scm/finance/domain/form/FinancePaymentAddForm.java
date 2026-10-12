@@ -21,7 +21,7 @@ import java.time.OffsetDateTime;
  * </ul>
  *
  * <p>
- * 不含应付、核销额、状态、审批人、账户、币种、附件或余额。付款与应付的对应关系只能由 {@code finance_write_off} 表达，这里不接受 {@code payableId}。
+ * 不含应付、核销额、状态、审批人、账户、币种、附件或余额。付款与应付的对应关系只能由 {@code xsy_finance_write_off} 表达，这里不接受 {@code payableId}。
  */
 @Data
 public class FinancePaymentAddForm {
@@ -33,7 +33,7 @@ public class FinancePaymentAddForm {
     private String counterpartyType;
 
     /**
-     * 对方主键：{@code SUPPLIER} 时为 {@code supplier.id}； {@code CUSTOMER} 时<b>以 {@code order_refund.customer_id}
+     * 对方主键：{@code SUPPLIER} 时为 {@code xsy_supplier.id}； {@code CUSTOMER} 时<b>以 {@code xsy_order_refund.customer_id}
      * 为权威</b>，本字段只用于一致性校验。
      */
     @NotNull(message = "往来方编号不能为空")
@@ -63,7 +63,7 @@ public class FinancePaymentAddForm {
      * 资金凭据号，只是文本：可空、可重复、不建唯一约束。
      *
      * <p>
-     * <b>不会从 {@code order_refund.external_reference} 自动带入</b>：那一列属于订单域的退款事实，本列属于财务的真实资金动作，两者职责不同，必须由登记人独立提供。
+     * <b>不会从 {@code xsy_order_refund.external_reference} 自动带入</b>：那一列属于订单域的退款事实，本列属于财务的真实资金动作，两者职责不同，必须由登记人独立提供。
      */
     @Size(max = 128, message = "资金凭据号长度不能超过128")
     private String externalReference;
@@ -75,7 +75,7 @@ public class FinancePaymentAddForm {
     private String sourceType;
 
     /**
-     * {@code order_refund.id}；与 {@link #sourceType} 同空同非空。
+     * {@code xsy_order_refund.id}；与 {@link #sourceType} 同空同非空。
      */
     private Long sourceId;
 

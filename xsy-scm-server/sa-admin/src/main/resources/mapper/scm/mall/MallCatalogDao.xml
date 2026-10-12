@@ -6,11 +6,11 @@
         AND p.deleted = FALSE AND p.status = 'ON_SHELF'
         AND c.deleted = FALSE AND c.status = 'ENABLED'
         AND EXISTS (
-            SELECT 1 FROM customer customer
+            SELECT 1 FROM xsy_customer customer
             WHERE customer.id = #{customerId} AND customer.deleted = FALSE
               AND customer.status = 'COOPERATING'
               AND (customer.visibility_policy = 'ALL_ENABLED'
-                   OR EXISTS (SELECT 1 FROM customer_sku_visibility visibility
+                   OR EXISTS (SELECT 1 FROM xsy_customer_sku_visibility visibility
                               WHERE visibility.customer_id = customer.id
                                 AND visibility.sku_id = s.id AND visibility.deleted = FALSE))
         )
@@ -26,11 +26,11 @@
         'UNKNOWN' AS stock_status
     </sql>
     <sql id="productJoins">
-        FROM product_sku s
-        JOIN product_spu p ON p.id = s.spu_id
-        JOIN product_category c ON c.id = p.category_id
+        FROM xsy_product_sku s
+        JOIN xsy_product_spu p ON p.id = s.spu_id
+        JOIN xsy_product_category c ON c.id = p.category_id
         LEFT JOIN LATERAL (
-            SELECT i.file_key FROM product_image i
+            SELECT i.file_key FROM xsy_product_image i
             WHERE i.spu_id = p.id AND i.deleted = FALSE AND i.is_primary = TRUE
               AND i.file_key LIKE 'public/%'
             ORDER BY i.id LIMIT 1
@@ -40,15 +40,15 @@
     <select id="categories" resultType="com.xsy.scm.mall.catalog.domain.vo.MallCategoryVO">
         WITH RECURSIVE visible_category AS (
             SELECT DISTINCT c.id, c.parent_id, c.name, c.level, c.sort_order
-            FROM product_category c
+            FROM xsy_product_category c
             WHERE c.deleted = FALSE AND c.status = 'ENABLED'
               AND EXISTS (
-                  SELECT 1 FROM product_spu p JOIN product_sku s ON s.spu_id = p.id
+                  SELECT 1 FROM xsy_product_spu p JOIN xsy_product_sku s ON s.spu_id = p.id
                   WHERE p.category_id = c.id AND <include refid="visibleSku"/>
               )
             UNION
             SELECT parent.id, parent.parent_id, parent.name, parent.level, parent.sort_order
-            FROM product_category parent JOIN visible_category child ON child.parent_id = parent.id
+            FROM xsy_product_category parent JOIN visible_category child ON child.parent_id = parent.id
             WHERE parent.deleted = FALSE AND parent.status = 'ENABLED'
         )
         SELECT id AS category_id, parent_id, name, level, sort_order

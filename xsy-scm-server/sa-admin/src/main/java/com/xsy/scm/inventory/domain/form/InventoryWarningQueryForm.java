@@ -32,7 +32,7 @@ public class InventoryWarningQueryForm extends PageParam {
     private Long skuId;
 
     /**
-     * SKU 编码模糊匹配（联 {@code product_sku}）。
+     * SKU 编码模糊匹配（联 {@code xsy_product_sku}）。
      */
     @Size(max = 64, message = "商品规格编码不能超过64个字符")
     private String skuCode;

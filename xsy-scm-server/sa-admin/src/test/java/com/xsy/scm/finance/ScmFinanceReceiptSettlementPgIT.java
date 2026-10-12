@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * <ol>
  * <li>{@link #danglingSettlementSubjectStillReadsThePayerButRejectsANewReceipt()} ——
  * <b>收紧新事实</b>：付款客户声明的结算父客户已经被软删时，客户事实整行仍然读得到，但结算 id
- * 与名称成对落空，登记收款被拒绝且不产生任何收款。{@code finance_receipt} 的这两列都是
+ * 与名称成对落空，登记收款被拒绝且不产生任何收款。{@code xsy_finance_receipt} 的这两列都是
  * NOT NULL，写进历史就不可改，宁可拒绝也不能把付款客户自己的名字当结算主体快照。</li>
  * <li>{@link #historicalReceiptStaysReadableAfterTheSettlementParentIsDeletedLater()} ——
  * <b>不破坏旧事实</b>：收款落库之后结算父客户才被软删，只读查询面必须照常返回这张历史收款。
@@ -94,13 +94,13 @@ class ScmFinanceReceiptSettlementPgIT extends ScmW5PgITBase {
     }
 
     private void softDelete(Long customerId) {
-        jdbc.update("UPDATE customer SET deleted = TRUE WHERE id = ?", customerId);
+        jdbc.update("UPDATE xsy_customer SET deleted = TRUE WHERE id = ?", customerId);
         evictMybatisCache();
     }
 
     private int countReceiptsOf(Long customerId) {
         Integer value = jdbc.queryForObject(
-                "SELECT count(*) FROM finance_receipt WHERE customer_id = ?", Integer.class, customerId);
+                "SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", Integer.class, customerId);
         return value == null ? 0 : value;
     }
 
@@ -122,7 +122,7 @@ class ScmFinanceReceiptSettlementPgIT extends ScmW5PgITBase {
         assertThat(jdbc.queryForObject(
                 "SELECT administrator_flag FROM t_employee WHERE employee_id = ?", Boolean.class, employeeId))
                         .as("越权与可读性取证禁止用超管位").isFalse();
-        jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", employeeId, customerId);
+        jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", employeeId, customerId);
         evictMybatisCache();
         return employeeId;
     }

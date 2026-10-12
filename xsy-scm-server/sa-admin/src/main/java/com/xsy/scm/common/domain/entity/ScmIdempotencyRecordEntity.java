@@ -15,7 +15,7 @@ import java.util.Map;
 
 /** Shared persistence record for idempotent SCM commands. */
 @Data
-@TableName(value = "idempotency_record", autoResultMap = true)
+@TableName(value = "xsy_idempotency_record", autoResultMap = true)
 public class ScmIdempotencyRecordEntity {
 
     @TableId(type = IdType.AUTO)

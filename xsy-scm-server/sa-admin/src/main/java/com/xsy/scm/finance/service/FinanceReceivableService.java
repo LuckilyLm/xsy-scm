@@ -56,13 +56,13 @@ public class FinanceReceivableService {
      * <p>
      * 两步必须在这里连续做：{@code sign} 与 {@code approve} 是两条独立事务，只靠「退货批准时看一眼有没有正常应收」会漏账 —— 批准的那一方看不到尚未提交的签收，
      * 签收的一方也可能看不到刚刚提交的批准。共享串行点是订单行锁 （{@code OrderReturnService.lock} 与 {@code DeliveryRouteService.sign} 都先锁
-     * {@code sales_order}），后拿到锁的一方在 {@code READ COMMITTED} 下一定能看见先提交的一方。
+     * {@code xsy_sales_order}），后拿到锁的一方在 {@code READ COMMITTED} 下一定能看见先提交的一方。
      *
      * <p>
      * <b>必须与签收同事务同成败</b>（{@code MANDATORY}）；跳过语义（零实发 / 整单 0 元）是成功返回，不回滚签收。
      *
      * @param deliveryRouteOrderId
-     *            刚被置为 {@code SIGNED} 的 {@code delivery_route_order.id}；时点与操作人只存在于这一行，不能由调用方现取
+     *            刚被置为 {@code SIGNED} 的 {@code xsy_delivery_route_order.id}；时点与操作人只存在于这一行，不能由调用方现取
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void generateOnSign(Long deliveryRouteOrderId) {
@@ -94,7 +94,7 @@ public class FinanceReceivableService {
      * {@code..._item_source_active}，本方法不吃 {@code Idempotency-Key}。
      *
      * @param orderReturnId
-     *            刚被置为 {@code APPROVED} 的 {@code order_return.id}
+     *            刚被置为 {@code APPROVED} 的 {@code xsy_order_return.id}
      * @return 按冻结优惠分摊计算的退货净额
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)

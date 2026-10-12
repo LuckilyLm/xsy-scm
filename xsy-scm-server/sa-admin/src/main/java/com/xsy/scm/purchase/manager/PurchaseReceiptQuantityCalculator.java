@@ -17,7 +17,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_TOLERANCE
  * <p>
  * 超收上限：{@code tolerance} 取自 SmartAdmin {@code t_config} 的 {@code scm.purchase.over_receipt_tolerance_percent}，缺失回退
  * 10，非数字或超出 0–100 报错； {@code ceiling = planned_quantity × (1 + tolerance / 100)}，
- * {@code available = ceiling − purchase_order_item.received_quantity}， 本次 {@code effectiveQuantity > available} 抛
+ * {@code available = ceiling − xsy_purchase_order_item.received_quantity}， 本次 {@code effectiveQuantity > available} 抛
  * {@code PURCHASE_RECEIPT_OVER_RECEIVED} 并整笔回滚。
  *
  * <p>

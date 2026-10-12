@@ -69,7 +69,7 @@
   </a-card>
 
   <a-modal :open="visible" title="变更前后" width="900px" :footer="null" @cancel="visible = false">
-    <ScmDiffTable :before="active?.beforeData" :after="active?.afterData"/>
+    <ScmDiffTable :before="active?.beforeData" :after="active?.afterData" :scope="active?.operationType"/>
   </a-modal>
 </template>
 
@@ -125,12 +125,14 @@ async function queryData() {
     if (!orderNo.value?.trim()) {
       return;
     }
-    const found = await purchaseOrderApi.query({pageNum: 1, pageSize: 1, orderNo: orderNo.value.trim()});
+    // 查询失败由页头 Alert 承担（含「采购单不存在」这类本地判定），不再让全局 toast 重复说一遍
+    const found = await purchaseOrderApi.query({pageNum: 1, pageSize: 1, orderNo: orderNo.value.trim()},
+        {suppressGlobalErrorMessage: true});
     const order = found.data.list[0];
     if (!order) {
       throw new Error(`采购单 ${orderNo.value} 不存在`);
     }
-    const r = await purchaseOrderApi.logs(order.id!);
+    const r = await purchaseOrderApi.logs(order.id!, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       // 操作类型是客户端过滤：后端只按采购单维度提供日志，没有按类型过滤的入参。
       tableData.value = operationType.value

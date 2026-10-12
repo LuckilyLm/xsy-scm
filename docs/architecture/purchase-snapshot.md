@@ -8,10 +8,10 @@
 
 | 快照 | 落点 | 冻结时点 |
 | --- | --- | --- |
-| Supplier | `purchase_order` / `purchase_receipt` | 创建 / 编辑时（DRAFT 可刷新）；收货单创建时继承 |
-| SKU | `purchase_order_item` / `purchase_receipt_item` / `purchase_demand` | 创建 / 编辑时；收货单创建时继承；需求生成时 |
-| Purchase unit | `purchase_order_item.purchase_unit_snapshot` | 创建 / 编辑时，来源 `supplier_sku.purchase_unit` |
-| Purchase price | `purchase_order_item.purchase_price` + `line_amount` | 创建 / 编辑时（人工确认值） |
+| Supplier | `xsy_purchase_order` / `xsy_purchase_receipt` | 创建 / 编辑时（DRAFT 可刷新）；收货单创建时继承 |
+| SKU | `xsy_purchase_order_item` / `xsy_purchase_receipt_item` / `xsy_purchase_demand` | 创建 / 编辑时；收货单创建时继承；需求生成时 |
+| Purchase unit | `xsy_purchase_order_item.purchase_unit_snapshot` | 创建 / 编辑时，来源 `xsy_supplier_sku.purchase_unit` |
+| Purchase price | `xsy_purchase_order_item.purchase_price` + `line_amount` | 创建 / 编辑时（人工确认值） |
 
 ## 2. 两条不变量
 
@@ -23,7 +23,7 @@
 - 头级快照（供应商）落在一张单据上，全单共享一个值；
 - 行级快照（商品规格、采购单位、采购价）落在明细行上，同一张单的不同行可以取不同的值 —— 这正是「一张采购单可以买多个供应商的商品规格」的表达方式。
 
-采购单位快照取的是 `supplier_sku.purchase_unit`（该供应商对该商品规格的供货单位），**不是** `product_sku.sale_unit`。需求侧的单位快照则取 `sales_order_item.sale_unit_snapshot`（销售单位），两者不是同一个概念，不要互相替换。
+采购单位快照取的是 `xsy_supplier_sku.purchase_unit`（该供应商对该商品规格的供货单位），**不是** `xsy_product_sku.sale_unit`。需求侧的单位快照则取 `xsy_sales_order_item.sale_unit_snapshot`（销售单位），两者不是同一个概念，不要互相替换。
 
 ## 4. 时区口径
 

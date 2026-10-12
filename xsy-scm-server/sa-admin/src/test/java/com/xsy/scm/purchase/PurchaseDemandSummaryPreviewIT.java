@@ -22,12 +22,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>验证的是「读侧口径」而非写入：预览必须与 {@code generate} 同源（已确认订单 + 实发量），
  * 并在单位门禁、仓库隔离、无余额、四位定点这些边界上给出正确判定。
  *
- * <p><b>预留口径</b>：{@code inventory_balance.reserved_quantity} 是全仓总量，其中包含本批订单
+ * <p><b>预留口径</b>：{@code xsy_inventory_balance.reserved_quantity} 是全仓总量，其中包含本批订单
  * 自己占用的预留。预览必须把「本批自身预留」从占用里排除后再比对，否则已备好货的订单会被
  * 算成等额采购缺口（见 {@link #ownReservationDoesNotInflateGap}）。
  *
  * <p>余额用 {@link #seedBalance} 直接插表：预览只<b>读</b>余额，不经收货入库链路，
- * 直插一个 {@code inventory_balance} 行是本用例要构造的「已知库存事实」夹具，不是绕过业务写入口
+ * 直插一个 {@code xsy_inventory_balance} 行是本用例要构造的「已知库存事实」夹具，不是绕过业务写入口
  * （写入口是 {@code InventoryCommandService}，预览完全不碰）。预留则一律走
  * {@code InventoryReservationService.reserve} 真实写入口，保证 {@code reserved_quantity}
  * 与预留行由同一事务维护，夹具不会造出库里不可能出现的状态。
@@ -56,7 +56,7 @@ class PurchaseDemandSummaryPreviewIT extends ScmW5PgITBase {
      */
     private void seedBalance(Long warehouseId, Long skuId, String unit,
                              String quantity, String reserved) {
-        jdbc.update("INSERT INTO inventory_balance (warehouse_id, sku_id, unit, quantity, reserved_quantity, "
+        jdbc.update("INSERT INTO xsy_inventory_balance (warehouse_id, sku_id, unit, quantity, reserved_quantity, "
                         + "avg_cost, version, deleted, created_at, updated_at, created_by, updated_by) "
                         + "VALUES (?, ?, ?, ?, ?, 0, 0, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'it', 'it')",
                 warehouseId, skuId, unit, new BigDecimal(quantity), new BigDecimal(reserved));
@@ -306,11 +306,11 @@ class PurchaseDemandSummaryPreviewIT extends ScmW5PgITBase {
         assertThat(purchaseDemandDao.listActiveBySourceItemIds(List.of(fixture.salesOrderItemId()))).isEmpty();
         // 未产生任何库存流水
         Integer movements = jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_movement WHERE sku_id = ?", Integer.class, fixture.skuId());
+                "SELECT count(*) FROM xsy_inventory_movement WHERE sku_id = ?", Integer.class, fixture.skuId());
         assertThat(movements).isZero();
         // 未新增任何预留行
         Integer reservations = jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_reservation WHERE sku_id = ?", Integer.class, fixture.skuId());
+                "SELECT count(*) FROM xsy_inventory_reservation WHERE sku_id = ?", Integer.class, fixture.skuId());
         assertThat(reservations).isZero();
     }
 }

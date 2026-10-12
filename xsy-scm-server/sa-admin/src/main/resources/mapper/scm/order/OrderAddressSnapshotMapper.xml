@@ -21,7 +21,7 @@
         <result column="geom_crs" property="geomCrs"/>
     </resultMap>
     <select id="list" resultMap="row">SELECT *
-                                      FROM order_address_snapshot
+                                      FROM xsy_order_address_snapshot
                                       WHERE order_id = #{id}
                                       ORDER BY id</select>
 </mapper>

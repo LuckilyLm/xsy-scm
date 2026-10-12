@@ -32,8 +32,8 @@ import com.xsy.scm.report.domain.vo.SalesReportVO;
  * <p>
  * <b>{@code scope} 是调用者的仓库数据范围，必须由 Service 显式下传</b>：为 {@code null} 时 XML 退化为恒假谓词，即「没有授权范围就查不到数据」，不允许用 {@code null}
  * 表达「全部」。空授权清单（{@code ScmValueScope#none()}）会渲染成非法的 {@code IN ()}，所以调用方要么先短路成空结果，要么（仅概览两条，因为它同时带着不受仓库范围约束的销售指标）传
- * {@code null} 走恒假分支。页面查询与 Excel 导出共用本 DAO 的同一批方法，因此导出不会比页面看到更多仓库。销售侧语句不带 {@code scope}：{@code sales_order} /
- * {@code order_refund} 上没有仓库列。
+ * {@code null} 走恒假分支。页面查询与 Excel 导出共用本 DAO 的同一批方法，因此导出不会比页面看到更多仓库。销售侧语句不带 {@code scope}：{@code xsy_sales_order} /
+ * {@code xsy_order_refund} 上没有仓库列。
  */
 @Mapper
 public interface ReportDao {

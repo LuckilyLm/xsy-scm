@@ -16,7 +16,7 @@ import com.xsy.scm.order.domain.vo.OrderReturnVO;
 public interface OrderReturnDao extends BaseMapper<OrderReturnEntity> {
     OrderReturnEntity lock(@Param("id") Long id);
 
-    /** 列表读；范围按父订单的 {@code sales_order.seller_id} 收窄，见 OrderReturnMapper.xml。 */
+    /** 列表读；范围按父订单的 {@code xsy_sales_order.seller_id} 收窄，见 OrderReturnMapper.xml。 */
     List<OrderReturnVO> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
             @Param("scope") ScmValueScope scope);
 }

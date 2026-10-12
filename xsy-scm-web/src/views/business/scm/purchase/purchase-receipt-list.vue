@@ -222,7 +222,7 @@ async function resolveOrderId() {
     queryForm.purchaseOrderId = undefined;
     return;
   }
-  const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 1, orderNo: no});
+  const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 1, orderNo: no}, {suppressGlobalErrorMessage: true});
   const first = r.data.list[0];
   if (!first) {
     throw new Error(`采购单 ${no} 不存在`);
@@ -236,7 +236,8 @@ async function queryData() {
   error.value = '';
   try {
     await resolveOrderId();
-    const r = await purchaseReceiptApi.query(queryForm);
+    // 列表加载失败由页头 Alert 承担（带重试），不再让全局 toast 重复说一遍
+    const r = await purchaseReceiptApi.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -273,13 +274,9 @@ function remove(row: Receipt) {
     title: '删除这张草稿收货单？',
     okType: 'danger',
     onOk: async () => {
-      try {
-        await purchaseReceiptApi.delete({id: row.id!});
-        await queryData();
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
-      }
+      // 失败由全局 toast 给出原因；拒绝以保持确认框打开
+      await purchaseReceiptApi.delete({id: row.id!});
+      await queryData();
     },
   });
 }
@@ -289,17 +286,12 @@ function batchDelete() {
     title: '删除所选草稿收货单？',
     okType: 'danger',
     onOk: async () => {
-      try {
-        await purchaseReceiptApi.batchDelete(
-            tableData.value
-                .filter((r) => selected.value.includes(r.id!))
-                .map((r) => ({id: r.id!, version: r.version!}))
-        );
-        await queryData();
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
-      }
+      await purchaseReceiptApi.batchDelete(
+          tableData.value
+              .filter((r) => selected.value.includes(r.id!))
+              .map((r) => ({id: r.id!, version: r.version!}))
+      );
+      await queryData();
     },
   });
 }
@@ -310,14 +302,9 @@ async function putaway(row: Receipt) {
     title: '确认入库？',
     content: '该操作会把本收货单数量正式记入库存（不可撤销）。',
     onOk: async () => {
-      try {
-        await purchaseReceiptApi.putaway({id: row.id!, version: row.version!});
-        message.success('已入库');
-        await queryData();
-      } catch (e) {
-        error.value = purchaseError(e);
-        throw e;
-      }
+      await purchaseReceiptApi.putaway({id: row.id!, version: row.version!});
+      message.success('已入库');
+      await queryData();
     },
   });
 }

@@ -18,7 +18,7 @@ import java.util.List;
  * 库存预警阈值配置读写 + 预警列表查询。
  *
  * <p>
- * <b>本 DAO 不碰 {@code inventory_balance}</b>（除预警列表的只读 LEFT JOIN）：阈值是配置，余额是派生状态，两者的写路径必须完全分开 —— 否则配置路径就会成为
+ * <b>本 DAO 不碰 {@code xsy_inventory_balance}</b>（除预警列表的只读 LEFT JOIN）：阈值是配置，余额是派生状态，两者的写路径必须完全分开 —— 否则配置路径就会成为
  * 「创建没有流水支撑的余额行」的入口。
  *
  * <p>

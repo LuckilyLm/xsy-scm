@@ -15,12 +15,11 @@ import lombok.Data;
  * 优惠券模板。
  *
  * <p>
- * {@code discountValue} 的含义由 {@code discountType} 决定：{@code AMOUNT} 是减免金额，
- * {@code RATE} 是折扣率（0.95 = 95 折）。两者不合并成一列，因为「减 5 元」和「95 折」
- * 在展示与对账上完全不同，用一列加一个类型标记是唯一不会读错的表达。
+ * {@code discountValue} 的含义由 {@code discountType} 决定：{@code AMOUNT} 是减免金额， {@code RATE} 是折扣率（0.95 = 95 折）。两者不合并成一列，因为「减
+ * 5 元」和「95 折」 在展示与对账上完全不同，用一列加一个类型标记是唯一不会读错的表达。
  */
 @Data
-@TableName(value = "promotion_coupon", autoResultMap = true)
+@TableName(value = "xsy_promotion_coupon", autoResultMap = true)
 public class PromotionCouponEntity {
 
     @TableId(type = IdType.AUTO)

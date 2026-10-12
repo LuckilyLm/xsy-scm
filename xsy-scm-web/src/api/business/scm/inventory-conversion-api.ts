@@ -10,7 +10,7 @@
  * 若在「打开单据 → 点审批」之间折算关系被改过（那是金额相关的改动），
  * 后端返回 40921 并要求刷新 —— 因此前端不得在打开审批弹窗时重新拉取单据。
  */
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -21,8 +21,8 @@ import type {
 } from '/@/views/business/scm/inventory/inventory-types';
 
 export const inventoryConversionApi = {
-    query: (data: InventoryConversionQuery) =>
-        postRequest('/scm/inventory/conversion/query', data) as unknown as Promise<
+    query: (data: InventoryConversionQuery, options?: RequestOptions) =>
+        postRequest('/scm/inventory/conversion/query', data, options) as unknown as Promise<
             ScmResponse<ScmPage<InventoryConversion>>
         >,
     detail: (id: Id) =>

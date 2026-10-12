@@ -38,7 +38,7 @@
 
     <select id="countByWarehouseAndSku" resultType="int">
         SELECT COUNT(*)
-        FROM inventory_warning_threshold
+        FROM xsy_inventory_warning_threshold
         WHERE warehouse_id = #{warehouseId}
           AND sku_id = #{skuId}
           AND deleted = FALSE
@@ -53,7 +53,7 @@
       version 乐观锁 + deleted 守卫都写在 WHERE 里。
     -->
     <update id="updateThreshold">
-        UPDATE inventory_warning_threshold
+        UPDATE xsy_inventory_warning_threshold
         SET warehouse_id = #{warehouseId},
             sku_id       = #{skuId},
             warn_min     = #{warnMin},
@@ -84,10 +84,10 @@
         k.spec_name AS sku_name,
         k.spec_values,
         p.name AS product_name
-        FROM inventory_warning_threshold t
-        LEFT JOIN warehouse w ON w.id = t.warehouse_id
-        LEFT JOIN product_sku k ON k.id = t.sku_id
-        LEFT JOIN product_spu p ON p.id = k.spu_id
+        FROM xsy_inventory_warning_threshold t
+        LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
+        LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
         <!-- 仓库数据范围：阈值配置属于它所约束的那个仓库；scope 缺失时恒假。 -->
         <if test="scope != null and scope.all == false">
@@ -125,10 +125,10 @@
                k.spec_name AS sku_name,
                k.spec_values,
                p.name      AS product_name
-        FROM inventory_warning_threshold t
-                 LEFT JOIN warehouse w ON w.id = t.warehouse_id
-                 LEFT JOIN product_sku k ON k.id = t.sku_id
-                 LEFT JOIN product_spu p ON p.id = k.spu_id
+        FROM xsy_inventory_warning_threshold t
+                 LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
+                 LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
+                 LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
           AND t.id = #{id}
     </select>
@@ -155,14 +155,14 @@
         COALESCE(b.quantity, 0) AS quantity,
         COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
         COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) AS available_quantity
-        FROM inventory_warning_threshold t
-        LEFT JOIN inventory_balance b
+        FROM xsy_inventory_warning_threshold t
+        LEFT JOIN xsy_inventory_balance b
         ON b.warehouse_id = t.warehouse_id
         AND b.sku_id = t.sku_id
         AND b.deleted = FALSE
-        LEFT JOIN warehouse w ON w.id = t.warehouse_id
-        LEFT JOIN product_sku k ON k.id = t.sku_id
-        LEFT JOIN product_spu p ON p.id = k.spu_id
+        LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
+        LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
         <!-- 预警列表按阈值配置所在仓判定：余额列是 LEFT JOIN 进来的，未授权仓的配置
              即使有余额也不出现。scope 缺失时恒假。 -->
@@ -233,14 +233,14 @@
         COALESCE(b.quantity, 0) AS quantity,
         COALESCE(b.reserved_quantity, 0) AS reserved_quantity,
         COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0) AS available_quantity
-        FROM inventory_warning_threshold t
-        LEFT JOIN inventory_balance b
+        FROM xsy_inventory_warning_threshold t
+        LEFT JOIN xsy_inventory_balance b
         ON b.warehouse_id = t.warehouse_id
         AND b.sku_id = t.sku_id
         AND b.deleted = FALSE
-        LEFT JOIN warehouse w ON w.id = t.warehouse_id
-        LEFT JOIN product_sku k ON k.id = t.sku_id
-        LEFT JOIN product_spu p ON p.id = k.spu_id
+        LEFT JOIN xsy_warehouse w ON w.id = t.warehouse_id
+        LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE t.deleted = FALSE
         <if test="scope != null and scope.all == false">
             AND t.warehouse_id IN

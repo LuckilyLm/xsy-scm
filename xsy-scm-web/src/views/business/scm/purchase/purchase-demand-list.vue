@@ -271,7 +271,8 @@ async function queryData() {
   try {
     queryForm.demandDateFrom = dateRange.value?.[0];
     queryForm.demandDateTo = dateRange.value?.[1];
-    const r = await purchaseDemandApi.query(queryForm);
+    // 列表加载失败由页头 Alert 承担（带重试），不再让全局 toast 重复说一遍
+    const r = await purchaseDemandApi.query(queryForm, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -320,7 +321,8 @@ async function openAllocate(demand: Demand) {
 async function loadOrders(keyword: string) {
   alloc.orderLoading = true;
   try {
-    const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 20, orderNo: keyword || undefined});
+    const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 20, orderNo: keyword || undefined},
+        {suppressGlobalErrorMessage: true});
     alloc.orderOptions = r.data.list
         .filter((o) => RECEIVABLE.includes(o.status ?? ''))
         .map((o) => ({value: o.id!, label: `${o.orderNo}（${o.supplierName ?? ''}）`}));
@@ -340,7 +342,7 @@ async function orderChanged(orderId: Id | undefined) {
   }
   alloc.itemLoading = true;
   try {
-    const detail = (await purchaseOrderApi.detail(orderId)).data;
+    const detail = (await purchaseOrderApi.detail(orderId, {suppressGlobalErrorMessage: true})).data;
     alloc.supplierId = detail.supplierId;
     alloc.warehouseId = detail.warehouseId;
     alloc.itemOptions = (detail.items ?? [])
@@ -386,8 +388,8 @@ async function submitAllocate() {
     message.success('需求已分配');
     alloc.open = false;
     await queryData();
-  } catch (e) {
-    alloc.error = purchaseError(e);
+  } catch {
+    // 分配失败只走全局 toast；弹窗里的 alloc.error 留给本地校验
   } finally {
     alloc.saving = false;
   }

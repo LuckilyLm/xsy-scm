@@ -22,8 +22,8 @@
   <a-card v-if="selected" :title="`客户对账单 · 版本 #${selected.id}`" size="small" :bordered="false">
     <template #extra>
       <a-space>
-        <a-button v-privilege="PERM.EXPORT" @click="exportVersion">导出 Excel</a-button>
-        <a-button @click="printVersion">打印 / 保存 PDF</a-button>
+        <a-button v-privilege="PERM.EXPORT" size="small" :loading="versionExport.exporting" @click="exportVersion">导出 Excel</a-button>
+        <a-button size="small" @click="printVersion">打印 / 保存 PDF</a-button>
       </a-space>
     </template>
     <div ref="printArea" class="statement-print">
@@ -58,6 +58,7 @@ import type {ReportId} from './report-types';
 import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-model';
 import {moneyText} from '../inventory/inventory-model';
 import {reportError} from './report-errors';
+import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import ReportDateRangePicker from './report-components/report-date-range-picker.vue';
@@ -66,6 +67,7 @@ const settlementCustomerId = ref<ReportId>(), customerId = ref<ReportId>();
 const dateRange = ref<DateRange>(defaultDateRange());
 
 const selected = ref<CustomerStatement>(), history = ref<CustomerStatement[]>([]);
+const versionExport = useScmExport();
 const printArea = ref<HTMLElement>(), busy = ref(false), error = ref('');
 const factLabels: Record<string, string> = {
   RECEIVABLE: '销售应收', RED: '退货红字', RECEIPT: '实际收款', RECEIPT_REVERSE: '反向收款',
@@ -87,7 +89,7 @@ const lineColumns: TableColumnsType<CustomerStatementLine> = [
 async function loadHistory() {
   if (!settlementCustomerId.value) return;
   busy.value = true; error.value = '';
-  try { history.value = (await customerStatementApi.history(settlementCustomerId.value)).data ?? []; }
+  try { history.value = (await customerStatementApi.history(settlementCustomerId.value, {suppressGlobalErrorMessage: true})).data ?? []; }
   catch (e) { error.value = reportError(e); }
   finally { busy.value = false; }
 }
@@ -102,17 +104,21 @@ async function freeze() {
     selected.value = (await customerStatementApi.freeze({settlementCustomerId: settlementCustomerId.value,
       customerId: customerId.value, startDate: dateRange.value[0], endDate: dateRange.value[1]})).data;
     await loadHistory();
-  } catch (e) { error.value = reportError(e); }
+  } catch {
+    // 生成对账单失败只走全局 toast
+  }
   finally { busy.value = false; }
 }
 async function openVersion(id: ReportId) {
   busy.value = true; error.value = '';
-  try { selected.value = (await customerStatementApi.detail(id)).data; }
+  try { selected.value = (await customerStatementApi.detail(id, {suppressGlobalErrorMessage: true})).data; }
   catch (e) { error.value = reportError(e); }
   finally { busy.value = false; }
 }
-async function exportVersion() {
-  if (selected.value) await customerStatementApi.export(selected.value.id);
+function exportVersion() {
+  const target = selected.value;
+  if (!target) return;
+  void versionExport.run(() => customerStatementApi.export(target.id));
 }
 function printVersion() {
   if (!selected.value || !printArea.value) return;

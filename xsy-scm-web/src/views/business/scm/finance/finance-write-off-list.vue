@@ -140,7 +140,6 @@ import BalanceMovementDetail from './balance-movement-detail.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 import {dateTimeText, entryTypeText, initialFinanceDateRange, moneyText, isValidPositiveAmount} from './finance-form-model';
-import {financeError} from './finance-errors';
 import type {FinanceCandidate, FinanceWriteOff, WriteOffQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
@@ -262,15 +261,21 @@ async function submitAdd() {
         message.warning('请为至少一条目标填写正数金额（最多 4 位小数）');
         return;
     }
+    if (!source.value || !sourceType.value) {
+        addError.value = '请选择核销来源';
+        return;
+    }
     addSaving.value = true; addError.value = '';
     try {
         await financeApi.writeOffAdd({sourceType: sourceType.value, sourceId: source.value.id, items});
         message.success('核销已登记'); addOpen.value = false; await queryData();
-    } catch (cause) { addError.value = financeError(cause); }
+    } catch {
+        // 登记失败只走全局 toast；弹窗里的 addError 留给本地校验
+    }
     finally { addSaving.value = false; }
 }
 
-function openReverse(row: FinanceWriteOff) { reverseRow.value = row; reverseReason.value = ''; reverseError.value = ''; reverseOpen.value = true; }
+function openReverse(row: FinanceWriteOff) { reverseRow.value = row; reverseReason.value = ''; reverseOpen.value = true; }
 async function submitReverse() {
     if (!reverseRow.value) return;
     // 必填项走表单校验：错误显示在输入框下方
@@ -283,7 +288,9 @@ async function submitReverse() {
     try {
         await financeApi.writeOffReverse({writeOffId: reverseRow.value.writeOffId, reason: reverseReason.value.trim()});
         message.success('反向核销已追加'); reverseOpen.value = false; await queryData();
-    } catch (cause) { reverseError.value = financeError(cause); }
+    } catch {
+        // 反向失败只走全局 toast；弹窗里的 reverseError 留给表单校验
+    }
     finally { reverseSaving.value = false; }
 }
 

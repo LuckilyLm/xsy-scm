@@ -107,7 +107,7 @@ public class InventoryFulfillmentService {
      * 一条赠品出库明细：一个冻结的赠品权益行。
      *
      * @param giftId
-     *            {@code order_promotion_gift.id}，同时是防重锚点
+     *            {@code xsy_order_promotion_gift.id}，同时是防重锚点
      * @param quantity
      *            赠品数量，恒 &gt; 0
      */

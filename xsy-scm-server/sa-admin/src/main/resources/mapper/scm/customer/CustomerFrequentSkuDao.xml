@@ -23,8 +23,8 @@
                              i.product_name_snapshot AS product_name,
                              i.spec_name_snapshot AS spec_name,
                              i.locked_unit_price  AS locked_unit_price
-                      FROM sales_order o
-                               JOIN sales_order_item i ON i.order_id = o.id AND i.deleted = FALSE
+                      FROM xsy_sales_order o
+                               JOIN xsy_sales_order_item i ON i.order_id = o.id AND i.deleted = FALSE
                       WHERE o.deleted = FALSE
                         AND o.status = 'CONFIRMED'
                         AND o.customer_id = #{customerId}

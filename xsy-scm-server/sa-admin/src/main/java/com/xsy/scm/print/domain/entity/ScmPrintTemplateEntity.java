@@ -15,11 +15,10 @@ import lombok.Data;
  * 打印模板配置（按单据类型 + 编码）。
  *
  * <p>
- * {@code model} 是受控模型（见 {@code ScmPrintTemplateModel}），存 JSONB；
- * 模板只保存字段 key，不保存标签、不保存 HTML、不保存任何授权信息。
+ * {@code model} 是受控模型（见 {@code ScmPrintTemplateModel}），存 JSONB； 模板只保存字段 key，不保存标签、不保存 HTML、不保存任何授权信息。
  */
 @Data
-@TableName(value = "scm_print_template", autoResultMap = true)
+@TableName(value = "xsy_print_template", autoResultMap = true)
 public class ScmPrintTemplateEntity {
 
     @TableId(type = IdType.AUTO)

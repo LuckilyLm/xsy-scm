@@ -22,7 +22,7 @@ import java.time.OffsetDateTime;
  * 静默忽略，导致「清空联系人 / 地址 / 备注」永远失败。
  */
 @Data
-@TableName(value = "customer", autoResultMap = true)
+@TableName(value = "xsy_customer", autoResultMap = true)
 public class CustomerEntity {
     @JsonSerialize(nullsUsing = NullSerializer.class)
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

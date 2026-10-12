@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 余额流水类型。持久化到 {@code customer_balance_movement.type}。
+ * 余额流水类型。持久化到 {@code xsy_customer_balance_movement.type}。
  *
  * <p>
  * 每个类型<b>自带允许的方向</b>（与库上的 {@code ck_customer_balance_movement_type_direction} 逐字一致）：充值只能进、消费只能出、退款返还只能进、人工更正两个方向都可以。

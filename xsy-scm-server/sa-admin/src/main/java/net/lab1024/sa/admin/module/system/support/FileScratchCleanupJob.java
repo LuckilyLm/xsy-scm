@@ -34,7 +34,7 @@ public class FileScratchCleanupJob implements SmartJob {
      * <p>新领域如果新增附件列，必须同时登记到这里，否则该列引用的暂存件会被误判为孤儿。
      */
     private static final String[][] BUSINESS_KEY_COLUMNS = {
-            {"product_image", "file_key"},
+            {"xsy_product_image", "file_key"},
             {"t_notice", "attachment"},
             {"t_help_doc", "attachment"},
             {"t_feedback", "feedback_attachment"},

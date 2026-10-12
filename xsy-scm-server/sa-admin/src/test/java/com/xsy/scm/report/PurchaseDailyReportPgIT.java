@@ -71,9 +71,9 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
         order(ScmPurchaseStatusEnum.DRAFT, null, "kg", "100", WAREHOUSE_A, PURCHASER_A);
         order(ScmPurchaseStatusEnum.CANCELLED, start(), "kg", "100", WAREHOUSE_A, PURCHASER_A);
         Long deletedOrder = order(ScmPurchaseStatusEnum.SUBMITTED, start(), "kg", "100", WAREHOUSE_A, PURCHASER_A);
-        jdbcTemplate.update("UPDATE purchase_order SET deleted = TRUE WHERE id = ?", deletedOrder);
+        jdbcTemplate.update("UPDATE xsy_purchase_order SET deleted = TRUE WHERE id = ?", deletedOrder);
         Long deletedItem = order(ScmPurchaseStatusEnum.SUBMITTED, start(), "kg", "100", WAREHOUSE_A, PURCHASER_A);
-        jdbcTemplate.update("UPDATE purchase_order_item SET deleted = TRUE WHERE purchase_order_id = ?", deletedItem);
+        jdbcTemplate.update("UPDATE xsy_purchase_order_item SET deleted = TRUE WHERE purchase_order_id = ?", deletedItem);
         evictMybatisCache();
 
         assertThat(generationService.generate(REPORT_DATE)).isTrue();
@@ -130,7 +130,7 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
                     """);
             jdbcTemplate.execute("""
                     CREATE TRIGGER xsy_test_reject_purchase_daily_item
-                    BEFORE INSERT ON report_purchase_daily_item
+                    BEFORE INSERT ON xsy_report_purchase_daily_item
                     FOR EACH ROW EXECUTE FUNCTION xsy_test_reject_purchase_daily_item()
                     """);
 
@@ -169,10 +169,10 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
             assertThat(countDailyHeaders()).isEqualTo(1);
             assertThat(countDailyItems()).isEqualTo(1);
             assertThat(jdbcTemplate.queryForObject(
-                    "SELECT order_count FROM report_purchase_daily_item WHERE report_date = ?",
+                    "SELECT order_count FROM xsy_report_purchase_daily_item WHERE report_date = ?",
                     Integer.class, REPORT_DATE)).isEqualTo(2);
             assertThat(jdbcTemplate.queryForObject(
-                    "SELECT planned_quantity FROM report_purchase_daily_item WHERE report_date = ?",
+                    "SELECT planned_quantity FROM xsy_report_purchase_daily_item WHERE report_date = ?",
                     BigDecimal.class, REPORT_DATE)).isEqualByComparingTo("5");
         } finally {
             startTogether.countDown();
@@ -187,7 +187,7 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
         Long orderId = order(ScmPurchaseStatusEnum.SUBMITTED, start(), "kg", "2", WAREHOUSE_A, PURCHASER_A);
         assertThat(generationService.generate(REPORT_DATE)).isTrue();
         OffsetDateTime generatedAt = reportDao.findGeneratedAt(REPORT_DATE);
-        jdbcTemplate.update("UPDATE purchase_order SET status = 'CANCELLED', cancel_reason = '测试取消', "
+        jdbcTemplate.update("UPDATE xsy_purchase_order SET status = 'CANCELLED', cancel_reason = '测试取消', "
                 + "cancelled_at = CURRENT_TIMESTAMP WHERE id = ?", orderId);
         evictMybatisCache();
 
@@ -280,26 +280,26 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
 
     private int countDailyHeaders() {
         return jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM report_purchase_daily WHERE report_date = ?", Integer.class, REPORT_DATE);
+                "SELECT count(*) FROM xsy_report_purchase_daily WHERE report_date = ?", Integer.class, REPORT_DATE);
     }
 
     private int countDailyItems() {
         return jdbcTemplate.queryForObject(
-                "SELECT count(*) FROM report_purchase_daily_item WHERE report_date = ?", Integer.class, REPORT_DATE);
+                "SELECT count(*) FROM xsy_report_purchase_daily_item WHERE report_date = ?", Integer.class, REPORT_DATE);
     }
 
     private void dropItemFailureTrigger() {
         jdbcTemplate.execute(
-                "DROP TRIGGER IF EXISTS xsy_test_reject_purchase_daily_item ON report_purchase_daily_item");
+                "DROP TRIGGER IF EXISTS xsy_test_reject_purchase_daily_item ON xsy_report_purchase_daily_item");
         jdbcTemplate.execute("DROP FUNCTION IF EXISTS xsy_test_reject_purchase_daily_item()");
     }
 
     private void cleanupDailyReportFixtures(List<Long> orderIds) {
-        jdbcTemplate.update("DELETE FROM report_purchase_daily_item WHERE report_date = ?", REPORT_DATE);
-        jdbcTemplate.update("DELETE FROM report_purchase_daily WHERE report_date = ?", REPORT_DATE);
+        jdbcTemplate.update("DELETE FROM xsy_report_purchase_daily_item WHERE report_date = ?", REPORT_DATE);
+        jdbcTemplate.update("DELETE FROM xsy_report_purchase_daily WHERE report_date = ?", REPORT_DATE);
         for (Long orderId : orderIds) {
-            jdbcTemplate.update("DELETE FROM purchase_order_item WHERE purchase_order_id = ?", orderId);
-            jdbcTemplate.update("DELETE FROM purchase_order WHERE id = ?", orderId);
+            jdbcTemplate.update("DELETE FROM xsy_purchase_order_item WHERE purchase_order_id = ?", orderId);
+            jdbcTemplate.update("DELETE FROM xsy_purchase_order WHERE id = ?", orderId);
         }
     }
 
@@ -316,7 +316,7 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
         boolean shortClosed = status == ScmPurchaseStatusEnum.SHORT_CLOSED;
         BigDecimal amount = new BigDecimal(quantity).multiply(new BigDecimal("2"));
         Long orderId = jdbcTemplate.queryForObject("""
-                INSERT INTO purchase_order (order_no, supplier_id, supplier_code_snapshot, supplier_name_snapshot,
+                INSERT INTO xsy_purchase_order (order_no, supplier_id, supplier_code_snapshot, supplier_name_snapshot,
                     warehouse_id, warehouse_code_snapshot, warehouse_name_snapshot, purchaser_id, status,
                     total_amount, submitted_at, planned_arrival_date, cancelled_at, cancel_reason,
                     short_closed_at, short_close_reason)
@@ -325,7 +325,7 @@ class PurchaseDailyReportPgIT extends ScmW6PgITBase {
                 cancelled ? start() : null, cancelled ? "取消" : null,
                 shortClosed ? start() : null, shortClosed ? "短结" : null);
         jdbcTemplate.update("""
-                INSERT INTO purchase_order_item (purchase_order_id, spu_id, sku_id, spu_code_snapshot,
+                INSERT INTO xsy_purchase_order_item (purchase_order_id, spu_id, sku_id, spu_code_snapshot,
                     product_name_snapshot, sku_code_snapshot, sku_name_snapshot, purchase_unit_snapshot,
                     product_type_snapshot, planned_quantity, received_quantity, purchase_price, line_amount)
                 VALUES (?, 1, ?, ?, ?, ?, ?, ?, 'STANDARD', ?, 0, 2, ?)

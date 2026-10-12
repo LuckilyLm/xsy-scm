@@ -63,7 +63,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_M
  * 统一协调库存余额与流水的写入，参与调用方事务，失败时随业务命令整体回滚。
  *
  * <p>
- * 全仓唯一会改变 {@code inventory_balance.quantity} 的地方：十条写入路径都只通过 {@code incrementQuantity} / {@code decrementQuantity}
+ * 全仓唯一会改变 {@code xsy_inventory_balance.quantity} 的地方：十条写入路径都只通过 {@code incrementQuantity} / {@code decrementQuantity}
  * 增量语句改数量，不做读-改-写赋值。加权均价只在采购入库、销售退货回库、调拨转入、规格转换转入 这四条有明确单位成本的入库路径上更新；盘点与报损报溢不改变均价，出库保留当时均价到流水。
  *
  * <p>
@@ -320,7 +320,7 @@ public class InventoryCommandService {
     }
 
     /**
-     * 促销赠品出库：方向 = 出，来源 = 冻结的赠品权益（{@code order_promotion_gift}）。
+     * 促销赠品出库：方向 = 出，来源 = 冻结的赠品权益（{@code xsy_order_promotion_gift}）。
      *
      * <p>
      * 与 {@link #postSalesOutbound} 同一套纪律：必须在调用方事务内、按 {@code (warehouse_id, sku_id)} 锁余额、

@@ -39,8 +39,6 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-tag color="blue">只读预览</a-tag>
-    <p class="scm-note scm-note--block">预览不是最终净采购建议，也不生成采购单。</p>
     <a-table
         id="scm-purchase-demand-summary-preview-table"
         size="small"
@@ -85,9 +83,10 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref} from 'vue';
+import {computed, h, ref} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
+import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import type {DemandSummaryRow, Id} from '../purchase-types';
@@ -139,7 +138,17 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
   {title: '库存对比差额', dataIndex: 'stockComparisonGap', align: 'right', width: 130},
   {title: '有效在途未收', dataIndex: 'inTransitQuantity', align: 'right', width: 130},
   {title: '已有采购覆盖', dataIndex: 'purchaseCoverageQuantity', align: 'right', width: 130},
-  {title: '净采购缺口', dataIndex: 'netPurchaseGap', align: 'right', width: 125},
+  {
+    // 「净采购缺口」容易被当成「该买这么多」，用表头问号说明它只是预览口径。
+    // 放表头而不是页面常驻一行：不操作的人不需要看到，需要的人悬停即可。
+    title: () => h('span', [
+      h('span', '净采购缺口'),
+      h(ScmFieldHelp, {label: '净采购缺口', text: '预览不是最终净采购建议，也不生成采购单。'}),
+    ]),
+    dataIndex: 'netPurchaseGap',
+    align: 'right',
+    width: 125,
+  },
   {title: '计算状态', dataIndex: 'calculationStatus', align: 'center', width: 120},
 ]);
 
@@ -156,6 +165,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
+    // 加载失败由页内 Alert 承担（带重试），不再让全局 toast 重复说一遍
     const r = await purchaseDemandApi.summaryPreview({
       startAt: range.value[0],
       endAt: range.value[1],
@@ -163,7 +173,7 @@ async function queryData() {
       keyword: keyword.value || null,
       pageNum: pageNum.value,
       pageSize: pageSize.value,
-    });
+    }, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;
@@ -193,9 +203,3 @@ function resetQuery() {
   error.value = '';
 }
 </script>
-
-<style scoped>
-.banner {
-  margin-bottom: 12px;
-}
-</style>

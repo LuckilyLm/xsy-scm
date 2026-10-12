@@ -19,7 +19,7 @@ import lombok.Data;
  * 钱包属于<b>结算主体</b>：集团下属单位共用集团钱包。
  */
 @Data
-@TableName("customer_balance_account")
+@TableName("xsy_customer_balance_account")
 public class CustomerBalanceAccountEntity {
 
     @TableId(type = IdType.AUTO)

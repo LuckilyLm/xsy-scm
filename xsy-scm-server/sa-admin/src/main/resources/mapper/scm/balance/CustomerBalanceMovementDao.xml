@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.balance.dao.CustomerBalanceMovementDao">
 
     <insert id="insertOnConflictDoNothing" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO customer_balance_movement (movement_no, account_id, settlement_customer_id, customer_id,
+        INSERT INTO xsy_customer_balance_movement (movement_no, account_id, settlement_customer_id, customer_id,
             type, direction, amount, source_type, source_id, reason, occurred_at,
             created_at, updated_at, created_by, updated_by)
         VALUES (#{movementNo}, #{accountId}, #{settlementCustomerId}, #{customerId},
@@ -18,13 +18,13 @@
     -->
     <select id="sumSignedByAccount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(CASE WHEN direction = #{credit} THEN amount ELSE -amount END), 0)
-        FROM customer_balance_movement
+        FROM xsy_customer_balance_movement
         WHERE account_id = #{accountId}
           AND deleted = FALSE
     </select>
 
     <select id="selectBySource" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity">
-        SELECT * FROM customer_balance_movement
+        SELECT * FROM xsy_customer_balance_movement
         WHERE source_type = #{sourceType}
           AND source_id = #{sourceId}
           AND deleted = FALSE
@@ -52,9 +52,9 @@
                m.occurred_at            AS occurredAt,
                m.created_at             AS createdAt,
                m.created_by             AS operator
-        FROM customer_balance_movement m
-                 JOIN customer sc ON sc.id = m.settlement_customer_id AND sc.deleted = FALSE
-                 LEFT JOIN customer bc ON bc.id = m.customer_id AND bc.deleted = FALSE
+        FROM xsy_customer_balance_movement m
+                 JOIN xsy_customer sc ON sc.id = m.settlement_customer_id AND sc.deleted = FALSE
+                 LEFT JOIN xsy_customer bc ON bc.id = m.customer_id AND bc.deleted = FALSE
         WHERE m.deleted = FALSE
         <choose>
             <when test="scope == null or scope.customerSellerScope.empty">AND FALSE</when>
@@ -80,7 +80,7 @@
     </select>
 
     <select id="listByAccount" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity">
-        SELECT * FROM customer_balance_movement
+        SELECT * FROM xsy_customer_balance_movement
         WHERE account_id = #{accountId}
           AND deleted = FALSE
         ORDER BY occurred_at, id

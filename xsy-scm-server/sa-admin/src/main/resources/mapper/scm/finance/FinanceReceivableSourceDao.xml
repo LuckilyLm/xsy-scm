@@ -5,7 +5,7 @@
     <!--
       财务域对配送 / 订单 / 库存表只读：本文件只有 SELECT。
       读取一律显式写 deleted = FALSE，与 uk_finance_receivable_source_active 的谓词同口径；
-      唯一例外是 JOIN 进来的 sales_order：它是这张应收的来源主体，主档被软删也不能让
+      唯一例外是 JOIN 进来的 xsy_sales_order：它是这张应收的来源主体，主档被软删也不能让
       一次真实签收静默变成「什么都不生成」（漏账比多读一行危险），缺行时结果集为空、
       由服务侧的 null 判据失败并让签收回滚。
     -->
@@ -19,8 +19,8 @@
                o.customer_name_snapshot AS customerNameSnapshot,
                o.settlement_customer_id AS settlementCustomerId,
                o.settlement_customer_name_snapshot AS settlementCustomerNameSnapshot
-        FROM delivery_route_order ro
-                 JOIN sales_order o ON o.id = ro.order_id
+        FROM xsy_delivery_route_order ro
+                 JOIN xsy_sales_order o ON o.id = ro.order_id
         WHERE ro.id = #{deliveryRouteOrderId}
           AND ro.deleted = FALSE
           AND ro.fulfillment_status = 'SIGNED'
@@ -45,8 +45,8 @@
                ob.quantity            AS quantity,
                oi.locked_unit_price   AS unitPrice,
                oi.ordered_line_amount AS orderedLineAmount
-        FROM inventory_outbound_item ob
-                 JOIN sales_order_item oi ON oi.id = ob.sales_order_item_id
+        FROM xsy_inventory_outbound_item ob
+                 JOIN xsy_sales_order_item oi ON oi.id = ob.sales_order_item_id
         WHERE ob.deleted = FALSE
           AND ob.sales_order_id = #{salesOrderId}
           AND ob.sales_order_item_id IS NOT NULL
@@ -56,7 +56,7 @@
 
     <select id="selectOrderSellerId" resultType="long">
         SELECT seller_id
-        FROM sales_order
+        FROM xsy_sales_order
         WHERE id = #{salesOrderId}
           AND deleted = FALSE
     </select>
@@ -73,7 +73,7 @@
                rt.approved_at  AS approvedAt,
                rt.updated_by   AS approvedBy,
                rt.reason       AS reason
-        FROM order_return rt
+        FROM xsy_order_return rt
         WHERE rt.id = #{orderReturnId}
           AND rt.deleted = FALSE
           AND rt.status = 'APPROVED'
@@ -81,7 +81,7 @@
 
     <select id="selectApprovedReturnIds" resultType="long">
         SELECT rt.id
-        FROM order_return rt
+        FROM xsy_order_return rt
         WHERE rt.order_id = #{salesOrderId}
           AND rt.deleted = FALSE
           AND rt.status = 'APPROVED'
@@ -91,7 +91,7 @@
     <!--
       有效红字行：逐行跳过非正金额。金额原样取 approved_amount，
       不在 SQL 里乘回来 —— 订单域已按 round(approved_quantity × locked_unit_price, 4) 落库。
-      商品三件套从来源订单行取（order_return_item 不存快照）。
+      商品三件套从来源订单行取（xsy_order_return_item 不存快照）。
     -->
     <select id="selectApprovedReturnLines"
             resultType="com.xsy.scm.finance.domain.dto.FinanceReturnSourceLineDto">
@@ -104,8 +104,8 @@
                ri.locked_unit_price AS lockedUnitPrice,
                ri.approved_amount   AS approvedAmount,
                oi.ordered_line_amount AS orderedLineAmount
-        FROM order_return_item ri
-                 JOIN sales_order_item oi ON oi.id = ri.order_item_id
+        FROM xsy_order_return_item ri
+                 JOIN xsy_sales_order_item oi ON oi.id = ri.order_item_id
         WHERE ri.return_id = #{orderReturnId}
           AND ri.deleted = FALSE
           AND ri.approved_quantity &gt; 0
@@ -124,7 +124,7 @@
             resultType="com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto">
         SELECT (allocation -&gt;&gt; 'orderItemId')::bigint     AS orderItemId,
                (allocation -&gt;&gt; 'discountAmount')::numeric AS discountAmount
-        FROM order_discount od
+        FROM xsy_order_discount od
                  CROSS JOIN LATERAL jsonb_array_elements(od.allocations) AS allocation
         WHERE od.sales_order_id = #{salesOrderId}
     </select>

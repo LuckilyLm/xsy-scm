@@ -29,7 +29,8 @@
       </a-col>
 
       <a-col :xs="24" :md="15">
-        <a-card size="small" :bordered="false">
+        <a-card size="small" :bordered="false" :class="{ 'pool-target': !!poolDragKey }"
+                @dragover.prevent @drop.prevent="dropFromPool">
           <template #title>
             <span v-if="view">
               {{ view.name }}（{{ view.spuCode }}）
@@ -38,7 +39,7 @@
             <span v-else>图片维护</span>
           </template>
           <template #extra>
-            <a-button v-privilege="'scm:product:image:batch'" type="primary" :disabled="!products.length"
+            <a-button v-privilege="'scm:product:image:batch'" type="primary" size="small" :disabled="!products.length"
                       @click="openBatch">按文件名批量导入
             </a-button>
           </template>
@@ -80,6 +81,29 @@
       </a-col>
     </a-row>
 
+    <a-card size="small" :bordered="false" class="pool-card">
+      <template #title>
+        <span>未绑定图片（{{ pool.length }}）
+          <ScmFieldHelp label="未绑定图片" text="已上传到公开图片目录、但还没挂到任何商品的图片。先选中左侧商品，再把它拖到右边，或点「绑到当前商品」。"/>
+        </span>
+      </template>
+      <template #extra>
+        <a-button size="small" :loading="poolLoading" @click="loadPool">刷新</a-button>
+      </template>
+      <a-alert v-if="poolError" :message="poolError" type="error" show-icon class="gap"/>
+      <a-spin :spinning="poolLoading">
+        <a-empty v-if="!pool.length" description="没有待绑定的图片"/>
+        <div v-else class="pool">
+          <figure v-for="image in pool" :key="image.fileKey" draggable="true"
+                  @dragstart="poolDragKey = image.fileKey" @dragend="poolDragKey = ''">
+            <a-image :src="image.fileUrl" :width="88" :height="88" :alt="image.fileName || '未绑定图片'"/>
+            <figcaption :title="image.fileName">{{ image.fileName || '—' }}</figcaption>
+            <a-button size="small" :disabled="!view || busy" @click="bindFromPool(image)">绑到当前商品</a-button>
+          </figure>
+        </div>
+      </a-spin>
+    </a-card>
+
     <a-modal v-model:open="batchOpen" title="按文件名批量导入图片" :width="760" :mask-closable="false" @cancel="closeBatch">
       <p class="scm-note">文件名（去扩展名）需等于目标商品的商品编码；预览确认后才写入。</p>
       <a-upload :file-list="[]" :before-upload="stageFiles" accept="image/*" multiple :show-upload-list="false">
@@ -113,14 +137,14 @@
   </section>
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { message } from 'ant-design-vue';
 import type { UploadProps } from 'ant-design-vue';
 import { productApi, productImageApi } from '/@/api/business/scm/product-api';
 import { fileApi } from '/@/api/support/file-api';
 import { FILE_FOLDER_TYPE_ENUM } from '/@/constants/support/file-const';
 import { useUserStore } from '/@/store/modules/system/user';
-import type { ImageCenterView, ProductId, ProductImage, ProductRow, ScmResponse } from '/@/types/business/scm/product';
+import type { ImageCenterView, ProductId, ProductImage, ProductRow, ScmResponse, UnboundImage } from '/@/types/business/scm/product';
 import type { FileMatchResult, SpuTarget, UploadedImageFile } from './product-import-model';
 import { matchFilesBySpuCode } from './product-import-model';
 import { productError } from './product-errors';
@@ -143,6 +167,46 @@ const pickColumns = [
 const view = ref<ImageCenterView | null>(null), imageLoading = ref(false), imageError = ref(''), busy = ref(false),
     uploading = ref(false), dragIndex = ref(-1);
 
+// 未绑定图片池：数据源是文件表里 public/image 目录下没有挂到任何商品的图，和上面按 SPU 的视图互不覆盖。
+const pool = ref<UnboundImage[]>([]), poolLoading = ref(false), poolError = ref(''), poolDragKey = ref('');
+
+async function loadPool() {
+  poolLoading.value = true;
+  poolError.value = '';
+  try {
+    pool.value = (await productImageApi.unboundImages(300)).data;
+  } catch (e) {
+    poolError.value = productError(e);
+  } finally {
+    poolLoading.value = false;
+  }
+}
+
+/** 池里的图绑到当前选中商品；主图只在商品还没有任何图时给，避免顶掉用户已设的主图。 */
+async function bindFromPool(image: UnboundImage) {
+  if (!view.value) return;
+  const target = view.value;
+  const primaryFlag = target.images.length === 0;
+  await runWrite(() => productImageApi.batchBind({
+    items: [{ spuId: target.spuId, fileKey: image.fileKey, primaryFlag, sortOrder: target.images.length }]
+  }), '图片已绑定');
+  await loadPool();
+}
+
+/** 拖拽落点在右侧商品卡片上；商品内部换序的拖拽没有 poolDragKey，直接放行。 */
+async function dropFromPool() {
+  const fileKey = poolDragKey.value;
+  poolDragKey.value = '';
+  if (!fileKey) return;
+  const image = pool.value.find(item => item.fileKey === fileKey);
+  if (image) await bindFromPool(image);
+}
+
+onMounted(() => {
+  search();
+  loadPool();
+});
+
 async function search() {
   pickLoading.value = true;
   pickError.value = '';
@@ -164,8 +228,9 @@ async function search() {
 function resetPick() {
   keyword.value = '';
   onlyNoPrimary.value = false;
-  products.value = [];
   view.value = null;
+  // 重置只清筛选条件，列表要重新拉一遍；清空 products 会让整页变成「暂无数据」，看着像数据没了。
+  search();
 }
 
 async function select(spuId: ProductId) {
@@ -352,5 +417,32 @@ figcaption {
 
 .muted {
   color: var(--scm-text-secondary, #bbb);
+}
+
+.pool-card {
+  margin-top: 12px;
+}
+
+.pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.pool figure {
+  width: 96px;
+}
+
+.pool figcaption {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pool-target {
+  outline: 1px dashed var(--scm-primary, #1677ff);
+  outline-offset: -4px;
 }
 </style>

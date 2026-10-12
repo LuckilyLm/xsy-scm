@@ -23,7 +23,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_UNIT_CONV
  * 全部为静态纯函数，无 Spring、无 DB、无事务；需求超量、跨供应商或仓库冲突、需求 ID 排序和单位匹配规则集中在此处判定。
  *
  * <p>
- * 需求单位（销售单位）与采购单位（{@code supplier_sku.purchase_unit}）是两个独立快照。两者不一致时拒绝自动分配（40971）；仅替换单位字符串或猜测换算系数都会产生错误数量。
+ * 需求单位（销售单位）与采购单位（{@code xsy_supplier_sku.purchase_unit}）是两个独立快照。两者不一致时拒绝自动分配（40971）；仅替换单位字符串或猜测换算系数都会产生错误数量。
  */
 public final class PurchaseDemandAllocator {
 
@@ -79,7 +79,7 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * {@code (supplier, warehouse)} 一致性（40981）。
+     * {@code (xsy_supplier, xsy_warehouse)} 一致性（40981）。
      *
      * <p>
      * {@code warehouse_id} 在 {@code generate} 时已固定，因此必须始终等于采购单的仓库； {@code supplier_id}

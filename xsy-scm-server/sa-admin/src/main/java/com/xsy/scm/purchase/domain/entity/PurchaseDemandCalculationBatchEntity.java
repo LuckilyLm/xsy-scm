@@ -11,7 +11,7 @@ import lombok.Data;
 
 /** Immutable demand-calculation inputs; only lifecycle/result columns change after generation. */
 @Data
-@TableName(value = "purchase_demand_calculation_batch", autoResultMap = true)
+@TableName(value = "xsy_purchase_demand_calculation_batch", autoResultMap = true)
 public class PurchaseDemandCalculationBatchEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

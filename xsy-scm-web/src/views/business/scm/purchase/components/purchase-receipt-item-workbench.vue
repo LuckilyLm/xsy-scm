@@ -122,6 +122,7 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
+    // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
     const r = await purchaseReceiptApi.itemWorkbench({
       supplierId: supplierId.value,
       warehouseId: warehouseId.value,
@@ -129,7 +130,7 @@ async function queryData() {
       keyword: keyword.value || undefined,
       pageNum: pageNum.value,
       pageSize: pageSize.value,
-    });
+    }, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;

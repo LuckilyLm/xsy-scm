@@ -16,7 +16,7 @@
     <select id="queryPage" resultMap="activityMap">
         SELECT
         <include refid="columns"/>
-        FROM promotion_activity
+        FROM xsy_promotion_activity
         WHERE deleted = FALSE
         <if test="query.activityType != null and query.activityType != ''">
             AND activity_type = #{query.activityType}
@@ -35,7 +35,7 @@
     <select id="listActive" resultMap="activityMap">
         SELECT
         <include refid="columns"/>
-        FROM promotion_activity
+        FROM xsy_promotion_activity
         WHERE deleted = FALSE
           AND status = 'ACTIVE'
           AND valid_from &lt;= #{at}
@@ -46,14 +46,14 @@
     <select id="lockById" resultMap="activityMap">
         SELECT
         <include refid="columns"/>
-        FROM promotion_activity
+        FROM xsy_promotion_activity
         WHERE id = #{id}
           AND deleted = FALSE
             FOR UPDATE
     </select>
 
     <update id="updateStatus">
-        UPDATE promotion_activity
+        UPDATE xsy_promotion_activity
         SET status     = #{status},
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,

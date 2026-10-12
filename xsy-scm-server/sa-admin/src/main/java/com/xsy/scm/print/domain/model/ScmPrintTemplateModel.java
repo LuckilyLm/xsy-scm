@@ -7,7 +7,7 @@ import java.util.Map;
 import lombok.Data;
 
 /**
- * 打印模板的<b>受控模型</b>（存进 {@code scm_print_template.model} 的形状）。
+ * 打印模板的<b>受控模型</b>（存进 {@code xsy_print_template.model} 的形状）。
  *
  * <p>
  * 它刻意不是一个「版式描述语言」：只有标题、纸张、方向、表头字段、明细列、是否合计、页脚备注。 没有位置、字号、HTML、脚本，也没有表达式 —— 能表达的版式就是「一张表 + 一行表头 + 一行页脚」，

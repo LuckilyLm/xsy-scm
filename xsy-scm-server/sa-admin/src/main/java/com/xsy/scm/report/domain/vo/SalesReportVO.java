@@ -74,7 +74,7 @@ public class SalesReportVO {
     }
 
     /**
-     * 粒度 = 客户。退款按 {@code order_refund.customer_id} 独立聚合后再合并，不经订单行 JOIN，否则一单多行会把退款放大。
+     * 粒度 = 客户。退款按 {@code xsy_order_refund.customer_id} 独立聚合后再合并，不经订单行 JOIN，否则一单多行会把退款放大。
      */
     @Data
     public static class CustomerRow {
@@ -107,14 +107,14 @@ public class SalesReportVO {
     }
 
     /**
-     * 粒度 = {@code sales_order}（订单表头级）。
+     * 粒度 = {@code xsy_sales_order}（订单表头级）。
      *
      * <p>
      * 与 {@link ItemRow} 的分工：行级回答「这单买了什么」，本行回答「这个客户有几单、每单多少」。因此筛选语义也不同——{@code categoryId} / {@code keyword}
      * 是<b>行级</b>条件，在本维度下用 {@code EXISTS} 判定「该订单是否命中」，命中后金额仍按<b>整单</b>汇总，不会因为只匹配部分行而把订单金额算小。
      *
      * <p>
-     * 退款按 {@code order_refund} 独立聚合后按订单关联，不经订单行 JOIN，否则一单多行会把退款放大。 与按客户 / 按销售员一致：退款只统计窗口内 {@code COMPLETED}
+     * 退款按 {@code xsy_order_refund} 独立聚合后按订单关联，不经订单行 JOIN，否则一单多行会把退款放大。 与按客户 / 按销售员一致：退款只统计窗口内 {@code COMPLETED}
      * 的退款，不推算「净额」。
      */
     @Data
@@ -127,7 +127,7 @@ public class SalesReportVO {
         private String sellerName;
         private String orderSource;
         private String settleMode;
-        /** 订单行数（{@code sales_order_item} 未删除行）。 */
+        /** 订单行数（{@code xsy_sales_order_item} 未删除行）。 */
         private Long lineCount;
         /** 订单涉及的 SKU 种类数。 */
         private Long skuKindCount;
@@ -137,7 +137,7 @@ public class SalesReportVO {
         private BigDecimal completedRefundAmount;
     }
 
-    /** 粒度 = {@code sales_order_item}。全部业务字段取订单行快照。 */
+    /** 粒度 = {@code xsy_sales_order_item}。全部业务字段取订单行快照。 */
     @Data
     public static class ItemRow {
         private Long orderId;

@@ -29,6 +29,23 @@ export const SCM_FINANCE_SETTLE_STATE_ENUM: SmartEnum<string> = {
     SETTLED: {value: 'SETTLED', desc: '已结清'},
 };
 
+/**
+ * 财务流水记录的动作类型（与后端 `ScmFinanceOperationTypeEnum` 逐字对应）。
+ *
+ * 后端用数据库 CHECK 白名单钉住取值，新增动作必须两边同时改；
+ * 展示层不许再直接把 `operationType` 原样印到表格里（曾出现 GENERATE / RED_GENERATE 直出）。
+ */
+export const SCM_FINANCE_OPERATION_TYPE_ENUM: SmartEnum<string> = {
+    GENERATE: {value: 'GENERATE', desc: '生成'},
+    RED_GENERATE: {value: 'RED_GENERATE', desc: '红字生成'},
+    RECEIVE: {value: 'RECEIVE', desc: '收款登记'},
+    PAY: {value: 'PAY', desc: '付款登记'},
+    WRITE_OFF: {value: 'WRITE_OFF', desc: '核销'},
+    WRITE_OFF_REVERSE: {value: 'WRITE_OFF_REVERSE', desc: '核销撤销'},
+    RECEIPT_REVERSE: {value: 'RECEIPT_REVERSE', desc: '收款反向'},
+    PAYMENT_REVERSE: {value: 'PAYMENT_REVERSE', desc: '付款反向'},
+};
+
 /** 付款方式（与后端 `ScmFinancePaymentMethodEnum` 逐字对应）。 */
 export const SCM_FINANCE_PAYMENT_METHOD_ENUM: SmartEnum<string> = {
     CASH: {value: 'CASH', desc: '现金'},
@@ -99,6 +116,7 @@ export const SCM_FINANCE_ENTRY_COLOR: Record<string, string> = {
 export default {
     SCM_FINANCE_ENTRY_TYPE_ENUM,
     SCM_FINANCE_SETTLE_STATE_ENUM,
+    SCM_FINANCE_OPERATION_TYPE_ENUM,
     SCM_FINANCE_PAYMENT_METHOD_ENUM,
     SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM,
     SCM_FINANCE_RECEIPT_METHOD_ENUM,

@@ -34,7 +34,7 @@ import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
  * {@code 0.0000}），非标品三者齐全且 {@code weighingSource = MANUAL}。
  */
 @Data
-@TableName(value = "purchase_receipt_item", autoResultMap = true)
+@TableName(value = "xsy_purchase_receipt_item", autoResultMap = true)
 public class PurchaseReceiptItemEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

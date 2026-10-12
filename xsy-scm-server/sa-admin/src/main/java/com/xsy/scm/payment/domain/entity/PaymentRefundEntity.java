@@ -15,11 +15,11 @@ import lombok.Data;
  * 渠道退款事实。
  *
  * <p>
- * 与订单域的 {@code order_refund}（售后退款单）是两件事：{@code order_refund} 说「该退多少」， 这里说「渠道实际退了多少、退到哪一笔交易上」。通过
+ * 与订单域的 {@code xsy_order_refund}（售后退款单）是两件事：{@code xsy_order_refund} 说「该退多少」， 这里说「渠道实际退了多少、退到哪一笔交易上」。通过
  * {@code source_type = ORDER_REFUND} + {@code source_id} 关联，且<b>一张售后退款单只对应一笔渠道退款</b>（唯一索引）。
  */
 @Data
-@TableName("payment_refund")
+@TableName("xsy_payment_refund")
 public class PaymentRefundEntity {
 
     @TableId(type = IdType.AUTO)

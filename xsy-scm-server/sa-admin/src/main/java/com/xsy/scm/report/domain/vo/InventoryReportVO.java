@@ -7,12 +7,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import lombok.Data;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 
 /**
  * 库存分析返回行（库存流水 / 损耗分析 / 当前库存价值 / 收发存数量版）。
  *
  * <p>
- * 数据源是 append-only 的 {@code inventory_movement}：报表只读它，永不改它。方向不另存一份枚举清单，由
+ * 数据源是 append-only 的 {@code xsy_inventory_movement}：报表只读它，永不改它。方向不另存一份枚举清单，由
  * {@code ScmInventoryMovementTypeEnum.isInbound()} 在服务层派生，避免报表维护出第二套 IN / OUT 口径。
  */
 @Data
@@ -47,6 +48,7 @@ public class InventoryReportVO {
         private BigDecimal beforeQuantity;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal afterQuantity;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String operator;
     }
 
@@ -83,10 +85,11 @@ public class InventoryReportVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal costAmount;
         private String sourceDocumentNo;
+        @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String operator;
     }
 
-    /** 粒度 = 一条 {@code inventory_balance} 行，即「当前时点」快照，不受查询区间影响。 */
+    /** 粒度 = 一条 {@code xsy_inventory_balance} 行，即「当前时点」快照，不受查询区间影响。 */
     @Data
     public static class ValueRow {
         private Long balanceId;
@@ -113,8 +116,8 @@ public class InventoryReportVO {
      * 收发存（数量版）行，粒度 = 仓库 × SKU × 记账单位。
      *
      * <p>
-     * 刻意<b>没有</b>期初 / 期末数量与金额：{@code inventory_movement} 不是从库存起点完整覆盖全部历史（初次库存入账前的采购量不在流水中），且流水存的是本次 {@code unit_cost}
-     * 而非每次变动后的 {@code avg_cost}，所以历史期初期末均价无法还原。宁可只有期内净变动量，也不造一个看起来精确的假期初。
+     * 刻意<b>没有</b>期初 / 期末数量与金额：{@code xsy_inventory_movement} 不是从库存起点完整覆盖全部历史（初次库存入账前的采购量不在流水中），且流水存的是本次
+     * {@code unit_cost} 而非每次变动后的 {@code avg_cost}，所以历史期初期末均价无法还原。宁可只有期内净变动量，也不造一个看起来精确的假期初。
      */
     @Data
     public static class FlowSummaryRow {

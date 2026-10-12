@@ -26,7 +26,7 @@ import java.time.OffsetDateTime;
  * </ul>
  */
 @Data
-@TableName(value = "inventory_conversion_item", autoResultMap = true)
+@TableName(value = "xsy_inventory_conversion_item", autoResultMap = true)
 public class InventoryConversionItemEntity {
 
     @TableId(type = IdType.AUTO)

@@ -57,8 +57,7 @@
                 @click="deleteDepartment(record.departmentId)"
                 type="link"
             >删除
-            </a-button
-            >
+            </a-button>
           </div>
         </template>
       </template>

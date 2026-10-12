@@ -1,6 +1,7 @@
 import Decimal from 'decimal.js';
 import dayjs from 'dayjs';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
+import {SCM_FINANCE_OPERATION_TYPE_ENUM} from '/@/constants/business/scm/finance-const';
 
 // 两个最多 18 位有效数字的输入相乘，先保留完整乘积再按金额精度舍入。
 const LineAmountDecimal = Decimal.clone({precision: 40});
@@ -48,6 +49,17 @@ export function entryTypeText(value: string | null | undefined): string {
 
 export function settleStateText(value: string | null | undefined): string {
     return value === 'OPEN' ? '未结清' : value === 'PARTIAL' ? '部分结清' : value === 'SETTLED' ? '已结清' : value || '—';
+}
+
+/**
+ * 流水记录的动作类型。
+ *
+ * 认不出的值原样透出而不是吞成空白：日志是审计证据，枚举演进后前端还没跟上时，
+ * 宁可让人看到 `SOME_NEW_ACTION`，也不能显示成空让人以为这条没记动作。
+ */
+export function operationTypeText(value: string | null | undefined): string {
+    if (!value) return '—';
+    return SCM_FINANCE_OPERATION_TYPE_ENUM[value]?.desc || value;
 }
 
 export function settleStateTone(value: string | null | undefined): ScmStatusTone {

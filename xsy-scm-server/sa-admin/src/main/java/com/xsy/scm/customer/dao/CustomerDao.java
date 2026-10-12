@@ -17,7 +17,7 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
      * 分页查询；排序由 Service 的白名单校验后通过 {@link Page} 的 orders 传入。
      *
      * <p>
-     * {@code scope} 是 {@code customer.seller_id} 维度的授权取值：由 Service 显式解析后下传，传 {@code null} 在 SQL 里渲染成恒假谓词而不是「不加限制」。
+     * {@code scope} 是 {@code xsy_customer.seller_id} 维度的授权取值：由 Service 显式解析后下传，传 {@code null} 在 SQL 里渲染成恒假谓词而不是「不加限制」。
      */
     List<CustomerEntity> queryPage(Page<?> page, @Param("query") CustomerQueryForm query,
             @Param("scope") ScmValueScope scope);

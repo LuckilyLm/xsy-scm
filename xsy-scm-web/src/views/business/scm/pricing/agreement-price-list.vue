@@ -73,11 +73,12 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
     const r = await api.query({
       ...query,
       effectiveFrom: range.value?.[0] || null,
       effectiveTo: range.value?.[1] || null
-    });
+    }, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       rows.value = r.data.list;
       total.value = r.data.total;
@@ -105,13 +106,9 @@ function reset() {
 function remove(row: PriceRow) {
   Modal.confirm({
     title: '删除这条客户协议价？', content: '删除后保留价格变更记录。', onOk: async () => {
-      try {
-        await api.delete(row);
-        await load();
-      } catch (e) {
-        error.value = pricingError(e);
-        throw e;
-      }
+      // 删除失败由全局 toast 给出原因；拒绝以保持确认框打开
+      await api.delete(row);
+      await load();
     }
   });
 }

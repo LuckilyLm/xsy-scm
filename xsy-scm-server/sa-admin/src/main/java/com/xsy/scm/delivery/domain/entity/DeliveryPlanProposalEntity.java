@@ -15,15 +15,13 @@ import lombok.Data;
  * 辅助排线建议（冻结快照）。
  *
  * <p>
- * 表上有触发器保证输入与结果快照不可变：建议里看到的距离必须与「应用时依据的距离」是同一份。
- * 能改快照的排线建议等于没有依据。
+ * 表上有触发器保证输入与结果快照不可变：建议里看到的距离必须与「应用时依据的距离」是同一份。 能改快照的排线建议等于没有依据。
  *
  * <p>
- * 一条线路同时至多一条 {@code PROPOSED}（部分唯一索引兜底）：两个待确认建议会让
- * 「应用哪一个」变成猜。生成新建议时旧的待确认建议转为 {@code DISCARDED}。
+ * 一条线路同时至多一条 {@code PROPOSED}（部分唯一索引兜底）：两个待确认建议会让 「应用哪一个」变成猜。生成新建议时旧的待确认建议转为 {@code DISCARDED}。
  */
 @Data
-@TableName(value = "delivery_plan_proposal", autoResultMap = true)
+@TableName(value = "xsy_delivery_plan_proposal", autoResultMap = true)
 public class DeliveryPlanProposalEntity {
 
     @TableId(type = IdType.AUTO)

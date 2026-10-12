@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 @Data
-@TableName("mall_cart_item")
+@TableName("xsy_mall_cart_item")
 public class MallCartItemEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

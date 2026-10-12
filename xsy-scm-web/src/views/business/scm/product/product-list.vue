@@ -207,11 +207,12 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
     const response = await productApi.query({
       ...filters,
       createdFrom: createdRange.value?.[0] || undefined,
       createdTo: createdRange.value?.[1] || undefined
-    });
+    }, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       rows.value = response.data.list;
       total.value = Number(response.data.total);
@@ -268,8 +269,8 @@ async function exportCurrent() {
       createdFrom: createdRange.value?.[0] || undefined,
       createdTo: createdRange.value?.[1] || undefined
     });
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 导出失败只走全局 toast
   } finally {
     exporting.value = false;
   }
@@ -285,8 +286,8 @@ async function toggleStatus(row: ProductRow) {
     await productApi.status(row.spuId, row.version, row.status === 'ON_SHELF' ? 'OFF_SHELF' : 'ON_SHELF');
     message.success('商品状态已更新');
     await load();
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 状态流转失败只走全局 toast
   }
 }
 
@@ -295,15 +296,19 @@ async function remove(row: ProductRow) {
     await productApi.delete(row.spuId, row.version);
     message.success('商品已删除');
     await load();
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 删除失败只走全局 toast
   }
 }
 
 onMounted(async () => {
   void load();
   try {
-    const [tree, tags] = await Promise.all([productCategoryApi.tree(), productTagApi.options()]);
+    // 筛选下拉的选项加载失败也由页头 Alert 承担
+    const [tree, tags] = await Promise.all([
+      productCategoryApi.tree({suppressGlobalErrorMessage: true}),
+      productTagApi.options({suppressGlobalErrorMessage: true}),
+    ]);
     categories.value = tree.data;
     tagChoices.value = tags.data;
   } catch (e) {

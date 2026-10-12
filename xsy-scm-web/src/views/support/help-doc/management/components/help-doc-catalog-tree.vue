@@ -48,8 +48,7 @@
                   @click="deleteHelpDocCatalog(item.helpDocCatalogId)"
                   v-privilege="'support:helpDocCatalog:delete'"
               >删除
-              </a-button
-              >
+              </a-button>
             </div>
           </template>
           {{ item.name }}

@@ -110,7 +110,7 @@ class PurchaseReceiptOverReceiptIT extends ScmW5PgITBase {
                 .isEqualByComparingTo("0.0000");
         assertThat(reloadOrder(fx.order().getId()).getStatus()).isEqualTo("SUBMITTED");
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM receipt_weighing_record WHERE purchase_receipt_item_id = ?",
+                "SELECT count(*) FROM xsy_receipt_weighing_record WHERE purchase_receipt_item_id = ?",
                 Integer.class, line.getId())).isZero();
 
         // 上限内仍然可以收 —— 证明拒绝的原因是数量而不是别的

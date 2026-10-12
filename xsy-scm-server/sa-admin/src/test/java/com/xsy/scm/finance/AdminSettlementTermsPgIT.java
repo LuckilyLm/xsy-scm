@@ -52,10 +52,10 @@ class AdminSettlementTermsPgIT extends ScmW5PgITBase {
         Long skuId = newOnShelfSku(key().substring(0, 4));
         Long orderId = confirmedSalesOrder(customerId, skuId, "1.0000", "1.0000");
         // Isolate due-date and allocation semantics with a source snapshot from a real order.
-        return jdbc.queryForObject("INSERT INTO finance_receivable (receivable_no,source_type,source_id,order_id,"
+        return jdbc.queryForObject("INSERT INTO xsy_finance_receivable (receivable_no,source_type,source_id,order_id,"
                 + "customer_id,customer_name_snapshot,settlement_customer_id,settlement_customer_name_snapshot,entry_type,amount,event_at)"
                 + " SELECT ?, 'SALES_ORDER', id,id,customer_id,customer_name_snapshot,settlement_customer_id,"
-                + "settlement_customer_name_snapshot,'NORMAL',10,?::timestamptz FROM sales_order WHERE id=? RETURNING id",
+                + "settlement_customer_name_snapshot,'NORMAL',10,?::timestamptz FROM xsy_sales_order WHERE id=? RETURNING id",
                 Long.class, "AR-" + key(), eventAt, orderId);
     }
 
@@ -91,10 +91,10 @@ class AdminSettlementTermsPgIT extends ScmW5PgITBase {
         assertThat(financeWriteOffService.add(form, key).getItems().getFirst().getWriteOffId())
                 .isEqualTo(result.getItems().getFirst().getWriteOffId());
         assertThat(orderCreditService.check(parent, BigDecimal.ZERO).getOpenReceivableAmount()).isEqualByComparingTo("0");
-        assertThat(jdbc.queryForObject("SELECT customer_id FROM finance_receipt WHERE id=?",Long.class,receipt))
+        assertThat(jdbc.queryForObject("SELECT customer_id FROM xsy_finance_receipt WHERE id=?",Long.class,receipt))
                 .as("收款保留实际付款客户").isEqualTo(payer);
-        jdbc.update("UPDATE customer SET settlement_customer_id=id WHERE id=?", payer);
-        assertThat(jdbc.queryForObject("SELECT settlement_customer_id FROM finance_receipt WHERE id=?",Long.class,receipt))
+        jdbc.update("UPDATE xsy_customer SET settlement_customer_id=id WHERE id=?", payer);
+        assertThat(jdbc.queryForObject("SELECT settlement_customer_id FROM xsy_finance_receipt WHERE id=?",Long.class,receipt))
                 .as("统一收款主体冻结为集团结算客户").isEqualTo(parent);
     }
 
@@ -113,9 +113,9 @@ class AdminSettlementTermsPgIT extends ScmW5PgITBase {
     @Test void nonGroupParentCannotActAsSettlementCustomerEvenWithDirtyRelationship() {
         Long parent = newCustomer();
         Long child = newCustomer();
-        jdbc.update("UPDATE customer SET settle_mode='GROUP',parent_customer_id=?,settlement_customer_id=? WHERE id=?",
+        jdbc.update("UPDATE xsy_customer SET settle_mode='GROUP',parent_customer_id=?,settlement_customer_id=? WHERE id=?",
                 parent, parent, child);
-        jdbc.update("UPDATE customer SET settle_mode='GROUP' WHERE id=?", parent);
+        jdbc.update("UPDATE xsy_customer SET settle_mode='GROUP' WHERE id=?", parent);
         evictMybatisCache();
         assertThatThrownBy(() -> receipt(child)).isInstanceOf(com.xsy.scm.common.exception.ScmBusinessException.class);
     }
@@ -126,7 +126,7 @@ class AdminSettlementTermsPgIT extends ScmW5PgITBase {
         Long debtor = groupCustomer(parent);
         Long receivable = receivable(debtor, OffsetDateTime.now().toString());
         Long receipt = receipt(payer);
-        jdbc.update("UPDATE customer SET seller_id=987654321 WHERE id=?", payer);
+        jdbc.update("UPDATE xsy_customer SET seller_id=987654321 WHERE id=?", payer);
         evictMybatisCache();
         RequestEmployee employee = new RequestEmployee();
         employee.setEmployeeId(1L);
@@ -139,14 +139,14 @@ class AdminSettlementTermsPgIT extends ScmW5PgITBase {
 
     @Test void dueDateFreezesAtShanghaiEventDateAndDoesNotFollowMasterEdits() {
         Long customer = newCustomer();
-        jdbc.update("UPDATE customer SET credit_period_type='BY_TIME',credit_period_value=10,credit_period_unit='DAY' WHERE id=?",customer);
+        jdbc.update("UPDATE xsy_customer SET credit_period_type='BY_TIME',credit_period_value=10,credit_period_unit='DAY' WHERE id=?",customer);
         evictMybatisCache();
         Long receivable = receivable(customer, "2026-01-10T20:00:00Z");
-        assertThat(jdbc.queryForObject("SELECT due_date FROM finance_receivable WHERE id=?",LocalDate.class,receivable))
+        assertThat(jdbc.queryForObject("SELECT due_date FROM xsy_finance_receivable WHERE id=?",LocalDate.class,receivable))
                 .isEqualTo(LocalDate.of(2026,1,21));
-        jdbc.update("UPDATE customer SET credit_period_value=30 WHERE id=?",customer);
+        jdbc.update("UPDATE xsy_customer SET credit_period_value=30 WHERE id=?",customer);
         evictMybatisCache();
-        assertThat(jdbc.queryForObject("SELECT due_date FROM finance_receivable WHERE id=?",LocalDate.class,receivable))
+        assertThat(jdbc.queryForObject("SELECT due_date FROM xsy_finance_receivable WHERE id=?",LocalDate.class,receivable))
                 .isEqualTo(LocalDate.of(2026,1,21));
         assertThat(orderCreditService.check(customer, BigDecimal.ZERO).getOverdue()).isTrue();
     }

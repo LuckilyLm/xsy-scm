@@ -78,9 +78,9 @@ class PurchaseReceiptPutawayRollbackIT extends ScmW6PgITBase {
         // 清理：NOT_SUPPORTED 把数据提交到开发库。WAREHOUSE_CONFIRM + PENDING 的收货单是合法形态
         // 合法形态（CONFIRMED 却没有流水），会打破 ScmInventoryBackfillIT 等对「CONFIRMED ⇒ 有流水」
         // 的 V19 全局对账假设，因此物理删除这张 box 收货单，避免残留污染其它测试。
-        jdbc.update("DELETE FROM receipt_weighing_record WHERE purchase_receipt_item_id IN "
-                + "(SELECT id FROM purchase_receipt_item WHERE purchase_receipt_id = ?)", second.getId());
-        jdbc.update("DELETE FROM purchase_receipt_item WHERE purchase_receipt_id = ?", second.getId());
-        jdbc.update("DELETE FROM purchase_receipt WHERE id = ?", second.getId());
+        jdbc.update("DELETE FROM xsy_receipt_weighing_record WHERE purchase_receipt_item_id IN "
+                + "(SELECT id FROM xsy_purchase_receipt_item WHERE purchase_receipt_id = ?)", second.getId());
+        jdbc.update("DELETE FROM xsy_purchase_receipt_item WHERE purchase_receipt_id = ?", second.getId());
+        jdbc.update("DELETE FROM xsy_purchase_receipt WHERE id = ?", second.getId());
     }
 }

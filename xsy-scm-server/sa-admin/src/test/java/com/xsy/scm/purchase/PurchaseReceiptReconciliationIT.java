@@ -48,7 +48,7 @@ class PurchaseReceiptReconciliationIT extends ScmW5PgITBase {
         var row = jdbc.queryForMap(
                 "SELECT received_quantity, cumulative_received_quantity, remaining_quantity, "
                         + "over_receipt_quantity, receipt_difference "
-                        + "FROM purchase_receipt_item WHERE id = ?", receiptItemId);
+                        + "FROM xsy_purchase_receipt_item WHERE id = ?", receiptItemId);
         assertThat((BigDecimal) row.get("received_quantity")).isEqualByComparingTo(line.getReceivedQuantity());
         assertThat((BigDecimal) row.get("cumulative_received_quantity"))
                 .isEqualByComparingTo(line.getCumulativeReceivedQuantity());

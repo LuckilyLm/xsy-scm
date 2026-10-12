@@ -54,7 +54,7 @@ async function open(row: SupplierRow) {
   supplierName.value = row.name;
   loading.value = true;
   try {
-    const response = await supplierSkuApi.listBySupplierId(row.supplierId);
+    const response = await supplierSkuApi.listBySupplierId(row.supplierId, {suppressGlobalErrorMessage: true});
     drafts.value = fromRows(response.data ?? []);
     loadedCount.value = drafts.value.length;
   } catch (e) {
@@ -98,8 +98,8 @@ async function submit() {
     message.success('商品关联已保存');
     visible.value = false;
     emit('saved');
-  } catch (e) {
-    error.value = supplierError(e);
+  } catch {
+    // 保存失败只走全局 toast；抽屉里的 error 留给本地校验与加载失败
   } finally {
     saving.value = false;
   }

@@ -27,7 +27,7 @@ public class ReportOverviewVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal confirmedOrderAmount;
 
-    /** {@code order_refund} 中 {@code COMPLETED} 的退款额；独立展示，不冲减订单金额。 */
+    /** {@code xsy_order_refund} 中 {@code COMPLETED} 的退款额；独立展示，不冲减订单金额。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal completedRefundAmount;
 
@@ -50,7 +50,7 @@ public class ReportOverviewVO {
     private Integer purchaseInCostMissingCount;
 
     /**
-     * 当前库存账面金额：{@code SUM(inventory_balance.quantity * avg_cost)}。
+     * 当前库存账面金额：{@code SUM(xsy_inventory_balance.quantity * avg_cost)}。
      *
      * <p>
      * 不受查询历史区间影响，配 {@link #snapshotAt} 一起读才是完整事实。

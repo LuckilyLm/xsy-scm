@@ -30,7 +30,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    rows.value = (await productCategoryApi.tree()).data;
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    rows.value = (await productCategoryApi.tree({suppressGlobalErrorMessage: true})).data;
   } catch (e) {
     error.value = productError(e);
   } finally {
@@ -43,8 +44,8 @@ async function remove(row: ProductCategory) {
     await productCategoryApi.delete(row.categoryId, row.version);
     message.success('分类已删除');
     await load();
-  } catch (e) {
-    error.value = productError(e);
+  } catch {
+    // 删除失败只走全局 toast
   }
 }
 

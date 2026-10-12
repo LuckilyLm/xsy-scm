@@ -17,7 +17,7 @@
                 typeHandler="com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler"/>
     </resultMap>
 
-    <!-- 来源行属于订单域的 sales_order_item，其 JSONB 处理器是订单域的 OrderJsonbTypeHandler；
+    <!-- 来源行属于订单域的 xsy_sales_order_item，其 JSONB 处理器是订单域的 OrderJsonbTypeHandler；
          这里只以字符串引用，不产生 purchase → order 的编译期依赖。 -->
     <resultMap id="sourceItemMap" type="com.xsy.scm.order.domain.entity.SalesOrderItemEntity">
         <id column="id" property="id"/>
@@ -26,7 +26,7 @@
     </resultMap>
 
     <!-- 第 3 步：已确认订单 + 有实数量；确定性排序让重复 generate 可复现。
-         仓库数据范围：来源行所在的 sales_order / sales_order_item 都没有仓库列，按仓库无从收窄
+         仓库数据范围：来源行所在的 xsy_sales_order / xsy_sales_order_item 都没有仓库列，按仓库无从收窄
          （与 ReportDao.xml 销售侧同一口径）。本次命令落哪个仓由表单显式给出，边界在
          PurchaseWarehouseReferenceGuard 与后续收货/出库的仓库守卫上，不在这里重复实现。
          scope 为 null 仍是调用方漏传，失败关闭返回 0 行，绝不静默读全量。 -->
@@ -50,8 +50,8 @@
                oi.version,
                oi.created_at,
                oi.updated_at
-        FROM sales_order_item oi
-                 JOIN sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
+        FROM xsy_sales_order_item oi
+                 JOIN xsy_sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
         WHERE o.status = 'CONFIRMED'
           AND oi.deleted = FALSE
           AND oi.actual_quantity IS NOT NULL
@@ -64,7 +64,7 @@
         ORDER BY oi.sku_id ASC, o.confirmed_at ASC, oi.id ASC
     </select>
 
-    <!-- 联 supplier / warehouse 取名称（快照之外还需要当前名称展示，两者语义不同） -->
+    <!-- 联 xsy_supplier / xsy_warehouse 取名称（快照之外还需要当前名称展示，两者语义不同） -->
     <select id="query" resultMap="demandVoMap">
         SELECT d.id, d.sales_order_id, d.sales_order_no_snapshot, d.sales_order_item_id,
         d.calculation_batch_id,
@@ -80,9 +80,9 @@
         d.supplier_id, s.name AS supplier_name,
         d.warehouse_id, w.name AS warehouse_name,
         d.status, d.demand_date, d.source_confirmed_at, d.version, d.created_at
-        FROM purchase_demand d
-        LEFT JOIN supplier s ON s.id = d.supplier_id AND s.deleted = FALSE
-        LEFT JOIN warehouse w ON w.id = d.warehouse_id AND w.deleted = FALSE
+        FROM xsy_purchase_demand d
+        LEFT JOIN xsy_supplier s ON s.id = d.supplier_id AND s.deleted = FALSE
+        LEFT JOIN xsy_warehouse w ON w.id = d.warehouse_id AND w.deleted = FALSE
         WHERE d.deleted = FALSE
         <if test="query.salesOrderNo != null and query.salesOrderNo != ''">
             AND d.sales_order_no_snapshot ILIKE CONCAT('%', #{query.salesOrderNo}, '%')
@@ -106,7 +106,7 @@
         <if test="query.demandDateTo != null">
             AND d.demand_date &lt; #{query.demandDateTo}
         </if>
-        <!-- 采购员数据范围（与 purchase_order 同一维度）：谓词落在驱动表 d 上，
+        <!-- 采购员数据范围（与 xsy_purchase_order 同一维度）：谓词落在驱动表 d 上，
              供应商 / 仓库都是 N:1 左连，不放大行数；scope 为 null 按失败关闭。 -->
         <if test="scope != null and scope.all == false">
             AND d.purchaser_id IN
@@ -124,25 +124,25 @@
       取数口径 WHERE 与 listSourceItems 完全同源：已确认订单 + 有实数量 + 同一确认窗口，
       因此本预览看到的订单量与将来 generate 生成的需求数量一致（不改写需求语义）。
 
-      仓库只存在于库存/采购侧、订单行不带仓库，故 warehouseId 作为入参进入 inventory_balance
+      仓库只存在于库存/采购侧、订单行不带仓库，故 warehouseId 作为入参进入 xsy_inventory_balance
       的 LEFT JOIN 谓词（放 ON 而非 WHERE，否则左连退化成内连会把无余额的 SKU 整行藏掉）。
 
        单位门禁：按 (sku_id, warehouse_id) 连余额，比对 b.unit 与订单销售单位；
       不一致即 UNIT_MISMATCH 且差额为 null，绝不换算、绝不猜折算率。
 
-      预留必须拆成两半，否则缺口虚增：inventory_balance.reserved_quantity 是该 (仓库, SKU) 的
+      预留必须拆成两半，否则缺口虚增：xsy_inventory_balance.reserved_quantity 是该 (仓库, SKU) 的
       全量 ACTIVE 预留，其中就包含「本批订单自己 reserveStock 占用的量」。直接用
       quantity - reserved_quantity 会把已经为这些订单留好的货当成不可用库存。因此
       otherReserved = reserved_quantity - selectedOrderReservedQuantity，
       本批可用 = quantity - otherReserved = available_quantity + selectedOrderReservedQuantity，
       差额（stock_comparison_gap）= max(本批需求 - 本批可用, 0)。
-      selectedOrderReservedQuantity 只读既有预留事实 inventory_reservation（ACTIVE +
+      selectedOrderReservedQuantity 只读既有预留事实 xsy_inventory_reservation（ACTIVE +
       SALES_ORDER_ITEM + 来源单落在同一确认窗口），不新造第二套预留记录。它按 oi.sku_id 相关，
       组内恒等，因此写成标量子查询而不是普通 LEFT JOIN —— 后者会让
       SUM(oi.actual_quantity) 随预留行数翻倍。
 
       可用量 / 差额 / 状态全部用 NUMERIC 在 SQL 里算好（4 位定点），Java/前端不做浮点减法。
-      非聚合列一律显式进 GROUP BY：inventory_balance 的部分唯一索引不构成 PG 的 GROUP BY
+      非聚合列一律显式进 GROUP BY：xsy_inventory_balance 的部分唯一索引不构成 PG 的 GROUP BY
       函数依赖，靠 FD 推断会静默少列报错；每个 SKU 至多一行余额、至多一行主档，分组键不会拆行。
 
       仓库数据范围（docs/decisions.md「P0 基线收口裁决」第 8 条）：谓词落在内层 WHERE 的「请求仓」
@@ -191,7 +191,7 @@
                         COALESCE(b.reserved_quantity, 0)         AS reserved_quantity,
                         (COALESCE(b.quantity, 0) - COALESCE(b.reserved_quantity, 0)) AS available_quantity,
                         COALESCE((SELECT SUM(r.quantity)
-                                  FROM inventory_reservation r
+                                  FROM xsy_inventory_reservation r
                                   WHERE r.deleted = FALSE
                                     AND r.status = 'ACTIVE'
                                     AND r.source_document_type = 'SALES_ORDER_ITEM'
@@ -200,7 +200,7 @@
                                     /* 「本批」= 与外层同源的确认窗口内的订单集合 */
                                     AND r.source_document_id IN
                                         (SELECT w.id
-                                         FROM sales_order w
+                                         FROM xsy_sales_order w
                                          WHERE w.deleted = FALSE
                                            AND w.status = 'CONFIRMED'
                                            AND w.confirmed_at &gt;= #{query.startAt}
@@ -208,15 +208,15 @@
                                  0)                                                          AS selected_order_reserved_quantity,
                         COALESCE((SELECT SUM(GREATEST(oi2.planned_quantity - oi2.received_quantity
                                       - COALESCE((SELECT SUM(a2.allocated_quantity)
-                                                  FROM purchase_demand_allocation a2
-                                                  JOIN purchase_demand d3 ON d3.id = a2.purchase_demand_id
+                                                  FROM xsy_purchase_demand_allocation a2
+                                                  JOIN xsy_purchase_demand d3 ON d3.id = a2.purchase_demand_id
                                                       AND d3.deleted = FALSE
                                                   WHERE a2.deleted = FALSE
                                                     AND a2.purchase_order_item_id = oi2.id
                                                     AND d3.sku_id = oi2.sku_id
                                                     AND d3.demand_unit_snapshot = oi2.purchase_unit_snapshot), 0), 0))
-                                  FROM purchase_order_item oi2
-                                  JOIN purchase_order po2 ON po2.id = oi2.purchase_order_id
+                                  FROM xsy_purchase_order_item oi2
+                                  JOIN xsy_purchase_order po2 ON po2.id = oi2.purchase_order_id
                                       AND po2.deleted = FALSE
                                   WHERE oi2.deleted = FALSE
                                     AND po2.warehouse_id = #{query.warehouseId}
@@ -225,12 +225,12 @@
                                     AND oi2.purchase_unit_snapshot = oi.sale_unit_snapshot), 0)
                                                                                               AS in_transit_quantity,
                         COALESCE((SELECT SUM(a.allocated_quantity)
-                                  FROM purchase_demand_allocation a
-                                  JOIN purchase_demand d2 ON d2.id = a.purchase_demand_id
+                                  FROM xsy_purchase_demand_allocation a
+                                  JOIN xsy_purchase_demand d2 ON d2.id = a.purchase_demand_id
                                       AND d2.deleted = FALSE
-                                  JOIN purchase_order_item oi2 ON oi2.id = a.purchase_order_item_id
+                                  JOIN xsy_purchase_order_item oi2 ON oi2.id = a.purchase_order_item_id
                                       AND oi2.deleted = FALSE
-                                  JOIN purchase_order po2 ON po2.id = oi2.purchase_order_id
+                                  JOIN xsy_purchase_order po2 ON po2.id = oi2.purchase_order_id
                                       AND po2.deleted = FALSE
                                   WHERE a.deleted = FALSE
                                     AND d2.sku_id = oi.sku_id
@@ -239,19 +239,19 @@
                                     AND po2.status IN ('SUBMITTED','PARTIALLY_RECEIVED')
                                     AND oi2.purchase_unit_snapshot = oi.sale_unit_snapshot), 0)
                             + COALESCE((SELECT SUM(d.required_quantity - d.allocated_quantity)
-                                        FROM purchase_demand d
+                                        FROM xsy_purchase_demand d
                                         WHERE d.deleted=FALSE AND d.status IN ('PENDING','PARTIALLY_ALLOCATED')
                                           AND d.warehouse_id=#{query.warehouseId}
                                           AND d.sku_id=oi.sku_id
                                           AND d.demand_unit_snapshot=oi.sale_unit_snapshot
                                           AND d.required_quantity > d.allocated_quantity),0)
                                                                                               AS purchase_coverage_quantity
-                 FROM sales_order_item oi
-                          JOIN sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
-                          LEFT JOIN product_sku k ON k.id = oi.sku_id
-                          LEFT JOIN product_spu p ON p.id = k.spu_id
-                          LEFT JOIN product_category cat ON cat.id = p.category_id
-                          LEFT JOIN inventory_balance b
+                 FROM xsy_sales_order_item oi
+                          JOIN xsy_sales_order o ON o.id = oi.order_id AND o.deleted = FALSE
+                          LEFT JOIN xsy_product_sku k ON k.id = oi.sku_id
+                          LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
+                          LEFT JOIN xsy_product_category cat ON cat.id = p.category_id
+                          LEFT JOIN xsy_inventory_balance b
                                     ON b.sku_id = oi.sku_id
                                         AND b.warehouse_id = #{query.warehouseId}
                                         AND b.deleted = FALSE
@@ -321,16 +321,16 @@
                d.source_confirmed_at,
                d.version,
                d.created_at
-        FROM purchase_demand d
-                 LEFT JOIN supplier s ON s.id = d.supplier_id AND s.deleted = FALSE
-                 LEFT JOIN warehouse w ON w.id = d.warehouse_id AND w.deleted = FALSE
+        FROM xsy_purchase_demand d
+                 LEFT JOIN xsy_supplier s ON s.id = d.supplier_id AND s.deleted = FALSE
+                 LEFT JOIN xsy_warehouse w ON w.id = d.warehouse_id AND w.deleted = FALSE
         WHERE d.deleted = FALSE
           AND d.id = #{id}
     </select>
 
     <!-- P12 锁序：必须 ORDER BY id ASC，否则与 order.create 路径可能交叉成环 -->
     <select id="lockByIds" resultMap="demandRowMap">
-        SELECT * FROM purchase_demand
+        SELECT * FROM xsy_purchase_demand
         WHERE deleted = FALSE
         AND id IN
         <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
@@ -340,13 +340,13 @@
 
     <select id="lock" resultMap="demandRowMap">
         SELECT *
-        FROM purchase_demand
+        FROM xsy_purchase_demand
         WHERE id = #{id}
           AND deleted = FALSE FOR UPDATE
     </select>
 
     <select id="listActiveBySourceItemIds" resultMap="demandRowMap">
-        SELECT * FROM purchase_demand
+        SELECT * FROM xsy_purchase_demand
         WHERE deleted = FALSE
         AND sales_order_item_id IN
         <foreach collection="ids" item="it" open="(" separator="," close=")">#{it}</foreach>
@@ -356,7 +356,7 @@
     <!-- INSERT 竞争：不先查后插；冲突返回 0，调用方重读收敛。
          冲突（0 行）时 JDBC 不回传生成键，因此 row.id 保持 null —— 调用方必须走「重读」分支。 -->
     <insert id="insertIgnore" useGeneratedKeys="true" keyProperty="row.id">
-        INSERT INTO purchase_demand (sales_order_id, sales_order_item_id, spu_id, sku_id,
+        INSERT INTO xsy_purchase_demand (sales_order_id, sales_order_item_id, spu_id, sku_id,
                                      sales_order_no_snapshot, spu_code_snapshot, product_name_snapshot,
                                      sku_code_snapshot, sku_name_snapshot, spec_values_snapshot,
                                      demand_unit_snapshot, product_type_snapshot,
@@ -376,7 +376,7 @@
 
     <!-- 需求侧重算。supplier_id 只在首次分配时写入 -->
     <update id="updateAllocation">
-        UPDATE purchase_demand
+        UPDATE xsy_purchase_demand
         SET allocated_quantity = #{allocatedQuantity},
             status             = #{status},
             supplier_id        = #{supplierId},
@@ -389,7 +389,7 @@
     </update>
 
     <update id="softDelete">
-        UPDATE purchase_demand
+        UPDATE xsy_purchase_demand
         SET deleted    = TRUE,
             version    = version + 1,
             updated_at = CURRENT_TIMESTAMP,

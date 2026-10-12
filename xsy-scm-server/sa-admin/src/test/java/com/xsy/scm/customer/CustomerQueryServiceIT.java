@@ -72,7 +72,7 @@ class CustomerQueryServiceIT extends ScmW2PgITBase {
         form.setContactPhone("13800001111");
         Long id = service.add(form);
         String generatedCode = jdbc.queryForObject(
-                "SELECT customer_code FROM customer WHERE id = ?", String.class, id);
+                "SELECT customer_code FROM xsy_customer WHERE id = ?", String.class, id);
 
         for (String keyword : List.of("客户K1", generatedCode, prefix + "CONTACT-NAME", "13800001111")) {
             CustomerQueryForm query = queryForm();

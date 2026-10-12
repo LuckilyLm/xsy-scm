@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
  *
  * <p>
  * 不含 {@code BALANCE}：余额消费不是新的实际资金进入 —— 充值 100 时渠道已真实收到并记了一条 {@code ONLINE_PAYMENT} 收款，余额买 60 若再生成收款，账上就有 160 而公司只进来
- * 100。钱包余额增减属于权益账本（{@code customer_balance_movement}）。
+ * 100。钱包余额增减属于权益账本（{@code xsy_customer_balance_movement}）。
  *
  * <p>
  * 取值由 Java enum 与 {@code ck_finance_receipt_method} 双向固定，不引入 {@code t_dict}：收款方式一旦能被随意增删，历史收款的方式语义就会漂移。
@@ -27,7 +27,7 @@ public enum ScmFinanceReceiptMethodEnum {
     /** 银行转账。 */
     BANK_TRANSFER("银行转账"),
 
-    /** 在线支付（经支付渠道收取，来源见 {@code finance_receipt.source_type}）。 */
+    /** 在线支付（经支付渠道收取，来源见 {@code xsy_finance_receipt.source_type}）。 */
     ONLINE_PAYMENT("在线支付"),
 
     /** 其它；具体渠道写在 {@code external_reference} 或 {@code remark} 里。 */

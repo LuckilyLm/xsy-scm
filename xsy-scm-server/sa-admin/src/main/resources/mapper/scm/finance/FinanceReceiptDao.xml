@@ -8,7 +8,7 @@
 
     <select id="selectByIdForUpdate" resultType="com.xsy.scm.finance.domain.entity.FinanceReceiptEntity">
         SELECT *
-        FROM finance_receipt
+        FROM xsy_finance_receipt
         WHERE id = #{receiptId}
           AND deleted = FALSE
         FOR UPDATE
@@ -20,7 +20,7 @@
             WHEN entry_type = 'REVERSE' THEN -amount
             ELSE 0
         END), 0)
-        FROM finance_write_off
+        FROM xsy_finance_write_off
         WHERE source_type = 'RECEIPT'
           AND source_id = #{receiptId}
           AND deleted = FALSE
@@ -29,7 +29,7 @@
     <insert id="insertReverseOnConflictDoNothing"
             parameterType="com.xsy.scm.finance.domain.entity.FinanceReceiptEntity"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot,
+        INSERT INTO xsy_finance_receipt (receipt_no, customer_id, customer_name_snapshot,
                                      settlement_customer_id, settlement_customer_name_snapshot,
                                      amount, method, received_at, entry_type, reverse_of_id,
                                      reason, external_reference, remark, version, deleted,
@@ -45,7 +45,7 @@
 
     <select id="selectReversedAmount" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(amount), 0)
-        FROM finance_receipt
+        FROM xsy_finance_receipt
         WHERE reverse_of_id = #{receiptId}
           AND entry_type = 'REVERSE'
           AND deleted = FALSE
@@ -75,14 +75,14 @@
                r.received_at AS receivedAt,
                r.external_reference AS externalReference,
                r.remark
-        FROM finance_receipt r
-        LEFT JOIN payment_transaction pt ON r.source_type = 'PAYMENT_TRANSACTION' AND pt.id = r.source_id
-        LEFT JOIN payment_intent pi ON pi.id = pt.intent_id
-        LEFT JOIN customer c ON c.id = r.customer_id AND c.deleted = FALSE
-        LEFT JOIN finance_receipt original ON original.id = r.reverse_of_id AND original.deleted = FALSE
+        FROM xsy_finance_receipt r
+        LEFT JOIN xsy_payment_transaction pt ON r.source_type = 'PAYMENT_TRANSACTION' AND pt.id = r.source_id
+        LEFT JOIN xsy_payment_intent pi ON pi.id = pt.intent_id
+        LEFT JOIN xsy_customer c ON c.id = r.customer_id AND c.deleted = FALSE
+        LEFT JOIN xsy_finance_receipt original ON original.id = r.reverse_of_id AND original.deleted = FALSE
         LEFT JOIN LATERAL (
             SELECT COALESCE(SUM(reverse.amount), 0) AS reversedAmount
-            FROM finance_receipt reverse
+            FROM xsy_finance_receipt reverse
             WHERE reverse.reverse_of_id = r.id
               AND reverse.entry_type = 'REVERSE'
               AND reverse.deleted = FALSE
@@ -93,7 +93,7 @@
                 WHEN wo.entry_type = 'REVERSE' THEN -wo.amount
                 ELSE 0
             END), 0) AS usedAmount
-            FROM finance_write_off wo
+            FROM xsy_finance_write_off wo
             WHERE wo.source_type = 'RECEIPT'
               AND wo.source_id = r.id
               AND wo.deleted = FALSE
@@ -142,7 +142,7 @@
         ORDER BY r.received_at DESC, r.id DESC
     </select>
     <select id="selectBySource" resultType="com.xsy.scm.finance.domain.entity.FinanceReceiptEntity">
-        SELECT * FROM finance_receipt
+        SELECT * FROM xsy_finance_receipt
         WHERE source_type = #{sourceType}
           AND source_id = #{sourceId}
           AND entry_type = 'NORMAL'

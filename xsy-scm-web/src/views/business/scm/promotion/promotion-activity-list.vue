@@ -107,7 +107,6 @@
       @ok="submit"
       @cancel="editOpen = false"
   >
-    <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner"/>
     <a-form ref="formRef" :model="{...form, ...rule}" :rules="formRules" layout="vertical">
       <section class="scm-form-section">
         <div class="scm-form-section__head">
@@ -319,7 +318,6 @@ const loading = ref(false);
 const error = ref('');
 const editOpen = ref(false);
 const saving = ref(false);
-const editError = ref('');
 
 const typeOptions = Object.entries(activityTypes).map(([value, item]) => ({value, label: item.label}));
 const statusOptions = Object.entries(promotionStatuses).map(([value, item]) => ({value, label: item.label}));
@@ -478,7 +476,8 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
-    const r = await promotionApi.activityQuery({...queryForm});
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const r = await promotionApi.activityQuery({...queryForm}, {suppressGlobalErrorMessage: true});
     tableData.value = r.data.list ?? [];
     total.value = r.data.total ?? 0;
   } catch (e) {
@@ -515,7 +514,6 @@ function openCreate() {
     version: undefined,
   });
   Object.assign(rule, emptyRule());
-  editError.value = '';
   editOpen.value = true;
 }
 
@@ -534,7 +532,6 @@ function openEdit(record: PromotionActivity) {
     version: record.version,
   });
   ruleToForm(record.rule);
-  editError.value = '';
   editOpen.value = true;
 }
 
@@ -545,7 +542,6 @@ function onTypeChange() {
 }
 
 async function submit() {
-  editError.value = '';
   // 必填项走表单校验：缺哪个就在哪个输入框下方提示（规则区字段按活动类型条件渲染，只会校验当前挂载的）
   try {
     await formRef.value?.validate();
@@ -558,8 +554,8 @@ async function submit() {
     message.success('活动已保存');
     editOpen.value = false;
     await queryData();
-  } catch (e) {
-    editError.value = promotionError(e);
+  } catch {
+    // 保存失败只走全局 toast
   } finally {
     saving.value = false;
   }
@@ -570,8 +566,8 @@ async function changeStatus(record: PromotionActivity, status: 'ACTIVE' | 'STOPP
     await promotionApi.activityStatus(record.id, record.version, status);
     message.success(status === 'ACTIVE' ? '活动已上线' : '活动已停用');
     await queryData();
-  } catch (e) {
-    error.value = promotionError(e);
+  } catch {
+    // 启停失败只走全局 toast
   }
 }
 

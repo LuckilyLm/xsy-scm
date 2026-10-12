@@ -9,7 +9,6 @@
         </a-upload>
       </div>
     </div>
-    <a-alert v-if="error" :message="error" type="error" show-icon/>
     <div v-if="modelValue.length" class="images">
       <figure v-for="(image, index) in modelValue" :key="image.fileKey" class="image-item" :draggable="canEdit"
               @dragstart="dragIndex = index" @dragover.prevent @drop.prevent="move(dragIndex, index)">
@@ -46,23 +45,21 @@ import { ArrowLeftOutlined, ArrowRightOutlined, DeleteOutlined } from '@ant-desi
 import { fileApi } from '/@/api/support/file-api';
 import { FILE_FOLDER_TYPE_ENUM } from '/@/constants/support/file-const';
 import type { ProductImage, ScmResponse } from '/@/types/business/scm/product';
-import { productError } from '../product-errors';
 const props = defineProps<{ modelValue: ProductImage[]; canEdit: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [images: ProductImage[]]; uploading: [busy: boolean] }>();
-const uploading = ref(false), error = ref(''), dragIndex = ref(-1);
+const uploading = ref(false), dragIndex = ref(-1);
 const upload: UploadProps['customRequest'] = async options => {
   if (!props.canEdit || !(options.file instanceof File)) return;
   uploading.value = true;
   emit('uploading', true);
-  error.value = '';
   try {
     const data = new FormData(); data.append('file', options.file);
     const response = await fileApi.uploadFile(data, FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value) as unknown as ScmResponse<{ fileKey: string; fileUrl: string; fileName?: string; fileSize?: number }>;
     if (!props.modelValue.some(image => image.fileKey === response.data.fileKey)) emit('update:modelValue', [...props.modelValue, { ...response.data, fileName: response.data.fileName || options.file.name, primaryFlag: props.modelValue.length === 0, sortOrder: props.modelValue.length }]);
     options.onSuccess?.(response.data);
   } catch (e) {
-    error.value = productError(e);
-    options.onError?.(new Error(error.value));
+    // 上传失败由全局 toast 给出原因；这里只把失败态回给上传控件
+    options.onError?.(e instanceof Error ? e : new Error(String(e)));
   } finally {
     uploading.value = false;
     emit('uploading', false);

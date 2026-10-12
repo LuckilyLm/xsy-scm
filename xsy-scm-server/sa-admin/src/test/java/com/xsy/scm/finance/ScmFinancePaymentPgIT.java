@@ -102,7 +102,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
 
     private Long customerOwnedBy(Long sellerId) {
         Long customerId = newCustomer();
-        jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", sellerId, customerId);
+        jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", sellerId, customerId);
         evictMybatisCache();
         return customerId;
     }
@@ -110,7 +110,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     /**
      * 走完整订单域链路造一张<b>已 COMPLETED 的退款</b>：确认订单 → 退货批准 → 退款完成。
      *
-     * <p>不直插 {@code order_refund}：退款金额、客户与状态都必须是订单域真实计算的结果，
+     * <p>不直插 {@code xsy_order_refund}：退款金额、客户与状态都必须是订单域真实计算的结果，
      * 否则「付款金额必须逐值等于 refund_amount」这条校验就变成两个自造数字互相印证。
      */
     private Refund completedRefund(String tag, String ordered, String approved) {
@@ -143,9 +143,9 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         // 那个分页读接口按 orderSellerScope 收窄（非超管身份下会拿不到行），
         // 而夹具要的只是「这一单的退款」，直查不依赖读侧范围也不依赖行序。
         Long refundId = jdbc.queryForObject(
-                "SELECT id FROM order_refund WHERE order_id = ? AND deleted = FALSE", Long.class, orderId);
+                "SELECT id FROM xsy_order_refund WHERE order_id = ? AND deleted = FALSE", Long.class, orderId);
         Integer refundVersion = jdbc.queryForObject(
-                "SELECT version FROM order_refund WHERE id = ?", Integer.class, refundId);
+                "SELECT version FROM xsy_order_refund WHERE id = ?", Integer.class, refundId);
 
         var complete = new OrderRefundCompleteForm();
         complete.setRefundId(refundId);
@@ -159,7 +159,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         evictMybatisCache();
 
         Map<String, Object> row1 = jdbc.queryForMap(
-                "SELECT * FROM order_refund WHERE id = ?", refundId);
+                "SELECT * FROM xsy_order_refund WHERE id = ?", refundId);
         return new Refund(refundId, orderId, customerId,
                 (BigDecimal) row1.get("refund_amount"), String.valueOf(row1.get("status")));
     }
@@ -174,13 +174,13 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     }
 
     private Map<String, Object> paymentRow(Long paymentId) {
-        return jdbc.queryForMap("SELECT * FROM finance_payment WHERE id = ?", paymentId);
+        return jdbc.queryForMap("SELECT * FROM xsy_finance_payment WHERE id = ?", paymentId);
     }
 
     private List<Map<String, Object>> logsOf(Long paymentId) {
         // business_id 只在同一 business_type 内唯一（各事实表各有 id 序列），必须带类型
         return jdbc.queryForList(
-                "SELECT * FROM finance_operation_log WHERE business_type = 'PAYMENT' AND business_id = ?",
+                "SELECT * FROM xsy_finance_operation_log WHERE business_type = 'PAYMENT' AND business_id = ?",
                 paymentId);
     }
 
@@ -191,26 +191,26 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
      * 因此单按 id 计数会把同号的客户付款一起算进来 —— 必须连 {@code counterparty_type} 一起判。
      */
     private int paymentsOfSupplier(Long supplierId) {
-        return count("SELECT count(*) FROM finance_payment"
+        return count("SELECT count(*) FROM xsy_finance_payment"
                 + " WHERE counterparty_type = 'SUPPLIER' AND counterparty_id = ?", supplierId);
     }
 
     private int payLogsOfSupplier(Long supplierId) {
-        return count("SELECT count(*) FROM finance_operation_log l"
-                + " JOIN finance_payment p ON p.id = l.business_id"
+        return count("SELECT count(*) FROM xsy_finance_operation_log l"
+                + " JOIN xsy_finance_payment p ON p.id = l.business_id"
                 + " WHERE l.business_type = 'PAYMENT' AND p.counterparty_type = 'SUPPLIER'"
                 + " AND p.counterparty_id = ?", supplierId);
     }
 
     /** 某退款名下的付款数（来源两列一起判，与 {@code uk_finance_payment_source_active} 同口径）。 */
     private int paymentsOfRefund(Long refundId) {
-        return count("SELECT count(*) FROM finance_payment"
+        return count("SELECT count(*) FROM xsy_finance_payment"
                 + " WHERE source_type = 'ORDER_REFUND' AND source_id = ?", refundId);
     }
 
     private int payLogsOfRefund(Long refundId) {
-        return count("SELECT count(*) FROM finance_operation_log l"
-                + " JOIN finance_payment p ON p.id = l.business_id"
+        return count("SELECT count(*) FROM xsy_finance_operation_log l"
+                + " JOIN xsy_finance_payment p ON p.id = l.business_id"
                 + " WHERE l.business_type = 'PAYMENT' AND p.source_type = 'ORDER_REFUND'"
                 + " AND p.source_id = ?", refundId);
     }
@@ -276,7 +276,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     @DisplayName("A 供应商预付：没有任何应付也照常登记，且不产生核销行")
     void supplierPrepaymentWithoutAnyPayableIsAllowed() {
         Long supplierId = supplier();
-        assertThat(count("SELECT count(*) FROM finance_payable WHERE supplier_id = ?", supplierId)).isZero();
+        assertThat(count("SELECT count(*) FROM xsy_finance_payable WHERE supplier_id = ?", supplierId)).isZero();
 
         FinancePaymentVO result = add(supplierForm(supplierId, "500.0000"));
 
@@ -290,7 +290,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(row.get("reason")).isNull();
         assertThat((BigDecimal) row.get("amount")).isEqualByComparingTo("500.0000");
         assertThat(String.valueOf(row.get("payment_no"))).matches("PM\\d{14,}");
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
                 result.getPaymentId())).as("该笔预付款不自动生成核销").isZero();
         assertThat(result.getCounterpartyName()).as("回显登记时冻结的对方名").isEqualTo(row.get("counterparty_name_snapshot"));
     }
@@ -303,7 +303,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         // 目的是证明「付款不会自动去冲它」，核销仍只能由核销命令产生。
         Long purchaseOrderId = 900_001L;
         long receiptId = 900_002L;
-        jdbc.update("INSERT INTO finance_payable (payable_no, source_type, source_id, purchase_order_id,"
+        jdbc.update("INSERT INTO xsy_finance_payable (payable_no, source_type, source_id, purchase_order_id,"
                         + " supplier_id, supplier_name_snapshot, entry_type, amount, event_at,"
                         + " created_at, updated_at, created_by)"
                         + " VALUES ('AP-FIXTURE-PB', 'PURCHASE_RECEIPT', ?, ?, ?, '夹具供应商', 'NORMAL',"
@@ -311,16 +311,16 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
                 receiptId, purchaseOrderId, supplierId, currentOperator());
         evictMybatisCache();
         Map<String, Object> before = jdbc.queryForMap(
-                "SELECT * FROM finance_payable WHERE source_id = ?", receiptId);
+                "SELECT * FROM xsy_finance_payable WHERE source_id = ?", receiptId);
 
         FinancePaymentVO payment = add(supplierForm(supplierId, "500.0000"));
 
         Map<String, Object> after = jdbc.queryForMap(
-                "SELECT * FROM finance_payable WHERE source_id = ?", receiptId);
+                "SELECT * FROM xsy_finance_payable WHERE source_id = ?", receiptId);
         assertThat(after.get("amount")).isEqualTo(before.get("amount"));
         assertThat(after.get("version")).isEqualTo(before.get("version"));
         assertThat(after.get("updated_at")).isEqualTo(before.get("updated_at"));
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
                 payment.getPaymentId())).as("等额付款也不自动核销").isZero();
     }
 
@@ -345,14 +345,14 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         // 库侧取证：finance_payment 的全部唯一索引只有主键、单据号、来源（含 source_id IS NOT NULL 谓词）
         // 与反向唯一 —— 没有任何按业务字段组合的自然键。
         assertThat(jdbc.queryForList(
-                "SELECT indexdef FROM pg_indexes WHERE tablename = 'finance_payment'"
+                "SELECT indexdef FROM pg_indexes WHERE tablename = 'xsy_finance_payment'"
                         + " AND indexdef ILIKE '%unique%'", String.class))
                 .allSatisfy(def -> assertThat(def).satisfiesAnyOf(
                         sql -> assertThat(sql).contains("payment_no"),
                         sql -> assertThat(sql).contains("source_type, source_id"),
                         sql -> assertThat(sql).contains("reverse_of_id"),
                         sql -> assertThat(sql).contains("finance_payment_pkey")));
-        assertThat(count("SELECT count(*) FROM pg_indexes WHERE tablename = 'finance_payment'"
+        assertThat(count("SELECT count(*) FROM pg_indexes WHERE tablename = 'xsy_finance_payment'"
                 + " AND indexdef ILIKE '%unique%' AND indexdef ILIKE '%external_reference%'")).isZero();
     }
 
@@ -375,7 +375,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(row.get("source_type")).isEqualTo("ORDER_REFUND");
         assertThat(row.get("source_id")).isEqualTo(refund.refundId());
         assertThat((BigDecimal) row.get("amount")).isEqualByComparingTo(exact);
-        assertThat(jdbc.queryForObject("SELECT name FROM customer WHERE id = ?", String.class,
+        assertThat(jdbc.queryForObject("SELECT name FROM xsy_customer WHERE id = ?", String.class,
                 refund.customerId())).isEqualTo(row.get("counterparty_name_snapshot"));
         // 订单侧凭据号绝不复制进财务侧（两域各自的资金凭证）
         assertThat(row.get("external_reference"))
@@ -388,7 +388,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
     void pendingRefundCannotBePaid() {
         Refund refund = completedRefund("E", "10.0000", "1.0000");
         // 撤回到 PENDING：夹具用真链路造单，这里只把状态与完成时点成对改回去
-        assertThat(jdbc.update("UPDATE order_refund SET status = 'PENDING', completed_at = NULL WHERE id = ?",
+        assertThat(jdbc.update("UPDATE xsy_order_refund SET status = 'PENDING', completed_at = NULL WHERE id = ?",
                 refund.refundId())).isEqualTo(1);
         evictMybatisCache();
 
@@ -440,7 +440,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
                 "CASH", PAST, "ORDER_REFUND", null)), 41139);
         expectCode(() -> add(form("CUSTOMER", refund.customerId(), refund.refundAmount().toPlainString(),
                 "CASH", PAST, null, refund.refundId())), 41139);
-        assertThat(count("SELECT count(*) FROM finance_payment"
+        assertThat(count("SELECT count(*) FROM xsy_finance_payment"
                 + " WHERE counterparty_type = 'CUSTOMER' AND counterparty_id = ?", refund.customerId()))
                 .isZero();
     }
@@ -471,13 +471,13 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(paymentsOfRefund(refund.refundId()) + paymentsOfSupplier(supplierId))
                 .as("两种越界来源都没落库").isZero();
 
-        expectSqlFailure("INSERT INTO finance_payment (payment_no, counterparty_type, counterparty_id,"
+        expectSqlFailure("INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id,"
                         + " counterparty_name_snapshot, amount, method, paid_at, entry_type, source_type,"
                         + " source_id) VALUES ('PM-J-1', 'CUSTOMER', ?, '客户', 10.0000, 'CASH', now(),"
                         + " 'NORMAL', 'PURCHASE_ORDER', ?)",
                 refund.customerId(), refund.refundId());
         // 供应商（无来源）与未知对方类型同样被库层挡住
-        expectSqlFailure("INSERT INTO finance_payment (payment_no, counterparty_type, counterparty_id,"
+        expectSqlFailure("INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id,"
                         + " counterparty_name_snapshot, amount, method, paid_at, entry_type)"
                         + " VALUES ('PM-J-2', 'WAREHOUSE', ?, '仓库', 10.0000, 'CASH', now(), 'NORMAL')",
                 supplierId);
@@ -512,7 +512,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         Refund refund = completedRefund("M", "10.0000", "2.0000");
         // 该退货发生在签收之前，因此批准时成功跳过、库里此刻没有红字。
         // 直接按 schema 补两张应收事实作为「已存在」的前置，不依赖签收链路。
-        jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
+        jdbc.update("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,"
                         + " customer_id, customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, amount, event_at,"
                         + " created_at, updated_at, created_by)"
@@ -520,8 +520,8 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
                         + " now(), now(), now(), ?)",
                 refund.orderId(), refund.orderId(), refund.customerId(), refund.customerId(), currentOperator());
         Long normalId = jdbc.queryForObject(
-                "SELECT id FROM finance_receivable WHERE receivable_no = 'AR-M-NORMAL'", Long.class);
-        jdbc.update("INSERT INTO finance_receivable (receivable_no, source_type, source_id, order_id,"
+                "SELECT id FROM xsy_finance_receivable WHERE receivable_no = 'AR-M-NORMAL'", Long.class);
+        jdbc.update("INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,"
                         + " customer_id, customer_name_snapshot, settlement_customer_id,"
                         + " settlement_customer_name_snapshot, entry_type, amount, event_at,"
                         + " original_receivable_id, reason, created_at, updated_at, created_by)"
@@ -530,23 +530,23 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
                 refund.refundId(), refund.orderId(), refund.customerId(), refund.customerId(), normalId, currentOperator());
         evictMybatisCache();
         List<Map<String, Object>> before = jdbc.queryForList(
-                "SELECT * FROM finance_receivable WHERE order_id = ? ORDER BY entry_type", refund.orderId());
+                "SELECT * FROM xsy_finance_receivable WHERE order_id = ? ORDER BY entry_type", refund.orderId());
         assertThat(before).hasSize(2);
 
         FinancePaymentVO payment = add(refundForm(
                 refund.customerId(), refund.refundAmount().toPlainString(), refund.refundId()));
 
         List<Map<String, Object>> after = jdbc.queryForList(
-                "SELECT * FROM finance_receivable WHERE order_id = ? ORDER BY entry_type", refund.orderId());
+                "SELECT * FROM xsy_finance_receivable WHERE order_id = ? ORDER BY entry_type", refund.orderId());
         assertThat(after).hasSize(2);
         for (int index = 0; index < after.size(); index++) {
             assertThat(after.get(index).get("amount")).isEqualTo(before.get(index).get("amount"));
             assertThat(after.get(index).get("version")).isEqualTo(before.get(index).get("version"));
             assertThat(after.get(index).get("updated_at")).isEqualTo(before.get(index).get("updated_at"));
         }
-        assertThat(count("SELECT count(*) FROM finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
+        assertThat(count("SELECT count(*) FROM xsy_finance_write_off WHERE source_type = 'PAYMENT' AND source_id = ?",
                 payment.getPaymentId())).as("退款付款不自动生成核销").isZero();
-        assertThat(count("SELECT count(*) FROM finance_receivable WHERE source_id = ? AND entry_type = 'RED'"
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable WHERE source_id = ? AND entry_type = 'RED'"
                 + " AND receivable_no <> 'AR-M-RED'", refund.refundId())).as("不追加第二张红字").isZero();
     }
 
@@ -562,7 +562,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
 
         assertThat(timestampOf(paymentRow(receiptId).get("paid_at")).toInstant()).isEqualTo(PAST.toInstant());
         assertThat(jdbc.queryForObject(
-                "SELECT paid_at = ?::timestamptz FROM finance_payment WHERE id = ?",
+                "SELECT paid_at = ?::timestamptz FROM xsy_finance_payment WHERE id = ?",
                 Boolean.class, PAST.toInstant().toString(), receiptId)).isTrue();
 
         // 夹具取到微秒：timestamptz 只到微秒且会舍入纳秒，归一放夹具侧才能保持逐值判等
@@ -587,7 +587,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         expectCode(() -> add(form("SUPPLIER", supplierId, "1.0000", "RECHARGE", PAST, null, null)), 41140);
         assertThat(paymentsOfSupplier(supplierId)).isEqualTo(3);
 
-        expectSqlFailure("INSERT INTO finance_payment (payment_no, counterparty_type, counterparty_id,"
+        expectSqlFailure("INSERT INTO xsy_finance_payment (payment_no, counterparty_type, counterparty_id,"
                         + " counterparty_name_snapshot, amount, method, paid_at, entry_type)"
                         + " VALUES ('PM-R-1', 'SUPPLIER', ?, '供应商', 1.0000, 'ONLINE_PAYMENT', now(), 'NORMAL')",
                 supplierId);
@@ -622,21 +622,21 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         Refund mine = completedRefund("T-MINE", "10.0000", "1.0000");
         Refund theirs = completedRefund("T-THEIRS", "10.0000", "1.0000");
         Long employeeId = newPlainEmployee("T");
-        jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", employeeId, mine.customerId());
+        jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", employeeId, mine.customerId());
         Long otherSeller = newPlainEmployee("T-OTHER");
-        jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", otherSeller, theirs.customerId());
+        jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", otherSeller, theirs.customerId());
         evictMybatisCache();
 
         try {
             asEmployee(employeeId);
             // 自己的客户：可付（金额取库上真值）
-            String mineAmount = jdbc.queryForObject("SELECT refund_amount FROM order_refund WHERE id = ?",
+            String mineAmount = jdbc.queryForObject("SELECT refund_amount FROM xsy_order_refund WHERE id = ?",
                     BigDecimal.class, mine.refundId()).toPlainString();
             assertThat(add(refundForm(mine.customerId(), mineAmount, mine.refundId())).getPaymentId())
                     .isNotNull();
 
             // 别人的客户与不存在的退款必须给出<b>同一个</b>码，否则「存在但不是你的」就成了探测信号
-            String theirsAmount = jdbc.queryForObject("SELECT refund_amount FROM order_refund WHERE id = ?",
+            String theirsAmount = jdbc.queryForObject("SELECT refund_amount FROM xsy_order_refund WHERE id = ?",
                     BigDecimal.class, theirs.refundId()).toPlainString();
             expectCode(() -> add(refundForm(theirs.customerId(), theirsAmount, theirs.refundId())), 41139);
             expectCode(() -> add(refundForm(theirs.customerId(), theirsAmount, 999999999L)), 41139);
@@ -704,7 +704,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         assertThat(replay.getSourceType()).isNull();
         assertThat(paymentsOfSupplier(supplierId)).isEqualTo(1);
         assertThat(logsOf(first.getPaymentId())).hasSize(1);
-        assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+        assertThat(count("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key = ?", idempotencyKey))
                 .isEqualTo(1);
     }
 
@@ -714,7 +714,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
         Long employeeA = newPlainEmployee("PRA");
         Long employeeB = newPlainEmployee("PRB");
         Refund refund = completedRefund("CUSTOMER-REPLAY", "10.0000", "2.0000");
-        assertThat(jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", employeeA, refund.customerId()))
+        assertThat(jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", employeeA, refund.customerId()))
                 .isEqualTo(1);
         evictMybatisCache();
 
@@ -729,10 +729,10 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
             assertThat(replay.getPaymentId()).isEqualTo(first.getPaymentId());
             assertThat(paymentsOfRefund(refund.refundId())).isEqualTo(1);
             assertThat(payLogsOfRefund(refund.refundId())).isEqualTo(1);
-            assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+            assertThat(count("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key = ?", idempotencyKey))
                     .isEqualTo(1);
 
-            assertThat(jdbc.update("UPDATE customer SET seller_id = ? WHERE id = ?", employeeB, refund.customerId()))
+            assertThat(jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", employeeB, refund.customerId()))
                     .isEqualTo(1);
             evictMybatisCache();
 
@@ -743,7 +743,7 @@ class ScmFinancePaymentPgIT extends ScmW5PgITBase {
 
         assertThat(paymentsOfRefund(refund.refundId())).isEqualTo(1);
         assertThat(payLogsOfRefund(refund.refundId())).isEqualTo(1);
-        assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+        assertThat(count("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key = ?", idempotencyKey))
                 .isEqualTo(1);
     }
 

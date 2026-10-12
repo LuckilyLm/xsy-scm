@@ -16,14 +16,14 @@ import java.time.OffsetDateTime;
  * 库存余额（粒度 = warehouse + sku）。
  *
  * <p>
- * <b>余额是活状态，不是单据</b>：没有任何商品 / 仓库快照列，展示用的编码与名称由查询服务实时联 {@code product_sku} / {@code product_spu} / {@code warehouse}
- * 取（单据侧的快照纪律不受影响）。批次与保质期、预警阈值都不属于本表。
+ * <b>余额是活状态，不是单据</b>：没有任何商品 / 仓库快照列，展示用的编码与名称由查询服务实时联 {@code xsy_product_sku} / {@code xsy_product_spu} /
+ * {@code xsy_warehouse} 取（单据侧的快照纪律不受影响）。批次与保质期、预警阈值都不属于本表。
  *
  * <p>
  * {@code unit} 是单位不变量载体：一个 {@code (warehouse_id, sku_id)} 锁定一个记账单位，后续异单位入库必须显式失败（41001），不能静默相加。
  */
 @Data
-@TableName(value = "inventory_balance", autoResultMap = true)
+@TableName(value = "xsy_inventory_balance", autoResultMap = true)
 public class InventoryBalanceEntity {
 
     @TableId(type = IdType.AUTO)

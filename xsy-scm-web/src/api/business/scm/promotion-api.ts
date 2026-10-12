@@ -4,7 +4,7 @@
  * 试算是只读的（`POST` 只是因为要传订单行数组）：不占用券、不写任何表；
  * 只有 `confirm` 才占用券并冻结优惠。两者分开是 ADR-009 的明确要求 —— 预览不等于最终占用。
  */
-import {getRequest, postRequest, request} from '/@/lib/axios';
+import {getRequest, postRequest, request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -44,8 +44,8 @@ async function promotionCommand<T>(path: string, data: unknown): Promise<ScmResp
 
 export const promotionApi = {
     // ---- 活动 ----
-    activityQuery: (data: PromotionActivityQuery) =>
-        postRequest('/scm/promotion/activity/query', data) as unknown as Promise<
+    activityQuery: (data: PromotionActivityQuery, options?: RequestOptions) =>
+        postRequest('/scm/promotion/activity/query', data, options) as unknown as Promise<
             ScmResponse<ScmPage<PromotionActivity>>
         >,
 
@@ -62,8 +62,8 @@ export const promotionApi = {
         >,
 
     // ---- 优惠券 ----
-    couponQuery: (data: PromotionCouponQuery) =>
-        postRequest('/scm/promotion/coupon/query', data) as unknown as Promise<ScmResponse<ScmPage<PromotionCoupon>>>,
+    couponQuery: (data: PromotionCouponQuery, options?: RequestOptions) =>
+        postRequest('/scm/promotion/coupon/query', data, options) as unknown as Promise<ScmResponse<ScmPage<PromotionCoupon>>>,
 
     couponDetail: (id: Id) =>
         getRequest(`/scm/promotion/coupon/${id}`, {}) as unknown as Promise<ScmResponse<PromotionCoupon>>,
@@ -81,8 +81,8 @@ export const promotionApi = {
     couponIssue: (couponId: Id, customerId: Id, quantity: number) =>
         promotionCommand<number>('/scm/promotion/coupon/issue', {couponId, customerId, quantity}),
 
-    couponInstances: (customerId: Id, status?: string) =>
-        getRequest('/scm/promotion/coupon/instances', status ? {customerId, status} : {customerId}) as unknown as Promise<
+    couponInstances: (customerId: Id, status?: string, options?: RequestOptions) =>
+        getRequest('/scm/promotion/coupon/instances', status ? {customerId, status} : {customerId}, options) as unknown as Promise<
             ScmResponse<PromotionCouponInstance[]>
         >,
 
@@ -92,8 +92,8 @@ export const promotionApi = {
         activityId?: Id | null;
         couponInstanceId?: Id | null;
         lines: PromotionDiscountLine[];
-    }) =>
-        postRequest('/scm/promotion/discount/preview', form) as unknown as Promise<ScmResponse<PromotionDiscount>>,
+    }, options?: RequestOptions) =>
+        postRequest('/scm/promotion/discount/preview', form, options) as unknown as Promise<ScmResponse<PromotionDiscount>>,
 
     /**
      * 冻结不再有独立端点：优惠由订单确认在服务端按订单事实冻结。

@@ -77,21 +77,21 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
                 + " RAISE EXCEPTION 'injected finance_operation_log failure'; END IF;"
                 + " RETURN NEW; END $BODY$ LANGUAGE plpgsql");
         jdbc.execute("CREATE TRIGGER trg_scm_f13a_break_receipt_log"
-                + " BEFORE INSERT ON finance_operation_log"
+                + " BEFORE INSERT ON xsy_finance_operation_log"
                 + " FOR EACH ROW EXECUTE FUNCTION scm_f13a_break_receipt_log()");
         try {
             assertThatThrownBy(() -> financeReceiptService.add(form(customerId, "66.0000", MARKER), idempotencyKey))
                     .isInstanceOf(Throwable.class);
 
-            assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?", customerId))
+            assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?", customerId))
                     .as("收款单不得留下").isZero();
-            assertThat(count("SELECT count(*) FROM finance_operation_log WHERE business_type = 'RECEIPT'"
+            assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'RECEIPT'"
                     + " AND after_data->>'remark' = ?", MARKER))
                     .as("日志本身也没有").isZero();
-            assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+            assertThat(count("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key = ?", idempotencyKey))
                     .as("claim 随事务回滚，否则同一 key 的重放会读到空结果").isZero();
         } finally {
-            jdbc.execute("DROP TRIGGER IF EXISTS trg_scm_f13a_break_receipt_log ON finance_operation_log");
+            jdbc.execute("DROP TRIGGER IF EXISTS trg_scm_f13a_break_receipt_log ON xsy_finance_operation_log");
             jdbc.execute("DROP FUNCTION IF EXISTS scm_f13a_break_receipt_log()");
         }
 
@@ -99,7 +99,7 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
         Long receiptId = financeReceiptService.add(form(customerId, "66.0000", MARKER), idempotencyKey)
                 .getReceiptId();
         assertThat(receiptId).isNotNull();
-        assertThat(count("SELECT count(*) FROM finance_operation_log WHERE business_type = 'RECEIPT'"
+        assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'RECEIPT'"
                 + " AND business_id = ?", receiptId)).isEqualTo(1);
     }
 
@@ -118,7 +118,7 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
         String taken = "RC" + java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"))
                 .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)
                 + String.format("%06d", next + 1);
-        jdbc.update("INSERT INTO finance_receipt (receipt_no, customer_id, customer_name_snapshot,"
+        jdbc.update("INSERT INTO xsy_finance_receipt (receipt_no, customer_id, customer_name_snapshot,"
                         + " settlement_customer_id, settlement_customer_name_snapshot,"
                         + " amount, method, received_at, entry_type, created_at, updated_at, created_by)"
                         + " VALUES (?, ?, '占位客户', ?, '占位客户', 1.0000, 'CASH', now(), 'NORMAL', now(), now(), '2:1')",
@@ -126,8 +126,8 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
 
         // 基线：本类是 NOT_SUPPORTED（真提交），前一个用例留下的收款与日志是既有事实，
         // 因此「零残留」只能相对本次调用之前测量，按全局零断言会把别人的证据算成自己的泄漏。
-        int receiptsBefore = count("SELECT count(*) FROM finance_receipt");
-        int receiveLogsBefore = count("SELECT count(*) FROM finance_operation_log"
+        int receiptsBefore = count("SELECT count(*) FROM xsy_finance_receipt");
+        int receiveLogsBefore = count("SELECT count(*) FROM xsy_finance_operation_log"
                 + " WHERE business_type = 'RECEIPT'");
 
         try {
@@ -135,18 +135,18 @@ class ScmFinanceReceiptRollbackPgIT extends ScmW5PgITBase {
                     idempotencyKey))
                     .isInstanceOf(DataIntegrityViolationException.class);
 
-            assertThat(count("SELECT count(*) FROM finance_receipt"))
+            assertThat(count("SELECT count(*) FROM xsy_finance_receipt"))
                     .as("基线已含夹具那一行，服务侧什么都没写")
                     .isEqualTo(receiptsBefore);
-            assertThat(count("SELECT count(*) FROM finance_receipt WHERE customer_id = ?"
+            assertThat(count("SELECT count(*) FROM xsy_finance_receipt WHERE customer_id = ?"
                     + " AND receipt_no <> ?", customerId, taken))
                     .as("除夹具那一行外没有新收款单").isZero();
-            assertThat(count("SELECT count(*) FROM finance_operation_log WHERE business_type = 'RECEIPT'"))
+            assertThat(count("SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'RECEIPT'"))
                     .as("日志与收款单同事务，一起回滚").isEqualTo(receiveLogsBefore);
-            assertThat(count("SELECT count(*) FROM idempotency_record WHERE idempotency_key = ?", idempotencyKey))
+            assertThat(count("SELECT count(*) FROM xsy_idempotency_record WHERE idempotency_key = ?", idempotencyKey))
                     .as("幂等 claim 也随事务回滚").isZero();
         } finally {
-            jdbc.update("DELETE FROM finance_receipt WHERE receipt_no = ?", taken);
+            jdbc.update("DELETE FROM xsy_finance_receipt WHERE receipt_no = ?", taken);
         }
     }
 }

@@ -68,9 +68,9 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
         Long customer = newCustomer();
         Long orderId = confirmedSalesOrder(customer, sku, "1.0000", "1.0000");
         // 用这一单自己的两列做基准：下单金额与结算金额是两个不同的列，互相替代会让断言算错。
-        BigDecimal settlement = jdbc.queryForObject("SELECT settlement_total_amount FROM sales_order WHERE id = ?",
+        BigDecimal settlement = jdbc.queryForObject("SELECT settlement_total_amount FROM xsy_sales_order WHERE id = ?",
                 BigDecimal.class, orderId);
-        BigDecimal ordered = jdbc.queryForObject("SELECT ordered_total_amount FROM sales_order WHERE id = ?",
+        BigDecimal ordered = jdbc.queryForObject("SELECT ordered_total_amount FROM xsy_sales_order WHERE id = ?",
                 BigDecimal.class, orderId);
         assertThat(ordered.signum()).as("造数必须让这一单有下单金额，否则创建轴的断言会变成空转").isPositive();
         assertThat(settlement.signum()).as("同上").isPositive();
@@ -80,7 +80,7 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
 
         // 只把创建时间挪到昨天：这一单变成「昨天创建、今天确认」。
         // 销售额与订单数走确认轴，都不受影响；下单金额走创建轴，少掉这一单。
-        assertThat(jdbc.update("UPDATE sales_order SET created_at = now() - interval '1 day' WHERE id = ?", orderId))
+        assertThat(jdbc.update("UPDATE xsy_sales_order SET created_at = now() - interval '1 day' WHERE id = ?", orderId))
                 .isEqualTo(1);
         evictMybatisCache();
         SalesMetrics afterCreatedMove = metricsService.todaySales(scope);
@@ -92,7 +92,7 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
                 .isEqualByComparingTo(before.todayOrderedAmount().subtract(ordered));
 
         // 再把确认时间也挪到昨天：销售额与订单数这才少掉这一单。
-        assertThat(jdbc.update("UPDATE sales_order SET confirmed_at = now() - interval '1 day' WHERE id = ?", orderId))
+        assertThat(jdbc.update("UPDATE xsy_sales_order SET confirmed_at = now() - interval '1 day' WHERE id = ?", orderId))
                 .isEqualTo(1);
         evictMybatisCache();
         SalesMetrics afterConfirmedMove = metricsService.todaySales(scope);
@@ -125,10 +125,10 @@ class ScmBusinessMetricsConsistencyPgIT extends ScmW6PgITBase {
         Long sku = newOnShelfSku("MX2");
         Long customer = newCustomer();
         Long orderId = confirmedSalesOrder(customer, sku, "1.0000", "1.0000");
-        BigDecimal settlement = jdbc.queryForObject("SELECT settlement_total_amount FROM sales_order WHERE id = ?",
+        BigDecimal settlement = jdbc.queryForObject("SELECT settlement_total_amount FROM xsy_sales_order WHERE id = ?",
                 BigDecimal.class, orderId);
         // 昨天 23:50 创建、今天 09:00 确认。按创建轴归属会落到昨天，按确认轴归属才是今天。
-        jdbc.update("UPDATE sales_order SET"
+        jdbc.update("UPDATE xsy_sales_order SET"
                 + " created_at = (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai') - interval '10 minutes')"
                 + " AT TIME ZONE 'Asia/Shanghai',"
                 + " confirmed_at = (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai') + interval '9 hours')"

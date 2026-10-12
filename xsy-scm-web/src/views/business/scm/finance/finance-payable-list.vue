@@ -255,15 +255,14 @@ async function submitRed() {
     }
     redSaving.value = true;
     const generation = redRequestId;
-    redError.value = '';
     try {
         await financeApi.payableRed({originalPayableId: redSource.value.payableId, reason: redReason.value.trim(), items: lines});
         if (generation !== redRequestId) return;
         message.success('红字应付已登记');
         redOpen.value = false;
         await queryData();
-    } catch (cause) {
-        if (generation === redRequestId) redError.value = financeError(cause);
+    } catch {
+        // 登记失败只走全局 toast；弹窗里的 redError 留给明细加载失败
     } finally {
         redSaving.value = false;
     }

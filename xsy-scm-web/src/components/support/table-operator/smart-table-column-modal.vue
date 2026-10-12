@@ -26,15 +26,7 @@
       </a-alert>
     </div>
     <div v-else>
-      <a-alert type="info" show-icon class="smart-margin-bottom10">
-        <template #icon>
-          <smile-outlined/>
-        </template>
-        <template #message> 可以通过拖拽行直接修改顺序哦；（
-          <pushpin-outlined/>
-          为固定列，不可拖拽 ）
-        </template>
-      </a-alert>
+      <FormNote :lines="['可以通过拖拽行直接修改顺序；带「固定」标记的列不可拖拽。']"/>
       <a-table
           id="smartTableColumnModalTable"
           rowKey="columnKey"
@@ -94,6 +86,7 @@ import Sortable from 'sortablejs';
 import {message, Modal} from 'ant-design-vue';
 import {mergeColumn} from './smart-table-column-merge';
 import {smartSentry} from '/@/lib/smart-sentry';
+import FormNote from '/@/components/framework/form-note/index.vue';
 
 const emit = defineEmits(['change']);
 

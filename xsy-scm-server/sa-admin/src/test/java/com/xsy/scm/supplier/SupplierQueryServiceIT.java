@@ -63,7 +63,7 @@ class SupplierQueryServiceIT extends ScmW2PgITBase {
         form.setContactPhone("13900002222");
         Long id = service.add(form);
         String generatedCode = jdbc.queryForObject(
-                "SELECT supplier_code FROM supplier WHERE id = ?", String.class, id);
+                "SELECT supplier_code FROM xsy_supplier WHERE id = ?", String.class, id);
 
         for (String keyword : List.of("供应商K1", generatedCode, prefix + "CONTACT-NAME", "13900002222")) {
             SupplierQueryForm query = queryForm();

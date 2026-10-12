@@ -18,7 +18,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.order.support.OrderJsonbTypeHandler;
 
 @Data
-@TableName(value = "sales_order_item", autoResultMap = true)
+@TableName(value = "xsy_sales_order_item", autoResultMap = true)
 public class SalesOrderItemEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

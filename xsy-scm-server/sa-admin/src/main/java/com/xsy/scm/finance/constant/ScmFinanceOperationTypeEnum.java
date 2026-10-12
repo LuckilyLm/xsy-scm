@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 财务操作日志的动作类型，对应 {@code finance_operation_log.operation_type} 的 {@code ck_finance_operation_log_type} 白名单。
+ * 财务操作日志的动作类型，对应 {@code xsy_finance_operation_log.operation_type} 的 {@code ck_finance_operation_log_type} 白名单。
  *
  * <p>
  * 枚举值必须与数据库 CHECK 保持一致；新增操作类型时需同步更新两者。

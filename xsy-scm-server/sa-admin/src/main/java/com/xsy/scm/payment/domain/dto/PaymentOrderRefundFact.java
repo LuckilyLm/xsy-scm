@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 支付域读取的业务退款单事实（只读，来源 {@code order_refund}）。
+ * 支付域读取的业务退款单事实（只读，来源 {@code xsy_order_refund}）。
  *
  * <p>
  * {@code customerId} 必须与原支付客户一致；{@code refundAmount} 必须与支付域提交的退款额逐值一致 —— 差一分钱，人工与线上两条退款路径就会各退一部分。{@code status} 读侧不过滤，

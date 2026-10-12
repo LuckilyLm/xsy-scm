@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 回调事件的处理结果。持久化到 {@code payment_callback_event.process_status}。
+ * 回调事件的处理结果。持久化到 {@code xsy_payment_callback_event.process_status}。
  *
  * <p>
  * 四个值刻意区分「收下了但没处理」与「处理失败」：未通过验签的事件<b>照样落库</b>（留证）， 但永远是 {@code REJECTED}，绝不进入状态转换 —— 这样「有人伪造回调」是看得见的， 而不是被静默丢弃。

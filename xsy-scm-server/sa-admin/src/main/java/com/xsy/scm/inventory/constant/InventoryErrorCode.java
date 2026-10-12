@@ -105,7 +105,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_STOCKTAKE_PARAM_INVALID(41022, "库存盘点事实不合法"),
 
     /**
-     * 41023：该 {@code (warehouse, sku)} 没有余额行，无法盘点。
+     * 41023：该 {@code (xsy_warehouse, sku)} 没有余额行，无法盘点。
      *
      * <p>
      * 记账单位只能来自余额行，因此「从未入库过的 SKU」不能在盘点里凭空盘盈 —— 那需要先有入库事实来确定单位。这不是能力缺失，而是刻意不让盘点成为 「绕过入库、凭空造库存」的入口。
@@ -166,7 +166,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
     INVENTORY_LOSS_GAIN_PARAM_INVALID(41031, "报损报溢事实不合法"),
 
     /**
-     * 41032：该 {@code (warehouse, sku)} 没有余额行，无法报损报溢。
+     * 41032：该 {@code (xsy_warehouse, sku)} 没有余额行，无法报损报溢。
      *
      * <p>
      * 与盘点的 41023 是<b>同一类约束</b>（记账单位只能来自余额行），但补救动作不同：盘点要「先入库再盘点」，报损报溢要「先入库再报损报溢」。因此各自保留一个码，让前端提示能给出准确的下一步。
@@ -250,7 +250,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 41044：目标仓的记账单位与调拨单位不一致。
      *
      * <p>
-     * 规定一个 {@code (warehouse, sku)} 只锁一个记账单位，且<b>不做隐式换算</b>：源仓按「箱」记账、目标仓按「kg」记账时，把 10 箱直接加成 10 kg 会得到一个
+     * 规定一个 {@code (xsy_warehouse, sku)} 只锁一个记账单位，且<b>不做隐式换算</b>：源仓按「箱」记账、目标仓按「kg」记账时，把 10 箱直接加成 10 kg 会得到一个
      * 没有物理意义的余额，而错误只会在未来盘点时以「账实不符」的形式暴露。当前不支持单位换算，单位不匹配时显式失败。
      */
     INVENTORY_TRANSFER_UNIT_MISMATCH(41044, "目标仓库该商品规格的记账单位与调拨单位不一致，库存不做自动换算：请先统一两仓的采购单位"),
@@ -352,7 +352,7 @@ public enum InventoryErrorCode implements ScmErrorCode {
      * 41059：源 SKU 的余额记账单位与单据声明的源单位不一致。
      *
      * <p>
-     * 规定一个 {@code (warehouse, sku)} 只锁一个记账单位且<b>不做隐式换算</b>。单位是单据显式声明的（折算关系本身含单位），因此不一致时只能失败，不能「按声明改记账单位」——
+     * 规定一个 {@code (xsy_warehouse, sku)} 只锁一个记账单位且<b>不做隐式换算</b>。单位是单据显式声明的（折算关系本身含单位），因此不一致时只能失败，不能「按声明改记账单位」——
      * 那会让既有余额的含义漂移。
      */
     INVENTORY_CONVERSION_SOURCE_UNIT_MISMATCH(41059, "源商品规格的记账单位与单据声明的源单位不一致，库存不做自动换算"),

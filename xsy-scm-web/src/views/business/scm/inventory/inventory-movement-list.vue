@@ -206,13 +206,14 @@ async function queryData() {
   loading.value = true;
   error.value = '';
   try {
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
     const r = await inventoryMovementApi.query({
       ...queryForm,
       // 清空时省略枚举字段，空字符串会被后端校验拒绝。
       movementType: queryForm.movementType || undefined,
       occurredFrom: occurredRange.value?.[0] ?? null,
       occurredTo: occurredRange.value?.[1] ?? null,
-    });
+    }, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;

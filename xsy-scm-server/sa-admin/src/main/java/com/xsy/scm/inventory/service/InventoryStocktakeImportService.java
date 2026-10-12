@@ -37,7 +37,8 @@ import java.util.Map;
  *
  * <p>
  * <b>本类只负责「解析 + 全量校验 + 凭证核验」，不直接碰库存</b>：真正的落库交给 {@link InventoryStocktakeImportTxService}（持锁核验 + 复用既有
- * {@code create}）。导入绝不写 {@code inventory_balance.quantity} 或 {@code inventory_movement} —— 只有后续 {@code confirm} 才改库存。
+ * {@code create}）。导入绝不写 {@code xsy_inventory_balance.quantity} 或 {@code xsy_inventory_movement} —— 只有后续 {@code confirm}
+ * 才改库存。
  *
  * <p>
  * <b>整批语义</b>：任一空行 / 空白实盘量 / 来源集合被增删替换 / 凭证被篡改或过期 / 快照漂移，全部导致整批拒绝且不产生草稿。这与商品、订单导入同一取向：先全部校验，0 错误才写。

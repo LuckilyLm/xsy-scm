@@ -362,14 +362,14 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
         // 直接插一张 seller_id 为 null 的草稿：模拟「归属被收回」的历史单。
         // 用 delete 作为探针：它只需要订单行本身，不依赖地址快照或订单行，
         // 能把「范围判定」这一件事单独隔离出来。
-        jdbc.update("INSERT INTO sales_order (order_no, customer_id, customer_code_snapshot,"
+        jdbc.update("INSERT INTO xsy_sales_order (order_no, customer_id, customer_code_snapshot,"
                         + " customer_name_snapshot, settlement_customer_id, settlement_customer_name_snapshot,"
                         + " order_source, status, ordered_total_amount, settlement_total_amount,"
                         + " settle_mode_snapshot, seller_id)"
                         + " VALUES (?, ?, 'CODE-N1', '范围测试客户', ?, '范围测试客户', 'ADMIN', 'DRAFT', 0, 0,"
                         + " 'INDEPENDENT', NULL)",
                 orderNo, customerOfA, customerOfA);
-        Long unassigned = jdbc.queryForObject("SELECT id FROM sales_order WHERE order_no = ?", Long.class, orderNo);
+        Long unassigned = jdbc.queryForObject("SELECT id FROM xsy_sales_order WHERE order_no = ?", Long.class, orderNo);
 
         // A 是「原本可能负责过这户客户」的普通销售：范围谓词只认 seller_id IN (本人)，null 不在其中
         assertNoPermission(() -> as(sellerA, Set.of(), () -> {
@@ -466,7 +466,7 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
      * 再提交 + 确认。这三步都是被本类当作「前置事实」的既有主链，不是待测点。
      */
     private void confirmOwn(Long orderId) {
-        Long seller = jdbc.queryForObject("SELECT seller_id FROM sales_order WHERE id = ?", Long.class, orderId);
+        Long seller = jdbc.queryForObject("SELECT seller_id FROM xsy_sales_order WHERE id = ?", Long.class, orderId);
         Long itemId = firstItemId(orderId);
         as(seller, Set.of(), () -> {
             salesOrderService.submit(versionForm(orderId, versionOf(orderId)), prefix + "-sub");
@@ -574,56 +574,56 @@ class ScmOrderWriteScopePgIT extends ScmW3PgITBase {
 
     private Integer versionOf(Long orderId) {
         evicted();
-        return jdbc.queryForObject("SELECT version FROM sales_order WHERE id = ?", Integer.class, orderId);
+        return jdbc.queryForObject("SELECT version FROM xsy_sales_order WHERE id = ?", Integer.class, orderId);
     }
 
     private String statusOf(Long orderId) {
         evicted();
-        return jdbc.queryForObject("SELECT status FROM sales_order WHERE id = ?", String.class, orderId);
+        return jdbc.queryForObject("SELECT status FROM xsy_sales_order WHERE id = ?", String.class, orderId);
     }
 
     private String remarkOf(Long orderId) {
         evicted();
-        return jdbc.queryForObject("SELECT remark FROM sales_order WHERE id = ?", String.class, orderId);
+        return jdbc.queryForObject("SELECT remark FROM xsy_sales_order WHERE id = ?", String.class, orderId);
     }
 
     private Boolean deletedOf(Long orderId) {
         evicted();
-        return jdbc.queryForObject("SELECT deleted FROM sales_order WHERE id = ?", Boolean.class, orderId);
+        return jdbc.queryForObject("SELECT deleted FROM xsy_sales_order WHERE id = ?", Boolean.class, orderId);
     }
 
     private java.math.BigDecimal actualQuantityOf(Long itemId) {
         evicted();
         return jdbc.queryForObject(
-                "SELECT actual_quantity FROM sales_order_item WHERE id = ?", java.math.BigDecimal.class, itemId);
+                "SELECT actual_quantity FROM xsy_sales_order_item WHERE id = ?", java.math.BigDecimal.class, itemId);
     }
 
     private Long firstItemId(Long orderId) {
         evicted();
         return jdbc.queryForObject(
-                "SELECT id FROM sales_order_item WHERE order_id = ? AND deleted = FALSE ORDER BY id LIMIT 1",
+                "SELECT id FROM xsy_sales_order_item WHERE order_id = ? AND deleted = FALSE ORDER BY id LIMIT 1",
                 Long.class, orderId);
     }
 
     private Integer returnVersionOf(Long returnId) {
         evicted();
-        return jdbc.queryForObject("SELECT version FROM order_return WHERE id = ?", Integer.class, returnId);
+        return jdbc.queryForObject("SELECT version FROM xsy_order_return WHERE id = ?", Integer.class, returnId);
     }
 
     private String returnStatusOf(Long returnId) {
         evicted();
-        return jdbc.queryForObject("SELECT status FROM order_return WHERE id = ?", String.class, returnId);
+        return jdbc.queryForObject("SELECT status FROM xsy_order_return WHERE id = ?", String.class, returnId);
     }
 
     private Integer reservationRowsFor(Long orderId) {
         evicted();
         return jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_reservation WHERE source_document_id = ?", Integer.class, orderId);
+                "SELECT count(*) FROM xsy_inventory_reservation WHERE source_document_id = ?", Integer.class, orderId);
     }
 
     private Integer returnRowsFor(Long orderId) {
         evicted();
-        return jdbc.queryForObject("SELECT count(*) FROM order_return WHERE order_id = ?", Integer.class, orderId);
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_order_return WHERE order_id = ?", Integer.class, orderId);
     }
 
     /** 同一测试事务共用一个 SqlSession，MyBatis 一级缓存会按「语句 + 参数」命中旧结果。 */

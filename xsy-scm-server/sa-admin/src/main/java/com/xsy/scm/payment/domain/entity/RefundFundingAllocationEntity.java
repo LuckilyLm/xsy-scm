@@ -11,7 +11,7 @@ import lombok.Data;
 
 /** 业务退款按原成功资金来源冻结的分摊事实。 */
 @Data
-@TableName("refund_funding_allocation")
+@TableName("xsy_refund_funding_allocation")
 public class RefundFundingAllocationEntity {
     @TableId(type = IdType.AUTO)
     private Long id;

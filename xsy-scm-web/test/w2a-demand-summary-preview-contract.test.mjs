@@ -39,7 +39,7 @@ test('summary calculation status enum matches the backend 5 states and every val
 
 test('summary-preview is a read-only postRequest and does not touch generate', () => {
   const api = code('../src/api/business/scm/purchase-demand-api.ts');
-  assert.match(api, /summaryPreview:\s*\(data:\s*DemandSummaryPreviewQuery\)\s*=>\s*postRequest\('\/scm\/purchase\/demand\/summary-preview'/);
+  assert.match(api, /summaryPreview:\s*\(data:\s*DemandSummaryPreviewQuery(,\s*options\?:\s*RequestOptions)?\)\s*=>\s*postRequest\('\/scm\/purchase\/demand\/summary-preview'/);
   // 只读：预览自身不得走带 Idempotency-Key 的命令式封装（只看 summaryPreview 到其 postRequest 之间）
   assert.doesNotMatch(api, /summaryPreview:[^\n]*purchaseCommand/);
   // generate 端点仍是原样（未被预览改写语义）

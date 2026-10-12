@@ -22,8 +22,8 @@
   <a-card v-if="selected" :title="`供应商对账单 · 版本 #${selected.id}`" size="small" :bordered="false">
     <template #extra>
       <a-space>
-        <a-button v-privilege="PERM.EXPORT" @click="exportVersion">导出 Excel</a-button>
-        <a-button @click="printVersion">打印 / 保存 PDF</a-button>
+        <a-button v-privilege="PERM.EXPORT" size="small" :loading="versionExport.exporting" @click="exportVersion">导出 Excel</a-button>
+        <a-button size="small" @click="printVersion">打印 / 保存 PDF</a-button>
       </a-space>
     </template>
     <div ref="printArea" class="statement-print">
@@ -59,6 +59,7 @@ import type {ReportId} from './report-types';
 import {defaultDateRange, rangeOverLimitError, type DateRange} from './report-model';
 import {moneyText} from '../inventory/inventory-model';
 import {reportError} from './report-errors';
+import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION as PERM} from '/@/constants/business/scm/report-const';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -68,6 +69,7 @@ const supplierId = ref<ReportId>(), warehouseId = ref<ReportId>();
 const dateRange = ref<DateRange>(defaultDateRange());
 
 const selected = ref<SupplierStatement>(), history = ref<SupplierStatement[]>([]);
+const versionExport = useScmExport();
 const printArea = ref<HTMLElement>(), busy = ref(false), error = ref('');
 watch(supplierId, () => { selected.value = undefined; history.value = []; });
 const factLabels: Record<string, string> = {
@@ -91,7 +93,7 @@ async function loadHistory() {
   if (!id) return;
   busy.value = true; error.value = '';
   try {
-    const rows = (await supplierStatementApi.history(id)).data ?? [];
+    const rows = (await supplierStatementApi.history(id, {suppressGlobalErrorMessage: true})).data ?? [];
     if (supplierId.value === id) history.value = rows;
   } catch (e) { error.value = reportError(e); }
   finally { busy.value = false; }
@@ -108,22 +110,26 @@ async function freeze() {
     const version = (await supplierStatementApi.freeze({supplierId: id, warehouseId: warehouseId.value,
       startDate: dateRange.value[0], endDate: dateRange.value[1]})).data;
     if (supplierId.value === id) { selected.value = version; await loadHistory(); }
-  } catch (e) { error.value = reportError(e); }
+  } catch {
+    // 生成对账单失败只走全局 toast
+  }
   finally { busy.value = false; }
 }
 async function openVersion(id: ReportId) {
   const expectedSupplierId = supplierId.value;
   busy.value = true; error.value = '';
   try {
-    const version = (await supplierStatementApi.detail(id)).data;
+    const version = (await supplierStatementApi.detail(id, {suppressGlobalErrorMessage: true})).data;
     if (supplierId.value === expectedSupplierId && String(version.supplierId) === String(expectedSupplierId)) {
       selected.value = version;
     }
   } catch (e) { error.value = reportError(e); }
   finally { busy.value = false; }
 }
-async function exportVersion() {
-  if (selected.value) await supplierStatementApi.export(selected.value.id);
+function exportVersion() {
+  const target = selected.value;
+  if (!target) return;
+  void versionExport.run(() => supplierStatementApi.export(target.id));
 }
 function printVersion() {
   if (!selected.value || !printArea.value) return;

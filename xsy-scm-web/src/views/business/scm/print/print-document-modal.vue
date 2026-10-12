@@ -51,14 +51,6 @@
         message="部分字段因权限未打印"
         :description="`以下字段在你的模板里已选，但你没有该单据类型的金额权限，本次不会出现在纸上：${hiddenFields.join('、')}`"
     />
-    <a-alert
-        v-if="frozenHint"
-        class="banner"
-        type="success"
-        show-icon
-        message="已生成打印快照"
-        :description="frozenHint"
-    />
 
     <a-spin :spinning="loading">
       <div v-if="renders.length" class="preview" v-html="previewHtml"/>
@@ -69,7 +61,7 @@
 
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue';
-import {message} from 'ant-design-vue';
+import {notification} from 'ant-design-vue';
 import {printApi} from '/@/api/business/scm/print-api';
 import type {Id, PrintDocumentType, PrintRender, PrintTemplate} from './print-types';
 import {renderPrintHtml, printRenders} from './print-render';
@@ -109,20 +101,23 @@ const hiddenFields = computed(() => {
   return Array.from(keys);
 });
 
-const frozenHint = computed(() => {
-  const first = renders.value.find((render) => render.frozen);
-  if (!first) {
-    return '';
-  }
-  return `模板 ${first.templateCode} v${first.templateVersion}，打印时间 ${first.printedAt ?? '—'}。重印只读这份快照，不随业务数据变化。`;
-});
+/**
+ * 冻结快照的一句话说明：模板中文名 + 版本 + 打印时间 + 重印口径。
+ *
+ * 用 `templateName` 而不是 `templateCode`：编码是给程序看的标识，用户认的是模板名。
+ */
+function snapshotHint(render: PrintRender): string {
+  const template = render.templateName || render.templateCode;
+  return `模板 ${template ?? '—'} v${render.templateVersion ?? '—'}，打印时间 ${render.printedAt ?? '—'}。重印只读这份快照，不随业务数据变化。`;
+}
 
 const previewHtml = computed(() => renders.value.map(renderPrintHtml).join(''));
 
 async function loadTemplates(id: number) {
   const firstId = props.businessIds[0];
   if (firstId === undefined) return;
-  const r = await printApi.templateOptions(props.documentType, firstId);
+  // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
+  const r = await printApi.templateOptions(props.documentType, firstId, {suppressGlobalErrorMessage: true});
   if (id !== requestId) return;
   templates.value = r.data ?? [];
   const preferred = templates.value.find((item) => item.defaultFlag) ?? templates.value[0];
@@ -145,7 +140,7 @@ async function reloadPreview() {
     const list: PrintRender[] = [];
     for (const businessId of props.businessIds) {
       if (id !== requestId) return;
-      const r = await printApi.preview(props.documentType, businessId, templateId.value);
+      const r = await printApi.preview(props.documentType, businessId, templateId.value, {suppressGlobalErrorMessage: true});
       list.push(r.data);
     }
     if (id === requestId) {
@@ -191,9 +186,15 @@ async function print() {
     emit('printed');
     await printRenders(frozen);
     frozenByBusiness.clear();
-    message.success(`已打开 ${frozen.length} 张单据的打印窗口`);
-  } catch (e) {
-    error.value = printError(e);
+    // 「已生成打印快照」是动作完成的一次性确认，走右上角通知而不是对话框内的常驻横幅：
+    // 横幅会一直占着预览区上方，而这条信息只在动作发生的那一刻有用。
+    const firstFrozen = frozen[0];
+    notification.success({
+      message: `已生成 ${frozen.length} 张打印快照`,
+      description: firstFrozen ? snapshotHint(firstFrozen) : undefined,
+    });
+  } catch {
+    // 打印失败只走全局 toast
   } finally {
     printing.value = false;
   }

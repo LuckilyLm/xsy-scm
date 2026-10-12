@@ -14,7 +14,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  * 采购单。
  *
  * <p>
- * <b>没有 {@code confirmedAt}</b>：{@code purchase_order} 表没有 {@code confirmed_at} 列，收货完成时间见各收货单的
+ * <b>没有 {@code confirmedAt}</b>：{@code xsy_purchase_order} 表没有 {@code confirmed_at} 列，收货完成时间见各收货单的
  * {@code confirmed_at}。{@code submittedAt} / {@code cancelledAt} / {@code shortClosedAt} 与状态时间戳 CHECK 一一对应。
  *
  * <p>

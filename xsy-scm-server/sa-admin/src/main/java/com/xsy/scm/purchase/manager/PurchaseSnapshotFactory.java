@@ -76,11 +76,11 @@ public final class PurchaseSnapshotFactory {
      * 采购单行快照。
      *
      * <p>
-     * <b>采购单位</b>：{@code purchaseUnitSnapshot} 来自 {@code supplier_sku.purchase_unit}， <b>不是</b>
-     * {@code product_sku.sale_unit} —— 需求单位（销售单位）与采购单位是两个独立快照，生成时冻结、永不互相覆盖。
+     * <b>采购单位</b>：{@code purchaseUnitSnapshot} 来自 {@code xsy_supplier_sku.purchase_unit}， <b>不是</b>
+     * {@code xsy_product_sku.sale_unit} —— 需求单位（销售单位）与采购单位是两个独立快照，生成时冻结、永不互相覆盖。
      *
      * <p>
-     * {@code purchasePrice} 取表单值（人工确认值）；{@code supplier_sku.reference_price} 只作<b>建议值</b>， <b>不自动写入</b>。
+     * {@code purchasePrice} 取表单值（人工确认值）；{@code xsy_supplier_sku.reference_price} 只作<b>建议值</b>， <b>不自动写入</b>。
      */
     public static PurchaseOrderItemEntity item(PurchaseOrderAddForm.Item form, ProductSkuOptionVO sku, String spuCode,
             SupplierSkuEntity supplierSku) {
@@ -179,8 +179,8 @@ public final class PurchaseSnapshotFactory {
      *
      * <p>
      * <b>需求单位</b>：{@code demandUnitSnapshot} 取
-     * {@code sales_order_item.sale_unit_snapshot}（<b>销售单位</b>），生成时冻结、<b>永不改写</b>。它<b>不是</b>采购单位 —— 采购单位来自
-     * {@code supplier_sku.purchase_unit} 并落在 {@code purchase_order_item.purchase_unit_snapshot}，两者在分配时做一致性校验。
+     * {@code xsy_sales_order_item.sale_unit_snapshot}（<b>销售单位</b>），生成时冻结、<b>永不改写</b>。它<b>不是</b>采购单位 —— 采购单位来自
+     * {@code xsy_supplier_sku.purchase_unit} 并落在 {@code xsy_purchase_order_item.purchase_unit_snapshot}，两者在分配时做一致性校验。
      *
      * <p>
      * {@code requiredQuantity} 取 <b>{@code actual_quantity}（实数量）</b> 而不是 {@code ordered_quantity}，与订单集成表口径一致。

@@ -34,7 +34,7 @@ public interface ScreenDataDao {
             @Param("scope") ScmDataScopeContext scope);
 
     /**
-     * 按市聚合的主档归属行，坐标取 {@code scm_region} 的区划质心。
+     * 按市聚合的主档归属行，坐标取 {@code xsy_region} 的区划质心。
      *
      * <p>
      * 只返回<b>已解析出市级归属、且编码能在区划字典里查到</b>的行；省级分布由调用方在这里的结果上向上卷一层， 避免两份 SQL 各自演算导致省界与气泡对不上。

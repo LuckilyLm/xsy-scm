@@ -19,20 +19,20 @@
     </resultMap>
     <select id="lock" resultMap="row">
         SELECT *
-        FROM idempotency_record
+        FROM xsy_idempotency_record
         WHERE id = #{id}
           AND deleted = FALSE
         FOR UPDATE
     </select>
     <insert id="claim" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO idempotency_record(operation_scope, idempotency_key, request_hash, created_by)
+        INSERT INTO xsy_idempotency_record(operation_scope, idempotency_key, request_hash, created_by)
         VALUES (#{operationScope}, #{idempotencyKey}, #{requestHash}, #{createdBy})
         ON CONFLICT(operation_scope,idempotency_key)
         WHERE deleted = FALSE DO NOTHING
     </insert>
     <select id="find" resultMap="row">
         SELECT *
-        FROM idempotency_record
+        FROM xsy_idempotency_record
         WHERE operation_scope = #{scope}
           AND idempotency_key = #{key}
           AND deleted = FALSE

@@ -5,7 +5,7 @@
     <select id="queryPage" resultType="com.xsy.scm.print.domain.vo.ScmPrintRecordVO">
         SELECT id, document_type, business_id, business_no, template_id, template_code, template_name,
                template_version, printed_at, printed_by
-        FROM scm_print_record r
+        FROM xsy_print_record r
         WHERE 1 = 1
         <choose>
             <when test="scope == null or visibleTypes == null or visibleTypes.isEmpty()">AND FALSE</when>
@@ -14,7 +14,7 @@
                 <foreach collection="visibleTypes" item="type" open="(" separator="," close=")">#{type}</foreach>
                 AND (
                     (document_type = 'PURCHASE_ORDER' AND EXISTS (
-                        SELECT 1 FROM purchase_order p WHERE p.id = r.business_id AND p.deleted = FALSE
+                        SELECT 1 FROM xsy_purchase_order p WHERE p.id = r.business_id AND p.deleted = FALSE
                         <choose>
                             <when test="scope.purchaserScope.empty">AND FALSE</when>
                             <when test="scope.purchaserScope.all == false">
@@ -24,7 +24,7 @@
                         </choose>
                     ))
                     OR (document_type = 'DELIVERY_NOTE' AND EXISTS (
-                        SELECT 1 FROM delivery_route d WHERE d.id = r.business_id AND d.deleted = FALSE
+                        SELECT 1 FROM xsy_delivery_route d WHERE d.id = r.business_id AND d.deleted = FALSE
                         <choose>
                             <when test="scope.driverScope.empty">AND FALSE</when>
                             <when test="scope.driverScope.all == false">
@@ -34,7 +34,7 @@
                         </choose>
                     ))
                     OR (document_type = 'SORTING_TICKET' AND EXISTS (
-                        SELECT 1 FROM sorting_task t WHERE t.id = r.business_id AND t.deleted = FALSE
+                        SELECT 1 FROM xsy_sorting_task t WHERE t.id = r.business_id AND t.deleted = FALSE
                         <include refid="com.xsy.scm.sorting.dao.SortingQueryDao.taskScopeGuard"/>
                     ))
                 )

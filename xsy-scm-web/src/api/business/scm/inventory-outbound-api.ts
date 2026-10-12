@@ -10,7 +10,7 @@
  *
  * `confirm` 失败时整单回滚，不存在「出一半」；重复确认会被状态机拒绝（41014）。
  */
-import {getRequest, postRequest} from '/@/lib/axios';
+import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
@@ -20,8 +20,8 @@ import type {
 } from '/@/views/business/scm/inventory/inventory-types';
 
 export const inventoryOutboundApi = {
-    query: (data: InventoryOutboundQuery) =>
-        postRequest('/scm/inventory/outbound/query', data) as unknown as Promise<
+    query: (data: InventoryOutboundQuery, options?: RequestOptions) =>
+        postRequest('/scm/inventory/outbound/query', data, options) as unknown as Promise<
             ScmResponse<ScmPage<InventoryOutbound>>
         >,
     detail: (id: Id) =>

@@ -29,12 +29,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 签收 → 正常应收（PG IT）。
  *
  * <p>本类钉的是「应收事实由签收与出库两条既有事实派生」这一口径：
- * 时点必须逐值等于 {@code delivery_route_order.signed_at}（不是"接近"），
- * 数量只来自 {@code inventory_outbound_item.quantity}（不是下单量、不是订单结算量、
- * 不是分拣量），价格只来自 {@code sales_order_item.locked_unit_price}（不是库存成本）。
+ * 时点必须逐值等于 {@code xsy_delivery_route_order.signed_at}（不是"接近"），
+ * 数量只来自 {@code xsy_inventory_outbound_item.quantity}（不是下单量、不是订单结算量、
+ * 不是分拣量），价格只来自 {@code xsy_sales_order_item.locked_unit_price}（不是库存成本）。
  *
  * <p>链路走真实命令（下单 → 分拣 → 组单 → 规划 → 发车 → 签收），因为「少拣」这一形态
- * 只有在真实分拣与出库之后才存在；mock 出来的 {@code inventory_outbound_item} 证明不了任何东西。
+ * 只有在真实分拣与出库之后才存在；mock 出来的 {@code xsy_inventory_outbound_item} 证明不了任何东西。
  *
  * <p><b>受控夹具的三处直改库</b>（商品市场价、出库行软删、补第二条出库行）都是为了构造
  * 「产品规则允许、但本用例无法用现有入口自然走到」的合法数据形状，
@@ -74,7 +74,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         stockIn(warehouseId, skuId, tag, "20.0000");
 
         Long customerId = newCustomer();
-        jdbc.update("UPDATE customer SET address = ?, longitude = 113.94, latitude = 22.54,"
+        jdbc.update("UPDATE xsy_customer SET address = ?, longitude = 113.94, latitude = 22.54,"
                 + " geom_crs = 'GCJ02' WHERE id = ?", "F1-2B IT 地址" + tag, customerId);
         evictMybatisCache();
 
@@ -109,7 +109,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
 
     private Long addressedConfirmedOrder(String tag, Long warehouseId, Long skuId) {
         Long customerId = newCustomer();
-        jdbc.update("UPDATE customer SET address = ?, longitude = 113.94, latitude = 22.54,"
+        jdbc.update("UPDATE xsy_customer SET address = ?, longitude = 113.94, latitude = 22.54,"
                 + " geom_crs = 'GCJ02' WHERE id = ?", "F1-2B IT 地址" + tag, customerId);
         evictMybatisCache();
         Long orderId = confirmedSalesOrder(customerId, skuId, "10.0000", "10.0000");
@@ -119,7 +119,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
 
     private Long locatedWarehouse(String tag) {
         Long warehouseId = newWarehouse(tag);
-        jdbc.update("UPDATE warehouse SET longitude = 113.90, latitude = 22.50, geom_crs = 'GCJ02' WHERE id = ?",
+        jdbc.update("UPDATE xsy_warehouse SET longitude = 113.90, latitude = 22.50, geom_crs = 'GCJ02' WHERE id = ?",
                 warehouseId);
         evictMybatisCache();
         return warehouseId;
@@ -132,7 +132,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
      * 而本类要证明的是「财务读的就是订单行那个冻结单价列」，与它来自哪个价格源无关。
      */
     private void withMarketPrice(Long skuId, String marketPrice) {
-        jdbc.update("UPDATE product_sku SET market_price = ? WHERE id = ?",
+        jdbc.update("UPDATE xsy_product_sku SET market_price = ? WHERE id = ?",
                 new BigDecimal(marketPrice), skuId);
         evictMybatisCache();
     }
@@ -167,7 +167,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         entryForm.setItems(entries);
         sortingTaskService.enter(taskId, entryForm);
         var action = new SortingActionForm();
-        action.setVersion(jdbc.queryForObject("SELECT version FROM sorting_task WHERE id = ?",
+        action.setVersion(jdbc.queryForObject("SELECT version FROM xsy_sorting_task WHERE id = ?",
                 Integer.class, taskId));
         sortingTaskService.complete(taskId, action);
         evictMybatisCache();
@@ -190,7 +190,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     }
 
     private void locateAllStops(Long routeId) {
-        jdbc.update("UPDATE delivery_route_stop SET longitude = 113.95, latitude = 22.55, geom_crs = 'GCJ02'"
+        jdbc.update("UPDATE xsy_delivery_route_stop SET longitude = 113.95, latitude = 22.55, geom_crs = 'GCJ02'"
                 + " WHERE route_id = ? AND deleted = FALSE", routeId);
         evictMybatisCache();
     }
@@ -219,12 +219,12 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     }
 
     private Integer versionOf(Long routeId) {
-        return jdbc.queryForObject("SELECT version FROM delivery_route WHERE id = ?", Integer.class, routeId);
+        return jdbc.queryForObject("SELECT version FROM xsy_delivery_route WHERE id = ?", Integer.class, routeId);
     }
 
     private Integer orderVersionOf(Long routeId, Long orderId) {
         return jdbc.queryForObject(
-                "SELECT version FROM delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
+                "SELECT version FROM xsy_delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
                 Integer.class, routeId, orderId);
     }
 
@@ -235,13 +235,13 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     /** 签收行 id（应收时点与签收人的唯一来源）。 */
     private Long assignmentId(Long routeId, Long orderId) {
         return jdbc.queryForObject(
-                "SELECT id FROM delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
+                "SELECT id FROM xsy_delivery_route_order WHERE route_id = ? AND order_id = ? AND deleted = FALSE",
                 Long.class, routeId, orderId);
     }
 
     private Long outboundItemIdOf(Long orderId) {
         return jdbc.queryForObject(
-                "SELECT id FROM inventory_outbound_item WHERE sales_order_id = ? AND deleted = FALSE ORDER BY id LIMIT 1",
+                "SELECT id FROM xsy_inventory_outbound_item WHERE sales_order_id = ? AND deleted = FALSE ORDER BY id LIMIT 1",
                 Long.class, orderId);
     }
 
@@ -251,14 +251,14 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
 
     private Map<String, Object> receivableOf(Long orderId) {
         List<Map<String, Object>> rows = jdbc.queryForList(
-                "SELECT * FROM finance_receivable WHERE source_type = 'SALES_ORDER' AND source_id = ?", orderId);
+                "SELECT * FROM xsy_finance_receivable WHERE source_type = 'SALES_ORDER' AND source_id = ?", orderId);
         assertThat(rows).as("订单 %s 的应收单（恰好一张）", orderId).hasSize(1);
         return rows.getFirst();
     }
 
     private int receivablesOfOrder(Long orderId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM finance_receivable WHERE source_type = 'SALES_ORDER' AND source_id = ?",
+                "SELECT count(*) FROM xsy_finance_receivable WHERE source_type = 'SALES_ORDER' AND source_id = ?",
                 Integer.class, orderId);
     }
 
@@ -270,27 +270,27 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
      */
     private int receivableItemsOfOrder(Long orderId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM finance_receivable_item WHERE source_type = 'INVENTORY_OUTBOUND_ITEM'"
-                        + " AND source_id IN (SELECT id FROM inventory_outbound_item WHERE sales_order_id = ?)",
+                "SELECT count(*) FROM xsy_finance_receivable_item WHERE source_type = 'INVENTORY_OUTBOUND_ITEM'"
+                        + " AND source_id IN (SELECT id FROM xsy_inventory_outbound_item WHERE sales_order_id = ?)",
                 Integer.class, orderId);
     }
 
     private int receivableLogsOfOrder(Long orderId) {
         return jdbc.queryForObject(
-                "SELECT count(*) FROM finance_operation_log WHERE business_type = 'RECEIVABLE'"
-                        + " AND business_id IN (SELECT id FROM finance_receivable"
+                "SELECT count(*) FROM xsy_finance_operation_log WHERE business_type = 'RECEIVABLE'"
+                        + " AND business_id IN (SELECT id FROM xsy_finance_receivable"
                         + "                       WHERE source_type = 'SALES_ORDER' AND source_id = ?)",
                 Integer.class, orderId);
     }
 
     private List<Map<String, Object>> receivableItemsOf(Long receivableId) {
         return jdbc.queryForList(
-                "SELECT * FROM finance_receivable_item WHERE receivable_id = ? ORDER BY id", receivableId);
+                "SELECT * FROM xsy_finance_receivable_item WHERE receivable_id = ? ORDER BY id", receivableId);
     }
 
     private List<Map<String, Object>> receivableLogsOf(Long receivableId) {
         return jdbc.queryForList(
-                "SELECT * FROM finance_operation_log WHERE business_type = 'RECEIVABLE' AND business_id = ?",
+                "SELECT * FROM xsy_finance_operation_log WHERE business_type = 'RECEIVABLE' AND business_id = ?",
                 receivableId);
     }
 
@@ -330,7 +330,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         assertThat(longOf(receivable, "order_id")).isEqualTo(chain.orderId());
         assertThat(longOf(receivable, "customer_id")).isEqualTo(chain.customerId());
         assertThat(receivable.get("customer_name_snapshot")).isEqualTo(jdbc.queryForObject(
-                "SELECT customer_name_snapshot FROM sales_order WHERE id = ?", String.class, chain.orderId()));
+                "SELECT customer_name_snapshot FROM xsy_sales_order WHERE id = ?", String.class, chain.orderId()));
         assertThat(receivable.get("original_receivable_id")).isNull();
         assertThat(receivable.get("reason")).isNull();
         assertThat(receivable.get("deleted")).isEqualTo(false);
@@ -371,31 +371,31 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         Long receivableId = longOf(receivableOf(chain.orderId()), "id");
 
         assertThat(sameAs("r.event_at = ro.signed_at"
-                        + " FROM finance_receivable r JOIN delivery_route_order ro ON ro.id = ?"
+                        + " FROM xsy_finance_receivable r JOIN xsy_delivery_route_order ro ON ro.id = ?"
                         + " WHERE r.id = ?",
                 assignment, receivableId))
                 .as("应收时点必须逐值等于签收时刻，不是「服务层现在时间」")
                 .isTrue();
         assertThat(sameAs("r.created_by = ro.signed_by"
-                        + " FROM finance_receivable r JOIN delivery_route_order ro ON ro.id = ?"
+                        + " FROM xsy_finance_receivable r JOIN xsy_delivery_route_order ro ON ro.id = ?"
                         + " WHERE r.id = ?",
                 assignment, receivableId))
                 .as("应收创建人必须是签收人本人")
                 .isTrue();
         assertThat(sameAs("l.operator = ro.signed_by"
-                        + " FROM finance_operation_log l"
-                        + " JOIN delivery_route_order ro ON ro.id = ?"
+                        + " FROM xsy_finance_operation_log l"
+                        + " JOIN xsy_delivery_route_order ro ON ro.id = ?"
                         + " WHERE l.business_type = 'RECEIVABLE' AND l.business_id = ?",
                 assignment, receivableId))
                 .as("日志操作人必须与 signed_by 一致")
                 .isTrue();
         // 明细的身份列同样取签收人，不另立第二个操作人事实
         assertThat(sameAs("i.created_by = ro.signed_by"
-                        + " FROM finance_receivable_item i JOIN delivery_route_order ro ON ro.id = ?"
+                        + " FROM xsy_finance_receivable_item i JOIN xsy_delivery_route_order ro ON ro.id = ?"
                         + " WHERE i.receivable_id = ?",
                 assignment, receivableId)).isTrue();
         assertThat(jdbc.queryForObject(
-                "SELECT signed_at FROM delivery_route_order WHERE id = ?", java.time.OffsetDateTime.class,
+                "SELECT signed_at FROM xsy_delivery_route_order WHERE id = ?", java.time.OffsetDateTime.class,
                 assignment)).isNotNull();
     }
 
@@ -413,13 +413,13 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         Long orderItemId = confirmedSalesOrderItemId(chain.orderId());
         // 前置事实：订单侧的下单量与结算量都还是 10，分拣行记的是 7
         assertThat(jdbc.queryForObject(
-                "SELECT ordered_quantity FROM sales_order_item WHERE id = ?", BigDecimal.class, orderItemId))
+                "SELECT ordered_quantity FROM xsy_sales_order_item WHERE id = ?", BigDecimal.class, orderItemId))
                 .isEqualByComparingTo("10.0000");
         assertThat(jdbc.queryForObject(
-                "SELECT actual_quantity FROM sales_order_item WHERE id = ?", BigDecimal.class, orderItemId))
+                "SELECT actual_quantity FROM xsy_sales_order_item WHERE id = ?", BigDecimal.class, orderItemId))
                 .isEqualByComparingTo("10.0000");
         assertThat(jdbc.queryForObject(
-                "SELECT sorted_quantity FROM sorting_task_item WHERE sales_order_item_id = ? AND deleted = FALSE",
+                "SELECT sorted_quantity FROM xsy_sorting_task_item WHERE sales_order_item_id = ? AND deleted = FALSE",
                 BigDecimal.class, orderItemId)).isEqualByComparingTo("7.0000");
 
         Map<String, Object> receivable = receivableOf(chain.orderId());
@@ -446,9 +446,9 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         Map<String, Object> receivable = receivableOf(chain.orderId());
         Map<String, Object> line = receivableItemsOf(longOf(receivable, "id")).getFirst();
         assertThat(sameAs("i.unit_price = oi.locked_unit_price"
-                        + " FROM finance_receivable_item i"
-                        + " JOIN finance_receivable r ON r.id = i.receivable_id"
-                        + " JOIN sales_order_item oi ON oi.id = i.order_item_id"
+                        + " FROM xsy_finance_receivable_item i"
+                        + " JOIN xsy_finance_receivable r ON r.id = i.receivable_id"
+                        + " JOIN xsy_sales_order_item oi ON oi.id = i.order_item_id"
                         + " WHERE r.source_id = ? AND i.order_item_id = ?",
                 chain.orderId(), orderItemId))
                 .as("单价必须逐值等于订单行冻结售价")
@@ -459,7 +459,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
 
         // 反向证明：采购入库成本是 6.2000，若读成本金额只会是 62.0000
         assertThat(jdbc.queryForObject(
-                "SELECT unit_cost FROM inventory_movement WHERE sku_id = ? AND movement_type = 'PURCHASE_IN'"
+                "SELECT unit_cost FROM xsy_inventory_movement WHERE sku_id = ? AND movement_type = 'PURCHASE_IN'"
                         + " AND deleted = FALSE", BigDecimal.class, chain.skuId()))
                 .isEqualByComparingTo("6.2000");
         assertThat(decimalOf(receivable, "amount")).isNotEqualByComparingTo("62.0000");
@@ -500,11 +500,11 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         // 因此「同订单行的第二条出库行」是 schema 合法形状，但现有发车入口一次只生成一条。
         Long first = outboundItemIdOf(chain.orderId());
         Long outboundId = jdbc.queryForObject(
-                "SELECT outbound_id FROM inventory_outbound_item WHERE id = ?", Long.class, first);
-        jdbc.update("INSERT INTO inventory_outbound_item (outbound_id, sku_id, quantity, sales_order_id,"
+                "SELECT outbound_id FROM xsy_inventory_outbound_item WHERE id = ?", Long.class, first);
+        jdbc.update("INSERT INTO xsy_inventory_outbound_item (outbound_id, sku_id, quantity, sales_order_id,"
                         + " sales_order_item_id, version, deleted, created_at, updated_at)"
                         + " SELECT ?, sku_id, 2.0000, sales_order_id, sales_order_item_id, 0, FALSE,"
-                        + "        now(), now() FROM inventory_outbound_item WHERE id = ?",
+                        + "        now(), now() FROM xsy_inventory_outbound_item WHERE id = ?",
                 outboundId, first);
         evictMybatisCache();
 
@@ -531,7 +531,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         // 全部流水断言一律按本用例新建的 SKU 作用域：本仓库还有 NOT_SUPPORTED 的用例会留下
         // 已提交的真实流水，「全库只有两条」这种写法会随执行顺序忽绿忽红。
         BigDecimal salesOutBefore = jdbc.queryForObject(
-                "SELECT quantity FROM inventory_movement WHERE movement_type = 'SALES_OUT'"
+                "SELECT quantity FROM xsy_inventory_movement WHERE movement_type = 'SALES_OUT'"
                         + " AND sku_id = ? AND deleted = FALSE", BigDecimal.class, chain.skuId());
 
         sign(chain.routeId(), chain.orderId(), "EXCEPTION", "客户拒收");
@@ -540,20 +540,20 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
                 .isEqualTo("EXCEPTION");
         assertThat(receivablesOfOrder(chain.orderId())).as("异常签收不形成应收（第二批 Q6）").isZero();
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM finance_receivable_item WHERE source_type = 'INVENTORY_OUTBOUND_ITEM'"
-                        + " AND source_id IN (SELECT id FROM inventory_outbound_item WHERE sales_order_id = ?)",
+                "SELECT count(*) FROM xsy_finance_receivable_item WHERE source_type = 'INVENTORY_OUTBOUND_ITEM'"
+                        + " AND source_id IN (SELECT id FROM xsy_inventory_outbound_item WHERE sales_order_id = ?)",
                 Integer.class, chain.orderId())).isZero();
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM finance_operation_log l WHERE l.business_type = 'RECEIVABLE'"
-                        + " AND l.business_id IN (SELECT id FROM finance_receivable WHERE source_id = ?)",
+                "SELECT count(*) FROM xsy_finance_operation_log l WHERE l.business_type = 'RECEIVABLE'"
+                        + " AND l.business_id IN (SELECT id FROM xsy_finance_receivable WHERE source_id = ?)",
                 Integer.class, chain.orderId())).isZero();
         // 财务不反冲库存：SALES_OUT 还在，数量不变，也没有新增反向流水
         assertThat(jdbc.queryForObject(
-                "SELECT quantity FROM inventory_movement WHERE movement_type = 'SALES_OUT'"
+                "SELECT quantity FROM xsy_inventory_movement WHERE movement_type = 'SALES_OUT'"
                         + " AND sku_id = ? AND deleted = FALSE", BigDecimal.class, chain.skuId()))
                 .isEqualByComparingTo(salesOutBefore);
         assertThat(jdbc.queryForObject(
-                "SELECT count(*) FROM inventory_movement WHERE sku_id = ? AND deleted = FALSE",
+                "SELECT count(*) FROM xsy_inventory_movement WHERE sku_id = ? AND deleted = FALSE",
                 Integer.class, chain.skuId()))
                 .as("本 SKU 只有采购入库与销售出库两条流水").isEqualTo(2);
     }
@@ -573,7 +573,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         // 因此按 schema 允许的方式把出库行软删，不修改任何产品规则。
         // 必须断言恰好软删到一行：软删 0 行时下面所有「财务跳过」的断言都会空转通过，
         // 那等于这条用例根本没被执行。
-        assertThat(jdbc.update("UPDATE inventory_outbound_item SET deleted = TRUE WHERE sales_order_id = ?",
+        assertThat(jdbc.update("UPDATE xsy_inventory_outbound_item SET deleted = TRUE WHERE sales_order_id = ?",
                 chain.orderId())).as("夹具必须真的造出「零有效出库行」").isEqualTo(1);
         evictMybatisCache();
 
@@ -642,7 +642,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
         dispatch(chain.routeId());
         Long firstOrder = chain.orderId();
         Long secondOrder = jdbc.queryForObject(
-                "SELECT order_id FROM delivery_route_order WHERE route_id = ? AND deleted = FALSE"
+                "SELECT order_id FROM xsy_delivery_route_order WHERE route_id = ? AND deleted = FALSE"
                         + " AND order_id <> ? ORDER BY id", Long.class, chain.routeId(), firstOrder);
 
         sign(chain.routeId(), firstOrder, "SIGNED", null);
@@ -676,7 +676,7 @@ class ScmFinanceReceivablePgIT extends ScmW6PgITBase {
     }
 
     private String fulfillmentOf(Long assignment) {
-        return jdbc.queryForObject("SELECT fulfillment_status FROM delivery_route_order WHERE id = ?",
+        return jdbc.queryForObject("SELECT fulfillment_status FROM xsy_delivery_route_order WHERE id = ?",
                 String.class, assignment);
     }
 }

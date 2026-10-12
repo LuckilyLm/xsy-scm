@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.NullSerializer;
 
 @Data
-@TableName(value = "order_address_snapshot", autoResultMap = true)
+@TableName(value = "xsy_order_address_snapshot", autoResultMap = true)
 public class OrderAddressSnapshotEntity {
     private Integer provinceCode;
     private String provinceName;

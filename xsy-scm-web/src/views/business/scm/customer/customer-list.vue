@@ -117,7 +117,6 @@
         :ok-button-props="{ disabled: reassignSaving }"
         @ok="submitReassign"
     >
-      <a-alert v-if="reassignError" type="error" :message="reassignError" show-icon class="smart-margin-bottom10"/>
       <p>客户：<strong>{{ reassignTarget?.name }}</strong>（{{ reassignTarget?.customerCode }}）</p>
       <p class="reassign-current">当前负责人：{{ reassignTarget?.sellerName || '未分配' }}</p>
       <a-form layout="vertical">
@@ -171,7 +170,6 @@ const queryMemory = useQueryFilterMemory<CustomerQuery>('scm:customer:list');
 /** 改派归属：独立动作、独立权限（scm:customer:assign），带乐观锁 version。 */
 const reassignVisible = ref(false);
 const reassignSaving = ref(false);
-const reassignError = ref('');
 const reassignTarget = ref<CustomerRow>();
 /** EmployeeSelect 的 value prop 不接受 null（声明 [Number, Array]），用 undefined 桥接「收回为未分配」。 */
 const reassignSeller = ref<number | undefined>(undefined);
@@ -187,7 +185,6 @@ const emptyText = computed(() =>
 function openReassign(row: CustomerRow) {
   reassignTarget.value = row;
   reassignSeller.value = row.sellerId ?? undefined;
-  reassignError.value = '';
   reassignVisible.value = true;
 }
 
@@ -197,7 +194,6 @@ async function submitReassign() {
     return;
   }
   reassignSaving.value = true;
-  reassignError.value = '';
   try {
     await customerApi.reassignSeller({
       customerId: row.customerId,
@@ -207,9 +203,8 @@ async function submitReassign() {
     message.success('归属已改派');
     reassignVisible.value = false;
     await load();
-  } catch (e) {
-    // 版本冲突（40921）走 customerError 的同一句话，提示刷新后重试而不是静默覆盖。
-    reassignError.value = customerError(e);
+  } catch {
+    // 改派失败只走全局 toast（版本冲突 40921 的文案由拦截器给出）
   } finally {
     reassignSaving.value = false;
   }
@@ -249,7 +244,8 @@ async function load() {
   loading.value = true;
   error.value = '';
   try {
-    const response = await customerApi.query({...filters});
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    const response = await customerApi.query({...filters}, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       rows.value = response.data.list;
       total.value = Number(response.data.total);
@@ -310,8 +306,8 @@ async function changeStatus(row: CustomerRow, status: string) {
     });
     message.success('客户状态已更新');
     await load();
-  } catch (e) {
-    error.value = customerError(e);
+  } catch {
+    // 状态流转失败只走全局 toast
   }
 }
 
@@ -320,8 +316,8 @@ async function remove(row: CustomerRow) {
     await customerApi.delete({customerId: row.customerId, version: row.version});
     message.success('客户已删除');
     await load();
-  } catch (e) {
-    error.value = customerError(e);
+  } catch {
+    // 删除失败只走全局 toast
   }
 }
 

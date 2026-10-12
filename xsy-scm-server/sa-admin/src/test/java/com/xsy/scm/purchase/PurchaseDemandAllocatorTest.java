@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * 采购需求分配规则契约测试。
  *
  * <p>单位一致性是本类存在的主要理由：需求单位（销售单位快照）与采购单位
- * （{@code supplier_sku.purchase_unit} 快照）是两个独立事实，不一致时必须
+ * （{@code xsy_supplier_sku.purchase_unit} 快照）是两个独立事实，不一致时必须
  * 拒绝自动分配（40971），不允许把「100 kg」仅替换单位字符串变成「100 箱」。
  */
 class PurchaseDemandAllocatorTest {
