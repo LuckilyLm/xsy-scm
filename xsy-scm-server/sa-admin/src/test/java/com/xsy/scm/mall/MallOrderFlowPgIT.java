@@ -29,6 +29,7 @@ import com.xsy.scm.mall.order.domain.form.MallCheckoutPreviewForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderQueryForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
 import com.xsy.scm.mall.order.domain.vo.MallCheckoutPreviewVO;
+import com.xsy.scm.mall.order.domain.vo.MallOrderItemVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderProgressNodeVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
@@ -275,14 +276,24 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         assertThat(nodeCodes(beforeRoute)).containsExactly("SUBMITTED", "CONFIRMED", "DISPATCHED", "SIGNED");
         assertThat(doneCodes(beforeRoute)).containsExactly("SUBMITTED");
 
-        // 后台接单后：确认节点点亮，展示分类进入「备货中」
+        // 后台接单后：确认节点点亮，展示分类进入「备货中」；实重与结算金额同时落定
         asEmployee(sellerEmployeeId, () -> {
-            confirmOrder(orderId, "1.0000");
+            // 实重与订货量故意不同：只有不同才验证得到「结算金额 = 锁定价 × 实重」而不是「× 订货量」
+            confirmOrder(orderId, "1.2000");
             return null;
         });
         MallOrderVO confirmed = mallOrderQueryService.detail(customer, orderId);
         assertThat(confirmed.getDisplayStatus()).isEqualTo(MallOrderDisplayStatusEnum.PREPARING.name());
         assertThat(doneCodes(confirmed)).containsExactly("SUBMITTED", "CONFIRMED");
+        assertThat(confirmed.getItems()).hasSize(1);
+        MallOrderItemVO line = confirmed.getItems().getFirst();
+        // 订货量 2.0000（结算表单下发的数量）、实重 1.2000、锁定价 1.2000
+        assertThat(line.getOrderedQuantity()).as("订货量").isEqualByComparingTo("2.0000");
+        assertThat(line.getActualQuantity()).as("实重来自正式订单行，不是前端模拟").isEqualByComparingTo("1.2000");
+        assertThat(line.getUnitPrice()).as("结算单价取锁定价").isEqualByComparingTo("1.2000");
+        assertThat(line.getOrderedLineAmount()).as("订货金额按订货量算").isEqualByComparingTo("2.4000");
+        assertThat(line.getSettlementLineAmount()).as("结算金额按实重算").isEqualByComparingTo("1.4400");
+        assertThat(confirmed.getSettlementTotalAmount()).isEqualByComparingTo("1.4400");
 
         // 排车并已发车：线路信息与发车节点都来自配送事实
         Long routeId = insertDispatchedRoute();
