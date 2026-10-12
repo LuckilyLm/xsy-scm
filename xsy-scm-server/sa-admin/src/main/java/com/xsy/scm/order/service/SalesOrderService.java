@@ -136,10 +136,15 @@ public class SalesOrderService {
      *
      * <p>
      * 商城入口不套用员工负责人数据范围；客户归属由商城适配器按登录身份判定。返回重放标记，供调用方只在首次建单时执行购物车清理。
+     *
+     * <p>
+     * {@code idempotencyRequest} 是调用方给出的<b>稳定</b>请求指纹，不能直接用 {@code salesOrderAddForm}：
+     * 它含收货地址内容快照，而地址会被同一客户的其他采购账号编辑。同一幂等键重试时重新读取到的地址已经变了， 哈希随之改变，原订单就回放不出来（会报幂等冲突）。地址快照仍在建单时照常冻结进订单。
      */
     @Transactional(rollbackFor = Exception.class)
-    public MallOrderCreationResult createFromMall(SalesOrderAddForm salesOrderAddForm, String key) {
-        var claim = orderIdempotencyService.claim("ORDER_CREATE_MALL", key, salesOrderAddForm);
+    public MallOrderCreationResult createFromMall(SalesOrderAddForm salesOrderAddForm, Object idempotencyRequest,
+            String key) {
+        var claim = orderIdempotencyService.claim("ORDER_CREATE_MALL", key, idempotencyRequest);
         if (claim.replay()) {
             return new MallOrderCreationResult(orderIdempotencyService.replay(claim, SalesOrderDetailVO.class), true);
         }
@@ -160,9 +165,12 @@ public class SalesOrderService {
      * <p>
      * 存在的理由：第一次下单已经成功但响应丢失时，客户重试前商品可能已经变价。若先做价格校验再进幂等， 重试会被判成「价格已变化」，客户以为没下成，实际订单已经存在。幂等键与请求指纹都不变才算命中；
      * 指纹不同说明是另一笔请求，返回空交由正常路径处理（并在 {@code claim} 时报冲突，错误语义不变）。
+     *
+     * <p>
+     * {@code idempotencyRequest} 与 {@link #createFromMall} 必须传同一个稳定指纹，否则预检永远不命中。 客户身份由幂等 scope 里的操作者体现，因此这里不需要再传订单表单。
      */
-    public Optional<MallOrderCreationResult> replayMallOrder(SalesOrderAddForm salesOrderAddForm, String key) {
-        return orderIdempotencyService.peekCompleted("ORDER_CREATE_MALL", key, salesOrderAddForm).map(
+    public Optional<MallOrderCreationResult> replayMallOrder(Object idempotencyRequest, String key) {
+        return orderIdempotencyService.peekCompleted("ORDER_CREATE_MALL", key, idempotencyRequest).map(
                 claim -> new MallOrderCreationResult(orderIdempotencyService.replay(claim, SalesOrderDetailVO.class),
                         true));
     }

@@ -104,9 +104,13 @@ public class MallCheckoutService {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_NOT_FOUND);
         }
         SalesOrderAddForm orderForm = orderForm(customer, form, address, quantities);
+        // 幂等指纹只绑稳定的客户请求（客户 / 地址 ID / 备注 / 期望配送时间 / 规格与数量），不含地址内容快照：
+        // 地址会被同一客户的其他采购账号编辑，用快照算指纹会让「第一次已成功、重试时地址已改」认不出原订单。
+        Map<String, Object> idempotencyRequest = idempotencyRequest(customer, form, quantities);
         // 幂等预检必须排在价格校验之前：第一次已下单成功但响应丢失时，重试要先拿回原订单，
         // 否则会被「价格已变化」挡住，客户以为没下成，其实订单已经存在。
-        Optional<MallOrderCreationResult> replayed = salesOrderService.replayMallOrder(orderForm, idempotencyKey);
+        Optional<MallOrderCreationResult> replayed = salesOrderService.replayMallOrder(idempotencyRequest,
+                idempotencyKey);
         if (replayed.isPresent()) {
             return toSubmitVO(replayed.get().order());
         }
@@ -123,7 +127,7 @@ public class MallCheckoutService {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
         }
 
-        var creation = salesOrderService.createFromMall(orderForm, idempotencyKey);
+        var creation = salesOrderService.createFromMall(orderForm, idempotencyRequest, idempotencyKey);
         if (!creation.replayed()) {
             cartDao.removeBySkus(customer.getAccountId(), new ArrayList<>(quantities.keySet()), ScmOperator.current());
         }
@@ -212,6 +216,33 @@ public class MallCheckoutService {
         item.setAvailability(MallCartAvailabilityEnum.AVAILABLE.name());
         item.setLineAmount(product.getUnitPrice().multiply(quantity).setScale(SCALE, RoundingMode.HALF_UP));
         return item;
+    }
+
+    /**
+     * 商城下单的幂等请求指纹：只含客户请求里稳定的字段。
+     *
+     * <p>
+     * 不能用 {@code SalesOrderAddForm} 本身：它带收货地址内容快照，而地址会被同一客户的其他采购账号编辑； 同一幂等键重试时服务端重新读到的地址已经变了，请求哈希跟着变，第一次成功的订单就回放不出来。
+     * 这里改用地址 ID（稳定）代表收货地址，地址内容仍会在建单时冻结进订单快照。
+     *
+     * <p>
+     * 规格按 SKU 排序后再入指纹，使「同一批商品、提交顺序不同」视为同一请求； 用 {@link LinkedHashMap} 而非 {@code Map.of}：备注与期望配送日期可以为空，{@code Map.of} 不接受
+     * null。
+     */
+    private static Map<String, Object> idempotencyRequest(RequestMallCustomer customer, MallOrderSubmitForm form,
+            Map<Long, BigDecimal> quantities) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("customerId", customer.getCustomerId());
+        request.put("addressId", form.getAddressId());
+        request.put("remark", form.getRemark());
+        request.put("expectDeliveryDate", form.getExpectDeliveryDate());
+        request.put("items", quantities.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("skuId", entry.getKey());
+            item.put("quantity", entry.getValue().toPlainString());
+            return item;
+        }).toList());
+        return request;
     }
 
     /**

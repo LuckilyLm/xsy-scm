@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,6 +23,7 @@ import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
 import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.order.domain.dto.MallOrderCreationResult;
+import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.service.SalesOrderService;
 import java.math.BigDecimal;
@@ -31,6 +33,7 @@ import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class MallCheckoutServiceTest {
     private final MallCatalogService catalogService = mock(MallCatalogService.class);
@@ -56,7 +59,7 @@ class MallCheckoutServiceTest {
 
     @Test
     void firstCreationRemovesSubmittedSkuFromCart() {
-        when(salesOrderService.createFromMall(any(), eq("key")))
+        when(salesOrderService.createFromMall(any(), any(), eq("key")))
                 .thenReturn(new MallOrderCreationResult(order(), false));
 
         service.submit(customer, form, "key");
@@ -66,12 +69,34 @@ class MallCheckoutServiceTest {
 
     @Test
     void replayDoesNotRemoveAReaddedCartItem() {
-        when(salesOrderService.createFromMall(any(), eq("key")))
+        when(salesOrderService.createFromMall(any(), any(), eq("key")))
                 .thenReturn(new MallOrderCreationResult(order(), true));
 
         service.submit(customer, form, "key");
 
         verify(cartDao, never()).removeBySkus(any(), any(), any());
+    }
+
+    @Test
+    void idempotencyIdentitySurvivesAnAddressEditedByAnotherAccount() {
+        // 第一次下单成功后，同一客户的其他采购账号把共享地址改了内容。
+        // 若幂等指纹直接取订单表单（含地址快照），重试时哈希就变了，原订单回放不出来。
+        when(salesOrderService.replayMallOrder(any(), eq("key"))).thenReturn(Optional.empty());
+        when(salesOrderService.createFromMall(any(), any(), eq("key")))
+                .thenReturn(new MallOrderCreationResult(order(), false));
+        when(addressDao.detailById(9L, 3L)).thenReturn(address()).thenReturn(editedAddress());
+
+        service.submit(customer, form, "key");
+        service.submit(customer, form, "key");
+
+        ArgumentCaptor<SalesOrderAddForm> forms = ArgumentCaptor.forClass(SalesOrderAddForm.class);
+        ArgumentCaptor<Object> requests = ArgumentCaptor.forClass(Object.class);
+        verify(salesOrderService, times(2)).createFromMall(forms.capture(), requests.capture(), eq("key"));
+        // 指纹不受地址内容影响：两次请求的幂等身份相同
+        assertThat(requests.getAllValues().get(0)).isEqualTo(requests.getAllValues().get(1));
+        // 而建单用的地址快照确实变了，说明指纹没有跟着地址内容走
+        assertThat(forms.getAllValues().get(0).getAddress().getReceiverName()).isEqualTo("张三");
+        assertThat(forms.getAllValues().get(1).getAddress().getReceiverName()).isEqualTo("李四");
     }
 
     @Test
@@ -99,7 +124,7 @@ class MallCheckoutServiceTest {
                 .isInstanceOfSatisfying(ScmBusinessException.class,
                         exception -> assertThat(exception.getErrorCode())
                                 .isEqualTo(MallErrorCode.CHECKOUT_PRICE_CHANGED));
-        verify(salesOrderService, never()).createFromMall(any(), any());
+        verify(salesOrderService, never()).createFromMall(any(), any(), any());
     }
 
     private static RequestMallCustomer customer() {
@@ -126,6 +151,16 @@ class MallCheckoutServiceTest {
         address.setReceiverName("张三");
         address.setReceiverPhone("13800000000");
         address.setDetailAddress("测试地址");
+        return address;
+    }
+
+    /** 同一个地址 ID，但内容已被其他采购账号编辑 */
+    private static MallAddressVO editedAddress() {
+        MallAddressVO address = new MallAddressVO();
+        address.setAddressId(3L);
+        address.setReceiverName("李四");
+        address.setReceiverPhone("13900000000");
+        address.setDetailAddress("改过的地址");
         return address;
     }
 
