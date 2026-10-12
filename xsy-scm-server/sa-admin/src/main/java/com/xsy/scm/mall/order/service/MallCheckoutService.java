@@ -34,6 +34,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -133,9 +134,29 @@ public class MallCheckoutService {
 
         var creation = salesOrderService.createFromMall(orderForm, idempotencyRequest, idempotencyKey);
         if (!creation.replayed()) {
+            requireMatchingLockedPrices(creation.order(), quantities, products);
             cartDao.removeBySkus(customer.getAccountId(), new ArrayList<>(quantities.keySet()), ScmOperator.current());
         }
         return toSubmitVO(creation.order());
+    }
+
+    private static void requireMatchingLockedPrices(SalesOrderDetailVO order, Map<Long, BigDecimal> quantities,
+            Map<Long, MallProductVO> products) {
+        // 正式订单提交会重新解析价格；必须在同一事务提交前核对最终快照，覆盖变价和协议到期窗口。
+        if (order.getItems() == null || order.getItems().size() != quantities.size()) {
+            throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
+        }
+        var matchedSkuIds = new HashSet<Long>();
+        for (var item : order.getItems()) {
+            BigDecimal quantity = quantities.get(item.getSkuId());
+            MallProductVO product = products.get(item.getSkuId());
+            if (!matchedSkuIds.add(item.getSkuId()) || quantity == null || product == null
+                    || product.getUnitPrice() == null || item.getOrderedQuantity() == null
+                    || item.getLockedUnitPrice() == null || quantity.compareTo(item.getOrderedQuantity()) != 0
+                    || product.getUnitPrice().compareTo(item.getLockedUnitPrice()) != 0) {
+                throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
+            }
+        }
     }
 
     private SalesOrderAddForm orderForm(RequestMallCustomer customer, MallOrderSubmitForm form, MallAddressVO address,

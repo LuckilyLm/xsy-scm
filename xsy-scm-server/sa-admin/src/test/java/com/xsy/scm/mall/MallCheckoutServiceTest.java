@@ -25,6 +25,7 @@ import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.order.domain.dto.MallOrderCreationResult;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
+import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
 import com.xsy.scm.order.service.SalesOrderService;
 import java.math.BigDecimal;
 import java.util.List;
@@ -74,6 +75,32 @@ class MallCheckoutServiceTest {
 
         service.submit(customer, form, "key");
 
+        verify(cartDao, never()).removeBySkus(any(), any(), any());
+    }
+
+    @Test
+    void finalLockedPriceChangeRejectsBeforeCartCleanup() {
+        when(salesOrderService.createFromMall(any(), any(), eq("key")))
+                .thenReturn(new MallOrderCreationResult(order("6.0000"), false));
+
+        assertThatThrownBy(() -> service.submit(customer, form, "key"))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(MallErrorCode.CHECKOUT_PRICE_CHANGED));
+        verify(cartDao, never()).removeBySkus(any(), any(), any());
+    }
+
+    @Test
+    void duplicateFinalOrderLineRejectsBeforeCartCleanup() {
+        SalesOrderDetailVO order = order();
+        order.setItems(List.of(order.getItems().get(0), order.getItems().get(0)));
+        when(salesOrderService.createFromMall(any(), any(), eq("key")))
+                .thenReturn(new MallOrderCreationResult(order, false));
+
+        assertThatThrownBy(() -> service.submit(customer, form, "key"))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(MallErrorCode.CHECKOUT_PRICE_CHANGED));
         verify(cartDao, never()).removeBySkus(any(), any(), any());
     }
 
@@ -200,10 +227,19 @@ class MallCheckoutServiceTest {
     }
 
     private static SalesOrderDetailVO order() {
+        return order("5.0000");
+    }
+
+    private static SalesOrderDetailVO order(String lockedUnitPrice) {
         SalesOrderDetailVO order = new SalesOrderDetailVO();
         order.setOrderId(21L);
         order.setOrderNo("SO21");
         order.setOrderedTotalAmount(new BigDecimal("10.0000"));
+        SalesOrderItemVO item = new SalesOrderItemVO();
+        item.setSkuId(11L);
+        item.setOrderedQuantity(new BigDecimal("2.0000"));
+        item.setLockedUnitPrice(new BigDecimal(lockedUnitPrice));
+        order.setItems(List.of(item));
         return order;
     }
 }
