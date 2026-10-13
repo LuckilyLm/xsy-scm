@@ -93,10 +93,10 @@
     error.value = '';
     try {
       const nextPage = reset ? 1 : pageNum.value + 1;
-      const response = await mallFundsApi.walletMovements({
-        pageNum: nextPage, pageSize: PAGE_SIZE,
-        type: type.value || undefined, direction: direction.value || undefined,
-      });
+      const query = { pageNum: nextPage, pageSize: PAGE_SIZE };
+      if (type.value) query.type = type.value;
+      if (direction.value) query.direction = direction.value;
+      const response = await mallFundsApi.walletMovements(query);
       if (seq !== requestSeq) return;
       const page = response.data || {};
       rows.value = reset ? page.list || [] : rows.value.concat(page.list || []);

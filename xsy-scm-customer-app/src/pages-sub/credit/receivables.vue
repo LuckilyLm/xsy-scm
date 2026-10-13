@@ -64,7 +64,9 @@
     error.value = '';
     try {
       const nextPage = reset ? 1 : pageNum.value + 1;
-      const response = await mallFundsApi.receivables({ pageNum: nextPage, pageSize: PAGE_SIZE, settleState: state.value || undefined });
+      const query = { pageNum: nextPage, pageSize: PAGE_SIZE };
+      if (state.value) query.settleState = state.value;
+      const response = await mallFundsApi.receivables(query);
       if (seq !== requestSeq) return;
       const page = response.data || {};
       rows.value = reset ? page.list || [] : rows.value.concat(page.list || []);
