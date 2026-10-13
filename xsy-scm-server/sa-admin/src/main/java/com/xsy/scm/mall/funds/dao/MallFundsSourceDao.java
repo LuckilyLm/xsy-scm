@@ -21,8 +21,7 @@ public interface MallFundsSourceDao {
     List<FinanceReceivableVO> receivables(Page<?> page, @Param("customerId") Long customerId,
             @Param("settleState") String settleState);
 
-    FinanceReceivableVO receivable(@Param("customerId") Long customerId,
-            @Param("receivableId") Long receivableId);
+    FinanceReceivableVO receivable(@Param("customerId") Long customerId, @Param("receivableId") Long receivableId);
 
     CreditFacts creditFacts(@Param("customerId") Long customerId);
 

@@ -1,6 +1,8 @@
 # 迁移 SQL 的换行必须保持稳定。
 /verify.sh text eol=lf
 /deploy/minio/bootstrap.sh text eol=lf
+# SCM Java 质量门禁使用 LF；Windows 检出也应与 Spotless 的换行规则一致。
+/xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/**/*.java text eol=lf
 #
 # 本仓库 core.autocrlf=true（Windows 默认），迁移 SQL 统一按 LF 检出，
 # 避免不同平台的换行差异改变迁移文件字节。

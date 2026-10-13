@@ -72,11 +72,11 @@ public class MallFundsQueryService {
         MallFundsSourceDao.CreditFacts facts = sourceDao.creditFacts(customer.getId());
         MallCreditSummaryVO result = new MallCreditSummaryVO();
         result.setSharedSettlement(shared);
-        result.setCreditLimitVisible(!shared && settlement.getCreditLimit() != null
-                && settlement.getCreditLimit().signum() > 0);
+        result.setCreditLimitVisible(
+                !shared && settlement.getCreditLimit() != null && settlement.getCreditLimit().signum() > 0);
         if (!shared) {
-            result.setCreditLimit(Boolean.TRUE.equals(result.getCreditLimitVisible())
-                    ? settlement.getCreditLimit() : null);
+            result.setCreditLimit(
+                    Boolean.TRUE.equals(result.getCreditLimitVisible()) ? settlement.getCreditLimit() : null);
             result.setCreditPeriodType(settlement.getCreditPeriodType());
             result.setCreditPeriodValue(settlement.getCreditPeriodValue());
             result.setCreditPeriodUnit(settlement.getCreditPeriodUnit());
