@@ -15,9 +15,11 @@ import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 余额分摊返还的资金发生时间（PG IT）。
+ * 余额分摊返还的资金发生时间与单条失败的持久化边界（PG IT）。
  *
  * <p><b>为什么要这一组用例</b>：{@code xsy_customer_balance_movement.occurred_at} 同时是客户余额流水的
  * 时间轴、商城售后「资金到账时间」的取数来源（{@code MallAfterSaleFundingSourceDao.allocationSuccessTimes}）。
@@ -29,7 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * 造一张混合资金订单还要为在线那一腿补财务收款单，而那与被测对象无关 —— 本类钉的是余额腿写入
  * {@code occurred_at} 的口径，因此把「已冻结的余额分摊行」作为输入固定下来。
  */
-@DisplayName("余额分摊返还的资金发生时间（PG IT）")
+@DisplayName("余额分摊返还时间与失败提交（PG IT）")
 class RefundFundingAllocationTimePgIT extends ScmW5PgITBase {
 
     @Autowired
@@ -75,6 +77,34 @@ class RefundFundingAllocationTimePgIT extends ScmW5PgITBase {
                     .as("商城展示的资金到账时间必须等于实际返还时刻")
                     .isEqualTo(occurredAt);
         });
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("钱包账户不可用时，分摊失败与幂等结果仍能提交，不留余额返还流水")
+    void failedBalanceAllocationPersistsItsFailureOutsideTheTestTransaction() {
+        // 本用例会提交带唯一前缀的夹具，只能在授权的隔离 PostgreSQL 中执行。
+        BalanceAllocationFixture fixture = completedRefundWithBalanceAllocation();
+        jdbc.update("UPDATE xsy_customer_balance_account SET deleted = TRUE "
+                + "WHERE settlement_customer_id = (SELECT settlement_customer_id "
+                + "FROM xsy_refund_funding_allocation WHERE id = ?)", fixture.allocationId());
+        RefundFundingExecuteForm form = new RefundFundingExecuteForm();
+        form.setRefundId(fixture.orderRefundId());
+        String key = prefix + ":failed-allocation:" + UUID.randomUUID();
+
+        var result = refundFundingAllocationService.execute(form, key);
+
+        assertThat(result.getStatus()).isEqualTo("FAILED");
+        assertThat(jdbc.queryForObject("SELECT status FROM xsy_refund_funding_allocation WHERE id = ?",
+                String.class, fixture.allocationId())).isEqualTo("FAILED");
+        assertThat(jdbc.queryForObject("SELECT EXISTS (SELECT 1 FROM xsy_idempotency_record "
+                + "WHERE idempotency_key = ? AND result_data IS NOT NULL)", Boolean.class, key)).isTrue();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_customer_balance_movement "
+                + "WHERE source_type = 'REFUND_FUNDING_ALLOCATION' AND source_id = ?", Integer.class,
+                fixture.allocationId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_finance_payment "
+                + "WHERE source_type = 'ORDER_REFUND' AND source_id = ? AND entry_type = 'NORMAL'",
+                Integer.class, fixture.orderRefundId())).isZero();
     }
 
     // ------------------------------------------------------------------

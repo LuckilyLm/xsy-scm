@@ -151,14 +151,16 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         return returned;
     }
 
+    /** 钱包返还失败回滚到当前来源的保存点；外层订单事务继续记录该分摊为失败。 */
     @Override
-    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.NESTED, rollbackFor = Exception.class)
     public Long refundAllocation(Long allocationId, Long customerId, Long settlementCustomerId, BigDecimal amount,
             OffsetDateTime occurredAt) {
         if (allocationId == null || customerId == null || settlementCustomerId == null || occurredAt == null) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
         }
-        CustomerBalanceAccountEntity account = customerBalanceAccountDao.lockBySettlementCustomerId(settlementCustomerId);
+        CustomerBalanceAccountEntity account = customerBalanceAccountDao
+                .lockBySettlementCustomerId(settlementCustomerId);
         if (account == null) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
         }
@@ -173,9 +175,8 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
             ScmBalanceSourceTypeEnum sourceType, Long sourceId, String reason, OffsetDateTime occurredAt) {
         if (!((type == ScmBalanceMovementTypeEnum.RECHARGE
                 && sourceType == ScmBalanceSourceTypeEnum.PAYMENT_TRANSACTION)
-                || (type == ScmBalanceMovementTypeEnum.REFUND
-                        && (sourceType == ScmBalanceSourceTypeEnum.ORDER_REFUND
-                                || sourceType == ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION)))
+                || (type == ScmBalanceMovementTypeEnum.REFUND && (sourceType == ScmBalanceSourceTypeEnum.ORDER_REFUND
+                        || sourceType == ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION)))
                 || sourceId == null) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
         }
