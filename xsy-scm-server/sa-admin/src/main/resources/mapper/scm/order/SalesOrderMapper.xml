@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.order.dao.SalesOrderDao">
+    <select id="unassignedMallOrders" resultMap="row">
+        SELECT * FROM xsy_sales_order
+        WHERE deleted = FALSE AND order_source = 'MALL' AND seller_id IS NULL
+            AND status IN ('DRAFT', 'PENDING', 'CONFIRMED')
+        <if test="query.status != null and query.status != ''">AND status = #{query.status}</if>
+        <if test="query.keyword != null and query.keyword != ''">
+            AND (order_no ILIKE CONCAT('%', #{query.keyword}, '%')
+                OR customer_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
+        </if>
+        ORDER BY created_at DESC, id DESC
+    </select>
+    <update id="assignUnassignedMallOrder">
+        UPDATE xsy_sales_order SET seller_id = #{sellerId}, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{orderId} AND version = #{version} AND seller_id IS NULL
+            AND order_source = 'MALL' AND status IN ('DRAFT', 'PENDING', 'CONFIRMED') AND deleted = FALSE
+    </update>
     <select id="customerReferences" resultType="long">SELECT count(*)
                                                       FROM xsy_sales_order
                                                       WHERE customer_id = #{id}

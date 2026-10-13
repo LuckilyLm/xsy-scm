@@ -38,7 +38,8 @@ export const SCM_ORDER_OPERATION_ENUM: SmartEnum<string> = {
     CANCEL: {value: 'CANCEL', desc: '取消'},
     RESERVE_STOCK: {value: 'RESERVE_STOCK', desc: '预留库存'},
     RETURN: {value: 'RETURN', desc: '退货'},
-    REFUND: {value: 'REFUND', desc: '退款'}
+    REFUND: {value: 'REFUND', desc: '退款'},
+    ASSIGN: {value: 'ASSIGN', desc: '指派业务员'}
 };
 export default {
     SCM_ORDER_STATUS_ENUM,

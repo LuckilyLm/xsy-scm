@@ -1,6 +1,6 @@
 import {request, getRequest, postRequest, getDownload, type RequestOptions} from '/@/lib/axios';
 import type {ScmResponse, ScmPage} from '/@/types/business/scm/customer';
-import type {Order, Query, Id, ImportResult, RecentPrice} from '/@/views/business/scm/order/order-types';
+import type {Order, Query, Id, ImportResult, RecentPrice, OrderPoolQuery, OrderPoolRow, OrderPoolAssignee} from '/@/views/business/scm/order/order-types';
 import type {ResolveResult} from '/@/types/business/scm/pricing';
 // A failed retry retains its UUID; a changed payload or successful request starts a new command.
 const keys = new Map<string, string>();
@@ -55,6 +55,14 @@ export interface CreditCheck {
 }
 
 export const orderApi = {
+    unassignedPool: (data: OrderPoolQuery, options?: RequestOptions) =>
+        postRequest('/scm/order/pool/query', data, options) as unknown as Promise<ScmResponse<ScmPage<OrderPoolRow>>>,
+    poolAssignees: () =>
+        getRequest('/scm/order/pool/assignees', {}) as unknown as Promise<ScmResponse<OrderPoolAssignee[]>>,
+    claimPoolOrder: (data: {orderId: Id; version: number}) =>
+        orderCommand<OrderPoolRow>('/scm/order/pool/claim', data),
+    assignPoolOrder: (data: {orderId: Id; version: number; sellerId: number}) =>
+        orderCommand<OrderPoolRow>('/scm/order/pool/assign', data),
     query: (data: Query, options?: RequestOptions) =>
         postRequest('/scm/order/query', data, options) as unknown as Promise<ScmResponse<ScmPage<Order>>>,
     detail: (id: Id, options?: RequestOptions) =>

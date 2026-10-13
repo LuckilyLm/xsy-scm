@@ -10,9 +10,14 @@ import java.util.List;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
+import com.xsy.scm.order.domain.form.OrderPoolQueryForm;
 
 @Mapper
 public interface SalesOrderDao extends BaseMapper<SalesOrderEntity> {
+    List<SalesOrderEntity> unassignedMallOrders(Page<?> page, @Param("query") OrderPoolQueryForm query);
+
+    int assignUnassignedMallOrder(@Param("orderId") Long orderId, @Param("version") Integer version,
+            @Param("sellerId") Long sellerId, @Param("operator") String operator);
     Long customerReferences(@Param("id") Long id);
 
     int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);

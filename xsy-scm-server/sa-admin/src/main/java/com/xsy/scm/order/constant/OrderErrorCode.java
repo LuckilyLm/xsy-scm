@@ -39,6 +39,8 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_REFUND_STATUS_INVALID(40968, "当前退款状态不允许此操作"),
     ORDER_RETURN_QUANTITY_EXCEEDED(40969, "退货数量超过可退数量"),
     ORDER_RETURN_ORDER_NOT_CONFIRMED(40970, "仅已确认订单可以申请退货"),
+    ORDER_ALREADY_ASSIGNED(40973, "订单已被接单或指派，请刷新待分配列表"),
+    ORDER_ASSIGN_TARGET_INVALID(40974, "目标业务员不存在、已停用或没有订单查看权限"),
 
     /**
      * 40945：当前订单状态不允许预留库存。

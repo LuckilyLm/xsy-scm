@@ -21,7 +21,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void reachesTheRequestedMigrationVersion() {
-        String expected = System.getProperty("xsy.migration.expected-version", "125");
+        String expected = System.getProperty("xsy.migration.expected-version", "126");
         String current = jdbc.queryForObject("SELECT version FROM flyway_schema_history "
                 + "WHERE version IS NOT NULL ORDER BY installed_rank DESC LIMIT 1", String.class);
         assertThat(current).isEqualTo(expected);

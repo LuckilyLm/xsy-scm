@@ -78,6 +78,29 @@ export interface Query {
     operationType?: string
 }
 
+export interface OrderPoolQuery {
+    pageNum: number;
+    pageSize: number;
+    keyword?: string;
+    status?: string;
+}
+
+export interface OrderPoolRow {
+    orderId: Id;
+    orderNo: string;
+    customerNameSnapshot: string;
+    status: string;
+    version: number;
+    orderedTotalAmount?: string | null;
+    settlementTotalAmount?: string | null;
+    createdAt?: string | null;
+}
+
+export interface OrderPoolAssignee {
+    employeeId: number;
+    actualName: string;
+}
+
 /**
  * 最近已确认订单价（只读）：某客户某 SKU 的历史 CONFIRMED 订单行锁定单价快照。
  * 仅用于录单旁证，不回算当前价格、不参与定价，故不是第二套价格事实。
