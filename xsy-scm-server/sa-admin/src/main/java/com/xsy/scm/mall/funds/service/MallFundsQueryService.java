@@ -17,6 +17,8 @@ import com.xsy.scm.mall.funds.domain.vo.MallCreditSummaryVO;
 import com.xsy.scm.mall.funds.domain.vo.MallReceivableVO;
 import com.xsy.scm.mall.funds.domain.vo.MallWalletMovementVO;
 import com.xsy.scm.mall.funds.domain.vo.MallWalletSummaryVO;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class MallFundsQueryService {
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
+
     private final CustomerService customerService;
     private final CustomerTypeService customerTypeService;
     private final CustomerBalanceService balanceService;
@@ -76,6 +80,8 @@ public class MallFundsQueryService {
             result.setCreditPeriodType(settlement.getCreditPeriodType());
             result.setCreditPeriodValue(settlement.getCreditPeriodValue());
             result.setCreditPeriodUnit(settlement.getCreditPeriodUnit());
+            result.setCreditAmountThreshold(settlement.getCreditAmountThreshold());
+            result.setSettleDay(settlement.getSettleDay());
         }
         result.setOpenReceivableAmount(facts.getOpenReceivableAmount());
         result.setConfirmedOrderAmount(facts.getConfirmedOrderAmount());
@@ -115,9 +121,12 @@ public class MallFundsQueryService {
         MallReceivableVO result = new MallReceivableVO();
         result.setReceivableId(row.getReceivableId());
         result.setReceivableNo(row.getReceivableNo());
+        result.setOrderId(row.getOrderId());
         result.setOrderNo(row.getOrderNo());
         result.setSettleState(row.getSettleState());
         result.setDueDate(row.getDueDate());
+        result.setOverdue(row.getDueDate() != null && row.getOpenAmount().signum() > 0
+                && row.getDueDate().isBefore(LocalDate.now(BUSINESS_ZONE)));
         result.setEventAt(row.getEventAt());
         result.setAmount(row.getAmount());
         result.setRedAmount(row.getAmount().subtract(row.getNetAmount()));

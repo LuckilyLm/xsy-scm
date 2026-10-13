@@ -13,6 +13,10 @@ public class MallCreditSummaryVO {
     private String creditPeriodType;
     private Integer creditPeriodValue;
     private String creditPeriodUnit;
+    private Integer settleDay;
+
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal creditAmountThreshold;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal creditLimit;

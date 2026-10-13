@@ -10,19 +10,33 @@
     <select id="walletMovements" resultType="com.xsy.scm.mall.funds.domain.vo.MallWalletMovementVO">
         SELECT m.movement_no AS movementNo, m.type AS movementType, m.direction, m.amount,
                m.occurred_at AS occurredAt, so.order_no AS orderNo,
-               COALESCE(own_refund.refund_no, allocation_refund.refund_no) AS refundNo
+               COALESCE(own_refund.refund_no, allocation_refund.refund_no) AS refundNo,
+               recharge.recharge_no AS rechargeNo,
+               owned_return.id AS returnId
         FROM xsy_customer_balance_movement m
         JOIN xsy_customer_balance_account a ON a.id = m.account_id AND a.deleted = FALSE
         LEFT JOIN xsy_payment_intent intent ON m.source_type = 'PAYMENT_INTENT'
             AND intent.id = m.source_id AND intent.customer_id = #{customerId}
-            AND intent.source_type = 'SALES_ORDER'
+            AND intent.source_type = 'SALES_ORDER' AND intent.deleted = FALSE
+        LEFT JOIN xsy_payment_transaction recharge_tx ON m.source_type = 'PAYMENT_TRANSACTION'
+            AND recharge_tx.id = m.source_id AND recharge_tx.deleted = FALSE
+        LEFT JOIN xsy_payment_intent recharge_intent ON recharge_intent.id = recharge_tx.intent_id
+            AND recharge_intent.source_type = 'BALANCE_RECHARGE'
+            AND recharge_intent.customer_id = #{customerId} AND recharge_intent.deleted = FALSE
+        LEFT JOIN xsy_customer_balance_recharge recharge ON recharge.id = recharge_intent.source_id
+            AND recharge.customer_id = #{customerId} AND recharge.settlement_customer_id = #{settlementCustomerId}
+            AND recharge.deleted = FALSE
         LEFT JOIN xsy_order_refund own_refund ON m.source_type = 'ORDER_REFUND'
             AND own_refund.id = m.source_id AND own_refund.customer_id = #{customerId}
+            AND own_refund.deleted = FALSE
         LEFT JOIN xsy_refund_funding_allocation allocation ON m.source_type = 'REFUND_FUNDING_ALLOCATION'
             AND allocation.id = m.source_id AND allocation.customer_id = #{customerId}
             AND allocation.deleted = FALSE
         LEFT JOIN xsy_order_refund allocation_refund ON allocation_refund.id = allocation.order_refund_id
-            AND allocation_refund.customer_id = #{customerId}
+            AND allocation_refund.customer_id = #{customerId} AND allocation_refund.deleted = FALSE
+        LEFT JOIN xsy_order_return owned_return ON owned_return.id = COALESCE(own_refund.return_id,
+            allocation_refund.return_id) AND owned_return.customer_id = #{customerId}
+            AND owned_return.deleted = FALSE
         LEFT JOIN xsy_sales_order so ON so.id = COALESCE(intent.source_id, own_refund.order_id,
             allocation_refund.order_id) AND so.customer_id = #{customerId} AND so.deleted = FALSE
         WHERE m.customer_id = #{customerId} AND m.settlement_customer_id = #{settlementCustomerId}

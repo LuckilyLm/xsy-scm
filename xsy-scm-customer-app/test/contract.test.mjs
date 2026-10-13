@@ -11,7 +11,7 @@ test('SmartAdmin success contract uses code zero', () => {
   assert.match(request, /code === SUCCESS_CODE && res\?\.ok !== false/);
 });
 
-test('release only exposes authentication, catalog, cart, address, order and after-sale APIs', () => {
+test('release exposes customer-scoped commerce APIs without employee account endpoints', () => {
   const auth = read('../src/api/mall/auth-api.js');
   const api = read('../src/api/mall/index.js');
   assert.match(auth, /auth\/login/);
@@ -21,7 +21,28 @@ test('release only exposes authentication, catalog, cart, address, order and aft
   assert.match(api, /Address/);
   assert.match(api, /Order/);
   assert.match(api, /AfterSale/);
+  assert.match(api, /Funds/);
   assert.doesNotMatch(api, /Account|Home/);
+});
+
+test('funds pages use only customer read APIs and do not create payment commands', () => {
+  const api = read('../src/api/mall/funds-api.js');
+  const pages = read('../src/pages.json');
+  const mine = read('../src/pages/mine/index.vue');
+  const wallet = read('../src/pages-sub/wallet/movements.vue');
+  const credit = read('../src/pages-sub/credit/receivables.vue');
+  const mock = read('../mock/routes/funds.js');
+  assert.match(api, /\/scm\/mall\/funds\/wallet\/summary/);
+  assert.match(api, /\/scm\/mall\/funds\/receivables/);
+  assert.doesNotMatch(api, /\/scm\/(balance|finance)\//);
+  assert.doesNotMatch(api, /postRequest|recharge|repay/);
+  assert.match(pages, /pages-sub\/wallet/);
+  assert.match(pages, /pages-sub\/credit/);
+  assert.match(mine, /goWallet/);
+  assert.match(mine, /goCredit/);
+  assert.match(wallet, /row\.returnId/);
+  assert.match(credit, /settleState/);
+  assert.match(mock, /creditLimitVisible: false/);
 });
 
 test('after-sale center exposes apply, list and detail pages', () => {

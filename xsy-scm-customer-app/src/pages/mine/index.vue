@@ -12,6 +12,8 @@
       <view class="mine__row" @click="goCart"><text>购物车</text><text>›</text></view>
       <view class="mine__row" @click="goAddress"><text>收货地址</text><text>›</text></view>
       <view class="mine__row" @click="goAfterSales"><text>售后服务</text><text>›</text></view>
+      <view class="mine__row" @click="goWallet"><text>我的钱包</text><text>›</text></view>
+      <view class="mine__row" @click="goCredit"><text>账期与账单</text><text>›</text></view>
       <view class="mine__row" @click="changePassword"><text>修改登录密码</text><text>›</text></view>
       <view class="mine__row" @click="goOrders"><text>我的订单</text><text>›</text></view>
     </view>
@@ -33,6 +35,8 @@
   function goOrders() { uni.switchTab({ url: '/pages/order/index' }); }
   function goAddress() { uni.navigateTo({ url: '/pages-sub/address/list' }); }
   function goAfterSales() { userStore.isLogin ? uni.navigateTo({ url: '/pages-sub/after-sale/list' }) : goLogin(); }
+  function goWallet() { userStore.isLogin ? uni.navigateTo({ url: '/pages-sub/wallet/index' }) : goLogin(); }
+  function goCredit() { userStore.isLogin ? uni.navigateTo({ url: '/pages-sub/credit/index' }) : goLogin(); }
   function changePassword() { userStore.isLogin ? uni.navigateTo({ url: '/pages/account/password' }) : goLogin(); }
   function logout() {
     uni.showModal({ title: '退出登录', content: '确认退出当前账号？', success: async ({ confirm }) => {

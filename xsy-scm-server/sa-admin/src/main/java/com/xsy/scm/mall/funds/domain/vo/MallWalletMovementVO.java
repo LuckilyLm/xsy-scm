@@ -18,4 +18,6 @@ public class MallWalletMovementVO {
     private OffsetDateTime occurredAt;
     private String orderNo;
     private String refundNo;
+    private String rechargeNo;
+    private Long returnId;
 }

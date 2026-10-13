@@ -11,8 +11,10 @@ import lombok.Data;
 public class MallReceivableVO {
     private Long receivableId;
     private String receivableNo;
+    private Long orderId;
     private String orderNo;
     private String settleState;
+    private Boolean overdue;
     private LocalDate dueDate;
     private OffsetDateTime eventAt;
 
