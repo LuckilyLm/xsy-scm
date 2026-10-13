@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.mall.funds.dao.MallFundsSourceDao">
+
+    <select id="walletAccountExists" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM xsy_customer_balance_account
+            WHERE settlement_customer_id = #{settlementCustomerId} AND deleted = FALSE)
+    </select>
+
+    <select id="walletMovements" resultType="com.xsy.scm.mall.funds.domain.vo.MallWalletMovementVO">
+        SELECT m.movement_no AS movementNo, m.type AS movementType, m.direction, m.amount,
+               m.occurred_at AS occurredAt, so.order_no AS orderNo,
+               COALESCE(own_refund.refund_no, allocation_refund.refund_no) AS refundNo
+        FROM xsy_customer_balance_movement m
+        JOIN xsy_customer_balance_account a ON a.id = m.account_id AND a.deleted = FALSE
+        LEFT JOIN xsy_payment_intent intent ON m.source_type = 'PAYMENT_INTENT'
+            AND intent.id = m.source_id AND intent.customer_id = #{customerId}
+            AND intent.source_type = 'SALES_ORDER'
+        LEFT JOIN xsy_order_refund own_refund ON m.source_type = 'ORDER_REFUND'
+            AND own_refund.id = m.source_id AND own_refund.customer_id = #{customerId}
+        LEFT JOIN xsy_refund_funding_allocation allocation ON m.source_type = 'REFUND_FUNDING_ALLOCATION'
+            AND allocation.id = m.source_id AND allocation.customer_id = #{customerId}
+            AND allocation.deleted = FALSE
+        LEFT JOIN xsy_order_refund allocation_refund ON allocation_refund.id = allocation.order_refund_id
+            AND allocation_refund.customer_id = #{customerId}
+        LEFT JOIN xsy_sales_order so ON so.id = COALESCE(intent.source_id, own_refund.order_id,
+            allocation_refund.order_id) AND so.customer_id = #{customerId} AND so.deleted = FALSE
+        WHERE m.customer_id = #{customerId} AND m.settlement_customer_id = #{settlementCustomerId}
+          AND a.settlement_customer_id = #{settlementCustomerId} AND m.deleted = FALSE
+        <if test="type != null and type != ''">AND m.type = #{type}</if>
+        <if test="direction != null and direction != ''">AND m.direction = #{direction}</if>
+        ORDER BY m.occurred_at DESC, m.id DESC
+    </select>
+
+    <select id="receivables" resultType="com.xsy.scm.finance.domain.vo.FinanceReceivableVO">
+        <include refid="com.xsy.scm.finance.dao.FinanceReceivableDao.receivableSummarySelect"/>
+        WHERE r.customer_id = #{customerId} AND so.customer_id = #{customerId}
+          AND r.entry_type = 'NORMAL' AND r.deleted = FALSE
+        <if test="settleState != null and settleState != ''">
+            AND CASE WHEN GREATEST(r.amount - red.redAmount - written.writtenOffAmount, 0) = 0
+                          AND GREATEST(written.writtenOffAmount - (r.amount - red.redAmount), 0) = 0
+                     THEN 'SETTLED'
+                     WHEN written.writtenOffAmount = 0 THEN 'OPEN'
+                     ELSE 'PARTIAL' END = #{settleState}
+        </if>
+        ORDER BY r.event_at DESC, r.id DESC
+    </select>
+
+    <select id="receivable" resultType="com.xsy.scm.finance.domain.vo.FinanceReceivableVO">
+        <include refid="com.xsy.scm.finance.dao.FinanceReceivableDao.receivableSummarySelect"/>
+        WHERE r.id = #{receivableId} AND r.customer_id = #{customerId}
+          AND so.customer_id = #{customerId} AND r.entry_type = 'NORMAL' AND r.deleted = FALSE
+    </select>
+
+    <select id="creditFacts" resultType="com.xsy.scm.mall.funds.dao.MallFundsSourceDao$CreditFacts">
+        WITH own_receivables AS (
+            <include refid="com.xsy.scm.finance.dao.FinanceReceivableDao.receivableSummarySelect"/>
+            WHERE r.customer_id = #{customerId} AND so.customer_id = #{customerId}
+              AND r.entry_type = 'NORMAL' AND r.deleted = FALSE
+        )
+        SELECT COALESCE(SUM(openAmount), 0) AS openReceivableAmount,
+               MIN(dueDate) FILTER (WHERE openAmount &gt; 0 AND dueDate &lt;
+                   (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Shanghai')::date) AS earliestOverdueDate,
+               (SELECT COALESCE(SUM(o.settlement_total_amount), 0) FROM xsy_sales_order o
+                WHERE o.customer_id = #{customerId} AND o.status = 'CONFIRMED' AND o.deleted = FALSE
+                  AND NOT EXISTS (SELECT 1 FROM xsy_finance_receivable r
+                      WHERE r.source_type = 'SALES_ORDER' AND r.source_id = o.id AND r.deleted = FALSE))
+                   AS confirmedOrderAmount
+        FROM own_receivables
+    </select>
+</mapper>

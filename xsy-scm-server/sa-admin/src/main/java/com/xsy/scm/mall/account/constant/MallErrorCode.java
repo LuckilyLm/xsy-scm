@@ -30,7 +30,8 @@ public enum MallErrorCode implements ScmErrorCode {
     ORDER_ALREADY_FULFILLING(40987, "订单已进入配送流程，无法取消，请联系业务员处理"),
     REORDER_NOTHING_ADDED(40988, "历史商品均已下架或暂无客户价，未能加入购物车"),
     AFTERSALE_NOT_FOUND(40485, "售后单不存在"),
-    AFTERSALE_NOT_CANCELABLE(40989, "当前售后状态不允许撤销");
+    AFTERSALE_NOT_CANCELABLE(40989, "当前售后状态不允许撤销"),
+    FUNDS_RECEIVABLE_NOT_FOUND(40490, "账单不存在");
 
     private final int code;
     private final String msg;
