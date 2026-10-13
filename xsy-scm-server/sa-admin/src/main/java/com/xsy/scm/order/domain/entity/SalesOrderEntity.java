@@ -55,6 +55,10 @@ public class SalesOrderEntity {
     private String remark;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String cancelReason;
+
+    /** 商城客户下单时预选的券实例；仅 {@code orderSource = MALL} 使用，正式占用在确认命令内完成。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Long mallCouponInstanceId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime submittedAt;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

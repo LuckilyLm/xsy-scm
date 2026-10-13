@@ -3,7 +3,7 @@
 <mapper namespace="com.xsy.scm.promotion.dao.PromotionCouponInstanceDao">
 
     <sql id="columns">
-        id, coupon_id, customer_id, instance_no, status, reserved_order_id, reserved_at,
+        id, coupon_id, customer_id, instance_no, issue_source, status, reserved_order_id, reserved_at,
         used_order_id, used_at, released_at, release_reason, version
     </sql>
 
@@ -64,10 +64,10 @@
     </update>
 
     <insert id="insertBatch">
-        INSERT INTO xsy_promotion_coupon_instance (coupon_id, customer_id, instance_no, status, version)
+        INSERT INTO xsy_promotion_coupon_instance (coupon_id, customer_id, instance_no, issue_source, status, version)
         VALUES
         <foreach collection="rows" item="r" separator=",">
-            (#{r.couponId}, #{r.customerId}, #{r.instanceNo}, 'AVAILABLE', 0)
+            (#{r.couponId}, #{r.customerId}, #{r.instanceNo}, #{issueSource}, 'AVAILABLE', 0)
         </foreach>
     </insert>
 

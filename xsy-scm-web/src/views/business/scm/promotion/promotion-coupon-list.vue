@@ -50,7 +50,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1340 }"
+        :scroll="{ x: 1530 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'couponCode'">
@@ -70,6 +70,13 @@
         <template v-else-if="column.dataIndex === 'validTo'">{{ datetime(record.validTo) }}</template>
         <template v-else-if="column.dataIndex === 'status'">
           <ScmStatusTag :tone="statusTone(record.status)" :label="statusLabelOf(record.status)"/>
+        </template>
+        <template v-else-if="column.dataIndex === 'claimable'">
+          <ScmStatusTag :tone="record.claimable ? 'success' : 'neutral'"
+                        :label="record.claimable ? '开放领取' : '仅后台发券'"/>
+        </template>
+        <template v-else-if="column.dataIndex === 'claimLimits'">
+          {{ record.claimable ? `每人 ${record.perCustomerLimit ?? '不限'} / 总量 ${record.totalLimit ?? '不限'}` : '—' }}
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -226,6 +233,30 @@
           <a-input v-model:value="form.remark"/>
         </a-form-item>
       </section>
+
+      <section class="scm-form-section">
+        <div class="scm-form-section__head">
+          <h3 class="scm-form-section__title">商城领取</h3>
+        </div>
+        <a-form-item label="允许客户自助领取">
+          <a-switch v-model:checked="form.claimable"/>
+          <span class="scm-cell-hint">仅影响商城领取，后台发券不受限制</span>
+        </a-form-item>
+        <a-row v-if="form.claimable" :gutter="20">
+          <a-col :span="12">
+            <a-form-item label="每人限领张数">
+              <a-input-number v-model:value="form.perCustomerLimit" :min="1" :precision="0"
+                              placeholder="不填表示不限" style="width: 100%"/>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="自助领取总量">
+              <a-input-number v-model:value="form.totalLimit" :min="1" :precision="0"
+                              placeholder="不填表示不限" style="width: 100%"/>
+            </a-form-item>
+          </a-col>
+        </a-row>
+      </section>
     </a-form>
   </a-modal>
 
@@ -316,6 +347,8 @@ const columns: TableColumnsType<PromotionCoupon> = [
   {title: '生效时间', dataIndex: 'validFrom', width: 170},
   {title: '失效时间', dataIndex: 'validTo', width: 170},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
+  {title: '商城领取', dataIndex: 'claimable', align: 'center', width: 120},
+  {title: '领取限制', dataIndex: 'claimLimits', width: 190},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
 
@@ -327,6 +360,9 @@ const form = reactive<PromotionCouponSave>({
   minOrderAmount: '0',
   validFrom: '',
   validTo: '',
+  claimable: false,
+  perCustomerLimit: null,
+  totalLimit: null,
   remark: null,
 });
 const formRef = ref();
@@ -409,6 +445,9 @@ function openCreate() {
     minOrderAmount: '0',
     validFrom: '',
     validTo: '',
+    claimable: false,
+    perCustomerLimit: null,
+    totalLimit: null,
     remark: null,
     version: undefined,
   });
@@ -427,6 +466,9 @@ function openEdit(record: PromotionCoupon) {
     minOrderAmount: record.minOrderAmount ?? '0',
     validFrom: record.validFrom,
     validTo: record.validTo,
+    claimable: record.claimable ?? false,
+    perCustomerLimit: record.perCustomerLimit ?? null,
+    totalLimit: record.totalLimit ?? null,
     remark: record.remark ?? null,
     version: record.version,
   });

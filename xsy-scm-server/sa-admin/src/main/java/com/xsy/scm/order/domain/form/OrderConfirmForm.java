@@ -11,7 +11,7 @@ public class OrderConfirmForm extends OrderVersionForm {
     private String creditOverrideReason;
 
     /**
-     * 客户选用的券实例；为空表示本单不使用券。
+     * 本次确认显式改选的券实例；为空时商城订单沿用客户下单时的预选券。
      *
      * <p>
      * 只接受「用哪张券」：券是客户自己的权益，必须由调用方显式指定券实例 id，服务端不自动挑券。
@@ -19,4 +19,7 @@ public class OrderConfirmForm extends OrderVersionForm {
      */
     @Positive(message = "券实例 ID 必须大于0")
     private Long couponInstanceId;
+
+    /** 操作员显式放弃商城订单的预选券；与 {@code couponInstanceId} 不能同时使用。 */
+    private Boolean clearMallCoupon;
 }

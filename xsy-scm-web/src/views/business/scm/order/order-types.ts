@@ -42,6 +42,7 @@ export interface Order {
     settleModeSnapshot?: string;
     sellerId?: Id | null;
     orderSource: string;
+    mallCouponInstanceId?: Id | null;
     status?: string;
     originalOrderId?: Id | null;
     supplementReason?: string | null;

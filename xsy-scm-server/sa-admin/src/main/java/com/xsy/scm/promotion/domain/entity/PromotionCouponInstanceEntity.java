@@ -32,6 +32,8 @@ public class PromotionCouponInstanceEntity {
 
     private String instanceNo;
 
+    private String issueSource;
+
     /** {@code AVAILABLE} / {@code RESERVED} / {@code USED} / {@code RELEASED}。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String status;

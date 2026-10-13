@@ -26,4 +26,9 @@ public class MallOrderSubmitForm {
     /** 期望配送日期 yyyy-MM-dd，可空；服务端按当日 00:00（Asia/Shanghai）落库 */
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "期望配送日期格式应为 yyyy-MM-dd")
     private String expectDeliveryDate;
+    /**
+     * 客户预选的券实例。提交时服务端重验归属、状态与门槛后随订单持久化； 正式占用（冻结）仍在订单确认命令内完成，预览与预选都不占用券。
+     */
+    @Positive(message = "券实例 ID 必须大于0")
+    private Long couponInstanceId;
 }

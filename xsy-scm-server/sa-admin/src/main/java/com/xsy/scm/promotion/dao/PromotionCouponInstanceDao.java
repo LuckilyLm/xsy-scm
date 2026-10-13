@@ -37,5 +37,6 @@ public interface PromotionCouponInstanceDao extends BaseMapper<PromotionCouponIn
     int markReleased(@Param("id") Long id, @Param("version") Integer version, @Param("reason") String reason,
             @Param("operator") String operator);
 
-    int insertBatch(@Param("rows") List<PromotionCouponInstanceEntity> rows);
+    int insertBatch(@Param("rows") List<PromotionCouponInstanceEntity> rows,
+            @Param("issueSource") String issueSource);
 }

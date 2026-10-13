@@ -17,6 +17,8 @@ public interface MallCatalogDao {
     MallProductVO product(@Param("customerId") Long customerId, @Param("skuId") Long skuId);
     List<MallProductVO> productsBySkuIds(@Param("customerId") Long customerId, @Param("skuIds") List<Long> skuIds);
 
+    List<Long> newestSkuIds(@Param("customerId") Long customerId, @Param("limit") int limit);
+
     /**
      * 按 SKU 批量取主图 file_key，供订单列表缩略图使用。
      *

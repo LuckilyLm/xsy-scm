@@ -12,6 +12,7 @@ import com.xsy.scm.mall.catalog.dao.MallCatalogDao;
 import com.xsy.scm.mall.order.constant.MallOrderDisplayStatusEnum;
 import com.xsy.scm.mall.order.domain.form.MallOrderQueryForm;
 import com.xsy.scm.mall.order.domain.vo.MallOrderDeliveryVO;
+import com.xsy.scm.mall.order.domain.vo.MallOrderDiscountVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderItemVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderProgressNodeVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderTimelineVO;
@@ -25,6 +26,10 @@ import com.xsy.scm.order.dao.SalesOrderItemDao;
 import com.xsy.scm.order.domain.entity.OrderOperationLogEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
+import com.xsy.scm.promotion.domain.vo.OrderDiscountVO;
+import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
+import com.xsy.scm.promotion.service.PromotionDiscountService;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -78,6 +83,7 @@ public class MallOrderQueryService {
     private final OrderOperationLogDao orderOperationLogDao;
     private final DeliveryRouteOrderDao deliveryRouteOrderDao;
     private final MallCatalogDao mallCatalogDao;
+    private final PromotionDiscountService promotionDiscountService;
     private final FileService fileService;
 
     @Transactional(readOnly = true)
@@ -131,6 +137,34 @@ public class MallOrderQueryService {
                 .stream().findFirst().orElse(null);
         result.setDelivery(delivery(deliveryProgress));
         result.setProgress(progressNodes(order, deliveryProgress));
+        result.setDiscount(discount(orderId));
+        return result;
+    }
+
+    private MallOrderDiscountVO discount(Long orderId) {
+        OrderDiscountVO frozen = promotionDiscountService.getByOrder(orderId);
+        List<PromotionDiscountVO.GiftEntitlementVO> gifts = promotionDiscountService.listGifts(orderId);
+        if (frozen == null && gifts.isEmpty()) {
+            return null;
+        }
+        MallOrderDiscountVO result = new MallOrderDiscountVO();
+        result.setDiscountAmount(frozen == null ? BigDecimal.ZERO.setScale(4) : frozen.getDiscountAmount());
+        if (frozen != null) {
+            Map<String, Object> coupon = frozen.getCouponSnapshot();
+            if (coupon != null && coupon.get("couponName") instanceof String name) {
+                result.setCouponName(name);
+            }
+            Map<String, Object> activities = frozen.getActivitySnapshot();
+            if (activities != null && activities.get("applied") instanceof List<?> applied) {
+                result.setActivityNames(applied.stream().filter(Map.class::isInstance).map(Map.class::cast)
+                        .map(row -> row.get("activityName")).filter(String.class::isInstance)
+                        .map(String.class::cast).toList());
+            }
+        }
+        result.setGiftDescriptions(gifts.stream()
+                .map(gift -> gift.getProductName() + " ×" + gift.getQuantity().toPlainString() + " "
+                        + (gift.getSaleUnit() == null ? "" : gift.getSaleUnit()))
+                .toList());
         return result;
     }
 
