@@ -52,6 +52,24 @@
       <view v-if="nonStandardCount" class="co-tip"> 含 {{ nonStandardCount }} 项按实重结算，最终金额以出库实重为准 </view>
     </view>
 
+    <view class="co-card co-coupon">
+      <view class="co-row" @click="chooseCoupon">
+        <text class="co-row__label">优惠券</text>
+        <text class="co-row__value">{{ selectedCouponName || '选择优惠券' }} ›</text>
+      </view>
+      <text v-if="selectedCouponId" class="co-coupon__clear" @click="clearCoupon">不使用优惠券</text>
+      <text v-if="promotionError" class="co-coupon__error">{{ promotionError }}</text>
+      <text v-else-if="promotion?.couponName" class="co-coupon__hint">已试算：{{ promotion.couponName }}</text>
+    </view>
+
+    <view v-if="promotion && previewReady" class="co-card co-promotion">
+      <view class="co-row"><text class="co-row__label">商品预估金额</text><text>¥{{ estimatedAmount }}</text></view>
+      <view v-if="Number(promotion.discountAmount) > 0" class="co-row"><text class="co-row__label">活动及优惠券优惠</text><text class="co-promotion__discount">−¥{{ promotion.discountAmount }}</text></view>
+      <text v-for="name in promotion.appliedActivityNames || []" :key="name" class="co-promotion__detail">{{ name }}</text>
+      <text v-for="gift in promotion.giftDescriptions || []" :key="gift" class="co-promotion__detail">赠品：{{ gift }}</text>
+      <text class="co-promotion__note">优惠仅为预览，后台受理订单时将重新校验并冻结；按实重商品以最终结算为准。</text>
+    </view>
+
     <!-- 备注 -->
     <view class="co-card">
       <view class="co-card__title">订单备注</view>
@@ -60,10 +78,10 @@
 
     <view class="co-bar">
       <view class="co-bar__amount">
-        <text class="co-bar__label">预计金额</text>
+        <text class="co-bar__label">优惠后预估</text>
         <text v-if="previewing" class="co-bar__hint">计算中…</text>
-        <text v-else-if="!previewReady" class="co-bar__error" @click="refreshPreview">金额获取失败，点击重试</text>
-        <text v-else class="co-bar__value">¥{{ estimatedAmount }}</text>
+        <text v-else-if="!previewReady" class="co-bar__error" @click="refreshPreview">{{ promotionError || '金额获取失败，点击重试' }}</text>
+        <text v-else class="co-bar__value">¥{{ promotion?.payableAmount || estimatedAmount }}</text>
       </view>
       <view class="co-bar__submit" :class="{ 'co-bar__submit--disabled': !canSubmit }" @click="submit">
         {{ submitting ? '提交中…' : '提交订单' }}
@@ -86,6 +104,10 @@
   const items = ref([]);
   const address = ref(null);
   const estimatedAmount = ref('0.00');
+  const selectedCouponId = ref(null);
+  const selectedCouponName = ref('');
+  const promotion = ref(null);
+  const promotionError = ref('');
   const deliveryDate = ref('');
   const remark = ref('');
   const previewing = ref(false);
@@ -114,7 +136,7 @@
   });
   const canSubmit = computed(
     () =>
-      !!address.value && items.value.length > 0 && unavailableItems.value.length === 0 && previewReady.value && !previewing.value && !submitting.value
+      !!address.value && items.value.length > 0 && unavailableItems.value.length === 0 && !promotionError.value && previewReady.value && !previewing.value && !submitting.value
   );
 
   function isAvailable(item) {
@@ -198,6 +220,8 @@
     previewReady.value = false;
     fingerprint.value = '';
     unavailableItems.value = [];
+    promotion.value = null;
+    promotionError.value = '';
     if (!items.value.length) {
       estimatedAmount.value = '0.00';
       return;
@@ -207,6 +231,7 @@
       const response = await mallOrderApi.preview({
         items: payloadItems(),
         addressId: address.value ? address.value.addressId : null,
+        couponInstanceId: selectedCouponId.value || undefined,
       });
       // 只认最后一次预览：旧响应后到一律丢弃，否则会把新金额与指纹覆盖回旧的
       if (seq !== previewSeq) return;
@@ -216,8 +241,10 @@
       // 服务端判定不可售的项：金额已被排除，必须同时禁止提交，不能只看金额
       unavailableItems.value = nextItems.filter((item) => !isAvailable(item));
       estimatedAmount.value = data.estimatedAmount || '0.00';
+      promotion.value = data.promotion || null;
+      promotionError.value = data.promotionError || '';
       fingerprint.value = data.priceFingerprint || '';
-      previewReady.value = !!fingerprint.value;
+      previewReady.value = !!fingerprint.value && !promotionError.value;
       syncIdempotencyKey();
     } catch (error) {
       if (seq !== previewSeq) return;
@@ -236,6 +263,7 @@
       addressId: address.value ? address.value.addressId : null,
       remark: remark.value,
       deliveryDate: deliveryDate.value,
+      couponInstanceId: selectedCouponId.value,
     });
   }
 
@@ -257,6 +285,27 @@
     uni.navigateTo({ url: '/pages-sub/address/list?select=1' });
   }
 
+  function chooseCoupon() {
+    uni.navigateTo({
+      url: '/pages-sub/promotion/my?select=1',
+      events: {
+        couponSelected: (coupon) => {
+          selectedCouponId.value = coupon.id;
+          selectedCouponName.value = coupon.name;
+          syncIdempotencyKey();
+          refreshPreview();
+        },
+      },
+    });
+  }
+
+  function clearCoupon() {
+    selectedCouponId.value = null;
+    selectedCouponName.value = '';
+    syncIdempotencyKey();
+    refreshPreview();
+  }
+
   async function submit() {
     if (submitting.value) return;
     if (!items.value.length) {
@@ -268,7 +317,7 @@
       return;
     }
     if (!previewReady.value || !fingerprint.value) {
-      uni.showToast({ title: '结算金额获取失败，请点击金额处重试', icon: 'none' });
+      uni.showToast({ title: promotionError.value || '结算金额获取失败，请点击金额处重试', icon: 'none' });
       return;
     }
     if (unavailableItems.value.length) {
@@ -285,6 +334,7 @@
           priceFingerprint: fingerprint.value,
           remark: remark.value || undefined,
           expectDeliveryDate: deliveryDate.value || undefined,
+          couponInstanceId: selectedCouponId.value || undefined,
         },
         idempotencyKey.value
       );
@@ -377,6 +427,13 @@
   .co-row__value--placeholder {
     color: $color-text-placeholder;
   }
+  .co-coupon__clear { display: block; margin-top: $space-3; color: $color-text-tertiary; font-size: $font-size-sm; text-align: right; }
+  .co-coupon__error { display: block; margin-top: $space-3; color: $color-danger; font-size: $font-size-sm; }
+  .co-coupon__hint { display: block; margin-top: $space-3; color: $color-primary; font-size: $font-size-sm; }
+  .co-promotion .co-row + .co-row { margin-top: $space-3; }
+  .co-promotion__discount { color: $color-danger; }
+  .co-promotion__detail { display: block; margin-top: $space-2; color: $color-text-secondary; font-size: $font-size-sm; }
+  .co-promotion__note { display: block; margin-top: $space-3; color: $color-text-tertiary; font-size: $font-size-xs; }
 
   .co-item {
     @include flex-start;

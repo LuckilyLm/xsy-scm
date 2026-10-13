@@ -27,6 +27,7 @@ import { addressRoutes } from './routes/address';
 import { orderRoutes } from './routes/order';
 import { afterSaleRoutes } from './routes/after-sale';
 import { fundsRoutes } from './routes/funds';
+import { promotionRoutes } from './routes/promotion';
 import { delay } from './helpers';
 import { findSession } from './session';
 import { USER_TOKEN } from '@/constants/local-storage-key-const';
@@ -34,7 +35,8 @@ import { USER_TOKEN } from '@/constants/local-storage-key-const';
 /** 是否启用 mock。Vite 在构建时会把 import.meta.env.* 替换为字面量，便于 DCE。 */
 export const USE_MOCK = import.meta.env.VITE_APP_USE_MOCK === 'true';
 
-const ROUTES = [...authRoutes, ...catalogRoutes, ...cartRoutes, ...addressRoutes, ...orderRoutes, ...afterSaleRoutes, ...fundsRoutes];
+const ROUTES = [...authRoutes, ...catalogRoutes, ...cartRoutes, ...addressRoutes, ...orderRoutes,
+  ...afterSaleRoutes, ...fundsRoutes, ...promotionRoutes];
 
 /**
  * 匹配 `/a/:id/b` 形式的路径，返回参数对象；不匹配返回 null。

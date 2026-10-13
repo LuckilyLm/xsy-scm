@@ -11,6 +11,25 @@
         <uni-icons type="search" :size="20" :color="COLOR_TEXT_TERTIARY" />
         <text class="home__search-text">搜索商品名称或规格</text>
       </view>
+      <text v-if="userStore.isLogin" class="home__coupon-link" @click="goCoupons">领券中心 ›</text>
+    </view>
+
+    <view v-if="activities.length" class="home__section">
+      <view class="home__section-head">
+        <text class="home__section-title">正在进行的活动</text>
+        <text class="home__section-link" @click="goActivities">全部活动</text>
+      </view>
+      <view v-for="activity in activities.slice(0, 3)" :key="activity.id" class="home__activity"
+            @click="goActivity(activity)">
+        <image v-if="activity.product?.primaryImageUrl" class="home__activity-image"
+               :src="activity.product.primaryImageUrl" mode="aspectFill" />
+        <view class="home__activity-main">
+          <text class="home__activity-name">{{ activity.activityName }}</text>
+          <text class="home__activity-summary">{{ activity.summary }}</text>
+          <text class="home__activity-time">至 {{ formatDate(activity.validTo) }}</text>
+        </view>
+        <text class="home__activity-arrow">›</text>
+      </view>
     </view>
 
     <view class="home__section">
@@ -22,6 +41,14 @@
         <ProductCard v-for="item in frequentProducts" :key="item.skuId" :product="item" @click="goDetail" @add="addToCart" @inquiry="inquiry" />
       </view>
       <text v-else class="home__empty">{{ userStore.isLogin ? '暂无常购商品' : '登录后展示常购商品' }}</text>
+    </view>
+
+    <view v-if="newProducts.length" class="home__section">
+      <view class="home__section-head"><text class="home__section-title">新品上架</text></view>
+      <view class="home__list">
+        <ProductCard v-for="item in newProducts" :key="item.skuId" :product="item"
+                     @click="goDetail" @add="addToCart" @inquiry="inquiry" />
+      </view>
     </view>
 
     <view class="home__section">
@@ -37,20 +64,24 @@
 
 <script setup>
   import { computed, ref } from 'vue';
-  import { onReachBottom } from '@dcloudio/uni-app';
+  import { onReachBottom, onShow } from '@dcloudio/uni-app';
   import ProductCard from '@/components/business/product-card.vue';
   import { mallCatalogApi } from '@/api/mall';
+  import { mallPromotionApi } from '@/api/mall/promotion-api';
   import { useUserStore } from '@/store/modules/system/user';
   import { useSystemLayout } from '@/composables/use-system-layout';
   import { useMallCart } from '@/composables/use-mall-cart';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { formatDate } from '@/utils/order-display';
 
   const PAGE_SIZE = 10;
   const { statusBarHeight } = useSystemLayout();
   const userStore = useUserStore();
   const products = ref([]);
   const frequentProducts = ref([]);
+  const activities = ref([]);
+  const newProducts = ref([]);
   const pageNum = ref(0);
   const total = ref(0);
   const loading = ref(false);
@@ -86,16 +117,43 @@
     }
   }
 
+  async function loadMarketing() {
+    if (!userStore.isLogin) {
+      activities.value = [];
+      newProducts.value = [];
+      return;
+    }
+    try {
+      activities.value = (await mallPromotionApi.activities()).data || [];
+      newProducts.value = (await mallPromotionApi.newProducts()).data || [];
+    } catch (error) {
+      smartSentry.captureError(error);
+    }
+  }
+
   function goLogin() { uni.navigateTo({ url: '/pages/login/login' }); }
   function goSearch() { uni.navigateTo({ url: '/pages-sub/product/search' }); }
   function goCategory() { uni.switchTab({ url: '/pages/category/index' }); }
+  function goCoupons() { uni.navigateTo({ url: '/pages-sub/promotion/coupons' }); }
+  function goActivities() { uni.navigateTo({ url: '/pages-sub/promotion/activities' }); }
+  function goActivity(activity) { activity.product ? goDetail(activity.product) : goActivities(); }
   function goDetail(item) { uni.navigateTo({ url: `/pages-sub/product/detail?skuId=${item.skuId}` }); }
   const { addToCart } = useMallCart();
   function inquiry(item) { uni.showToast({ title: `${item.productName} 暂无客户价，请联系业务员`, icon: 'none' }); }
 
   onReachBottom(() => { if (hasMore.value) loadProducts(); });
+  let showed = false;
+  onShow(() => {
+    if (showed) {
+      loadProducts(true);
+      loadFrequent();
+      loadMarketing();
+    }
+    showed = true;
+  });
   loadProducts(true);
   loadFrequent();
+  loadMarketing();
 </script>
 
 <style lang="scss" scoped>
@@ -108,7 +166,15 @@
   .home__greeting { display: block; margin-top: $space-1; color: rgba(255,255,255,.85); font-size: $font-size-sm; }
   .home__search { @include flex-start; height: 72rpx; margin-top: $space-3; padding: 0 $space-3; border-radius: $radius-pill; background: white; }
   .home__search-text { margin-left: $space-2; color: $color-text-placeholder; }
+  .home__coupon-link { display: block; margin-top: $space-3; color: white; font-size: $font-size-sm; text-align: right; }
   .home__section { margin-top: $space-3; background: white; }
+  .home__activity { display: flex; align-items: center; gap: $space-3; min-height: 120rpx; padding: $space-3 $space-4; @include hairline-bottom; }
+  .home__activity-image { width: 96rpx; height: 96rpx; flex-shrink: 0; border-radius: $radius-md; }
+  .home__activity-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: $space-1; }
+  .home__activity-name { color: $color-text-primary; font-weight: $font-weight-bold; @include ellipsis; }
+  .home__activity-summary { color: $color-primary; font-size: $font-size-sm; }
+  .home__activity-time { color: $color-text-tertiary; font-size: $font-size-xs; }
+  .home__activity-arrow { color: $color-text-tertiary; }
   .home__section-head { padding: $space-3 $space-4; }
   .home__section-title { font-size: $font-size-lg; font-weight: $font-weight-bold; color: $color-text-primary; }
   .home__section-link { color: $color-primary; font-size: $font-size-sm; }
