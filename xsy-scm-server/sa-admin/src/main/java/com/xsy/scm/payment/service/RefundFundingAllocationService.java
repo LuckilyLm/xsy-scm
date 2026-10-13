@@ -25,14 +25,19 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /** 订单级资金退款：先冻结比例分摊，再逐来源幂等执行。 */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefundFundingAllocationService {
     private static final int SCALE = 4;
+    private static final int FAILURE_CODE_LIMIT = 64;
+    private static final int FAILURE_MESSAGE_LIMIT = 500;
     private static final String IDEMPOTENCY_SCOPE = "REFUND_FUNDING_EXECUTE";
 
     private final RefundFundingAllocator allocator;
@@ -192,8 +197,10 @@ public class RefundFundingAllocationService {
                 }
                 allocationDao.markSucceeded(row.getId(), resultId, operator);
             } catch (RuntimeException exception) {
-                allocationDao.markFailed(row.getId(), exception.getClass().getSimpleName(), exception.getMessage(),
-                        operator);
+                log.warn("退款资金来源执行失败：refundId={} allocationId={}", refund.refundId(), row.getId(), exception);
+                allocationDao.markFailed(row.getId(),
+                        StringUtils.abbreviate(exception.getClass().getSimpleName(), FAILURE_CODE_LIMIT),
+                        StringUtils.abbreviate(exception.getMessage(), FAILURE_MESSAGE_LIMIT), operator);
             }
         }
     }
