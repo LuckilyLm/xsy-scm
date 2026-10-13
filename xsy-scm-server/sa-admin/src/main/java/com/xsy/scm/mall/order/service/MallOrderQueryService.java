@@ -63,7 +63,7 @@ public class MallOrderQueryService {
      * <p>
      * 时间线直接回读 {@code xsy_order_operation_log}，但那张表是<b>内部审计日志</b>：
      * {@code CREDIT_OVERRIDE}（超额授信放行）带的是内部审批原因，{@code UPDATE} 带改价/改量原因， {@code RESERVE_STOCK} 是仓库内部动作 ——
-     * 这些都不是给客户看的。后台审计记录保持完整， 商城侧只收窄展示，**不删除任何原始记录**。
+     * 这些都不是给客户看的。后台审计记录保持完整， 商城侧只收窄展示，不删除任何原始记录。
      *
      * <p>
      * 售后类操作（{@code RETURN} / {@code REFUND}）在售后功能落地、各自的原因口径定下来之后再逐个加入， 不预先放行。
@@ -162,8 +162,8 @@ public class MallOrderQueryService {
 
     /** 订单行不存图，展示时按 SKU 回读主图；取不到图的 SKU 不进 map，由客户端兜底。 */
     private Map<Long, String> imageUrls(List<SalesOrderItemEntity> items) {
-        return skuImageUrls(items.stream().map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct()
-                .toList());
+        return skuImageUrls(
+                items.stream().map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct().toList());
     }
 
     /** 按 SKU 批量取主图 URL；取不到图的 SKU 不进 map。订单与售后共用同一套图片解析。 */
