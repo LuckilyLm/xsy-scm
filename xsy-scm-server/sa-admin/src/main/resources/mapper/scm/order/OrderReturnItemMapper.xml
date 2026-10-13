@@ -25,6 +25,13 @@
                                       WHERE return_id = #{id}
                                         AND deleted = FALSE
                                       ORDER BY id</select>
+    <!-- 归属由调用方判定（商城按退货单客户），本查询只按 return_id 过滤。 -->
+    <select id="listByReturnIds" resultMap="row">SELECT *
+                                      FROM xsy_order_return_item
+                                      WHERE return_id IN
+                                      <foreach collection="returnIds" item="returnId" open="(" separator="," close=")">#{returnId}</foreach>
+                                        AND deleted = FALSE
+                                      ORDER BY id</select>
     <select id="reserved" resultType="java.math.BigDecimal">SELECT COALESCE(SUM(CASE
                                                                                     WHEN r.status = 'PENDING'
                                                                                         THEN i.requested_quantity

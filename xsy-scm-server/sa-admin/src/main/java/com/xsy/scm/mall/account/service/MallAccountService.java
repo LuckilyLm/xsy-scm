@@ -15,6 +15,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.module.support.securityprotect.service.SecurityPasswordService;
+import net.lab1024.sa.base.module.support.securityprotect.service.SecurityLoginService;
+import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MallAccountService {
     private final MallCustomerAccountDao accountDao;
     private final CustomerService customerService;
+    private final SecurityLoginService securityLoginService;
 
     @Transactional(readOnly = true)
     public List<MallAccountVO> list(Long customerId) {
@@ -72,6 +75,7 @@ public class MallAccountService {
         MallCustomerAccountEntity row = lockVisible(form.getAccountId());
         accountDao.resetPassword(row.getId(), SecurityPasswordService.getEncryptPwd(form.getTemporaryPassword()),
                 ScmOperator.current());
+        securityLoginService.removeLoginFail(row.getId(), UserTypeEnum.MALL_CUSTOMER);
     }
 
     private MallCustomerAccountEntity lockVisible(Long accountId) {

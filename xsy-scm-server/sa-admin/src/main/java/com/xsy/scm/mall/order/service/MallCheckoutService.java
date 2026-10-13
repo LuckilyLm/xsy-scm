@@ -17,6 +17,7 @@ import com.xsy.scm.mall.order.domain.vo.MallCheckoutItemVO;
 import com.xsy.scm.mall.order.domain.vo.MallCheckoutPreviewVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
 import com.xsy.scm.order.constant.ScmOrderSourceEnum;
+import com.xsy.scm.order.domain.dto.MallOrderCreationResult;
 import com.xsy.scm.order.domain.form.OrderAddressForm;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.form.SalesOrderItemForm;
@@ -33,10 +34,12 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -97,10 +100,26 @@ public class MallCheckoutService {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_IDEMPOTENCY_REQUIRED);
         }
         Map<Long, BigDecimal> quantities = normalize(form.getItems());
+        // 幂等指纹只绑稳定的客户请求（客户 / 地址 ID / 备注 / 期望配送时间 / 规格与数量），不含地址内容快照：
+        // 地址会被同一客户的其他采购账号编辑，用快照算指纹会让「第一次已成功、重试时地址已改」认不出原订单。
+        // 它只取请求里的地址 ID，因此不需要先把地址读出来。
+        Map<String, Object> idempotencyRequest = idempotencyRequest(customer, form, quantities);
+        // 幂等预检必须排在所有「会被后续操作改变的前置校验」之前：
+        // ① 排在价格校验前——第一次已下单成功但响应丢失时，重试遇变价会被误报成「价格已变化」；
+        // ② 排在读地址前——重试期间地址可能已被同一客户的其他采购账号删除，
+        // 先读地址会直接抛「地址不存在」，把一笔已经成功的订单藏起来。
+        // 只有真正的新请求才继续校验地址与价格。
+        Optional<MallOrderCreationResult> replayed = salesOrderService.replayMallOrder(idempotencyRequest,
+                idempotencyKey);
+        if (replayed.isPresent()) {
+            return toSubmitVO(replayed.get().order());
+        }
         MallAddressVO address = addressDao.detailById(customer.getCustomerId(), form.getAddressId());
         if (address == null) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_NOT_FOUND);
         }
+        SalesOrderAddForm orderForm = orderForm(customer, form, address, quantities);
+        // 只有新请求才按当前价格严格校验
         Map<Long, MallProductVO> products = resolveProducts(customer, quantities.keySet());
         for (Long skuId : quantities.keySet()) {
             MallProductVO product = products.get(skuId);
@@ -113,11 +132,31 @@ public class MallCheckoutService {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
         }
 
-        var creation = salesOrderService.createFromMall(orderForm(customer, form, address, quantities), idempotencyKey);
+        var creation = salesOrderService.createFromMall(orderForm, idempotencyRequest, idempotencyKey);
         if (!creation.replayed()) {
+            requireMatchingLockedPrices(creation.order(), quantities, products);
             cartDao.removeBySkus(customer.getAccountId(), new ArrayList<>(quantities.keySet()), ScmOperator.current());
         }
         return toSubmitVO(creation.order());
+    }
+
+    private static void requireMatchingLockedPrices(SalesOrderDetailVO order, Map<Long, BigDecimal> quantities,
+            Map<Long, MallProductVO> products) {
+        // 正式订单提交会重新解析价格；必须在同一事务提交前核对最终快照，覆盖变价和协议到期窗口。
+        if (order.getItems() == null || order.getItems().size() != quantities.size()) {
+            throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
+        }
+        var matchedSkuIds = new HashSet<Long>();
+        for (var item : order.getItems()) {
+            BigDecimal quantity = quantities.get(item.getSkuId());
+            MallProductVO product = products.get(item.getSkuId());
+            if (!matchedSkuIds.add(item.getSkuId()) || quantity == null || product == null
+                    || product.getUnitPrice() == null || item.getOrderedQuantity() == null
+                    || item.getLockedUnitPrice() == null || quantity.compareTo(item.getOrderedQuantity()) != 0
+                    || product.getUnitPrice().compareTo(item.getLockedUnitPrice()) != 0) {
+                throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
+            }
+        }
     }
 
     private SalesOrderAddForm orderForm(RequestMallCustomer customer, MallOrderSubmitForm form, MallAddressVO address,
@@ -151,9 +190,8 @@ public class MallCheckoutService {
     private Map<Long, MallProductVO> resolveProducts(RequestMallCustomer customer, Iterable<Long> skuIds) {
         List<Long> ids = new ArrayList<>();
         skuIds.forEach(ids::add);
-        return catalogService.visibleProducts(customer, ids).stream()
-                .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity(), (left, right) -> left,
-                        LinkedHashMap::new));
+        return catalogService.visibleProducts(customer, ids).stream().collect(Collectors.toMap(MallProductVO::getSkuId,
+                Function.identity(), (left, right) -> left, LinkedHashMap::new));
     }
 
     /** 合并重复规格并校验数量；保持提交顺序 */
@@ -206,19 +244,43 @@ public class MallCheckoutService {
     }
 
     /**
-     * 价格指纹：按 SKU 排序的 {@code skuId:quantity:unitPrice} 摘要。
-     * 只用于判断「预览到提交之间价格或数量是否变了」，不是安全边界。
+     * 商城下单的幂等请求指纹：只含客户请求里稳定的字段。
+     *
+     * <p>
+     * 不能用 {@code SalesOrderAddForm} 本身：它带收货地址内容快照，而地址会被同一客户的其他采购账号编辑； 同一幂等键重试时服务端重新读到的地址已经变了，请求哈希跟着变，第一次成功的订单就回放不出来。
+     * 这里改用地址 ID（稳定）代表收货地址，地址内容仍会在建单时冻结进订单快照。
+     *
+     * <p>
+     * 规格按 SKU 排序后再入指纹，使「同一批商品、提交顺序不同」视为同一请求； 用 {@link LinkedHashMap} 而非 {@code Map.of}：备注与期望配送日期可以为空，{@code Map.of} 不接受
+     * null。
+     */
+    private static Map<String, Object> idempotencyRequest(RequestMallCustomer customer, MallOrderSubmitForm form,
+            Map<Long, BigDecimal> quantities) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("customerId", customer.getCustomerId());
+        request.put("addressId", form.getAddressId());
+        request.put("remark", form.getRemark());
+        request.put("expectDeliveryDate", form.getExpectDeliveryDate());
+        request.put("items", quantities.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("skuId", entry.getKey());
+            item.put("quantity", entry.getValue().toPlainString());
+            return item;
+        }).toList());
+        return request;
+    }
+
+    /**
+     * 价格指纹：按 SKU 排序的 {@code skuId:quantity:unitPrice} 摘要。 只用于判断「预览到提交之间价格或数量是否变了」，不是安全边界。
      */
     private static String fingerprint(Map<Long, BigDecimal> quantities, Map<Long, MallProductVO> products) {
-        String canonical = quantities.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(entry -> {
-                    MallProductVO product = products.get(entry.getKey());
-                    String price = product == null || product.getUnitPrice() == null ? "null"
-                            : product.getUnitPrice().toPlainString();
-                    return entry.getKey() + ":" + entry.getValue().toPlainString() + ":" + price;
-                })
-                .collect(Collectors.joining(";"));
+        String canonical = quantities.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> {
+            MallProductVO product = products.get(entry.getKey());
+            String price = product == null || product.getUnitPrice() == null
+                    ? "null"
+                    : product.getUnitPrice().toPlainString();
+            return entry.getKey() + ":" + entry.getValue().toPlainString() + ":" + price;
+        }).collect(Collectors.joining(";"));
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(digest.digest(canonical.getBytes(StandardCharsets.UTF_8)));
@@ -238,8 +300,7 @@ public class MallCheckoutService {
         return java.util.stream.Stream
                 .of(address.getProvinceName(), address.getCityName(), address.getDistrictName(),
                         address.getDetailAddress())
-                .filter(part -> part != null && !part.isBlank())
-                .collect(Collectors.joining(" "));
+                .filter(part -> part != null && !part.isBlank()).collect(Collectors.joining(" "));
     }
 
     private static MallOrderSubmitVO toSubmitVO(SalesOrderDetailVO order) {

@@ -68,9 +68,30 @@
         ORDER BY created_at DESC,id DESC
     </select>
     <select id="listByCustomer" resultMap="row">
-        SELECT * FROM xsy_sales_order
-        WHERE customer_id = #{customerId} AND order_source = 'MALL' AND deleted = FALSE
-        ORDER BY created_at DESC, id DESC
+        SELECT o.* FROM xsy_sales_order o
+        LEFT JOIN LATERAL (
+            SELECT r.fulfillment_status FROM xsy_delivery_route_order r
+            WHERE r.order_id = o.id AND r.deleted = FALSE AND r.assignment_status = 'ACTIVE'
+            ORDER BY r.id DESC LIMIT 1
+        ) f ON TRUE
+        WHERE o.customer_id = #{customerId} AND o.order_source = 'MALL' AND o.deleted = FALSE
+        <if test="displayStatus == 'PENDING'">
+            AND o.status IN ('DRAFT','PENDING')
+        </if>
+        <if test="displayStatus == 'PREPARING'">
+            AND o.status = 'CONFIRMED'
+            AND COALESCE(f.fulfillment_status, 'PENDING') NOT IN ('IN_TRANSIT','SIGNED','EXCEPTION')
+        </if>
+        <if test="displayStatus == 'DELIVERING'">
+            AND o.status = 'CONFIRMED' AND f.fulfillment_status = 'IN_TRANSIT'
+        </if>
+        <if test="displayStatus == 'COMPLETED'">
+            AND o.status = 'CONFIRMED' AND f.fulfillment_status IN ('SIGNED','EXCEPTION')
+        </if>
+        <if test="displayStatus == 'CANCELLED'">
+            AND o.status = 'CANCELLED'
+        </if>
+        ORDER BY o.created_at DESC, o.id DESC
     </select>
     <select id="selectByIdAndCustomer" resultMap="row">
         SELECT * FROM xsy_sales_order

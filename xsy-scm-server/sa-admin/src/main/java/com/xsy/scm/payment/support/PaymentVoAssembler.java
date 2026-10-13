@@ -77,6 +77,11 @@ public final class PaymentVoAssembler {
             return null;
         }
         PaymentRefundVO vo = new PaymentRefundVO();
+        vo.setProviderAmount(row.getProviderAmount());
+        vo.setRecoveryAttempts(row.getRecoveryAttempts());
+        vo.setRecoveryStatus(row.getRecoveryStatus());
+        vo.setRecoveryMessage(row.getRecoveryMessage());
+        vo.setNextRecoveryAt(row.getNextRecoveryAt());
         vo.setId(row.getId());
         vo.setRefundNo(row.getRefundNo());
         vo.setIntentId(row.getIntentId());

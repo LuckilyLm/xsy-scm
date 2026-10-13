@@ -32,6 +32,17 @@ public class MockPaymentLedgerRecorder {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void record(String providerTransactionNo, String providerRefundNo, String direction, BigDecimal amount) {
+        if ("OUT".equals(direction)) {
+            paymentMockLedgerDao.lockRefundReference(providerRefundNo);
+            var existing = paymentMockLedgerDao.selectOutByProviderRefundNo(providerRefundNo);
+            if (!existing.isEmpty()) {
+                if (existing.stream().anyMatch(row -> !providerTransactionNo.equals(row.getProviderTransactionNo())
+                        || amount.compareTo(row.getAmount()) != 0)) {
+                    throw new IllegalStateException("同一模拟退款号的交易或金额不一致");
+                }
+                return;
+            }
+        }
         PaymentMockLedgerEntity row = new PaymentMockLedgerEntity();
         row.setProvider(ScmPaymentProviderEnum.MOCK.name());
         row.setProviderTransactionNo(providerTransactionNo);

@@ -8,6 +8,7 @@ import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 @Data
 public class RequestMallCustomer implements RequestUser, Serializable {
     private Long accountId;
+    private Integer sessionVersion;
     private Long customerId;
     private String customerName;
     private String loginPhone;

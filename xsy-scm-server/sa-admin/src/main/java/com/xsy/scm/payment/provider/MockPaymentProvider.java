@@ -86,6 +86,15 @@ public class MockPaymentProvider implements ScmPaymentProvider {
 
     @Override
     public RefundResult refund(RefundRequest request) {
+        RefundResult existing = queryRefund(request.refundNo(), null);
+        if (existing != null) {
+            if (existing.amount().compareTo(request.amount()) != 0
+                    || paymentMockLedgerDao.selectOutByProviderRefundNo(existing.providerRefundNo()).stream()
+                            .anyMatch(row -> !request.providerTransactionNo().equals(row.getProviderTransactionNo()))) {
+                throw new IllegalStateException("同一模拟退款号的交易或金额不一致");
+            }
+            return existing;
+        }
         ScmPaymentMockScenarioEnum scenario = request.scenario() == null
                 ? ScmPaymentMockScenarioEnum.SUCCESS
                 : request.scenario();
@@ -95,6 +104,18 @@ public class MockPaymentProvider implements ScmPaymentProvider {
         }
         ledgerRecorder.record(request.providerTransactionNo(), providerRefundNo, "OUT", request.amount());
         return new RefundResult(providerRefundNo, Outcome.SUCCEEDED, request.amount(), null, null);
+    }
+
+    @Override
+    public RefundResult queryRefund(String refundNo, String providerRefundNo) {
+        String reference = "MOCK-REFUND-" + refundNo;
+        var rows = paymentMockLedgerDao.selectOutByProviderRefundNo(reference);
+        if (rows.isEmpty()) {
+            return null;
+        }
+        BigDecimal total = rows.stream().map(PaymentMockLedgerEntity::getAmount).reduce(BigDecimal.ZERO,
+                BigDecimal::add);
+        return new RefundResult(reference, Outcome.SUCCEEDED, total, null, null);
     }
 
     /**

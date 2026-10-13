@@ -41,6 +41,14 @@
       "pages": [
         { "path": "detail", "style": { "navigationBarTitleText": "订单详情", "enablePullDownRefresh": true } }
       ]
+    },
+    {
+      "root": "pages-sub/after-sale",
+      "pages": [
+        { "path": "apply", "style": { "navigationBarTitleText": "申请售后" } },
+        { "path": "list", "style": { "navigationBarTitleText": "售后", "enablePullDownRefresh": true, "onReachBottomDistance": 80 } },
+        { "path": "detail", "style": { "navigationBarTitleText": "售后详情", "enablePullDownRefresh": true } }
+      ]
     }
   ],
   "preloadRule": {

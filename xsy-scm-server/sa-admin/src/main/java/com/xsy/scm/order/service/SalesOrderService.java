@@ -49,9 +49,11 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -134,13 +136,17 @@ public class SalesOrderService {
      *
      * <p>
      * 商城入口不套用员工负责人数据范围；客户归属由商城适配器按登录身份判定。返回重放标记，供调用方只在首次建单时执行购物车清理。
+     *
+     * <p>
+     * {@code idempotencyRequest} 是调用方给出的<b>稳定</b>请求指纹，不能直接用 {@code salesOrderAddForm}：
+     * 它含收货地址内容快照，而地址会被同一客户的其他采购账号编辑。同一幂等键重试时重新读取到的地址已经变了， 哈希随之改变，原订单就回放不出来（会报幂等冲突）。地址快照仍在建单时照常冻结进订单。
      */
     @Transactional(rollbackFor = Exception.class)
-    public MallOrderCreationResult createFromMall(SalesOrderAddForm salesOrderAddForm, String key) {
-        var claim = orderIdempotencyService.claim("ORDER_CREATE_MALL", key, salesOrderAddForm);
+    public MallOrderCreationResult createFromMall(SalesOrderAddForm salesOrderAddForm, Object idempotencyRequest,
+            String key) {
+        var claim = orderIdempotencyService.claim("ORDER_CREATE_MALL", key, idempotencyRequest);
         if (claim.replay()) {
-            return new MallOrderCreationResult(
-                    orderIdempotencyService.replay(claim, SalesOrderDetailVO.class), true);
+            return new MallOrderCreationResult(orderIdempotencyService.replay(claim, SalesOrderDetailVO.class), true);
         }
         var result = createDraft(salesOrderAddForm, false);
         result = submitOrderForMall(result.getOrderId(), result.getVersion());
@@ -151,6 +157,35 @@ public class SalesOrderService {
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
                 result.getOrderId(), result);
         return new MallOrderCreationResult(result, false);
+    }
+
+    /**
+     * 商城下单的幂等预检：同一个幂等键已经成功过时返回原订单，<b>不重新校验价格</b>。
+     *
+     * <p>
+     * 存在的理由：第一次下单已经成功但响应丢失时，客户重试前商品可能已经变价、收货地址也可能已被同一客户的其他采购账号改动或删除。若先做这些易变校验再进幂等，
+     * 重试会被判成「价格已变化」或「地址不存在」，客户以为没下成，实际订单已经存在。幂等键与请求指纹都不变才算命中； 指纹不同说明是另一笔请求，返回空交由正常路径处理（并在 {@code claim} 时报冲突，错误语义不变）。
+     *
+     * <p>
+     * {@code idempotencyRequest} 与 {@link #createFromMall} 必须传同一个稳定指纹，否则预检永远不命中。 客户身份由幂等 scope 里的操作者体现，因此这里不需要再传订单表单。
+     */
+    public Optional<MallOrderCreationResult> replayMallOrder(Object idempotencyRequest, String key) {
+        return orderIdempotencyService.peekCompleted("ORDER_CREATE_MALL", key, idempotencyRequest).map(
+                claim -> new MallOrderCreationResult(orderIdempotencyService.replay(claim, SalesOrderDetailVO.class),
+                        true));
+    }
+
+    /**
+     * 商城取消的幂等指纹：只绑定订单与原因（客户身份已由幂等 scope 里的操作者体现）。
+     *
+     * <p>
+     * 用 {@link LinkedHashMap} 而不是 {@code Map.of}：后者的迭代顺序在不同 JVM 之间会变， 序列化后哈希跟着漂移，重启后就认不出同一个键了。包内可见，便于直接验证指纹稳定性。
+     */
+    static Map<String, Object> cancelFingerprint(OrderCancelForm orderCancelForm) {
+        Map<String, Object> fingerprint = new LinkedHashMap<>();
+        fingerprint.put("orderId", orderCancelForm.getOrderId());
+        fingerprint.put("reason", orderCancelForm.getReason() == null ? null : orderCancelForm.getReason().trim());
+        return fingerprint;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -205,7 +240,8 @@ public class SalesOrderService {
     }
 
     /**
-     * @param enforceEmployeeScope 是否套用员工负责人范围；商城入口传 {@code false}，由适配器按登录客户判定归属
+     * @param enforceEmployeeScope
+     *            是否套用员工负责人范围；商城入口传 {@code false}，由适配器按登录客户判定归属
      */
     private SalesOrderDetailVO createDraft(SalesOrderAddForm salesOrderAddForm, boolean enforceEmployeeScope) {
         OrderValidator.draft(salesOrderAddForm);
@@ -214,8 +250,7 @@ public class SalesOrderService {
         // 只收窄列表等于「看不见但仍然能往别人名下塞单」，行级范围就不成立；因此新建入口按同一范围判定。
         // 分配权（scm:customer:assign）与全量订单范围同等放行：主管刚把客户指定给某人，
         // 就该能替他录单，否则「主管建客户 + 指定负责人」这条路会把主管自己挡在门外。
-        if (enforceEmployeeScope
-                && !dataScopeService.resolve().getOrderSellerScope().allows(customer.getSellerId())
+        if (enforceEmployeeScope && !dataScopeService.resolve().getOrderSellerScope().allows(customer.getSellerId())
                 && !ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM))
             throw new ScmDataScopeException();
         validateOriginal(salesOrderAddForm);
@@ -511,13 +546,37 @@ public class SalesOrderService {
 
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO cancel(OrderCancelForm orderCancelForm, String key) {
-        var claim = orderIdempotencyService.claim("ORDER_CANCEL:" + orderCancelForm.getOrderId(), key, orderCancelForm);
+        return cancel(orderCancelForm, key, true);
+    }
+
+    /**
+     * 商城客户取消入口：与管理端共用同一条取消路径与同一套状态机，只跳过员工负责人范围（商城客户没有该范围）。
+     *
+     * <p>
+     * 状态机与取消原因校验一律不变：只有 {@code DRAFT} / {@code PENDING} 可取消，已确认订单一律拒绝， 客户不能绕过已确认、已履约、已支付订单的处理规则。归属由商城适配器在入口按登录客户判定。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SalesOrderDetailVO cancelFromMall(OrderCancelForm orderCancelForm, String key) {
+        return cancel(orderCancelForm, key, false);
+    }
+
+    private SalesOrderDetailVO cancel(OrderCancelForm orderCancelForm, String key, boolean enforceEmployeeScope) {
+        // 商城取消的幂等指纹只绑定订单与原因：version 是并发控制字段，第一次执行成功后订单版本就会前进，
+        // 把它算进指纹会让「同一请求重试」被判成内容不同，合法重放变成幂等冲突。
+        // 管理端保持原样（整表单参与指纹），版本规则不变。
+        Object requestFingerprint = enforceEmployeeScope ? orderCancelForm : cancelFingerprint(orderCancelForm);
+        var claim = orderIdempotencyService.claim("ORDER_CANCEL:" + orderCancelForm.getOrderId(), key,
+                requestFingerprint);
         if (claim.replay()) {
-            salesOrderQueryService.detail(orderCancelForm.getOrderId());
+            // 重放也要过归属：管理端用员工范围重新判一次；商城入口已在 MallOrderService 按登录客户校验过归属，
+            // 这里若再套员工范围，商城客户的重试会被自己挡掉，幂等就白做了。
+            if (enforceEmployeeScope) {
+                salesOrderQueryService.detail(orderCancelForm.getOrderId());
+            }
             return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
         }
         var salesOrder = lock(orderCancelForm.getOrderId());
-        requireOrderSellerScope(salesOrder);
+        requireEmployeeScopeIfNeeded(salesOrder, enforceEmployeeScope);
         version(salesOrder.getVersion(), orderCancelForm.getVersion());
         OrderStateMachine.transition(salesOrder.getStatus(), ScmOrderStatusEnum.CANCELLED.name());
         OrderValidator.reason(orderCancelForm.getReason(), ORDER_CANCEL_REASON_REQUIRED);

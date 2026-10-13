@@ -7,13 +7,9 @@ import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.finance.domain.dto.FinanceOrderFundingDto;
 import com.xsy.scm.finance.service.FinanceOrderFundingPolicy;
-import com.xsy.scm.finance.service.FinancePaymentService;
-import com.xsy.scm.finance.support.FinancePaymentRefundFact;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
 import com.xsy.scm.payment.constant.ScmPaymentMethodEnum;
-import com.xsy.scm.payment.constant.ScmPaymentRefundStatusEnum;
 import com.xsy.scm.payment.constant.ScmRefundFundingAllocationStatusEnum;
-import com.xsy.scm.payment.dao.PaymentRefundDao;
 import com.xsy.scm.payment.dao.PaymentSourceDao;
 import com.xsy.scm.payment.dao.PaymentTransactionDao;
 import com.xsy.scm.payment.dao.RefundFundingAllocationDao;
@@ -43,18 +39,17 @@ public class RefundFundingAllocationService {
     private final PaymentSourceDao paymentSourceDao;
     private final RefundFundingAllocationDao allocationDao;
     private final PaymentTransactionDao paymentTransactionDao;
-    private final PaymentRefundDao paymentRefundDao;
     private final PaymentRefundService paymentRefundService;
     private final RefundBalanceSink refundBalanceSink;
     private final FinanceOrderFundingPolicy fundingPolicy;
-    private final FinancePaymentService financePaymentService;
+    private final RefundFundingCompletionService refundFundingCompletionService;
     private final ScmDataScopeService dataScopeService;
     private final ScmIdempotencyService idempotencyService;
 
     @Transactional(rollbackFor = Exception.class)
     public RefundFundingResultVO execute(RefundFundingExecuteForm form, String key) {
-        PaymentOrderRefundFact initial = paymentSourceDao.lockOrderRefund(form.getRefundId());
-        if (initial == null || !initial.completed() || initial.completedAt() == null) {
+        PaymentOrderRefundFact initial = paymentSourceDao.selectOrderRefund(form.getRefundId());
+        if (initial == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
         }
         var order = paymentSourceDao.lockOrder(initial.orderId());
@@ -62,6 +57,12 @@ public class RefundFundingAllocationService {
             throw new ScmDataScopeException();
         }
         paymentSourceDao.lockOrderRefunds(initial.orderId());
+        PaymentOrderRefundFact locked = paymentSourceDao.selectOrderRefund(form.getRefundId());
+        if (locked == null || !initial.orderId().equals(locked.orderId()) || !locked.completed()
+                || locked.completedAt() == null) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
+        }
+        initial = locked;
         paymentSourceDao.lockOrderFunding(initial.orderId());
         requireVisible(initial.customerId());
         List<RefundFundingAllocationEntity> existingPlan = allocationDao.lockByRefund(initial.refundId());
@@ -72,6 +73,10 @@ public class RefundFundingAllocationService {
             return idempotencyService.replay(claim, RefundFundingResultVO.class);
         }
         List<RefundFundingAllocationEntity> rows = existingPlan;
+        // 旧退款未记录逐资金来源的分摊，不能把这部分本金再次交给新路径使用。
+        if (paymentSourceDao.hasLegacyRefundFunding(initial.orderId())) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_DUPLICATED);
+        }
         if (paymentSourceDao.selectActiveRefundPayment(initial.refundId()) != null && rows.isEmpty()) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_DUPLICATED);
         }
@@ -81,14 +86,7 @@ public class RefundFundingAllocationService {
         executeRows(initial, rows, form.getMockScenario());
         rows = allocationDao.lockByRefund(initial.refundId());
         RefundFundingResultVO result = result(initial, rows);
-        if (ScmRefundFundingAllocationStatusEnum.SUCCEEDED.name().equals(result.getStatus())) {
-            String reference = rows.stream().map(RefundFundingAllocationEntity::getResultSourceId).map(String::valueOf)
-                    .reduce((left, right) -> left + "," + right).orElse(null);
-            var payment = financePaymentService
-                    .registerFromPaymentRefund(FinancePaymentRefundFact.allocated(initial.refundId(),
-                            initial.customerId(), initial.refundAmount(), initial.completedAt(), reference));
-            result.setFinancePaymentId(payment.getId());
-        }
+        result.setFinancePaymentId(refundFundingCompletionService.complete(initial.refundId(), ScmOperator.current()));
         idempotencyService.complete(claim, "REFUND_FUNDING", initial.refundId(), result);
         return result;
     }
@@ -182,16 +180,10 @@ public class RefundFundingAllocationService {
                             row.getSettlementCustomerId(), row.getAllocatedAmount(), refund.completedAt());
                 } else {
                     var transaction = paymentTransactionDao.lockById(row.getSourceId());
-                    var channel = paymentRefundService.executeAllocation(row.getId(), refund.refundId(), transaction,
+                    paymentRefundService.executeAllocation(row.getId(), refund.refundId(), transaction,
                             row.getAllocatedAmount(), "售后退款 " + refund.refundNo(), mockScenario);
-                    if (!ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(channel.getStatus())) {
-                        if (ScmPaymentRefundStatusEnum.FAILED.name().equals(channel.getStatus())) {
-                            allocationDao.markFailed(row.getId(), channel.getFailureCode(), channel.getFailureMessage(),
-                                    operator);
-                        }
-                        continue;
-                    }
-                    resultId = channel.getId();
+                    // ONLINE 的成功与金额差异只由支付结果同步推进，不能仅凭渠道成功覆盖其判定。
+                    continue;
                 }
                 allocationDao.markSucceeded(row.getId(), resultId, operator);
             } catch (RuntimeException exception) {
@@ -209,6 +201,7 @@ public class RefundFundingAllocationService {
                 .filter(row -> ScmRefundFundingAllocationStatusEnum.SUCCEEDED.name().equals(row.getStatus()))
                 .map(RefundFundingAllocationEntity::getAllocatedAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
         result.setStatus(status(rows));
+        result.setFinancePaymentId(paymentSourceDao.selectActiveRefundPayment(refund.refundId()));
         result.setAllocations(rows.stream().map(this::vo).toList());
         return result;
     }

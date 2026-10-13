@@ -76,7 +76,9 @@
             AND (EXISTS (SELECT 1 FROM xsy_payment_refund p WHERE p.source_type = 'ORDER_REFUND'
                 AND p.source_id = r.id AND p.deleted = FALSE)
             OR EXISTS (SELECT 1 FROM xsy_finance_payment p WHERE p.source_type = 'ORDER_REFUND'
-                AND p.source_id = r.id AND p.entry_type = 'NORMAL' AND p.deleted = FALSE)))
+                AND p.source_id = r.id AND p.entry_type = 'NORMAL' AND p.deleted = FALSE)
+            OR EXISTS (SELECT 1 FROM xsy_refund_funding_allocation a
+                WHERE a.order_refund_id = r.id AND a.deleted = FALSE)))
     </select>
     <select id="customerVisible" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM xsy_customer WHERE id = #{customerId} AND deleted = FALSE
@@ -92,5 +94,15 @@
         SELECT EXISTS (SELECT 1 FROM xsy_customer_balance_movement m
             JOIN xsy_order_refund r ON m.source_type = 'ORDER_REFUND' AND m.source_id = r.id
             WHERE r.order_id = #{orderId} AND m.deleted = FALSE)
+    </select>
+    <select id="hasLegacyRefundFunding" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM xsy_order_refund r WHERE r.order_id = #{orderId} AND r.deleted = FALSE
+            AND (EXISTS (SELECT 1 FROM xsy_customer_balance_movement m
+                WHERE m.source_type = 'ORDER_REFUND' AND m.source_id = r.id AND m.deleted = FALSE)
+            OR EXISTS (SELECT 1 FROM xsy_payment_refund p
+                WHERE p.source_type = 'ORDER_REFUND' AND p.source_id = r.id AND p.deleted = FALSE)
+            OR EXISTS (SELECT 1 FROM xsy_finance_payment p
+                WHERE p.source_type = 'ORDER_REFUND' AND p.source_id = r.id AND p.entry_type = 'NORMAL'
+                    AND p.method != 'ORIGINAL_FUNDING' AND p.deleted = FALSE)))
     </select>
 </mapper>

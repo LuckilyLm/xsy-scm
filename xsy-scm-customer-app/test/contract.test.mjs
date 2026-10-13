@@ -11,7 +11,7 @@ test('SmartAdmin success contract uses code zero', () => {
   assert.match(request, /code === SUCCESS_CODE && res\?\.ok !== false/);
 });
 
-test('release only exposes authentication, catalog, cart, address and order APIs', () => {
+test('release only exposes authentication, catalog, cart, address, order and after-sale APIs', () => {
   const auth = read('../src/api/mall/auth-api.js');
   const api = read('../src/api/mall/index.js');
   assert.match(auth, /auth\/login/);
@@ -20,7 +20,92 @@ test('release only exposes authentication, catalog, cart, address and order APIs
   assert.match(api, /Cart/);
   assert.match(api, /Address/);
   assert.match(api, /Order/);
+  assert.match(api, /AfterSale/);
   assert.doesNotMatch(api, /Account|Home/);
+});
+
+test('after-sale center exposes apply, list and detail pages', () => {
+  const api = read('../src/api/mall/after-sale-api.js');
+  const pages = read('../src/pages.json');
+  const mine = read('../src/pages/mine/index.vue');
+  assert.match(api, /\/scm\/mall\/after-sales/);
+  assert.match(api, /getList/);
+  assert.match(api, /getDetail/);
+  assert.match(api, /apply: \(param, idempotencyKey\)/);
+  assert.match(api, /cancel: \(returnId, idempotencyKey\)/);
+  assert.match(pages, /pages-sub\/after-sale/);
+  assert.match(mine, /pages-sub\/after-sale\/list/);
+});
+
+test('after-sale apply submits items and reason with an idempotency key', () => {
+  const page = read('../src/pages-sub/after-sale/apply.vue');
+  // 幂等键与「订单 + 明细 + 原因」绑定，重复提交不重复建单
+  assert.match(page, /mallAfterSaleApi\.apply\(\{ orderId: orderId\.value, reason: reason\.value, items \}, key\)/);
+  assert.match(page, /aftersale-\$\{orderId\.value\}/);
+  // 预估金额只是展示，核定以服务端审核为准
+  assert.match(page, /以平台审核为准/);
+  // 归属由服务端按登录身份判定，客户端不提交 customerId
+  assert.doesNotMatch(page, /customerId/);
+});
+
+test('after-sale estimates use fixed-point math, never float sums', () => {
+  const page = read('../src/pages-sub/after-sale/apply.vue');
+  const util = read('../src/utils/after-sale-display.js');
+  assert.match(page, /estimateLineAmount/);
+  assert.match(page, /sumAmounts/);
+  // 金额按四位小数定点整数运算
+  assert.match(util, /Math\.round\(Number\(quantity\) \* 10000\)/);
+  assert.doesNotMatch(util, /Number\(quantity\) \* Number\(unitPrice\)/);
+});
+
+test('after-sale status text maps the server-derived display status', () => {
+  const list = read('../src/pages-sub/after-sale/list.vue');
+  const util = read('../src/utils/after-sale-display.js');
+  assert.match(util, /REVIEWING: \{ text: '审核中'/);
+  assert.match(list, /afterSaleStatusText\(record\.displayStatus\)/);
+  // 客户端不按原始退货状态自行推导阶段
+  assert.doesNotMatch(list, /record\.status === 'APPROVED'/);
+});
+
+test('after-sale detail renders server progress and the original-funding breakdown', () => {
+  const detail = read('../src/pages-sub/after-sale/detail.vue');
+  const util = read('../src/utils/after-sale-display.js');
+  // 节点文案与 done 都由服务端给出，客户端只渲染
+  assert.match(detail, /v-for="\(node, index\) in record\.progress"/);
+  assert.match(detail, /:class="\{ 'ad-step--pending': !node\.done \}"/);
+  // 原路退回明细：方式与金额来自服务端分摊事实
+  assert.match(detail, /record\.refund\.allocations/);
+  assert.match(detail, /refundMethodText\(allocation\.method\)/);
+  assert.match(detail, /allocationStatusText\(allocation\.status\)/);
+  // 内部失败码不透出：失败只显示「退款异常，请联系客服」
+  assert.match(util, /FAILED: '退款异常，请联系客服'/);
+  assert.doesNotMatch(util, /failureCode|failureMessage/);
+});
+
+test('after-sale cancel only fires when the server says it is cancelable', () => {
+  const detail = read('../src/pages-sub/after-sale/detail.vue');
+  assert.match(detail, /v-if="record\.cancelable"/);
+  assert.match(detail, /mallAfterSaleApi\.cancel\(returnId\.value, `aftersale-cancel-\$\{returnId\.value\}`\)/);
+});
+
+test('order detail links to the after-sale center', () => {
+  const detail = read('../src/pages-sub/order/detail.vue');
+  assert.match(detail, /mallAfterSaleApi\.getList/);
+  assert.match(detail, /canApplyAfterSale\(order\)/);
+  assert.match(detail, /pages-sub\/after-sale\/apply/);
+  // 售后加载失败不能拖垮订单详情
+  assert.match(detail, /售后状态独立加载/);
+});
+
+test('after-sale mock mirrors the backend routes', () => {
+  const mock = read('../mock/routes/after-sale.js');
+  const index = read('../mock/index.js');
+  assert.match(mock, /\/scm\/mall\/after-sales/);
+  assert.match(mock, /\/scm\/mall\/after-sales\/:returnId\/cancel/);
+  assert.match(mock, /Idempotency-Key/);
+  assert.match(index, /afterSaleRoutes/);
+  // mock 与后端同构：撤销仅限待审核
+  assert.match(mock, /record\.status !== 'PENDING'/);
 });
 
 test('checkout submits a price fingerprint and an idempotency key', () => {
@@ -54,6 +139,143 @@ test('order center exposes customer-scoped list and detail pages', () => {
   assert.doesNotMatch(success, /下一阶段开放/);
 });
 
+test('order center shows the server-derived display status, not a client state machine', () => {
+  const page = read('../src/pages/order/index.vue');
+  const detail = read('../src/pages-sub/order/detail.vue');
+  const util = read('../src/utils/order-display.js');
+  // 文案与档位来自服务端下发的 displayStatus
+  assert.match(util, /PENDING: \{ text: '待处理'/);
+  assert.match(page, /displayStatusText\(order\.displayStatus\)/);
+  assert.match(detail, /displayStatusText\(order\.displayStatus\)/);
+  // 客户端不得按订单原始状态自行推导阶段
+  assert.doesNotMatch(page, /order\.status === 'CONFIRMED'/);
+  assert.doesNotMatch(detail, /order\.status === 'CONFIRMED'/);
+});
+
+test('cancel and reorder both go through the server', () => {
+  const api = read('../src/api/mall/order-api.js');
+  const page = read('../src/pages/order/index.vue');
+  const detail = read('../src/pages-sub/order/detail.vue');
+  const mock = read('../mock/routes/order.js');
+  assert.match(api, /cancel: \(orderId, reason, idempotencyKey\)/);
+  assert.match(api, /reorder: \(orderId\)/);
+  assert.match(page, /mallOrderApi\.cancel\(/);
+  assert.match(page, /mallOrderApi\.reorder\(/);
+  assert.match(detail, /mallOrderApi\.cancel\(/);
+  // 再来一单只传订单号：不复制历史成交价
+  assert.doesNotMatch(api, /reorder[\s\S]{0,160}unitPrice/);
+  assert.match(mock, /\/scm\/mall\/orders\/:orderId\/cancel/);
+  assert.match(mock, /\/scm\/mall\/orders\/:orderId\/reorder/);
+});
+
+test('order actions only offer cancel when the server says it is cancelable', () => {
+  const page = read('../src/pages/order/index.vue');
+  const detail = read('../src/pages-sub/order/detail.vue');
+  assert.match(page, /v-if="order\.cancelable"/);
+  assert.match(detail, /v-if="order\.cancelable"/);
+});
+
+test('order list labels the amount as an estimate and drops stale tab responses', () => {
+  const page = read('../src/pages/order/index.vue');
+  // orderedTotalAmount 是订货金额，不等于实付；接入真实支付事实前不得写成「实付金额」
+  assert.match(page, /预计订单金额/);
+  assert.doesNotMatch(page, /实付金额/);
+  // 切分类要作废旧请求，否则会把上一分类的结果显示到新分类
+  assert.match(page, /let loadSeq = 0/);
+  assert.match(page, /if \(seq !== loadSeq\) return;/);
+});
+
+test('abnormal fulfillment is never presented as a plain completion', () => {
+  const util = read('../src/utils/order-display.js');
+  const page = read('../src/pages/order/index.vue');
+  const detail = read('../src/pages-sub/order/detail.vue');
+  assert.match(util, /isAbnormalFulfillment/);
+  assert.match(page, /isAbnormalFulfillment\(order\.fulfillmentStatus\)/);
+  assert.match(detail, /isAbnormalFulfillment\(order\.fulfillmentStatus\)/);
+});
+
+test('checkout blocks submission until the current preview succeeds', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  // 重新预览先作废旧结果：失败时不能继续沿用上一次的金额与指纹
+  assert.match(page, /const previewReady = ref\(false\)/);
+  assert.match(page, /previewReady\.value = false/);
+  assert.match(page, /previewReady\.value = !!fingerprint\.value/);
+  // 提交守卫必须同时看「本次预览成功」和「有指纹」
+  assert.match(page, /!previewReady\.value \|\| !fingerprint\.value/);
+});
+
+test('checkout refuses to submit when the preview reports unavailable items', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  // 服务端已把不可售项的金额排除，前端不能只看金额：不可售项必须同时挡住提交
+  assert.match(page, /const unavailableItems = ref\(\[\]\)/);
+  assert.match(page, /unavailableItems\.value = nextItems\.filter\(\(item\) => !isAvailable\(item\)\)/);
+  assert.match(page, /unavailableItems\.value\.length === 0/);
+  assert.match(page, /if \(unavailableItems\.value\.length\) \{/);
+  assert.match(page, /返回购物车调整/);
+});
+
+test('checkout only applies the latest preview response', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  // 连续预览时旧响应后到会覆盖新金额与指纹，必须用请求序号丢弃
+  assert.match(page, /let previewSeq = 0/);
+  assert.match(page, /const seq = \+\+previewSeq/);
+  assert.match(page, /if \(seq !== previewSeq\) return;/);
+  assert.match(page, /if \(seq === previewSeq\) previewing\.value = false/);
+});
+
+test('order detail renders the server-provided delivery progress', () => {
+  const page = read('../src/pages-sub/order/detail.vue');
+  const mock = read('../mock/routes/order.js');
+  // 节点文案与 done 都由服务端按正式事实给出，客户端只渲染，不自己推导进度
+  assert.match(page, /v-for="\(node, index\) in order\.progress"/);
+  assert.match(page, /:class="\{ 'od-step--pending': !node\.done \}"/);
+  // 配送详情只读配送事实（线路 / 发车 / 司机），未排车时不编线路
+  assert.match(page, /order\.delivery\.routeName/);
+  assert.match(page, /order\.delivery\.dispatchedAt/);
+  assert.match(page, /后台尚未安排配送线路/);
+  // mock 与后端同形：同一套节点
+  assert.match(mock, /function progressOf\(order\)/);
+  assert.match(mock, /delivery: order\.delivery \|\| null/);
+  assert.match(mock, /progress: progressOf\(order\)/);
+});
+
+test('customer timeline never exposes internal operations', () => {
+  const util = read('../src/utils/order-display.js');
+  // 授信放行 / 改价 / 库存预留都是内部审计动作，不得出现在客户可见文案里
+  assert.doesNotMatch(util, /CREDIT_OVERRIDE/);
+  assert.doesNotMatch(util, /RESERVE_STOCK/);
+  assert.doesNotMatch(util, /超额授信/);
+  // 兜底也不能把原始枚举名透出去
+  assert.match(util, /\|\| '状态更新'/);
+});
+
+test('order timestamps are converted to Asia/Shanghai', () => {
+  const util = read('../src/utils/order-display.js');
+  const date = read('../src/utils/mall-date.js');
+  // 后端时间的偏移不保证是 +08:00（PG 会话时区是 UTC 时就是 +00:00），不能直接截字符串
+  assert.match(util, /shanghaiDateTime\(value\)/);
+  assert.doesNotMatch(util, /replace\('T', ' '\)\.slice\(0, 16\)/);
+  assert.match(date, /export function shanghaiDateTime/);
+  assert.match(date, /SHANGHAI_OFFSET_MINUTES/);
+});
+
+test('abnormal delivery result is labelled as an exception, not a signature', () => {
+  const page = read('../src/pages-sub/order/detail.vue');
+  // 异常签收也是终态：用「配送结果记录时间」，并把结果显式写成配送异常
+  assert.match(page, /配送结果记录时间/);
+  assert.match(page, /'配送异常' : '已签收'/);
+  assert.match(page, /异常原因/);
+});
+
+test('delivery date uses the Shanghai calendar instead of UTC', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  const util = read('../src/utils/mall-date.js');
+  // toISOString() 取 UTC 日期，中国时间凌晨会得到前一天
+  assert.doesNotMatch(page, /toISOString\(\)\.slice\(0, 10\)/);
+  assert.match(page, /shanghaiDate\(\)/);
+  assert.match(util, /SHANGHAI_OFFSET_MINUTES/);
+});
+
 test('address form posts the field names the backend expects', () => {
   const api = read('../src/api/mall/address-api.js');
   const edit = read('../src/pages-sub/address/edit.vue');
@@ -77,7 +299,12 @@ test('login and password forms match the backend payload', () => {
 });
 
 test('product pages add to the server cart through the shared composable', () => {
-  for (const page of ['../src/pages/home/index.vue', '../src/pages/category/index.vue', '../src/pages-sub/product/search.vue', '../src/pages-sub/product/detail.vue']) {
+  for (const page of [
+    '../src/pages/home/index.vue',
+    '../src/pages/category/index.vue',
+    '../src/pages-sub/product/search.vue',
+    '../src/pages-sub/product/detail.vue',
+  ]) {
     const source = read(page);
     assert.match(source, /useMallCart/);
     assert.doesNotMatch(source, /购物车.*下一阶段开放|购物车暂未开放/);

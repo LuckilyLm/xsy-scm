@@ -6,6 +6,7 @@ import com.xsy.scm.order.domain.form.*;
 import com.xsy.scm.order.domain.vo.*;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.customer.domain.form.*;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -329,6 +330,54 @@ class SalesOrderServiceIT extends ScmW3PgITBase {
         // 第二次是重放，因此日志条数同时钉住「重放不重复记日志」。
         assertThat(logCount(o.getOrderId(), "RETURN")).isEqualTo(2);
         assertThat(logCount(o.getOrderId(), "REFUND")).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("订单已有资金分摊计划时，退款完成必须让位给分摊路径而不是整笔回滚")
+    void refundCompletionSurvivesAnExistingAllocationPlan() {
+        var o = confirmed(customer(), newOnShelfSku("AP"));
+        var f = new OrderReturnAddForm();
+        f.setOrderId(o.getOrderId());
+        f.setReason("品质问题");
+        var row = new OrderReturnItemForm();
+        row.setOrderItemId(o.getItems().getFirst().getItemId());
+        row.setRequestedQuantity("1.0000");
+        f.setItems(List.of(row));
+        var r = returns.create(f, prefix + "ap-return");
+        var approve = new OrderReturnApproveForm();
+        approve.setReturnId(r.getReturnId());
+        approve.setVersion(r.getVersion());
+        var approved = new OrderReturnApproveItemForm();
+        approved.setOrderItemId(row.getOrderItemId());
+        approved.setApprovedQuantity("0.5000");
+        approve.setItems(List.of(approved));
+        returns.approve(approve, prefix + "ap-approve");
+
+        var q = new OrderRefundQueryForm();
+        q.setOrderId(o.getOrderId());
+        q.setPageNum(1L);
+        q.setPageSize(20L);
+        var refund = refunds.query(q).getList().getFirst();
+
+        // 模拟「该订单此前已按新分摊路径退过款」：分摊计划只可能来自更早那笔已完成的退款，
+        // 而旧钱包返还路径看到计划就必须整体让位（否则同一笔本金会被退两次）。
+        Long customerId = jdbc.queryForObject("SELECT customer_id FROM xsy_sales_order WHERE id = ?",
+                Long.class, o.getOrderId());
+        Long settlementCustomerId = jdbc.queryForObject(
+                "SELECT settlement_customer_id FROM xsy_sales_order WHERE id = ?", Long.class, o.getOrderId());
+        jdbc.update("INSERT INTO xsy_refund_funding_allocation (order_refund_id, order_id, customer_id, "
+                + "settlement_customer_id, source_method, source_id, source_principal, allocated_amount, status, "
+                + "source_succeeded_at, sort_order, created_by, updated_by) "
+                + "VALUES (?, ?, ?, ?, 'BALANCE', 1, 1.0000, 1.0000, 'PENDING', CURRENT_TIMESTAMP, 0, '1:1', '1:1')",
+                refund.getRefundId(), o.getOrderId(), customerId, settlementCustomerId);
+
+        // 完成必须成功：让位要发生在这里的前置分流，不能靠兜异常 —— refundOnCompletion 是
+        // MANDATORY 传播，异常一旦逃出就会把本事务标记成 rollback-only，这笔退款完成会整笔回滚。
+        var complete = new OrderRefundCompleteForm();
+        complete.setRefundId(refund.getRefundId());
+        complete.setVersion(refund.getVersion());
+        complete.setExternalReference(prefix);
+        assertThat(refunds.complete(complete, prefix + "ap-complete").getStatus()).isEqualTo("COMPLETED");
     }
 
     @Test

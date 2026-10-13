@@ -54,6 +54,14 @@
                                         AND deleted = FALSE
                                       ORDER BY id</select>
 
+    <select id="listByOrderIds" resultMap="row">SELECT *
+                                                FROM xsy_sales_order_item
+                                                WHERE deleted = FALSE
+                                                  AND order_id IN
+                                                <foreach collection="orderIds" item="orderId" open="(" separator=","
+                                                         close=")">#{orderId}</foreach>
+                                                ORDER BY order_id, sort_order, id</select>
+
     <!--
        「最近已确认订单价」（只读）：按 (xsy_customer, sku) 取历史 CONFIRMED 订单行的锁定单价与单位快照。
       只取未删除的 CONFIRMED 单（排除 DRAFT / PENDING / CANCELLED），不做 locked_unit_price 非空过滤，

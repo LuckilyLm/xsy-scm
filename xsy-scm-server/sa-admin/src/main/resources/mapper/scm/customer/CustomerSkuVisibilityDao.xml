@@ -22,17 +22,17 @@
                               AND version = #{version}
                               AND customer_id = #{customerId}
                               AND deleted = FALSE</update>
+    <!--
+      客户自身的业务引用：客户协议价与商品可见性白名单。
+      刻意不含「客户类型价」——它属于客户类型这一层、被该类型下所有客户共享，
+      删掉一个客户不会让它失效；类型删除时的类型价引用由 typeReferences 单独检查。
+    -->
     <select id="customerReferences" resultType="long">SELECT (SELECT count(*)
                                                               FROM xsy_customer_agreement_price
                                                               WHERE customer_id = #{id} AND deleted = FALSE) +
                                                              (SELECT count(*)
                                                               FROM xsy_customer_sku_visibility
-                                                              WHERE customer_id = #{id} AND deleted = FALSE) +
-                                                             (SELECT count(*)
-                                                              FROM xsy_customer_type_price p
-                                                                       JOIN xsy_customer c ON c.customer_type_id = p.customer_type_id
-                                                              WHERE c.id = #{id}
-                                                                AND p.deleted = FALSE)
+                                                              WHERE customer_id = #{id} AND deleted = FALSE)
     </select>
     <select id="typeReferences" resultType="long">SELECT count(*)
                                                   FROM xsy_customer_type_price

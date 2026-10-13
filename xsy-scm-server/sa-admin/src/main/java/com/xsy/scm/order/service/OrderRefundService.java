@@ -1,6 +1,7 @@
 package com.xsy.scm.order.service;
 
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.balance.service.BalanceRefundService;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
@@ -36,6 +37,7 @@ import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_REFUND_STATUS_INVA
 @Service
 @RequiredArgsConstructor
 public class OrderRefundService {
+    private final BalanceRefundService balanceRefundService;
     private final OrderRefundDao orderRefundDao;
     private final OrderRefundFundingSourceDao orderRefundFundingSourceDao;
     private final SalesOrderDao salesOrderDao;
@@ -138,6 +140,12 @@ public class OrderRefundService {
                 throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (org.springframework.dao.DuplicateKeyException ex) {
             throw new ScmBusinessException(ORDER_REFUND_STATUS_INVALID);
+        }
+        if (!balanceRefundService.hasFundingAllocationPlan(refundEntity.getOrderId())) {
+            // 已有分摊计划的订单由分摊路径负责这笔钱，旧钱包返还整体让位。
+            // 必须在这里分流，而不是调用后再兜异常：refundOnCompletion 是 MANDATORY 传播，
+            // 它抛出的冲突会逃出本事务并把事务标记成 rollback-only，退款完成会整笔回滚。
+            balanceRefundService.refundOnCompletion(refundEntity.getId());
         }
         var result = detailSnapshot(refundEntity.getId());
         // 退款完成同样是必须留痕的订单状态变更。镜像取未收窄的 detailSnapshot，

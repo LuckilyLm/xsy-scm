@@ -41,4 +41,12 @@
         <if test="query.endTime != null">AND created_at &lt; #{query.endTime}</if>
         ORDER BY created_at DESC,id DESC
     </select>
+    <!-- 归属由调用方判定（商城按退货单客户、后台按父订单负责人），本查询只按 return_id 过滤。 -->
+    <select id="listByReturnIds" resultMap="row">
+        SELECT * FROM xsy_order_refund
+        WHERE return_id IN
+        <foreach collection="returnIds" item="returnId" open="(" separator="," close=")">#{returnId}</foreach>
+        AND deleted = FALSE
+        ORDER BY id
+    </select>
 </mapper>

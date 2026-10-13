@@ -73,6 +73,11 @@ export function mockCartRemove(session, skuIds) {
   skuIds.forEach((skuId) => cart.delete(Number(skuId)));
 }
 
+/** 供「再来一单」复用：把数量设为指定值（覆盖，不是累加），与后端 setQuantity 同语义 */
+export function mockCartSet(session, skuId, quantity) {
+  cartOf(session).set(Number(skuId), String(quantity));
+}
+
 /** 数量校验与后端一致：大于 0、最多 4 位小数 */
 function validQuantity(raw) {
   return typeof raw === 'string' && /^\d{1,10}(\.\d{1,4})?$/.test(raw) && Number(raw) > 0;
@@ -148,9 +153,7 @@ export const cartRoutes = [
       const denied = guard(session);
       if (denied) return denied;
       const selected = new Set((data?.skuIds || []).map(Number));
-      const items = [...cartOf(session).entries()]
-        .filter(([skuId]) => selected.has(skuId))
-        .map(([skuId, quantity]) => toItem(skuId, quantity));
+      const items = [...cartOf(session).entries()].filter(([skuId]) => selected.has(skuId)).map(([skuId, quantity]) => toItem(skuId, quantity));
       const available = items.filter((item) => item.availability === 'AVAILABLE');
       const estimated = available.reduce((sum, item) => sum + Number(item.lineAmount), 0);
       return ok({

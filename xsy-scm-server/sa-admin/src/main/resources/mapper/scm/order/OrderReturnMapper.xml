@@ -54,4 +54,11 @@
         <if test="query.endTime != null">AND r.created_at &lt; #{query.endTime}</if>
         ORDER BY r.created_at DESC,r.id DESC
     </select>
+    <!-- 商城客户列表：归属就是 customer_id 等值，不联接订单、不拼员工范围。 -->
+    <select id="listByCustomer" resultMap="row">
+        SELECT * FROM xsy_order_return
+        WHERE customer_id = #{customerId} AND deleted = FALSE
+        <if test="orderId != null">AND order_id = #{orderId}</if>
+        ORDER BY id DESC
+    </select>
 </mapper>

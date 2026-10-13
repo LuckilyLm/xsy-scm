@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.payment.dao.RefundFundingAllocationDao">
+    <select id="existsByOrder" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM xsy_refund_funding_allocation
+            WHERE order_id = #{orderId} AND deleted = FALSE)
+    </select>
     <insert id="insertIgnoreDuplicate" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO xsy_refund_funding_allocation(order_refund_id, order_id, customer_id, settlement_customer_id,
             source_method, source_id, source_principal, allocated_amount, status, source_succeeded_at, sort_order,
