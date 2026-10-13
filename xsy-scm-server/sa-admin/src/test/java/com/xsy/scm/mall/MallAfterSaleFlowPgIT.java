@@ -47,6 +47,7 @@ import com.xsy.scm.order.service.OrderReturnService;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.order.service.SalesOrderService;
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
@@ -185,6 +186,55 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
     }
 
     // ------------------------------------------------------------------
+    // 资金到账：纯余额支付的订单走到 REFUNDED
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("纯余额支付的订单：退款完成即把余额原路返还，客户侧展示转为已退款且资金时间不再是空")
+    void balancePaidOrderReachesRefundedOnceTheWalletReturnLands() {
+        // 余额支付的钱包返还走的是「与退款完成同事务」的旧钱包路径，因此这里不再人工执行资金分摊。
+        AfterSaleFixture fixture = confirmedMallOrderWithCost("refunded", this::payByBalance);
+
+        MallAfterSaleVO applied = apply(fixture, "2.0000", "refunded-apply");
+        asBackOffice();
+        OrderReturnDetailVO approved = approve(fixture);
+        receiveReturn(fixture, approved, "2.0000");
+        completeRefund(refundIdOf(fixture.orderId()));
+
+        // 退款完成时刻与钱包返还流水的发生时刻必须一致：这条路径由 hasInvalidReturns 强校验
+        OffsetDateTime refundCompletedAt = jdbc.queryForObject(
+                "SELECT completed_at FROM xsy_order_refund WHERE order_id = ? AND deleted = FALSE",
+                OffsetDateTime.class, fixture.orderId());
+        OffsetDateTime walletOccurredAt = jdbc.queryForObject(
+                "SELECT m.occurred_at FROM xsy_customer_balance_movement m"
+                        + " JOIN xsy_order_refund r ON m.source_id = r.id WHERE r.order_id = ?"
+                        + " AND m.source_type = 'ORDER_REFUND' AND m.type = 'REFUND' AND m.direction = 'CREDIT'",
+                OffsetDateTime.class, fixture.orderId());
+        assertThat(walletOccurredAt)
+                .as("同事务返还的流水时间必须等于退款完成时刻，否则 hasInvalidReturns 会把这条返还判成脏数据")
+                .isEqualTo(refundCompletedAt);
+
+        MallAfterSaleVO finalView = mallAfterSaleView(fixture, approved.getReturnId());
+        assertThat(finalView.getStatus()).isEqualTo("APPROVED");
+        assertThat(finalView.getDisplayStatus())
+                .as("资金已实际到账，展示分类必须从退款处理中前进到已退款")
+                .isEqualTo(MallAfterSaleDisplayStatusEnum.REFUNDED.name());
+        assertThat(finalView.getRefund()).isNotNull();
+        assertThat(finalView.getRefund().getStatus()).isEqualTo("COMPLETED");
+        assertThat(finalView.getRefund().getCompletedAt())
+                .as("资金到账后必须给出真实到账时间")
+                .isEqualTo(walletOccurredAt);
+        assertThat(finalView.getRefund().getAllocations()).singleElement().satisfies(allocation -> {
+            assertThat(allocation.getMethod()).as("原路退回：这笔钱本来就是从余额出的").isEqualTo("BALANCE");
+            assertThat(allocation.getStatus()).isEqualTo("SUCCEEDED");
+            assertThat(allocation.getAllocatedAmount()).isEqualByComparingTo("2.4000");
+            assertThat(allocation.getSucceededAt()).isEqualTo(walletOccurredAt);
+        });
+        assertThat(progressText(finalView, "REFUND")).isEqualTo("退款完成");
+        assertThat(applied.getDisplayStatus()).as("申请当时的展示分类是待审核").isEqualTo("REVIEWING");
+    }
+
+    // ------------------------------------------------------------------
     // 撤销：释放可退额度
     // ------------------------------------------------------------------
 
@@ -222,6 +272,17 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
      * 这正是真实运营顺序，也让退货收货能取到历史出库成本。
      */
     private AfterSaleFixture confirmedMallOrderWithCost(String tag) {
+        return confirmedMallOrderWithCost(tag, (orderId, customerId) -> {
+        });
+    }
+
+    /**
+     * 同上，并允许在确认之前登记订单的支付事实。
+     *
+     * <p>支付事实决定退款完成时走哪条资金路径：纯余额支付由旧钱包路径同事务原路返还，
+     * 混合资金才需要人工执行资金分摊。回调拿到订单与客户 id，因为支付意图要挂在订单上、金额取订单结算额。
+     */
+    private AfterSaleFixture confirmedMallOrderWithCost(String tag, java.util.function.BiConsumer<Long, Long> pay) {
         Long skuId = newOnShelfSku("mas-" + tag);
         W6Fixture inbound = inboundFixture("mas-" + tag, skuId, "10.0000");
         confirmReceipt(inbound.receipt().getId(), "10.0000");
@@ -241,12 +302,73 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
 
         asBackOffice();
         confirmOrder(orderId, "3.0000");
+        // 支付事实登记在确认之后：结算额要等实重录入才落定，而支付意图挂在已确认的订单上。
+        pay.accept(orderId, customerId);
         Long orderItemId = confirmedSalesOrderItemId(orderId);
         confirmSalesOutbound(orderId, orderItemId, skuId, "3.0000");
         assertThat(balanceRow(fixtureWarehouseId(), skuId).getQuantity())
                 .as("出库后余额 = 入库 10 − 出库 3").isEqualByComparingTo("7.0000");
 
         return new AfterSaleFixture(skuId, fixtureWarehouseId(), customerId, orderId, orderItemId, customer);
+    }
+
+    /**
+     * 登记一笔「纯余额支付」的订单资金事实：钱包账户 + 余额支付意图 + 交易 + 余额消费流水。
+     *
+     * <p>三条事实缺一不可：意图与交易是订单资金的取数来源（{@code selectOrderFunding}），
+     * 消费流水是钱包返还的本金依据（{@code BalanceRefundService} 按它的金额算可退上限）。
+     * 金额取订单结算额，保证返还金额不超过本金。
+     */
+    private void payByBalance(Long orderId, Long customerId) {
+        BigDecimal orderAmount = jdbc.queryForObject(
+                "SELECT settlement_total_amount FROM xsy_sales_order WHERE id = ?", BigDecimal.class, orderId);
+        Long settlementCustomerId = jdbc.queryForObject(
+                "SELECT settlement_customer_id FROM xsy_sales_order WHERE id = ?", Long.class, orderId);
+        String settlementCustomerName = jdbc.queryForObject(
+                "SELECT settlement_customer_name_snapshot FROM xsy_sales_order WHERE id = ?", String.class, orderId);
+        String orderNo = jdbc.queryForObject("SELECT order_no FROM xsy_sales_order WHERE id = ?", String.class,
+                orderId);
+
+        Long accountId = jdbc.queryForObject("""
+                INSERT INTO xsy_customer_balance_account (settlement_customer_id, settlement_customer_name_snapshot,
+                    created_by, updated_by)
+                VALUES (?, ?, ?, ?)
+                RETURNING id
+                """, Long.class, settlementCustomerId, settlementCustomerName, operator(), operator());
+
+        // ck_payment_intent_method_provider：BALANCE 只能配 INTERNAL_BALANCE，且来源必须是销售订单。
+        Long intentId = jdbc.queryForObject("""
+                INSERT INTO xsy_payment_intent
+                    (intent_no, customer_id, customer_name_snapshot, source_type, source_id, source_no_snapshot,
+                     amount, method, provider, status, succeeded_at, created_by, updated_by)
+                VALUES (?, ?, ?, 'SALES_ORDER', ?, ?, CAST(? AS numeric), 'BALANCE', 'INTERNAL_BALANCE', 'SUCCEEDED',
+                    CURRENT_TIMESTAMP, ?, ?)
+                RETURNING id
+                """, Long.class, prefix + "-BI-" + UUID.randomUUID().toString().substring(0, 8), customerId,
+                settlementCustomerName, orderId, orderNo, orderAmount, operator(), operator());
+
+        jdbc.update("""
+                INSERT INTO xsy_payment_transaction
+                    (transaction_no, intent_id, provider, provider_transaction_no, amount, provider_amount, status,
+                     paid_at, created_by)
+                VALUES (?, ?, 'INTERNAL_BALANCE', ?, CAST(? AS numeric), CAST(? AS numeric), 'SUCCEEDED',
+                    CURRENT_TIMESTAMP, ?)
+                """, prefix + "-BT-" + UUID.randomUUID().toString().substring(0, 8), intentId,
+                prefix + "-BPTN-" + UUID.randomUUID().toString().substring(0, 8), orderAmount, orderAmount,
+                operator());
+
+        jdbc.update("""
+                INSERT INTO xsy_customer_balance_movement
+                    (movement_no, account_id, settlement_customer_id, customer_id, type, direction, amount,
+                     source_type, source_id, reason, occurred_at, created_by, updated_by)
+                VALUES (?, ?, ?, ?, 'CONSUME', 'DEBIT', CAST(? AS numeric), 'PAYMENT_INTENT', ?, '余额支付',
+                    CURRENT_TIMESTAMP, ?, ?)
+                """, prefix + "-BM-" + UUID.randomUUID().toString().substring(0, 8), accountId,
+                settlementCustomerId, customerId, orderAmount, intentId, operator(), operator());
+    }
+
+    private String operator() {
+        return "IT-MAS";
     }
 
     private MallAfterSaleVO apply(AfterSaleFixture fixture, String quantity, String keyTag) {
