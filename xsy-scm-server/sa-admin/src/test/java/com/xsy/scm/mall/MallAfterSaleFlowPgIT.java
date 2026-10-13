@@ -7,6 +7,8 @@ import static org.mockito.Mockito.mockStatic;
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.ScmW6PgITBase;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.finance.service.FinanceReceiptService;
+import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
 import com.xsy.scm.inventory.domain.form.InventoryOutboundAddForm;
 import com.xsy.scm.inventory.service.InventoryOutboundService;
 import com.xsy.scm.mall.account.domain.form.MallAccountCreateForm;
@@ -20,6 +22,7 @@ import com.xsy.scm.mall.address.domain.form.MallAddressSaveForm;
 import com.xsy.scm.mall.address.service.MallAddressService;
 import com.xsy.scm.mall.aftersale.constant.MallAfterSaleDisplayStatusEnum;
 import com.xsy.scm.mall.aftersale.domain.form.MallAfterSaleApplyForm;
+import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleRefundVO;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleVO;
 import com.xsy.scm.mall.aftersale.service.MallAfterSaleQueryService;
 import com.xsy.scm.mall.aftersale.service.MallAfterSaleService;
@@ -46,7 +49,12 @@ import com.xsy.scm.order.service.OrderReturnReceiptService;
 import com.xsy.scm.order.service.OrderReturnService;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.order.service.SalesOrderService;
+import com.xsy.scm.payment.domain.form.RefundFundingExecuteForm;
+import com.xsy.scm.payment.provider.ScmPaymentProvider;
+import com.xsy.scm.payment.service.PaymentRefundService;
+import com.xsy.scm.payment.service.RefundFundingAllocationService;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -69,10 +77,10 @@ import org.springframework.mock.web.MockHttpServletRequest;
  *
  * <p>
  * <b>资金到账的分界</b>：{@code OrderRefundService.complete} 只把退款单置为 COMPLETED；
- * 真正的资金事实（渠道原路退回 / 退回余额）由资金分摊或旧钱包返还路径产生。本类夹具没有支付，
- * 因此断言的是「退款单已完成、资金尚未到账」这一侧（客户看到 REFUNDING），
- * 资金到账后的 REFUNDED 由分摊与钱包那两组用例负责（{@code PaymentRefundSumBasisPgIT}、
- * {@code BalanceRefundServiceTest}），本类不重复也不放宽它们。
+ * 真正的资金事实（渠道原路退回 / 退回余额）由资金分摊或旧钱包返还路径产生。三条资金路径在本类各有一个用例：
+ * 无支付（退款单已完成、资金未到，客户看到 REFUNDING）、纯余额支付（旧钱包路径同事务返还，客户看到 REFUNDED）、
+ * 余额加在线混合支付（分摊逐条腿退回，两条腿都到账才转 REFUNDED）。分摊的算法与失败隔离由
+ * {@code RefundFundingAllocatorTest}、{@code RefundFundingAllocationSavepointPgIT} 负责，本类不重复也不放宽它们。
  */
 @DisplayName("商城售后全链路（PG IT）")
 class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
@@ -118,6 +126,15 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
 
     @Autowired
     private InventoryOutboundService inventoryOutboundService;
+
+    @Autowired
+    private RefundFundingAllocationService refundFundingAllocationService;
+
+    @Autowired
+    private PaymentRefundService paymentRefundService;
+
+    @Autowired
+    private FinanceReceiptService financeReceiptService;
 
     // ------------------------------------------------------------------
     // 主链路
@@ -232,6 +249,89 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         });
         assertThat(progressText(finalView, "REFUND")).isEqualTo("退款完成");
         assertThat(applied.getDisplayStatus()).as("申请当时的展示分类是待审核").isEqualTo("REVIEWING");
+    }
+
+    // ------------------------------------------------------------------
+    // 混合资金：余额 + 在线，两条腿都到账才算退完
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("混合资金（余额 + 在线）订单：分摊把两条腿各自原路退回后，客户侧才转为已退款")
+    void mixedFundingOrderReachesRefundedOnlyAfterBothLegsLand() {
+        AfterSaleFixture fixture = confirmedMallOrderWithCost("mixed", this::payByMixedFunding);
+
+        MallAfterSaleVO applied = apply(fixture, "2.0000", "mixed-apply");
+        assertThat(applied.getDisplayStatus()).isEqualTo(MallAfterSaleDisplayStatusEnum.REVIEWING.name());
+
+        asBackOffice();
+        OrderReturnDetailVO approved = approve(fixture);
+        receiveReturn(fixture, approved, "2.0000");
+        Long refundId = refundIdOf(fixture.orderId());
+        completeRefund(refundId);
+
+        // 混合资金不由旧钱包路径返还：退款单已完成，但一分钱都还没退出去
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_customer_balance_movement"
+                + " WHERE source_type = 'ORDER_REFUND' AND source_id = ?", Integer.class, refundId))
+                .as("有在线来源时旧钱包整体返还必须让位，否则会把 A 的钱退给 B 或退重复")
+                .isZero();
+        assertThat(mallAfterSaleView(fixture, approved.getReturnId()).getDisplayStatus())
+                .isEqualTo(MallAfterSaleDisplayStatusEnum.REFUNDING.name());
+
+        // 后台执行资金分摊：余额腿当场返还，在线腿建立渠道退款意图后停在处理中
+        // 读客户侧视图会把请求身份换成商城客户，后台命令前必须切回员工身份。
+        asBackOffice();
+        RefundFundingExecuteForm form = new RefundFundingExecuteForm();
+        form.setRefundId(refundId);
+        var executed = refundFundingAllocationService.execute(form, prefix + ":mixed-exec");
+        assertThat(executed.getStatus()).isEqualTo("PROCESSING");
+        assertThat(allocationStatusOf(refundId, "BALANCE")).isEqualTo("SUCCEEDED");
+        assertThat(allocationStatusOf(refundId, "ONLINE")).isEqualTo("PROCESSING");
+
+        // 余额已经退回钱包，但在线那笔还没到账 —— 客户侧不能提前显示「已退款」
+        assertThat(mallAfterSaleView(fixture, approved.getReturnId()).getDisplayStatus())
+                .as("只有一条腿到账时展示分类仍必须是退款处理中")
+                .isEqualTo(MallAfterSaleDisplayStatusEnum.REFUNDING.name());
+        assertThat(financePaymentCount(refundId)).as("来源没有全部成功，不登记财务付款").isZero();
+
+        // 渠道退回成功：回调与恢复任务共用同一条落库路径
+        Long onlineAllocationId = allocationIdOf(refundId, "ONLINE");
+        BigDecimal onlineAllocated = jdbc.queryForObject(
+                "SELECT allocated_amount FROM xsy_refund_funding_allocation WHERE id = ?", BigDecimal.class,
+                onlineAllocationId);
+        Long paymentRefundId = jdbc.queryForObject("SELECT id FROM xsy_payment_refund"
+                + " WHERE source_type = 'REFUND_FUNDING_ALLOCATION' AND source_id = ?", Long.class,
+                onlineAllocationId);
+        assertThat(paymentRefundId).as("在线腿必须先建立渠道退款意图").isNotNull();
+        paymentRefundService.applyOutcome(paymentRefundId, ScmPaymentProvider.Outcome.SUCCEEDED,
+                "MOCK-REFUND-" + refundId, onlineAllocated, null, null, operator());
+
+        assertThat(allocationStatusOf(refundId, "ONLINE")).isEqualTo("SUCCEEDED");
+        assertThat(financePaymentCount(refundId))
+                .as("两条腿都成功后自动登记财务付款，且只登记一笔")
+                .isEqualTo(1);
+
+        MallAfterSaleVO finalView = mallAfterSaleView(fixture, approved.getReturnId());
+        assertThat(finalView.getDisplayStatus())
+                .as("两条腿都到账，展示分类必须前进到已退款")
+                .isEqualTo(MallAfterSaleDisplayStatusEnum.REFUNDED.name());
+        assertThat(finalView.getRefund()).isNotNull();
+        assertThat(finalView.getRefund().getCompletedAt())
+                .as("资金到账后必须给出真实到账时间")
+                .isNotNull();
+        assertThat(finalView.getRefund().getAllocations())
+                .as("原路退回明细要同时给出余额与在线两条腿，客户才看得出钱从哪来回哪去")
+                .hasSize(2)
+                .extracting(MallAfterSaleRefundVO.Allocation::getMethod)
+                .containsExactlyInAnyOrder("BALANCE", "ONLINE");
+        assertThat(finalView.getRefund().getAllocations()).allSatisfy(allocation -> {
+            assertThat(allocation.getStatus()).isEqualTo("SUCCEEDED");
+            assertThat(allocation.getSucceededAt()).isNotNull();
+        });
+        assertThat(finalView.getRefund().getAllocations().stream()
+                .map(MallAfterSaleRefundVO.Allocation::getAllocatedAmount).reduce(BigDecimal.ZERO, BigDecimal::add))
+                .as("两条腿的实退之和必须等于退款单金额")
+                .isEqualByComparingTo("2.4000");
+        assertThat(progressText(finalView, "REFUND")).isEqualTo("退款完成");
     }
 
     // ------------------------------------------------------------------
@@ -365,6 +465,114 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
                     CURRENT_TIMESTAMP, ?, ?)
                 """, prefix + "-BM-" + UUID.randomUUID().toString().substring(0, 8), accountId,
                 settlementCustomerId, customerId, orderAmount, intentId, operator(), operator());
+    }
+
+    /**
+     * 登记一笔「余额 + 在线」混合支付的订单资金事实。
+     *
+     * <p>混合资金是旧钱包整体返还明确让位的场景：{@code BalanceRefundService} 一旦发现还有在线来源就直接返回 null，
+     * 所以退款完成不会自动返还任何一分钱，钱只能由资金分摊按原资金来源逐条腿退回。
+     *
+     * <p>在线腿必须同时带上 Finance 收款事实：订单资金完整性校验要求在线来源有对应收款单，否则分摊连计划都冻结不出来。
+     * 收款单走财务域的正式登记入口，不直插表 —— 它的客户与结算主体快照由财务域自己解析。
+     */
+    private void payByMixedFunding(Long orderId, Long customerId) {
+        BigDecimal orderAmount = jdbc.queryForObject(
+                "SELECT settlement_total_amount FROM xsy_sales_order WHERE id = ?", BigDecimal.class, orderId);
+        Long settlementCustomerId = jdbc.queryForObject(
+                "SELECT settlement_customer_id FROM xsy_sales_order WHERE id = ?", Long.class, orderId);
+        String settlementCustomerName = jdbc.queryForObject(
+                "SELECT settlement_customer_name_snapshot FROM xsy_sales_order WHERE id = ?", String.class, orderId);
+        String orderNo = jdbc.queryForObject("SELECT order_no FROM xsy_sales_order WHERE id = ?", String.class,
+                orderId);
+        // 余额腿刻意占大头：它的本金（2.4000）已够覆盖整笔退款，因此「有在线来源就不许走旧钱包整体返还」
+        // 这条守卫是本用例唯一能拦住重复返还的东西 —— 去掉它，钱包会把整笔钱再退一次。
+        BigDecimal balanceAmount = orderAmount.multiply(new BigDecimal("2")).divide(new BigDecimal("3"), 4,
+                RoundingMode.HALF_UP);
+        BigDecimal onlineAmount = orderAmount.subtract(balanceAmount);
+
+        Long accountId = jdbc.queryForObject("""
+                INSERT INTO xsy_customer_balance_account (settlement_customer_id, settlement_customer_name_snapshot,
+                    created_by, updated_by)
+                VALUES (?, ?, ?, ?)
+                RETURNING id
+                """, Long.class, settlementCustomerId, settlementCustomerName, operator(), operator());
+
+        Long balanceIntentId = jdbc.queryForObject("""
+                INSERT INTO xsy_payment_intent
+                    (intent_no, customer_id, customer_name_snapshot, source_type, source_id, source_no_snapshot,
+                     amount, method, provider, status, succeeded_at, created_by, updated_by)
+                VALUES (?, ?, ?, 'SALES_ORDER', ?, ?, CAST(? AS numeric), 'BALANCE', 'INTERNAL_BALANCE', 'SUCCEEDED',
+                    CURRENT_TIMESTAMP, ?, ?)
+                RETURNING id
+                """, Long.class, prefix + "-MBI-" + UUID.randomUUID().toString().substring(0, 8), customerId,
+                settlementCustomerName, orderId, orderNo, balanceAmount, operator(), operator());
+
+        jdbc.update("""
+                INSERT INTO xsy_payment_transaction
+                    (transaction_no, intent_id, provider, provider_transaction_no, amount, provider_amount, status,
+                     paid_at, created_by)
+                VALUES (?, ?, 'INTERNAL_BALANCE', ?, CAST(? AS numeric), CAST(? AS numeric), 'SUCCEEDED',
+                    CURRENT_TIMESTAMP, ?)
+                """, prefix + "-MBT-" + UUID.randomUUID().toString().substring(0, 8), balanceIntentId,
+                prefix + "-MBPTN-" + UUID.randomUUID().toString().substring(0, 8), balanceAmount, balanceAmount,
+                operator());
+
+        jdbc.update("""
+                INSERT INTO xsy_customer_balance_movement
+                    (movement_no, account_id, settlement_customer_id, customer_id, type, direction, amount,
+                     source_type, source_id, reason, occurred_at, created_by, updated_by)
+                VALUES (?, ?, ?, ?, 'CONSUME', 'DEBIT', CAST(? AS numeric), 'PAYMENT_INTENT', ?, '余额支付',
+                    CURRENT_TIMESTAMP, ?, ?)
+                """, prefix + "-MBM-" + UUID.randomUUID().toString().substring(0, 8), accountId,
+                settlementCustomerId, customerId, balanceAmount, balanceIntentId, operator(), operator());
+
+        Long onlineIntentId = jdbc.queryForObject("""
+                INSERT INTO xsy_payment_intent
+                    (intent_no, customer_id, customer_name_snapshot, source_type, source_id, source_no_snapshot,
+                     amount, method, provider, status, succeeded_at, created_by, updated_by)
+                VALUES (?, ?, ?, 'SALES_ORDER', ?, ?, CAST(? AS numeric), 'ONLINE', 'MOCK', 'SUCCEEDED',
+                    CURRENT_TIMESTAMP, ?, ?)
+                RETURNING id
+                """, Long.class, prefix + "-MOI-" + UUID.randomUUID().toString().substring(0, 8), customerId,
+                settlementCustomerName, orderId, orderNo, onlineAmount, operator(), operator());
+
+        Long onlineTransactionId = jdbc.queryForObject("""
+                INSERT INTO xsy_payment_transaction
+                    (transaction_no, intent_id, provider, provider_transaction_no, amount, provider_amount, status,
+                     paid_at, created_by)
+                VALUES (?, ?, 'MOCK', ?, CAST(? AS numeric), CAST(? AS numeric), 'SUCCEEDED',
+                    CURRENT_TIMESTAMP, ?)
+                RETURNING id
+                """, Long.class, prefix + "-MOT-" + UUID.randomUUID().toString().substring(0, 8), onlineIntentId,
+                prefix + "-MOPTN-" + UUID.randomUUID().toString().substring(0, 8), onlineAmount, onlineAmount,
+                operator());
+
+        OffsetDateTime paidAt = jdbc.queryForObject(
+                "SELECT paid_at FROM xsy_payment_transaction WHERE id = ?", OffsetDateTime.class, onlineTransactionId);
+        String providerTransactionNo = jdbc.queryForObject(
+                "SELECT provider_transaction_no FROM xsy_payment_transaction WHERE id = ?", String.class,
+                onlineTransactionId);
+        financeReceiptService.registerFromPaymentTransaction(new FinancePaymentReceiptFact(onlineTransactionId,
+                customerId, onlineAmount, paidAt, providerTransactionNo));
+    }
+
+    private String allocationStatusOf(Long refundId, String sourceMethod) {
+        return jdbc.queryForObject("SELECT status FROM xsy_refund_funding_allocation"
+                + " WHERE order_refund_id = ? AND source_method = ? AND deleted = FALSE", String.class, refundId,
+                sourceMethod);
+    }
+
+    private Long allocationIdOf(Long refundId, String sourceMethod) {
+        return jdbc.queryForObject("SELECT id FROM xsy_refund_funding_allocation"
+                + " WHERE order_refund_id = ? AND source_method = ? AND deleted = FALSE", Long.class, refundId,
+                sourceMethod);
+    }
+
+    private Integer financePaymentCount(Long refundId) {
+        return jdbc.queryForObject("SELECT count(*) FROM xsy_finance_payment"
+                + " WHERE source_type = 'ORDER_REFUND' AND source_id = ? AND entry_type = 'NORMAL'", Integer.class,
+                refundId);
     }
 
     private String operator() {
