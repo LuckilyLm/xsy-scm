@@ -36,6 +36,7 @@ import java.math.RoundingMode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -339,7 +340,7 @@ public class PaymentRefundService {
     }
 
     /** 执行一条已冻结的 ONLINE 资金分摊；调用方负责锁订单与分摊行。 */
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY, rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public PaymentRefundEntity executeAllocation(Long allocationId, Long orderRefundId,
             PaymentTransactionEntity transaction, BigDecimal amount, String reason, String mockScenario) {
         String sourceType = ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION.name();

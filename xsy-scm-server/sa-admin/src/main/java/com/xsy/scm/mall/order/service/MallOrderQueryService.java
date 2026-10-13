@@ -1,6 +1,7 @@
 package com.xsy.scm.mall.order.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.delivery.constant.ScmDeliveryFulfillmentStatusEnum;
 import com.xsy.scm.delivery.dao.DeliveryRouteOrderDao;
@@ -10,6 +11,7 @@ import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.catalog.dao.MallCatalogDao;
 import com.xsy.scm.mall.order.constant.MallOrderDisplayStatusEnum;
+import com.xsy.scm.mall.order.constant.MallOrderProgressNodeEnum;
 import com.xsy.scm.mall.order.domain.form.MallOrderQueryForm;
 import com.xsy.scm.mall.order.domain.vo.MallOrderDeliveryVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderItemVO;
@@ -55,7 +57,7 @@ public class MallOrderQueryService {
     /** 列表卡片最多展示的缩略图数量，与设计图一致 */
     private static final int THUMBNAIL_LIMIT = 3;
     private static final String MALL_OPERATOR_PREFIX = UserTypeEnum.MALL_CUSTOMER.getValue() + ":";
-    private static final String NON_STANDARD = "NON_STANDARD";
+    private static final String NON_STANDARD = ScmProductTypeEnum.NON_STANDARD.name();
 
     /**
      * 客户可见的订单操作类型白名单。
@@ -63,7 +65,7 @@ public class MallOrderQueryService {
      * <p>
      * 时间线直接回读 {@code xsy_order_operation_log}，但那张表是<b>内部审计日志</b>：
      * {@code CREDIT_OVERRIDE}（超额授信放行）带的是内部审批原因，{@code UPDATE} 带改价/改量原因， {@code RESERVE_STOCK} 是仓库内部动作 ——
-     * 这些都不是给客户看的。后台审计记录保持完整， 商城侧只收窄展示，**不删除任何原始记录**。
+     * 这些都不是给客户看的。后台审计记录保持完整， 商城侧只收窄展示，不删除任何原始记录。
      *
      * <p>
      * 售后类操作（{@code RETURN} / {@code REFUND}）在售后功能落地、各自的原因口径定下来之后再逐个加入， 不预先放行。
@@ -162,8 +164,8 @@ public class MallOrderQueryService {
 
     /** 订单行不存图，展示时按 SKU 回读主图；取不到图的 SKU 不进 map，由客户端兜底。 */
     private Map<Long, String> imageUrls(List<SalesOrderItemEntity> items) {
-        return skuImageUrls(items.stream().map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct()
-                .toList());
+        return skuImageUrls(
+                items.stream().map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct().toList());
     }
 
     /** 按 SKU 批量取主图 URL；取不到图的 SKU 不进 map。订单与售后共用同一套图片解析。 */
@@ -270,20 +272,22 @@ public class MallOrderQueryService {
      */
     private static List<MallOrderProgressNodeVO> progressNodes(SalesOrderEntity order, DeliveryOrderProgressVO row) {
         List<MallOrderProgressNodeVO> nodes = new ArrayList<>();
-        nodes.add(node("SUBMITTED", "已提交订单", null,
+        nodes.add(node(MallOrderProgressNodeEnum.SUBMITTED.name(), "已提交订单", null,
                 order.getSubmittedAt() == null ? order.getCreatedAt() : order.getSubmittedAt(), true));
         if (ScmOrderStatusEnum.CANCELLED.name().equals(order.getStatus())) {
-            nodes.add(node("CANCELLED", "订单已取消", order.getCancelReason(), order.getCancelledAt(), true));
+            nodes.add(node(MallOrderProgressNodeEnum.CANCELLED.name(), "订单已取消", order.getCancelReason(),
+                    order.getCancelledAt(), true));
             return nodes;
         }
-        nodes.add(node("CONFIRMED", "后台已接单", null, order.getConfirmedAt(), order.getConfirmedAt() != null));
+        nodes.add(node(MallOrderProgressNodeEnum.CONFIRMED.name(), "后台已接单", null, order.getConfirmedAt(),
+                order.getConfirmedAt() != null));
         OffsetDateTime dispatchedAt = row == null ? null : row.getDispatchedAt();
-        nodes.add(node("DISPATCHED", "已发车配送", null, dispatchedAt, dispatchedAt != null));
+        nodes.add(node(MallOrderProgressNodeEnum.DISPATCHED.name(), "已发车配送", null, dispatchedAt, dispatchedAt != null));
         OffsetDateTime signedAt = row == null ? null : row.getSignedAt();
         boolean abnormal = row != null
                 && ScmDeliveryFulfillmentStatusEnum.EXCEPTION.name().equals(row.getFulfillmentStatus());
-        nodes.add(node("SIGNED", abnormal ? "配送异常" : "已签收", row == null ? null : row.getSignReason(), signedAt,
-                signedAt != null));
+        nodes.add(node(MallOrderProgressNodeEnum.SIGNED.name(), abnormal ? "配送异常" : "已签收",
+                row == null ? null : row.getSignReason(), signedAt, signedAt != null));
         return nodes;
     }
 

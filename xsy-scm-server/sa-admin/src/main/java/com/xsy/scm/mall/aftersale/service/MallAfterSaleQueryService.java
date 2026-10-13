@@ -9,6 +9,7 @@ import com.xsy.scm.mall.aftersale.domain.form.MallAfterSaleQueryForm;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleItemVO;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleRefundVO;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleVO;
+import com.xsy.scm.mall.order.constant.MallOrderProgressNodeEnum;
 import com.xsy.scm.mall.order.domain.vo.MallOrderProgressNodeVO;
 import com.xsy.scm.mall.order.service.MallOrderQueryService;
 import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
@@ -45,8 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 商城售后只读查询。
  *
  * <p>
- * 售后事实只来自正式退货单、退款单与资金分摊行；归属一律按退货单的 {@code customer_id} 与登录客户等值收窄，
- * 本服务不写任何表。渠道失败码、内部失败原因等内部事实不下发客户。
+ * 售后事实只来自正式退货单、退款单与资金分摊行；归属一律按退货单的 {@code customer_id} 与登录客户等值收窄， 本服务不写任何表。渠道失败码、内部失败原因等内部事实不下发客户。
  */
 @Service
 @RequiredArgsConstructor
@@ -107,19 +107,20 @@ public class MallAfterSaleQueryService {
         Map<Long, SalesOrderItemEntity> orderItemsById = salesOrderItemDao.listByOrderIds(orderIds).stream()
                 .collect(Collectors.toMap(SalesOrderItemEntity::getId, Function.identity()));
         // 一张退货单至多一张退款单（批准时按净额生成一次）；取 id 最小的一条，不把异常数据放大成列表。
-        Map<Long, OrderRefundEntity> refundsByReturn = orderRefundDao.listByReturnIds(returnIds).stream()
-                .collect(Collectors.toMap(OrderRefundEntity::getReturnId, Function.identity(),
-                        (first, ignored) -> first));
+        Map<Long, OrderRefundEntity> refundsByReturn = orderRefundDao.listByReturnIds(returnIds).stream().collect(
+                Collectors.toMap(OrderRefundEntity::getReturnId, Function.identity(), (first, ignored) -> first));
         Map<Long, String> imageUrls = orderQueryService.skuImageUrls(orderItemsById.values().stream()
                 .map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct().toList());
-        return returns.stream().map(entity -> toVo(entity, itemsByReturn.getOrDefault(entity.getId(), List.of()),
-                ordersById.get(entity.getOrderId()), orderItemsById, refundsByReturn.get(entity.getId()), imageUrls,
-                detail)).toList();
+        return returns.stream()
+                .map(entity -> toVo(entity, itemsByReturn.getOrDefault(entity.getId(), List.of()),
+                        ordersById.get(entity.getOrderId()), orderItemsById, refundsByReturn.get(entity.getId()),
+                        imageUrls, detail))
+                .toList();
     }
 
-    private MallAfterSaleVO toVo(OrderReturnEntity entity, List<OrderReturnItemEntity> items,
-            SalesOrderEntity order, Map<Long, SalesOrderItemEntity> orderItemsById, OrderRefundEntity refund,
-            Map<Long, String> imageUrls, boolean detail) {
+    private MallAfterSaleVO toVo(OrderReturnEntity entity, List<OrderReturnItemEntity> items, SalesOrderEntity order,
+            Map<Long, SalesOrderItemEntity> orderItemsById, OrderRefundEntity refund, Map<Long, String> imageUrls,
+            boolean detail) {
         MallAfterSaleVO result = new MallAfterSaleVO();
         result.setReturnId(entity.getId());
         result.setReturnNo(entity.getReturnNo());
@@ -141,11 +142,11 @@ public class MallAfterSaleQueryService {
         result.setCancelledAt(entity.getCancelledAt());
         result.setItemCount(items.size());
         result.setItemThumbnails(items.stream().map(item -> orderItemsById.get(item.getOrderItemId()))
-                .filter(Objects::nonNull).map(orderItem -> imageUrls.get(orderItem.getSkuId()))
-                .filter(Objects::nonNull).limit(THUMBNAIL_LIMIT).toList());
+                .filter(Objects::nonNull).map(orderItem -> imageUrls.get(orderItem.getSkuId())).filter(Objects::nonNull)
+                .limit(THUMBNAIL_LIMIT).toList());
         if (detail) {
-            result.setItems(items.stream().map(item -> itemVo(item, orderItemsById.get(item.getOrderItemId()),
-                    imageUrls)).toList());
+            result.setItems(items.stream()
+                    .map(item -> itemVo(item, orderItemsById.get(item.getOrderItemId()), imageUrls)).toList());
             result.setRefund(refundVo(refund));
             result.setProgress(progressNodes(entity, refund));
         }
@@ -173,8 +174,7 @@ public class MallAfterSaleQueryService {
     }
 
     /**
-     * 退款结果与原路退回明细。资金分摊存在时按分摊行给出每个资金来源的实退进度；
-     * 无分摊计划的旧路径（纯余额返还）以余额流水事实拼出一行，客户看到的是同一个口径。
+     * 退款结果与原路退回明细。资金分摊存在时按分摊行给出每个资金来源的实退进度； 无分摊计划的旧路径（纯余额返还）以余额流水事实拼出一行，客户看到的是同一个口径。
      */
     private MallAfterSaleRefundVO refundVo(OrderRefundEntity refund) {
         if (refund == null) {
@@ -218,27 +218,29 @@ public class MallAfterSaleQueryService {
      */
     private static List<MallOrderProgressNodeVO> progressNodes(OrderReturnEntity entity, OrderRefundEntity refund) {
         List<MallOrderProgressNodeVO> nodes = new ArrayList<>();
-        nodes.add(node("SUBMITTED", "已提交申请", null, entity.getCreatedAt(), true));
+        nodes.add(node(MallOrderProgressNodeEnum.SUBMITTED.name(), "已提交申请", null, entity.getCreatedAt(), true));
         String status = entity.getStatus();
         if (ScmOrderReturnStatusEnum.REJECTED.name().equals(status)) {
-            nodes.add(node("REJECTED", "申请已驳回", entity.getDecisionReason(), entity.getRejectedAt(), true));
+            nodes.add(node(MallOrderProgressNodeEnum.REJECTED.name(), "申请已驳回", entity.getDecisionReason(),
+                    entity.getRejectedAt(), true));
             return nodes;
         }
         if (ScmOrderReturnStatusEnum.CANCELLED.name().equals(status)) {
-            nodes.add(node("CANCELLED", "申请已撤销", null, entity.getCancelledAt(), true));
+            nodes.add(node(MallOrderProgressNodeEnum.CANCELLED.name(), "申请已撤销", null, entity.getCancelledAt(), true));
             return nodes;
         }
         if (ScmOrderReturnStatusEnum.PENDING.name().equals(status)) {
-            nodes.add(node("REVIEW", "等待平台审核", null, null, false));
+            nodes.add(node(MallOrderProgressNodeEnum.REVIEW.name(), "等待平台审核", null, null, false));
             return nodes;
         }
-        nodes.add(node("REVIEW", "审核通过", null, entity.getApprovedAt(), true));
+        nodes.add(node(MallOrderProgressNodeEnum.REVIEW.name(), "审核通过", null, entity.getApprovedAt(), true));
         if (refund == null) {
-            nodes.add(node("REFUND", "无需退款", null, entity.getApprovedAt(), true));
+            nodes.add(node(MallOrderProgressNodeEnum.REFUND.name(), "无需退款", null, entity.getApprovedAt(), true));
             return nodes;
         }
         boolean completed = ScmOrderRefundStatusEnum.COMPLETED.name().equals(refund.getStatus());
-        nodes.add(node("REFUND", completed ? "退款完成" : "退款处理中", null, refund.getCompletedAt(), completed));
+        nodes.add(node(MallOrderProgressNodeEnum.REFUND.name(), completed ? "退款完成" : "退款处理中", null,
+                refund.getCompletedAt(), completed));
         return nodes;
     }
 
