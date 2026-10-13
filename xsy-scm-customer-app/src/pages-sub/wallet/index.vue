@@ -6,6 +6,9 @@
       <text class="wallet__retry" @click="load">重试</text>
     </view>
     <template v-else-if="summary">
+      <view v-if="stale" class="wallet__stale" @click="load">
+        更新失败，当前为上次查询结果。点击重试 ›
+      </view>
       <view class="wallet__balance">
         <text class="wallet__label">{{ summary.balanceVisible ? '账户余额' : '共享结算账户' }}</text>
         <text v-if="summary.balanceVisible" class="wallet__amount">¥{{ displayAmount(summary.availableBalance) }}</text>
@@ -44,6 +47,7 @@
   const movements = ref([]);
   const loading = ref(false);
   const error = ref('');
+  const stale = ref(false);
   let requestSeq = 0;
   let showed = false;
 
@@ -69,11 +73,12 @@
       if (seq !== requestSeq) return;
       summary.value = walletResponse.data;
       movements.value = movementResponse.data?.list || [];
+      stale.value = false;
     } catch (failure) {
       if (seq !== requestSeq) return;
       smartSentry.captureError(failure);
       error.value = failure?.message || '钱包信息加载失败';
-      if (summary.value) uni.showToast({ title: error.value, icon: 'none' });
+      stale.value = !!summary.value;
     } finally {
       if (seq === requestSeq) loading.value = false;
     }
@@ -88,6 +93,7 @@
   .wallet { min-height: 100vh; padding: $space-4 $space-4 $space-8; box-sizing: border-box; background: $color-bg-page; }
   .wallet__state { padding: $space-8 $space-4; text-align: center; color: $color-text-secondary; }
   .wallet__retry { display: block; margin-top: $space-4; color: $color-primary; }
+  .wallet__stale { margin-bottom: $space-3; padding: $space-3 $space-4; border-radius: $radius-md; background: $color-warning-light; color: $color-text-primary; font-size: $font-size-sm; }
   .wallet__balance { display: flex; flex-direction: column; padding: $space-6; border-radius: $radius-lg; background: $color-primary; color: $color-text-inverse; }
   .wallet__label { font-size: $font-size-sm; opacity: .9; }
   .wallet__amount { margin-top: $space-3; font-size: 64rpx; font-weight: $font-weight-bold; font-variant-numeric: tabular-nums; }

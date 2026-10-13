@@ -5,6 +5,9 @@
       <text>{{ error }}</text><text class="credit__retry" @click="load">重试</text>
     </view>
     <template v-else-if="summary">
+      <view v-if="stale" class="credit__stale" @click="load">
+        更新失败，当前为上次查询结果。点击重试 ›
+      </view>
       <view class="credit__hero">
         <text class="credit__hero-label">本客户应收未结</text>
         <text class="credit__hero-amount">¥{{ displayAmount(summary.openReceivableAmount) }}</text>
@@ -48,6 +51,7 @@
   const recent = ref([]);
   const loading = ref(false);
   const error = ref('');
+  const stale = ref(false);
   let requestSeq = 0;
   let showed = false;
 
@@ -73,11 +77,12 @@
       if (seq !== requestSeq) return;
       summary.value = summaryResponse.data;
       recent.value = listResponse.data?.list || [];
+      stale.value = false;
     } catch (failure) {
       if (seq !== requestSeq) return;
       smartSentry.captureError(failure);
       error.value = failure?.message || '账期信息加载失败';
-      if (summary.value) uni.showToast({ title: error.value, icon: 'none' });
+      stale.value = !!summary.value;
     } finally {
       if (seq === requestSeq) loading.value = false;
     }
@@ -99,6 +104,7 @@
   .credit { min-height: 100vh; padding: $space-4 $space-4 $space-8; box-sizing: border-box; background: $color-bg-page; }
   .credit__state { padding: $space-8 $space-4; text-align: center; color: $color-text-secondary; }
   .credit__retry { display: block; margin-top: $space-4; color: $color-primary; }
+  .credit__stale { margin-bottom: $space-3; padding: $space-3 $space-4; border-radius: $radius-md; background: $color-warning-light; color: $color-text-primary; font-size: $font-size-sm; }
   .credit__hero { display: flex; flex-direction: column; padding: $space-6; border-radius: $radius-lg; background: $color-primary; color: $color-text-inverse; }
   .credit__hero-label { font-size: $font-size-sm; opacity: .9; }
   .credit__hero-amount { margin-top: $space-3; font-size: 64rpx; font-weight: $font-weight-bold; font-variant-numeric: tabular-nums; }
