@@ -14,6 +14,7 @@ import com.xsy.scm.mall.funds.domain.form.MallWalletMovementQueryForm;
 import com.xsy.scm.mall.funds.service.MallFundsQueryService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -69,14 +70,19 @@ class MallFundsQueryPgIT extends ScmW5PgITBase {
     @Test
     void redAndWriteOffFactsDriveOpenAmountOverdueAndFilteredPages() {
         Long customerId = newCustomer();
+        jdbc.update("UPDATE xsy_customer SET credit_period_type = 'BY_TIME', credit_period_value = 1,"
+                + " credit_period_unit = 'DAY', updated_at = now() WHERE id = ?", customerId);
+        evictMybatisCache();
         Long skuId = newOnShelfSku("FUNDS-N");
         LocalDate overdueDate = LocalDate.now(BUSINESS_ZONE).minusDays(1);
-        Long adjusted = normalReceivable(confirmedSalesOrder(customerId, skuId, "1.0000", "1.0000"),
-                "100.0000", overdueDate);
-        normalReceivable(confirmedSalesOrder(customerId, skuId, "1.0000", "1.0000"),
-                "25.0000", LocalDate.now(BUSINESS_ZONE).plusDays(3));
+        Long adjustedOrder = confirmedSalesOrder(customerId, skuId, "1.0000", "1.0000");
+        Long currentOrder = confirmedSalesOrder(customerId, skuId, "1.0000", "1.0000");
+        Long adjusted = normalReceivable(adjustedOrder, "100.0000", overdueDate);
+        normalReceivable(currentOrder, "25.0000", LocalDate.now(BUSINESS_ZONE).plusDays(1));
         redReceivable(adjusted, "20.0000");
         writeOff(adjusted, "30.0000");
+        assertThat(jdbc.queryForObject("SELECT due_date FROM xsy_finance_receivable WHERE id = ?",
+                LocalDate.class, adjusted)).isEqualTo(overdueDate);
 
         RequestMallCustomer identity = identity(customerId);
         assertThat(funds.walletSummary(identity).getBalanceVisible()).isTrue();
@@ -87,6 +93,7 @@ class MallFundsQueryPgIT extends ScmW5PgITBase {
         assertThat(detail.getWrittenOffAmount()).isEqualByComparingTo("30.0000");
         assertThat(detail.getOpenAmount()).isEqualByComparingTo("50.0000");
         assertThat(detail.getSettleState()).isEqualTo("PARTIAL");
+        assertThat(detail.getDueDate()).isEqualTo(overdueDate);
         assertThat(detail.getOverdue()).isTrue();
         assertThat(funds.creditSummary(identity).getOpenReceivableAmount()).isEqualByComparingTo("75.0000");
         assertThat(funds.creditSummary(identity).getEarliestOverdueDate()).isEqualTo(overdueDate);
@@ -122,14 +129,15 @@ class MallFundsQueryPgIT extends ScmW5PgITBase {
     }
 
     private Long normalReceivable(Long orderId, String amount, LocalDate dueDate) {
+        OffsetDateTime eventAt = dueDate.minusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime();
         return jdbc.queryForObject("""
                 INSERT INTO xsy_finance_receivable (receivable_no, source_type, source_id, order_id,
                     customer_id, customer_name_snapshot, settlement_customer_id,
-                    settlement_customer_name_snapshot, entry_type, amount, event_at, due_date)
+                    settlement_customer_name_snapshot, entry_type, amount, event_at)
                 SELECT ?, 'SALES_ORDER', id, id, customer_id, customer_name_snapshot,
-                    settlement_customer_id, settlement_customer_name_snapshot, 'NORMAL', ?, now(), ?
+                    settlement_customer_id, settlement_customer_name_snapshot, 'NORMAL', ?, ?
                 FROM xsy_sales_order WHERE id = ? RETURNING id
-                """, Long.class, "AR-FUNDS-" + UUID.randomUUID(), new BigDecimal(amount), dueDate, orderId);
+                """, Long.class, "AR-FUNDS-" + UUID.randomUUID(), new BigDecimal(amount), eventAt, orderId);
     }
 
     private void redReceivable(Long originalId, String amount) {
