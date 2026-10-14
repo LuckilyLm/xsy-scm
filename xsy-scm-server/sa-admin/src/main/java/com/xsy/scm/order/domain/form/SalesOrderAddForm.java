@@ -33,4 +33,13 @@ public class SalesOrderAddForm {
     @NotEmpty(message = "订单明细不能为空")
     @Size(max = 500, message = "订单明细不能超过500项")
     private List<SalesOrderItemForm> items;
+    /**
+     * 商城客户预选的券实例；仅 {@code orderSource = MALL} 的建单路径持久化， 后台录单忽略该字段（后台用券在确认命令上显式给出）。
+     */
+    private Long mallCouponInstanceId;
+
+    /**
+     * 商城客户在结算页选定的结算方式（WALLET / CREDIT / COD）。仅商城来源的订单会带；后台建单不填。
+     */
+    private String settlementMethod;
 }

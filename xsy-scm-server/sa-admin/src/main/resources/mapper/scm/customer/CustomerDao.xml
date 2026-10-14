@@ -5,6 +5,7 @@
     <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式契约） -->
     <sql id="customerColumns">
         c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.customer_type_id, c.status, c.settle_mode,
+        c.cod_allowed,
         c.credit_limit, c.parent_customer_id, c.settlement_customer_id, c.seller_id, c.supplier_id,
         c.contact_name, c.contact_phone, c.address,
         c.credit_period_type, c.credit_amount_threshold, c.credit_period_value, c.credit_period_unit,

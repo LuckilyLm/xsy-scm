@@ -25,14 +25,19 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /** 订单级资金退款：先冻结比例分摊，再逐来源幂等执行。 */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefundFundingAllocationService {
     private static final int SCALE = 4;
+    private static final int FAILURE_CODE_LIMIT = 64;
+    private static final int FAILURE_MESSAGE_LIMIT = 500;
     private static final String IDEMPOTENCY_SCOPE = "REFUND_FUNDING_EXECUTE";
 
     private final RefundFundingAllocator allocator;
@@ -176,8 +181,13 @@ public class RefundFundingAllocationService {
             try {
                 Long resultId;
                 if (ScmPaymentMethodEnum.BALANCE.name().equals(row.getSourceMethod())) {
+                    // 返还时刻取「执行时刻」，不取 refund.completedAt()：分摊只由人工与重试入口触发，
+                    // 钱包真正加钱发生在这一行执行的时候，两者可以相隔很久。旧钱包路径
+                    // （CustomerBalanceService.refundToSettlement）与退款完成同事务，才要求 occurred_at 等于
+                    // completed_at 并被 hasInvalidReturns 校验；本路径没有那条约束，沿用业务完成时间会让
+                    // 客户流水与商城「资金到账时间」都显示成退款单完成时刻。
                     resultId = refundBalanceSink.refundAllocation(row.getId(), refund.customerId(),
-                            row.getSettlementCustomerId(), row.getAllocatedAmount(), refund.completedAt());
+                            row.getSettlementCustomerId(), row.getAllocatedAmount(), OffsetDateTime.now());
                 } else {
                     var transaction = paymentTransactionDao.lockById(row.getSourceId());
                     paymentRefundService.executeAllocation(row.getId(), refund.refundId(), transaction,
@@ -187,8 +197,10 @@ public class RefundFundingAllocationService {
                 }
                 allocationDao.markSucceeded(row.getId(), resultId, operator);
             } catch (RuntimeException exception) {
-                allocationDao.markFailed(row.getId(), exception.getClass().getSimpleName(), exception.getMessage(),
-                        operator);
+                log.warn("退款资金来源执行失败：refundId={} allocationId={}", refund.refundId(), row.getId(), exception);
+                allocationDao.markFailed(row.getId(),
+                        StringUtils.abbreviate(exception.getClass().getSimpleName(), FAILURE_CODE_LIMIT),
+                        StringUtils.abbreviate(exception.getMessage(), FAILURE_MESSAGE_LIMIT), operator);
             }
         }
     }

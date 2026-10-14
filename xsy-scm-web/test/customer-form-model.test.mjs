@@ -143,3 +143,10 @@ test('写请求体不含客户编码：编码由服务端生成', () => {
   assert.equal('customerCode' in payload, false);
   assert.equal(payload.name, '客户甲');
 });
+
+test('货到付款默认关闭，只有后台明确勾选才提交开通', () => {
+  const fresh = emptyCustomer();
+  assert.equal(fresh.codAllowed, false);
+  assert.equal(toCustomerPayload(fresh).codAllowed, false);
+  assert.equal(toCustomerPayload({ ...fresh, codAllowed: true }).codAllowed, true);
+});

@@ -1,11 +1,13 @@
 package com.xsy.scm.mall;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.customer.domain.form.CustomerAddForm;
 import com.xsy.scm.customer.domain.form.CustomerStatusForm;
@@ -44,6 +46,14 @@ import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderVO;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.order.service.SalesOrderService;
+import com.xsy.scm.promotion.constant.PromotionErrorCode;
+import com.xsy.scm.promotion.constant.ScmPromotionCouponDiscountTypeEnum;
+import com.xsy.scm.promotion.constant.ScmPromotionStatusEnum;
+import com.xsy.scm.promotion.domain.form.PromotionCouponForm;
+import com.xsy.scm.promotion.domain.form.PromotionStatusForm;
+import com.xsy.scm.promotion.service.PromotionCouponService;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -52,9 +62,12 @@ import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 商城主链端到端联调（真实 PostgreSQL + 真实服务，不 mock 商城域）。
@@ -83,6 +96,8 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
     @Autowired
     private MallAccountService mallAccountService;
     @Autowired
+    private PromotionCouponService promotionCouponService;
+    @Autowired
     private MallAuthService mallAuthService;
     @Autowired
     private MallCatalogService mallCatalogService;
@@ -100,6 +115,72 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
     private SalesOrderQueryService salesOrderQueryService;
 
     private int customerSequence;
+
+    @Test
+    @EnabledIfSystemProperty(named = "scm.mall.promotion.confirm-it", matches = "true")
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void expiredPreselectedCouponBlocksOrderConfirmation() {
+        String expectedDatabase = System.getProperty("scm.mall.promotion.confirm-db", "");
+        assertThat(expectedDatabase).matches("xsy_(verify|codex_mkt)_[A-Za-z0-9_]+");
+        assertThat(jdbc.queryForObject("SELECT current_database()", String.class)).isEqualTo(expectedDatabase);
+        Long sellerId = newEmployee("coupon");
+        Long skuId = newOnShelfSku("coupon");
+        Long customerId = newCustomerAssignedTo(sellerId);
+        PromotionCouponForm coupon = new PromotionCouponForm();
+        coupon.setCouponCode(prefix + "-MALL-COUPON");
+        coupon.setCouponName(prefix + "商城预选券");
+        coupon.setDiscountType(ScmPromotionCouponDiscountTypeEnum.AMOUNT.name());
+        coupon.setDiscountValue(new BigDecimal("0.5000"));
+        coupon.setMinOrderAmount(BigDecimal.ZERO);
+        coupon.setClaimable(true);
+        coupon.setValidFrom(OffsetDateTime.now().minusMinutes(1));
+        coupon.setValidTo(OffsetDateTime.now().plusDays(1));
+        Long couponId = promotionCouponService.save(coupon);
+        PromotionStatusForm status = new PromotionStatusForm();
+        status.setVersion(0);
+        status.setStatus(ScmPromotionStatusEnum.ACTIVE.name());
+        promotionCouponService.updateStatus(couponId, status);
+
+        RequestMallCustomer customer = signIn(openMallAccount(customerId));
+        Long instanceId = promotionCouponService.claimFromMall(customerId, couponId, prefix + ":claim");
+        Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
+        MallCheckoutPreviewForm previewForm = previewForm(skuId, addressId);
+        previewForm.setCouponInstanceId(instanceId);
+        MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm);
+        assertThat(preview.getPromotion().getCouponDiscount()).isEqualByComparingTo("0.5000");
+        MallOrderSubmitForm submitForm = submitForm(skuId, addressId, preview.getPriceFingerprint());
+        submitForm.setCouponInstanceId(instanceId);
+        MallOrderSubmitVO submitted = mallCheckoutService.submit(customer, submitForm, prefix + ":submit-coupon");
+        assertThat(submitted.getStatus()).isEqualTo("PENDING");
+
+        asAdmin();
+        SalesOrderDetailVO order = salesOrderQueryService.detail(submitted.getOrderId());
+        OrderActualQuantityForm actual = new OrderActualQuantityForm();
+        actual.setOrderId(order.getOrderId());
+        actual.setItemId(order.getItems().getFirst().getItemId());
+        actual.setVersion(order.getItems().getFirst().getVersion());
+        actual.setActualQuantity("2.0000");
+        actual.setReason("券失效确认回归");
+        SalesOrderDetailVO weighted = salesOrderService.actualQuantity(actual, prefix + ":actual-coupon");
+
+        assertThat(jdbc.update("UPDATE xsy_promotion_coupon SET valid_from = ?, valid_to = ? WHERE id = ?",
+                java.sql.Timestamp.from(OffsetDateTime.now().minusHours(2).toInstant()),
+                java.sql.Timestamp.from(OffsetDateTime.now().minusHours(1).toInstant()), couponId)).isEqualTo(1);
+        evictMybatisCache();
+        OrderVersionForm confirm = new OrderVersionForm();
+        confirm.setOrderId(weighted.getOrderId());
+        confirm.setVersion(weighted.getVersion());
+        assertThatThrownBy(() -> salesOrderService.confirm(confirm, prefix + ":confirm-coupon"))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        failure -> assertThat(failure.getErrorCode()).isEqualTo(PromotionErrorCode.COUPON_STATE_INVALID));
+        evictMybatisCache();
+        assertThat(jdbc.queryForObject("SELECT status FROM xsy_sales_order WHERE id = ?", String.class,
+                submitted.getOrderId())).isEqualTo("PENDING");
+        assertThat(jdbc.queryForObject("SELECT status FROM xsy_promotion_coupon_instance WHERE id = ?", String.class,
+                instanceId)).isEqualTo("AVAILABLE");
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_order_discount WHERE sales_order_id = ?",
+                Integer.class, submitted.getOrderId())).isZero();
+    }
 
     @Test
     void mallOrderRunsFromLoginToAdminConfirmation() {
@@ -504,6 +585,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         form.setAddressId(addressId);
         form.setPriceFingerprint(priceFingerprint);
         form.setRemark("IT 商城下单");
+        form.setSettlementMethod("COD");
         return form;
     }
 
@@ -609,6 +691,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         form.setName(prefix + "-M" + (++customerSequence) + "客户");
         form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
+        form.setCodAllowed(true);
         form.setSellerId(sellerId);
         Long customerId;
         try (MockedStatic<StpUtil> ignored = mockStatic(StpUtil.class)) {

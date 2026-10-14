@@ -4,7 +4,8 @@
 
     <sql id="columns">
         id, coupon_code, coupon_name, discount_type, discount_value, min_order_amount, valid_from, valid_to,
-        status, remark, version, deleted, created_at, updated_at, created_by, updated_by
+        status, claimable, per_customer_limit, total_limit, remark, version, deleted, created_at, updated_at,
+        created_by, updated_by
     </sql>
 
     <select id="queryPage" resultType="com.xsy.scm.promotion.domain.entity.PromotionCouponEntity">

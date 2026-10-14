@@ -12,6 +12,12 @@ node_modules
 dist
 *.local
 
+# 微信开发者工具本地工程文件：由 IDE 生成，含 appid 与本人机器相关设置，
+# 因此不进版本库，避免 `git add .` 顺带把本机配置提交上去。
+# 若团队决定共享 appid，请只放行 project.config.json（project.private.config.json 始终忽略）。
+project.config.json
+project.private.config.json
+
 # Editor directories and files
 .idea
 *.suo

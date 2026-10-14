@@ -43,6 +43,15 @@ public class PromotionCouponEntity {
     /** {@code DRAFT} / {@code ACTIVE} / {@code STOPPED}。 */
     private String status;
 
+    /** 是否开放商城客户自助领取；后台直接发券不受此标记约束。 */
+    private Boolean claimable = false;
+
+    /** 每个客户经商城入口可领取的上限；{@code null} 表示不限。 */
+    private Integer perCustomerLimit;
+
+    /** 经商城入口可领取的总量上限；{@code null} 表示不限。 */
+    private Integer totalLimit;
+
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String remark;
 

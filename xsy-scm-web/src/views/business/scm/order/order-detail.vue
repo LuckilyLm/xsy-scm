@@ -162,6 +162,9 @@
               allow-clear
               style="width: 100%"
           />
+          <span v-if="order?.mallCouponInstanceId" class="scm-cell-hint">
+            商城下单时预选了券；清空选择即可在本次确认时不使用。
+          </span>
         </a-form-item>
         <a-alert v-if="previewError" :message="previewError" type="warning" show-icon class="coupon-hint"/>
         <a-descriptions v-if="discountPreview" :column="1" size="small" bordered>
@@ -276,6 +279,7 @@ const creditOpen = ref(false), creditCheck = ref<CreditCheck>(), creditOverride 
  * 活动优惠由服务端按当前生效规则算出，前端不拼优惠组合。
  */
 const couponInstanceId = ref<Id | undefined>();
+const clearMallCoupon = ref(false);
 const couponOptions = ref<{value: Id; label: string}[]>([]);
 const couponLoading = ref(false);
 const discountPreview = ref<PromotionDiscount>();
@@ -289,7 +293,8 @@ const appliedActivities = computed<OrderDiscountAppliedActivity[]>(
     () => order.value?.discount?.activitySnapshot?.applied ?? []);
 
 async function loadCoupons() {
-  couponInstanceId.value = undefined;
+  clearMallCoupon.value = false;
+  couponInstanceId.value = order.value?.mallCouponInstanceId ?? undefined;
   couponOptions.value = [];
   discountPreview.value = undefined;
   previewError.value = '';
@@ -305,6 +310,9 @@ async function loadCoupons() {
       value: row.id,
       label: `${row.couponName ?? row.couponCode ?? '优惠券'}（${row.instanceNo}）`,
     }));
+    if (couponInstanceId.value && !couponOptions.value.some((option) => option.value === couponInstanceId.value)) {
+      couponOptions.value.unshift({value: couponInstanceId.value, label: '商城预选券（当前不可用）'});
+    }
   } catch (e) {
     // 券列表拉不到只影响「用哪张券」，不该挡住确认本身
     previewError.value = orderError(e);
@@ -345,7 +353,8 @@ async function loadPreview() {
   }
 }
 
-watch(couponInstanceId, () => {
+watch(couponInstanceId, (selected) => {
+  clearMallCoupon.value = !!order.value?.mallCouponInstanceId && !selected;
   void loadPreview();
 });
 
@@ -378,7 +387,8 @@ async function confirmWithCredit() {
   try {
     await orderApi.confirm({orderId: order.value.orderId, version: order.value.version,
       creditOverride: creditOverride.value, creditOverrideReason: creditOverride.value ? creditOverrideReason.value.trim() : undefined,
-      couponInstanceId: couponInstanceId.value ?? undefined});
+      couponInstanceId: couponInstanceId.value ?? undefined,
+      clearMallCoupon: clearMallCoupon.value});
     creditOpen.value = false;
     await load();
     emit('saved');

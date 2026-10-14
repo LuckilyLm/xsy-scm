@@ -53,4 +53,6 @@ public class MallOrderVO {
     private MallOrderDeliveryVO delivery;
     /** 配送进度节点（已提交 → 已接单 → 已发车 → 已签收），仅详情返回；已取消订单只到「已取消」 */
     private List<MallOrderProgressNodeVO> progress = new ArrayList<>();
+    /** 确认时冻结的客户可见优惠；未确认或无优惠时为 null。 */
+    private MallOrderDiscountVO discount;
 }

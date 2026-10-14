@@ -99,6 +99,17 @@ public class MallCatalogService {
         return rows;
     }
 
+    @Transactional(readOnly = true)
+    public List<MallProductVO> newest(RequestMallCustomer customer, int limit) {
+        List<Long> skuIds = catalogDao.newestSkuIds(customer.getCustomerId(), Math.min(Math.max(limit, 1), 20));
+        if (skuIds.isEmpty()) {
+            return List.of();
+        }
+        List<MallProductVO> rows = catalogDao.productsBySkuIds(customer.getCustomerId(), skuIds);
+        enrich(customer, rows);
+        return rows;
+    }
+
     private void enrich(RequestMallCustomer customer, List<MallProductVO> rows) {
         if (rows.isEmpty()) {
             return;

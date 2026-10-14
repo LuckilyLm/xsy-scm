@@ -23,6 +23,7 @@ public enum MallErrorCode implements ScmErrorCode {
     CHECKOUT_EMPTY(40084, "请选择要结算的商品"),
     CHECKOUT_ADDRESS_REQUIRED(40085, "请选择收货地址"),
     CHECKOUT_IDEMPOTENCY_REQUIRED(40086, "缺少幂等键，无法安全提交订单"),
+    CHECKOUT_SETTLEMENT_METHOD_REQUIRED(40087, "请选择结算方式后再提交订单"),
     CHECKOUT_ITEM_UNAVAILABLE(40984, "所选商品中有不可售项，请返回购物车调整"),
     CHECKOUT_PRICE_CHANGED(40985, "商品价格已变化，请重新确认结算金额"),
     ORDER_NOT_FOUND(40489, "订单不存在"),
@@ -30,7 +31,9 @@ public enum MallErrorCode implements ScmErrorCode {
     ORDER_ALREADY_FULFILLING(40987, "订单已进入配送流程，无法取消，请联系业务员处理"),
     REORDER_NOTHING_ADDED(40988, "历史商品均已下架或暂无客户价，未能加入购物车"),
     AFTERSALE_NOT_FOUND(40485, "售后单不存在"),
-    AFTERSALE_NOT_CANCELABLE(40989, "当前售后状态不允许撤销");
+    AFTERSALE_NOT_CANCELABLE(40989, "当前售后状态不允许撤销"),
+    FUNDS_RECEIVABLE_NOT_FOUND(40490, "账单不存在"),
+    CHECKOUT_SETTLEMENT_METHOD_UNAVAILABLE(40991, "所选结算方式当前不可用，请重新选择");
 
     private final int code;
     private final String msg;

@@ -1,8 +1,8 @@
 package com.xsy.scm.payment;
 
+import com.xsy.scm.payment.service.RefundFundingAllocator;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.xsy.scm.payment.service.RefundFundingAllocator;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;

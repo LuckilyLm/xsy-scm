@@ -1,10 +1,9 @@
 package com.xsy.scm.mall.aftersale.constant;
 
-import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
 import com.xsy.scm.order.constant.ScmOrderReturnStatusEnum;
 
 /**
- * 商城售后单的展示分类：由正式退货单状态与退款单状态派生，不新增状态机。
+ * 商城售后单的展示分类：由正式退货单与实际退款资金事实派生，不新增状态机。
  */
 public enum MallAfterSaleDisplayStatusEnum {
     /** 已提交，等待平台审核 */
@@ -19,10 +18,14 @@ public enum MallAfterSaleDisplayStatusEnum {
     CANCELLED;
 
     /**
-     * @param returnStatus 正式退货单状态
-     * @param refundStatus 退款单状态；该退货单没有退款单（净额为 0）时为 null
+     * @param returnStatus
+     *            正式退货单状态
+     * @param hasRefund
+     *            该退货单是否有应退金额的退款单
+     * @param funded
+     *            退款资金是否实际完成
      */
-    public static MallAfterSaleDisplayStatusEnum derive(String returnStatus, String refundStatus) {
+    public static MallAfterSaleDisplayStatusEnum derive(String returnStatus, boolean hasRefund, boolean funded) {
         if (ScmOrderReturnStatusEnum.REJECTED.name().equals(returnStatus)) {
             return REJECTED;
         }
@@ -30,8 +33,7 @@ public enum MallAfterSaleDisplayStatusEnum {
             return CANCELLED;
         }
         if (ScmOrderReturnStatusEnum.APPROVED.name().equals(returnStatus)) {
-            return refundStatus == null || ScmOrderRefundStatusEnum.COMPLETED.name().equals(refundStatus) ? REFUNDED
-                    : REFUNDING;
+            return !hasRefund || funded ? REFUNDED : REFUNDING;
         }
         return REVIEWING;
     }

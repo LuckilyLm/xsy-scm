@@ -1,10 +1,13 @@
 package com.xsy.scm.mall.order.domain.form;
 
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import lombok.Data;
@@ -26,4 +29,14 @@ public class MallOrderSubmitForm {
     /** 期望配送日期 yyyy-MM-dd，可空；服务端按当日 00:00（Asia/Shanghai）落库 */
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "期望配送日期格式应为 yyyy-MM-dd")
     private String expectDeliveryDate;
+    /**
+     * 客户预选的券实例。提交时服务端重验归属、状态与门槛后随订单持久化； 正式占用（冻结）仍在订单确认命令内完成，预览与预选都不占用券。
+     */
+    @Positive(message = "券实例 ID 必须大于0")
+    private Long couponInstanceId;
+    /**
+     * 新下单必须主动选定结算方式。此字段保持可空以便旧请求用同一幂等键重放成功订单；新请求会在幂等预检后拒绝空值。
+     */
+    @ScmEnumValue(enumClass = ScmSettlementMethodEnum.class, message = "结算方式无效")
+    private String settlementMethod;
 }

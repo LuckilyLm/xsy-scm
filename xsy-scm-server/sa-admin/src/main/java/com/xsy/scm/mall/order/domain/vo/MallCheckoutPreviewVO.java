@@ -25,4 +25,12 @@ public class MallCheckoutPreviewVO {
     private List<Long> unavailableSkuIds = new ArrayList<>();
     /** 提交时必须原样回传；服务端在提交时按当前价格重算比对 */
     private String priceFingerprint;
+    /** 优惠试算结果；试算失败（如券不可用）时为 null，由 promotionError 说明 */
+    private MallCheckoutPromotionVO promotion;
+    /** 优惠试算失败原因；商品与金额照常返回，优惠不生效 */
+    private String promotionError;
+    /**
+     * 可选结算方式（余额 / 账期 / 货到付款）及其实时可用性；只读投影，真正校验在下单与确认时。
+     */
+    private List<MallSettlementOptionVO> settlementOptions = new ArrayList<>();
 }

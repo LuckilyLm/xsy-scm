@@ -14,6 +14,7 @@ import com.xsy.scm.notification.service.ScmNotificationService;
 import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
 import com.xsy.scm.order.constant.ScmOrderQuantitySourceEnum;
+import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
@@ -61,6 +62,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ACTUAL_NOT_ALLOWED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ACTUAL_QUANTITY_REQUIRED;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ACTUAL_REASON_REQUIRED;
@@ -97,6 +99,7 @@ public class SalesOrderService {
     /** SCM 数据范围的唯一解析入口；只在「能否对这户客户开单」这类归属判定上用。 */
     private final ScmDataScopeService dataScopeService;
     private final OrderCreditService orderCreditService;
+    private final OrderSettlementConfirmationPolicy settlementConfirmationPolicy;
     private final ScmNotificationService notificationService;
 
     /**
@@ -265,6 +268,12 @@ public class SalesOrderService {
         salesOrder.setOrderNo(numbers.order());
         salesOrder.setStatus(ScmOrderStatusEnum.DRAFT.name());
         header(salesOrder, salesOrderAddForm);
+        // 客户预选券只随商城建单持久化；后台录单即使误带该字段也不落库， 后台用券一律由确认命令显式给出。
+        if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource())) {
+            salesOrder.setMallCouponInstanceId(salesOrderAddForm.getMallCouponInstanceId());
+            // 结算方式与预选券同源：只认商城渠道，后台录单不采信请求体里的结算方式。
+            salesOrder.setSettlementMethod(salesOrderAddForm.getSettlementMethod());
+        }
         salesOrder.setOrderedTotalAmount(total(rows));
         stamp(salesOrder, true);
         salesOrderDao.insert(salesOrder);
@@ -506,21 +515,26 @@ public class SalesOrderService {
         }
         salesOrder.setSettlementTotalAmount(OrderAmountCalculator
                 .orderAmount(rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).toList()));
-        var check = orderCreditService.checkForSettlementConfirmation(salesOrder.getSettlementCustomerId(),
-                salesOrder.getSettlementTotalAmount());
-        if (!Boolean.TRUE.equals(check.getAllowed())) {
-            if (confirmation == null || !Boolean.TRUE.equals(confirmation.getCreditOverride())
-                    || confirmation.getCreditOverrideReason() == null
-                    || confirmation.getCreditOverrideReason().isBlank()) {
-                throw new ScmBusinessException(OrderErrorCode.ORDER_CREDIT_BLOCKED);
+        if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource())
+                && salesOrder.getSettlementMethod() != null) {
+            settlementConfirmationPolicy.validate(salesOrder);
+        } else {
+            var check = orderCreditService.checkForSettlementConfirmation(salesOrder.getSettlementCustomerId(),
+                    salesOrder.getSettlementTotalAmount());
+            if (!Boolean.TRUE.equals(check.getAllowed())) {
+                if (confirmation == null || !Boolean.TRUE.equals(confirmation.getCreditOverride())
+                        || confirmation.getCreditOverrideReason() == null
+                        || confirmation.getCreditOverrideReason().isBlank()) {
+                    throw new ScmBusinessException(OrderErrorCode.ORDER_CREDIT_BLOCKED);
+                }
+                StpUtil.checkPermission(OrderPermission.CREDIT_OVERRIDE);
+                String reason = confirmation.getCreditOverrideReason().trim();
+                salesOrder.setCreditOverrideReason(reason);
+                orderLogs.record(salesOrder.getId(), ScmOrderOperationTypeEnum.CREDIT_OVERRIDE, reason, null,
+                        Map.of("settlementCustomerId", salesOrder.getSettlementCustomerId(), "orderAmount",
+                                salesOrder.getSettlementTotalAmount().toPlainString(), "overLimit",
+                                check.getOverLimit(), "overdue", check.getOverdue()));
             }
-            StpUtil.checkPermission(OrderPermission.CREDIT_OVERRIDE);
-            String reason = confirmation.getCreditOverrideReason().trim();
-            salesOrder.setCreditOverrideReason(reason);
-            orderLogs.record(salesOrder.getId(), ScmOrderOperationTypeEnum.CREDIT_OVERRIDE, reason, null,
-                    Map.of("settlementCustomerId", salesOrder.getSettlementCustomerId(), "orderAmount",
-                            salesOrder.getSettlementTotalAmount().toPlainString(), "overLimit", check.getOverLimit(),
-                            "overdue", check.getOverdue()));
         }
         salesOrder.setStatus(ScmOrderStatusEnum.CONFIRMED.name());
         salesOrder.setConfirmedAt(OffsetDateTime.now());
@@ -528,13 +542,25 @@ public class SalesOrderService {
         // 优惠冻结并入确认命令，而不是让客户端确认后再单独调一次：否则会出现
         // 「订单已确认、优惠却没冻结」的中间态。行基础金额取 ordered_line_amount
         // （下单量 × 锁定单价），该口径由负责人 2026-10-03 确认。
+        // 券来源：确认表单显式给出的优先；表单为空时回退到商城客户下单时的预选券
+        // （仅 MALL 来源订单可能有）。冻结会重验券的归属、状态、模板生效与门槛，
+        // 预选券在确认前已失效的，确认按券校验规则失败，由操作员改选或客户取消重下。
+        boolean clearMallCoupon = confirmation != null && Boolean.TRUE.equals(confirmation.getClearMallCoupon());
+        if (clearMallCoupon && confirmation.getCouponInstanceId() != null) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        Long couponInstanceId = clearMallCoupon
+                ? null
+                : confirmation != null && confirmation.getCouponInstanceId() != null
+                        ? confirmation.getCouponInstanceId()
+                        : salesOrder.getMallCouponInstanceId();
         promotionDiscountService.freeze(
                 new PromotionOrderFacts(salesOrder.getId(), salesOrder.getCustomerId(),
                         rows.stream()
                                 .map(row -> new PromotionOrderFacts.Line(row.getId(), row.getSkuId(),
                                         row.getOrderedQuantity(), row.getOrderedLineAmount()))
                                 .toList()),
-                confirmation == null ? null : confirmation.getCouponInstanceId());
+                couponInstanceId);
         notificationService.sendOnce("ORDER_CONFIRMED:" + salesOrder.getId(), "ORDER_CONFIRMED",
                 salesOrder.getSellerId(), salesOrder.getId(), "销售订单已确认",
                 "销售订单 " + salesOrder.getOrderNo() + " 已确认，可进入采购与履约流程。");

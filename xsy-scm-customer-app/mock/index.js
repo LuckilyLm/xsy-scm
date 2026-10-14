@@ -2,9 +2,8 @@
  * Mock 契约层 · 入口
  *
  * ============================ 这是什么 ============================
- * 后端 `/scm/mall/**` 尚未实现（xsy-scm-server 里没有 scm/mall 模块），
- * 而本分支只负责小程序客户端。为了不让客户端开发被后端阻塞，
- * 这里按**冻结的契约**提供一层假后端。
+ * 真实后端已有 `/scm/mall/**` 接口；本层只供离线页面开发。
+ * 资金 Mock 是空账本，不代表真实充值、应收或授信事实。
  *
  * ============================ 为什么这样设计 ============================
  * mock 挂在**请求层内部**，而不是替换 `src/api/mall/**`：
@@ -27,6 +26,8 @@ import { cartRoutes } from './routes/cart';
 import { addressRoutes } from './routes/address';
 import { orderRoutes } from './routes/order';
 import { afterSaleRoutes } from './routes/after-sale';
+import { fundsRoutes } from './routes/funds';
+import { promotionRoutes } from './routes/promotion';
 import { delay } from './helpers';
 import { findSession } from './session';
 import { USER_TOKEN } from '@/constants/local-storage-key-const';
@@ -34,7 +35,16 @@ import { USER_TOKEN } from '@/constants/local-storage-key-const';
 /** 是否启用 mock。Vite 在构建时会把 import.meta.env.* 替换为字面量，便于 DCE。 */
 export const USE_MOCK = import.meta.env.VITE_APP_USE_MOCK === 'true';
 
-const ROUTES = [...authRoutes, ...catalogRoutes, ...cartRoutes, ...addressRoutes, ...orderRoutes, ...afterSaleRoutes];
+const ROUTES = [
+  ...authRoutes,
+  ...catalogRoutes,
+  ...cartRoutes,
+  ...addressRoutes,
+  ...orderRoutes,
+  ...afterSaleRoutes,
+  ...fundsRoutes,
+  ...promotionRoutes,
+];
 
 /**
  * 匹配 `/a/:id/b` 形式的路径，返回参数对象；不匹配返回 null。

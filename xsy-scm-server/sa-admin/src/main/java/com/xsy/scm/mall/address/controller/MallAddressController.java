@@ -42,8 +42,7 @@ public class MallAddressController {
     }
 
     @PutMapping("/{id}")
-    public ResponseDTO<List<MallAddressVO>> update(@PathVariable Long id,
-            @Valid @RequestBody MallAddressSaveForm form) {
+    public ResponseDTO<List<MallAddressVO>> update(@PathVariable Long id, @Valid @RequestBody MallAddressSaveForm form) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(addressService.update(MallRequestSupport.current(), id, form));
     }

@@ -62,6 +62,9 @@ public class CustomerEntity {
 
     private String settleMode;
 
+    /** 后台明确开通后，客户才可在商城选择货到付款。 */
+    private Boolean codAllowed = false;
+
     /**
      * 授信额度，{@code NUMERIC(18,4)}，非空、默认 0。
      */

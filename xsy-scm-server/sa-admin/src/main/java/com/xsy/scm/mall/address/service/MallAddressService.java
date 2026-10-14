@@ -1,6 +1,5 @@
 package com.xsy.scm.mall.address.service;
 
-import com.xsy.scm.common.constant.ScmGeoCoordinateSystemEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
@@ -16,7 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 客户收货地址：归属客户，同一客户的多个采购账号共享。 客户 ID 一律取自登录身份，请求体不承载归属；一个客户至多一个默认地址。
+ * 客户收货地址：归属客户，同一客户的多个采购账号共享。
+ * 客户 ID 一律取自登录身份，请求体不承载归属；一个客户至多一个默认地址。
  */
 @Service
 @RequiredArgsConstructor
@@ -127,6 +127,6 @@ public class MallAddressService {
         row.setDetailAddress(form.getDetailAddress().trim());
         row.setLongitude(form.getLongitude());
         row.setLatitude(form.getLatitude());
-        row.setGeomCrs(form.getLongitude() == null ? null : ScmGeoCoordinateSystemEnum.GCJ02.name());
+        row.setGeomCrs(form.getLongitude() == null ? null : "GCJ02");
     }
 }

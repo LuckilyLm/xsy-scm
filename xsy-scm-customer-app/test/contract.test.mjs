@@ -11,7 +11,7 @@ test('SmartAdmin success contract uses code zero', () => {
   assert.match(request, /code === SUCCESS_CODE && res\?\.ok !== false/);
 });
 
-test('release only exposes authentication, catalog, cart, address, order and after-sale APIs', () => {
+test('release exposes customer-scoped commerce APIs without employee account endpoints', () => {
   const auth = read('../src/api/mall/auth-api.js');
   const api = read('../src/api/mall/index.js');
   assert.match(auth, /auth\/login/);
@@ -21,7 +21,28 @@ test('release only exposes authentication, catalog, cart, address, order and aft
   assert.match(api, /Address/);
   assert.match(api, /Order/);
   assert.match(api, /AfterSale/);
+  assert.match(api, /Funds/);
   assert.doesNotMatch(api, /Account|Home/);
+});
+
+test('funds pages use only customer read APIs and do not create payment commands', () => {
+  const api = read('../src/api/mall/funds-api.js');
+  const pages = read('../src/pages.json');
+  const mine = read('../src/pages/mine/index.vue');
+  const wallet = read('../src/pages-sub/wallet/movements.vue');
+  const credit = read('../src/pages-sub/credit/receivables.vue');
+  const mock = read('../mock/routes/funds.js');
+  assert.match(api, /\/scm\/mall\/funds\/wallet\/summary/);
+  assert.match(api, /\/scm\/mall\/funds\/receivables/);
+  assert.doesNotMatch(api, /\/scm\/(balance|finance)\//);
+  assert.doesNotMatch(api, /postRequest|recharge|repay/);
+  assert.match(pages, /pages-sub\/wallet/);
+  assert.match(pages, /pages-sub\/credit/);
+  assert.match(mine, /goWallet/);
+  assert.match(mine, /goCredit/);
+  assert.match(wallet, /row\.returnId/);
+  assert.match(credit, /settleState/);
+  assert.match(mock, /creditLimitVisible: false/);
 });
 
 test('after-sale center exposes apply, list and detail pages', () => {
@@ -125,6 +146,22 @@ test('checkout submits a price fingerprint and an idempotency key', () => {
   // 客户端不提交 customerId，也不自行改价
   assert.doesNotMatch(page, /customerId/);
   assert.doesNotMatch(page, /manualPriceOverride: true/);
+});
+
+test('checkout renders server-provided settlement options and submits the chosen method', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  // 可用性判断完全来自服务端；客户端只做默认选择与失效改选，不自行推断
+  assert.match(page, /applySettlementOptions\(data\.settlementOptions \|\| \[\]\)/);
+  assert.match(page, /settlementOptions\.value = options/);
+  // 不可用的结算方式不得被选中
+  assert.match(page, /if \(!option\.enabled\) \{/);
+  // 结算方式变化要换幂等键，避免被旧键回放成另一笔约定
+  assert.match(page, /settlementMethod\.value === option\.method\) return;[\s\S]*syncIdempotencyKey\(\);/);
+  // 提交时把选择回传服务端
+  assert.match(page, /settlementMethod: settlementMethod\.value \|\| undefined/);
+  // 共享结算下服务端不回金额，客户端必须保持沉默，不得用推算值代替
+  assert.match(page, /if \(option\.amountVisible !== true\) return '';/);
+  assert.doesNotMatch(page, /option\.availableAmount \|\| 0/);
 });
 
 test('order center exposes customer-scoped list and detail pages', () => {

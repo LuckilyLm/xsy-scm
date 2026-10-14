@@ -36,6 +36,7 @@ import com.xsy.scm.order.manager.OrderOperationLogRecorder;
 import com.xsy.scm.order.manager.OrderValidator;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -355,9 +356,13 @@ public class OrderReturnService {
 
     private OrderReturnDetailVO decide(OrderReturnDecisionForm orderReturnDecisionForm, String key,
             ScmOrderReturnStatusEnum state, boolean enforceEmployeeScope) {
+        // 商城撤销的版本会在首次成功后变化；指纹只包含稳定的售后单与固定撤销原因。
+        // 管理端驳回/撤销保留原表单指纹与版本并发约束。
+        Object requestFingerprint = !enforceEmployeeScope && state == ScmOrderReturnStatusEnum.CANCELLED
+                ? mallCancelFingerprint(orderReturnDecisionForm)
+                : orderReturnDecisionForm;
         var claim = orderIdempotencyService.claim(
-                "ORDER_RETURN_" + state.name() + ":" + orderReturnDecisionForm.getReturnId(), key,
-                orderReturnDecisionForm);
+                "ORDER_RETURN_" + state.name() + ":" + orderReturnDecisionForm.getReturnId(), key, requestFingerprint);
         if (claim.replay()) {
             // 商城重放已由 MallAfterSaleService 按客户归属判过，不再套员工范围。
             if (enforceEmployeeScope) {
@@ -386,6 +391,13 @@ public class OrderReturnService {
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
                 orderReturnEntity.getId(), result);
         return result;
+    }
+
+    static LinkedHashMap<String, Object> mallCancelFingerprint(OrderReturnDecisionForm form) {
+        LinkedHashMap<String, Object> fingerprint = new LinkedHashMap<>();
+        fingerprint.put("returnId", form.getReturnId());
+        fingerprint.put("decisionReason", form.getDecisionReason() == null ? null : form.getDecisionReason().trim());
+        return fingerprint;
     }
 
     public OrderReturnEntity lockForReceipt(Long orderReturnId) {

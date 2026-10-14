@@ -32,6 +32,9 @@ public class PromotionCouponVO {
     private OffsetDateTime validTo;
 
     private String status;
+    private Boolean claimable;
+    private Integer perCustomerLimit;
+    private Integer totalLimit;
 
     private String remark;
 
@@ -49,6 +52,9 @@ public class PromotionCouponVO {
         vo.setValidFrom(row.getValidFrom());
         vo.setValidTo(row.getValidTo());
         vo.setStatus(row.getStatus());
+        vo.setClaimable(row.getClaimable());
+        vo.setPerCustomerLimit(row.getPerCustomerLimit());
+        vo.setTotalLimit(row.getTotalLimit());
         vo.setRemark(row.getRemark());
         vo.setVersion(row.getVersion());
         return vo;

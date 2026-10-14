@@ -122,6 +122,10 @@
                       <dt class="scm-field__label">账期类型</dt>
                       <dd class="scm-field__value">{{ creditPeriodTypeText }}</dd>
                     </div>
+                    <div class="scm-field">
+                      <dt class="scm-field__label">商城货到付款</dt>
+                      <dd class="scm-field__value">{{ customer.codAllowed ? '已开通' : '未开通' }}</dd>
+                    </div>
                     <template v-if="customer.creditPeriodType === 'BY_AMOUNT'">
                       <div class="scm-field">
                         <dt class="scm-field__label">金额阈值</dt>
@@ -391,7 +395,7 @@ const mallAccountCols: TableColumnsType<MallAccount> = [
   {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
   {title: '临时密码', dataIndex: 'firstPasswordChange', width: 140, align: 'center'},
   {title: '最近登录', dataIndex: 'lastLoginAt', width: 180},
-  {title: '操作', dataIndex: 'action', width: 180, align: 'center'}
+  {title: '操作', dataIndex: 'action', width: 200, align: 'center'}
 ];
 
 const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;

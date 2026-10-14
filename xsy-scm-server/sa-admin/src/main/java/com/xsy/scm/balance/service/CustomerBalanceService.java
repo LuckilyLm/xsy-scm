@@ -151,8 +151,9 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         return returned;
     }
 
+    /** 钱包返还失败回滚到当前来源的保存点；外层订单事务继续记录该分摊为失败。 */
     @Override
-    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.NESTED, rollbackFor = Exception.class)
     public Long refundAllocation(Long allocationId, Long customerId, Long settlementCustomerId, BigDecimal amount,
             OffsetDateTime occurredAt) {
         if (allocationId == null || customerId == null || settlementCustomerId == null || occurredAt == null) {

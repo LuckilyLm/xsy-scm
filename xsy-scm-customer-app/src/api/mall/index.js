@@ -4,3 +4,5 @@ export { mallCartApi } from './cart-api';
 export { mallAddressApi } from './address-api';
 export { mallOrderApi } from './order-api';
 export { mallAfterSaleApi } from './after-sale-api';
+export { mallFundsApi } from './funds-api';
+export { mallPromotionApi } from './promotion-api';

@@ -17,6 +17,7 @@ public class SalesOrderVO {
     private String customerCodeSnapshot;
     private String customerNameSnapshot;
     private String orderSource;
+    private Long mallCouponInstanceId;
     private Long originalOrderId;
     private String supplementReason;
     private String status;

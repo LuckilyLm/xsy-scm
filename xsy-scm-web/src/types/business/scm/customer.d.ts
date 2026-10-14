@@ -101,6 +101,8 @@ export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
     contactPhone?: string | null;
     address?: string | null;
     settleMode: SettleMode;
+    /** 商城货到付款由后台显式开通，默认关闭。 */
+    codAllowed?: boolean;
     creditLimit?: string | null;
     creditPeriodType?: CreditPeriodType | null;
     creditAmountThreshold?: string | null;

@@ -38,6 +38,8 @@ public class CustomerDetailVO {
 
     private String settleMode;
 
+    private Boolean codAllowed;
+
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal creditLimit;
 

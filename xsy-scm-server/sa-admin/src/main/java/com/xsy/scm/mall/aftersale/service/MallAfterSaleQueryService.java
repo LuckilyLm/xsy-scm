@@ -5,14 +5,14 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.aftersale.constant.MallAfterSaleDisplayStatusEnum;
+import com.xsy.scm.mall.aftersale.dao.MallAfterSaleFundingSourceDao;
 import com.xsy.scm.mall.aftersale.domain.form.MallAfterSaleQueryForm;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleItemVO;
+import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleFundingTimeVO;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleRefundVO;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleVO;
-import com.xsy.scm.mall.order.constant.MallOrderProgressNodeEnum;
 import com.xsy.scm.mall.order.domain.vo.MallOrderProgressNodeVO;
 import com.xsy.scm.mall.order.service.MallOrderQueryService;
-import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
 import com.xsy.scm.order.constant.ScmOrderReturnStatusEnum;
 import com.xsy.scm.order.dao.OrderRefundDao;
 import com.xsy.scm.order.dao.OrderRefundFundingSourceDao;
@@ -61,6 +61,7 @@ public class MallAfterSaleQueryService {
     private final SalesOrderDao salesOrderDao;
     private final SalesOrderItemDao salesOrderItemDao;
     private final RefundFundingAllocationDao refundFundingAllocationDao;
+    private final MallAfterSaleFundingSourceDao fundingSourceDao;
     private final MallOrderQueryService orderQueryService;
 
     @Transactional(readOnly = true)
@@ -109,26 +110,32 @@ public class MallAfterSaleQueryService {
         // 一张退货单至多一张退款单（批准时按净额生成一次）；取 id 最小的一条，不把异常数据放大成列表。
         Map<Long, OrderRefundEntity> refundsByReturn = orderRefundDao.listByReturnIds(returnIds).stream().collect(
                 Collectors.toMap(OrderRefundEntity::getReturnId, Function.identity(), (first, ignored) -> first));
+        List<Long> refundIds = refundsByReturn.values().stream().map(OrderRefundEntity::getId).toList();
+        Map<Long, OffsetDateTime> fundedAtByRefund = refundIds.isEmpty()
+                ? Map.of()
+                : fundingSourceDao.completedRefunds(refundIds).stream().collect(Collectors
+                        .toMap(MallAfterSaleFundingTimeVO::getRefundId, MallAfterSaleFundingTimeVO::getSucceededAt));
         Map<Long, String> imageUrls = orderQueryService.skuImageUrls(orderItemsById.values().stream()
                 .map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct().toList());
         return returns.stream()
                 .map(entity -> toVo(entity, itemsByReturn.getOrDefault(entity.getId(), List.of()),
                         ordersById.get(entity.getOrderId()), orderItemsById, refundsByReturn.get(entity.getId()),
-                        imageUrls, detail))
+                        imageUrls, fundedAtByRefund, detail))
                 .toList();
     }
 
     private MallAfterSaleVO toVo(OrderReturnEntity entity, List<OrderReturnItemEntity> items, SalesOrderEntity order,
             Map<Long, SalesOrderItemEntity> orderItemsById, OrderRefundEntity refund, Map<Long, String> imageUrls,
-            boolean detail) {
+            Map<Long, OffsetDateTime> fundedAtByRefund, boolean detail) {
+        OffsetDateTime fundedAt = refund == null ? null : fundedAtByRefund.get(refund.getId());
         MallAfterSaleVO result = new MallAfterSaleVO();
         result.setReturnId(entity.getId());
         result.setReturnNo(entity.getReturnNo());
         result.setOrderId(entity.getOrderId());
         result.setOrderNo(order == null ? null : order.getOrderNo());
         result.setStatus(entity.getStatus());
-        result.setDisplayStatus(MallAfterSaleDisplayStatusEnum
-                .derive(entity.getStatus(), refund == null ? null : refund.getStatus()).name());
+        result.setDisplayStatus(
+                MallAfterSaleDisplayStatusEnum.derive(entity.getStatus(), refund != null, fundedAt != null).name());
         result.setReason(entity.getReason());
         result.setDecisionReason(entity.getDecisionReason());
         result.setRequestedAmount(OrderAmountCalculator.orderAmount(items.stream()
@@ -147,8 +154,8 @@ public class MallAfterSaleQueryService {
         if (detail) {
             result.setItems(items.stream()
                     .map(item -> itemVo(item, orderItemsById.get(item.getOrderItemId()), imageUrls)).toList());
-            result.setRefund(refundVo(refund));
-            result.setProgress(progressNodes(entity, refund));
+            result.setRefund(refundVo(refund, fundedAt));
+            result.setProgress(progressNodes(entity, refund, fundedAt));
         }
         return result;
     }
@@ -176,7 +183,7 @@ public class MallAfterSaleQueryService {
     /**
      * 退款结果与原路退回明细。资金分摊存在时按分摊行给出每个资金来源的实退进度； 无分摊计划的旧路径（纯余额返还）以余额流水事实拼出一行，客户看到的是同一个口径。
      */
-    private MallAfterSaleRefundVO refundVo(OrderRefundEntity refund) {
+    private MallAfterSaleRefundVO refundVo(OrderRefundEntity refund, OffsetDateTime fundedAt) {
         if (refund == null) {
             return null;
         }
@@ -185,26 +192,38 @@ public class MallAfterSaleQueryService {
         result.setRefundNo(refund.getRefundNo());
         result.setRefundAmount(refund.getRefundAmount());
         result.setStatus(refund.getStatus());
-        result.setCompletedAt(refund.getCompletedAt());
+        result.setCompletedAt(fundedAt);
         List<RefundFundingAllocationEntity> allocations = refundFundingAllocationDao.listByRefund(refund.getId());
         if (!allocations.isEmpty()) {
+            Map<Long,
+                    OffsetDateTime> succeededAtByAllocation = fundingSourceDao.allocationSuccessTimes(refund.getId())
+                            .stream().filter(row -> row.getSucceededAt() != null)
+                            .collect(Collectors.toMap(MallAfterSaleFundingTimeVO::getAllocationId,
+                                    MallAfterSaleFundingTimeVO::getSucceededAt));
             result.setAllocations(allocations.stream().map(row -> {
                 MallAfterSaleRefundVO.Allocation allocation = new MallAfterSaleRefundVO.Allocation();
                 allocation.setMethod(row.getSourceMethod());
                 allocation.setAllocatedAmount(row.getAllocatedAmount());
-                allocation.setStatus(row.getStatus());
-                allocation.setSucceededAt(row.getSourceSucceededAt());
+                OffsetDateTime sourceCompletedAt = succeededAtByAllocation.get(row.getId());
+                allocation.setStatus(ScmRefundFundingAllocationStatusEnum.SUCCEEDED.name().equals(row.getStatus())
+                        && sourceCompletedAt == null
+                                ? ScmRefundFundingAllocationStatusEnum.FAILED.name()
+                                : row.getStatus());
+                allocation.setSucceededAt(sourceCompletedAt);
                 return allocation;
             }).toList());
             return result;
         }
-        orderRefundFundingSourceDao.selectBalanceReturns(List.of(refund.getId())).stream().findFirst()
-                .ifPresent(fact -> {
+        if (fundedAt == null) {
+            return result;
+        }
+        orderRefundFundingSourceDao.selectBalanceReturns(List.of(refund.getId())).stream()
+                .filter(fact -> fact.amount().compareTo(refund.getRefundAmount()) == 0).findFirst().ifPresent(fact -> {
                     MallAfterSaleRefundVO.Allocation allocation = new MallAfterSaleRefundVO.Allocation();
                     allocation.setMethod(ScmPaymentMethodEnum.BALANCE.name());
                     allocation.setAllocatedAmount(fact.amount());
                     allocation.setStatus(ScmRefundFundingAllocationStatusEnum.SUCCEEDED.name());
-                    allocation.setSucceededAt(refund.getCompletedAt());
+                    allocation.setSucceededAt(fundedAt);
                     result.getAllocations().add(allocation);
                 });
         return result;
@@ -216,31 +235,30 @@ public class MallAfterSaleQueryService {
      * <p>
      * 被驳回与已撤销在对应节点即止；审核通过后没有退款单（净额为 0）时末节点为「无需退款」。
      */
-    private static List<MallOrderProgressNodeVO> progressNodes(OrderReturnEntity entity, OrderRefundEntity refund) {
+    private static List<MallOrderProgressNodeVO> progressNodes(OrderReturnEntity entity, OrderRefundEntity refund,
+            OffsetDateTime fundedAt) {
         List<MallOrderProgressNodeVO> nodes = new ArrayList<>();
-        nodes.add(node(MallOrderProgressNodeEnum.SUBMITTED.name(), "已提交申请", null, entity.getCreatedAt(), true));
+        nodes.add(node("SUBMITTED", "已提交申请", null, entity.getCreatedAt(), true));
         String status = entity.getStatus();
         if (ScmOrderReturnStatusEnum.REJECTED.name().equals(status)) {
-            nodes.add(node(MallOrderProgressNodeEnum.REJECTED.name(), "申请已驳回", entity.getDecisionReason(),
-                    entity.getRejectedAt(), true));
+            nodes.add(node("REJECTED", "申请已驳回", entity.getDecisionReason(), entity.getRejectedAt(), true));
             return nodes;
         }
         if (ScmOrderReturnStatusEnum.CANCELLED.name().equals(status)) {
-            nodes.add(node(MallOrderProgressNodeEnum.CANCELLED.name(), "申请已撤销", null, entity.getCancelledAt(), true));
+            nodes.add(node("CANCELLED", "申请已撤销", null, entity.getCancelledAt(), true));
             return nodes;
         }
         if (ScmOrderReturnStatusEnum.PENDING.name().equals(status)) {
-            nodes.add(node(MallOrderProgressNodeEnum.REVIEW.name(), "等待平台审核", null, null, false));
+            nodes.add(node("REVIEW", "等待平台审核", null, null, false));
             return nodes;
         }
-        nodes.add(node(MallOrderProgressNodeEnum.REVIEW.name(), "审核通过", null, entity.getApprovedAt(), true));
+        nodes.add(node("REVIEW", "审核通过", null, entity.getApprovedAt(), true));
         if (refund == null) {
-            nodes.add(node(MallOrderProgressNodeEnum.REFUND.name(), "无需退款", null, entity.getApprovedAt(), true));
+            nodes.add(node("REFUND", "无需退款", null, entity.getApprovedAt(), true));
             return nodes;
         }
-        boolean completed = ScmOrderRefundStatusEnum.COMPLETED.name().equals(refund.getStatus());
-        nodes.add(node(MallOrderProgressNodeEnum.REFUND.name(), completed ? "退款完成" : "退款处理中", null,
-                refund.getCompletedAt(), completed));
+        boolean completed = fundedAt != null;
+        nodes.add(node("REFUND", completed ? "退款完成" : "退款处理中", null, fundedAt, completed));
         return nodes;
     }
 

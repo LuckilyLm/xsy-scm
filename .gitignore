@@ -4,6 +4,9 @@ skills-lock.json
 .claude
 .workbuddy-ai
 .commandcode
+# WorkBuddy 本地会话数据与工作记忆：只留在本机，不作为项目源码入库。
+# 目录本身不要删除，只是不进版本库。
+.workbuddy/
 
 # Local IDE metadata
 .idea/

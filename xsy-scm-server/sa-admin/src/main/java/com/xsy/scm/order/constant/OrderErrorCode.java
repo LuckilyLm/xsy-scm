@@ -34,11 +34,14 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_ITEM_NOT_OWNED(40964, "订单明细不属于当前订单"),
     ORDER_ITEM_VERSION_CONFLICT(40965, "订单明细版本冲突"),
     ORDER_CREDIT_BLOCKED(41201, "订单确认被授信规则阻断：额度不足或存在逾期，请查看授信检查；例外放行需专门权限及原因"),
+    ORDER_SETTLEMENT_METHOD_BLOCKED(41203, "商城订单结算方式当前不可用，请核对客户交易资格、货到付款授权或共享结算规则"),
     ORDER_RETURN_COST_INCOMPLETE(41202, "原销售出库成本缺失或存在多种成本，请核对出库来源后再接收"),
     ORDER_RETURN_STATUS_INVALID(40967, "当前退货状态不允许此操作"),
     ORDER_REFUND_STATUS_INVALID(40968, "当前退款状态不允许此操作"),
     ORDER_RETURN_QUANTITY_EXCEEDED(40969, "退货数量超过可退数量"),
     ORDER_RETURN_ORDER_NOT_CONFIRMED(40970, "仅已确认订单可以申请退货"),
+    ORDER_ALREADY_ASSIGNED(40973, "订单已被接单或指派，请刷新待分配列表"),
+    ORDER_ASSIGN_TARGET_INVALID(40974, "目标业务员不存在、已停用或没有订单查看权限"),
 
     /**
      * 40945：当前订单状态不允许预留库存。

@@ -130,7 +130,7 @@ import {loginApi} from '/@/api/system/login-api';
 import logoImg from '/@/assets/images/logo/xsy-logo.png';
 import harvestMorning from '/@/assets/images/login-illustration/harvest-morning.webp';
 import harvestLandscape from '/@/assets/images/login-illustration/harvest-landscape.webp';
-import supplyChainScene from '/@/assets/images/login-illustration/supply-chain-scene.png';
+import supplyChainScene from '/@/assets/images/login-illustration/supply-chain-scene-fixed.png';
 import {SmartLoading} from '/@/components/framework/smart-loading';
 import {LOGIN_DEVICE_ENUM} from '/@/constants/system/login-device-const';
 import {useUserStore} from '/@/store/modules/system/user';

@@ -84,6 +84,14 @@
         ], s.id)
     </select>
 
+    <select id="newestSkuIds" resultType="java.lang.Long">
+        SELECT s.id
+        <include refid="productJoins"/>
+        WHERE <include refid="visibleSku"/>
+        ORDER BY s.created_at DESC, s.id DESC
+        LIMIT #{limit}
+    </select>
+
     <!-- 订单缩略图：只取图，不判上架与可见性。订单是历史事实，商品下架后仍要显示当时的图。 -->
     <select id="primaryImagesBySkuIds" resultType="com.xsy.scm.mall.order.domain.vo.MallSkuImageVO">
         SELECT s.id AS sku_id, image.file_key AS primary_image_key

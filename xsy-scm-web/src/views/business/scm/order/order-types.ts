@@ -42,6 +42,7 @@ export interface Order {
     settleModeSnapshot?: string;
     sellerId?: Id | null;
     orderSource: string;
+    mallCouponInstanceId?: Id | null;
     status?: string;
     originalOrderId?: Id | null;
     supplementReason?: string | null;
@@ -76,6 +77,29 @@ export interface Query {
     customerId?: Id;
     orderId?: Id;
     operationType?: string
+}
+
+export interface OrderPoolQuery {
+    pageNum: number;
+    pageSize: number;
+    keyword?: string;
+    status?: string;
+}
+
+export interface OrderPoolRow {
+    orderId: Id;
+    orderNo: string;
+    customerNameSnapshot: string;
+    status: string;
+    version: number;
+    orderedTotalAmount?: string | null;
+    settlementTotalAmount?: string | null;
+    createdAt?: string | null;
+}
+
+export interface OrderPoolAssignee {
+    employeeId: number;
+    actualName: string;
 }
 
 /**

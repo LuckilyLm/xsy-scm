@@ -87,6 +87,9 @@ export interface PromotionCoupon {
     validFrom: string;
     validTo: string;
     status: PromotionStatus;
+    claimable: boolean;
+    perCustomerLimit?: number | null;
+    totalLimit?: number | null;
     remark?: string | null;
     version: number;
 }
@@ -105,6 +108,9 @@ export interface PromotionCouponSave {
     minOrderAmount?: string | null;
     validFrom: string;
     validTo: string;
+    claimable: boolean;
+    perCustomerLimit?: number | null;
+    totalLimit?: number | null;
     remark?: string | null;
     version?: number;
 }

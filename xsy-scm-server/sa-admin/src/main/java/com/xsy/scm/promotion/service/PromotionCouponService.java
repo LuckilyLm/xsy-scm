@@ -10,6 +10,7 @@ import com.xsy.scm.customer.service.CustomerQueryService;
 import com.xsy.scm.promotion.constant.PromotionErrorCode;
 import com.xsy.scm.promotion.constant.ScmPromotionCouponDiscountTypeEnum;
 import com.xsy.scm.promotion.constant.ScmPromotionCouponInstanceStatusEnum;
+import com.xsy.scm.promotion.constant.ScmPromotionCouponIssueSourceEnum;
 import com.xsy.scm.promotion.constant.ScmPromotionStatusEnum;
 import com.xsy.scm.promotion.dao.PromotionCouponDao;
 import com.xsy.scm.promotion.dao.PromotionCouponInstanceDao;
@@ -24,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,8 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 优惠券模板与客户券。
  *
  * <p>
- * 券模板只在 {@code DRAFT/STOPPED} 可改；发券一次一条 INSERT 批量落库，
- * 每张券带自己的 {@code instance_no}，因此「这个客户有几张、用到第几张」都能查。
+ * 券模板只在 {@code DRAFT/STOPPED} 可改；发券一次一条 INSERT 批量落库， 每张券带自己的 {@code instance_no}，因此「这个客户有几张、用到第几张」都能查。
  */
 @Service
 @RequiredArgsConstructor
@@ -163,8 +164,8 @@ public class PromotionCouponService {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_NOT_FOUND);
         }
         OffsetDateTime now = OffsetDateTime.now();
-        if (!ScmPromotionStatusEnum.ACTIVE.name().equals(coupon.getStatus())
-                || coupon.getValidFrom().isAfter(now) || !coupon.getValidTo().isAfter(now)) {
+        if (!ScmPromotionStatusEnum.ACTIVE.name().equals(coupon.getStatus()) || coupon.getValidFrom().isAfter(now)
+                || !coupon.getValidTo().isAfter(now)) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_STATE_INVALID);
         }
         int quantity = form.getQuantity() == null ? 1 : form.getQuantity();
@@ -179,11 +180,61 @@ public class PromotionCouponService {
             row.setStatus(ScmPromotionCouponInstanceStatusEnum.AVAILABLE.name());
             rows.add(row);
         }
-        if (promotionCouponInstanceDao.insertBatch(rows) != quantity) {
+        if (promotionCouponInstanceDao.insertBatch(rows,
+                ScmPromotionCouponIssueSourceEnum.ADMIN_ISSUE.name()) != quantity) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_UNAVAILABLE);
         }
         idempotencyService.complete(claim, "PROMOTION_COUPON", coupon.getId(), quantity);
         return quantity;
+    }
+
+    /**
+     * 商城客户自助领券：与后台发券共用同一套实例落库，但只认「开放领取」的模板， 并受每人限领与总量上限约束。
+     *
+     * <p>
+     * 上限在模板行锁内计数：并发领取在同一模板上串行，不会超限。客户身份来自商城登录会话， 本方法不做员工数据范围判定（商城身份在数据范围服务里是 {@code denied()}）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public Long claimFromMall(Long customerId, Long couponId, String key) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("customerId", customerId);
+        request.put("couponId", couponId);
+        var claim = idempotencyService.claim("MALL_PROMOTION_COUPON_CLAIM:" + customerId, key, request);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, Long.class);
+        }
+        PromotionCouponEntity coupon = promotionCouponDao.lockById(couponId);
+        OffsetDateTime now = OffsetDateTime.now();
+        if (coupon == null || Boolean.TRUE.equals(coupon.getDeleted()) || !Boolean.TRUE.equals(coupon.getClaimable())
+                || !ScmPromotionStatusEnum.ACTIVE.name().equals(coupon.getStatus())
+                || coupon.getValidFrom().isAfter(now) || !coupon.getValidTo().isAfter(now)) {
+            throw new ScmBusinessException(PromotionErrorCode.COUPON_NOT_CLAIMABLE);
+        }
+        if (coupon.getPerCustomerLimit() != null
+                && promotionCouponInstanceDao.selectCount(new LambdaQueryWrapper<PromotionCouponInstanceEntity>()
+                        .eq(PromotionCouponInstanceEntity::getCouponId, couponId)
+                        .eq(PromotionCouponInstanceEntity::getCustomerId, customerId)
+                        .eq(PromotionCouponInstanceEntity::getIssueSource,
+                                ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name())) >= coupon.getPerCustomerLimit()) {
+            throw new ScmBusinessException(PromotionErrorCode.COUPON_CLAIM_LIMIT_REACHED);
+        }
+        if (coupon.getTotalLimit() != null
+                && promotionCouponInstanceDao.selectCount(new LambdaQueryWrapper<PromotionCouponInstanceEntity>()
+                        .eq(PromotionCouponInstanceEntity::getCouponId, couponId)
+                        .eq(PromotionCouponInstanceEntity::getIssueSource,
+                                ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name())) >= coupon.getTotalLimit()) {
+            throw new ScmBusinessException(PromotionErrorCode.COUPON_CLAIM_LIMIT_REACHED);
+        }
+        PromotionCouponInstanceEntity row = new PromotionCouponInstanceEntity();
+        row.setCouponId(coupon.getId());
+        row.setCustomerId(customerId);
+        row.setIssueSource(ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name());
+        // 幂等记录主键标识领取批次，不以毫秒时间猜测唯一性；与后台发券同一约定。
+        row.setInstanceNo("CLAIM-" + claim.record().getId() + "-1");
+        row.setStatus(ScmPromotionCouponInstanceStatusEnum.AVAILABLE.name());
+        promotionCouponInstanceDao.insert(row);
+        idempotencyService.complete(claim, "PROMOTION_COUPON_INSTANCE", row.getId(), row.getId());
+        return row.getId();
     }
 
     @Transactional(readOnly = true)
@@ -207,12 +258,14 @@ public class PromotionCouponService {
         return rows.stream().map(row -> PromotionCouponVO.Instance.of(row, coupons.get(row.getCouponId()))).toList();
     }
 
-    private void apply(PromotionCouponEntity row, PromotionCouponForm form,
-            ScmPromotionCouponDiscountTypeEnum type) {
+    private void apply(PromotionCouponEntity row, PromotionCouponForm form, ScmPromotionCouponDiscountTypeEnum type) {
         row.setCouponName(form.getCouponName().trim());
         row.setDiscountType(type.name());
         row.setDiscountValue(form.getDiscountValue());
         row.setMinOrderAmount(form.getMinOrderAmount() == null ? BigDecimal.ZERO : form.getMinOrderAmount());
+        row.setClaimable(Boolean.TRUE.equals(form.getClaimable()));
+        row.setPerCustomerLimit(form.getPerCustomerLimit());
+        row.setTotalLimit(form.getTotalLimit());
         row.setValidFrom(form.getValidFrom());
         row.setValidTo(form.getValidTo());
         row.setRemark(StringUtils.isBlank(form.getRemark()) ? null : form.getRemark().trim());
@@ -220,8 +273,7 @@ public class PromotionCouponService {
 
     private void requireCodeAvailable(String code, Long selfId) {
         LambdaQueryWrapper<PromotionCouponEntity> wrapper = new LambdaQueryWrapper<PromotionCouponEntity>()
-                .eq(PromotionCouponEntity::getCouponCode, code.trim())
-                .eq(PromotionCouponEntity::getDeleted, false);
+                .eq(PromotionCouponEntity::getCouponCode, code.trim()).eq(PromotionCouponEntity::getDeleted, false);
         if (selfId != null) {
             wrapper.ne(PromotionCouponEntity::getId, selfId);
         }

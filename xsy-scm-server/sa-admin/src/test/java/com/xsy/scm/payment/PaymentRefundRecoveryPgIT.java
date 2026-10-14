@@ -311,6 +311,31 @@ class PaymentRefundRecoveryPgIT extends ScmW5PgITBase {
     }
 
     // ------------------------------------------------------------------
+    // V127：外键移除后的回归
+    // ------------------------------------------------------------------
+
+    @Test
+    @DisplayName("V127 移除恢复日志的外键后，追加审计与不可改约束照旧生效")
+    void recoveryLogKeepsAppendOnlySemanticsAfterTheForeignKeyIsDropped() {
+        RefundFixture fixture = recoveryFixture("FKFREE", "30.0000", "PROCESSING");
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM pg_constraint c JOIN pg_class t ON t.oid = c.conrelid"
+                + " WHERE t.relnamespace = current_schema()::regnamespace"
+                + " AND t.relname = 'xsy_payment_refund_recovery_log' AND c.contype = 'f'", Integer.class))
+                .as("V127 之后恢复日志不得再有外键，引用完整性改由服务层承担").isZero();
+
+        jdbc.update("INSERT INTO xsy_payment_refund_recovery_log (refund_id, operator, reason, result, detail)"
+                + " VALUES (?, '1:1', 'V127 回归', 'MANUAL', '外键移除后仍可追加')", fixture.refundId());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_payment_refund_recovery_log WHERE refund_id = ?",
+                Integer.class, fixture.refundId()))
+                .as("移除外键不影响写入").isEqualTo(1);
+
+        // 不可改这条约束从来由触发器承担，与外键无关：移除外键后必须照旧拒绝改写
+        expectSqlFailure("UPDATE xsy_payment_refund_recovery_log SET result = 'TAMPERED' WHERE refund_id = ?",
+                fixture.refundId());
+    }
+
+    // ------------------------------------------------------------------
     // 夹具
     // ------------------------------------------------------------------
 

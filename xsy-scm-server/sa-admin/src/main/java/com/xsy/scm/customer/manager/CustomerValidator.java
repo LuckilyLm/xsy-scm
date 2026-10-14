@@ -168,4 +168,23 @@ public class CustomerValidator {
         CustomerTypeEntity type = customerTypeDao.selectById(customerTypeId);
         return type != null && Objects.equals(GROUP_TYPE_CODE, type.getTypeCode());
     }
+
+    /**
+     * 是否为「共享结算」：结算主体不是客户本人，或者结算主体本身就是集团。
+     *
+     * <p>
+     * 这是客户资金的<b>唯一可见性判定点</b>：共享结算下不得向成员账号（以及集团主体自己）展示共享钱包总额与集团授信总额， 口径见
+     * {@code docs/architecture/mall-funds-read-model.md}。商城钱包/账期概览与商城结算方式选项 都必须调用本方法，不允许各自比较 id 或类型编码 ——
+     * 否则同一笔钱在两个入口的可见性会漂移。
+     *
+     * @param customerId
+     *            当前登录的业务客户 id
+     * @param settlementCustomerId
+     *            解析出的结算主体 id
+     * @param settlementTypeCode
+     *            结算主体的客户类型编码
+     */
+    public static boolean sharedSettlement(Long customerId, Long settlementCustomerId, String settlementTypeCode) {
+        return !Objects.equals(customerId, settlementCustomerId) || GROUP_TYPE_CODE.equals(settlementTypeCode);
+    }
 }

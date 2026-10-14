@@ -40,6 +40,15 @@ public class PromotionCouponForm {
     @Digits(integer = 14, fraction = 4, message = "门槛金额最多14位整数和4位小数")
     private BigDecimal minOrderAmount;
 
+    /** 是否开放客户在商城自助领取；后台发券不受此开关限制。 */
+    private Boolean claimable;
+
+    @Min(value = 1, message = "每人限领数量必须大于0")
+    private Integer perCustomerLimit;
+
+    @Min(value = 1, message = "总领取上限必须大于0")
+    private Integer totalLimit;
+
     @NotNull(message = "生效时间不能为空")
     private OffsetDateTime validFrom;
 

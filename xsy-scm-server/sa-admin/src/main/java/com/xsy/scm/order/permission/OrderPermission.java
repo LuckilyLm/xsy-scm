@@ -4,6 +4,7 @@ package com.xsy.scm.order.permission;
 public final class OrderPermission {
 
     public static final String QUERY = "scm:order:query";
+    public static final String ASSIGN = "scm:order:assign";
 
     public static final String LOG_QUERY = "scm:order:log:query";
 

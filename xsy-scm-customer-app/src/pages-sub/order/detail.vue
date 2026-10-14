@@ -135,8 +135,15 @@
           <text class="od__row-label">预计金额</text>
           <text class="od__row-value">¥{{ displayAmount(order.orderedTotalAmount) }}</text>
         </view>
+        <view v-if="order.discount" class="od__row">
+          <text class="od__row-label">已确认优惠</text>
+          <text class="od__row-value">−¥{{ displayAmount(order.discount.discountAmount) }}</text>
+        </view>
+        <text v-if="order.discount?.couponName" class="od__sub">优惠券：{{ order.discount.couponName }}</text>
+        <text v-for="name in order.discount?.activityNames || []" :key="name" class="od__sub">活动：{{ name }}</text>
+        <text v-for="gift in order.discount?.giftDescriptions || []" :key="gift" class="od__sub">赠品：{{ gift }}</text>
         <view class="od__row">
-          <text class="od__row-label">最终结算金额</text>
+          <text class="od__row-label">{{ order.discount ? '实重商品金额（优惠前）' : '最终结算金额' }}</text>
           <text class="od__row-value od__row-value--strong">
             {{ order.settlementTotalAmount ? `¥${displayAmount(order.settlementTotalAmount)}` : '待结算' }}
           </text>
@@ -153,9 +160,7 @@
             {{ afterSaleStatusText(record.displayStatus) }} ›
           </text>
         </view>
-        <view v-if="canApplyAfterSale(order)" class="od-aftersale__apply" @click="goAfterSaleApply">
-          申请售后（退货 / 退款）
-        </view>
+        <view v-if="canApplyAfterSale(order)" class="od-aftersale__apply" @click="goAfterSaleApply"> 申请售后（退货 / 退款） </view>
       </view>
 
       <view class="od-card">

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.mall.aftersale.dao.MallAfterSaleFundingSourceDao">
+    <select id="completedRefunds" resultType="com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleFundingTimeVO">
+        SELECT r.id AS refund_id, COALESCE(p.paid_at, m.occurred_at) AS succeeded_at
+        FROM xsy_order_refund r
+        JOIN xsy_sales_order o ON o.id = r.order_id AND o.customer_id = r.customer_id AND o.deleted = FALSE
+        LEFT JOIN xsy_finance_payment p ON p.source_type = 'ORDER_REFUND' AND p.source_id = r.id
+            AND p.entry_type = 'NORMAL' AND p.deleted = FALSE AND p.amount = r.refund_amount
+            AND p.counterparty_id = r.customer_id
+        LEFT JOIN xsy_customer_balance_movement m ON m.source_type = 'ORDER_REFUND' AND m.source_id = r.id
+            AND m.type = 'REFUND' AND m.direction = 'CREDIT' AND m.deleted = FALSE
+            AND m.amount = r.refund_amount AND m.customer_id = r.customer_id
+            AND m.settlement_customer_id = o.settlement_customer_id
+        WHERE r.deleted = FALSE AND r.status = 'COMPLETED' AND (p.id IS NOT NULL OR m.id IS NOT NULL)
+            AND (p.id IS NULL OR m.id IS NULL) AND r.id IN
+        <foreach collection="refundIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+    <select id="allocationSuccessTimes" resultType="com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleFundingTimeVO">
+        SELECT a.id AS allocation_id,
+            CASE WHEN a.status != 'SUCCEEDED' THEN NULL
+                WHEN a.source_method = 'ONLINE' AND p.status = 'SUCCEEDED'
+                    AND p.source_type = 'REFUND_FUNDING_ALLOCATION' AND p.source_id = a.id
+                    AND p.transaction_id = a.source_id AND p.amount = a.allocated_amount
+                    AND p.provider_amount = a.allocated_amount AND i.customer_id = a.customer_id THEN p.refunded_at
+                WHEN a.source_method = 'BALANCE' AND m.type = 'REFUND' AND m.direction = 'CREDIT'
+                    AND m.source_type = 'REFUND_FUNDING_ALLOCATION' AND m.source_id = a.id
+                    AND m.amount = a.allocated_amount AND m.customer_id = a.customer_id
+                    AND m.settlement_customer_id = a.settlement_customer_id THEN m.occurred_at
+                ELSE NULL END AS succeeded_at
+        FROM xsy_refund_funding_allocation a
+        LEFT JOIN xsy_payment_refund p ON a.source_method = 'ONLINE' AND p.id = a.result_source_id
+            AND p.deleted = FALSE
+        LEFT JOIN xsy_payment_intent i ON i.id = p.intent_id AND i.deleted = FALSE
+        LEFT JOIN xsy_customer_balance_movement m ON a.source_method = 'BALANCE' AND m.id = a.result_source_id
+            AND m.deleted = FALSE
+        WHERE a.order_refund_id = #{refundId} AND a.deleted = FALSE
+    </select>
+</mapper>

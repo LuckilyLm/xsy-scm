@@ -23,14 +23,14 @@ export const mallOrderApi = {
 
   /**
    * 结算预览
-   * @param {{items: Array<{skuId: number, quantity: string}>, addressId?: number}} param
+   * @param {{items: Array<{skuId: number, quantity: string}>, addressId?: number, couponInstanceId?: number}} param
    */
   preview: (param) => postRequest('/scm/mall/orders/preview', param),
 
   /**
    * 提交订单
    * @param {{items: Array<{skuId: number, quantity: string}>, addressId: number,
-   *          priceFingerprint: string, remark?: string, expectDeliveryDate?: string}} param
+   *          priceFingerprint: string, remark?: string, expectDeliveryDate?: string, couponInstanceId?: number}} param
    * @param {string} idempotencyKey 内容不变时复用
    */
   submit: (param, idempotencyKey) => postRequest('/scm/mall/orders', param, { idempotencyKey }),
