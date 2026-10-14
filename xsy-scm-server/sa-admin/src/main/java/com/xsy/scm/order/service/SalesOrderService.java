@@ -515,6 +515,30 @@ public class SalesOrderService {
         }
         salesOrder.setSettlementTotalAmount(OrderAmountCalculator
                 .orderAmount(rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).toList()));
+        // 优惠冻结并入确认命令，而不是让客户端确认后再单独调一次：否则会出现
+        // 「订单已确认、优惠却没冻结」的中间态。行基础金额取 ordered_line_amount
+        // （下单量 × 锁定单价），该口径由负责人 2026-10-03 确认。
+        // 券来源：确认表单显式给出的优先；表单为空时回退到商城客户下单时的预选券
+        // （仅 MALL 来源订单可能有）。冻结会重验券的归属、状态、模板生效与门槛，
+        // 预选券在确认前已失效的，确认按券校验规则失败，由操作员改选或客户取消重下。
+        // <b>冻结排在授信判定之前</b>：账期占用必须与签收应收同口径（实重 × 锁定价 − 冻结优惠等比分摊），
+        // 而优惠额只有冻结之后才存在。整笔仍是同一个事务，授信不过时券的占用随之回滚。
+        boolean clearMallCoupon = confirmation != null && Boolean.TRUE.equals(confirmation.getClearMallCoupon());
+        if (clearMallCoupon && confirmation.getCouponInstanceId() != null) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        Long couponInstanceId = clearMallCoupon
+                ? null
+                : confirmation != null && confirmation.getCouponInstanceId() != null
+                        ? confirmation.getCouponInstanceId()
+                        : salesOrder.getMallCouponInstanceId();
+        promotionDiscountService.freeze(
+                new PromotionOrderFacts(salesOrder.getId(), salesOrder.getCustomerId(),
+                        rows.stream()
+                                .map(row -> new PromotionOrderFacts.Line(row.getId(), row.getSkuId(),
+                                        row.getOrderedQuantity(), row.getOrderedLineAmount()))
+                                .toList()),
+                couponInstanceId);
         if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource())
                 && salesOrder.getSettlementMethod() != null) {
             settlementConfirmationPolicy.validate(salesOrder);
@@ -539,28 +563,6 @@ public class SalesOrderService {
         salesOrder.setStatus(ScmOrderStatusEnum.CONFIRMED.name());
         salesOrder.setConfirmedAt(OffsetDateTime.now());
         save(salesOrder);
-        // 优惠冻结并入确认命令，而不是让客户端确认后再单独调一次：否则会出现
-        // 「订单已确认、优惠却没冻结」的中间态。行基础金额取 ordered_line_amount
-        // （下单量 × 锁定单价），该口径由负责人 2026-10-03 确认。
-        // 券来源：确认表单显式给出的优先；表单为空时回退到商城客户下单时的预选券
-        // （仅 MALL 来源订单可能有）。冻结会重验券的归属、状态、模板生效与门槛，
-        // 预选券在确认前已失效的，确认按券校验规则失败，由操作员改选或客户取消重下。
-        boolean clearMallCoupon = confirmation != null && Boolean.TRUE.equals(confirmation.getClearMallCoupon());
-        if (clearMallCoupon && confirmation.getCouponInstanceId() != null) {
-            throw new ScmBusinessException(VALIDATION_ERROR);
-        }
-        Long couponInstanceId = clearMallCoupon
-                ? null
-                : confirmation != null && confirmation.getCouponInstanceId() != null
-                        ? confirmation.getCouponInstanceId()
-                        : salesOrder.getMallCouponInstanceId();
-        promotionDiscountService.freeze(
-                new PromotionOrderFacts(salesOrder.getId(), salesOrder.getCustomerId(),
-                        rows.stream()
-                                .map(row -> new PromotionOrderFacts.Line(row.getId(), row.getSkuId(),
-                                        row.getOrderedQuantity(), row.getOrderedLineAmount()))
-                                .toList()),
-                couponInstanceId);
         notificationService.sendOnce("ORDER_CONFIRMED:" + salesOrder.getId(), "ORDER_CONFIRMED",
                 salesOrder.getSellerId(), salesOrder.getId(), "销售订单已确认",
                 "销售订单 " + salesOrder.getOrderNo() + " 已确认，可进入采购与履约流程。");

@@ -106,9 +106,9 @@ public class MallCheckoutService {
         } catch (ScmBusinessException exception) {
             result.setPromotionError(exception.getMessage());
         }
-        // 结算方式可用性按「优惠后应付」计算：余额够不够付，看的是实际要付的钱而不是原价。
+        // 结算方式可用性按「优惠后应付」计算：余额够不够付、账期占多少额度，看的都是实际要付的钱而不是原价。
         BigDecimal payable = promotion == null ? estimated : promotion.getPayableAmount();
-        result.setSettlementOptions(settlementService.options(customer, payable, estimated));
+        result.setSettlementOptions(settlementService.options(customer, payable));
         return result;
     }
 
@@ -162,7 +162,7 @@ public class MallCheckoutService {
         // 结算方式：用与预览同一口径的应付金额重新判定可用性，避免客户端拿旧预览的结论下单。
         BigDecimal gross = estimatedAmount(quantities, products);
         BigDecimal payable = promotion == null ? gross : promotion.getPayableAmount();
-        boolean enabled = settlementService.options(customer, payable, gross).stream()
+        boolean enabled = settlementService.options(customer, payable).stream()
                 .anyMatch(option -> form.getSettlementMethod().equals(option.getMethod())
                         && Boolean.TRUE.equals(option.getEnabled()));
         if (!enabled) {

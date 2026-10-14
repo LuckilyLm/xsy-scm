@@ -51,26 +51,16 @@ public class MallSettlementService {
 
     @Transactional(readOnly = true)
     public List<MallSettlementOptionVO> options(RequestMallCustomer customer, BigDecimal payableAmount) {
-        return options(customer, payableAmount, payableAmount);
-    }
-
-    /** 余额按优惠后应付预估，账期按确认命令使用的优惠前商品金额保守校验。 */
-    @Transactional(readOnly = true)
-    public List<MallSettlementOptionVO> options(RequestMallCustomer customer, BigDecimal payableAmount,
-            BigDecimal creditExposureAmount) {
         BigDecimal amount = payableAmount == null
                 ? BigDecimal.ZERO.setScale(SCALE, RoundingMode.HALF_UP)
                 : payableAmount.setScale(SCALE, RoundingMode.HALF_UP);
-        BigDecimal creditAmount = creditExposureAmount == null
-                ? amount
-                : creditExposureAmount.setScale(SCALE, RoundingMode.HALF_UP);
         CustomerEntity buyer = customerService.requireTradable(customer.getCustomerId());
         CustomerEntity settlement = customerService.requireSettlementCustomer(buyer);
         boolean shared = CustomerValidator.sharedSettlement(buyer.getId(), settlement.getId(),
                 customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
 
         List<MallSettlementOptionVO> options = new ArrayList<>();
-        options.add(creditOption(settlement, shared, creditAmount));
+        options.add(creditOption(settlement, shared, amount));
         options.add(walletOption(settlement, shared, amount));
         options.add(codOption(buyer, settlement));
         return options;
@@ -111,7 +101,7 @@ public class MallSettlementService {
             return option;
         }
         option.setEnabled(Boolean.TRUE);
-        option.setNote("账期按优惠前商品金额占用，确认时按实重与授信规则重验");
+        option.setNote("账期按优惠后应付占用，确认时按实重与已冻结优惠重验");
         return option;
     }
 

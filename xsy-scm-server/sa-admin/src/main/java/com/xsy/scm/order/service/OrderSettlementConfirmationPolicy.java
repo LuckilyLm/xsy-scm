@@ -5,6 +5,7 @@ import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.manager.CustomerValidator;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.customer.service.CustomerTypeService;
+import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import com.xsy.scm.mall.order.constant.ScmSharedSettlementPolicy;
 import com.xsy.scm.order.constant.OrderErrorCode;
@@ -22,6 +23,7 @@ public class OrderSettlementConfirmationPolicy {
     private final CustomerService customerService;
     private final CustomerTypeService customerTypeService;
     private final OrderCreditService orderCreditService;
+    private final FinanceOrderPayableQueryService payableQueryService;
 
     public void validate(SalesOrderEntity order) {
         CustomerEntity buyer = customerService.requireTradable(order.getCustomerId());
@@ -38,8 +40,11 @@ public class OrderSettlementConfirmationPolicy {
                 if (shared && !ScmSharedSettlementPolicy.sharedCheckoutAllowed()) {
                     throw new ScmBusinessException(OrderErrorCode.ORDER_SETTLEMENT_METHOD_BLOCKED);
                 }
+                // 占用额取正式净额（实重 × 锁定价 − 已冻结优惠等比分摊），与签收生成的应收同一把尺子。
+                // 确认命令已把优惠冻结排在本判定之前，因此这里的优惠额是已成立的事实，不是预估。
+                // 按优惠前毛额判定会让客户被自己的优惠挡住（额度够、实际账单更小，却确认不了）。
                 var check = orderCreditService.checkForSettlementConfirmation(settlement.getId(),
-                        order.getSettlementTotalAmount());
+                        payableQueryService.payableOfConfirmedOrder(order.getId()));
                 if (check.getCreditLimit() == null || check.getCreditLimit().signum() <= 0
                         || !Boolean.TRUE.equals(check.getAllowed())) {
                     throw new ScmBusinessException(OrderErrorCode.ORDER_CREDIT_BLOCKED);

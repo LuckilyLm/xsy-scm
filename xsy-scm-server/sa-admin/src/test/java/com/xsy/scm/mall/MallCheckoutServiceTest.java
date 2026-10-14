@@ -59,7 +59,7 @@ class MallCheckoutServiceTest {
         MallSettlementOptionVO cod = new MallSettlementOptionVO();
         cod.setMethod("COD");
         cod.setEnabled(true);
-        when(settlementService.options(any(), any(), any())).thenReturn(List.of(cod));
+        when(settlementService.options(any(), any())).thenReturn(List.of(cod));
     }
 
     @AfterEach

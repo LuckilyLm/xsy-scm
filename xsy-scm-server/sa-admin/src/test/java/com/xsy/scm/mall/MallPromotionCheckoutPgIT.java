@@ -30,6 +30,7 @@ import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
 import com.xsy.scm.order.domain.form.OrderVersionForm;
 import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
+import com.xsy.scm.order.service.OrderCreditService;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.order.service.SalesOrderService;
 import com.xsy.scm.promotion.constant.ScmPromotionCouponDiscountTypeEnum;
@@ -86,22 +87,16 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
     private SalesOrderService salesOrderService;
     @Autowired
     private SalesOrderQueryService salesOrderQueryService;
+    @Autowired
+    private OrderCreditService orderCreditService;
 
-    @Test
-    @DisplayName("客户领券 → 结算预览 → 下单 → 后台确认 → 客户看到优惠")
-    void claimedCouponFlowsThroughPreviewSubmitAndConfirmation() {
-        Long skuId = newOnShelfSku("mkt");
-        Long customerId = newCustomer();
-        jdbc.update("UPDATE xsy_customer SET cod_allowed = TRUE WHERE id = ?", customerId);
-        jdbc.update("UPDATE xsy_customer SET credit_limit = 2.0000 WHERE id = ?", customerId);
-        evictMybatisCache();
-
-        // 1. 后台建一张可自助领取的券并启用
+    /** 建一张「可自助领取 + 立即生效」的定额券。 */
+    private Long activeClaimableCoupon(String tag, String discountValue) {
         PromotionCouponForm couponForm = new PromotionCouponForm();
-        couponForm.setCouponCode(prefix + "-MKT-CLAIM");
+        couponForm.setCouponCode(prefix + "-" + tag);
         couponForm.setCouponName(prefix + "商城自助领券");
         couponForm.setDiscountType(ScmPromotionCouponDiscountTypeEnum.AMOUNT.name());
-        couponForm.setDiscountValue(new BigDecimal("0.5000"));
+        couponForm.setDiscountValue(new BigDecimal(discountValue));
         couponForm.setMinOrderAmount(BigDecimal.ZERO);
         couponForm.setClaimable(true);
         couponForm.setPerCustomerLimit(1);
@@ -113,6 +108,20 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         status.setVersion(0);
         status.setStatus(ScmPromotionStatusEnum.ACTIVE.name());
         promotionCouponService.updateStatus(couponId, status);
+        return couponId;
+    }
+
+    @Test
+    @DisplayName("客户领券 → 结算预览 → 下单 → 后台确认 → 客户看到优惠")
+    void claimedCouponFlowsThroughPreviewSubmitAndConfirmation() {
+        Long skuId = newOnShelfSku("mkt");
+        Long customerId = newCustomer();
+        jdbc.update("UPDATE xsy_customer SET cod_allowed = TRUE WHERE id = ?", customerId);
+        jdbc.update("UPDATE xsy_customer SET credit_limit = 2.0000 WHERE id = ?", customerId);
+        evictMybatisCache();
+
+        // 1. 后台建一张可自助领取的券并启用
+        Long couponId = activeClaimableCoupon("MKT-CLAIM", "0.5000");
 
         // 2. 客户登录（含首次改密）
         MallAccount account = openMallAccount(customerId);
@@ -133,8 +142,10 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         assertThat(preview.getPromotion().getPayableAmount()).isEqualByComparingTo("1.9000");
         MallSettlementOptionVO creditOption = preview.getSettlementOptions().stream()
                 .filter(option -> "CREDIT".equals(option.getMethod())).findFirst().orElseThrow();
-        assertThat(creditOption.getEnabled()).as("优惠后 1.9 足够，但账期按优惠前 2.4 保守占用仍应禁用")
-                .isFalse();
+        assertThat(creditOption.getEnabled())
+                .as("账期按优惠后 1.9 占用（额度 2.0 够），不再按优惠前 2.4 保守判定")
+                .isTrue();
+        assertThat(creditOption.getAvailableAmount()).isEqualByComparingTo("2.0000");
         assertThat(preview.getPromotion().getCouponInstanceId()).isEqualTo(instanceId);
         assertThat(instanceStatus(instanceId)).as("预览不得占用券（ADR-009）").isEqualTo("AVAILABLE");
 
@@ -177,7 +188,7 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         assertThat(mine.getStatus()).isEqualTo("CONFIRMED");
         assertThat(mine.getDiscount()).as("客户订单详情必须带回优惠").isNotNull();
         assertThat(mine.getDiscount().getDiscountAmount()).isEqualByComparingTo("0.5000");
-        assertThat(mine.getDiscount().getCouponName()).isEqualTo(couponForm.getCouponName());
+        assertThat(mine.getDiscount().getCouponName()).isEqualTo(prefix + "商城自助领券");
         assertThat(mine.getOrderedTotalAmount()).isEqualByComparingTo("2.4000");
     }
 
@@ -271,6 +282,47 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
                 orderId)).isEqualTo("WALLET");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_customer_balance_movement WHERE account_id = ?"
                 + " AND direction = 'DEBIT'", Integer.class, walletId)).as("支付扣款由 PAY-01 处理").isZero();
+    }
+
+    @Test
+    @DisplayName("账期订单的确认按净额放行：额度只够优惠后净额、不够优惠前毛额时，确认不再被毛额挡住")
+    void creditConfirmationUsesTheNetAmountFrozenInTheSameCommand() {
+        Long skuId = newOnShelfSku("mkt-credit");
+        Long customerId = newCustomer();
+        // 额度 2.0000：够付优惠后 1.9000，不够付优惠前 2.4000 —— 优惠越大，旧口径挡得越狠
+        jdbc.update("UPDATE xsy_customer SET credit_limit = 2.0000 WHERE id = ?", customerId);
+        evictMybatisCache();
+        Long couponId = activeClaimableCoupon("MKT-CREDIT", "0.5000");
+
+        RequestMallCustomer customer = signIn(openMallAccount(customerId));
+        Long instanceId = promotionCouponService.claimFromMall(customerId, couponId, prefix + ":credit-claim");
+        Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
+        MallCheckoutPreviewForm previewForm = previewForm(skuId, addressId);
+        previewForm.setCouponInstanceId(instanceId);
+        MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm);
+        assertThat(preview.getPromotion().getPayableAmount()).isEqualByComparingTo("1.9000");
+
+        MallOrderSubmitForm submitForm = submitForm(skuId, addressId, preview.getPriceFingerprint());
+        submitForm.setCouponInstanceId(instanceId);
+        submitForm.setSettlementMethod(ScmSettlementMethodEnum.CREDIT.name());
+        Long orderId = mallCheckoutService.submit(customer, submitForm, prefix + ":credit-submit").getOrderId();
+
+        SalesOrderDetailVO weighted = recordActualQuantity(orderId, "mkt-credit");
+        OrderVersionForm confirm = new OrderVersionForm();
+        confirm.setOrderId(orderId);
+        confirm.setVersion(weighted.getVersion());
+        assertThat(salesOrderService.confirm(confirm, prefix + ":credit-confirm").getStatus())
+                .as("确认按同一命令内冻结出来的净额 1.9000 判定，而不是优惠前毛额 2.4000")
+                .isEqualTo("CONFIRMED");
+        assertThat(jdbc.queryForObject("SELECT settlement_total_amount FROM xsy_sales_order WHERE id = ?",
+                BigDecimal.class, orderId)).as("订单上的结算额仍然是优惠前毛额").isEqualByComparingTo("2.4000");
+        assertThat(instanceStatus(instanceId)).as("确认后券被占用为 RESERVED").isEqualTo("RESERVED");
+        assertThat(jdbc.queryForObject("SELECT discount_amount FROM xsy_order_discount WHERE sales_order_id = ?",
+                BigDecimal.class, orderId)).isEqualByComparingTo("0.5000");
+
+        // 确认后的额度占用同样按净额：签收前的这段时间占用不能虚高
+        assertThat(orderCreditService.checkSelfSettlement(customerId, BigDecimal.ZERO).getConfirmedOrderAmount())
+                .isEqualByComparingTo("1.9000");
     }
 
     @Test
