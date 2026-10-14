@@ -7,6 +7,8 @@ import com.xsy.scm.customer.domain.form.CustomerSkuVisibilityItemForm;
 import com.xsy.scm.customer.domain.form.CustomerStatusForm;
 import com.xsy.scm.customer.domain.form.CustomerUpdateForm;
 import com.xsy.scm.customer.service.CustomerService;
+import com.xsy.scm.pricing.domain.form.CustomerTypePriceAddForm;
+import com.xsy.scm.pricing.service.CustomerTypePriceService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -14,6 +16,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +33,9 @@ class CustomerServiceIT extends ScmW2PgITBase {
 
     @Autowired
     private CustomerService service;
+
+    @Autowired
+    private CustomerTypePriceService customerTypePriceService;
 
     private CustomerAddForm form(String suffix) {
         CustomerAddForm form = new CustomerAddForm();
@@ -182,6 +188,13 @@ class CustomerServiceIT extends ScmW2PgITBase {
         Long id = service.add(form("TYPE-PRICED"));
         Long typeId = jdbc.queryForObject("SELECT customer_type_id FROM xsy_customer WHERE id = ?",
                 Long.class, id);
+        // 类型价由本用例自己造：迁移只建表、不种任何价，靠库里「碰巧有」的数据会让这条前置在新库上永远不成立。
+        CustomerTypePriceAddForm price = new CustomerTypePriceAddForm();
+        price.setCustomerTypeId(typeId);
+        price.setSkuId(newOnShelfSku("TYPE-PRICED"));
+        price.setUnitPrice("3.0000");
+        price.setEffectiveFrom(OffsetDateTime.now().minusDays(1));
+        customerTypePriceService.add(price);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM xsy_customer_type_price "
                 + "WHERE customer_type_id = ? AND deleted = FALSE", Integer.class, typeId))
                 .as("前提：该客户所属类型确实配过客户类型价")
