@@ -1,4 +1,4 @@
-package com.xsy.scm.mall.account.constant;
+package com.xsy.scm.mall.permission;
 
 public final class MallPermission {
 

@@ -1,7 +1,7 @@
 package com.xsy.scm.mall.account.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
-import com.xsy.scm.mall.account.constant.MallPermission;
+import com.xsy.scm.mall.permission.MallPermission;
 import com.xsy.scm.mall.account.domain.form.MallAccountCreateForm;
 import com.xsy.scm.mall.account.domain.form.MallAccountStatusForm;
 import com.xsy.scm.mall.account.domain.form.MallPasswordResetForm;
