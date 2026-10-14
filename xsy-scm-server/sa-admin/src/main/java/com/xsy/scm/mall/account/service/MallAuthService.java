@@ -14,6 +14,7 @@ import com.xsy.scm.mall.account.domain.vo.MallLoginVO;
 import com.xsy.scm.mall.account.domain.vo.MallProfileVO;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.account.exception.MallLoginRejectedException;
+import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +57,7 @@ public class MallAuthService {
         CustomerEntity customer = customerService.requireTradable(account.getCustomerId());
         securityLoginService.removeLoginFail(account.getId(), UserTypeEnum.MALL_CUSTOMER);
         accountDao.recordLogin(account.getId(), ip);
-        StpUtil.login(loginId(account.getId(), account.getVersion()), "MALL");
+        StpUtil.login(loginId(account.getId(), account.getVersion()), ScmOrderSourceEnum.MALL.name());
         return new MallLoginVO(StpUtil.getTokenValue(), profile(account, customer));
     }
 

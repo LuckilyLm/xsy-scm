@@ -1,6 +1,7 @@
 package com.xsy.scm.mall.order.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.delivery.constant.ScmDeliveryFulfillmentStatusEnum;
 import com.xsy.scm.delivery.dao.DeliveryRouteOrderDao;
@@ -10,6 +11,7 @@ import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.catalog.dao.MallCatalogDao;
 import com.xsy.scm.mall.order.constant.MallOrderDisplayStatusEnum;
+import com.xsy.scm.mall.order.constant.MallOrderProgressNodeEnum;
 import com.xsy.scm.mall.order.domain.form.MallOrderQueryForm;
 import com.xsy.scm.mall.order.domain.vo.MallOrderDeliveryVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderDiscountVO;
@@ -60,7 +62,7 @@ public class MallOrderQueryService {
     /** 列表卡片最多展示的缩略图数量，与设计图一致 */
     private static final int THUMBNAIL_LIMIT = 3;
     private static final String MALL_OPERATOR_PREFIX = UserTypeEnum.MALL_CUSTOMER.getValue() + ":";
-    private static final String NON_STANDARD = "NON_STANDARD";
+    private static final String NON_STANDARD = ScmProductTypeEnum.NON_STANDARD.name();
 
     /**
      * 客户可见的订单操作类型白名单。
@@ -303,20 +305,22 @@ public class MallOrderQueryService {
      */
     private static List<MallOrderProgressNodeVO> progressNodes(SalesOrderEntity order, DeliveryOrderProgressVO row) {
         List<MallOrderProgressNodeVO> nodes = new ArrayList<>();
-        nodes.add(node("SUBMITTED", "已提交订单", null,
+        nodes.add(node(MallOrderProgressNodeEnum.SUBMITTED.name(), "已提交订单", null,
                 order.getSubmittedAt() == null ? order.getCreatedAt() : order.getSubmittedAt(), true));
         if (ScmOrderStatusEnum.CANCELLED.name().equals(order.getStatus())) {
-            nodes.add(node("CANCELLED", "订单已取消", order.getCancelReason(), order.getCancelledAt(), true));
+            nodes.add(node(MallOrderProgressNodeEnum.CANCELLED.name(), "订单已取消", order.getCancelReason(),
+                    order.getCancelledAt(), true));
             return nodes;
         }
-        nodes.add(node("CONFIRMED", "后台已接单", null, order.getConfirmedAt(), order.getConfirmedAt() != null));
+        nodes.add(node(MallOrderProgressNodeEnum.CONFIRMED.name(), "后台已接单", null, order.getConfirmedAt(),
+                order.getConfirmedAt() != null));
         OffsetDateTime dispatchedAt = row == null ? null : row.getDispatchedAt();
-        nodes.add(node("DISPATCHED", "已发车配送", null, dispatchedAt, dispatchedAt != null));
+        nodes.add(node(MallOrderProgressNodeEnum.DISPATCHED.name(), "已发车配送", null, dispatchedAt, dispatchedAt != null));
         OffsetDateTime signedAt = row == null ? null : row.getSignedAt();
         boolean abnormal = row != null
                 && ScmDeliveryFulfillmentStatusEnum.EXCEPTION.name().equals(row.getFulfillmentStatus());
-        nodes.add(node("SIGNED", abnormal ? "配送异常" : "已签收", row == null ? null : row.getSignReason(), signedAt,
-                signedAt != null));
+        nodes.add(node(MallOrderProgressNodeEnum.SIGNED.name(), abnormal ? "配送异常" : "已签收",
+                row == null ? null : row.getSignReason(), signedAt, signedAt != null));
         return nodes;
     }
 

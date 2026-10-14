@@ -11,6 +11,7 @@ import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleItemVO;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleFundingTimeVO;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleRefundVO;
 import com.xsy.scm.mall.aftersale.domain.vo.MallAfterSaleVO;
+import com.xsy.scm.mall.order.constant.MallOrderProgressNodeEnum;
 import com.xsy.scm.mall.order.domain.vo.MallOrderProgressNodeVO;
 import com.xsy.scm.mall.order.service.MallOrderQueryService;
 import com.xsy.scm.order.constant.ScmOrderReturnStatusEnum;
@@ -238,27 +239,29 @@ public class MallAfterSaleQueryService {
     private static List<MallOrderProgressNodeVO> progressNodes(OrderReturnEntity entity, OrderRefundEntity refund,
             OffsetDateTime fundedAt) {
         List<MallOrderProgressNodeVO> nodes = new ArrayList<>();
-        nodes.add(node("SUBMITTED", "已提交申请", null, entity.getCreatedAt(), true));
+        nodes.add(node(MallOrderProgressNodeEnum.SUBMITTED.name(), "已提交申请", null, entity.getCreatedAt(), true));
         String status = entity.getStatus();
         if (ScmOrderReturnStatusEnum.REJECTED.name().equals(status)) {
-            nodes.add(node("REJECTED", "申请已驳回", entity.getDecisionReason(), entity.getRejectedAt(), true));
+            nodes.add(node(MallOrderProgressNodeEnum.REJECTED.name(), "申请已驳回", entity.getDecisionReason(),
+                    entity.getRejectedAt(), true));
             return nodes;
         }
         if (ScmOrderReturnStatusEnum.CANCELLED.name().equals(status)) {
-            nodes.add(node("CANCELLED", "申请已撤销", null, entity.getCancelledAt(), true));
+            nodes.add(node(MallOrderProgressNodeEnum.CANCELLED.name(), "申请已撤销", null, entity.getCancelledAt(), true));
             return nodes;
         }
         if (ScmOrderReturnStatusEnum.PENDING.name().equals(status)) {
-            nodes.add(node("REVIEW", "等待平台审核", null, null, false));
+            nodes.add(node(MallOrderProgressNodeEnum.REVIEW.name(), "等待平台审核", null, null, false));
             return nodes;
         }
-        nodes.add(node("REVIEW", "审核通过", null, entity.getApprovedAt(), true));
+        nodes.add(node(MallOrderProgressNodeEnum.REVIEW.name(), "审核通过", null, entity.getApprovedAt(), true));
         if (refund == null) {
-            nodes.add(node("REFUND", "无需退款", null, entity.getApprovedAt(), true));
+            nodes.add(node(MallOrderProgressNodeEnum.REFUND.name(), "无需退款", null, entity.getApprovedAt(), true));
             return nodes;
         }
         boolean completed = fundedAt != null;
-        nodes.add(node("REFUND", completed ? "退款完成" : "退款处理中", null, fundedAt, completed));
+        nodes.add(
+                node(MallOrderProgressNodeEnum.REFUND.name(), completed ? "退款完成" : "退款处理中", null, fundedAt, completed));
         return nodes;
     }
 

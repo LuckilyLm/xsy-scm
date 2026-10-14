@@ -1,5 +1,6 @@
 package com.xsy.scm.payment.service;
 
+import com.xsy.scm.balance.constant.ScmBalanceSourceTypeEnum;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
@@ -35,6 +36,7 @@ import java.math.RoundingMode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -285,7 +287,7 @@ public class PaymentRefundService {
                 || refund.getProviderAmount() == null) {
             return;
         }
-        if ("REFUND_FUNDING_ALLOCATION".equals(refund.getSourceType())) {
+        if (ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION.name().equals(refund.getSourceType())) {
             syncFundingAllocation(refund, operator);
             return;
         }
@@ -318,7 +320,7 @@ public class PaymentRefundService {
     }
 
     private void syncFundingAllocation(PaymentRefundEntity refund, String operator, boolean finishOrderRefund) {
-        if (refund == null || !"REFUND_FUNDING_ALLOCATION".equals(refund.getSourceType())
+        if (refund == null || !ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION.name().equals(refund.getSourceType())
                 || refund.getSourceId() == null) {
             return;
         }
@@ -344,13 +346,13 @@ public class PaymentRefundService {
     }
 
     /** 单条 ONLINE 准备失败只回滚到保存点；调用方持有订单锁并记录失败分摊。 */
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.NESTED, rollbackFor = Exception.class)
+    @Transactional(propagation = Propagation.NESTED, rollbackFor = Exception.class)
     public PaymentRefundEntity executeAllocation(Long allocationId, Long orderRefundId,
             PaymentTransactionEntity transaction, BigDecimal amount, String reason, String mockScenario) {
-        String sourceType = "REFUND_FUNDING_ALLOCATION";
+        String sourceType = ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION.name();
         PaymentRefundEntity existing = paymentRefundDao.selectBySource(sourceType, allocationId);
         if (existing != null && ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(existing.getStatus())) {
-            // 外层执行完本轮所有来源后统一登记 Finance；保存点内只恢复这条分摊行。
+            // 外层执行完所有来源后统一登记 Finance；保存点内只恢复这条分摊行。
             syncFundingAllocation(existing, ScmOperator.current(), false);
             return existing;
         }

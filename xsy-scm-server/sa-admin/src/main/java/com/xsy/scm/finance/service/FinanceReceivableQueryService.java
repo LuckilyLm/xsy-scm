@@ -10,6 +10,7 @@ import com.xsy.scm.common.time.ScmDateTimeRangeResolver;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.constant.ScmFinanceBusinessTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceEntryTypeEnum;
+import com.xsy.scm.finance.constant.ScmFinanceSettleStateEnum;
 import com.xsy.scm.finance.constant.ScmFinanceWriteOffTargetTypeEnum;
 import com.xsy.scm.finance.dao.FinanceOperationLogDao;
 import com.xsy.scm.finance.dao.FinanceReceivableDao;
@@ -44,7 +45,8 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 @RequiredArgsConstructor
 public class FinanceReceivableQueryService {
 
-    private static final java.util.Set<String> SETTLE_STATES = java.util.Set.of("OPEN", "PARTIAL", "SETTLED");
+    private static final java.util.Set<String> SETTLE_STATES = java.util.Set.of(ScmFinanceSettleStateEnum.OPEN.name(),
+            ScmFinanceSettleStateEnum.PARTIAL.name(), ScmFinanceSettleStateEnum.SETTLED.name());
 
     private static final java.util.Set<String> ENTRY_TYPES = java.util.Set.of(ScmFinanceEntryTypeEnum.NORMAL.name(),
             ScmFinanceEntryTypeEnum.RED.name());
