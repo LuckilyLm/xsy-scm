@@ -149,4 +149,16 @@
           AND deleted = FALSE
     </select>
 
+    <!--
+      某张订单的货到付款实收合计。
+      只取 NORMAL：系统来源的收款不允许人工冲正（41144），因此不存在需要扣减的 REVERSE 行。
+    -->
+    <select id="sumCodCollectedByOrder" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(amount), 0) FROM xsy_finance_receipt
+        WHERE source_type = 'ORDER_COD_COLLECTION'
+          AND source_id = #{orderId}
+          AND entry_type = 'NORMAL'
+          AND deleted = FALSE
+    </select>
+
 </mapper>

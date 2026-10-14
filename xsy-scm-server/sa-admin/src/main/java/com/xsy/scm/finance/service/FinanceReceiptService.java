@@ -16,13 +16,21 @@ import com.xsy.scm.finance.constant.ScmFinanceOperationTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReceiptMethodEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReceiptSourceTypeEnum;
 import com.xsy.scm.finance.constant.ScmFinanceReverseEntryTypeEnum;
+import com.xsy.scm.finance.constant.ScmFinanceWriteOffSourceTypeEnum;
 import com.xsy.scm.finance.dao.FinanceCounterpartySourceDao;
 import com.xsy.scm.finance.dao.FinanceOrderFundingSourceDao;
 import com.xsy.scm.finance.dao.FinanceReceiptDao;
+import com.xsy.scm.finance.dao.FinanceReceivableDao;
+import com.xsy.scm.finance.dao.FinanceReceivableSourceDao;
+import com.xsy.scm.finance.domain.dto.FinanceCodCollectionOrderDto;
 import com.xsy.scm.finance.domain.dto.FinanceCustomerFactDto;
 import com.xsy.scm.finance.domain.entity.FinanceReceiptEntity;
+import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
+import com.xsy.scm.finance.domain.form.FinanceCodCollectionForm;
 import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
 import com.xsy.scm.finance.domain.form.FinanceReceiptReverseForm;
+import com.xsy.scm.finance.domain.form.FinanceWriteOffAddForm;
+import com.xsy.scm.finance.domain.form.FinanceWriteOffAddItemForm;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
@@ -31,9 +39,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -63,6 +73,9 @@ public class FinanceReceiptService {
     private final FinanceOrderFundingSourceDao financeOrderFundingSourceDao;
     private final FinanceOrderFundingPolicy financeOrderFundingPolicy;
     private final CustomerSettlementAccountValidator customerSettlementAccountValidator;
+    private final FinanceReceivableSourceDao financeReceivableSourceDao;
+    private final FinanceReceivableDao financeReceivableDao;
+    private final FinanceWriteOffService financeWriteOffService;
 
     /**
      * 登记一笔 {@code NORMAL} 收款。
@@ -89,9 +102,79 @@ public class FinanceReceiptService {
         }
 
         customerSettlementAccountValidator.validateSettlementRelationship(customer.getCustomerId());
-        FinanceReceiptEntity receipt = register(form, customer);
+        FinanceReceiptEntity receipt = register(form, customer, null, null);
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
                 null, null, snapshot(receipt));
+
+        FinanceReceiptVO result = vo(receipt);
+        idempotencyService.complete(claim, "FINANCE_RECEIPT", receipt.getId(), result);
+        return result;
+    }
+
+    /**
+     * 货到付款收款确认：把交付时真正收到的钱登记成收款事实，并核销该订单签收生成的正常应收。
+     *
+     * <p>
+     * <b>签收不等于已收款</b>：签收只生成应收，钱到没到要由这笔收款回答。因此本命令的前置是 「订单约定为 COD <b>且</b>已经有正常应收」—— 拒收与异常签收不生成应收，自然也就收不到钱。
+     *
+     * <p>
+     * <b>两层防重</b>：请求级 {@code Idempotency-Key}（同键重放首次结果）+ 收款来源唯一索引 {@code uk_finance_receipt_source_active}（一张订单最多一笔 COD
+     * 收款）。 后者是并发下的真防线：两个不同幂等键同时收同一张单，只有一个能插进去。
+     *
+     * <p>
+     * <b>少收与多收</b>：少收按实收登记，应收剩余仍未结；多收由核销命令按「不得超过可核销余额」拒绝 —— 金额上限只在一个地方判定，不在这里再写一遍。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public FinanceReceiptVO collectCod(FinanceCodCollectionForm form, String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+        }
+        var claim = idempotencyService.claim(FinanceConstant.COD_COLLECTION_SCOPE + ":" + form.getOrderId(),
+                idempotencyKey, form);
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, FinanceReceiptVO.class);
+        }
+        FinanceCodCollectionOrderDto order = financeReceivableSourceDao.selectCodCollectionOrder(form.getOrderId());
+        if (order == null) {
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ORDER_NOT_FOUND);
+        }
+        if (!Boolean.TRUE.equals(order.getCodSettlement())) {
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ORDER_NOT_APPLICABLE);
+        }
+        FinanceReceivableEntity receivable = financeReceivableDao.selectNormalByOrder(order.getOrderId());
+        if (receivable == null) {
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ORDER_NOT_APPLICABLE);
+        }
+        // 收款对象由订单的客户按客户域规则解析，客户端不能指定；范围判定与人工收款同口径。
+        FinanceCustomerFactDto customer = requireAuthorizedCustomer(order.getCustomerId());
+        customerSettlementAccountValidator.validateSettlementRelationship(customer.getCustomerId());
+
+        FinanceReceiptAddForm receiptForm = new FinanceReceiptAddForm();
+        receiptForm.setCustomerId(order.getCustomerId());
+        receiptForm.setAmount(form.getAmount());
+        receiptForm.setMethod(form.getMethod());
+        receiptForm.setReceivedAt(form.getReceivedAt());
+        receiptForm.setExternalReference(form.getExternalReference());
+        receiptForm.setRemark(form.getRemark());
+        FinanceReceiptEntity receipt;
+        try {
+            receipt = register(receiptForm, customer, ScmFinanceReceiptSourceTypeEnum.ORDER_COD_COLLECTION,
+                    order.getOrderId());
+        } catch (DuplicateKeyException duplicate) {
+            // 唯一索引兜住「一张订单最多一笔 COD 收款」：并发下先写的一方赢，后到的在这里被翻译成可解释的业务码。
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ALREADY_REGISTERED);
+        }
+        operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
+                null, null, snapshot(receipt));
+
+        FinanceWriteOffAddItemForm item = new FinanceWriteOffAddItemForm();
+        item.setTargetId(receivable.getId());
+        item.setAmount(form.getAmount());
+        FinanceWriteOffAddForm writeOffForm = new FinanceWriteOffAddForm();
+        writeOffForm.setSourceType(ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name());
+        writeOffForm.setSourceId(receipt.getId());
+        writeOffForm.setItems(List.of(item));
+        financeWriteOffService.add(writeOffForm, idempotencyKey + ":write-off");
 
         FinanceReceiptVO result = vo(receipt);
         idempotencyService.complete(claim, "FINANCE_RECEIPT", receipt.getId(), result);
@@ -288,7 +371,8 @@ public class FinanceReceiptService {
         return snapshot;
     }
 
-    private FinanceReceiptEntity register(FinanceReceiptAddForm form, FinanceCustomerFactDto customer) {
+    private FinanceReceiptEntity register(FinanceReceiptAddForm form, FinanceCustomerFactDto customer,
+            ScmFinanceReceiptSourceTypeEnum sourceType, Long sourceId) {
 
         BigDecimal amount = ScmDecimalStrings.parseScale4Required(form.getAmount());
         if (amount.signum() <= 0) {
@@ -321,6 +405,9 @@ public class FinanceReceiptService {
         receipt.setReason(null);
         receipt.setExternalReference(StringUtils.trimToNull(form.getExternalReference()));
         receipt.setRemark(StringUtils.trimToNull(form.getRemark()));
+        // 系统来源成对出现（ck_finance_receipt_source_pairing）；人工登记的收款两者都为 null。
+        receipt.setSourceType(sourceType == null ? null : sourceType.name());
+        receipt.setSourceId(sourceId);
         receipt.setCreatedAt(now);
         receipt.setUpdatedAt(now);
         receipt.setCreatedBy(operator);

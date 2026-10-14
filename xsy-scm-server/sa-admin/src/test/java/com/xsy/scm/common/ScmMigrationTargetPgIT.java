@@ -21,7 +21,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void reachesTheRequestedMigrationVersion() {
-        String expected = System.getProperty("xsy.migration.expected-version", "130");
+        String expected = System.getProperty("xsy.migration.expected-version", "131");
         String current = jdbc.queryForObject("SELECT version FROM flyway_schema_history "
                 + "WHERE version IS NOT NULL ORDER BY installed_rank DESC LIMIT 1", String.class);
         assertThat(current).isEqualTo(expected);
@@ -33,7 +33,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void mallClaimColumnsExistWhenTargetIs128OrLater() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "130"));
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "131"));
         if (target < 128) {
             return;
         }
@@ -50,7 +50,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void settlementMethodColumnExistsWhenTargetIs129OrLater() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "130"));
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "131"));
         if (target < 129) {
             return;
         }
@@ -76,7 +76,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void codPermissionDefaultsToDisabledFromV130() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "130"));
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "131"));
         if (target < 130) {
             return;
         }

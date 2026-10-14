@@ -61,6 +61,15 @@ public final class FinanceConstant {
     public static final String RECEIPT_ADD_SCOPE = "FINANCE_RECEIPT_ADD";
 
     /**
+     * 货到付款收款的幂等 scope。
+     *
+     * <p>
+     * 它防的是<b>重复请求</b>；重复<b>事实</b>另有一层 —— {@code uk_finance_receipt_source_active} 按 （来源类型, 订单 id）唯一，因此两个不同幂等键同时收同一张 COD
+     * 订单，也只会留下一笔收款。
+     */
+    public static final String COD_COLLECTION_SCOPE = "FINANCE_COD_COLLECTION";
+
+    /**
      * 付款登记的幂等 scope（与 {@code Idempotency-Key} 一起定位一条命令）。
      *
      * <p>

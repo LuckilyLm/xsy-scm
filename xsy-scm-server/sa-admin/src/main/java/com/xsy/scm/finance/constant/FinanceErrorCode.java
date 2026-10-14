@@ -85,7 +85,14 @@ public enum FinanceErrorCode implements ScmErrorCode {
     REFUND_ALLOCATION_REQUIRED(41148, "该退款需要支付来源分摊，不能从单笔交易或人工付款直接退款"),
     BALANCE_REFUND_REQUIRES_WALLET(41149, "纯余额订单请通过售后退款单返还钱包余额"),
     BALANCE_PAYMENT_AFTER_REFUND(41150, "订单已发起资金退款，暂不支持继续余额支付"),
-    PAYMENT_AFTER_BALANCE_REFUND(41151, "订单已返还余额，不能继续发起支付，请另建订单");
+    PAYMENT_AFTER_BALANCE_REFUND(41151, "订单已返还余额，不能继续发起支付，请另建订单"),
+
+    /** 货到付款收款：订单不存在。 */
+    COD_COLLECTION_ORDER_NOT_FOUND(41152, "订单不存在"),
+    /** 货到付款收款：订单不是 COD 结算，或尚未签收生成应收（拒收 / 异常签收就没有应收可收）。 */
+    COD_COLLECTION_ORDER_NOT_APPLICABLE(41153, "该订单不是货到付款结算，或尚未签收生成应收，不能登记收款"),
+    /** 货到付款收款：一张订单最多一笔，重复登记由收款来源唯一索引兜住。 */
+    COD_COLLECTION_ALREADY_REGISTERED(41154, "该订单已登记过货到付款收款，不能重复登记");
 
     private final int code;
     private final String msg;

@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.finance.permission.FinancePermission;
+import com.xsy.scm.finance.domain.form.FinanceCodCollectionForm;
 import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
 import com.xsy.scm.finance.domain.form.FinanceReceiptReverseForm;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
@@ -48,5 +49,19 @@ public class FinanceReceiptController {
     public ResponseDTO<FinanceReceiptVO> reverse(@Valid @RequestBody FinanceReceiptReverseForm form,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(financeReceiptService.reverse(form, idempotencyKey));
+    }
+
+    /**
+     * 货到付款收款确认：对已签收的 COD 订单登记实收并核销其应收。
+     *
+     * <p>
+     * 沿用「登记收款」的权限：能不能登记收款与能不能收 COD 的钱是同一件事，不为同一能力再切一个角色维度。 必须带 {@code Idempotency-Key}；同一张订单最多一笔 COD 收款由收款来源唯一索引兜住。
+     */
+    @PostMapping("/cod-collection")
+    @SaCheckPermission(FinancePermission.RECEIPT_ADD)
+    @OperateLog
+    public ResponseDTO<FinanceReceiptVO> collectCod(@Valid @RequestBody FinanceCodCollectionForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseDTO.ok(financeReceiptService.collectCod(form, idempotencyKey));
     }
 }
