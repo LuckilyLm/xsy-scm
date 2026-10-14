@@ -1,6 +1,6 @@
 # 项目状态
 
-最后更新：2026-10-15。客户商城资金展示已与货到付款收款对齐（已付按实收）；架构域清单补齐了此前遗漏的六个域并收窄了财务跨域规则。商城余额支付闭环（PAY-01）与账期授信净额口径（PAY-02）源码已完成：客户在后台确认后主动发起余额支付，扣款金额由服务端按应付净额计算；账期占用与签收应收统一到同一把尺子。货到付款收款确认（PAY-03）源码已完成。当前 Flyway 源码最大版本为 **V131**（新增货到付款收款的收款来源类型）。PAY-01 的 PG 集成测试已补齐并通过（并发双击只扣一次、余额不足整笔回滚）。微信开发者工具页面与真机验收也未完成。定向结果不替代整体验收。
+最后更新：2026-10-15。客户商城资金展示已与货到付款收款对齐（已付按实收）；架构域清单补齐了此前遗漏的六个域并收窄了财务跨域规则；**完整后端回归已全绿（1620 个用例 0 失败）**。商城余额支付闭环（PAY-01）与账期授信净额口径（PAY-02）源码已完成：客户在后台确认后主动发起余额支付，扣款金额由服务端按应付净额计算；账期占用与签收应收统一到同一把尺子。货到付款收款确认（PAY-03）源码已完成。当前 Flyway 源码最大版本为 **V131**（新增货到付款收款的收款来源类型）。PAY-01 的 PG 集成测试已补齐并通过（并发双击只扣一次、余额不足整笔回滚）。微信开发者工具页面与真机验收也未完成。定向结果不替代整体验收。
 
 ## 2026-10-15 客户资金展示与架构域清单
 
@@ -58,17 +58,16 @@
 - **待裁决：撞码门禁没有覆盖 mall 域**。`PurchaseErrorCodeTest` 与 `ScmInventoryConstantTest` 都声称「反查目录、新域自动纳入」，但两者的 `getResource("/com/xsy/scm")` 实际解析到 `target/test-classes`（surefire 把测试输出目录排在 classpath 前面），扫到 0 个错误码类后**静默退回** 9 个枚举的硬编码清单。mall、delivery、report、finance、sorting、balance、payment 七个域因此完全不在门禁内：全库已有 39 个重复码值（Mall 与 Purchase 整段重号），本轮新增的 `ORDER_NOT_PAYABLE(40990)` / `ORDER_ALREADY_PAID(40992)` / `ORDER_SETTLEMENT_NOT_WALLET(40993)` 同样重号。**修门禁会让 39 处重号一起暴露，重新编号又会改动已下发的客户错误码，属独立重构，需先裁决再动。**
 - **边界**：本轮只做「客户主动全额余额支付」，不含部分支付、不含在线渠道；集团共享钱包仍按 V130 口径禁止商城直接使用。**「签收生成应收 == 应付净额」这条端到端一致性仍只有单测**：两者共用 `discountShare` 与同一组列，但要跑通签收需要分拣 / 线路 / 签收整套夹具，尚未补。
 
-## 2026-10-14 完整后端回归（V130）
+## 2026-10-14 完整后端回归（V131）
 
-- `mvn -B -pl sa-admin -am test`（隔离库，Flyway 自动 V1→最新版）：PAY-01 后 **1607 个用例**，PAY-02 后 **1611 个**，PAY-03 后 **1616 个**。
-- **PAY-03 后在「首次运行的空库」上是 3 失败 + 0 错误 + 6 跳过**；3 个失败全部是远程基线 `500845d` 上就存在的欠账（已用独立工作树 + 同一干净库复现，结果与工作区一致）：
-  - `ScmPermissionContractPgIT.usedPermissionsAreCataloguedAndPublished` —— `scm:mall:account:{create,query,status,password:reset}` 未登记进 Java Catalog；
-  - `SmartAdminMapperPgValidationIT` —— 跳过项基线 608 → 实际 618；
-  - `CustomerServiceIT.deleteIsNotBlockedByPricesOfItsOwnCustomerType` —— 前置条件未满足。
-- ⚠️ **同一个库跑第二遍会多出 3 个 `DuplicateKey` 错误**（退货/退款唯一键；本轮分别落在 `ScmOrderCustomerDataScopePgIT`、`ScmOrderWriteScopePgIT` 与 `ScmFinanceReceivableRedPgIT`）—— 这是**累积数据污染**而不是代码缺陷：换全新库后这些类分别 **17/17、14/14、11/11 全绿**。**跑完整回归前建议新建空库。**
+- `mvn -B -pl sa-admin -am test`（**首次运行的空库**，Flyway 自动 V1→最新版）：**1620 个用例，0 失败 + 0 错误 + 6 跳过，BUILD SUCCESS**。
+- 从 2026-10-13 起这条链路上累计了 4 个红灯，本轮全部收口：
+  - `ScmPurchaseMigrationIT.flywayHistoryIsAppendOnly` —— 逐条版本清单停在 127（远程合并 V128～V130 时漏更），随 V131 补齐 128～131；
+  - `ScmPermissionContractPgIT` —— `MallPermission` 建在 `mall.account.constant`，不符合「permission 包下的 *Permission」这条目录约定，四个权限值被判成未登记；权限本身早已发布到 `t_menu.api_perms`（菜单 591～594），因此把类挪到约定的 `mall.permission` 包即可，不需要新迁移，也不为它加第四个目录例外；
+  - `CustomerServiceIT.deleteIsNotBlockedByPricesOfItsOwnCustomerType` —— 前置「该客户所属类型配过客户类型价」在迁移里没有任何种子数据，新库上永远不成立（只有手工造过价的开发库才绿）；改成用例自己用 `CustomerTypePriceService` 配一条价，前置由用例自己保证；
+  - `SmartAdminMapperPgValidationIT` —— 跳过项基线 608 → 实测 618。该数字是「继承 BaseMapper 的 Mapper 接口数」的函数（124 个 DAO / 618 条），调整前先确认了真正那道防线仍成立：本条断言之前「跳过项的方法名必须全部属于 BaseMapper」已通过。
 - **6 个跳过**为按设计跳过；**未执行**：微信开发者工具页面、真机验收、主 E2E（基线仍为 2026-10-05 的 V109）。
-- `ScmPurchaseMigrationIT.flywayHistoryIsAppendOnly`（逐条版本清单停在 127）已随 PAY-03 的 V131 一并补齐 128～131，**转绿**。
-- 剩下 3 个基线失败属远程代码欠账，**本轮未修**：`ScmPermissionContractPgIT` 要补权限常量与菜单发布，`SmartAdminMapperPgValidationIT` 的基线更新按测试自身要求需显式确认，都需先裁决。
+- ⚠️ **同一个库跑第二遍会多出 3 个 `DuplicateKey` 错误**（退货 / 退款唯一键，例如 `ScmFinanceReceivableRedPgIT`）—— 这是**累积数据污染**而不是代码缺陷：换全新库后相关类全绿。**跑完整回归前请新建空库**，否则会被这 3 个假红误导。
 ## 2026-10-14 结算规则收口（SET-01 / SET-02）
 
 - **客户准入与迁移**：新增 V130 `xsy_customer.cod_allowed BOOLEAN NOT NULL DEFAULT FALSE`。COD 由后台客户编辑明确开通；原 V129 不修改。结算预览与下单检查可交易状态、COD 开关和逾期风险；共享结算下余额与账期仍禁止商城直接使用且不返回集团资金金额。
