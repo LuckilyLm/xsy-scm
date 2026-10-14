@@ -1,9 +1,74 @@
 # 项目状态
 
-最后更新：2026-10-14。商城结算方式选择已按客户 COD 准入、账期授信和主动选择规则收口，当前 Flyway 源码最大版本为 **V130**。余额实际扣款、账期资金处理和货到付款收款仍待后续工作包；微信开发者工具页面与真机验收也未完成。定向结果不替代整体验收。
+最后更新：2026-10-15。客户商城资金展示已与货到付款收款对齐（已付按实收）；架构域清单补齐了此前遗漏的六个域并收窄了财务跨域规则。商城余额支付闭环（PAY-01）与账期授信净额口径（PAY-02）源码已完成：客户在后台确认后主动发起余额支付，扣款金额由服务端按应付净额计算；账期占用与签收应收统一到同一把尺子。货到付款收款确认（PAY-03）源码已完成。当前 Flyway 源码最大版本为 **V131**（新增货到付款收款的收款来源类型）。PAY-01 的 PG 集成测试已补齐并通过（并发双击只扣一次、余额不足整笔回滚）。微信开发者工具页面与真机验收也未完成。定向结果不替代整体验收。
 
-2026-10-08 的审查记录以 `main @ 058ff5a6`（FIX-01～FIX-09）为起点。V130 已在独立隔离库完成 V129→V130 与 V1→V130 演练；V128/V129 的先前演练见下文。最近一次完整后端与主 E2E 基线仍是 2026-10-05 的 **V109** 验收；本轮定向结果不替代整体验收。
+## 2026-10-15 客户资金展示与架构域清单
 
+### 客户商城资金展示：已付按实收
+
+- **问题**：`MallOrderVO.paidAmount` 只算「支付事实」（`paidAmountOf`），货到付款收的钱不在其中 —— COD 订单交付收款后，客户详情仍显示**全额待付**。
+- **改法**：finance 新增 `receivedAmountOf`（= 支付事实 + 该订单的 COD 收款合计），客户详情的「已付」改读它。**支付命令仍用 `paidAmountOf`**：门禁问的是「有没有成功的支付事实」，展示问的是「实际收到多少钱」，两个问题不同，因此保留两个方法而不是把口径混成一个。
+- 两种结算方式互斥（余额 / 账期 / 在线走支付事实，COD 走收款事实），两项不会同时有值。系统来源的收款不允许人工冲正（41144），因此 COD 实收只取 `NORMAL` 行，不需要再扣 REVERSE。
+- **验证**：新增 `MallOrderPaymentDisplayPgIT` 2 项（收清 → 已付 = 应付、待付 0；少收 → 已付 = 实收、待付 = 差额），`FinanceOrderPayableQueryServiceTest` 增 2 项。**反向验证**：把客户详情改回只算支付事实，两个用例都转红。
+
+### 架构域清单补齐，并收窄财务跨域规则
+
+- **问题**：`ScmArchitectureTest` 的域清单停在 15 个 —— **balance / mall / payment / print / metrics / notification 六个域是在清单写定之后才建的，一直不在任何跨域规则之内**。规则注释写着「新域要补一行」，但漏补不会以任何形式报警，门禁只是少比一个域。
+- **补齐后跑一遍**：财务域暴露出 **47 处**对 payment / balance 的依赖，构成是两类：
+  - **约 40 处是跨域枚举常量**（结算方式、支付意图 / 交易状态、余额流水类型……）；
+  - **约 7 处是 `CustomerBalanceMovementEntity`** —— 财务的只读 DAO 直接返回了余额域的**实体**。
+- **处理**：
+  - 规则收窄为「财务域不许依赖其它域的**非枚举**类型」。理由写进注释：那些枚举是各域共用的**词汇表**，财务判定「这腿是不是成功的余额消费」必然要引用它们；把它们也算越界，规则就从「不许伸手进别的域」变成「不许使用共享词汇」，只会逼出重复的值域副本，而重复的值域副本最容易漂移。规则真正要拦的是别人的**服务、DAO 与实体**。
+  - 新增 finance 自己的 `FinanceBalanceMovementDto`，`lockMovement` 改返回它 —— 修掉那 7 处实体泄漏（只取财务判定与核销真正用到的列）。
+- **验证**：`ScmArchitectureTest` 9/9 通过。**反向验证**：临时给一个财务类加一个跨域**服务**字段，规则立刻抓到（`Field <…probeDependency> has type <com.xsy.scm.payment.service.PaymentRefundService>`）。
+
+## 2026-10-14 货到付款收款确认（PAY-03）
+
+- **边界**：**签收不是已收款**。签收只生成应收，钱到没到由一笔真实收款回答；因此命令的前置是「订单约定为 COD **且**已有正常应收」—— 拒收与异常签收不生成应收，也就没有可收的钱。
+- **新增 V131**：`xsy_finance_receipt.source_type` 白名单加 `ORDER_COD_COLLECTION`。走来源键而不是人工收款（`source_type IS NULL`）的理由是**重复登记**：人工收款没有来源键，`uk_finance_receipt_source_active` 管不到它；带来源的收款让「一张 COD 订单最多一笔收款」由唯一索引直接兜住，而不是靠服务层「先查后写」那种有窗口的判定。
+- **命令** `POST /scm/finance/receipt/cod-collection`（`FinanceReceiptService.collectCod`）：只带订单、实收金额、资金形式、业务时点与凭据号。**收款对象由订单的客户按客户域规则解析、核销目标由订单签收生成的正常应收决定**，客户端都不能指定；落收款 → 自动核销该应收 → 幂等 complete，全程同事务。
+- **资金形式不出现 COD**：COD 是「什么时候收钱」的结算时机，不是资金形式（finance-r1-design Q21 已裁决），方式仍取 CASH / BANK_TRANSFER 等值。
+- **边界处理**：重复登记 → 唯一索引挡下并翻译成 41154；同一幂等键重放 → 返回首次结果；**少收** → 按实收核销、剩余仍未结（补收走人工收款 / 核销）；**多收** → 核销命令按「不得超过可核销余额」拒绝，且整笔回滚不留收款单；非 COD / 未签收 / 订单不存在 → 在写任何资金事实之前拒绝（41153 / 41152）。
+- **权限**：沿用 `scm:finance:receipt:add`（能不能登记收款与能不能收 COD 的钱是同一件事），不新增角色维度、不动菜单号段。
+- **验证**：新增 `FinanceCodCollectionPgIT` 5 项；受影响 13 个类 **48/48 通过**。**反向验证**：去掉「必须有应收」这条前置，未签收订单的断言转红。
+- **顺带修复**：`ScmPurchaseMigrationIT.flywayHistoryIsAppendOnly` 的逐条版本清单补齐 128～131（它此前停在 127，是远程合并 V128～V130 时漏更的既有红灯）；`ScmMigrationTargetPgIT` 默认版本 130 → 131。
+- **未做（属另一工作包「客户商城资金展示」）**：客户侧「已付」尚未把 COD 收款计入 —— `paidAmountOf` 只算支付事实，因此 COD 订单收款后在客户详情里仍显示全额待付。端到端展示与待付口径统一放在那一项里做。
+
+## 2026-10-14 账期授信占用的正式净额口径（PAY-02）
+
+- **问题**：账期占用按订单的 `settlement_total_amount`（优惠前毛额）计算，而签收生成的应收是净额（实重 × 锁定价 − 冻结优惠等比分摊）。优惠越大占用越虚高，客户被自己的优惠挡住 —— 额度明明够付优惠后的钱，却因为「优惠前」超限而下不了单、确认不了。
+- **统一到正式净额**，三处一起改：
+  - **预览 / 下单**（`MallSettlementService`）：账期可用性改用优惠后应付（与余额同一口径），删掉「优惠前毛额」这个只给账期用的第二参数；`MallCheckoutService` 两处调用同步。
+  - **确认**（`SalesOrderService.confirmOrder` + `OrderSettlementConfirmationPolicy`）：账期门禁改用 `payableOfConfirmedOrder`（正式净额）。为此把**优惠冻结前移到授信判定之前** —— 优惠额只有冻结后才存在。整笔仍是同一个事务，授信不过时券的占用随之回滚。
+  - **敞口**（`CustomerCreditDao` + `FinanceCreditExposureQueryService`）：SQL 只给出「已确认且未开应收」的订单主键，金额逐单走 `FinanceOrderPayableQueryService.payableOfConfirmedOrders`（新增批量版，两条 IN 查询，避免 N+1），**不把折算公式在 SQL 里再写一遍**。
+- **刻意不动的**：后台录单 / 商城历史空方式订单的**例外审批**路径仍按 `settlement_total_amount` 保守判定 —— 那条路径有 `CREDIT_OVERRIDE` 显式放行机制，SET-01 已把它记为「沿用原口径」。占用是账本事实，必须与应收一致；门禁是承诺前的保守检查，两者口径可以不同，但都要有出处。
+- **验证**：新增 `MallCreditExposurePgIT` 3 项（净额占用、开应收后移出占用、剩余额度按净额扣减）；`MallPromotionCheckoutPgIT` 增 1 项（额度只够净额、不够毛额时确认仍放行），并把预览那处断言由「按毛额应禁用」改为「按净额可用」。受影响 11 个类 **77/77 通过**。
+- **反向验证**：把确认门禁与预览口径分别改回优惠前毛额，两处断言都转红。
+
+## 2026-10-14 商城余额支付闭环（PAY-01）
+
+- **资金时点**：沿用 V129 的「结算约定」，客户选 `WALLET` 下单、后台录实重确认后，由**客户主动**在订单详情发起余额支付；后台确认订单仍不等于已付款。`CREDIT` / `COD` 不受本轮影响。
+- **应付净额口径**：新增 finance 只读契约 `FinanceOrderPayableQueryService`——`payableOfConfirmedOrder` 按「实重 × 冻结锁定价 − 该订单行冻结优惠的等比分摊」逐行舍入后汇总，**与签收生成应收共用同一个 `discountShare`**（由私有改为包内共享），不再另起一套算法；`paidAmountOf` 取该订单全部成功支付事实合计。新增 V 级 migration：**无**（只读 SQL，落在 `FinanceReceivableSourceDao.selectOrderPayableLines`）。
+- **支付入口**：`PaymentIntentService` 按 `cancelFromMall` 既有模式新增 `createFromMall`，只跳过员工负责人范围（商城身份在数据范围服务里是 `denied()`），订单必须已确认、退款互斥、钱包消费、幂等与 Finance 资金编排一律不变。新增 `POST /scm/mall/orders/{orderId}/pay`（`MallPaymentService`）：**请求体不带金额**，缺 `Idempotency-Key` 直接拒绝；先判归属再锁订单行，在锁内算 待付 = 应付 − 已付，待付归零即拒绝，因此并发双击与同键重放都扣不出第二笔。
+- **客户资金投影**：`MallOrderVO` 增加 `settlementMethod` / `payableAmount` / `paidAmount`，**仅已确认订单下发**（确认前实重未齐，应付没有权威口径）；前端 `dueAmount` 只做服务端两个数的定点相减，页面不出现客户端自算金额。
+- **前端**：订单详情金额卡新增结算方式、应付（优惠后）、已付、待付四行；待付大于零且约定为余额时底部出现「余额支付」，二次确认后扣款并刷新。mock 与后端同形（补 `settlementOptions` 下发、资金投影与非余额/重复支付拒绝）。
+- **验证**：新增单测 `FinanceOrderPayableQueryServiceTest` 5 项（含「实重与下单量不同才测得到等比分摊」）与 `MallPaymentServiceTest` 5 项（金额权威、缺幂等键、未确认、非余额、已付清）**已运行 10/10**；新增 PG 集成测试 `MallWalletPaymentPgIT` **5/5**（真实库跑通 下单 → 录实重确认 → 客户支付 → 钱包扣减 → 资金取数；并发双击只扣一次；余额不足整笔回滚；未确认 / 非余额结算 / 跨客户归属一律在扣款前被拒）；客户商城契约测试 41/41 通过（本轮新增 5 项）。**未做**：`build:mp-weixin`、真机与浏览器验收、主 E2E。
+- **补测发现并修复**：新 SQL `selectOrderPayableLines` 原写 `xsy_sales_order_item.sales_order_id`，该表实际列名是 `order_id`。单测用 mock DAO 把这条 SQL 整个掩盖了 —— 真实库上**任何已确认订单**的详情读取都会报 `column "sales_order_id" does not exist`。已改列名并纳入本轮回归。
+- **反向验证**：把「待付归零即拒绝」这条守卫临时去掉，已付清再点、同键重放与并发双击三个用例全部转红，说明「只扣一次」不是空转断言。
+- **待裁决：撞码门禁没有覆盖 mall 域**。`PurchaseErrorCodeTest` 与 `ScmInventoryConstantTest` 都声称「反查目录、新域自动纳入」，但两者的 `getResource("/com/xsy/scm")` 实际解析到 `target/test-classes`（surefire 把测试输出目录排在 classpath 前面），扫到 0 个错误码类后**静默退回** 9 个枚举的硬编码清单。mall、delivery、report、finance、sorting、balance、payment 七个域因此完全不在门禁内：全库已有 39 个重复码值（Mall 与 Purchase 整段重号），本轮新增的 `ORDER_NOT_PAYABLE(40990)` / `ORDER_ALREADY_PAID(40992)` / `ORDER_SETTLEMENT_NOT_WALLET(40993)` 同样重号。**修门禁会让 39 处重号一起暴露，重新编号又会改动已下发的客户错误码，属独立重构，需先裁决再动。**
+- **边界**：本轮只做「客户主动全额余额支付」，不含部分支付、不含在线渠道；集团共享钱包仍按 V130 口径禁止商城直接使用。**「签收生成应收 == 应付净额」这条端到端一致性仍只有单测**：两者共用 `discountShare` 与同一组列，但要跑通签收需要分拣 / 线路 / 签收整套夹具，尚未补。
+
+## 2026-10-14 完整后端回归（V130）
+
+- `mvn -B -pl sa-admin -am test`（隔离库，Flyway 自动 V1→最新版）：PAY-01 后 **1607 个用例**，PAY-02 后 **1611 个**，PAY-03 后 **1616 个**。
+- **PAY-03 后在「首次运行的空库」上是 3 失败 + 0 错误 + 6 跳过**；3 个失败全部是远程基线 `500845d` 上就存在的欠账（已用独立工作树 + 同一干净库复现，结果与工作区一致）：
+  - `ScmPermissionContractPgIT.usedPermissionsAreCataloguedAndPublished` —— `scm:mall:account:{create,query,status,password:reset}` 未登记进 Java Catalog；
+  - `SmartAdminMapperPgValidationIT` —— 跳过项基线 608 → 实际 618；
+  - `CustomerServiceIT.deleteIsNotBlockedByPricesOfItsOwnCustomerType` —— 前置条件未满足。
+- ⚠️ **同一个库跑第二遍会多出 3 个 `DuplicateKey` 错误**（退货/退款唯一键；本轮分别落在 `ScmOrderCustomerDataScopePgIT`、`ScmOrderWriteScopePgIT` 与 `ScmFinanceReceivableRedPgIT`）—— 这是**累积数据污染**而不是代码缺陷：换全新库后这些类分别 **17/17、14/14、11/11 全绿**。**跑完整回归前建议新建空库。**
+- **6 个跳过**为按设计跳过；**未执行**：微信开发者工具页面、真机验收、主 E2E（基线仍为 2026-10-05 的 V109）。
+- `ScmPurchaseMigrationIT.flywayHistoryIsAppendOnly`（逐条版本清单停在 127）已随 PAY-03 的 V131 一并补齐 128～131，**转绿**。
+- 剩下 3 个基线失败属远程代码欠账，**本轮未修**：`ScmPermissionContractPgIT` 要补权限常量与菜单发布，`SmartAdminMapperPgValidationIT` 的基线更新按测试自身要求需显式确认，都需先裁决。
 ## 2026-10-14 结算规则收口（SET-01 / SET-02）
 
 - **客户准入与迁移**：新增 V130 `xsy_customer.cod_allowed BOOLEAN NOT NULL DEFAULT FALSE`。COD 由后台客户编辑明确开通；原 V129 不修改。结算预览与下单检查可交易状态、COD 开关和逾期风险；共享结算下余额与账期仍禁止商城直接使用且不返回集团资金金额。
