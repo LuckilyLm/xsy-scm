@@ -157,14 +157,13 @@ public class MallOrderQueryService {
             Map<String, Object> activities = frozen.getActivitySnapshot();
             if (activities != null && activities.get("applied") instanceof List<?> applied) {
                 result.setActivityNames(applied.stream().filter(Map.class::isInstance).map(Map.class::cast)
-                        .map(row -> row.get("activityName")).filter(String.class::isInstance)
-                        .map(String.class::cast).toList());
+                        .map(row -> row.get("activityName")).filter(String.class::isInstance).map(String.class::cast)
+                        .toList());
             }
         }
-        result.setGiftDescriptions(gifts.stream()
-                .map(gift -> gift.getProductName() + " ×" + gift.getQuantity().toPlainString() + " "
-                        + (gift.getSaleUnit() == null ? "" : gift.getSaleUnit()))
-                .toList());
+        result.setGiftDescriptions(
+                gifts.stream().map(gift -> gift.getProductName() + " ×" + gift.getQuantity().toPlainString() + " "
+                        + (gift.getSaleUnit() == null ? "" : gift.getSaleUnit())).toList());
         return result;
     }
 

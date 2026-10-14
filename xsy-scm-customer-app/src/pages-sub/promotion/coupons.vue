@@ -4,10 +4,14 @@
     <view v-if="loading && !rows.length" class="coupons__state">优惠券加载中…</view>
     <view v-else-if="error && !rows.length" class="coupons__state">{{ error }}<text class="coupons__retry" @click="load(true)">重试</text></view>
     <view v-else-if="!rows.length" class="coupons__state">当前暂无可领优惠券</view>
-    <MallCouponCard v-for="coupon in rows" :key="coupon.couponId" :coupon="coupon"
-                    :action-label="claimingId === coupon.couponId ? '领取中…' : coupon.claimableNow ? '领取' : '已达上限'"
-                    :disabled="!coupon.claimableNow || claimingId !== null"
-                    @action="claim" />
+    <MallCouponCard
+      v-for="coupon in rows"
+      :key="coupon.couponId"
+      :coupon="coupon"
+      :action-label="claimingId === coupon.couponId ? '领取中…' : coupon.claimableNow ? '领取' : '已达上限'"
+      :disabled="!coupon.claimableNow || claimingId !== null"
+      @action="claim"
+    />
     <view v-if="rows.length" class="coupons__bottom">{{ loading ? '加载中…' : hasMore ? '上拉加载更多' : '没有更多了' }}</view>
     <view v-if="error && rows.length" class="coupons__retry" @click="load(false)">{{ error }}，点击重试</view>
   </view>
@@ -30,13 +34,22 @@
   const claimKeyPrefix = 'MALL_COUPON_CLAIM_';
   let requestSeq = 0;
   onLoad(() => load(true));
-  onPullDownRefresh(async () => { await load(true); uni.stopPullDownRefresh(); });
-  onReachBottom(() => { if (hasMore.value && !loading.value) load(false); });
+  onPullDownRefresh(async () => {
+    await load(true);
+    uni.stopPullDownRefresh();
+  });
+  onReachBottom(() => {
+    if (hasMore.value && !loading.value) load(false);
+  });
 
   async function load(reset) {
     if (!reset && loading.value) return;
     const seq = ++requestSeq;
-    if (reset) { rows.value = []; pageNum.value = 0; hasMore.value = true; }
+    if (reset) {
+      rows.value = [];
+      pageNum.value = 0;
+      hasMore.value = true;
+    }
     loading.value = true;
     error.value = '';
     try {
@@ -50,7 +63,9 @@
       if (seq !== requestSeq) return;
       smartSentry.captureError(failure);
       error.value = failure?.message || '优惠券加载失败';
-    } finally { if (seq === requestSeq) loading.value = false; }
+    } finally {
+      if (seq === requestSeq) loading.value = false;
+    }
   }
 
   async function claim(coupon) {
@@ -67,16 +82,44 @@
     } catch (failure) {
       smartSentry.captureError(failure);
       uni.showToast({ title: failure?.message || '领取失败，请重试', icon: 'none' });
-    } finally { claimingId.value = null; }
+    } finally {
+      claimingId.value = null;
+    }
   }
 
-  function goMine() { uni.navigateTo({ url: '/pages-sub/promotion/my' }); }
+  function goMine() {
+    uni.navigateTo({ url: '/pages-sub/promotion/my' });
+  }
 </script>
 
 <style lang="scss" scoped>
-  .coupons { min-height: 100vh; padding-bottom: $space-8; background: $color-bg-page; }
-  .coupons__nav { padding: $space-4; background: $color-bg-card; color: $color-primary; text-align: right; font-size: $font-size-sm; }
-  .coupons__state { padding: 220rpx $space-4 0; text-align: center; color: $color-text-secondary; }
-  .coupons__retry { display: block; padding: $space-4; text-align: center; color: $color-primary; }
-  .coupons__bottom { padding: $space-5; text-align: center; color: $color-text-tertiary; font-size: $font-size-xs; }
+  .coupons {
+    min-height: 100vh;
+    padding-bottom: $space-8;
+    background: $color-bg-page;
+  }
+  .coupons__nav {
+    padding: $space-4;
+    background: $color-bg-card;
+    color: $color-primary;
+    text-align: right;
+    font-size: $font-size-sm;
+  }
+  .coupons__state {
+    padding: 220rpx $space-4 0;
+    text-align: center;
+    color: $color-text-secondary;
+  }
+  .coupons__retry {
+    display: block;
+    padding: $space-4;
+    text-align: center;
+    color: $color-primary;
+  }
+  .coupons__bottom {
+    padding: $space-5;
+    text-align: center;
+    color: $color-text-tertiary;
+    font-size: $font-size-xs;
+  }
 </style>

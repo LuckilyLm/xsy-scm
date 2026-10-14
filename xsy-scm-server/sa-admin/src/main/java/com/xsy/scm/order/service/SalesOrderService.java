@@ -14,6 +14,7 @@ import com.xsy.scm.notification.service.ScmNotificationService;
 import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
 import com.xsy.scm.order.constant.ScmOrderQuantitySourceEnum;
+import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
@@ -540,7 +541,8 @@ public class SalesOrderService {
         if (clearMallCoupon && confirmation.getCouponInstanceId() != null) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-        Long couponInstanceId = clearMallCoupon ? null
+        Long couponInstanceId = clearMallCoupon
+                ? null
                 : confirmation != null && confirmation.getCouponInstanceId() != null
                         ? confirmation.getCouponInstanceId()
                         : salesOrder.getMallCouponInstanceId();

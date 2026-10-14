@@ -63,8 +63,12 @@
     </view>
 
     <view v-if="promotion && previewReady" class="co-card co-promotion">
-      <view class="co-row"><text class="co-row__label">商品预估金额</text><text>¥{{ estimatedAmount }}</text></view>
-      <view v-if="Number(promotion.discountAmount) > 0" class="co-row"><text class="co-row__label">活动及优惠券优惠</text><text class="co-promotion__discount">−¥{{ promotion.discountAmount }}</text></view>
+      <view class="co-row"
+        ><text class="co-row__label">商品预估金额</text><text>¥{{ estimatedAmount }}</text></view
+      >
+      <view v-if="Number(promotion.discountAmount) > 0" class="co-row"
+        ><text class="co-row__label">活动及优惠券优惠</text><text class="co-promotion__discount">−¥{{ promotion.discountAmount }}</text></view
+      >
       <text v-for="name in promotion.appliedActivityNames || []" :key="name" class="co-promotion__detail">{{ name }}</text>
       <text v-for="gift in promotion.giftDescriptions || []" :key="gift" class="co-promotion__detail">赠品：{{ gift }}</text>
       <text class="co-promotion__note">优惠仅为预览，后台受理订单时将重新校验并冻结；按实重商品以最终结算为准。</text>
@@ -136,7 +140,13 @@
   });
   const canSubmit = computed(
     () =>
-      !!address.value && items.value.length > 0 && unavailableItems.value.length === 0 && !promotionError.value && previewReady.value && !previewing.value && !submitting.value
+      !!address.value &&
+      items.value.length > 0 &&
+      unavailableItems.value.length === 0 &&
+      !promotionError.value &&
+      previewReady.value &&
+      !previewing.value &&
+      !submitting.value
   );
 
   function isAvailable(item) {
@@ -339,8 +349,12 @@
         idempotencyKey.value
       );
       const order = response.data || {};
+      // 成功页与结算栏保持同一口径：订货金额是订单事实，优惠与应付取自下单前最后一次成功试算，
+      // 成功页会标注「优惠以订单确认为准」，避免把试算值当成已冻结结果
+      const discount = promotion.value?.discountAmount || '';
+      const payable = promotion.value?.payableAmount || '';
       uni.redirectTo({
-        url: `/pages-sub/checkout/success?orderId=${order.orderId || ''}&orderNo=${encodeURIComponent(order.orderNo || '')}&amount=${order.orderedTotalAmount || ''}`,
+        url: `/pages-sub/checkout/success?orderId=${order.orderId || ''}&orderNo=${encodeURIComponent(order.orderNo || '')}&amount=${order.orderedTotalAmount || ''}&discount=${discount}&payable=${payable}`,
       });
     } catch (error) {
       smartSentry.captureError(error);
@@ -427,13 +441,43 @@
   .co-row__value--placeholder {
     color: $color-text-placeholder;
   }
-  .co-coupon__clear { display: block; margin-top: $space-3; color: $color-text-tertiary; font-size: $font-size-sm; text-align: right; }
-  .co-coupon__error { display: block; margin-top: $space-3; color: $color-danger; font-size: $font-size-sm; }
-  .co-coupon__hint { display: block; margin-top: $space-3; color: $color-primary; font-size: $font-size-sm; }
-  .co-promotion .co-row + .co-row { margin-top: $space-3; }
-  .co-promotion__discount { color: $color-danger; }
-  .co-promotion__detail { display: block; margin-top: $space-2; color: $color-text-secondary; font-size: $font-size-sm; }
-  .co-promotion__note { display: block; margin-top: $space-3; color: $color-text-tertiary; font-size: $font-size-xs; }
+  .co-coupon__clear {
+    display: block;
+    margin-top: $space-3;
+    color: $color-text-tertiary;
+    font-size: $font-size-sm;
+    text-align: right;
+  }
+  .co-coupon__error {
+    display: block;
+    margin-top: $space-3;
+    color: $color-danger;
+    font-size: $font-size-sm;
+  }
+  .co-coupon__hint {
+    display: block;
+    margin-top: $space-3;
+    color: $color-primary;
+    font-size: $font-size-sm;
+  }
+  .co-promotion .co-row + .co-row {
+    margin-top: $space-3;
+  }
+  .co-promotion__discount {
+    color: $color-danger;
+  }
+  .co-promotion__detail {
+    display: block;
+    margin-top: $space-2;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+  }
+  .co-promotion__note {
+    display: block;
+    margin-top: $space-3;
+    color: $color-text-tertiary;
+    font-size: $font-size-xs;
+  }
 
   .co-item {
     @include flex-start;

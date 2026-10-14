@@ -37,9 +37,8 @@ public class MallCatalogService {
     @Transactional(readOnly = true)
     public List<MallCategoryVO> categories(RequestMallCustomer customer) {
         List<MallCategoryVO> rows = catalogDao.categories(customer.getCustomerId());
-        Map<Long, MallCategoryVO> byId = rows.stream()
-                .collect(Collectors.toMap(MallCategoryVO::getCategoryId, Function.identity(), (a, b) -> a,
-                        LinkedHashMap::new));
+        Map<Long, MallCategoryVO> byId = rows.stream().collect(
+                Collectors.toMap(MallCategoryVO::getCategoryId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
         rows.forEach(row -> {
             MallCategoryVO parent = byId.get(row.getParentId());
             if (parent != null) {
@@ -115,11 +114,13 @@ public class MallCatalogService {
         if (rows.isEmpty()) {
             return;
         }
-        Map<Long, ResolvedPriceVO> prices = priceResolver.resolve(customer.getCustomerId(),
-                rows.stream().map(MallProductVO::getSkuId).toList(), null).stream()
-                .collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity()));
+        Map<Long,
+                ResolvedPriceVO> prices = priceResolver
+                        .resolve(customer.getCustomerId(), rows.stream().map(MallProductVO::getSkuId).toList(), null)
+                        .stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity()));
         Map<String, String> urls = new HashMap<>();
-        fileService.getFileList(rows.stream().map(MallProductVO::getPrimaryImageKey).filter(key -> key != null).toList())
+        fileService
+                .getFileList(rows.stream().map(MallProductVO::getPrimaryImageKey).filter(key -> key != null).toList())
                 .forEach(file -> urls.put(file.getFileKey(), file.getFileUrl()));
         for (MallProductVO row : rows) {
             ResolvedPriceVO price = prices.get(row.getSkuId());
@@ -128,7 +129,8 @@ public class MallCatalogService {
                 row.setPriceStatus(price.getPriceStatus().name());
                 row.setPriceSource(price.getPriceSource() == null ? null : price.getPriceSource().name());
                 row.setSellable(price.isSellable());
-                row.setUnavailableReason(price.getUnavailableReason() == null ? null : price.getUnavailableReason().name());
+                row.setUnavailableReason(
+                        price.getUnavailableReason() == null ? null : price.getUnavailableReason().name());
             }
             row.setPrimaryImageUrl(urls.get(row.getPrimaryImageKey()));
         }

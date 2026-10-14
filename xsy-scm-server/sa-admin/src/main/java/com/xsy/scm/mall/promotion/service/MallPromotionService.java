@@ -123,8 +123,8 @@ public class MallPromotionService {
             case DISCOUNT -> new BigDecimal(String.valueOf(rule.get("discountRate"))).multiply(BigDecimal.TEN)
                     .stripTrailingZeros().toPlainString() + "折";
             case FULL_GIFT -> "满¥" + rule.get("thresholdAmount") + "赠礼";
-            case SPECIAL_PRICE -> "限时价 ¥" + row.getSpecialPrice().toPlainString() + "/"
-                    + row.getProduct().getSaleUnit();
+            case SPECIAL_PRICE ->
+                "限时价 ¥" + row.getSpecialPrice().toPlainString() + "/" + row.getProduct().getSaleUnit();
         };
     }
 

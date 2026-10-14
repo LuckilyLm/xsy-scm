@@ -27,6 +27,7 @@ import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
 import com.xsy.scm.order.service.SalesOrderService;
+import com.xsy.scm.promotion.service.PromotionDiscountService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -41,8 +42,9 @@ class MallCheckoutServiceTest {
     private final MallCustomerAddressDao addressDao = mock(MallCustomerAddressDao.class);
     private final MallCartDao cartDao = mock(MallCartDao.class);
     private final SalesOrderService salesOrderService = mock(SalesOrderService.class);
+    private final PromotionDiscountService promotionDiscountService = mock(PromotionDiscountService.class);
     private final MallCheckoutService service = new MallCheckoutService(catalogService, addressDao, cartDao,
-            salesOrderService);
+            salesOrderService, promotionDiscountService);
     private final RequestMallCustomer customer = customer();
     private final MallOrderSubmitForm form = form();
 

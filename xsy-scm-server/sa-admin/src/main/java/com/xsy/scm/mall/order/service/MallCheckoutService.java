@@ -99,8 +99,8 @@ public class MallCheckoutService {
         // 优惠试算：预览不占用券（ADR-009）。券不可用或门槛未达不拖垮整个预览——
         // 商品与金额照常返回，优惠错误单独提示，由客户换券或放弃用券。
         try {
-            result.setPromotion(previewPromotion(customer.getCustomerId(), form.getCouponInstanceId(), quantities,
-                    products));
+            result.setPromotion(
+                    previewPromotion(customer.getCustomerId(), form.getCouponInstanceId(), quantities, products));
         } catch (ScmBusinessException exception) {
             result.setPromotionError(exception.getMessage());
         }
@@ -197,8 +197,7 @@ public class MallCheckoutService {
             line.setOrderItemId(++sequence);
             line.setSkuId(entry.getKey());
             line.setQuantity(entry.getValue());
-            line.setBaseAmount(product.getUnitPrice().multiply(entry.getValue()).setScale(SCALE,
-                    RoundingMode.HALF_UP));
+            line.setBaseAmount(product.getUnitPrice().multiply(entry.getValue()).setScale(SCALE, RoundingMode.HALF_UP));
             lines.add(line);
         }
         if (lines.isEmpty()) {
@@ -216,9 +215,8 @@ public class MallCheckoutService {
         promotion.setCouponName(computed.getCouponName());
         promotion.setAppliedActivityNames(computed.getAppliedActivities().stream()
                 .map(PromotionDiscountVO.AppliedActivityVO::getActivityName).toList());
-        promotion.setGiftDescriptions(computed.getGifts().stream()
-                .map(gift -> gift.getProductName() + " ×" + gift.getQuantity().toPlainString() + " "
-                        + (gift.getSaleUnit() == null ? "" : gift.getSaleUnit()))
+        promotion.setGiftDescriptions(computed.getGifts().stream().map(gift -> gift.getProductName() + " ×"
+                + gift.getQuantity().toPlainString() + " " + (gift.getSaleUnit() == null ? "" : gift.getSaleUnit()))
                 .toList());
         return promotion;
     }

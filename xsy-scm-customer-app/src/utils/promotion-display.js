@@ -22,15 +22,13 @@ export function couponStatusText(status) {
 export function couponBenefit(coupon) {
   if (coupon.discountType === 'RATE') {
     const rate = Number(coupon.discountValue);
-    return Number.isFinite(rate) && rate > 0 && rate < 1
-      ? `${(rate * 10).toFixed(2).replace(/0+$/, '').replace(/\.$/, '')} 折` : '折扣券';
+    return Number.isFinite(rate) && rate > 0 && rate < 1 ? `${(rate * 10).toFixed(2).replace(/0+$/, '').replace(/\.$/, '')} 折` : '折扣券';
   }
   return `减 ¥${coupon.discountValue || '—'}`;
 }
 
 export function couponThreshold(coupon) {
-  return coupon.minOrderAmount && coupon.minOrderAmount !== '0.0000'
-    ? `满 ¥${coupon.minOrderAmount} 可用` : '无门槛';
+  return coupon.minOrderAmount && coupon.minOrderAmount !== '0.0000' ? `满 ¥${coupon.minOrderAmount} 可用` : '无门槛';
 }
 
 export function couponWindow(coupon) {

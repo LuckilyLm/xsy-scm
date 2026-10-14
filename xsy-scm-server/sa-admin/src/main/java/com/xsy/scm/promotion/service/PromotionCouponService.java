@@ -40,8 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 优惠券模板与客户券。
  *
  * <p>
- * 券模板只在 {@code DRAFT/STOPPED} 可改；发券一次一条 INSERT 批量落库，
- * 每张券带自己的 {@code instance_no}，因此「这个客户有几张、用到第几张」都能查。
+ * 券模板只在 {@code DRAFT/STOPPED} 可改；发券一次一条 INSERT 批量落库， 每张券带自己的 {@code instance_no}，因此「这个客户有几张、用到第几张」都能查。
  */
 @Service
 @RequiredArgsConstructor
@@ -165,8 +164,8 @@ public class PromotionCouponService {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_NOT_FOUND);
         }
         OffsetDateTime now = OffsetDateTime.now();
-        if (!ScmPromotionStatusEnum.ACTIVE.name().equals(coupon.getStatus())
-                || coupon.getValidFrom().isAfter(now) || !coupon.getValidTo().isAfter(now)) {
+        if (!ScmPromotionStatusEnum.ACTIVE.name().equals(coupon.getStatus()) || coupon.getValidFrom().isAfter(now)
+                || !coupon.getValidTo().isAfter(now)) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_STATE_INVALID);
         }
         int quantity = form.getQuantity() == null ? 1 : form.getQuantity();
@@ -216,8 +215,7 @@ public class PromotionCouponService {
                         .eq(PromotionCouponInstanceEntity::getCouponId, couponId)
                         .eq(PromotionCouponInstanceEntity::getCustomerId, customerId)
                         .eq(PromotionCouponInstanceEntity::getIssueSource,
-                                ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name())) >= coupon
-                                .getPerCustomerLimit()) {
+                                ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name())) >= coupon.getPerCustomerLimit()) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_CLAIM_LIMIT_REACHED);
         }
         if (coupon.getTotalLimit() != null
@@ -260,8 +258,7 @@ public class PromotionCouponService {
         return rows.stream().map(row -> PromotionCouponVO.Instance.of(row, coupons.get(row.getCouponId()))).toList();
     }
 
-    private void apply(PromotionCouponEntity row, PromotionCouponForm form,
-            ScmPromotionCouponDiscountTypeEnum type) {
+    private void apply(PromotionCouponEntity row, PromotionCouponForm form, ScmPromotionCouponDiscountTypeEnum type) {
         row.setCouponName(form.getCouponName().trim());
         row.setDiscountType(type.name());
         row.setDiscountValue(form.getDiscountValue());
@@ -276,8 +273,7 @@ public class PromotionCouponService {
 
     private void requireCodeAvailable(String code, Long selfId) {
         LambdaQueryWrapper<PromotionCouponEntity> wrapper = new LambdaQueryWrapper<PromotionCouponEntity>()
-                .eq(PromotionCouponEntity::getCouponCode, code.trim())
-                .eq(PromotionCouponEntity::getDeleted, false);
+                .eq(PromotionCouponEntity::getCouponCode, code.trim()).eq(PromotionCouponEntity::getDeleted, false);
         if (selfId != null) {
             wrapper.ne(PromotionCouponEntity::getId, selfId);
         }
