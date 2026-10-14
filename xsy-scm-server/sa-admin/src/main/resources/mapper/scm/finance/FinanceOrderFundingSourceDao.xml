@@ -40,8 +40,19 @@
         <include refid="funding"/>
         WHERE t.id = #{transactionId} AND i.deleted = FALSE
     </select>
-    <select id="lockMovement" resultType="com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity">
-        SELECT * FROM xsy_customer_balance_movement WHERE id = #{movementId} AND deleted = FALSE FOR UPDATE
+    <!-- 返回财务自己的 DTO，不返回余额域的实体：只取财务判定与核销用到的列。 -->
+    <select id="lockMovement" resultType="com.xsy.scm.finance.domain.dto.FinanceBalanceMovementDto">
+        SELECT id,
+               movement_no              AS movementNo,
+               customer_id              AS customerId,
+               settlement_customer_id   AS settlementCustomerId,
+               type,
+               direction,
+               amount,
+               source_id                AS sourceId
+        FROM xsy_customer_balance_movement
+        WHERE id = #{movementId} AND deleted = FALSE
+        FOR UPDATE
     </select>
     <select id="isRechargeReceipt" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM xsy_finance_receipt r

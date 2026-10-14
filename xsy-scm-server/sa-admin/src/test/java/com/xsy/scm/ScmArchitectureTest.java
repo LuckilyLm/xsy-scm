@@ -1,5 +1,6 @@
 package com.xsy.scm;
 
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -39,12 +40,18 @@ class ScmArchitectureTest {
     /**
      * SCM 具体业务域。{@code common} 不在其中：它是被所有域依赖的一侧，
      * 反向依赖任何一个具体域都会让「公共层」变成隐式的全域耦合点。
+     *
+     * <p><b>新增域必须在这里补一行</b>：漏补不会以任何形式报警，门禁只是少比一个域。
+     * 2026-10-15 补齐了此前遗漏的 balance / mall / payment / print / metrics / notification 六个域 ——
+     * 它们都是在清单写定之后才建的，因此一直不在任何跨域规则之内。
      */
     private static final String[] CONCRETE_DOMAINS = {
             "..scm.product..", "..scm.customer..", "..scm.supplier..", "..scm.pricing..",
             "..scm.order..", "..scm.purchase..", "..scm.inventory..", "..scm.sorting..",
             "..scm.delivery..", "..scm.finance..", "..scm.report..", "..scm.dashboard..",
             "..scm.screen..", "..scm.warehouse..", "..scm.promotion..",
+            "..scm.balance..", "..scm.mall..", "..scm.payment..", "..scm.print..",
+            "..scm.metrics..", "..scm.notification..",
     };
 
     private static final String[] CONCRETE_DOMAINS_EXCEPT_FINANCE = {
@@ -52,6 +59,8 @@ class ScmArchitectureTest {
             "..scm.order..", "..scm.purchase..", "..scm.inventory..", "..scm.sorting..",
             "..scm.delivery..", "..scm.report..", "..scm.dashboard..",
             "..scm.screen..", "..scm.warehouse..", "..scm.promotion..",
+            "..scm.balance..", "..scm.mall..", "..scm.payment..", "..scm.print..",
+            "..scm.metrics..", "..scm.notification..",
     };
 
     /**
@@ -105,11 +114,24 @@ class ScmArchitectureTest {
                     .should().dependOnClassesThat().resideInAnyPackage(CONCRETE_DOMAINS)
                     .because("common 被所有域依赖；它一旦依赖某个具体域，该域就被隐式耦合进每一个域");
 
+    /**
+     * 财务域只消费既有事实、只生产自己的事实；跨域读走自己的只读 DAO，跨域写一律禁止。
+     *
+     * <p><b>为什么把值域枚举排除在外</b>：结算方式、支付意图/交易状态、余额流水类型这些枚举是各域共用的
+     * <b>词汇表</b> —— 财务读到的资金事实本身就带着这些取值，判定「这腿是不是成功的余额消费」时必然要引用它们。
+     * 把它们也算越界，规则就从「不许伸手进别的域」变成了「不许使用共享词汇」，只会逼出重复的值域副本，
+     * 而重复的值域副本恰恰是最容易漂移的东西。
+     *
+     * <p>规则真正要拦的是依赖别的域的<b>服务、DAO 与实体</b> —— 那才是把别人的实现与表结构变成自己的编译期依赖。
+     * 2026-10-15 把 mall / payment / balance 等域补进清单后，这条规则抓出的正是两处实体泄漏
+     * （财务的只读 DAO 直接返回余额域的实体），已改为财务自己的 DTO。
+     */
     @ArchTest
     static final ArchRule financeDoesNotDependOnOtherDomains =
             noClasses().that().resideInAPackage("..scm.finance..")
-                    .should().dependOnClassesThat().resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)
-                    .because("财务域只消费既有事实、只生产自己的事实；跨域读走自己的只读 DAO，跨域写一律禁止");
+                    .should().dependOnClassesThat(resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)
+                            .and(DescribedPredicate.doesNot(JavaClass.Predicates.ENUMS)))
+                    .because("财务域只消费既有事实、只生产自己的事实；跨域读走自己的只读 DAO，跨域写一律禁止（共用值域枚举除外）");
 
     /**
      * 防止「一条规则都没跑到」被读成「所有规则都过了」。

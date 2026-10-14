@@ -1,6 +1,6 @@
 package com.xsy.scm.finance;
 
-import com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity;
+import com.xsy.scm.finance.domain.dto.FinanceBalanceMovementDto;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.finance.constant.FinanceConstant;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
@@ -128,7 +128,7 @@ class FinanceOrderFundingWriteOffServiceTest {
         balanceSource();
         when(sources.lockMovement(30L)).thenReturn(null);
         assertInvalid(() -> service.register(20L, 50L));
-        var foreign = new CustomerBalanceMovementEntity();
+        var foreign = new FinanceBalanceMovementDto();
         foreign.setSourceId(999L); foreign.setAmount(new BigDecimal("100"));
         when(sources.lockMovement(30L)).thenReturn(foreign);
         assertInvalid(() -> service.register(20L, 50L));
@@ -202,7 +202,7 @@ class FinanceOrderFundingWriteOffServiceTest {
 
     private void balanceSource() {
         when(sources.selectTransaction(20L)).thenReturn(FinanceOrderFundingPolicyTest.balance());
-        var movement = new CustomerBalanceMovementEntity();
+        var movement = new FinanceBalanceMovementDto();
         movement.setSourceId(1L); movement.setAmount(new BigDecimal("100"));
         when(sources.lockMovement(30L)).thenReturn(movement);
         when(writeOffs.selectSourceUsedAmount("BALANCE_MOVEMENT", 30L)).thenReturn(BigDecimal.ZERO);

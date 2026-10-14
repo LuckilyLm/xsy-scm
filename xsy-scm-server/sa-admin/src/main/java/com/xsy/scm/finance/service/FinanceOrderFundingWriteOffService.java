@@ -1,6 +1,6 @@
 package com.xsy.scm.finance.service;
 
-import com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity;
+import com.xsy.scm.finance.domain.dto.FinanceBalanceMovementDto;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.util.ScmDocumentNumbers;
 import com.xsy.scm.finance.constant.FinanceConstant;
@@ -51,7 +51,7 @@ public class FinanceOrderFundingWriteOffService {
         Long sourceId = balance ? funding.getMovementId() : funding.getReceiptId();
         BigDecimal effective;
         if (balance) {
-            CustomerBalanceMovementEntity movement = financeOrderFundingSourceDao.lockMovement(sourceId);
+            FinanceBalanceMovementDto movement = financeOrderFundingSourceDao.lockMovement(sourceId);
             if (movement == null || !Objects.equals(movement.getSourceId(), funding.getIntentId())) {
                 throw invalid();
             }

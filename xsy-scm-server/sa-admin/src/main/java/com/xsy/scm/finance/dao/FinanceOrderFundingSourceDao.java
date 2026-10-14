@@ -1,6 +1,6 @@
 package com.xsy.scm.finance.dao;
 
-import com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity;
+import com.xsy.scm.finance.domain.dto.FinanceBalanceMovementDto;
 import com.xsy.scm.finance.domain.dto.FinanceOrderFundingDto;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
@@ -10,8 +10,12 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface FinanceOrderFundingSourceDao {
     List<FinanceOrderFundingDto> selectOrderFunding(@Param("orderId") Long orderId);
+
     FinanceOrderFundingDto selectTransaction(@Param("transactionId") Long transactionId);
-    CustomerBalanceMovementEntity lockMovement(@Param("movementId") Long movementId);
+
+    FinanceBalanceMovementDto lockMovement(@Param("movementId") Long movementId);
+
     boolean hasReceiptFunding(@Param("orderId") Long orderId);
+
     boolean isRechargeReceipt(@Param("receiptId") Long receiptId);
 }
