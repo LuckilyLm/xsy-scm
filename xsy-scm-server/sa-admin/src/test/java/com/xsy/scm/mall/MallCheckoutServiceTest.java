@@ -21,7 +21,9 @@ import com.xsy.scm.mall.catalog.service.MallCatalogService;
 import com.xsy.scm.mall.order.domain.form.MallCheckoutItemForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
 import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
+import com.xsy.scm.mall.order.domain.vo.MallSettlementOptionVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
+import com.xsy.scm.mall.order.service.MallSettlementService;
 import com.xsy.scm.order.domain.dto.MallOrderCreationResult;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
@@ -43,8 +45,9 @@ class MallCheckoutServiceTest {
     private final MallCartDao cartDao = mock(MallCartDao.class);
     private final SalesOrderService salesOrderService = mock(SalesOrderService.class);
     private final PromotionDiscountService promotionDiscountService = mock(PromotionDiscountService.class);
+    private final MallSettlementService settlementService = mock(MallSettlementService.class);
     private final MallCheckoutService service = new MallCheckoutService(catalogService, addressDao, cartDao,
-            salesOrderService, promotionDiscountService);
+            salesOrderService, promotionDiscountService, settlementService);
     private final RequestMallCustomer customer = customer();
     private final MallOrderSubmitForm form = form();
 
@@ -53,6 +56,10 @@ class MallCheckoutServiceTest {
         SmartRequestUtil.setRequestUser(customer);
         when(addressDao.detailById(9L, 3L)).thenReturn(address());
         when(catalogService.visibleProducts(eq(customer), any())).thenReturn(List.of(product("5.0000")));
+        MallSettlementOptionVO cod = new MallSettlementOptionVO();
+        cod.setMethod("COD");
+        cod.setEnabled(true);
+        when(settlementService.options(any(), any(), any())).thenReturn(List.of(cod));
     }
 
     @AfterEach
@@ -184,6 +191,39 @@ class MallCheckoutServiceTest {
         verify(salesOrderService, never()).createFromMall(any(), any(), any());
     }
 
+    @Test
+    void newOrderRequiresAnExplicitSettlementMethod() {
+        form.setSettlementMethod(null);
+
+        assertThatThrownBy(() -> service.submit(customer, form, "new-key"))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(MallErrorCode.CHECKOUT_SETTLEMENT_METHOD_REQUIRED));
+        verify(addressDao, never()).detailById(any(), any());
+        verify(salesOrderService, never()).createFromMall(any(), any(), any());
+    }
+
+    @Test
+    void oldSuccessfulRequestWithoutMethodStillReplays() {
+        form.setSettlementMethod(null);
+        when(salesOrderService.replayMallOrder(any(), eq("old-key")))
+                .thenReturn(Optional.of(new MallOrderCreationResult(order(), true)));
+
+        assertThat(service.submit(customer, form, "old-key").getOrderId()).isEqualTo(21L);
+        verify(addressDao, never()).detailById(any(), any());
+    }
+
+    @Test
+    void disabledSettlementMethodIsRejectedBeforeOrderCreation() {
+        form.setSettlementMethod("CREDIT");
+
+        assertThatThrownBy(() -> service.submit(customer, form, "new-key"))
+                .isInstanceOfSatisfying(ScmBusinessException.class,
+                        exception -> assertThat(exception.getErrorCode())
+                                .isEqualTo(MallErrorCode.CHECKOUT_SETTLEMENT_METHOD_UNAVAILABLE));
+        verify(salesOrderService, never()).createFromMall(any(), any(), any());
+    }
+
     private static RequestMallCustomer customer() {
         RequestMallCustomer customer = new RequestMallCustomer();
         customer.setAccountId(7L);
@@ -199,6 +239,7 @@ class MallCheckoutServiceTest {
         form.setItems(List.of(item));
         form.setAddressId(3L);
         form.setPriceFingerprint("f97b78895d41dd981ee076cff835a4a47c828df484b389cc9c86f423b8972793");
+        form.setSettlementMethod("COD");
         return form;
     }
 

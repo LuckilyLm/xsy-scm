@@ -42,6 +42,9 @@ class MallFundsQueryServiceTest {
         CustomerEntity parent = customer(10L, 10L, 1L);
         when(customers.requireTradable(20L)).thenReturn(child);
         when(customers.requireSettlementAccount(child)).thenReturn(parent);
+        // 共享判定现在由 CustomerValidator.sharedSettlement 统一给出：结算主体类型码是必传参数，
+        // 因此这里必须显式给出类型（非 GROUP，共享仅因「结算主体不是本人」成立）。
+        when(customerTypes.require(1L)).thenReturn(enterpriseType());
 
         var summary = service.walletSummary(identity);
         assertThat(summary.getBalanceVisible()).isFalse();
@@ -80,6 +83,7 @@ class MallFundsQueryServiceTest {
         parent.setCreditLimit(new BigDecimal("1000.0000"));
         when(customers.requireTradable(20L)).thenReturn(child);
         when(customers.requireSettlementAccount(child)).thenReturn(parent);
+        when(customerTypes.require(1L)).thenReturn(enterpriseType());
         MallFundsSourceDao.CreditFacts facts = new MallFundsSourceDao.CreditFacts();
         facts.setOpenReceivableAmount(new BigDecimal("20.0000"));
         facts.setConfirmedOrderAmount(new BigDecimal("10.0000"));
@@ -122,5 +126,11 @@ class MallFundsQueryServiceTest {
         customer.setSettlementCustomerId(settlementId);
         customer.setCustomerTypeId(typeId);
         return customer;
+    }
+
+    private static CustomerTypeEntity enterpriseType() {
+        CustomerTypeEntity type = new CustomerTypeEntity();
+        type.setTypeCode("ENTERPRISE");
+        return type;
     }
 }

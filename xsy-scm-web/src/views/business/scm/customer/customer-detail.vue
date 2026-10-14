@@ -122,6 +122,10 @@
                       <dt class="scm-field__label">账期类型</dt>
                       <dd class="scm-field__value">{{ creditPeriodTypeText }}</dd>
                     </div>
+                    <div class="scm-field">
+                      <dt class="scm-field__label">商城货到付款</dt>
+                      <dd class="scm-field__value">{{ customer.codAllowed ? '已开通' : '未开通' }}</dd>
+                    </div>
                     <template v-if="customer.creditPeriodType === 'BY_AMOUNT'">
                       <div class="scm-field">
                         <dt class="scm-field__label">金额阈值</dt>

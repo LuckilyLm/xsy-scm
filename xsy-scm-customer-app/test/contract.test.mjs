@@ -148,6 +148,22 @@ test('checkout submits a price fingerprint and an idempotency key', () => {
   assert.doesNotMatch(page, /manualPriceOverride: true/);
 });
 
+test('checkout renders server-provided settlement options and submits the chosen method', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  // 可用性判断完全来自服务端；客户端只做默认选择与失效改选，不自行推断
+  assert.match(page, /applySettlementOptions\(data\.settlementOptions \|\| \[\]\)/);
+  assert.match(page, /settlementOptions\.value = options/);
+  // 不可用的结算方式不得被选中
+  assert.match(page, /if \(!option\.enabled\) \{/);
+  // 结算方式变化要换幂等键，避免被旧键回放成另一笔约定
+  assert.match(page, /settlementMethod\.value === option\.method\) return;[\s\S]*syncIdempotencyKey\(\);/);
+  // 提交时把选择回传服务端
+  assert.match(page, /settlementMethod: settlementMethod\.value \|\| undefined/);
+  // 共享结算下服务端不回金额，客户端必须保持沉默，不得用推算值代替
+  assert.match(page, /if \(option\.amountVisible !== true\) return '';/);
+  assert.doesNotMatch(page, /option\.availableAmount \|\| 0/);
+});
+
 test('order center exposes customer-scoped list and detail pages', () => {
   const api = read('../src/api/mall/order-api.js');
   const pages = read('../src/pages.json');

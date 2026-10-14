@@ -21,7 +21,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void reachesTheRequestedMigrationVersion() {
-        String expected = System.getProperty("xsy.migration.expected-version", "128");
+        String expected = System.getProperty("xsy.migration.expected-version", "130");
         String current = jdbc.queryForObject("SELECT version FROM flyway_schema_history "
                 + "WHERE version IS NOT NULL ORDER BY installed_rank DESC LIMIT 1", String.class);
         assertThat(current).isEqualTo(expected);
@@ -33,7 +33,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void mallClaimColumnsExistWhenTargetIs128OrLater() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "128"));
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "130"));
         if (target < 128) {
             return;
         }
@@ -42,6 +42,23 @@ class ScmMigrationTargetPgIT {
         assertColumn("xsy_promotion_coupon", "total_limit");
         assertColumn("xsy_sales_order", "mall_coupon_instance_id");
         assertColumn("xsy_promotion_coupon_instance", "issue_source");
+    }
+
+    /**
+     * V129 新增商城结算方式列：它是「结算约定」，资金事实仍由余额 / 授信 / 收款各自领域承担。
+     * 只在目标版本 >= 129 时校验。
+     */
+    @Test
+    void settlementMethodColumnExistsWhenTargetIs129OrLater() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "130"));
+        if (target < 129) {
+            return;
+        }
+        assertColumn("xsy_sales_order", "settlement_method");
+        Integer allowed = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_sales_order_settlement_method'",
+                Integer.class);
+        assertThat(allowed).as("结算方式取值约束应随列一起建立").isEqualTo(1);
     }
 
     /**
@@ -55,6 +72,23 @@ class ScmMigrationTargetPgIT {
                         + "WHERE c.contype = 'f' AND c.connamespace = 'xsy_v2'::regnamespace",
                 Integer.class);
         assertThat(count).isZero();
+    }
+
+    @Test
+    void codPermissionDefaultsToDisabledFromV130() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "130"));
+        if (target < 130) {
+            return;
+        }
+        assertColumn("xsy_customer", "cod_allowed");
+        Integer notAllowed = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_customer WHERE cod_allowed IS NULL", Integer.class);
+        assertThat(notAllowed).isZero();
+        String defaultExpression = jdbc.queryForObject(
+                "SELECT column_default FROM information_schema.columns "
+                        + "WHERE table_schema = 'xsy_v2' AND table_name = 'xsy_customer' AND column_name = 'cod_allowed'",
+                String.class);
+        assertThat(defaultExpression).contains("false");
     }
 
     private void assertColumn(String table, String column) {

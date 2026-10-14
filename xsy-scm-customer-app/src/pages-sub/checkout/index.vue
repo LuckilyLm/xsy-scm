@@ -74,6 +74,27 @@
       <text class="co-promotion__note">优惠仅为预览，后台受理订单时将重新校验并冻结；按实重商品以最终结算为准。</text>
     </view>
 
+    <view v-if="settlementOptions.length" class="co-card co-settlement">
+      <view class="co-card__title">结算方式</view>
+      <text v-if="!settlementMethod" class="co-settlement__prompt">请选择本次结算方式</text>
+      <view
+        v-for="option in settlementOptions"
+        :key="option.method"
+        class="co-settlement__option"
+        :class="{ 'co-settlement__option--disabled': !option.enabled, 'co-settlement__option--active': settlementMethod === option.method }"
+        @click="chooseSettlement(option)"
+      >
+        <view class="co-settlement__main">
+          <text class="co-settlement__label">{{ option.label }}</text>
+          <text v-if="!option.enabled && option.disabledReason" class="co-settlement__reason">{{ option.disabledReason }}</text>
+          <text v-else-if="option.note" class="co-settlement__note">{{ option.note }}</text>
+          <text v-if="amountText(option)" class="co-settlement__amount">{{ amountText(option) }}</text>
+        </view>
+        <text v-if="settlementMethod === option.method" class="co-settlement__check">✓</text>
+      </view>
+      <text class="co-promotion__note">结算方式只是本次下单的结算约定，订单确认不代表已付款，实际支付和收款结果以资金记录为准。</text>
+    </view>
+
     <!-- 备注 -->
     <view class="co-card">
       <view class="co-card__title">订单备注</view>
@@ -112,6 +133,9 @@
   const selectedCouponName = ref('');
   const promotion = ref(null);
   const promotionError = ref('');
+  /** 服务端给出的可选结算方式及其当前可用性；服务端每次都重算，客户端只展示与提交选择 */
+  const settlementOptions = ref([]);
+  const settlementMethod = ref('');
   const deliveryDate = ref('');
   const remark = ref('');
   const previewing = ref(false);
@@ -142,6 +166,7 @@
     () =>
       !!address.value &&
       items.value.length > 0 &&
+      !!settlementMethod.value &&
       unavailableItems.value.length === 0 &&
       !promotionError.value &&
       previewReady.value &&
@@ -253,6 +278,7 @@
       estimatedAmount.value = data.estimatedAmount || '0.00';
       promotion.value = data.promotion || null;
       promotionError.value = data.promotionError || '';
+      applySettlementOptions(data.settlementOptions || []);
       fingerprint.value = data.priceFingerprint || '';
       previewReady.value = !!fingerprint.value && !promotionError.value;
       syncIdempotencyKey();
@@ -267,6 +293,38 @@
     }
   }
 
+  /**
+   * 结算方式由客户主动选。重新试算若发现原选择已不可用，只清空选择并要求客户重新决定。
+   */
+  function applySettlementOptions(options) {
+    settlementOptions.value = options;
+    const current = options.find((item) => item.method === settlementMethod.value && item.enabled);
+    if (current) return;
+    settlementMethod.value = '';
+  }
+
+  /**
+   * 金额文案：共享结算下服务端不回金额（amountVisible=false），这里必须保持沉默，
+   * 不得用 0 或其它推算值代替，否则等于绕过共享资金可见性规则。
+   */
+  function amountText(option) {
+    if (option.amountVisible !== true) return '';
+    const amount = option.availableAmount;
+    if (amount === null || amount === undefined || amount === '') return '';
+    return `${option.method === 'CREDIT' ? '剩余额度' : '可用余额'} ¥${amount}`;
+  }
+
+  function chooseSettlement(option) {
+    if (!option.enabled) {
+      uni.showToast({ title: option.disabledReason || '该结算方式当前不可用', icon: 'none' });
+      return;
+    }
+    if (settlementMethod.value === option.method) return;
+    settlementMethod.value = option.method;
+    // 结算方式变了就是新的一次下单请求，刷新幂等键避免被旧键回放
+    syncIdempotencyKey();
+  }
+
   function contentSignature() {
     return JSON.stringify({
       items: payloadItems(),
@@ -274,6 +332,7 @@
       remark: remark.value,
       deliveryDate: deliveryDate.value,
       couponInstanceId: selectedCouponId.value,
+      settlementMethod: settlementMethod.value || null,
     });
   }
 
@@ -326,6 +385,10 @@
       uni.showToast({ title: '请选择收货地址', icon: 'none' });
       return;
     }
+    if (!settlementMethod.value) {
+      uni.showToast({ title: '请选择结算方式', icon: 'none' });
+      return;
+    }
     if (!previewReady.value || !fingerprint.value) {
       uni.showToast({ title: promotionError.value || '结算金额获取失败，请点击金额处重试', icon: 'none' });
       return;
@@ -345,6 +408,7 @@
           remark: remark.value || undefined,
           expectDeliveryDate: deliveryDate.value || undefined,
           couponInstanceId: selectedCouponId.value || undefined,
+          settlementMethod: settlementMethod.value || undefined,
         },
         idempotencyKey.value
       );
@@ -477,6 +541,58 @@
     margin-top: $space-3;
     color: $color-text-tertiary;
     font-size: $font-size-xs;
+  }
+
+  .co-settlement__prompt {
+    display: block;
+    margin-top: $space-2;
+    color: $color-warning;
+    font-size: $font-size-sm;
+  }
+  .co-settlement__option {
+    @include flex-start;
+    justify-content: space-between;
+    margin-top: $space-3;
+    padding: $space-3 $space-4;
+    border: 1rpx solid $color-border;
+    border-radius: $radius-md;
+  }
+  .co-settlement__option--active {
+    border-color: $color-primary;
+    background-color: $color-primary-light;
+  }
+  .co-settlement__option--disabled {
+    opacity: 0.55;
+  }
+  .co-settlement__main {
+    flex: 1;
+    @include flex-start;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .co-settlement__label {
+    color: $color-text-primary;
+    font-size: $font-size-base;
+  }
+  .co-settlement__reason {
+    margin-top: $space-1;
+    color: $color-danger;
+    font-size: $font-size-xs;
+  }
+  .co-settlement__amount {
+    margin-top: $space-1;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+  }
+  .co-settlement__note {
+    margin-top: $space-1;
+    color: $color-text-tertiary;
+    font-size: $font-size-xs;
+  }
+  .co-settlement__check {
+    margin-left: $space-3;
+    color: $color-primary;
+    font-size: $font-size-lg;
   }
 
   .co-item {

@@ -388,6 +388,8 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         confirmReceipt(inbound.receipt().getId(), "10.0000");
 
         Long customerId = newCustomer();
+        jdbc.update("UPDATE xsy_customer SET cod_allowed = TRUE WHERE id = ?", customerId);
+        evictMybatisCache();
         MallAccount account = openMallAccount(customerId);
         RequestMallCustomer customer = signIn(account);
         Long addressId = mallAddressService.create(customer, mallAddress()).getFirst().getAddressId();
@@ -774,6 +776,7 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         form.setAddressId(addressId);
         form.setPriceFingerprint(priceFingerprint);
         form.setRemark("商城售后 IT");
+        form.setSettlementMethod("COD");
         return form;
     }
 

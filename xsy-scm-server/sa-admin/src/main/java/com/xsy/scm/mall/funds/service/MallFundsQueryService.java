@@ -20,7 +20,6 @@ import com.xsy.scm.mall.funds.domain.vo.MallWalletSummaryVO;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -113,8 +112,9 @@ public class MallFundsQueryService {
     }
 
     private boolean sharedSettlement(CustomerEntity customer, CustomerEntity settlement) {
-        return !Objects.equals(customer.getId(), settlement.getId()) || CustomerValidator.GROUP_TYPE_CODE
-                .equals(customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
+        // 唯一判定点见 CustomerValidator.sharedSettlement：商城结算方式选项必须与这里同口径。
+        return CustomerValidator.sharedSettlement(customer.getId(), settlement.getId(),
+                customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
     }
 
     private static MallReceivableVO receivableView(FinanceReceivableVO row) {

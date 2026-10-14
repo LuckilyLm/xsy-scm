@@ -68,6 +68,7 @@ public class MallCheckoutService {
     private final MallCartDao cartDao;
     private final SalesOrderService salesOrderService;
     private final PromotionDiscountService promotionDiscountService;
+    private final MallSettlementService settlementService;
 
     @Transactional(readOnly = true)
     public MallCheckoutPreviewVO preview(RequestMallCustomer customer, MallCheckoutPreviewForm form) {
@@ -98,12 +99,16 @@ public class MallCheckoutService {
         result.setPriceFingerprint(fingerprint(quantities, products));
         // 优惠试算：预览不占用券（ADR-009）。券不可用或门槛未达不拖垮整个预览——
         // 商品与金额照常返回，优惠错误单独提示，由客户换券或放弃用券。
+        MallCheckoutPromotionVO promotion = null;
         try {
-            result.setPromotion(
-                    previewPromotion(customer.getCustomerId(), form.getCouponInstanceId(), quantities, products));
+            promotion = previewPromotion(customer.getCustomerId(), form.getCouponInstanceId(), quantities, products);
+            result.setPromotion(promotion);
         } catch (ScmBusinessException exception) {
             result.setPromotionError(exception.getMessage());
         }
+        // 结算方式可用性按「优惠后应付」计算：余额够不够付，看的是实际要付的钱而不是原价。
+        BigDecimal payable = promotion == null ? estimated : promotion.getPayableAmount();
+        result.setSettlementOptions(settlementService.options(customer, payable, estimated));
         return result;
     }
 
@@ -127,6 +132,9 @@ public class MallCheckoutService {
         if (replayed.isPresent()) {
             return toSubmitVO(replayed.get().order());
         }
+        if (form.getSettlementMethod() == null || form.getSettlementMethod().isBlank()) {
+            throw new ScmBusinessException(MallErrorCode.CHECKOUT_SETTLEMENT_METHOD_REQUIRED);
+        }
         MallAddressVO address = addressDao.detailById(customer.getCustomerId(), form.getAddressId());
         if (address == null) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_NOT_FOUND);
@@ -147,8 +155,18 @@ public class MallCheckoutService {
         // 预选券在提交时按当前状态完整试算一次（归属 / AVAILABLE / 模板生效 / 门槛）：
         // 让不成立的券在下单前失败，而不是把一笔确认时必然冻结失败的单塞进后台。
         // 试算不锁券；全标品自动确认仍会在冻结时按最新券状态重新校验。
+        MallCheckoutPromotionVO promotion = null;
         if (form.getCouponInstanceId() != null) {
-            previewPromotion(customer.getCustomerId(), form.getCouponInstanceId(), quantities, products);
+            promotion = previewPromotion(customer.getCustomerId(), form.getCouponInstanceId(), quantities, products);
+        }
+        // 结算方式：用与预览同一口径的应付金额重新判定可用性，避免客户端拿旧预览的结论下单。
+        BigDecimal gross = estimatedAmount(quantities, products);
+        BigDecimal payable = promotion == null ? gross : promotion.getPayableAmount();
+        boolean enabled = settlementService.options(customer, payable, gross).stream()
+                .anyMatch(option -> form.getSettlementMethod().equals(option.getMethod())
+                        && Boolean.TRUE.equals(option.getEnabled()));
+        if (!enabled) {
+            throw new ScmBusinessException(MallErrorCode.CHECKOUT_SETTLEMENT_METHOD_UNAVAILABLE);
         }
 
         var creation = salesOrderService.createFromMall(orderForm, idempotencyRequest, idempotencyKey);
@@ -248,7 +266,22 @@ public class MallCheckoutService {
         orderForm.setItems(items);
         // 客户预选券随订单持久化：确认命令默认带入它完成冻结（操作员可改可去），后台订单不经过这里。
         orderForm.setMallCouponInstanceId(form.getCouponInstanceId());
+        // 结算方式同为「客户约定」：只记录选择，实际资金动作由余额 / 授信 / 收款各自领域在既有节点驱动。
+        orderForm.setSettlementMethod(form.getSettlementMethod());
         return orderForm;
+    }
+
+    /** 可结算行的预估金额合计（与预览 {@code estimatedAmount} 同一口径：只累计有客户价的行）。 */
+    private static BigDecimal estimatedAmount(Map<Long, BigDecimal> quantities, Map<Long, MallProductVO> products) {
+        BigDecimal total = BigDecimal.ZERO.setScale(SCALE);
+        for (Map.Entry<Long, BigDecimal> entry : quantities.entrySet()) {
+            MallProductVO product = products.get(entry.getKey());
+            if (product == null || product.getUnitPrice() == null) {
+                continue;
+            }
+            total = total.add(product.getUnitPrice().multiply(entry.getValue()).setScale(SCALE, RoundingMode.HALF_UP));
+        }
+        return total;
     }
 
     private Map<Long, MallProductVO> resolveProducts(RequestMallCustomer customer, Iterable<Long> skuIds) {
@@ -326,6 +359,7 @@ public class MallCheckoutService {
         request.put("remark", form.getRemark());
         request.put("expectDeliveryDate", form.getExpectDeliveryDate());
         request.put("couponInstanceId", form.getCouponInstanceId());
+        request.put("settlementMethod", form.getSettlementMethod());
         request.put("items", quantities.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("skuId", entry.getKey());

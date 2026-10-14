@@ -89,6 +89,9 @@ public class CustomerAddForm extends ScmLocationForm {
     @ScmEnumValue(enumClass = ScmSettleModeEnum.class, message = "结算模式无效")
     private String settleMode = ScmSettleModeEnum.INDEPENDENT.name();
 
+    /** 商城货到付款准入；未提供时新增默认关闭，编辑不改变已有设置。 */
+    private Boolean codAllowed;
+
     /**
      * 授信额度，4 位定点字符串；缺省视作 0。
      */

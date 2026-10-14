@@ -99,6 +99,7 @@ public class SalesOrderService {
     /** SCM 数据范围的唯一解析入口；只在「能否对这户客户开单」这类归属判定上用。 */
     private final ScmDataScopeService dataScopeService;
     private final OrderCreditService orderCreditService;
+    private final OrderSettlementConfirmationPolicy settlementConfirmationPolicy;
     private final ScmNotificationService notificationService;
 
     /**
@@ -270,6 +271,8 @@ public class SalesOrderService {
         // 客户预选券只随商城建单持久化；后台录单即使误带该字段也不落库， 后台用券一律由确认命令显式给出。
         if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource())) {
             salesOrder.setMallCouponInstanceId(salesOrderAddForm.getMallCouponInstanceId());
+            // 结算方式与预选券同源：只认商城渠道，后台录单不采信请求体里的结算方式。
+            salesOrder.setSettlementMethod(salesOrderAddForm.getSettlementMethod());
         }
         salesOrder.setOrderedTotalAmount(total(rows));
         stamp(salesOrder, true);
@@ -512,21 +515,26 @@ public class SalesOrderService {
         }
         salesOrder.setSettlementTotalAmount(OrderAmountCalculator
                 .orderAmount(rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).toList()));
-        var check = orderCreditService.checkForSettlementConfirmation(salesOrder.getSettlementCustomerId(),
-                salesOrder.getSettlementTotalAmount());
-        if (!Boolean.TRUE.equals(check.getAllowed())) {
-            if (confirmation == null || !Boolean.TRUE.equals(confirmation.getCreditOverride())
-                    || confirmation.getCreditOverrideReason() == null
-                    || confirmation.getCreditOverrideReason().isBlank()) {
-                throw new ScmBusinessException(OrderErrorCode.ORDER_CREDIT_BLOCKED);
+        if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource())
+                && salesOrder.getSettlementMethod() != null) {
+            settlementConfirmationPolicy.validate(salesOrder);
+        } else {
+            var check = orderCreditService.checkForSettlementConfirmation(salesOrder.getSettlementCustomerId(),
+                    salesOrder.getSettlementTotalAmount());
+            if (!Boolean.TRUE.equals(check.getAllowed())) {
+                if (confirmation == null || !Boolean.TRUE.equals(confirmation.getCreditOverride())
+                        || confirmation.getCreditOverrideReason() == null
+                        || confirmation.getCreditOverrideReason().isBlank()) {
+                    throw new ScmBusinessException(OrderErrorCode.ORDER_CREDIT_BLOCKED);
+                }
+                StpUtil.checkPermission(OrderPermission.CREDIT_OVERRIDE);
+                String reason = confirmation.getCreditOverrideReason().trim();
+                salesOrder.setCreditOverrideReason(reason);
+                orderLogs.record(salesOrder.getId(), ScmOrderOperationTypeEnum.CREDIT_OVERRIDE, reason, null,
+                        Map.of("settlementCustomerId", salesOrder.getSettlementCustomerId(), "orderAmount",
+                                salesOrder.getSettlementTotalAmount().toPlainString(), "overLimit",
+                                check.getOverLimit(), "overdue", check.getOverdue()));
             }
-            StpUtil.checkPermission(OrderPermission.CREDIT_OVERRIDE);
-            String reason = confirmation.getCreditOverrideReason().trim();
-            salesOrder.setCreditOverrideReason(reason);
-            orderLogs.record(salesOrder.getId(), ScmOrderOperationTypeEnum.CREDIT_OVERRIDE, reason, null,
-                    Map.of("settlementCustomerId", salesOrder.getSettlementCustomerId(), "orderAmount",
-                            salesOrder.getSettlementTotalAmount().toPlainString(), "overLimit", check.getOverLimit(),
-                            "overdue", check.getOverdue()));
         }
         salesOrder.setStatus(ScmOrderStatusEnum.CONFIRMED.name());
         salesOrder.setConfirmedAt(OffsetDateTime.now());

@@ -1,5 +1,7 @@
 package com.xsy.scm.mall.order.domain.form;
 
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -32,4 +34,9 @@ public class MallOrderSubmitForm {
      */
     @Positive(message = "券实例 ID 必须大于0")
     private Long couponInstanceId;
+    /**
+     * 新下单必须主动选定结算方式。此字段保持可空以便旧请求用同一幂等键重放成功订单；新请求会在幂等预检后拒绝空值。
+     */
+    @ScmEnumValue(enumClass = ScmSettlementMethodEnum.class, message = "结算方式无效")
+    private String settlementMethod;
 }

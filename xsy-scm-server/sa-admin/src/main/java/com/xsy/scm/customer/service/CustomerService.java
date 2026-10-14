@@ -296,6 +296,9 @@ public class CustomerService {
         entity.setName(CustomerValidator.normalizeName(form.getName()));
         entity.setCustomerTypeId(form.getCustomerTypeId());
         entity.setSettleMode(form.getSettleMode());
+        if (form.getCodAllowed() != null) {
+            entity.setCodAllowed(form.getCodAllowed());
+        }
         entity.setParentCustomerId(form.getParentCustomerId());
         Long settlementCustomerId = form.getSettlementCustomerId();
         entity.setSettlementCustomerId(settlementCustomerId == null ? entity.getId() : settlementCustomerId);

@@ -585,6 +585,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         form.setAddressId(addressId);
         form.setPriceFingerprint(priceFingerprint);
         form.setRemark("IT 商城下单");
+        form.setSettlementMethod("COD");
         return form;
     }
 
@@ -690,6 +691,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         form.setName(prefix + "-M" + (++customerSequence) + "客户");
         form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
+        form.setCodAllowed(true);
         form.setSellerId(sellerId);
         Long customerId;
         try (MockedStatic<StpUtil> ignored = mockStatic(StpUtil.class)) {

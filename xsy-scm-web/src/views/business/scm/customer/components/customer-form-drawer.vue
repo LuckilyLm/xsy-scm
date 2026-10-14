@@ -152,6 +152,15 @@
                 />
               </a-form-item>
             </a-col>
+            <a-col :xs="24" :sm="12">
+              <a-form-item name="codAllowed">
+                <template #label>
+                  允许商城货到付款
+                  <ScmFieldHelp label="允许商城货到付款" text="默认关闭；开通后仍会检查客户交易状态与逾期风险，收款以交付时实际到账为准"/>
+                </template>
+                <a-switch v-model:checked="form.codAllowed"/>
+              </a-form-item>
+            </a-col>
             <a-col v-if="form.creditPeriodType === 'BY_AMOUNT'" :xs="24" :sm="12">
               <a-form-item label="金额阈值" name="creditAmountThreshold">
                 <a-input-number v-model:value="form.creditAmountThreshold" string-mode :min="0"
@@ -330,6 +339,7 @@ async function open(customerId?: ScmId) {
       districtCode: detail.districtCode ?? null,
       districtName: detail.districtName ?? null,
       settleMode: detail.settleMode,
+      codAllowed: detail.codAllowed === true,
       creditLimit: detail.creditLimit ?? '0.0000',
       creditPeriodType: detail.creditPeriodType ?? undefined,
       creditAmountThreshold: detail.creditAmountThreshold ?? undefined,

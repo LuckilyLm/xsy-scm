@@ -33,6 +33,8 @@ public class CustomerVO {
 
     private String settleMode;
 
+    private Boolean codAllowed;
+
     /**
      * 授信额度，4 位定点字符串；{@code null} 保持 {@code null}。
      */

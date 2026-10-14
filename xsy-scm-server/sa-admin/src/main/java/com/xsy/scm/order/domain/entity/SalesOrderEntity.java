@@ -59,6 +59,13 @@ public class SalesOrderEntity {
     /** 商城客户下单时预选的券实例；仅 {@code orderSource = MALL} 使用，正式占用在确认命令内完成。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long mallCouponInstanceId;
+
+    /**
+     * 商城客户选定的结算方式（{@code WALLET} / {@code CREDIT} / {@code COD}）；仅商城来源的订单会带。
+     * 它是「结算约定」而不是资金事实：余额扣减、账期占用、货到付款收款分别由对应领域在各自节点完成。
+     */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String settlementMethod;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime submittedAt;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

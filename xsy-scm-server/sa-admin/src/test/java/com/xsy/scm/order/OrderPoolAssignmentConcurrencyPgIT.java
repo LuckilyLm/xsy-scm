@@ -277,6 +277,7 @@ class OrderPoolAssignmentConcurrencyPgIT extends ScmW5PgITBase {
         form.setName(prefix + "-P" + (++customerSequence) + "客户");
         form.setCustomerTypeId(customerTypeId("ENTERPRISE"));
         form.setSettleMode("INDEPENDENT");
+        form.setCodAllowed(true);
         form.setSellerId(null);
         Long customerId;
         try (MockedStatic<StpUtil> ignored = mockStatic(StpUtil.class)) {
@@ -427,6 +428,7 @@ class OrderPoolAssignmentConcurrencyPgIT extends ScmW5PgITBase {
         form.setAddressId(addressId);
         form.setPriceFingerprint(priceFingerprint);
         form.setRemark("订单池并发 IT");
+        form.setSettlementMethod("COD");
         return form;
     }
 
