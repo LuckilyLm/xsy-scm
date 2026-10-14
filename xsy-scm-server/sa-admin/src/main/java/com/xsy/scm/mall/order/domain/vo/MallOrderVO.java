@@ -55,4 +55,12 @@ public class MallOrderVO {
     private List<MallOrderProgressNodeVO> progress = new ArrayList<>();
     /** 确认时冻结的客户可见优惠；未确认或无优惠时为 null。 */
     private MallOrderDiscountVO discount;
+    /** 结算方式约定：WALLET / CREDIT / COD；后台订单或未选择时为 null */
+    private String settlementMethod;
+    /** 应付净额（实重 × 锁定价 − 冻结优惠等比分摊，与签收应收同口径），仅已确认订单返回 */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal payableAmount;
+    /** 已付金额（该订单实际收到的钱：支付事实 + 货到付款收款），仅已确认订单返回 */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal paidAmount;
 }

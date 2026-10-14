@@ -409,3 +409,49 @@ test('catalog adapter maps backend VO fields to the display model', () => {
   assert.match(mock, /specName: spec/);
   assert.match(mock, /saleUnit: unit/);
 });
+
+test('pay sends no amount: the server owns the deduction figure', () => {
+  const api = read('../src/api/mall/order-api.js');
+  // 支付只带订单号与幂等键，金额一律不进请求体
+  assert.match(api, /pay: \(orderId, idempotencyKey\) => postRequest\(`\/scm\/mall\/orders\/\$\{orderId\}\/pay`, \{\}, \{ idempotencyKey \}\)/);
+  assert.doesNotMatch(api, /pay[\s\S]{0,160}(amount|payableAmount)/);
+});
+
+test('order detail shows wallet pay only when the server says there is a due amount', () => {
+  const page = read('../src/pages-sub/order/detail.vue');
+  const util = read('../src/utils/order-display.js');
+  assert.match(page, /v-if="canPayByWallet\(order\)"/);
+  assert.match(page, /mallOrderApi\.pay\(orderId\.value, `pay-\$\{orderId\.value\}`\)/);
+  // 入口条件：服务端下发的结算约定是余额，且下发的应付减已付仍大于零
+  assert.match(util, /order\.settlementMethod !== 'WALLET'/);
+  assert.match(util, /Math\.round\(Number\(order\.payableAmount\) \* 10000\)/);
+  assert.doesNotMatch(util, /Number\(order\.payableAmount\) - Number\(order\.paidAmount\)/);
+});
+
+test('funds rows render server amounts and never a client-side guess', () => {
+  const page = read('../src/pages-sub/order/detail.vue');
+  // 应付/已付/待付整组只在服务端下发 payableAmount 时出现；确认前没有应付口径就不显示
+  assert.match(page, /v-if="order\.payableAmount"/);
+  assert.match(page, /应付金额（优惠后）/);
+  assert.match(page, /settlementMethodText\(order\.settlementMethod\)/);
+  assert.doesNotMatch(page, /payableAmount = /);
+});
+
+test('mock pay mirrors the backend money rules', () => {
+  const mock = read('../mock/routes/order.js');
+  assert.match(mock, /\/scm\/mall\/orders\/:orderId\/pay/);
+  assert.match(mock, /order\.settlementMethod !== 'WALLET'/);
+  assert.match(mock, /Number\(payable\) - Number\(paid\) <= 0/);
+  // 结算方式仍是下单必选项，且资金投影与后端同形
+  assert.match(mock, /settlementMethod: data\?\.settlementMethod \|\| null/);
+  assert.match(mock, /function fundsOf\(order\)/);
+});
+
+test('checkout settlement options come from the server preview', () => {
+  const page = read('../src/pages-sub/checkout/index.vue');
+  const mock = read('../mock/routes/order.js');
+  assert.match(page, /applySettlementOptions\(data\.settlementOptions \|\| \[\]\)/);
+  assert.doesNotMatch(page, /settlementOptions\.value = \[\{ method/i);
+  // mock 也必须返回同形的可选项，否则开发环境走不到支付链路
+  assert.match(mock, /settlementOptions: \[/);
+});

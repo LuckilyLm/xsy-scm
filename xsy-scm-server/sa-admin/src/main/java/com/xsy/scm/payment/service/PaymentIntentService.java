@@ -92,10 +92,26 @@ public class PaymentIntentService {
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity create(PaymentIntentCreateForm form, String idempotencyKey) {
+        return create(form, idempotencyKey, true);
+    }
+
+    /**
+     * 商城客户支付入口：与后台共用同一条意图创建与资金编排，只跳过员工负责人范围（商城客户没有该范围）。
+     *
+     * <p>
+     * 订单状态门槛、退款互斥、钱包消费与幂等一律不变；归属由商城适配器在入口按登录客户判定， 金额同样由调用方（商城适配器按正式口径算出的待付额）显式给出，本入口仍不做金额推断。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public PaymentIntentEntity createFromMall(PaymentIntentCreateForm form, String idempotencyKey) {
+        return create(form, idempotencyKey, false);
+    }
+
+    private PaymentIntentEntity create(PaymentIntentCreateForm form, String idempotencyKey,
+            boolean enforceEmployeeScope) {
         // 幂等：<b>收钱也要幂等</b>。这里往下会真的调用 provider.createIntent()，
         // 后台双击 / 网络重试 / 前端超时重试都会造出第二个意图与第二笔渠道交易。
         var claim = idempotencyService.claim(IDEMPOTENCY_SCOPE, idempotencyKey, form);
-        PaymentOrderFact order = requireOrder(form);
+        PaymentOrderFact order = requireOrder(form, enforceEmployeeScope);
         if (claim.replay()) {
             return idempotencyService.replay(claim, PaymentIntentEntity.class);
         }
@@ -374,17 +390,20 @@ public class PaymentIntentService {
      * <p>
      * 金额仍由调用方显式给出（允许部分支付、余额 + 在线支付拆分），但<b>来源身份不能由客户端自己拼</b>。
      */
-    private PaymentOrderFact requireOrder(PaymentIntentCreateForm form) {
+    private PaymentOrderFact requireOrder(PaymentIntentCreateForm form, boolean enforceEmployeeScope) {
         if (!ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(form.getSourceType())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);
         }
         PaymentOrderFact order = paymentSourceDao.lockOrder(form.getSourceId());
-        if (order == null || !dataScopeService.resolve().getOrderSellerScope().allows(order.sellerId())) {
+        if (order == null || (enforceEmployeeScope
+                && !dataScopeService.resolve().getOrderSellerScope().allows(order.sellerId()))) {
             throw new ScmDataScopeException();
         }
-        var customerScope = dataScopeService.resolve().getCustomerSellerScope();
-        if (!paymentSourceDao.customerVisible(order.customerId(), customerScope)) {
-            throw new ScmDataScopeException();
+        if (enforceEmployeeScope) {
+            var customerScope = dataScopeService.resolve().getCustomerSellerScope();
+            if (!paymentSourceDao.customerVisible(order.customerId(), customerScope)) {
+                throw new ScmDataScopeException();
+            }
         }
         if (!order.customerId().equals(form.getCustomerId())) {
             // 订单客户与提交客户不一致：这条不挡住，支付成功后的 Finance 收款会挂到别的客户名下

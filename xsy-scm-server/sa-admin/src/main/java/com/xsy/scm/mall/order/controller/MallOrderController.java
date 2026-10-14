@@ -12,6 +12,7 @@ import com.xsy.scm.mall.order.domain.vo.MallReorderVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.mall.order.service.MallOrderQueryService;
 import com.xsy.scm.mall.order.service.MallOrderService;
+import com.xsy.scm.mall.order.service.MallPaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -31,6 +32,7 @@ public class MallOrderController {
     private final MallCheckoutService checkoutService;
     private final MallOrderQueryService orderQueryService;
     private final MallOrderService orderService;
+    private final MallPaymentService paymentService;
 
     /** 订单列表；{@code displayStatus} 按展示分类筛选，留空为全部 */
     @GetMapping
@@ -60,6 +62,17 @@ public class MallOrderController {
     public ResponseDTO<MallReorderVO> reorder(@PathVariable Long orderId) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(orderService.reorder(MallRequestSupport.current(), orderId));
+    }
+
+    /**
+     * 余额支付：客户对已确认且约定余额结算的订单主动发起，扣款金额由服务端按正式口径计算（应付净额 − 已付），客户端不传金额。 必须携带
+     * {@code Idempotency-Key}：首笔提交后待付归零，重复点击落到「订单已支付」，不会二次扣款。
+     */
+    @PostMapping("/{orderId}/pay")
+    public ResponseDTO<MallOrderVO> pay(@PathVariable Long orderId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        MallRequestSupport.requirePasswordChanged();
+        return ResponseDTO.ok(paymentService.pay(MallRequestSupport.current(), orderId, key));
     }
 
     /** 结算预览：返回明细、预估金额与价格指纹；不占用库存、不建单 */

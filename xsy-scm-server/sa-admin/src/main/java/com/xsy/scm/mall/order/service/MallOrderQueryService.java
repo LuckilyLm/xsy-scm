@@ -7,6 +7,7 @@ import com.xsy.scm.delivery.constant.ScmDeliveryFulfillmentStatusEnum;
 import com.xsy.scm.delivery.dao.DeliveryRouteOrderDao;
 import com.xsy.scm.delivery.domain.entity.DeliveryRouteOrderEntity;
 import com.xsy.scm.delivery.domain.vo.DeliveryOrderProgressVO;
+import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.catalog.dao.MallCatalogDao;
@@ -86,6 +87,7 @@ public class MallOrderQueryService {
     private final DeliveryRouteOrderDao deliveryRouteOrderDao;
     private final MallCatalogDao mallCatalogDao;
     private final PromotionDiscountService promotionDiscountService;
+    private final FinanceOrderPayableQueryService payableQueryService;
     private final FileService fileService;
 
     @Transactional(readOnly = true)
@@ -140,6 +142,12 @@ public class MallOrderQueryService {
         result.setDelivery(delivery(deliveryProgress));
         result.setProgress(progressNodes(order, deliveryProgress));
         result.setDiscount(discount(orderId));
+        // 资金投影只在已确认订单计算：确认前实重未齐，应付没有权威口径；支付时点也只可能在确认后。
+        if (ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus())) {
+            result.setPayableAmount(payableQueryService.payableOfConfirmedOrder(orderId));
+            // 客户看到的「已付」是实收：余额 / 在线走支付事实，货到付款走收款事实。
+            result.setPaidAmount(payableQueryService.receivedAmountOf(orderId));
+        }
         return result;
     }
 
@@ -240,6 +248,7 @@ public class MallOrderQueryService {
         result.setCancelable(displayStatus.cancelable());
         result.setOrderedTotalAmount(order.getOrderedTotalAmount());
         result.setSettlementTotalAmount(order.getSettlementTotalAmount());
+        result.setSettlementMethod(order.getSettlementMethod());
         result.setExpectDeliveryTime(order.getExpectDeliveryTime());
         result.setRemark(order.getRemark());
         result.setCreatedAt(order.getCreatedAt());

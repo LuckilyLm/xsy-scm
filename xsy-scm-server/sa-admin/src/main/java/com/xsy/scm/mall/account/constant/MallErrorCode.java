@@ -33,7 +33,10 @@ public enum MallErrorCode implements ScmErrorCode {
     AFTERSALE_NOT_FOUND(40485, "售后单不存在"),
     AFTERSALE_NOT_CANCELABLE(40989, "当前售后状态不允许撤销"),
     FUNDS_RECEIVABLE_NOT_FOUND(40490, "账单不存在"),
-    CHECKOUT_SETTLEMENT_METHOD_UNAVAILABLE(40991, "所选结算方式当前不可用，请重新选择");
+    CHECKOUT_SETTLEMENT_METHOD_UNAVAILABLE(40991, "所选结算方式当前不可用，请重新选择"),
+    ORDER_NOT_PAYABLE(40990, "当前订单状态不允许支付"),
+    ORDER_ALREADY_PAID(40992, "订单已支付，请勿重复付款"),
+    ORDER_SETTLEMENT_NOT_WALLET(40993, "该订单未选择余额结算");
 
     private final int code;
     private final String msg;

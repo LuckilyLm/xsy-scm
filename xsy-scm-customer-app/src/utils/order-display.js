@@ -29,6 +29,41 @@ export const ORDER_TABS = [
 /** 取消原因快捷选项（仍允许自定义填写） */
 export const CANCEL_REASONS = ['下错单了', '数量需要调整', '暂时不需要了', '配送时间不合适', '其他原因'];
 
+/** 结算方式文案（与后端 ScmSettlementMethodEnum 一一对应；客户端不推导资金，只翻译服务端约定） */
+const SETTLEMENT_METHOD_MAP = {
+  WALLET: '余额支付',
+  CREDIT: '账期结算',
+  COD: '货到付款',
+};
+
+export function settlementMethodText(method) {
+  return SETTLEMENT_METHOD_MAP[method] || '未选择';
+}
+
+/**
+ * 待付金额 = 应付净额 − 已付，按四位小数定点做整数相减（不用浮点）。
+ *
+ * payableAmount 只在已确认订单由服务端下发（确认前实重未齐，应付没有权威口径）；未下发时返回 null，页面不显示资金行。
+ */
+export function dueAmount(order) {
+  if (!order || order.payableAmount === null || order.payableAmount === undefined || order.payableAmount === '') {
+    return null;
+  }
+  const scaled =
+    Math.round(Number(order.payableAmount) * 10000) - Math.round(Number(order.paidAmount || 0) * 10000);
+  const clamped = Math.max(scaled, 0);
+  const int = Math.floor(clamped / 10000);
+  const frac = String(clamped % 10000).padStart(4, '0');
+  return `${int}.${frac}`;
+}
+
+/** 是否可以出现「余额支付」入口：结算约定为余额且服务端算出的待付大于零 */
+export function canPayByWallet(order) {
+  if (!order || order.settlementMethod !== 'WALLET') return false;
+  const due = dueAmount(order);
+  return due !== null && Number(due) > 0;
+}
+
 /** 订单处理记录文案（只覆盖服务端白名单内的类型；未覆盖的类型不原样透出内部枚举名） */
 const OPERATION_MAP = {
   CREATE: '提交订单',

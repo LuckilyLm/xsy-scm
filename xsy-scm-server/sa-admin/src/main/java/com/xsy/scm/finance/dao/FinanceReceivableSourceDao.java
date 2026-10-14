@@ -1,6 +1,8 @@
 package com.xsy.scm.finance.dao;
 
+import com.xsy.scm.finance.domain.dto.FinanceCodCollectionOrderDto;
 import com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto;
+import com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableSourceDto;
 import com.xsy.scm.finance.domain.dto.FinanceReceivableSourceLineDto;
 import com.xsy.scm.finance.domain.dto.FinanceReturnSourceDto;
@@ -8,6 +10,7 @@ import com.xsy.scm.finance.domain.dto.FinanceReturnSourceLineDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -73,4 +76,32 @@ public interface FinanceReceivableSourceDao {
      * 没有冻结记录（订单无优惠）时返回空集。
      */
     List<FinanceOrderDiscountLineDto> selectOrderDiscountLines(@Param("salesOrderId") Long salesOrderId);
+
+    /**
+     * 已确认订单的应付行事实（明细维度），按订单行主键升序。
+     *
+     * <p>
+     * 量取<b>实重</b>、价取订单行冻结售价：商城余额支付与签收应收必须算出同一个净额， 因此读同一组列、走同一段优惠等比分摊，不另起口径。
+     */
+    List<FinanceOrderPayableLineDto> selectOrderPayableLines(@Param("salesOrderId") Long salesOrderId);
+
+    /**
+     * 多张订单的应付行事实（批量），用于一次算完一批订单的应付净额，避免逐单取数。
+     *
+     * <p>
+     * 与 {@link #selectOrderPayableLines(Long)} 读同一组列；行上带 {@code salesOrderId} 供调用方归回订单。
+     */
+    List<FinanceOrderPayableLineDto> selectPayableLinesByOrders(@Param("salesOrderIds") Collection<Long> salesOrderIds);
+
+    /** 多张订单的冻结优惠行分摊（批量），与 {@link #selectOrderDiscountLines(Long)} 同源同列。 */
+    List<FinanceOrderDiscountLineDto> selectDiscountLinesByOrders(
+            @Param("salesOrderIds") Collection<Long> salesOrderIds);
+
+    /**
+     * 货到付款收款需要的订单事实：订单不存在或已删除返回 {@code null}。
+     *
+     * <p>
+     * 结算约定是否为 COD 在 SQL 里判定 —— 财务域不依赖其它业务域，拿不到订单域的结算方式枚举。
+     */
+    FinanceCodCollectionOrderDto selectCodCollectionOrder(@Param("salesOrderId") Long salesOrderId);
 }

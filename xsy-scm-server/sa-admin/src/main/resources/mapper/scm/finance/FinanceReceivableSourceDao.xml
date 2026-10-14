@@ -129,4 +129,52 @@
         WHERE od.sales_order_id = #{salesOrderId}
     </select>
 
+    <!-- 与签收应收同一组列：量取实重、价取冻结售价；应付净额由同一段 discountShare 算出，不另起口径。 -->
+    <select id="selectOrderPayableLines"
+            resultType="com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto">
+        SELECT id AS orderItemId,
+               actual_quantity AS actualQuantity,
+               locked_unit_price AS lockedUnitPrice,
+               ordered_line_amount AS orderedLineAmount
+        FROM xsy_sales_order_item
+        WHERE order_id = #{salesOrderId} AND deleted = FALSE
+        ORDER BY id
+    </select>
+
+    <!-- 批量版：与单订单取数读同一组列，只是把订单条件换成 IN，供一次算完一批订单的应付净额。 -->
+    <select id="selectPayableLinesByOrders"
+            resultType="com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto">
+        SELECT order_id AS salesOrderId,
+               id AS orderItemId,
+               actual_quantity AS actualQuantity,
+               locked_unit_price AS lockedUnitPrice,
+               ordered_line_amount AS orderedLineAmount
+        FROM xsy_sales_order_item
+        WHERE deleted = FALSE AND order_id IN
+        <foreach collection="salesOrderIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        ORDER BY order_id, id
+    </select>
+
+    <!-- 批量版：与单订单取数同源同列，行上带 sales_order_id 供调用方归回订单。 -->
+    <select id="selectDiscountLinesByOrders"
+            resultType="com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto">
+        SELECT od.sales_order_id                            AS salesOrderId,
+               (allocation -&gt;&gt; 'orderItemId')::bigint     AS orderItemId,
+               (allocation -&gt;&gt; 'discountAmount')::numeric AS discountAmount
+        FROM xsy_order_discount od
+                 CROSS JOIN LATERAL jsonb_array_elements(od.allocations) AS allocation
+        WHERE od.sales_order_id IN
+        <foreach collection="salesOrderIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+    <!-- 结算约定是否为 COD 在这里判定：财务域不依赖其它业务域，拿不到订单域的结算方式枚举。 -->
+    <select id="selectCodCollectionOrder"
+            resultType="com.xsy.scm.finance.domain.dto.FinanceCodCollectionOrderDto">
+        SELECT o.id AS orderId,
+               o.customer_id AS customerId,
+               (o.settlement_method = 'COD') AS codSettlement
+        FROM xsy_sales_order o
+        WHERE o.id = #{salesOrderId} AND o.deleted = FALSE
+    </select>
+
 </mapper>

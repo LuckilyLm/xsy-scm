@@ -148,6 +148,25 @@
             {{ order.settlementTotalAmount ? `¥${displayAmount(order.settlementTotalAmount)}` : '待结算' }}
           </text>
         </view>
+        <!-- 资金投影只读服务端算出的应付净额与已付（确认前不下发，页面不显示资金行；客户端不算钱） -->
+        <view v-if="order.settlementMethod" class="od__row">
+          <text class="od__row-label">结算方式</text>
+          <text class="od__row-value">{{ settlementMethodText(order.settlementMethod) }}</text>
+        </view>
+        <template v-if="order.payableAmount">
+          <view class="od__row">
+            <text class="od__row-label">应付金额（优惠后）</text>
+            <text class="od__row-value od__row-value--strong">¥{{ displayAmount(order.payableAmount) }}</text>
+          </view>
+          <view class="od__row">
+            <text class="od__row-label">已付金额</text>
+            <text class="od__row-value">¥{{ displayAmount(order.paidAmount) }}</text>
+          </view>
+          <view class="od__row">
+            <text class="od__row-label">待付金额</text>
+            <text class="od__row-value">¥{{ displayAmount(dueAmount(order)) }}</text>
+          </view>
+        </template>
         <text v-if="hasNonStandard" class="od__tip">含按实重结算商品，最终金额以出库实重为准</text>
       </view>
 
@@ -202,6 +221,7 @@
       <view class="od-bar">
         <view v-if="order.cancelable" class="od-bar__btn" @click="cancelOrder">取消订单</view>
         <view class="od-bar__btn od-bar__btn--primary" @click="reorder">再次购买</view>
+        <view v-if="canPayByWallet(order)" class="od-bar__btn od-bar__btn--primary" @click="payByWallet">余额支付</view>
       </view>
     </template>
   </view>
@@ -215,13 +235,16 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import {
     CANCEL_REASONS,
+    canPayByWallet,
     displayAmount,
     displayQuantity,
     displayStatusLevel,
     displayStatusText,
+    dueAmount,
     formatDateTime,
     isAbnormalFulfillment,
     operationText,
+    settlementMethodText,
   } from '@/utils/order-display';
   import { afterSaleStatusLevel, afterSaleStatusText, canApplyAfterSale } from '@/utils/after-sale-display';
 
@@ -308,6 +331,32 @@
     } catch (error) {
       smartSentry.captureError(error);
       uni.showToast({ title: error?.message || '取消失败，请稍后重试', icon: 'none' });
+    }
+  }
+
+  /**
+   * 余额支付：客户端不传金额，服务端按应付净额与已付计算扣款。
+   * 幂等键绑订单，重复点击返回首次结果而不是二次扣款。
+   */
+  function payByWallet() {
+    const due = dueAmount(order.value);
+    uni.showModal({
+      title: '确认余额支付',
+      content: `将从结算主体钱包扣减 ¥${displayAmount(due)}，确认支付？`,
+      success: ({ confirm }) => {
+        if (confirm) doPay();
+      },
+    });
+  }
+
+  async function doPay() {
+    try {
+      await mallOrderApi.pay(orderId.value, `pay-${orderId.value}`);
+      uni.showToast({ title: '支付成功', icon: 'none' });
+      load();
+    } catch (error) {
+      smartSentry.captureError(error);
+      uni.showToast({ title: error?.message || '支付失败，请稍后重试', icon: 'none' });
     }
   }
 

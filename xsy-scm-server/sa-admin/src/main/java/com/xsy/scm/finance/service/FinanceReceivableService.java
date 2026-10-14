@@ -342,7 +342,7 @@ public class FinanceReceivableService {
      * <p>
      * 下单金额缺失或为 0（历史数据 / 0 元单）时按 0 处理，而不是把整额优惠压到这一行： 没有可依的比例时「不减」比「乱减」更可解释。
      */
-    private static BigDecimal discountShare(Long orderItemId, BigDecimal lineAmount, BigDecimal orderedLineAmount,
+    static BigDecimal discountShare(Long orderItemId, BigDecimal lineAmount, BigDecimal orderedLineAmount,
             Map<Long, BigDecimal> orderLineDiscounts) {
         BigDecimal allocated = orderLineDiscounts.get(orderItemId);
         if (allocated == null || allocated.signum() <= 0 || lineAmount.signum() <= 0 || orderedLineAmount == null

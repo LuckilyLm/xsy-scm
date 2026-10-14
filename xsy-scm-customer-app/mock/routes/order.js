@@ -59,6 +59,12 @@ function buildPreview(session, form) {
     totalCount: items.length,
     unavailableSkuIds: items.filter((item) => item.availability !== 'AVAILABLE').map((item) => item.skuId),
     priceFingerprint: fingerprint(items),
+    // 与后端 MallSettlementOptionVO 同形的结算方式可用性；mock 不接真实钱包与授信，金额仅供页面开发
+    settlementOptions: [
+      { method: 'CREDIT', label: '账期结算', amountVisible: true, availableAmount: '1000.0000', enabled: true, note: 'mock：账期按优惠前商品金额占用' },
+      { method: 'WALLET', label: '余额支付', amountVisible: true, availableAmount: '500.0000', enabled: true, note: 'mock：余额在结算主体钱包内扣减' },
+      { method: 'COD', label: '货到付款', amountVisible: true, availableAmount: null, enabled: false, disabledReason: '当前客户未开通货到付款' },
+    ],
   };
 }
 
@@ -109,11 +115,21 @@ function progressOf(order) {
   return nodes;
 }
 
+/** 与后端 MallOrderVO 同构的资金投影：仅已确认订单下发应付/已付；mock 不建模优惠与实重，应付取订货金额 */
+function fundsOf(order) {
+  if (order.status !== 'CONFIRMED') return {};
+  return {
+    payableAmount: order.payableAmount || order.orderedTotalAmount,
+    paidAmount: order.paidAmount || '0.0000',
+  };
+}
+
 /** 读取时补齐派生字段，保证列表与详情字段一致（与后端 MallOrderVO 同形） */
 function decorate(order) {
   const items = order.items || [];
   return {
     ...order,
+    ...fundsOf(order),
     displayStatus: displayStatusOf(order.status),
     cancelable: displayStatusOf(order.status) === 'PENDING',
     itemCount: items.length,
@@ -185,6 +201,34 @@ export const orderRoutes = [
       );
       IDEMPOTENT_CANCELS.set(replayKey, cancelled);
       return ok(decorate(cancelled));
+    },
+  },
+  {
+    method: 'POST',
+    path: '/scm/mall/orders/:orderId/pay',
+    handler: async ({ params, session, header }) => {
+      const denied = guard(session);
+      if (denied) return denied;
+      const orderId = Number(params.orderId);
+      const rows = accountOrders(session);
+      const order = rows.find((item) => item.orderId === orderId);
+      if (!order) return fail(40489, '订单不存在');
+      // 与后端 MallPaymentService 同构：仅已确认 + 余额结算 + 待付大于零；金额由服务端算，客户端不传
+      if (order.status !== 'CONFIRMED') return fail(40990, '当前订单状态不允许支付');
+      if (order.settlementMethod !== 'WALLET') return fail(40993, '该订单未选择余额结算');
+      const payable = order.payableAmount || order.orderedTotalAmount;
+      const paid = order.paidAmount || '0.0000';
+      if (Number(payable) - Number(paid) <= 0) return fail(40992, '订单已支付，请勿重复付款');
+      const paidOrder = {
+        ...order,
+        paidAmount: payable,
+        timeline: [
+          ...(order.timeline || []),
+          { logId: Date.now(), operationType: 'PAY', operatorName: '客户', reason: '余额支付', createdAt: new Date().toISOString() },
+        ],
+      };
+      saveOrders(session, rows.map((item) => (item.orderId === orderId ? paidOrder : item)));
+      return ok(decorate(paidOrder));
     },
   },
   {
@@ -268,6 +312,8 @@ export const orderRoutes = [
         orderSource: 'MALL',
         orderedTotalAmount: preview.estimatedAmount,
         settlementTotalAmount: null,
+        settlementMethod: data?.settlementMethod || null,
+        paidAmount: null,
         expectDeliveryTime: data?.expectDeliveryDate ? `${data.expectDeliveryDate}T00:00:00+08:00` : null,
         remark: data?.remark || null,
         createdAt,
