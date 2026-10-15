@@ -8,8 +8,10 @@ import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.service.FinanceOrderFundingSettlementService;
+import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import com.xsy.scm.finance.service.FinanceReceiptService;
 import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
+import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
 import com.xsy.scm.payment.constant.ScmPaymentIntentStatusEnum;
@@ -83,6 +85,7 @@ public class PaymentIntentService {
     private final ObjectProvider<BalanceRechargeSink> balanceRechargeSinkProvider;
     private final ObjectProvider<BalanceConsumptionSink> balanceConsumptionSinkProvider;
     private final FinanceOrderFundingSettlementService financeOrderFundingSettlementService;
+    private final FinanceOrderPayableQueryService financeOrderPayableQueryService;
 
     /**
      * 创建支付意图并向渠道发起。
@@ -124,10 +127,22 @@ public class PaymentIntentService {
         if (method == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_STATE_INVALID);
         }
+        if (order.settlementMethod() != null
+                && !(ScmSettlementMethodEnum.WALLET.name().equals(order.settlementMethod())
+                        && method == ScmPaymentMethodEnum.BALANCE)) {
+            throw new ScmBusinessException(PaymentErrorCode.PAYMENT_SETTLEMENT_METHOD_BLOCKED);
+        }
         ScmPaymentProviderEnum provider = ScmPaymentProviderEnum.of(form.getProvider());
         if (provider == null
                 || (method == ScmPaymentMethodEnum.BALANCE) != (provider == ScmPaymentProviderEnum.INTERNAL_BALANCE)) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_PROVIDER_UNSUPPORTED);
+        }
+        if (ScmSettlementMethodEnum.WALLET.name().equals(order.settlementMethod())) {
+            BigDecimal due = financeOrderPayableQueryService.payableOfConfirmedOrder(order.orderId())
+                    .subtract(financeOrderPayableQueryService.paidAmountOf(order.orderId()));
+            if (form.getAmount().compareTo(due) > 0) {
+                throw new ScmBusinessException(PaymentErrorCode.PAYMENT_AMOUNT_EXCEEDS_DUE);
+            }
         }
         if (paymentSourceDao.hasBalanceRefunds(order.orderId())) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_AFTER_BALANCE_REFUND);

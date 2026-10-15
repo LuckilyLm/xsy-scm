@@ -12,7 +12,8 @@
                so.customer_id           AS customer_id,
                so.customer_name_snapshot AS customer_name_snapshot,
                so.seller_id             AS seller_id,
-               so.settlement_customer_id, so.settlement_customer_name_snapshot, so.status
+               so.settlement_customer_id, so.settlement_customer_name_snapshot, so.status,
+               so.settlement_method
         FROM xsy_sales_order so
         WHERE so.id = #{orderId}
           AND so.deleted = FALSE
@@ -24,7 +25,8 @@
                so.customer_id           AS customer_id,
                so.customer_name_snapshot AS customer_name_snapshot,
                so.seller_id             AS seller_id,
-               so.settlement_customer_id, so.settlement_customer_name_snapshot, so.status
+               so.settlement_customer_id, so.settlement_customer_name_snapshot, so.status,
+               so.settlement_method
         FROM xsy_sales_order so
         WHERE so.id = #{orderId}
           AND so.deleted = FALSE

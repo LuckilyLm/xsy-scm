@@ -138,17 +138,15 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("同一幂等键重放：首笔已提交后重放落到「订单已支付」，钱包不出现第二笔扣款")
+    @DisplayName("同一幂等键重放返回已付订单，钱包不出现第二笔扣款")
     void replayingTheSameIdempotencyKeyNeverDeductsASecondTime() {
         WalletOrder fixture = mallOrder("replay", "10.0000", ScmSettlementMethodEnum.WALLET, true);
         String key = prefix + ":pay-replay";
 
         pay(fixture, key);
 
-        // 首笔提交后待付归零，重放同一键会先撞上「订单已支付」——那是首次支付的真实终态，不是第二笔扣款
-        assertThatThrownBy(() -> pay(fixture, key))
-                .isInstanceOfSatisfying(ScmBusinessException.class, failure -> assertThat(failure.getErrorCode())
-                        .isEqualTo(MallErrorCode.ORDER_ALREADY_PAID));
+        MallOrderVO replayed = pay(fixture, key);
+        assertThat(replayed.getPaidAmount()).isEqualByComparingTo(PAYABLE);
 
         assertThat(walletMovementCount(fixture.walletId(), "CONSUME")).isEqualTo(1);
         assertThat(walletDebits(fixture.walletId())).isEqualByComparingTo(PAYABLE);

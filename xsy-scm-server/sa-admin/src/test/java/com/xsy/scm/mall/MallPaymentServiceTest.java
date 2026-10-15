@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
@@ -39,9 +40,15 @@ class MallPaymentServiceTest {
     private final SalesOrderService salesOrderService = mock(SalesOrderService.class);
     private final FinanceOrderPayableQueryService payableQueryService = mock(FinanceOrderPayableQueryService.class);
     private final PaymentIntentService paymentIntentService = mock(PaymentIntentService.class);
+    private final ScmIdempotencyService idempotencyService = mock(ScmIdempotencyService.class);
     private final MallPaymentService service = new MallPaymentService(orderQueryService, salesOrderService,
-            payableQueryService, paymentIntentService);
+            payableQueryService, paymentIntentService, idempotencyService);
     private final RequestMallCustomer customer = customer();
+
+    {
+        when(idempotencyService.claim(any(), any(), any()))
+                .thenReturn(new ScmIdempotencyService.Claim(null, false));
+    }
 
     @Test
     void payChargesTheServerComputedDueAmountNotAnythingTheClientSent() {
@@ -63,6 +70,21 @@ class MallPaymentServiceTest {
         assertThat(form.getCustomerId()).isEqualTo(9L);
         assertThat(form.getMethod()).isEqualTo(ScmPaymentMethodEnum.BALANCE.name());
         assertThat(form.getProvider()).isEqualTo(ScmPaymentProviderEnum.INTERNAL_BALANCE.name());
+    }
+
+    @Test
+    void sameKeyReplaysTheFirstPaidResultAfterRecheckingOwnership() {
+        var claim = new ScmIdempotencyService.Claim(null, true);
+        MallOrderVO paid = new MallOrderVO();
+        paid.setPaidAmount(new BigDecimal("50.0000"));
+        when(orderQueryService.requireOwnedOrder(customer, ORDER_ID)).thenReturn(order("CONFIRMED", "WALLET"));
+        when(idempotencyService.claim(any(), eq("key"), any())).thenReturn(claim);
+        when(idempotencyService.replay(claim, MallOrderVO.class)).thenReturn(paid);
+
+        assertThat(service.pay(customer, ORDER_ID, "key")).isSameAs(paid);
+        verify(orderQueryService).requireOwnedOrder(customer, ORDER_ID);
+        verify(salesOrderService, never()).lock(any());
+        verify(paymentIntentService, never()).createFromMall(any(), any());
     }
 
     @Test

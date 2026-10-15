@@ -1,6 +1,7 @@
 package com.xsy.scm.mall.order.service;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
@@ -15,6 +16,7 @@ import com.xsy.scm.payment.constant.ScmPaymentSourceTypeEnum;
 import com.xsy.scm.payment.domain.form.PaymentIntentCreateForm;
 import com.xsy.scm.payment.service.PaymentIntentService;
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,13 +36,13 @@ public class MallPaymentService {
     private final SalesOrderService salesOrderService;
     private final FinanceOrderPayableQueryService payableQueryService;
     private final PaymentIntentService paymentIntentService;
+    private final ScmIdempotencyService idempotencyService;
 
     /**
      * 客户对「已确认且约定余额结算」的订单发起余额支付。
      *
      * <p>
-     * 前置判定只为客户可读：权威门槛在支付意图创建（仅已确认、退款互斥）与钱包消费（余额、钱包归属）。 <b>并发与双击</b>：订单行锁把并发支付串行化，后到事务看到第一笔已付、待付归零即拒绝；同一幂等键在首笔提交后重放同样落到
-     * 「订单已支付」——那是首次支付的真实终态，前端据此刷新为已付，不会造出第二笔扣款。
+     * 前置判定只为客户可读：权威门槛在支付意图创建与钱包消费。同键请求先回放已完成结果；不同键并发由订单行锁串行化，后到事务看到待付归零即拒绝。
      */
     @Transactional(rollbackFor = Exception.class)
     public MallOrderVO pay(RequestMallCustomer customer, Long orderId, String idempotencyKey) {
@@ -49,6 +51,11 @@ public class MallPaymentService {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_IDEMPOTENCY_REQUIRED);
         }
         orderQueryService.requireOwnedOrder(customer, orderId);
+        var claim = idempotencyService.claim("MALL_WALLET_PAY:" + orderId, idempotencyKey,
+                List.of(orderId, customer.getCustomerId()));
+        if (claim.replay()) {
+            return idempotencyService.replay(claim, MallOrderVO.class);
+        }
         SalesOrderEntity order = salesOrderService.lock(orderId);
         if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus())) {
             throw new ScmBusinessException(MallErrorCode.ORDER_NOT_PAYABLE);
@@ -69,6 +76,8 @@ public class MallPaymentService {
         form.setMethod(ScmPaymentMethodEnum.BALANCE.name());
         form.setProvider(ScmPaymentProviderEnum.INTERNAL_BALANCE.name());
         paymentIntentService.createFromMall(form, idempotencyKey);
-        return orderQueryService.detail(customer, orderId);
+        MallOrderVO result = orderQueryService.detail(customer, orderId);
+        idempotencyService.complete(claim, "SALES_ORDER", orderId, result);
+        return result;
     }
 }

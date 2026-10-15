@@ -28,10 +28,10 @@ public interface PaymentSourceDao {
     boolean customerVisible(@Param("customerId") Long customerId, @Param("scope") ScmValueScope scope);
 
     /**
-     * 销售订单事实（订单号 / 客户 / 业务员）。
+     * 销售订单事实（订单号 / 客户 / 业务员 / 结算约定）。
      *
      * <p>
-     * 不加锁：订单的客户与单号在创建后不会变，意图只需要冻结它们的当前值。 真正的并发争用点在退款路径（见 {@link #lockOrderRefund}）。
+     * 创建支付意图时锁订单，保证状态和结算约定检查与同单并发命令串行；只读详情用 {@link #selectOrder}。
      */
     PaymentOrderFact lockOrder(@Param("orderId") Long orderId);
 

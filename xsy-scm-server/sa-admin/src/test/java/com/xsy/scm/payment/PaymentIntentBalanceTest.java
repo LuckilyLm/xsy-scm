@@ -8,6 +8,7 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.service.FinanceOrderFundingSettlementService;
+import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import com.xsy.scm.finance.service.FinanceReceiptService;
 import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
@@ -57,18 +58,19 @@ class PaymentIntentBalanceTest {
     private final ScmPaymentProviderRegistry providers = mock(ScmPaymentProviderRegistry.class);
     private final FinanceReceiptService receipts = mock(FinanceReceiptService.class);
     private final FinanceOrderFundingSettlementService settlements = mock(FinanceOrderFundingSettlementService.class);
+    private final FinanceOrderPayableQueryService payable = mock(FinanceOrderPayableQueryService.class);
     private final BalanceConsumptionSink consumption = mock(BalanceConsumptionSink.class);
     private final ObjectProvider<BalanceRechargeSink> rechargeProvider = provider();
     private final ObjectProvider<BalanceConsumptionSink> consumptionProvider = provider();
     private final PaymentIntentService service = new PaymentIntentService(intents, transactions, numbers, sources,
-            scopes, idempotency, providers, receipts, rechargeProvider, consumptionProvider, settlements);
+            scopes, idempotency, providers, receipts, rechargeProvider, consumptionProvider, settlements, payable);
     private final PaymentIntentCreateForm form = new PaymentIntentCreateForm();
 
     @BeforeEach
     void source() {
         form.setCustomerId(2L); form.setSourceType("SALES_ORDER"); form.setSourceId(10L);
         form.setMethod("BALANCE"); form.setProvider("INTERNAL_BALANCE"); form.setAmount(new BigDecimal("60.0000"));
-        var order = new PaymentOrderFact(10L, "SO10", 2L, "门店", 9L, 3L, "集团", "CONFIRMED");
+        var order = new PaymentOrderFact(10L, "SO10", 2L, "门店", 9L, 3L, "集团", "CONFIRMED", null);
         when(sources.lockOrder(10L)).thenReturn(order); when(sources.selectOrder(10L)).thenReturn(order);
         var scope = mock(ScmDataScopeContext.class);
         when(scopes.resolve()).thenReturn(scope);
@@ -119,6 +121,30 @@ class PaymentIntentBalanceTest {
         // 退款已经占住订单资金，再用余额付会让同一笔钱被两处认领
         verify(sources).lockOrderRefunds(10L);
         verifyNoInteractions(intents, transactions, consumptionProvider);
+    }
+
+    @Test
+    void codOrderCannotBePaidThroughTheGenericBalanceEntry() {
+        stubClaim();
+        when(sources.lockOrder(10L)).thenReturn(
+                new PaymentOrderFact(10L, "SO10", 2L, "门店", 9L, 3L, "集团", "CONFIRMED", "COD"));
+
+        assertThatThrownBy(() -> service.create(form, "key")).isInstanceOfSatisfying(ScmBusinessException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(PaymentErrorCode.PAYMENT_SETTLEMENT_METHOD_BLOCKED));
+        verifyNoInteractions(consumptionProvider, transactions);
+    }
+
+    @Test
+    void walletOrderCannotChargeMoreThanItsCurrentDueAmount() {
+        stubClaim();
+        when(sources.lockOrder(10L)).thenReturn(
+                new PaymentOrderFact(10L, "SO10", 2L, "门店", 9L, 3L, "集团", "CONFIRMED", "WALLET"));
+        when(payable.payableOfConfirmedOrder(10L)).thenReturn(new BigDecimal("80.0000"));
+        when(payable.paidAmountOf(10L)).thenReturn(new BigDecimal("30.0000"));
+
+        assertThatThrownBy(() -> service.create(form, "key")).isInstanceOfSatisfying(ScmBusinessException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(PaymentErrorCode.PAYMENT_AMOUNT_EXCEEDS_DUE));
+        verifyNoInteractions(consumptionProvider, transactions);
     }
 
     @Test

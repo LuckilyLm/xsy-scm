@@ -6,6 +6,7 @@ import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.finance.service.FinanceOrderFundingSettlementService;
+import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import com.xsy.scm.finance.service.FinanceReceiptService;
 import com.xsy.scm.payment.dao.PaymentCallbackEventDao;
 import com.xsy.scm.payment.dao.PaymentIntentDao;
@@ -51,11 +52,12 @@ class PaymentIntentOutcomeTest {
     private final ScmPaymentProviderRegistry providers = mock(ScmPaymentProviderRegistry.class);
     private final FinanceReceiptService receipts = mock(FinanceReceiptService.class);
     private final FinanceOrderFundingSettlementService settlements = mock(FinanceOrderFundingSettlementService.class);
+    private final FinanceOrderPayableQueryService payable = mock(FinanceOrderPayableQueryService.class);
     private final PaymentCallbackEventDao callbackEvents = mock(PaymentCallbackEventDao.class);
     private final ObjectProvider<BalanceRechargeSink> rechargeProvider = provider();
     private final ObjectProvider<BalanceConsumptionSink> consumptionProvider = provider();
     private final PaymentIntentService intentsService = new PaymentIntentService(intents, transactions, numbers,
-            sources, scopes, idempotency, providers, receipts, rechargeProvider, consumptionProvider, settlements);
+            sources, scopes, idempotency, providers, receipts, rechargeProvider, consumptionProvider, settlements, payable);
     private final ScmPaymentProvider provider = mock(ScmPaymentProvider.class);
 
     private final PaymentIntentEntity intent = new PaymentIntentEntity();
@@ -87,7 +89,7 @@ class PaymentIntentOutcomeTest {
         succeededTransaction.setStatus("SUCCEEDED");
         succeededTransaction.setPaidAt(OffsetDateTime.parse("2026-10-09T12:00:00+08:00"));
 
-        PaymentOrderFact order = new PaymentOrderFact(10L, "SO10", 2L, "门店", 9L, 3L, "集团", "CONFIRMED");
+        PaymentOrderFact order = new PaymentOrderFact(10L, "SO10", 2L, "门店", 9L, 3L, "集团", "CONFIRMED", null);
         when(sources.lockOrder(10L)).thenReturn(order);
         when(sources.customerVisible(eq(2L), any())).thenReturn(true);
         ScmDataScopeContext scope = mock(ScmDataScopeContext.class);

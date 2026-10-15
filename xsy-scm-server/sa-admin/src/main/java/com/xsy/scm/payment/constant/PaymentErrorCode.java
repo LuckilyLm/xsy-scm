@@ -5,10 +5,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
- * 支付域使用 41340–41359 错误码（41320–41339 属营销域）。
- *
- * <p>
- * 分配前已 grep 全仓已用码值确认 41340–41359 空闲（既有最大值为 41333）。
+ * 41340–41359 是支付域初始码段；新增错误码须经全域注册清单确认唯一。
  */
 @Getter
 @RequiredArgsConstructor
@@ -88,7 +85,10 @@ public enum PaymentErrorCode implements ScmErrorCode {
 
     REFUND_FUNDING_PENDING(41361, "退款资金仍在处理中，请稍后重试"),
 
-    REFUND_FUNDING_FAILED(41362, "部分退款资金执行失败，可重试失败来源");
+    REFUND_FUNDING_FAILED(41362, "部分退款资金执行失败，可重试失败来源"),
+
+    PAYMENT_SETTLEMENT_METHOD_BLOCKED(41480, "订单结算方式与支付方式不符，不能发起该支付"),
+    PAYMENT_AMOUNT_EXCEEDS_DUE(41481, "本次支付金额超过订单当前待付金额");
 
     private final int code;
 
