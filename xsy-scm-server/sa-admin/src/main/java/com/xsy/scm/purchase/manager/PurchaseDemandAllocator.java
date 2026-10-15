@@ -17,13 +17,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_VE
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_UNIT_CONVERSION_REQUIRED;
 
 /**
- * 采购需求分配规则。
- *
- * <p>
- * 全部为静态纯函数，无 Spring、无 DB、无事务；需求超量、跨供应商或仓库冲突、需求 ID 排序和单位匹配规则集中在此处判定。
- *
- * <p>
- * 需求单位（销售单位）与采购单位（{@code xsy_supplier_sku.purchase_unit}）是两个独立快照。两者不一致时拒绝自动分配（40971）；仅替换单位字符串或猜测换算系数都会产生错误数量。
+ * 集中校验采购需求分配：数量、供应商、仓库和单位必须符合要求。 纯计算，不读取数据库；需求单位与采购单位不一致时直接拒绝，不自动换算。
  */
 public final class PurchaseDemandAllocator {
 

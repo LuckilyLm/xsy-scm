@@ -12,21 +12,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_Q
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_TOLERANCE_CONFIG_INVALID;
 
 /**
- * 收货数量与对账恒等式。
- *
- * <p>
- * 超收上限：{@code tolerance} 取自 SmartAdmin {@code t_config} 的 {@code scm.purchase.over_receipt_tolerance_percent}，缺失回退
- * 10，非数字或超出 0–100 报错； {@code ceiling = planned_quantity × (1 + tolerance / 100)}，
- * {@code available = ceiling − xsy_purchase_order_item.received_quantity}， 本次 {@code effectiveQuantity > available} 抛
- * {@code PURCHASE_RECEIPT_OVER_RECEIVED} 并整笔回滚。
- *
- * <p>
- * 对账恒等式： {@code remaining_quantity = GREATEST(planned − cumulative, 0)}；
- * {@code over_receipt_quantity = GREATEST(cumulative − planned, 0)}；
- * {@code receipt_difference = cumulative − planned}（可为负）。
- *
- * <p>
- * {@code ceiling} 是有意不做 4 位取整的：它是运行时判定上限、不落库，保留精确值可以避免 「取整后恰好放行 / 拒绝」的边界歧义；参与比较的 {@code effectiveQuantity} 本身已是 4 位定点。
+ * 计算收货有效数量、超收上限和剩余数量。 超收比例来自系统配置，缺失时按 10%；非法配置直接报错。 超收比较保持精确值，不提前四舍五入；剩余数量和超收数量由累计收货量计算。
  */
 public final class PurchaseReceiptQuantityCalculator {
 

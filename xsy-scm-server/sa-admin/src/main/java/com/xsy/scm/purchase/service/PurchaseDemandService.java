@@ -47,20 +47,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_QUANTITY_INVALID;
 
 /**
- * 采购需求命令服务。
- *
- * <p>
- * 两个命令，各自一个事务、各自一个幂等 scope：
- * <ul>
- * <li>{@code generate}：窗口内<b>已确认</b>订单行 → 需求。去重靠 {@code uk_purchase_demand_source_active} + INSERT 竞争（并发 generate
- * 收敛到同一行）；</li>
- * <li>{@code allocate}：把某条需求分到某个采购行上。分配门禁：需求单位与采购单位必须一致，否则 40971 —— 绝不猜换算系数。</li>
- * </ul>
- *
- * <p>
- * <b>锁序</b>：与 {@code PurchaseOrderService} 的 {@code update} / {@code cancel} / {@code delete} 同向 —— <b>采购单 → 需求</b>。
- * {@code allocate} 先锁采购单行、再锁需求行，因此与「取消」在单据行上串行，不存在「取消读到本单没有分配、随后分配又插进来」的幻读窗口。 {@code generate} 不锁单据，只按来源行做 INSERT
- * 竞争，不参与本锁序。
+ * 根据已确认订单生成采购需求，并把需求分配到采购单。 生成时按来源去重；分配时要求需求单位与采购单位一致，不自动换算。 分配先锁采购单，再锁需求记录，避免与修改、取消采购单发生并发冲突。
  */
 @Service
 @RequiredArgsConstructor

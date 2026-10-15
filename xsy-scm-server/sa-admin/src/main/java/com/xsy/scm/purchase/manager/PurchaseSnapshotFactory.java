@@ -26,13 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 采购快照装配。
- *
- * <p>
- * 负责在业务约定的冻结时点生成采购、需求、收货相关快照。两条不变量： <b>{@code submit} 后永不回读主数据</b>、<b>收货单行不存价格</b>。
- *
- * <p>
- * 快照不得由当前主档重算覆盖；长期边界见 {@code docs/decisions.md §采购每日清单与快照}。
+ * 生成采购、需求和收货单据的历史信息。 采购单提交后不再从商品、供应商等主档刷新内容；收货明细不保存价格。
  */
 public final class PurchaseSnapshotFactory {
 
@@ -45,14 +39,7 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * 采购单头快照。{@code orderNo} 由 {@code PurchaseNumberGenerator} 在事务内生成后回填。
-     *
-     * <p>
-     * 供应商 / 仓库快照在创建 / 编辑时刷新（DRAFT 可刷新），{@code submit} 后不再回读。
-     *
-     * <p>
-     * {@code purchaserId} 必须由服务端的 {@code PurchaseOwnerResolver} 确定，不能传
-     * {@code form.getPurchaserId()}：表单值是一个客户端可任意填写的数字，而它同时是采购员数据范围的行归属依据。
+     * 创建或编辑草稿时更新供应商、仓库信息，提交后冻结。 采购员由服务端确定，不能信任客户端传入的 ID。
      */
     public static PurchaseOrderEntity order(String supplierCode, String supplierName, String warehouseCode,
             String warehouseName, Long purchaserId, PurchaseOrderAddForm form) {

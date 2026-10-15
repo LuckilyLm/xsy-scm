@@ -1,12 +1,7 @@
 /**
- *  采购域表单模型。
- *
- * 三块职责：
- * 1. 定点数纪律：所有数量 / 金额在提交前经 fixed 归一为 4 位小数字符串；
- *    渲染时 `null` → `—`、`"0.0000"` → `0.0000`（三态不可合并）。
- * 2. 分配集合：`items[].allocations[]` 是集合，增删改都以 `demandId` 为身份，
- *    只改一条不得影响同行其它条。
- * 3. 单位一致性：需求单位 ≠ 采购单位时禁止加入分配，且不猜换算系数。
+ * 采购表单的数据处理与校验。
+ * 提交前把数量、金额统一转成四位小数字符串。
+ * 分配明细按 demandId 更新；需求单位与采购单位不一致时禁止分配。
  */
 import Decimal from 'decimal.js';
 import type {
@@ -144,15 +139,9 @@ export function hasAllocation(item: OrderItem, demandId: Order['id']): boolean {
 }
 
 /**
- * 把输入框里正在编辑的数归一为 4 位定点字符串（fixed 的宽进版）。
- *
- * `a-input-number` 在用户键入期间不应用 `precision`（antd 4.2.5 的
- * `getPrecision(numStr, userTyping)` 在 `userTyping` 为真时直接返回 `undefined`，
- * 提交只发生在 blur），因此绑定到模型上的是裸输入 `"2"` / `"2.5"` 而不是 `"2.0000"`。
- *
- * 用户没输入 → 原样返回（`''` / `null` / `undefined` 不伪造 `0`）；合法数字 → 归一；
- * 其余（`'-'`、`'.'`、空串）→ `''`，绝不能交给 `new Decimal()`（会抛 Invalid argument）。
- * 只归一数值表示，不放宽定点形状：超长整数位仍会被 FIXED 拒绝。
+ * 把输入中的数量转成四位小数字符串。
+ * 输入过程中允许 "2"、"2.5" 等写法；空值保留为空，非法输入返回空字符串。
+ * 超出金额精度限制的值仍会被拒绝。
  */
 function typedFixed(value: string | number | null | undefined): string {
     if (value === null || value === undefined || value === '') {
@@ -192,15 +181,8 @@ export function priceFilled(value: string | null | undefined): boolean {
 }
 
 /**
- * 提交前校验。返回第一条错误文案；全部通过返回 `undefined`。
- *
- * 只做形状与业务前置校验（必填、正数、重复商品规格、单位一致、上限）；
- * 「需求被别的单据抢走」这类并发冲突交给服务端（40972 / 40082），前端不假装能预测。
- *
- * 校验时机与提交口径一致：用户可能一次都没离开数量输入框就点保存，
- * 此时模型里是键入中的裸数，必须先经 typedFixed 归一 —— 否则会出现
- * 「明明填了 2 却说不是四位定点数」。只有真正缺失（`''` / `null`）才报该文案；
- * `null` 必须显式兜底，否则 `test(null)` 会强转成 `'null'` 而误判形状合法。
+ * 提交前检查必填、正数、重复商品规格、单位及数量上限，返回第一条错误。
+ * 先把尚未失焦的数字输入归一化；并发占用等冲突仍由服务端判断。
  */
 export function validateOrder(form: Order): string | undefined {
     if (!form.supplierId) {

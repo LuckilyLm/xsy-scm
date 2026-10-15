@@ -60,8 +60,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_SHORT_CLOSE_REASON_REQUIRED;
 
 /**
- * 采购单命令编排：幂等、状态转换、写入顺序、操作日志与事务边界。行级身份为 (order, sku)，分配级身份为 (item, demand)，两层独立对账，保留一行多需求。
- * 新建先锁需求再写单据；编辑先锁单据和采购行，再由分配服务锁旧、新需求并集。取消和删除持有单据锁后释放分配并重算需求；少收关单保留已有分配。
+ * 处理采购单创建、编辑、提交、取消和需求分配。 采购行按商品规格区分，分配记录按需求区分，一行商品可关联多条需求。 新建先锁需求；修改和取消先锁采购单，再处理关联需求，避免并发重复分配。
  */
 @Service
 @RequiredArgsConstructor

@@ -53,13 +53,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_NOT
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_NOT_FOUND;
 
 /**
- * 采购域只读查询。
- *
- * <p>
- * 列表与详情按采购员范围收窄，工作台汇总按仓库范围收窄；命令结果快照由已授权的写命令调用。空范围返回空分页，不把无权数据伪装成零值。
- *
- * <p>
- * 收货余量与超收量统一由 {@link PurchaseReceiptQuantityCalculator} 计算，避免列表和详情使用不同的数量口径。
+ * 提供采购单、需求和收货记录的只读查询。 列表和详情按采购员权限过滤，汇总按仓库权限过滤。 收货剩余量和超收量统一使用 PurchaseReceiptQuantityCalculator 计算。
  */
 @Service
 @RequiredArgsConstructor

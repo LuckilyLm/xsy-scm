@@ -17,16 +17,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 采购需求。
- *
- * <p>
- * 三个要点：
- * <ul>
- * <li>{@link #listSourceItems} 是 {@code generate} 的<b>取数口径</b>，返回 {@code SalesOrderItemEntity} （需求快照的 8 个商品字段全部来自
- * {@code xsy_sales_order_item}，无需自建投影类型）；订单号与确认时间由调用方用 {@code SalesOrderDao.selectBatchIds} 批量补齐（2 次查询，无 N+1）；</li>
- * <li>{@link #lockByIds} 按 id 升序加行锁，避免与订单写路径形成反向锁序；</li>
- * <li>{@link #insertIgnore} 用 {@code ON CONFLICT DO NOTHING} 做 INSERT 竞争 （不先查后插），冲突时由调用方重读收敛到同一行。</li>
- * </ul>
+ * 采购需求的数据读写。 生成需求只取已确认订单的实际数量，并按稳定顺序查询。 多条需求按 ID 排序加锁；创建时用数据库唯一约束防止重复插入。
  */
 @Mapper
 public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {

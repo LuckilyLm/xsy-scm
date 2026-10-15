@@ -1,17 +1,8 @@
 import type {ScmLocation} from '/@/components/business/scm/map/types';
 /**
- *  采购域前端类型。
- *
- * 字段与后端 VO / Form 逐字对齐：
- * - VO 侧：`PurchaseOrderVO` / `PurchaseOrderItemVO` / `PurchaseOrderAllocationVO` /
- *   `PurchaseDemandVO` / `PurchaseReceiptVO` / `PurchaseReceiptItemVO` / `PurchaseOperationLogVO`；
- * - Form 侧：`PurchaseOrderAddForm` / `PurchaseOrderUpdateForm` / `PurchaseReceiptConfirmForm` 等。
- *
- * 两条硬约束体现在类型里：
- * 1. 定点数字段一律是 `string | null`（4 位小数）。后端用
- *    `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字，前端不得传 number；
- *    `null`（未定价 / 未分配）与 `"0.0000"`（合法的零）是两种不同事实。
- * 2. `version` 必填且为 `number`，乐观锁靠它。
+ * 采购模块的前端请求与响应类型，与后端保持一致。
+ * 数量和金额使用定点数字符串，null 与 0 含义不同。
+ * version 用于防止覆盖其他人刚修改的单据。
  */
 
 import type {AreaColumns} from '/@/types/business/scm/area';
@@ -96,13 +87,9 @@ export interface DemandCalculationBatch {
 }
 
 /**
- * `PurchaseDemandCalculationBatchDetailVO` —— 冻结批次回看（只读，不重算）。
- *
- * 三块内容缺一不可地支撑「建议量逐项解释」：批次头是冻结时的输入条件与计数，
- * `summary` 是 SKU 级解释行（订单需求 − 本批可用 − 在途 − 已有采购覆盖 = 净缺口），
- * `items` 是逐行建议（净缺口摊到哪张订单行、摊了多少）。
- *
- * 所有数字原样取自冻结快照，与生成时逐字一致 —— 不能拿它当「当前库存」再判断一次。
+ * 采购需求生成批次的历史记录。
+ * summary 是按商品规格汇总的缺口，items 是分配到订单明细的建议数量。
+ * 这些值是生成时的结果，不代表当前库存。
  */
 export interface DemandBatchDetail {
     batchId: Id;
@@ -209,15 +196,9 @@ export interface DemandSummaryPreviewQuery extends Page {
 }
 
 /**
- * `PurchaseDemandSummaryVO` —— 预览聚合行。
- *
- * 数量全部是后端 SQL 内用 `BigDecimal` 算好的四位定点字符串（`null` 与 `"0.0000"` 语义不同），
- * 前端不得重算 `availableQuantity` / `stockComparisonGap`。
- * `UNIT_MISMATCH` 时 `stockComparisonGap` 为 `null`（单位门禁，不猜折算率）。
- *
- * 预留分三段：`reservedQuantity` 是全仓该 SKU 的总预留，其中 `selectedOrderReservedQuantity`
- * 属于本批预览订单自身，`otherReservedQuantity` 才是其他业务的占用。判断本批是否缺料要看
- * `stockAvailableForSelectedOrders`（= 现有量 − 其他业务预留），不是 `availableQuantity`。
+ * 采购需求的汇总预览，由后端计算，前端不重复计算缺口。
+ * 单位不一致时不做换算，缺口留空。
+ * 判断本批缺料时须排除本批订单自己的预留，只扣其他业务占用。
  */
 export interface DemandSummaryRow {
     skuId: Id;

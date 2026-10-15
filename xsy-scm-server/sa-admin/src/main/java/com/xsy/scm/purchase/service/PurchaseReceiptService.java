@@ -69,22 +69,8 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_S
 import static com.xsy.scm.purchase.service.PurchaseReceiptSnapshotMapper.receiptSnapshot;
 
 /**
- * 采购收货命令服务。收货单只有 {@code DRAFT}（无副作用）与 {@code CONFIRMED}（只读）两态； 「多次收货」由「一采购单多收货单」表达，不是同一张单反复确认。
- *
- * <p>
- * 标品有效数量 = 本次申报数量，且实重三字段必须全空；非标品有效数量 = 本次实重 （必填 &gt; 0，来源必须 {@code MANUAL}）。{@code planned_quantity} 永不被覆盖。
- *
- * <p>
- * 锁序：采购单 → 收货单 → 采购行（按 id 升序）→ 收货行（按 id 升序）。全库只有本类同时持有 「收货单」与「采购行」两把锁，因此与 {@code order.create}（需求 → 采购单 → 采购行）不构成环。
- *
- * <p>
- * {@code confirm} 的最后两步在同一事务内分别调用 {@link PurchaseInventoryContract#postInbound} 与
- * {@link FinancePayableService#generateOnReceiptConfirm}。库存侧只依赖已定义接口，purchase → inventory 编译期依赖为零，实现由 Spring
- * 装配期注入；应付侧依赖方向本是 purchase → finance， finance 对采购表只读、不反向 import。
- *
- * <p>
- * 容差走 SmartAdmin 原生 Config（{@link ConfigService#getConfig(String)} 读 {@code t_config}）： 缺失回退 10，非法 40999；SCM
- * 不自建缓存、不建配置表。
+ * 处理采购收货。收货单从草稿确认后就不能再改；分次收货要创建多张收货单。 标品按申报数量入库，非标品按实际重量入库。 锁顺序为采购单、收货单、采购明细、收货明细；明细按 ID 升序。
+ * 确认时在同一事务内登记入库和应付；超收容差读取系统配置，默认 10%。
  */
 @Service
 @RequiredArgsConstructor
