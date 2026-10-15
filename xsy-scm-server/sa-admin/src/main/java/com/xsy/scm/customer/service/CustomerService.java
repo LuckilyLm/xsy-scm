@@ -198,15 +198,7 @@ public class CustomerService {
             customerSkuVisibilityService.replace(entity.getId(), entity.getVisibilityPolicy(), form.getVisibilities());
     }
 
-    /**
-     * 改派客户业务归属（独立端点，权限 {@code scm:customer:assign}）。
-     *
-     * <p>
-     * 与 {@link #update} 同一把客户行锁 + 同一套版本比对，改派与编辑因此互斥：两个动作都在动「这行归谁」这件事的两种口径，不能一个走乐观锁一个不走。
-     *
-     * <p>
-     * 权限判定在 Controller 的 {@code @SaCheckPermission} 上，本方法不再重复判断： Service 被别的写路径复用时，调用方必须自己带着范围判定。
-     */
+    /** 改派客户负责人只能通过独立授权接口执行，必须校验分配权限及单据版本；普通编辑不能顺带改客户归属。 */
     @Transactional(rollbackFor = Exception.class)
     public void reassignSeller(CustomerSellerReassignForm form) {
         customerSkuVisibilityDao.lockCustomer(form.getCustomerId());

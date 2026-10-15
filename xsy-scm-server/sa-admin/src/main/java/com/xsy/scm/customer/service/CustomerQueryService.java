@@ -113,15 +113,7 @@ public class CustomerQueryService {
         return detail(customerId, dataScopeService.resolve());
     }
 
-    /**
-     * 客户详情读 + 显式范围。
-     *
-     * <p>
-     * 不存在与越权分得很清：不存在仍按 {@code CUSTOMER_NOT_FOUND}，存在但负责人不在范围内按 30005 拒绝。列表收窄不等于读不到，猜 id 直连详情必须是拒绝，否则整套行级范围只是隐藏。
-     *
-     * <p>
-     * 上级集团客户名仍由 {@code context()} 单行取回，<b>不做也不校验集团展开</b>：集团统一结算不代表跨业务员互见（裁决第 6 条）。
-     */
+    /** 按客户 ID 查询详情时也必须检查负责人数据范围；客户不存在与当前用户无权查看分别处理，不能通过直接传 ID 绕过列表权限。 */
     public CustomerDetailVO detail(Long customerId, ScmDataScopeContext scope) {
         CustomerEntity entity = customerDao.selectById(customerId);
         if (entity == null) {

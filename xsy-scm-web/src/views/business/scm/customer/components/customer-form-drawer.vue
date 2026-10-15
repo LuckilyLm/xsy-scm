@@ -362,16 +362,7 @@ async function open(customerId?: ScmId) {
   }
 }
 
-/**
- * 账期类型的桥接。
- *
- * `SmartEnumSelect` 的 `value` prop 声明是 `[Number, String]`，不接受 `null`；
- * 而 `CustomerFormModel.creditPeriodType` 的可空语义正是 `null`（表示「不设置账期」），
- * 直接绑会报 TS2322。这里用 computed 把 `null` 折成 `undefined`。
- *
- * 顺带把「切换形态时清掉不属于该形态的字段」放进 setter：无论用户选择还是程序回填，
- * 都走同一套清理，不会残留「按金额」的阈值 + 「按时间」的账期值这种非法组合（后端 40000）。
- */
+/** 账期类型可不填。切换账期方式时清理另一方式的值，避免提交互相冲突的配置。 */
 const creditPeriodTypeValue = computed<string | undefined>({
   get: () => form.creditPeriodType ?? undefined,
   set: (value) => {
