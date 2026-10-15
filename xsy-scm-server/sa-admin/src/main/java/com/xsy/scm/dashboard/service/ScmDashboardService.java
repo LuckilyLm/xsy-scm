@@ -35,17 +35,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 首页「供应链工作台」的只读聚合（不写任何业务表、不落快照）。
- *
- * <p>
- * <b>本类不写统计 SQL</b>：所有数字向 {@link ScmBusinessMetricsService} 取，口径与首页 / 大屏同一套 （销售看确认、采购看提交、收货看确认），数据范围也沿用大屏那一套「归属 ∩ 仓库」——
- * 不沿用报表的宽范围语义（见 {@code docs/decisions.md} 的经营指标与可见范围决策）。
- *
- * <p>
- * <b>可见性是两层</b>：入口权限 {@code scm:dashboard:query} 由控制器保证；每张卡片再过自己的领域权限， 无权卡片整卡省略、既不给数字也不填 0 —— 0
- * 会被读成「今天真的没有」。趋势与排行是单指标端点， 没有「省略」的形态，缺领域权限直接按无权限拒绝。
- */
+/** 首页指标统一从经营统计服务读取，并按当前数据权限展示；没有权限的指标隐藏，不用零值冒充。 */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

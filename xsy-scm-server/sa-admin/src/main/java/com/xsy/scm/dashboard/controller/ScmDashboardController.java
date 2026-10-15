@@ -18,16 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * 首页「供应链工作台」只读聚合入口。
- *
- * <p>
- * {@code scm:dashboard:query} 只授权访问工作台本身，<b>不隐含任何领域可见性</b>：KPI 卡片按「入口权限 ∩ 领域权限」 逐卡裁剪（无权整卡省略），趋势与排行按指标 /
- * 维度校验各自的领域权限（缺权直接拒绝）。本接口不写业务表、 不发消息、不落快照。
- *
- * <p>
- * 与 {@code ScmTodoController} 共用 {@code /scm/dashboard} 前缀：待办与工作台是同一条产品线（首页）， 分成两个控制器只是为了让「待办」与「经营指标」各自的权限语义独立演进。
- */
+/** 首页接口仅返回当前用户有权查看的指标与待办，其他业务模块的统计不在控制器中重复计算。 */
 @RestController
 @RequestMapping("/scm/dashboard")
 @Tag(name = "SCM 供应链工作台")
