@@ -192,7 +192,7 @@
   <!-- 打印：预览走只读 GET，「登记打印」才是计次的 POST 命令；两者绝不混用同一个入口 -->
   <PrintDocumentModal :open="ticketOpen" document-type="SORTING_TICKET"
                       :business-ids="ticketTaskId === undefined ? [] : [ticketTaskId]" @close="ticketOpen = false"/>
-  <SortingScaleDrawer v-model:open="scaleOpen" :task-id="scaleTaskId"/>
+  <SortingScaleDrawer v-model:open="scaleOpen" :task-id="scaleTaskId" @updated="queryData"/>
   <SortingPrintPreviewModal
       v-model:open="printOpen"
       :print-task-id="printTaskId"
@@ -328,7 +328,7 @@ function rowActions(row: SortingTask): ScmActionItem[] {
   return [
     // 「指派」已提到行内（未指派任务的关键下一步）；「更多」里只留低频的改派
     {key: 'assign', label: '改派', hidden: !(working && row.assigneeEmployeeId != null && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN))},
-    {key: 'scale', label: '秤读数', hidden: !hasPermission(SCM_SORTING_PERMISSION.SCALE_QUERY)},
+    {key: 'scale', label: '称重工作台', hidden: !hasPermission(SCM_SORTING_PERMISSION.SCALE_QUERY)},
     {key: 'ticket', label: '小票', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_QUERY))},
     {key: 'print', label: '打印', hidden: !(printable && hasPermission(SCM_SORTING_PERMISSION.TASK_PRINT))},
     // 取消限 WORKING、重开限 COMPLETED：两者条件不同不是漏写

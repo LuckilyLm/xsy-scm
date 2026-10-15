@@ -37,7 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 三条不变量：
  * <ul>
  * <li><b>读数不等于分拣结果</b>：上报只落事实，只有 {@code accept} 才写分拣结果。 让设备直接决定发货数量，等于让一台未经校准的秤替人签字。</li>
- * <li><b>一键只处理标准品</b>：非标品的数量是称重结果，需要人工录入并说明差异；由一键操作推断会绕过人工确认。</li>
+ * <li><b>非标品必须人工裁定</b>：设备只提供稳定的原始重量与单位；人工选择正常或差异结果，非正常结果填写原因；单位不匹配则不得录入。</li>
  * <li><b>重复事件不重复写结果</b>：{@code event_key} 唯一挡住重复上报， 状态流转只认 {@code PENDING}，重复接受影响 0 行并回答「已被处理」。</li>
  * </ul>
  *
@@ -93,6 +93,17 @@ public class SortingScaleEventService {
         if (existing == null) {
             throw new IllegalStateException("秤读数插入冲突但重读为空，eventKey=" + row.getEventKey());
         }
+        // 同键只有同一读数才能重放：设备重启、网关重试若复用 key 却换了任务/重量，
+        // 必须显式报冲突，不能把另一条读数误认为本次上报成功。
+        if (!Objects.equals(existing.getTaskId(), row.getTaskId())
+                || !Objects.equals(existing.getTaskItemId(), row.getTaskItemId())
+                || !Objects.equals(existing.getDeviceCode(), row.getDeviceCode())
+                || existing.getRawReading().compareTo(row.getRawReading()) != 0
+                || !Objects.equals(existing.getUnit(), row.getUnit())
+                || !Objects.equals(existing.getStableFlag(), row.getStableFlag())
+                || !existing.getCapturedAt().isEqual(row.getCapturedAt())) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_KEY_CONFLICT);
+        }
         return toVO(existing, item, true);
     }
 
@@ -124,17 +135,34 @@ public class SortingScaleEventService {
         if (item == null || Boolean.TRUE.equals(item.getDeleted())) {
             throw new ScmBusinessException(SortingErrorCode.ITEM_NOT_IN_TASK);
         }
-        if (!ScmProductTypeEnum.STANDARD.name().equals(item.getProductTypeSnapshot())) {
-            // 非标品的数量必须人工录入并说明差异，一键接受会绕过这条链路
-            throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_ITEM_NOT_STANDARD);
+        // 设备接入协议尚未确定。当前仅允许原始读数的单位与订单行冻结销售单位完全相同，
+        // 禁止把 kg/斤/件等不同单位的数值直接写进实分量。
+        if (!Objects.equals(event.getUnit(), item.getSaleUnitSnapshot())) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_UNIT_MISMATCH);
+        }
+        boolean nonStandard = ScmProductTypeEnum.NON_STANDARD.name().equals(item.getProductTypeSnapshot());
+        String result = ScmSortingResultEnum.NORMAL.name();
+        String reason = null;
+        if (nonStandard) {
+            // 非标品以实重为准，但是否短少、超出容差属于人工业务裁定，不在设备网关猜测。
+            // 非正常结果必须留下原因，并与手工 enter 命令保持同样的规则。
+            if (form.getResult() == null) {
+                throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_RESULT_REQUIRED);
+            }
+            result = form.getResult();
+            reason = org.apache.commons.lang3.StringUtils.trimToNull(form.getReason());
+            if (!ScmSortingResultEnum.NORMAL.name().equals(result) && reason == null) {
+                throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+            }
         }
 
         SortingEntryItemForm entry = new SortingEntryItemForm();
         entry.setId(item.getId());
-        // 用<b>读到的当前版本</b>提交：enter 内部仍会再校验一次，版本在这中间被改掉就整体回滚
+        // 使用当前行版本提交；enter 内部重验，行已被其他分拣员更新时整个事务回滚。
         entry.setVersion(item.getVersion());
         entry.setSortedQuantity(event.getRawReading());
-        entry.setResult(ScmSortingResultEnum.NORMAL.name());
+        entry.setResult(result);
+        entry.setReason(reason);
         SortingEntryForm entryForm = new SortingEntryForm();
         entryForm.setItems(List.of(entry));
         sortingTaskService.enter(event.getTaskId(), entryForm);

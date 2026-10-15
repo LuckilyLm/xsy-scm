@@ -53,7 +53,7 @@ public class SortingScaleController {
     }
 
     /**
-     * 接受读数：把该读数写进分拣结果（只处理标准品）。
+     * 人工接受稳定读数：非标品须选择结果并填写必要原因；单位不一致拒绝落地。
      */
     @PostMapping("/{id}/accept")
     @SaCheckPermission(SortingPermission.SCALE_ACCEPT)

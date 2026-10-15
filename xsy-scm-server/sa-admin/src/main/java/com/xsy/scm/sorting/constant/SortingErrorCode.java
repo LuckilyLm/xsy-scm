@@ -42,7 +42,16 @@ public enum SortingErrorCode implements ScmErrorCode {
     SCALE_EVENT_ITEM_NOT_STANDARD(41132, "该明细不是标准品，不能一键分拣，请人工录入"),
 
     /** 读数未标记为稳定：不稳定读数不能作为分拣结果。 */
-    SCALE_EVENT_NOT_STABLE(41133, "读数未稳定，请等待稳定后再接受");
+    SCALE_EVENT_NOT_STABLE(41133, "读数未稳定，请等待稳定后再接受"),
+
+    /** 真实设备协议与单位换算尚未接入，不允许将不同单位的读数写为分拣量。 */
+    SCALE_EVENT_UNIT_MISMATCH(41870, "电子秤读数单位与订单商品规格单位不一致，请核对设备配置"),
+
+    /** 非标品需要操作员裁定正常、短少、缺货或超出，设备不得自行裁定。 */
+    SCALE_EVENT_RESULT_REQUIRED(41871, "非标品称重必须选择分拣结果"),
+
+    /** 同一设备事件标识不得被用于另一笔重量或另一张任务。 */
+    SCALE_EVENT_KEY_CONFLICT(41872, "电子秤事件编号已用于另一笔读数，请检查设备上报");
 
     private final int code;
     private final String msg;

@@ -80,9 +80,9 @@ export const sortingApi = {
     /** 某任务的秤读数；`status` 为空返回全部（默认看全部，便于追溯被驳回的读数）。 */
     scaleEvents: (taskId: Id, status?: string) =>
         call<SortingScaleEvent[]>('get', `/scale/tasks/${taskId}`, status ? {status} : {}),
-    /** 接受读数：把该读数写进分拣结果（只处理标准品）。 */
-    acceptScaleEvent: (id: Id, version: number) =>
-        call<string>('post', `/scale/${id}/accept`, {version}),
+    /** 接受稳定读数：非标品必须人工选择分拣结果，非正常结果附原因；数量不可修改。 */
+    acceptScaleEvent: (id: Id, version: number, result?: string, reason?: string) =>
+        call<string>('post', `/scale/${id}/accept`, {version, result, reason}),
     /** 驳回读数：不写分拣结果，留原因。 */
     rejectScaleEvent: (id: Id, version: number, reason: string) =>
         call<string>('post', `/scale/${id}/reject`, {version, reason}),

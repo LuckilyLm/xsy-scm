@@ -1,14 +1,15 @@
 package com.xsy.scm.sorting.domain.form;
 
+import com.xsy.scm.common.validation.ScmEnumValue;
+import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * 接受秤读数：把<b>该读数</b>写进分拣结果。
- *
- * <p>
- * 刻意不提供「改成别的数量再接受」：那等于用一次「接受」掩盖一次人工改数。 读数不对就先驳回，再走人工录入（那条路径会要求填写差异原因）。
+ * 秤读数人工确认。非标品由操作员选择分拣结果并说明差异；
+ * 数量始终取不可编辑的设备原始读数，禁止在确认请求中覆盖。
  */
 @Data
 public class SortingScaleAcceptForm {
@@ -16,4 +17,10 @@ public class SortingScaleAcceptForm {
     @NotNull(message = "版本号不能为空")
     @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
+
+    @ScmEnumValue(enumClass = ScmSortingResultEnum.class, message = "分拣结果无效")
+    private String result;
+
+    @Size(max = 500, message = "差异原因不能超过500个字符")
+    private String reason;
 }

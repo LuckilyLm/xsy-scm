@@ -32,7 +32,7 @@ public class SortingScaleEventEntity {
     private Long taskId;
 
     /**
-     * 对应的任务明细；接受前可以为空（设备先报了读数、人再把它挂到某一行）。
+     * 对应的任务明细。当前上报契约要求必填，避免接收时猜测属于哪个订单行。
      */
     private Long taskItemId;
 
