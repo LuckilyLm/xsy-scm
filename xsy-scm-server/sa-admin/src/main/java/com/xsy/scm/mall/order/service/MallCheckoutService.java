@@ -340,17 +340,7 @@ public class MallCheckoutService {
         return item;
     }
 
-    /**
-     * 商城下单的幂等请求指纹：只含客户请求里稳定的字段。
-     *
-     * <p>
-     * 不能用 {@code SalesOrderAddForm} 本身：它带收货地址内容快照，而地址会被同一客户的其他采购账号编辑； 同一幂等键重试时服务端重新读到的地址已经变了，请求哈希跟着变，第一次成功的订单就回放不出来。
-     * 这里改用地址 ID（稳定）代表收货地址，地址内容仍会在建单时冻结进订单快照。
-     *
-     * <p>
-     * 规格按 SKU 排序后再入指纹，使「同一批商品、提交顺序不同」视为同一请求； 用 {@link LinkedHashMap} 而非 {@code Map.of}：备注与期望配送日期可以为空，{@code Map.of} 不接受
-     * null。
-     */
+    /** 商城下单的幂等指纹只包含客户请求中稳定的字段，不用后来可能变化的地址或商品资料重新计算同一次请求。 */
     private static Map<String, Object> idempotencyRequest(RequestMallCustomer customer, MallOrderSubmitForm form,
             Map<Long, BigDecimal> quantities) {
         Map<String, Object> request = new LinkedHashMap<>();

@@ -19,22 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 商城结算方式可用性投影（只读）。
- *
- * <p>
- * 只回答「此刻客户可选哪些结算方式、为什么不可选」，不产生任何资金动作，也不替代授权校验：
- * <ul>
- * <li><b>余额</b>：读结算主体钱包的可用余额（集团下属单位共用集团钱包，因此这里读的是结算主体而非下单客户， 避免把别家主体的余额当成自己的）；</li>
- * <li><b>账期</b>：复用 {@link OrderCreditService#checkSelfSettlement} 的正式授信口径（敞口 = 正常应收净额 + 已确认未开应收订单 +
- * 本单金额，叠加超限与逾期判定），不是「有额度就可用」；</li>
- * <li><b>货到付款</b>：客户须由后台开通且无逾期，交付时仍按实际到账确认收款。</li>
- * </ul>
- *
- * <p>
- * <b>共享结算的资金可见性</b>：集团共享结算下（判定见 {@link CustomerValidator#sharedSettlement}）不返回任何金额， 与商城钱包 / 账期概览同口径 ——
- * 成员账号不能通过结算页读到集团钱包总额或集团授信总额。 是否允许成员用共享资金下单由 {@link ScmSharedSettlementPolicy#sharedCheckoutAllowed} 统一裁定。
- */
+/** 商城结算方式查询只读返回当前客户可选的支付方式及不可选原因。余额按结算主体查询，不产生扣款或订单状态变化。 */
 @Service
 @RequiredArgsConstructor
 public class MallSettlementService {

@@ -40,17 +40,7 @@ public class MallOrderService {
     private final MallCartService cartService;
     private final MallCatalogService catalogService;
 
-    /**
-     * 客户取消订单。
-     *
-     * <p>
-     * 归属先判（任何状态都能判，包括已取消）。<b>已经取消的订单不再做前置判定</b>：那既可能是同一个幂等键的重放，也可能是别人先取消了；
-     * 两种情况都交给正式订单服务的幂等记录与状态机回答。前置检查挡在前面会把合法重放变成报错，与「重复点击返回首次结果」的承诺不符。
-     *
-     * <p>
-     * 非重放路径仍有前置判定，只为给出客户可读的失败原因；权威判定始终在 {@code OrderStateMachine}： 只有 {@code DRAFT} / {@code PENDING} 能进入
-     * {@code CANCELLED}，已确认订单一律拒绝。
-     */
+    /** 客户取消订单先校验订单归属；已经取消的订单继续交给正式订单服务处理幂等重试，避免重复点击被误判为失败。 */
     @Transactional(rollbackFor = Exception.class)
     public MallOrderVO cancel(RequestMallCustomer customer, Long orderId, MallOrderCancelForm form,
             String idempotencyKey) {

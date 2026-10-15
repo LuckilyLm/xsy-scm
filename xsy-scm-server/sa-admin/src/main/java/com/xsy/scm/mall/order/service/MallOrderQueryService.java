@@ -65,17 +65,7 @@ public class MallOrderQueryService {
     private static final String MALL_OPERATOR_PREFIX = UserTypeEnum.MALL_CUSTOMER.getValue() + ":";
     private static final String NON_STANDARD = ScmProductTypeEnum.NON_STANDARD.name();
 
-    /**
-     * 客户可见的订单操作类型白名单。
-     *
-     * <p>
-     * 时间线直接回读 {@code xsy_order_operation_log}，但那张表是<b>内部审计日志</b>：
-     * {@code CREDIT_OVERRIDE}（超额授信放行）带的是内部审批原因，{@code UPDATE} 带改价/改量原因， {@code RESERVE_STOCK} 是仓库内部动作 ——
-     * 这些都不是给客户看的。后台审计记录保持完整， 商城侧只收窄展示，不删除任何原始记录。
-     *
-     * <p>
-     * 售后类操作（{@code RETURN} / {@code REFUND}）在售后功能落地、各自的原因口径定下来之后再逐个加入， 不预先放行。
-     */
+    /** 商城订单操作记录只展示允许客户查看的动作，不暴露后台专用操作类型。 */
     private static final Set<String> CUSTOMER_VISIBLE_OPERATIONS = Set.of(ScmOrderOperationTypeEnum.CREATE.name(),
             ScmOrderOperationTypeEnum.SUBMIT.name(), ScmOrderOperationTypeEnum.ACTUAL_QUANTITY.name(),
             ScmOrderOperationTypeEnum.CONFIRM.name(), ScmOrderOperationTypeEnum.CANCEL.name());
