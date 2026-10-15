@@ -8,6 +8,7 @@
 - [参考项目目录](../project-reference-examples/xsy-scm/)：只读的旧系统及上游参考资料。
 - [贡献与评审约定](../CONTRIBUTING.md)及[代理协作规则](../AGENTS.md)：工程实践、用户界面与 Git 约束。
 - [地图部署说明](map-deployment.md)：高德配置、坐标系、降级行为和现场核对项。
+- [首衡电子秤接口联调交接](sohe-scale-integration-handoff.md)：跨系统接口草案、设备绑定、称重与打印回执、离线同步及验收；拟新增 API 不代表已经实现。
 
 ## 文档维护
 
