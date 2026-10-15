@@ -15,18 +15,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/**
- * 经营类指标的只读聚合 DAO，是首页 / 大屏 / 报表共用的唯一取数处。
- *
- * <p>
- * <b>方法名必须写出时间轴</b>（{@code ByConfirmedAt} / {@code ByCreatedAt}）：同一个「销售金额」在确认轴与创建轴上是两个数，
- * 名字里不写清楚，调用方就会拿错。同一个指标不在这里出现第二个方法 —— 要加口径就加名字，不要加实现。
- *
- * <p>
- * <b>{@code scope} 是必填参数</b>：聚合值比明细更容易被误当成「已经授权过的数据」。上下文由调用方每个请求解析一次再下传，
- * 不要在这里解析。只有确实带仓库列或业务归属列的语句收该参数；{@link #countSuppliers()} 与 {@link #countSkus()} 两张主档 既无仓库列也无归属列（采购归属在
- * {@code xsy_supplier_sku} 上），按裁决属团队共享读，不收窄。
- */
+/** 经营指标 SQL 只负责汇总真实业务事实，统计日期按北京时间对齐。 */
 @Mapper
 public interface ScmBusinessMetricsDao {
 

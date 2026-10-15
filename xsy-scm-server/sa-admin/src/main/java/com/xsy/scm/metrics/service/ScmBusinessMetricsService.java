@@ -31,17 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * 跨端复用经营指标的统一业务入口：首页 / 大屏 / 报表都从这里取数。
- *
- * <p>
- * 边界分三层，不要把它们混成一件事：<b>业务口径</b>在本类编排（区间怎么取、日界用哪个时区、哪几个字段同轴）； <b>SQL</b> 只在 {@code ScmBusinessMetricsMapper}
- * 定义一处；<b>状态与方向等语义</b>继续复用各业务域的枚举 （如 {@code ScmMovementDirections} 从流水类型的方向位派生），不在 metrics 里再抄一份清单。
- * 「唯一」指的是同一指标只有一处定义，不是「所有统计逻辑都要堆进这个类」。
- *
- * <p>
- * <b>本类只收跨端共用的经营类指标</b>，不是「所有查询的万能入口」：报表专有的按业务员 / 分类分组、对账、账龄、 利润、退款、异常订单、分页导出都留在报表域，进来只会把它变成 God Service。
- */
+/** 首页、大屏和报表共用统一经营指标。销售按订单确认时间、采购按提交时间统计；查询必须带对应权限范围。 */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
