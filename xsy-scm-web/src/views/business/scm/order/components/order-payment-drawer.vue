@@ -4,11 +4,11 @@
     <a-alert v-if="error" type="error" show-icon :message="error" class="payment-message"/>
     <a-alert v-if="created" type="success" show-icon
              :message="`${created.intentNo}：${statusText(created.status)}`" class="payment-message"/>
-    <a-form ref="formRef" v-if="order?.status === 'CONFIRMED'" v-privilege="'scm:payment:intent:create'"
+    <a-form ref="formRef" v-if="order?.status === 'CONFIRMED' && (!order.settlementMethod || order.settlementMethod === 'WALLET')" v-privilege="'scm:payment:intent:create'"
             :model="{amount}" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="支付方式">
         <a-radio-group v-model:value="method" :disabled="saving">
-          <a-radio value="BALANCE">余额支付</a-radio><a-radio value="ONLINE">在线支付（模拟渠道）</a-radio>
+          <a-radio value="BALANCE">余额支付</a-radio><a-radio v-if="!order.settlementMethod" value="ONLINE">在线支付（模拟渠道）</a-radio>
         </a-radio-group>
       </a-form-item>
       <a-form-item label="本次支付金额" name="amount">
@@ -80,9 +80,11 @@ function open(value: Order) {
   if (saving.value) return;
   generation++; order.value = value; visible.value = true; amount.value = ''; error.value = '';
   created.value = undefined; detail.value = undefined; rows.value = []; queried.value = false; loading.value = false;
+  method.value = 'BALANCE';
 }
 async function submit() {
   if (saving.value || !order.value?.orderId || !order.value.customerId) return;
+  if (order.value.settlementMethod && (order.value.settlementMethod !== 'WALLET' || method.value !== 'BALANCE')) return;
   try {
     await formRef.value?.validate();
   } catch {

@@ -26,6 +26,7 @@ public class SalesOrderVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal settlementTotalAmount;
     private String settleModeSnapshot;
+    private String settlementMethod;
     private OffsetDateTime expectDeliveryTime;
     private Long sellerId;
     private String remark;

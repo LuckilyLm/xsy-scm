@@ -4,6 +4,8 @@ import type {RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     FinanceBusinessType,
+    FinanceCodCollectionForm,
+    FinanceCodCollectionPreview,
     FinanceId,
     FinanceOperationLog,
     FinancePageQuery,
@@ -68,6 +70,9 @@ export const financeApi = {
     receiptDetail: (id: FinanceId, options?: RequestOptions) =>
         getRequest(`${BASE}/receipt/${id}`, {}, options) as unknown as Promise<ScmResponse<FinanceReceiptDetail>>,
     receiptAdd: (data: FinanceReceiptAddForm) => command(`${BASE}/receipt/add`, data),
+    receiptCodPreview: (orderId: FinanceId, options?: RequestOptions) =>
+        getRequest(`${BASE}/receipt/cod-preview/${orderId}`, {}, options) as unknown as Promise<ScmResponse<FinanceCodCollectionPreview>>,
+    receiptCodCollect: (data: FinanceCodCollectionForm) => command<FinanceReceipt>(`${BASE}/receipt/cod-collection`, data),
     receiptReverse: (data: FinanceReceiptReverseForm) => command(`${BASE}/receipt/reverse`, data),
     receiptExport: (data: Partial<FinancePageQuery> & Omit<ReceiptQuery, 'pageNum' | 'pageSize'>) =>
         postDownload(`${BASE}/receipt/export`, data),

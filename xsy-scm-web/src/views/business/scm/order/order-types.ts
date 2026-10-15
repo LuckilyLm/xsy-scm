@@ -40,6 +40,7 @@ export interface Order {
     customerNameSnapshot?: string;
     customerCodeSnapshot?: string;
     settleModeSnapshot?: string;
+    settlementMethod?: 'WALLET' | 'CREDIT' | 'COD' | null;
     sellerId?: Id | null;
     orderSource: string;
     mallCouponInstanceId?: Id | null;

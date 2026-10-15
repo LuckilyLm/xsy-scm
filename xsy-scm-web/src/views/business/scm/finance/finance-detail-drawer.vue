@@ -156,7 +156,7 @@ const header = computed(() => {
 });
 const headerNo = computed(() => header.value.receivableNo ?? header.value.payableNo ?? header.value.receiptNo ?? header.value.paymentNo ?? '—');
 const partyName = computed(() => header.value.customerName ?? header.value.supplierName ?? header.value.counterpartyName ?? '—');
-const linkedNo = computed(() => header.value.orderNo ?? header.value.purchaseOrderNo ?? header.value.sourceType ?? '—');
+const linkedNo = computed(() => header.value.codOrderNo ?? header.value.orderNo ?? header.value.purchaseOrderNo ?? header.value.sourceType ?? '—');
 const receivableItems = computed(() => detail.value && 'items' in detail.value && 'receivable' in detail.value
     ? detail.value.items as FinanceReceivableItem[] : []);
 const payableItems = computed(() => detail.value && 'items' in detail.value && 'payable' in detail.value

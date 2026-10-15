@@ -166,6 +166,13 @@
             <text class="od__row-label">待付金额</text>
             <text class="od__row-value">¥{{ displayAmount(dueAmount(order)) }}</text>
           </view>
+          <view v-if="order.excessPaidAmount && order.excessPaidAmount !== '0.0000'" class="od__row">
+            <text class="od__row-label">已付超出当前应付</text>
+            <text class="od__row-value">¥{{ displayAmount(order.excessPaidAmount) }}</text>
+          </view>
+          <text v-if="order.excessPaidAmount && order.excessPaidAmount !== '0.0000'" class="od__tip">
+            差额不会自动返还，退款结果请查看售后记录。
+          </text>
         </template>
         <text v-if="hasNonStandard" class="od__tip">含按实重结算商品，最终金额以出库实重为准</text>
       </view>
@@ -356,6 +363,11 @@
       load();
     } catch (error) {
       smartSentry.captureError(error);
+      await load();
+      if (dueAmount(order.value) === '0.0000') {
+        uni.showToast({ title: '订单已支付', icon: 'none' });
+        return;
+      }
       uni.showToast({ title: error?.message || '支付失败，请稍后重试', icon: 'none' });
     }
   }

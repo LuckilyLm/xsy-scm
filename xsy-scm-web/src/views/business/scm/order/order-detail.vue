@@ -14,8 +14,10 @@
           <a-button v-if="order.status==='CONFIRMED'" v-privilege="'scm:order:return:add'"
                     @click="returnForm?.open(order)">申请退货
           </a-button>
-          <a-button v-if="order.status === 'CONFIRMED'" v-privilege="'scm:payment:intent:create'"
+          <a-button v-if="order.status === 'CONFIRMED' && (!order.settlementMethod || order.settlementMethod === 'WALLET')" v-privilege="'scm:payment:intent:create'"
                     @click="paymentDrawer?.open(order)">订单支付</a-button>
+          <a-button v-if="order.status === 'CONFIRMED' && order.settlementMethod === 'COD'"
+                    v-privilege="'scm:finance:receipt:add'" @click="openCodCollection">货到付款收款</a-button>
           <a-button v-privilege="'scm:payment:transaction:query'" @click="paymentDrawer?.open(order)">支付记录</a-button>
         </a-space>
 
@@ -36,6 +38,9 @@
             </a-descriptions-item>
             <a-descriptions-item label="下单时结算方式">
               {{ SETTLE_MODE_ENUM[order.settleModeSnapshot ?? '']?.desc || '—' }}
+            </a-descriptions-item>
+            <a-descriptions-item v-if="order.settlementMethod" label="订单结算约定">
+              {{ settlementMethodText(order.settlementMethod) }}
             </a-descriptions-item>
             <a-descriptions-item label="收货人">{{ order.address?.receiverName }} / {{ order.address?.receiverPhone }}
             </a-descriptions-item>
@@ -192,6 +197,7 @@
 </template>
 <script setup lang="ts">
 import {computed, ref, watch} from 'vue';
+import {useRouter} from 'vue-router';
 import {SETTLE_MODE_ENUM} from '/@/constants/business/scm/customer-const';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -209,6 +215,15 @@ import ReturnForm from './components/order-return-form-modal.vue';
 import OrderPaymentDrawer from './components/order-payment-drawer.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const paymentDrawer = ref<InstanceType<typeof OrderPaymentDrawer>>();
+const router = useRouter();
+
+function openCodCollection() {
+  if (order.value?.orderId) router.push({path: '/finance/receipts', query: {codOrderId: String(order.value.orderId)}});
+}
+
+function settlementMethodText(method: 'WALLET' | 'CREDIT' | 'COD') {
+  return {WALLET: '余额支付', CREDIT: '账期结算', COD: '货到付款'}[method];
+}
 
 const emit = defineEmits<{ saved: [] }>();
 const visible = ref(false), loading = ref(false), saving = ref(false), error = ref(''), order = ref<Order>(),

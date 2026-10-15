@@ -118,9 +118,12 @@ function progressOf(order) {
 /** 与后端 MallOrderVO 同构的资金投影：仅已确认订单下发应付/已付；mock 不建模优惠与实重，应付取订货金额 */
 function fundsOf(order) {
   if (order.status !== 'CONFIRMED') return {};
+  const payable = order.payableAmount || order.orderedTotalAmount;
+  const paid = order.paidAmount || '0.0000';
   return {
-    payableAmount: order.payableAmount || order.orderedTotalAmount,
-    paidAmount: order.paidAmount || '0.0000',
+    payableAmount: payable,
+    paidAmount: paid,
+    excessPaidAmount: (Math.max(Math.round(Number(paid) * 10000) - Math.round(Number(payable) * 10000), 0) / 10000).toFixed(4),
   };
 }
 
@@ -145,6 +148,7 @@ function decorate(order) {
 
 const IDEMPOTENT_ORDERS = new Map();
 const IDEMPOTENT_CANCELS = new Map();
+const IDEMPOTENT_PAYMENTS = new Map();
 
 export const orderRoutes = [
   {
@@ -213,6 +217,10 @@ export const orderRoutes = [
       const rows = accountOrders(session);
       const order = rows.find((item) => item.orderId === orderId);
       if (!order) return fail(40489, '订单不存在');
+      const idempotencyKey = header?.['Idempotency-Key'];
+      if (!idempotencyKey) return fail(40086, '缺少幂等键，无法安全支付');
+      const replayKey = `${accountKey(session)}:${orderId}:${idempotencyKey}`;
+      if (IDEMPOTENT_PAYMENTS.has(replayKey)) return ok(decorate(IDEMPOTENT_PAYMENTS.get(replayKey)));
       // 与后端 MallPaymentService 同构：仅已确认 + 余额结算 + 待付大于零；金额由服务端算，客户端不传
       if (order.status !== 'CONFIRMED') return fail(40990, '当前订单状态不允许支付');
       if (order.settlementMethod !== 'WALLET') return fail(40993, '该订单未选择余额结算');
@@ -228,6 +236,7 @@ export const orderRoutes = [
         ],
       };
       saveOrders(session, rows.map((item) => (item.orderId === orderId ? paidOrder : item)));
+      IDEMPOTENT_PAYMENTS.set(replayKey, paidOrder);
       return ok(decorate(paidOrder));
     },
   },

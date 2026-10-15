@@ -46,6 +46,26 @@ export interface ReceiptQuery extends FinancePageQuery {
     pendingOnly?: boolean;
 }
 
+export interface FinanceCodCollectionPreview {
+    orderId: FinanceId;
+    orderNo: string;
+    customerId: FinanceId;
+    customerName: string;
+    settlementCustomerName: string;
+    receivableNo: string;
+    netAmount: string;
+    openAmount: string;
+}
+
+export interface FinanceCodCollectionForm {
+    orderId: FinanceId;
+    amount: string;
+    method: FinancePaymentMethod;
+    receivedAt: string;
+    externalReference?: string;
+    remark?: string;
+}
+
 export interface PaymentQuery extends FinancePageQuery {
     paymentId?: FinanceId;
     counterpartyType?: 'CUSTOMER' | 'SUPPLIER';
@@ -145,6 +165,8 @@ export interface FinanceReceipt extends FinanceAuditFields {
     walletFunding?: boolean;
     receiptId: FinanceId;
     receiptNo: string;
+    codOrderId?: FinanceId | null;
+    codOrderNo?: string | null;
     customerId: FinanceId;
     customerName: string;
     settlementCustomerId?: FinanceId;

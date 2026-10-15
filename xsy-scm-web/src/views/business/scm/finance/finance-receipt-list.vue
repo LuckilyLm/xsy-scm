@@ -37,6 +37,7 @@
       <div class="smart-table-operate-block">收款明细</div>
       <div class="smart-table-setting-block">
         <a-button v-privilege="PERM.RECEIPT_ADD" type="primary" @click="openAdd">登记收款</a-button>
+        <a-button v-privilege="PERM.RECEIPT_ADD" @click="openCod">货到付款收款</a-button>
         <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_RECEIPT" :refresh="queryData"/>
       </div>
@@ -44,12 +45,12 @@
     <div class="finance-mobile-balance-list">
       <div v-for="record in page.tableData.value" :key="record.receiptId" class="finance-mobile-balance-row">
         <div class="mobile-balance-heading"><strong>{{ record.receiptNo }}</strong><a-button type="link" @click="showDetail(record)">明细</a-button></div>
-        <div class="mobile-balance-party">{{ record.customerName }} · {{ paymentMethodText(record.method) }} · {{ entryTypeText(record.entryType) }}</div>
+        <div class="mobile-balance-party">{{ record.customerName }} · {{ paymentMethodText(record.method) }} · {{ entryTypeText(record.entryType) }}<span v-if="record.codOrderNo"> · {{ record.codOrderNo }}</span></div>
         <div class="mobile-balance-values"><span>{{ record.walletFunding ? '已转钱包权益' : '待核销' }} <strong>{{ moneyText(record.pendingWriteOffAmount) }}</strong></span><span>有效 {{ moneyText(record.effectiveAmount) }}</span></div>
       </div>
     </div>
     <a-table id="scm-finance-receipt-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="receiptId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1455}">
+             row-key="receiptId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1595}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='entryType'">
           <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
@@ -96,6 +97,33 @@
     </a-form>
   </a-modal>
 
+  <a-modal v-model:open="codOpen" title="货到付款收款确认" :confirm-loading="codSaving"
+           :closable="!codSaving" :mask-closable="!codSaving" :keyboard="!codSaving"
+           :cancel-button-props="{disabled: codSaving}" @ok="submitCod">
+    <a-alert v-if="codError" class="form-error" type="error" show-icon :message="codError"/>
+    <a-form layout="vertical">
+      <a-form-item label="销售订单 ID" required>
+        <a-input v-model:value="codForm.orderId" :disabled="codSaving" placeholder="输入订单 ID 后查询待收金额" @change="clearCodPreview"/>
+        <a-button :loading="codLoading" :disabled="codSaving" style="margin-top: 8px" @click="() => loadCodPreview()">查询订单</a-button>
+      </a-form-item>
+      <a-alert v-if="codPreview" type="info" show-icon>
+        <template #message>{{ codPreview.orderNo }} · {{ codPreview.customerName }}</template>
+        <template #description>
+          应收单 {{ codPreview.receivableNo }}；结算主体 {{ codPreview.settlementCustomerName }}；
+          净应收 {{ moneyText(codPreview.netAmount) }}；当前待收 {{ moneyText(codPreview.openAmount) }}。
+          可分笔登记，提交时服务端重新核对剩余金额。
+        </template>
+      </a-alert>
+      <a-form-item label="本次实收金额" required>
+        <a-input-number v-model:value="codForm.amount" string-mode :min="0" :precision="4" :max="99999999999999" :disabled="codSaving" style="width:100%"/>
+      </a-form-item>
+      <a-form-item label="收款方式" required><a-select v-model:value="codForm.method" :options="methodOptions" :disabled="codSaving" placeholder="选择实际资金形式"/></a-form-item>
+      <a-form-item label="收款时间" required><a-date-picker v-model:value="codForm.receivedAt" show-time value-format="YYYY-MM-DD HH:mm:ss" :disabled="codSaving" style="width:100%"/></a-form-item>
+      <a-form-item label="资金凭据号"><a-input v-model:value="codForm.externalReference" :maxlength="128" :disabled="codSaving"/></a-form-item>
+      <a-form-item label="备注"><a-textarea v-model:value="codForm.remark" :maxlength="500" :rows="2" :disabled="codSaving" show-count/></a-form-item>
+    </a-form>
+  </a-modal>
+
   <a-modal v-model:open="reverseOpen" title="反向收款" :confirm-loading="reverseSaving" @ok="submitReverse">
     <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一笔反向收款，金额 ${moneyText(reverseRow.amount)}。原收款事实会保留。`"/>
     <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError"/>
@@ -106,7 +134,8 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive, ref, watch} from 'vue';
+import {useRoute} from 'vue-router';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
@@ -116,14 +145,16 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
+import {financeError} from './finance-errors';
 import {dateTimeText, entryTypeText, initialFinanceDateRange, isValidPositiveAmount, moneyText, nowDateTimeValue, paymentMethodText, trimOptional} from './finance-form-model';
-import type {FinanceReceipt, FinanceReceiptDetail, ReceiptQuery} from './finance-types';
+import type {FinanceCodCollectionPreview, FinanceReceipt, FinanceReceiptDetail, ReceiptQuery} from './finance-types';
 import type {CustomerOption} from '/@/types/business/scm/customer';
 import {useFinancePage} from './use-finance-page';
 import {useFinanceDetail} from './use-finance-detail';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
 
 const query = reactive<ReceiptQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
+const route = useRoute();
 const page = useFinancePage<FinanceReceipt, ReceiptQuery>(financeApi.receiptQuery, financeApi.receiptExport);
 const customerOptions = ref<Array<{label: string; value: string | number}>>([]);
 const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
@@ -131,6 +162,11 @@ const {open: detailOpen, loading: detailLoading, data: detailData, error: detail
     (id) => financeApi.receiptDetail(id, {suppressGlobalErrorMessage: true})
 );
 const addOpen = ref(false), addSaving = ref(false), addError = ref('');
+const codOpen = ref(false), codSaving = ref(false), codLoading = ref(false), codError = ref('');
+const codPreview = ref<FinanceCodCollectionPreview>();
+let codPreviewGeneration = 0;
+const codForm = reactive({orderId: '', amount: '', method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
+    receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
 const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinanceReceipt | null>(null);
 const addForm = reactive({customerId: undefined as string | number | undefined, amount: '', method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
     receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
@@ -156,6 +192,7 @@ const columns = ref<TableColumnsType<FinanceReceipt>>([
     {title: '收款单号', dataIndex: 'receiptNo', fixed: 'left', width: 110, ellipsis: true},
     {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', align: 'right', width: 90},
     {title: '客户', dataIndex: 'customerName', width: 170}, {title: '方向', dataIndex: 'entryType', width: 80, align: 'center'},
+    {title: '来源订单', dataIndex: 'codOrderNo', width: 140, ellipsis: true},
     {title: '金额', dataIndex: 'amount', align: 'right', width: 125},
     {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 125},
     {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 115}, {title: '方式', dataIndex: 'method', width: 110, align: 'center'},
@@ -184,6 +221,68 @@ function openAdd() {
     addError.value = '';
     Object.assign(addForm, {customerId: undefined, amount: '', method: undefined, receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
     addOpen.value = true;
+}
+
+function openCod() {
+    codPreviewGeneration++;
+    codError.value = '';
+    codPreview.value = undefined;
+    Object.assign(codForm, {orderId: '', amount: '', method: undefined, receivedAt: nowDateTimeValue(),
+        externalReference: '', remark: ''});
+    codOpen.value = true;
+}
+
+function clearCodPreview() {
+    codPreviewGeneration++;
+    codPreview.value = undefined;
+    codLoading.value = false;
+    codForm.amount = '';
+}
+
+async function loadCodPreview(options: {preserveAmount?: boolean} = {}) {
+    const requestedOrderId = codForm.orderId.trim();
+    if (!/^[1-9]\d*$/.test(requestedOrderId)) {
+        codError.value = '请输入有效的销售订单 ID。';
+        return;
+    }
+    const generation = ++codPreviewGeneration;
+    codLoading.value = true; codError.value = ''; codPreview.value = undefined;
+    try {
+        const preview = (await financeApi.receiptCodPreview(requestedOrderId,
+            {suppressGlobalErrorMessage: true})).data;
+        if (generation !== codPreviewGeneration || codForm.orderId.trim() !== requestedOrderId) return;
+        codPreview.value = preview;
+        if (!options.preserveAmount && !codForm.amount) codForm.amount = preview.openAmount;
+    } catch (error) {
+        if (generation === codPreviewGeneration) codError.value = financeError(error);
+    } finally {
+        if (generation === codPreviewGeneration) codLoading.value = false;
+    }
+}
+
+async function submitCod() {
+    if (codSaving.value) return;
+    if (!codPreview.value || String(codPreview.value.orderId) !== codForm.orderId.trim()) {
+        codError.value = '请先查询并确认订单。';
+        return;
+    }
+    if (!isValidPositiveAmount(codForm.amount) || !codForm.method || !codForm.receivedAt) {
+        codError.value = '请填写大于 0 的实收金额、收款方式和收款时间。';
+        return;
+    }
+    codSaving.value = true; codError.value = '';
+    try {
+        await financeApi.receiptCodCollect({orderId: codPreview.value.orderId, amount: codForm.amount,
+            method: codForm.method, receivedAt: codForm.receivedAt,
+            externalReference: trimOptional(codForm.externalReference), remark: trimOptional(codForm.remark)});
+        message.success('货到付款收款已登记并核销');
+        codOpen.value = false;
+        await queryData();
+    } catch (error) {
+        const failureMessage = financeError(error);
+        await loadCodPreview({preserveAmount: true});
+        codError.value = failureMessage;
+    } finally { codSaving.value = false; }
 }
 
 async function submitAdd() {
@@ -233,6 +332,18 @@ onMounted(async () => {
         page.error.value = '客户选项暂不可用，请稍后重试。';
     }
     queryData();
+    if (typeof route.query.codOrderId === 'string' && /^[1-9]\d*$/.test(route.query.codOrderId)) {
+        openCod();
+        codForm.orderId = route.query.codOrderId;
+        await loadCodPreview();
+    }
+});
+
+watch(() => route.query.codOrderId, async (value) => {
+    if (codSaving.value || typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) return;
+    openCod();
+    codForm.orderId = value;
+    await loadCodPreview();
 });
 </script>
 
