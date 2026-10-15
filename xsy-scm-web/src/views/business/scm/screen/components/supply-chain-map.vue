@@ -64,20 +64,7 @@ import {useEcharts} from '../composables/use-echarts';
 import {formatInt, formatQty, toNumber} from '../format';
 import type {BusinessData, GeoData, GeoCityNode, InventoryData} from '../types';
 
-/**
- * 供应链分布（大屏主视觉，地图 M1）。
- *
- * 省界着色与市级气泡来自同一个 `/scm/screen/data/geo` 返回，前端不做二次聚合：
- * 省级数值由后端从市级事实上卷，图例与气泡因此不会各自漂移。
- *
- * 底图是仓库里存档的省界 GeoJSON（`public/screen/china-province.json`，
- * 属性只留 `adcode` 与 `name`），零网络依赖、零授权。省级节点按 `adcode` 与底图对齐
- * （两者同为 GB/T 2260 六位码），不按名称对齐 —— 字典里港澳用简称、边界数据用官方全称，
- * 按名称匹配会静默丢省。
- *
- * 气泡坐标是区划质心（GCJ-02），代表「这个市」而不是某个单位的实际位置；
- * 真正的点位/街道底图属于 M2，届时才需要地图服务商授权。
- */
+/** 供应链地图展示已提供的位置与统计数据；缺少地理位置时提供空状态，不臆造坐标。 */
 const props = defineProps<{
   inventory: InventoryData | null;
   business: BusinessData | null;

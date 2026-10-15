@@ -29,17 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 数据大屏只读聚合服务：只做「取指标 + 装成大屏面板」两件事。
- *
- * <p>
- * <b>经营类指标不在这里算</b>，一律向 {@link ScmBusinessMetricsService} 取 —— 大屏、首页、报表对同一件事必须给出同一个数。
- * 本类只保留呈现形态属于大屏自己的查询（仓库分布条、供应链网络节点、地理分布）。
- *
- * <p>
- * <b>大屏同样受数据范围约束</b>：它是业务列表的聚合视图，如果这里不收范围，一个只有 A 仓授权的人拿到 {@code scm:screen:query}
- * 就能读到全公司的成交额、库存量和采购额。每个入口解析一次上下文再下传，一次页面加载发十几个 Dao 调用也只解析一次 （授权行改动必须立即生效，所以不缓存在登录态里）。
- */
+/** 运营大屏复用统一经营指标和权限范围；各区块只负责组织展示所需的数据。 */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
