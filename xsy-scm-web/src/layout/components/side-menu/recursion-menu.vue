@@ -102,6 +102,8 @@ watch(
 
 function onOpenChange(openKeysParams) {
   if (!menuSingleExpandFlag.value) {
+    // open-keys 是受控属性：允许多组展开时也必须同步点击后的 keys，否则点击看起来没有反应。
+    openKeys.value = [...openKeysParams];
     return;
   }
   const latestOpenKey = openKeysParams.find((key) => openKeys.value.indexOf(key) === -1);
@@ -179,6 +181,12 @@ defineExpose({
     color: var(--scm-text, rgba(0, 0, 0, 0.88));
   }
 
+  // 默认用次要文字色；鼠标悬停或展开后按当前主题色高亮，和选中菜单一致。
+  :deep(.ant-menu-submenu-title:hover .ant-menu-submenu-expand-icon),
+  :deep(.ant-menu-submenu-open > .ant-menu-submenu-title .ant-menu-submenu-expand-icon) {
+    color: var(--scm-primary, #1677ff) !important;
+  }
+
   :deep(.ant-menu-item-selected::before) {
     position: absolute;
     top: 10px;
@@ -188,6 +196,18 @@ defineExpose({
     background: var(--scm-primary, #1677ff);
     border-radius: 0 3px 3px 0;
     content: '';
+  }
+}
+
+// 暗色菜单没有浅色 --scm-text-secondary 变量时，仍保证未展开箭头清晰可见。
+.smart-menu.ant-menu-dark {
+  :deep(.ant-menu-submenu-expand-icon) {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  :deep(.ant-menu-submenu-title:hover .ant-menu-submenu-expand-icon),
+  :deep(.ant-menu-submenu-open > .ant-menu-submenu-title .ant-menu-submenu-expand-icon) {
+    color: var(--scm-primary, #1677ff) !important;
   }
 }
 

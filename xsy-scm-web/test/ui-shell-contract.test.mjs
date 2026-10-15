@@ -122,6 +122,18 @@ test('传统侧栏的分组展开图标用组件库的实心圆形箭头，展�
       '菜单图标配色规则仍须排除暗色菜单');
 });
 
+test('侧栏展开状态由受控 openKeys 同步，展开箭头跟随主题色', () => {
+  assert.match(recursionMenu,
+      /if \(!menuSingleExpandFlag\.value\) \{\s*openKeys\.value = \[\.\.\.openKeysParams\];/,
+      '允许多组展开时必须更新 openKeys，否则点击后不展开');
+  assert.match(recursionMenu,
+      /\.ant-menu-submenu-open > \.ant-menu-submenu-title \.ant-menu-submenu-expand-icon[\s\S]{0,140}color:\s*var\(--scm-primary/,
+      '已展开分组的图标必须使用当前主题色');
+  assert.match(recursionMenu,
+      /\.smart-menu\.ant-menu-dark\s*\{[\s\S]{0,140}rgba\(255, 255, 255/,
+      '暗色菜单里未展开的箭头需要浅色对比度');
+});
+
 test('侧栏滚动条不常驻：auto + 透明轨道 + hover 才显形', () => {
   assert.match(sideLayout, /\.side-menu\s*\{[\s\S]{0,200}overflow-y:\s*auto/, 'overflow-y 应为 auto');
   assert.doesNotMatch(sideLayout, /overflow-y:\s*scroll/, 'overflow-y: scroll 会无条件画滚动条');
