@@ -23,20 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 在线充值（ADM-12）。
- *
- * <p>
- * 链路：解析客户 → 解析结算主体 → 校验数据范围 → Idempotency-Key，落 {@code xsy_customer_balance_recharge}（谁往哪个钱包充多少），再创建
- * {@code PaymentIntent}（{@code method=ONLINE}、{@code source_type=BALANCE_RECHARGE}、
- * {@code source_id=recharge.id}）。支付成功后由 {@code PaymentTransaction SUCCEEDED} 派生两条事实：
- * {@code FinanceReceipt}（{@code ONLINE_PAYMENT + PAYMENT_TRANSACTION}，公司实际进账）与
- * {@code BalanceMovement}（{@code RECHARGE/CREDIT + PAYMENT_TRANSACTION}，钱包权益增加）。
- *
- * <p>
- * 余额域负责解释「为什么要支付」，支付域负责支付本身。因此充值意图由本服务内部创建， 而不是把公开的 {@code /scm/payment/intent/create} 放开给客户端拼 {@code sourceType} 与任意
- * {@code sourceId}。
- */
+/** 客户余额充值与渠道支付结果分开处理；只按实际确认的收款入账，重复通知不得重复充值。 */
 @Service
 @RequiredArgsConstructor
 public class BalanceRechargeService {

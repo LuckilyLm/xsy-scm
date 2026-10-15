@@ -54,13 +54,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
 
     private final ScmIdempotencyService idempotencyService;
 
-    /**
-     * 钱包归属：<b>结算主体</b>。
-     *
-     * <p>
-     * 普通客户的钱包就是自己的；集团下属单位共用集团钱包。理由是应收、授信、收款早已把 「实际下单客户」与「结算主体」分开 —— 若钱包挂在子客户，A 店与 B 店各有一份不能共享的
-     * 余额，就与「集团统一结算」直接冲突。流水仍保留实际业务客户，因此花的是哪家店仍可追溯。
-     */
+    /** 客户余额变动以流水为依据，账面余额与充值、抵扣和退款的记录保持一致。 */
     @Transactional(readOnly = true)
     public CustomerEntity settlementCustomerOf(Long customerId) {
         CustomerEntity customer = customerService.require(customerId);
