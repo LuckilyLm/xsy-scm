@@ -41,16 +41,7 @@ public class OrderCreditService {
                 dataScopeService.resolve().getOrderSellerScope());
     }
 
-    /**
-     * 客户自助场景（商城结算预览）：结算主体由客户本人解析而来，因此本维度不收窄业务员范围。
-     *
-     * <p>
-     * <b>只放开范围，不放开规则</b>：敞口仍取正式事实（正常应收净额 + 已确认未开应收的订单）， 超限与逾期判定复用下面同一段代码。之所以必须传
-     * {@link ScmValueScope#all()}：员工侧的范围谓词是为了不让人看到 「只统计了自己可见订单」的残缺敞口，而客户读的是自己的结算主体，本来就应该看到完整敞口。
-     *
-     * <p>
-     * 本方法<b>只读不锁</b>，仅供展示与前置提示；订单确认仍走 {@link #checkForSettlementConfirmation} 在订单锁内做最终裁定。
-     */
+    /** 客户商城结算时按完整结算主体核对授信与逾期情况，最终结果仍需在订单确认时重新校验。 */
     public CustomerCreditCheckVO checkSelfSettlement(Long settlementCustomerId, BigDecimal requestedAmount) {
         return calculateSettlement(customerService.require(settlementCustomerId), requestedAmount, true,
                 ScmValueScope.all());

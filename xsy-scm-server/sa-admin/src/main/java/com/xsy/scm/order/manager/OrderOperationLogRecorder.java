@@ -11,16 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-/**
- * 订单操作日志的唯一写入口。
- *
- * <p>
- * 原先是 {@code SalesOrderService} 的私有方法；退货与退款同样受 AGENTS.md 约束 （cancellation / refund / return 必须留操作日志），若各自再写一份就是三个事实源——
- * 操作人取值、JSON 列形态、before 可为空而 after 必填这些口径迟早会分叉。
- *
- * <p>
- * 调用方须在自身事务内使用：日志与业务变更必须同事务，否则会出现「库已改、日志没落」。
- */
+/** 订单操作日志统一由本类写入，必须与订单、退货或退款变更处于同一事务。 */
 @Component
 @RequiredArgsConstructor
 public class OrderOperationLogRecorder {

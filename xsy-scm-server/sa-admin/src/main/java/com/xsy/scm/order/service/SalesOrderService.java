@@ -134,16 +134,7 @@ public class SalesOrderService {
         return result;
     }
 
-    /**
-     * 商城客户下单入口：建单 → 提交 → 全标品自动尝试确认；授信不允许时按订单规则拒绝。库存预留仍由后台在货到后显式执行。
-     *
-     * <p>
-     * 商城入口不套用员工负责人数据范围；客户归属由商城适配器按登录身份判定。返回重放标记，供调用方只在首次建单时执行购物车清理。
-     *
-     * <p>
-     * {@code idempotencyRequest} 是调用方给出的<b>稳定</b>请求指纹，不能直接用 {@code salesOrderAddForm}：
-     * 它含收货地址内容快照，而地址会被同一客户的其他采购账号编辑。同一幂等键重试时重新读取到的地址已经变了， 哈希随之改变，原订单就回放不出来（会报幂等冲突）。地址快照仍在建单时照常冻结进订单。
-     */
+    /** 商城客户下单先建单并提交，标品会尝试自动确认；同一幂等请求重试返回原订单，不因价格或地址后来变化而重新下单。库存预留需在到货后另外执行。 */
     @Transactional(rollbackFor = Exception.class)
     public MallOrderCreationResult createFromMall(SalesOrderAddForm salesOrderAddForm, Object idempotencyRequest,
             String key) {
