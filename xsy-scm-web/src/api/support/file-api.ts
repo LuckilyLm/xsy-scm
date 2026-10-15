@@ -3,12 +3,13 @@
  *
  */
 import {postRequest, getRequest, getDownload} from '/@/lib/axios';
+import type {RequestOptions} from '/@/lib/axios';
 
 export const fileApi = {
     // 文件上传
     uploadUrl: '/support/file/upload',
-    uploadFile: (param, folder) => {
-        return postRequest(`/support/file/upload?folder=${folder}`, param);
+    uploadFile: (param: FormData, folder: number, options?: RequestOptions) => {
+        return postRequest(`/support/file/upload?folder=${folder}`, param, options);
     },
 
     /**

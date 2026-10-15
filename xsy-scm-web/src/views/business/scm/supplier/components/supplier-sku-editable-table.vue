@@ -17,7 +17,7 @@
           <th>商品规格 *</th>
           <th>采购单位 *</th>
           <th>参考价</th>
-          <th>默认来源</th>
+          <th>优先采购</th>
           <th>采购员</th>
           <th>状态</th>
           <th>操作</th>
@@ -45,7 +45,7 @@
           <td class="center">
             <a-checkbox
                 v-model:checked="draft.defaultFlag"
-                :aria-label="`第 ${index + 1} 行设为默认来源`"
+                :aria-label="`第 ${index + 1} 行设为优先采购`"
             />
           </td>
           <td>

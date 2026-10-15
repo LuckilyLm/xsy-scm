@@ -5,16 +5,16 @@
     <a-form-item label="对账期间" required><ReportDateRangePicker v-model:value="dateRange"/></a-form-item>
     <a-form-item>
       <a-space>
-        <a-button v-privilege="PERM.SUPPLIER_STATEMENT_FREEZE" type="primary" :loading="busy" @click="freeze">生成并冻结新版本</a-button>
+        <a-button v-privilege="PERM.SUPPLIER_STATEMENT_FREEZE" type="primary" :loading="busy" @click="freeze">生成对账单</a-button>
         <a-button v-privilege="PERM.SUPPLIER_STATEMENT_QUERY" :disabled="!supplierId" @click="loadHistory">查看历史版本</a-button>
       </a-space>
     </a-form-item>
   </a-form>
   <a-alert v-if="error" class="statement-note" type="error" show-icon :message="error"/>
-  <a-card title="历史对账版本（当前操作人）" size="small" :bordered="false" class="statement-card">
+  <a-card title="历史对账单" size="small" :bordered="false" class="statement-card">
     <a-table :columns="historyColumns" :data-source="history" row-key="id" size="small" :pagination="{pageSize: 10}" :loading="busy">
       <template #bodyCell="{record,column}">
-        <template v-if="column.dataIndex === 'action'"><a-button type="link" @click="openVersion(record.id)">查看冻结内容</a-button></template>
+        <template v-if="column.dataIndex === 'action'"><a-button type="link" @click="openVersion(record.id)">查看对账单</a-button></template>
         <template v-else-if="column.dataIndex === 'partialScope'">{{ record.partialScope ? '部分应付范围' : '完整供应商范围' }}</template>
       </template>
     </a-table>
@@ -30,7 +30,7 @@
       <h2>{{ selected.supplierName }} · 供应商对账单</h2>
       <p>版本 #{{ selected.id }}　期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ selected.generatedAt }}</p>
       <a-alert v-if="selected.partialScope" type="warning" show-icon class="statement-note"
-               message="仅含授权仓库/采购员的应付；付款是全供应商金额，不能据此核算未分配资金或完整应付"/>
+               message="这份对账单仅包含部分仓库或采购员的应付，付款金额则按整个供应商计算。请勿据此判断完整应付或未分配付款。"/>
       <a-descriptions bordered size="small" :column="{xs: 1, sm: 2, lg: 4}">
         <a-descriptions-item label="期初净应付">{{ moneyText(selected.openingPayable) }}</a-descriptions-item>
         <a-descriptions-item label="本期新增应付">{{ moneyText(selected.payableIncrease) }}</a-descriptions-item>

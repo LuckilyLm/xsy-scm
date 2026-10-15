@@ -37,7 +37,7 @@
           <a-alert
               v-if="warehouse && !isLocated(warehouse)"
               class="field-warning"
-              message="该仓库尚未定位。可先保存草稿，确认规划前需在仓库管理补齐定位，再编辑本线路刷新起点。"
+              message="起点仓库尚未设置地图位置。可以先保存线路，规划路线前请先在仓库管理中设置位置。"
               type="warning"
               show-icon
           />

@@ -23,7 +23,7 @@
       <a-form-item class="smart-query-form-item">
         <template #label>
           发生区间
-          <ScmFieldHelp label="发生区间" text="结束时间不包含"/>
+          <ScmFieldHelp label="发生区间" text="筛选范围包含开始时间，不包含结束时间。需要查询某天全天时，请将结束时间设为次日零点。"/>
         </template>
         <a-range-picker
             v-model:value="occurredRange"

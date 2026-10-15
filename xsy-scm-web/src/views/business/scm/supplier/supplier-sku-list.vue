@@ -29,7 +29,7 @@
 
     <a-card size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
-        <p class="scm-note scm-note--block">本页为只读反查；维护关联请到「供应商档案」→「关联商品」。</p>
+        <p class="scm-note scm-note--block">查看各商品规格对应的供货商；需要调整供货关系，请到「供应商档案」→「关联商品」。</p>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER_SKU" :refresh="load"/>
       </a-row>
       <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
@@ -56,7 +56,7 @@
             }}</span>
           <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
           <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
-            {{ record.defaultFlag ? '默认来源' : '—' }}
+            {{ record.defaultFlag ? '优先采购' : '—' }}
           </a-tag>
           <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
             {{ statusText(record.status) }}
@@ -104,15 +104,15 @@ const specText = (spec: Record<string, string> | undefined): string => {
 };
 
 const columns = ref<TableColumnsType<SupplierSkuRow>>([
-  {title: '供应商（快照）', dataIndex: 'supplierNameSnapshot', width: 200},
+  {title: '供应商', dataIndex: 'supplierNameSnapshot', width: 200},
   {title: '供应商编码', dataIndex: 'supplierCodeSnapshot', width: 150},
-  {title: '商品名称（快照）', dataIndex: 'skuNameSnapshot', width: 200},
+  {title: '商品名称', dataIndex: 'skuNameSnapshot', width: 200},
   {title: '商品规格', dataIndex: 'spec', width: 150},
   {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 160},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 100, align: 'center'},
   {title: '参考价', dataIndex: 'referencePrice', width: 120, align: 'right'},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},
-  {title: '默认来源', dataIndex: 'defaultFlag', width: 110, align: 'center'},
+  {title: '优先采购', dataIndex: 'defaultFlag', width: 110, align: 'center'},
   {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
   {title: '更新时间', dataIndex: 'updatedAt', width: 190, customRender: ({text}) => datetime(text)},
 ]);

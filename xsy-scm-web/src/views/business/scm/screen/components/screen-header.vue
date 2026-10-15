@@ -29,7 +29,7 @@
         <span class="scm-clock-time">{{ timeText }}</span>
       </div>
       <div class="scm-status">
-        <button class="scm-btn" type="button" title="立即刷新" @click="emit('refresh')">
+        <button class="scm-btn" type="button" title="立即刷新" aria-label="刷新运营数据" :disabled="refreshing" @click="emit('refresh')">
           <svg class="scm-icon" viewBox="0 0 16 16" aria-hidden="true" :class="{ 'is-spin': refreshing }">
             <path
                 d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"
@@ -41,7 +41,8 @@
             <path d="M13.8 1.6v3.2h-3.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
           </svg>
         </button>
-        <button class="scm-btn" type="button" :title="fullscreen ? '退出全屏' : '进入全屏'" @click="emit('fullscreen')">
+        <button class="scm-btn" type="button" :title="fullscreen ? '退出全屏' : '进入全屏'"
+                :aria-label="fullscreen ? '退出全屏' : '进入全屏'" @click="emit('fullscreen')">
           <svg v-if="!fullscreen" class="scm-icon" viewBox="0 0 16 16" aria-hidden="true">
             <path
                 d="M6 2H2v4M10 2h4v4M10 14h4v-4M6 14H2v-4"

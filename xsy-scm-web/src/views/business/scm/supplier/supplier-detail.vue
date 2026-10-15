@@ -22,7 +22,7 @@
       <!-- 1. 概览 -->
       <section class="detail-section">
         <h3>概览</h3>
-        <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+        <a-descriptions size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
           <a-descriptions-item label="供应商编码">{{ supplier.supplierCode }}</a-descriptions-item>
           <a-descriptions-item label="状态">
             <a-tag :color="supplier.status === 'ENABLED' ? 'green' : 'default'">{{ statusText(supplier.status) }}</a-tag>
@@ -32,39 +32,39 @@
 
         <!-- 2. 联系方式 -->
         <h3 class="detail-section--nested">联系方式</h3>
-        <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+        <a-descriptions size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
           <a-descriptions-item label="联系人">{{ supplier.contactName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="联系电话">{{ supplier.contactPhone || '—' }}</a-descriptions-item>
         </a-descriptions>
 
         <!-- 3. 地址与地图 -->
         <h3 class="detail-section--nested">地址与地图</h3>
-        <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+        <a-descriptions size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
           <a-descriptions-item label="地址" :span="3">{{ supplier.address || '—' }}</a-descriptions-item>
           <a-descriptions-item label="地图定位" :span="3">
-            <span v-if="isLocated(supplier)">
-              {{ supplier.longitude }}，{{ supplier.latitude }}（{{ supplier.geomCrs }}）
-            </span>
-            <span v-else>未采集</span>
+            <a-tooltip v-if="isLocated(supplier)" :title="`经度：${supplier.longitude}，纬度：${supplier.latitude}`">
+              <span>已设置地图位置</span>
+            </a-tooltip>
+            <span v-else>尚未设置地图位置</span>
           </a-descriptions-item>
         </a-descriptions>
 
         <!-- 4. 采购与账期 -->
         <h3 class="detail-section--nested">采购与账期</h3>
-        <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+        <a-descriptions size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
           <a-descriptions-item label="付款账期">{{ supplier.paymentPeriodDays ?? 0 }} 天</a-descriptions-item>
         </a-descriptions>
 
         <!-- 6. 系统信息：编码与时间放最后，不占核心区域 -->
         <h3 class="detail-section--nested">系统信息</h3>
-        <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
+        <a-descriptions size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
           <a-descriptions-item label="创建时间">{{ datetime(supplier.createdAt) }}</a-descriptions-item>
           <a-descriptions-item label="更新时间">{{ datetime(supplier.updatedAt) }}</a-descriptions-item>
           <a-descriptions-item label="备注" :span="3">{{ supplier.remark || '—' }}</a-descriptions-item>
         </a-descriptions>
 
         <!-- 5. 关联商品 -->
-        <h3 class="detail-section--nested">已关联商品（快照）</h3>
+        <h3 class="detail-section--nested">已关联商品</h3>
         <a-table
             :data-source="relations"
             :columns="relationColumns"
@@ -82,7 +82,7 @@
               }}</span>
             <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
             <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
-              {{ record.defaultFlag ? '默认来源' : '—' }}
+              {{ record.defaultFlag ? '优先采购' : '—' }}
             </a-tag>
             <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
               {{ skuStatusText(record.status) }}
@@ -122,13 +122,13 @@ const specText = (spec: Record<string, string> | undefined): string => {
 };
 
 const relationColumns: TableColumnsType<SupplierSkuRow> = [
-  {title: '商品名称（快照）', dataIndex: 'skuNameSnapshot', width: 220},
+  {title: '商品名称', dataIndex: 'skuNameSnapshot', width: 220},
   {title: '商品规格', dataIndex: 'spec', width: 160},
-  {title: '商品规格编码（快照）', dataIndex: 'skuCodeSnapshot', width: 170},
+  {title: '规格编码', dataIndex: 'skuCodeSnapshot', width: 170},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 100, align: 'center'},
   {title: '参考价', dataIndex: 'referencePrice', width: 120, align: 'right'},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},
-  {title: '默认来源', dataIndex: 'defaultFlag', width: 110, align: 'center'},
+  {title: '优先采购', dataIndex: 'defaultFlag', width: 110, align: 'center'},
   {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
 ];
 
@@ -188,6 +188,16 @@ watch(() => route.query.supplierId, load, {immediate: true});
 /* 同一段里的后续小标题（概览段串起 联系/地址/采购/系统信息/关联商品）；
    选择器必须压过 `.detail-section h3`，否则上边距被它的 margin 简写吃掉 */
 .detail-section h3.detail-section--nested {
-  margin-top: 20px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--scm-border, #f0f0f0);
+}
+
+.detail-section :deep(.ant-descriptions-item-label) {
+  color: var(--scm-text-secondary, #777);
+}
+
+.detail-section :deep(.ant-descriptions-item-content) {
+  color: var(--scm-text, #262626);
 }
 </style>

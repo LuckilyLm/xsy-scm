@@ -101,7 +101,8 @@ const color = computed(() => {
     height: @header-user-height;
     line-height: @header-user-height;
     background-color: v-bind('color.background');
-    padding: 0px 15px 0px 15px;
+    border-bottom: 1px solid var(--scm-border, rgba(0, 0, 0, 0.06));
+    padding: 0 16px;
     position: fixed;
     z-index: 21;
     display: flex;
@@ -122,5 +123,6 @@ const color = computed(() => {
 
 .menu {
   margin-top: @header-user-height;
+  padding-bottom: 12px;
 }
 </style>

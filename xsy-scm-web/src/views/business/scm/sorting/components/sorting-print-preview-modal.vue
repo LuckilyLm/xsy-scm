@@ -2,7 +2,7 @@
   <a-modal :open="open" title="分拣单打印预览" :width="1000" :footer="null" @cancel="close">
     <a-alert v-if="printError" type="error" show-icon :message="printError"/>
     <div class="print-toolbar">
-      <p class="scm-note scm-note--block">预览不累加打印次数；确认已实际出单后再登记，登记只代表出单动作发生，不代表库存或状态变化。</p>
+      <p class="scm-note scm-note--block">请在实际打印成功后点击“登记打印”；仅查看预览不会增加打印次数。</p>
       <a-space>
         <a-button :disabled="printLoading || !print" @click="emit('open-ticket', printTaskId)"
                   v-privilege="'scm:sorting:task:query'">选择模板并打印小票</a-button>
@@ -52,7 +52,7 @@
             </tr>
             </tbody>
           </table>
-          <p class="print-note">本单为分拣作业凭据；未录入的分拣量显示“—”。分拣不回写订单、不改库存。</p>
+          <p class="print-note">本单用于核对分拣结果；尚未登记的分拣数量显示“—”。</p>
         </section>
         <section class="print-labels">
           <h2>商品标签（逐行）</h2>

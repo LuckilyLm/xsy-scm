@@ -45,7 +45,7 @@
         class="anchor"
         type="info"
         show-icon
-        :message="`已按消息定位到阈值配置 ${anchorThresholdId}`"
+        :message="'已定位到相关的库存预警配置'"
     />
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">

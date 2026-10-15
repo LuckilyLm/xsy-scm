@@ -1,5 +1,6 @@
 <template>
   <a-alert
+      class="route-map-warning"
       v-if="!allLocated"
       :message="`尚有 ${route.stopCount - route.locatedCount} 个停靠点未定位${
       !isLocated(startPoint) ? '，仓库起点也未定位' : ''
@@ -35,7 +36,7 @@
         <p class="stop-card__name">{{ route.warehouseNameSnapshot }}</p>
         <p class="stop-card__line stop-card__line--muted">{{ route.warehouseAddressSnapshot || '暂无详细地址' }}</p>
       </div>
-      <p v-if="canEdit" class="scm-note scm-note--block">拖动停靠点排序，或使用上移 / 下移。顺序调整后自动保存。</p>
+      <p v-if="canEdit" class="route-stops__hint">拖动调整配送顺序，调整后自动保存。</p>
       <a-empty v-if="!stops.length" description="还没有停靠点，请先在线路订单中加入订单"/>
       <div
           v-for="(stop, index) in stops"
@@ -64,20 +65,20 @@
         <p class="stop-card__line stop-card__line--muted">
           预计到达 {{ stop.plannedArrivalTime ? datetime(stop.plannedArrivalTime) : '—' }}
         </p>
-        <a-space v-if="canEdit">
+        <a-space v-if="canEdit" class="stop-card__actions" :size="4">
           <a-button
               size="small"
               :disabled="index === 0 || busy"
               :aria-label="`上移${stop.customerNameSnapshot}`"
               @click="move(index, index - 1)"
-          >上移</a-button>
+          ><ArrowUpOutlined/></a-button>
           <a-button
               size="small"
               :disabled="index === stops.length - 1 || busy"
               :aria-label="`下移${stop.customerNameSnapshot}`"
               @click="move(index, index + 1)"
-          >下移</a-button>
-          <a-button size="small" :disabled="busy" @click="emit('editStop', stop)">定位 / 备注</a-button>
+          ><ArrowDownOutlined/></a-button>
+          <a-button size="small" :disabled="busy" @click="emit('editStop', stop)">编辑站点</a-button>
         </a-space>
       </div>
     </div>
@@ -87,6 +88,7 @@
 
 <script setup lang="ts">
 import {computed, ref} from 'vue';
+import {ArrowUpOutlined, ArrowDownOutlined} from '@ant-design/icons-vue';
 import ScmMap from '/@/components/business/scm/map/scm-map.vue';
 import {isLocated, type MapPoint, type RouteMapStatus} from '/@/components/business/scm/map/types';
 import {datetime} from '../../common/scm-display';
@@ -137,13 +139,17 @@ function move(from: number, to: number) {
 </script>
 
 <style scoped>
+.route-map-warning {
+  margin-bottom: 12px;
+}
+
 .route-map-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
-  margin-top: 16px;
-  padding: 10px 16px;
+  gap: 10px 16px;
+  margin-top: 0;
+  padding: 10px 14px;
   background: var(--scm-fill, rgba(0, 0, 0, 0.04));
   border-radius: 8px;
 }
@@ -160,12 +166,19 @@ function move(from: number, to: number) {
   grid-template-columns: 360px minmax(0, 1fr);
   height: calc(100vh - 330px);
   min-height: 520px;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .route-stops {
   overflow: auto;
   padding-right: 8px;
+}
+
+.route-stops__hint {
+  margin: 4px 0 12px;
+  color: var(--scm-text-secondary, #888);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .stop-card {
@@ -185,6 +198,10 @@ function move(from: number, to: number) {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.stop-card__actions {
+  margin-top: 10px;
 }
 
 .stop-card__name {

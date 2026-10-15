@@ -67,7 +67,7 @@
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="showDetail(record)">明细</a-button>
             <a-button v-if="record.entryType==='NORMAL'" type="link" size="small" danger v-privilege="PERM.RECEIPT_REVERSE"
-                      :disabled="record.walletFunding || record.usedAmount!=='0.0000'" @click="openReverse(record)">反向</a-button>
+                      :disabled="record.walletFunding || record.usedAmount!=='0.0000'" @click="openReverse(record)">撤销收款</a-button>
           </a-space>
         </template>
       </template>
@@ -124,10 +124,10 @@
     </a-form>
   </a-modal>
 
-  <a-modal v-model:open="reverseOpen" title="反向收款" :confirm-loading="reverseSaving" @ok="submitReverse">
-    <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一笔反向收款，金额 ${moneyText(reverseRow.amount)}。原收款事实会保留。`"/>
+  <a-modal v-model:open="reverseOpen" title="撤销收款" :confirm-loading="reverseSaving" @ok="submitReverse">
+    <a-alert v-if="reverseRow" type="warning" show-icon :message="`将登记一笔等额冲回记录，金额 ${moneyText(reverseRow.amount)}。原收款记录会保留。`"/>
     <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError"/>
-    <a-form layout="vertical"><a-form-item label="反向原因" required>
+    <a-form layout="vertical"><a-form-item label="撤销原因" required>
       <a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/>
     </a-form-item></a-form>
   </a-modal>
@@ -197,7 +197,7 @@ const columns = ref<TableColumnsType<FinanceReceipt>>([
     {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 125},
     {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 115}, {title: '方式', dataIndex: 'method', width: 110, align: 'center'},
     {title: '凭据号', dataIndex: 'externalReference', width: 160}, {title: '收款时点', dataIndex: 'receivedAt', width: 165},
-    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
+    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 140},
 ]);
 useFinanceMobileActionColumn((compact) => {
     const action = columns.value[columns.value.length - 1];

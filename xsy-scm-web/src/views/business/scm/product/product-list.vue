@@ -53,14 +53,19 @@
             <a-button type="link" @click="detail(record.spuId)">{{ record.name }}</a-button>
           </template>
           <template v-else-if="column.dataIndex === 'primaryImageUrl'">
-            <a-image v-if="record.primaryImageUrl" :src="record.primaryImageUrl" :width="40" :height="40"
-                     :alt="record.name">
-              <!-- 40px 缩略图放不下遮罩默认的「预览」文字，会被截成省略号；只保留眼睛图标 -->
+            <a-image v-if="record.primaryImageUrl && !failedImageUrls.has(record.primaryImageUrl)"
+                     :src="record.primaryImageUrl" :width="40" :height="40"
+                     :alt="record.name" @error="imageFailed(record.primaryImageUrl)">
               <template #previewMask>
                 <EyeOutlined/>
               </template>
             </a-image>
-            <span v-else>—</span></template>
+            <a-tooltip v-else :title="record.primaryImageUrl ? '图片加载失败' : '暂无商品图片'">
+              <span class="product-image-placeholder" :aria-label="record.primaryImageUrl ? '图片加载失败' : '暂无商品图片'">
+                <PictureOutlined/>
+              </span>
+            </a-tooltip>
+          </template>
           <template v-else-if="column.dataIndex === 'tags'">
             <a-space v-if="record.tags.length" :size="2" class="scm-tags">
               <a-tag v-for="tag in record.tags.slice(0, TAG_PREVIEW_LIMIT)" :key="tag.tagId"
@@ -112,7 +117,7 @@
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {message} from 'ant-design-vue';
-import {EyeOutlined} from '@ant-design/icons-vue';
+import {EyeOutlined, PictureOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType, TableProps} from 'ant-design-vue';
 import {productApi} from '/@/api/business/scm/product-api';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
@@ -152,6 +157,10 @@ const categories = ref<ProductCategory[]>([]), rows = ref<ProductRow[]>([]), tot
     error = ref(''), advanced = ref(false);
 const tagChoices = ref<ProductTag[]>([]), createdRange = ref<[string, string]>();
 const selectedKeys = ref<ProductId[]>([]);
+const failedImageUrls = ref(new Set<string>());
+function imageFailed(url: string) {
+  failedImageUrls.value = new Set([...failedImageUrls.value, url]);
+}
 const drawer = ref<InstanceType<typeof ProductDrawer>>(), batch = ref<InstanceType<typeof ProductBatchModal>>();
 const importModal = ref<InstanceType<typeof ProductImportModal>>(), exporting = ref(false);
 const user = useUserStore();
@@ -316,4 +325,18 @@ onMounted(async () => {
   }
 });
 </script>
+<style scoped>
+.product-image-placeholder {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--scm-border, #e5e6eb);
+  border-radius: 6px;
+  background: var(--scm-fill, #f5f5f5);
+  color: var(--scm-text-secondary, #999);
+  font-size: 18px;
+}
+</style>
 

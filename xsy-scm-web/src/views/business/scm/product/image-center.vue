@@ -50,7 +50,11 @@
               <div class="images">
                 <figure v-for="(image, index) in view.images" :key="String(image.imageId)" :draggable="canWrite"
                         @dragstart="dragIndex = index" @dragover.prevent @drop.prevent="move(dragIndex, index)">
-                  <a-image :src="image.fileUrl" :width="104" :height="104" :alt="image.fileName || `图 ${index + 1}`"/>
+                  <a-image v-if="image.fileUrl && !brokenImageKeys.has(image.fileKey)"
+                           :src="image.fileUrl" :width="104" :height="104"
+                           :alt="image.fileName || `图 ${index + 1}`"
+                           @error="markImageBroken(image.fileKey)"/>
+                  <div v-else class="image-preview-fallback">图片无法预览</div>
                   <figcaption>
                     <a-tag v-if="image.primaryFlag" color="green">主图</a-tag>
                     <span v-else>第 {{ index + 1 }} 张</span>
@@ -96,7 +100,11 @@
         <div v-else class="pool">
           <figure v-for="image in pool" :key="image.fileKey" draggable="true"
                   @dragstart="poolDragKey = image.fileKey" @dragend="poolDragKey = ''">
-            <a-image :src="image.fileUrl" :width="88" :height="88" :alt="image.fileName || '未绑定图片'"/>
+            <a-image v-if="image.fileUrl && !brokenImageKeys.has(image.fileKey)"
+                     :src="image.fileUrl" :width="88" :height="88"
+                     :alt="image.fileName || '未绑定图片'"
+                     @error="markImageBroken(image.fileKey)"/>
+            <div v-else class="image-preview-fallback image-preview-fallback--small">图片无法预览</div>
             <figcaption :title="image.fileName">{{ image.fileName || '—' }}</figcaption>
             <a-button size="small" :disabled="!view || busy" @click="bindFromPool(image)">绑到当前商品</a-button>
           </figure>
@@ -166,6 +174,10 @@ const pickColumns = [
 
 const view = ref<ImageCenterView | null>(null), imageLoading = ref(false), imageError = ref(''), busy = ref(false),
     uploading = ref(false), dragIndex = ref(-1);
+const brokenImageKeys = ref(new Set<string>());
+function markImageBroken(fileKey: string) {
+  brokenImageKeys.value = new Set([...brokenImageKeys.value, fileKey]);
+}
 
 // 未绑定图片池：数据源是文件表里 public/image 目录下没有挂到任何商品的图，和上面按 SPU 的视图互不覆盖。
 const pool = ref<UnboundImage[]>([]), poolLoading = ref(false), poolError = ref(''), poolDragKey = ref('');
@@ -283,6 +295,7 @@ const uploadIntoSelected: UploadProps['beforeUpload'] = async (selected) => {
       items: [{ spuId: targetSpuId, fileKey: uploaded.fileKey, primaryFlag: isFirst, sortOrder: view.value!.images.length }]
     });
     await select(targetSpuId);
+    message.success('图片已上传并添加到商品');
   } catch (e) {
     imageError.value = productError(e);
   } finally {
@@ -307,7 +320,8 @@ async function runWrite(action: () => Promise<unknown>, successMsg: string) {
 async function uploadFile(file: File): Promise<{ fileKey: string }> {
   const data = new FormData();
   data.append('file', file);
-  const response = await fileApi.uploadFile(data, FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value) as unknown as Uploaded;
+  const response = await fileApi.uploadFile(data, FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value,
+      {suppressGlobalErrorMessage: true}) as unknown as Uploaded;
   return { fileKey: response.data.fileKey };
 }
 
@@ -401,6 +415,26 @@ figure {
 
 figcaption {
   margin: 6px 0;
+}
+
+.image-preview-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  height: 104px;
+  padding: 8px;
+  border: 1px dashed var(--scm-border, #e5e6eb);
+  border-radius: 6px;
+  background: var(--scm-fill, #f5f5f5);
+  color: var(--scm-text-secondary, #888);
+  font-size: 12px;
+  text-align: center;
+}
+
+.image-preview-fallback--small {
+  width: 88px;
+  height: 88px;
 }
 
 .add-tile {

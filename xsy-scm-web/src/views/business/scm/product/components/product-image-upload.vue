@@ -9,11 +9,17 @@
         </a-upload>
       </div>
     </div>
+    <a-alert v-if="uploadError" type="error" :message="uploadError" show-icon closable @close="uploadError = ''"/>
+    <a-alert v-if="hasBrokenPreview" type="warning" message="部分图片无法预览，请检查图片访问地址或网络连接。" show-icon/>
     <div v-if="modelValue.length" class="images">
       <figure v-for="(image, index) in modelValue" :key="image.fileKey" class="image-item" :draggable="canEdit"
               @dragstart="dragIndex = index" @dragover.prevent @drop.prevent="move(dragIndex, index)">
         <div class="image-item__frame">
-          <a-image :src="image.fileUrl" :width="112" :height="112" :alt="image.fileName || `商品图 ${index + 1}`"/>
+          <a-image v-if="image.fileUrl && !failedPreviews.has(image.fileKey)"
+                   :src="image.fileUrl" :width="112" :height="112"
+                   :alt="image.fileName || `商品图 ${index + 1}`"
+                   @error="markPreviewFailed(image.fileKey)"/>
+          <div v-else class="image-item__fallback">图片无法预览</div>
           <span v-if="image.primaryFlag" class="image-item__badge">主图</span>
         </div>
         <div v-if="canEdit" class="image-item__actions">
@@ -39,27 +45,50 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue';
+import {computed, ref} from 'vue';
+import {message} from 'ant-design-vue';
 import type { UploadProps } from 'ant-design-vue';
 import { ArrowLeftOutlined, ArrowRightOutlined, DeleteOutlined } from '@ant-design/icons-vue';
 import { fileApi } from '/@/api/support/file-api';
 import { FILE_FOLDER_TYPE_ENUM } from '/@/constants/support/file-const';
 import type { ProductImage, ScmResponse } from '/@/types/business/scm/product';
+import {productError} from '../product-errors';
 const props = defineProps<{ modelValue: ProductImage[]; canEdit: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [images: ProductImage[]]; uploading: [busy: boolean] }>();
 const uploading = ref(false), dragIndex = ref(-1);
+const uploadError = ref('');
+const failedPreviews = ref(new Set<string>());
+const hasBrokenPreview = computed(() => props.modelValue.some(image =>
+    !image.fileUrl || failedPreviews.value.has(image.fileKey)
+));
+function markPreviewFailed(fileKey: string) {
+  failedPreviews.value = new Set([...failedPreviews.value, fileKey]);
+}
 const upload: UploadProps['customRequest'] = async options => {
   if (!props.canEdit || !(options.file instanceof File)) return;
   uploading.value = true;
+  uploadError.value = '';
   emit('uploading', true);
   try {
-    const data = new FormData(); data.append('file', options.file);
-    const response = await fileApi.uploadFile(data, FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value) as unknown as ScmResponse<{ fileKey: string; fileUrl: string; fileName?: string; fileSize?: number }>;
-    if (!props.modelValue.some(image => image.fileKey === response.data.fileKey)) emit('update:modelValue', [...props.modelValue, { ...response.data, fileName: response.data.fileName || options.file.name, primaryFlag: props.modelValue.length === 0, sortOrder: props.modelValue.length }]);
+    const data = new FormData();
+    data.append('file', options.file);
+    const response = await fileApi.uploadFile(data, FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value,
+        {suppressGlobalErrorMessage: true}) as unknown as ScmResponse<{ fileKey: string; fileUrl: string; fileName?: string; fileSize?: number }>;
+    if (!response.data?.fileKey) throw new Error('上传接口未返回文件信息');
+    if (!props.modelValue.some(image => image.fileKey === response.data.fileKey)) {
+      emit('update:modelValue', [...props.modelValue, {
+        ...response.data,
+        fileName: response.data.fileName || options.file.name,
+        primaryFlag: props.modelValue.length === 0,
+        sortOrder: props.modelValue.length
+      }]);
+    }
     options.onSuccess?.(response.data);
+    message.success('图片已上传，请保存商品以完成关联');
   } catch (e) {
-    // 上传失败由全局 toast 给出原因；这里只把失败态回给上传控件
-    options.onError?.(e instanceof Error ? e : new Error(String(e)));
+    const reason = productError(e);
+    uploadError.value = reason === 'Network Error' ? '网络连接失败，图片未上传，请稍后重试' : reason;
+    options.onError?.(e instanceof Error ? e : new Error(uploadError.value));
   } finally {
     uploading.value = false;
     emit('uploading', false);
@@ -119,6 +148,21 @@ function remove(index: number) {
   position: relative;
   width: 112px;
   height: 112px;
+}
+
+.image-item__fallback {
+  display: flex;
+  width: 112px;
+  height: 112px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border: 1px dashed var(--scm-border, #e5e6eb);
+  border-radius: 6px;
+  background: var(--scm-fill, #f5f5f5);
+  color: var(--scm-text-secondary, #888);
+  font-size: 12px;
+  text-align: center;
 }
 
 .image-item__badge {

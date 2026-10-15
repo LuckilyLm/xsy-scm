@@ -2,8 +2,8 @@
 <template>
   <a-card size="small" :bordered="false">
     <template #title>
-      取价试算
-      <ScmFieldHelp label="取价试算" text="0 元也是有效价格"/>
+      价格试算
+      <ScmFieldHelp label="价格试算" text="按客户、商品规格及指定时间查询适用价格；0 元也可能是有效价格。"/>
     </template>
     <a-form layout="inline" class="smart-query-form">
       <a-row class="smart-query-form-row">
@@ -13,7 +13,7 @@
         <a-form-item label="商品规格" required class="smart-query-form-item">
           <SkuSelect v-model:value="skuIds" mode="multiple" width="380px" :disabled-statuses="[]"/>
         </a-form-item>
-        <a-form-item label="时点" class="smart-query-form-item">
+        <a-form-item label="价格生效时间" class="smart-query-form-item">
           <a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DD HH:mm:ss" placeholder="当前时点"/>
         </a-form-item>
         <a-form-item class="smart-query-form-item">
@@ -24,7 +24,7 @@
     </a-form>
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <p v-if="result" class="resolve-meta">
-      解析时点：{{ result.at }} · 客户类型：{{ result.customerTypeName }}
+      查询时间：{{ result.at }} · 客户类型：{{ result.customerTypeName }}
     </p>
     <a-table :columns="columns" :data-source="result?.items||[]" row-key="skuId" :loading="loading"
              :pagination="false" size="small" bordered :scroll="{x:1210}">

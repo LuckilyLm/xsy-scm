@@ -64,7 +64,7 @@
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="showDetail(record)">明细</a-button>
             <a-button v-if="record.entryType==='NORMAL'" type="link" size="small" danger v-privilege="PERM.PAYMENT_REVERSE"
-                      :disabled="record.usedAmount!=='0.0000'" @click="openReverse(record)">反向</a-button>
+                      :disabled="record.usedAmount!=='0.0000'" @click="openReverse(record)">撤销付款</a-button>
           </a-space>
         </template>
       </template>
@@ -88,8 +88,8 @@
         </template>
         <a-select v-model:value="addForm.counterpartyType" :options="partyTypeOptions" @change="onPartyTypeChange"/>
       </a-form-item>
-      <a-form-item v-if="addForm.counterpartyType==='SUPPLIER'" label="供应商 ID" name="supplierId">
-        <a-input-number v-model:value="supplierId" :min="1" :precision="0" placeholder="输入供应商编号" style="width:100%"/>
+      <a-form-item v-if="addForm.counterpartyType==='SUPPLIER'" label="供应商" name="supplierId">
+        <SupplierSelect v-model:value="supplierId" placeholder="搜索供应商名称或编码" width="100%"/>
       </a-form-item>
       <a-form-item v-if="addForm.counterpartyType==='CUSTOMER'" label="已完成退款来源" name="selectedRefund">
         <a-input :value="selectedRefund ? `${selectedRefund.refundNo} · ${selectedRefund.customerName} · ${moneyText(selectedRefund.refundAmount)}` : ''"
@@ -108,10 +108,10 @@
     </a-form>
   </a-modal>
 
-  <a-modal v-model:open="reverseOpen" title="反向付款" :confirm-loading="reverseSaving" @ok="submitReverse">
-    <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一笔反向付款，金额 ${moneyText(reverseRow.amount)}。原付款事实会保留。`"/>
+  <a-modal v-model:open="reverseOpen" title="撤销付款" :confirm-loading="reverseSaving" @ok="submitReverse">
+    <a-alert v-if="reverseRow" type="warning" show-icon :message="`将登记一笔等额冲回记录，金额 ${moneyText(reverseRow.amount)}。原付款记录会保留。`"/>
     <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError"/>
-    <a-form layout="vertical"><a-form-item label="反向原因" required><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/></a-form-item></a-form>
+    <a-form layout="vertical"><a-form-item label="撤销原因" required><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/></a-form-item></a-form>
   </a-modal>
 
   <FinanceRefundPicker v-model:open="refundPickerOpen" @select="selectRefund"/>
@@ -129,6 +129,8 @@ import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import FinanceRefundPicker from './finance-refund-picker.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
+import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
+import type {ScmId} from '/@/types/business/scm/customer';
 import {dateTimeText, entryTypeText, initialFinanceDateRange, isValidPositiveAmount, moneyText, nowDateTimeValue, paymentMethodText, trimOptional} from './finance-form-model';
 import type {FinancePayment, FinancePaymentAddForm, FinancePaymentDetail, FinanceRefundOption, PaymentQuery} from './finance-types';
 import {useFinancePage} from './use-finance-page';
@@ -143,7 +145,7 @@ const {open: detailOpen, loading: detailLoading, data: detailData, error: detail
 );
 const addOpen = ref(false), addSaving = ref(false), addError = ref(''), refundPickerOpen = ref(false);
 const selectedRefund = ref<FinanceRefundOption | null>(null);
-const supplierId = ref<number>();
+const supplierId = ref<ScmId>();
 const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinancePayment | null>(null);
 const addForm = reactive<Omit<FinancePaymentAddForm, 'counterpartyId'> & {counterpartyType: 'CUSTOMER' | 'SUPPLIER'}>({
     counterpartyType: 'SUPPLIER', amount: '', method: 'BANK_TRANSFER', paidAt: nowDateTimeValue(), externalReference: '',
@@ -153,7 +155,7 @@ const addFormRef = ref();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const addRules = {
     counterpartyType: [{required: true, message: '请选择往来方类型', trigger: 'change'}],
-    supplierId: [{required: true, message: '请输入供应商编号', trigger: 'blur'}],
+    supplierId: [{required: true, message: '请选择供应商', trigger: 'change'}],
     selectedRefund: [{
         validator: () => (selectedRefund.value ? Promise.resolve() : Promise.reject(new Error('请选择已完成退款'))),
         trigger: 'change',
@@ -196,7 +198,7 @@ const columns = ref<TableColumnsType<FinancePayment>>([
     {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 110},
     {title: '方式', dataIndex: 'method', width: 105, align: 'center'}, {title: '来源', dataIndex: 'sourceType', align: 'center', width: 95},
     {title: '付款时点', dataIndex: 'paidAt', width: 160},
-    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
+    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 140},
 ]);
 useFinanceMobileActionColumn((compact) => {
     const action = columns.value[columns.value.length - 1];

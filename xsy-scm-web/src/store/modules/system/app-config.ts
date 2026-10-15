@@ -18,11 +18,12 @@ let language = appDefaultConfig.language;
 if (appConfigStr) {
     try {
         const cached = JSON.parse(appConfigStr);
-        // 版本 3 → 4 只调整默认侧栏宽度：迁移该项时保留其他用户偏好。
+        // 侧栏布局版本迁移只刷新默认宽度，保留其他用户偏好。
         if (cached && cached.configVersion === appDefaultConfig.configVersion) {
             state = cached;
             language = state.language;
-        } else if (cached && cached.configVersion === 3 && appDefaultConfig.configVersion === 4) {
+        } else if (cached && (cached.configVersion === 3 || cached.configVersion === 4)
+            && appDefaultConfig.configVersion === 5) {
             state = {
                 ...appDefaultConfig,
                 ...cached,

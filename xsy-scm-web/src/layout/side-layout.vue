@@ -393,7 +393,7 @@ const {token} = useToken();
     min-height: auto;
     position: relative;
     overflow-x: hidden;
-    padding: 5px 10px 0px 10px;
+    padding: 12px 16px 16px;
     height: calc(100% - v-bind(dueHeight)px);
   }
 }
@@ -432,7 +432,7 @@ const {token} = useToken();
   }
 
   :deep(.admin-layout-content) {
-    padding-bottom: 48px;
+    padding: 10px 10px 48px;
   }
 }
 </style>

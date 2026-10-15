@@ -5,16 +5,16 @@
     <a-form-item label="对账期间" required><ReportDateRangePicker v-model:value="dateRange"/></a-form-item>
     <a-form-item>
       <a-space>
-        <a-button v-privilege="PERM.CUSTOMER_STATEMENT_FREEZE" type="primary" :loading="busy" @click="freeze">生成并冻结新版本</a-button>
+        <a-button v-privilege="PERM.CUSTOMER_STATEMENT_FREEZE" type="primary" :loading="busy" @click="freeze">生成对账单</a-button>
         <a-button v-privilege="PERM.CUSTOMER_STATEMENT_QUERY" :disabled="!settlementCustomerId" @click="loadHistory">查看历史版本</a-button>
       </a-space>
     </a-form-item>
   </a-form>
   <a-alert v-if="error" class="statement-note" type="error" show-icon :message="error"/>
-  <a-card title="历史对账版本（当前操作人）" size="small" :bordered="false" class="statement-card">
+  <a-card title="历史对账单" size="small" :bordered="false" class="statement-card">
     <a-table :columns="historyColumns" :data-source="history" row-key="id" size="small" :pagination="{pageSize: 10}" :loading="busy">
       <template #bodyCell="{record,column}">
-        <template v-if="column.dataIndex === 'action'"><a-button type="link" @click="openVersion(record.id)">查看冻结内容</a-button></template>
+        <template v-if="column.dataIndex === 'action'"><a-button type="link" @click="openVersion(record.id)">查看对账单</a-button></template>
         <template v-else-if="column.dataIndex === 'partialScope'">{{ record.partialScope ? '授权范围内 / 非完整集团' : '完整结算方' }}</template>
       </template>
     </a-table>
@@ -29,7 +29,7 @@
     <div ref="printArea" class="statement-print">
       <h2>{{ selected.settlementCustomerName }} · 客户对账单</h2>
       <p>版本 #{{ selected.id }}　期间 {{ selected.startDate }} 至 {{ selected.endDate }}　冻结时间 {{ selected.generatedAt }}</p>
-      <a-alert v-if="selected.partialScope" type="warning" show-icon message="仅涵盖当前授权及原客户筛选范围，不能作为完整集团对账额" class="statement-note"/>
+      <a-alert v-if="selected.partialScope" type="warning" show-icon message="这份对账单仅包含你有权查看的客户数据，不代表整个集团的完整金额。" class="statement-note"/>
       <a-descriptions bordered size="small" :column="{xs: 1, sm: 2, lg: 4}">
         <a-descriptions-item label="期初净应收">{{ moneyText(selected.openingReceivable) }}</a-descriptions-item>
         <a-descriptions-item label="本期新增应收">{{ moneyText(selected.receivableIncrease) }}</a-descriptions-item>

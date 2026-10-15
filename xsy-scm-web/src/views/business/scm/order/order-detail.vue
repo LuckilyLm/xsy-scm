@@ -23,7 +23,7 @@
 
         <!-- 1. 状态与核心摘要 -->
         <section class="detail-section">
-          <h3>状态与核心摘要</h3>
+          <h3>订单概览</h3>
           <a-descriptions bordered size="small" :column="2">
             <a-descriptions-item label="订单号">{{ order.orderNo }}</a-descriptions-item>
             <a-descriptions-item label="下单金额">{{ amount(order.orderedTotalAmount, true) }}</a-descriptions-item>
@@ -52,7 +52,7 @@
           <a-descriptions v-if="order.discount" bordered size="small" :column="2">
             <a-descriptions-item label="优惠合计">{{ amount(order.discount.discountAmount) }}</a-descriptions-item>
             <a-descriptions-item label="其中限时特价让利">{{ amount(order.discount.specialDiscountAmount) }}</a-descriptions-item>
-            <a-descriptions-item label="优惠基数（下单金额口径）">{{ amount(order.discount.baseAmount) }}</a-descriptions-item>
+            <a-descriptions-item label="参与优惠计算的金额">{{ amount(order.discount.baseAmount) }}</a-descriptions-item>
             <a-descriptions-item label="券优惠">{{ amount(order.discount.couponSnapshot?.couponDiscount) }}</a-descriptions-item>
             <a-descriptions-item label="用券">
               <template v-if="order.discount.couponSnapshot">

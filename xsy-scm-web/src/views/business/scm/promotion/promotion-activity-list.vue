@@ -25,7 +25,9 @@
     </a-row>
   </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon/>
+  <a-alert v-if="error" :message="error" type="error" show-icon>
+    <template #action><a-button size="small" @click="queryData">重新加载</a-button></template>
+  </a-alert>
 
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">

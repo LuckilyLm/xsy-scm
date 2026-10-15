@@ -7,7 +7,7 @@
         <a-input v-model:value="queryForm.receiptNo" placeholder="收货单号" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="采购单号" class="smart-query-form-item">
-        <a-input v-model:value="orderNoInput" placeholder="采购单号（自动解析）" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="orderNoInput" placeholder="输入采购单号" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
         <SmartEnumSelect enum-name="SCM_RECEIPT_STATUS_ENUM" v-model:value="queryForm.status" width="140px"/>

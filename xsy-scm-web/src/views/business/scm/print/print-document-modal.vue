@@ -108,7 +108,7 @@ const hiddenFields = computed(() => {
  */
 function snapshotHint(render: PrintRender): string {
   const template = render.templateName || render.templateCode;
-  return `模板 ${template ?? '—'} v${render.templateVersion ?? '—'}，打印时间 ${render.printedAt ?? '—'}。重印只读这份快照，不随业务数据变化。`;
+  return `模板 ${template ?? '—'} v${render.templateVersion ?? '—'}，打印时间 ${render.printedAt ?? '—'}。再次打印使用这次保存的内容，不会随单据后续修改而变化。`;
 }
 
 const previewHtml = computed(() => renders.value.map(renderPrintHtml).join(''));

@@ -22,7 +22,7 @@
     </a-form>
 
     <p class="daily-description">
-      每日生成，保留生成时的快照。
+      清单每天定时生成，后续单据变化不会影响已生成的清单。
       <router-link v-privilege="'support:job:query'" to="/job/list">配置执行时间</router-link>
     </p>
 
@@ -32,7 +32,7 @@
     <p v-if="report?.generatedAt" class="daily-meta">
       <strong>{{ report.reportDate }} 采购商品清单</strong>
       <span>生成时间：{{ datetime(report.generatedAt) }}</span>
-      <span>当前范围 {{ report.products.total }} 项</span>
+      <span>符合条件的商品规格：{{ report.products.total }} 项</span>
     </p>
     <a-table size="small" bordered :columns="columns" :data-source="report?.products.list ?? []"
              :row-key="rowKey" :loading="loading" :pagination="false" :scroll="{ x: 800 }"

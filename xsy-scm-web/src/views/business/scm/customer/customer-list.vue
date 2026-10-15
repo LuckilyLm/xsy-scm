@@ -123,7 +123,7 @@
         <a-form-item>
           <template #label>
             新负责人
-            <ScmFieldHelp label="新负责人" text="留空会收回分配；未分配客户仅有分配权或全量权限的人员可见"/>
+            <ScmFieldHelp label="新负责人" text="留空则取消当前业务员的负责关系；只有有权分配客户的人员才能重新分配"/>
           </template>
           <EmployeeSelect v-model:value="reassignSeller" placeholder="留空即收回为未分配" width="100%"/>
         </a-form-item>

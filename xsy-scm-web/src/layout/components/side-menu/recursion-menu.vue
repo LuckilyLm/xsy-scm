@@ -114,24 +114,69 @@ defineExpose({
 <style lang="less" scoped>
 .smart-menu {
   position: relative;
+  padding: 8px 10px 16px;
+  border-inline-end: 0;
+  background: transparent;
 
   :deep(.ant-menu-item),
   :deep(.ant-menu-submenu-title) {
-    height: 44px;
-    line-height: 44px;
-    margin-block: 3px;
+    width: 100%;
+    height: 42px;
+    line-height: 42px;
+    margin: 2px 0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: background-color 0.18s, color 0.18s;
   }
 
   :deep(.ant-menu-submenu-arrow) {
-    display: none;
+    display: block;
+    opacity: 0.6;
+  }
+
+  :deep(.ant-menu-item .anticon),
+  :deep(.ant-menu-submenu-title .anticon) {
+    font-size: 16px;
   }
 
   :deep(.ant-menu-submenu-title) {
-    padding-inline-end: 34px;
+    padding-inline-end: 28px;
+    font-weight: 500;
   }
 
   :deep(.ant-menu-item) {
     padding-inline-end: 12px;
+  }
+
+  :deep(.ant-menu-sub .ant-menu-item),
+  :deep(.ant-menu-sub .ant-menu-submenu-title) {
+    height: 38px;
+    line-height: 38px;
+    font-size: 13px;
+    font-weight: 400;
+  }
+}
+
+.smart-menu:not(.ant-menu-dark) {
+  :deep(.ant-menu-item-selected) {
+    background: var(--scm-primary-bg, rgba(0, 185, 107, 0.09));
+    color: var(--scm-primary, #1677ff);
+    font-weight: 600;
+  }
+
+  :deep(.ant-menu-submenu-open > .ant-menu-submenu-title) {
+    color: var(--scm-text, rgba(0, 0, 0, 0.88));
+  }
+
+  :deep(.ant-menu-item-selected::before) {
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 0;
+    width: 3px;
+    background: var(--scm-primary, #1677ff);
+    border-radius: 0 3px 3px 0;
+    content: '';
   }
 }
 
