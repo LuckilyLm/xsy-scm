@@ -1,12 +1,6 @@
 import {computed, reactive} from 'vue';
 
-/**
- * 导出按钮的 loading 至少停留多久。
- *
- * 演示数据下导出接口只要 20ms 左右，spinner 一闪而过 —— 用户读到的是「点了没反应」，
- * 于是再点一次，浏览器就多落一个文件。低于可感知阈值的 loading 等于没有 loading，
- * 所以这里给一个下限：请求多快都不少于 300ms（仍在「状态变化 200-300ms」这一档内）。
- */
+/** 导出时显示加载状态并防止重复点击；加载动画保持短暂可见，避免成功时一闪而过。 */
 const MIN_LOADING_MS = 300;
 
 /** loading 状态的宿主：页面自己的对象，或报表 Tab 的视图对象（`TabView.exporting`）。 */

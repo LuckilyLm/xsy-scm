@@ -28,8 +28,8 @@ class ScmMigrationTargetPgIT {
     }
 
     /**
-     * V128 新增列必须落库：券模板领取三列、订单预选券列、券实例发放来源列。
-     * 只在目标版本 >= 128 时校验，避免在 V127 及更早的演练中误报。
+     * 数据库版本达到 V128 时，必须包含券模板领取限制、订单预选券和券发放来源字段。
+     * 目标版本早于 V128 时跳过检查。
      */
     @Test
     void mallClaimColumnsExistWhenTargetIs128OrLater() {
@@ -45,8 +45,8 @@ class ScmMigrationTargetPgIT {
     }
 
     /**
-     * V129 新增商城结算方式列：它是「结算约定」，资金事实仍由余额 / 授信 / 收款各自领域承担。
-     * 只在目标版本 >= 129 时校验。
+     * 数据库版本达到 V129 时，订单必须包含结算方式列和取值约束。
+     * 结算方式仅表示约定，余额、授信和收款仍由各自业务模块管理。
      */
     @Test
     void settlementMethodColumnExistsWhenTargetIs129OrLater() {
@@ -62,8 +62,8 @@ class ScmMigrationTargetPgIT {
     }
 
     /**
-     * V2 起不引入数据库外键（见 AGENTS.md）。V127 移除了全库最后一个外键，
-     * 之后必须保持 0。这里统计 xsy_v2 schema 下所有外键约束数量。
+     * V2 数据库禁止外键约束（见 AGENTS.md）。V127 清理最后一个外键后，
+     * xsy_v2 schema 的外键数量必须保持为零。
      */
     @Test
     void noForeignKeysAcrossSchema() {
