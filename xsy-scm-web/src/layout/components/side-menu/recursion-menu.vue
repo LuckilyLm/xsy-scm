@@ -129,9 +129,18 @@ defineExpose({
     transition: background-color 0.18s, color 0.18s;
   }
 
+  // 分组要能收起/展开，所以箭头必须可见；antd 默认那根是 1.28px 的细条，看着发飘，
+  // 这里加粗到 2px 并改圆头端点，与侧栏的线性图标保持同一套语言。
   :deep(.ant-menu-submenu-arrow) {
     display: block;
-    opacity: 0.6;
+    opacity: 0.75;
+
+    &::before,
+    &::after {
+      width: 7px;
+      height: 2px;
+      border-radius: 1px;
+    }
   }
 
   :deep(.ant-menu-item .anticon),

@@ -92,12 +92,20 @@ test('改默认侧栏宽度必须同时升级 configVersion', () => {
       '版本 3 → 4 应迁移侧栏宽度并保留其他缓存偏好');
 });
 
-test('两种侧栏布局隐藏子菜单箭头但保留内联菜单交互', () => {
+test('传统侧栏显示加粗折角箭头，展开式侧栏隐藏箭头，两者都保留内联子菜单', () => {
   const sideExpandMenu = code('../src/layout/components/side-expand-menu/recursion-menu.vue');
-  assert.match(recursionMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/,
-      '传统侧栏只应在菜单作用域内隐藏子菜单箭头');
+  // 传统侧栏的分组要能收起/展开，箭头必须可见；但 antd 默认那根是 1.28px 的细条，看着发飘，
+  // 所以要显式加粗并给端点圆角 —— 只写 display 不写粗细，等于把细条原样放回来。
+  assert.match(recursionMenu,
+      /:deep\(\.ant-menu-submenu-arrow\)\s*\{[\s\S]{0,120}?display:\s*block/,
+      '传统侧栏的分组箭头必须可见');
+  assert.match(recursionMenu,
+      /\.ant-menu-submenu-arrow[\s\S]{0,300}?width:\s*7px[\s\S]{0,60}?height:\s*2px/,
+      '箭头要加粗到 2px，否则又回到 antd 的细条');
+  assert.match(recursionMenu, /\.ant-menu-submenu-arrow[\s\S]{0,400}?border-radius:\s*1px/,
+      '箭头端点要圆角');
   assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/,
-      '展开式侧栏只应在子菜单作用域内隐藏子菜单箭头');
+      '展开式侧栏的子菜单箭头仍应隐藏');
   assert.match(recursionMenu, /mode="inline"/, '传统侧栏必须保留内联子菜单');
   assert.match(sideExpandMenu, /mode="inline"/, '展开式侧栏必须保留内联子菜单');
   assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/,
