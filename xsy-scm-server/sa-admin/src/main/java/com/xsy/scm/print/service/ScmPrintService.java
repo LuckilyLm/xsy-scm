@@ -35,20 +35,7 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 打印编排：预览 / 正式打印（冻结）/ 历史重印 / 记录查询。
- *
- * <p>
- * 三者的关系是这个能力的核心：
- * <ul>
- * <li><b>预览</b>：读业务数据 + 模板现算，<b>不写任何表</b>（不计次、不留痕）；</li>
- * <li><b>正式打印</b>：先用同一段代码算出同一份版面，再把它连同模板版本冻结进 {@code xsy_print_record}。冻结记录只追加、不可改（表上有触发器）；</li>
- * <li><b>重印</b>：只读冻结快照，<b>不回业务表重算</b> —— 否则「当初打出来的那张」会随着业务数据变化变成另一张。但金额权限要按<b>当前</b>调用者重新套一遍：快照冻结的是内容，不是授权。</li>
- * </ul>
- *
- * <p>
- * 打印不改业务单据的任何状态：本类只读业务域、只写打印域。
- */
+/** 预览只读业务数据；正式打印保存当时的版面，历史重印使用已保存内容，不重新生成业务数据。 */
 @Service
 @RequiredArgsConstructor
 public class ScmPrintService {

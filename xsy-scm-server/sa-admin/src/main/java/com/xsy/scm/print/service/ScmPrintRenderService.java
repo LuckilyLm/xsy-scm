@@ -18,16 +18,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/**
- * 渲染：把「一份模板 + 一张单据的数据源」变成一份已经算好的版面。
- *
- * <p>
- * 这里是权限与白名单的收口点，两件事都在服务端做完。白名单方面，模板只能选到类型目录里的 key （写入时已校验），渲染按模板选的 key 取值，不存在「模板里写什么就取什么」；金额方面，
- * 模板里选了金额字段而调用者没有该单据类型的金额权限时，字段在这里被剔除并记入 {@code hiddenFields} —— 授权不写进模板，同一份模板对不同的人渲染出不同的列，这正是「打印不绕过金额权限」的实现方式。
- *
- * <p>
- * 本类不读库：数据源由调用方先取好（因此范围判定与详情页同源），快照与实时渲染走的是同一段代码， 不会出现「预览和打印不是同一张」。
- */
+/** 打印渲染只使用模板白名单字段；金额字段按业务单据权限裁剪，不能通过打印查看无权数据。 */
 @Service
 @RequiredArgsConstructor
 public class ScmPrintRenderService {

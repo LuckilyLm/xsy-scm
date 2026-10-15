@@ -29,22 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 打印中心：模板维护 + 打印渲染 + 打印记录。
- *
- * <p>
- * <b>权限分两层</b>：
- * <ul>
- * <li>模板维护与记录查看用 {@code scm:print:*}（见 {@link ScmPrintPermission}）；</li>
- * <li>渲染与打印一张业务单据<b>不在这里授权</b>，它由数据源自己校验该单据的查看权
- * （采购单走 {@code PurchaseQueryService} 的采购员范围）—— 否则「模板维护权」会变成
- * 一条读到任意业务单据的旁路。</li>
- * </ul>
- *
- * <p>
- * 正式打印要 {@code Idempotency-Key}：一次提交重试不该产生两条「打过一次」的记录。
- * 该头不能标成必填 —— 缺失时由幂等服务抛业务码，而不是框架的 30001。
- */
+/** 打印接口按单据及模板权限校验，不能通过打印接口绕过原业务数据范围。 */
 @RestController
 @RequestMapping("/scm/print")
 @Tag(name = "SCM 打印中心")
@@ -79,8 +64,8 @@ public class ScmPrintController {
      * 可配置打印的单据类型清单（前端类型下拉用）。
      */
     @GetMapping("/template/document-types")
-    @SaCheckPermission(value = {ScmPrintPermission.TEMPLATE_QUERY, ScmPrintPermission.RECORD_QUERY},
-            mode = cn.dev33.satoken.annotation.SaMode.OR)
+    @SaCheckPermission(value = {ScmPrintPermission.TEMPLATE_QUERY,
+            ScmPrintPermission.RECORD_QUERY}, mode = cn.dev33.satoken.annotation.SaMode.OR)
     public ResponseDTO<List<ScmPrintDocumentTypeVO>> documentTypes() {
         return ResponseDTO.ok(scmPrintTemplateService.documentTypes());
     }
@@ -120,8 +105,7 @@ public class ScmPrintController {
     @PostMapping("/template/{id}/delete")
     @SaCheckPermission(ScmPrintPermission.TEMPLATE_DELETE)
     @OperateLog
-    public ResponseDTO<String> deleteTemplate(@PathVariable("id") Long id,
-            @RequestParam("version") Integer version) {
+    public ResponseDTO<String> deleteTemplate(@PathVariable("id") Long id, @RequestParam("version") Integer version) {
         scmPrintTemplateService.delete(id, version);
         return ResponseDTO.ok();
     }
