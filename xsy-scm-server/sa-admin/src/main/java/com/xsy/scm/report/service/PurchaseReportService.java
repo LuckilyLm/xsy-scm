@@ -18,21 +18,7 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
-/**
- * 采购分析（只读）。业务日期是 {@code submitted_at}，状态只认已提交（非草稿、非取消）。
- *
- * <p>
- * 本报表不展示「应付金额」：采购单金额是承诺、收货参考金额是履约事实，只有财务应付事实才能作为应付。
- *
- * <p>
- * <b>口径同源、范围策略不同</b>：已提交采购单数 / 金额的时间轴（{@code submitted_at}）与状态（已提交，非草稿非取消）与首页 / 大屏完全一致， 状态清单由
- * {@code ScmPurchaseStatusEnum.committedNames()} 派生；但本页只按仓库收窄，大屏的采购面板按「采购归属 ∩ 仓库」收窄。 要统一，必须整页一起改（bySupplier /
- * byPurchaser / topSupplier 都得跟着动）。
- *
- * <p>
- * <b>整页按仓库授权范围取数</b>：采购单、收货单与入库流水三张事实表都有 {@code warehouse_id}，所以每条语句的每个派生表都带范围谓词，调用方的 {@code warehouseId}
- * 筛选只能在授权范围内进一步收窄。范围为空即返回空结果，而不是跑一次恒假查询换回一堆 0。
- */
+/** 采购报表按订单、收货和金额的业务时点统计，时间筛选与汇总保持一致。 */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

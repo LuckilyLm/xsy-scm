@@ -14,16 +14,7 @@ import cn.idev.excel.FastExcel;
 import jakarta.servlet.http.HttpServletResponse;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
 
-/**
- * 报表的同步 Excel 导出写出。
- *
- * <p>
- * 用 FastExcel 的动态表头而不是给每张报表建一个 {@code @ExcelProperty} 模型：报表列是「口径」的一部分，与查询 SQL 一一对应，做成两个平行结构后两边很容易长歪。因此每个导出在同一处给出 titles
- * 与 rows，列顺序不可能分叉。
- *
- * <p>
- * 单元格一律写字符串：金额/数量的精度由后端序列化前就定死，交给 Excel 的数值格式会按 Excel 的显示规则收敛位数。
- */
+/** 报表 Excel 导出使用同一套字段和金额口径，并遵守当前用户的数据范围与导出权限。 */
 public final class ScmReportExcel {
 
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

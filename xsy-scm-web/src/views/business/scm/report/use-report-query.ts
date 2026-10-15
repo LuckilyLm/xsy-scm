@@ -1,14 +1,4 @@
-/**
- * 报表页的查询装载器。
- *
- * 五个报表页都有同一件事要做：同一个 Tab 的慢响应不能盖掉新响应。
- * 报表比普通列表更容易踩这个坑——用户会连续改日期、快速切 Tab，
- * 而一次概览刷新同时发 3 个请求。所以把竞态令牌收在一处，而不是每个页面各写一份
- * `let requestId = 0` + 三处 `if (id === requestId)`。
- *
- * 令牌放在闭包里而不是全局：一个页面的多个 Tab 与多个图表并发在飞时，
- * 共享一个计数器会互相把对方的结果判成「过期」，表现为图有数、表格空白。
- */
+/** 每个报表页签独立保存加载与错误状态；只接受最后一次查询结果，避免旧响应覆盖新筛选结果。 */
 import {type Ref} from 'vue';
 import type {RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';

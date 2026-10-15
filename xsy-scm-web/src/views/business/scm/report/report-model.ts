@@ -77,13 +77,7 @@ export function defaultDateRange(today?: Date | string): DateRange {
     return presetRange(DEFAULT_DATE_PRESET, today);
 }
 
-/**
- * `a-range-picker` 的 `presets` 数据源。
- *
- * 值给的是 `yyyy-MM-dd` 字符串而不是 dayjs 对象：picker 上绑了
- * `value-format="YYYY-MM-DD"`，给对象会让组件在写回时再格式化一次，
- * 两条路径都产生同一个字符串没问题，但保持单一形状更好排查。
- */
+/** 生成日期选择器的快捷选项，标签和值成对；日期范围始终使用 YYYY-MM-DD 字符串。 */
 export function datePresets(today?: Date | string): Array<{label: string; value: DateRange}> {
     return (Object.keys(DATE_PRESET_LABELS) as DatePresetKey[]).map((key) => ({
         label: DATE_PRESET_LABELS[key],
