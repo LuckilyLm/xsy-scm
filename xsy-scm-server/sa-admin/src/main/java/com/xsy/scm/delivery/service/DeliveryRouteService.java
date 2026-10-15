@@ -357,16 +357,7 @@ public class DeliveryRouteService {
         save(route);
     }
 
-    /**
-     * 发车：整条线路原子出库，{@code PLANNED → DISPATCHED}。
-     *
-     * <p>
-     * 实发量一律取分拣的 {@code sorted_quantity}，本方法不读 {@code actual_quantity}、不重新计算差异。锁序：线路聚合锁 → 逐订单行锁 → 库存命令内部的预留锁与余额锁。
-     *
-     * <p>
-     * 线路内任一订单在锁上复核后不再合格（例如分拣被重开）就<b>整条拒绝</b>，不做「先发能发的」；库存不足同样整条回滚，一行库存都不扣。全部订单都实发 0（整线
-     * OUT_OF_STOCK）时不生成出库单，{@code outboundId} 返回 null —— 没有实物离开仓库，不该留下一张空出库单。
-     */
+    /** 配送发车按整条线路一次性出库，发货数量以已确认分拣结果为准；任一订单不符合条件则整条线路回滚。 */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryDispatchResultVO dispatch(Long id, DeliveryVersionForm form, String key) {
         var claim = idempotencyService.claim("DELIVERY_DISPATCH:" + id, key, form);

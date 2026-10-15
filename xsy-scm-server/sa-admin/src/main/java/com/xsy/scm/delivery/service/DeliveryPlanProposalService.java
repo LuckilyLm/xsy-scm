@@ -38,17 +38,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 辅助排线建议：生成 → 比较 → 显式应用 / 放弃。
- *
- * <p>
- * 三条不变量。只建议、不动线路：生成建议不改任何停靠顺序、不改线路状态，只有 {@code apply} 写回顺序， 且要求线路仍是 {@code DRAFT}（未发车），建议不会自动发车。输入与结果一起冻结：停靠点、起点、
- * 坐标系、生效与未生效的约束、provider 版本、每段与累计距离全部写进快照，表上有触发器拒绝改动， 因此建议里看到的距离与应用时依据的距离必然是同一份。一条线路同时至多一条待确认建议：
- * 生成新建议时旧的待确认建议转为放弃，避免「应用哪一个」变成猜。
- *
- * <p>
- * 本类不写库存、不写订单、不发车：应用建议只等价于一次「按给定顺序重排停靠点」， 与手工拖拽排序走同一套写入纪律。
- */
+/** 排线建议只供查看和选择，不自动改变线路或发车。仅草稿线路可应用建议，并保留计算规则与距离来源。 */
 @Service
 @RequiredArgsConstructor
 public class DeliveryPlanProposalService {
