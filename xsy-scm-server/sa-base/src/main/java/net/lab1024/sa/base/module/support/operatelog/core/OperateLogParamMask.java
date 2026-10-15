@@ -7,17 +7,7 @@ import com.alibaba.fastjson.parser.Feature;
 
 import java.util.regex.Pattern;
 
-/**
- * 操作日志参数写库前的敏感字段脱敏。
- *
- * <p>日志一旦带凭据明文，就等于把明文交给所有持日志读取权的人：数据库行、API 响应、浏览器
- * Network 三处同时留痕，前端展示层遮不住。因此在切面唯一的参数序列化出口先遮一次，
- * 前端 {@code operate-log-mask.ts} 继续作为存量历史数据的第二层兜底。
- *
- * <p>只按 JSON 键名替换值，不删键、不改结构、不动数字类型，
- * 所以 {@code spuId} / {@code customerId} 这类业务对象键不受影响，
- * 操作日志的结构化精确筛选口径保持有效。
- */
+/** 操作日志在写库前就必须脱敏密码、令牌等敏感字段，不能只依赖前端隐藏。 */
 final class OperateLogParamMask {
     /**
      * 与前端展示层遮罩保持同一份口径，避免两侧各判一套键名。

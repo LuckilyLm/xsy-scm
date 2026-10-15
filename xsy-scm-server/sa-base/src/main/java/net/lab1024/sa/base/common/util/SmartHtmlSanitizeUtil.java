@@ -8,22 +8,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.safety.Safelist;
 
-/**
- * 富文本 HTML 白名单清洗。
- *
- * <p><b>为什么必须在服务端做</b>：公告与帮助文档的正文以 HTML 存储，前端用 {@code v-html} 直接注入 DOM。
- * 只在前端过滤是无效的 —— 攻击者绕过页面直接调接口提交即可，而这篇正文会被所有有权限查看的人加载执行。
- * 后台的富文本编辑器本质上是一个「可跨用户投放 HTML」的入口，必须按不可信输入对待。
- *
- * <p><b>策略</b>：白名单，不是黑名单。只保留排版必需的标签与属性，其余一律剥掉；
- * 标签被移除时保留其文本内容（{@code Safelist} 的默认行为），避免把正文吃掉。
- * 关键的三类：
- * <ul>
- * <li>脚本与可执行内容：{@code script} / {@code iframe} / {@code object} / {@code embed} / {@code form} 等不在白名单内，直接移除；</li>
- * <li>事件属性：{@code on*} （{@code onclick}、{@code onerror}…）不在允许属性内，直接移除；</li>
- * <li>危险协议：{@code javascript:} / {@code vbscript:} / {@code data:} 等，由协议白名单拦下。</li>
- * </ul>
- */
+/** 富文本公告在保存前由服务端按 HTML 白名单清洗，防止绕过前端提交恶意脚本。 */
 public class SmartHtmlSanitizeUtil {
 
     /**

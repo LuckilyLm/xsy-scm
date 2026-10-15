@@ -12,15 +12,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * 附件与业务对象的绑定入口。
- *
- * <p>「绑定」是授权动作而不是元数据动作：私有附件的读取权由这里的行决定，
- * 因此每条写附件列的业务链路都必须在**同一事务内**调用它，
- * 否则表单保存成功而附件永远不可读。
- *
- * <p>解绑只软删除关系行，**不删物理文件** —— 与 SCM 既有「不静默删数据」一致。
- */
+/** 私有附件读取权限由对象关系决定。绑定与业务保存处于同一事务；解绑仅撤销关系，不立即删除物理文件。 */
 @Service
 @RequiredArgsConstructor
 public class FileRelationService {
@@ -42,14 +34,10 @@ public class FileRelationService {
     }
 
     /**
-     * 把关系行同步成对象**当前**引用的这一组 key：缺的补上、多的收回。
+     * 同步对象当前引用的附件：新增文件建立授权，移除文件撤销授权。
+     * 不删除物理文件；绑定变更与业务对象保存处于同一事务。
      *
-     * <p>这里必须同时做两件事，只做清理会让「新建带附件的对象」永远没有授权行 ——
-     * 私有附件因此只有上传者和管理员能读，其他有权查看该对象的员工一律 30005，
-     * 而 FA-2 的口径恰恰是「能看对象即可看其附件」。各写链路都用本方法而不是 {@link #bind}，
-     * 是因为更新可以删掉附件，只增不减会让已删附件长期可读。
-     *
-     * @param keepFileKeys 对象现在引用的 key；为空表示该对象已不含附件
+     * @param keepFileKeys 仍被引用的文件键；为空表示全部解绑
      */
     @Transactional(rollbackFor = Exception.class)
     public void rebind(FileRelationBizTypeEnum bizType, Long bizId, Collection<String> keepFileKeys) {

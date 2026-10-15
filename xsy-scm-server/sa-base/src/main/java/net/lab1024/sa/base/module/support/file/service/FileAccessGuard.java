@@ -16,14 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * 私有附件的读取判定。放行只有三条路：管理员、业务对象授权（关系表）、上传者本人。
- *
- * <p>目录前缀只用来判「公开」和「这个 key 属于哪个受管目录」，不再单独构成放行理由：
- * {@code private/notice/}、{@code private/help-doc/} 以前的前缀级放行等于
- * 「同前缀下所有人的附件互看」，而前缀表达不了「哪一张单据」，所以 FA-2 起
- * 必须由 {@code t_file_relation} 回答（见 docs/decisions.md「P0 基线收口裁决」第 12–13 条）。
- */
+/** 私有文件仅允许管理员、拥有业务对象查看权限的人或上传者本人读取。目录前缀不能代替授权检查。 */
 @Component
 public class FileAccessGuard {
 

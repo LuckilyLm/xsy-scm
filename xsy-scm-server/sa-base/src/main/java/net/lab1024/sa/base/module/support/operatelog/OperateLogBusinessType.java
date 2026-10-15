@@ -5,16 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-/**
- * 操作日志所属 SCM 业务领域的识别口径。
- *
- * <p>日志表没有业务对象列，领域归属只能从写入时留下的 {@code param} / {@code url} 推断，
- * 因此这里的判定规则必须与 {@code OperateLogMapper.xml} 的结构化业务筛选保持一致：
- * 精确 JSON 键名判定商品、客户，线路 ID 走 {@code @PathVariable} 故判定 URL 段。
- *
- * <p>只用于「宁可多要求一个读取权」的授权收紧：误判成某领域只会额外要求该领域读取权限，
- * 不会放宽任何权限。
- */
+/** 根据日志请求参数与 URL 判定所属的 SCM 业务模块，筛选规则要与数据库查询保持一致。 */
 public final class OperateLogBusinessType {
 
     public static final String PRODUCT = "PRODUCT";
