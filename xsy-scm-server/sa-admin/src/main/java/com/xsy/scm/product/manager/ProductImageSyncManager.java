@@ -97,14 +97,7 @@ public class ProductImageSyncManager {
                         .set(ProductImageEntity::getUpdatedBy, ScmOperator.current()).setSql("version = version + 1"));
         productImageDao.deleteByIds(ids);
     }
-    /**
-     * 商品图是面向客户的展示资产，新增或换绑只能引用公开图片目录。只读 fileKey 前缀不够：存在性由文件模块证明，而「谁的附件」不在这条链上—— 少了这道判断，改商品权限就等于把他人私有附件晋升为所有查看者可读。
-     *
-     * <p>
-     * 这里不再给「沿用本行原有私有 key」留过渡例外：存量 key 已迁至 {@code public/image/} 并把同一判据落成数据库 CHECK
-     * {@code ck_product_image_public_file_key}， 「私有前缀的活商品图」已经不是可能存在的状态。例外若留着，任何一次编辑都会把它重新养大 ——
-     * 判据与库约束不一致时，绕过服务层的写入就能造出只有这里拒、库里却收下的行。
-     */
+    /** 商品只能绑定文件模块确认存在的公开图片，不允许把他人的私有附件设为商品图片。 */
     private void requirePublicImageKey(ProductImageForm form) {
         if (!form.getFileKey().startsWith(PUBLIC_IMAGE_FOLDER)) {
             throw new ScmBusinessException(IMAGE_NOT_PUBLIC);

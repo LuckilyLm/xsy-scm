@@ -54,14 +54,7 @@ import static com.xsy.scm.product.service.ProductImportValueRules.required;
 import static com.xsy.scm.product.service.ProductImportValueRules.same;
 import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 
-/**
- * 商品 Excel 导入编排：工作簿读写由 {@link ProductImportWorkbookSupport} 负责，单元格规范化和字段值校验由 {@link ProductImportValueRules}
- * 负责，领域校验通过后交给 {@link ProductImportWriteService} 整批回滚写入。复用既有 ProductSpuService.add / update 的全部领域校验与保护，不新建导入旁路。
- *
- * <p>
- * 两种模式语义互斥且必须显式选择： {@link ImportMode#CREATE} 整批新增；{@link ImportMode#UPDATE} 按 SPU ID / SKU ID + 版本定位既存行，
- * <b>留空表示保持原值</b>（不是清空），未出现在 Excel 的 SKU 也不会被删除；要把可空属性（别名、助记码、品牌、产地、标签编码、条码）清成空，在该单元格填 {@link #CLEAR_TOKEN}。
- */
+/** 商品 Excel 导入先校验整批数据，再统一写入。新增和更新模式必须明确选择；更新时空单元格表示保留原值，需要清空时使用指定标记。 */
 @Service
 @RequiredArgsConstructor
 public class ProductImportService {

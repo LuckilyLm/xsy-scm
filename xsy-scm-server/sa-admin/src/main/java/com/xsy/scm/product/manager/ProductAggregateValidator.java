@@ -49,14 +49,7 @@ public class ProductAggregateValidator {
         validateImages(images);
     }
 
-    /**
-     * 图片集合自身的规则：数量上限、主图至多一张、fileKey 不得重复。
-     *
-     * <p>
-     * 单独成一是因为图片中心的批量换绑不经 {@link #validateSpu}，只走 {@link ProductImageSyncManager#sync}；口径若留在 SPU 表单里，那条链路就会把两张主图
-     * 直接触发唯一索引 {@code uq_product_image_primary_spu}，并抛出未捕获的 {@code DuplicateKeyException}（HTTP 500）而不是稳定的
-     * IMAGE_INVALID。
-     */
+    /** 校验商品图片数量、主图唯一性与文件键不重复；图片中心的批量换绑也必须执行这些校验。 */
     public void validateImages(List<ProductImageForm> images) {
         if (images == null || images.size() > 20
                 || images.stream().filter(i -> Boolean.TRUE.equals(i.getPrimaryFlag())).count() > 1)
