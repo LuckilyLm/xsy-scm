@@ -62,8 +62,9 @@ export interface FinanceCodCollectionForm {
     amount: string;
     method: FinancePaymentMethod;
     receivedAt: string;
-    externalReference?: string;
-    remark?: string;
+    // 与 FinanceReceiptAddForm 同口径：两个字段都由 trimOptional 填充，空串会变成 null。
+    externalReference?: string | null;
+    remark?: string | null;
 }
 
 export interface PaymentQuery extends FinancePageQuery {

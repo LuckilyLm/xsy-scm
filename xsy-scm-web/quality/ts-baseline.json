@@ -12,10 +12,10 @@
     "src/views/business/scm/"
   ],
   "summary": {
-    "total": 1776,
+    "total": 1774,
     "scm": 0,
     "by_code": {
-      "TS7006": 817,
+      "TS7006": 815,
       "TS2339": 355,
       "TS6133": 130,
       "TS2322": 104,
@@ -43,7 +43,7 @@
       "src/views/business": 228,
       "src/layout/components": 203,
       "src/components/support": 141,
-      "src/api/support": 82,
+      "src/api/support": 80,
       "src/store/modules": 64,
       "src/components/framework": 57,
       "src/api/system": 39,
@@ -618,35 +618,21 @@
     },
     {
       "file": "src/api/support/file-api.ts",
-      "line": 10,
-      "column": 18,
-      "code": "TS7006",
-      "message": "Parameter 'param' implicitly has an 'any' type."
-    },
-    {
-      "file": "src/api/support/file-api.ts",
-      "line": 10,
-      "column": 25,
-      "code": "TS7006",
-      "message": "Parameter 'folder' implicitly has an 'any' type."
-    },
-    {
-      "file": "src/api/support/file-api.ts",
-      "line": 17,
+      "line": 18,
       "column": 17,
       "code": "TS7006",
       "message": "Parameter 'param' implicitly has an 'any' type."
     },
     {
       "file": "src/api/support/file-api.ts",
-      "line": 23,
+      "line": 24,
       "column": 14,
       "code": "TS7006",
       "message": "Parameter 'fileKey' implicitly has an 'any' type."
     },
     {
       "file": "src/api/support/file-api.ts",
-      "line": 30,
+      "line": 31,
       "column": 20,
       "code": "TS7006",
       "message": "Parameter 'fileKey' implicitly has an 'any' type."
@@ -2536,203 +2522,203 @@
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 92,
+      "line": 84,
       "column": 15,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'lodash'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/lodash` if it exists or add a new declaration (.d.ts) file containing `declare module 'lodash';`"
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 93,
+      "line": 85,
       "column": 22,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'sortablejs'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/sortablejs` if it exists or add a new declaration (.d.ts) file containing `declare module 'sortablejs';`"
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 103,
+      "line": 96,
       "column": 5,
       "code": "TS7034",
       "message": "Variable 'tableId' implicitly has type 'any' in some locations where its type cannot be determined."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 107,
+      "line": 100,
       "column": 15,
       "code": "TS7006",
       "message": "Parameter 'columns' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 107,
+      "line": 100,
       "column": 24,
       "code": "TS7006",
       "message": "Parameter 'showTableId' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 121,
+      "line": 114,
       "column": 36,
       "code": "TS7006",
       "message": "Parameter 'tableId' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 121,
+      "line": 114,
       "column": 45,
       "code": "TS7006",
       "message": "Parameter 'columns' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 148,
+      "line": 141,
       "column": 14,
       "code": "TS2339",
       "message": "Property 'showFlag' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 149,
+      "line": 142,
       "column": 37,
       "code": "TS2345",
       "message": "Argument of type 'any' is not assignable to parameter of type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 149,
+      "line": 142,
       "column": 42,
       "code": "TS2339",
       "message": "Property 'columnKey' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 193,
+      "line": 186,
       "column": 12,
       "code": "TS7031",
       "message": "Binding element 'newIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 193,
+      "line": 186,
       "column": 22,
       "code": "TS7031",
       "message": "Binding element 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 203,
+      "line": 196,
       "column": 13,
       "code": "TS7006",
       "message": "Parameter 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 209,
+      "line": 202,
       "column": 33,
       "code": "TS2339",
       "message": "Property 'fixed' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 216,
+      "line": 209,
       "column": 15,
       "code": "TS7006",
       "message": "Parameter 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 223,
+      "line": 216,
       "column": 33,
       "code": "TS2339",
       "message": "Property 'fixed' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 231,
+      "line": 224,
       "column": 24,
       "code": "TS7006",
       "message": "Parameter 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 231,
+      "line": 224,
       "column": 34,
       "code": "TS7006",
       "message": "Parameter 'newIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 239,
+      "line": 232,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'keyArray' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 257,
+      "line": 250,
       "column": 46,
       "code": "TS7005",
       "message": "Variable 'tableId' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 282,
+      "line": 275,
       "column": 25,
       "code": "TS2339",
       "message": "Property 'columnKey' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 285,
+      "line": 278,
       "column": 16,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 286,
+      "line": 279,
       "column": 16,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type '{ columnKey: any; sort: number; }'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 286,
+      "line": 279,
       "column": 29,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 288,
+      "line": 281,
       "column": 14,
       "code": "TS2339",
       "message": "Property 'showFlag' does not exist on type '{ columnKey: any; sort: number; }'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 288,
+      "line": 281,
       "column": 58,
       "code": "TS2345",
       "message": "Argument of type 'any' is not assignable to parameter of type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 288,
+      "line": 281,
       "column": 63,
       "code": "TS2339",
       "message": "Property 'columnKey' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 292,
+      "line": 285,
       "column": 40,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 295,
+      "line": 288,
       "column": 7,
       "code": "TS7005",
       "message": "Variable 'tableId' implicitly has an 'any' type."
@@ -9732,28 +9718,28 @@
     },
     {
       "file": "src/views/support/job/components/job-form-modal.vue",
-      "line": 154,
+      "line": 153,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'record' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/components/job-form-modal.vue",
-      "line": 182,
+      "line": 181,
       "column": 11,
       "code": "TS2322",
       "message": "Type 'string' is not assignable to type 'null'."
     },
     {
       "file": "src/views/support/job/components/job-form-modal.vue",
-      "line": 210,
+      "line": 209,
       "column": 15,
       "code": "TS7006",
       "message": "Parameter 'error' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/components/job-form-modal.vue",
-      "line": 227,
+      "line": 226,
       "column": 27,
       "code": "TS7006",
       "message": "Parameter 'record' implicitly has an 'any' type."
@@ -10404,42 +10390,42 @@
     },
     {
       "file": "src/views/support/operate-log/operate-log-list.vue",
-      "line": 106,
+      "line": 103,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'total' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/operate-log/operate-log-list.vue",
-      "line": 120,
+      "line": 117,
       "column": 22,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'ua-parser-js'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/ua-parser-js` if it exists or add a new declaration (.d.ts) file containing `declare module 'ua-parser-js';`"
     },
     {
       "file": "src/views/support/operate-log/operate-log-list.vue",
-      "line": 230,
+      "line": 228,
       "column": 27,
       "code": "TS6133",
       "message": "'dates' is declared but its value is never read."
     },
     {
       "file": "src/views/support/operate-log/operate-log-list.vue",
-      "line": 230,
+      "line": 228,
       "column": 27,
       "code": "TS7006",
       "message": "Parameter 'dates' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/operate-log/operate-log-list.vue",
-      "line": 230,
+      "line": 228,
       "column": 34,
       "code": "TS7006",
       "message": "Parameter 'dateStrings' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/operate-log/operate-log-list.vue",
-      "line": 307,
+      "line": 305,
       "column": 21,
       "code": "TS7006",
       "message": "Parameter 'operateLogId' implicitly has an 'any' type."
