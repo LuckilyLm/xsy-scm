@@ -24,14 +24,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication(exclude = {UserDetailsServiceAutoConfiguration.class})
 public class AdminApplication {
 
-    /**
-     * SmartAdmin 底座扫描根（{@code net.lab1024.sa}）。
-     *
-     * <p>这是<b>长期</b>扫描根，不是迁移期的临时产物：SmartAdmin 的
-     * {@code sa-base} / {@code system} / {@code support} / {@code admin} 仍全部位于
-     * {@code net.lab1024.sa} 之下，因此本常量与 {@link #XSY_COMPONENT_SCAN} 长期并存。
-     * 不要把本常量收缩为 {@code com.xsy} —— 那会让整个 SmartAdmin 底座扫不到。
-     */
+    /** Spring Boot 同时扫描 SmartAdmin 与 SCM 的组件，保持两套包路径都能完成依赖注入。 */
     public static final String COMPONENT_SCAN = "net.lab1024.sa";
 
     /**

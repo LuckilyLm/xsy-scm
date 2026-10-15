@@ -11,15 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * 暂存附件回收（FA-2b）：删除「超期 + 无关系行 + 无任何业务表直接引用」的对象存储文件。
- *
- * <p>三条件缺一不可，其中「无业务表引用」是最后一道防误删闸门：物理删除不可逆，
- * 宁可这一轮不删、留到人工确认，也绝不能把某个表单正在引用的附件删掉。
- *
- * <p>参数为保留天数，缺省 7 天；每轮最多处理 {@link #BATCH_LIMIT} 条，避免一次任务
- * 打满存储侧配额。
- */
+/** 定时清理过期的暂存附件。只有文件无关系、无业务直接引用且超过保留期时才删除，避免误删仍在使用的文件。 */
 @Slf4j
 @Service
 public class FileScratchCleanupJob implements SmartJob {
