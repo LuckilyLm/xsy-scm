@@ -1,25 +1,17 @@
 # 项目文档
 
-日常开发优先看三个入口：
+仓库只保留一份当前规则、一份状态和一份持续待办：
 
-- [项目状态](status.md)：当前代码事实、最近一次验证证据、部署边界。
-- [后续开发路线图](plan/active/admin-development-roadmap.md)：只记录仍未完成的工作。
-- [有效决策](decisions.md)：当前业务规则、正式 ADR 与仍未裁决事项。
+- [有效决策](decisions.md)：当前业务、架构与权限不变量，以及尚未裁决事项。
+- [项目状态](status.md)：代码现状、验证证据、风险与待完成工作。
+- [需求基线](requirements/产品功能需求基线.md)及[负责人确认口径](requirements/2026-09-09-负责人确认口径.md)：产品需求和原始业务确认。
+- [参考项目目录](../project-reference-examples/xsy-scm/)：只读的旧系统及上游参考资料。
+- [贡献与评审约定](../CONTRIBUTING.md)及[代理协作规则](../AGENTS.md)：工程实践、用户界面与 Git 约束。
+- [地图部署说明](map-deployment.md)：高德配置、坐标系、降级行为和现场核对项。
 
-按主题深入时再看：
+## 文档维护
 
-- 需求：[产品功能需求基线](requirements/产品功能需求基线.md)、[负责人确认口径](requirements/2026-09-09-负责人确认口径.md)。
-- 架构：[SmartAdmin 底座](architecture/smartadmin-foundation.md)、[SCM UI 规范](architecture/scm-ui-guidelines.md)、[源码注释规范](architecture/code-comment-guidelines.md)、[地图部署](architecture/map-deployment.md)、[采购快照矩阵](architecture/purchase-snapshot.md)。
-- 仍需维护的正式设计：[Finance R1](plan/active/finance-r1-design.md)、[余额支付、订单资金核销与售后返还](plan/active/balance-payment-order-settlement-design.md)。首页经营指标的长期口径见[有效决策](decisions.md)。
-- 尚未补齐的接口字段：[前端所需后端字段缺口](plan/active/frontend-ui-backend-gap-inventory.md)。
-- 工程规则：[Java 工程规范与质量基线](quality/java-code-quality-remediation-plan.md)、[贡献与验证指南](../CONTRIBUTING.md)。
-
-仓库已移除 GitHub Actions CI 工作流；验证入口为 `tools/verify.ps1`、`tools/verify.sh` 和 `tools/verify.py`，实际执行结果以[项目状态](status.md)和当次交付记录为准。
-
-## 文档治理
-
-- `status.md` 只写“现在是什么状态”，不堆开发过程。
-- `plan/active/` 只放仍会指导后续施工的计划或正式设计；已经完成的实施计划、一次性审计、验收流水直接删除，从 Git 历史追溯。
-- `adr/` 保存长期有效的业务与架构决策；`archive/` 只保存仍有明确追溯价值、且被现行文档引用的历史决策。
-- 需求、状态、规则、路线图各维护一份事实源，禁止为同一主题再建第二份“最新版”。
-- 测试记录必须区分“已通过 / 未执行 / 未覆盖”；本地验证、Git 提交、生产部署与现场验收不能互相替代。
+- 新规则合并进 `decisions.md`，不再另建 ADR、设计副本或“最新版”文档。
+- 进度和验证证据只维护在 `status.md`；完成的计划、一次性审计和过程日志从工作区删除，由 Git 历史追溯。
+- `requirements/` 只保留当前仍用于裁定需求的基线。文档与代码不一致时，以本轮明确裁定、`AGENTS.md` 和 `decisions.md` 为准，并同步修正文档。
+- 验证入口为 `tools/verify.ps1`、`tools/verify.sh` 和 `tools/verify.py`。记录结果时区分已通过、未执行、未覆盖和现场验收，不以本地代码或 mock 推断生产状态。

@@ -2,7 +2,7 @@
 """SCM Java quality guard.
 
 Enforces the rules Checkstyle structurally cannot see, on the principle set out
-in ``docs/quality/java-code-quality-remediation-plan.md``: historical defects may
+in ``AGENTS.md`` and ``CONTRIBUTING.md``: historical defects may
 sit in a baseline, new defects must be zero, and a baseline may only shrink.
 
 Checkstyle answers "is this identifier camelCase". It cannot answer whether
@@ -839,7 +839,7 @@ def _print_capture_breaches(
         "       A baseline may only shrink: every current identity must be recorded and\n"
         "       every count must be at most the recorded one. A total that happens to be\n"
         "       unchanged does not permit a swap - fix the new finding, or record the\n"
-        "       reason under docs/quality/ before using --allow-growth for a new rule.",
+        "       record the reason in tools/quality/package-migration-readiness.md before using --allow-growth.",
         file=sys.stderr,
     )
     for family, items in breaches.items():
@@ -964,7 +964,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--allow-growth",
         action="store_true",
         help="permit unrecorded findings; only for initialising a brand-new rule "
-             "(the reason must be recorded under docs/quality/)",
+             "(the reason must be recorded with the quality-tool change)",
     )
     subparsers.add_parser("check", parents=[shared], help="fail on any new or grown finding")
     return parser

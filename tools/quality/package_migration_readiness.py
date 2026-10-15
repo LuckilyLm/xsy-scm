@@ -50,7 +50,7 @@ STOCKTAKE_IT_RELATIVE = "inventory/ScmStocktakeImportPgIT.java"
 MIGRATION_TOOL = Path(__file__).resolve().parent / "migrate_baseline_paths.py"
 MIGRATION_SELFTEST = Path(__file__).resolve().parent / "test_baseline_path_migration.py"
 EDITORCONFIG = ROOT / ".editorconfig"
-READINESS_DOC = ROOT / "docs/quality/package-migration-readiness.md"
+READINESS_DOC = ROOT / "tools/quality/package-migration-readiness.md"
 
 
 @dataclass
@@ -286,7 +286,7 @@ def check_baseline_migration_tooling() -> Check:
 
 def check_editorconfig_is_markdown_safe() -> Check:
     check = Check("editorconfig-markdown", "*.md 不会被编辑器静默重写行尾空白")
-    settings = editorconfig_value("docs/quality/example.md")
+    settings = editorconfig_value("docs/README.md")
     if settings.get("trim_trailing_whitespace") != "false":
         check.failures.append(
             "effective trim_trailing_whitespace for *.md is "
@@ -405,7 +405,7 @@ def check_domain_completeness_contract() -> Check:
 def check_probe_is_configured() -> Check:
     check = Check("probe-evidence", "com.xsy.scm 能被三个门禁识别（--with-probe 可复现）")
     if not READINESS_DOC.is_file():
-        check.failures.append("docs/quality/package-migration-readiness.md is missing")
+        check.failures.append("tools/quality/package-migration-readiness.md is missing")
     return check
 
 
@@ -413,18 +413,17 @@ def check_probe_is_configured() -> Check:
 
 SERVER_JAVA_SUFFIX = ".java"
 
-# Q1 已收口（2026-09-26）：manifest 从 tools/quality/baseline/ 移出，归档到
-# docs/quality/ 作为**只读历史快照**。它记录的是「迁移前那一刻 847 个文件的精确归属」
+# Q1 已收口（2026-09-26）：manifest 是供本工具读取的机器清单，保存在
+# tools/quality/baseline/。它记录的是「迁移前那一刻 847 个文件的精确归属」
 # （main 692 + test 155），用于事后复核「迁移是逐个文件搬家，不是等量替换」。
 #
-# 为什么不再放在 baseline/ 下：baseline 目录被 quality_guard 当作门禁数据源读取，
-# 而 manifest 在收口后已无门禁语义 —— 它描述的是一个**已经结束的状态**，
-# 不是一条需要持续满足的规则。留在门禁目录里会让人误以为它还在把关。
+# 它是迁包历史校验输入，不是 quality_guard 的违规基线；放在独立文件中供
+# package_migration_readiness.py 读取，不用于放宽或捕获常规质量门禁。
 #
 # 为什么保留而不是删除：它是「精确迁移」的唯一可复核证据。删掉之后
 # 「847 = 692 + 155 且每个文件都在预期域下」就只能靠翻 git 历史，
-# 无法用脚本一遍复核。归档在 docs/ 下，与门禁彻底分离。
-MANIFEST_PATH = guard.ROOT / "docs/quality/q1-package-migration-manifest.json"
+# 无法用脚本一遍复核。保留在工具目录，不占用用户阅读的 docs 空间。
+MANIFEST_PATH = guard.ROOT / "tools/quality/baseline/q1-package-migration-manifest.json"
 
 # SCM classes that sit directly in the package root belong to no domain. They are
 # not "common" and must not be folded into it: a file moved under the wrong domain

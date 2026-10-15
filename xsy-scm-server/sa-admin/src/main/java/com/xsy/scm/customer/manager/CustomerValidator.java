@@ -174,7 +174,7 @@ public class CustomerValidator {
      *
      * <p>
      * 这是客户资金的<b>唯一可见性判定点</b>：共享结算下不得向成员账号（以及集团主体自己）展示共享钱包总额与集团授信总额， 口径见
-     * {@code docs/architecture/mall-funds-read-model.md}。商城钱包/账期概览与商城结算方式选项 都必须调用本方法，不允许各自比较 id 或类型编码 ——
+     * {@code docs/decisions.md §客户商城账号与退款分摊口径}。商城钱包/账期概览与商城结算方式选项都必须调用本方法，不允许各自比较 id 或类型编码 ——
      * 否则同一笔钱在两个入口的可见性会漂移。
      *
      * @param customerId

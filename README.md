@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前事实与最近验证见[项目状态](docs/status.md)，未闭环工作见[后续开发路线图](docs/plan/active/admin-development-roadmap.md)。正式 uni-app 客户商城已有认证、目录、购物车、地址、结算下单、订单中心、履约售后、钱包与账期等源码；legacy 小程序保持冻结。
+管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前代码事实、验证边界和未闭环工作统一见[项目状态](docs/status.md)。正式 uni-app 客户商城已有认证、目录、购物车、地址、结算下单、订单中心、履约售后、钱包与账期等源码；legacy 小程序保持冻结。
 
 业务需求和旧系统语义以 [参考项目目录](project-reference-examples/xsy-scm/) 为主，当前边界见 [项目决策](docs/decisions.md)。
 
@@ -15,14 +15,14 @@
 | `xsy-scm-server/` | 正式后端：Java 21、Spring Boot、MyBatis-Plus、Sa-Token、Redis、PostgreSQL、Flyway |
 | `xsy-scm-web/` | 正式后台：Vue3、TypeScript、Ant Design Vue、Vite、Pinia |
 | `xsy-scm-customer-app/` | 正式客户商城：uni-app、Vue3、Vite、Pinia |
-| `docs/` | 状态、架构、需求、决策、计划、质量和归档文档 |
+| `docs/` | 当前状态、有效决策、需求与参考资料 |
 | `tools/` | 版本控制的质量、迁移、E2E 与验证工具 |
 | `deploy/minio/` | F0 本地对象存储与集成验证环境 |
 | `deploy/postgres/` | 本地 PostgreSQL 容器配置与操作说明 |
 | `xsy-scm-miniapp/` | 冻结的 Taro + React legacy 小程序，不再继续开发 |
 | `project-reference-examples/` | 纳入 Git 的只读上游参考；含凭据的环境配置仍忽略 |
 
-系统登录、权限、菜单、日志、字典、文件和后台 Layout 使用 SmartAdmin 原生实现。规则见 [AGENTS.md](AGENTS.md) 与 [SmartAdmin 底座规则](docs/architecture/smartadmin-foundation.md)。
+系统登录、权限、菜单、日志、字典、文件和后台 Layout 使用 SmartAdmin 原生实现。工程规则和业务决策见 [AGENTS.md](AGENTS.md)、[CONTRIBUTING.md](CONTRIBUTING.md) 与 [docs/decisions.md](docs/decisions.md)。
 
 ## 本地开发
 

@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 库存预警阈值通知的单行评估与投递。
  *
  * <p>
- * <b>跃迁语义（ADR-007）</b>：只在「{@code NORMAL → LOW/HIGH}」时投递，异常持续期间不重复，回到 {@code NORMAL} 之后再次异常可以再提醒一次。判定「上次是什么状态」靠
+ * <b>跃迁语义</b>：只在「{@code NORMAL → LOW/HIGH}」时投递，异常持续期间不重复，回到 {@code NORMAL} 之后再次异常可以再提醒一次。判定「上次是什么状态」靠
  * {@code xsy_inventory_warning_state}，而状态本身仍由 {@link ScmInventoryWarningStatusEnum#evaluate} 现算 —— 这里不复制一份阈值规则。
  *
  * <p>

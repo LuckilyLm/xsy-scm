@@ -529,18 +529,11 @@ DOCS_FILES = (
     "CONTRIBUTING.md",
     "README.md",
     "NOTICE.md",
-    "docs/architecture/smartadmin-foundation.md",
-    "docs/plan/active/admin-development-roadmap.md",
     "docs/README.md",
     "docs/status.md",
     "docs/decisions.md",
-    "docs/adr/001-data-scope-and-file-access.md",
-    "docs/adr/002-sorting-fact-boundary.md",
-    "docs/adr/003-delivery-outbound-and-signoff.md",
-    "docs/adr/004-finance-r1-facts.md",
-    "docs/quality/java-code-quality-remediation-plan.md",
-    "docs/quality/package-migration-readiness.md",
-    "docs/plan/active/finance-r1-design.md",
+    "docs/requirements/产品功能需求基线.md",
+    "docs/requirements/2026-09-09-负责人确认口径.md",
 )
 
 

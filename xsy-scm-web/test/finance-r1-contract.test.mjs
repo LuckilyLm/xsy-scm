@@ -100,7 +100,7 @@ test('未核销余额固定在首屏，不再挂常驻的横向滚动提示', ()
   assert.match(pageCode.payable, /finance-mobile-balance-list[\s\S]*record\.openAmount/);
   assert.match(pageCode.receipt, /finance-mobile-balance-list[\s\S]*record\.pendingWriteOffAmount/);
   assert.match(pageCode.payment, /finance-mobile-balance-list[\s\S]*record\.pendingWriteOffAmount/);
-  // 横向滚动提示已删除：窄屏表格本身可滑动，不需要一句常驻说明（见 scm-ui-guidelines.md）。
+  // 横向滚动提示已删除：窄屏表格本身可滑动，不需要一句常驻说明（见 CONTRIBUTING.md SCM 界面规范）。
   assert.doesNotMatch(pageCode.receivable, /table-scroll-hint/);
   assert.doesNotMatch(pageCode.writeOff, /table-scroll-hint/);
   assert.match(pageCode.writeOff, /source\.partyName[\s\S]*source\.availableAmount/);

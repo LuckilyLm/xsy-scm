@@ -266,7 +266,7 @@
 
             UNION ALL
 
-            -- Physical acceptance reverses original sales cost per ADR-006; disposition only
+            -- Physical acceptance reverses original sales cost; disposition only
             -- decides whether the returned quantity becomes available inventory.
             SELECT <include refid="dimensionFields"/>,
                    0::NUMERIC AS revenue_amount,
@@ -300,7 +300,7 @@
 
             UNION ALL
 
-            -- 促销赠品成本：赠品不减收入，但它的出库成本计入该订单的履约成本（ADR-009）。
+            -- 促销赠品不减收入，但它的出库成本计入该订单的履约成本。
             -- 单独一列 gift_cost_amount 而不是并进 sales_cost_amount：「这个月活动送掉多少成本」
             -- 要能直接从报表回答，而不是回头从库存流水重拼一遍。
             -- 商品 / 分类维度按赠品 SKU 归集（下面那张派生表把赠品对成 soi 的形状），

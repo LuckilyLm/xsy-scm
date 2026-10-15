@@ -2,7 +2,7 @@
  * 营销中心接口。
  *
  * 试算是只读的（`POST` 只是因为要传订单行数组）：不占用券、不写任何表；
- * 只有 `confirm` 才占用券并冻结优惠。两者分开是 ADR-009 的明确要求 —— 预览不等于最终占用。
+ * 只有 `confirm` 才占用券并冻结优惠 —— 预览不等于最终占用。
  */
 import {getRequest, postRequest, request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';

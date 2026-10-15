@@ -97,7 +97,7 @@ public class MallCheckoutService {
             result.setAddress(addressDao.detailById(customer.getCustomerId(), form.getAddressId()));
         }
         result.setPriceFingerprint(fingerprint(quantities, products));
-        // 优惠试算：预览不占用券（ADR-009）。券不可用或门槛未达不拖垮整个预览——
+        // 优惠试算：预览不占用券。券不可用或门槛未达不拖垮整个预览——
         // 商品与金额照常返回，优惠错误单独提示，由客户换券或放弃用券。
         MallCheckoutPromotionVO promotion = null;
         try {

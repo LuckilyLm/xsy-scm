@@ -51,7 +51,7 @@ import static com.xsy.scm.promotion.service.PromotionDiscountSnapshotMapper.coup
  * 分工与边界：
  * <ul>
  * <li><b>基础价不在本域</b>：订单行只传「行 id + 基础金额」，基础定价顺序 （协议价 → 客户类型价 → 市场价）仍只有订单域一处实现，活动价在它之后计算。</li>
- * <li><b>试算不占用</b>：{@code preview} 不写任何表、不动券状态（ADR-009：预览不等于最终占用）。</li>
+ * <li><b>试算不占用</b>：{@code preview} 不写任何表、不动券状态；预览不等于最终占用。</li>
  * <li><b>冻结只认订单事实</b>：{@code freeze} 由订单确认在服务端编排调用，客户与行金额来自
  * {@link PromotionOrderFacts}，活动由服务端自行选出；客户端无法指定客户、行金额或优惠组合。</li>
  * <li><b>冻结时重验</b>：{@code freeze} 重新读活动与券的<b>当前</b>状态与版本， 试算之后活动可能已停用、券可能已被别人占用 —— 用试算结果直接落库会写出一个从未成立过的优惠。</li>

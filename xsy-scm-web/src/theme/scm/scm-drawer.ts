@@ -7,7 +7,7 @@
  *
  * 业务页面一律通过 `scmDrawerWidth('s' | 'm' | 'l' | 'xl' | 'workspace')` 取值，
  * 不允许再出现硬编码宽度（契约测试 `test/scm-drawer-width-contract.test.mjs` 钉住这一点）。
- * 长期规则见 `docs/architecture/scm-ui-guidelines.md` §5。
+ * 长期规则见 `CONTRIBUTING.md` §SCM 界面规范。
  */
 export const SCM_DRAWER_WIDTH = {
   /** 600：简单配置 / 简单维护，以及单列只读详情 */

@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 营销中心：活动、优惠券与优惠试算 / 冻结。
  *
  * <p>
- * 试算是只读的（{@code POST} 只是因为要传订单行数组），<b>不占用券、不写任何表</b>； 只有 {@code confirm} 才占用券并冻结优惠。两者分开是 ADR-009 的明确要求： 预览不等于最终占用。
+ * 试算是只读的（{@code POST} 只是因为要传订单行数组），不占用券、不写任何表；只有 {@code confirm} 才占用券并冻结优惠。
  */
 @RestController
 @RequestMapping("/scm/promotion")

@@ -204,7 +204,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     //   V75 起对应 ADM 系列决策追加的版本（ADM-02/03/04 结算与退货、ADM-12 支付与余额）
     // 没有受保护端点也没有真实页面的一次交付不发布菜单与权限点：财务菜单/权限只随第一次
     // 出现受保护 API 或页面的那次迁移发布，不提前占号，
-    // 口径见 docs/plan/active/finance-r1-design.md 的权限矩阵与 Flyway 规划两节。
+    // Finance 跨域只读与迁移追加边界见 docs/decisions.md 的工程边界及 Finance 事实规则。
     //
     // 注意：本用例只读 flyway_schema_history（DB 侧），不扫描磁盘上的迁移文件，
     // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。

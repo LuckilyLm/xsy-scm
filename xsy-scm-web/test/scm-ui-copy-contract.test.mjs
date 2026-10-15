@@ -16,7 +16,7 @@
  * 只约束前端输入，不改变数据库精度                   ← 纯实现细节
  * ```
  *
- * 治理规则见 `docs/architecture/scm-ui-guidelines.md §8`：
+ * 治理规则见 `CONTRIBUTING.md §SCM 界面规范`：
  * 不要为了证明系统设计严谨，而让 UI 替代码写设计文档。
  * 代码注释、ADR、测试负责解释「为什么」；业务 UI 负责告诉用户「现在能做什么」。
  *
@@ -110,7 +110,7 @@ const CONTEXTUAL = new Set(['amodal', 'adrawer', 'aalert', 'aempty', 'atooltip',
 const tagOf = (node) => node.name.toLowerCase().replace(/-/g, '');
 
 // ------------------------------------------------------------------
-// 黑名单（docs/architecture/scm-ui-guidelines.md §8.2）
+// 黑名单（CONTRIBUTING.md §SCM 界面规范）
 // ------------------------------------------------------------------
 
 /**
@@ -371,7 +371,7 @@ const hasHintClass = (node) =>
  * （单元格占位 `—`、单位、`已选 N 个`）当成待删项：删了会破坏表格显示。
  *
  * 提高基线必须在 PR 里说明「不告知会导致什么操作错误」，否则应改为
- * Tooltip / 口径说明 / 操作时确认（见 scm-ui-guidelines.md §8.1）。
+ * Tooltip / 口径说明 / 操作时确认（见 CONTRIBUTING.md SCM 界面规范）。
  *
  * 清理是分批做的：每清完一批就把受影响的基线降到新的实测值，别留旧数字 —— 留下的差额
  * 会被下一轮「顺手补一句」吃掉。

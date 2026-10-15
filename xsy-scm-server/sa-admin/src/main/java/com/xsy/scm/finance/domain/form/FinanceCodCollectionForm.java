@@ -38,7 +38,7 @@ public class FinanceCodCollectionForm {
      * 实际资金形式，取收款方式白名单里的 CASH / BANK_TRANSFER 等值。
      *
      * <p>
-     * <b>不出现 COD</b>：货到付款是「什么时候收钱」的结算时机，不是资金形式（见 finance-r1-design Q21）。
+     * <b>不出现 COD</b>：货到付款是结算时机，不是资金形式；实收方式仍应填写现金或转账，见 docs/decisions.md 的商城结算规则。
      */
     @NotNull(message = "收款方式不能为空")
     private String method;

@@ -1,5 +1,5 @@
 /*
-  Finance R0 报表中心验收（docs/plan/finance-reporting-r0-plan.md §42）。
+  Finance 报表中心浏览器场景。
 
   口径：报表页是只读层，因此本 spec 的断言重点是「数字来自哪个事实」而不是「页面好不好看」：
   - 销售只计 CONFIRMED + confirmed_at + settlement_*，草稿与取消单一律不进；

@@ -7,10 +7,10 @@
  * 标记必须为 0：任何命中都失败，确需保留的例外逐条登记在 `WHITELIST` 并写明理由。
  *
  * 标记用组合 / 条件匹配，避免误报：裸 `来源：` 会命中业务含义（`来源：销售订单`），
- * 裸 `§` 会命中指向 `docs/architecture` 的有效链接，裸 `P\d+` 会命中指向
+ * 裸 `§` 会命中指向 `CONTRIBUTING.md` 的有效链接，裸 `P\d+` 会命中指向
  * `docs/decisions.md` 的「P0/P1/P2 裁决」与 `CONTRIBUTING.md` 的「P12 锁序」。
  *
- * 详细规则见 `docs/architecture/code-comment-guidelines.md`。
+ * 详细规则见 `AGENTS.md`。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -187,7 +187,7 @@ const PLAN_MARKERS = [
   ['Rn 阶段代号', /\bR[0-9]\b/],
   ['A-Dn 编号', /\bA-D\d+\b/],
   ['Qna 编号', /\bQ\d{1,2}[a-z]?\b/],
-  // 开发切片号 `3-11a` / `3-12b` / `F1-3A`：ADM-12 是 ADR-009 定义的长期锚点，但它后面的
+  // 开发切片号 `3-11a` / `3-12b` / `F1-3A`：ADM-12 是当前决策文档里的长期锚点，但它后面的
   // 「3-11a」在 docs 里没有对应小节，属「这批开发是第几刀」而不是当前约束。
   // 必须收窄，否则会命中两类正常散文：长度范围（`请输入3-16位`）与日期（`09-21`）。
   // 判据是「带字母尾巴」或「紧跟在 ADM-n 之后」——这两种才是切片号的实际写法。
@@ -215,7 +215,7 @@ const WHITELIST = [
   {
     file: 'xsy-scm-web/src/views/business/scm/promotion/promotion-coupon-list.vue',
     marker: 'Bn 批次号（非缺口溯源）',
-    reason: '指向 docs/plan/active/frontend-ui-backend-gap-inventory.md 的 B7 缺口溯源，是活契约',
+    reason: '指向 docs/status.md 的 B7 缺口溯源，是活契约',
   },
   {
     file: 'xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintPaperEnum.java',
@@ -248,8 +248,7 @@ const WHITELIST = [
   {
     file: 'xsy-scm-web/test/p3-backend-gap-inventory-contract.test.mjs',
     marker: 'Bn 批次号（非缺口溯源）',
-    reason: '本文件就是缺口清单（docs/plan/active/frontend-ui-backend-gap-inventory.md）的守卫，'
-        + 'B1–B8 是它逐条校验的对象，属活契约',
+    reason: '本文件守卫 docs/status.md 中的后端字段缺口，B1、B4、B5、B7 是逐条校验的对象，属活契约',
   },
   {
     file: 'xsy-scm-web/test/ui-shell-contract.test.mjs',
@@ -629,7 +628,7 @@ test('过程标记必须为 0（未登记白名单的一律失败）', () => {
   }
   assert.deepEqual(failures, [],
       '新增了 AI 开发过程残留注释。注释只解释当前代码中无法直接看出的约束，不记录代码是怎么被开发出来的；' +
-      '确需保留请登记到 WHITELIST 并写明理由（见 docs/architecture/code-comment-guidelines.md）');
+      '确需保留请登记到 WHITELIST 并写明理由（见 AGENTS.md）');
 });
 
 test('指向现存文档的 § 链接不得被误删', () => {
@@ -638,7 +637,7 @@ test('指向现存文档的 § 链接不得被误删', () => {
     const expected = REPORT_BASELINE[scope.key].anchoredSection;
     assert.ok(anchoredSection >= expected,
         `${scope.key} 指向现存文档的 § 链接从 ${expected} 降到 ${anchoredSection}；` +
-        '`长期规则见 docs/architecture/xxx.md §5` 是有效引用，不是过程标记');
+        '`长期规则见 CONTRIBUTING.md §SCM 界面规范` 是有效引用，不是过程标记');
   }
 });
 

@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 距离矩阵 provider 契约（ADR-008：距离矩阵通过可替换 provider 提供）。
+ * 距离矩阵通过可替换 provider 提供，测试估算结果不得宣称为真实路网结果。
  *
  * <p>
  * <b>估算实现必须自报家门</b>：{@link #estimated()} 为 {@code true} 的实现（直线距离、测试桩等） 会被原样写进排线建议，界面上必须显示「估算，不是真实路网」。把估算结果当路网结果展示，

@@ -16,7 +16,7 @@
  *   xl        1120   复杂详情 / 内嵌宽表 / 多明细业务
  *   workspace 1440   受限特殊档，见第 4 项断言
  *
- * 长期准入规则见 `docs/architecture/scm-ui-guidelines.md` §5；
+ * 长期准入规则见 `CONTRIBUTING.md` §SCM 界面规范；
  * 当前 34 个实例及 workspace 白名单直接由本测试维护。
  *
  * ## 判定方式
@@ -41,7 +41,7 @@ const EXPECTED_INSTANCES = 33;
 const ALLOWED_LEVELS = ['s', 'm', 'l', 'xl', 'workspace'];
 
 /**
- * `workspace` 的准入白名单 —— 与 `docs/architecture/scm-ui-guidelines.md` §5 一致。
+ * `workspace` 的准入白名单 —— 与 `CONTRIBUTING.md` §SCM 界面规范一致。
  * 每一类都必须能在代码注释里说出「为什么横向空间本身属于业务内容」。
  */
 const WORKSPACE_FILES = new Set([

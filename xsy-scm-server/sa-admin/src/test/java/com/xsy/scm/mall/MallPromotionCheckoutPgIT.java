@@ -60,7 +60,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
  * <p>
  * 这条链把 MKT-01~05 的关键口径一次钉死：
  * <ul>
- * <li><b>预览不占用</b>（ADR-009）：结算预览带券只做试算，券实例必须仍为 {@code AVAILABLE}；</li>
+ * <li><b>预览不占用</b>：结算预览带券只做试算，券实例必须仍为 {@code AVAILABLE}；</li>
  * <li><b>下单不冻结</b>：下单把预选券写到订单上，冻结只发生在后台确认命令内；</li>
  * <li><b>确认才冻结</b>：确认成功后券转 {@code RESERVED}，并落 {@code order_discount} 正式优惠事实；</li>
  * <li><b>客户可见</b>：客户侧订单详情能读到优惠金额与券名，金额与后台一致。</li>
@@ -147,7 +147,7 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
                 .isTrue();
         assertThat(creditOption.getAvailableAmount()).isEqualByComparingTo("2.0000");
         assertThat(preview.getPromotion().getCouponInstanceId()).isEqualTo(instanceId);
-        assertThat(instanceStatus(instanceId)).as("预览不得占用券（ADR-009）").isEqualTo("AVAILABLE");
+        assertThat(instanceStatus(instanceId)).as("预览不得占用券").isEqualTo("AVAILABLE");
 
         // 5. 下单携带预选券：写入订单，但券仍不被冻结
         MallOrderSubmitForm submitForm = submitForm(skuId, addressId, preview.getPriceFingerprint());

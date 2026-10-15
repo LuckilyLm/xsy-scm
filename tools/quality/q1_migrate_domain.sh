@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Q1 per-domain migration driver — enforces the §3.1 order from
-# docs/quality/package-migration-readiness.md.
+# tools/quality/package-migration-readiness.md.
 #
 # Usage:  tools/quality/q1_migrate_domain.sh <domain> <step> [targeted-test-pattern]
 #   step 1 : git mv + rewrite + baseline migration + gates (stops before capture)

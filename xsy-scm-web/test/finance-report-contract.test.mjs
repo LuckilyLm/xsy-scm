@@ -212,7 +212,7 @@ test('finance report overview exposes only the six fixed measures and read-only 
   for (const label of ['应收发生额', '应收已核销', '期末待收', '应付发生额', '应付已核销', '期末待付']) {
     assert.ok(FINANCE_PAGE.includes(label), `往来概览缺固定指标「${label}」`);
   }
-  // 这两条语义压进指标名，而不是另写一条口径说明：报表模块不常驻解释（见 scm-ui-guidelines.md）。
+  // 这两条语义压进指标名，而不是另写一条口径说明：报表模块不常驻解释（见 CONTRIBUTING.md SCM 界面规范）。
   assert.match(FINANCE_PAGE, /期末待收（含期初未结）/, '期末余额口径要说明不受起始日截断');
   assert.match(FINANCE_PAGE, /期末待付（含期初未结）/, '期末余额口径要说明不受起始日截断');
   assert.match(FINANCE_PAGE, /应收已核销（非实收）/, '已核销不得让人读成现金收付');

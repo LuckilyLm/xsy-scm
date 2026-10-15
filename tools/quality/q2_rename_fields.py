@@ -7,7 +7,7 @@
 仍应优先用 IDE Rename Symbol / AST-aware refactor / JavaParser；本工具只是
 在环境确实无法符号改名时的**项目内兜底**。
 
-背景（写进 docs/quality/java-code-quality-remediation-plan.md 的规则）：
+背景与现行约束见 AGENTS.md 和 CONTRIBUTING.md：
 Q2.1 用整文件正则改 `query` / `batch` 时，把权限字面量、@PostMapping 的 URL、
 同名方法一起改坏了。因此本次改名的实现方式是：
 

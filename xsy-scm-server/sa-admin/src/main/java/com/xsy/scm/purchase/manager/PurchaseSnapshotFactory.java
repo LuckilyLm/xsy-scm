@@ -32,7 +32,7 @@ import java.util.Map;
  * 负责在业务约定的冻结时点生成采购、需求、收货相关快照。两条不变量： <b>{@code submit} 后永不回读主数据</b>、<b>收货单行不存价格</b>。
  *
  * <p>
- * 完整冻结矩阵（四个快照 × 落点 × 冻结时点）见 {@code docs/architecture/purchase-snapshot.md} —— 那张表会随业务调整，写在类头里会与实现长期漂移。
+ * 快照不得由当前主档重算覆盖；长期边界见 {@code docs/decisions.md §采购每日清单与快照}。
  */
 public final class PurchaseSnapshotFactory {
 

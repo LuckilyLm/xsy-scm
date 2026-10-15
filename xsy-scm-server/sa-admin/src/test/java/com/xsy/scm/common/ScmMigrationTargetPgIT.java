@@ -62,7 +62,7 @@ class ScmMigrationTargetPgIT {
     }
 
     /**
-     * V2 起不引入数据库外键（见 smartadmin-foundation.md）。V127 移除了全库最后一个外键，
+     * V2 起不引入数据库外键（见 AGENTS.md）。V127 移除了全库最后一个外键，
      * 之后必须保持 0。这里统计 xsy_v2 schema 下所有外键约束数量。
      */
     @Test

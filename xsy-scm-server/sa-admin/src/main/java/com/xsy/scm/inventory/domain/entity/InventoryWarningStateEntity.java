@@ -12,7 +12,7 @@ import lombok.Data;
  *
  * <p>
  * {@code epoch} 在状态<b>回到 NORMAL</b> 时 +1。异常持续期间它不动，因此同一段异常反复评估 得到的是同一个 event_key，只会发出一条通知；而「异常 → 正常 → 再异常」会落在新的纪元上，
- * 可以再提醒一次。这正是 ADR-007 要求的语义。
+ * 可以再提醒一次。
  */
 @Data
 public class InventoryWarningStateEntity {
