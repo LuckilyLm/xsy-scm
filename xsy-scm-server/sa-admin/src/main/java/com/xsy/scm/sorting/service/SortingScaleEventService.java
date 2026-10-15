@@ -30,20 +30,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 电子秤事件：设备事件 → 稳定读数 → 人工接受。
- *
- * <p>
- * 三条不变量：
- * <ul>
- * <li><b>读数不等于分拣结果</b>：上报只落事实，只有 {@code accept} 才写分拣结果。 让设备直接决定发货数量，等于让一台未经校准的秤替人签字。</li>
- * <li><b>非标品必须人工裁定</b>：设备只提供稳定的原始重量与单位；人工选择正常或差异结果，非正常结果填写原因；单位不匹配则不得录入。</li>
- * <li><b>重复事件不重复写结果</b>：{@code event_key} 唯一挡住重复上报， 状态流转只认 {@code PENDING}，重复接受影响 0 行并回答「已被处理」。</li>
- * </ul>
- *
- * <p>
- * 接受写的是<b>分拣明细</b>（只写已分拣数量），不碰订单数量、不碰库存、不触发结算 —— 与手工录入走的是同一个 {@code enter} 入口，因此两条路径的约束完全一致。
- */
+/** 电子秤上报只记录设备读数，人工确认后才写入实际分拣量。重复事件不能重复写入；异常分拣必须说明原因。 */
 @Service
 @RequiredArgsConstructor
 public class SortingScaleEventService {
