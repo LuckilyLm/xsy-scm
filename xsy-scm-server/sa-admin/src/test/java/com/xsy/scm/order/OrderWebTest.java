@@ -5,6 +5,8 @@ import com.xsy.scm.order.service.*;
 import com.xsy.scm.order.domain.vo.*;
 import com.xsy.scm.common.handler.ScmExceptionHandler;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
+import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.pricing.service.PriceResolver;
 import net.lab1024.sa.base.common.domain.SystemEnvironment;
@@ -42,6 +44,8 @@ class OrderWebTest {
     OrderRefundService refunds;
     @MockitoBean
     PriceResolver prices;
+    @MockitoBean
+    CustomerService customers;
     @MockitoBean
     OrderCreditService credits;
     @MockitoBean
@@ -126,6 +130,23 @@ class OrderWebTest {
                 .andExpect(jsonPath("$.data[0].priceSource").value("MARKET"));
         // 只读旁证：不得触碰写命令服务，也不得触发任何定价解析
         verifyNoInteractions(service, prices);
+    }
+
+    @Test
+    void pricePreviewRejectsCustomerOutsideCurrentScope() throws Exception {
+        when(customers.requireInCurrentScope(1L)).thenThrow(new ScmDataScopeException());
+        mvc.perform(post("/scm/order/price/preview").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"customerId\":1,\"skuIds\":[2]}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(30005));
+        verifyNoInteractions(prices);
+    }
+
+    @Test
+    void recentPricesReturnsNoPermissionEnvelopeForOutOfScopeCustomer() throws Exception {
+        when(queries.recentPrices(1L, 2L, 5)).thenThrow(new ScmDataScopeException());
+        mvc.perform(get("/scm/order/reference/recent-prices").param("customerId", "1")
+                        .param("skuId", "2").param("limit", "5"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(30005));
     }
 
     @Test

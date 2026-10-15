@@ -5,6 +5,7 @@ import cn.dev33.satoken.annotation.SaMode;
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.permission.CustomerPermission;
+import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.finance.domain.vo.CustomerCreditCheckVO;
 import com.xsy.scm.order.service.OrderCreditService;
 import com.xsy.scm.order.constant.OrderErrorCode;
@@ -50,6 +51,7 @@ public class SalesOrderController {
     private final SalesOrderQueryService salesOrderQueryService;
     private final PriceResolver priceResolver;
     private final OrderCreditService orderCreditService;
+    private final CustomerService customerService;
 
     @PostMapping("/query")
     @SaCheckPermission(OrderPermission.QUERY)
@@ -73,14 +75,15 @@ public class SalesOrderController {
      * 录单时的价格解析预览。
      *
      * <p>
-     * 返回体是定价域的 {@code PriceResolveResultVO}，与 {@code PriceResolveController#preview} 调用同一个
+     * 返回体是定价域的 {@code PriceResolveResultVO}，与 {@code PriceResolveController#resolve} 调用同一个
      * {@link com.xsy.scm.pricing.service.PriceResolver#preview}，因此<b>同时</b>要求 {@code scm:order:query} 与
-     * {@code scm:pricing:resolve:query}（{@link SaMode#AND}）：只有订单查看权的人不能经此旁路批量读到客户协议价与类型价解析结果，那本来需要单独的定价查看权。
+     * {@code scm:pricing:resolve:query}（{@link SaMode#AND}）；指定客户还须处于当前员工的客户数据范围内。
      */
     @PostMapping("/price/preview")
     @SaCheckPermission(value = {OrderPermission.QUERY, PricingPermission.RESOLVE_QUERY}, mode = SaMode.AND)
     public ResponseDTO<com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(
             @Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm priceResolveForm) {
+        customerService.requireInCurrentScope(priceResolveForm.getCustomerId());
         return ResponseDTO.ok(priceResolver.preview(priceResolveForm.getCustomerId(), priceResolveForm.getSkuIds(),
                 priceResolveForm.getAt()));
     }

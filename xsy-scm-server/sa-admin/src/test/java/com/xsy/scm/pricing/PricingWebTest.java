@@ -2,6 +2,8 @@ package com.xsy.scm.pricing;
 
 import com.xsy.scm.common.handler.ScmExceptionHandler;
 import com.xsy.scm.customer.controller.CustomerVisibilityController;
+import com.xsy.scm.customer.service.CustomerService;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.customer.service.CustomerSkuVisibilityService;
 import com.xsy.scm.product.controller.ProductSkuController;
 import com.xsy.scm.product.service.ProductSkuOptionQueryService;
@@ -23,6 +25,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -58,6 +61,8 @@ class PricingWebTest {
     PriceHistoryQueryService historyService;
     @MockitoBean
     PriceResolver resolver;
+    @MockitoBean
+    CustomerService customers;
     @MockitoBean
     CustomerSkuVisibilityService visibilityService;
     @MockitoBean
@@ -113,6 +118,15 @@ class PricingWebTest {
         mvc.perform(post("/scm/pricing/resolve").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"customerId\":1,\"skuIds\":[]}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(30001));
+    }
+
+    @Test
+    void resolveRejectsCustomerOutsideCurrentScope() throws Exception {
+        when(customers.requireInCurrentScope(1L)).thenThrow(new ScmDataScopeException());
+        mvc.perform(post("/scm/pricing/resolve").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"customerId\":1,\"skuIds\":[2]}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.code").value(30005));
+        verifyNoInteractions(resolver);
     }
 
     @Test

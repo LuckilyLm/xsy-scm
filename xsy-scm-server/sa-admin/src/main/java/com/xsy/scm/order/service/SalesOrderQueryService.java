@@ -2,6 +2,7 @@ package com.xsy.scm.order.service;
 
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.json.ScmOperatorNameResolver;
+import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.mall.account.dao.MallCustomerAccountDao;
 import com.xsy.scm.order.domain.entity.OrderOperationLogEntity;
 import com.xsy.scm.order.domain.entity.SalesOrderEntity;
@@ -55,6 +56,7 @@ public class SalesOrderQueryService {
     private final ScmOperatorNameResolver operatorNameResolver;
     private final MallCustomerAccountDao mallCustomerAccountDao;
     private final ScmDataScopeService dataScopeService;
+    private final CustomerService customerService;
 
     /**
      * 订单详情带上已冻结优惠（只读事实）。订单域不重复实现优惠规则，只把营销域的读模型嵌进来， 让「这单减了多少、用了哪张券」在详情页可查；没有优惠时为 null。
@@ -146,9 +148,10 @@ public class SalesOrderQueryService {
      * 某客户某 SKU 的最近成交参考价（只读）：仅供录单旁证，不回算当前价格、不参与定价。
      *
      * <p>
-     * 刻意不按调用者范围收窄：它是录单时的取价旁证入参，客户与 SKU 都由前端选择，真正的下单校验在 {@code SalesOrderService} 的归属判定里做（读不到该客户就建不了单）。
+     * 历史成交价属于指定客户的只读事实；查询前按当前客户负责人范围校验，避免猜测客户 ID 读取其他业务员的成交记录。
      */
     public List<OrderRecentPriceVO> recentPrices(Long customerId, Long skuId, int limit) {
+        customerService.requireInCurrentScope(customerId);
         int n = Math.min(Math.max(limit, RECENT_PRICE_MIN_LIMIT), RECENT_PRICE_MAX_LIMIT);
         return salesOrderItemDao.recentPrices(customerId, skuId, n);
     }

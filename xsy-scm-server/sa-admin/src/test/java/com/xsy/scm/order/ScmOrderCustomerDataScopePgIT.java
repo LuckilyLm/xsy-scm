@@ -37,6 +37,9 @@ import com.xsy.scm.order.domain.form.OrderRefundQueryForm;
 import com.xsy.scm.order.domain.form.OrderReturnQueryForm;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.form.SalesOrderItemForm;
+import com.xsy.scm.order.controller.SalesOrderController;
+import com.xsy.scm.pricing.controller.PriceResolveController;
+import com.xsy.scm.pricing.domain.form.PriceResolveForm;
 import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
 import com.xsy.scm.order.domain.vo.OrderAddressSnapshotVO;
 import com.xsy.scm.order.domain.vo.OrderOperationLogVO;
@@ -77,7 +80,7 @@ import static org.mockito.Mockito.mockStatic;
  * 会抛「SaTokenContext 未初始化」并被 {@code ScmDataScopeService#hasPermission} 吞成 false，
  * 因此这里按 {@code FileAccessGuardTest} 的既有做法用 {@code mockStatic(StpUtil.class)}
  * 显式给权限；未点名的权限码取 Mockito 默认值 false，正好等于失败关闭。
- * 测试员工一律 {@code administratorFlag=false}（裁决第 5 条：超管通过不构成权限证据）。
+ * 普通员工场景使用 {@code administratorFlag=false}；管理员全量范围另行显式覆盖。
  *
  * <p><b>越权读的断言口径</b>：只断到异常类型与 {@link UserErrorCode#NO_PERMISSION} 的语义。
  * HTTP 信封里的数字码不在这里断：底座 {@code GlobalExceptionHandler} 对普通
@@ -102,6 +105,15 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
 
     @Autowired
     private SalesOrderQueryService salesOrderQueryService;
+
+    @Autowired
+    private SalesOrderController salesOrderController;
+
+    @Autowired
+    private PriceResolveController priceResolveController;
+
+    @Autowired
+    private ScmDataScopeService dataScopeService;
 
     @Autowired
     private OrderReturnService orderReturnService;
@@ -163,6 +175,60 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
         // 全量范围者能读别人的详情（销售主管 / 财务口径）
         assertThat(as(sellerB, Set.of(ScmDataScopeService.CUSTOMER_ALL_PERM),
                 () -> customerQueryService.detail(customerOfA).getCustomerId())).isEqualTo(customerOfA);
+    }
+
+    @Test
+    @DisplayName("最近成交价与两个后台价格预览入口按客户范围拒绝越权，并允许管理员全量读取")
+    void priceReadsRequireCustomerScope() {
+        Long customerOfA = createTradableCustomer("PR", sellerA);
+        Long sku = newOnShelfSku("PR");
+        PriceResolveForm form = priceForm(customerOfA, sku);
+
+        assertNoPermission(() -> as(sellerB, Set.of(),
+                () -> salesOrderQueryService.recentPrices(customerOfA, sku, 5)));
+        assertNoPermission(() -> as(sellerB, Set.of(), () -> salesOrderController.preview(form)));
+        assertNoPermission(() -> as(sellerB, Set.of(), () -> priceResolveController.resolve(form)));
+
+        assertThat(as(sellerA, Set.of(), () -> salesOrderQueryService.recentPrices(customerOfA, sku, 5))).isEmpty();
+        assertThat(as(sellerA, Set.of(), () -> salesOrderController.preview(form).getData().customerId()))
+                .isEqualTo(customerOfA);
+        assertThat(as(sellerB, Set.of(ScmDataScopeService.CUSTOMER_ALL_PERM),
+                () -> priceResolveController.resolve(form).getData().customerId())).isEqualTo(customerOfA);
+
+        RequestUser previous = SmartRequestUtil.getRequestUser();
+        try {
+            RequestEmployee administrator = new RequestEmployee();
+            administrator.setEmployeeId(sellerB);
+            administrator.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
+            administrator.setAdministratorFlag(true);
+            administrator.setDepartmentId(1L);
+            SmartRequestUtil.setRequestUser(administrator);
+            assertThat(dataScopeService.resolve().getCustomerSellerScope().isAll()).isTrue();
+            assertThat(salesOrderQueryService.recentPrices(customerOfA, sku, 5)).isEmpty();
+            assertThat(salesOrderController.preview(form).getData().customerId()).isEqualTo(customerOfA);
+            assertThat(priceResolveController.resolve(form).getData().customerId()).isEqualTo(customerOfA);
+        } finally {
+            SmartRequestUtil.remove();
+            SmartRequestUtil.setRequestUser(previous);
+        }
+    }
+
+    @Test
+    @DisplayName("没有登录员工时客户范围为空，三个价格读取入口全部失败关闭")
+    void priceReadsFailClosedWithEmptyScope() {
+        Long customerOfA = createTradableCustomer("PE", sellerA);
+        Long sku = newOnShelfSku("PE");
+        PriceResolveForm form = priceForm(customerOfA, sku);
+        RequestUser previous = SmartRequestUtil.getRequestUser();
+        try {
+            SmartRequestUtil.remove();
+            assertThat(dataScopeService.resolve().getCustomerSellerScope().isEmpty()).isTrue();
+            assertNoPermission(() -> salesOrderQueryService.recentPrices(customerOfA, sku, 5));
+            assertNoPermission(() -> salesOrderController.preview(form));
+            assertNoPermission(() -> priceResolveController.resolve(form));
+        } finally {
+            SmartRequestUtil.setRequestUser(previous);
+        }
     }
 
     @Test
@@ -550,6 +616,13 @@ class ScmOrderCustomerDataScopePgIT extends ScmW3PgITBase {
         item.setOrderedQuantity("1.0000");
         item.setManualPriceOverride(false);
         form.setItems(new ArrayList<>(List.of(item)));
+        return form;
+    }
+
+    private PriceResolveForm priceForm(Long customerId, Long skuId) {
+        PriceResolveForm form = new PriceResolveForm();
+        form.setCustomerId(customerId);
+        form.setSkuIds(List.of(skuId));
         return form;
     }
 
