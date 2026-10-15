@@ -196,13 +196,7 @@
     loadProducts(true);
   }
 
-  /**
-   * 回到「全部」。
-   *
-   * 「全部」不是一个服务端分类，它等价于「用当前一级 categoryId 查询」，
-   * 也就是把 activeSubId 置回 null（effectiveCategoryId 会回落到一级 id）。
-   * 这里不构造假的 category 对象，也不新增接口。
-   */
+  /** 选中当前一级分类的“全部商品”，清除子分类筛选后重新加载。 */
   function selectAllSubs() {
     if (activeSubId.value === null) {
       return;

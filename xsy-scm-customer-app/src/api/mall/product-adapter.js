@@ -1,14 +1,7 @@
 /*
- * 后端商品契约（MallProductVO）→ 前端展示模型的唯一映射点。
- *
- * 后端 /scm/mall/catalog/** 返回领域字段（unitPrice / saleUnit / specName / primaryImageUrl …），
- * 而商品卡片与详情页沿用展示字段（price / unit / spec / imageUrl …）。两边字段名不同，
- * 必须在 API 边界一次性对齐；否则接真实接口后价格、规格与图片都会是空。
- *
- * 约束：
- * - 只做字段改名与派生，不做任何业务判断或金额运算；
- * - 无价一律映射为 price = null，由展示层渲染「询价」，绝不显示 ¥0.00；
- * - 展示层需要的额外字段（deliveryTip / nonStandardTip 等）由后端在 VO 上原样透传。
+ * 将商品接口字段统一转换为页面展示字段，不做定价或库存计算。
+ * 没有价格时保留 null，页面显示“询价”，不能显示为 0 元。
+ * 其他商品提示直接使用服务端返回值。
  */
 
 /** 价格来源文案，与后端 ScmPriceSourceEnum 对应 */
