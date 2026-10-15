@@ -18,17 +18,23 @@ let language = appDefaultConfig.language;
 if (appConfigStr) {
     try {
         const cached = JSON.parse(appConfigStr);
-        // 侧栏布局版本迁移只刷新默认宽度，保留其他用户偏好。
+        // 版本迁移只刷新「默认值改过」的项，保留其他用户偏好。
+        // 5 → 6：侧栏宽度 208 → 168、主题色改极光绿、标签页位置改顶部、默认隐藏水印与帮助文档。
         if (cached && cached.configVersion === appDefaultConfig.configVersion) {
             state = cached;
             language = state.language;
-        } else if (cached && (cached.configVersion === 3 || cached.configVersion === 4)
-            && appDefaultConfig.configVersion === 5) {
+        } else if (cached
+            && (cached.configVersion === 3 || cached.configVersion === 4 || cached.configVersion === 5)
+            && appDefaultConfig.configVersion === 6) {
             state = {
                 ...appDefaultConfig,
                 ...cached,
                 configVersion: appDefaultConfig.configVersion,
                 sideMenuWidth: appDefaultConfig.sideMenuWidth,
+                colorIndex: appDefaultConfig.colorIndex,
+                pageTagLocation: appDefaultConfig.pageTagLocation,
+                watermarkFlag: appDefaultConfig.watermarkFlag,
+                helpDocFlag: appDefaultConfig.helpDocFlag,
             };
             language = state.language;
         } else {

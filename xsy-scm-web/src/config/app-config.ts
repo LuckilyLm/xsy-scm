@@ -8,22 +8,23 @@ export const appDefaultConfig: Omit<AppConfig, 'fullScreenFlag'> = {
     // 默认配置版本号：只要本文件的默认值发生变更，就把它 +1，
     // 已有浏览器里 localStorage 缓存的旧配置会被自动迁移到新默认值，
     // 否则老用户永远停留在旧样式上（详见 store/modules/system/app-config.ts）。
-    configVersion: 5,
+    // 6：侧栏宽度 208 → 168、主题色改极光绿、标签页位置改顶部、默认隐藏水印与帮助文档。
+    configVersion: 6,
     // i18n 语言选择
     language: 'zh_CN',
     // 布局: side 或者 side-expand 或者 top
     layout: 'side',
     // 侧栏为业务分组和二级菜单保留可读宽度，收起态仍为 64px。
     // 默认宽度变化时升级 configVersion；对应迁移只重置此项，保留用户的其他界面偏好。
-    sideMenuWidth: 208,
+    sideMenuWidth: 168,
     //标签页位置
-    pageTagLocation: 'center',
+    pageTagLocation: 'top',
     // 夜间模式
     darkModeFlag: false,
     // 菜单主题
     sideMenuTheme: 'light',
-    // 主题颜色索引
-    colorIndex: 2,
+    // 主题颜色索引（themeColors 下标：7 = 极光绿 #52c41a）
+    colorIndex: 7,
     // 顶部菜单页面宽度
     pageWidth: '99%',
     // 圆角
@@ -39,11 +40,11 @@ export const appDefaultConfig: Omit<AppConfig, 'fullScreenFlag'> = {
     // 页脚
     footerFlag: true,
     // 帮助文档
-    helpDocFlag: true,
+    helpDocFlag: false,
     // 帮助文档默认展开
     helpDocExpandFlag: false,
     // 水印
-    watermarkFlag: true,
+    watermarkFlag: false,
     // 网站名称
     websiteName: '鲜蔬源智链',
     // 主题颜色
