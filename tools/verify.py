@@ -139,6 +139,8 @@ class Verification:
             [sys.executable, str(ROOT / "tools/quality/scm_common_domain_source_guard.py")],
             ROOT,
         )
+        self.run("scm-error-code-registry",
+                 [sys.executable, str(ROOT / "tools/quality/scm_error_code_registry.py")], ROOT)
         self.run("cross-domain-dao-guard-selftest",
                  [sys.executable, str(ROOT / "tools/quality/test_scm_cross_domain_dao_guard.py")],
                  ROOT / "tools/quality")
