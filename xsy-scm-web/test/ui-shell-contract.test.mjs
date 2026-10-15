@@ -92,29 +92,30 @@ test('改默认侧栏宽度必须同时升级 configVersion', () => {
       '版本 3 → 4 应迁移侧栏宽度并保留其他缓存偏好');
 });
 
-test('传统侧栏显示圆底折角箭头，展开式侧栏隐藏箭头，两者都保留内联子菜单', () => {
+test('传统侧栏的分组展开图标用组件库的实心圆形箭头，展开式侧栏仍隐藏自带折角', () => {
   const sideExpandMenu = code('../src/layout/components/side-expand-menu/recursion-menu.vue');
-  // 传统侧栏的分组要能收起/展开，箭头必须可见，形态是「圆底 + 白色折角」。
-  // 只写 display 不写形态，等于把 antd 的细折角原样放回来 —— 那个形态只调粗细，在 1x 屏幕上根本看不出来。
+  // 不自己画：走 a-menu 的 expandIcon 插槽 + @ant-design/icons-vue 的圆形箭头。
+  // 给了 expandIcon 之后 antd 不再渲染自带的细折角，因此也不需要任何 ::before/::after 覆盖
+  // —— 手写 CSS 拼圆底那版就是踩在这里：antd 的 translateY(-50%) 与展开态 rotate(180deg)
+  // 会分别把圆底顶高、把圆底一起转斜。
+  assert.match(recursionMenu, /<template #expandIcon="\{ isOpen \}">/,
+      '必须用 expandIcon 插槽接管展开图标');
+  assert.match(recursionMenu, /<UpCircleFilled v-if="isOpen"\/>/, '展开态用 UpCircleFilled');
+  assert.match(recursionMenu, /<DownCircleFilled v-else\/>/, '收起态用 DownCircleFilled');
   assert.match(recursionMenu,
-      /:deep\(\.ant-menu-submenu-arrow\)\s*\{[\s\S]{0,300}?display:\s*block/,
-      '传统侧栏的分组箭头必须可见');
+      /import \{DownCircleFilled, UpCircleFilled\} from '@ant-design\/icons-vue';/,
+      '图标必须从组件库导入，不要手写 SVG / CSS 拼');
+  assert.match(recursionMenu, /\.ant-menu-submenu-expand-icon[\s\S]{0,300}?font-size:\s*16px/,
+      '展开图标要定尺寸');
+  // 颜色必须带 !important：本文件下方 :not(.ant-menu-dark) 的 .anticon 配色权重 (0,5,0) 比这条高，
+  // 不带 !important 会被按 --scm-text 涂成与文字同深的黑，圆底就不成其为圆底了。
   assert.match(recursionMenu,
-      /\.ant-menu-submenu-arrow[\s\S]{0,400}?&::before\s*\{[\s\S]{0,260}?border-radius:\s*50%/,
-      '箭头要有圆形底，否则又退回一根细折角');
-  assert.match(recursionMenu,
-      /\.ant-menu-submenu-arrow[\s\S]{0,600}?&::after\s*\{[\s\S]{0,320}?border-right:\s*[\d.]+px solid #fff/,
-      '圆底上要有白色折角');
-  // antd 默认给箭头加了 translateY(-50%) 与展开态的 rotate(180deg)：前者会和显式的 top 叠加把圆底顶高，
-  // 后者会把圆底一起转。所以必须收掉父级变换、由 ::after 自己控制方向。
-  assert.match(recursionMenu,
-      /\.ant-menu-submenu-arrow[\s\S]{0,300}?transform:\s*none/,
-      '箭头必须收掉 antd 的父级变换，否则圆底会被顶高、展开时还会被一起转');
-  assert.match(recursionMenu,
-      /\.ant-menu-submenu-open[\s\S]{0,160}?\.ant-menu-submenu-arrow::after\)\s*\{[\s\S]{0,120}?rotate\(-135deg\)/,
-      '展开态的折角要翻上去');
+      /\.ant-menu-submenu-expand-icon[\s\S]{0,300}?color:\s*var\(--scm-text-secondary[^;]*\)\s*!important/,
+      '展开图标的颜色必须带 !important，否则会被 .anticon 配色覆盖');
+  assert.doesNotMatch(recursionMenu, /\.ant-menu-submenu-arrow/,
+      '接管 expandIcon 之后不该再覆盖 antd 自带的折角');
   assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/,
-      '展开式侧栏的子菜单箭头仍应隐藏');
+      '展开式侧栏的子菜单折角仍应隐藏');
   assert.match(recursionMenu, /mode="inline"/, '传统侧栏必须保留内联子菜单');
   assert.match(sideExpandMenu, /mode="inline"/, '展开式侧栏必须保留内联子菜单');
   assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/,

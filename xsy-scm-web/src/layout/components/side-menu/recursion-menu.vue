@@ -5,6 +5,11 @@
 <template>
   <a-menu :open-keys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu" mode="inline" :inline-indent="16" :theme="theme"
           @openChange="onOpenChange">
+    <!-- 分组展开/收起图标用组件库自带的实心圆形箭头；给了 expandIcon 之后 antd 不再渲染自带的细折角 -->
+    <template #expandIcon="{ isOpen }">
+      <UpCircleFilled v-if="isOpen"/>
+      <DownCircleFilled v-else/>
+    </template>
     <template v-for="item in menuTree" :key="item.menuId">
       <template v-if="item.visibleFlag && !item.disabledFlag">
         <template v-if="$lodash.isEmpty(item.children)">
@@ -27,6 +32,7 @@ import _ from 'lodash';
 import {computed, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import SubMenu from './sub-menu.vue';
+import {DownCircleFilled, UpCircleFilled} from '@ant-design/icons-vue';
 import {router} from '/@/router/index';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -129,53 +135,14 @@ defineExpose({
     transition: background-color 0.18s, color 0.18s;
   }
 
-  // 分组要能收起/展开，所以箭头必须可见。
-  // 形态取「圆底 + 白色折角」：antd 默认那根细折角只调粗细的话，在 1x 屏幕上几乎看不出差别
-  // （试过 2px，用户反馈「还是原来那样」），换成有面的一整个圆底才有存在感。
-  :deep(.ant-menu-submenu-arrow) {
-    display: block;
+  // 展开/收起图标走组件库自带的实心圆形箭头（见模板里的 expandIcon 插槽），这里只定尺寸与颜色。
+  // ⚠️ 颜色必须带 !important：本文件下方 :not(.ant-menu-dark) 里的 .anticon 配色权重是 (0,5,0)，
+  // 比这条 (0,3,0) 高，会把圆底按 --scm-text 涂成与文字同深的黑。
+  :deep(.ant-menu-submenu-expand-icon) {
     width: 16px;
     height: 16px;
-    inset-inline-end: 10px;
-    top: calc(50% - 8px);
-    opacity: 1;
-    // 收掉 antd 的两处默认变换：translateY(-50%) 会和上面的 top 叠加把圆底顶高 8px；
-    // 展开态的 rotate(180deg) 会把圆底一起转。方向改由下面的 ::after 自己管。
-    transform: none;
-
-    // 圆底
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.38);
-      transform: none;
-    }
-
-    // 白色折角：一个元素用右边框 + 下边框再转 45°，正好是一个「⌄」
-    &::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 5px;
-      height: 5px;
-      margin: -2.5px 0 0 -2.5px;
-      border: 0;
-      border-right: 2px solid #fff;
-      border-bottom: 2px solid #fff;
-      border-radius: 0;
-      background: transparent;
-      transform: rotate(45deg);
-    }
-  }
-
-  // 展开态把折角翻上去（= 45° + 180°），不依赖父级旋转
-  :deep(.ant-menu-submenu-open > .ant-menu-submenu-title .ant-menu-submenu-arrow::after) {
-    transform: rotate(-135deg);
+    font-size: 16px;
+    color: var(--scm-text-secondary, rgba(0, 0, 0, 0.65)) !important;
   }
 
   :deep(.ant-menu-item .anticon),
