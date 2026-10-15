@@ -72,16 +72,7 @@ public class PaymentIntentService {
      */
     private final FinanceReceiptService financeReceiptService;
 
-    /**
-     * 充值落账入口（由余额域实现）。
-     *
-     * <p>
-     * 用 {@link ObjectProvider} 而不是直接注入：这是<b>真实的双向业务关系</b> —— 余额域要调本域创建意图，本域要在支付成功后通知余额域落账。接口定义在本域（依赖倒置，编译期单向），但 Bean
-     * 依赖仍是双向的，因此按需解析、不在构造期解环。
-     *
-     * <p>
-     * 用 {@code getObject()} 而不是 {@code getIfAvailable()}：拿不到实现是装配错误，必须响亮失败 —— 静默跳过会让「钱进来了、钱包没加」这种最糟的情况无声发生。
-     */
+    /** 延迟获取余额模块的入账接口，避免启动时循环依赖；接口缺失必须报错，不能静默跳过已成功的支付。 */
     private final ObjectProvider<BalanceRechargeSink> balanceRechargeSinkProvider;
     private final ObjectProvider<BalanceConsumptionSink> balanceConsumptionSinkProvider;
     private final FinanceOrderFundingSettlementService financeOrderFundingSettlementService;
@@ -127,9 +118,8 @@ public class PaymentIntentService {
         if (method == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_STATE_INVALID);
         }
-        if (order.settlementMethod() != null
-                && !(ScmSettlementMethodEnum.WALLET.name().equals(order.settlementMethod())
-                        && method == ScmPaymentMethodEnum.BALANCE)) {
+        if (order.settlementMethod() != null && !(ScmSettlementMethodEnum.WALLET.name().equals(order.settlementMethod())
+                && method == ScmPaymentMethodEnum.BALANCE)) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_SETTLEMENT_METHOD_BLOCKED);
         }
         ScmPaymentProviderEnum provider = ScmPaymentProviderEnum.of(form.getProvider());

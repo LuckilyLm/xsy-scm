@@ -9,19 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 支付渠道契约（provider-neutral）。
- *
- * <p>
- * <b>业务域只认这个接口，不认任何渠道</b>：状态机、幂等、Finance 收款映射都在业务侧，换渠道只换实现。渠道密钥、签名算法、通知地址全部封装在实现里，不得出现在业务规则、配置以外的类或客户端。
- *
- * <p>
- * <b>实现必须是纯函数式的「问渠道 / 让渠道做事」</b>：不写库、不开事务、不改业务状态。 状态转换由 {@code PaymentCallbackService} 在事务里做 —— 否则「渠道调用成功但事务回滚」
- * 会留下说不清的外部事实。
- *
- * <p>
- * 嵌套 record 而不是一堆顶层文件：契约集中在一处，改接口时不可能漏改某个 DTO。
- */
+/** 支付渠道接口只负责发起支付、查询和核验回调；订单状态、数据库写入和财务记账由业务服务负责。 */
 public interface ScmPaymentProvider {
 
     /** 本实现对应的渠道。 */

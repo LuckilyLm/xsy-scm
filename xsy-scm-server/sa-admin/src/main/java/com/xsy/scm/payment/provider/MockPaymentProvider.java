@@ -19,19 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-/**
- * 本地模拟支付渠道。
- *
- * <p>
- * 它模拟的是渠道这一侧：有自己的一本账（{@link PaymentMockLedgerEntity}）、自己签名、自己决定什么时候回。 业务域那边的验签、幂等与状态机照常执行，mock
- * 无权跳过任何一条业务纪律，否则本地验证就失去意义。
- *
- * <p>
- * 账本用独立事务写的理由是：渠道是另一个系统。如果 mock 的账随业务事务一起回滚，它永远和本地平账， 「渠道扣了钱、本地没记上」这类差异根本测不出来，因此用 {@code REQUIRES_NEW} 如实模拟两边各自记账。
- *
- * <p>
- * 签名用 HMAC-SHA256（密钥来自配置，不进业务规则）。真实渠道实现会换成渠道自己的签名算法与证书， 业务侧代码一行不用改。
- */
+/** 测试支付渠道只用于模拟支付结果，必须与正式支付渠道明确区分。 */
 @Slf4j
 @Component
 @Profile("(dev | test) & !pre & !prod")

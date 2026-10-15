@@ -29,21 +29,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 对账服务：比较渠道账与本地账，把差异冻成 {@code xsy_payment_reconciliation_item} 事实供人工处理。
- *
- * <p>
- * 首版只发现差异，绝不自动修复 —— 自动改交易状态会让审计链说不清「这条记录是渠道说的，还是对账程序改的」。 分类：{@code LOCAL_MISSING}（渠道有本地无，最危险）/ {@code PROVIDER_MISSING}
- * / {@code AMOUNT_MISMATCH} / {@code STATUS_MISMATCH}。
- *
- * <p>
- * 本地侧分<b>两个窗口</b>取数：成功交易按 {@code paid_at} 落结算日（渠道按收款时刻记账）， 未决交易按 {@code created_at} 落创建日。只用 {@code created_at} 会在跨午夜时误判
- * —— 10-08 23:55 创建、10-09 00:05 成功的那笔，在 10-09 的对账里被当成渠道多出来的钱 （{@code LOCAL_MISSING}），在 10-08
- * 又成了本地多出来的钱（{@code PROVIDER_MISSING}）。 两个窗口都取，是为了在不丢 {@code STATUS_MISMATCH} 的前提下修正归属。
- *
- * <p>
- * 本地侧取全部状态的交易，不只看成功的：只看成功交易就永远发现不了 {@code STATUS_MISMATCH}。 首版只对收款；退款对账口径不对称，是后续独立一项。
- */
+/** 支付对账以渠道返回的真实结果为依据，对不一致的记录进行核对，不擅自重写已成立的业务事实。 */
 @Service
 @RequiredArgsConstructor
 public class PaymentReconciliationService {

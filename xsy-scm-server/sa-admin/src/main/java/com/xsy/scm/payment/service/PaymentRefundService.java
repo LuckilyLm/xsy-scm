@@ -39,15 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 退款服务：支付域自己的退款事实，从 {@code CREATED} 经渠道退款推进到 {@code PROCESSING → SUCCEEDED | FAILED}。
- *
- * <p>
- * 三条硬约束：①资金来源必须是成功的 {@code PaymentTransaction} —— 没收到钱就退钱是账外行为； ②累计成功退款不超过原支付成功金额；③同一业务退款来源只能映射一笔有效退款（表上有唯一索引兜底）。
- *
- * <p>
- * 渠道退款成功按实退登记 Finance 付款事实，不冲减或反向应收及历史核销。
- */
+/** 退款必须关联已成功收取的款项，累计退款不得超过原支付金额；重复退款请求不得生成重复的财务付款。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
