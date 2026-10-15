@@ -19,15 +19,7 @@ import java.util.Set;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/**
- * 员工—仓库授权维护（{@code xsy_employee_warehouse_scope}）。
- *
- * <p>
- * 这是「能看哪些仓」的唯一写入口：库存族的数据范围全部由 {@code ScmDataScopeService} 读本表得出，没有任何旁路默认值，因此这里写下的行就是运行时的可见范围。
- *
- * <p>
- * 不建数据库外键（项目约定），所以员工与仓库的存在性必须在这里判掉：一条指向已删除员工或不存在仓库的授权行既不会报错，也永远不会命中任何数据，只会变成没人看得懂的垃圾行。
- */
+/** 维护员工可管理的仓库范围，写入前校验员工和仓库存在。没有授权记录不等于默认有权查看。 */
 @Service
 @RequiredArgsConstructor
 public class WarehouseScopeService {

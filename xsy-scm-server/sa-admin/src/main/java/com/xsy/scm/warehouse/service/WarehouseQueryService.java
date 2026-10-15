@@ -23,17 +23,7 @@ import java.util.Set;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/**
- * 仓库查询（只读，不开事务）。
- *
- * <p>
- * {@code GET /scm/warehouse/list} 只返回 <b>ENABLED</b> 仓库：它是给采购单/收货单的<b>下拉选择器</b>用的，与
- * {@code CustomerTypeService.optionList()} 的口径一致；管理页用 {@code POST /query}。
- *
- * <p>
- * <b>三个读入口都按仓库授权范围收窄</b>：未授权仓库的 id、名称、地址一律不给，否则选择器就成了绕过仓库范围的旁门 —— 拿到别人仓库的 id 就能提交别人的入库单。
- * 历史单据不受影响：它们展示的是自己行上的仓库名称快照，不经过本类。
- */
+/** 仓库查询按员工授权范围过滤；下拉列表只返回可用仓库，管理列表仍显示管理范围内的其他状态。 */
 @Service
 @RequiredArgsConstructor
 public class WarehouseQueryService {
