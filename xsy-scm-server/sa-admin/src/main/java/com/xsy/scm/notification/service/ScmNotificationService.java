@@ -14,13 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ScmNotificationService {
 
-    /**
-     * 无登录上下文（定时任务）写去重行时的操作者标记。
-     *
-     * <p>
-     * 去重行的 {@code created_by} 只用于追溯来源，不参与任何权限判定，因此用常量标记比让
-     * 整次扫描失败更合适；业务写路径仍必须经 {@link ScmOperator#current()} 拿到真实操作者。
-     */
+    /** 定时任务没有登录用户时使用系统操作人标记，避免通知记录被错误归属到普通员工。 */
     public static final String SYSTEM_OPERATOR = "system";
 
     private final ScmNotificationEventDao eventDao;
@@ -36,19 +30,11 @@ public class ScmNotificationService {
     }
 
     /**
-     * 按业务事件唯一键投递一条站内信；同一个键只会投递一次。
-     *
-     * <p>
-     * <b>去重键必须按接收人区分</b>：一个业务事件可能有多个接收人（例如某仓的全部仓管），
-     * 若 eventKey 只标识事件本身，唯一约束会把第二个及之后的接收人一起挡掉 —— 那会让
-     * 「多人提醒」静默退化成「只提醒第一个人」。
-     *
-     * <p>
-     * 去重行与站内信在同一事务内写入：回滚时不留通知，也不会出现「记了已发但没发」。
+     * 同一事件对同一接收人只发一次站内信；不同接收人各自接收。 去重记录与通知在同一事务内保存，失败时一起回滚。
      *
      * @param messageType
-     *            消息类型，决定前端「查看业务单据」的跳转目标
-     * @return 本次是否真的投递；{@code false} 表示该键此前已投递过
+     *            消息类型，决定业务单据的跳转目标
+     * @return true 表示本次发出；false 表示之前已经发送
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean sendOnce(String eventKey, String eventType, Integer messageType, Long receiverUserId, Long dataId,
