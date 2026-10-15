@@ -1,4 +1,33 @@
 /* SCM 列表筛选区与工具栏；SmartAdmin 系统页继续使用自己的表单规则。 */
+/* 只有表格工具（无新增/导出等业务操作）的列表：放到查询行右端。
+ * 避免表格卡片上方留一整行，仅摆三个图标按钮。窄屏允许自动换行。 */
+.scm-query-table-tools {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  margin-left: auto;
+  min-height: 28px;
+}
+
+.scm-query-table-tools > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.scm-query-table-tools .ant-btn {
+  margin: 0;
+  min-width: 28px;
+  height: 28px;
+}
+
+.scm-query-table-context {
+  color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .scm-filter-bar {
   display: flex;
   align-items: center;

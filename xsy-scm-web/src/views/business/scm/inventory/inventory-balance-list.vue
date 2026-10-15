@@ -20,6 +20,13 @@
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
       </a-form-item>
+      <div class="scm-query-table-tools">
+        <TableOperator
+          v-model="columns"
+          :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_BALANCE"
+          :refresh="queryData"
+          />
+      </div>
     </a-row>
   </a-form>
 
@@ -30,17 +37,6 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-      </div>
-      <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_BALANCE"
-            :refresh="queryData"
-        />
-      </div>
-    </a-row>
 
     <a-table
         :id="SCM_INVENTORY_TABLE_ID.BALANCE"

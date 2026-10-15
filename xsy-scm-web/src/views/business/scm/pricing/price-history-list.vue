@@ -26,15 +26,14 @@
       <a-form-item class="smart-query-form-item">
         <a-button type="primary" @click="search" v-privilege="'scm:pricing:history:query'">查询</a-button>
       </a-form-item>
+      <div class="scm-query-table-tools">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load"/>
+      </div>
     </a-row>
   </a-form>
   <a-alert v-if="error" type="error" :message="error"/>
   <a-card size="small" :bordered="false">
-    <div class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load"/>
-      </div>
-    </div>
+
     <a-table :data-source="rows" :columns="columns" :row-key="(r:HistoryRow)=>`${r.source}-${r.historyId}`"
              :loading="loading" :pagination="false" size="small" bordered :scroll="{x:1850}">
       <template #bodyCell="{record,column}">

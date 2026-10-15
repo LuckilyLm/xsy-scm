@@ -11,6 +11,9 @@
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
       </a-form-item>
+      <div class="scm-query-table-tools">
+        <TableOperator v-model="columns" :table-id="605" :refresh="queryData"/>
+      </div>
     </a-row>
   </a-form>
   <a-alert v-if="error" :message="error" type="error" show-icon>
@@ -19,12 +22,7 @@
     </template>
   </a-alert>
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">操作日志</div>
-      <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="605" :refresh="queryData"/>
-      </div>
-    </a-row>
+
     <a-table id="order-log-table" size="small" :data-source="tableData" :columns="columns" row-key="logId"
              :loading="loading" bordered :pagination="false" :scroll="{x:920}">
       <template #bodyCell="{record,column,text}">

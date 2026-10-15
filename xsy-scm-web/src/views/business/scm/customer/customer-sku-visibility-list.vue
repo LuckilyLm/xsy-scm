@@ -20,7 +20,14 @@
             <a-button @click="reset">重置</a-button>
           </a-space>
         </a-form-item>
-      </a-row>
+      <div class="scm-query-table-tools">
+        <TableOperator
+          v-model="columns"
+          :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER_SKU_VISIBILITY"
+          :refresh="load"
+          />
+      </div>
+    </a-row>
     </a-form>
 
     <a-card size="small" :bordered="false">
@@ -29,16 +36,6 @@
           <a-button size="small" @click="load">重新加载</a-button>
         </template>
       </a-alert>
-
-      <a-row class="smart-table-btn-block scm-table-toolbar">
-        <div class="smart-table-setting-block">
-          <TableOperator
-              v-model="columns"
-              :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER_SKU_VISIBILITY"
-              :refresh="load"
-          />
-        </div>
-      </a-row>
 
       <a-table
         :data-source="rows"
