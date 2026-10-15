@@ -129,18 +129,53 @@ defineExpose({
     transition: background-color 0.18s, color 0.18s;
   }
 
-  // 分组要能收起/展开，所以箭头必须可见；antd 默认那根是 1.28px 的细条，看着发飘，
-  // 这里加粗到 2px 并改圆头端点，与侧栏的线性图标保持同一套语言。
+  // 分组要能收起/展开，所以箭头必须可见。
+  // 形态取「圆底 + 白色折角」：antd 默认那根细折角只调粗细的话，在 1x 屏幕上几乎看不出差别
+  // （试过 2px，用户反馈「还是原来那样」），换成有面的一整个圆底才有存在感。
   :deep(.ant-menu-submenu-arrow) {
     display: block;
-    opacity: 0.75;
+    width: 16px;
+    height: 16px;
+    inset-inline-end: 10px;
+    top: calc(50% - 8px);
+    opacity: 1;
+    // 收掉 antd 的两处默认变换：translateY(-50%) 会和上面的 top 叠加把圆底顶高 8px；
+    // 展开态的 rotate(180deg) 会把圆底一起转。方向改由下面的 ::after 自己管。
+    transform: none;
 
-    &::before,
-    &::after {
-      width: 7px;
-      height: 2px;
-      border-radius: 1px;
+    // 圆底
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.38);
+      transform: none;
     }
+
+    // 白色折角：一个元素用右边框 + 下边框再转 45°，正好是一个「⌄」
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 5px;
+      margin: -2.5px 0 0 -2.5px;
+      border: 0;
+      border-right: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      border-radius: 0;
+      background: transparent;
+      transform: rotate(45deg);
+    }
+  }
+
+  // 展开态把折角翻上去（= 45° + 180°），不依赖父级旋转
+  :deep(.ant-menu-submenu-open > .ant-menu-submenu-title .ant-menu-submenu-arrow::after) {
+    transform: rotate(-135deg);
   }
 
   :deep(.ant-menu-item .anticon),
