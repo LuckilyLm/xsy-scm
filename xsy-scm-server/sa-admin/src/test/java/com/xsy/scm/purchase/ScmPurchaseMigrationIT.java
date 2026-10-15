@@ -208,7 +208,7 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     //
     // 注意：本用例只读 flyway_schema_history（DB 侧），不扫描磁盘上的迁移文件，
     // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。
-    @DisplayName("flyway_schema_history：V1–V132 全部 success，V15–V132 只追加（V1–V14 未被改写）")
+    @DisplayName("flyway_schema_history：V1–V133 全部 success，V15–V133 只追加（V1–V14 未被改写）")
     void flywayHistoryIsAppendOnly() {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
@@ -243,7 +243,9 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
                 // 商城自助领券、结算方式约定、客户级 COD 准入（V128～V130，随远程合并落地）。
                 "128", "129", "130",
                 // 货到付款收款来源类型，以及分笔收款的订单归属列。
-                "131", "132");
+                "131", "132",
+                // 菜单 435 的名字改回「商品可见性」。
+                "133");
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
         // 除上面逐条列举的版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
