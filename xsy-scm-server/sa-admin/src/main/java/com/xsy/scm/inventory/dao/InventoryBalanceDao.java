@@ -13,15 +13,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 库存余额读写。
- *
- * <p>
- * <b>唯一的写入口</b>是 {@link #insertOnConflictDoNothing}（并发首建余额）+ {@link #incrementQuantity}（持锁后自增），两者都在
- * {@code InventoryCommandService} 里 <b>先持行锁再调用</b>。本接口没有任何「设置绝对数量」的方法 —— 余额不是可以被随意赋值的状态，它只能是流水的净和。
- *
- * <p>
- * <b>冲突目标</b>：{@link #insertOnConflictDoNothing} 的冲突目标与部分唯一索引 {@code uk_inventory_balance_wh_sku_active} <b>完全匹配</b>（含
- * {@code WHERE deleted = FALSE} 谓词）。业务代码不制造任何 PG 版本分支；该 SQL 由 PG IT 在真实 PostgreSQL 上执行验证。
+ * 库存余额的数据库操作。 首次入库可并发创建余额行；后续数量只能在持锁后增减，不能直接覆盖绝对值。 创建记录时必须匹配数据库的有效余额唯一索引。
  */
 @Mapper
 public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> {

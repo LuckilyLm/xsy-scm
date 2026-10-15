@@ -15,16 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 库存预警阈值配置读写 + 预警列表查询。
- *
- * <p>
- * <b>本 DAO 不碰 {@code xsy_inventory_balance}</b>（除预警列表的只读 LEFT JOIN）：阈值是配置，余额是派生状态，两者的写路径必须完全分开 —— 否则配置路径就会成为
- * 「创建没有流水支撑的余额行」的入口。
- *
- * <p>
- * 配置的增删用 MyBatis-Plus 的 {@code insert / deleteById}；<b>编辑必须走手写 SQL</b> （{@link #updateThreshold}）—— 见该方法的注释：用
- * {@code updateById} 会把实体上标了 {@code updateStrategy = ALWAYS} 的字段（含 {@code created_at}）一并写进 SET 子句，而新建的更新实体里
- * {@code created_at} 是 {@code null}，直接违反 NOT NULL。手写 SQL 只更新真正该变的列，与全仓其它模块一致。
+ * 查询和维护库存预警阈值。 阈值配置不创建或修改库存余额；预警列表只关联余额做查询。 更新阈值使用专用 SQL，避免覆盖创建时间等不可修改字段。
  */
 @Mapper
 public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarningThresholdEntity> {

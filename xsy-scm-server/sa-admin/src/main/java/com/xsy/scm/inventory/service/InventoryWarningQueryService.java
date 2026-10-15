@@ -20,14 +20,7 @@ import java.util.List;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_NOT_FOUND;
 
 /**
- * 库存预警与阈值配置的查询侧（只读）。
- *
- * <p>
- * <b>预警状态在服务层按可用量算出，不落库</b>：它完全由 {@code (阈值, 可用量)} 决定，落库只会多出一个会漂移的副本，而不会多出任何信息（落库意味着那意味着<b>六条</b>余额写入路径都要顺手维护这个状态）。
- *
- * <p>
- * <b>状态判定的实现只有一处</b>（{@code ScmInventoryWarningStatusEnum#evaluate}）。列表 SQL 里另有一份<b>过滤</b>用的谓词（为了能按状态筛选 + 分页），两者的等价性由
- * {@code ScmInventoryWarningIT} 交叉验证：用 {@code status=LOW} 查出来的行，其服务层算出的状态必须全是 {@code LOW}。
+ * 只读查询预警阈值和当前库存预警。 预警状态由可用量与阈值计算，不单独存库。 SQL 的状态筛选与 Java 的状态计算必须保持一致。
  */
 @Service
 @RequiredArgsConstructor

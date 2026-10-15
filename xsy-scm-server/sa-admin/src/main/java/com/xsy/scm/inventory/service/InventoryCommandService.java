@@ -60,17 +60,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSF
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_MISMATCH;
 
 /**
- * 统一协调库存余额与流水的写入，参与调用方事务，失败时随业务命令整体回滚。
- *
- * <p>
- * 全仓唯一会改变 {@code xsy_inventory_balance.quantity} 的地方：十条写入路径都只通过 {@code incrementQuantity} / {@code decrementQuantity}
- * 增量语句改数量，不做读-改-写赋值。加权均价只在采购入库、销售退货回库、调拨转入、规格转换转入 这四条有明确单位成本的入库路径上更新；盘点与报损报溢不改变均价，出库保留当时均价到流水。
- *
- * <p>
- * 调用方须先持有自己的单据锁，再按 {@code (warehouseId, skuId)} 升序写余额，避免多行命令以相反顺序获取余额锁。
- *
- * <p>
- * 只有四条入库路径可以并发首建零余额行；其余六条都要求余额已存在，正向盘点或报溢不能代替入库建行。
+ * 统一写入库存余额和流水，失败时随业务事务一起回滚。 数量只能增减，不能直接覆盖；均价只在有明确入库成本时重算。 先锁业务单据，再按仓库和商品规格的顺序锁余额。 只有采购入库、销售退货、调拨转入、规格转换转入能首次建立余额记录。
  */
 @Service
 @RequiredArgsConstructor
@@ -144,11 +134,7 @@ public class InventoryCommandService {
     }
 
     /**
-     * 采购入库后的移动加权均价。<b>纯计算，不落库</b> —— 结果由 {@link InventoryBalanceDao#incrementQuantityAndSetAvgCost} 与数量增量一起写入，
-     * 让一次逻辑行变更只自增一次 {@code version}。
-     *
-     * <p>
-     * 入参 {@code balance} 必须是<b>持有行锁之后</b>读到的快照，否则加权基数会是过期的。公式与取整口径见 {@link #weightedAvgCost}。
+     * 计算采购入库后的移动加权均价，不直接写库。 必须使用已加锁的余额；均价与库存数量由同一条更新语句保存。
      */
     private static BigDecimal inboundAvgCost(InventoryBalanceEntity balance, BigDecimal inboundQuantity,
             BigDecimal inboundUnitCost) {

@@ -1,14 +1,7 @@
 /**
- * 库存域前端类型。字段与后端 VO / Form 逐字对齐。
- *
- * 两条硬约束体现在类型里：
- * 1. 定点数字段一律 `string | null`（4 位小数）。后端 `ScmStrictDecimalStringDeserializer`
- *    拒绝 JSON 数字，前端不得传 number；`null`（无值）与 `"0.0000"`（合法的零）是两种事实；
- * 2. 时间字段一律是字符串，后端已统一成 `yyyy-MM-dd HH:mm:ss`（北京时间），
- *    前端直接渲染，不做 `new Date()` 二次换算。
- *
- * 余额行是实时联表结果；流水行的 `unitSnapshot` / `unitCost` / `beforeQuantity` /
- * `afterQuantity` 是写入时冻结的事实。
+ * 库存模块的前端类型，与后端请求和响应字段保持一致。
+ * 数量、金额等定点数使用字符串；null 表示无值，"0.0000" 表示零。
+ * 时间按后端返回的北京时间字符串显示，不再转换时区。
  */
 
 export type Id = string | number;
@@ -44,14 +37,8 @@ export interface InventoryBalance {
     /** 可用量 = quantity − reservedQuantity。后端计算属性，不落库。 */
     availableQuantity?: string | null;
     /**
-     * 移动加权平均成本（每记账单位，4 位小数）。
-     *
-     * `NOT NULL DEFAULT 0`：与其它定点数字段不同，它不会是 `null` ——
-     * 「没有均价」与「均价为 0」在本业务里无法区分，后端因此不允许为空。
-     * 所以这里不写 `| null`，也不做「无值显示 —」的分支。
-     *
-     * 期初口径：该 (仓库, SKU) 最近一次采购入库单价，无采购入库则为 0。
-     * 因此历史库上线后第一眼看到的均价是近似值（见 `db/migration` 里引入本列的迁移头注释），不是缺陷。
+     * 移动加权平均成本，不能为空。
+     * 没有采购入库历史时初始为 0；首次上线的历史均价可能是估算值。
      */
     avgCost?: string;
     /** 库存金额 = quantity × avgCost。后端计算属性，不落库。 */
@@ -238,15 +225,9 @@ export interface InventoryReservationQuery extends Page {
 // ------------------------------------------------------------------
 
 /**
- * `InventoryStocktakeVO`。
- *
- * 差异语义（与后端一致，前端只是展示，不重算）：
- * ```
- * delta = actualQuantity - bookQuantity     // 清点发现的差异，基线是保存草稿时的账面量快照
- * after = live + delta                      // live 是确认瞬间的账面量
- * ```
- * 因此确认后的账面不一定等于实盘数 —— 保存草稿到确认之间发生的收货 / 出库会被保留。
- * 详情页据此提示用户，避免把「账面 ≠ 实盘」误读成系统出错。
+ * 盘点差异 = 实盘量 - 保存草稿时的账面量。
+ * 确认时把差异加到最新账面量上，因此确认后库存不一定等于当时实盘量。
+ * 这里只展示结果，不在前端重新计算。
  */
 export interface InventoryStocktake {
     id: Id;
@@ -298,13 +279,8 @@ export interface InventoryStocktakeQuery extends Page {
 }
 
 /**
- * `InventoryStocktakeAddForm`（新建与改草稿共用）。
- *
- * 不提交账面量：账面量由服务端在保存时从余额行读取并快照 ——
- * 让客户端提交账面量等于把「账」交给调用方定义，那样盘点就能凭空制造差异。
- *
- * 实盘量是定点字符串：后端用 `ScmStrictDecimalStringDeserializer` 拒绝 JSON 数字，
- * 前端必须传 `"12.0000"` 这样的字符串，不能传 number。允许 `"0"`（确实一件不剩），不允许负数。
+ * 新建或修改盘点草稿时，只提交实盘量，不提交账面量。
+ * 账面量由服务端读取；实盘量须为非负的定点数字符串。
  */
 export interface InventoryStocktakeAdd {
     warehouseId: Id;

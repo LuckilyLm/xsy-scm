@@ -36,20 +36,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOU
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERVATION_INVALID;
 
 /**
- * 配送发车的库存出库入口，是本域唯一的写命令。出库单直接以 {@code CONFIRMED} 落库，不经过 {@code DRAFT}。
- *
- * <p>
- * <b>先归还预留、再扣减实物</b>：{@code ck_inventory_balance_available (reserved_quantity <= quantity)} 逐语句求值，顺序反过来会写出
- * {@code quantity = 5 / reserved_quantity = 10} 这类不可恢复的行。这也是不能直接复用 {@link InventoryOutboundService#confirm} 的原因 ——
- * 那条链路要求调用方自己先把预留释放干净。
- *
- * <p>
- * <b>锁序</b>：单据锁先于余额锁，余额锁按 {@code (warehouse_id, sku_id)} 升序；本命令的单据锁是调用方持有的配送线路行锁，
- * 因此先按既定顺序锁预留，再把预留所在仓与发货仓两侧的余额行一次性按升序预锁。
- *
- * <p>
- * <b>少拣与跨仓</b>：预留按整条生命周期收口，同一事务里整条归还 {@code reserved_quantity}，实发量只从发货仓可用量扣；差额现算不另存。预留仓与发货仓一致且本行确有出库时置
- * {@code CONSUMED}，否则置 {@code RELEASED}。
+ * 配送发车时确认出库，没有出库草稿。 必须先释放预留量，再按实发量扣减库存，否则可能触发预留量不能大于库存量的约束。 先锁配送单据，再按仓库和商品规格顺序锁余额。 少拣时释放整笔预留，只扣实际发货仓的库存。
  */
 @Service
 @RequiredArgsConstructor

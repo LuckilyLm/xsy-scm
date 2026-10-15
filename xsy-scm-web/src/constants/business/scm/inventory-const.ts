@@ -1,13 +1,6 @@
 /**
- * 库存域前端常量。
- *
- * 枚举值与后端逐字对应，且与 DB 的 CHECK 白名单同源：
- * `ScmInventoryMovementTypeEnum` ↔ `ck_inventory_movement_type`；来源单据类型、
- * 报损报溢、调拨、预警、转换各自对应同名 CHECK（预警为读时计算，无 CHECK）。
- *
- * 新增流水类型时必须同时改四处：本文件枚举、后端枚举类、DB CHECK（新迁移）、
- * 后端 `InventoryMovementQueryForm` 的 `@Pattern` 白名单 —— 漏掉最后一项的表现是
- * 「流水写进去了，页面按新类型筛选却报 30001」。
+ * 库存流水、单据和状态的前端枚举，与后端及数据库约束保持一致。
+ * 数量始终为正，入库或出库方向由流水类型决定。
  */
 import type {SmartEnum} from '/@/types/smart-enum';
 

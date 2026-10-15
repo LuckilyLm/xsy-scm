@@ -38,20 +38,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_G
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_STATUS_INVALID;
 
 /**
- * 报损报溢单命令侧：创建 / 改待审核 / 审批 / 驳回 / 删除。状态机 {@code PENDING → COMPLETED | REJECTED}，两个终态都不可回退。
- *
- * <p>
- * 只有 {@code PENDING} 可改 / 可删 / 可审 —— 不加状态守卫会让「已完成（已写流水）」的单据被改内容或被删掉，账与单从此对不上。
- *
- * <p>
- * <b>锁序</b>（与收货 / 出库 / 盘点同序）：先锁单据头，再按 {@code (warehouseId, skuId)} 升序逐行锁余额并写流水。顺序固定是避免四条链路以相反顺序拿余额锁而死锁。
- *
- * <p>
- * 全部明细在同一事务内，任一行失败（负库存 / 低于预留 / 无余额行）整单回滚，已写下的流水也随事务回滚。
- *
- * <p>
- * <b>审批用乐观锁</b>：审批人必须批准自己读到的内容，版本在写流水之前先比一次，同时保留在 SQL 的 {@code WHERE} 里作为并发下的第二道防线。 本域只有报损报溢同时有「录单 + 审批」，因此审批通过与驳回都要求
- * {@code approver != creator}（41065）；不给别的库存单据补审批环节。
+ * 管理报损报溢单。待审核可以修改或删除，审批或驳回后不能回退。 审批时先锁单据，再按仓库和商品规格顺序锁余额；所有明细在同一事务中处理。 审批人不能是录单人，审批时必须核对单据版本。
  */
 @Service
 @RequiredArgsConstructor

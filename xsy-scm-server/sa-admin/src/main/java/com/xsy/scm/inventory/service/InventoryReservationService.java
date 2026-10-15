@@ -27,17 +27,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_INSUFF
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERVATION_INVALID;
 
 /**
- * 库存预留：占用可用量，但不改变物理库存。
- *
- * <p>
- * <b>与出库的区别</b>：出库改 {@code quantity}（物理出库），预留只改 {@code reserved_quantity}（占用）。两者共用同一个可用量口径
- * {@code quantity - reserved_quantity}，因此预留之后出库会立刻看到可用量变小。
- *
- * <p>
- * <b>锁序</b>：与出库一致 —— 先锁预留行（若已存在），再锁余额行；余额锁按 {@code (warehouse_id, sku_id)} 升序。预留行不存在时直接锁余额行。
- *
- * <p>
- * <b>事务要求</b>：{@link #reserve} 允许独立事务（{@code @Transactional}），也允许被销售订单确认复用其事务（{@code REQUIRED} 语义）。
+ * 处理库存预留：增加预留量，不改变实际库存。 可用量 = 实际库存 - 预留量，预留与出库采用相同口径。 先锁预留记录，再按仓库和商品规格顺序锁余额；可在订单确认事务内调用。
  */
 @Service
 @RequiredArgsConstructor

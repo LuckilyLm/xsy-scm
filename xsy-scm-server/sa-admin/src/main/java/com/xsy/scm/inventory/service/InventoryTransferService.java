@@ -34,16 +34,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSF
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSFER_WAREHOUSE_DISABLED;
 
 /**
- * 调拨单命令侧：创建 / 改草稿 / 发出 / 收货 / 取消 / 删除。
- *
- * <p>
- * 状态机 {@code DRAFT → SHIPPED → RECEIVED}，草稿可 {@code → CANCELLED}。在途不可取消（货已物理离开源仓， 只能靠反向调拨单冲回），两个终态都不可回退。
- *
- * <p>
- * 发出与收货各自独立事务：发出只锁源仓余额行，收货只锁目标仓余额行。因此既有的 「按 {@code (warehouse_id, sku_id)} 升序锁余额」纪律完全不用改 —— 每个事务里只有一个仓库的行。
- *
- * <p>
- * 锁序：先锁单据头（{@code lockById}），再按 {@code (warehouseId, skuId)} 升序锁余额，与收货 / 出库 / 盘点 / 报损报溢同一顺序。 全部明细在同一事务内，任一行失败整单回滚。
+ * 管理跨仓调拨：草稿、发出、在途、收货。 在途调拨不能取消，需用反向调拨冲回。 发出和收货分别在事务中更新对应仓库；先锁单据，再按仓库和商品规格顺序锁余额。
  */
 @Service
 @RequiredArgsConstructor

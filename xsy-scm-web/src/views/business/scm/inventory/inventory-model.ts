@@ -1,9 +1,6 @@
 /**
- * 库存域纯函数：数量与金额的展示文本、仓库默认值、盘点复制单位的解析。
- *
- * 本文件不依赖 Vue、不发请求，可被 `node --test` 直接加载。因此只能有 type-only 的相对导入
- * （值导入要写 `.ts` 后缀，而 `tsconfig` 未开 `allowImportingTsExtensions`，会触发 TS5097），
- * 枚举文案一概由调用方传入。
+ * 库存展示和表单处理的公共函数。
+ * 不依赖 Vue 或接口调用，方便单独测试。
  */
 import type {Id} from './inventory-types.ts';
 
@@ -43,14 +40,8 @@ export function quantityText(value: string | null | undefined): string {
 }
 
 /**
- * 金额 / 均价的展示文本。
- *
- * 与 `quantityText` 一样是「null 安全 + 原样透传」，刻意不做二次换算：
- * 千分位、补零、四舍五入都已经在源头定好 —— 均价由后端按 4 位小数存，
- * 金额由 SQL `ROUND(..., 2)` 收敛到 2 位。前端再格式化一次就会出现
- * 「同一笔钱在列表和详情里位数不同」这类只能靠肉眼发现的问题。
- *
- * 唯一的例外是 `null` → `—`：它表示「没有这个事实」，与 `"0.00"`（真的是零）必须区分。
+ * 金额和均价直接显示后端提供的值，不重复四舍五入。
+ * null 显示为“—”，数字 0 仍显示为 0。
  */
 export function moneyText(value: string | null | undefined): string {
     if (value === null || value === undefined || value === '') {
@@ -112,13 +103,8 @@ export function movementTypeText(
 }
 
 /**
- * 「复制历史盘点」按页解析来源 SKU 的当前记账单位（pageSize 冲突的修复口径）。
- *
- * 余额查询的 `pageSize` 上限是后端 `@Max(100)`，一次拉 2000 行会被直接拒成 400 参数错误；
- * 这里按页拉取、找齐来源 SKU 即停，既不放宽通用查询上限来喂单个页面，也不静默丢 SKU——
- * 缺哪个就返回哪个，由调用方整单拒绝。
- *
- * `fetchPage` 由调用方注入（真实实现是 `inventoryBalanceApi.query`），本函数不发请求、不碰 UI。
+ * 复制历史盘点时分页查询商品规格的当前记账单位。
+ * 每页最多 100 条，找齐后提前结束；缺失项交给调用方报错。
  */
 export const BALANCE_QUERY_PAGE_SIZE = 100;
 

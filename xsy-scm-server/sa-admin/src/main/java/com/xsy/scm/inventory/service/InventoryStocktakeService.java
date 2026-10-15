@@ -36,20 +36,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKT
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_STATUS_INVALID;
 
 /**
- * 盘点单命令侧：创建 / 改草稿 / 确认盘点 / 取消 / 删除。
- *
- * <p>
- * 状态机 {@code DRAFT → CONFIRMED}，草稿可 {@code → CANCELLED}。已确认不可回退 —— 库存流水 append-only， 冲销必须新增反向流水，改回草稿再删流水会被
- * {@code trg_inventory_movement_append_only} 在 DB 层拒绝。
- *
- * <p>
- * 锁序与收货确认、出库确认同一顺序：先锁盘点单头（{@code lockById}），再按 {@code (warehouseId, skuId)} 升序逐行锁余额并写流水。 顺序固定是避免三条链路以相反顺序拿余额锁而死锁。
- *
- * <p>
- * 全部明细在同一事务内，任一行调整失败（负库存 / 低于预留 / 无余额行）整单回滚。已写下的流水也随事务回滚 —— 触发器拦的是 UPDATE/DELETE，不拦 INSERT 的回滚。
- *
- * <p>
- * 账面量快照在保存草稿时读入（{@link #insertItems}），不在建单时读一次就冻结：改草稿会重新快照， 仓管发现账面量变了只要重新保存即可刷新基线，不需要删单重建。
+ * 管理盘点草稿、确认和取消。已确认盘点不能退回草稿。 确认时先锁盘点单，再按仓库和商品规格顺序锁余额；任一明细失败则整单回滚。 账面数量在每次保存草稿时重新读取，确认后通过库存流水保留调整记录。
  */
 @Service
 @RequiredArgsConstructor
@@ -70,15 +57,9 @@ public class InventoryStocktakeService {
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     /**
-     * 新建草稿盘点单。
+     * 新建盘点草稿，只要求对应仓库和商品规格存在余额记录。 草稿不检查调整后是否缺货或低于预留量，这些条件在确认时校验。
      *
-     * <p>
-     * 草稿阶段<b>不校验差异能否落地</b>（会不会负库存 / 会不会低于预留量）—— 那是确认盘点时的判断。草稿允许「先录实盘数再调整预留」，提前卡住反而让录单不可用。
-     *
-     * <p>
-     * 但<b>账面量必须读得到</b>：读不到余额行说明该 (仓库, SKU) 从未入库，既没有可对比的账面量，也无法确定记账单位，此时直接失败（41023）。
-     *
-     * @return 新单 id
+     * @return 新单 ID
      */
     @Transactional(rollbackFor = Exception.class)
     public Long create(InventoryStocktakeAddForm form) {

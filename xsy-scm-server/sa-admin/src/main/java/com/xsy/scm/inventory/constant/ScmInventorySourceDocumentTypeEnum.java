@@ -4,16 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 库存流水的来源单据类型。
- *
- * <p>
- * 该值持久化到 {@code xsy_inventory_movement.source_document_type}，并与 {@code source_document_item_id} 一起构成<b>稳定唯一源键</b>（TD
- * 冻结的口径）， 由部分唯一索引 {@code uk_inventory_movement_source_active} 在 DB 层兜底防重。
- *
- * <p>
- * <b>为什么不直接引用 {@code PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE}</b>：库存域是<b>与来源无关</b>的领域原语（未来销售出库 / 调拨 /
- * 盘点都会写入同一张流水表），把 purchase 的契约常量嵌进库存域常量会让库存域被迫依赖某一个来源域。两个常量的一致性由单测 {@code ScmInventorySourceDocumentTypeEnumTest} 强制 ——
- * 值相等是<b>断言</b>，不是靠人记得。
+ * 标识每条库存流水对应的来源单据。 来源类型与明细 ID 共同组成防重键；库存模块不能反向依赖采购模块的常量。
  */
 @Getter
 @RequiredArgsConstructor

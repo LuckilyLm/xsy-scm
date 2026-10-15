@@ -6,19 +6,7 @@ import lombok.RequiredArgsConstructor;
 import java.math.BigDecimal;
 
 /**
- * 库存预警状态（{@code NORMAL} / {@code LOW} / {@code HIGH}）。
- *
- * <p>
- * <b>这是派生值，不落库</b>：它完全由 {@code (阈值, 可用量)} 决定，因此没有对应的列、也不在任何写入路径里维护。落库就意味着<b>六条</b>余额写入路径都要顺手更新这个状态 ——
- * 那只会多出一个会漂移的副本，而不会多出任何信息。
- *
- * <p>
- * <b>比较基准是可用量（现有量 − 预留量），不是现有量</b>：下限的业务含义是「还够不够发货」—— 20 kg 在库但 18 kg 已预留给明天的订单时，可用只有 2 kg，这时必须触发补货预警。
- * 上限同理：货已经被订走就不算积压。
- *
- * <p>
- * <b>判断规则只有这一处实现</b>（{@link #evaluate}）。列表 SQL 里另有一份<b>过滤</b>用的谓词 （为了能按状态筛选 + 分页），两者的等价性由 {@code ScmInventoryWarningIT}
- * 交叉验证：用 {@code status=LOW} 查出来的行，其 Java 侧状态必须全是 {@code LOW}。
+ * 库存预警状态：正常、低于下限或高于上限。 按可用量（实际库存减预留量）计算，不在数据库中保存状态。 查询 SQL 的筛选结果应与本枚举的计算结果一致。
  */
 @Getter
 @RequiredArgsConstructor

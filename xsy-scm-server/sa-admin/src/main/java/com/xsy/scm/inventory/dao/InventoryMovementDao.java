@@ -12,14 +12,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 库存流水读写。
- *
- * <p>
- * <b>append-only 的接口形态</b>：本接口只有 <b>insert + select</b>，没有任何 update / delete 方法 —— 这不是「忘了写」，而是硬化后的契约。表上还有
- * {@code ck_inventory_movement_append_only CHECK (deleted = FALSE)} 在数据库层兜底，因此即使有人绕过 DAO 写 SQL 去改历史流水，也会被 PG 拒绝。
- *
- * <p>
- * 未来冲销（采购退货等）必须<b>新增反向 movement</b>，而不是修改/删除历史行。
+ * 库存流水只允许新增和查询，不允许修改、删除历史记录。 冲销需要新增反向流水，原始记录继续保留。
  */
 @Mapper
 public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity> {

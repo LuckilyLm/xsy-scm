@@ -41,18 +41,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVER
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVERSION_WAREHOUSE_DISABLED;
 
 /**
- * 规格转换单命令侧：创建 / 改待审核 / 审批 / 驳回 / 删除。
- *
- * <p>
- * 一次转换要在同一事务里改动同一仓库的两行余额（源 SKU 与目标 SKU）。既有六条写入路径每个事务只碰一行， 锁序天然成立；这里第一次碰两行，必须显式排序，否则「行 1 先锁 A 再锁 B、行 2 先锁 B 再锁 A」会死锁。
- * {@link #approve} 的做法是把每行拆成转出腿 / 转入腿，全部收集后按 {@code (skuId, 方向)} 统一排序再逐条执行 —— 同一仓库下按 {@code skuId} 升序即等价于既有的「按
- * {@code (warehouse_id, sku_id)} 升序锁余额」纪律。
- *
- * <p>
- * 同一 {@code skuId} 上先入后出：若某 SKU 既是某行的目标又是另一行的源（链式转换，如 A→B 且 B→C）， B 的「出」依赖 B 的「入」，先出后入会因为 B 还没入而失败。这是本单内唯一允许的次序依赖。
- *
- * <p>
- * 不做聚合：每条腿对应一条流水，源身份是 {@code (CONVERT_OUT_ITEM|CONVERT_IN_ITEM, 明细行 id)}， 聚合会让「一条明细行产生两条流水」的防重语义说不清该用哪个行 id。
+ * 管理同仓库不同商品规格之间的库存转换。 审批时在同一事务里按商品规格 ID 顺序处理出入库，避免死锁。 链式转换先入后出，使上一项转入的库存可供下一项使用。 每条转换明细分别留下转出、转入流水，不合并记录。
  */
 @Service
 @RequiredArgsConstructor
