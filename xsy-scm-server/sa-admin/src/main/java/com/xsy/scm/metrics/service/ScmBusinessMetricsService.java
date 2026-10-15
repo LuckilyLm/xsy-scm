@@ -68,8 +68,7 @@ public class ScmBusinessMetricsService {
      *
      * <p>
      * 首页 / 大屏直接使用本方法。报表概览因<b>可见性范围策略不同</b>（销售不做归属收窄，由页面权限承担） 保留自己的查询实现，不复用这里 —— 但时间轴、状态与金额列必须与这里保持同一套口径契约， 由
-     * {@code scm-metrics-single-source-contract} 钉住。详见 {@code docs/plan/active/home-workbench-design.md} 的「口径同源 ≠
-     * 范围同源」一节。
+     * {@code scm-metrics-single-source-contract} 钉住。经营指标口径与范围决策见 {@code docs/decisions.md}。
      *
      * <p>
      * {@code filter} 是本方法自带的业务维度筛选（客户 / 业务员 / 订单来源），与范围收窄是两件事。

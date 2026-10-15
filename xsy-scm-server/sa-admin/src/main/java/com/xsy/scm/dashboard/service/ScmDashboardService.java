@@ -40,7 +40,7 @@ import java.util.List;
  *
  * <p>
  * <b>本类不写统计 SQL</b>：所有数字向 {@link ScmBusinessMetricsService} 取，口径与首页 / 大屏同一套 （销售看确认、采购看提交、收货看确认），数据范围也沿用大屏那一套「归属 ∩ 仓库」——
- * 不沿用报表的宽范围语义（见 {@code home-workbench-design.md} 的「口径同源 ≠ 范围同源」）。
+ * 不沿用报表的宽范围语义（见 {@code docs/decisions.md} 的经营指标与可见范围决策）。
  *
  * <p>
  * <b>可见性是两层</b>：入口权限 {@code scm:dashboard:query} 由控制器保证；每张卡片再过自己的领域权限， 无权卡片整卡省略、既不给数字也不填 0 —— 0

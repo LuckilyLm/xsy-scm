@@ -4,7 +4,7 @@
 
 ## 当前范围
 
-管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前事实与最近一次完整验收见[项目状态](docs/status.md)，未闭环工作见[后续开发路线图](docs/plan/active/admin-development-roadmap.md)。客户商城已建立正式 uni-app 工作区，认证、商品目录、购物车、地址、结算下单及订单只读查询已有源码，legacy 小程序保持冻结。
+管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前事实与最近验证见[项目状态](docs/status.md)，未闭环工作见[后续开发路线图](docs/plan/active/admin-development-roadmap.md)。正式 uni-app 客户商城已有认证、目录、购物车、地址、结算下单、订单中心、履约售后、钱包与账期等源码；legacy 小程序保持冻结。
 
 业务需求和旧系统语义以 [参考项目目录](project-reference-examples/xsy-scm/) 为主，当前边界见 [项目决策](docs/decisions.md)。
 
