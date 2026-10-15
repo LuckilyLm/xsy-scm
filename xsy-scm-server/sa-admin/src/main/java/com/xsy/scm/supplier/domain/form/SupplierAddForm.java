@@ -7,19 +7,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 新增供应商。
- *
- * <p>
- * <b>刻意不含 {@code status}</b>：新建供应商强制为 {@code ENABLED}，由 Service 显式设置，不接受客户端指定。
- *
- * <p>
- * <b>刻意不含 {@code supplierCode}</b>：供应商编码由服务端生成（{@code ScmBusinessNoService}），客户端传入的值不会被采信。
- *
- * <p>
- * 继承 {@link ScmLocationForm} 以获得「经纬度与坐标系同时填写或同时清空」的成组校验： 半组坐标在地图上是无法解释的，而 DB 的 {@code ck_supplier_location_complete}
- * 也会拒绝它。
- */
+/** 新增供应商时，编码和启用状态由服务端生成；经纬度与坐标系必须成组填写。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class SupplierAddForm extends ScmLocationForm {
