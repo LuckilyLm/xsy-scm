@@ -1,12 +1,4 @@
-/**
- * 首页每个区块各自的加载状态。
- *
- * 首页有多个互不相关的数据源，刻意不做「一把抓」的全局 loading：任一失败都不该让整页
- * 变成错误页，也不该弹全局提示把用户从别处打断。这里只把「这一次请求的失败」收进区块
- * 自己的状态，由区块显示一行可重试的提示。
- *
- * `load` 永不 reject —— 调用方可以放心地并发等待它（例如顶部的刷新按钮）。
- */
+/** 首页每个区块单独处理加载、错误和重试，某一区块失败不影响其他区块。 */
 import {onScopeDispose, ref, type Ref} from 'vue';
 import type {ScmResponse} from '/@/types/business/scm/customer';
 

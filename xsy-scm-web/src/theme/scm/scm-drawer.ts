@@ -1,14 +1,4 @@
-/**
- * SCM Drawer 宽度分级。
- *
- * 不按「全部统一成一个宽度」处理：简单配置、中型主数据、含明细的复杂单据所需空间差异很大。
- * 超出视口的部分由 `theme/scm/responsive.less` 的 `max-width: 96vw` 兜住 —— 业务页面
- * 不要再自己写 `min(NNNpx, 96vw)`，那会把视口兜底和宽度分级混成两件事。
- *
- * 业务页面一律通过 `scmDrawerWidth('s' | 'm' | 'l' | 'xl' | 'workspace')` 取值，
- * 不允许再出现硬编码宽度（契约测试 `test/scm-drawer-width-contract.test.mjs` 钉住这一点）。
- * 长期规则见 `CONTRIBUTING.md` §SCM 界面规范。
- */
+/** 业务抽屉按复杂度选择宽度，窄屏由公共响应式样式限制。长期规则见 `CONTRIBUTING.md` §SCM 界面规范。 */
 export const SCM_DRAWER_WIDTH = {
   /** 600：简单配置 / 简单维护，以及单列只读详情 */
   s: 600,
