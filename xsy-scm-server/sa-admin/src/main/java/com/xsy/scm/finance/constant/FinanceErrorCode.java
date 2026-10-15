@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 财务域错误码使用 41130–41149；已发布数值保持稳定。
+ * 财务域初始码段为 41130–41149；已发布数值保持稳定，新增值按全域注册清单选空号。
  *
  * <p>
  * 需要隐藏资源是否存在的客户数据范围拒绝由 {@code ScmDataScopeException} 统一返回 30005；其余错误码只表达财务命令本身的业务拒绝原因。
@@ -91,8 +91,9 @@ public enum FinanceErrorCode implements ScmErrorCode {
     COD_COLLECTION_ORDER_NOT_FOUND(41152, "订单不存在"),
     /** 货到付款收款：订单不是 COD 结算，或尚未签收生成应收（拒收 / 异常签收就没有应收可收）。 */
     COD_COLLECTION_ORDER_NOT_APPLICABLE(41153, "该订单不是货到付款结算，或尚未签收生成应收，不能登记收款"),
-    /** 货到付款收款：一张订单最多一笔，重复登记由收款来源唯一索引兜住。 */
-    COD_COLLECTION_ALREADY_REGISTERED(41154, "该订单已登记过货到付款收款，不能重复登记");
+    /** 同一货到付款收款命令已有来源事实。 */
+    COD_COLLECTION_ALREADY_REGISTERED(41154, "该笔货到付款收款已登记，不能重复登记"),
+    COD_COLLECTION_PAYMENT_CONFLICT(41155, "该订单已有未结束或成功的支付意图，不能再登记货到付款收款");
 
     private final int code;
     private final String msg;

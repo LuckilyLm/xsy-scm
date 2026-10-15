@@ -52,12 +52,15 @@ public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
     BigDecimal selectReversedAmount(@Param("receiptId") Long receiptId);
 
     /**
-     * 某张订单的货到付款实收合计。
+     * 某张订单的货到付款实收合计，兼容 V131 单笔来源与 V132 分笔来源。
      *
      * <p>
      * 系统来源的收款不允许人工冲正（41144），因此只取 {@code NORMAL} 行即可，不需要再扣 REVERSE。
      */
     BigDecimal sumCodCollectedByOrder(@Param("orderId") Long orderId);
+
+    /** 人工收款经有效核销分配到该订单正常应收的金额。 */
+    BigDecimal sumManualCollectedByOrder(@Param("orderId") Long orderId);
 
     FinanceReceiptQueryVO selectQueryById(@Param("receiptId") Long receiptId);
 

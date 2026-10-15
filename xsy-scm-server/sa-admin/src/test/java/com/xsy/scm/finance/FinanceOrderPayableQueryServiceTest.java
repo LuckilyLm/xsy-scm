@@ -5,11 +5,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.xsy.scm.finance.dao.FinanceOrderFundingSourceDao;
+import com.xsy.scm.finance.dao.FinanceReceivableDao;
 import com.xsy.scm.finance.dao.FinanceReceiptDao;
 import com.xsy.scm.finance.dao.FinanceReceivableSourceDao;
 import com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto;
 import com.xsy.scm.finance.domain.dto.FinanceOrderFundingDto;
 import com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto;
+import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
+import com.xsy.scm.finance.domain.vo.FinanceReceivableVO;
 import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,9 +27,11 @@ class FinanceOrderPayableQueryServiceTest {
     private static final Long ORDER_ID = 7L;
 
     private final FinanceReceivableSourceDao sourceDao = mock(FinanceReceivableSourceDao.class);
+    private final FinanceReceivableDao receivableDao = mock(FinanceReceivableDao.class);
     private final FinanceOrderFundingSourceDao fundingDao = mock(FinanceOrderFundingSourceDao.class);
     private final FinanceReceiptDao receiptDao = mock(FinanceReceiptDao.class);
-    private final FinanceOrderPayableQueryService service = new FinanceOrderPayableQueryService(sourceDao, fundingDao, receiptDao);
+    private final FinanceOrderPayableQueryService service = new FinanceOrderPayableQueryService(sourceDao, receivableDao,
+            fundingDao, receiptDao);
 
     @Test
     void fullQuantityNetMatchesTheFrozenDiscount() {
@@ -59,6 +64,18 @@ class FinanceOrderPayableQueryServiceTest {
     }
 
     @Test
+    void signedOrderUsesTheActualReceivableWhenOutboundIsLessThanConfirmedWeight() {
+        FinanceReceivableEntity receivable = new FinanceReceivableEntity();
+        receivable.setId(31L);
+        FinanceReceivableVO summary = new FinanceReceivableVO();
+        summary.setNetAmount(new BigDecimal("8.0000"));
+        when(receivableDao.selectNormalByOrder(ORDER_ID)).thenReturn(receivable);
+        when(receivableDao.selectSummaryById(31L)).thenReturn(summary);
+
+        assertThat(service.payableOfConfirmedOrder(ORDER_ID)).isEqualByComparingTo("8.0000");
+    }
+
+    @Test
     void paidAmountIsTheSumOfRecordedOrderFunding() {
         when(fundingDao.selectOrderFunding(ORDER_ID)).thenReturn(List.of(funding("8.0000"), funding("2.0000")));
 
@@ -76,9 +93,10 @@ class FinanceOrderPayableQueryServiceTest {
     void receivedAmountAddsCodCollectionsOnTopOfPaymentFacts() {
         when(fundingDao.selectOrderFunding(ORDER_ID)).thenReturn(List.of(funding("8.0000")));
         when(receiptDao.sumCodCollectedByOrder(ORDER_ID)).thenReturn(new BigDecimal("2.4000"));
+        when(receiptDao.sumManualCollectedByOrder(ORDER_ID)).thenReturn(new BigDecimal("1.4000"));
 
         assertThat(service.paidAmountOf(ORDER_ID)).as("支付事实口径不含 COD 收款").isEqualByComparingTo("8.0000");
-        assertThat(service.receivedAmountOf(ORDER_ID)).as("客户看到的已付是实收").isEqualByComparingTo("10.4000");
+        assertThat(service.receivedAmountOf(ORDER_ID)).as("历史人工补收也计入该订单实收").isEqualByComparingTo("11.8000");
     }
 
     @Test

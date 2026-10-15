@@ -17,5 +17,7 @@ public interface FinanceOrderFundingSourceDao {
 
     boolean hasReceiptFunding(@Param("orderId") Long orderId);
 
+    boolean hasActiveOrderPaymentIntent(@Param("orderId") Long orderId);
+
     boolean isRechargeReceipt(@Param("receiptId") Long receiptId);
 }

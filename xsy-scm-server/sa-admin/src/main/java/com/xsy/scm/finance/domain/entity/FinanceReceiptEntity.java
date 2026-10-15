@@ -82,6 +82,9 @@ public class FinanceReceiptEntity extends FinanceRecord {
      */
     private String sourceType;
 
-    /** 系统来源主键；{@code PAYMENT_TRANSACTION} 时是 {@code xsy_payment_transaction.id}。 */
+    /** 系统来源主键；支付交易取交易 id，分笔 COD 取幂等命令记录 id。 */
     private Long sourceId;
+
+    /** 分笔 COD 收款所属订单；V131 的历史行仍以 source_id 表示订单。 */
+    private Long codOrderId;
 }

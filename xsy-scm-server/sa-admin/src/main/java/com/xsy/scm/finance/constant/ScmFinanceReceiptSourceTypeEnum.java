@@ -19,13 +19,11 @@ public enum ScmFinanceReceiptSourceTypeEnum {
     /** 来源是支付域的交易事实：{@code source_id = xsy_payment_transaction.id}（ADM-12）。 */
     PAYMENT_TRANSACTION("支付交易"),
 
-    /**
-     * 来源是货到付款的订单：{@code source_id = xsy_sales_order.id}。
-     *
-     * <p>
-     * 唯一索引 {@code uk_finance_receipt_source_active} 因此保证「一张 COD 订单最多一笔收款」—— 重复登记由库直接拦下，而不是靠服务层「先查后写」。
-     */
-    ORDER_COD_COLLECTION("货到付款收款");
+    /** V131 历史来源：{@code source_id = xsy_sales_order.id}，保留旧事实不改写。 */
+    ORDER_COD_COLLECTION("货到付款收款"),
+
+    /** 分笔 COD 来源：{@code source_id = xsy_idempotency_record.id}，订单由 cod_order_id 指明。 */
+    ORDER_COD_INSTALLMENT("货到付款分笔收款");
 
     private final String desc;
 

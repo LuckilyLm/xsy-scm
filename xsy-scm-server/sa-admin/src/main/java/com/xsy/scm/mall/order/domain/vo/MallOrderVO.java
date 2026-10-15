@@ -57,10 +57,14 @@ public class MallOrderVO {
     private MallOrderDiscountVO discount;
     /** 结算方式约定：WALLET / CREDIT / COD；后台订单或未选择时为 null */
     private String settlementMethod;
-    /** 应付净额（实重 × 锁定价 − 冻结优惠等比分摊，与签收应收同口径），仅已确认订单返回 */
+    /** 签收前按确认实重预估；签收后按实际出库形成的正常应收净额，仅已确认订单返回。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal payableAmount;
     /** 已付金额（该订单实际收到的钱：支付事实 + 货到付款收款），仅已确认订单返回 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal paidAmount;
+
+    /** 已收金额高于当前应付的差额；只展示事实，不自动退款。 */
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal excessPaidAmount;
 }

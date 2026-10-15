@@ -26,6 +26,7 @@ import java.util.List;
  */
 @Mapper
 public interface FinanceReceivableSourceDao {
+    boolean hasFinalDeliveryResult(@Param("salesOrderId") Long salesOrderId);
 
     /**
      * 已签收分配行 + 订单的结算对方（单头维度）。

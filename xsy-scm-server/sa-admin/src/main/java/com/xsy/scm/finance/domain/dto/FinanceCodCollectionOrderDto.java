@@ -15,7 +15,11 @@ public class FinanceCodCollectionOrderDto {
     /** 销售订单主键。 */
     private Long orderId;
 
-    /** 下单客户主键（收款的结算对象由客户域规则解析，这里只给客户）。 */
+    private String orderNo;
+
+    private Long sellerId;
+
+    /** 下单客户主键用于当前数据范围校验；收款结算主体由历史应收冻结快照提供。 */
     private Long customerId;
 
     /** 该订单的结算约定是否为货到付款。 */

@@ -3,6 +3,7 @@ package com.xsy.scm.mall;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.finance.domain.form.FinanceCodCollectionForm;
 import com.xsy.scm.finance.service.FinanceReceiptService;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
@@ -61,7 +62,7 @@ class MallOrderPaymentDisplayPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("少收时已付是实收额，待付保留差额")
+    @DisplayName("少收后继续分笔补收，客户详情随实际到账变为已付清")
     void partialCollectionLeavesTheRemainderAsDue() {
         CodFixture fixture = mallCodOrder("partial");
 
@@ -70,6 +71,44 @@ class MallOrderPaymentDisplayPgIT extends ScmW5PgITBase {
         MallOrderVO view = customerView(fixture);
         assertThat(view.getPaidAmount()).isEqualByComparingTo("1.0000");
         assertThat(due(view)).isEqualByComparingTo("1.4000");
+
+        collect(fixture, "1.4000", "partial-supplement");
+        MallOrderVO settled = customerView(fixture);
+        assertThat(settled.getPaidAmount()).isEqualByComparingTo(PAYABLE);
+        assertThat(due(settled)).isEqualByComparingTo("0.0000");
+    }
+
+    @Test
+    @DisplayName("历史人工补收计入已付，反向核销后从该订单已付中扣除")
+    void manualSupplementTracksEffectiveWriteOffs() {
+        CodFixture fixture = mallCodOrder("manual");
+        Long receiptId = jdbc.queryForObject("""
+                INSERT INTO xsy_finance_receipt (receipt_no, customer_id, customer_name_snapshot,
+                    settlement_customer_id, settlement_customer_name_snapshot, amount, method,
+                    received_at, entry_type)
+                SELECT ?, customer_id, customer_name_snapshot, settlement_customer_id,
+                    settlement_customer_name_snapshot, 1.0000, 'CASH', now(), 'NORMAL'
+                FROM xsy_finance_receivable WHERE id = ? RETURNING id
+                """, Long.class, "RC-MANUAL-" + UUID.randomUUID(), fixture.receivableId());
+        Long writeOffId = jdbc.queryForObject("""
+                INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type,
+                    target_id, amount, entry_type, written_off_at, operator)
+                VALUES (?, 'RECEIPT', ?, 'RECEIVABLE', ?, 1.0000, 'NORMAL', now(), ?) RETURNING id
+                """, Long.class, "WO-MANUAL-" + UUID.randomUUID(), receiptId, fixture.receivableId(),
+                ScmOperator.current());
+        evictMybatisCache();
+        assertThat(customerView(fixture).getPaidAmount()).isEqualByComparingTo("1.0000");
+
+        jdbc.update("""
+                INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type,
+                    target_id, amount, entry_type, reverse_of_id, reason, written_off_at, operator)
+                VALUES (?, 'RECEIPT', ?, 'RECEIVABLE', ?, 1.0000, 'REVERSE', ?,
+                    '人工核销撤销', now(), ?)
+                """, "WO-REVERSE-" + UUID.randomUUID(), receiptId, fixture.receivableId(), writeOffId,
+                ScmOperator.current());
+        evictMybatisCache();
+        assertThat(customerView(fixture).getPaidAmount()).isEqualByComparingTo("0.0000");
+        assertThat(due(customerView(fixture))).isEqualByComparingTo(PAYABLE);
     }
 
     // ------------------------------------------------------------------

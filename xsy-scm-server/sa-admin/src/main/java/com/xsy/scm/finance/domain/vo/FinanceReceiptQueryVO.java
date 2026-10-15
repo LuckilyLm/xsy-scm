@@ -16,6 +16,9 @@ public class FinanceReceiptQueryVO {
 
     private String receiptNo;
 
+    private Long codOrderId;
+    private String codOrderNo;
+
     private Long customerId;
 
     private String customerName;

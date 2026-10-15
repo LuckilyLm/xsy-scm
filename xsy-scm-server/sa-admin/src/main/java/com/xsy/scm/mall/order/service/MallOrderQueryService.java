@@ -144,9 +144,12 @@ public class MallOrderQueryService {
         result.setDiscount(discount(orderId));
         // 资金投影只在已确认订单计算：确认前实重未齐，应付没有权威口径；支付时点也只可能在确认后。
         if (ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus())) {
-            result.setPayableAmount(payableQueryService.payableOfConfirmedOrder(orderId));
+            BigDecimal payable = payableQueryService.payableOfConfirmedOrder(orderId);
             // 客户看到的「已付」是实收：余额 / 在线走支付事实，货到付款走收款事实。
-            result.setPaidAmount(payableQueryService.receivedAmountOf(orderId));
+            BigDecimal paid = payableQueryService.receivedAmountOf(orderId);
+            result.setPayableAmount(payable);
+            result.setPaidAmount(paid);
+            result.setExcessPaidAmount(paid.subtract(payable).max(BigDecimal.ZERO));
         }
         return result;
     }

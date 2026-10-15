@@ -1,12 +1,15 @@
 package com.xsy.scm.finance.service;
 
 import com.xsy.scm.finance.dao.FinanceOrderFundingSourceDao;
+import com.xsy.scm.finance.dao.FinanceReceivableDao;
 import com.xsy.scm.finance.dao.FinanceReceiptDao;
 import com.xsy.scm.finance.dao.FinanceReceivableSourceDao;
 import com.xsy.scm.finance.constant.FinanceConstant;
 import com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto;
 import com.xsy.scm.finance.domain.dto.FinanceOrderFundingDto;
 import com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto;
+import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
+import com.xsy.scm.finance.domain.vo.FinanceReceivableVO;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -22,24 +25,38 @@ import org.springframework.transaction.annotation.Transactional;
  * 订单资金金额的只读口径：确认后应付净额与已付金额。
  *
  * <p>
- * 应付净额与签收应收共用同一把尺子（实重 × 冻结售价 − 冻结优惠等比分摊）， 客户在确认后支付的钱与签收后形成的应收才不会出现两个答案。 授信敞口也读这里，因此「占用多少额度」与「最终开多少应收」同样只有一个答案。本服务不写任何表。
+ * 签收前按确认实重与冻结优惠计算预收应付；签收后以实际出库形成的正常应收净额为准。
+ * 分拣出库量可以小于确认实重，已付超过实发应收的部分按既有超额资金与售后规则处理，不自动退款。本服务不写任何表。
  */
 @Service
 @RequiredArgsConstructor
 public class FinanceOrderPayableQueryService {
 
     private final FinanceReceivableSourceDao financeReceivableSourceDao;
+    private final FinanceReceivableDao financeReceivableDao;
     private final FinanceOrderFundingSourceDao financeOrderFundingSourceDao;
     private final FinanceReceiptDao financeReceiptDao;
 
     /**
-     * 已确认订单的应付净额：逐行 {@code 实重 × 锁定价} 扣冻结优惠等比分摊后求和（行先舍入再汇总，与应收单头同口径）。
+     * 已确认订单的当前应付：签收前取确认实重预估，签收后取正常应收扣红字的净额。
      *
      * <p>
      * 调用方负责只在已确认订单上使用：确认前实重未录齐，本方法不替「能不能算」背书。
      */
     @Transactional(readOnly = true)
     public BigDecimal payableOfConfirmedOrder(Long salesOrderId) {
+        FinanceReceivableEntity receivable = financeReceivableDao.selectNormalByOrder(salesOrderId);
+        if (receivable != null) {
+            FinanceReceivableVO summary = financeReceivableDao.selectSummaryById(receivable.getId());
+            if (summary == null || summary.getNetAmount() == null) {
+                throw new IllegalStateException("已生成的订单应收缺少净额: " + salesOrderId);
+            }
+            return summary.getNetAmount().max(BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE));
+        }
+        // 异常签收和 0 元正常签收不生成应收；终态交付后不能再按确认实重追收。
+        if (financeReceivableSourceDao.hasFinalDeliveryResult(salesOrderId)) {
+            return BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE);
+        }
         Map<Long, BigDecimal> discounts = new HashMap<>();
         for (FinanceOrderDiscountLineDto line : financeReceivableSourceDao.selectOrderDiscountLines(salesOrderId)) {
             if (line.getOrderItemId() != null && line.getDiscountAmount() != null) {
@@ -107,15 +124,17 @@ public class FinanceOrderPayableQueryService {
     }
 
     /**
-     * 实收金额：该订单<b>实际收到的钱</b> —— 支付事实（余额 / 在线）+ 货到付款收款。
+     * 实收金额：支付事实、专用 COD 分笔收款，以及人工收款对该订单正常应收的有效核销。
      *
      * <p>
-     * 两种结算方式互斥，因此两项不会同时有值：余额 / 账期 / 在线走支付事实，货到付款走收款事实。 客户侧的「已付」用这个数，否则 COD 订单收了钱仍会一直显示全额待付。
+     * 新订单的结算方式互斥；账期和历史 COD 人工补收通过有效核销归属订单，避免财务已结清而客户仍看到待付。
      */
     @Transactional(readOnly = true)
     public BigDecimal receivedAmountOf(Long salesOrderId) {
         BigDecimal collected = financeReceiptDao.sumCodCollectedByOrder(salesOrderId);
+        BigDecimal manualSupplement = financeReceiptDao.sumManualCollectedByOrder(salesOrderId);
         return paidAmountOf(salesOrderId)
-                .add(collected == null ? BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE) : collected);
+                .add(collected == null ? BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE) : collected)
+                .add(manualSupplement == null ? BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE) : manualSupplement);
     }
 }

@@ -56,6 +56,8 @@
                r.created_at AS createdAt, r.updated_at AS updatedAt,
                r.created_by AS createdBy, r.updated_by AS updatedBy,
                r.receipt_no AS receiptNo,
+               cod_order.id AS codOrderId,
+               cod_order.order_no AS codOrderNo,
                r.customer_id AS customerId,
                r.customer_name_snapshot AS customerName,
                r.settlement_customer_id AS settlementCustomerId,
@@ -76,6 +78,10 @@
                r.external_reference AS externalReference,
                r.remark
         FROM xsy_finance_receipt r
+        LEFT JOIN xsy_sales_order cod_order ON cod_order.id = CASE
+            WHEN r.source_type = 'ORDER_COD_COLLECTION' THEN r.source_id
+            WHEN r.source_type = 'ORDER_COD_INSTALLMENT' THEN r.cod_order_id
+            ELSE NULL END AND cod_order.deleted = FALSE
         LEFT JOIN xsy_payment_transaction pt ON r.source_type = 'PAYMENT_TRANSACTION' AND pt.id = r.source_id
         LEFT JOIN xsy_payment_intent pi ON pi.id = pt.intent_id
         LEFT JOIN xsy_customer c ON c.id = r.customer_id AND c.deleted = FALSE
@@ -155,10 +161,20 @@
     -->
     <select id="sumCodCollectedByOrder" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(amount), 0) FROM xsy_finance_receipt
-        WHERE source_type = 'ORDER_COD_COLLECTION'
-          AND source_id = #{orderId}
+        WHERE ((source_type = 'ORDER_COD_COLLECTION' AND source_id = #{orderId})
+            OR (source_type = 'ORDER_COD_INSTALLMENT' AND cod_order_id = #{orderId}))
           AND entry_type = 'NORMAL'
           AND deleted = FALSE
+    </select>
+
+    <select id="sumManualCollectedByOrder" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(CASE WHEN w.entry_type = 'NORMAL' THEN w.amount ELSE -w.amount END), 0)
+        FROM xsy_finance_write_off w
+        JOIN xsy_finance_receivable ar ON ar.id = w.target_id AND ar.entry_type = 'NORMAL'
+            AND ar.source_type = 'SALES_ORDER' AND ar.source_id = #{orderId} AND ar.deleted = FALSE
+        JOIN xsy_finance_receipt r ON r.id = w.source_id AND r.source_type IS NULL
+            AND r.entry_type = 'NORMAL' AND r.deleted = FALSE
+        WHERE w.source_type = 'RECEIPT' AND w.target_type = 'RECEIVABLE' AND w.deleted = FALSE
     </select>
 
 </mapper>

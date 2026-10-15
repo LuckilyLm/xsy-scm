@@ -68,4 +68,9 @@
                 AND NOT EXISTS (SELECT 1 FROM xsy_finance_write_off reverse
                     WHERE reverse.reverse_of_id = w.id AND reverse.entry_type = 'REVERSE' AND reverse.deleted = FALSE))
     </select>
+    <select id="hasActiveOrderPaymentIntent" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM xsy_payment_intent i
+            WHERE i.source_type = 'SALES_ORDER' AND i.source_id = #{orderId}
+                AND i.status IN ('CREATED', 'PENDING', 'SUCCEEDED') AND i.deleted = FALSE)
+    </select>
 </mapper>

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.finance.dao.FinanceReceivableSourceDao">
+    <select id="hasFinalDeliveryResult" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM xsy_delivery_route_order d
+            WHERE d.order_id = #{salesOrderId} AND d.assignment_status = 'ACTIVE'
+                AND d.fulfillment_status IN ('SIGNED', 'EXCEPTION') AND d.deleted = FALSE)
+    </select>
 
     <!--
       财务域对配送 / 订单 / 库存表只读：本文件只有 SELECT。
@@ -171,6 +176,8 @@
     <select id="selectCodCollectionOrder"
             resultType="com.xsy.scm.finance.domain.dto.FinanceCodCollectionOrderDto">
         SELECT o.id AS orderId,
+               o.order_no AS orderNo,
+               o.seller_id AS sellerId,
                o.customer_id AS customerId,
                (o.settlement_method = 'COD') AS codSettlement
         FROM xsy_sales_order o

@@ -8,10 +8,13 @@ import com.xsy.scm.finance.permission.FinancePermission;
 import com.xsy.scm.finance.domain.form.FinanceCodCollectionForm;
 import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
 import com.xsy.scm.finance.domain.form.FinanceReceiptReverseForm;
+import com.xsy.scm.finance.domain.vo.FinanceCodCollectionPreviewVO;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
 import com.xsy.scm.finance.service.FinanceReceiptService;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -51,11 +54,17 @@ public class FinanceReceiptController {
         return ResponseDTO.ok(financeReceiptService.reverse(form, idempotencyKey));
     }
 
+    @GetMapping("/cod-preview/{orderId}")
+    @SaCheckPermission(FinancePermission.RECEIPT_ADD)
+    public ResponseDTO<FinanceCodCollectionPreviewVO> previewCod(@PathVariable Long orderId) {
+        return ResponseDTO.ok(financeReceiptService.previewCod(orderId));
+    }
+
     /**
      * 货到付款收款确认：对已签收的 COD 订单登记实收并核销其应收。
      *
      * <p>
-     * 沿用「登记收款」的权限：能不能登记收款与能不能收 COD 的钱是同一件事，不为同一能力再切一个角色维度。 必须带 {@code Idempotency-Key}；同一张订单最多一笔 COD 收款由收款来源唯一索引兜住。
+     * 沿用「登记收款」权限。必须带 {@code Idempotency-Key}；一张订单可以分笔登记，每笔以请求来源唯一键防重，合计不得超过应收剩余。
      */
     @PostMapping("/cod-collection")
     @SaCheckPermission(FinancePermission.RECEIPT_ADD)

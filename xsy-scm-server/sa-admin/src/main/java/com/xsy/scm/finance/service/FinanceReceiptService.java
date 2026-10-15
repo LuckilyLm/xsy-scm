@@ -31,6 +31,8 @@ import com.xsy.scm.finance.domain.form.FinanceReceiptAddForm;
 import com.xsy.scm.finance.domain.form.FinanceReceiptReverseForm;
 import com.xsy.scm.finance.domain.form.FinanceWriteOffAddForm;
 import com.xsy.scm.finance.domain.form.FinanceWriteOffAddItemForm;
+import com.xsy.scm.finance.domain.vo.FinanceCodCollectionPreviewVO;
+import com.xsy.scm.finance.domain.vo.FinanceReceivableVO;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
@@ -54,8 +56,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 只登记 {@code NORMAL} 收款。更正错误收款应追加反向事实，不修改、作废或软删原记录。
  *
  * <p>
- * <b>收款登记与核销是两件事</b>：登记一笔钱只产生 「一笔待核销款」这一事实，绝不自动创建 {@code xsy_finance_write_off}、绝不改 {@code xsy_finance_receivable} /
- * {@code xsy_sales_order} / {@code xsy_customer.credit_limit}。允许预收：没有对应应收也可以登记收款。核销由单独命令完成。
+ * 人工收款允许预收，登记与核销分开；COD 专用命令把实际收款与本单正常应收核销放在同一事务。
+ * 两种入口都不修改订单、应收或客户授信事实。
  *
  * <p>
  * <b>不设第二套幂等基建</b>：复用既有 {@code xsy_idempotency_record} 与 {@link ScmIdempotencyService}（三段式 {@code claim → 写 → complete}
@@ -111,6 +113,40 @@ public class FinanceReceiptService {
         return result;
     }
 
+    @Transactional(readOnly = true)
+    public FinanceCodCollectionPreviewVO previewCod(Long orderId) {
+        FinanceCodCollectionOrderDto order = financeReceivableSourceDao.selectCodCollectionOrder(orderId);
+        if (order == null) {
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ORDER_NOT_FOUND);
+        }
+        requireAuthorizedCustomer(order.getCustomerId());
+        requireCodOrderScope(order);
+        if (!Boolean.TRUE.equals(order.getCodSettlement())) {
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ORDER_NOT_APPLICABLE);
+        }
+        FinanceReceivableEntity receivable = financeReceivableDao.selectNormalByOrder(orderId);
+        if (receivable == null || !order.getCustomerId().equals(receivable.getCustomerId())) {
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ORDER_NOT_APPLICABLE);
+        }
+        if (financeOrderFundingSourceDao.hasActiveOrderPaymentIntent(orderId)) {
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_PAYMENT_CONFLICT);
+        }
+        FinanceReceivableVO summary = financeReceivableDao.selectSummaryById(receivable.getId());
+        if (summary == null) {
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ORDER_NOT_APPLICABLE);
+        }
+        FinanceCodCollectionPreviewVO preview = new FinanceCodCollectionPreviewVO();
+        preview.setOrderId(orderId);
+        preview.setOrderNo(order.getOrderNo());
+        preview.setCustomerId(receivable.getCustomerId());
+        preview.setCustomerName(receivable.getCustomerNameSnapshot());
+        preview.setSettlementCustomerName(receivable.getSettlementCustomerNameSnapshot());
+        preview.setReceivableNo(receivable.getReceivableNo());
+        preview.setNetAmount(summary.getNetAmount());
+        preview.setOpenAmount(summary.getOpenAmount());
+        return preview;
+    }
+
     /**
      * 货到付款收款确认：把交付时真正收到的钱登记成收款事实，并核销该订单签收生成的正常应收。
      *
@@ -118,8 +154,7 @@ public class FinanceReceiptService {
      * <b>签收不等于已收款</b>：签收只生成应收，钱到没到要由这笔收款回答。因此本命令的前置是 「订单约定为 COD <b>且</b>已经有正常应收」—— 拒收与异常签收不生成应收，自然也就收不到钱。
      *
      * <p>
-     * <b>两层防重</b>：请求级 {@code Idempotency-Key}（同键重放首次结果）+ 收款来源唯一索引 {@code uk_finance_receipt_source_active}（一张订单最多一笔 COD
-     * 收款）。 后者是并发下的真防线：两个不同幂等键同时收同一张单，只有一个能插进去。
+     * <b>分笔与防重</b>：每笔实际收款以幂等命令记录为唯一来源，订单归属另存；同键重放首次结果，不同键可继续补收，但核销不得超过剩余应收。
      *
      * <p>
      * <b>少收与多收</b>：少收按实收登记，应收剩余仍未结；多收由核销命令按「不得超过可核销余额」拒绝 —— 金额上限只在一个地方判定，不在这里再写一遍。
@@ -132,7 +167,15 @@ public class FinanceReceiptService {
         var claim = idempotencyService.claim(FinanceConstant.COD_COLLECTION_SCOPE + ":" + form.getOrderId(),
                 idempotencyKey, form);
         if (claim.replay()) {
-            return idempotencyService.replay(claim, FinanceReceiptVO.class);
+            FinanceReceiptVO replayed = idempotencyService.replay(claim, FinanceReceiptVO.class);
+            requireAuthorizedCustomer(replayed.getCustomerId());
+            FinanceCodCollectionOrderDto replayOrder = financeReceivableSourceDao
+                    .selectCodCollectionOrder(form.getOrderId());
+            if (replayOrder == null || !replayed.getCustomerId().equals(replayOrder.getCustomerId())) {
+                throw new ScmDataScopeException();
+            }
+            requireCodOrderScope(replayOrder);
+            return replayed;
         }
         FinanceCodCollectionOrderDto order = financeReceivableSourceDao.selectCodCollectionOrder(form.getOrderId());
         if (order == null) {
@@ -145,9 +188,15 @@ public class FinanceReceiptService {
         if (receivable == null) {
             throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ORDER_NOT_APPLICABLE);
         }
-        // 收款对象由订单的客户按客户域规则解析，客户端不能指定；范围判定与人工收款同口径。
+        if (!order.getCustomerId().equals(receivable.getCustomerId())) {
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ORDER_NOT_APPLICABLE);
+        }
+        // 当前客户与订单范围只用于授权；收款事实的结算主体沿用正常应收冻结快照。
         FinanceCustomerFactDto customer = requireAuthorizedCustomer(order.getCustomerId());
-        customerSettlementAccountValidator.validateSettlementRelationship(customer.getCustomerId());
+        requireCodOrderScope(order);
+        if (financeOrderFundingSourceDao.hasActiveOrderPaymentIntent(order.getOrderId())) {
+            throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_PAYMENT_CONFLICT);
+        }
 
         FinanceReceiptAddForm receiptForm = new FinanceReceiptAddForm();
         receiptForm.setCustomerId(order.getCustomerId());
@@ -158,10 +207,11 @@ public class FinanceReceiptService {
         receiptForm.setRemark(form.getRemark());
         FinanceReceiptEntity receipt;
         try {
-            receipt = register(receiptForm, customer, ScmFinanceReceiptSourceTypeEnum.ORDER_COD_COLLECTION,
-                    order.getOrderId());
+            receipt = register(receiptForm, customer, ScmFinanceReceiptSourceTypeEnum.ORDER_COD_INSTALLMENT,
+                    claim.record().getId(), receivable.getCustomerNameSnapshot(), receivable.getSettlementCustomerId(),
+                    receivable.getSettlementCustomerNameSnapshot(), order.getOrderId());
         } catch (DuplicateKeyException duplicate) {
-            // 唯一索引兜住「一张订单最多一笔 COD 收款」：并发下先写的一方赢，后到的在这里被翻译成可解释的业务码。
+            // 同一命令记录只能生成一张收款单；不同命令的金额上限仍由核销串行裁决。
             throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ALREADY_REGISTERED);
         }
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
@@ -322,15 +372,18 @@ public class FinanceReceiptService {
         return receipt;
     }
 
-    /**
-     * 创建收款事实本身（不含幂等三段式）；反向收款由追加反向事实的命令处理。
-     */
     private FinanceCustomerFactDto requireAuthorizedCustomer(Long customerId) {
         FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(customerId);
         if (customer == null || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
             throw new ScmDataScopeException();
         }
         return customer;
+    }
+
+    private void requireCodOrderScope(FinanceCodCollectionOrderDto order) {
+        if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId())) {
+            throw new ScmDataScopeException();
+        }
     }
 
     private FinanceReceiptEntity newReverseRecord(FinanceReceiptEntity original, String reason) {
@@ -373,6 +426,13 @@ public class FinanceReceiptService {
 
     private FinanceReceiptEntity register(FinanceReceiptAddForm form, FinanceCustomerFactDto customer,
             ScmFinanceReceiptSourceTypeEnum sourceType, Long sourceId) {
+        return register(form, customer, sourceType, sourceId, customer.getCustomerName(),
+                customer.getSettlementCustomerId(), customer.getSettlementCustomerName(), null);
+    }
+
+    private FinanceReceiptEntity register(FinanceReceiptAddForm form, FinanceCustomerFactDto customer,
+            ScmFinanceReceiptSourceTypeEnum sourceType, Long sourceId, String customerNameSnapshot,
+            Long settlementCustomerId, String settlementCustomerNameSnapshot, Long codOrderId) {
 
         BigDecimal amount = ScmDecimalStrings.parseScale4Required(form.getAmount());
         if (amount.signum() <= 0) {
@@ -382,7 +442,7 @@ public class FinanceReceiptService {
         // 客户域只读契约先验证当前结算关系；快照值仍来自 FinanceCounterpartySourceDao，财务域不重算或替换。
         // 已声明结算主体却读不到未删除的那一行说明主档悬空：这两列在 finance_receipt 上都是 NOT NULL，
         // 宁可拒绝登记，也不能把付款客户自己的名字写成结算主体快照（历史事实不可改，写错就永久错）。
-        if (customer.getSettlementCustomerId() == null || customer.getSettlementCustomerName() == null) {
+        if (settlementCustomerId == null || settlementCustomerNameSnapshot == null || customerNameSnapshot == null) {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
 
@@ -393,9 +453,9 @@ public class FinanceReceiptService {
         receipt.setReceiptNo(
                 ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
         receipt.setCustomerId(customer.getCustomerId());
-        receipt.setCustomerNameSnapshot(customer.getCustomerName());
-        receipt.setSettlementCustomerId(customer.getSettlementCustomerId());
-        receipt.setSettlementCustomerNameSnapshot(customer.getSettlementCustomerName());
+        receipt.setCustomerNameSnapshot(customerNameSnapshot);
+        receipt.setSettlementCustomerId(settlementCustomerId);
+        receipt.setSettlementCustomerNameSnapshot(settlementCustomerNameSnapshot);
         receipt.setAmount(amount);
         receipt.setMethod(method(form.getMethod()));
         receipt.setReceivedAt(form.getReceivedAt());
@@ -408,6 +468,7 @@ public class FinanceReceiptService {
         // 系统来源成对出现（ck_finance_receipt_source_pairing）；人工登记的收款两者都为 null。
         receipt.setSourceType(sourceType == null ? null : sourceType.name());
         receipt.setSourceId(sourceId);
+        receipt.setCodOrderId(codOrderId);
         receipt.setCreatedAt(now);
         receipt.setUpdatedAt(now);
         receipt.setCreatedBy(operator);

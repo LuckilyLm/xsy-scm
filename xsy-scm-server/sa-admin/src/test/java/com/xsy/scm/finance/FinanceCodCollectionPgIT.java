@@ -4,8 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.xsy.scm.common.ScmW5PgITBase;
+import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.finance.constant.FinanceErrorCode;
+import com.xsy.scm.finance.dao.FinanceReceiptDao;
 import com.xsy.scm.finance.domain.form.FinanceCodCollectionForm;
 import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
 import com.xsy.scm.finance.service.FinanceReceiptService;
@@ -13,7 +16,16 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
+import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,17 +59,20 @@ class FinanceCodCollectionPgIT extends ScmW5PgITBase {
     @Autowired
     private FinanceReceiptService financeReceiptService;
 
+    @Autowired
+    private FinanceReceiptDao financeReceiptDao;
+
     @Test
-    @DisplayName("已签收的 COD 订单：登记实收并核销应收，收款来源指向订单")
+    @DisplayName("已签收的 COD 订单：登记实收并核销应收，分笔来源与订单归属分别记录")
     void collectedCodIsRecordedWithItsOrderAsSourceAndWrittenOff() {
         CodOrder order = signedCodOrder("ok");
 
         FinanceReceiptVO receipt = collect(order, RECEIVABLE_AMOUNT.toPlainString(), "CASH", "ok");
 
         assertThat(jdbc.queryForObject("SELECT source_type FROM xsy_finance_receipt WHERE id = ?", String.class,
-                receipt.getReceiptId())).isEqualTo("ORDER_COD_COLLECTION");
-        assertThat(jdbc.queryForObject("SELECT source_id FROM xsy_finance_receipt WHERE id = ?", Long.class,
-                receipt.getReceiptId())).as("来源指向订单，这笔钱才答得出是哪张单的").isEqualTo(order.orderId());
+                receipt.getReceiptId())).isEqualTo("ORDER_COD_INSTALLMENT");
+        assertThat(jdbc.queryForObject("SELECT cod_order_id FROM xsy_finance_receipt WHERE id = ?", Long.class,
+                receipt.getReceiptId())).as("每笔收款都能追到订单").isEqualTo(order.orderId());
         assertThat(receipt.getMethod()).as("方式是真实资金形式，不是 COD 本身").isEqualTo("CASH");
         assertThat(receipt.getAmount()).isEqualByComparingTo(RECEIVABLE_AMOUNT);
         assertThat(receipt.getSettlementCustomerId()).isEqualTo(order.customerId());
@@ -67,7 +82,7 @@ class FinanceCodCollectionPgIT extends ScmW5PgITBase {
     }
 
     @Test
-    @DisplayName("少收按实收登记，应收剩余仍未结")
+    @DisplayName("少收后可按订单继续分笔补收，合计核销到零")
     void partialCollectionLeavesTheRemainderOpen() {
         CodOrder order = signedCodOrder("partial");
 
@@ -76,6 +91,54 @@ class FinanceCodCollectionPgIT extends ScmW5PgITBase {
         assertThat(receipt.getAmount()).isEqualByComparingTo("1.0000");
         assertThat(writeOffCount(receipt.getReceiptId(), order.receivableId())).isEqualTo(1);
         assertThat(openAmount(order.receivableId())).as("剩余 1.4000 仍未结").isEqualByComparingTo("1.4000");
+        FinanceReceiptVO supplement = collect(order, "1.4000", "CASH", "partial-supplement");
+        assertThat(supplement.getReceiptId()).isNotEqualTo(receipt.getReceiptId());
+        assertThat(receiptCount(order.orderId())).isEqualTo(2);
+        assertThat(financeReceiptDao.sumCodCollectedByOrder(order.orderId()))
+                .isEqualByComparingTo(RECEIVABLE_AMOUNT);
+        assertThat(openAmount(order.receivableId())).isEqualByComparingTo("0.0000");
+    }
+
+    @Test
+    @DisplayName("客户后来改为集团结算，COD 收款仍沿用订单应收冻结的原结算主体")
+    void collectionUsesFrozenCounterpartyAfterCustomerRelationshipChanges() {
+        CodOrder order = signedCodOrder("frozen");
+        Long newSettlementCustomerId = newCustomer();
+        jdbc.update("UPDATE xsy_customer SET settlement_customer_id = ?, settle_mode = 'GROUP' WHERE id = ?",
+                newSettlementCustomerId, order.customerId());
+        evictMybatisCache();
+
+        FinanceReceiptVO receipt = collect(order, "1.0000", "CASH", "frozen");
+        assertThat(receipt.getSettlementCustomerId()).isEqualTo(order.customerId());
+        assertThat(writeOffCount(receipt.getReceiptId(), order.receivableId())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("V131 旧单笔收款与 V132 新分笔收款可在同一订单上接续核销")
+    void legacyCollectionCanBeFollowedByANewInstallment() {
+        CodOrder order = signedCodOrder("legacy");
+        Long legacyReceiptId = jdbc.queryForObject("""
+                INSERT INTO xsy_finance_receipt (receipt_no, customer_id, customer_name_snapshot,
+                    settlement_customer_id, settlement_customer_name_snapshot, amount, method, received_at,
+                    entry_type, source_type, source_id)
+                SELECT ?, customer_id, customer_name_snapshot, settlement_customer_id,
+                    settlement_customer_name_snapshot, 1.0000, 'CASH', now(), 'NORMAL',
+                    'ORDER_COD_COLLECTION', order_id
+                FROM xsy_finance_receivable WHERE id = ? RETURNING id
+                """, Long.class, "RC-LEGACY-" + UUID.randomUUID(), order.receivableId());
+        jdbc.update("""
+                INSERT INTO xsy_finance_write_off (write_off_no, source_type, source_id, target_type,
+                    target_id, amount, entry_type, written_off_at, operator)
+                VALUES (?, 'RECEIPT', ?, 'RECEIVABLE', ?, 1.0000, 'NORMAL', now(), ?)
+                """, "WO-LEGACY-" + UUID.randomUUID(), legacyReceiptId, order.receivableId(), ScmOperator.current());
+        evictMybatisCache();
+
+        FinanceReceiptVO installment = collect(order, "1.4000", "BANK_TRANSFER", "legacy-next");
+        assertThat(installment.getReceiptId()).isNotEqualTo(legacyReceiptId);
+        assertThat(receiptCount(order.orderId())).isEqualTo(2);
+        assertThat(financeReceiptDao.sumCodCollectedByOrder(order.orderId()))
+                .isEqualByComparingTo(RECEIVABLE_AMOUNT);
+        assertThat(openAmount(order.receivableId())).isEqualByComparingTo("0.0000");
     }
 
     @Test
@@ -95,10 +158,9 @@ class FinanceCodCollectionPgIT extends ScmW5PgITBase {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    @DisplayName("重复登记被唯一索引挡下；同一幂等键重放返回首次结果")
-    void duplicateCollectionIsRejectedByTheSourceUniqueIndex() {
-        // 唯一索引冲突会让 PostgreSQL 把当前事务标记为已中止，因此这条路径必须在真事务里走：
-        // 生产上 collectCod 自己持有事务并整体回滚，测试外层事务会把中止状态传染给后续断言。
+    @DisplayName("同键重放首次结果，收清后换键再收仍被核销上限拒绝")
+    void replayAndFullySettledOrderDoNotCreateAnotherReceipt() {
+        // 失败后检查库中没有第二张收款单，需要真事务观察整笔回滚。
         CodOrder order = signedCodOrder("dup");
         String key = prefix + ":cod-dup";
         // 幂等指纹包含请求内容，因此重放必须复用同一个表单对象，否则会被判成「同键异内容」
@@ -108,13 +170,82 @@ class FinanceCodCollectionPgIT extends ScmW5PgITBase {
         FinanceReceiptVO replayed = financeReceiptService.collectCod(request, key);
         assertThat(replayed.getReceiptId()).isEqualTo(first.getReceiptId());
 
-        // 换一个幂等键再收一次：请求级幂等放行，但来源唯一索引不允许第二笔事实
+        // 换一个幂等键再收一次：分笔来源允许新请求，但已无应收余额，整笔回滚。
         assertThatThrownBy(() -> financeReceiptService.collectCod(request, prefix + ":cod-dup-again"))
                 .isInstanceOfSatisfying(ScmBusinessException.class, failure -> assertThat(failure.getErrorCode())
-                        .isEqualTo(FinanceErrorCode.COD_COLLECTION_ALREADY_REGISTERED));
+                        .isEqualTo(FinanceErrorCode.WRITE_OFF_AMOUNT_EXCEEDED));
 
         assertThat(receiptCount(order.orderId())).isEqualTo(1);
         assertThat(writeOffCount(first.getReceiptId(), order.receivableId())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("客户改派后原操作员失去范围，同键重放不能读取旧收款结果")
+    void replayRechecksCurrentCustomerScope() {
+        CodOrder order = signedCodOrder("replay-scope");
+        FinanceCodCollectionForm request = form(order, "1.0000", "CASH");
+        String key = prefix + ":cod-replay-scope";
+        financeReceiptService.collectCod(request, key);
+
+        RequestEmployee original = (RequestEmployee) SmartRequestUtil.getRequestUser();
+        jdbc.update("UPDATE xsy_customer SET seller_id = ? WHERE id = ?", Long.MAX_VALUE, order.customerId());
+        evictMybatisCache();
+        RequestEmployee restricted = new RequestEmployee();
+        restricted.setEmployeeId(original.getEmployeeId());
+        restricted.setActualName(original.getActualName());
+        restricted.setUserType(original.getUserType());
+        restricted.setAdministratorFlag(false);
+        SmartRequestUtil.setRequestUser(restricted);
+        try {
+            assertThatThrownBy(() -> financeReceiptService.collectCod(request, key))
+                    .isInstanceOf(ScmDataScopeException.class);
+        } finally {
+            SmartRequestUtil.setRequestUser(original);
+        }
+        assertThat(receiptCount(order.orderId())).isEqualTo(1);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("不同幂等键并发补收最后一笔欠款：恰有一笔落库，另一笔完整回滚")
+    void concurrentInstallmentsCannotCollectTheLastRemainderTwice() throws Exception {
+        CodOrder order = signedCodOrder("race");
+        collect(order, "1.0000", "CASH", "race-first");
+        RequestEmployee employee = (RequestEmployee) SmartRequestUtil.getRequestUser();
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch go = new CountDownLatch(1);
+        List<Future<String>> outcomes = new ArrayList<>();
+        try {
+            for (int index = 0; index < 2; index++) {
+                final String key = "race-last-" + index;
+                outcomes.add(pool.submit(() -> {
+                    SmartRequestUtil.setRequestUser(employee);
+                    try {
+                        ready.countDown();
+                        go.await();
+                        collect(order, "1.4000", "BANK_TRANSFER", key);
+                        return "COLLECTED";
+                    } catch (ScmBusinessException rejected) {
+                        return String.valueOf(rejected.getErrorCode().getCode());
+                    } finally {
+                        SmartRequestUtil.remove();
+                    }
+                }));
+            }
+            assertThat(ready.await(30, TimeUnit.SECONDS)).isTrue();
+            go.countDown();
+            List<String> results = new ArrayList<>();
+            for (Future<String> outcome : outcomes) {
+                results.add(outcome.get(60, TimeUnit.SECONDS));
+            }
+            assertThat(results).containsExactlyInAnyOrder("COLLECTED",
+                    String.valueOf(FinanceErrorCode.WRITE_OFF_AMOUNT_EXCEEDED.getCode()));
+        } finally {
+            pool.shutdownNow();
+        }
+        assertThat(receiptCount(order.orderId())).isEqualTo(2);
+        assertThat(openAmount(order.receivableId())).isEqualByComparingTo("0.0000");
     }
 
     @Test
@@ -196,8 +327,9 @@ class FinanceCodCollectionPgIT extends ScmW5PgITBase {
 
     private Integer receiptCount(Long orderId) {
         return jdbc.queryForObject("SELECT count(*) FROM xsy_finance_receipt"
-                + " WHERE source_type = 'ORDER_COD_COLLECTION' AND source_id = ? AND deleted = FALSE",
-                Integer.class, orderId);
+                + " WHERE ((source_type = 'ORDER_COD_COLLECTION' AND source_id = ?)"
+                + " OR (source_type = 'ORDER_COD_INSTALLMENT' AND cod_order_id = ?)) AND deleted = FALSE",
+                Integer.class, orderId, orderId);
     }
 
     private Integer writeOffCount(Long receiptId, Long receivableId) {
