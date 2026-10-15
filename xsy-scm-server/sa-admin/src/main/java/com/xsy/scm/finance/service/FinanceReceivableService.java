@@ -31,14 +31,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 应收域服务：正常应收（签收派生）与红字应收（退货批准派生）。
- *
- * <p>
- * <b>红字没有金额上限</b>：红字金额直接取已批准退货事实，不扣既有核销额，也不受原应收余额限制。生成器失败不能反过来阻止订单域批准退货。允许净应收为负，{@code openAmount} 与
- * {@code overAppliedAmount} 均为读侧派生值。
- *
- * <p>
- * 来源 DAO 只读订单、退货、库存和配送事实；本服务只写财务应收记录与操作日志。应收由签收和退货批准命令触发，不提供历史回填接口；收付款事实由各自登记命令负责。
+ * 根据签收生成应收，根据批准退货生成红字应收。 红字金额按已批准退货计算，不受当前未收余额限制，也不能阻止退货审批。 本服务只写财务应收及操作日志，不直接修改订单和库存。
  */
 @Service
 @RequiredArgsConstructor
@@ -51,18 +44,10 @@ public class FinanceReceivableService {
     private final FinanceOrderFundingSettlementService financeOrderFundingSettlementService;
 
     /**
-     * 签收后生成正常应收，并补生成该订单此前已批准退货的红字。
-     *
-     * <p>
-     * 两步必须在这里连续做：{@code sign} 与 {@code approve} 是两条独立事务，只靠「退货批准时看一眼有没有正常应收」会漏账 —— 批准的那一方看不到尚未提交的签收，
-     * 签收的一方也可能看不到刚刚提交的批准。共享串行点是订单行锁 （{@code OrderReturnService.lock} 与 {@code DeliveryRouteService.sign} 都先锁
-     * {@code xsy_sales_order}），后拿到锁的一方在 {@code READ COMMITTED} 下一定能看见先提交的一方。
-     *
-     * <p>
-     * <b>必须与签收同事务同成败</b>（{@code MANDATORY}）；跳过语义（零实发 / 整单 0 元）是成功返回，不回滚签收。
+     * 签收后生成正常应收，并补齐之前已批准退货的红字应收。 签收和退货审批通过订单行锁串行处理，避免并发漏账。 生成过程与签收处于同一事务。
      *
      * @param deliveryRouteOrderId
-     *            刚被置为 {@code SIGNED} 的 {@code xsy_delivery_route_order.id}；时点与操作人只存在于这一行，不能由调用方现取
+     *            已签收的配送线路订单 ID。
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void generateOnSign(Long deliveryRouteOrderId) {
@@ -83,19 +68,11 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 退货批准 → 红字应收。
-     *
-     * <p>
-     * <b>正常应收尚不存在时成功跳过</b>：不创建孤立红字、不抛「原应收不存在」、不引入待处理状态，更不阻塞 {@code approve} —— 退货与退款单是订单域已经成立的事实。该订单后续签收时由
-     * {@link #generateOnSign} 补生成（同一套实现，不复制第二份算法）。
-     *
-     * <p>
-     * 重复执行（批准幂等重放、签收补生成、生成器重放）都收敛到「一张退货一张红字」：防重是 {@code uk_finance_receivable_source_active} 与
-     * {@code..._item_source_active}，本方法不吃 {@code Idempotency-Key}。
+     * 退货批准后生成红字应收。 原应收尚未生成时先跳过，后续签收会补齐；重复执行不会重复记账。
      *
      * @param orderReturnId
-     *            刚被置为 {@code APPROVED} 的 {@code xsy_order_return.id}
-     * @return 按冻结优惠分摊计算的退货净额
+     *            已批准的退货单 ID
+     * @return 按已冻结优惠分摊计算的退货净额
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public BigDecimal generateRedOnReturnApproved(Long orderReturnId) {

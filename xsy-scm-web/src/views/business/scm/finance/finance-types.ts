@@ -62,7 +62,7 @@ export interface FinanceCodCollectionForm {
     amount: string;
     method: FinancePaymentMethod;
     receivedAt: string;
-    // 与 FinanceReceiptAddForm 同口径：两个字段都由 trimOptional 填充，空串会变成 null。
+    // 凭据号和备注可不填；提交时将空字符串转换成 null。
     externalReference?: string | null;
     remark?: string | null;
 }

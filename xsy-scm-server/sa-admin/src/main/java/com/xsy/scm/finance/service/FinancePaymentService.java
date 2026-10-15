@@ -40,18 +40,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 付款域服务。
- *
- * <p>
- * 只接受 {@code NORMAL} 付款，且只有两种合法组合： {@code SUPPLIER} + 无来源（供应商付款 / 预付），{@code CUSTOMER} + {@code ORDER_REFUND}
- * （客户退款付款）。客户付款必须对应退款来源；不接受无来源的客户付款。
- *
- * <p>
- * <b>退款付款不冲减应收</b>：Return 已经通过红字应收处理过应收，本命令只表达「钱真的付出去了」，因此绝不写 {@code xsy_finance_write_off}、绝不改任何
- * {@code xsy_finance_receivable} 行 —— 否则同一笔退货被冲减两次。
- *
- * <p>
- * <b>不设第二套幂等基建</b>：复用既有 {@code xsy_idempotency_record} 与 {@link ScmIdempotencyService}（三段式同一事务）。
+ * 登记供应商付款和客户退款付款。 客户付款必须关联退款单；退款付款只记录实际支出，不再次冲减应收。 幂等处理沿用统一的 IdempotencyService，不另建一套机制。
  */
 @Service
 @RequiredArgsConstructor
@@ -66,17 +55,10 @@ public class FinancePaymentService {
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * 登记一笔 {@code NORMAL} 付款。
-     *
-     * <p>
-     * <b>整条链必须同事务</b>：幂等 claim、付款事实、操作日志、幂等 complete 要么一起成，要么一起不成。退款来源撞 {@code uk_finance_payment_source_active}
-     * 时同样整笔回滚 —— 留下「已付款但无日志」或「claim 已占但无结果」都是不可接受的半成品。
-     *
-     * <p>
-     * 客户退款先锁退款来源，与渠道退款及余额支付串行；来源唯一索引继续兜底重复付款。
+     * 登记付款，并在同一事务中完成幂等校验、付款写入和操作日志。 客户退款来源先加锁，避免重复付款。
      *
      * @param idempotencyKey
-     *            请求级幂等键；同键同内容重放首次结果，同键异内容按既有语义报冲突
+     *            请求幂等键；重复请求返回首次结果，内容不同则报冲突。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentVO add(FinancePaymentAddForm form, String idempotencyKey) {

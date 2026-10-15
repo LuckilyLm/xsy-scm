@@ -50,18 +50,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 收款域服务。
- *
- * <p>
- * 只登记 {@code NORMAL} 收款。更正错误收款应追加反向事实，不修改、作废或软删原记录。
- *
- * <p>
- * 人工收款允许预收，登记与核销分开；COD 专用命令把实际收款与本单正常应收核销放在同一事务。
- * 两种入口都不修改订单、应收或客户授信事实。
- *
- * <p>
- * <b>不设第二套幂等基建</b>：复用既有 {@code xsy_idempotency_record} 与 {@link ScmIdempotencyService}（三段式 {@code claim → 写 → complete}
- * 同一事务），与 delivery / inventory / sorting 同一形态。 {@code external_reference} 只是资金凭据文本，不参与任何一层防重。
+ * 记录客户收款。错误收款要新增反向记录，不修改原记录。 人工收款和核销分开处理；货到付款收款与对应应收核销在同一事务。 幂等记录沿用统一服务，外部凭据号只用于查账，不用于防重。
  */
 @Service
 @RequiredArgsConstructor

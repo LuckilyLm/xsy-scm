@@ -14,15 +14,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 收款读写。
- *
- * <p>
- * <b>登错只能反向，不能改</b>：本接口刻意不声明 update / delete， {@code ck_finance_receipt_append_only} 在库层拒绝软删，
- * {@code uk_finance_receipt_single_reverse} 保证一条 {@code NORMAL} 最多被反向一次。
- *
- * <p>
- * 收款登记与退款反向都必须先 {@code SELECT … FOR UPDATE} 锁住原行 （{@code FinanceConstant.LOCK_RANK_RECEIPT}），再校验已用额；反向与核销共用这把锁，
- * 因此「反向前已用额 = 0」这条前置在并发下才成立。
+ * 收款记录只允许新增和查询，错误收款必须登记反向记录。 登记反向记录和核销前需要锁住原收款行，防止并发重复冲回。
  */
 @Mapper
 public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {

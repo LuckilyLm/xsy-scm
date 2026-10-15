@@ -52,10 +52,7 @@ export function settleStateText(value: string | null | undefined): string {
 }
 
 /**
- * 流水记录的动作类型。
- *
- * 认不出的值原样透出而不是吞成空白：日志是审计证据，枚举演进后前端还没跟上时，
- * 宁可让人看到 `SOME_NEW_ACTION`，也不能显示成空让人以为这条没记动作。
+ * 把操作类型转为中文；不认识的类型保留原值，便于发现新增动作。
  */
 export function operationTypeText(value: string | null | undefined): string {
     if (!value) return '—';
@@ -67,8 +64,7 @@ export function settleStateTone(value: string | null | undefined): ScmStatusTone
 }
 
 /**
- * 金额单元样式。fact：单据自身金额，恒常规显示；balance：未核销/待核销等余额，零值弱化；
- * anomaly：超额核销/差额，非零即异常，红色加粗（页面配套定义 .money-alert）。
+ * 金额样式：普通金额正常显示，零余额弱化，非零异常金额高亮。
  */
 export function moneyClass(value: string | null | undefined, mode: 'fact' | 'balance' | 'anomaly' = 'fact'): string {
     if (value == null || value === '') return 'scm-money scm-money--muted';
@@ -110,9 +106,8 @@ export function isValidPositiveAmount(value: string | null | undefined): boolean
 }
 
 /**
- * 金额 = 数量 × 单价（定点四位小数，不经浮点）。
- *
- * 红字金额舍入后仍须为正且在金额字段范围内；返回空串的行不提交。
+ * 按数量和单价计算四位小数金额，不用浮点数。
+ * 金额超出允许范围或输入无效时返回空字符串，避免提交错误金额。
  */
 export function lineAmount(quantity: string | null | undefined, unitPrice: string | null | undefined): string {
     if (quantity == null || unitPrice == null || !isValidPositiveAmount(quantity) || !isValidPositiveAmount(unitPrice)) return '';
