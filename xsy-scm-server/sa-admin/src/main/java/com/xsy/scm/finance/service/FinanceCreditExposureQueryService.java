@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service;
  * 结算主体的授信敞口只读取数；客户锁与订单裁定属于调用方。
  *
  * <p>
- * <b>已确认未开应收的占用与签收应收同口径</b>：SQL 只给出「哪些订单还没开应收」，金额逐单走 {@link FinanceOrderPayableQueryService}（实重 × 锁定价 −
- * 冻结优惠等比分摊）。此前按订单的 {@code settlement_total_amount}（优惠前）加总，会让额度占用长期大于最终账单，客户被自己的优惠挡住。
+ * <b>未开应收的占用与签收应收同金额口径</b>：只有账期订单参与预占；历史空结算方式订单沿用旧口径。
+ * 已开正常应收无论原结算方式如何，按未结净额计入。订单金额逐单走 {@link FinanceOrderPayableQueryService} 的冻结优惠折算。
  */
 @Service
 @RequiredArgsConstructor

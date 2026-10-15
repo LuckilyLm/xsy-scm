@@ -90,6 +90,36 @@ class MallCreditExposurePgIT extends ScmW5PgITBase {
     }
 
     @Test
+    @DisplayName("未开应收只预占账期与历史空方式订单；余额和 COD 不占授信")
+    void onlyCreditAndLegacyOrdersReserveCreditBeforeReceivable() {
+        Long customerId = newCustomer();
+        Long skuId = newOnShelfSku("expo-methods");
+        Long creditOrderId = confirmedSalesOrder(customerId, skuId, "2.0000", "2.0000");
+        Long legacyOrderId = confirmedSalesOrder(customerId, skuId, "2.0000", "2.0000");
+        Long walletOrderId = confirmedSalesOrder(customerId, skuId, "2.0000", "2.0000");
+        Long codOrderId = confirmedSalesOrder(customerId, skuId, "2.0000", "2.0000");
+        jdbc.update("UPDATE xsy_sales_order SET settlement_method = 'CREDIT' WHERE id = ?", creditOrderId);
+        jdbc.update("UPDATE xsy_sales_order SET settlement_method = 'WALLET' WHERE id = ?", walletOrderId);
+        jdbc.update("UPDATE xsy_sales_order SET settlement_method = 'COD' WHERE id = ?", codOrderId);
+        evictMybatisCache();
+
+        FinanceCreditExposureDto exposure = exposure(customerId);
+        assertThat(exposure.getConfirmedOrderAmount())
+                .as("仅 CREDIT 与历史空方式各占 2.4000；余额和 COD 未开应收不预占授信")
+                .isEqualByComparingTo("4.8000");
+        assertThat(jdbc.queryForObject("SELECT settlement_method FROM xsy_sales_order WHERE id = ?",
+                String.class, legacyOrderId)).isNull();
+
+        normalReceivable(walletOrderId, "2.4000");
+        evictMybatisCache();
+        FinanceCreditExposureDto afterReceivable = exposure(customerId);
+        assertThat(afterReceivable.getConfirmedOrderAmount()).isEqualByComparingTo("4.8000");
+        assertThat(afterReceivable.getOpenReceivableAmount())
+                .as("实际开出的正常应收无论原结算方式如何都按未结额计入")
+                .isEqualByComparingTo("2.4000");
+    }
+
+    @Test
     @DisplayName("开出应收后订单移出占用，改由应收的未结净额计入")
     void openedReceivableReplacesTheOrderInTheExposure() {
         Long customerId = newCustomer();

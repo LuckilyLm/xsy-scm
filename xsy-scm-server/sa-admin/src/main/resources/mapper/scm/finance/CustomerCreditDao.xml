@@ -28,14 +28,19 @@
 
     <!--
       占用金额按订单逐单折算，不在这条 SQL 里 SUM 金额：
+      只预占 CREDIT 和历史空结算方式的订单；WALLET/COD 不在签收前占账期额度。
       「实重 × 锁定价 − 冻结优惠等比分摊」必须与签收应收同一把尺子，而那段折算在 Java 里
       （FinanceReceivableService.discountShare），SQL 再写一遍就是第二套口径。
     -->
     <select id="selectConfirmedOrderIdsWithoutReceivable" resultType="java.lang.Long">
         SELECT o.id FROM xsy_sales_order o
         WHERE o.settlement_customer_id=#{settlementCustomerId} AND o.status='CONFIRMED' AND o.deleted=FALSE
+          AND (o.settlement_method='CREDIT' OR o.settlement_method IS NULL)
           AND NOT EXISTS (SELECT 1 FROM xsy_finance_receivable r WHERE r.source_type='SALES_ORDER'
               AND r.source_id=o.id AND r.deleted=FALSE)
+          AND NOT EXISTS (SELECT 1 FROM xsy_delivery_route_order d WHERE d.order_id=o.id
+              AND d.assignment_status='ACTIVE' AND d.fulfillment_status IN ('SIGNED','EXCEPTION')
+              AND d.deleted=FALSE)
         ORDER BY o.id
     </select>
 </mapper>
