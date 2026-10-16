@@ -28,13 +28,7 @@ public interface CustomerBalanceMovementDao extends BaseMapper<CustomerBalanceMo
     CustomerBalanceMovementEntity selectBySource(@Param("sourceType") String sourceType,
             @Param("sourceId") Long sourceId);
 
-    /**
-     * 流水分页。
-     *
-     * <p>
-     * 数据范围<b>按结算主体的业务员</b>收窄，与收款列表同一套规则：范围为空时直接返回空页 （{@code AND FALSE}），不做「无范围即全量」的宽松处理 —— 那是 fail-open。
-     * 查询结果同时带出结算主体名与实际业务客户名，页面不必再逐行回查。
-     */
+    /** 钱包流水按结算主体所属客户范围过滤，没有权限就返回空结果。查询同时返回结算主体和实际客户名称。 */
     List<BalanceMovementVO> queryPage(Page<?> page, @Param("query") BalanceMovementQueryForm query,
             @Param("scope") ScmDataScopeContext scope);
 

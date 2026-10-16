@@ -40,13 +40,7 @@ public class BalanceRefundService {
         apply(lockSource(refundId), false);
     }
 
-    /**
-     * 订单是否已有资金分摊计划。
-     *
-     * <p>
-     * 有分摊计划时这笔退款由分摊路径负责，旧钱包返还路径整体让位。调用方需要先分流再决定是否调用 {@link #refundOnCompletion(Long)}：那条路径在遇到分摊计划时直接抛冲突，而它是
-     * {@code MANDATORY} 传播， 异常一旦逃出外层事务就会把它标记成 rollback-only，让整笔退款完成回滚。
-     */
+    /** 订单已有资金分摊计划时，退款应走分摊返还路径，不再调用旧钱包退款。必须先判定路径，避免事务异常导致整笔退款回滚。 */
     @Transactional(readOnly = true)
     public boolean hasFundingAllocationPlan(Long orderId) {
         return balanceRefundSourceDao.hasFundingAllocations(orderId);
