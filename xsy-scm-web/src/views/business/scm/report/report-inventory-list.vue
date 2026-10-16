@@ -1,16 +1,4 @@
-<!--
-  库存分析：库存流水 / 损耗分析 / 当前库存价值 / 收发存（数量版）。
-
-  三条边界：
-  1. 方向不重新发明：流水的「入 / 出」由 `SCM_INVENTORY_MOVEMENT_INBOUND_TYPES`
-     （与后端 `ScmInventoryMovementTypeEnum.getInbound()` 同源）派生，本页不再维护第二份
-     IN / OUT 清单；`quantity` 恒为正。
-  2. 成本受 `scm:report:cost:query` 控制：没有该权限时单位成本 / 成本金额整列不出现，
-     「当前库存价值」整个 Tab 也不出现；后端同时已把这些字段置 null，前端不会看到别人的成本。
-  3. 收发存只有数量：不做历史期初 / 期末均价与金额 ——
-     流水存的是「本次 movement 的 unit_cost」，不是「每次 movement 后的 avg_cost」，
-     用它回算历史均价就是伪造成本。跨单位的数量也永不相加。
--->
+<!-- 库存分析展示流水、损耗、库存价值和收发存。流向沿用库存类型，金额及成本字段根据当前权限显示。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">

@@ -17,19 +17,7 @@ import com.xsy.scm.report.domain.vo.ReportOverviewVO;
 import com.xsy.scm.report.support.ScmReportTimeRange;
 import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 
-/**
- * 经营概览（只读）。趋势与每日统计共用同一条 SQL，因此图上那个点与表里那一行必然同口径。
- *
- * <p>
- * <b>仓库范围只收窄能按仓库归属的指标</b>：采购与库存四个派生表按调用者的仓库授权范围取数，而销售与退款指标所在的 {@code xsy_sales_order} / {@code xsy_order_refund} 没有仓库列，
- * 既不能按仓库收窄，也不得拿 {@code created_by} 之类的审计字段顶替。因此仓库范围为空时，采购与库存指标返回 {@code null}（页面显示 {@code —}）而不是 0 —— 0
- * 会把它谎报成「这些仓库里没有数据」，而真实原因是「你没有可看的仓库」。两个方法抹的字段必须一致，否则指标卡与趋势图会对不上。
- *
- * <p>
- * <b>口径同源、范围策略不同</b>：销售三件套与采购提交金额的时间轴、状态、金额列与首页 / 大屏完全一致（见 {@code ScmBusinessMetricsService}），但本页不做归属维度的行级收窄 ——
- * {@code xsy_sales_order} 没有仓库列， 销售侧的可见性由页面权限承担，采购侧只按仓库收窄。大屏按「归属 ∩ 仓库」收窄，那是另一处的策略。 要统一，必须整页一起改（byCustomer / byProduct /
- * bySeller / bySupplier 都得跟着动）。
- */
+/** 经营概览只读，图表和日汇总共用同一统计口径。只有能明确归属仓库的指标才按仓库授权过滤。 */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

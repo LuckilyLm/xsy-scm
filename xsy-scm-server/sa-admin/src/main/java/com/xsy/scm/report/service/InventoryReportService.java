@@ -18,20 +18,7 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
-/**
- * 库存分析（只读）。事实源是 append-only 的 {@code xsy_inventory_movement} 与当前 {@code xsy_inventory_balance}。
- *
- * <p>
- * <b>方向不重复定义</b>：入 / 出由 {@link ScmInventoryMovementTypeEnum#isInbound()} 派生后传入 SQL，报表不自建第二套 IN / OUT 清单 ——
- * 一旦出现两份，新增流水类型时必然忘记其中一份。
- *
- * <p>
- * <b>不提供历史期初 / 期末</b>：流水存的是本次 {@code unit_cost}，不是每次变动后的 {@code avg_cost}，且账本不是从库存起点完整覆盖的，因此历史期初期末均价无法还原，宁可不给。
- *
- * <p>
- * <b>仓库授权范围</b>：五条查询的事实表都带 {@code warehouse_id}，因此与库存域的余额 / 流水页同一口径（{@code xsy_employee_warehouse_scope} 授权行或
- * {@code scm:inventory:scope:all:query}）。范围为空即返回空结果，不去跑一次恒假查询换回一张全 0 的汇总表。
- */
+/** 库存分析以库存流水与当前余额为数据来源。历史出入库按流水统计，当前库存按余额统计，不能混用时间口径。 */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
