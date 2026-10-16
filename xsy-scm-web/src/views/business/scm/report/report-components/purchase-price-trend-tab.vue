@@ -6,6 +6,7 @@
       :series="trendSeries"
   />
   <a-card size="small" :bordered="false">
+    <p class="scm-note">涨跌仅比较当前筛选范围内同商品规格、同采购单位的相邻有效业务日；首日无对比数据，基期为 0 时涨跌幅未知。采购价为已提交采购单的数量加权均价，并非入库成本。</p>
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting"
@@ -34,7 +35,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无价格波动数据'}"
-        :scroll="{x: 1000}"
+        :scroll="{x: 1430}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'bizDate'">
@@ -42,6 +43,12 @@
         </template>
         <template v-else-if="column.dataIndex === 'weightedAvgPrice'">
           <span class="scm-money">{{ moneyText(record.weightedAvgPrice) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'previousWeightedAvgPrice' || column.dataIndex === 'priceChangeAmount'">
+          <span class="scm-money">{{ changeMoneyText(record[column.dataIndex]) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'priceChangePercent'">
+          <span class="scm-money">{{ percentText(record.priceChangePercent) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'sampleLineCount'">
           <span class="scm-quantity">{{ countText(record.sampleLineCount) }}</span>
@@ -82,6 +89,9 @@ const columns = ref<TableColumnsType<PurchasePriceTrendPoint>>([
   {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
   {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 110},
   {title: '加权平均成交价', dataIndex: 'weightedAvgPrice', align: 'right', width: 160},
+  {title: '上次有效均价', dataIndex: 'previousWeightedAvgPrice', align: 'right', width: 150},
+  {title: '涨跌金额', dataIndex: 'priceChangeAmount', align: 'right', width: 140},
+  {title: '涨跌幅', dataIndex: 'priceChangePercent', align: 'right', width: 130},
   {title: '样本行数', dataIndex: 'sampleLineCount', align: 'right', width: 110},
 ]);
 
@@ -111,6 +121,16 @@ const trendSeries = computed<ReportChartLine[]>(() => {
     };
   });
 });
+
+function changeMoneyText(value: string | null | undefined): string {
+  if (value == null) return '—';
+  return (Number(value) > 0 ? '+' : '') + moneyText(value);
+}
+
+function percentText(value: string | null | undefined): string {
+  if (value == null) return '—';
+  return (Number(value) > 0 ? '+' : '') + value + '%';
+}
 
 function refresh() {
   emit('reload');

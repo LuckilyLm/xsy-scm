@@ -13,6 +13,7 @@ import com.xsy.scm.report.dao.ReportDao;
 import com.xsy.scm.report.domain.form.ScmPurchaseReportQueryForm;
 import com.xsy.scm.report.domain.vo.PurchaseReportVO;
 import com.xsy.scm.report.domain.vo.SalesReportVO;
+import com.xsy.scm.report.support.PurchasePriceTrendComparison;
 import com.xsy.scm.report.support.ScmReportTimeRange;
 import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -127,7 +128,8 @@ public class PurchaseReportService {
         if (context.warehouseNowhere()) {
             return List.of();
         }
-        return reportDao.purchasePriceTrend(range.startAt(), range.endAt(), form, context.getWarehouseScope());
+        return PurchasePriceTrendComparison.populate(
+                reportDao.purchasePriceTrend(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
     }
 
     private void maskProductCost(PageResult<PurchaseReportVO.ProductRow> result, boolean costVisible) {

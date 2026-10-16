@@ -143,6 +143,14 @@ public class PurchaseReportVO {
         private String purchaseUnit;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal weightedAvgPrice;
+        /** 当前筛选窗口内同规格与采购单位的上一有效均价。 */
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal previousWeightedAvgPrice;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal priceChangeAmount;
+        /** 百分数单位：12.5000 表示上涨 12.5%；零基期没有可用百分比。 */
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal priceChangePercent;
         private Long sampleLineCount;
     }
 }

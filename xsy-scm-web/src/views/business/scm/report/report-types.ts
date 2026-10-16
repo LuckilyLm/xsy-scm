@@ -395,6 +395,11 @@ export interface PurchasePriceTrendPoint {
     /** 不同单位永不合并成一条线（箱价与公斤价混画没有意义）。 */
     purchaseUnit?: string | null;
     weightedAvgPrice?: string | null;
+    /** 上次有效均价，仅在相同商品规格和采购单位中比较。 */
+    previousWeightedAvgPrice?: string | null;
+    priceChangeAmount?: string | null;
+    /** 以百分数为单位，零基期时为 null。 */
+    priceChangePercent?: string | null;
     sampleLineCount?: number | null;
 }
 
