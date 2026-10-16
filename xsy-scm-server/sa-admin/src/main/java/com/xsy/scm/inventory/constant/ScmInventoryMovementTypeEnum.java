@@ -3,15 +3,7 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 库存流水类型，类型本身编码方向：{@code PURCHASE_IN} 即入、{@code SALES_OUT} 即出，因此没有独立 {@code direction} 列，{@code quantity} 恒为正（由
- * {@code ck_inventory_movement_qty} 在 DB 层强制）。
- *
- * <p>
- * {@code ck_inventory_movement_snap} 是方向感知的（入库 {@code after = before + quantity}，出库
- * {@code after = before - quantity}），因此<b>新增类型必须同时</b>：扩 {@code ck_inventory_movement_type} 白名单（新迁移）、方向不同则同步扩
- * {@code ck_inventory_movement_snap} 分支、在本枚举加值、并复用「先锁单据、后按 {@code (warehouse_id, sku_id)} 升序锁余额」的锁序。
- */
+/** 库存流水的类型决定出入库方向，数量始终为正。新增流水类型时须同步后端枚举、数据库类型白名单和出入库数量校验。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryMovementTypeEnum {

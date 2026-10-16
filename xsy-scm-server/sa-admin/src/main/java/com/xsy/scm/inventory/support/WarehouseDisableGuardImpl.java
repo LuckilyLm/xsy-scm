@@ -20,20 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
-/**
- * {@link WarehouseDisableGuard} 实现。
- *
- * <p>
- * 放在 inventory 域是因为停用要同时读 {@code xsy_inventory_balance}、{@code xsy_purchase_order}、 {@code xsy_purchase_receipt} 与
- * {@code xsy_inventory_transfer}，而 inventory → purchase → warehouse 是本仓库既有的单向依赖方向，不会反向成环。
- *
- * <p>
- * 四条阻塞条件逐条短路：库存余额 &gt; 0；在途采购单；待入库收货单；在途调拨单。 在途调拨单的源仓与目标仓都计入 —— 源仓的货已经出去但账上还没落地到目标仓，目标仓还欠着一批要入库的货， 任一被停用都会让在途调拨无处可收 /
- * 无据可查。软删由 MyBatis-Plus {@code @TableLogic} 在 {@code selectCount} 时自动过滤。
- *
- * <p>
- * 只在在途阻塞、草稿不阻塞：草稿调拨还没动过任何库存，停用后发出会被拒绝，不构成风险； 在途调拨是「货已离开源仓、还没进目标仓」的真实缺口，必须挡住。
- */
+/** 仓库停用前检查四项：库存是否有余量、是否有未完成采购单、待入库收货单、在途调拨。调拨的调出仓和调入仓都要检查；任一条件不满足就拒绝停用。 */
 @Component
 @RequiredArgsConstructor
 public class WarehouseDisableGuardImpl implements WarehouseDisableGuard {

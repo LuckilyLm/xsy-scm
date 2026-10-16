@@ -9,17 +9,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-/**
- * 库存流水行。
- *
- * <p>
- * 溯源字段分两组：{@code sourceDocumentType + sourceDocumentItemId} 是防重锚点（唯一索引列），{@code sourceDocumentId + receiptNo}
- * 是人类可读溯源（流水表不设 {@code movement_no}，来源单号由 {@code xsy_purchase_receipt.receipt_no} 承担），前端据此跳收货单详情。
- *
- * <p>
- * {@code unitSnapshot} / {@code unitCost} / {@code beforeQuantity} / {@code afterQuantity} / {@code occurredAt} /
- * {@code operator} 是写入时冻结的事实；SKU 与仓库的编码、名称是实时联表（流水表刻意不存展示快照，溯源靠 id）。
- */
+/** 库存流水保留来源类型和来源明细 ID 作为防重依据，来源单号供页面查看原单据。数量、成本及发生时间保存当时的事实；商品与仓库名称可以按当前主档展示。 */
 @Data
 public class InventoryMovementVO {
 

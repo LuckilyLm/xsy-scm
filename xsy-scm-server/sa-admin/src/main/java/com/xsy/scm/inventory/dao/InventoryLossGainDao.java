@@ -12,20 +12,7 @@ import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/**
- * 报损报溢单头读写。
- *
- * <p>
- * 本表是<b>有状态单据</b>，因此有 update 方法。真正的不可变纪律在 {@code xsy_inventory_movement} 上，不在这里。
- *
- * <p>
- * <b>每个写方法都带 {@code status = 'PENDING'} 守卫</b>：只有待审核的单据可改 / 可审。没有状态守卫会让「已完成（已写流水）」的单据被改内容或被删掉，账与单会因此不一致。状态守卫写入 SQL 的
- * {@code WHERE}，而不只依赖服务层判断—— 服务层的状态判断是「给人看的错误码」，SQL 的守卫才是并发下真正生效的那一道。
- *
- * <p>
- * <b>为什么只有审批带 {@code version}，update 不带</b>：审批是一道<b>控制</b>，审批人必须批准自己读到的内容；若允许在「打开 → 审批」之间被静默改掉数量，
- * 这道控制就形同虚设，因此审批用乐观锁把这种情形变成 40921。而两个人同时改同一张草稿属于录单碰撞，与全仓其它单据（出库单 / 盘点单）处理方式一致 —— 本项目在那一类场景上不引入乐观锁，保持一致比局部更严更重要。
- */
+/** 报损报溢单可以更新，但所有写入都必须在 SQL 中限制为待审核状态。审批额外校验版本号，防止批准前单据内容被修改。 */
 @Mapper
 public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity> {
 

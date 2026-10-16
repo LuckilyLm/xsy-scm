@@ -12,19 +12,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/**
- * 规格转换单明细行：一行 = 「源 SKU 出 N（单位 U₁） → 目标 SKU 入 M（单位 U₂）」。
- *
- * <p>
- * <b>两个数量都恒为正</b>：方向由「转出 / 转入」这个动作决定（源一律出、目标一律入），不由数量正负表达 —— 用正负号表达会让「这一行到底是加还是减」变得需要推理。
- *
- * <p>
- * <b>两个单位都由单据显式声明</b>，不从余额推导：折算关系本身含单位 （1 箱 = 10 kg），让系统去猜等于把「箱」和「kg」的关系交给启发式。执行时：
- * <ul>
- * <li>{@code sourceUnit} 必须等于源 SKU 余额行的记账单位（否则 41059）；</li>
- * <li>{@code targetUnit} 在目标 SKU 已有余额行时必须等于其单位（否则 41060）， 没有余额行时用它<b>建立</b>该行（入方向才允许建行）。</li>
- * </ul>
- */
+/** 一条转换明细包含来源商品、目标商品、两边数量和单位；数量均为正，方向由转出、转入动作决定。单位按单据声明校验，目标没有余额时可由转入创建余额。 */
 @Data
 @TableName(value = "xsy_inventory_conversion_item", autoResultMap = true)
 public class InventoryConversionItemEntity {

@@ -13,17 +13,7 @@ import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/**
- * 调拨单头读写。
- *
- * <p>
- * <b>每个写方法都带状态守卫</b>（{@code WHERE status = ...}）：发出仅 {@code DRAFT}、收货仅 {@code SHIPPED}、改 / 删仅 {@code DRAFT}。守卫写在 SQL
- * 里而不只是服务层 —— 服务层的状态判断是「给人看的错误码」， SQL 的守卫才是并发下真正生效的那一道。
- *
- * <p>
- * <b>为什么不需要乐观锁</b>：发出与收货都先 {@link #lockById}（{@code FOR UPDATE}）持有单据行锁，再读明细。并发的「改草稿」也要拿同一把行锁 → 它只能等发出/收货提交后才执行，
- * 而那时状态已不是 DRAFT，改草稿会被守卫拒绝。行锁天然把「读明细 → 写流水」这段序列化了，所以不需要额外的版本号（报损报溢的审批需要，是因为它的「读」发生在弹窗打开那一刻，不在锁的保护范围内）。
- */
+/** 调拨单在 SQL 中按状态限制写入：草稿才能修改、删除和发出，发出后才能收货。发出和收货使用单据行锁防止并发重复处理。 */
 @Mapper
 public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity> {
 

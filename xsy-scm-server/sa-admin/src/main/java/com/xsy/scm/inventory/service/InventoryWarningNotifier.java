@@ -16,20 +16,7 @@ import net.lab1024.sa.base.module.support.message.constant.MessageTypeEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 库存预警阈值通知的单行评估与投递。
- *
- * <p>
- * <b>跃迁语义</b>：只在「{@code NORMAL → LOW/HIGH}」时投递，异常持续期间不重复，回到 {@code NORMAL} 之后再次异常可以再提醒一次。判定「上次是什么状态」靠
- * {@code xsy_inventory_warning_state}，而状态本身仍由 {@link ScmInventoryWarningStatusEnum#evaluate} 现算 —— 这里不复制一份阈值规则。
- *
- * <p>
- * 每次跃迁的 {@code event_key} 由 {@code (仓库, SKU, 纪元, 状态, 接收人)} 组成：
- * <ul>
- * <li>带接收人 —— 一个仓可能有多名仓管，键不含接收人会让唯一约束把第二个人之后全部挡掉；</li>
- * <li>带纪元 —— 「恢复后再次异常」必须落在一个新的键上，否则会被当成重复事件丢掉。</li>
- * </ul>
- */
+/** 库存预警只在正常转为偏低或偏高时通知，异常持续期间不重复；恢复正常后再次异常可以重新提醒。事件键必须包含仓库、商品规格、变化轮次、状态和接收人。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor

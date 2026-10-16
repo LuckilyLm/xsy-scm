@@ -11,17 +11,7 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/**
- * 库存盘点单。
- *
- * <p>
- * <b>差异不落库到明细的「差异列」上</b>：差异是 {@code actual_quantity - book_quantity} 的派生值，不另设列（冗余列会与两个真值列失去同步）。确认时真正写下来的是流水的
- * {@code before_quantity} / {@code after_quantity} —— 那才是权威账。
- *
- * <p>
- * <b>{@code operator} / {@code confirmed_at} 是流水的事实来源</b>：确认盘点时把这两个值传给 {@code InventoryCommandService}，作为
- * {@code xsy_inventory_movement.occurred_at} 与 {@code operator} —— 与入库/出库同纪律，禁止用 {@code now()} 或当前登录人顶替。
- */
+/** 盘点差异由实盘量减账面量计算，不另存差异列。确认后通过库存流水保存调整前后的数量，并使用实际确认时间和确认人。 */
 @Data
 @TableName(value = "xsy_inventory_stocktake", autoResultMap = true)
 public class InventoryStocktakeEntity {

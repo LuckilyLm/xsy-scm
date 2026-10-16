@@ -37,15 +37,7 @@ public class InventoryMovementQueryForm extends PageParam {
     @Size(max = 64, message = "商品规格编码不能超过64个字符")
     private String skuCode;
 
-    /**
-     * 流水类型过滤。
-     *
-     * <p>
-     * 枚举白名单与 {@code ScmInventoryMovementTypeEnum} / {@code ck_inventory_movement_type} <b>同源</b>：入库
-     * {@code PURCHASE_IN}、出库 {@code SALES_OUT}、盘点 {@code STOCKTAKE_GAIN} / {@code STOCKTAKE_LOSS}、报损报溢
-     * {@code LOSS_REPORT} / {@code GAIN_REPORT}、调拨 {@code TRANSFER_OUT} / {@code TRANSFER_IN}。新增流水类型时必须同步这三处 ——
-     * 否则页面按新类型筛选会被参数校验 直接拒掉（30001），表现为「流水明明写进去了，却筛不出来」。
-     */
+    /** 库存流水查询只接受已定义的流水类型。增加类型时必须同步后端枚举、数据库约束和查询参数白名单，否则新类型会无法筛选。 */
     @ScmEnumValue(enumClass = ScmInventoryMovementTypeEnum.class, message = "流水类型无效")
     private String movementType;
 

@@ -3,19 +3,7 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 调拨单状态（两步式：发出 → 在途 → 收货）。
- *
- * <p>
- * {@code DRAFT} 发出后经 {@code SHIPPED}（在途）到达 {@code RECEIVED}；草稿可取消为 {@code CANCELLED}。
- *
- * <p>
- * 之所以是两步而不是一步：货在卡车上时既不在源仓也不在目标仓，一步式会让「发出」那一刻目标仓就凭空多出库存； 且两步各自只锁一个仓库的余额行，既有的「按 {@code (warehouse_id, sku_id)}
- * 升序锁余额」纪律完全不用改， 一步式则要把锁序规则升级为跨仓排序。
- *
- * <p>
- * {@code SHIPPED} 不可取消：货已物理离开源仓，账上只能靠一张反向调拨单冲回， 改回草稿再删流水会被 {@code trg_inventory_movement_append_only} 拒绝。
- */
+/** 调拨依次从草稿、已发出到已收货。草稿可以取消；发出后不能取消或删除，必须通过后续收货或反向业务处理。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryTransferStatusEnum {
