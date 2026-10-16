@@ -1,5 +1,5 @@
 <template>
-  <p class="scm-note scm-note--block">根据当前停靠点提供配送顺序建议。建议不会自动修改线路，需要人工确认应用。</p>
+  <p class="scm-note scm-note--block">建议基于当前授权线路内已绑定的停靠点，而非全公司未排线订单池。建议不会自动修改线路或发车；每次应用都要人工确认，服务端会重验版本及所有停靠点快照。</p>
   <a-space class="plan-actions">
     <a-button
         type="primary"
@@ -33,7 +33,24 @@
       </a-descriptions-item>
     </a-descriptions>
 
+    <a-alert
+        v-if="sourceVersionStale"
+        type="warning" show-icon style="margin-bottom: 12px"
+        message="此建议由历史线路版本生成，可能已失效。仅供比较；请刷新线路并重新生成建议后应用。"
+    />
+    <a-alert
+        type="info" show-icon style="margin-bottom: 12px"
+        :message="`排线未纳入：${ignoredFactorText}。候选路线只优化冻结距离矩阵，不承诺时间窗、载重或实时路况。`"
+    />
+    <a-space style="margin-bottom: 12px">
+      <a-radio-group v-model:value="viewMode" button-style="solid">
+        <a-radio-button value="list">顺序对比</a-radio-button>
+        <a-radio-button value="map">地图对比</a-radio-button>
+      </a-radio-group>
+      <span class="plan-note">生成时线路版本：{{ proposal.sourceRouteVersion ?? '未知' }}，当前版本：{{ route.version }}</span>
+    </a-space>
     <a-table
+        v-if="viewMode === 'list'"
         size="small"
         :data-source="proposal.legs ?? []"
         :columns="planColumns"
@@ -43,18 +60,34 @@
         :scroll="{ x: 900 }"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'legDistance' || column.dataIndex === 'cumulativeDistance'">
+        <template v-if="column.dataIndex === 'change'">
+          <a-tag v-if="record.originalSeq == null">旧版快照无顺序</a-tag>
+          <a-tag v-else :color="record.originalSeq === record.seq ? 'default' : 'orange'">
+            {{ record.originalSeq === record.seq ? '不变' : `${record.originalSeq} → ${record.seq}` }}
+          </a-tag>
+        </template>
+        <template v-else-if="column.dataIndex === 'legDistance' || column.dataIndex === 'cumulativeDistance'">
           <span class="scm-quantity">{{ record[column.dataIndex] }}</span>
         </template>
       </template>
     </a-table>
+
+    <div v-if="viewMode === 'map'" class="plan-map-pane">
+      <a-radio-group v-model:value="mapVariant" button-style="solid" style="margin-bottom: 12px">
+        <a-radio-button value="current">当前线路顺序</a-radio-button>
+        <a-radio-button value="suggested">冻结建议顺序</a-radio-button>
+      </a-radio-group>
+      <p class="plan-note">当前线路以最新授权站点为准；建议地图使用生成时冻结的坐标。地图道路路径是当前地图服务的预览，不能替代建议中冻结的距离和来源。</p>
+      <ScmMap v-if="mapReady" :points="previewMapPoints" route />
+      <a-alert v-else message="该视角缺少完整、同坐标系的起点或停靠点；历史顺序表仍可查看。" show-icon type="warning"/>
+    </div>
 
     <a-space class="plan-actions">
       <a-button
           type="primary"
           v-privilege="DELIVERY_PERM.PLAN_APPLY"
           :loading="busy"
-          :disabled="proposal.status !== 'PROPOSED' || !canEdit || loading || busy"
+          :disabled="!canApplyProposal || loading || busy"
           @click="emit('apply')"
       >
         应用建议
@@ -105,12 +138,17 @@
 </template>
 
 <script setup lang="ts">
+import {computed, ref} from 'vue';
 import {type TableColumnsType} from 'ant-design-vue';
+import ScmMap from '/@/components/business/scm/map/scm-map.vue';
+import {isLocated, type MapPoint} from '/@/components/business/scm/map/types';
 import {DELIVERY_PERM} from '../use-delivery-permission';
 import {datetime} from '../../common/scm-display';
-import {planProposalStatuses, planRuleLabels, type DeliveryPlanProposal} from '../delivery-types';
+import {planProposalStatuses, planRuleLabels, type DeliveryPlanProposal, type DeliveryRoute, type DeliveryStop} from '../delivery-types';
 
-defineProps<{
+const props = defineProps<{
+  route: DeliveryRoute;
+  stops: DeliveryStop[];
   canEdit: boolean;
   loading: boolean;
   busy: boolean;
@@ -127,8 +165,74 @@ const emit = defineEmits<{
   select: [proposal: DeliveryPlanProposal];
 }>();
 
+const viewMode = ref<'list' | 'map'>('list');
+const mapVariant = ref<'current' | 'suggested'>('suggested');
+
+const sourceVersionStale = computed(() =>
+    props.proposal?.sourceRouteVersion == null ||
+    props.proposal.sourceRouteVersion !== props.route.version
+);
+const canApplyProposal = computed(() =>
+    props.canEdit && props.route.status === 'DRAFT' &&
+    props.proposal?.status === 'PROPOSED' && !sourceVersionStale.value
+);
+const factorLabels: Record<string, string> = {
+    TIME_WINDOW: '客户时间窗',
+    VEHICLE_CAPACITY: '车辆载重/容积',
+    TRAFFIC: '实时路况',
+};
+const ignoredFactorText = computed(() =>
+    (props.proposal?.ignoredFactors ?? []).length
+        ? (props.proposal?.ignoredFactors ?? []).map((item) => factorLabels[item] ?? item).join('、')
+        : '未提供限制说明（历史建议）'
+);
+
+const currentMapPoints = computed<MapPoint[]>(() => [
+    {
+        longitude: props.route.startLongitude,
+        latitude: props.route.startLatitude,
+        geomCrs: props.route.startGeomCrs,
+        label: `起点 · ${props.route.warehouseNameSnapshot}`,
+    },
+    ...props.stops.map((stop, index) => ({
+        longitude: stop.longitude,
+        latitude: stop.latitude,
+        geomCrs: stop.geomCrs,
+        label: `${index + 1} · ${stop.customerNameSnapshot}`,
+        description: stop.addressSnapshot,
+    })),
+]);
+const suggestedMapPoints = computed<MapPoint[]>(() => {
+    const plan = props.proposal;
+    if (!plan) return [];
+    return [
+        {
+            longitude: plan.sourceLongitude,
+            latitude: plan.sourceLatitude,
+            geomCrs: plan.sourceGeomCrs,
+            label: '冻结建议起点',
+        },
+        ...(plan.legs ?? []).map((leg) => ({
+            longitude: leg.longitude,
+            latitude: leg.latitude,
+            geomCrs: plan.sourceGeomCrs,
+            label: `${leg.seq} · ${leg.customerNameSnapshot ?? '停靠点'}`,
+            description: leg.addressSnapshot,
+        })),
+    ];
+});
+const previewMapPoints = computed<MapPoint[]>(() =>
+    mapVariant.value === 'current' ? currentMapPoints.value : suggestedMapPoints.value
+);
+const mapReady = computed(() =>
+    previewMapPoints.value.length >= 2 &&
+    previewMapPoints.value.every(isLocated) &&
+    previewMapPoints.value.every((point) => point.geomCrs === previewMapPoints.value[0].geomCrs)
+);
+
 const planColumns: TableColumnsType = [
-  {title: '顺序', dataIndex: 'seq', align: 'right', width: 70},
+  {title: '建议顺序', dataIndex: 'seq', align: 'right', width: 95},
+  {title: '与生成时顺序对比', dataIndex: 'change', align: 'center', width: 165},
   {title: '停靠点 / 客户', dataIndex: 'customerNameSnapshot', width: 200},
   {title: '配送地址', dataIndex: 'addressSnapshot', width: 280},
   {title: '本段距离（米）', dataIndex: 'legDistance', align: 'right', width: 130},
@@ -166,5 +270,14 @@ const planHistoryColumns: TableColumnsType = [
 
 .ml {
   margin-left: 8px;
+}
+
+.plan-map-pane {
+  height: 470px;
+  margin-bottom: 20px;
+}
+
+.plan-map-pane .plan-note {
+  margin-bottom: 12px;
 }
 </style>

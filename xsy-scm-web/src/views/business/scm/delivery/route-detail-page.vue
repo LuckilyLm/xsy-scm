@@ -155,6 +155,8 @@
           </a-tab-pane>
           <a-tab-pane v-if="hasPerm(DELIVERY_PERM.PLAN_QUERY)" key="plan" tab="辅助排线（可选）">
             <RoutePlanningSuggestionPanel
+                :route="detail.route"
+                :stops="detail.stops"
                 :can-edit="canEdit"
                 :loading="planLoading"
                 :busy="planBusy"

@@ -31,6 +31,14 @@ public class DeliveryPlanProposalVO {
 
     private Integer stopCount;
 
+    /** 冻结建议生成时的线路版本，用于页面预警；正式应用仍由服务端重验快照。 */
+    private Integer sourceRouteVersion;
+    private String sourceGeomCrs;
+    private BigDecimal sourceLongitude;
+    private BigDecimal sourceLatitude;
+    /** 排线未采用的限制条件，页面必须显式说明，不能把启发式距离当成容量/时间窗承诺。 */
+    private List<String> ignoredFactors = new ArrayList<>();
+
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal totalDistance;
 

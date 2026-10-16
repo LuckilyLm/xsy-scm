@@ -277,6 +277,8 @@ export function deliveryError(error: unknown): string {
 /** 建议里的一段：本段距离 + 累计距离。只有总距离时无法解释「为什么这单排在前面」。 */
 export interface DeliveryPlanLeg {
     seq: number;
+    /** 建议生成时的站点原顺序；旧建议可能不存在。 */
+    originalSeq?: number | null;
     stopId: Id;
     customerNameSnapshot?: string;
     addressSnapshot?: string;
@@ -297,6 +299,11 @@ export interface DeliveryPlanProposal {
     estimated: boolean;
     ruleCode: string;
     stopCount: number;
+    sourceRouteVersion?: number | null;
+    sourceLongitude?: string | number | null;
+    sourceLatitude?: string | number | null;
+    sourceGeomCrs?: ScmLocation['geomCrs'];
+    ignoredFactors?: string[];
     totalDistance?: string | null;
     legs?: DeliveryPlanLeg[];
     createdAt?: string;

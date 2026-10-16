@@ -6,6 +6,7 @@ import com.xsy.scm.delivery.domain.entity.DeliveryPlanProposalEntity;
 import com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity;
 import com.xsy.scm.delivery.domain.entity.DeliveryRouteStopEntity;
 import com.xsy.scm.delivery.domain.vo.DeliveryPlanLegVO;
+import com.xsy.scm.delivery.domain.vo.DeliveryPlanProposalVO;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -86,6 +87,35 @@ public final class DeliveryPlanSnapshotPolicy {
         }
     }
 
+    /** 只从生成时的输入快照还原地图起点、旧顺序和约束说明；旧快照缺字段时安全降级。 */
+    public static void fillPreviewSource(DeliveryPlanProposalEntity proposal, DeliveryPlanProposalVO view) {
+        Map<String, Object> frozen = proposal.getInputSnapshot();
+        if (frozen == null)
+            return;
+        Object version = frozen.get("routeVersion");
+        if (version != null) {
+            try {
+                view.setSourceRouteVersion(Integer.valueOf(String.valueOf(version)));
+            } catch (NumberFormatException ignored) {
+                // 历史坏数据只禁用页面快速应用，不放宽服务端的 requireCurrent。
+            }
+        }
+        if (frozen.get("start") instanceof Map<?, ?> start) {
+            try {
+                view.setSourceLongitude(decimal(start.get("longitude")));
+                view.setSourceLatitude(decimal(start.get("latitude")));
+                if (start.get("geomCrs") != null)
+                    view.setSourceGeomCrs(String.valueOf(start.get("geomCrs")));
+            } catch (NumberFormatException ignored) {
+                // 不使用当前路线的坐标冒充历史起点。
+            }
+        }
+        if (frozen.get("constraints") instanceof Map<?, ?> constraints
+                && constraints.get("notApplied") instanceof List<?> excluded) {
+            view.setIgnoredFactors(excluded.stream().map(String::valueOf).toList());
+        }
+    }
+
     public static List<DeliveryPlanLegVO> legs(DeliveryPlanProposalEntity proposal) {
         try {
             Map<String, Map<?, ?>> inputs = new LinkedHashMap<>();
@@ -101,6 +131,8 @@ public final class DeliveryPlanSnapshotPolicy {
                 Map<?, ?> input = Objects.requireNonNull(inputs.get(String.valueOf(item.get("stopId"))));
                 DeliveryPlanLegVO leg = new DeliveryPlanLegVO();
                 leg.setSeq(Integer.valueOf(String.valueOf(item.get("seq"))));
+                if (input.get("stopSeq") != null)
+                    leg.setOriginalSeq(Integer.valueOf(String.valueOf(input.get("stopSeq"))));
                 leg.setStopId(Long.valueOf(String.valueOf(item.get("stopId"))));
                 leg.setCustomerNameSnapshot((String) input.get("customerNameSnapshot"));
                 leg.setAddressSnapshot((String) input.get("addressSnapshot"));

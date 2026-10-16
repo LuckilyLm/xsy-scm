@@ -282,6 +282,7 @@ public class DeliveryPlanProposalService {
         vo.setDiscardedAt(row.getDiscardedAt());
         vo.setDiscardedBy(row.getDiscardedBy());
         vo.setVersion(row.getVersion());
+        DeliveryPlanSnapshotPolicy.fillPreviewSource(row, vo);
         vo.setLegs(DeliveryPlanSnapshotPolicy.legs(row));
         return vo;
     }
