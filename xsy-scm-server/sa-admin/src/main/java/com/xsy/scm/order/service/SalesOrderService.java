@@ -153,16 +153,7 @@ public class SalesOrderService {
         return new MallOrderCreationResult(result, false);
     }
 
-    /**
-     * 商城下单的幂等预检：同一个幂等键已经成功过时返回原订单，<b>不重新校验价格</b>。
-     *
-     * <p>
-     * 存在的理由：第一次下单已经成功但响应丢失时，客户重试前商品可能已经变价、收货地址也可能已被同一客户的其他采购账号改动或删除。若先做这些易变校验再进幂等，
-     * 重试会被判成「价格已变化」或「地址不存在」，客户以为没下成，实际订单已经存在。幂等键与请求指纹都不变才算命中； 指纹不同说明是另一笔请求，返回空交由正常路径处理（并在 {@code claim} 时报冲突，错误语义不变）。
-     *
-     * <p>
-     * {@code idempotencyRequest} 与 {@link #createFromMall} 必须传同一个稳定指纹，否则预检永远不命中。 客户身份由幂等 scope 里的操作者体现，因此这里不需要再传订单表单。
-     */
+    /** 相同幂等键和请求指纹已成功下单时，直接返回原订单，不再按当前价格或地址重复校验。不同请求指纹必须按新请求处理或报冲突。 */
     public Optional<MallOrderCreationResult> replayMallOrder(Object idempotencyRequest, String key) {
         return orderIdempotencyService.peekCompleted("ORDER_CREATE_MALL", key, idempotencyRequest).map(
                 claim -> new MallOrderCreationResult(orderIdempotencyService.replay(claim, SalesOrderDetailVO.class),
@@ -640,19 +631,7 @@ public class SalesOrderService {
             delete(orderVersionForm);
     }
 
-    /**
-     * 为已确认的订单<b>显式预留库存</b>。
-     *
-     * <p>
-     * <b>为什么是显式操作而不是确认时自动预留</b>：本业务的链路是「客户下单 → 订单 → 确认 → 聚合 → 采购需求 → 采购单 → 收货 → 库存」，
-     * <b>库存在订单确认之后才产生</b>。把预留挂在确认上等于要求「货先到才能接单」，与「先接单、再采购」的流程前提冲突。因此把「什么时候占货」交给业务判断：货到之后，由业务人员对本单执行预留。
-     *
-     * <p>
-     * 业务依据仍是销售订单 —— 预留的来源单据就是订单行，不存在「凭空占货」。
-     *
-     * <p>
-     * 严格语义：任一行可用量不足就抛 41011，整体回滚（不会只占一半）。仓库由 {@code defaultEnabledWarehouse} 解析（订单无仓库字段，G-03 单仓库）。
-     */
+    /** 确认订单不自动占库存，货到后才由业务人员对已确认订单执行预留。只要任一明细可用量不足，整单预留回滚，不允许部分成功。 */
     @Transactional(rollbackFor = Exception.class)
     public void reserveStock(Long orderId) {
         var salesOrder = lock(orderId);
@@ -678,16 +657,7 @@ public class SalesOrderService {
         return salesOrder;
     }
 
-    /**
-     * 写入侧的归属门禁：当前操作员必须在该订单销售负责人的范围内。
-     *
-     * <p>
-     * 查询与详情早就按 {@code orderSellerScope} 收窄，但那只保护读路径 —— 能看见的少了， 「看不见却仍能改」这条路还得在写命令里单独堵。否则持有功能权限的普通人员只要猜到订单 id，
-     * 就能改别人的单、动别人的数量、占别人的库存。功能点权限（{@code @SaCheckPermission}）回答的是 「能不能用这个功能」，这里回答的是「能不能对这个单用」，两者不能互相替代。
-     *
-     * <p>
-     * 刻意不放进 {@link #lock}：它还被退货、退款等模块调用，在那层加守卫会把这些路径的语义一起改掉。 门禁加在<b>对外写命令入口</b>，与 {@code confirmOrder} 用同一套判定。
-     */
+    /** 修改订单前必须校验当前员工是否有权操作该订单。功能权限与订单数据范围是两层独立校验，不允许凭订单 ID 越权修改。 */
     private void requireOrderSellerScope(SalesOrderEntity salesOrder) {
         if (!dataScopeService.resolve().getOrderSellerScope().allows(salesOrder.getSellerId()))
             throw new ScmDataScopeException();

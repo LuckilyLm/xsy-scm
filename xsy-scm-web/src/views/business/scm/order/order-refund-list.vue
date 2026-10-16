@@ -84,15 +84,7 @@ const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<R
 const balanceRefundOpen = ref(false), returning = ref(false);
 const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 let requestId = 0;
-/**
- * 退款列。
- *
- * 外部凭证是渠道返回的长字符串（订单号 / 流水号 / 人工备注都可能塞进来），
- * 固定 200px + ellipsis + Tooltip：不给 Tooltip 就只剩一串截断字符，
- * 不给 ellipsis 则会被长串把整行撑开。
- *
- * 已返还钱包同时带「流水」入口，属于动作而非纯文本，因此不参与 ellipsis。
- */
+/** 外部退款凭证可能很长，表格固定宽度并用悬浮提示展示全文；钱包退款的流水入口保留独立操作按钮。 */
 const columns = ref<TableColumnsType<RefundRow>>([{
   title: '退款单号',
   dataIndex: 'refundNo',

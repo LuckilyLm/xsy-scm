@@ -71,14 +71,7 @@ public class SalesOrderController {
         return ResponseDTO.ok(salesOrderQueryService.logs(orderLogQueryForm));
     }
 
-    /**
-     * 录单时的价格解析预览。
-     *
-     * <p>
-     * 返回体是定价域的 {@code PriceResolveResultVO}，与 {@code PriceResolveController#resolve} 调用同一个
-     * {@link com.xsy.scm.pricing.service.PriceResolver#preview}，因此<b>同时</b>要求 {@code scm:order:query} 与
-     * {@code scm:pricing:resolve:query}（{@link SaMode#AND}）；指定客户还须处于当前员工的客户数据范围内。
-     */
+    /** 订单录入时的价格预览复用定价服务。调用者必须同时具备订单查询和价格查询权限，客户也必须属于当前数据范围。 */
     @PostMapping("/price/preview")
     @SaCheckPermission(value = {OrderPermission.QUERY, PricingPermission.RESOLVE_QUERY}, mode = SaMode.AND)
     public ResponseDTO<com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(
@@ -88,13 +81,7 @@ public class SalesOrderController {
                 priceResolveForm.getAt()));
     }
 
-    /**
-     * 某客户某 SKU 的最近已确认订单价（只读）：仅取 CONFIRMED 单的锁定价，只用于录单旁证，不参与定价、不改价格优先级。
-     *
-     * <p>
-     * 取数源是指定客户的历史成交事实，与客户 360 的 {@code frequent-skus} 同数据面，因此门禁口径一致： <b>同时</b>要求 {@code scm:order:query} 与
-     * {@code scm:customer:query}（{@link SaMode#AND}）。
-     */
+    /** 最近成交价只参考该客户已确认订单的锁定价格，不参与当前商品定价。查询必须同时满足订单和客户权限。 */
     @GetMapping("/reference/recent-prices")
     @SaCheckPermission(value = {OrderPermission.QUERY, CustomerPermission.QUERY}, mode = SaMode.AND)
     public ResponseDTO<List<OrderRecentPriceVO>> recentPrices(@RequestParam Long customerId, @RequestParam Long skuId,

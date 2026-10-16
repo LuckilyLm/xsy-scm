@@ -81,13 +81,7 @@ export function applyDraft(draft: Draft): Order {
     return form;
 }
 
-/**
- * 历史订单复用：从历史单构造「新增草稿」，只复制允许字段并强制重新解析。
- *
- * 绝不复制：orderId / orderNo / version / status / 历史 lockedUnitPrice / draftUnitPrice /
- * 人工改价 / 库存预留 / 日志。订单来源回落为后台录单、补单字段清空；价格与主档可用性由后续
- * preview + 后端 create 校验重新决定。
- */
+/** 复制历史订单只生成新草稿，不复制单号、状态、旧锁定价、库存预留和操作日志。价格与主档可用性在新订单中重新校验。 */
 export function fromHistory(detail: Order): Order {
     const form = newOrder();
     form.customerId = detail.customerId;

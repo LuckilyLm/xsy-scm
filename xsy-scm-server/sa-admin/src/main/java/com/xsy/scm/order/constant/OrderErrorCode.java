@@ -43,15 +43,7 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_ALREADY_ASSIGNED(40973, "订单已被接单或指派，请刷新待分配列表"),
     ORDER_ASSIGN_TARGET_INVALID(40974, "目标业务员不存在、已停用或没有订单查看权限"),
 
-    /**
-     * 40945：当前订单状态不允许预留库存。
-     *
-     * <p>
-     * 只有 {@code CONFIRMED} 的订单能预留 —— 草稿还没定下要多少（实数量可能变），已取消/已完成的订单没有占用可用量的意义。
-     *
-     * <p>
-     * 40945 已核对空闲（409xx 段在 40944 与 40946 之间有空档）。
-     */
+    /** 只有已确认订单允许预留库存；草稿、取消和完成订单不得占用库存。 */
     ORDER_RESERVE_STATE_INVALID(40945, "当前订单状态不允许预留库存（仅已确认订单可预留）");
 
     /** Compatibility aliases; idempotency errors are owned by the shared SCM layer. */

@@ -18,12 +18,6 @@ public interface OrderOperationLogDao {
     List<OrderOperationLogEntity> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
             @Param("scope") ScmValueScope scope);
 
-    /**
-     * 按订单读全部处理记录，<b>不带</b>员工数据范围。
-     *
-     * <p>
-     * 只给「已经按归属校验过订单」的调用方使用（商城入口先用 {@code selectByIdAndCustomer} 确认订单属于当前客户）。 不在这里再收窄一次，是因为商城客户不是员工、没有
-     * {@code orderSellerScope}，套用员工范围会让客户看不到自己订单的记录。
-     */
+    /** 订单日志只能在调用方完成订单归属校验后读取。商城客户按客户归属校验，不使用员工的数据范围过滤。 */
     List<OrderOperationLogEntity> listByOrderId(@Param("orderId") Long orderId);
 }

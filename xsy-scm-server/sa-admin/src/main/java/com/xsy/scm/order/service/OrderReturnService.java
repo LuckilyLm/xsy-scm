@@ -404,15 +404,7 @@ public class OrderReturnService {
         return lock(orderReturnId);
     }
 
-    /**
-     * 锁退货单及其父订单、订单行（锁序：采购/销售的既有约定是<b>先单据后明细</b>，这里沿用）。
-     *
-     * <p>
-     * <b>顺带做归属门禁</b>：退货单自身没有负责人字段，归属完全由父销售订单决定。读接口 {@code detail()} 早就按 {@code orderSellerScope} 收窄，写入口却只判「退货单存在 +
-     * 父订单存在」—— 于是持有退货功能权限的普通人员只要猜到退货单 id，就能替别人的订单批退货、退款、放额度。 放在 {@code lock()} 而不是各命令里，是因为 create/approve/reject/cancel
-     * 全部经过它， 一处收口即可覆盖；{@code lockForReceipt} 的唯一调用方 {@code OrderReturnReceiptService.receive} 在入口已调过带范围的
-     * {@code detail()}，这里的重复判定不会改变它的语义。
-     */
+    /** 退货操作先锁退货单，再锁父订单和明细，并校验父订单的业务员归属。所有退货写命令都必须经过该校验，不能只依赖详情页的数据权限。 */
     private OrderReturnEntity lock(Long orderReturnId) {
         return lock(orderReturnId, true);
     }
