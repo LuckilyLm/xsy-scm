@@ -25,8 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 订单资金金额的只读口径：确认后应付净额与已付金额。
  *
  * <p>
- * 签收前按确认实重与冻结优惠计算预收应付；签收后以实际出库形成的正常应收净额为准。
- * 分拣出库量可以小于确认实重，已付超过实发应收的部分按既有超额资金与售后规则处理，不自动退款。本服务不写任何表。
+ * 签收前按确认实重与冻结优惠计算预收应付；签收后以实际出库形成的正常应收净额为准。 分拣出库量可以小于确认实重，已付超过实发应收的部分按既有超额资金与售后规则处理，不自动退款。本服务不写任何表。
  */
 @Service
 @RequiredArgsConstructor
@@ -135,6 +134,8 @@ public class FinanceOrderPayableQueryService {
         BigDecimal manualSupplement = financeReceiptDao.sumManualCollectedByOrder(salesOrderId);
         return paidAmountOf(salesOrderId)
                 .add(collected == null ? BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE) : collected)
-                .add(manualSupplement == null ? BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE) : manualSupplement);
+                .add(manualSupplement == null
+                        ? BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE)
+                        : manualSupplement);
     }
 }

@@ -8,6 +8,7 @@ import com.xsy.scm.mall.address.dao.MallCustomerAddressDao;
 import com.xsy.scm.mall.address.domain.vo.MallAddressVO;
 import com.xsy.scm.mall.cart.constant.MallCartAvailabilityEnum;
 import com.xsy.scm.mall.cart.dao.MallCartDao;
+import com.xsy.scm.mall.catalog.constant.MallStockStatusEnum;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.service.MallCatalogService;
 import com.xsy.scm.mall.catalog.service.MallQuantityPolicy;
@@ -370,7 +371,7 @@ public class MallCheckoutService {
             item.setUnavailableReason(MallErrorCode.CART_QUANTITY_RULE_INVALID.name());
             return item;
         }
-        if (!"AVAILABLE".equals(product.getStockStatus()) || product.getAvailableQty() == null
+        if (!MallStockStatusEnum.AVAILABLE.name().equals(product.getStockStatus()) || product.getAvailableQty() == null
                 || product.getAvailableQty().compareTo(quantity) < 0) {
             item.setAvailability(MallCartAvailabilityEnum.UNAVAILABLE.name());
             item.setUnavailableReason(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE.name());

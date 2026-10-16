@@ -8,7 +8,7 @@
 - **GATE-02：核心真实 PostgreSQL 集成链已通过。** 商城选仓/订单快照、显式预留、公斤库存出库、两次分批退货及成本路径已有相关验证；另独立运行跨单位贯通用例通过。真实地图服务和微信真机仍未验证。
 - **PAY-VERIFY：本地 PostgreSQL 资金定向回归已通过。** COD、授信、结算方式、余额支付、退款、回调、分摊及权限两轮分别 **38/38** 和 **47/47**，合计 **85/85 通过（0 失败/跳过）**。仅修复商城钱包支付测试夹具，不放宽资金规则；真实支付沙箱与生产渠道回调仍待验证。
 - **WX-VERIFY 本地代码与构建已通过，真实环境待验**：客户端 Node 测试 41/41、ESLint 0 错误、H5 构建与 mp-weixin 构建均成功。微信开发者工具和真实高德密钥在当前环境不可用，尚未验证交互、真机和真实坐标服务。
-- **下一阶段 QUALITY-01 / WX 外部联调**：先运行主 E2E 和聚合/全量门禁；具备微信开发者工具、真机与高德密钥后再补实机验收。生产存量迁移模拟单独进行，不触碰生产库。
+- **QUALITY-01 本地静态门禁与定向后端测试已通过，完整前端/E2E 待修复**：`tools/verify.py quality` **PASS**；ArchUnit 9/9、PG 定向回归 21 执行通过/1 条条件跳过、新增客户配送仓写入 PG 用例 1/1；TS 基线棘轮补类型后 **1770/1774，无新增错误**。后台 Vue 页面契约仍 **431/444 通过，13 项失败**；Playwright 因 `18080/18081` API 端口不在线返回 **INCOMPLETE**。下一步分批核对 13 项页面契约、启动隔离测试 API 做真实 E2E；微信真机、真实高德与生产存量迁移模拟均是独立待办。
 
 ## PAY-VERIFY 复现命令（2026-10-16 已执行）
 
@@ -33,6 +33,21 @@ npm run build:mp-weixin
 ```
 
 实测：Node 契约测试 **41/41 通过**；lint **0 错误**；H5 与微信小程序构建均 exit 0。构建存在 Sass 弃用警告。微信构建产物在 `dist/build/mp-weixin`，**导入开发者工具和真机验证尚未执行**。当前设备没有可用微信开发者工具 CLI，会话未配置真实高德服务密钥。实际地图逆地理编码、GCJ-02 坐标保存、客户登录和弱网幂等须在具有凭据及设备的环境完成。
+
+## QUALITY-01 定向检查与阻塞记录（2026-10-16）
+
+隔离测试库 PostgreSQL 18 使用 `127.0.0.1:15432`；运行静态检查前由 PowerShell 设置棘轮起点，避免已合并基线造成 Spotless 零覆盖假绿：
+
+```powershell
+cd 'D:\Browser Download\xsy-scm'
+$env:QUALITY_RATCHET_FROM = '38255e4b'
+python tools/verify.py quality
+python tools/ts_baseline_ratchet.py check
+python tools/verify.py frontend
+python tools/verify.py e2e
+```
+
+实测：quality **PASS (0 失败 / 0 未完成)**，TS 棘轮 **PASS (1770/1774，SCM 0，新错误 0)**。前端全量门禁 **FAIL**：Vue/Node 页面契约 444 项中 431 通过、13 失败；失败用例文件分别是 `p1-action-column-centre-contract.test.mjs`(1)、`p1-detail-pages-sections-contract.test.mjs`(2)、`p1-sorting-contract.test.mjs`(1)、`p3-backend-gap-inventory-contract.test.mjs`(3)、`scm-drawer-width-contract.test.mjs`(2)、`scm-table-alignment-contract.test.mjs`(1)、`scm-ui-copy-contract.test.mjs`(2)、`ui-foundation-contract.test.mjs`(1)，涉及详情分区、分拣抽屉、表格、运营文案和样式；lint、E2E TS 检查、生产构建已成功。E2E 前置检查 **INCOMPLETE (exit 2)**：`http://127.0.0.1:18080` 与 `http://127.0.0.1:18081` 无服务监听，没有实际运行 Playwright。后续不得将其写为完成验收。
 
 ## 目标与优先顺序
 

@@ -1,13 +1,10 @@
 package com.xsy.scm.mall.order.service;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
-import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmValueScope;
-import com.xsy.scm.customer.dao.CustomerDao;
-import com.xsy.scm.customer.domain.entity.CustomerEntity;
-import com.xsy.scm.customer.permission.CustomerPermission;
+import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.order.dao.MallWarehouseDao;
 import com.xsy.scm.mall.order.domain.form.MallCustomerWarehouseBindingForm;
@@ -27,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MallWarehouseAdminService {
     private final MallWarehouseDao mallWarehouseDao;
-    private final CustomerDao customerDao;
+    private final CustomerService customerService;
     private final WarehouseService warehouseService;
     private final ScmDataScopeService dataScopeService;
 
@@ -65,19 +62,10 @@ public class MallWarehouseAdminService {
 
     @Transactional(rollbackFor = Exception.class)
     public void bindCustomer(MallCustomerWarehouseBindingForm form) {
-        CustomerEntity customer = customerDao.selectById(form.getCustomerId());
-        ScmDataScopeContext scope = dataScopeService.resolve();
-        if (customer == null || !scope.getCustomerSellerScope().allows(customer.getSellerId())
-                && !ScmDataScopeService.hasPermission(CustomerPermission.ASSIGN)) {
-            throw new ScmDataScopeException();
-        }
         if (form.getWarehouseId() != null) {
             requireEnabledWarehouse(form.getWarehouseId());
         }
-        if (customerDao.updateMallDeliveryWarehouse(customer.getId(), form.getVersion(), form.getWarehouseId(),
-                com.xsy.scm.common.constant.ScmOperator.current()) != 1) {
-            throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT);
-        }
+        customerService.bindMallDeliveryWarehouse(form.getCustomerId(), form.getVersion(), form.getWarehouseId());
     }
 
     private void requireEnabledWarehouse(Long id) {

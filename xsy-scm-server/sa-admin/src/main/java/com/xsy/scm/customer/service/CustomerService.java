@@ -227,6 +227,21 @@ public class CustomerService {
         return employeeId;
     }
 
+    /**
+     * 配送仓绑定是客户主档写入；商城服务先校验目标仓授权，本服务保留客户范围和乐观锁。 不存在的客户与越权客户统一按数据范围拒绝，避免泄露其它业务员客户。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void bindMallDeliveryWarehouse(Long customerId, Integer version, Long warehouseId) {
+        CustomerEntity customer = customerDao.selectById(customerId);
+        if (customer == null || (!dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())
+                && !ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM))) {
+            throw new ScmDataScopeException();
+        }
+        if (customerDao.updateMallDeliveryWarehouse(customerId, version, warehouseId, ScmOperator.current()) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void updateStatus(CustomerStatusForm form) {
         CustomerEntity entity = require(form.getCustomerId(), form.getVersion());

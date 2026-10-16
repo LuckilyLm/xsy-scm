@@ -71,7 +71,7 @@ public class MallPaymentService {
         form.setProvider(ScmPaymentProviderEnum.INTERNAL_BALANCE.name());
         paymentIntentService.createFromMall(form, idempotencyKey);
         MallOrderVO result = orderQueryService.detail(customer, orderId);
-        idempotencyService.complete(claim, "SALES_ORDER", orderId, result);
+        idempotencyService.complete(claim, ScmPaymentSourceTypeEnum.SALES_ORDER.name(), orderId, result);
         return result;
     }
 }

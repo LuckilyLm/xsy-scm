@@ -6,6 +6,7 @@ import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.address.dao.MallCustomerAddressDao;
 import com.xsy.scm.mall.address.domain.vo.MallAddressVO;
+import com.xsy.scm.mall.order.constant.MallWarehouseSourceEnum;
 import com.xsy.scm.mall.order.dao.MallWarehouseDao;
 import com.xsy.scm.mall.order.domain.vo.MallWarehouseOptionVO;
 import com.xsy.scm.warehouse.service.WarehouseService;
@@ -44,7 +45,7 @@ public class MallWarehouseService {
             MallWarehouseOptionVO bound = new MallWarehouseOptionVO();
             bound.setWarehouseId(warehouse.getId());
             bound.setWarehouseName(warehouse.getName());
-            bound.setSource("CUSTOMER");
+            bound.setSource(MallWarehouseSourceEnum.CUSTOMER.name());
             bound.setPriority(-1);
             result.add(bound);
             // 客户绑定仓是强约束，不允许用地址区县映射绕过绑定仓下单。

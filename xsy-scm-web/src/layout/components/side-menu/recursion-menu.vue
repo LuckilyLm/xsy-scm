@@ -51,8 +51,8 @@ const rootSubmenuKeys = computed(() => menuTree.value.map((item) => item.menuId)
 
 //展开的菜单
 let currentRoute = useRoute();
-const selectedKeys = ref([]);
-const openKeys = ref([]);
+const selectedKeys = ref<Array<string | number>>([]);
+const openKeys = ref<Array<string | number>>([]);
 
 // 页面跳转
 function turnToPage(menu) {

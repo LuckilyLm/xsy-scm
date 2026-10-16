@@ -7,7 +7,6 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -129,7 +128,7 @@ class ScmArchitectureTest {
     @ArchTest
     static final ArchRule financeDoesNotDependOnOtherDomains =
             noClasses().that().resideInAPackage("..scm.finance..")
-                    .should().dependOnClassesThat(resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)
+                    .should().dependOnClassesThat(JavaClass.Predicates.resideInAnyPackage(CONCRETE_DOMAINS_EXCEPT_FINANCE)
                             .and(DescribedPredicate.doesNot(JavaClass.Predicates.ENUMS)))
                     .because("财务域只消费既有事实、只生产自己的事实；跨域读走自己的只读 DAO，跨域写一律禁止（共用值域枚举除外）");
 

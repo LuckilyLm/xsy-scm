@@ -2,6 +2,7 @@ package com.xsy.scm.mall.catalog.service;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
+import com.xsy.scm.mall.catalog.constant.MallStockStatusEnum;
 import com.xsy.scm.mall.catalog.dao.MallStockDao;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.domain.vo.MallStockFact;
@@ -32,20 +33,22 @@ public class MallStockAvailabilityService {
             MallStockFact fact = facts.get(product.getSkuId());
             if (fact == null) {
                 product.setAvailableQty(BigDecimal.ZERO);
-                product.setStockStatus("OUT_OF_STOCK");
+                product.setStockStatus(MallStockStatusEnum.OUT_OF_STOCK.name());
                 continue;
             }
             BigDecimal factor = factor(product.getSaleUnit(), fact);
             if (factor == null) {
-                product.setStockStatus("UNKNOWN");
+                product.setStockStatus(MallStockStatusEnum.UNKNOWN.name());
                 continue;
             }
             BigDecimal quantity = fact.getAvailableStockQuantity().divide(factor, 4, RoundingMode.DOWN);
             product.setAvailableQty(quantity);
             BigDecimal minimum = product.getMinOrderQty() == null ? BigDecimal.ONE : product.getMinOrderQty();
             product.setStockStatus(quantity.signum() == 0
-                    ? "OUT_OF_STOCK"
-                    : quantity.compareTo(minimum) < 0 ? "INSUFFICIENT" : "AVAILABLE");
+                    ? MallStockStatusEnum.OUT_OF_STOCK.name()
+                    : quantity.compareTo(minimum) < 0
+                            ? MallStockStatusEnum.INSUFFICIENT.name()
+                            : MallStockStatusEnum.AVAILABLE.name());
         }
     }
 
