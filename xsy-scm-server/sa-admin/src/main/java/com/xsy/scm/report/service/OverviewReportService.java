@@ -67,13 +67,7 @@ public class OverviewReportService {
         return rows;
     }
 
-    /**
-     * 概览是「一条 SQL 里混着两类指标」的例外：销售与退款指标没有仓库维度，不能因为调用者一个仓都没授权就消失，所以这里不能像列表那样整体短路掉。
-     *
-     * <p>
-     * 但空授权清单也不能直接下传 —— {@code IN ()} 是非法 SQL。XML 把 {@code scope == null} 读成恒假（失败关闭），正好是「采购与库存这四个派生表一行都不取」的合法表达，
-     * 于是范围在此处保持「不知道」，再由 {@link #clearWarehouseMetrics} 把那些零抹成 null。其余按仓库归属的查询都在 Service 层就短路了，不需要这个写法。
-     */
+    /** 经营概览同时包含按仓库统计和不按仓库统计的指标。无仓库权限时只隐藏仓库指标，不影响有权查看的销售和退款指标。 */
     private static ScmValueScope warehousePredicate(ScmDataScopeContext context) {
         return context.warehouseNowhere() ? null : context.getWarehouseScope();
     }

@@ -112,13 +112,7 @@ public class InventoryReportVO {
         private BigDecimal bookAmount;
     }
 
-    /**
-     * 收发存（数量版）行，粒度 = 仓库 × SKU × 记账单位。
-     *
-     * <p>
-     * 刻意<b>没有</b>期初 / 期末数量与金额：{@code xsy_inventory_movement} 不是从库存起点完整覆盖全部历史（初次库存入账前的采购量不在流水中），且流水存的是本次
-     * {@code unit_cost} 而非每次变动后的 {@code avg_cost}，所以历史期初期末均价无法还原。宁可只有期内净变动量，也不造一个看起来精确的假期初。
-     */
+    /** 收发存数量报表按仓库、商品规格和单位汇总期内变动。缺少完整历史成本时不推算看似精确的期初、期末金额。 */
     @Data
     public static class FlowSummaryRow {
         private Long warehouseId;

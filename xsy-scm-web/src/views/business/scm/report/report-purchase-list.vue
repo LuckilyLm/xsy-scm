@@ -1,13 +1,4 @@
-<!--
-  采购分析（含价格波动）：
-  采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动。
-
-  本页刻意没有「应付金额」：采购单金额是采购承诺，收货参考金额是履约事实，
-  两者都不等于应付 —— 应付需要收货/入账时点与核销规则， 没有这些事实，不能提前命名。
-
-  日期是「提交日期」：草稿没有承诺量也没有价格事实，因此默认统计
-  SUBMITTED / PARTIALLY_RECEIVED / RECEIVED / SHORT_CLOSED，排除 DRAFT 与 CANCELLED（SQL 固定）。
--->
+<!-- 采购分析按提交日查询有效采购事实。采购承诺金额和实际收货金额都不等同应付金额，报表不得提前标为应付。 -->
 <template>
   <a-form v-if="activeTab !== 'daily'" class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">

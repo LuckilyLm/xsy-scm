@@ -22,15 +22,7 @@ import {useEcharts} from '/@/views/business/scm/screen/composables/use-echarts';
 import {REPORT_CHART_COLORS, REPORT_CHART_HEIGHT} from './chart-theme';
 import type {ReportChartBar} from '../report-types';
 
-/**
- * TOP 排名条形图（商品 / 分类 / 客户 TOP5、供应商 TOP10）。
- *
- * 一条排名 = 一个 `{name, value, text}`（见 `report-types.ReportChartBar`：
- * `value` 只画长度、`text` 才是展示值）。
- *
- * `value` 为 `null` 的条目仍占一行（画不出条、标签显示 `—`）：静默丢掉它会让
- * 「TOP5」变成「TOP4」，而用户无从知道少的那条是没有事实还是被过滤了。
- */
+/** 排行榜保留无值条目，使用占位提示，不自行删除导致 TOP5 变 TOP4；值与显示文本分别用于图形和标签。 */
 const props = withDefaults(
     defineProps<{
         title: string;

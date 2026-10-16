@@ -1,12 +1,4 @@
-/**
- * 报表中心接口，与后端 `ScmReportController`（`/scm/report`）逐端点对应，全部只读：
- * 没有任何写端点。报表是「已成立事实的另一种看法」，不是第二套账。
- *
- * 三条统一约定：查询体一律 `POST` + JSON，日期是闭区间 `startDate` / `endDate`
- * （前端不做日界换算）；分页响应用 `ScmPage`，非分页用 `ScmResponse<T>`；
- * 导出走 `postDownload`（它已负责 `<a download>` 与文件名），不在前端硬编码文件名、
- * 不自己拼 Blob。导出不带分页参数：后端强制第 1 页 + 行数上限，超限整体拒绝。
- */
+/** 报表接口只读。日期使用前端选取的闭区间字符串，分页与非分页结果分别使用对应类型；导出不传分页参数，使用统一下载函数。 */
 import {postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

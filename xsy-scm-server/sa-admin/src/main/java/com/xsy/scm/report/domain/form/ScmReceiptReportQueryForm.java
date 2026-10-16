@@ -11,13 +11,7 @@ import com.xsy.scm.purchase.constant.ScmPutawayStatusEnum;
 import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
 import com.xsy.scm.report.support.ScmReportDateFilter;
 
-/**
- * 收货与入库页的筛选条件（收货明细 / 入库明细 / 待入库三个 Tab 共用）。
- *
- * <p>
- * <b>收货与入库是两件事</b>：收货确认（{@code xsy_purchase_receipt.status=CONFIRMED}）只是商业确认，库存入账由 {@code putaway_status=COMPLETED}
- * 决定。因此本域的「日期」在两处含义不同：收货明细按 {@code confirmed_at}，入库明细按 {@code xsy_inventory_movement.occurred_at}。页面不得把收货确认显示成「已入库」。
- */
+/** 收货确认与入库是不同事实：收货明细用确认时间，入库明细用库存流水时间。三类列表可以共用条件，但不能混淆状态。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ScmReceiptReportQueryForm extends PageParam implements ScmReportDateFilter {

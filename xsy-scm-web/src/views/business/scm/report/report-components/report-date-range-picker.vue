@@ -14,16 +14,7 @@ import dayjs from 'dayjs';
 import type {DateRange} from '../report-model';
 import {datePresets} from '../report-model';
 
-/**
- * 报表中心统一的日期区间选择器。五个页面共用它，为的是两件事只能有一个实现：
- * 快捷区间集合与默认值（由 `report-model.datePresets` 生成，纯函数可单测）；
- * 绑定值恒为 `yyyy-MM-dd` 字符串，与后端 `LocalDate` 的闭区间语义一致。
- *
- * `presets` 的取值必须是 dayjs 对象（面板要按它算月份与格子，传字符串会让日历空白），
- * 因此这里把字符串区间只为画日历转成 dayjs，写回 `v-model` 的仍是字符串。
- *
- * `allow-clear` 关掉：报表没有「不设日期看全部」这一档 —— 后端会以 41110 拒掉缺日期的查询。
- */
+/** 报表日期区间由统一组件处理。查询使用 yyyy-MM-dd 字符串，日历显示时转换为 dayjs；日期不能为空。 */
 const props = defineProps<{value?: DateRange | undefined}>();
 
 const emit = defineEmits<{'update:value': [value: DateRange | undefined]}>();

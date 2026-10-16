@@ -1,13 +1,4 @@
-/**
- * 报表中心前端常量：表格 DOM id、权限码、损耗类型口径。
- *
- * 其余枚举一律复用既有单一来源，不在本文件复制第二份：流水类型 / 来源单据类型 →
- * `inventory-const.ts`；收货模式 / 入库状态 / 采购状态 → `purchase-const.ts`；
- * 订单来源 / 价格来源 → `order-const.ts`。
- *
- * 复制一份枚举等于制造第二个真相：后端扩枚举时只改一处，另一份会静默陈旧，
- * 表现是筛选下拉里少一个类型、而列表里那一行的类型列显示成原值。
- */
+/** 报表常量只维护权限和展示配置；订单、库存、采购类型复用原模块的枚举，避免复制出不一致的状态表。 */
 import type {SmartEnum} from '/@/types/smart-enum';
 
 /**
@@ -22,16 +13,7 @@ export const SCM_REPORT_LOSS_TYPE_ENUM: SmartEnum<string> = {
     LOSS_REPORT: {value: 'LOSS_REPORT', desc: '报损'},
 };
 
-/**
- * 报表中心权限码（与后端 `@SaCheckPermission` 逐字对应）。
- *
- * 三条约束：
- * - 导出 = 对应页的 query 权限 AND `export`；`v-privilege` 只吃一个码，
- *   所以按钮上挂 `EXPORT`，AND 关系由后端裁决；
- * - `COST_QUERY` 是独立的成本门禁：没有它的角色可以看数量流水，不能看均价与金额；
- * - 后端已对缺权限的调用者把成本字段置 `null`，前端只需把列隐藏并把 `null` 渲染成 `—`，
- *   不得在前端做「无权限就显示 0」。
- */
+/** 报表导出需同时具备页面查询和导出权限；成本字段需要独立成本权限。无权查看的成本不返回数值，也不能显示为零。 */
 export const SCM_REPORT_PERMISSION = {
     OVERVIEW_QUERY: 'scm:report:overview:query',
     SALES_QUERY: 'scm:report:sales:query',

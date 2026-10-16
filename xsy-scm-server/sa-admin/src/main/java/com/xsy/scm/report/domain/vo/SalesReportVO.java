@@ -8,16 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/**
- * 销售分析各维度的返回行集合（按商品 / 按分类 / 按客户 / 按销售员 / 订单明细）。
- *
- * <p>
- * <b>全类共同遵守的口径</b>：只统计 {@code status=CONFIRMED} 的订单，业务日是 {@code confirmed_at}，金额只取
- * {@code settlement_*}。{@code ordered_*} 在本域完全不出现，避免出现「同一页面两个金额、不知哪个算数」的情况。
- *
- * <p>
- * 行数排名（{@code amountRank}）由 SQL 窗口函数在<b>分页之前</b>算出，所以第 2 页的排名仍是全局排名，不是页内排名。
- */
+/** 销售分析只统计已确认订单，按确认时间、结算金额计算。全局排名在分页前生成，翻到下一页仍保持原排名。 */
 @Data
 public class SalesReportVO {
 

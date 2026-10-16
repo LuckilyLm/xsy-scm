@@ -58,16 +58,7 @@ public final class ScmReportExcel {
         return row;
     }
 
-    /**
-     * 单元格归一化。
-     *
-     * <p>
-     * 时间必须在服务端转成字符串：FastExcel 没有 {@code OffsetDateTime} 的 Converter，直接塞进去会在写出的那一刻抛
-     * {@code ExcelWriteDataConvertException}（HTTP 500，用户看到的是「点了导出没反应」）。字符串也顺带保证导出与接口显示同一套北京时间格式。
-     *
-     * <p>
-     * {@code BigDecimal} 走 {@code toPlainString()}：科学计数法形态与位数交给文本固定下来，不让 Excel 按单元格默认格式重新收敛小数位，保留金额和数量的四位精度。
-     */
+    /** 报表导出时，日期先转换成北京时间文本，金额与数量按完整定点字符串输出，避免 Excel 自动舍入或使用科学计数法。 */
     private static Object cell(Object value) {
         if (value == null) {
             return "";

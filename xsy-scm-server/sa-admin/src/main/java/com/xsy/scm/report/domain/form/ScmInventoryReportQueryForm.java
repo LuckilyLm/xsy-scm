@@ -11,16 +11,7 @@ import com.xsy.scm.report.constant.ScmInventoryMovementFilterEnum;
 import com.xsy.scm.report.constant.ScmInventorySourceDocumentFilterEnum;
 import com.xsy.scm.report.support.ScmReportDateFilter;
 
-/**
- * 库存分析页的筛选条件（库存流水 / 损耗分析 / 当前库存价值 / 收发存数量版）。
- *
- * <p>
- * 流水按 {@code occurred_at}，当前库存价值是<b>当前时点</b>快照、不受日期区间影响，因此价值页只借用仓库与商品筛选，忽略日期字段（VO 上必须标注「当前时点」）。
- *
- * <p>
- * 损耗汇总返回单行指标而不是分页结果，控制器对 {@code /inventory/loss/summary} 因此不加 {@code @Valid}：继承自 {@code PageParam} 的 {@code pageNum} /
- * {@code pageSize} 只在分页端点上必填。
- */
+/** 库存流水按发生日期筛选；当前库存金额是当前时点数据，与选定日期区间无关。非分页概览不要求分页参数。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ScmInventoryReportQueryForm extends PageParam implements ScmReportDateFilter {

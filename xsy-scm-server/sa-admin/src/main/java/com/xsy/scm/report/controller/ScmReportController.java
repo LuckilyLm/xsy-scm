@@ -42,19 +42,7 @@ import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 
-/**
- * 报表中心（只读）。
- *
- * <p>
- * 本类没有任何写端点。金额字段只使用报表对应的已成立事实，不把确认订单额当作收入， 也不把采购金额或收货参考金额标成应付。
- *
- * <p>
- * 权限分三层且彼此不隐含：{@code scm:report:<page>:query} 管页面与查询； {@code scm:report:cost:query} 管成本字段，数量流水与成本分属两类岗位，因此成本是字段级抹除 （返回
- * {@code null}，页面显示 {@code —}），而「当前库存价值」整页都是成本，直接由接口拦住； {@code scm:report:export} 管导出，且必须 AND 上对应查询权限。
- *
- * <p>
- * 导出与列表调用同一个查询方法，口径不可能分叉，超过行数上限时明确拒绝而不是静默截断。 因此导出继承列表的仓库数据范围，{@code scm:report:export} 只代表允许导出，绝不扩大可见范围。
- */
+/** 报表只读。页面查询、导出、成本字段权限分别校验；导出不能扩大数据范围或静默截断，成本不可见时隐藏字段而不是展示零。 */
 @RestController
 @RequestMapping("/scm/report")
 @Tag(name = "SCM 报表中心")

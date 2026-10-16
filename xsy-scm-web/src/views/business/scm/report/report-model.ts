@@ -245,15 +245,7 @@ export function yesNoText(value: boolean | null | undefined): string {
     return value ? '是' : '否';
 }
 
-/**
- * 一个 Tab 的全部视图状态。
- *
- * 每个 Tab 一份（不是共享一个对象）：共用 `pageNum` 时，A Tab 翻到第 3 页再切到 B Tab，
- * B 会直接落在第 3 页甚至空态 —— 这就是「Tab 串条件」。`rows` / `error` / `loading`
- * 分开也是同一个道理：A Tab 的报错横幅不该盖在 B Tab 的表格上。
- *
- * 共享的是筛选（日期区间 + 常用条件），它留在页面级对象上。
- */
+/** 每个报表标签页分别保存分页、数据、加载状态和错误提示，切换标签时不串页码；通用筛选仍由页面共享。 */
 export interface TabView<T> {
     pageNum: number;
     pageSize: number;

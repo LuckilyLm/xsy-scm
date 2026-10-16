@@ -8,18 +8,7 @@ import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 import com.xsy.scm.report.support.ScmReportDateFilter;
 
-/**
- * 销售分析页的共用筛选条件（按商品 / 按分类 / 按客户 / 按销售员 / 订单明细）。
- *
- * <p>
- * <b>日期是「确认日期」</b>：销售统计只汇总 {@code CONFIRMED} 订单的 {@code settlement_*}，并按 {@code confirmed_at} 过滤，不按创建时间或下单金额过滤。
- *
- * <p>
- * <b>没有仓库筛选</b>：{@code xsy_sales_order} 上没有仓库归属列，订单可以跨仓履约，订单没有仓库归属字段，因此查询不提供仓库筛选。
- *
- * <p>
- * 五个维度共用一个表单：字段互为可选，页面切 Tab 不串条件是前端职责，后端只保证「同一筛选在不同维度下口径一致」。
- */
+/** 销售分析仅统计已确认订单，使用确认日期和结算金额。订单可能跨仓履约，不提供虚构的订单仓库筛选。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ScmSalesReportQueryForm extends PageParam implements ScmReportDateFilter {
