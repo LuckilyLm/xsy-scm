@@ -15,18 +15,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 /**
- * SCM 数据范围的唯一解析入口。
- *
- * <ul>
- * <li>功能权限按角色并集，由 Sa-Token 负责；本类只负责「能看哪些行」。</li>
- * <li>「本人」以业务 owner 字段为准（{@code xsy_customer.seller_id} / {@code xsy_sales_order.seller_id} /
- * {@code xsy_purchase_order.purchaser_id} / {@code xsy_delivery_driver.employee_id}），{@code created_by} 只是审计字段。</li>
- * <li>放宽某个维度必须显式授权，没有授权即该维度看不到数据；不存在「参数为 null 就等于全部」。</li>
- * <li>财务不因是财务而全量：它的仓库范围同样来自 {@code xsy_employee_warehouse_scope} 授权行。</li>
- * </ul>
- *
- * <p>
- * 取不到登录员工（异步线程、定时任务、直连 Service 的测试）时按失败关闭处理。需要跨全量跑的内部逻辑应当直接调用未收窄的 Dao，而不是绕过本类去读列表接口。
+ * 统一解析 SCM 的数据可见范围；功能权限由 Sa-Token 处理。 行权限按业务负责人及授权仓库判断，不按创建人判断。 没有授权或无法识别登录员工时拒绝访问；财务人员也不会自动获得全部仓库权限。
  */
 @Service
 @RequiredArgsConstructor
