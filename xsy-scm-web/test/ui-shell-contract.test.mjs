@@ -92,26 +92,26 @@ test('改默认侧栏宽度必须同时升级 configVersion', () => {
       '版本 3 → 4 应迁移侧栏宽度并保留其他缓存偏好');
 });
 
-test('传统侧栏的分组展开图标用组件库的实心圆形箭头，展开式侧栏仍隐藏自带折角', () => {
+test('传统侧栏使用组件库的 Chevron 细箭头，展开式侧栏仍隐藏自带折角', () => {
   const sideExpandMenu = code('../src/layout/components/side-expand-menu/recursion-menu.vue');
-  // 不自己画：走 a-menu 的 expandIcon 插槽 + @ant-design/icons-vue 的圆形箭头。
-  // 给了 expandIcon 之后 antd 不再渲染自带的细折角，因此也不需要任何 ::before/::after 覆盖
-  // —— 手写 CSS 拼圆底那版就是踩在这里：antd 的 translateY(-50%) 与展开态 rotate(180deg)
-  // 会分别把圆底顶高、把圆底一起转斜。
+  // 用组件库图标，状态变化只旋转，不添加圆形背景。
   assert.match(recursionMenu, /<template #expandIcon="\{ isOpen \}">/,
-      '必须用 expandIcon 插槽接管展开图标');
-  assert.match(recursionMenu, /<UpCircleFilled v-if="isOpen"\/>/, '展开态用 UpCircleFilled');
-  assert.match(recursionMenu, /<DownCircleFilled v-else\/>/, '收起态用 DownCircleFilled');
+      '分组箭头应使用 expandIcon 插槽');
   assert.match(recursionMenu,
-      /import \{DownCircleFilled, UpCircleFilled\} from '@ant-design\/icons-vue';/,
-      '图标必须从组件库导入，不要手写 SVG / CSS 拼');
-  assert.match(recursionMenu, /\.ant-menu-submenu-expand-icon[\s\S]{0,300}?font-size:\s*16px/,
-      '展开图标要定尺寸');
-  // 颜色必须带 !important：本文件下方 :not(.ant-menu-dark) 的 .anticon 配色权重 (0,5,0) 比这条高，
-  // 不带 !important 会被按 --scm-text 涂成与文字同深的黑，圆底就不成其为圆底了。
-  assert.match(recursionMenu,
-      /\.ant-menu-submenu-expand-icon[\s\S]{0,300}?color:\s*var\(--scm-text-secondary[^;]*\)\s*!important/,
-      '展开图标的颜色必须带 !important，否则会被 .anticon 配色覆盖');
+      /<RightOutlined class="smart-menu-chevron" :class="\{ 'smart-menu-chevron-open': isOpen \}"\/>/,
+      '默认向右，展开向下');
+  assert.match(recursionMenu, /import \{RightOutlined\} from '@ant-design\/icons-vue';/,
+      '箭头应使用 Ant Design Vue 图标');
+  assert.doesNotMatch(recursionMenu, /UpCircleFilled|DownCircleFilled/,
+      '不再使用实心圆形箭头');
+  assert.match(recursionMenu, /\.ant-menu-submenu-expand-icon[\s\S]{0,130}?font-size:\s*13px/,
+      '箭头尺寸为 13px');
+  assert.match(recursionMenu, /\.smart-menu-chevron-open[\s\S]{0,60}?rotate\(90deg\)/,
+      '展开态旋转 90 度');
+  assert.match(recursionMenu, /transition:\s*transform 0\.2s ease/,
+      '箭头旋转动画为 0.2 秒');
+  assert.match(recursionMenu, /color:\s*var\(--scm-text-secondary[^;]*\)\s*!important/,
+      '箭头保持次要文字色');
   assert.doesNotMatch(recursionMenu, /\.ant-menu-submenu-arrow/,
       '接管 expandIcon 之后不该再覆盖 antd 自带的折角');
   assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/,
@@ -122,16 +122,16 @@ test('传统侧栏的分组展开图标用组件库的实心圆形箭头，展�
       '菜单图标配色规则仍须排除暗色菜单');
 });
 
-test('侧栏展开状态由受控 openKeys 同步，展开箭头跟随主题色', () => {
+test('受控菜单展开正常，Chevron 在亮暗主题下都保持中性灰', () => {
   assert.match(recursionMenu,
       /if \(!menuSingleExpandFlag\.value\) \{\s*openKeys\.value = \[\.\.\.openKeysParams\];/,
-      '允许多组展开时必须更新 openKeys，否则点击后不展开');
-  assert.match(recursionMenu,
+      '允许多组展开时也要同步 openKeys');
+  assert.doesNotMatch(recursionMenu,
       /\.ant-menu-submenu-open > \.ant-menu-submenu-title \.ant-menu-submenu-expand-icon[\s\S]{0,140}color:\s*var\(--scm-primary/,
-      '已展开分组的图标必须使用当前主题色');
+      '展开时箭头不应变为主题色');
   assert.match(recursionMenu,
       /\.smart-menu\.ant-menu-dark\s*\{[\s\S]{0,140}rgba\(255, 255, 255/,
-      '暗色菜单里未展开的箭头需要浅色对比度');
+      '暗色主题保持足够对比度');
 });
 
 test('侧栏滚动条不常驻：auto + 透明轨道 + hover 才显形', () => {

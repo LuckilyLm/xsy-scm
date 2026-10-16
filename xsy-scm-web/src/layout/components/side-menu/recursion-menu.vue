@@ -5,10 +5,9 @@
 <template>
   <a-menu :open-keys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu" mode="inline" :inline-indent="16" :theme="theme"
           @openChange="onOpenChange">
-    <!-- 分组展开/收起图标用组件库自带的实心圆形箭头；给了 expandIcon 之后 antd 不再渲染自带的细折角 -->
+    <!-- 分组统一使用 Chevron 细箭头，展开时向下旋转。 -->
     <template #expandIcon="{ isOpen }">
-      <UpCircleFilled v-if="isOpen"/>
-      <DownCircleFilled v-else/>
+      <RightOutlined class="smart-menu-chevron" :class="{ 'smart-menu-chevron-open': isOpen }"/>
     </template>
     <template v-for="item in menuTree" :key="item.menuId">
       <template v-if="item.visibleFlag && !item.disabledFlag">
@@ -32,7 +31,7 @@ import _ from 'lodash';
 import {computed, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import SubMenu from './sub-menu.vue';
-import {DownCircleFilled, UpCircleFilled} from '@ant-design/icons-vue';
+import {RightOutlined} from '@ant-design/icons-vue';
 import {router} from '/@/router/index';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -137,14 +136,22 @@ defineExpose({
     transition: background-color 0.18s, color 0.18s;
   }
 
-  // 展开/收起图标走组件库自带的实心圆形箭头（见模板里的 expandIcon 插槽），这里只定尺寸与颜色。
-  // ⚠️ 颜色必须带 !important：本文件下方 :not(.ant-menu-dark) 里的 .anticon 配色权重是 (0,5,0)，
-  // 比这条 (0,3,0) 高，会把圆底按 --scm-text 涂成与文字同深的黑。
+  // 使用组件库的 Chevron，不添加背景或边框。
   :deep(.ant-menu-submenu-expand-icon) {
-    width: 16px;
-    height: 16px;
-    font-size: 16px;
-    color: var(--scm-text-secondary, rgba(0, 0, 0, 0.65)) !important;
+    width: 14px;
+    height: 14px;
+    font-size: 13px;
+    color: var(--scm-text-secondary, rgba(0, 0, 0, 0.55)) !important;
+  }
+
+  :deep(.smart-menu-chevron) {
+    font-size: 13px;
+    transform: rotate(0deg);
+    transition: transform 0.2s ease;
+  }
+
+  :deep(.smart-menu-chevron-open) {
+    transform: rotate(90deg);
   }
 
   :deep(.ant-menu-item .anticon),
@@ -181,12 +188,6 @@ defineExpose({
     color: var(--scm-text, rgba(0, 0, 0, 0.88));
   }
 
-  // 默认用次要文字色；鼠标悬停或展开后按当前主题色高亮，和选中菜单一致。
-  :deep(.ant-menu-submenu-title:hover .ant-menu-submenu-expand-icon),
-  :deep(.ant-menu-submenu-open > .ant-menu-submenu-title .ant-menu-submenu-expand-icon) {
-    color: var(--scm-primary, #1677ff) !important;
-  }
-
   :deep(.ant-menu-item-selected::before) {
     position: absolute;
     top: 10px;
@@ -199,15 +200,10 @@ defineExpose({
   }
 }
 
-// 暗色菜单没有浅色 --scm-text-secondary 变量时，仍保证未展开箭头清晰可见。
+// 深色菜单使用浅灰箭头，悬停和展开后仍保持中性色。
 .smart-menu.ant-menu-dark {
   :deep(.ant-menu-submenu-expand-icon) {
     color: rgba(255, 255, 255, 0.7) !important;
-  }
-
-  :deep(.ant-menu-submenu-title:hover .ant-menu-submenu-expand-icon),
-  :deep(.ant-menu-submenu-open > .ant-menu-submenu-title .ant-menu-submenu-expand-icon) {
-    color: var(--scm-primary, #1677ff) !important;
   }
 }
 
