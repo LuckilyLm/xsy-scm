@@ -12,17 +12,7 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 采购单行。
- *
- * <p>
- * 行身份 = {@code (purchase_order_id, sku_id)}，由 {@code uk_purchase_order_item_order_sku_active} 强制。
- *
- * <p>
- * {@code received_quantity} 只增不减，且不受 {@code planned_quantity} 上限约束：超收上限是运行时 {@code t_config}
- * 容差值（{@code planned × (1 + tolerance/100)}），静态 CHECK 表达不了。 累计的唯一入口是
- * {@link #accumulateReceived}，且必须持有行锁（{@link #lockByOrderId}）。
- */
+/** 同一采购单内每个商品规格最多一行，数据库唯一索引保证。数量变更与需求分配由服务层统一校验，不能只靠页面去重。 */
 @Mapper
 public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity> {
 
@@ -69,16 +59,7 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
      */
     int countActiveByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
-    /**
-     * 按商品收货工作台（只读）：跨「可收货」采购单按 {@code (sku_id, 采购单位)} 归并计划 / 已收量。
-     *
-     * <p>
-     * 分页 count 必须走聚合组数（调用方置 {@code optimizeCountSql=false}），排序固定，不接受客户端排序。
-     *
-     * <p>
-     * {@code scope} 是调用者的仓库授权范围，谓词落在 {@code xsy_purchase_order.warehouse_id} 上：收货单的仓库在建单时从采购单继承，因此这一列同时就是收货行所在的那个仓。
-     * {@code null} 在 Mapper 里失败关闭，不表示「全部」。
-     */
+    /** 按商品规格和采购单位汇总可收货采购明细，只读不改采购和库存。分页必须统计分组数量，不能把明细行数当作汇总行数。 */
     List<PurchaseReceiptItemWorkbenchVO> workbench(Page<?> page,
             @Param("query") PurchaseReceiptItemWorkbenchQueryForm form, @Param("scope") ScmValueScope scope);
 }

@@ -13,17 +13,7 @@ import java.time.OffsetDateTime;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/**
- * 称重记录。
- *
- * <p>
- * <b>只追加的审计事实</b>：没有 {@code version} / {@code deleted} / {@code updated_*} —— 与 {@code xsy_inventory_movement}
- * 的只追加纪律一致，也意味着 MP 不会对它加 {@code deleted} 过滤。
- *
- * <p>
- * 只允许 {@code source = MANUAL}（手工录入），由 {@code ck_receipt_weighing_record_source} 收紧； {@code DEVICE} 是 +
- * 接入电子秤时的扩展点。{@code scale_precision} 已删除（无设备精度来源）。
- */
+/** 收货称重记录只追加，保留设备读数、人工接受结果和采集时间。历史记录不得修改或软删，纠错需要另记事实。 */
 @Data
 @TableName(value = "xsy_receipt_weighing_record", autoResultMap = true)
 public class ReceiptWeighingRecordEntity {

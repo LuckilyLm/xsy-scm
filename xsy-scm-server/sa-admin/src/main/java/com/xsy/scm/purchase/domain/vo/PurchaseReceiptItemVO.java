@@ -8,16 +8,7 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/**
- * 采购收货单行。
- *
- * <p>
- * 含 5 个对账数量（恒等式）：{@code remaining = max(planned − cumulative, 0)}、
- * {@code over = max(cumulative − planned, 0)}、{@code difference = cumulative − planned}（可为负）。
- *
- * <p>
- * {@code actualWeight} 三态：标品为 {@code null} 渲染为 {@code —}；非标品为实重。不存价格，金额由采购行派生。
- */
+/** 收货明细展示计划、本次实收、累计、剩余、超收及差异数量，各指标遵守同一对账恒等式，不混用实际重量和申报量。 */
 @Data
 public class PurchaseReceiptItemVO {
     private Long id;

@@ -14,16 +14,7 @@ import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
-/**
- * 确认采购收货。
- *
- * <p>
- * <b>必须提交本收货单的全部活动行</b>（{@code PURCHASE_RECEIPT_ITEM_INCOMPLETE(40998)}），不允许只提交子集 —— 修 /G11 的「确认了但仍有 0 数量行」歧义。
- *
- * <p>
- * 标品：{@code actualWeight} / {@code weightSource} / {@code correctionReason} 必须全空；非标品：{@code actualWeight} 必填且 &gt;
- * 0，{@code weightSource} 必须 == {@code MANUAL}，有效数量取实重。
- */
+/** 确认收货必须提交该收货单的全部活动明细，不能只提交部分行。服务端校验每行实际数量、单位及版本后再统一确认。 */
 @Data
 public class PurchaseReceiptConfirmForm {
     @NotNull(message = "收货单 ID 不能为空")

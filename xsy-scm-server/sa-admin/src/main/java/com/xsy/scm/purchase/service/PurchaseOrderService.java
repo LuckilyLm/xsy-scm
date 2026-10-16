@@ -253,16 +253,7 @@ public class PurchaseOrderService {
     // .1 reassign（改派采购归属）
     // ------------------------------------------------------------------
 
-    /**
-     * 改派采购归属：只有持 {@code scm:purchase:assign} 的调用方能到达（权限在控制器上）。
-     *
-     * <p>
-     * 不按单据状态设限；只要调用者有分配权即可指定或改派负责人，而单据在途时换人（离职、调岗）恰恰是本端点的主要用途。
-     *
-     * <p>
-     * 乐观锁沿用本模块既有纪律：先 {@code FOR UPDATE} 锁单，比对 {@code id + version}，再由 {@code @Version} 的 {@code updateById}
-     * 做并发下的第二道防线（0 行 → 40921）。改派必须留操作日志：归属是数据范围依据，换了谁必须可追溯。
-     */
+    /** 有采购分配权限的员工可以独立改派负责人。改派与编辑采购内容分开，记录版本及操作历史，不混同于列表可见范围。 */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseOrderVO reassign(PurchaseOrderReassignForm form) {
         PurchaseOrderEntity order = lockOrder(form.getId());

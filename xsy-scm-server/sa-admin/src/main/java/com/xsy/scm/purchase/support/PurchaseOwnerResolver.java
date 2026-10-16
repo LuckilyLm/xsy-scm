@@ -8,16 +8,7 @@ import com.xsy.scm.purchase.permission.PurchasePermission;
 import net.lab1024.sa.base.common.exception.BusinessException;
 import org.springframework.stereotype.Component;
 
-/**
- * 采购归属（{@code purchaser_id}）的服务端解析器。
- *
- * <p>
- * 表单中的 {@code purchaser_id} 是客户端提供值，不能直接作为数据范围依据。 <b>普通新建时归属一律是当前员工，表单值一律不采信</b>；只有持 {@code scm:purchase:assign}
- * 的人才可以把归属写成别人（留空即「未分配」）。已存在的单据只能经 {@code /scm/purchase/reassign} 改派，见 {@link #canAssign()}。
- *
- * <p>
- * {@code canAssign()} 与列表范围是两件事：分配权只回答「能不能指定别人」， 「能不能看到全部」仍由 {@code scm:purchase:scope:all:query} 决定，两者不互相隐含。
- */
+/** 普通员工新建采购单时，采购员固定为当前员工；只有具备分配权限者可以指定其他采购员。已有采购单的负责人只能通过独立改派接口变更，分配权限不代表全部数据查看权。 */
 @Component
 @RequiredArgsConstructor
 public class PurchaseOwnerResolver {
@@ -44,16 +35,7 @@ public class PurchaseOwnerResolver {
         return context.getEmployeeId();
     }
 
-    /**
-     * 已存在单据的写侧归属守卫：单据归属不在调用者的采购范围内即拒绝（对外 30005，与读侧同一信封）。
-     *
-     * <p>
-     * 读侧的范围只回答「看得见哪些行」，本方法回答「动得了哪些行」：采购功能权限在整个采购团队内共享，只有读侧范围时普通采购员只要握着按钮权限就能提交、取消甚至确认别人名下的单据。
-     * 拒绝而不回答「不存在」，否则探测主键与探测权限可以分辨出来。
-     *
-     * <p>
-     * {@code purchaserId} 为 {@code null}（未分配）时只有全部范围可通过：未分配单据是分配权持有者认领的对象，普通采购员既看不到也不该改。
-     */
+    /** 采购单写操作除功能权限外，还必须检查采购员数据范围。查询权限不能替代写入前的归属校验，避免凭 ID 改别人的单据。 */
     public void requireVisible(Long purchaserId) {
         if (!dataScopeService.resolve().getPurchaserScope().allows(purchaserId)) {
             throw new ScmDataScopeException();

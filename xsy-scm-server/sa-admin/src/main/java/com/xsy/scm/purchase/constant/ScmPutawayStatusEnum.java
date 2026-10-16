@@ -1,19 +1,6 @@
 package com.xsy.scm.purchase.constant;
 
-/**
- * 入库状态（2 值）。
- *
- * <p>
- * 取值与 {@code ck_purchase_receipt_putaway_status} 白名单逐字一致。
- *
- * <p>
- * 与 {@code xsy_purchase_receipt.status}（DRAFT/CONFIRMED 商业生命周期）<b>刻意解耦</b>： {@code CONFIRMED} 只表示「收货已被确认」，不等于「库存已经入账」。
- * 入库事实由本枚举独立表达：
- * <ul>
- * <li>{@link #PENDING}：已确认但尚未物理入库（仅 WAREHOUSE_CONFIRM）；</li>
- * <li>{@link #COMPLETED}：已物理入库（DIRECT 在 confirm 时即完成）。</li>
- * </ul>
- */
+/** 收货确认与库存入账是两种状态。直接入库模式在收货确认时完成入账；仓库二次确认模式须等仓库确认后才变成已入库。 */
 public enum ScmPutawayStatusEnum {
     PENDING,
     COMPLETED

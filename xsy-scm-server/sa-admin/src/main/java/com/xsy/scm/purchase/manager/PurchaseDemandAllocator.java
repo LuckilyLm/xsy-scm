@@ -72,17 +72,7 @@ public final class PurchaseDemandAllocator {
         }
     }
 
-    /**
-     * {@code (xsy_supplier, xsy_warehouse)} 一致性（40981）。
-     *
-     * <p>
-     * {@code warehouse_id} 在 {@code generate} 时已固定，因此必须始终等于采购单的仓库； {@code supplier_id}
-     * 由<b>第一次分配</b>固定（{@code allocated_quantity == 0} 时由调用方写入），之后不得改变。所以：
-     * <ul>
-     * <li>需求已有仓库且与采购单仓库不等 → 40981；</li>
-     * <li>需求已分配过（{@code allocated > 0}）且供应商与采购单不等 → 40981。</li>
-     * </ul>
-     */
+    /** 采购需求的仓库在生成时确定，必须与采购单相同；需求首次分配后供应商也不能再改变。仓库或供应商不一致返回 40981。 */
     public static void assignmentCompatible(Long orderSupplierId, Long orderWarehouseId, PurchaseDemandEntity demand) {
         if (demand.getWarehouseId() != null && !demand.getWarehouseId().equals(orderWarehouseId)) {
             throw new ScmBusinessException(PURCHASE_DEMAND_ALLOCATION_CONFLICT);
@@ -118,18 +108,7 @@ public final class PurchaseDemandAllocator {
         }
     }
 
-    /**
-     * 由 {@code allocated} 与 {@code required} 推导需求状态。
-     *
-     * <pre>
-     * allocated == 0        → PENDING
-     * allocated == required → ALLOCATED
-     * 其它                  → PARTIALLY_ALLOCATED
-     * </pre>
-     *
-     * <p>
-     * <b>必须能回落</b>：编辑采购单删掉某个 demand 的全部分配后，{@code allocated} 归零、状态必须从 {@code ALLOCATED} 退回 {@code PENDING}（并集遍历就是为此）。
-     */
+    /** 需求状态由已分配数量与需求量确定：未分配为待处理，全部分配为已分配，中间为部分分配；不存一套独立的派生状态规则。 */
     public static String statusFor(BigDecimal requiredQuantity, BigDecimal allocatedQuantity) {
         if (allocatedQuantity == null || allocatedQuantity.signum() == 0) {
             return ScmPurchaseDemandStatusEnum.PENDING.name();

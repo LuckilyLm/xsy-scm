@@ -91,18 +91,7 @@ const visible = ref(false);
 const active = ref<LogRow>();
 let requestId = 0;
 
-/**
- * 日志列。
- *
- * 去掉「采购单 id」列：本页本来就按单号定位到一张采购单才查得出的日志，
- * 每一行的采购单 id 必然等于当前查询单 —— 它占 120px 却不提供任何行间差异。
- * 保留「关联收货单」：同一张采购单下收货、入库、删除收货单都会各写日志，
- * 哪几行属于同一张收货单只能靠它分辨。
- *
- * 注意 `purchaseReceiptId` 是内部主键而不是收货单号（`PurchaseOperationLogVO`
- * 只带 id，不带 `receiptNo`）。因此列名写「收货单（内部编号）」，
- * 不把它伪装成业务单号 —— 假单号比裸 id 更危险，会被拷去当检索条件用。
- */
+/** 采购日志列表已根据当前采购单查询，不重复展示采购单 ID。保留关联收货单，便于区分不同收货操作。 */
 const columns = ref<TableColumnsType<LogRow>>([
   {title: '时间', dataIndex: 'createdAt', width: 200, customRender: ({text}) => datetime(text)},
   {title: '操作', dataIndex: 'operationType', width: 150},

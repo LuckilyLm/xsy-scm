@@ -33,14 +33,7 @@ public interface PurchaseDemandAllocationDao extends BaseMapper<PurchaseDemandAl
     List<PurchaseDemandAllocationEntity> listActiveByOrderIdAndDemandIds(@Param("purchaseOrderId") Long purchaseOrderId,
             @Param("demandIds") List<Long> demandIds);
 
-    /**
-     * 只改数量（<b>保留的 allocation</b>， B 段第 9 步：不重建行）。
-     *
-     * <p>
-     * <b>刻意不用 MP 的 {@code updateById}</b>：{@code @Version} 的乐观锁要求实体上的 {@code version} 非空，而差量对象是从「请求」构造出来的（请求不带
-     * allocation 版本），一旦漏设 version， MP 会<b>静默跳过</b>版本条件、把并发写变成覆盖写。这里把版本作为显式参数传给 SQL，影响行数为 0 就一定是并发冲突 —— 与
-     * {@link #softDelete} 同一形状。
-     */
+    /** 需求分配仅修改已有关系的数量，保留原关系身份和版本。SQL 必须限制原记录及版本，冲突时拒绝覆盖。 */
     int updateQuantity(@Param("id") Long id, @Param("version") Integer version,
             @Param("allocatedQuantity") BigDecimal allocatedQuantity, @Param("operator") String operator);
 

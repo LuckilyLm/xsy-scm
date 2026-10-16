@@ -8,16 +8,7 @@ import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/**
- * 采购单行。
- *
- * <p>
- * {@code remainingQuantity} / {@code overReceiptQuantity} 是派生量（不落库），与收货行恒等式同口径：
- * {@code remaining = max(planned − received, 0)}，{@code over = max(received − planned, 0)}。
- *
- * <p>
- * {@code allocations} 是该行挂的全部需求分配（一行多需求），每项一个 {@code demandId}。
- */
+/** 采购明细的剩余量和超收量按当前已收数量计算，不另存冗余结果；订单明细和收货对账保持一致。 */
 @Data
 public class PurchaseOrderItemVO {
     private Long id;

@@ -59,16 +59,7 @@ public final class PurchaseSnapshotFactory {
         return order;
     }
 
-    /**
-     * 采购单行快照。
-     *
-     * <p>
-     * <b>采购单位</b>：{@code purchaseUnitSnapshot} 来自 {@code xsy_supplier_sku.purchase_unit}， <b>不是</b>
-     * {@code xsy_product_sku.sale_unit} —— 需求单位（销售单位）与采购单位是两个独立快照，生成时冻结、永不互相覆盖。
-     *
-     * <p>
-     * {@code purchasePrice} 取表单值（人工确认值）；{@code xsy_supplier_sku.reference_price} 只作<b>建议值</b>， <b>不自动写入</b>。
-     */
+    /** 采购明细的采购单位来自供应商商品关系，需求单位来自销售订单，两者独立保存并校验一致，不做隐式换算。 */
     public static PurchaseOrderItemEntity item(PurchaseOrderAddForm.Item form, ProductSkuOptionVO sku, String spuCode,
             SupplierSkuEntity supplierSku) {
         PurchaseOrderItemEntity item = new PurchaseOrderItemEntity();
@@ -113,18 +104,7 @@ public final class PurchaseSnapshotFactory {
         return receipt;
     }
 
-    /**
-     * 收货单行快照：商品 / 单位 / 计划量从采购行<b>继承</b>，5 个对账数量从「尚未收货」起算。
-     *
-     * <pre>
-     * received = cumulative = over = 0
-     * remaining = planned
-     * difference = 0 − planned = −planned      （与 ck_purchase_receipt_item_reconciliation 一致）
-     * </pre>
-     *
-     * <p>
-     * <b>不复制价格</b>：收货只记数量 / 重量。
-     */
+    /** 收货单明细从采购单继承商品、单位和计划量，累计收货从零开始；剩余量与超收量按对账公式计算。 */
     public static PurchaseReceiptItemEntity receiptItem(PurchaseReceiptEntity receipt,
             PurchaseOrderItemEntity orderItem, int sortOrder) {
         PurchaseReceiptItemEntity item = new PurchaseReceiptItemEntity();

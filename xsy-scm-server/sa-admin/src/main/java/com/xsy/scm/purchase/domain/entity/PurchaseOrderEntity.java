@@ -16,17 +16,7 @@ import java.time.OffsetDateTime;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/**
- * 采购单头。
- *
- * <p>
- * 6 状态 {@code DRAFT/SUBMITTED/PARTIALLY_RECEIVED/RECEIVED/SHORT_CLOSED/CANCELLED}，由 {@code ck_purchase_order_status} 与
- * {@code PurchaseOrderStateMachine} 双重强制。
- *
- * <p>
- * <b>没有 {@code confirmed_at}</b>：采购单的收货完成时间分散在各收货单的 {@code confirmed_at} 上。供应商 / 仓库快照在创建 / 编辑时刷新，{@code submit}
- * 后永不回读主数据。
- */
+/** 采购单从草稿提交，允许部分收货、全部收货或少收关单；草稿和已提交单可取消。正式履约及取消时点随状态一同保存。 */
 @Data
 @TableName(value = "xsy_purchase_order", autoResultMap = true)
 public class PurchaseOrderEntity {

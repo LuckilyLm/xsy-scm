@@ -17,14 +17,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 
-/**
- * 采购需求 ↔ 采购单行的数量分配。
- *
- * <p>
- * 分配是集合：{@code xsy_purchase_order_item} 与 {@code xsy_purchase_demand_allocation} 是 <b>1:N</b> —— 一行采购行（一个
- * SKU）可以承接<b>多个</b>需求，每个 {@code (purchase_order_item_id, purchase_demand_id)} 组合至多一条活动 allocation（由
- * {@code uk_purchase_demand_allocation_source_active} 强制）。 「一行多需求」由<b>多行 allocation</b> 表达。
- */
+/** 分配记录连接采购明细和采购需求，数量计入该需求的跨采购单已分配总量。同一明细与需求组合不能重复出现。 */
 @Data
 @TableName(value = "xsy_purchase_demand_allocation", autoResultMap = true)
 public class PurchaseDemandAllocationEntity {

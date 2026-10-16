@@ -3,13 +3,7 @@ package com.xsy.scm.purchase.support;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/**
- * Compile-time boundary between purchase confirmation and inventory posting.
- *
- * <p>
- * Purchase sends confirmed receipt facts through this interface; the inventory module supplies the implementation. The
- * caller and implementation share one transaction so inventory failure rolls back receipt confirmation.
- */
+/** 采购确认通过本接口把已保存的收货事实交给库存模块。采购不直接更新库存余额，库存模块统一校验单位、锁定余额和生成流水。 */
 public interface PurchaseInventoryContract {
 
     /**
