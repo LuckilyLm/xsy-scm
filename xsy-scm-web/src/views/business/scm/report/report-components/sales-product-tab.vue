@@ -6,7 +6,7 @@
       series-name="确认订单金额"
   />
   <a-card size="small" :bordered="false">
-    <p class="scm-note">金额占比和累计占比基于当前筛选范围内所有匹配的商品行计算，在分页之前完成；金额总计为 0 时显示未知。仅使用已确认订单的结算金额，不等同实际毛利或净收款。</p>
+    <p class="scm-note">按已确认订单金额分析商品销售贡献。<a-tooltip title="金额占比和累计占比基于当前筛选范围内全部匹配商品行计算，不受分页影响；金额总计为 0 时显示未知。"><a class="scm-cell-link">口径说明</a></a-tooltip></p>
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting"
