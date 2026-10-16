@@ -45,16 +45,7 @@ export const SCM_INVENTORY_MOVEMENT_INBOUND_TYPES: readonly string[] = [
     'CONVERT_IN',
 ];
 
-/**
- * 流水来源单据类型。
- *
- * 与 `sourceDocumentItemId` 一起构成稳定唯一源键（防重锚点）；
- * 人类可读的来源单号用 `receiptNo`（收货单）或 `sourceDocumentNo`。
- *
- * 调拨与规格转换各占两个来源类型：它们的同一条明细行会产生两条流水（出、入），
- * 而唯一索引只认 `(source_document_type, source_document_item_id)` ——
- * 共用一个来源类型会让第二条流水插不进去。因此方向被编进了来源类型。
- */
+/** 流水来源类型与来源明细 ID 组成防重键；页面另用来源单号展示和跳转。调拨及规格转换的转入、转出必须用不同类型。 */
 export const SCM_INVENTORY_SOURCE_TYPE_ENUM: SmartEnum<string> = {
     PURCHASE_RECEIPT_ITEM: {value: 'PURCHASE_RECEIPT_ITEM', desc: '采购收货行'},
     SALES_OUTBOUND_ITEM: {value: 'SALES_OUTBOUND_ITEM', desc: '出库单行'},

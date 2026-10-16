@@ -1,13 +1,4 @@
-/**
- * 库存预警接口，与后端 `InventoryWarningController` 对应。
- *
- * 预警列表刻意没有「标记已读 / 已忽略」这类写操作 —— 预警不是一种状态，
- * 它只是 `(阈值, 可用量)` 的当前计算结果，加「已读」会让预警与真实库存脱钩。
- *
- * `query` 的 `status` 为空时后端只返回异常项（低于下限 / 高于上限）—— 这是默认语义，
- * 不是「全部」。`scan` 会给别人发站内信，因此单独用 `scm:inventory:warning:scan`
- * 授权；重复调用不会重复发信（同一次跃迁的 event_key 稳定）。
- */
+/** 库存预警按可用量和阈值实时计算，只读展示。预警没有已读、忽略等可修改状态，不提供标记处理接口。 */
 import {postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

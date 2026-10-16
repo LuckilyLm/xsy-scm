@@ -223,14 +223,7 @@
     return hit;
   }
 
-  /**
-   * 兑现从 Home 带过来的一次性导航意图。
-   *
-   * 三种情况：
-   *   1. 分类清单尚未加载完成 → 直接返回，等 loadCategories() 的 finally 再兜一次（首开竞态）
-   *   2. 命中真实分类 → selectPrimary（内部会把 activeSubId 归零 = 回到「全部」）
-   *   3. 没命中 → 安全回退到当前 / 首个分类，不报错
-   */
+  /** 从首页跳转分类页时先保存目标分类。若分类尚未加载，等数据加载完成后再定位，避免首次进入时跳转失效。 */
   function applyPendingCategory() {
     if (!categoriesLoaded.value || !categories.value.length) {
       return;

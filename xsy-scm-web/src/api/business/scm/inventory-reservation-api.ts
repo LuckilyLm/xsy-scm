@@ -1,15 +1,4 @@
-/**
- * 库存预留接口。
- *
- * 与后端 `InventoryReservationController` 逐端点对应（2 个）：
- * query / release。
- *
- * 没有 create 端点：预留是业务动作的副产物，不是人手工录的单据。
- * 由销售订单确认触发（后端 `InventoryReservationService.reserve`），
- * 前端只做查看与释放。一个不存在的函数比一个会返回 404 的函数更能说明这一点。
- *
- * 释放只对「生效中」的预留有效；重复释放会被拒绝（41016），不会把可用量虚增。
- */
+/** 库存预留只能查询与释放；新预留由正式订单业务触发，不允许前端调用通用创建接口直接占用库存。 */
 import {postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

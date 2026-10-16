@@ -1,13 +1,4 @@
-/**
- * 库存预警阈值配置接口。
- *
- * 与后端 `InventoryWarningThresholdController` 逐端点对应（5 个）：
- * query / detail / create / update / delete。
- *
- * 本模块不改变库存：阈值是配置，余额是派生状态，两者的写路径完全分开 ——
- * 配置路径不会、也不应该创建余额行（否则就会造出「没有任何流水支撑的余额行」）。
- * 因此这里没有「确认 / 审批」这类动作，改配置立即生效（预警是读时计算的，天然实时）。
- */
+/** 预警阈值的维护不直接修改库存数量。创建、修改及删除阈值后，实际预警状态仍由可用量重新判定。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

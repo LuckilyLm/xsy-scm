@@ -158,17 +158,7 @@ export function incompleteCostHint(missingCount: number | null | undefined, labe
     return `${label}已跳过 ${missingCount} 行无成本流水，不是全部${label}`;
 }
 
-/**
- * 按成本权限裁剪列：`canSeeCost` 为假时移除 `costIndexes` 列出的列。
- *
- * 隐藏整列而不是显示一串 `—`：一列全是 `—` 会让用户以为「数据还没进来」，
- * 而事实是「你不该看这一列」，两者要能被区分。
- *
- * 约束刻意只用 `object`、`dataIndex` 由访问器读出：ant-design-vue 的 `ColumnType`
- * 是四十多个成员且含递归 `children` 与泛型比较器的深类型，拿结构接口去约束它会触发
- * TS2589「类型实例化过深」，而泛型原样返回 `T[]` 又必须让调用方写断言。
- * 默认访问器读的就是 antd 列的 `dataIndex`，页面侧不必重复传。
- */
+/** 没有成本查询权限时移除成本列，而不是显示空列；后端也会独立隐藏敏感字段。 */
 export function filterCostColumns<T extends object>(
     columns: T[],
     costIndexes: readonly string[],
@@ -286,18 +276,7 @@ function omitEmpty(source: LooseFilters): LooseFilters {
     return result;
 }
 
-/**
- * 装配报表查询体：日期区间 + 共享筛选（+ 可选的分页）。
- *
- * 三条规则：
- * - `startDate` / `endDate` 只从区间来，缺失时省略字段而不是传 `''`；
- * - 共享筛选里的 `''`（清空的下拉、空关键字）转成省略，避免后端 `@Pattern` 直接拒整次查询；
- * - 导出请求不带分页（传 `tab` 省略即可）：后端强制第 1 页 + 上限行，
- *   前端传分页只会让人误以为导出的是当前页。
- *
- * `T` 由调用方显式指定为对应的查询表单类型；内部是松散的键值装配，
- * 因此在出口做一次收口断言（字段合法性由调用方的 `filters` 类型保证）。
- */
+/** 报表查询由日期与共享筛选组成，空筛选值省略不发送。导出请求不带分页参数，由服务端按导出上限处理。 */
 export function buildReportQuery<T extends object>(
     range: DateRange | undefined | null,
     shared: LooseFilters,

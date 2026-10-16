@@ -1,16 +1,4 @@
-/**
- * 库存调拨单接口。
- *
- * 与后端 `InventoryTransferController` 逐端点对应（8 个）：
- * query / detail / create / update / ship / receive / cancel / delete。
- *
- * 两步式：`ship` 与 `receive` 是两个独立权限，因为它们通常由不同的人执行
- * （源仓发货、目标仓点收）。由同一个人两头都确认会让在途数量失去复核 ——
- * 而在途数量正是最容易出错的地方。
- *
- * `ship` 从源仓扣减（进入在途），`receive` 向目标仓累加（单据完成）。
- * 两步各自只影响一个仓库，因此不存在跨仓的并发问题。
- */
+/** 库存调拨分草稿、发出和收货两步。修改、取消只能在草稿阶段执行，发出与收货分别调用对应端点，不能一次直接完成。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

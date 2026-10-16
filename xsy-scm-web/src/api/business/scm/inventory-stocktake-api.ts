@@ -1,15 +1,4 @@
-/**
- * 库存盘点单接口。
- *
- * 与后端 `InventoryStocktakeController` 逐端点对应（7 个）：
- * query / detail / create / update / confirm / cancel / delete。
- *
- * 权限分两档：录实盘数与改草稿是日常操作（`add` / `update`），
- * `confirm` 是独立权限 —— 它会真实调整库存并写不可逆流水，
- * 允许仓管录数、由主管确认是完全合理的分工，因此不复用 `update`。与出库单同一取向。
- *
- * `confirm` 失败时整单回滚，不存在「盘一半」；重复确认会被状态机拒绝（41020）。
- */
+/** 库存盘点支持草稿查询、修改、确认和取消。盘点确认会生成库存流水，前端不得用普通修改代替确认。 */
 import {getRequest, postRequest, request, getDownload, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

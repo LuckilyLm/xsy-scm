@@ -1,15 +1,4 @@
-/**
- * 库存规格转换接口。
- *
- * 与后端 `InventoryConversionController` 逐端点对应（7 个）：
- * query / detail / create / update / approve / reject / delete。
- *
- * 跨 SKU、同仓库：跨仓搬运是调拨（`inventory-transfer-api`），不是转换。
- *
- * 审批必须带 `version`（乐观锁）：审批人必须批准自己读到的内容。
- * 若在「打开单据 → 点审批」之间折算关系被改过（那是金额相关的改动），
- * 后端返回 40921 并要求刷新 —— 因此前端不得在打开审批弹窗时重新拉取单据。
- */
+/** 同仓库商品规格转换须经过审批，通过后才同时记转出和转入流水；驳回不改变库存。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
