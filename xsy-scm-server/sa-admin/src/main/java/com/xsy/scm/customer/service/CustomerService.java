@@ -36,12 +36,7 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_CODE_DUPL
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_TRADABLE;
 
-/**
- * 客户写路径。
- *
- * <p>
- * 所有写方法都在事务内，并按固定顺序执行：校验 → 读取并比对版本 → 归属校验 → 落库。顺序固定是为了让并发场景下的失败原因可预测（版本冲突永远先于其他业务冲突暴露）。
- */
+/** 客户资料的修改都在事务中完成，依次校验输入、版本和业务归属后再保存。 */
 @Service
 @RequiredArgsConstructor
 public class CustomerService {

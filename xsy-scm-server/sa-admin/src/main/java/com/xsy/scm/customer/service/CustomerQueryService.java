@@ -41,12 +41,7 @@ import java.util.function.Function;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND;
 
-/**
- * 客户读路径。
- *
- * <p>
- * 列表补全（类型名 / 上级客户名 / 业务员名）一律走<b>批量查询</b>，绝不在循环里查库，避免查询次数随列表行数增长。
- */
+/** 客户列表的类型、上级客户和业务员名称统一批量查询，避免逐条访问数据库。 */
 @Service
 @RequiredArgsConstructor
 public class CustomerQueryService {
