@@ -9,6 +9,7 @@ import com.xsy.scm.mall.address.dao.MallCustomerAddressDao;
 import com.xsy.scm.mall.address.domain.entity.MallCustomerAddressEntity;
 import com.xsy.scm.mall.address.domain.form.MallAddressSaveForm;
 import com.xsy.scm.mall.address.domain.vo.MallAddressVO;
+import com.xsy.scm.mall.address.domain.vo.MallMapLocationVO;
 import java.time.OffsetDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MallAddressService {
     private final MallCustomerAddressDao addressDao;
+    private final MallMapService mapService;
 
     @Transactional(readOnly = true)
     public List<MallAddressVO> list(RequestMallCustomer customer) {
@@ -39,6 +41,7 @@ public class MallAddressService {
 
     @Transactional(rollbackFor = Exception.class)
     public List<MallAddressVO> create(RequestMallCustomer customer, MallAddressSaveForm form) {
+        MallMapLocationVO location = mapService.reverse(form.getLongitude(), form.getLatitude());
         String operator = ScmOperator.current();
         boolean first = addressDao.countByCustomer(customer.getCustomerId()) == 0;
         boolean asDefault = first || Boolean.TRUE.equals(form.getIsDefault());
@@ -46,7 +49,7 @@ public class MallAddressService {
             addressDao.clearDefault(customer.getCustomerId(), operator);
         }
         MallCustomerAddressEntity row = new MallCustomerAddressEntity();
-        apply(row, customer, form);
+        apply(row, customer, form, location);
         row.setIsDefault(asDefault);
         OffsetDateTime now = OffsetDateTime.now();
         row.setCreatedAt(now);
@@ -59,6 +62,7 @@ public class MallAddressService {
 
     @Transactional(rollbackFor = Exception.class)
     public List<MallAddressVO> update(RequestMallCustomer customer, Long id, MallAddressSaveForm form) {
+        MallMapLocationVO location = mapService.reverse(form.getLongitude(), form.getLatitude());
         String operator = ScmOperator.current();
         MallCustomerAddressEntity existing = lockOwned(customer, id);
         boolean asDefault = Boolean.TRUE.equals(form.getIsDefault());
@@ -69,7 +73,7 @@ public class MallAddressService {
             asDefault = true;
         }
         MallCustomerAddressEntity row = new MallCustomerAddressEntity();
-        apply(row, customer, form);
+        apply(row, customer, form, location);
         row.setId(id);
         row.setIsDefault(asDefault);
         row.setUpdatedAt(OffsetDateTime.now());
@@ -111,19 +115,25 @@ public class MallAddressService {
         return row;
     }
 
-    private static void apply(MallCustomerAddressEntity row, RequestMallCustomer customer, MallAddressSaveForm form) {
+    private static void apply(MallCustomerAddressEntity row, RequestMallCustomer customer, MallAddressSaveForm form,
+            MallMapLocationVO location) {
         if ((form.getLongitude() == null) != (form.getLatitude() == null)) {
+            throw new ScmBusinessException(MallErrorCode.ADDRESS_COORDINATE_INVALID);
+        }
+        if (location.getProvinceCode() == null || location.getCityCode() == null || location.getDistrictCode() == null
+                || location.getProvinceName() == null || location.getCityName() == null
+                || location.getDistrictName() == null) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_COORDINATE_INVALID);
         }
         row.setCustomerId(customer.getCustomerId());
         row.setReceiverName(form.getReceiverName().trim());
         row.setReceiverPhone(form.getReceiverPhone().trim());
-        row.setProvinceCode(form.getProvinceCode());
-        row.setProvinceName(form.getProvinceName());
-        row.setCityCode(form.getCityCode());
-        row.setCityName(form.getCityName());
-        row.setDistrictCode(form.getDistrictCode());
-        row.setDistrictName(form.getDistrictName());
+        row.setProvinceCode(location.getProvinceCode());
+        row.setProvinceName(location.getProvinceName());
+        row.setCityCode(location.getCityCode());
+        row.setCityName(location.getCityName());
+        row.setDistrictCode(location.getDistrictCode());
+        row.setDistrictName(location.getDistrictName());
         row.setDetailAddress(form.getDetailAddress().trim());
         row.setLongitude(form.getLongitude());
         row.setLatitude(form.getLatitude());

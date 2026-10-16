@@ -136,6 +136,10 @@ public class FileConfig implements WebMvcConfigurer {
                 || !cloudPublicUrlPrefix.endsWith("/")) {
             throw new IllegalStateException("Cloud public-url-prefix must be an absolute HTTP(S) URL ending with /");
         }
+        if (production && (!"https".equals(prefix.getScheme())
+                || !"https".equals(URI.create(cloudEndpoint).getScheme()))) {
+            throw new IllegalStateException("Pre/prod cloud storage requires HTTPS public and signing endpoints");
+        }
     }
 
     @Bean

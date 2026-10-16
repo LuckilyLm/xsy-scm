@@ -56,6 +56,8 @@ export interface ProductSku {
     specName: string;
     specValues: Record<string, string>;
     saleUnit: string;
+    mallMinQuantity: string;
+    mallQuantityStep: string;
     productType: ProductType;
     marketPrice: string;
     status: ShelfStatus;

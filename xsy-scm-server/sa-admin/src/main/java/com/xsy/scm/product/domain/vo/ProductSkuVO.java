@@ -17,6 +17,10 @@ public class ProductSkuVO {
     private String specName;
     private Map<String, String> specValues;
     private String saleUnit;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal mallMinQuantity;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal mallQuantityStep;
     private String productType;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal marketPrice;

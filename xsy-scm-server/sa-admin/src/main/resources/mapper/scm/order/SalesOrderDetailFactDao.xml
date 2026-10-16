@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.order.dao.SalesOrderDetailFactDao">
+
+    <select id="reservations" resultType="com.xsy.scm.order.domain.vo.SalesOrderDetailVO$ReservationFact">
+        SELECT r.id AS reservationId, r.source_document_item_id AS orderItemId,
+               i.product_name_snapshot AS productName, i.spec_name_snapshot AS skuName,
+               w.name AS warehouseName, r.unit_snapshot AS unit, r.quantity, r.status, r.occurred_at AS occurredAt
+        FROM xsy_inventory_reservation r
+                 JOIN xsy_sales_order_item i ON i.id = r.source_document_item_id AND i.deleted = FALSE
+                 LEFT JOIN xsy_warehouse w ON w.id = r.warehouse_id AND w.deleted = FALSE
+        WHERE r.deleted = FALSE AND r.source_document_type = 'SALES_ORDER_ITEM'
+          AND r.source_document_id = #{orderId} AND i.order_id = #{orderId}
+          <choose>
+              <when test="scope != null and scope.all == true"/>
+              <when test="scope != null and scope.ids != null and scope.ids.size() > 0">
+                  AND r.warehouse_id IN
+                  <foreach collection="scope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+              </when>
+              <otherwise>AND FALSE</otherwise>
+          </choose>
+        ORDER BY i.sort_order, r.id
+    </select>
+
+    <select id="sorting" resultType="com.xsy.scm.order.domain.vo.SalesOrderDetailVO$SortingFact">
+        SELECT t.id AS taskId, t.task_no AS taskNo, t.status AS taskStatus,
+               i.sales_order_item_id AS orderItemId, i.product_name_snapshot AS productName,
+               i.spec_name_snapshot AS skuName, i.sale_unit_snapshot AS unit,
+               i.planned_quantity_snapshot AS plannedQuantity, i.sorted_quantity AS sortedQuantity,
+               i.result, i.sorted_at AS sortedAt
+        FROM xsy_sorting_task_item i
+                 JOIN xsy_sorting_task t ON t.id = i.task_id AND t.deleted = FALSE
+        WHERE i.deleted = FALSE AND i.occupation_status = 'ACTIVE'
+          AND t.status != 'CANCELLED' AND i.sales_order_id = #{orderId}
+          <if test="crossAssignee == false">AND t.assignee_employee_id = #{employeeId}</if>
+          <choose>
+              <when test="scope != null and scope.all == true"/>
+              <when test="scope != null and scope.ids != null and scope.ids.size() > 0">
+                  AND t.warehouse_id IN
+                  <foreach collection="scope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+              </when>
+              <otherwise>AND FALSE</otherwise>
+          </choose>
+        ORDER BY t.id, i.id
+    </select>
+
+    <select id="delivery" resultType="com.xsy.scm.order.domain.vo.SalesOrderDetailVO$DeliveryFact">
+        SELECT r.id AS routeId, r.route_no AS routeNo, r.status AS routeStatus,
+               ro.fulfillment_status AS fulfillmentStatus,
+               r.warehouse_name_snapshot AS warehouseName, r.dispatched_at AS dispatchedAt,
+               ro.signed_at AS signedAt, ro.sign_reason AS signReason
+        FROM xsy_delivery_route_order ro
+                 JOIN xsy_delivery_route r ON r.id = ro.route_id AND r.deleted = FALSE
+        WHERE ro.deleted = FALSE AND ro.assignment_status = 'ACTIVE' AND ro.order_id = #{orderId}
+          <choose>
+              <when test="scope != null and scope.all == true"/>
+              <when test="scope != null and scope.ids != null and scope.ids.size() > 0">
+                  AND r.driver_id IN
+                  <foreach collection="scope.ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+              </when>
+              <otherwise>AND FALSE</otherwise>
+          </choose>
+        ORDER BY ro.id DESC
+        LIMIT 1
+    </select>
+
+    <select id="returns" resultType="com.xsy.scm.order.domain.vo.SalesOrderDetailVO$ReturnFact">
+        SELECT id AS returnId, return_no AS returnNo, status, reason,
+               approved_amount AS approvedAmount, approved_at AS approvedAt
+        FROM xsy_order_return
+        WHERE deleted = FALSE AND order_id = #{orderId}
+        ORDER BY created_at DESC, id DESC
+    </select>
+
+    <select id="redReceivables" resultType="com.xsy.scm.order.domain.vo.SalesOrderDetailVO$RedReceivableFact">
+        SELECT source_id AS returnId, SUM(amount) AS amount
+        FROM xsy_finance_receivable
+        WHERE deleted = FALSE AND order_id = #{orderId}
+          AND source_type = 'ORDER_RETURN' AND entry_type = 'RED'
+        GROUP BY source_id
+    </select>
+
+    <select id="refunds" resultType="com.xsy.scm.order.domain.vo.SalesOrderDetailVO$RefundFact">
+        SELECT rf.id AS refundId, rf.return_id AS returnId, rt.return_no AS returnNo, rf.refund_no AS refundNo,
+               rf.status, rf.refund_amount AS refundAmount, rf.completed_at AS completedAt
+        FROM xsy_order_refund rf
+                 LEFT JOIN xsy_order_return rt ON rt.id = rf.return_id AND rt.deleted = FALSE
+        WHERE rf.deleted = FALSE AND rf.order_id = #{orderId}
+        ORDER BY rf.created_at DESC, rf.id DESC
+    </select>
+
+    <select id="refundFunding" resultType="com.xsy.scm.order.domain.vo.SalesOrderDetailVO$RefundFundingFact">
+        SELECT order_refund_id AS refundId, COUNT(*) AS sourceCount,
+               COUNT(*) FILTER (WHERE status = 'SUCCEEDED') AS succeededCount,
+               COUNT(*) FILTER (WHERE status = 'FAILED') AS failedCount,
+               COUNT(*) FILTER (WHERE status = 'PROCESSING') AS processingCount,
+               COALESCE(SUM(allocated_amount) FILTER (WHERE status = 'SUCCEEDED'), 0) AS succeededAmount
+        FROM xsy_refund_funding_allocation
+        WHERE deleted = FALSE AND order_id = #{orderId}
+        GROUP BY order_refund_id
+    </select>
+
+    <select id="legacyRefundFunding" resultType="com.xsy.scm.order.domain.vo.SalesOrderDetailVO$RefundFundingFact">
+        SELECT facts.refund_id AS refundId, COUNT(*) AS sourceCount,
+               COUNT(*) FILTER (WHERE facts.status = 'SUCCEEDED') AS succeededCount,
+               COUNT(*) FILTER (WHERE facts.status = 'FAILED') AS failedCount,
+               COUNT(*) FILTER (WHERE facts.status = 'PROCESSING') AS processingCount,
+               COALESCE(SUM(facts.amount) FILTER (WHERE facts.status = 'SUCCEEDED'), 0) AS succeededAmount
+        FROM (
+            SELECT p.source_id AS refund_id,
+                   CASE WHEN p.status = 'CLOSED' THEN 'FAILED' ELSE p.status END AS status,
+                   p.provider_amount AS amount
+            FROM xsy_payment_refund p
+                     JOIN xsy_order_refund rf ON rf.id = p.source_id AND rf.deleted = FALSE
+            WHERE p.deleted = FALSE AND p.source_type = 'ORDER_REFUND' AND rf.order_id = #{orderId}
+            UNION ALL
+            SELECT m.source_id AS refund_id, 'SUCCEEDED' AS status, m.amount
+            FROM xsy_customer_balance_movement m
+                     JOIN xsy_order_refund rf ON rf.id = m.source_id AND rf.deleted = FALSE
+            WHERE m.deleted = FALSE AND m.type = 'REFUND' AND m.direction = 'CREDIT'
+              AND m.source_type = 'ORDER_REFUND' AND rf.order_id = #{orderId}
+        ) facts
+        GROUP BY facts.refund_id
+    </select>
+</mapper>

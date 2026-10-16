@@ -104,12 +104,34 @@ public interface ReportDao {
             @Param("endAt") OffsetDateTime endAt, @Param("query") ScmReceiptReportQueryForm query,
             @Param("scope") ScmValueScope scope);
 
+    ReceiptReportVO.ReceiptSummary receiptSummary(@Param("startAt") OffsetDateTime startAt,
+            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmReceiptReportQueryForm query,
+            @Param("scope") ScmValueScope scope);
+
+    List<ReceiptReportVO.UnitQuantity> receiptQuantitySummary(@Param("startAt") OffsetDateTime startAt,
+            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmReceiptReportQueryForm query,
+            @Param("scope") ScmValueScope scope);
+
     List<ReceiptReportVO.InboundRow> inboundList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
+            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmReceiptReportQueryForm query,
+            @Param("scope") ScmValueScope scope);
+
+    ReceiptReportVO.InboundSummary inboundSummary(@Param("startAt") OffsetDateTime startAt,
+            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmReceiptReportQueryForm query,
+            @Param("scope") ScmValueScope scope);
+
+    List<ReceiptReportVO.UnitQuantity> inboundQuantitySummary(@Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt, @Param("query") ScmReceiptReportQueryForm query,
             @Param("scope") ScmValueScope scope);
 
     List<ReceiptReportVO.PendingPutawayRow> pendingPutawayList(Page<?> page,
             @Param("query") ScmReceiptReportQueryForm query, @Param("scope") ScmValueScope scope);
+
+    ReceiptReportVO.PendingPutawaySummary pendingPutawaySummary(@Param("query") ScmReceiptReportQueryForm query,
+            @Param("scope") ScmValueScope scope);
+
+    List<ReceiptReportVO.UnitQuantity> pendingPutawayQuantitySummary(@Param("query") ScmReceiptReportQueryForm query,
+            @Param("scope") ScmValueScope scope);
 
     // ---------- 库存分析 ----------
 

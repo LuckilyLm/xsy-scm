@@ -1,5 +1,6 @@
 package com.xsy.scm.order.domain.form;
 
+import java.math.BigDecimal;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -15,4 +16,13 @@ public class OrderAddressForm {
     @NotBlank(message = "收货地址不能为空")
     @Size(max = 500, message = "收货地址不能超过500个字符")
     private String address;
+    private Integer provinceCode;
+    private String provinceName;
+    private Integer cityCode;
+    private String cityName;
+    private Integer districtCode;
+    private String districtName;
+    private BigDecimal longitude;
+    private BigDecimal latitude;
+    private String geomCrs;
 }

@@ -24,6 +24,7 @@ import com.xsy.scm.order.domain.vo.OrderRecentPriceVO;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderVO;
 import com.xsy.scm.order.permission.OrderPermission;
+import com.xsy.scm.order.service.SalesOrderDetailReadService;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.order.service.SalesOrderService;
 import com.xsy.scm.pricing.permission.PricingPermission;
@@ -49,6 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SalesOrderController {
     private final SalesOrderService salesOrderService;
     private final SalesOrderQueryService salesOrderQueryService;
+    private final SalesOrderDetailReadService salesOrderDetailReadService;
     private final PriceResolver priceResolver;
     private final OrderCreditService orderCreditService;
     private final CustomerService customerService;
@@ -62,7 +64,7 @@ public class SalesOrderController {
     @GetMapping("/detail/{orderId}")
     @SaCheckPermission(OrderPermission.QUERY)
     public ResponseDTO<SalesOrderDetailVO> detail(@PathVariable Long orderId) {
-        return ResponseDTO.ok(salesOrderQueryService.detail(orderId));
+        return ResponseDTO.ok(salesOrderDetailReadService.detail(orderId));
     }
 
     @PostMapping("/log/query")

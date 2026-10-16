@@ -7,6 +7,8 @@ export function emptySku(sortOrder = 0, defaultFlag = false): ProductSku {
         specName: defaultFlag ? '默认商品规格' : '',
         specValues: {},
         saleUnit: '',
+        mallMinQuantity: '1.0000',
+        mallQuantityStep: '1.0000',
         productType: 'NON_STANDARD',
         marketPrice: '0.0000',
         status: 'ON_SHELF',

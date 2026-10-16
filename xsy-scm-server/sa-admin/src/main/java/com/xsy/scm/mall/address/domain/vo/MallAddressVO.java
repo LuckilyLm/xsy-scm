@@ -17,5 +17,6 @@ public class MallAddressVO {
     private String detailAddress;
     private BigDecimal longitude;
     private BigDecimal latitude;
+    private String geomCrs;
     private Boolean isDefault;
 }

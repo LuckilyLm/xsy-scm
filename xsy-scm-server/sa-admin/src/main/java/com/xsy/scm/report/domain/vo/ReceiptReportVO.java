@@ -2,6 +2,7 @@ package com.xsy.scm.report.domain.vo;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -18,6 +19,37 @@ import com.xsy.scm.common.json.ScmOperatorNameSerializer;
  */
 @Data
 public class ReceiptReportVO {
+
+    @Data
+    public static class UnitQuantity {
+        private String unit;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal quantity;
+    }
+
+    @Data
+    public static class ReceiptSummary {
+        private Long receiptCount;
+        private Long itemCount;
+        private List<UnitQuantity> quantities;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal referenceAmount;
+    }
+
+    @Data
+    public static class InboundSummary {
+        private Long movementCount;
+        private List<UnitQuantity> quantities;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal knownCostAmount;
+        private Long costMissingCount;
+    }
+
+    @Data
+    public static class PendingPutawaySummary {
+        private Long receiptCount;
+        private List<UnitQuantity> quantities;
+    }
 
     /** 粒度 = {@code xsy_purchase_receipt_item}。 */
     @Data

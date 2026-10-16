@@ -61,6 +61,7 @@ public class PromotionCouponService {
         Page<?> page = SmartPageUtil.convert2PageQuery(query);
         List<PromotionCouponVO> rows = promotionCouponDao.queryPage(page, query).stream()
                 .map(PromotionCouponService::toVO).toList();
+        attachUsageStats(rows);
         return SmartPageUtil.convert2PageResult(page, rows);
     }
 
@@ -70,7 +71,9 @@ public class PromotionCouponService {
         if (row == null || Boolean.TRUE.equals(row.getDeleted())) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_NOT_FOUND);
         }
-        return toVO(row);
+        PromotionCouponVO vo = toVO(row);
+        attachUsageStats(List.of(vo));
+        return vo;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -269,6 +272,29 @@ public class PromotionCouponService {
         row.setValidFrom(form.getValidFrom());
         row.setValidTo(form.getValidTo());
         row.setRemark(StringUtils.isBlank(form.getRemark()) ? null : form.getRemark().trim());
+    }
+
+    private void attachUsageStats(List<PromotionCouponVO> rows) {
+        if (rows.isEmpty()) {
+            return;
+        }
+        List<Long> ids = rows.stream().map(PromotionCouponVO::getId).toList();
+        Map<Long, PromotionCouponVO.UsageStats> statsById = new HashMap<>();
+        promotionCouponInstanceDao.usageStatsByCouponIds(ids)
+                .forEach(stats -> statsById.put(stats.getCouponId(), stats));
+        for (PromotionCouponVO row : rows) {
+            PromotionCouponVO.UsageStats stats = statsById.get(row.getId());
+            if (stats == null) {
+                stats = new PromotionCouponVO.UsageStats();
+                stats.setCouponId(row.getId());
+                stats.setAdminIssuedCount(0L);
+                stats.setMallClaimedCount(0L);
+                stats.setUsedCount(0L);
+                stats.setUsedDiscountAmount(BigDecimal.ZERO);
+                stats.setDiscountMissingCount(0L);
+            }
+            row.setUsageStats(stats);
+        }
     }
 
     private void requireCodeAvailable(String code, Long selfId) {

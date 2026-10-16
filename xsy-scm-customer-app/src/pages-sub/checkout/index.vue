@@ -180,6 +180,7 @@
   /** 与购物车页保持同一套不可售文案 */
   function unavailableText(item) {
     if (item.availability === 'NO_PRICE') return '暂无客户价，请联系业务员询价';
+    if (item.availability === 'QUANTITY_INVALID') return '数量不符合当前起订量和递增量，请返回购物车调整';
     return '商品已下架或对当前客户不可见';
   }
   function backToCart() {

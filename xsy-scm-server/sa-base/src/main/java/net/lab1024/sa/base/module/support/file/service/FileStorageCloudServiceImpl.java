@@ -109,8 +109,10 @@ public class FileStorageCloudServiceImpl implements IFileStorageService {
                 .metadata(userMetadata)
                 .contentLength(file.getSize())
                 .contentType(this.getContentType(fileType))
-                .contentEncoding(StandardCharsets.UTF_8.name())
-                .contentDisposition("attachment;filename=" + urlEncoderFilename);
+                // 图片需要在 HTTPS 页面内联展示；二进制对象不能声明 UTF-8 内容编码。
+                .contentDisposition(path.startsWith("public/image/")
+                        ? "inline;filename=" + urlEncoderFilename
+                        : "attachment;filename=" + urlEncoderFilename);
         if (cloudConfig.isCloudSendObjectAcl()) {
             putObjectBuilder.acl(acl);
         }

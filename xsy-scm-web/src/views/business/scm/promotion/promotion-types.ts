@@ -92,6 +92,14 @@ export interface PromotionCoupon {
     totalLimit?: number | null;
     remark?: string | null;
     version: number;
+    usageStats?: {
+        couponId: Id;
+        adminIssuedCount: number;
+        mallClaimedCount: number;
+        usedCount: number;
+        usedDiscountAmount: string | null;
+        discountMissingCount: number;
+    } | null;
 }
 
 export interface PromotionCouponQuery extends PromotionPage {

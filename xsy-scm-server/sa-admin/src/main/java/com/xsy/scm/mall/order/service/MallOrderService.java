@@ -7,6 +7,7 @@ import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.cart.service.MallCartService;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.service.MallCatalogService;
+import com.xsy.scm.mall.catalog.service.MallQuantityPolicy;
 import com.xsy.scm.mall.order.domain.form.MallOrderCancelForm;
 import com.xsy.scm.mall.order.domain.vo.MallOrderVO;
 import com.xsy.scm.mall.order.domain.vo.MallReorderVO;
@@ -94,6 +95,10 @@ public class MallOrderService {
             }
             if (product.getUnitPrice() == null) {
                 result.getSkipped().add(skipped(item, "暂无客户价，请联系业务员询价"));
+                continue;
+            }
+            if (!MallQuantityPolicy.accepts(product, item.getOrderedQuantity())) {
+                result.getSkipped().add(skipped(item, "原购买数量不符合当前起订量和递增量"));
                 continue;
             }
             cartService.setQuantity(customer, item.getSkuId(), item.getOrderedQuantity());

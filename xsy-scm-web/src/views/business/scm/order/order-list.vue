@@ -40,7 +40,7 @@
              :loading="loading" :pagination="false" :scroll="{x:1190}"
              :row-selection="{selectedRowKeys:selected,onChange:(keys:(string|number)[])=>selected=keys,getCheckboxProps:(r:Order)=>({disabled:r.status!=='DRAFT'})}">
       <template #bodyCell="{record,column}">
-        <template v-if="column.dataIndex==='orderNo'"><a @click="detail?.open(record.orderId)">{{ record.orderNo }}</a>
+        <template v-if="column.dataIndex==='orderNo'"><a @click="openDetail(record.orderId)">{{ record.orderNo }}</a>
         </template>
         <template v-else-if="column.dataIndex==='customerNameSnapshot'">{{ record.customerNameSnapshot || '—' }}</template>
         <template v-else-if="column.dataIndex==='customerCodeSnapshot'">
@@ -70,13 +70,13 @@
               </a-button>
             </template>
             <template v-else-if="record.status==='CONFIRMED'">
-              <a-button type="link" size="small" @click="detail?.open(record.orderId)">详情</a-button>
+              <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
               <a-button type="link" size="small" v-privilege="'scm:order:reserve-stock'"
                         @click="reserveStock(record)">预留库存
               </a-button>
             </template>
             <template v-else>
-              <a-button type="link" size="small" @click="detail?.open(record.orderId)">详情</a-button>
+              <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
             </template>
             <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
           </a-space>
@@ -91,7 +91,6 @@
   </a-card>
   <OrderForm ref="drawer" @saved="queryData"/>
   <OrderImportModal ref="importModal" @saved="queryData"/>
-  <OrderDetail ref="detail" @saved="queryData"/>
 </template>
 <script setup lang="ts">
 import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue';
@@ -112,14 +111,20 @@ import {orderError} from './order-errors';
 import {hasPermission} from '../common/scm-permission';
 import OrderForm from './components/order-form-drawer.vue';
 import OrderImportModal from './components/order-import-modal.vue';
-import OrderDetail from './order-detail.vue';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<Order[]>([]), total = ref(0),
     loading = ref(false), error = ref(''), selected = ref<(string | number)[]>([]);
-const drawer = ref<InstanceType<typeof OrderForm>>(), importModal = ref<InstanceType<typeof OrderImportModal>>(),
-    detail = ref<InstanceType<typeof OrderDetail>>();
+const drawer = ref<InstanceType<typeof OrderForm>>(), importModal = ref<InstanceType<typeof OrderImportModal>>();
 const route = useRoute();
 const router = useRouter();
+
+function openDetail(id?: string | number) {
+  if (id != null) void router.push(`/order/detail/${id}`);
+}
+
+watch(() => route.path, (path) => {
+  if (path === '/order/order-list') void queryData();
+});
 
 // 消费一次快捷入口动作，避免刷新或返回列表时再次打开新建表单。
 watch(() => route.query.action, async (action) => {
@@ -176,7 +181,7 @@ function rowActions(row: Order): ScmActionItem[] {
 function onRowAction(key: string, row: Order) {
   // `Order.orderId` 在 VO 里可选，打开详情 / 复用为新单都要求确定的 Id，这里先判空。
   if (row.orderId != null && key === 'detail') {
-    detail?.value?.open(row.orderId);
+    openDetail(row.orderId);
   } else if (row.orderId != null && key === 'reuse') {
     drawer?.value?.openFromHistory(row.orderId);
   } else if (key === 'delete') {

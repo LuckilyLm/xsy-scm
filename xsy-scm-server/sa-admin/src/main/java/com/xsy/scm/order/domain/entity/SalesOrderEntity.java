@@ -30,6 +30,8 @@ public class SalesOrderEntity {
     private String customerNameSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String orderSource;
+    /** 商城下单时冻结的配送仓；后台及历史订单为空。 */
+    private Long mallDeliveryWarehouseId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long originalOrderId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

@@ -40,6 +40,8 @@ public class SalesOrderItemEntity {
     private Map<String, Object> specValuesSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String saleUnitSnapshot;
+    private String mallStockUnitSnapshot;
+    private BigDecimal mallStockUnitsPerSaleUnit;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String productTypeSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

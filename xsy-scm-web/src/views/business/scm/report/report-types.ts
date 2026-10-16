@@ -414,6 +414,31 @@ export interface PurchaseQuery extends ReportPage, ReportDateQuery {
 // 收货与入库
 // ==================================================================
 
+export interface ReceiptUnitQuantity {
+    unit: string | null;
+    quantity: string | null;
+}
+
+export interface ReceiptSummary {
+    receiptCount: number;
+    itemCount: number;
+    quantities: ReceiptUnitQuantity[];
+    referenceAmount: string | null;
+}
+
+export interface InboundSummary {
+    movementCount: number;
+    quantities: ReceiptUnitQuantity[];
+    /** 仅已知成本流水的小计；有无成本流水时不可当作全量成本。 */
+    knownCostAmount: string | null;
+    costMissingCount: number | null;
+}
+
+export interface PendingPutawaySummary {
+    receiptCount: number;
+    quantities: ReceiptUnitQuantity[];
+}
+
 /** `ReceiptReportVO.ReceiptRow`：粒度 = `purchase_receipt_item`（收货确认这一事实）。 */
 export interface ReceiptRow {
     receiptId?: ReportId;

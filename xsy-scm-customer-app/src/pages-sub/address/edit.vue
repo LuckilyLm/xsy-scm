@@ -18,6 +18,27 @@
           </text>
         </view>
       </picker>
+      <view class="field">
+        <text class="field__label">搜索位置</text>
+        <input class="field__input" v-model="searchKeyword" placeholder="小区、楼宇或街道" confirm-type="search"
+               @confirm="searchPlaces" />
+        <text class="field__link" @click="searchPlaces">搜索</text>
+      </view>
+      <view v-if="searching" class="addr-edit__map-hint">正在搜索高德地点…</view>
+      <view v-for="place in places" :key="`${place.longitude}-${place.latitude}-${place.name}`"
+            class="addr-edit__place" @click="selectPlace(place)">
+        <text>{{ place.name }}</text><text class="addr-edit__place-address">{{ place.address }}</text>
+      </view>
+      <map id="address-map" class="addr-edit__map" :latitude="mapLatitude" :longitude="mapLongitude"
+           :scale="15" :markers="markers" />
+      <view class="addr-edit__map-actions">
+        <text @click="chooseMapCenter">选取地图中心</text>
+        <text @click="chooseCurrentLocation">使用当前位置</text>
+      </view>
+      <view class="addr-edit__map-hint">
+        {{ form.longitude == null ? '请搜索地点或移动地图后选取中心点' :
+            `已选 GCJ-02 坐标：${form.longitude}, ${form.latitude}` }}
+      </view>
       <view class="field field--textarea">
         <text class="field__label">详细地址</text>
         <textarea class="field__textarea" v-model="form.detailAddress" :maxlength="255"
@@ -38,20 +59,32 @@
 </template>
 
 <script setup>
-  import { reactive, ref } from 'vue';
+  import { computed, reactive, ref } from 'vue';
   import { onLoad } from '@dcloudio/uni-app';
   import { mallAddressApi } from '@/api/mall/address-api';
+  import { mallMapApi } from '@/api/mall/map-api';
   import { smartSentry } from '@/lib/smart-sentry';
 
   const addressId = ref(null);
   const region = ref([]);
+  const regionCodes = ref([]);
+  const searchKeyword = ref('');
+  const searching = ref(false);
+  const places = ref([]);
+  const mapLatitude = ref(35);
+  const mapLongitude = ref(105);
   const saving = ref(false);
   const form = reactive({
     receiverName: '',
     receiverPhone: '',
     detailAddress: '',
+    longitude: null,
+    latitude: null,
     isDefault: false,
   });
+  const markers = computed(() => form.longitude == null ? [] : [{
+    id: 1, longitude: Number(form.longitude), latitude: Number(form.latitude),
+  }]);
 
   onLoad(async (options) => {
     const id = options?.id ? Number(options.id) : null;
@@ -65,6 +98,13 @@
       form.detailAddress = data.detailAddress || '';
       form.isDefault = data.isDefault === true;
       region.value = [data.provinceName, data.cityName, data.districtName].filter(Boolean);
+      regionCodes.value = [data.provinceCode, data.cityCode, data.districtCode].filter(Boolean);
+      form.longitude = data.longitude ?? null;
+      form.latitude = data.latitude ?? null;
+      if (form.longitude != null && form.latitude != null) {
+        mapLongitude.value = Number(form.longitude);
+        mapLatitude.value = Number(form.latitude);
+      }
     } catch (error) {
       smartSentry.captureError(error);
     }
@@ -72,6 +112,62 @@
 
   function onRegionChange(event) {
     region.value = event.detail.value || [];
+    regionCodes.value = event.detail.code || [];
+    form.longitude = null;
+    form.latitude = null;
+    places.value = [];
+  }
+
+  async function searchPlaces() {
+    if (!searchKeyword.value.trim() || searching.value) return;
+    searching.value = true;
+    try {
+      const response = await mallMapApi.search(searchKeyword.value.trim(), region.value[1]);
+      places.value = response.data || [];
+      if (!places.value.length) uni.showToast({ title: '未找到地点，请换个关键词', icon: 'none' });
+    } catch (error) {
+      smartSentry.captureError(error);
+      uni.showToast({ title: error?.message || '地点搜索失败', icon: 'none' });
+    } finally {
+      searching.value = false;
+    }
+  }
+
+  async function selectCoordinates(longitude, latitude) {
+    try {
+      const response = await mallMapApi.reverse(longitude, latitude);
+      const place = response.data;
+      if (!place?.districtCode) throw new Error('该位置没有可用的行政区信息');
+      form.longitude = place.longitude;
+      form.latitude = place.latitude;
+      mapLongitude.value = Number(place.longitude);
+      mapLatitude.value = Number(place.latitude);
+      region.value = [place.provinceName, place.cityName, place.districtName];
+      regionCodes.value = [place.provinceCode, place.cityCode, place.districtCode];
+      places.value = [];
+    } catch (error) {
+      smartSentry.captureError(error);
+      uni.showToast({ title: error?.message || '位置解析失败', icon: 'none' });
+    }
+  }
+
+  function selectPlace(place) {
+    void selectCoordinates(place.longitude, place.latitude);
+  }
+
+  function chooseMapCenter() {
+    uni.createMapContext('address-map').getCenterLocation({
+      success: ({ longitude, latitude }) => { void selectCoordinates(longitude, latitude); },
+      fail: () => uni.showToast({ title: '暂时无法读取地图中心', icon: 'none' }),
+    });
+  }
+
+  function chooseCurrentLocation() {
+    uni.getLocation({
+      type: 'gcj02',
+      success: ({ longitude, latitude }) => { void selectCoordinates(longitude, latitude); },
+      fail: () => uni.showToast({ title: '请开启定位权限后重试', icon: 'none' }),
+    });
   }
   function onDefaultChange(event) {
     form.isDefault = event.detail.value === true;
@@ -82,6 +178,8 @@
     // 允许手机号与座机（含区号、分机分隔符），只做长度与字符校验
     if (!/^[\d\-\s+]{6,32}$/.test(form.receiverPhone.trim())) return '请输入正确的联系电话';
     if (!region.value.length) return '请选择所在地区';
+    if (!regionCodes.value[2]) return '请选择有效的区县位置';
+    if (form.longitude == null || form.latitude == null) return '请在地图上选择收货位置';
     if (!form.detailAddress.trim()) return '请输入详细地址';
     return '';
   }
@@ -94,14 +192,18 @@
       return;
     }
     saving.value = true;
-    // 省市区编码待接入区划数据后补齐，当前只提交名称快照
     const payload = {
       receiverName: form.receiverName.trim(),
       receiverPhone: form.receiverPhone.trim(),
       provinceName: region.value[0] || null,
       cityName: region.value[1] || null,
       districtName: region.value[2] || null,
+      provinceCode: regionCodes.value[0] || null,
+      cityCode: regionCodes.value[1] || null,
+      districtCode: regionCodes.value[2] || null,
       detailAddress: form.detailAddress.trim(),
+      longitude: form.longitude,
+      latitude: form.latitude,
       isDefault: form.isDefault,
     };
     try {
@@ -137,4 +239,10 @@
   .addr-edit__save { width: 100%; height: 80rpx; @include flex-center; border-radius: $radius-pill;
     background-color: $color-primary; color: white; font-size: $font-size-base; }
   .addr-edit__save--disabled { background-color: $color-primary-disabled; }
+  .field__link { margin-left: $space-3; color: $color-primary; }
+  .addr-edit__map { width: 100%; height: 420rpx; }
+  .addr-edit__map-actions { display: flex; justify-content: space-around; padding: $space-3; color: $color-primary; }
+  .addr-edit__map-hint { padding: $space-2 $space-4; color: $color-text-secondary; font-size: $font-size-sm; }
+  .addr-edit__place { padding: $space-2 $space-4; @include hairline-bottom; }
+  .addr-edit__place-address { display: block; color: $color-text-secondary; font-size: $font-size-sm; }
 </style>

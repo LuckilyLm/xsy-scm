@@ -52,6 +52,7 @@ export interface Order {
     orderedTotalAmount?: string | null;
     settlementTotalAmount?: string | null;
     createdAt?: string;
+    confirmedAt?: string | null;
     items: Item[];
     address: Address;
     /**
@@ -67,6 +68,84 @@ export interface Order {
      * 与 `discount` 分开：赠品是非金额权益，只有赠品没有金额优惠的订单不会有优惠行。
      */
     gifts?: OrderGiftEntitlement[] | null;
+    inventoryFactsVisible?: boolean;
+    sortingFactsVisible?: boolean;
+    deliveryFactsVisible?: boolean;
+    returnFactsVisible?: boolean;
+    refundFactsVisible?: boolean;
+    receivableFactsVisible?: boolean;
+    fundingFactsVisible?: boolean;
+    funding?: {
+        payableAmount: string;
+        receivedAmount: string;
+        remainingAmount: string;
+        excessReceivedAmount: string;
+    } | null;
+    inventoryReservations?: OrderReservation[] | null;
+    sortingProgress?: OrderSorting[] | null;
+    deliveryProgress?: OrderDelivery | null;
+    returns?: OrderReturnFact[] | null;
+    refunds?: OrderRefundFact[] | null;
+}
+
+export interface OrderReservation {
+    reservationId: Id;
+    orderItemId: Id;
+    productName?: string | null;
+    skuName?: string | null;
+    warehouseName?: string | null;
+    unit?: string | null;
+    quantity: string;
+    status: 'ACTIVE' | 'RELEASED' | 'CONSUMED';
+    occurredAt?: string | null;
+}
+
+export interface OrderSorting {
+    taskId: Id;
+    taskNo: string;
+    taskStatus: string;
+    orderItemId: Id;
+    productName?: string | null;
+    skuName?: string | null;
+    unit?: string | null;
+    plannedQuantity: string;
+    sortedQuantity?: string | null;
+    result?: string | null;
+    sortedAt?: string | null;
+}
+
+export interface OrderDelivery {
+    routeId: Id;
+    routeNo: string;
+    routeStatus: string;
+    fulfillmentStatus: string;
+    warehouseName?: string | null;
+    dispatchedAt?: string | null;
+    signedAt?: string | null;
+    signReason?: string | null;
+}
+
+export interface OrderReturnFact {
+    returnId: Id;
+    returnNo: string;
+    status: string;
+    reason: string;
+    approvedAmount: string;
+    approvedAt?: string | null;
+    redReceivableRecorded?: boolean | null;
+    redReceivableAmount?: string | null;
+}
+
+export interface OrderRefundFact {
+    refundId: Id;
+    returnId: Id;
+    returnNo?: string | null;
+    refundNo: string;
+    status: 'PENDING' | 'COMPLETED';
+    refundAmount: string;
+    completedAt?: string | null;
+    fundingStatus?: 'PENDING' | 'PROCESSING' | 'SUCCEEDED' | 'FAILED' | null;
+    fundingSucceededAmount?: string | null;
 }
 
 export interface Query {

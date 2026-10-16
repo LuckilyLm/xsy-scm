@@ -38,6 +38,18 @@
     <!-- ==================== 收货明细 ==================== -->
     <a-tab-pane key="receipt" tab="收货明细">
       <a-card size="small" :bordered="false">
+        <a-alert v-if="receiptSummaryError" :message="receiptSummaryError" type="error" show-icon class="smart-margin-bottom10">
+          <template #action><a-button @click="loadReceiptTab">重试</a-button></template>
+        </a-alert>
+        <div v-else class="scm-report-summary">
+          <span v-if="!receiptSummary">汇总查询中…</span>
+          <template v-else>
+            <span>收货单 <strong>{{ countText(receiptSummary.receiptCount) }}</strong> 张</span>
+            <span>收货行 <strong>{{ countText(receiptSummary.itemCount) }}</strong> 条</span>
+            <span>收货数量 <strong>{{ unitQuantitiesText(receiptSummary.quantities) }}</strong></span>
+            <span>收货参考金额 <strong class="scm-money">{{ moneyText(receiptSummary.referenceAmount) }}</strong></span>
+          </template>
+        </div>
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-button v-privilege="PERM.EXPORT" :loading="receiptExport.exporting" @click="exportReceipt">导出</a-button>
@@ -46,7 +58,7 @@
             <TableOperator
                 v-model="receiptColumns"
                 :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_RECEIPT"
-                :refresh="loadReceipt"
+                :refresh="loadReceiptTab"
             />
           </div>
         </a-row>
@@ -115,7 +127,7 @@
               v-model:page-size="receipt.pageSize"
               :total="receipt.total"
               :exporting="receipt.exporting"
-              @change="loadReceipt"
+              @change="loadReceiptTab"
               :show-total="(n: number) => `共${n}条`"
           />
         </div>
@@ -125,6 +137,20 @@
     <!-- ==================== 入库明细 ==================== -->
     <a-tab-pane key="inbound" tab="入库明细">
       <a-card size="small" :bordered="false">
+        <a-alert v-if="inboundSummaryError" :message="inboundSummaryError" type="error" show-icon class="smart-margin-bottom10">
+          <template #action><a-button @click="loadInboundTab">重试</a-button></template>
+        </a-alert>
+        <div v-else class="scm-report-summary">
+          <span v-if="!inboundSummary">汇总查询中…</span>
+          <template v-else>
+            <span>入库流水 <strong>{{ countText(inboundSummary.movementCount) }}</strong> 条</span>
+            <span>入库数量 <strong>{{ unitQuantitiesText(inboundSummary.quantities) }}</strong></span>
+            <template v-if="canViewCost">
+              <span>已知入库成本小计 <strong class="scm-money">{{ moneyText(inboundSummary.knownCostAmount) }}</strong></span>
+              <span v-if="inboundSummary.costMissingCount">{{ inboundSummary.costMissingCount }} 条流水缺少成本，金额不代表全部入库成本</span>
+            </template>
+          </template>
+        </div>
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
             <a-button v-privilege="PERM.EXPORT" :loading="inboundExport.exporting" @click="exportInbound">导出</a-button>
@@ -133,7 +159,7 @@
             <TableOperator
                 v-model="inboundColumns"
                 :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INBOUND"
-                :refresh="loadInbound"
+                :refresh="loadInboundTab"
             />
           </div>
         </a-row>
@@ -182,7 +208,7 @@
               v-model:page-size="inbound.pageSize"
               :total="inbound.total"
               :exporting="inbound.exporting"
-              @change="loadInbound"
+              @change="loadInboundTab"
               :show-total="(n: number) => `共${n}条`"
           />
         </div>
@@ -192,6 +218,17 @@
     <!-- ==================== 待入库 ==================== -->
     <a-tab-pane key="pending" tab="待入库">
       <a-card size="small" :bordered="false">
+        <a-alert v-if="pendingSummaryError" :message="pendingSummaryError" type="error" show-icon class="smart-margin-bottom10">
+          <template #action><a-button @click="loadPendingTab">重试</a-button></template>
+        </a-alert>
+        <div v-else class="scm-report-summary">
+          <span v-if="!pendingSummary">汇总查询中…</span>
+          <template v-else>
+            <span>当前待入库收货单 <strong>{{ countText(pendingSummary.receiptCount) }}</strong> 张</span>
+            <span>待入库数量 <strong>{{ unitQuantitiesText(pendingSummary.quantities) }}</strong></span>
+            <span>当前状态不受业务日期筛选影响</span>
+          </template>
+        </div>
         <a-row class="smart-table-btn-block">
           <div class="smart-table-operate-block">
           </div>
@@ -199,7 +236,7 @@
             <TableOperator
                 v-model="pendingColumns"
                 :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PENDING_PUTAWAY"
-                :refresh="loadPending"
+                :refresh="loadPendingTab"
             />
           </div>
         </a-row>
@@ -246,7 +283,7 @@
               v-model:current="pending.pageNum"
               v-model:page-size="pending.pageSize"
               :total="pending.total"
-              @change="loadPending"
+              @change="loadPendingTab"
               :show-total="(n: number) => `共${n}条`"
           />
         </div>
@@ -269,7 +306,16 @@ import {useScmExport} from '../common/use-scm-export';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {SCM_PUTAWAY_STATUS_ENUM, SCM_RECEIPT_MODE_ENUM} from '/@/constants/business/scm/purchase-const';
-import type {InboundRow, PendingPutawayRow, ReceiptQuery, ReceiptRow} from './report-types';
+import type {
+    InboundRow,
+    InboundSummary,
+    PendingPutawayRow,
+    PendingPutawaySummary,
+    ReceiptQuery,
+    ReceiptRow,
+    ReceiptSummary,
+    ReceiptUnitQuantity,
+} from './report-types';
 import {
     buildReportQuery,
     countText,
@@ -285,7 +331,7 @@ import {
 import {moneyText, quantityText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
 import {useReportPermission} from './use-report-permission';
-import {createTabLoader} from './use-report-query';
+import {createGuardedLoader, createTabLoader} from './use-report-query';
 import type {DateRange} from './report-model';
 
 const PERM = SCM_REPORT_PERMISSION;
@@ -303,6 +349,12 @@ const advanced = ref(false);
 const receipt = reactive(createTabView<ReceiptRow>());
 const inbound = reactive(createTabView<InboundRow>());
 const pending = reactive(createTabView<PendingPutawayRow>());
+const receiptSummary = ref<ReceiptSummary | null>(null);
+const inboundSummary = ref<InboundSummary | null>(null);
+const pendingSummary = ref<PendingPutawaySummary | null>(null);
+const receiptSummaryError = ref('');
+const inboundSummaryError = ref('');
+const pendingSummaryError = ref('');
 const inboundExport = useScmExport(inbound);
 const receiptExport = useScmExport(receipt);
 
@@ -368,6 +420,43 @@ function exportQuery(): Partial<ReceiptQuery> {
 const loadReceipt = createTabLoader(receipt, () => receiptQuery(receipt), reportReceiptApi.query);
 const loadInbound = createTabLoader(inbound, () => receiptQuery(inbound), reportReceiptApi.inboundQuery);
 const loadPending = createTabLoader(pending, () => receiptQuery(pending), reportReceiptApi.pendingPutawayQuery);
+const loadReceiptSummary = createGuardedLoader(
+    (options) => reportReceiptApi.summary(receiptQuery(receipt), options),
+    (data) => { receiptSummary.value = data; }, receiptSummaryError);
+const loadInboundSummary = createGuardedLoader(
+    (options) => reportReceiptApi.inboundSummary(receiptQuery(inbound), options),
+    (data) => { inboundSummary.value = data; }, inboundSummaryError);
+const loadPendingSummary = createGuardedLoader(
+    (options) => reportReceiptApi.pendingPutawaySummary(receiptQuery(pending), options),
+    (data) => { pendingSummary.value = data; }, pendingSummaryError);
+
+function loadReceiptTab() {
+    receiptSummary.value = null;
+    receiptSummaryError.value = '';
+    void loadReceipt();
+    void loadReceiptSummary();
+}
+
+function loadInboundTab() {
+    inboundSummary.value = null;
+    inboundSummaryError.value = '';
+    void loadInbound();
+    void loadInboundSummary();
+}
+
+function loadPendingTab() {
+    pendingSummary.value = null;
+    pendingSummaryError.value = '';
+    void loadPending();
+    void loadPendingSummary();
+}
+
+function unitQuantitiesText(quantities: ReceiptUnitQuantity[] | null | undefined): string {
+    if (!quantities?.length) {
+        return '—';
+    }
+    return quantities.map(({quantity, unit}) => `${quantityText(quantity)} ${unit || '未标明单位'}`).join(' / ');
+}
 
 /**
  * 成本单元格文案：`costMissing` 为真或无成本权限时都是 `—`。
@@ -388,17 +477,20 @@ function queryActiveTab() {
         receipt.error = overLimit;
         inbound.error = overLimit;
         pending.error = overLimit;
+        receiptSummaryError.value = overLimit;
+        inboundSummaryError.value = overLimit;
+        pendingSummaryError.value = overLimit;
         return;
     }
     switch (activeTab.value) {
         case 'receipt':
-            void loadReceipt();
+            loadReceiptTab();
             break;
         case 'inbound':
-            void loadInbound();
+            loadInboundTab();
             break;
         case 'pending':
-            void loadPending();
+            loadPendingTab();
             break;
         default:
             break;
@@ -417,6 +509,13 @@ function onTabChange() {
 }
 
 function onSearch() {
+    if (activeTab.value === 'receipt') {
+        enterTab(receipt);
+    } else if (activeTab.value === 'inbound') {
+        enterTab(inbound);
+    } else {
+        enterTab(pending);
+    }
     queryActiveTab();
 }
 
@@ -455,3 +554,16 @@ onMounted(() => {
     queryActiveTab();
 });
 </script>
+
+<style scoped>
+.scm-report-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 24px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  background: var(--ant-color-fill-quaternary, #fafafa);
+  border-radius: 4px;
+}
+</style>

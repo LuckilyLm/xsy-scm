@@ -163,28 +163,32 @@
   }
 
   /** 起订量与步进来自服务端契约，客户端只按它约束步进，不自行设定业务规则 */
-  const minQty = computed(() => Math.max(1, Number(product.value?.minOrderQty) || 1));
-  const stepQty = computed(() => Math.max(1, Number(product.value?.stepQty) || 1));
+  const minQty = computed(() => Number(product.value?.minOrderQty) > 0 ? Number(product.value.minOrderQty) : 1);
+  const stepQty = computed(() => Number(product.value?.stepQty) > 0 ? Number(product.value.stepQty) : 1);
 
-  /** 数量上限仅用于目录交互；当前库存口径未知时回落到起订量，不作为下单门槛。 */
+  const scaled = (value) => Math.round(Number(value) * 10000);
+  const unscaled = (value) => Number((value / 10000).toFixed(4));
+
+  /** 数量上限只按当前配送仓的服务端可售量收窄交互，提交仍由后端重验。 */
   const maxQty = computed(() => {
-    const available = Number(product.value?.availableQty);
-    if (!Number.isFinite(available) || available <= 0) {
-      return minQty.value;
-    }
-    return Math.max(minQty.value, Math.floor(available));
+    const available = scaled(product.value?.availableQty);
+    const minimum = scaled(minQty.value);
+    const step = scaled(stepQty.value);
+    if (!Number.isFinite(available) || available < minimum || step <= 0) return 0;
+    return unscaled(minimum + Math.floor((available - minimum) / step) * step);
   });
 
-  const canDecrease = computed(() => orderable.value && quantity.value > minQty.value);
-  const canIncrease = computed(() => orderable.value && quantity.value + stepQty.value <= maxQty.value);
+  const canDecrease = computed(() => orderable.value && scaled(quantity.value) > scaled(minQty.value));
+  const canIncrease = computed(() => orderable.value
+      && scaled(quantity.value) + scaled(stepQty.value) <= scaled(maxQty.value));
 
   const quantityHint = computed(() => {
     const unit = product.value?.unit || '';
     const tips = [];
-    if (minQty.value > 1) {
+    if (minQty.value !== 1) {
       tips.push(`起订 ${minQty.value}${unit}`);
     }
-    if (stepQty.value > 1) {
+    if (stepQty.value !== 1) {
       tips.push(`按 ${stepQty.value}${unit}递增`);
     }
     if (nonStandard.value) {
@@ -215,20 +219,20 @@
       return '询价';
     }
     if (submitKind.value === 'disabled') {
-      return '暂时缺货';
+      return product.value?.stockStatus === 'UNKNOWN' ? '待确认配送仓' : '暂时缺货';
     }
     return '加入购物车';
   });
 
   function decrease() {
     if (canDecrease.value) {
-      quantity.value -= stepQty.value;
+      quantity.value = unscaled(scaled(quantity.value) - scaled(stepQty.value));
     }
   }
 
   function increase() {
     if (canIncrease.value) {
-      quantity.value = Math.min(maxQty.value, quantity.value + stepQty.value);
+      quantity.value = unscaled(Math.min(scaled(maxQty.value), scaled(quantity.value) + scaled(stepQty.value)));
     }
   }
 
@@ -265,7 +269,7 @@
     try {
       const res = await mallCatalogApi.getProduct(skuId.value);
       product.value = res.data || null;
-      quantity.value = Math.max(1, Number(product.value?.minOrderQty) || 1);
+      quantity.value = minQty.value;
     } catch (e) {
       // 「数据不存在」是预期的业务结果，已由页面空态表达，不再当作异常上报
       if (!isApiError(e, PLATFORM_ERROR_CODE.DATA_NOT_EXIST)) {

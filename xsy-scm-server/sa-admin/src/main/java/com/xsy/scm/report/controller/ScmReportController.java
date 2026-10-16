@@ -410,6 +410,13 @@ public class ScmReportController {
         return ResponseDTO.ok(receiptReportService.receiptList(form));
     }
 
+    @PostMapping("/receipt/summary")
+    @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
+    public ResponseDTO<ReceiptReportVO.ReceiptSummary> receiptSummary(
+            @Valid @RequestBody ScmReceiptReportQueryForm form) {
+        return ResponseDTO.ok(receiptReportService.receiptSummary(form));
+    }
+
     @PostMapping("/inbound/query")
     @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
     public ResponseDTO<PageResult<ReceiptReportVO.InboundRow>> inboundList(
@@ -417,11 +424,25 @@ public class ScmReportController {
         return ResponseDTO.ok(receiptReportService.inboundList(form));
     }
 
+    @PostMapping("/inbound/summary")
+    @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
+    public ResponseDTO<ReceiptReportVO.InboundSummary> inboundSummary(
+            @Valid @RequestBody ScmReceiptReportQueryForm form) {
+        return ResponseDTO.ok(receiptReportService.inboundSummary(form));
+    }
+
     @PostMapping("/pending-putaway/query")
     @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
     public ResponseDTO<PageResult<ReceiptReportVO.PendingPutawayRow>> pendingPutaway(
             @RequestBody ScmReceiptReportQueryForm form) {
         return ResponseDTO.ok(receiptReportService.pendingPutawayList(form));
+    }
+
+    @PostMapping("/pending-putaway/summary")
+    @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
+    public ResponseDTO<ReceiptReportVO.PendingPutawaySummary> pendingPutawaySummary(
+            @RequestBody ScmReceiptReportQueryForm form) {
+        return ResponseDTO.ok(receiptReportService.pendingPutawaySummary(form));
     }
 
     @PostMapping("/receipt/export")

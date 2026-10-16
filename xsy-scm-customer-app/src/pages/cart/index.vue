@@ -113,6 +113,7 @@
   }
   function unavailableText(item) {
     if (item.availability === 'NO_PRICE') return '暂无客户价，请联系业务员询价';
+    if (item.availability === 'QUANTITY_INVALID') return `数量需从 ${item.minOrderQty} ${item.saleUnit} 起，按 ${item.stepQty} ${item.saleUnit} 递增`;
     return '商品已下架或对当前客户不可见';
   }
   function onImageError(skuId) {
@@ -201,8 +202,8 @@
   }
 
   async function step(item, delta) {
-    const next = scaled(item.quantity) + delta * 10000;
-    if (next <= 0) return;
+    const next = scaled(item.quantity) + delta * scaled(item.stepQty ?? 1);
+    if (next < scaled(item.minOrderQty ?? 1)) return;
     await mutate(() => mallCartApi.updateItem(item.skuId, formatQuantity(next)));
   }
 

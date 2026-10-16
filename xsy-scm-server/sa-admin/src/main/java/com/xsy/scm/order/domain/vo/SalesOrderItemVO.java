@@ -22,6 +22,9 @@ public class SalesOrderItemVO {
     private String specNameSnapshot;
     private Map<String, Object> specValuesSnapshot;
     private String saleUnitSnapshot;
+    private String mallStockUnitSnapshot;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal mallStockUnitsPerSaleUnit;
     private String productTypeSnapshot;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal orderedQuantity;

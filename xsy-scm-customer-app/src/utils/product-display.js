@@ -59,11 +59,11 @@ export function hasPrice(product) {
 
 /**
  * 是否可下单。
- * 无价（需询价）或已缺货时置灰，避免用户反复点到必然失败的动作。
+ * 无价或库存状态未确认时置灰，避免把 UNKNOWN 当作有货。
  * 注意：这只控制按钮可用性，真正的库存与价格校验仍在服务端事务内完成（规划 §38.7）。
  */
 export function isOrderable(product) {
-  return hasPrice(product) && product.stockStatus !== STOCK_STATUS.OUT_OF_STOCK;
+  return hasPrice(product) && product.stockStatus === STOCK_STATUS.AVAILABLE;
 }
 
 /** 操作按钮文案：询价 / 缺货 / 加购 */
@@ -71,7 +71,10 @@ export function actionText(product) {
   if (!hasPrice(product)) {
     return '询价';
   }
-  if (product && product.stockStatus === STOCK_STATUS.OUT_OF_STOCK) {
+  if (product && product.stockStatus === STOCK_STATUS.UNKNOWN) {
+    return '待确认配送仓';
+  }
+  if (product && product.stockStatus !== STOCK_STATUS.AVAILABLE) {
     return '缺货';
   }
   return '加购';

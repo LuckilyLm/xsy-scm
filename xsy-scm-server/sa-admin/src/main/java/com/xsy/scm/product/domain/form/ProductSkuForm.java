@@ -35,6 +35,14 @@ public class ProductSkuForm {
     @NotBlank(message = "销售单位不能为空")
     @Size(max = 32, message = "销售单位不能超过32个字符")
     private String saleUnit;
+    @NotNull(message = "商城起订量不能为空")
+    @DecimalMin(value = "0.0001", message = "商城起订量必须大于0")
+    @Digits(integer = 14, fraction = 4, message = "商城起订量最多14位整数和4位小数")
+    private BigDecimal mallMinQuantity = BigDecimal.ONE;
+    @NotNull(message = "商城递增量不能为空")
+    @DecimalMin(value = "0.0001", message = "商城递增量必须大于0")
+    @Digits(integer = 14, fraction = 4, message = "商城递增量最多14位整数和4位小数")
+    private BigDecimal mallQuantityStep = BigDecimal.ONE;
     @NotNull(message = "商品类型不能为空")
     @ScmEnumValue(enumClass = ScmProductTypeEnum.class, message = "商品类型无效")
     private String productType;

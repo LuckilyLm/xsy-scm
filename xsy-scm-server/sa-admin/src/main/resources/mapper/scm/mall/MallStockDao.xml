@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.mall.catalog.dao.MallStockDao">
+    <select id="bySkus" resultType="com.xsy.scm.mall.catalog.domain.vo.MallStockFact">
+        SELECT b.sku_id AS skuId, s.sale_unit AS saleUnit, b.unit AS stockUnit,
+               GREATEST(b.quantity - b.reserved_quantity, 0) AS availableStockQuantity,
+               c.stock_units_per_sale_unit AS stockUnitsPerSaleUnit
+        FROM xsy_inventory_balance b
+                 JOIN xsy_product_sku s ON s.id = b.sku_id AND s.deleted = FALSE
+                 LEFT JOIN xsy_product_sku_stock_conversion c ON c.sku_id = b.sku_id
+                     AND c.sale_unit = s.sale_unit AND c.stock_unit = b.unit AND c.deleted = FALSE
+        WHERE b.deleted = FALSE AND b.warehouse_id = #{warehouseId} AND b.sku_id IN
+        <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+    </select>
+</mapper>

@@ -10,6 +10,7 @@ import com.xsy.scm.mall.cart.constant.MallCartAvailabilityEnum;
 import com.xsy.scm.mall.cart.dao.MallCartDao;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.service.MallCatalogService;
+import com.xsy.scm.mall.catalog.service.MallQuantityPolicy;
 import com.xsy.scm.mall.order.domain.form.MallCheckoutItemForm;
 import com.xsy.scm.mall.order.domain.form.MallCheckoutPreviewForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
@@ -141,6 +142,7 @@ public class MallCheckoutService {
             if (product == null || product.getUnitPrice() == null) {
                 throw new ScmBusinessException(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE);
             }
+            MallQuantityPolicy.require(product, quantities.get(skuId));
         }
         // 价格指纹不一致说明预览后价格变了，不能按旧价静默下单
         if (!fingerprint(quantities, products).equals(form.getPriceFingerprint())) {
@@ -202,7 +204,8 @@ public class MallCheckoutService {
         long sequence = 0;
         for (Map.Entry<Long, BigDecimal> entry : quantities.entrySet()) {
             MallProductVO product = products.get(entry.getKey());
-            if (product == null || product.getUnitPrice() == null) {
+            if (product == null || product.getUnitPrice() == null
+                    || !MallQuantityPolicy.accepts(product, entry.getValue())) {
                 continue;
             }
             PromotionDiscountPreviewForm.Line line = new PromotionDiscountPreviewForm.Line();
@@ -270,7 +273,8 @@ public class MallCheckoutService {
         BigDecimal total = BigDecimal.ZERO.setScale(SCALE);
         for (Map.Entry<Long, BigDecimal> entry : quantities.entrySet()) {
             MallProductVO product = products.get(entry.getKey());
-            if (product == null || product.getUnitPrice() == null) {
+            if (product == null || product.getUnitPrice() == null
+                    || !MallQuantityPolicy.accepts(product, entry.getValue())) {
                 continue;
             }
             total = total.add(product.getUnitPrice().multiply(entry.getValue()).setScale(SCALE, RoundingMode.HALF_UP));
@@ -319,6 +323,8 @@ public class MallCheckoutService {
         item.setSkuCode(product.getSkuCode());
         item.setSpecName(product.getSpecName());
         item.setSaleUnit(product.getSaleUnit());
+        item.setMinOrderQty(product.getMinOrderQty());
+        item.setStepQty(product.getStepQty());
         item.setPrimaryImageUrl(product.getPrimaryImageUrl());
         item.setNonStandard(product.getNonStandard());
         item.setUnitPrice(product.getUnitPrice());
@@ -327,6 +333,11 @@ public class MallCheckoutService {
         if (product.getUnitPrice() == null) {
             item.setAvailability(MallCartAvailabilityEnum.NO_PRICE.name());
             item.setUnavailableReason(ScmUnpricedReasonEnum.NO_PRICE_SOURCE.name());
+            return item;
+        }
+        if (!MallQuantityPolicy.accepts(product, quantity)) {
+            item.setAvailability(MallCartAvailabilityEnum.QUANTITY_INVALID.name());
+            item.setUnavailableReason(MallErrorCode.CART_QUANTITY_RULE_INVALID.name());
             return item;
         }
         item.setAvailability(MallCartAvailabilityEnum.AVAILABLE.name());

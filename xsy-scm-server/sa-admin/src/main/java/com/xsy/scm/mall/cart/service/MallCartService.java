@@ -15,6 +15,7 @@ import com.xsy.scm.mall.cart.domain.vo.MallCartItemVO;
 import com.xsy.scm.mall.cart.domain.vo.MallCartVO;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.service.MallCatalogService;
+import com.xsy.scm.mall.catalog.service.MallQuantityPolicy;
 import com.xsy.scm.pricing.constant.ScmUnavailableReasonEnum;
 import com.xsy.scm.pricing.constant.ScmUnpricedReasonEnum;
 import java.math.BigDecimal;
@@ -81,8 +82,9 @@ public class MallCartService {
     @Transactional(rollbackFor = Exception.class)
     public MallCartVO add(RequestMallCustomer customer, MallCartAddForm form) {
         BigDecimal quantity = parseQuantity(form.getQuantity());
-        requireVisible(customer, form.getSkuId());
+        MallProductVO product = requireVisible(customer, form.getSkuId());
         MallCartItemEntity existing = cartDao.selectByAccountAndSku(customer.getAccountId(), form.getSkuId());
+        MallQuantityPolicy.require(product, existing == null ? quantity : existing.getQuantity().add(quantity));
         if (existing == null) {
             MallCartItemEntity row = new MallCartItemEntity();
             row.setAccountId(customer.getAccountId());
@@ -108,6 +110,7 @@ public class MallCartService {
         if (cartDao.selectByAccountAndSku(customer.getAccountId(), skuId) == null) {
             throw new ScmBusinessException(MallErrorCode.CART_ITEM_NOT_FOUND);
         }
+        MallQuantityPolicy.require(requireVisible(customer, skuId), quantity);
         cartDao.updateQuantity(customer.getAccountId(), skuId, quantity, ScmOperator.current());
         return assemble(customer);
     }
@@ -141,6 +144,7 @@ public class MallCartService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void setQuantity(RequestMallCustomer customer, Long skuId, BigDecimal quantity) {
+        MallQuantityPolicy.require(requireVisible(customer, skuId), quantity);
         MallCartItemEntity existing = cartDao.selectByAccountAndSku(customer.getAccountId(), skuId);
         if (existing == null) {
             MallCartItemEntity row = new MallCartItemEntity();
@@ -159,10 +163,12 @@ public class MallCartService {
         cartDao.updateQuantity(customer.getAccountId(), skuId, quantity, ScmOperator.current());
     }
 
-    private void requireVisible(RequestMallCustomer customer, Long skuId) {
-        if (catalogService.visibleProducts(customer, List.of(skuId)).isEmpty()) {
+    private MallProductVO requireVisible(RequestMallCustomer customer, Long skuId) {
+        List<MallProductVO> visible = catalogService.visibleProducts(customer, List.of(skuId));
+        if (visible.isEmpty()) {
             throw new ScmBusinessException(MallErrorCode.CART_SKU_NOT_VISIBLE);
         }
+        return visible.get(0);
     }
 
     private MallCartVO assemble(RequestMallCustomer customer) {
@@ -204,6 +210,8 @@ public class MallCartService {
         item.setSkuCode(product.getSkuCode());
         item.setSpecName(product.getSpecName());
         item.setSaleUnit(product.getSaleUnit());
+        item.setMinOrderQty(product.getMinOrderQty());
+        item.setStepQty(product.getStepQty());
         item.setPrimaryImageUrl(product.getPrimaryImageUrl());
         item.setUnitPrice(product.getUnitPrice());
         item.setPriceStatus(product.getPriceStatus());
@@ -211,6 +219,11 @@ public class MallCartService {
         if (product.getUnitPrice() == null) {
             item.setAvailability(MallCartAvailabilityEnum.NO_PRICE.name());
             item.setUnavailableReason(ScmUnpricedReasonEnum.NO_PRICE_SOURCE.name());
+            return item;
+        }
+        if (!MallQuantityPolicy.accepts(product, row.getQuantity())) {
+            item.setAvailability(MallCartAvailabilityEnum.QUANTITY_INVALID.name());
+            item.setUnavailableReason(MallErrorCode.CART_QUANTITY_RULE_INVALID.name());
             return item;
         }
         item.setAvailability(MallCartAvailabilityEnum.AVAILABLE.name());

@@ -37,6 +37,8 @@ public class InventoryOutboundItemEntity {
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal quantity;
+    /** 商城自动出库的记账数量；手工/历史出库为空，按 quantity 处理。 */
+    private BigDecimal stockQuantity;
 
     /**
      * 确认出库时写入的记账单位快照；草稿态为空。

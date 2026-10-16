@@ -38,6 +38,12 @@ export const homeRouters: Array<RouteRecordRaw> = [
                     hideInMenu: false,
                 },
             },
+            {
+                path: '/order/detail/:orderId',
+                name: 'ScmOrderDetail',
+                component: () => import('/@/views/business/scm/order/order-detail-page.vue'),
+                meta: {title: '销售订单详情', hideInMenu: true},
+            },
         ],
     },
 ];

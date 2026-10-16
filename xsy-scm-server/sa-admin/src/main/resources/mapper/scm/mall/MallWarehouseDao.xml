@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.mall.order.dao.MallWarehouseDao">
+    <select id="byDistrict" resultType="com.xsy.scm.mall.order.domain.vo.MallWarehouseOptionVO">
+        SELECT w.id AS warehouseId, w.name AS warehouseName,
+               'DISTRICT' AS source, rule.priority
+        FROM xsy_mall_district_warehouse rule
+                 JOIN xsy_warehouse w ON w.id = rule.warehouse_id
+                     AND w.deleted = FALSE AND w.status = 'ENABLED'
+        WHERE rule.deleted = FALSE AND rule.district_code = #{districtCode}
+        ORDER BY rule.priority, rule.id
+    </select>
+</mapper>

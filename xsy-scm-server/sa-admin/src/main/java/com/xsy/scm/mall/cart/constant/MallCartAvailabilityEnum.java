@@ -6,6 +6,8 @@ public enum MallCartAvailabilityEnum {
     AVAILABLE,
     /** 可见但无客户价，需询价 */
     NO_PRICE,
+    /** 起订量或递增量已变化，购物车中的历史数量需调整 */
+    QUANTITY_INVALID,
     /** 已下架、分类停用或对当前客户不可见 */
     UNAVAILABLE
 }

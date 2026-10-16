@@ -27,6 +27,23 @@
         LIMIT #{limit}
     </select>
 
+    <select id="usageStatsByCouponIds" resultType="com.xsy.scm.promotion.domain.vo.PromotionCouponVO$UsageStats">
+        SELECT i.coupon_id AS couponId,
+               COUNT(*) FILTER (WHERE i.issue_source = 'ADMIN_ISSUE') AS adminIssuedCount,
+               COUNT(*) FILTER (WHERE i.issue_source = 'MALL_CLAIM') AS mallClaimedCount,
+               COUNT(*) FILTER (WHERE i.status = 'USED') AS usedCount,
+               COALESCE(SUM((od.coupon_snapshot -&gt;&gt; 'couponDiscount')::numeric)
+                   FILTER (WHERE i.status = 'USED'), 0) AS usedDiscountAmount,
+               COUNT(*) FILTER (WHERE i.status = 'USED'
+                   AND (od.id IS NULL OR od.coupon_snapshot -&gt;&gt; 'couponDiscount' IS NULL)) AS discountMissingCount
+        FROM xsy_promotion_coupon_instance i
+                 LEFT JOIN xsy_order_discount od ON od.sales_order_id = i.used_order_id
+                     AND od.coupon_instance_id = i.id
+        WHERE i.coupon_id IN
+        <foreach collection="couponIds" item="couponId" open="(" separator="," close=")">#{couponId}</foreach>
+        GROUP BY i.coupon_id
+    </select>
+
     <!-- 状态流转一律带 status 前置条件：并发下同一张券只能被占用一次，
          第二次影响 0 行，调用方据此回答「券已被占用」而不是覆盖别人的占用。 -->
     <update id="markReserved">

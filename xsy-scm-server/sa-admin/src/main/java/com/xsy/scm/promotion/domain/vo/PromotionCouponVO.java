@@ -40,6 +40,19 @@ public class PromotionCouponVO {
 
     private Integer version;
 
+    private UsageStats usageStats;
+
+    @Data
+    public static class UsageStats {
+        private Long couponId;
+        private Long adminIssuedCount;
+        private Long mallClaimedCount;
+        private Long usedCount;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal usedDiscountAmount;
+        private Long discountMissingCount;
+    }
+
     public static PromotionCouponVO of(PromotionCouponEntity row, String typeLabel) {
         PromotionCouponVO vo = new PromotionCouponVO();
         vo.setId(row.getId());

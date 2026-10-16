@@ -39,6 +39,20 @@
           </a-form-item>
         </a-col>
         <a-col :xs="24" :sm="12">
+          <a-form-item :label="`商城起订量（${sku.saleUnit || '销售单位'}）`" required class="sku-field">
+            <a-input-number :value="sku.mallMinQuantity" string-mode :min="'0.0001'" step="0.0001"
+                            :precision="4" :controls="false" style="width: 100%"
+                            @update:value="sku.mallMinQuantity = $event === null ? '' : String($event)"/>
+          </a-form-item>
+        </a-col>
+        <a-col :xs="24" :sm="12">
+          <a-form-item :label="`商城递增量（${sku.saleUnit || '销售单位'}）`" required class="sku-field">
+            <a-input-number :value="sku.mallQuantityStep" string-mode :min="'0.0001'" step="0.0001"
+                            :precision="4" :controls="false" style="width: 100%"
+                            @update:value="sku.mallQuantityStep = $event === null ? '' : String($event)"/>
+          </a-form-item>
+        </a-col>
+        <a-col :xs="24" :sm="12">
           <a-form-item label="类型" class="sku-field">
             <a-select v-model:value="sku.productType" :options="PRODUCT_TYPE_ENUM"
                       :aria-label="`第 ${index + 1} 个商品规格的类型`"/>

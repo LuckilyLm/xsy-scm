@@ -31,6 +31,8 @@ export function adaptProduct(raw) {
     priceSourceLabel: priced ? PRICE_SOURCE_LABEL[raw.priceSource] || '' : '',
     stockStatus: raw.stockStatus || '',
     availableQty: raw.availableQty ?? null,
+    minOrderQty: raw.minOrderQty ?? '1.0000',
+    stepQty: raw.stepQty ?? '1.0000',
     description: raw.description || '',
     deliveryTip: raw.deliveryTip || '',
     nonStandardTip: raw.nonStandardTip || '',

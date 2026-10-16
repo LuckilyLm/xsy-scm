@@ -5,7 +5,7 @@
         id AS address_id, receiver_name, receiver_phone,
         province_code, province_name, city_code, city_name,
         district_code, district_name, detail_address,
-        longitude, latitude, is_default
+        longitude, latitude, geom_crs, is_default
     </sql>
     <select id="listByCustomer" resultType="com.xsy.scm.mall.address.domain.vo.MallAddressVO">
         SELECT <include refid="columns"/> FROM xsy_mall_customer_address

@@ -67,6 +67,9 @@ public interface IFileStorageService {
         if ("png".equalsIgnoreCase(fileExt)) {
             return "image/png";
         }
+        if ("webp".equalsIgnoreCase(fileExt)) {
+            return "image/webp";
+        }
         if ("html".equalsIgnoreCase(fileExt)) {
             return "text/html";
         }

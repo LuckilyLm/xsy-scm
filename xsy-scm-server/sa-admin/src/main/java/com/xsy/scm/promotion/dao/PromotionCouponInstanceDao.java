@@ -2,6 +2,7 @@ package com.xsy.scm.promotion.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity;
+import com.xsy.scm.promotion.domain.vo.PromotionCouponVO;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -25,6 +26,8 @@ public interface PromotionCouponInstanceDao extends BaseMapper<PromotionCouponIn
 
     List<PromotionCouponInstanceEntity> listByCustomer(@Param("customerId") Long customerId,
             @Param("status") String status, @Param("limit") int limit);
+
+    List<PromotionCouponVO.UsageStats> usageStatsByCouponIds(@Param("couponIds") List<Long> couponIds);
 
     int markReserved(@Param("id") Long id, @Param("version") Integer version, @Param("orderId") Long orderId,
             @Param("operator") String operator);

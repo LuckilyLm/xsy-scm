@@ -980,31 +980,7 @@
 
     <!-- ============ 收货 / 入库 ============ -->
 
-    <select id="receiptItemList"
-            resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$ReceiptRow">
-        SELECT r.id                            AS receiptId,
-               ri.id                           AS receiptItemId,
-               r.receipt_no                    AS receiptNo,
-               r.purchase_order_no_snapshot    AS purchaseOrderNo,
-               r.purchase_order_id             AS purchaseOrderId,
-               r.supplier_name_snapshot        AS supplierName,
-               r.warehouse_name_snapshot       AS warehouseName,
-               r.receipt_mode                  AS receiptMode,
-               r.putaway_status                AS putawayStatus,
-               r.confirmed_at                  AS confirmedAt,
-               r.operator                      AS confirmedBy,
-               ri.spu_code_snapshot            AS spuCode,
-               ri.product_name_snapshot        AS productName,
-               ri.sku_code_snapshot            AS skuCode,
-               ri.sku_name_snapshot            AS skuName,
-               ri.purchase_unit_snapshot       AS purchaseUnit,
-               ri.received_quantity            AS receivedQuantity,
-               ri.cumulative_received_quantity AS cumulativeReceivedQuantity,
-               ri.remaining_quantity           AS remainingQuantity,
-               ri.over_receipt_quantity        AS overReceiptQuantity,
-               ri.receipt_difference           AS receiptDifference,
-               oi.purchase_price               AS purchasePrice,
-               ROUND(ri.received_quantity * oi.purchase_price, 4) AS receiptReferenceAmount
+    <sql id="receiptFrom">
         FROM xsy_purchase_receipt r
                  JOIN xsy_purchase_receipt_item ri ON ri.purchase_receipt_id = r.id AND ri.deleted = FALSE
                  JOIN xsy_purchase_order_item oi ON oi.id = ri.purchase_order_item_id AND oi.deleted = FALSE
@@ -1034,7 +1010,50 @@
                OR ri.product_name_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
                OR ri.sku_code_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
           </if>
+    </sql>
+
+    <select id="receiptItemList"
+            resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$ReceiptRow">
+        SELECT r.id                            AS receiptId,
+               ri.id                           AS receiptItemId,
+               r.receipt_no                    AS receiptNo,
+               r.purchase_order_no_snapshot    AS purchaseOrderNo,
+               r.purchase_order_id             AS purchaseOrderId,
+               r.supplier_name_snapshot        AS supplierName,
+               r.warehouse_name_snapshot       AS warehouseName,
+               r.receipt_mode                  AS receiptMode,
+               r.putaway_status                AS putawayStatus,
+               r.confirmed_at                  AS confirmedAt,
+               r.operator                      AS confirmedBy,
+               ri.spu_code_snapshot            AS spuCode,
+               ri.product_name_snapshot        AS productName,
+               ri.sku_code_snapshot            AS skuCode,
+               ri.sku_name_snapshot            AS skuName,
+               ri.purchase_unit_snapshot       AS purchaseUnit,
+               ri.received_quantity            AS receivedQuantity,
+               ri.cumulative_received_quantity AS cumulativeReceivedQuantity,
+               ri.remaining_quantity           AS remainingQuantity,
+               ri.over_receipt_quantity        AS overReceiptQuantity,
+               ri.receipt_difference           AS receiptDifference,
+               oi.purchase_price               AS purchasePrice,
+               ROUND(ri.received_quantity * oi.purchase_price, 4) AS receiptReferenceAmount
+        <include refid="receiptFrom"/>
         ORDER BY r.confirmed_at DESC, r.id DESC, ri.sort_order, ri.id
+    </select>
+
+    <select id="receiptSummary" resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$ReceiptSummary">
+        SELECT COUNT(DISTINCT r.id) AS receiptCount,
+               COUNT(ri.id) AS itemCount,
+               COALESCE(SUM(ROUND(ri.received_quantity * oi.purchase_price, 4)), 0) AS referenceAmount
+        <include refid="receiptFrom"/>
+    </select>
+
+    <select id="receiptQuantitySummary" resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$UnitQuantity">
+        SELECT ri.purchase_unit_snapshot AS unit,
+               SUM(ri.received_quantity) AS quantity
+        <include refid="receiptFrom"/>
+        GROUP BY ri.purchase_unit_snapshot
+        ORDER BY ri.purchase_unit_snapshot
     </select>
 
     <!--
@@ -1043,22 +1062,7 @@
       这正是收货与入库必须分开的意义。成本缺失（unit_cost IS NULL）返回 null 并置 costMissing，
       绝不显示成 0。
     -->
-    <select id="inboundList"
-            resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$InboundRow">
-        SELECT m.id                                              AS movementId,
-               m.occurred_at                                     AS occurredAt,
-               w.name                                            AS warehouseName,
-               r.receipt_no                                      AS receiptNo,
-               r.purchase_order_no_snapshot                      AS purchaseOrderNo,
-               r.supplier_name_snapshot                          AS supplierName,
-               spu.name                                          AS productName,
-               k.sku_code                                        AS skuCode,
-               m.unit_snapshot                                   AS unit,
-               m.quantity                                        AS quantity,
-               m.unit_cost                                       AS unitCost,
-               ROUND(m.quantity * m.unit_cost, 4)                AS costAmount,
-               (m.unit_cost IS NULL)                             AS costMissing,
-               m.operator                                        AS operator
+    <sql id="inboundFrom">
         FROM xsy_inventory_movement m
                  JOIN xsy_purchase_receipt_item ri ON ri.id = m.source_document_item_id AND ri.deleted = FALSE
                  JOIN xsy_purchase_receipt r ON r.id = ri.purchase_receipt_id AND r.deleted = FALSE
@@ -1080,28 +1084,58 @@
               AND FALSE
           </if>
           <if test="query.purchaseOrderId != null">AND r.purchase_order_id = #{query.purchaseOrderId}</if>
+          <if test="query.receiptMode != null and query.receiptMode != ''">
+              AND r.receipt_mode = #{query.receiptMode}
+          </if>
+          <if test="query.putawayStatus != null and query.putawayStatus != ''">
+              AND r.putaway_status = #{query.putawayStatus}
+          </if>
           <if test="query.keyword != null and query.keyword != ''">
               AND (r.receipt_no ILIKE CONCAT('%', #{query.keyword}, '%')
                OR r.purchase_order_no_snapshot ILIKE CONCAT('%', #{query.keyword}, '%')
                OR spu.name ILIKE CONCAT('%', #{query.keyword}, '%')
                OR k.sku_code ILIKE CONCAT('%', #{query.keyword}, '%'))
           </if>
+    </sql>
+
+    <select id="inboundList"
+            resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$InboundRow">
+        SELECT m.id                                              AS movementId,
+               m.occurred_at                                     AS occurredAt,
+               w.name                                            AS warehouseName,
+               r.receipt_no                                      AS receiptNo,
+               r.purchase_order_no_snapshot                      AS purchaseOrderNo,
+               r.supplier_name_snapshot                          AS supplierName,
+               spu.name                                          AS productName,
+               k.sku_code                                        AS skuCode,
+               m.unit_snapshot                                   AS unit,
+               m.quantity                                        AS quantity,
+               m.unit_cost                                       AS unitCost,
+               ROUND(m.quantity * m.unit_cost, 4)                AS costAmount,
+               (m.unit_cost IS NULL)                             AS costMissing,
+               m.operator                                        AS operator
+        <include refid="inboundFrom"/>
         ORDER BY m.occurred_at DESC, m.id DESC
     </select>
 
+    <select id="inboundSummary" resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$InboundSummary">
+        SELECT COUNT(*) AS movementCount,
+               CASE WHEN COUNT(*) &gt; 0 AND COUNT(m.unit_cost) = 0 THEN NULL
+                    ELSE COALESCE(SUM(ROUND(m.quantity * m.unit_cost, 4)), 0) END AS knownCostAmount,
+               COUNT(*) FILTER (WHERE m.unit_cost IS NULL) AS costMissingCount
+        <include refid="inboundFrom"/>
+    </select>
+
+    <select id="inboundQuantitySummary" resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$UnitQuantity">
+        SELECT m.unit_snapshot AS unit,
+               SUM(m.quantity) AS quantity
+        <include refid="inboundFrom"/>
+        GROUP BY m.unit_snapshot
+        ORDER BY m.unit_snapshot
+    </select>
+
     <!-- 待入库：只可能是 WAREHOUSE_CONFIRM + CONFIRMED + PENDING；本页不提供入库写入口。 -->
-    <select id="pendingPutawayList"
-            resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$PendingPutawayRow">
-        SELECT r.id                         AS receiptId,
-               r.receipt_no                 AS receiptNo,
-               r.purchase_order_no_snapshot AS purchaseOrderNo,
-               r.purchase_order_id          AS purchaseOrderId,
-               r.supplier_name_snapshot     AS supplierName,
-               r.warehouse_name_snapshot    AS warehouseName,
-               r.confirmed_at               AS confirmedAt,
-               COALESCE(MAX(it.sku_kind_count), 0) AS skuKindCount,
-               STRING_AGG(it.unit_snapshot || ' ' || CAST(it.qty AS TEXT),
-                          ' / ' ORDER BY it.unit_snapshot) AS quantityText
+    <sql id="pendingPutawayFrom">
         FROM xsy_purchase_receipt r
                  LEFT JOIN (SELECT ri.purchase_receipt_id,
                                    ri.purchase_unit_snapshot AS unit_snapshot,
@@ -1124,12 +1158,48 @@
           <if test="scope == null">
               AND FALSE
           </if>
+          <if test="query.purchaseOrderId != null">AND r.purchase_order_id = #{query.purchaseOrderId}</if>
+          <if test="query.receiptMode != null and query.receiptMode != ''">
+              AND r.receipt_mode = #{query.receiptMode}
+          </if>
+          <if test="query.putawayStatus != null and query.putawayStatus != ''">
+              AND r.putaway_status = #{query.putawayStatus}
+          </if>
           <if test="query.keyword != null and query.keyword != ''">
               AND (r.receipt_no ILIKE CONCAT('%', #{query.keyword}, '%')
                OR r.purchase_order_no_snapshot ILIKE CONCAT('%', #{query.keyword}, '%'))
           </if>
+    </sql>
+
+    <select id="pendingPutawayList"
+            resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$PendingPutawayRow">
+        SELECT r.id                         AS receiptId,
+               r.receipt_no                 AS receiptNo,
+               r.purchase_order_no_snapshot AS purchaseOrderNo,
+               r.purchase_order_id          AS purchaseOrderId,
+               r.supplier_name_snapshot     AS supplierName,
+               r.warehouse_name_snapshot    AS warehouseName,
+               r.confirmed_at               AS confirmedAt,
+               COALESCE(MAX(it.sku_kind_count), 0) AS skuKindCount,
+               STRING_AGG(it.unit_snapshot || ' ' || CAST(it.qty AS TEXT),
+                          ' / ' ORDER BY it.unit_snapshot) AS quantityText
+        <include refid="pendingPutawayFrom"/>
         GROUP BY r.id
         ORDER BY r.confirmed_at DESC, r.id DESC
+    </select>
+
+    <select id="pendingPutawaySummary" resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$PendingPutawaySummary">
+        SELECT COUNT(DISTINCT r.id) AS receiptCount
+        <include refid="pendingPutawayFrom"/>
+    </select>
+
+    <select id="pendingPutawayQuantitySummary" resultType="com.xsy.scm.report.domain.vo.ReceiptReportVO$UnitQuantity">
+        SELECT it.unit_snapshot AS unit,
+               SUM(it.qty) AS quantity
+        <include refid="pendingPutawayFrom"/>
+        GROUP BY it.unit_snapshot
+        HAVING COUNT(it.qty) &gt; 0
+        ORDER BY it.unit_snapshot
     </select>
 
     <!-- ============ 库存分析 ============ -->

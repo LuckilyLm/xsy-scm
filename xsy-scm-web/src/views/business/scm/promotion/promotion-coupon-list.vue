@@ -30,6 +30,7 @@
         <a-button type="primary" v-privilege="'scm:promotion:coupon:edit'" @click="openCreate">新建券</a-button>
       </div>
     </a-row>
+    <p class="hint">累计统计：后台发放与商城领取按来源分别计数；已使用包含两种来源，券让利取已使用订单的冻结金额。</p>
 
     <a-table
         size="small"
@@ -39,7 +40,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1530 }"
+        :scroll="{ x: 2050 }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'couponCode'">
@@ -66,6 +67,21 @@
         </template>
         <template v-else-if="column.dataIndex === 'claimLimits'">
           {{ record.claimable ? `每人 ${record.perCustomerLimit ?? '不限'} / 总量 ${record.totalLimit ?? '不限'}` : '—' }}
+        </template>
+        <template v-else-if="column.dataIndex === 'adminIssuedCount'">
+          <span class="scm-quantity">{{ record.usageStats?.adminIssuedCount ?? '—' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'mallClaimedCount'">
+          <span class="scm-quantity">{{ record.usageStats?.mallClaimedCount ?? '—' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'usedCount'">
+          <span class="scm-quantity">{{ record.usageStats?.usedCount ?? '—' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'usedDiscountAmount'">
+          <span class="scm-money">{{ record.usageStats?.usedDiscountAmount ?? '—' }}</span>
+          <span v-if="record.usageStats?.discountMissingCount" class="scm-cell-hint">
+            （{{ record.usageStats.discountMissingCount }} 张缺少冻结让利）
+          </span>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -324,8 +340,7 @@ function discountTypeLabel(value: PromotionCouponDiscountType): string {
 /**
  * 列按「叫什么 / 什么券 / 优惠多少 / 什么门槛 / 什么时候有效 / 上没上线」排列。
  * 券编码下沉为名称的次要行；生效与失效时间合成一格（它们回答同一个问题）。
- * 「发放量 / 已领取 / 已使用」当前 VO 不返回，属于后端缺口
- * （登记于 docs/status.md 的 B7），前端不臆造。
+ * 统计由服务端按券实例来源与状态汇总，和模板当前启停状态分开。
  */
 const columns: TableColumnsType<PromotionCoupon> = [
   {title: '券编码', dataIndex: 'couponCode', width: 130},
@@ -338,6 +353,10 @@ const columns: TableColumnsType<PromotionCoupon> = [
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '商城领取', dataIndex: 'claimable', align: 'center', width: 120},
   {title: '领取限制', dataIndex: 'claimLimits', width: 190},
+  {title: '后台发放', dataIndex: 'adminIssuedCount', align: 'right', width: 105},
+  {title: '商城领取', dataIndex: 'mallClaimedCount', align: 'right', width: 105},
+  {title: '已使用', dataIndex: 'usedCount', align: 'right', width: 90},
+  {title: '已知券让利', dataIndex: 'usedDiscountAmount', align: 'right', width: 210},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
 
@@ -526,6 +545,7 @@ async function submitIssue() {
     const count = (await promotionApi.couponIssue(issueForm.couponId, issueForm.customerId, issueForm.quantity)).data;
     message.success(`已发出 ${count} 张券`);
     issueOpen.value = false;
+    await queryData();
   } catch {
     // 发券失败只走全局 toast；弹窗里的 issueError 留给本地校验
   } finally {

@@ -12,6 +12,10 @@ public class MallCheckoutItemVO {
     private String skuCode;
     private String specName;
     private String saleUnit;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal minOrderQty;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal stepQty;
     private String primaryImageUrl;
     private Boolean nonStandard;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

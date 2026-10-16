@@ -450,6 +450,8 @@ public class ProductImportService {
         form.setSpecValues(
                 entity.getSpecValues() == null ? new LinkedHashMap<>() : new LinkedHashMap<>(entity.getSpecValues()));
         form.setSaleUnit(entity.getSaleUnit());
+        form.setMallMinQuantity(entity.getMallMinQuantity());
+        form.setMallQuantityStep(entity.getMallQuantityStep());
         form.setProductType(entity.getProductType());
         form.setMarketPrice(entity.getMarketPrice());
         form.setStatus(entity.getStatus());

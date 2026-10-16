@@ -24,8 +24,11 @@ import type {
     PurchaseTopItem,
     ReceiptQuery,
     ReceiptRow,
+    ReceiptSummary,
     InboundRow,
+    InboundSummary,
     PendingPutawayRow,
+    PendingPutawaySummary,
     ReportDailyStat,
     ReportFilterQuery,
     ReportOverview,
@@ -134,12 +137,18 @@ export const reportReceiptApi = {
     /** 收货明细：粒度 = `purchase_receipt_item`，按 `confirmed_at`。 */
     query: (data: ReceiptQuery, options?: RequestOptions) =>
         postRequest(`${BASE}/receipt/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<ReceiptRow>>>,
+    summary: (data: ReceiptQuery, options?: RequestOptions) =>
+        postRequest(`${BASE}/receipt/summary`, data, options) as unknown as Promise<ScmResponse<ReceiptSummary>>,
     /** 入库明细：粒度 = 一条 `PURCHASE_IN` 流水，按 `occurred_at`。 */
     inboundQuery: (data: ReceiptQuery, options?: RequestOptions) =>
         postRequest(`${BASE}/inbound/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<InboundRow>>>,
+    inboundSummary: (data: ReceiptQuery, options?: RequestOptions) =>
+        postRequest(`${BASE}/inbound/summary`, data, options) as unknown as Promise<ScmResponse<InboundSummary>>,
     /** 待入库：`WAREHOUSE_CONFIRM + CONFIRMED + PENDING`。只读，入库动作在采购收货页。 */
     pendingPutawayQuery: (data: ReceiptQuery, options?: RequestOptions) =>
         postRequest(`${BASE}/pending-putaway/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<PendingPutawayRow>>>,
+    pendingPutawaySummary: (data: ReceiptQuery, options?: RequestOptions) =>
+        postRequest(`${BASE}/pending-putaway/summary`, data, options) as unknown as Promise<ScmResponse<PendingPutawaySummary>>,
 
     receiptExport: (data: Partial<ReceiptQuery>) => postDownload(`${BASE}/receipt/export`, data),
     inboundExport: (data: Partial<ReceiptQuery>) => postDownload(`${BASE}/inbound/export`, data),

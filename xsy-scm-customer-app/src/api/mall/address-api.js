@@ -17,7 +17,8 @@ export const mallAddressApi = {
    * 新增地址
    * @param {{receiverName: string, receiverPhone: string, detailAddress: string,
    *          provinceCode?: number, provinceName?: string, cityCode?: number, cityName?: string,
-   *          districtCode?: number, districtName?: string, isDefault?: boolean}} param
+   *          districtCode: number, districtName: string, longitude: number, latitude: number,
+   *          isDefault?: boolean}} param
    */
   create: (param) => postRequest('/scm/mall/addresses', param),
 
