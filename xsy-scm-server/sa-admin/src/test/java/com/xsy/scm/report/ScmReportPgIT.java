@@ -284,6 +284,32 @@ class ScmReportPgIT extends ScmW6PgITBase {
         assertThat(row.getConfirmedQuantity()).isNull();
     }
 
+    @Test
+    @DisplayName("商品销售额占比：所有匹配行做分母、分页不改变份额，累计占比最终归一")
+    void salesProductContributionUsesFullFilteredDatasetBeforePaging() {
+        Long orderId = insertSalesOrder("CONFIRMED", insideRange(), 900_000_033L);
+        insertSalesItem(orderId, new BigDecimal("50.0000"));
+
+        ScmSalesReportQueryForm form = page(new ScmSalesReportQueryForm());
+        form.setStartDate(start());
+        form.setEndDate(end());
+        form.setKeyword(tag + "-商品");
+        form.setPageSize(1L);
+        evictMybatisCache();
+
+        SalesReportVO.ProductRow first = salesReportService.byProduct(form).getList().get(0);
+        assertThat(first.getSettlementAmount()).isEqualByComparingTo("100.0000");
+        assertThat(first.getSalesAmountSharePercent()).isEqualByComparingTo("66.6667");
+        assertThat(first.getCumulativeSalesAmountSharePercent()).isEqualByComparingTo("66.6667");
+
+        form.setPageNum(2L);
+        evictMybatisCache();
+        SalesReportVO.ProductRow second = salesReportService.byProduct(form).getList().get(0);
+        assertThat(second.getSettlementAmount()).isEqualByComparingTo("50.0000");
+        assertThat(second.getSalesAmountSharePercent()).isEqualByComparingTo("33.3333");
+        assertThat(second.getCumulativeSalesAmountSharePercent()).isEqualByComparingTo("100.0000");
+    }
+
     // ==================== 3. 采购口径：只统计提交后的采购事实 ====================
 
     @Test

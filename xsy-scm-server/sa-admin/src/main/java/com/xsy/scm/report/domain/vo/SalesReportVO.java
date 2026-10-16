@@ -48,6 +48,12 @@ public class SalesReportVO {
         private BigDecimal avgTransactionPrice;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal settlementAmount;
+        /** 查询范围内的该行销售金额占比（%），查询总金额为零时未知。 */
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal salesAmountSharePercent;
+        /** 按销售额排序的累计占比（%），在分页之前计算。 */
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal cumulativeSalesAmountSharePercent;
         private Integer amountRank;
     }
 

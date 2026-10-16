@@ -173,12 +173,13 @@ public class ScmReportController {
     public void exportSalesProduct(@RequestBody ScmSalesReportQueryForm form, HttpServletResponse response)
             throws IOException {
         List<String> titles = List.of("商品名称", "商品规格编码", "商品规格", "销售单位", "一级分类", "末级分类", "订单笔数", "客户数", "确认数量", "成交均价",
-                "确认订单金额", "金额排名");
+                "确认订单金额", "金额占比(%)", "累计金额占比(%)", "金额排名");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.byProduct(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getProductName(), r.getSkuCode(), r.getSpecName(),
                         r.getSaleUnit(), r.getRootCategoryName(), r.getLeafCategoryName(), r.getOrderCount(),
                         r.getCustomerCount(), r.getConfirmedQuantity(), r.getAvgTransactionPrice(),
-                        r.getSettlementAmount(), r.getAmountRank()))
+                        r.getSettlementAmount(), r.getSalesAmountSharePercent(),
+                        r.getCumulativeSalesAmountSharePercent(), r.getAmountRank()))
                 .toList();
         ScmReportExcel.write(response, "销售分析-按商品.xlsx", "按商品", titles, rows);
     }

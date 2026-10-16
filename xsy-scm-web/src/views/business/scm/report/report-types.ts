@@ -201,6 +201,10 @@ export interface SalesProductRow {
     /** 成交均价 = 结算金额 / 确认数量（同单位内）。数量为 0 或 null 时是 null 而非 0。 */
     avgTransactionPrice?: string | null;
     settlementAmount?: string | null;
+    /** 当前查询范围内商品行的销售金额占比（百分数），在分页前计算。 */
+    salesAmountSharePercent?: string | null;
+    /** 按金额排序的累计占比（百分数），用于识别重点商品。 */
+    cumulativeSalesAmountSharePercent?: string | null;
     /** 金额排名由 SQL 窗口函数在分页之前算出，所以第 2 页仍是全局排名。 */
     amountRank?: number | null;
 }

@@ -6,6 +6,7 @@
       series-name="确认订单金额"
   />
   <a-card size="small" :bordered="false">
+    <p class="scm-note">金额占比和累计占比基于当前筛选范围内所有匹配的商品行计算，在分页之前完成；金额总计为 0 时显示未知。仅使用已确认订单的结算金额，不等同实际毛利或净收款。</p>
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting"
@@ -30,7 +31,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无商品销售数据'}"
-        :scroll="{x: 1400}"
+        :scroll="{x: 1710}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'orderCount'">
@@ -47,6 +48,9 @@
         </template>
         <template v-else-if="column.dataIndex === 'settlementAmount'">
           <span class="scm-money">{{ moneyText(record.settlementAmount) }}</span>
+        </template>
+        <template v-else-if="column.dataIndex === 'salesAmountSharePercent' || column.dataIndex === 'cumulativeSalesAmountSharePercent'">
+          <span class="scm-money">{{ percentText(record[column.dataIndex]) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'amountRank'">
           <span class="scm-quantity">{{ countText(record.amountRank) }}</span>
@@ -107,8 +111,14 @@ const columns = ref<TableColumnsType<SalesProductRow>>([
   {title: '确认数量', dataIndex: 'confirmedQuantity', align: 'right', width: 130},
   {title: '成交均价', dataIndex: 'avgTransactionPrice', align: 'right', width: 130},
   {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 160},
+  {title: '金额占比', dataIndex: 'salesAmountSharePercent', align: 'right', width: 130},
+  {title: '累计金额占比', dataIndex: 'cumulativeSalesAmountSharePercent', align: 'right', width: 150},
   {title: '金额排名', dataIndex: 'amountRank', align: 'right', width: 110},
 ]);
+
+function percentText(value: string | null | undefined): string {
+  return value == null ? '—' : value + '%';
+}
 
 function refresh() {
   emit('reload');

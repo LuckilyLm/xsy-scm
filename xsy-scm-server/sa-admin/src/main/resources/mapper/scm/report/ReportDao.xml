@@ -302,6 +302,14 @@
                ROUND(SUM(i.settlement_line_amount)
                          / NULLIF(SUM(i.actual_quantity), 0), 4)   AS avgTransactionPrice,
                SUM(i.settlement_line_amount)                       AS settlementAmount,
+               ROUND(100 * SUM(i.settlement_line_amount)
+                     / NULLIF(SUM(SUM(i.settlement_line_amount)) OVER (), 0), 4) AS salesAmountSharePercent,
+               ROUND(100 * SUM(SUM(i.settlement_line_amount)) OVER (
+                           ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST,
+                                    i.sku_id, i.spu_code_snapshot, i.product_name_snapshot,
+                                    i.sku_code_snapshot, i.spec_name_snapshot, i.sale_unit_snapshot
+                           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                     / NULLIF(SUM(SUM(i.settlement_line_amount)) OVER (), 0), 4) AS cumulativeSalesAmountSharePercent,
                RANK() OVER (ORDER BY SUM(i.settlement_line_amount) DESC NULLS LAST) AS amountRank
         FROM xsy_sales_order_item i
                  JOIN xsy_sales_order o ON o.id = i.order_id
