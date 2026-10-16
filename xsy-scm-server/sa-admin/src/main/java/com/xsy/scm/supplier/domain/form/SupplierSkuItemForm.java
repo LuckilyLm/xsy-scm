@@ -13,20 +13,7 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.validation.ScmEnumValue;
 
-/**
- * 关联表中的一行。
- *
- * <p>
- * {@code id} 与 {@code version} 的存在与否决定这一行的语义：
- * <ul>
- * <li>带 {@code id}：更新既有行，{@code version} 必须与库中一致，且 {@code skuId} 不得变更；</li>
- * <li>不带 {@code id}：新增行；若 {@code (supplierId, skuId)} 已存在则复用该行而不是报错；</li>
- * <li>库中存在但请求里没有的行 → 软删。</li>
- * </ul>
- *
- * <p>
- * <b>刻意允许同一供应商多条 {@code defaultFlag = true}</b>，不做互斥校验。
- */
+/** 商品关联带 id 表示更新，且必须携带匹配的版本；不带 id 表示新增。未提交的旧关联会删除，商品规格不能通过更新变更。 */
 @Data
 public class SupplierSkuItemForm {
 

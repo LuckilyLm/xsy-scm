@@ -26,13 +26,7 @@ export interface SkuDraft {
     skuId?: ScmId;
     purchaseUnit: string;
     referencePrice?: string | null;
-    /**
-     * 采购员（员工）ID。
-     *
-     * 用 `number | null` 而非 `ScmId`：原生 `employee-select` 的 `value` prop 是
-     * `[Number, Array]`，传 `string | number | null` 会触发 TS2322。后端是 Java `Long`，
-     * JSON 里本来就是 number。
-     */
+    /** 采购员 ID 使用数字或 null，和人员选择组件及后端 Long 字段保持一致。 */
     purchaserId?: number | null;
     /** 多行可以同时为 true，这不是缺陷而是 legacy 事实。 */
     defaultFlag: boolean;
