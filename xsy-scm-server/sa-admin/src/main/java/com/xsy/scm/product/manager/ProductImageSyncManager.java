@@ -34,10 +34,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 public class ProductImageSyncManager {
     /** 目录前缀只有一个来源：上传白名单枚举，避免业务侧与存储侧各写一份口径。 */
     private static final String PUBLIC_IMAGE_FOLDER = FileFolderTypeEnum.PUBLIC_IMAGE.getFolder();
-    /**
-     * 图集：新增行的缺省归类。image_type 只表达内容角色，<b>不</b>再派生自 primaryFlag—— 主图唯一事实是 is_primary，否则「切主图」会顺带改写图片类型，等于保留第二个主图事实源。
-     */
-    /** 公开前缀按 {@code FOLDER_PUBLIC} 判定，不用 PUBLIC_IMAGE 的完整目录，新增公开目录时这里不必跟着改。 */
+    /** 图片类型与主图标记各自独立；只允许绑定 public/ 目录下的文件。 */
     private static final String PUBLIC_FOLDER_PREFIX = FileFolderTypeEnum.FOLDER_PUBLIC + "/";
     private final ProductImageDao productImageDao;
     private final FileService fileService;
@@ -53,9 +50,7 @@ public class ProductImageSyncManager {
     public void sync(Long spuId, ProductImageChangeSet changes) {
         List<ProductImageForm> requested = new ArrayList<>(changes.updated());
         requested.addAll(changes.inserted());
-        // File module remains the authority for existence and metadata; URLs are never resolved on
-        // the write path (the caller may not own these keys — resolving them would be an ungarded
-        // read). Public-prefix binding is enforced by requirePublicImageKey, not by URL resolution.
+        // 文件是否存在由文件中心验证，图片权限只检查 public/ 路径，不依赖 URL。
         Map<String,
                 FileVO> metadata = fileService
                         .getFileMetadata(requested.stream().map(ProductImageForm::getFileKey).toList()).stream()
