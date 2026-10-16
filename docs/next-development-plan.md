@@ -4,7 +4,7 @@
 
 ## 2026-10-17 进度补记
 
-- **QUALITY-01 管理后台前端恢复全绿**：`python tools/verify.py frontend` 实测 **PASS**；444/444 契约测试通过，TypeScript 基线棘轮、lint、E2E TypeScript 校验和生产构建均通过。前一日的 13 个失败已修复，未改动测试断言。剩余工作不是页面契约，而是启动本地隔离 API 18080、18081，完成 Playwright E2E 并复核投影与权限。
+- **QUALITY-01 管理后台前端恢复全绿**：`python tools/verify.py frontend` 实测 **PASS**；444/444 契约测试通过，TypeScript 基线棘轮、lint、E2E TypeScript 校验和生产构建均通过。前一日的 13 个失败已修复，未改动测试断言。剩余工作不是页面契约，而是启动本地隔离后端 API `18080`（`18081` 是前端 Vite），完成 Playwright E2E 并复核投影与权限。2026-10-17 已重建当前源码的 `sa-admin-test-3.0.0.jar`（`-Ptest -DskipTests package`，BUILD SUCCESS），前端 Vite `18081` 启动验证 HTTP 200 后已停止；本地后端启动时数据库凭据注入受远程安全限制阻断，E2E 前置复测只剩 `18080` 不可用，结果仍为 `INCOMPLETE (exit 2)`。请先在电脑上安全配置**隔离测试库**所需的 `XSY_V2_DB_PASSWORD` 等环境变量，不要把密码写入 Git 或聊天记录。
 - **WX-VERIFY 外部联调仍待完成**：微信开发者工具与真机、真实高德密钥及设备需要单独验收；前端构建成功不等于真机通过。
 
 ## 当前阶段进展（2026-10-16）
