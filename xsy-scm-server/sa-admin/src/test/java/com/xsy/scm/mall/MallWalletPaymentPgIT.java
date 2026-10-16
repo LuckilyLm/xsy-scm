@@ -3,6 +3,8 @@ package com.xsy.scm.mall;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.balance.constant.BalanceErrorCode;
@@ -18,6 +20,8 @@ import com.xsy.scm.mall.account.service.MallAccountService;
 import com.xsy.scm.mall.account.service.MallAuthService;
 import com.xsy.scm.mall.address.domain.form.MallAddressSaveForm;
 import com.xsy.scm.mall.address.service.MallAddressService;
+import com.xsy.scm.mall.address.service.MallMapService;
+import com.xsy.scm.mall.address.domain.vo.MallMapLocationVO;
 import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import com.xsy.scm.mall.order.domain.form.MallCheckoutItemForm;
 import com.xsy.scm.mall.order.domain.form.MallCheckoutPreviewForm;
@@ -47,8 +51,10 @@ import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -88,6 +94,39 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
 
     @Autowired
     private MallAddressService mallAddressService;
+
+    @MockitoBean
+    private MallMapService mapService;
+
+    @BeforeEach
+    void stubExternalGeocode() {
+        MallMapLocationVO location = new MallMapLocationVO();
+        location.setLongitude(new BigDecimal("121.544000"));
+        location.setLatitude(new BigDecimal("31.221000"));
+        location.setProvinceCode(310000);
+        location.setCityCode(310100);
+        location.setDistrictCode(310115);
+        location.setProvinceName("上海市");
+        location.setCityName("上海市");
+        location.setDistrictName("浦东新区");
+        when(mapService.reverse(any(BigDecimal.class), any(BigDecimal.class))).thenReturn(location);
+    }
+
+    @Override
+    protected Long newOnShelfSku(String suffix) {
+        Long skuId = super.newOnShelfSku(suffix);
+        Long supplierId = newPurchasableSupplier(suffix + "-stock", skuId);
+        var purchase = createDraftOrder(suffix + "-stock", supplierId, skuId, "100.0000", "6.2000");
+        var receipt = submittedOrderReceipt(purchase.getId());
+        var current = reloadReceipt(receipt.getId());
+        var item = current.getItems().getFirst();
+        purchaseReceiptService.confirm(
+                confirmForm(current.getId(), current.getVersion(),
+                        receiptLine(item.getId(), item.getVersion(), "100.0000")),
+                prefix + ":stock:" + suffix);
+        evictMybatisCache();
+        return skuId;
+    }
 
     @Autowired
     private MallCheckoutService mallCheckoutService;
@@ -264,6 +303,8 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
         asAdmin();
         Long skuId = newOnShelfSku("pay-" + tag);
         Long customerId = newCustomer();
+        jdbc.update("UPDATE xsy_customer SET mall_delivery_warehouse_id=? WHERE id=?", seedWarehouseId(),
+                customerId);
         Long walletId = fundWallet(customerId, walletCredit);
         if (settlementMethod == ScmSettlementMethodEnum.CREDIT) {
             // 账期可用性看正式授信口径：没有额度时结算页就不会把账期标成可选，单也下不出来
@@ -428,6 +469,8 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
         form.setDistrictName("浦东新区");
         form.setDetailAddress("IT 测试路 2 号");
         form.setIsDefault(true);
+        form.setLongitude(new BigDecimal("121.544000"));
+        form.setLatitude(new BigDecimal("31.221000"));
         return form;
     }
 
@@ -438,10 +481,11 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
         return form;
     }
 
-    private static MallOrderSubmitForm submitForm(Long skuId, Long addressId, String priceFingerprint) {
+    private MallOrderSubmitForm submitForm(Long skuId, Long addressId, String priceFingerprint) {
         MallOrderSubmitForm form = new MallOrderSubmitForm();
         form.setItems(List.of(checkoutItem(skuId, ORDERED_QUANTITY)));
         form.setAddressId(addressId);
+        form.setWarehouseId(seedWarehouseId());
         form.setPriceFingerprint(priceFingerprint);
         form.setRemark("PAY-01 IT");
         return form;

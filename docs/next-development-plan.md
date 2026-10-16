@@ -6,7 +6,20 @@
 
 - **GATE-01：空库 PostgreSQL 18 Flyway 至 V137 已通过，7/7 真实迁移断言，提交 `6e29f5ba`。** 生产存量升级仍待验证。
 - **GATE-02：核心真实 PostgreSQL 集成链已通过。** 商城选仓/订单快照、显式预留、公斤库存出库、两次分批退货及成本路径已有相关验证；另独立运行跨单位贯通用例通过。真实地图服务和微信真机仍未验证。
-- **下一阶段：PAY-VERIFY（结算方式、余额、COD 分笔、退款及幂等）。** 在隔离测试库验证，先处理已有代码与回归，再补新功能。
+- **PAY-VERIFY：本地 PostgreSQL 资金定向回归已通过。** COD、授信、结算方式、余额支付、退款、回调、分摊及权限两轮分别 **38/38** 和 **47/47**，合计 **85/85 通过（0 失败/跳过）**。仅修复商城钱包支付测试夹具，不放宽资金规则；真实支付沙箱与生产渠道回调仍待验证。
+- **下一阶段：WX-VERIFY / QUALITY-01。** 在可用的测试环境验证 H5、微信开发者工具与真机、高德坐标真实接口，然后进行主 E2E、全量质量门禁和生产存量迁移模拟。
+
+## PAY-VERIFY 复现命令（2026-10-16 已执行）
+
+仅对独立开发/集成测试库运行。测试使用 `127.0.0.1:15432` 的 PostgreSQL 18（数据库 `xsy_scm`、schema `xsy_v2`）和 `127.0.0.1:6379` 的 Redis。高德逆地理编码仅在钱包测试中使用替身；正式资金业务和 SQL 均不 mock。
+
+```powershell
+cd 'D:\Browser Download\xsy-scm\xsy-scm-server'
+mvn -B -pl sa-admin -am '-Dtest=MallWalletPaymentPgIT,MallCreditExposurePgIT,MallSettlementOptionsPgIT,FinanceCodCollectionPgIT,PaymentRefundRecoveryPgIT,PaymentRefundSumBasisPgIT' '-Dsurefire.failIfNoSpecifiedTests=false' test
+mvn -B -pl sa-admin -am '-Dtest=ScmFinancePaymentPgIT,PaymentCallbackEventPersistPgIT,RefundFundingAllocationSavepointPgIT,RefundFundingAllocationTimePgIT,ScmFinanceOrderFundingSourcePgIT,ScmFinanceReceiptSettlementPgIT,MallOrderPaymentDisplayPgIT,ScmFinancePaymentPermissionPgIT,AdminSettlementTermsPgIT' '-Dsurefire.failIfNoSpecifiedTests=false' test
+```
+
+实测两次均 `BUILD SUCCESS`，分别为 38/38 和 47/47，总计 85 个测试全部通过。此结果**不是**真实第三方支付沙箱、微信真机、存量数据迁移或生产验收记录。
 
 ## 目标与优先顺序
 
