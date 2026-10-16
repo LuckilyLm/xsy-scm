@@ -104,13 +104,7 @@ public class ScmBusinessMetricsService {
         return Math.max(1, Math.min(limit, TOP_RANK_LIMIT));
     }
 
-    /**
-     * 区间内的已提交采购事实（采购单数 / 金额），两个字段同轴（{@code submitted_at}）且只算已提交状态。
-     *
-     * <p>
-     * 首页 / 大屏直接使用本方法。报表的采购分析因<b>可见性范围策略不同</b>（只按仓库收窄，不按采购归属收窄） 保留自己的查询实现，不复用这里 —— 但时间轴、状态与金额列必须与这里保持同一套口径契约，
-     * 其中「已提交状态清单」由 {@code ScmPurchaseStatusEnum.committedNames()} 传参给两边的 SQL，只有一处来源。
-     */
+    /** 采购汇总按提交日期和已提交状态统计。首页与大屏共用此口径；报表可以使用不同权限范围，但时间、状态、金额定义必须一致。 */
     public PurchaseRangeMetrics purchaseRange(LocalDate startDate, LocalDate endDate, PurchaseFilter filter,
             ScmDataScopeContext scope) {
         OffsetDateTime[] range = dayRange(startDate, endDate);
@@ -212,15 +206,7 @@ public class ScmBusinessMetricsService {
                 purchaseOrders, inventoryQuantity, inboundQuantity, outboundQuantity);
     }
 
-    /**
-     * 库存健康度分档。
-     *
-     * <p>
-     * 判定完全交给预警枚举，这里只做计数；SQL 只提供「可用量 + 上下限」三个事实，不参与分类 —— 一旦 SQL 里也写一份 「正常 / 低于下限 / 高于上限」，两份规则漂移后健康度就会和预警列表对不上。
-     *
-     * <p>
-     * 缺货优先于其它档，且不依赖阈值配置，否则「配了阈值但一件都没有」会被算成预警，而缺货段恒为 0。
-     */
+    /** 库存健康度的正常、偏低、偏高状态统一调用预警枚举计算。缺货优先单独计数，不能在 SQL 和 Java 各写一套阈值判断。 */
     private InventoryHealth inventoryHealth(ScmDataScopeContext scope) {
         List<InventoryHealthRow> rows = nullToEmpty(metricsDao.inventoryHealthRows(scope));
         long normal = 0L;

@@ -77,13 +77,7 @@ public interface ScmBusinessMetricsDao {
 
     Long countEnabledWarehouses(@Param("scope") ScmDataScopeContext scope);
 
-    /**
-     * 按流水类型集合统计条数。
-     *
-     * <p>
-     * 接收集合而不是单个类型：调用方传的是<b>方向集合</b>（入库方向 / 出库方向），由 {@code ScmInventoryMovementTypeEnum} 的方向位派生 —— 不要在 SQL
-     * 里抄一份类型清单，新增流水类型时那种副本会静默少算。
-     */
+    /** 出入库数量按流水类型对应的方向集合查询。方向类型由库存枚举提供，SQL 不复制另一份类型清单。 */
     Long countMovementsByTypeAndRange(@Param("movementTypes") List<String> movementTypes,
             @Param("startTime") OffsetDateTime startTime, @Param("endTime") OffsetDateTime endTime,
             @Param("scope") ScmDataScopeContext scope);
