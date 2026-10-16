@@ -49,6 +49,11 @@ public class ProductQueryService {
     private final ProductTagService productTagService;
     private final FileService fileService;
 
+    /** 对客户别名等跨领域输入提供只读规格存在性检查。 */
+    public boolean skuExists(Long skuId) {
+        return skuId != null && productSkuDao.selectById(skuId) != null;
+    }
+
     public PageResult<ProductSpuVO> query(ProductSpuQueryForm form) {
         if (form.getSortItemList() != null) {
             Set<String> allowed = Set.of("spu_code", "name", "updated_at", "status");

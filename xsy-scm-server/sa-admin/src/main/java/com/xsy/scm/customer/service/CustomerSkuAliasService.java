@@ -8,7 +8,7 @@ import com.xsy.scm.customer.dao.CustomerSkuVisibilityDao;
 import com.xsy.scm.customer.domain.entity.CustomerSkuAliasEntity;
 import com.xsy.scm.customer.domain.form.CustomerSkuAliasForm;
 import com.xsy.scm.customer.domain.vo.CustomerSkuAliasVO;
-import com.xsy.scm.product.dao.ProductSkuDao;
+import com.xsy.scm.product.service.ProductQueryService;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -27,7 +27,7 @@ public class CustomerSkuAliasService {
     private final CustomerSkuAliasDao aliasDao;
     private final CustomerSkuVisibilityDao visibilityDao;
     private final CustomerService customerService;
-    private final ProductSkuDao productSkuDao;
+    private final ProductQueryService productQueryService;
 
     @Transactional(readOnly = true)
     public List<CustomerSkuAliasVO> list(Long customerId) {
@@ -42,7 +42,7 @@ public class CustomerSkuAliasService {
             throw new ScmBusinessException(CUSTOMER_NOT_FOUND);
         }
         String alias = form.getAlias() == null ? "" : form.getAlias().trim();
-        if (alias.length() > 100 || productSkuDao.selectById(form.getSkuId()) == null) {
+        if (alias.length() > 100 || !productQueryService.skuExists(form.getSkuId())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         CustomerSkuAliasEntity existing = aliasDao.selectOne(new LambdaQueryWrapper<CustomerSkuAliasEntity>()
