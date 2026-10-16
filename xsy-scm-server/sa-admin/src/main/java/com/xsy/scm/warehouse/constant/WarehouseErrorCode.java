@@ -51,16 +51,7 @@ public enum WarehouseErrorCode implements ScmErrorCode {
      */
     WAREHOUSE_DEFAULT_AMBIGUOUS(41018, "当前启用仓库不是唯一一个，无法确定默认仓库"),
 
-    /**
-     * 41009：仓库存在<b>在途调拨单</b>（已发出未收货），不能停用。
-     *
-     * <p>
-     * 放在仓库域而不是 {@code InventoryErrorCode}： 「停用阻塞条件」是仓库域自身的不变量，与 41005/41006/41007 同一族；而
-     * 41048（仓库停用不能用于调拨）是<b>调拨侧</b>的规则，因此留在库存域。两者方向相反、归属不同，不能混为一谈。
-     *
-     * <p>
-     * 源仓与目标仓<b>都算</b>：源仓的货已经出去了但账上还没落地到目标仓，目标仓则还欠着一批要入库的货。任一被停用都会让在途调拨无处可收 / 无据可查。
-     */
+    /** 仓库存在未收货的在途调拨时不能停用；调入仓和调出仓都需要检查。 */
     WAREHOUSE_DISABLE_HAS_IN_TRANSIT_TRANSFER(41009, "仓库存在在途调拨单，不能停用");
 
     private final int code;

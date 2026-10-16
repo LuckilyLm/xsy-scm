@@ -24,15 +24,7 @@ public interface EmployeeWarehouseScopeDao extends BaseMapper<EmployeeWarehouseS
      */
     List<WarehouseScopeEmployeeVO> listEmployeesByWarehouse(@Param("warehouseId") Long warehouseId);
 
-    /**
-     * 某仓库下可接收通知的员工 id。
-     *
-     * <p>
-     * 与 {@link #listEmployeesByWarehouse} 的区别是这里<b>排除已停用人员</b>：维护页要显性展示 「这条授权还在，但人已停用」，而给停用的人发站内信只会堆一批没人看的通知。
-     *
-     * <p>
-     * 授权行是仓库责任人的唯一正式来源（角色只表达「能做什么」，不表达「管哪个仓」）， 因此通知接收人由它解析，而不是猜某个角色或某个部门。
-     */
+    /** 通知只发送给仍在职、且拥有该仓库授权的员工；停用员工的授权记录仍保留供管理查询。 */
     List<Long> listEnabledEmployeeIdsByWarehouse(@Param("warehouseId") Long warehouseId);
 
     /**
