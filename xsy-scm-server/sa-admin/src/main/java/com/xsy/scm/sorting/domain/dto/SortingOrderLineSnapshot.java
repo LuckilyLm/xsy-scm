@@ -4,13 +4,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-/**
- * 建单时从订单域读到的行快照与校验所需字段。
- *
- * <p>
- * 刻意带上 {@code orderStatus} / {@code orderDeleted} / {@code itemDeleted}：建单要求「已确认订单的有效明细」，把状态读出来才能给出可分辨的拒绝理由，
- * 而不是让一条已经被删掉的行以「数量为 null」的形式冒出来。
- */
+/** 建分拣任务前校验订单已确认、未删除且明细有效。读取订单状态和删除标记用于准确返回拒绝原因。 */
 @Data
 public class SortingOrderLineSnapshot {
     private Long salesOrderItemId;

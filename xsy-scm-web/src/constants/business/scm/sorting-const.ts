@@ -1,17 +1,7 @@
 /** 分拣状态、明细结果及占用标记与后端枚举和数据库约束保持一致。相同英文状态在其他业务中可能含义不同，不能复用枚举。 */
 import type {SmartEnum} from '/@/types/smart-enum';
 
-/**
- * 分拣任务状态（四值，裁决补充第 16 条）。
- *
- * ```text
- * PENDING ──首次录入──→ SORTING ──全部行有结果──→ COMPLETED ──重开（保留已录内容）──→ SORTING
- *    │                     │
- *    └──────取消───────────┴──→ CANCELLED（同时释放全部明细占用位）
- * ```
- *
- * `CANCELLED` 不再改动；`COMPLETED` 只能走重开，不能直接取消 —— 否则「完成」这一事实会被静默抹掉。
- */
+/** 分拣任务从待分拣到分拣中、已完成；已完成只能重开，不能直接取消。取消会释放订单行占用，历史记录保留。 */
 export const SCM_SORTING_TASK_STATUS_ENUM: SmartEnum<string> = {
     PENDING: {value: 'PENDING', desc: '待分拣'},
     SORTING: {value: 'SORTING', desc: '分拣中'},
@@ -75,16 +65,7 @@ export const SCM_SORTING_OCCUPATION_COLOR: Record<string, string> = {
     RELEASED: 'default',
 };
 
-/**
- * 分拣域权限码（与后端 `@SaCheckPermission` 与 V61 的 `web_perms` 逐字一致）。
- *
- * 两条不是显而易见的语义：
- * - `scm:sorting:task:assign` 隐含跨指派人可见：持者才能建单、指派 / 改派、取消与重开，
- *   也只有他能按人筛选与看未指派队列；分拣员只看到派给自己的任务。因此前端用它作为
- *   「队列管理者」开关，不再另设 `*:scope:all:query`。
- * - 录入（`scm:sorting:item:update`）与完成只认受指派人本人，权限码之外服务端还会比对身份；
- *   前端据此把非受指派人的编辑区渲染成只读，而不是显示了输入框等提交后被 30005 拒绝。
- */
+/** 分拣队列管理者可以跨指派人查看并分配任务；普通分拣员只能操作分配给自己的任务。前端隐藏不可用操作，后端仍须校验权限和操作人。 */
 export const SCM_SORTING_PERMISSION = {
     TASK_QUERY: 'scm:sorting:task:query',
     TASK_ADD: 'scm:sorting:task:add',

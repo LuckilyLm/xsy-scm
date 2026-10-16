@@ -24,13 +24,7 @@ public class SortingAccess {
         return dataScopeService.resolve();
     }
 
-    /**
-     * 跨指派人可见 = 持队列管理权，或超管按 break-glass 放行。
-     *
-     * <p>
-     * 读侧拼的是「未指派行落在等值判断之外」这条 SQL 谓词，因此超管位必须在这里一并生效：只在写侧放行会让同一个账号「能改单却看不到未指派队列」。仓库维度不受此影响 —— 它已经通过 {@code resolve()} 的
-     * {@code all()} 天然放行。
-     */
+    /** 队列管理权限或超级管理员权限可查看未分配与跨指派任务。仓库数据范围仍需独立校验，不能因为管理队列就拥有全部仓库。 */
     public boolean crossAssignee() {
         return ScmDataScopeService.hasPermission(SortingPermission.TASK_ASSIGN)
                 || ScmDataScopeService.isAdministrator();

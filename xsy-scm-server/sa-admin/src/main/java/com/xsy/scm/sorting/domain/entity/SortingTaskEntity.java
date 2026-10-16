@@ -8,13 +8,7 @@ import lombok.EqualsAndHashCode;
 
 import java.time.OffsetDateTime;
 
-/**
- * 分拣任务：某仓库内派给某位分拣员的一批订单行。
- *
- * <p>
- * 任务状态即「是否占用订单行」的聚合答案，但<b>占用位写在明细行上</b> （{@code occupation_status}），因为部分唯一索引不能跨表判断任务状态；代价是取消任务必须在同一事务里把该任务全部明细置为
- * {@code RELEASED}。
- */
+/** 任务按仓库和分拣员组织订单行，占用状态保存在明细中。取消任务时必须在同一事务释放全部有效明细占用。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_sorting_task")

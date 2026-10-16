@@ -80,13 +80,7 @@ export interface SortingTask {
 /** 分拣清单行的来源：订单行 / 满赠赠品权益。 */
 export type SortingItemSourceType = 'ORDER_ITEM' | 'PROMOTION_GIFT';
 
-/**
- * `SortingTaskItemVO`：计划量是建单时冻结的订单行实发量，之后订单怎么改都不追溯。
- *
- * 这是一个只读合并模型：订单行来自 `sorting_task_item`，满赠赠品来自
- * `order_promotion_gift`（赠品不复制成订单行，否则会污染销售数量与商品排行）。
- * 赠品行 `salesOrderItemId` 为 null、`sortedQuantity` 恒为 null —— 分拣不写回赠品数量。
- */
+/** 分拣明细的计划量在建单时确定。订单行与促销赠品分开读取；赠品不记录订单行 ID，也不回写分拣量。 */
 export interface SortingTaskItem {
     id: Id;
     taskId: Id;
@@ -254,13 +248,7 @@ export function quantityText(value: string | null | undefined): string {
 
 export type SortingScaleStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 
-/**
- * `SortingScaleEventVO` —— 秤读数。
- *
- * 原始读数与接受数量都返回：两者不一致时必须能看出来，而不是只留一个「最终值」。
- * `capturedAt` 是设备采集时间，`receivedAt` 是服务端接收时间（设备可能离线补传）。
- * `duplicated` 表示本次上报是重复事件（服务端已有同键记录），不是错误。
- */
+/** 电子秤事件分别返回原始读数和人工接受数量。设备采集时间与服务端接收时间不同，重复上报不代表处理失败。 */
 export interface SortingScaleEvent {
     id: Id;
     eventKey: string;
