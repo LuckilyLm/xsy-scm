@@ -50,13 +50,7 @@ public class WarehouseService {
         return entity;
     }
 
-    /**
-     * 读取仓库并断言<b>启用</b>。
-     *
-     * <p>
-     * 停用时抛 {@code WAREHOUSE_NOT_FOUND} 会掩盖真实原因，因此这里<b>不</b>抛错，只把判定结果交给调用方；采购侧的 {@code PurchaseWarehouseReferenceGuard}
-     * 负责抛 40987。
-     */
+    /** 查询仓库状态只返回是否启用，停用仓库的具体业务拒绝码由采购等调用方判断。 */
     public boolean enabled(Long id) {
         return ScmWarehouseStatusEnum.ENABLED.name().equals(require(id).getStatus());
     }
@@ -69,13 +63,7 @@ public class WarehouseService {
                 .orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId));
     }
 
-    /**
-     * 解析「默认仓库」= 当前<b>唯一启用</b>的仓库。
-     *
-     * <p>
-     * 销售订单没有仓库字段，显式预留库存时必须落在一个具体仓库上。启用仓库恰好一个时直接返回；0 个或多个都<b>不猜</b>，抛 {@code WAREHOUSE_DEFAULT_AMBIGUOUS(41018)} ——
-     * 猜错会把货占在错误的仓库，而且要到出库/盘点才暴露。
-     */
+    /** 只有恰好一个启用仓库时才能自动选为默认仓库。无启用仓或多个启用仓都返回明确错误，不能猜仓库。 */
     public WarehouseEntity defaultEnabledWarehouse() {
         List<WarehouseEntity> enabled = all().stream()
                 .filter(w -> ScmWarehouseStatusEnum.ENABLED.name().equals(w.getStatus())).toList();
