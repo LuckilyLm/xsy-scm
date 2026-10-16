@@ -50,17 +50,7 @@ import BusinessTrend from './components/business-trend.vue';
 import RankingCard from './components/ranking-card.vue';
 import InventoryHealth from './components/inventory-health.vue';
 
-/**
- * 权限判定必须是 computed，不能是普通常量。
- *
- * <p>`hasPermission` 读的是 Pinia 里的 `administratorFlag` / `pointsList`，而登录信息是异步取回的
- * （`main.ts` 的 `getLoginfo` 与首页 setup 谁先谁后不确定）。普通常量只在 setup 里求值一次：
- * 若那一刻权限还没到，结果就固化成「全都无权」，之后数据到了也不会重新计算 ——
- * 首页会稳定地一片空白，且不会自我恢复。
- *
- * <p>模板里的 `v-if` 与「按权限决定是否挂载子组件（从而决定发不发请求）」都挂在这些值上，
- * 所以它们响应式之后，权限到达会让对应区块自己出现并各自去取数，不需要额外的重试逻辑。
- */
+/** 登录权限异步加载，首页必须用 computed 实时更新可见区块，避免误判无权限。 */
 const canDashboard = computed(() => hasPermission('scm:dashboard:query'));
 const canOrder = computed(() => hasPermission('scm:order:query'));
 const canPurchase = computed(() => hasPermission('scm:purchase:query'));

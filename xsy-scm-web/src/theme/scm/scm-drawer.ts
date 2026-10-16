@@ -15,14 +15,9 @@ export const SCM_DRAWER_WIDTH = {
 export type ScmDrawerSize = keyof typeof SCM_DRAWER_WIDTH;
 
 /**
- * 取 Drawer 宽度。
- *
- * `workspace` 是受限特殊档，不是普通 Drawer 的第五个宽度档，仅限五类：
- * 地图工作台 / 分拣 / 称重工作台 / 报表下钻 / 超宽业务数据阅读 / 多面板业务工作台。
- * 普通表单、编辑、配置与普通详情一律禁止 —— 这类内容应升到 `xl`（1120）或拆分。
- *
- * 白名单由 `test/scm-drawer-width-contract.test.mjs` 直接钉住；
- * 新增用例需先更新 UI 规范并同步契约。
+ * workspace 是受限特殊档，不是普通第五档。
+ * 仅用于地图工作台、分拣 / 称重工作台、报表下钻、超宽业务数据阅读、多面板业务工作台。
+ * 普通表单和详情请使用 s/m/l/xl。
  */
 export function scmDrawerWidth(size: ScmDrawerSize): number {
   return SCM_DRAWER_WIDTH[size];
