@@ -11,16 +11,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import lombok.Data;
 
-/**
- * 充值请求事实（ADM-12）。
- *
- * <p>
- * <b>只有业务身份，没有支付状态机</b>：{@code CREATED / PAYING / SUCCESS / FAILED} 那些状态 已经由 {@code xsy_payment_intent} 与
- * {@code xsy_payment_transaction} 表达。再造一套就会出现 「两个地方都说自己知道充值成没成功」，而它们迟早会不一致。
- *
- * <p>
- * 它回答的问题只有一个：<b>谁准备往哪个钱包充多少钱、业务编号是什么</b>。
- */
+/** 充值单只记录充值人、钱包和申请金额。支付是否成功由支付交易记录维护，不能再建一套充值状态。 */
 @Data
 @TableName("xsy_customer_balance_recharge")
 public class CustomerBalanceRechargeEntity {
