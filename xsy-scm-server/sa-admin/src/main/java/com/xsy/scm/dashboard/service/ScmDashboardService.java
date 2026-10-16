@@ -60,15 +60,7 @@ public class ScmDashboardService {
         return overviewFor(heldPermissions());
     }
 
-    /**
-     * 按给定权限集合算卡片（与登录态解耦，便于负向夹具直接验证「省略」与「范围」的组合）。
-     *
-     * <p>
-     * <b>只为可见卡片取数</b>：先按权限筛出这批人要看的卡片，再回头判断「哪几组聚合真的需要」。 三组聚合各自独立，谁都不依赖谁，所以能给多少给多少 —— 一个只有库存预警权的人 不该为销售额与采购额付两次查询的钱。
-     *
-     * <p>
-     * 用 {@code null} 表示「本组聚合不需要」：它能与「取了但结果为空」区分开。 早先的写法是三组无条件取齐（代价写在注释里、留作待办），现在按待办收掉。
-     */
+    /** 首页先按用户权限选出可见指标，再只查询相关业务汇总。没有查询的分组与已查询但结果为零必须区分。 */
     public List<ScmDashboardCardVO> overviewFor(List<String> heldPermissions) {
         List<ScmDashboardCardEnum> visibleCards = new ArrayList<>();
         boolean needsSales = false;
@@ -112,13 +104,7 @@ public class ScmDashboardService {
         return cards;
     }
 
-    /**
-     * 卡片取值：穷尽 switch、不写 default —— 新增卡片时这里会直接编译不过，逼着补上取值口径。
-     *
-     * <p>
-     * 某组聚合为 {@code null} 表示「没有卡片用到它」（调用方已按可见卡片裁剪）。 真被用到却是 null 属于调用方的编排错误，直接抛出来而不是静默给 0 —— 0
-     * 是合法金额，拿它兜底会把「漏查」伪装成「今天没有业务」。
-     */
+    /** 首页卡片类型必须逐一处理，新增卡片需要明确数据来源。未查询的指标不能用零替代，避免把遗漏伪装成无业务。 */
     private static BigDecimal valueOf(ScmDashboardCardEnum card, SalesRangeMetrics sales, PurchaseMetrics purchase,
             long warningTotal) {
         return switch (card) {

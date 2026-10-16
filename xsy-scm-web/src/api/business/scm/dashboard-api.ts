@@ -1,14 +1,4 @@
-/**
- * 首页「供应链工作台」的只读聚合接口。
- *
- * 与后端 `ScmDashboardController` 一一对应：`overview` 返回当前登录人可见的 KPI 卡
- * （无权的卡后端直接省略，不会给 0），`trend` / `ranking` / `inventoryHealth` 是单指标端点，
- * 缺对应领域权限时后端按无权限拒绝。因此调用方必须先按权限决定发不发这个请求 ——
- * 无脑全发会让无权的人每次打开首页都收到一串失败。
- *
- * 这里刻意是 Pull（读时现算）而不是 Push：这些数字不是会被「解决」的记录，
- * 只是当前快照，刷新即最新。前端不缓存、不参与口径计算。
- */
+/** 首页指标接口只读，后端按权限返回可见卡片；前端应按领域权限决定请求哪些指标，不能把无权数据当作零。 */
 import {getRequest} from '/@/lib/axios';
 import type {ScmResponse} from '/@/types/business/scm/customer';
 

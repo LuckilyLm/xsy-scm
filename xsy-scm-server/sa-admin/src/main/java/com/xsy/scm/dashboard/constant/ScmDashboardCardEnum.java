@@ -25,13 +25,7 @@ public enum ScmDashboardCardEnum {
     RECEIPT_COUNT("receipt-count", PurchasePermission.RECEIPT_QUERY, ScmDashboardValueType.COUNT,
             "/purchase/purchase-receipt-list", ScmDashboardCardGroup.PURCHASE),
 
-    /**
-     * 库存预警：取值就是库存预警列表的分页总数。
-     *
-     * <p>
-     * <b>刻意不用指标层的健康度分档求和</b>：那张分档表更宽（含缺货与未配置阈值），而预警列表默认只收「低于下限 / 高于上限」 两档。用分档求和当卡片数字会出现「首页 12、点进去只有 8」——
-     * 数字与明细对不上，比数字本身更伤信任。 分档数据另走 {@code /scm/dashboard/inventory-health}，供首页的库存健康卡使用。
-     */
+    /** 首页库存预警数量与库存预警列表的筛选范围一致，不直接用更宽的库存健康度分档数量代替。 */
     INVENTORY_WARNING("inventory-warning", InventoryPermission.WARNING_QUERY, ScmDashboardValueType.COUNT,
             "/inventory/inventory-warning-list", ScmDashboardCardGroup.INVENTORY_WARNING);
 
