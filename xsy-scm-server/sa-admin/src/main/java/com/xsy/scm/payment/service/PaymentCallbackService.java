@@ -22,16 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 支付回调唯一入口。顺序：验签 → 落事件（有效事件的渠道 id 唯一）→ 匹配交易 → 推进支付域状态机 → 派生唯一 Finance 收款事实。顺序不可调换。
- *
- * <p>
- * 回调只推进支付域自己的状态，不直接改订单、改库存或写财务表；收款事实由支付成功派生，带唯一来源键，重复回调不会重复记收款。
- *
- * <p>
- * 幂等靠唯一索引而不是「先查后写」：并发回调下先查后写两边都会查到「不存在」，于是都执行副作用。这里先 {@code INSERT ... ON CONFLICT DO NOTHING}，返回 0 即判重复并直接返回，不执行任何副作用。
- * 未通过验签的回调照样落库（{@code REJECTED}）—— 伪造回调必须留证据，但拒绝记录不占后续有效事件的 id。
- */
+/** 支付回调按验签、保存事件、核对交易、更新状态、登记收款的顺序处理。同一渠道事件不能重复入账。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor

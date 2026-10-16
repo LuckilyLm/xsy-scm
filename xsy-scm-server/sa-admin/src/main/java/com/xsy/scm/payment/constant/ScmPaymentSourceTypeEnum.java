@@ -3,16 +3,7 @@ package com.xsy.scm.payment.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 支付域自己的<b>业务来源类型</b>（{@code xsy_payment_intent.source_type} / {@code xsy_payment_refund.source_type}）。
- *
- * <p>
- * 与财务域的 {@code ScmFinancePaymentSourceTypeEnum} 值相同但<b>归属不同</b>：那个枚举描述的是 「财务付款事实的来源」，这里描述的是「支付意图 / 支付退款的业务来源」。两边值相同由各自的
- * 库级 CHECK 分别固定 —— 是断言，不是靠一处定义顺带覆盖另一处。
- *
- * <p>
- * 用枚举而不是「常量类 + 字符串」：字符串字面量会与其它域已声明的同名值撞上质量门禁 （{@code magic-string-domain-literal}），而枚举常量名不会。
- */
+/** 支付业务来源类型由支付域维护，与订单和钱包的类型分开。来源码必须符合数据库约束，不能自由填写。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPaymentSourceTypeEnum {
