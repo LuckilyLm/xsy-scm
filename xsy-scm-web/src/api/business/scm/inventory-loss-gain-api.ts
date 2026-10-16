@@ -1,16 +1,4 @@
-/**
- * 库存报损报溢单接口。
- *
- * 与后端 `InventoryLossGainController` 逐端点对应（7 个）：
- * query / detail / create / update / approve / reject / delete。
- *
- * 权限分三档：录单与改待审核是日常操作（`add` / `update`），
- * `approve` 与 `reject` 是两个独立权限 —— 允许主管审批、由另一角色驳回是常见分工。
- * 「新建」与「审批」必须分开：报损是把货从账上抹掉的动作，由同一人录单并批准就失去了制衡。
- *
- * 审批必须带 `version`（乐观锁）：审批人必须批准自己读到的内容。
- * 若在「打开单据 → 点审批」之间单据被改过，后端返回 40921 并要求刷新。
- */
+/** 报损报溢支持创建、修改、审批和驳回。录单与审批权限分开；审批必须携带版本号，防止批准过期数据。 */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

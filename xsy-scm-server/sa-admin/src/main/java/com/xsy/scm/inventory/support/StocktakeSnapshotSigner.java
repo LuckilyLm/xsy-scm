@@ -12,18 +12,7 @@ import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.List;
 
-/**
- * 盘点 Excel 模板的「签名快照凭证」编解码器（无状态，不落任何快照表）。
- *
- * <p>
- * <b>快照用签名令牌而不是业务快照表</b>：导入要求「任一参与行的余额版本在导出后变化即整批拒绝」，而这份权威事实不宜新增业务快照表承载。因此导出时把快照（仓库、来源 SKU 集合、每行的余额 id / 版本 / 记账单位 /
- * 账面量、模板版本、导出人、有效期）编成一段令牌随模板带出，导入时用它做「受保护来源集合」并与持锁读取的当前余额逐项核验。令牌用 HMAC-SHA256 签名，用户改一个字节即校验失败，故 Excel 里的元数据列不可信也无妨。
- *
- * <p>
- * <b>密钥来源</b>：{@code scm.inventory.stocktake.snapshot.secret}。默认值 {@code DEV_SECRET} 只保证本地开发与 IT 可运行；pre / prod profile
- * 下缺失或仍等于该公开默认值会让构造直接抛错、启动失败（见 {@link #requireNonPublicSecret}），生产必须用环境变量
- * {@code SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET} 显式配置（AGENTS：不把真实密钥写进源码 / 配置）。
- */
+/** 盘点模板使用签名保存导出时的库存版本。导入时有一条库存发生变化就拒绝整批导入。 */
 @Component
 public class StocktakeSnapshotSigner {
 

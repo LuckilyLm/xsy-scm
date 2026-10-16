@@ -11,18 +11,7 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/**
- * 库存域出库单。
- *
- * <p>
- * <b>两种产生方式</b>：仓库自己开草稿单再确认（{@code InventoryOutboundService}），以及配送发车一次性生成已确认单（{@code InventoryFulfillmentService}）。后者把
- * {@code sourceDocumentType = DELIVERY_ROUTE} 与 {@code sourceDocumentId = xsy_delivery_route.id} 写在头上，由部分唯一索引
- * {@code uk_inventory_outbound_source_active} 保证 「一条线路最多一张出库单」。
- *
- * <p>
- * <b>{@code operator} / {@code confirmed_at} 是流水的事实来源</b>：确认出库时把这两个值传给 {@code InventoryCommandService}，作为
- * {@code xsy_inventory_movement.occurred_at} 与 {@code operator} —— 与入库同纪律，禁止用 {@code now()} 或当前登录人顶替。
- */
+/** 出库单可由仓库创建草稿并确认，也可在配送发车时直接生成已确认出库单。 */
 @Data
 @TableName(value = "xsy_inventory_outbound", autoResultMap = true)
 public class InventoryOutboundEntity {

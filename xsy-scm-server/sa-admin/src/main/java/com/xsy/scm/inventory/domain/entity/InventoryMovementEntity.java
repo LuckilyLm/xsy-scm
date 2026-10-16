@@ -8,22 +8,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/**
- * 库存流水，append-only 账本。
- *
- * <p>
- * 表上有 {@code deleted} 列（为与部分唯一索引 {@code WHERE deleted = FALSE AND source_document_item_id IS NOT NULL} 逐字匹配），但
- * {@code ck_inventory_movement_append_only CHECK (deleted = FALSE)} 把它锁死为 FALSE：soft delete / update 历史流水在数据库层直接失败。
- * 因此本实体没有 {@code version} / {@code updatedAt} / {@code updatedBy}，对应 DAO 只有 insert + select；未来冲销（如采购退货）必须新增反向
- * movement，不得修改历史行。
- *
- * <p>
- * 不用 {@code @TableLogic}（它表达「可被软删的实体」，与本表语义相反）：所有读取在 SQL 里显式写 {@code deleted = FALSE}，与部分唯一索引谓词同口径。
- *
- * <p>
- * 溯源三件套：{@code sourceDocumentType + sourceDocumentItemId} 是防重锚点，{@code sourceDocumentId}
- * 是头级溯源（列表页跳转收货单用，不参与唯一索引）。人类可读的来源单号由查询侧联 {@code xsy_purchase_receipt.receipt_no} 取得。
- */
+/** 库存流水只能新增，不修改历史。数量和方向分别记录，同一业务来源不可重复记账。 */
 @Data
 @TableName(value = "xsy_inventory_movement", autoResultMap = true)
 public class InventoryMovementEntity {
