@@ -3,13 +3,7 @@ package com.xsy.scm.mall.order.constant;
 import com.xsy.scm.delivery.constant.ScmDeliveryFulfillmentStatusEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 
-/**
- * 商城订单列表的展示分类。
- *
- * <p>
- * 这不是订单状态机：订单状态只有 {@link ScmOrderStatusEnum} 的四个值，履约进度由配送域独立推进。本枚举只把 「订单状态 +
- * 生效中的配送履约状态」投影成客户看得懂的四个阶段，<b>不写库、不参与任何状态转换</b>； 可取消与否的最终判定仍在 {@code OrderStateMachine}。
- */
+/** 商城订单阶段由订单状态和配送进度合成，只用于页面展示，不落库也不改变订单状态机；能否取消仍由订单规则决定。 */
 public enum MallOrderDisplayStatusEnum {
     /** 待处理：订单已提交但后台尚未确认（含草稿）。 */
     PENDING,

@@ -3,15 +3,7 @@ package com.xsy.scm.mall.order.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 商城结算方式。
- *
- * <p>
- * 只收录当前能真正闭环的三种：余额、账期、货到付款。在线支付需要真实渠道回调与对账， 未接入前不对外开放，因此不在此枚举内 —— 避免出现「选了却收不到钱」的伪能力。
- *
- * <p>
- * 枚举只表达客户在结算页的「约定」，不承担资金动作：余额扣减走钱包、账期占用走授信、 货到付款只是交付时收款，各自的时点与幂等由对应领域负责。
- */
+/** 商城只展示能够完成支付的余额、账期和货到付款选项。在线支付未接入完整渠道前不开放，结算方式本身不直接执行资金操作。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmSettlementMethodEnum {

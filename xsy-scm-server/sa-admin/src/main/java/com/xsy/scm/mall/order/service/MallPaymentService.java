@@ -21,13 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 商城订单的客户侧支付：余额支付。
- *
- * <p>
- * 不新建支付状态机：扣钱包、登记 Finance 资金事实与订单资金核销编排全部走 {@link PaymentIntentService} 的既有链。 <b>金额由服务端在订单行锁内计算</b>（应付净额 −
- * 已付，与签收应收同一把尺子），客户端不传金额、 也不支持部分支付；钱包归属、余额不足与集团共享限制由余额域在消费时权威判定。
- */
+/** 商城钱包支付沿用现有支付与余额服务，不另建状态机。应付金额在服务端锁定订单后计算，客户端不能指定金额；余额及集团共享权限在钱包扣款时校验。 */
 @Service
 @RequiredArgsConstructor
 public class MallPaymentService {
