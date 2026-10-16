@@ -113,7 +113,7 @@ const compareColumns: TableColumnsType<SupplierSkuComparisonRow> = [
   {title: '最低有效参考价', dataIndex: 'lowestReferencePrice', width: 140, align: 'right'},
   {title: '高于最低价金额', dataIndex: 'priceGapAmount', width: 140, align: 'right'},
   {title: '高于最低价比例', dataIndex: 'priceGapPercent', width: 140, align: 'right'},
-  {title: '有效报价数', dataIndex: 'pricedSupplierCount', width: 115, align: 'center'},
+  {title: '有效报价数', dataIndex: 'pricedSupplierCount', width: 115, align: 'right'},
   {title: '优先采购', dataIndex: 'defaultFlag', width: 110, align: 'center'},
 ];
 
