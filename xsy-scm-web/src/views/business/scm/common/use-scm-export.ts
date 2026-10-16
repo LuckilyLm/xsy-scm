@@ -8,20 +8,7 @@ interface ExportFlag {
     exporting: boolean;
 }
 
-/**
- * 导出按钮的 loading 状态。
- *
- * 两件事必须一起做，缺一个都等于没反馈：
- * 1. 请求在飞的时候按钮进 loading —— antd 会同时把按钮禁用，挡住连点；
- * 2. loading 至少停留 MIN_LOADING_MS，否则就是一次看不见的闪烁。
- *
- * 传 `target` 时用调用方自己的状态位（报表页按 Tab 各存一份，一个 Tab 在导不让整排按钮都转）；
- * 不传就自带一个。失败仍由请求层的全局 toast 说明原因，这里不吞异常。
- *
- * ⚠️ 返回值必须用 `reactive` 包一层：模板里写的是 `xxxExport.exporting`，
- * 而 Vue 只解包顶层的 ref —— 返回 `{exporting: computed(...)}` 的话，
- * 模板拿到的是 ComputedRef 对象（恒为 truthy），按钮会永久 loading 且被禁用、点了没反应。
- */
+/** 导出请求期间按钮保持 loading 并阻止重复点击；成功后恢复状态，失败时显示错误。 */
 export function useScmExport(target?: ExportFlag) {
     const state: ExportFlag = target ?? reactive({exporting: false});
     const exporting = computed(() => state.exporting);
