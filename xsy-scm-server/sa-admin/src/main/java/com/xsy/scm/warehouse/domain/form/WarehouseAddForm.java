@@ -5,15 +5,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * 新建仓库。
- *
- * <p>
- * <b>不含 {@code status}</b>：新建仓库由服务端设为 {@code ENABLED}；状态变更走专用命令。
- *
- * <p>
- * <b>不含 {@code warehouseCode}</b>：仓库编码由服务端生成（{@code ScmBusinessNoService}），客户端传入的值不会被采信。
- */
+/** 新建仓库时，编码由服务端生成、状态默认启用。状态变更必须使用专用操作。 */
 @Data
 public class WarehouseAddForm extends com.xsy.scm.common.domain.ScmLocationForm {
 

@@ -25,14 +25,7 @@ import java.util.Objects;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
-/**
- * 仓库主数据读写与启停命令。
- *
- * <p>
- * <b>错误码边界</b>：本类只抛 {@code WarehouseErrorCode} 与 {@code ScmCommonErrorCode}。 「仓库已停用 → 不能用于新采购单」是<b>采购侧规则</b>，错误码
- * {@code PURCHASE_WAREHOUSE_DISABLED(40987)} 属于 {@code PurchaseErrorCode}，由
- * {@code purchase/support/PurchaseWarehouseReferenceGuard} 判定 —— 这样 {@code warehouse} 域不必反向依赖 {@code purchase} 域。
- */
+/** 维护仓库基本信息和启停状态。仓库停用的校验由仓库模块负责；新采购单使用停用仓库的限制由采购模块负责。 */
 @Service
 @RequiredArgsConstructor
 public class WarehouseService {
