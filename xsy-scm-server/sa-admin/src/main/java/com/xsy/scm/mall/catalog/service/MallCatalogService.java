@@ -136,7 +136,8 @@ public class MallCatalogService {
         }
         Map<Long,
                 ResolvedPriceVO> prices = priceResolver
-                        .resolve(customer.getCustomerId(), rows.stream().map(MallProductVO::getSkuId).toList(), null)
+                        .resolve(customer.getCustomerId(), rows.stream().map(MallProductVO::getSkuId).toList(), null,
+                                warehouseId)
                         .stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity()));
         Map<String, String> urls = new HashMap<>();
         fileService

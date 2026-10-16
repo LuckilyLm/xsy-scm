@@ -16,9 +16,14 @@
         <a-form-item label="价格生效时间" class="smart-query-form-item">
           <a-date-picker v-model:value="at" show-time value-format="YYYY-MM-DD HH:mm:ss" placeholder="当前时点"/>
         </a-form-item>
+        <a-form-item label="配送仓" class="smart-query-form-item">
+          <WarehouseSelect v-model:value="warehouseId" width="180px"/>
+        </a-form-item>
         <a-form-item class="smart-query-form-item">
           <a-button type="primary" @click="resolve" :loading="loading" v-privilege="'scm:pricing:resolve:query'">试算
           </a-button>
+          <a-button v-if="hasPermission('scm:pricing:resolve:query') && hasPermission('scm:report:cost:query')"
+                    :loading="trialLoading" @click="trial">查看计算依据</a-button>
         </a-form-item>
       </a-row>
     </a-form>
@@ -58,6 +63,21 @@
         <template v-else>{{record[column.dataIndex]??'—'}}</template>
       </template>
     </a-table>
+    <a-modal :open="trialOpen" title="协议价计算依据" :footer="null" width="760px" @cancel="trialOpen=false">
+      <a-alert type="info" show-icon message="依据取所选配送仓的当前事实；订单提交后使用订单冻结快照。"/>
+      <a-table :data-source="trialRows" :columns="trialColumns" row-key="skuId" size="small"
+               :pagination="false" style="margin-top: 12px">
+        <template #bodyCell="{record, column}">
+          <template v-if="column.dataIndex === 'skuId'">{{ result?.items.find(item => String(item.skuId) === String(record.skuId))?.skuCode || '—' }}</template>
+          <template v-else-if="column.dataIndex === 'formula'">{{ formulaLabel(record.calculationBasis?.formulaType) }}</template>
+          <template v-else-if="column.dataIndex === 'source'">{{ basisSourceLabel(record.calculationBasis?.basisSource) }}</template>
+          <template v-else-if="column.dataIndex === 'basis'">{{ record.calculationBasis?.basisUnitPrice || '—' }}</template>
+          <template v-else-if="column.dataIndex === 'parameter'">{{ record.calculationBasis?.formulaParameter || '—' }}</template>
+          <template v-else-if="column.dataIndex === 'unitPrice'">{{ record.unitPrice || '—' }}</template>
+          <template v-else-if="column.dataIndex === 'reason'">{{ record.unpricedReason ? UNPRICED_REASON_ENUM[record.unpricedReason]?.desc || record.unpricedReason : '—' }}</template>
+        </template>
+      </a-table>
+    </a-modal>
   </a-card>
 </template>
 <script setup lang="ts">
@@ -65,19 +85,60 @@ import {ref} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
+import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {formatAmount} from '/@/utils/scm-amount';
-import {UNAVAILABLE_REASON_ENUM, SCM_PRICE_SOURCE_ENUM} from '/@/constants/business/scm/pricing-const';
+import {UNAVAILABLE_REASON_ENUM, UNPRICED_REASON_ENUM, SCM_PRICE_SOURCE_ENUM} from '/@/constants/business/scm/pricing-const';
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {ResolveResult, ResolvedPrice} from '/@/types/business/scm/pricing';
 import {pricingError} from './pricing-errors';
+import {hasPermission} from '../common/scm-permission';
 
 const customerId = ref<ScmId>(), skuIds = ref<ScmId[]>([]), at = ref<string>(), result = ref<ResolveResult>(),
+  warehouseId = ref<ScmId>(),
     loading = ref(false), error = ref('');
 let requestId = 0;
+type TrialRow = {skuId: ScmId; unitPrice: string | null; unpricedReason: string | null;
+  calculationBasis: Record<string, unknown> | null};
+const trialOpen = ref(false), trialLoading = ref(false), trialRows = ref<TrialRow[]>([]);
+const trialColumns: TableColumnsType<TrialRow> = [
+  {title: '商品规格编码', dataIndex: 'skuId', width: 140},
+  {title: '公式', dataIndex: 'formula', width: 150},
+  {title: '基准来源', dataIndex: 'source', width: 150},
+  {title: '基准单价', dataIndex: 'basis', align: 'right', width: 130},
+  {title: '公式参数', dataIndex: 'parameter', width: 120},
+  {title: '结果单价', dataIndex: 'unitPrice', align: 'right', width: 120},
+  {title: '未定价原因', dataIndex: 'reason', width: 180}
+];
+function formulaLabel(value: unknown): string {
+  return ({FIXED: '固定协议价', MARKET_PLUS_AMOUNT: '市场价加固定金额',
+    COST_MARKUP_RATE: '配送仓成本加价率', MARKET_MARKUP_RATE: '市场价加价率'} as Record<string, string>)[String(value)] || '未命中协议价';
+}
+function basisSourceLabel(value: unknown): string {
+  return ({FIXED: '固定单价', MARKET_PRICE: '商品市场价',
+    WAREHOUSE_WEIGHTED_AVG_COST: '配送仓移动加权成本'} as Record<string, string>)[String(value)] || '—';
+}
+
+async function trial() {
+  if (!customerId.value || !skuIds.value?.length || !warehouseId.value) {
+    void message.warning('请选择客户、商品规格和配送仓');
+    return;
+  }
+  trialLoading.value = true;
+  try {
+    const response = await pricingApi.trial({customerId: customerId.value, skuIds: skuIds.value,
+      warehouseId: warehouseId.value, at: at.value || null});
+    trialRows.value = response.data;
+    trialOpen.value = true;
+  } catch (cause) {
+    void message.error(pricingError(cause));
+  } finally {
+    trialLoading.value = false;
+  }
+}
 
 /**
  * 来源的语义档位：协议价最具体（蓝）、类型价次之（绿）、市场价是兜底（灰）。
@@ -118,7 +179,7 @@ function reasonLabel(value: string | null) {
 /** 说明列：不可售原因优先（它挡着不能卖），否则给缺价原因，都正常才是破折号。 */
 function hintText(record: ResolvedPrice): string {
   if (record.unavailableReason) return reasonLabel(record.unavailableReason);
-  if (record.unpricedReason) return reasonLabel(record.unpricedReason);
+  if (record.unpricedReason) return UNPRICED_REASON_ENUM[record.unpricedReason]?.desc || record.unpricedReason;
   return '—';
 }
 
@@ -134,7 +195,7 @@ async function resolve() {
   try {
     // 试算失败由页内 Alert 承担（不提示会被读成「没有价格」），不再让全局 toast 重复说一遍
     const r = await pricingApi.resolve({
-      customerId: customerId.value, skuIds: skuIds.value, at: at.value || null
+      customerId: customerId.value, skuIds: skuIds.value, at: at.value || null, warehouseId: warehouseId.value
     }, {suppressGlobalErrorMessage: true});
     if (id === requestId) result.value = r.data;
   } catch (e) {

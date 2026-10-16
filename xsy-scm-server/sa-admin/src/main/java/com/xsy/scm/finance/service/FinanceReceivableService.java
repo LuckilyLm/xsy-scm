@@ -93,6 +93,9 @@ public class FinanceReceivableService {
      * 零实发与整单金额为 0 时什么都不写、静默返回 —— 跳过是成功语义，不是失败。
      */
     private void ensureNormalFromSigning(FinanceReceivableSourceDto source) {
+        if (financeReceivableSourceDao.countIncompleteBundleOutbound(source.getSalesOrderId()) > 0) {
+            throw new IllegalStateException("组合商品出库组成不完整，不能生成应收: " + source.getSalesOrderId());
+        }
         List<FinanceReceivableItemEntity> items = toNormalItems(source,
                 financeReceivableSourceDao.selectOutboundLines(source.getSalesOrderId()),
                 orderLineDiscounts(source.getSalesOrderId()));

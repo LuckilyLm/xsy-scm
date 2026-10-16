@@ -27,6 +27,8 @@ public enum ScmInventorySourceDocumentTypeEnum {
      */
     SALES_ORDER_ITEM("销售订单行"),
 
+    ORDER_BUNDLE_COMPONENT("组合商品冻结组成行"),
+
     /**
      * 盘点单行：{@code source_document_item_id = xsy_inventory_stocktake_item.id}。
      *

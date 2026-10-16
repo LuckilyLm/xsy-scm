@@ -16,7 +16,8 @@
     <template v-if="column.dataIndex==='customerName'">{{record.customerName || '—'}}</template>
     <template v-else-if="column.dataIndex==='customerCode'"><span class="scm-mono">{{record.customerCode || '—'}}</span></template>
     <template v-else-if="column.dataIndex==='skuCode'"><span class="scm-mono">{{record.skuCode || '—'}}</span></template>
-    <template v-else-if="column.dataIndex==='unitPrice'"><span class="scm-money">{{formatAmount(record.unitPrice)}}</span></template>
+    <template v-else-if="column.dataIndex==='unitPrice'"><span class="scm-money">{{record.formulaType && record.formulaType !== 'FIXED' ? '按公式计算' : formatAmount(record.unitPrice)}}</span></template>
+    <template v-else-if="column.dataIndex==='formulaType'">{{formulaText(record)}}</template>
     <template v-else-if="column.dataIndex==='effectiveRange'">{{effectiveRangeText(record.effectiveFrom, record.effectiveTo)}}<span v-if="!record.effectiveTo" class="scm-cell-hint">（长期有效）</span></template>
     <ScmStatusTag v-else-if="column.dataIndex==='effectiveness'" v-bind="effectiveness(record)" />
     <template v-else-if="column.dataIndex==='action'"><div class="smart-table-operate scm-table-actions"><a-button type="link" v-privilege="'scm:pricing:agreement:update'" @click="drawer?.open(record.agreementPriceId)">编辑</a-button><a-button type="link" danger v-privilege="'scm:pricing:agreement:delete'" @click="remove(record)">删除</a-button></div></template>
@@ -58,10 +59,21 @@ const columns = ref<AgreementPriceColumn[]>([
   {title: '商品规格', dataIndex: 'specName', width: 200},
   {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '协议价', dataIndex: 'unitPrice', align: 'right', width: 130},
+  {title: '计算方式', dataIndex: 'formulaType', align: 'center', width: 190},
   {title: '有效期', dataIndex: 'effectiveRange', width: 340},
   {title: '状态', dataIndex: 'effectiveness', align: 'center', width: 100},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 120},
 ]);
+
+function formulaText(row: PriceRow): string {
+  const value = row.formulaParameter || '0.0000';
+  switch (row.formulaType) {
+    case 'MARKET_PLUS_AMOUNT': return `市场价 + ${value}`;
+    case 'COST_MARKUP_RATE': return `配送仓成本 × (1 + ${value})`;
+    case 'MARKET_MARKUP_RATE': return `市场价 × (1 + ${value})`;
+    default: return '固定协议价';
+  }
+}
 
 /** 生效状态由前端按有效区间推导（VO 不带状态字段），只用于展示。 */
 function effectiveness(row: PriceRow) {

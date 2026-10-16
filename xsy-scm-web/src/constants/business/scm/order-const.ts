@@ -34,6 +34,7 @@ export const SCM_ORDER_OPERATION_ENUM: SmartEnum<string> = {
     SUBMIT: {value: 'SUBMIT', desc: '提交'},
     ACTUAL_QUANTITY: {value: 'ACTUAL_QUANTITY', desc: '实重录入'},
     CREDIT_OVERRIDE: {value: 'CREDIT_OVERRIDE', desc: '授信例外放行'},
+    REPRICE: {value: 'REPRICE', desc: '手动价格重算'},
     CONFIRM: {value: 'CONFIRM', desc: '确认'},
     CANCEL: {value: 'CANCEL', desc: '取消'},
     RESERVE_STOCK: {value: 'RESERVE_STOCK', desc: '预留库存'},

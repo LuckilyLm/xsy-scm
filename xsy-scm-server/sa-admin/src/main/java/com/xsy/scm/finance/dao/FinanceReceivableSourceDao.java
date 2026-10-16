@@ -16,6 +16,7 @@ import java.util.List;
 /** 财务生成应收时只读订单签收、实际出库和冻结折扣事实，不通过此 DAO 改订单。签收身份及时间以已保存记录为准，异常签收不能生成正常应收。 */
 @Mapper
 public interface FinanceReceivableSourceDao {
+    long countIncompleteBundleOutbound(@Param("salesOrderId") Long salesOrderId);
     boolean hasFinalDeliveryResult(@Param("salesOrderId") Long salesOrderId);
 
     /** 正常应收仅由已签收订单生成；异常签收不能生成正常应收。获取不到有效签收事实必须失败。 */

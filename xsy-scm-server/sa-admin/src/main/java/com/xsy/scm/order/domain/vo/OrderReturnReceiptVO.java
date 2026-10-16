@@ -25,6 +25,8 @@ public class OrderReturnReceiptVO {
         private Long returnItemId;
         private Long sourceSalesOutMovementId;
         private Long sourceOutboundItemId;
+        private Long bundleComponentId;
+        private Boolean bundleReceiptCounted;
         private String disposition;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal quantity;

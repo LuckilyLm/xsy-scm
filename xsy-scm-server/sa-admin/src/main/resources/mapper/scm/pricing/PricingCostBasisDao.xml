@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.pricing.dao.PricingCostBasisDao">
+    <select id="byWarehouseAndSkus" resultType="com.xsy.scm.pricing.domain.vo.PricingCostBasisVO">
+        SELECT b.sku_id AS skuId, b.warehouse_id AS warehouseId,
+               b.unit AS stockUnit, b.avg_cost AS stockUnitCost,
+               CASE WHEN s.sale_unit = b.unit THEN 1.0000
+                    ELSE conversion.stock_units_per_sale_unit END AS stockUnitsPerSaleUnit,
+               b.version AS balanceVersion
+        FROM xsy_inventory_balance b
+        JOIN xsy_product_sku s ON s.id = b.sku_id AND s.deleted = FALSE
+        LEFT JOIN xsy_product_sku_stock_conversion conversion
+          ON conversion.sku_id = b.sku_id AND conversion.sale_unit = s.sale_unit
+         AND conversion.stock_unit = b.unit AND conversion.deleted = FALSE
+        WHERE b.deleted = FALSE AND b.warehouse_id = #{warehouseId}
+          AND b.sku_id IN
+          <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
+    </select>
+</mapper>

@@ -2,7 +2,7 @@ import Decimal from 'decimal.js';
 import type {Address, Id, Item, Order, RecentPrice} from './order-types.ts';
 
 export function newOrder(): Order {
-    return {orderSource: 'ADMIN', items: [], address: {receiverName: '', receiverPhone: '', address: ''}};
+    return {orderSource: 'ADMIN', deliveryWarehouseId: null, items: [], address: {receiverName: '', receiverPhone: '', address: ''}};
 }
 
 export function fixed(value: string | number): string {
@@ -28,6 +28,7 @@ export interface DraftItem {
  */
 export interface Draft {
     customerId?: string | number;
+    deliveryWarehouseId?: string | number | null;
     orderSource: string;
     expectDeliveryTime?: string | null;
     remark?: string | null;
@@ -45,6 +46,7 @@ export function draftKey(employeeId: string | number): string {
 export function serializeDraft(form: Order): Draft {
     return {
         customerId: form.customerId,
+        deliveryWarehouseId: form.deliveryWarehouseId ?? null,
         orderSource: form.orderSource,
         expectDeliveryTime: form.expectDeliveryTime ?? null,
         remark: form.remark ?? null,
@@ -66,6 +68,7 @@ export function serializeDraft(form: Order): Draft {
 export function applyDraft(draft: Draft): Order {
     const form = newOrder();
     form.customerId = draft.customerId;
+    form.deliveryWarehouseId = draft.deliveryWarehouseId ?? null;
     form.orderSource = draft.orderSource || 'ADMIN';
     form.expectDeliveryTime = draft.expectDeliveryTime ?? null;
     form.remark = draft.remark ?? null;
@@ -85,6 +88,7 @@ export function applyDraft(draft: Draft): Order {
 export function fromHistory(detail: Order): Order {
     const form = newOrder();
     form.customerId = detail.customerId;
+    form.deliveryWarehouseId = detail.mallDeliveryWarehouseId ?? null;
     form.expectDeliveryTime = detail.expectDeliveryTime ?? null;
     form.remark = detail.remark ?? null;
     const addr: Address = detail.address

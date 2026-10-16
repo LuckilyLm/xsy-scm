@@ -19,9 +19,12 @@ test('amount contract keeps zero distinct from missing price', () => {
   assert.equal(formatAmountOrDash(null), '—');
 });
 
-test('status contract has one unpriced reason and five unavailable reasons', async () => {
+test('pricing status includes formula-specific missing basis reasons and five unavailable reasons', async () => {
   const constants = await import('../src/constants/business/scm/pricing-const.ts');
-  assert.deepEqual(Object.keys(constants.UNPRICED_REASON_ENUM), ['NO_PRICE_SOURCE']);
+  assert.deepEqual(Object.keys(constants.UNPRICED_REASON_ENUM), [
+    'NO_PRICE_SOURCE', 'AGREEMENT_COST_MISSING', 'AGREEMENT_MARKET_PRICE_MISSING',
+    'AGREEMENT_RESULT_INVALID',
+  ]);
   assert.deepEqual(Object.keys(constants.UNAVAILABLE_REASON_ENUM).sort(), [
     'CATEGORY_DISABLED', 'NOT_VISIBLE', 'SKU_NOT_FOUND', 'SKU_OFF_SHELF', 'SPU_OFF_SHELF',
   ]);
@@ -45,7 +48,10 @@ test('协议价抽屉：单价用 InputNumber + ¥，宽度走 foundation 分级
   assert.match(drawer, /:precision="4"/);
   assert.match(drawer, /:min="0"/);
   // 提交前必须收口回 4 位定点字符串：后端拒绝 JSON 数字，也拒绝空串
-  assert.match(drawer, /form\.unitPrice = fixed4\(unitPrice\.value\) as string/);
+  assert.match(drawer, /form\.unitPrice = form\.formulaType === 'FIXED' \? fixed4\(unitPrice\.value\) as string : null/);
+  assert.match(drawer, /form\.formulaParameter = form\.formulaType === 'FIXED' \? null/);
+  assert.match(drawer, /'COST_MARKUP_RATE'/);
+  assert.match(drawer, /'MARKET_MARKUP_RATE'/);
   assert.match(drawer, /fixed4.*from '\.\.\/\.\.\/common\/scm-fixed'/);
   // 宽度走分级，不写死像素（foundation 的 s 档注释里就写着「协议价」）
   assert.match(drawer, /scmDrawerWidth\('s'\)/);

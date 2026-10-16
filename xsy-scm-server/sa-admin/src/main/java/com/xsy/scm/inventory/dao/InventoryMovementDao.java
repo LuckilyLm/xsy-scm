@@ -6,6 +6,7 @@ import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.inventory.domain.entity.InventoryMovementEntity;
 import com.xsy.scm.inventory.domain.form.InventoryMovementQueryForm;
 import com.xsy.scm.inventory.domain.vo.InventoryMovementVO;
+import com.xsy.scm.inventory.domain.vo.BundleSalesOutAllocationVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -16,6 +17,7 @@ import java.util.List;
  */
 @Mapper
 public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity> {
+    List<BundleSalesOutAllocationVO> listBundleSalesOutAllocations(@Param("orderItemId") Long orderItemId);
 
     /**
      * 追加一条流水，源身份冲突时<b>不做任何事</b>（防重）。

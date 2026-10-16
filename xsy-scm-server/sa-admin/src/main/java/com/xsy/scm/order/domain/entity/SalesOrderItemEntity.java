@@ -72,6 +72,8 @@ public class SalesOrderItemEntity {
     private String lockedPriceSource;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long lockedPriceSourceId;
+    @TableField(typeHandler = OrderJsonbTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    private Map<String, Object> priceBasisSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal orderedLineAmount;

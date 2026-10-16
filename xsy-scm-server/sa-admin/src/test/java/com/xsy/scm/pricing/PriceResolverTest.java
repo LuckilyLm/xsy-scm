@@ -34,7 +34,8 @@ class PriceResolverTest {
         assertThat(r.getUnpricedReason()).isEqualTo(ScmUnpricedReasonEnum.NO_PRICE_SOURCE);
         assertThat(r.getUnitPrice()).isNull();
         assertThat(r.getPriceSource()).isNull();
-        assertThat(ScmUnpricedReasonEnum.values()).containsExactly(ScmUnpricedReasonEnum.NO_PRICE_SOURCE);
+        // 新公式可以引入更细的未定价原因，但不影响缺少价格来源的既有语义。
+        assertThat(ScmUnpricedReasonEnum.values()).contains(ScmUnpricedReasonEnum.NO_PRICE_SOURCE);
         assertThat(ScmPriceSourceEnum.values()).hasSize(3);
     }
 

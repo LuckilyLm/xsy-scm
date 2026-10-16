@@ -2,6 +2,7 @@ package com.xsy.scm.inventory.service;
 
 import com.xsy.scm.inventory.dao.InventoryMovementDao;
 import com.xsy.scm.inventory.domain.entity.InventoryMovementEntity;
+import com.xsy.scm.inventory.domain.vo.BundleSalesOutAllocationVO;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,5 +15,9 @@ public class InventorySalesReturnQueryService {
 
     public List<InventoryMovementEntity> salesOutAllocations(Long orderItemId) {
         return inventoryMovementDao.listSalesOutAllocations(orderItemId);
+    }
+
+    public List<BundleSalesOutAllocationVO> bundleSalesOutAllocations(Long orderItemId) {
+        return inventoryMovementDao.listBundleSalesOutAllocations(orderItemId);
     }
 }

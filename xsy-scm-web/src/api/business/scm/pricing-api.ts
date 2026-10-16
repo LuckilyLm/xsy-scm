@@ -23,6 +23,14 @@ function resource(path: string) {
 }
 
 export const pricingApi = {
+    trial: (form: {customerId: ScmId; skuIds: ScmId[]; warehouseId: ScmId; at?: string | null}) =>
+        postRequest('/scm/pricing/resolve/trial', form) as unknown as Promise<ScmResponse<{
+            skuId: ScmId;
+            unitPrice: string | null;
+            priceSource: string | null;
+            unpricedReason: string | null;
+            calculationBasis: Record<string, unknown> | null;
+        }[]>>,
     agreement: resource('/scm/pricing/agreement-price'), typePrice: resource('/scm/pricing/type-price'),
     batch: (form: {
         batchKey: string;
@@ -38,7 +46,8 @@ export const pricingApi = {
     resolve: (form: {
         customerId: ScmId;
         skuIds: ScmId[];
-        at?: string | null
+        at?: string | null;
+        warehouseId?: ScmId
     }, options?: RequestOptions) =>
         postRequest('/scm/pricing/resolve', form, options) as unknown as Promise<ScmResponse<ResolveResult>>,
 };

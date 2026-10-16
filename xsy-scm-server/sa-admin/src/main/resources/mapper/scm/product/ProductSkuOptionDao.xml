@@ -18,6 +18,7 @@
         <if test="query.status != null">AND s.status=#{query.status}</if>
         <if test="query.spuId != null">AND s.spu_id=#{query.spuId}</if>
         <if test="query.keyword != null and query.keyword != ''">AND (s.sku_code ILIKE CONCAT('%',#{query.keyword},'%')
+            OR p.spu_code ILIKE CONCAT('%',#{query.keyword},'%')
             OR s.barcode ILIKE CONCAT('%',#{query.keyword},'%') OR s.spec_name ILIKE CONCAT('%',#{query.keyword},'%') OR
             p.name ILIKE CONCAT('%',#{query.keyword},'%') OR p.alias ILIKE CONCAT('%',#{query.keyword},'%') OR
             p.mnemonic_code ILIKE CONCAT('%',#{query.keyword},'%'))

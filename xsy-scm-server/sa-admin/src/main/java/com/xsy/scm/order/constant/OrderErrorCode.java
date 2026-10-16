@@ -42,6 +42,7 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_RETURN_ORDER_NOT_CONFIRMED(40970, "仅已确认订单可以申请退货"),
     ORDER_ALREADY_ASSIGNED(40973, "订单已被接单或指派，请刷新待分配列表"),
     ORDER_ASSIGN_TARGET_INVALID(40974, "目标业务员不存在、已停用或没有订单查看权限"),
+    ORDER_REPRICE_REQUIRED(40975, "订单价格依据已变化，请授权人员手动重算并填写原因"),
 
     /** 只有已确认订单允许预留库存；草稿、取消和完成订单不得占用库存。 */
     ORDER_RESERVE_STATE_INVALID(40945, "当前订单状态不允许预留库存（仅已确认订单可预留）");

@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.finance.dao.FinanceReceivableSourceDao">
+    <select id="countIncompleteBundleOutbound" resultType="long">
+        SELECT COUNT(*) FROM (
+            SELECT ob.outbound_id, ob.sales_order_item_id
+            FROM xsy_inventory_outbound_item ob
+            WHERE ob.sales_order_id = #{salesOrderId} AND ob.bundle_component_id IS NOT NULL
+              AND ob.deleted = FALSE
+            GROUP BY ob.outbound_id, ob.sales_order_item_id
+            HAVING COUNT(*) &lt;&gt; (SELECT COUNT(*) FROM xsy_order_bundle_component bc
+                                   WHERE bc.order_item_id = ob.sales_order_item_id)
+                OR MIN(ob.bundle_sale_quantity) &lt;&gt; MAX(ob.bundle_sale_quantity)
+        ) incomplete
+    </select>
     <select id="hasFinalDeliveryResult" resultType="boolean">
         SELECT EXISTS (SELECT 1 FROM xsy_delivery_route_order d
             WHERE d.order_id = #{salesOrderId} AND d.assignment_status = 'ACTIVE'
@@ -55,8 +67,28 @@
         WHERE ob.deleted = FALSE
           AND ob.sales_order_id = #{salesOrderId}
           AND ob.sales_order_item_id IS NOT NULL
+          AND ob.bundle_component_id IS NULL
           AND ob.quantity > 0
-        ORDER BY ob.id
+        UNION ALL
+        SELECT MIN(ob.id)           AS inventoryOutboundItemId,
+               ob.sales_order_item_id AS salesOrderItemId,
+               oi.sku_id           AS skuId,
+               oi.product_name_snapshot AS skuNameSnapshot,
+               oi.sale_unit_snapshot AS unitSnapshot,
+               MAX(ob.bundle_sale_quantity) AS quantity,
+               oi.locked_unit_price AS unitPrice,
+               oi.ordered_line_amount AS orderedLineAmount
+        FROM xsy_inventory_outbound_item ob
+        JOIN xsy_sales_order_item oi ON oi.id = ob.sales_order_item_id
+        WHERE ob.deleted = FALSE AND ob.sales_order_id = #{salesOrderId}
+          AND ob.bundle_component_id IS NOT NULL AND ob.quantity > 0
+        GROUP BY ob.outbound_id, ob.sales_order_item_id, oi.sku_id,
+                 oi.product_name_snapshot, oi.sale_unit_snapshot,
+                 oi.locked_unit_price, oi.ordered_line_amount
+        HAVING COUNT(*) = (SELECT COUNT(*) FROM xsy_order_bundle_component bc
+                           WHERE bc.order_item_id = ob.sales_order_item_id)
+           AND MIN(ob.bundle_sale_quantity) = MAX(ob.bundle_sale_quantity)
+        ORDER BY inventoryOutboundItemId
     </select>
 
     <select id="selectOrderSellerId" resultType="long">

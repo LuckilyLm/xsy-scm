@@ -39,6 +39,9 @@ public class SalesOrderAddForm {
     private Long mallCouponInstanceId;
     /** 仅商城渠道写入；由商城地址与配送仓服务授权后传入。 */
     private Long mallDeliveryWarehouseId;
+    /** 后台录单显式选择的配送仓；不影响商城原有仓库选择和权限流程。 */
+    @jakarta.validation.constraints.Positive(message = "配送仓必须大于0")
+    private Long deliveryWarehouseId;
 
     /**
      * 商城客户在结算页选定的结算方式（WALLET / CREDIT / COD）。仅商城来源的订单会带；后台建单不填。

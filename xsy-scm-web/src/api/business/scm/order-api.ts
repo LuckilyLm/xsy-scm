@@ -72,6 +72,8 @@ export const orderApi = {
     downloadImportTemplate: () => getDownload('/scm/order/import/template', {}),
     importOrders,
     update: (data: Order) => postRequest('/scm/order/update', data) as unknown as Promise<ScmResponse<Order>>,
+    reprice: (data: {orderId: Id; version: number; reason: string}) =>
+        postRequest('/scm/order/reprice', data) as unknown as Promise<ScmResponse<Order>>,
     submit: (data: unknown) => orderCommand<Order>('/scm/order/submit', data),
     confirm: (data: unknown) => orderCommand<Order>('/scm/order/confirm', data),
     creditCheck: (customerId: Id, requestedAmount?: string) => getRequest('/scm/order/credit-check/' + customerId, {requestedAmount}) as unknown as Promise<ScmResponse<{allowed: boolean; overLimit: boolean; overdue: boolean; creditLimit: string; projectedExposure: string; amountThresholdHint?: string | null}>>,
@@ -83,7 +85,8 @@ export const orderApi = {
     batchDelete: (orders: unknown[]) => postRequest('/scm/order/batch-delete', {orders}),
     preview: (data: {
         customerId: Id;
-        skuIds: Id[]
+        skuIds: Id[];
+        warehouseId?: Id | null
     }, options?: RequestOptions) =>
         postRequest('/scm/order/price/preview', data, options) as unknown as Promise<ScmResponse<ResolveResult>>,
     /**

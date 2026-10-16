@@ -61,6 +61,8 @@ public class InventoryOutboundItemEntity {
      * <b>同 SKU 的不同订单行不合并</b>，否则「哪张订单实发了多少」在库里失去答案，分拣的 REOPEN 守卫与成本归属都无从判定。
      */
     private Long salesOrderItemId;
+    private Long bundleComponentId;
+    private BigDecimal bundleSaleQuantity;
 
     @Version
     private Integer version = 0;

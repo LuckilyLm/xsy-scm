@@ -1,8 +1,10 @@
 package com.xsy.scm.pricing.domain.vo;
 
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
@@ -28,6 +30,8 @@ public class ResolvedPriceVO {
     private ScmUnpricedReasonEnum unpricedReason;
     private boolean sellable;
     private ScmUnavailableReasonEnum unavailableReason;
+    @JsonIgnore
+    private Map<String, Object> priceBasisSnapshot;
 
     public void price(BigDecimal unitPrice, ScmPriceSourceEnum priceSource, Long sourceRecordId) {
         this.unitPrice = unitPrice;

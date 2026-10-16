@@ -15,6 +15,7 @@ import com.xsy.scm.pricing.domain.form.AgreementPriceDeleteForm;
 import com.xsy.scm.pricing.domain.form.AgreementPriceUpdateForm;
 import com.xsy.scm.pricing.manager.PriceValidation;
 import com.xsy.scm.pricing.constant.ScmPriceOperationTypeEnum;
+import com.xsy.scm.pricing.constant.AgreementFormulaType;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.customer.service.CustomerTypeService;
 import com.xsy.scm.common.constant.ScmOperator;
@@ -24,6 +25,8 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 import static com.xsy.scm.pricing.constant.PricingErrorCode.AGREEMENT_PRICE_NOT_FOUND;
 import static com.xsy.scm.pricing.constant.PricingErrorCode.AGREEMENT_PRICE_OVERLAP;
 import static com.xsy.scm.pricing.constant.PricingErrorCode.PRICE_BATCH_ROW_INVALID;
+import static com.xsy.scm.pricing.constant.PricingErrorCode.PRICE_INVALID;
+import static com.xsy.scm.pricing.constant.PricingErrorCode.PERIOD_INVALID;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 @Service
@@ -82,7 +85,21 @@ public class AgreementPriceService {
     }
 
     private void validateAndLock(AgreementPriceAddForm form, Long excludedAgreementPriceId) {
-        PriceValidation.amountAndPeriod(form.getUnitPrice(), form.getEffectiveFrom(), form.getEffectiveTo());
+        AgreementFormulaType formula = formula(form);
+        if (form.getEffectiveFrom() == null
+                || (form.getEffectiveTo() != null && !form.getEffectiveTo().isAfter(form.getEffectiveFrom()))) {
+            throw new ScmBusinessException(PERIOD_INVALID);
+        }
+        boolean fixed = formula == AgreementFormulaType.FIXED;
+        if ((fixed && (form.getUnitPrice() == null || form.getFormulaParameter() != null))
+                || (!fixed && (form.getUnitPrice() != null || form.getFormulaParameter() == null))) {
+            throw new ScmBusinessException(PRICE_INVALID);
+        }
+        if (fixed) {
+            ScmDecimalStrings.parseScale4Required(form.getUnitPrice());
+        } else {
+            ScmDecimalStrings.parseScale4Required(form.getFormulaParameter());
+        }
         if (form.getCustomerId() == null)
             throw new ScmBusinessException(PRICE_BATCH_ROW_INVALID);
         if (agreementPriceDao.lockParent(form.getCustomerId()) == null) {
@@ -98,6 +115,8 @@ public class AgreementPriceService {
     private void apply(AgreementPriceEntity agreementPrice, AgreementPriceAddForm agreementPriceForm) {
         agreementPrice.setCustomerId(agreementPriceForm.getCustomerId());
         agreementPrice.setSkuId(agreementPriceForm.getSkuId());
+        agreementPrice.setFormulaType(formula(agreementPriceForm).name());
+        agreementPrice.setFormulaParameter(ScmDecimalStrings.parseScale4(agreementPriceForm.getFormulaParameter()));
         agreementPrice.setUnitPrice(ScmDecimalStrings.parseScale4(agreementPriceForm.getUnitPrice()));
         agreementPrice.setEffectiveFrom(agreementPriceForm.getEffectiveFrom());
         agreementPrice.setEffectiveTo(agreementPriceForm.getEffectiveTo());
@@ -109,12 +128,24 @@ public class AgreementPriceService {
         }
     }
 
+    private static AgreementFormulaType formula(AgreementPriceAddForm form) {
+        try {
+            return form.getFormulaType() == null
+                    ? AgreementFormulaType.FIXED
+                    : AgreementFormulaType.valueOf(form.getFormulaType());
+        } catch (IllegalArgumentException invalid) {
+            throw new ScmBusinessException(PRICE_INVALID);
+        }
+    }
+
     private String snapshot(AgreementPriceEntity agreementPrice) {
         var fields = new java.util.LinkedHashMap<String, Object>();
         fields.put("id", agreementPrice.getId());
         fields.put("customerId", agreementPrice.getCustomerId());
         fields.put("skuId", agreementPrice.getSkuId());
-        fields.put("unitPrice", agreementPrice.getUnitPrice().setScale(4).toPlainString());
+        fields.put("unitPrice", ScmDecimalStrings.format(agreementPrice.getUnitPrice()));
+        fields.put("formulaType", agreementPrice.getFormulaType());
+        fields.put("formulaParameter", ScmDecimalStrings.format(agreementPrice.getFormulaParameter()));
         fields.put("effectiveFrom", agreementPrice.getEffectiveFrom().toString());
         fields.put("effectiveTo",
                 agreementPrice.getEffectiveTo() == null ? null : agreementPrice.getEffectiveTo().toString());

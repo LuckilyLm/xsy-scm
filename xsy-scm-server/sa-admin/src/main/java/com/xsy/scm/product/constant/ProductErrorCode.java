@@ -37,7 +37,9 @@ public enum ProductErrorCode implements ScmErrorCode {
     TAG_NAME_DUPLICATE(40927, "商品标签名称已存在"),
     UOM_REFERENCED(40928, "计量单位已被商品或供应商关系引用，不能删除，请改为停用"),
     TAG_REFERENCED(40929, "标签下仍有商品，不能删除"),
-    PRODUCT_BUSINESS_REFERENCED(40931, "商品已产生业务数据，不能删除，请改为停用或归档");
+    PRODUCT_BUSINESS_REFERENCED(40931, "商品已产生业务数据，不能删除，请改为停用或归档"),
+    BUNDLE_COMPONENT_INVALID(40077, "组合商品组成规格或用量不正确"),
+    BUNDLE_COMPONENT_IN_USE(40976, "商品规格已被其他组合商品使用");
 
     private final int code;
     private final String msg;

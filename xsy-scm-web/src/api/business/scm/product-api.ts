@@ -23,6 +23,19 @@ import type {
 
 // SmartAdmin interceptor resolves ResponseDTO directly, despite Axios's declared return type.
 export const productApi = {
+    bundleComponents: (bundleSkuId: ProductId) =>
+        getRequest(`/scm/product/bundle/${bundleSkuId}/components`, {}) as unknown as Promise<ScmResponse<{
+            id: ProductId;
+            componentSkuId: ProductId;
+            productName: string;
+            specName: string;
+            skuCode: string;
+            saleUnit: string;
+            quantityPerBundleSaleUnit: string;
+        }[]>>,
+    saveBundle: (form: {bundleSkuId: ProductId; version: number;
+        components: {skuId: ProductId; quantityPerBundleSaleUnit: string}[]}) =>
+        postRequest('/scm/product/bundle/replace', form),
     query: (form: ProductQuery, options?: RequestOptions) =>
         postRequest('/scm/product/query', form, options) as unknown as Promise<ScmResponse<ProductPage<ProductRow>>>,
     detail: (id: ProductId, options?: RequestOptions) =>

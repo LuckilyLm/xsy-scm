@@ -59,6 +59,7 @@ public final class OrderSnapshotFactory {
         orderItem.setDraftPriceSource(
                 resolvedPrice.getPriceSource() == null ? null : resolvedPrice.getPriceSource().name());
         orderItem.setDraftPriceSourceId(resolvedPrice.getSourceRecordId());
+        orderItem.setPriceBasisSnapshot(resolvedPrice.getPriceBasisSnapshot());
     }
 
     public static void customer(SalesOrderEntity salesOrder, CustomerEntity customer) {

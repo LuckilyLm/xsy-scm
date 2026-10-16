@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import com.xsy.scm.customer.permission.CustomerPermission;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.finance.domain.vo.CustomerCreditCheckVO;
@@ -16,6 +17,7 @@ import com.xsy.scm.order.domain.form.OrderCancelForm;
 import com.xsy.scm.order.domain.form.OrderConfirmForm;
 import com.xsy.scm.order.domain.form.OrderLogQueryForm;
 import com.xsy.scm.order.domain.form.OrderVersionForm;
+import com.xsy.scm.order.domain.form.OrderRepriceForm;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.form.SalesOrderQueryForm;
 import com.xsy.scm.order.domain.form.SalesOrderUpdateForm;
@@ -54,6 +56,14 @@ public class SalesOrderController {
     private final PriceResolver priceResolver;
     private final OrderCreditService orderCreditService;
     private final CustomerService customerService;
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
+
+    @PostMapping("/reprice")
+    @SaCheckPermission(value = {OrderPermission.UPDATE, PricingPermission.RESOLVE_QUERY}, mode = SaMode.AND)
+    @OperateLog
+    public ResponseDTO<SalesOrderDetailVO> reprice(@Valid @RequestBody OrderRepriceForm form) {
+        return ResponseDTO.ok(salesOrderService.reprice(form));
+    }
 
     @PostMapping("/query")
     @SaCheckPermission(OrderPermission.QUERY)
@@ -79,8 +89,11 @@ public class SalesOrderController {
     public ResponseDTO<com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(
             @Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm priceResolveForm) {
         customerService.requireInCurrentScope(priceResolveForm.getCustomerId());
+        if (priceResolveForm.getWarehouseId() != null) {
+            warehouseScopeGuard.require(priceResolveForm.getWarehouseId());
+        }
         return ResponseDTO.ok(priceResolver.preview(priceResolveForm.getCustomerId(), priceResolveForm.getSkuIds(),
-                priceResolveForm.getAt()));
+                priceResolveForm.getAt(), priceResolveForm.getWarehouseId()));
     }
 
     /** 最近成交价只参考该客户已确认订单的锁定价格，不参与当前商品定价。查询必须同时满足订单和客户权限。 */

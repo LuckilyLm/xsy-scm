@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.product.dao.ProductSkuDao">
+    <select id="lockById" resultType="com.xsy.scm.product.domain.entity.ProductSkuEntity">
+        SELECT * FROM xsy_product_sku WHERE id = #{skuId} AND deleted = FALSE FOR UPDATE
+    </select>
+    <select id="lockByIds" resultType="com.xsy.scm.product.domain.entity.ProductSkuEntity">
+        SELECT * FROM xsy_product_sku WHERE deleted = FALSE AND id IN
+        <foreach collection="skuIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        ORDER BY id FOR UPDATE
+    </select>
+    <update id="bumpVersion">
+        UPDATE xsy_product_sku SET version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{skuId} AND version = #{version} AND deleted = FALSE
+    </update>
     <!-- Aggregate SPU version is claimed first. Child versions are checked by subsequent updateById. -->
     <update id="clearDefault">
         UPDATE xsy_product_sku

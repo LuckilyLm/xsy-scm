@@ -27,7 +27,12 @@
           </div>
           <a-row :gutter="20">
             <a-col :span="24">
-              <a-form-item name="unitPrice">
+              <a-form-item label="协议价公式">
+                <a-select v-model:value="form.formulaType" :options="formulaOptions"/>
+              </a-form-item>
+            </a-col>
+            <a-col :span="24">
+              <a-form-item v-if="form.formulaType === 'FIXED'" name="unitPrice">
                 <template #label>
                   单价
                   <ScmFieldHelp label="单价" text="0 元也是有效价格"/>
@@ -42,6 +47,9 @@
                     aria-label="单价"
                     style="width:100%"
                 />
+              </a-form-item>
+              <a-form-item v-else name="formulaParameter" :label="form.formulaType === 'MARKET_PLUS_AMOUNT' ? '固定加价金额' : '加价率'">
+                <a-input v-model:value="form.formulaParameter" placeholder="输入非负四位定点数；0.1000 表示 10%"/>
               </a-form-item>
             </a-col>
           </a-row>
@@ -80,6 +88,7 @@ import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {PriceForm} from '/@/types/business/scm/pricing';
+import type {AgreementFormulaType} from '/@/types/business/scm/pricing';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {emptyPrice, validatePrice} from '../pricing-form-model';
@@ -90,15 +99,26 @@ import {fixed4} from '../../common/scm-fixed';
 const emit = defineEmits<{ saved: [] }>();
 const visible = ref(false), loading = ref(false), saving = ref(false), error = ref('');
 const form = reactive<PriceForm>(emptyPrice());
+const formulaOptions: {value: AgreementFormulaType; label: string}[] = [
+  {value: 'FIXED', label: '固定协议价'},
+  {value: 'MARKET_PLUS_AMOUNT', label: '市场价加固定金额'},
+  {value: 'COST_MARKUP_RATE', label: '配送仓成本加价率'},
+  {value: 'MARKET_MARKUP_RATE', label: '市场价加价率'}
+];
 const formRef = ref();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
   customerId: [{required: true, message: '请选择客户', trigger: 'change'}],
   skuId: [{required: true, message: '请选择商品规格', trigger: 'change'}],
   unitPrice: [{
-    validator: () => (unitPrice.value == null
+    validator: () => (form.formulaType === 'FIXED' && unitPrice.value == null
         ? Promise.reject(new Error('请填写单价（零价也是有效价格，填 0 即可）'))
         : Promise.resolve()),
+    trigger: 'blur',
+  }],
+  formulaParameter: [{
+    validator: () => (form.formulaType !== 'FIXED' && !/^\d{1,14}(\.\d{1,4})?$/.test(form.formulaParameter || '')
+        ? Promise.reject(new Error('请填写非负四位定点公式参数')) : Promise.resolve()),
     trigger: 'blur',
   }],
   range: [{
@@ -118,6 +138,8 @@ async function open(id?: ScmId) {
   error.value = '';
   for (const key of Object.keys(form)) delete (form as unknown as Record<string, unknown>)[key];
   Object.assign(form, emptyPrice());
+  form.formulaType = 'FIXED';
+  form.formulaParameter = null;
   range.value = undefined;
   unitPrice.value = null;
   if (!id) return;
@@ -127,7 +149,8 @@ async function open(id?: ScmId) {
     if (request === requestId) {
       Object.assign(form, r.data);
       range.value = [r.data.effectiveFrom, r.data.effectiveTo || ''];
-      unitPrice.value = r.data.unitPrice === '' ? null : Number(r.data.unitPrice);
+      form.formulaType = r.data.formulaType || 'FIXED';
+      unitPrice.value = r.data.unitPrice == null || r.data.unitPrice === '' ? null : Number(r.data.unitPrice);
     }
   } catch (e) {
     error.value = pricingError(e);
@@ -143,7 +166,8 @@ async function submit() {
   } catch {
     return;
   }
-  form.unitPrice = fixed4(unitPrice.value) as string;
+  form.unitPrice = form.formulaType === 'FIXED' ? fixed4(unitPrice.value) as string : null;
+  form.formulaParameter = form.formulaType === 'FIXED' ? null : form.formulaParameter?.trim();
   form.effectiveFrom = range.value?.[0] || '';
   form.effectiveTo = range.value?.[1] || null;
   // 剩下的跨字段业务规则（结束时间必须晚于开始时间）不是字段必填，用 toast

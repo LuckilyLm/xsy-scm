@@ -11,5 +11,6 @@ public enum ScmOrderOperationTypeEnum {
     RETURN,
     REFUND,
     CREDIT_OVERRIDE,
-    ASSIGN
+    ASSIGN,
+    REPRICE
 }

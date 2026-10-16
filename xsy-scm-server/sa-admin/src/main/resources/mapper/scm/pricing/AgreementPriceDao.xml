@@ -11,6 +11,8 @@
                             p.customer_id,
                             p.sku_id,
                             p.unit_price,
+                            p.formula_type,
+                            p.formula_parameter,
                             p.effective_from,
                             p.effective_to,
                             p.updated_at,
@@ -62,7 +64,8 @@
     </select>
     <select id="selectEffective"
             resultType="com.xsy.scm.pricing.domain.entity.AgreementPriceEntity">
-        SELECT id,customer_id,sku_id,unit_price,effective_from,effective_to,version,deleted FROM
+        SELECT id,customer_id,sku_id,unit_price,formula_type,formula_parameter,
+               effective_from,effective_to,version,deleted FROM
         xsy_customer_agreement_price
         WHERE deleted=FALSE AND customer_id=#{dimension} AND effective_from &lt;= #{at} AND (effective_to IS NULL OR
         effective_to &gt; #{at})

@@ -6,6 +6,10 @@ import com.xsy.scm.mall.catalog.constant.MallStockStatusEnum;
 import com.xsy.scm.mall.catalog.dao.MallStockDao;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.domain.vo.MallStockFact;
+import com.xsy.scm.product.service.ProductBundleComponentQueryService;
+import com.xsy.scm.product.domain.entity.ProductBundleComponentEntity;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -20,16 +24,27 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MallStockAvailabilityService {
     private final MallStockDao stockDao;
+    private final ProductBundleComponentQueryService bundleDao;
 
     public void enrich(Long warehouseId, List<MallProductVO> products) {
         if (products.isEmpty() || warehouseId == null)
             return;
-        Map<Long,
-                MallStockFact> facts = stockDao
-                        .bySkus(warehouseId, products.stream().map(MallProductVO::getSkuId).distinct().toList())
-                        .stream().collect(Collectors.toMap(MallStockFact::getSkuId, Function.identity()));
+        List<ProductBundleComponentEntity> components = bundleDao
+                .listByBundleSkus(products.stream().map(MallProductVO::getSkuId).distinct().toList());
+        Map<Long, List<ProductBundleComponentEntity>> bundles = components.stream()
+                .collect(Collectors.groupingBy(ProductBundleComponentEntity::getBundleSkuId));
+        var skuIds = new LinkedHashSet<Long>();
+        products.forEach(product -> skuIds.add(product.getSkuId()));
+        components.forEach(component -> skuIds.add(component.getComponentSkuId()));
+        Map<Long, MallStockFact> facts = stockDao.bySkus(warehouseId, new ArrayList<>(skuIds)).stream()
+                .collect(Collectors.toMap(MallStockFact::getSkuId, Function.identity()));
         for (MallProductVO product : products) {
             product.setWarehouseId(warehouseId);
+            List<ProductBundleComponentEntity> bundle = bundles.get(product.getSkuId());
+            if (bundle != null) {
+                enrichBundle(product, bundle, facts);
+                continue;
+            }
             MallStockFact fact = facts.get(product.getSkuId());
             if (fact == null) {
                 product.setAvailableQty(BigDecimal.ZERO);
@@ -50,6 +65,37 @@ public class MallStockAvailabilityService {
                             ? MallStockStatusEnum.INSUFFICIENT.name()
                             : MallStockStatusEnum.AVAILABLE.name());
         }
+    }
+
+    private static void enrichBundle(MallProductVO product, List<ProductBundleComponentEntity> components,
+            Map<Long, MallStockFact> facts) {
+        BigDecimal available = null;
+        for (ProductBundleComponentEntity component : components) {
+            MallStockFact fact = facts.get(component.getComponentSkuId());
+            if (fact == null) {
+                available = BigDecimal.ZERO;
+                break;
+            }
+            BigDecimal conversion = factor(fact.getSaleUnit(), fact);
+            if (conversion == null || conversion.signum() <= 0) {
+                product.setStockStatus(MallStockStatusEnum.UNKNOWN.name());
+                return;
+            }
+            BigDecimal needed = conversion.multiply(component.getQuantityPerBundleSaleUnit());
+            if (needed.signum() <= 0) {
+                product.setStockStatus(MallStockStatusEnum.UNKNOWN.name());
+                return;
+            }
+            BigDecimal possible = fact.getAvailableStockQuantity().divide(needed, 4, RoundingMode.DOWN);
+            available = available == null ? possible : available.min(possible);
+        }
+        product.setAvailableQty(available);
+        BigDecimal minimum = product.getMinOrderQty() == null ? BigDecimal.ONE : product.getMinOrderQty();
+        product.setStockStatus(available == null || available.signum() == 0
+                ? MallStockStatusEnum.OUT_OF_STOCK.name()
+                : available.compareTo(minimum) < 0
+                        ? MallStockStatusEnum.INSUFFICIENT.name()
+                        : MallStockStatusEnum.AVAILABLE.name());
     }
 
     public Conversion requireConversion(Long warehouseId, Long skuId, String saleUnit) {

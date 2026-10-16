@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.order.dao.SalesOrderDao">
+    <select id="hasPriceFreezeBlockingFact" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM xsy_payment_intent WHERE source_type = 'SALES_ORDER' AND source_id = #{orderId})
+            OR EXISTS (SELECT 1 FROM xsy_finance_receivable WHERE order_id = #{orderId})
+            OR EXISTS (SELECT 1 FROM xsy_inventory_reservation
+                       WHERE source_document_type = 'SALES_ORDER_ITEM' AND source_document_id = #{orderId})
+            OR EXISTS (SELECT 1 FROM xsy_inventory_outbound_item WHERE sales_order_id = #{orderId})
+            OR EXISTS (SELECT 1 FROM xsy_sorting_task_item WHERE sales_order_id = #{orderId})
+    </select>
     <select id="unassignedMallOrders" resultMap="row">
         SELECT * FROM xsy_sales_order
         WHERE deleted = FALSE AND order_source = 'MALL' AND seller_id IS NULL

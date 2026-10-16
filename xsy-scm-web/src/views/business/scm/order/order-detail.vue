@@ -5,6 +5,8 @@
       <template v-if="order">
         <a-space class="actions scm-detail-actions">
           <a-tag>{{ SCM_ORDER_STATUS_ENUM[order.status!]?.desc }}</a-tag>
+          <a-button v-if="['DRAFT','PENDING'].includes(order.status!)"
+                    v-privilege="'scm:order:update'" @click="repriceOpen=true">手动重算价格</a-button>
           <a-button v-if="order.status==='PENDING'" type="primary" v-privilege="'scm:order:confirm'" @click="confirm">
             确认订单
           </a-button>
@@ -193,6 +195,13 @@
         <a-input v-model:value="cancelReason" maxlength="500"/>
       </a-form-item>
     </a-modal>
+    <a-modal :open="repriceOpen" title="手动重算订单价格" :confirm-loading="saving"
+             @ok="reprice" @cancel="repriceOpen=false">
+      <a-alert type="warning" show-icon message="仅草稿和待确认订单可重算；已有资金或履约事实时会被拒绝。"/>
+      <a-form-item label="重算原因" required style="margin-top: 16px">
+        <a-textarea v-model:value="repriceReason" :maxlength="500" :rows="3"/>
+      </a-form-item>
+    </a-modal>
   </a-drawer>
 </template>
 <script setup lang="ts">
@@ -230,6 +239,28 @@ const visible = ref(false), loading = ref(false), saving = ref(false), error = r
     logs = ref<LogRow[]>([]), returnForm = ref<InstanceType<typeof ReturnForm>>();
 const actualOpen = ref(false), cancelOpen = ref(false), actualQuantity = ref('1.0000'), actualReason = ref(''),
     cancelReason = ref(''), activeItem = ref<Item>();
+const repriceOpen = ref(false), repriceReason = ref('');
+
+async function reprice() {
+  if (!order.value?.orderId || order.value.version == null || !repriceReason.value.trim()) {
+    void message.warning('请填写价格重算原因');
+    return;
+  }
+  saving.value = true;
+  try {
+    await orderApi.reprice({orderId: order.value.orderId, version: order.value.version,
+      reason: repriceReason.value.trim()});
+    repriceOpen.value = false;
+    repriceReason.value = '';
+    await load();
+    emit('saved');
+    void message.success('订单价格已重算');
+  } catch (error) {
+    void message.error(orderError(error));
+  } finally {
+    saving.value = false;
+  }
+}
 const columns: TableColumnsType<Item> = [{title: '商品', dataIndex: 'productNameSnapshot', width: 140}, {
   title: '商品规格',
   dataIndex: 'specNameSnapshot',

@@ -80,6 +80,12 @@
         OR EXISTS (SELECT 1 FROM xsy_inventory_warning_threshold WHERE sku_id IN (<include refid="ownSkuIds"/>))
         OR EXISTS (SELECT 1 FROM xsy_customer_agreement_price WHERE sku_id IN (<include refid="ownSkuIds"/>))
         OR EXISTS (SELECT 1 FROM xsy_customer_type_price WHERE sku_id IN (<include refid="ownSkuIds"/>))
+        OR EXISTS (SELECT 1 FROM xsy_product_bundle_component WHERE deleted = FALSE
+                   AND (bundle_sku_id IN (<include refid="ownSkuIds"/>)
+                        OR component_sku_id IN (<include refid="ownSkuIds"/>)))
+        OR EXISTS (SELECT 1 FROM xsy_order_bundle_component
+                   WHERE bundle_sku_id IN (<include refid="ownSkuIds"/>)
+                      OR component_sku_id IN (<include refid="ownSkuIds"/>))
     </select>
     <!-- 批量命令按 id 升序加锁，避免多标签/多批次交叉持锁造成死锁；版本号在锁后复核。 -->
     <select id="lockByIds" resultType="com.xsy.scm.product.domain.entity.ProductSpuEntity">

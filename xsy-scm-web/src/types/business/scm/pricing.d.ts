@@ -1,6 +1,7 @@
 import type {ScmId, ScmSortItem} from './customer';
 
 export type PriceSource = 'AGREEMENT' | 'CUSTOMER_TYPE' | 'MARKET';
+export type AgreementFormulaType = 'FIXED' | 'MARKET_PLUS_AMOUNT' | 'COST_MARKUP_RATE' | 'MARKET_MARKUP_RATE';
 export type UnavailableReason =
     'SKU_NOT_FOUND'
     | 'SKU_OFF_SHELF'
@@ -15,7 +16,9 @@ export interface PriceForm {
     customerId?: ScmId;
     customerTypeId?: ScmId;
     skuId?: ScmId;
-    unitPrice: string;
+    unitPrice: string | null;
+    formulaType?: AgreementFormulaType;
+    formulaParameter?: string | null;
     effectiveFrom: string;
     effectiveTo: string | null;
 }
@@ -67,7 +70,8 @@ export interface ResolvedPrice {
     priceStatus: 'PRICED' | 'UNPRICED';
     priceSource: PriceSource | null;
     sourceRecordId: ScmId | null;
-    unpricedReason: 'NO_PRICE_SOURCE' | null;
+    unpricedReason: 'NO_PRICE_SOURCE' | 'AGREEMENT_COST_MISSING'
+        | 'AGREEMENT_MARKET_PRICE_MISSING' | 'AGREEMENT_RESULT_INVALID' | null;
     sellable: boolean;
     unavailableReason: UnavailableReason | null;
 }

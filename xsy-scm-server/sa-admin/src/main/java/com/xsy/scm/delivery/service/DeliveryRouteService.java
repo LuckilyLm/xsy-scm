@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -15,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -54,6 +57,8 @@ import com.xsy.scm.delivery.domain.vo.DeliveryPrintResultVO;
 import com.xsy.scm.finance.service.FinanceReceivableService;
 import com.xsy.scm.inventory.service.InventoryFulfillmentService;
 import com.xsy.scm.order.dao.SalesOrderDao;
+import com.xsy.scm.order.service.OrderBundleSnapshotQueryService;
+import com.xsy.scm.order.domain.entity.OrderBundleComponentEntity;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.promotion.service.PromotionDiscountService;
 import com.xsy.scm.warehouse.dao.WarehouseDao;
@@ -94,6 +99,7 @@ public class DeliveryRouteService {
      * 库存域唯一的写入口：本类不直接修改余额、预留或库存流水。
      */
     private final InventoryFulfillmentService inventoryFulfillmentService;
+    private final OrderBundleSnapshotQueryService orderBundleComponentDao;
     /**
      * 只为「签收」这一件事注入：司机维度收窄必须与读侧同源，见 {@link #sign} 里的说明。
      */
@@ -383,6 +389,13 @@ public class DeliveryRouteService {
         var orderIds = assigned.stream().map(DeliveryRouteOrderEntity::getOrderId).toList();
         var linesByOrder = deliveryQueryDao.sortedLines(orderIds).stream().collect(
                 Collectors.groupingBy(DeliverySortedLine::getOrderId, LinkedHashMap::new, Collectors.toList()));
+        List<Long> sortedItemIds = linesByOrder.values().stream().flatMap(List::stream)
+                .map(DeliverySortedLine::getSalesOrderItemId).toList();
+        Map<Long,
+                List<OrderBundleComponentEntity>> bundles = sortedItemIds.isEmpty()
+                        ? Map.of()
+                        : orderBundleComponentDao.listByOrderItemIds(sortedItemIds).stream()
+                                .collect(Collectors.groupingBy(OrderBundleComponentEntity::getOrderItemId));
         var lines = new ArrayList<InventoryFulfillmentService.Line>();
         for (var orderId : orderIds) {
             var sorted = linesByOrder.get(orderId);
@@ -392,9 +405,29 @@ public class DeliveryRouteService {
             for (var line : sorted) {
                 if (line.getSortedQuantity() == null)
                     throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
-                lines.add(new InventoryFulfillmentService.Line(orderId, line.getSalesOrderItemId(), line.getSkuId(),
-                        line.getSortedQuantity(), line.getMallStockUnitSnapshot(),
-                        line.getMallStockUnitsPerSaleUnit()));
+                List<OrderBundleComponentEntity> components = bundles.get(line.getSalesOrderItemId());
+                if (components == null) {
+                    lines.add(new InventoryFulfillmentService.Line(orderId, line.getSalesOrderItemId(), line.getSkuId(),
+                            line.getSortedQuantity(), line.getMallStockUnitSnapshot(),
+                            line.getMallStockUnitsPerSaleUnit()));
+                    continue;
+                }
+                for (OrderBundleComponentEntity component : components) {
+                    if (!Objects.equals(component.getWarehouseId(), route.getWarehouseId())) {
+                        throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
+                    }
+                    BigDecimal quantity;
+                    try {
+                        quantity = line.getSortedQuantity().multiply(component.getQuantityPerBundleSaleUnit())
+                                .setScale(4, RoundingMode.UNNECESSARY);
+                    } catch (ArithmeticException invalid) {
+                        throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
+                    }
+                    lines.add(new InventoryFulfillmentService.Line(orderId, line.getSalesOrderItemId(),
+                            component.getComponentSkuId(), quantity, component.getComponentStockUnitSnapshot(),
+                            component.getStockUnitsPerComponentSaleUnit(), component.getId(), line.getSkuId(),
+                            line.getSortedQuantity()));
+                }
             }
         }
 

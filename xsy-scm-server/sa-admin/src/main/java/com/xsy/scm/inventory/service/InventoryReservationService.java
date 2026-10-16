@@ -175,8 +175,8 @@ public class InventoryReservationService {
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
         }
         lines.stream().sorted(Comparator.comparing(OrderReserveLine::skuId))
-                .forEach(line -> reserve(new ReserveInventoryFact(warehouseId, line.skuId(),
-                        ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), salesOrderId, line.itemId(),
+                .forEach(line -> reserve(new ReserveInventoryFact(warehouseId, line.skuId(), line.sourceType(),
+                        salesOrderId, line.itemId(),
                         InventorySaleUnitConverter.toStockQuantity(line.quantity(), line.stockUnit(), line.factor()),
                         occurredAt, null, line.stockUnit())));
     }
@@ -191,8 +191,15 @@ public class InventoryReservationService {
         if (salesOrderId == null) {
             return;
         }
-        List<InventoryReservationEntity> actives = inventoryReservationDao
+        List<InventoryReservationEntity> normal = inventoryReservationDao
                 .listActiveBySourceDocument(ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), salesOrderId);
+        List<InventoryReservationEntity> bundle = inventoryReservationDao.listActiveBySourceDocument(
+                ScmInventorySourceDocumentTypeEnum.ORDER_BUNDLE_COMPONENT.name(), salesOrderId);
+        List<InventoryReservationEntity> actives = java.util.stream.Stream.concat(normal.stream(), bundle.stream())
+                .sorted(Comparator.comparing(InventoryReservationEntity::getWarehouseId)
+                        .thenComparing(InventoryReservationEntity::getSkuId)
+                        .thenComparing(InventoryReservationEntity::getId))
+                .toList();
         for (InventoryReservationEntity active : actives) {
             releaseCascade(active.getId());
         }
@@ -239,7 +246,13 @@ public class InventoryReservationService {
     /**
      * 订单行维度的预留入参（只带预留需要的最小字段）。
      */
-    public record OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity, String stockUnit, BigDecimal factor) {
+    public record OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity, String stockUnit, BigDecimal factor,
+            String sourceType) {
+        public OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity, String stockUnit, BigDecimal factor) {
+            this(itemId, skuId, quantity, stockUnit, factor,
+                    ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name());
+        }
+
         public OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity) {
             this(itemId, skuId, quantity, null, null);
         }

@@ -4,6 +4,7 @@ import com.xsy.scm.mall.catalog.dao.MallStockDao;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.domain.vo.MallStockFact;
 import com.xsy.scm.mall.catalog.service.MallStockAvailabilityService;
+import com.xsy.scm.product.service.ProductBundleComponentQueryService;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,8 @@ import static org.mockito.Mockito.when;
 
 class MallStockAvailabilityServiceTest {
     private final MallStockDao dao = mock(MallStockDao.class);
-    private final MallStockAvailabilityService service = new MallStockAvailabilityService(dao);
+    private final ProductBundleComponentQueryService bundleDao = mock(ProductBundleComponentQueryService.class);
+    private final MallStockAvailabilityService service = new MallStockAvailabilityService(dao, bundleDao);
 
     @Test
     void availableSalesQuantityUsesOnlySelectedWarehouseAndFrozenUnitFactor() {

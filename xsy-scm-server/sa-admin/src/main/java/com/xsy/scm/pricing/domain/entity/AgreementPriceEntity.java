@@ -23,7 +23,11 @@ public class AgreementPriceEntity {
     private Boolean deleted = false;
     private Long customerId;
     private Long skuId;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal unitPrice;
+    private String formulaType;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private BigDecimal formulaParameter;
     private OffsetDateTime effectiveFrom;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime effectiveTo;

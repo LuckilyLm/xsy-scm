@@ -15,6 +15,9 @@ import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
 import com.xsy.scm.order.constant.ScmOrderReturnStatusEnum;
 import com.xsy.scm.order.constant.ScmReturnReceiptDispositionEnum;
 import com.xsy.scm.order.dao.OrderReturnItemDao;
+import com.xsy.scm.order.dao.OrderBundleComponentDao;
+import com.xsy.scm.order.domain.entity.OrderBundleComponentEntity;
+import com.xsy.scm.inventory.domain.vo.BundleSalesOutAllocationVO;
 import com.xsy.scm.order.dao.OrderReturnReceiptDao;
 import com.xsy.scm.order.dao.OrderReturnReceiptItemDao;
 import com.xsy.scm.order.dao.SalesOrderItemDao;
@@ -25,10 +28,12 @@ import com.xsy.scm.order.domain.vo.OrderReturnReceiptVO;
 import com.xsy.scm.order.manager.OrderOperationLogRecorder;
 import com.xsy.scm.warehouse.service.WarehouseService;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +49,7 @@ public class OrderReturnReceiptService {
     private final OrderReturnReceiptDao orderReturnReceiptDao;
     private final OrderReturnReceiptItemDao orderReturnReceiptItemDao;
     private final SalesOrderItemDao salesOrderItemDao;
+    private final OrderBundleComponentDao orderBundleComponentDao;
     private final InventorySalesReturnQueryService inventorySalesReturnQueryService;
     private final InventoryCommandService inventoryCommandService;
     private final ScmIdempotencyService idempotencyService;
@@ -110,6 +116,13 @@ public class OrderReturnReceiptService {
                 disposition = ScmReturnReceiptDispositionEnum.valueOf(input.getDisposition());
             } catch (RuntimeException exception) {
                 throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+            }
+            List<OrderBundleComponentEntity> bundle = orderBundleComponentDao.listByOrderItem(orderItem.getId());
+            if (!bundle.isEmpty()) {
+                resultItems.addAll(
+                        receiveBundle(bundle, orderItem.getSaleUnitSnapshot(), receipt.getId(), returnItem.getId(),
+                                returned.getId(), form.getWarehouseId(), quantity, disposition, now, operator));
+                continue;
             }
             BigDecimal remaining = quantity;
             var salesOutMovements = inventorySalesReturnQueryService.salesOutAllocations(returnItem.getOrderItemId());
@@ -196,6 +209,87 @@ public class OrderReturnReceiptService {
                 Map.of("receiptId", receipt.getId(), "warehouseId", receipt.getWarehouseId()));
         idempotencyService.complete(claim, "ORDER_RETURN_RECEIPT", receipt.getId(), result);
         maskCost(result, scope.isCostVisible());
+        return result;
+    }
+
+    private List<OrderReturnReceiptVO.Item> receiveBundle(List<OrderBundleComponentEntity> components,
+            String bundleSaleUnit, Long receiptId, Long returnItemId, Long returnId, Long warehouseId,
+            BigDecimal bundleQuantity, ScmReturnReceiptDispositionEnum disposition, OffsetDateTime now,
+            String operator) {
+        Long orderItemId = components.getFirst().getOrderItemId();
+        Map<Long,
+                List<BundleSalesOutAllocationVO>> byComponent = inventorySalesReturnQueryService
+                        .bundleSalesOutAllocations(orderItemId).stream()
+                        .collect(Collectors.groupingBy(BundleSalesOutAllocationVO::getBundleComponentId));
+        List<OrderReturnReceiptVO.Item> result = new ArrayList<>();
+        boolean counted = false;
+        for (OrderBundleComponentEntity component : components) {
+            BigDecimal wanted;
+            try {
+                wanted = bundleQuantity.multiply(component.getQuantityPerBundleSaleUnit())
+                        .multiply(component.getStockUnitsPerComponentSaleUnit()).setScale(4, RoundingMode.UNNECESSARY);
+            } catch (ArithmeticException invalid) {
+                throw new ScmBusinessException(ORDER_RETURN_APPROVAL_INVALID);
+            }
+            for (BundleSalesOutAllocationVO movement : byComponent.getOrDefault(component.getId(), List.of())) {
+                if (!Objects.equals(movement.getSkuId(), component.getComponentSkuId())
+                        || !Objects.equals(movement.getUnitSnapshot(), component.getComponentStockUnitSnapshot())
+                        || movement.getUnitCost() == null) {
+                    throw new ScmBusinessException(
+                            com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_COST_INCOMPLETE);
+                }
+                BigDecimal available = movement.getQuantity()
+                        .subtract(orderReturnReceiptItemDao.allocatedStockQuantity(movement.getMovementId()));
+                BigDecimal allocated = wanted.min(available);
+                if (allocated.signum() <= 0) {
+                    continue;
+                }
+                OrderReturnReceiptItemEntity item = new OrderReturnReceiptItemEntity();
+                item.setReceiptId(receiptId);
+                item.setReturnItemId(returnItemId);
+                item.setSourceSalesOutMovementId(movement.getMovementId());
+                item.setSourceOutboundItemId(movement.getOutboundItemId());
+                item.setBundleComponentId(component.getId());
+                item.setBundleReceiptCounted(!counted);
+                item.setDisposition(disposition.name());
+                item.setQuantity(bundleQuantity);
+                item.setUnitSnapshot(bundleSaleUnit);
+                item.setStockQuantity(allocated);
+                item.setStockUnitSnapshot(movement.getUnitSnapshot());
+                item.setUnitCost(movement.getUnitCost());
+                item.setCreatedAt(now);
+                item.setCreatedBy(operator);
+                orderReturnReceiptItemDao.insert(item);
+                if (disposition == ScmReturnReceiptDispositionEnum.RETURN_TO_STOCK) {
+                    inventoryCommandService.postSalesReturnInbound(new InventorySalesReturnFact(warehouseId,
+                            component.getComponentSkuId(), returnId, item.getId(), allocated,
+                            item.getStockUnitSnapshot(), item.getUnitCost(), now, operator));
+                }
+                OrderReturnReceiptVO.Item vo = new OrderReturnReceiptVO.Item();
+                vo.setReceiptItemId(item.getId());
+                vo.setReturnItemId(returnItemId);
+                vo.setSourceSalesOutMovementId(movement.getMovementId());
+                vo.setSourceOutboundItemId(movement.getOutboundItemId());
+                vo.setBundleComponentId(component.getId());
+                vo.setBundleReceiptCounted(item.getBundleReceiptCounted());
+                vo.setDisposition(disposition.name());
+                vo.setQuantity(bundleQuantity);
+                vo.setUnit(bundleSaleUnit);
+                vo.setStockQuantity(allocated);
+                vo.setStockUnit(item.getStockUnitSnapshot());
+                vo.setUnitCost(item.getUnitCost());
+                result.add(vo);
+                counted = true;
+                wanted = wanted.subtract(allocated);
+                if (wanted.signum() == 0) {
+                    break;
+                }
+            }
+            if (wanted.signum() > 0) {
+                throw new ScmBusinessException(
+                        com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_QUANTITY_EXCEEDED);
+            }
+        }
         return result;
     }
 

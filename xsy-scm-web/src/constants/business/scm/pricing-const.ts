@@ -13,7 +13,10 @@ export const UNPRICED_REASON_ENUM: SmartEnum<string> = {
     NO_PRICE_SOURCE: {
         value: 'NO_PRICE_SOURCE',
         desc: '无可用价格来源'
-    }
+    },
+    AGREEMENT_COST_MISSING: {value: 'AGREEMENT_COST_MISSING', desc: '配送仓缺少有效单位成本或换算关系'},
+    AGREEMENT_MARKET_PRICE_MISSING: {value: 'AGREEMENT_MARKET_PRICE_MISSING', desc: '商品缺少市场价'},
+    AGREEMENT_RESULT_INVALID: {value: 'AGREEMENT_RESULT_INVALID', desc: '公式计算结果超出有效价格范围'}
 };
 export const UNAVAILABLE_REASON_ENUM: SmartEnum<string> = {
     SKU_NOT_FOUND: {value: 'SKU_NOT_FOUND', desc: '商品规格不存在'},

@@ -24,6 +24,8 @@ public class OrderReturnReceiptItemEntity {
     private BigDecimal stockQuantity;
     private String stockUnitSnapshot;
     private BigDecimal unitCost;
+    private Long bundleComponentId;
+    private Boolean bundleReceiptCounted = true;
     private OffsetDateTime createdAt;
     private String createdBy;
 }

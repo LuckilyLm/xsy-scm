@@ -23,6 +23,9 @@ public class AgreementPriceVO {
     private Map<String, String> specValues;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal unitPrice;
+    private String formulaType;
+    @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+    private BigDecimal formulaParameter;
     private OffsetDateTime effectiveFrom;
     private OffsetDateTime effectiveTo;
     private OffsetDateTime updatedAt;

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductSkuDao;
+import com.xsy.scm.product.dao.ProductBundleComponentDao;
 import com.xsy.scm.product.domain.entity.ProductSkuEntity;
 import com.xsy.scm.product.domain.form.ProductSkuForm;
 import org.springframework.beans.BeanUtils;
@@ -15,11 +16,13 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
+import static com.xsy.scm.product.constant.ProductErrorCode.BUNDLE_COMPONENT_IN_USE;
 
 @Component
 @RequiredArgsConstructor
 public class ProductSkuSyncManager {
     private final ProductSkuDao productSkuDao;
+    private final ProductBundleComponentDao bundleDao;
 
     public List<ProductSkuEntity> existing(Long spuId) {
         return productSkuDao.selectList(new LambdaQueryWrapper<ProductSkuEntity>().eq(ProductSkuEntity::getSpuId, spuId)
@@ -48,6 +51,9 @@ public class ProductSkuSyncManager {
     public void remove(List<Long> ids) {
         if (ids.isEmpty())
             return;
+        if (bundleDao.countReferencesBySkuIds(ids) > 0) {
+            throw new ScmBusinessException(BUNDLE_COMPONENT_IN_USE);
+        }
         productSkuDao.update(null,
                 new LambdaUpdateWrapper<ProductSkuEntity>().in(ProductSkuEntity::getId, ids)
                         .set(ProductSkuEntity::getUpdatedAt, OffsetDateTime.now())

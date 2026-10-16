@@ -44,6 +44,10 @@ export interface Order {
     sellerId?: Id | null;
     orderSource: string;
     mallCouponInstanceId?: Id | null;
+    /** 当前订单明确选定的履约仓（后台录单新字段）。 */
+    deliveryWarehouseId?: Id | null;
+    /** 历史响应沿用的仓库字段。 */
+    mallDeliveryWarehouseId?: Id | null;
     status?: string;
     originalOrderId?: Id | null;
     supplementReason?: string | null;

@@ -29,6 +29,12 @@
                 <a-textarea v-model:value="form.supplementReason" :maxlength="500" :rows="2" show-count/>
             </a-form-item>
           </a-col>
+          <a-col :span="12" v-if="!form.orderId">
+            <a-form-item label="配送仓库" name="deliveryWarehouseId">
+              <WarehouseSelect v-model:value="warehouseValue" placeholder="组合商品 / 成本公式须明确选仓" width="100%"/>
+              <p class="scm-note">仅用于本次订单，选仓后重新计算该仓的成本公式价格。</p>
+            </a-form-item>
+          </a-col>
           <a-col :span="12">
             <a-form-item label="期望配送时间" name="expectDeliveryTime">
               <a-date-picker v-model:value="form.expectDeliveryTime" show-time value-format="YYYY-MM-DD HH:mm:ss"
@@ -78,6 +84,7 @@ import {computed, onBeforeUnmount, ref, watch} from 'vue';
 import {onBeforeRouteLeave} from 'vue-router';
 import {message, Modal} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
+import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {orderApi} from '/@/api/business/scm/order-api';
 import {newOrder, payload, validateOrder, fixed, draftKey, serializeDraft, applyDraft, fromHistory, type Draft} from '../order-form-model';
@@ -94,6 +101,10 @@ const form = ref<Order>(newOrder()), visible = ref(false), loading = ref(false),
 const formRef = ref();
 /** 收货信息在 `form.address.*` 里，展平一份给表单校验用（顶层 `address` 就是详细地址）。 */
 const flatModel = computed(() => ({...form.value, ...form.value.address}));
+const warehouseValue = computed<Id | undefined>({
+  get: () => form.value.deliveryWarehouseId ?? undefined,
+  set: value => { form.value.deliveryWarehouseId = value ?? null; },
+});
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
   customerId: [{required: true, message: '请选择客户', trigger: 'change'}],
@@ -194,6 +205,12 @@ const itemTableRef = ref<{ closeRecentPopover: () => void } | null>(null);
 
 // 关闭路径不止一条（关闭按钮、Esc、创建成功自动关），所以在 visible 落 false 时统一收起，
 // 而不是在各处分别补调用。
+watch(() => form.value.deliveryWarehouseId, () => {
+  if (visible.value && !form.value.orderId && form.value.customerId && form.value.items.length) {
+    void preview();
+  }
+});
+
 watch(visible, opened => {
   if (opened) window.addEventListener('beforeunload', persistUnsavedDraft);
   else {
@@ -268,7 +285,8 @@ async function preview() {
   if (!customerId || !skuIds.length) return;
   pricing.value = true;
   try {
-    const r = await orderApi.preview({customerId, skuIds}, {suppressGlobalErrorMessage: true});
+    const r = await orderApi.preview({customerId, skuIds, warehouseId: form.value.deliveryWarehouseId ?? null},
+      {suppressGlobalErrorMessage: true});
     for (const i of form.value.items) {
       const p = r.data.items.find(p => String(p.skuId) === String(i.skuId));
       i.draftUnitPrice = p?.unitPrice ?? null;
