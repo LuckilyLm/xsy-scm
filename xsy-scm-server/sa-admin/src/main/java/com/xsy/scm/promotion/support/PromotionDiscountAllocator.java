@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** 把优惠金额分配到订单明细时保持总额一致，舍入差额按固定规则处理。 */
+/** 优惠金额按订单明细分配，保持分配后的合计与订单优惠总额一致；尾差按固定规则处理。 */
 public final class PromotionDiscountAllocator {
 
     private static final int SCALE = 4;

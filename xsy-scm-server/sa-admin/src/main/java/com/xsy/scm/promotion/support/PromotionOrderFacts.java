@@ -3,7 +3,7 @@ package com.xsy.scm.promotion.support;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 促销只读取服务端确定的订单事实，不能信任前端传入的商品金额或优惠条件。 */
+/** 订单优惠计算只使用服务端确认的订单与商品信息，不信任前端传入的价格和活动结果。 */
 public record PromotionOrderFacts(Long salesOrderId, Long customerId, List<Line> lines) {
 
     /**
