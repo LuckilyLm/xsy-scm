@@ -18,19 +18,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 
-/**
- * 采购需求。
- *
- * <p>
- * 来源：{@code xsy_sales_order_item}（只读）。{@code sales_order_item_id} 上有部分唯一索引，一条订单行最多生成一条活动需求。
- *
- * <p>
- * 需求日期：{@code demandDate} = {@code sourceConfirmedAt} 在 {@code Asia/Shanghai} 下的日期，由 DB CHECK
- * {@code ck_purchase_demand_date} 强制，<b>不是</b>汇总窗口的第一天。
- *
- * <p>
- * 需求单位：{@code demandUnitSnapshot} 是<b>需求单位</b>（来源 {@code xsy_sales_order_item.sale_unit_snapshot}），永不被采购单位覆盖。
- */
+/** 每条已确认销售订单行最多生成一条有效采购需求。需求日期取订单确认时间的北京时间日期，需求单位在生成时固定，不会被采购单位覆盖。 */
 @Data
 @TableName(value = "xsy_purchase_demand", autoResultMap = true)
 public class PurchaseDemandEntity {

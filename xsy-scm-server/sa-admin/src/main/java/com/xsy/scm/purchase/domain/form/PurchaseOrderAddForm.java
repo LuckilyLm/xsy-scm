@@ -14,21 +14,7 @@ import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
-/**
- * 新建采购单。
- *
- * <p>
- * 多需求分配：一行（一个 SKU）可以承接<b>多个</b>采购需求 —— 由 {@code items[].allocations[]} 表达，不是行上的单个 {@code demandId}
- * 字段。{@code (item, demand)} 组合在一张采购单内不得重复。
- *
- * <p>
- * 单位快照：需求单位（{@code demandUnitSnapshot}）与采购单位（{@code purchaseUnitSnapshot}）是两个独立快照；
- * 两者不一致时不允许自动分配（{@code PURCHASE_UNIT_CONVERSION_REQUIRED}），不做换算。
- *
- * <p>
- * 子表单元类型是本类的<b>嵌套静态类</b>（与设计把 {@code items[]} / {@code allocations[]} 画成内联块一致），因此 {@code purchase/domain/form} 恰好 17 个
- * Form 文件。新增与编辑共用同一个 {@code Item}： {@code id} / {@code version} 在新增时为空，编辑保留行时必填（同 {@code SalesOrderItemForm} 的做法）。
- */
+/** 一条采购商品规格可分配多条采购需求，按明细内的分配列表提交；同一明细与需求组合不能重复。需求单位与采购单位分别保存，单位不一致时不自动换算。 */
 @Data
 public class PurchaseOrderAddForm {
     @NotNull(message = "供应商不能为空")

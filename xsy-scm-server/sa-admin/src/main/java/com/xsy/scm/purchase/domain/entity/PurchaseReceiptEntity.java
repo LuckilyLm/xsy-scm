@@ -11,20 +11,7 @@ import com.baomidou.mybatisplus.annotation.Version;
 
 import java.time.OffsetDateTime;
 
-/**
- * 采购收货单头（扩展 /02/03）。
- *
- * <p>
- * 商业状态 {@code status}（{@code DRAFT/CONFIRMED}）与入库生命周期 {@code receiptMode} / {@code putawayStatus}
- * <b>解耦</b>：{@code CONFIRMED} 只表示收货已确认，不等于库存已入账。
- * <ul>
- * <li>{@code receiptMode=DIRECT}：confirm 同事务完成入库（putaway=COMPLETED）；</li>
- * <li>{@code receiptMode=WAREHOUSE_CONFIRM}：confirm 后 putaway=PENDING，仓库二次确认才入库。</li>
- * </ul>
- *
- * <p>
- * 供应商 / 仓库快照在收货单创建时从采购单继承。
- */
+/** 收货确认与库存入账分开记录：直接入库模式在确认时入账；仓库二次确认模式先确认收货，再等待入库。供应商和仓库信息取采购单并在建单时保存。 */
 @Data
 @TableName(value = "xsy_purchase_receipt", autoResultMap = true)
 public class PurchaseReceiptEntity {

@@ -92,19 +92,7 @@ public class PurchaseQueryService {
         return SmartPageUtil.convert2PageResult(page, purchaseDemandDao.query(page, form, purchaserScope));
     }
 
-    /**
-     * 订单汇总 / 库存缺口预览。
-     *
-     * <p>
-     * <b>只读</b>：不写任何表、不改 {@link PurchaseDemandService#generate} 的需求语义，只是把「已确认订单实发量」与「目标仓可用余额」并排算一个缺口供决策。
-     *
-     * <p>
-     * 拒绝客户端排序的理由与库存余额页一致（join + 聚合，裸列名有歧义），排序固定为「缺口降序 → SKU」；{@code optimizeCountSql=false} 让分页 count 按聚合组数而非明细行数统计。
-     *
-     * <p>
-     * <b>仓库范围</b>：{@code warehouseId} 必填且单选，整页数字（余额、预留、缺口）都归属到它，因此请求仓不在授权范围内时整页给空分页。只把余额左连收窄是错的：那会让调用者读到同一页
-     * 订单需求量、只是状态变成 {@code NO_BALANCE}，等于把「无权看这个仓」谎报成「这个仓没货」。范围谓词同时下传 Mapper 兜底，见 {@code PurchaseDemandDao.xml}。
-     */
+    /** 按已确认订单实际数量和指定仓库可用库存计算缺口，只读不生成需求。仓库必须明确指定且在授权范围内；无权查看时返回空结果，不当作零库存。 */
     @Transactional(readOnly = true)
     public PageResult<PurchaseDemandSummaryVO> summaryPreview(PurchaseDemandSummaryPreviewForm form) {
         if (!form.getStartAt().isBefore(form.getEndAt())) {
@@ -350,17 +338,7 @@ public class PurchaseQueryService {
                 .toList();
     }
 
-    /**
-     * 按商品收货工作台（只读）。
-     *
-     * <p>
-     * 与 {@link #summaryPreview} 同为聚合分页：拒绝客户端排序（join + 聚合下裸列名有歧义、排序口径已在 SQL 固定），置 {@code optimizeCountSql=false} 让分页
-     * count 按 SKU×单位组数统计。只做展示与汇总，绝不写任何表，也不改收货 / 库存事实。
-     *
-     * <p>
-     * <b>仓库范围</b>：计划量与已收量归属的仓库就是采购单的 {@code warehouse_id} （收货单建单时从采购单继承，因此不需要另判收货侧的仓），范围谓词落在采购单事实行上、
-     * 分组之前，未授权仓的采购单整单不参与聚合。表单的 {@code warehouseId} 只能进一步缩小范围。一个授权仓都没有时给空分页：0 会被读成「这些仓没收过货」，而真实原因是「你没有可看的仓」。
-     */
+    /** 按商品规格与采购单位汇总待收货数据，只读不改收货和库存。数据先按授权仓库过滤，再分组计算；聚合分页按分组数量统计。 */
     @Transactional(readOnly = true)
     public PageResult<PurchaseReceiptItemWorkbenchVO> receiptItemWorkbench(PurchaseReceiptItemWorkbenchQueryForm form) {
         if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {

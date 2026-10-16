@@ -15,20 +15,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITE
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITEM_VERSION_CONFLICT;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID;
 
-/**
- * 采购单行级差量（A 段）。
- *
- * <p>
- * 行身份 = {@code (purchase_order_id, sku_id)}，由 {@code uk_purchase_order_item_order_sku_active} 强制 （修订后保留该索引）。这与
- * allocation 身份 {@code (purchase_order_item_id, purchase_demand_id)} 是两个层次， 必须区分（见
- * {@link PurchaseOrderAllocationChangeSet}）。
- *
- * <p>
- * 校验逐条对应：请求内同一 {@code skuId} 出现两次 → {@code PURCHASE_ORDER_ITEM_DUPLICATE_SKU}； 保留行（{@code id} 非空）必须属于本单，否则
- * {@code PURCHASE_ORDER_ITEM_NOT_OWNED}； 保留行必须带 {@code version} 且版本必须相等，否则分别抛 {@code PURCHASE_ITEM_VERSION_REQUIRED} 与
- * {@code PURCHASE_ORDER_ITEM_VERSION_CONFLICT}；被删除的行若已收货（{@code received_quantity > 0}） 则抛
- * {@code PURCHASE_ORDER_STATE_INVALID}。
- */
+/** 采购单明细用采购单 ID 与商品规格 ID 唯一确定，需求分配用采购明细 ID 与需求 ID 确定。提交时校验重复规格、行归属和版本，统一计算新增、修改与删除。 */
 public record PurchaseOrderItemChangeSet(List<PurchaseOrderItemEntity> inserted, List<PurchaseOrderItemEntity> updated,
         List<PurchaseOrderItemEntity> removed) {
 

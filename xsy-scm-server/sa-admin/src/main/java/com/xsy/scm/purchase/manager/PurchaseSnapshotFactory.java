@@ -161,20 +161,7 @@ public final class PurchaseSnapshotFactory {
         return sourceConfirmedAt.atZoneSameInstant(ASIA_SHANGHAI).toLocalDate();
     }
 
-    /**
-     * 需求快照装配（{@code generate} 用）。
-     *
-     * <p>
-     * <b>需求单位</b>：{@code demandUnitSnapshot} 取
-     * {@code xsy_sales_order_item.sale_unit_snapshot}（<b>销售单位</b>），生成时冻结、<b>永不改写</b>。它<b>不是</b>采购单位 —— 采购单位来自
-     * {@code xsy_supplier_sku.purchase_unit} 并落在 {@code xsy_purchase_order_item.purchase_unit_snapshot}，两者在分配时做一致性校验。
-     *
-     * <p>
-     * {@code requiredQuantity} 取 <b>{@code actual_quantity}（实数量）</b> 而不是 {@code ordered_quantity}，与订单集成表口径一致。
-     *
-     * <p>
-     * {@code status} 固定从 {@code PENDING} 起（的默认值也一致）；{@code allocatedQuantity} 从 0 起。
-     */
+    /** 采购需求在生成时保存销售订单的单位和实际数量，不能用采购单位覆盖。采购单位由供应商商品关系决定，正式分配时校验两者一致。 */
     public static PurchaseDemandEntity demand(SalesOrderItemEntity source, SalesOrderEntity order, Long supplierId,
             Long warehouseId, Long purchaserId) {
         PurchaseDemandEntity demand = new PurchaseDemandEntity();

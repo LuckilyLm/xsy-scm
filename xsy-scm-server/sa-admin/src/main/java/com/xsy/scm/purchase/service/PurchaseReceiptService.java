@@ -412,20 +412,7 @@ public class PurchaseReceiptService {
     // receipt.putaway（仓库二次确认入库，独立事务）
     // ------------------------------------------------------------------
 
-    /**
-     * 仓库确认入库：仅适用于 {@code WAREHOUSE_CONFIRM} 且 {@code putaway_status=PENDING} 的已确认收货单。
-     *
-     * <p>
-     * <b>锁序</b>：收货单（行锁）→ 余额（按 (warehouseId, skuId) 升序）。收货单锁始终先于余额锁，且 confirm 路径同样是「收货单锁在余额锁之前」，因此不存在
-     * {@code balance → receipt} 的反向路径，与全局锁序兼容，不会成环。
-     *
-     * <p>
-     * <b>并发两次 putaway</b>：只有先拿到收货单锁的那次能通过 {@code putaway_status=PENDING} 校验并写入库存；后到者读到 {@code COMPLETED} 抛 41008（或由幂等
-     * claim 重放）。数据库侧 {@code uk_inventory_movement_source_active} 兜底，绝不重复 PURCHASE_IN。
-     *
-     * <p>
-     * <b>occurred_at / operator</b>：流水取本次 putaway 的物理入库时刻与操作人， <b>不得</b>写成 receipt.confirmed_at。
-     */
+    /** 仅已确认且待入库的仓库二次确认收货单可以入库。先锁收货单，再按顺序锁余额；重复确认应拒绝或返回同一幂等结果，不能二次生成入库流水。 */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO putaway(PurchaseReceiptPutawayForm form, String idempotencyKey) {
         var claim = purchaseIdempotencyService.claim("PURCHASE_RECEIPT_PUTAWAY:" + form.getId(), idempotencyKey, form);
@@ -558,22 +545,7 @@ public class PurchaseReceiptService {
         return requested;
     }
 
-    /**
-     * 把本次确认的收货行交给库存域入库。
-     *
-     * <p>
-     * {@code occurredAt} 与 {@code operator} 一律取 <b>已落库的收货确认事实</b>（{@code receipt.getConfirmedAt()} /
-     * {@code receipt.getOperator()}），而不是在库存侧现取 {@code now()} 或 ambient operator。因此本方法必须在「收货单 → CONFIRMED 落库」之后调用（调用点见
-     * {@code confirm}）。
-     *
-     * <p>
-     * <b>锁序</b>：余额锁是事务里最后获取的锁，且多把余额锁之间必须按 {@code (warehouseId, skuId)} <b>升序</b>获取 —— 任意两个并发 confirm 的加锁顺序因此一致，
-     * 这是防死锁的关键，也是「排序发生在调用方而不是实现侧」的原因（实现侧内部缓冲会把事务状态留在契约实现里）。
-     *
-     * <p>
-     * <b>失败传播</b>：库存写入抛出的任何异常都会冒泡出去，使整个 confirm 回滚 —— {@code received_quantity} 累计、对账快照、称重记录、采购单状态、收货单状态、操作日志、
-     * 幂等记录全部不落库。用户视角 = 「这次收货确认失败了」，重试安全（幂等 claim 未提交）。
-     */
+    /** 收货确认后才调用库存入库。操作人和发生时间必须取已保存的收货确认记录；先锁收货单，再按仓库、商品规格升序锁库存余额。 */
     private void postInbound(PurchaseOrderEntity order, PurchaseReceiptEntity receipt, List<InboundLine> lines,
             OffsetDateTime occurredAt, String operator) {
         if (lines.isEmpty()) {
@@ -596,17 +568,7 @@ public class PurchaseReceiptService {
         facts.stream().sorted(inboundLockOrder()).forEach(purchaseInventoryContract::postInbound);
     }
 
-    /**
-     * 余额加锁顺序：按 {@code (warehouseId, skuId)} 字典序升序。
-     *
-     * <p>
-     * <b>为什么必须排好序再逐条调用</b>：库存余额锁是整个事务里<b>最后</b>获取的锁。如果两个并发事务各自按「采购单行的自然顺序」去锁余额，就可能出现 A 先锁 {@code (w1,k1)} 再锁
-     * {@code (w2,k2)}、B 先锁 {@code (w2,k2)} 再锁 {@code (w1,k1)} —— 加锁方向相反即形成等待环，PostgreSQL 只能靠死锁检测牺牲其中一个事务
-     * （表现为「偶发的收货失败」，最难排查的一类缺陷）。统一升序后任意两个事务的加锁方向一致，环不可能形成。
-     *
-     * <p>
-     * 集中成具名比较器，确保每个入库调用都按相同顺序获取余额锁。
-     */
+    /** 采购入库必须最后获取库存余额锁，并按仓库 ID、商品规格 ID 升序锁定，避免两个收货事务相互等待。 */
     static Comparator<PurchaseInventoryContract.InboundFact> inboundLockOrder() {
         return Comparator.comparing(PurchaseInventoryContract.InboundFact::warehouseId)
                 .thenComparing(PurchaseInventoryContract.InboundFact::skuId);

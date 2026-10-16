@@ -17,18 +17,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 
-/**
- * 采购单行。
- *
- * <p>
- * <b>行身份</b> = {@code (purchase_order_id, sku_id)}（{@code uk_purchase_order_item_order_sku_active}，保留）； <b>allocation
- * 身份</b> = {@code (purchase_order_item_id, purchase_demand_id)}。两者必须区分。
- *
- * <p>
- * <b>不引入 {@code received_quantity <= planned_quantity}
- * 约束</b>：容差内超收合法，超收上限是<b>运行时</b>计算（{@code planned × (1 + tolerance/100)}），不能表达为静态 CHECK。这是已知的 DB 级缺口，由
- * {@code PurchaseReceiptQuantityCalculator} + 40989 在服务层强制。
- */
+/** 采购明细按采购单与商品规格唯一，需求分配另按采购明细与需求唯一。容差范围内的超收合法，不能用静态数据库约束限制“已收量不超过计划量”。 */
 @Data
 @TableName(value = "xsy_purchase_order_item", autoResultMap = true)
 public class PurchaseOrderItemEntity {

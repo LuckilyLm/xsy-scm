@@ -22,18 +22,7 @@ import java.util.List;
 @Mapper
 public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
 
-    /**
-     * 来源行（{@code generate} 取数）：已确认订单 + 有实数量，确定性排序。
-     *
-     * <p>
-     * 按 SKU、订单确认时间与行 id 排序，使同一窗口的重复 generate 得到相同结果。
-     *
-     * <p>
-     * {@code scope} 是仓库维度的授权范围，但本口径取的是 {@code xsy_sales_order} 与
-     * {@code xsy_sales_order_item}，两张表都没有仓库列（仓库在需求/库存侧才出现），因此按仓库不收窄； 命令路径必须显式传 {@link ScmValueScope#all()}（见
-     * {@code PurchaseDemandService#generate}）， {@code null} 仍失败关闭。要收的是这条命令写入哪个仓，那道边界在
-     * {@code PurchaseWarehouseReferenceGuard} 与后续收货/出库的仓库守卫上。
-     */
+    /** 生成采购需求只取已确认且有实际数量的销售订单行，并按稳定顺序查询以保证重复生成结果一致。订单行没有仓库字段；入库仓库的授权由后续采购和仓库校验负责。 */
     List<SalesOrderItemEntity> listSourceItems(@Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmValueScope scope);
 
@@ -47,21 +36,7 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
     List<PurchaseDemandVO> query(Page<?> page, @Param("query") PurchaseDemandQueryForm query,
             @Param("scope") ScmValueScope scope);
 
-    /**
-     * 订单汇总 / 库存缺口预览（只读聚合）。
-     *
-     * <p>
-     * WHERE 与 {@link #listSourceItems} 同源（已确认订单 + 有实数量 + 同一确认窗口），按 {@code sku_id + sale_unit_snapshot} 聚合后左连
-     * {@code xsy_inventory_balance} （{@code warehouse_id} 来自入参）比对可用量。可用量、缺口、状态全在 SQL 里用 {@code NUMERIC}
-     * 算好，Java/前端不做浮点运算。
-     *
-     * <p>
-     * {@code scope} 是调用者的<b>仓库</b>授权范围：整页数字都归属到入参那一个仓库 （余额、预留、由它算出的缺口），因此范围谓词落在「请求仓」上而不是余额左连上，详见 XML 里的说明。{@code null}
-     * 失败关闭。
-     *
-     * <p>
-     * 调用方须关闭 count SQL 优化（GROUP BY 分页），否则自动 count 会按行数而非组数计数。
-     */
+    /** 按已确认订单的实际数量汇总需求，并与指定仓库的余额比较。缺口与状态由 SQL 精确计算；仓库范围必须限制请求仓库，聚合分页按组数统计。 */
     List<PurchaseDemandSummaryVO> summaryPreview(Page<?> page, @Param("query") PurchaseDemandSummaryPreviewForm query,
             @Param("scope") ScmValueScope scope);
 

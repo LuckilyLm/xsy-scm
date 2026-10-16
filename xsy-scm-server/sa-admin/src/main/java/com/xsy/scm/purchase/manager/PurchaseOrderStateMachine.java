@@ -7,18 +7,7 @@ import java.util.Set;
 
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID;
 
-/**
- * 采购单状态机（6 状态）。
- *
- * <p>
- * 实现为声明式转换表，不是散落的 if，与 {@code ck_purchase_order_status} 白名单逐条对应： {@code DRAFT} 提交转 {@code SUBMITTED}，收货确认依次转
- * {@code PARTIALLY_RECEIVED} / {@code RECEIVED}； {@code DRAFT} 与 {@code SUBMITTED} 可取消为
- * {@code CANCELLED}，{@code PARTIALLY_RECEIVED} 只能短关为 {@code SHORT_CLOSED}。
- *
- * <p>
- * 部分收货不可取消，需要终止时走 {@link #shortClosable} 对应的 {@code shortClose}。 {@code RECEIVED} / {@code SHORT_CLOSED} /
- * {@code CANCELLED} 是终态。
- */
+/** 采购单草稿可提交或取消；已提交可取消或进入收货流程；部分收货后只能继续收货或少收关单。收货完成、少收关单和取消均不可再流转。 */
 public final class PurchaseOrderStateMachine {
 
     private PurchaseOrderStateMachine() {

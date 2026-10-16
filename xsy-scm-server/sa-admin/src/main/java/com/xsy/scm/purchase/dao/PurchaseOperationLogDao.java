@@ -8,18 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-/**
- * 采购操作日志，只追加不修改。
- *
- * <p>
- * 日志归属规则由 DB 的 {@code ck_purchase_operation_log_owner} 强制，本 Dao 不做任何归属推断 —— 它只负责把调用方算好的 {@code purchase_order_id} /
- * {@code purchase_receipt_id} 原样写入。 {@code DEMAND_GENERATE} 时两者都是 {@code null}；{@code DEMAND_ALLOCATE} 由调用方用
- * {@code purchaseOrderItemId} <b>反查</b> {@code purchase_order_id} 后写入。
- *
- * <p>
- * 刻意没有 update / delete 方法：日志不可篡改，与 {@code OrderOperationLogDao} 一致。 日志没有 {@code deleted} 列，所以查询不需要补
- * {@code WHERE deleted = FALSE}。
- */
+/** 采购操作日志只能新增和查询，不能更新或删除。日志关联的采购单、收货单由调用方明确给出，数据库校验归属。 */
 @Mapper
 public interface PurchaseOperationLogDao extends BaseMapper<PurchaseOperationLogEntity> {
 

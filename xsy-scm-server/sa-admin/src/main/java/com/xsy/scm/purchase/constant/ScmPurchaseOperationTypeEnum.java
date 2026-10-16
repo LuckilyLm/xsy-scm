@@ -1,17 +1,6 @@
 package com.xsy.scm.purchase.constant;
 
-/**
- * 采购操作日志类型（13 值）。
- *
- * <p>
- * 取值与 {@code ck_purchase_operation_log_type} 的白名单一致。
- *
- * <p>
- * <b>归属规则</b>：{@code xsy_purchase_operation_log.purchase_order_id} 的取值由本枚举决定，并由 {@code ck_purchase_operation_log_owner}
- * 在 DB 层强制 —— {@link #DEMAND_GENERATE} 双 id 为空（此时采购单与收货单都还不存在）· {@link #DEMAND_ALLOCATE} 只有采购单 id（由
- * {@code purchaseOrderItemId} 反查）· {@link #RECEIPT_CREATE} / {@link #RECEIPT_UPDATE} / {@link #RECEIPT_CONFIRM} /
- * {@link #RECEIPT_DELETE} 双 id 非空。
- */
+/** 采购操作类型与数据库白名单保持一致。生成需求、需求分配和收货操作的归属字段不同，必须按操作类型写入并由数据库约束校验。 */
 public enum ScmPurchaseOperationTypeEnum {
 
     // ---- 采购单 ----

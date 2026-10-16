@@ -4,18 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
-/**
- * 采购域错误码。
- *
- * <p>
- * 采购专属错误码与 {@code WarehouseErrorCode} 分域定义，避免跨域反向依赖： 40080–40091 为 BAD_REQUEST，40480–40484 为 NOT_FOUND， 40971–40972 ·
- * 40980–40995 · 40997–40999 为 CONFLICT。
- *
- * <p>
- * {@code WAREHOUSE_NOT_FOUND(40485)} 与 {@code WAREHOUSE_CODE_DUPLICATE(40996)} 属于 warehouse 域， 放在这里会让 warehouse 反向依赖
- * purchase，因此刻意不放进本枚举；{@code PURCHASE_WAREHOUSE_DISABLED(40987)} 留在本枚举，因为它是采购侧规则（不允许用停用仓库建单），不是仓库域自身的不变量。
- * {@code ScmCommonErrorCode.VERSION_CONFLICT(40921)} 与 {@code VALIDATION_ERROR(40000)} 复用而非重复定义。
- */
+/** 采购错误码只定义采购业务的失败原因。仓库本身的不存在、编码重复等错误由仓库模块定义；跨模块共享错误码不能形成反向依赖。 */
 @Getter
 @RequiredArgsConstructor
 public enum PurchaseErrorCode implements ScmErrorCode {

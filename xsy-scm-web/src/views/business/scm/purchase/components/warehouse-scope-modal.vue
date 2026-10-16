@@ -1,12 +1,4 @@
-<!--
-  * 仓库授权维护（employee_warehouse_scope），挂在「仓库管理」页的两类入口上：
-  * - open()：员工维度的整体替换编辑器（对应 POST /scm/warehouse/scope/update 的 employeeId + warehouseIds 形状）。
-  * - openEmployees(warehouseId)：仓库维度的只读查看（对应 GET /scm/warehouse/scope/employees）。
-  *
-  * 写侧刻意做成「选人 → 勾他的全部可见仓 → 整体提交」，而不是在某一仓里增减人：
-  * update 是员工维度的替换语义，若从仓库侧增删一人，就得改写此人其它所有仓的授权集合，
-  * 既不是原子操作，也会把「改一个仓的可见性」放大成对人不一致的覆盖。
--->
+<!-- 仓库授权按员工整体保存：编辑某员工可访问的全部仓库；按仓库查看员工仅用于查询，不能只修改其中一项以免覆盖其他授权。 -->
 <template>
   <a-modal
       v-model:open="visible"

@@ -6,21 +6,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 import java.math.BigDecimal;
 
-/**
- * 订单汇总 / 库存缺口预览行（只读聚合，按 {@code warehouseId + skuId + demandUnit} 归并）。
- *
- * <p>
- * <b>口径</b>：{@code orderDemandQuantity} 取来源销售订单行的<b>实发量</b>（{@code actual_quantity}），与需求生成使用同一数据范围和筛选条件。
- * {@code availableQuantity} 与 {@code stockComparisonGap} 均由<b>后端</b>用 {@code BigDecimal} 在 SQL
- * 里算好、以四位定点字符串下发，前端不参与浮点运算。
- *
- * <p>
- * <b>单位门禁</b>：{@code demandUnit}（订单销售单位）与 {@code inventoryUnit}（余额记账单位）不一致时 {@code calculationStatus = UNIT_MISMATCH} 且
- * {@code stockComparisonGap = null}，禁止换算/猜折算率。
- *
- * <p>
- * 本视图不计算在途采购量；缺口只反映订单需求与当前仓库可用量。
- */
+/** 缺口预览按仓库、商品规格和需求单位汇总。数量由服务端精确计算，单位不一致时明确返回无法比较，前端不猜换算比例。 */
 @Data
 public class PurchaseDemandSummaryVO {
 

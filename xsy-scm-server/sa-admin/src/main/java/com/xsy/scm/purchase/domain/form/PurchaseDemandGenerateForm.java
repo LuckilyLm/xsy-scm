@@ -5,17 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.OffsetDateTime;
 
-/**
- * 生成采购需求（汇总已确认销售订单行）。
- *
- * <p>
- * {@code startAt} / {@code endAt} 是<b>半开区间</b> {@code [startAt, endAt)}，按 {@code xsy_sales_order.confirmed_at} 过滤；
- * {@code startAt < endAt} 由 Service 校验（否则 {@code PURCHASE_QUANTITY_INVALID}）。
- *
- * <p>
- * 需求日期：生成出来的 {@code demand_date} 取每行 {@code source_confirmed_at} 在 {@code Asia/Shanghai} 下的日期， <b>不是</b>本窗口的第一天 ——
- * 跨多日窗口不会被压平成同一天。
- */
+/** 采购需求按订单确认时间的半开区间生成；需求日期由每张订单的北京时间确认日决定，不是筛选窗口首日。 */
 @Data
 public class PurchaseDemandGenerateForm {
     @NotNull(message = "开始时间不能为空")

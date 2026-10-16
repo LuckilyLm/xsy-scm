@@ -38,20 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * 采购单端点（的 11 个端点）。
- *
- * <p>
- * 查询类走 {@code scm:purchase:query}，日志单独一个 {@code scm:purchase:log:query} （审计数据与业务数据分权，与订单域的 {@code scm:order:log:query}
- * 一致）。
- *
- * <p>
- * {@code Idempotency-Key} 头一律声明为 {@code required = false}：缺失时由 {@code PurchaseIdempotencyService} 抛 40084，若标成必填会被框架转成
- * 30001， 与错误码契约不符（同 {@code PurchaseDemandController}）。
- *
- * <p>
- * {@code update} <b>不带</b>幂等头 —— 它靠行级 {@code @Version} 保证重复提交安全。
- */
+/** 采购查询和操作日志使用不同权限。创建等幂等命令由业务层校验 Idempotency-Key；修改依赖行版本检查，不额外使用幂等键。 */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/scm/purchase")

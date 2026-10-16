@@ -17,22 +17,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 
-/**
- * 采购收货单行。
- *
- * <p>
- * 含 5 个对账数量，恒等式由 {@code ck_purchase_receipt_item_reconciliation} 在 DB 层强制：
- * {@code remaining_quantity = GREATEST(planned_quantity − cumulative_received_quantity, 0)}；
- * {@code over_receipt_quantity = GREATEST(cumulative_received_quantity − planned_quantity, 0)}；
- * {@code receipt_difference = cumulative_received_quantity − planned_quantity}（可为负）。
- *
- * <p>
- * 不存价格：收货只记数量 / 重量，金额由采购行派生。
- *
- * <p>
- * {@code actualWeight} / {@code weightUnit} / {@code weighingSource} 三字段同生同灭： 标品全为 {@code null}（不是
- * {@code 0.0000}），非标品三者齐全且 {@code weighingSource = MANUAL}。
- */
+/** 收货明细保留计划量、本次实收量、累计收货量、剩余量、超收量及差异。数据库约束保证这些值一致；不在收货行另存采购价格。 */
 @Data
 @TableName(value = "xsy_purchase_receipt_item", autoResultMap = true)
 public class PurchaseReceiptItemEntity {

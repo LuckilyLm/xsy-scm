@@ -8,19 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 采购需求分配。
- *
- * <p>
- * allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}，由
- * {@code uk_purchase_demand_allocation_source_active} 强制。
- *
- * <p>
- * <b>这里没有「按 itemId 查单条 allocation」的方法</b> —— 那是错误的形状。所有查询都是<b>集合形态</b>，让调用方按 allocation 集合做差量对账。
- *
- * <p>
- * {@link #listActiveByDemandIds} 返回的是<b>跨采购单的全部活动分配</b>：需求侧 {@code allocated_quantity} 是跨单累计值，只按本单算会漏掉其它采购单的贡献。
- */
+/** 每条分配按采购明细和需求唯一确定。查询必须返回同一需求在全部采购单的活动分配，不能只计算当前采购单。 */
 @Mapper
 public interface PurchaseDemandAllocationDao extends BaseMapper<PurchaseDemandAllocationEntity> {
 

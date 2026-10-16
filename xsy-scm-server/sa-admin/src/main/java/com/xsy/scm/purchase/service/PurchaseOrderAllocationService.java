@@ -107,17 +107,7 @@ public class PurchaseOrderAllocationService {
         return rows;
     }
 
-    /**
-     * 校验分配集合并补全快照字段；返回「本次请求按 demandId 的合计」。
-     *
-     * <p>
-     * 逐条对应分配校验表。
-     *
-     * <p>
-     * <b>累计上限必须扣除本单旧值</b>：{@code demand.allocated_quantity} 是全库已分配合计， 其中已含本单上一次提交的量。{@code create} 时本单尚无分配（传空
-     * Map），{@code update} 时必须传入旧合计， 否则「原样保存」都会因为 {@code 旧 + 新 > required} 而误报 40082。这与 {@code recomputeDemands} 里
-     * {@code otherAllocated = allocated − oldTotals[demand]} 是同一个口径。
-     */
+    /** 采购需求已分配量包含本单上次分配的数量；修改本单时先扣除旧分配，再检查本次合计是否超过需求量。 */
     public Map<Long, BigDecimal> validateAllocations(List<RequestedRow> rows, Map<Long, PurchaseDemandEntity> demands,
             Long supplierId, Long warehouseId, Map<Long, BigDecimal> oldTotals) {
         Map<Long, BigDecimal> totals = new LinkedHashMap<>();
@@ -235,17 +225,7 @@ public class PurchaseOrderAllocationService {
         }
     }
 
-    /**
-     * 释放本单的全部分配并重算需求（{@code cancel} / {@code delete}）。
-     *
-     * <p>
-     * 见类注释：不释放会让需求永久卡在 {@code ALLOCATED}。<b>不删任何行、不删任何单据</b> —— 只把分配软删、把需求的 {@code allocated_quantity} 减回去。
-     *
-     * <p>
-     * <b>读到什么就删什么，不需要加锁重读</b>：所有会改动「既有单据分配集合」的命令 （{@code PurchaseOrderService.update}、以及唯一往既有单据插分配的
-     * {@code PurchaseDemandService.allocate}） 都<b>先锁采购单行</b>再动分配，本方法的调用方（{@code cancel} / {@code delete}）也已持有同一把单据锁。
-     * 因此「读分配」与「写分配」在单据行上完全串行，不存在「读完才发现并发插进来一条」的窗口。
-     */
+    /** 取消或删除采购单时释放该单的活动需求分配，并重新计算需求已分配量，不删除采购需求。操作前先锁采购单，防止并发插入新分配。 */
     public void releaseAllocations(PurchaseOrderEntity order) {
         List<PurchaseOrderItemEntity> items = purchaseOrderItemDao.listByOrderId(order.getId());
         if (items.isEmpty()) {

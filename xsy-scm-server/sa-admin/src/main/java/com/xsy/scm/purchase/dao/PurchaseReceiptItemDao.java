@@ -8,18 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 收货单行（<b>对账恒等式</b>）。
- *
- * <p>
- * 五个对账数量（{@code received} / {@code cumulative_received} / {@code remaining} / {@code over_receipt} /
- * {@code receipt_difference}）由 {@code ck_purchase_receipt_item_reconciliation} 在 DB 层强制，因此
- * {@link #updateReconciliation} <b>必须一次写全五个值</b> —— 少写一个就会撞 CHECK。
- *
- * <p>
- * {@link #updateReconciliation} 显式传 {@code plannedQuantity} 是为了让 CHECK 恒等式可被 DB 复核； {@code planned_quantity}
- * 本身<b>永不被覆盖</b>，传的是从采购行继承的同一个值。
- */
+/** 更新收货对账数量时必须一次写入本次、累计、剩余、超收和差异字段，确保数据库核对公式成立；计划数量不可随收货更新覆盖。 */
 @Mapper
 public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEntity> {
 
