@@ -8,19 +8,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Data;
 
-/**
- * 打印渲染结果（预览与正式打印返回同一形状）。
- *
- * <p>
- * 它是一份<b>已经算好的版面</b>：列定义、行单元格、表头字段、合计、被剔除的字段都在里面。前端只做「按列顺序取值 + 转义 + 排版」，不再自己决定打印哪些列 —— 否则权限剔除与
- * 白名单就只在前端生效，绕过页面直接调接口即可拿到全部字段。
- *
- * <p>
- * {@code rows} 的每个元素以<b>列 key</b> 为键；单元格是字符串，四位定点数量与金额原样透传。
- *
- * <p>
- * {@code frozen=true} 表示这份结果来自冻结快照（历史重印），此时 {@code recordId} / {@code printedAt} / {@code printedBy} 非空，且数字不再随业务数据变化。
- */
+/** 打印渲染结果已包含表头、列顺序、单元格文本与合计。前端只负责排版，金额权限由服务端处理；历史重印使用冻结内容。 */
 @Data
 public class ScmPrintRenderVO {
 

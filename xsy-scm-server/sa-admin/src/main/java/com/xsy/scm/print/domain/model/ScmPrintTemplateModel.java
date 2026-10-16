@@ -6,16 +6,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Data;
 
-/**
- * 打印模板的<b>受控模型</b>（存进 {@code xsy_print_template.model} 的形状）。
- *
- * <p>
- * 它刻意不是一个「版式描述语言」：只有标题、纸张、方向、表头字段、明细列、是否合计、页脚备注。 没有位置、字号、HTML、脚本，也没有表达式 —— 能表达的版式就是「一张表 + 一行表头 + 一行页脚」，
- * 因此不存在需要求值器才能渲染的模板，也不存在模板里能执行代码的入口。
- *
- * <p>
- * {@link #fromMap} 对结构缺失一律按空处理（例如 {@code columns} 不是数组）， 把「结构不对」交给校验器统一回答，而不是在这里抛一个说不清位置的异常。
- */
+/** 打印模板只支持标题、纸张、列、表头、合计和页脚，不支持脚本、HTML 或自由表达式。结构错误交给统一校验器处理。 */
 @Data
 public class ScmPrintTemplateModel {
 

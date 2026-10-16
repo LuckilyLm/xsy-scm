@@ -3,18 +3,7 @@ package com.xsy.scm.print.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 模板可选纸张。取值刻意只有两种：
- *
- * <ul>
- * <li>{@link #A4}：单据类（采购单、发货单），配浏览器 {@code @page} 的毫米边距；</li>
- * <li>{@link #TICKET_80}：热敏小票，固定 80mm 宽、无横向。</li>
- * </ul>
- *
- * <p>
- * 不做自定义毫米尺寸：纸张尺寸最终由打印机驱动与浏览器缩放决定，
- * 在模板里放开任意尺寸只会造出「配置里是 210×297，出来是别的」这种无法复现的问题。
- */
+/** 打印模板仅支持 A4 单据和 80mm 热敏小票。具体缩放由浏览器和打印机处理，不允许在模板中自定义任意纸张尺寸。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPrintPaperEnum {

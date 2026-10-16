@@ -1,15 +1,4 @@
-/**
- * 打印渲染（纯函数 + 一次浏览器打印调用）。
- *
- * 前端只做三件事：按列顺序取值、转义、排版。它不决定打印哪些列、不重算数量金额 ——
- * 列定义与单元格文本都由后端算好（权限剔除也在服务端完成），前端剔除等于没剔除。
- *
- * `renderPrintDocument` 是无 DOM 的纯字符串函数，可在 node 下直接单测；
- * 只有 `printRenders` 触达浏览器 DOM（隐藏 iframe，避开弹窗拦截）。
- *
- * 所有来自数据的字段一律转义后再落 HTML：模板文本在服务端已拒绝尖括号，但业务数据
- * （商品名、备注）没有也不该有这条限制。
- */
+/** 前端只对服务端给出的打印结果排序、转义与排版，不决定金额列也不计算金额。所有业务文本进入 HTML 前必须转义。 */
 import type {PrintRender} from './print-types';
 
 function esc(value: unknown): string {
@@ -38,13 +27,7 @@ function bodyClass(render: PrintRender): string {
     return render.paper === 'TICKET_80' ? 'ticket' : 'a4';
 }
 
-/**
- * 页脚溯源行：模板名 + 版本 +（冻结时的）打印时间，让重印件与原件可分辨。
- *
- * 用模板的中文名而不是编码：编码是给程序看的标识，印在纸上对收件人没有意义。
- * 也不打印操作人：`printedBy` 是 `userType:userId`（形如 `1:1`），
- * 那不是人名；真正的操作人留在打印记录里可查，不必印到纸上。
- */
+/** 打印页脚标注模板名称、版本及冻结时间，便于识别历史重印；操作人编号不直接印到纸上。 */
 function traceLine(render: PrintRender): string {
     const template = render.templateName || render.templateCode;
     const parts = [`模板 ${template ?? '—'} v${render.templateVersion ?? '—'}`];

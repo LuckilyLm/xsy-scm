@@ -9,13 +9,7 @@ import jakarta.validation.constraints.Size;
 import java.util.Map;
 import lombok.Data;
 
-/**
- * 打印模板新建 / 编辑（编辑时带 {@code id} 与 {@code version}）。
- *
- * <p>
- * {@code model} 收成 {@code Map} 而不是模型对象，是为了让「结构不对」由服务端校验器统一回答
- * （{@code MODEL_INVALID}），而不是让 Jackson 在反序列化阶段抛一个字段位置不明的 400。
- */
+/** 打印模板表单把模型保留为 Map，由统一模板校验器检查结构并返回业务错误。 */
 @Data
 public class ScmPrintTemplateForm {
 

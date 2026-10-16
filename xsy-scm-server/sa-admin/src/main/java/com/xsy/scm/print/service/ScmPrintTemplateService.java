@@ -21,17 +21,7 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 打印模板维护。
- *
- * <p>
- * 三条不变量：
- * <ul>
- * <li><b>同类型至多一个默认模板</b>：设默认是「清旧 + 设新」，两步在同一事务里； 该类型还没有任何默认时，新建的模板自动成为默认 —— 否则「不指定模板就打印」在只有一份 模板时会直接失败，而那正是最常见的情形。</li>
- * <li><b>模板类型不可改</b>：模型里的字段是相对类型校验过的，换类型等于把一份按 A 校验过的 配置挂到 B 上。要换就新建一份。</li>
- * <li><b>默认模板不可删</b>：删掉默认会让该类型的打印失去默认入口；先指定别的模板为默认。</li>
- * </ul>
- */
+/** 同一单据类型只能有一个默认模板。模板类型建立后不可改，默认模板不能直接删除，须先设置其他默认模板。 */
 @Service
 @RequiredArgsConstructor
 public class ScmPrintTemplateService {

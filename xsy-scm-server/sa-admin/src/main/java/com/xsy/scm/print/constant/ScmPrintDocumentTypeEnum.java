@@ -6,17 +6,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
-/**
- * 可配置打印的单据类型，以及每种类型的<b>字段白名单</b>。
- *
- * <p>
- * 白名单是「受控模板」的落点：模板只能从表头字段、列和合计里挑 key，服务端不接受的键一律 拒收。这样模板里不存在「任意数据库字段」这种可能，也不需要一套模板表达式求值器。
- *
- * <p>
- * <b>金额与权限</b>：{@link #moneyPermission} 是该单据类型「看金额」所需的权限码， {@code null} 表示该域本来就没有金额门禁、按既有可见性打印（采购单即如此：能看到采购单的人
- * 本来就看得到单价，打印不额外放宽也不额外收紧）。需要门禁的类型在这里声明，渲染阶段据此 剔除金额字段 —— 授权信息不写进模板。
- *
- */
+/** 每种打印单据只允许使用字段白名单里的键。金额列按业务查看权限剔除，模板本身不能放宽权限。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPrintDocumentTypeEnum {
