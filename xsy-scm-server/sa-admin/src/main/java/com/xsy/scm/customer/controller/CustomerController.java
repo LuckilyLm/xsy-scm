@@ -60,13 +60,7 @@ public class CustomerController {
         return ResponseDTO.ok(customerQueryService.detail(customerId));
     }
 
-    /**
-     * 客户「常购商品」（客户 360°，只读聚合）。
-     *
-     * <p>
-     * 取数源是订单事实，价格字段沿用订单查看规则，因此<b>同时</b>要求 {@code scm:customer:query} 与
-     * {@code scm:order:query}（{@link SaMode#AND}）：没有订单查看权的人不能仅凭客户权限读到历史成交价。
-     */
+    /** 客户常购商品包含历史成交价，读取时必须同时拥有客户查询和订单查询权限。 */
     @GetMapping("/{customerId}/frequent-skus")
     @SaCheckPermission(value = {CustomerPermission.QUERY, OrderPermission.QUERY}, mode = SaMode.AND)
     public ResponseDTO<List<CustomerFrequentSkuVO>> frequentSkus(@PathVariable Long customerId,
@@ -97,13 +91,7 @@ public class CustomerController {
         return ResponseDTO.ok();
     }
 
-    /**
-     * 改派客户业务归属。
-     *
-     * <p>
-     * 独立端点 + 独立权限（{@code scm:customer:assign}）：{@code /update} 一律不改 {@code seller_id}，
-     * 归属变更必须带着乐观锁版本走这里，才能留下单独的操作日志并且不让编辑表单顺带挪走数据。
-     */
+    /** 客户归属变更只能走独立改派接口，要求专门权限和版本校验，并单独记录操作日志。 */
     @PostMapping("/reassignSeller")
     @SaCheckPermission(CustomerPermission.ASSIGN)
     @OperateLog

@@ -21,15 +21,7 @@ import com.xsy.scm.customer.constant.CustomerVisibilityPolicy;
 
 import java.util.List;
 
-/**
- * 新增客户。
- *
- * <p>
- * <b>刻意不含 {@code status}</b>：状态变更走独立的 {@code /scm/customer/updateStatus} 端点，新客户的初始状态由 Service 固定为 {@code POTENTIAL}。
- *
- * <p>
- * <b>刻意不含 {@code customerCode}</b>：客户编码由服务端生成（{@code ScmBusinessNoService}），客户端传入的值不会被采信。
- */
+/** 新客户默认是潜在客户，状态通过专门接口变更。客户编码由服务端生成，不接受客户端自行填写。 */
 @Data
 public class CustomerAddForm extends ScmLocationForm {
     @Pattern(regexp = CustomerVisibilityPolicy.PATTERN, message = "商品可见性策略无效")

@@ -118,15 +118,7 @@ export function validateCustomer(form: CustomerFormModel): string | undefined {
     return undefined;
 }
 
-/**
- * 提交前归一化 → 写请求体。
- *
- * 空白字符串统一转成 `null`：后端把「空白」也视作未填写，但如果前端直接送 `""`，
- * 就会出现「想清空却清不掉」的错觉（后端 `FieldStrategy.ALWAYS` 只对 `null` 生效）。
- *
- * 编码在这里被摘掉：它是服务端生成的只读回显，返回类型 `CustomerPayload` 上根本没有这个键，
- * 所以「客户端 × 编码」是类型层面的事实，不是靠后端忽略。
- */
+/** 提交客户表单时将空字符串转为 null，允许清空可选字段。客户编码由服务端生成，不放入提交参数。 */
 export function toCustomerPayload(form: CustomerFormModel): CustomerPayload {
     const blankToNull = (value?: string | null): string | null => {
         const text = value == null ? '' : String(value).trim();

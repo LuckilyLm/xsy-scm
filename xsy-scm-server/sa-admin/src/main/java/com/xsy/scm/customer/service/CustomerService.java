@@ -206,16 +206,7 @@ public class CustomerService {
         }
     }
 
-    /**
-     * 新建客户的归属：无分配权者一律记在当前员工名下，客户端传来的 {@code sellerId} 忽略。
-     *
-     * <p>
-     * 这是行级范围能成立的前提——否则「建在别人名下、再按列表去读别人的客户」就是留着的口子。有分配权者（销售主管 / 超管）可以指定别人，也可以留空表示<b>暂不分配</b>；未分配客户只对持分配权或全量范围者可见（见
-     * {@code ScmValueScope#allows}）。
-     *
-     * <p>
-     * 取不到当前员工时直接拒绝而不是落成未分配：落成 NULL 会让这条客户对建它的人自己不可见。
-     */
+    /** 普通员工新建客户时负责人默认是自己；只有有分配权的人可以指定别人或暂不分配。无法识别当前员工时必须拒绝创建。 */
     private Long resolveSellerOnCreate(Long submittedSellerId) {
         if (ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM)) {
             return submittedSellerId;

@@ -162,16 +162,7 @@ public class CustomerQueryService {
         return customerFrequentSkuDao.frequentSkus(customerId, since, rowLimit);
     }
 
-    /**
-     * 客户下拉选项。
-     *
-     * <p>
-     * 返回当前范围内的活动客户（按名称排序）。客户状态是四态业务状态而不是启用位，因此不像供应商那样只筛 {@code ENABLED}；调用方（例如「上级集团客户」选择器）按 {@code customerTypeCode}
-     * 过滤。
-     *
-     * <p>
-     * 与列表和详情共用客户负责人范围；全量选择由现有全量客户权限决定。
-     */
+    /** 客户选择列表遵守当前客户数据范围，可按客户类型过滤。客户状态不等同供应商启停状态，不能只按 ENABLED 筛选。 */
     public List<CustomerOptionVO> optionList() {
         var customerScope = dataScopeService.resolve().getCustomerSellerScope();
         if (customerScope.isEmpty()) {

@@ -14,13 +14,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/**
- * 客户（聚合根）。
- *
- * <p>
- * 联系人 / 地址 / 账期都是内嵌标量列，不建子表。可空列全部显式声明 {@code FieldStrategy.ALWAYS}：MyBatis-Plus 默认 {@code NOT_NULL} 会让 {@code null} 被
- * 静默忽略，导致「清空联系人 / 地址 / 备注」永远失败。
- */
+/** 客户联系人、地址和账期直接保存在客户记录中。可选字段允许保存 null，以支持在编辑时清空旧值。 */
 @Data
 @TableName(value = "xsy_customer", autoResultMap = true)
 public class CustomerEntity {
