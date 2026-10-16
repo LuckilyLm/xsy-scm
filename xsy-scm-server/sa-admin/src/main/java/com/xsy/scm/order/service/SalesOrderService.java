@@ -254,6 +254,8 @@ public class SalesOrderService {
         header(salesOrder, salesOrderAddForm);
         // 客户预选券只随商城建单持久化；后台录单即使误带该字段也不落库， 后台用券一律由确认命令显式给出。
         if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource())) {
+            // 本次商城下单选定的配送仓是不可变订单事实，不能在确认时重新按客户当前地址猜测。
+            salesOrder.setMallDeliveryWarehouseId(salesOrderAddForm.getMallDeliveryWarehouseId());
             salesOrder.setMallCouponInstanceId(salesOrderAddForm.getMallCouponInstanceId());
             // 结算方式与预选券同源：只认商城渠道，后台录单不采信请求体里的结算方式。
             salesOrder.setSettlementMethod(salesOrderAddForm.getSettlementMethod());

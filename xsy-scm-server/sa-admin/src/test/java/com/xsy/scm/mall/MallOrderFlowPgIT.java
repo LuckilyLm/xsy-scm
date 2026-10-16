@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.common.ScmW5PgITBase;
@@ -20,6 +21,8 @@ import com.xsy.scm.mall.account.service.MallAccountService;
 import com.xsy.scm.mall.account.service.MallAuthService;
 import com.xsy.scm.mall.address.domain.form.MallAddressSaveForm;
 import com.xsy.scm.mall.address.service.MallAddressService;
+import com.xsy.scm.mall.address.service.MallMapService;
+import com.xsy.scm.mall.address.domain.vo.MallMapLocationVO;
 import com.xsy.scm.mall.cart.domain.form.MallCartAddForm;
 import com.xsy.scm.mall.cart.domain.vo.MallCartVO;
 import com.xsy.scm.mall.cart.service.MallCartService;
@@ -46,6 +49,15 @@ import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderVO;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.order.service.SalesOrderService;
+import com.xsy.scm.order.service.OrderReturnService;
+import com.xsy.scm.order.service.OrderReturnReceiptService;
+import com.xsy.scm.inventory.service.InventoryFulfillmentService;
+import com.xsy.scm.order.domain.form.OrderReturnAddForm;
+import com.xsy.scm.order.domain.form.OrderReturnItemForm;
+import com.xsy.scm.order.domain.form.OrderReturnApproveForm;
+import com.xsy.scm.order.domain.form.OrderReturnApproveItemForm;
+import com.xsy.scm.order.domain.form.OrderReturnReceiveForm;
+import com.xsy.scm.order.domain.form.OrderReturnReceiveItemForm;
 import com.xsy.scm.promotion.constant.PromotionErrorCode;
 import com.xsy.scm.promotion.constant.ScmPromotionCouponDiscountTypeEnum;
 import com.xsy.scm.promotion.constant.ScmPromotionStatusEnum;
@@ -55,6 +67,7 @@ import com.xsy.scm.promotion.service.PromotionCouponService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -62,9 +75,11 @@ import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -112,9 +127,135 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
     @Autowired
     private SalesOrderService salesOrderService;
     @Autowired
+    private InventoryFulfillmentService inventoryFulfillmentService;
+    @Autowired
+    private OrderReturnService orderReturnService;
+    @Autowired
+    private OrderReturnReceiptService orderReturnReceiptService;
+    @Autowired
     private SalesOrderQueryService salesOrderQueryService;
 
     private int customerSequence;
+
+    // 测试商品先走真实采购收货，在绑定配送仓生成可售库存；商城不能凭主档库存下单。
+    @Override
+    protected Long newOnShelfSku(String suffix) {
+        Long skuId = super.newOnShelfSku(suffix);
+        Long supplierId = newPurchasableSupplier(suffix + "-stock", skuId);
+        var purchase = createDraftOrder(suffix + "-stock", supplierId, skuId, "100.0000", "6.2000");
+        var receipt = submittedOrderReceipt(purchase.getId());
+        var current = reloadReceipt(receipt.getId());
+        var item = current.getItems().getFirst();
+        purchaseReceiptService.confirm(
+                confirmForm(current.getId(), current.getVersion(),
+                        receiptLine(item.getId(), item.getVersion(), "100.0000")),
+                prefix + ":stock:" + suffix);
+        evictMybatisCache();
+        return skuId;
+    }
+
+    // 仅隔离高德公网依赖；商城地址校验、订单与库存仍访问真实服务和 PostgreSQL。
+    @MockitoBean
+    private MallMapService mapService;
+
+    @BeforeEach
+    void mockExternalMapProvider() {
+        MallMapLocationVO location = new MallMapLocationVO();
+        location.setLongitude(new BigDecimal("121.544000"));
+        location.setLatitude(new BigDecimal("31.221000"));
+        location.setProvinceCode(310000);
+        location.setCityCode(310100);
+        location.setDistrictCode(310115);
+        location.setProvinceName("上海市");
+        location.setCityName("上海市");
+        location.setDistrictName("浦东新区");
+        when(mapService.reverse(any(BigDecimal.class), any(BigDecimal.class))).thenReturn(location);
+    }
+
+    @Test
+    void crossUnitMallOrderFulfillmentAndTwoReceiptsRemainConsistent() {
+        Long skuId = newOnShelfSku("full-unit");
+        // 采购已在种子配送仓按 kg 入库 100；商品销售改为箱并配置 1 箱 = 10 kg。
+        jdbc.update("UPDATE xsy_product_sku SET sale_unit='箱' WHERE id=?", skuId);
+        jdbc.update("INSERT INTO xsy_product_sku_stock_conversion "
+                + "(sku_id,sale_unit,stock_unit,stock_units_per_sale_unit,created_by,updated_by) "
+                + "VALUES (?,'箱','kg',10.0000,'1','1')", skuId);
+        evictMybatisCache();
+
+        Long customerId = newCustomerAssignedTo(newEmployee("fullunit"));
+        RequestMallCustomer customer = signIn(openMallAccount(customerId));
+        Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
+        MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));
+        assertThat(preview.getAvailableCount()).isEqualTo(1);
+        MallOrderSubmitVO submitted = mallCheckoutService.submit(customer,
+                submitForm(skuId, addressId, preview.getPriceFingerprint()), prefix + ":unit-order");
+        assertThat(submitted.getStatus()).isEqualTo("PENDING");
+        Long orderId = submitted.getOrderId();
+        assertThat(jdbc.queryForObject(
+                "SELECT mall_delivery_warehouse_id FROM xsy_sales_order WHERE id=?", Long.class, orderId))
+                .isEqualTo(seedWarehouseId());
+
+        asAdmin();
+        confirmOrder(orderId, "2.0000");
+        Long itemId = jdbc.queryForObject("SELECT id FROM xsy_sales_order_item WHERE order_id=?",
+                Long.class, orderId);
+        Map<String, Object> frozen = jdbc.queryForMap(
+                "SELECT mall_stock_unit_snapshot, mall_stock_units_per_sale_unit "
+                        + "FROM xsy_sales_order_item WHERE id=?", itemId);
+        assertThat(frozen.get("mall_stock_unit_snapshot")).isEqualTo("kg");
+        assertThat((BigDecimal) frozen.get("mall_stock_units_per_sale_unit")).isEqualByComparingTo("10.0000");
+        // 当前正式业务口径是「确认后显式预留」，不是确认动作自动占库。
+        salesOrderService.reserveStock(orderId);
+        assertThat(jdbc.queryForObject(
+                "SELECT reserved_quantity FROM xsy_inventory_balance WHERE warehouse_id=? AND sku_id=?",
+                BigDecimal.class, seedWarehouseId(), skuId)).isEqualByComparingTo("20.0000");
+
+        var sent = inventoryFulfillmentService.dispatchOutbound(new InventoryFulfillmentService.Command(
+                880000L + skuId, seedWarehouseId(), OffsetDateTime.now(), "W5 IT",
+                List.of(new InventoryFulfillmentService.Line(orderId, itemId, skuId,
+                        new BigDecimal("2.0000"), "kg", new BigDecimal("10.0000")))));
+        assertThat(sent.shippedLineCount()).isEqualTo(1);
+        assertThat(jdbc.queryForObject(
+                "SELECT quantity FROM xsy_inventory_balance WHERE warehouse_id=? AND sku_id=?",
+                BigDecimal.class, seedWarehouseId(), skuId)).isEqualByComparingTo("80.0000");
+        assertThat(jdbc.queryForObject(
+                "SELECT reserved_quantity FROM xsy_inventory_balance WHERE warehouse_id=? AND sku_id=?",
+                BigDecimal.class, seedWarehouseId(), skuId)).isEqualByComparingTo("0.0000");
+
+        OrderReturnItemForm requested = new OrderReturnItemForm();
+        requested.setOrderItemId(itemId);
+        requested.setRequestedQuantity("2.0000");
+        OrderReturnAddForm create = new OrderReturnAddForm();
+        create.setOrderId(orderId);
+        create.setReason("商城两次退货");
+        create.setItems(List.of(requested));
+        var draft = orderReturnService.create(create, prefix + ":ret-create");
+        OrderReturnApproveItemForm approvedItem = new OrderReturnApproveItemForm();
+        approvedItem.setOrderItemId(itemId);
+        approvedItem.setApprovedQuantity("2.0000");
+        OrderReturnApproveForm approve = new OrderReturnApproveForm();
+        approve.setReturnId(draft.getReturnId());
+        approve.setVersion(draft.getVersion());
+        approve.setItems(List.of(approvedItem));
+        var approved = orderReturnService.approve(approve, prefix + ":ret-approve");
+        for (int index = 1; index <= 2; index++) {
+            OrderReturnReceiveItemForm line = new OrderReturnReceiveItemForm();
+            line.setReturnItemId(approved.getItems().getFirst().getReturnItemId());
+            line.setQuantity("1.0000");
+            line.setDisposition("RETURN_TO_STOCK");
+            OrderReturnReceiveForm form = new OrderReturnReceiveForm();
+            form.setReturnId(approved.getReturnId());
+            form.setVersion(approved.getVersion());
+            form.setWarehouseId(seedWarehouseId());
+            form.setItems(List.of(line));
+            var receipt = orderReturnReceiptService.receive(form, prefix + ":return:" + index);
+            assertThat(receipt.getItems().getFirst().getQuantity()).isEqualByComparingTo("1.0000");
+            assertThat(receipt.getItems().getFirst().getStockQuantity()).isEqualByComparingTo("10.0000");
+        }
+        assertThat(jdbc.queryForObject(
+                "SELECT quantity FROM xsy_inventory_balance WHERE warehouse_id=? AND sku_id=?",
+                BigDecimal.class, seedWarehouseId(), skuId)).isEqualByComparingTo("100.0000");
+    }
 
     @Test
     @EnabledIfSystemProperty(named = "scm.mall.promotion.confirm-it", matches = "true")
@@ -220,6 +361,8 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         MallOrderSubmitForm submit = submitForm(skuId, addressId, preview.getPriceFingerprint());
         var submitted = mallCheckoutService.submit(customer, submit, idempotencyKey);
         assertThat(submitted.getOrderSource()).isEqualTo(ScmOrderSourceEnum.MALL.name());
+        assertThat(jdbc.queryForObject("SELECT mall_delivery_warehouse_id FROM xsy_sales_order WHERE id=?",
+                Long.class, submitted.getOrderId())).isEqualTo(seedWarehouseId());
         assertThat(submitted.getOrderedTotalAmount()).isEqualByComparingTo("2.4000");
         // 非标品：商城不自动确认，等后台录实重后接单
         assertThat(submitted.getStatus()).isEqualTo("PENDING");
@@ -569,6 +712,8 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         form.setDistrictName("浦东新区");
         form.setDetailAddress("IT 测试路 1 号");
         form.setIsDefault(true);
+        form.setLongitude(new BigDecimal("121.544000"));
+        form.setLatitude(new BigDecimal("31.221000"));
         return form;
     }
 
@@ -579,11 +724,12 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         return form;
     }
 
-    private static MallOrderSubmitForm submitForm(Long skuId, Long addressId, String priceFingerprint) {
+    private MallOrderSubmitForm submitForm(Long skuId, Long addressId, String priceFingerprint) {
         MallOrderSubmitForm form = new MallOrderSubmitForm();
         form.setItems(List.of(checkoutItem(skuId, "2.0000")));
         form.setAddressId(addressId);
         form.setPriceFingerprint(priceFingerprint);
+        form.setWarehouseId(seedWarehouseId());
         form.setRemark("IT 商城下单");
         form.setSettlementMethod("COD");
         return form;
@@ -703,6 +849,8 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         status.setVersion(0);
         status.setStatus("COOPERATING");
         customerService.updateStatus(status);
+        // 正式商城必需单仓：夹具使用种子配送仓，不以全仓库存替代选仓逻辑。
+        jdbc.update("UPDATE xsy_customer SET mall_delivery_warehouse_id = ? WHERE id = ?", seedWarehouseId(), customerId);
         return customerId;
     }
 

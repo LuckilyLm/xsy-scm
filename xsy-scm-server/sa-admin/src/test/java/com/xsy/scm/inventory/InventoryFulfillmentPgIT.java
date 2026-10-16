@@ -88,6 +88,36 @@ class InventoryFulfillmentPgIT extends ScmW6PgITBase {
     }
 
     @Test
+    @DisplayName("商城销售单位为箱，预留和发车按 kg 记账，且少拣全额释放占用")
+    void convertedSalesUnitReservesAndShipsInStockUnit() {
+        Long warehouseId = seedWarehouseId();
+        Long skuId = newOnShelfSku("unitbox");
+        stockIn(warehouseId, skuId, "unitbox", "100.0000");
+        jdbc.update("UPDATE xsy_product_sku SET sale_unit='箱' WHERE id=?", skuId);
+        evictMybatisCache();
+        Long orderId = confirmedOrder(newCustomer(), skuId, "3.0000");
+        Long itemId = confirmedSalesOrderItemId(orderId);
+        reservationService.reserveForSalesOrder(warehouseId, orderId,
+                List.of(new InventoryReservationService.OrderReserveLine(
+                        itemId, skuId, new BigDecimal("3.0000"), "kg", new BigDecimal("10.0000"))),
+                OffsetDateTime.now());
+        assertThat(reservedQuantity(warehouseId, skuId)).isEqualByComparingTo("30.0000");
+
+        Result result = fulfill(9020L, warehouseId, new Line(orderId, itemId, skuId,
+                new BigDecimal("2.0000"), "kg", new BigDecimal("10.0000")));
+
+        assertThat(onHand(warehouseId, skuId)).isEqualByComparingTo("80.0000");
+        assertThat(reservedQuantity(warehouseId, skuId)).isEqualByComparingTo("0.0000");
+        assertThat(reservationStatus(itemId)).isEqualTo("CONSUMED");
+        assertThat(movementQuantity(result.outboundId())).isEqualByComparingTo("20.0000");
+        Map<String, Object> outboundItem = jdbc.queryForMap(
+                "SELECT quantity, stock_quantity FROM xsy_inventory_outbound_item WHERE outbound_id=?",
+                result.outboundId());
+        assertThat((BigDecimal) outboundItem.get("quantity")).isEqualByComparingTo("2.0000");
+        assertThat((BigDecimal) outboundItem.get("stock_quantity")).isEqualByComparingTo("20.0000");
+    }
+
+    @Test
     @DisplayName("少拣：预留整条收口为 CONSUMED，差额只存在于「预留量 − 出库量」")
     void shortPickKeepsSingleReservationRow() {
         Long warehouseId = seedWarehouseId();

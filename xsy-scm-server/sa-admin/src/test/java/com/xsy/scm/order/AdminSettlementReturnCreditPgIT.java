@@ -6,6 +6,7 @@ import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.order.service.OrderCreditService;
 import com.xsy.scm.inventory.domain.form.InventoryOutboundAddForm;
 import com.xsy.scm.inventory.service.InventoryOutboundService;
+import com.xsy.scm.inventory.service.InventoryFulfillmentService;
 import com.xsy.scm.order.domain.form.OrderActualQuantityForm;
 import com.xsy.scm.order.domain.form.OrderAddressForm;
 import com.xsy.scm.order.domain.form.OrderReturnAddForm;
@@ -43,6 +44,7 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
     @Autowired private OrderReturnService orderReturnService;
     @Autowired private OrderReturnReceiptService orderReturnReceiptService;
     @Autowired private InventoryOutboundService inventoryOutboundService;
+    @Autowired private InventoryFulfillmentService inventoryFulfillmentService;
     @Autowired private SalesOrderQueryService salesOrderQueryService;
     @Autowired private OrderCreditService orderCreditService;
 
@@ -178,6 +180,65 @@ class AdminSettlementReturnCreditPgIT extends ScmW6PgITBase {
         assertThat(balanceRow(fixture.warehouseId(), fixture.skuId()).getQuantity()).isEqualByComparingTo("7.0000");
         assertThat(orderReturnService.detail(fixture.returned().getReturnId()).getItems().getFirst().getReceivedQuantity())
                 .isEqualByComparingTo("3.0000");
+    }
+
+    @Test
+    void crossUnitReturnUsesFrozenSalesToStockFactorForTwoSeparateReceipts() {
+        Long skuId = newOnShelfSku("box-return");
+        W6Fixture inbound = freeInboundFixture("box-return", skuId, "100.0000", "kg");
+        confirmReceipt(inbound.receipt().getId(), "100.0000");
+        jdbc.update("UPDATE xsy_product_sku SET sale_unit='箱' WHERE id=?", skuId);
+        evictMybatisCache();
+
+        Long orderId = confirmedSalesOrder(newCustomer(), skuId, "2.0000", "2.0000");
+        Long itemId = confirmedSalesOrderItemId(orderId);
+        // 先配置经订单确认冻结的快照事实；被测范围是正式库存出库与退货接收的单位闭环。
+        jdbc.update("UPDATE xsy_sales_order_item SET mall_stock_unit_snapshot='kg',"
+                + " mall_stock_units_per_sale_unit=10.0000 WHERE id=?", itemId);
+        evictMybatisCache();
+        var outbound = inventoryFulfillmentService.dispatchOutbound(
+                new InventoryFulfillmentService.Command(970000L + skuId, seedWarehouseId(),
+                        java.time.OffsetDateTime.now(), "W6 IT",
+                        List.of(new InventoryFulfillmentService.Line(orderId, itemId, skuId,
+                                new BigDecimal("2.0000"), "kg", new BigDecimal("10.0000")))));
+        assertThat(outbound.shippedLineCount()).isEqualTo(1);
+        assertThat(balanceRow(seedWarehouseId(), skuId).getQuantity()).isEqualByComparingTo("80.0000");
+
+        OrderReturnItemForm requested = new OrderReturnItemForm();
+        requested.setOrderItemId(itemId);
+        requested.setRequestedQuantity("2.0000");
+        OrderReturnAddForm create = new OrderReturnAddForm();
+        create.setOrderId(orderId);
+        create.setReason("箱转公斤分批退货");
+        create.setItems(List.of(requested));
+        var draft = orderReturnService.create(create, key());
+        OrderReturnApproveItemForm approvedLine = new OrderReturnApproveItemForm();
+        approvedLine.setOrderItemId(itemId);
+        approvedLine.setApprovedQuantity("2.0000");
+        OrderReturnApproveForm approve = new OrderReturnApproveForm();
+        approve.setReturnId(draft.getReturnId());
+        approve.setVersion(draft.getVersion());
+        approve.setItems(List.of(approvedLine));
+        var approved = orderReturnService.approve(approve, key());
+        Returned fixture = new Returned(skuId, seedWarehouseId(), approved);
+
+        var first = orderReturnReceiptService.receive(receiveForm(fixture, "1.0000", "RETURN_TO_STOCK"), key());
+        assertThat(first.getItems()).hasSize(1);
+        assertThat(first.getItems().getFirst().getQuantity()).isEqualByComparingTo("1.0000");
+        assertThat(first.getItems().getFirst().getStockQuantity()).isEqualByComparingTo("10.0000");
+        assertThat(first.getItems().getFirst().getUnit()).isEqualTo("箱");
+        assertThat(first.getItems().getFirst().getStockUnit()).isEqualTo("kg");
+        assertThat(balanceRow(seedWarehouseId(), skuId).getQuantity()).isEqualByComparingTo("90.0000");
+
+        var second = orderReturnReceiptService.receive(receiveForm(fixture, "1.0000", "RETURN_TO_STOCK"), key());
+        assertThat(second.getItems().getFirst().getStockQuantity()).isEqualByComparingTo("10.0000");
+        assertThat(balanceRow(seedWarehouseId(), skuId).getQuantity()).isEqualByComparingTo("100.0000");
+        assertThat(orderReturnService.detail(approved.getReturnId()).getItems().getFirst().getReceivedQuantity())
+                .isEqualByComparingTo("2.0000");
+        assertThat(jdbc.queryForObject(
+                "SELECT COALESCE(SUM(stock_quantity),0) FROM xsy_order_return_receipt_item "
+                        + "WHERE return_item_id = ?", BigDecimal.class,
+                approved.getItems().getFirst().getReturnItemId())).isEqualByComparingTo("20.0000");
     }
 
     @Test void partialReturnSplitsAcrossHistoricalSalesOutCostsInFifoOrder() {
