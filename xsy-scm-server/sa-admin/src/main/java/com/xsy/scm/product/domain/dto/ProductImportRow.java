@@ -2,13 +2,7 @@ package com.xsy.scm.product.domain.dto;
 
 import lombok.Data;
 
-/**
- * 商品导入的单个 Excel 行，一行一个 SKU，同 SPU 编码的多行在服务层聚合为一张商品。字段全部按字符串接收，数值/日期/枚举校验在 {@code ProductImportService} 里做，避免解析期丢精度。
- *
- * <p>
- * UPDATE 模式下 {@code spuId} / {@code spuVersion} 与已存在 SKU 的 {@code skuId} / {@code skuVersion}
- * 是定位键；其余业务列留空表示「保持原值」，不等于清空。
- */
+/** Excel 每行对应一个商品规格，同一商品编码的多行会聚合。所有字段先按文本读取，再由导入服务校验。 */
 @Data
 public class ProductImportRow {
     private int rowNumber;
