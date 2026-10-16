@@ -9,6 +9,7 @@ import com.xsy.scm.mall.catalog.dao.MallCatalogDao;
 import com.xsy.scm.mall.catalog.domain.form.MallProductQueryForm;
 import com.xsy.scm.mall.catalog.domain.vo.MallCategoryVO;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
+import com.xsy.scm.mall.order.service.MallWarehouseService;
 import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.pricing.service.PriceResolver;
 import java.time.LocalDate;
@@ -33,6 +34,8 @@ public class MallCatalogService {
     private final PriceResolver priceResolver;
     private final CustomerFrequentSkuDao frequentSkuDao;
     private final FileService fileService;
+    private final MallWarehouseService mallWarehouseService;
+    private final MallStockAvailabilityService stockAvailabilityService;
 
     @Transactional(readOnly = true)
     public List<MallCategoryVO> categories(RequestMallCustomer customer) {
@@ -51,8 +54,11 @@ public class MallCatalogService {
     @Transactional(readOnly = true)
     public PageResult<MallProductVO> products(RequestMallCustomer customer, MallProductQueryForm query) {
         Page<MallProductVO> page = new Page<>(query.getPageNum(), query.getPageSize(), true);
+        Long warehouseId = query.getWarehouseId() == null
+                ? mallWarehouseService.preferred(customer.getCustomerId(), null)
+                : mallWarehouseService.require(customer.getCustomerId(), null, query.getWarehouseId());
         List<MallProductVO> rows = catalogDao.products(page, customer.getCustomerId(), query);
-        enrich(customer, rows);
+        enrich(customer, rows, warehouseId);
         PageResult<MallProductVO> result = new PageResult<>();
         result.setPageNum(page.getCurrent());
         result.setPageSize(page.getSize());
@@ -69,7 +75,7 @@ public class MallCatalogService {
         if (row == null) {
             throw new ScmBusinessException(MallErrorCode.CATALOG_PRODUCT_NOT_FOUND);
         }
-        enrich(customer, List.of(row));
+        enrich(customer, List.of(row), mallWarehouseService.preferred(customer.getCustomerId(), null));
         return row;
     }
 
@@ -80,7 +86,21 @@ public class MallCatalogService {
         }
         List<MallProductVO> rows = catalogDao.productsBySkuIds(customer.getCustomerId(),
                 skuIds.stream().distinct().toList());
-        enrich(customer, rows);
+        enrich(customer, rows, mallWarehouseService.preferred(customer.getCustomerId(), null));
+        return rows;
+    }
+
+    @Transactional(readOnly = true)
+    public List<MallProductVO> visibleProducts(RequestMallCustomer customer, List<Long> skuIds, Long addressId,
+            Long warehouseId) {
+        if (skuIds == null || skuIds.isEmpty())
+            return List.of();
+        Long selectedWarehouse = warehouseId == null
+                ? mallWarehouseService.preferred(customer.getCustomerId(), addressId)
+                : mallWarehouseService.require(customer.getCustomerId(), addressId, warehouseId);
+        List<MallProductVO> rows = catalogDao.productsBySkuIds(customer.getCustomerId(),
+                skuIds.stream().distinct().toList());
+        enrich(customer, rows, selectedWarehouse);
         return rows;
     }
 
@@ -95,7 +115,7 @@ public class MallCatalogService {
             return List.of();
         }
         List<MallProductVO> rows = catalogDao.productsBySkuIds(customer.getCustomerId(), skuIds);
-        enrich(customer, rows);
+        enrich(customer, rows, mallWarehouseService.preferred(customer.getCustomerId(), null));
         return rows;
     }
 
@@ -106,11 +126,11 @@ public class MallCatalogService {
             return List.of();
         }
         List<MallProductVO> rows = catalogDao.productsBySkuIds(customer.getCustomerId(), skuIds);
-        enrich(customer, rows);
+        enrich(customer, rows, mallWarehouseService.preferred(customer.getCustomerId(), null));
         return rows;
     }
 
-    private void enrich(RequestMallCustomer customer, List<MallProductVO> rows) {
+    private void enrich(RequestMallCustomer customer, List<MallProductVO> rows, Long warehouseId) {
         if (rows.isEmpty()) {
             return;
         }
@@ -134,5 +154,6 @@ public class MallCatalogService {
             }
             row.setPrimaryImageUrl(urls.get(row.getPrimaryImageKey()));
         }
+        stockAvailabilityService.enrich(warehouseId, rows);
     }
 }

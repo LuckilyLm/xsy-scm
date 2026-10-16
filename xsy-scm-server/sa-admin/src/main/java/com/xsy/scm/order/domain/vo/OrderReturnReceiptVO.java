@@ -30,6 +30,10 @@ public class OrderReturnReceiptVO {
         private BigDecimal quantity;
         private String unit;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal stockQuantity;
+        private String stockUnit;
+        /** 记账单位的历史出库成本，而非销售单位的报价。 */
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal unitCost;
     }
 }

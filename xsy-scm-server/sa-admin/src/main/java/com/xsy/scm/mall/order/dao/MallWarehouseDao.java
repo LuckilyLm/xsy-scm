@@ -8,4 +8,10 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface MallWarehouseDao {
     List<MallWarehouseOptionVO> byDistrict(@Param("districtCode") Integer districtCode);
+
+    int insertDistrictMapping(@Param("districtCode") Integer districtCode, @Param("warehouseId") Long warehouseId,
+            @Param("priority") Integer priority, @Param("operator") String operator);
+
+    int deleteDistrictMapping(@Param("districtCode") Integer districtCode, @Param("warehouseId") Long warehouseId,
+            @Param("operator") String operator);
 }

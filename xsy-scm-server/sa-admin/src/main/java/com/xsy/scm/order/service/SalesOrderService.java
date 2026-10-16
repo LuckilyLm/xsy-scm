@@ -10,6 +10,7 @@ import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.finance.constant.ScmFinanceReceivableSourceTypeEnum;
 import com.xsy.scm.finance.domain.vo.CustomerCreditCheckVO;
 import com.xsy.scm.inventory.service.InventoryReservationService;
+import com.xsy.scm.mall.catalog.service.MallStockAvailabilityService;
 import com.xsy.scm.notification.service.ScmNotificationService;
 import com.xsy.scm.order.constant.OrderErrorCode;
 import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
@@ -95,6 +96,7 @@ public class SalesOrderService {
     private final OrderIdempotencyService orderIdempotencyService;
     /** 显式预留库存、取消时释放；库存变更通过库存域服务完成。 */
     private final InventoryReservationService inventoryReservationService;
+    private final MallStockAvailabilityService mallStockAvailabilityService;
     private final SalesOrderQueryService salesOrderQueryService;
     /** SCM 数据范围的唯一解析入口；只在「能否对这户客户开单」这类归属判定上用。 */
     private final ScmDataScopeService dataScopeService;
@@ -491,6 +493,17 @@ public class SalesOrderService {
         for (var row : rows) {
             if (row.getActualQuantity() == null || row.getActualQuantity().signum() <= 0)
                 throw new ScmBusinessException(ORDER_ACTUAL_QUANTITY_REQUIRED);
+            if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource())) {
+                if (salesOrder.getMallDeliveryWarehouseId() == null) {
+                    throw new ScmBusinessException(VALIDATION_ERROR);
+                }
+                var conversion = mallStockAvailabilityService.requireConversion(salesOrder.getMallDeliveryWarehouseId(),
+                        row.getSkuId(), row.getSaleUnitSnapshot());
+                row.setMallStockUnitSnapshot(conversion.stockUnit());
+                row.setMallStockUnitsPerSaleUnit(conversion.stockUnitsPerSaleUnit());
+                com.xsy.scm.inventory.service.InventorySaleUnitConverter.toStockQuantity(row.getActualQuantity(),
+                        conversion.stockUnit(), conversion.stockUnitsPerSaleUnit());
+            }
             row.setSettlementLineAmount(
                     OrderAmountCalculator.lineAmount(row.getActualQuantity(), row.getLockedUnitPrice()));
             saveItem(row);
@@ -640,12 +653,17 @@ public class SalesOrderService {
             throw new ScmBusinessException(ORDER_RESERVE_STATE_INVALID);
         }
         var rows = salesOrderItemDao.list(salesOrder.getId());
-        inventoryReservationService.reserveForSalesOrder(salesOrder.getId(),
-                rows.stream()
-                        .map(salesOrderItem -> new InventoryReservationService.OrderReserveLine(salesOrderItem.getId(),
-                                salesOrderItem.getSkuId(), salesOrderItem.getActualQuantity()))
-                        .toList(),
-                OffsetDateTime.now());
+        var reserveLines = rows.stream()
+                .map(row -> new InventoryReservationService.OrderReserveLine(row.getId(), row.getSkuId(),
+                        row.getActualQuantity(), row.getMallStockUnitSnapshot(), row.getMallStockUnitsPerSaleUnit()))
+                .toList();
+        if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource())
+                && salesOrder.getMallDeliveryWarehouseId() != null) {
+            inventoryReservationService.reserveForSalesOrder(salesOrder.getMallDeliveryWarehouseId(),
+                    salesOrder.getId(), reserveLines, OffsetDateTime.now());
+        } else {
+            inventoryReservationService.reserveForSalesOrder(salesOrder.getId(), reserveLines, OffsetDateTime.now());
+        }
         log(salesOrder.getId(), ScmOrderOperationTypeEnum.RESERVE_STOCK, null, null,
                 Map.of("reservedLines", rows.size()));
     }

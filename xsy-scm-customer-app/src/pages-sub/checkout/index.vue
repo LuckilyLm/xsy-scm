@@ -13,6 +13,16 @@
       <text class="co-address__arrow">›</text>
     </view>
 
+    <picker v-if="warehouseOptions.length" :range="warehouseOptions" range-key="warehouseName" :value="warehouseIndex" @change="onWarehouseChange">
+      <view class="co-card co-row">
+        <text class="co-row__label">配送仓</text>
+        <text class="co-row__value">{{ selectedWarehouse?.warehouseName || '请选择配送仓' }} ›</text>
+      </view>
+    </picker>
+    <view v-if="warehouseError" class="co-alert">
+      <text class="co-alert__text">{{ warehouseError }}</text>
+    </view>
+
     <!-- 不可售提示：预览发现不可售项时不允许提交，先让客户回购物车调整 -->
     <view v-if="unavailableItems.length" class="co-alert">
       <text class="co-alert__text">{{ unavailableTip }}</text>
@@ -128,6 +138,9 @@
   const skuIds = ref([]);
   const items = ref([]);
   const address = ref(null);
+  const warehouseOptions = ref([]);
+  const warehouseId = ref(null);
+  const warehouseError = ref('');
   const estimatedAmount = ref('0.00');
   const selectedCouponId = ref(null);
   const selectedCouponName = ref('');
@@ -154,6 +167,13 @@
   const idempotencyKey = ref('');
   let lastSignature = '';
 
+  const selectedWarehouse = computed(() => warehouseOptions.value.find((item) => item.warehouseId === warehouseId.value));
+  const warehouseIndex = computed(() =>
+    Math.max(
+      0,
+      warehouseOptions.value.findIndex((item) => item.warehouseId === warehouseId.value)
+    )
+  );
   const nonStandardCount = computed(() => items.value.filter((item) => item.nonStandard === true).length);
   const unavailableTip = computed(() => {
     if (!unavailableItems.value.length) return '';
@@ -165,6 +185,8 @@
   const canSubmit = computed(
     () =>
       !!address.value &&
+      !!warehouseId.value &&
+      !warehouseError.value &&
       items.value.length > 0 &&
       !!settlementMethod.value &&
       unavailableItems.value.length === 0 &&
@@ -181,6 +203,7 @@
   function unavailableText(item) {
     if (item.availability === 'NO_PRICE') return '暂无客户价，请联系业务员询价';
     if (item.availability === 'QUANTITY_INVALID') return '数量不符合当前起订量和递增量，请返回购物车调整';
+    if (item.unavailableReason === 'CHECKOUT_ITEM_UNAVAILABLE') return '当前配送仓库存不足';
     return '商品已下架或对当前客户不可见';
   }
   function backToCart() {
@@ -214,6 +237,7 @@
 
   async function load() {
     await Promise.all([loadAddress(), loadItems()]);
+    await loadWarehouses();
     await refreshPreview();
   }
 
@@ -230,16 +254,43 @@
     }
   }
 
+  async function loadWarehouses() {
+    warehouseOptions.value = [];
+    warehouseError.value = '';
+    if (!address.value) {
+      warehouseId.value = null;
+      return;
+    }
+    try {
+      const response = await mallOrderApi.getWarehouses(address.value.addressId);
+      warehouseOptions.value = response.data || [];
+      if (!warehouseOptions.value.some((item) => item.warehouseId === warehouseId.value)) {
+        warehouseId.value = warehouseOptions.value[0]?.warehouseId || null;
+      }
+      if (!warehouseId.value) warehouseError.value = '当前收货地址暂无可用配送仓，请联系管理员';
+    } catch (error) {
+      warehouseId.value = null;
+      warehouseError.value = error?.message || '配送仓信息加载失败，请稍后重试';
+      smartSentry.captureError(error);
+    }
+  }
+
+  function onWarehouseChange(event) {
+    const selected = warehouseOptions.value[Number(event.detail.value)];
+    if (!selected || selected.warehouseId === warehouseId.value) return;
+    warehouseId.value = selected.warehouseId;
+    syncIdempotencyKey();
+    refreshPreview();
+  }
+
   async function loadItems() {
     try {
       const response = await mallCartApi.getCart();
       const all = response.data?.items || [];
       const selected = all.filter((item) => skuIds.value.includes(item.skuId));
-      items.value = selected.filter((item) => item.availability === 'AVAILABLE');
-      const dropped = selected.length - items.value.length;
-      if (dropped > 0) {
-        uni.showToast({ title: `${dropped} 项已不可售，已从本次结算中移除`, icon: 'none' });
-      }
+      // 购物车按默认仓读取的可售状态不适用于本次收货地址对应的配送仓。
+      // 不能提前丢弃行；统一由选仓后的结算预览给出可售性及原因。
+      items.value = selected;
     } catch (error) {
       smartSentry.captureError(error);
     }
@@ -258,7 +309,7 @@
     unavailableItems.value = [];
     promotion.value = null;
     promotionError.value = '';
-    if (!items.value.length) {
+    if (!items.value.length || !warehouseId.value) {
       estimatedAmount.value = '0.00';
       return;
     }
@@ -267,6 +318,7 @@
       const response = await mallOrderApi.preview({
         items: payloadItems(),
         addressId: address.value ? address.value.addressId : null,
+        warehouseId: warehouseId.value,
         couponInstanceId: selectedCouponId.value || undefined,
       });
       // 只认最后一次预览：旧响应后到一律丢弃，否则会把新金额与指纹覆盖回旧的
@@ -330,6 +382,7 @@
     return JSON.stringify({
       items: payloadItems(),
       addressId: address.value ? address.value.addressId : null,
+      warehouseId: warehouseId.value,
       remark: remark.value,
       deliveryDate: deliveryDate.value,
       couponInstanceId: selectedCouponId.value,
@@ -386,6 +439,10 @@
       uni.showToast({ title: '请选择收货地址', icon: 'none' });
       return;
     }
+    if (!warehouseId.value) {
+      uni.showToast({ title: warehouseError.value || '请选择配送仓', icon: 'none' });
+      return;
+    }
     if (!settlementMethod.value) {
       uni.showToast({ title: '请选择结算方式', icon: 'none' });
       return;
@@ -405,6 +462,7 @@
         {
           items: payloadItems(),
           addressId: address.value.addressId,
+          warehouseId: warehouseId.value,
           priceFingerprint: fingerprint.value,
           remark: remark.value || undefined,
           expectDeliveryDate: deliveryDate.value || undefined,

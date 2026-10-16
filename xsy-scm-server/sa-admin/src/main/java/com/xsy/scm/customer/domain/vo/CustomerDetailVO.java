@@ -40,6 +40,8 @@ public class CustomerDetailVO {
 
     private Boolean codAllowed;
 
+    private Long mallDeliveryWarehouseId;
+
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal creditLimit;
 

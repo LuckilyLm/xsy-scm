@@ -24,6 +24,7 @@ import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
 import com.xsy.scm.mall.order.domain.vo.MallSettlementOptionVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
 import com.xsy.scm.mall.order.service.MallSettlementService;
+import com.xsy.scm.mall.order.service.MallWarehouseService;
 import com.xsy.scm.order.domain.dto.MallOrderCreationResult;
 import com.xsy.scm.order.domain.form.SalesOrderAddForm;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
@@ -46,8 +47,9 @@ class MallCheckoutServiceTest {
     private final SalesOrderService salesOrderService = mock(SalesOrderService.class);
     private final PromotionDiscountService promotionDiscountService = mock(PromotionDiscountService.class);
     private final MallSettlementService settlementService = mock(MallSettlementService.class);
+    private final MallWarehouseService warehouseService = mock(MallWarehouseService.class);
     private final MallCheckoutService service = new MallCheckoutService(catalogService, addressDao, cartDao,
-            salesOrderService, promotionDiscountService, settlementService);
+            salesOrderService, promotionDiscountService, settlementService, warehouseService);
     private final RequestMallCustomer customer = customer();
     private final MallOrderSubmitForm form = form();
 
@@ -55,7 +57,9 @@ class MallCheckoutServiceTest {
     void setUp() {
         SmartRequestUtil.setRequestUser(customer);
         when(addressDao.detailById(9L, 3L)).thenReturn(address());
-        when(catalogService.visibleProducts(eq(customer), any())).thenReturn(List.of(product("5.0000")));
+        when(warehouseService.require(9L, 3L, 8L)).thenReturn(8L);
+        when(catalogService.visibleProducts(eq(customer), any(), eq(3L), eq(8L)))
+                .thenReturn(List.of(product("5.0000")));
         MallSettlementOptionVO cod = new MallSettlementOptionVO();
         cod.setMethod("COD");
         cod.setEnabled(true);
@@ -141,7 +145,8 @@ class MallCheckoutServiceTest {
         // 但幂等预检必须先把原订单还回去，否则客户会收到「价格已变化」而以为没下成。
         when(salesOrderService.replayMallOrder(any(), eq("key")))
                 .thenReturn(Optional.of(new MallOrderCreationResult(order(), true)));
-        when(catalogService.visibleProducts(eq(customer), any())).thenReturn(List.of(product("9.0000")));
+        when(catalogService.visibleProducts(eq(customer), any(), eq(3L), eq(8L)))
+                .thenReturn(List.of(product("9.0000")));
 
         MallOrderSubmitVO result = service.submit(customer, form, "key");
 
@@ -154,7 +159,8 @@ class MallCheckoutServiceTest {
     @Test
     void newRequestStillFailsWhenThePriceChanged() {
         when(salesOrderService.replayMallOrder(any(), eq("key"))).thenReturn(Optional.empty());
-        when(catalogService.visibleProducts(eq(customer), any())).thenReturn(List.of(product("9.0000")));
+        when(catalogService.visibleProducts(eq(customer), any(), eq(3L), eq(8L)))
+                .thenReturn(List.of(product("9.0000")));
 
         assertThatThrownBy(() -> service.submit(customer, form, "key"))
                 .isInstanceOfSatisfying(ScmBusinessException.class,
@@ -238,6 +244,7 @@ class MallCheckoutServiceTest {
         MallOrderSubmitForm form = new MallOrderSubmitForm();
         form.setItems(List.of(item));
         form.setAddressId(3L);
+        form.setWarehouseId(8L);
         form.setPriceFingerprint("f97b78895d41dd981ee076cff835a4a47c828df484b389cc9c86f423b8972793");
         form.setSettlementMethod("COD");
         return form;
@@ -266,6 +273,8 @@ class MallCheckoutServiceTest {
         MallProductVO product = new MallProductVO();
         product.setSkuId(11L);
         product.setUnitPrice(new BigDecimal(unitPrice));
+        product.setStockStatus("AVAILABLE");
+        product.setAvailableQty(new BigDecimal("20.0000"));
         return product;
     }
 

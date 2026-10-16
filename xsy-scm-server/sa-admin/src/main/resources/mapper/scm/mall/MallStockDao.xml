@@ -12,4 +12,10 @@
         WHERE b.deleted = FALSE AND b.warehouse_id = #{warehouseId} AND b.sku_id IN
         <foreach collection="skuIds" item="skuId" open="(" separator="," close=")">#{skuId}</foreach>
     </select>
+    <select id="configuredConversions" resultType="com.xsy.scm.mall.catalog.domain.vo.MallStockFact">
+        SELECT stock_unit AS stockUnit, stock_units_per_sale_unit AS stockUnitsPerSaleUnit
+        FROM xsy_product_sku_stock_conversion
+        WHERE sku_id = #{skuId} AND sale_unit = #{saleUnit} AND deleted = FALSE
+        ORDER BY stock_unit
+    </select>
 </mapper>

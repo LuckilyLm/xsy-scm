@@ -31,6 +31,8 @@ export function emptyCustomer(): CustomerFormModel {
         name: '',
         customerTypeId: undefined,
         parentCustomerId: undefined,
+        mallDeliveryWarehouseId: null,
+        clearMallDeliveryWarehouse: false,
         sellerId: undefined,
         supplierId: undefined,
         contactName: '',

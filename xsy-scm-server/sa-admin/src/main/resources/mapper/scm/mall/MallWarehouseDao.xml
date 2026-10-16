@@ -10,4 +10,17 @@
         WHERE rule.deleted = FALSE AND rule.district_code = #{districtCode}
         ORDER BY rule.priority, rule.id
     </select>
+    <insert id="insertDistrictMapping">
+        INSERT INTO xsy_mall_district_warehouse(district_code, warehouse_id, priority, deleted,
+                                                created_at, updated_at, created_by, updated_by)
+        VALUES(#{districtCode}, #{warehouseId}, #{priority}, FALSE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+               #{operator}, #{operator})
+        ON CONFLICT (district_code, warehouse_id) WHERE deleted = FALSE
+        DO UPDATE SET priority = EXCLUDED.priority, updated_at = CURRENT_TIMESTAMP, updated_by = EXCLUDED.updated_by
+    </insert>
+    <update id="deleteDistrictMapping">
+        UPDATE xsy_mall_district_warehouse
+        SET deleted = TRUE, updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE district_code = #{districtCode} AND warehouse_id = #{warehouseId} AND deleted = FALSE
+    </update>
 </mapper>

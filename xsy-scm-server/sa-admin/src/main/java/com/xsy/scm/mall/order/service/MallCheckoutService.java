@@ -17,6 +17,7 @@ import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
 import com.xsy.scm.mall.order.domain.vo.MallCheckoutItemVO;
 import com.xsy.scm.mall.order.domain.vo.MallCheckoutPreviewVO;
 import com.xsy.scm.mall.order.domain.vo.MallCheckoutPromotionVO;
+import com.xsy.scm.mall.order.domain.vo.MallWarehouseOptionVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
 import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.order.domain.dto.MallOrderCreationResult;
@@ -64,13 +65,25 @@ public class MallCheckoutService {
     private final SalesOrderService salesOrderService;
     private final PromotionDiscountService promotionDiscountService;
     private final MallSettlementService settlementService;
+    private final MallWarehouseService warehouseService;
 
     @Transactional(readOnly = true)
     public MallCheckoutPreviewVO preview(RequestMallCustomer customer, MallCheckoutPreviewForm form) {
         Map<Long, BigDecimal> quantities = normalize(form.getItems());
-        Map<Long, MallProductVO> products = resolveProducts(customer, quantities.keySet());
+        List<MallWarehouseOptionVO> warehouses = warehouseService.options(customer.getCustomerId(),
+                form.getAddressId());
+        Long warehouseId = form.getWarehouseId() == null
+                ? warehouses.stream().findFirst().map(MallWarehouseOptionVO::getWarehouseId).orElse(null)
+                : warehouseService.require(customer.getCustomerId(), form.getAddressId(), form.getWarehouseId());
+        Map<Long, MallProductVO> products = resolveProducts(customer, quantities.keySet(), form.getAddressId(),
+                warehouseId);
 
         MallCheckoutPreviewVO result = new MallCheckoutPreviewVO();
+        result.setWarehouses(warehouses);
+        result.setWarehouseId(warehouseId);
+        result.setWarehouseName(warehouses.stream().filter(option -> option.getWarehouseId().equals(warehouseId))
+                .findFirst().map(MallWarehouseOptionVO::getWarehouseName).orElse(null));
+        result.setWarehouseRequired(warehouseId == null);
         BigDecimal estimated = BigDecimal.ZERO.setScale(SCALE);
         List<Long> unavailable = new ArrayList<>();
         int available = 0;
@@ -134,15 +147,22 @@ public class MallCheckoutService {
         if (address == null) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_NOT_FOUND);
         }
+        Long warehouseId = warehouseService.require(customer.getCustomerId(), address.getAddressId(),
+                form.getWarehouseId());
         SalesOrderAddForm orderForm = orderForm(customer, form, address, quantities);
+        orderForm.setMallDeliveryWarehouseId(warehouseId);
         // 只有新请求才按当前价格严格校验
-        Map<Long, MallProductVO> products = resolveProducts(customer, quantities.keySet());
+        Map<Long, MallProductVO> products = resolveProducts(customer, quantities.keySet(), address.getAddressId(),
+                warehouseId);
         for (Long skuId : quantities.keySet()) {
             MallProductVO product = products.get(skuId);
-            if (product == null || product.getUnitPrice() == null) {
+            BigDecimal quantity = quantities.get(skuId);
+            if (product == null || product.getUnitPrice() == null
+                    || !MallCartAvailabilityEnum.AVAILABLE.name().equals(product.getStockStatus())
+                    || !MallQuantityPolicy.accepts(product, quantity) || product.getAvailableQty() == null
+                    || product.getAvailableQty().compareTo(quantity) < 0) {
                 throw new ScmBusinessException(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE);
             }
-            MallQuantityPolicy.require(product, quantities.get(skuId));
         }
         // 价格指纹不一致说明预览后价格变了，不能按旧价静默下单
         if (!fingerprint(quantities, products).equals(form.getPriceFingerprint())) {
@@ -248,6 +268,15 @@ public class MallCheckoutService {
         orderAddress.setReceiverName(address.getReceiverName());
         orderAddress.setReceiverPhone(address.getReceiverPhone());
         orderAddress.setAddress(fullAddress(address));
+        orderAddress.setProvinceCode(address.getProvinceCode());
+        orderAddress.setProvinceName(address.getProvinceName());
+        orderAddress.setCityCode(address.getCityCode());
+        orderAddress.setCityName(address.getCityName());
+        orderAddress.setDistrictCode(address.getDistrictCode());
+        orderAddress.setDistrictName(address.getDistrictName());
+        orderAddress.setLongitude(address.getLongitude());
+        orderAddress.setLatitude(address.getLatitude());
+        orderAddress.setGeomCrs(address.getGeomCrs());
         orderForm.setAddress(orderAddress);
         List<SalesOrderItemForm> items = new ArrayList<>();
         int sortOrder = 0;
@@ -282,11 +311,12 @@ public class MallCheckoutService {
         return total;
     }
 
-    private Map<Long, MallProductVO> resolveProducts(RequestMallCustomer customer, Iterable<Long> skuIds) {
+    private Map<Long, MallProductVO> resolveProducts(RequestMallCustomer customer, Iterable<Long> skuIds,
+            Long addressId, Long warehouseId) {
         List<Long> ids = new ArrayList<>();
         skuIds.forEach(ids::add);
-        return catalogService.visibleProducts(customer, ids).stream().collect(Collectors.toMap(MallProductVO::getSkuId,
-                Function.identity(), (left, right) -> left, LinkedHashMap::new));
+        return catalogService.visibleProducts(customer, ids, addressId, warehouseId).stream().collect(Collectors
+                .toMap(MallProductVO::getSkuId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
     }
 
     /** 合并重复规格并校验数量；保持提交顺序 */
@@ -340,6 +370,12 @@ public class MallCheckoutService {
             item.setUnavailableReason(MallErrorCode.CART_QUANTITY_RULE_INVALID.name());
             return item;
         }
+        if (!"AVAILABLE".equals(product.getStockStatus()) || product.getAvailableQty() == null
+                || product.getAvailableQty().compareTo(quantity) < 0) {
+            item.setAvailability(MallCartAvailabilityEnum.UNAVAILABLE.name());
+            item.setUnavailableReason(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE.name());
+            return item;
+        }
         item.setAvailability(MallCartAvailabilityEnum.AVAILABLE.name());
         item.setLineAmount(product.getUnitPrice().multiply(quantity).setScale(SCALE, RoundingMode.HALF_UP));
         return item;
@@ -351,6 +387,8 @@ public class MallCheckoutService {
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("customerId", customer.getCustomerId());
         request.put("addressId", form.getAddressId());
+        if (form.getWarehouseId() != null)
+            request.put("warehouseId", form.getWarehouseId());
         request.put("remark", form.getRemark());
         request.put("expectDeliveryDate", form.getExpectDeliveryDate());
         request.put("couponInstanceId", form.getCouponInstanceId());

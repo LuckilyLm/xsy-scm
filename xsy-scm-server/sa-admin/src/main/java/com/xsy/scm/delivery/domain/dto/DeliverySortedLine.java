@@ -11,4 +11,6 @@ public class DeliverySortedLine {
     private Long salesOrderItemId;
     private Long skuId;
     private BigDecimal sortedQuantity;
+    private String mallStockUnitSnapshot;
+    private BigDecimal mallStockUnitsPerSaleUnit;
 }

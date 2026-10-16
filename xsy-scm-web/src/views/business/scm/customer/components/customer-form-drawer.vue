@@ -84,6 +84,15 @@
                 <SupplierSelect v-model:value="form.supplierId" placeholder="请选择供应商"/>
               </a-form-item>
             </a-col>
+            <a-col v-if="canWarehouseUpdate" :xs="24" :sm="12">
+              <a-form-item>
+                <template #label>
+                  商城默认配送仓
+                  <ScmFieldHelp label="商城默认配送仓" text="优先使用此仓；未绑定时按收货地址区县映射。"/>
+                </template>
+                <WarehouseSelect v-model:value="mallWarehouseValue" placeholder="按收货地址区县自动匹配" width="100%"/>
+              </a-form-item>
+            </a-col>
           </a-row>
         </section>
 
@@ -237,6 +246,7 @@ import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
+import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {
   applyCreditPeriodType,
@@ -270,6 +280,8 @@ const sellerName = ref('');
 
 /** 分配/改派权：与服务端 resolveSellerOnCreate 同一口径 —— 无此权者新建一律落自己名下。 */
 const canAssign = computed(() => hasPermission('scm:customer:assign'));
+const canWarehouseUpdate = computed(() => hasPermission('scm:customer:update')
+    && hasPermission('scm:warehouse:update') && hasPermission('scm:warehouse:query'));
 const isEdit = computed(() => form.customerId != null);
 
 const form = reactive<CustomerFormModel>(emptyCustomer());
@@ -294,6 +306,13 @@ const sellerValue = computed<number | undefined>({
   get: () => form.sellerId ?? undefined,
   set: (value) => {
     form.sellerId = value ?? null;
+  },
+});
+const mallWarehouseValue = computed<string | number | undefined>({
+  get: () => form.mallDeliveryWarehouseId ?? undefined,
+  set: (value) => {
+    form.mallDeliveryWarehouseId = value ?? null;
+    form.clearMallDeliveryWarehouse = value == null;
   },
 });
 
@@ -324,6 +343,8 @@ async function open(customerId?: ScmId) {
       customerTypeId: detail.customerTypeId,
       parentCustomerId: detail.parentCustomerId ?? null,
       settlementCustomerId: detail.settlementCustomerId ?? null,
+      mallDeliveryWarehouseId: detail.mallDeliveryWarehouseId ?? null,
+      clearMallDeliveryWarehouse: false,
       sellerId: detail.sellerId ?? null,
       supplierId: detail.supplierId ?? null,
       contactName: detail.contactName ?? '',

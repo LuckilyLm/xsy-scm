@@ -10,6 +10,8 @@ import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.catalog.dao.MallCatalogDao;
 import com.xsy.scm.mall.catalog.service.MallCatalogService;
+import com.xsy.scm.mall.catalog.service.MallStockAvailabilityService;
+import com.xsy.scm.mall.order.service.MallWarehouseService;
 import com.xsy.scm.pricing.service.PriceResolver;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.junit.jupiter.api.Test;
@@ -17,7 +19,8 @@ import org.junit.jupiter.api.Test;
 class MallCatalogServiceTest {
     private final MallCatalogDao catalog = mock(MallCatalogDao.class);
     private final MallCatalogService service = new MallCatalogService(catalog, mock(PriceResolver.class),
-            mock(CustomerFrequentSkuDao.class), mock(FileService.class));
+            mock(CustomerFrequentSkuDao.class), mock(FileService.class), mock(MallWarehouseService.class),
+            mock(MallStockAvailabilityService.class));
 
     @Test
     void invisibleProductUsesTheSameNotFoundResult() {

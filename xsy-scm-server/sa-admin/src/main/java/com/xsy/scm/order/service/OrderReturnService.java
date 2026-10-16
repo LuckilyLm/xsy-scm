@@ -158,6 +158,8 @@ public class OrderReturnService {
         item.setDisposition(entity.getDisposition());
         item.setQuantity(entity.getQuantity());
         item.setUnit(entity.getUnitSnapshot());
+        item.setStockQuantity(entity.getStockQuantity());
+        item.setStockUnit(entity.getStockUnitSnapshot());
         item.setUnitCost(entity.getUnitCost());
         return item;
     }

@@ -21,6 +21,8 @@
         <result column="spec_values_snapshot" property="specValuesSnapshot"
                 typeHandler="com.xsy.scm.order.support.OrderJsonbTypeHandler"/>
         <result column="sale_unit_snapshot" property="saleUnitSnapshot"/>
+        <result column="mall_stock_unit_snapshot" property="mallStockUnitSnapshot"/>
+        <result column="mall_stock_units_per_sale_unit" property="mallStockUnitsPerSaleUnit"/>
         <result column="product_type_snapshot" property="productTypeSnapshot"/>
         <result column="ordered_quantity" property="orderedQuantity"/>
         <result column="actual_quantity" property="actualQuantity"/>

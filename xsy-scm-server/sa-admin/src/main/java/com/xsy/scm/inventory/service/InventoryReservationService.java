@@ -61,6 +61,9 @@ public class InventoryReservationService {
         if (balance == null) {
             throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
         }
+        if (fact.expectedStockUnit() != null && !fact.expectedStockUnit().equals(balance.getUnit())) {
+            throw new ScmBusinessException(com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_MISMATCH);
+        }
 
         BigDecimal onHand = balance.getQuantity();
         BigDecimal reserved = balance.getReservedQuantity() == null ? BigDecimal.ZERO : balance.getReservedQuantity();
@@ -163,11 +166,19 @@ public class InventoryReservationService {
         if (lines == null || lines.isEmpty()) {
             return;
         }
-        Long warehouseId = warehouseService.defaultEnabledWarehouse().getId();
+        reserveForSalesOrder(warehouseService.defaultEnabledWarehouse().getId(), salesOrderId, lines, occurredAt);
+    }
+
+    public void reserveForSalesOrder(Long warehouseId, Long salesOrderId, List<OrderReserveLine> lines,
+            OffsetDateTime occurredAt) {
+        if (warehouseId == null || lines == null || lines.isEmpty()) {
+            throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
+        }
         lines.stream().sorted(Comparator.comparing(OrderReserveLine::skuId))
                 .forEach(line -> reserve(new ReserveInventoryFact(warehouseId, line.skuId(),
                         ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), salesOrderId, line.itemId(),
-                        line.quantity(), occurredAt, null)));
+                        InventorySaleUnitConverter.toStockQuantity(line.quantity(), line.stockUnit(), line.factor()),
+                        occurredAt, null, line.stockUnit())));
     }
 
     /**
@@ -228,7 +239,10 @@ public class InventoryReservationService {
     /**
      * 订单行维度的预留入参（只带预留需要的最小字段）。
      */
-    public record OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity) {
+    public record OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity, String stockUnit, BigDecimal factor) {
+        public OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity) {
+            this(itemId, skuId, quantity, null, null);
+        }
     }
 
     private static void requireFact(ReserveInventoryFact fact) {

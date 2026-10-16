@@ -12,6 +12,9 @@
 import { getRequest, postRequest } from '@/lib/smart-request';
 
 export const mallOrderApi = {
+  /** 按当前客户和收货地址列出允许选择的配送仓。 */
+  getWarehouses: (addressId) => getRequest('/scm/mall/warehouses', { addressId }),
+
   /**
    * 当前客户的订单分页
    * @param {{pageNum: number, pageSize: number, displayStatus?: string}} param

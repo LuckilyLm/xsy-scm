@@ -11,7 +11,8 @@ public final class MallQuantityPolicy {
     }
 
     public static boolean accepts(MallProductVO product, BigDecimal quantity) {
-        if (product == null || quantity == null) return false;
+        if (product == null || quantity == null)
+            return false;
         BigDecimal minimum = product.getMinOrderQty() == null ? BigDecimal.ONE : product.getMinOrderQty();
         BigDecimal step = product.getStepQty() == null ? BigDecimal.ONE : product.getStepQty();
         return minimum.signum() > 0 && step.signum() > 0 && quantity.compareTo(minimum) >= 0

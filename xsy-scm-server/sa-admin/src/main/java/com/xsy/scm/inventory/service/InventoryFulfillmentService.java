@@ -64,7 +64,15 @@ public class InventoryFulfillmentService {
      * @param quantity
      *            实发量，{@code >= 0}；为 0 表示该行全缺（OUT_OF_STOCK），不生成出库行
      */
-    public record Line(Long salesOrderId, Long salesOrderItemId, Long skuId, BigDecimal quantity) {
+    public record Line(Long salesOrderId, Long salesOrderItemId, Long skuId, BigDecimal quantity, String stockUnit,
+            BigDecimal factor) {
+        public Line(Long salesOrderId, Long salesOrderItemId, Long skuId, BigDecimal quantity) {
+            this(salesOrderId, salesOrderItemId, skuId, quantity, null, null);
+        }
+
+        public BigDecimal stockQuantity() {
+            return InventorySaleUnitConverter.toStockQuantity(quantity, stockUnit, factor);
+        }
     }
 
     /**
@@ -138,7 +146,7 @@ public class InventoryFulfillmentService {
             InventoryOutboundItemEntity item = insertItem(outbound.getId(), line, command.operator());
             String unit = inventoryCommandService
                     .postSalesOutbound(new InventoryOutboundFact(command.warehouseId(), line.skuId(), outbound.getId(),
-                            item.getId(), line.quantity(), null, command.occurredAt(), command.operator()));
+                            item.getId(), line.stockQuantity(), null, command.occurredAt(), command.operator()));
             inventoryOutboundItemDao.updateUnitSnapshot(item.getId(), unit, command.operator());
         }
         return new Result(outbound.getId(), outbound.getOutboundNo(), shipped.size());
@@ -298,6 +306,14 @@ public class InventoryFulfillmentService {
                 locked.put(balanceKey(pair[0], pair[1]), balance);
             }
         }
+        for (Line line : command.lines()) {
+            if (line.quantity().signum() > 0 && line.stockUnit() != null) {
+                InventoryBalanceEntity balance = locked.get(balanceKey(command.warehouseId(), line.skuId()));
+                if (balance != null && !line.stockUnit().equals(balance.getUnit())) {
+                    throw new ScmBusinessException(InventoryErrorCode.INVENTORY_UNIT_MISMATCH);
+                }
+            }
+        }
         return locked;
     }
 
@@ -357,6 +373,8 @@ public class InventoryFulfillmentService {
         item.setOutboundId(outboundId);
         item.setSkuId(line.skuId());
         item.setQuantity(line.quantity());
+        if (line.stockUnit() != null)
+            item.setStockQuantity(line.stockQuantity());
         item.setSalesOrderId(line.salesOrderId());
         item.setSalesOrderItemId(line.salesOrderItemId());
         item.setVersion(0);

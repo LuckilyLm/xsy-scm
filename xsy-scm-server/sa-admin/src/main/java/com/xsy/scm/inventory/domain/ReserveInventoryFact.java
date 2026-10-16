@@ -14,5 +14,11 @@ import java.time.OffsetDateTime;
  * {@code occurredAt} 取来源单据的确认时刻，不是写入时刻；{@code operator} 为空时由服务层取当前登录人。
  */
 public record ReserveInventoryFact(Long warehouseId, Long skuId, String sourceDocumentType, Long sourceDocumentId,
-        Long sourceDocumentItemId, BigDecimal quantity, OffsetDateTime occurredAt, String operator) {
+        Long sourceDocumentItemId, BigDecimal quantity, OffsetDateTime occurredAt, String operator,
+        String expectedStockUnit) {
+    public ReserveInventoryFact(Long warehouseId, Long skuId, String sourceDocumentType, Long sourceDocumentId,
+            Long sourceDocumentItemId, BigDecimal quantity, OffsetDateTime occurredAt, String operator) {
+        this(warehouseId, skuId, sourceDocumentType, sourceDocumentId, sourceDocumentItemId, quantity, occurredAt,
+                operator, null);
+    }
 }

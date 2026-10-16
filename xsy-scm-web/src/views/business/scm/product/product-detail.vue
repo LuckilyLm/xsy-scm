@@ -80,6 +80,9 @@
       <a-empty v-else description="暂无商品图片" :image="Empty.PRESENTED_IMAGE_SIMPLE"/>
       <a-divider orientation="left">商品规格</a-divider>
       <SkuTable :rows="product.skuList"/>
+      <a-divider orientation="left">商城库存单位换算</a-divider>
+      <a-alert type="info" show-icon message="库存按配送仓的记账单位维护，销售单位可与记账单位不同；库存换算比例在订单确认时冻结。"/>
+      <StockConversionEditor v-for="sku in product.skuList" :key="sku.skuId" :sku="sku"/>
     </template>
   </a-card>
 </template>
@@ -97,6 +100,7 @@ import {
   STORAGE_METHOD_ENUM
 } from '/@/constants/business/scm/product-const';
 import SkuTable from './components/product-sku-table.vue';
+import StockConversionEditor from './components/product-stock-conversion-editor.vue';
 import {productError} from './product-errors';
 import {datetime} from '../common/scm-display';
 

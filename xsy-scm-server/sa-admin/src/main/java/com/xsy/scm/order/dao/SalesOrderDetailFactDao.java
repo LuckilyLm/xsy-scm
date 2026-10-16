@@ -17,8 +17,7 @@ public interface SalesOrderDetailFactDao {
             @Param("scope") ScmValueScope warehouseScope, @Param("employeeId") Long employeeId,
             @Param("crossAssignee") boolean crossAssignee);
 
-    SalesOrderDetailVO.DeliveryFact delivery(@Param("orderId") Long orderId,
-            @Param("scope") ScmValueScope driverScope);
+    SalesOrderDetailVO.DeliveryFact delivery(@Param("orderId") Long orderId, @Param("scope") ScmValueScope driverScope);
 
     List<SalesOrderDetailVO.ReturnFact> returns(@Param("orderId") Long orderId);
 

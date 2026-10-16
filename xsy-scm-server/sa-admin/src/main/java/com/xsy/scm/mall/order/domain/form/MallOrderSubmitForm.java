@@ -19,6 +19,9 @@ public class MallOrderSubmitForm {
     private List<MallCheckoutItemForm> items;
     @NotNull(message = "请选择收货地址")
     private Long addressId;
+    /** 提交时必须是该客户配送仓选项之一；由订单服务冻结。 */
+    @Positive(message = "配送仓必须大于0")
+    private Long warehouseId;
     /**
      * 结算预览返回的价格指纹。提交时服务端按当前价格重算，不一致即拒绝，避免按旧价静默下单。
      */

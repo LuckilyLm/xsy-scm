@@ -27,8 +27,9 @@ public class MallWarehouseService {
     @Transactional(readOnly = true)
     public List<MallWarehouseOptionVO> options(Long customerId, Long addressId) {
         CustomerEntity customer = customerService.require(customerId);
-        MallAddressVO address = addressId == null ? addressDao.listByCustomer(customerId).stream()
-                .filter(row -> Boolean.TRUE.equals(row.getIsDefault())).findFirst().orElse(null)
+        MallAddressVO address = addressId == null
+                ? addressDao.listByCustomer(customerId).stream().filter(row -> Boolean.TRUE.equals(row.getIsDefault()))
+                        .findFirst().orElse(null)
                 : addressDao.detailById(customerId, addressId);
         if (addressId != null && address == null) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_NOT_FOUND);
@@ -46,6 +47,8 @@ public class MallWarehouseService {
             bound.setSource("CUSTOMER");
             bound.setPriority(-1);
             result.add(bound);
+            // 客户绑定仓是强约束，不允许用地址区县映射绕过绑定仓下单。
+            return result;
         }
         if (address != null && address.getDistrictCode() != null) {
             for (MallWarehouseOptionVO option : warehouseDao.byDistrict(address.getDistrictCode())) {
@@ -61,13 +64,13 @@ public class MallWarehouseService {
         if (warehouseId == null) {
             throw new ScmBusinessException(MallErrorCode.WAREHOUSE_REQUIRED);
         }
-        return options(customerId, addressId).stream()
-                .filter(option -> warehouseId.equals(option.getWarehouseId()))
+        return options(customerId, addressId).stream().filter(option -> warehouseId.equals(option.getWarehouseId()))
                 .findFirst().orElseThrow(() -> new ScmBusinessException(MallErrorCode.WAREHOUSE_UNAVAILABLE))
                 .getWarehouseId();
     }
 
     public Long preferred(Long customerId, Long addressId) {
-        return options(customerId, addressId).stream().findFirst().map(MallWarehouseOptionVO::getWarehouseId).orElse(null);
+        return options(customerId, addressId).stream().findFirst().map(MallWarehouseOptionVO::getWarehouseId)
+                .orElse(null);
     }
 }

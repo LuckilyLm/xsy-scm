@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.mall.address.domain.vo.MallAddressVO;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
 import lombok.Data;
 
 /**
@@ -13,6 +13,10 @@ import lombok.Data;
  */
 @Data
 public class MallCheckoutPreviewVO {
+    private Long warehouseId;
+    private String warehouseName;
+    private boolean warehouseRequired;
+    private List<MallWarehouseOptionVO> warehouses = new ArrayList<>();
     private List<MallCheckoutItemVO> items = new ArrayList<>();
     /** 当前选中的收货地址；未选择时为 null */
     private MallAddressVO address;

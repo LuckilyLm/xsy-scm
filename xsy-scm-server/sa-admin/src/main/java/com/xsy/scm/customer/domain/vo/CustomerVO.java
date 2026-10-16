@@ -35,6 +35,8 @@ public class CustomerVO {
 
     private Boolean codAllowed;
 
+    private Long mallDeliveryWarehouseId;
+
     /**
      * 授信额度，4 位定点字符串；{@code null} 保持 {@code null}。
      */

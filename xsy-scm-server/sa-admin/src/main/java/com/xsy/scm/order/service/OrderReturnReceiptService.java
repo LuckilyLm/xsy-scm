@@ -10,6 +10,7 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.inventory.domain.InventorySalesReturnFact;
 import com.xsy.scm.inventory.service.InventoryCommandService;
 import com.xsy.scm.inventory.service.InventorySalesReturnQueryService;
+import com.xsy.scm.inventory.service.InventorySaleUnitConverter;
 import com.xsy.scm.order.constant.ScmOrderOperationTypeEnum;
 import com.xsy.scm.order.constant.ScmOrderReturnStatusEnum;
 import com.xsy.scm.order.constant.ScmReturnReceiptDispositionEnum;
@@ -117,12 +118,30 @@ public class OrderReturnReceiptService {
                     throw new ScmBusinessException(
                             com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_COST_INCOMPLETE);
                 }
-                BigDecimal available = salesOut.getQuantity()
-                        .subtract(orderReturnReceiptItemDao.allocatedQuantity(salesOut.getId()));
-                if (available.signum() <= 0) {
+                // SALES_OUT 流水记录库存记账量；退货申请/批准/累计接收记录销售单位数量。
+                // 两种量不能直接相减，否则 1 箱=10 kg 时退回 2 箱会错记成 2 kg。
+                String stockUnit = orderItem.getMallStockUnitSnapshot();
+                BigDecimal factor = orderItem.getMallStockUnitsPerSaleUnit();
+                if (stockUnit != null && !stockUnit.equals(salesOut.getUnitSnapshot())) {
+                    throw new ScmBusinessException(
+                            com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_UNIT_MISMATCH);
+                }
+                BigDecimal availableStock = salesOut.getQuantity()
+                        .subtract(orderReturnReceiptItemDao.allocatedStockQuantity(salesOut.getId()));
+                if (availableStock.signum() <= 0) {
                     continue;
                 }
-                BigDecimal allocated = remaining.min(available);
+                BigDecimal availableSale = InventorySaleUnitConverter.availableSaleQuantity(availableStock, stockUnit,
+                        factor);
+                BigDecimal allocated = remaining.min(availableSale);
+                if (allocated.signum() <= 0) {
+                    continue;
+                }
+                BigDecimal allocatedStock = InventorySaleUnitConverter.toStockQuantity(allocated, stockUnit, factor);
+                if (allocatedStock.compareTo(availableStock) > 0) {
+                    throw new ScmBusinessException(
+                            com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_QUANTITY_EXCEEDED);
+                }
                 OrderReturnReceiptItemEntity item = new OrderReturnReceiptItemEntity();
                 item.setReceiptId(receipt.getId());
                 item.setReturnItemId(returnItem.getId());
@@ -130,15 +149,19 @@ public class OrderReturnReceiptService {
                 item.setSourceOutboundItemId(salesOut.getSourceDocumentItemId());
                 item.setDisposition(disposition.name());
                 item.setQuantity(allocated);
-                item.setUnitSnapshot(salesOut.getUnitSnapshot());
+                item.setUnitSnapshot(orderItem.getSaleUnitSnapshot() == null
+                        ? salesOut.getUnitSnapshot()
+                        : orderItem.getSaleUnitSnapshot());
+                item.setStockQuantity(allocatedStock);
+                item.setStockUnitSnapshot(salesOut.getUnitSnapshot());
                 item.setUnitCost(salesOut.getUnitCost());
                 item.setCreatedAt(now);
                 item.setCreatedBy(operator);
                 orderReturnReceiptItemDao.insert(item);
                 if (disposition == ScmReturnReceiptDispositionEnum.RETURN_TO_STOCK) {
                     inventoryCommandService.postSalesReturnInbound(new InventorySalesReturnFact(form.getWarehouseId(),
-                            orderItem.getSkuId(), returned.getId(), item.getId(), allocated, item.getUnitSnapshot(),
-                            item.getUnitCost(), now, operator));
+                            orderItem.getSkuId(), returned.getId(), item.getId(), allocatedStock,
+                            item.getStockUnitSnapshot(), item.getUnitCost(), now, operator));
                 }
                 OrderReturnReceiptVO.Item itemVO = new OrderReturnReceiptVO.Item();
                 itemVO.setReceiptItemId(item.getId());
@@ -148,6 +171,8 @@ public class OrderReturnReceiptService {
                 itemVO.setDisposition(disposition.name());
                 itemVO.setQuantity(allocated);
                 itemVO.setUnit(item.getUnitSnapshot());
+                itemVO.setStockQuantity(allocatedStock);
+                itemVO.setStockUnit(item.getStockUnitSnapshot());
                 itemVO.setUnitCost(item.getUnitCost());
                 resultItems.add(itemVO);
                 remaining = remaining.subtract(allocated);

@@ -5,8 +5,9 @@
     <!-- 显式列清单，不使用 SELECT *（修正 legacy K13：依赖列名驼峰映射的隐式契约） -->
     <sql id="customerColumns">
         c.id, c.version, c.visibility_policy, c.customer_code, c.name, c.customer_type_id, c.status, c.settle_mode,
-        c.cod_allowed,
-        c.credit_limit, c.parent_customer_id, c.settlement_customer_id, c.seller_id, c.supplier_id,
+        c.cod_allowed, c.mall_delivery_warehouse_id,
+        c.credit_limit, c.parent_customer_id, c.settlement_customer_id, c.mall_delivery_warehouse_id,
+        c.seller_id, c.supplier_id,
         c.contact_name, c.contact_phone, c.address,
         c.credit_period_type, c.credit_amount_threshold, c.credit_period_value, c.credit_period_unit,
         c.settle_day, c.remark, c.created_at, c.updated_at, c.created_by, c.updated_by
@@ -70,6 +71,13 @@
         WHERE id = #{customerId}
           AND version = #{version}
           AND deleted = FALSE
+    </update>
+
+    <update id="updateMallDeliveryWarehouse">
+        UPDATE xsy_customer
+        SET mall_delivery_warehouse_id = #{warehouseId}, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{customerId} AND version = #{version} AND deleted = FALSE
     </update>
 
     <select id="countActiveByTypeId" resultType="long">

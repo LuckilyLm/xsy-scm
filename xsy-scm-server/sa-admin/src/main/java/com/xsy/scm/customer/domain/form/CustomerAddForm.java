@@ -84,6 +84,12 @@ public class CustomerAddForm extends ScmLocationForm {
     /** 商城货到付款准入；未提供时新增默认关闭，编辑不改变已有设置。 */
     private Boolean codAllowed;
 
+    /** 商城默认配送仓；仅同时持客户编辑与仓库编辑权时可设置。 */
+    @Positive(message = "商城配送仓必须大于0")
+    private Long mallDeliveryWarehouseId;
+
+    private Boolean clearMallDeliveryWarehouse;
+
     /**
      * 授信额度，4 位定点字符串；缺省视作 0。
      */

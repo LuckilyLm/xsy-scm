@@ -173,7 +173,9 @@ public class DeliveryRouteService {
             throw new ScmBusinessException(LIMIT_EXCEEDED);
         // Lock all requested orders before reading snapshots or testing the unique ACTIVE assignment.
         for (Long orderId : ids) {
-            if (!eligibility.eligible(salesOrderDao.lock(orderId)))
+            var order = salesOrderDao.lock(orderId);
+            if (!eligibility.eligible(order) || (order.getMallDeliveryWarehouseId() != null
+                    && !Objects.equals(order.getMallDeliveryWarehouseId(), route.getWarehouseId())))
                 throw new ScmBusinessException(ORDER_INELIGIBLE);
         }
         var routeStops = new ArrayList<>(
@@ -372,7 +374,9 @@ public class DeliveryRouteService {
             throw new ScmBusinessException(EMPTY_ROUTE);
         // 发车前在锁上重查资格：PLANNED 之后分拣任务可能被重开，规划那一刻的结论不算数。
         for (var orderId : assigned.stream().map(DeliveryRouteOrderEntity::getOrderId).sorted().toList()) {
-            if (!eligibility.eligible(salesOrderDao.lock(orderId)))
+            var order = salesOrderDao.lock(orderId);
+            if (!eligibility.eligible(order) || (order.getMallDeliveryWarehouseId() != null
+                    && !Objects.equals(order.getMallDeliveryWarehouseId(), route.getWarehouseId())))
                 throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
         }
 
@@ -389,7 +393,8 @@ public class DeliveryRouteService {
                 if (line.getSortedQuantity() == null)
                     throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
                 lines.add(new InventoryFulfillmentService.Line(orderId, line.getSalesOrderItemId(), line.getSkuId(),
-                        line.getSortedQuantity()));
+                        line.getSortedQuantity(), line.getMallStockUnitSnapshot(),
+                        line.getMallStockUnitsPerSaleUnit()));
             }
         }
 

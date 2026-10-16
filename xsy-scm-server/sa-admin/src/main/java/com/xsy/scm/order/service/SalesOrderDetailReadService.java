@@ -82,9 +82,8 @@ public class SalesOrderDetailReadService {
         if (returnsVisible) {
             List<SalesOrderDetailVO.ReturnFact> returns = factDao.returns(orderId);
             if (receivablesVisible && !returns.isEmpty()) {
-                Map<Long, SalesOrderDetailVO.RedReceivableFact> redByReturn = factDao.redReceivables(orderId)
-                        .stream().collect(Collectors.toMap(SalesOrderDetailVO.RedReceivableFact::getReturnId,
-                                fact -> fact));
+                Map<Long, SalesOrderDetailVO.RedReceivableFact> redByReturn = factDao.redReceivables(orderId).stream()
+                        .collect(Collectors.toMap(SalesOrderDetailVO.RedReceivableFact::getReturnId, fact -> fact));
                 for (SalesOrderDetailVO.ReturnFact row : returns) {
                     SalesOrderDetailVO.RedReceivableFact red = redByReturn.get(row.getReturnId());
                     row.setRedReceivableRecorded(red != null);
@@ -102,9 +101,10 @@ public class SalesOrderDetailReadService {
             List<SalesOrderDetailVO.RefundFact> refunds = factDao.refunds(orderId);
             if (!refunds.isEmpty()) {
                 Map<Long, SalesOrderDetailVO.RefundFundingFact> fundingByRefund = factDao.refundFunding(orderId)
-                        .stream().collect(Collectors.toMap(SalesOrderDetailVO.RefundFundingFact::getRefundId,
-                                fact -> fact));
-                factDao.legacyRefundFunding(orderId).forEach(fact -> fundingByRefund.putIfAbsent(fact.getRefundId(), fact));
+                        .stream()
+                        .collect(Collectors.toMap(SalesOrderDetailVO.RefundFundingFact::getRefundId, fact -> fact));
+                factDao.legacyRefundFunding(orderId)
+                        .forEach(fact -> fundingByRefund.putIfAbsent(fact.getRefundId(), fact));
                 for (SalesOrderDetailVO.RefundFact row : refunds) {
                     SalesOrderDetailVO.RefundFundingFact funding = fundingByRefund.get(row.getRefundId());
                     if (funding == null) {

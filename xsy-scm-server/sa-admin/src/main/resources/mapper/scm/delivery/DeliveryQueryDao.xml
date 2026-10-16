@@ -179,7 +179,9 @@
         SELECT i.order_id             AS orderId,
                i.id                   AS salesOrderItemId,
                i.sku_id               AS skuId,
-               si.sorted_quantity     AS sortedQuantity
+               si.sorted_quantity     AS sortedQuantity,
+               i.mall_stock_unit_snapshot AS mallStockUnitSnapshot,
+               i.mall_stock_units_per_sale_unit AS mallStockUnitsPerSaleUnit
         FROM xsy_sales_order_item i
                  JOIN xsy_sorting_task_item si
                       ON si.sales_order_item_id = i.id AND si.deleted = FALSE AND si.occupation_status = 'ACTIVE'

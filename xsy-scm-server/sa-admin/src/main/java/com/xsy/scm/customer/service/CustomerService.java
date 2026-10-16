@@ -9,6 +9,7 @@ import com.xsy.scm.common.no.ScmBusinessNoService;
 import com.xsy.scm.common.no.ScmBusinessNoType;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.customer.constant.CustomerErrorCode;
 import com.xsy.scm.customer.constant.CustomerVisibilityPolicy;
@@ -21,6 +22,9 @@ import com.xsy.scm.customer.domain.form.CustomerSellerReassignForm;
 import com.xsy.scm.customer.domain.form.CustomerStatusForm;
 import com.xsy.scm.customer.domain.form.CustomerUpdateForm;
 import com.xsy.scm.customer.manager.CustomerValidator;
+import com.xsy.scm.warehouse.permission.WarehousePermission;
+import com.xsy.scm.warehouse.service.WarehouseService;
+import cn.dev33.satoken.stp.StpUtil;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Objects;
@@ -56,6 +60,8 @@ public class CustomerService {
     private final CustomerTypeService customerTypeService;
 
     private final ScmBusinessNoService businessNoService;
+    private final WarehouseService warehouseService;
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     /**
      * 读取客户，不存在或已删除 → 40430。
@@ -148,6 +154,7 @@ public class CustomerService {
         CustomerEntity entity = new CustomerEntity();
         entity.setCustomerCode(businessNoService.next(ScmBusinessNoType.CUSTOMER));
         apply(entity, form);
+        applyMallDeliveryWarehouse(entity, form);
         entity.setSellerId(resolveSellerOnCreate(form.getSellerId()));
         entity.setStatus(INITIAL_STATUS);
         entity.setVersion(0);
@@ -180,6 +187,7 @@ public class CustomerService {
         // 编辑表单里的 sellerId 对任何角色都只是回显值，否则普通销售把客户回传成别人的 id
         // 就能把它挪出自己的范围（或挪进别人的范围），行级范围随之失效。
         apply(entity, form);
+        applyMallDeliveryWarehouse(entity, form);
         entity.setVersion(form.getVersion());
         stamp(entity, false);
         try {
@@ -312,6 +320,29 @@ public class CustomerService {
         entity.setCreditPeriodValue(form.getCreditPeriodValue());
         entity.setCreditPeriodUnit(form.getCreditPeriodUnit());
         entity.setSettleDay(form.getSettleDay());
+    }
+
+    private void applyMallDeliveryWarehouse(CustomerEntity entity, CustomerAddForm form) {
+        Long requestedId = form.getMallDeliveryWarehouseId();
+        boolean clear = Boolean.TRUE.equals(form.getClearMallDeliveryWarehouse());
+        if (clear && requestedId != null) {
+            throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
+        }
+        boolean changed = clear
+                ? entity.getMallDeliveryWarehouseId() != null
+                : requestedId != null && !Objects.equals(requestedId, entity.getMallDeliveryWarehouseId());
+        if (!changed)
+            return;
+        StpUtil.checkPermission(WarehousePermission.UPDATE);
+        if (clear) {
+            entity.setMallDeliveryWarehouseId(null);
+            return;
+        }
+        warehouseScopeGuard.require(requestedId);
+        if (!warehouseService.enabled(requestedId)) {
+            throw new ScmBusinessException(com.xsy.scm.mall.account.constant.MallErrorCode.WAREHOUSE_UNAVAILABLE);
+        }
+        entity.setMallDeliveryWarehouseId(requestedId);
     }
 
     private void stamp(CustomerEntity entity, boolean creating) {

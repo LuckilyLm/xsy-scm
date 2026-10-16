@@ -36,6 +36,7 @@
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:warehouse:add'" @click="open()">新建仓库</a-button>
         <a-button v-privilege="'scm:warehouse:scope:update'" @click="scopeModal?.open()">授权维护</a-button>
+        <a-button v-privilege="'scm:warehouse:query'" @click="districtModal?.open()">商城配送区县</a-button>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_WAREHOUSE" :refresh="queryData"/>
@@ -130,6 +131,7 @@
   </a-modal>
 
   <WarehouseScopeModal ref="scopeModal"/>
+  <MallDistrictWarehouseModal ref="districtModal"/>
 </template>
 
 <script setup lang="ts">
@@ -146,6 +148,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import WarehouseScopeModal from './components/warehouse-scope-modal.vue';
+import MallDistrictWarehouseModal from './components/mall-district-warehouse-modal.vue';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_PURCHASE_TABLE_ID, SCM_WAREHOUSE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
@@ -174,6 +177,7 @@ const formRules = {
 const area = ref<AreaNode[]>([]);
 /** 员工—仓库授权维护（独立权限点，与仓库主数据编辑分开）。 */
 const scopeModal = ref<InstanceType<typeof WarehouseScopeModal>>();
+const districtModal = ref<InstanceType<typeof MallDistrictWarehouseModal>>();
 
 function onAreaChange(_value: unknown, nodes: AreaNode[]) {
   Object.assign(form.value, areaColumnsOf(nodes), emptyLocation());

@@ -51,8 +51,8 @@ public class ReceiptReportService {
         }
         ReceiptReportVO.ReceiptSummary summary = reportDao.receiptSummary(range.startAt(), range.endAt(), form,
                 context.getWarehouseScope());
-        summary.setQuantities(reportDao.receiptQuantitySummary(range.startAt(), range.endAt(), form,
-                context.getWarehouseScope()));
+        summary.setQuantities(
+                reportDao.receiptQuantitySummary(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         return summary;
     }
 
@@ -91,8 +91,8 @@ public class ReceiptReportService {
         }
         ReceiptReportVO.InboundSummary summary = reportDao.inboundSummary(range.startAt(), range.endAt(), form,
                 context.getWarehouseScope());
-        summary.setQuantities(reportDao.inboundQuantitySummary(range.startAt(), range.endAt(), form,
-                context.getWarehouseScope()));
+        summary.setQuantities(
+                reportDao.inboundQuantitySummary(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         if (!context.isCostVisible()) {
             summary.setKnownCostAmount(null);
             summary.setCostMissingCount(null);
@@ -121,7 +121,8 @@ public class ReceiptReportService {
             empty.setQuantities(List.of());
             return empty;
         }
-        ReceiptReportVO.PendingPutawaySummary summary = reportDao.pendingPutawaySummary(form, context.getWarehouseScope());
+        ReceiptReportVO.PendingPutawaySummary summary = reportDao.pendingPutawaySummary(form,
+                context.getWarehouseScope());
         summary.setQuantities(reportDao.pendingPutawayQuantitySummary(form, context.getWarehouseScope()));
         return summary;
     }

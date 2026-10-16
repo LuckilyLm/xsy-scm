@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 @Data
@@ -18,4 +19,6 @@ public class MallProductQueryForm {
     @Size(max = 100, message = "搜索关键字不能超过100个字符")
     private String keyword;
     private Long categoryId;
+    @Positive(message = "配送仓必须大于0")
+    private Long warehouseId;
 }

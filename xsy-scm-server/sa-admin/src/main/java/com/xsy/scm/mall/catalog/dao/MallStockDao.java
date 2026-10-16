@@ -9,4 +9,6 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface MallStockDao {
     List<MallStockFact> bySkus(@Param("warehouseId") Long warehouseId, @Param("skuIds") List<Long> skuIds);
+
+    List<MallStockFact> configuredConversions(@Param("skuId") Long skuId, @Param("saleUnit") String saleUnit);
 }

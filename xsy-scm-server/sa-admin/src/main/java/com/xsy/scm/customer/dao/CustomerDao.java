@@ -41,5 +41,8 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
     /** Locks the active customer row used as the authoritative settlement/credit account. */
     CustomerEntity lock(@Param("customerId") Long customerId);
 
+    int updateMallDeliveryWarehouse(@Param("customerId") Long customerId, @Param("version") Integer version,
+            @Param("warehouseId") Long warehouseId, @Param("operator") String operator);
+
     List<CustomerEntity> selectActiveByCodes(@Param("codes") List<String> codes);
 }

@@ -88,6 +88,8 @@ export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
     customerTypeId?: ScmId;
     parentCustomerId?: ScmId | null;
     settlementCustomerId?: ScmId | null;
+    mallDeliveryWarehouseId?: ScmId | null;
+    clearMallDeliveryWarehouse?: boolean;
     /**
      * 业务员（员工）ID。
      *

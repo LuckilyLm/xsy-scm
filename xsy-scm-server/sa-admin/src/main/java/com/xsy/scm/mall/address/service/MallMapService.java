@@ -43,8 +43,10 @@ public class MallMapService {
         List<MallMapLocationVO> result = new ArrayList<>();
         if (pois.isArray()) {
             for (JsonNode poi : pois) {
-                MallMapLocationVO location = location(poi.path("location").asText(null), poi.path("adcode").asText(null));
-                if (location == null) continue;
+                MallMapLocationVO location = location(poi.path("location").asText(null),
+                        poi.path("adcode").asText(null));
+                if (location == null)
+                    continue;
                 location.setName(poi.path("name").asText(null));
                 location.setAddress(poi.path("address").asText(null));
                 location.setProvinceName(poi.path("pname").asText(null));
@@ -58,8 +60,7 @@ public class MallMapService {
 
     public MallMapLocationVO reverse(BigDecimal longitude, BigDecimal latitude) {
         if (longitude == null || latitude == null || longitude.compareTo(new BigDecimal("-180")) < 0
-                || longitude.compareTo(new BigDecimal("180")) > 0
-                || latitude.compareTo(new BigDecimal("-90")) < 0
+                || longitude.compareTo(new BigDecimal("180")) > 0 || latitude.compareTo(new BigDecimal("-90")) < 0
                 || latitude.compareTo(new BigDecimal("90")) > 0) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_COORDINATE_INVALID);
         }
@@ -106,7 +107,8 @@ public class MallMapService {
     }
 
     private static MallMapLocationVO location(String coordinates, String adcode) {
-        if (coordinates == null || !coordinates.matches("-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?")) return null;
+        if (coordinates == null || !coordinates.matches("-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?"))
+            return null;
         String[] values = coordinates.split(",", 2);
         MallMapLocationVO result = new MallMapLocationVO();
         result.setLongitude(new BigDecimal(values[0]));
