@@ -111,7 +111,7 @@
         <template #description>
           应收单 {{ codPreview.receivableNo }}；结算主体 {{ codPreview.settlementCustomerName }}；
           净应收 {{ moneyText(codPreview.netAmount) }}；当前待收 {{ moneyText(codPreview.openAmount) }}。
-          可分笔登记，提交时服务端重新核对剩余金额。
+          可分笔登记，提交时将再次核对剩余应收金额。
         </template>
       </a-alert>
       <a-form-item label="本次实收金额" required>

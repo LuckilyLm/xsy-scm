@@ -385,7 +385,7 @@ const mallAccountCols: TableColumnsType<MallAccount> = [
   {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
   {title: '临时密码', dataIndex: 'firstPasswordChange', width: 140, align: 'center'},
   {title: '最近登录', dataIndex: 'lastLoginAt', width: 180},
-  {title: '操作', dataIndex: 'action', width: 200, align: 'center'}
+  {title: '操作', dataIndex: 'action', width: 180, align: 'center'}
 ];
 
 const statusText = (value: CustomerStatus): string => CUSTOMER_STATUS_ENUM[value]?.desc || value;

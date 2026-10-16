@@ -23,6 +23,8 @@
 
 - 2026-10-16 **PAY-VERIFY 真实 PG 资金定向回归通过**：PostgreSQL 18（Docker 临时隔离容器）执行两轮 `mvn -B -pl sa-admin -am '-Dtest=...' '-Dsurefire.failIfNoSpecifiedTests=false' test`，分别为 **38/38**（`MallWalletPaymentPgIT,MallCreditExposurePgIT,MallSettlementOptionsPgIT,FinanceCodCollectionPgIT,PaymentRefundRecoveryPgIT,PaymentRefundSumBasisPgIT`）和 **47/47**（`ScmFinancePaymentPgIT,PaymentCallbackEventPersistPgIT,RefundFundingAllocationSavepointPgIT,RefundFundingAllocationTimePgIT,ScmFinanceOrderFundingSourcePgIT,ScmFinanceReceiptSettlementPgIT,MallOrderPaymentDisplayPgIT,ScmFinancePaymentPermissionPgIT,AdminSettlementTermsPgIT`），合计 **85 个执行通过，0 失败/错误/跳过，两轮 BUILD SUCCESS**。修正 `MallWalletPaymentPgIT` 旧夹具：GCJ-02 收货坐标、独立高德逆地理编码替身、客户指定配送仓和正式采购收货的可售库存；未修改资金业务规则。验证包括余额支付幂等/并发与不足回滚、COD 分笔和补收、账期敞口、结算权限、回调记录、资金来源退款分摊及恢复。**未执行真实支付渠道沙箱、真实高德、微信真机及存量生产库升级**。
 
+- 2026-10-17 **QUALITY-01 管理后台前端门禁已转绿**：对 `xsy-scm-web` 运行 `python tools/verify.py frontend`，结果 **PASS (exit 0)，FAILED/INCOMPLETE 均为 none**；其中 Vue/Node 页面契约测试 **444/444 通过，0 失败、0 跳过**，TypeScript 基线棘轮、ESLint、E2E TypeScript 类型检查、Vite 生产构建均 exit 0。修复上一轮 13 个失败涉及的操作列宽度、详情页分区标题、分拣电子秤原始读数与已接受数量展示、workspace 抽屉、状态/单位列对齐、用户可见文案、主题变量及 B7 文档溯源；未修改原有契约断言。构建仍提示超大 JS chunk 警告，但构建成功。**Playwright 主 E2E 尚未运行**：检查时 18080 / 18081 本地测试 API 端口未监听；该前置阻塞独立于静态门禁。
+
 - 2026-10-16 **QUALITY-01 分项验证（未全部闭环）**：对 `main` 本地基线设置 `QUALITY_RATCHET_FROM=38255e4b` 执行 `python tools/verify.py quality`，修复枚举字符串、客户配送仓跨域 DAO、Finance ArchUnit 规则表达、Checkstyle 长行、V137 迁移测试默认版本后，最终 **PASS，0 FAILED / 0 INCOMPLETE**。真实 PostgreSQL 回归 `ScmMigrationTargetPgIT,MallStockAvailabilityServiceTest,MallWarehouseServiceTest,MallCatalogServiceTest,MallOrderFlowPgIT,MallWalletPaymentPgIT` **22 项，21 执行通过、1 条按促销条件跳过**；`ScmArchitectureTest` **9/9 通过**，新增 `MallWarehouseAdminPgIT` 对客户配送仓绑定/清除与版本递增 **1/1 通过**。`python tools/verify.py e2e` 返回 **INCOMPLETE (exit 2)**，因为 `127.0.0.1:18080` 与 `127.0.0.1:18081` 未监听，没有执行 Playwright 全链浏览器测试。管理后台 `python tools/verify.py frontend` 首轮发现：lint、`typecheck:e2e`、build 成功，但 444 项页面契约测试中 **431 通过/13 失败**；TypeScript 初扫比既有 1774 条基线多 1 条（侧栏 openKeys 误推断为 `never[]`）；补充 `string | number` 键类型后独立复核 **PASS：1770 条，较基线减少 4 条，SCM 0 条、无新增错误**。**完整 QUALITY-01 的前端组件契约与 E2E 仍未通过**。
 
 - 2026-10-16 **WX-VERIFY 客户端本地代码门禁通过（真实环境待验）**：`xsy-scm-customer-app` 执行 `npm test` **41/41 通过**、`npm run lint` **0 错误**、`npm run build:h5` 和 `npm run build:mp-weixin` **均 BUILD 完成（exit 0）**。最初 lint 有 265 条错误，按已有 ESLint/Prettier 规则修复 18 个相关文件的格式与 Vue 标签闭合，并为 Node 契约测试补 `node:url` 的 URL 导入；变更后重新执行上述四项均通过。两个构建仍有 Sass `@import` 等弃用警告，不属于构建失败。**本机未检测到可调用的微信开发者工具 CLI，会话中没有可用于真实高德 API 请求的密钥；微信开发者工具运行、真机、真实地理编码和弱网交互仍未验收**。
@@ -35,7 +37,7 @@
 
 ## 待完成
 
-- **当前执行顺序**：GATE-01 空库迁移、GATE-02 核心业务黄金链、PAY-VERIFY 本地资金 PG 回归和 WX-VERIFY 客户端静态门禁/双端构建已通过；**下一阶段 QUALITY-01**（主 E2E、聚合和全量门禁），同时等待真实高德密钥、微信开发者工具/真机完成 WX 外部联调。存量升级另做隔离模拟。详细任务及验收见[下一阶段开发计划](next-development-plan.md)。
+- **当前执行顺序**：GATE-01、GATE-02、PAY-VERIFY 本地验证、WX-VERIFY 客户端双端构建和 QUALITY-01 静态/后端/管理后台前端门禁均有通过记录；**下一阶段优先在隔离测试服务完成 Playwright E2E、B1/B4/B5/B7 聚合与权限验收**，并补微信开发者工具/真机及真实高德服务验证。生产存量升级另行隔离模拟；不能用任何本地构建结果替代外部验收。详见[下一阶段开发计划](next-development-plan.md)。
 
 - **资金闭环剩余验收**：V132 分笔 COD、历史人工补收展示、冻结结算主体、支付方式限制、同键余额支付回放及退款分摊已通过独立 PostgreSQL 定向回归；**尚未执行真实支付渠道沙箱、模拟存量库完整升级、生产迁移和业务现场端到端验收**。授信敞口关于账期预占、历史空方式及已开应收的定向测试已执行；不要把定向回归等同于全量验收。
 - **错误码**：源码有 39 组既有撞码，已建立完整注册清单及新撞码门禁源码，未运行门禁；已发布数值的兼容迁移尚未执行。
@@ -52,7 +54,7 @@
 | B1 | 收货 / 入库报表 | 三类汇总接口与页面已接入 | 筛选、仓库范围、单位分组、成本权限及缺失语义 |
 | B4 | 销售订单详情 | 库存预留、分拣与配送只读聚合已接入独立页面 | 订单与仓库/指派/司机范围交集，线路及签收进度 |
 | B5 | 销售订单详情 | 退货、红字应收、退款单及资金返还事实已分开展示 | 旧退款事实、混合来源部分失败、权限与历史数据 |
-| B7 | 优惠券列表 | 发放、领取、已使用累计张数及冻结券让利已接入 | 来源分类、USED 终态、让利缺失、列表与详情一致性 |
+| B7 | 优惠券列表 | 发放、领取、已使用累计张数及冻结券让利已接入；后端证据：`PromotionCouponService`、`PromotionCouponVO` | 来源分类、USED 终态、让利缺失、列表与详情一致性 |
 
 已具备且不是缺口：Finance 操作流水提供 `operator` / `createdAt`；收货确认人、收货模式、上架状态、优惠赠品详情及成本缺失/权限区分均由正式字段提供。金额或成本未知时不得用 0 代替。已关闭的旧 UI 口径项：共享数字样式已收口，`.num` 已关闭，不再是后端缺口或待决设计。
 

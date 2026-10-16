@@ -1,5 +1,6 @@
 <template>
-  <a-drawer :open="open" title="订单称重工作台" :width="scmDrawerWidth('l')" @close="close">
+  <!-- workspace：称重记录要并排核对读数、已接受分拣量、设备状态与处理操作，属于多面板业务工作台。 -->
+  <a-drawer :open="open" title="订单称重工作台" :width="scmDrawerWidth('workspace')" @close="close">
     <a-alert type="info" show-icon class="workbench-alert"
              message="电子秤采集接口待接入"
              description="先选择订单和商品规格；设备接入后，稳定读数将在下方出现。只有人工接受才会写入分拣结果。"/>
@@ -56,7 +57,7 @@
       </a-card>
 
       <a-card v-if="isDev && selectedItem" size="small" class="demo-card">
-        <template #title>界面演示（不写数据库）</template>
+        <template #title>本地示例（仅展示）</template>
         <a-space wrap>
           <span>模拟重量</span>
           <a-input-number v-model:value="demoReading" string-mode :min="0" :precision="4"
@@ -69,7 +70,7 @@
 
       <a-card size="small" title="称重记录" class="events-card">
         <a-table :data-source="visibleEvents" :columns="scaleColumns" row-key="id" size="small" bordered
-                 :loading="scaleLoading" :pagination="false" :scroll="{x:1150}"
+                 :loading="scaleLoading" :pagination="false" :scroll="{x:1280}"
                  :locale="{emptyText: '当前订单商品暂无设备上报记录'}">
           <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'status'">
@@ -81,7 +82,10 @@
               <a-tag :color="record.stableFlag ? 'green' : 'orange'">{{ record.stableFlag ? '稳定' : '跳动' }}</a-tag>
             </template>
             <template v-else-if="column.dataIndex === 'rawReading'">
-              <strong class="scm-quantity">{{ quantityText(record.rawReading) }}</strong>
+              <span class="reading"><strong class="scm-quantity">{{ quantityText(record.rawReading) }}</strong></span>
+            </template>
+            <template v-else-if="column.dataIndex === 'acceptedQuantity'">
+              <span class="accepted"><strong class="scm-quantity">{{ record.acceptedQuantity == null ? '—' : quantityText(record.acceptedQuantity) }}</strong></span>
             </template>
             <template v-else-if="column.dataIndex === 'capturedAt' || column.dataIndex === 'receivedAt'">
               {{ datetime(record[column.dataIndex]) }}
@@ -320,7 +324,8 @@ function close() {
 
 const scaleColumns: TableColumnsType<SortingScaleEvent> = [
     {title: '状态', dataIndex: 'status', align: 'center', width: 90},
-    {title: '读数', dataIndex: 'rawReading', align: 'right', width: 120},
+    {title: '原始读数', dataIndex: 'rawReading', align: 'right', width: 120},
+    {title: '已接受数量', dataIndex: 'acceptedQuantity', align: 'right', width: 120},
     {title: '单位', dataIndex: 'unit', align: 'center', width: 70},
     {title: '稳定', dataIndex: 'stableFlag', align: 'center', width: 80},
     {title: '设备', dataIndex: 'deviceCode', width: 130},
@@ -340,6 +345,8 @@ const scaleColumns: TableColumnsType<SortingScaleEvent> = [
 .reading-number { font-size: 40px; line-height: 1.4; font-variant-numeric: tabular-nums; font-weight: 700; }
 .reading-number small { font-size: 18px; font-weight: 400; }
 .reading-facts { min-width: 280px; }
+.reading { font-weight: 700; color: var(--scm-text); }
+.accepted { font-weight: 700; color: var(--scm-success); }
 .demo-note { margin: 10px 0 0; color: var(--scm-text-secondary, #667085); }
 .accept-form { margin-top: 16px; }
 </style>

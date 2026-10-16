@@ -1,4 +1,4 @@
-<!-- 优惠券列表显示可领取、已领取和使用状态，用户操作结果以服务端返回为准。 -->
+<!-- B7 优惠券来源与让利投影验证：docs/status.md。用户操作结果以服务端返回为准。 -->
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
@@ -30,7 +30,7 @@
         <a-button type="primary" v-privilege="'scm:promotion:coupon:edit'" @click="openCreate">新建券</a-button>
       </div>
     </a-row>
-    <p class="hint">累计统计：后台发放与商城领取按来源分别计数；已使用包含两种来源，券让利取已使用订单的冻结金额。</p>
+    <p class="hint">累计数据按发放、领取及实际使用记录统计。</p>
 
     <a-table
         size="small"

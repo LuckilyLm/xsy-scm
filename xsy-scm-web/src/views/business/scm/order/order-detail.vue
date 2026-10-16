@@ -23,7 +23,7 @@
 
         <!-- 1. 状态与核心摘要 -->
         <section class="detail-section">
-          <h3>订单概览</h3>
+          <h3>状态与核心摘要</h3>
           <a-descriptions bordered size="small" :column="2">
             <a-descriptions-item label="订单号">{{ order.orderNo }}</a-descriptions-item>
             <a-descriptions-item label="下单金额">{{ amount(order.orderedTotalAmount, true) }}</a-descriptions-item>

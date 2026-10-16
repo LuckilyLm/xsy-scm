@@ -57,7 +57,7 @@
         </a-descriptions>
 
         <!-- 5. 关联商品 -->
-        <h3 class="detail-section--nested">已关联商品</h3>
+        <h3 class="detail-section--nested">已关联商品（快照）</h3>
         <a-table
             :data-source="relations"
             :columns="relationColumns"

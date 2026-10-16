@@ -563,7 +563,7 @@ onMounted(() => {
   gap: 8px 24px;
   padding: 10px 14px;
   margin-bottom: 10px;
-  background: var(--ant-color-fill-quaternary, #fafafa);
+  background: var(--scm-fill, #fafafa);
   border-radius: 4px;
 }
 </style>
