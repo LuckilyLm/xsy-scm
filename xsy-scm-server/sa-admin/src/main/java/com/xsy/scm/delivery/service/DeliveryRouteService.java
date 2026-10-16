@@ -434,21 +434,7 @@ public class DeliveryRouteService {
         return result;
     }
 
-    /**
-     * 订单级签收：{@code IN_TRANSIT → SIGNED | EXCEPTION}。
-     *
-     * <p>
-     * 本方法先锁线路行，再按 {@code route → xsy_sales_order} 的顺序锁被签订单行。与退货批准共用订单行锁，确保签收与批准按同一顺序串行，避免遗漏红字应收。线路内某一单的行级并发另外由
-     * {@code version} 乐观锁 + 条件更新兜底 （{@code markSigned} 返回 0 即「有人比你先签了」）。签收是单向推进（{@code PENDING / IN_TRANSIT}
-     * 只能走向终态），因此完成线路所要求的 「全部活动订单已终态」对并发签收是单调的。
-     *
-     * <p>
-     * 应收生成不获取业务行锁：订单行锁由本方法这个调用方持有，生成器只 INSERT 财务自己的表；跨线路重复签同一订单由 {@code uk_finance_receivable_source_active}
-     * 仲裁，后到者命中唯一索引即按「已生成」静默返回。
-     *
-     * <p>
-     * 异常签收<b>不反冲</b> {@code SALES_OUT}：库存已真实出库，冲销必须由后续退货流程新增反向事实。
-     */
+    /** 签收先锁配送线路，再按订单 ID 顺序锁订单，避免与退货审批并发漏记应收。已签收的订单不能重复签收；异常签收不自动恢复已出库库存，需要通过退货处理。 */
     @Transactional(rollbackFor = Exception.class)
     public void sign(Long routeId, Long orderId, DeliverySignForm form) {
         var route = deliveryQueryDao.lockRoute(routeId);

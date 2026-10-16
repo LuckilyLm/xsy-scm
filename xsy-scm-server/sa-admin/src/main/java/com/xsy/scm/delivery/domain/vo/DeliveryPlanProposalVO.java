@@ -9,16 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
 
-/**
- * 排线建议。
- *
- * <p>
- * {@code estimated} 与 {@code providerCode} / {@code providerVersion} / {@code ruleCode} 必须一起展示：
- * 它们共同回答「这个顺序是按什么、用哪一版算法、在什么前提下算出来的」。只给一个总距离的 排线结果不可复核。
- *
- * <p>
- * {@code applied} 状态由建议自己带，线路侧不另存「当前建议」指针 —— 线路的停靠顺序本身就是 应用结果，再加一个指针会出现两者不一致。
- */
+/** 配送路线建议保留算法来源、版本和是否估算的信息，方便核对。线路停靠顺序本身就是建议应用后的结果。 */
 @Data
 public class DeliveryPlanProposalVO {
 
