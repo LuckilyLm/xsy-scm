@@ -1,18 +1,6 @@
 import type {SmartEnum} from '/@/types/smart-enum';
 
-/**
- * 采购单状态（6 值字符串，与状态机和 DB `ck_purchase_order_status` 白名单逐字一致）。
- *
- *
- * DRAFT ──submit──→ SUBMITTED ──收货──→ PARTIALLY_RECEIVED ──收货──→ RECEIVED
- *   │                   │                        │
- *   │cancel             │cancel                  │short-close
- *   ▼                   ▼                        ▼
- * CANCELLED ←───────────┘                  SHORT_CLOSED
- *
- *
- * `RECEIVED` / `SHORT_CLOSED` / `CANCELLED` 是终态；`PARTIALLY_RECEIVED` 不允许取消。
- */
+/** 采购单状态依次为草稿、已提交、部分收货及收货完成等。部分收货不能直接取消；已收货、少收关单和已取消均为终态。 */
 export const SCM_PURCHASE_STATUS_ENUM: SmartEnum<string> = {
     DRAFT: {value: 'DRAFT', desc: '草稿'},
     SUBMITTED: {value: 'SUBMITTED', desc: '已提交'},

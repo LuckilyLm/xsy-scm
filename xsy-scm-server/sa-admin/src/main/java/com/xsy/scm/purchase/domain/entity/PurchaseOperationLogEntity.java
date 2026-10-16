@@ -12,21 +12,7 @@ import java.util.Map;
 
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 
-/**
- * 采购操作日志。
- *
- * <p>
- * <b>只追加</b>：没有 {@code version} / {@code deleted} / {@code updated_*}，也没有 update / delete 端点。
- *
- * <p>
- * <b>归属</b>：{@code purchaseOrderId} 与 {@code purchaseReceiptId} 的取值由 {@code operationType} 决定，由
- * {@code ck_purchase_operation_log_owner} 在 DB 层强制： {@code DEMAND_GENERATE} 双 id 为空（此时采购单与收货单都还不存在）·
- * {@code DEMAND_ALLOCATE} 只有采购单 id（由 {@code purchaseOrderItemId} 反查）·
- * {@code CREATE/UPDATE/SUBMIT/CANCEL/SHORT_CLOSE/DELETE} 只有采购单 id · {@code RECEIPT_*} 双 id 非空。
- *
- * <p>
- * {@code beforeData} / {@code afterData} 写<b>全量快照</b>，格式与订单域的 {@code xsy_order_operation_log} 一致。
- */
+/** 采购操作日志只允许新增；保留变更前后的单据数据，不能修改或删除历史记录。 */
 @Data
 @TableName(value = "xsy_purchase_operation_log", autoResultMap = true)
 public class PurchaseOperationLogEntity {

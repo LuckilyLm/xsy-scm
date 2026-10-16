@@ -10,22 +10,7 @@ import java.util.Objects;
 
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_ALLOCATION_DUPLICATE;
 
-/**
- * 采购单分配级差量。
- *
- * <p>
- * allocation 身份 = {@code (purchase_order_item_id, purchase_demand_id)}，由
- * {@code uk_purchase_demand_allocation_source_active} 强制。
- *
- * <p>
- * 请求内同一 {@code (itemId, demandId)} 出现两次 → {@code PURCHASE_DEMAND_ALLOCATION_DUPLICATE}。 两侧都有的 identity 仅当数量不同才进
- * {@link #updated}，且更新项继承旧行的 {@code id} / {@code version} / {@code createdAt} / {@code createdBy} —— {@code version}
- * 是行级乐观锁的谓词，必须来自库中值。 只在旧集合的 identity 进 {@link #removed}，只在请求集合的 identity 进 {@link #inserted}。
- *
- * <p>
- * 调用方必须遍历旧集合 ∪ 新集合的 demandId 去重算需求侧（并集用 {@link #involvedDemandIds}）： 只在旧集合出现的 demand 被删空也要重算，否则
- * {@code allocated_quantity} 不会回落、 {@code status} 也不会从 {@code ALLOCATED} 退回 {@code PENDING}。
- */
+/** 按采购明细与需求的组合识别分配记录。先校验本次变更，再统一写入，避免分配数量重复。 */
 public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEntity> inserted,
         List<PurchaseDemandAllocationEntity> updated, List<PurchaseDemandAllocationEntity> removed) {
 
