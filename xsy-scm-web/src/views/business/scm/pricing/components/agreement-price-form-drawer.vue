@@ -107,12 +107,7 @@ const formRules = {
   }],
 };
 const range = ref<[string, string] | undefined>();
-/**
- * 单价在表单里是 `number`（InputNumber 只接受数字），而 `PriceForm.unitPrice` 是
- * 定点字符串（后端拒绝 JSON 数字）。这里用一个独立 ref 承载控件值：
- * 打开时从字符串解出，提交时由 `fixed4` 收口回字符串 —— 不做双向桥接，
- * 免得每次击键都往返一次格式化，把控件自己的编辑态冲掉。
- */
+/** 价格输入框使用数字控件，提交后端时转换成定点数字符串，不直接发送 JSON 数字。 */
 const unitPrice = ref<number | null>(null);
 const api = pricingApi.agreement;
 let requestId = 0;
