@@ -19,15 +19,7 @@ import {
  */
 const REFRESH_INTERVAL = 30_000;
 
-/**
- * 大屏数据源。
- *
- * 首次加载失败才进入 error（页面没有可用数据）；静默刷新失败只记 staleError，
- * 保留旧数据、把「数据可能过期」交给头部状态栏 —— 大屏上把已渲染好的数据
- * 换成错误页是最差的选择。
- *
- * 趋势单独拉取：切换 7 天 / 30 天只影响趋势带，没必要把经营、库存、采购三个聚合重拉一遍。
- */
+/** 首次加载失败显示错误；后台静默刷新失败时保留旧数据并标注可能过期。切换趋势周期不重新请求其他业务指标。 */
 export function useScreenData() {
     const business = ref<BusinessData | null>(null);
     const inventory = ref<InventoryData | null>(null);

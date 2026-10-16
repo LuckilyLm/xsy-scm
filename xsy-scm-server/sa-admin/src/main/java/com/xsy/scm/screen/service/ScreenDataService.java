@@ -123,15 +123,7 @@ public class ScreenDataService {
         return vo;
     }
 
-    /**
-     * 地理分布（地图 M1）。
-     *
-     * <p>
-     * 气泡取市级聚合行，省界着色由这批行<b>在 Java 侧上卷</b>得到：两者因此恒等，不存在「省级图例与市级气泡对不上」这种两份 SQL 各自演算的漂移。
-     *
-     * <p>
-     * 覆盖度原样透出：{@code 总数 − 已归属} 就是地图上找不到位置的业务量，必须让用户看到差额，而不是以为看到的分布等于全部业务量。
-     */
+    /** 地图气泡来自市级业务汇总，省级值从市级结果汇总。未能归属地区的数据要保留覆盖率提示，不能直接丢掉。 */
     public ScreenGeoVO getGeoData() {
         ScmDataScopeContext scope = dataScopeService.resolve();
         List<ScreenGeoVO.CityNode> cities = nullToEmpty(screenDataDao.geoCityRows(scope));

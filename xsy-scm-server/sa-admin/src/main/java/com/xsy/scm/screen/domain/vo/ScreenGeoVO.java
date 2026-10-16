@@ -6,15 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 数据大屏-地理分布快照（只读聚合，地图 M1）。
- *
- * <p>
- * 坐标一律来自 {@code xsy_region} 的<b>区划质心</b>（GCJ-02），不是任何单位的实际地址坐标；质心只用于把「某个市有 N 个客户」画在地图的正确位置上，不代表该市的范围或点位。
- *
- * <p>
- * 省级与市级两层都由市级聚合行<b>在 Java 侧上卷</b>得到，因此省界数值与气泡之和恒等，不会出现「省级图例和市级气泡对不上」这种两份 SQL 各自演算的漂移。
- */
+/** 大屏地图使用行政区划质心定位汇总气泡，不代表客户真实地址。省级数据由市级汇总上卷，确保数值一致。 */
 @Data
 @Schema(description = "数据大屏-地理分布")
 public class ScreenGeoVO {
@@ -28,13 +20,7 @@ public class ScreenGeoVO {
     @Schema(description = "地理归属覆盖度")
     private Coverage coverage;
 
-    /**
-     * 市级节点。
-     *
-     * <p>
-     * {@code centerLng} / {@code centerLat} 来自区划字典，字典里查不到的编码不会成为节点 （没有坐标的气泡画不出来），这类记录只会体现在 {@code coverage}
-     * 的「已归属」与气泡之和的差额里。
-     */
+    /** 地图坐标来自行政区划字典，缺少坐标的记录不画气泡，但仍计入覆盖率的未定位差额。 */
     @Data
     @Schema(description = "市级地理节点")
     public static class CityNode {

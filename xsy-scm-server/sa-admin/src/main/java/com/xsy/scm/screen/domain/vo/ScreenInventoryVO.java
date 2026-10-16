@@ -44,20 +44,7 @@ public class ScreenInventoryVO {
         private BigDecimal quantity;
     }
 
-    /**
-     * 库存健康度。
-     *
-     * <p>
-     * <b>分档规则完全复用库存预警阈值，不另起一套算法</b>：基准是 {@code 可用量 = 现有量 − 预留量}，判定只有
-     * {@link com.xsy.scm.inventory.constant.ScmInventoryWarningStatusEnum#evaluate} 一处实现（正常 / 低于下限 / 高于上限）。
-     *
-     * <p>
-     * {@code outOfStockCount}（缺货 = 可用量 ≤ 0）是<b>单列指标</b>，与上面三档<b>可能重叠</b>：它是「低于下限」的极端情形，不是第四个互斥档位。之所以单列，是因为「一件都没有」
-     * 和「低于下限但还有货」在补货决策上完全不同，而现有枚举无法区分。
-     *
-     * <p>
-     * {@code unconfiguredCount} 是存在余额行但<b>没有配置阈值</b>的 (仓库, SKU) 组合 —— 它们既不正常也不预警，只是没有判定依据，因此必须单独暴露而不是塞进「正常」。
-     */
+    /** 库存健康度按可用量与预警阈值计算。缺货单列用于提示零库存，可能与低库存统计重叠；无阈值配置的记录不能算作正常库存。 */
     @Data
     @Schema(description = "库存健康度")
     public static class InventoryHealth {

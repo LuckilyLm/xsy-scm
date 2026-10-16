@@ -33,15 +33,7 @@ export interface RankRow {
   text: string;
 }
 
-/**
- * 自定义排行条（不是 ECharts bar）。
- *
- * 设计稿明确要求排行不要用普通 ECharts bar：ECharts 的类目轴会把名称和数值
- * 分列两侧、条形贴轴，做不出「序号 + 名称 + 金额 一行，条形另起一行」的紧凑排布，
- * 而且 10 条柱状图在 420px 宽的面板里标签必然截断。
- *
- * Top3 给金银铜的序号底色，但只染序号，不整行染色 —— 设计稿要求「别太花」。
- */
+/** 排行使用紧凑的名称、金额与独立进度条布局。前三名只高亮序号，不使用大面积装饰色。 */
 const props = withDefaults(
     defineProps<{
       items: RankRow[];

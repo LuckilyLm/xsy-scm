@@ -28,16 +28,7 @@ import ScreenPanel from './screen-panel.vue';
 import {formatQty, toNumber} from '../format';
 import type {WarehouseDistribution} from '../types';
 
-/**
- * 仓库库存分布。
- *
- * 刻意不用饼图：设计稿指出仓库数量一多，饼图的扇区标签会互相遮挡并被截断
- * （上一版就在 420px 面板里把「默认仓库」截成了「默…」）。横向条形 + 百分比
- * 在固定宽度下永远可读，且能并排给出绝对数量。
- *
- * 注意数量是各 SKU 之和，而 SKU 单位不统一（kg / 箱 / 把 …），
- * 所以这里只用于相对比较，不当作可换算的重量口径。
- */
+/** 仓库排行使用横向条形便于显示长仓库名。不同商品单位的数量不可直接换算，展示总数只用于相对比较。 */
 const props = defineProps<{ distribution: WarehouseDistribution[] }>();
 
 const total = computed(() =>

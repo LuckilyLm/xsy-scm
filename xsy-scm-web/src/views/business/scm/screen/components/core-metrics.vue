@@ -55,18 +55,7 @@ import MetricCard from './metric-card.vue';
 import {formatAmount, formatDelta, formatInt, toNumber} from '../format';
 import type {BusinessData, InventoryData, PurchaseData, TrendData} from '../types';
 
-/**
- * 今日核心指标（整屏视觉中心）。
- *
- * 环比从趋势接口取「昨天」：/business 只给当天与累计，没有昨日基线，
- * 而趋势接口的序列最后一项是今天、倒数第二项是昨天，且语义与 KPI 一致
- * （销售额对销售额、订单数对订单数）。
- *
- * 为什么「今日客户」「今日出库」不显示环比：趋势序列里没有可比的同口径历史
- * （outboundQuantity 是数量、不是出库次数；客户数没有历史序列）。
- * 传 null 会渲染成「较昨日 —」，这是刻意的 —— 宁可显示「无法比较」，
- * 也不要拿一个口径不同的数字算出一个看起来合理的百分比。
- */
+/** 今日指标的同比或环比只使用相同口径的历史指标。没有可比数据的指标显示无法比较，不拼凑百分比。 */
 const props = defineProps<{
   business: BusinessData | null;
   inventory: InventoryData | null;

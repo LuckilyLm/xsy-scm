@@ -55,16 +55,7 @@ import {useEcharts} from '../composables/use-echarts';
 import {toNumber} from '../format';
 import type {ScreenRange, TrendData} from '../types';
 
-/**
- * 底部趋势带。
- *
- * 三张图共用一个区间状态（设计稿：「点击以后三张图同时切换」），
- * 所以区间切换按钮放在带子顶部而不是每个面板各放一个 —— 各放一个会出现
- * 「销售看 7 天、采购看 30 天」这种没法解读的对比。
- *
- * 数据来自单次 /scm/screen/data/trend 调用：设计稿要求
- * 「不要大屏为了 7 张图调用十几个接口」。
- */
+/** 三张趋势图共用一个日期区间，切换时同时刷新。趋势数据由统一接口获取，避免不同面板显示不同周期。 */
 const props = defineProps<{
   trend: TrendData;
   range: ScreenRange;

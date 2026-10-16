@@ -78,18 +78,7 @@ import TrendSection from './components/trend-section.vue';
 import {useScreenData} from './composables/use-screen-data';
 import {useScreenScale} from './composables/use-screen-scale';
 
-/**
- * 供应链运营中心（数据大屏）。
- *
- * 本文件只负责布局：三列（420 / 1000 / 420）+ 顶部状态栏 + 底部趋势带。
- * 所有数据获取在 useScreenData，所有缩放适配在 useScreenScale，
- * 每个面板的渲染细节在自己的组件里。
- *
- * 这是 Layout 之外的独立路由（不带侧边栏/标签页），
- * 所以：① 任何新窗口打开它的链接都必须带 hash（`#/screen`）；
- * ② 页面内的全局监听（resize / visibilitychange）必须在卸载时注销，
- * 否则离开大屏后仍会触发。
- */
+/** 大屏页面只负责三列布局和面板组合。数据请求、缩放与图表各由独立组件处理，页面卸载时要清除全局监听。 */
 const wrapperRef = ref<HTMLElement>();
 const containerRef = ref<HTMLElement>();
 

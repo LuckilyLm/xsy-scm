@@ -1,12 +1,4 @@
-/**
- * 大屏格式化工具（纯函数，无状态）。
- *
- * 统一放这里的原因：同一个数字会在多个面板出现（今日销售额同时出现在核心指标、
- * 今日经营、趋势 tooltip），各写一份 `toLocaleString` 迟早会出现
- * 「这里带千分位、那里不带」的不一致。
- *
- * 后端小数一律是 string，所以入口参数统一收 `string | number | null | undefined`。
- */
+/** 大屏各指标统一使用此处的数字与金额格式化，避免同一数值在不同面板显示格式不一致。 */
 
 /** 把后端返回的小数字符串安全转成 number。非法值一律返回 0，不返回 NaN。 */
 export function toNumber(value: string | number | null | undefined): number {

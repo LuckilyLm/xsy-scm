@@ -6,13 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 数据大屏-经营数据快照（只读聚合）。
- *
- * <p>
- * 口径：今日订单与销售额取 sales_order.created_at 在当日区间内的已确认/已完成口径 （CONFIRMED），金额为 settlement_total_amount（结算口径）与
- * ordered_total_amount（下单口径）双列。排行取区间内按销售额倒序的前 N 条客户/商品。
- */
+/** 大屏经营数据按今日已确认订单及结算金额汇总。订购金额与结算金额分开，排行按选定时间段取前 N 项。 */
 @Data
 @Schema(description = "数据大屏-经营数据")
 public class ScreenBusinessVO {

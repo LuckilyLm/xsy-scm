@@ -12,13 +12,7 @@ import RankBarList, {type RankRow} from './rank-bar-list.vue';
 import {formatAmount, toNumber} from '../format';
 import type {BusinessData} from '../types';
 
-/**
- * 商品销售排行（今日，按订单结算金额）。
- *
- * 指标是金额而不是设计稿写的「销量（kg）」：销量需要把各 SKU 的数量相加，
- * 而 SKU 的记账单位各不相同（kg / 箱 / 把 / 颗 / 托 / 件），
- * 「100 kg + 50 箱 = 150」没有任何业务含义。金额是唯一能跨 SKU 比较的口径。
- */
+/** 商品排行按订单结算金额比较。不同商品的销售单位可能不同，不能简单把 kg、箱、件相加成销量。 */
 const props = defineProps<{ business: BusinessData | null }>();
 
 const rows = computed<RankRow[]>(() =>

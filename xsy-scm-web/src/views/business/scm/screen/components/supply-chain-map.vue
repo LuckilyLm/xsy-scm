@@ -115,14 +115,7 @@ const unlocatedText = computed(() => {
  */
 let baseMap: Promise<void> | null = null;
 
-/**
- * 底图要素名按 `adcode` 索引。
- *
- * 省名不能直接当 ECharts map series 的匹配键：`scm_region` 存的是简称
- * （香港 / 澳门），官方边界数据用的是全称（香港特别行政区 / 澳门特别行政区），
- * 按名称匹配会让这两省静默不着色。`adcode` 与 `province_code` 同为 GB/T 2260 六位码，
- * 是两份数据唯一稳定的共同身份，因此名称只在加载时按码回查一次。
- */
+/** 地图省份用行政区划编码匹配边界与业务数据，不用省名字符串匹配，避免简称不同造成漏显示。 */
 const boundaryNameByAdcode = new Map<number, string>();
 
 interface GeoFeature {
