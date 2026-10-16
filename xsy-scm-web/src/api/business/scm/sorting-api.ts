@@ -1,16 +1,4 @@
-/**
- * 分拣管理接口。
- *
- * 幂等键只加在会产生新事实或累加计次的两个命令上：建单（`SORTING_TASK_CREATE`）与
- * 登记打印（`SORTING_PRINT:{id}`）。失败时保留同一 UUID 供重试，避免「一次网络抖动被算成两次打印」；
- * 成功后删除签名，让下一次真正的内容变化换用新键。
- *
- * 录入 / 完成 / 取消 / 重开不带幂等键：后端签名里没有 `Idempotency-Key`，
- * 它们的重复提交由明细行的乐观锁（`version`）拦截，多加一个头不会改变语义只会掩盖冲突。
- *
- * 打印预览是 GET：它与正式生成同源，但既不改状态也不计次。
- * 任何页面都不许用预览接口「顺手」计一次数。
- */
+/** 建单和登记打印使用幂等键，失败重试应沿用原键；数量录入等操作通过版本号防重。预览打印不会增加计次。 */
 import {request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {

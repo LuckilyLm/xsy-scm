@@ -1,17 +1,4 @@
-/**
- * 分拣管理前端常量。
- *
- * 枚举值与后端逐字对应，且与 DB 的 CHECK 白名单同源：
- * - `ScmSortingTaskStatusEnum` / `SortingConstant` ↔ `ck_sorting_task_status`
- * - 明细结果 ↔ `ck_sorting_task_item_result`，占用位 ↔ `ck_sorting_task_item_occupation`
- * - 商品类型是订单行快照（`product_type`），不是分拣自己的状态
- *
- * 新增取值时必须同时改三处：本文件、后端枚举 / `SortingConstant`、DB CHECK 白名单。
- * 漏掉最后一项的表现是「值写进去了，按它筛选时列表恒空」，比编译失败难发现得多。
- *
- * 本域不复用库存 / 采购的枚举：分拣状态与报损报溢的 `PENDING / COMPLETED` 只是字面相同，
- * 迁移含义完全不同（分拣的 `PENDING` 是「还没开始录」，报损报溢的 `PENDING` 是「等人审批」）。
- */
+/** 分拣状态、明细结果及占用标记与后端枚举和数据库约束保持一致。相同英文状态在其他业务中可能含义不同，不能复用枚举。 */
 import type {SmartEnum} from '/@/types/smart-enum';
 
 /**
