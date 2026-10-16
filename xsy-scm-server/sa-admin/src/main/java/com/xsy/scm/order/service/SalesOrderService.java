@@ -78,7 +78,7 @@ import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RESERVE_STATE_INVA
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_STATE_INVALID;
 
 /**
- * Aggregate root: all item mutations occur inside an order transaction.
+ * 订单及其明细必须在同一个事务中修改。
  */
 @Service
 @RequiredArgsConstructor

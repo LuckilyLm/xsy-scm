@@ -32,15 +32,7 @@ public final class OrderValidator {
     }
 
     /**
-     * 解析数量 / 金额的定点字符串。
-     *
-     * <p>
-     * 形态规则直接复用 {@link ScmDecimalStrings}：订单域曾要求「恰好 4 位小数」，比全项目唯一规则更严，导致前端与 Excel 导入提交的 {@code "10"} 被拒。负数、科学计数法与超 4
-     * 位小数仍然拒绝。
-     *
-     * @param positive
-     *            {@code true} = 数量（必须 &gt; 0）；{@code false} = 单价（允许 0）
-     * @return 4 位小数的 {@link BigDecimal}，与 {@code NUMERIC(18,4)} 及对外序列化形态一致
+     * 解析最多四位小数的数量或单价。数量必须大于 0，单价可以为 0。 负数、科学计数法和超过四位小数的输入会被拒绝。
      */
     public static BigDecimal decimal(String decimalText, boolean positive) {
         BigDecimal result;
