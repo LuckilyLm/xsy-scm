@@ -304,7 +304,39 @@
           </div>
         </template>
       </a-tab-pane>
+      <a-tab-pane key="aliases" tab="客户商品别名">
+        <a-alert v-if="aliasError" type="error" :message="aliasError" show-icon>
+          <template #action><a-button size="small" @click="loadAliases">重新加载</a-button></template>
+        </a-alert>
+        <a-space v-if="hasPermission('scm:customer:update')" style="margin-bottom: 12px">
+          <a-button type="primary" @click="openAlias()">设置别名</a-button>
+        </a-space>
+        <a-table :data-source="aliases" :columns="aliasCols" :row-key="(row: CustomerSkuAlias) => String(row.skuId)"
+                 :loading="aliasLoading" size="small" bordered :pagination="{pageSize: 20}" :scroll="{x: 680}">
+          <template #bodyCell="{record, column}">
+            <template v-if="column.dataIndex === 'action'">
+              <a-space v-if="hasPermission('scm:customer:update')">
+                <a-button type="link" size="small" @click="openAlias(record)">编辑</a-button>
+                <a-popconfirm title="删除这个客户商品别名？" @confirm="removeAlias(record)">
+                  <a-button type="link" danger size="small">删除</a-button>
+                </a-popconfirm>
+              </a-space>
+            </template>
+          </template>
+        </a-table>
+      </a-tab-pane>
     </a-tabs>
+    <a-modal v-model:open="aliasModal" title="客户商品别名" :confirm-loading="aliasSaving" @ok="saveAlias">
+      <a-form layout="vertical">
+        <a-form-item label="商品规格" required>
+          <span v-if="aliasForm.version !== undefined">{{ aliasForm.productName }} / {{ aliasForm.specName }}</span>
+          <SkuSelect v-else v-model:value="aliasSkuId" :disabled-statuses="[]"/>
+        </a-form-item>
+        <a-form-item label="客户商品别名" required>
+          <a-input v-model:value="aliasForm.alias" :maxlength="100" placeholder="仅当前客户的商城显示此名称"/>
+        </a-form-item>
+      </a-form>
+    </a-modal>
     <a-modal v-model:open="mallAccountModal" :title="mallAccountMode === 'create' ? '开通商城账号' : '重置临时密码'"
              :confirm-loading="mallAccountSaving" @ok="saveMallAccount">
       <a-form layout="vertical">
@@ -325,7 +357,8 @@ import {message} from 'ant-design-vue';
 import {useRoute, useRouter} from 'vue-router';
 import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
-import {customerApi, mallAccountApi, type MallAccount} from '/@/api/business/scm/customer-api';
+import {customerApi, mallAccountApi, type CustomerSkuAlias, type MallAccount} from '/@/api/business/scm/customer-api';
+import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {orderApi} from '/@/api/business/scm/order-api';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {customerVisibilityApi} from '/@/api/business/scm/customer-visibility-api';
@@ -352,13 +385,80 @@ import {hasPermission} from '../common/scm-permission';
 const route = useRoute();
 const router = useRouter();
 
-const activeTab = ref<'base' | 'orders' | 'frequent' | 'agreement' | 'visibility'>('base');
+const activeTab = ref<'base' | 'orders' | 'frequent' | 'agreement' | 'visibility' | 'aliases'>('base');
 
 /** 深链参数即全部 Tab 的唯一上下文；非纯数字视为无效，任何 Tab 都不据此发请求。 */
 const customerId = computed(() => {
   const id = route.query.customerId;
   return typeof id === 'string' && /^\d+$/.test(id) ? id : '';
 });
+
+const aliases = ref<CustomerSkuAlias[]>([]);
+const aliasLoading = ref(false);
+const aliasError = ref('');
+const aliasModal = ref(false);
+const aliasSaving = ref(false);
+const aliasSkuId = ref<string | number | (string | number)[]>();
+const aliasForm = reactive<{skuId?: string | number; productName?: string; specName?: string; alias: string; version?: number}>({alias: ''});
+let aliasRequest = 0;
+const aliasCols: TableColumnsType<CustomerSkuAlias> = [
+  {title: '商品', dataIndex: 'productName', width: 190},
+  {title: '商品规格', dataIndex: 'specName', width: 140},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
+  {title: '客户商品别名', dataIndex: 'alias', width: 190},
+  {title: '操作', dataIndex: 'action', width: 120}
+];
+
+async function loadAliases(): Promise<void> {
+  if (!customerId.value) return;
+  const request = ++aliasRequest;
+  aliasLoading.value = true;
+  aliasError.value = '';
+  try {
+    const result = await customerApi.skuAliases(customerId.value);
+    if (request === aliasRequest) aliases.value = result.data || [];
+  } catch (error) {
+    if (request === aliasRequest) aliasError.value = customerError(error);
+  } finally {
+    if (request === aliasRequest) aliasLoading.value = false;
+  }
+}
+
+function openAlias(row?: CustomerSkuAlias): void {
+  aliasSkuId.value = row?.skuId;
+  Object.assign(aliasForm, {skuId: row?.skuId, productName: row?.productName,
+    specName: row?.specName, alias: row?.alias || '', version: row?.version});
+  aliasModal.value = true;
+}
+
+async function saveAlias(): Promise<void> {
+  const skuId = aliasForm.version === undefined ? aliasSkuId.value : aliasForm.skuId;
+  if (skuId == null || Array.isArray(skuId) || !aliasForm.alias.trim()) {
+    void message.warning('请选择商品规格并填写客户商品别名');
+    return;
+  }
+  aliasSaving.value = true;
+  try {
+    await customerApi.saveSkuAlias({customerId: customerId.value, skuId, alias: aliasForm.alias.trim(), version: aliasForm.version});
+    aliasModal.value = false;
+    await loadAliases();
+    void message.success('客户商品别名已保存');
+  } catch (error) {
+    void message.error(customerError(error));
+  } finally {
+    aliasSaving.value = false;
+  }
+}
+
+async function removeAlias(row: CustomerSkuAlias): Promise<void> {
+  try {
+    await customerApi.saveSkuAlias({customerId: customerId.value, skuId: row.skuId, alias: '', version: row.version});
+    await loadAliases();
+    void message.success('客户商品别名已删除');
+  } catch (error) {
+    void message.error(customerError(error));
+  }
+}
 
 function backToList(): void {
   void router.push('/customer/customer-list');
@@ -590,9 +690,15 @@ function ensureTab(key: typeof activeTab.value): void {
   else if (key === 'frequent') frequent.ensure();
   else if (key === 'agreement') agreement.ensure();
   else if (key === 'visibility') visibility.ensure();
+  else if (key === 'aliases') void loadAliases();
 }
 
 function resetAllTabs(): void {
+  aliasRequest++;
+  aliases.value = [];
+  aliasError.value = '';
+  aliasModal.value = false;
+  aliasSkuId.value = undefined;
   orders.reset();
   frequent.reset();
   agreement.reset();

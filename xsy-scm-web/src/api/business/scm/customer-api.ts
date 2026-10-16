@@ -26,6 +26,15 @@ export interface MallAccount {
     version: number;
 }
 
+export interface CustomerSkuAlias {
+    skuId: ScmId;
+    skuCode: string;
+    productName: string;
+    specName: string;
+    alias: string;
+    version: number;
+}
+
 export const mallAccountApi = {
     // 一个客户可绑定多个采购账号，接口返回账号列表。
     list: (customerId: ScmId) => getRequest(`/scm/customer/mall-account/${customerId}`, {}) as unknown as Promise<ScmResponse<MallAccount[]>>,
@@ -37,6 +46,10 @@ export const mallAccountApi = {
 };
 
 export const customerApi = {
+    skuAliases: (customerId: ScmId) =>
+        getRequest(`/scm/customer/${customerId}/sku-aliases`, {}) as unknown as Promise<ScmResponse<CustomerSkuAlias[]>>,
+    saveSkuAlias: (form: {customerId: ScmId; skuId: ScmId; alias: string; version?: number}) =>
+        postRequest('/scm/customer/sku-alias/save', form),
     query: (form: CustomerQuery, options?: RequestOptions) =>
         postRequest('/scm/customer/query', form, options) as unknown as Promise<ScmResponse<ScmPage<CustomerRow>>>,
     detail: (customerId: ScmId, options?: RequestOptions) =>

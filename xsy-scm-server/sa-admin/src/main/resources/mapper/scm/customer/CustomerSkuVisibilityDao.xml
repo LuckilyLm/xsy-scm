@@ -32,6 +32,8 @@
                                                               WHERE customer_id = #{id} AND deleted = FALSE) +
                                                              (SELECT count(*)
                                                               FROM xsy_customer_sku_visibility
+                                                             WHERE customer_id = #{id} AND deleted = FALSE) +
+                                                             (SELECT count(*) FROM xsy_customer_sku_alias
                                                               WHERE customer_id = #{id} AND deleted = FALSE)
     </select>
     <select id="typeReferences" resultType="long">SELECT count(*)

@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.customer.domain.form.CustomerAddForm;
+import com.xsy.scm.customer.domain.form.CustomerSkuAliasForm;
 import com.xsy.scm.customer.domain.form.CustomerDeleteForm;
 import com.xsy.scm.customer.domain.form.CustomerQueryForm;
 import com.xsy.scm.customer.domain.form.CustomerSellerReassignForm;
@@ -14,9 +15,11 @@ import com.xsy.scm.customer.domain.form.CustomerUpdateForm;
 import com.xsy.scm.customer.domain.vo.CustomerDetailVO;
 import com.xsy.scm.customer.domain.vo.CustomerFrequentSkuVO;
 import com.xsy.scm.customer.domain.vo.CustomerOptionVO;
+import com.xsy.scm.customer.domain.vo.CustomerSkuAliasVO;
 import com.xsy.scm.customer.domain.vo.CustomerVO;
 import com.xsy.scm.customer.permission.CustomerPermission;
 import com.xsy.scm.customer.service.CustomerQueryService;
+import com.xsy.scm.customer.service.CustomerSkuAliasService;
 import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.order.permission.OrderPermission;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -47,6 +50,21 @@ public class CustomerController {
     private final CustomerService customerService;
 
     private final CustomerQueryService customerQueryService;
+    private final CustomerSkuAliasService customerSkuAliasService;
+
+    @GetMapping("/{customerId}/sku-aliases")
+    @SaCheckPermission(CustomerPermission.QUERY)
+    public ResponseDTO<List<CustomerSkuAliasVO>> skuAliases(@PathVariable Long customerId) {
+        return ResponseDTO.ok(customerSkuAliasService.list(customerId));
+    }
+
+    @PostMapping("/sku-alias/save")
+    @SaCheckPermission(CustomerPermission.UPDATE)
+    @OperateLog
+    public ResponseDTO<String> saveSkuAlias(@Valid @RequestBody CustomerSkuAliasForm form) {
+        customerSkuAliasService.save(form);
+        return ResponseDTO.ok();
+    }
 
     @PostMapping("/query")
     @SaCheckPermission(CustomerPermission.QUERY)
