@@ -4,13 +4,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-/**
- * 红字应收所需的<b>退货批准事实</b>（明细维度）：一条 {@code xsy_order_return_item} 一行红字明细。
- *
- * <p>
- * {@code amount} 直接取订单域已落库的 {@code approved_amount} （{@code OrderReturnService.approve} 按
- * {@code round(approved_quantity × locked_unit_price, 4)} 算好），财务<b>不重算</b> —— 重算就是给同一个金额造第二个权威来源。
- */
+/** 红字应收明细使用退货审批时已经保存的批准金额，不在财务模块用当前价格重新计算。 */
 @Data
 public class FinanceReturnSourceLineDto {
 

@@ -59,13 +59,7 @@ public class FinanceReceivableItemEntity extends FinanceRecord {
      */
     private BigDecimal unitPrice;
 
-    /**
-     * 该行承担的订单优惠分摊（正常为减免额；红字为按同一份冻结分摊反向的减免额）。恒 &gt;= 0。
-     *
-     * <p>
-     * 来源是订单确认时冻结的 {@code xsy_order_discount.allocations}，按「该行金额 / 订单行下单金额」等比折算； <b>不用</b>本次操作时的当前活动重算 ——
-     * 否则双十一买的单在双十二退货会退成另一个数。
-     */
+    /** 应收明细的优惠额来自订单确认时冻结的分配，正常与红字均按同一口径处理，不能用现行活动重新折算。 */
     private BigDecimal discountAmount;
 
     /**

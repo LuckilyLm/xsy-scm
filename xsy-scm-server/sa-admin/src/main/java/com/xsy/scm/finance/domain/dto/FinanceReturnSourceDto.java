@@ -4,13 +4,7 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/**
- * 红字应收所需的<b>退货批准事实</b>（单头维度），由 {@code FinanceReceivableSourceDao} 只读取得。
- *
- * <p>
- * {@code approvedAt} / {@code approvedBy} 取 {@code xsy_order_return} 上已落库的列：红字是「已经成立的 {@code OrderReturn APPROVED}
- * 在财务域中的事实映射」（原则），时点与操作人属于那个业务事实，不能由财务侧现取 {@code now()} 或现取请求上下文。
- */
+/** 红字应收取已批准退货单的时间和批准人，不能用财务登记时的当前时间或操作人替代。 */
 @Data
 public class FinanceReturnSourceDto {
 

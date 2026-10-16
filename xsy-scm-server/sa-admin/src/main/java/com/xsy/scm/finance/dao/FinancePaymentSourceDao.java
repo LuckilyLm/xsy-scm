@@ -34,13 +34,7 @@ public interface FinancePaymentSourceDao {
     boolean matchesSuccessfulRefund(@Param("refundId") Long refundId, @Param("paymentRefundId") Long paymentRefundId,
             @Param("customerId") Long customerId, @Param("amount") BigDecimal amount);
 
-    /**
-     * 该业务退款单是否已有<b>线上退款事实</b>（支付域 {@code xsy_payment_refund}）。
-     *
-     * <p>
-     * 人工退款付款与线上退款必须互斥：同一张退款单被退两次（人工一次、渠道一次） 是最难查的一类账。两边各自锁同一行 {@code xsy_order_refund}，再各自查对方有没有事实， 窗口就关上了。返回退款单
-     * id；没有则返回 {@code null}。
-     */
+    /** 人工退款付款和渠道退款不能同时支付同一退款单。两者都锁原退款单并检查另一条支付路径是否已执行。 */
     Long selectActivePaymentRefund(@Param("orderRefundId") Long orderRefundId);
 
     /** Paginated completed refund picker; excludes already-paid sources and follows customer seller scope. */

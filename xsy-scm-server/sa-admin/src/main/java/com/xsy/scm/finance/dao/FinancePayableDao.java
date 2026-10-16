@@ -14,13 +14,7 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 应付单头读写，append-only 契约同 {@link FinanceReceivableDao}。
- *
- * <p>
- * 正常应付的行级防重锚点是 {@code uk_finance_payable_source_active} （谓词含 {@code source_id IS NOT NULL}）；手工红字应付的 {@code source_id} 为
- * NULL，落在该谓词之外，防重由「可冲上限 41137 + 请求级幂等键」承担。
- */
+/** 正常应付按业务来源防重；没有来源 ID 的手工红字应付用金额限制和请求幂等键防重。应付事实只能追加。 */
 @Mapper
 public interface FinancePayableDao extends BaseMapper<FinancePayableEntity> {
 

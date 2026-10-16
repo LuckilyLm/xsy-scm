@@ -13,14 +13,7 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 付款读写，append-only 契约同 {@link FinanceReceiptDao}。
- *
- * <p>
- * 退款付款的行级防重锚点是 {@code uk_finance_payment_source_active}
- * （{@code (source_type, source_id) WHERE deleted = FALSE AND source_id IS NOT NULL}）：同一张 {@code xsy_order_refund}
- * 最多一笔正式退款付款。反向付款的 {@code source_id} 必须为 NULL，因此不与原行抢这个键。
- */
+/** 财务付款只追加不修改，退款付款以退款单来源唯一索引防重；反向付款无原业务来源 ID，不占用该索引。 */
 @Mapper
 public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
 

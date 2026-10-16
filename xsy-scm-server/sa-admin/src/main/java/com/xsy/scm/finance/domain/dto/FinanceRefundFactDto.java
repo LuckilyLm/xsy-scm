@@ -3,16 +3,7 @@ package com.xsy.scm.finance.domain.dto;
 import java.math.BigDecimal;
 import lombok.Data;
 
-/**
- * 退款付款所需的<b>订单退款事实</b>，由 {@code FinancePaymentSourceDao} 只读取得。
- *
- * <p>
- * {@code xsy_order_refund.COMPLETED} 只代表订单域的退款业务已完成，<b>不代表资金已付出</b>；真实退付由 {@code xsy_finance_payment} 表达，两者是两个独立事实，因此本
- * DTO 只用于校验，付款决不由 {@code OrderRefundService.complete} 自动触发。
- *
- * <p>
- * 刻意<b>不含</b> {@code xsy_order_refund.external_reference}：那是订单侧的凭据文本，财务付款的凭据号必须独立登记，复制过来会让同一凭证号在两个域里被当成同一笔钱。
- */
+/** 退款单已完成只代表业务流程结束，不代表钱已实际退付。财务付款需单独登记，其凭据号不能直接复制订单凭据。 */
 @Data
 public class FinanceRefundFactDto {
 

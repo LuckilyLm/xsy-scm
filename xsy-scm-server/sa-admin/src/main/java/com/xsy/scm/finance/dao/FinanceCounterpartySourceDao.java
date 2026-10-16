@@ -5,16 +5,7 @@ import com.xsy.scm.finance.domain.dto.FinanceSupplierFactDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-/**
- * 财务域读取的<b>对方主档事实</b>（只读跨域 DAO，形态照 {@link FinancePayableSourceDao}）。
- *
- * <p>
- * 刻意不继承 {@code BaseMapper}：财务域对业务表没有写入口，Mapper XML 只读取这些主档事实。
- *
- * <p>
- * <b>客户事实只在这里读一次</b>：收款登记与退款付款的 CUSTOMER 侧共用同一条 {@code customer_id → seller_id → customerSellerScope} 判定，复制到第二个 DAO
- * 就等于让两处的范围口径可以各自漂移。
- */
+/** 财务通过只读 DAO 查询客户或供应商资料，不能修改业务主档。客户归属权限必须复用统一的员工范围规则。 */
 @Mapper
 public interface FinanceCounterpartySourceDao {
 

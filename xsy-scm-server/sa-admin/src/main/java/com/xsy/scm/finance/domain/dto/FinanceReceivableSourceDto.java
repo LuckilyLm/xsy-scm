@@ -4,13 +4,7 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/**
- * 应收生成所需的<b>签收事实</b>（单头维度），由 {@code FinanceReceivableSourceDao} 只读取得。
- *
- * <p>
- * {@code signedAt} / {@code signedBy} 一律取 {@code xsy_delivery_route_order} 上已落库的列： {@code markSigned} 写的是数据库时钟
- * {@code now()}，服务层再取一次 {@code OffsetDateTime.now()} 会得到一个<b>比签收时刻更晚</b>的值，那正是本类要避免的第二个时点事实。
- */
+/** 生成应收所用的签收时间、签收人必须来自已保存的配送签收记录，不能在财务侧重新取当前时间。 */
 @Data
 public class FinanceReceivableSourceDto {
 

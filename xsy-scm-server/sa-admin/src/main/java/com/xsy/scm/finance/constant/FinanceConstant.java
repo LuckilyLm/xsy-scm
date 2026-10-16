@@ -2,16 +2,7 @@ package com.xsy.scm.finance.constant;
 
 import com.xsy.scm.finance.permission.FinancePermission;
 
-/**
- * 财务域的固定口径：单号前缀与锁序 rank。
- *
- * <p>
- * <b>金额与数量一律 {@code NUMERIC(18,4)}、scale 4、{@code HALF_UP}</b>；序列化沿用 {@code ScmFixedScale4Serializer}（null 写 null，绝不写
- * 0）。展示可以按 2 位格式化，但存储与对账口径恒为 4 位。
- *
- * <p>
- * <b>财务域没有状态机</b>：这里刻意没有任何状态常量集合 —— 结清 / 部分核销 / 待核销都是读时派生视图，落库就会多出一个会漂移的副本。
- */
+/** 财务金额与数量统一保留四位小数，按 HALF_UP 处理。应收应付没有独立结清状态，结清和未核销额都从财务记录计算。 */
 public final class FinanceConstant {
 
     public static final String ORDER_FUNDING_OPERATOR = "SYSTEM:ORDER_FUNDING";
@@ -69,13 +60,7 @@ public final class FinanceConstant {
      */
     public static final String COD_COLLECTION_SCOPE = "FINANCE_COD_COLLECTION";
 
-    /**
-     * 付款登记的幂等 scope（与 {@code Idempotency-Key} 一起定位一条命令）。
-     *
-     * <p>
-     * 它防的是<b>重复请求</b>；退款付款还多一层<b>重复事实</b>防护 （{@code uk_finance_payment_source_active}），所以两个不同幂等键同时付同一张退款
-     * 也只会在库里留下一笔付款。供应商付款没有来源列，只有前者这一层。
-     */
+    /** 付款登记使用幂等键防重复请求。退款付款还按退款单来源唯一约束防重复事实；两者都不能省略。 */
     public static final String PAYMENT_ADD_SCOPE = "FINANCE_PAYMENT_ADD";
 
     /**
@@ -109,16 +94,7 @@ public final class FinanceConstant {
      */
     public static final String EXPORT_PERM = FinancePermission.EXPORT;
 
-    /**
-     * 写命令的加锁层级：单据锁先于余额锁，余额锁最后。
-     *
-     * <p>
-     * 所有用户命令按 rank 升序、同 rank 按 id 升序 {@code SELECT … FOR UPDATE}。收付款反向与核销<b>共用同一把原收付款行锁</b>（rank 1 / 2），因此两者天然串行 ——
-     * 这是并发安全校验「反向前已用额必须 = 0」的前提， 「先查再判断」的乐观写法在这里不成立。
-     *
-     * <p>
-     * 财务域<b>不获取</b>任何 {@code xsy_inventory_balance} 行锁（全局不变量 4）。
-     */
+    /** 财务写入先锁单据再锁收付款，余额锁最后获取；同级锁按 ID 升序。撤销与核销要持有同一原收付款行锁，避免并发重复使用金额。 */
     public static final int LOCK_RANK_RECEIPT = 1;
     public static final int LOCK_RANK_PAYMENT = 2;
     public static final int LOCK_RANK_RECEIVABLE = 3;

@@ -28,13 +28,7 @@ import java.util.List;
 public interface FinanceReceivableSourceDao {
     boolean hasFinalDeliveryResult(@Param("salesOrderId") Long salesOrderId);
 
-    /**
-     * 已签收分配行 + 订单的结算对方（单头维度）。
-     *
-     * <p>
-     * 谓词 {@code fulfillment_status = 'SIGNED'} 是「{@code EXCEPTION} 不形成应收」的库级表达：异常签收走同一条 {@code markSigned}，状态不是 SIGNED
-     * 时本方法返回 {@code null}，调用方必须失败而不是静默跳过。
-     */
+    /** 正常应收仅由已签收订单生成；异常签收不能生成正常应收。获取不到有效签收事实必须失败。 */
     FinanceReceivableSourceDto selectSignedAssignment(@Param("deliveryRouteOrderId") Long deliveryRouteOrderId);
 
     /**
@@ -69,13 +63,7 @@ public interface FinanceReceivableSourceDao {
 
     Long selectOrderSellerId(@Param("salesOrderId") Long salesOrderId);
 
-    /**
-     * 订单确认时冻结的行级优惠分摊（{@code orderItemId -> discountAmount}）。
-     *
-     * <p>
-     * 只读订单域已经冻结的 {@code xsy_order_discount.allocations}，<b>不重算优惠规则</b>： 应收净额与红字反向都必须与冻结时的分摊逐字一致，否则「当时减了多少」会有两个答案。
-     * 没有冻结记录（订单无优惠）时返回空集。
-     */
+    /** 应收和退货红字使用下单时冻结的优惠分摊，不按当前活动重新计算；没有优惠时返回空分配。 */
     List<FinanceOrderDiscountLineDto> selectOrderDiscountLines(@Param("salesOrderId") Long salesOrderId);
 
     /**

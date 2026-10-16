@@ -136,18 +136,7 @@ public class FinanceReceiptService {
         return preview;
     }
 
-    /**
-     * 货到付款收款确认：把交付时真正收到的钱登记成收款事实，并核销该订单签收生成的正常应收。
-     *
-     * <p>
-     * <b>签收不等于已收款</b>：签收只生成应收，钱到没到要由这笔收款回答。因此本命令的前置是 「订单约定为 COD <b>且</b>已经有正常应收」—— 拒收与异常签收不生成应收，自然也就收不到钱。
-     *
-     * <p>
-     * <b>分笔与防重</b>：每笔实际收款以幂等命令记录为唯一来源，订单归属另存；同键重放首次结果，不同键可继续补收，但核销不得超过剩余应收。
-     *
-     * <p>
-     * <b>少收与多收</b>：少收按实收登记，应收剩余仍未结；多收由核销命令按「不得超过可核销余额」拒绝 —— 金额上限只在一个地方判定，不在这里再写一遍。
-     */
+    /** 货到付款只有在订单签收并生成正常应收后才能登记收款。实收多少记多少，核销不能超过未结余额；同一幂等键重试不得重复收款。 */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptVO collectCod(FinanceCodCollectionForm form, String idempotencyKey) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
@@ -468,13 +457,7 @@ public class FinanceReceiptService {
         return receipt;
     }
 
-    /**
-     * 方式取值以 {@link ScmFinanceReceiptMethodEnum} 为唯一来源，必须与 {@code ck_finance_receipt_method} 的白名单一致；不用 {@code valueOf}
-     * 直抛，是为了给用户一个业务码而不是栈异常。
-     *
-     * <p>
-     * 枚举里没有 {@code BALANCE}，因此这里不需要额外禁止它：余额消费不是实际资金动作，不该出现在收款方式里（见 {@link ScmFinanceReceiptMethodEnum} 的说明）。
-     */
+    /** 收款方式以收款枚举和数据库约束为准。钱包余额抵扣不属于实际资金收款，不能作为收款方式登记。 */
     private static String method(String raw) {
         String value = StringUtils.trimToNull(raw);
         ScmFinanceReceiptMethodEnum candidate = ScmFinanceReceiptMethodEnum.of(value);

@@ -3,15 +3,7 @@ package com.xsy.scm.finance.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 财务操作日志的动作类型，对应 {@code xsy_finance_operation_log.operation_type} 的 {@code ck_finance_operation_log_type} 白名单。
- *
- * <p>
- * 枚举值必须与数据库 CHECK 保持一致；新增操作类型时需同步更新两者。
- *
- * <p>
- * 白名单存在的理由与 {@code ScmOrderOperationTypeEnum} 相同：日志类型一旦可以自由填写， 「这个动作有没有留痕」就无法用一条 SQL 回答，而财务恰恰最需要这个回答。
- */
+/** 财务日志操作类型与数据库白名单对应。新增动作时必须同步数据库约束，确保所有财务操作都能准确审计。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmFinanceOperationTypeEnum {

@@ -10,18 +10,7 @@ import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 应收单头：一张已签收销售订单一条正常应收，一张已批准退货一条红字应收。
- *
- * <p>
- * <b>没有状态列</b>：已核销额、未核销额、超额核销、结清状态全部由 {@code xsy_finance_write_off} 与红字关系<b>读时派生</b>，不在事实行重复存储。
- *
- * <p>
- * <b>没有 seller_id</b>：范围归属在读取时 join {@code xsy_sales_order} 获取当前负责人。 {@code customer_id} 是结算对方，属于财务事实本身。
- *
- * <p>
- * <b>本实体没有任何更新路径</b>：应收一经生成即不可改，红冲是新增一条 {@code RED} 行。因此不提供更新路径，避免把未提交字段写回 NULL。
- */
+/** 签收订单生成正常应收，批准退货生成红字应收。结清状态和已核销额从核销记录实时计算，不单独保存；历史应收只能新增不能修改。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "xsy_finance_receivable", autoResultMap = true)

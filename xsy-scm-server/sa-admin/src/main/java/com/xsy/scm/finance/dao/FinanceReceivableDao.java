@@ -39,13 +39,7 @@ public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity
      */
     int insertOnConflictDoNothing(FinanceReceivableEntity entity);
 
-    /**
-     * 该订单的正常应收单头。红字的 {@code original_receivable_id}、结算对方与对方名称快照都必须来自这一行（「必须引用原 Receivable」）。
-     *
-     * <p>
-     * <b>这不是防重手段</b>：防重仍然只有 {@code uk_finance_receivable_source_active} +
-     * {@code ON CONFLICT DO NOTHING}。本查询只在插入尝试之后取「已存在那一张」的 id，因为补生成红字时必须拿到 NORMAL 单头才能挂 {@code original_receivable_id}。
-     */
+    /** 退货红字应收必须关联原正常应收。正常应收的防重由数据库来源唯一索引承担；查询只是取得原单 ID，不代替防重。 */
     FinanceReceivableEntity selectNormalByOrder(@Param("salesOrderId") Long salesOrderId);
 
     List<FinanceReceivableTargetDto> selectNormalTargetsForUpdate(@Param("targetIds") List<Long> targetIds);
