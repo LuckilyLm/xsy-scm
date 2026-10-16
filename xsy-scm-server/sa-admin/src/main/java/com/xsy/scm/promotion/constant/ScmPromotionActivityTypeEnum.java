@@ -23,13 +23,7 @@ public enum ScmPromotionActivityTypeEnum {
     /** 满赠：{@code {thresholdAmount, giftSkuId, giftQuantity}}；赠品不产生订单优惠金额。 */
     FULL_GIFT("满赠"),
 
-    /**
-     * 限时特价：{@code {skuId, specialPrice}}。
-     *
-     * <p>
-     * 它作用在<b>基础价之后</b>：让利 = 行基础金额 − 数量 × 特价，且只在特价低于该行单价时成立 （特价只能往下压，不能抬高）。让利按<b>行</b>归集，不像满减/折扣那样按金额比例分摊 —— 特价是针对某个 SKU
-     * 的，摊到别的行上会让退款反向错行。
-     */
+    /** 特价先于其他优惠计算，只能降价不能抬价；特价优惠归属命中的商品行，退款时按原行反向处理。 */
     SPECIAL_PRICE("限时特价");
 
     private final String desc;

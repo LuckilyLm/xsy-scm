@@ -11,13 +11,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import lombok.Data;
 
-/**
- * 优惠券模板。
- *
- * <p>
- * {@code discountValue} 的含义由 {@code discountType} 决定：{@code AMOUNT} 是减免金额， {@code RATE} 是折扣率（0.95 = 95 折）。两者不合并成一列，因为「减
- * 5 元」和「95 折」 在展示与对账上完全不同，用一列加一个类型标记是唯一不会读错的表达。
- */
+/** 优惠券金额或折扣率由类型字段确定：固定金额直接减免，比例折扣按百分比计算，不能混淆。 */
 @Data
 @TableName(value = "xsy_promotion_coupon", autoResultMap = true)
 public class PromotionCouponEntity {

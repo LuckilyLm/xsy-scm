@@ -83,18 +83,7 @@ public class PromotionDiscountService {
         return compute(form.getCustomerId(), form.getActivityId(), form.getCouponInstanceId(), lines, null);
     }
 
-    /**
-     * 冻结：由<b>订单确认</b>在服务端编排调用，按订单事实计算并占用券。
-     *
-     * <p>
-     * 与试算的三点差别：
-     * <ul>
-     * <li>客户与行金额来自 {@link PromotionOrderFacts}（订单域装配），不接受客户端传入；</li>
-     * <li>活动不由客户端指定：服务端按当前生效活动与互斥组自行选出，避免客户端拼优惠组合；</li>
-     * <li>请求级幂等由外层命令承担 —— 冻结是订单确认事务的一部分，重复确认由 {@code ORDER_CONFIRM} 的 {@code Idempotency-Key} 回放首次结果，不会走到这里第二次。
-     * 本方法仍保留「一个订单至多一份」的兜底判定，供非幂等路径调用时拒绝而不是覆盖。</li>
-     * </ul>
-     */
+    /** 订单优惠在确认订单时由服务端计算和冻结。客户、金额取真实订单，活动由服务端选择；重复确认不得新增第二套优惠记录。 */
     @Transactional(rollbackFor = Exception.class)
     public PromotionDiscountVO freeze(PromotionOrderFacts facts, Long couponInstanceId) {
         if (orderDiscountDao.selectByOrderId(facts.salesOrderId()) != null) {
@@ -210,23 +199,7 @@ public class PromotionDiscountService {
         return row;
     }
 
-    /**
-     * 正常签收 → 核销该订单占用的券：{@code RESERVED → USED}。
-     *
-     * <p>
-     * <b>必须与签收同事务</b>（{@code MANDATORY}）：签收是订单级不可逆终态，也正是应收的形成时点，券「已被一笔真实成交用掉」的判定与它对齐。任何一步失败整笔回滚，不会出现 「已签收但券还是
-     * RESERVED」，也不会出现「券已核销但财务没生成」。
-     *
-     * <p>
-     * <b>异常签收不核销</b>：{@code EXCEPTION} 不形成应收，券也保持 {@code RESERVED}，等异常解决后真正签收再核销 —— 与「异常签收不形成应收」同一条规则。
-     *
-     * <p>
-     * <b>退款不恢复券</b>：签收之后的部分 / 全额退款都保持 {@code USED}。退款反向的是<b>金额</b> （按冻结分摊），券回答的是<b>权益是否已被一笔成交使用过</b>，两者不是一回事；允许复活会让「100
-     * 元订单用 20 元券、退款后券回来、再用于下一单」变成重复营销权益。业务若确需「全额退款返券」，应重新 {@code issue} 一张新券，而不是把旧券改回 {@code AVAILABLE}。
-     *
-     * <p>
-     * 没有冻结记录或没用券时成功跳过：签收本身合法，不能因为没有券而回滚。
-     */
+    /** 优惠券在正常签收时从占用变成已使用，与签收及应收生成同事务。异常签收不核销，签收后退款也不重新激活已使用券。 */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void markCouponUsed(Long salesOrderId) {
         OrderDiscountEntity row = orderDiscountDao.selectByOrderId(salesOrderId);
@@ -439,15 +412,7 @@ public class PromotionDiscountService {
         vo.setActivityRule(activity.getRule());
     }
 
-    /**
-     * 一条限时特价活动作用在匹配行上的让利，并把它记进 {@code specialByItem}。
-     *
-     * <p>
-     * 让利 = 行基础金额 − 数量 × 特价；<b>特价 ≥ 该行单价时让利为 0</b> —— 特价只能把价格往下压，不能抬高（否则协议客户的价格会被活动抬上去）。
-     *
-     * <p>
-     * 同一行只让一次价：已被更靠前的一条特价命中过的行直接跳过。这样「按优先级顺序作用」这条既有语义在特价上也成立，且每条活动记进快照的让利额之和恰好等于总让利。
-     */
+    /** 限时特价只在低于基础价时产生让利，同一商品行只应用一次符合优先级的特价。让利按商品行记录，不分摊到其他商品。 */
     private static BigDecimal specialPriceDelta(PromotionActivityEntity activity, List<PromotionOrderFacts.Line> lines,
             Map<Long, BigDecimal> specialByItem) {
         Map<String, Object> rule = activity.getRule();

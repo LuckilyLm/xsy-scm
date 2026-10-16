@@ -7,15 +7,7 @@ import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * 活动规则校验：<b>受控规则的唯一准入点</b>。
- *
- * <p>
- * 与打印模板同一取向：规则是一组具名键值，不是表达式，也不是「什么键都收下、算的时候再挑」。 未知键一律拒收 —— 宽容会让一份写错的规则静默变成另一条活动，而用户以为它生效了。
- *
- * <p>
- * 校验通过后返回<b>归一化</b>的规则（去空白、金额定标到 4 位），冻结进订单优惠的就是这一份。
- */
+/** 营销规则只接受已定义的键和值，未知项直接拒绝。金额统一按四位小数处理，订单冻结使用校验后的规则。 */
 public final class PromotionRuleValidator {
 
     private static final int SCALE = 4;

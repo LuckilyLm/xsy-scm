@@ -24,15 +24,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 营销活动维护。
- *
- * <p>
- * 活动是<b>版本化的规则</b>：每次编辑 {@code version} 自增，订单优惠冻结时一并记录， 因此「这单当时按哪一版算的」永远可查。
- *
- * <p>
- * 只有 {@code DRAFT} 可以编辑：已生效的活动被改内容，会让同一时间窗内的两笔订单按两套规则 计算而界面上看不出来。要改就先停用再改。
- */
+/** 活动草稿可以编辑，生效后不能直接修改规则。每个版本用于生成订单优惠记录，方便按当时规则对账。 */
 @Service
 @RequiredArgsConstructor
 public class PromotionActivityService {

@@ -30,13 +30,7 @@ public class PromotionDiscountVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal activityDiscount;
 
-    /**
-     * 限时特价让利（不含满减/折扣与券）。
-     *
-     * <p>
-     * 与 {@link #activityDiscount} 分开：特价作用在<b>基础价之上、其余活动之前</b>，且让利按<b>行</b>归集 （针对某个
-     * SKU），不是按订单金额比例分摊的订单级优惠。分开才能回答「原基础价多少、特价让了多少」。
-     */
+    /** 限时特价的让利归属对应商品行，单独保留金额；其余满减与券优惠再按订单规则分摊。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal specialDiscount;
 
@@ -74,13 +68,7 @@ public class PromotionDiscountVO {
     /** 试算过程中被互斥组挤掉的活动（可解释：为什么另一条没生效）。 */
     private List<String> suppressedActivities = new ArrayList<>();
 
-    /**
-     * 实际产生优惠的<b>全部</b>活动，按作用顺序。
-     *
-     * <p>
-     * 与 {@link #activityId} 的区别：{@code activityId} 只记第一条产生优惠的活动（主规则，便于快速展示）， 不同互斥组可以叠加，因此真实生效的可能不止一条。冻结时必须按本列表完整落快照，
-     * 否则退款反向会漏掉叠加的那部分。
-     */
+    /** 订单可能同时命中不同互斥组的多个活动。完整生效活动列表用于冻结和退款，主活动 ID 仅用于快速展示。 */
     private List<AppliedActivityVO> appliedActivities = new ArrayList<>();
 
     /**

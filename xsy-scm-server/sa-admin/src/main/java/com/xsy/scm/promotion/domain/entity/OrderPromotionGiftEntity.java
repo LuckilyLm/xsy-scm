@@ -11,16 +11,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import lombok.Data;
 
-/**
- * 满赠赠品权益（冻结事实）。
- *
- * <p>
- * 赠品是<b>非金额权益</b>：它不让订单金额变小，因此不参与优惠分摊、也不进 {@code xsy_order_discount}。 但它必须可追溯 ——
- * 「这单因为哪个活动、拿到什么赠品、多少」，出库、分拣、小票与成本归集都读这一行， 不在各自环节重算活动规则。
- *
- * <p>
- * 快照不可变（表上有触发器）：能改等于发货时可以换赠品。
- */
+/** 满赠赠品单独记录赠品、活动和数量，不作为金额优惠分摊。赠品信息在订单确认时冻结，分拣、出库和打印读取同一份权益。 */
 @Data
 @TableName(value = "xsy_order_promotion_gift", autoResultMap = true)
 public class OrderPromotionGiftEntity {
