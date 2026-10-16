@@ -15,15 +15,7 @@ import java.util.Set;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_DUPLICATE;
 
-/**
- * 整表替换的差量计算结果。
- *
- * <p>
- * 把「请求列表」与「库中现存列表」对齐成三类动作，落库阶段只负责执行、不再做任何判断—— 这样「先全部校验、再统一写」才能成立：只要 {@link #between} 返回成功，后续写库就不会因为业务规则失败而回滚一半。
- *
- * <p>
- * {@code defaultFlag} 的基数不在这里校验：同一供应商允许多个默认来源，因此默认标记的数量不是约束。
- */
+/** 供应商商品关联先比较请求与现有记录，得到新增、更新和删除差量；通过校验后再统一保存。一个供应商可以有多个优先采购来源。 */
 public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemForm> inserted, List<Long> removedIds) {
 
     /**
