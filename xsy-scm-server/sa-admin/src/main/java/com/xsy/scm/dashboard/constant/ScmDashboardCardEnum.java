@@ -6,16 +6,7 @@ import com.xsy.scm.purchase.permission.PurchasePermission;
 
 import java.util.List;
 
-/**
- * 首页 KPI 卡片定义：入口权限 {@code scm:dashboard:query} 只授权访问工作台接口本身，每张卡片的可见性由 「入口权限 ∩ 本卡片所需领域权限」决定 ——
- * 与业务待办同范式，不因为用户有入口权限就把五张卡全给他。
- *
- * <p>
- * 卡片只声明业务语义（{@code key} / 所需领域权限 / 单位 / 跳哪里）。中文文案、图标与配色由前端决定， 后端不把 UI 设计耦合进 Java。
- *
- * <p>
- * <b>跳转目标必须是与工作台同一套数据范围的页面</b>：工作台按「归属 ∩ 仓库」收窄，所以「今日销售额」跳订单列表而不是销售报表 —— 报表页的范围策略不同（见 {@code docs/decisions.md}），从工作台点过去会看到另一个数。
- */
+/** 首页每张指标卡片需同时满足工作台入口权限和对应业务权限。未授权的卡片不返回。 */
 public enum ScmDashboardCardEnum {
 
     /** 今日销售额（确认口径）。 */
