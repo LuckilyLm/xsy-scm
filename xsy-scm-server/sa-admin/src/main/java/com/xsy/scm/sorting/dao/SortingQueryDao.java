@@ -13,6 +13,8 @@ import com.xsy.scm.sorting.domain.form.SortingCandidateQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingSummaryQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskQueryForm;
 import com.xsy.scm.sorting.domain.vo.SortingCandidateLineVO;
+import com.xsy.scm.sorting.domain.vo.SortingCustomerLineVO;
+import com.xsy.scm.sorting.domain.vo.SortingPerformanceVO;
 import com.xsy.scm.sorting.domain.vo.SortingSkuSummaryVO;
 import com.xsy.scm.sorting.domain.vo.SortingTaskItemVO;
 import com.xsy.scm.sorting.domain.vo.SortingTaskVO;
@@ -43,6 +45,12 @@ public interface SortingQueryDao {
     List<SortingTaskItemVO> giftItems(@Param("taskId") Long taskId);
 
     List<SortingSkuSummaryVO> skuSummary(Page<?> page, @Param("q") SortingSummaryQueryForm q,
+            @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
+
+    List<SortingCustomerLineVO> customerLines(Page<?> page, @Param("q") SortingSummaryQueryForm q,
+            @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
+
+    List<SortingPerformanceVO> confirmedPerformance(Page<?> page, @Param("q") SortingSummaryQueryForm q,
             @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
 
     /**

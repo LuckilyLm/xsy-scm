@@ -24,6 +24,7 @@ import com.xsy.scm.sorting.domain.form.SortingActionForm;
 import com.xsy.scm.sorting.domain.form.SortingAssignForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryItemForm;
+import com.xsy.scm.sorting.domain.form.SortingPartForm;
 import com.xsy.scm.sorting.domain.form.SortingSummaryQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskCreateForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskQueryForm;
@@ -424,6 +425,67 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         assertThatThrownBy(() -> doAs(sorterA, SORTER, () -> queries.detail(other)))
                 .as("同一张未指派任务，分拣员侧仍然越不到")
                 .isInstanceOf(BusinessException.class).hasMessage(UserErrorCode.NO_PERMISSION.getMsg());
+    }
+
+    @Test
+    @DisplayName("分次追加保留未确认状态，同键幂等、版本守卫和最终差额校验")
+    void partAppendRequiresExplicitFinalConfirmation() {
+        var order = order("pt", "4.0000");
+        var detail = as(lead, QUEUE_MANAGER,
+                () -> sorting.create(createForm("pt", List.of(order.item()), sorterA), key("pt-create")));
+        Long taskId = detail.getTask().getId();
+        var line = detail.getItems().getFirst();
+        int beforeInventory = count("SELECT count(*) FROM xsy_inventory_movement");
+
+        var part = new SortingPartForm();
+        part.setTaskItemId(line.getId());
+        part.setVersion(line.getVersion());
+        part.setQuantity(new BigDecimal("1.5000"));
+        part.setNote("第一筐");
+        var first = as(sorterA, SORTER, () -> sorting.appendPart(taskId, part, key("pt1")));
+        var replay = as(sorterA, SORTER, () -> sorting.appendPart(taskId, part, key("pt1")));
+        assertThat(replay.getId()).isEqualTo(first.getId());
+        assertThat(first.getTotalQuantity()).isEqualByComparingTo("1.5000");
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_sorting_part_record WHERE task_item_id=?", Integer.class, line.getId()))
+                .isEqualTo(1);
+        assertThat(taskStatus(taskId)).isEqualTo("SORTING");
+        assertThat(itemResultOfTask(taskId)).isNull();
+        assertThat(jdbc.queryForObject(
+                "SELECT sorted_quantity FROM xsy_sorting_task_item WHERE id=?", BigDecimal.class, line.getId()))
+                .isNull();
+        expectCode(() -> doAs(sorterA, SORTER,
+                () -> sorting.complete(taskId, action(currentVersion(taskId), null))), 41125);
+
+        expectCode(() -> as(sorterA, SORTER, () -> sorting.appendPart(taskId, part, key("pt-stale"))), 40921);
+        part.setVersion(itemVersion(line.getId()));
+        part.setQuantity(new BigDecimal("2.5000"));
+        var second = as(sorterA, SORTER, () -> sorting.appendPart(taskId, part, key("pt2")));
+        assertThat(second.getTotalQuantity()).isEqualByComparingTo("4.0000");
+        expectCode(() -> doAs(sorterA, SORTER,
+                () -> sorting.enter(taskId, entryForm(
+                        entryItem(line.getId(), itemVersion(line.getId()), "3.0000", "NORMAL", null)))), 40000);
+        completeLine(taskId, line, "4.0000", "NORMAL", null);
+        assertThat(as(sorterA, SORTER, () -> queries.parts(taskId))).hasSize(3);
+        as(sorterA, SORTER, () -> {
+            sorting.complete(taskId, action(currentVersion(taskId), null));
+            return null;
+        });
+        assertThat(as(sorterA, Set.of(SUMMARY_PERM), () -> queries.confirmedPerformance(summaryForm())).getList())
+                .anyMatch(v -> v.getLineCount() > 0
+                        && v.getConfirmedQuantity().compareTo(new BigDecimal("4.0000")) >= 0);
+        assertThat(count("SELECT count(*) FROM xsy_inventory_movement")).isEqualTo(beforeInventory);
+    }
+
+    @Test
+    @DisplayName("分次事件按任务授权读取，跨指派人不可借流水窥探客户明细")
+    void partHistoryRespectsTaskScope() {
+        var order = order("priv", "2.0000");
+        Long taskId = as(lead, QUEUE_MANAGER,
+                () -> sorting.create(createForm("priv", List.of(order.item()), sorterA), key("priv"))).getTask().getId();
+        assertThatThrownBy(() -> as(sorterB, SORTER, () -> queries.parts(taskId)))
+                .isInstanceOf(BusinessException.class).hasMessage(UserErrorCode.NO_PERMISSION.getMsg());
+        assertThat(as(sorterA, SORTER, () -> queries.parts(taskId))).isEmpty();
     }
 
     // ------------------------------------------------------------------

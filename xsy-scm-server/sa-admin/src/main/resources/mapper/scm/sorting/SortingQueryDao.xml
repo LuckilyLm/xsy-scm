@@ -149,8 +149,13 @@
         WHERE i.deleted=FALSE AND i.occupation_status='ACTIVE'
         <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status=#{q.taskStatus}</if>
         <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
+        <if test="q.deliveryDate != null">
+            AND t.delivery_time_snapshot &gt;= (#{q.deliveryDate}::date AT TIME ZONE 'Asia/Shanghai')
+            AND t.delivery_time_snapshot &lt; ((#{q.deliveryDate}::date + INTERVAL '1 day') AT TIME ZONE 'Asia/Shanghai')
+        </if>
         <if test="q.keyword != null and q.keyword != ''">
             AND (i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.spec_name_snapshot ILIKE concat('%',#{q.keyword},'%')
             OR i.sku_code_snapshot ILIKE concat('%',#{q.keyword},'%')
             OR i.spu_code_snapshot ILIKE concat('%',#{q.keyword},'%'))
         </if>
@@ -158,6 +163,68 @@
         GROUP BY i.sku_id,i.spu_code_snapshot,i.product_name_snapshot,i.sku_code_snapshot,i.spec_name_snapshot,
         i.sale_unit_snapshot
         ORDER BY i.product_name_snapshot,i.sale_unit_snapshot,i.sku_code_snapshot
+    </select>
+    <!-- 客户视角逐条订单行；与按商品视角使用相同任务范围、状态及送货日期口径。
+         不跨单位汇总，不将只读视图当作分拣写命令；赠品另按原任务详情展示。 -->
+    <select id="customerLines" resultType="com.xsy.scm.sorting.domain.vo.SortingCustomerLineVO">
+        SELECT i.*,
+               t.task_no AS task_no,
+               t.status AS task_status,
+               t.warehouse_name_snapshot AS warehouse_name_snapshot,
+               t.delivery_time_snapshot AS delivery_time_snapshot,
+               'ORDER_ITEM' AS source_type
+        FROM xsy_sorting_task_item i
+        JOIN xsy_sorting_task t ON t.id=i.task_id AND t.deleted=FALSE
+        WHERE i.deleted=FALSE AND i.occupation_status='ACTIVE'
+        <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status=#{q.taskStatus}</if>
+        <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
+        <if test="q.deliveryDate != null">
+            AND t.delivery_time_snapshot &gt;= (#{q.deliveryDate}::date AT TIME ZONE 'Asia/Shanghai')
+            AND t.delivery_time_snapshot &lt; ((#{q.deliveryDate}::date + INTERVAL '1 day') AT TIME ZONE 'Asia/Shanghai')
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (i.customer_name_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.order_no_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.spec_name_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.sku_code_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.spu_code_snapshot ILIKE concat('%',#{q.keyword},'%'))
+        </if>
+        <include refid="taskScopeGuard"/>
+        ORDER BY t.delivery_time_snapshot NULLS LAST,
+                 i.customer_name_snapshot,i.order_no_snapshot,i.id
+    </select>
+    <!-- 绩效视角只统计已完成任务的最终确认行，不把待确认分次、赠品或不同单位混合计量。
+         confirmed_by 是当前最终确认人，不能据此推断所有参与者的劳动贡献或绩效工资。 -->
+    <select id="confirmedPerformance" resultType="com.xsy.scm.sorting.domain.vo.SortingPerformanceVO">
+        SELECT t.warehouse_id,
+               t.warehouse_name_snapshot,
+               i.sorted_by AS confirmed_by,
+               i.sale_unit_snapshot,
+               count(DISTINCT t.id) AS task_count,
+               count(*) AS line_count,
+               sum(i.sorted_quantity) AS confirmed_quantity,
+               max(i.sorted_at) AS last_confirmed_at
+        FROM xsy_sorting_task_item i
+        JOIN xsy_sorting_task t ON t.id=i.task_id AND t.deleted=FALSE
+        WHERE i.deleted=FALSE AND i.occupation_status='ACTIVE'
+          AND t.status='COMPLETED' AND i.result IS NOT NULL AND i.sorted_quantity IS NOT NULL
+          AND i.sorted_by IS NOT NULL
+        <if test="q.taskStatus != null and q.taskStatus != ''">AND t.status=#{q.taskStatus}</if>
+        <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
+        <if test="q.deliveryDate != null">
+            AND t.delivery_time_snapshot &gt;= (#{q.deliveryDate}::date AT TIME ZONE 'Asia/Shanghai')
+            AND t.delivery_time_snapshot &lt; ((#{q.deliveryDate}::date + INTERVAL '1 day') AT TIME ZONE 'Asia/Shanghai')
+        </if>
+        <if test="q.keyword != null and q.keyword != ''">
+            AND (i.product_name_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.customer_name_snapshot ILIKE concat('%',#{q.keyword},'%')
+            OR i.sorted_by ILIKE concat('%',#{q.keyword},'%')
+            OR i.sku_code_snapshot ILIKE concat('%',#{q.keyword},'%'))
+        </if>
+        <include refid="taskScopeGuard"/>
+        GROUP BY t.warehouse_id,t.warehouse_name_snapshot,i.sorted_by,i.sale_unit_snapshot
+        ORDER BY confirmed_quantity DESC,i.sorted_by,t.warehouse_id,i.sale_unit_snapshot
     </select>
     <!--
       候选订单行（裁决补充第 22 条）：这是分拣队列视图，不按订单业务员维度收窄 ——

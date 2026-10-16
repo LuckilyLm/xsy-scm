@@ -6,11 +6,15 @@ import type {
     SortingActionPayload,
     SortingAssignPayload,
     SortingCandidateLine,
+    SortingCustomerLine,
     SortingScaleEvent,
     SortingCandidateQuery,
     SortingEntryPayload,
     SortingPrint,
     SortingPrintResult,
+    SortingPartPayload,
+    SortingPartRecord,
+    SortingPerformance,
     SortingSkuSummary,
     SortingSummaryQuery,
     SortingTask,
@@ -52,8 +56,15 @@ async function command<T>(path: string, data: unknown): Promise<ScmResponse<T>> 
 export const sortingApi = {
     tasks: (query: SortingTaskQuery) => call<ScmPage<SortingTask>>('get', '/tasks', query),
     detail: (id: Id) => call<SortingTaskDetail>('get', `/tasks/${id}`),
+    partRecords: (id: Id) => call<SortingPartRecord[]>('get', `/tasks/${id}/parts`),
+    appendPart: (id: Id, payload: SortingPartPayload) =>
+        command<SortingPartRecord>(`/tasks/${id}/parts`, payload),
     summary: (query: SortingSummaryQuery, options?: RequestOptions) =>
         call<ScmPage<SortingSkuSummary>>('get', '/summary', query, options),
+    customerLines: (query: SortingSummaryQuery, options?: RequestOptions) =>
+        call<ScmPage<SortingCustomerLine>>('get', '/customer-lines', query, options),
+    confirmedPerformance: (query: SortingSummaryQuery, options?: RequestOptions) =>
+        call<ScmPage<SortingPerformance>>('get', '/confirmed-performance', query, options),
     candidateLines: (query: SortingCandidateQuery) => call<ScmPage<SortingCandidateLine>>('get', '/candidate-lines', query),
     /** 预览：只读、不计次；仅 SORTING / COMPLETED 可取，否则业务码 41121。 */
     printPreview: (id: Id) => call<SortingPrint>('get', `/tasks/${id}/print`),

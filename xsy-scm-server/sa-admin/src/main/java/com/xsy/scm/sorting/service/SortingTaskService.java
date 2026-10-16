@@ -12,6 +12,7 @@ import com.xsy.scm.inventory.dao.InventoryOutboundItemDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
+import com.xsy.scm.sorting.dao.SortingPartRecordDao;
 import com.xsy.scm.sorting.dao.SortingQueryDao;
 import com.xsy.scm.sorting.dao.SortingTaskDao;
 import com.xsy.scm.sorting.dao.SortingTaskItemDao;
@@ -22,7 +23,9 @@ import com.xsy.scm.sorting.domain.entity.SortingTaskItemEntity;
 import com.xsy.scm.sorting.domain.form.SortingActionForm;
 import com.xsy.scm.sorting.domain.form.SortingAssignForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryForm;
+import com.xsy.scm.sorting.domain.form.SortingPartForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskCreateForm;
+import com.xsy.scm.sorting.domain.vo.SortingPartRecordVO;
 import com.xsy.scm.sorting.domain.vo.SortingPrintResultVO;
 import com.xsy.scm.sorting.domain.vo.SortingTaskDetailVO;
 import com.xsy.scm.sorting.constant.ScmSortingOccupationStatusEnum;
@@ -37,6 +40,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -76,6 +80,7 @@ public class SortingTaskService {
     private final SalesOrderDao salesOrderDao;
     private final SortingTaskDao sortingTaskDao;
     private final SortingTaskItemDao sortingTaskItemDao;
+    private final SortingPartRecordDao sortingPartRecordDao;
     private final SortingQueryDao sortingQueryDao;
     private final SortingAccess access;
     private final WarehouseDao warehouseDao;
@@ -156,6 +161,66 @@ public class SortingTaskService {
     }
 
     /**
+     * 追加一笔分次分拣记录。只冻结分次累积事实；正式分拣量/结果必须经过 enter 显式确认。
+     * 任务锁串行化同一任务中的追加、编辑、取消与完成；事件键重复重放仍复核当前仓库和受指派人。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SortingPartRecordVO appendPart(Long id, SortingPartForm form, String key) {
+        ScmDataScopeContext scope = access.scope();
+        var task = lock(id);
+        access.requireAssignee(scope, task);
+        var claim = idempotencyService.claim("SORTING_PART:" + id, key, form);
+        if (claim.replay())
+            return idempotencyService.replay(claim, SortingPartRecordVO.class);
+        if (!WORKING.contains(task.getStatus()))
+            throw new ScmBusinessException(STATE_INVALID);
+        var row = activeItems(id).get(form.getTaskItemId());
+        if (row == null)
+            throw new ScmBusinessException(ITEM_NOT_IN_TASK);
+        if (!Objects.equals(row.getVersion(), form.getVersion()))
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        if (row.getResult() != null)
+            throw new ScmBusinessException(STATE_INVALID);
+        BigDecimal quantity = form.getQuantity();
+        if (quantity == null || quantity.signum() <= 0 || quantity.scale() > 4)
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        var previous = sortingPartRecordDao.latest(row.getId());
+        BigDecimal before = previous == null ? BigDecimal.ZERO : previous.getTotalQuantity();
+        BigDecimal total = before.add(quantity);
+        if (total.compareTo(new BigDecimal("99999999999999.9999")) > 0)
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        var event = partEvent(id, row.getId(), "APPEND", quantity, total, form.getNote());
+        if (sortingPartRecordDao.insert(event) != 1)
+            throw new IllegalStateException("分次分拣事件写入失败");
+        // 版本递增防止浏览器用分次追加前的草稿直接提交最终结果。
+        stamp(row, false);
+        if (sortingTaskItemDao.updateById(row) != 1)
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        if (ScmSortingTaskStatusEnum.PENDING.name().equals(task.getStatus())) {
+            task.setStatus(ScmSortingTaskStatusEnum.SORTING.name());
+            if (task.getStartedAt() == null)
+                task.setStartedAt(OffsetDateTime.now());
+            save(task);
+        }
+        idempotencyService.complete(claim, "SORTING_PART", event.getId(), event);
+        return event;
+    }
+
+    private static SortingPartRecordVO partEvent(Long taskId, Long itemId, String kind,
+            BigDecimal delta, BigDecimal total, String note) {
+        var event = new SortingPartRecordVO();
+        event.setTaskId(taskId);
+        event.setTaskItemId(itemId);
+        event.setEventType(kind);
+        event.setQuantityDelta(delta);
+        event.setTotalQuantity(total);
+        event.setNote(StringUtils.isBlank(note) ? null : StringUtils.trim(note));
+        event.setCreatedBy(ScmOperator.current());
+        event.setCreatedAt(OffsetDateTime.now());
+        return event;
+    }
+
+    /**
      * 批量录入分拣结果。允许一次只处理任务里的部分行（边称边录是常态），但每条提交行都必须属于本任务且带它自己读到的版本；首次录入把任务从 {@code PENDING} 推到 {@code SORTING}。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -175,6 +240,14 @@ public class SortingTaskService {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             if (!ScmSortingResultEnum.NORMAL.name().equals(entry.getResult()) && StringUtils.isBlank(reason))
                 throw new ScmBusinessException(VALIDATION_ERROR);
+            // 历次分量只保存在追加事件表，不能把它当作已确认分拣量。
+            // 若最终量偏离已累计记录，必须显式写原因和差额事件，禁止静默覆盖。
+            var previous = sortingPartRecordDao.latest(row.getId());
+            BigDecimal before = previous != null ? previous.getTotalQuantity()
+                    : row.getSortedQuantity() != null ? row.getSortedQuantity() : BigDecimal.ZERO;
+            BigDecimal difference = entry.getSortedQuantity().subtract(before);
+            if (previous != null && difference.signum() != 0 && StringUtils.isBlank(reason))
+                throw new ScmBusinessException(VALIDATION_ERROR);
             row.setSortedQuantity(entry.getSortedQuantity());
             row.setResult(entry.getResult());
             row.setReason(StringUtils.isBlank(reason) ? null : StringUtils.trim(reason));
@@ -184,6 +257,10 @@ public class SortingTaskService {
             // 同一批里重复提交同一行时，第二次带的是已被自己改掉的旧版本，在这里就断掉。
             if (sortingTaskItemDao.updateById(row) != 1)
                 throw new ScmBusinessException(VERSION_CONFLICT);
+            var correction = partEvent(id, row.getId(), "SET_TOTAL", difference,
+                    entry.getSortedQuantity(), reason);
+            if (sortingPartRecordDao.insert(correction) != 1)
+                throw new IllegalStateException("分拣数量审计写入失败");
         }
         if (ScmSortingTaskStatusEnum.PENDING.name().equals(task.getStatus())) {
             task.setStatus(ScmSortingTaskStatusEnum.SORTING.name());

@@ -129,6 +129,22 @@ class ScmMigrationTargetPgIT {
         assertThat(indexes).isEqualTo(2);
     }
 
+    @Test
+    void sortingPartRecordSchemaExistsAt141() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 141)
+            return;
+        assertColumn("xsy_sorting_part_record", "task_id");
+        assertColumn("xsy_sorting_part_record", "task_item_id");
+        assertColumn("xsy_sorting_part_record", "quantity_delta");
+        assertColumn("xsy_sorting_part_record", "total_quantity");
+        Integer checks = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE connamespace='xsy_v2'::regnamespace "
+                        + "AND conname IN ('ck_sorting_part_record_event','ck_sorting_part_record_delta',"
+                        + "'ck_sorting_part_record_total')", Integer.class);
+        assertThat(checks).isEqualTo(3);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

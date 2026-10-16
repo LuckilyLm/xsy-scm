@@ -16,11 +16,15 @@ import com.xsy.scm.sorting.domain.form.SortingActionForm;
 import com.xsy.scm.sorting.domain.form.SortingAssignForm;
 import com.xsy.scm.sorting.domain.form.SortingCandidateQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryForm;
+import com.xsy.scm.sorting.domain.form.SortingPartForm;
 import com.xsy.scm.sorting.domain.form.SortingSummaryQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskCreateForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskQueryForm;
 import com.xsy.scm.sorting.permission.SortingPermission;
 import com.xsy.scm.sorting.domain.vo.SortingCandidateLineVO;
+import com.xsy.scm.sorting.domain.vo.SortingCustomerLineVO;
+import com.xsy.scm.sorting.domain.vo.SortingPartRecordVO;
+import com.xsy.scm.sorting.domain.vo.SortingPerformanceVO;
 import com.xsy.scm.sorting.domain.vo.SortingPrintResultVO;
 import com.xsy.scm.sorting.domain.vo.SortingPrintVO;
 import com.xsy.scm.sorting.domain.vo.SortingSkuSummaryVO;
@@ -56,10 +60,39 @@ public class SortingTaskController {
         return ResponseDTO.ok(sortingQueryService.detail(id));
     }
 
+    @GetMapping("/tasks/{id}/parts")
+    @SaCheckPermission(SortingPermission.TASK_QUERY)
+    public ResponseDTO<java.util.List<SortingPartRecordVO>> parts(@PathVariable Long id) {
+        return ResponseDTO.ok(sortingQueryService.parts(id));
+    }
+
+    @PostMapping("/tasks/{id}/parts")
+    @SaCheckPermission(SortingPermission.ITEM_UPDATE)
+    @OperateLog
+    public ResponseDTO<SortingPartRecordVO> appendPart(@PathVariable Long id,
+            @Valid @RequestBody SortingPartForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(sortingTaskService.appendPart(id, form, key));
+    }
+
     @GetMapping("/summary")
     @SaCheckPermission(SortingPermission.SUMMARY_QUERY)
     public ResponseDTO<PageResult<SortingSkuSummaryVO>> summary(@Valid @ModelAttribute SortingSummaryQueryForm form) {
         return ResponseDTO.ok(sortingQueryService.summary(form));
+    }
+
+    @GetMapping("/customer-lines")
+    @SaCheckPermission(SortingPermission.TASK_QUERY)
+    public ResponseDTO<PageResult<SortingCustomerLineVO>> customerLines(
+            @Valid @ModelAttribute SortingSummaryQueryForm form) {
+        return ResponseDTO.ok(sortingQueryService.customerLines(form));
+    }
+
+    @GetMapping("/confirmed-performance")
+    @SaCheckPermission(SortingPermission.SUMMARY_QUERY)
+    public ResponseDTO<PageResult<SortingPerformanceVO>> confirmedPerformance(
+            @Valid @ModelAttribute SortingSummaryQueryForm form) {
+        return ResponseDTO.ok(sortingQueryService.confirmedPerformance(form));
     }
 
     // 候选订单行是建单队列，只授建单权限；返回列不含价格或金额。

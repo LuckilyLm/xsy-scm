@@ -6,11 +6,15 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.sorting.dao.SortingPartRecordDao;
 import com.xsy.scm.sorting.dao.SortingQueryDao;
 import com.xsy.scm.sorting.domain.form.SortingCandidateQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingSummaryQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskQueryForm;
 import com.xsy.scm.sorting.domain.vo.SortingCandidateLineVO;
+import com.xsy.scm.sorting.domain.vo.SortingCustomerLineVO;
+import com.xsy.scm.sorting.domain.vo.SortingPartRecordVO;
+import com.xsy.scm.sorting.domain.vo.SortingPerformanceVO;
 import com.xsy.scm.sorting.domain.vo.SortingPrintVO;
 import com.xsy.scm.sorting.domain.vo.SortingSkuSummaryVO;
 import com.xsy.scm.sorting.domain.vo.SortingTaskDetailVO;
@@ -41,6 +45,7 @@ import static com.xsy.scm.sorting.constant.SortingErrorCode.STATE_INVALID;
 public class SortingQueryService {
 
     private final SortingQueryDao sortingQueryDao;
+    private final SortingPartRecordDao sortingPartRecordDao;
     private final SortingAccess access;
 
     private Page<?> page(PageParam form) {
@@ -79,6 +84,13 @@ public class SortingQueryService {
         return result;
     }
 
+    /** 分次事件只在完整任务可见后读取；仅返回最近 200 条，历史记录仍全部保留。 */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public java.util.List<SortingPartRecordVO> parts(Long taskId) {
+        detail(taskId);
+        return sortingPartRecordDao.recent(taskId);
+    }
+
     /**
      * 打印预览：固定版式的标签 / 小票内容，现算不留副本，也不计次。
      */
@@ -107,6 +119,28 @@ public class SortingQueryService {
             return ScmDataScopeService.emptyPage(form);
         return SmartPageUtil.convert2PageResult(page,
                 sortingQueryDao.skuSummary(page, form, scope, access.crossAssignee()));
+    }
+
+    /** 按客户/订单明细展示同一份活动任务事实，不跨销售单位汇总，也不提供批量写操作。 */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public PageResult<SortingCustomerLineVO> customerLines(SortingSummaryQueryForm form) {
+        var page = page(form);
+        ScmDataScopeContext scope = access.scope();
+        if (scope.getWarehouseScope().isEmpty())
+            return ScmDataScopeService.emptyPage(form);
+        return SmartPageUtil.convert2PageResult(page,
+                sortingQueryDao.customerLines(page, form, scope, access.crossAssignee()));
+    }
+
+    /** 仅聚合已完成任务中最后确认人登记的行，数量按原销售单位独立分组。 */
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
+    public PageResult<SortingPerformanceVO> confirmedPerformance(SortingSummaryQueryForm form) {
+        var page = page(form);
+        ScmDataScopeContext scope = access.scope();
+        if (scope.getWarehouseScope().isEmpty())
+            return ScmDataScopeService.emptyPage(form);
+        return SmartPageUtil.convert2PageResult(page,
+                sortingQueryDao.confirmedPerformance(page, form, scope, access.crossAssignee()));
     }
 
     /**

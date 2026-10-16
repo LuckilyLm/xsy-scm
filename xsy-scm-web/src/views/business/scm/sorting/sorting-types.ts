@@ -41,6 +41,8 @@ export interface SortingSummaryQuery extends SortingPage {
     keyword?: string;
     warehouseId?: Id;
     taskStatus?: SortingTaskStatus;
+    /** 建单时冻结的送货日，按 Asia/Shanghai 日期查询。 */
+    deliveryDate?: string;
 }
 
 export interface SortingCandidateQuery extends SortingPage {
@@ -112,6 +114,26 @@ export interface SortingTaskItem {
     sourceType?: SortingItemSourceType | null;
 }
 
+/** 分次登记只追加待确认事件；最终数量必须显式确认，正式出库不读取这些事件。 */
+export interface SortingPartPayload {
+    taskItemId: Id;
+    version: number;
+    quantity: string;
+    note?: string;
+}
+
+export interface SortingPartRecord {
+    id: Id;
+    taskId: Id;
+    taskItemId: Id;
+    eventType: 'APPEND' | 'SET_TOTAL';
+    quantityDelta: string;
+    totalQuantity: string;
+    note?: string | null;
+    createdBy: string;
+    createdAt: string;
+}
+
 /** `SortingTaskDetailVO`。 */
 export interface SortingTaskDetail {
     task: SortingTask;
@@ -132,6 +154,26 @@ export interface SortingSkuSummary {
     plannedQuantity: string | null;
     sortedQuantity: string | null;
     unprocessedCount: number;
+}
+
+/** 绩效只指最终确认行，不能混同为实际分次劳动量或工资依据。 */
+export interface SortingPerformance {
+    warehouseId: Id;
+    warehouseNameSnapshot: string;
+    confirmedBy: string;
+    saleUnitSnapshot: string;
+    taskCount: number;
+    lineCount: number;
+    confirmedQuantity: string;
+    lastConfirmedAt?: string | null;
+}
+
+/** 按客户逐条展示已占用的订单分拣明细，不跨销售单位计算合计。 */
+export interface SortingCustomerLine extends SortingTaskItem {
+    taskNo: string;
+    taskStatus: SortingTaskStatus;
+    warehouseNameSnapshot: string;
+    deliveryTimeSnapshot?: string | null;
 }
 
 /** `SortingCandidateLineVO`：可进入分拣的已确认订单明细。 */

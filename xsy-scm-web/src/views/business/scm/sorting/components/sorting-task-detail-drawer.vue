@@ -142,6 +142,13 @@
               <span v-else>{{ record.reason || '—' }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'sortedAt'">{{ datetime(record.sortedAt) }}</template>
+            <template v-else-if="column.dataIndex === 'partRecords'">
+              <a-button
+                  v-if="!isGiftRow(record)" type="link" size="small"
+                  @click="openPartRecords(record)"
+              >{{ canEditRow(record) && record.result == null ? '分次录入/记录' : '查看分次记录' }}</a-button>
+              <span v-else>—</span>
+            </template>
             <template v-else-if="column.dataIndex === 'occupationStatus'">
               <span v-if="isGiftRow(record)">—</span>
               <a-tag v-else :color="SCM_SORTING_OCCUPATION_COLOR[record.occupationStatus]">
@@ -164,11 +171,17 @@
       </template>
       <a-empty v-else-if="!detailLoading" description="任务尚未加载"/>
     </a-spin>
+    <SortingPartModal
+        v-model:open="partOpen" :row="partRow" :task-id="detail?.task.id"
+        :can-edit="partRow ? canEditRow(partRow) : false"
+        @saved="emit('reload')" @use-total="(id, quantity) => emit('draftChange', id, 'sortedQuantity', quantity)"
+    />
   </a-drawer>
 </template>
 
 <script setup lang="ts">
 import {ref} from 'vue';
+import SortingPartModal from './sorting-part-modal.vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {datetime} from '../../common/scm-display';
 import {
@@ -232,8 +245,16 @@ const itemColumns = ref<TableColumnsType<SortingTaskItem>>([
   {title: '原因', dataIndex: 'reason', width: 220},
   {title: '录入人', dataIndex: 'sortedBy', width: 120},
   {title: '录入时间', dataIndex: 'sortedAt', width: 170},
+  {title: '分次记录', dataIndex: 'partRecords', align: 'center', width: 150},
   {title: '占用', dataIndex: 'occupationStatus', align: 'center', width: 100},
 ]);
+
+const partOpen = ref(false);
+const partRow = ref<SortingTaskItem>();
+function openPartRecords(row: SortingTaskItem) {
+  partRow.value = row;
+  partOpen.value = true;
+}
 
 function resultColor(result?: string | null) {
   return (result && SCM_SORTING_RESULT_COLOR[result]) || 'default';
