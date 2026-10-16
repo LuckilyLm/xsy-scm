@@ -9,25 +9,8 @@ import org.springframework.context.annotation.Configuration;
 import java.time.OffsetDateTime;
 
 /**
- * SCM 域 JSON 序列化补充配置。
- *
- * <p><b>背景：</b>SmartAdmin 的 {@code net.lab1024.sa.base.config.JsonConfig} 只注册了
- * {@link java.time.LocalDate} 与 {@link java.time.LocalDateTime} 的序列化器，
- * 没有覆盖 {@link OffsetDateTime}。而 SCM 域的 VO 统一使用 {@code OffsetDateTime}
- * （138 个字段，SCM 之外无使用），导致这些字段走 Jackson 默认 ISO-8601 输出：
- * <pre>
- *   2026-09-17T13:50:57.394795+08:00
- * </pre>
- * 前端直接渲染后表现为「日期时间粘连 + 6 位微秒 + 时区后缀」，
- * 与 {@code sa-base.yaml} 中 {@code date-format: yyyy-MM-dd HH:mm:ss} 的意图不符。
- *
- * <p><b>为什么单独建一个类、而不改 sa-base 的 JsonConfig：</b>
- * {@code sa-base} 属 SmartAdmin 底座，按项目规则不承载 SCM 业务定制；
- * 且 {@code OffsetDateTime} 仅 SCM 使用，把定制收敛在 sa-admin 侧
- * 可避免影响底座页面，也便于后续单独回滚。
- *
- * @see net.lab1024.sa.base.config.JsonConfig
- * @see ScmOffsetDateTimeSerializer
+ * 为 SCM 的 OffsetDateTime 注册统一日期格式（yyyy-MM-dd HH:mm:ss）。
+ * 这项配置独立于 SmartAdmin 通用 JSON 设置，避免影响其他业务。
  */
 @Configuration
 public class ScmJsonConfig {
