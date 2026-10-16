@@ -9,7 +9,7 @@
  *    不把「上级集团 / 更新时间」摊回列表，授信额度走 `formatAmountOrDash` + `.scm-money`。
  * 2. 详情页客户名必须在 Tabs 之上（切 Tab 后始终可见），页头只保留返回入口。
  * 3. 详情页不得回退到大面积 `a-descriptions bordered`：基础资料走 label/value 字段结构。
- * 4. 五个 Tab 与 lazy load 口径不变（由 w7-customer-360 覆盖取数口径，这里只钉展示层）。
+ * 4. 基础五个 Tab 与客户 SKU 别名 Tab 共六个，仍由各 Tab lazy 取数。
  * 5. 枚举不得直接摊给用户：商品规格状态必须走翻译 + ScmStatusTag，订单状态走 ScmStatusTag。
  * 6. 常购窗口只有 30/90/180/365 四档，用 segmented 而非 Select。
  * 7. 客户与供应商列表在桌面把名称、编码、联系人与电话分列；编码走 `.scm-mono`，
@@ -158,9 +158,11 @@ test('基础资料不得回退到 bordered descriptions，字段走 label/value'
   assert.match(DETAIL_THEME, /\.scm-detail-read\s*\{[\s\S]*?max-width:\s*1360px/);
 });
 
-test('五个 Tab 保持且 lazy 取数口径不变', () => {
+test('客户资料与别名共六个 Tab，lazy 取数口径不变', () => {
   const keys = [...DETAIL.matchAll(/<a-tab-pane key="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(keys, ['base', 'orders', 'frequent', 'agreement', 'visibility']);
+  assert.deepEqual(keys, ['base', 'orders', 'frequent', 'agreement', 'visibility', 'aliases']);
+  assert.match(DETAIL, /key="aliases"/);
+  assert.match(DETAIL, /CustomerSkuAlias/);
   assert.match(DETAIL, /if\s*\(customerId\.value\s*&&\s*!loaded\.value\s*&&\s*!loading\.value\)\s*void reload\(\)/);
   assert.doesNotMatch(DETAIL, /Promise\.all\(\[/);
 });

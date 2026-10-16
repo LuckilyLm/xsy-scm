@@ -406,7 +406,7 @@ const aliasCols: TableColumnsType<CustomerSkuAlias> = [
   {title: '商品规格', dataIndex: 'specName', width: 140},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
   {title: '客户商品别名', dataIndex: 'alias', width: 190},
-  {title: '操作', dataIndex: 'action', width: 120}
+  {title: '操作', dataIndex: 'action', width: 120, align: 'center'}
 ];
 
 async function loadAliases(): Promise<void> {
