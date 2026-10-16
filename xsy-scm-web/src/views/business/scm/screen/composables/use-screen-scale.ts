@@ -4,16 +4,7 @@ import {onBeforeUnmount, onMounted, ref, type Ref} from 'vue';
 export const DESIGN_WIDTH = 1920;
 export const DESIGN_HEIGHT = 1080;
 
-/**
- * 1920×1080 设计稿等比缩放。
- *
- * 必须缩放而不是响应式：大屏每个面板高度都按 1080 精确分配，让浏览器自由伸缩会在
- * 某些视口算出负数或把内容挤没。等比缩放把「布局」与「适配」分开，适配只做一次 transform。
- *
- * 监听 wrapper 而不是 container：container 就是那个固定 1920×1080 的盒子，量它等于没量。
- * 用 ResizeObserver 而不是 window.onresize：进 / 退全屏时 window 不一定触发 resize，
- * 而 wrapper 尺寸一定变；且本组件是独立路由，卸载时可 unobserve，不留全局泄漏。
- */
+/** 大屏以 1920×1080 为设计尺寸，按视口等比缩放，避免面板被浏览器响应式布局挤压。 */
 export function useScreenScale(
     wrapperRef: Ref<HTMLElement | undefined>,
     containerRef: Ref<HTMLElement | undefined>

@@ -6,21 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 数据大屏-趋势数据（近 7 / 30 天）。
- *
- * <p>
- * <b>为什么一次返回 8 条序列而不是按图拆接口</b>：底部趋势带要同时画销售、采购、库存三张图，按图拆会让大屏为了三张图调用十几个接口，且三张图的日期轴必须完全对齐 ——
- * 一次返回能保证这一点，也避免各接口的时间区间出现毫秒级偏差。
- *
- * <p>
- * <b>日期口径是 Asia/Shanghai，不是 UTC</b>：业务上的「今天」是北京时间的今天。用 UTC 日界会把窗口整体平移 8 小时（实际变成 08:00 → 次日 08:00），
- * 早上下的单会被算到前一天。这一条与需求日期 {@code demand_date} 的口径一致。
- *
- * <p>
- * {@code inventoryQuantity} 是<b>每日期末库存量</b>（当日及之前所有流水的净额累加），不是当日变动量；当日变动量看 {@code inboundQuantity} /
- * {@code outboundQuantity}。
- */
+/** 大屏一次返回近 7 天或 30 天的销售、采购和库存趋势，保证各图使用同一时间区间。 */
 @Data
 @Schema(description = "数据大屏-趋势数据")
 public class ScreenTrendVO {

@@ -9,17 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/**
- * 数据大屏专属的只读聚合 DAO：只放<b>呈现形态本身属于大屏</b>的查询（仓库分布条、供应链网络节点、地理分布）。
- *
- * <p>
- * 经营类指标（销售额 / 订单 / 采购 / 库存健康度 / 趋势 / 排行）不在这里 —— 它们是首页、大屏、报表共用的口径， 统一由 {@code ScmBusinessMetricsDao} 定义。同一件事在三处各写一份
- * SQL，漂移后不会报错，只会给出三个不同的数。
- *
- * <p>
- * <b>{@code scope} 是必填参数</b>：大屏是业务列表的聚合视图，不能成为绕过数据范围的旁门 —— 一次页面加载要发多个 Dao 调用， 因此上下文由 {@code ScreenDataService}
- * 每次请求解析一次再逐个下传。
- */
+/** 大屏 DAO 只查仓库分布和地理网络等展示数据；销售、采购等经营指标沿用统一统计服务。 */
 @Mapper
 public interface ScreenDataDao {
 
