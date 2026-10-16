@@ -50,13 +50,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 商城结算与下单。
- *
- * <p>
- * 不建立第二套商品、库存、订单或财务逻辑：可见性与客户价复用目录服务，下单复用正式销售订单服务并标记 {@code MALL} 来源。
- * 客户身份一律取自登录会话，请求体里的商品与地址都必须属于当前客户；价格在提交时由服务端重算，与预览指纹不一致即拒绝。
- */
+/** 商城下单复用正式的商品、价格和销售订单服务。客户身份来自登录会话，商品及地址须属于当前客户；提交时由服务端重新核价。 */
 @Service
 @RequiredArgsConstructor
 public class MallCheckoutService {
