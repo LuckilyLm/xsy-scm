@@ -15,7 +15,8 @@ public final class ScmPrintText {
     }
 
     public static String fixed(BigDecimal value) {
-        return value == null ? "" : value.setScale(ScmFixedScale4Serializer.SCALE, RoundingMode.HALF_UP)
-                .toPlainString();
+        return value == null
+                ? ""
+                : value.setScale(ScmFixedScale4Serializer.SCALE, RoundingMode.HALF_UP).toPlainString();
     }
 }
