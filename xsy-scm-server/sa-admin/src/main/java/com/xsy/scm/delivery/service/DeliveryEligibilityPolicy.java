@@ -8,15 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * 订单能否进入配送候选的唯一判据。
- *
- * <p>
- * 订单必须处于 {@code CONFIRMED}，且每条有效明细都被<b>已完成</b>的分拣任务覆盖。使用任务状态判定资格，因此重开任务会让订单退出候选池，即使已录入的分拣量与原因仍保留。
- *
- * <p>
- * 完成分拣即可进入配送候选；本类不判断分拣数量或库存数量，发车命令使用分拣实发量并执行库存校验。
- */
+/** 进入配送候选的订单必须已确认，所有有效明细均完成分拣。候选资格不等于库存足够，发车时仍要校验实发量和余额。 */
 @Component
 @RequiredArgsConstructor
 public class DeliveryEligibilityPolicy {

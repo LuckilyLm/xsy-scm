@@ -55,13 +55,7 @@ public class DeliveryRouteEntity extends DeliveryRecord {
     private String remark;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String cancelReason;
-    /**
-     * 发车时刻与操作人；由 dispatch 与 status 同事务写入。
-     *
-     * <p>
-     * 刻意不标 {@code ALWAYS}：本实体的多数列用 ALWAYS 是为了让「表单整行替换」能把值清空，而这四列不是表单字段 —— 一旦被某次不带值的整行更新抹掉，线路上就出现 「状态是 DISPATCHED
-     * 却没有发车时点」，而库里的 CHECK 会直接把那次更新打回。
-     */
+    /** 发车时间和操作人与发车状态在同一事务中保存。后续普通表单更新不能清空这些已确认的发车事实。 */
     private OffsetDateTime dispatchedAt;
     private String dispatchedBy;
     /**

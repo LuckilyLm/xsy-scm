@@ -11,13 +11,7 @@ import com.xsy.scm.delivery.constant.ScmDeliveryOrderPrintFilterEnum;
 
 import java.util.List;
 
-/**
- * 按客户正式生成打印：两个维度分开，先按客户状态圈定客户，再决定这些客户中打印哪些订单。
- *
- * <p>
- * {@code customerIds} 只是候选范围（缺省表示线路上全部客户），客户是否 PRINTED / UNPRINTED / PARTIAL 一律由服务端在持有线路锁后按当前 ACTIVE
- * 订单重新聚合判定，不接受前端传来的状态。
- */
+/** 正式打印按客户范围筛选订单。打印状态由服务端在锁住线路后重新计算，不信任前端提交的打印状态。 */
 @Data
 public class DeliveryPrintCustomersForm {
     @NotNull(message = "版本号不能为空")

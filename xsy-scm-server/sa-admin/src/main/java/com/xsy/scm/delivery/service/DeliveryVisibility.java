@@ -12,15 +12,7 @@ import com.xsy.scm.delivery.domain.vo.DeliveryPrintResultVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryRouteVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryPrintItemVO;
 
-/**
- * 配送读接口的金额可见性：缺 {@code scm:delivery:amount:query} 时由服务端把金额字段抹成 {@code null}，前端渲染 {@code —}。
- *
- * <p>
- * 用 {@code null} 而不是 {@code 0}：0 是「这笔金额确实是零」这一事实，null 才是「调用者无权知道」。只在前端隐藏列不构成管控——直接调接口仍会拿到数字。
- *
- * <p>
- * 一次请求只判定一次（{@link #current()}），因此它是值对象而不是静态工具：逐行、逐集合再问一遍 Sa-Token 既浪费也容易在不同集合上得出口径不一致的结果。
- */
+/** 配送金额只有具备对应权限时才返回。无权查看返回 null，不返回零；整次查询统一判断权限，避免列表中出现不同口径。 */
 public final class DeliveryVisibility {
 
     private final boolean amountVisible;

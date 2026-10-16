@@ -42,13 +42,7 @@ public interface DeliveryQueryDao {
      */
     int unsortedItemCount(@Param("orderId") Long orderId);
 
-    /**
-     * 发车取实发量：给定订单的每条有效明细行，取其被 COMPLETED 任务的 ACTIVE 明细覆盖时的实发量。
-     *
-     * <p>
-     * 与 {@link #unsortedItemCount} 是<b>同一条件的正反两面</b>，两处必须一起改：资格判定说 「每行都被覆盖」，这里就保证「每行都能取到一行量」。只改一边会出现
-     * 「订单合格、发车却静默少发一行」。未被覆盖的订单行不出现在结果里，由服务侧逐单核对行数。
-     */
+    /** 发车只读取已完成分拣任务中仍生效的订单行实发量。必须与未分拣明细的校验条件一致，防止发车时漏扣明细。 */
     List<com.xsy.scm.delivery.domain.dto.DeliverySortedLine> sortedLines(
             @Param("orderIds") java.util.Collection<Long> orderIds);
 

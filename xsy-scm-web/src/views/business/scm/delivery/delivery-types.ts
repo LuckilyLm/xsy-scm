@@ -33,13 +33,7 @@ export interface Vehicle {
 
 export type RouteStatus = 'DRAFT' | 'PLANNED' | 'DISPATCHED' | 'COMPLETED' | 'CANCELLED';
 
-/**
- * 订单级履约状态（V63 `ck_delivery_order_fulfillment`）。
- *
- * 与 `assignmentStatus`（ACTIVE / RELEASED）正交：一个说「货到没到手」，
- * 一个说「这单还在不在线路上」。取消线路会写 RELEASED，那与拒收不是同一个事实，
- * 因此两者不能互相推导，页面上也不能拿其中一个替代另一个渲染。
- */
+/** 配送履约状态表示是否已送达；线路分配状态表示订单是否仍在线路中。两者独立，不能把移出线路理解成拒收。 */
 export type FulfillmentStatus = 'PENDING' | 'IN_TRANSIT' | 'SIGNED' | 'EXCEPTION';
 
 /** 签收结果：终态只有这两个，没有「部分签收」（P2 裁决第 12 条）。 */

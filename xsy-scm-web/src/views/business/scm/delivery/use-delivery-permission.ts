@@ -5,13 +5,7 @@ import {useUserStore} from '/@/store/modules/system/user';
 /** 配送订单金额可见权；必须与菜单种子里的 `t_menu.perms` 逐字一致。 */
 export const DELIVERY_AMOUNT_PERM = 'scm:delivery:amount:query';
 
-/**
- * 配送域功能点的唯一来源（与菜单种子 `t_menu.web_perms` 逐字一致）。
- *
- * 模板里的 `v-privilege` 只能引用这里的值：写错一个字符的表现是「按钮显示出来了，点下去 403」，
- * 而 403 文案是底座统一的「无权限」，看不出是拼错，排查成本远高于这里多写一层常量。
- * 新增取值必须先在 `db/migration` 同族的菜单种子迁移里种下功能点，再来加这一行。
- */
+/** 配送功能权限码与后端和菜单配置保持一致。新增权限时先更新权限种子，前端按钮统一引用常量，避免拼错码。 */
 export const DELIVERY_PERM = {
     ROUTE_QUERY: 'scm:delivery:route:query',
     ROUTE_ADD: 'scm:delivery:route:add',
