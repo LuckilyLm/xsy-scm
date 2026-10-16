@@ -100,6 +100,35 @@ class ScmMigrationTargetPgIT {
         assertColumn("xsy_finance_receipt", "cod_order_id");
     }
 
+    @Test
+    void mallWarehouseAndConversionSchemaExistsAt137() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "133"));
+        if (target < 137) {
+            return;
+        }
+        assertColumn("xsy_customer", "mall_delivery_warehouse_id");
+        assertColumn("xsy_sales_order", "mall_delivery_warehouse_id");
+        assertColumn("xsy_sales_order_item", "mall_stock_unit_snapshot");
+        assertColumn("xsy_sales_order_item", "mall_stock_units_per_sale_unit");
+        assertColumn("xsy_inventory_outbound_item", "stock_quantity");
+        assertColumn("xsy_order_return_receipt_item", "stock_quantity");
+        assertColumn("xsy_order_return_receipt_item", "stock_unit_snapshot");
+        assertColumn("xsy_product_sku_stock_conversion", "stock_units_per_sale_unit");
+        assertColumn("xsy_mall_district_warehouse", "priority");
+
+        Integer constraints = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE connamespace = 'xsy_v2'::regnamespace "
+                        + "AND conname IN ('ck_order_item_mall_stock_factor', "
+                        + "'ck_order_return_receipt_stock_quantity', 'ck_order_return_receipt_stock_snapshot_pair')",
+                Integer.class);
+        assertThat(constraints).isEqualTo(3);
+        Integer indexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname='xsy_v2' "
+                        + "AND indexname IN ('uk_mall_district_warehouse_active', "
+                        + "'uk_product_sku_stock_conversion_active')", Integer.class);
+        assertThat(indexes).isEqualTo(2);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "
