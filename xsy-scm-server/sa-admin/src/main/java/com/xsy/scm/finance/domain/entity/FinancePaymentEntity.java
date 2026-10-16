@@ -7,21 +7,7 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/**
- * 付款：一笔钱一单，可无对应应付（预付）；退款付款带 {@code ORDER_REFUND} 来源。
- *
- * <p>
- * <b>{@code COMPLETED} 的退款不等于资金已付出</b>：{@code xsy_order_refund} 是订单域的业务事实，真实退付由本表表达。一张退款最多一笔正式付款、金额必须等于
- * {@code xsy_order_refund.refund_amount}，由 {@code uk_finance_payment_source_active} 在库级兜底。
- *
- * <p>
- * <b>付款不冲减应收</b>：Return 负责红冲，Refund Payment 只负责真实资金退付，两者互不替代，避免双重冲减。
- *
- * <p>
- * <b>反向行的来源必须为 {@code null}</b>（{@code ck_finance_payment_reverse_no_source}）： {@code uk_finance_payment_source_active}
- * 的谓词是 {@code source_id IS NOT NULL}，若反向行沿用原行的 {@code ORDER_REFUND} 来源，它会与原行抢同一个唯一键 ——
- * 结果是「登错一笔退款付款后再也反向不掉」，纠错路径被自己的防重索引锁死。
- */
+/** 一笔付款单记录一次实际付款，可以没有对应应付单。订单退款付款须关联退款来源，退款审批完成不等于已经付款。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_finance_payment")
