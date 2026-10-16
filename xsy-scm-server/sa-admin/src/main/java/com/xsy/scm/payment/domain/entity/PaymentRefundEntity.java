@@ -11,13 +11,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import lombok.Data;
 
-/**
- * 渠道退款事实。
- *
- * <p>
- * 与订单域的 {@code xsy_order_refund}（售后退款单）是两件事：{@code xsy_order_refund} 说「该退多少」， 这里说「渠道实际退了多少、退到哪一笔交易上」。通过
- * {@code source_type = ORDER_REFUND} + {@code source_id} 关联，且<b>一张售后退款单只对应一笔渠道退款</b>（唯一索引）。
- */
+/** 渠道退款记录实际退付金额和原支付交易，与售后退款单的批准金额是两种不同事实。同一售后退款单最多执行一笔渠道退款。 */
 @Data
 @TableName("xsy_payment_refund")
 public class PaymentRefundEntity {

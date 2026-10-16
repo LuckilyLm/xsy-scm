@@ -10,18 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 import lombok.Data;
 
-/**
- * 回调事件：渠道投递过来的每一次通知。
- *
- * <p>
- * <b>这是回调幂等的锚点</b>：{@code (provider, provider_event_id)} 唯一。重复投递同一事件 必然撞唯一索引，业务侧据此判定「已处理过」并静默返回，<b>不重复执行任何副作用</b>。
- *
- * <p>
- * 未通过验签的事件<b>照样落库</b>（{@code process_status = REJECTED}）： 「有人伪造回调」必须留下证据，而不是被静默丢弃。
- *
- * <p>
- * 这张表没有 {@code version} / {@code deleted}：事实表只有追加。
- */
+/** 支付回调事件按渠道和事件 ID 唯一防重。重复通知不能重复执行；验签失败也要以拒绝状态记录，回调事件只追加。 */
 @Data
 @TableName(value = "xsy_payment_callback_event", autoResultMap = true)
 public class PaymentCallbackEventEntity {

@@ -3,15 +3,7 @@ package com.xsy.scm.payment.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 本地模拟渠道的回放剧本。
- *
- * <p>
- * <b>只有 MOCK 渠道能带剧本</b>（DDL 的 {@code ck_payment_intent_mock_scenario} 保证）： 真实渠道如果允许客户端指定剧本，就等于给了一个可控的行为开关。
- *
- * <p>
- * 剧本只影响 <b>provider 侧的行为</b>（什么时候回、回成功还是失败）， 不绕过验签、幂等与状态机 —— 那些是业务域的事，mock 无权跳过。
- */
+/** 仅模拟渠道可以携带测试场景。模拟场景只控制渠道行为，不得绕过验签、幂等或状态机。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPaymentMockScenarioEnum {

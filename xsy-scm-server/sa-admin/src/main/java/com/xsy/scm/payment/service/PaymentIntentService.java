@@ -152,16 +152,7 @@ public class PaymentIntentService {
                 claim);
     }
 
-    /**
-     * 余额充值：<b>内部契约</b>，只由余额域调用。
-     *
-     * <p>
-     * 刻意不放开公开的 {@code /scm/payment/intent/create}：客户端若能自己拼
-     * {@code sourceType=BALANCE_RECHARGE + sourceId=任意充值 id}，就等于绕过了 「先有充值事实、再有钱要付」这条顺序。
-     *
-     * <p>
-     * <b>{@code method} 恒为 {@code ONLINE}</b>：这是往余额里充钱，资金来源仍是外部在线支付； {@code BALANCE} 表示「用余额抵扣」，是相反的方向。
-     */
+    /** 余额充值支付只能由余额模块在充值单建立后发起，不能开放客户端随意传充值 ID。充值资金来源始终为在线支付，不是钱包余额扣减。 */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity createForBalanceRecharge(BalanceRechargeIntentFact fact, String idempotencyKey) {
         var claim = idempotencyService.claim(RECHARGE_INTENT_SCOPE + ":" + fact.rechargeId(), idempotencyKey, fact);
@@ -371,18 +362,7 @@ public class PaymentIntentService {
         }
     }
 
-    /**
-     * 按订单 id 解析并校验正式订单事实。
-     *
-     * <p>
-     * 校验四件事：来源类型受支持、订单存在、<b>订单客户与提交的客户一致</b>、订单在当前调用者的订单数据范围内。
-     *
-     * <p>
-     * 越权与「订单不存在」<b>共用同一个拒绝</b>（{@link ScmDataScopeException}，对外 30005）：能分辨「存在但无权」就等于把订单主键探测变成了可用信号，与 Finance 收款的纪律一致。
-     *
-     * <p>
-     * 金额仍由调用方显式给出（允许部分支付、余额 + 在线支付拆分），但<b>来源身份不能由客户端自己拼</b>。
-     */
+    /** 创建订单支付前，服务端验证订单存在、客户匹配及操作者的数据范围。订单不存在与越权使用相同拒绝响应，不能向客户端泄露订单是否存在。 */
     private PaymentOrderFact requireOrder(PaymentIntentCreateForm form, boolean enforceEmployeeScope) {
         if (!ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(form.getSourceType())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);

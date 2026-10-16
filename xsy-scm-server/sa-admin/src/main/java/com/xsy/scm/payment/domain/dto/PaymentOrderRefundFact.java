@@ -4,13 +4,7 @@ import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/**
- * 支付域读取的业务退款单事实（只读，来源 {@code xsy_order_refund}）。
- *
- * <p>
- * {@code customerId} 必须与原支付客户一致；{@code refundAmount} 必须与支付域提交的退款额逐值一致 —— 差一分钱，人工与线上两条退款路径就会各退一部分。{@code status} 读侧不过滤，
- * 由服务层给出可解释的拒绝原因。
- */
+/** 渠道退款前确认退款单客户与原支付客户相同，金额与批准退款额一致。退款状态的拒绝原因由服务层判断。 */
 public record PaymentOrderRefundFact(Long refundId, String refundNo, Long orderId, Long customerId,
         BigDecimal refundAmount, String status, OffsetDateTime completedAt) {
 

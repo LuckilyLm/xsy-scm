@@ -7,13 +7,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-/**
- * 支付域读取的<b>外部只读事实</b>（订单 / 退款单 / 财务付款）。
- *
- * <p>
- * 形态照财务域的 {@code FinancePaymentSourceDao}：<b>不继承 BaseMapper</b> —— 支付域对这三张表没有写入口，只读它们来校验来源身份。刻意不走别的域的 DAO
- * 接口：那会让「谁可以读什么」变成跨域对象图的一部分，而这里真正需要的只是三行 SQL。
- */
+/** 支付模块通过只读 DAO 校验订单、退款单与财务付款，不能通过该 DAO 修改其他业务模块的数据。 */
 @Mapper
 public interface PaymentSourceDao {
     List<Long> lockOrderRefunds(@Param("orderId") Long orderId);

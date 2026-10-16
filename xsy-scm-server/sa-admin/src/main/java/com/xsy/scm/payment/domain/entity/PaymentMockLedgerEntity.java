@@ -8,15 +8,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import lombok.Data;
 
-/**
- * 本地模拟渠道<b>自己的账</b>（仅 MOCK 渠道使用）。
- *
- * <p>
- * 存在的理由是让对账能真的对出差异：如果模拟渠道的账就是本地交易表的投影， 它永远平账，差异路径不可测。
- *
- * <p>
- * 这张表刻意没有 {@code deleted} / {@code version} / {@code updated_*}： 渠道的账本只有追加，结构上就没有改一行的入口。
- */
+/** 模拟渠道账本独立追加保存，用于对账差异测试；不允许编辑或删除历史渠道事实。 */
 @Data
 @TableName("xsy_payment_mock_ledger")
 public class PaymentMockLedgerEntity {

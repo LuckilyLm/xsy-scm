@@ -3,20 +3,7 @@ package com.xsy.scm.payment.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 支付意图状态机。持久化到 {@code xsy_payment_intent.status}，与 DDL 的 CHECK 白名单逐字一致。
- *
- * <pre>
- * CREATED ──发起支付──▶ PENDING ──渠道成功──▶ SUCCEEDED   （终态）
- *    │                     │
- *    │                     └──渠道失败──▶ FAILED         （终态）
- *    │                     └──超时未付──▶ EXPIRED        （终态）
- *    └──关闭──────▶ CLOSED （终态，只能从 CREATED / PENDING 进入）
- * </pre>
- *
- * <p>
- * <b>三个终态都不可回退</b>：支付是外部事实，本地改状态改不掉客户已经付过的钱。 需要「撤销」时追加新的支付事实（退款），而不是把意图改回未付。
- */
+/** 支付意图从创建转为等待渠道结果，最终成功、失败、超时或关闭。终态不能回退；客户已支付的钱只能通过退款形成新记录处理。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPaymentIntentStatusEnum {

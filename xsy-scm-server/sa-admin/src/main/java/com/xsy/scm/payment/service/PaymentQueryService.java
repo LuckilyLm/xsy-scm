@@ -30,15 +30,7 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 支付域的<b>只读</b>查询。
- *
- * <p>
- * 集中一处而不是散在各个 Controller：查询不改状态，没有事务与编排可言，分成四个 Service 只会让「哪个接口查什么」更难找。
- *
- * <p>
- * 排序一律在 Mapper 里写死（{@code created_at DESC, id DESC}），<b>不接受客户端排序字段</b>：把客户端字符串拼进 ORDER BY 是注入面，而且会让分页结果不稳定。
- */
+/** 支付列表与详情仅查询，不修改业务状态。排序由 SQL 固定，不接收客户端拼入的排序字段，以确保安全和稳定分页。 */
 @Service
 @RequiredArgsConstructor
 public class PaymentQueryService {

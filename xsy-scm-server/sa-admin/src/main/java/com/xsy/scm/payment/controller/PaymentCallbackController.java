@@ -19,16 +19,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 支付回调：查记录，以及<b>受控的模拟投递</b>。
- *
- * <p>
- * <b>当前不开放匿名渠道回调，也不改 {@code MvcConfig}。</b> 模拟入口要求登录态 + 权限，而且它走的仍是业务侧那条真实路径（验签 → 落事件 → 匹配交易 → 状态机），
- * 只是由后台把报文投进来而已。等接真实渠道时再单独处理公网入口、验签证书、原始报文白名单、密钥与重放防护。
- *
- * <p>
- * 模拟入口<b>不新造权限模型</b>：复用创建支付意图的权限码 —— 能发起这笔支付的人，才能模拟它的回调。
- */
+/** 当前支付回调仅支持有权限的内部模拟投递，不开放匿名渠道回调。模拟投递仍必须走验签、事件防重和支付状态机；接真实渠道时需单独设计公网入口。 */
 @RestController
 @RequestMapping("/scm/payment/callback")
 @RequiredArgsConstructor

@@ -3,15 +3,7 @@ package com.xsy.scm.payment.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 对账差异分类。持久化到 {@code xsy_payment_reconciliation_item.category}。
- *
- * <p>
- * 四类都是<b>要给人看的结论</b>，不是内部状态：后台按分类展示，人工处理。 对账程序<b>只发现差异、不自动修复</b> —— 自动改交易状态会让审计链变得说不清。
- *
- * <p>
- * {@code MATCHED} 不在这里：它是「零差异」这个运行结论（{@code xsy_payment_reconciliation.status}）， 不是一条差异记录。
- */
+/** 对账分类供人工查看和处理；对账程序只发现差异，不自动修改支付事实。匹配成功不是差异记录。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPaymentReconciliationCategoryEnum {

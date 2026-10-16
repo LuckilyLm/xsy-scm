@@ -38,16 +38,7 @@ public class PaymentIntentController {
 
     private final PaymentQueryService paymentQueryService;
 
-    /**
-     * 创建支付意图并向渠道发起。
-     *
-     * <p>
-     * <b>需要 {@code Idempotency-Key}</b>：这里往下会真的调用渠道。后台双击、网络重试、前端超时后重试都会造出第二个意图与第二笔渠道交易 —— 退款都要求幂等，收钱更不能没有。
-     * 同键同内容重放首次结果，同键异内容按既有语义报冲突。
-     *
-     * <p>
-     * 应付金额由入参显式给出（允许部分支付、余额 + 在线支付拆分）；本接口<b>不做</b> 「按订单金额自动算」的推断，但<b>来源身份由正式订单事实解析</b>，不采信提交的客户与单号。
-     */
+    /** 创建支付意图必须携带幂等键，避免重试产生两笔渠道交易。支付金额允许分笔，但订单来源和客户身份由服务端查验。 */
     @PostMapping("/create")
     @SaCheckPermission(ScmPaymentPermission.INTENT_CREATE)
     @OperateLog

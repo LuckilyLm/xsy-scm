@@ -106,17 +106,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
         return new RefundResult(reference, Outcome.SUCCEEDED, total, null, null);
     }
 
-    /**
-     * 验签 + 归一化。
-     *
-     * <p>
-     * 报文格式（本地模拟，字段与真实渠道同构）：
-     * {@code {"eventId":"...","eventType":"PAYMENT_SUCCEEDED","providerTransactionNo":"...","amount":"12.0000",
-     * "providerRefundNo":null,"bizDate":"2026-10-03"}}。
-     *
-     * <p>
-     * 不抛异常：验签失败也返回一个 {@code signatureVerified = false} 的结果， 让业务侧落一条 REJECTED 事件留证。
-     */
+    /** 模拟渠道解析和验签回调。验签失败也要返回未验证结果供业务记录拒绝事件，不能直接丢弃审计证据。 */
     @Override
     public Callback parseCallback(Map<String, String> headers, String rawBody) {
         Map<String, Object> payload = readJson(rawBody);

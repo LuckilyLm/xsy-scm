@@ -72,13 +72,7 @@ public enum PaymentErrorCode implements ScmErrorCode {
     /** 渠道退款成功回调没带实际退款金额：没有它就无法登记资金反向事实。 */
     PAYMENT_REFUND_PROVIDER_AMOUNT_MISSING(41358, "渠道未回报实际退款金额，无法确认退款结果"),
 
-    /**
-     * 支付意图的业务来源不合法：订单不存在 / 不受支持 / 与提交的客户不一致。
-     *
-     * <p>
-     * <b>来源身份不能由客户端自己拼</b>：意图必须按订单 id 解析出正式事实（订单号、客户、业务员）， 否则 {@code customer_name_snapshot} 里会躺着一个客户 id 字符串，支付成功后又顺着它进
-     * Finance。
-     */
+    /** 支付来源必须对应服务端查到的真实订单和客户。订单不存在、来源不支持或客户不匹配时拒绝创建支付意图。 */
     PAYMENT_INTENT_SOURCE_INVALID(41359, "支付意图的业务来源不合法：请确认订单存在且属于该客户"),
 
     REFUND_FUNDING_INVALID(41360, "退款资金来源不完整或可退本金不足"),

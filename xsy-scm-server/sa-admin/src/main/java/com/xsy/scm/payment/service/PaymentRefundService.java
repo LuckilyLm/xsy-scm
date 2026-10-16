@@ -208,20 +208,7 @@ public class PaymentRefundService {
         }
     }
 
-    /**
-     * 业务退款来源（{@code ORDER_REFUND}）的前置校验。
-     *
-     * <p>
-     * 顺序即纪律，且<b>必须在 {@code provider.refund()} 之前</b>完成：
-     * <ol>
-     * <li>锁 {@code xsy_order_refund} —— 线上退款与人工退款付款（财务域 {@code CUSTOMER + ORDER_REFUND}） 必须互斥，两边锁同一行才能关掉「先查后写」的窗口；</li>
-     * <li>退款单必须存在且 {@code COMPLETED}；</li>
-     * <li>退款对象必须与原支付客户一致（否则会把 A 的付款退给 B）；</li>
-     * <li>提交金额必须与应退额<b>逐值一致</b>（差一分钱，两条路径就各退一部分）；</li>
-     * <li>不存在人工登记的退款付款；</li>
-     * <li>不存在已有的线上退款。</li>
-     * </ol>
-     */
+    /** 渠道退款前先锁原退款单，检查已完成状态、退款客户、金额和既有付款记录。线上与人工退款付款互斥，同一退款单不能重复支付。 */
     private void requireOrderRefundSource(PaymentRefundCreateForm form, PaymentTransactionEntity transaction,
             BigDecimal amount) {
         if (!ScmPaymentSourceTypeEnum.ORDER_REFUND.name().equals(form.getSourceType()) || form.getSourceId() == null) {
@@ -411,13 +398,7 @@ public class PaymentRefundService {
         return paymentRefundDao.selectByProviderRefundNo(provider, providerRefundNo);
     }
 
-    /**
-     * 可退本金 = 渠道实收 − 已成功实退 − 已受理但未终结的退款申请。
-     *
-     * <p>
-     * 刻意<b>不</b> fallback 到本地应付金额：本地应付 100、渠道实收 98 时，按 100 退必然被渠道拒；而更糟的是「本地根本没记下渠道实收」时静默按 100 退 —— 那会掩盖支付结果落库不完整，
-     * 等接真实渠道时才以「退款被渠道拒」的形式暴露出来。缺可信金额就<b>拒绝退款</b>。
-     */
+    /** 可退金额以渠道实际收款减去已成功及处理中退款为准，不使用本地应付金额猜测。缺少可靠渠道实收金额时拒绝退款。 */
     private BigDecimal refundableOf(PaymentTransactionEntity transaction) {
         if (transaction.getProviderAmount() == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_PROVIDER_AMOUNT_MISSING);
