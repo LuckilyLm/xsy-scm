@@ -6,9 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * 数据大屏-库存数据快照（只读聚合）。
- */
+/** 大屏库存数据来自只读汇总，不直接修改库存。 */
 @Data
 @Schema(description = "数据大屏-库存数据")
 public class ScreenInventoryVO {
