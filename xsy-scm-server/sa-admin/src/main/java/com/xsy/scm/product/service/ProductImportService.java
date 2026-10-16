@@ -609,13 +609,7 @@ public class ProductImportService {
                         .stream().collect(Collectors.toMap(ProductUomEntity::getName, u -> u, (a, b) -> a));
     }
 
-    /**
-     * 标签编码列取值：UPDATE 允许显式清空标记（表示解除全部标签），CREATE 没有「原值」可清，标记按非法编码处理。
-     *
-     * <p>
-     * CREATE 同时复核启用态：{@code loadTags} 只按 {@code deleted=FALSE} 取行、不看 {@code status}，缺了这一步，填了停用标签要等整批写库被
-     * {@code assertUsable} 抛 40028 才知道是哪一行。
-     */
+    /** 商品更新允许清空全部标签；新建商品的标签编码必须有效且启用。导入时提前校验并定位错误行，不延迟到写库阶段。 */
     private void validateTagCodes(ProductImportResultVO result, ProductImportRow row,
             Map<String, ProductTagEntity> tagMap, boolean allowClear) {
         var cell = trim(row.getTagCodes());

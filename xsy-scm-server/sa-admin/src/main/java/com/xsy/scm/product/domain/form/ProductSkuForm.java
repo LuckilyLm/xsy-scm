@@ -51,13 +51,7 @@ public class ProductSkuForm {
     @Min(value = 0, message = "排序值不能小于0")
     private Integer sortOrder = 0;
 
-    /**
-     * 规格值默认空表，避免调用方为「无规格项」显式传 null。
-     *
-     * <p>
-     * 初始化刻意不写在字段声明行上：这两个容器元素注解的渲染宽度已顶到 Checkstyle 的 120 列上限，而 Eclipse formatter 不在泛型类型参数内部断行，把
-     * {@code = new LinkedHashMap<>()} 留在声明行会稳定产出 130 列，Spotless 与 Checkstyle 无法同时满足。
-     */
+    /** 没有规格项时默认使用空表；容器初始化另起一行，以满足项目格式及行宽检查。 */
     public ProductSkuForm() {
         this.specValues = new LinkedHashMap<>();
     }
