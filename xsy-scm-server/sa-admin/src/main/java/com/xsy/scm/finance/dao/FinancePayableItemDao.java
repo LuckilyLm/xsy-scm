@@ -13,13 +13,7 @@ import java.util.List;
 @Mapper
 public interface FinancePayableItemDao extends BaseMapper<FinancePayableItemEntity> {
 
-    /**
-     * 插入应付明细，来源身份已存在时什么都不做。
-     *
-     * <p>
-     * 冲突目标与 {@code uk_finance_payable_item_source_active} 逐字一致（纪律）。与单头不同：调用方只在「单头刚刚由本次调用插入」之后才写明细，此时返回 0
-     * 不可能是重放，而是这一条收货行已经挂在别的应付单上 —— 属于数据异常，必须失败。
-     */
+    /** 一条有效收货明细只能生成一条应付明细，数据库来源唯一索引负责防重。重复写入需要区分合法重放与不一致业务记录。 */
     int insertOnConflictDoNothing(FinancePayableItemEntity entity);
 
     FinancePayableItemEntity selectOriginalItem(@Param("payableId") Long payableId,

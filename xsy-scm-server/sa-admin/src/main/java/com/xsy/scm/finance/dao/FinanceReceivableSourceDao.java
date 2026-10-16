@@ -13,17 +13,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * 应收生成器读取的签收与出库事实（第 2 条允许的<b>只读跨域 DAO</b>，形态照 {@link FinancePayableSourceDao}）。
- *
- * <p>
- * <b>刻意不继承 {@code BaseMapper}</b>：本接口没有实体可写，越界写在这里是够不着的能力，不是靠纪律约束的口子。
- *
- * <p>
- * <b>为什么由财务侧回读，而不是让 {@code DeliveryRouteService.sign} 把 {@code signedAt} 传进来</b>： {@code markSigned} 的
- * {@code signed_at} 写的是数据库时钟 {@code now()}，调用方手里没有这个值；传 {@code OffsetDateTime.now()} 会让 {@code receivable.event_at}
- * 成为一个比签收时刻更晚的近似值，而「应收发生在何时」必须与「客户何时签收」是同一个事实。
- */
+/** 财务生成应收时只读订单签收、实际出库和冻结折扣事实，不通过此 DAO 改订单。签收身份及时间以已保存记录为准，异常签收不能生成正常应收。 */
 @Mapper
 public interface FinanceReceivableSourceDao {
     boolean hasFinalDeliveryResult(@Param("salesOrderId") Long salesOrderId);

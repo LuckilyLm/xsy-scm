@@ -7,19 +7,7 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/**
- * 收款：一笔钱一单，可无对应应收（预收）。
- *
- * <p>
- * <b>没有来源列</b>：收款一律人工登记，与应收的关系只通过 {@code xsy_finance_write_off} 表达 （允许无应收的预收）。<b>没有状态列</b>：待核销余额读时派生。
- *
- * <p>
- * <b>纠错只能新增 {@code REVERSE} 行</b>：登错金额、登错客户、登错凭据号都不能改原行。反向行的金额<b>同样恒为正</b>，方向由 {@code entryType} 表达；反向前该单的已用额必须为 0
- * （即先反向其全部核销），否则会出现「已用 &gt; 有效额」的负待核销余额。
- *
- * <p>
- * {@code externalReference} 只是资金凭据文本，<b>不唯一、也不作幂等键</b>：银行流水号跨客户重复是真实存在的，把它当唯一键会让第二笔合法收款登不进去。
- */
+/** 每笔实收款独立记账，可以暂不关联应收单。与应收的抵扣关系通过核销表保存，收款记录本身不可修改；系统收款与人工登记须保留来源区分。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_finance_receipt")

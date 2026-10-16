@@ -124,13 +124,7 @@ public class FinancePaymentService {
         return result;
     }
 
-    /**
-     * 付款事实本身（不含幂等三段式）。
-     *
-     * <p>
-     * 两种模式的判定顺序刻意是「先形态、后来源、再范围、最后落库」，并且 <b>CUSTOMER 侧的一切不通过都收敛到同一个 41139</b>：退款不存在、退款不属于我、状态未完成、金额或对方不符、已付过 ——
-     * 全部同一个码。若把「不属于我」换成范围异常（30005）而「不存在」保持 41139，就等于是给调用者一个「这张退款存在且不是你的」的探测信号，因此客户范围校验也使用相同的失败响应。
-     */
+    /** 付款先校验方式与来源，再检查对方数据权限，最后登记事实。客户退款的不存在、越权、金额不符等情况返回同一拒绝码，避免暴露其他客户退款是否存在。 */
     private FinancePaymentEntity register(FinancePaymentAddForm form) {
         String counterpartyType = counterpartyType(form.getCounterpartyType());
         BigDecimal amount = amount(form.getAmount());

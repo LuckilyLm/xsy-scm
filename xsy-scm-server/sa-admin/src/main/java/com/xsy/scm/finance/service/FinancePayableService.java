@@ -314,13 +314,7 @@ public class FinancePayableService {
         }).toList();
     }
 
-    /**
-     * {@code GENERATE} 的 {@code after_data}：单头快照，{@code before_data} 为 {@code null}。
-     *
-     * <p>
-     * 金额与时间落成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是<b>未注册 JavaTimeModule 的裸 ObjectMapper</b>，把
-     * {@code OffsetDateTime} 直接放进快照会在写入时炸。
-     */
+    /** 财务生成日志的金额和时间写入 JSON 快照前须转成字符串，避免通用 JSONB 转换器无法序列化时间类型。 */
     private Map<String, Object> generatedSnapshot(FinancePayableEntity payable, int itemCount) {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("payableNo", payable.getPayableNo());

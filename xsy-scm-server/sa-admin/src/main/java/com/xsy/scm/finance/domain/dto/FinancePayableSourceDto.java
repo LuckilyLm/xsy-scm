@@ -4,13 +4,7 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/**
- * 应付生成所需的<b>收货确认事实</b>（单头维度），由 {@code FinancePayableSourceDao} 只读取得。
- *
- * <p>
- * 字段全部来自 {@code xsy_purchase_receipt} 的已落库列，没有一个是在服务层现算或现取的： {@code confirmedAt} 必须是这次收货确认留下的事实本身，否则「业务已确认、财务时刻却是后来补的」
- * 这种账就无法解释（与库存流水取 {@code confirmed_at} 同一纪律）。
- */
+/** 生成应付的收货时间和操作人来自已确认收货记录，财务不重新生成时间戳；金额按已落库的采购收货事实确定。 */
 @Data
 public class FinancePayableSourceDto {
 

@@ -7,21 +7,7 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/**
- * 应付单头：一张已确认收货单一条正常应付。
- *
- * <p>
- * <b>红字应付是另一张 {@code entry_type = 'RED'} 的单</b>，与应收红字同形，不是原单上的一列调整。它的来源是 {@code MANUAL} 且 {@code sourceId} 为
- * {@code null} —— 手工事实没有外部业务行，因此落在 {@code uk_finance_payable_source_active} 的 {@code source_id IS NOT NULL}
- * 谓词之外，防重由「可冲上限 + 请求级幂等键」承担。
- *
- * <p>
- * <b>没有 purchaser_id / warehouse_id</b>：范围归属读时 join {@code xsy_purchase_receipt → xsy_purchase_order → purchaser_id}
- * 取活值（指定路径）；应付不按仓收窄。
- *
- * <p>
- * <b>没有状态列与 due_date</b>：结清状态和待核销余额均在读取时派生。
- */
+/** 正常应付由已确认收货生成，红字应付独立新增而不改原单。应付金额、核销及结清状态分别保存事实与派生结果，历史单据只能追加纠错。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_finance_payable")

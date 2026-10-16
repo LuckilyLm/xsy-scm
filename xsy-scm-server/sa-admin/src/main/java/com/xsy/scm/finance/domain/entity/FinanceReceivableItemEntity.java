@@ -6,17 +6,7 @@ import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
-/**
- * 应收明细：正常一条 {@code xsy_inventory_outbound_item} 一行，红字一条 {@code xsy_order_return_item} 一行。
- *
- * <p>
- * <b>来源锚点是出库行主键，不是 {@code sales_order_item_id}</b>：一条订单行可能对应多条出库行，因此唯一索引
- * {@code uk_finance_receivable_item_source_active} 按 {@code xsy_inventory_outbound_item.id} 去重。
- *
- * <p>
- * <b>红字明细不存行级原明细指针</b>：一条 {@code xsy_sales_order_item} 可能对应多条出库行，不存在唯一的「原正常明细行」，假设 1:1 会造出一个指错行的外键语义。红字的行级追溯链是
- * {@code RED receivable → original_receivable_id（单头级）} + {@code RED item → xsy_order_return_item → orderItemId}。
- */
+/** 正常应收按出库明细生成，退货红字按已批准退货明细生成。来源身份独立防重，金额按原订单的冻结结算价与优惠分摊处理，不按当前商品价格重新计算。 */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_finance_receivable_item")

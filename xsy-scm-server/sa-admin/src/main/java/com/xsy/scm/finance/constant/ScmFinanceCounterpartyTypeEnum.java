@@ -3,13 +3,7 @@ package com.xsy.scm.finance.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 付款对方类型：付给供应商（应付 / 预付）或付给客户（退款）。
- *
- * <p>
- * 两侧的<b>数据范围口径不同</b>：{@code SUPPLIER} 侧不收窄，供应商主档无 owner 列，按采购团队共享读取； {@code CUSTOMER} 侧与收款同口径，按
- * {@code xsy_customer.seller_id} 用 customerSellerScope 收窄。
- */
+/** 付款对象分供应商与客户退款两类。客户付款必须校验客户业务员的数据范围；供应商历史欠款仍可按统一供应商主档处理。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmFinanceCounterpartyTypeEnum {

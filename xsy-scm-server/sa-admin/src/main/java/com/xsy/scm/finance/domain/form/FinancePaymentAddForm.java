@@ -10,19 +10,7 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 
 import java.time.OffsetDateTime;
 
-/**
- * 付款登记请求，只创建 {@code NORMAL} 付款事实。
- *
- * <p>
- * 只有两种合法组合（{@code counterpartyType} × {@code sourceType}），服务端逐条判定，其余组合一律 41139：
- * <ul>
- * <li>{@code SUPPLIER} + 来源两列全空 —— 供应商付款 / 预付，允许当前没有任何应付；</li>
- * <li>{@code CUSTOMER} + {@code ORDER_REFUND} + {@code sourceId} —— 客户退款付款， 必须指向一张已 {@code COMPLETED} 的退款且金额逐值相等。</li>
- * </ul>
- *
- * <p>
- * 不含应付、核销额、状态、审批人、账户、币种、附件或余额。付款与应付的对应关系只能由 {@code xsy_finance_write_off} 表达，这里不接受 {@code payableId}。
- */
+/** 付款登记只新增正常付款事实。供应商付款和客户退款按对方类型、来源与金额分别验证；客户退款必须关联已完成的真实退款单。 */
 @Data
 public class FinancePaymentAddForm {
 

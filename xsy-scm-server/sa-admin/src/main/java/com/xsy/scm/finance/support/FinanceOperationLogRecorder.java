@@ -34,14 +34,7 @@ public class FinanceOperationLogRecorder {
         record(businessType, businessId, operation, reason, before, after, ScmOperator.current());
     }
 
-    /**
-     * 追加一条财务操作日志，并<b>显式指定操作人</b>。
-     *
-     * <p>
-     * 派生生成器用这一条：红字应收的操作人是 {@code xsy_order_return.updated_by}（批准人），正常应收的是
-     * {@code xsy_delivery_route_order.signed_by}（签收人）。取已落库的业务事实操作人而不是
-     * {@link ScmOperator#current()}，是为了让「财务事实的身份列」与「日志的操作人」来自同一个事实源 —— 否则同一笔账会出现两个可能对不上的操作人（「红字是已成立业务事实的映射」要求这一点成立）。
-     */
+    /** 财务派生事实写日志时明确传入原业务操作人：正常应收用签收人、红字应收用退货批准人，不能替换成后台任务当前账户。 */
     public void record(ScmFinanceBusinessTypeEnum businessType, Long businessId, ScmFinanceOperationTypeEnum operation,
             String reason, Object before, Object after, String operator) {
         var entry = new FinanceOperationLogEntity();
