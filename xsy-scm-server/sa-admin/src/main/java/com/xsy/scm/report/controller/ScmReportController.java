@@ -347,13 +347,11 @@ public class ScmReportController {
     @OperateLog
     public void exportPurchasePriceTrend(@RequestBody ScmPurchaseReportQueryForm form, HttpServletResponse response)
             throws IOException {
-        List<String> titles = List.of("业务日", "商品规格编码", "商品名称", "采购单位",
-                "加权平均采购价", "上次有效均价", "涨跌金额", "涨跌幅(%)", "样本行数");
-        List<List<Object>> rows = purchaseReportService
-                .priceTrend(form).stream().map(r -> ScmReportExcel.row(titles, r.getBizDate(), r.getSkuCode(),
-                        r.getProductName(), r.getPurchaseUnit(), r.getWeightedAvgPrice(),
-                        r.getPreviousWeightedAvgPrice(), r.getPriceChangeAmount(),
-                        r.getPriceChangePercent(), r.getSampleLineCount()))
+        List<String> titles = List.of("业务日", "商品规格编码", "商品名称", "采购单位", "加权平均采购价", "上次有效均价", "涨跌金额", "涨跌幅(%)", "样本行数");
+        List<List<Object>> rows = purchaseReportService.priceTrend(form).stream()
+                .map(r -> ScmReportExcel.row(titles, r.getBizDate(), r.getSkuCode(), r.getProductName(),
+                        r.getPurchaseUnit(), r.getWeightedAvgPrice(), r.getPreviousWeightedAvgPrice(),
+                        r.getPriceChangeAmount(), r.getPriceChangePercent(), r.getSampleLineCount()))
                 .toList();
         ScmReportExcel.write(response, "采购分析-价格波动.xlsx", "价格波动", titles, rows);
     }

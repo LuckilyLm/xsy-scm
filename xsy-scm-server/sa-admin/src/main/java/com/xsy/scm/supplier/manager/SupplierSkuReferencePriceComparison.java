@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 比较同一个 SKU 的供应商参考价；不能把“箱”和“公斤”价格直接相比。
- * 缺失参考价不按零计；仅有一个可报价供应商时不产生没有意义的溢价。
+ * 比较同一个 SKU 的供应商参考价；不能把“箱”和“公斤”价格直接相比。 缺失参考价不按零计；仅有一个可报价供应商时不产生没有意义的溢价。
  */
 public final class SupplierSkuReferencePriceComparison {
 
@@ -50,14 +49,14 @@ public final class SupplierSkuReferencePriceComparison {
                 BigDecimal gap = source.getReferencePrice().subtract(lowest).setScale(4, RoundingMode.HALF_UP);
                 row.setPriceGapAmount(gap);
                 if (lowest.signum() > 0) {
-                    row.setPriceGapPercent(gap.multiply(BigDecimal.valueOf(100))
-                            .divide(lowest, 4, RoundingMode.HALF_UP));
+                    row.setPriceGapPercent(
+                            gap.multiply(BigDecimal.valueOf(100)).divide(lowest, 4, RoundingMode.HALF_UP));
                 }
             }
             compared.add(row);
         }
-        compared.sort(Comparator.comparing(SupplierSkuComparisonVO::getPurchaseUnit,
-                Comparator.nullsLast(Comparator.naturalOrder()))
+        compared.sort(Comparator
+                .comparing(SupplierSkuComparisonVO::getPurchaseUnit, Comparator.nullsLast(Comparator.naturalOrder()))
                 .thenComparing(SupplierSkuComparisonVO::getReferencePrice,
                         Comparator.nullsLast(Comparator.naturalOrder()))
                 .thenComparing(SupplierSkuComparisonVO::getSupplierId,

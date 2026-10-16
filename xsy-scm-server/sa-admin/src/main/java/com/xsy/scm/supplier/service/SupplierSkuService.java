@@ -73,8 +73,7 @@ public class SupplierSkuService {
     }
 
     /**
-     * 按 SKU 比较当前可采购供应商的参考价，只按原始采购单位分组。
-     * 不需要另外扫描分页，也不将参考价作为真实成交或入库成本。
+     * 按 SKU 比较当前可采购供应商的参考价，只按原始采购单位分组。 不需要另外扫描分页，也不将参考价作为真实成交或入库成本。
      */
     public List<SupplierSkuComparisonVO> compareReferencePrices(Long skuId) {
         return SupplierSkuReferencePriceComparison.compare(enrich(supplierSkuDao.selectEnabledBySkuId(skuId)));

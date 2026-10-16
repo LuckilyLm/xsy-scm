@@ -11,6 +11,6 @@ import org.apache.ibatis.annotations.Param;
 public interface CustomerSkuAliasDao extends BaseMapper<CustomerSkuAliasEntity> {
     List<CustomerSkuAliasVO> listByCustomer(@Param("customerId") Long customerId);
 
-    int softDelete(@Param("id") Long id, @Param("customerId") Long customerId,
-            @Param("version") Integer version, @Param("operator") String operator);
+    int softDelete(@Param("id") Long id, @Param("customerId") Long customerId, @Param("version") Integer version,
+            @Param("operator") String operator);
 }

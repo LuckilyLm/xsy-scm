@@ -45,8 +45,8 @@ public final class PurchasePriceTrendComparison {
                     point.setPreviousWeightedAvgPrice(previous);
                     point.setPriceChangeAmount(difference);
                     if (previous.signum() != 0) {
-                        point.setPriceChangePercent(difference.multiply(BigDecimal.valueOf(100))
-                                .divide(previous, 4, RoundingMode.HALF_UP));
+                        point.setPriceChangePercent(
+                                difference.multiply(BigDecimal.valueOf(100)).divide(previous, 4, RoundingMode.HALF_UP));
                     }
                 }
                 previous = current;
