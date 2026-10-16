@@ -134,6 +134,21 @@ export interface SupplierSkuRow {
     updatedAt: string;
 }
 
+/** 同 SKU、同采购单位的参考价比较，不代表合同成交价或库存成本。 */
+export interface SupplierSkuComparisonRow {
+    supplierId: ScmId;
+    supplierCode: string;
+    supplierName: string;
+    skuId: ScmId;
+    purchaseUnit: string;
+    defaultFlag: boolean;
+    referencePrice: string | null;
+    lowestReferencePrice: string | null;
+    priceGapAmount: string | null;
+    priceGapPercent: string | null;
+    pricedSupplierCount: number;
+}
+
 /**
  * 整表替换的单行请求（对应 SupplierSkuItemForm）。
  *

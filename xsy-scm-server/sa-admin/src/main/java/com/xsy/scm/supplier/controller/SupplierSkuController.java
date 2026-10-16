@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.supplier.domain.form.SupplierSkuQueryForm;
 import com.xsy.scm.supplier.domain.form.SupplierSkuReplaceForm;
 import com.xsy.scm.supplier.domain.vo.SupplierSkuVO;
+import com.xsy.scm.supplier.domain.vo.SupplierSkuComparisonVO;
+import jakarta.validation.constraints.Positive;
 import com.xsy.scm.supplier.permission.SupplierPermission;
 import com.xsy.scm.supplier.service.SupplierSkuService;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -51,6 +53,13 @@ public class SupplierSkuController {
     @SaCheckPermission(SupplierPermission.SKU_QUERY)
     public ResponseDTO<PageResult<SupplierSkuVO>> query(@Valid @RequestBody SupplierSkuQueryForm form) {
         return ResponseDTO.ok(supplierSkuService.query(form));
+    }
+
+    /** 同商品规格、同采购单位的有效供货来源参考价比较。 */
+    @GetMapping("/compare/{skuId}")
+    @SaCheckPermission(SupplierPermission.SKU_QUERY)
+    public ResponseDTO<List<SupplierSkuComparisonVO>> compare(@PathVariable @Positive Long skuId) {
+        return ResponseDTO.ok(supplierSkuService.compareReferencePrices(skuId));
     }
 
     @PostMapping("/replace")

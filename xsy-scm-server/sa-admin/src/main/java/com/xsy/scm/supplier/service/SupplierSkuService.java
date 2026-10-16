@@ -10,6 +10,8 @@ import com.xsy.scm.supplier.domain.entity.SupplierSkuEntity;
 import com.xsy.scm.supplier.domain.form.SupplierSkuQueryForm;
 import com.xsy.scm.supplier.domain.form.SupplierSkuReplaceForm;
 import com.xsy.scm.supplier.domain.vo.SupplierSkuVO;
+import com.xsy.scm.supplier.domain.vo.SupplierSkuComparisonVO;
+import com.xsy.scm.supplier.manager.SupplierSkuReferencePriceComparison;
 import com.xsy.scm.supplier.manager.SupplierSkuSyncManager;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -68,6 +70,14 @@ public class SupplierSkuService {
         }
         List<SupplierSkuEntity> rows = supplierSkuDao.queryPage(page, form);
         return SmartPageUtil.convert2PageResult(page, enrich(rows));
+    }
+
+    /**
+     * 按 SKU 比较当前可采购供应商的参考价，只按原始采购单位分组。
+     * 不需要另外扫描分页，也不将参考价作为真实成交或入库成本。
+     */
+    public List<SupplierSkuComparisonVO> compareReferencePrices(Long skuId) {
+        return SupplierSkuReferencePriceComparison.compare(enrich(supplierSkuDao.selectEnabledBySkuId(skuId)));
     }
 
     /**

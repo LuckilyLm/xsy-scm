@@ -8,6 +8,7 @@ import type {
     ScmPage,
     ScmResponse,
     SupplierSkuQuery,
+    SupplierSkuComparisonRow,
     SupplierSkuReplacePayload,
     SupplierSkuRow,
 } from '/@/types/business/scm/supplier';
@@ -19,6 +20,9 @@ export const supplierSkuApi = {
     /** 只读反查分页（按 SKU 找供应商）。 */
     query: (form: SupplierSkuQuery, options?: RequestOptions) =>
         postRequest('/scm/supplier/sku/query', form, options) as unknown as Promise<ScmResponse<ScmPage<SupplierSkuRow>>>,
+    /** 同 SKU 的有效供货商参考价比较，采购单位不同不比较差价。 */
+    compareReferencePrices: (skuId: ScmId, options?: RequestOptions) =>
+        getRequest(`/scm/supplier/sku/compare/${encodeURIComponent(String(skuId))}`, {}, options) as unknown as Promise<ScmResponse<SupplierSkuComparisonRow[]>>,
     /** 整表替换；`items: []` 即清空。 */
     replace: (payload: SupplierSkuReplacePayload) => postRequest('/scm/supplier/sku/replace', payload),
 };

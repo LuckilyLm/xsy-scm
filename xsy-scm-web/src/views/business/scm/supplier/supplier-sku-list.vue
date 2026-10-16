@@ -16,6 +16,7 @@
           <a-space>
             <a-button type="primary" @click="search">查询</a-button>
             <a-button @click="reset">重置</a-button>
+            <a-button :disabled="!filters.skuId" :loading="compareLoading" @click="compare">同规格参考价比对</a-button>
           </a-space>
         </a-form-item>
       </a-row>
@@ -68,6 +69,18 @@
         />
       </div>
     </a-card>
+    <a-modal v-model:open="compareOpen" title="多供应商参考价对比" :footer="null" width="1000px">
+      <a-alert type="info" show-icon message="仅比较当前可采购且同一商品规格、同一采购单位的有效供应商参考价；不是采购合同价、实际成交价或入库成本。" class="smart-margin-bottom10"/>
+      <a-table :columns="compareColumns" :data-source="compareRows" row-key="supplierId" :loading="compareLoading"
+               size="small" bordered :pagination="false" :scroll="{x: 1100}">
+        <template #bodyCell="{column, record}">
+          <span v-if="column.dataIndex === 'referencePrice' || column.dataIndex === 'lowestReferencePrice' || column.dataIndex === 'priceGapAmount'" class="amount">{{ record[column.dataIndex] ?? '—' }}</span>
+          <span v-else-if="column.dataIndex === 'priceGapPercent'" class="amount">{{ record.priceGapPercent == null ? '—' : `${record.priceGapPercent}%` }}</span>
+          <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">{{ record.defaultFlag ? '优先采购' : '—' }}</a-tag>
+        </template>
+      </a-table>
+      <p class="scm-note" style="margin-top: 8px">不足两家有效报价或最低参考价为 0 时不计算涨幅；缺少参考价不会视作零报价。</p>
+    </a-modal>
   </section>
 </template>
 
@@ -75,7 +88,7 @@
 import {onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {supplierSkuApi} from '/@/api/business/scm/supplier-sku-api';
-import type {EnableStatus, SupplierSkuQuery, SupplierSkuRow} from '/@/types/business/scm/supplier';
+import type {EnableStatus, SupplierSkuQuery, SupplierSkuRow, SupplierSkuComparisonRow} from '/@/types/business/scm/supplier';
 import {SUPPLIER_SKU_STATUS_ENUM} from '/@/constants/business/scm/supplier-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
@@ -90,6 +103,19 @@ const rows = ref<SupplierSkuRow[]>([]);
 const total = ref(0);
 const loading = ref(false);
 const error = ref('');
+const compareOpen = ref(false);
+const compareLoading = ref(false);
+const compareRows = ref<SupplierSkuComparisonRow[]>([]);
+const compareColumns: TableColumnsType<SupplierSkuComparisonRow> = [
+  {title: '供应商', dataIndex: 'supplierName', width: 170},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 100, align: 'center'},
+  {title: '参考价', dataIndex: 'referencePrice', width: 125, align: 'right'},
+  {title: '最低有效参考价', dataIndex: 'lowestReferencePrice', width: 140, align: 'right'},
+  {title: '高于最低价金额', dataIndex: 'priceGapAmount', width: 140, align: 'right'},
+  {title: '高于最低价比例', dataIndex: 'priceGapPercent', width: 140, align: 'right'},
+  {title: '有效报价数', dataIndex: 'pricedSupplierCount', width: 115, align: 'center'},
+  {title: '优先采购', dataIndex: 'defaultFlag', width: 110, align: 'center'},
+];
 
 const statusText = (value: EnableStatus): string => SUPPLIER_SKU_STATUS_ENUM[value]?.desc || value;
 const specText = (spec: Record<string, string> | undefined): string => {
@@ -128,6 +154,23 @@ async function load() {
     if (request === requestId) error.value = supplierError(e);
   } finally {
     if (request === requestId) loading.value = false;
+  }
+}
+
+async function compare() {
+  const skuId = filters.skuId;
+  if (!skuId) return;
+  compareLoading.value = true;
+  compareRows.value = [];
+  try {
+    const response = await supplierSkuApi.compareReferencePrices(skuId, {suppressGlobalErrorMessage: true});
+    if (String(filters.skuId) !== String(skuId)) return;
+    compareRows.value = response.data;
+    compareOpen.value = true;
+  } catch (e) {
+    error.value = supplierError(e);
+  } finally {
+    compareLoading.value = false;
   }
 }
 
