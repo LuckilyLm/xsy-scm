@@ -6,17 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import lombok.Data;
 
-/**
- * 结算页可选的结算方式及其实时可用性。
- *
- * <p>
- * {@code enabled=false} 只代表「此刻按当前配置不满足」，不代表永久不可用； {@code disabledReason} 给出可读原因，客户端据此置灰并提示。真正下单与确认时服务端会再校验一次，
- * 因此这个投影是「给客户看的」，不是授权依据。
- *
- * <p>
- * {@code amountVisible} 与既有共享资金可见性规则同口径（见 {@code CustomerValidator.sharedSettlement}）：集团共享结算下金额一律不返回，
- * 客户端只能展示标签与原因，不得展示或推断金额。
- */
+/** 结算页返回当前可用的支付方式及不可用原因。是否可用需要根据实时配置和余额重新判断。 */
 @Data
 public class MallSettlementOptionVO {
 
