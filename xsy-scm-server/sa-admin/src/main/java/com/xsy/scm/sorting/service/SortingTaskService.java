@@ -230,16 +230,7 @@ public class SortingTaskService {
         save(task);
     }
 
-    /**
-     * 重开：已完成任务回到分拣中，已录入的量与原因<b>保留</b>继续修改。订单在配送资格上立刻不合格，靠的是资格按任务状态判定，而不是靠清数据。
-     *
-     * <p>
-     * <b>已产生真实出库则禁止重开</b>：判据是「本任务某条明细对应的订单行上存在<b>父单为 CONFIRMED</b> 的出库行」。只认 CONFIRMED 是因为出库单的取消只在 DRAFT 可用且不发任何流水，
-     * 没扣过库存的出库行不构成「货已出去」这个事实。仍然不使用「仓库 + SKU + 时间窗」近似判据。
-     *
-     * <p>
-     * 与发车的交错：发车在线路锁内重查资格并把任务所在订单行写进出库单，因此「先重开成功 → 发车整条被拒」与「先发车成功 → 重开被本条拦住」都是自洽的串行结果；反过来若本方法早于发车提交，发车侧的资格复核会把它挡在线路之外。
-     */
+    /** 重开已完成分拣任务时，保留原分拣数量及原因，供继续修改。已确认销售出库的任务不能重开；发车前会再次检查任务状态。 */
     @Transactional(rollbackFor = Exception.class)
     public void reopen(Long id, SortingActionForm form) {
         ScmDataScopeContext scope = access.scope();

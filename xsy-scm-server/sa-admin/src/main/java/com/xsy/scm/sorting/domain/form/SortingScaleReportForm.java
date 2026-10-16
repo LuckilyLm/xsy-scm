@@ -10,17 +10,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import lombok.Data;
 
-/**
- * 秤读数上报（设备事件）。
- *
- * <p>
- * {@code eventKey} 必填：设备在弱网下会重试，用「时间 + 读数」当键会在静止时把多个真实读数
- * 压成一个，用随机键则完全去不了重。
- *
- * <p>
- * {@code taskItemId} 必填：读数必须能落到确定的任务明细上，否则「接受」这一步没有写入目标，
- * 只能靠人去猜是称的哪一行。
- */
+/** 电子秤上报必须包含唯一事件标识和目标分拣明细。重试用同一事件标识去重，读数不能记到不确定的任务上。 */
 @Data
 public class SortingScaleReportForm {
 

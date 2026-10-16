@@ -1,16 +1,4 @@
-/**
- * 分拣管理前端契约（与后端 `module/scm/sorting/domain/{form,vo}` 逐字对齐）。
- *
- * 三条口径：
- * - 数量（`BigDecimal` + `ScmFixedScale4Serializer`）到前端一律是 4 位定点字符串或 `null`；
- *   `null` 是「尚未录入」，`"0.0000"` 是「录入过且为 0（整行缺货）」，两者绝不合并渲染。
- *   因此这里不出现 `number` 类型的量，页面也不得 `Number()` / `toFixed()` 后再算。
- * - 计数（`itemCount` / `printCount` 等 `Integer`）才是 JSON 数字。
- * - 每个任务与每条明细各带自己的 `version`：录入按行提交，所以行版本不能被任务版本替代。
- *
- * 分拣是独立的实发事实：不回写订单实发量、不改结算金额、不写库存余额与流水
- * （裁决第 1、3 条）。任何把本页数字当成「订单已改成这个数」的命名都属于口径漂移。
- */
+/** 分拣数量用四位小数字符串：null 表示未录入，"0.0000" 表示已录入零。任务和明细各自校验版本。分拣只记录作业数量，不修改订单或库存。 */
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 
 /** 后端主键是 `Long`，经 JSON 数字或字符串抵达前端；一律不参与算术。 */
