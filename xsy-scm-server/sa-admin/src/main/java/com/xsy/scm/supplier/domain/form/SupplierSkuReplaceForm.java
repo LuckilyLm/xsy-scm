@@ -9,15 +9,7 @@ import lombok.Data;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * 整表替换某供应商的商品关联。
- *
- * <p>
- * 这是 {@code xsy_supplier_sku} 的<b>唯一</b>写入口，使用整表替换语义。不做行级 add / update / delete 端点，避免两套规则漂移。
- *
- * <p>
- * {@code items} 为空数组表示<b>清空全部关联</b>，不是「无操作」。
- */
+/** 维护商品关联时提交完整列表；传空列表表示清除该供应商全部关联，不是跳过保存。 */
 @Data
 public class SupplierSkuReplaceForm {
 

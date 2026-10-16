@@ -28,16 +28,7 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_DISABLED;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_IN_USE;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND;
 
-/**
- * 供应商写路径。
- *
- * <p>
- * 状态字段只由专用命令维护：
- * <ul>
- * <li>{@link #update} 不触碰 {@code status}，更新表单不含该字段；</li>
- * <li>{@link #add} 固定使用 {@code ENABLED}，不接受客户端指定初始状态。</li>
- * </ul>
- */
+/** 供应商新建后默认启用。编辑资料不会改变启停状态，状态必须通过专用操作修改。 */
 @Service
 @RequiredArgsConstructor
 public class SupplierService {

@@ -1,11 +1,4 @@
-<!--
-  供应商详情（独立隐藏路由，可深链）。
-  按业务 Section 分区：概览 / 联系方式 / 地址与地图 / 采购与账期 / 关联商品 / 系统信息。
-
-  列表 VO 不含 `address` / `remark`，详情页是唯一能看到完整信息的地方；
-  「已关联商品」展示的是冻结快照（`skuNameSnapshot` 等）—— 商品后来改名不会改写
-  历史关联的展示口径。
--->
+<!-- 供应商详情按基础信息、联系地址、采购设置和关联商品分区展示。已关联商品保留下单时的名称信息。 -->
 <template>
   <a-card size="small" :bordered="false" :loading="loading">
     <a-space class="smart-margin-bottom10">
