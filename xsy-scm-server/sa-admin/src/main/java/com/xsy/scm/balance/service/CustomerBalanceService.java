@@ -227,16 +227,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         return movement;
     }
 
-    /**
-     * 充值支付成功 → 钱包权益增加（ADM-12，{@link BalanceRechargeSink} 的实现）。
-     *
-     * <p>
-     * <b>入账金额取渠道实收</b>：钱包进多少必须等于公司真收多少。渠道实收 98 而充值申请 100 时，记 98 并留下告警 —— 与退款那条口径（不一致就不落账）刻意不同：
-     * 充值场景下「客户付了钱却没有任何权益」比「权益比申请额少 2 元」严重得多。差异本身可查（充值事实仍保留申请额），留给对账处理。
-     *
-     * <p>
-     * 幂等靠 {@code (PAYMENT_TRANSACTION, transactionId)} 的来源唯一索引：同一个回调重复投递多少次，也只产生一条充值流水。
-     */
+    /** 充值成功后按支付渠道实际到账金额增加钱包余额，金额不一致留待对账，不按申请金额虚记。 */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void rechargeFromPayment(Long rechargeId, Long customerId, BigDecimal providerAmount, Long transactionId,
