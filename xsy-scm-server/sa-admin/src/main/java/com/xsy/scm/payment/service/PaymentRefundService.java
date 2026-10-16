@@ -261,18 +261,7 @@ public class PaymentRefundService {
         }
     }
 
-    /**
-     * 退款成功 → Finance 付款事实（ADM-12）。
-     *
-     * <p>
-     * 复用财务域 {@code xsy_finance_payment} 的 {@code CUSTOMER + ORDER_REFUND}，唯一来源键是
-     * {@code source_id = xsy_order_refund.id}：无论本地被驱动多少次，Finance 只有一条正常付款事实。
-     *
-     * <p>
-     * <b>金额不一致时只保留渠道成功事实，不生成 Finance 付款、也不回滚。</b> 渠道实际退了 98 而业务应退 100 是可能发生的；若因此把整笔已验签的退款成功回滚，
-     * 每次重复回调都会因为同一个永久差异失败，本地永远停在「退款处理中」，反而丢掉「渠道确实已经退钱」这个最重要的事实。这类记录天然可查
-     * （{@code SUCCEEDED AND provider_amount <> amount}），留给后续退款对账处理。
-     */
+    /** 渠道退款成功后登记一笔客户退款付款。以退款单 ID 防重，不重复冲减应收。 */
     private void registerFinancePayment(Long refundId, String operator) {
         PaymentRefundEntity refund = paymentRefundDao.selectById(refundId);
         if (refund == null || !ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(refund.getStatus())

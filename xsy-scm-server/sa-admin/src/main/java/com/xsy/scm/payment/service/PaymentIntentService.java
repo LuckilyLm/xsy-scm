@@ -328,19 +328,7 @@ public class PaymentIntentService {
         }
     }
 
-    /**
-     * 支付成功 → Finance 收款事实（ADM-12）。
-     *
-     * <p>
-     * <b>同一事务</b>：Finance 写失败就整笔回滚，本地不会留下「已成功但没登记收款」的半截事实。渠道事实不回滚 —— 那正是对账要发现、并靠下一次回调重新驱动的差异。
-     *
-     * <p>
-     * <b>唯一来源键</b>：{@code source_type = PAYMENT_TRANSACTION} + {@code source_id = transactionId}。
-     * 支付域的回调事件幂等是第一层，这个来源键是第二层：无论本地被驱动多少次， Finance 只有一条正常收款事实。
-     *
-     * <p>
-     * 金额取 {@code provider_amount}（渠道实收），时间取交易的成功时刻 —— 都不取本地应付金额与本地当前时间。
-     */
+    /** 支付成功后，按渠道实际收款金额和成功时间登记财务收款。本地支付状态与收款记录同事务保存，交易 ID 作为防重来源。 */
     private void registerFinanceReceipt(Long intentId, Long transactionId, String operator) {
         PaymentTransactionEntity transaction = paymentTransactionDao.selectById(transactionId);
         if (transaction == null || !ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())) {
