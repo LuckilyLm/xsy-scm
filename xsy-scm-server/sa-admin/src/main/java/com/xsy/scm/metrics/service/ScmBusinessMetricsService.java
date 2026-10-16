@@ -53,16 +53,7 @@ public class ScmBusinessMetricsService {
 
     private final ScmBusinessMetricsDao metricsDao;
 
-    /**
-     * 区间内的销售事实（订单数 / 销售额 / 成交客户数），三个字段同轴（{@code confirmed_at}）。
-     *
-     * <p>
-     * 首页 / 大屏直接使用本方法。报表概览因<b>可见性范围策略不同</b>（销售不做归属收窄，由页面权限承担） 保留自己的查询实现，不复用这里 —— 但时间轴、状态与金额列必须与这里保持同一套口径契约， 由
-     * {@code scm-metrics-single-source-contract} 钉住。经营指标口径与范围决策见 {@code docs/decisions.md}。
-     *
-     * <p>
-     * {@code filter} 是本方法自带的业务维度筛选（客户 / 业务员 / 订单来源），与范围收窄是两件事。
-     */
+    /** 销售指标按订单确认时间统计。首页和大屏复用这份汇总，报表单独处理数据范围但须保持同一时间口径。 */
     public SalesRangeMetrics salesRange(LocalDate startDate, LocalDate endDate, SalesFilter filter,
             ScmDataScopeContext scope) {
         OffsetDateTime[] range = dayRange(startDate, endDate);

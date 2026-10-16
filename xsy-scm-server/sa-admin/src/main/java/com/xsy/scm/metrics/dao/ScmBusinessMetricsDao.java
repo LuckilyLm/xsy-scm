@@ -134,14 +134,7 @@ public interface ScmBusinessMetricsDao {
 
     // ---------- 趋势 ----------
 
-    /**
-     * 按天聚合的趋势行：一天一行、八条序列。
-     *
-     * <p>
-     * 日期口径一律 Asia/Shanghai。<b>每条序列与它对应的今日 KPI 同口径</b>：{@code sales} / {@code orders} 走确认轴； {@code purchaseAmounts} /
-     * {@code purchaseOrders} 走提交轴且只算已提交状态 —— 大屏的环比正是拿这两组相减， 不同轴就会算出一个无意义的百分比。{@code inventoryQuantity}
-     * 是当日期末库存量（当日及之前所有流水净额累加），不是当日变动量。
-     */
+    /** 趋势按北京时间每天汇总，销售按确认日、采购按提交日统计；各序列需与对应今日指标同口径。 */
     List<TrendPoint> trendByDay(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
             @Param("inboundTypes") List<String> inboundTypes, @Param("outboundTypes") List<String> outboundTypes,
             @Param("committedStatuses") List<String> committedStatuses, @Param("scope") ScmDataScopeContext scope);
