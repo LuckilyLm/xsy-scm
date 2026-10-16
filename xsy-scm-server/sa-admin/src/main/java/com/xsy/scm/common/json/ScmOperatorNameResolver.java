@@ -10,15 +10,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/**
- * 把 {@code userType:userId}（形如 {@code 1:1}）解析成人名，供 {@link ScmOperatorNameSerializer} 使用。
- *
- * <p>
- * 员工表很小（一个公司几十到几百行），因此整表缓存 id → 姓名，按 {@link #TTL_MILLIS} 惰性刷新： 序列化器是逐字段调用的，不做缓存就会变成「一行一次查询」的 N+1。
- *
- * <p>
- * 只解析管理端员工（{@code userType = 1}）。其它 userType 的数字 id 与员工 id 不在同一个空间， 拿员工表去查会张冠李戴，因此原样返回。解析不到的 id（员工已删）同样原样返回。
- */
+/** 后台操作人编号按员工表解析成人名，使用短期缓存避免逐字段查库。非员工用户及找不到的员工编号保持原文。 */
 @Component
 @RequiredArgsConstructor
 public class ScmOperatorNameResolver {

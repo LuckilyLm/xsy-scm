@@ -1,14 +1,6 @@
 package com.xsy.scm.common.constant;
 
-/**
- * 客户结算方式。
- *
- * <p>
- * {@code INDEPENDENT} = 独立结算（客户自己作为结算主体）； {@code GROUP} = 集团结算（下属单位下单、由上级集团统一结算）。
- *
- * <p>
- * 本表只落库该字段，<b>不实现</b>结算逻辑；集团结算与订单归属不是同一概念，引入订单域时不得把二者合并。
- */
+/** 客户可以独立结算或由集团统一结算。结算主体与订单负责人不同，不能混用。 */
 public enum ScmSettleModeEnum {
 
     INDEPENDENT,

@@ -57,14 +57,7 @@ function show(value: unknown, labelOf: LabelFn): string {
     return String(value);
 }
 
-/**
- * 对象值展开成多行「字段名: 值」。
- *
- * 只用于「对象里还套着对象 / 数组」这种第二层：第一层已经在 `pushFlattened` 里拍成了独立字段。
- * 空的键不逐行占位，合并成一句「（其余 N 项为空）」；技术字段整条跳过，也不算进那个计数。
- *
- * 单元格的 `.scm-diff-value` 是 `white-space: pre-wrap`，这里的 `\n` 会逐行渲染。
- */
+/** 审计差异中的嵌套对象按字段展开，空值合并展示，内部技术字段过滤，不直接呈现大段 JSON。 */
 function objectLines(value: Record<string, unknown>, labelOf: LabelFn): string {
     const entries = Object.entries(value).filter(([key]) => !isHiddenChildAuditKey(key));
     if (!entries.length) {
@@ -124,13 +117,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
     return !!value && typeof value === 'object' && !Array.isArray(value);
 }
 
-/**
- * 把一层对象的键拍成独立字段。
- *
- * `address` 里的 `receiverName` / `receiverPhone` 各自成行，用户才能一列一列地看；
- * 挤在「收货地址」一个单元格里叠四行，等于让用户自己拆字段。
- * `reserved` 是顶层标量字段名，撞名时跳过 —— 拍平不能把同名标量覆盖掉。
- */
+/** 操作日志中的地址等嵌套字段展开成可读的独立行，避免同名字段覆盖原有数据。 */
 function pushFlattened(target: DiffField[], before: unknown, after: unknown, labelOf: LabelFn,
                        reserved: Set<string>): void {
     const b = isPlainObject(before) ? before : {};

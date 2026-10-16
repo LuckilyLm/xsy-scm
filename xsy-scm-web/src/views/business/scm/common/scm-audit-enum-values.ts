@@ -111,15 +111,7 @@ const ENUM_BY_FIELD: Record<string, ValueEnum> = {
     method: merge(SCM_FINANCE_RECEIPT_METHOD_ENUM, SCM_FINANCE_PAYMENT_METHOD_ENUM),
 };
 
-/**
- * 同一字段在不同单据下含义不同时，按调用方给的 `scope` 覆盖上面的通用表。
- *
- * `scope` 就是这条日志的操作类型。目前只有 `status` 有歧义，而且是真歧义：退货单的 `PENDING`
- * 是「待审核」、退款单的 `PENDING` 是「待退款」，两者的快照可能只有 `status` 一个键
- * （退款单就是这样），光看快照分不出来 —— 只能由页面把自己知道的单据类型传进来，不在这里猜。
- *
- * `RETURN` / `REFUND` 只存在于销售订单域的操作类型里，与采购操作类型不重叠，因此可以直传。
- */
+/** 审计日志中的状态码按单据类型转换为中文。例如退货待审核和退款待退款不能只按 PENDING 统一翻译。 */
 const SCOPED_ENUM_BY_FIELD: Record<string, Record<string, ValueEnum>> = {
     RETURN: {status: SCM_ORDER_RETURN_STATUS_ENUM},
     REFUND: {status: SCM_ORDER_REFUND_STATUS_ENUM},

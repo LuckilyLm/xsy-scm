@@ -1,13 +1,6 @@
 package com.xsy.scm.common.constant;
 
-/**
- * 账期类型：{@code BY_AMOUNT} 按金额（达到 {@code credit_amount_threshold} 后触发结算）； {@code BY_TIME} 按时间（以
- * {@code credit_period_value} + {@code credit_period_unit} 计账期）。
- *
- * <p>
- * 两者互斥，且都可以不设置（{@code credit_period_type} 为 {@code NULL}）。互斥性由 {@code xsy_customer} 表的
- * {@code ck_customer_credit_period} 约束与 {@code CustomerValidator} 双重保证。
- */
+/** 客户账期可以按金额阈值结算，或按时间周期结算，也可以不设置。两种模式互斥，由校验器和数据库共同保证。 */
 public enum ScmCreditPeriodTypeEnum {
 
     BY_AMOUNT,

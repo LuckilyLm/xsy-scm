@@ -65,13 +65,7 @@ public class ScmIdempotencyService {
         return new Claim(row, true);
     }
 
-    /**
-     * 只读预检：同键且请求指纹一致的<b>已完成</b>记录存在时返回它，否则返回空。
-     *
-     * <p>
-     * 给「先确认是否已经成功」的入口使用：调用方在易变校验（如价格）之前先回放原结果， 避免「第一次已成功、重试时外部数据变了」被误报成业务错误。不占用键、不写任何记录； 指纹不一致时返回空而不是抛冲突，交给正常路径的
-     * {@link #claim} 去报，错误语义不变。
-     */
+    /** 同幂等键及请求指纹已成功时，可在重新校验易变数据之前返回原结果。预检不占用键也不写记录，指纹冲突由正式执行阶段处理。 */
     public Optional<Claim> peekCompleted(String scope, String key, Object request) {
         if (StringUtils.isBlank(key)) {
             return Optional.empty();

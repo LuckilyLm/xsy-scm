@@ -13,14 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
-/**
- * JSONB ↔ {@code Map<String, Object>} 的共享 TypeHandler，用于操作日志的 before / after 快照
- * （快照里有金额、数量与嵌套对象，{@code Map<String, String>} 表达不了）。
- *
- * <p>
- * {@code order} 域有一份等价的 {@code OrderJsonbTypeHandler}，未合并是为了不让 {@code finance} 依赖 {@code order/support}；合并是一次纯 Java
- * 重构，不涉及 migration、不改变对外行为，留待后续统一处理。
- */
+/** 操作日志的前后快照用 JSONB Map 保存，支持金额和嵌套字段。各业务模块通过公共处理器读写，不需要互相依赖。 */
 public class JsonbObjectMapTypeHandler extends BaseTypeHandler<Map<String, Object>> {
 
     private static final ObjectMapper JSON = new ObjectMapper();

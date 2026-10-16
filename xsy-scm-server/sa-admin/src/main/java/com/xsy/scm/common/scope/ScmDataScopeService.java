@@ -81,13 +81,7 @@ public class ScmDataScopeService {
                 .build();
     }
 
-    /**
-     * break-glass 判定的唯一出处：{@code administratorFlag=true} 绕过 SCM 数据范围。
-     *
-     * <p>
-     * 维度落在 {@link ScmValueScope} 里的（仓库、负责人、司机）由 {@link #resolve()} 返回 {@code all()} 天然放行；<b>不落在范围值对象里的维度</b>（例如分拣的「受指派人
-     * = 本人」是与员工 id 直接比等值）必须显式调用本方法同等放行，否则同一个超管账号会出现 「仓库看得见、人看不见」这种半开半关的口径。
-     */
+    /** 超级管理员可以绕过 SCM 的业务数据范围，仓库和负责人范围统一放行；分拣指派等额外维度仍需显式检查超级管理员。 */
     public static boolean isAdministrator() {
         return SmartRequestUtil.getRequestUser() instanceof RequestEmployee employee
                 && Boolean.TRUE.equals(employee.getAdministratorFlag());

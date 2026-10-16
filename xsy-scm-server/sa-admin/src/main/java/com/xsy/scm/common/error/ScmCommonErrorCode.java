@@ -3,13 +3,7 @@ package com.xsy.scm.common.error;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 跨 SCM 域共享的错误码。
- *
- * <p>
- * 同码值常量已在 {@code ProductErrorCode} 中定义过 {@code VERSION_CONFLICT(40921)}。本处不修改已验收的代码，因此在这里重新声明一次同码值常量；两个枚举对外表现完全一致（前端与
- * {@code t_operate_log} 无法区分）。建议后续做一次纯 Java 重构让 ProductErrorCode 指向本枚举，该重构不涉及 migration、不改变对外行为。
- */
+/** SCM 各模块复用统一错误码；版本冲突等历史重复码暂保留兼容，后续调整要保证对外错误码不变。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmCommonErrorCode implements ScmErrorCode {
@@ -19,13 +13,7 @@ public enum ScmCommonErrorCode implements ScmErrorCode {
      */
     VERSION_CONFLICT(40921, "数据已被其他操作修改，请刷新后重试"),
 
-    /**
-     * 请求参数不正确。
-     *
-     * <p>
-     * 用于「非 MVC 入口」的解析失败——即参数已经进入 Service / Manager，不再经过 Bean Validation 的场景（内部调用、批量导入、工具类解析）。 MVC 入口的校验失败仍由 SmartAdmin
-     * 底座的 {@code GlobalExceptionHandler} 以 30001 返回，SCM 不重复接管。
-     */
+    /** 非 MVC 入口的参数解析错误使用 SCM 通用参数错误；普通接口入参校验仍由框架统一处理。 */
     VALIDATION_ERROR(40000, "请求参数不正确"),
 
     IDEMPOTENCY_KEY_REQUIRED(40069, "Idempotency-Key 不能为空"),

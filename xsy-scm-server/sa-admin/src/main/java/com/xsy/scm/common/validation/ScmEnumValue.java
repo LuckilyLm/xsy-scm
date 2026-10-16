@@ -9,13 +9,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Validates a String against enum constant names without changing the JSON field type.
- *
- * <p>
- * {@code null} passes this constraint so callers can combine it with {@code @NotNull} or {@code @NotBlank} and provide
- * a field-specific message for required values.
- */
+/** 校验字符串是否属于指定枚举。null 由其他必填校验负责，本注解不修改 JSON 字段类型。 */
 @Documented
 @Constraint(validatedBy = ScmEnumValueValidator.class)
 @Target({ElementType.FIELD, ElementType.PARAMETER, ElementType.ANNOTATION_TYPE})
