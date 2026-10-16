@@ -5,20 +5,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.inventory.dao.InventoryLossGainDao;
 import org.springframework.stereotype.Service;
 
-/**
- * 报损报溢单号生成。
- *
- * <pre>
- * 报损报溢单：LGR + yyyyMMdd + 至少 6 位 （例 LGR20260919000001）
- * </pre>
- *
- * <p>
- * 与采购/收货/出库/盘点同口径：序列来自 PG sequence，<b>全局单调递增、不按日 reset</b>；日期段只是可读性装饰，唯一性由序列保证；补零用 {@code %06d}，超过 999999 自然扩位。
- *
- * <p>
- * <b>为什么不用 BSD / BYD 两个前缀</b>：那样单号前缀会同时编码 「报损还是报溢」，而本表的 {@code adjust_type} 已经承载了这个信息，再编进单号等于把同一个事实存两遍 ——
- * 一旦有人改类型而没改单号，两个字段就互相矛盾。一个前缀 + 一个类型字段，只有一个来源。
- */
+/** 报损报溢单号以 LGR、日期和数据库序列组成。使用数据库序列确保并发不重复，单号不作为库存流水的防重依据。 */
 @Service
 @RequiredArgsConstructor
 public class InventoryLossGainNumberGenerator {

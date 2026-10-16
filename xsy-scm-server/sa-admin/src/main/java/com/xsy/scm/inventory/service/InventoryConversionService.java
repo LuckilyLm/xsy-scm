@@ -252,16 +252,7 @@ public class InventoryConversionService {
         return resolved;
     }
 
-    /**
-     * 沿单据的 SKU 引用图递归求基准：某 SKU 的基准 = 期初行与它在本单里收到的全部转入腿加权，而每条转入腿的成本又来自其源 SKU 的基准（同一条规则）。
-     *
-     * <p>
-     * 循环引用（同一单里 A→B 且 B→A）没有定义良好的解，按期初均价收敛且不写缓存：每条明细的两条腿仍共用同一个基准值，总成本依旧守恒，只是转出腿的基准价可能与该 SKU
-     * 当时的行均价不同。这类单据本身没有业务意义，不为它新增拒绝路径。
-     *
-     * <p>
-     * 转入腿按 {@code items} 的顺序逐条加权，与腿的实际执行顺序一致（同一 SKU 上先入后出、入腿之间保持明细行顺序），因此中间取整也与账本一致。
-     */
+    /** 规格转换成本按期初数量、均价及本单转入量递归加权。遇到 A→B→A 循环时使用期初均价作基准，不增加拒绝逻辑；按明细顺序计算，保持各腿总成本守恒。 */
     private BigDecimal outboundCostBasis(Long skuId, Map<Long, List<InventoryConversionItemVO>> inboundByTarget,
             Map<Long, InventoryCommandService.CostBasis> opening, Map<Long, BigDecimal> resolved, Set<Long> visiting) {
         BigDecimal cached = resolved.get(skuId);

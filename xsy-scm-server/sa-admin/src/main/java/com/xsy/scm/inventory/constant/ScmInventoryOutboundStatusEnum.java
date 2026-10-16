@@ -3,19 +3,7 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 出库单状态。
- *
- * <p>
- * 状态机刻意保持最小：{@code DRAFT → CONFIRMED}，以及草稿态的 {@code CANCELLED}。已确认的出库单<b>不可回退</b>——库存流水是 append-only 账本，冲销必须走「新增反向流水」，
- * 而不是把单据改回草稿再把流水删掉（后者在 DB 层会被 {@code ck_inventory_movement_append_only} 直接拒绝）。
- *
- * <pre>
- * DRAFT ──confirm──▶ CONFIRMED        （写 SALES_OUT 流水 + 扣减余额）
- *   │
- *   └──cancel──▶ CANCELLED            （不产生任何库存影响）
- * </pre>
- */
+/** 出库单可由草稿变为已确认，草稿可取消。已确认意味着库存已经扣减，不能回退状态或删除库存流水。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryOutboundStatusEnum {

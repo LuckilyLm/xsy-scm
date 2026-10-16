@@ -24,19 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * SCM 库存调拨单（跨仓，两步式：发出 → 在途 → 收货）。
- *
- * <p>
- * 共 7 个端点：分页 / 详情 / 新建 / 改草稿 / 发出 / 收货 / 取消 / 删除（8 个，其中取消与删除分开）。
- *
- * <p>
- * <b>权限划分</b>：查询 {@code scm:inventory:transfer:query}、新建 {@code :add}、改草稿 {@code :update}、发出 {@code :ship}、收货
- * {@code :receive}、删除 {@code :delete}。
- *
- * <p>
- * <b>「发出」与「收货」是两个独立权限</b>：跨仓调拨的常见分工是源仓发货、目标仓点收，由同一个人两头都确认会让在途数量失去复核 —— 而在途数量正是最容易出错的地方。
- */
+/** 库存调拨支持草稿、发出和目标仓收货。发出与收货独立授权；已发出但未收货的记录不可当作完成调拨，也不能重新修改草稿。 */
 @RestController
 @RequestMapping("/scm/inventory/transfer")
 @Tag(name = "SCM 库存调拨单")

@@ -53,14 +53,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
      */
     TRANSFER_IN_ITEM("调拨单行（转入）"),
 
-    /**
-     * 规格转换<b>转出</b>行的来源类型：{@code source_document_item_id = xsy_inventory_conversion_item.id}。
-     *
-     * <p>
-     * 与调拨<b>同一个原因</b>拆成两个来源类型：同一条明细行会产生两条流水 （转出写源 SKU、转入写目标 SKU），而防重锚点是部分唯一索引
-     * {@code uk_inventory_movement_source_active (source_document_type, source_document_item_id)} —— 两条流水引用同一个明细行
-     * id，共用一个来源类型第二条就插不进去。该索引是冻结的 / 契约，不为新能力放宽。
-     */
+    /** 规格转换的转出和转入共用同一明细 ID，但使用不同来源类型以满足流水来源唯一索引。不能为了转换放宽来源防重。 */
     CONVERT_OUT_ITEM("转换单行（转出）"),
 
     /**
@@ -68,24 +61,10 @@ public enum ScmInventorySourceDocumentTypeEnum {
      */
     CONVERT_IN_ITEM("转换单行（转入）"),
 
-    /**
-     * 配送线路：{@code source_document_item_id} 不用（本类型只出现在
-     * {@code xsy_inventory_outbound.source_document_id = xsy_delivery_route.id} 上）。
-     *
-     * <p>
-     * <b>为什么流水里看不到它</b>：发车产生的仍然是 {@code SALES_OUT}，来源类型按 {@link #SALES_OUTBOUND_ITEM}（出库单行）记账 —— 流水的唯一锚点与成本口径都在出库单行上，
-     * 线路只是「谁创建了这张出库单」。多一条追溯走 {@code xsy_inventory_outbound_item.sales_order_item_id}，不给流水表再加第二套来源语义。
-     */
+    /** 配送线路只标识生成出库单的业务来源，库存流水仍以出库明细为唯一来源，避免同一流水出现两套防重依据。 */
     DELIVERY_ROUTE("配送线路"),
 
-    /**
-     * 促销赠品权益：{@code source_document_item_id = xsy_order_promotion_gift.id}。
-     *
-     * <p>
-     * 赠品出库的源身份是<b>冻结的赠品权益</b>而不是出库单行：赠品不挂在任何订单行上 （{@code xsy_inventory_outbound_item.sales_order_item_id}
-     * 保持为空，不为兼容旧逻辑虚造订单行）， 因此「哪个活动赠了什么、出库多少」直接从流水追到权益行。 一行权益至多产生一条出库流水，{@code uk_inventory_movement_source_active}
-     * 的一行一流水语义成立。
-     */
+    /** 促销赠品以赠品权益 ID 作为库存流水来源，不挂销售订单行。一个权益最多产生一条有效出库流水，防重规则与其他库存来源一致。 */
     ORDER_PROMOTION_GIFT("促销赠品权益");
 
     private final String desc;

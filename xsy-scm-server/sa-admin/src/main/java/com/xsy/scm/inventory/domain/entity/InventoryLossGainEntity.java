@@ -11,17 +11,7 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/**
- * 库存报损报溢单。
- *
- * <p>
- * <b>与出库单 / 盘点单的关键差别：这张单据有审批状态机</b>。出库与盘点是「录完即确认」，报损报溢必须经过审核才动库存 —— 报损是<b>把货从账上抹掉</b>的动作，由一个人独立完成缺少制衡。
- *
- * <p>
- * <b>{@code auditor} / {@code audited_at} 是流水的事实来源</b>：审批通过时把这两个值传给 {@code InventoryCommandService}，作为
- * {@code xsy_inventory_movement.occurred_at} 与 {@code operator} —— 与入库/出库/盘点同纪律，禁止用 {@code now()} 或当前登录人顶替。
- * 注意取的是<b>审核时刻与审核人</b>，不是创建时刻与创建人：库存是在审核那一刻变的。
- */
+/** 报损报溢单创建后待审核，批准时才生成库存流水；驳回不影响库存。已批准或驳回的单据不能重改，历史库存流水只追加不回写。 */
 @Data
 @TableName(value = "xsy_inventory_loss_gain", autoResultMap = true)
 public class InventoryLossGainEntity {

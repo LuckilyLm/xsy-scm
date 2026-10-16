@@ -7,13 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/**
- * 盘点导入的<b>事务提交</b>侧：把「幂等认领 → 持锁核验并建草稿 → 完成幂等记录」放进同一事务，供非事务的 {@link InventoryStocktakeImportService} 在校验通过后调用。
- *
- * <p>
- * <b>为什么幂等认领必须与建草稿同事务</b>：核验一旦漂移，{@code createFromSnapshot} 抛异常 → 整个事务回滚，连认领写下的 {@code xsy_idempotency_record}
- * 也一并撤销，用户重导同一份 Excel 不会被判成 「上次已建单」。反过来，如果认领是独立提交的事务，漂移失败后会残留一条无结果的认领，使合法重试撞上「Incomplete claim」而永远无法导入。
- */
+/** 盘点导入在一个事务里完成幂等认领、锁定库存、验证库存版本、创建草稿和幂等结果记录；任一失败整批回滚。 */
 @Service
 @RequiredArgsConstructor
 public class InventoryStocktakeImportTxService {

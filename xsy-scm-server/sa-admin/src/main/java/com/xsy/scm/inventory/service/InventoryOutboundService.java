@@ -24,19 +24,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOU
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOUND_NOT_FOUND;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOUND_STATUS_INVALID;
 
-/**
- * 出库单命令侧：创建 / 改草稿 / 确认出库 / 取消 / 删除。
- *
- * <p>
- * 状态机 {@code DRAFT → CONFIRMED}，草稿可 {@code → CANCELLED}。已确认不可回退 —— 库存流水 append-only， 冲销必须新增反向流水，改回草稿再删流水会被
- * {@code trg_inventory_movement_append_only} 在 DB 层拒绝。
- *
- * <p>
- * 锁序与收货确认同一顺序：先锁出库单头（{@code lockById}），再按 {@code (warehouseId, skuId)} 升序逐行锁余额并写流水。 顺序固定是避免两条链路以相反顺序拿余额锁而死锁。
- *
- * <p>
- * 全部明细在同一事务内，任一行可用量不足或单位不一致，整单回滚，不允许部分出库。
- */
+/** 手工出库单可创建和修改草稿，确认时扣减库存并写流水，草稿可取消。确认后的出库记录不能回退或删除历史流水。 */
 @Service
 @RequiredArgsConstructor
 public class InventoryOutboundService {

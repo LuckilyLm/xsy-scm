@@ -12,17 +12,7 @@ import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/**
- * 规格转换单头读写。
- *
- * <p>
- * <b>每个写方法都带 {@code status = 'PENDING'} 守卫</b>：只有待审核的单据可改 / 可审。守卫写在 SQL 的 {@code WHERE} 里而不只是服务层 —— 服务层的状态判断是「给人看的错误码」，
- * SQL 的守卫才是并发下真正生效的那一道。
- *
- * <p>
- * <b>为什么不需要乐观锁在 update 上</b>：改待审核与审批都先 {@link #lockById}（{@code FOR UPDATE}）持有单据行锁，并发的改草稿要拿同一把锁 → 只能等前者提交后才执行，而那时状态已不是
- * PENDING，会被守卫拒绝。行锁把「读明细 → 写流水」这段序列化了。审批仍<b>额外</b>带 {@code version}：它的「读」发生在弹窗打开那一刻，不在锁的保护范围内。
- */
+/** 规格转换单只有待审核时允许修改、删除或审批，状态限制必须写在 SQL 条件中。审批使用版本校验，防止确认过程中明细被改动。 */
 @Mapper
 public interface InventoryConversionDao extends BaseMapper<InventoryConversionEntity> {
 

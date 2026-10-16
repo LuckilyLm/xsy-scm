@@ -3,19 +3,7 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 盘点单状态。
- *
- * <p>
- * 状态机与出库单刻意同构，保持全仓单据状态语义一致：{@code DRAFT} 确认转 {@code CONFIRMED} （差异转流水 + 调整余额），草稿可取消为 {@code CANCELLED}（不产生任何库存影响）。
- *
- * <p>
- * 已确认的盘点单不可回退：库存流水是 append-only 账本，冲销必须走「新增反向流水」， 而不是把单据改回草稿再把流水删掉（后者会被 {@code trg_inventory_movement_append_only}
- * 在数据库层直接拒绝）。
- *
- * <p>
- * 之所以没有独立的「盘点中」状态：录入实盘数是草稿态的编辑动作，加一个状态只会让「改明细」与 「改状态」两个动作需要保持同步，而它们并不携带不同的业务含义。{@code DRAFT} 即「盘点进行中」。
- */
+/** 盘点单由草稿确认后写入库存差异流水并成为终态；草稿可取消。确认后不能回到草稿或删除流水，需另建调整业务更正。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryStocktakeStatusEnum {

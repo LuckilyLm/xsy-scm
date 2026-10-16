@@ -22,20 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * SCM 规格转换单（整件拆零 / 组合拆分）。
- *
- * <p>
- * 共 7 个端点：分页 / 详情 / 新建 / 改待审核 / 审批通过 / 驳回 / 删除。
- *
- * <p>
- * <b>跨 SKU、同仓库</b>：跨仓搬运是<b>调拨</b>（{@code /scm/inventory/transfer}），不是转换 —— 两者职责必须分清，否则会出现「用转换单搬货」这种绕过调拨在途语义的用法。
- *
- * <p>
- * <b>权限</b>：查询 {@code scm:inventory:conversion:query}、新建 {@code :add}、改待审核 {@code :update}、审批 {@code :approve}、驳回
- * {@code :reject}、删除 {@code :delete}。 「审批」与「驳回」是两个独立权限（与报损报溢一致）； 「新建」与「审批」也必须分开 —— 折算关系（一箱等于多少 kg）是人工声明的，
- * 由同一个人录单并批准等于没人复核。
- */
+/** 规格转换仅处理同仓库内的商品规格折算，跨仓库使用调拨。录入、审批、驳回分别检查权限；只有审批通过才修改库存，禁止无审批权限人员自行放行转换。 */
 @RestController
 @RequestMapping("/scm/inventory/conversion")
 @Tag(name = "SCM 库存规格转换单")

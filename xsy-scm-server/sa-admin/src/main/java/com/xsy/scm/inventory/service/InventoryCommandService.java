@@ -305,20 +305,7 @@ public class InventoryCommandService {
         return unit;
     }
 
-    /**
-     * 促销赠品出库：方向 = 出，来源 = 冻结的赠品权益（{@code xsy_order_promotion_gift}）。
-     *
-     * <p>
-     * 与 {@link #postSalesOutbound} 同一套纪律：必须在调用方事务内、按 {@code (warehouse_id, sku_id)} 锁余额、
-     * 可用量不足即失败、成本取当时的移动加权均价、数量恒为正（方向编码在类型里）。
-     *
-     * <p>
-     * 赠品不挂订单行，流水行来源使用权益 id；{@code PROMOTION_GIFT_OUT} 让毛利报表单独统计其成本。
-     *
-     * <p>
-     * 防重由 {@code uk_inventory_movement_source_active (source_document_type, source_document_item_id)}
-     * 承担：一行权益至多一条赠品出库流水，重复发车不会重复扣库存。
-     */
+    /** 赠品出库按冻结赠品权益记账，使用赠品权益 ID 作为防重来源，不能虚造订单明细。必须持有余额锁并校验可用库存，单位成本取出库时移动均价。 */
     public String postPromotionGiftOutbound(InventoryPromotionGiftFact fact) {
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new IllegalTransactionStateException("Promotion gift outbound requires the caller's transaction");
@@ -679,23 +666,7 @@ public class InventoryCommandService {
         return unit;
     }
 
-    /**
-     * 调拨<b>转入</b>：向目标仓累加并写 {@code TRANSFER_IN} 流水（方向 = 入）。
-     *
-     * <p>
-     * 与采购入库（{@link #postPurchaseInbound}）同一取向：<b>入方向允许建零余额行</b> —— 目标仓从没有过该 SKU 时，由本次调入建立该行，单位取明细行的快照（= 发出时记录的源仓单位）。
-     *
-     * <p>
-     * <b>单位必须与目标仓既有记账单位一致</b>：不一致直接 41044，绝不隐式换算。源仓按「箱」记账、目标仓按「kg」记账时把 10 箱加成 10 kg 会得到一个
-     * 没有物理意义的余额，而错误只会在未来盘点时以「账实不符」的形式暴露。
-     *
-     * <p>
-     * <b>转入成本取发出腿的事实，不取目标仓均价</b>：调拨只是把货换个仓库，总成本必须守恒（见 {@link #transferInCost}）。均价按与采购入库相同的加权公式更新，因此「源仓 10 / 目标仓
-     * 8」时目标仓被拉向 10，而不是按 8 记；目标仓新建行时均价直接等于转入成本，不再出现「数量对、金额为零」。
-     *
-     * <p>
-     * 转入没有下限判断（只增不减），但 {@code ck_inventory_balance_quantity} 仍然生效。
-     */
+    /** 调拨收货向目标仓增加库存并写 TRANSFER_IN 流水。允许为新商品建立余额行，但单位必须与已存在的余额一致（否则 41044）。转入成本取原发出流水，目标仓均价按移动加权计算，总成本不能凭空变化。 */
     public void postTransferIn(InventoryTransferFact fact) {
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new IllegalTransactionStateException("Transfer in requires the caller's transaction");
@@ -755,19 +726,7 @@ public class InventoryCommandService {
         }
     }
 
-    /**
-     * 调拨转入的单位成本 = 同一条明细行<b>发出腿</b>当时的成本事实。
-     *
-     * <p>
-     * 发出与收货是两个事务（两步式），收货时内存里什么都没有，只能回读已冻结的流水；不在调拨明细行上另存一份成本副本，否则同一事实有两处可各自漂移。
-     *
-     * <p>
-     * 发出腿 {@code unit_cost} 为空只可能发生在成本核算上线前已发出、上线后才收货的在途单上 —— 那批货确实没有成本事实，按 0 计入，与 {@link #inboundAvgCost} 对无成本入库的
-     * 同一取向：宁可在均价上体现「有一批货成本未知」，也不凭空编一个价格。
-     *
-     * <p>
-     * 流水本身不会缺失：收货要求单据为 SHIPPED，而 {@code ship()} 与转出流水在同一事务内写入。真缺了就是账实不一致，必须响亮失败 —— 按 0 静默入账会把「成本清零」这个缺陷重新引进来。
-     */
+    /** 调拨收货的单位成本必须读取对应发出流水，不以目标仓当前均价代替。老数据缺成本时按零成本参与均价，但缺少发出流水属于账务异常，必须报错。 */
     private BigDecimal transferInCost(Long transferItemId) {
         InventoryMovementEntity shipped = inventoryMovementDao
                 .selectBySourceItem(ScmInventorySourceDocumentTypeEnum.TRANSFER_OUT_ITEM.name(), transferItemId);
@@ -778,16 +737,7 @@ public class InventoryCommandService {
         return shipped.getUnitCost() == null ? BigDecimal.ZERO : shipped.getUnitCost();
     }
 
-    /**
-     * 规格转换<b>转出</b>：从<b>源 SKU</b> 扣减并写 {@code CONVERT_OUT} 流水（方向 = 出）。
-     *
-     * <p>
-     * 与销售出库 / 调拨转出同一取向：<b>不建零余额行</b>（没有余额行 = 从未入库 = 无货可转），先判可用量再持锁扣减。
-     *
-     * <p>
-     * <b>单位与出库 / 调拨的关键差异：单位来自单据声明，不是余额</b>。折算关系本身含单位（1 箱 = 10 kg），所以单据必须写清源单位；
-     * 这里用它与余额记账单位<b>比对</b>，不一致直接失败（41059），不做隐式换算，也<b>不</b>按声明改写余额单位 —— 那会让既有余额的含义漂移。
-     */
+    /** 转换出库必须有现存余额，不能为出方向新建零余额行。先锁余额并校验可用量，转出成本按源规格移动均价记录，作为转入成本的依据。 */
     public void postConvertOut(InventoryConversionFact fact) {
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new IllegalTransactionStateException("Conversion out requires the caller's transaction");
@@ -840,19 +790,7 @@ public class InventoryCommandService {
         }
     }
 
-    /**
-     * 规格转换<b>转入</b>：向<b>目标 SKU</b> 累加并写 {@code CONVERT_IN} 流水（方向 = 入）。
-     *
-     * <p>
-     * 与采购入库 / 调拨转入同一取向：<b>入方向允许建零余额行</b> —— 目标 SKU 在该仓库从没有过余额时，由本次转换建立，单位取单据声明的目标单位。
-     *
-     * <p>
-     * 目标 SKU <b>已有</b>余额行时，其记账单位必须等于声明的目标单位（否则 41060）：否则会把「箱」与「kg」相加，得到一个没有物理意义的余额。
-     *
-     * <p>
-     * <b>成本只平移、不凭空产生</b>：转入腿单价 = 转出腿总成本 ÷ 目标腿数量（由调用方按同一基准换算），目标 SKU 均价再按与采购入库相同的加权公式更新。因此「9.5 kg 拆成 1 箱」两边金额相等，而目标 SKU
-     * 新建余额行时均价等于转入成本、不再是 0。
-     */
+    /** 转换入库可为目标规格新建余额，已有余额时单位必须一致（否则 41060）。转入总成本等于转出总成本，按转换数量折算单价，并参与目标规格的移动加权均价计算。 */
     public void postConvertIn(InventoryConversionFact fact) {
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
             throw new IllegalTransactionStateException("Conversion in requires the caller's transaction");

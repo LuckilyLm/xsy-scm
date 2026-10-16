@@ -20,17 +20,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNIN
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_NOT_FOUND;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_SKU_NOT_FOUND;
 
-/**
- * 预警阈值配置的命令侧：新建 / 编辑 / 删除。
- *
- * <p>
- * <b>本类不碰 {@code xsy_inventory_balance}</b>：阈值是配置，余额是派生状态。若阈值放在余额表上，这个类就必须为了写阈值而创建余额行 ——
- * 那会造出「没有任何流水支撑的余额行」，直接破坏「余额是流水的净和」这条不变量。单独建表让配置路径完全不必触碰余额表。
- *
- * <p>
- * <b>并发口径</b>：编辑用实体自带的 {@code @Version} 乐观锁。版本号取自本事务刚读到的行，因此它主要起「版本号持续推进」的作用，而不是挡住「两个人在不同时间先后保存」—— 配置表一行只对应一个 (仓库,
- * SKU)，争用极低，与其它库存单据一致采用最后写入者生效。
- */
+/** 库存预警阈值是独立配置，不直接修改库存余额。新增、修改和删除阈值都应校验仓库与商品权限，预警状态由实时可用量计算。 */
 @Service
 @RequiredArgsConstructor
 public class InventoryWarningThresholdService {

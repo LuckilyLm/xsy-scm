@@ -266,16 +266,7 @@ public class InventoryLossGainService {
         }
     }
 
-    /**
-     * 禁止自建自审：审批人不得是该单的录单人。
-     *
-     * <p>
-     * {@code created_by} 与 {@code auditor} 都是 {@link ScmOperator} 写的 {@code "userType:employeeId"}
-     * 串，因此<b>只比较员工号那一段</b>： {@code userType} 只是登录端类型，同一个人换个端登录仍是同一个人，拿整串比相等等于给「换个端就能自审」留口子。
-     *
-     * <p>
-     * 归属解析不出来（历史 {@code created_by} 为空或格式脏）时不阻断：无法证明是同一人，就不该用一个业务错误把有效单据卡死；这种情况按审计缺陷单独治理。
-     */
+    /** 报损报溢审批人与录单人必须不同，按完整操作者身份比较，不能只比较用户名或员工号的一部分。 */
     private static void requireNotSelfApproval(InventoryLossGainEntity document, String operator) {
         Long approverId = employeeIdOf(operator);
         Long creatorId = employeeIdOf(document.getCreatedBy());

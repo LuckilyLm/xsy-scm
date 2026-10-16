@@ -3,21 +3,7 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/**
- * 规格转换单状态（与报损报溢单<b>刻意同构</b>）。
- *
- * <pre>
- * PENDING ──approve──▶ COMPLETED （写 CONVERT_OUT + CONVERT_IN 流水并调整两边余额）
- *    │
- *    └──reject───▶ REJECTED （不产生任何库存影响）
- * </pre>
- *
- * <p>
- * <b>为什么需要审批</b>：转换会把<b>两个 SKU</b> 的余额同时改掉，影响面比单纯报损更大；而且折算关系是人工声明的，没有审批就等于「录单人可以单方面决定一箱等于多少 kg」。
- *
- * <p>
- * 两个终态都<b>不可回退</b>：流水 append-only，修正靠<b>反向转换单</b>。
- */
+/** 规格转换单创建即待审核，审批通过后同时写转出与转入流水，驳回不影响库存。完成和驳回均是终态，不能回滚流水。 */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryConversionStatusEnum {

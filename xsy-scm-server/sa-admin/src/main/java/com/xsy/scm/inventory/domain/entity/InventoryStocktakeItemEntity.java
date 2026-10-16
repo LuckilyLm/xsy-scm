@@ -12,16 +12,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/**
- * 盘点单明细行：一行 = 一个 SKU 的「账面量 vs 实盘量」。
- *
- * <p>
- * {@code bookQuantity} 是快照，不是实时值：它在保存草稿那一刻从余额行读入，既作为清点时给仓管的参考， 也作为差异计算的基线。确认时不再读它，而是持锁读当时的余额量（{@code live}）， 把差异施加到
- * live 上：{@code delta = actualQuantity - bookQuantity}，{@code after = live + delta}。 这样「保存草稿 → 确认」之间发生的收货 / 出库不会被盘点抹掉。
- *
- * <p>
- * {@code unitSnapshot} 在确认时写入（= 该 (仓库, SKU) 的余额记账单位），草稿态允许为空， 与出库单明细同一取向。
- */
+/** 盘点明细保存当时账面数量和实盘数量，确认前仍需校验库存版本。盘点差异由两者计算，确认后才形成不可改的库存流水。 */
 @Data
 @TableName(value = "xsy_inventory_stocktake_item", autoResultMap = true)
 public class InventoryStocktakeItemEntity {

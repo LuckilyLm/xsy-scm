@@ -32,17 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Locale;
 
-/**
- * SCM 库存盘点单。
- *
- * <p>
- * 共 7 个端点：分页 / 详情 / 新建 / 改草稿 / 确认盘点 / 取消 / 删除。
- *
- * <p>
- * <b>权限划分</b>：查询 {@code scm:inventory:stocktake:query}、新建 {@code :add}、改草稿 {@code :update}、确认盘点 {@code :confirm}、删除
- * {@code :delete}。 「确认盘点」是<b>独立的权限</b>而不是复用 {@code :update} ——
- * 确认会真实调整库存并写不可逆流水，与「改个草稿」不是同一量级的操作，允许仓管录实盘数但由主管确认是完全合理的分工。 与出库单保持同一取向。
- */
+/** 库存盘点支持创建、修改、确认和取消。查询、录单与确认分别授权，确认时必须核对库存快照和实际盘点数量。 */
 @RestController
 @RequestMapping("/scm/inventory/stocktake")
 @Tag(name = "SCM 库存盘点单")
