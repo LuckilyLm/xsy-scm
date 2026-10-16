@@ -113,26 +113,99 @@
 </script>
 
 <style lang="scss" scoped>
-  .addr { min-height: 100vh; background-color: $color-bg-page; padding-bottom: 140rpx; }
-  .addr__hint { display: block; padding: $space-6; text-align: center; color: $color-text-tertiary; }
-  .addr__empty { @include flex-center; flex-direction: column; padding-top: 160rpx; }
-  .addr__empty-title { margin-top: $space-3; font-size: $font-size-lg; color: $color-text-secondary; }
-  .addr__empty-desc { margin-top: $space-1; font-size: $font-size-sm; color: $color-text-tertiary; }
+  .addr {
+    min-height: 100vh;
+    background-color: $color-bg-page;
+    padding-bottom: 140rpx;
+  }
+  .addr__hint {
+    display: block;
+    padding: $space-6;
+    text-align: center;
+    color: $color-text-tertiary;
+  }
+  .addr__empty {
+    @include flex-center;
+    flex-direction: column;
+    padding-top: 160rpx;
+  }
+  .addr__empty-title {
+    margin-top: $space-3;
+    font-size: $font-size-lg;
+    color: $color-text-secondary;
+  }
+  .addr__empty-desc {
+    margin-top: $space-1;
+    font-size: $font-size-sm;
+    color: $color-text-tertiary;
+  }
 
-  .addr__list { margin-top: $space-3; background-color: $color-bg-card; }
-  .addr-item { padding: $space-4; @include hairline-bottom; }
-  .addr-item__head { @include flex-start; }
-  .addr-item__receiver { font-size: $font-size-lg; font-weight: $font-weight-bold; color: $color-text-primary; }
-  .addr-item__phone { margin-left: $space-3; font-size: $font-size-base; color: $color-text-secondary; }
-  .addr-item__tag { margin-left: $space-2; padding: 2rpx 12rpx; border-radius: $radius-pill;
-    background-color: $color-primary-light; color: $color-primary; font-size: $font-size-xs; }
-  .addr-item__tag--pick { background-color: $color-bg-hover; color: $color-text-secondary; }
-  .addr-item__detail { display: block; margin-top: $space-2; font-size: $font-size-sm; color: $color-text-secondary; }
-  .addr-item__actions { @include flex-start; justify-content: flex-end; margin-top: $space-2; }
-  .addr-item__action { margin-left: $space-4; font-size: $font-size-sm; color: $color-text-secondary; }
-  .addr-item__action--danger { color: $color-danger; }
+  .addr__list {
+    margin-top: $space-3;
+    background-color: $color-bg-card;
+  }
+  .addr-item {
+    padding: $space-4;
+    @include hairline-bottom;
+  }
+  .addr-item__head {
+    @include flex-start;
+  }
+  .addr-item__receiver {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+  }
+  .addr-item__phone {
+    margin-left: $space-3;
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+  }
+  .addr-item__tag {
+    margin-left: $space-2;
+    padding: 2rpx 12rpx;
+    border-radius: $radius-pill;
+    background-color: $color-primary-light;
+    color: $color-primary;
+    font-size: $font-size-xs;
+  }
+  .addr-item__tag--pick {
+    background-color: $color-bg-hover;
+    color: $color-text-secondary;
+  }
+  .addr-item__detail {
+    display: block;
+    margin-top: $space-2;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+  .addr-item__actions {
+    @include flex-start;
+    justify-content: flex-end;
+    margin-top: $space-2;
+  }
+  .addr-item__action {
+    margin-left: $space-4;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+  .addr-item__action--danger {
+    color: $color-danger;
+  }
 
-  .addr__bar { @include fixed-bottom-bar; @include flex-center; height: 108rpx; padding: 0 $space-4; }
-  .addr__add { width: 100%; height: 80rpx; @include flex-center; border-radius: $radius-pill;
-    background-color: $color-primary; color: white; font-size: $font-size-base; }
+  .addr__bar {
+    @include fixed-bottom-bar;
+    @include flex-center;
+    height: 108rpx;
+    padding: 0 $space-4;
+  }
+  .addr__add {
+    width: 100%;
+    height: 80rpx;
+    @include flex-center;
+    border-radius: $radius-pill;
+    background-color: $color-primary;
+    color: white;
+    font-size: $font-size-base;
+  }
 </style>

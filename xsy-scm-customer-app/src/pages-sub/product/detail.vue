@@ -163,8 +163,8 @@
   }
 
   /** 起订量与步进来自服务端契约，客户端只按它约束步进，不自行设定业务规则 */
-  const minQty = computed(() => Number(product.value?.minOrderQty) > 0 ? Number(product.value.minOrderQty) : 1);
-  const stepQty = computed(() => Number(product.value?.stepQty) > 0 ? Number(product.value.stepQty) : 1);
+  const minQty = computed(() => (Number(product.value?.minOrderQty) > 0 ? Number(product.value.minOrderQty) : 1));
+  const stepQty = computed(() => (Number(product.value?.stepQty) > 0 ? Number(product.value.stepQty) : 1));
 
   const scaled = (value) => Math.round(Number(value) * 10000);
   const unscaled = (value) => Number((value / 10000).toFixed(4));
@@ -179,8 +179,7 @@
   });
 
   const canDecrease = computed(() => orderable.value && scaled(quantity.value) > scaled(minQty.value));
-  const canIncrease = computed(() => orderable.value
-      && scaled(quantity.value) + scaled(stepQty.value) <= scaled(maxQty.value));
+  const canIncrease = computed(() => orderable.value && scaled(quantity.value) + scaled(stepQty.value) <= scaled(maxQty.value));
 
   const quantityHint = computed(() => {
     const unit = product.value?.unit || '';

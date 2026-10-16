@@ -49,8 +49,7 @@ export function dueAmount(order) {
   if (!order || order.payableAmount === null || order.payableAmount === undefined || order.payableAmount === '') {
     return null;
   }
-  const scaled =
-    Math.round(Number(order.payableAmount) * 10000) - Math.round(Number(order.paidAmount || 0) * 10000);
+  const scaled = Math.round(Number(order.payableAmount) * 10000) - Math.round(Number(order.paidAmount || 0) * 10000);
   const clamped = Math.max(scaled, 0);
   const int = Math.floor(clamped / 10000);
   const frac = String(clamped % 10000).padStart(4, '0');

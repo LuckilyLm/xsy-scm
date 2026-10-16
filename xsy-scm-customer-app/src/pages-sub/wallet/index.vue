@@ -6,9 +6,7 @@
       <text class="wallet__retry" @click="load">重试</text>
     </view>
     <template v-else-if="summary">
-      <view v-if="stale" class="wallet__stale" @click="load">
-        更新失败，当前为上次查询结果。点击重试 ›
-      </view>
+      <view v-if="stale" class="wallet__stale" @click="load"> 更新失败，当前为上次查询结果。点击重试 › </view>
       <view class="wallet__balance">
         <text class="wallet__label">{{ summary.balanceVisible ? '账户余额' : '共享结算账户' }}</text>
         <text v-if="summary.balanceVisible" class="wallet__amount">¥{{ displayAmount(summary.availableBalance) }}</text>
@@ -90,23 +88,106 @@
 </script>
 
 <style lang="scss" scoped>
-  .wallet { min-height: 100vh; padding: $space-4 $space-4 $space-8; box-sizing: border-box; background: $color-bg-page; }
-  .wallet__state { padding: $space-8 $space-4; text-align: center; color: $color-text-secondary; }
-  .wallet__retry { display: block; margin-top: $space-4; color: $color-primary; }
-  .wallet__stale { margin-bottom: $space-3; padding: $space-3 $space-4; border-radius: $radius-md; background: $color-warning-light; color: $color-text-primary; font-size: $font-size-sm; }
-  .wallet__balance { display: flex; flex-direction: column; padding: $space-6; border-radius: $radius-lg; background: $color-primary; color: $color-text-inverse; }
-  .wallet__label { font-size: $font-size-sm; opacity: .9; }
-  .wallet__amount { margin-top: $space-3; font-size: 64rpx; font-weight: $font-weight-bold; font-variant-numeric: tabular-nums; }
-  .wallet__private { margin-top: $space-3; font-size: $font-size-xl; font-weight: $font-weight-bold; }
-  .wallet__hint { margin-top: $space-4; font-size: $font-size-sm; opacity: .9; }
-  .wallet__section { margin-top: $space-4; padding: 0 $space-4; @include card(0); }
-  .wallet__head { height: 104rpx; @include flex-between; font-size: $font-size-lg; font-weight: $font-weight-bold; }
-  .wallet__link { color: $color-primary; font-size: $font-size-sm; font-weight: $font-weight-regular; }
-  .wallet__empty { padding: $space-8 0; text-align: center; color: $color-text-tertiary; }
-  .wallet__row { min-height: 104rpx; display: flex; align-items: center; justify-content: space-between; @include hairline-bottom; }
-  .wallet__row-main { display: flex; flex-direction: column; gap: $space-1; }
-  .wallet__time { color: $color-text-tertiary; font-size: $font-size-xs; }
-  .wallet__change { font-variant-numeric: tabular-nums; font-weight: $font-weight-medium; }
-  .wallet__change--in { color: $color-primary; }
-  .wallet__note { margin-top: $space-4; color: $color-text-secondary; font-size: $font-size-sm; line-height: 1.6; }
+  .wallet {
+    min-height: 100vh;
+    padding: $space-4 $space-4 $space-8;
+    box-sizing: border-box;
+    background: $color-bg-page;
+  }
+  .wallet__state {
+    padding: $space-8 $space-4;
+    text-align: center;
+    color: $color-text-secondary;
+  }
+  .wallet__retry {
+    display: block;
+    margin-top: $space-4;
+    color: $color-primary;
+  }
+  .wallet__stale {
+    margin-bottom: $space-3;
+    padding: $space-3 $space-4;
+    border-radius: $radius-md;
+    background: $color-warning-light;
+    color: $color-text-primary;
+    font-size: $font-size-sm;
+  }
+  .wallet__balance {
+    display: flex;
+    flex-direction: column;
+    padding: $space-6;
+    border-radius: $radius-lg;
+    background: $color-primary;
+    color: $color-text-inverse;
+  }
+  .wallet__label {
+    font-size: $font-size-sm;
+    opacity: 0.9;
+  }
+  .wallet__amount {
+    margin-top: $space-3;
+    font-size: 64rpx;
+    font-weight: $font-weight-bold;
+    font-variant-numeric: tabular-nums;
+  }
+  .wallet__private {
+    margin-top: $space-3;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+  }
+  .wallet__hint {
+    margin-top: $space-4;
+    font-size: $font-size-sm;
+    opacity: 0.9;
+  }
+  .wallet__section {
+    margin-top: $space-4;
+    padding: 0 $space-4;
+    @include card(0);
+  }
+  .wallet__head {
+    height: 104rpx;
+    @include flex-between;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+  }
+  .wallet__link {
+    color: $color-primary;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-regular;
+  }
+  .wallet__empty {
+    padding: $space-8 0;
+    text-align: center;
+    color: $color-text-tertiary;
+  }
+  .wallet__row {
+    min-height: 104rpx;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    @include hairline-bottom;
+  }
+  .wallet__row-main {
+    display: flex;
+    flex-direction: column;
+    gap: $space-1;
+  }
+  .wallet__time {
+    color: $color-text-tertiary;
+    font-size: $font-size-xs;
+  }
+  .wallet__change {
+    font-variant-numeric: tabular-nums;
+    font-weight: $font-weight-medium;
+  }
+  .wallet__change--in {
+    color: $color-primary;
+  }
+  .wallet__note {
+    margin-top: $space-4;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+    line-height: 1.6;
+  }
 </style>

@@ -23,6 +23,8 @@
 
 - 2026-10-16 **PAY-VERIFY 真实 PG 资金定向回归通过**：PostgreSQL 18（Docker 临时隔离容器）执行两轮 `mvn -B -pl sa-admin -am '-Dtest=...' '-Dsurefire.failIfNoSpecifiedTests=false' test`，分别为 **38/38**（`MallWalletPaymentPgIT,MallCreditExposurePgIT,MallSettlementOptionsPgIT,FinanceCodCollectionPgIT,PaymentRefundRecoveryPgIT,PaymentRefundSumBasisPgIT`）和 **47/47**（`ScmFinancePaymentPgIT,PaymentCallbackEventPersistPgIT,RefundFundingAllocationSavepointPgIT,RefundFundingAllocationTimePgIT,ScmFinanceOrderFundingSourcePgIT,ScmFinanceReceiptSettlementPgIT,MallOrderPaymentDisplayPgIT,ScmFinancePaymentPermissionPgIT,AdminSettlementTermsPgIT`），合计 **85 个执行通过，0 失败/错误/跳过，两轮 BUILD SUCCESS**。修正 `MallWalletPaymentPgIT` 旧夹具：GCJ-02 收货坐标、独立高德逆地理编码替身、客户指定配送仓和正式采购收货的可售库存；未修改资金业务规则。验证包括余额支付幂等/并发与不足回滚、COD 分笔和补收、账期敞口、结算权限、回调记录、资金来源退款分摊及恢复。**未执行真实支付渠道沙箱、真实高德、微信真机及存量生产库升级**。
 
+- 2026-10-16 **WX-VERIFY 客户端本地代码门禁通过（真实环境待验）**：`xsy-scm-customer-app` 执行 `npm test` **41/41 通过**、`npm run lint` **0 错误**、`npm run build:h5` 和 `npm run build:mp-weixin` **均 BUILD 完成（exit 0）**。最初 lint 有 265 条错误，按已有 ESLint/Prettier 规则修复 18 个相关文件的格式与 Vue 标签闭合，并为 Node 契约测试补 `node:url` 的 URL 导入；变更后重新执行上述四项均通过。两个构建仍有 Sass `@import` 等弃用警告，不属于构建失败。**本机未检测到可调用的微信开发者工具 CLI，会话中没有可用于真实高德 API 请求的密钥；微信开发者工具运行、真机、真实地理编码和弱网交互仍未验收**。
+
 - 2026-10-16 提交 `38255e4b`：商城配送仓与单位换算、退货记账量、本地后台/商城入口已提交。后端相关定向测试实际运行 **24 个用例，0 失败/错误，BUILD SUCCESS**；Spotless 检查通过；H5 构建已有成功证据。**该提交当时**尚未执行 V135–V137 隔离数据库迁移、订单发车退货全链 PostgreSQL 测试、微信真机和生产部署；本轮前两项已在后续独立测试中补验。
 - 2026-10-14 的隔离空库后端回归：`mvn -B -pl sa-admin -am test`，**1620 个用例，0 失败、0 错误、6 跳过，BUILD SUCCESS**。该记录来自提交 `2bc202c9` 所写的项目状态；本次文档与代码静态审查没有重跑。相同测试库重复跑会受到部分夹具残留影响，完整回归应使用新空库。
 - 2026-10-14 记录的全量后端回归当时只覆盖 **V131**；V132 之后的独立空库迁移和资金定向回归已于 2026-10-16 补验，但**本次未重跑全量后端 1620 个用例，也未模拟生产存量数据升级**。
@@ -31,7 +33,7 @@
 
 ## 待完成
 
-- **当前执行顺序**：GATE-01 空库迁移、GATE-02 核心业务黄金链、PAY-VERIFY 本地资金 PG 定向回归已通过；**下一阶段 WX-VERIFY**（真实高德、H5、微信开发者工具与真机）以及 **QUALITY-01**（主 E2E、聚合、存量迁移和门禁）。详细任务及验收见[下一阶段开发计划](next-development-plan.md)。
+- **当前执行顺序**：GATE-01 空库迁移、GATE-02 核心业务黄金链、PAY-VERIFY 本地资金 PG 回归和 WX-VERIFY 客户端静态门禁/双端构建已通过；**下一阶段 QUALITY-01**（主 E2E、聚合和全量门禁），同时等待真实高德密钥、微信开发者工具/真机完成 WX 外部联调。存量升级另做隔离模拟。详细任务及验收见[下一阶段开发计划](next-development-plan.md)。
 
 - **资金闭环剩余验收**：V132 分笔 COD、历史人工补收展示、冻结结算主体、支付方式限制、同键余额支付回放及退款分摊已通过独立 PostgreSQL 定向回归；**尚未执行真实支付渠道沙箱、模拟存量库完整升级、生产迁移和业务现场端到端验收**。授信敞口关于账期预占、历史空方式及已开应收的定向测试已执行；不要把定向回归等同于全量验收。
 - **错误码**：源码有 39 组既有撞码，已建立完整注册清单及新撞码门禁源码，未运行门禁；已发布数值的兼容迁移尚未执行。

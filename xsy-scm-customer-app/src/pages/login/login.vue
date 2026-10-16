@@ -62,16 +62,73 @@
 </script>
 
 <style lang="scss" scoped>
-  .login { min-height: 100vh; background: $color-bg-card; }
-  .login__hero { @include flex-center; flex-direction: column; padding: 160rpx 0 80rpx; }
-  .login__mark { width: 144rpx; height: 144rpx; border-radius: 36rpx; background: $color-primary; color: white; font-size: 72rpx; font-weight: $font-weight-bold; text-align: center; line-height: 144rpx; }
-  .login__title { margin-top: $space-4; font-size: $font-size-xl; font-weight: $font-weight-bold; color: $color-text-primary; }
-  .login__subtitle { margin-top: $space-1; font-size: $font-size-sm; color: $color-text-tertiary; }
-  .login__panel { padding: 0 $space-6; }
-  .field { height: 104rpx; @include flex-start; @include hairline-bottom; }
-  .field__label { width: 120rpx; font-size: $font-size-base; color: $color-text-primary; }
-  .field__input { flex: 1; height: 100%; font-size: $font-size-base; }
-  .login__submit { margin-top: $space-6; height: 88rpx; border-radius: $radius-md; background: $color-primary; color: white; @include flex-center; font-size: $font-size-lg; }
-  .login__submit--disabled { background: $color-primary-disabled; }
-  .login__help { display: block; margin-top: $space-4; font-size: $font-size-xs; line-height: 1.6; color: $color-text-tertiary; text-align: center; }
+  .login {
+    min-height: 100vh;
+    background: $color-bg-card;
+  }
+  .login__hero {
+    @include flex-center;
+    flex-direction: column;
+    padding: 160rpx 0 80rpx;
+  }
+  .login__mark {
+    width: 144rpx;
+    height: 144rpx;
+    border-radius: 36rpx;
+    background: $color-primary;
+    color: white;
+    font-size: 72rpx;
+    font-weight: $font-weight-bold;
+    text-align: center;
+    line-height: 144rpx;
+  }
+  .login__title {
+    margin-top: $space-4;
+    font-size: $font-size-xl;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+  }
+  .login__subtitle {
+    margin-top: $space-1;
+    font-size: $font-size-sm;
+    color: $color-text-tertiary;
+  }
+  .login__panel {
+    padding: 0 $space-6;
+  }
+  .field {
+    height: 104rpx;
+    @include flex-start;
+    @include hairline-bottom;
+  }
+  .field__label {
+    width: 120rpx;
+    font-size: $font-size-base;
+    color: $color-text-primary;
+  }
+  .field__input {
+    flex: 1;
+    height: 100%;
+    font-size: $font-size-base;
+  }
+  .login__submit {
+    margin-top: $space-6;
+    height: 88rpx;
+    border-radius: $radius-md;
+    background: $color-primary;
+    color: white;
+    @include flex-center;
+    font-size: $font-size-lg;
+  }
+  .login__submit--disabled {
+    background: $color-primary-disabled;
+  }
+  .login__help {
+    display: block;
+    margin-top: $space-4;
+    font-size: $font-size-xs;
+    line-height: 1.6;
+    color: $color-text-tertiary;
+    text-align: center;
+  }
 </style>

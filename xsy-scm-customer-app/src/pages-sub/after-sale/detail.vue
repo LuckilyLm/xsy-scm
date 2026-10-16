@@ -11,7 +11,9 @@
         <text class="ad-head__no">售后单号 {{ record.returnNo }}</text>
         <text v-if="record.displayStatus === 'REVIEWING'" class="ad-head__hint">已提交，平台审核中</text>
         <text v-else-if="record.displayStatus === 'REFUNDING'" class="ad-head__hint">审核通过，退款处理中</text>
-        <text v-else-if="record.displayStatus === 'REJECTED' && record.decisionReason" class="ad-head__hint"> 驳回原因：{{ record.decisionReason }} </text>
+        <text v-else-if="record.displayStatus === 'REJECTED' && record.decisionReason" class="ad-head__hint">
+          驳回原因：{{ record.decisionReason }}
+        </text>
       </view>
 
       <!-- 售后进度：节点与 done 都由服务端按正式事实给出，客户端不推导 -->
@@ -40,7 +42,9 @@
           <view class="ad-item__main">
             <text class="ad-item__name">{{ item.productName }}</text>
             <text class="ad__sub">{{ item.specName || '默认规格' }} · {{ item.unit }}</text>
-            <text class="ad__sub">申请 {{ displayQuantity(item.requestedQuantity) }}{{ item.unit }} × ¥{{ displayAmount(item.lockedUnitPrice) }}</text>
+            <text class="ad__sub"
+              >申请 {{ displayQuantity(item.requestedQuantity) }}{{ item.unit }} × ¥{{ displayAmount(item.lockedUnitPrice) }}</text
+            >
             <text v-if="item.approvedQuantity" class="ad-item__approved"> 核定 {{ displayQuantity(item.approvedQuantity) }}{{ item.unit }} </text>
           </view>
           <view class="ad-item__amount">
@@ -113,12 +117,7 @@
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, displayQuantity, formatDateTime } from '@/utils/order-display';
-  import {
-    afterSaleStatusLevel,
-    afterSaleStatusText,
-    allocationStatusText,
-    refundMethodText,
-  } from '@/utils/after-sale-display';
+  import { afterSaleStatusLevel, afterSaleStatusText, allocationStatusText, refundMethodText } from '@/utils/after-sale-display';
 
   const returnId = ref(null);
   const record = ref(null);

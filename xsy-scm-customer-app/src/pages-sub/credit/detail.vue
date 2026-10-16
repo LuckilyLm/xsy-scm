@@ -12,15 +12,28 @@
         <text class="bill__hero-state">{{ receivableStateText(record.settleState) }}<text v-if="record.overdue"> · 已逾期</text></text>
       </view>
       <view class="bill__card">
-        <view class="bill__row"><text>账单编号</text><text>{{ record.receivableNo }}</text></view>
-        <view class="bill__row"><text>原始应收</text><text>¥{{ displayAmount(record.amount) }}</text></view>
-        <view class="bill__row"><text>退货红字冲减</text><text>¥{{ displayAmount(record.redAmount) }}</text></view>
-        <view class="bill__row"><text>有效核销</text><text>¥{{ displayAmount(record.writtenOffAmount) }}</text></view>
-        <view class="bill__row"><text>到期日</text><text>{{ formatDate(record.dueDate) || '未设置' }}</text></view>
-        <view class="bill__row"><text>应收发生时间</text><text>{{ formatDateTime(record.eventAt) }}</text></view>
+        <view class="bill__row"
+          ><text>账单编号</text><text>{{ record.receivableNo }}</text></view
+        >
+        <view class="bill__row"
+          ><text>原始应收</text><text>¥{{ displayAmount(record.amount) }}</text></view
+        >
+        <view class="bill__row"
+          ><text>退货红字冲减</text><text>¥{{ displayAmount(record.redAmount) }}</text></view
+        >
+        <view class="bill__row"
+          ><text>有效核销</text><text>¥{{ displayAmount(record.writtenOffAmount) }}</text></view
+        >
+        <view class="bill__row"
+          ><text>到期日</text><text>{{ formatDate(record.dueDate) || '未设置' }}</text></view
+        >
+        <view class="bill__row"
+          ><text>应收发生时间</text><text>{{ formatDateTime(record.eventAt) }}</text></view
+        >
       </view>
       <view v-if="record.orderId" class="bill__order" @click="goOrder">
-        <text>关联订单 {{ record.orderNo || '' }}</text><text>查看订单 ›</text>
+        <text>关联订单 {{ record.orderNo || '' }}</text
+        ><text>查看订单 ›</text>
       </view>
       <text class="bill__note">账单金额依据正式应收、红字和核销记录计算。钱包余额不会自动抵扣应收。</text>
     </template>
@@ -73,17 +86,76 @@
 </script>
 
 <style lang="scss" scoped>
-  .bill { min-height: 100vh; padding: $space-4 $space-4 $space-8; box-sizing: border-box; background: $color-bg-page; }
-  .bill__state { padding: 240rpx $space-4 0; text-align: center; color: $color-text-secondary; }
-  .bill__retry { display: block; margin-top: $space-4; color: $color-primary; }
-  .bill__hero { display: flex; flex-direction: column; align-items: center; padding: $space-6; border-radius: $radius-lg; background: $color-bg-card; }
-  .bill__hero-label { color: $color-text-secondary; font-size: $font-size-sm; }
-  .bill__hero-amount { margin-top: $space-2; font-size: 64rpx; font-weight: $font-weight-bold; font-variant-numeric: tabular-nums; }
-  .bill__hero-state { margin-top: $space-2; color: $color-primary; font-size: $font-size-sm; }
-  .bill__card { margin-top: $space-4; padding: 0 $space-4; @include card(0); }
-  .bill__row { min-height: 96rpx; @include flex-between; @include hairline-bottom; gap: $space-3; }
-  .bill__row text:first-child { flex-shrink: 0; color: $color-text-secondary; }
-  .bill__row text:last-child { text-align: right; font-variant-numeric: tabular-nums; }
-  .bill__order { margin-top: $space-4; padding: $space-4; @include flex-between; @include card(0); color: $color-primary; }
-  .bill__note { display: block; margin-top: $space-4; color: $color-text-secondary; font-size: $font-size-sm; line-height: 1.6; }
+  .bill {
+    min-height: 100vh;
+    padding: $space-4 $space-4 $space-8;
+    box-sizing: border-box;
+    background: $color-bg-page;
+  }
+  .bill__state {
+    padding: 240rpx $space-4 0;
+    text-align: center;
+    color: $color-text-secondary;
+  }
+  .bill__retry {
+    display: block;
+    margin-top: $space-4;
+    color: $color-primary;
+  }
+  .bill__hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: $space-6;
+    border-radius: $radius-lg;
+    background: $color-bg-card;
+  }
+  .bill__hero-label {
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+  }
+  .bill__hero-amount {
+    margin-top: $space-2;
+    font-size: 64rpx;
+    font-weight: $font-weight-bold;
+    font-variant-numeric: tabular-nums;
+  }
+  .bill__hero-state {
+    margin-top: $space-2;
+    color: $color-primary;
+    font-size: $font-size-sm;
+  }
+  .bill__card {
+    margin-top: $space-4;
+    padding: 0 $space-4;
+    @include card(0);
+  }
+  .bill__row {
+    min-height: 96rpx;
+    @include flex-between;
+    @include hairline-bottom;
+    gap: $space-3;
+  }
+  .bill__row text:first-child {
+    flex-shrink: 0;
+    color: $color-text-secondary;
+  }
+  .bill__row text:last-child {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .bill__order {
+    margin-top: $space-4;
+    padding: $space-4;
+    @include flex-between;
+    @include card(0);
+    color: $color-primary;
+  }
+  .bill__note {
+    display: block;
+    margin-top: $space-4;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+    line-height: 1.6;
+  }
 </style>

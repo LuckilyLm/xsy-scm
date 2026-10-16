@@ -34,9 +34,7 @@ export const authRoutes = [
   {
     method: 'GET',
     path: '/scm/mall/auth/profile',
-    handler: async ({ session }) => session
-      ? ok(profile(false))
-      : fail(PLATFORM_ERROR_CODE.LOGIN_STATE_INVALID, '登录已失效，请重新登录'),
+    handler: async ({ session }) => (session ? ok(profile(false)) : fail(PLATFORM_ERROR_CODE.LOGIN_STATE_INVALID, '登录已失效，请重新登录')),
   },
   {
     method: 'POST',

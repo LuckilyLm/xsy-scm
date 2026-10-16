@@ -15,7 +15,8 @@
             <text class="aa-item__name">{{ line.item.productName }}</text>
             <text class="aa__sub">{{ line.item.specName || '默认规格' }} · {{ line.item.saleUnit }}</text>
             <text class="aa__sub">
-              ¥{{ displayAmount(line.item.unitPrice) }} · 可申请 {{ line.available === null ? '待称重后可申请' : `${displayQuantity(line.available)}${line.item.saleUnit}` }}
+              ¥{{ displayAmount(line.item.unitPrice) }} · 可申请
+              {{ line.available === null ? '待称重后可申请' : `${displayQuantity(line.available)}${line.item.saleUnit}` }}
             </text>
             <view v-if="line.available !== null" class="aa-item__quantity">
               <text class="aa-item__quantity-label">申请数量</text>
@@ -49,12 +50,7 @@
             {{ option }}
           </view>
         </view>
-        <textarea
-          v-model="reasonDetail"
-          class="aa-reasons__detail"
-          maxlength="200"
-          placeholder="补充说明（选填）：如破损程度、短缺数量等"
-        />
+        <textarea v-model="reasonDetail" class="aa-reasons__detail" maxlength="200" placeholder="补充说明（选填）：如破损程度、短缺数量等"></textarea>
       </view>
 
       <view class="aa-card">
@@ -79,12 +75,7 @@
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, displayQuantity } from '@/utils/order-display';
-  import {
-    AFTERSALE_REASONS,
-    estimateLineAmount,
-    isValidApplyQuantity,
-    sumAmounts,
-  } from '@/utils/after-sale-display';
+  import { AFTERSALE_REASONS, estimateLineAmount, isValidApplyQuantity, sumAmounts } from '@/utils/after-sale-display';
 
   const orderId = ref(null);
   const order = ref(null);
@@ -111,9 +102,7 @@
 
   const selectedLines = computed(() => lines.value.filter((line) => line.quantity !== ''));
 
-  const estimatedTotal = computed(() =>
-    sumAmounts(selectedLines.value.map((line) => lineEstimate(line)))
-  );
+  const estimatedTotal = computed(() => sumAmounts(selectedLines.value.map((line) => lineEstimate(line))));
 
   onLoad((options) => {
     orderId.value = Number(options?.orderId) || null;

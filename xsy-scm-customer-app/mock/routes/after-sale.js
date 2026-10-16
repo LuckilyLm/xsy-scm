@@ -127,9 +127,7 @@ export const afterSaleRoutes = [
         status: 'PENDING',
         reason,
         decisionReason: null,
-        requestedAmount: items
-          .reduce((sum, item) => sum + Number(item.estimatedAmount || 0), 0)
-          .toFixed(4),
+        requestedAmount: items.reduce((sum, item) => sum + Number(item.estimatedAmount || 0), 0).toFixed(4),
         approvedAmount: '0.0000',
         createdAt,
         approvedAt: null,

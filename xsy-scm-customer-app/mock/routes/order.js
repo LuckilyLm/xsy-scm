@@ -61,8 +61,22 @@ function buildPreview(session, form) {
     priceFingerprint: fingerprint(items),
     // 与后端 MallSettlementOptionVO 同形的结算方式可用性；mock 不接真实钱包与授信，金额仅供页面开发
     settlementOptions: [
-      { method: 'CREDIT', label: '账期结算', amountVisible: true, availableAmount: '1000.0000', enabled: true, note: 'mock：账期按优惠前商品金额占用' },
-      { method: 'WALLET', label: '余额支付', amountVisible: true, availableAmount: '500.0000', enabled: true, note: 'mock：余额在结算主体钱包内扣减' },
+      {
+        method: 'CREDIT',
+        label: '账期结算',
+        amountVisible: true,
+        availableAmount: '1000.0000',
+        enabled: true,
+        note: 'mock：账期按优惠前商品金额占用',
+      },
+      {
+        method: 'WALLET',
+        label: '余额支付',
+        amountVisible: true,
+        availableAmount: '500.0000',
+        enabled: true,
+        note: 'mock：余额在结算主体钱包内扣减',
+      },
       { method: 'COD', label: '货到付款', amountVisible: true, availableAmount: null, enabled: false, disabledReason: '当前客户未开通货到付款' },
     ],
   };
@@ -235,7 +249,10 @@ export const orderRoutes = [
           { logId: Date.now(), operationType: 'PAY', operatorName: '客户', reason: '余额支付', createdAt: new Date().toISOString() },
         ],
       };
-      saveOrders(session, rows.map((item) => (item.orderId === orderId ? paidOrder : item)));
+      saveOrders(
+        session,
+        rows.map((item) => (item.orderId === orderId ? paidOrder : item))
+      );
       IDEMPOTENT_PAYMENTS.set(replayKey, paidOrder);
       return ok(decorate(paidOrder));
     },

@@ -20,29 +20,25 @@
       </picker>
       <view class="field">
         <text class="field__label">搜索位置</text>
-        <input class="field__input" v-model="searchKeyword" placeholder="小区、楼宇或街道" confirm-type="search"
-               @confirm="searchPlaces" />
+        <input class="field__input" v-model="searchKeyword" placeholder="小区、楼宇或街道" confirm-type="search" @confirm="searchPlaces" />
         <text class="field__link" @click="searchPlaces">搜索</text>
       </view>
       <view v-if="searching" class="addr-edit__map-hint">正在搜索高德地点…</view>
-      <view v-for="place in places" :key="`${place.longitude}-${place.latitude}-${place.name}`"
-            class="addr-edit__place" @click="selectPlace(place)">
-        <text>{{ place.name }}</text><text class="addr-edit__place-address">{{ place.address }}</text>
+      <view v-for="place in places" :key="`${place.longitude}-${place.latitude}-${place.name}`" class="addr-edit__place" @click="selectPlace(place)">
+        <text>{{ place.name }}</text
+        ><text class="addr-edit__place-address">{{ place.address }}</text>
       </view>
-      <map id="address-map" class="addr-edit__map" :latitude="mapLatitude" :longitude="mapLongitude"
-           :scale="15" :markers="markers" />
+      <map id="address-map" class="addr-edit__map" :latitude="mapLatitude" :longitude="mapLongitude" :scale="15" :markers="markers"></map>
       <view class="addr-edit__map-actions">
         <text @click="chooseMapCenter">选取地图中心</text>
         <text @click="chooseCurrentLocation">使用当前位置</text>
       </view>
       <view class="addr-edit__map-hint">
-        {{ form.longitude == null ? '请搜索地点或移动地图后选取中心点' :
-            `已选 GCJ-02 坐标：${form.longitude}, ${form.latitude}` }}
+        {{ form.longitude == null ? '请搜索地点或移动地图后选取中心点' : `已选 GCJ-02 坐标：${form.longitude}, ${form.latitude}` }}
       </view>
       <view class="field field--textarea">
         <text class="field__label">详细地址</text>
-        <textarea class="field__textarea" v-model="form.detailAddress" :maxlength="255"
-                  placeholder="街道、门牌号、楼层等" auto-height />
+        <textarea class="field__textarea" v-model="form.detailAddress" :maxlength="255" placeholder="街道、门牌号、楼层等" auto-height></textarea>
       </view>
       <view class="field field--switch">
         <text class="field__label">设为默认地址</text>
@@ -82,9 +78,17 @@
     latitude: null,
     isDefault: false,
   });
-  const markers = computed(() => form.longitude == null ? [] : [{
-    id: 1, longitude: Number(form.longitude), latitude: Number(form.latitude),
-  }]);
+  const markers = computed(() =>
+    form.longitude == null
+      ? []
+      : [
+          {
+            id: 1,
+            longitude: Number(form.longitude),
+            latitude: Number(form.latitude),
+          },
+        ]
+  );
 
   onLoad(async (options) => {
     const id = options?.id ? Number(options.id) : null;
@@ -157,7 +161,9 @@
 
   function chooseMapCenter() {
     uni.createMapContext('address-map').getCenterLocation({
-      success: ({ longitude, latitude }) => { void selectCoordinates(longitude, latitude); },
+      success: ({ longitude, latitude }) => {
+        void selectCoordinates(longitude, latitude);
+      },
       fail: () => uni.showToast({ title: '暂时无法读取地图中心', icon: 'none' }),
     });
   }
@@ -165,7 +171,9 @@
   function chooseCurrentLocation() {
     uni.getLocation({
       type: 'gcj02',
-      success: ({ longitude, latitude }) => { void selectCoordinates(longitude, latitude); },
+      success: ({ longitude, latitude }) => {
+        void selectCoordinates(longitude, latitude);
+      },
       fail: () => uni.showToast({ title: '请开启定位权限后重试', icon: 'none' }),
     });
   }
@@ -224,25 +232,99 @@
 </script>
 
 <style lang="scss" scoped>
-  .addr-edit { min-height: 100vh; background-color: $color-bg-page; padding-bottom: 140rpx; }
-  .addr-edit__card { margin-top: $space-3; background-color: $color-bg-card; }
-  .field { @include flex-between; padding: $space-3 $space-4; @include hairline-bottom; }
-  .field__label { flex-shrink: 0; width: 180rpx; font-size: $font-size-base; color: $color-text-primary; }
-  .field__input { flex: 1; text-align: right; font-size: $font-size-base; color: $color-text-primary; }
-  .field__value { flex: 1; text-align: right; font-size: $font-size-base; color: $color-text-primary; }
-  .field__value--placeholder { color: $color-text-placeholder; }
-  .field--textarea { align-items: flex-start; }
-  .field__textarea { flex: 1; min-height: 80rpx; text-align: right; font-size: $font-size-base; color: $color-text-primary; }
-  .field--switch { align-items: center; }
+  .addr-edit {
+    min-height: 100vh;
+    background-color: $color-bg-page;
+    padding-bottom: 140rpx;
+  }
+  .addr-edit__card {
+    margin-top: $space-3;
+    background-color: $color-bg-card;
+  }
+  .field {
+    @include flex-between;
+    padding: $space-3 $space-4;
+    @include hairline-bottom;
+  }
+  .field__label {
+    flex-shrink: 0;
+    width: 180rpx;
+    font-size: $font-size-base;
+    color: $color-text-primary;
+  }
+  .field__input {
+    flex: 1;
+    text-align: right;
+    font-size: $font-size-base;
+    color: $color-text-primary;
+  }
+  .field__value {
+    flex: 1;
+    text-align: right;
+    font-size: $font-size-base;
+    color: $color-text-primary;
+  }
+  .field__value--placeholder {
+    color: $color-text-placeholder;
+  }
+  .field--textarea {
+    align-items: flex-start;
+  }
+  .field__textarea {
+    flex: 1;
+    min-height: 80rpx;
+    text-align: right;
+    font-size: $font-size-base;
+    color: $color-text-primary;
+  }
+  .field--switch {
+    align-items: center;
+  }
 
-  .addr-edit__bar { @include fixed-bottom-bar; @include flex-center; height: 108rpx; padding: 0 $space-4; }
-  .addr-edit__save { width: 100%; height: 80rpx; @include flex-center; border-radius: $radius-pill;
-    background-color: $color-primary; color: white; font-size: $font-size-base; }
-  .addr-edit__save--disabled { background-color: $color-primary-disabled; }
-  .field__link { margin-left: $space-3; color: $color-primary; }
-  .addr-edit__map { width: 100%; height: 420rpx; }
-  .addr-edit__map-actions { display: flex; justify-content: space-around; padding: $space-3; color: $color-primary; }
-  .addr-edit__map-hint { padding: $space-2 $space-4; color: $color-text-secondary; font-size: $font-size-sm; }
-  .addr-edit__place { padding: $space-2 $space-4; @include hairline-bottom; }
-  .addr-edit__place-address { display: block; color: $color-text-secondary; font-size: $font-size-sm; }
+  .addr-edit__bar {
+    @include fixed-bottom-bar;
+    @include flex-center;
+    height: 108rpx;
+    padding: 0 $space-4;
+  }
+  .addr-edit__save {
+    width: 100%;
+    height: 80rpx;
+    @include flex-center;
+    border-radius: $radius-pill;
+    background-color: $color-primary;
+    color: white;
+    font-size: $font-size-base;
+  }
+  .addr-edit__save--disabled {
+    background-color: $color-primary-disabled;
+  }
+  .field__link {
+    margin-left: $space-3;
+    color: $color-primary;
+  }
+  .addr-edit__map {
+    width: 100%;
+    height: 420rpx;
+  }
+  .addr-edit__map-actions {
+    display: flex;
+    justify-content: space-around;
+    padding: $space-3;
+    color: $color-primary;
+  }
+  .addr-edit__map-hint {
+    padding: $space-2 $space-4;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+  }
+  .addr-edit__place {
+    padding: $space-2 $space-4;
+    @include hairline-bottom;
+  }
+  .addr-edit__place-address {
+    display: block;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+  }
 </style>

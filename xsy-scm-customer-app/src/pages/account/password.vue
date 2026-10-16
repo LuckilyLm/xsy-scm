@@ -51,10 +51,38 @@
 </script>
 
 <style lang="scss" scoped>
-  .password-page { min-height: 100vh; padding: $space-4; background: $color-bg-page; }
-  .password-card { @include card($space-4); }
-  .password-title { display: block; font-size: $font-size-lg; font-weight: $font-weight-bold; color: $color-text-primary; }
-  .password-hint { display: block; margin-top: $space-2; font-size: $font-size-sm; color: $color-text-tertiary; }
-  .password-input { height: 96rpx; margin-top: $space-3; padding: 0 $space-3; border: 1px solid $color-border; border-radius: $radius-md; background: white; }
-  .password-submit { margin-top: $space-6; background: $color-primary; color: white; font-size: $font-size-base; }
+  .password-page {
+    min-height: 100vh;
+    padding: $space-4;
+    background: $color-bg-page;
+  }
+  .password-card {
+    @include card($space-4);
+  }
+  .password-title {
+    display: block;
+    font-size: $font-size-lg;
+    font-weight: $font-weight-bold;
+    color: $color-text-primary;
+  }
+  .password-hint {
+    display: block;
+    margin-top: $space-2;
+    font-size: $font-size-sm;
+    color: $color-text-tertiary;
+  }
+  .password-input {
+    height: 96rpx;
+    margin-top: $space-3;
+    padding: 0 $space-3;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    background: white;
+  }
+  .password-submit {
+    margin-top: $space-6;
+    background: $color-primary;
+    color: white;
+    font-size: $font-size-base;
+  }
 </style>

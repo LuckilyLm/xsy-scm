@@ -2,21 +2,32 @@
   <view class="movements">
     <scroll-view scroll-x class="movements__filters">
       <view class="movements__filter-row">
-        <text v-for="filter in MOVEMENT_FILTERS" :key="filter.type" class="movements__filter"
-              :class="{ 'movements__filter--active': type === filter.type }" @click="setType(filter.type)">
+        <text
+          v-for="filter in MOVEMENT_FILTERS"
+          :key="filter.type"
+          class="movements__filter"
+          :class="{ 'movements__filter--active': type === filter.type }"
+          @click="setType(filter.type)"
+        >
           {{ filter.label }}
         </text>
       </view>
     </scroll-view>
     <view class="movements__directions">
-      <text v-for="filter in directions" :key="filter.value" class="movements__direction"
-            :class="{ 'movements__direction--active': direction === filter.value }" @click="setDirection(filter.value)">
+      <text
+        v-for="filter in directions"
+        :key="filter.value"
+        class="movements__direction"
+        :class="{ 'movements__direction--active': direction === filter.value }"
+        @click="setDirection(filter.value)"
+      >
         {{ filter.label }}
       </text>
     </view>
     <view v-if="loading && !rows.length" class="movements__state">收支记录加载中…</view>
     <view v-else-if="error && !rows.length" class="movements__state">
-      <text>{{ error }}</text><text class="movements__retry" @click="load(true)">重试</text>
+      <text>{{ error }}</text
+      ><text class="movements__retry" @click="load(true)">重试</text>
     </view>
     <view v-else-if="!rows.length" class="movements__state">暂无符合条件的收支记录</view>
     <view v-for="row in rows" :key="row.movementNo" class="movements__card">
@@ -118,22 +129,86 @@
 </script>
 
 <style lang="scss" scoped>
-  .movements { min-height: 100vh; padding-bottom: $space-8; background: $color-bg-page; }
-  .movements__filters { white-space: nowrap; background: $color-bg-card; }
-  .movements__filter-row { display: inline-flex; gap: $space-4; padding: $space-4; }
-  .movements__filter { color: $color-text-secondary; font-size: $font-size-sm; }
-  .movements__filter--active { color: $color-primary; font-weight: $font-weight-bold; }
-  .movements__directions { display: flex; gap: $space-4; padding: 0 $space-4 $space-4; background: $color-bg-card; }
-  .movements__direction { color: $color-text-secondary; font-size: $font-size-sm; }
-  .movements__direction--active { color: $color-primary; font-weight: $font-weight-bold; }
-  .movements__state { padding: 240rpx $space-4 0; text-align: center; color: $color-text-secondary; }
-  .movements__retry { display: block; margin-top: $space-4; color: $color-primary; }
-  .movements__card { margin: $space-3 $space-4 0; padding: $space-4; @include card(0); }
-  .movements__top { @include flex-between; }
-  .movements__type { font-weight: $font-weight-medium; }
-  .movements__amount { font-variant-numeric: tabular-nums; font-weight: $font-weight-bold; }
-  .movements__amount--in { color: $color-primary; }
-  .movements__meta { display: block; margin-top: $space-2; color: $color-text-secondary; font-size: $font-size-sm; }
-  .movements__link { display: block; margin-top: $space-3; color: $color-primary; font-size: $font-size-sm; }
-  .movements__bottom { padding: $space-5; text-align: center; color: $color-text-tertiary; font-size: $font-size-xs; }
+  .movements {
+    min-height: 100vh;
+    padding-bottom: $space-8;
+    background: $color-bg-page;
+  }
+  .movements__filters {
+    white-space: nowrap;
+    background: $color-bg-card;
+  }
+  .movements__filter-row {
+    display: inline-flex;
+    gap: $space-4;
+    padding: $space-4;
+  }
+  .movements__filter {
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+  }
+  .movements__filter--active {
+    color: $color-primary;
+    font-weight: $font-weight-bold;
+  }
+  .movements__directions {
+    display: flex;
+    gap: $space-4;
+    padding: 0 $space-4 $space-4;
+    background: $color-bg-card;
+  }
+  .movements__direction {
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+  }
+  .movements__direction--active {
+    color: $color-primary;
+    font-weight: $font-weight-bold;
+  }
+  .movements__state {
+    padding: 240rpx $space-4 0;
+    text-align: center;
+    color: $color-text-secondary;
+  }
+  .movements__retry {
+    display: block;
+    margin-top: $space-4;
+    color: $color-primary;
+  }
+  .movements__card {
+    margin: $space-3 $space-4 0;
+    padding: $space-4;
+    @include card(0);
+  }
+  .movements__top {
+    @include flex-between;
+  }
+  .movements__type {
+    font-weight: $font-weight-medium;
+  }
+  .movements__amount {
+    font-variant-numeric: tabular-nums;
+    font-weight: $font-weight-bold;
+  }
+  .movements__amount--in {
+    color: $color-primary;
+  }
+  .movements__meta {
+    display: block;
+    margin-top: $space-2;
+    color: $color-text-secondary;
+    font-size: $font-size-sm;
+  }
+  .movements__link {
+    display: block;
+    margin-top: $space-3;
+    color: $color-primary;
+    font-size: $font-size-sm;
+  }
+  .movements__bottom {
+    padding: $space-5;
+    text-align: center;
+    color: $color-text-tertiary;
+    font-size: $font-size-xs;
+  }
 </style>
