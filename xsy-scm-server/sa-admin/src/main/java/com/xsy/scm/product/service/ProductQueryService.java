@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.OrderItem;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.product.support.ProductAdvancedFilters;
 import com.xsy.scm.product.dao.ProductImageDao;
 import com.xsy.scm.product.dao.ProductSkuDao;
 import com.xsy.scm.product.dao.ProductSpuDao;
@@ -55,6 +56,7 @@ public class ProductQueryService {
     }
 
     public PageResult<ProductSpuVO> query(ProductSpuQueryForm form) {
+        ProductAdvancedFilters.apply(form);
         if (form.getSortItemList() != null) {
             Set<String> allowed = Set.of("spu_code", "name", "updated_at", "status");
             if (form.getSortItemList().stream().anyMatch(s -> !allowed.contains(s.getColumn())))

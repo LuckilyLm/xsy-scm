@@ -11,6 +11,7 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.purchase.constant.ScmPurchaseStatusEnum;
 import com.xsy.scm.report.dao.ReportDao;
 import com.xsy.scm.report.domain.form.ScmPurchaseReportQueryForm;
+import com.xsy.scm.report.support.ScmReportAdvancedFilters;
 import com.xsy.scm.report.domain.vo.PurchaseReportVO;
 import com.xsy.scm.report.domain.vo.SalesReportVO;
 import com.xsy.scm.report.support.PurchasePriceTrendComparison;
@@ -50,6 +51,7 @@ public class PurchaseReportService {
     }
 
     public PageResult<PurchaseReportVO.ProductRow> byProduct(ScmPurchaseReportQueryForm form) {
+        ScmReportAdvancedFilters.purchaseProduct(form);
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();

@@ -1,6 +1,8 @@
 package com.xsy.scm.product.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.xsy.scm.common.filter.ScmAdvancedFilterCatalog.Field;
+import com.xsy.scm.product.support.ProductAdvancedFilters;
 import cn.dev33.satoken.stp.StpUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
+import java.util.List;
 
 @RestController
 @RequestMapping("/scm/product")
@@ -40,6 +43,12 @@ public class ProductController {
     private final ProductSpuService productSpuService;
     private final ProductQueryService productQueryService;
     private final ProductBatchService productBatchService;
+
+    @GetMapping("/query/filters")
+    @SaCheckPermission(ProductPermission.QUERY)
+    public ResponseDTO<List<Field>> queryFilterFields() {
+        return ResponseDTO.ok(ProductAdvancedFilters.FIELDS);
+    }
 
     @PostMapping("/query")
     @SaCheckPermission(ProductPermission.QUERY)

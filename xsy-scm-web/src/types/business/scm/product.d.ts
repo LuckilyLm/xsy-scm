@@ -141,6 +141,7 @@ export interface ProductRow extends ProductMasterFields {
 }
 
 export interface ProductQuery {
+    advancedFilters?: import('./advanced-filter').ScmAdvancedFilterCondition[];
     exportColumnKeys?: string[];
     pageNum: number;
     pageSize: number;

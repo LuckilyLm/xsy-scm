@@ -5,7 +5,7 @@
         <a-form-item label="分类" class="smart-query-form-item"><CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" /></a-form-item>
         <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称 / 商品编码 / 条码 / 助记码" style="width: 260px" /></a-form-item>
         <a-form-item label="商品状态" class="smart-query-form-item"><a-select v-model:value="filters.status" allow-clear :options="SHELF_STATUS_ENUM" style="width: 110px" /></a-form-item>
-        <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space><a-button class="smart-margin-left20" @click="advanced = !advanced"><template #icon><UpOutlined v-if="advanced" aria-hidden="true" /><DownOutlined v-else aria-hidden="true" /></template>{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-form-item>
+        <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space><a-button class="smart-margin-left20" @click="toggleAdvanced"><template #icon><UpOutlined v-if="advanced" aria-hidden="true" /><DownOutlined v-else aria-hidden="true" /></template>{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-form-item>
       </a-row>
       <a-row v-if="advanced" class="smart-query-form-row">
         <a-form-item label="商品规格状态" class="smart-query-form-item"><a-select v-model:value="filters.skuStatus" allow-clear :options="SHELF_STATUS_ENUM" style="width: 120px" /></a-form-item>
@@ -17,6 +17,7 @@
         <a-form-item label="条码" class="smart-query-form-item"><a-select v-model:value="filters.hasBarcode" allow-clear :options="YES_NO_ENUM" style="width: 90px" /></a-form-item>
         <a-form-item label="创建时间" class="smart-query-form-item"><a-range-picker v-model:value="createdRange" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" /></a-form-item>
       </a-row>
+      <ScmAdvancedFilterBuilder v-if="advanced" v-model="advancedFilters" :fields="advancedFilterFields"/>
     </a-form>
     <a-card size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
@@ -124,6 +125,8 @@ import {message} from 'ant-design-vue';
 import {EyeOutlined, PictureOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType, TableProps} from 'ant-design-vue';
 import {productApi} from '/@/api/business/scm/product-api';
+import ScmAdvancedFilterBuilder from '/@/components/business/scm/advanced-filter/index.vue';
+import type {ScmAdvancedFilterField, ScmAdvancedFilterCondition} from '/@/types/business/scm/advanced-filter';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {productTagApi} from '/@/api/business/scm/product-assistant-api';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -162,6 +165,17 @@ const categories = ref<ProductCategory[]>([]), rows = ref<ProductRow[]>([]), tot
 const tagChoices = ref<ProductTag[]>([]), createdRange = ref<[string, string]>();
 const selectedKeys = ref<ProductId[]>([]);
 const failedImageUrls = ref(new Set<string>());
+const advancedFilterFields = ref<ScmAdvancedFilterField[]>([]);
+const advancedFilters = ref<ScmAdvancedFilterCondition[]>([]);
+async function toggleAdvanced(): Promise<void> {
+  advanced.value = !advanced.value;
+  if (!advanced.value || advancedFilterFields.value.length) return;
+  try {
+    advancedFilterFields.value = (await productApi.queryFilterFields()).data;
+  } catch {
+    void message.error('高级筛选字段加载失败');
+  }
+}
 function imageFailed(url: string) {
   failedImageUrls.value = new Set([...failedImageUrls.value, url]);
 }
@@ -237,7 +251,8 @@ async function load() {
     const response = await productApi.query({
       ...filters,
       createdFrom: createdRange.value?.[0] || undefined,
-      createdTo: createdRange.value?.[1] || undefined
+      createdTo: createdRange.value?.[1] || undefined,
+      advancedFilters: advancedFilters.value.length ? advancedFilters.value : undefined
     }, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       rows.value = response.data.list;
@@ -272,6 +287,7 @@ function reset() {
     sortItemList: undefined
   });
   createdRange.value = undefined;
+  advancedFilters.value = [];
   void load();
 }
 
@@ -294,7 +310,8 @@ async function exportCurrent() {
       ...filters,
       createdFrom: createdRange.value?.[0] || undefined,
       createdTo: createdRange.value?.[1] || undefined,
-      exportColumnKeys: exportColumnKeys.value.length ? exportColumnKeys.value : undefined
+      exportColumnKeys: exportColumnKeys.value.length ? exportColumnKeys.value : undefined,
+      advancedFilters: advancedFilters.value.length ? advancedFilters.value : undefined
     });
   } catch {
     // 导出失败只走全局 toast

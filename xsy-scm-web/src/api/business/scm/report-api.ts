@@ -1,5 +1,6 @@
 /** 报表接口只读。日期使用前端选取的闭区间字符串，分页与非分页结果分别使用对应类型；导出不传分页参数，使用统一下载函数。 */
 import {getRequest, postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
+import type {ScmAdvancedFilterField} from '/@/types/business/scm/advanced-filter';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     InventoryFlowSummaryRow,
@@ -100,6 +101,8 @@ export const reportSalesApi = {
     sellerExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/seller/export`, data),
     itemExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/item/export`, data),
     orderExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/order/export`, data),
+    orderFilterFields: () => getRequest(`${BASE}/sales/order/query/filters`, {})
+        as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
     orderExportColumns: () => getRequest(`${BASE}/sales/order/export/columns`, {})
         as unknown as Promise<ScmResponse<ScmExportColumn[]>>,
 };
@@ -128,6 +131,8 @@ export const reportPurchaseApi = {
         postRequest(`${BASE}/purchase/price-trend`, data, options) as unknown as Promise<ScmResponse<PurchasePriceTrendPoint[]>>,
 
     productExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/product/export`, data),
+    productFilterFields: () => getRequest(`${BASE}/purchase/product/query/filters`, {})
+        as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
     productExportColumns: () => getRequest(`${BASE}/purchase/product/export/columns`, {})
         as unknown as Promise<ScmResponse<ScmExportColumn[]>>,
     supplierExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/supplier/export`, data),

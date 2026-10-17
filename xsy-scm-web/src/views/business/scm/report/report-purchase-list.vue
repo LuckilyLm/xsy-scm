@@ -19,7 +19,7 @@
           <a-button type="primary" v-privilege="PERM.PURCHASE_QUERY" @click="onSearch">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
-        <a-button class="smart-margin-left10" @click="advanced = !advanced">
+        <a-button class="smart-margin-left10" @click="toggleAdvanced">
           {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
         </a-button>
       </a-form-item>
@@ -35,6 +35,8 @@
         <SkuSelect v-model:value="filters.skuId" width="240px" placeholder="按商品规格看价格曲线"/>
       </a-form-item>
     </a-row>
+    <ScmAdvancedFilterBuilder v-if="advanced && activeTab === 'product'"
+                              v-model="advancedFilters" :fields="dynamicFilterFields"/>
   </a-form>
 
   <a-alert v-if="chartError && activeTab !== 'daily'" :message="chartError" type="error" show-icon>
@@ -211,6 +213,8 @@ import {useRoute} from 'vue-router';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
+import ScmAdvancedFilterBuilder from '/@/components/business/scm/advanced-filter/index.vue';
+import type {ScmAdvancedFilterField, ScmAdvancedFilterCondition} from '/@/types/business/scm/advanced-filter';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
@@ -272,6 +276,20 @@ const dateRange = ref<DateRange | undefined>();
 const filters = reactive<Omit<PurchaseQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
 const chartError = ref('');
+const advancedFilters = ref<ScmAdvancedFilterCondition[]>([]);
+const dynamicFilterFields = ref<ScmAdvancedFilterField[]>([]);
+async function loadDynamicFilterFields(): Promise<void> {
+    if (dynamicFilterFields.value.length) return;
+    try {
+        dynamicFilterFields.value = (await reportPurchaseApi.productFilterFields()).data;
+    } catch {
+        void message.error('获取可组合的筛选字段失败');
+    }
+}
+function toggleAdvanced(): void {
+    advanced.value = !advanced.value;
+    if (advanced.value && activeTab.value === 'product') void loadDynamicFilterFields();
+}
 const purchaseProductExportKeys = ref<string[]>([]);
 const purchaseProductColumnDefs = ref<ScmExportColumn[]>([]);
 const purchaseProductColumnsLoaded = ref(false);
@@ -375,7 +393,10 @@ function topItems(rows: PurchaseTopItem[]): ReportChartBar[] {
 }
 
 function purchaseQuery(tab: {pageNum: number; pageSize: number}): PurchaseQuery {
-    return buildReportQuery<PurchaseQuery>(dateRange.value, {...filters}, tab);
+    return buildReportQuery<PurchaseQuery>(dateRange.value, {
+        ...filters,
+        advancedFilters: tab === product && advancedFilters.value.length ? advancedFilters.value : undefined
+    }, tab);
 }
 
 /** 非分页端点（采购概览 / 供应商 TOP 榜 / 价格波动）的查询体：不带分页字段。 */
@@ -384,7 +405,10 @@ function purchaseFilterQuery(): ReportFilterQuery<PurchaseQuery> {
 }
 
 function exportQuery(): Partial<PurchaseQuery> {
-    return buildReportQuery<Partial<PurchaseQuery>>(dateRange.value, {...filters});
+    return buildReportQuery<Partial<PurchaseQuery>>(dateRange.value, {
+        ...filters,
+        advancedFilters: activeTab.value === 'product' && advancedFilters.value.length ? advancedFilters.value : undefined
+    });
 }
 
 const loadProduct = createTabLoader(product, () => purchaseQuery(product), reportPurchaseApi.product);
@@ -479,6 +503,7 @@ function queryActiveTab() {
 }
 
 function onTabChange() {
+    if (advanced.value && activeTab.value === 'product') void loadDynamicFilterFields();
     enterTabByActiveTab();
     queryActiveTab();
 }
@@ -518,6 +543,7 @@ function resetQuery() {
     filters.status = undefined;
     filters.keyword = undefined;
     filters.skuId = undefined;
+    advancedFilters.value = [];
     dateRange.value = defaultDateRange();
     enterTab(product);
     enterTab(supplier);

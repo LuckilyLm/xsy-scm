@@ -1,4 +1,5 @@
 import {getDownload, getRequest, postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
+import type {ScmAdvancedFilterField} from '/@/types/business/scm/advanced-filter';
 import type {
     ImageBatchBindForm,
     ImageBatchRemoveForm,
@@ -73,6 +74,8 @@ export const productApi = {
         return postRequest('/scm/product/import', data) as unknown as Promise<ScmResponse<ProductImportResult>>;
     },
     exportProducts: (form: ProductQuery) => postDownload('/scm/product/export', form),
+    queryFilterFields: () => getRequest('/scm/product/query/filters', {})
+        as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
     exportColumns: () => getRequest('/scm/product/export/columns', {})
         as unknown as Promise<ScmResponse<{key: string; title: string; costRestricted: boolean}[]>>,
 };

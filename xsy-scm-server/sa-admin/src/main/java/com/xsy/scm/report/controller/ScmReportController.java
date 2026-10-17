@@ -39,6 +39,8 @@ import com.xsy.scm.report.service.OverviewReportService;
 import com.xsy.scm.report.service.PurchaseReportService;
 import com.xsy.scm.report.service.ReceiptReportService;
 import com.xsy.scm.report.service.SalesReportService;
+import com.xsy.scm.common.filter.ScmAdvancedFilterCatalog.Field;
+import com.xsy.scm.report.support.ScmReportAdvancedFilters;
 import com.xsy.scm.report.support.ScmReportExcel;
 import com.xsy.scm.report.support.ScmReportExportGuard;
 import net.lab1024.sa.base.common.domain.PageParam;
@@ -89,6 +91,18 @@ public class ScmReportController {
     private final PurchaseReportService purchaseReportService;
     private final ReceiptReportService receiptReportService;
     private final InventoryReportService inventoryReportService;
+
+    @GetMapping("/sales/order/query/filters")
+    @SaCheckPermission(ScmReportPermission.SALES_QUERY)
+    public ResponseDTO<List<Field>> salesOrderFilterFields() {
+        return ResponseDTO.ok(ScmReportAdvancedFilters.SALES_ORDER);
+    }
+
+    @GetMapping("/purchase/product/query/filters")
+    @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
+    public ResponseDTO<List<Field>> purchaseProductFilterFields() {
+        return ResponseDTO.ok(ScmReportAdvancedFilters.PURCHASE_PRODUCT);
+    }
 
     @GetMapping("/sales/order/export/columns")
     @SaCheckPermission(value = {ScmReportPermission.SALES_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)

@@ -16,7 +16,7 @@
           <a-button type="primary" v-privilege="PERM.SALES_QUERY" @click="onSearch">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
-        <a-button class="smart-margin-left10" @click="advanced = !advanced">
+        <a-button class="smart-margin-left10" @click="toggleAdvanced">
           {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
         </a-button>
       </a-form-item>
@@ -32,6 +32,8 @@
         <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品编码 / 商品规格编码" allow-clear @pressEnter="onSearch"/>
       </a-form-item>
     </a-row>
+    <ScmAdvancedFilterBuilder v-if="advanced && activeTab === 'order'"
+                              v-model="advancedFilters" :fields="dynamicFilterFields"/>
   </a-form>
 
   <a-alert v-if="chartError" :message="chartError" type="error" show-icon>
@@ -158,6 +160,8 @@ import {message} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
+import ScmAdvancedFilterBuilder from '/@/components/business/scm/advanced-filter/index.vue';
+import type {ScmAdvancedFilterField, ScmAdvancedFilterCondition} from '/@/types/business/scm/advanced-filter';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
 import OrderDetail from '../order/order-detail.vue';
@@ -209,6 +213,20 @@ const dateRange = ref<DateRange | undefined>();
 const filters = reactive<Omit<SalesQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
 const chartError = ref('');
+const advancedFilters = ref<ScmAdvancedFilterCondition[]>([]);
+const dynamicFilterFields = ref<ScmAdvancedFilterField[]>([]);
+async function loadDynamicFilterFields(): Promise<void> {
+    if (dynamicFilterFields.value.length) return;
+    try {
+        dynamicFilterFields.value = (await reportSalesApi.orderFilterFields()).data;
+    } catch {
+        void message.error('获取可组合的筛选字段失败');
+    }
+}
+function toggleAdvanced(): void {
+    advanced.value = !advanced.value;
+    if (advanced.value && activeTab.value === 'order') void loadDynamicFilterFields();
+}
 const orderExportKeys = ref<string[]>([]);
 const orderColumnDefs = ref<ScmExportColumn[]>([]);
 const orderColumnsLoaded = ref(false);
@@ -249,12 +267,18 @@ const sellerExport = useScmExport(seller);
 
 /** 请求体：日期区间 + 共享筛选 + 该 Tab 的分页。 */
 function salesQuery(tab: {pageNum: number; pageSize: number}): SalesQuery {
-    return buildReportQuery<SalesQuery>(dateRange.value, {...filters}, tab);
+    return buildReportQuery<SalesQuery>(dateRange.value, {
+        ...filters,
+        advancedFilters: tab === order && advancedFilters.value.length ? advancedFilters.value : undefined
+    }, tab);
 }
 
 /** 导出口径 = 列表口径，且不带分页（后端强制第 1 页与行数上限）。 */
 function exportQuery(): Partial<SalesQuery> {
-    return buildReportQuery<Partial<SalesQuery>>(dateRange.value, {...filters});
+    return buildReportQuery<Partial<SalesQuery>>(dateRange.value, {
+        ...filters,
+        advancedFilters: activeTab.value === 'order' && advancedFilters.value.length ? advancedFilters.value : undefined
+    });
 }
 
 const loadProduct = createTabLoader(product, () => salesQuery(product), reportSalesApi.product);
@@ -367,6 +391,7 @@ function queryActiveTab() {
  * `activeTab`），否则等于把同一个状态存两处。
  */
 function onTabChange() {
+    if (advanced.value && activeTab.value === 'order') void loadDynamicFilterFields();
     switch (activeTab.value) {
         case 'product':
             enterTab(product);
@@ -402,6 +427,7 @@ function resetQuery() {
     filters.orderSource = undefined;
     filters.categoryId = undefined;
     filters.keyword = undefined;
+    advancedFilters.value = [];
     // 重置回到「本月」（的统一默认值），并把每个 Tab 的页码归零位
     dateRange.value = defaultDateRange();
     resetAllTabsPage();
