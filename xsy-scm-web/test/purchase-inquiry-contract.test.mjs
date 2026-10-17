@@ -26,7 +26,9 @@ test('询价批次分页和报价修订历史都使用服务端分页', () => {
 test('询价从冻结批次进入，当前报价与历史版本分别展示', () => {
   assert.match(batchDrawer, /\/purchase\/purchase-inquiry-list/);
   assert.match(page, /detail\.currentOffers/);
-  assert.match(page, /detail\.quotes/);
-  assert.match(page, /scmDrawerWidth\('workspace'\)/);
+  assert.match(page, /:data-source="quoteHistory"/);
+  assert.match(page, /nextQuoteBeforeId/);
+  assert.match(api, /\/history'/);
+  assert.match(page, /scmDrawerWidth\('xl'\)/);
   assert.match(page, /v-privilege="'scm:purchase:inquiry:accept'"/);
 });

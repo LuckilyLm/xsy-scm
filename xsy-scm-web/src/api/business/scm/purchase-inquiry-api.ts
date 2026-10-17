@@ -61,12 +61,10 @@ export interface PurchaseInquiryDetail {
 
 const prefix = '/scm/purchase/inquiry';
 export const purchaseInquiryApi = {
-    byBatch: (batchId: ScmId, page = 1) => postRequest(prefix + '/batch', {batchId, page})
-        as unknown as Promise<ScmResponse<InquiryBatchPage>>,
+    byBatch: (batchId: ScmId, page = 1) => postRequest(prefix + '/batch', {batchId, page}) as unknown as Promise<ScmResponse<InquiryBatchPage>>,
     candidates: (batchId: ScmId) => postRequest(prefix + '/batch/candidates', {batchId}) as unknown as Promise<ScmResponse<InquiryCandidate[]>>,
     detail: (id: ScmId) => getRequest(prefix + '/' + id, {}) as unknown as Promise<ScmResponse<PurchaseInquiryDetail>>,
-    history: (inquiryId: ScmId, beforeId: ScmId) => postRequest(prefix + '/history', {inquiryId, beforeId})
-        as unknown as Promise<ScmResponse<InquiryHistoryPage>>,
+    history: (inquiryId: ScmId, beforeId: ScmId) => postRequest(prefix + '/history', {inquiryId, beforeId}) as unknown as Promise<ScmResponse<InquiryHistoryPage>>,
     create: (data: {batchId: ScmId; skuId: ScmId; demandUnit: string; deadlineAt: string}) =>
         purchaseCommand<PurchaseInquiryDetail>(prefix + '/create', data),
     quote: (data: {inquiryId: ScmId; supplierId: ScmId; version: number; unitPrice: string; validUntil: string; remark?: string}) =>

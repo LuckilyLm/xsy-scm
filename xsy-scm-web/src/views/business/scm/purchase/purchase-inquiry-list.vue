@@ -1,7 +1,7 @@
 <template>
   <div class="scm-inquiry">
     <a-card title="采购询价" :bordered="false" size="small">
-      <p class="scm-note">基于已冻结的净需求批次发起询价。报价由采购人员登记，确认后保留历史，不会自动生成采购单。</p>
+      <p class="scm-note">从净需求批次发起询价，登记并比较供应商报价。</p>
       <a-form layout="inline" class="scm-inquiry__toolbar" @submit.prevent="loadBatch(1)">
         <a-form-item label="净需求批次">
           <a-input v-model:value="batchInput" placeholder="输入已冻结的批次编号" style="width: 220px"/>
@@ -37,7 +37,7 @@
       <a-empty v-if="!loadedBatch && !loading" description="输入净需求批次编号，查看该批次的采购询价"/>
     </a-card>
 
-    <a-drawer :open="detailOpen" :width="scmDrawerWidth('workspace')" title="询价与报价对比"
+    <a-drawer :open="detailOpen" :width="scmDrawerWidth('xl')" title="询价与报价对比"
               @close="detailOpen=false">
       <a-spin :spinning="detailLoading">
         <template v-if="detail">
@@ -164,7 +164,7 @@ const historyColumns: TableColumnsType<PurchaseInquiryQuote> = [
   {title: '供应商', dataIndex: 'supplierNameSnapshot', width: 180},
   {title: '版本', dataIndex: 'revision', align: 'center', width: 80},
   {title: '单价', dataIndex: 'unitPrice', align: 'right', width: 130},
-  {title: '单位', dataIndex: 'purchaseUnit', width: 85},
+  {title: '单位', dataIndex: 'purchaseUnit', align: 'center', width: 85},
   {title: '有效期', dataIndex: 'validUntil', width: 210},
   {title: '登记人', dataIndex: 'recordedBy', width: 120},
   {title: '备注', dataIndex: 'remark', width: 150}

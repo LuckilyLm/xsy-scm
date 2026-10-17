@@ -23,7 +23,7 @@ test('三个试点页面共用条件编辑器且筛选作用于原查询和导�
   for (const page of [product, sales, purchase]) {
     assert.match(page, /ScmAdvancedFilterBuilder/);
     assert.match(page, /v-model="advancedFilters"/);
-    assert.match(page, /advancedFilters: advancedFilters\.value\.length/);
+    assert.match(page, /advancedFilters:\s*(?:activeTab\.value\s*===\s*'(?:order|product)'\s*&&\s*)?advancedFilters\.value\.length/);
   }
   assert.match(sales, /tab === order && advancedFilters\.value\.length/);
   assert.match(purchase, /tab === product && advancedFilters\.value\.length/);

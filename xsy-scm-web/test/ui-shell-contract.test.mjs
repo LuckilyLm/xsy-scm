@@ -92,26 +92,29 @@ test('改默认侧栏宽度必须同时升级 configVersion', () => {
       '版本 3 → 4 应迁移侧栏宽度并保留其他缓存偏好');
 });
 
-test('传统侧栏使用组件库的 Chevron 细箭头，展开式侧栏仍隐藏自带折角', () => {
+test('传统侧栏使用组件库的实心倒三角，右侧垂直居中，展开式侧栏仍隐藏自带折角', () => {
   const sideExpandMenu = code('../src/layout/components/side-expand-menu/recursion-menu.vue');
-  // 用组件库图标，状态变化只旋转，不添加圆形背景。
+  // 使用组件库的实心 CaretDownFilled，折叠朝右、展开朝下，不能回退为描边 Chevron。
   assert.match(recursionMenu, /<template #expandIcon="\{ isOpen \}">/,
       '分组箭头应使用 expandIcon 插槽');
-  assert.match(recursionMenu,
-      /<RightOutlined class="smart-menu-chevron" :class="\{ 'smart-menu-chevron-open': isOpen \}"\/>/,
-      '默认向右，展开向下');
-  assert.match(recursionMenu, /import \{RightOutlined\} from '@ant-design\/icons-vue';/,
-      '箭头应使用 Ant Design Vue 图标');
+  assert.match(recursionMenu, /<CaretDownFilled class="smart-menu-caret"/,
+      '必须使用 Ant Design Vue 的实心三角');
+  assert.match(recursionMenu, /'smart-menu-caret-collapsed': !isOpen/,
+      '展开向下，收起向右');
+  assert.match(recursionMenu, /import \{CaretDownFilled\} from '@ant-design\/icons-vue';/,
+      '三角图标必须从 Ant Design Vue 导入');
   assert.doesNotMatch(recursionMenu, /UpCircleFilled|DownCircleFilled/,
       '不再使用实心圆形箭头');
-  assert.match(recursionMenu, /\.ant-menu-submenu-expand-icon[\s\S]{0,130}?font-size:\s*13px/,
-      '箭头尺寸为 13px');
-  assert.match(recursionMenu, /\.smart-menu-chevron-open[\s\S]{0,60}?rotate\(90deg\)/,
-      '展开态旋转 90 度');
+  assert.match(recursionMenu, /\.smart-menu-caret-frame[\s\S]{0,120}?top:\s*50%/,
+      '三角容器必须定位到标题高度中线');
+  assert.match(recursionMenu, /\.smart-menu-caret-frame[\s\S]{0,270}?translateY\(-50%\)/,
+      '必须以自身高度向上补偿，不能偏到右下角');
+  assert.match(recursionMenu, /\.smart-menu-caret-collapsed[\s\S]{0,60}?rotate\(-90deg\)/,
+      '收起态实心三角朝右');
   assert.match(recursionMenu, /transition:\s*transform 0\.2s ease/,
       '箭头旋转动画为 0.2 秒');
-  assert.match(recursionMenu, /color:\s*var\(--scm-text-secondary[^;]*\)\s*!important/,
-      '箭头保持次要文字色');
+  assert.match(recursionMenu, /color:\s*var\(--scm-text-secondary[^;]*\)/,
+      '实心箭头保持次要文字色');
   assert.doesNotMatch(recursionMenu, /\.ant-menu-submenu-arrow/,
       '接管 expandIcon 之后不该再覆盖 antd 自带的折角');
   assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/,

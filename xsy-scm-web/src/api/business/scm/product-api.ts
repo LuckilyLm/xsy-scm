@@ -74,10 +74,8 @@ export const productApi = {
         return postRequest('/scm/product/import', data) as unknown as Promise<ScmResponse<ProductImportResult>>;
     },
     exportProducts: (form: ProductQuery) => postDownload('/scm/product/export', form),
-    queryFilterFields: () => getRequest('/scm/product/query/filters', {})
-        as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
-    exportColumns: () => getRequest('/scm/product/export/columns', {})
-        as unknown as Promise<ScmResponse<{key: string; title: string; costRestricted: boolean}[]>>,
+    queryFilterFields: () => getRequest('/scm/product/query/filters', {}) as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
+    exportColumns: () => getRequest('/scm/product/export/columns', {}) as unknown as Promise<ScmResponse<{key: string; title: string; costRestricted: boolean}[]>>,
 };
 
 /** 图片中心：查询与四类批量写都以单个 SPU 为上下文，URL 一律由后端按 fileKey 现算。 */

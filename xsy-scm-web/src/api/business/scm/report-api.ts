@@ -101,10 +101,8 @@ export const reportSalesApi = {
     sellerExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/seller/export`, data),
     itemExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/item/export`, data),
     orderExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/order/export`, data),
-    orderFilterFields: () => getRequest(`${BASE}/sales/order/query/filters`, {})
-        as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
-    orderExportColumns: () => getRequest(`${BASE}/sales/order/export/columns`, {})
-        as unknown as Promise<ScmResponse<ScmExportColumn[]>>,
+    orderFilterFields: () => getRequest(`${BASE}/sales/order/query/filters`, {}) as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
+    orderExportColumns: () => getRequest(`${BASE}/sales/order/export/columns`, {}) as unknown as Promise<ScmResponse<ScmExportColumn[]>>,
 };
 
 /** 采购分析：采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动。 */
@@ -131,10 +129,8 @@ export const reportPurchaseApi = {
         postRequest(`${BASE}/purchase/price-trend`, data, options) as unknown as Promise<ScmResponse<PurchasePriceTrendPoint[]>>,
 
     productExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/product/export`, data),
-    productFilterFields: () => getRequest(`${BASE}/purchase/product/query/filters`, {})
-        as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
-    productExportColumns: () => getRequest(`${BASE}/purchase/product/export/columns`, {})
-        as unknown as Promise<ScmResponse<ScmExportColumn[]>>,
+    productFilterFields: () => getRequest(`${BASE}/purchase/product/query/filters`, {}) as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
+    productExportColumns: () => getRequest(`${BASE}/purchase/product/export/columns`, {}) as unknown as Promise<ScmResponse<ScmExportColumn[]>>,
     supplierExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/supplier/export`, data),
     itemExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/item/export`, data),
     overviewExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/overview/export`, data),
