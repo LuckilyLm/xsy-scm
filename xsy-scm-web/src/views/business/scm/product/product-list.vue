@@ -49,8 +49,9 @@
           <a-button size="small" @click="load">重新加载</a-button>
         </template>
       </a-alert>
-      <a-table class="scm-width-fit-table" :data-source="rows" :columns="columns" row-key="spuId" :loading="loading" :pagination="false"
-               size="small" bordered :scroll="{ x: scrollX }" :expand-column-width="SCM_COLUMN_WIDTH.expand"
+      <div ref="tableHost" class="scm-product-table-host">
+      <a-table :data-source="rows" :columns="displayColumns" row-key="spuId" :loading="loading" :pagination="false"
+               size="small" bordered table-layout="fixed" :scroll="{ x: scrollX }" :expand-column-width="SCM_COLUMN_WIDTH.expand"
                :row-selection="canBatch ? rowSelection : undefined"
                @change="sortChanged">
         <template #expandedRowRender="{ record }">
@@ -59,6 +60,11 @@
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'name'">
             <a-tooltip :title="record.name"><a-button type="link" class="scm-cell-link" @click="detail(record.spuId)">{{ record.name }}</a-button></a-tooltip>
+          </template>
+          <template v-else-if="column.dataIndex === 'categoryPath'">
+            <a-tooltip :title="record.categoryPath || '—'">
+              <span class="scm-product-category">{{ record.categoryPath || '—' }}</span>
+            </a-tooltip>
           </template>
           <template v-else-if="column.dataIndex === 'primaryImageUrl'">
             <a-image v-if="record.primaryImageUrl && !failedImageUrls.has(record.primaryImageUrl)"
@@ -113,6 +119,7 @@
           </a-space>
         </template>
       </a-table>
+      </div>
       <div class="smart-query-table-page">
         <a-pagination v-model:current="filters.pageNum" v-model:page-size="filters.pageSize" :total="total"
                       show-size-changer :show-total="(n: number) => `共 ${n} 条`" @change="load"/>
@@ -124,7 +131,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref} from 'vue';
+import {computed, onBeforeUnmount, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {message} from 'ant-design-vue';
 import {EyeOutlined, PictureOutlined} from '@ant-design/icons-vue';
@@ -229,8 +236,42 @@ const columns = ref<TableColumnsType<ProductRow>>([
   {title: '标签', dataIndex: 'tags', width: 132},
   {title: '操作', dataIndex: 'action', width: SCM_COLUMN_WIDTH.actionThree, align: 'center', fixed: 'right'},
 ]);
-const scrollX = computed(() => scmColumnsWidth(columns.value,
-    SCM_COLUMN_WIDTH.expand + (canBatch.value ? SCM_COLUMN_WIDTH.selection : 0)));
+// 固定长度字段使用系统列宽；宽屏剩余空间只分配给名称和分类，避免金额等列被拉宽。
+const tableHost = ref<HTMLElement>();
+const tableHostWidth = ref(0);
+let tableObserver: ResizeObserver | undefined;
+const auxiliaryWidth = computed(() => SCM_COLUMN_WIDTH.expand
+    + (canBatch.value ? SCM_COLUMN_WIDTH.selection : 0));
+const displayColumns = computed<TableColumnsType<ProductRow>>(() => {
+  const base = columns.value;
+  const extra = Math.max(0, tableHostWidth.value - scmColumnsWidth(base, auxiliaryWidth.value));
+  const flexible = ['name', 'categoryPath'].filter(key =>
+      base.some(column => 'dataIndex' in column && column.dataIndex === key));
+  if (!extra || !flexible.length) return base;
+
+  const share = Math.floor(extra / flexible.length);
+  const widths = new Map<string, number>(flexible.map((key, index): [string, number] =>
+      [key, share + (index === 0 ? extra % flexible.length : 0)]));
+  return base.map(column => {
+    const addition = widths.get('dataIndex' in column ? String(column.dataIndex) : '');
+    if (!addition) return column;
+    const baseWidth = typeof column.width === 'number' ? column.width
+        : Number.parseFloat(String(column.width ?? '')) || 0;
+    return {...column, width: baseWidth + addition};
+  });
+});
+const scrollX = computed(() => scmColumnsWidth(displayColumns.value, auxiliaryWidth.value));
+
+onMounted(() => {
+  const host = tableHost.value;
+  if (!host) return;
+  tableHostWidth.value = Math.floor(host.clientWidth);
+  tableObserver = new ResizeObserver(entries => {
+    tableHostWidth.value = Math.floor(entries[0]?.contentRect.width ?? 0);
+  });
+  tableObserver.observe(host);
+});
+onBeforeUnmount(() => tableObserver?.disconnect());
 const tagFilterOptions = computed(() => tagChoices.value.map((tag) => ({value: tag.tagId, label: tag.name})));
 // 标签列只展示前 N 个，其余折成 +N；否则标签多的商品会把整行撑宽、撑高。
 const TAG_PREVIEW_LIMIT = 2;
@@ -381,6 +422,18 @@ onMounted(async () => {
 });
 </script>
 <style scoped>
+.scm-product-table-host {
+  width: 100%;
+  min-width: 0;
+}
+
+.scm-product-category {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .product-image-placeholder {
   display: inline-flex;
   width: 40px;

@@ -89,12 +89,19 @@ test('saved user widths persist until the user explicitly chooses recommended wi
   assert.match(COLUMN_MODAL, /recommendedColumns\.map/);
 });
 
-test('商品档案的默认市场价与定长字段确实收紧，短表不均摊剩余宽度', () => {
+test('商品表格铺满内容区，但只让名称与分类吸收宽屏额外空间', () => {
   assert.match(SCM_COLUMN, /moneyRange:\s*156/);
   assert.match(SCM_COLUMN, /status:\s*88/);
-  assert.match(PRODUCT_LIST, /class="scm-width-fit-table"/);
+  assert.match(PRODUCT_LIST, /ref="tableHost"/);
+  assert.match(PRODUCT_LIST, /:columns="displayColumns"/);
+  assert.match(PRODUCT_LIST, /table-layout="fixed"/);
+  assert.match(PRODUCT_LIST, /new ResizeObserver/);
+  assert.match(PRODUCT_LIST, /const flexible = \['name', 'categoryPath'\]/);
   assert.match(PRODUCT_LIST, /dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange/);
-  assert.match(TABLE_THEME, /\.scm-width-fit-table\.ant-table-wrapper\s*\{\s*width:\s*fit-content;/);
+  assert.match(PRODUCT_LIST, /column.dataIndex === 'categoryPath'[\s\S]*?:title="record.categoryPath/);
+  assert.match(PRODUCT_LIST, /\.scm-product-table-host\s*\{\s*width:\s*100%/);
+  assert.doesNotMatch(PRODUCT_LIST, /class="scm-width-fit-table"/);
+  assert.doesNotMatch(TABLE_THEME, /\.scm-width-fit-table/);
 });
 
 test('商品列表旧系统默认宽度随新版规范迁移，手工列宽仍保留', () => {
