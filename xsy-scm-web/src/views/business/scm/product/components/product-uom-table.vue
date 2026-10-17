@@ -51,17 +51,16 @@ import UomModal from './product-uom-modal.vue';
 const query = reactive<AssistantQuery>({}), rows = ref<ProductUom[]>([]), loading = ref(false), error = ref('');
 const modal = ref<InstanceType<typeof UomModal>>();
 const columns: TableColumnsType<ProductUom> = [
-  {title: '排序', dataIndex: 'sortOrder', width: 70, align: 'right'}, {
+  {title: '排序', dataIndex: 'sortOrder', width: 70}, {
     title: '单位编码',
     dataIndex: 'uomCode',
     width: 150
   },
-  {title: '单位名称', dataIndex: 'name', width: 120}, {title: '量纲', dataIndex: 'category', width: 90},
-  {title: '小数位', dataIndex: 'precisionScale', width: 80, align: 'right'}, {
+  {title: '单位名称', dataIndex: 'name', width: 120}, {title: '量纲', dataIndex: 'category', align: 'center', width: 90},
+  {title: '小数位', dataIndex: 'precisionScale', width: 80}, {
     title: '被引用',
     dataIndex: 'referencedCount',
-    width: 80,
-    align: 'right'
+    width: 80
   },
   {title: '状态', dataIndex: 'status', width: 80, align: 'center'}, {
     title: '操作',

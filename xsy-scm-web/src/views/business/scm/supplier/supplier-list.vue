@@ -34,14 +34,15 @@
         </template>
       </a-alert>
       <a-table
+          ref="tableRef"
           :data-source="rows"
-          :columns="columns"
+          :columns="displayColumns"
           row-key="supplierId"
           :loading="loading"
           :pagination="false"
           size="small"
           bordered
-          :scroll="{ x: scmColumnsWidth(columns) }"
+          :scroll="{ x: scrollX }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
@@ -98,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import {onMounted, computed, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {message, Modal} from 'ant-design-vue';
@@ -133,14 +134,16 @@ const statusTone = (value: EnableStatus): ScmStatusTone => (value === 'ENABLED' 
 
 // 名称、编码、联系人和电话可独立查看、比较；更新时间仍由搜索、详情、编辑与导出承载。
 const columns = ref<TableColumnsType<SupplierRow>>([
-  {title: '供应商名称', dataIndex: 'name', width: 190, sorter: true, ellipsis: true, align: 'left'},
-  {title: '供应商编码', dataIndex: 'supplierCode', width: 140, align: 'left'},
-  {title: '联系人', dataIndex: 'contactName', width: 130, ellipsis: true, align: 'left'},
-  {title: '联系电话', dataIndex: 'contactPhone', width: 140, align: 'left'},
-  {title: '关联商品数', dataIndex: 'skuCount', width: 92, align: 'right'},
+  {title: '供应商名称', dataIndex: 'name', width: 190, sorter: true, ellipsis: true},
+  {title: '供应商编码', dataIndex: 'supplierCode', width: 140},
+  {title: '联系人', dataIndex: 'contactName', width: 130, ellipsis: true},
+  {title: '联系电话', dataIndex: 'contactPhone', width: 140},
+  {title: '关联商品数', dataIndex: 'skuCount', width: 92},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
   {title: '操作', dataIndex: 'action', width: 170, align: 'center', fixed: 'right'},
 ]);
+// 宽屏剩余宽度补给文本列；用户改过列宽则原样渲染。
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 let requestId = 0;
 

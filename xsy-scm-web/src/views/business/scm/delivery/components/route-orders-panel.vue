@@ -110,7 +110,7 @@ const orderColumns = computed<TableColumnsType<RouteOrder>>(() => [
   {title: '配送地址', dataIndex: 'address', width: 240},
   {title: '期望配送', dataIndex: 'expectDeliveryTimeSnapshot', width: 180},
   ...(props.canViewAmount
-      ? [{title: '订单金额', dataIndex: 'orderAmountSnapshot', align: 'right' as const, width: 120}]
+      ? [{title: '订单金额', dataIndex: 'orderAmountSnapshot' as const, width: 120}]
       : []),
   {title: '定位', dataIndex: 'location', width: 90},
   {title: '操作', dataIndex: 'action', align: 'center' as const, width: 80},

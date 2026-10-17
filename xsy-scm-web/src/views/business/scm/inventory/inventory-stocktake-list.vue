@@ -296,8 +296,8 @@ const scrollX = computed(() => scmColumnsWidth(columns.value));
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
-  {title: '记账单位', dataIndex: 'unit', align: 'center', width: 76},
-  {title: '实盘量', dataIndex: 'actualQuantity', width: 160, align: 'right'},
+  {title: '记账单位', dataIndex: 'unit', width: 76},
+  {title: '实盘量', dataIndex: 'actualQuantity', width: 160},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];

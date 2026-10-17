@@ -68,7 +68,7 @@ const columns = ref<TableColumnsType<LogRow>>([{
   dataIndex: 'createdAt',
   width: 210,
   customRender: ({text}) => datetime(text)
-}, {title: '操作', dataIndex: 'operationType', width: 140}, {
+}, {title: '操作', dataIndex: 'operationType', align: 'center', width: 140}, {
   title: '操作人',
   dataIndex: 'operatorName',
   width: 140

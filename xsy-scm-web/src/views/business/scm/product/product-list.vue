@@ -49,8 +49,7 @@
           <a-button size="small" @click="load">重新加载</a-button>
         </template>
       </a-alert>
-      <div ref="tableHost" class="scm-product-table-host">
-      <a-table :data-source="rows" :columns="displayColumns" row-key="spuId" :loading="loading" :pagination="false"
+      <a-table ref="tableRef" :data-source="rows" :columns="displayColumns" row-key="spuId" :loading="loading" :pagination="false"
                size="small" bordered table-layout="fixed" :scroll="{ x: scrollX }" :expand-column-width="SCM_COLUMN_WIDTH.expand"
                :row-selection="canBatch ? rowSelection : undefined"
                @change="sortChanged">
@@ -62,8 +61,8 @@
             <a-tooltip :title="record.name"><a-button type="link" class="scm-cell-link" @click="detail(record.spuId)">{{ record.name }}</a-button></a-tooltip>
           </template>
           <template v-else-if="column.dataIndex === 'categoryPath'">
-            <a-tooltip :title="record.categoryPath || '—'">
-              <span class="scm-product-category">{{ record.categoryPath || '—' }}</span>
+            <a-tooltip :title="record.categoryPath || DASH">
+              <span class="scm-product-category">{{ record.categoryPath || DASH }}</span>
             </a-tooltip>
           </template>
           <template v-else-if="column.dataIndex === 'primaryImageUrl'">
@@ -90,8 +89,8 @@
                 <a-tag class="scm-tags__more">+{{ record.tags.length - TAG_PREVIEW_LIMIT }}</a-tag>
               </a-tooltip>
             </a-space>
-            <span v-else>—</span></template>
-          <span v-else-if="column.dataIndex === 'saleUnit'">{{ record.defaultSku?.saleUnit || '—' }}</span>
+            <span v-else>{{ DASH }}</span></template>
+          <span v-else-if="column.dataIndex === 'saleUnit'">{{ record.defaultSku?.saleUnit || DASH }}</span>
           <a-tooltip v-else-if="column.dataIndex === 'price'"
                      :title="priceRange(record.minMarketPrice, record.maxMarketPrice)">
             <span class="scm-money">{{ priceRange(record.minMarketPrice, record.maxMarketPrice) }}</span>
@@ -100,8 +99,15 @@
             {{ record.status === 'ON_SHELF' ? '上架' : '下架' }}
           </a-tag>
           <a-tag v-else-if="column.dataIndex === 'masterStatus'" :color="MASTER_STATUS_COLOR[record.masterStatus]">
-            {{ enumLabel(MASTER_STATUS_ENUM, record.masterStatus) }}
+            {{ enumText(MASTER_STATUS_ENUM, record.masterStatus) }}
           </a-tag>
+          <span v-else-if="column.dataIndex === 'spuCode'" class="scm-mono">{{ record.spuCode }}</span>
+          <span v-else-if="column.dataIndex === 'storageMethod'">{{ enumText(STORAGE_METHOD_ENUM, record.storageMethod) }}</span>
+          <span v-else-if="column.dataIndex === 'shelfLifeDays'">{{ days(record.shelfLifeDays) }}</span>
+          <span v-else-if="column.dataIndex === 'lossRate'">{{ percent(record.lossRate) }}</span>
+          <span v-else-if="column.dataIndex === 'purchaseWarningDays'">{{ days(record.purchaseWarningDays) }}</span>
+          <span v-else-if="column.dataIndex === 'taxRate'">{{ percent(record.taxRate) }}</span>
+          <span v-else-if="column.dataIndex === 'taxExempt'">{{ record.taxExempt ? '是' : '否' }}</span>
           <a-space v-else-if="column.dataIndex === 'action'" :size="0"
                    class="smart-table-operate scm-table-actions">
             <a-button v-privilege="'scm:product:update'" type="link" size="small" @click="drawer?.open(record.spuId)">
@@ -117,9 +123,9 @@
               <a-button v-privilege="'scm:product:delete'" type="link" danger size="small">删除</a-button>
             </a-popconfirm>
           </a-space>
+          <span v-else>{{ cellText(record, column.dataIndex) }}</span>
         </template>
       </a-table>
-      </div>
       <div class="smart-query-table-page">
         <a-pagination v-model:current="filters.pageNum" v-model:page-size="filters.pageSize" :total="total"
                       show-size-changer :show-total="(n: number) => `共 ${n} 条`" @change="load"/>
@@ -131,7 +137,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import {computed, onBeforeUnmount, onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {message} from 'ant-design-vue';
 import {EyeOutlined, PictureOutlined} from '@ant-design/icons-vue';
@@ -153,7 +159,6 @@ import type {
   ProductTagRef
 } from '/@/types/business/scm/product';
 import {
-  enumLabel,
   MASTER_STATUS_COLOR,
   MASTER_STATUS_ENUM,
   priceRange,
@@ -163,7 +168,8 @@ import {
   YES_NO_ENUM
 } from '/@/constants/business/scm/product-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {SCM_COLUMN_WIDTH, scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {SCM_COLUMN_WIDTH} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ProductDrawer from './components/product-form-drawer.vue';
@@ -222,57 +228,50 @@ const user = useUserStore();
 const canBatch = computed(() => user.administratorFlag || user.getPointList?.some((point: {
   webPerms: string
 }) => point.webPerms === 'scm:product:batch'));
-// 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。
-// 商品编码、别名、创建/更新时间等仍在搜索、高级筛选、详情、编辑与导出里，只是不默认摊在列表上。
+// 当前按「全字段」摊开：接口返回的 25 个字段全部成列，便于一次性核对主数据完整性。
+// 列很多时表格横向滚动；需要精简可在「设置列」里隐藏，配置会按用户保存。
 const columns = ref<TableColumnsType<ProductRow>>([
-  {title: '主图', dataIndex: 'primaryImageUrl', width: SCM_COLUMN_WIDTH.image, align: 'center'},
+  {title: '主图', dataIndex: 'primaryImageUrl', width: SCM_COLUMN_WIDTH.image},
+  {title: '商品编码', dataIndex: 'spuCode', width: 150},
   {title: '商品名称', dataIndex: 'name', width: 200, sorter: true, ellipsis: true},
-  {title: '分类', dataIndex: 'categoryPath', width: SCM_COLUMN_WIDTH.name, ellipsis: true},
-  {title: '单位', dataIndex: 'saleUnit', width: SCM_COLUMN_WIDTH.unit, align: 'center'},
-  {title: '市场价', dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange, align: 'right'},
-  {title: '规格数', dataIndex: 'skuCount', width: SCM_COLUMN_WIDTH.count, align: 'right'},
+  {title: '别名', dataIndex: 'alias', width: 130, ellipsis: true},
+  {title: '助记码', dataIndex: 'mnemonicCode', width: 110},
+  {title: '分类', dataIndex: 'categoryPath', align: 'center', width: SCM_COLUMN_WIDTH.name, ellipsis: true},
+  {title: '品牌', dataIndex: 'brandName', width: 110, ellipsis: true},
+  {title: '产地', dataIndex: 'origin', width: 110, ellipsis: true},
+  {title: '储存方式', dataIndex: 'storageMethod', width: 100, align: 'center'},
+  {title: '保质期', dataIndex: 'shelfLifeDays', width: 90},
+  {title: '损耗率', dataIndex: 'lossRate', width: 90},
+  {title: '采购预警天数', dataIndex: 'purchaseWarningDays', width: 120},
+  {title: '单位', dataIndex: 'saleUnit', width: SCM_COLUMN_WIDTH.unit},
+  {title: '市场价', dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange},
+  {title: '规格数', dataIndex: 'skuCount', width: SCM_COLUMN_WIDTH.count},
   {title: '在售状态', dataIndex: 'status', width: SCM_COLUMN_WIDTH.status, align: 'center', sorter: true},
   {title: '主档状态', dataIndex: 'masterStatus', width: SCM_COLUMN_WIDTH.status, align: 'center'},
   {title: '标签', dataIndex: 'tags', width: 132},
+  {title: '开票品名', dataIndex: 'invoiceName', width: 130, ellipsis: true},
+  {title: '税收分类编码', dataIndex: 'taxCategoryCode', width: 140},
+  {title: '税率', dataIndex: 'taxRate', width: 80},
+  {title: '免税', dataIndex: 'taxExempt', width: 80, align: 'center'},
+  {title: '商品描述', dataIndex: 'description', width: 200, ellipsis: true},
+  {title: '创建时间', dataIndex: 'createdAt', width: SCM_COLUMN_WIDTH.dateTime},
+  {title: '更新时间', dataIndex: 'updatedAt', width: SCM_COLUMN_WIDTH.dateTime},
   {title: '操作', dataIndex: 'action', width: SCM_COLUMN_WIDTH.actionThree, align: 'center', fixed: 'right'},
 ]);
-// 固定长度字段使用系统列宽；宽屏剩余空间只分配给名称和分类，避免金额等列被拉宽。
-const tableHost = ref<HTMLElement>();
-const tableHostWidth = ref(0);
-let tableObserver: ResizeObserver | undefined;
-const auxiliaryWidth = computed(() => SCM_COLUMN_WIDTH.expand
-    + (canBatch.value ? SCM_COLUMN_WIDTH.selection : 0));
-const displayColumns = computed<TableColumnsType<ProductRow>>(() => {
-  const base = columns.value;
-  const extra = Math.max(0, tableHostWidth.value - scmColumnsWidth(base, auxiliaryWidth.value));
-  const flexible = ['name', 'categoryPath'].filter(key =>
-      base.some(column => 'dataIndex' in column && column.dataIndex === key));
-  if (!extra || !flexible.length) return base;
+// 宽屏剩余空间补给仍在使用默认宽度的文本列（名称、分类），用户改过的列宽原样渲染。
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns, () =>
+    SCM_COLUMN_WIDTH.expand + (canBatch.value ? SCM_COLUMN_WIDTH.selection : 0));
 
-  const share = Math.floor(extra / flexible.length);
-  const widths = new Map<string, number>(flexible.map((key, index): [string, number] =>
-      [key, share + (index === 0 ? extra % flexible.length : 0)]));
-  return base.map(column => {
-    const addition = widths.get('dataIndex' in column ? String(column.dataIndex) : '');
-    if (!addition) return column;
-    const baseWidth = typeof column.width === 'number' ? column.width
-        : Number.parseFloat(String(column.width ?? '')) || 0;
-    return {...column, width: baseWidth + addition};
-  });
-});
-const scrollX = computed(() => scmColumnsWidth(displayColumns.value, auxiliaryWidth.value));
-
-onMounted(() => {
-  const host = tableHost.value;
-  if (!host) return;
-  tableHostWidth.value = Math.floor(host.clientWidth);
-  tableObserver = new ResizeObserver(entries => {
-    tableHostWidth.value = Math.floor(entries[0]?.contentRect.width ?? 0);
-  });
-  tableObserver.observe(host);
-});
-onBeforeUnmount(() => tableObserver?.disconnect());
 const tagFilterOptions = computed(() => tagChoices.value.map((tag) => ({value: tag.tagId, label: tag.name})));
+// 空值统一显示连字符；BigDecimal 以字符串下发，Number() 去掉尾随零
+const DASH = '—';
+const dash = (value: unknown) => (value === null || value === undefined || value === '' ? DASH : String(value));
+const days = (value?: number | string | null) => (value == null || value === '' ? DASH : `${Number(value)} 天`);
+const percent = (value?: number | string | null) => (value == null || value === '' ? DASH : `${Number(value)}%`);
+const enumText = (options: {value: string; label: string}[], value?: string | null) =>
+    options.find((item) => item.value === value)?.label || DASH;
+const cellText = (record: ProductRow, dataIndex: unknown) =>
+    dash((record as unknown as Record<string, unknown>)[String(dataIndex ?? '')]);
 // 标签列只展示前 N 个，其余折成 +N；否则标签多的商品会把整行撑宽、撑高。
 const TAG_PREVIEW_LIMIT = 2;
 const restTagTitle = (tags: ProductTagRef[]) => tags.slice(TAG_PREVIEW_LIMIT)
@@ -422,11 +421,6 @@ onMounted(async () => {
 });
 </script>
 <style scoped>
-.scm-product-table-host {
-  width: 100%;
-  min-width: 0;
-}
-
 .scm-product-category {
   display: block;
   overflow: hidden;

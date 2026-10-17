@@ -86,10 +86,9 @@ const columns: TableColumnsType<Item> = [{
   title: '商品 / 商品规格',
   dataIndex: 'skuId',
   width: 300
-}, {title: '下单数量', dataIndex: 'orderedQuantity', align: 'right', width: 165}, {
+}, {title: '下单数量', dataIndex: 'orderedQuantity', width: 165}, {
   title: '解析单价',
   dataIndex: 'draftUnitPrice',
-  align: 'right',
   width: 190
 }, {title: '价格修订', dataIndex: 'override', width: 230}, {
   title: '操作',

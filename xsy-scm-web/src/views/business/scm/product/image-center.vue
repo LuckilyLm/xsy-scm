@@ -169,7 +169,7 @@ const keyword = ref(''), onlyNoPrimary = ref(false), products = ref<ProductRow[]
 const pickColumns = [
   { title: '商品编码', dataIndex: 'spuCode', width: 130 },
   { title: '商品名称', dataIndex: 'name' },
-  { title: '主图', dataIndex: 'primary', width: 90, align: 'center' },
+  { title: '主图', dataIndex: 'primary', width: 90 },
 ];
 
 const view = ref<ImageCenterView | null>(null), imageLoading = ref(false), imageError = ref(''), busy = ref(false),

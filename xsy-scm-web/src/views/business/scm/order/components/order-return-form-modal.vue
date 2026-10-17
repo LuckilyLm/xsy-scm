@@ -30,9 +30,8 @@ const formRef = ref();
 const formRules = {reason: [{required: true, message: '请输入退货原因', trigger: 'blur'}]};
 const columns = [{title: '商品', dataIndex: 'productNameSnapshot'}, {
   title: '实数量',
-  dataIndex: 'actualQuantity',
-  align: 'right'
-}, {title: '本次申请数量', dataIndex: 'quantity', align: 'right'}];
+  dataIndex: 'actualQuantity'
+}, {title: '本次申请数量', dataIndex: 'quantity'}];
 
 function open(order: Order) {
   orderId.value = order.orderId;

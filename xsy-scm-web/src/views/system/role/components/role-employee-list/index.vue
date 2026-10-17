@@ -155,9 +155,8 @@ const columns = reactive([
   },
   {
     title: '操作',
-    dataIndex: 'operate',
+    dataIndex: 'operate', align: 'center',
     width: 60,
-    align: 'center',
   },
 ]);
 

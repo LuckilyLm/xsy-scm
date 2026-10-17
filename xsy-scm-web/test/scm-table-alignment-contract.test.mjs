@@ -56,30 +56,27 @@ const textTitle = /名称|编码|编号|单号|标识|联系人|电话|手机号
 const imageTitle = /主图|缩略图|头像|图片|图标|二维码/;
 const shortSourceKeys = new Set(['sourcetype', 'ordersource', 'pricesource', 'lockedpricesource']);
 
+/**
+ * 全站列对齐口径（2026-10-18 起）：只有枚举、分类、操作列居中，其余一律左对齐。
+ *
+ * 金额、数量、日期等不再右对齐 —— 用户明确要求「除了枚举/分类/操作，其他都左对齐」，
+ * 右对齐会让数字贴到单元格右边缘，与左侧标题轴线错位。
+ */
+const CENTER_KEYS = new Set([
+  'direction', 'settleMode', 'receiptMode', 'visibilityPolicy', 'storageMethod',
+  'effectiveness', 'result', 'method', 'state', 'level', 'documentTypeLabel',
+  'taxExempt', 'orderSource', 'bizType', 'documentType', 'sourceType',
+]);
+
 function expectedAlignment(title, dataIndex) {
   const key = String(dataIndex || '');
   const lowerKey = key.toLowerCase();
-  const keyTokens = tokens(key);
   if (/^(action|actions|operate)$/.test(lowerKey)) return 'center';
-  if (shortSourceKeys.has(lowerKey)) return 'center';
-  if (/单位$/.test(title)) return 'center';
-  if (/(execute|response|description|reason|text)/i.test(key) &&
-      !/(count|amount|quantity|qty|price|rate|ratio|percent)/i.test(key)) {
-    return textTitle.test(title) ? 'left' : undefined;
-  }
-  if (statusTitle.test(title) && !/(名称|编码|编号|路径|内容|描述|备注)/.test(title) &&
-      !/(execute|response|content|description)/i.test(key)) return 'center';
-  const identifierTitle = /单号|编号|编码|手机号|联系电话|电话|日期|时间|时点|名称|地址|备注|描述|说明|路径|内容|摘要|流水号/;
-  const quantifiedTitle = /数量|数|金额|量|次数|占比|比例|百分比|税率|费率|单价|售价|进价|余额|额度|上限|下限|载重|容积|里程|距离|耗时|时长|重量|体积|利润|成本|佣金|毛利|合计/;
-  const hasNumberLabel = numericTitle.test(title);
-  const numericByKey = keyTokens.some((part) => numericTokens.has(part));
-  if ((hasNumberLabel || numericByKey) &&
-      !(identifierTitle.test(title) && !quantifiedTitle.test(title)) &&
-      !(keyTokens.includes('source') && !quantifiedTitle.test(title)) &&
-      !(keyTokens.includes('text') || keyTokens.includes('reason'))) return 'right';
-  if (imageTitle.test(title)) return 'center';
-  if (textTitle.test(title)) return 'left';
-  return undefined;
+  if (CENTER_KEYS.has(key)) return 'center';
+  // 枚举：*Status / *Type / *Flag；分类：category*
+  if (/(status|state|type|flag)$/.test(lowerKey)) return 'center';
+  if (/categor/.test(lowerKey) && !/code$/.test(lowerKey)) return 'center';
+  return 'left';
 }
 
 function alignmentViolations(file) {
@@ -133,18 +130,19 @@ test('全局表格样式不覆盖列水平对齐，并让数据单元垂直居�
 });
 
 test('供应商与应付样板按字段语义设置同轴对齐', () => {
-  assert.match(column(supplierPage, 'name'), /align:\s*'left'/);
-  assert.match(column(supplierPage, 'skuCount'), /align:\s*'right'/);
+  // 数值列也左对齐：只有枚举、分类、操作列居中
+  assert.doesNotMatch(column(supplierPage, 'name'), /align:/);
+  assert.doesNotMatch(column(supplierPage, 'skuCount'), /align:/);
   assert.match(column(supplierPage, 'status'), /align:\s*'center'/);
   assert.match(column(supplierPage, 'action'), /align:\s*'center'/);
 
-  assert.match(column(payablePage, 'payableNo'), /align:\s*'left'/);
-  assert.match(column(payablePage, 'supplierName'), /align:\s*'left'/);
-  assert.match(column(payablePage, 'amount'), /align:\s*'right'/);
-  assert.match(column(payablePage, 'writtenOffAmount'), /align:\s*'right'/);
+  assert.doesNotMatch(column(payablePage, 'payableNo'), /align:/);
+  assert.doesNotMatch(column(payablePage, 'supplierName'), /align:/);
+  assert.doesNotMatch(column(payablePage, 'amount'), /align:/);
+  assert.doesNotMatch(column(payablePage, 'writtenOffAmount'), /align:/);
   assert.match(column(payablePage, 'settleState'), /align:\s*'center'/);
   assert.match(column(payablePage, 'action'), /align:\s*'center'/);
-  assert.match(column(payablePage, 'redAmount'), /align:\s*'right'/);
+  assert.doesNotMatch(column(payablePage, 'redAmount'), /align:/);
 });
 
 test('可排序表头让标题与排序图标作为一组沿列对齐轴排列', () => {

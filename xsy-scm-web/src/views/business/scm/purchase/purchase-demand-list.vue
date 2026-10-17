@@ -47,9 +47,10 @@
 
     <a-table
         :id="SCM_PURCHASE_TABLE_ID.DEMAND"
+        ref="tableRef"
         size="small"
         :data-source="tableData"
-        :columns="columns"
+        :columns="displayColumns"
         row-key="id"
         bordered
         :loading="loading"
@@ -185,7 +186,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
@@ -200,7 +201,8 @@ import {purchaseError} from './purchase-errors';
 import DemandGenerateModal from './components/purchase-demand-generate-modal.vue';
 import PurchaseDemandSummaryPreview from './components/purchase-demand-summary-preview.vue';
 import PurchaseDemandBatchDetailDrawer from './components/purchase-demand-batch-detail-drawer.vue';
-import {scmColumnsWidth, type ScmListColumn} from '../common/scm-column';
+import type {ScmListColumn} from '../common/scm-column';
+import {useScmTableFill} from '../common/use-scm-table-fill';
 
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
@@ -253,16 +255,17 @@ const columns = ref<DemandListColumn[]>([
   {title: '商品名称', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'skuName', width: 150},
   {title: '规格编码', dataIndex: 'skuCode', width: 135, showFlag: false},
-  {title: '需求量', dataIndex: 'requiredQuantity', align: 'right', width: 120},
-  {title: '已分配', dataIndex: 'allocatedQuantity', align: 'right', width: 120, showFlag: false},
-  {title: '未分配', dataIndex: 'unallocatedQuantity', align: 'right', width: 120},
+  {title: '需求量', dataIndex: 'requiredQuantity', width: 120},
+  {title: '已分配', dataIndex: 'allocatedQuantity', width: 120, showFlag: false},
+  {title: '未分配', dataIndex: 'unallocatedQuantity', width: 120},
   {title: '状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '供应商', dataIndex: 'supplierName', width: 150, showFlag: false},
   {title: '仓库', dataIndex: 'warehouseName', width: 130, showFlag: false},
   {title: '需求日期', dataIndex: 'demandDate', width: 120, showFlag: false},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);
-const scrollX = computed(() => scmColumnsWidth(columns.value));
+// 宽屏剩余宽度补给文本列；用户改过列宽则原样渲染。
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 async function queryData() {
   const id = ++requestId;

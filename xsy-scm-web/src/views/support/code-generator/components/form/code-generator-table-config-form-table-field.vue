@@ -76,7 +76,7 @@ const columns = ref([
   },
   {
     title: '显示',
-    dataIndex: 'showFlag',
+    dataIndex: 'showFlag', align: 'center',
     width: 50,
   },
   {
@@ -97,7 +97,7 @@ const columns = ref([
   },
   {
     title: 'ellipsis',
-    dataIndex: 'ellipsisFlag',
+    dataIndex: 'ellipsisFlag', align: 'center',
     width: 100,
   },
 ]);

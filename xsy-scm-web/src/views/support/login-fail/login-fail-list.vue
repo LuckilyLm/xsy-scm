@@ -129,7 +129,6 @@ const columns = ref([
   {
     title: '登录失败次数',
     dataIndex: 'loginFailCount',
-    align: 'right',
   },
   {
     title: '锁定状态',

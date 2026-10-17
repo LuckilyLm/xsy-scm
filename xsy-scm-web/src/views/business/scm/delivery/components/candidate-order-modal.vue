@@ -122,8 +122,8 @@ const columns = computed<TableColumnsType>(() => [
   {title: '客户', dataIndex: 'customerName', width: 160},
   {title: '配送地址', dataIndex: 'address', width: 230},
   {title: '期望配送', dataIndex: 'expectDeliveryTime', width: 170},
-  ...(canViewAmount.value ? [{title: '金额', dataIndex: 'orderAmount', align: 'right' as const, width: 120}] : []),
-  {title: '商品行数', dataIndex: 'itemCount', align: 'right' as const, width: 90},
+  ...(canViewAmount.value ? [{title: '金额', dataIndex: 'orderAmount' as const, width: 120}] : []),
+  {title: '商品行数', dataIndex: 'itemCount' as const, width: 90},
   {title: '定位', dataIndex: 'location', width: 90},
 ]);
 

@@ -70,7 +70,7 @@ const keys = new Map<string, string>();
 let generation = 0;
 const columns: TableColumnsType<PaymentIntent> = [
   {title: '支付单号', dataIndex: 'intentNo', width: 200}, {title: '方式 / 渠道', dataIndex: 'method', width: 170, align: 'center'},
-  {title: '申请金额', dataIndex: 'amount', width: 120, align: 'right'},
+  {title: '申请金额', dataIndex: 'amount', width: 120},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center'}, {title: '追溯', dataIndex: 'action', width: 150, align: 'center'},
 ];
 function statusText(value: string) {

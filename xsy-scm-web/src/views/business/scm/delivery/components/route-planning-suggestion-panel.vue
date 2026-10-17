@@ -233,20 +233,20 @@ const mapReady = computed(() =>
 );
 
 const planColumns: TableColumnsType = [
-  {title: '建议顺序', dataIndex: 'seq', align: 'right', width: 95},
-  {title: '与生成时顺序对比', dataIndex: 'change', align: 'center', width: 165},
+  {title: '建议顺序', dataIndex: 'seq', width: 95},
+  {title: '与生成时顺序对比', dataIndex: 'change', width: 165},
   {title: '停靠点 / 客户', dataIndex: 'customerNameSnapshot', width: 200},
   {title: '配送地址', dataIndex: 'addressSnapshot', width: 280},
-  {title: '本段距离（米）', dataIndex: 'legDistance', align: 'right', width: 130},
-  {title: '累计距离（米）', dataIndex: 'cumulativeDistance', align: 'right', width: 130},
+  {title: '本段距离（米）', dataIndex: 'legDistance', width: 130},
+  {title: '累计距离（米）', dataIndex: 'cumulativeDistance', width: 130},
 ];
 
 const planHistoryColumns: TableColumnsType = [
   {title: '生成时间', dataIndex: 'createdAt', width: 180},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
-  {title: '停靠点数', dataIndex: 'stopCount', align: 'right', width: 92},
-  {title: '总距离（米）', dataIndex: 'totalDistance', align: 'right', width: 130},
-  {title: '距离计算方式', dataIndex: 'providerCode', align: 'center', width: 160},
+  {title: '停靠点数', dataIndex: 'stopCount', width: 92},
+  {title: '总距离（米）', dataIndex: 'totalDistance', width: 130},
+  {title: '距离计算方式', dataIndex: 'providerCode', width: 160},
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ];
 </script>

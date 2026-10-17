@@ -93,8 +93,8 @@ const bucketLabel = (bucket: AgingBucket) => bucketOptions.find(option => option
 const summaryRows = computed(() => summary.value.map(row => ({...row, label: bucketLabel(row.agingBucket)}))
   .sort((a, b) => bucketOptions.findIndex(option => option.value === a.agingBucket) - bucketOptions.findIndex(option => option.value === b.agingBucket)));
 const summaryColumns = [
-  {title: '账龄分组', dataIndex: 'label', width: 150}, {title: '单据数', dataIndex: 'documentCount', align: 'right', width: 96},
-  {title: '未核销余额', dataIndex: 'openAmount', width: 148, customRender: ({text}: {text: string}) => moneyText(text), align: 'right'},
+  {title: '账龄分组', dataIndex: 'label', width: 150}, {title: '单据数', dataIndex: 'documentCount', width: 96},
+  {title: '未核销余额', dataIndex: 'openAmount', width: 148, customRender: ({text}: {text: string}) => moneyText(text)},
 ];
 const columns: TableColumnsType<AgingRow> = [
   {title: '财务单号', dataIndex: 'documentNo', width: 190}, {title: '来源单号', dataIndex: 'sourceNo', width: 190},
@@ -103,7 +103,7 @@ const columns: TableColumnsType<AgingRow> = [
   {title: '账龄分组', dataIndex: 'agingBucket', width: 140},
   ...(['amount', 'redAmount', 'netAmount', 'writtenOffAmount', 'openAmount'] as const).map((key, index) => ({
     title: ['原金额', '红字金额', '净额', '已核销', '未核销余额'][index], dataIndex: key, width: 130,
-    align: 'right' as const, customRender: ({text}: {text: string}) => moneyText(text),
+    customRender: ({text}: {text: string}) => moneyText(text),
   })),
   {title: '操作', dataIndex: 'action', fixed: 'right', width: 100, align: 'center'},
 ];

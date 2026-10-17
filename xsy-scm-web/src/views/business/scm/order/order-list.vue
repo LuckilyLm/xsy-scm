@@ -46,8 +46,8 @@
         <TableOperator v-model="columns" :table-id="602" :refresh="queryData"/>
       </div>
     </a-row>
-    <a-table id="order-table" size="small" :data-source="tableData" :columns="columns" row-key="orderId" bordered
-             :loading="loading" :pagination="false" :scroll="{x:scmColumnsWidth(columns, SCM_COLUMN_WIDTH.selection)}"
+    <a-table id="order-table" ref="tableRef" size="small" :data-source="tableData" :columns="displayColumns" row-key="orderId" bordered
+             :loading="loading" :pagination="false" :scroll="{x:scrollX}"
              :row-selection="{columnWidth:SCM_COLUMN_WIDTH.selection,selectedRowKeys:selected,onChange:(keys:(string|number)[])=>selected=keys}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='orderNo'"><a @click="openDetail(record.orderId)">{{ record.orderNo }}</a>
@@ -112,7 +112,8 @@
   <OrderTagModal ref="tagModal" @saved="onTagsSaved"/>
 </template>
 <script setup lang="ts">
-import {SCM_COLUMN_WIDTH, scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {SCM_COLUMN_WIDTH} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import {Modal} from 'ant-design-vue';
@@ -187,11 +188,13 @@ const columns = ref<OrderListColumn[]>([
   {title: '来源', dataIndex: 'orderSource', align: 'center', width: 100},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '标签', dataIndex: 'tags', width: 180},
-  {title: '下单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 130},
-  {title: '结算金额', dataIndex: 'settlementTotalAmount', align: 'right', width: 130},
+  {title: '下单金额', dataIndex: 'orderedTotalAmount', width: 130},
+  {title: '结算金额', dataIndex: 'settlementTotalAmount', width: 130},
   {title: '期望配送时间', dataIndex: 'expectDeliveryTime', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);
+// 宽屏剩余宽度补给文本列；用户改过列宽则原样渲染。
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns, () => SCM_COLUMN_WIDTH.selection);
 
 /** 草稿/待确认=待处理，已确认=处理中，已取消=失效。 */
 const STATUS_TONE: Record<string, ScmStatusTone> = {

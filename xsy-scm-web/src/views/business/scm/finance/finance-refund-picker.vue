@@ -52,7 +52,7 @@ const columns = computed<TableColumnsType<FinanceRefundOption>>(() => [
     {title: '退货单号', dataIndex: 'returnNo', width: 170},
     {title: '订单号', dataIndex: 'orderNo', width: 180},
     {title: '客户', dataIndex: 'customerName', width: 190},
-    {title: '退款金额', dataIndex: 'refundAmount', align: 'right', width: 150},
+    {title: '退款金额', dataIndex: 'refundAmount', width: 150},
     {title: '完成时点', dataIndex: 'completedAt', width: 180},
     {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ]);

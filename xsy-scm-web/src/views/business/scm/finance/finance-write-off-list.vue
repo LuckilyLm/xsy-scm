@@ -199,7 +199,7 @@ const columns = ref<TableColumnsType<FinanceWriteOff>>([
     {title: '核销目标', dataIndex: 'targetName', width: 190},
     {title: '目标类型', dataIndex: 'targetType', align: 'center', width: 90},
     {title: '目标单号', dataIndex: 'targetNo', width: 175},
-    {title: '核销金额', dataIndex: 'amount', align: 'right', width: 136},
+    {title: '核销金额', dataIndex: 'amount', width: 136},
     {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
     {title: '原因', dataIndex: 'reason', width: 180},
     {title: '核销时点', dataIndex: 'writtenOffAt', width: 180},
@@ -208,8 +208,8 @@ const columns = ref<TableColumnsType<FinanceWriteOff>>([
 ]);
 const targetColumns: TableColumnsType<AllocationDraft> = [
     {title: '目标单号', dataIndex: 'documentNo', width: 210}, {title: '往来方', dataIndex: 'partyName', width: 170},
-    {title: '关联单号', dataIndex: 'linkedDocumentNo', width: 180}, {title: '可核销金额', dataIndex: 'availableAmount', align: 'right', width: 150},
-    {title: '本次金额', dataIndex: 'amount', align: 'right', width: 180}, {title: '操作', dataIndex: 'action', align: 'center', width: 90},
+    {title: '关联单号', dataIndex: 'linkedDocumentNo', width: 180}, {title: '可核销金额', dataIndex: 'availableAmount', width: 150},
+    {title: '本次金额', dataIndex: 'amount', width: 180}, {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ];
 useFinanceMobileActionColumn((compact) => {
     const action = columns.value[columns.value.length - 1];

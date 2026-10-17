@@ -192,9 +192,9 @@ const columns = computed<TableColumnsType>(() => [
       ]
       : [
         {title: '车牌号', dataIndex: 'vehicleNo', width: 150},
-        {title: '车型', dataIndex: 'vehicleType', width: 140},
-        {title: '载重（kg）', dataIndex: 'loadWeight', align: 'right' as const, width: 120},
-        {title: '容积（m³）', dataIndex: 'loadVolume', align: 'right' as const, width: 120},
+        {title: '车型', dataIndex: 'vehicleType', align: 'center' as const, width: 140},
+        {title: '载重（kg）', dataIndex: 'loadWeight' as const, width: 120},
+        {title: '容积（m³）', dataIndex: 'loadVolume' as const, width: 120},
       ]),
   {title: '状态', dataIndex: 'status', align: 'center' as const, width: 90},
   {title: '备注', dataIndex: 'remark', width: 240, ellipsis: true},

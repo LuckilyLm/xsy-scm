@@ -191,12 +191,12 @@ function counterpartyTypeText(value?: string | null): string {
 
 const columns = ref<TableColumnsType<FinancePayment>>([
     {title: '付款单号', dataIndex: 'paymentNo', fixed: 'left', width: 170, ellipsis: true},
-    {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', align: 'right', width: 148},
+    {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', width: 148},
     {title: '往来方', dataIndex: 'counterpartyName', width: 190},
     {title: '往来方类型', dataIndex: 'counterpartyType', align: 'center', width: 112},
-    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 136},
-    {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 148},
-    {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 148},
+    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', width: 136},
+    {title: '有效金额', dataIndex: 'effectiveAmount', width: 148},
+    {title: '已核销', dataIndex: 'usedAmount', width: 148},
     {title: '方式', dataIndex: 'method', width: 105, align: 'center'}, {title: '来源', dataIndex: 'sourceType', align: 'center', width: 95},
     {title: '付款时点', dataIndex: 'paidAt', width: 180},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 140},

@@ -46,16 +46,17 @@
         </template>
       </a-alert>
       <a-table
+          ref="tableRef"
           class="customer-table"
           :data-source="rows"
-          :columns="columns"
+          :columns="displayColumns"
           row-key="customerId"
           :loading="loading"
           :pagination="false"
           :locale="{ emptyText }"
           size="small"
           bordered
-          :scroll="{ x: scmColumnsWidth(columns) }"
+          :scroll="{ x: scrollX }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
@@ -133,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
+import {useScmTableFill} from '/@/views/business/scm/common/use-scm-table-fill';
 import {onMounted, reactive, ref, computed} from 'vue';
 import {useRouter} from 'vue-router';
 import {message, Modal} from 'ant-design-vue';
@@ -228,15 +229,17 @@ type CustomerListColumn = TableColumnsType<CustomerRow>[number] & {showFlag?: bo
 const columns = ref<CustomerListColumn[]>([
   {title: '客户名称', dataIndex: 'name', width: 200, sorter: true, ellipsis: true},
   {title: '客户编码', dataIndex: 'customerCode', width: 160, showFlag: false},
-  {title: '客户类型', dataIndex: 'customerTypeName', width: 120, align: 'center'},
+  {title: '客户类型', dataIndex: 'customerTypeName', width: 120},
   {title: '业务员', dataIndex: 'sellerName', width: 110},
   {title: '联系人', dataIndex: 'contactName', width: 120},
   {title: '联系电话', dataIndex: 'contactPhone', width: 140},
   {title: '结算方式', dataIndex: 'settleMode', width: 112, align: 'center'},
-  {title: '授信额度', dataIndex: 'creditLimit', width: 130, align: 'right'},
+  {title: '授信额度', dataIndex: 'creditLimit', width: 130},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
   {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},
 ]);
+// 客户名称是唯一可伸缩的文本列：宽屏剩余空间补给它；用户改过宽度则按原值渲染。
+const {tableRef, displayColumns, scrollX} = useScmTableFill(columns);
 
 let requestId = 0;
 

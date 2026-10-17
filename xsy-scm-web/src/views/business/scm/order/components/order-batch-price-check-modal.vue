@@ -1,7 +1,7 @@
 <template>
   <a-modal :open="visible" title="草稿订单批量核价" :width="1120" :footer="null" @cancel="close">
     <a-alert type="info" show-icon class="smart-margin-bottom10"
-             message="仅比较当前价格，不修改订单。人工改价不参与重算；正式执行时服务端重新解析价格并检查版本。"/>
+             message="仅比较当前价格，不修改订单。人工改价不参与重算；正式执行时系统会重新解析价格并检查版本。"/>
     <a-space class="smart-margin-bottom10" wrap>
       <span>已选 {{ entries.length }} 单，最多 8 单</span>
       <a-button size="small" :loading="loading" @click="reload">重新核价</a-button>
@@ -92,9 +92,9 @@ const canUpdate = computed(() => hasPermission('scm:order:update')
 const columns: TableColumnsType<PriceCheckLine> = [
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '规格编码', dataIndex: 'skuCode', width: 130},
-  {title: '下单量', dataIndex: 'quantity', align: 'right', width: 100},
-  {title: '原草稿价', dataIndex: 'oldPrice', align: 'right', width: 120},
-  {title: '当前解析价', dataIndex: 'currentPrice', align: 'right', width: 120},
+  {title: '下单量', dataIndex: 'quantity', width: 100},
+  {title: '原草稿价', dataIndex: 'oldPrice', width: 120},
+  {title: '当前解析价', dataIndex: 'currentPrice', width: 120},
   {title: '比较结果', dataIndex: 'state', align: 'center', width: 120},
   {title: '说明', dataIndex: 'reason', width: 180}
 ];
@@ -172,7 +172,7 @@ function confirmApply(entry: Entry): void {
   const actionReason = reason.value.trim();
   Modal.confirm({
     title: '确认重算该草稿订单？',
-    content: '服务端将以执行时的价格重新核价并记录操作日志，不保证与预览价格完全一致。',
+    content: '系统将以执行时的价格重新核价并记录操作日志，不保证与预览价格完全一致。',
     okText: '确认重算',
     async onOk() {
       applyingId.value = String(entry.id);

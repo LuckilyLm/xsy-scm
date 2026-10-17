@@ -65,10 +65,10 @@ const itemColumns: TableColumnsType = [
   {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品规格名称', dataIndex: 'skuName', width: 130},
   {title: '商品名称', dataIndex: 'productName', width: 130},
-  {title: '账面量', dataIndex: 'bookQuantity', align: 'right', width: 110},
-  {title: '实盘量', dataIndex: 'actualQuantity', align: 'right', width: 110},
-  {title: '差异', dataIndex: 'deltaQuantity', align: 'right', width: 110},
-  {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 110},
+  {title: '账面量', dataIndex: 'bookQuantity', width: 110},
+  {title: '实盘量', dataIndex: 'actualQuantity', width: 110},
+  {title: '差异', dataIndex: 'deltaQuantity', width: 110},
+  {title: '单位', dataIndex: 'unitSnapshot', width: 110},
 ];
 
 /** 差异带符号展示：盘盈 `+`、盘亏 `−`。后端已给 4 位定点字符串，这里只补符号。 */

@@ -101,12 +101,12 @@ const emit = defineEmits<{
 const columns = ref<TableColumnsType<SalesCustomerRow>>([
   {title: '客户名称', dataIndex: 'customerName', width: 200},
   {title: '销售员', dataIndex: 'sellerName', width: 120},
-  {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 92},
-  {title: '商品规格数', dataIndex: 'skuKindCount', align: 'right', width: 92},
-  {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 148},
-  {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 148},
+  {title: '订单笔数', dataIndex: 'orderCount', width: 92},
+  {title: '商品规格数', dataIndex: 'skuKindCount', width: 92},
+  {title: '确认订单金额', dataIndex: 'settlementAmount', width: 148},
+  {title: '已完成退款金额', dataIndex: 'completedRefundAmount', width: 148},
   {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 180},
-  {title: '金额排名', dataIndex: 'amountRank', align: 'right', width: 110},
+  {title: '金额排名', dataIndex: 'amountRank', width: 110},
 ]);
 
 function refresh() {

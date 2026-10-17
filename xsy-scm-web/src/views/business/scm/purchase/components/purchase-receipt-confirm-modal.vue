@@ -121,14 +121,14 @@ let requestId = 0;
 
 const columns: TableColumnsType<ReceiptItem> = [
   {title: '商品', dataIndex: 'skuName', width: 150},
-  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76, align: 'center'},
-  {title: '计划数量', dataIndex: 'plannedQuantity', align: 'right', width: 105},
-  {title: '累计已收', dataIndex: 'cumulativeReceivedQuantity', align: 'right', width: 105},
-  {title: '剩余可收', dataIndex: 'remainingQuantity', align: 'right', width: 105},
-  {title: '超收', dataIndex: 'overReceiptQuantity', align: 'right', width: 95},
-  {title: '差异', dataIndex: 'receiptDifference', align: 'right', width: 105},
-  {title: '本次声明数量', dataIndex: 'receivedQuantity', align: 'right', width: 155},
-  {title: '实重', dataIndex: 'actualWeight', align: 'right', width: 145},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
+  {title: '计划数量', dataIndex: 'plannedQuantity', width: 105},
+  {title: '累计已收', dataIndex: 'cumulativeReceivedQuantity', width: 105},
+  {title: '剩余可收', dataIndex: 'remainingQuantity', width: 105},
+  {title: '超收', dataIndex: 'overReceiptQuantity', width: 95},
+  {title: '差异', dataIndex: 'receiptDifference', width: 105},
+  {title: '本次声明数量', dataIndex: 'receivedQuantity', width: 155},
+  {title: '实重', dataIndex: 'actualWeight', width: 145},
   {title: '修正原因', dataIndex: 'correctionReason', width: 170},
 ];
 

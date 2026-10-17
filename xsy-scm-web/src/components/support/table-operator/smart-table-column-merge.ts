@@ -58,7 +58,32 @@ export function mergeColumn(originalTableColumnArray, userTableColumnArray, tabl
     }
 
     //第三步：前端列进行排序
-    newColumns = _.sortBy(newColumns, (e) => e.sort);
+    //用户保存的顺序优先；页面新增的列按其在页面定义里的位置插入，
+    //否则新旧 sort 会撞号（旧列 1..10、新列 2..26），列序看起来是乱的。
+    const pageKeys = newColumns.map((column: any) => column.columnKey);
+    const savedOrder = (userTableColumnArray || [])
+        .slice()
+        .sort((a: any, b: any) => (a.sort ?? 0) - (b.sort ?? 0))
+        .map((column: any) => column.columnKey)
+        .filter((key: string) => pageKeys.includes(key));
+    const placed = new Set(savedOrder);
+    const finalOrder = savedOrder.slice();
+    for (const key of pageKeys) {
+        if (placed.has(key)) {
+            continue;
+        }
+        const pageIndex = pageKeys.indexOf(key);
+        const nextPlaced = pageKeys.slice(pageIndex + 1).find((next: string) => placed.has(next));
+        const insertAt = nextPlaced == null ? finalOrder.length : finalOrder.indexOf(nextPlaced);
+        finalOrder.splice(insertAt, 0, key);
+        placed.add(key);
+    }
+    const orderIndex = new Map(finalOrder.map((key: string, index: number) => [key, index]));
+    newColumns = _.sortBy(newColumns, (column: any) => orderIndex.get(column.columnKey) ?? Number.MAX_SAFE_INTEGER);
+    //重排后把 sort 重新编号，避免保存时把撞号的旧值再写回数据库
+    newColumns.forEach((column: any, index: number) => {
+        column.sort = index + 1;
+    });
     return {
         newColumns,
         saveFlag,

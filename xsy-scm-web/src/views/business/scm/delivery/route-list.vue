@@ -188,12 +188,12 @@ const columns = computed<TableColumnsType>(() => [
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 150},
   {title: '司机', dataIndex: 'driverNameSnapshot', width: 110},
   {title: '车辆', dataIndex: 'vehicleNoSnapshot', width: 120},
-  {title: '停靠点', dataIndex: 'stopCount', align: 'right' as const, width: 80},
-  {title: '订单数', dataIndex: 'orderCount', align: 'right' as const, width: 80},
+  {title: '停靠点', dataIndex: 'stopCount' as const, width: 80},
+  {title: '订单数', dataIndex: 'orderCount' as const, width: 80},
   ...(canViewAmount.value
-      ? [{title: '订单金额', dataIndex: 'totalAmount', align: 'right' as const, width: 140}]
+      ? [{title: '订单金额', dataIndex: 'totalAmount' as const, width: 140}]
       : []),
-  {title: '停靠点定位', dataIndex: 'coverage', align: 'center' as const, width: 90},
+  {title: '停靠点定位', dataIndex: 'coverage' as const, width: 90},
   {title: '状态', dataIndex: 'status', align: 'center' as const, width: 100},
   {title: '操作', dataIndex: 'action', fixed: 'right' as const, align: 'center' as const, width: 160},
 ]);

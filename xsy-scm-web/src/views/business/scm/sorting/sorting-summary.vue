@@ -205,13 +205,13 @@ const columns = ref<TableColumnsType<SortingSkuSummary>>([
   {title: '商品编码', dataIndex: 'spuCodeSnapshot', width: 140},
   {title: '商品规格', dataIndex: 'sku', width: 150},
   {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 150},
-  {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 90},
-  {title: '涉及订单数', dataIndex: 'orderCount', align: 'right', width: 92},
-  {title: '任务数', dataIndex: 'taskCount', align: 'right', width: 90},
-  {title: '明细行数', dataIndex: 'lineCount', align: 'right', width: 92},
-  {title: '未处理行数', dataIndex: 'unprocessedCount', align: 'right', width: 92},
-  {title: '计划量合计', dataIndex: 'plannedQuantity', align: 'right', width: 120},
-  {title: '已分量合计', dataIndex: 'sortedQuantity', align: 'right', width: 120},
+  {title: '单位', dataIndex: 'saleUnitSnapshot', width: 90},
+  {title: '涉及订单数', dataIndex: 'orderCount', width: 92},
+  {title: '任务数', dataIndex: 'taskCount', width: 90},
+  {title: '明细行数', dataIndex: 'lineCount', width: 92},
+  {title: '未处理行数', dataIndex: 'unprocessedCount', width: 92},
+  {title: '计划量合计', dataIndex: 'plannedQuantity', width: 120},
+  {title: '已分量合计', dataIndex: 'sortedQuantity', width: 120},
 ]);
 
 const customerColumns: TableColumnsType<SortingCustomerLine> = [
@@ -223,19 +223,19 @@ const customerColumns: TableColumnsType<SortingCustomerLine> = [
   {title: '任务状态', dataIndex: 'taskStatus', align: 'center', width: 100},
   {title: '商品', dataIndex: 'productNameSnapshot', width: 160},
   {title: '商品规格', dataIndex: 'specNameSnapshot', width: 140},
-  {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 75},
-  {title: '计划量', dataIndex: 'plannedQuantitySnapshot', align: 'right', width: 110},
-  {title: '已分量', dataIndex: 'sortedQuantity', align: 'right', width: 110},
+  {title: '单位', dataIndex: 'saleUnitSnapshot', width: 75},
+  {title: '计划量', dataIndex: 'plannedQuantitySnapshot', width: 110},
+  {title: '已分量', dataIndex: 'sortedQuantity', width: 110},
   {title: '分拣结果', dataIndex: 'result', align: 'center', width: 100},
 ];
 
 const performanceColumns: TableColumnsType<SortingPerformance> = [
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 165},
   {title: '最后确认人', dataIndex: 'confirmedBy', width: 170},
-  {title: '销售单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 100},
-  {title: '已完成任务数', dataIndex: 'taskCount', align: 'right', width: 92},
-  {title: '最终确认行数', dataIndex: 'lineCount', align: 'right', width: 92},
-  {title: '最终确认量', dataIndex: 'confirmedQuantity', align: 'right', width: 150},
+  {title: '销售单位', dataIndex: 'saleUnitSnapshot', width: 100},
+  {title: '已完成任务数', dataIndex: 'taskCount', width: 92},
+  {title: '最终确认行数', dataIndex: 'lineCount', width: 92},
+  {title: '最终确认量', dataIndex: 'confirmedQuantity', width: 150},
   {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 180},
 ];
 

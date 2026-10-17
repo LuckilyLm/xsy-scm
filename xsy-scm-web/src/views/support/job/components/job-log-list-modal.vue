@@ -136,7 +136,7 @@ const columns = ref([
   },
   {
     title: '结果',
-    dataIndex: 'successFlag',
+    dataIndex: 'successFlag', align: 'center',
     width: 80,
   },
   {

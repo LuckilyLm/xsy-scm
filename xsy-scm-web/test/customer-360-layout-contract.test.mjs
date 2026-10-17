@@ -121,13 +121,16 @@ test('滚动宽度跟随当前可见列，隐藏列不占空间', () => {
   assert.equal(columns.length, 10, '客户列表列数被改动');
   const visibleWidth = columns.filter((column) => !column.hiddenByDefault).reduce((sum, column) => sum + column.width, 0);
   assert.ok(visibleWidth > 0);
-  assert.match(LIST, /:scroll="\{ x: scmColumnsWidth\(columns\) \}"/);
+  // 列宽与铺满统一走 useScmTableFill：scrollX 由它算出
+  assert.match(LIST, /:scroll="\{ x: scrollX \}"/);
+  assert.match(LIST, /useScmTableFill\(columns\)/);
   assert.match(LIST, /<TableOperator v-model="columns"/);
 
   const supplierWidths = [...SUPPLIER.matchAll(/\{title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)/g)]
       .map((m) => Number(m[1]));
   assert.ok(supplierWidths.reduce((a, b) => a + b, 0) > 0);
-  assert.match(SUPPLIER, /:scroll="\{ x: scmColumnsWidth\(columns\) \}"/);
+  assert.match(SUPPLIER, /:scroll="\{ x: scrollX \}"/);
+  assert.match(SUPPLIER, /useScmTableFill\(columns\)/);
 });
 
 test('详情页客户名与编码在 Tabs 之上，切 Tab 后始终可见', () => {

@@ -175,20 +175,20 @@ const emit = defineEmits<{
 const orderViewColumns = computed<TableColumnsType<RouteOrderView>>(() => [
   {title: '订单号', dataIndex: 'orderNo', width: 170},
   {title: '客户', dataIndex: 'customerName', width: 160},
-  {title: '停靠序', dataIndex: 'stopSeq', width: 80, align: 'right'},
-  {title: '商品行', dataIndex: 'itemCount', width: 80, align: 'right'},
-  ...(props.canViewAmount ? [{title: '订单金额', dataIndex: 'orderAmount', width: 120, align: 'right' as const}] : []),
-  {title: '打印次数', dataIndex: 'printCount', width: 90, align: 'right'},
+  {title: '停靠序', dataIndex: 'stopSeq', width: 80},
+  {title: '商品行', dataIndex: 'itemCount', width: 80},
+  ...(props.canViewAmount ? [{title: '订单金额', dataIndex: 'orderAmount', width: 120 as const}] : []),
+  {title: '打印次数', dataIndex: 'printCount', width: 90},
   {title: '打印状态', dataIndex: 'printStatus', width: 100, align: 'center'},
   {title: '最近打印', dataIndex: 'lastPrintedAt', width: 170},
 ]);
 
 const customerViewColumns = computed<TableColumnsType<RouteCustomerView>>(() => [
   {title: '客户', dataIndex: 'customerName', width: 200},
-  {title: '订单数', dataIndex: 'orderCount', width: 90, align: 'right'},
-  {title: '商品行', dataIndex: 'itemCount', width: 90, align: 'right'},
-  ...(props.canViewAmount ? [{title: '金额', dataIndex: 'totalAmount', width: 130, align: 'right' as const}] : []),
-  {title: '已打印订单', dataIndex: 'printedOrderCount', width: 92, align: 'right'},
+  {title: '订单数', dataIndex: 'orderCount', width: 90},
+  {title: '商品行', dataIndex: 'itemCount', width: 90},
+  ...(props.canViewAmount ? [{title: '金额', dataIndex: 'totalAmount', width: 130 as const}] : []),
+  {title: '已打印订单', dataIndex: 'printedOrderCount', width: 92},
   {title: '打印状态', dataIndex: 'printStatus', width: 96, align: 'center'},
 ]);
 

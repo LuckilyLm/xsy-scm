@@ -82,7 +82,7 @@ const columns = reactive([
   },
   {
     title: '运行结果',
-    dataIndex: 'result',
+    dataIndex: 'result', align: 'center',
   },
   {
     title: '异常',

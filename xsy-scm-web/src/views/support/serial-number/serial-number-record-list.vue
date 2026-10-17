@@ -72,7 +72,6 @@ const columns = reactive([
   {
     title: '生成数量',
     dataIndex: 'count',
-    align: 'right',
   },
   {
     title: '最后更新值',

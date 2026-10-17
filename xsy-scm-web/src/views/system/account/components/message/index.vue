@@ -99,7 +99,7 @@ const columns = reactive([
   {
     title: '已读',
     width: 80,
-    dataIndex: 'readFlag',
+    dataIndex: 'readFlag', align: 'center',
   },
   {
     title: '时间',

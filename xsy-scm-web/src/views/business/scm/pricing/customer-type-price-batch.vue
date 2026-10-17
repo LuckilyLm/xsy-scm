@@ -50,13 +50,11 @@ const formRules = {batchKey: [{required: true, message: '请填写批次号', tr
 const columns: TableColumnsType<BatchRow> = [{title: '行号', dataIndex: 'rowNumber', width: 65}, {
   title: '客户类型',
   dataIndex: 'customerTypeId',
-  width: 200,
-  align: 'center'
+  width: 200
 }, {title: '商品规格', dataIndex: 'skuId', width: 280}, {
   title: '单价',
   dataIndex: 'unitPrice',
-  width: 140,
-  align: 'right'
+  width: 140
 }, {title: '有效区间', dataIndex: 'effectiveFrom', width: 400}, {
   title: '错误',
   dataIndex: 'error',

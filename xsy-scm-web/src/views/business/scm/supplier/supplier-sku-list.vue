@@ -109,12 +109,12 @@ const compareLoading = ref(false);
 const compareRows = ref<SupplierSkuComparisonRow[]>([]);
 const compareColumns: TableColumnsType<SupplierSkuComparisonRow> = [
   {title: '供应商', dataIndex: 'supplierName', width: 170},
-  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76, align: 'center'},
-  {title: '参考价', dataIndex: 'referencePrice', width: 125, align: 'right'},
-  {title: '最低有效参考价', dataIndex: 'lowestReferencePrice', width: 140, align: 'right'},
-  {title: '高于最低价金额', dataIndex: 'priceGapAmount', width: 140, align: 'right'},
-  {title: '高于最低价比例', dataIndex: 'priceGapPercent', width: 108, align: 'right'},
-  {title: '有效报价数', dataIndex: 'pricedSupplierCount', width: 92, align: 'right'},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
+  {title: '参考价', dataIndex: 'referencePrice', width: 125},
+  {title: '最低有效参考价', dataIndex: 'lowestReferencePrice', width: 140},
+  {title: '高于最低价金额', dataIndex: 'priceGapAmount', width: 140},
+  {title: '高于最低价比例', dataIndex: 'priceGapPercent', width: 108},
+  {title: '有效报价数', dataIndex: 'pricedSupplierCount', width: 92},
   {title: '优先采购', dataIndex: 'defaultFlag', width: 110, align: 'center'},
 ];
 
@@ -130,8 +130,8 @@ const columns = ref<TableColumnsType<SupplierSkuRow>>([
   {title: '商品名称', dataIndex: 'skuNameSnapshot', width: 200},
   {title: '商品规格', dataIndex: 'spec', width: 150},
   {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 160},
-  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76, align: 'center'},
-  {title: '参考价', dataIndex: 'referencePrice', width: 120, align: 'right'},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
+  {title: '参考价', dataIndex: 'referencePrice', width: 120},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},
   {title: '优先采购', dataIndex: 'defaultFlag', width: 110, align: 'center'},
   {title: '状态', dataIndex: 'status', width: 90, align: 'center'},

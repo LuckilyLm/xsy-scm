@@ -44,9 +44,9 @@ function parentName(record: ProductCategory): string {
 
 const columns = [
   {title: '分类名称', dataIndex: 'name', width: 260},
-  {title: '层级', dataIndex: 'level', width: 90},
+  {title: '层级', dataIndex: 'level', align: 'center', width: 90},
   {title: '父分类', dataIndex: 'parentName', width: 240},
-  {title: '排序', dataIndex: 'sortOrder', width: 90, align: 'right' as const},
+  {title: '排序', dataIndex: 'sortOrder', width: 90 as const},
   {title: '状态', dataIndex: 'status', width: 90, align: 'center' as const},
   {title: '操作', dataIndex: 'action', width: 160, align: 'center' as const},
 ];

@@ -49,8 +49,8 @@ test('收货明细：商品身份只占两列，不复制编码列', () => {
     assert.ok(!/dataIndex: 'spuCode'/.test(receipt), '收货明细仍在渲染 spuCode');
 });
 
-test('收款与入库明细：金额右对齐、数量右对齐，且无局部 .num 样式', () => {
-    // 金额与数量列必须显式右对齐
+test('收款与入库明细：金额与数量列左对齐，且无局部 .num 样式', () => {
+    // 2026-10-18 起全站只有枚举/分类/操作居中，数值列不再右对齐
     for (const index of [
         'receivedQuantity',
         'cumulativeReceivedQuantity',
@@ -63,10 +63,10 @@ test('收款与入库明细：金额右对齐、数量右对齐，且无局部 .
         'unitCost',
         'costAmount',
     ]) {
-        assert.match(
+        assert.doesNotMatch(
             receipt,
-            new RegExp(`dataIndex: '${index}'[\\s\\S]{0,60}?align: 'right'`),
-            `${index} 列未右对齐`,
+            new RegExp(`dataIndex: '${index}'[\\s\\S]{0,60}?align:`),
+            `${index} 列不应再声明 align`,
         );
     }
     // 数值渲染统一走全局类，页面里不得再定义局部 .num

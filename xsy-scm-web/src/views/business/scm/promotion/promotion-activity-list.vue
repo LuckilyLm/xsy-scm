@@ -359,7 +359,7 @@ const columns: TableColumnsType<PromotionActivity> = [
   {title: '活动名称', dataIndex: 'activityName', width: 200},
   {title: '类型', dataIndex: 'activityType', align: 'center', width: 110},
   {title: '规则摘要', dataIndex: 'ruleText', width: 260},
-  {title: '优先级', dataIndex: 'priority', align: 'right', width: 90},
+  {title: '优先级', dataIndex: 'priority', width: 90},
   {title: '生效时间', dataIndex: 'validFrom', width: 170},
   {title: '失效时间', dataIndex: 'validTo', width: 170},
   {title: '互斥组', dataIndex: 'exclusiveGroup', width: 130},

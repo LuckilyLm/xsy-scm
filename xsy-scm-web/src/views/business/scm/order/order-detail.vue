@@ -271,22 +271,19 @@ const columns: TableColumnsType<Item> = [{title: '商品', dataIndex: 'productNa
   title: '商品规格',
   dataIndex: 'specNameSnapshot',
   width: 100
-}, {title: '单位', dataIndex: 'saleUnitSnapshot', width: 65, align: 'center'}, {
+}, {title: '单位', dataIndex: 'saleUnitSnapshot', width: 65}, {
   title: '下单量',
   dataIndex: 'orderedQuantity',
-  align: 'right',
   width: 100
-}, {title: '实数量', dataIndex: 'actualQuantity', align: 'right', width: 100}, {
+}, {title: '实数量', dataIndex: 'actualQuantity', width: 100}, {
   title: '草稿单价',
   dataIndex: 'draftUnitPrice',
-  align: 'right',
   width: 110
-}, {title: '锁定单价', dataIndex: 'lockedUnitPrice', align: 'right', width: 110}, {
+}, {title: '锁定单价', dataIndex: 'lockedUnitPrice', width: 110}, {
   title: '下单金额',
   dataIndex: 'orderedLineAmount',
-  align: 'right',
   width: 115
-}, {title: '结算金额', dataIndex: 'settlementLineAmount', align: 'right', width: 115}, {
+}, {title: '结算金额', dataIndex: 'settlementLineAmount', width: 115}, {
   title: '操作',
   dataIndex: 'action',
   width: 120,

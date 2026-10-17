@@ -39,8 +39,8 @@ const columns: TableColumnsType<BundleRow> = [
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'specName', width: 140},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
-  {title: '组成销售单位', dataIndex: 'saleUnit', width: 120, align: 'center'},
-  {title: '每套用量（组成销售单位）', dataIndex: 'quantityPerBundleSaleUnit', width: 220, align: 'right'}
+  {title: '组成销售单位', dataIndex: 'saleUnit', width: 120},
+  {title: '每套用量（组成销售单位）', dataIndex: 'quantityPerBundleSaleUnit', width: 220}
 ];
 let requestId = 0;
 

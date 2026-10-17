@@ -180,22 +180,22 @@ const relationText = computed(() => {
 
 const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
     {title: '出库来源', dataIndex: 'sourceId', width: 120}, {title: '商品', dataIndex: 'skuName', width: 200},
-    {title: '数量', dataIndex: 'quantity', width: 112, align: 'right', customRender: ({text}) => numberText(text)},
-    {title: '单价', dataIndex: 'unitPrice', width: 136, align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text)},
+    {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text)},
     // 毛额 − 优惠 = 净额：三列一起看才能解释「这行为什么只记这么多应收」
-    {title: '毛额', dataIndex: 'grossAmount', width: 148, align: 'right', customRender: ({text}) => moneyText(text)},
-    {title: '订单优惠', dataIndex: 'discountAmount', width: 148, align: 'right', customRender: ({text}) => moneyText(text)},
-    {title: '净额', dataIndex: 'amount', width: 148, align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '毛额', dataIndex: 'grossAmount', width: 148, customRender: ({text}) => moneyText(text)},
+    {title: '订单优惠', dataIndex: 'discountAmount', width: 148, customRender: ({text}) => moneyText(text)},
+    {title: '净额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
 ];
 const payableColumns: TableColumnsType<FinancePayableItem> = [
     {title: '收货来源', dataIndex: 'sourceId', width: 120}, {title: '商品', dataIndex: 'skuName', width: 200},
-    {title: '数量', dataIndex: 'quantity', width: 112, align: 'right', customRender: ({text}) => numberText(text)},
-    {title: '单价', dataIndex: 'unitPrice', width: 136, align: 'right', customRender: ({text}) => moneyText(text)},
-    {title: '金额', dataIndex: 'amount', width: 148, align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text)},
+    {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text)},
+    {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
 ];
 const redColumns: TableColumnsType<FinanceReceivable | FinancePayable> = [
     {title: '红字单号', dataIndex: 'receivableNo', customRender: ({record}) => ('receivableNo' in record ? record.receivableNo : record.payableNo)},
-    {title: '金额', dataIndex: 'amount', align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '金额', dataIndex: 'amount', customRender: ({text}) => moneyText(text)},
     {title: '原因', dataIndex: 'reason'}, {title: '业务时点', dataIndex: 'eventAt', customRender: ({text}) => dateTimeText(text)},
 ];
 
@@ -205,12 +205,12 @@ function redEntryKey(row: FinanceReceivable | FinancePayable) {
 const writeOffColumns: TableColumnsType<FinanceWriteOff> = [
     {title: '核销单号', dataIndex: 'writeOffNo', width: 190}, {title: '资金单', dataIndex: 'sourceNo', width: 180},
     {title: '目标单', dataIndex: 'targetNo', width: 180}, {title: '方向', dataIndex: 'entryType', width: 90, customRender: ({text}) => entryTypeText(text), align: 'center'},
-    {title: '金额', dataIndex: 'amount', width: 148, align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
     {title: '原因', dataIndex: 'reason', width: 240},
 ];
 const logColumns: TableColumnsType<FinanceOperationLog> = [
     {title: '时间', dataIndex: 'createdAt', width: 180, customRender: ({text}) => dateTimeText(text)},
-    {title: '操作', dataIndex: 'operationType', width: 160, customRender: ({text}) => operationTypeText(text)},
+    {title: '操作', dataIndex: 'operationType', align: 'center', width: 160, customRender: ({text}) => operationTypeText(text)},
     {title: '操作人', dataIndex: 'operator', width: 130},
     {title: '原因', dataIndex: 'reason', width: 200}, {title: '快照', dataIndex: 'snapshot', width: 150},
 ];

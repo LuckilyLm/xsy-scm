@@ -108,11 +108,11 @@ const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 76
 
 const columns = ref<TableColumnsType<FinanceReceivable>>([
     {title: '应收单号', dataIndex: 'receivableNo', fixed: 'left', width: 170, ellipsis: true},
-    {title: '未核销', dataIndex: 'openAmount', fixed: 'left', align: 'right', width: 148},
+    {title: '未核销', dataIndex: 'openAmount', fixed: 'left', width: 148},
     {title: '客户', dataIndex: 'customerName', width: 190}, {title: '订单号', dataIndex: 'orderNo', width: 170},
-    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 136},
-    {title: '已核销', dataIndex: 'writtenOffAmount', align: 'right', width: 148},
-    {title: '超额核销', dataIndex: 'overAppliedAmount', align: 'right', width: 148},
+    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', width: 136},
+    {title: '已核销', dataIndex: 'writtenOffAmount', width: 148},
+    {title: '超额核销', dataIndex: 'overAppliedAmount', width: 148},
     {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110}, {title: '事件时点', dataIndex: 'eventAt', width: 180},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 65},
 ]);

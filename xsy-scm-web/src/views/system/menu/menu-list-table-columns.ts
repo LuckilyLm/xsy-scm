@@ -15,13 +15,12 @@ export const columns = ref([
         title: '类型',
         dataIndex: 'menuType',
         width: 100,
-        align: "center"
+        align: 'center'
     },
     {
         title: '图标',
         dataIndex: 'icon',
         width: 50,
-        align: 'center',
     },
     {
         title: '路径',
@@ -52,6 +51,6 @@ export const columns = ref([
         title: '操作',
         dataIndex: 'operate',
         width: 170,
-        align: "center"
+        align: 'center'
     },
 ]);

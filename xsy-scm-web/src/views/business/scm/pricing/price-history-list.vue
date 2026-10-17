@@ -121,17 +121,17 @@ const operationOptions = Object.entries(HISTORY_OPERATION_LABEL).map(([value, la
 const columns = ref<TableColumnsType<HistoryRow>>([
   {title: '来源', dataIndex: 'source', width: 120},
   {title: '客户', dataIndex: 'customerName', width: 170},
-  {title: '客户类型', dataIndex: 'customerTypeName', align: 'center', width: 150},
+  {title: '客户类型', dataIndex: 'customerTypeName', width: 150},
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'specName', width: 170},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '变更', dataIndex: 'operationType', align: 'center', width: 100},
-  {title: '当前价格', dataIndex: 'currentUnitPrice', align: 'right', width: 120},
+  {title: '当前价格', dataIndex: 'currentUnitPrice', width: 120},
   {title: '当前生效时间', dataIndex: 'currentEffectiveFrom', width: 170},
   {title: '当前结束时间', dataIndex: 'currentEffectiveTo', width: 130},
   {title: '变更时间', dataIndex: 'operatedAt', width: 170},
   {title: '操作人', dataIndex: 'operator', width: 110},
-  {title: '记录', dataIndex: 'currentDeleted', align: 'center', width: 100},
+  {title: '记录', dataIndex: 'currentDeleted', width: 100},
   {title: '详情', dataIndex: 'action', align: 'center', fixed: 'right', width: 100},
 ]);
 

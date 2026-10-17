@@ -191,7 +191,7 @@ const tableColumns = ref([
 
   {
     title: '可见范围',
-    dataIndex: 'allVisibleFlag',
+    dataIndex: 'allVisibleFlag', align: 'center',
     width: 90,
     ellipsis: true,
   },
@@ -203,7 +203,7 @@ const tableColumns = ref([
   },
   {
     title: '删除',
-    dataIndex: 'deletedFlag',
+    dataIndex: 'deletedFlag', align: 'center',
     width: 80,
   },
   {
@@ -215,13 +215,11 @@ const tableColumns = ref([
     title: '页面浏览量',
     dataIndex: 'pageViewCount',
     width: 90,
-    align: 'right',
   },
   {
     title: '用户浏览量',
     dataIndex: 'userViewCount',
     width: 90,
-    align: 'right',
   },
   {
     title: '创建人',

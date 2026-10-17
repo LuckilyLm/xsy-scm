@@ -131,18 +131,18 @@ import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 type ReturnItemWithDisposition = ReturnItem & { disposition: 'RETURN_TO_STOCK' | 'DAMAGE'; receiptQuantity: string };
 const detailItemColumns: TableColumnsType<ReturnItem> = [
   {title: '商品', dataIndex: 'productName', width: 200},
-  {title: '单位', dataIndex: 'unit', width: 72, align: 'center'},
-  {title: '申请数量', dataIndex: 'requestedQuantity', width: 112, align: 'right'},
-  {title: '批准数量', dataIndex: 'approvedQuantity', width: 112, align: 'right'},
-  {title: '已接收数量', dataIndex: 'receivedQuantity', width: 112, align: 'right'},
+  {title: '单位', dataIndex: 'unit', width: 72},
+  {title: '申请数量', dataIndex: 'requestedQuantity', width: 112},
+  {title: '批准数量', dataIndex: 'approvedQuantity', width: 112},
+  {title: '已接收数量', dataIndex: 'receivedQuantity', width: 112},
 ];
 const receiveItemColumns: TableColumnsType<ReturnItemWithDisposition> = [
   {title: '商品', dataIndex: 'productName', width: 200},
-  {title: '单位', dataIndex: 'unit', width: 72, align: 'center'},
-  {title: '批准数量', dataIndex: 'approvedQuantity', width: 112, align: 'right'},
-  {title: '已接收', dataIndex: 'receivedQuantity', width: 112, align: 'right'},
-  {title: '本次接收', dataIndex: 'receiptQuantity', width: 132, align: 'right'},
-  {title: '处置', dataIndex: 'disposition', width: 160, align: 'center'},
+  {title: '单位', dataIndex: 'unit', width: 72},
+  {title: '批准数量', dataIndex: 'approvedQuantity', width: 112},
+  {title: '已接收', dataIndex: 'receivedQuantity', width: 112},
+  {title: '本次接收', dataIndex: 'receiptQuantity', width: 132},
+  {title: '处置', dataIndex: 'disposition', width: 160},
 ];
 import {amount, fixed} from './order-form-model';
 import {orderError} from './order-errors';
@@ -166,7 +166,7 @@ const columns = ref<TableColumnsType<ReturnRow>>([{
   dataIndex: 'status',
   width: 120,
   align: 'center'
-}, {title: '批准金额', dataIndex: 'approvedAmount', align: 'right', width: 140}, {
+}, {title: '批准金额', dataIndex: 'approvedAmount', width: 140}, {
   title: '操作',
   dataIndex: 'action',
   align: 'center',

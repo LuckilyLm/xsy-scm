@@ -168,11 +168,11 @@ const columns = ref<InventoryMovementColumn[]>([
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
   {title: '商品规格', dataIndex: 'skuName', width: 150},
   {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
-  {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
-  {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 80},
-  {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 120},
-  {title: '期初量', dataIndex: 'beforeQuantity', align: 'right', width: 110},
-  {title: '结存量', dataIndex: 'afterQuantity', align: 'right', width: 110},
+  {title: '数量', dataIndex: 'quantity', width: 110},
+  {title: '单位', dataIndex: 'unitSnapshot', width: 80},
+  {title: '单位成本', dataIndex: 'unitCost', width: 120},
+  {title: '期初量', dataIndex: 'beforeQuantity', width: 110},
+  {title: '结存量', dataIndex: 'afterQuantity', width: 110},
   {title: '操作者', dataIndex: 'operator', width: 110},
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value));

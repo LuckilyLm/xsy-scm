@@ -123,9 +123,8 @@ const columns = ref([
   },
   {
     title: '操作',
-    dataIndex: 'operate',
+    dataIndex: 'operate', align: 'center',
     width: 90,
-    align: 'center',
   },
 ]);
 

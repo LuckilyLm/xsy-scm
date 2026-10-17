@@ -221,7 +221,7 @@ function rowsOf(rows: DiffChild[]): Record<string, string>[] {
 
 function columnsOf(rows: DiffChild[]): TableColumnsType<Record<string, string>> {
   return [
-    {title: '#', dataIndex: '__row', width: 56, align: 'center'},
+    {title: '#', dataIndex: '__row', width: 56},
     ...groupKeys(rows).map((key) => ({title: labelOf(key), dataIndex: key, width: 160})),
   ];
 }

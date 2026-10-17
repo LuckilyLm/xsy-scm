@@ -51,7 +51,7 @@ import TagModal from './product-tag-modal.vue';
 const query = reactive<AssistantQuery>({}), rows = ref<ProductTag[]>([]), loading = ref(false), error = ref('');
 const modal = ref<InstanceType<typeof TagModal>>();
 const columns: TableColumnsType<ProductTag> = [
-  {title: '排序', dataIndex: 'sortOrder', width: 70, align: 'right'}, {
+  {title: '排序', dataIndex: 'sortOrder', width: 70}, {
     title: '标签编码',
     dataIndex: 'tagCode',
     width: 170
@@ -59,8 +59,7 @@ const columns: TableColumnsType<ProductTag> = [
   {title: '标签名称', dataIndex: 'name', width: 170}, {
     title: '已打标商品',
     dataIndex: 'productCount',
-    width: 110,
-    align: 'right'
+    width: 110
   },
   {title: '状态', dataIndex: 'status', width: 80, align: 'center'}, {
     title: '操作',

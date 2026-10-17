@@ -325,9 +325,9 @@ function close() {
 
 const scaleColumns: TableColumnsType<SortingScaleEvent> = [
     {title: '状态', dataIndex: 'status', align: 'center', width: 90},
-    {title: '原始读数', dataIndex: 'rawReading', align: 'right', width: 120},
-    {title: '已接受数量', dataIndex: 'acceptedQuantity', align: 'right', width: 120},
-    {title: '单位', dataIndex: 'unit', align: 'center', width: 70},
+    {title: '原始读数', dataIndex: 'rawReading', width: 120},
+    {title: '已接受数量', dataIndex: 'acceptedQuantity', width: 120},
+    {title: '单位', dataIndex: 'unit', width: 70},
     {title: '稳定', dataIndex: 'stableFlag', align: 'center', width: 80},
     {title: '设备', dataIndex: 'deviceCode', width: 130},
     {title: '采集时间', dataIndex: 'capturedAt', width: 175},

@@ -103,12 +103,10 @@ const columns = [
   {
     title: '姓名',
     dataIndex: 'actualName',
-    align: 'center',
   },
   {
     title: '手机号',
     dataIndex: 'phone',
-    align: 'left',
   },
 ];
 

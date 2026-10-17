@@ -95,7 +95,7 @@ let requestId = 0;
 /** 采购日志列表已根据当前采购单查询，不重复展示采购单 ID。保留关联收货单，便于区分不同收货操作。 */
 const columns = ref<TableColumnsType<LogRow>>([
   {title: '时间', dataIndex: 'createdAt', width: 200, customRender: ({text}) => datetime(text)},
-  {title: '操作', dataIndex: 'operationType', width: 150},
+  {title: '操作', dataIndex: 'operationType', align: 'center', width: 150},
   {title: '操作人', dataIndex: 'operator', width: 130},
   {title: '关联收货单（内部编号）', dataIndex: 'purchaseReceiptId', width: 200},
   {title: '原因', dataIndex: 'reason', width: 200},

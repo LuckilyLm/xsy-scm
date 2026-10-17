@@ -118,13 +118,13 @@ const canOperate = computed(() => {
 const itemColumns: TableColumnsType<Item> = [
   {title: '商品', dataIndex: 'productNameSnapshot', width: 170},
   {title: '商品规格', dataIndex: 'specNameSnapshot', width: 150},
-  {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 80},
-  {title: '下单量', dataIndex: 'orderedQuantity', align: 'right', width: 110},
-  {title: '实数量', dataIndex: 'actualQuantity', align: 'right', width: 110},
-  {title: '草稿单价', dataIndex: 'draftUnitPrice', align: 'right', width: 120},
-  {title: '锁定单价', dataIndex: 'lockedUnitPrice', align: 'right', width: 120},
-  {title: '下单金额', dataIndex: 'orderedLineAmount', align: 'right', width: 130},
-  {title: '结算金额', dataIndex: 'settlementLineAmount', align: 'right', width: 130},
+  {title: '单位', dataIndex: 'saleUnitSnapshot', width: 80},
+  {title: '下单量', dataIndex: 'orderedQuantity', width: 110},
+  {title: '实数量', dataIndex: 'actualQuantity', width: 110},
+  {title: '草稿单价', dataIndex: 'draftUnitPrice', width: 120},
+  {title: '锁定单价', dataIndex: 'lockedUnitPrice', width: 120},
+  {title: '下单金额', dataIndex: 'orderedLineAmount', width: 130},
+  {title: '结算金额', dataIndex: 'settlementLineAmount', width: 130},
 ];
 
 function settlementLabel(method?: Order['settlementMethod']): string {

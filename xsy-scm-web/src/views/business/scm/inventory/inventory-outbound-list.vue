@@ -281,7 +281,7 @@ const statusTone = (status?: string | null): ScmStatusTone => STATUS_TONE[status
 
 const itemColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'skuId', width: 290},
-  {title: '出库数量', dataIndex: 'quantity', width: 160, align: 'right'},
+  {title: '出库数量', dataIndex: 'quantity', width: 160},
   {title: '备注', dataIndex: 'remark'},
   {title: '操作', dataIndex: 'action', width: 80, align: 'center'},
 ];
@@ -291,8 +291,8 @@ const detailItemColumns: TableColumnsType = [
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'sku', width: 170},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
-  {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
-  {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 110},
+  {title: '数量', dataIndex: 'quantity', width: 110},
+  {title: '单位', dataIndex: 'unitSnapshot', width: 110},
 ];
 
 /** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */

@@ -85,7 +85,7 @@ const columns = ref([
   },
   {
     title: '循环周期',
-    dataIndex: 'ruleType',
+    dataIndex: 'ruleType', align: 'center',
   },
   {
     title: '初始值',

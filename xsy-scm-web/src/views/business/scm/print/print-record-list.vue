@@ -94,7 +94,7 @@ const columns: TableColumnsType<PrintRecord> = [
   {title: '业务单号', dataIndex: 'businessNo', width: 190},
   {title: '模板名称', dataIndex: 'templateName', width: 170},
   {title: '模板编码', dataIndex: 'templateCode', width: 150},
-  {title: '模板版本', dataIndex: 'templateVersion', align: 'right', width: 90},
+  {title: '模板版本', dataIndex: 'templateVersion', width: 90},
   {title: '打印时间', dataIndex: 'printedAt', width: 165},
   {title: '打印人', dataIndex: 'printedBy', width: 110},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 100},

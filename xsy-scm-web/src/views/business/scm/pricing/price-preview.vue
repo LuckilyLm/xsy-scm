@@ -109,9 +109,9 @@ const trialColumns: TableColumnsType<TrialRow> = [
   {title: '商品规格编码', dataIndex: 'skuId', width: 140},
   {title: '公式', dataIndex: 'formula', width: 150},
   {title: '基准来源', dataIndex: 'source', width: 150},
-  {title: '基准单价', dataIndex: 'basis', align: 'right', width: 130},
+  {title: '基准单价', dataIndex: 'basis', width: 130},
   {title: '公式参数', dataIndex: 'parameter', width: 120},
-  {title: '结果单价', dataIndex: 'unitPrice', align: 'right', width: 120},
+  {title: '结果单价', dataIndex: 'unitPrice', width: 120},
   {title: '未定价原因', dataIndex: 'reason', width: 180}
 ];
 function formulaLabel(value: unknown): string {
@@ -162,10 +162,10 @@ const columns: TableColumnsType<ResolvedPrice> = [
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'specName', width: 170},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
-  {title: '最终价格', dataIndex: 'unitPrice', align: 'right', width: 148},
-  {title: '价格来源', dataIndex: 'priceSource', width: 150, align: 'center'},
+  {title: '最终价格', dataIndex: 'unitPrice', width: 148},
+  {title: '价格来源', dataIndex: 'priceSource', width: 150},
   {title: '价格状态', dataIndex: 'priceStatus', align: 'center', width: 96},
-  {title: '可售', dataIndex: 'sellable', align: 'center', width: 110},
+  {title: '可售', dataIndex: 'sellable', width: 110},
   {title: '说明', dataIndex: 'hint', width: 220},
 ];
 

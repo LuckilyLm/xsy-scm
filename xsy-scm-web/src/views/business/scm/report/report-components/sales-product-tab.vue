@@ -103,18 +103,18 @@ const emit = defineEmits<{
 
 const columns = ref<TableColumnsType<SalesProductRow>>([
   {title: '商品名称', dataIndex: 'productName', width: 200},
-  {title: '一级分类', dataIndex: 'rootCategoryName', width: 140},
-  {title: '末级分类', dataIndex: 'leafCategoryName', width: 140},
+  {title: '一级分类', dataIndex: 'rootCategoryName', align: 'center', width: 140},
+  {title: '末级分类', dataIndex: 'leafCategoryName', align: 'center', width: 140},
   {title: '商品规格', dataIndex: 'specName', width: 140},
-  {title: '销售单位', dataIndex: 'saleUnit', align: 'center', width: 76},
-  {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 92},
-  {title: '客户数', dataIndex: 'customerCount', align: 'right', width: 92},
-  {title: '确认数量', dataIndex: 'confirmedQuantity', align: 'right', width: 130},
-  {title: '成交均价', dataIndex: 'avgTransactionPrice', align: 'right', width: 130},
-  {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 148},
-  {title: '金额占比', dataIndex: 'salesAmountSharePercent', align: 'right', width: 108},
-  {title: '累计金额占比', dataIndex: 'cumulativeSalesAmountSharePercent', align: 'right', width: 108},
-  {title: '金额排名', dataIndex: 'amountRank', align: 'right', width: 110},
+  {title: '销售单位', dataIndex: 'saleUnit', width: 76},
+  {title: '订单笔数', dataIndex: 'orderCount', width: 92},
+  {title: '客户数', dataIndex: 'customerCount', width: 92},
+  {title: '确认数量', dataIndex: 'confirmedQuantity', width: 130},
+  {title: '成交均价', dataIndex: 'avgTransactionPrice', width: 130},
+  {title: '确认订单金额', dataIndex: 'settlementAmount', width: 148},
+  {title: '金额占比', dataIndex: 'salesAmountSharePercent', width: 108},
+  {title: '累计金额占比', dataIndex: 'cumulativeSalesAmountSharePercent', width: 108},
+  {title: '金额排名', dataIndex: 'amountRank', width: 110},
 ]);
 
 function percentText(value: string | null | undefined): string {

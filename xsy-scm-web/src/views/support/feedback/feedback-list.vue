@@ -88,7 +88,6 @@ const tableColumns = reactive([
   {
     title: '反馈图片',
     dataIndex: 'feedbackAttachment',
-    align: 'center',
   },
   {
     title: '反馈人',

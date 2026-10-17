@@ -484,7 +484,7 @@ let baseReq = 0;
 const mallAccountCols: TableColumnsType<MallAccount> = [
   {title: '登录手机号', dataIndex: 'loginPhone', width: 160},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
-  {title: '临时密码', dataIndex: 'firstPasswordChange', width: 140, align: 'center'},
+  {title: '临时密码', dataIndex: 'firstPasswordChange', width: 140},
   {title: '最近登录', dataIndex: 'lastLoginAt', width: 180},
   {title: '操作', dataIndex: 'action', width: 180, align: 'center'}
 ];
@@ -744,24 +744,24 @@ const orderCols: TableColumnsType<Order> = [
   {title: '订单号', dataIndex: 'orderNo', width: 180},
   {title: '来源', dataIndex: 'orderSource', width: 110, align: 'center'},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '订单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 140},
+  {title: '订单金额', dataIndex: 'orderedTotalAmount', width: 140},
   {title: '创建时间', dataIndex: 'createdAt', width: 180}
 ];
 const frequentCols: TableColumnsType<CustomerFrequentSku> = [
   {title: '商品', dataIndex: 'productName', width: 220},
   {title: '商品规格', dataIndex: 'specName', width: 140},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
-  {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
-  {title: '订购次数', dataIndex: 'orderCount', align: 'right', width: 92},
-  {title: '订购量', dataIndex: 'orderedQuantity', align: 'right', width: 110},
-  {title: '最近成交价', dataIndex: 'recentUnitPrice', align: 'right', width: 120},
+  {title: '单位', dataIndex: 'unit', width: 80},
+  {title: '订购次数', dataIndex: 'orderCount', width: 92},
+  {title: '订购量', dataIndex: 'orderedQuantity', width: 110},
+  {title: '最近成交价', dataIndex: 'recentUnitPrice', width: 120},
   {title: '最近购买', dataIndex: 'lastConfirmedAt', width: 180}
 ];
 const agreementCols: TableColumnsType<PriceRow> = [
   {title: '商品', dataIndex: 'productName', width: 220},
   {title: '商品规格', dataIndex: 'specName', width: 140},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
-  {title: '协议单价', dataIndex: 'unitPrice', align: 'right', width: 130},
+  {title: '协议单价', dataIndex: 'unitPrice', width: 130},
   {title: '有效期', dataIndex: 'effectivePeriod', width: 300}
 ];
 const visibilityCols: TableColumnsType<VisibilityRow> = [

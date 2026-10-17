@@ -108,14 +108,14 @@ const columns = computed<TableColumnsType<ReceiptItemWorkbenchRow>>(() => [
   {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
-  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76, align: 'center'},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '商品类型', dataIndex: 'productType', align: 'center', width: 100},
-  {title: '命中采购单数', dataIndex: 'orderCount', align: 'right', width: 92},
-  {title: '命中行数', dataIndex: 'lineCount', align: 'right', width: 92},
-  {title: '计划量', dataIndex: 'plannedQuantity', align: 'right', width: 120},
-  {title: '已收量', dataIndex: 'receivedQuantity', align: 'right', width: 120},
-  {title: '欠收量', dataIndex: 'pendingQuantity', align: 'right', width: 120},
-  {title: '超收量', dataIndex: 'overReceiptQuantity', align: 'right', width: 120},
+  {title: '命中采购单数', dataIndex: 'orderCount', width: 92},
+  {title: '命中行数', dataIndex: 'lineCount', width: 92},
+  {title: '计划量', dataIndex: 'plannedQuantity', width: 120},
+  {title: '已收量', dataIndex: 'receivedQuantity', width: 120},
+  {title: '欠收量', dataIndex: 'pendingQuantity', width: 120},
+  {title: '超收量', dataIndex: 'overReceiptQuantity', width: 120},
 ]);
 
 async function queryData() {

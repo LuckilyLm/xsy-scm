@@ -109,11 +109,11 @@ const columns = ref<TableColumnsType<PurchaseItemRow>>([
   {title: '计划到货日期', dataIndex: 'plannedArrivalDate', width: 130},
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'skuName', width: 140},
-  {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 76},
-  {title: '计划数量', dataIndex: 'plannedQuantity', align: 'right', width: 120},
-  {title: '累计收货数量', dataIndex: 'receivedQuantity', align: 'right', width: 150},
-  {title: '采购单价', dataIndex: 'purchasePrice', align: 'right', width: 130},
-  {title: '采购行金额', dataIndex: 'lineAmount', align: 'right', width: 140},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
+  {title: '计划数量', dataIndex: 'plannedQuantity', width: 120},
+  {title: '累计收货数量', dataIndex: 'receivedQuantity', width: 150},
+  {title: '采购单价', dataIndex: 'purchasePrice', width: 130},
+  {title: '采购行金额', dataIndex: 'lineAmount', width: 140},
 ]);
 
 function refresh() {

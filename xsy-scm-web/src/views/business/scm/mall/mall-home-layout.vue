@@ -170,11 +170,11 @@ const linkOptions: {value: HomeLinkType; label: string}[] = [
   {value: 'EXTERNAL_URL', label: '允许的外部网页'}
 ];
 const columns: TableColumnsType<HomeBlock> = [
-  {title: '顺序', dataIndex: 'sortOrder', width: 70, align: 'center'},
-  {title: '组件', dataIndex: 'type', width: 120},
+  {title: '顺序', dataIndex: 'sortOrder', width: 70},
+  {title: '组件', dataIndex: 'type', align: 'center', width: 120},
   {title: '内容', dataIndex: 'title', width: 230},
   {title: '展示客户', dataIndex: 'audience', width: 145},
-  {title: '状态', dataIndex: 'enabled', width: 90, align: 'center'},
+  {title: '状态', dataIndex: 'enabled', width: 90},
   {title: '操作', dataIndex: 'action', align: 'center', width: 150}
 ];
 const newType = ref<HomeBlockType>('BANNER');

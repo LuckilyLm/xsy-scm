@@ -139,10 +139,10 @@ const columns = ref<TableColumnsType<SortingCandidateLine>>([
   {title: '客户', dataIndex: 'customerName', width: 160},
   {title: '商品', dataIndex: 'productNameSnapshot', width: 170},
   {title: '商品规格', dataIndex: 'specNameSnapshot', width: 130},
-  {title: '类型', dataIndex: 'productTypeSnapshot', align: 'center', width: 90},
-  {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 80},
-  {title: '订购量', dataIndex: 'orderedQuantity', align: 'right', width: 110},
-  {title: '实发量', dataIndex: 'actualQuantity', align: 'right', width: 110},
+  {title: '类型', dataIndex: 'productTypeSnapshot', width: 90},
+  {title: '单位', dataIndex: 'saleUnitSnapshot', width: 80},
+  {title: '订购量', dataIndex: 'orderedQuantity', width: 110},
+  {title: '实发量', dataIndex: 'actualQuantity', width: 110},
 ]);
 
 function productTypeDesc(type?: string | null) {

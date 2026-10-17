@@ -63,12 +63,12 @@ const emit = defineEmits<{
 const itemColumns: TableColumnsType = [
   {title: '源商品规格', dataIndex: 'sourceSkuCode', width: 150},
   {title: '源商品', dataIndex: 'sourceProductName', width: 140},
-  {title: '源数量', dataIndex: 'sourceQuantity', align: 'right', width: 110},
-  {title: '源单位', dataIndex: 'sourceUnit', align: 'center', width: 90},
+  {title: '源数量', dataIndex: 'sourceQuantity', width: 110},
+  {title: '源单位', dataIndex: 'sourceUnit', width: 90},
   {title: '目标商品规格', dataIndex: 'targetSkuCode', width: 150},
   {title: '目标商品', dataIndex: 'targetProductName', width: 140},
-  {title: '目标数量', dataIndex: 'targetQuantity', align: 'right', width: 110},
-  {title: '目标单位', dataIndex: 'targetUnit', align: 'center', width: 90},
+  {title: '目标数量', dataIndex: 'targetQuantity', width: 110},
+  {title: '目标单位', dataIndex: 'targetUnit', width: 90},
 ];
 
 function statusColor(status?: string) {

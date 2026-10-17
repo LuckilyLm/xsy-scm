@@ -226,7 +226,7 @@ const columns: TableColumnsType<PrintTemplate> = [
   {title: '模板名称', dataIndex: 'templateName', width: 180},
   {title: '默认', dataIndex: 'defaultFlag', align: 'center', width: 90},
   {title: '状态', dataIndex: 'enabledFlag', align: 'center', width: 90},
-  {title: '版本', dataIndex: 'version', align: 'right', width: 80},
+  {title: '版本', dataIndex: 'version', width: 80},
   {title: '更新时间', dataIndex: 'updatedAt', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];

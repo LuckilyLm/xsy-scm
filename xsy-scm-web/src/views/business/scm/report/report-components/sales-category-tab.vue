@@ -92,12 +92,12 @@ const emit = defineEmits<{
 }>();
 
 const columns = ref<TableColumnsType<SalesCategoryRow>>([
-  {title: '一级分类', dataIndex: 'rootCategoryName', width: 180},
-  {title: '末级分类', dataIndex: 'leafCategoryName', width: 180},
-  {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 148},
-  {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 92},
-  {title: '客户数', dataIndex: 'customerCount', align: 'right', width: 92},
-  {title: '金额排名', dataIndex: 'amountRank', align: 'right', width: 110},
+  {title: '一级分类', dataIndex: 'rootCategoryName', align: 'center', width: 180},
+  {title: '末级分类', dataIndex: 'leafCategoryName', align: 'center', width: 180},
+  {title: '确认订单金额', dataIndex: 'settlementAmount', width: 148},
+  {title: '订单笔数', dataIndex: 'orderCount', width: 92},
+  {title: '客户数', dataIndex: 'customerCount', width: 92},
+  {title: '金额排名', dataIndex: 'amountRank', width: 110},
 ]);
 
 function refresh() {

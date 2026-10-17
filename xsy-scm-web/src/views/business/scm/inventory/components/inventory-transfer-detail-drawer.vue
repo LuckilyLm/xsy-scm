@@ -58,8 +58,8 @@ const itemColumns: TableColumnsType = [
   {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
   {title: '商品规格名称', dataIndex: 'skuName', width: 150},
   {title: '商品名称', dataIndex: 'productName', width: 150},
-  {title: '数量', dataIndex: 'quantity', align: 'right', width: 110},
-  {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 130},
+  {title: '数量', dataIndex: 'quantity', width: 110},
+  {title: '单位', dataIndex: 'unitSnapshot', width: 130},
 ];
 
 function statusColor(status?: string) {

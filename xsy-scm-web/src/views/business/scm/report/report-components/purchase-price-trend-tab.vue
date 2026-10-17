@@ -88,12 +88,12 @@ const columns = ref<TableColumnsType<PurchasePriceTrendPoint>>([
   {title: '业务日期', dataIndex: 'bizDate', width: 130},
   {title: '商品', dataIndex: 'productName', width: 200},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
-  {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 76},
-  {title: '加权平均成交价', dataIndex: 'weightedAvgPrice', align: 'right', width: 148},
-  {title: '上次有效均价', dataIndex: 'previousWeightedAvgPrice', align: 'right', width: 150},
-  {title: '涨跌金额', dataIndex: 'priceChangeAmount', align: 'right', width: 140},
-  {title: '涨跌幅', dataIndex: 'priceChangePercent', align: 'right', width: 108},
-  {title: '样本行数', dataIndex: 'sampleLineCount', align: 'right', width: 92},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
+  {title: '加权平均成交价', dataIndex: 'weightedAvgPrice', width: 148},
+  {title: '上次有效均价', dataIndex: 'previousWeightedAvgPrice', width: 150},
+  {title: '涨跌金额', dataIndex: 'priceChangeAmount', width: 140},
+  {title: '涨跌幅', dataIndex: 'priceChangePercent', width: 108},
+  {title: '样本行数', dataIndex: 'sampleLineCount', width: 92},
 ]);
 
 /** x 轴只包含返回结果中的业务日，按日期升序且不补空日。 */

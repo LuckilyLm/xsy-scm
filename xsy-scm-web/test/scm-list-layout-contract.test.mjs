@@ -89,17 +89,21 @@ test('saved user widths persist until the user explicitly chooses recommended wi
   assert.match(COLUMN_MODAL, /recommendedColumns\.map/);
 });
 
-test('商品表格铺满内容区，但只让名称与分类吸收宽屏额外空间', () => {
+test('商品表格铺满内容区，但只让仍在使用默认宽度的文本列吸收宽屏额外空间', () => {
   assert.match(SCM_COLUMN, /moneyRange:\s*156/);
   assert.match(SCM_COLUMN, /status:\s*88/);
-  assert.match(PRODUCT_LIST, /ref="tableHost"/);
+  assert.match(PRODUCT_LIST, /ref="tableRef"/);
   assert.match(PRODUCT_LIST, /:columns="displayColumns"/);
   assert.match(PRODUCT_LIST, /table-layout="fixed"/);
-  assert.match(PRODUCT_LIST, /new ResizeObserver/);
-  assert.match(PRODUCT_LIST, /const flexible = \['name', 'categoryPath'\]/);
+  assert.match(PRODUCT_LIST, /useScmTableFill\(columns/);
+  // 用户改过的列宽必须原样渲染：只有等于页面默认宽度的列才吸收剩余空间
+  assert.match(SCM_COLUMN, /export function fillDefaultColumnWidths/);
+  assert.match(SCM_COLUMN, /toPixelWidth\(column\.width\) === defaultWidths\[key\]/);
+  // 可伸缩列都被改过时按比例放大，保证表格仍然铺满（不留右侧空白）
+  assert.match(SCM_COLUMN, /const factor = scalableTotal > 0 \? target \/ scalableTotal : 1/);
+  assert.match(SCM_COLUMN, /const scalable = columns\.filter/);
   assert.match(PRODUCT_LIST, /dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange/);
   assert.match(PRODUCT_LIST, /column.dataIndex === 'categoryPath'[\s\S]*?:title="record.categoryPath/);
-  assert.match(PRODUCT_LIST, /\.scm-product-table-host\s*\{\s*width:\s*100%/);
   assert.doesNotMatch(PRODUCT_LIST, /class="scm-width-fit-table"/);
   assert.doesNotMatch(TABLE_THEME, /\.scm-width-fit-table/);
 });

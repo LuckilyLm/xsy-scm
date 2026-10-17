@@ -128,7 +128,7 @@ const columns = ref([
   },
   {
     title: '已读',
-    dataIndex: 'readFlag',
+    dataIndex: 'readFlag', align: 'center',
     width: 50,
   },
   {

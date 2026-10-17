@@ -239,14 +239,14 @@ const itemColumns = ref<TableColumnsType<SortingTaskItem>>([
   {title: '订单号', dataIndex: 'orderNoSnapshot', width: 170},
   {title: '客户', dataIndex: 'customerNameSnapshot', width: 150},
   {title: '商品 / 商品规格', dataIndex: 'product', width: 220},
-  {title: '单位', dataIndex: 'saleUnitSnapshot', align: 'center', width: 80},
-  {title: '计划量', dataIndex: 'plannedQuantitySnapshot', align: 'right', width: 110},
-  {title: '分拣量', dataIndex: 'sortedQuantity', align: 'right', width: 150},
+  {title: '单位', dataIndex: 'saleUnitSnapshot', width: 80},
+  {title: '计划量', dataIndex: 'plannedQuantitySnapshot', width: 110},
+  {title: '分拣量', dataIndex: 'sortedQuantity', width: 150},
   {title: '结果', dataIndex: 'result', align: 'center', width: 140},
   {title: '原因', dataIndex: 'reason', width: 220},
   {title: '录入人', dataIndex: 'sortedBy', width: 120},
   {title: '录入时间', dataIndex: 'sortedAt', width: 170},
-  {title: '分次记录', dataIndex: 'partRecords', align: 'center', width: 150},
+  {title: '分次记录', dataIndex: 'partRecords', width: 150},
   {title: '占用', dataIndex: 'occupationStatus', align: 'center', width: 100},
 ]);
 

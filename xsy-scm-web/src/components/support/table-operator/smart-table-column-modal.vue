@@ -178,10 +178,9 @@ const tableColumns = [
   },
   {
     title: '操作',
-    dataIndex: 'operate',
+    dataIndex: 'operate', align: 'center',
     width: 150,
     rowDrag: true,
-    align: 'center',
   },
 ];
 

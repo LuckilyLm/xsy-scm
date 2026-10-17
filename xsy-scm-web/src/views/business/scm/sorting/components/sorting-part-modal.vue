@@ -90,9 +90,9 @@ const canAppend = computed(() =>
 
 const columns: TableColumnsType<SortingPartRecord> = [
   {title: '时间', dataIndex: 'createdAt', width: 160},
-  {title: '事件', dataIndex: 'eventType', width: 140},
-  {title: '本次变化量', dataIndex: 'quantityDelta', align: 'right', width: 115},
-  {title: '登记后累计量', dataIndex: 'totalQuantity', align: 'right', width: 125},
+  {title: '事件', dataIndex: 'eventType', align: 'center', width: 140},
+  {title: '本次变化量', dataIndex: 'quantityDelta', width: 115},
+  {title: '登记后累计量', dataIndex: 'totalQuantity', width: 125},
   {title: '操作人', dataIndex: 'createdBy', width: 120},
   {title: '备注 / 调整原因', dataIndex: 'note', width: 200},
 ];

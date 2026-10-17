@@ -143,7 +143,7 @@ const columns = ref([
   },
   {
     title: '文件夹',
-    dataIndex: 'folderType',
+    dataIndex: 'folderType', align: 'center',
     ellipsis: true,
     width: 70,
   },

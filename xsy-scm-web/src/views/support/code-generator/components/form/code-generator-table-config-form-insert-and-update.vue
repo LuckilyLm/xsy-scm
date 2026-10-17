@@ -171,7 +171,7 @@ const columns = ref([
   },
   {
     title: '非空',
-    dataIndex: 'nullableFlag',
+    dataIndex: 'nullableFlag', align: 'center',
     width: 60,
   },
   {
@@ -181,12 +181,12 @@ const columns = ref([
   },
   {
     title: '新增',
-    dataIndex: 'insertFlag',
+    dataIndex: 'insertFlag', align: 'center',
     width: 35,
   },
   {
     title: '更新',
-    dataIndex: 'updateFlag',
+    dataIndex: 'updateFlag', align: 'center',
     width: 35,
   },
   {

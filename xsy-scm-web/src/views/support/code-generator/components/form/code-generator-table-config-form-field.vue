@@ -124,7 +124,7 @@ const columns = ref([
   },
   {
     title: '非空',
-    dataIndex: 'nullableFlag',
+    dataIndex: 'nullableFlag', align: 'center',
     width: 60,
   },
 

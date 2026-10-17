@@ -166,7 +166,7 @@ const columns = ref([
   },
   {
     title: '超管',
-    dataIndex: 'administratorFlag',
+    dataIndex: 'administratorFlag', align: 'center',
     width: 60,
   },
   {
@@ -194,9 +194,8 @@ const columns = ref([
   },
   {
     title: '操作',
-    dataIndex: 'operate',
+    dataIndex: 'operate', align: 'center',
     width: 140,
-    align: 'center',
   },
 ]);
 const tableData = ref();
