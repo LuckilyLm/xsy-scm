@@ -15,6 +15,8 @@ class PurchaseInquiryPermissionTest {
                 .getAnnotation(SaCheckPermission.class).value()).containsExactly(PurchasePermission.INQUIRY_QUERY);
         assertThat(PurchaseInquiryController.class.getMethod("candidates", PurchaseInquiryForm.Batch.class)
                 .getAnnotation(SaCheckPermission.class).value()).containsExactly(PurchasePermission.INQUIRY_QUERY);
+        assertThat(PurchaseInquiryController.class.getMethod("history", PurchaseInquiryForm.History.class)
+                .getAnnotation(SaCheckPermission.class).value()).containsExactly(PurchasePermission.INQUIRY_QUERY);
         assertThat(PurchaseInquiryController.class.getMethod("create", PurchaseInquiryForm.Create.class, String.class)
                 .getAnnotation(SaCheckPermission.class).value()).containsExactly(PurchasePermission.INQUIRY_CREATE);
         assertThat(PurchaseInquiryController.class.getMethod("quote", PurchaseInquiryForm.Quote.class, String.class)

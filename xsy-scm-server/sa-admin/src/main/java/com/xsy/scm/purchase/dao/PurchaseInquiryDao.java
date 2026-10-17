@@ -32,6 +32,16 @@ public interface PurchaseInquiryDao {
     @Select("SELECT * FROM xsy_purchase_inquiry WHERE batch_id = #{batchId} ORDER BY id")
     List<Inquiry> byBatch(@Param("batchId") Long batchId);
 
+    @Select("""
+            SELECT * FROM xsy_purchase_inquiry WHERE batch_id = #{batchId}
+            ORDER BY id DESC LIMIT #{limit} OFFSET #{offset}
+            """)
+    List<Inquiry> pageByBatch(@Param("batchId") Long batchId, @Param("limit") int limit,
+            @Param("offset") int offset);
+
+    @Select("SELECT count(*) FROM xsy_purchase_inquiry WHERE batch_id = #{batchId}")
+    long countByBatch(@Param("batchId") Long batchId);
+
     @Update("""
             UPDATE xsy_purchase_inquiry SET version = version + 1
             WHERE id = #{id} AND version = #{version} AND status = 'OPEN'
@@ -86,9 +96,13 @@ public interface PurchaseInquiryDao {
     List<Quote> currentOffers(@Param("inquiryId") Long inquiryId);
 
     @Select("""
+            <script>
             SELECT * FROM xsy_purchase_inquiry_quote
             WHERE inquiry_id = #{inquiryId}
-            ORDER BY supplier_id, revision DESC
+            <if test="beforeId != null">AND id &lt; #{beforeId}</if>
+            ORDER BY id DESC LIMIT #{limit}
+            </script>
             """)
-    List<Quote> quotes(@Param("inquiryId") Long inquiryId);
+    List<Quote> history(@Param("inquiryId") Long inquiryId, @Param("beforeId") Long beforeId,
+            @Param("limit") int limit);
 }

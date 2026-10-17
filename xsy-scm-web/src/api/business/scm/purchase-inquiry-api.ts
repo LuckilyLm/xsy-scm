@@ -8,6 +8,7 @@ export interface InquiryCandidate {
     productName: string;
     demandUnit: string;
     requiredQuantity: string;
+    existingInquiryId: ScmId | null;
 }
 export interface PurchaseInquiry {
     id: ScmId;
@@ -41,17 +42,31 @@ export interface PurchaseInquiryQuote {
     recordedAt: string;
     recordedBy: string;
 }
+export interface InquiryBatchPage {
+    records: PurchaseInquiry[];
+    total: number;
+}
+export interface InquiryHistoryPage {
+    records: PurchaseInquiryQuote[];
+    hasMore: boolean;
+    nextBeforeId: ScmId | null;
+}
 export interface PurchaseInquiryDetail {
     inquiry: PurchaseInquiry;
     currentOffers: PurchaseInquiryQuote[];
     quotes: PurchaseInquiryQuote[];
+    hasMoreQuotes: boolean;
+    nextQuoteBeforeId: ScmId | null;
 }
 
 const prefix = '/scm/purchase/inquiry';
 export const purchaseInquiryApi = {
-    byBatch: (batchId: ScmId) => postRequest(prefix + '/batch', {batchId}) as unknown as Promise<ScmResponse<PurchaseInquiry[]>>,
+    byBatch: (batchId: ScmId, page = 1) => postRequest(prefix + '/batch', {batchId, page})
+        as unknown as Promise<ScmResponse<InquiryBatchPage>>,
     candidates: (batchId: ScmId) => postRequest(prefix + '/batch/candidates', {batchId}) as unknown as Promise<ScmResponse<InquiryCandidate[]>>,
     detail: (id: ScmId) => getRequest(prefix + '/' + id, {}) as unknown as Promise<ScmResponse<PurchaseInquiryDetail>>,
+    history: (inquiryId: ScmId, beforeId: ScmId) => postRequest(prefix + '/history', {inquiryId, beforeId})
+        as unknown as Promise<ScmResponse<InquiryHistoryPage>>,
     create: (data: {batchId: ScmId; skuId: ScmId; demandUnit: string; deadlineAt: string}) =>
         purchaseCommand<PurchaseInquiryDetail>(prefix + '/create', data),
     quote: (data: {inquiryId: ScmId; supplierId: ScmId; version: number; unitPrice: string; validUntil: string; remark?: string}) =>

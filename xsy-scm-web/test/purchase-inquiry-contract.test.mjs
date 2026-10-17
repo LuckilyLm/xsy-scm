@@ -15,6 +15,14 @@ test('询价与报价写请求复用采购幂等封装，确认需明确版本',
   assert.match(page, /采购单仍需单独创建和提交/);
 });
 
+test('询价批次分页和报价修订历史都使用服务端分页', () => {
+  assert.match(api, /postRequest\(prefix \+ '\/batch', \{batchId, page\}\)/);
+  assert.match(api, /postRequest\(prefix \+ '\/history', \{inquiryId, beforeId\}\)/);
+  assert.match(page, /quoteHistoryMore/);
+  assert.match(page, /onPageChange/);
+  assert.match(page, /c\.existingInquiryId/);
+});
+
 test('询价从冻结批次进入，当前报价与历史版本分别展示', () => {
   assert.match(batchDrawer, /\/purchase\/purchase-inquiry-list/);
   assert.match(page, /detail\.currentOffers/);

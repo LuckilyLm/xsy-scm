@@ -3,7 +3,6 @@ package com.xsy.scm.purchase.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.purchase.domain.form.PurchaseInquiryForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseInquiryVO;
-import com.xsy.scm.purchase.domain.vo.PurchaseInquiryVO.Inquiry;
 import com.xsy.scm.purchase.permission.PurchasePermission;
 import com.xsy.scm.purchase.service.PurchaseInquiryService;
 import jakarta.validation.Valid;
@@ -28,8 +27,8 @@ public class PurchaseInquiryController {
 
     @PostMapping("/batch")
     @SaCheckPermission(PurchasePermission.INQUIRY_QUERY)
-    public ResponseDTO<List<Inquiry>> byBatch(@Valid @RequestBody PurchaseInquiryForm.Batch form) {
-        return ResponseDTO.ok(service.byBatch(form.getBatchId()));
+    public ResponseDTO<PurchaseInquiryVO.BatchPage> byBatch(@Valid @RequestBody PurchaseInquiryForm.Batch form) {
+        return ResponseDTO.ok(service.byBatch(form.getBatchId(), form.getPage()));
     }
 
     @PostMapping("/batch/candidates")
@@ -37,6 +36,12 @@ public class PurchaseInquiryController {
     public ResponseDTO<List<PurchaseInquiryVO.Candidate>> candidates(
             @Valid @RequestBody PurchaseInquiryForm.Batch form) {
         return ResponseDTO.ok(service.candidates(form.getBatchId()));
+    }
+
+    @PostMapping("/history")
+    @SaCheckPermission(PurchasePermission.INQUIRY_QUERY)
+    public ResponseDTO<PurchaseInquiryVO.HistoryPage> history(@Valid @RequestBody PurchaseInquiryForm.History form) {
+        return ResponseDTO.ok(service.history(form.getInquiryId(), form.getBeforeId()));
     }
 
     @GetMapping("/{id}")
