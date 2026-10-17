@@ -65,8 +65,8 @@
         row-key="salesOrderItemId"
         :loading="loading"
         :pagination="false"
-        :scroll="{x: 940, y: 320}"
-        :row-selection="{selectedRowKeys: selectedIds, onChange: onSelectionChange, preserveSelectedRowKeys: true}"
+        :scroll="{x: scmColumnsWidth(columns, 44), y: 320}"
+        :row-selection="{columnWidth: 44, selectedRowKeys: selectedIds, onChange: onSelectionChange, preserveSelectedRowKeys: true}"
         :locale="{emptyText: '暂无可分拣的订单行'}"
     >
       <template #bodyCell="{record, column}">
@@ -96,6 +96,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';

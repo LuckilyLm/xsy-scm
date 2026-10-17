@@ -50,14 +50,15 @@
         </template>
       </a-alert>
       <a-table :data-source="rows" :columns="columns" row-key="spuId" :loading="loading" :pagination="false"
-               size="small" bordered :scroll="{ x: 1280 }" :row-selection="canBatch ? rowSelection : undefined"
+               size="small" bordered :scroll="{ x: scrollX }" :expand-column-width="SCM_COLUMN_WIDTH.expand"
+               :row-selection="canBatch ? rowSelection : undefined"
                @change="sortChanged">
         <template #expandedRowRender="{ record }">
           <SkuTable :rows="record.skuList"/>
         </template>
         <template #bodyCell="{ column, record }">
           <template v-if="column.dataIndex === 'name'">
-            <a-button type="link" @click="detail(record.spuId)">{{ record.name }}</a-button>
+            <a-tooltip :title="record.name"><a-button type="link" class="scm-cell-link" @click="detail(record.spuId)">{{ record.name }}</a-button></a-tooltip>
           </template>
           <template v-else-if="column.dataIndex === 'primaryImageUrl'">
             <a-image v-if="record.primaryImageUrl && !failedImageUrls.has(record.primaryImageUrl)"
@@ -85,8 +86,10 @@
             </a-space>
             <span v-else>—</span></template>
           <span v-else-if="column.dataIndex === 'saleUnit'">{{ record.defaultSku?.saleUnit || '—' }}</span>
-          <span v-else-if="column.dataIndex === 'price'"
-                class="scm-money">{{ priceRange(record.minMarketPrice, record.maxMarketPrice) }}</span>
+          <a-tooltip v-else-if="column.dataIndex === 'price'"
+                     :title="priceRange(record.minMarketPrice, record.maxMarketPrice)">
+            <span class="scm-money">{{ priceRange(record.minMarketPrice, record.maxMarketPrice) }}</span>
+          </a-tooltip>
           <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ON_SHELF' ? 'green' : 'default'">
             {{ record.status === 'ON_SHELF' ? '上架' : '下架' }}
           </a-tag>
@@ -153,6 +156,7 @@ import {
   YES_NO_ENUM
 } from '/@/constants/business/scm/product-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
+import {SCM_COLUMN_WIDTH, scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ProductDrawer from './components/product-form-drawer.vue';
@@ -214,17 +218,19 @@ const canBatch = computed(() => user.administratorFlag || user.getPointList?.som
 // 主列表只放「快速识别 + 状态判断 + 高频操作」用得上的列。
 // 商品编码、别名、创建/更新时间等仍在搜索、高级筛选、详情、编辑与导出里，只是不默认摊在列表上。
 const columns = ref<TableColumnsType<ProductRow>>([
-  {title: '主图', dataIndex: 'primaryImageUrl', width: 64, align: 'center'},
-  {title: '商品名称', dataIndex: 'name', width: 200, sorter: true},
-  {title: '分类', dataIndex: 'categoryPath', width: 210},
-  {title: '单位', dataIndex: 'saleUnit', width: 70, align: 'center'},
-  {title: '市场价', dataIndex: 'price', width: 180, align: 'right'},
-  {title: '规格数', dataIndex: 'skuCount', width: 76, align: 'right'},
-  {title: '在售状态', dataIndex: 'status', width: 84, align: 'center', sorter: true},
-  {title: '主档状态', dataIndex: 'masterStatus', width: 88, align: 'center'},
+  {title: '主图', dataIndex: 'primaryImageUrl', width: SCM_COLUMN_WIDTH.image, align: 'center'},
+  {title: '商品名称', dataIndex: 'name', width: 220, sorter: true, ellipsis: true},
+  {title: '分类', dataIndex: 'categoryPath', width: SCM_COLUMN_WIDTH.name, ellipsis: true},
+  {title: '单位', dataIndex: 'saleUnit', width: SCM_COLUMN_WIDTH.unit, align: 'center'},
+  {title: '市场价', dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange, align: 'right'},
+  {title: '规格数', dataIndex: 'skuCount', width: SCM_COLUMN_WIDTH.count, align: 'right'},
+  {title: '在售状态', dataIndex: 'status', width: SCM_COLUMN_WIDTH.status, align: 'center', sorter: true},
+  {title: '主档状态', dataIndex: 'masterStatus', width: SCM_COLUMN_WIDTH.status, align: 'center'},
   {title: '标签', dataIndex: 'tags', width: 150},
-  {title: '操作', dataIndex: 'action', width: 120, align: 'center', fixed: 'right'},
+  {title: '操作', dataIndex: 'action', width: SCM_COLUMN_WIDTH.actionThree, align: 'center', fixed: 'right'},
 ]);
+const scrollX = computed(() => scmColumnsWidth(columns.value,
+    SCM_COLUMN_WIDTH.expand + (canBatch.value ? SCM_COLUMN_WIDTH.selection : 0)));
 const tagFilterOptions = computed(() => tagChoices.value.map((tag) => ({value: tag.tagId, label: tag.name})));
 // 标签列只展示前 N 个，其余折成 +N；否则标签多的商品会把整行撑宽、撑高。
 const TAG_PREVIEW_LIMIT = 2;
@@ -248,6 +254,7 @@ const batchTagOptions = computed(() => {
   }))];
 });
 const rowSelection = computed(() => ({
+  columnWidth: SCM_COLUMN_WIDTH.selection,
   selectedRowKeys: selectedKeys.value,
   onChange: (keys: (string | number)[]) => {
     selectedKeys.value = keys;

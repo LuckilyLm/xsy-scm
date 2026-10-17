@@ -20,7 +20,7 @@
     </a-form>
     <a-alert v-if="error" class="picker-error" type="error" show-icon :message="error"/>
     <a-table size="small" row-key="id" :data-source="rows" :columns="columns" :loading="loading"
-             :pagination="false" :scroll="{x:700}">
+             :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='availableAmount'">{{ moneyText(record.availableAmount) }}</template>
         <template v-else-if="column.dataIndex==='select'">
@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref, watch} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {financeApi} from '/@/api/business/scm/finance-api';

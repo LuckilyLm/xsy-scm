@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {mergeColumn} from '../src/components/support/table-operator/smart-table-column-merge.ts';
+import {tableColumnsWidth} from '../src/components/support/table-operator/table-width.ts';
 
 function code(relative) {
   return readFileSync(new URL(relative, import.meta.url), 'utf8')
@@ -12,6 +13,7 @@ function code(relative) {
 
 const THRESHOLD = code('../src/views/business/scm/inventory/inventory-warning-threshold-list.vue');
 const COLUMN_MERGE = code('../src/components/support/table-operator/smart-table-column-merge.ts');
+const COLUMN_MODAL = code('../src/components/support/table-operator/smart-table-column-modal.vue');
 const VISIBILITY = code('../src/views/business/scm/customer/customer-sku-visibility-list.vue');
 const PRODUCT_CONST = code('../src/constants/business/scm/product-const.ts');
 const PURCHASE_DEMAND = code('../src/views/business/scm/purchase/purchase-demand-list.vue');
@@ -65,6 +67,23 @@ test('TableOperator respects default hidden columns and keeps new fields visible
   ]);
   assert.equal(userOptIn.newColumns.find((column) => column.dataIndex === 'warehouseCode')?.showFlag, true);
   assert.match(COLUMN_MERGE, /fontColumn\.showFlag = fontColumn\.showFlag \?\? true/);
+});
+
+test('scroll width follows visible resized columns and explicit utility columns', () => {
+  const columns = [{width: 180}, {width: 120, showFlag: false}, {width: 144}];
+  assert.equal(tableColumnsWidth(columns, 44), 368);
+  columns[1].showFlag = true;
+  columns[0].width = 220;
+  assert.equal(tableColumnsWidth(columns, 44), 528);
+  assert.equal(tableColumnsWidth([{width: '50%'}]), 0);
+});
+
+test('saved user widths persist until the user explicitly chooses recommended widths', () => {
+  const merged = mergeColumn([{title: '金额', dataIndex: 'amount', width: 136}],
+      [{columnKey: 'amount', sort: 1, showFlag: true, width: 180}]);
+  assert.equal(merged.newColumns[0].width, 180);
+  assert.match(COLUMN_MODAL, /使用系统推荐列宽/);
+  assert.match(COLUMN_MODAL, /recommendedColumns\.map/);
 });
 
 test('customer visibility uses Chinese product status labels and keeps unknown values diagnosable', () => {

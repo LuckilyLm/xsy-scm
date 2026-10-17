@@ -11,7 +11,7 @@
  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error=''" />
  <a-card size="small" :bordered="false">
   <a-row class="smart-table-btn-block"><div class="smart-table-operate-block"><a-button type="primary" v-privilege="'scm:pricing:agreement:add'" @click="drawer?.open()">新增客户协议价</a-button></div><div class="smart-table-setting-block"><TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_AGREEMENT" :refresh="load" /></div></a-row>
-  <a-table :data-source="rows" :columns="columns" row-key="agreementPriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{x:1250}">
+  <a-table :data-source="rows" :columns="columns" row-key="agreementPriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
    <template #bodyCell="{record,column}">
     <template v-if="column.dataIndex==='customerName'">{{record.customerName || '—'}}</template>
     <template v-else-if="column.dataIndex==='customerCode'"><span class="scm-mono">{{record.customerCode || '—'}}</span></template>
@@ -28,6 +28,7 @@
  <PriceDrawer ref="drawer" @saved="load" />
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

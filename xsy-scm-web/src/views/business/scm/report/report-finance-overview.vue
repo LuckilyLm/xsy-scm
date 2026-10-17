@@ -52,7 +52,7 @@
           <a-table :id="SCM_REPORT_TABLE_ID.FINANCE_RECEIVABLE" class="finance-detail-table" size="small"
                    :data-source="receivableView.rows" :columns="receivableColumns"
                    row-key="receivableId" :loading="receivableView.loading" :pagination="false"
-                   bordered :scroll="{x: 1500, y: tableBodyHeight}">
+                   bordered :scroll="{x: scmColumnsWidth(receivableColumns), y: tableBodyHeight}">
             <template #bodyCell="{column,text}">
               <template v-if="['amount','redAmount','netAmount','writtenOffAmount','openAmount','overAppliedAmount'].includes(column.dataIndex)">
                 <span class="scm-money">{{ moneyText(text) }}</span>
@@ -118,7 +118,7 @@
           <a-table :id="SCM_REPORT_TABLE_ID.FINANCE_PAYABLE" class="finance-detail-table" size="small"
                    :data-source="payableView.rows" :columns="payableColumns"
                    row-key="payableId" :loading="payableView.loading" :pagination="false"
-                   bordered :scroll="{x: 1500, y: tableBodyHeight}">
+                   bordered :scroll="{x: scmColumnsWidth(payableColumns), y: tableBodyHeight}">
             <template #bodyCell="{column,text}">
               <template v-if="['amount','redAmount','netAmount','writtenOffAmount','openAmount','overAppliedAmount'].includes(column.dataIndex)">
                 <span class="scm-money">{{ moneyText(text) }}</span>
@@ -168,6 +168,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, onUnmounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {reportFinanceApi} from '/@/api/business/scm/report-api';

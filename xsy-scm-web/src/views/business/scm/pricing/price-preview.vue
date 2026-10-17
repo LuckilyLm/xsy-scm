@@ -32,7 +32,7 @@
       查询时间：{{ result.at }} · 客户类型：{{ result.customerTypeName }}
     </p>
     <a-table :columns="columns" :data-source="result?.items||[]" row-key="skuId" :loading="loading"
-             :pagination="false" size="small" bordered :scroll="{x:1210}">
+             :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(columns) }">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='specName'">{{ record.specName || '—' }}</template>
         <template v-else-if="column.dataIndex==='skuCode'">
@@ -81,6 +81,7 @@
   </a-card>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';

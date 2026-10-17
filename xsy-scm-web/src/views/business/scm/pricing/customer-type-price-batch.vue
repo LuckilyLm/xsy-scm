@@ -15,7 +15,7 @@
    </a-row>
   </a-form>
   <a-alert v-if="error" :message="error" type="error" show-icon />
-  <a-table :data-source="rows" :columns="columns" row-key="rowNumber" :pagination="false" size="small" bordered :scroll="{x:1300}" :row-class-name="(r:BatchRow)=>failures.some(f=>f.rowNumber===r.rowNumber)?'failed-row':''">
+  <a-table :data-source="rows" :columns="columns" row-key="rowNumber" :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(columns) }" :row-class-name="(r:BatchRow)=>failures.some(f=>f.rowNumber===r.rowNumber)?'failed-row':''">
    <template #bodyCell="{record,column}">
     <template v-if="column.dataIndex==='customerTypeId'"><CustomerTypeSelect v-model:value="record.customerTypeId" width="180px" /></template>
     <template v-else-if="column.dataIndex==='skuId'"><SkuSelect v-model:value="record.skuId" width="260px" /></template>
@@ -28,6 +28,7 @@
  </a-card>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

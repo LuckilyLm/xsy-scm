@@ -11,7 +11,7 @@
  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error=''" />
  <a-card size="small" :bordered="false">
   <a-row class="smart-table-btn-block"><div class="smart-table-operate-block"><a-button type="primary" v-privilege="'scm:pricing:type-price:add'" @click="drawer?.open()">新增客户类型价</a-button><a-button v-privilege="'scm:pricing:type-price:batch'" @click="router.push('/pricing/customer-type-price-batch')">批量调价</a-button></div><div class="smart-table-setting-block"><TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_TYPE_PRICE" :refresh="load" /></div></a-row>
-  <a-table :data-source="rows" :columns="columns" row-key="customerTypePriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{x:1200}">
+  <a-table :data-source="rows" :columns="columns" row-key="customerTypePriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
    <template #bodyCell="{record,column}">
     <template v-if="column.dataIndex==='customerTypeName'">{{record.customerTypeName || '—'}}</template>
     <template v-else-if="column.dataIndex==='customerTypeCode'"><span class="scm-mono">{{record.customerTypeCode || '—'}}</span></template>
@@ -27,6 +27,7 @@
  <PriceDrawer ref="drawer" @saved="load" />
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

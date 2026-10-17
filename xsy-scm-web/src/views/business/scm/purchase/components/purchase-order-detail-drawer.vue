@@ -76,7 +76,7 @@
             :columns="itemColumns"
             row-key="id"
             :pagination="false"
-            :scroll="{ x: 1300 }"
+            :scroll="{ x: scmColumnsWidth(itemColumns) }"
             size="small"
             bordered
         >
@@ -188,6 +188,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import {Modal, message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

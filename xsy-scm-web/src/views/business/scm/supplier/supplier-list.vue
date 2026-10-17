@@ -41,7 +41,7 @@
           :pagination="false"
           size="small"
           bordered
-          :scroll="{ x: 990 }"
+          :scroll="{ x: scmColumnsWidth(columns) }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
@@ -98,6 +98,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, computed, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import {message, Modal} from 'ant-design-vue';

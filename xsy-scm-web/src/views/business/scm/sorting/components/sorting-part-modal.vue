@@ -33,7 +33,7 @@
       >将当前累计量填入最终分拣草稿</a-button>
       <a-table
           size="small" bordered :data-source="records" :columns="columns" row-key="id"
-          :loading="loading" :pagination="{pageSize: 10}" :scroll="{x: 740}"
+          :loading="loading" :pagination="{pageSize: 10}" :scroll="{ x: scmColumnsWidth(columns) }"
       >
         <template #bodyCell="{record, column}">
           <template v-if="column.dataIndex === 'eventType'">
@@ -55,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {sortingApi} from '/@/api/business/scm/sorting-api';

@@ -1,5 +1,5 @@
 <template>
-  <a-table :columns="columns" :data-source="rows" row-key="skuId" :pagination="false" size="small" :scroll="{ x: 920 }">
+  <a-table :columns="columns" :data-source="rows" row-key="skuId" :pagination="false" size="small" :scroll="{ x: scmColumnsWidth(columns) }">
     <template #bodyCell="{ column, record }">
       <span v-if="column.dataIndex === 'marketPrice'"
             class="price">{{ record.marketPrice === null ? '未定价' : `¥ ${record.marketPrice}` }}</span>
@@ -17,6 +17,7 @@
   </a-table>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {TableColumnsType} from 'ant-design-vue';
 import type {ProductSku} from '/@/types/business/scm/product';
 

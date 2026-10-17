@@ -24,7 +24,7 @@
   <a-card size="small" :bordered="false">
 
     <a-table id="order-log-table" size="small" :data-source="tableData" :columns="columns" row-key="logId"
-             :loading="loading" bordered :pagination="false" :scroll="{x:920}">
+             :loading="loading" bordered :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='operationType'">{{ SCM_ORDER_OPERATION_ENUM[text]?.desc }}</template>
         <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
@@ -46,6 +46,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderLogApi as api} from '/@/api/business/scm/order-log-api';

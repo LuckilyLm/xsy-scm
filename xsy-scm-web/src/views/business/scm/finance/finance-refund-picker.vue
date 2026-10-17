@@ -14,7 +14,7 @@
       <template #action><a-button @click="queryData">重试</a-button></template>
     </a-alert>
     <a-table size="small" row-key="refundId" :data-source="rows" :columns="columns" :loading="loading"
-             :pagination="false" :scroll="{x:1040}">
+             :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='refundAmount'">{{ moneyText(text) }}</template>
         <template v-else-if="column.dataIndex==='completedAt'">{{ dateTimeText(text) }}</template>
@@ -30,6 +30,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref, watch} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {financeApi} from '/@/api/business/scm/finance-api';

@@ -70,7 +70,7 @@
 
       <a-card size="small" title="称重记录" class="events-card">
         <a-table :data-source="visibleEvents" :columns="scaleColumns" row-key="id" size="small" bordered
-                 :loading="scaleLoading" :pagination="false" :scroll="{x:1280}"
+                 :loading="scaleLoading" :pagination="false" :scroll="{ x: scmColumnsWidth(scaleColumns) }"
                  :locale="{emptyText: '当前订单商品暂无设备上报记录'}">
           <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'status'">
@@ -140,6 +140,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {sortingApi} from '/@/api/business/scm/sorting-api';

@@ -24,7 +24,7 @@
         row-key="id"
         bordered
         :pagination="false"
-        :scroll="{ x: 1100 }"
+        :scroll="{ x: scmColumnsWidth(itemColumns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'sourceQuantity'">
@@ -44,6 +44,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {TableColumnsType} from 'ant-design-vue';
 import {quantityText} from '../inventory-model';
 import type {InventoryConversion} from '../inventory-types';

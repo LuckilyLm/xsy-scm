@@ -40,7 +40,7 @@
           :pagination="false"
           size="small"
           bordered
-          :scroll="{ x: 1400 }"
+          :scroll="{ x: scmColumnsWidth(columns) }"
       >
         <template #bodyCell="{ column, record }">
           <span v-if="column.dataIndex === 'supplierNameSnapshot'">{{ record.supplierNameSnapshot }}</span>
@@ -72,7 +72,7 @@
     <a-modal v-model:open="compareOpen" title="多供应商参考价对比" :footer="null" width="1000px">
       <a-alert type="info" show-icon message="仅比较当前可采购且同一商品规格、同一采购单位的有效供应商参考价；不是采购合同价、实际成交价或入库成本。" class="smart-margin-bottom10"/>
       <a-table :columns="compareColumns" :data-source="compareRows" row-key="supplierId" :loading="compareLoading"
-               size="small" bordered :pagination="false" :scroll="{x: 1100}">
+               size="small" bordered :pagination="false" :scroll="{ x: scmColumnsWidth(compareColumns) }">
         <template #bodyCell="{column, record}">
           <span v-if="column.dataIndex === 'referencePrice' || column.dataIndex === 'lowestReferencePrice' || column.dataIndex === 'priceGapAmount'" class="amount">{{ record[column.dataIndex] ?? '—' }}</span>
           <span v-else-if="column.dataIndex === 'priceGapPercent'" class="amount">{{ record.priceGapPercent == null ? '—' : `${record.priceGapPercent}%` }}</span>
@@ -85,6 +85,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {supplierSkuApi} from '/@/api/business/scm/supplier-sku-api';

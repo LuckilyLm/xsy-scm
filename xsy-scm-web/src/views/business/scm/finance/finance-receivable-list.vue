@@ -47,7 +47,7 @@
       </div>
     </div>
     <a-table id="scm-finance-receivable-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="receivableId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1375}">
+             row-key="receivableId" :loading="page.loading.value" :pagination="false" bordered :scroll="{ x: scmColumnsWidth(columns) }">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='entryType'">
           <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
@@ -78,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
@@ -106,13 +107,13 @@ const settleOptions = Object.values(SCM_FINANCE_SETTLE_STATE_ENUM).map((item) =>
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
 const columns = ref<TableColumnsType<FinanceReceivable>>([
-    {title: '应收单号', dataIndex: 'receivableNo', fixed: 'left', width: 110, ellipsis: true},
-    {title: '未核销', dataIndex: 'openAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '客户', dataIndex: 'customerName', width: 150}, {title: '订单号', dataIndex: 'orderNo', width: 150},
-    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
-    {title: '已核销', dataIndex: 'writtenOffAmount', align: 'right', width: 110},
-    {title: '超额核销', dataIndex: 'overAppliedAmount', align: 'right', width: 120},
-    {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110}, {title: '事件时点', dataIndex: 'eventAt', width: 165},
+    {title: '应收单号', dataIndex: 'receivableNo', fixed: 'left', width: 170, ellipsis: true},
+    {title: '未核销', dataIndex: 'openAmount', fixed: 'left', align: 'right', width: 148},
+    {title: '客户', dataIndex: 'customerName', width: 190}, {title: '订单号', dataIndex: 'orderNo', width: 170},
+    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 136},
+    {title: '已核销', dataIndex: 'writtenOffAmount', align: 'right', width: 148},
+    {title: '超额核销', dataIndex: 'overAppliedAmount', align: 'right', width: 148},
+    {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110}, {title: '事件时点', dataIndex: 'eventAt', width: 180},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 65},
 ]);
 useFinanceMobileActionColumn((compact) => {

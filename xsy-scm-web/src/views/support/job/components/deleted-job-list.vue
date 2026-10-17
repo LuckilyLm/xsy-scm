@@ -55,7 +55,7 @@
     </a-flex>
 
     <a-table
-        :scroll="{ x: 1800 }"
+        :scroll="{ x: tableColumnsWidth(columns) }"
         size="small"
         :loading="tableLoading"
         bordered
@@ -134,6 +134,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {onMounted, reactive, ref} from 'vue';
 import {jobApi} from '/@/api/support/job-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
@@ -152,13 +153,13 @@ const columns = ref([
   {
     title: '任务名称',
     dataIndex: 'jobName',
-    minWidth: 150,
+    width: 180,
     ellipsis: true,
   },
   {
     title: '执行类',
     dataIndex: 'jobClass',
-    minWidth: 180,
+    width: 220,
     ellipsis: true,
   },
   {
@@ -192,11 +193,13 @@ const columns = ref([
     title: '执行参数',
     dataIndex: 'param',
     ellipsis: true,
+    width: 200,
   },
   {
     title: '任务描述',
     dataIndex: 'remark',
     ellipsis: true,
+    width: 220,
   },
   {
     title: '排序',

@@ -35,7 +35,7 @@
       <span>符合条件的商品规格：{{ report.products.total }} 项</span>
     </p>
     <a-table size="small" bordered :columns="columns" :data-source="report?.products.list ?? []"
-             :row-key="rowKey" :loading="loading" :pagination="false" :scroll="{ x: 800 }"
+             :row-key="rowKey" :loading="loading" :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }"
              :locale="{ emptyText }">
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'plannedQuantity'"><span class="scm-quantity">{{ quantityText(record.plannedQuantity) }}</span></template>
@@ -51,6 +51,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onBeforeUnmount, onMounted, reactive, ref} from 'vue';
 import dayjs from 'dayjs';
 import type {Dayjs} from 'dayjs';

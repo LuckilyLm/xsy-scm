@@ -1,6 +1,6 @@
 <template>
   <a-table id="order-item-table" size="small" bordered :data-source="items" :columns="columns" :pagination="false"
-           :scroll="{x:1200}" :row-key="(_row:Item,index?:number)=>index??0">
+           :scroll="{ x: scmColumnsWidth(columns) }" :row-key="(_row:Item,index?:number)=>index??0">
     <template #bodyCell="{record,column,index}">
       <template v-if="column.dataIndex==='skuId'">
         <SkuSelect :value="record.skuId" @update:value="v=>{record.skuId=Array.isArray(v)?v[0]:v;emit('price');}"
@@ -62,6 +62,7 @@
   </a-button>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {reactive, ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import dayjs from 'dayjs';

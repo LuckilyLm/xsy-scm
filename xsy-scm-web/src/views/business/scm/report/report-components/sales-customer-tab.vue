@@ -30,7 +30,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无客户销售数据'}"
-        :scroll="{x: 1250}"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'orderCount'">
@@ -69,6 +69,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';

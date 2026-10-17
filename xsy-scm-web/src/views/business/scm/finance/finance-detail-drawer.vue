@@ -64,9 +64,9 @@
         <section v-if="receivableItems.length || payableItems.length" class="detail-section">
           <h3>来源单据</h3>
           <a-table v-if="isReceivable" size="small" :data-source="receivableItems" :columns="receivableColumns"
-                   row-key="receivableItemId" :pagination="false" :scroll="{x:760}"/>
+                   row-key="receivableItemId" :pagination="false" :scroll="{x:scmColumnsWidth(receivableColumns)}"/>
           <a-table v-else size="small" :data-source="payableItems" :columns="payableColumns"
-                   row-key="payableItemId" :pagination="false" :scroll="{x:760}"/>
+                   row-key="payableItemId" :pagination="false" :scroll="{x:scmColumnsWidth(payableColumns)}"/>
         </section>
 
         <!-- 5. 核销 / 退款 / 红字关系：把互相抵消的事实放在一起，便于对账。 -->
@@ -75,7 +75,7 @@
           <a-alert v-if="relationText" class="relation-alert" type="info" show-icon :message="relationText"/>
           <h4 v-if="writeOffs.length" class="detail-subtitle">核销记录</h4>
           <a-table v-if="writeOffs.length" size="small" :data-source="writeOffs" :columns="writeOffColumns"
-                   row-key="writeOffId" :pagination="false" :scroll="{x:900}"/>
+                   row-key="writeOffId" :pagination="false" :scroll="{x:scmColumnsWidth(writeOffColumns)}"/>
           <h4 v-if="redEntries.length" class="detail-subtitle">红字关联</h4>
           <a-table v-if="redEntries.length" size="small" :data-source="redEntries" :columns="redColumns"
                    :row-key="redEntryKey" :pagination="false"/>
@@ -85,7 +85,7 @@
         <section v-if="operationLogs.length" class="detail-section">
           <h3>流水记录</h3>
           <a-table size="small" :data-source="operationLogs" :columns="logColumns" row-key="id"
-                   :pagination="false" :scroll="{x:960}">
+                   :pagination="false" :scroll="{ x: scmColumnsWidth(logColumns) }">
             <template #bodyCell="{record,column}">
               <template v-if="column.dataIndex==='snapshot'">
                 <a-button v-if="record.beforeData || record.afterData" type="link"
@@ -119,6 +119,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
@@ -179,18 +180,18 @@ const relationText = computed(() => {
 
 const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
     {title: '出库来源', dataIndex: 'sourceId', width: 120}, {title: '商品', dataIndex: 'skuName', width: 200},
-    {title: '数量', dataIndex: 'quantity', align: 'right', customRender: ({text}) => numberText(text)},
-    {title: '单价', dataIndex: 'unitPrice', align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '数量', dataIndex: 'quantity', width: 112, align: 'right', customRender: ({text}) => numberText(text)},
+    {title: '单价', dataIndex: 'unitPrice', width: 136, align: 'right', customRender: ({text}) => moneyText(text)},
     // 毛额 − 优惠 = 净额：三列一起看才能解释「这行为什么只记这么多应收」
-    {title: '毛额', dataIndex: 'grossAmount', align: 'right', customRender: ({text}) => moneyText(text)},
-    {title: '订单优惠', dataIndex: 'discountAmount', align: 'right', customRender: ({text}) => moneyText(text)},
-    {title: '净额', dataIndex: 'amount', align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '毛额', dataIndex: 'grossAmount', width: 148, align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '订单优惠', dataIndex: 'discountAmount', width: 148, align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '净额', dataIndex: 'amount', width: 148, align: 'right', customRender: ({text}) => moneyText(text)},
 ];
 const payableColumns: TableColumnsType<FinancePayableItem> = [
     {title: '收货来源', dataIndex: 'sourceId', width: 120}, {title: '商品', dataIndex: 'skuName', width: 200},
-    {title: '数量', dataIndex: 'quantity', align: 'right', customRender: ({text}) => numberText(text)},
-    {title: '单价', dataIndex: 'unitPrice', align: 'right', customRender: ({text}) => moneyText(text)},
-    {title: '金额', dataIndex: 'amount', align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '数量', dataIndex: 'quantity', width: 112, align: 'right', customRender: ({text}) => numberText(text)},
+    {title: '单价', dataIndex: 'unitPrice', width: 136, align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '金额', dataIndex: 'amount', width: 148, align: 'right', customRender: ({text}) => moneyText(text)},
 ];
 const redColumns: TableColumnsType<FinanceReceivable | FinancePayable> = [
     {title: '红字单号', dataIndex: 'receivableNo', customRender: ({record}) => ('receivableNo' in record ? record.receivableNo : record.payableNo)},
@@ -204,8 +205,8 @@ function redEntryKey(row: FinanceReceivable | FinancePayable) {
 const writeOffColumns: TableColumnsType<FinanceWriteOff> = [
     {title: '核销单号', dataIndex: 'writeOffNo', width: 190}, {title: '资金单', dataIndex: 'sourceNo', width: 180},
     {title: '目标单', dataIndex: 'targetNo', width: 180}, {title: '方向', dataIndex: 'entryType', width: 90, customRender: ({text}) => entryTypeText(text), align: 'center'},
-    {title: '金额', dataIndex: 'amount', align: 'right', customRender: ({text}) => moneyText(text)},
-    {title: '原因', dataIndex: 'reason'},
+    {title: '金额', dataIndex: 'amount', width: 148, align: 'right', customRender: ({text}) => moneyText(text)},
+    {title: '原因', dataIndex: 'reason', width: 240},
 ];
 const logColumns: TableColumnsType<FinanceOperationLog> = [
     {title: '时间', dataIndex: 'createdAt', width: 180, customRender: ({text}) => dateTimeText(text)},

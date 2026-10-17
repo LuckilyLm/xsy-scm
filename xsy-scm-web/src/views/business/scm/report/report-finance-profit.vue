@@ -46,7 +46,7 @@
       </div>
     </a-row>
     <a-table id="scm-report-finance-profit-table" size="small" :data-source="rows" :columns="columns"
-             :row-key="rowKey" bordered :pagination="false" :loading="loading" :scroll="{x: 1250}"
+             :row-key="rowKey" bordered :pagination="false" :loading="loading" :scroll="{ x: scmColumnsWidth(columns) }"
              :locale="{emptyText: '当前筛选范围没有销售毛利事实'}">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'bizDate'">{{ record.bizDate || '—' }}</template>
@@ -66,6 +66,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {financeProfitApi} from '/@/api/business/scm/finance-profit-api';

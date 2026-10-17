@@ -179,7 +179,7 @@ function exitElementFullscreen(element) {
 const smartTableColumnModal = ref();
 
 function showModal() {
-  smartTableColumnModal.value.show(newColumn, props.tableId);
+  smartTableColumnModal.value.show(newColumn, props.tableId, originalColumn);
 }
 
 // 将弹窗修改的列数据，赋值给原表格 列数组
@@ -187,11 +187,7 @@ function updateColumn(changeColumnArray) {
   let obj = {};
   // 如果为空数组代表恢复默认，使用原始表格数据
   //合并列
-  if (_.isEmpty(changeColumnArray)) {
-    obj = mergeColumn(_.cloneDeep(originalColumn), changeColumnArray);
-  } else {
-    obj = mergeColumn(_.cloneDeep(newColumn), changeColumnArray);
-  }
+  obj = mergeColumn(_.cloneDeep(originalColumn), changeColumnArray);
   const newColumns = obj.newColumns;
   newColumn.forEach((item) => {
     obj.newColumns.forEach((itemNewColumns) => {

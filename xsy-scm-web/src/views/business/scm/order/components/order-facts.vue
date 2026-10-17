@@ -2,7 +2,7 @@
   <section v-if="order.inventoryFactsVisible" class="order-fact-section">
     <h3>库存预留</h3>
     <a-table :data-source="order.inventoryReservations ?? []" :columns="reservationColumns"
-             row-key="reservationId" :pagination="false" size="small" bordered :scroll="{x: 760}">
+             row-key="reservationId" :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(reservationColumns) }">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'quantity'">{{ record.quantity }} {{ record.unit || '' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
@@ -17,7 +17,7 @@
     <h3>分拣进度</h3>
     <a-table :data-source="order.sortingProgress ?? []" :columns="sortingColumns"
              :row-key="(record: OrderSorting) => `${record.taskId}-${record.orderItemId}`"
-             :pagination="false" size="small" bordered :scroll="{x: 830}">
+             :pagination="false" size="small" bordered :scroll="{x: scmColumnsWidth(sortingColumns)}">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'taskStatus'">
           {{ SCM_SORTING_TASK_STATUS_ENUM[record.taskStatus]?.desc ?? record.taskStatus }}
@@ -58,7 +58,7 @@
   <section v-if="order.returnFactsVisible" class="order-fact-section">
     <h3>退货与应收更正</h3>
     <a-table :data-source="order.returns ?? []" :columns="returnColumns" row-key="returnId"
-             :pagination="false" size="small" bordered :scroll="{x: 880}">
+             :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(returnColumns) }">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
           {{ SCM_ORDER_RETURN_STATUS_ENUM[record.status]?.desc ?? record.status }}
@@ -94,7 +94,7 @@
     <a-alert message="退款单完成与资金到账分开记录；资金结果以原资金来源返还事实为准。"
              type="info" show-icon class="order-fact-note"/>
     <a-table :data-source="order.refunds ?? []" :columns="refundColumns" row-key="refundId"
-             :pagination="false" size="small" bordered :scroll="{x: 900}">
+             :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(refundColumns) }">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
           {{ SCM_ORDER_REFUND_STATUS_ENUM[record.status]?.desc ?? record.status }}
@@ -111,6 +111,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {TableColumnsType} from 'ant-design-vue';
 import {SCM_INVENTORY_RESERVATION_STATUS_ENUM} from '/@/constants/business/scm/inventory-const';
 import {SCM_SORTING_RESULT_ENUM, SCM_SORTING_TASK_STATUS_ENUM} from '/@/constants/business/scm/sorting-const';

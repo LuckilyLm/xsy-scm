@@ -41,7 +41,7 @@
         <a-descriptions-item label="本期实退净额">{{ moneyText(selected.refundNet) }}</a-descriptions-item>
       </a-descriptions>
       <a-table class="statement-lines" :columns="lineColumns" :data-source="selected.items ?? []" row-key="lineNo"
-               size="small" bordered :pagination="{pageSize: 30}" :scroll="{x: 1370}">
+               size="small" bordered :pagination="{pageSize: 30}" :scroll="{ x: scmColumnsWidth(lineColumns) }">
         <template #bodyCell="{record,column}">
           <template v-if="column.dataIndex === 'factType'">{{ factLabels[record.factType] ?? record.factType }}</template>
           <template v-else-if="moneyColumns.includes(String(column.dataIndex))">{{ moneyText(record[column.dataIndex]) }}</template>
@@ -51,6 +51,7 @@
   </a-card>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {customerStatementApi, type CustomerStatement, type CustomerStatementLine} from '/@/api/business/scm/customer-statement-api';

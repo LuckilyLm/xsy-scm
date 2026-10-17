@@ -34,7 +34,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '还没有正式打印记录' }"
-        :scroll="{ x: 1105 }"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'templateName'">{{ record.templateName || '—' }}</template>
@@ -67,6 +67,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

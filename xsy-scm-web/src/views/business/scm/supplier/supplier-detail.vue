@@ -65,7 +65,7 @@
             size="small"
             bordered
             :pagination="false"
-            :scroll="{ x: 1000 }"
+            :scroll="{ x: scmColumnsWidth(relationColumns) }"
         >
           <template #bodyCell="{ column, record }">
             <span v-if="column.dataIndex === 'skuNameSnapshot'">{{ record.skuNameSnapshot }}</span>
@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';

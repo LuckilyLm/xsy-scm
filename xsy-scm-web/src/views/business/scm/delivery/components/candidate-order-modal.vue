@@ -56,8 +56,8 @@
         row-key="orderId"
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1050, y: 360 }"
-        :row-selection="{ selectedRowKeys: selected, onChange: select, preserveSelectedRowKeys: true }"
+        :scroll="{ x: scmColumnsWidth(columns, 44), y: 360 }"
+        :row-selection="{ columnWidth: 44, selectedRowKeys: selected, onChange: select, preserveSelectedRowKeys: true }"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'location'"
@@ -85,6 +85,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, reactive, ref} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';

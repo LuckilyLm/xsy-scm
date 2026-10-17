@@ -70,6 +70,7 @@
 
     <template #footer>
       <a-button key="back" @click="hide">取消</a-button>
+      <a-button v-if="tableId" key="recommended" :loading="submitLoading" @click="useRecommendedWidths">使用系统推荐列宽</a-button>
       <a-button v-if="tableId" key="submit" type="primary" :loading="submitLoading" @click="save">保存</a-button>
       <a-button v-if="tableId" key="back" :loading="submitLoading" @click="reset" danger style="margin-left: 20px">
         恢复默认
@@ -94,13 +95,24 @@ defineExpose({show});
 
 // ---------------- 显示 / 隐藏 --------------------
 let tableId = null;
+let recommendedColumns: Array<{dataIndex?: unknown; width?: number | string}> = [];
 const visible = ref(false);
 
 //显示
-function show(columns, showTableId) {
+function show(columns, showTableId, defaults: typeof recommendedColumns) {
   tableId = showTableId;
+  recommendedColumns = _.cloneDeep(defaults);
   visible.value = true;
+  selectedRowKeyList.value = [];
   getUserTableColumns(tableId, _.cloneDeep(columns));
+}
+
+function useRecommendedWidths() {
+  const widths = new Map(recommendedColumns.map((column) => [column.dataIndex, column.width]));
+  for (const column of tableData.value as typeof recommendedColumns) {
+    if (widths.has(column.dataIndex)) column.width = widths.get(column.dataIndex);
+  }
+  message.info('已采用系统推荐列宽；保存后生效，列顺序和显隐保持当前设置');
 }
 
 //隐藏

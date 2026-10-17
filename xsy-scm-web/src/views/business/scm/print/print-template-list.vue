@@ -40,7 +40,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1100 }"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'defaultFlag'">
@@ -161,6 +161,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

@@ -43,7 +43,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1000 }"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'operationType'">
@@ -70,6 +70,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';

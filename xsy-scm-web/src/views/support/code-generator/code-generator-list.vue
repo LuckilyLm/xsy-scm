@@ -37,7 +37,7 @@
 
       <a-table
           size="small"
-          :scroll="{ x: 1000 }"
+          :scroll="{ x: tableColumnsWidth(columns) }"
           :loading="tableLoading"
           bordered
           :dataSource="tableData"
@@ -80,6 +80,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {onMounted, reactive, ref} from 'vue';
 import {codeGeneratorApi} from '/@/api/support/code-generator-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';
@@ -98,11 +99,13 @@ const columns = ref([
   {
     title: '表名',
     dataIndex: 'tableName',
+    width: 180,
   },
   {
     title: '备注',
     dataIndex: 'tableComment',
     ellipsis: true,
+    width: 240,
   },
   {
     title: '代码配置时间',

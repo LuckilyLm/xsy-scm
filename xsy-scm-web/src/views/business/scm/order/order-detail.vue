@@ -89,7 +89,7 @@
           <!-- 3. 商品明细 -->
           <h3 class="detail-section--nested">商品明细</h3>
           <a-table class="items" :data-source="order.items" :columns="columns" row-key="itemId" :pagination="false"
-                   :scroll="{x:1100}" size="small" bordered>
+                   :scroll="{ x: scmColumnsWidth(columns) }" size="small" bordered>
             <template #bodyCell="{record,column}">
               <template
                   v-if="['draftUnitPrice','lockedUnitPrice','orderedLineAmount','settlementLineAmount'].includes(column.dataIndex)">
@@ -205,6 +205,7 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import {SETTLE_MODE_ENUM} from '/@/constants/business/scm/customer-const';

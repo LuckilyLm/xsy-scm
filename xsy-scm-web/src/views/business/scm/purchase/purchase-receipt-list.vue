@@ -67,8 +67,9 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1720 }"
+        :scroll="{ x: scmColumnsWidth(columns, SCM_COLUMN_WIDTH.selection) }"
         :row-selection="{
+        columnWidth: SCM_COLUMN_WIDTH.selection,
         selectedRowKeys: selected,
         onChange: (keys: (string | number)[]) => (selected = keys),
         getCheckboxProps: (row: Receipt) => ({ disabled: row.status !== 'DRAFT' }),
@@ -139,6 +140,7 @@
 </template>
 
 <script setup lang="ts">
+import {SCM_COLUMN_WIDTH, scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, reactive, ref, watch} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

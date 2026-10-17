@@ -49,7 +49,7 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
             row-key="skuId"
             bordered
             :pagination="false"
-            :scroll="{ x: 1800 }"
+            :scroll="{ x: scmColumnsWidth(summaryColumns) }"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'calculationStatus'">
@@ -72,7 +72,7 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
             row-key="lineNo"
             bordered
             :pagination="false"
-            :scroll="{ x: 1400 }"
+            :scroll="{ x: scmColumnsWidth(itemColumns) }"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'sourceQuantity'">
@@ -96,6 +96,7 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';

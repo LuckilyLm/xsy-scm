@@ -39,7 +39,7 @@
     <a-table
         size="small"
         bordered
-        :scroll="{ x: 1100 }"
+        :scroll="{ x: tableColumnsWidth(columns) }"
         :loading="tableLoading"
         class="smart-margin-top10"
         :dataSource="tableData"
@@ -49,6 +49,7 @@
   </a-card>
 </template>
 <script setup lang="ts">
+import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {onMounted, reactive, ref} from 'vue';
 import {heartBeatApi} from '/@/api/support/heart-beat-api';
 import {PAGE_SIZE_OPTIONS} from '/@/constants/common-const';

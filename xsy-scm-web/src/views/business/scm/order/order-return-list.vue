@@ -26,7 +26,7 @@
   <a-card size="small" :bordered="false">
 
     <a-table id="order-return-table" size="small" :data-source="tableData" :columns="columns" row-key="returnId"
-             :loading="loading" bordered :pagination="false" :scroll="{x:1230}">
+             :loading="loading" bordered :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='status'">{{ SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc }}</template>
         <template v-else-if="column.dataIndex==='customerName'">{{ record.customerName || '—' }}</template>
@@ -72,10 +72,8 @@
           <a-descriptions-item label="申请原因">{{ detail.reason || '—' }}</a-descriptions-item>
           <a-descriptions-item label="处理原因">{{ detail.decisionReason || '—' }}</a-descriptions-item>
         </a-descriptions>
-        <a-table :data-source="detail.items" row-key="orderItemId" :pagination="false" :scroll="{x: 600}"
-                 :columns="[{title:'商品',dataIndex:'productName'},{title:'单位',dataIndex:'unit'},
-                   {title:'申请数量',dataIndex:'requestedQuantity'},{title:'批准数量',dataIndex:'approvedQuantity'},
-                   {title:'已接收数量',dataIndex:'receivedQuantity'}]"/>
+        <a-table :data-source="detail.items" row-key="orderItemId" :pagination="false"
+                 :scroll="{x: scmColumnsWidth(detailItemColumns)}" :columns="detailItemColumns"/>
       </template>
     </a-spin>
   </a-drawer>
@@ -99,7 +97,8 @@
       </a-table>
       <template v-else-if="action==='receive'">
         <a-form-item label="接收仓库" required><WarehouseSelect v-model:value="warehouseId" :disabled="saving"/></a-form-item>
-        <a-table :data-source="active.items" :scroll="{x: 650}" :columns="[{title:'商品',dataIndex:'productName',width:150},{title:'单位',dataIndex:'unit',width:65},{title:'批准数量',dataIndex:'approvedQuantity'},{title:'已接收',dataIndex:'receivedQuantity'},{title:'本次接收',dataIndex:'receiptQuantity'},{title:'处置',dataIndex:'disposition'}]" row-key="returnItemId" :pagination="false">
+        <a-table :data-source="active.items" :scroll="{x: scmColumnsWidth(receiveItemColumns)}"
+                 :columns="receiveItemColumns" row-key="returnItemId" :pagination="false">
           <template #bodyCell="{record,column}">
             <a-input-number v-if="column.dataIndex==='receiptQuantity'" v-model:value="record.receiptQuantity" :disabled="saving" string-mode :precision="4" :min="'0'" :max="remainingQuantity(record)" aria-label="本次接收数量"/>
             <a-select v-else-if="column.dataIndex==='disposition'" v-model:value="record.disposition" :disabled="saving" aria-label="实物处置方式" :options="[{value:'RETURN_TO_STOCK',label:'可售回库'},{value:'DAMAGE',label:'报损'}]"/>
@@ -115,6 +114,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onDeactivated, onMounted, onScopeDispose, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import Decimal from 'decimal.js';
@@ -129,6 +129,21 @@ import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/act
 import type {ReturnRow, Query, ReturnItem, Id} from './order-types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 type ReturnItemWithDisposition = ReturnItem & { disposition: 'RETURN_TO_STOCK' | 'DAMAGE'; receiptQuantity: string };
+const detailItemColumns: TableColumnsType<ReturnItem> = [
+  {title: '商品', dataIndex: 'productName', width: 200},
+  {title: '单位', dataIndex: 'unit', width: 72, align: 'center'},
+  {title: '申请数量', dataIndex: 'requestedQuantity', width: 112, align: 'right'},
+  {title: '批准数量', dataIndex: 'approvedQuantity', width: 112, align: 'right'},
+  {title: '已接收数量', dataIndex: 'receivedQuantity', width: 112, align: 'right'},
+];
+const receiveItemColumns: TableColumnsType<ReturnItemWithDisposition> = [
+  {title: '商品', dataIndex: 'productName', width: 200},
+  {title: '单位', dataIndex: 'unit', width: 72, align: 'center'},
+  {title: '批准数量', dataIndex: 'approvedQuantity', width: 112, align: 'right'},
+  {title: '已接收', dataIndex: 'receivedQuantity', width: 112, align: 'right'},
+  {title: '本次接收', dataIndex: 'receiptQuantity', width: 132, align: 'right'},
+  {title: '处置', dataIndex: 'disposition', width: 160, align: 'center'},
+];
 import {amount, fixed} from './order-form-model';
 import {orderError} from './order-errors';
 import {hasPermission} from '../common/scm-permission';

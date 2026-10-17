@@ -41,7 +41,7 @@ test('客户列表将独立识别字段分列，且不摊开主数据时间列',
       ['客户名称', '客户编码', '客户类型', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
       '客户列表列结构被改动'
   );
-  assert.match(LIST, /title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false/);
+  assert.match(LIST, /title: '客户编码', dataIndex: 'customerCode', width: 160, showFlag: false/);
   assert.doesNotMatch(LIST, /title:\s*'上级集团'/);
   assert.doesNotMatch(LIST, /title:\s*'更新时间'/);
 });
@@ -115,22 +115,19 @@ test('客户与供应商的独立字段各自成列，不再叠进同一个单�
   assert.doesNotMatch(SUPPLIER, /class="scm-cell-inline/);
 });
 
-test('列宽收紧后 scroll.x 仍等于各列 width 之和', () => {
+test('滚动宽度跟随当前可见列，隐藏列不占空间', () => {
   const columns = [...LIST.matchAll(/\{\s*title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)([^}]*)\}/g)]
       .map((m) => ({width: Number(m[1]), hiddenByDefault: /showFlag:\s*false/.test(m[2])}));
   assert.equal(columns.length, 10, '客户列表列数被改动');
   const visibleWidth = columns.filter((column) => !column.hiddenByDefault).reduce((sum, column) => sum + column.width, 0);
-  const scrollX = /:scroll="\{ x: (\d+) \}"/.exec(LIST);
-  assert.ok(scrollX, '客户列表没有声明 scroll.x');
-  assert.equal(visibleWidth, Number(scrollX[1]),
-      `scroll.x=${scrollX[1]} 与默认显示列宽之和 ${visibleWidth} 不一致`);
+  assert.ok(visibleWidth > 0);
+  assert.match(LIST, /:scroll="\{ x: scmColumnsWidth\(columns\) \}"/);
+  assert.match(LIST, /<TableOperator v-model="columns"/);
 
   const supplierWidths = [...SUPPLIER.matchAll(/\{title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)/g)]
       .map((m) => Number(m[1]));
-  const supplierScrollX = /:scroll="\{ x: (\d+) \}"/.exec(SUPPLIER);
-  assert.ok(supplierScrollX, '供应商列表没有声明 scroll.x');
-  assert.equal(supplierWidths.reduce((a, b) => a + b, 0), Number(supplierScrollX[1]),
-      `供应商 scroll.x=${supplierScrollX[1]} 与列宽之和 ${supplierWidths.reduce((a, b) => a + b, 0)} 不一致`);
+  assert.ok(supplierWidths.reduce((a, b) => a + b, 0) > 0);
+  assert.match(SUPPLIER, /:scroll="\{ x: scmColumnsWidth\(columns\) \}"/);
 });
 
 test('详情页客户名与编码在 Tabs 之上，切 Tab 后始终可见', () => {

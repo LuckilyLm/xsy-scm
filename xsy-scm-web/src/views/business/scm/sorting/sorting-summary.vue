@@ -55,7 +55,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1350 }"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'product'">{{ record.productNameSnapshot || '—' }}</template>
@@ -93,7 +93,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1760 }"
+        :scroll="{ x: scmColumnsWidth(customerColumns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'taskStatus'">
@@ -125,7 +125,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1000 }"
+        :scroll="{ x: scmColumnsWidth(performanceColumns) }"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'confirmedQuantity'">
@@ -154,6 +154,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';

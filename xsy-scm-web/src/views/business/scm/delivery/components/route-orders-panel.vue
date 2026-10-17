@@ -46,7 +46,7 @@
       :data-source="orders"
       row-key="id"
       :pagination="false"
-      :scroll="{ x: 1100 }"
+      :scroll="{ x: scmColumnsWidth(orderColumns) }"
       bordered
   >
     <template #bodyCell="{ column, record }">
@@ -83,6 +83,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {isLocated} from '/@/components/business/scm/map/types';

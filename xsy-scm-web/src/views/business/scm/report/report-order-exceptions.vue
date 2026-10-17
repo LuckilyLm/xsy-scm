@@ -25,14 +25,14 @@
       <a-button v-privilege="'scm:report:export'" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows">导出当前结果</a-button>
     </div>
     <a-table size="small" :data-source="summary" :columns="summaryColumns" row-key="exceptionType" :pagination="false"
-             :loading="loading" :scroll="{x: 450}" class="report-summary">
+             :loading="loading" :scroll="{x: scmColumnsWidth(summaryColumns)}" class="report-summary">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex === 'exceptionType'">{{ labels[record.exceptionType as OrderExceptionType] }}</template>
         <template v-else>{{ text }}</template>
       </template>
     </a-table>
     <a-table size="small" :data-source="rows" :columns="columns" :row-key="rowKey" :pagination="false" bordered
-             :loading="loading" :scroll="{x: 2050}" :locale="{emptyText: '当前筛选与授权范围内没有异常事实'}">
+             :loading="loading" :scroll="{ x: scmColumnsWidth(columns) }" :locale="{emptyText: '当前筛选与授权范围内没有异常事实'}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex === 'exceptionType'">{{ labels[record.exceptionType as OrderExceptionType] }}</template>
         <template v-else-if="column.dataIndex === 'sourceStatus'">{{ statusLabel(record) }}</template>
@@ -50,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import dayjs from 'dayjs';
@@ -84,8 +85,8 @@ const router = useRouter();
 let requestId = 0;
 const rowKey = (row: OrderExceptionRow) => `${row.exceptionType}:${row.sourceRowId}`;
 const summaryColumns = [
-  {title: '异常类别', dataIndex: 'exceptionType'}, {title: '异常条数', dataIndex: 'exceptionCount', align: 'right'},
-  {title: '该类别关联订单数', dataIndex: 'orderCount', align: 'right'},
+  {title: '异常类别', dataIndex: 'exceptionType', width: 180}, {title: '异常条数', dataIndex: 'exceptionCount', align: 'right', width: 96},
+  {title: '该类别关联订单数', dataIndex: 'orderCount', align: 'right', width: 150},
 ];
 const columns: TableColumnsType<OrderExceptionRow> = [
   {title: '异常类别', dataIndex: 'exceptionType', width: 145}, {title: '发生时间', dataIndex: 'occurredAt', width: 180},

@@ -35,7 +35,7 @@
           :pagination="false"
           size="small"
           bordered
-          :scroll="{ x: 1150 }"
+          :scroll="{ x: scmColumnsWidth(columns) }"
       >
         <template #bodyCell="{ record, column }">
           <template v-if="column.dataIndex === 'plannedQuantity'">
@@ -93,6 +93,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

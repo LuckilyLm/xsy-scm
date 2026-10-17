@@ -34,7 +34,7 @@
       </div>
     </a-row>
     <a-table id="scm-finance-write-off-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1785}">
+             row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{ x: scmColumnsWidth(columns) }">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='sourceName'">{{ record.sourceName || '—' }}</template>
         <template v-else-if="column.dataIndex==='sourceType'">{{ sourceTypeText(record.sourceType) }}</template>
@@ -100,7 +100,7 @@
       <a-button :disabled="!source" @click="openTargetPicker">添加目标单</a-button>
     </div>
     <a-empty v-if="!targets.length" description="先选择一笔资金单，再添加一个或多个目标单"/>
-    <a-table v-else size="small" :data-source="targets" :columns="targetColumns" row-key="id" :pagination="false" :scroll="{x:690}">
+    <a-table v-else size="small" :data-source="targets" :columns="targetColumns" row-key="id" :pagination="false" :scroll="{ x: scmColumnsWidth(targetColumns) }">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='availableAmount'">{{ moneyText(record.availableAmount) }}</template>
         <template v-else-if="column.dataIndex==='amount'">
@@ -126,6 +126,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -192,16 +193,16 @@ function targetTypeText(value?: string | null): string {
 // 核销时点与操作人合成一格。
 const columns = ref<TableColumnsType<FinanceWriteOff>>([
     {title: '核销单号', dataIndex: 'writeOffNo', width: 175},
-    {title: '资金方', dataIndex: 'sourceName', width: 150},
+    {title: '资金方', dataIndex: 'sourceName', width: 190},
     {title: '资金类型', dataIndex: 'sourceType', align: 'center', width: 90},
     {title: '资金单号', dataIndex: 'sourceNo', width: 180},
-    {title: '核销目标', dataIndex: 'targetName', width: 150},
+    {title: '核销目标', dataIndex: 'targetName', width: 190},
     {title: '目标类型', dataIndex: 'targetType', align: 'center', width: 90},
     {title: '目标单号', dataIndex: 'targetNo', width: 175},
-    {title: '核销金额', dataIndex: 'amount', align: 'right', width: 130},
+    {title: '核销金额', dataIndex: 'amount', align: 'right', width: 136},
     {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
     {title: '原因', dataIndex: 'reason', width: 180},
-    {title: '核销时点', dataIndex: 'writtenOffAt', width: 165},
+    {title: '核销时点', dataIndex: 'writtenOffAt', width: 180},
     {title: '操作人', dataIndex: 'operator', width: 110},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);

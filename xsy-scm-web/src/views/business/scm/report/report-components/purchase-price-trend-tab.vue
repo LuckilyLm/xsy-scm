@@ -35,7 +35,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无价格波动数据'}"
-        :scroll="{x: 1430}"
+        :scroll="{x: scmColumnsWidth(columns)}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'bizDate'">
@@ -60,6 +60,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import ReportLineChart from './report-line-chart.vue';

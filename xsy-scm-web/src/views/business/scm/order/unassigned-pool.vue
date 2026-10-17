@@ -29,7 +29,7 @@
       </div>
     </a-row>
     <a-table size="small" :data-source="rows" :columns="columns" row-key="orderId" bordered
-             :loading="loading" :pagination="false" :scroll="{x: 980}">
+             :loading="loading" :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'orderNo'">
           <span class="scm-mono">{{ record.orderNo }}</span>
@@ -77,6 +77,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import dayjs from 'dayjs';
 import {message, Modal} from 'ant-design-vue';

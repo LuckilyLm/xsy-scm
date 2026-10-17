@@ -66,7 +66,7 @@
     <!---------- 表格 begin ----------->
     <a-table
         size="small"
-        :scroll="{ x: 1300 }"
+        :scroll="{ x: tableColumnsWidth(columns) }"
         :dataSource="tableData"
         :columns="columns"
         rowKey="fileId"
@@ -121,6 +121,7 @@
   </a-card>
 </template>
 <script setup lang="ts">
+import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {onMounted, reactive, ref} from 'vue';
 import {fileApi} from '/@/api/support/file-api';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
@@ -169,13 +170,13 @@ const columns = ref([
     title: '上传时间',
     dataIndex: 'createTime',
     ellipsis: true,
-    width: 150,
+    width: 180,
   },
   {
     title: '文件Key',
     dataIndex: 'fileKey',
     ellipsis: true,
-    width: 100,
+    width: 180,
   },
   {
     title: '操作',

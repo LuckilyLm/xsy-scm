@@ -45,13 +45,13 @@
     </div>
 
     <a-table
-        :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
+        :row-selection="{ columnWidth: 44, selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
         size="small"
         :columns="columns"
         :data-source="tableData"
         :pagination="false"
         :loading="tableLoading"
-        :scroll="{ x: 1500 }"
+        :scroll="{ x: tableColumnsWidth(columns, 44) }"
         row-key="employeeId"
         bordered
     >
@@ -105,6 +105,7 @@
   </a-card>
 </template>
 <script setup lang="ts">
+import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {ExclamationCircleOutlined} from '@ant-design/icons-vue';
 import {message, Modal} from 'ant-design-vue';
 import _ from 'lodash';
@@ -155,7 +156,7 @@ const columns = ref([
   {
     title: '手机号',
     dataIndex: 'phone',
-    width: 85,
+    width: 140,
   },
   {
     title: '邮箱',

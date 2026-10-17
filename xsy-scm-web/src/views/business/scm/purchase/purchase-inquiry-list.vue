@@ -19,7 +19,7 @@
       </a-space>
       <a-table :data-source="inquiries" :columns="columns" row-key="id" bordered size="small"
                :loading="loading" :pagination="{current: currentPage, pageSize: 20, total: total, showSizeChanger: false}"
-               :scroll="{x: 1050}" @change="onPageChange">
+               :scroll="{ x: scmColumnsWidth(columns) }" @change="onPageChange">
         <template #bodyCell="{record, column}">
           <template v-if="column.dataIndex === 'requiredQuantity'">
             <span class="scm-quantity">{{ record.requiredQuantity }}</span> {{ record.demandUnit }}
@@ -57,7 +57,7 @@
           <a-alert type="info" show-icon message="报价接收截止后仍可确认有效报价；报价由采购员代为登记，不代表供应商在线签署。" class="scm-inquiry__alert"/>
           <a-divider orientation="left">当前有效报价（单价从低到高）</a-divider>
           <a-table :data-source="detail.currentOffers" :columns="quoteColumns" row-key="id"
-                   size="small" bordered :pagination="{pageSize: 10}" :scroll="{x: 1080}">
+                   size="small" bordered :pagination="{pageSize: 10}" :scroll="{ x: scmColumnsWidth(quoteColumns) }">
             <template #bodyCell="{record, column}">
               <template v-if="column.dataIndex === 'unitPrice'">
                 <span class="scm-amount">{{ record.unitPrice }}</span> / {{ record.purchaseUnit }}
@@ -77,7 +77,7 @@
           </a-table>
           <a-divider orientation="left">历次报价修订记录</a-divider>
           <a-table :data-source="quoteHistory" :columns="historyColumns" row-key="id" bordered
-                   size="small" :pagination="{pageSize: 10}" :scroll="{x: 950}"/>
+                   size="small" :pagination="{pageSize: 10}" :scroll="{ x: scmColumnsWidth(historyColumns) }"/>
           <a-button v-if="quoteHistoryMore" :loading="historyLoading" @click="loadMoreHistory">
             加载更多历史报价
           </a-button>
@@ -107,6 +107,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';

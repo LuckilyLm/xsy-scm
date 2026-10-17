@@ -33,7 +33,7 @@
         bordered
         :pagination="false"
         :loading="loading"
-        :scroll="{ x: 900 }"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex === 'status'">
@@ -114,6 +114,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
@@ -196,7 +197,7 @@ const columns = computed<TableColumnsType>(() => [
         {title: '容积（m³）', dataIndex: 'loadVolume', align: 'right' as const, width: 120},
       ]),
   {title: '状态', dataIndex: 'status', align: 'center' as const, width: 90},
-  {title: '备注', dataIndex: 'remark'},
+  {title: '备注', dataIndex: 'remark', width: 240, ellipsis: true},
   {title: '操作', dataIndex: 'action', align: 'center' as const, width: 90},
 ]);
 

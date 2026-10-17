@@ -48,7 +48,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无库存余额' }"
-        :scroll="{ x: 1130 }"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
@@ -94,6 +94,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
@@ -122,8 +123,8 @@ type InventoryBalanceColumn = TableColumnsType<InventoryBalance>[number] & {show
 const columns = ref<InventoryBalanceColumn[]>([
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
   {title: '仓库编码', dataIndex: 'warehouseCode', width: 120, showFlag: false},
-  {title: '商品', dataIndex: 'productName', width: 160},
-  {title: '商品规格', dataIndex: 'skuName', width: 160},
+  {title: '商品', dataIndex: 'productName', width: 200, ellipsis: true},
+  {title: '商品规格', dataIndex: 'skuName', width: 180, ellipsis: true},
   {title: '规格编码', dataIndex: 'skuCode', width: 130, showFlag: false},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
   {title: '库存', dataIndex: 'quantity', align: 'right', width: 110},

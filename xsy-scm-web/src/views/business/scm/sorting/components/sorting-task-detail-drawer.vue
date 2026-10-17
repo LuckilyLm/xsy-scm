@@ -79,7 +79,7 @@
             row-key="id"
             bordered
             :pagination="false"
-            :scroll="{x: 1420}"
+            :scroll="{ x: scmColumnsWidth(itemColumns) }"
         >
           <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'product'">
@@ -180,6 +180,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import SortingPartModal from './sorting-part-modal.vue';
 import type {TableColumnsType} from 'ant-design-vue';

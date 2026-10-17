@@ -23,7 +23,7 @@
         <a-button v-privilege="'scm:mall:home:publish'" :loading="publishing" :disabled="dirty || !blocks.length" @click="publish">发布草稿</a-button>
       </a-space>
       <a-table :data-source="blocks" :columns="columns" row-key="key" size="small" bordered
-               :loading="loading" :pagination="false" :scroll="{x: 850}"
+               :loading="loading" :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }"
                :locale="{emptyText: '草稿还没有组件。选择类型后点击“添加组件”。'}">
         <template #bodyCell="{record, column, index}">
           <template v-if="column.dataIndex === 'type'">{{ blockTypeLabel(record.type) }}</template>
@@ -139,6 +139,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, ref} from 'vue';
 import {message, Modal, type TableColumnsType, type UploadProps} from 'ant-design-vue';
 import {fileApi} from '/@/api/support/file-api';

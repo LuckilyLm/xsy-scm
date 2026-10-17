@@ -11,7 +11,21 @@ export interface ScmListColumn {
   showFlag?: boolean;
 }
 
-/** 按列宽合计表格横向滚动宽度，避免每页各自写一遍 `reduce`。 */
-export function scmColumnsWidth(columns: readonly ScmListColumn[]): number {
-  return columns.reduce((width, column) => width + Number(column.width ?? 0), 0);
-}
+export const SCM_COLUMN_WIDTH = {
+  selection: 44,
+  expand: 36,
+  image: 68,
+  unit: 72,
+  count: 80,
+  status: 96,
+  quantity: 112,
+  money: 136,
+  moneyRange: 184,
+  date: 120,
+  dateTime: 180,
+  phone: 140,
+  name: 200,
+  actionThree: 144,
+} as const;
+
+export {tableColumnsWidth as scmColumnsWidth} from '/@/components/support/table-operator/table-width';

@@ -77,7 +77,7 @@
             :loading="receipt.loading"
             :pagination="false"
             :locale="{emptyText: '暂无收货明细'}"
-            :scroll="{x: 2620}"
+            :scroll="{x: scmColumnsWidth(receiptColumns)}"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'confirmedAt'">
@@ -178,7 +178,7 @@
             :loading="inbound.loading"
             :pagination="false"
             :locale="{emptyText: '暂无入库明细'}"
-            :scroll="{x: 1890}"
+            :scroll="{x: scmColumnsWidth(visibleInboundColumns)}"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'occurredAt'">
@@ -255,7 +255,7 @@
             :loading="pending.loading"
             :pagination="false"
             :locale="{emptyText: '暂无待入库收货单'}"
-            :scroll="{x: 1250}"
+            :scroll="{x: scmColumnsWidth(pendingColumns)}"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'confirmedAt'">
@@ -293,6 +293,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';

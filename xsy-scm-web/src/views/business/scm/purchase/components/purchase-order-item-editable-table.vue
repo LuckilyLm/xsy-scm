@@ -11,7 +11,8 @@
       :data-source="items"
       :columns="columns"
       :pagination="false"
-      :scroll="{ x: 1250 }"
+      :scroll="{ x: scmColumnsWidth(columns, 36) }"
+      :expand-column-width="36"
       :row-key="(_row: OrderItem, index?: number) => index ?? 0"
       :expanded-row-keys="items.map((_row, index) => index)"
   >
@@ -124,6 +125,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {reactive} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

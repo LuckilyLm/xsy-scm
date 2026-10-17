@@ -35,7 +35,7 @@
   <a-card size="small" :bordered="false">
 
     <a-table :data-source="rows" :columns="columns" :row-key="(r:HistoryRow)=>`${r.source}-${r.historyId}`"
-             :loading="loading" :pagination="false" size="small" bordered :scroll="{x:1850}">
+             :loading="loading" :pagination="false" size="small" bordered :scroll="{x:scmColumnsWidth(columns)}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='source'">
           {{ historyLabel(HISTORY_SOURCE_LABEL, record.source) }}
@@ -81,6 +81,7 @@
   </a-modal>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';

@@ -42,7 +42,7 @@
       </div>
     </div>
     <a-table id="scm-finance-payable-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="payableId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1375}">
+             row-key="payableId" :loading="page.loading.value" :pagination="false" bordered :scroll="{ x: scmColumnsWidth(columns) }">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='entryType'"><ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/></template>
         <template v-else-if="column.dataIndex==='settleState'"><ScmStatusTag :tone="settleStateTone(text)" :label="settleStateText(text)"/></template>
@@ -91,7 +91,7 @@
         <a-form-item label="红字原因" required><a-textarea v-model:value="redReason" :disabled="redSaving || redLoading" :maxlength="500" :rows="2" show-count/></a-form-item>
       </a-form>
       <a-table size="small" :data-source="redDrafts" :columns="redDraftColumns" row-key="purchaseOrderItemId"
-               :pagination="false" :scroll="{x:850}">
+               :pagination="false" :scroll="{ x: scmColumnsWidth(redDraftColumns) }">
         <template #bodyCell="{record,column}">
           <template v-if="column.dataIndex==='redQuantity'">
             <a-input-number v-model:value="record.redQuantity" :disabled="redSaving" string-mode :min="0" :precision="4" :max="99999999999999" style="width:125px"/>
@@ -118,6 +118,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onDeactivated, onMounted, onScopeDispose, reactive, ref, watch} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -166,24 +167,24 @@ const settleOptions = Object.values(SCM_FINANCE_SETTLE_STATE_ENUM).map((item) =>
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
 const columns = ref<TableColumnsType<FinancePayable>>([
-    {title: '应付单号', dataIndex: 'payableNo', fixed: 'left', width: 110, ellipsis: true, align: 'left'},
-    {title: '未核销', dataIndex: 'openAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '供应商', dataIndex: 'supplierName', width: 150, align: 'left'},
-    {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 150, align: 'left'},
-    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
-    {title: '已核销', dataIndex: 'writtenOffAmount', align: 'right', width: 110},
-    {title: '超额核销', dataIndex: 'overAppliedAmount', align: 'right', width: 120},
+    {title: '应付单号', dataIndex: 'payableNo', fixed: 'left', width: 170, ellipsis: true, align: 'left'},
+    {title: '未核销', dataIndex: 'openAmount', fixed: 'left', align: 'right', width: 148},
+    {title: '供应商', dataIndex: 'supplierName', width: 190, align: 'left'},
+    {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 170, align: 'left'},
+    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 136},
+    {title: '已核销', dataIndex: 'writtenOffAmount', align: 'right', width: 148},
+    {title: '超额核销', dataIndex: 'overAppliedAmount', align: 'right', width: 148},
     {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},
-    {title: '事件时点', dataIndex: 'eventAt', width: 165, align: 'left'},
+    {title: '事件时点', dataIndex: 'eventAt', width: 180, align: 'left'},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 130},
 ]);
 const redDraftColumns: TableColumnsType<RedDraft> = [
     {title: '商品', dataIndex: 'skuName', width: 190, align: 'left'},
     {title: '单位', dataIndex: 'unit', width: 90, align: 'center'},
     {title: '原数量', dataIndex: 'quantity', width: 130, align: 'right', customRender: ({text}) => text},
-    {title: '红字数量', dataIndex: 'redQuantity', align: 'right'},
-    {title: '红字单价', dataIndex: 'redUnitPrice', align: 'right'},
-    {title: '红字金额', dataIndex: 'redAmount', align: 'right'},
+    {title: '红字数量', dataIndex: 'redQuantity', align: 'right', width: 120},
+    {title: '红字单价', dataIndex: 'redUnitPrice', align: 'right', width: 136},
+    {title: '红字金额', dataIndex: 'redAmount', align: 'right', width: 148},
 ];
 useFinanceMobileActionColumn((compact) => {
     const action = columns.value[columns.value.length - 1];

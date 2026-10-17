@@ -45,7 +45,7 @@
       :loading="loading"
       :pagination="false"
       :locale="{emptyText}"
-      :scroll="{x: 1160}"
+      :scroll="{ x: scmColumnsWidth(columns) }"
       bordered
   >
     <template #bodyCell="{column, record}">
@@ -91,6 +91,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {DELIVERY_PERM} from '../use-delivery-permission';

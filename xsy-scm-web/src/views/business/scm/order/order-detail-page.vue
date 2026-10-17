@@ -37,7 +37,7 @@
 
           <h3 class="order-section-title">商品明细</h3>
           <a-table :data-source="order.items ?? []" :columns="itemColumns" row-key="itemId"
-                   :pagination="false" size="small" bordered :scroll="{x: 980}">
+                   :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(itemColumns) }">
             <template #bodyCell="{record, column}">
               <template v-if="column.dataIndex === 'draftUnitPrice'">
                 {{ amount(record.draftUnitPrice, true) }}
@@ -78,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';

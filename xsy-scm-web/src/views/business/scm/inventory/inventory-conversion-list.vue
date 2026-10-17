@@ -158,7 +158,7 @@
             row-key="_key"
             bordered
             :pagination="false"
-            :scroll="{ x: 900 }"
+            :scroll="{ x: scmColumnsWidth(itemColumns) }"
         >
           <template #bodyCell="{ record, column, index }">
             <template v-if="column.dataIndex === 'sourceSkuId'">

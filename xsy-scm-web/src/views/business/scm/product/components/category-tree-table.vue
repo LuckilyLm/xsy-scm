@@ -1,6 +1,6 @@
 <template>
   <a-table :columns="columns" :data-source="rows" row-key="categoryId" :pagination="false" :loading="loading"
-           size="small" bordered :scroll="{ x: 1020 }">
+           size="small" bordered :scroll="{ x: scmColumnsWidth(columns) }">
     <template #bodyCell="{ column, record }">
       <template v-if="column.dataIndex === 'level'">{{ record.level }} 级</template>
       <!-- 分类路径是「生鲜 / 果蔬 / 苹果」；父分类 = 去掉最后一段，一级分类没有父级 -->
@@ -23,6 +23,7 @@
   </a-table>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {ProductCategory} from '/@/types/business/scm/product';
 
 defineProps<{ rows: ProductCategory[]; loading: boolean }>();

@@ -74,7 +74,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText: '暂无调拨单' }"
-        :scroll="{ x: 1290 }"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'direction'">
@@ -216,7 +216,7 @@
         :loading="inTransitLoading"
         :pagination="false"
         :locale="{ emptyText: '当前没有在途调拨' }"
-        :scroll="{ x: 990 }"
+        :scroll="{ x: scmColumnsWidth(inTransitColumns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'direction'">
@@ -240,6 +240,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';

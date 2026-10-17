@@ -54,8 +54,9 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1280 }"
+        :scroll="{ x: scmColumnsWidth(columns, SCM_COLUMN_WIDTH.selection) }"
         :row-selection="{
+        columnWidth: SCM_COLUMN_WIDTH.selection,
         selectedRowKeys: selected,
         onChange: (keys: (string | number)[]) => (selected = keys),
         getCheckboxProps: (row: Order) => ({ disabled: !['DRAFT', 'PARTIALLY_RECEIVED'].includes(row.status ?? '') }),
@@ -155,6 +156,7 @@
 </template>
 
 <script setup lang="ts">
+import {SCM_COLUMN_WIDTH, scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, h, onMounted, reactive, ref} from 'vue';
 import {Input, message, Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -282,12 +284,12 @@ const partialSelected = computed(() => selectedOrders.value.filter((o) => o.stat
 // 创建时间是技术时间戳，仍在详情抽屉与导出列里，只是不默认摊在列表上；计划到货才是采购跟单看的业务日期。
 const columns = ref<TableColumnsType<Order>>([
   {title: '采购单号', dataIndex: 'orderNo', width: 190},
-  {title: '供应商', dataIndex: 'supplierName', width: 180},
+  {title: '供应商', dataIndex: 'supplierName', width: 220, ellipsis: true},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},
   {title: '收货仓库', dataIndex: 'warehouseName', width: 140},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '计划到货', dataIndex: 'plannedArrivalDate', width: 120},
-  {title: '采购金额', dataIndex: 'totalAmount', align: 'right', width: 130},
+  {title: '采购金额', dataIndex: 'totalAmount', align: 'right', width: 148},
   {title: '收货进度', dataIndex: 'receivedProgress', align: 'right', width: 110},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);

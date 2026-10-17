@@ -13,7 +13,7 @@
     <a-button type="primary" @click="refreshDict">刷新字典</a-button>
   </div>
   <a-table
-      :scroll="{ x: 1300 }"
+      :scroll="{ x: tableColumnsWidth(columns) }"
       size="small"
       bordered
       class="smart-margin-top10"
@@ -76,6 +76,7 @@
 </template>
 
 <script setup lang="ts">
+import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {inject, ref} from 'vue';
 import {
   checkExistEnum,

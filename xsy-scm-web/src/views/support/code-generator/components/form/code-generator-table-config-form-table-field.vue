@@ -11,7 +11,7 @@
   <a-table
       size="small"
       bordered
-      :scroll="{ x: 1000 }"
+      :scroll="{ x: tableColumnsWidth(columns) }"
       class="smart-margin-top10"
       :dataSource="tableData"
       :columns="columns"
@@ -47,6 +47,7 @@
 </template>
 
 <script setup lang="ts">
+import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {inject, ref} from 'vue';
 import {convertLowerCamel} from '/@/utils/str-util';
 

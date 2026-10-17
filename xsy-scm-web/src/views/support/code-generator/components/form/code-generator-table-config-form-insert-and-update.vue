@@ -60,7 +60,7 @@
 
   <a-table
       size="small"
-      :scroll="{ x: 1000 }"
+      :scroll="{ x: tableColumnsWidth(columns) }"
       bordered
       class="smart-margin-top10"
       :dataSource="tableData"
@@ -111,6 +111,7 @@
 </template>
 
 <script setup lang="ts">
+import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {computed, inject, reactive, ref} from 'vue';
 import {checkExistEnum, getFrontComponent} from '../../code-generator-util';
 import {CODE_FRONT_COMPONENT_ENUM, CODE_INSERT_AND_UPDATE_PAGE_ENUM} from '/@/constants/support/code-generator-const';

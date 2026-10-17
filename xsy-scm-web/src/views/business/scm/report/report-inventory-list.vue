@@ -83,7 +83,7 @@
             :loading="movement.loading"
             :pagination="false"
             :locale="{emptyText: '暂无库存流水'}"
-            :scroll="{x: 2700}"
+            :scroll="{x: scmColumnsWidth(visibleMovementColumns)}"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'occurredAt'">
@@ -186,7 +186,7 @@
             :loading="value.loading"
             :pagination="false"
             :locale="{emptyText: '暂无库存价值'}"
-            :scroll="{x: 1400}"
+            :scroll="{x: scmColumnsWidth(valueColumns)}"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'quantity'">
@@ -251,7 +251,7 @@
             :loading="flow.loading"
             :pagination="false"
             :locale="{emptyText: '暂无收发存数据'}"
-            :scroll="{x: 2500}"
+            :scroll="{x: scmColumnsWidth(flowColumns)}"
         >
           <template #bodyCell="{ record, column }">
             <template v-if="QUANTITY_INDEXES.includes(String(column.dataIndex))">
@@ -277,6 +277,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';

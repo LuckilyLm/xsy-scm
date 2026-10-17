@@ -38,9 +38,9 @@
       <a-button v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!applied || loading || !!error" @click="exportRows">导出当前结果</a-button>
     </div>
     <a-table size="small" :data-source="summaryRows" :columns="summaryColumns" row-key="agingBucket"
-             :pagination="false" :loading="loading" :scroll="{x: 450}" class="aging-summary"/>
+             :pagination="false" :loading="loading" :scroll="{x: scmColumnsWidth(summaryColumns)}" class="aging-summary"/>
     <a-table id="scm-report-finance-aging-table" size="small" :data-source="rows" :columns="columns"
-             row-key="documentId" bordered :pagination="false" :loading="loading" :scroll="{x: 1760}"
+             row-key="documentId" bordered :pagination="false" :loading="loading" :scroll="{ x: scmColumnsWidth(columns) }"
              :locale="{emptyText: '当前范围没有未核销余额'}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex === 'agingBucket'">{{ bucketLabel(record.agingBucket) }}</template>
@@ -60,6 +60,7 @@
   <FinanceDetailDrawer v-model:open="detailOpen" :loading="detailLoading" :kind="detailKind" :detail="detail"/>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import dayjs from 'dayjs';
 import {message, type TableColumnsType} from 'ant-design-vue';
@@ -92,8 +93,8 @@ const bucketLabel = (bucket: AgingBucket) => bucketOptions.find(option => option
 const summaryRows = computed(() => summary.value.map(row => ({...row, label: bucketLabel(row.agingBucket)}))
   .sort((a, b) => bucketOptions.findIndex(option => option.value === a.agingBucket) - bucketOptions.findIndex(option => option.value === b.agingBucket)));
 const summaryColumns = [
-  {title: '账龄分组', dataIndex: 'label'}, {title: '单据数', dataIndex: 'documentCount', align: 'right'},
-  {title: '未核销余额', dataIndex: 'openAmount', customRender: ({text}: {text: string}) => moneyText(text), align: 'right'},
+  {title: '账龄分组', dataIndex: 'label', width: 150}, {title: '单据数', dataIndex: 'documentCount', align: 'right', width: 96},
+  {title: '未核销余额', dataIndex: 'openAmount', width: 148, customRender: ({text}: {text: string}) => moneyText(text), align: 'right'},
 ];
 const columns: TableColumnsType<AgingRow> = [
   {title: '财务单号', dataIndex: 'documentNo', width: 190}, {title: '来源单号', dataIndex: 'sourceNo', width: 190},

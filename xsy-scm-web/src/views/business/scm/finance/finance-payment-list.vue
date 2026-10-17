@@ -44,7 +44,7 @@
       </div>
     </div>
     <a-table id="scm-finance-payment-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="paymentId" :loading="page.loading.value" :pagination="false" bordered :scroll="{x:1365}">
+             row-key="paymentId" :loading="page.loading.value" :pagination="false" bordered :scroll="{ x: scmColumnsWidth(columns) }">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex==='entryType'">
           <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
@@ -118,6 +118,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
@@ -189,15 +190,15 @@ function counterpartyTypeText(value?: string | null): string {
 }
 
 const columns = ref<TableColumnsType<FinancePayment>>([
-    {title: '付款单号', dataIndex: 'paymentNo', fixed: 'left', width: 110, ellipsis: true},
-    {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', align: 'right', width: 90},
-    {title: '往来方', dataIndex: 'counterpartyName', width: 170},
-    {title: '往来方类型', dataIndex: 'counterpartyType', align: 'center', width: 95},
-    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 120},
-    {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 120},
-    {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 110},
+    {title: '付款单号', dataIndex: 'paymentNo', fixed: 'left', width: 170, ellipsis: true},
+    {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', align: 'right', width: 148},
+    {title: '往来方', dataIndex: 'counterpartyName', width: 190},
+    {title: '往来方类型', dataIndex: 'counterpartyType', align: 'center', width: 112},
+    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80}, {title: '金额', dataIndex: 'amount', align: 'right', width: 136},
+    {title: '有效金额', dataIndex: 'effectiveAmount', align: 'right', width: 148},
+    {title: '已核销', dataIndex: 'usedAmount', align: 'right', width: 148},
     {title: '方式', dataIndex: 'method', width: 105, align: 'center'}, {title: '来源', dataIndex: 'sourceType', align: 'center', width: 95},
-    {title: '付款时点', dataIndex: 'paidAt', width: 160},
+    {title: '付款时点', dataIndex: 'paidAt', width: 180},
     {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 140},
 ]);
 useFinanceMobileActionColumn((compact) => {

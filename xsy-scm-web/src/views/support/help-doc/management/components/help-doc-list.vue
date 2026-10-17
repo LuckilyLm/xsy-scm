@@ -51,7 +51,7 @@
     <a-table
         rowKey="helpDocId"
         :columns="tableColumns"
-        :scroll="{ x: 1000 }"
+        :scroll="{ x: tableColumnsWidth(tableColumns) }"
         :dataSource="tableData"
         :pagination="false"
         :loading="tableLoading"
@@ -97,6 +97,7 @@
 </template>
 
 <script setup lang="ts">
+import {tableColumnsWidth} from '/@/components/support/table-operator/table-width';
 import {message, Modal} from 'ant-design-vue';
 import {onMounted, reactive, ref, watch} from 'vue';
 import HelpDocFormDrawer from './help-doc-form-drawer.vue';
@@ -127,6 +128,7 @@ const tableColumns = ref([
     title: `标题`,
     dataIndex: 'title',
     ellipsis: true,
+    width: 260,
   },
   {
     title: '目录',

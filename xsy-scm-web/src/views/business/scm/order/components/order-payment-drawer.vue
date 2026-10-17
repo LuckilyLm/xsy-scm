@@ -22,7 +22,7 @@
     <a-divider/>
     <a-button v-privilege="'scm:payment:transaction:query'" :loading="loading" @click="load(1)">查询支付记录</a-button>
     <a-table v-if="queried" class="payment-records" size="small" :columns="columns" :data-source="rows"
-             row-key="id" :loading="loading" :scroll="{x: 680}" :pagination="false">
+             row-key="id" :loading="loading" :scroll="{ x: scmColumnsWidth(columns) }" :pagination="false">
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'method'">{{ record.method === 'BALANCE' ? '余额 / 内部结算' : '在线 / ' + providerText(record.provider) }}</template>
         <template v-else-if="column.dataIndex === 'status'">{{ statusText(record.status) }}</template>
@@ -43,6 +43,7 @@
   </a-drawer>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {paymentApi, type PaymentIntent, type PaymentCreate} from '/@/api/business/scm/payment-api';

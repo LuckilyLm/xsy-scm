@@ -1,5 +1,5 @@
 <template>
-  <!-- workspace：报表下钻 —— 下钻的宽表（scroll.x 1500）就是被阅读的内容本身，
+  <!-- workspace：报表下钻 —— 下钻宽表就是被阅读的内容本身，
        抽屉的价值在于「就地在两个粒度之间对照」，收窄会直接损害对照能力。 -->
   <a-drawer
       :open="open"
@@ -23,7 +23,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无该供应商 / 采购员的商品明细'}"
-        :scroll="{x: 1500}"
+        :scroll="{x: scmColumnsWidth(columns)}"
     >
       <template #bodyCell="{ record, column }">
         <slot name="bodyCell" :record="record" :column="column"/>
@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {TableColumnsType} from 'ant-design-vue';
 import {SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import type {PurchaseProductRow} from '../report-types';

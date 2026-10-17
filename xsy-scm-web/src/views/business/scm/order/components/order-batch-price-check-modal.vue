@@ -28,7 +28,7 @@
           <a-alert v-if="entry.error" type="error" show-icon :message="entry.error"/>
           <template v-else-if="entry.result">
             <a-table :data-source="entry.result.lines" :columns="columns"
-                     :pagination="false" row-key="itemId" size="small" bordered :scroll="{x: 870}">
+                     :pagination="false" row-key="itemId" size="small" bordered :scroll="{ x: scmColumnsWidth(columns) }">
               <template #bodyCell="{record, column}">
                 <span v-if="column.dataIndex === 'oldPrice'" class="scm-money">
                   {{ money(record.oldPrice) }}
@@ -61,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
 import {message, Modal, type TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';

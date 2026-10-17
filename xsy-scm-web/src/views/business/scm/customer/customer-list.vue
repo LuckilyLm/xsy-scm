@@ -55,7 +55,7 @@
           :locale="{ emptyText }"
           size="small"
           bordered
-          :scroll="{ x: 1180 }"
+          :scroll="{ x: scmColumnsWidth(columns) }"
           @change="sortChanged"
       >
         <template #bodyCell="{ column, record }">
@@ -133,6 +133,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref, computed} from 'vue';
 import {useRouter} from 'vue-router';
 import {message, Modal} from 'ant-design-vue';
@@ -225,8 +226,8 @@ const statusColor = (value: CustomerStatus): string => {
 // 名称、编码、联系人与电话可独立查看；客户编码默认收起，仍可通过列设置打开。
 type CustomerListColumn = TableColumnsType<CustomerRow>[number] & {showFlag?: boolean};
 const columns = ref<CustomerListColumn[]>([
-  {title: '客户名称', dataIndex: 'name', width: 180, sorter: true},
-  {title: '客户编码', dataIndex: 'customerCode', width: 120, showFlag: false},
+  {title: '客户名称', dataIndex: 'name', width: 220, sorter: true, ellipsis: true},
+  {title: '客户编码', dataIndex: 'customerCode', width: 160, showFlag: false},
   {title: '客户类型', dataIndex: 'customerTypeName', width: 120, align: 'center'},
   {title: '业务员', dataIndex: 'sellerName', width: 110},
   {title: '联系人', dataIndex: 'contactName', width: 120},

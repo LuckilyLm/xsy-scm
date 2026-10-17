@@ -53,7 +53,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{ emptyText }"
-        :scroll="{ x: 1520 }"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
@@ -197,6 +197,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import PrintDocumentModal from '../print/print-document-modal.vue';
 import {computed, onMounted, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';

@@ -42,7 +42,7 @@
         <a-descriptions-item label="期末未分配付款">{{ moneyText(selected.closingUnallocated) }}</a-descriptions-item>
       </a-descriptions>
       <a-table class="statement-lines" :columns="lineColumns" :data-source="selected.items ?? []" row-key="lineNo"
-               size="small" bordered :pagination="{pageSize: 30}" :scroll="{x: 1180}">
+               size="small" bordered :pagination="{pageSize: 30}" :scroll="{ x: scmColumnsWidth(lineColumns) }">
         <template #bodyCell="{record,column}">
           <template v-if="column.dataIndex === 'factType'">{{ factLabels[record.factType] ?? record.factType }}</template>
           <template v-else-if="moneyColumns.includes(String(column.dataIndex))">{{ moneyText(record[column.dataIndex]) }}</template>
@@ -52,6 +52,7 @@
   </a-card>
 </template>
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref, watch} from 'vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
 import {supplierStatementApi, type SupplierStatement, type SupplierStatementLine} from '/@/api/business/scm/supplier-statement-api';

@@ -52,7 +52,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1330 }"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'status'">
@@ -135,6 +135,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import ScmMapPicker from '/@/components/business/scm/map/scm-map-picker.vue';
 import {emptyLocation, isLocated, locationError} from '/@/components/business/scm/map/types';
 import {CheckCircleOutlined, ExclamationCircleOutlined} from '@ant-design/icons-vue';

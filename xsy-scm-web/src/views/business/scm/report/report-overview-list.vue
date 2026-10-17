@@ -86,7 +86,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无每日统计'}"
-        :scroll="{x: 1240, y: 420}"
+        :scroll="{x: scmColumnsWidth(visibleColumns), y: 420}"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'bizDate'">
@@ -130,6 +130,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';

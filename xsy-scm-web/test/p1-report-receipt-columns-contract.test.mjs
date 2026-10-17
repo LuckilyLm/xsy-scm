@@ -14,8 +14,7 @@
  * 2. 数值样式走公共类：`.scm-money` / `.scm-quantity` 是全局唯一的金额/数量样式，
  *    页面里再定义一个局部 `.num` 会造成「同一个数字在不同报表里字体不同」。
  *
- * `scroll.x` 必须等于各列 width 之和：同一报表的精度要一致，横向滚动宽度与实际列宽
- * 脱节会让固定列（操作列）压住内容列。
+ * `scroll.x` 必须由当前显示列的 width 合计，列设置变化后不能沿用旧总宽。
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -39,13 +38,6 @@ function widthSum(source, arrayName) {
     const widths = [...matched[1].matchAll(/width:\s*(\d+)/g)].map((item) => Number(item[1]));
     assert.ok(widths.length > 0, `${arrayName} 里没有任何列宽`);
     return widths.reduce((total, item) => total + item, 0);
-}
-
-/** 取某个表格的 scroll.x。 */
-function scrollX(source, emptyText) {
-    const matched = new RegExp(`emptyText: '${emptyText}'[\\s\\S]{0,80}?:scroll="\\{x: (\\d+)\\}"`).exec(source);
-    assert.ok(matched, `找不到「${emptyText}」表格的 scroll.x`);
-    return Number(matched[1]);
 }
 
 test('收货明细：商品身份只占两列，不复制编码列', () => {
@@ -84,17 +76,17 @@ test('收款与入库明细：金额右对齐、数量右对齐，且无局部 .
     assert.match(receipt, /class="scm-money"/, '金额列未使用 .scm-money');
 });
 
-test('两个明细表的 scroll.x 等于各列宽度之和', () => {
-    assert.equal(
-        scrollX(receipt, '暂无收货明细'),
-        widthSum(receipt, 'receiptColumns'),
-        '收货明细的 scroll.x 与列宽之和不一致',
-    );
-    assert.equal(
-        scrollX(receipt, '暂无入库明细'),
-        widthSum(receipt, 'inboundColumns'),
-        '入库明细的 scroll.x 与列宽之和不一致',
-    );
+test('明细表按当前列宽计算 scroll.x', () => {
+    for (const [emptyText, columnName] of [
+        ['暂无收货明细', 'receiptColumns'],
+        ['暂无入库明细', 'visibleInboundColumns'],
+        ['暂无待入库收货单', 'pendingColumns'],
+    ]) {
+        const pattern = new RegExp(`emptyText: '${emptyText}'[\\s\\S]{0,80}?:scroll="\\{x: scmColumnsWidth\\(${columnName}\\)\\}"`);
+        assert.match(receipt, pattern);
+    }
+    assert.ok(widthSum(receipt, 'receiptColumns') > 0);
+    assert.ok(widthSum(receipt, 'inboundColumns') > 0);
 });
 
 test('待入库：操作列居中且只有一个回原单的跳转', () => {

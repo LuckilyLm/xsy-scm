@@ -30,7 +30,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '暂无供应商采购数据'}"
-        :scroll="{x: 1450}"
+        :scroll="{ x: scmColumnsWidth(visibleColumns) }"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'supplierName'">
@@ -80,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
 import {ExclamationCircleOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';

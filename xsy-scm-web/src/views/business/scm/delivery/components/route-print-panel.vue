@@ -74,7 +74,7 @@
         row-key="orderId"
         :loading="loading"
         :pagination="false"
-        :scroll="{x: 1080}"
+        :scroll="{x: scmColumnsWidth(orderViewColumns, 44)}"
         :row-selection="orderRowSelection"
         bordered
     >
@@ -119,7 +119,7 @@
         row-key="customerId"
         :loading="loading"
         :pagination="false"
-        :scroll="{x: 760}"
+        :scroll="{x: scmColumnsWidth(customerViewColumns, 44)}"
         :row-selection="customerRowSelection"
         bordered
     >
@@ -136,6 +136,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {datetime} from '../../common/scm-display';
@@ -192,11 +193,13 @@ const customerViewColumns = computed<TableColumnsType<RouteCustomerView>>(() => 
 ]);
 
 const orderRowSelection = computed(() => ({
+  columnWidth: 44,
   selectedRowKeys: props.orderSelection,
   onChange: (keys: Array<string | number>) => emit('update:orderSelection', keys),
 }));
 
 const customerRowSelection = computed(() => ({
+  columnWidth: 44,
   selectedRowKeys: props.customerSelection,
   onChange: (keys: Array<string | number>) => emit('update:customerSelection', keys),
 }));

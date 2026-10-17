@@ -44,7 +44,7 @@
         bordered
         :loading="loading"
         :pagination="false"
-        :scroll="{ x: 1500 }"
+        :scroll="{ x: scmColumnsWidth(columns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="numericColumns.includes(column.dataIndex)">
@@ -74,6 +74,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';

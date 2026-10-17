@@ -44,7 +44,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '当前授权范围内没有匹配的客户可见性配置'}"
-        :scroll="{x: 1045}"
+        :scroll="{ x: scmColumnsWidth(columns) }"
         size="small"
       >
         <template #bodyCell="{column, record}">
@@ -98,6 +98,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';

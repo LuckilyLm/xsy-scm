@@ -56,7 +56,7 @@
         row-key="stopId"
         bordered
         :pagination="false"
-        :scroll="{ x: 900 }"
+        :scroll="{ x: scmColumnsWidth(planColumns) }"
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'change'">
@@ -138,6 +138,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
 import {type TableColumnsType} from 'ant-design-vue';
 import ScmMap from '/@/components/business/scm/map/scm-map.vue';

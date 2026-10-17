@@ -39,8 +39,8 @@
       </div>
     </a-row>
     <a-table id="order-table" size="small" :data-source="tableData" :columns="columns" row-key="orderId" bordered
-             :loading="loading" :pagination="false" :scroll="{x:1190}"
-             :row-selection="{selectedRowKeys:selected,onChange:(keys:(string|number)[])=>selected=keys,getCheckboxProps:(r:Order)=>({disabled:r.status!=='DRAFT'})}">
+             :loading="loading" :pagination="false" :scroll="{x:scmColumnsWidth(columns, SCM_COLUMN_WIDTH.selection)}"
+             :row-selection="{columnWidth:SCM_COLUMN_WIDTH.selection,selectedRowKeys:selected,onChange:(keys:(string|number)[])=>selected=keys,getCheckboxProps:(r:Order)=>({disabled:r.status!=='DRAFT'})}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='orderNo'"><a @click="openDetail(record.orderId)">{{ record.orderNo }}</a>
         </template>
@@ -96,6 +96,7 @@
   <OrderBatchPriceCheckModal ref="priceCheckModal" @saved="queryData"/>
 </template>
 <script setup lang="ts">
+import {SCM_COLUMN_WIDTH, scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import {Modal} from 'ant-design-vue';

@@ -148,7 +148,7 @@
                 <a-spin :spinning="mallAccountLoading">
                   <a-alert v-if="mallAccountError" type="error" show-icon :message="mallAccountError"/>
                   <a-table v-else-if="mallAccounts.length" :data-source="mallAccounts" :columns="mallAccountCols" row-key="accountId"
-                           size="small" bordered :pagination="false" :scroll="{ x: 720 }">
+                           size="small" bordered :pagination="false" :scroll="{ x: scmColumnsWidth(mallAccountCols) }">
                     <template #bodyCell="{ record, column }">
                       <template v-if="column.dataIndex === 'loginPhone'"><span class="scm-mono">{{ record.loginPhone }}</span></template>
                       <template v-else-if="column.dataIndex === 'status'">{{ record.status === 'ENABLED' ? '已启用' : '已禁用' }}</template>
@@ -203,7 +203,7 @@
           </template>
         </a-alert>
         <a-table v-else :data-source="orders.rows.value" :columns="orderCols" row-key="orderId" size="small" bordered
-                 :loading="orders.loading.value" :pagination="false" :scroll="{ x: 710 }">
+                 :loading="orders.loading.value" :pagination="false" :scroll="{ x: scmColumnsWidth(orderCols) }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'orderNo'"><span class="scm-mono">{{ record.orderNo }}</span></template>
             <template v-else-if="column.dataIndex === 'orderSource'">{{ SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc || record.orderSource }}</template>
@@ -233,7 +233,7 @@
           </template>
         </a-alert>
         <a-table v-else :data-source="frequent.rows.value" :columns="frequentCols" :row-key="(r: CustomerFrequentSku) => `${r.skuId}-${r.unit}`" size="small" bordered
-                 :loading="frequent.loading.value" :pagination="false" :scroll="{ x: 1090 }">
+                 :loading="frequent.loading.value" :pagination="false" :scroll="{ x: scmColumnsWidth(frequentCols) }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'productName'">
               <span>{{ record.productName || '—' }}</span>
@@ -256,7 +256,7 @@
           </template>
         </a-alert>
         <a-table v-else :data-source="agreement.rows.value" :columns="agreementCols" row-key="agreementPriceId" size="small" bordered
-                 :loading="agreement.loading.value" :pagination="false" :scroll="{ x: 930 }">
+                 :loading="agreement.loading.value" :pagination="false" :scroll="{ x: scmColumnsWidth(agreementCols) }">
           <template #bodyCell="{ record, column }">
             <template v-if="column.dataIndex === 'productName'">
               <span>{{ record.productName || '—' }}</span>
@@ -284,7 +284,7 @@
         <template v-else>
           <p v-if="visPolicyText" class="scm-note">{{ visPolicyText }}</p>
           <a-table :data-source="visRows" :columns="visibilityCols" :row-key="(r: VisibilityRow) => String(r.skuId)" size="small" bordered
-                   :loading="visibility.loading.value" :pagination="false" :scroll="{ x: 650 }">
+                   :loading="visibility.loading.value" :pagination="false" :scroll="{ x: scmColumnsWidth(visibilityCols) }">
             <template #bodyCell="{ record, column }">
               <template v-if="column.dataIndex === 'productName'">
                 <span>{{ record.productName || '—' }}</span>
@@ -312,7 +312,7 @@
           <a-button type="primary" @click="openAlias()">设置别名</a-button>
         </a-space>
         <a-table :data-source="aliases" :columns="aliasCols" :row-key="(row: CustomerSkuAlias) => String(row.skuId)"
-                 :loading="aliasLoading" size="small" bordered :pagination="{pageSize: 20}" :scroll="{x: 680}">
+                 :loading="aliasLoading" size="small" bordered :pagination="{pageSize: 20}" :scroll="{x: scmColumnsWidth(aliasCols)}">
           <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'action'">
               <a-space v-if="hasPermission('scm:customer:update')">
@@ -352,6 +352,7 @@
 </template>
 
 <script setup lang="ts">
+import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref, shallowRef, watch, type Ref} from 'vue';
 import {message} from 'ant-design-vue';
 import {useRoute, useRouter} from 'vue-router';
