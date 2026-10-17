@@ -5,6 +5,14 @@ export function newOrder(): Order {
     return {orderSource: 'ADMIN', deliveryWarehouseId: null, items: [], address: {receiverName: '', receiverPhone: '', address: ''}};
 }
 
+/** 连续录单只保留客户与本次选定仓库，绝不沿用上单商品、地址快照、定价、补单关联或版本。 */
+export function nextOrderForCustomer(previous: Order): Order {
+    const next = newOrder();
+    next.customerId = previous.customerId;
+    next.deliveryWarehouseId = previous.deliveryWarehouseId ?? previous.mallDeliveryWarehouseId ?? null;
+    return next;
+}
+
 export function fixed(value: string | number): string {
     return new Decimal(value).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
 }

@@ -72,6 +72,9 @@
       <a-space>
         <a-button @click="closeDrawer">关闭</a-button>
         <a-button v-if="!form.orderId" :loading="saving" :disabled="loading" @click="save(true)">保存草稿</a-button>
+        <a-button v-if="!form.orderId" :loading="saving" :disabled="loading" @click="save(false, true)">
+          创建并继续录单
+        </a-button>
         <a-button type="primary" :loading="saving" :disabled="loading" @click="save(false)">
           {{ form.orderId ? '保存修改' : '创建订单' }}
         </a-button>
@@ -87,7 +90,7 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {orderApi} from '/@/api/business/scm/order-api';
-import {newOrder, payload, validateOrder, fixed, draftKey, serializeDraft, applyDraft, fromHistory, type Draft} from '../order-form-model';
+import {newOrder, nextOrderForCustomer, payload, validateOrder, fixed, draftKey, serializeDraft, applyDraft, fromHistory, type Draft} from '../order-form-model';
 import {localSave, localRead, localRemove} from '/@/utils/local-util';
 import {useUserStore} from '/@/store/modules/system/user';
 import {orderError} from '../order-errors';
@@ -230,6 +233,7 @@ function persistUnsavedDraft() {
 /** 关闭 Drawer：仅对「尚未保存的新建单」落本地草稿，编辑既有单不产生草稿。 */
 function closeDrawer() {
   persistUnsavedDraft();
+  requestId++;
   visible.value = false;
 }
 
@@ -314,7 +318,39 @@ async function loadOriginals(keyword: string) {
   }
 }
 
-async function save(draft = false) {
+/** 成功创建后继续录下一单：仅保留客户/选仓，地址须从当前客户重取，所有价格和商品重新录入。 */
+async function continueWithNextOrder(previous: Order): Promise<void> {
+  const token = ++requestId;
+  form.value = nextOrderForCustomer(previous);
+  originals.value = [];
+  itemTableRef.value?.closeRecentPopover();
+  error.value = '';
+  formRef.value?.clearValidate();
+  if (!form.value.customerId) return;
+  loading.value = true;
+  try {
+    const c = (await customerApi.detail(form.value.customerId, {
+      suppressGlobalErrorMessage: true
+    })).data;
+    if (token !== requestId || !visible.value) return;
+    form.value.address = {
+      receiverName: c.contactName ?? '',
+      receiverPhone: c.contactPhone ?? '',
+      address: c.address ?? ''
+    };
+  } catch {
+    if (token === requestId && visible.value) {
+      form.value.customerId = undefined;
+      error.value = '上一单已创建成功，但未能取得客户最新收货信息，请重新选择客户';
+    }
+  } finally {
+    if (token === requestId) loading.value = false;
+  }
+}
+
+async function save(draft = false, continueCreating = false) {
+  if (saving.value || loading.value) return;
+  saving.value = true;
   error.value = '';
   try {
     form.value.items.forEach(i => {
@@ -333,7 +369,6 @@ async function save(draft = false) {
       message.warning(invalid);
       return;
     }
-    saving.value = true;
     const f = payload(form.value);
     const isNew = !f.orderId;
     if (f.orderSource !== 'SUPPLEMENT') {
@@ -351,8 +386,12 @@ async function save(draft = false) {
       message.success(result.data.status === 'CONFIRMED' ? '订单已创建并确认' : '订单已创建，非标品等待称重后确认');
     }
     if (isNew) clearDraft();
-    visible.value = false;
     emit('saved');
+    if (isNew && !draft && continueCreating && visible.value) {
+      await continueWithNextOrder(f);
+    } else {
+      visible.value = false;
+    }
   } catch {
     // 保存失败只走全局 toast；抽屉里的 error 留给加载失败
   } finally {

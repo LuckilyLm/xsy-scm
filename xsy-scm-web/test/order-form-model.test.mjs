@@ -15,11 +15,34 @@ import {
   serializeDraft,
   applyDraft,
   fromHistory,
+  nextOrderForCustomer,
 } from '../src/views/business/scm/order/order-form-model.ts';
 
 function itemOf(over) {
   return {orderedQuantity: '2.0000', manualPriceOverride: false, ...over};
 }
+
+test('连续录单只保留客户与仓库，清空来源快照、旧地址、商品、价款及补单关联', () => {
+  const previous = {
+    ...newOrder(),
+    orderId: '9007199254740993', orderNo: 'SO-900', version: 8,
+    status: 'CONFIRMED', customerId: '12', mallDeliveryWarehouseId: '31',
+    orderSource: 'SUPPLEMENT', originalOrderId: '9', supplementReason: '上一单原因',
+    expectDeliveryTime: '2026-10-17 19:00:00', remark: '仅上一单的备注',
+    address: {receiverName: '旧收货人', receiverPhone: '123456', address: '旧地址'},
+    items: [itemOf({skuId: '4', itemId: '11', version: 2, orderedQuantity: '5.0000',
+      draftUnitPrice: '9.9900', lockedUnitPrice: '9.9900',
+      manualPriceOverride: true, unitPrice: '9.9900', overrideReason: '上一单改价'})]
+  };
+  const next = nextOrderForCustomer(previous);
+  assert.deepEqual(next, {
+    ...newOrder(), customerId: '12', deliveryWarehouseId: '31'
+  });
+  assert.equal(previous.items.length, 1, '准备下一单不能修改上一单快照');
+  assert.notEqual(next.address, previous.address);
+  const chosen = nextOrderForCustomer({...previous, deliveryWarehouseId: '42'});
+  assert.equal(chosen.deliveryWarehouseId, '42', '显式选仓优先于历史商城履约仓');
+});
 
 test('草稿键按登录用户隔离，不同操作员互不串', () => {
   assert.equal(draftKey(44), 'xsy-scm:order-draft:44');
