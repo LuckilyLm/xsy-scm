@@ -2,7 +2,8 @@ import {postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {ReportId} from '/@/views/business/scm/report/report-types';
 
-export type OrderExceptionType = 'SORTING_DIFFERENCE' | 'DELIVERY_EXCEPTION' | 'RETURN_REJECTED';
+export type OrderExceptionType = 'SORTING_SHORTAGE' | 'SORTING_DIFFERENCE' | 'ORDER_QUANTITY_DIFFERENCE'
+    | 'DELIVERY_EXCEPTION' | 'RETURN_PENDING' | 'REFUND_PENDING' | 'RETURN_REJECTED';
 export interface OrderExceptionQuery {
     startDate: string;
     endDate: string;
@@ -24,6 +25,10 @@ export interface OrderExceptionRow {
     warehouseName?: string | null;
     productName?: string | null;
     unit?: string | null;
+    stockUnit?: string | null;
+    stockQuantity?: string | null;
+    stockReservedQuantity?: string | null;
+    stockAvailableQuantity?: string | null;
     plannedQuantity?: string | null;
     actualQuantity?: string | null;
     differenceQuantity?: string | null;

@@ -10,12 +10,12 @@ test('连续录单复用原 create-and-progress 命令，不新增隐蔽的自�
   assert.match(drawer, /创建并继续录单/);
   assert.match(drawer, /save\(false, true\)/);
   assert.match(drawer, /orderApi\.createAndProgress\(f\)/);
-  assert.match(drawer, /isNew && !draft && continueCreating && visible\.value/);
+  assert.match(drawer, /isNew && !exchangeReturnId\.value && !draft && continueCreating && visible\.value/);
   assert.doesNotMatch(drawer, /orderApi\.copy\(|orderApi\.clone\(|orderApi\.batchCreate\(/);
 });
 
 test('只有创建成功才清草稿和继续；后续客户地址从服务端重取且失败时清空客户', () => {
-  assert.match(drawer, /if \(isNew\) clearDraft\(\)/);
+  assert.match(drawer, /if \(isNew && !exchangeReturnId\.value\) clearDraft\(\)/);
   assert.match(drawer, /await continueWithNextOrder\(f\)/);
   assert.match(drawer, /nextOrderForCustomer\(previous\)/);
   assert.match(drawer, /customerApi\.detail\(form\.value\.customerId/);

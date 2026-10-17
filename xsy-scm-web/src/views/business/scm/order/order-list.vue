@@ -32,6 +32,8 @@
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:order:add'" @click="drawer?.open()">新建订单</a-button>
         <a-button v-privilege="'scm:order:import'" @click="importModal?.open()">导入订单</a-button>
+        <a-button v-privilege="'scm:report:order:exception:query'"
+                  @click="router.push('/report/report-order-exceptions')">异常工作台</a-button>
         <a-button v-if="canPriceCheck"
                   :disabled="!selected.length || selected.length > 8 || !selectedAllDraft"
                   @click="openBatchPriceCheck">批量核价（最多8单）</a-button>

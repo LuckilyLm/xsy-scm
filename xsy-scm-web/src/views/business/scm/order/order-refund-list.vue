@@ -69,7 +69,8 @@
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive, ref, watch} from 'vue';
+import {useRoute} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderRefundApi as api} from '/@/api/business/scm/order-refund-api';
 import {SCM_ORDER_REFUND_STATUS_ENUM} from '/@/constants/business/scm/order-const';
@@ -85,6 +86,14 @@ const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<R
 const balanceRefundOpen = ref(false), returning = ref(false);
 const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 let requestId = 0;
+const route = useRoute();
+watch(() => route.query.keyword, (keyword) => {
+  if (typeof keyword === 'string' && keyword.length <= 120) {
+    queryForm.keyword = keyword;
+    queryForm.pageNum = 1;
+    void queryData();
+  }
+}, {immediate: true});
 /** 外部退款凭证可能很长，表格固定宽度并用悬浮提示展示全文；钱包退款的流水入口保留独立操作按钮。 */
 const columns = ref<TableColumnsType<RefundRow>>([{
   title: '退款单号',
@@ -182,7 +191,9 @@ async function returnBalance() {
   finally { returning.value = false; }
 }
 
-onMounted(queryData);
+onMounted(() => {
+  if (typeof route.query.keyword !== 'string' || route.query.keyword.length > 120) void queryData();
+});
 </script>
 <style scoped>pre {
   white-space: pre-wrap;

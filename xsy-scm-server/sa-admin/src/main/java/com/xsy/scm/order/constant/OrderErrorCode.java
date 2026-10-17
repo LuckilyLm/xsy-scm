@@ -43,6 +43,10 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_ALREADY_ASSIGNED(40973, "订单已被接单或指派，请刷新待分配列表"),
     ORDER_ASSIGN_TARGET_INVALID(40974, "目标业务员不存在、已停用或没有订单查看权限"),
     ORDER_REPRICE_REQUIRED(40975, "订单价格依据已变化，请授权人员手动重算并填写原因"),
+    ORDER_RECEIVED_CORRECTION_INVALID(41210, "客户实收数量更正无效，请核对已出库数量与最新记录"),
+    ORDER_RECEIVED_CORRECTION_CONFLICT(41211, "客户实收数量已有新记录，请刷新后再提交"),
+    ORDER_EXCHANGE_NOT_READY(41212, "退货须批准并完成实物接收后才能创建换货单"),
+    ORDER_EXCHANGE_EXISTS(41213, "该退货单已有换货订单"),
 
     /** 只有已确认订单允许预留库存；草稿、取消和完成订单不得占用库存。 */
     ORDER_RESERVE_STATE_INVALID(40945, "当前订单状态不允许预留库存（仅已确认订单可预留）");

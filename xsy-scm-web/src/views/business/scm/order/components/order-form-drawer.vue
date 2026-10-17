@@ -1,26 +1,27 @@
 <template>
-  <a-drawer :title="form.orderId?'编辑销售订单':'新建销售订单'" :open="visible" :width="scmDrawerWidth('xl')"
+  <a-drawer :title="exchangeReturnId ? '创建关联换货订单' : form.orderId ? '编辑销售订单' : '新建销售订单'" :open="visible" :width="scmDrawerWidth('xl')"
             @close="closeDrawer">
     <a-alert v-if="error" :message="error" type="error" show-icon/>
+    <p v-if="exchangeReturnId" class="scm-note">原货已接收。替换订单重新定价并从草稿开始；后续提交、预留和配送按正常订单办理，不自动抵扣退款。</p>
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="客户" name="customerId" required>
-              <CustomerSelect v-if="!form.orderId" v-model:value="form.customerId" @change="customerChanged"/>
+              <CustomerSelect v-if="!form.orderId" v-model:value="form.customerId" :disabled="!!exchangeReturnId" @change="customerChanged"/>
               <a-input v-else :value="form.customerNameSnapshot" disabled/>
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="订单来源" name="orderSource">
-              <a-select v-model:value="form.orderSource"
+              <a-select v-model:value="form.orderSource" :disabled="!!exchangeReturnId"
                         :options="[{value:'ADMIN',label:'后台录单'},{value:'SUPPLEMENT',label:'补单'}]"
                         style="width:100%"/>
             </a-form-item>
           </a-col>
           <a-col :span="12" v-if="form.orderSource==='SUPPLEMENT'">
             <a-form-item label="关联原订单" name="originalOrderId">
-              <a-select v-model:value="form.originalOrderId" show-search allow-clear :filter-option="false"
+              <a-select v-model:value="form.originalOrderId" show-search allow-clear :filter-option="false" :disabled="!!exchangeReturnId"
                         :options="originals" @search="loadOriginals" placeholder="搜索已确认订单号"/>
             </a-form-item>
           </a-col>
@@ -71,12 +72,12 @@
     <template #footer>
       <a-space>
         <a-button @click="closeDrawer">关闭</a-button>
-        <a-button v-if="!form.orderId" :loading="saving" :disabled="loading" @click="save(true)">保存草稿</a-button>
-        <a-button v-if="!form.orderId" :loading="saving" :disabled="loading" @click="save(false, true)">
+        <a-button v-if="!form.orderId && !exchangeReturnId" :loading="saving" :disabled="loading" @click="save(true)">保存草稿</a-button>
+        <a-button v-if="!form.orderId && !exchangeReturnId" :loading="saving" :disabled="loading" @click="save(false, true)">
           创建并继续录单
         </a-button>
         <a-button type="primary" :loading="saving" :disabled="loading" @click="save(false)">
-          {{ form.orderId ? '保存修改' : '创建订单' }}
+          {{ exchangeReturnId ? '创建换货草稿' : form.orderId ? '保存修改' : '创建订单' }}
         </a-button>
       </a-space>
     </template>
@@ -101,6 +102,7 @@ import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 const emit = defineEmits<{ saved: [] }>();
 const form = ref<Order>(newOrder()), visible = ref(false), loading = ref(false), saving = ref(false),
     pricing = ref(false), error = ref(''), originals = ref<{ value: Id; label: string }[]>([]);
+const exchangeReturnId = ref<Id>();
 const formRef = ref();
 /** 收货信息在 `form.address.*` 里，展平一份给表单校验用（顶层 `address` 就是详细地址）。 */
 const flatModel = computed(() => ({...form.value, ...form.value.address}));
@@ -148,6 +150,7 @@ function clearDraft() {
 
 async function open(id?: Id) {
   requestId++;
+  exchangeReturnId.value = undefined;
   error.value = '';
   form.value = newOrder();
   visible.value = true;
@@ -225,6 +228,7 @@ watch(visible, opened => {
 /** 尚未保存的新建单才落草稿；抽屉已关闭时不写，避免创建成功后又把已保存的单写回草稿。 */
 function persistUnsavedDraft() {
   if (!visible.value) return;
+  if (exchangeReturnId.value) return;
   if (!form.value.orderId && (form.value.customerId || form.value.items.length)) {
     writeDraft(serializeDraft(form.value));
   }
@@ -250,6 +254,7 @@ onBeforeUnmount(() => {
  */
 async function openFromHistory(id: Id) {
   requestId++;
+  exchangeReturnId.value = undefined;
   error.value = '';
   visible.value = true;
   loading.value = true;
@@ -261,6 +266,35 @@ async function openFromHistory(id: Id) {
     error.value = orderError(e);
   } finally {
     loading.value = false;
+  }
+}
+
+async function openForExchange(returnId: Id, returnNo: string, originalOrderId: Id,
+    returnedLines: Array<{orderItemId: Id; receivedQuantity: string}>): Promise<void> {
+  const current = ++requestId;
+  exchangeReturnId.value = returnId;
+  error.value = '';
+  visible.value = true;
+  loading.value = true;
+  try {
+    const original = (await orderApi.detail(originalOrderId, {suppressGlobalErrorMessage: true})).data;
+    if (current !== requestId || !visible.value || exchangeReturnId.value !== returnId) return;
+    const next = fromHistory(original);
+    const receivedByItem = new Map(returnedLines.map(line => [String(line.orderItemId), line.receivedQuantity]));
+    next.items = original.items.flatMap((source, index) => {
+      const quantity = receivedByItem.get(String(source.itemId));
+      return quantity ? [{...next.items[index], orderedQuantity: quantity}] : [];
+    });
+    next.orderSource = 'SUPPLEMENT';
+    next.originalOrderId = originalOrderId;
+    next.supplementReason = `换货：退货单${returnNo}`;
+    form.value = next;
+    originals.value = [{value: originalOrderId, label: original.orderNo ?? String(originalOrderId)}];
+    await preview();
+  } catch (cause) {
+    if (current === requestId) error.value = orderError(cause);
+  } finally {
+    if (current === requestId) loading.value = false;
   }
 }
 
@@ -378,6 +412,9 @@ async function save(draft = false, continueCreating = false) {
     if (f.orderId) {
       await orderApi.update(f);
       message.success('订单修改已保存');
+    } else if (exchangeReturnId.value) {
+      await orderApi.createExchange(exchangeReturnId.value, f);
+      message.success('换货草稿已创建，请按正常订单流程提交和确认');
     } else if (draft) {
       await orderApi.create(f);
       message.success('草稿已保存');
@@ -385,9 +422,9 @@ async function save(draft = false, continueCreating = false) {
       const result = await orderApi.createAndProgress(f);
       message.success(result.data.status === 'CONFIRMED' ? '订单已创建并确认' : '订单已创建，非标品等待称重后确认');
     }
-    if (isNew) clearDraft();
+    if (isNew && !exchangeReturnId.value) clearDraft();
     emit('saved');
-    if (isNew && !draft && continueCreating && visible.value) {
+    if (isNew && !exchangeReturnId.value && !draft && continueCreating && visible.value) {
       await continueWithNextOrder(f);
     } else {
       visible.value = false;
@@ -399,7 +436,7 @@ async function save(draft = false, continueCreating = false) {
   }
 }
 
-defineExpose({open, openFromHistory});
+defineExpose({open, openFromHistory, openForExchange});
 </script>
 
 <style scoped>

@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ScmOrderExceptionController {
     private static final List<String> TITLES = List.of("异常类别", "发生时间", "来源单号", "来源行编号", "订单号", "客户", "仓库", "商品", "单位",
-            "计划量", "实际量", "差异量", "源状态", "原因");
+            "库存单位", "现存", "预留", "可用", "计划量", "实际量", "差异量", "源状态", "原因");
     private final ScmOrderExceptionService orderExceptionService;
 
     @PostMapping("/query")
@@ -48,13 +48,12 @@ public class ScmOrderExceptionController {
     @OperateLog
     public void export(@Valid @RequestBody ScmOrderExceptionQueryForm form, HttpServletResponse response)
             throws IOException {
-        var rows = orderExceptionService.export(form).stream()
-                .map(row -> ScmReportExcel.row(TITLES,
-                        ScmOrderExceptionTypeEnum.valueOf(row.getExceptionType()).getLabel(), row.getOccurredAt(),
-                        row.getSourceNo(), row.getSourceRowId(), row.getOrderNo(), row.getCustomerName(),
-                        row.getWarehouseName(), row.getProductName(), row.getUnit(), row.getPlannedQuantity(),
-                        row.getActualQuantity(), row.getDifferenceQuantity(), row.getSourceStatus(), row.getReason()))
-                .toList();
+        var rows = orderExceptionService.export(form).stream().map(row -> ScmReportExcel.row(TITLES,
+                ScmOrderExceptionTypeEnum.valueOf(row.getExceptionType()).getLabel(), row.getOccurredAt(),
+                row.getSourceNo(), row.getSourceRowId(), row.getOrderNo(), row.getCustomerName(),
+                row.getWarehouseName(), row.getProductName(), row.getUnit(), row.getStockUnit(), row.getStockQuantity(),
+                row.getStockReservedQuantity(), row.getStockAvailableQuantity(), row.getPlannedQuantity(),
+                row.getActualQuantity(), row.getDifferenceQuantity(), row.getSourceStatus(), row.getReason())).toList();
         ScmReportExcel.write(response, "异常订单分析.xlsx", "异常事实", TITLES, rows);
     }
 }

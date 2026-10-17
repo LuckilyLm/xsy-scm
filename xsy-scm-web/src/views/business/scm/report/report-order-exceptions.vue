@@ -1,4 +1,6 @@
 <template>
+  <h2>订单异常工作台</h2>
+  <p class="scm-note">汇总已有异常事实；请进入来源单据处理。</p>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
     <a-form-item label="发生日期" required>
       <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD"/>
@@ -31,11 +33,16 @@
         <template v-else>{{ text }}</template>
       </template>
     </a-table>
-    <a-table size="small" :data-source="rows" :columns="columns" :row-key="rowKey" :pagination="false" bordered
-             :loading="loading" :scroll="{ x: scmColumnsWidth(columns) }" :locale="{emptyText: '当前筛选与授权范围内没有异常事实'}">
+    <a-table size="small" :data-source="rows" :columns="displayColumns" :row-key="rowKey" :pagination="false" bordered
+             :loading="loading" :scroll="{ x: scmColumnsWidth(displayColumns) }" :locale="{emptyText: '当前筛选与授权范围内没有异常事实'}">
       <template #bodyCell="{record,column,text}">
         <template v-if="column.dataIndex === 'exceptionType'">{{ labels[record.exceptionType as OrderExceptionType] }}</template>
+        <template v-else-if="column.dataIndex === 'occurredAt'">{{ dayjs(record.occurredAt).format('YYYY-MM-DD HH:mm') }}</template>
         <template v-else-if="column.dataIndex === 'sourceStatus'">{{ statusLabel(record) }}</template>
+        <template v-else-if="column.dataIndex === 'suggestion'">{{ suggestion(record) }}</template>
+        <template v-else-if="quantityColumns.has(String(column.dataIndex))">
+          <span class="scm-quantity">{{ text ?? '—' }}</span>
+        </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-button type="link" v-privilege="sources[record.exceptionType as OrderExceptionType].permission" @click="openSource(record)">来源详情</a-button>
         </template>
@@ -51,7 +58,7 @@
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
 import dayjs from 'dayjs';
 import {message, type TableColumnsType} from 'ant-design-vue';
@@ -63,17 +70,27 @@ import {SCM_REPORT_PERMISSION} from '/@/constants/business/scm/report-const';
 import {SCM_SORTING_RESULT_ENUM} from '/@/constants/business/scm/sorting-const';
 import {SCM_ORDER_RETURN_STATUS_ENUM} from '/@/constants/business/scm/order-const';
 import {fulfillmentStatuses, type FulfillmentStatus} from '../delivery/delivery-types';
+import {hasPermission} from '../common/scm-permission';
 
 const QUERY_PERMISSION = SCM_REPORT_PERMISSION.ORDER_EXCEPTION_QUERY;
 const labels: Record<OrderExceptionType, string> = {
-  SORTING_DIFFERENCE: '分拣数量差异', DELIVERY_EXCEPTION: '配送异常签收', RETURN_REJECTED: '售后拒绝',
+  SORTING_SHORTAGE: '分拣缺货', SORTING_DIFFERENCE: '分拣数量差异',
+  ORDER_QUANTITY_DIFFERENCE: '订单实量差异', DELIVERY_EXCEPTION: '配送异常签收',
+  RETURN_PENDING: '退货待审核', REFUND_PENDING: '退款单待完成', RETURN_REJECTED: '售后拒绝',
 };
 const typeOptions = Object.entries(labels).map(([value, label]) => ({value, label}));
 const sources: Record<OrderExceptionType, {path: string; key: string; permission: string}> = {
+  SORTING_SHORTAGE: {path: '/sorting/tasks', key: 'taskId', permission: 'scm:sorting:task:query'},
   SORTING_DIFFERENCE: {path: '/sorting/tasks', key: 'taskId', permission: 'scm:sorting:task:query'},
+  ORDER_QUANTITY_DIFFERENCE: {path: '/order/detail', key: 'orderId', permission: 'scm:order:query'},
   DELIVERY_EXCEPTION: {path: '/delivery/routes', key: 'routeId', permission: 'scm:delivery:route:query'},
+  RETURN_PENDING: {path: '/order/order-return-list', key: 'returnId', permission: 'scm:order:return:query'},
+  REFUND_PENDING: {path: '/order/order-refund-list', key: 'keyword', permission: 'scm:order:refund:query'},
   RETURN_REJECTED: {path: '/order/order-return-list', key: 'returnId', permission: 'scm:order:return:query'},
 };
+const quantityColumns = new Set(['plannedQuantity', 'actualQuantity', 'differenceQuantity',
+  'stockQuantity', 'stockReservedQuantity', 'stockAvailableQuantity']);
+const stockColumns = new Set(['stockUnit', 'stockQuantity', 'stockReservedQuantity', 'stockAvailableQuantity']);
 const defaultRange = (): [string, string] => [dayjs().subtract(6, 'day').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')];
 const dateRange = ref<[string, string]>(defaultRange());
 
@@ -93,16 +110,41 @@ const columns: TableColumnsType<OrderExceptionRow> = [
   {title: '来源单号', dataIndex: 'sourceNo', width: 180}, {title: '订单号', dataIndex: 'orderNo', width: 180},
   {title: '客户', dataIndex: 'customerName', width: 150}, {title: '仓库', dataIndex: 'warehouseName', width: 140},
   {title: '商品', dataIndex: 'productName', width: 140}, {title: '单位', dataIndex: 'unit', width: 70},
-  {title: '计划量', dataIndex: 'plannedQuantity', width: 110},
-  {title: '实际量', dataIndex: 'actualQuantity', width: 110},
-  {title: '差异（实际−计划）', dataIndex: 'differenceQuantity', width: 150},
+  {title: '库存单位', dataIndex: 'stockUnit', width: 88},
+  {title: '现存', dataIndex: 'stockQuantity', width: 112},
+  {title: '预留', dataIndex: 'stockReservedQuantity', width: 112},
+  {title: '可用', dataIndex: 'stockAvailableQuantity', width: 112},
+  {title: '订单/计划量', dataIndex: 'plannedQuantity', width: 120},
+  {title: '实际/已拣量', dataIndex: 'actualQuantity', width: 120},
+  {title: '差异（实际−计划）', dataIndex: 'differenceQuantity', width: 160},
   {title: '源状态', dataIndex: 'sourceStatus', width: 100, align: 'center'}, {title: '原因', dataIndex: 'reason', width: 260},
+  {title: '处理建议', dataIndex: 'suggestion', width: 300},
   {title: '操作', dataIndex: 'action', fixed: 'right', width: 110, align: 'center'},
 ];
+const displayColumns = computed(() => hasPermission('scm:inventory:balance:query')
+    ? columns : columns.filter(column => !('dataIndex' in column && stockColumns.has(String(column.dataIndex)))));
 function statusLabel(row: OrderExceptionRow) {
-  if (row.exceptionType === 'SORTING_DIFFERENCE') return SCM_SORTING_RESULT_ENUM[row.sourceStatus]?.desc ?? row.sourceStatus;
-  if (row.exceptionType === 'RETURN_REJECTED') return SCM_ORDER_RETURN_STATUS_ENUM[row.sourceStatus]?.desc ?? row.sourceStatus;
+  if (row.exceptionType === 'SORTING_DIFFERENCE' || row.exceptionType === 'SORTING_SHORTAGE')
+    return SCM_SORTING_RESULT_ENUM[row.sourceStatus]?.desc ?? row.sourceStatus;
+  if (row.exceptionType === 'RETURN_REJECTED' || row.exceptionType === 'RETURN_PENDING')
+    return SCM_ORDER_RETURN_STATUS_ENUM[row.sourceStatus]?.desc ?? row.sourceStatus;
+  if (row.exceptionType === 'ORDER_QUANTITY_DIFFERENCE') return row.sourceStatus === 'MANUAL' ? '人工记录' : row.sourceStatus;
+  if (row.exceptionType === 'REFUND_PENDING') return '待完成';
   return fulfillmentStatuses[row.sourceStatus as FulfillmentStatus]?.label ?? row.sourceStatus;
+}
+function suggestion(row: OrderExceptionRow): string {
+  switch (row.exceptionType) {
+    case 'SORTING_SHORTAGE':
+      return row.stockUnit && row.unit && row.stockUnit !== row.unit
+          ? '库存与销售单位不同；先核对换算，再回分拣任务处理'
+          : '核对当前仓库库存和采购到货，再回分拣任务处理';
+    case 'SORTING_DIFFERENCE': return '核对分拣原因和实拣数量';
+    case 'ORDER_QUANTITY_DIFFERENCE': return '查看订单实量变更原因及确认状态';
+    case 'DELIVERY_EXCEPTION': return '查看签收原因，按正式售后流程处理';
+    case 'RETURN_PENDING': return '进入退货单审核';
+    case 'REFUND_PENDING': return '核对退款单与资金事实，按正式流程完成';
+    case 'RETURN_REJECTED': return '查看退货拒绝原因';
+  }
 }
 async function load(payload: OrderExceptionQuery) {
   const id = ++requestId;
@@ -152,13 +194,19 @@ async function exportRows() {
   finally { exporting.value = false; }
 }
 function openSource(row: OrderExceptionRow) {
+  if (row.exceptionType === 'ORDER_QUANTITY_DIFFERENCE') {
+    void router.push(`/order/detail/${row.orderId}`);
+    return;
+  }
   const target = sources[row.exceptionType];
-  void router.push({path: target.path, query: {[target.key]: String(row.sourceId)}});
+  void router.push({path: target.path, query: {[target.key]: row.exceptionType === 'REFUND_PENDING'
+      ? row.sourceNo : String(row.sourceId)}});
 }
 onMounted(search);
 </script>
 
 <style scoped>
+h2 { margin: 0 0 8px; font-size: 20px; line-height: 28px; }
 .report-note, .report-summary { margin-bottom: 14px; }
 .report-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
 .type-select { min-width: 180px; }

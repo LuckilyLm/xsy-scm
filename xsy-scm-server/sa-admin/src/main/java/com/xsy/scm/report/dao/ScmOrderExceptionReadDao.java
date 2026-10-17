@@ -16,7 +16,7 @@ public interface ScmOrderExceptionReadDao {
     List<ScmOrderExceptionRowVO> query(Page<?> page, @Param("q") ScmOrderExceptionQueryForm query,
             @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
             @Param("scope") ScmDataScopeContext scope, @Param("visibleTypes") List<String> visibleTypes,
-            @Param("crossAssignee") boolean crossAssignee);
+            @Param("crossAssignee") boolean crossAssignee, @Param("canViewStock") boolean canViewStock);
 
     List<ScmOrderExceptionSummaryVO> summary(@Param("q") ScmOrderExceptionQueryForm query,
             @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,

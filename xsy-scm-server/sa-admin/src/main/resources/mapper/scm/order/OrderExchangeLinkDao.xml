@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.order.dao.OrderExchangeLinkDao">
+    <select id="replacementOrderId" resultType="long">
+        SELECT replacement_order_id FROM xsy_order_exchange_link WHERE return_id = #{returnId}
+    </select>
+    <insert id="insert">
+        INSERT INTO xsy_order_exchange_link(return_id, original_order_id, replacement_order_id, created_by)
+        VALUES (#{returnId}, #{originalOrderId}, #{replacementOrderId}, #{operator})
+    </insert>
+</mapper>

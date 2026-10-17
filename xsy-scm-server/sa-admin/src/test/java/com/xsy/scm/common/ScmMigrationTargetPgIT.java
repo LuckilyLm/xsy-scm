@@ -75,6 +75,23 @@ class ScmMigrationTargetPgIT {
     }
 
     @Test
+    void orderExceptionCompensationTablesExistFromV148() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 148) {
+            return;
+        }
+        assertColumn("xsy_order_exchange_link", "return_id");
+        assertColumn("xsy_order_exchange_link", "replacement_order_id");
+        assertColumn("xsy_order_received_quantity_correction", "previous_received_quantity");
+        assertColumn("xsy_order_received_quantity_correction", "shipped_quantity");
+        Integer uniqueIndexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname IN ('uk_order_exchange_return', 'uk_order_exchange_replacement')",
+                Integer.class);
+        assertThat(uniqueIndexes).isEqualTo(2);
+    }
+
+    @Test
     void codPermissionDefaultsToDisabledFromV130() {
         int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
         if (target < 130) {
@@ -194,7 +211,7 @@ class ScmMigrationTargetPgIT {
         int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
         if (target < 146) return;
         Integer defaults = jdbc.queryForObject(
-                "SELECT count(*) FROM scm_print_template "
+                "SELECT count(*) FROM xsy_print_template "
                         + "WHERE document_type='SALES_ORDER' AND template_code='SALES_ORDER_DEFAULT' "
                         + "AND default_flag=TRUE AND enabled_flag=TRUE AND deleted=FALSE",
                 Integer.class);

@@ -73,6 +73,7 @@
           </template>
 
           <OrderFacts :order="order"/>
+          <OrderReceivedCorrections :order="order"/>
         </a-card>
       </template>
     </a-spin>
@@ -98,6 +99,7 @@ import {orderError} from './order-errors';
 import type {Item, Order} from './order-types';
 import OrderDetail from './order-detail.vue';
 import OrderFacts from './components/order-facts.vue';
+import OrderReceivedCorrections from './components/order-received-corrections.vue';
 import PrintDocumentModal from '../print/print-document-modal.vue';
 
 const route = useRoute();

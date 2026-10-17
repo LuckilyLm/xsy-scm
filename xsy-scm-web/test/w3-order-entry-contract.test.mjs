@@ -33,8 +33,8 @@ test('录单页把草稿恢复 / 历史复用接在既有 Drawer，创建成功�
   assert.match(drawer, /promptRestoreDraft/);
   assert.match(drawer, /closeDrawer/);
   assert.match(drawer, /openFromHistory/);
-  assert.match(drawer, /defineExpose\(\{open,\s*openFromHistory\}\)/);
-  assert.match(drawer, /if \(isNew\) clearDraft\(\)/);
+  assert.match(drawer, /defineExpose\(\{open,\s*openFromHistory,\s*openForExchange\}\)/);
+  assert.match(drawer, /if \(isNew && !exchangeReturnId\.value\) clearDraft\(\)/);
   // 关闭 / 保存动作走 closeDrawer，不再直接置 visible=false
   assert.doesNotMatch(drawer, /@close="visible=false"/);
 });

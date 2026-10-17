@@ -54,6 +54,26 @@ export interface CreditCheck {
     amountThresholdHint?: string | null;
 }
 
+export interface ReceivedCorrection {
+    id: Id;
+    orderId: Id;
+    orderItemId: Id;
+    saleUnitSnapshot: string;
+    shippedQuantity: string;
+    previousReceivedQuantity: string;
+    receivedQuantity: string;
+    reason: string;
+    createdBy: string;
+    createdAt: string;
+}
+export interface ReceivedCorrectionCandidate {
+    orderItemId: Id;
+    lastCorrectionId: Id;
+    saleUnit: string;
+    shippedQuantity: string;
+    currentReceivedQuantity: string;
+}
+
 export const orderApi = {
     unassignedPool: (data: OrderPoolQuery, options?: RequestOptions) =>
         postRequest('/scm/order/pool/query', data, options) as unknown as Promise<ScmResponse<ScmPage<OrderPoolRow>>>,
@@ -68,6 +88,17 @@ export const orderApi = {
     detail: (id: Id, options?: RequestOptions) =>
         getRequest('/scm/order/detail/' + id, {}, options) as unknown as Promise<ScmResponse<Order>>,
     create: (data: Order) => orderCommand<Order>('/scm/order/create', data),
+    exchangeReplacement: (returnId: Id) =>
+        getRequest('/scm/order/exchange/replacement/' + returnId, {}) as unknown as Promise<ScmResponse<Id | null>>,
+    createExchange: (returnId: Id, order: Order) =>
+        orderCommand<Order>('/scm/order/exchange/create', {returnId, order}),
+    receivedCorrections: (orderId: Id, options?: RequestOptions) =>
+        getRequest('/scm/order/received-correction/list/' + orderId, {}, options) as unknown as Promise<ScmResponse<ReceivedCorrection[]>>,
+    receivedCorrectionCandidate: (orderId: Id, orderItemId: Id, options?: RequestOptions) =>
+        getRequest(`/scm/order/received-correction/candidate/${orderId}/${orderItemId}`, {}, options) as unknown as Promise<ScmResponse<ReceivedCorrectionCandidate>>,
+    recordReceivedCorrection: (data: {orderId: Id; orderItemId: Id; expectedLastCorrectionId: Id;
+        receivedQuantity: string; reason: string}) =>
+        orderCommand<ReceivedCorrection>('/scm/order/received-correction/record', data),
     createAndProgress: (data: Order) => orderCommand<Order>('/scm/order/create-and-progress', data),
     downloadImportTemplate: () => getDownload('/scm/order/import/template', {}),
     importOrders,

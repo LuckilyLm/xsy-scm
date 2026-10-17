@@ -74,6 +74,12 @@
         </a-descriptions>
         <a-table :data-source="detail.items" row-key="orderItemId" :pagination="false"
                  :scroll="{x: scmColumnsWidth(detailItemColumns)}" :columns="detailItemColumns"/>
+        <a-space class="exchange-actions">
+          <a-button v-if="replacementOrderId" @click="router.push(`/order/detail/${replacementOrderId}`)">查看关联换货单</a-button>
+          <a-button v-else-if="exchangeReady" v-privilege="'scm:order:add'" type="primary"
+                    @click="openExchange">创建关联换货单</a-button>
+          <span v-else-if="detail.status === 'APPROVED'" class="scm-cell-hint">全部批准数量完成实物接收后可创建换货单</span>
+        </a-space>
       </template>
     </a-spin>
   </a-drawer>
@@ -112,11 +118,12 @@
     </template>
     </a-spin>
   </a-modal>
+  <OrderFormDrawer ref="exchangeDrawer" @saved="onExchangeSaved"/>
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onDeactivated, onMounted, onScopeDispose, reactive, ref, watch} from 'vue';
-import {useRoute} from 'vue-router';
+import {useRoute, useRouter} from 'vue-router';
 import Decimal from 'decimal.js';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {message, type TableColumnsType} from 'ant-design-vue';
@@ -147,6 +154,8 @@ const receiveItemColumns: TableColumnsType<ReturnItemWithDisposition> = [
 import {amount, fixed} from './order-form-model';
 import {orderError} from './order-errors';
 import {hasPermission} from '../common/scm-permission';
+import {orderApi} from '/@/api/business/scm/order-api';
+import OrderFormDrawer from './components/order-form-drawer.vue';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<ReturnRow[]>([]), total = ref(0),
     loading = ref(false), error = ref(''), visible = ref(false), saving = ref(false), active = ref<ReturnRow>();
@@ -328,6 +337,13 @@ async function save() {
 
 const detailOpen = ref(false), detailLoading = ref(false), detailError = ref('');
 const detail = ref<ReturnRow>(), detailId = ref<Id>();
+const replacementOrderId = ref<Id | null>(null), replacementLoaded = ref(false);
+const exchangeDrawer = ref<InstanceType<typeof OrderFormDrawer>>();
+const router = useRouter();
+const exchangeReady = computed(() => replacementLoaded.value && !replacementOrderId.value
+    && detail.value?.status === 'APPROVED' && detail.value.items.some(item =>
+      new Decimal(item.approvedQuantity ?? 0).gt(0)) && detail.value.items.every(item =>
+      new Decimal(item.receivedQuantity ?? 0).gte(item.approvedQuantity ?? 0)));
 let detailRequestId = 0;
 async function showDetail(id?: Id) {
   if (id === undefined) return;
@@ -337,11 +353,31 @@ async function showDetail(id?: Id) {
   detailLoading.value = true;
   detailError.value = '';
   detail.value = undefined;
+  replacementOrderId.value = null;
+  replacementLoaded.value = false;
   try {
-    const response = await api.detail(id, {suppressGlobalErrorMessage: true});
-    if (generation === detailRequestId) detail.value = response.data;
+    const [response, linked] = await Promise.all([
+      api.detail(id, {suppressGlobalErrorMessage: true}), orderApi.exchangeReplacement(id)
+    ]);
+    if (generation === detailRequestId) {
+      detail.value = response.data;
+      replacementOrderId.value = linked.data;
+      replacementLoaded.value = true;
+    }
   } catch (e) { if (generation === detailRequestId) detailError.value = orderError(e); }
   finally { if (generation === detailRequestId) detailLoading.value = false; }
+}
+function openExchange(): void {
+  const current = detail.value;
+  if (!current || !exchangeReady.value) return;
+  const lines = current.items.filter(item => new Decimal(item.receivedQuantity ?? 0).gt(0))
+      .map(item => ({orderItemId: item.orderItemId, receivedQuantity: item.receivedQuantity!}));
+  detailOpen.value = false;
+  void exchangeDrawer.value?.openForExchange(current.returnId, current.returnNo, current.orderId, lines);
+}
+function onExchangeSaved(): void {
+  void showDetail(detailId.value);
+  void queryData();
 }
 const route = useRoute();
 watch(detailOpen, (open) => {

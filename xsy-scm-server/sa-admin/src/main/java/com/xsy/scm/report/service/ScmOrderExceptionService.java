@@ -2,6 +2,7 @@ package com.xsy.scm.report.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.inventory.permission.InventoryPermission;
 import com.xsy.scm.report.constant.ScmOrderExceptionTypeEnum;
 import com.xsy.scm.report.dao.ScmOrderExceptionReadDao;
 import com.xsy.scm.report.domain.form.ScmOrderExceptionQueryForm;
@@ -30,29 +31,35 @@ public class ScmOrderExceptionService {
     public PageResult<ScmOrderExceptionRowVO> query(ScmOrderExceptionQueryForm form) {
         var range = validate(form);
         var types = visibleTypes();
-        if (types.isEmpty()) return ScmDataScopeService.emptyPage(form);
+        if (types.isEmpty())
+            return ScmDataScopeService.emptyPage(form);
         Page<?> page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
-        return SmartPageUtil.convert2PageResult(page, orderExceptionReadDao.query(page, form, range.startAt(),
-                range.endAt(), dataScopeService.resolve(), types, sortingAccess.crossAssignee()));
+        return SmartPageUtil.convert2PageResult(page,
+                orderExceptionReadDao.query(page, form, range.startAt(), range.endAt(), dataScopeService.resolve(),
+                        types, sortingAccess.crossAssignee(),
+                        ScmDataScopeService.hasPermission(InventoryPermission.BALANCE_QUERY)));
     }
 
     public List<ScmOrderExceptionSummaryVO> summary(ScmOrderExceptionQueryForm form) {
         var range = validate(form);
         var types = visibleTypes();
-        if (types.isEmpty()) return List.of();
-        return orderExceptionReadDao.summary(form, range.startAt(), range.endAt(), dataScopeService.resolve(),
-                types, sortingAccess.crossAssignee());
+        if (types.isEmpty())
+            return List.of();
+        return orderExceptionReadDao.summary(form, range.startAt(), range.endAt(), dataScopeService.resolve(), types,
+                sortingAccess.crossAssignee());
     }
 
     public List<ScmOrderExceptionRowVO> export(ScmOrderExceptionQueryForm form) {
         var range = validate(form);
         var types = visibleTypes();
-        if (types.isEmpty()) return List.of();
+        if (types.isEmpty())
+            return List.of();
         var scope = dataScopeService.resolve();
         boolean crossAssignee = sortingAccess.crossAssignee();
-        return ScmReportExportGuard.exportRows(pageSize -> orderExceptionReadDao.query(
-                new Page<>(1, pageSize, false), form, range.startAt(), range.endAt(), scope, types, crossAssignee));
+        return ScmReportExportGuard.exportRows(pageSize -> orderExceptionReadDao.query(new Page<>(1, pageSize, false),
+                form, range.startAt(), range.endAt(), scope, types, crossAssignee,
+                ScmDataScopeService.hasPermission(InventoryPermission.BALANCE_QUERY)));
     }
 
     private ScmReportTimeRange validate(ScmOrderExceptionQueryForm form) {
@@ -62,7 +69,6 @@ public class ScmOrderExceptionService {
 
     private List<String> visibleTypes() {
         return Arrays.stream(ScmOrderExceptionTypeEnum.values())
-                .filter(type -> ScmDataScopeService.hasPermission(type.getQueryPermission()))
-                .map(Enum::name).toList();
+                .filter(type -> ScmDataScopeService.hasPermission(type.getQueryPermission())).map(Enum::name).toList();
     }
 }
