@@ -1,20 +1,48 @@
 <template>
   <view class="home">
+    <!-- 顶部只有定位：高度与右上角胶囊一致，垂直居中对齐 -->
     <view class="home__header" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <text class="home__brand">鲜蔬源商城 · 客户采购</text>
-      <view class="home__customer-row">
-        <text class="home__customer">{{ userStore.customerName || '欢迎光临' }}</text>
-        <text v-if="!userStore.isLogin" class="home__login" @click="goLogin">登录</text>
+      <view class="home__location" :style="locationStyle" @click="goAddress">
+        <uni-icons type="location" :size="16" color="#ffffff" />
+        <text class="home__location-text">{{ locationText }}</text>
+        <uni-icons type="bottom" :size="12" color="rgba(255,255,255,0.8)" />
       </view>
-      <text class="home__greeting">{{ userStore.isLogin ? `${greeting}，${displayName}` : '登录后查看客户专属商品与价格' }}</text>
-      <view class="home__search" @click="goSearch">
-        <uni-icons type="search" :size="20" :color="COLOR_TEXT_TERTIARY" />
-        <text class="home__search-text">搜索商品名称或规格</text>
-      </view>
-      <text v-if="userStore.isLogin" class="home__coupon-link" @click="goCoupons">领券中心 ›</text>
     </view>
 
-    <template v-for="section in configuredSections" :key="section.key">
+    <!-- 搜索框：公告之下，白底绿描边胶囊 -->
+    <view class="home__search-wrap">
+      <view class="home__search" @click="goSearch">
+        <uni-icons type="search" :size="18" :color="COLOR_PRIMARY" />
+        <text class="home__search-text">搜索商品名称或规格</text>
+      </view>
+    </view>
+
+    <!-- 分类横滑：取三级分类（蔬菜、水果、猪肉…），最后一个固定为领券中心 -->
+    <view v-if="categoryRail.length" class="home__rail">
+      <scroll-view class="home__rail-scroll" scroll-x :show-scrollbar="false">
+        <view class="home__rail-inner">
+          <view
+            v-for="item in categoryRail"
+            :key="item.categoryId"
+            class="home__rail-item"
+            @click="goCategory(item.categoryId)"
+          >
+            <view class="home__rail-icon">
+              <text class="home__rail-emoji">{{ categoryEmoji(item.categoryName) }}</text>
+            </view>
+            <text class="home__rail-text">{{ item.categoryName }}</text>
+          </view>
+          <view v-if="userStore.isLogin" class="home__rail-item" @click="goCoupons">
+            <view class="home__rail-icon">
+              <uni-icons type="gift" :size="20" :color="COLOR_PRIMARY" />
+            </view>
+            <text class="home__rail-text">领券中心</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <template v-for="section in contentSections" :key="section.key">
       <view v-if="section.type === 'BANNER_GROUP'" class="home__banner-wrap">
         <swiper class="home__banner" :indicator-dots="section.items.length > 1" :autoplay="section.items.length > 1"
                 :interval="4500" circular>
@@ -26,16 +54,6 @@
             </view>
           </swiper-item>
         </swiper>
-      </view>
-      <view v-else-if="section.type === 'SHORTCUT_GROUP'" class="home__shortcuts">
-        <view v-for="item in section.items" :key="item.key" class="home__shortcut" @click="goHomeLink(item)">
-          <image v-if="item.imageUrl" :src="item.imageUrl" class="home__shortcut-image" mode="aspectFill"/>
-          <text>{{ item.title }}</text>
-        </view>
-      </view>
-      <view v-else-if="section.type === 'ANNOUNCEMENT'" class="home__announcement" @click="goHomeLink(section)">
-        <text class="home__announcement-title">{{ section.title || '商城公告' }}</text>
-        <text class="home__announcement-text">{{ section.text }}</text>
       </view>
       <view v-else-if="section.type === 'ACTIVITY_TOPIC'" class="home__topic" @click="goHomeLink(section)">
         <image v-if="section.imageUrl" :src="section.imageUrl" class="home__topic-image" mode="aspectFill"/>
@@ -106,6 +124,7 @@
   import { onReachBottom, onShow } from '@dcloudio/uni-app';
   import ProductCard from '@/components/business/product-card.vue';
   import { mallCatalogApi } from '@/api/mall';
+  import { mallAddressApi } from '@/api/mall/address-api';
   import { mallPromotionApi } from '@/api/mall/promotion-api';
   import { mallHomeApi } from '@/api/mall/home-api';
   import { useMallNavigationStore } from '@/store/modules/mall/navigation';
@@ -113,11 +132,49 @@
   import { useSystemLayout } from '@/composables/use-system-layout';
   import { useMallCart } from '@/composables/use-mall-cart';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { COLOR_PRIMARY } from '@/constants/theme-color-const';
   import { formatDate } from '@/utils/order-display';
+  import { categoryEmoji } from '@/utils/category-icon';
 
   const PAGE_SIZE = 10;
-  const { statusBarHeight } = useSystemLayout();
+  const { statusBarHeight, menuButtonRect } = useSystemLayout();
+  /** 定位行与右上角胶囊同高、并让开胶囊宽度，视觉上与胶囊同一水平线 */
+  const locationStyle = computed(() => {
+    const rect = menuButtonRect.value;
+    if (!rect || !rect.left) {
+      return { height: '32px' };
+    }
+    let windowWidth = 0;
+    try {
+      const win = uni.getWindowInfo ? uni.getWindowInfo() : uni.getSystemInfoSync();
+      windowWidth = win.windowWidth || 0;
+    } catch {
+      windowWidth = 0;
+    }
+    return {
+      height: (rect.height || 32) + 'px',
+      paddingRight: Math.max(0, windowWidth - rect.left + 8) + 'px',
+    };
+  });
+  /** 顶部定位：取默认收货地址的市区，没有地址时提示去选 */
+  const locationText = ref('选择收货地址');
+  async function loadLocation() {
+    try {
+      const response = await mallAddressApi.getList();
+      const list = response.data || [];
+      const chosen = list.find((item) => item.isDefault) || list[0];
+      if (!chosen) {
+        return;
+      }
+      locationText.value =
+        [chosen.cityName, chosen.districtName].filter(Boolean).join('') || chosen.detailAddress || '选择收货地址';
+    } catch (error) {
+      smartSentry.captureError(error);
+    }
+  }
+  function goAddress() {
+    uni.navigateTo({ url: '/pages-sub/address/list' });
+  }
   const userStore = useUserStore();
   const navigationStore = useMallNavigationStore();
   const products = ref([]);
@@ -139,11 +196,37 @@
     }
     return result;
   });
+  const contentSections = computed(
+    () =>
+      configuredSections.value.filter(
+        (section) => section.type !== 'ANNOUNCEMENT' && section.type !== 'SHORTCUT_GROUP'
+      )
+  );
+  /** 分类横滑：服务端三级分类（蔬菜 / 水果 / 猪肉 …），比固定的快捷入口更贴近采购习惯 */
+  const categoryRail = ref([]);
+  async function loadCategoryRail() {
+    try {
+      const response = await mallCatalogApi.getCategories();
+      const result = [];
+      const walk = (nodes) => {
+        (nodes || []).forEach((node) => {
+          if (node.level === 3) {
+            result.push(node);
+          } else {
+            walk(node.children);
+          }
+        });
+      };
+      walk(response.data || []);
+      categoryRail.value = result.slice(0, 14);
+    } catch (error) {
+      smartSentry.captureError(error);
+    }
+  }
   const pageNum = ref(0);
   const total = ref(0);
   const loading = ref(false);
   const hasMore = computed(() => products.value.length < total.value);
-  const displayName = computed(() => userStore.contactName || userStore.customerName || '客户');
   const greeting = computed(() => (new Date().getHours() < 12 ? '上午好' : new Date().getHours() < 18 ? '下午好' : '晚上好'));
 
   async function loadProducts(reset = false) {
@@ -277,6 +360,8 @@
   });
   loadProducts(true);
   loadHomeLayout();
+  loadCategoryRail();
+  loadLocation();
 </script>
 
 <style lang="scss" scoped>
@@ -286,55 +371,85 @@
     padding-bottom: $space-6;
   }
   .home__header {
-    padding: 0 $space-4 $space-4;
+    padding: 0 $space-4 $space-3;
     background: linear-gradient(180deg, $color-primary, $color-primary-dark);
   }
-  .home__brand {
-    display: block;
-    padding-top: $space-4;
-    font-size: $font-size-xs;
-    color: rgba(255, 255, 255, 0.8);
-  }
-  .home__customer-row,
   .home__section-head {
     @include flex-between;
-    margin-top: $space-2;
   }
-  .home__customer {
-    font-size: $font-size-xl;
-    font-weight: $font-weight-bold;
+  /* 顶部定位：与胶囊同高，点击去地址列表 */
+  .home__location {
+    display: flex;
+    align-items: center;
+    gap: $space-1;
+  }
+  .home__location-text {
+    max-width: 72%;
     color: white;
-  }
-  .home__login {
-    padding: $space-1 $space-3;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: $radius-pill;
-    color: white;
-  }
-  .home__greeting {
-    display: block;
-    margin-top: $space-1;
-    color: rgba(255, 255, 255, 0.85);
     font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* 搜索框与分类横滑同处一张白卡，避免出现「白框浮在灰底上」的碎块 */
+  .home__search-wrap {
+    padding: $space-3 $space-4 0;
+    background: white;
   }
   .home__search {
     @include flex-start;
-    height: 72rpx;
-    margin-top: $space-3;
+    height: 76rpx;
     padding: 0 $space-3;
+    border: 1px solid $color-primary;
     border-radius: $radius-pill;
     background: white;
   }
   .home__search-text {
     margin-left: $space-2;
     color: $color-text-placeholder;
-  }
-  .home__coupon-link {
-    display: block;
-    margin-top: $space-3;
-    color: white;
     font-size: $font-size-sm;
-    text-align: right;
+  }
+  /* 分类横滑：圆形首字图标 + 名称，横向滚动 */
+  .home__rail {
+    padding: $space-3 0;
+    background: white;
+  }
+  .home__rail-scroll {
+    white-space: nowrap;
+  }
+  .home__rail-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: $space-4;
+    padding: 0 $space-4;
+  }
+  .home__rail-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-1;
+    flex-shrink: 0;
+    width: 96rpx;
+  }
+  .home__rail-icon {
+    width: 88rpx;
+    height: 88rpx;
+    border-radius: $radius-pill;
+    background: $color-primary-light;
+    @include flex-center;
+  }
+  .home__rail-emoji {
+    font-size: 40rpx;
+    line-height: 1;
+  }
+  .home__rail-text {
+    max-width: 96rpx;
+    color: $color-text-secondary;
+    font-size: $font-size-xs;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .home__section {
     margin-top: $space-3;
@@ -368,47 +483,6 @@
   }
   .home__banner-title {font-size: $font-size-base; font-weight: $font-weight-bold}
   .home__banner-subtitle {font-size: $font-size-sm}
-  .home__shortcuts {
-    display: flex;
-    flex-wrap: wrap;
-    padding: $space-3 $space-2;
-    margin-top: $space-3;
-    background: white;
-  }
-  .home__shortcut {
-    width: 25%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $space-2;
-    padding: $space-2;
-    color: $color-text-primary;
-    font-size: $font-size-sm;
-    text-align: center;
-  }
-  .home__shortcut-image {
-    width: 80rpx;
-    height: 80rpx;
-    border-radius: $radius-md;
-  }
-  .home__announcement {
-    display: flex;
-    gap: $space-2;
-    padding: $space-3 $space-4;
-    margin-top: $space-3;
-    background: white;
-    color: $color-text-primary;
-    font-size: $font-size-sm;
-  }
-  .home__announcement-title {
-    flex-shrink: 0;
-    color: $color-primary;
-    font-weight: $font-weight-bold;
-  }
-  .home__announcement-text {
-    flex: 1;
-    min-width: 0;
-  }
   .home__topic {
     margin-top: $space-3;
     background: white;

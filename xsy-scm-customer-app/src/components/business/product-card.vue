@@ -65,6 +65,7 @@
   import {
     hasPrice,
     isNonStandard,
+    actionText,
     isOrderable,
     priceSourceLabel,
     priceSourceLevel,
@@ -94,11 +95,7 @@
 
   const priced = computed(() => hasPrice(props.product));
   const orderable = computed(() => isOrderable(props.product));
-  const actionLabel = computed(() => {
-    if (!priced.value) return '询价';
-    if (!orderable.value) return '缺货';
-    return '加购';
-  });
+  const actionLabel = computed(() => actionText(props.product));
   const thumb = computed(() => thumbText(props.product));
   const sourceLabel = computed(() => priceSourceLabel(props.product));
   const sourceLevel = computed(() => priceSourceLevel(props.product));
@@ -110,13 +107,15 @@
 
   const actionKind = computed(() => {
     if (!priced.value) return 'inquiry';
-    return orderable.value ? 'add' : 'disabled';
+    if (!orderable.value) return 'disabled';
+    // 缺货商品走「预订」样式：仍可下单，但视觉上区别于现货
+    return props.product.stockStatus === 'OUT_OF_STOCK' ? 'preorder' : 'add';
   });
 
   function onAction() {
     if (actionKind.value === 'inquiry') {
       emit('inquiry', props.product);
-    } else if (actionKind.value === 'add') {
+    } else if (actionKind.value === 'add' || actionKind.value === 'preorder') {
       emit('add', props.product);
     }
   }
@@ -175,7 +174,8 @@
     }
 
     &__thumb-text {
-      font-size: $font-size-xl;
+      font-size: 48rpx;
+      line-height: 1;
       font-weight: $font-weight-medium;
       color: $color-primary;
     }
@@ -209,7 +209,8 @@
     }
 
     &__spec {
-      flex: 1;
+      /* 不占满整行，让「按实重」标签紧跟规格文字，而不是被推到卡片最右侧 */
+      flex: 0 1 auto;
       min-width: 0;
       font-size: $font-size-sm;
       color: $color-text-tertiary;
@@ -232,7 +233,7 @@
     /* 价格类型标签：独立一行，不与价格争抢横向空间 */
     &__tag-row {
       @include flex-start;
-      margin-top: $space-2;
+      margin-top: $space-1;
     }
 
     &__source {
@@ -336,11 +337,22 @@
     &__action {
       align-self: flex-end;
       flex-shrink: 0;
-      margin-left: $space-2;
-      padding: 0 $space-3;
-      height: 56rpx;
+      margin-left: $space-3;
+      padding: 0 $space-4;
+      height: 60rpx;
       border-radius: $radius-pill;
       @include flex-center;
+
+      /* 主操作：实心品牌绿，白字，与询价（描边）区分 */
+      &--add {
+        background-color: $color-primary;
+      }
+
+      /* 缺货预订：描边样式，可点击但视觉弱于现货 */
+      &--preorder {
+        background-color: $color-bg-card;
+        border: 1px solid $color-primary;
+      }
 
       &--unavailable {
         background-color: $color-bg-hover;
@@ -364,6 +376,10 @@
     }
 
     &__action--inquiry &__action-text {
+      color: $color-primary;
+    }
+
+    &__action--preorder &__action-text {
       color: $color-primary;
     }
 

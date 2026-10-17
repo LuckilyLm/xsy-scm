@@ -8,7 +8,7 @@
     /* 小程序特有相关 */
     "mp-weixin" : {
         /* 业主提供的小程序 AppID；未填写时微信开发者工具只能用测试号打开 */
-        "appid" : "",
+        "appid" : "wx66cd53ccf2e037c9",
         "setting" : {
             "urlCheck" : false
         },

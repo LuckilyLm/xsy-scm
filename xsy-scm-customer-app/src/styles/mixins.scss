@@ -40,7 +40,14 @@
 @mixin card($padding: $space-4) {
   background-color: $color-bg-card;
   border-radius: $radius-lg;
-  padding: $padding;
+  /*
+   * 传 0 表示「不设置内边距」，由调用方自己声明 padding。
+   * 早前无条件输出 padding，会把调用方写在 mixin 之前的 padding 覆盖成 0，
+   * 导致卡片内容直接贴边（订单卡、钱包、账期等 12 处都踩过）。
+   */
+  @if $padding != 0 {
+    padding: $padding;
+  }
 }
 
 /* 1px 细线（适配高 DPI，避免小程序上 1px 过粗） */

@@ -9,7 +9,7 @@
           class="search__input"
           type="text"
           :value="keyword"
-          placeholder="搜商品名称 / SKU"
+          placeholder="搜商品名称或规格"
           placeholder-class="search__placeholder"
           confirm-type="search"
           :focus="autoFocus"

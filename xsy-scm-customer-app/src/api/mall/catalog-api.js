@@ -11,9 +11,19 @@ async function withData(promise, map) {
   return { ...response, data: map(response.data) };
 }
 
+/** 分类树（只返回有可见 SKU 的分类） */
+/** 服务端分类节点用 name，页面统一读 categoryName（与商品卡片字段一致） */
+function adaptCategory(node) {
+  return {
+    ...node,
+    categoryName: node.name,
+    children: (node.children || []).map(adaptCategory),
+  };
+}
+
 export const mallCatalogApi = {
   /** 分类树（只返回有可见 SKU 的分类） */
-  getCategories: () => getRequest('/scm/mall/catalog/categories'),
+  getCategories: () => withData(getRequest('/scm/mall/catalog/categories'), (list) => (list || []).map(adaptCategory)),
 
   /**
    * 商品分页

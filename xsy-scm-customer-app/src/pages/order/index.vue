@@ -35,14 +35,16 @@
             <uni-icons type="image" :size="20" :color="COLOR_TEXT_PLACEHOLDER" />
           </view>
         </view>
-        <text class="order-card__count">共 {{ order.itemCount || 0 }} 件 ›</text>
+        <view class="order-card__summary">
+          <text class="order-card__count">共 {{ order.itemCount || 0 }} 件</text>
+          <text class="order-card__time">{{ formatDateTime(order.createdAt) }}</text>
+        </view>
       </view>
 
       <view class="order-card__foot" @click="goDetail(order.orderId)">
-        <text class="order-card__label">预计订单金额</text>
+        <text class="order-card__label">预计金额</text>
         <text class="order-card__amount">¥{{ displayAmount(order.orderedTotalAmount) }}</text>
       </view>
-      <text class="order-card__time">下单时间：{{ formatDateTime(order.createdAt) }}</text>
 
       <view class="order-card__actions">
         <view v-if="order.cancelable" class="order-card__btn" @click="cancelOrder(order)">取消订单</view>
@@ -235,8 +237,8 @@
   }
   .order-card {
     margin: $space-3 $space-4 0;
-    padding: $space-4;
-    @include card(0);
+    /* card() 的 padding 参数会覆盖前面的 padding 声明，这里必须传内边距，否则内容贴边 */
+    @include card($space-4);
   }
   .order-card__head {
     @include flex-between;
@@ -275,37 +277,53 @@
     color: $color-text-tertiary;
   }
   .order-card__goods {
-    @include flex-between;
+    display: flex;
+    align-items: center;
     margin-top: $space-3;
   }
   .order-card__thumbs {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
   }
   .order-card__thumb {
-    width: 112rpx;
-    height: 112rpx;
+    width: 96rpx;
+    height: 96rpx;
     margin-right: $space-2;
     border-radius: $radius-md;
     overflow: hidden;
     background: $color-bg-hover;
   }
+  .order-card__thumb:last-child {
+    margin-right: 0;
+  }
   .order-card__thumb--empty {
     @include flex-center;
+    background: $color-primary-light;
   }
   .order-card__image {
     width: 100%;
     height: 100%;
   }
+  /* 件数与下单时间贴着缩略图竖排，避免右侧出现大片空白 */
+  .order-card__summary {
+    margin-left: $space-3;
+    display: flex;
+    flex-direction: column;
+    gap: $space-1;
+    min-width: 0;
+  }
   .order-card__count {
-    color: $color-text-tertiary;
+    color: $color-text-secondary;
     font-size: $font-size-sm;
   }
   .order-card__foot {
     display: flex;
     align-items: baseline;
-    justify-content: flex-end;
+    justify-content: space-between;
     margin-top: $space-3;
+    padding-top: $space-3;
+    border-top: 1px solid $color-divider;
   }
   .order-card__label {
     color: $color-text-secondary;
@@ -318,31 +336,27 @@
     font-weight: $font-weight-bold;
   }
   .order-card__time {
-    display: block;
-    margin-top: $space-1;
     color: $color-text-tertiary;
     font-size: $font-size-xs;
-    text-align: right;
   }
   .order-card__actions {
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    gap: $space-3;
     margin-top: $space-3;
     padding-top: $space-3;
     border-top: 1px solid $color-divider;
   }
   .order-card__btn {
-    min-width: 160rpx;
-    height: 64rpx;
+    min-width: 152rpx;
+    height: 60rpx;
     @include flex-center;
     border: 1px solid $color-border;
     border-radius: $radius-pill;
+    background: $color-bg-page;
     color: $color-text-secondary;
     font-size: $font-size-sm;
-  }
-  .order-card__btn + .order-card__btn {
-    margin-left: $space-3;
   }
   .order-card__btn--primary {
     border-color: $color-primary;

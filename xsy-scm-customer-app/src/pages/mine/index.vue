@@ -1,6 +1,6 @@
 <template>
   <view class="mine">
-    <view class="mine__header" :style="{ paddingTop: statusBarHeight + 'px' }">
+    <view class="mine__header" :style="{ paddingTop: statusBarHeight + 'px', paddingRight: headerRightGap + 'px' }">
       <view class="mine__avatar">{{ avatarText }}</view>
       <view class="mine__identity">
         <text class="mine__name">{{ userStore.customerName || '未登录' }}</text>
@@ -28,7 +28,20 @@
   import { useSystemLayout } from '@/composables/use-system-layout';
   import { useUserStore } from '@/store/modules/system/user';
 
-  const { statusBarHeight } = useSystemLayout();
+  const { statusBarHeight, menuButtonRect } = useSystemLayout();
+  /** 未登录时右侧有「登录」按钮，必须让开右上角胶囊 */
+  const headerRightGap = computed(() => {
+    const rect = menuButtonRect.value;
+    if (!rect || !rect.left) {
+      return 16;
+    }
+    try {
+      const win = uni.getWindowInfo ? uni.getWindowInfo() : uni.getSystemInfoSync();
+      return Math.max(16, (win.windowWidth || 0) - rect.left + 8);
+    } catch {
+      return 16;
+    }
+  });
   const userStore = useUserStore();
   const avatarText = computed(() => (userStore.customerName || userStore.contactName || '客').slice(0, 1));
   const metaLine = computed(() => (userStore.isLogin ? [userStore.customerCode, userStore.phone].filter(Boolean).join(' · ') : '登录后查看客户信息'));

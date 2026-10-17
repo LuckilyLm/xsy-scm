@@ -4,8 +4,9 @@
  * 其他商品提示直接使用服务端返回值。
  */
 
-/** 价格来源文案，与后端 ScmPriceSourceEnum 对应 */
+/** 价格来源文案，与后端价格来源枚举对应；MARKET 是服务端实际返回的市场价档 */
 const PRICE_SOURCE_LABEL = {
+  MARKET: '市场价',
   AGREEMENT: '客户协议价',
   CUSTOMER_TYPE: '客户类型价',
   STANDARD: '标准价',
@@ -31,6 +32,9 @@ export function adaptProduct(raw) {
     priceSourceLabel: priced ? PRICE_SOURCE_LABEL[raw.priceSource] || '' : '',
     stockStatus: raw.stockStatus || '',
     availableQty: raw.availableQty ?? null,
+    /** 服务端可售判定（先接单后采购模式下库存为 0 仍可售），页面不得自行用库存覆盖 */
+    sellable: raw.sellable !== false,
+    unavailableReason: raw.unavailableReason || '',
     minOrderQty: raw.minOrderQty ?? '1.0000',
     stepQty: raw.stepQty ?? '1.0000',
     description: raw.description || '',
