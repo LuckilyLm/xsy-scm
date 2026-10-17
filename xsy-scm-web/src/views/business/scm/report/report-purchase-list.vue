@@ -37,6 +37,8 @@
     </a-row>
     <ScmAdvancedFilterBuilder v-if="advanced && activeTab === 'product'"
                               v-model="advancedFilters" :fields="dynamicFilterFields"/>
+    <ScmSavedFilterPresets v-if="advanced && activeTab === 'product'" view-key="PURCHASE_PRODUCT"
+                           :conditions="advancedFilters" @apply="applySavedFilters"/>
   </a-form>
 
   <a-alert v-if="chartError && activeTab !== 'daily'" :message="chartError" type="error" show-icon>
@@ -214,6 +216,7 @@ import {message, type TableColumnsType} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import ScmAdvancedFilterBuilder from '/@/components/business/scm/advanced-filter/index.vue';
+import ScmSavedFilterPresets from '/@/components/business/scm/advanced-filter/saved-presets.vue';
 import type {ScmAdvancedFilterField, ScmAdvancedFilterCondition} from '/@/types/business/scm/advanced-filter';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
@@ -278,6 +281,16 @@ const advanced = ref(false);
 const chartError = ref('');
 const advancedFilters = ref<ScmAdvancedFilterCondition[]>([]);
 const dynamicFilterFields = ref<ScmAdvancedFilterField[]>([]);
+function applySavedFilters(conditions: ScmAdvancedFilterCondition[]): void {
+    const keys = new Set(conditions.map(c => c.key));
+    if (keys.has('supplierId')) filters.supplierId = undefined;
+    if (keys.has('purchaserId')) filters.purchaserId = undefined;
+    if (keys.has('warehouseId')) filters.warehouseId = undefined;
+    if (keys.has('keyword')) filters.keyword = undefined;
+    advancedFilters.value = conditions;
+    advanced.value = true;
+    onSearch();
+}
 async function loadDynamicFilterFields(): Promise<void> {
     if (dynamicFilterFields.value.length) return;
     try {

@@ -18,6 +18,8 @@
         <a-form-item label="创建时间" class="smart-query-form-item"><a-range-picker v-model:value="createdRange" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" /></a-form-item>
       </a-row>
       <ScmAdvancedFilterBuilder v-if="advanced" v-model="advancedFilters" :fields="advancedFilterFields"/>
+      <ScmSavedFilterPresets v-if="advanced" view-key="PRODUCT"
+                             :conditions="advancedFilters" @apply="applySavedFilters"/>
     </a-form>
     <a-card size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
@@ -126,6 +128,7 @@ import {EyeOutlined, PictureOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType, TableProps} from 'ant-design-vue';
 import {productApi} from '/@/api/business/scm/product-api';
 import ScmAdvancedFilterBuilder from '/@/components/business/scm/advanced-filter/index.vue';
+import ScmSavedFilterPresets from '/@/components/business/scm/advanced-filter/saved-presets.vue';
 import type {ScmAdvancedFilterField, ScmAdvancedFilterCondition} from '/@/types/business/scm/advanced-filter';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {productTagApi} from '/@/api/business/scm/product-assistant-api';
@@ -167,6 +170,16 @@ const selectedKeys = ref<ProductId[]>([]);
 const failedImageUrls = ref(new Set<string>());
 const advancedFilterFields = ref<ScmAdvancedFilterField[]>([]);
 const advancedFilters = ref<ScmAdvancedFilterCondition[]>([]);
+function applySavedFilters(conditions: ScmAdvancedFilterCondition[]): void {
+  const keys = new Set(conditions.map(c => c.key));
+  if (keys.has('keyword')) filters.keyword = undefined;
+  if (keys.has('categoryId')) filters.categoryId = undefined;
+  if (keys.has('hasPrimaryImage')) filters.hasPrimaryImage = undefined;
+  if (keys.has('hasBarcode')) filters.hasBarcode = undefined;
+  advancedFilters.value = conditions;
+  advanced.value = true;
+  search();
+}
 async function toggleAdvanced(): Promise<void> {
   advanced.value = !advanced.value;
   if (!advanced.value || advancedFilterFields.value.length) return;
