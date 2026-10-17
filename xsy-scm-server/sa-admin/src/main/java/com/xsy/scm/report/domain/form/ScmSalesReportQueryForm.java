@@ -1,6 +1,9 @@
 package com.xsy.scm.report.domain.form;
 
+import com.xsy.scm.common.filter.ScmAdvancedFilterCatalog.Condition;
 import java.time.LocalDate;
+import java.util.List;
+import jakarta.validation.constraints.Size;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -34,4 +37,9 @@ public class ScmSalesReportQueryForm extends PageParam implements ScmReportDateF
 
     /** 商品名称 / SPU 编码 / SKU 编码模糊匹配。 */
     private String keyword;
+
+    @Size(max = 30, message = "最多选择30个导出字段")
+    private List<String> exportColumnKeys;
+    @Size(max = 8, message = "最多设置8个自定义筛选条件")
+    private List<Condition> advancedFilters;
 }

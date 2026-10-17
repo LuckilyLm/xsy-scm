@@ -56,7 +56,13 @@ public final class PurchaseInquiryVO {
         private String demandUnit;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal requiredQuantity;
+        private Long existingInquiryId;
     }
 
-    public record Detail(Inquiry inquiry, List<Quote> currentOffers, List<Quote> quotes) {}
+    public record BatchPage(List<Inquiry> records, long total) {}
+
+    public record HistoryPage(List<Quote> records, boolean hasMore, Long nextBeforeId) {}
+
+    public record Detail(Inquiry inquiry, List<Quote> currentOffers, List<Quote> quotes,
+            boolean hasMoreQuotes, Long nextQuoteBeforeId) {}
 }

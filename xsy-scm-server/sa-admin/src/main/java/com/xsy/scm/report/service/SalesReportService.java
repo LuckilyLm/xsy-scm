@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.report.dao.ReportDao;
 import com.xsy.scm.report.domain.form.ScmSalesReportQueryForm;
+import com.xsy.scm.report.support.ScmReportAdvancedFilters;
 import com.xsy.scm.report.domain.vo.SalesReportVO;
 import com.xsy.scm.report.support.ScmReportTimeRange;
 import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
@@ -100,6 +101,7 @@ public class SalesReportService {
 
     /** 订单表头级明细：一行 = 一个订单，回答「这个客户有几单、每单多少」。 */
     public PageResult<SalesReportVO.OrderRow> orderList(ScmSalesReportQueryForm form) {
+        ScmReportAdvancedFilters.salesOrder(form);
         rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         var page = SmartPageUtil.convert2PageQuery(form);

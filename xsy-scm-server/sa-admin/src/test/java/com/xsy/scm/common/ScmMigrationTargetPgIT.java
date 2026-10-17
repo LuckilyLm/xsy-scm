@@ -161,6 +161,19 @@ class ScmMigrationTargetPgIT {
         assertThat(guards).isEqualTo(2);
     }
 
+    @Test
+    void personalFilterPresetSchemaExistsAt144() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 144) return;
+        assertColumn("xsy_user_filter_preset", "owner_key");
+        assertColumn("xsy_user_filter_preset", "view_key");
+        assertColumn("xsy_user_filter_preset", "conditions");
+        Integer unique = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE connamespace = 'xsy_v2'::regnamespace "
+                        + "AND conname = 'uk_user_filter_preset_name'", Integer.class);
+        assertThat(unique).isEqualTo(1);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

@@ -1,6 +1,9 @@
 package com.xsy.scm.report.domain.form;
 
+import com.xsy.scm.common.filter.ScmAdvancedFilterCatalog.Condition;
 import java.time.LocalDate;
+import java.util.List;
+import jakarta.validation.constraints.Size;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -33,4 +36,9 @@ public class ScmPurchaseReportQueryForm extends PageParam implements ScmReportDa
 
     /** 价格波动维度：按 SKU 收窄，避免把不同单位的价格画进同一条线。 */
     private Long skuId;
+
+    @Size(max = 30, message = "最多选择30个导出字段")
+    private List<String> exportColumnKeys;
+    @Size(max = 8, message = "最多设置8个自定义筛选条件")
+    private List<Condition> advancedFilters;
 }

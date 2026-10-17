@@ -1,6 +1,7 @@
 package com.xsy.scm.product.domain.form;
 
 import com.xsy.scm.common.constant.ScmProductTypeEnum;
+import com.xsy.scm.common.filter.ScmAdvancedFilterCatalog.Condition;
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.validation.ScmEnumValue;
 import com.xsy.scm.product.constant.ScmProductMasterStatusEnum;
@@ -42,6 +43,12 @@ public class ProductSpuQueryForm extends net.lab1024.sa.base.common.domain.PageP
     private Boolean hasBarcode;
     private OffsetDateTime createdFrom;
     private OffsetDateTime createdTo;
+    @Size(max = 8, message = "最多设置8个自定义筛选条件")
+    private List<Condition> advancedFilters;
+
+    /** 仅用于导出的服务端白名单键；查询接口忽略该字段。 */
+    @Size(max = 30, message = "最多选择30个导出字段")
+    private List<String> exportColumnKeys;
 
     @Override
     @Min(value = 1, message = "页码不能小于1")

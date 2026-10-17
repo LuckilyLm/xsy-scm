@@ -19,7 +19,7 @@
           <a-button type="primary" v-privilege="PERM.PURCHASE_QUERY" @click="onSearch">查询</a-button>
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
-        <a-button class="smart-margin-left10" @click="advanced = !advanced">
+        <a-button class="smart-margin-left10" @click="toggleAdvanced">
           {{ advanced ? '收起高级筛选' : '展开高级筛选' }}
         </a-button>
       </a-form-item>
@@ -35,6 +35,10 @@
         <SkuSelect v-model:value="filters.skuId" width="240px" placeholder="按商品规格看价格曲线"/>
       </a-form-item>
     </a-row>
+    <ScmAdvancedFilterBuilder v-if="advanced && activeTab === 'product'"
+                              v-model="advancedFilters" :fields="dynamicFilterFields"/>
+    <ScmSavedFilterPresets v-if="advanced && activeTab === 'product'" view-key="PURCHASE_PRODUCT"
+                           :conditions="advancedFilters" @apply="applySavedFilters"/>
   </a-form>
 
   <a-alert v-if="chartError && activeTab !== 'daily'" :message="chartError" type="error" show-icon>
@@ -43,6 +47,13 @@
     </template>
   </a-alert>
 
+  <a-space v-if="activeTab === 'product'" class="smart-margin-top10" v-privilege="PERM.EXPORT">
+    <span>导出字段</span>
+    <a-select v-model:value="purchaseProductExportKeys" mode="multiple" allow-clear
+              :options="purchaseProductColumnOptions" option-filter-prop="label"
+              placeholder="不选择则导出全部字段" style="width: 360px"
+              @focus="loadPurchaseProductExportColumns"/>
+  </a-space>
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
     <a-tab-pane key="daily" tab="每日清单">
       <PurchaseDailyReport/>
@@ -201,9 +212,12 @@
 import PurchaseDailyReport from './report-components/purchase-daily-report.vue';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute} from 'vue-router';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
+import ScmAdvancedFilterBuilder from '/@/components/business/scm/advanced-filter/index.vue';
+import ScmSavedFilterPresets from '/@/components/business/scm/advanced-filter/saved-presets.vue';
+import type {ScmAdvancedFilterField, ScmAdvancedFilterCondition} from '/@/types/business/scm/advanced-filter';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
@@ -217,7 +231,7 @@ import PurchaseItemTab from './report-components/purchase-item-tab.vue';
 import PurchasePurchaserTab from './report-components/purchase-purchaser-tab.vue';
 import PurchaseProductTab from './report-components/purchase-product-tab.vue';
 import PurchaseSupplierTab from './report-components/purchase-supplier-tab.vue';
-import {reportPurchaseApi} from '/@/api/business/scm/report-api';
+import {reportPurchaseApi, type ScmExportColumn} from '/@/api/business/scm/report-api';
 import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION} from '/@/constants/business/scm/report-const';
 import type {
@@ -265,6 +279,45 @@ const dateRange = ref<DateRange | undefined>();
 const filters = reactive<Omit<PurchaseQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
 const chartError = ref('');
+const advancedFilters = ref<ScmAdvancedFilterCondition[]>([]);
+const dynamicFilterFields = ref<ScmAdvancedFilterField[]>([]);
+function applySavedFilters(conditions: ScmAdvancedFilterCondition[]): void {
+    const keys = new Set(conditions.map(c => c.key));
+    if (keys.has('supplierId')) filters.supplierId = undefined;
+    if (keys.has('purchaserId')) filters.purchaserId = undefined;
+    if (keys.has('warehouseId')) filters.warehouseId = undefined;
+    if (keys.has('keyword')) filters.keyword = undefined;
+    advancedFilters.value = conditions;
+    advanced.value = true;
+    onSearch();
+}
+async function loadDynamicFilterFields(): Promise<void> {
+    if (dynamicFilterFields.value.length) return;
+    try {
+        dynamicFilterFields.value = (await reportPurchaseApi.productFilterFields()).data;
+    } catch {
+        void message.error('获取可组合的筛选字段失败');
+    }
+}
+function toggleAdvanced(): void {
+    advanced.value = !advanced.value;
+    if (advanced.value && activeTab.value === 'product') void loadDynamicFilterFields();
+}
+const purchaseProductExportKeys = ref<string[]>([]);
+const purchaseProductColumnDefs = ref<ScmExportColumn[]>([]);
+const purchaseProductColumnsLoaded = ref(false);
+const purchaseProductColumnOptions = computed(() => purchaseProductColumnDefs.value.map(column => ({
+    label: column.title, value: column.key
+})));
+async function loadPurchaseProductExportColumns(): Promise<void> {
+    if (purchaseProductColumnsLoaded.value) return;
+    try {
+        purchaseProductColumnDefs.value = (await reportPurchaseApi.productExportColumns()).data;
+        purchaseProductColumnsLoaded.value = true;
+    } catch {
+        void message.error('获取可导出字段失败');
+    }
+}
 
 const overview = ref<PurchaseOverview>();
 const supplierTopRows = ref<PurchaseTopItem[]>([]);
@@ -353,7 +406,10 @@ function topItems(rows: PurchaseTopItem[]): ReportChartBar[] {
 }
 
 function purchaseQuery(tab: {pageNum: number; pageSize: number}): PurchaseQuery {
-    return buildReportQuery<PurchaseQuery>(dateRange.value, {...filters}, tab);
+    return buildReportQuery<PurchaseQuery>(dateRange.value, {
+        ...filters,
+        advancedFilters: tab === product && advancedFilters.value.length ? advancedFilters.value : undefined
+    }, tab);
 }
 
 /** 非分页端点（采购概览 / 供应商 TOP 榜 / 价格波动）的查询体：不带分页字段。 */
@@ -362,7 +418,10 @@ function purchaseFilterQuery(): ReportFilterQuery<PurchaseQuery> {
 }
 
 function exportQuery(): Partial<PurchaseQuery> {
-    return buildReportQuery<Partial<PurchaseQuery>>(dateRange.value, {...filters});
+    return buildReportQuery<Partial<PurchaseQuery>>(dateRange.value, {
+        ...filters,
+        advancedFilters: activeTab.value === 'product' && advancedFilters.value.length ? advancedFilters.value : undefined
+    });
 }
 
 const loadProduct = createTabLoader(product, () => purchaseQuery(product), reportPurchaseApi.product);
@@ -457,6 +516,7 @@ function queryActiveTab() {
 }
 
 function onTabChange() {
+    if (advanced.value && activeTab.value === 'product') void loadDynamicFilterFields();
     enterTabByActiveTab();
     queryActiveTab();
 }
@@ -496,6 +556,7 @@ function resetQuery() {
     filters.status = undefined;
     filters.keyword = undefined;
     filters.skuId = undefined;
+    advancedFilters.value = [];
     dateRange.value = defaultDateRange();
     enterTab(product);
     enterTab(supplier);
@@ -526,7 +587,10 @@ function openPurchaserDrilldown(row: PurchasePurchaserRow) {
 }
 
 function exportProduct() {
-    void productExport.run(() => reportPurchaseApi.productExport(exportQuery()));
+    void productExport.run(() => reportPurchaseApi.productExport({
+        ...exportQuery(),
+        exportColumnKeys: purchaseProductExportKeys.value.length ? purchaseProductExportKeys.value : undefined
+    }));
 }
 
 function exportSupplier() {

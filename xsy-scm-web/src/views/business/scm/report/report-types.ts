@@ -295,6 +295,9 @@ export interface SalesOrderRow {
 
 /** `ScmSalesReportQueryForm`：五个维度共用一个表单（切 Tab 不串条件是前端职责）。 */
 export interface SalesQuery extends ReportPage, ReportDateQuery {
+    advancedFilters?: import('/@/types/business/scm/advanced-filter').ScmAdvancedFilterCondition[];
+    /** 仅导出端点使用；服务端对白名单字段再次校验。 */
+    exportColumnKeys?: string[];
     customerId?: ReportId;
     /** 员工 id，见 OverviewQuery.sellerId 的理由。 */
     sellerId?: number;
@@ -409,6 +412,9 @@ export interface PurchasePriceTrendPoint {
 
 /** `ScmPurchaseReportQueryForm`：六个维度共用（默认统计四个「已提交」状态，SQL 固定）。 */
 export interface PurchaseQuery extends ReportPage, ReportDateQuery {
+    advancedFilters?: import('/@/types/business/scm/advanced-filter').ScmAdvancedFilterCondition[];
+    /** 仅导出端点使用；敏感成本列由后端权限独立控制。 */
+    exportColumnKeys?: string[];
     supplierId?: ReportId;
     /** 员工 id，见 OverviewQuery.sellerId 的理由。 */
     purchaserId?: number;

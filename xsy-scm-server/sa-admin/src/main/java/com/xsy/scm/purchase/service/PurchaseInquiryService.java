@@ -6,6 +6,7 @@ import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.purchase.dao.PurchaseDemandCalculationBatchDao;
 import com.xsy.scm.purchase.dao.PurchaseDemandCalculationBatchItemDao;
+import com.xsy.scm.purchase.dao.PurchaseDemandDao;
 import com.xsy.scm.purchase.dao.PurchaseInquiryDao;
 import com.xsy.scm.purchase.domain.entity.PurchaseDemandCalculationBatchEntity;
 import com.xsy.scm.purchase.domain.entity.PurchaseDemandCalculationBatchItemEntity;
@@ -14,6 +15,7 @@ import com.xsy.scm.purchase.domain.vo.PurchaseInquiryVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseInquiryVO.Inquiry;
 import com.xsy.scm.purchase.domain.vo.PurchaseInquiryVO.Quote;
 import com.xsy.scm.purchase.support.PurchaseOwnerResolver;
+import com.xsy.scm.purchase.support.PurchaseInquiryDecisionPolicy;
 import com.xsy.scm.supplier.service.SupplierService;
 import com.xsy.scm.supplier.service.SupplierSkuService;
 import java.math.BigDecimal;
@@ -22,6 +24,8 @@ import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -40,9 +44,12 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_UNIT_CONV
 @RequiredArgsConstructor
 public class PurchaseInquiryService {
     private static final BigDecimal MAX_QUANTITY = new BigDecimal("99999999999999.9999");
+    private static final int PAGE_SIZE = 20;
+    private static final int HISTORY_SIZE = 30;
     private final PurchaseInquiryDao inquiryDao;
     private final PurchaseDemandCalculationBatchDao batchDao;
     private final PurchaseDemandCalculationBatchItemDao batchItemDao;
+    private final PurchaseDemandDao purchaseDemandDao;
     private final PurchaseOwnerResolver ownerResolver;
     private final ScmDataScopeService scopeService;
     private final SupplierSkuService supplierSkuService;
@@ -50,19 +57,31 @@ public class PurchaseInquiryService {
     private final PurchaseIdempotencyService idempotencyService;
 
     @Transactional(readOnly = true)
-    public List<Inquiry> byBatch(Long batchId) {
+    public PurchaseInquiryVO.BatchPage byBatch(Long batchId, Integer page) {
         requireBatch(batchId);
-        return inquiryDao.byBatch(batchId);
+        int current = page == null ? 1 : page;
+        if (current < 1 || (long) (current - 1) * PAGE_SIZE > Integer.MAX_VALUE) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        return new PurchaseInquiryVO.BatchPage(
+                inquiryDao.pageByBatch(batchId, PAGE_SIZE, (current - 1) * PAGE_SIZE),
+                inquiryDao.countByBatch(batchId));
     }
 
     @Transactional(readOnly = true)
     public List<PurchaseInquiryVO.Candidate> candidates(Long batchId) {
-        requireBatch(batchId);
+        var batch = requireBatch(batchId);
+        if (!"READY".equals(batch.getStatus())) return List.of();
+        var eligible = eligibleLines(batchId);
+        Set<Long> alreadyInDemand = activeDemandSourceIds(eligible);
         Map<String, PurchaseInquiryVO.Candidate> grouped = new LinkedHashMap<>();
-        for (var item : batchItemDao.listByBatchId(batchId)) {
-            if (item.getExistingDemandId() != null || item.getRequiredQuantity() == null
-                    || item.getRequiredQuantity().signum() <= 0) continue;
+        Set<String> blocked = eligible.stream()
+                .filter(item -> alreadyInDemand.contains(item.getSalesOrderItemId()))
+                .map(item -> item.getSkuId() + "|" + item.getDemandUnitSnapshot())
+                .collect(Collectors.toSet());
+        for (var item : eligible) {
             String grouping = item.getSkuId() + "|" + item.getDemandUnitSnapshot();
+            if (blocked.contains(grouping)) continue;
             var row = grouped.get(grouping);
             if (row == null) {
                 row = new PurchaseInquiryVO.Candidate();
@@ -75,33 +94,61 @@ public class PurchaseInquiryService {
             }
             row.setRequiredQuantity(row.getRequiredQuantity().add(item.getRequiredQuantity()));
         }
+        var existing = inquiryDao.byBatch(batchId).stream()
+                .collect(Collectors.toMap(row -> row.getSkuId() + "|" + row.getDemandUnit(),
+                        Inquiry::getId, (left, right) -> left));
+        grouped.forEach((sourceKey, row) -> row.setExistingInquiryId(existing.get(sourceKey)));
         return List.copyOf(grouped.values());
     }
 
     @Transactional(readOnly = true)
     public PurchaseInquiryVO.Detail detail(Long id) {
         Inquiry inquiry = requireVisible(id);
-        return new PurchaseInquiryVO.Detail(inquiry, inquiryDao.currentOffers(id), inquiryDao.quotes(id));
+        var history = historyPage(id, null);
+        return new PurchaseInquiryVO.Detail(inquiry, inquiryDao.currentOffers(id), history.records(),
+                history.hasMore(), history.nextBeforeId());
+    }
+
+    @Transactional(readOnly = true)
+    public PurchaseInquiryVO.HistoryPage history(Long inquiryId, Long beforeId) {
+        requireVisible(inquiryId);
+        if (beforeId != null && beforeId <= 0) throw new ScmBusinessException(VALIDATION_ERROR);
+        return historyPage(inquiryId, beforeId);
+    }
+
+    private PurchaseInquiryVO.HistoryPage historyPage(Long inquiryId, Long beforeId) {
+        var rows = inquiryDao.history(inquiryId, beforeId, HISTORY_SIZE + 1);
+        boolean hasMore = rows.size() > HISTORY_SIZE;
+        List<Quote> records = hasMore ? rows.subList(0, HISTORY_SIZE) : rows;
+        Long next = hasMore ? records.getLast().getId() : null;
+        return new PurchaseInquiryVO.HistoryPage(List.copyOf(records), hasMore, next);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public PurchaseInquiryVO.Detail create(PurchaseInquiryForm.Create form, String key) {
-        PurchaseDemandCalculationBatchEntity batch = requireBatch(form.getBatchId());
+        requireBatch(form.getBatchId());
         var claim = idempotencyService.claim("PURCHASE_INQUIRY_CREATE", key, form);
         if (claim.replay()) return idempotencyService.replay(claim, PurchaseInquiryVO.Detail.class);
+        PurchaseDemandCalculationBatchEntity batch = batchDao.lock(form.getBatchId());
+        if (batch == null) throw new ScmBusinessException(PURCHASE_DEMAND_BATCH_NOT_FOUND);
+        requireScope(batch.getWarehouseId(), batch.getPurchaserId());
+        if (!"READY".equals(batch.getStatus())) {
+            throw new ScmBusinessException(PURCHASE_INQUIRY_STATE_INVALID);
+        }
         OffsetDateTime now = OffsetDateTime.now();
         if (form.getDeadlineAt() == null || !form.getDeadlineAt().isAfter(now)
                 || form.getDemandUnit() == null || form.getDemandUnit().isBlank()) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
 
-        List<PurchaseDemandCalculationBatchItemEntity> lines = batchItemDao.listByBatchId(batch.getId()).stream()
+        List<PurchaseDemandCalculationBatchItemEntity> lines = eligibleLines(batch.getId()).stream()
                 .filter(item -> Objects.equals(item.getSkuId(), form.getSkuId()))
                 .filter(item -> Objects.equals(item.getDemandUnitSnapshot(), form.getDemandUnit()))
-                .filter(item -> item.getExistingDemandId() == null)
-                .filter(item -> item.getRequiredQuantity() != null && item.getRequiredQuantity().signum() > 0)
                 .toList();
         if (lines.isEmpty()) throw new ScmBusinessException(PURCHASE_INQUIRY_QUOTE_INVALID);
+        if (!activeDemandSourceIds(lines).isEmpty()) {
+            throw new ScmBusinessException(PURCHASE_INQUIRY_STATE_INVALID);
+        }
         BigDecimal required = lines.stream().map(PurchaseDemandCalculationBatchItemEntity::getRequiredQuantity)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         if (required.compareTo(MAX_QUANTITY) > 0) throw new ScmBusinessException(VALIDATION_ERROR);
@@ -132,9 +179,9 @@ public class PurchaseInquiryService {
         Inquiry inquiry = requireLocked(form.getInquiryId());
         var claim = idempotencyService.claim("PURCHASE_INQUIRY_QUOTE:" + inquiry.getId(), key, form);
         if (claim.replay()) return idempotencyService.replay(claim, PurchaseInquiryVO.Detail.class);
-        requireOpen(inquiry, form.getVersion());
+        PurchaseInquiryDecisionPolicy.requireQuoteWritable(inquiry, form.getVersion(), OffsetDateTime.now());
         BigDecimal price = price(form.getUnitPrice());
-        if (form.getValidUntil() == null || !form.getValidUntil().isAfter(OffsetDateTime.now())) {
+        if (!PurchaseInquiryDecisionPolicy.isQuoteStillValid(form.getValidUntil(), OffsetDateTime.now())) {
             throw new ScmBusinessException(PURCHASE_INQUIRY_QUOTE_INVALID);
         }
         var relation = supplierSkuService.requireEnabledForPurchasing(form.getSupplierId(), inquiry.getSkuId());
@@ -166,9 +213,10 @@ public class PurchaseInquiryService {
         Inquiry inquiry = requireLocked(form.getInquiryId());
         var claim = idempotencyService.claim("PURCHASE_INQUIRY_ACCEPT:" + inquiry.getId(), key, form);
         if (claim.replay()) return idempotencyService.replay(claim, PurchaseInquiryVO.Detail.class);
-        requireOpen(inquiry, form.getVersion());
+        PurchaseInquiryDecisionPolicy.requireAwaitingDecision(inquiry, form.getVersion());
         Quote selected = inquiryDao.quoteById(form.getQuoteId(), inquiry.getId());
-        if (selected == null || !selected.getValidUntil().isAfter(OffsetDateTime.now())) {
+        if (selected == null || !PurchaseInquiryDecisionPolicy.isQuoteStillValid(
+                selected.getValidUntil(), OffsetDateTime.now())) {
             throw new ScmBusinessException(PURCHASE_INQUIRY_QUOTE_INVALID);
         }
         Quote latest = inquiryDao.latestSupplierQuote(inquiry.getId(), selected.getSupplierId());
@@ -217,13 +265,18 @@ public class PurchaseInquiryService {
         ownerResolver.requireVisible(purchaserId);
     }
 
-    private static void requireOpen(Inquiry inquiry, Integer expectedVersion) {
-        if (!Objects.equals(inquiry.getVersion(), expectedVersion)) {
-            throw new ScmBusinessException(VERSION_CONFLICT);
-        }
-        if (!"OPEN".equals(inquiry.getStatus()) || !inquiry.getDeadlineAt().isAfter(OffsetDateTime.now())) {
-            throw new ScmBusinessException(PURCHASE_INQUIRY_STATE_INVALID);
-        }
+     private List<PurchaseDemandCalculationBatchItemEntity> eligibleLines(Long batchId) {
+        return batchItemDao.listByBatchId(batchId).stream()
+                .filter(row -> row.getExistingDemandId() == null && row.getRequiredQuantity() != null
+                        && row.getRequiredQuantity().signum() > 0)
+                .toList();
+    }
+
+    private Set<Long> activeDemandSourceIds(List<PurchaseDemandCalculationBatchItemEntity> lines) {
+        if (lines.isEmpty()) return Set.of();
+        return purchaseDemandDao.listActiveBySourceItemIds(
+                lines.stream().map(PurchaseDemandCalculationBatchItemEntity::getSalesOrderItemId).distinct().toList())
+                .stream().map(row -> row.getSalesOrderItemId()).collect(Collectors.toSet());
     }
 
     private static BigDecimal price(String input) {

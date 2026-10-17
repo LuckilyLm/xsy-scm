@@ -66,5 +66,16 @@ public final class PurchaseInquiryForm {
         @NotNull(message = "净需求批次不能为空")
         @Positive(message = "净需求批次编号必须大于零")
         private Long batchId;
+        @Min(value = 1, message = "页码不能小于1")
+        private Integer page;
+    }
+
+    @Data
+    public static class History {
+        @NotNull(message = "询价单不能为空")
+        @Positive(message = "询价单编号必须大于零")
+        private Long inquiryId;
+        @Positive(message = "历史游标必须大于零")
+        private Long beforeId;
     }
 }
