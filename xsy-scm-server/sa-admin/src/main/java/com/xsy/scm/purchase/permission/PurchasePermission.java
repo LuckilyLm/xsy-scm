@@ -17,6 +17,11 @@ public final class PurchasePermission {
 
     public static final String DEMAND_BATCH_QUERY = "scm:purchase:demand:batch:query";
 
+    public static final String INQUIRY_QUERY = "scm:purchase:inquiry:query";
+    public static final String INQUIRY_CREATE = "scm:purchase:inquiry:create";
+    public static final String INQUIRY_QUOTE = "scm:purchase:inquiry:quote";
+    public static final String INQUIRY_ACCEPT = "scm:purchase:inquiry:accept";
+
     public static final String QUERY = "scm:purchase:query";
 
     public static final String LOG_QUERY = "scm:purchase:log:query";

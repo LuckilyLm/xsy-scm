@@ -145,6 +145,22 @@ class ScmMigrationTargetPgIT {
         assertThat(checks).isEqualTo(3);
     }
 
+    @Test
+    void purchaseInquiryAndImmutableQuoteSchemaExistAt143() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 143)
+            return;
+        assertColumn("xsy_purchase_inquiry", "accepted_quote_id");
+        assertColumn("xsy_purchase_inquiry", "required_quantity");
+        assertColumn("xsy_purchase_inquiry_quote", "revision");
+        assertColumn("xsy_purchase_inquiry_quote", "valid_until");
+        Integer guards = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname IN "
+                        + "('trg_purchase_inquiry_guard', 'trg_purchase_inquiry_quote_immutable') "
+                        + "AND NOT tgisinternal", Integer.class);
+        assertThat(guards).isEqualTo(2);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

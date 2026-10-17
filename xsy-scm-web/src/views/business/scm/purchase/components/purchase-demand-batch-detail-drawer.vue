@@ -37,6 +37,9 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
           <a-descriptions-item label="已生成需求">{{ detail.generatedCount }}</a-descriptions-item>
           <a-descriptions-item label="已跳过">{{ detail.skippedCount }}</a-descriptions-item>
         </a-descriptions>
+        <a-button type="primary" style="margin: 12px 0"
+                  v-privilege="'scm:purchase:inquiry:query'"
+                  @click="openInquiry">查看本批次询价</a-button>
 
         <a-divider orientation="left">商品规格需求解释行</a-divider>
         <a-table
@@ -94,6 +97,7 @@ ADM-05 收口：批次一旦生成就只剩计数时，「为什么建议这个�
 
 <script setup lang="ts">
 import {ref, watch} from 'vue';
+import {useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
@@ -103,6 +107,12 @@ import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const props = defineProps<{ open: boolean; batchId?: Id }>();
+const router = useRouter();
+function openInquiry(): void {
+  if (props.batchId != null) {
+    void router.push({path: '/purchase/purchase-inquiry-list', query: {batchId: String(props.batchId)}});
+  }
+}
 const emit = defineEmits<{ close: [] }>();
 
 /** 解释行里所有数量都是后端下发的四位定点字符串，统一走 `quantity` 渲染（null → —）。 */

@@ -9,7 +9,7 @@ import com.xsy.scm.common.error.ScmErrorCode;
 @RequiredArgsConstructor
 public enum PurchaseErrorCode implements ScmErrorCode {
 
-    // ---- 40080–40091 BAD_REQUEST ----
+    // ---- 40080–40094 BAD_REQUEST ----
     PURCHASE_QUANTITY_INVALID(40080, "采购数量必须为大于零的四位定点数"),
     PURCHASE_PRICE_INVALID(40081, "采购单价必须为非负四位定点数"),
     PURCHASE_DEMAND_ALLOCATION_EXCEEDED(40082, "分配数量超过需求量"),
@@ -23,8 +23,9 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_DEMAND_ALLOCATION_DUPLICATE(40090, "同一采购行重复关联同一采购需求"),
     PURCHASE_DEMAND_VERSION_REQUIRED(40091, "采购需求分配必须携带需求版本"),
     PURCHASE_DEMAND_BATCH_TOO_LARGE(40092, "净需求计算来源超过单批上限，请缩短时间段或增加筛选条件"),
+    PURCHASE_INQUIRY_QUOTE_INVALID(40094, "询价内容、报价或有效期不符合要求"),
 
-    // ---- 40480–40487 NOT_FOUND ----
+    // ---- 40480–40488 NOT_FOUND ----
     // 40485 属仓库域、40486 属库存域（InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND，
     // 已被 ScmInventoryConstantTest 冻结），采购批次因此取 40487，不与两者共用一个码值。
     PURCHASE_DEMAND_NOT_FOUND(40480, "采购需求不存在"),
@@ -33,12 +34,14 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_RECEIPT_NOT_FOUND(40483, "收货单不存在"),
     PURCHASE_RECEIPT_ITEM_NOT_FOUND(40484, "收货明细不存在"),
     PURCHASE_DEMAND_BATCH_NOT_FOUND(40487, "净需求计算批次不存在"),
+    PURCHASE_INQUIRY_NOT_FOUND(40488, "采购询价单不存在"),
 
     // ---- 40971–40999 CONFLICT ----
     PURCHASE_UNIT_CONVERSION_REQUIRED(40971, "需求单位与采购单位不一致，无法自动换算"),
     PURCHASE_DEMAND_VERSION_CONFLICT(40972, "采购需求版本冲突，请刷新后重试"),
     PURCHASE_DEMAND_SOURCE_INVALID(40980, "销售订单状态不允许生成采购需求"),
     PURCHASE_DEMAND_ALLOCATION_CONFLICT(40981, "采购需求分配冲突"),
+    PURCHASE_INQUIRY_STATE_INVALID(40978, "询价已结束、截止或重复创建，无法继续操作"),
     PURCHASE_ORDER_STATE_INVALID(40982, "当前采购单状态不允许此操作"),
     PURCHASE_ORDER_ITEM_NOT_OWNED(40983, "采购明细不属于当前采购单"),
     PURCHASE_ORDER_ITEM_VERSION_CONFLICT(40984, "采购明细版本冲突"),
