@@ -28,6 +28,8 @@
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:order:add'" @click="drawer?.open()">新建订单</a-button>
         <a-button v-privilege="'scm:order:import'" @click="importModal?.open()">导入订单</a-button>
+        <a-button v-if="canPriceCheck" :disabled="!selected.length || selected.length > 8"
+                  @click="openBatchPriceCheck">批量核价（最多8单）</a-button>
         <a-button danger v-privilege="'scm:order:delete'" :disabled="!selected.length" @click="batchDelete">
           批量删除草稿
         </a-button>
@@ -91,6 +93,7 @@
   </a-card>
   <OrderForm ref="drawer" @saved="queryData"/>
   <OrderImportModal ref="importModal" @saved="queryData"/>
+  <OrderBatchPriceCheckModal ref="priceCheckModal" @saved="queryData"/>
 </template>
 <script setup lang="ts">
 import {computed, nextTick, onMounted, reactive, ref, watch} from 'vue';
@@ -111,10 +114,12 @@ import {orderError} from './order-errors';
 import {hasPermission} from '../common/scm-permission';
 import OrderForm from './components/order-form-drawer.vue';
 import OrderImportModal from './components/order-import-modal.vue';
+import OrderBatchPriceCheckModal from './components/order-batch-price-check-modal.vue';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<Order[]>([]), total = ref(0),
     loading = ref(false), error = ref(''), selected = ref<(string | number)[]>([]);
 const drawer = ref<InstanceType<typeof OrderForm>>(), importModal = ref<InstanceType<typeof OrderImportModal>>();
+const priceCheckModal = ref<InstanceType<typeof OrderBatchPriceCheckModal>>();
 const route = useRoute();
 const router = useRouter();
 
@@ -163,6 +168,15 @@ const statusTone = (value?: string | null): ScmStatusTone => STATUS_TONE[value ?
 /** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
 const canAdd = computed(() => hasPermission('scm:order:add'));
 const canDelete = computed(() => hasPermission('scm:order:delete'));
+const canPriceCheck = computed(() => hasPermission('scm:order:query')
+  && hasPermission('scm:pricing:resolve:query'));
+
+function openBatchPriceCheck(): void {
+  if (!canPriceCheck.value) return;
+  const rows = tableData.value.filter(row => row.orderId != null
+    && selected.value.some(id => String(id) === String(row.orderId)));
+  priceCheckModal.value?.open(rows);
+}
 
 /**
  * 行内常驻当前状态最高频的动作（草稿：编辑/提交；已确认：详情/预留库存），其余收进「更多」。
