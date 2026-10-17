@@ -73,7 +73,18 @@
                  OR COALESCE(p.mnemonic_code, '') ILIKE CONCAT('%', #{query.keyword}, '%')
                  OR COALESCE(customer_alias.alias, '') ILIKE CONCAT('%', #{query.keyword}, '%'))
         </if>
-        <if test="query.categoryId != null">AND p.category_id = #{query.categoryId}</if>
+        <!-- 分类按子树过滤：商品只挂叶子分类，点一级/二级分类时也要能看到下级商品 -->
+        <if test="query.categoryId != null">
+            AND p.category_id IN (
+                WITH RECURSIVE category_subtree AS (
+                    SELECT id FROM xsy_product_category WHERE id = #{query.categoryId}
+                    UNION ALL
+                    SELECT child.id FROM xsy_product_category child
+                    JOIN category_subtree parent ON child.parent_id = parent.id
+                )
+                SELECT id FROM category_subtree
+            )
+        </if>
         ORDER BY p.name, s.sort_order, s.id
     </select>
 

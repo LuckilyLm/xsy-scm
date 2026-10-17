@@ -160,11 +160,29 @@ export const request = function (url, method, data, options = {}) {
 };
 
 /**
+ * GET 查询参数去掉 undefined / null。
+ * uni.request 会把它们拼成字符串 "undefined"，后端按枚举校验时判为非法值。
+ */
+function pruneQueryParams(params) {
+  if (!params) {
+    return params;
+  }
+  const result = {};
+  Object.keys(params).forEach((key) => {
+    const value = params[key];
+    if (value !== undefined && value !== null) {
+      result[key] = value;
+    }
+  });
+  return result;
+}
+
+/**
  * GET 请求。
  * @param {string} url    以 / 开头的接口路径
  * @param {object} params 查询参数（uni.request 会把 GET 的 data 拼到 query string）
  */
-export const getRequest = (url, params) => request(url, 'GET', params);
+export const getRequest = (url, params) => request(url, 'GET', pruneQueryParams(params));
 
 export const postRequest = (url, data, options) => request(url, 'POST', data, options);
 

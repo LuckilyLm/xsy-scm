@@ -264,7 +264,7 @@
   }
   .cart__notice {
     @include flex-start;
-    padding: $space-2 $space-4;
+    padding: $space-3 $space-4;
     background-color: #fff8e6;
   }
   .cart__notice-text {

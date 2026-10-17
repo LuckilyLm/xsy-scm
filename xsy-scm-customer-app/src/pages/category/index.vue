@@ -1,18 +1,18 @@
 <template>
   <view class="category">
-    <xsy-nav-bar title="分类" divider>
+    <xsy-nav-bar title="分类">
       <template #bottom>
-        <!-- 搜索对齐 Home / Final：图标 20px @xRel=12、占位文本 @xRel=40、图文间距 8px -->
+        <!-- 与首页搜索框统一：绿描边胶囊、76rpx 高、图标品牌绿 -->
         <view class="category__search" @click="goSearch">
-          <uni-icons type="search" :size="20" :color="COLOR_TEXT_TERTIARY" />
+          <uni-icons type="search" :size="18" :color="COLOR_PRIMARY" />
           <text class="category__search-ph">搜商品或规格</text>
         </view>
       </template>
     </xsy-nav-bar>
 
     <view class="category__body">
-      <!-- 左侧一级分类：清单来自服务端 getCategories()，不写死分类名 -->
-      <scroll-view class="category__rail" scroll-y>
+      <!-- 左侧一级分类：只有一个一级分类时没有切换意义，整列不渲染，把宽度让给商品 -->
+      <scroll-view v-if="categories.length > 1" class="category__rail" scroll-y>
         <view
           v-for="item in categories"
           :key="item.categoryId"
@@ -27,29 +27,29 @@
       <!-- 右侧二级分类 + 商品列表 -->
       <scroll-view class="category__content" scroll-y :scroll-top="contentScrollTop" @scrolltolower="loadMore">
         <!--
-          二级分类横滑：只在当前一级分类**确实有 children** 时渲染。
-          没有 children 时整块不渲染、不占高度，商品列表直接从内容区顶部开始。
+          二级分类网格：图标 + 名称平铺，比横向 chip 更容易点中，也更接近生鲜商城的分类入口。
+          没有 children 时整块不渲染，商品列表直接从内容区顶部开始。
         -->
-        <scroll-view v-if="subCategories.length" class="category__subs" scroll-x>
-          <view class="category__subs-inner">
-            <!--
-              「全部」不是服务端分类：它映射当前一级 categoryId，
-              不构造假的 category 对象提交给后端。
-            -->
-            <view class="category__sub" :class="{ 'category__sub--active': activeSubId === null }" @click="selectAllSubs">
-              <text class="category__sub-text">全部</text>
-            </view>
-            <view
-              v-for="sub in subCategories"
-              :key="sub.categoryId"
-              class="category__sub"
-              :class="{ 'category__sub--active': sub.categoryId === activeSubId }"
-              @click="selectSub(sub)"
-            >
-              <text class="category__sub-text">{{ sub.categoryName }}</text>
-            </view>
+        <view v-if="subCategories.length" class="category__grid">
+          <view
+            class="category__grid-item"
+            :class="{ 'category__grid-item--active': activeSubId === null }"
+            @click="selectAllSubs"
+          >
+            <view class="category__grid-icon">🛍️</view>
+            <text class="category__grid-text">全部</text>
           </view>
-        </scroll-view>
+          <view
+            v-for="sub in subCategories"
+            :key="sub.categoryId"
+            class="category__grid-item"
+            :class="{ 'category__grid-item--active': sub.categoryId === activeSubId }"
+            @click="selectSub(sub)"
+          >
+            <view class="category__grid-icon">{{ gridIcon(sub) }}</view>
+            <text class="category__grid-text">{{ sub.categoryName }}</text>
+          </view>
+        </view>
 
         <!-- 商品列表 -->
         <view v-if="products.length" class="category__list">
@@ -80,7 +80,7 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { useMallNavigationStore } from '@/store/modules/mall/navigation';
   import { useMallCart } from '@/composables/use-mall-cart';
-  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { COLOR_PRIMARY, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
   const PAGE_SIZE = 10;
 
@@ -102,6 +102,37 @@
     const hit = categories.value.find((c) => c.categoryId === activePrimaryId.value);
     return hit ? hit.children || [] : [];
   });
+
+  /**
+   * 分类图标：页面内自带一份映射，避免依赖外部模块的运行时取值差异；
+   * 服务端节点可能只有 name 或 categoryName，两个都兜住。
+   */
+  const GRID_ICONS = {
+    生鲜: '🥬',
+    果蔬: '🍎',
+    肉禽: '🥩',
+    水产: '🐟',
+    蛋奶: '🥛',
+    粮油干货: '🌾',
+    水果: '🍎',
+    蔬菜: '🥬',
+    猪肉: '🥩',
+    牛肉: '🥩',
+    禽类: '🍗',
+    羊肉: '🍖',
+    鱼类: '🐟',
+    虾蟹: '🦐',
+    蛋类: '🥚',
+    奶制品: '🥛',
+    米面: '🍚',
+    食用油: '🫒',
+    干货: '🌰',
+    调味品: '🧂',
+  };
+  function gridIcon(node) {
+    const name = (node && (node.categoryName || node.name)) || '';
+    return GRID_ICONS[name] || '🛒';
+  }
 
   const hasMore = computed(() => products.value.length < total.value);
 
@@ -284,17 +315,17 @@
 
     &__search {
       @include flex-start;
-      margin: 0 $space-4 $space-3;
-      /* 390 主稿 358×36：70rpx ≈ 36.4px（rpx 网格取不到 36，按「不追 1px」取最近值） */
-      height: 70rpx;
+      margin: $space-2 $space-4 $space-3;
+      height: 76rpx;
       padding: 0 $space-3;
+      border: 1px solid $color-primary;
       border-radius: $radius-pill;
-      background-color: $color-bg-page;
+      background-color: $color-bg-card;
     }
 
     &__search-ph {
       margin-left: $space-2;
-      font-size: $font-size-base;
+      font-size: $font-size-sm;
       color: $color-text-placeholder;
     }
 
@@ -369,39 +400,49 @@
       height: 100%;
     }
 
-    &__subs {
-      white-space: nowrap;
-      padding: $space-3 0;
+    /* 二级分类网格：一行 5 个，图标 + 名称 */
+    &__grid {
+      display: flex;
+      flex-wrap: wrap;
+      padding: $space-3 $space-2 $space-2;
       background-color: $color-bg-card;
     }
 
-    &__subs-inner {
-      display: inline-flex;
+    &__grid-item {
+      width: 25%;
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      padding: 0 $space-2;
+      gap: $space-1;
+      padding: $space-1 0 $space-2;
     }
 
-    &__sub {
-      flex-shrink: 0;
-      margin-right: $space-2;
-      padding: 0 $space-3;
-      /* 390 主稿 chip 高 28px → 54rpx ≈ 28.1px */
-      height: 54rpx;
+    &__grid-icon {
+      width: 84rpx;
+      height: 84rpx;
       border-radius: $radius-pill;
       background-color: $color-bg-page;
+      font-size: 40rpx;
+      line-height: 1;
       @include flex-center;
-
-      &--active {
-        background-color: $color-primary-light;
-      }
     }
 
-    &__sub-text {
-      font-size: $font-size-sm;
+    &__grid-text {
+      max-width: 100%;
+      padding: 0 $space-1;
       color: $color-text-secondary;
+      font-size: $font-size-xs;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
-    &__sub--active &__sub-text {
+    &__grid-item--active &__grid-icon {
+      background-color: $color-primary-light;
+      color: $color-primary;
+    }
+
+    &__grid-item--active &__grid-text {
       color: $color-primary;
       font-weight: $font-weight-medium;
     }

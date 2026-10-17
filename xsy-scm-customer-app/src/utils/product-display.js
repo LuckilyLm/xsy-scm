@@ -10,6 +10,8 @@
  * 迟早出现「卡片显示有货、详情显示缺货」这类不一致。
  */
 
+import { categoryEmoji } from './category-icon';
+
 /** 库存状态枚举（服务端给出，与后端一致） */
 export const STOCK_STATUS = {
   AVAILABLE: 'AVAILABLE',
@@ -63,25 +65,31 @@ export function hasPrice(product) {
  * 注意：这只控制按钮可用性，真正的库存与价格校验仍在服务端事务内完成（规划 §38.7）。
  */
 export function isOrderable(product) {
-  return hasPrice(product) && product.stockStatus === STOCK_STATUS.AVAILABLE;
+  // 可售与否以服务端 sellable 为准：本商城「先接单后采购」，库存为 0 仍可下单。
+  return hasPrice(product) && product.sellable !== false;
 }
 
-/** 操作按钮文案：询价 / 缺货 / 加购 */
+/** 操作按钮文案：询价 / 加购 / 预订 / 不可售 */
 export function actionText(product) {
   if (!hasPrice(product)) {
     return '询价';
   }
-  if (product && product.stockStatus === STOCK_STATUS.UNKNOWN) {
-    return '待确认配送仓';
+  if (!isOrderable(product)) {
+    return '不可售';
   }
-  if (product && product.stockStatus !== STOCK_STATUS.AVAILABLE) {
-    return '缺货';
+  // 先接单后采购：库存为 0 仍可下单，按钮语义用「预订」而不是「加购」
+  if (product.stockStatus === STOCK_STATUS.OUT_OF_STOCK) {
+    return '预订';
   }
   return '加购';
 }
 
 /** 无图时的占位首字（业主提供 fileKey 前的兜底展示） */
 export function thumbText(product) {
+  // 无图占位优先用分类 emoji：单字「一」「南」放大后辨识度低，emoji 更像商品图
+  if (product && product.categoryName) {
+    return categoryEmoji(product.categoryName);
+  }
   return ((product && product.productName) || '商').slice(0, 1);
 }
 
@@ -103,11 +111,18 @@ export function nonStandardTip(product) {
 }
 
 /** 价格来源文案：服务端给 label 优先，退化到原始枚举，最后兜底 */
+const PRICE_SOURCE_LABELS = {
+  MARKET: '市场价',
+  AGREEMENT: '协议价',
+  CUSTOMER_TYPE: '类型价',
+};
+
 export function priceSourceLabel(product) {
   if (!product) {
     return '';
   }
-  return product.priceSourceLabel || product.priceSource || '';
+  // 后端只给枚举值，缺省时按枚举翻译，避免把 MARKET 之类的英文直出给用户。
+  return product.priceSourceLabel || PRICE_SOURCE_LABELS[product.priceSource] || product.priceSource || '';
 }
 
 /**
