@@ -188,7 +188,7 @@ const columns = ref<InventoryWarningColumn[]>([
   {title: '可用量', dataIndex: 'availableQuantity', align: 'right', width: 110},
   {title: '预警下限', dataIndex: 'warnMin', align: 'right', width: 100},
   {title: '预警上限', dataIndex: 'warnMax', align: 'right', width: 100},
-  {title: '状态', dataIndex: 'status', align: 'center', width: 110},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 96},
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value));
 

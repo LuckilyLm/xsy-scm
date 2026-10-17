@@ -90,7 +90,7 @@ const columns = ref<TableColumnsType<RefundRow>>([{
   title: '退款单号',
   dataIndex: 'refundNo',
   width: 220
-}, {title: '状态', dataIndex: 'status', width: 120, align: 'center'}, {
+}, {title: '状态', dataIndex: 'status', width: 96, align: 'center'}, {
   title: '退款金额',
   dataIndex: 'refundAmount',
   align: 'right',

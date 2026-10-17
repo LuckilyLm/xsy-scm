@@ -752,7 +752,7 @@ const frequentCols: TableColumnsType<CustomerFrequentSku> = [
   {title: '商品规格', dataIndex: 'specName', width: 140},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 140},
   {title: '单位', dataIndex: 'unit', align: 'center', width: 80},
-  {title: '订购次数', dataIndex: 'orderCount', align: 'right', width: 100},
+  {title: '订购次数', dataIndex: 'orderCount', align: 'right', width: 92},
   {title: '订购量', dataIndex: 'orderedQuantity', align: 'right', width: 110},
   {title: '最近成交价', dataIndex: 'recentUnitPrice', align: 'right', width: 120},
   {title: '最近购买', dataIndex: 'lastConfirmedAt', width: 180}
@@ -767,7 +767,7 @@ const agreementCols: TableColumnsType<PriceRow> = [
 const visibilityCols: TableColumnsType<VisibilityRow> = [
   {title: '商品', dataIndex: 'productName', width: 220},
   {title: '商品规格', dataIndex: 'specName', width: 140},
-  {title: '状态', dataIndex: 'skuStatus', align: 'center', width: 110},
+  {title: '状态', dataIndex: 'skuStatus', align: 'center', width: 96},
   {title: '加入时间', dataIndex: 'createdAt', width: 180}
 ];
 

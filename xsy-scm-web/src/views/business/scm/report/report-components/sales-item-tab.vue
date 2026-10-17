@@ -111,7 +111,7 @@ const emit = defineEmits<{
 }>();
 
 const columns = ref<TableColumnsType<SalesItemRow>>([
-  {title: '确认时间', dataIndex: 'confirmedAt', width: 190},
+  {title: '确认时间', dataIndex: 'confirmedAt', width: 180},
   {title: '订单号', dataIndex: 'orderNo', width: 190},
   {title: '客户名称', dataIndex: 'customerName', width: 180},
   {title: '销售员', dataIndex: 'sellerName', width: 110},
@@ -120,7 +120,7 @@ const columns = ref<TableColumnsType<SalesItemRow>>([
   {title: '商品名称', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'specName', width: 130},
   {title: '商品类型', dataIndex: 'productType', width: 100, align: 'center'},
-  {title: '销售单位', dataIndex: 'saleUnit', align: 'center', width: 90},
+  {title: '销售单位', dataIndex: 'saleUnit', align: 'center', width: 76},
   {title: '订购数量', dataIndex: 'orderedQuantity', align: 'right', width: 120},
   {title: '实际数量', dataIndex: 'actualQuantity', align: 'right', width: 120},
   {title: '锁定成交单价', dataIndex: 'lockedUnitPrice', align: 'right', width: 140},

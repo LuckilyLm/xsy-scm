@@ -246,7 +246,7 @@ const receivableColumns = ref<TableColumnsType<FinanceReceivableDetailRow>>([
     {title: '净应收', dataIndex: 'netAmount', align: 'right', width: 115},
     {title: '已核销金额', dataIndex: 'writtenOffAmount', align: 'right', width: 125},
     {title: '期末待收', dataIndex: 'openAmount', align: 'right', width: 125},
-    {title: '超额核销待处理', dataIndex: 'overAppliedAmount', align: 'right', width: 160},
+    {title: '超额核销待处理', dataIndex: 'overAppliedAmount', align: 'right', width: 148},
     {title: '事件时点', dataIndex: 'eventAt', width: 170},
 ]);
 const payableColumns = ref<TableColumnsType<FinancePayableDetailRow>>([
@@ -258,7 +258,7 @@ const payableColumns = ref<TableColumnsType<FinancePayableDetailRow>>([
     {title: '净应付', dataIndex: 'netAmount', align: 'right', width: 115},
     {title: '已核销金额', dataIndex: 'writtenOffAmount', align: 'right', width: 125},
     {title: '期末待付', dataIndex: 'openAmount', align: 'right', width: 125},
-    {title: '超额核销待处理', dataIndex: 'overAppliedAmount', align: 'right', width: 160},
+    {title: '超额核销待处理', dataIndex: 'overAppliedAmount', align: 'right', width: 148},
     {title: '事件时点', dataIndex: 'eventAt', width: 170},
 ]);
 

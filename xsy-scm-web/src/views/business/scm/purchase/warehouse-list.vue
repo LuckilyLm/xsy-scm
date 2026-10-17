@@ -197,7 +197,7 @@ const columns = ref<TableColumnsType<Warehouse>>([
   {title: '所在地区', dataIndex: 'areaText', width: 190},
   {title: '详细地址', dataIndex: 'address', width: 240},
   {title: '定位', dataIndex: 'located', align: 'center', width: 80},
-  {title: '状态', dataIndex: 'status', align: 'center', width: 110},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '备注', dataIndex: 'remark', width: 200},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ]);

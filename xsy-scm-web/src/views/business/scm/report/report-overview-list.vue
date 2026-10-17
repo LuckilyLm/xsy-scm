@@ -198,12 +198,12 @@ let requestId = 0;
 
 const columns = ref<TableColumnsType<ReportDailyStat>>([
     {title: '业务日期', dataIndex: 'bizDate', width: 130},
-    {title: '已确认订单数', dataIndex: 'confirmedOrderCount', align: 'right', width: 130},
-    {title: '下单客户数', dataIndex: 'customerCount', align: 'right', width: 120},
-    {title: '已确认订单金额', dataIndex: 'confirmedOrderAmount', align: 'right', width: 160},
-    {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 160},
-    {title: '已提交采购金额', dataIndex: 'submittedPurchaseAmount', align: 'right', width: 160},
-    {title: '采购入库成本金额', dataIndex: 'purchaseInCostAmount', align: 'right', width: 180},
+    {title: '已确认订单数', dataIndex: 'confirmedOrderCount', align: 'right', width: 92},
+    {title: '下单客户数', dataIndex: 'customerCount', align: 'right', width: 92},
+    {title: '已确认订单金额', dataIndex: 'confirmedOrderAmount', align: 'right', width: 148},
+    {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 148},
+    {title: '已提交采购金额', dataIndex: 'submittedPurchaseAmount', align: 'right', width: 148},
+    {title: '采购入库成本金额', dataIndex: 'purchaseInCostAmount', align: 'right', width: 148},
     {title: '下钻', dataIndex: 'action', align: 'center', fixed: 'right', width: 110},
 ]);
 

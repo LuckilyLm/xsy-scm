@@ -129,11 +129,11 @@ const columns = ref<TableColumnsType<InventoryLossRow>>([
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
   {title: '损耗类型', dataIndex: 'lossType', width: 110, align: 'center'},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 120},
-  {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
+  {title: '单位', dataIndex: 'unit', align: 'center', width: 76},
   {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 130},
   {title: '损耗成本金额', dataIndex: 'costAmount', align: 'right', width: 150},
   {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 190},
-  {title: '发生时间', dataIndex: 'occurredAt', width: 190},
+  {title: '发生时间', dataIndex: 'occurredAt', width: 180},
   {title: '操作人', dataIndex: 'operator', width: 120},
 ]);
 

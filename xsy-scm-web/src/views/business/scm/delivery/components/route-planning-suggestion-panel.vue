@@ -244,7 +244,7 @@ const planColumns: TableColumnsType = [
 const planHistoryColumns: TableColumnsType = [
   {title: '生成时间', dataIndex: 'createdAt', width: 180},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
-  {title: '停靠点数', dataIndex: 'stopCount', align: 'right', width: 100},
+  {title: '停靠点数', dataIndex: 'stopCount', align: 'right', width: 92},
   {title: '总距离（米）', dataIndex: 'totalDistance', align: 'right', width: 130},
   {title: '距离计算方式', dataIndex: 'providerCode', align: 'center', width: 160},
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},

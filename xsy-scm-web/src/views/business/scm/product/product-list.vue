@@ -49,7 +49,7 @@
           <a-button size="small" @click="load">重新加载</a-button>
         </template>
       </a-alert>
-      <a-table :data-source="rows" :columns="columns" row-key="spuId" :loading="loading" :pagination="false"
+      <a-table class="scm-width-fit-table" :data-source="rows" :columns="columns" row-key="spuId" :loading="loading" :pagination="false"
                size="small" bordered :scroll="{ x: scrollX }" :expand-column-width="SCM_COLUMN_WIDTH.expand"
                :row-selection="canBatch ? rowSelection : undefined"
                @change="sortChanged">
@@ -219,14 +219,14 @@ const canBatch = computed(() => user.administratorFlag || user.getPointList?.som
 // 商品编码、别名、创建/更新时间等仍在搜索、高级筛选、详情、编辑与导出里，只是不默认摊在列表上。
 const columns = ref<TableColumnsType<ProductRow>>([
   {title: '主图', dataIndex: 'primaryImageUrl', width: SCM_COLUMN_WIDTH.image, align: 'center'},
-  {title: '商品名称', dataIndex: 'name', width: 220, sorter: true, ellipsis: true},
+  {title: '商品名称', dataIndex: 'name', width: 200, sorter: true, ellipsis: true},
   {title: '分类', dataIndex: 'categoryPath', width: SCM_COLUMN_WIDTH.name, ellipsis: true},
   {title: '单位', dataIndex: 'saleUnit', width: SCM_COLUMN_WIDTH.unit, align: 'center'},
   {title: '市场价', dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange, align: 'right'},
   {title: '规格数', dataIndex: 'skuCount', width: SCM_COLUMN_WIDTH.count, align: 'right'},
   {title: '在售状态', dataIndex: 'status', width: SCM_COLUMN_WIDTH.status, align: 'center', sorter: true},
   {title: '主档状态', dataIndex: 'masterStatus', width: SCM_COLUMN_WIDTH.status, align: 'center'},
-  {title: '标签', dataIndex: 'tags', width: 150},
+  {title: '标签', dataIndex: 'tags', width: 132},
   {title: '操作', dataIndex: 'action', width: SCM_COLUMN_WIDTH.actionThree, align: 'center', fixed: 'right'},
 ]);
 const scrollX = computed(() => scmColumnsWidth(columns.value,

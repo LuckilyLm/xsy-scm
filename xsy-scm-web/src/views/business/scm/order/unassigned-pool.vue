@@ -112,8 +112,8 @@ let requestId = 0;
 const columns: TableColumnsType<OrderPoolRow> = [
   {title: '订单号', dataIndex: 'orderNo', width: 190},
   {title: '客户名称', dataIndex: 'customerNameSnapshot', width: 210},
-  {title: '订单状态', dataIndex: 'status', align: 'center', width: 115},
-  {title: '预计订单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 160},
+  {title: '订单状态', dataIndex: 'status', align: 'center', width: 96},
+  {title: '预计订单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 148},
   {title: '下单时间', dataIndex: 'createdAt', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];

@@ -256,7 +256,7 @@ const columns = ref<DemandListColumn[]>([
   {title: '需求量', dataIndex: 'requiredQuantity', align: 'right', width: 120},
   {title: '已分配', dataIndex: 'allocatedQuantity', align: 'right', width: 120, showFlag: false},
   {title: '未分配', dataIndex: 'unallocatedQuantity', align: 'right', width: 120},
-  {title: '状态', dataIndex: 'status', align: 'center', width: 110},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '供应商', dataIndex: 'supplierName', width: 150, showFlag: false},
   {title: '仓库', dataIndex: 'warehouseName', width: 130, showFlag: false},
   {title: '需求日期', dataIndex: 'demandDate', width: 120, showFlag: false},

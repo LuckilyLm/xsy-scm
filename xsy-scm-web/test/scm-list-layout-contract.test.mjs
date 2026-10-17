@@ -16,6 +16,9 @@ const COLUMN_MERGE = code('../src/components/support/table-operator/smart-table-
 const COLUMN_MODAL = code('../src/components/support/table-operator/smart-table-column-modal.vue');
 const VISIBILITY = code('../src/views/business/scm/customer/customer-sku-visibility-list.vue');
 const PRODUCT_CONST = code('../src/constants/business/scm/product-const.ts');
+const PRODUCT_LIST = code('../src/views/business/scm/product/product-list.vue');
+const SCM_COLUMN = code('../src/views/business/scm/common/scm-column.ts');
+const TABLE_THEME = code('../src/theme/scm/table.less');
 const PURCHASE_DEMAND = code('../src/views/business/scm/purchase/purchase-demand-list.vue');
 const CUSTOMER_LIST = code('../src/views/business/scm/customer/customer-list.vue');
 const INVENTORY_BALANCE = code('../src/views/business/scm/inventory/inventory-balance-list.vue');
@@ -84,6 +87,33 @@ test('saved user widths persist until the user explicitly chooses recommended wi
   assert.equal(merged.newColumns[0].width, 180);
   assert.match(COLUMN_MODAL, /使用系统推荐列宽/);
   assert.match(COLUMN_MODAL, /recommendedColumns\.map/);
+});
+
+test('商品档案的默认市场价与定长字段确实收紧，短表不均摊剩余宽度', () => {
+  assert.match(SCM_COLUMN, /moneyRange:\s*156/);
+  assert.match(SCM_COLUMN, /status:\s*88/);
+  assert.match(PRODUCT_LIST, /class="scm-width-fit-table"/);
+  assert.match(PRODUCT_LIST, /dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange/);
+  assert.match(TABLE_THEME, /\.scm-width-fit-table\.ant-table-wrapper\s*\{\s*width:\s*fit-content;/);
+});
+
+test('商品列表旧系统默认宽度随新版规范迁移，手工列宽仍保留', () => {
+  const defaults = [
+    {title: '市场价', dataIndex: 'price', width: 156},
+    {title: '商品名称', dataIndex: 'name', width: 200},
+  ];
+  const saved = [
+    {columnKey: 'price', sort: 1, showFlag: true, width: 184},
+    {columnKey: 'name', sort: 2, showFlag: true, width: 220},
+  ];
+  const migrated = mergeColumn(structuredClone(defaults), saved, 50001);
+  assert.deepEqual(migrated.newColumns.map((column) => column.width), [156, 200]);
+  const custom = mergeColumn(structuredClone(defaults), [
+    {columnKey: 'price', sort: 1, showFlag: true, width: 173},
+  ], 50001);
+  assert.equal(custom.newColumns[0].width, 173, '明确自定义的非历史默认宽度应保留');
+  const otherTable = mergeColumn(structuredClone(defaults), saved, 50005);
+  assert.equal(otherTable.newColumns[0].width, 184, '不应将商品历史规则应用到其它表格');
 });
 
 test('customer visibility uses Chinese product status labels and keeps unknown values diagnosable', () => {

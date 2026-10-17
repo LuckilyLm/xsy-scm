@@ -360,17 +360,17 @@ const inboundExport = useScmExport(inbound);
 const receiptExport = useScmExport(receipt);
 
 const receiptColumns = ref<TableColumnsType<ReceiptRow>>([
-    {title: '收货确认时间', dataIndex: 'confirmedAt', width: 190},
+    {title: '收货确认时间', dataIndex: 'confirmedAt', width: 180},
     {title: '收货确认人', dataIndex: 'confirmedBy', width: 130},
     {title: '收货单号', dataIndex: 'receiptNo', width: 190},
     {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 190},
     {title: '供应商', dataIndex: 'supplierName', width: 180},
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
     {title: '收货模式', dataIndex: 'receiptMode', align: 'center', width: 130},
-    {title: '入库状态', dataIndex: 'putawayStatus', align: 'center', width: 110},
+    {title: '入库状态', dataIndex: 'putawayStatus', align: 'center', width: 96},
     {title: '商品', dataIndex: 'productName', width: 180},
     {title: '商品规格', dataIndex: 'skuName', width: 140},
-    {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 100},
+    {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 76},
     {title: '本次收货数量', dataIndex: 'receivedQuantity', align: 'right', width: 140},
     {title: '累计收货数量', dataIndex: 'cumulativeReceivedQuantity', align: 'right', width: 150},
     {title: '剩余数量', dataIndex: 'remainingQuantity', align: 'right', width: 120},
@@ -381,14 +381,14 @@ const receiptColumns = ref<TableColumnsType<ReceiptRow>>([
 ]);
 
 const inboundColumns = ref<TableColumnsType<InboundRow>>([
-    {title: '入库时间', dataIndex: 'occurredAt', width: 190},
+    {title: '入库时间', dataIndex: 'occurredAt', width: 180},
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
     {title: '收货单号', dataIndex: 'receiptNo', width: 190},
     {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 190},
     {title: '供应商', dataIndex: 'supplierName', width: 180},
     {title: '商品', dataIndex: 'productName', width: 180},
     {title: '商品规格', dataIndex: 'skuCode', width: 170},
-    {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
+    {title: '单位', dataIndex: 'unit', align: 'center', width: 76},
     {title: '入库数量', dataIndex: 'quantity', align: 'right', width: 130},
     {title: '入库单位成本', dataIndex: 'unitCost', align: 'right', width: 150},
     {title: '入库成本金额', dataIndex: 'costAmount', align: 'right', width: 150},
@@ -400,8 +400,8 @@ const pendingColumns = ref<TableColumnsType<PendingPutawayRow>>([
     {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 190},
     {title: '供应商', dataIndex: 'supplierName', width: 180},
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
-    {title: '确认时间', dataIndex: 'confirmedAt', width: 190},
-    {title: '商品种类', dataIndex: 'skuKindCount', align: 'right', width: 110},
+    {title: '确认时间', dataIndex: 'confirmedAt', width: 180},
+    {title: '商品种类', dataIndex: 'skuKindCount', align: 'right', width: 92},
     {title: '收货数量', dataIndex: 'quantityText', width: 220},
     {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 140},
 ]);

@@ -137,7 +137,7 @@ const columns = ref<TableColumnsType<SupplierRow>>([
   {title: '供应商编码', dataIndex: 'supplierCode', width: 140, align: 'left'},
   {title: '联系人', dataIndex: 'contactName', width: 130, ellipsis: true, align: 'left'},
   {title: '联系电话', dataIndex: 'contactPhone', width: 140, align: 'left'},
-  {title: '关联商品数', dataIndex: 'skuCount', width: 120, align: 'right'},
+  {title: '关联商品数', dataIndex: 'skuCount', width: 92, align: 'right'},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
   {title: '操作', dataIndex: 'action', width: 170, align: 'center', fixed: 'right'},
 ]);

@@ -180,7 +180,7 @@ const columns = ref<TableColumnsType<FinancePayable>>([
 ]);
 const redDraftColumns: TableColumnsType<RedDraft> = [
     {title: '商品', dataIndex: 'skuName', width: 190, align: 'left'},
-    {title: '单位', dataIndex: 'unit', width: 90, align: 'center'},
+    {title: '单位', dataIndex: 'unit', width: 76, align: 'center'},
     {title: '原数量', dataIndex: 'quantity', width: 130, align: 'right', customRender: ({text}) => text},
     {title: '红字数量', dataIndex: 'redQuantity', align: 'right', width: 120},
     {title: '红字单价', dataIndex: 'redUnitPrice', align: 'right', width: 136},

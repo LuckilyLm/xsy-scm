@@ -102,11 +102,11 @@ const columns: TableColumnsType<FinanceProfitRow> = [
   {title: '分析对象', dataIndex: 'dimensionName', width: 210},
   {title: '编码', dataIndex: 'dimensionCode', width: 170},
   {title: '销售收入', dataIndex: 'revenueAmount', align: 'right', width: 150},
-  {title: '商品销售成本（净额）', dataIndex: 'salesCostAmount', align: 'right', width: 180},
+  {title: '商品销售成本（净额）', dataIndex: 'salesCostAmount', align: 'right', width: 148},
   {title: '促销赠品成本', dataIndex: 'giftCostAmount', align: 'right', width: 150},
   {title: '销售毛利', dataIndex: 'grossProfit', align: 'right', width: 150},
-  {title: '毛利率', dataIndex: 'grossMarginRate', align: 'right', width: 130},
-  {title: '缺失成本流水数', dataIndex: 'costMissingCount', align: 'right', width: 150},
+  {title: '毛利率', dataIndex: 'grossMarginRate', align: 'right', width: 108},
+  {title: '缺失成本流水数', dataIndex: 'costMissingCount', align: 'right', width: 92},
 ];
 
 function queryPayload(): FinanceProfitQuery {

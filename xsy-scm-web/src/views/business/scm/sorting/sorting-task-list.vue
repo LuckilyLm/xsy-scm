@@ -277,7 +277,7 @@ const columns = ref<TableColumnsType<SortingTask>>([
   {title: '仓库', dataIndex: 'warehouseNameSnapshot', width: 150},
   {title: '受指派人', dataIndex: 'assigneeName', width: 120},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
-  {title: '分拣进度', dataIndex: 'processedCount', align: 'right', width: 110},
+  {title: '分拣进度', dataIndex: 'processedCount', align: 'right', width: 92},
   // 三个冻结维度：任务建出来之后它们不再变化，所以直接展示，不做「当前值 vs 快照」的对比
   {title: '送货时间', dataIndex: 'deliveryTimeSnapshot', width: 170},
   {title: '波次', dataIndex: 'deliveryWave', width: 110},

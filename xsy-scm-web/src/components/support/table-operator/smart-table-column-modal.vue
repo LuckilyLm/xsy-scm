@@ -145,7 +145,7 @@ async function getUserTableColumns(tableId, columns) {
   }
 
   //根据前端列和后端列构建新的列数据
-  let obj = mergeColumn(columns, userTableColumnArray);
+  let obj = mergeColumn(columns, userTableColumnArray, tableId);
   tableData.value = obj.newColumns;
   saveFlag.value = obj.saveFlag;
   //将已经显示的展示出来

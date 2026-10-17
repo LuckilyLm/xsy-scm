@@ -353,14 +353,14 @@ const productColumns = ref<TableColumnsType<PurchaseProductRow>>([
     {title: '商品编码', dataIndex: 'spuCode', width: 150},
     {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
     {title: '商品规格名称', dataIndex: 'skuName', width: 160},
-    {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 100},
-    {title: '采购单数', dataIndex: 'orderCount', align: 'right', width: 110},
+    {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 76},
+    {title: '采购单数', dataIndex: 'orderCount', align: 'right', width: 92},
     {title: '计划采购数量', dataIndex: 'plannedQuantity', align: 'right', width: 140},
     {title: '已收数量', dataIndex: 'receivedQuantity', align: 'right', width: 120},
-    {title: '采购订单金额', dataIndex: 'orderAmount', align: 'right', width: 160},
+    {title: '采购订单金额', dataIndex: 'orderAmount', align: 'right', width: 148},
     {title: '采购成交均价', dataIndex: 'avgPurchasePrice', align: 'right', width: 140},
     {title: '采购入库数量', dataIndex: 'inboundQuantityText', width: 180},
-    {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', align: 'right', width: 180},
+    {title: '采购入库成本金额', dataIndex: 'inboundCostAmount', align: 'right', width: 148},
 ]);
 
 const visibleDrilldownColumns = computed(() =>

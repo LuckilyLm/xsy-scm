@@ -147,15 +147,15 @@ const columns: TableColumnsType<PurchaseInquiry> = [
   {title: '商品', dataIndex: 'productNameSnapshot', width: 210},
   {title: '规格编码', dataIndex: 'skuCodeSnapshot', width: 165},
   {title: '需求量', dataIndex: 'requiredQuantity', align: 'right', width: 150},
-  {title: '截止时间', dataIndex: 'deadlineAt', width: 205},
-  {title: '状态', dataIndex: 'status', align: 'center', width: 115},
+  {title: '截止时间', dataIndex: 'deadlineAt', width: 180},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '操作', dataIndex: 'action', align: 'center', width: 125}
 ];
 const quoteColumns: TableColumnsType<PurchaseInquiryQuote> = [
   {title: '供应商', dataIndex: 'supplierNameSnapshot', width: 185},
   {title: '版本', dataIndex: 'revision', align: 'center', width: 85},
-  {title: '单价', dataIndex: 'unitPrice', align: 'right', width: 170},
-  {title: '有效期', dataIndex: 'validUntil', width: 235},
+  {title: '单价', dataIndex: 'unitPrice', align: 'right', width: 148},
+  {title: '有效期', dataIndex: 'validUntil', width: 180},
   {title: '登记人', dataIndex: 'recordedBy', width: 130},
   {title: '备注', dataIndex: 'remark', width: 155},
   {title: '操作', dataIndex: 'action', align: 'center', width: 120}
@@ -165,8 +165,8 @@ const historyColumns: TableColumnsType<PurchaseInquiryQuote> = [
   {title: '供应商', dataIndex: 'supplierNameSnapshot', width: 180},
   {title: '版本', dataIndex: 'revision', align: 'center', width: 80},
   {title: '单价', dataIndex: 'unitPrice', align: 'right', width: 130},
-  {title: '单位', dataIndex: 'purchaseUnit', align: 'center', width: 85},
-  {title: '有效期', dataIndex: 'validUntil', width: 210},
+  {title: '单位', dataIndex: 'purchaseUnit', align: 'center', width: 76},
+  {title: '有效期', dataIndex: 'validUntil', width: 180},
   {title: '登记人', dataIndex: 'recordedBy', width: 120},
   {title: '备注', dataIndex: 'remark', width: 150}
 ];

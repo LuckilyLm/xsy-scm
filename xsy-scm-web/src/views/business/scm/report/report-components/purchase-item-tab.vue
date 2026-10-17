@@ -100,16 +100,16 @@ const emit = defineEmits<{
 }>();
 
 const columns = ref<TableColumnsType<PurchaseItemRow>>([
-  {title: '提交时间', dataIndex: 'submittedAt', width: 190},
+  {title: '提交时间', dataIndex: 'submittedAt', width: 180},
   {title: '采购单号', dataIndex: 'orderNo', width: 190},
-  {title: '状态', dataIndex: 'status', align: 'center', width: 110},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '供应商', dataIndex: 'supplierName', width: 180},
   {title: '采购员', dataIndex: 'purchaserName', width: 120},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
   {title: '计划到货日期', dataIndex: 'plannedArrivalDate', width: 130},
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '商品规格', dataIndex: 'skuName', width: 140},
-  {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 100},
+  {title: '采购单位', dataIndex: 'purchaseUnit', align: 'center', width: 76},
   {title: '计划数量', dataIndex: 'plannedQuantity', align: 'right', width: 120},
   {title: '累计收货数量', dataIndex: 'receivedQuantity', align: 'right', width: 150},
   {title: '采购单价', dataIndex: 'purchasePrice', align: 'right', width: 130},

@@ -226,13 +226,13 @@ const statusColor = (value: CustomerStatus): string => {
 // 名称、编码、联系人与电话可独立查看；客户编码默认收起，仍可通过列设置打开。
 type CustomerListColumn = TableColumnsType<CustomerRow>[number] & {showFlag?: boolean};
 const columns = ref<CustomerListColumn[]>([
-  {title: '客户名称', dataIndex: 'name', width: 220, sorter: true, ellipsis: true},
+  {title: '客户名称', dataIndex: 'name', width: 200, sorter: true, ellipsis: true},
   {title: '客户编码', dataIndex: 'customerCode', width: 160, showFlag: false},
   {title: '客户类型', dataIndex: 'customerTypeName', width: 120, align: 'center'},
   {title: '业务员', dataIndex: 'sellerName', width: 110},
   {title: '联系人', dataIndex: 'contactName', width: 120},
   {title: '联系电话', dataIndex: 'contactPhone', width: 140},
-  {title: '结算方式', dataIndex: 'settleMode', width: 130, align: 'center'},
+  {title: '结算方式', dataIndex: 'settleMode', width: 112, align: 'center'},
   {title: '授信额度', dataIndex: 'creditLimit', width: 130, align: 'right'},
   {title: '状态', dataIndex: 'status', width: 100, align: 'center', sorter: true},
   {title: '操作', dataIndex: 'action', width: 150, align: 'center', fixed: 'right'},

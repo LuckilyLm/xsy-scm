@@ -128,21 +128,21 @@ const reservationColumns: TableColumnsType<OrderReservation> = [
   {title: '商品规格', dataIndex: 'skuName', width: 150},
   {title: '仓库', dataIndex: 'warehouseName', width: 140},
   {title: '预留数量', dataIndex: 'quantity', align: 'right', width: 130},
-  {title: '状态', dataIndex: 'status', align: 'center', width: 110},
+  {title: '状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '预留时间', dataIndex: 'occurredAt', width: 170},
 ];
 const sortingColumns: TableColumnsType<OrderSorting> = [
   {title: '任务', dataIndex: 'taskNo', width: 160},
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'skuName', width: 140},
-  {title: '任务状态', dataIndex: 'taskStatus', align: 'center', width: 110},
+  {title: '任务状态', dataIndex: 'taskStatus', align: 'center', width: 96},
   {title: '计划量', dataIndex: 'plannedQuantity', align: 'right', width: 110},
   {title: '实拣量', dataIndex: 'sortedQuantity', align: 'right', width: 110},
   {title: '分拣结果', dataIndex: 'result', width: 110},
 ];
 const returnColumns: TableColumnsType<OrderReturnFact> = [
   {title: '退货单号', dataIndex: 'returnNo', width: 170},
-  {title: '审批状态', dataIndex: 'status', align: 'center', width: 110},
+  {title: '审批状态', dataIndex: 'status', align: 'center', width: 96},
   {title: '原因', dataIndex: 'reason', width: 180},
   {title: '批准金额', dataIndex: 'approvedAmount', align: 'right', width: 130},
   {title: '批准时间', dataIndex: 'approvedAt', width: 170},
@@ -151,7 +151,7 @@ const returnColumns: TableColumnsType<OrderReturnFact> = [
 const refundColumns: TableColumnsType<OrderRefundFact> = [
   {title: '退款单号', dataIndex: 'refundNo', width: 170},
   {title: '关联退货单', dataIndex: 'returnNo', width: 170},
-  {title: '退款单状态', dataIndex: 'status', align: 'center', width: 120},
+  {title: '退款单状态', dataIndex: 'status', align: 'center', width: 106},
   {title: '退款金额', dataIndex: 'refundAmount', align: 'right', width: 130},
   {title: '完成时间', dataIndex: 'completedAt', width: 170},
   {title: '资金返还', dataIndex: 'fundingStatus', width: 250},

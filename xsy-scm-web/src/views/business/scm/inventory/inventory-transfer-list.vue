@@ -635,7 +635,7 @@ const inTransitColumns: TableColumnsType = [
   {title: '商品规格', dataIndex: 'sku', width: 200},
   {title: '商品规格编码', dataIndex: 'skuCode', width: 150},
   {title: '在途数量', dataIndex: 'quantity', align: 'right', width: 120},
-  {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
+  {title: '单位', dataIndex: 'unit', align: 'center', width: 76},
 ];
 
 /**

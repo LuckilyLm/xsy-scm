@@ -86,7 +86,7 @@ let requestId = 0;
 const rowKey = (row: OrderExceptionRow) => `${row.exceptionType}:${row.sourceRowId}`;
 const summaryColumns = [
   {title: '异常类别', dataIndex: 'exceptionType', width: 180}, {title: '异常条数', dataIndex: 'exceptionCount', align: 'right', width: 96},
-  {title: '该类别关联订单数', dataIndex: 'orderCount', align: 'right', width: 150},
+  {title: '该类别关联订单数', dataIndex: 'orderCount', align: 'right', width: 92},
 ];
 const columns: TableColumnsType<OrderExceptionRow> = [
   {title: '异常类别', dataIndex: 'exceptionType', width: 145}, {title: '发生时间', dataIndex: 'occurredAt', width: 180},

@@ -118,11 +118,11 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
   {title: '商品', dataIndex: 'productName', width: 160},
   {title: '商品规格', dataIndex: 'skuName', width: 130},
   {title: '分类', dataIndex: 'categoryName', width: 130},
-  {title: '来源订单数', dataIndex: 'sourceOrderCount', align: 'right', width: 110},
-  {title: '来源行数', dataIndex: 'sourceLineCount', align: 'right', width: 100},
+  {title: '来源订单数', dataIndex: 'sourceOrderCount', align: 'right', width: 92},
+  {title: '来源行数', dataIndex: 'sourceLineCount', align: 'right', width: 92},
   {title: '需求单位', dataIndex: 'demandUnit', width: 95, align: 'center'},
   {title: '订单需求量', dataIndex: 'orderDemandQuantity', align: 'right', width: 120},
-  {title: '库存单位', dataIndex: 'inventoryUnit', width: 95, align: 'center'},
+  {title: '库存单位', dataIndex: 'inventoryUnit', width: 76, align: 'center'},
   {title: '现有量', dataIndex: 'onHandQuantity', align: 'right', width: 110},
   {title: '全仓预留', dataIndex: 'reservedQuantity', align: 'right', width: 110},
   {title: '其中本批预留', dataIndex: 'selectedOrderReservedQuantity', align: 'right', width: 130},
@@ -143,7 +143,7 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
     align: 'right',
     width: 125,
   },
-  {title: '计算状态', dataIndex: 'calculationStatus', align: 'center', width: 120},
+  {title: '计算状态', dataIndex: 'calculationStatus', align: 'center', width: 96},
 ]);
 
 async function queryData() {

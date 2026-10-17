@@ -187,7 +187,7 @@ function updateColumn(changeColumnArray) {
   let obj = {};
   // 如果为空数组代表恢复默认，使用原始表格数据
   //合并列
-  obj = mergeColumn(_.cloneDeep(originalColumn), changeColumnArray);
+  obj = mergeColumn(_.cloneDeep(originalColumn), changeColumnArray, props.tableId);
   const newColumns = obj.newColumns;
   newColumn.forEach((item) => {
     obj.newColumns.forEach((itemNewColumns) => {

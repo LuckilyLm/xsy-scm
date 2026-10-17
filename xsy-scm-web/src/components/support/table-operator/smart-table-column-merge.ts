@@ -5,12 +5,19 @@
 
 import _ from 'lodash';
 
-/**
- * 将原视表格列和用户表格列进行合并、排序
- * @param {*} originalTableColumnArray
- * @param {*} userTableColumnArray
- */
-export function mergeColumn(originalTableColumnArray, userTableColumnArray) {
+// 只迁移能精确识别的历史系统默认值；其余用户手工列宽原样保留。
+// 表格设置以前会把所有默认宽度一并保存，因此不能将每个历史 width 都视为用户主动调整。
+const legacyDefaults: Record<number, Record<string, readonly number[]>> = {
+    50001: {
+        primaryImageUrl: [64, 68], name: [200, 220], categoryPath: [200, 210],
+        saleUnit: [70, 72], price: [180, 184], skuCount: [76, 80],
+        status: [84, 96], masterStatus: [88, 96], tags: [150], action: [120, 144],
+    },
+    50003: {name: [180, 220], customerCode: [120, 160]},
+};
+
+/** 将页面默认列和已保存的个人列设置合并、排序。 */
+export function mergeColumn(originalTableColumnArray, userTableColumnArray, tableId?: number | string) {
     let saveFlag = false;
     if (!userTableColumnArray) {
         return originalTableColumnArray;
@@ -40,7 +47,8 @@ export function mergeColumn(originalTableColumnArray, userTableColumnArray) {
                 saveFlag = true;
                 delete fontColumn.dragAndDropFlag;
             } else {
-                if (userColumn.width) {
+                const knownDefaults = tableId == null ? [] : (legacyDefaults[Number(tableId)]?.[fontColumn.columnKey] ?? []);
+                if (userColumn.width && !knownDefaults.includes(Number(userColumn.width))) {
                     fontColumn.width = userColumn.width;
                 }
             }

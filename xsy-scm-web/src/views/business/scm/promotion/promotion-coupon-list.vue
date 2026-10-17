@@ -354,10 +354,10 @@ const columns: TableColumnsType<PromotionCoupon> = [
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '商城领取', dataIndex: 'claimable', align: 'center', width: 120},
   {title: '领取限制', dataIndex: 'claimLimits', width: 190},
-  {title: '后台发放', dataIndex: 'adminIssuedCount', align: 'right', width: 105},
-  {title: '商城领取', dataIndex: 'mallClaimedCount', align: 'right', width: 105},
+  {title: '后台发放', dataIndex: 'adminIssuedCount', align: 'right', width: 92},
+  {title: '商城领取', dataIndex: 'mallClaimedCount', align: 'right', width: 92},
   {title: '已使用', dataIndex: 'usedCount', align: 'right', width: 90},
-  {title: '已知券让利', dataIndex: 'usedDiscountAmount', align: 'right', width: 210},
+  {title: '已知券让利', dataIndex: 'usedDiscountAmount', align: 'right', width: 148},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
 

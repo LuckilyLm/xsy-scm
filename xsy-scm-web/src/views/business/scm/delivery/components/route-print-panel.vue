@@ -188,8 +188,8 @@ const customerViewColumns = computed<TableColumnsType<RouteCustomerView>>(() => 
   {title: '订单数', dataIndex: 'orderCount', width: 90, align: 'right'},
   {title: '商品行', dataIndex: 'itemCount', width: 90, align: 'right'},
   ...(props.canViewAmount ? [{title: '金额', dataIndex: 'totalAmount', width: 130, align: 'right' as const}] : []),
-  {title: '已打印订单', dataIndex: 'printedOrderCount', width: 110, align: 'right'},
-  {title: '打印状态', dataIndex: 'printStatus', width: 110, align: 'center'},
+  {title: '已打印订单', dataIndex: 'printedOrderCount', width: 92, align: 'right'},
+  {title: '打印状态', dataIndex: 'printStatus', width: 96, align: 'center'},
 ]);
 
 const orderRowSelection = computed(() => ({

@@ -353,7 +353,7 @@ const valueExport = useScmExport(value);
 const COST_INDEXES = ['unitCost', 'costAmount'];
 
 const movementColumns = ref<TableColumnsType<InventoryMovementRow>>([
-    {title: '发生时间', dataIndex: 'occurredAt', width: 190},
+    {title: '发生时间', dataIndex: 'occurredAt', width: 180},
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
     {title: '商品', dataIndex: 'productName', width: 180},
     {title: '商品规格', dataIndex: 'skuCode', width: 170},
@@ -376,12 +376,12 @@ const valueColumns = ref<TableColumnsType<InventoryValueRow>>([
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
     {title: '商品', dataIndex: 'productName', width: 180},
     {title: '商品规格', dataIndex: 'skuCode', width: 170},
-    {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
+    {title: '单位', dataIndex: 'unit', align: 'center', width: 76},
     {title: '当前数量', dataIndex: 'quantity', align: 'right', width: 130},
     {title: '预留数量', dataIndex: 'reservedQuantity', align: 'right', width: 130},
     {title: '可用数量', dataIndex: 'availableQuantity', align: 'right', width: 130},
     {title: '当前移动平均成本', dataIndex: 'avgCost', align: 'right', width: 170},
-    {title: '当前账面金额', dataIndex: 'amount', align: 'right', width: 160},
+    {title: '当前账面金额', dataIndex: 'amount', align: 'right', width: 148},
 ]);
 
 /** 收发存的全部数量列（同一份名单既驱动渲染，也说明「这些列不可相加」）。 */
@@ -403,7 +403,7 @@ const flowColumns = ref<TableColumnsType<InventoryFlowSummaryRow>>([
     {title: '仓库', dataIndex: 'warehouseName', width: 150},
     {title: '商品', dataIndex: 'productName', width: 180},
         {title: '商品规格', dataIndex: 'skuCode', width: 170},
-    {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
+    {title: '单位', dataIndex: 'unit', align: 'center', width: 76},
     {title: '期内采购入库数量', dataIndex: 'purchaseInQuantity', align: 'right', width: 160},
     {title: '期内销售出库数量', dataIndex: 'salesOutQuantity', align: 'right', width: 160},
     {title: '期内盘盈数量', dataIndex: 'stocktakeGainQuantity', align: 'right', width: 140},

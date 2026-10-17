@@ -89,11 +89,11 @@ const emit = defineEmits<{
 
 const columns = ref<TableColumnsType<SalesSellerRow>>([
   {title: '销售员', dataIndex: 'sellerName', width: 160},
-  {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 120},
-  {title: '客户数', dataIndex: 'customerCount', align: 'right', width: 110},
-  {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 170},
-  {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 170},
-  {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 190},
+  {title: '订单笔数', dataIndex: 'orderCount', align: 'right', width: 92},
+  {title: '客户数', dataIndex: 'customerCount', align: 'right', width: 92},
+  {title: '确认订单金额', dataIndex: 'settlementAmount', align: 'right', width: 148},
+  {title: '已完成退款金额', dataIndex: 'completedRefundAmount', align: 'right', width: 148},
+  {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 180},
 ]);
 
 function refresh() {
