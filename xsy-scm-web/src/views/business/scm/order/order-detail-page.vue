@@ -7,6 +7,7 @@
       </div>
       <a-space>
         <a-button :loading="loading" @click="load">刷新</a-button>
+        <a-button v-if="order && canPrint" @click="printOpen = true">打印订单</a-button>
         <a-button v-if="order && canOperate" type="primary" @click="operation?.open(order.orderId!)">订单操作</a-button>
       </a-space>
     </div>
@@ -76,6 +77,9 @@
       </template>
     </a-spin>
     <OrderDetail ref="operation" @saved="load"/>
+    <PrintDocumentModal :open="printOpen" document-type="SALES_ORDER"
+                        :business-ids="order?.orderId == null ? [] : [order.orderId]"
+                        @close="printOpen = false"/>
   </div>
 </template>
 
@@ -94,11 +98,14 @@ import {orderError} from './order-errors';
 import type {Item, Order} from './order-types';
 import OrderDetail from './order-detail.vue';
 import OrderFacts from './components/order-facts.vue';
+import PrintDocumentModal from '../print/print-document-modal.vue';
 
 const route = useRoute();
 const router = useRouter();
 const order = ref<Order | null>(null);
 const operation = ref<InstanceType<typeof OrderDetail>>();
+const printOpen = ref(false);
+const canPrint = computed(() => hasPermission('scm:order:query'));
 const loading = ref(false);
 const error = ref('');
 let requestId = 0;
@@ -158,7 +165,10 @@ async function load() {
   }
 }
 
-watch(() => route.params.orderId, () => { void load(); }, {immediate: true});
+watch(() => route.params.orderId, () => {
+  printOpen.value = false;
+  void load();
+}, {immediate: true});
 </script>
 
 <style scoped>

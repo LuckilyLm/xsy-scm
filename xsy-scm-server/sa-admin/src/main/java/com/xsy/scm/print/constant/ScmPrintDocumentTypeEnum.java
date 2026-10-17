@@ -11,9 +11,31 @@ import java.util.List;
 @RequiredArgsConstructor
 public enum ScmPrintDocumentTypeEnum {
 
-    /**
-     * 采购单。默认模型的选列与接入模板前的固定版式一致，因此接入模板不改变既有打印效果。
-     */
+    /** 销售单只使用正式订单详情快照；订单查询权限本身允许查看订单金额。 */
+    SALES_ORDER("销售订单", null,
+            List.of(new ScmPrintField("orderNo", "销售订单号", false, false),
+                    new ScmPrintField("customerName", "客户", false, false),
+                    new ScmPrintField("customerCode", "客户编码", false, false),
+                    new ScmPrintField("orderStatus", "订单状态", false, false),
+                    new ScmPrintField("orderSource", "订单来源", false, false),
+                    new ScmPrintField("expectDeliveryTime", "期望配送时间", false, false),
+                    new ScmPrintField("receiverName", "收货人", false, false),
+                    new ScmPrintField("receiverPhone", "收货电话", false, false),
+                    new ScmPrintField("address", "收货地址", false, false),
+                    new ScmPrintField("remark", "备注", false, false)),
+            List.of(new ScmPrintField("productName", "商品", false, false),
+                    new ScmPrintField("skuCode", "商品规格编码", false, false),
+                    new ScmPrintField("specName", "规格", false, false),
+                    new ScmPrintField("saleUnit", "销售单位", false, false),
+                    new ScmPrintField("orderedQuantity", "订购数量", false, true),
+                    new ScmPrintField("actualQuantity", "实数量", false, true),
+                    new ScmPrintField("draftUnitPrice", "草稿单价", true, true),
+                    new ScmPrintField("lockedUnitPrice", "锁定单价", true, true),
+                    new ScmPrintField("orderedLineAmount", "下单行金额", true, true),
+                    new ScmPrintField("settlementLineAmount", "结算行金额", true, true)),
+            List.of(new ScmPrintField("orderedTotalAmount", "下单总金额", true, true),
+                    new ScmPrintField("settlementTotalAmount", "结算总金额", true, true))),
+
     PURCHASE_ORDER("采购单", null,
             List.of(new ScmPrintField("orderNo", "采购单号", false, false),
                     new ScmPrintField("supplierName", "供应商", false, false),

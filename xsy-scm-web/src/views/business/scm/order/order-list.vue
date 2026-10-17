@@ -37,6 +37,8 @@
                   @click="openBatchPriceCheck">批量核价（最多8单）</a-button>
         <a-button v-if="canManageTags" :disabled="!selected.length || selected.length > 20"
                   @click="openBatchTags">批量打标签</a-button>
+        <a-button v-if="canPrint" :disabled="!selected.length || selected.length > 10"
+                  @click="openBatchPrint">批量打印（最多10单）</a-button>
         <a-button danger v-privilege="'scm:order:delete'"
                   :disabled="!selected.length || !selectedAllDraft" @click="batchDelete">
           批量删除草稿
@@ -110,6 +112,8 @@
   <OrderImportModal ref="importModal" @saved="queryData"/>
   <OrderBatchPriceCheckModal ref="priceCheckModal" @saved="queryData"/>
   <OrderTagModal ref="tagModal" @saved="onTagsSaved"/>
+  <PrintDocumentModal :open="printOpen" document-type="SALES_ORDER"
+                      :business-ids="printOrderIds" @close="printOpen = false"/>
 </template>
 <script setup lang="ts">
 import {SCM_COLUMN_WIDTH} from '/@/views/business/scm/common/scm-column';
@@ -134,6 +138,7 @@ import OrderForm from './components/order-form-drawer.vue';
 import OrderImportModal from './components/order-import-modal.vue';
 import OrderBatchPriceCheckModal from './components/order-batch-price-check-modal.vue';
 import OrderTagModal from './components/order-tag-modal.vue';
+import PrintDocumentModal from '../print/print-document-modal.vue';
 import {orderTagApi, tagColor} from '/@/api/business/scm/order-tag-api';
 import type {OrderTag} from '/@/api/business/scm/order-tag-api';
 
@@ -142,6 +147,8 @@ const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<O
 const drawer = ref<InstanceType<typeof OrderForm>>(), importModal = ref<InstanceType<typeof OrderImportModal>>();
 const priceCheckModal = ref<InstanceType<typeof OrderBatchPriceCheckModal>>();
 const tagModal = ref<InstanceType<typeof OrderTagModal>>();
+const printOpen = ref(false);
+const printOrderIds = ref<(string | number)[]>([]);
 const availableTags = ref<OrderTag[]>([]);
 const tagOptions = computed(() => availableTags.value.map(tag => ({label: tag.name, value: tag.tagId})));
 
@@ -209,6 +216,7 @@ const statusTone = (value?: string | null): ScmStatusTone => STATUS_TONE[value ?
 const canAdd = computed(() => hasPermission('scm:order:add'));
 const canDelete = computed(() => hasPermission('scm:order:delete'));
 const canManageTags = computed(() => hasPermission('scm:order:query') && hasPermission('scm:order:update'));
+const canPrint = computed(() => hasPermission('scm:order:query'));
 const selectedRows = computed(() => tableData.value.filter(row => row.orderId != null
   && selected.value.some(id => String(id) === String(row.orderId))));
 const selectedAllDraft = computed(() => selectedRows.value.length === selected.value.length
@@ -216,6 +224,15 @@ const selectedAllDraft = computed(() => selectedRows.value.length === selected.v
 function openBatchTags(): void {
   if (!canManageTags.value) return;
   tagModal.value?.open(selectedRows.value.map(row => row.orderId!));
+}
+function openBatchPrint(): void {
+  if (!canPrint.value || selectedRows.value.length !== selected.value.length
+      || selectedRows.value.length < 1 || selectedRows.value.length > 10) return;
+  openPrint(selectedRows.value.map(row => row.orderId!));
+}
+function openPrint(ids: (string | number)[]): void {
+  printOrderIds.value = ids;
+  printOpen.value = true;
 }
 const canPriceCheck = computed(() => hasPermission('scm:order:query')
   && hasPermission('scm:pricing:resolve:query'));
@@ -238,6 +255,7 @@ function rowActions(row: Order): ScmActionItem[] {
     {key: 'detail', label: '详情', hidden: draft || confirmed},
     {key: 'reuse', label: '复用为新单', hidden: !(confirmed && canAdd.value)},
     {key: 'tag', label: '订单标签', hidden: !canManageTags.value},
+    {key: 'print', label: '打印订单', hidden: !canPrint.value},
     {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
   ];
 }
@@ -250,6 +268,8 @@ function onRowAction(key: string, row: Order) {
     drawer?.value?.openFromHistory(row.orderId);
   } else if (row.orderId != null && key === 'tag') {
     tagModal.value?.open([row.orderId]);
+  } else if (row.orderId != null && key === 'print' && canPrint.value) {
+    openPrint([row.orderId]);
   } else if (key === 'delete') {
     remove(row);
   }

@@ -189,6 +189,25 @@ class ScmMigrationTargetPgIT {
         assertThat(indexes).isEqualTo(2);
     }
 
+    @Test
+    void salesOrderPrintTypeAndDefaultTemplateExistAt146() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 146) return;
+        Integer defaults = jdbc.queryForObject(
+                "SELECT count(*) FROM scm_print_template "
+                        + "WHERE document_type='SALES_ORDER' AND template_code='SALES_ORDER_DEFAULT' "
+                        + "AND default_flag=TRUE AND enabled_flag=TRUE AND deleted=FALSE",
+                Integer.class);
+        assertThat(defaults).isEqualTo(1);
+        Integer constraints = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE connamespace='xsy_v2'::regnamespace "
+                        + "AND conname IN ('ck_scm_print_template_document_type', "
+                        + "'ck_scm_print_record_document_type') "
+                        + "AND pg_get_constraintdef(oid) LIKE '%SALES_ORDER%'",
+                Integer.class);
+        assertThat(constraints).isEqualTo(2);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "
