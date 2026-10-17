@@ -43,11 +43,17 @@ public class MallPromotionService {
 
     @Transactional(readOnly = true)
     public List<MallPromotionActivityVO> activities(RequestMallCustomer identity) {
+        return activities(identity, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MallPromotionActivityVO> activities(RequestMallCustomer identity, Long warehouseId) {
         List<MallPromotionActivityVO> rows = promotionDao.listActiveActivities(OffsetDateTime.now());
         List<Long> specialSkuIds = rows.stream()
                 .filter(row -> ScmPromotionActivityTypeEnum.SPECIAL_PRICE.name().equals(row.getActivityType()))
                 .map(row -> Long.valueOf(String.valueOf(row.getRule().get("skuId")))).distinct().toList();
-        Map<Long, MallProductVO> products = catalogService.visibleProducts(identity, specialSkuIds).stream()
+        Map<Long, MallProductVO> products = catalogService.visibleProducts(identity, specialSkuIds, null,
+                warehouseId).stream()
                 .collect(Collectors.toMap(MallProductVO::getSkuId, product -> product));
         List<MallPromotionActivityVO> visible = new ArrayList<>(rows.size());
         for (MallPromotionActivityVO row : rows) {

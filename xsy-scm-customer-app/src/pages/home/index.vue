@@ -14,7 +14,49 @@
       <text v-if="userStore.isLogin" class="home__coupon-link" @click="goCoupons">领券中心 ›</text>
     </view>
 
-    <view v-if="activities.length" class="home__section">
+    <template v-for="section in configuredSections" :key="section.key">
+      <view v-if="section.type === 'BANNER_GROUP'" class="home__banner-wrap">
+        <swiper class="home__banner" :indicator-dots="section.items.length > 1" :autoplay="section.items.length > 1"
+                :interval="4500" circular>
+          <swiper-item v-for="item in section.items" :key="item.key" class="home__banner-slide" @click="goHomeLink(item)">
+            <image class="home__banner-image" :src="item.imageUrl" :alt="item.title || '商城活动'" mode="aspectFill"/>
+            <view v-if="item.title || item.subtitle" class="home__banner-caption">
+              <text v-if="item.title" class="home__banner-title">{{ item.title }}</text>
+              <text v-if="item.subtitle" class="home__banner-subtitle">{{ item.subtitle }}</text>
+            </view>
+          </swiper-item>
+        </swiper>
+      </view>
+      <view v-else-if="section.type === 'SHORTCUT_GROUP'" class="home__shortcuts">
+        <view v-for="item in section.items" :key="item.key" class="home__shortcut" @click="goHomeLink(item)">
+          <image v-if="item.imageUrl" :src="item.imageUrl" class="home__shortcut-image" mode="aspectFill"/>
+          <text>{{ item.title }}</text>
+        </view>
+      </view>
+      <view v-else-if="section.type === 'ANNOUNCEMENT'" class="home__announcement" @click="goHomeLink(section)">
+        <text class="home__announcement-title">{{ section.title || '商城公告' }}</text>
+        <text class="home__announcement-text">{{ section.text }}</text>
+      </view>
+      <view v-else-if="section.type === 'ACTIVITY_TOPIC'" class="home__topic" @click="goHomeLink(section)">
+        <image v-if="section.imageUrl" :src="section.imageUrl" class="home__topic-image" mode="aspectFill"/>
+        <view class="home__topic-copy">
+          <text class="home__section-title">{{ section.title }}</text>
+          <text v-if="section.subtitle" class="home__topic-subtitle">{{ section.subtitle }}</text>
+        </view>
+      </view>
+      <view v-else-if="section.type === 'RECOMMENDATION'" class="home__section">
+        <view class="home__section-head">
+          <text class="home__section-title">{{ section.title }}</text>
+          <text class="home__section-link" @click="goCategory">全部商品</text>
+        </view>
+        <view class="home__list">
+          <ProductCard v-for="item in section.products" :key="item.skuId" :product="item"
+                       @click="goDetail" @add="addToCart" @inquiry="inquiry"/>
+        </view>
+      </view>
+    </template>
+
+    <view v-if="!hasPublishedLayout && activities.length" class="home__section">
       <view class="home__section-head">
         <text class="home__section-title">正在进行的活动</text>
         <text class="home__section-link" @click="goActivities">全部活动</text>
@@ -30,7 +72,7 @@
       </view>
     </view>
 
-    <view class="home__section">
+    <view v-if="!hasPublishedLayout" class="home__section">
       <view class="home__section-head">
         <text class="home__section-title">常购商品</text>
         <text class="home__section-link" @click="goCategory">全部商品</text>
@@ -41,7 +83,7 @@
       <text v-else class="home__empty">{{ userStore.isLogin ? '暂无常购商品' : '登录后展示常购商品' }}</text>
     </view>
 
-    <view v-if="newProducts.length" class="home__section">
+    <view v-if="!hasPublishedLayout && newProducts.length" class="home__section">
       <view class="home__section-head"><text class="home__section-title">新品上架</text></view>
       <view class="home__list">
         <ProductCard v-for="item in newProducts" :key="item.skuId" :product="item" @click="goDetail" @add="addToCart" @inquiry="inquiry" />
@@ -60,11 +102,13 @@
 </template>
 
 <script setup>
-  import { computed, ref } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { onReachBottom, onShow } from '@dcloudio/uni-app';
   import ProductCard from '@/components/business/product-card.vue';
   import { mallCatalogApi } from '@/api/mall';
   import { mallPromotionApi } from '@/api/mall/promotion-api';
+  import { mallHomeApi } from '@/api/mall/home-api';
+  import { useMallNavigationStore } from '@/store/modules/mall/navigation';
   import { useUserStore } from '@/store/modules/system/user';
   import { useSystemLayout } from '@/composables/use-system-layout';
   import { useMallCart } from '@/composables/use-mall-cart';
@@ -75,10 +119,26 @@
   const PAGE_SIZE = 10;
   const { statusBarHeight } = useSystemLayout();
   const userStore = useUserStore();
+  const navigationStore = useMallNavigationStore();
   const products = ref([]);
   const frequentProducts = ref([]);
   const activities = ref([]);
   const newProducts = ref([]);
+  const homeLayout = ref(null);
+  let homeRequest = 0;
+  const hasPublishedLayout = computed(() => homeLayout.value?.releaseId != null);
+  const configuredSections = computed(() => {
+    if (!hasPublishedLayout.value) return [];
+    const result = [];
+    for (const block of homeLayout.value.blocks || []) {
+      const groupType = block.type === 'BANNER' ? 'BANNER_GROUP' : block.type === 'SHORTCUT' ? 'SHORTCUT_GROUP' : null;
+      const previous = result[result.length - 1];
+      if (groupType && previous?.type === groupType) previous.items.push(block);
+      else if (groupType) result.push({type: groupType, key: block.key, items: [block]});
+      else result.push(block);
+    }
+    return result;
+  });
   const pageNum = ref(0);
   const total = ref(0);
   const loading = ref(false);
@@ -132,13 +192,59 @@
     }
   }
 
+  async function loadHomeLayout() {
+    const request = ++homeRequest;
+    const customerId = userStore.customerId;
+    if (!userStore.isLogin) { homeLayout.value = null; return; }
+    try {
+      const page = (await mallHomeApi.published()).data;
+      if (request !== homeRequest || !userStore.isLogin || userStore.customerId !== customerId) return;
+      homeLayout.value = page;
+    } catch (error) {
+      if (request !== homeRequest || userStore.customerId !== customerId) return;
+      homeLayout.value = null;
+      smartSentry.captureError(error);
+    }
+    if (!hasPublishedLayout.value) {
+      await Promise.all([loadFrequent(), loadMarketing()]);
+    }
+  }
+
+  watch(() => userStore.customerId, () => {
+    homeRequest += 1;
+    homeLayout.value = null;
+    if (userStore.isLogin) loadHomeLayout();
+  });
+
+  function goHomeLink(block) {
+    const target = block.linkTarget;
+    switch (block.linkType) {
+      case 'PRODUCT':
+        if (/^\d+$/.test(String(target))) goDetail({skuId: target});
+        break;
+      case 'CATEGORY': goCategory(target); break;
+      case 'ACTIVITY': goActivities(); break;
+      case 'COUPONS': goCoupons(); break;
+      case 'SEARCH': goSearch(); break;
+      case 'EXTERNAL_URL':
+        if (typeof target === 'string' && /^https:\/\//i.test(target)) {
+          uni.navigateTo({url: `/pages-sub/mall/web?url=${encodeURIComponent(target)}`});
+        }
+        break;
+      default: break;
+    }
+  }
+
   function goLogin() {
     uni.navigateTo({ url: '/pages/login/login' });
   }
   function goSearch() {
     uni.navigateTo({ url: '/pages-sub/product/search' });
   }
-  function goCategory() {
+  function goCategory(categoryId) {
+    if (categoryId && /^\d+$/.test(String(categoryId))) {
+      navigationStore.setPendingCategoryId(categoryId);
+    }
     uni.switchTab({ url: '/pages/category/index' });
   }
   function goCoupons() {
@@ -165,14 +271,12 @@
   onShow(() => {
     if (showed) {
       loadProducts(true);
-      loadFrequent();
-      loadMarketing();
+      loadHomeLayout();
     }
     showed = true;
   });
   loadProducts(true);
-  loadFrequent();
-  loadMarketing();
+  loadHomeLayout();
 </script>
 
 <style lang="scss" scoped>
@@ -235,6 +339,94 @@
   .home__section {
     margin-top: $space-3;
     background: white;
+  }
+  .home__banner-wrap {
+    padding: $space-3 $space-4 0;
+  }
+  .home__banner {
+    height: 280rpx;
+    border-radius: $radius-md;
+    overflow: hidden;
+  }
+  .home__banner-image {
+    display: block;
+    width: 100%;
+    height: 280rpx;
+  }
+  .home__banner-slide {position: relative}
+  .home__banner-caption {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $space-1;
+    padding: $space-2 $space-3;
+    background: rgba(0, 0, 0, 0.62);
+    color: white;
+  }
+  .home__banner-title {font-size: $font-size-base; font-weight: $font-weight-bold}
+  .home__banner-subtitle {font-size: $font-size-sm}
+  .home__shortcuts {
+    display: flex;
+    flex-wrap: wrap;
+    padding: $space-3 $space-2;
+    margin-top: $space-3;
+    background: white;
+  }
+  .home__shortcut {
+    width: 25%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $space-2;
+    padding: $space-2;
+    color: $color-text-primary;
+    font-size: $font-size-sm;
+    text-align: center;
+  }
+  .home__shortcut-image {
+    width: 80rpx;
+    height: 80rpx;
+    border-radius: $radius-md;
+  }
+  .home__announcement {
+    display: flex;
+    gap: $space-2;
+    padding: $space-3 $space-4;
+    margin-top: $space-3;
+    background: white;
+    color: $color-text-primary;
+    font-size: $font-size-sm;
+  }
+  .home__announcement-title {
+    flex-shrink: 0;
+    color: $color-primary;
+    font-weight: $font-weight-bold;
+  }
+  .home__announcement-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .home__topic {
+    margin-top: $space-3;
+    background: white;
+  }
+  .home__topic-image {
+    display: block;
+    width: 100%;
+    height: 240rpx;
+  }
+  .home__topic-copy {
+    display: flex;
+    flex-direction: column;
+    gap: $space-1;
+    padding: $space-3 $space-4;
+  }
+  .home__topic-subtitle {
+    color: $color-text-tertiary;
+    font-size: $font-size-sm;
   }
   .home__activity {
     display: flex;

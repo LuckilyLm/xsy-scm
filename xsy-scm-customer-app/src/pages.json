@@ -72,6 +72,12 @@
         { "path": "coupons", "style": { "navigationBarTitleText": "领券中心", "enablePullDownRefresh": true, "onReachBottomDistance": 80 } },
         { "path": "my", "style": { "navigationBarTitleText": "我的优惠券", "enablePullDownRefresh": true, "onReachBottomDistance": 80 } }
       ]
+    },
+    {
+      "root": "pages-sub/mall",
+      "pages": [
+        { "path": "web", "style": { "navigationBarTitleText": "网页" } }
+      ]
     }
   ],
   "preloadRule": {

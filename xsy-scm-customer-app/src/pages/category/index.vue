@@ -5,7 +5,7 @@
         <!-- 搜索对齐 Home / Final：图标 20px @xRel=12、占位文本 @xRel=40、图文间距 8px -->
         <view class="category__search" @click="goSearch">
           <uni-icons type="search" :size="20" :color="COLOR_TEXT_TERTIARY" />
-          <text class="category__search-ph">搜商品 / SKU</text>
+          <text class="category__search-ph">搜商品或规格</text>
         </view>
       </template>
     </xsy-nav-bar>
@@ -121,9 +121,10 @@
       categories.value = res.data || [];
       // 首次进入：优先兑现 Home 带过来的目标分类，没有才落到首个
       const pendingHit = takePendingCategory();
-      const initial = pendingHit || categories.value[0];
+      const initial = pendingHit?.primary || categories.value[0];
       if (initial) {
         selectPrimary(initial);
+        if (pendingHit?.sub) selectSub(pendingHit.sub);
       }
     } catch (e) {
       smartSentry.captureError(e);
@@ -208,7 +209,7 @@
   /* ===================== Home → Category 定向跳转 ===================== */
 
   /**
-   * 取出待选中的一级分类实体。
+   * 取出待选中的一级或二级分类实体。
    *
    * 只按 id 匹配**服务端返回的真实分类对象**；无论命中与否都清掉意图
    * （一次性消费，避免陈旧意图影响下一次进入）。
@@ -218,7 +219,18 @@
     if (pendingId === null || pendingId === undefined) {
       return null;
     }
-    const hit = categories.value.find((c) => c.categoryId === Number(pendingId)) || null;
+    let hit = null;
+    for (const primary of categories.value) {
+      if (primary.categoryId === Number(pendingId)) {
+        hit = {primary};
+        break;
+      }
+      const sub = (primary.children || []).find(child => child.categoryId === Number(pendingId));
+      if (sub) {
+        hit = {primary, sub};
+        break;
+      }
+    }
     navigationStore.clearPendingCategoryId();
     return hit;
   }
@@ -233,7 +245,8 @@
     }
     const hit = takePendingCategory();
     const fallback = categories.value.find((c) => c.categoryId === activePrimaryId.value) || categories.value[0];
-    selectPrimary(hit || fallback);
+    selectPrimary(hit?.primary || fallback);
+    if (hit?.sub) selectSub(hit.sub);
   }
 
   /*
