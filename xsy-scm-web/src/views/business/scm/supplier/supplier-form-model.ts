@@ -25,6 +25,7 @@ export interface SkuDraft {
     version?: number;
     skuId?: ScmId;
     purchaseUnit: string;
+    supplierItemCode?: string | null;
     referencePrice?: string | null;
     /** 采购员 ID 使用数字或 null，和人员选择组件及后端 Long 字段保持一致。 */
     purchaserId?: number | null;
@@ -58,7 +59,7 @@ export function emptySupplier(): SupplierFormModel {
 }
 
 export function emptySkuDraft(): SkuDraft {
-    return {purchaseUnit: '', referencePrice: null, purchaserId: null, defaultFlag: false, status: 'ENABLED'};
+    return {purchaseUnit: '', supplierItemCode: null, referencePrice: null, purchaserId: null, defaultFlag: false, status: 'ENABLED'};
 }
 
 /** 移除某一行（纯函数，便于 `node --test` 直接单测）。 */
@@ -73,6 +74,7 @@ export function fromRows(rows: SupplierSkuRow[]): SkuDraft[] {
         version: row.version,
         skuId: row.skuId,
         purchaseUnit: row.purchaseUnit,
+        supplierItemCode: row.supplierItemCode ?? null,
         referencePrice: row.referencePrice,
         purchaserId: row.purchaserId ?? null,
         defaultFlag: row.defaultFlag,
@@ -93,6 +95,7 @@ export function validateSupplier(form: SupplierFormModel): string | undefined {
 
 export function validateSkuDrafts(drafts: SkuDraft[]): string | undefined {
     const seen = new Set<string>();
+    const supplierCodes = new Set<string>();
     for (const [index, draft] of drafts.entries()) {
         const label = `第 ${index + 1} 行：`;
         if (draft.skuId == null) {
@@ -103,6 +106,10 @@ export function validateSkuDrafts(drafts: SkuDraft[]): string | undefined {
             return label + '该商品规格已存在，不能重复添加';
         }
         seen.add(key);
+        const externalCode = draft.supplierItemCode?.trim();
+        if (externalCode && externalCode.length > 100) return label + '供应商货号不能超过100个字符';
+        if (externalCode && supplierCodes.has(externalCode)) return label + '供应商货号不能重复指向不同商品';
+        if (externalCode) supplierCodes.add(externalCode);
         if (!draft.purchaseUnit?.trim()) {
             return label + '请填写采购单位';
         }
@@ -124,6 +131,7 @@ export function toReplaceItems(drafts: SkuDraft[]): SupplierSkuItem[] {
         const item: SupplierSkuItem = {
             skuId: draft.skuId as ScmId,
             purchaseUnit: draft.purchaseUnit.trim(),
+            supplierItemCode: blankToNull(draft.supplierItemCode),
             referencePrice: blankToNull(draft.referencePrice),
             purchaserId: draft.purchaserId ?? null,
             defaultFlag: draft.defaultFlag,

@@ -6,6 +6,7 @@
         ss.id, ss.version, ss.supplier_id, ss.sku_id,
         ss.supplier_code_snapshot, ss.supplier_name_snapshot,
         ss.sku_code_snapshot, ss.sku_name_snapshot, ss.spec_values_snapshot,
+        ss.supplier_item_code,
         ss.purchase_unit, ss.reference_price, ss.purchaser_id,
         ss.is_default, ss.status,
         ss.created_at, ss.updated_at, ss.created_by, ss.updated_by

@@ -55,6 +55,7 @@ test('服务端行转草稿时保留 id 与 version，否则保存会退化成�
     version: 3,
     skuId: 9,
     purchaseUnit: 'kg',
+    supplierItemCode: null,
     referencePrice: '3.5000',
     purchaserId: 2,
     defaultFlag: true,
@@ -147,4 +148,26 @@ test('写请求体不含供应商编码：编码由服务端生成', () => {
   // 编码只在 UI 表单模型（SupplierFormModel）上做只读回显，写请求体（SupplierPayload）没有这个键。
   assert.equal('supplierCode' in payload, false);
   assert.equal(payload.name, '供应商甲');
+});
+
+test('供应商货号是外部标识：保留前导零和大小写，重复映射拒绝', () => {
+  const input = [
+    {skuId: 10, purchaseUnit: 'kg', supplierItemCode: '  Ab-00007  ', defaultFlag: false},
+    {skuId: 11, purchaseUnit: 'kg', supplierItemCode: '', defaultFlag: false},
+  ];
+  assert.equal(validateSkuDrafts(input), undefined);
+  const items = toReplaceItems(input);
+  assert.equal(items[0].supplierItemCode, 'Ab-00007');
+  assert.equal(items[1].supplierItemCode, null);
+  assert.equal(validateSkuDrafts([
+    input[0],
+    {skuId: 11, purchaseUnit: 'kg', supplierItemCode: 'Ab-00007', defaultFlag: false},
+  ]).includes('供应商货号'), true);
+  assert.equal(validateSkuDrafts([
+    input[0],
+    {skuId: 11, purchaseUnit: 'kg', supplierItemCode: 'ab-00007', defaultFlag: false},
+  ]), undefined);
+  assert.match(validateSkuDrafts([
+    {skuId: 10, purchaseUnit: 'kg', supplierItemCode: 'a'.repeat(101), defaultFlag: false},
+  ]), /100/);
 });

@@ -25,6 +25,33 @@ class SupplierSkuChangeSetTest {
         return ((ScmBusinessException) t).getErrorCode().getCode();
     }
 
+    @Test
+    void supplierItemCodeIsExternalAndPreservesCaseAndZeros() {
+        assertThat(SupplierSkuChangeSet.normalizeSupplierItemCode("  Ab-00007  ")).isEqualTo("Ab-00007");
+        assertThat(SupplierSkuChangeSet.normalizeSupplierItemCode("    ")).isNull();
+        assertThat(SupplierSkuChangeSet.normalizeSupplierItemCode(null)).isNull();
+    }
+
+    @Test
+    void duplicateSupplierItemCodeCannotPointAtTwoSkus() {
+        var a = item(null, null, 10L);
+        a.setSupplierItemCode("  0007  ");
+        var b = item(null, null, 11L);
+        b.setSupplierItemCode("0007");
+        assertThatThrownBy(() -> SupplierSkuChangeSet.between(List.of(), List.of(a, b)))
+                .isInstanceOfSatisfying(ScmBusinessException.class, e -> assertThat(codeOf(e)).isEqualTo(40943));
+    }
+
+    @Test
+    void sameExternalCodeMayDifferByCaseAndNullCodeMayRepeat() {
+        var a = item(null, null, 10L);
+        a.setSupplierItemCode("ab-01");
+        var b = item(null, null, 11L);
+        b.setSupplierItemCode("AB-01");
+        var c = item(null, null, 12L);
+        assertThat(SupplierSkuChangeSet.between(List.of(), List.of(a, b, c)).inserted()).hasSize(3);
+    }
+
     private static SupplierSkuEntity row(Long id, Long skuId, Integer version) {
         SupplierSkuEntity entity = new SupplierSkuEntity();
         entity.setId(id);

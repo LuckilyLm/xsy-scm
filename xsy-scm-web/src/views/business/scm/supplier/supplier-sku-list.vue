@@ -130,6 +130,7 @@ const columns = ref<TableColumnsType<SupplierSkuRow>>([
   {title: '商品名称', dataIndex: 'skuNameSnapshot', width: 200},
   {title: '商品规格', dataIndex: 'spec', width: 150},
   {title: '商品规格编码', dataIndex: 'skuCodeSnapshot', width: 160},
+  {title: '供应商货号', dataIndex: 'supplierItemCode', width: 160},
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '参考价', dataIndex: 'referencePrice', width: 120},
   {title: '采购员', dataIndex: 'purchaserName', width: 110},

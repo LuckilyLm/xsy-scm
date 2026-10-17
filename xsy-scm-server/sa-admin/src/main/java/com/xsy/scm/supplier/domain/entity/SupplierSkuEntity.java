@@ -45,6 +45,10 @@ public class SupplierSkuEntity {
 
     private Long skuId;
 
+    /** 供应商给该商品的外部货号，非 XSY 的 SKU 编码，也非批次号。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String supplierItemCode;
+
     private String supplierCodeSnapshot;
 
     private String supplierNameSnapshot;

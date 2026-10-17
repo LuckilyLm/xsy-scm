@@ -113,6 +113,8 @@ export interface SupplierSkuRow {
     version: number;
     supplierId: ScmId;
     skuId: ScmId;
+    /** 供应商自己的商品货号（可能为空），不是系统 SKU，也不是批次号。 */
+    supplierItemCode?: string | null;
     supplierCodeSnapshot: string;
     supplierNameSnapshot: string;
     skuCodeSnapshot: string;
@@ -159,6 +161,7 @@ export interface SupplierSkuItem {
     id?: ScmId;
     version?: number;
     skuId: ScmId;
+    supplierItemCode?: string | null;
     purchaseUnit: string;
     referencePrice?: string | null;
     /** 采购员（员工）ID；`number | null` 的原因同 `SupplierSkuRow.purchaserId`。 */

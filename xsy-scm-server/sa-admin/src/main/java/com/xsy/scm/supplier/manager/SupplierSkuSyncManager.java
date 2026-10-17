@@ -206,6 +206,7 @@ public class SupplierSkuSyncManager {
         SupplierEntity supplier = planned.supplier();
 
         entity.setSkuId(item.getSkuId());
+        entity.setSupplierItemCode(SupplierSkuChangeSet.normalizeSupplierItemCode(item.getSupplierItemCode()));
         entity.setSupplierCodeSnapshot(supplier.getSupplierCode());
         entity.setSupplierNameSnapshot(supplier.getName());
         entity.setSkuCodeSnapshot(sku.getSkuCode());

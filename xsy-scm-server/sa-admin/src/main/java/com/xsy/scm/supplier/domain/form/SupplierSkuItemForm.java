@@ -33,6 +33,10 @@ public class SupplierSkuItemForm {
     @Positive(message = "商品规格ID必须大于0")
     private Long skuId;
 
+    /** 外部供应商货号可空，保留原始大小写和前导零，不自动拼接。 */
+    @Size(max = 100, message = "供应商货号不能超过100个字符")
+    private String supplierItemCode;
+
     @NotBlank(message = "采购单位不能为空")
     @Size(max = 32, message = "采购单位不能超过32个字符")
     private String purchaseUnit;

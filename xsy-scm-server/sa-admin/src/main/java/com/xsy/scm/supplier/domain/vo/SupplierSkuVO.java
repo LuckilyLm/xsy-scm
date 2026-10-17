@@ -22,6 +22,8 @@ public class SupplierSkuVO {
 
     private Long skuId;
 
+    private String supplierItemCode;
+
     private String supplierCodeSnapshot;
 
     private String supplierNameSnapshot;

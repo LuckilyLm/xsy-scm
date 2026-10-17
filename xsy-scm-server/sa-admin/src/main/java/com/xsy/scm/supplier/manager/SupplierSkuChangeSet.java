@@ -33,13 +33,26 @@ public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemF
      * @throws ScmBusinessException
      *             40943（请求内 skuId 重复 / id 不属于该供应商 / skuId 被变更）、 40921（带 id 的行版本不一致）
      */
+    /** 外部货号保留大小写和前导零，只去掉首尾空格，空串当作未提供。 */
+    public static String normalizeSupplierItemCode(String raw) {
+        if (raw == null)
+            return null;
+        String trimmed = raw.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     public static SupplierSkuChangeSet between(List<SupplierSkuEntity> existing, List<SupplierSkuItemForm> requested) {
         List<SupplierSkuItemForm> items = requested == null ? List.of() : requested;
 
         // 校验段 A：请求内 skuId 不得重复。
         Set<Long> requestedSkuIds = new HashSet<>();
+        Set<String> supplierItemCodes = new HashSet<>();
         for (SupplierSkuItemForm item : items) {
             if (!requestedSkuIds.add(item.getSkuId())) {
+                throw new ScmBusinessException(SUPPLIER_SKU_DUPLICATE);
+            }
+            String supplierItemCode = normalizeSupplierItemCode(item.getSupplierItemCode());
+            if (supplierItemCode != null && !supplierItemCodes.add(supplierItemCode)) {
                 throw new ScmBusinessException(SUPPLIER_SKU_DUPLICATE);
             }
         }

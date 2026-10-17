@@ -6,6 +6,7 @@
         <thead>
         <tr>
           <th>商品规格 *</th>
+          <th>供应商货号</th>
           <th>采购单位 *</th>
           <th>参考价</th>
           <th>优先采购</th>
@@ -22,6 +23,9 @@
                 :aria-label="`第 ${index + 1} 行商品规格`"
                 @update:value="(value) => (draft.skuId = Array.isArray(value) ? value[0] : value)"
             />
+          </td>
+          <td>
+            <a-input v-model:value="draft.supplierItemCode" :maxlength="100" :aria-label="`第 ${index + 1} 行供应商货号`"/>
           </td>
           <td>
             <a-input v-model:value="draft.purchaseUnit" :maxlength="32" :aria-label="`第 ${index + 1} 行采购单位`"/>
@@ -65,7 +69,7 @@
           </td>
         </tr>
         <tr v-if="modelValue.length === 0">
-          <td colspan="7" class="empty">尚未关联任何商品；保存后将清空该供应商的全部关联</td>
+          <td colspan="8" class="empty">尚未关联任何商品；保存后将清空该供应商的全部关联</td>
         </tr>
         </tbody>
       </table>
@@ -97,7 +101,7 @@ void props;
 
 table {
   width: 100%;
-  min-width: 1080px;
+  min-width: 1240px;
   border-collapse: collapse;
 }
 
