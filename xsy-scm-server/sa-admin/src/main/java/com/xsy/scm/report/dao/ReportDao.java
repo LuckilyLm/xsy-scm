@@ -143,6 +143,14 @@ public interface ReportDao {
             @Param("endAt") OffsetDateTime endAt, @Param("query") ScmInventoryReportQueryForm query,
             @Param("scope") ScmValueScope scope);
 
+    List<InventoryReportVO.LossUnitRow> lossQuantitySummary(@Param("startAt") OffsetDateTime startAt,
+            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmInventoryReportQueryForm query,
+            @Param("scope") ScmValueScope scope);
+
+    List<InventoryReportVO.LossTrendRow> lossDailyTrend(@Param("startAt") OffsetDateTime startAt,
+            @Param("endAt") OffsetDateTime endAt, @Param("query") ScmInventoryReportQueryForm query,
+            @Param("scope") ScmValueScope scope);
+
     List<InventoryReportVO.LossRow> lossList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
             @Param("endAt") OffsetDateTime endAt, @Param("query") ScmInventoryReportQueryForm query,
             @Param("scope") ScmValueScope scope);

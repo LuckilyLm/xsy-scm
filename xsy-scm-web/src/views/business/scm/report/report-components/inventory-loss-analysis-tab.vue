@@ -1,4 +1,6 @@
 <template>
+  <a-alert v-if="canViewCost && (summary?.costMissingCount ?? 0) > 0" type="warning" show-icon style="margin-bottom: 12px"
+           :message="`有 ${summary?.costMissingCount} 条损耗流水缺失成本；相关金额和趋势点显示为 —，不以 0 或已知部分代替完整金额`"/>
   <a-row :gutter="[12, 12]">
     <a-col v-for="card in lossCards" :key="card.label" :xs="24" :sm="12" :md="8" :lg="6" :xl="4">
       <ReportKpiCard :label="card.label" :value="card.value" :warning="card.warning"/>
@@ -13,7 +15,7 @@
     </a-col>
     <a-col :xs="24" :lg="12">
       <ReportLineChart
-          title="损耗金额按日趋势"
+          title="已知损耗成本按日趋势（缺失值断线）"
           :x-axis="lossTrendAxis"
           :series="lossTrendSeries"
           empty-text="暂无按日损耗趋势"
@@ -52,8 +54,8 @@
         :scroll="{x: 1800}"
     >
       <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'movementType'">
-          {{ enumDescText(record.movementType, SCM_REPORT_LOSS_TYPE_ENUM) }}
+        <template v-if="column.dataIndex === 'lossType'">
+          {{ enumDescText(record.lossType, SCM_REPORT_LOSS_TYPE_ENUM) }}
         </template>
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
@@ -122,11 +124,11 @@ const emit = defineEmits<{
 
 const columns = ref<TableColumnsType<InventoryLossRow>>([
   {title: '商品', dataIndex: 'productName', width: 180},
-  {title: '商品规格', dataIndex: 'skuName', width: 170},
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 170},
   {title: '仓库', dataIndex: 'warehouseName', width: 150},
-  {title: '损耗类型', dataIndex: 'movementType', width: 110, align: 'center'},
+  {title: '损耗类型', dataIndex: 'lossType', width: 110, align: 'center'},
   {title: '数量', dataIndex: 'quantity', align: 'right', width: 120},
-  {title: '单位', dataIndex: 'unitSnapshot', align: 'center', width: 90},
+  {title: '单位', dataIndex: 'unit', align: 'center', width: 90},
   {title: '单位成本', dataIndex: 'unitCost', align: 'right', width: 130},
   {title: '损耗成本金额', dataIndex: 'costAmount', align: 'right', width: 150},
   {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 190},
@@ -159,7 +161,7 @@ const lossCards = computed(() => {
     {
       label: '损耗总成本金额',
       value: costText(data.totalLossCostAmount, props.canViewCost),
-      warning: incompleteCostHint(data.missingCostCount, '损耗成本金额'),
+      warning: incompleteCostHint(data.costMissingCount, '损耗成本金额'),
       cost: true,
     },
   ];
@@ -168,7 +170,7 @@ const lossCards = computed(() => {
 
 const lossPieSlices = computed<ReportChartSlice[]>(() => {
   const data = props.summary ?? {};
-  if (!props.canViewCost) return [];
+  if (!props.canViewCost || (data.costMissingCount ?? 0) > 0) return [];
   return [
     {name: '盘亏', value: chartValue(data.stocktakeLossCostAmount), text: moneyText(data.stocktakeLossCostAmount)},
     {name: '报损', value: chartValue(data.lossReportCostAmount), text: moneyText(data.lossReportCostAmount)},

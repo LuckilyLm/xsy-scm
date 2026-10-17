@@ -1,7 +1,9 @@
 package com.xsy.scm.report.domain.vo;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -60,10 +62,38 @@ public class InventoryReportVO {
     public static class LossSummary {
         private Long stocktakeLossCount;
         private Long lossReportCount;
+        /** 同一种损耗可有多种库存记账单位，显示按单位分组的文本而不跨单位求和。 */
+        private String stocktakeLossQuantityText;
+        private String lossReportQuantityText;
+        private List<LossTrendRow> dailyTrend;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal stocktakeLossCostAmount;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal lossReportCostAmount;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal totalLossCostAmount;
         private Integer costMissingCount;
+    }
+
+    /** 期内分组只按损耗类型与真实库存单位聚合。 */
+    @Data
+    public static class LossUnitRow {
+        private String movementType;
+        private String unit;
+        private BigDecimal quantity;
+    }
+
+    /** 服务端以 Asia/Shanghai 的自然日聚合，成本缺失的日金额为 null。 */
+    @Data
+    public static class LossTrendRow {
+        private LocalDate bizDate;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal stocktakeLossCostAmount;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal lossReportCostAmount;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal totalLossCostAmount;
+        private Long costMissingCount;
     }
 
     /** 损耗明细行，粒度 = 一条损耗流水。 */

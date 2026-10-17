@@ -1323,16 +1323,58 @@
             resultType="com.xsy.scm.report.domain.vo.InventoryReportVO$LossSummary">
         SELECT COUNT(*) FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS')          AS stocktakeLossCount,
                COUNT(*) FILTER (WHERE m.movement_type = 'LOSS_REPORT')             AS lossReportCount,
-               COALESCE(SUM(m.quantity * m.unit_cost) FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS'), 0)
-                                                                                   AS stocktakeLossCostAmount,
-               COALESCE(SUM(m.quantity * m.unit_cost) FILTER (WHERE m.movement_type = 'LOSS_REPORT'), 0)
-                                                                                   AS lossReportCostAmount,
-               COALESCE(SUM(m.quantity * m.unit_cost), 0)                          AS totalLossCostAmount,
+               CASE WHEN COUNT(*) FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS'
+                                               AND m.unit_cost IS NULL) &gt; 0 THEN NULL
+                    ELSE COALESCE(SUM(m.quantity * m.unit_cost)
+                         FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS'), 0) END AS stocktakeLossCostAmount,
+               CASE WHEN COUNT(*) FILTER (WHERE m.movement_type = 'LOSS_REPORT'
+                                               AND m.unit_cost IS NULL) &gt; 0 THEN NULL
+                    ELSE COALESCE(SUM(m.quantity * m.unit_cost)
+                         FILTER (WHERE m.movement_type = 'LOSS_REPORT'), 0) END AS lossReportCostAmount,
+               CASE WHEN COUNT(*) FILTER (WHERE m.unit_cost IS NULL) &gt; 0 THEN NULL
+                    ELSE COALESCE(SUM(m.quantity * m.unit_cost), 0) END AS totalLossCostAmount,
                COUNT(*) FILTER (WHERE m.unit_cost IS NULL)                         AS costMissingCount
         FROM xsy_inventory_movement m
                  LEFT JOIN xsy_product_sku k ON k.id = m.sku_id
                  LEFT JOIN xsy_product_spu spu ON spu.id = k.spu_id
         WHERE <include refid="lossMovementWhere"/>
+    </select>
+
+    <!-- 非金额损耗数量严格按流水类型与记账单位分组；无论库存成本权限均可展示。 -->
+    <select id="lossQuantitySummary"
+            resultType="com.xsy.scm.report.domain.vo.InventoryReportVO$LossUnitRow">
+        SELECT m.movement_type AS movementType,
+               m.unit_snapshot AS unit,
+               SUM(m.quantity) AS quantity
+        FROM xsy_inventory_movement m
+                 LEFT JOIN xsy_product_sku k ON k.id = m.sku_id
+                 LEFT JOIN xsy_product_spu spu ON spu.id = k.spu_id
+        WHERE <include refid="lossMovementWhere"/>
+        GROUP BY m.movement_type, m.unit_snapshot
+        ORDER BY m.movement_type, m.unit_snapshot
+    </select>
+
+    <!-- 同一个过滤与授权范围的完整按日聚合；不能从分页列表求和生成时间序列。 -->
+    <select id="lossDailyTrend"
+            resultType="com.xsy.scm.report.domain.vo.InventoryReportVO$LossTrendRow">
+        SELECT (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::DATE AS bizDate,
+               CASE WHEN COUNT(*) FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS'
+                                               AND m.unit_cost IS NULL) &gt; 0 THEN NULL
+                    ELSE COALESCE(SUM(m.quantity * m.unit_cost)
+                         FILTER (WHERE m.movement_type = 'STOCKTAKE_LOSS'), 0) END AS stocktakeLossCostAmount,
+               CASE WHEN COUNT(*) FILTER (WHERE m.movement_type = 'LOSS_REPORT'
+                                               AND m.unit_cost IS NULL) &gt; 0 THEN NULL
+                    ELSE COALESCE(SUM(m.quantity * m.unit_cost)
+                         FILTER (WHERE m.movement_type = 'LOSS_REPORT'), 0) END AS lossReportCostAmount,
+               CASE WHEN COUNT(*) FILTER (WHERE m.unit_cost IS NULL) &gt; 0 THEN NULL
+                    ELSE COALESCE(SUM(m.quantity * m.unit_cost), 0) END AS totalLossCostAmount,
+               COUNT(*) FILTER (WHERE m.unit_cost IS NULL) AS costMissingCount
+        FROM xsy_inventory_movement m
+                 LEFT JOIN xsy_product_sku k ON k.id = m.sku_id
+                 LEFT JOIN xsy_product_spu spu ON spu.id = k.spu_id
+        WHERE <include refid="lossMovementWhere"/>
+        GROUP BY (m.occurred_at AT TIME ZONE 'Asia/Shanghai')::DATE
+        ORDER BY bizDate
     </select>
 
     <select id="lossList"

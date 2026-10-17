@@ -569,8 +569,8 @@ export interface InventoryLossSummary {
     lossReportCostAmount?: string | null;
     /** 损耗总成本金额（后端聚合，前端不相加）。 */
     totalLossCostAmount?: string | null;
-    /** 被跳过的无成本行数；> 0 表示上面的金额不完整。 */
-    missingCostCount?: number | null;
+    /** 无成本行数；> 0 时服务端相关聚合金额为 null，不会用已知部分冒充全额。 */
+    costMissingCount?: number | null;
     /**
      * 按日损耗成本趋势（的「损耗金额按日趋势」）。
      *
@@ -580,9 +580,10 @@ export interface InventoryLossSummary {
     dailyTrend?: InventoryLossTrendPoint[] | null;
 }
 
-/** 损耗按日趋势点（业务日由后端补齐，与概览日统计同一口径）。 */
+/** 损耗按日趋势点（服务端只返回期内存在损耗流水的业务日，不用分页拼趋势）。 */
 export interface InventoryLossTrendPoint {
     bizDate?: string | null;
+    costMissingCount?: number | null;
     stocktakeLossCostAmount?: string | null;
     lossReportCostAmount?: string | null;
     totalLossCostAmount?: string | null;
@@ -593,12 +594,11 @@ export interface InventoryLossRow {
     movementId?: ReportId;
     productName?: string | null;
     skuCode?: string | null;
-    skuName?: string | null;
     warehouseName?: string | null;
-    /** `STOCKTAKE_LOSS` 盘亏 / `LOSS_REPORT` 报损。 */
-    movementType?: string | null;
+    /** 与服务端 LossRow.lossType 精确一致，不借用库存流水的 movementType 字段。 */
+    lossType?: string | null;
     quantity?: string | null;
-    unitSnapshot?: string | null;
+    unit?: string | null;
     unitCost?: string | null;
     costAmount?: string | null;
     sourceDocumentNo?: string | null;
