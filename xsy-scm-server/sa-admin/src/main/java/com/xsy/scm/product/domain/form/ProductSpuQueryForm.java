@@ -43,6 +43,10 @@ public class ProductSpuQueryForm extends net.lab1024.sa.base.common.domain.PageP
     private OffsetDateTime createdFrom;
     private OffsetDateTime createdTo;
 
+    /** 仅用于导出的服务端白名单键；查询接口忽略该字段。 */
+    @Size(max = 30, message = "最多选择30个导出字段")
+    private List<String> exportColumnKeys;
+
     @Override
     @Min(value = 1, message = "页码不能小于1")
     public Long getPageNum() {

@@ -32,6 +32,10 @@
                     @click="batch?.open('TAG', selectedItems)">批量打标签
           </a-button>
           <a-button v-privilege="'scm:product:import'" @click="importModal?.show()">导入</a-button>
+          <a-select v-privilege="'scm:product:export'" v-model:value="exportColumnKeys" mode="multiple"
+                    allow-clear :options="exportColumnOptions" option-filter-prop="label"
+                    placeholder="导出列：不选则全部" style="width: 300px"
+                    @focus="loadExportColumnOptions"/>
           <a-button v-privilege="'scm:product:export'" :loading="exporting" @click="exportCurrent">导出</a-button>
           <span v-if="selectedRows.length" class="scm-cell-hint">已选 {{ selectedRows.length }} 个</span>
         </a-space>
@@ -163,6 +167,19 @@ function imageFailed(url: string) {
 }
 const drawer = ref<InstanceType<typeof ProductDrawer>>(), batch = ref<InstanceType<typeof ProductBatchModal>>();
 const importModal = ref<InstanceType<typeof ProductImportModal>>(), exporting = ref(false);
+const exportColumnKeys = ref<string[]>([]);
+const exportColumnOptions = ref<{label: string; value: string}[]>([]);
+const exportColumnsLoaded = ref(false);
+async function loadExportColumnOptions(): Promise<void> {
+  if (exportColumnsLoaded.value) return;
+  try {
+    const response = await productApi.exportColumns();
+    exportColumnOptions.value = response.data.map(column => ({label: column.title, value: column.key}));
+    exportColumnsLoaded.value = true;
+  } catch {
+    void message.error('获取商品可导出字段失败');
+  }
+}
 const user = useUserStore();
 const canBatch = computed(() => user.administratorFlag || user.getPointList?.some((point: {
   webPerms: string
@@ -276,7 +293,8 @@ async function exportCurrent() {
     await productApi.exportProducts({
       ...filters,
       createdFrom: createdRange.value?.[0] || undefined,
-      createdTo: createdRange.value?.[1] || undefined
+      createdTo: createdRange.value?.[1] || undefined,
+      exportColumnKeys: exportColumnKeys.value.length ? exportColumnKeys.value : undefined
     });
   } catch {
     // 导出失败只走全局 toast

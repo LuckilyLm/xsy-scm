@@ -1,6 +1,10 @@
 package com.xsy.scm.product.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
+import com.xsy.scm.common.export.ScmExportColumnSelection;
+import com.xsy.scm.common.export.ScmExportColumnSelection.Column;
+import com.xsy.scm.common.exception.ScmBusinessException;
+import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import cn.dev33.satoken.stp.StpUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,6 +45,32 @@ import java.util.stream.Collectors;
 public class ProductExcelController {
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
     private static final int EXPORT_MAX_ROWS = 100000;
+    private static final List<Column> PRODUCT_EXPORT_COLUMNS = List.of(
+            new Column("spuId", "商品ID"),
+            new Column("spuVersion", "商品版本"),
+            new Column("skuId", "商品规格ID"),
+            new Column("skuVersion", "商品规格版本"),
+            new Column("spuCode", "商品编码"),
+            new Column("spuName", "商品名称"),
+            new Column("alias", "别名"),
+            new Column("categoryPath", "分类"),
+            new Column("mnemonicCode", "助记码"),
+            new Column("brandName", "品牌"),
+            new Column("origin", "产地"),
+            new Column("storageMethod", "储存方式"),
+            new Column("masterStatus", "主档状态"),
+            new Column("spuStatus", "商品状态"),
+            new Column("tagNames", "标签"),
+            new Column("skuCode", "商品规格编码"),
+            new Column("barcode", "条码"),
+            new Column("specName", "商品规格名称"),
+            new Column("saleUnit", "销售单位"),
+            new Column("productType", "商品类型"),
+            new Column("marketPrice", "市场价"),
+            new Column("skuStatus", "商品规格状态"),
+            new Column("defaultFlag", "默认商品规格"),
+            new Column("sortOrder", "排序")
+    );
     /** 更新导入改写既存商品，除导入权外还要求商品编辑权；权限串与 ProductController 保持一致。 */
 
     private final ProductImportService productImportService;
@@ -83,17 +114,36 @@ public class ProductExcelController {
         return ResponseDTO.ok(productImportService.importFile(file, selectedMode));
     }
 
+    @GetMapping("/export/columns")
+    @SaCheckPermission(ProductPermission.EXPORT)
+    public ResponseDTO<List<Column>> exportColumns() {
+        return ResponseDTO.ok(PRODUCT_EXPORT_COLUMNS);
+    }
+
     @PostMapping("/export")
     @SaCheckPermission(ProductPermission.EXPORT)
     @OperateLog
     public void export(@RequestBody ProductSpuQueryForm form, HttpServletResponse response) throws IOException {
         form.setPageNum(1L);
-        form.setPageSize((long) EXPORT_MAX_ROWS);
+        form.setPageSize(EXPORT_MAX_ROWS + (form.getExportColumnKeys() == null ? 0L : 1L));
         PageResult<ProductSpuVO> page = productQueryService.query(form);
         var rows = new ArrayList<ProductExportExcelVO>();
         for (var spu : page.getList())
             rows.addAll(flatten(spu));
-        SmartExcelUtil.exportExcel(response, "商品档案导出.xlsx", "商品", ProductExportExcelVO.class, rows);
+        if (form.getExportColumnKeys() == null) {
+            SmartExcelUtil.exportExcel(response, "商品档案导出.xlsx", "商品", ProductExportExcelVO.class, rows);
+            return;
+        }
+        if (rows.size() > EXPORT_MAX_ROWS) throw new ScmBusinessException(VALIDATION_ERROR);
+        var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(), PRODUCT_EXPORT_COLUMNS, true);
+        List<List<Object>> values = rows.stream().map(row -> Arrays.<Object>asList(
+                row.getSpuId(), row.getSpuVersion(), row.getSkuId(), row.getSkuVersion(),
+                row.getSpuCode(), row.getSpuName(), row.getAlias(), row.getCategoryPath(),
+                row.getMnemonicCode(), row.getBrandName(), row.getOrigin(), row.getStorageMethod(),
+                row.getMasterStatus(), row.getSpuStatus(), row.getTagNames(), row.getSkuCode(),
+                row.getBarcode(), row.getSpecName(), row.getSaleUnit(), row.getProductType(),
+                row.getMarketPrice(), row.getSkuStatus(), row.getDefaultFlag(), row.getSortOrder())).toList();
+        ScmExportColumnSelection.writeSelected(response, "商品档案导出.xlsx", "商品", selection, values);
     }
 
     private List<ProductExportExcelVO> flatten(ProductSpuVO spu) {

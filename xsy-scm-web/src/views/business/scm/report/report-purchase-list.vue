@@ -43,6 +43,13 @@
     </template>
   </a-alert>
 
+  <a-space v-if="activeTab === 'product'" class="smart-margin-top10" v-privilege="PERM.EXPORT">
+    <span>导出字段</span>
+    <a-select v-model:value="purchaseProductExportKeys" mode="multiple" allow-clear
+              :options="purchaseProductColumnOptions" option-filter-prop="label"
+              placeholder="不选择则导出全部字段" style="width: 360px"
+              @focus="loadPurchaseProductExportColumns"/>
+  </a-space>
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
     <a-tab-pane key="daily" tab="每日清单">
       <PurchaseDailyReport/>
@@ -201,7 +208,7 @@
 import PurchaseDailyReport from './report-components/purchase-daily-report.vue';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {useRoute} from 'vue-router';
-import type {TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
@@ -217,7 +224,7 @@ import PurchaseItemTab from './report-components/purchase-item-tab.vue';
 import PurchasePurchaserTab from './report-components/purchase-purchaser-tab.vue';
 import PurchaseProductTab from './report-components/purchase-product-tab.vue';
 import PurchaseSupplierTab from './report-components/purchase-supplier-tab.vue';
-import {reportPurchaseApi} from '/@/api/business/scm/report-api';
+import {reportPurchaseApi, type ScmExportColumn} from '/@/api/business/scm/report-api';
 import {useScmExport} from '../common/use-scm-export';
 import {SCM_REPORT_PERMISSION} from '/@/constants/business/scm/report-const';
 import type {
@@ -265,6 +272,21 @@ const dateRange = ref<DateRange | undefined>();
 const filters = reactive<Omit<PurchaseQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
 const chartError = ref('');
+const purchaseProductExportKeys = ref<string[]>([]);
+const purchaseProductColumnDefs = ref<ScmExportColumn[]>([]);
+const purchaseProductColumnsLoaded = ref(false);
+const purchaseProductColumnOptions = computed(() => purchaseProductColumnDefs.value.map(column => ({
+    label: column.title, value: column.key
+})));
+async function loadPurchaseProductExportColumns(): Promise<void> {
+    if (purchaseProductColumnsLoaded.value) return;
+    try {
+        purchaseProductColumnDefs.value = (await reportPurchaseApi.productExportColumns()).data;
+        purchaseProductColumnsLoaded.value = true;
+    } catch {
+        void message.error('获取可导出字段失败');
+    }
+}
 
 const overview = ref<PurchaseOverview>();
 const supplierTopRows = ref<PurchaseTopItem[]>([]);
@@ -526,7 +548,10 @@ function openPurchaserDrilldown(row: PurchasePurchaserRow) {
 }
 
 function exportProduct() {
-    void productExport.run(() => reportPurchaseApi.productExport(exportQuery()));
+    void productExport.run(() => reportPurchaseApi.productExport({
+        ...exportQuery(),
+        exportColumnKeys: purchaseProductExportKeys.value.length ? purchaseProductExportKeys.value : undefined
+    }));
 }
 
 function exportSupplier() {

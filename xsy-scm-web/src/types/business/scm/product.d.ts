@@ -141,6 +141,7 @@ export interface ProductRow extends ProductMasterFields {
 }
 
 export interface ProductQuery {
+    exportColumnKeys?: string[];
     pageNum: number;
     pageSize: number;
     searchCount?: boolean;

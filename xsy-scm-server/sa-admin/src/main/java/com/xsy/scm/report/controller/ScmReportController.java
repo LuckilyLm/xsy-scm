@@ -1,11 +1,15 @@
 package com.xsy.scm.report.controller;
 
 import com.xsy.scm.report.constant.ScmReportPermission;
+import com.xsy.scm.common.export.ScmExportColumnSelection;
+import com.xsy.scm.common.export.ScmExportColumnSelection.Column;
+import cn.dev33.satoken.stp.StpUtil;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,6 +54,32 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 public class ScmReportController {
 
     private static final int TOP_LIMIT = 5;
+    private static final List<Column> SALES_ORDER_EXPORT_COLUMNS = List.of(
+            new Column("confirmedAt", "确认时间"),
+            new Column("orderNo", "订单号"),
+            new Column("customerCode", "客户编码"),
+            new Column("customerName", "客户名称"),
+            new Column("sellerName", "销售员"),
+            new Column("orderSource", "订单来源"),
+            new Column("settleMode", "结算方式"),
+            new Column("lineCount", "订单行数"),
+            new Column("skuKindCount", "商品规格数"),
+            new Column("settlementAmount", "结算金额"),
+            new Column("completedRefundAmount", "已完成退款金额")
+    );
+    private static final List<Column> PURCHASE_PRODUCT_EXPORT_COLUMNS = List.of(
+            new Column("productName", "商品名称"),
+            new Column("skuCode", "商品规格编码"),
+            new Column("skuName", "商品规格"),
+            new Column("purchaseUnit", "采购单位"),
+            new Column("orderCount", "采购单数"),
+            new Column("plannedQuantity", "计划采购数量"),
+            new Column("receivedQuantity", "已收数量"),
+            new Column("orderAmount", "采购订单金额"),
+            new Column("avgPurchasePrice", "采购成交均价"),
+            new Column("inboundQuantityText", "采购入库数量"),
+            new Column("inboundCostAmount", "采购入库成本金额", true)
+    );
 
     private static final List<String> OVERVIEW_DAILY_TITLES = List.of("业务日期", "确认订单数", "客户数", "确认订单金额", "已完成退款金额",
             "提交采购金额", "采购入库成本金额", "成本缺失行数");
@@ -59,6 +89,20 @@ public class ScmReportController {
     private final PurchaseReportService purchaseReportService;
     private final ReceiptReportService receiptReportService;
     private final InventoryReportService inventoryReportService;
+
+    @GetMapping("/sales/order/export/columns")
+    @SaCheckPermission(value = {ScmReportPermission.SALES_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
+    public ResponseDTO<List<Column>> salesOrderExportColumns() {
+        return ResponseDTO.ok(SALES_ORDER_EXPORT_COLUMNS);
+    }
+
+    @GetMapping("/purchase/product/export/columns")
+    @SaCheckPermission(value = {ScmReportPermission.PURCHASE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
+    public ResponseDTO<List<Column>> purchaseProductExportColumns() {
+        boolean canViewCost = StpUtil.hasPermission(ScmReportPermission.COST_QUERY);
+        return ResponseDTO.ok(PURCHASE_PRODUCT_EXPORT_COLUMNS.stream()
+                .filter(column -> !column.costRestricted() || canViewCost).toList());
+    }
 
     // ==================== 经营概览 ====================
 
@@ -256,7 +300,10 @@ public class ScmReportController {
                         r.getCustomerName(), r.getSellerName(), r.getOrderSource(), r.getSettleMode(), r.getLineCount(),
                         r.getSkuKindCount(), r.getSettlementAmount(), r.getCompletedRefundAmount()))
                 .toList();
-        ScmReportExcel.write(response, "销售分析-客户订单明细.xlsx", "客户订单明细", titles, rows);
+        var selection = ScmExportColumnSelection.resolve(
+                form.getExportColumnKeys(), SALES_ORDER_EXPORT_COLUMNS, true);
+        ScmReportExcel.write(response, "销售分析-客户订单明细.xlsx", "客户订单明细",
+                selection.titles(), selection.project(rows));
     }
 
     // ==================== 采购分析 ====================
@@ -369,7 +416,10 @@ public class ScmReportController {
                         r.getOrderAmount(), r.getAvgPurchasePrice(), r.getInboundQuantityText(),
                         r.getInboundCostAmount()))
                 .toList();
-        ScmReportExcel.write(response, "采购分析-按商品.xlsx", "按商品", titles, rows);
+        var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(),
+                PURCHASE_PRODUCT_EXPORT_COLUMNS, StpUtil.hasPermission(ScmReportPermission.COST_QUERY));
+        ScmReportExcel.write(response, "采购分析-按商品.xlsx", "按商品",
+                selection.titles(), selection.project(rows));
     }
 
     @PostMapping("/purchase/supplier/export")

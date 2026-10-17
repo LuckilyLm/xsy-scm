@@ -40,6 +40,13 @@
     </template>
   </a-alert>
 
+  <a-space v-if="activeTab === 'order'" class="smart-margin-top10" v-privilege="PERM.EXPORT">
+    <span>导出字段</span>
+    <a-select v-model:value="orderExportKeys" mode="multiple" allow-clear
+              :options="orderColumnOptions" option-filter-prop="label"
+              placeholder="不选择则导出全部字段" style="width: 360px"
+              @focus="loadOrderExportColumns"/>
+  </a-space>
   <a-tabs v-model:activeKey="activeTab" class="smart-margin-top10" @change="onTabChange">
     <!-- ==================== 按商品 ==================== -->
     <a-tab-pane key="product" tab="按商品">
@@ -146,7 +153,8 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue';
+import {computed, onMounted, reactive, ref} from 'vue';
+import {message} from 'ant-design-vue';
 import {useRoute} from 'vue-router';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
@@ -160,7 +168,7 @@ import SalesCustomerTab from './report-components/sales-customer-tab.vue';
 import SalesSellerTab from './report-components/sales-seller-tab.vue';
 import SalesItemTab from './report-components/sales-item-tab.vue';
 import SalesOrderTab from './report-components/sales-order-tab.vue';
-import {reportSalesApi} from '/@/api/business/scm/report-api';
+import {reportSalesApi, type ScmExportColumn} from '/@/api/business/scm/report-api';
 import {useScmExport} from '../common/use-scm-export';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {SCM_REPORT_PERMISSION} from '/@/constants/business/scm/report-const';
@@ -201,6 +209,22 @@ const dateRange = ref<DateRange | undefined>();
 const filters = reactive<Omit<SalesQuery, 'pageNum' | 'pageSize' | 'startDate' | 'endDate'>>({});
 const advanced = ref(false);
 const chartError = ref('');
+const orderExportKeys = ref<string[]>([]);
+const orderColumnDefs = ref<ScmExportColumn[]>([]);
+const orderColumnsLoaded = ref(false);
+const orderColumnOptions = computed(() => orderColumnDefs.value.map(column => ({
+    label: column.title, value: column.key
+})));
+
+async function loadOrderExportColumns(): Promise<void> {
+    if (orderColumnsLoaded.value) return;
+    try {
+        orderColumnDefs.value = (await reportSalesApi.orderExportColumns()).data;
+        orderColumnsLoaded.value = true;
+    } catch {
+        void message.error('获取可导出字段失败');
+    }
+}
 const categories = ref<ProductCategory[]>([]);
 
 /** TOP5 图的原始行（后端已按金额降序 LIMIT）。 */
@@ -413,7 +437,9 @@ function exportItem() {
 }
 
 function exportOrder() {
-    void orderExport.run(() => reportSalesApi.orderExport(exportQuery()));
+    void orderExport.run(() => reportSalesApi.orderExport({
+        ...exportQuery(), exportColumnKeys: orderExportKeys.value.length ? orderExportKeys.value : undefined
+    }));
 }
 
 const orderDetail = ref<InstanceType<typeof OrderDetail>>();

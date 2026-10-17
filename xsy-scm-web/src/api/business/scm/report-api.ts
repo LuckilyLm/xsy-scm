@@ -1,5 +1,5 @@
 /** 报表接口只读。日期使用前端选取的闭区间字符串，分页与非分页结果分别使用对应类型；导出不传分页参数，使用统一下载函数。 */
-import {postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
+import {getRequest, postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     InventoryFlowSummaryRow,
@@ -43,6 +43,7 @@ import type {
 } from '/@/views/business/scm/report/report-types';
 
 const BASE = '/scm/report';
+export interface ScmExportColumn {key: string; title: string; costRestricted: boolean}
 
 /** 经营概览：指标卡 / 日趋势 / 每日统计。 */
 export const reportOverviewApi = {
@@ -99,6 +100,8 @@ export const reportSalesApi = {
     sellerExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/seller/export`, data),
     itemExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/item/export`, data),
     orderExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/order/export`, data),
+    orderExportColumns: () => getRequest(`${BASE}/sales/order/export/columns`, {})
+        as unknown as Promise<ScmResponse<ScmExportColumn[]>>,
 };
 
 /** 采购分析：采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动。 */
@@ -125,6 +128,8 @@ export const reportPurchaseApi = {
         postRequest(`${BASE}/purchase/price-trend`, data, options) as unknown as Promise<ScmResponse<PurchasePriceTrendPoint[]>>,
 
     productExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/product/export`, data),
+    productExportColumns: () => getRequest(`${BASE}/purchase/product/export/columns`, {})
+        as unknown as Promise<ScmResponse<ScmExportColumn[]>>,
     supplierExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/supplier/export`, data),
     itemExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/item/export`, data),
     overviewExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/overview/export`, data),
