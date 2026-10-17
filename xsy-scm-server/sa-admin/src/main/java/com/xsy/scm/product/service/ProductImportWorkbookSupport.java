@@ -26,12 +26,24 @@ import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 @Slf4j
 @Component
 public class ProductImportWorkbookSupport {
-    private static final List<String> CREATE_HEADERS = List.of("模板版本", "商品编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地",
-            "储存方式", "保质期天数", "标签编码", "商品状态", "商品规格编码", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
+    // 分组标记仅用于本次导入把多行规格归入一个商品，不是落库的 SPU 编码。
+    private static final List<String> CREATE_HEADERS = List.of("模板版本", "导入商品分组", "商品名称", "别名", "分类编码", "助记码", "品牌",
+            "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
+    private static final List<
+            String> LEGACY_CREATE_HEADERS = List.of("模板版本", "商品编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式",
+                    "保质期天数", "标签编码", "商品状态", "商品规格编码", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
     private static final List<String> UPDATE_HEADERS = List.of("模板版本", "商品ID", "商品版本", "商品规格ID", "商品规格版本", "商品编码",
             "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "商品规格编码", "条码", "商品规格名称", "销售单位",
             "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
     private static final List<BiConsumer<ProductImportRow, String>> CREATE_SETTERS = List.of(
+            ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
+            ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
+            ProductImportRow::setBrandName, ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
+            ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes, ProductImportRow::setSpuStatus,
+            ProductImportRow::setBarcode, ProductImportRow::setSpecName, ProductImportRow::setSaleUnit,
+            ProductImportRow::setProductType, ProductImportRow::setMarketPrice, ProductImportRow::setSkuStatus,
+            ProductImportRow::setDefaultFlag, ProductImportRow::setSortOrder);
+    private static final List<BiConsumer<ProductImportRow, String>> LEGACY_CREATE_SETTERS = List.of(
             ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
             ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
             ProductImportRow::setBrandName, ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
@@ -67,8 +79,6 @@ public class ProductImportWorkbookSupport {
 
     public List<ProductImportRow> readRows(byte[] bytes, ProductImportService.ImportMode mode,
             ProductImportResultVO result) {
-        var headers = headers(mode);
-        var setters = mode == ProductImportService.ImportMode.CREATE ? CREATE_SETTERS : UPDATE_SETTERS;
         var rows = new ArrayList<ProductImportRow>();
         var formatter = new DataFormatter(Locale.ROOT);
         try (var workbook = org.apache.poi.ss.usermodel.WorkbookFactory
@@ -79,9 +89,16 @@ public class ProductImportWorkbookSupport {
             }
             var sheet = workbook.getSheetAt(0);
             var header = sheet.getRow(0);
+            var secondHeader = header == null ? null : trim(formatter.formatCellValue(header.getCell(1)));
+            boolean legacyCreate = mode == ProductImportService.ImportMode.CREATE
+                    && ("商品编码".equals(secondHeader) || "SPU编码".equals(secondHeader));
+            var headers = legacyCreate ? LEGACY_CREATE_HEADERS : headers(mode);
+            var setters = mode == ProductImportService.ImportMode.UPDATE
+                    ? UPDATE_SETTERS
+                    : legacyCreate ? LEGACY_CREATE_SETTERS : CREATE_SETTERS;
             for (int column = 0; column < headers.size(); column++) {
                 String headerValue = header == null ? null : trim(formatter.formatCellValue(header.getCell(column)));
-                if (!headerMatches(mode, column, headerValue)) {
+                if (!headerMatches(mode, column, headerValue, legacyCreate)) {
                     addError(result, 1, null, CellReference.convertNumToColString(column), "HEADER_INVALID",
                             "表头应为“" + headers.get(column) + "”，请使用"
                                     + (mode == ProductImportService.ImportMode.CREATE ? "新增" : "更新") + "模板");
@@ -135,10 +152,13 @@ public class ProductImportWorkbookSupport {
     }
 
     /** Accept previously downloaded technical headers while exporting only business-facing labels. */
-    private boolean headerMatches(ProductImportService.ImportMode mode, int column, String value) {
-        if (headers(mode).get(column).equals(value)) {
+    private boolean headerMatches(ProductImportService.ImportMode mode, int column, String value,
+            boolean legacyCreate) {
+        var headerList = legacyCreate ? LEGACY_CREATE_HEADERS : headers(mode);
+        if (headerList.get(column).equals(value))
             return true;
-        }
+        if (mode == ProductImportService.ImportMode.CREATE && !legacyCreate)
+            return false;
         if (mode == ProductImportService.ImportMode.CREATE) {
             return switch (column) {
                 case 1 -> "SPU编码".equals(value);
@@ -192,20 +212,19 @@ public class ProductImportWorkbookSupport {
         }
         return switch (column) {
             case 0 -> ProductImportService.TEMPLATE_VERSION;
-            case 1 -> "P000012";
+            case 1 -> "A01";
             case 2 -> "示例蔬菜";
             case 4 -> "FRESH-FRUIT";
             case 7 -> "本地";
             case 8 -> ScmStorageMethodEnum.CHILLED.name();
             case 11 -> ScmShelfStatusEnum.ON_SHELF.name();
-            case 12 -> "G000001";
-            case 14 -> "500g/份";
-            case 15 -> "份";
-            case 16 -> ScmProductTypeEnum.STANDARD.name();
-            case 17 -> "9.9000";
-            case 18 -> ScmShelfStatusEnum.ON_SHELF.name();
-            case 19 -> "是";
-            case 20 -> "0";
+            case 13 -> "500g/份";
+            case 14 -> "份";
+            case 15 -> ScmProductTypeEnum.STANDARD.name();
+            case 16 -> "9.9000";
+            case 17 -> ScmShelfStatusEnum.ON_SHELF.name();
+            case 18 -> "是";
+            case 19 -> "0";
             default -> "";
         };
     }

@@ -11,7 +11,6 @@ import lombok.Data;
 
 @Data
 public class ProductTagAddForm {
-    @NotBlank(message = "标签编码不能为空")
     @Size(max = 64, message = "标签编码不能超过64个字符")
     private String tagCode;
     @NotBlank(message = "商品标签名称不能为空")

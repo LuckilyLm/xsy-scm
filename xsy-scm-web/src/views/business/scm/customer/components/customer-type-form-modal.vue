@@ -12,11 +12,10 @@
       @cancel="visible = false"
   >
     <a-form ref="formRef" :model="form" layout="vertical">
-      <a-form-item name="typeCode"
+      <a-form-item v-if="!form.typeId" name="typeCode"
                    :rules="[{ required: true, whitespace: true, message: '请输入类型编码' }]">
         <template #label>
           类型编码
-          <ScmFieldHelp label="类型编码" text="编码需全局唯一，保存时自动转为大写"/>
         </template>
         <a-input v-model:value="form.typeCode" :maxlength="64" placeholder="例如 GROUP"/>
       </a-form-item>
@@ -38,7 +37,6 @@ import {message} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import {customerTypeApi} from '/@/api/business/scm/customer-type-api';
 import type {CustomerType, CustomerTypeForm} from '/@/types/business/scm/customer';
-import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
 const emit = defineEmits<{ saved: [] }>();
 

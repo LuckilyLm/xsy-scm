@@ -14,7 +14,6 @@ import lombok.Data;
 public class ProductCategoryAddForm {
     @Positive(message = "上级分类 ID必须大于0")
     private Long parentId;
-    @NotBlank(message = "分类编码不能为空")
     @Size(max = 64, message = "分类编码不能超过64个字符")
     private String categoryCode;
     @NotBlank(message = "商品分类名称不能为空")

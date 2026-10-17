@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 class SalesOrderQueryRecentPriceTest {
 
     private SalesOrderQueryService serviceWith(SalesOrderItemDao items) {
-        return new SalesOrderQueryService(mock(SalesOrderDao.class), items, mock(OrderAddressSnapshotDao.class),
+        return new SalesOrderQueryService(mock(SalesOrderDao.class), items, mock(com.xsy.scm.order.dao.OrderTagDao.class), mock(OrderAddressSnapshotDao.class),
                 mock(OrderOperationLogDao.class), mock(ScmOperatorNameResolver.class), mock(MallCustomerAccountDao.class),
                 mock(com.xsy.scm.common.scope.ScmDataScopeService.class),
                 mock(CustomerService.class),

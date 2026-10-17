@@ -1,15 +1,9 @@
-<!-- 商品标签新增 / 编辑弹窗：编码与名称可改，改名不影响已绑定商品的展示。 -->
+<!-- 商品标签内部编码由后端生成，表单仅提交业务属性。 -->
 <template>
   <a-modal v-model:open="visible" :title="form.tagId ? '编辑商品标签' : '新增商品标签'" :confirm-loading="saving"
            @ok="submit" @cancel="visible = false">
     <a-form ref="formRef" :model="form" layout="vertical">
       <a-row :gutter="16">
-        <a-col :span="12">
-          <a-form-item label="标签编码" name="tagCode"
-                       :rules="[{ required: true, whitespace: true, message: '请输入标签编码' }]">
-            <a-input v-model:value="form.tagCode" :maxlength="64" placeholder="如 TAG-ORGANIC"/>
-          </a-form-item>
-        </a-col>
         <a-col :span="12">
           <a-form-item label="标签名称" name="name"
                        :rules="[{ required: true, whitespace: true, message: '请输入标签名称' }]">
@@ -69,13 +63,11 @@ async function save() {
     if (form.tagId) await productTagApi.update({
       tagId: form.tagId,
       version: form.version,
-      tagCode: form.tagCode,
       name: form.name,
       status: form.status,
       sortOrder: form.sortOrder
     });
     else await productTagApi.add({
-      tagCode: form.tagCode,
       name: form.name,
       status: form.status,
       sortOrder: form.sortOrder

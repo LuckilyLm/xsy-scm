@@ -15,7 +15,11 @@ public enum ScmBusinessNoType {
 
     CUSTOMER("CUS", "customer_code_seq"),
     SUPPLIER("SUP", "supplier_code_seq"),
-    WAREHOUSE("WH", "warehouse_code_seq");
+    WAREHOUSE("WH", "warehouse_code_seq"),
+    PRODUCT_SPU("SPU", "product_spu_code_seq"),
+    PRODUCT_SKU("SKU", "product_sku_code_seq"),
+    PRODUCT_CATEGORY("CAT", "product_category_code_seq"),
+    PRODUCT_TAG("TAG", "product_tag_code_seq");
 
     private final String prefix;
 

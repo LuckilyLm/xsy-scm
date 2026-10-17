@@ -10,10 +10,6 @@
         <CategorySelect v-model:value="form.parentId" :categories="categories" mode="parent"
                         :exclude-id="form.categoryId"/>
       </a-form-item>
-      <a-form-item label="分类编码" name="categoryCode"
-                   :rules="[{ required: true, whitespace: true, message: '请输入分类编码' }]">
-        <a-input v-model:value="form.categoryCode" :maxlength="64"/>
-      </a-form-item>
       <a-form-item label="分类名称" name="name"
                    :rules="[{ required: true, whitespace: true, message: '请输入分类名称' }]">
         <a-input v-model:value="form.name" :maxlength="100"/>
@@ -68,7 +64,8 @@ async function open(row?: ProductCategory, parentId?: ProductId) {
 async function save() {
   saving.value = true;
   try {
-    const payload = {...form, parentId: form.parentId ?? null};
+    const {categoryCode: _readOnly, ...values} = form;
+    const payload = {...values, parentId: form.parentId ?? null};
     await (form.categoryId ? productCategoryApi.update(payload) : productCategoryApi.add(payload));
     message.success('分类已保存');
     visible.value = false;

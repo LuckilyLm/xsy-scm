@@ -185,6 +185,25 @@ class ProductImportServiceTest {
     }
 
     @Test
+    void newCreateTemplateUsesGroupingMarkerAndBackendCodes() throws Exception {
+        byte[] content = productImportService.buildTemplate(ImportMode.CREATE);
+        try (var workbook = new XSSFWorkbook(new java.io.ByteArrayInputStream(content))) {
+            var header = workbook.getSheetAt(0).getRow(0);
+            assertThat(header.getCell(1).getStringCellValue()).isEqualTo("导入商品分组");
+            assertThat(header.getCell(12).getStringCellValue()).isEqualTo("条码");
+            assertThat(header.getLastCellNum()).isEqualTo((short) 20);
+        }
+        when(productImportWriteService.writeAll(anyList())).thenReturn(List.of(501L));
+        var response = productImportService.importFile(new MockMultipartFile("file", "products.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", content), ImportMode.CREATE);
+        assertThat(response.getTotalErrors()).isZero();
+        assertThat(response.getImportedProducts()).isEqualTo(1);
+        verify(productImportWriteService).writeAll(argThat((List<ProductSpuAddForm> forms) ->
+                forms.size() == 1 && forms.getFirst().getSpuCode() == null
+                        && forms.getFirst().getSkuList().getFirst().getSkuCode() == null));
+    }
+
+    @Test
     void validSingleSkuWritesThroughOnce() throws Exception {
         when(productImportWriteService.writeAll(anyList())).thenReturn(List.of(5001L));
         var result = productImportService.importFile(workbook(book -> {
@@ -194,7 +213,8 @@ class ProductImportServiceTest {
         assertThat(result.getSpuIds()).containsExactly(5001L);
         verify(productImportWriteService).writeAll(argThat((List<ProductSpuAddForm> forms) -> {
             var form = forms.getFirst();
-            return form.getSpuCode().equals("SPU0001")
+            return form.getSpuCode() == null
+                    && form.getSkuList().getFirst().getSkuCode() == null
                     && form.getCategoryId().equals(100L)
                     && form.getTagIds().contains(200L)
                     && form.getSkuList().getFirst().getMarketPrice().toPlainString().equals("9.9000")
@@ -316,16 +336,16 @@ class ProductImportServiceTest {
     }
 
     @Test
-    void duplicateSkuCodeWithinProductIsRejected() throws Exception {
+    void duplicateSpecWithinProductIsRejected() throws Exception {
         var result = productImportService.importFile(workbook(book -> {
             var sheet = book.getSheetAt(0);
             var second = sheet.createRow(3);
             String[] data = {"1.0", "SPU0001", "示例蔬菜", "", "FRESH-FRUIT", "", "", "本地", "CHILLED",
-                    "", "HOT", "ON_SHELF", "SKU0001", "", "1kg/份", "份", "STANDARD", "18.0000", "ON_SHELF", "否", "1"};
+                    "", "HOT", "ON_SHELF", "SKU0001", "", "500g/份", "份", "STANDARD", "18.0000", "ON_SHELF", "否", "1"};
             for (int i = 0; i < data.length; i++) second.createCell(i).setCellValue(data[i]);
         }), ImportMode.CREATE);
         assertThat(result.getErrors()).anySatisfy(error -> {
-            assertThat(error.getCode()).isEqualTo("SKU_CODE_DUPLICATE");
+            assertThat(error.getCode()).isEqualTo("SKU_SPEC_DUPLICATE");
             assertThat(error.getRowNumber()).isEqualTo(4);
         });
         verifyNoInteractions(productImportWriteService);

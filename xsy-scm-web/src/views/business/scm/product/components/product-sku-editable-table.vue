@@ -16,11 +16,6 @@
       </div>
       <a-row :gutter="16">
         <a-col :xs="24" :sm="12">
-          <a-form-item label="商品规格编码" required class="sku-field">
-            <a-input v-model:value="sku.skuCode" :maxlength="64" :aria-label="`第 ${index + 1} 个商品规格编码`"/>
-          </a-form-item>
-        </a-col>
-        <a-col :xs="24" :sm="12">
           <a-form-item label="商品规格" required class="sku-field">
             <a-input v-model:value="sku.specName" :maxlength="150" :aria-label="`第 ${index + 1} 个商品规格名称`"/>
           </a-form-item>

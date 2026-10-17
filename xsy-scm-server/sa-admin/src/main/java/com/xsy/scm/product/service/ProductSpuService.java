@@ -2,6 +2,8 @@ package com.xsy.scm.product.service;
 
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.no.ScmBusinessNoService;
+import com.xsy.scm.common.no.ScmBusinessNoType;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
@@ -45,6 +47,7 @@ import static com.xsy.scm.product.manager.ProductAggregateValidator.trimToNull;
 @RequiredArgsConstructor
 public class ProductSpuService {
     private final ProductSpuDao productSpuDao;
+    private final ScmBusinessNoService businessNoService;
     private final ProductCategoryService productCategoryService;
     private final ProductAggregateValidator productAggregateValidator;
     private final ProductSkuSyncManager productSkuSyncManager;
@@ -62,6 +65,7 @@ public class ProductSpuService {
         var imageChanges = ProductImageChangeSet.between(List.of(), form.getImages());
         var entity = new ProductSpuEntity();
         apply(entity, form);
+        entity.setSpuCode(businessNoService.next(ScmBusinessNoType.PRODUCT_SPU));
         entity.setCreatedAt(entity.getUpdatedAt());
         entity.setCreatedBy(entity.getUpdatedBy());
         try {
@@ -137,8 +141,7 @@ public class ProductSpuService {
     }
 
     private void apply(ProductSpuEntity entity, ProductSpuAddForm form) {
-        BeanUtils.copyProperties(form, entity, "version", "masterStatus");
-        entity.setSpuCode(ProductAggregateValidator.normalizeCode(form.getSpuCode()));
+        BeanUtils.copyProperties(form, entity, "version", "masterStatus", "spuCode");
         entity.setName(form.getName().trim());
         entity.setAlias(trimToNull(form.getAlias()));
         entity.setDescription(trimToNull(form.getDescription()));

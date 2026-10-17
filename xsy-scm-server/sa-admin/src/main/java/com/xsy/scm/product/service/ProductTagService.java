@@ -3,6 +3,8 @@ package com.xsy.scm.product.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.no.ScmBusinessNoService;
+import com.xsy.scm.common.no.ScmBusinessNoType;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductTagDao;
@@ -14,7 +16,6 @@ import com.xsy.scm.product.domain.form.ProductTagKeyForm;
 import com.xsy.scm.product.domain.form.ProductTagUpdateForm;
 import com.xsy.scm.product.domain.vo.ProductSpuTagVO;
 import com.xsy.scm.product.domain.vo.ProductTagVO;
-import com.xsy.scm.product.manager.ProductAggregateValidator;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -43,6 +44,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 @RequiredArgsConstructor
 public class ProductTagService {
     private final ProductTagDao productTagDao;
+    private final ScmBusinessNoService businessNoService;
     private final ProductTagRelationDao productTagRelationDao;
 
     public List<ProductTagVO> list(ProductAssistantQueryForm query) {
@@ -70,8 +72,8 @@ public class ProductTagService {
     @Transactional
     public Long add(ProductTagAddForm form) {
         var entity = new ProductTagEntity();
-        BeanUtils.copyProperties(form, entity, "version");
-        entity.setTagCode(ProductAggregateValidator.normalizeCode(form.getTagCode()));
+        BeanUtils.copyProperties(form, entity, "version", "tagCode");
+        entity.setTagCode(businessNoService.next(ScmBusinessNoType.PRODUCT_TAG));
         entity.setName(form.getName().trim());
         assertUnique(entity.getTagCode(), entity.getName(), null);
         stamp(entity);
@@ -85,14 +87,11 @@ public class ProductTagService {
         return entity.getId();
     }
 
-    /**
-     * 编码与名称可改：关系表按 tag_id 关联，改名不影响已打标商品。
-     */
+    /** 标签内部编码不改，名称可维护；所有引用按 tag_id 关联。 */
     @Transactional
     public void update(ProductTagUpdateForm form) {
         var entity = require(form.getTagId(), form.getVersion());
-        BeanUtils.copyProperties(form, entity, "version", "tagId");
-        entity.setTagCode(ProductAggregateValidator.normalizeCode(form.getTagCode()));
+        BeanUtils.copyProperties(form, entity, "version", "tagId", "tagCode");
         entity.setName(form.getName().trim());
         assertUnique(entity.getTagCode(), entity.getName(), entity.getId());
         entity.setVersion(form.getVersion());

@@ -89,14 +89,11 @@ export function validateProduct(form: ProductForm): string | undefined {
     if (form.masterStatus === 'ARCHIVED' && form.status === 'ON_SHELF') return '已归档商品不能处于上架状态';
     if (!form.skuList.length) return '至少保留一个商品规格';
     if (form.skuList.filter(s => s.defaultFlag).length !== 1) return '请选择且仅选择一个默认商品规格';
-    const codes = new Set<string>(), barcodes = new Set<string>(), specs = new Set<string>();
+    const barcodes = new Set<string>(), specs = new Set<string>();
     for (const [index, sku] of form.skuList.entries()) {
         const label = `第 ${index + 1} 个商品规格：`;
-        if (!sku.skuCode.trim() || !sku.specName.trim() || !sku.saleUnit.trim()) return label + '请填写商品规格编码、商品规格名称和单位';
+        if (!sku.specName.trim() || !sku.saleUnit.trim()) return label + '请填写商品规格名称和单位';
         if (!/^\d+(\.\d{1,4})?$/.test(sku.marketPrice)) return label + '市场价须为非负数，最多四位小数';
-        const code = sku.skuCode.trim().toUpperCase();
-        if (codes.has(code)) return label + '商品规格编码重复';
-        codes.add(code);
         const barcode = sku.barcode?.trim();
         if (barcode && barcodes.has(barcode)) return label + '条码重复';
         if (barcode) barcodes.add(barcode);

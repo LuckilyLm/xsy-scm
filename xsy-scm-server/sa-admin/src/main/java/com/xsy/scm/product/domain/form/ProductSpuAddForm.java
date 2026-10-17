@@ -23,7 +23,6 @@ import java.math.BigDecimal;
 
 @Data
 public class ProductSpuAddForm {
-    @NotBlank(message = "商品编码不能为空")
     @Size(max = 64, message = "商品编码不能超过64个字符")
     private String spuCode;
     @NotBlank(message = "商品名称不能为空")

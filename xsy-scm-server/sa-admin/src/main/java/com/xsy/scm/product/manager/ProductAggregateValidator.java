@@ -16,7 +16,6 @@ import java.util.TreeMap;
 import static com.xsy.scm.product.constant.ProductErrorCode.DEFAULT_SKU_INVALID;
 import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_INVALID;
 import static com.xsy.scm.product.constant.ProductErrorCode.SKU_BARCODE_DUPLICATE;
-import static com.xsy.scm.product.constant.ProductErrorCode.SKU_CODE_DUPLICATE;
 import static com.xsy.scm.product.constant.ProductErrorCode.SKU_PRICE_INVALID;
 import static com.xsy.scm.product.constant.ProductErrorCode.SKU_REQUIRED;
 import static com.xsy.scm.product.constant.ProductErrorCode.SKU_SPEC_DUPLICATE;
@@ -29,11 +28,9 @@ public class ProductAggregateValidator {
             throw new ScmBusinessException(SKU_REQUIRED);
         if (skus.stream().filter(s -> Boolean.TRUE.equals(s.getDefaultFlag())).count() != 1)
             throw new ScmBusinessException(DEFAULT_SKU_INVALID);
-        Set<String> codes = new HashSet<>(), barcodes = new HashSet<>();
+        Set<String> barcodes = new HashSet<>();
         Set<Map<String, String>> specs = new HashSet<>();
         for (var sku : skus) {
-            if (!codes.add(normalizeCode(sku.getSkuCode())))
-                throw new ScmBusinessException(SKU_CODE_DUPLICATE);
             String barcode = trimToNull(sku.getBarcode());
             if (barcode != null && !barcodes.add(barcode))
                 throw new ScmBusinessException(SKU_BARCODE_DUPLICATE);

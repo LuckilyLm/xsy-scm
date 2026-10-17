@@ -42,7 +42,7 @@ export interface ProductCategoryForm {
     categoryId?: ProductId;
     version?: number;
     parentId?: ProductId | null;
-    categoryCode: string;
+    categoryCode?: string;
     name: string;
     sortOrder: number;
     status: 'ENABLED' | 'DISABLED';
@@ -51,7 +51,7 @@ export interface ProductCategoryForm {
 export interface ProductSku {
     skuId?: ProductId;
     version?: number;
-    skuCode: string;
+    skuCode?: string;
     barcode?: string | null;
     specName: string;
     specValues: Record<string, string>;
@@ -102,7 +102,7 @@ interface ProductMasterFields {
 export interface ProductForm extends ProductMasterFields {
     spuId?: ProductId;
     version?: number;
-    spuCode: string;
+    spuCode?: string;
     name: string;
     alias?: string | null;
     categoryId?: ProductId;
@@ -211,7 +211,7 @@ export interface ProductTag {
 export interface ProductTagForm {
     tagId?: ProductId;
     version?: number;
-    tagCode: string;
+    tagCode?: string;
     name: string;
     status: AssistantStatus;
     sortOrder: number;

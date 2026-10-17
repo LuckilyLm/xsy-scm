@@ -11,7 +11,7 @@ import static org.mockito.Mockito.*;
 
 class ProductCategoryLevelTest {
     private final ProductCategoryDao productCategoryDao = mock(ProductCategoryDao.class);
-    private final ProductCategoryService productCategoryService = new ProductCategoryService(productCategoryDao, mock(ProductSpuDao.class));
+    private final ProductCategoryService productCategoryService = new ProductCategoryService(productCategoryDao, mock(com.xsy.scm.common.no.ScmBusinessNoService.class), mock(ProductSpuDao.class));
 
     @Test
     void derivesLevelFromEnabledParent() {

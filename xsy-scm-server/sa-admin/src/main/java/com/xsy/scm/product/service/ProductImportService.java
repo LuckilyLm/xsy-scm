@@ -162,8 +162,9 @@ public class ProductImportService {
             validateCreateRow(row, categoryMap, tagMap, unitMap, result);
         for (var row : rows) {
             var key = trim(row.getSpuCode());
-            if (key != null)
-                groups.computeIfAbsent(key, k -> new ArrayList<>()).add(row);
+            // 无分组标记时每行创建独立商品；多 SKU 属于同一 SPU 时填写相同的导入分组标记。
+            groups.computeIfAbsent(key == null ? "ROW:" + row.getRowNumber() : "GROUP:" + key, k -> new ArrayList<>())
+                    .add(row);
         }
         result.setTotalProducts(groups.size());
         if (groups.size() > MAX_PRODUCTS) {
@@ -318,15 +319,15 @@ public class ProductImportService {
             // 新增 SKU 走与新增导入相同的必填口径；SKU 版本对新增行没有意义
             if (trim(row.getSkuVersion()) != null)
                 addError(result, rowNumber, trim(row.getSkuCode()), "商品规格版本", "NEW_SKU_VERSION", "新增商品规格不应填写商品规格版本");
-            required(result, rowNumber, trim(row.getSkuCode()), "商品规格编码", row.getSkuCode());
+
             required(result, rowNumber, trim(row.getSkuCode()), "商品规格名称", row.getSpecName());
             required(result, rowNumber, trim(row.getSkuCode()), "销售单位", row.getSaleUnit());
             required(result, rowNumber, trim(row.getSkuCode()), "商品类型", row.getProductType());
             required(result, rowNumber, trim(row.getSkuCode()), "市场价", row.getMarketPrice());
             required(result, rowNumber, trim(row.getSkuCode()), "商品规格状态", row.getSkuStatus());
             required(result, rowNumber, trim(row.getSkuCode()), "默认商品规格", row.getDefaultFlag());
-            var skuCode = ProductAggregateValidator.normalizeCode(row.getSkuCode());
-            if (skuCode != null && !skuCodes.add(skuCode))
+            var skuCode = trim(row.getSkuCode());
+            if (skuCode != null && !skuCodes.add(ProductAggregateValidator.normalizeCode(skuCode)))
                 addError(result, rowNumber, trim(row.getSkuCode()), "商品规格编码", "SKU_CODE_DUPLICATE", "同一商品内商品规格编码不能重复");
             if (isTruthy(row.getDefaultFlag()))
                 defaults++;
@@ -506,11 +507,9 @@ public class ProductImportService {
         required(result, rowNumber, key, "模板版本", row.getTemplateVersion());
         if (trim(row.getTemplateVersion()) != null && !TEMPLATE_VERSION.equals(trim(row.getTemplateVersion())))
             addError(result, rowNumber, key, "模板版本", "TEMPLATE_VERSION", "模板版本不受支持，请重新下载模板");
-        required(result, rowNumber, key, "商品编码", row.getSpuCode());
         required(result, rowNumber, key, "商品名称", row.getSpuName());
         required(result, rowNumber, key, "分类编码", row.getCategoryCode());
         required(result, rowNumber, key, "商品状态", row.getSpuStatus());
-        required(result, rowNumber, key, "商品规格编码", row.getSkuCode());
         required(result, rowNumber, key, "商品规格名称", row.getSpecName());
         required(result, rowNumber, key, "销售单位", row.getSaleUnit());
         required(result, rowNumber, key, "商品类型", row.getProductType());
@@ -631,7 +630,7 @@ public class ProductImportService {
 
     private void validateGroup(String spuCode, List<ProductImportRow> rows, ProductImportResultVO result) {
         var first = rows.getFirst();
-        var skuCodes = new java.util.HashSet<String>();
+        var specs = new java.util.HashSet<String>();
         int defaults = 0;
         for (var row : rows) {
             int rowNumber = row.getRowNumber();
@@ -640,9 +639,9 @@ public class ProductImportService {
             same(result, rowNumber, spuCode, "商品状态", first.getSpuStatus(), row.getSpuStatus());
             same(result, rowNumber, spuCode, "储存方式", first.getStorageMethod(), row.getStorageMethod());
             same(result, rowNumber, spuCode, "标签编码", first.getTagCodes(), row.getTagCodes());
-            var skuCode = trim(row.getSkuCode());
-            if (skuCode != null && !skuCodes.add(skuCode))
-                addError(result, rowNumber, spuCode, "商品规格编码", "SKU_CODE_DUPLICATE", "同一商品内商品规格编码不能重复");
+            var spec = trim(row.getSpecName());
+            if (spec != null && !specs.add(spec.trim().toLowerCase(Locale.ROOT)))
+                addError(result, rowNumber, spuCode, "商品规格名称", "SKU_SPEC_DUPLICATE", "同一商品内规格名称不能重复");
             if (isTruthy(row.getDefaultFlag()))
                 defaults++;
         }
@@ -656,7 +655,7 @@ public class ProductImportService {
             Map<String, ProductTagEntity> tagMap) {
         var first = rows.getFirst();
         var form = new ProductSpuAddForm();
-        form.setSpuCode(first.getSpuCode());
+        // 导入分组标记不属于商品编码；真实编码在 ProductSpuService.add 发号。
         form.setName(trim(first.getSpuName()));
         form.setAlias(trim(first.getAlias()));
         form.setCategoryId(categoryMap.get(trim(first.getCategoryCode())).getId());
@@ -672,7 +671,7 @@ public class ProductImportService {
         var skuList = new ArrayList<ProductSkuForm>();
         for (var row : rows) {
             var sku = new ProductSkuForm();
-            sku.setSkuCode(row.getSkuCode());
+            // SKU 内部码在 ProductSkuSyncManager 新增时发号。
             sku.setBarcode(trim(row.getBarcode()));
             sku.setSpecName(trim(row.getSpecName()));
             sku.setSpecValues(new LinkedHashMap<>(Map.of("规格", trim(row.getSpecName()))));

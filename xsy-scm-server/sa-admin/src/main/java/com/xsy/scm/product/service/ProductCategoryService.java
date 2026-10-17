@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.no.ScmBusinessNoService;
+import com.xsy.scm.common.no.ScmBusinessNoType;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductCategoryDao;
 import com.xsy.scm.product.dao.ProductSpuDao;
@@ -14,7 +16,6 @@ import com.xsy.scm.product.domain.form.ProductCategoryDeleteForm;
 import com.xsy.scm.product.domain.form.ProductCategoryUpdateForm;
 import com.xsy.scm.product.domain.vo.ProductCategoryTreeVO;
 import com.xsy.scm.product.domain.vo.ProductCategoryVO;
-import com.xsy.scm.product.manager.ProductAggregateValidator;
 import org.springframework.beans.BeanUtils;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 @RequiredArgsConstructor
 public class ProductCategoryService {
     private final ProductCategoryDao productCategoryDao;
+    private final ScmBusinessNoService businessNoService;
     private final ProductSpuDao productSpuDao;
 
     public List<ProductCategoryEntity> all() {
@@ -167,6 +169,7 @@ public class ProductCategoryService {
         lockParent(form.getParentId());
         var entity = new ProductCategoryEntity();
         apply(entity, form, null);
+        entity.setCategoryCode(businessNoService.next(ScmBusinessNoType.PRODUCT_CATEGORY));
         entity.setCreatedAt(entity.getUpdatedAt());
         entity.setCreatedBy(entity.getUpdatedBy());
         try {
@@ -233,8 +236,7 @@ public class ProductCategoryService {
 
     private void apply(ProductCategoryEntity entity, ProductCategoryAddForm form, Long self) {
         int level = resolveLevel(form.getParentId(), self);
-        BeanUtils.copyProperties(form, entity, "version");
-        entity.setCategoryCode(ProductAggregateValidator.normalizeCode(form.getCategoryCode()));
+        BeanUtils.copyProperties(form, entity, "version", "categoryCode");
         entity.setName(form.getName().trim());
         entity.setLevel(level);
         entity.setUpdatedAt(OffsetDateTime.now());

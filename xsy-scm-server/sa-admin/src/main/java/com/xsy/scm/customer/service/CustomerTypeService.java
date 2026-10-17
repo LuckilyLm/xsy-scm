@@ -144,11 +144,7 @@ public class CustomerTypeService {
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        String code = CustomerTypeValidator.normalizeCode(form.getTypeCode());
-        if (existsCode(code, form.getTypeId())) {
-            throw new ScmBusinessException(CUSTOMER_TYPE_CODE_DUPLICATE);
-        }
-        entity.setTypeCode(code);
+        // 客户类型编码是稳定业务语义键（例如 GROUP）；创建后不得通过编辑改变身份。
         entity.setName(CustomerTypeValidator.normalizeName(form.getName()));
         entity.setStatus(form.getStatus());
         entity.setVersion(form.getVersion());

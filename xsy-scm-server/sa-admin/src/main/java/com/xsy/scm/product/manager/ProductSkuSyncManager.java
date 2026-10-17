@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.common.no.ScmBusinessNoService;
+import com.xsy.scm.common.no.ScmBusinessNoType;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.product.dao.ProductSkuDao;
 import com.xsy.scm.product.dao.ProductBundleComponentDao;
@@ -22,6 +24,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.BUNDLE_COMPONENT_IN_
 @RequiredArgsConstructor
 public class ProductSkuSyncManager {
     private final ProductSkuDao productSkuDao;
+    private final ScmBusinessNoService businessNoService;
     private final ProductBundleComponentDao bundleDao;
 
     public List<ProductSkuEntity> existing(Long spuId) {
@@ -33,6 +36,10 @@ public class ProductSkuSyncManager {
         productSkuDao.clearDefault(spuId);
         for (var form : changes.updated()) {
             var entity = entity(spuId, form);
+            var original = productSkuDao.selectById(form.getSkuId());
+            if (original == null || !spuId.equals(original.getSpuId()))
+                throw new ScmBusinessException(VERSION_CONFLICT);
+            entity.setSkuCode(original.getSkuCode());
             entity.setId(form.getSkuId());
             entity.setVersion(form.getVersion());
             if (productSkuDao.updateById(entity) != 1)
@@ -40,6 +47,7 @@ public class ProductSkuSyncManager {
         }
         for (var form : changes.inserted()) {
             var entity = entity(spuId, form);
+            entity.setSkuCode(businessNoService.next(ScmBusinessNoType.PRODUCT_SKU));
             entity.setVersion(0);
             entity.setCreatedAt(entity.getUpdatedAt());
             entity.setCreatedBy(entity.getUpdatedBy());
@@ -63,9 +71,8 @@ public class ProductSkuSyncManager {
 
     private ProductSkuEntity entity(Long spuId, ProductSkuForm form) {
         var entity = new ProductSkuEntity();
-        BeanUtils.copyProperties(form, entity);
+        BeanUtils.copyProperties(form, entity, "skuCode");
         entity.setSpuId(spuId);
-        entity.setSkuCode(ProductAggregateValidator.normalizeCode(form.getSkuCode()));
         entity.setBarcode(ProductAggregateValidator.trimToNull(form.getBarcode()));
         entity.setSpecName(form.getSpecName().trim());
         entity.setSaleUnit(form.getSaleUnit().trim());

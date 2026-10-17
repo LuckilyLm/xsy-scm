@@ -21,12 +21,6 @@
                 </a-form-item>
               </a-col>
               <a-col :xs="24" :sm="12">
-                <a-form-item label="商品编码" name="spuCode"
-                             :rules="[{ required: true, whitespace: true, message: '请输入商品编码' }]">
-                  <a-input v-model:value="form.spuCode" :maxlength="64"/>
-                </a-form-item>
-              </a-col>
-              <a-col :xs="24" :sm="12">
                 <a-form-item label="商品分类" name="categoryId"
                              :rules="[{ required: true, message: '请选择已启用的三级分类' }]">
                   <CategorySelect v-model:value="form.categoryId" :categories="categories" mode="product"/>
@@ -290,6 +284,9 @@ async function save() {
   saving.value = true;
   try {
     const payload = JSON.parse(JSON.stringify(form.value)) as ProductForm;
+    // 只提交业务属性；内部 SPU/SKU 编码由后端发号或原样保留。
+    delete payload.spuCode;
+    payload.skuList.forEach(sku => { delete sku.skuCode; });
     await (payload.spuId ? productApi.update(payload) : productApi.add(payload));
     message.success('商品已保存');
     visible.value = false;

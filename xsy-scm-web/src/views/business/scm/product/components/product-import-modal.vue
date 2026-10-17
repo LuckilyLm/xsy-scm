@@ -1,7 +1,7 @@
 <template>
   <a-modal v-model:open="open" title="导入商品" :width="720" :mask-closable="false"
            :footer="null" @cancel="reset">
-    <p class="scm-note scm-note--block">{{ hint }}</p>
+    <p v-if="mode === 'UPDATE'" class="scm-note scm-note--block">{{ hint }}</p>
     <a-space class="toolbar">
       <a-radio-group v-model:value="mode" button-style="solid">
         <a-radio-button value="CREATE">新增商品</a-radio-button>
@@ -53,16 +53,14 @@ import { productError } from '../product-errors';
 const emit = defineEmits<{ imported: [] }>();
 const open = ref(false), file = ref<File | null>(null), importing = ref(false), templateLoading = ref(false),
     result = ref<ProductImportResult | null>(null), done = ref(false), mode = ref<ProductImportMode>('CREATE');
-const errorColumns = [
+const errorColumns = computed(() => [
   { title: 'Excel 行', dataIndex: 'rowNumber', width: 90 },
-  { title: '商品编码', dataIndex: 'spuCode', width: 150 },
+  { title: mode.value === 'CREATE' ? '导入分组' : '商品编码', dataIndex: 'spuCode', width: 150 },
   { title: '错误明细', dataIndex: 'cells' },
-];
+]);
 const groups = computed(() => (result.value ? groupErrorsByRow(result.value.errors) : []));
 const hasErrors = computed(() => !!result.value && hasBlockingErrors(result.value));
-const hint = computed(() => (mode.value === 'UPDATE'
-    ? '更新只改写你填写的单元格，空白列保持原值；填 (清空) 才会清除既有值。前四列定位键请取自刚导出的商品档案，版本过期会整批拒绝。'
-    : '任一行有错都不会写入任何商品。请先下载模板，按商品编码组织多行商品规格。'));
+const hint = '更新只改写你填写的单元格，空白列保持原值；填 (清空) 才会清除既有值。前四列定位键请取自刚导出的商品档案，版本过期会整批拒绝。';
 const doneTitle = computed(() => (result.value?.mode === 'UPDATE'
     ? `成功更新 ${result.value?.updatedProducts ?? 0} 个商品`
     : `成功导入 ${result.value?.importedProducts ?? 0} 个商品`));
@@ -117,7 +115,7 @@ async function doImport() {
 /** 失败明细在前端即时导出，符合「本次即时查看/下载、不建历史批次表」的第一版约定。 */
 function downloadErrors() {
   if (!result.value) return;
-  const header = ['Excel行', '商品编码', '列', '原因码', '说明'];
+  const header = ['Excel行', mode.value === 'CREATE' ? '导入分组' : '商品编码', '列', '原因码', '说明'];
   const lines = result.value.errors.map(e => [e.rowNumber, e.spuCode ?? '', e.column, e.code, e.message]
       .map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','));
   const blob = new Blob(['﻿' + [header.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });

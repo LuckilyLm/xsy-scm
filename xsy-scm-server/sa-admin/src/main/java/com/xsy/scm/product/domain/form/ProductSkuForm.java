@@ -20,7 +20,6 @@ import java.math.BigDecimal;
 public class ProductSkuForm {
     private Long skuId;
     private Integer version;
-    @NotBlank(message = "商品规格编码不能为空")
     @Size(max = 64, message = "商品规格编码不能超过64个字符")
     private String skuCode;
     @Size(max = 64, message = "条形码不能超过64个字符")
