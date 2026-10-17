@@ -5,9 +5,11 @@
 <template>
   <a-menu :open-keys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu" mode="inline" :inline-indent="16" :theme="theme"
           @openChange="onOpenChange">
-    <!-- 分组统一使用 Chevron 细箭头，展开时向下旋转。 -->
+    <!-- 使用组件库的实心三角形：展开向下，收起向右。 -->
     <template #expandIcon="{ isOpen }">
-      <RightOutlined class="smart-menu-chevron" :class="{ 'smart-menu-chevron-open': isOpen }"/>
+      <span class="smart-menu-caret-frame">
+        <CaretDownFilled class="smart-menu-caret" :class="{ 'smart-menu-caret-collapsed': !isOpen }"/>
+      </span>
     </template>
     <template v-for="item in menuTree" :key="item.menuId">
       <template v-if="item.visibleFlag && !item.disabledFlag">
@@ -31,7 +33,7 @@ import _ from 'lodash';
 import {computed, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import SubMenu from './sub-menu.vue';
-import {RightOutlined} from '@ant-design/icons-vue';
+import {CaretDownFilled} from '@ant-design/icons-vue';
 import {router} from '/@/router/index';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -136,22 +138,31 @@ defineExpose({
     transition: background-color 0.18s, color 0.18s;
   }
 
-  // 使用组件库的 Chevron，不添加背景或边框。
-  :deep(.ant-menu-submenu-expand-icon) {
-    width: 14px;
-    height: 14px;
-    font-size: 13px;
-    color: var(--scm-text-secondary, rgba(0, 0, 0, 0.55)) !important;
+  // expandIcon 自定义插槽直接插入标题中，必须定位插槽根元素。
+  :deep(.smart-menu-caret-frame) {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: 14px;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    margin: 0;
+    transform: translateY(-50%);
+    color: var(--scm-text-secondary, rgba(0, 0, 0, 0.55));
   }
 
-  :deep(.smart-menu-chevron) {
-    font-size: 13px;
+  :deep(.smart-menu-caret) {
+    font-size: 11px !important;
+    line-height: 1;
     transform: rotate(0deg);
     transition: transform 0.2s ease;
   }
 
-  :deep(.smart-menu-chevron-open) {
-    transform: rotate(90deg);
+  :deep(.smart-menu-caret-collapsed) {
+    transform: rotate(-90deg);
   }
 
   :deep(.ant-menu-item .anticon),
@@ -160,7 +171,8 @@ defineExpose({
   }
 
   :deep(.ant-menu-submenu-title) {
-    padding-inline-end: 28px;
+    position: relative;
+    padding-inline-end: 36px;
     font-weight: 500;
   }
 
@@ -202,8 +214,8 @@ defineExpose({
 
 // 深色菜单使用浅灰箭头，悬停和展开后仍保持中性色。
 .smart-menu.ant-menu-dark {
-  :deep(.ant-menu-submenu-expand-icon) {
-    color: rgba(255, 255, 255, 0.7) !important;
+  :deep(.smart-menu-caret-frame) {
+    color: rgba(255, 255, 255, 0.7);
   }
 }
 
