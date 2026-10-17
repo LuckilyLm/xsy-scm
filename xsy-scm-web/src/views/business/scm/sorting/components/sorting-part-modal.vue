@@ -8,8 +8,8 @@
     <a-spin :spinning="loading">
       <a-descriptions :column="2" bordered size="small" style="margin-bottom: 12px">
         <a-descriptions-item label="计划量">{{ quantityText(row?.plannedQuantitySnapshot) }}</a-descriptions-item>
-        <a-descriptions-item label="最近登记累计量">
-          {{ records.length ? quantityText(records[0].totalQuantity) : '暂无分次登记' }}
+        <a-descriptions-item label="当前登记累计量">
+          {{ totalQuantity == null ? '暂无分次登记' : quantityText(totalQuantity) }}
         </a-descriptions-item>
       </a-descriptions>
       <a-form v-if="canAppend" layout="inline" style="margin-bottom: 12px">
@@ -26,14 +26,11 @@
           <a-button type="primary" :loading="busy" @click="appendPart">登记本次分量</a-button>
         </a-form-item>
       </a-form>
-      <a-alert
-          type="info" show-icon style="margin-bottom: 12px"
-          message="登记分次并不确认最终实分量，也不会修改订单或库存。核对后仍须在任务明细里选择结果并提交。"
-      />
+      <p class="scm-note">分次登记不会确认最终分拣量。请在任务明细核对并提交。</p>
       <a-button
-          v-if="canAppend && records.length" size="small" style="margin-bottom: 12px"
+          v-if="canAppend && totalQuantity != null" size="small" style="margin-bottom: 12px"
           @click="useTotal"
-      >将最近累计量填入最终分拣草稿</a-button>
+      >将当前累计量填入最终分拣草稿</a-button>
       <a-table
           size="small" bordered :data-source="records" :columns="columns" row-key="id"
           :loading="loading" :pagination="{pageSize: 10}" :scroll="{x: 740}"
@@ -49,7 +46,7 @@
           <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
         </template>
       </a-table>
-      <p class="scm-note">仅展示本任务最近 200 条事件中属于当前明细的记录；完整历史保留在服务端。</p>
+      <a-button v-if="hasMore" :loading="loading" size="small" @click="loadRecords(false)">加载更早记录</a-button>
     </a-spin>
     <div style="text-align: right; margin-top: 12px">
       <a-button @click="emit('update:open', false)">关闭</a-button>
@@ -80,6 +77,9 @@ const loading = ref(false);
 const busy = ref(false);
 const error = ref('');
 const records = ref<SortingPartRecord[]>([]);
+const totalQuantity = ref<string | null>(null);
+const hasMore = ref(false);
+const beforeId = ref<Id | null>(null);
 const quantity = ref<string>();
 const note = ref('');
 let generation = 0;
@@ -96,18 +96,27 @@ const columns: TableColumnsType<SortingPartRecord> = [
   {title: '备注 / 调整原因', dataIndex: 'note', width: 200},
 ];
 
-async function loadRecords() {
+async function loadRecords(reset = true) {
+    if (!reset && (loading.value || !hasMore.value)) return;
     const current = ++generation;
     const taskId = props.taskId;
     const itemId = props.row?.id;
     if (!props.open || taskId == null || itemId == null) return;
     loading.value = true;
     error.value = '';
-    records.value = [];
+    if (reset) {
+        records.value = [];
+        totalQuantity.value = null;
+        hasMore.value = false;
+        beforeId.value = null;
+    }
     try {
-        const result = await sortingApi.partRecords(taskId);
+        const result = await sortingApi.partRecords(taskId, itemId, reset ? undefined : beforeId.value ?? undefined);
         if (current === generation) {
-            records.value = result.data.filter((item) => String(item.taskItemId) === String(itemId));
+            records.value = reset ? result.data.records : records.value.concat(result.data.records);
+            totalQuantity.value = result.data.totalQuantity;
+            hasMore.value = result.data.hasMore;
+            beforeId.value = result.data.nextBeforeId;
         }
     } catch (e) {
         if (current === generation) error.value = sortingError(e);
@@ -123,8 +132,8 @@ watch([() => props.open, () => props.row?.id], () => {
 }, {immediate: true});
 
 function useTotal() {
-    if (!props.row || !canAppend.value || !records.value.length) return;
-    emit('useTotal', props.row.id, records.value[0].totalQuantity);
+    if (!props.row || !canAppend.value || totalQuantity.value == null) return;
+    emit('useTotal', props.row.id, totalQuantity.value);
     emit('update:open', false);
 }
 

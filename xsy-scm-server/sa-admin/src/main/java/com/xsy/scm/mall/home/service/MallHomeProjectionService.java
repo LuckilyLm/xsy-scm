@@ -53,6 +53,7 @@ public class MallHomeProjectionService {
 
     @Transactional(readOnly = true)
     public MallHomePageVO draftPreview(Long customerId, Long warehouseId) {
+        layoutService.requireGlobalCustomerScope();
         RequestMallCustomer customer = new RequestMallCustomer();
         customer.setCustomerId(customerId);
         Long selectedWarehouse = warehouseService.require(customerId, null, warehouseId);

@@ -40,6 +40,7 @@ const DETAIL_DRAWER = '../src/views/business/scm/sorting/components/sorting-task
 const TASK_ENTRY = '../src/views/business/scm/sorting/use-sorting-task-entry.ts';
 const SUMMARY = '../src/views/business/scm/sorting/sorting-summary.vue';
 const API = '../src/api/business/scm/sorting-api.ts';
+const PART_MODAL = '../src/views/business/scm/sorting/components/sorting-part-modal.vue';
 const CONST = '../src/constants/business/scm/sorting-const.ts';
 
 /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
@@ -57,6 +58,17 @@ const detailDrawer = code(DETAIL_DRAWER);
 const taskEntry = code(TASK_ENTRY);
 const summary = code(SUMMARY);
 const api = code(API);
+
+test('分次记录只按当前任务明细查询，分页累计量由服务端返回', () => {
+    const modal = code(PART_MODAL);
+    assert.match(api, /partRecords: \(taskId: Id, itemId: Id, beforeId\?: Id\)/);
+    assert.match(api, /\/tasks\/\$\{taskId\}\/items\/\$\{itemId\}\/parts/);
+    assert.match(modal, /sortingApi\.partRecords\(taskId, itemId,/);
+    assert.match(modal, /totalQuantity\.value = result\.data\.totalQuantity/);
+    assert.match(modal, /records\.value\.concat\(result\.data\.records\)/);
+    assert.doesNotMatch(modal, /\.filter\([^)]*taskItemId/);
+    assert.doesNotMatch(modal, /\.reduce\(/);
+});
 
 /** 后端 P1 契约里的九个权限码（与 `@SaCheckPermission` / V61 的 `web_perms` 同源）。 */
 const CONTRACT_PERMS = [
@@ -77,10 +89,10 @@ const CONTRACT_PERMS = [
 
 // ------------------------------------------------------------------ 只读边界
 
-test('汇总页没有任何录入 / 写命令入口（裁决补充第 19 条）', () => {
-    // 唯一的 sortingApi 调用必须是 summary 查询
+test('三个分拣视角只调用各自的只读查询，没有录入或写命令入口', () => {
     const calls = [...summary.matchAll(/sortingApi\.(\w+)\(/g)].map((m) => m[1]);
-    assert.deepEqual(calls, ['summary'], `汇总页只允许查询，实际调用了 ${calls}`);
+    assert.deepEqual(calls, ['summary', 'customerLines', 'confirmedPerformance'],
+        `三个视角只允许固定的查询，实际调用了 ${calls}`);
     for (const forbidden of ['enter', 'create', 'assign', 'complete', 'cancel', 'reopen', 'print', 'entry']) {
         assert.ok(!new RegExp(`\\b${forbidden}\\s*\\(`).test(summary), `汇总页出现了写动作 ${forbidden}`);
     }
@@ -145,11 +157,12 @@ test('打印预览是只读 GET，登记计次才是带幂等键的 POST', () =>
     assert.match(record, /version: printVersion\.value/);
 });
 
-test('幂等键只加在建单与登记打印上，失败保留同一 UUID、成功即换新', () => {
+test('建单、分次追加与登记打印带幂等键，其余状态命令靠版本防重', () => {
     assert.match(api, /'Idempotency-Key': key/);
     assert.match(api, /crypto\.randomUUID\(\)/);
     assert.match(api, /idempotentKeys\.delete\(signature\)/);
     assert.match(api, /create: .*=> command<SortingTaskDetail>\('\/tasks', form\)/);
+    assert.match(api, /appendPart: \(id: Id, payload: SortingPartPayload\) =>[\s\S]*?command<SortingPartRecord>\(`/);
     // 其余命令的重复提交由行 / 任务乐观锁拦截，带幂等头只会把冲突掩盖成成功
     for (const path of ['assign', 'enter', 'complete', 'cancel', 'reopen']) {
         assert.match(api, new RegExp(`${path}: [^\\n]*=> call<`), `${path} 不应走幂等 command()`);

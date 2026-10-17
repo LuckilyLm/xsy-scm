@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,7 @@ import com.xsy.scm.sorting.permission.SortingPermission;
 import com.xsy.scm.sorting.domain.vo.SortingCandidateLineVO;
 import com.xsy.scm.sorting.domain.vo.SortingCustomerLineVO;
 import com.xsy.scm.sorting.domain.vo.SortingPartRecordVO;
+import com.xsy.scm.sorting.domain.vo.SortingPartHistoryVO;
 import com.xsy.scm.sorting.domain.vo.SortingPerformanceVO;
 import com.xsy.scm.sorting.domain.vo.SortingPrintResultVO;
 import com.xsy.scm.sorting.domain.vo.SortingPrintVO;
@@ -60,10 +62,12 @@ public class SortingTaskController {
         return ResponseDTO.ok(sortingQueryService.detail(id));
     }
 
-    @GetMapping("/tasks/{id}/parts")
+    @GetMapping("/tasks/{id}/items/{itemId}/parts")
     @SaCheckPermission(SortingPermission.TASK_QUERY)
-    public ResponseDTO<java.util.List<SortingPartRecordVO>> parts(@PathVariable Long id) {
-        return ResponseDTO.ok(sortingQueryService.parts(id));
+    public ResponseDTO<SortingPartHistoryVO> parts(@PathVariable Long id,
+            @PathVariable Long itemId, @RequestParam(required = false) Long beforeId,
+            @RequestParam(defaultValue = "50") int limit) {
+        return ResponseDTO.ok(sortingQueryService.parts(id, itemId, beforeId, limit));
     }
 
     @PostMapping("/tasks/{id}/parts")

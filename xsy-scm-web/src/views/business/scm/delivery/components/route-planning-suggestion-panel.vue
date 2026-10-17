@@ -1,5 +1,5 @@
 <template>
-  <p class="scm-note scm-note--block">建议基于当前授权线路内已绑定的停靠点，而非全公司未排线订单池。建议不会自动修改线路或发车；每次应用都要人工确认，服务端会重验版本及所有停靠点快照。</p>
+  <p class="scm-note scm-note--block">建议仅覆盖当前线路停靠点；应用前请核对。</p>
   <a-space class="plan-actions">
     <a-button
         type="primary"
@@ -23,13 +23,12 @@
       </a-descriptions-item>
       <a-descriptions-item label="总距离">{{ proposal.totalDistance }} 米</a-descriptions-item>
       <a-descriptions-item label="停靠点数">{{ proposal.stopCount }}</a-descriptions-item>
-      <a-descriptions-item label="算路来源" :span="2">
-        {{ proposal.providerCode }} v{{ proposal.providerVersion }}
-        <a-tag v-if="proposal.estimated" color="orange" class="ml">估算，非真实路网</a-tag>
+      <a-descriptions-item label="距离计算方式" :span="2">
+        {{ distanceBasis(proposal) }}
       </a-descriptions-item>
       <a-descriptions-item label="生成时间">{{ datetime(proposal.createdAt) }}</a-descriptions-item>
       <a-descriptions-item label="排序规则" :span="3">
-        {{ planRuleLabels[proposal.ruleCode] || proposal.ruleCode }}
+        {{ planRuleLabels[proposal.ruleCode] || '未知规则' }}
       </a-descriptions-item>
     </a-descriptions>
 
@@ -40,7 +39,7 @@
     />
     <a-alert
         type="info" show-icon style="margin-bottom: 12px"
-        :message="`排线未纳入：${ignoredFactorText}。候选路线只优化冻结距离矩阵，不承诺时间窗、载重或实时路况。`"
+        :message="`建议未考虑：${ignoredFactorText}。请核对车辆和送达要求。`"
     />
     <a-space style="margin-bottom: 12px">
       <a-radio-group v-model:value="viewMode" button-style="solid">
@@ -61,7 +60,7 @@
     >
       <template #bodyCell="{ record, column }">
         <template v-if="column.dataIndex === 'change'">
-          <a-tag v-if="record.originalSeq == null">旧版快照无顺序</a-tag>
+          <a-tag v-if="record.originalSeq == null">历史建议无原顺序</a-tag>
           <a-tag v-else :color="record.originalSeq === record.seq ? 'default' : 'orange'">
             {{ record.originalSeq === record.seq ? '不变' : `${record.originalSeq} → ${record.seq}` }}
           </a-tag>
@@ -75,9 +74,9 @@
     <div v-if="viewMode === 'map'" class="plan-map-pane">
       <a-radio-group v-model:value="mapVariant" button-style="solid" style="margin-bottom: 12px">
         <a-radio-button value="current">当前线路顺序</a-radio-button>
-        <a-radio-button value="suggested">冻结建议顺序</a-radio-button>
+        <a-radio-button value="suggested">建议生成时顺序</a-radio-button>
       </a-radio-group>
-      <p class="plan-note">当前线路以最新授权站点为准；建议地图使用生成时冻结的坐标。地图道路路径是当前地图服务的预览，不能替代建议中冻结的距离和来源。</p>
+      <p class="plan-note">地图显示当前道路，仅供位置参考；建议距离以生成时为准。</p>
       <ScmMap v-if="mapReady" :points="previewMapPoints" route />
       <a-alert v-else message="该视角缺少完整、同坐标系的起点或停靠点；历史顺序表仍可查看。" show-icon type="warning"/>
     </div>
@@ -129,6 +128,7 @@
             {{ planProposalStatuses[record.status]?.label || record.status }}
           </a-tag>
         </template>
+        <template v-else-if="column.dataIndex === 'providerCode'">{{ distanceBasis(record) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-button type="link" :disabled="busy || loading" @click="emit('select', record)">查看</a-button>
         </template>
@@ -167,6 +167,7 @@ const emit = defineEmits<{
 
 const viewMode = ref<'list' | 'map'>('list');
 const mapVariant = ref<'current' | 'suggested'>('suggested');
+const distanceBasis = (plan: DeliveryPlanProposal) => plan.estimated ? '直线距离估算' : '道路距离';
 
 const sourceVersionStale = computed(() =>
     props.proposal?.sourceRouteVersion == null ||
@@ -210,7 +211,7 @@ const suggestedMapPoints = computed<MapPoint[]>(() => {
             longitude: plan.sourceLongitude,
             latitude: plan.sourceLatitude,
             geomCrs: plan.sourceGeomCrs,
-            label: '冻结建议起点',
+            label: '建议生成时起点',
         },
         ...(plan.legs ?? []).map((leg) => ({
             longitude: leg.longitude,
@@ -244,7 +245,7 @@ const planHistoryColumns: TableColumnsType = [
   {title: '状态', dataIndex: 'status', width: 100, align: 'center'},
   {title: '停靠点数', dataIndex: 'stopCount', align: 'right', width: 100},
   {title: '总距离（米）', dataIndex: 'totalDistance', align: 'right', width: 130},
-  {title: '算路来源', dataIndex: 'providerCode', width: 220},
+  {title: '距离计算方式', dataIndex: 'providerCode', align: 'center', width: 160},
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ];
 </script>

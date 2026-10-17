@@ -33,11 +33,8 @@
           <template v-else-if="column.dataIndex === 'action'">
             <a-space size="small">
               <a-button type="link" v-privilege="'scm:mall:home:edit'" @click="editBlock(record)">编辑</a-button>
-              <a-button type="link" :disabled="index === 0" v-privilege="'scm:mall:home:edit'" @click="move(index, -1)">上移</a-button>
-              <a-button type="link" :disabled="index === blocks.length - 1" v-privilege="'scm:mall:home:edit'" @click="move(index, 1)">下移</a-button>
-              <a-popconfirm title="从草稿移除此组件？" @confirm="removeBlock(record.key)">
-                <a-button type="link" danger v-privilege="'scm:mall:home:edit'">移除</a-button>
-              </a-popconfirm>
+              <ScmActionMore v-if="hasPermission('scm:mall:home:edit')" :actions="rowActions(index)"
+                             @select="onRowAction($event, record, index)"/>
             </a-space>
           </template>
         </template>
@@ -46,7 +43,7 @@
 
     <a-row :gutter="16" class="mall-home-editor__lower">
       <a-col :xs="24" :lg="14">
-        <a-card title="服务端内容预览" :bordered="false" size="small">
+        <a-card title="客户内容预览" :bordered="false" size="small">
           <a-space wrap class="mall-home-editor__toolbar">
             <CustomerSelect v-model:value="previewCustomerId" width="200px"/>
             <WarehouseSelect v-model:value="previewWarehouseId" width="180px"/>
@@ -87,7 +84,7 @@
       </a-col>
     </a-row>
 
-    <a-drawer :open="editorOpen" title="编辑首页组件" :width="520" @close="editorOpen=false">
+    <a-drawer :open="editorOpen" title="编辑首页组件" :width="scmDrawerWidth('s')" @close="editorOpen=false">
       <a-form v-if="editing" layout="vertical">
         <a-form-item label="组件类型"><a-input :value="blockTypeLabel(editing.type)" disabled/></a-form-item>
         <a-form-item v-if="editing.type !== 'ANNOUNCEMENT'" label="标题">
@@ -103,7 +100,7 @@
           <a-upload accept="image/png,image/jpeg,image/webp,image/gif" :show-upload-list="false" :custom-request="uploadImage">
             <a-button :loading="uploading">上传公开图片</a-button>
           </a-upload>
-          <span v-if="editing.imageFileKey" class="scm-note">已选图片，保存草稿后可查看服务端展示内容。</span>
+          <span v-if="editing.imageFileKey" class="scm-note">已选图片，保存后可预览。</span>
         </a-form-item>
         <a-form-item v-if="editing.type === 'RECOMMENDATION'" label="推荐商品规格" required>
           <SkuSelect v-model:value="recommendationSkuIds" mode="multiple" :limit="100"/>
@@ -118,8 +115,8 @@
         <a-form-item v-if="editing.linkType === 'ACTIVITY'" label="目标活动">
           <a-select v-model:value="activityTargetId" show-search option-filter-prop="label" :options="activityOptions"/>
         </a-form-item>
-        <a-form-item v-if="editing.linkType === 'EXTERNAL_URL'" label="允许的 HTTPS 外链">
-          <a-input v-model:value="editing.linkTarget" placeholder="需在服务端外链域名白名单中"/>
+        <a-form-item v-if="editing.linkType === 'EXTERNAL_URL'" label="外部网页地址">
+          <a-input v-model:value="editing.linkTarget" placeholder="仅限已授权的 HTTPS 域名"/>
         </a-form-item>
         <a-form-item label="展示客户">
           <a-select v-model:value="editing.customerIds" mode="multiple" show-search option-filter-prop="label"
@@ -156,6 +153,9 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import {hasPermission} from '../common/scm-permission';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 const blockTypeOptions: {value: HomeBlockType; label: string}[] = [
   {value: 'BANNER', label: '轮播图'}, {value: 'SHORTCUT', label: '快捷入口'},
@@ -174,7 +174,7 @@ const columns: TableColumnsType<HomeBlock> = [
   {title: '内容', dataIndex: 'title', width: 230},
   {title: '展示客户', dataIndex: 'audience', width: 145},
   {title: '状态', dataIndex: 'enabled', width: 90, align: 'center'},
-  {title: '操作', dataIndex: 'action', width: 260}
+  {title: '操作', dataIndex: 'action', align: 'center', width: 150}
 ];
 const newType = ref<HomeBlockType>('BANNER');
 const blocks = ref<HomeBlock[]>([]), releases = ref<HomeRelease[]>([]);
@@ -279,6 +279,18 @@ function move(index: number, step: number): void {
   normalize(); dirty.value = true;
 }
 function removeBlock(key: string): void { blocks.value = blocks.value.filter(block => block.key !== key); normalize(); dirty.value = true; }
+function rowActions(index: number) {
+  return [
+    {key: 'up', label: '上移', disabled: index === 0},
+    {key: 'down', label: '下移', disabled: index === blocks.value.length - 1},
+    {key: 'remove', label: '移除', danger: true}
+  ];
+}
+function onRowAction(action: string, block: HomeBlock, index: number): void {
+  if (action === 'up') move(index, -1);
+  else if (action === 'down') move(index, 1);
+  else if (action === 'remove') Modal.confirm({title: '从草稿移除此组件？', onOk: () => removeBlock(block.key)});
+}
 
 const uploadImage: UploadProps['customRequest'] = async options => {
   if (!editing.value || !(options.file instanceof File)) return;
@@ -344,10 +356,10 @@ onMounted(load);
 .mall-home-editor__alert {margin-top: 12px}
 .mall-home-editor__lower {margin: 0}
 .mall-home-editor__preview {display: grid; gap: 12px; margin-top: 16px}
-.mall-home-editor__preview-block {padding: 12px; border: 1px solid var(--scm-border-color, #e5e7eb); border-radius: 12px}
+.mall-home-editor__preview-block {padding: 12px; border: 1px solid var(--scm-border, #f0f0f0); border-radius: 12px}
 .mall-home-editor__preview-block img {display: block; width: min(100%, 460px); max-height: 170px; object-fit: cover; margin-bottom: 8px; border-radius: 8px}
 .mall-home-editor__preview-block p {margin: 6px 0 0}
 .mall-home-editor__preview-products {display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px}
-.mall-home-editor__preview-products span {padding: 4px 8px; background: var(--scm-surface-muted, #f5f6f8); border-radius: 6px}
+.mall-home-editor__preview-products span {padding: 4px 8px; background: var(--scm-fill, #fafafa); border-radius: 6px}
 @media (max-width: 720px) {.mall-home-editor__heading {display: block}}
 </style>

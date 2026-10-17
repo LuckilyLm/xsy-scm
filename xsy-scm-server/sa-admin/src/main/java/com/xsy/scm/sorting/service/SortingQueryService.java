@@ -14,6 +14,7 @@ import com.xsy.scm.sorting.domain.form.SortingTaskQueryForm;
 import com.xsy.scm.sorting.domain.vo.SortingCandidateLineVO;
 import com.xsy.scm.sorting.domain.vo.SortingCustomerLineVO;
 import com.xsy.scm.sorting.domain.vo.SortingPartRecordVO;
+import com.xsy.scm.sorting.domain.vo.SortingPartHistoryVO;
 import com.xsy.scm.sorting.domain.vo.SortingPerformanceVO;
 import com.xsy.scm.sorting.domain.vo.SortingPrintVO;
 import com.xsy.scm.sorting.domain.vo.SortingSkuSummaryVO;
@@ -84,11 +85,25 @@ public class SortingQueryService {
         return result;
     }
 
-    /** 分次事件只在完整任务可见后读取；仅返回最近 200 条，历史记录仍全部保留。 */
+    /** 分次事件先判任务可见，再核对明细归属；列表按该明细游标分页，累计量取全部历史最新事件。 */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
-    public java.util.List<SortingPartRecordVO> parts(Long taskId) {
-        detail(taskId);
-        return sortingPartRecordDao.recent(taskId);
+    public SortingPartHistoryVO parts(Long taskId, Long itemId, Long beforeId,
+            int limit) {
+        var task = detail(taskId);
+        if (itemId == null || limit < 1 || limit > 100 || beforeId != null && beforeId <= 0) {
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        }
+        if (task.getItems().stream().noneMatch(item -> itemId.equals(item.getId())
+                && item.getSalesOrderItemId() != null)) {
+            throw new ScmDataScopeException();
+        }
+        SortingPartRecordVO latest = sortingPartRecordDao.latestInTask(taskId, itemId);
+        var fetched = sortingPartRecordDao.byItem(taskId, itemId, beforeId, limit + 1);
+        boolean hasMore = fetched.size() > limit;
+        var records = hasMore ? fetched.subList(0, limit) : fetched;
+        Long nextBeforeId = hasMore ? records.getLast().getId() : null;
+        return new SortingPartHistoryVO(records,
+                latest == null ? null : latest.getTotalQuantity(), hasMore, nextBeforeId);
     }
 
     /**

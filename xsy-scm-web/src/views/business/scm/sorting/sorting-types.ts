@@ -134,6 +134,13 @@ export interface SortingPartRecord {
     createdAt: string;
 }
 
+export interface SortingPartHistory {
+    records: SortingPartRecord[];
+    totalQuantity: string | null;
+    hasMore: boolean;
+    nextBeforeId: Id | null;
+}
+
 /** `SortingTaskDetailVO`。 */
 export interface SortingTaskDetail {
     task: SortingTask;

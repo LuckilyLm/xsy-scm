@@ -28,9 +28,20 @@ public interface SortingPartRecordDao {
     SortingPartRecordVO latest(@Param("itemId") Long itemId);
 
     @Select("""
+            <script>
             SELECT * FROM xsy_sorting_part_record
-            WHERE task_id = #{taskId}
-            ORDER BY id DESC LIMIT 200
+            WHERE task_id = #{taskId} AND task_item_id = #{itemId}
+            <if test="beforeId != null">AND id &lt; #{beforeId}</if>
+            ORDER BY id DESC LIMIT #{limitPlusOne}
+            </script>
             """)
-    List<SortingPartRecordVO> recent(@Param("taskId") Long taskId);
+    List<SortingPartRecordVO> byItem(@Param("taskId") Long taskId, @Param("itemId") Long itemId,
+            @Param("beforeId") Long beforeId, @Param("limitPlusOne") int limitPlusOne);
+
+    @Select("""
+            SELECT * FROM xsy_sorting_part_record
+            WHERE task_id = #{taskId} AND task_item_id = #{itemId}
+            ORDER BY id DESC LIMIT 1
+            """)
+    SortingPartRecordVO latestInTask(@Param("taskId") Long taskId, @Param("itemId") Long itemId);
 }

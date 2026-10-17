@@ -23,7 +23,8 @@ test('release exposes customer-scoped commerce APIs without employee account end
   assert.match(api, /Order/);
   assert.match(api, /AfterSale/);
   assert.match(api, /Funds/);
-  assert.doesNotMatch(api, /Account|Home/);
+  assert.match(api, /mallHomeApi \} from '\.\/home-api'/);
+  assert.doesNotMatch(api, /Account/);
 });
 
 test('funds pages use only customer read APIs and do not create payment commands', () => {
@@ -395,6 +396,23 @@ test('frequent products follow the backend array contract', () => {
   assert.doesNotMatch(home, /response\.data\?\.list/);
   // mock 与后端一致：返回数组而不是分页包装
   assert.match(mock, /MOCK_PRODUCTS\.filter\(\(p\) => p\.favorite\)\.slice\(0, limit\)/);
+});
+
+test('published mall home uses the customer endpoint and checks web links against visible blocks', () => {
+  const home = read('../src/pages/home/index.vue');
+  const api = read('../src/api/mall/home-api.js');
+  const web = read('../src/pages-sub/mall/web.vue');
+  const routes = read('../src/pages.json');
+  assert.match(api, /getRequest\('\/scm\/mall\/home'/);
+  assert.match(api, /response\.data\?\.blocks/);
+  assert.match(api, /\.map\(adaptProduct\)/);
+  assert.match(home, /mallHomeApi\.published\(\)/);
+  assert.match(home, /homeLayout\.value\?\.releaseId != null/);
+  assert.match(home, /request !== homeRequest \|\| !userStore\.isLogin \|\| userStore\.customerId !== customerId/);
+  assert.match(home, /v-if="!hasPublishedLayout"/);
+  assert.match(web, /mallHomeApi\.published\(\)/);
+  assert.match(web, /block\.linkType === 'EXTERNAL_URL' && block\.linkTarget === value/);
+  assert.match(routes, /"root": "pages-sub\/mall"/);
 });
 
 test('catalog adapter maps backend VO fields to the display model', () => {

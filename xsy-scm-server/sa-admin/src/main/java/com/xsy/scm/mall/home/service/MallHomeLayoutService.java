@@ -117,7 +117,7 @@ public class MallHomeLayoutService {
         return homeDao.history();
     }
 
-    private void requireGlobalCustomerScope() {
+    public void requireGlobalCustomerScope() {
         if (!scopeService.resolve().getCustomerSellerScope().isAll()) {
             throw new ScmDataScopeException();
         }

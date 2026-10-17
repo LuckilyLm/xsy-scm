@@ -14,6 +14,7 @@ import type {
     SortingPrintResult,
     SortingPartPayload,
     SortingPartRecord,
+    SortingPartHistory,
     SortingPerformance,
     SortingSkuSummary,
     SortingSummaryQuery,
@@ -56,7 +57,9 @@ async function command<T>(path: string, data: unknown): Promise<ScmResponse<T>> 
 export const sortingApi = {
     tasks: (query: SortingTaskQuery) => call<ScmPage<SortingTask>>('get', '/tasks', query),
     detail: (id: Id) => call<SortingTaskDetail>('get', `/tasks/${id}`),
-    partRecords: (id: Id) => call<SortingPartRecord[]>('get', `/tasks/${id}/parts`),
+    partRecords: (taskId: Id, itemId: Id, beforeId?: Id) =>
+        call<SortingPartHistory>('get', `/tasks/${taskId}/items/${itemId}/parts`,
+            {limit: 50, ...(beforeId == null ? {} : {beforeId})}),
     appendPart: (id: Id, payload: SortingPartPayload) =>
         command<SortingPartRecord>(`/tasks/${id}/parts`, payload),
     summary: (query: SortingSummaryQuery, options?: RequestOptions) =>

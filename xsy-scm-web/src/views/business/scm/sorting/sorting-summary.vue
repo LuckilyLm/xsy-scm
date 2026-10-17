@@ -43,7 +43,7 @@
       <a-radio-button v-if="hasPermission(SCM_SORTING_PERMISSION.TASK_QUERY)" value="customer">按客户明细</a-radio-button>
       <a-radio-button value="performance">最终确认统计</a-radio-button>
     </a-radio-group>
-    <p class="scm-note">按商品仅同规格同单位汇总；客户明细逐条展示。最终确认统计仅计已完成任务的最后确认人，不等同个人劳动绩效或工资依据。所有视角只读。</p>
+    <p class="scm-note">按商品规格和销售单位分别汇总；最终确认统计不代表个人绩效或工资。</p>
 
     <a-table v-if="viewMode === 'sku'"
         :id="SCM_SORTING_TABLE_ID.SUMMARY"

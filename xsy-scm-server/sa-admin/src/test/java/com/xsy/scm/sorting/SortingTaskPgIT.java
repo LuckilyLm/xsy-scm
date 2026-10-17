@@ -253,7 +253,10 @@ class SortingTaskPgIT extends ScmW6PgITBase {
                 () -> sorting.create(createForm("g1", List.of(mine.item()), sorterA), key("g1")));
         Long taskId = detail.getTask().getId();
         var line = detail.getItems().getFirst();
-        Long foreignItemId = order("g2", "4.0000").item();
+        var foreignOrder = order("g2", "4.0000");
+        Long foreignItemId = as(lead, QUEUE_MANAGER,
+                () -> sorting.create(createForm("g2", List.of(foreignOrder.item()), sorterA), key("g2")))
+                .getItems().getFirst().getId();
 
         expectCode(() -> doAs(sorterA, SORTER, () -> sorting.enter(taskId,
                 entryForm(entryItem(foreignItemId, 0, "4.0000", "SHORT", "别人的行")))), 41122);
@@ -466,7 +469,9 @@ class SortingTaskPgIT extends ScmW6PgITBase {
                 () -> sorting.enter(taskId, entryForm(
                         entryItem(line.getId(), itemVersion(line.getId()), "3.0000", "NORMAL", null)))), 40000);
         completeLine(taskId, line, "4.0000", "NORMAL", null);
-        assertThat(as(sorterA, SORTER, () -> queries.parts(taskId))).hasSize(3);
+        var history = as(sorterA, SORTER, () -> queries.parts(taskId, line.getId(), null, 50));
+        assertThat(history.records()).hasSize(3);
+        assertThat(history.totalQuantity()).isEqualByComparingTo("4.0000");
         as(sorterA, SORTER, () -> {
             sorting.complete(taskId, action(currentVersion(taskId), null));
             return null;
@@ -481,11 +486,56 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     @DisplayName("分次事件按任务授权读取，跨指派人不可借流水窥探客户明细")
     void partHistoryRespectsTaskScope() {
         var order = order("priv", "2.0000");
-        Long taskId = as(lead, QUEUE_MANAGER,
-                () -> sorting.create(createForm("priv", List.of(order.item()), sorterA), key("priv"))).getTask().getId();
-        assertThatThrownBy(() -> as(sorterB, SORTER, () -> queries.parts(taskId)))
+        var detail = as(lead, QUEUE_MANAGER,
+                () -> sorting.create(createForm("priv", List.of(order.item()), sorterA), key("priv")));
+        Long taskId = detail.getTask().getId();
+        Long itemId = detail.getItems().getFirst().getId();
+        assertThatThrownBy(() -> as(sorterB, SORTER, () -> queries.parts(taskId, itemId, null, 50)))
                 .isInstanceOf(BusinessException.class).hasMessage(UserErrorCode.NO_PERMISSION.getMsg());
-        assertThat(as(sorterA, SORTER, () -> queries.parts(taskId))).isEmpty();
+        assertThat(as(sorterA, SORTER, () -> queries.parts(taskId, itemId, null, 50)).records()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("分次记录按明细分页，其他明细超过二百条仍能读到完整累计量")
+    void partHistoryUsesItemCursorAndCurrentTotal() {
+        var firstOrder = order("hist-a", "2.0000");
+        var secondOrder = order("hist-b", "2.0000");
+        var detail = as(lead, QUEUE_MANAGER, () -> sorting.create(
+                createForm("hist", List.of(firstOrder.item(), secondOrder.item()), sorterA), key("hist")));
+        Long taskId = detail.getTask().getId();
+        Long firstItemId = detail.getItems().stream()
+                .filter(item -> firstOrder.item().equals(item.getSalesOrderItemId()))
+                .findFirst().orElseThrow().getId();
+        Long secondItemId = detail.getItems().stream()
+                .filter(item -> secondOrder.item().equals(item.getSalesOrderItemId()))
+                .findFirst().orElseThrow().getId();
+        jdbc.update("INSERT INTO xsy_sorting_part_record "
+                + "(task_id,task_item_id,event_type,quantity_delta,total_quantity,created_by) "
+                + "VALUES (?,?,'APPEND',1.0000,1.0000,'fixture')", taskId, firstItemId);
+        jdbc.update("INSERT INTO xsy_sorting_part_record "
+                + "(task_id,task_item_id,event_type,quantity_delta,total_quantity,created_by) "
+                + "SELECT ?,?,'APPEND',1.0000,n::numeric(18,4),'fixture' FROM generate_series(1,205) n",
+                taskId, secondItemId);
+        var oldLine = as(sorterA, SORTER, () -> queries.parts(taskId, firstItemId, null, 50));
+        assertThat(oldLine.records()).hasSize(1);
+        assertThat(oldLine.totalQuantity()).isEqualByComparingTo("1.0000");
+        assertThat(oldLine.hasMore()).isFalse();
+
+        jdbc.update("INSERT INTO xsy_sorting_part_record "
+                + "(task_id,task_item_id,event_type,quantity_delta,total_quantity,created_by) "
+                + "SELECT ?,?,'APPEND',1.0000,n::numeric(18,4),'fixture' FROM generate_series(2,61) n",
+                taskId, firstItemId);
+        evictMybatisCache();
+        var firstPage = as(sorterA, SORTER, () -> queries.parts(taskId, firstItemId, null, 50));
+        assertThat(firstPage.records()).hasSize(50);
+        assertThat(firstPage.totalQuantity()).isEqualByComparingTo("61.0000");
+        assertThat(firstPage.hasMore()).isTrue();
+        var secondPage = as(sorterA, SORTER,
+                () -> queries.parts(taskId, firstItemId, firstPage.nextBeforeId(), 50));
+        assertThat(secondPage.records()).hasSize(11);
+        assertThat(secondPage.records().getLast().getTotalQuantity()).isEqualByComparingTo("1.0000");
+        assertThat(secondPage.totalQuantity()).isEqualByComparingTo("61.0000");
+        assertThat(secondPage.hasMore()).isFalse();
     }
 
     // ------------------------------------------------------------------
