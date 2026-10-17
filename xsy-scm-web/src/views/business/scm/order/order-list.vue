@@ -10,6 +10,10 @@
       <a-form-item label="订单状态" class="smart-query-form-item">
         <SmartEnumSelect enum-name="SCM_ORDER_STATUS_ENUM" v-model:value="queryForm.status" width="140px"/>
       </a-form-item>
+      <a-form-item label="订单标签" class="smart-query-form-item">
+        <a-select v-model:value="queryForm.tagId" :options="tagOptions" allow-clear
+                  placeholder="全部标签" style="width: 150px" show-search option-filter-prop="label"/>
+      </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch" v-privilege="'scm:order:query'">查询</a-button>
@@ -28,9 +32,13 @@
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:order:add'" @click="drawer?.open()">新建订单</a-button>
         <a-button v-privilege="'scm:order:import'" @click="importModal?.open()">导入订单</a-button>
-        <a-button v-if="canPriceCheck" :disabled="!selected.length || selected.length > 8"
+        <a-button v-if="canPriceCheck"
+                  :disabled="!selected.length || selected.length > 8 || !selectedAllDraft"
                   @click="openBatchPriceCheck">批量核价（最多8单）</a-button>
-        <a-button danger v-privilege="'scm:order:delete'" :disabled="!selected.length" @click="batchDelete">
+        <a-button v-if="canManageTags" :disabled="!selected.length || selected.length > 20"
+                  @click="openBatchTags">批量打标签</a-button>
+        <a-button danger v-privilege="'scm:order:delete'"
+                  :disabled="!selected.length || !selectedAllDraft" @click="batchDelete">
           批量删除草稿
         </a-button>
       </div>
@@ -40,13 +48,20 @@
     </a-row>
     <a-table id="order-table" size="small" :data-source="tableData" :columns="columns" row-key="orderId" bordered
              :loading="loading" :pagination="false" :scroll="{x:scmColumnsWidth(columns, SCM_COLUMN_WIDTH.selection)}"
-             :row-selection="{columnWidth:SCM_COLUMN_WIDTH.selection,selectedRowKeys:selected,onChange:(keys:(string|number)[])=>selected=keys,getCheckboxProps:(r:Order)=>({disabled:r.status!=='DRAFT'})}">
+             :row-selection="{columnWidth:SCM_COLUMN_WIDTH.selection,selectedRowKeys:selected,onChange:(keys:(string|number)[])=>selected=keys}">
       <template #bodyCell="{record,column}">
         <template v-if="column.dataIndex==='orderNo'"><a @click="openDetail(record.orderId)">{{ record.orderNo }}</a>
         </template>
         <template v-else-if="column.dataIndex==='customerNameSnapshot'">{{ record.customerNameSnapshot || '—' }}</template>
         <template v-else-if="column.dataIndex==='customerCodeSnapshot'">
           <span class="scm-mono">{{ record.customerCodeSnapshot || '—' }}</span>
+        </template>
+        <template v-else-if="column.dataIndex==='tags'">
+          <a-space :size="4" wrap>
+            <a-tag v-for="tag in record.tags ?? []" :key="String(tag.tagId)"
+                   :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
+            <span v-if="!record.tags?.length">—</span>
+          </a-space>
         </template>
         <template v-else-if="column.dataIndex==='status'">
           <ScmStatusTag :tone="statusTone(record.status)"
@@ -94,6 +109,7 @@
   <OrderForm ref="drawer" @saved="queryData"/>
   <OrderImportModal ref="importModal" @saved="queryData"/>
   <OrderBatchPriceCheckModal ref="priceCheckModal" @saved="queryData"/>
+  <OrderTagModal ref="tagModal" @saved="onTagsSaved"/>
 </template>
 <script setup lang="ts">
 import {SCM_COLUMN_WIDTH, scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -116,11 +132,30 @@ import {hasPermission} from '../common/scm-permission';
 import OrderForm from './components/order-form-drawer.vue';
 import OrderImportModal from './components/order-import-modal.vue';
 import OrderBatchPriceCheckModal from './components/order-batch-price-check-modal.vue';
+import OrderTagModal from './components/order-tag-modal.vue';
+import {orderTagApi, tagColor} from '/@/api/business/scm/order-tag-api';
+import type {OrderTag} from '/@/api/business/scm/order-tag-api';
 
 const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<Order[]>([]), total = ref(0),
     loading = ref(false), error = ref(''), selected = ref<(string | number)[]>([]);
 const drawer = ref<InstanceType<typeof OrderForm>>(), importModal = ref<InstanceType<typeof OrderImportModal>>();
 const priceCheckModal = ref<InstanceType<typeof OrderBatchPriceCheckModal>>();
+const tagModal = ref<InstanceType<typeof OrderTagModal>>();
+const availableTags = ref<OrderTag[]>([]);
+const tagOptions = computed(() => availableTags.value.map(tag => ({label: tag.name, value: tag.tagId})));
+
+async function loadTags(): Promise<void> {
+  try {
+    availableTags.value = (await orderTagApi.list()).data;
+  } catch {
+    // 订单查询错误仍由主列表处理；这里只隐藏不可用的标签筛选项。
+    availableTags.value = [];
+  }
+}
+function onTagsSaved(): void {
+  void loadTags();
+  void queryData();
+}
 const route = useRoute();
 const router = useRouter();
 
@@ -151,6 +186,7 @@ const columns = ref<OrderListColumn[]>([
   {title: '客户编码', dataIndex: 'customerCodeSnapshot', width: 125, showFlag: false},
   {title: '来源', dataIndex: 'orderSource', align: 'center', width: 100},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
+  {title: '标签', dataIndex: 'tags', width: 180},
   {title: '下单金额', dataIndex: 'orderedTotalAmount', align: 'right', width: 130},
   {title: '结算金额', dataIndex: 'settlementTotalAmount', align: 'right', width: 130},
   {title: '期望配送时间', dataIndex: 'expectDeliveryTime', width: 180},
@@ -169,6 +205,15 @@ const statusTone = (value?: string | null): ScmStatusTone => STATUS_TONE[value ?
 /** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
 const canAdd = computed(() => hasPermission('scm:order:add'));
 const canDelete = computed(() => hasPermission('scm:order:delete'));
+const canManageTags = computed(() => hasPermission('scm:order:query') && hasPermission('scm:order:update'));
+const selectedRows = computed(() => tableData.value.filter(row => row.orderId != null
+  && selected.value.some(id => String(id) === String(row.orderId))));
+const selectedAllDraft = computed(() => selectedRows.value.length === selected.value.length
+  && selectedRows.value.every(row => row.status === 'DRAFT'));
+function openBatchTags(): void {
+  if (!canManageTags.value) return;
+  tagModal.value?.open(selectedRows.value.map(row => row.orderId!));
+}
 const canPriceCheck = computed(() => hasPermission('scm:order:query')
   && hasPermission('scm:pricing:resolve:query'));
 
@@ -189,6 +234,7 @@ function rowActions(row: Order): ScmActionItem[] {
   return [
     {key: 'detail', label: '详情', hidden: draft || confirmed},
     {key: 'reuse', label: '复用为新单', hidden: !(confirmed && canAdd.value)},
+    {key: 'tag', label: '订单标签', hidden: !canManageTags.value},
     {key: 'delete', label: '删除', danger: true, hidden: !(draft && canDelete.value)},
   ];
 }
@@ -199,6 +245,8 @@ function onRowAction(key: string, row: Order) {
     openDetail(row.orderId);
   } else if (row.orderId != null && key === 'reuse') {
     drawer?.value?.openFromHistory(row.orderId);
+  } else if (row.orderId != null && key === 'tag') {
+    tagModal.value?.open([row.orderId]);
   } else if (key === 'delete') {
     remove(row);
   }
@@ -232,6 +280,7 @@ function resetQuery() {
   queryForm.keyword = undefined;
   queryForm.status = undefined;
   queryForm.orderSource = undefined;
+  queryForm.tagId = undefined;
   onSearch();
 }
 
@@ -285,5 +334,5 @@ function batchDelete() {
   });
 }
 
-onMounted(queryData);
+onMounted(() => {void queryData(); void loadTags();});
 </script>

@@ -174,6 +174,21 @@ class ScmMigrationTargetPgIT {
         assertThat(unique).isEqualTo(1);
     }
 
+    @Test
+    void orderTagSchemaExistsAt145() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 145) return;
+        assertColumn("xsy_order_tag", "name");
+        assertColumn("xsy_order_tag", "color");
+        assertColumn("xsy_order_tag_link", "order_id");
+        assertColumn("xsy_order_tag_link", "tag_id");
+        Integer indexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname='xsy_v2' "
+                        + "AND indexname IN ('uk_order_tag_name','idx_order_tag_link_tag_order')",
+                Integer.class);
+        assertThat(indexes).isEqualTo(2);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

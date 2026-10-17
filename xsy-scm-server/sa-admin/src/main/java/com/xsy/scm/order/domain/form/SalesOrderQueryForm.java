@@ -17,6 +17,8 @@ import net.lab1024.sa.base.common.domain.PageParam;
 public class SalesOrderQueryForm extends PageParam {
     private Long orderId;
     private Long customerId;
+    @jakarta.validation.constraints.Positive(message = "标签编号必须为正数")
+    private Long tagId;
     /**
      * 按业务员筛选：只是用户侧的<b>收窄</b>条件，与数据范围取交集，不能用来扩大可见行。
      */

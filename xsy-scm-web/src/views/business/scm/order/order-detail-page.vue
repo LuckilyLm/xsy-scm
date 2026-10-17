@@ -18,6 +18,8 @@
       <template v-if="order">
         <a-card size="small" :bordered="false">
           <a-tag>{{ SCM_ORDER_STATUS_ENUM[order.status ?? '']?.desc ?? order.status }}</a-tag>
+          <a-tag v-for="tag in order.tags ?? []" :key="String(tag.tagId)"
+                 :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
           <a-descriptions class="order-detail-overview" size="small" bordered :column="{xs: 1, sm: 2, lg: 3}">
             <a-descriptions-item label="客户">{{ order.customerNameSnapshot || '—' }}</a-descriptions-item>
             <a-descriptions-item label="客户编码">{{ order.customerCodeSnapshot || '—' }}</a-descriptions-item>
@@ -83,6 +85,7 @@ import {computed, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
+import {tagColor} from '/@/api/business/scm/order-tag-api';
 import {SCM_ORDER_SOURCE_ENUM, SCM_ORDER_STATUS_ENUM} from '/@/constants/business/scm/order-const';
 import {datetime} from '../common/scm-display';
 import {hasPermission} from '../common/scm-permission';

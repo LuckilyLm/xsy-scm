@@ -26,6 +26,10 @@
         <!-- 1. 状态与核心摘要 -->
         <section class="detail-section">
           <h3>状态与核心摘要</h3>
+          <a-space :size="4" wrap class="smart-margin-bottom10">
+            <a-tag v-for="tag in order.tags ?? []" :key="String(tag.tagId)"
+                   :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
+          </a-space>
           <a-descriptions bordered size="small" :column="2">
             <a-descriptions-item label="订单号">{{ order.orderNo }}</a-descriptions-item>
             <a-descriptions-item label="下单金额">{{ amount(order.orderedTotalAmount, true) }}</a-descriptions-item>
@@ -212,6 +216,7 @@ import {SETTLE_MODE_ENUM} from '/@/constants/business/scm/customer-const';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi, type CreditCheck} from '/@/api/business/scm/order-api';
+import {tagColor} from '/@/api/business/scm/order-tag-api';
 import {orderLogApi} from '/@/api/business/scm/order-log-api';
 import {promotionApi} from '/@/api/business/scm/promotion-api';
 import type {OrderDiscountAppliedActivity, PromotionCouponInstance, PromotionDiscount} from '/@/views/business/scm/promotion/promotion-types';

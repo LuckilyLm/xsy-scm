@@ -12,6 +12,7 @@ import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 @Data
 public class SalesOrderVO {
     private Long orderId;
+    private java.util.List<OrderTagVO> tags = java.util.List.of();
     private String orderNo;
     private Long customerId;
     private String customerCodeSnapshot;

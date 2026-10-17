@@ -59,6 +59,7 @@ export interface Order {
     confirmedAt?: string | null;
     items: Item[];
     address: Address;
+    tags?: import('/@/api/business/scm/order-tag-api').OrderTag[];
     /**
      * 已冻结的订单优惠；没有优惠时为 null。
      *
@@ -158,6 +159,7 @@ export interface Query {
     keyword?: string;
     status?: string;
     orderSource?: string;
+    tagId?: Id;
     customerId?: Id;
     orderId?: Id;
     operationType?: string

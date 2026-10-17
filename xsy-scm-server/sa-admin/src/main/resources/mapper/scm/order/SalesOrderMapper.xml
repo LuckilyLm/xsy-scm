@@ -85,6 +85,11 @@
         <if test="query.status != null and query.status != ''">AND status=#{query.status}</if>
         <if test="query.orderSource != null and query.orderSource != ''">AND order_source=#{query.orderSource}</if>
         <if test="query.orderId != null">AND id=#{query.orderId}</if>
+        <!-- 标签筛选只能进一步收窄已生效的业务员范围。 -->
+        <if test="query.tagId != null">
+            AND EXISTS (SELECT 1 FROM xsy_order_tag_link ol WHERE ol.order_id = xsy_sales_order.id
+                        AND ol.tag_id = #{query.tagId})
+        </if>
         <if test="query.keyword != null and query.keyword != ''">AND (order_no ILIKE '%' || #{query.keyword} || '%' OR
             customer_name_snapshot ILIKE '%' || #{query.keyword} || '%')
         </if>

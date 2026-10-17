@@ -7,6 +7,7 @@ import com.xsy.scm.finance.permission.FinancePermission;
 import com.xsy.scm.finance.service.FinanceOrderPayableQueryService;
 import com.xsy.scm.inventory.permission.InventoryPermission;
 import com.xsy.scm.order.dao.SalesOrderDetailFactDao;
+import com.xsy.scm.order.dao.OrderTagDao;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
@@ -29,6 +30,7 @@ public class SalesOrderDetailReadService {
 
     private final SalesOrderQueryService salesOrderQueryService;
     private final SalesOrderDetailFactDao factDao;
+    private final OrderTagDao tagDao;
     private final ScmDataScopeService dataScopeService;
     private final FinanceOrderPayableQueryService orderPayableQueryService;
     private final SortingAccess sortingAccess;
@@ -37,6 +39,7 @@ public class SalesOrderDetailReadService {
     public SalesOrderDetailVO detail(Long orderId) {
         ScmDataScopeContext scope = dataScopeService.resolve();
         SalesOrderDetailVO detail = salesOrderQueryService.detail(orderId, scope);
+        detail.setTags(tagDao.tagsByOrders(List.of(orderId)));
 
         boolean fundingVisible = ScmDataScopeService.hasPermission(FinancePermission.RECEIVABLE_QUERY)
                 && ScmDataScopeService.hasPermission(FinancePermission.RECEIPT_QUERY);

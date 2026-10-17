@@ -22,6 +22,8 @@ import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
 import com.xsy.scm.order.dao.OrderOperationLogDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.dao.SalesOrderItemDao;
+import com.xsy.scm.order.dao.OrderTagDao;
+import com.xsy.scm.order.domain.vo.OrderTagVO;
 
 import com.xsy.scm.promotion.service.PromotionDiscountService;
 
@@ -51,6 +53,7 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 public class SalesOrderQueryService {
     private final SalesOrderDao salesOrderDao;
     private final SalesOrderItemDao salesOrderItemDao;
+    private final OrderTagDao orderTagDao;
     private final OrderAddressSnapshotDao orderAddressSnapshotDao;
     private final OrderOperationLogDao orderOperationLogDao;
     private final ScmOperatorNameResolver operatorNameResolver;
@@ -75,7 +78,14 @@ public class SalesOrderQueryService {
             return ScmDataScopeService.emptyPage(salesOrderQueryForm);
         var page = SmartPageUtil.convert2PageQuery(salesOrderQueryForm);
         var salesOrders = salesOrderDao.query(page, salesOrderQueryForm, dataScopeContext.getOrderSellerScope());
-        return SmartPageUtil.convert2PageResult(page, salesOrders.stream().map(this::order).toList());
+        var rows = salesOrders.stream().map(this::order).toList();
+        if (!rows.isEmpty()) {
+            Map<Long, List<OrderTagVO>> tags = orderTagDao.tagsByOrders(
+                    rows.stream().map(SalesOrderVO::getOrderId).toList()).stream()
+                    .collect(Collectors.groupingBy(OrderTagVO::getOrderId));
+            rows.forEach(row -> row.setTags(tags.getOrDefault(row.getOrderId(), List.of())));
+        }
+        return SmartPageUtil.convert2PageResult(page, rows);
     }
 
     public SalesOrderVO order(SalesOrderEntity salesOrder) {
