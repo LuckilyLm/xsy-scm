@@ -119,11 +119,11 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   // PCO-1 主档扩展：助记码由运营自维护，储存方式与标签一起进入同一个抽屉
   await drawer.getByLabel('助记码', { exact: true }).fill(prefix + 'PG');
   await pick(page, drawer.getByLabel('储存方式', { exact: true }), '冷藏');
-  await pick(page, drawer.getByLabel('规格 1 单位', { exact: true }), 'kg');
-  await button(drawer, '添加属性').click(); await drawer.getByLabel('规格 1 属性值 1', { exact: true }).fill('大果');
-  await button(drawer, '新增规格').click();
-  await pick(page, drawer.getByLabel('规格 2 单位', { exact: true }), 'kg');
-  await drawer.getByLabel('规格 2 名称', { exact: true }).fill('小果'); await drawer.getByLabel('规格 2 条码', { exact: true }).fill(prefix + 'BAR');
+  await pick(page, drawer.getByLabel('第 1 个商品规格的单位', { exact: true }), 'kg');
+  await drawer.getByText('添加规格项', { exact: true }).click(); await drawer.getByLabel('第 1 个商品规格的第 1 个规格值', { exact: true }).fill('大果');
+  await drawer.getByText('新增商品规格', { exact: true }).click();
+  await pick(page, drawer.getByLabel('第 2 个商品规格的单位', { exact: true }), 'kg');
+  await drawer.getByLabel('第 2 个商品规格名称', { exact: true }).fill('小果'); await drawer.getByLabel('第 2 个商品规格的条码', { exact: true }).fill(prefix + 'BAR');
   await drawer.locator('input[type=file]').setInputFiles({ name: 'pilot.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=', 'base64') });
   await expect(drawer.getByText('主图', { exact: true })).toBeVisible();
   const created = page.waitForResponse(r => r.url().endsWith('/scm/product/add'));
@@ -133,10 +133,10 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await row.locator('.ant-table-row-expand-icon').click(); await expect(page.getByText(prefix + 'BAR', { exact: true })).toBeVisible();
   const before = (await (await api.get(`/scm/product/detail/${id}`)).json()).data;
   expect(before.mnemonicCode).toBe(prefix + 'PG'); expect(before.storageMethod).toBe('CHILLED'); expect(before.masterStatus).toBe('ENABLED');
-  await button(row, '编辑').click(); await expect(drawer.getByLabel('规格 1 属性值 1', { exact: true })).toHaveValue('大果');
+  await button(row, '编辑').click(); await expect(drawer.getByLabel('第 1 个商品规格的第 1 个规格值', { exact: true })).toHaveValue('大果');
   // 编辑态必须回显字典值，否则停用单位会让历史商品看不出原值
-  await expect(selectBox(drawer.getByLabel('规格 1 单位', { exact: true }))).toHaveText(/kg/);
-  await drawer.getByLabel('规格 1 市场价', { exact: true }).fill('12.3456'); await drawer.getByLabel('将第 2 个规格设为默认规格').check();
+  await expect(selectBox(drawer.getByLabel('第 1 个商品规格的单位', { exact: true }))).toHaveText(/kg/);
+  await drawer.getByLabel('第 1 个商品规格的市场价', { exact: true }).fill('12.3456'); await drawer.getByLabel('将第 2 个商品规格设为默认商品规格').check();
   await button(drawer, '保存商品').click(); await expectDrawerClosed();
   const after = (await (await api.get(`/scm/product/detail/${id}`)).json()).data;
   expect(after.skuList.map((s: { skuId: string }) => s.skuId)).toEqual(before.skuList.map((s: { skuId: string }) => s.skuId));
@@ -173,7 +173,7 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await page.reload();
   await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + '苹果'); await button(page, '查询').click();
   row = page.getByRole('row').filter({ hasText: prefix + '苹果' });
-  await row.getByRole('checkbox').check(); await expect(page.getByText(/已选\s*1\s*个/)).toBeVisible();
+  await row.first().locator('.ant-checkbox-input').check(); await expect(page.getByText(/已选\s*1\s*个/)).toBeVisible();
   const modal = page.locator('.ant-modal:visible');
   await button(page, '批量改状态').click();
   await modal.getByRole('button', { name: /确.*定/ }).click();
@@ -184,7 +184,7 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   expect((await (await statusChanged).json()).data.updatedCount).toBe(1);
   await expect(row.getByText('停止引用', { exact: true })).toBeVisible();
   // 每次批量命令都会重载列表并清空选择，所以第二条命令要重新勾选
-  await row.getByRole('checkbox').check();
+  await row.first().locator('.ant-checkbox-input').check();
   await button(page, '批量打标签').click();
   const tagged = page.waitForResponse(r => r.url().endsWith('/scm/product/batch/updateTags'));
   await pick(page, modal.getByLabel('商品标签', { exact: true }), prefix + '礼盒');
