@@ -34,7 +34,9 @@ const button = (root: Page | Locator, text: string) => root.getByRole('button', 
 const selectBox = (trigger: Locator) => trigger.locator('xpath=ancestor-or-self::*[contains(@class,"ant-select") and not(contains(@class,"ant-select-selection"))][1]');
 async function pick(page: Page, trigger: Locator, option: string) {
   await selectBox(trigger).click();
-  await page.locator(`.ant-select-dropdown:visible .ant-select-item-option-content:text-is("${option}")`).click();
+  // 上一次选择的下拉可能仍在收起动画里，:visible 会命中旧面板；只认最后一个未隐藏的
+  const dropdown = page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)').last();
+  await dropdown.locator(`.ant-select-item-option-content:text-is("${option}")`).first().click();
 }
 
 async function login(account: string) {
@@ -119,16 +121,16 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   // PCO-1 主档扩展：助记码由运营自维护，储存方式与标签一起进入同一个抽屉
   await drawer.getByLabel('助记码', { exact: true }).fill(prefix + 'PG');
   await pick(page, drawer.getByLabel('储存方式', { exact: true }), '冷藏');
-  await pick(page, drawer.getByLabel('第 1 个商品规格的单位', { exact: true }), '公斤');
+  await pick(page, drawer.getByLabel('第 1 个商品规格的单位', { exact: true }), 'kg');
   await drawer.getByText('添加规格项', { exact: true }).click(); await drawer.getByLabel('第 1 个商品规格的第 1 个规格值', { exact: true }).fill('大果');
   await drawer.getByText('新增商品规格', { exact: true }).click();
-  await pick(page, drawer.getByLabel('第 2 个商品规格的单位', { exact: true }), '公斤');
+  await pick(page, drawer.getByLabel('第 2 个商品规格的单位', { exact: true }), 'kg');
   await drawer.getByLabel('第 2 个商品规格名称', { exact: true }).fill('小果'); await drawer.getByLabel('第 2 个商品规格的条码', { exact: true }).fill(prefix + 'BAR');
   await drawer.locator('input[type=file]').setInputFiles({ name: 'pilot.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=', 'base64') });
   await expect(drawer.getByText('主图', { exact: true })).toBeVisible();
   const created = page.waitForResponse(r => r.url().endsWith('/scm/product/add'));
   await button(drawer, '保存商品').click(); const body = await (await created).json(); expect(body.code).toBe(0); const id = body.data; productIds.push(id);
-  await expectDrawerClosed(); row = page.getByRole('row').filter({ hasText: prefix + '苹果' });
+  await expectDrawerClosed(); row = page.locator('.ant-table-tbody tr.ant-table-row').filter({ hasText: prefix + '苹果' });
   await expect(row).toBeVisible(); await expect(row.getByText('可用', { exact: true })).toBeVisible();
   await row.locator('.ant-table-row-expand-icon').click(); await expect(page.getByText(prefix + 'BAR', { exact: true })).toBeVisible();
   const before = (await (await api.get(`/scm/product/detail/${id}`)).json()).data;
@@ -141,7 +143,7 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   const after = (await (await api.get(`/scm/product/detail/${id}`)).json()).data;
   expect(after.skuList.map((s: { skuId: string }) => s.skuId)).toEqual(before.skuList.map((s: { skuId: string }) => s.skuId));
   expect(after.defaultSku.skuCode).toMatch(/^SKU\d{6,}$/); expect(after.skuList[0].marketPrice).toBe('12.3456');
-  row = page.getByRole('row').filter({ hasText: prefix + '苹果' }); await button(row, '下架').click();
+  row = page.locator('.ant-table-tbody tr.ant-table-row').filter({ hasText: prefix + '苹果' }); await button(row, '下架').click();
   await page.locator('.ant-popover:visible').getByRole('button', { name: /确.*定/ }).click();
   await expect(button(row, '上架')).toBeVisible();
   await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + 'BAR'); await button(page, '查询').click();
@@ -165,14 +167,14 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await button(page, '返回商品列表').click();
   await button(page, '重置').click();
   await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + '苹果'); await button(page, '查询').click();
-  row = page.getByRole('row').filter({ hasText: prefix + '苹果' });
+  row = page.locator('.ant-table-tbody tr.ant-table-row').filter({ hasText: prefix + '苹果' });
 
   // PCO-1 批量维护：标签先由接口建好，再刷新列表让下拉选项重新加载
   const tag = await (await api.post('/scm/product/tag/add', { data: { tagCode: prefix + 'TAG', name: prefix + '礼盒', sortOrder: 99, status: 'ENABLED' } })).json();
   expect(tag.code).toBe(0); tagIds.push(tag.data);
   await page.reload();
   await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + '苹果'); await button(page, '查询').click();
-  row = page.getByRole('row').filter({ hasText: prefix + '苹果' });
+  row = page.locator('.ant-table-tbody tr.ant-table-row').filter({ hasText: prefix + '苹果' });
   await expect(row.first()).toBeVisible();
   await row.first().locator('.ant-checkbox-wrapper').click(); await expect(page.getByText(/已选\s*1\s*个/)).toBeVisible();
   const modal = page.locator('.ant-modal:visible');
@@ -182,6 +184,8 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await pick(page, modal.getByLabel('主档状态', { exact: true }), '停止引用');
   const statusChanged = page.waitForResponse(r => r.url().endsWith('/scm/product/batch/updateStatus'));
   await modal.getByRole('button', { name: /确.*定/ }).click();
+  // 「停止引用」属危险动作：批量弹窗提交后还会再弹一次确认，命令在确认之后才发出
+  await page.locator('.ant-modal-confirm:visible').getByRole('button', { name: /确认停止引用/ }).click();
   expect((await (await statusChanged).json()).data.updatedCount).toBe(1);
   await expect(row.getByText('停止引用', { exact: true })).toBeVisible();
   // 每次批量命令都会重载列表并清空选择，所以第二条命令要重新勾选
