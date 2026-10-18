@@ -316,14 +316,17 @@ test('2｜L1 司机与车辆在主档页新建并落库，重复编码被服务�
     // 不删业务行 —— 开发库累计到 20+ 条司机后，新行会落到第一页之外。
     // 所以这里必须按编码搜索再断言「唯一一行」：断的是服务端唯一性与列表渲染，
     // 而不是「它恰好排在第一页」。
-    await page.locator('.smart-query-form input').first().fill(driverCode);
-    await page.locator('.smart-query-form input').first().press('Enter');
+    // 司机编码在服务端 trim + toUpperCase，关键字查询用的是区分大小写的 LIKE
+    const driverCodeUpper = driverCode.toUpperCase();
+    await page.locator('.smart-query-form input').first().fill(driverCodeUpper);
+    // 关键字框不绑 Enter，必须点查询按钮
+    await page.locator('.smart-query-form').getByRole('button', {name: /^查\s*询$/}).click();
     await expect(page.locator('#scm-delivery-driver-table tbody tr.ant-table-row')
-        .filter({hasText: driverCode}), '列表应只出现这一条新建司机').toHaveCount(1);
+        .filter({hasText: `${name}司机`}), '列表应只出现这一条新建司机').toHaveCount(1);
     // 绑定关系的证据在下面按接口回读 employeeId（列表里显示的是员工姓名，
     // 由临时账号脚本决定，不该用文案去猜），页面这一段只验新行确实出现在主档列表里。
 
-    const drivers = await get<Row>(`/scm/delivery/drivers?keyword=${driverCode}&pageNum=1&pageSize=20`);
+    const drivers = await get<Row>(`/scm/delivery/drivers?keyword=${driverCodeUpper}&pageNum=1&pageSize=20`);
     expect(drivers.list, '司机必须真的落库').toHaveLength(1);
     driverId = String(drivers.list[0].id);
     expect(drivers.list[0].status).toBe('ENABLED');
@@ -334,7 +337,7 @@ test('2｜L1 司机与车辆在主档页新建并落库，重复编码被服务�
         driverCode: `${name}-NB`, driverName: '未绑定启用司机', phone: '13900000009', status: 'ENABLED',
     });
     expect(unbound.ok, '未绑定员工的启用司机不得建立').toBe(false);
-    const stillOne = await get<Row>(`/scm/delivery/drivers?keyword=${name}-NB&pageNum=1&pageSize=20`);
+    const stillOne = await get<Row>(`/scm/delivery/drivers?keyword=${`${name}-NB`.toUpperCase()}&pageNum=1&pageSize=20`);
     expect(stillOne.list, '被拒的司机不得留下档案行').toHaveLength(0);
 
     await page.goto('/#/delivery/vehicles');
@@ -345,7 +348,7 @@ test('2｜L1 司机与车辆在主档页新建并落库，重复编码被服务�
     await fillField(vehicleModal, '车型', '验收面包车');
     await button(vehicleModal, '确 定').click();
     await expect(vehicleModal).toBeHidden();
-    const vehicles = await get<Row>(`/scm/delivery/vehicles?keyword=${vehicleNo}&pageNum=1&pageSize=20`);
+    const vehicles = await get<Row>(`/scm/delivery/vehicles?keyword=${vehicleNo.toUpperCase()}&pageNum=1&pageSize=20`);
     expect(vehicles.list).toHaveLength(1);
     vehicleId = String(vehicles.list[0].id);
 
