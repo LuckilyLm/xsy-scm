@@ -1,6 +1,7 @@
 package com.xsy.scm.trace.dao;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.trace.domain.form.TraceUnitQueryForm;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import java.math.BigDecimal;
@@ -58,6 +59,36 @@ public interface TraceUnitDao {
     @Select("SELECT COALESCE(SUM(quantity), 0) FROM xsy_inventory_lot_balance WHERE lot_id = #{lotId}")
     BigDecimal lotBalance(@Param("lotId") Long lotId);
 
+    /**
+     * 锁定该批次在全部仓库的批次余额行。
+     *
+     * <p>
+     * 发码前必须持锁：余额与已发码量是两次普通聚合，两个事务同时读到「还能发 3 个」都会通过检查，最终发出 6 个。 锁顺序与库存域一致（余额锁最后取）。
+     */
+    @Select("""
+            SELECT id, quantity FROM xsy_inventory_lot_balance
+            WHERE lot_id = #{lotId}
+            ORDER BY id
+            FOR UPDATE
+            """)
+    List<LotBalanceRow> lockLotBalances(@Param("lotId") Long lotId);
+
+    /** 批次余额行（加锁读）。 */
+    record LotBalanceRow(Long id, BigDecimal quantity) {
+    }
+
+    /** 批次归属仓库：由首次收货的收货单决定，包装码与批次共用同一个仓库。 */
+    @Select("""
+            SELECT r.warehouse_id
+            FROM xsy_purchase_receipt_item_lot l
+            JOIN xsy_purchase_receipt_item i ON i.id = l.purchase_receipt_item_id
+            JOIN xsy_purchase_receipt r ON r.id = i.purchase_receipt_id
+            WHERE l.lot_id = #{lotId} AND r.deleted = FALSE
+            ORDER BY r.id DESC
+            LIMIT 1
+            """)
+    Long lotWarehouseId(@Param("lotId") Long lotId);
+
     @Select("""
             <script>
             SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, t.lot_no AS lotNo,
@@ -74,10 +105,22 @@ public interface TraceUnitDao {
                 AND t.lot_no ILIKE CONCAT('%', #{query.lotNo}, '%')
             </if>
             <if test="query.status != null and query.status != ''">AND u.status = #{query.status}</if>
+            <!-- 仓库数据范围：批次归属仓库由首次收货单决定，scope 缺失必须恒假 -->
+            <if test="scope == null">AND FALSE</if>
+            <if test="scope != null and scope.all == false">
+                AND EXISTS (
+                    SELECT 1 FROM xsy_purchase_receipt_item_lot rl
+                    JOIN xsy_purchase_receipt_item ri ON ri.id = rl.purchase_receipt_item_id
+                    JOIN xsy_purchase_receipt r ON r.id = ri.purchase_receipt_id
+                    WHERE rl.lot_id = u.lot_id AND r.deleted = FALSE AND r.warehouse_id IN
+                    <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+                )
+            </if>
             ORDER BY u.id DESC
             </script>
             """)
-    List<TraceUnitVO.Unit> queryPage(Page<?> page, @Param("query") TraceUnitQueryForm query);
+    List<TraceUnitVO.Unit> queryPage(Page<?> page, @Param("query") TraceUnitQueryForm query,
+            @Param("scope") ScmValueScope scope);
 
     @Select("""
             SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, t.lot_no AS lotNo,
@@ -88,6 +131,23 @@ public interface TraceUnitDao {
             WHERE u.unit_code = #{unitCode}
             """)
     TraceUnitVO.Unit findByCode(@Param("unitCode") String unitCode);
+
+    /**
+     * 按码加锁读：绑定与作废都要先拿这把锁。
+     *
+     * <p>
+     * 没有锁时，「绑定读到 ACTIVE」与「作废读到无绑定」可以同时通过，最终留下「已作废的码挂着绑定」。
+     */
+    @Select("""
+            SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, t.lot_no AS lotNo,
+                   t.source_lot_no AS sourceLotNo, u.package_type AS packageType, u.quantity, u.unit,
+                   u.status, u.remark, u.created_at AS createdAt, u.created_by AS createdBy
+            FROM xsy_trace_unit u
+            LEFT JOIN xsy_trace_lot t ON t.id = u.lot_id
+            WHERE u.unit_code = #{unitCode}
+            FOR UPDATE OF u
+            """)
+    TraceUnitVO.Unit lockByCode(@Param("unitCode") String unitCode);
 
     /** 批次首次入库的收货来源。 */
     @Select("""
@@ -116,11 +176,13 @@ public interface TraceUnitDao {
             SELECT i.task_id AS taskId, i.id AS itemId, i.sku_id AS skuId, i.sales_order_id AS salesOrderId,
                    i.sales_order_item_id AS salesOrderItemId, i.customer_id AS customerId,
                    i.customer_name_snapshot AS customerName, i.order_no_snapshot AS orderNo,
-                   i.sorted_quantity AS sortedQuantity
+                   i.sorted_quantity AS sortedQuantity, t.status AS taskStatus, t.warehouse_id AS warehouseId
             FROM xsy_sorting_task_item i
+            JOIN xsy_sorting_task t ON t.id = i.task_id
             WHERE i.id = #{itemId} AND i.deleted = FALSE
+            FOR UPDATE OF i
             """)
-    TraceUnitVO.SortingItem findSortingItem(@Param("itemId") Long itemId);
+    TraceUnitVO.SortingItem lockSortingItem(@Param("itemId") Long itemId);
 
     /** 该分拣行已绑定的包装数量之和：绑定总量不得超过实拣量。 */
     @Select("""

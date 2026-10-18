@@ -188,7 +188,10 @@
         </a-descriptions>
         <a-empty v-else description="该包装码还没有绑定分拣任务行"/>
 
-        <h4 class="replay-title">出库去向</h4>
+        <h4 class="replay-title">批次相关出库</h4>
+        <a-descriptions bordered size="small" :column="1" style="margin-bottom: 8px">
+          <a-descriptions-item label="说明">批次级出库，不代表本包装已出库</a-descriptions-item>
+        </a-descriptions>
         <a-table
             v-if="replay.outbounds?.length"
             size="small"

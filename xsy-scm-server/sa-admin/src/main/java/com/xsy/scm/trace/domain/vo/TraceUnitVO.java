@@ -69,6 +69,8 @@ public final class TraceUnitVO {
     public static class SortingItem {
         private Long taskId;
         private Long itemId;
+        private String taskStatus;
+        private Long warehouseId;
         private Long skuId;
         private Long salesOrderId;
         private Long salesOrderItemId;

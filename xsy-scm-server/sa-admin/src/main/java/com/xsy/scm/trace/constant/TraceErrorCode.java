@@ -45,7 +45,13 @@ public enum TraceErrorCode implements ScmErrorCode {
 
     TRACE_UNIT_ALREADY_VOID(41513, "包装码已作废，不能重复作废"),
 
-    TRACE_UNIT_VOID_REASON_REQUIRED(41514, "作废原因不能为空");
+    TRACE_UNIT_VOID_REASON_REQUIRED(41514, "作废原因不能为空"),
+
+    /** 41515：只有进行中或已完成的分拣任务才能承接实物。 */
+    TRACE_SORTING_TASK_STATE_INVALID(41515, "该分拣任务未开始或已取消，不能绑定包装码"),
+
+    /** 41516：包装码的批次必须来自分拣任务所在仓库。 */
+    TRACE_UNIT_WAREHOUSE_MISMATCH(41516, "包装码所属批次与分拣任务不在同一仓库，不能绑定");
 
     private final int code;
 

@@ -2,6 +2,9 @@ package com.xsy.scm.trace.service;
 
 import com.xsy.scm.common.dao.ScmBusinessNoDao;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.common.scope.ScmDataScopeContext;
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import com.xsy.scm.trace.constant.TraceErrorCode;
 import com.xsy.scm.trace.dao.TraceUnitDao;
 import com.xsy.scm.trace.domain.form.TraceUnitBindForm;
@@ -24,6 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>
  * 包装码是贴在被包装实物上的身份：一码一批、码由系统发号且不透明、永不复用；作废只追加事件，不改写原行。 发码总量受批次余额约束——包装码描述已经存在的实物，不能在库存之外凭空造出实物身份。
+ *
+ * <p>
+ * 三条硬约束：所有入口都先过仓库数据范围（批次归属仓库由首次收货单决定）；发码先锁批次余额行再算可发量； 绑定与作废先锁同一个包装码行，避免「作废后仍被绑定」的交叉状态。
  */
 @Service
 @RequiredArgsConstructor
@@ -35,21 +41,31 @@ public class TraceUnitService {
 
     private final ScmBusinessNoDao businessNoDao;
 
-    /** 发码：同一批次一次发 N 个同规格包装，逐码追加一条发码事件。 */
+    private final ScmWarehouseScopeGuard warehouseScopeGuard;
+
+    private final ScmDataScopeService dataScopeService;
+
+    /**
+     * 发码：同一批次一次发 N 个同规格包装，逐码追加一条发码事件。
+     *
+     * <p>
+     * 先锁该批次的余额行再读「已发码量」与「余额」：两个事务若各自读到「还能发 3 个」，会一起通过检查发出 6 个。 锁顺序与库存域一致（余额锁是最后取的锁）。
+     */
     @Transactional(rollbackFor = Exception.class)
     public List<TraceUnitVO.Unit> issue(TraceUnitIssueForm form, String operator) {
         TraceUnitVO.Lot lot = traceUnitDao.findLot(form.getLotId());
         if (lot == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_LOT_NOT_FOUND);
         }
+        warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(form.getLotId()));
         BigDecimal perPackage = parseQuantity(form.getQuantityPerPackage());
         String unit = traceUnitDao.lotUnit(form.getLotId());
         if (unit == null || unit.isBlank()) {
             // 批次还没有任何余额行：先有入库事实，才谈得上包装身份
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_EXCEED_BALANCE);
         }
+        BigDecimal balance = lockedBalance(form.getLotId());
         BigDecimal adding = perPackage.multiply(BigDecimal.valueOf(form.getPackageCount()));
-        BigDecimal balance = traceUnitDao.lotBalance(form.getLotId());
         BigDecimal issued = traceUnitDao.sumIssuedByLot(form.getLotId());
         if (issued.add(adding).compareTo(balance) > 0) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_EXCEED_BALANCE);
@@ -77,11 +93,12 @@ public class TraceUnitService {
      * 分拣扫码绑定：把包装码绑到分拣任务行。
      *
      * <p>
-     * 校验顺序即语义：码存在且有效 → 未绑过（一码一物）→ 商品规格一致 → 该行绑定总量不超过实拣量。 绑定是只追加事实，绑错只能作废该码，不能改绑到别的客户。
+     * 先锁包装码行、再锁分拣行，两步都在同一事务内：前者让绑定与作废串行化，后者让同一分拣行上的并发绑定串行化， 否则两枚码各自读到相同的剩余可绑定量、合计超出实拣量。校验顺序即语义：码存在且有效 → 未绑过（一码一物） →
+     * 分拣任务可绑定 → 商品规格一致 → 仓库一致 → 该行绑定总量不超过实拣量。
      */
     @Transactional(rollbackFor = Exception.class)
     public TraceUnitVO.Binding bind(TraceUnitBindForm form, String operator) {
-        TraceUnitVO.Unit unit = traceUnitDao.findByCode(form.getUnitCode().trim());
+        TraceUnitVO.Unit unit = traceUnitDao.lockByCode(form.getUnitCode().trim());
         if (unit == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
         }
@@ -91,13 +108,23 @@ public class TraceUnitService {
         if (traceUnitDao.findBinding(unit.getId()) != null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_BOUND);
         }
-        TraceUnitVO.SortingItem item = traceUnitDao.findSortingItem(form.getSortingTaskItemId());
+        TraceUnitVO.SortingItem item = traceUnitDao.lockSortingItem(form.getSortingTaskItemId());
         if (item == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_ITEM_NOT_FOUND);
         }
+        // 已取消的任务不能再承接实物；未开始的任务也还没有实拣量
+        if (!"SORTING".equals(item.getTaskStatus()) && !"COMPLETED".equals(item.getTaskStatus())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_TASK_STATE_INVALID);
+        }
+        warehouseScopeGuard.require(item.getWarehouseId());
         TraceUnitVO.Lot lot = traceUnitDao.findLot(unit.getLotId());
         if (lot == null || !item.getSkuId().equals(lot.getSkuId())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_SKU_MISMATCH);
+        }
+        // 商品对得上还不够：这一袋必须来自本任务所在仓库，否则「批次级召回」会被跨仓数据污染
+        Long lotWarehouseId = traceUnitDao.lotWarehouseId(unit.getLotId());
+        if (lotWarehouseId == null || !lotWarehouseId.equals(item.getWarehouseId())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_WAREHOUSE_MISMATCH);
         }
         BigDecimal bound = traceUnitDao.sumBoundBySortingItem(item.getItemId());
         if (bound.add(unit.getQuantity()).compareTo(item.getSortedQuantity()) > 0) {
@@ -124,14 +151,15 @@ public class TraceUnitService {
      * 作废：只对未绑定的码生效。
      *
      * <p>
-     * 已绑定的码代表一件已承诺给客户的实物，作废会让回放自相矛盾；现场应先走退货或更正流程。 作废只改状态并追加一条 VOID 事件，原码保留、永不复用。
+     * 与绑定共用同一把包装码行锁：否则「绑定读到 ACTIVE」与「作废读到无绑定」可以同时通过， 留下「已作废的码挂着绑定」这种谁也解释不了的状态。数据库侧另有触发器兜底。
      */
     @Transactional(rollbackFor = Exception.class)
     public void voidUnit(TraceUnitVoidForm form, String operator) {
-        TraceUnitVO.Unit unit = traceUnitDao.findByCode(form.getUnitCode().trim());
+        TraceUnitVO.Unit unit = traceUnitDao.lockByCode(form.getUnitCode().trim());
         if (unit == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
         }
+        warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(unit.getLotId()));
         if (!"ACTIVE".equals(unit.getStatus())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_VOID);
         }
@@ -145,20 +173,31 @@ public class TraceUnitService {
                 form.getReason().trim());
     }
 
+    /** 列表按仓库数据范围收窄：没有范围就是空页，不是「不加条件」。 */
     @Transactional(readOnly = true)
     public PageResult<TraceUnitVO.Unit> query(TraceUnitQueryForm form) {
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.warehouseNowhere()) {
+            return ScmDataScopeService.emptyPage(form);
+        }
         var page = SmartPageUtil.convert2PageQuery(form);
-        List<TraceUnitVO.Unit> list = traceUnitDao.queryPage(page, form);
+        List<TraceUnitVO.Unit> list = traceUnitDao.queryPage(page, form, scope.getWarehouseScope());
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
-    /** 回放：单元 → 批次 → 收货来源 → 出库去向。找不到码直接报不存在，不返回半截结果。 */
+    /**
+     * 回放：单元 → 批次 → 收货来源 → 分拣绑定 → 出库去向。
+     *
+     * <p>
+     * 出库去向是「该批次参与过的出库」，不等于「这一袋已经出库」——批次级分摊还证明不了单元级出库。 找不到码直接报不存在，不返回半截结果。
+     */
     @Transactional(readOnly = true)
     public TraceUnitVO.Replay replay(String unitCode) {
         TraceUnitVO.Unit unit = traceUnitDao.findByCode(unitCode);
         if (unit == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
         }
+        warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(unit.getLotId()));
         TraceUnitVO.Replay replay = new TraceUnitVO.Replay();
         replay.setUnit(unit);
         replay.setLot(traceUnitDao.findLot(unit.getLotId()));
@@ -172,7 +211,7 @@ public class TraceUnitService {
      * 打印取数：单元 + 批次 + 绑定客户。
      *
      * <p>
-     * 打印域只通过这里读包装码，数据范围与详情页同一套判定；找不到码按「不存在」回答。
+     * 打印域只通过这里读包装码；数据范围与详情页同一套判定，找不到码按「不存在」回答。
      */
     @Transactional(readOnly = true)
     public TraceUnitVO.Replay printSource(Long unitId) {
@@ -180,11 +219,21 @@ public class TraceUnitService {
         if (unit == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
         }
+        warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(unit.getLotId()));
         TraceUnitVO.Replay replay = new TraceUnitVO.Replay();
         replay.setUnit(unit);
         replay.setLot(traceUnitDao.findLot(unit.getLotId()));
         replay.setBinding(traceUnitDao.findBinding(unit.getId()));
         return replay;
+    }
+
+    /** 加锁读该批次余额：锁在行上，两个发码事务必须排队。 */
+    private BigDecimal lockedBalance(Long lotId) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (TraceUnitDao.LotBalanceRow row : traceUnitDao.lockLotBalances(lotId)) {
+            total = total.add(row.quantity());
+        }
+        return total;
     }
 
     /**

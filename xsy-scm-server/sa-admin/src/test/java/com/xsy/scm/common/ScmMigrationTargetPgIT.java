@@ -367,6 +367,22 @@ class ScmMigrationTargetPgIT {
         assertThat(menus).as("作废权限应随迁移发布").isEqualTo(1);
     }
 
+    /**
+     * V156 起数据库兜底：绑定不能挂到作废码上。
+     */
+    @Test
+    void traceUnitBindingActiveGuardExistsFromV156() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 156) {
+            return;
+        }
+        Integer trigger = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_trace_unit_binding_active' "
+                        + "AND NOT tgisinternal",
+                Integer.class);
+        assertThat(trigger).as("绑定到作废码必须被数据库拒绝").isEqualTo(1);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "
