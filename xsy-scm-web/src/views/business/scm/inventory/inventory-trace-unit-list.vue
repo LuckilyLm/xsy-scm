@@ -76,6 +76,7 @@
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openReplay(record)">回放</a-button>
             <a-button type="link" size="small" @click="openBind(record)" v-privilege="'scm:inventory:unit:bind'">绑定分拣</a-button>
+            <a-button type="link" size="small" @click="openPrint(record)" v-privilege="'scm:inventory:unit:query'">打印标签</a-button>
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -135,6 +136,14 @@
       </a-form-item>
     </a-form>
   </a-modal>
+
+  <PrintDocumentModal
+      :open="printOpen"
+      document-type="TRACE_UNIT"
+      :business-ids="printBusinessIds"
+      @close="printOpen = false"
+      @printed="printOpen = false"
+  />
 
   <a-drawer :open="replayOpen" title="包装码回放" :width="scmDrawerWidth('m')" @close="replayOpen = false">
     <a-spin :spinning="replayLoading">
@@ -196,6 +205,7 @@ import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {inventoryTraceUnitApi} from '/@/api/business/scm/inventory-trace-unit-api';
 import {inventoryLotApi} from '/@/api/business/scm/inventory-lot-api';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
+import PrintDocumentModal from '/@/views/business/scm/print/print-document-modal.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -230,7 +240,7 @@ const columns = ref<TraceUnitColumn[]>([
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
   {title: '创建时间', dataIndex: 'createdAt', width: 170},
-  {title: '操作', dataIndex: 'action', width: 90, align: 'center'},
+  {title: '操作', dataIndex: 'action', width: 180, align: 'center'},
 ]);
 
 const issueOpen = ref(false);
@@ -238,6 +248,9 @@ const issuing = ref(false);
 const issueError = ref('');
 const lotHint = ref('');
 const issueForm = reactive({lotNo: '', lotId: undefined as string | number | undefined, packageType: 'BAG', packageCount: 1, quantityPerPackage: '0.0000', remark: ''});
+
+const printOpen = ref(false);
+const printBusinessIds = ref<(string | number)[]>([]);
 
 const bindOpen = ref(false);
 const binding = ref(false);
@@ -343,6 +356,11 @@ async function submitIssue() {
   } finally {
     issuing.value = false;
   }
+}
+
+function openPrint(record: TraceUnit) {
+  printBusinessIds.value = [record.id];
+  printOpen.value = true;
 }
 
 function openBind(record: TraceUnit) {

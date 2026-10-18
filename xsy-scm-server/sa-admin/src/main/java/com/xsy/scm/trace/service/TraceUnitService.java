@@ -143,6 +143,25 @@ public class TraceUnitService {
     }
 
     /**
+     * 打印取数：单元 + 批次 + 绑定客户。
+     *
+     * <p>
+     * 打印域只通过这里读包装码，数据范围与详情页同一套判定；找不到码按「不存在」回答。
+     */
+    @Transactional(readOnly = true)
+    public TraceUnitVO.Replay printSource(Long unitId) {
+        TraceUnitVO.Unit unit = traceUnitDao.findById(unitId);
+        if (unit == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
+        }
+        TraceUnitVO.Replay replay = new TraceUnitVO.Replay();
+        replay.setUnit(unit);
+        replay.setLot(traceUnitDao.findLot(unit.getLotId()));
+        replay.setBinding(traceUnitDao.findBinding(unit.getId()));
+        return replay;
+    }
+
+    /**
      * 不透明包装码：序号经 Base32 编码，前缀 U。
      *
      * <p>

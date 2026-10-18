@@ -12,17 +12,15 @@ import java.util.List;
 public enum ScmPrintDocumentTypeEnum {
 
     /** 销售单只使用正式订单详情快照；订单查询权限本身允许查看订单金额。 */
-    SALES_ORDER("销售订单", null,
-            List.of(new ScmPrintField("orderNo", "销售订单号", false, false),
-                    new ScmPrintField("customerName", "客户", false, false),
-                    new ScmPrintField("customerCode", "客户编码", false, false),
-                    new ScmPrintField("orderStatus", "订单状态", false, false),
-                    new ScmPrintField("orderSource", "订单来源", false, false),
-                    new ScmPrintField("expectDeliveryTime", "期望配送时间", false, false),
-                    new ScmPrintField("receiverName", "收货人", false, false),
-                    new ScmPrintField("receiverPhone", "收货电话", false, false),
-                    new ScmPrintField("address", "收货地址", false, false),
-                    new ScmPrintField("remark", "备注", false, false)),
+    SALES_ORDER("销售订单", null, List.of(new ScmPrintField("orderNo", "销售订单号", false, false),
+            new ScmPrintField("customerName", "客户", false, false),
+            new ScmPrintField("customerCode", "客户编码", false, false),
+            new ScmPrintField("orderStatus", "订单状态", false, false),
+            new ScmPrintField("orderSource", "订单来源", false, false),
+            new ScmPrintField("expectDeliveryTime", "期望配送时间", false, false),
+            new ScmPrintField("receiverName", "收货人", false, false),
+            new ScmPrintField("receiverPhone", "收货电话", false, false),
+            new ScmPrintField("address", "收货地址", false, false), new ScmPrintField("remark", "备注", false, false)),
             List.of(new ScmPrintField("productName", "商品", false, false),
                     new ScmPrintField("skuCode", "商品规格编码", false, false),
                     new ScmPrintField("specName", "规格", false, false),
@@ -92,7 +90,14 @@ public enum ScmPrintDocumentTypeEnum {
                     new ScmPrintField("sortedQuantity", "实分量", false, true),
                     new ScmPrintField("result", "分拣结果", false, false),
                     new ScmPrintField("reason", "差异原因", false, false)),
-            List.of());
+            List.of()),
+
+    TRACE_UNIT("包装码标签", null, List.of(new ScmPrintField("unitCode", "包装码", false, false),
+            new ScmPrintField("lotNo", "批次号", false, false), new ScmPrintField("sourceLotNo", "来源生产批号", false, false),
+            new ScmPrintField("productName", "商品", false, false), new ScmPrintField("skuName", "规格", false, false),
+            new ScmPrintField("packageType", "包装类型", false, false), new ScmPrintField("quantity", "数量", false, true),
+            new ScmPrintField("unit", "单位", false, false), new ScmPrintField("customerName", "客户", false, false),
+            new ScmPrintField("orderNo", "订单号", false, false)), List.of(), List.of());
 
     /**
      * 展示名（模板列表与错误信息用）。

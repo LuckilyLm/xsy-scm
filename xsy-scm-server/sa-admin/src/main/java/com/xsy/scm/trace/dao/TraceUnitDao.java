@@ -100,6 +100,16 @@ public interface TraceUnitDao {
             """)
     TraceUnitVO.Receipt receiptOfLot(@Param("lotId") Long lotId);
 
+    @Select("""
+            SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, t.lot_no AS lotNo,
+                   t.source_lot_no AS sourceLotNo, u.package_type AS packageType, u.quantity, u.unit,
+                   u.status, u.remark, u.created_at AS createdAt, u.created_by AS createdBy
+            FROM xsy_trace_unit u
+            LEFT JOIN xsy_trace_lot t ON t.id = u.lot_id
+            WHERE u.id = #{id}
+            """)
+    TraceUnitVO.Unit findById(@Param("id") Long id);
+
     /** 分拣任务行：绑定校验的客户/商品/实拣量来源。 */
     @Select("""
             SELECT i.task_id AS taskId, i.id AS itemId, i.sku_id AS skuId, i.sales_order_id AS salesOrderId,

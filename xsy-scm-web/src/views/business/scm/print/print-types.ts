@@ -7,7 +7,12 @@ export interface PrintPage {
     pageSize: number;
 }
 
-export type PrintDocumentType = 'PURCHASE_ORDER' | 'DELIVERY_NOTE' | 'SORTING_TICKET' | 'SALES_ORDER';
+export type PrintDocumentType =
+    | 'PURCHASE_ORDER'
+    | 'DELIVERY_NOTE'
+    | 'SORTING_TICKET'
+    | 'SALES_ORDER'
+    | 'TRACE_UNIT';
 
 export type PrintPaper = 'A4' | 'TICKET_80';
 

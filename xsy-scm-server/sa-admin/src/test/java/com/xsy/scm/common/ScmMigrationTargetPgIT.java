@@ -321,6 +321,37 @@ class ScmMigrationTargetPgIT {
         assertThat(menus).as("绑定权限应随迁移发布").isEqualTo(1);
     }
 
+    /**
+     * V154 起包装码标签走打印中心：单据类型放开到 TRACE_UNIT，并自带默认标签模板。
+     */
+    @Test
+    void traceUnitPrintSchemaExistsFromV154() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 154) {
+            return;
+        }
+        Integer templateConstraint = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_scm_print_template_document_type' "
+                        + "AND pg_get_constraintdef(oid) LIKE '%TRACE_UNIT%'",
+                Integer.class);
+        assertThat(templateConstraint).as("模板类型应放开到包装码").isEqualTo(1);
+        Integer recordConstraint = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_scm_print_record_document_type' "
+                        + "AND pg_get_constraintdef(oid) LIKE '%TRACE_UNIT%'",
+                Integer.class);
+        assertThat(recordConstraint).as("打印记录类型应放开到包装码").isEqualTo(1);
+        Integer templates = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_print_template WHERE document_type = 'TRACE_UNIT' "
+                        + "AND default_flag = TRUE AND enabled_flag = TRUE AND deleted = FALSE",
+                Integer.class);
+        assertThat(templates).as("包装码标签默认模板应存在且唯一").isEqualTo(1);
+        String paper = jdbc.queryForObject(
+                "SELECT model->>'paper' FROM xsy_print_template WHERE document_type = 'TRACE_UNIT' "
+                        + "AND default_flag = TRUE AND deleted = FALSE",
+                String.class);
+        assertThat(paper).as("标签用 80mm 热敏纸").isEqualTo("TICKET_80");
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

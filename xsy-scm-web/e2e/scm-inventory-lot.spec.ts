@@ -280,3 +280,31 @@ test('5｜扫码把包装码绑到分拣任务行，回放能回到客户', asyn
   await expect(drawer).toContainText(String(order.orderNo));
   expect(errors).toEqual([]);
 });
+
+test('6｜包装码标签走打印中心：预览含码与批次，打印留下冻结记录', async ({page}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await browse(page, '/inventory/inventory-trace-unit-list');
+  await expect(page.locator('#scm-inventory-trace-unit-table')).toBeVisible();
+  await page.getByPlaceholder('包装码', {exact: true}).fill(firstUnitCode);
+  await search(page);
+  const row = page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first();
+
+  const previewed = page.waitForResponse((r) => r.url().includes('/scm/print/TRACE_UNIT/') && r.url().includes('/preview'));
+  await row.getByRole('button', {name: '打印标签'}).click();
+  const preview = await (await previewed).json();
+  expect(preview.code, preview.msg).toBe(0);
+  expect(preview.data.documentType).toBe('TRACE_UNIT');
+  expect(preview.data.paper, '标签用 80mm 热敏纸').toBe('TICKET_80');
+  const rendered = JSON.stringify(preview.data);
+  expect(rendered, '标签上必须有码与批次').toContain(firstUnitCode);
+  expect(rendered).toContain(lotNo);
+
+  const modal = page.locator('.ant-modal:visible').filter({hasText: '打印'}).last();
+  const printed = page.waitForResponse((r) => r.request().method() === 'POST' && /\/scm\/print\/TRACE_UNIT\//.test(r.url()));
+  await modal.getByRole('button', {name: /^打\s*印$/}).click();
+  const body = await (await printed).json();
+  expect(body.code, body.msg).toBe(0);
+  expect(body.data.frozen, '正式打印必须返回冻结版面').toBe(true);
+  expect(errors).toEqual([]);
+});
