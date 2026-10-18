@@ -119,10 +119,10 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   // PCO-1 主档扩展：助记码由运营自维护，储存方式与标签一起进入同一个抽屉
   await drawer.getByLabel('助记码', { exact: true }).fill(prefix + 'PG');
   await pick(page, drawer.getByLabel('储存方式', { exact: true }), '冷藏');
-  await pick(page, drawer.getByLabel('第 1 个商品规格的单位', { exact: true }), 'kg');
+  await pick(page, drawer.getByLabel('第 1 个商品规格的单位', { exact: true }), '公斤');
   await drawer.getByText('添加规格项', { exact: true }).click(); await drawer.getByLabel('第 1 个商品规格的第 1 个规格值', { exact: true }).fill('大果');
   await drawer.getByText('新增商品规格', { exact: true }).click();
-  await pick(page, drawer.getByLabel('第 2 个商品规格的单位', { exact: true }), 'kg');
+  await pick(page, drawer.getByLabel('第 2 个商品规格的单位', { exact: true }), '公斤');
   await drawer.getByLabel('第 2 个商品规格名称', { exact: true }).fill('小果'); await drawer.getByLabel('第 2 个商品规格的条码', { exact: true }).fill(prefix + 'BAR');
   await drawer.locator('input[type=file]').setInputFiles({ name: 'pilot.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=', 'base64') });
   await expect(drawer.getByText('主图', { exact: true })).toBeVisible();
@@ -173,7 +173,8 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await page.reload();
   await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + '苹果'); await button(page, '查询').click();
   row = page.getByRole('row').filter({ hasText: prefix + '苹果' });
-  await row.first().locator('.ant-checkbox-input').check(); await expect(page.getByText(/已选\s*1\s*个/)).toBeVisible();
+  await expect(row.first()).toBeVisible();
+  await row.first().locator('.ant-checkbox-wrapper').click(); await expect(page.getByText(/已选\s*1\s*个/)).toBeVisible();
   const modal = page.locator('.ant-modal:visible');
   await button(page, '批量改状态').click();
   await modal.getByRole('button', { name: /确.*定/ }).click();
@@ -184,7 +185,8 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   expect((await (await statusChanged).json()).data.updatedCount).toBe(1);
   await expect(row.getByText('停止引用', { exact: true })).toBeVisible();
   // 每次批量命令都会重载列表并清空选择，所以第二条命令要重新勾选
-  await row.first().locator('.ant-checkbox-input').check();
+  await expect(row.first()).toBeVisible();
+  await row.first().locator('.ant-checkbox-wrapper').click();
   await button(page, '批量打标签').click();
   const tagged = page.waitForResponse(r => r.url().endsWith('/scm/product/batch/updateTags'));
   await pick(page, modal.getByLabel('商品标签', { exact: true }), prefix + '礼盒');
