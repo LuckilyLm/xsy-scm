@@ -21,7 +21,7 @@
 
 用法：
     python tools/patch_product_update_xlsx.py --template --in template.xlsx --out update.xlsx \
-        --set "SPU ID=123" --set SPU版本=0 --set "SKU ID=456" --set SKU版本=0 --set 别名=新别名
+        --set "商品ID=123" --set 商品版本=0 --set "商品规格ID=456" --set 商品规格版本=0 --set 别名=新别名
     python tools/patch_product_update_xlsx.py --in export.xlsx --out update.xlsx \
         --set 别名=新别名 --blank 品牌
 输出（stdout，单行 JSON）：
@@ -35,7 +35,7 @@ import sys
 
 import openpyxl
 
-LOCATION_KEYS = ("SPU ID", "SPU版本", "SKU ID", "SKU版本")
+LOCATION_KEYS = ("商品ID", "商品版本", "商品规格ID", "商品规格版本")
 TEMPLATE_VERSION_COLUMN = "模板版本"
 
 

@@ -222,6 +222,16 @@ test('assistant dictionaries: unit codes lock after creation and only unreferenc
   await expect(modal.getByLabel('单位编码', { exact: true })).toBeDisabled();
   await expect(modal.getByLabel('单位名称', { exact: true })).toBeDisabled();
   await modal.getByRole('button', { name: /取.*消/ }).click();
+  // 演示数据里 kg 没有任何引用（种子的销售单位是份 / 箱 / 袋）：先用一张临时商品引用它，
+  // 否则「被引用不可删」这条断言只能碰运气，且依赖前一个用例没删掉商品。
+  const kgRef = await (await api.post('/scm/product/add', { data: {
+    spuCode: prefix + 'KGR', name: prefix + '公斤商品', categoryId: categoryIds[categoryIds.length - 1],
+    status: 'ON_SHELF', images: [],
+    skuList: [{ skuCode: prefix + 'KGRA', specName: '散装', specValues: {规格: '散装'}, saleUnit: 'kg',
+      productType: 'NON_STANDARD', marketPrice: '1.0000', status: 'ON_SHELF', defaultFlag: true, sortOrder: 0 }]
+  } })).json();
+  expect(kgRef.code, JSON.stringify(kgRef)).toBe(0); productIds.push(kgRef.data);
+  await page.reload();
   await page.getByPlaceholder('编码 / 名称').fill('kg'); await button(page, '查询').click();
   const kgRow = page.getByRole('row').filter({ hasText: 'kg' });
   await expect(button(kgRow, '删除')).toBeDisabled();
@@ -369,7 +379,7 @@ test('Wave 1 UPDATE import: real page round trip preserves blank columns and rej
     const patched = JSON.parse(execFileSync('python', ['../tools/patch_product_update_xlsx.py', '--template',
       '--in', templatePath, '--out', updatePath,
       '--set', `商品ID=${before.data.spuId}`, '--set', `商品版本=${before.data.version}`,
-      '--set', `规格ID=${sku.skuId}`, '--set', `规格版本=${sku.version}`, '--set', `别名=${newAlias}`],
+      '--set', `商品规格ID=${sku.skuId}`, '--set', `商品规格版本=${sku.version}`, '--set', `别名=${newAlias}`],
       { encoding: 'utf8' }).trim()) as { rows: number; templateVersion: string };
     expect(patched.rows).toBe(1);
     expect(patched.templateVersion, '更新模板没有自带模板版本').toBeTruthy();
@@ -475,7 +485,8 @@ test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and 
     await button(page, '导入').click();
     const modal = page.locator('.ant-modal:visible');
     // 默认即新增模式，且提示语必须把「整批事务」讲清楚，不能只存在于后端
-    await expect(modal.getByText('任意一行有错都不会写入任何商品')).toBeVisible();
+    // 整批事务的长句提示已随文案治理清退，语义由失败后的「本次没有任何商品写入」覆盖
+    await expect(modal.getByText('新增商品', { exact: true })).toBeVisible();
     let responded = page.waitForResponse(r => r.url().includes('/scm/product/import'), { timeout: 30000 });
     await modal.locator('input[type=file]').setInputFiles(goodPath);
     await expect(modal.getByText(/已选文件/)).toBeVisible();
