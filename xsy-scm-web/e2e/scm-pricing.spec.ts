@@ -97,7 +97,8 @@ test('pricing resolver keeps price and sale eligibility independent', async ({ p
   expect(resolved.data.items[0]).toMatchObject({ priceStatus: 'PRICED', unitPrice: '0.0000', sellable: false, unavailableReason: 'SKU_OFF_SHELF', unpricedReason: null });
   await page.addInitScript((value) => localStorage.setItem('smart_admin_user_token', value), token);
   await page.goto('/#/pricing/price-preview');
-  await expect(page.locator('#smartAdminLayoutContent').getByText('取价试算', { exact: true })).toBeVisible();
+  // V150 起菜单名与页面标题统一为「价格试算」
+  await expect(page.locator('#smartAdminLayoutContent').getByText('价格试算', { exact: true }).first()).toBeVisible();
 });
 
 test('read-only role cannot mutate pricing and successful batch keys are protected', async () => {

@@ -97,15 +97,16 @@ async function newSku(): Promise<string> {
     }));
   }
   const code = `${runName}-W4`.toUpperCase();
-  await post('/scm/product/add', {
+  const spuId = await post(`/scm/product/add`, {
     spuCode: code, name: `${runName}待办商品`, categoryId: parentId, status: 'ON_SHELF', images: [],
     skuList: [{
       skuCode: code, specName: '散装', specValues: {规格: '散装'}, saleUnit: 'kg', productType: 'NON_STANDARD',
       marketPrice: '3.5000', status: 'ON_SHELF', defaultFlag: true, sortOrder: 0,
     }],
   });
-  const options = (await post<Row>('/scm/product/sku/option-list', {keyword: code, limit: 10})).options as Row[];
-  const hit = options.find((o) => o.skuCode === code);
+  // V147 起规格编码由后端发号：只能回读详情取真实 skuId，不能按造数编码检索
+  const detail = await get<Row>(`/scm/product/detail/${spuId}`);
+  const hit = (detail.skuList ?? [])[0];
   expect(hit, `新建 SKU ${code} 应能查到`).toBeTruthy();
   return String(hit!.skuId);
 }

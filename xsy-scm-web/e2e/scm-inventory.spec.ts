@@ -29,6 +29,11 @@ async function post(path:string,data:unknown,key=randomUUID()){const r=await raw
 async function get(path:string){const r=await(await api.get(path)).json();expect(r.code,`${path}: ${r.msg}`).toBe(0);return r.data;}
 function browse(page:Page,path:string){return page.addInitScript(v=>localStorage.setItem('smart_admin_user_token',v),token).then(()=>page.goto('/#'+path));}
 async function search(page:Page){await page.getByRole('button',{name:/^查\s*询$/}).click();}
+/** 低频动作已收进操作列「更多」，菜单项渲染在 portal 里，不在行内。 */
+async function rowMenu(page:Page,row:Locator,label:string){
+  await row.getByRole('button',{name:/更多/}).click();
+  await page.locator('.ant-dropdown:visible').getByText(label,{exact:true}).click();
+}
 const balanceRows=(page:Page,text:string)=>page.locator('#scm-inventory-balance-table tr').filter({hasText:text});
 const movementRows=(page:Page,text:string)=>page.locator('#scm-inventory-movement-table tr').filter({hasText:text});
 const receiptRows=(page:Page,text:string)=>page.locator('#scm-purchase-receipt-table tr').filter({hasText:text});
@@ -111,7 +116,7 @@ test('1 a confirmed receipt lands as a PURCHASE_IN balance row with the purchase
   await expect(page.locator('#scm-inventory-balance-table')).toBeVisible();
   await page.getByPlaceholder('商品规格编码').fill(skuCode);
   await search(page);
-  const row=balanceRows(page,skuCode);
+  const row=balanceRows(page,name+'商品A');
   await expect(row).toHaveCount(1);
   await expect(row).toContainText('10.0000');
   await expect(row).toContainText('kg');
@@ -143,7 +148,7 @@ test('2 a second partial receipt accumulates the balance and adds a traceable mo
   await expect(page.locator('#scm-inventory-movement-table')).toBeVisible();
   await page.getByPlaceholder('商品规格编码').fill(skuCode);
   await search(page);
-  const rows=movementRows(page,skuCode);
+  const rows=movementRows(page,'散装');
   await expect(rows).toHaveCount(2);
   await expect(rows.first()).toContainText('采购入库');
   await page.screenshot({path:'../.runtime/w6-inventory-movement.png',fullPage:true});
@@ -205,18 +210,18 @@ test('4 an account with no role sees no page and is rejected by the API',async({
 
 test('5 filters and paging work on both read-only pages',async({page})=>{
   // 余额：SKU 编码关键字命中 1 行；不存在的编码 → 0 行
-  const hit=await balanceQuery({skuCode:name});
+  const hit=await balanceQuery({skuCode});
   expect(hit.total).toBe(1);
-  expect(await balanceQuery({skuCode:name+'-NO-SUCH'})).toMatchObject({total:0});
+  expect(await balanceQuery({skuCode:skuCode+'-NO-SUCH'})).toMatchObject({total:0});
   // 分页：pageSize=1 时只返回 1 行，但 total 仍是全量
-  const paged=await post('/scm/inventory/balance/query',{pageNum:1,pageSize:1,skuCode:name});
+  const paged=await post('/scm/inventory/balance/query',{pageNum:1,pageSize:1,skuCode});
   expect(paged.list).toHaveLength(1);
   expect(paged.total).toBeGreaterThanOrEqual(1);
 
   await browse(page,'/inventory/inventory-balance-list');
   await page.getByPlaceholder('商品规格编码').fill(skuCode);
   await search(page);
-  await expect(balanceRows(page,skuCode)).toHaveCount(1);
+  await expect(balanceRows(page,name+'商品A')).toHaveCount(1);
 
   // 流水：类型筛选 + 时间范围（occurred_at，左闭右开）
   const typed=await movementQuery({skuId,movementType:'PURCHASE_IN'});
@@ -228,9 +233,11 @@ test('5 filters and paging work on both read-only pages',async({page})=>{
   expect(ancient.total).toBe(0);
 
   await browse(page,'/inventory/inventory-movement-list');
+  await expect(page.locator('#scm-inventory-movement-table')).toBeVisible();
   await page.getByPlaceholder('商品规格编码').fill(skuCode);
+  await expect(page.getByPlaceholder('商品规格编码')).toHaveValue(skuCode);
   await search(page);
-  await expect(movementRows(page,skuCode)).toHaveCount(2);
+  await expect(movementRows(page,'散装')).toHaveCount(2);
   // 区间选择器：设到 2020 年 → 空态
   const picker=page.locator('.ant-picker-input input');
   await picker.first().click();
@@ -245,7 +252,7 @@ test('5 filters and paging work on both read-only pages',async({page})=>{
   await page.getByRole('button',{name:/^重\s*置$/}).click();
   await page.getByPlaceholder('商品规格编码').fill(skuCode);
   await search(page);
-  await expect(movementRows(page,skuCode)).toHaveCount(2);
+  await expect(movementRows(page,'散装')).toHaveCount(2);
 });
 
 // ------------------------------------------------------------------
@@ -352,20 +359,21 @@ test('8 warehouse disable is strict and an empty warehouse can be disabled and e
   await search(page);
   const defaultRow=page.locator('#scm-warehouse-table tr').filter({hasText:'WH001'});
   await expect(defaultRow).toHaveCount(1);
-  await defaultRow.getByRole('button',{name:'停用'}).click();
+  await rowMenu(page,defaultRow,'停用');
   await page.locator('.ant-modal-confirm:visible').getByRole('button',{name:/确\s*定/}).click();
-  await expect(page.locator('.ant-alert-error')).toContainText('仓库仍有库存余额，不能停用');
+  // 停用失败时确认框保留，原因由全局 toast 给出
+  await expect(page.locator('.ant-message')).toContainText('仓库仍有库存余额，不能停用');
   await page.locator('.ant-modal-confirm:visible').getByRole('button',{name:/取\s*消/}).click();
 
   await page.getByPlaceholder('仓库编码').fill(isolatedCode);
   await search(page);
   const isolatedRow=page.locator('#scm-warehouse-table tr').filter({hasText:isolatedCode});
   await expect(isolatedRow).toHaveCount(1);
-  await isolatedRow.getByRole('button',{name:'停用'}).click();
+  await rowMenu(page,isolatedRow,'停用');
   await page.locator('.ant-modal-confirm:visible').getByRole('button',{name:/确\s*定/}).click();
   await expect(page.getByText('仓库已停用',{exact:true})).toBeVisible();
   await expect(isolatedRow).toContainText('停用');
-  await isolatedRow.getByRole('button',{name:'启用'}).click();
+  await rowMenu(page,isolatedRow,'启用');
   await expect(page.getByText('仓库已启用',{exact:true})).toBeVisible();
   await expect(isolatedRow).toContainText('启用');
 

@@ -116,10 +116,12 @@ async function ensureCategoryChain(){
 /** 建一个非标品 SKU（散装 / kg）。 */
 async function newSku(tag:string){
   const code=(name+'-'+tag).toUpperCase();
-  await post('/scm/product/add',{spuCode:code,name:name+'商品'+tag,categoryId,status:'ON_SHELF',images:[],
+  const spuId=await post('/scm/product/add',{spuCode:code,name:name+'商品'+tag,categoryId,status:'ON_SHELF',images:[],
     skuList:[{skuCode:code,specName:'散装'+tag,specValues:{规格:'散装'},saleUnit:'kg',productType:'NON_STANDARD',marketPrice:'3.5000',status:'ON_SHELF',defaultFlag:true,sortOrder:0}]});
-  const options=(await post('/scm/product/sku/option-list',{keyword:code,limit:10})).options;
-  sku.set(tag,{id:String(options.find((x:any)=>x.skuCode===code).skuId),code});
+  // V147 起规格编码由后端发号：回读详情取真实 id 与编码
+  const detail=await get('/scm/product/detail/'+spuId);
+  const row=(detail.skuList??[])[0];
+  sku.set(tag,{id:String(row.skuId),code:String(row.skuCode)});
 }
 
 /** 采购 → 提交 → DIRECT 收货确认，把 SKU  stocking 到指定数量（均价 = 采购价）。 */

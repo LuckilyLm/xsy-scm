@@ -81,7 +81,8 @@ async function authenticate(page: Page, value = token) {
 }
 async function saveCategory(page: Page, code: string, label: string) {
   const modal = page.locator('.ant-modal:visible');
-  await modal.getByLabel('分类编码').fill(code); await modal.getByLabel('分类名称').fill(label);
+  // V147 起分类编码由后端发号，表单不再有「分类编码」输入
+  await modal.getByLabel('分类名称').fill(label);
   const response = page.waitForResponse(r => r.url().endsWith('/scm/product/category/add'));
   await modal.getByRole('button', { name: /确.*定/ }).click();
   const body = await (await response).json(); expect(body.code).toBe(0); categoryIds.push(body.data);
@@ -108,7 +109,8 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   const drawer = page.locator('.ant-drawer');
   const openDrawer = page.locator('.ant-drawer-open');
   const expectDrawerClosed = () => expect(openDrawer).toHaveCount(0);
-  await drawer.getByLabel('商品名称', { exact: true }).fill(prefix + '苹果'); await drawer.getByLabel('商品编码', { exact: true }).fill(prefix + 'SPU');
+  // V147 起商品 / 规格编码由后端发号，抽屉不再有编码输入
+  await drawer.getByLabel('商品名称', { exact: true }).fill(prefix + '苹果');
   // 分类树用虚拟列表渲染，节点一多目标行根本不在 DOM 里，只能先按标题搜出唯一节点再点
   const category = drawer.getByLabel('商品分类', { exact: true });
   await selectBox(category).click();
@@ -117,29 +119,29 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   // PCO-1 主档扩展：助记码由运营自维护，储存方式与标签一起进入同一个抽屉
   await drawer.getByLabel('助记码', { exact: true }).fill(prefix + 'PG');
   await pick(page, drawer.getByLabel('储存方式', { exact: true }), '冷藏');
-  await drawer.getByLabel('规格 1 编码', { exact: true }).fill(prefix + 'A'); await pick(page, drawer.getByLabel('规格 1 单位', { exact: true }), 'kg');
+  await pick(page, drawer.getByLabel('规格 1 单位', { exact: true }), 'kg');
   await button(drawer, '添加属性').click(); await drawer.getByLabel('规格 1 属性值 1', { exact: true }).fill('大果');
   await button(drawer, '新增规格').click();
-  await drawer.getByLabel('规格 2 编码', { exact: true }).fill(prefix + 'B'); await pick(page, drawer.getByLabel('规格 2 单位', { exact: true }), 'kg');
+  await pick(page, drawer.getByLabel('规格 2 单位', { exact: true }), 'kg');
   await drawer.getByLabel('规格 2 名称', { exact: true }).fill('小果'); await drawer.getByLabel('规格 2 条码', { exact: true }).fill(prefix + 'BAR');
   await drawer.locator('input[type=file]').setInputFiles({ name: 'pilot.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=', 'base64') });
   await expect(drawer.getByText('主图', { exact: true })).toBeVisible();
   const created = page.waitForResponse(r => r.url().endsWith('/scm/product/add'));
   await button(drawer, '保存商品').click(); const body = await (await created).json(); expect(body.code).toBe(0); const id = body.data; productIds.push(id);
-  await expectDrawerClosed(); row = page.getByRole('row').filter({ hasText: prefix + 'SPU' });
+  await expectDrawerClosed(); row = page.getByRole('row').filter({ hasText: prefix + '苹果' });
   await expect(row).toBeVisible(); await expect(row.getByText('可用', { exact: true })).toBeVisible();
   await row.locator('.ant-table-row-expand-icon').click(); await expect(page.getByText(prefix + 'BAR', { exact: true })).toBeVisible();
   const before = (await (await api.get(`/scm/product/detail/${id}`)).json()).data;
   expect(before.mnemonicCode).toBe(prefix + 'PG'); expect(before.storageMethod).toBe('CHILLED'); expect(before.masterStatus).toBe('ENABLED');
-  await button(row, '编辑').click(); await expect(drawer.getByLabel('规格 1 编码', { exact: true })).toHaveValue(prefix + 'A');
+  await button(row, '编辑').click(); await expect(drawer.getByLabel('规格 1 属性值 1', { exact: true })).toHaveValue('大果');
   // 编辑态必须回显字典值，否则停用单位会让历史商品看不出原值
   await expect(selectBox(drawer.getByLabel('规格 1 单位', { exact: true }))).toHaveText(/kg/);
   await drawer.getByLabel('规格 1 市场价', { exact: true }).fill('12.3456'); await drawer.getByLabel('将第 2 个规格设为默认规格').check();
   await button(drawer, '保存商品').click(); await expectDrawerClosed();
   const after = (await (await api.get(`/scm/product/detail/${id}`)).json()).data;
   expect(after.skuList.map((s: { skuId: string }) => s.skuId)).toEqual(before.skuList.map((s: { skuId: string }) => s.skuId));
-  expect(after.defaultSku.skuCode).toBe(prefix + 'B'); expect(after.skuList[0].marketPrice).toBe('12.3456');
-  row = page.getByRole('row').filter({ hasText: prefix + 'SPU' }); await button(row, '下架').click();
+  expect(after.defaultSku.skuCode).toMatch(/^SKU\d{6,}$/); expect(after.skuList[0].marketPrice).toBe('12.3456');
+  row = page.getByRole('row').filter({ hasText: prefix + '苹果' }); await button(row, '下架').click();
   await page.locator('.ant-popover:visible').getByRole('button', { name: /确.*定/ }).click();
   await expect(button(row, '上架')).toBeVisible();
   await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + 'BAR'); await button(page, '查询').click();
@@ -155,22 +157,22 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await pick(page, querySelect('主档状态'), '可用');
   await button(page, '查询').click(); await expect(row).toBeVisible();
   await button(row, prefix + '苹果').click();
-  await expect(page).toHaveURL(new RegExp(`product-detail.*spuId=${id}`)); await page.reload(); await expect(page.getByText(prefix + 'SPU', { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`product-detail.*spuId=${id}`)); await page.reload(); await expect(page.getByText(prefix + '苹果', { exact: true }).first()).toBeVisible();
   // 详情页的「主档扩展信息」块是这些字段的唯一展示入口
   await expect(page.getByText(prefix + 'PG', { exact: true })).toBeVisible(); await expect(page.getByText('冷藏', { exact: true })).toBeVisible();
   const image = page.locator('.ant-image-img').first(); await expect(image).toBeVisible(); await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
   await page.screenshot({ path: '../.runtime/w1-product-detail.png', fullPage: true });
   await button(page, '返回商品列表').click();
   await button(page, '重置').click();
-  await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + 'SPU'); await button(page, '查询').click();
-  row = page.getByRole('row').filter({ hasText: prefix + 'SPU' });
+  await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + '苹果'); await button(page, '查询').click();
+  row = page.getByRole('row').filter({ hasText: prefix + '苹果' });
 
   // PCO-1 批量维护：标签先由接口建好，再刷新列表让下拉选项重新加载
   const tag = await (await api.post('/scm/product/tag/add', { data: { tagCode: prefix + 'TAG', name: prefix + '礼盒', sortOrder: 99, status: 'ENABLED' } })).json();
   expect(tag.code).toBe(0); tagIds.push(tag.data);
   await page.reload();
-  await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + 'SPU'); await button(page, '查询').click();
-  row = page.getByRole('row').filter({ hasText: prefix + 'SPU' });
+  await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(prefix + '苹果'); await button(page, '查询').click();
+  row = page.getByRole('row').filter({ hasText: prefix + '苹果' });
   await row.getByRole('checkbox').check(); await expect(page.getByText(/已选\s*1\s*个/)).toBeVisible();
   const modal = page.locator('.ant-modal:visible');
   await button(page, '批量改状态').click();
@@ -220,7 +222,6 @@ test('assistant dictionaries: unit codes lock after creation and only unreferenc
 
   await page.getByRole('tab', { name: '商品标签' }).click();
   await button(page, '新增标签').click();
-  await modal.getByLabel('标签编码', { exact: true }).fill(prefix + 'TAG2');
   await modal.getByLabel('标签名称', { exact: true }).fill(prefix + '礼盒装');
   const createdTag = page.waitForResponse(r => r.url().endsWith('/scm/product/tag/add'));
   await modal.getByRole('button', { name: /确.*定/ }).click();
@@ -295,9 +296,9 @@ test('PCO-2 image center: filter no-image products, open single-SPU maintenance,
   await expect(page).toHaveURL(/product-image-center|image-center/);
   const noImage = page.locator('.ant-checkbox-wrapper', { hasText: '仅无主图' });
   await noImage.click();
-  await page.getByPlaceholder('商品编码 / 名称 / 助记码').fill(prefix + 'IMG');
+  await page.getByPlaceholder('商品编码 / 名称 / 助记码').fill(prefix + '无图商品');
   await button(page, '查询').click();
-  const row = page.getByRole('row').filter({ hasText: prefix + 'IMG' });
+  const row = page.getByRole('row').filter({ hasText: prefix + '无图商品' });
   await expect(row).toBeVisible();
   // 「仅无主图」命中后，目标行必须显性标记为无主图
   await expect(row.getByText('无主图', { exact: true })).toBeVisible();
@@ -420,26 +421,33 @@ test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and 
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   // 新增导入要求分类编码存在、ENABLED 且是三级分类：层级在逐行预校验就被拦下（与写入路径的
   // ProductCategoryService.requireSelectableCategory 同口径），不再等到整批写库才收到 40011
-  const categoryCode = prefix + 'CR';
+  const chainIds: (number | string)[] = [];
   let parentId: number | string | undefined;
-  for (const [index, name] of [prefix + '导入一级', prefix + '导入二级', prefix + '导入三级'].entries()) {
+  for (const name of [prefix + '导入一级', prefix + '导入二级', prefix + '导入三级']) {
     const created = await (await api.post('/scm/product/category/add', { data: {
-      parentId, categoryCode: categoryCode + (index + 1), name, sortOrder: 0, status: 'ENABLED'
+      parentId, name, sortOrder: 0, status: 'ENABLED'
     } })).json();
     expect(created.code, JSON.stringify(created)).toBe(0);
-    categoryIds.push(created.data); parentId = created.data;
+    categoryIds.push(created.data); chainIds.push(created.data); parentId = created.data;
   }
+  // V147 起分类编码由后端发号：导入模板的「分类编码」只能用回读的真实编码
+  const treeBody = await (await api.post('/scm/product/category/tree', { data: {} })).json();
+  const flatCats = (rows: any[]): any[] => rows.flatMap((r) => [r, ...flatCats(r.children ?? [])]);
+  const catCodeOf = (id: number | string) => String(
+    flatCats(treeBody.data).find((c: any) => String(c.categoryId ?? c.id) === String(id))?.categoryCode);
+  const leafCategoryCode = catCodeOf(chainIds[2]);
+  const secondLevelCode = catCodeOf(chainIds[1]);
 
-  const spuCode = prefix + 'CRE';
-  const leafCategoryCode = categoryCode + 3;
-  // Legacy SPU/SKU workbook headers remain accepted after new templates switch to business-facing labels.
+  // 新增模板按业务列命名：分组只是本次导入的归并标记，SPU / SKU 编码由后端发号
+  const spuName = prefix + '导入商品';
+  const group = prefix + 'GRP';
   const goodRows = [
-    { SPU编码: spuCode, 商品名称: prefix + '导入商品', 分类编码: leafCategoryCode, 品牌: '导入品牌',
-      商品上下架: 'ON_SHELF', SKU编码: spuCode + 'A', 规格名称: '散装', 销售单位: 'kg',
-      商品类型: 'NON_STANDARD', 市场价: '8.0000', SKU上下架: 'ON_SHELF', 默认SKU: '是' },
-    { SPU编码: spuCode, 商品名称: prefix + '导入商品', 分类编码: leafCategoryCode, 商品上下架: 'ON_SHELF',
-      SKU编码: spuCode + 'B', 规格名称: '整箱', 销售单位: 'kg', 商品类型: 'STANDARD',
-      市场价: '96.0000', SKU上下架: 'ON_SHELF', 默认SKU: '否' }
+    { 导入商品分组: group, 商品名称: spuName, 分类编码: leafCategoryCode, 品牌: '导入品牌',
+      商品状态: 'ON_SHELF', 商品规格名称: '散装', 销售单位: 'kg',
+      商品类型: 'NON_STANDARD', 市场价: '8.0000', 商品规格状态: 'ON_SHELF', 默认商品规格: '是' },
+    { 导入商品分组: group, 商品名称: spuName, 分类编码: leafCategoryCode, 商品状态: 'ON_SHELF',
+      商品规格名称: '整箱', 销售单位: 'kg', 商品类型: 'STANDARD',
+      市场价: '96.0000', 商品规格状态: 'ON_SHELF', 默认商品规格: '否' }
   ];
   // 输入用服务端的新增模板而不是更新模板：两者列集合刻意不同，喂错模板由生成器显性拒绝
   const template = await api.get('/scm/product/import/template', { params: { mode: 'CREATE' } });
@@ -479,29 +487,30 @@ test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and 
 
     const detail = await (await api.get(`/scm/product/detail/${spuId}`)).json();
     expect(detail.code).toBe(0);
-    expect(detail.data.spuCode).toBe(spuCode);
+    expect(detail.data.spuCode).toMatch(/^SPU\d{6,}$/);
     expect(detail.data.brandName).toBe('导入品牌');
     const skus = detail.data.skuList as { skuCode: string; defaultFlag: boolean }[];
-    expect(skus.map(s => s.skuCode).sort()).toEqual([spuCode + 'A', spuCode + 'B']);
+    expect(skus).toHaveLength(2);
+    expect(skus.every(s => /^SKU\d{6,}$/.test(s.skuCode)), skus.map(s => s.skuCode).join(',')).toBe(true);
     expect(skus.filter(s => s.defaultFlag)).toHaveLength(1);
 
     // 页面闭环：新增结果必须能在列表里查到，而不只是接口回一个 id
     await modal.getByRole('button', { name: 'Close' }).click();
     await expect(modal).not.toBeVisible();
-    await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(spuCode);
+    await page.getByPlaceholder('商品名称 / 商品编码 / 条码 / 助记码').fill(spuName);
     await button(page, '查询').click();
-    await expect(page.getByRole('row').filter({ hasText: spuCode })).toHaveCount(1);
+    await expect(page.getByRole('row').filter({ hasText: spuName })).toHaveCount(1);
 
     // 再加两行错行：一行给既存商品补个分类编码不存在的 SKU，另一行独立新建一个商品但只填到二级分类。
     // 二级分类那行刻意不并入同一 SPU，否则「同商品分类必须一致」会先炸出无关诊断，看不出层级校验。
     // 整批必须 0 写入：既存商品不会多出第三个 SKU，二级分类的新商品也不会落库
     const badPath = join(dir, 'create-bad.xlsx');
-    expect(fill(badPath, [...goodRows, { SPU编码: spuCode, 商品名称: prefix + '导入商品',
-      分类编码: prefix + 'NOCAT', 商品上下架: 'ON_SHELF', SKU编码: spuCode + 'C', 规格名称: '礼盒',
-      销售单位: 'kg', 商品类型: 'STANDARD', 市场价: '199.0000', SKU上下架: 'ON_SHELF', 默认SKU: '否' },
-      { SPU编码: spuCode + 'L2', 商品名称: prefix + '二级分类商品', 分类编码: categoryCode + 2,
-        商品上下架: 'ON_SHELF', SKU编码: spuCode + 'D', 规格名称: '组合装', 销售单位: 'kg',
-        商品类型: 'STANDARD', 市场价: '299.0000', SKU上下架: 'ON_SHELF', 默认SKU: '是' }
+    expect(fill(badPath, [...goodRows, { 导入商品分组: group, 商品名称: spuName,
+      分类编码: prefix + 'NOCAT', 商品状态: 'ON_SHELF', 商品规格名称: '礼盒',
+      销售单位: 'kg', 商品类型: 'STANDARD', 市场价: '199.0000', 商品规格状态: 'ON_SHELF', 默认商品规格: '否' },
+      { 导入商品分组: prefix + 'L2', 商品名称: prefix + '二级分类商品', 分类编码: secondLevelCode,
+        商品状态: 'ON_SHELF', 商品规格名称: '组合装', 销售单位: 'kg',
+        商品类型: 'STANDARD', 市场价: '299.0000', 商品规格状态: 'ON_SHELF', 默认商品规格: '是' }
     ]).rows).toBe(4);
     await button(page, '导入').click();
     responded = page.waitForResponse(r => r.url().includes('/scm/product/import'), { timeout: 30000 });

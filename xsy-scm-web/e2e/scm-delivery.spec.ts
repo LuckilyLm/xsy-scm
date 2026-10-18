@@ -156,7 +156,7 @@ test.beforeAll(async () => {
     const skuIds: string[] = [];
     for (const tag of ['A', 'B']) {
         const code = `${name}-${tag}`.toUpperCase();
-        await post('/scm/product/add', {
+        const spuId = await post('/scm/product/add', {
             spuCode: code,
             name: `${name}商品${tag}`,
             categoryId,
@@ -167,8 +167,9 @@ test.beforeAll(async () => {
                 productType: 'NON_STANDARD', marketPrice: '3.5000', status: 'ON_SHELF', defaultFlag: true, sortOrder: 0,
             }],
         });
-        const options = (await post<Row>('/scm/product/sku/option-list', {keyword: code, limit: 10})).options;
-        skuIds.push(String(options.find((o: Row) => o.skuCode === code).skuId));
+        // V147 起规格编码由后端发号：回读详情取真实 skuId
+        const detail = await get<Row>(`/scm/product/detail/${spuId}`);
+        skuIds.push(String((detail.skuList ?? [])[0].skuId));
     }
 
     const typeData: any = await post('/scm/customer/type/option/list', {});

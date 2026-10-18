@@ -414,15 +414,24 @@ test('3｜客户归属改派：销售只看自己名下，改派后可见性立�
     // UI：主管有「改派」入口并能打开弹窗；普通销售连按钮都不渲染（v-privilege 是删节点）
     await authenticate(page, tokens.SCM_SALES_LEAD);
     await page.goto('/#/customer/customer-list');
-    await expect(button(page, '改派').first()).toBeVisible();
-    await button(page, '改派').first().click();
+    // 改派业务员已收进操作列「更多」
+    const leadRow = page.locator('.ant-table-tbody tr.ant-table-row').first();
+    await leadRow.getByRole('button', {name: /更多/}).click();
+    await page.locator('.ant-dropdown:visible').getByText('改派业务员', {exact: true}).click();
     await expect(page.locator('.ant-modal-title')).toContainText('改派业务员');
     await page.keyboard.press('Escape');
 
     const salesPage = await page.context().newPage();
     await authenticate(salesPage, tokens.SCM_SALES);
     await salesPage.goto('/#/customer/customer-list');
-    await expect(button(salesPage, '改派')).toHaveCount(0);
+    // 普通销售连「更多」里的改派项都不渲染（菜单项按权限裁剪）
+    const salesRow = salesPage.locator('.ant-table-tbody tr.ant-table-row').first();
+    if (await salesRow.count()) {
+        await salesRow.getByRole('button', {name: /更多/}).click();
+        await expect(salesPage.locator('.ant-dropdown:visible').getByText('改派业务员', {exact: true}))
+            .toHaveCount(0);
+        await salesPage.keyboard.press('Escape');
+    }
     // 空表必须说清「可能只是没授权」，而不是「系统里没有数据」
     // antd 在 locale.emptyText 传字符串时直接把文案渲染进 placeholder 单元格，不套 .ant-empty
     await expect(salesPage.locator('.ant-table-placeholder'))

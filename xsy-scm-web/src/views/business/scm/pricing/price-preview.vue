@@ -1,4 +1,4 @@
-<!--  新能力：取价试算。价格状态与可售状态独立展示。 -->
+<!--  价格试算。价格状态与可售状态独立展示。 -->
 <template>
   <a-card size="small" :bordered="false">
     <template #title>

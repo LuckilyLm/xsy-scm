@@ -39,8 +39,8 @@ test('已核销收款不能反向；先反向核销后追加反向收款', async
     const row = page.locator('#scm-finance-receipt-table tr').filter({hasText: receipt.receiptNo}).first();
     await expect(row).toBeVisible();
     await expect(row).toContainText('30.0000');
-    await row.getByRole('button', {name: accessibleName('反向')}).click();
-    const dialog = page.locator('.ant-modal:visible').filter({hasText: '反向收款'}).last();
+    await row.getByRole('button', {name: accessibleName('撤销收款')}).click();
+    const dialog = page.locator('.ant-modal:visible').filter({hasText: '撤销收款'}).last();
     await dialog.locator('textarea').fill(`${harness.runTag} 更正误录收款`);
     await dialog.getByRole('button', {name: /确\s*定/}).click();
     await expect(dialog).toHaveCount(0);

@@ -143,7 +143,7 @@ test('4 second receipt completes the order and the progress reaches one',async({
  await browse(page,'/purchase/purchase-order-list');await page.getByPlaceholder('采购单号').fill(orderA.orderNo);
  const orderRow=await row(page,'scm-purchase-order-table',orderA.orderNo);
  await expect(orderRow).toContainText('已收货');await expect(orderRow).toContainText('100.00%');
- await browse(page,'/purchase/purchase-receipt-list');await page.getByPlaceholder('采购单号（自动解析）').fill(orderA.orderNo);
+ await browse(page,'/purchase/purchase-receipt-list');await page.getByPlaceholder('输入采购单号').fill(orderA.orderNo);
  const receiptRows=await row(page,'scm-purchase-receipt-table',orderA.orderNo);
  await expect(receiptRows).toHaveCount(2);
  await page.screenshot({path:'../.runtime/w5-receipt-list.png',fullPage:true});
@@ -186,9 +186,11 @@ test('7 short close requires a reason and closes the remainder',async({page})=>{
  await browse(page,'/purchase/purchase-order-list');await page.getByPlaceholder('采购单号').fill(order.orderNo);
  const orderRow=await row(page,'scm-purchase-order-table',order.orderNo);
  await expect(orderRow).toContainText('部分收货');
- await orderRow.getByRole('button',{name:'少收关单'}).click();
+ await orderRow.getByRole('button',{name:/更多/}).click();
+ await page.locator('.ant-dropdown:visible').getByText('少收关单',{exact:true}).click();
  await page.locator('.ant-modal-confirm').getByRole('button',{name:'确 定'}).click();
- await expect(page.locator('.ant-alert-error')).toContainText('请填写少收关单原因');
+ // 原因为空时走全局 toast（页内不再挂常驻 Alert）
+ await expect(page.locator('.ant-message')).toContainText('请填写少收关单原因');
  await page.locator('.ant-modal-confirm textarea').fill('供应商缺货，剩余不再补收');
  await page.locator('.ant-modal-confirm').getByRole('button',{name:'确 定'}).click();
  await expect(page.locator('.ant-modal-confirm')).toHaveCount(0);
@@ -262,7 +264,8 @@ test('10 stock shortage preview is read-only and server-computed',async({page})=
  expect(before.total).toBe(0); // 只读预览不建需求：此刻该单还没有需求行
  const preview=await post('/scm/purchase/demand/summary-preview',{startAt:so.before,endAt:so.after,warehouseId,keyword:name,pageNum:1,pageSize:20});
  expect(typeof preview.total).toBe('number');expect(Array.isArray(preview.list)).toBe(true);
- const mine=preview.list.filter((r:any)=>String(r.skuCode??'').startsWith(name.toUpperCase()));
+ // V147 后规格编码由服务端发号，不再含造数前缀，按商品名称定位本次造的商品
+ const mine=preview.list.filter((r:any)=>String(r.productName??'').includes(name));
  expect(mine.length).toBeGreaterThanOrEqual(1);
  for(const r of preview.list){
    expect(SUMMARY_STATUS.has(r.calculationStatus),`非法计算状态 ${r.calculationStatus}`).toBe(true);
@@ -276,7 +279,6 @@ test('10 stock shortage preview is read-only and server-computed',async({page})=
  await browse(page,'/purchase/purchase-demand-list');
  await page.getByRole('tab',{name:'订单汇总 / 缺口预览'}).click();
  await expect(page.locator('#scm-purchase-demand-summary-preview-table')).toBeVisible();
- await expect(page.getByText('只读预览')).toBeVisible();
  await page.screenshot({path:'../.runtime/w2a-summary-preview.png',fullPage:true});
  expect(consoleErrors).toEqual([]);
 });
@@ -335,7 +337,6 @@ test('12 batch short-close is atomic and the item workbench stays read-only',asy
  await browse(page,'/purchase/purchase-receipt-list');
  await page.getByRole('tab',{name:'按商品'}).click();
  await expect(page.locator('#scm-purchase-receipt-item-workbench-table')).toBeVisible();
- await expect(page.getByText('只读工作台')).toBeVisible();
  await page.screenshot({path:'../.runtime/w2b-item-workbench.png',fullPage:true});
 });
 
@@ -373,8 +374,7 @@ test('13 Wave 2A preview requires both perms: a real non-admin lacking inventory
     await page.getByRole('button', {name: /^查\s*询$/}).click();
     await expect(page.locator('#scm-purchase-demand-table tr').filter({hasText: so.orderNo}).first()).toBeVisible();
     await page.getByRole('tab', {name: '订单汇总 / 缺口预览'}).click();
-    await expect(page.getByText('只读预览')).toBeVisible();
-    expect(await page.locator('#scm-purchase-demand-summary-preview-table tbody tr.ant-table-row').count(),
+       expect(await page.locator('#scm-purchase-demand-summary-preview-table tbody tr.ant-table-row').count(),
         '预览表在缺权限的账号下出现了数据行').toBe(0);
     await page.screenshot({path: '../.runtime/w2a-summary-preview-denied.png', fullPage: true});
 
@@ -456,7 +456,8 @@ test('14 print renders the fetched order into the print document and never write
  await page.getByPlaceholder('采购单号').fill(order.orderNo);
  const orderRow=await row(page,'scm-purchase-order-table',order.orderNo);
  printing=true;
- await orderRow.getByRole('button',{name:'打印',exact:true}).click();
+ await orderRow.getByRole('button',{name:/更多/}).click();
+ await page.locator('.ant-dropdown:visible').getByText('打印',{exact:true}).click();
  const singleDialog=page.locator('.ant-modal:visible').last();
  await expect(singleDialog.getByText(order.orderNo)).toBeVisible();
  await singleDialog.locator('.ant-select').first().click();

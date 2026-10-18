@@ -7,7 +7,7 @@ import smCrypto from 'sm-crypto';
 const apiUrl='http://127.0.0.1:18080';
 const name='w4_e2e_'+Date.now().toString(36),password='W4@'+randomBytes(8).toString('hex');
 const env={...process.env,W4_E2E_NAME:name,W4_E2E_PASSWORD:password};
-let api:APIRequestContext,token:string,customerId:string,customerCode:string,skuId:string,standardSkuId:string;
+let api:APIRequestContext,token:string,customerId:string,customerCode:string,skuId:string,standardSkuId:string,standardSkuCode:string,weightSkuCode:string;
 let confirmedOrder:any;
 test.describe.configure({mode:'serial'});
 async function login(account:string){const c=await request.newContext({baseURL:apiUrl});const captcha=(await(await c.get('/login/getCaptcha')).json()).data;const source=readFileSync('src/lib/encrypt.ts','utf8');const key=/const SM4_KEY = '([^']+)'/.exec(source)![1];const encrypted=Buffer.from(smCrypto.sm4.encrypt(password,Buffer.from(key).toString('hex'))).toString('base64');const r=await(await c.post('/login',{data:{loginName:account,password:encrypted,captchaUuid:captcha.captchaUuid,captchaCode:captcha.captchaText,loginDevice:1}})).json();expect(r.code).toBe(0);await c.dispose();return r.data.token;}
@@ -30,7 +30,7 @@ test.beforeAll(async()=>{
  const customer=(await(await api.get('/scm/customer/detail/'+customerId)).json()).data;customerCode=String(customer.customerCode);expect(customerCode).toMatch(/^CUS\d{6,}$/);await post('/scm/customer/updateStatus',{customerId,version:customer.version,status:'COOPERATING'});
  const tree=(await(await api.post('/scm/product/category/tree',{data:{}})).json()).data;const flatten=(rows:any[]):any[]=>rows.flatMap(x=>[x,...flatten(x.children??[])]);const category=flatten(tree).find(x=>x.level===3)??flatten(tree)[0];
  await post('/scm/product/add',{spuCode:name.toUpperCase(),name:name+'商品',categoryId:category.categoryId,status:'ON_SHELF',images:[],skuList:[{skuCode:name.toUpperCase()+'-KG',specName:'散装',specValues:{规格:'散装'},saleUnit:'kg',productType:'NON_STANDARD',marketPrice:'3.5000',status:'ON_SHELF',defaultFlag:true,sortOrder:0},{skuCode:name.toUpperCase()+'-BOX',specName:'整箱',specValues:{规格:'整箱'},saleUnit:'箱',productType:'STANDARD',marketPrice:'0.0000',status:'ON_SHELF',defaultFlag:false,sortOrder:1}]});
- const options=(await(await api.post('/scm/product/sku/option-list',{data:{keyword:name,limit:10}})).json()).data.options;skuId=options.find((x:any)=>x.specName==='散装').skuId;standardSkuId=options.find((x:any)=>x.specName==='整箱').skuId;
+ const options=(await(await api.post('/scm/product/sku/option-list',{data:{keyword:name,limit:10}})).json()).data.options;skuId=options.find((x:any)=>x.specName==='散装').skuId;standardSkuId=options.find((x:any)=>x.specName==='整箱').skuId;weightSkuCode=String(options.find((x:any)=>x.specName==='散装').skuCode);standardSkuCode=String(options.find((x:any)=>x.specName==='整箱').skuCode);
 });
 test.afterAll(async()=>{if(api){await api.get('/login/logout');await api.dispose();}execFileSync('python',['../tools/w4_e2e_accounts.py','cleanup'],{env,stdio:'pipe'});});
 
@@ -46,16 +46,18 @@ test('2 nonstandard weight UI, reason and final settlement',async({page})=>{
  // 确认前弹的是 ADM-04 的「确认订单与授信检查」业务弹窗（根类名 .ant-modal、按钮「确定」），
  // 不是 antd 的 Modal.confirm，所以 .ant-modal-confirm 永远等不到；这里连标题一起断言，
  // 保证改的只是选择器，「确认前必须看到授信影响」这条语义反而更严。
- await browse(page);await page.getByPlaceholder('名称或订单号').fill(o.orderNo);await page.getByRole('button',{name:/^查\s*询$/}).click();await page.getByText(o.orderNo,{exact:true}).click();await page.getByRole('button',{name:'录入实重',exact:true}).click();await page.locator('#form_item_actualQuantity').fill('1.2500');await page.locator('#form_item_actualQuantityReason').fill('电子秤人工录入');await page.locator('.ant-modal:visible').getByRole('button',{name:'确 定'}).click();await expect(page.locator('.ant-modal:visible')).toHaveCount(0);await page.getByRole('button',{name:'确认订单',exact:true}).click();const confirmModal=page.locator('.ant-modal-content:visible').last();await expect(confirmModal).toContainText('确认订单与授信检查');await expect(confirmModal).toContainText('本次实重结算金额');await confirmModal.getByRole('button',{name:/^确\s*定$/}).click();await expect(page.locator('.ant-drawer-body').getByText('已确认',{exact:true})).toBeVisible();confirmedOrder=await detail(o.orderId);expect(confirmedOrder.settlementTotalAmount).toBe('4.3750');await expect(page.locator('.ant-modal-content:visible')).toHaveCount(0);await page.screenshot({path:'../.runtime/w4-order-detail.png',fullPage:true});
+ await browse(page);await page.getByPlaceholder('名称或订单号').fill(o.orderNo);await page.getByRole('button',{name:/^查\s*询$/}).click();await page.getByText(o.orderNo,{exact:true}).click();// 订单详情已是独立页面，实重等低频动作收在页头的「订单操作」抽屉里
+await page.getByRole('button',{name:'订单操作',exact:true}).click();await page.getByRole('button',{name:'录入实重',exact:true}).click();await page.locator('#form_item_actualQuantity').fill('1.2500');await page.locator('#form_item_actualQuantityReason').fill('电子秤人工录入');await page.locator('.ant-modal:visible').getByRole('button',{name:'确 定'}).click();await expect(page.locator('.ant-modal:visible')).toHaveCount(0);await page.getByRole('button',{name:'确认订单',exact:true}).click();const confirmModal=page.locator('.ant-modal-content:visible').last();await expect(confirmModal).toContainText('确认订单与授信检查');await expect(confirmModal).toContainText('本次实重结算金额');await confirmModal.getByRole('button',{name:/^确\s*定$/}).click();await expect(page.locator('.ant-drawer-body').getByText('已确认',{exact:true})).toBeVisible();confirmedOrder=await detail(o.orderId);expect(confirmedOrder.settlementTotalAmount).toBe('4.3750');await expect(page.locator('.ant-modal-content:visible')).toHaveCount(0);await page.screenshot({path:'../.runtime/w4-order-detail.png',fullPage:true});
 });
 test('3 cancellation preserves terminal rules and zero-price standard order',async({page})=>{
- const o=await post('/scm/order/create',draft(standardSkuId));expect(o.orderedTotalAmount).toBe('0.0000');await browse(page);await page.getByPlaceholder('名称或订单号').fill(o.orderNo);await page.getByRole('button',{name:/^查\s*询$/}).click();await page.getByText(o.orderNo,{exact:true}).click();await page.getByRole('button',{name:'取消订单',exact:true}).click();await page.locator('#form_item_cancelReason').fill('客户取消');await page.locator('.ant-modal:visible').getByRole('button',{name:'确 定'}).click();await expect(page.locator('.ant-drawer-body').getByText('已取消',{exact:true})).toBeVisible();const denied=await(await api.post('/scm/order/cancel',{data:{orderId:confirmedOrder.orderId,version:confirmedOrder.version,reason:'不可取消'},headers:{'Idempotency-Key':randomUUID()}})).json();expect(denied.code).toBe(40960);
+ const o=await post('/scm/order/create',draft(standardSkuId));expect(o.orderedTotalAmount).toBe('0.0000');await browse(page);await page.getByPlaceholder('名称或订单号').fill(o.orderNo);await page.getByRole('button',{name:/^查\s*询$/}).click();await page.getByText(o.orderNo,{exact:true}).click();await page.getByRole('button',{name:'订单操作',exact:true}).click();await page.getByRole('button',{name:'取消订单',exact:true}).click();await page.locator('#form_item_cancelReason').fill('客户取消');await page.locator('.ant-modal:visible').getByRole('button',{name:'确 定'}).click();await expect(page.locator('.ant-drawer-body').getByText('已取消',{exact:true})).toBeVisible();const denied=await(await api.post('/scm/order/cancel',{data:{orderId:confirmedOrder.orderId,version:confirmedOrder.version,reason:'不可取消'},headers:{'Idempotency-Key':randomUUID()}})).json();expect(denied.code).toBe(40960);
 });
 test('4 supplement reason, original identity and duplicate request',async()=>{
  const data={...draft(),orderSource:'SUPPLEMENT',originalOrderId:confirmedOrder.orderId};let r=await(await api.post('/scm/order/create',{data,headers:{'Idempotency-Key':randomUUID()}})).json();expect(r.code).toBe(40060);const key=randomUUID();const accepted={...data,supplementReason:'漏录补单'};const first=await post('/scm/order/create',accepted,key);const second=await post('/scm/order/create',accepted,key);expect(first.orderId).toBe(second.orderId);r=await(await api.post('/scm/order/create',{data:{...accepted,remark:'changed'},headers:{'Idempotency-Key':key}})).json();expect(r.code).toBe(40966);
 });
 test('5 audit page, error retry, empty results and read-only permission',async({page})=>{
- await browse(page,'/order/order-log-list');await expect(page.locator('#order-log-table')).toBeVisible();const changedLog=page.locator('#order-log-table tr').filter({hasText:'修改'}).first();await changedLog.getByRole('button',{name:'变更前后'}).click();const diff=page.locator('.ant-modal:visible .scm-diff');await expect(diff).toContainText('变更前');await expect(diff).toContainText('变更后');await expect(diff).toContainText('已变更');await page.locator('.ant-modal-close').click();
+ await browse(page,'/order/order-log-list');await expect(page.locator('#order-log-table')).toBeVisible();const changedLog=page.locator('#order-log-table tr').filter({hasText:'修改'}).first();await changedLog.getByRole('button',{name:'变更前后'}).click();const diff=page.locator('.ant-modal:visible .scm-diff');// 审计快照按「旧值 → 新值」逐字段展示，不再有「变更前 / 变更后」两块表头
+await expect(diff).toContainText('已变更');await expect(diff).toContainText('3.5000→10.5000');await expect(diff).toContainText('显示未变更');await page.locator('.ant-modal-close').click();
  const readToken=await login(name+'_read');const read=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${readToken}`}});const denied=await(await read.post('/scm/order/create',{data:draft(),headers:{'Idempotency-Key':randomUUID()}})).json();expect(denied.code).toBe(30005);await read.get('/login/logout');await read.dispose();
  await browse(page);await page.route('**/scm/order/query',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({code:50000,msg:'验收模拟错误',ok:false})}));await page.getByRole('button',{name:/^查\s*询$/}).click();await expect(page.locator('.ant-alert-error')).toContainText('验收模拟错误');await page.unroute('**/scm/order/query');const recovered=page.waitForResponse(r=>r.url().endsWith('/scm/order/query')&&r.request().method()==='POST');await page.locator('.ant-alert').getByRole('button',{name:/^重\s*试$/}).click();await recovered;await expect(page.locator('.ant-alert-error')).toHaveCount(0);await expect(page.locator('#order-table .ant-spin-spinning')).toHaveCount(0);await page.getByPlaceholder('名称或订单号').fill('NO-SUCH-W4-ORDER');await page.getByPlaceholder('名称或订单号').press('Enter');await expect(page.locator('#order-table .ant-empty')).toBeVisible();await page.setViewportSize({width:1920,height:1080});await page.screenshot({path:'../.runtime/w4-order-empty-1920.png',fullPage:true});
 });
@@ -67,10 +69,10 @@ test('6 return approval atomically generates refund and completes in UI',async({
 
 test('7 download template and import standard/nonstandard orders atomically',async({page})=>{
  await browse(page);await page.getByRole('button',{name:'导入订单',exact:true}).click();
- const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'下载 Excel 模板',exact:true}).click();const download=await downloadPromise;
+ const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:/下载\s*Excel\s*模板/}).click();const download=await downloadPromise;
  expect(download.suggestedFilename()).toBe('销售订单导入模板.xlsx');const valid='../.runtime/w4-order-import-valid.xlsx';await download.saveAs(valid);
  // 客户编码列必须填服务端回读的真实编码；SKU 编码仍是人工码，可继续拼前缀。
- const standardCode=name.toUpperCase()+'-BOX',weightCode=name.toUpperCase()+'-KG';
+ const standardCode=standardSkuCode,weightCode=weightSkuCode;
  const fillScript=`from openpyxl import load_workbook\nimport sys\np=sys.argv[1]; customer=sys.argv[2]; standard=sys.argv[3]; weight=sys.argv[4]; bad=sys.argv[5]=='bad'\nwb=load_workbook(p); ws=wb.active\nfor row in range(2,ws.max_row+1):\n    for col in range(1,13): ws.cell(row,col).value=None\nrows=[['1.0','IMPORT-STANDARD',customer,'W4验收','13800000000','验收地址',None,standard,'2.0000',None,None,'页面联调'],['1.0','IMPORT-WEIGHT',customer,'W4验收','13800000000','验收地址',None,weight,'3.0000',None,None,'页面联调']]\nif bad: rows.append(['1.0','IMPORT-BAD',customer,'W4验收','13800000000','验收地址',None,'SKU-NOT-FOUND','1.0000',None,None,'错误行'])\nfor r,row in enumerate(rows,2):\n    for c,v in enumerate(row,1): ws.cell(r,c).value=v\nwb.save(p)`;
  execFileSync('python',['-c',fillScript,valid,customerCode,standardCode,weightCode,'valid']);
  await page.locator('.ant-modal:visible input[type=file]').setInputFiles(valid);await page.getByRole('button',{name:'开始导入',exact:true}).click();
@@ -84,7 +86,7 @@ test('7 download template and import standard/nonstandard orders atomically',asy
 });
 
 test('8 sample row and manual override rules block the whole batch',async({page})=>{
- const standardCode=name.toUpperCase()+'-BOX';
+ const standardCode=standardSkuCode;
  const importFile=async(path:string)=>{await page.locator('.ant-modal:visible input[type=file]').setInputFiles(path);await page.getByRole('button',{name:'开始导入',exact:true}).click();};
  const reopen=async()=>{await page.getByRole('button',{name:'取 消'}).click();await page.getByRole('button',{name:'导入订单',exact:true}).click();};
  const importedTotal=async()=>(await post('/scm/order/query',{pageNum:1,pageSize:100,customerId,orderSource:'IMPORT'})).total;
@@ -92,7 +94,7 @@ test('8 sample row and manual override rules block the whole batch',async({page}
 
  // A) 原样上传刚下载的模板（示例行未替换）→ 整批失败、零写入，错误指到具体字段
  const raw='../.runtime/w4-order-import-raw.xlsx';
- const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:'下载 Excel 模板',exact:true}).click();await (await downloadPromise).saveAs(raw);
+ const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:/下载\s*Excel\s*模板/}).click();await (await downloadPromise).saveAs(raw);
  const baseline=await importedTotal();
  await importFile(raw);
  await expect(page.locator('.ant-modal:visible')).toContainText('发现 2 个问题，订单未写入');
@@ -103,7 +105,7 @@ test('8 sample row and manual override rules block the whole batch',async({page}
  await expect(sampleErrors.first()).toContainText('ORDER-001');
  await expect(sampleErrors.first()).toContainText('客户编码');
  await expect(sampleErrors.first()).toContainText('客户编码不存在');
- await expect(sampleErrors.nth(1)).toContainText('SKU编码');
+ await expect(sampleErrors.nth(1)).toContainText('商品规格编码');
  await expect(sampleErrors.nth(1)).toContainText('商品规格编码不存在');
  expect(await importedTotal()).toBe(baseline);
 
@@ -130,7 +132,7 @@ test('9 history reuse prefills a new draft and the recent-price popover shows th
  await page.getByPlaceholder('名称或订单号').fill(confirmedOrder.orderNo);
  await page.getByRole('button',{name:/^查\s*询$/}).click();
  const row=page.locator('#order-table tbody tr').filter({hasText:confirmedOrder.orderNo}).first();
- await row.getByRole('button',{name:'更多操作'}).click();
+ await row.getByRole('button',{name:/更多/}).click();
  await page.getByRole('menuitem',{name:'复用为新单'}).click();
  const drawer=page.locator('.ant-drawer:visible');
  // 复用生成的是「新建」态：只带一行历史商品，价格按当前价重新解析，绝不沿用历史锁价
@@ -150,7 +152,7 @@ test('9 history reuse prefills a new draft and the recent-price popover shows th
  await expect(page.locator('.ant-popover:visible')).toHaveCount(0);
  // 组件实例不销毁，重开抽屉时不能直接冒出上次的价签。仍走复用入口：
  // 上面那次关闭落了本地草稿，走「新建订单」会先弹草稿恢复框，与本用例要验的东西无关。
- await row.getByRole('button',{name:'更多操作'}).click();
+ await row.getByRole('button',{name:/更多/}).click();
  await page.getByRole('menuitem',{name:'复用为新单'}).click();
  await expect(drawer.getByRole('button',{name:'创建订单'})).toBeVisible();
  await expect(page.locator('.ant-popover:visible')).toHaveCount(0);

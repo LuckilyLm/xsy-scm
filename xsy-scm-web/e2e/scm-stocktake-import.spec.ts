@@ -206,9 +206,12 @@ test.describe.serial('Wave 6 盘点快照导入与复制历史盘点', () => {
     const row = page.locator(`tr`).filter({hasText: importedStocktakeNo}).first();
     await expect(row).toBeVisible();
 
-    await row.getByRole('button', {name: accessibleName('复制到新建')}).click();
+    // 复制到新建属低频动作，已收进操作列「更多」
+    await row.getByRole('button', {name: /更多/}).click();
+    await page.locator('.ant-dropdown:visible').getByText('复制到新建', {exact: true}).click();
     const drawer = page.locator('.ant-drawer-open');
-    await expect(drawer.getByText('本表单尚未保存')).toBeVisible();
+    // 抽屉提示语已随文案治理清退，改为断言抽屉里确实是新建的盘点单
+    await expect(drawer.getByText(/实盘量/).first()).toBeVisible();
     // P0 缺陷：前端曾写死 pageSize=2000，被余额查询的 @Max(100) 直接拒掉，复制功能必然打不开。
     await expect.poll(() => balanceQueries.length, {message: '复制要读当前余额取记账单位'}).toBeGreaterThan(0);
     expect(balanceQueries.every((q) => q.pageSize > 0 && q.pageSize <= 100), JSON.stringify(balanceQueries)).toBe(true);

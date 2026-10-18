@@ -173,9 +173,8 @@ test('live customer pilot: type, credit period, status, search, deep link and de
 
   // ------------------------------------------------------------------ 编辑
   await button(row, '编辑').click();
-  // 编辑态编码只读回显真实生成的编码；文本证据取服务端回读值，不假设提交码。
-  await expect(drawer.locator('.ant-form-item').filter({ hasText: '客户编码' })
-    .locator('.scm-form-readonly')).toHaveText(customerCode);
+  // 编辑态与创建态一致：编码字段不进表单，内部发号只在列表 / 详情只读展示。
+  await expect(drawer.getByLabel('客户编码', { exact: true })).toHaveCount(0);
   // 回填走 `areaNodesOf`：三级必须显示成一条连续路径，缺一级时级联选择器会渲染异常。
   await expect(drawer.locator('.ant-cascader .ant-select-selection-item')).toHaveText(
     /浙江省\s*\/\s*杭州市\s*\/\s*西湖区/
@@ -206,13 +205,14 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   await page.screenshot({ path: '../.runtime/w2-customer-detail.png', fullPage: true });
 
   // ------------------------------------------------------------------ 删除
-  await button(page, '客户档案').click();
+  // 侧栏菜单项不是 button，回列表直接走哈希路由
+  await page.goto('/#/customer/customer-list');
   row = page.getByRole('row').filter({ hasText: prefix + '客户甲' });
   // 删除属于危险动作，已从常驻操作收进「更多」；菜单项只在展开后进入 DOM。
   // 二次确认随之由 popconfirm 改为 Modal，断言的仍是「必须确认后才真的删除」。
   await row.getByRole('button', { name: /更多/ }).click();
   await page.getByRole('menuitem', { name: buttonName('删除') }).click();
-  await page.locator('.ant-modal:visible .ant-modal-confirm-btns .ant-btn-primary').click();
+  await page.locator('.ant-modal:visible').getByRole('button', { name: /删\s*除/ }).click();
   await expect(row).toHaveCount(0);
 
   // 客户已删除，客户类型这时才能删（否则后端 40938）。
