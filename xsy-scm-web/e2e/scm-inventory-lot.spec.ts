@@ -10,6 +10,7 @@ const name = 'w9_e2e_' + Date.now().toString(36), password = 'W9@' + randomBytes
 const env = {...process.env, W9_E2E_NAME: name, W9_E2E_PASSWORD: password};
 let api: APIRequestContext, token: string;
 let lotWarehouseId: string, skuId: string, supplierId: string, receiptId: string, receiptNo: string;
+let lotNo = '';
 test.describe.configure({mode: 'serial'});
 
 async function login(account: string) {
@@ -136,6 +137,7 @@ test('1｜确认收货时登记两个批次，批次库存按批次展开且合�
 test('2｜批次库存页按批次展示两行，合计等于总账余额', async ({page}) => {
   const balances = await post('/scm/inventory/lot/balance/query', {pageNum: 1, pageSize: 20, skuId});
   expect(balances.total, JSON.stringify(balances)).toBe(2);
+  lotNo = String(balances.list[0].lotNo);
   const quantities = balances.list.map((x: any) => String(x.quantity)).sort();
   expect(quantities).toEqual(['4.0000', '6.0000']);
   // 批次号由系统发号，来源批号原样保存
@@ -171,4 +173,42 @@ test('3｜批次仓的调拨被拒绝，非批次仓不受影响', async ({page}
   await page.getByPlaceholder('批次号').fill('LOT');
   await search(page);
   await page.screenshot({path: '../.runtime/w9-inventory-lot.png', fullPage: true});
+});
+
+test('4｜页面按批次发码并回放到收货来源', async ({page}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await browse(page, '/inventory/inventory-trace-unit-list');
+  await expect(page.locator('#scm-inventory-trace-unit-table')).toBeVisible();
+
+  await page.getByRole('button', {name: '按批次发码'}).click();
+  const modal = page.locator('.ant-modal:visible').filter({hasText: '按批次发码'}).last();
+  await modal.getByPlaceholder('输入批次号后确认可发数量').fill(lotNo);
+  await modal.getByPlaceholder('输入批次号后确认可发数量').blur();
+  await expect(modal.getByText(/可发数量/)).toBeVisible();
+  await modal.getByLabel('发码数量').fill('2');
+  await modal.getByLabel('每包数量').fill('2.0000');
+
+  const issued = page.waitForResponse((r) => r.url().endsWith('/scm/inventory/unit/issue'));
+  await modal.getByRole('button', {name: /^发\s*码$/}).click();
+  const body = await (await issued).json();
+  expect(body.code, body.msg).toBe(0);
+  expect(body.data).toHaveLength(2);
+  // 码不透明：不嵌日期
+  expect(body.data.every((u: any) => /^U[0-9A-HJKMNP-TV-Z]{8}$/.test(u.unitCode))).toBe(true);
+  await expect(modal).toBeHidden();
+
+  await page.getByPlaceholder('批次号', {exact: true}).fill(lotNo);
+  await search(page);
+  await expect(page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row')).toHaveCount(2);
+
+  // 回放：从码回到批次与收货来源
+  const firstRow = page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first();
+  const unitCode = (await firstRow.locator('td').first().innerText()).trim();
+  await firstRow.getByRole('button', {name: '回放'}).click();
+  const drawer = page.locator('.ant-drawer-open').filter({hasText: '包装码回放'}).first();
+  await expect(drawer).toContainText(unitCode);
+  await expect(drawer).toContainText(lotNo);
+  await expect(drawer).toContainText(receiptNo);
+  expect(errors).toEqual([]);
 });

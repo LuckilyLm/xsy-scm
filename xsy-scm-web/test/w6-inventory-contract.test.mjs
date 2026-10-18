@@ -297,7 +297,7 @@ test('loss/gain document enums match the backend state machine', () => {
 test('inventory table DOM ids are distinct, non-empty and registered with numeric table ids', () => {
   assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID),
       ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION', 'STOCKTAKE', 'LOSS_GAIN', 'TRANSFER',
-        'WARNING', 'WARNING_THRESHOLD', 'CONVERSION', 'LOT_BALANCE']);
+        'WARNING', 'WARNING_THRESHOLD', 'CONVERSION', 'LOT_BALANCE', 'TRACE_UNIT']);
   assert.equal(SCM_INVENTORY_TABLE_ID.BALANCE, 'scm-inventory-balance-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.MOVEMENT, 'scm-inventory-movement-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.STOCKTAKE, 'scm-inventory-stocktake-table');
@@ -318,8 +318,10 @@ test('inventory table DOM ids are distinct, non-empty and registered with numeri
   assert.equal(business.SCM_INVENTORY_WARNING_THRESHOLD, 50025);
   assert.equal(business.SCM_INVENTORY_CONVERSION, 50026);
   assert.equal(business.SCM_INVENTORY_LOT_BALANCE, 50055);
+  assert.equal(business.SCM_INVENTORY_TRACE_UNIT, 50056);
   assert.equal(SCM_INVENTORY_TABLE_ID.CONVERSION, 'scm-inventory-conversion-table');
   assert.equal(SCM_INVENTORY_TABLE_ID.LOT_BALANCE, 'scm-inventory-lot-balance-table');
+  assert.equal(SCM_INVENTORY_TABLE_ID.TRACE_UNIT, 'scm-inventory-trace-unit-table');
 
   // 数字 tableId 必须全局唯一（列配置按它持久化，撞了会串列）
   const numeric = Object.values(business).filter((value) => typeof value === 'number');

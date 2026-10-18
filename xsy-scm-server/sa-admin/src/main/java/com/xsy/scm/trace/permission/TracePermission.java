@@ -1,0 +1,14 @@
+package com.xsy.scm.trace.permission;
+
+/** 包装码接口的权限标识；与迁移里发布的菜单 api_perms 逐字对应。 */
+public final class TracePermission {
+
+    private TracePermission() {
+    }
+
+    /** 包装码列表与回放查询。 */
+    public static final String UNIT_QUERY = "scm:inventory:unit:query";
+
+    /** 按批次发码。 */
+    public static final String UNIT_ISSUE = "scm:inventory:unit:issue";
+}

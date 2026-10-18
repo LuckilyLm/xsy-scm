@@ -32,6 +32,9 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
 
     private Long lotWarehouseId;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.xsy.scm.trace.service.TraceUnitService traceUnitService;
+
     @BeforeEach
     void createLotWarehouse() {
         WarehouseAddForm form = new WarehouseAddForm();
@@ -158,6 +161,66 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
      * 与下一条拆成两个用例：异常会把测试事务标记为 rollback-only，
      * 同一个用例里再发第二次命令会得到 40921 而不是被测的行为。
      */
+    @Test
+    @DisplayName("#4 按批次发码：码不透明且唯一，回放能回到收货来源")
+    void issueUnitsAndReplayToReceipt() {
+        Long skuId = newOnShelfSku("UNIT1");
+        W6Fixture fx = inboundFixture("UNIT1", skuId, "10.0000");
+        confirmWithLots(fx.receipt().getId(), "10.0000", "10.0000");
+        Long lotId = jdbc.queryForObject(
+                "SELECT id FROM xsy_trace_lot WHERE sku_id = ? ORDER BY id DESC LIMIT 1", Long.class, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitIssueForm form = new com.xsy.scm.trace.domain.form.TraceUnitIssueForm();
+        form.setLotId(lotId);
+        form.setPackageType("BAG");
+        form.setPackageCount(3);
+        form.setQuantityPerPackage("2.0000");
+        var units = traceUnitService.issue(form, "W9 IT");
+        assertThat(units).hasSize(3);
+
+        // 码不透明：U + 8 位 Base32，不含日期段
+        List<String> codes = units.stream().map(com.xsy.scm.trace.domain.vo.TraceUnitVO.Unit::getUnitCode).toList();
+        assertThat(codes).allMatch(code -> code.matches("^U[0-9A-HJKMNP-TV-Z]{8}$"));
+        assertThat(codes).doesNotHaveDuplicates();
+        // 发码即追加事件
+        Integer events = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_trace_event WHERE lot_id = ? AND event_type = 'ISSUE'",
+                Integer.class, lotId);
+        assertThat(events).isEqualTo(3);
+
+        // 回放：单元 → 批次 → 收货来源
+        var replay = traceUnitService.replay(codes.getFirst());
+        assertThat(replay.getLot().getLotNo()).startsWith("LOT");
+        assertThat(replay.getReceipt()).isNotNull();
+        assertThat(replay.getReceipt().getReceiptNo()).isEqualTo(fx.receipt().getReceiptNo());
+    }
+
+    @Test
+    @DisplayName("#5 发码总量不得超过批次余额（41504）")
+    void issueRejectsBeyondBalance() {
+        Long skuId = newOnShelfSku("UNIT2");
+        W6Fixture fx = inboundFixture("UNIT2", skuId, "10.0000");
+        confirmWithLots(fx.receipt().getId(), "10.0000", "10.0000");
+        Long lotId = jdbc.queryForObject(
+                "SELECT id FROM xsy_trace_lot WHERE sku_id = ? ORDER BY id DESC LIMIT 1", Long.class, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitIssueForm form = new com.xsy.scm.trace.domain.form.TraceUnitIssueForm();
+        form.setLotId(lotId);
+        form.setPackageType("BAG");
+        form.setPackageCount(6);
+        form.setQuantityPerPackage("1.0000");
+        traceUnitService.issue(form, "W9 IT");
+
+        com.xsy.scm.trace.domain.form.TraceUnitIssueForm over = new com.xsy.scm.trace.domain.form.TraceUnitIssueForm();
+        over.setLotId(lotId);
+        over.setPackageType("BAG");
+        over.setPackageCount(6);
+        over.setQuantityPerPackage("1.0000");
+        assertThatThrownBy(() -> traceUnitService.issue(over, "W9 IT"))
+                .isInstanceOf(ScmBusinessException.class)
+                .satisfies(error -> assertThat(((ScmBusinessException) error).getErrorCode().getCode()).isEqualTo(41504));
+    }
+
     @Test
     @DisplayName("#4 批次仓不登记批次时拒绝确认（40095）")
     void lotWarehouseRequiresLots() {

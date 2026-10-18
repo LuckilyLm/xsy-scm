@@ -795,3 +795,48 @@ export interface InventoryLotMovement {
     occurredAt: string;
     operator: string;
 }
+
+// ------------------------------------------------------------------
+// 包装码（一物一码，二期）
+// ------------------------------------------------------------------
+
+/** `TraceUnitQueryForm`。 */
+export interface TraceUnitQuery extends Page {
+    lotId?: Id;
+    unitCode?: string;
+    lotNo?: string;
+    status?: string;
+}
+
+/** `TraceUnitVO.Unit`：一码一批，码不透明。 */
+export interface TraceUnit {
+    id: Id;
+    unitCode: string;
+    lotId: Id;
+    lotNo: string;
+    sourceLotNo?: string | null;
+    packageType: string;
+    quantity: string;
+    unit: string;
+    status: string;
+    remark?: string | null;
+    createdAt: string;
+    createdBy: string;
+}
+
+/** `TraceUnitIssueForm`：一次给同一批次发 N 个同规格包装。 */
+export interface TraceUnitIssue {
+    lotId: Id;
+    packageType: string;
+    packageCount: number;
+    quantityPerPackage: string;
+    remark?: string | null;
+}
+
+/** `TraceUnitVO.Replay`：一个包装码的完整回放。 */
+export interface TraceUnitReplay {
+    unit: TraceUnit;
+    lot: {lotId: Id; lotNo: string; sourceLotNo?: string | null; skuCode?: string; skuName?: string};
+    receipt?: {receiptNo: string; supplierName?: string | null; confirmedAt?: string | null} | null;
+    outbounds: {outboundNo: string; occurredAt: string; quantity: string}[];
+}

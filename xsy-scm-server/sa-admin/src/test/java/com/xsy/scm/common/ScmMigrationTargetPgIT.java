@@ -262,6 +262,32 @@ class ScmMigrationTargetPgIT {
         assertThat(perms).as("批次查询权限应随迁移发布").isEqualTo(1);
     }
 
+    /**
+     * V152 起包装码（一物一码）：单元表 + 只追加事件表，码不透明且唯一。
+     */
+    @Test
+    void traceUnitSchemaExistsFromV152() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 152) {
+            return;
+        }
+        assertColumn("xsy_trace_unit", "unit_code");
+        assertColumn("xsy_trace_unit", "lot_id");
+        assertColumn("xsy_trace_unit", "package_type");
+        assertColumn("xsy_trace_event", "event_type");
+        Integer uniqueIndexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' AND indexname = 'uk_trace_unit_code'",
+                Integer.class);
+        assertThat(uniqueIndexes).as("包装码必须全局唯一").isEqualTo(1);
+        Integer appendOnly = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_trace_event_append_only' AND NOT tgisinternal",
+                Integer.class);
+        assertThat(appendOnly).as("包装事件必须只追加").isEqualTo(1);
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 2110 AND 2112", Integer.class);
+        assertThat(menus).as("包装码页面与两条权限应随迁移发布").isEqualTo(3);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "
