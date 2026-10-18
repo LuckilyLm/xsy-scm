@@ -2,6 +2,7 @@ package com.xsy.scm.trace.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.common.constant.ScmOperator;
+import com.xsy.scm.trace.domain.form.TraceUnitBindForm;
 import com.xsy.scm.trace.domain.form.TraceUnitIssueForm;
 import com.xsy.scm.trace.domain.form.TraceUnitQueryForm;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
@@ -38,6 +39,12 @@ public class TraceUnitController {
     @SaCheckPermission(TracePermission.UNIT_ISSUE)
     public ResponseDTO<List<TraceUnitVO.Unit>> issue(@RequestBody @Valid TraceUnitIssueForm form) {
         return ResponseDTO.ok(traceUnitService.issue(form, ScmOperator.current()));
+    }
+
+    @PostMapping("/bind")
+    @SaCheckPermission(TracePermission.UNIT_BIND)
+    public ResponseDTO<TraceUnitVO.Binding> bind(@RequestBody @Valid TraceUnitBindForm form) {
+        return ResponseDTO.ok(traceUnitService.bind(form, ScmOperator.current()));
     }
 
     @PostMapping("/query")

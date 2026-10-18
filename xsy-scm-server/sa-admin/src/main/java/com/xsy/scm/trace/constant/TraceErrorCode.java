@@ -27,7 +27,18 @@ public enum TraceErrorCode implements ScmErrorCode {
 
     TRACE_UNIT_NOT_FOUND(41505, "包装码不存在"),
 
-    TRACE_UNIT_QUANTITY_INVALID(41506, "每包数量必须为大于零的四位定点数");
+    TRACE_UNIT_QUANTITY_INVALID(41506, "每包数量必须为大于零的四位定点数"),
+
+    /** 41507：一码一物，绑定后不能改绑。 */
+    TRACE_UNIT_ALREADY_BOUND(41507, "该包装码已经绑定过分拣任务行，不能重复绑定"),
+
+    TRACE_UNIT_SKU_MISMATCH(41508, "包装码所属批次与分拣行的商品规格不一致"),
+
+    TRACE_UNIT_BIND_EXCEED(41509, "该分拣行已绑定的数量将超过实拣数量"),
+
+    TRACE_SORTING_ITEM_NOT_FOUND(41510, "分拣任务行不存在"),
+
+    TRACE_UNIT_VOID(41511, "包装码已作废，不能再绑定");
 
     private final int code;
 

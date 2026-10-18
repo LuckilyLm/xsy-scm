@@ -75,6 +75,7 @@
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openReplay(record)">回放</a-button>
+            <a-button type="link" size="small" @click="openBind(record)" v-privilege="'scm:inventory:unit:bind'">绑定分拣</a-button>
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -118,6 +119,23 @@
     <p v-if="lotHint" class="scm-note">{{ lotHint }}</p>
   </a-modal>
 
+  <a-modal v-model:open="bindOpen" title="绑定分拣任务行" :confirm-loading="binding" ok-text="绑定" @ok="submitBind">
+    <a-alert v-if="bindError" class="form-error" type="error" show-icon :message="bindError"/>
+    <a-form layout="vertical">
+      <a-form-item label="包装码" required>
+        <a-input v-model:value="bindForm.unitCode" placeholder="扫码或输入包装码" aria-label="包装码"/>
+      </a-form-item>
+      <a-form-item label="分拣任务号" required>
+        <a-input-search v-model:value="bindForm.taskNo" placeholder="输入分拣任务号后查询" enter-button="查询任务"
+                        aria-label="分拣任务号" @search="loadTaskItems"/>
+      </a-form-item>
+      <a-form-item label="任务行" required>
+        <a-select v-model:value="bindForm.sortingTaskItemId" :options="taskItemOptions" :loading="taskLoading"
+                  placeholder="选择要发给的客户与商品" style="width: 100%"/>
+      </a-form-item>
+    </a-form>
+  </a-modal>
+
   <a-drawer :open="replayOpen" title="包装码回放" :width="scmDrawerWidth('m')" @close="replayOpen = false">
     <a-spin :spinning="replayLoading">
       <a-alert v-if="replayError" :message="replayError" type="error" show-icon/>
@@ -138,6 +156,14 @@
           <a-descriptions-item label="确认时间" :span="2">{{ replay.receipt.confirmedAt || '—' }}</a-descriptions-item>
         </a-descriptions>
         <a-empty v-else description="该批次还没有收货记录"/>
+
+        <h4 class="replay-title">分拣去向</h4>
+        <a-descriptions v-if="replay.binding" bordered size="small" :column="2">
+          <a-descriptions-item label="客户">{{ replay.binding.customerName || '—' }}</a-descriptions-item>
+          <a-descriptions-item label="订单号">{{ replay.binding.orderNo || '—' }}</a-descriptions-item>
+          <a-descriptions-item label="绑定时间" :span="2">{{ replay.binding.boundAt || '—' }}</a-descriptions-item>
+        </a-descriptions>
+        <a-empty v-else description="该包装码还没有绑定分拣任务行"/>
 
         <h4 class="replay-title">出库去向</h4>
         <a-table
@@ -169,6 +195,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {inventoryTraceUnitApi} from '/@/api/business/scm/inventory-trace-unit-api';
 import {inventoryLotApi} from '/@/api/business/scm/inventory-lot-api';
+import {sortingApi} from '/@/api/business/scm/sorting-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -211,6 +238,13 @@ const issuing = ref(false);
 const issueError = ref('');
 const lotHint = ref('');
 const issueForm = reactive({lotNo: '', lotId: undefined as string | number | undefined, packageType: 'BAG', packageCount: 1, quantityPerPackage: '0.0000', remark: ''});
+
+const bindOpen = ref(false);
+const binding = ref(false);
+const bindError = ref('');
+const taskLoading = ref(false);
+const taskItemOptions = ref<{value: string | number; label: string}[]>([]);
+const bindForm = reactive({unitCode: '', taskNo: '', sortingTaskItemId: undefined as string | number | undefined});
 
 const replayOpen = ref(false);
 const replayLoading = ref(false);
@@ -308,6 +342,64 @@ async function submitIssue() {
     void e;
   } finally {
     issuing.value = false;
+  }
+}
+
+function openBind(record: TraceUnit) {
+  bindOpen.value = true;
+  bindError.value = '';
+  bindForm.unitCode = record.unitCode;
+  bindForm.taskNo = '';
+  bindForm.sortingTaskItemId = undefined;
+  taskItemOptions.value = [];
+}
+
+/** 按任务号取任务明细，把「订单号 · 客户 · 商品」摊成可选项。 */
+async function loadTaskItems() {
+  bindError.value = '';
+  taskItemOptions.value = [];
+  bindForm.sortingTaskItemId = undefined;
+  if (!bindForm.taskNo.trim()) {
+    return;
+  }
+  taskLoading.value = true;
+  try {
+    const page = await sortingApi.tasks({pageNum: 1, pageSize: 5, keyword: bindForm.taskNo.trim()});
+    const task = page.data?.list?.[0];
+    if (!task) {
+      bindError.value = '没有找到该分拣任务';
+      return;
+    }
+    const detail = await sortingApi.detail(task.id);
+    taskItemOptions.value = (detail.data?.items ?? []).map((item) => ({
+      value: item.id,
+      label: `${item.orderNoSnapshot || '—'} · ${item.customerNameSnapshot || '—'} · ${item.productNameSnapshot || ''}`,
+    }));
+  } catch (e) {
+    bindError.value = inventoryError(e);
+  } finally {
+    taskLoading.value = false;
+  }
+}
+
+async function submitBind() {
+  bindError.value = '';
+  if (!bindForm.unitCode.trim() || bindForm.sortingTaskItemId === undefined) {
+    bindError.value = '请填写包装码并选择分拣任务行';
+    return;
+  }
+  binding.value = true;
+  try {
+    await inventoryTraceUnitApi.bind({
+      unitCode: bindForm.unitCode.trim(),
+      sortingTaskItemId: bindForm.sortingTaskItemId,
+    });
+    bindOpen.value = false;
+    await queryData();
+  } catch {
+    // 绑定失败只走全局 toast；本地只保留前置校验提示
+  } finally {
+    binding.value = false;
   }
 }
 

@@ -288,6 +288,39 @@ class ScmMigrationTargetPgIT {
         assertThat(menus).as("包装码页面与两条权限应随迁移发布").isEqualTo(3);
     }
 
+    /**
+     * V153 起包装码可绑到分拣任务行：一码一物、绑定只追加。
+     */
+    @Test
+    void traceUnitBindingSchemaExistsFromV153() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 153) {
+            return;
+        }
+        assertColumn("xsy_trace_unit_binding", "unit_id");
+        assertColumn("xsy_trace_unit_binding", "sorting_task_item_id");
+        assertColumn("xsy_trace_unit_binding", "customer_name_snapshot");
+        Integer uniqueIndexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname = 'uk_trace_unit_binding_unit'",
+                Integer.class);
+        assertThat(uniqueIndexes).as("一个包装码只能绑一次").isEqualTo(1);
+        Integer appendOnly = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_trace_unit_binding_append_only' "
+                        + "AND NOT tgisinternal",
+                Integer.class);
+        assertThat(appendOnly).as("绑定事实必须只追加").isEqualTo(1);
+        Integer eventTypes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_trace_event_type' "
+                        + "AND pg_get_constraintdef(oid) LIKE '%BIND%'",
+                Integer.class);
+        assertThat(eventTypes).as("绑定事件类型应已放开").isEqualTo(1);
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id = 2113 "
+                        + "AND api_perms = 'scm:inventory:unit:bind'", Integer.class);
+        assertThat(menus).as("绑定权限应随迁移发布").isEqualTo(1);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

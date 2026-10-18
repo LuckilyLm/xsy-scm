@@ -64,12 +64,39 @@ public final class TraceUnitVO {
         private BigDecimal quantity;
     }
 
-    /** 一个包装码的完整回放：单元 → 批次 → 收货来源 → 出库去向。 */
+    /** 分拣任务行（绑定校验用）：商品规格、客户与实拣量都取自分拣事实。 */
+    @Data
+    public static class SortingItem {
+        private Long taskId;
+        private Long itemId;
+        private Long skuId;
+        private Long salesOrderId;
+        private Long salesOrderItemId;
+        private Long customerId;
+        private String customerName;
+        private String orderNo;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal sortedQuantity;
+    }
+
+    /** 分拣绑定：这个码在分拣现场被绑到了哪张任务行的哪个客户。 */
+    @Data
+    public static class Binding {
+        private Long sortingTaskId;
+        private Long sortingTaskItemId;
+        private String orderNo;
+        private String customerName;
+        private OffsetDateTime boundAt;
+        private String boundBy;
+    }
+
+    /** 一个包装码的完整回放：单元 → 批次 → 收货来源 → 分拣绑定 → 出库去向。 */
     @Data
     public static class Replay {
         private Unit unit;
         private Lot lot;
         private Receipt receipt;
+        private Binding binding;
         private List<Outbound> outbounds;
     }
 }

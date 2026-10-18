@@ -833,10 +833,21 @@ export interface TraceUnitIssue {
     remark?: string | null;
 }
 
+/** `TraceUnitVO.Binding`：分拣现场把码绑到了哪张任务行的哪个客户。 */
+export interface TraceUnitBinding {
+    sortingTaskId: Id;
+    sortingTaskItemId: Id;
+    orderNo?: string | null;
+    customerName?: string | null;
+    boundAt?: string | null;
+    boundBy?: string | null;
+}
+
 /** `TraceUnitVO.Replay`：一个包装码的完整回放。 */
 export interface TraceUnitReplay {
     unit: TraceUnit;
     lot: {lotId: Id; lotNo: string; sourceLotNo?: string | null; skuCode?: string; skuName?: string};
     receipt?: {receiptNo: string; supplierName?: string | null; confirmedAt?: string | null} | null;
+    binding?: TraceUnitBinding | null;
     outbounds: {outboundNo: string; occurredAt: string; quantity: string}[];
 }

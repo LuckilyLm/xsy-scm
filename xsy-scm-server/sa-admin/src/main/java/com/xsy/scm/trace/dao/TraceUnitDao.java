@@ -100,6 +100,60 @@ public interface TraceUnitDao {
             """)
     TraceUnitVO.Receipt receiptOfLot(@Param("lotId") Long lotId);
 
+    /** 分拣任务行：绑定校验的客户/商品/实拣量来源。 */
+    @Select("""
+            SELECT i.task_id AS taskId, i.id AS itemId, i.sku_id AS skuId, i.sales_order_id AS salesOrderId,
+                   i.sales_order_item_id AS salesOrderItemId, i.customer_id AS customerId,
+                   i.customer_name_snapshot AS customerName, i.order_no_snapshot AS orderNo,
+                   i.sorted_quantity AS sortedQuantity
+            FROM xsy_sorting_task_item i
+            WHERE i.id = #{itemId} AND i.deleted = FALSE
+            """)
+    TraceUnitVO.SortingItem findSortingItem(@Param("itemId") Long itemId);
+
+    /** 该分拣行已绑定的包装数量之和：绑定总量不得超过实拣量。 */
+    @Select("""
+            SELECT COALESCE(SUM(u.quantity), 0)
+            FROM xsy_trace_unit_binding b
+            JOIN xsy_trace_unit u ON u.id = b.unit_id
+            WHERE b.sorting_task_item_id = #{itemId}
+            """)
+    BigDecimal sumBoundBySortingItem(@Param("itemId") Long itemId);
+
+    @Insert("""
+            INSERT INTO xsy_trace_unit_binding
+              (unit_id, lot_id, sorting_task_id, sorting_task_item_id, sales_order_id, sales_order_item_id,
+               customer_id, customer_name_snapshot, order_no_snapshot, bound_at, bound_by, created_by)
+            VALUES
+              (#{unitId}, #{lotId}, #{taskId}, #{itemId}, #{salesOrderId}, #{salesOrderItemId},
+               #{customerId}, #{customerName}, #{orderNo}, #{boundAt}, #{operator}, #{operator})
+            """)
+    int insertBinding(@Param("unitId") Long unitId, @Param("lotId") Long lotId, @Param("taskId") Long taskId,
+            @Param("itemId") Long itemId, @Param("salesOrderId") Long salesOrderId,
+            @Param("salesOrderItemId") Long salesOrderItemId, @Param("customerId") Long customerId,
+            @Param("customerName") String customerName, @Param("orderNo") String orderNo,
+            @Param("boundAt") OffsetDateTime boundAt, @Param("operator") String operator);
+
+    @Insert("""
+            INSERT INTO xsy_trace_event
+              (unit_id, lot_id, event_type, source_document_type, source_document_id,
+               occurred_at, operator, created_by)
+            VALUES
+              (#{unitId}, #{lotId}, 'BIND', 'SORTING_TASK_ITEM', #{itemId}, #{occurredAt}, #{operator}, #{operator})
+            """)
+    int appendBindEvent(@Param("unitId") Long unitId, @Param("lotId") Long lotId, @Param("itemId") Long itemId,
+            @Param("occurredAt") OffsetDateTime occurredAt, @Param("operator") String operator);
+
+    /** 该包装码的绑定事实（未绑定返回 null）。 */
+    @Select("""
+            SELECT b.sorting_task_id AS sortingTaskId, b.sorting_task_item_id AS sortingTaskItemId,
+                   b.order_no_snapshot AS orderNo, b.customer_name_snapshot AS customerName,
+                   b.bound_at AS boundAt, b.bound_by AS boundBy
+            FROM xsy_trace_unit_binding b
+            WHERE b.unit_id = #{unitId}
+            """)
+    TraceUnitVO.Binding findBinding(@Param("unitId") Long unitId);
+
     /** 该批次参与过的销售出库（按批次流水汇总到出库单）。 */
     @Select("""
             SELECT o.outbound_no AS outboundNo, m.occurred_at AS occurredAt, SUM(-m.quantity) AS quantity

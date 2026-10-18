@@ -4,6 +4,7 @@ import com.xsy.scm.common.dao.ScmBusinessNoDao;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.trace.constant.TraceErrorCode;
 import com.xsy.scm.trace.dao.TraceUnitDao;
+import com.xsy.scm.trace.domain.form.TraceUnitBindForm;
 import com.xsy.scm.trace.domain.form.TraceUnitIssueForm;
 import com.xsy.scm.trace.domain.form.TraceUnitQueryForm;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
@@ -71,6 +72,53 @@ public class TraceUnitService {
         return created;
     }
 
+    /**
+     * 分拣扫码绑定：把包装码绑到分拣任务行。
+     *
+     * <p>
+     * 校验顺序即语义：码存在且有效 → 未绑过（一码一物）→ 商品规格一致 → 该行绑定总量不超过实拣量。 绑定是只追加事实，绑错只能作废该码，不能改绑到别的客户。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public TraceUnitVO.Binding bind(TraceUnitBindForm form, String operator) {
+        TraceUnitVO.Unit unit = traceUnitDao.findByCode(form.getUnitCode().trim());
+        if (unit == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
+        }
+        if (!"ACTIVE".equals(unit.getStatus())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_VOID);
+        }
+        if (traceUnitDao.findBinding(unit.getId()) != null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_BOUND);
+        }
+        TraceUnitVO.SortingItem item = traceUnitDao.findSortingItem(form.getSortingTaskItemId());
+        if (item == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_ITEM_NOT_FOUND);
+        }
+        TraceUnitVO.Lot lot = traceUnitDao.findLot(unit.getLotId());
+        if (lot == null || !item.getSkuId().equals(lot.getSkuId())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_SKU_MISMATCH);
+        }
+        BigDecimal bound = traceUnitDao.sumBoundBySortingItem(item.getItemId());
+        if (bound.add(unit.getQuantity()).compareTo(item.getSortedQuantity()) > 0) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_BIND_EXCEED);
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+        traceUnitDao.insertBinding(unit.getId(), unit.getLotId(), item.getTaskId(), item.getItemId(),
+                item.getSalesOrderId(), item.getSalesOrderItemId(), item.getCustomerId(), item.getCustomerName(),
+                item.getOrderNo(), now, operator);
+        traceUnitDao.appendBindEvent(unit.getId(), unit.getLotId(), item.getItemId(), now, operator);
+
+        TraceUnitVO.Binding binding = new TraceUnitVO.Binding();
+        binding.setSortingTaskId(item.getTaskId());
+        binding.setSortingTaskItemId(item.getItemId());
+        binding.setOrderNo(item.getOrderNo());
+        binding.setCustomerName(item.getCustomerName());
+        binding.setBoundAt(now);
+        binding.setBoundBy(operator);
+        return binding;
+    }
+
     @Transactional(readOnly = true)
     public PageResult<TraceUnitVO.Unit> query(TraceUnitQueryForm form) {
         var page = SmartPageUtil.convert2PageQuery(form);
@@ -89,6 +137,7 @@ public class TraceUnitService {
         replay.setUnit(unit);
         replay.setLot(traceUnitDao.findLot(unit.getLotId()));
         replay.setReceipt(traceUnitDao.receiptOfLot(unit.getLotId()));
+        replay.setBinding(traceUnitDao.findBinding(unit.getId()));
         replay.setOutbounds(traceUnitDao.outboundsOfLot(unit.getLotId()));
         return replay;
     }

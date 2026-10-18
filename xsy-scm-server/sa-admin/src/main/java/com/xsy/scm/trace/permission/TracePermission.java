@@ -11,4 +11,7 @@ public final class TracePermission {
 
     /** 按批次发码。 */
     public static final String UNIT_ISSUE = "scm:inventory:unit:issue";
+
+    /** 分拣扫码绑定。 */
+    public static final String UNIT_BIND = "scm:inventory:unit:bind";
 }

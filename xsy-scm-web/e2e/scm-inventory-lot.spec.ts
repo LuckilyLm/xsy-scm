@@ -11,6 +11,7 @@ const env = {...process.env, W9_E2E_NAME: name, W9_E2E_PASSWORD: password};
 let api: APIRequestContext, token: string;
 let lotWarehouseId: string, skuId: string, supplierId: string, receiptId: string, receiptNo: string;
 let lotNo = '';
+let firstUnitCode = '';
 test.describe.configure({mode: 'serial'});
 
 async function login(account: string) {
@@ -205,10 +206,77 @@ test('4｜页面按批次发码并回放到收货来源', async ({page}) => {
   // 回放：从码回到批次与收货来源
   const firstRow = page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first();
   const unitCode = (await firstRow.locator('td').first().innerText()).trim();
+  firstUnitCode = unitCode;
   await firstRow.getByRole('button', {name: '回放'}).click();
   const drawer = page.locator('.ant-drawer-open').filter({hasText: '包装码回放'}).first();
   await expect(drawer).toContainText(unitCode);
   await expect(drawer).toContainText(lotNo);
   await expect(drawer).toContainText(receiptNo);
+  expect(errors).toEqual([]);
+});
+
+test('5｜扫码把包装码绑到分拣任务行，回放能回到客户', async ({page}) => {
+  // 分拣夹具要等库存存在才能建单：客户 → 确认订单 → 分拣任务 → 录入实拣
+  const types = await post('/scm/customer/type/option/list', {});
+  const customerId = await post('/scm/customer/add', {
+    name: name + '客户', customerTypeId: types[0].typeId, settleMode: 'INDEPENDENT',
+    contactName: 'W9验收', contactPhone: '13800000000', address: '验收地址',
+  });
+  const customer = await get('/scm/customer/detail/' + customerId);
+  await post('/scm/customer/updateStatus', {customerId, version: customer.version, status: 'COOPERATING'});
+
+  let order: any = await post('/scm/order/create', {
+    customerId, orderSource: 'ADMIN', remark: name,
+    address: {receiverName: 'W9验收', receiverPhone: '13800000000', address: '验收地址'},
+    items: [{skuId, orderedQuantity: '10.0000', manualPriceOverride: false}],
+  });
+  order = await post('/scm/order/submit', {orderId: order.orderId, version: order.version});
+  order = await post('/scm/order/confirm', {orderId: order.orderId, version: order.version});
+  expect(order.status).toBe('CONFIRMED');
+
+  const task = await post('/scm/sorting/tasks', {
+    warehouseId: lotWarehouseId, salesOrderItemIds: [order.items[0].itemId], remark: name,
+  });
+  const taskId = String(task.task.id);
+  const taskNo = String(task.task.taskNo);
+  const detail = await get(`/scm/sorting/tasks/${taskId}`);
+  const line = detail.items[0];
+  await post(`/scm/sorting/tasks/${taskId}/entry`, {
+    items: [{id: line.id, version: line.version, sortedQuantity: '10.0000', result: 'NORMAL'}],
+  });
+
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await browse(page, '/inventory/inventory-trace-unit-list');
+  await expect(page.locator('#scm-inventory-trace-unit-table')).toBeVisible();
+  await page.getByPlaceholder('包装码', {exact: true}).fill(firstUnitCode);
+  await search(page);
+  const row = page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first();
+  await row.getByRole('button', {name: '绑定分拣'}).click();
+
+  const modal = page.locator('.ant-modal:visible').filter({hasText: '绑定分拣任务行'}).last();
+  await expect(modal.getByLabel('包装码')).toHaveValue(firstUnitCode);
+  await modal.getByLabel('分拣任务号').fill(taskNo);
+  await modal.getByRole('button', {name: '查询任务'}).click();
+  await expect(modal.locator('.ant-select')).toBeVisible();
+  await modal.locator('.ant-select').click();
+  await page.locator('.ant-select-dropdown:visible .ant-select-item-option').first().click();
+
+  const bound = page.waitForResponse((r) => r.url().endsWith('/scm/inventory/unit/bind'));
+  await modal.getByRole('button', {name: /^绑\s*定$/}).click();
+  const body = await (await bound).json();
+  expect(body.code, body.msg).toBe(0);
+  expect(body.data.customerName).toBe(name + '客户');
+  await expect(modal).toBeHidden();
+
+  // 回放：分拣去向显示客户与订单号
+  await page.getByPlaceholder('包装码', {exact: true}).fill(firstUnitCode);
+  await search(page);
+  await page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first()
+      .getByRole('button', {name: '回放'}).click();
+  const drawer = page.locator('.ant-drawer-open').filter({hasText: '包装码回放'}).first();
+  await expect(drawer).toContainText('分拣去向');
+  await expect(drawer).toContainText(name + '客户');
+  await expect(drawer).toContainText(String(order.orderNo));
   expect(errors).toEqual([]);
 });

@@ -222,6 +222,83 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
     }
 
     @Test
+    @DisplayName("#6 分拣扫码绑定：一码一物，回放能回到客户与订单")
+    void bindUnitToSortingItemAndReplayToCustomer() {
+        Long skuId = newOnShelfSku("BIND1");
+        W6Fixture fx = inboundFixture("BIND1", skuId, "10.0000");
+        confirmWithLots(fx.receipt().getId(), "10.0000", "10.0000");
+        Long lotId = jdbc.queryForObject(
+                "SELECT id FROM xsy_trace_lot WHERE sku_id = ? ORDER BY id DESC LIMIT 1", Long.class, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitIssueForm issue = new com.xsy.scm.trace.domain.form.TraceUnitIssueForm();
+        issue.setLotId(lotId);
+        issue.setPackageType("BAG");
+        issue.setPackageCount(2);
+        issue.setQuantityPerPackage("2.0000");
+        var units = traceUnitService.issue(issue, "W9 IT");
+
+        // 同一 SKU 的确认订单 + 分拣完成，才有可绑的分拣行
+        Long customerId = newCustomer();
+        Long salesOrderId = confirmedSalesOrder(customerId, skuId, "10.0000", "10.0000");
+        sortingCompletedFor(salesOrderId);
+        Long itemId = jdbc.queryForObject(
+                "SELECT id FROM xsy_sorting_task_item WHERE sales_order_id = ? AND sku_id = ? "
+                        + "ORDER BY id DESC LIMIT 1", Long.class, salesOrderId, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitBindForm bind = new com.xsy.scm.trace.domain.form.TraceUnitBindForm();
+        bind.setUnitCode(units.getFirst().getUnitCode());
+        bind.setSortingTaskItemId(itemId);
+        var binding = traceUnitService.bind(bind, "W9 IT");
+        assertThat(binding.getCustomerName()).isNotBlank();
+        assertThat(binding.getOrderNo()).isNotBlank();
+
+        // 绑定只追加：事件里有一条 BIND
+        Integer bindEvents = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_trace_event WHERE unit_id = ? AND event_type = 'BIND'",
+                Integer.class, units.getFirst().getId());
+        assertThat(bindEvents).isEqualTo(1);
+
+        // 回放：码 → 客户
+        var replay = traceUnitService.replay(units.getFirst().getUnitCode());
+        assertThat(replay.getBinding()).isNotNull();
+        assertThat(replay.getBinding().getCustomerName()).isEqualTo(binding.getCustomerName());
+    }
+
+    @Test
+    @DisplayName("#7 同一个包装码不能绑两次（41507）")
+    void bindRejectsSecondBinding() {
+        Long skuId = newOnShelfSku("BIND2");
+        W6Fixture fx = inboundFixture("BIND2", skuId, "10.0000");
+        confirmWithLots(fx.receipt().getId(), "10.0000", "10.0000");
+        Long lotId = jdbc.queryForObject(
+                "SELECT id FROM xsy_trace_lot WHERE sku_id = ? ORDER BY id DESC LIMIT 1", Long.class, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitIssueForm issue = new com.xsy.scm.trace.domain.form.TraceUnitIssueForm();
+        issue.setLotId(lotId);
+        issue.setPackageType("BAG");
+        issue.setPackageCount(1);
+        issue.setQuantityPerPackage("1.0000");
+        var units = traceUnitService.issue(issue, "W9 IT");
+
+        Long customerId = newCustomer();
+        Long salesOrderId = confirmedSalesOrder(customerId, skuId, "10.0000", "10.0000");
+        sortingCompletedFor(salesOrderId);
+        Long itemId = jdbc.queryForObject(
+                "SELECT id FROM xsy_sorting_task_item WHERE sales_order_id = ? AND sku_id = ? "
+                        + "ORDER BY id DESC LIMIT 1", Long.class, salesOrderId, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitBindForm bind = new com.xsy.scm.trace.domain.form.TraceUnitBindForm();
+        bind.setUnitCode(units.getFirst().getUnitCode());
+        bind.setSortingTaskItemId(itemId);
+        traceUnitService.bind(bind, "W9 IT");
+
+        // 一码一物：第二次绑定必须被拒，且不能留下第二条绑定事实
+        assertThatThrownBy(() -> traceUnitService.bind(bind, "W9 IT"))
+                .isInstanceOf(ScmBusinessException.class)
+                .satisfies(error -> assertThat(((ScmBusinessException) error).getErrorCode().getCode()).isEqualTo(41507));
+    }
+
+    @Test
     @DisplayName("#4 批次仓不登记批次时拒绝确认（40095）")
     void lotWarehouseRequiresLots() {
         Long skuId = newOnShelfSku("LOT4");
