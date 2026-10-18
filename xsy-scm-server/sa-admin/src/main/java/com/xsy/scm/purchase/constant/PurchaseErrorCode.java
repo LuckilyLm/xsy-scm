@@ -24,6 +24,9 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_DEMAND_VERSION_REQUIRED(40091, "采购需求分配必须携带需求版本"),
     PURCHASE_DEMAND_BATCH_TOO_LARGE(40092, "净需求计算来源超过单批上限，请缩短时间段或增加筛选条件"),
     PURCHASE_INQUIRY_QUOTE_INVALID(40094, "询价内容、报价或有效期不符合要求"),
+    PURCHASE_RECEIPT_LOT_REQUIRED(40095, "该仓库启用了批次追踪，收货必须逐行登记批次"),
+    PURCHASE_RECEIPT_LOT_QUANTITY_MISMATCH(40096, "批次数量之和必须等于本次收货量"),
+    PURCHASE_RECEIPT_LOT_NOT_TRACKED(40097, "该仓库未启用批次追踪，不能登记批次"),
 
     // ---- 40480–40488 NOT_FOUND ----
     // 40485 属仓库域、40486 属库存域（InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND，

@@ -30,6 +30,9 @@ import com.xsy.scm.purchase.domain.form.PurchaseReceiptDeleteForm;
 import com.xsy.scm.purchase.domain.form.PurchaseReceiptPutawayForm;
 import com.xsy.scm.purchase.domain.form.PurchaseReceiptUpdateForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
+import com.xsy.scm.trace.domain.vo.TraceLotVO;
+import com.xsy.scm.trace.support.TraceLotContract;
+import com.xsy.scm.warehouse.service.WarehouseService;
 import com.xsy.scm.purchase.manager.PurchaseOrderStateMachine;
 import com.xsy.scm.purchase.manager.PurchaseOrderValidator;
 import com.xsy.scm.purchase.manager.PurchaseReceiptPutawayGuard;
@@ -62,6 +65,9 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_NOT
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_DELETE_STATE_INVALID;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_ITEM_INCOMPLETE;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_NOT_FOUND;
+import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_LOT_NOT_TRACKED;
+import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_LOT_QUANTITY_MISMATCH;
+import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_LOT_REQUIRED;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_ORDER_STATE_INVALID;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_OVER_RECEIVED;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_PUTAWAY_STATE_INVALID;
@@ -100,6 +106,11 @@ public class PurchaseReceiptService {
      * 库存契约（接线）。运行时注入的是 {@code inventory.support.PurchaseInventoryContractImpl}；期间容器里没有该类型的 Bean，本字段是新增的唯一依赖。
      */
     private final PurchaseInventoryContract purchaseInventoryContract;
+
+    /** 批次档案归追溯域：采购只描述本行分到几个批次、各多少量。 */
+    private final TraceLotContract traceLotContract;
+
+    private final WarehouseService warehouseService;
 
     /**
      * 仓库引用守卫：收货单创建 / 入库确认前断言仓库仍启用（40987）。
@@ -282,6 +293,9 @@ public class PurchaseReceiptService {
         // 本行入库事实的最小元组（行 / 采购行 / 有效数量）。<b>循环内只收集，不调用契约</b> ——
         // 事实装配必须发生在收货单 CONFIRMED 落库之后（occurredAt/operator 取自那一刻的冻结事实）。
         List<InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
+        // 批次追踪按仓库开关：开启后每行必须登记批次，数量之和必须等于本次收货量。
+        boolean lotTracking = Boolean.TRUE
+                .equals(warehouseService.require(receipt.getWarehouseId()).getLotTrackingEnabled());
 
         for (PurchaseReceiptItemEntity line : receiptItems) {
             PurchaseReceiptConfirmForm.Item input = requested.get(line.getId());
@@ -351,7 +365,9 @@ public class PurchaseReceiptService {
             afterItems.add(afterLine);
 
             // 收集入库事实元组（不在此处调用契约，见 inboundLines 声明处的说明）
-            inboundLines.add(new InboundLine(line, orderItem, effective));
+            List<TraceLotContract.LotAllocation> allocations = resolveLots(lotTracking, order, line, input, effective,
+                    ScmOperator.current());
+            inboundLines.add(new InboundLine(line, orderItem, effective, allocations));
         }
 
         // 全部活动行收齐 → RECEIVED，否则 PARTIALLY_RECEIVED
@@ -445,13 +461,15 @@ public class PurchaseReceiptService {
         List<PurchaseReceiptItemEntity> receiptItems = purchaseReceiptItemDao.listByReceiptId(receipt.getId());
 
         // 入库事实的最小元组：数量取确认时已落库的 received_quantity，单位/单价取采购行快照。
+        Map<Long, List<TraceLotContract.LotAllocation>> lotsByItem = lotsByReceiptItem(receiptItems);
         List<InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
         for (PurchaseReceiptItemEntity line : receiptItems) {
             PurchaseOrderItemEntity orderItem = orderItems.get(line.getPurchaseOrderItemId());
             if (orderItem == null) {
                 throw new ScmBusinessException(PURCHASE_ORDER_ITEM_NOT_FOUND);
             }
-            inboundLines.add(new InboundLine(line, orderItem, line.getReceivedQuantity()));
+            inboundLines.add(new InboundLine(line, orderItem, line.getReceivedQuantity(),
+                    lotsByItem.getOrDefault(line.getId(), List.of())));
         }
 
         OffsetDateTime now = OffsetDateTime.now();
@@ -562,7 +580,8 @@ public class PurchaseReceiptService {
                         line.orderItem().getPurchaseUnitSnapshot(), line.effective(),
                         line.orderItem().getPurchasePrice(),
                         PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE + ":" + line.line().getId(), occurredAt,
-                        operator))
+                        operator, line.lots().stream().map(lot -> new PurchaseInventoryContract.LotQuantity(lot.lotId(),
+                                lot.lotNo(), lot.quantity())).toList()))
                 .toList();
 
         facts.stream().sorted(inboundLockOrder()).forEach(purchaseInventoryContract::postInbound);
@@ -581,8 +600,53 @@ public class PurchaseReceiptService {
      * 刻意<b>不</b>在收货循环里直接装配 {@code InboundFact}：那时 {@code receipt} 还没落库成 CONFIRMED，{@code confirmedAt} /
      * {@code operator} 仍是 null —— 用它装配出来的流水会把「发生时刻」写成 null，或者被迫在库存侧补一个 {@code now()}。
      */
-    private record InboundLine(PurchaseReceiptItemEntity line, PurchaseOrderItemEntity orderItem,
-            BigDecimal effective) {
+    private record InboundLine(PurchaseReceiptItemEntity line, PurchaseOrderItemEntity orderItem, BigDecimal effective,
+            List<TraceLotContract.LotAllocation> lots) {
+    }
+
+    /**
+     * 按仓库开关校验并登记本行批次。
+     *
+     * <p>
+     * 批次仓：批次必填、数量之和必须等于本次有效收货量，来源批号可为空；非批次仓：不允许携带批次，行为与以前一致。
+     */
+    private List<TraceLotContract.LotAllocation> resolveLots(boolean lotTracking, PurchaseOrderEntity order,
+            PurchaseReceiptItemEntity line, PurchaseReceiptConfirmForm.Item input, BigDecimal effective,
+            String operator) {
+        List<PurchaseReceiptConfirmForm.Lot> drafts = input.getLots();
+        if (!lotTracking) {
+            if (drafts != null && !drafts.isEmpty()) {
+                throw new ScmBusinessException(PURCHASE_RECEIPT_LOT_NOT_TRACKED);
+            }
+            return List.of();
+        }
+        if (drafts == null || drafts.isEmpty()) {
+            throw new ScmBusinessException(PURCHASE_RECEIPT_LOT_REQUIRED);
+        }
+        BigDecimal sum = BigDecimal.ZERO;
+        List<TraceLotContract.LotDraft> lotDrafts = new ArrayList<>(drafts.size());
+        for (PurchaseReceiptConfirmForm.Lot draft : drafts) {
+            BigDecimal quantity = PurchaseReceiptQuantityCalculator.declared(draft.getQuantity());
+            sum = sum.add(quantity);
+            lotDrafts.add(new TraceLotContract.LotDraft(draft.getSourceLotNo(), quantity));
+        }
+        if (sum.compareTo(effective) != 0) {
+            throw new ScmBusinessException(PURCHASE_RECEIPT_LOT_QUANTITY_MISMATCH);
+        }
+        return traceLotContract.createReceiptLots(new TraceLotContract.CreateReceiptLots(line.getId(), line.getSkuId(),
+                order.getSupplierId(), operator, lotDrafts));
+    }
+
+    /** 上架时按收货行回读已登记批次；未启用批次的仓库自然得到空集合。 */
+    private Map<Long, List<TraceLotContract.LotAllocation>> lotsByReceiptItem(List<PurchaseReceiptItemEntity> items) {
+        List<Long> ids = items.stream().map(PurchaseReceiptItemEntity::getId).toList();
+        Map<Long, List<TraceLotContract.LotAllocation>> grouped = new LinkedHashMap<>();
+        for (TraceLotVO.ReceiptItemLot lot : traceLotContract.listByReceiptItemIds(ids)) {
+            grouped.computeIfAbsent(lot.getReceiptItemId(), key -> new ArrayList<>())
+                    .add(new TraceLotContract.LotAllocation(lot.getLotId(), lot.getLotNo(), lot.getSourceLotNo(),
+                            lot.getQuantity()));
+        }
+        return grouped;
     }
 
     private void appendWeighingRecord(Long receiptItemId, BigDecimal actualWeight, String weightUnit,

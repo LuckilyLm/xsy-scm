@@ -26,4 +26,14 @@ public class ScmBusinessNoService {
     public String next(ScmBusinessNoType type) {
         return ScmDocumentNumbers.masterCode(type.getPrefix(), businessNoDao.nextSequence(type.getSequence()));
     }
+
+    /**
+     * 生成带业务日期的内部编码（如 {@code LOT20261018000001}）。
+     *
+     * <p>
+     * 只给确有业务日期语义的编号使用；主数据编码没有日期段，仍走 {@link #next(ScmBusinessNoType)}。
+     */
+    public String nextDated(ScmBusinessNoType type) {
+        return ScmDocumentNumbers.format(type.getPrefix(), businessNoDao.nextSequence(type.getSequence()));
+    }
 }

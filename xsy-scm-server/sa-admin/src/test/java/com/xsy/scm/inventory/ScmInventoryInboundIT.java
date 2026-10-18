@@ -215,7 +215,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
                         fx.order().getId(), fx.receipt().getId(), fx.receiptItemId(),
                         warehouseId, skuId, null, null, null, null,
                         DEFAULT_PURCHASE_UNIT, new BigDecimal("5.0000"), new BigDecimal("6.2000"),
-                        "duplicate-probe", OffsetDateTime.now(), "W6 IT")), 41002);
+                        "duplicate-probe", OffsetDateTime.now(), "W6 IT", List.of())), 41002);
 
         // DB 侧兜底：绕过应用层直接插同源流水 → 撞 uk_inventory_movement_source_active
         expectSqlFailure(

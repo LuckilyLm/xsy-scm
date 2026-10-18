@@ -52,5 +52,23 @@ public class PurchaseReceiptConfirmForm {
         private String weightSource;
         @Size(max = 500, message = "修正原因不能超过500个字符")
         private String correctionReason;
+        /**
+         * 本行登记的批次：批次仓必填，且数量之和必须等于本次收货量；非批次仓必须为空。
+         */
+        @Valid
+        @Size(max = 100, message = "同一收货行最多登记100个批次")
+        private List<Lot> lots;
+    }
+
+    /**
+     * 收货行上的一个批次：来源生产批号由供应商或现场提供，允许为空；数量必填。
+     */
+    @Data
+    public static class Lot {
+        @Size(max = 64, message = "来源生产批号不能超过64个字符")
+        private String sourceLotNo;
+        @NotBlank(message = "批次数量不能为空")
+        @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
+        private String quantity;
     }
 }

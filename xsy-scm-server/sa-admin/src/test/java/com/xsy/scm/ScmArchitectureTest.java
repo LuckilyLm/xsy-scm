@@ -50,7 +50,7 @@ class ScmArchitectureTest {
             "..scm.delivery..", "..scm.finance..", "..scm.report..", "..scm.dashboard..",
             "..scm.screen..", "..scm.warehouse..", "..scm.promotion..",
             "..scm.balance..", "..scm.mall..", "..scm.payment..", "..scm.print..",
-            "..scm.metrics..", "..scm.notification..",
+            "..scm.metrics..", "..scm.notification..", "..scm.trace..",
     };
 
     private static final String[] CONCRETE_DOMAINS_EXCEPT_FINANCE = {
@@ -59,7 +59,7 @@ class ScmArchitectureTest {
             "..scm.delivery..", "..scm.report..", "..scm.dashboard..",
             "..scm.screen..", "..scm.warehouse..", "..scm.promotion..",
             "..scm.balance..", "..scm.mall..", "..scm.payment..", "..scm.print..",
-            "..scm.metrics..", "..scm.notification..",
+            "..scm.metrics..", "..scm.notification..", "..scm.trace..",
     };
 
     /**

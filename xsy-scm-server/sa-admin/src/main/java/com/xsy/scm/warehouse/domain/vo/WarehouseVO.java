@@ -26,6 +26,8 @@ public class WarehouseVO {
 
     private String status;
 
+    private Boolean lotTrackingEnabled;
+
     private String address;
 
     private Integer provinceCode;

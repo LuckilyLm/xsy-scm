@@ -7,6 +7,10 @@ import com.xsy.scm.inventory.constant.ScmInventoryMovementTypeEnum;
 import com.xsy.scm.inventory.constant.ScmInventorySourceDocumentTypeEnum;
 import com.xsy.scm.inventory.dao.InventoryBalanceDao;
 import com.xsy.scm.inventory.dao.InventoryMovementDao;
+import com.xsy.scm.inventory.dao.InventoryLotBalanceDao;
+import com.xsy.scm.inventory.dao.InventoryLotMovementDao;
+import com.xsy.scm.inventory.domain.entity.InventoryLotBalanceEntity;
+import com.xsy.scm.inventory.domain.entity.InventoryLotMovementEntity;
 import com.xsy.scm.inventory.domain.InventoryConversionFact;
 import com.xsy.scm.inventory.domain.InventoryLossGainFact;
 import com.xsy.scm.inventory.domain.InventoryOutboundFact;
@@ -24,9 +28,11 @@ import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -49,6 +55,10 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_G
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_PARAM_INVALID;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOUND_PARAM_INVALID;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_PARAM_INVALID;
+import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOT_ACTION_UNSUPPORTED;
+import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOT_INSUFFICIENT;
+import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOT_QUANTITY_INVALID;
+import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOT_RETURN_SOURCE_MISSING;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_BALANCE_MISSING;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_BELOW_RESERVED;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_NEGATIVE_AFTER;
@@ -69,6 +79,11 @@ public class InventoryCommandService {
     private final InventoryBalanceDao inventoryBalanceDao;
 
     private final InventoryMovementDao inventoryMovementDao;
+
+    /** 批次子账：与总账同事务双写，查询层不做二次计算。 */
+    private final InventoryLotBalanceDao inventoryLotBalanceDao;
+
+    private final InventoryLotMovementDao inventoryLotMovementDao;
 
     private final WarehouseService warehouseService;
 
@@ -131,6 +146,60 @@ public class InventoryCommandService {
                 inboundAvgCost(balance, fact.quantity(), fact.unitCost()), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
+
+        // 批次子账：总账写成功之后再逐批写子账，两者同一事务；未启用批次的仓库 lots 为空，行为不变。
+        for (PurchaseInventoryContract.LotQuantity lot : fact.lots()) {
+            if (lot.quantity().signum() <= 0) {
+                throw new ScmBusinessException(INVENTORY_LOT_QUANTITY_INVALID);
+            }
+            postLotInboundLeg(fact, lot, balance.getUnit());
+        }
+    }
+
+    /** 采购入库的批次腿：先锁（或首建）批次余额，再追加只追加流水并累加数量。 */
+    private void postLotInboundLeg(PurchaseInventoryContract.InboundFact fact,
+            PurchaseInventoryContract.LotQuantity lot, String unit) {
+        inventoryLotBalanceDao.insertOnConflictDoNothing(fact.warehouseId(), fact.skuId(), lot.lotId(), unit,
+                fact.operator());
+        InventoryLotBalanceEntity lotBalance = inventoryLotBalanceDao.lockByWarehouseSkuLot(fact.warehouseId(),
+                fact.skuId(), lot.lotId());
+        if (lotBalance == null) {
+            throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
+        }
+        if (!unit.equals(lotBalance.getUnit())) {
+            throw new ScmBusinessException(INVENTORY_UNIT_MISMATCH);
+        }
+        BigDecimal before = lotBalance.getQuantity();
+        BigDecimal after = before.add(lot.quantity());
+        appendLotMovement(fact.warehouseId(), fact.skuId(), lot.lotId(),
+                ScmInventoryMovementTypeEnum.PURCHASE_IN.name(),
+                ScmInventorySourceDocumentTypeEnum.PURCHASE_RECEIPT_ITEM.name(), fact.receiptItemId(),
+                fact.receiptItemId(), lot.quantity(), unit, before, after, fact.occurredAt(), fact.operator());
+        if (inventoryLotBalanceDao.addQuantity(lotBalance.getId(), lot.quantity(), fact.operator()) != 1) {
+            throw new ScmBusinessException(VERSION_CONFLICT);
+        }
+    }
+
+    /** 追加一条批次流水（只追加，禁止改写）。 */
+    private void appendLotMovement(Long warehouseId, Long skuId, Long lotId, String movementType,
+            String sourceDocumentType, Long sourceDocumentId, Long sourceDocumentItemId, BigDecimal quantity,
+            String unit, BigDecimal before, BigDecimal after, OffsetDateTime occurredAt, String operator) {
+        InventoryLotMovementEntity movement = new InventoryLotMovementEntity();
+        movement.setWarehouseId(warehouseId);
+        movement.setSkuId(skuId);
+        movement.setLotId(lotId);
+        movement.setMovementType(movementType);
+        movement.setSourceDocumentType(sourceDocumentType);
+        movement.setSourceDocumentId(sourceDocumentId);
+        movement.setSourceDocumentItemId(sourceDocumentItemId);
+        movement.setQuantity(quantity);
+        movement.setUnitSnapshot(unit);
+        movement.setBeforeQuantity(before);
+        movement.setAfterQuantity(after);
+        movement.setOccurredAt(occurredAt);
+        movement.setOperator(operator);
+        movement.setCreatedBy(operator);
+        inventoryLotMovementDao.insert(movement);
     }
 
     /**
@@ -302,6 +371,12 @@ public class InventoryCommandService {
         if (inventoryBalanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
+
+        // 批次子账：按先进先出分摊，逐批写负向流水；未启用批次的仓库没有子账行，自然跳过。
+        postLotOutboundLeg(fact.warehouseId(), fact.skuId(), unit, fact.quantity(),
+                ScmInventoryMovementTypeEnum.SALES_OUT.name(),
+                ScmInventorySourceDocumentTypeEnum.SALES_OUTBOUND_ITEM.name(), fact.outboundId(), fact.outboundItemId(),
+                fact.occurredAt(), fact.operator());
         return unit;
     }
 
@@ -354,6 +429,11 @@ public class InventoryCommandService {
         if (inventoryBalanceDao.decrementQuantity(balance.getId(), fact.quantity(), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
+
+        postLotOutboundLeg(fact.warehouseId(), fact.skuId(), unit, fact.quantity(),
+                ScmInventoryMovementTypeEnum.PROMOTION_GIFT_OUT.name(),
+                ScmInventorySourceDocumentTypeEnum.SALES_OUTBOUND_ITEM.name(), fact.routeId(), fact.giftId(),
+                fact.occurredAt(), fact.operator());
         return unit;
     }
 
@@ -401,6 +481,106 @@ public class InventoryCommandService {
                 inboundAvgCost(balance, fact.quantity(), fact.unitCost()), fact.operator()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
+
+        postLotReturnLeg(fact, balance.getUnit());
+    }
+
+    /**
+     * 出库的批次腿：按批次先后（先进先出）分摊，逐批追加负向流水。
+     *
+     * <p>
+     * 没有批次余额行说明该仓库未启用批次追踪（或库存来自批次之前的历史数据），此时不写子账； 启用批次却分摊不满则显式失败，绝不让总账与子账在静默中漂移。
+     */
+    private void postLotOutboundLeg(Long warehouseId, Long skuId, String unit, BigDecimal quantity, String movementType,
+            String sourceDocumentType, Long sourceDocumentId, Long sourceDocumentItemId, OffsetDateTime occurredAt,
+            String operator) {
+        List<InventoryLotBalanceEntity> lotBalances = inventoryLotBalanceDao.lockPositiveByWarehouseSku(warehouseId,
+                skuId);
+        if (lotBalances.isEmpty()) {
+            if (Boolean.TRUE.equals(warehouseService.require(warehouseId).getLotTrackingEnabled())) {
+                throw new ScmBusinessException(INVENTORY_LOT_INSUFFICIENT);
+            }
+            return;
+        }
+        BigDecimal remaining = quantity;
+        for (InventoryLotBalanceEntity lotBalance : lotBalances) {
+            if (remaining.signum() <= 0) {
+                break;
+            }
+            BigDecimal take = lotBalance.getQuantity().min(remaining);
+            if (take.signum() <= 0) {
+                continue;
+            }
+            BigDecimal before = lotBalance.getQuantity();
+            appendLotMovement(warehouseId, skuId, lotBalance.getLotId(), movementType, sourceDocumentType,
+                    sourceDocumentId, sourceDocumentItemId, take.negate(), unit, before, before.subtract(take),
+                    occurredAt, operator);
+            if (inventoryLotBalanceDao.addQuantity(lotBalance.getId(), take.negate(), operator) != 1) {
+                throw new ScmBusinessException(VERSION_CONFLICT);
+            }
+            remaining = remaining.subtract(take);
+        }
+        if (remaining.signum() > 0) {
+            throw new ScmBusinessException(INVENTORY_LOT_INSUFFICIENT);
+        }
+    }
+
+    /**
+     * 退货的批次腿：退回**原出库批次**。
+     *
+     * <p>
+     * 按来源出库行的批次净额判断每个批次还能退回多少，多次部分退货不会把同一批次重复填满； 找不到原出库批次时显式失败（41072），不猜批次、不新建批次。
+     */
+    private void postLotReturnLeg(InventorySalesReturnFact fact, String unit) {
+        if (!Boolean.TRUE.equals(warehouseService.require(fact.warehouseId()).getLotTrackingEnabled())) {
+            return;
+        }
+        if (fact.sourceOutboundItemId() == null) {
+            throw new ScmBusinessException(INVENTORY_LOT_RETURN_SOURCE_MISSING);
+        }
+        List<InventoryLotMovementDao.LotSourceNet> nets = inventoryLotMovementDao.sumByLotForSource(fact.warehouseId(),
+                fact.skuId(), fact.sourceOutboundItemId());
+        if (nets.isEmpty()) {
+            throw new ScmBusinessException(INVENTORY_LOT_RETURN_SOURCE_MISSING);
+        }
+        BigDecimal remaining = fact.quantity();
+        for (InventoryLotMovementDao.LotSourceNet net : nets) {
+            if (remaining.signum() <= 0) {
+                break;
+            }
+            BigDecimal stillOut = net.netQuantity().negate();
+            if (stillOut.signum() <= 0) {
+                continue;
+            }
+            BigDecimal take = stillOut.min(remaining);
+            inventoryLotBalanceDao.insertOnConflictDoNothing(fact.warehouseId(), fact.skuId(), net.lotId(), unit,
+                    fact.operator());
+            InventoryLotBalanceEntity lotBalance = inventoryLotBalanceDao.lockByWarehouseSkuLot(fact.warehouseId(),
+                    fact.skuId(), net.lotId());
+            if (lotBalance == null) {
+                throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
+            }
+            BigDecimal before = lotBalance.getQuantity();
+            appendLotMovement(fact.warehouseId(), fact.skuId(), net.lotId(),
+                    ScmInventoryMovementTypeEnum.SALES_RETURN_IN.name(),
+                    ScmInventorySourceDocumentTypeEnum.SALES_RETURN_RECEIPT_ITEM.name(), fact.returnId(),
+                    fact.sourceOutboundItemId(), take, unit, before, before.add(take), fact.occurredAt(),
+                    fact.operator());
+            if (inventoryLotBalanceDao.addQuantity(lotBalance.getId(), take, fact.operator()) != 1) {
+                throw new ScmBusinessException(VERSION_CONFLICT);
+            }
+            remaining = remaining.subtract(take);
+        }
+        if (remaining.signum() > 0) {
+            throw new ScmBusinessException(INVENTORY_LOT_RETURN_SOURCE_MISSING);
+        }
+    }
+
+    /** 批次仓守卫：一期只支持采购入库与销售出库两种批次动作，其余库存动作显式拒绝。 */
+    private void requireLotTrackingDisabled(Long warehouseId) {
+        if (Boolean.TRUE.equals(warehouseService.require(warehouseId).getLotTrackingEnabled())) {
+            throw new ScmBusinessException(INVENTORY_LOT_ACTION_UNSUPPORTED);
+        }
     }
 
     /**
@@ -433,6 +613,7 @@ public class InventoryCommandService {
         requireStocktakeFact(fact);
 
         warehouseService.require(fact.warehouseId());
+        requireLotTrackingDisabled(fact.warehouseId());
 
         // 盘点不建行：没有余额行 = 从未入库 = 无账可盘，也无法确定记账单位。
         InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
@@ -537,6 +718,7 @@ public class InventoryCommandService {
         }
 
         warehouseService.require(fact.warehouseId());
+        requireLotTrackingDisabled(fact.warehouseId());
 
         // 不建零余额行：没有余额行 = 从未入库 = 既无账可调，也无法确定记账单位。
         InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
@@ -617,6 +799,7 @@ public class InventoryCommandService {
         requireTransferFact(fact);
 
         warehouseService.require(fact.warehouseId());
+        requireLotTrackingDisabled(fact.warehouseId());
 
         // 转出不建行：没有余额行 = 从未入库 = 无货可调。
         InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
@@ -678,6 +861,7 @@ public class InventoryCommandService {
         }
 
         warehouseService.require(fact.warehouseId());
+        requireLotTrackingDisabled(fact.warehouseId());
 
         // 入方向允许首建余额行：单位取调拨明细的快照（= 源仓记账单位）。
         // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引。
@@ -745,6 +929,7 @@ public class InventoryCommandService {
         requireConversionFact(fact);
 
         warehouseService.require(fact.warehouseId());
+        requireLotTrackingDisabled(fact.warehouseId());
 
         InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(fact.warehouseId(), fact.skuId());
         if (balance == null) {
@@ -798,6 +983,8 @@ public class InventoryCommandService {
         requireConversionFact(fact);
 
         warehouseService.require(fact.warehouseId());
+
+        requireLotTrackingDisabled(fact.warehouseId());
 
         // 入方向允许首建余额行：单位取单据声明的目标单位。
         // 并发首建冲突后仍锁定同一余额行；SQL 冲突目标须匹配部分唯一索引。

@@ -12,6 +12,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 @Data
 public class PurchaseReceiptItemVO {
     private Long id;
+
+    /** 本行登记的批次：未启用批次追踪的仓库为空列表。 */
+    private java.util.List<com.xsy.scm.trace.domain.vo.TraceLotVO.ReceiptItemLot> lots;
     private Long purchaseOrderItemId;
     private Long skuId;
     private String skuCode;

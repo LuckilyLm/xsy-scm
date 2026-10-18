@@ -84,6 +84,8 @@ public class WarehouseService {
         entity.setAddress(form.getAddress());
         applyRegion(entity, form);
         entity.setRemark(form.getRemark());
+        // 批次追踪只在新建时决定：新建仓尚无库存，因此不需要期初批次回填。
+        entity.setLotTrackingEnabled(Boolean.TRUE.equals(form.getLotTrackingEnabled()));
         entity.setVersion(0);
         entity.setDeleted(false);
         stamp(entity, true);

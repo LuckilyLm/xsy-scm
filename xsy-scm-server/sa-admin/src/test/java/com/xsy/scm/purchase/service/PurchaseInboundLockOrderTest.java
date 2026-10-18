@@ -29,7 +29,7 @@ class PurchaseInboundLockOrderTest {
         return new PurchaseInventoryContract.InboundFact(
                 1L, 1L, skuId, warehouseId, skuId, null, null, null, null,
                 "kg", BigDecimal.ONE, BigDecimal.ONE, "lock-order-probe",
-                OffsetDateTime.parse("2026-01-01T00:00:00+08:00"), "W6 unit");
+                OffsetDateTime.parse("2026-01-01T00:00:00+08:00"), "W6 unit", List.of());
     }
 
     private static List<String> keys(List<PurchaseInventoryContract.InboundFact> facts) {

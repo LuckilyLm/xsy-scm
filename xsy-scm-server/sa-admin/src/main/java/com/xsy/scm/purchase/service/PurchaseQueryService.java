@@ -75,6 +75,8 @@ public class PurchaseQueryService {
 
     private final ScmDataScopeService dataScopeService;
 
+    private final com.xsy.scm.trace.support.TraceLotContract traceLotContract;
+
     // ------------------------------------------------------------------
     // 采购需求
     // ------------------------------------------------------------------
@@ -322,6 +324,17 @@ public class PurchaseQueryService {
      * 收货明细：独立端点 {@code GET /scm/purchase/receipt/item/{receiptId}}，与详情同一口径收范围。
      */
     @Transactional(readOnly = true)
+    /** 一次性装配整张收货单的批次，避免按行查询；未启用批次的仓库自然得到空列表。 */
+    private void attachLots(List<PurchaseReceiptItemVO> items) {
+        if (items.isEmpty()) {
+            return;
+        }
+        Map<Long, List<com.xsy.scm.trace.domain.vo.TraceLotVO.ReceiptItemLot>> grouped = traceLotContract
+                .listByReceiptItemIds(items.stream().map(PurchaseReceiptItemVO::getId).toList()).stream().collect(
+                        Collectors.groupingBy(com.xsy.scm.trace.domain.vo.TraceLotVO.ReceiptItemLot::getReceiptItemId));
+        items.forEach(item -> item.setLots(grouped.getOrDefault(item.getId(), List.of())));
+    }
+
     public List<PurchaseReceiptItemVO> receiptItems(Long receiptId) {
         return receiptItems(receiptId, dataScopeService.resolve().getPurchaserScope());
     }
@@ -334,8 +347,10 @@ public class PurchaseQueryService {
             Long parentOrderId = receipt == null ? null : receipt.getPurchaseOrderId();
             requirePurchaserVisible(purchaserScope, orderPurchaserId(parentOrderId));
         }
-        return purchaseReceiptItemDao.listByReceiptId(receiptId).stream().map(PurchaseQueryService::receiptItemVo)
-                .toList();
+        List<PurchaseReceiptItemVO> items = purchaseReceiptItemDao.listByReceiptId(receiptId).stream()
+                .map(PurchaseQueryService::receiptItemVo).toList();
+        attachLots(items);
+        return items;
     }
 
     /** 按商品规格与采购单位汇总待收货数据，只读不改收货和库存。数据先按授权仓库过滤，再分组计算；聚合分页按分组数量统计。 */

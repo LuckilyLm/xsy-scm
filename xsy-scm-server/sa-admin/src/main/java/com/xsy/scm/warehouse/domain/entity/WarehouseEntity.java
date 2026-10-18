@@ -32,6 +32,10 @@ public class WarehouseEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String geomCrs;
 
+    /** 是否启用批次追踪：只在新建空仓时写入，之后任何更新都不改（开启后不可关闭）。 */
+    @TableField(updateStrategy = FieldStrategy.NEVER)
+    private Boolean lotTrackingEnabled;
+
     @TableId(type = IdType.AUTO)
     private Long id;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

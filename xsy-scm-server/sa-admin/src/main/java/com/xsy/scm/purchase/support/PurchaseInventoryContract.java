@@ -2,6 +2,7 @@ package com.xsy.scm.purchase.support;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /** 采购确认通过本接口把已保存的收货事实交给库存模块。采购不直接更新库存余额，库存模块统一校验单位、锁定余额和生成流水。 */
 public interface PurchaseInventoryContract {
@@ -20,8 +21,17 @@ public interface PurchaseInventoryContract {
      */
     record InboundFact(Long purchaseOrderId, Long receiptId, Long receiptItemId, Long warehouseId, Long skuId,
             String warehouseCode, String warehouseName, String skuCode, String skuName, String unit,
-            BigDecimal quantity, BigDecimal unitCost, String idempotencyKey, OffsetDateTime occurredAt,
-            String operator) {
+            BigDecimal quantity, BigDecimal unitCost, String idempotencyKey, OffsetDateTime occurredAt, String operator,
+            List<LotQuantity> lots) {
+    }
+
+    /**
+     * 入库行分摊到某个批次的数量。
+     *
+     * <p>
+     * 只带批次身份与数量：批次档案归追溯域，库存不反向依赖追溯域的类型。未启用批次追踪的仓库传空列表。
+     */
+    record LotQuantity(Long lotId, String lotNo, BigDecimal quantity) {
     }
 
     /**

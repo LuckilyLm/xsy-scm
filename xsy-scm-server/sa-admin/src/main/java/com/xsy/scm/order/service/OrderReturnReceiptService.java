@@ -172,9 +172,10 @@ public class OrderReturnReceiptService {
                 item.setCreatedBy(operator);
                 orderReturnReceiptItemDao.insert(item);
                 if (disposition == ScmReturnReceiptDispositionEnum.RETURN_TO_STOCK) {
-                    inventoryCommandService.postSalesReturnInbound(new InventorySalesReturnFact(form.getWarehouseId(),
-                            orderItem.getSkuId(), returned.getId(), item.getId(), allocatedStock,
-                            item.getStockUnitSnapshot(), item.getUnitCost(), now, operator));
+                    inventoryCommandService.postSalesReturnInbound(
+                            new InventorySalesReturnFact(form.getWarehouseId(), orderItem.getSkuId(), returned.getId(),
+                                    item.getId(), allocatedStock, item.getStockUnitSnapshot(), item.getUnitCost(), now,
+                                    operator, item.getSourceOutboundItemId()));
                 }
                 OrderReturnReceiptVO.Item itemVO = new OrderReturnReceiptVO.Item();
                 itemVO.setReceiptItemId(item.getId());
@@ -261,9 +262,10 @@ public class OrderReturnReceiptService {
                 item.setCreatedBy(operator);
                 orderReturnReceiptItemDao.insert(item);
                 if (disposition == ScmReturnReceiptDispositionEnum.RETURN_TO_STOCK) {
-                    inventoryCommandService.postSalesReturnInbound(new InventorySalesReturnFact(warehouseId,
-                            component.getComponentSkuId(), returnId, item.getId(), allocated,
-                            item.getStockUnitSnapshot(), item.getUnitCost(), now, operator));
+                    inventoryCommandService.postSalesReturnInbound(
+                            new InventorySalesReturnFact(warehouseId, component.getComponentSkuId(), returnId,
+                                    item.getId(), allocated, item.getStockUnitSnapshot(), item.getUnitCost(), now,
+                                    operator, movement.getOutboundItemId()));
                 }
                 OrderReturnReceiptVO.Item vo = new OrderReturnReceiptVO.Item();
                 vo.setReceiptItemId(item.getId());

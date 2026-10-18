@@ -225,6 +225,43 @@ class ScmMigrationTargetPgIT {
         assertThat(constraints).isEqualTo(2);
     }
 
+    /**
+     * V151 起采购收货可登记批次：仓库开关、批次档案、收货行批次事实、批次子账（余额 + 只追加流水）。
+     * 批次是独立子账，总账唯一键不变。
+     */
+    @Test
+    void inventoryLotSchemaExistsFromV151() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 151) {
+            return;
+        }
+        assertColumn("xsy_warehouse", "lot_tracking_enabled");
+        assertColumn("xsy_trace_lot", "lot_no");
+        assertColumn("xsy_trace_lot", "source_lot_no");
+        assertColumn("xsy_purchase_receipt_item_lot", "lot_id");
+        assertColumn("xsy_inventory_lot_balance", "quantity");
+        assertColumn("xsy_inventory_lot_movement", "before_quantity");
+        assertColumn("xsy_inventory_lot_movement", "after_quantity");
+        Integer uniqueIndexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname IN ('uk_trace_lot_no', 'uk_inventory_lot_balance', "
+                        + "'uk_purchase_receipt_item_lot')",
+                Integer.class);
+        assertThat(uniqueIndexes).as("批次唯一索引应随表一起建立").isEqualTo(3);
+        Integer appendOnly = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_inventory_lot_movement_append_only' "
+                        + "AND NOT tgisinternal",
+                Integer.class);
+        assertThat(appendOnly).as("批次流水必须只追加").isEqualTo(1);
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id = 2100 AND menu_type = 2", Integer.class);
+        assertThat(menus).as("批次库存页面应随迁移发布").isEqualTo(1);
+        Integer perms = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id = 2101 "
+                        + "AND api_perms = 'scm:inventory:lot:query'", Integer.class);
+        assertThat(perms).as("批次查询权限应随迁移发布").isEqualTo(1);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "
