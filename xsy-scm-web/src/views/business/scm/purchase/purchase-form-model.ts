@@ -270,6 +270,7 @@ export function newConfirmLines(receipt: Receipt): ReceiptConfirmItemPayload[] {
         actualWeight: null,
         weightSource: null,
         correctionReason: null,
+        lots: [],
     }));
 }
 
@@ -312,6 +313,25 @@ export function validateConfirm(receipt: Receipt, lines: ReceiptConfirmItemPaylo
                 return '实重必须为四位定点数';
             }
         }
+        if (receipt.warehouseLotTrackingEnabled) {
+            const lots = line.lots ?? [];
+            if (!lots.length) {
+                return '该仓库启用了批次追踪，每行都要登记批次';
+            }
+            let sum = new Decimal(0);
+            for (const lot of lots) {
+                if (!FIXED.test(lot.quantity) || new Decimal(lot.quantity).lte(0)) {
+                    return '批次数量必须为大于零的四位定点数';
+                }
+                sum = sum.plus(new Decimal(lot.quantity));
+            }
+            const effective = isNonStandard(item) ? line.actualWeight ?? '0' : line.receivedQuantity;
+            if (!sum.eq(new Decimal(effective))) {
+                return '批次数量之和必须等于本次收货量';
+            }
+        } else if ((line.lots ?? []).length) {
+            return '该仓库未启用批次追踪，不能登记批次';
+        }
     }
     return undefined;
 }
@@ -328,6 +348,10 @@ export function confirmPayload(receipt: Receipt, lines: ReceiptConfirmItemPayloa
             actualWeight: line.actualWeight ? fixed(line.actualWeight) : null,
             weightSource: line.actualWeight ? 'MANUAL' : null,
             correctionReason: line.correctionReason ?? null,
+            lots: (line.lots ?? []).map((lot) => ({
+                sourceLotNo: lot.sourceLotNo?.trim() ? lot.sourceLotNo.trim() : null,
+                quantity: fixed(lot.quantity),
+            })),
         })),
     };
 }

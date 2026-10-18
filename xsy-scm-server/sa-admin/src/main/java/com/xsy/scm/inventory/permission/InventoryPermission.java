@@ -11,6 +11,9 @@ public final class InventoryPermission {
 
     public static final String MOVEMENT_QUERY = "scm:inventory:movement:query";
 
+    /** 批次库存与批次流水查询：与菜单 2101 的 api_perms 逐字对应。 */
+    public static final String LOT_QUERY = "scm:inventory:lot:query";
+
     public static final String CONVERSION_QUERY = "scm:inventory:conversion:query";
 
     public static final String CONVERSION_ADD = "scm:inventory:conversion:add";
@@ -72,8 +75,7 @@ public final class InventoryPermission {
     public static final String WARNING_QUERY = "scm:inventory:warning:query";
 
     /**
-     * 主动检查库存阈值并投递预警通知。与 {@link #WARNING_QUERY} 分开：查看预警是只读，
-     * 本权限会给别人发站内信。
+     * 主动检查库存阈值并投递预警通知。与 {@link #WARNING_QUERY} 分开：查看预警是只读， 本权限会给别人发站内信。
      */
     public static final String WARNING_SCAN = "scm:inventory:warning:scan";
 

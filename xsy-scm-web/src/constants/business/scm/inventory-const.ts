@@ -182,6 +182,7 @@ export const SCM_INVENTORY_TABLE_ID = {
     WARNING: 'scm-inventory-warning-table',
     WARNING_THRESHOLD: 'scm-inventory-warning-threshold-table',
     CONVERSION: 'scm-inventory-conversion-table',
+    LOT_BALANCE: 'scm-inventory-lot-balance-table',
 } as const;
 
 export default {

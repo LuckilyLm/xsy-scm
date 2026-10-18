@@ -77,6 +77,8 @@ public class PurchaseQueryService {
 
     private final com.xsy.scm.trace.support.TraceLotContract traceLotContract;
 
+    private final com.xsy.scm.warehouse.service.WarehouseService warehouseService;
+
     // ------------------------------------------------------------------
     // 采购需求
     // ------------------------------------------------------------------
@@ -309,6 +311,9 @@ public class PurchaseQueryService {
         }
         // 归属已按父单判定过，明细不再重复取父行
         vo.setItems(receiptItems(receiptId, ScmValueScope.all()));
+        // 批次开关随详情下发：确认弹窗据此决定是否要求登记批次（仓库不存在时按未启用处理）
+        vo.setWarehouseLotTrackingEnabled(vo.getWarehouseId() != null
+                && Boolean.TRUE.equals(warehouseService.require(vo.getWarehouseId()).getLotTrackingEnabled()));
         return vo;
     }
 

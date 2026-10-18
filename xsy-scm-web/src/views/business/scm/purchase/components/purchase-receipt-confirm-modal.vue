@@ -74,6 +74,14 @@
             />
             <span v-else class="hint">标品按声明数量结算</span>
           </template>
+          <template v-else-if="column.dataIndex === 'lots'">
+            <template v-if="receipt?.warehouseLotTrackingEnabled">
+              <a-button type="link" size="small" @click="openLots(record)">
+                {{ (lineOf(record.id).lots ?? []).length ? `已登记 ${(lineOf(record.id).lots ?? []).length} 个` : '登记批次' }}
+              </a-button>
+            </template>
+            <span v-else>—</span>
+          </template>
           <template v-else-if="column.dataIndex === 'correctionReason'">
             <a-input
                 v-if="isNonStandard(record)"
@@ -90,6 +98,25 @@
                      :lines="['超出剩余可收量的比例由「采购超收容差」配置决定；本次可收上限超出容差时整笔确认会被拒绝，不会部分入库。']"/>
     </a-spin>
   </a-modal>
+
+  <a-modal v-model:open="lotOpen" title="登记批次" width="560px" ok-text="确定" @ok="saveLots">
+    <p class="scm-note">数量之和必须等于本次收货量；来源生产批号可以不填。</p>
+    <div class="lot-rows">
+      <div v-for="(lot, index) in lotDraft" :key="index" class="lot-row">
+        <a-input v-model:value="lot.sourceLotNo" placeholder="来源生产批号" allow-clear style="width: 220px"/>
+        <a-input-number
+            v-model:value="lot.quantity"
+            string-mode
+            :precision="4"
+            :min="'0'"
+            aria-label="批次数量"
+            style="width: 150px"
+        />
+        <a-button type="link" danger size="small" @click="removeLot(index)">删除</a-button>
+      </div>
+    </div>
+    <a-button type="dashed" size="small" block @click="addLot">添加批次</a-button>
+  </a-modal>
 </template>
 
 <script setup lang="ts">
@@ -98,9 +125,10 @@ import {ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
-import type {Id, Receipt, ReceiptConfirmItemPayload, ReceiptItem} from '../purchase-types';
+import type {Id, Receipt, ReceiptConfirmItemPayload, ReceiptConfirmLot, ReceiptItem} from '../purchase-types';
 import {
   confirmPayload,
+  fixed,
   isNonStandard,
   newConfirmLines,
   quantity,
@@ -117,6 +145,9 @@ const saving = ref(false);
 const error = ref('');
 const receipt = ref<Receipt>();
 const lines = ref<ReceiptConfirmItemPayload[]>([]);
+const lotOpen = ref(false);
+const lotLineId = ref<Id>();
+const lotDraft = ref<ReceiptConfirmLot[]>([]);
 let requestId = 0;
 
 const columns: TableColumnsType<ReceiptItem> = [
@@ -128,6 +159,7 @@ const columns: TableColumnsType<ReceiptItem> = [
   {title: '超收', dataIndex: 'overReceiptQuantity', width: 95},
   {title: '差异', dataIndex: 'receiptDifference', width: 105},
   {title: '本次声明数量', dataIndex: 'receivedQuantity', width: 155},
+  {title: '批次', dataIndex: 'lots', width: 130},
   {title: '实重', dataIndex: 'actualWeight', width: 145},
   {title: '修正原因', dataIndex: 'correctionReason', width: 170},
 ];
@@ -180,6 +212,42 @@ async function load() {
   }
 }
 
+/**
+ * 打开某一行的批次登记。
+ *
+ * 首次打开时用「本次有效收货量」预填一条，仓管员只需要拆成多个批次或补来源批号，
+ * 不用再手抄一遍数量 —— 但合计仍必须等于本次收货量，否则提交会被拦下。
+ */
+function openLots(record: ReceiptItem) {
+  const line = lineOf(record.id);
+  lotLineId.value = record.id;
+  const existing = line.lots ?? [];
+  if (existing.length) {
+    lotDraft.value = existing.map((lot) => ({...lot}));
+  } else {
+    const effective = isNonStandard(record) ? line.actualWeight ?? line.receivedQuantity : line.receivedQuantity;
+    lotDraft.value = [{sourceLotNo: '', quantity: effective || '0.0000'}];
+  }
+  lotOpen.value = true;
+}
+
+function addLot() {
+  lotDraft.value = [...lotDraft.value, {sourceLotNo: '', quantity: '0.0000'}];
+}
+
+function removeLot(index: number) {
+  lotDraft.value = lotDraft.value.filter((_, i) => i !== index);
+}
+
+function saveLots() {
+  const line = lineOf(lotLineId.value as Id);
+  line.lots = lotDraft.value.map((lot) => ({
+    sourceLotNo: lot.sourceLotNo?.trim() ? lot.sourceLotNo.trim() : null,
+    quantity: fixed(lot.quantity),
+  }));
+  lotOpen.value = false;
+}
+
 async function confirm() {
   const target = receipt.value;
   if (!target) {
@@ -215,5 +283,16 @@ defineExpose({open});
 .hint {
   color: var(--scm-text-secondary);
   font-size: 12px;
+}
+
+.lot-rows {
+  margin-bottom: 12px;
+}
+
+.lot-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
 }
 </style>

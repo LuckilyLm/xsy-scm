@@ -88,6 +88,7 @@ export const TABLE_ID_CONST = {
         SCM_REPORT_FINANCE_RECEIVABLE: 50052,
         SCM_REPORT_FINANCE_PAYABLE: 50053,
         SCM_REPORT_SALES_ORDER: 50054,
+        SCM_INVENTORY_LOT_BALANCE: 50055,
         OA: {
             NOTICE: businessOAInitTableId + 1, //通知公告
             ENTERPRISE: businessOAInitTableId + 2, //企业信息

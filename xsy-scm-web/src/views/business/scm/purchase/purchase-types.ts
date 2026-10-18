@@ -418,6 +418,8 @@ export interface Receipt {
     supplierName?: string;
     warehouseId?: Id;
     warehouseName?: string;
+    /** 该仓库是否启用批次追踪：决定确认弹窗是否要求登记批次。 */
+    warehouseLotTrackingEnabled?: boolean;
     status?: string;
     receiptMode?: string;
     putawayStatus?: string;
@@ -488,6 +490,14 @@ export interface ReceiptConfirmItemPayload {
     actualWeight?: string | null;
     weightSource?: string | null;
     correctionReason?: string | null;
+    /** 批次仓必填：数量之和必须等于本次有效收货量；非批次仓必须为空。 */
+    lots?: ReceiptConfirmLot[];
+}
+
+/** 收货行上的一个批次：来源生产批号可空，数量必填（四位定点字符串）。 */
+export interface ReceiptConfirmLot {
+    sourceLotNo?: string | null;
+    quantity: string;
 }
 
 export interface ReceiptConfirmPayload {
@@ -560,6 +570,8 @@ export interface Warehouse extends Partial<AreaColumns>, ScmLocation {
     status?: string;
     address?: string | null;
     remark?: string | null;
+    /** 是否启用批次追踪；开启后不可关闭。 */
+    lotTrackingEnabled?: boolean;
     version?: number;
     createdAt?: string;
     updatedAt?: string;
@@ -580,6 +592,8 @@ export interface WarehouseFormModel extends Partial<AreaColumns>, ScmLocation {
     name: string;
     address?: string | null;
     remark?: string | null;
+    /** 是否启用批次追踪：只在新建时提交，编辑态只读回显。 */
+    lotTrackingEnabled?: boolean;
 }
 
 /**

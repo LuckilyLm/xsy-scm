@@ -127,6 +127,10 @@
       <a-form-item label="备注" name="remark">
         <a-input v-model:value="form.remark" maxlength="500"/>
       </a-form-item>
+      <!-- 批次追踪只在新建空仓时决定：开启后不可关闭，因此编辑态只读回显 -->
+      <a-form-item label="批次追踪">
+        <a-switch v-model:checked="form.lotTrackingEnabled" :disabled="form.id !== undefined"/>
+      </a-form-item>
     </a-form>
   </a-modal>
 
@@ -278,6 +282,7 @@ async function open(row?: Warehouse) {
         latitude: row.latitude ?? null,
         geomCrs: row.geomCrs ?? null,
         remark: row.remark ?? null,
+        lotTrackingEnabled: row.lotTrackingEnabled === true,
         provinceCode: row.provinceCode ?? null,
         provinceName: row.provinceName ?? null,
         cityCode: row.cityCode ?? null,

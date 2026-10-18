@@ -728,3 +728,70 @@ export interface InventoryConversionAudit {
     version: number;
     auditOpinion?: string;
 }
+
+// ------------------------------------------------------------------
+// 批次库存（一期：L1 批次，不含包装码）
+// ------------------------------------------------------------------
+
+/**
+ * `InventoryLotBalanceQueryForm`。
+ *
+ * 与余额查询同口径：不传仓库即返回当前调用者被授权的那些仓库的批次行，服务端不会因为没筛仓库而放宽范围。
+ */
+export interface InventoryLotBalanceQuery extends Page {
+    warehouseId?: Id;
+    skuId?: Id;
+    lotNo?: string;
+    sourceLotNo?: string;
+    productName?: string;
+}
+
+/** `InventoryLotBalanceVO`（粒度 = warehouse + sku + lot）。 */
+export interface InventoryLotBalance {
+    id: Id;
+    warehouseId: Id;
+    warehouseCode: string;
+    warehouseName: string;
+    skuId: Id;
+    skuCode: string;
+    skuName: string;
+    productName: string;
+    lotId: Id;
+    /** 内部批次号：系统发号，只读。 */
+    lotNo: string;
+    /** 来源生产批号：供应商或现场提供，可能为空。 */
+    sourceLotNo?: string | null;
+    unit: string;
+    quantity: string;
+    updatedAt: string;
+}
+
+/** `InventoryLotMovementQueryForm`。 */
+export interface InventoryLotMovementQuery extends Page {
+    warehouseId?: Id;
+    skuId?: Id;
+    lotNo?: string;
+    movementType?: string;
+}
+
+/** `InventoryLotMovementVO`：`quantity` 有符号，入库为正、出库为负。 */
+export interface InventoryLotMovement {
+    id: Id;
+    warehouseId: Id;
+    warehouseName: string;
+    skuId: Id;
+    skuCode: string;
+    skuName: string;
+    lotId: Id;
+    lotNo: string;
+    movementType: string;
+    sourceDocumentType: string;
+    sourceDocumentId: Id;
+    sourceDocumentItemId?: Id | null;
+    quantity: string;
+    unitSnapshot: string;
+    beforeQuantity: string;
+    afterQuantity: string;
+    occurredAt: string;
+    operator: string;
+}

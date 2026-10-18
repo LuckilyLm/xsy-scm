@@ -83,8 +83,12 @@ test.describe.serial('Wave 6 盘点快照导入与复制历史盘点', () => {
     admin = await apiClient(adminToken);
 
     // 模板按「当前余额行」签发凭证，所以必须挑一个真有余额的仓库，否则来源集合为空、整条链路没有意义。
+    // 批次仓要排除：一期盘点不支持批次（41070），挑到它只会验到一个与快照凭证无关的拒绝。
     const warehouses = await ok<any[]>(admin.get('/scm/warehouse/list'));
     for (const w of warehouses) {
+      if (w.lotTrackingEnabled === true) {
+        continue;
+      }
       const bal = await ok<any>(admin.post('/scm/inventory/balance/query', {data: {warehouseId: w.id, pageNum: 1, pageSize: 1}}));
       if ((bal.list ?? []).length > 0) {
         warehouseId = String(w.id);

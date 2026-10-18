@@ -318,8 +318,8 @@ test('unit mismatch blocks allocation instead of guessing a conversion', () => {
 
 test('confirm lines default to the remaining quantity of every receipt line', () => {
   assert.deepEqual(newConfirmLines(receipt()), [
-    {receiptItemId: 11, version: 0, receivedQuantity: '5.0000', actualWeight: null, weightSource: null, correctionReason: null},
-    {receiptItemId: 12, version: 0, receivedQuantity: '2.0000', actualWeight: null, weightSource: null, correctionReason: null},
+    {receiptItemId: 11, version: 0, receivedQuantity: '5.0000', actualWeight: null, weightSource: null, correctionReason: null, lots: []},
+    {receiptItemId: 12, version: 0, receivedQuantity: '2.0000', actualWeight: null, weightSource: null, correctionReason: null, lots: []},
   ]);
   assert.equal(newConfirmLines({items: []}).length, 0);
 });
@@ -391,6 +391,7 @@ test('confirm payload normalizes quantities and derives the manual weight source
     actualWeight: null,
     weightSource: null,
     correctionReason: null,
+    lots: [],
   });
   assert.deepEqual(body.items[1], {
     receiptItemId: 12,
@@ -399,6 +400,7 @@ test('confirm payload normalizes quantities and derives the manual weight source
     actualWeight: '2.0000',
     weightSource: 'MANUAL',
     correctionReason: null,
+    lots: [],
   });
 });
 
