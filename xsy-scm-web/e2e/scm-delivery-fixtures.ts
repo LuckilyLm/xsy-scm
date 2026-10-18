@@ -44,7 +44,7 @@ async function createCategoryChain(client: APIRequestContext, runTag: string): P
 export async function createSku(client: APIRequestContext, runTag: string, tag: string): Promise<string> {
     const categoryId = await createCategoryChain(client, `${runTag}${tag}`);
     const code = `${runTag}-${tag}`.toUpperCase();
-    await call(client, 'post', '/scm/product/add', {
+    const spuId = await call(client, 'post', '/scm/product/add', {
         spuCode: code,
         name: `${runTag}商品${tag}`,
         categoryId,
@@ -55,8 +55,16 @@ export async function createSku(client: APIRequestContext, runTag: string, tag: 
             productType: 'NON_STANDARD', marketPrice: '3.5000', status: 'ON_SHELF', defaultFlag: true, sortOrder: 0,
         }],
     });
-    const options = (await call(client, 'post', '/scm/product/sku/option-list', {keyword: code, limit: 10})).options;
-    const sku = options.find((o: Row) => o.skuCode === code);
+    // V147 起 SPU / SKU 编码由服务端发号：造数传入的字符串不落库，只能回读详情再按真实编码检索。
+    const detail = await call<Row>(client, 'get', `/scm/product/detail/${spuId}`);
+    const created = (detail.skuList ?? [])[0];
+    if (!created) throw new Error(`商品 ${code} 创建后没有规格行`);
+    const skuCode = String(created.skuCode);
+    if (!/^SKU\d{6,}$/.test(skuCode)) {
+        throw new Error(`SKU 编码不是服务端发号形态：${skuCode}`);
+    }
+    const options = (await call(client, 'post', '/scm/product/sku/option-list', {keyword: skuCode, limit: 10})).options;
+    const sku = options.find((o: Row) => String(o.skuId) === String(created.skuId));
     if (!sku) throw new Error(`商品 ${code} 的 SKU 选项没查到，无法继续造订单`);
     return String(sku.skuId);
 }

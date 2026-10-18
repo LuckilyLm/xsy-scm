@@ -132,7 +132,10 @@ class ProductPgIT {
         assertThat(saved.getVersion()).isEqualTo(1);
         assertThat(saved.getSkuList().getFirst().getSkuId()).isEqualTo(kept);
         assertThat(saved.getSkuList().getFirst().getVersion()).isEqualTo(1);
-        assertThat(saved.getDefaultSku().getSkuCode()).isEqualTo(prefix + "C");
+        // V147：新增规格由服务端发号，客户端传入的编码不被采信，且与保留规格的编码不同
+        String addedSkuCode = saved.getDefaultSku().getSkuCode();
+        assertThat(addedSkuCode).isNotEqualTo(prefix + "C");
+        assertThat(addedSkuCode).isNotEqualTo(initial.getSkuList().getFirst().getSkuCode());
         assertThat(jdbc.queryForObject("SELECT deleted FROM xsy_product_sku WHERE id=?", Boolean.class, removed)).isTrue();
         assertThat(jdbc.queryForObject("SELECT created_by FROM xsy_product_spu WHERE id=?", String.class, id)).isEqualTo("1:1");
     }
@@ -188,15 +191,26 @@ class ProductPgIT {
         assertThat(service.add(form)).isNotEqualTo(id);
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"", "商品", "别名", "A", "BARA"})
-    void searchesEveryLegacyField(String suffix) {
+    @Test
+    void searchesEveryLegacyField() {
         Long id = service.add(product());
-        var form = new ProductSpuQueryForm();
-        form.setPageNum(1L);
-        form.setPageSize(20L);
-        form.setKeyword(prefix + suffix);
-        assertThat(query.query(form).getList()).extracting(ProductSpuVO::getSpuId).contains(id);
+        var detail = query.detail(id);
+        // V147 起 SPU / SKU 编码由后端发号，按编码检索只能用落库值，不能沿用造数时传入的字符串
+        List<String> keywords = List.of(
+                "",
+                detail.getSpuCode(),
+                prefix + "商品",
+                prefix + "别名",
+                detail.getSkuList().getFirst().getSkuCode(),
+                prefix + "BARA");
+        for (String keyword : keywords) {
+            var form = new ProductSpuQueryForm();
+            form.setPageNum(1L);
+            form.setPageSize(20L);
+            form.setKeyword(keyword);
+            assertThat(query.query(form).getList()).as("keyword=%s", keyword)
+                    .extracting(ProductSpuVO::getSpuId).contains(id);
+        }
     }
 
     @Test

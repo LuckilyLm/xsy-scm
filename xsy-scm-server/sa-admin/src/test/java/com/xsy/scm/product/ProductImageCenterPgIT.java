@@ -121,7 +121,9 @@ class ProductImageCenterPgIT {
     void queryReturnsDerivedUrlWithoutPersistingIt() {
         Long spuId = newSpu();
         ProductImageCenterVO vo = service.query(spuId);
-        assertThat(vo.getSpuCode()).isEqualTo(prefix);
+        // V147 起 SPU 编码由后端发号，造数传入的字符串不再落库，只能与落库值比较
+        assertThat(vo.getSpuCode()).isEqualTo(
+                jdbc.queryForObject("SELECT spu_code FROM xsy_product_spu WHERE id = ?", String.class, spuId));
         assertThat(vo.getImages()).hasSize(1);
         assertThat(vo.getImages().getFirst().getFileUrl()).isNotBlank();
         String fileKey = jdbc.queryForObject("SELECT file_key FROM xsy_product_image WHERE spu_id=?", String.class, spuId);

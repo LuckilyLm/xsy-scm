@@ -122,7 +122,7 @@ test('Finance R0 六指标与期末明细和 Finance R1 事实一致，并导出
         const card = page.locator('.report-kpi').filter({hasText: label}).first();
         await expect(card.locator('.report-kpi-value')).toHaveText(amount);
     }
-    await expect(page.getByText('已核销来自收付款与应收/应付之间的分配关系，不代表实际现金收付。', {exact: false})).toBeVisible();
+    // 「已核销」的口径说明属于常驻长句，已被文案契约清退；口径本身由上面的 KPI 断言覆盖。
     await captureDownload(page, '导出概览', '往来概览.xlsx');
 
     await page.getByPlaceholder('应收单号 / 订单号 / 客户').fill(facts.receivable.receivableNo);

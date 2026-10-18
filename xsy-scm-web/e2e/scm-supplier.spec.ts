@@ -184,8 +184,8 @@ test('live supplier pilot: SKU relations with R12 defaults, whole-table clear, s
   await page.goto('/#/supplier/supplier-list');
   await button(page, '新增供应商').click();
   let drawer = currentDrawer(page);
-  // 供应商编码由服务端生成：创建态不再有可填输入框，只读提示「保存后由系统自动生成」。
-  await expect(drawer.getByText('保存后由系统自动生成')).toBeVisible();
+  // 供应商编码由服务端发号：创建态既没有可填输入框，也不放「由系统生成」这类提示。
+  await expect(drawer.getByLabel('供应商编码', { exact: true })).toHaveCount(0);
   await drawer.getByLabel('供应商名称', { exact: true }).fill(prefix + '供应商甲');
   await drawer.getByLabel('联系人', { exact: true }).fill('张三');
   await drawer.getByLabel('联系电话', { exact: true }).fill('13900139000');

@@ -175,7 +175,7 @@ test('客户列表查询条件按登录人分别记忆：查询落键、刷新�
   page.on('pageerror', (e) => errors.push(e.message));
   const keyword = '记忆' + Date.now().toString(36);
   const adminKeyword = '他人' + Date.now().toString(36);
-  const placeholder = '编码 / 名称 / 联系人 / 电话';
+  const placeholder = '客户名称 / 联系人 / 电话';
 
   // 不拼 employeeId（登录响应不带该字段），直接枚举本页的真实偏好键：
   // 键里那段数字就是隔离用的登录用户，换人必然落到另一枚键上。

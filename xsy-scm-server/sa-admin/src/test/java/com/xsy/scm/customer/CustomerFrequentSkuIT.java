@@ -127,7 +127,7 @@ class CustomerFrequentSkuIT extends ScmW3PgITBase {
         assertThat(row.getOrderedQuantity()).isEqualByComparingTo("4.0000");
         // 最近单价取最新一张（9.0000），既非平均 5.1 也非最早 1.2
         assertThat(row.getRecentUnitPrice()).isEqualByComparingTo("9.0000");
-        assertThat(row.getSkuCode()).isEqualTo(prefix + "A-K");
+        assertThat(row.getSkuCode()).isEqualTo(skuCodeOf(sku));
         assertThat(row.getProductName()).isEqualTo(prefix + "A商品");
         assertThat(row.getLastConfirmedAt()).isNotNull();
     }

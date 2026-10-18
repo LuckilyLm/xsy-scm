@@ -143,4 +143,14 @@ public abstract class ScmW3PgITBase {
         return jdbc.queryForObject(
                 "SELECT id FROM xsy_product_sku WHERE spu_id = ? AND deleted = FALSE", Long.class, spuId);
     }
+
+    /**
+     * 读回服务端发号的 SKU 内部编码。
+     *
+     * <p>V147 起 SPU / SKU 编码由后端 sequence 生成，{@code ProductSkuForm#setSkuCode} 不再被采信；
+     * 断言编码时必须回读落库值，不能沿用造数时传入的字符串。
+     */
+    protected String skuCodeOf(Long skuId) {
+        return jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id = ?", String.class, skuId);
+    }
 }

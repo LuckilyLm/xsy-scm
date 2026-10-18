@@ -313,7 +313,7 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         assertThat(page.getList()).hasSize(1);
         InventoryBalanceVO balance = page.getList().getFirst();
         assertThat(balance.getWarehouseCode()).isEqualTo(SEED_WAREHOUSE_CODE);
-        assertThat(balance.getSkuCode()).isEqualTo(prefix + "IN18-K");
+        assertThat(balance.getSkuCode()).isEqualTo(skuCodeOf(skuId));
         assertThat(balance.getProductName()).isEqualTo(prefix + "IN18商品");
         assertThat(balance.getSpecValues()).isNotEmpty();
         assertThat(balance.getUnit()).isEqualTo(DEFAULT_PURCHASE_UNIT);
@@ -321,11 +321,15 @@ class ScmInventoryInboundIT extends ScmW6PgITBase {
         assertThat(balance.getVersion()).isEqualTo(1);
 
         // --- 余额：skuCode 模糊命中；不存在的编码 → 空态（「没有库存」不是错误）---
+        // V147 起 SKU 编码由后端发号，模糊检索只能用落库编码，不能沿用造数时传入的字符串
+        String storedSkuCode = skuCodeOf(skuId);
         InventoryBalanceQueryForm fuzzy = new InventoryBalanceQueryForm();
         fuzzy.setPageNum(1L);
         fuzzy.setPageSize(20L);
-        fuzzy.setSkuCode(prefix + "IN18");
-        assertThat(inventoryBalanceQueryService.query(fuzzy).getList()).hasSize(1);
+        fuzzy.setSkuCode(storedSkuCode);
+        List<InventoryBalanceVO> fuzzyRows = inventoryBalanceQueryService.query(fuzzy).getList();
+        assertThat(fuzzyRows).hasSize(1);
+        assertThat(fuzzyRows.getFirst().getSkuCode()).isEqualTo(storedSkuCode);
 
         InventoryBalanceQueryForm noMatch = new InventoryBalanceQueryForm();
         noMatch.setPageNum(1L);

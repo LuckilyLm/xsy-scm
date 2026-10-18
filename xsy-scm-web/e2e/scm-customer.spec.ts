@@ -110,8 +110,8 @@ test('live customer pilot: type, credit period, status, search, deep link and de
   const openDrawer = page.locator('.ant-drawer-open');
   const expectDrawerClosed = () => expect(openDrawer).toHaveCount(0);
 
-  // 客户编码由服务端生成：创建态不再有可填输入框，只读提示「保存后由系统自动生成」。
-  await expect(drawer.getByText('保存后由系统自动生成')).toBeVisible();
+  // 客户编码由服务端发号：创建态既没有可填输入框，也不放「由系统生成」这类提示。
+  await expect(drawer.getByLabel('客户编码', { exact: true })).toHaveCount(0);
   await drawer.getByLabel('客户名称', { exact: true }).fill(prefix + '客户甲');
   await openSelect(drawer, 'customerTypeId');
   // 客户类型下拉的选项文本是「名称 （编码）」，不是纯名称，所以不能用 exact 匹配。
@@ -192,7 +192,7 @@ test('live customer pilot: type, credit period, status, search, deep link and de
 
   // ------------------------------------------------------------------ 查询
   // 编码搜索仍要可用，但输入的是服务端回读的真实编码。
-  await page.getByPlaceholder('编码 / 名称 / 联系人 / 电话').fill(customerCode);
+  await page.getByPlaceholder('客户名称 / 联系人 / 电话').fill(customerCode);
   await button(page, '查询').click();
   await expect(row).toBeVisible();
 

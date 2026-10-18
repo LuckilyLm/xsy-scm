@@ -51,11 +51,11 @@ def _unused_report_dates() -> None:
                 FROM generate_series(2, 90) AS day_offsets(day_offset)
           ) candidate
          WHERE NOT EXISTS (
-                   SELECT 1 FROM {schema}.report_purchase_daily daily
+                   SELECT 1 FROM {schema}.xsy_report_purchase_daily daily
                     WHERE daily.report_date = candidate.report_date
                )
            AND NOT EXISTS (
-                   SELECT 1 FROM {schema}.purchase_order purchase_order
+                   SELECT 1 FROM {schema}.xsy_purchase_order purchase_order
                     WHERE purchase_order.deleted = FALSE
                       AND purchase_order.submitted_at >= candidate.report_date::timestamp AT TIME ZONE 'Asia/Shanghai'
                       AND purchase_order.submitted_at < (candidate.report_date + 1)::timestamp AT TIME ZONE 'Asia/Shanghai'
@@ -83,7 +83,7 @@ def _backdate_purchase_order() -> None:
     schema = _schema()
     id_list = ",".join(str(order_id) for order_id in ids)
     sql = f"""
-        UPDATE {schema}.purchase_order
+        UPDATE {schema}.xsy_purchase_order
            SET submitted_at = (DATE {impl.q(report_date.isoformat())} + TIME '12:00:00') AT TIME ZONE 'Asia/Shanghai'
          WHERE id IN ({id_list})
            AND remark = {impl.q(remark)}
@@ -118,16 +118,16 @@ def _cleanup_daily_report_fixture() -> None:
     date_list = ",".join(f"DATE {impl.q(value)}" for value in report_dates)
     statements = [
         "BEGIN",
-        f"DELETE FROM {schema}.report_purchase_daily_item WHERE report_date IN ({date_list})",
-        f"DELETE FROM {schema}.report_purchase_daily WHERE report_date IN ({date_list})",
+        f"DELETE FROM {schema}.xsy_report_purchase_daily_item WHERE report_date IN ({date_list})",
+        f"DELETE FROM {schema}.xsy_report_purchase_daily WHERE report_date IN ({date_list})",
     ]
     if ids:
         id_list = ",".join(str(order_id) for order_id in ids)
         owner_clause = f"id IN ({id_list}) AND remark = {impl.q(remark)}"
         statements.extend([
-            f"DELETE FROM {schema}.purchase_order_item WHERE purchase_order_id IN "
-            f"(SELECT id FROM {schema}.purchase_order WHERE {owner_clause})",
-            f"DELETE FROM {schema}.purchase_order WHERE {owner_clause}",
+            f"DELETE FROM {schema}.xsy_purchase_order_item WHERE purchase_order_id IN "
+            f"(SELECT id FROM {schema}.xsy_purchase_order WHERE {owner_clause})",
+            f"DELETE FROM {schema}.xsy_purchase_order WHERE {owner_clause}",
         ])
     statements.append("COMMIT")
     impl.psql(";\n".join(statements) + ";")

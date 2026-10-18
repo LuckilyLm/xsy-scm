@@ -340,8 +340,10 @@ test('重开保留已录内容并让订单立刻掉出配送候选', async ({pag
     authenticate(page, leadToken);
     await page.goto('/#/sorting/tasks');
     await filterTaskRow(page);
-    await page.locator('.ant-table-tbody tr').filter({hasText: taskNo}).first()
-        .getByRole('button', {name: accessibleName('重开')}).click();
+    // 操作列收敛为「详情 + 当前下一步 + 更多」，重开属低频动作，只在「更多」菜单里出现。
+    const taskRow = page.locator('.ant-table-tbody tr').filter({hasText: taskNo}).first();
+    await taskRow.getByRole('button', {name: /更多/}).click();
+    await page.locator('.ant-dropdown:visible').getByText('重开', {exact: true}).click();
     const modal = page.locator('.ant-modal-content').last();
     await modal.locator('textarea, input[type=text]').last().fill('客户改量，需要重分拣');
     await button(modal, '确认').click();
@@ -365,8 +367,10 @@ test('打印只计次：预览不计数，登记后累加且状态与版本都�
     authenticate(page, sorterToken);
     await page.goto('/#/sorting/tasks');
     await filterTaskRow(page);
-    await page.locator('.ant-table-tbody tr').filter({hasText: taskNo}).first()
-        .getByRole('button', {name: accessibleName('打印')}).click();
+    // 打印同样收在「更多」菜单里，行内只保留详情与当前下一步。
+    const printRow = page.locator('.ant-table-tbody tr').filter({hasText: taskNo}).first();
+    await printRow.getByRole('button', {name: /更多/}).click();
+    await page.locator('.ant-dropdown:visible').getByText('打印', {exact: true}).click();
     const preview = page.locator('.ant-modal-content').last();
     await expect(preview).toContainText(taskNo);
     expect((await taskDetail(sorterClient, target.id)).task.printCount, '预览不得计次')

@@ -587,10 +587,6 @@ class ScmReportDataScopePgIT extends ScmW6PgITBase {
         return text.toString();
     }
 
-    private String skuCodeOf(Long skuId) {
-        return jdbc.queryForObject("SELECT sku_code FROM xsy_product_sku WHERE id = ?", String.class, skuId);
-    }
-
     private String receiptNo(Long receiptId) {
         return jdbc.queryForObject("SELECT receipt_no FROM xsy_purchase_receipt WHERE id = ?", String.class,
                 receiptId);

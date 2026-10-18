@@ -95,7 +95,7 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
         assertThat(row.get("supplier_code_snapshot")).isEqualTo(
                 jdbc.queryForObject("SELECT supplier_code FROM xsy_supplier WHERE id = ?", String.class, supplierId));
         assertThat(row.get("supplier_name_snapshot")).isEqualTo("供应商a");
-        assertThat(row.get("sku_code_snapshot")).isEqualTo(prefix + "A1-K");
+        assertThat(row.get("sku_code_snapshot")).isEqualTo(skuCodeOf(skuId));
         assertThat((String) row.get("sku_name_snapshot"))
                 .as("legacy R4：名称取 SPU 名称，不是 SKU 规格名")
                 .isEqualTo(prefix + "A1商品");

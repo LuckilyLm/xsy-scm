@@ -272,7 +272,8 @@ test('页面接线：打印标签双视角可切换，登记只发计次请求�
   // 关闭详情 = 回线路管理列表（左上「返回线路管理」；按钮内含图标，图标自身 aria-label
   // 会混进可及名，因此按专用类名定位）。页面已无抽屉。
   await detailPage.locator('.scm-detail-header__back').click();
-  await expect(page).toHaveURL(/#\/delivery\/routes$/);
+  // 列表查询条件按登录人记忆（Wave 8），返回列表会带回 keyword，只校验路由本身。
+  await expect(page).toHaveURL(/#\/delivery\/routes(\?.*)?$/);
   // 全程只有两次打印登记：任何其它 SCM 写接口（库存、出库、发货）都不该被页面偷偷发起。
   // 底座 Layout 自身的非业务请求（如 /support/feedback/query 轮询）不在这条约束的语义范围内。
   const scmWrites = writes.filter((u) => u.includes(' /scm/'));
