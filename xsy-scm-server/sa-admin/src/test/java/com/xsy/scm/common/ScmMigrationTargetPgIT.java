@@ -352,6 +352,21 @@ class ScmMigrationTargetPgIT {
         assertThat(paper).as("标签用 80mm 热敏纸").isEqualTo("TICKET_80");
     }
 
+    /**
+     * V155 起包装码可以作废：作废权限随迁移发布。
+     */
+    @Test
+    void traceUnitVoidPermissionExistsFromV155() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 155) {
+            return;
+        }
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id = 2114 "
+                        + "AND api_perms = 'scm:inventory:unit:void'", Integer.class);
+        assertThat(menus).as("作废权限应随迁移发布").isEqualTo(1);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

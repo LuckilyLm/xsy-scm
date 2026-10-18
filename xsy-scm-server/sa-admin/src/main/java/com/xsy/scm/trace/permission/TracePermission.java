@@ -14,4 +14,7 @@ public final class TracePermission {
 
     /** 分拣扫码绑定。 */
     public static final String UNIT_BIND = "scm:inventory:unit:bind";
+
+    /** 包装码作废。 */
+    public static final String UNIT_VOID = "scm:inventory:unit:void";
 }

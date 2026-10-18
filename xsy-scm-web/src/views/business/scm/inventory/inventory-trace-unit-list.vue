@@ -76,7 +76,7 @@
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openReplay(record)">回放</a-button>
             <a-button type="link" size="small" @click="openBind(record)" v-privilege="'scm:inventory:unit:bind'">绑定分拣</a-button>
-            <a-button type="link" size="small" @click="openPrint(record)" v-privilege="'scm:inventory:unit:query'">打印标签</a-button>
+            <ScmActionMore :actions="moreActions(record)" @select="onMore(record, $event)"/>
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -133,6 +133,20 @@
       <a-form-item label="任务行" required>
         <a-select v-model:value="bindForm.sortingTaskItemId" :options="taskItemOptions" :loading="taskLoading"
                   placeholder="选择要发给的客户与商品" style="width: 100%"/>
+      </a-form-item>
+    </a-form>
+  </a-modal>
+
+  <a-modal v-model:open="voidOpen" title="作废包装码" :confirm-loading="voidSaving" ok-text="作废"
+           ok-type="danger" @ok="submitVoid">
+    <a-alert v-if="voidError" class="form-error" type="error" show-icon :message="voidError"/>
+    <p class="scm-note">作废只把码标记为已作废并保留原码，不能复用到别的实物；已绑定分拣行的码不能作废。</p>
+    <a-form layout="vertical">
+      <a-form-item label="包装码">
+        <a-input :value="voidRow?.unitCode" disabled/>
+      </a-form-item>
+      <a-form-item label="作废原因" required>
+        <a-textarea v-model:value="voidReason" :maxlength="200" :rows="2" aria-label="作废原因"/>
       </a-form-item>
     </a-form>
   </a-modal>
@@ -206,6 +220,9 @@ import {inventoryTraceUnitApi} from '/@/api/business/scm/inventory-trace-unit-ap
 import {inventoryLotApi} from '/@/api/business/scm/inventory-lot-api';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
 import PrintDocumentModal from '/@/views/business/scm/print/print-document-modal.vue';
+import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import {hasPermission} from '../common/scm-permission';
+import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -248,6 +265,12 @@ const issuing = ref(false);
 const issueError = ref('');
 const lotHint = ref('');
 const issueForm = reactive({lotNo: '', lotId: undefined as string | number | undefined, packageType: 'BAG', packageCount: 1, quantityPerPackage: '0.0000', remark: ''});
+
+const voidOpen = ref(false);
+const voidSaving = ref(false);
+const voidError = ref('');
+const voidReason = ref('');
+const voidRow = ref<TraceUnit>();
 
 const printOpen = ref(false);
 const printBusinessIds = ref<(string | number)[]>([]);
@@ -355,6 +378,50 @@ async function submitIssue() {
     void e;
   } finally {
     issuing.value = false;
+  }
+}
+
+/** 打印与作废属低频/危险动作，收进「更多」，把常驻宽度留给回放与绑定。 */
+function moreActions(record: TraceUnit): ScmActionItem[] {
+  return [
+    {key: 'print', label: '打印标签', hidden: !hasPermission('scm:inventory:unit:query')},
+    {key: 'void', label: '作废', danger: true,
+      hidden: !hasPermission('scm:inventory:unit:void') || record.status !== 'ACTIVE'},
+  ];
+}
+
+function onMore(record: TraceUnit, key: string) {
+  if (key === 'print') {
+    openPrint(record);
+    return;
+  }
+  if (key === 'void') {
+    openVoid(record);
+  }
+}
+
+function openVoid(record: TraceUnit) {
+  voidOpen.value = true;
+  voidError.value = '';
+  voidReason.value = '';
+  voidRow.value = record;
+}
+
+async function submitVoid() {
+  voidError.value = '';
+  if (!voidReason.value.trim()) {
+    voidError.value = '请填写作废原因';
+    return;
+  }
+  voidSaving.value = true;
+  try {
+    await inventoryTraceUnitApi.voidUnit({unitCode: String(voidRow.value?.unitCode), reason: voidReason.value.trim()});
+    voidOpen.value = false;
+    await queryData();
+  } catch {
+    // 作废失败只走全局 toast；本地只保留原因必填这类前置校验
+  } finally {
+    voidSaving.value = false;
   }
 }
 

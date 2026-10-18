@@ -299,6 +299,77 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
     }
 
     @Test
+    @DisplayName("#8 未绑定的码可以作废，重复作废被拒（41513）")
+    void voidUnboundUnitAndRejectRepeat() {
+        Long skuId = newOnShelfSku("VOID1");
+        W6Fixture fx = inboundFixture("VOID1", skuId, "10.0000");
+        confirmWithLots(fx.receipt().getId(), "10.0000", "10.0000");
+        Long lotId = jdbc.queryForObject(
+                "SELECT id FROM xsy_trace_lot WHERE sku_id = ? ORDER BY id DESC LIMIT 1", Long.class, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitIssueForm issue = new com.xsy.scm.trace.domain.form.TraceUnitIssueForm();
+        issue.setLotId(lotId);
+        issue.setPackageType("BAG");
+        issue.setPackageCount(1);
+        issue.setQuantityPerPackage("1.0000");
+        var units = traceUnitService.issue(issue, "W9 IT");
+
+        com.xsy.scm.trace.domain.form.TraceUnitVoidForm voidForm = new com.xsy.scm.trace.domain.form.TraceUnitVoidForm();
+        voidForm.setUnitCode(units.getFirst().getUnitCode());
+        voidForm.setReason("标签破损");
+        traceUnitService.voidUnit(voidForm, "W9 IT");
+
+        assertThat(jdbc.queryForObject("SELECT status FROM xsy_trace_unit WHERE id = ?", String.class,
+                units.getFirst().getId())).isEqualTo("VOID");
+        Integer events = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_trace_event WHERE unit_id = ? AND event_type = 'VOID' AND remark = ?",
+                Integer.class, units.getFirst().getId(), "标签破损");
+        assertThat(events).isEqualTo(1);
+
+        // 原码保留：作废不等于删除，也不能复用
+        assertThat(traceUnitService.replay(units.getFirst().getUnitCode()).getUnit().getStatus()).isEqualTo("VOID");
+
+        assertThatThrownBy(() -> traceUnitService.voidUnit(voidForm, "W9 IT"))
+                .isInstanceOf(ScmBusinessException.class)
+                .satisfies(error -> assertThat(((ScmBusinessException) error).getErrorCode().getCode()).isEqualTo(41513));
+    }
+
+    @Test
+    @DisplayName("#9 已绑定分拣行的码不能作废（41512）")
+    void voidRejectsBoundUnit() {
+        Long skuId = newOnShelfSku("VOID2");
+        W6Fixture fx = inboundFixture("VOID2", skuId, "10.0000");
+        confirmWithLots(fx.receipt().getId(), "10.0000", "10.0000");
+        Long lotId = jdbc.queryForObject(
+                "SELECT id FROM xsy_trace_lot WHERE sku_id = ? ORDER BY id DESC LIMIT 1", Long.class, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitIssueForm issue = new com.xsy.scm.trace.domain.form.TraceUnitIssueForm();
+        issue.setLotId(lotId);
+        issue.setPackageType("BAG");
+        issue.setPackageCount(1);
+        issue.setQuantityPerPackage("1.0000");
+        var units = traceUnitService.issue(issue, "W9 IT");
+
+        Long customerId = newCustomer();
+        Long salesOrderId = confirmedSalesOrder(customerId, skuId, "10.0000", "10.0000");
+        sortingCompletedFor(salesOrderId);
+        Long itemId = jdbc.queryForObject(
+                "SELECT id FROM xsy_sorting_task_item WHERE sales_order_id = ? AND sku_id = ? "
+                        + "ORDER BY id DESC LIMIT 1", Long.class, salesOrderId, skuId);
+        com.xsy.scm.trace.domain.form.TraceUnitBindForm bind = new com.xsy.scm.trace.domain.form.TraceUnitBindForm();
+        bind.setUnitCode(units.getFirst().getUnitCode());
+        bind.setSortingTaskItemId(itemId);
+        traceUnitService.bind(bind, "W9 IT");
+
+        com.xsy.scm.trace.domain.form.TraceUnitVoidForm voidForm = new com.xsy.scm.trace.domain.form.TraceUnitVoidForm();
+        voidForm.setUnitCode(units.getFirst().getUnitCode());
+        voidForm.setReason("贴错");
+        assertThatThrownBy(() -> traceUnitService.voidUnit(voidForm, "W9 IT"))
+                .isInstanceOf(ScmBusinessException.class)
+                .satisfies(error -> assertThat(((ScmBusinessException) error).getErrorCode().getCode()).isEqualTo(41512));
+    }
+
+    @Test
     @DisplayName("#4 批次仓不登记批次时拒绝确认（40095）")
     void lotWarehouseRequiresLots() {
         Long skuId = newOnShelfSku("LOT4");

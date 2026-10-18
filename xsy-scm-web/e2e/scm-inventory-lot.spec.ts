@@ -12,6 +12,7 @@ let api: APIRequestContext, token: string;
 let lotWarehouseId: string, skuId: string, supplierId: string, receiptId: string, receiptNo: string;
 let lotNo = '';
 let firstUnitCode = '';
+let secondUnitCode = '';
 test.describe.configure({mode: 'serial'});
 
 async function login(account: string) {
@@ -197,6 +198,8 @@ test('4｜页面按批次发码并回放到收货来源', async ({page}) => {
   expect(body.data).toHaveLength(2);
   // 码不透明：不嵌日期
   expect(body.data.every((u: any) => /^U[0-9A-HJKMNP-TV-Z]{8}$/.test(u.unitCode))).toBe(true);
+  // 列表按 id 倒序：第一行是最新发的那个码，所以另一个未绑定的码取 data[0]
+  secondUnitCode = String(body.data[0].unitCode);
   await expect(modal).toBeHidden();
 
   await page.getByPlaceholder('批次号', {exact: true}).fill(lotNo);
@@ -291,7 +294,8 @@ test('6｜包装码标签走打印中心：预览含码与批次，打印留下�
   const row = page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first();
 
   const previewed = page.waitForResponse((r) => r.url().includes('/scm/print/TRACE_UNIT/') && r.url().includes('/preview'));
-  await row.getByRole('button', {name: '打印标签'}).click();
+  await row.getByRole('button', {name: /更多/}).click();
+  await page.locator('.ant-dropdown:visible').getByText('打印标签', {exact: true}).click();
   const preview = await (await previewed).json();
   expect(preview.code, preview.msg).toBe(0);
   expect(preview.data.documentType).toBe('TRACE_UNIT');
@@ -307,4 +311,42 @@ test('6｜包装码标签走打印中心：预览含码与批次，打印留下�
   expect(body.code, body.msg).toBe(0);
   expect(body.data.frozen, '正式打印必须返回冻结版面').toBe(true);
   expect(errors).toEqual([]);
+});
+
+test('7｜未绑定的码可以作废，已绑定的码作废被拒', async ({page}) => {
+  await browse(page, '/inventory/inventory-trace-unit-list');
+  await expect(page.locator('#scm-inventory-trace-unit-table')).toBeVisible();
+
+  // 未绑定的第二个码：作废成功，状态变已作废
+  await page.getByPlaceholder('包装码', {exact: true}).fill(secondUnitCode);
+  await search(page);
+  const row = page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first();
+  await row.getByRole('button', {name: /更多/}).click();
+  await page.locator('.ant-dropdown:visible').getByText('作废', {exact: true}).click();
+
+  const voidModal = page.locator('.ant-modal:visible').filter({hasText: '作废包装码'}).last();
+  await voidModal.getByLabel('作废原因').fill('标签破损');
+  const voided = page.waitForResponse((r) => r.url().endsWith('/scm/inventory/unit/void'));
+  await voidModal.getByRole('button', {name: /^作\s*废$/}).click();
+  expect((await (await voided).json()).code).toBe(0);
+  await expect(voidModal).toBeHidden();
+
+  await page.getByPlaceholder('包装码', {exact: true}).fill(secondUnitCode);
+  await search(page);
+  await expect(page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first())
+      .toContainText('已作废');
+
+  // 已绑定的第一个码：作废必须被拒（后端 41512），错误走全局提示
+  await page.getByPlaceholder('包装码', {exact: true}).fill(firstUnitCode);
+  await search(page);
+  const boundRow = page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first();
+  await boundRow.getByRole('button', {name: /更多/}).click();
+  await page.locator('.ant-dropdown:visible').getByText('作废', {exact: true}).click();
+  const boundModal = page.locator('.ant-modal:visible').filter({hasText: '作废包装码'}).last();
+  await boundModal.getByLabel('作废原因').fill('贴错');
+  const rejected = page.waitForResponse((r) => r.url().endsWith('/scm/inventory/unit/void'));
+  await boundModal.getByRole('button', {name: /^作\s*废$/}).click();
+  const rejectedBody = await (await rejected).json();
+  expect(rejectedBody.code, '已绑定的码不能作废').toBe(41512);
+  await expect(page.locator('.ant-message').getByText(/不能作废/)).toBeVisible();
 });

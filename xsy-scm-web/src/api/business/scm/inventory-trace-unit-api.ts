@@ -25,6 +25,9 @@ export const inventoryTraceUnitApi = {
     /** 分拣扫码绑定：一码一物，绑定后不能改绑。 */
     bind: (data: {unitCode: string; sortingTaskItemId: Id}) =>
         postRequest('/scm/inventory/unit/bind', data) as unknown as Promise<ScmResponse<TraceUnitBinding>>,
+    /** 作废：只对未绑定的码生效，原码保留且不复用。 */
+    voidUnit: (data: {unitCode: string; reason: string}) =>
+        postRequest('/scm/inventory/unit/void', data) as unknown as Promise<ScmResponse<string>>,
     /** 回放：单元 → 批次 → 收货来源 → 分拣绑定 → 出库去向。 */
     replay: (unitCode: string) =>
         getRequest(`/scm/inventory/unit/trace/${encodeURIComponent(unitCode)}`, {}) as unknown as Promise<

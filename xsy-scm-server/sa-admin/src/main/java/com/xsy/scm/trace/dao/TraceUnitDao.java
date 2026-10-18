@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 /** 包装码与包装事件的读写。包装事件只追加；包装码可作废但不可删除、码不复用。 */
 @Mapper
@@ -153,6 +154,23 @@ public interface TraceUnitDao {
             """)
     int appendBindEvent(@Param("unitId") Long unitId, @Param("lotId") Long lotId, @Param("itemId") Long itemId,
             @Param("occurredAt") OffsetDateTime occurredAt, @Param("operator") String operator);
+
+    @Update("""
+            UPDATE xsy_trace_unit
+            SET status = 'VOID'
+            WHERE id = #{id} AND status = 'ACTIVE'
+            """)
+    int markVoid(@Param("id") Long id);
+
+    @Insert("""
+            INSERT INTO xsy_trace_event
+              (unit_id, lot_id, event_type, occurred_at, operator, remark, created_by)
+            VALUES
+              (#{unitId}, #{lotId}, 'VOID', #{occurredAt}, #{operator}, #{reason}, #{operator})
+            """)
+    int appendVoidEvent(@Param("unitId") Long unitId, @Param("lotId") Long lotId,
+            @Param("occurredAt") OffsetDateTime occurredAt, @Param("operator") String operator,
+            @Param("reason") String reason);
 
     /** 该包装码的绑定事实（未绑定返回 null）。 */
     @Select("""

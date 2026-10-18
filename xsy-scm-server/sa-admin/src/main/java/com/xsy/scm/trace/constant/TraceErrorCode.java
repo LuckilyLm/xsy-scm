@@ -38,7 +38,14 @@ public enum TraceErrorCode implements ScmErrorCode {
 
     TRACE_SORTING_ITEM_NOT_FOUND(41510, "分拣任务行不存在"),
 
-    TRACE_UNIT_VOID(41511, "包装码已作废，不能再绑定");
+    TRACE_UNIT_VOID(41511, "包装码已作废，不能再绑定"),
+
+    /** 41512：已绑定的码不能作废，绑定事实不撤销。 */
+    TRACE_UNIT_VOID_BOUND(41512, "已绑定分拣任务行的包装码不能作废，请先走退货或更正流程"),
+
+    TRACE_UNIT_ALREADY_VOID(41513, "包装码已作废，不能重复作废"),
+
+    TRACE_UNIT_VOID_REASON_REQUIRED(41514, "作废原因不能为空");
 
     private final int code;
 

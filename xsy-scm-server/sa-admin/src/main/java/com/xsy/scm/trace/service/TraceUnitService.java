@@ -7,6 +7,7 @@ import com.xsy.scm.trace.dao.TraceUnitDao;
 import com.xsy.scm.trace.domain.form.TraceUnitBindForm;
 import com.xsy.scm.trace.domain.form.TraceUnitIssueForm;
 import com.xsy.scm.trace.domain.form.TraceUnitQueryForm;
+import com.xsy.scm.trace.domain.form.TraceUnitVoidForm;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -117,6 +118,31 @@ public class TraceUnitService {
         binding.setBoundAt(now);
         binding.setBoundBy(operator);
         return binding;
+    }
+
+    /**
+     * 作废：只对未绑定的码生效。
+     *
+     * <p>
+     * 已绑定的码代表一件已承诺给客户的实物，作废会让回放自相矛盾；现场应先走退货或更正流程。 作废只改状态并追加一条 VOID 事件，原码保留、永不复用。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void voidUnit(TraceUnitVoidForm form, String operator) {
+        TraceUnitVO.Unit unit = traceUnitDao.findByCode(form.getUnitCode().trim());
+        if (unit == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
+        }
+        if (!"ACTIVE".equals(unit.getStatus())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_VOID);
+        }
+        if (traceUnitDao.findBinding(unit.getId()) != null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_VOID_BOUND);
+        }
+        if (traceUnitDao.markVoid(unit.getId()) != 1) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_VOID);
+        }
+        traceUnitDao.appendVoidEvent(unit.getId(), unit.getLotId(), OffsetDateTime.now(), operator,
+                form.getReason().trim());
     }
 
     @Transactional(readOnly = true)

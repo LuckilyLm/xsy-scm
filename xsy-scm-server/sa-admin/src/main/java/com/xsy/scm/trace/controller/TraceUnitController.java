@@ -5,6 +5,7 @@ import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.trace.domain.form.TraceUnitBindForm;
 import com.xsy.scm.trace.domain.form.TraceUnitIssueForm;
 import com.xsy.scm.trace.domain.form.TraceUnitQueryForm;
+import com.xsy.scm.trace.domain.form.TraceUnitVoidForm;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import com.xsy.scm.trace.permission.TracePermission;
 import com.xsy.scm.trace.service.TraceUnitService;
@@ -45,6 +46,13 @@ public class TraceUnitController {
     @SaCheckPermission(TracePermission.UNIT_BIND)
     public ResponseDTO<TraceUnitVO.Binding> bind(@RequestBody @Valid TraceUnitBindForm form) {
         return ResponseDTO.ok(traceUnitService.bind(form, ScmOperator.current()));
+    }
+
+    @PostMapping("/void")
+    @SaCheckPermission(TracePermission.UNIT_VOID)
+    public ResponseDTO<String> voidUnit(@RequestBody @Valid TraceUnitVoidForm form) {
+        traceUnitService.voidUnit(form, ScmOperator.current());
+        return ResponseDTO.ok();
     }
 
     @PostMapping("/query")
