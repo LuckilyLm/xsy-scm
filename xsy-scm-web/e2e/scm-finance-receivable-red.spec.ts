@@ -32,7 +32,8 @@ test('批准累计超过少拣应收的退货，红字全额生成并显示待�
     await page.goto('/#/finance/receivables');
     const row = page.locator('#scm-finance-receivable-table tr')
         .filter({hasText: facts.receivable.receivableNo}).first();
-    await expect(row).toContainText('超额核销待处理');
+    // 桌面表格用「超额核销」列（异常色）表达同一事实；「超额核销待处理」标签只在移动端布局与明细抽屉里
+    await expect(row).toContainText('3.5000');
     await row.getByRole('button', {name: accessibleName('明细')}).click();
     const drawer = page.locator('.ant-drawer-open').filter({hasText: '应收明细'}).first();
     await expect(drawer).toContainText('净应收为负数');

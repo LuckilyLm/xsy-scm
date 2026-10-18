@@ -192,7 +192,7 @@ test('§6.1-2 首页点待审批卡片：地址栏带条件、查询带条件、
   await expect(todoCard).toBeVisible();
   const row = todoCard.locator('.todo-row').filter({hasText: card.label});
   // 卡片上的徽标数字就是接口给的 count，不是前端另算一份
-  await expect(row.locator('.ant-badge-count')).toHaveText(String(card.count));
+  await expect(row.locator('.todo-row__count')).toHaveText(String(card.count));
   const [conditions] = await Promise.all([firedQuery(page, LOSS_GAIN_QUERY_PATH, 'post'), row.click()]);
   expect(conditions.status, '点击卡片后页面查询未按 PENDING 收窄').toBe('PENDING');
   await expect(page).toHaveURL(/inventory-loss-gain-list\?status=PENDING/);

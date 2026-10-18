@@ -477,12 +477,13 @@ test('5｜L2 未定位时确认规划被拒，页面补定位后放行', async (
     await expect(detailPage).toContainText('尚有 1 个停靠点未定位');
     // 只有「未定位」那个停靠点需要补坐标：按停靠点卡片文本筛，避免点到已定位项的同类按钮。
     await detailPage.locator('.stop-card').filter({hasText: '未定位'}).first()
-        .getByRole('button', {name: accessibleName('定位 / 备注')}).click();
+        .getByRole('button', {name: accessibleName('编辑站点')}).click();
     // 经纬度与坐标系是「停靠点定位与备注」弹窗里的内联输入，直接改字段值；
     // 只有需要地图选点时才会再叠一层选择器弹窗，因此必须按标题锁定外层弹窗。
     const modal = page.locator('.ant-modal:visible').filter({hasText: '停靠点定位与备注'}).last();
-    await modal.getByPlaceholder('经度').fill(STOP_LNG);
-    await modal.getByPlaceholder('纬度').fill(STOP_LAT);
+    // 选点组件的输入框用 aria-label（placeholder 是示例值「例如 121.47370100」）
+    await modal.getByLabel('经度', { exact: true }).fill(STOP_LNG);
+    await modal.getByLabel('纬度', { exact: true }).fill(STOP_LAT);
     await modal.locator('.ant-select').last().click();
     await page.locator('.ant-select-dropdown:visible .ant-select-item-option-content')
         .filter({hasText: 'GCJ02'}).first().click();
