@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.trace.dao.TraceCorrectionDao">
+
+    <insert id="insertCorrection" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO xsy_trace_unit_correction
+          (unit_id, binding_id, reason, status, requested_by, requested_at, created_by)
+        VALUES
+          (#{unitId}, #{bindingId}, #{reason}, 'PENDING', #{requestedBy}, #{requestedAt}, #{requestedBy})
+    </insert>
+
+    <sql id="correctionColumns">
+        SELECT c.id, c.unit_id AS unitId, u.unit_code AS unitCode, u.lot_id AS lotId, t.lot_no AS lotNo,
+               c.binding_id AS bindingId, b.customer_name_snapshot AS customerName,
+               b.order_no_snapshot AS orderNo, c.reason, c.status,
+               c.requested_by AS requestedBy, c.requested_at AS requestedAt,
+               c.decided_by AS decidedBy, c.decided_at AS decidedAt,
+               c.decision_reason AS decisionReason, c.version
+        FROM xsy_trace_unit_correction c
+        JOIN xsy_trace_unit u ON u.id = c.unit_id
+        LEFT JOIN xsy_trace_lot t ON t.id = u.lot_id
+        LEFT JOIN xsy_trace_unit_binding b ON b.id = c.binding_id
+    </sql>
+
+    <select id="findById" resultType="com.xsy.scm.trace.domain.vo.TraceCorrectionVO">
+        <include refid="correctionColumns"/>
+        WHERE c.id = #{id}
+    </select>
+
+    <!-- 审批前锁单据行：同一张申请不能被两个审批人同时处理 -->
+    <select id="lockById" resultType="com.xsy.scm.trace.domain.vo.TraceCorrectionVO">
+        <include refid="correctionColumns"/>
+        WHERE c.id = #{id}
+        FOR UPDATE OF c
+    </select>
+
+    <select id="countPending" resultType="java.lang.Integer">
+        SELECT count(*) FROM xsy_trace_unit_correction WHERE unit_id = #{unitId} AND status = 'PENDING'
+    </select>
+
+    <update id="decide">
+        UPDATE xsy_trace_unit_correction
+        SET status = #{status}, decided_by = #{operator}, decided_at = #{decidedAt},
+            decision_reason = #{reason}, version = version + 1,
+            updated_at = CURRENT_TIMESTAMP, updated_by = #{operator}
+        WHERE id = #{id} AND version = #{version} AND status = 'PENDING'
+    </update>
+
+    <insert id="insertUnbind">
+        INSERT INTO xsy_trace_unit_unbind
+          (unit_id, binding_id, correction_id, reason, unbound_at, unbound_by, created_by)
+        VALUES
+          (#{unitId}, #{bindingId}, #{correctionId}, #{reason}, #{unboundAt}, #{operator}, #{operator})
+    </insert>
+
+    <insert id="appendUnbindEvent">
+        INSERT INTO xsy_trace_event
+          (unit_id, lot_id, event_type, source_document_type, source_document_id,
+           occurred_at, operator, remark, created_by)
+        VALUES
+          (#{unitId}, #{lotId}, 'UNBIND', 'TRACE_UNIT_CORRECTION', #{correctionId},
+           #{occurredAt}, #{operator}, #{reason}, #{operator})
+    </insert>
+
+    <select id="queryPage" resultType="com.xsy.scm.trace.domain.vo.TraceCorrectionVO">
+        <include refid="correctionColumns"/>
+        WHERE 1 = 1
+        <if test="query.status != null and query.status != ''">AND c.status = #{query.status}</if>
+        <if test="query.unitCode != null and query.unitCode != ''">
+            AND u.unit_code ILIKE CONCAT('%', #{query.unitCode}, '%')
+        </if>
+        <if test="query.lotNo != null and query.lotNo != ''">
+            AND t.lot_no ILIKE CONCAT('%', #{query.lotNo}, '%')
+        </if>
+        <if test="scope == null">AND FALSE</if>
+        <if test="scope != null and scope.all == false">
+            AND EXISTS (
+                SELECT 1 FROM xsy_purchase_receipt_item_lot rl
+                JOIN xsy_purchase_receipt_item ri ON ri.id = rl.purchase_receipt_item_id
+                JOIN xsy_purchase_receipt r ON r.id = ri.purchase_receipt_id
+                WHERE rl.lot_id = u.lot_id AND r.deleted = FALSE AND r.warehouse_id IN
+                <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+            )
+        </if>
+        ORDER BY c.id DESC
+    </select>
+
+</mapper>

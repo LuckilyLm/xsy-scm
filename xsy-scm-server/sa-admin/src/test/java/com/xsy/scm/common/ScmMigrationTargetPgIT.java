@@ -300,11 +300,21 @@ class ScmMigrationTargetPgIT {
         assertColumn("xsy_trace_unit_binding", "unit_id");
         assertColumn("xsy_trace_unit_binding", "sorting_task_item_id");
         assertColumn("xsy_trace_unit_binding", "customer_name_snapshot");
+        // V157 起「一码一绑」改为「同一时刻只有一条有效绑定」：唯一约束被去掉，由触发器保证，
+        // 这样解绑后可以重新绑定。历史断言按目标版本分流，避免把已演进的约束当成永恒事实。
         Integer uniqueIndexes = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
                         + "AND indexname = 'uk_trace_unit_binding_unit'",
                 Integer.class);
-        assertThat(uniqueIndexes).as("一个包装码只能绑一次").isEqualTo(1);
+        if (target >= 157) {
+            assertThat(uniqueIndexes).as("V157 起唯一约束由有效绑定触发器取代").isZero();
+            Integer activeTrigger = jdbc.queryForObject(
+                    "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_trace_unit_binding_active' "
+                            + "AND NOT tgisinternal", Integer.class);
+            assertThat(activeTrigger).as("有效绑定唯一必须由触发器兜底").isEqualTo(1);
+        } else {
+            assertThat(uniqueIndexes).as("一个包装码只能绑一次").isEqualTo(1);
+        }
         Integer appendOnly = jdbc.queryForObject(
                 "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_trace_unit_binding_append_only' "
                         + "AND NOT tgisinternal",
@@ -381,6 +391,34 @@ class ScmMigrationTargetPgIT {
                         + "AND NOT tgisinternal",
                 Integer.class);
         assertThat(trigger).as("绑定到作废码必须被数据库拒绝").isEqualTo(1);
+    }
+
+    /**
+     * V157 起更正流程：申请单 + 解绑事实，有效绑定唯一由触发器保证。
+     */
+    @Test
+    void traceUnitCorrectionSchemaExistsFromV157() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 157) {
+            return;
+        }
+        assertColumn("xsy_trace_unit_correction", "binding_id");
+        assertColumn("xsy_trace_unit_unbind", "correction_id");
+        Integer uniqueIndexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname = 'uk_trace_unit_correction_pending'", Integer.class);
+        assertThat(uniqueIndexes).as("一个码只能有一条待审批申请").isEqualTo(1);
+        Integer dropped = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'uk_trace_unit_binding_unit'",
+                Integer.class);
+        assertThat(dropped).as("旧的「一码一绑」唯一约束应被移除，改由有效绑定触发器保证").isZero();
+        Integer eventTypes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_trace_event_type' "
+                        + "AND pg_get_constraintdef(oid) LIKE '%UNBIND%'", Integer.class);
+        assertThat(eventTypes).as("解绑事件类型应已放开").isEqualTo(1);
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 2115 AND 2117", Integer.class);
+        assertThat(menus).as("更正页面与两条权限应随迁移发布").isEqualTo(3);
     }
 
     private void assertColumn(String table, String column) {

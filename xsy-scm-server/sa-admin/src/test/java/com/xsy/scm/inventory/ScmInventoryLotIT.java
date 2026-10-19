@@ -35,6 +35,9 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
     @org.springframework.beans.factory.annotation.Autowired
     private com.xsy.scm.trace.service.TraceUnitService traceUnitService;
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.xsy.scm.trace.service.TraceCorrectionService traceCorrectionService;
+
     @BeforeEach
     void createLotWarehouse() {
         WarehouseAddForm form = new WarehouseAddForm();
@@ -367,6 +370,107 @@ class ScmInventoryLotIT extends ScmW6PgITBase {
         assertThatThrownBy(() -> traceUnitService.voidUnit(voidForm, "W9 IT"))
                 .isInstanceOf(ScmBusinessException.class)
                 .satisfies(error -> assertThat(((ScmBusinessException) error).getErrorCode().getCode()).isEqualTo(41512));
+    }
+
+    @Test
+    @DisplayName("#10 更正：申请 → 他人批准 → 绑定失效且可重新绑定")
+    void correctionUnbindsAndAllowsRebinding() {
+        Long skuId = newOnShelfSku("CORR1");
+        W6Fixture fx = inboundFixture("CORR1", skuId, "10.0000");
+        confirmWithLots(fx.receipt().getId(), "10.0000", "10.0000");
+        Long lotId = jdbc.queryForObject(
+                "SELECT id FROM xsy_trace_lot WHERE sku_id = ? ORDER BY id DESC LIMIT 1", Long.class, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitIssueForm issue = new com.xsy.scm.trace.domain.form.TraceUnitIssueForm();
+        issue.setLotId(lotId);
+        issue.setPackageType("BAG");
+        issue.setPackageCount(1);
+        issue.setQuantityPerPackage("1.0000");
+        String unitCode = traceUnitService.issue(issue, "W9 IT").getFirst().getUnitCode();
+
+        Long customerId = newCustomer();
+        Long salesOrderId = confirmedSalesOrder(customerId, skuId, "10.0000", "10.0000");
+        sortingCompletedFor(salesOrderId);
+        Long itemId = jdbc.queryForObject(
+                "SELECT id FROM xsy_sorting_task_item WHERE sales_order_id = ? AND sku_id = ? "
+                        + "ORDER BY id DESC LIMIT 1", Long.class, salesOrderId, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitBindForm bind = new com.xsy.scm.trace.domain.form.TraceUnitBindForm();
+        bind.setUnitCode(unitCode);
+        bind.setSortingTaskItemId(itemId);
+        traceUnitService.bind(bind, "W9 IT");
+
+        com.xsy.scm.trace.domain.form.TraceCorrectionApplyForm apply =
+                new com.xsy.scm.trace.domain.form.TraceCorrectionApplyForm();
+        apply.setUnitCode(unitCode);
+        apply.setReason("绑错客户");
+        var correction = traceCorrectionService.apply(apply, "W9 IT");
+        assertThat(correction.getStatus()).isEqualTo("PENDING");
+
+        com.xsy.scm.trace.domain.form.TraceCorrectionDecisionForm decision =
+                new com.xsy.scm.trace.domain.form.TraceCorrectionDecisionForm();
+        decision.setId(correction.getId());
+        decision.setVersion(correction.getVersion());
+        decision.setReason("核实属实");
+        var approved = traceCorrectionService.approve(decision, "W9 审批人");
+        assertThat(approved.getStatus()).isEqualTo("APPROVED");
+
+        // 绑定失效：回放不再显示客户，但解绑事实与事件都留痕
+        assertThat(traceUnitService.replay(unitCode).getBinding()).isNull();
+        Integer unbindEvents = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_trace_event WHERE event_type = 'UNBIND' AND remark = ?",
+                Integer.class, "绑错客户");
+        assertThat(unbindEvents).isEqualTo(1);
+        Integer unbinds = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_trace_unit_unbind WHERE correction_id = ?",
+                Integer.class, correction.getId());
+        assertThat(unbinds).isEqualTo(1);
+
+        // 解绑后可以重新绑定（更正的意义所在）
+        traceUnitService.bind(bind, "W9 IT");
+        assertThat(traceUnitService.replay(unitCode).getBinding()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("#11 更正申请不能自己审批（41522）")
+    void correctionRejectsSelfApproval() {
+        Long skuId = newOnShelfSku("CORR2");
+        W6Fixture fx = inboundFixture("CORR2", skuId, "10.0000");
+        confirmWithLots(fx.receipt().getId(), "10.0000", "10.0000");
+        Long lotId = jdbc.queryForObject(
+                "SELECT id FROM xsy_trace_lot WHERE sku_id = ? ORDER BY id DESC LIMIT 1", Long.class, skuId);
+
+        com.xsy.scm.trace.domain.form.TraceUnitIssueForm issue = new com.xsy.scm.trace.domain.form.TraceUnitIssueForm();
+        issue.setLotId(lotId);
+        issue.setPackageType("BAG");
+        issue.setPackageCount(1);
+        issue.setQuantityPerPackage("1.0000");
+        String unitCode = traceUnitService.issue(issue, "W9 IT").getFirst().getUnitCode();
+
+        Long customerId = newCustomer();
+        Long salesOrderId = confirmedSalesOrder(customerId, skuId, "10.0000", "10.0000");
+        sortingCompletedFor(salesOrderId);
+        Long itemId = jdbc.queryForObject(
+                "SELECT id FROM xsy_sorting_task_item WHERE sales_order_id = ? AND sku_id = ? "
+                        + "ORDER BY id DESC LIMIT 1", Long.class, salesOrderId, skuId);
+        com.xsy.scm.trace.domain.form.TraceUnitBindForm bind = new com.xsy.scm.trace.domain.form.TraceUnitBindForm();
+        bind.setUnitCode(unitCode);
+        bind.setSortingTaskItemId(itemId);
+        traceUnitService.bind(bind, "W9 IT");
+
+        com.xsy.scm.trace.domain.form.TraceCorrectionApplyForm apply =
+                new com.xsy.scm.trace.domain.form.TraceCorrectionApplyForm();
+        apply.setUnitCode(unitCode);
+        apply.setReason("自己改自己");
+        var correction = traceCorrectionService.apply(apply, "W9 IT");
+
+        com.xsy.scm.trace.domain.form.TraceCorrectionDecisionForm decision =
+                new com.xsy.scm.trace.domain.form.TraceCorrectionDecisionForm();
+        decision.setId(correction.getId());
+        decision.setVersion(correction.getVersion());
+        assertThatThrownBy(() -> traceCorrectionService.approve(decision, "W9 IT"))
+                .isInstanceOf(ScmBusinessException.class)
+                .satisfies(error -> assertThat(((ScmBusinessException) error).getErrorCode().getCode()).isEqualTo(41522));
     }
 
     @Test

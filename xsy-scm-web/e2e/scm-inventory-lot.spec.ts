@@ -350,3 +350,46 @@ test('7｜未绑定的码可以作废，已绑定的码作废被拒', async ({pa
   expect(rejectedBody.code, '已绑定的码不能作废').toBe(41512);
   await expect(page.locator('.ant-message').getByText(/不能作废/)).toBeVisible();
 });
+
+test('8｜申请更正后不能自己审批，绑定仍然有效', async ({page}) => {
+  // 已绑定的码（用例 5 绑过）申请更正
+  await browse(page, '/inventory/inventory-trace-unit-list');
+  await expect(page.locator('#scm-inventory-trace-unit-table')).toBeVisible();
+  await page.getByPlaceholder('包装码', {exact: true}).fill(firstUnitCode);
+  await search(page);
+  const row = page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first();
+  await row.getByRole('button', {name: /更多/}).click();
+  await page.locator('.ant-dropdown:visible').getByText('申请更正', {exact: true}).click();
+
+  const applyModal = page.locator('.ant-modal:visible').filter({hasText: '申请更正'}).last();
+  await applyModal.getByLabel('更正原因').fill('绑错了客户');
+  const applied = page.waitForResponse((r) => r.url().endsWith('/scm/inventory/unit/correction/apply'));
+  await applyModal.getByRole('button', {name: /^提交申请$/}).click();
+  const appliedBody = await (await applied).json();
+  expect(appliedBody.code, appliedBody.msg).toBe(0);
+  expect(appliedBody.data.status).toBe('PENDING');
+
+  // 更正页：申请人自己点批准 → 41522，且申请仍是待审批
+  await browse(page, '/inventory/inventory-trace-correction-list');
+  await expect(page.locator('#scm-inventory-trace-correction-table')).toBeVisible();
+  await page.getByPlaceholder('包装码', {exact: true}).fill(firstUnitCode);
+  await search(page);
+  const pendingRow = page.locator('#scm-inventory-trace-correction-table tbody tr.ant-table-row').first();
+  await expect(pendingRow).toContainText('待审批');
+  await pendingRow.getByRole('button', {name: '批准'}).click();
+  const decisionModal = page.locator('.ant-modal:visible').filter({hasText: '批准更正'}).last();
+  const rejected = page.waitForResponse((r) => r.url().endsWith('/scm/inventory/unit/correction/approve'));
+  await decisionModal.getByRole('button', {name: /^确\s*定$/}).click();
+  const rejectedBody = await (await rejected).json();
+  expect(rejectedBody.code, '申请与审批不能是同一人').toBe(41522);
+  await expect(page.locator('.ant-message').getByText(/不能审批自己/)).toBeVisible();
+
+  // 绑定仍然有效：回放仍显示客户
+  await browse(page, '/inventory/inventory-trace-unit-list');
+  await page.getByPlaceholder('包装码', {exact: true}).fill(firstUnitCode);
+  await search(page);
+  await page.locator('#scm-inventory-trace-unit-table tbody tr.ant-table-row').first()
+      .getByRole('button', {name: '回放'}).click();
+  const drawer = page.locator('.ant-drawer-open').filter({hasText: '包装码回放'}).first();
+  await expect(drawer).toContainText(name + '客户');
+});

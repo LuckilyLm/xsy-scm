@@ -184,6 +184,7 @@ export const SCM_INVENTORY_TABLE_ID = {
     CONVERSION: 'scm-inventory-conversion-table',
     LOT_BALANCE: 'scm-inventory-lot-balance-table',
     TRACE_UNIT: 'scm-inventory-trace-unit-table',
+    TRACE_CORRECTION: 'scm-inventory-trace-correction-table',
 } as const;
 
 export default {

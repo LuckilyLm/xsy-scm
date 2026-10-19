@@ -17,4 +17,10 @@ public final class TracePermission {
 
     /** 包装码作废。 */
     public static final String UNIT_VOID = "scm:inventory:unit:void";
+
+    /** 更正申请（解绑必须经他人审批）。 */
+    public static final String CORRECTION_APPLY = "scm:inventory:unit:correct:apply";
+
+    /** 更正审批。 */
+    public static final String CORRECTION_APPROVE = "scm:inventory:unit:correct:approve";
 }

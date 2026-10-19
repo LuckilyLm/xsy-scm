@@ -548,20 +548,20 @@ public class InventoryCommandService {
             if (remaining.signum() <= 0) {
                 break;
             }
-            BigDecimal stillOut = net.netQuantity().negate();
+            BigDecimal stillOut = net.getNetQuantity().negate();
             if (stillOut.signum() <= 0) {
                 continue;
             }
             BigDecimal take = stillOut.min(remaining);
-            inventoryLotBalanceDao.insertOnConflictDoNothing(fact.warehouseId(), fact.skuId(), net.lotId(), unit,
+            inventoryLotBalanceDao.insertOnConflictDoNothing(fact.warehouseId(), fact.skuId(), net.getLotId(), unit,
                     fact.operator());
             InventoryLotBalanceEntity lotBalance = inventoryLotBalanceDao.lockByWarehouseSkuLot(fact.warehouseId(),
-                    fact.skuId(), net.lotId());
+                    fact.skuId(), net.getLotId());
             if (lotBalance == null) {
                 throw new ScmBusinessException(INVENTORY_PARAM_INVALID);
             }
             BigDecimal before = lotBalance.getQuantity();
-            appendLotMovement(fact.warehouseId(), fact.skuId(), net.lotId(),
+            appendLotMovement(fact.warehouseId(), fact.skuId(), net.getLotId(),
                     ScmInventoryMovementTypeEnum.SALES_RETURN_IN.name(),
                     ScmInventorySourceDocumentTypeEnum.SALES_RETURN_RECEIPT_ITEM.name(), fact.returnId(),
                     fact.sourceOutboundItemId(), take, unit, before, before.add(take), fact.occurredAt(),

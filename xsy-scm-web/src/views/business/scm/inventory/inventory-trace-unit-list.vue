@@ -137,6 +137,20 @@
     </a-form>
   </a-modal>
 
+  <a-modal v-model:open="correctOpen" title="申请更正" :confirm-loading="correcting" ok-text="提交申请"
+           @ok="submitCorrect">
+    <a-alert v-if="correctError" class="form-error" type="error" show-icon :message="correctError"/>
+    <p class="scm-note">提交后需他人审批；批准前绑定仍然有效。</p>
+    <a-form layout="vertical">
+      <a-form-item label="包装码">
+        <a-input :value="correctRow?.unitCode" disabled/>
+      </a-form-item>
+      <a-form-item label="更正原因" required>
+        <a-textarea v-model:value="correctReason" :maxlength="200" :rows="2" aria-label="更正原因"/>
+      </a-form-item>
+    </a-form>
+  </a-modal>
+
   <a-modal v-model:open="voidOpen" title="作废包装码" :confirm-loading="voidSaving" ok-text="作废"
            ok-type="danger" @ok="submitVoid">
     <a-alert v-if="voidError" class="form-error" type="error" show-icon :message="voidError"/>
@@ -221,6 +235,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {inventoryTraceUnitApi} from '/@/api/business/scm/inventory-trace-unit-api';
 import {inventoryLotApi} from '/@/api/business/scm/inventory-lot-api';
+import {inventoryTraceCorrectionApi} from '/@/api/business/scm/inventory-trace-correction-api';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
 import PrintDocumentModal from '/@/views/business/scm/print/print-document-modal.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
@@ -268,6 +283,12 @@ const issuing = ref(false);
 const issueError = ref('');
 const lotHint = ref('');
 const issueForm = reactive({lotNo: '', lotId: undefined as string | number | undefined, packageType: 'BAG', packageCount: 1, quantityPerPackage: '0.0000', remark: ''});
+
+const correctOpen = ref(false);
+const correcting = ref(false);
+const correctError = ref('');
+const correctReason = ref('');
+const correctRow = ref<TraceUnit>();
 
 const voidOpen = ref(false);
 const voidSaving = ref(false);
@@ -388,6 +409,7 @@ async function submitIssue() {
 function moreActions(record: TraceUnit): ScmActionItem[] {
   return [
     {key: 'print', label: '打印标签', hidden: !hasPermission('scm:inventory:unit:query')},
+    {key: 'correct', label: '申请更正', hidden: !hasPermission('scm:inventory:unit:correct:apply')},
     {key: 'void', label: '作废', danger: true,
       hidden: !hasPermission('scm:inventory:unit:void') || record.status !== 'ACTIVE'},
   ];
@@ -398,8 +420,40 @@ function onMore(record: TraceUnit, key: string) {
     openPrint(record);
     return;
   }
+  if (key === 'correct') {
+    openCorrect(record);
+    return;
+  }
   if (key === 'void') {
     openVoid(record);
+  }
+}
+
+function openCorrect(record: TraceUnit) {
+  correctOpen.value = true;
+  correctError.value = '';
+  correctReason.value = '';
+  correctRow.value = record;
+}
+
+async function submitCorrect() {
+  correctError.value = '';
+  if (!correctReason.value.trim()) {
+    correctError.value = '请填写更正原因';
+    return;
+  }
+  correcting.value = true;
+  try {
+    await inventoryTraceCorrectionApi.apply({
+      unitCode: String(correctRow.value?.unitCode),
+      reason: correctReason.value.trim(),
+    });
+    correctOpen.value = false;
+    await queryData();
+  } catch {
+    // 申请失败只走全局 toast；本地只保留原因必填这类前置校验
+  } finally {
+    correcting.value = false;
   }
 }
 

@@ -851,3 +851,41 @@ export interface TraceUnitReplay {
     binding?: TraceUnitBinding | null;
     outbounds: {outboundNo: string; occurredAt: string; quantity: string}[];
 }
+
+// ------------------------------------------------------------------
+// 包装码更正（解绑需他人审批）
+// ------------------------------------------------------------------
+
+/** `TraceCorrectionQueryForm`。 */
+export interface TraceCorrectionQuery extends Page {
+    status?: string;
+    unitCode?: string;
+    lotNo?: string;
+}
+
+/** `TraceCorrectionVO`：一条申请对应一条绑定。 */
+export interface TraceCorrection {
+    id: Id;
+    unitId: Id;
+    unitCode: string;
+    lotId: Id;
+    lotNo?: string | null;
+    bindingId: Id;
+    customerName?: string | null;
+    orderNo?: string | null;
+    reason: string;
+    status: string;
+    requestedBy: string;
+    requestedAt: string;
+    decidedBy?: string | null;
+    decidedAt?: string | null;
+    decisionReason?: string | null;
+    version: number;
+}
+
+/** 审批载荷。 */
+export interface TraceCorrectionDecision {
+    id: Id;
+    version: number;
+    reason?: string | null;
+}

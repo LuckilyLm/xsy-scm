@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.inventory.dao.InventoryLotMovementDao">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO xsy_inventory_lot_movement
+          (warehouse_id, sku_id, lot_id, movement_type, source_document_type, source_document_id,
+           source_document_item_id, quantity, unit_snapshot, before_quantity, after_quantity,
+           occurred_at, operator, created_by)
+        VALUES
+          (#{warehouseId}, #{skuId}, #{lotId}, #{movementType}, #{sourceDocumentType}, #{sourceDocumentId},
+           #{sourceDocumentItemId}, #{quantity}, #{unitSnapshot}, #{beforeQuantity}, #{afterQuantity},
+           #{occurredAt}, #{operator}, #{createdBy})
+    </insert>
+
+    <!-- 退货按「净额」判断还能退回多少，多次部分退货因此不会把同一批次重复填满 -->
+    <select id="sumByLotForSource" resultType="com.xsy.scm.inventory.dao.InventoryLotMovementDao$LotSourceNet">
+        SELECT lot_id AS lotId, SUM(quantity) AS netQuantity
+        FROM xsy_inventory_lot_movement
+        WHERE warehouse_id = #{warehouseId} AND sku_id = #{skuId}
+          AND source_document_item_id = #{sourceDocumentItemId}
+        GROUP BY lot_id
+        ORDER BY lot_id
+    </select>
+
+</mapper>

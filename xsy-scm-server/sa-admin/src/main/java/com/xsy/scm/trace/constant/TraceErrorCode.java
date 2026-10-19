@@ -51,7 +51,20 @@ public enum TraceErrorCode implements ScmErrorCode {
     TRACE_SORTING_TASK_STATE_INVALID(41515, "该分拣任务未开始或已取消，不能绑定包装码"),
 
     /** 41516：包装码的批次必须来自分拣任务所在仓库。 */
-    TRACE_UNIT_WAREHOUSE_MISMATCH(41516, "包装码所属批次与分拣任务不在同一仓库，不能绑定");
+    TRACE_UNIT_WAREHOUSE_MISMATCH(41516, "包装码所属批次与分拣任务不在同一仓库，不能绑定"),
+
+    /** 41520：更正申请不存在。 */
+    TRACE_CORRECTION_NOT_FOUND(41520, "更正申请不存在"),
+
+    /** 41521：同一个码只允许一条待审批的更正申请。 */
+    TRACE_CORRECTION_PENDING_EXISTS(41521, "该包装码已有一条待审批的更正申请"),
+
+    /** 41522：申请与审批不能是同一个人。 */
+    TRACE_CORRECTION_SELF_APPROVAL(41522, "不能审批自己提交的更正申请"),
+
+    TRACE_CORRECTION_STATE_INVALID(41523, "更正申请已处理，不能重复审批"),
+
+    TRACE_CORRECTION_NO_BINDING(41524, "该包装码当前没有可撤销的绑定");
 
     private final int code;
 

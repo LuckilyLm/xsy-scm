@@ -231,7 +231,7 @@ public class TraceUnitService {
     private BigDecimal lockedBalance(Long lotId) {
         BigDecimal total = BigDecimal.ZERO;
         for (TraceUnitDao.LotBalanceRow row : traceUnitDao.lockLotBalances(lotId)) {
-            total = total.add(row.quantity());
+            total = total.add(row.getQuantity());
         }
         return total;
     }
