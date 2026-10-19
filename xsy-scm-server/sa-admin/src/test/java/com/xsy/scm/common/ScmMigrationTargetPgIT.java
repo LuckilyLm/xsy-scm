@@ -526,6 +526,22 @@ class ScmMigrationTargetPgIT {
         assertThat(menus).as("时价页面与维护权限应随迁移发布").isEqualTo(2);
     }
 
+    /**
+     * V162 起分拣小票抬头带供应商来源，代分拣的货能直接把票交给供应商。
+     */
+    @Test
+    void sortingTicketShowsSupplierFromV162() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 162) {
+            return;
+        }
+        Integer tickets = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_print_template WHERE document_type = 'SORTING_TICKET' "
+                        + "AND default_flag = TRUE AND (model -> 'headerFields') @> jsonb_build_array('supplierName')",
+                Integer.class);
+        assertThat(tickets).as("分拣小票默认模板应包含供应商来源").isEqualTo(1);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

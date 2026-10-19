@@ -68,14 +68,14 @@ export interface HomePage {
 }
 
 export const mallHomeApi = {
-    draft: () => getRequest('/scm/mall/home/admin/draft', {}) as unknown as Promise<ScmResponse<HomeDraft>>,
-    history: () => getRequest('/scm/mall/home/admin/history', {}) as unknown as Promise<ScmResponse<HomeRelease[]>>,
+    draft: () => getRequest('/scm/mall-admin/home/draft', {}) as unknown as Promise<ScmResponse<HomeDraft>>,
+    history: () => getRequest('/scm/mall-admin/home/history', {}) as unknown as Promise<ScmResponse<HomeRelease[]>>,
     save: (version: number, blocks: HomeBlock[]) =>
-        postRequest('/scm/mall/home/admin/draft', {version, blocks}) as unknown as Promise<ScmResponse<HomeDraft>>,
+        postRequest('/scm/mall-admin/home/draft', {version, blocks}) as unknown as Promise<ScmResponse<HomeDraft>>,
     publish: (draftVersion: number, pointerVersion: number) =>
-        postRequest('/scm/mall/home/admin/publish', {draftVersion, pointerVersion}) as unknown as Promise<ScmResponse<ScmId>>,
+        postRequest('/scm/mall-admin/home/publish', {draftVersion, pointerVersion}) as unknown as Promise<ScmResponse<ScmId>>,
     rollback: (targetReleaseId: ScmId, pointerVersion: number, reason: string) =>
-        postRequest('/scm/mall/home/admin/rollback', {targetReleaseId, pointerVersion, reason}) as unknown as Promise<ScmResponse<ScmId>>,
+        postRequest('/scm/mall-admin/home/rollback', {targetReleaseId, pointerVersion, reason}) as unknown as Promise<ScmResponse<ScmId>>,
     preview: (customerId: ScmId, warehouseId: ScmId) =>
-        postRequest('/scm/mall/home/admin/preview', {customerId, warehouseId}) as unknown as Promise<ScmResponse<HomePage>>,
+        postRequest('/scm/mall-admin/home/preview', {customerId, warehouseId}) as unknown as Promise<ScmResponse<HomePage>>,
 };

@@ -59,7 +59,7 @@ class PricingIT extends ScmW3PgITBase {
      * 时价的位置：客户类型价之下、市场价之上。
      *
      * <p>
-     * 这条用例是 P02 的端到端取价证据：只验写入约束不够，必须证明真的按这个顺序选价。
+     * 只验写入约束不够，必须证明真实选价链路真的按这个顺序取价。
      */
     @Test
     void timePriceSitsBetweenCustomerTypeAndMarket() {

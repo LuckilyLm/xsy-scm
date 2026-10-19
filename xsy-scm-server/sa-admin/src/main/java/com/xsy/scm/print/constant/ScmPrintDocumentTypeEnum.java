@@ -76,7 +76,9 @@ public enum ScmPrintDocumentTypeEnum {
 
     SORTING_TICKET("分拣小票", null,
             List.of(new ScmPrintField("warehouseName", "仓库", false, false),
-                    new ScmPrintField("assigneeName", "分拣员", false, false)),
+                    new ScmPrintField("assigneeName", "分拣员", false, false),
+                    // 供应商来源：货由供应商代分拣时，小票要能直接交给对方，不必再口头交代
+                    new ScmPrintField("supplierName", "供应商来源", false, false)),
             List.of(new ScmPrintField("orderNo", "订单号", false, false),
                     new ScmPrintField("customerName", "客户", false, false),
                     // 来源：商品 / 赠品。满赠赠品随订单一起拣，但<b>不挂订单行</b>，

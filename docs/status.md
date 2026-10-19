@@ -96,6 +96,8 @@
 
 - 2026-10-18 **全量 E2E 首次执行（真实 Chrome，159 例）**：空库迁移到 V149 并写入演示数据后运行，**83 通过 / 19 失败 / 8 跳过 / 49 未执行**。跳过项为云存储用例（需目标环境对象存储公网地址）。失败中 1 例是夹具 SQL 表名缺 `xsy_` 前缀（已修，报表 13/13 转绿），其余集中在「用例仍按客户端 SPU / SKU 编码造数与检索」和「操作列收敛后的旧定位」，属用例未跟上 V147 编码治理与操作列调整，**不是线上缺陷**。已同步修正 8 处用例 / 夹具（公共造 SKU 改为回读服务端编码、客户与供应商无编码输入断言、客户列表搜索文案、分拣「更多」菜单、返回列表查询串、财务长文断言、`w6_e2e_accounts.py` 表名）。A 类用例迁移完成前，E2E 不能作为门禁。
 
+- 2026-10-19 **商城装修管理端恢复可用 + 分拣小票带供应商来源**：`MallHomeAdminController` 路径从 `/scm/mall/home/admin` 挪到 `/scm/mall-admin/home`，不再被 `MallCustomerInterceptor` 判成非客户身份（30007），前端 `mall-home-api.ts` 同步；V162 把 `supplierName` 加入分拣小票抬头并同步默认模板。验证：`MallHomeAdminPathTest` 1 项、迁移 25 项、打印中心 9 项、后台契约 476 项、后台前端构建通过。
+
 - 2026-10-19 **时价（P02）落地**：V161 新增 `xsy_pricing_time_price`（商品规格级、区间半开、同规格不重叠）并把下单/锁价的价格来源放开到 `TIME_PRICE`；`PriceResolver` 在客户类型价之后、市场价之前接入时价；后台新增「时价管理」页（菜单 2121/2122，`scm:pricing:time-price:manage`）。验证：`TimePricePgIT` 2 项、迁移 24 项、价格解析单测 8 项、权限 2 项、菜单 1 项、后台契约 475 项、后台前端构建通过。`PricingIT#timePriceSitsBetweenCustomerTypeAndMarket` 覆盖端到端取价：时价区间内取 TIME_PRICE、区间外回落 MARKET、加了客户类型价后由 CUSTOMER_TYPE 压过。全量 E2E **167 通过 / 0 失败 / 0 跳过**（11.2 分钟）。
 
 - 2026-10-19 **客户专属推广二维码（C04）落地**：V160 新增 `xsy_customer_promotion_code`（一客一条有效码）与只追加的 `xsy_customer_promotion_scan`；后台客户列表「更多」新增「推广二维码」（生成/撤销/扫码记录/二维码）；扫码落地页 `/#/promo/{code}` 免登录记录来源并显示归属业务员；新增客户时业务员按最近一次扫码归属预填。验证：`CustomerPromotionPgIT` 2 项、迁移 23 项、权限 2 项、后台契约 475 项、后台前端构建通过。
