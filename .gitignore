@@ -8,6 +8,11 @@ skills-lock.json
 # 目录本身不要删除，只是不进版本库。
 .workbuddy/
 
+# 工程技能的本地工作区（to-spec / to-tickets 产出的 spec 与工单）。
+# 只放本次工作的分解与草稿；需要长期留存的结论进 docs/decisions.md，状态进 docs/status.md。
+# 若希望工单随仓库共享，删掉这一行即可。
+.scratch/
+
 # Local IDE metadata
 .idea/
 .vscode
