@@ -65,6 +65,8 @@ export interface HomeVisibleBlock {
 
 export interface HomePage {
     releaseId: ScmId | null;
+    /** 发布版本上的主题编码；未发布时为空。 */
+    themeCode?: string | null;
     blocks: HomeVisibleBlock[];
 }
 

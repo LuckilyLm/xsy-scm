@@ -44,6 +44,12 @@ class TimePricePgIT extends ScmW5PgITBase {
         var page = timePriceService.query(query);
         assertThat(page.getList()).hasSize(1);
         assertThat(page.getList().getFirst().getEffectiveNow()).isTrue();
+
+        // 时价必须留审计：谁在什么时候把哪个规格的临时价改成了多少
+        Integer logs = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_pricing_time_price_operation_log WHERE time_price_id = ? "
+                        + "AND operation_type = 'CREATE'", Integer.class, created.getId());
+        assertThat(logs).as("新增时价要写一条 CREATE 审计").isEqualTo(1);
     }
 
     @Test

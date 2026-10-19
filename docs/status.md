@@ -203,9 +203,17 @@
 
 **本轮收口验证**：全量 E2E **167 通过 / 0 失败 / 0 跳过**（10.8 分钟，克隆库 + 真实 Chrome）；V162～V165 已在本机开发库（含 174 张历史订单）上由 Flyway 逐个应用成功，E2E 克隆库从该库复制后正常启动。微信真机、实物秤、打印机与真实支付渠道仍需现场验收。
 
-## 本轮改动的回归 TODO（2026-10-19 规划，未开工）
+## 本轮改动的回归 TODO（2026-10-19，P0 与 P2-9 已完成）
 
 范围：时价、集团结算、装修主题、分拣小票、装修路径这五项改动，逐个查下游消费方后的结论。**只列真实受影响的点，不做泛化回归**。
+
+### 已完成（2026-10-19）
+
+- **P0-1 集团账期**：`creditOption` 的 shared 分支固定不可选，`OrderSettlementConfirmationPolicy` 对共享账期一律拒绝；补 `MallSettlementOptionsPgIT` 用例（授权后余额可选、账期仍不可选、仍不展示集团余额）。
+- **P0-2 时价来源映射**：`SCM_ORDER_PRICE_SOURCE_ENUM`、`PRICE_SOURCE_TONE`、`HISTORY_SOURCE_LABEL` 三处补齐；新增 `scm-price-source-contract.test.mjs`，从后端 `ScmPriceSourceEnum` 反查前端映射，漏一个就失败。
+- **P0-3 时价审计**：V166 新增只追加的 `xsy_pricing_time_price_operation_log`，时价增删改写前后快照；价格历史 UNION 第三支接入时价，来源白名单放行 `TIME_PRICE`，历史页筛选自动多出「时价」。
+- **P2-9 既有红转绿**：`MallHomeLayoutPgIT` 改为给客户绑定种子配送仓，3/3 通过（此前 1 项因 `WAREHOUSE_UNAVAILABLE` 长期失败）。
+- **P1 部分**：`HomePage` 类型补 `themeCode`；装修页主题下拉加提示「只作用于商城首页」。
 
 ### P0 会直接产生错误结果
 

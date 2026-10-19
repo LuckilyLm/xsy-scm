@@ -37,8 +37,8 @@ public class OrderSettlementConfirmationPolicy {
         ScmSettlementMethodEnum method = ScmSettlementMethodEnum.valueOf(order.getSettlementMethod());
         switch (method) {
             case CREDIT -> {
-                if (shared && !ScmSharedSettlementPolicy
-                        .sharedCheckoutAllowed(Boolean.TRUE.equals(settlement.getSharedSettlementEnabled()))) {
+                // 共享账期一律拒绝：钱包授权不覆盖账期，集团账期由集团主体统一办理。
+                if (shared) {
                     throw new ScmBusinessException(OrderErrorCode.ORDER_SETTLEMENT_METHOD_BLOCKED);
                 }
                 // 占用额取正式净额（实重 × 锁定价 − 已冻结优惠等比分摊），与签收生成的应收同一把尺子。

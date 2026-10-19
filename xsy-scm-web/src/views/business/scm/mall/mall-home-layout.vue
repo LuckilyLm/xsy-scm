@@ -18,7 +18,8 @@
       </a-alert>
       <a-space wrap class="mall-home-editor__toolbar">
         <a-select v-model:value="themeCode" :options="themeOptions" style="width: 140px" @change="dirty = true"
-                  aria-label="首页主题"/>
+                  aria-label="首页主题"
+                  title="主题只作用于商城首页的配色，其他页面沿用系统配色"/>
         <a-select v-model:value="newType" :options="blockTypeOptions" style="width: 170px"/>
         <a-button v-privilege="'scm:mall:home:edit'" :disabled="blocks.length >= 30" @click="addBlock">添加组件</a-button>
         <a-button v-privilege="'scm:mall:home:edit'" type="primary" :loading="saving" :disabled="!dirty" @click="saveDraft">保存草稿</a-button>

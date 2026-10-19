@@ -593,6 +593,22 @@ class ScmMigrationTargetPgIT {
         assertThat(leaked).as("不写尚未提供的功能入口").isZero();
     }
 
+    /**
+     * V166 起时价有独立审计表，且只追加。
+     */
+    @Test
+    void timePriceAuditExistsFromV166() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 166) {
+            return;
+        }
+        assertColumn("xsy_pricing_time_price_operation_log", "before_data");
+        Integer appendOnly = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_time_price_log_append_only' "
+                        + "AND NOT tgisinternal", Integer.class);
+        assertThat(appendOnly).as("审计日志必须只追加").isEqualTo(1);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

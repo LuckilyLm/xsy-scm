@@ -61,6 +61,7 @@ export function effectiveRangeText(effectiveFrom?: string | null, effectiveTo?: 
 export const HISTORY_SOURCE_LABEL: Record<string, string> = {
     AGREEMENT: '客户协议价',
     CUSTOMER_TYPE: '客户类型价',
+    TIME_PRICE: '时价',
 };
 
 /** 价格历史的变更类型。 */

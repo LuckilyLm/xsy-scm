@@ -3,6 +3,7 @@ package com.xsy.scm.pricing.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.pricing.constant.PricingErrorCode;
+import com.xsy.scm.pricing.constant.ScmPriceOperationTypeEnum;
 import com.xsy.scm.pricing.dao.TimePriceDao;
 import com.xsy.scm.pricing.domain.entity.TimePriceEntity;
 import com.xsy.scm.pricing.domain.form.TimePriceForm;
@@ -26,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class TimePriceService {
 
     private final TimePriceDao timePriceDao;
+
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public PageResult<TimePriceVO> query(TimePriceQueryForm form) {
@@ -59,6 +62,7 @@ public class TimePriceService {
         entity.setCreatedBy(operator);
         entity.setUpdatedBy(operator);
         timePriceDao.insert(entity);
+        log(entity, ScmPriceOperationTypeEnum.CREATE, null);
         return timePriceDao.detail(entity.getId());
     }
 
@@ -75,6 +79,7 @@ public class TimePriceService {
         if (timePriceDao.countOverlapping(form.getSkuId(), form.getStartAt(), form.getEndAt(), form.getId()) > 0) {
             throw new ScmBusinessException(PricingErrorCode.TIME_PRICE_OVERLAP);
         }
+        String beforeSnapshot = snapshot(existing);
         TimePriceEntity entity = new TimePriceEntity();
         entity.setId(form.getId());
         entity.setVersion(form.getVersion());
@@ -87,14 +92,45 @@ public class TimePriceService {
         if (timePriceDao.updateById(entity) == 0) {
             throw new ScmBusinessException(PricingErrorCode.TIME_PRICE_UPDATE_CONFLICT);
         }
+        log(entity, ScmPriceOperationTypeEnum.UPDATE, beforeSnapshot);
         return timePriceDao.detail(form.getId());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id, Integer version, String operator) {
+        TimePriceEntity existing = timePriceDao.selectById(id);
+        if (existing == null) {
+            throw new ScmBusinessException(PricingErrorCode.TIME_PRICE_NOT_FOUND);
+        }
+        String beforeSnapshot = snapshot(existing);
         if (timePriceDao.softDelete(id, version, operator) == 0) {
             throw new ScmBusinessException(PricingErrorCode.TIME_PRICE_UPDATE_CONFLICT);
         }
+        log(existing, ScmPriceOperationTypeEnum.DELETE, beforeSnapshot);
+    }
+
+    /** 审计快照：只放人能读懂的业务字段，不放数据库内部键。 */
+    private String snapshot(TimePriceEntity entity) {
+        var fields = new java.util.LinkedHashMap<String, Object>();
+        fields.put("id", entity.getId());
+        fields.put("skuId", entity.getSkuId());
+        fields.put("unitPrice",
+                entity.getUnitPrice() == null ? null : entity.getUnitPrice().setScale(4).toPlainString());
+        fields.put("startAt", entity.getStartAt() == null ? null : entity.getStartAt().toString());
+        fields.put("endAt", entity.getEndAt() == null ? null : entity.getEndAt().toString());
+        fields.put("remark", entity.getRemark());
+        fields.put("version", entity.getVersion());
+        fields.put("deleted", entity.getDeleted());
+        try {
+            return objectMapper.writeValueAsString(fields);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+            throw new IllegalStateException("Cannot serialize time price audit", ex);
+        }
+    }
+
+    private void log(TimePriceEntity entity, ScmPriceOperationTypeEnum operationType, String beforeSnapshot) {
+        timePriceDao.log(entity.getId(), operationType.name(), com.xsy.scm.common.constant.ScmOperator.current(),
+                beforeSnapshot, snapshot(entity));
     }
 
     private void requireValidWindow(TimePriceForm form) {

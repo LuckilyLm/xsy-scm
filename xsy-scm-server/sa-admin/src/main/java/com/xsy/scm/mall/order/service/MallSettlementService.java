@@ -60,8 +60,9 @@ public class MallSettlementService {
     private MallSettlementOptionVO creditOption(CustomerEntity settlement, boolean shared, BigDecimal amount) {
         MallSettlementOptionVO option = base(ScmSettlementMethodEnum.CREDIT, null, !shared);
         if (shared) {
-            option.setEnabled(ScmSharedSettlementPolicy
-                    .sharedCheckoutAllowed(Boolean.TRUE.equals(settlement.getSharedSettlementEnabled())));
+            // 集团账期不跟随钱包授权：授权只管钱包，账期必须由集团主体统一办理，
+            // 否则子客户下单会占用集团授信，而集团主体并不知情。
+            option.setEnabled(Boolean.FALSE);
             option.setDisabledReason(SHARED_CREDIT_REASON);
             return option;
         }

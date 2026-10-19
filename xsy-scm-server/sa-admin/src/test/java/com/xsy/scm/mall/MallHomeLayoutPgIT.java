@@ -31,8 +31,8 @@ class MallHomeLayoutPgIT extends ScmW5PgITBase {
 
     @Test
     void draftPublishRollbackAndCustomerProjectionUseImmutableReleaseFacts() {
-        Long visibleCustomer = newCustomer();
-        Long hiddenCustomer = newCustomer();
+        Long visibleCustomer = customerWithWarehouse();
+        Long hiddenCustomer = customerWithWarehouse();
         var initial = layouts.draft();
         var first = layouts.save(save(initial.version(), announcement("one", "第一版", visibleCustomer)));
         assertThat(first.version()).isEqualTo(initial.version() + 1);
@@ -145,6 +145,18 @@ class MallHomeLayoutPgIT extends ScmW5PgITBase {
         block.setLinkType("NONE");
         block.setCustomerIds(customerId == null ? List.of() : List.of(customerId));
         return block;
+    }
+
+    /**
+     * 商城首页投影要按「客户可选的配送仓」校验仓库；裸 newCustomer() 没有绑定仓也没有地址，
+     * 会让投影直接报 WAREHOUSE_UNAVAILABLE。这里把种子仓绑到客户上，不依赖环境里的地址数据。
+     */
+    private Long customerWithWarehouse() {
+        Long customerId = newCustomer();
+        jdbc.update("UPDATE xsy_customer SET mall_delivery_warehouse_id = ? WHERE id = ?", seedWarehouseId(),
+                customerId);
+        evictMybatisCache();
+        return customerId;
     }
 
     private static RequestMallCustomer customer(Long id) {

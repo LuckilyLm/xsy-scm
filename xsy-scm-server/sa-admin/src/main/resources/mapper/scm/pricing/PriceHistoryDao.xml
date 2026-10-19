@@ -18,7 +18,12 @@
         customer_id,p.customer_type_id,p.sku_id,l.operation_type,l.operator,l.created_at
         operated_at,l.before_data,l.after_data,p.unit_price current_unit_price,p.effective_from
         current_effective_from,p.effective_to current_effective_to,COALESCE(p.deleted,TRUE) current_deleted FROM
-        xsy_customer_type_price_operation_log l LEFT JOIN xsy_customer_type_price p ON p.id=l.customer_type_price_id) h LEFT
+        xsy_customer_type_price_operation_log l LEFT JOIN xsy_customer_type_price p ON p.id=l.customer_type_price_id UNION
+        ALL SELECT l.id history_id,'TIME_PRICE' source,l.time_price_id price_id,NULL::bigint customer_id,NULL::bigint
+        customer_type_id,p.sku_id,l.operation_type,l.operator,l.created_at
+        operated_at,l.before_data,l.after_data,p.unit_price current_unit_price,p.start_at
+        current_effective_from,p.end_at current_effective_to,COALESCE(p.deleted,TRUE) current_deleted FROM
+        xsy_pricing_time_price_operation_log l LEFT JOIN xsy_pricing_time_price p ON p.id=l.time_price_id) h LEFT
         JOIN xsy_customer c ON c.id=h.customer_id LEFT JOIN xsy_customer_type ct ON ct.id=h.customer_type_id LEFT JOIN
         xsy_product_sku s ON s.id=h.sku_id LEFT JOIN xsy_product_spu sp ON sp.id=s.spu_id
         <where>
