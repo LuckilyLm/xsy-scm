@@ -448,6 +448,33 @@ class ScmMigrationTargetPgIT {
         assertThat(unbindSource).contains("FOR UPDATE", "xsy_inventory_outbound_item");
     }
 
+    /**
+     * V159 起采购单可二维码分享：令牌只存哈希、一单一条有效链接、回填只追加。
+     */
+    @Test
+    void purchaseShareSchemaExistsFromV159() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 159) {
+            return;
+        }
+        assertColumn("xsy_purchase_share_token", "token_hash");
+        assertColumn("xsy_purchase_share_token", "expires_at");
+        assertColumn("xsy_purchase_share_feedback", "purchase_order_item_id");
+        Integer uniqueIndexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname IN ('uk_purchase_share_token_hash', 'uk_purchase_share_active_order')",
+                Integer.class);
+        assertThat(uniqueIndexes).as("令牌哈希唯一且一单只有一条有效链接").isEqualTo(2);
+        Integer appendOnly = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_purchase_share_feedback_append_only' "
+                        + "AND NOT tgisinternal",
+                Integer.class);
+        assertThat(appendOnly).as("回填事实必须只追加").isEqualTo(1);
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 2118 AND 2119", Integer.class);
+        assertThat(menus).as("分享与撤销权限应随迁移发布").isEqualTo(2);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

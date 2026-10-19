@@ -29,6 +29,8 @@ public class MvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(adminInterceptor)
                 .excludePathPatterns(SwaggerConfig.SWAGGER_WHITELIST)
                 .excludePathPatterns("/scm/mall/**")
+                // 采购单分享页由令牌授权：手机端不登录，令牌的签发与撤销都在后台完成
+                .excludePathPatterns("/scm/purchase/share/public/**")
                 .addPathPatterns("/**");
     }
 
