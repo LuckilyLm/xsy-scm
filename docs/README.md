@@ -4,8 +4,9 @@
 
 - [有效决策](decisions.md)：当前业务、架构与权限不变量，以及尚未裁决事项。
 - [项目状态](status.md)：代码现状、验证证据、风险与待完成工作。
-- [下一阶段开发计划](next-development-plan.md)：当前持续执行中的任务顺序、边界、依赖、验收标准；完成后从工作区移除，由 Git 历史追溯。
+- [下一阶段开发计划](next-development-plan.md)：2026-10-19 起以逐包装码正式出库/退回关联为主线，包含依赖、交付批次与验收门禁；后附旧参考需求矩阵仅用于对标，不代表当前进度。
 - [需求基线](requirements/产品功能需求基线.md)及[负责人确认口径](requirements/2026-09-09-负责人确认口径.md)：产品需求和原始业务确认。
+- [业务身份与追溯架构](architecture/business-identity-and-traceability.md)：L1 批次、L2 包装码的身份边界、已实施内容与后续目标模型；实施状态以状态文档为准。
 - [参考项目目录](../project-reference-examples/xsy-scm/)：只读的旧系统及上游参考资料。
 - [贡献与评审约定](../CONTRIBUTING.md)及[代理协作规则](../AGENTS.md)：工程实践、用户界面与 Git 约束。
 - [地图部署说明](map-deployment.md)：高德配置、坐标系、降级行为和现场核对项。
