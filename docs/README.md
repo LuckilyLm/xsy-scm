@@ -4,7 +4,7 @@
 
 - [有效决策](decisions.md)：当前业务、架构与权限不变量，以及尚未裁决事项。
 - [项目状态](status.md)：代码现状、验证证据、风险与待完成工作。
-- [下一阶段开发计划](next-development-plan.md)：2026-10-19 起以逐包装码正式出库/退回关联为主线，包含依赖、交付批次与验收门禁；后附旧参考需求矩阵仅用于对标，不代表当前进度。
+- [下一阶段开发计划](next-development-plan.md)：按原始 13 模块、44 条功能描述收敛为 MVP 主链验收、基础缺口补齐和轻量回归；蔬东坡只参考常规业务操作，不自动扩展需求。
 - [需求基线](requirements/产品功能需求基线.md)及[负责人确认口径](requirements/2026-09-09-负责人确认口径.md)：产品需求和原始业务确认。
 - [业务身份与追溯架构](architecture/business-identity-and-traceability.md)：L1 批次、L2 包装码的身份边界、已实施内容与后续目标模型；实施状态以状态文档为准。
 - [参考项目目录](../project-reference-examples/xsy-scm/)：只读的旧系统及上游参考资料。
