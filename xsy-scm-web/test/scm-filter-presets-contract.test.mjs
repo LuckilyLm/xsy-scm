@@ -19,14 +19,14 @@ test('保存方案从登录上下文取得所有者，不允许客户端指定�
   assert.doesNotMatch(api, /ownerKey|userId/);
 });
 
-test('三个页面均复用方案保存应用删除，切页隔离方案类别', () => {
+test('报表页面保留方案操作，商品档案不再显示组合筛选方案', () => {
   assert.match(component, /scmFilterPresetApi\.create/);
   assert.match(component, /scmFilterPresetApi\.remove/);
   assert.match(component, /preset\.conditions\.map\(c => \(\{\.\.\.c\}\)\)/);
-  assert.match(product, /view-key="PRODUCT"/);
+  assert.doesNotMatch(product, /ScmSavedFilterPresets|view-key="PRODUCT"|applySavedFilters/);
   assert.match(sales, /view-key="SALES_ORDER"/);
   assert.match(purchase, /view-key="PURCHASE_PRODUCT"/);
-  for (const page of [product, sales, purchase]) {
+  for (const page of [sales, purchase]) {
     assert.match(page, /@apply="applySavedFilters"/);
     assert.match(page, /advancedFilters\.value = conditions/);
   }

@@ -7,7 +7,7 @@
     <template #icon>
       <component :is="$antIcons[menuInfo.icon]"/>
     </template>
-    <template #title>{{ menuInfo.menuName }}</template>
+    <template #title><span class="smart-menu-label" :title="menuInfo.menuName">{{ menuInfo.menuName }}</span></template>
     <template v-for="item in menuInfo.children" :key="item.menuId">
       <template v-if="item.visibleFlag && !item.disabledFlag">
         <template v-if="!item.children">
@@ -15,7 +15,7 @@
             <template #icon>
               <component :is="$antIcons[item.icon]"/>
             </template>
-            {{ item.menuName }}
+            <span class="smart-menu-label" :title="item.menuName">{{ item.menuName }}</span>
           </a-menu-item>
         </template>
         <template v-else>

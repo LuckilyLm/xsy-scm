@@ -3,7 +3,8 @@
   * 
 -->
 <template>
-  <a-menu :open-keys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu" mode="inline" :inline-indent="16" :theme="theme"
+  <a-menu :open-keys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu"
+          :class="{ 'smart-menu--collapsed': collapsed }" mode="inline" :inline-indent="14" :theme="theme"
           @openChange="onOpenChange">
     <!-- 使用组件库的实心三角形：展开向下，收起向右。 -->
     <template #expandIcon="{ isOpen }">
@@ -18,7 +19,7 @@
             <template #icon>
               <component :is="$antIcons[item.icon]"/>
             </template>
-            {{ item.menuName }}
+            <span class="smart-menu-label" :title="item.menuName">{{ item.menuName }}</span>
           </a-menu-item>
         </template>
         <template v-else>
@@ -123,7 +124,7 @@ defineExpose({
 <style lang="less" scoped>
 .smart-menu {
   position: relative;
-  padding: 8px 10px 16px;
+  padding: 8px 8px 16px;
   border-inline-end: 0;
   background: transparent;
 
@@ -172,7 +173,7 @@ defineExpose({
 
   :deep(.ant-menu-submenu-title) {
     position: relative;
-    padding-inline-end: 36px;
+    padding-inline-end: 32px;
     font-weight: 500;
   }
 
@@ -186,6 +187,36 @@ defineExpose({
     line-height: 38px;
     font-size: 13px;
     font-weight: 400;
+  }
+}
+
+.smart-menu:not(.smart-menu--collapsed) {
+  :deep(.ant-menu-item),
+  :deep(.ant-menu-submenu-title) {
+    height: auto;
+    min-height: 42px;
+    line-height: 20px;
+    padding-block: 11px;
+  }
+
+  :deep(.ant-menu-sub .ant-menu-item),
+  :deep(.ant-menu-sub .ant-menu-submenu-title) {
+    min-height: 38px;
+    padding-block: 9px;
+  }
+
+  :deep(.ant-menu-title-content) {
+    min-width: 0;
+    white-space: normal;
+  }
+
+  :deep(.smart-menu-label) {
+    display: -webkit-box;
+    max-width: 100%;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 }
 

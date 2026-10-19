@@ -5,7 +5,7 @@
         <a-form-item label="分类" class="smart-query-form-item"><CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" /></a-form-item>
         <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称 / 商品编码 / 条码 / 助记码" style="width: 260px" /></a-form-item>
         <a-form-item label="商品状态" class="smart-query-form-item"><a-select v-model:value="filters.status" allow-clear :options="SHELF_STATUS_ENUM" style="width: 110px" /></a-form-item>
-        <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space><a-button class="smart-margin-left20" @click="toggleAdvanced"><template #icon><UpOutlined v-if="advanced" aria-hidden="true" /><DownOutlined v-else aria-hidden="true" /></template>{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-form-item>
+        <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space><a-button class="smart-margin-left20" :aria-expanded="advanced" @click="toggleAdvanced">{{ advanced ? '收起筛选' : '高级筛选' }}</a-button></a-form-item>
       </a-row>
       <a-row v-if="advanced" class="smart-query-form-row">
         <a-form-item label="商品规格状态" class="smart-query-form-item"><a-select v-model:value="filters.skuStatus" allow-clear :options="SHELF_STATUS_ENUM" style="width: 120px" /></a-form-item>
@@ -17,9 +17,6 @@
         <a-form-item label="条码" class="smart-query-form-item"><a-select v-model:value="filters.hasBarcode" allow-clear :options="YES_NO_ENUM" style="width: 90px" /></a-form-item>
         <a-form-item label="创建时间" class="smart-query-form-item"><a-range-picker v-model:value="createdRange" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" /></a-form-item>
       </a-row>
-      <ScmAdvancedFilterBuilder v-if="advanced" v-model="advancedFilters" :fields="advancedFilterFields"/>
-      <ScmSavedFilterPresets v-if="advanced" view-key="PRODUCT"
-                             :conditions="advancedFilters" @apply="applySavedFilters"/>
     </a-form>
     <a-card size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
@@ -80,15 +77,17 @@
             </a-tooltip>
           </template>
           <template v-else-if="column.dataIndex === 'tags'">
-            <a-space v-if="record.tags.length" :size="2" class="scm-tags">
-              <a-tag v-for="tag in record.tags.slice(0, TAG_PREVIEW_LIMIT)" :key="tag.tagId"
-                     :color="tag.status === 'ENABLED' ? 'blue' : 'default'">
-                {{ tag.name }}
-              </a-tag>
-              <a-tooltip v-if="record.tags.length > TAG_PREVIEW_LIMIT" :title="restTagTitle(record.tags)">
-                <a-tag class="scm-tags__more">+{{ record.tags.length - TAG_PREVIEW_LIMIT }}</a-tag>
+            <div v-if="record.tags.length" class="scm-product-tags">
+              <a-tooltip v-for="tag in record.tags.slice(0, TAG_PREVIEW_LIMIT)" :key="tag.tagId"
+                         :title="tag.status === 'ENABLED' ? tag.name : `${tag.name}（已停用）`">
+                <a-tag class="scm-product-tags__first" :color="tag.status === 'ENABLED' ? 'blue' : 'default'">
+                  {{ tag.name }}
+                </a-tag>
               </a-tooltip>
-            </a-space>
+              <a-tooltip v-if="record.tags.length > TAG_PREVIEW_LIMIT" :title="restTagTitle(record.tags)">
+                <a-tag class="scm-product-tags__more">+{{ record.tags.length - TAG_PREVIEW_LIMIT }}</a-tag>
+              </a-tooltip>
+            </div>
             <span v-else>{{ DASH }}</span></template>
           <span v-else-if="column.dataIndex === 'saleUnit'">{{ record.defaultSku?.saleUnit || DASH }}</span>
           <a-tooltip v-else-if="column.dataIndex === 'price'"
@@ -143,9 +142,6 @@ import {message} from 'ant-design-vue';
 import {EyeOutlined, PictureOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType, TableProps} from 'ant-design-vue';
 import {productApi} from '/@/api/business/scm/product-api';
-import ScmAdvancedFilterBuilder from '/@/components/business/scm/advanced-filter/index.vue';
-import ScmSavedFilterPresets from '/@/components/business/scm/advanced-filter/saved-presets.vue';
-import type {ScmAdvancedFilterField, ScmAdvancedFilterCondition} from '/@/types/business/scm/advanced-filter';
 import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {productTagApi} from '/@/api/business/scm/product-assistant-api';
 import {useUserStore} from '/@/store/modules/system/user';
@@ -185,26 +181,8 @@ const categories = ref<ProductCategory[]>([]), rows = ref<ProductRow[]>([]), tot
 const tagChoices = ref<ProductTag[]>([]), createdRange = ref<[string, string]>();
 const selectedKeys = ref<ProductId[]>([]);
 const failedImageUrls = ref(new Set<string>());
-const advancedFilterFields = ref<ScmAdvancedFilterField[]>([]);
-const advancedFilters = ref<ScmAdvancedFilterCondition[]>([]);
-function applySavedFilters(conditions: ScmAdvancedFilterCondition[]): void {
-  const keys = new Set(conditions.map(c => c.key));
-  if (keys.has('keyword')) filters.keyword = undefined;
-  if (keys.has('categoryId')) filters.categoryId = undefined;
-  if (keys.has('hasPrimaryImage')) filters.hasPrimaryImage = undefined;
-  if (keys.has('hasBarcode')) filters.hasBarcode = undefined;
-  advancedFilters.value = conditions;
-  advanced.value = true;
-  search();
-}
-async function toggleAdvanced(): Promise<void> {
+function toggleAdvanced(): void {
   advanced.value = !advanced.value;
-  if (!advanced.value || advancedFilterFields.value.length) return;
-  try {
-    advancedFilterFields.value = (await productApi.queryFilterFields()).data;
-  } catch {
-    void message.error('高级筛选字段加载失败');
-  }
 }
 function imageFailed(url: string) {
   failedImageUrls.value = new Set([...failedImageUrls.value, url]);
@@ -272,8 +250,8 @@ const enumText = (options: {value: string; label: string}[], value?: string | nu
     options.find((item) => item.value === value)?.label || DASH;
 const cellText = (record: ProductRow, dataIndex: unknown) =>
     dash((record as unknown as Record<string, unknown>)[String(dataIndex ?? '')]);
-// 标签列只展示前 N 个，其余折成 +N；否则标签多的商品会把整行撑宽、撑高。
-const TAG_PREVIEW_LIMIT = 2;
+// 标签列只展示首个标签，其余折成 +N；完整名称可从提示中查看。
+const TAG_PREVIEW_LIMIT = 1;
 const restTagTitle = (tags: ProductTagRef[]) => tags.slice(TAG_PREVIEW_LIMIT)
     .map((tag) => (tag.status === 'ENABLED' ? tag.name : `${tag.name}（已停用）`))
     .join('、');
@@ -311,8 +289,7 @@ async function load() {
     const response = await productApi.query({
       ...filters,
       createdFrom: createdRange.value?.[0] || undefined,
-      createdTo: createdRange.value?.[1] || undefined,
-      advancedFilters: advancedFilters.value.length ? advancedFilters.value : undefined
+      createdTo: createdRange.value?.[1] || undefined
     }, {suppressGlobalErrorMessage: true});
     if (request === requestId) {
       rows.value = response.data.list;
@@ -347,7 +324,6 @@ function reset() {
     sortItemList: undefined
   });
   createdRange.value = undefined;
-  advancedFilters.value = [];
   void load();
 }
 
@@ -370,8 +346,7 @@ async function exportCurrent() {
       ...filters,
       createdFrom: createdRange.value?.[0] || undefined,
       createdTo: createdRange.value?.[1] || undefined,
-      exportColumnKeys: exportColumnKeys.value.length ? exportColumnKeys.value : undefined,
-      advancedFilters: advancedFilters.value.length ? advancedFilters.value : undefined
+      exportColumnKeys: exportColumnKeys.value.length ? exportColumnKeys.value : undefined
     });
   } catch {
     // 导出失败只走全局 toast
@@ -426,6 +401,34 @@ onMounted(async () => {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.scm-product-tags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.scm-product-tags :deep(.ant-tag) {
+  margin-inline-end: 0;
+}
+
+.scm-product-tags :deep(.scm-product-tags__first) {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.scm-product-tags :deep(.scm-product-tags__more) {
+  flex: none;
+  white-space: nowrap;
 }
 
 .product-image-placeholder {
