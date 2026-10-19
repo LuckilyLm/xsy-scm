@@ -575,6 +575,24 @@ class ScmMigrationTargetPgIT {
         assertThat(constraints).as("主题取值必须受控").isEqualTo(2);
     }
 
+    /**
+     * V165 起帮助中心按模块提供岗位操作说明；不含尚未提供的助手与语音入口。
+     */
+    @Test
+    void helpDocOperationsExistFromV165() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 165) {
+            return;
+        }
+        Integer docs = jdbc.queryForObject(
+                "SELECT count(*) FROM t_help_doc WHERE help_doc_id BETWEEN 7 AND 18", Integer.class);
+        assertThat(docs).as("十二个模块各一篇操作说明").isEqualTo(12);
+        Integer leaked = jdbc.queryForObject(
+                "SELECT count(*) FROM t_help_doc WHERE help_doc_id BETWEEN 7 AND 18 "
+                        + "AND (title LIKE '%助手%' OR title LIKE '%语音%')", Integer.class);
+        assertThat(leaked).as("不写尚未提供的功能入口").isZero();
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "
