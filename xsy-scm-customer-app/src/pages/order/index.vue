@@ -1,5 +1,8 @@
 <template>
   <view class="orders">
+    <view class="orders__toolbar">
+      <text class="orders__summary" @click="goSummary">商品汇总</text>
+    </view>
     <view class="orders__tabs">
       <view
         v-for="tab in ORDER_TABS"
@@ -142,6 +145,10 @@
     uni.navigateTo({ url: `/pages-sub/order/detail?orderId=${orderId}` });
   }
 
+  function goSummary() {
+    uni.navigateTo({ url: '/pages-sub/order/summary' });
+  }
+
   function cancelOrder(order) {
     uni.showActionSheet({
       itemList: CANCEL_REASONS,
@@ -203,6 +210,16 @@
     background: $color-bg-page;
     box-sizing: border-box;
     padding-bottom: $space-8;
+  }
+  .orders__toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: $space-2 $space-4;
+    background: $color-bg-card;
+  }
+  .orders__summary {
+    color: $color-primary;
+    font-size: $font-size-sm;
   }
   .orders__tabs {
     display: flex;

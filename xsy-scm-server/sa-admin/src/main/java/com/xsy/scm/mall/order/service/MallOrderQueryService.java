@@ -13,7 +13,10 @@ import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.catalog.dao.MallCatalogDao;
 import com.xsy.scm.mall.order.constant.MallOrderDisplayStatusEnum;
 import com.xsy.scm.mall.order.constant.MallOrderProgressNodeEnum;
+import com.xsy.scm.mall.order.dao.MallOrderSummaryDao;
 import com.xsy.scm.mall.order.domain.form.MallOrderQueryForm;
+import com.xsy.scm.mall.order.domain.form.MallOrderSummaryQueryForm;
+import com.xsy.scm.mall.order.domain.vo.MallOrderSummaryVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderDeliveryVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderDiscountVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderItemVO;
@@ -34,6 +37,7 @@ import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
 import com.xsy.scm.promotion.service.PromotionDiscountService;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -76,6 +80,7 @@ public class MallOrderQueryService {
     private final OrderOperationLogDao orderOperationLogDao;
     private final DeliveryRouteOrderDao deliveryRouteOrderDao;
     private final MallCatalogDao mallCatalogDao;
+    private final MallOrderSummaryDao mallOrderSummaryDao;
     private final PromotionDiscountService promotionDiscountService;
     private final FinanceOrderPayableQueryService payableQueryService;
     private final FileService fileService;
@@ -104,6 +109,43 @@ public class MallOrderQueryService {
         result.setPages(page.getPages());
         result.setList(rows);
         result.setEmptyFlag(rows.isEmpty());
+        return result;
+    }
+
+    /**
+     * 下单商品汇总：按商品规格聚合当前客户自己的历史下单。
+     *
+     * <p>
+     * 日期按服务器时区取整天：起日含 00:00，止日含当天全部，实现上把止日加一天后按半开区间比较。 总数是「有多少个规格」，由合计查询给出——分组分页的 count 不是这个数。
+     */
+    @Transactional(readOnly = true)
+    public MallOrderSummaryVO summary(RequestMallCustomer customer, MallOrderSummaryQueryForm form) {
+        ZoneId zone = ZoneId.systemDefault();
+        OffsetDateTime startAt = form.getStartDate() == null
+                ? null
+                : form.getStartDate().atStartOfDay(zone).toOffsetDateTime();
+        OffsetDateTime endAt = form.getEndDate() == null
+                ? null
+                : form.getEndDate().plusDays(1).atStartOfDay(zone).toOffsetDateTime();
+
+        MallOrderSummaryVO.Totals totals = mallOrderSummaryDao.summaryTotals(customer.getCustomerId(), startAt, endAt);
+        Page<MallOrderSummaryVO.Item> page = new Page<>(form.getPageNum(), form.getPageSize(), false);
+        List<MallOrderSummaryVO.Item> items = mallOrderSummaryDao.summaryPage(page, customer.getCustomerId(), startAt,
+                endAt);
+        Map<Long, String> imageUrls = skuImageUrls(items.stream().map(MallOrderSummaryVO.Item::getSkuId).toList());
+        items.forEach(item -> item.setImageUrl(imageUrls.get(item.getSkuId())));
+
+        long total = totals.getSkuCount() == null ? 0L : totals.getSkuCount();
+        long pageSize = form.getPageSize();
+
+        MallOrderSummaryVO result = new MallOrderSummaryVO();
+        result.setItems(items);
+        result.setTotals(totals);
+        result.setPageNum(form.getPageNum());
+        result.setPageSize(pageSize);
+        result.setTotal(total);
+        result.setPages(pageSize <= 0 ? 0L : (total + pageSize - 1) / pageSize);
+        result.setEmptyFlag(items.isEmpty());
         return result;
     }
 
