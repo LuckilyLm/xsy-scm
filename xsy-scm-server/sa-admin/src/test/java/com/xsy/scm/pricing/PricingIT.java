@@ -42,6 +42,8 @@ class PricingIT extends ScmW3PgITBase {
     @Autowired
     PriceResolver resolver;
     @Autowired
+    com.xsy.scm.pricing.service.TimePriceService timePrices;
+    @Autowired
     PriceHistoryQueryService history;
     @Autowired
     CustomerService customers;
@@ -52,6 +54,43 @@ class PricingIT extends ScmW3PgITBase {
     @Autowired
     ProductSkuOptionQueryService skuOptions;
     static final OffsetDateTime AT = OffsetDateTime.parse("2026-09-15T00:00:00Z");
+
+    /**
+     * 时价的位置：客户类型价之下、市场价之上。
+     *
+     * <p>
+     * 这条用例是 P02 的端到端取价证据：只验写入约束不够，必须证明真的按这个顺序选价。
+     */
+    @Test
+    void timePriceSitsBetweenCustomerTypeAndMarket() {
+        Long c = customer(), s = newOnShelfSku("TP");
+        var timePrice = new com.xsy.scm.pricing.domain.form.TimePriceForm();
+        timePrice.setSkuId(s);
+        timePrice.setUnitPrice(new java.math.BigDecimal("8.8000"));
+        timePrice.setStartAt(AT.minusDays(1));
+        timePrice.setEndAt(AT.plusDays(1));
+        timePrices.create(timePrice, "W9 IT");
+
+        // 无协议价、无客户类型价：时价压过市场价
+        var byTime = resolver.resolve(c, List.of(s), AT).getFirst();
+        assertThat(byTime.getPriceSource()).isEqualTo(ScmPriceSourceEnum.TIME_PRICE);
+        assertThat(byTime.getUnitPrice()).isEqualByComparingTo("8.8000");
+
+        // 时价区间之外：回落到市场价（此时该规格还没有客户类型价）
+        assertThat(resolver.resolve(c, List.of(s), AT.plusDays(3)).getFirst().getPriceSource())
+                .isEqualTo(ScmPriceSourceEnum.MARKET);
+
+        // 加客户类型价：分类约定压过时价
+        var typePrice = new CustomerTypePriceAddForm();
+        typePrice.setCustomerTypeId(customerTypeId("ENTERPRISE"));
+        typePrice.setSkuId(s);
+        typePrice.setUnitPrice("3.0000");
+        typePrice.setEffectiveFrom(AT.minusDays(2));
+        types.add(typePrice);
+        var byType = resolver.resolve(c, List.of(s), AT).getFirst();
+        assertThat(byType.getPriceSource()).isEqualTo(ScmPriceSourceEnum.CUSTOMER_TYPE);
+        assertThat(byType.getUnitPrice()).isEqualByComparingTo("3.0000");
+    }
 
     Long customer() {
         var f = new CustomerAddForm();
