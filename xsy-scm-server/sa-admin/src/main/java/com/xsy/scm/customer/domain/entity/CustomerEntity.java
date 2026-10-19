@@ -56,6 +56,9 @@ public class CustomerEntity {
 
     private String settleMode;
 
+    /** 集团主体是否允许子客户使用集团钱包结算；默认关闭。 */
+    private Boolean sharedSettlementEnabled;
+
     /** 后台明确开通后，客户才可在商城选择货到付款。 */
     private Boolean codAllowed = false;
     /** 商城默认配送仓；为空时按地址区县规则匹配。 */

@@ -37,7 +37,8 @@ public class OrderSettlementConfirmationPolicy {
         ScmSettlementMethodEnum method = ScmSettlementMethodEnum.valueOf(order.getSettlementMethod());
         switch (method) {
             case CREDIT -> {
-                if (shared && !ScmSharedSettlementPolicy.sharedCheckoutAllowed()) {
+                if (shared && !ScmSharedSettlementPolicy
+                        .sharedCheckoutAllowed(Boolean.TRUE.equals(settlement.getSharedSettlementEnabled()))) {
                     throw new ScmBusinessException(OrderErrorCode.ORDER_SETTLEMENT_METHOD_BLOCKED);
                 }
                 // 占用额取正式净额（实重 × 锁定价 − 已冻结优惠等比分摊），与签收生成的应收同一把尺子。
@@ -51,7 +52,8 @@ public class OrderSettlementConfirmationPolicy {
                 }
             }
             case WALLET -> {
-                if (shared && !ScmSharedSettlementPolicy.sharedCheckoutAllowed()) {
+                if (shared && !ScmSharedSettlementPolicy
+                        .sharedCheckoutAllowed(Boolean.TRUE.equals(settlement.getSharedSettlementEnabled()))) {
                     throw new ScmBusinessException(OrderErrorCode.ORDER_SETTLEMENT_METHOD_BLOCKED);
                 }
                 // 钱包资金在支付命令中按实重与已冻结优惠原子扣减；确认本身不冒充付款。

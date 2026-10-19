@@ -40,6 +40,7 @@ export function emptyCustomer(): CustomerFormModel {
         address: '',
         settleMode: 'INDEPENDENT',
         codAllowed: false,
+        sharedSettlementEnabled: false,
         creditLimit: '0.0000',
         creditPeriodType: undefined,
         creditAmountThreshold: undefined,
@@ -139,6 +140,8 @@ export function toCustomerPayload(form: CustomerFormModel): CustomerPayload {
         remark: blankToNull(form.remark),
         creditLimit: blankToNull(form.creditLimit),
         codAllowed: form.codAllowed === true,
+        // 非 GROUP 结算时后端会强制置假，这里也一并收口，避免提交一个语义为空的开关
+        sharedSettlementEnabled: form.settleMode === 'GROUP' && form.sharedSettlementEnabled === true,
         creditPeriodType: form.creditPeriodType ?? null,
         creditAmountThreshold: blankToNull(form.creditAmountThreshold),
         creditPeriodValue: form.creditPeriodValue ?? null,

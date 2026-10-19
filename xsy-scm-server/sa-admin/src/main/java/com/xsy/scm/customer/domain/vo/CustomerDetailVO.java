@@ -38,6 +38,9 @@ public class CustomerDetailVO {
 
     private String settleMode;
 
+    /** 集团主体是否允许子客户使用集团钱包结算。 */
+    private Boolean sharedSettlementEnabled;
+
     private Boolean codAllowed;
 
     private Long mallDeliveryWarehouseId;

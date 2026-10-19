@@ -60,7 +60,8 @@ public class MallSettlementService {
     private MallSettlementOptionVO creditOption(CustomerEntity settlement, boolean shared, BigDecimal amount) {
         MallSettlementOptionVO option = base(ScmSettlementMethodEnum.CREDIT, null, !shared);
         if (shared) {
-            option.setEnabled(ScmSharedSettlementPolicy.sharedCheckoutAllowed());
+            option.setEnabled(ScmSharedSettlementPolicy
+                    .sharedCheckoutAllowed(Boolean.TRUE.equals(settlement.getSharedSettlementEnabled())));
             option.setDisabledReason(SHARED_CREDIT_REASON);
             return option;
         }
@@ -93,7 +94,8 @@ public class MallSettlementService {
     private MallSettlementOptionVO walletOption(CustomerEntity settlement, boolean shared, BigDecimal amount) {
         MallSettlementOptionVO option = base(ScmSettlementMethodEnum.WALLET, null, !shared);
         if (shared) {
-            option.setEnabled(ScmSharedSettlementPolicy.sharedCheckoutAllowed());
+            option.setEnabled(ScmSharedSettlementPolicy
+                    .sharedCheckoutAllowed(Boolean.TRUE.equals(settlement.getSharedSettlementEnabled())));
             option.setDisabledReason(SHARED_WALLET_REASON);
             return option;
         }

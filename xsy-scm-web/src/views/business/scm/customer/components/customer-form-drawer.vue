@@ -79,6 +79,15 @@
                 <SmartEnumSelect v-model:value="form.settleMode" enum-name="SETTLE_MODE_ENUM" width="100%"/>
               </a-form-item>
             </a-col>
+            <a-col v-if="form.settleMode === 'GROUP'" :xs="24" :sm="12">
+              <a-form-item name="sharedSettlementEnabled">
+                <template #label>
+                  允许子客户使用集团钱包
+                  <ScmFieldHelp label="允许子客户使用集团钱包" text="默认关闭；打开后子客户在商城可直接扣集团钱包余额，看不到集团总额"/>
+                </template>
+                <a-switch v-model:checked="form.sharedSettlementEnabled"/>
+              </a-form-item>
+            </a-col>
             <a-col :xs="24" :sm="12">
               <a-form-item label="绑定供应商" name="supplierId">
                 <SupplierSelect v-model:value="form.supplierId" placeholder="请选择供应商"/>
@@ -370,6 +379,7 @@ async function open(customerId?: ScmId) {
       districtCode: detail.districtCode ?? null,
       districtName: detail.districtName ?? null,
       settleMode: detail.settleMode,
+      sharedSettlementEnabled: detail.sharedSettlementEnabled === true,
       codAllowed: detail.codAllowed === true,
       creditLimit: detail.creditLimit ?? '0.0000',
       creditPeriodType: detail.creditPeriodType ?? undefined,

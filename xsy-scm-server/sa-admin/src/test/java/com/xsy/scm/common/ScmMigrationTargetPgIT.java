@@ -542,6 +542,22 @@ class ScmMigrationTargetPgIT {
         assertThat(tickets).as("分拣小票默认模板应包含供应商来源").isEqualTo(1);
     }
 
+    /**
+     * V163 起集团主体可显式授权子客户使用集团钱包结算，且只有 GROUP 客户能置真。
+     */
+    @Test
+    void sharedSettlementGrantExistsFromV163() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 163) {
+            return;
+        }
+        assertColumn("xsy_customer", "shared_settlement_enabled");
+        Integer constraint = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_customer_shared_settlement_scope'",
+                Integer.class);
+        assertThat(constraint).as("授权只能在 GROUP 结算客户上成立").isEqualTo(1);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "
