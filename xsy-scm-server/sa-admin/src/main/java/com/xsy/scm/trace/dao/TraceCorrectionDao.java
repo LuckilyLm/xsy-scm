@@ -22,6 +22,9 @@ public interface TraceCorrectionDao {
 
     int countPending(@Param("unitId") Long unitId);
 
+    /** 绑定的订单行已有正式出库记录时禁止解绑，不能把已交付实物重新派给别的客户。 */
+    int countConfirmedOutboundByBinding(@Param("bindingId") Long bindingId);
+
     int decide(@Param("id") Long id, @Param("version") Integer version, @Param("status") String status,
             @Param("operator") String operator, @Param("decidedAt") OffsetDateTime decidedAt,
             @Param("reason") String reason);

@@ -30,14 +30,6 @@
         SELECT COALESCE(SUM(quantity), 0) FROM xsy_trace_unit WHERE lot_id = #{lotId}
     </select>
 
-    <!-- 出库腿为负、退回腿为正，取相反数得净离场量（正数） -->
-    <select id="sumSalesOutboundNetByLot" resultType="java.math.BigDecimal">
-        SELECT COALESCE(-SUM(quantity), 0)
-        FROM xsy_inventory_lot_movement
-        WHERE lot_id = #{lotId}
-          AND movement_type IN ('SALES_OUT', 'PROMOTION_GIFT_OUT', 'SALES_RETURN_IN')
-    </select>
-
     <select id="lotUnit" resultType="java.lang.String">
         SELECT unit FROM xsy_inventory_lot_balance WHERE lot_id = #{lotId} LIMIT 1
     </select>
@@ -129,6 +121,14 @@
         WHERE u.id = #{id}
     </select>
 
+    <select id="lockById" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit">
+        SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, u.quantity,
+               u.unit, u.status, u.created_at AS createdAt
+        FROM xsy_trace_unit u
+        WHERE u.id = #{id}
+        FOR UPDATE OF u
+    </select>
+
     <!-- 批次首次入库的收货来源 -->
     <select id="receiptOfLot" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Receipt">
         SELECT r.receipt_no AS receiptNo, r.supplier_name_snapshot AS supplierName, r.confirmed_at AS confirmedAt
@@ -165,6 +165,16 @@
         JOIN xsy_trace_unit u ON u.id = b.unit_id
         WHERE b.sorting_task_item_id = #{itemId}
           AND NOT EXISTS (SELECT 1 FROM xsy_trace_unit_unbind ub WHERE ub.binding_id = b.id)
+    </select>
+
+    <select id="countConfirmedOutboundBySortingItem" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM xsy_sorting_task_item i
+        JOIN xsy_inventory_outbound_item oi
+          ON oi.sales_order_item_id = i.sales_order_item_id
+        JOIN xsy_inventory_outbound o ON o.id = oi.outbound_id
+        WHERE i.id = #{itemId}
+          AND (o.status = 'CONFIRMED' OR o.confirmed_at IS NOT NULL)
     </select>
 
     <insert id="insertBinding">

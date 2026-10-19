@@ -421,6 +421,33 @@ class ScmMigrationTargetPgIT {
         assertThat(menus).as("更正页面与两条权限应随迁移发布").isEqualTo(3);
     }
 
+    /** V158：有效绑定共享码行锁，正式出库与解绑共享原订单行锁。 */
+    @Test
+    void traceUnitConsistencyGuardsExistFromV158() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 158) {
+            return;
+        }
+        Integer triggers = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger t "
+                        + "JOIN pg_class c ON c.oid=t.tgrelid "
+                        + "JOIN pg_namespace n ON n.oid=c.relnamespace "
+                        + "WHERE n.nspname='xsy_v2' AND NOT t.tgisinternal AND t.tgname IN "
+                        + "('trg_trace_unit_binding_active', 'trg_trace_unbind_outbound_guard', "
+                        + "'trg_trace_lock_outbound_source_item', 'trg_trace_lock_outbound_confirmation', "
+                        + "'trg_trace_unit_void_active_guard')",
+                Integer.class);
+        assertThat(triggers).as("绑定、解绑、出库、作废五个数据库触发器必须存在").isEqualTo(5);
+        String bindSource = jdbc.queryForObject(
+                "SELECT p.prosrc FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace "
+                        + "WHERE n.nspname='xsy_v2' AND p.proname = 'xsy_assert_unit_bindable'", String.class);
+        assertThat(bindSource).contains("FOR UPDATE", "xsy_inventory_outbound_item");
+        String unbindSource = jdbc.queryForObject(
+                "SELECT p.prosrc FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace "
+                        + "WHERE n.nspname='xsy_v2' AND p.proname = 'xsy_guard_trace_unit_unbind_outbound'", String.class);
+        assertThat(unbindSource).contains("FOR UPDATE", "xsy_inventory_outbound_item");
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

@@ -26,9 +26,6 @@ public interface TraceUnitDao {
     /** 该批次已发码的包装数量之和（含已作废的码：作废不等于没发过）。 */
     BigDecimal sumIssuedByLot(@Param("lotId") Long lotId);
 
-    /** 该批次销售出库净量（出库减退回，正数）：发码额度口径里「已随出库离场」的量。 */
-    BigDecimal sumSalesOutboundNetByLot(@Param("lotId") Long lotId);
-
     /** 批次余额行上的记账单位；发码沿用同一个单位，不做换算。 */
     String lotUnit(@Param("lotId") Long lotId);
 
@@ -58,6 +55,9 @@ public interface TraceUnitDao {
 
     TraceUnitVO.Unit findById(@Param("id") Long id);
 
+    /** 审批更正时锁住与扫码绑定/作废共用的包装单元行。 */
+    TraceUnitVO.Unit lockById(@Param("id") Long id);
+
     /** 批次首次入库的收货来源。 */
     TraceUnitVO.Receipt receiptOfLot(@Param("lotId") Long lotId);
 
@@ -66,6 +66,9 @@ public interface TraceUnitDao {
 
     /** 该分拣行已绑定的包装数量之和（只算有效绑定）：绑定总量不得超过实拣量。 */
     BigDecimal sumBoundBySortingItem(@Param("itemId") Long itemId);
+
+    /** 分拣行对应订单行如已确认出库，禁止事后补绑新的包装码。 */
+    int countConfirmedOutboundBySortingItem(@Param("itemId") Long itemId);
 
     int insertBinding(@Param("unitId") Long unitId, @Param("lotId") Long lotId, @Param("taskId") Long taskId,
             @Param("itemId") Long itemId, @Param("salesOrderId") Long salesOrderId,

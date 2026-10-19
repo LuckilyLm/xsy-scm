@@ -53,6 +53,7 @@ public class TraceCorrectionService {
         if (bindingId == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NO_BINDING);
         }
+        requireNotOutbound(bindingId);
         if (traceCorrectionDao.countPending(unit.getId()) > 0) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_PENDING_EXISTS);
         }
@@ -78,6 +79,13 @@ public class TraceCorrectionService {
     @Transactional(rollbackFor = Exception.class)
     public TraceCorrectionVO approve(TraceCorrectionDecisionForm form, String operator) {
         TraceCorrectionVO correction = requirePending(form, operator);
+        TraceUnitVO.Unit unit = traceUnitDao.lockById(correction.getUnitId());
+        if (unit == null || !"ACTIVE".equals(unit.getStatus())
+                || !correction.getBindingId().equals(traceUnitDao.findActiveBindingId(unit.getId()))) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NO_BINDING);
+        }
+        // 申请以后可能已发车，必须在批准这一事务中重新验证；数据库触发器再兜底。
+        requireNotOutbound(correction.getBindingId());
         OffsetDateTime now = OffsetDateTime.now();
         traceCorrectionDao.insertUnbind(correction.getUnitId(), correction.getBindingId(), correction.getId(),
                 correction.getReason(), now, operator);
@@ -119,6 +127,12 @@ public class TraceCorrectionService {
             throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_SELF_APPROVAL);
         }
         return correction;
+    }
+
+    private void requireNotOutbound(Long bindingId) {
+        if (traceCorrectionDao.countConfirmedOutboundByBinding(bindingId) > 0) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_ALREADY_OUTBOUND);
+        }
     }
 
     private void decide(TraceCorrectionDecisionForm form, String operator, String status, OffsetDateTime now) {

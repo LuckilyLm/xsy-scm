@@ -22,8 +22,8 @@ public enum TraceErrorCode implements ScmErrorCode {
 
     TRACE_LOT_REQUIRED(41503, "批次仓的收货必须逐行登记批次"),
 
-    /** 41504：包装码是实物的身份，仍在库内的已发码量不能超过该批次当前库存；已出库离场的包装不占额度。 */
-    TRACE_UNIT_EXCEED_BALANCE(41504, "在库包装量与本次发码之和不能超过该批次当前库存"),
+    /** 41504：没有单元出库关联前，不得凭批次出库推断某枚码已离场并释放发码额度。 */
+    TRACE_UNIT_EXCEED_BALANCE(41504, "累计已发码量与本次发码之和不能超过当前批次余额"),
 
     TRACE_UNIT_NOT_FOUND(41505, "包装码不存在"),
 
@@ -67,7 +67,12 @@ public enum TraceErrorCode implements ScmErrorCode {
 
     TRACE_CORRECTION_STATE_INVALID(41523, "更正申请已处理，不能重复审批"),
 
-    TRACE_CORRECTION_NO_BINDING(41524, "该包装码当前没有可撤销的绑定");
+    TRACE_CORRECTION_NO_BINDING(41524, "该包装码当前没有可撤销的绑定"),
+
+    /** 已有正式出库事实，不再允许解绑重新绑定到其他订单。 */
+    TRACE_CORRECTION_ALREADY_OUTBOUND(41525, "该包装码原绑定订单行已正式出库，不能解绑，请走退货或售后补偿"),
+
+    TRACE_UNIT_ALREADY_OUTBOUND(41526, "该分拣行已正式出库，不可再补绑包装码");
 
     private final int code;
 

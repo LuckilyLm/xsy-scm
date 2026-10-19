@@ -51,11 +51,10 @@ public class TraceUnitService {
      * 发码：同一批次一次发 N 个同规格包装，逐码追加一条发码事件。
      *
      * <p>
-     * 先锁该批次的余额行再读「在库已发码量」与「余额」：两个事务若各自读到「还能发 3 个」，会一起通过检查发出 6 个。 锁顺序与库存域一致（余额锁是最后取的锁），出库腿也走同批余额锁，因此发码与出库彼此排队。
-     *
-     * <p>
-     * 额度口径是「仍在库内的已发码量 ＋ 本次发码 ≤ 当前余额」：已随销售出库离场的包装不再占用库存额度， 部分发货后剩余库存可以继续发码。批次级出库证明不了单元级离场，这里按「出库优先消耗已发码量」折算——
-     * 绑定发生在分拣、出库在其后，与实际流转顺序一致；作废的码仍计入在库已发码量（作废不等于实物消失）。
+     * 先锁批次余额行再检查发码额度，序列化同批次发码和库存出库。
+     * 在建立包装码级出库事实前，批次级出库不能证明某一已发码实物离场；
+     * 因此累计发码量（含作废码）不扣批次出库，保守地与当前批次余额比较。
+     * 出库后无法自动释放额度，必须等未来单元级出库/退回关联落地，不能靠猜测复用包装身份。
      */
     @Transactional(rollbackFor = Exception.class)
     public List<TraceUnitVO.Unit> issue(TraceUnitIssueForm form, String operator) {
@@ -73,9 +72,7 @@ public class TraceUnitService {
         BigDecimal balance = lockedBalance(form.getLotId());
         BigDecimal adding = perPackage.multiply(BigDecimal.valueOf(form.getPackageCount()));
         BigDecimal issued = traceUnitDao.sumIssuedByLot(form.getLotId());
-        BigDecimal shipped = traceUnitDao.sumSalesOutboundNetByLot(form.getLotId());
-        BigDecimal codedInStock = issued.subtract(shipped).max(BigDecimal.ZERO);
-        if (codedInStock.add(adding).compareTo(balance) > 0) {
+        if (issued.add(adding).compareTo(balance) > 0) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_EXCEED_BALANCE);
         }
 
@@ -125,6 +122,9 @@ public class TraceUnitService {
             throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_TASK_STATE_INVALID);
         }
         warehouseScopeGuard.require(item.getWarehouseId());
+        if (traceUnitDao.countConfirmedOutboundBySortingItem(item.getItemId()) > 0) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_OUTBOUND);
+        }
         TraceUnitVO.Lot lot = traceUnitDao.findLot(unit.getLotId());
         if (lot == null || !item.getSkuId().equals(lot.getSkuId())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_SKU_MISMATCH);
