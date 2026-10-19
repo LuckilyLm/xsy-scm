@@ -229,6 +229,7 @@ import type {FormInstance} from 'ant-design-vue';
 import {message} from 'ant-design-vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
+import {customerPromotionApi} from '/@/api/business/scm/customer-promotion-api';
 import type {
   CreditPeriodType,
   CreditPeriodUnit,
@@ -327,6 +328,15 @@ async function open(customerId?: ScmId) {
   if (customerId == null) {
     await nextTick();
     formRef.value?.clearValidate();
+    // 扫码带来的线索：业务员按最近一次扫码归属预填，管理员仍可改
+    try {
+      const attribution = await customerPromotionApi.attribution();
+      if (attribution.data?.sellerId != null) {
+        form.sellerId = Number(attribution.data.sellerId);
+      }
+    } catch {
+      // 预填失败不影响新建
+    }
     return;
   }
   loading.value = true;

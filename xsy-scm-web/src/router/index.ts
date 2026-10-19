@@ -33,8 +33,8 @@ router.beforeEach(async (to, from, next) => {
         return;
     }
 
-    // 采购单分享页由路径里的令牌授权，登录态与菜单权限都不参与
-    if (to.path.startsWith('/purchase-share/')) {
+    // 采购单分享页与客户推广码落地页由路径里的令牌授权，登录态与菜单权限都不参与
+    if (to.path.startsWith('/purchase-share/') || to.path.startsWith('/promo/')) {
         next();
         return;
     }

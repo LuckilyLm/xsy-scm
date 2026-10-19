@@ -25,7 +25,9 @@ public class MvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(mallCustomerInterceptor)
-                .addPathPatterns("/scm/mall/**");
+                .addPathPatterns("/scm/mall/**")
+                // 推广码落地页免登录：扫码的人可能还没有商城账号
+                .excludePathPatterns("/scm/mall/promo/**");
         registry.addInterceptor(adminInterceptor)
                 .excludePathPatterns(SwaggerConfig.SWAGGER_WHITELIST)
                 .excludePathPatterns("/scm/mall/**")

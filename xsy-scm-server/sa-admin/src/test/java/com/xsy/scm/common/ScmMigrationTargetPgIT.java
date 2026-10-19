@@ -475,6 +475,33 @@ class ScmMigrationTargetPgIT {
         assertThat(menus).as("分享与撤销权限应随迁移发布").isEqualTo(2);
     }
 
+    /**
+     * V160 起客户可发推广二维码：一客一条有效码，扫码记录只追加。
+     */
+    @Test
+    void customerPromotionSchemaExistsFromV160() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 160) {
+            return;
+        }
+        assertColumn("xsy_customer_promotion_code", "code");
+        assertColumn("xsy_customer_promotion_scan", "seller_id");
+        Integer uniqueIndexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname IN ('uk_customer_promotion_code', 'uk_customer_promotion_active')",
+                Integer.class);
+        assertThat(uniqueIndexes).as("码全局唯一且一客只有一条有效码").isEqualTo(2);
+        Integer appendOnly = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_customer_promotion_scan_append_only' "
+                        + "AND NOT tgisinternal",
+                Integer.class);
+        assertThat(appendOnly).as("扫码记录必须只追加").isEqualTo(1);
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id = 2120 "
+                        + "AND api_perms = 'scm:customer:promotion:manage'", Integer.class);
+        assertThat(menus).as("推广码权限应随迁移发布").isEqualTo(1);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "
