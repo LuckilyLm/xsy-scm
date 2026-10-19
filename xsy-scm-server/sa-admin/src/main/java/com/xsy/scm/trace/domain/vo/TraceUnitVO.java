@@ -79,6 +79,12 @@ public final class TraceUnitVO {
         private String orderNo;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal sortedQuantity;
+        /** 实拣量的销售单位（分拣行快照）。 */
+        private String saleUnit;
+        /** 订单行确认时冻结的库存记账单位与换算比例；为空表示该单没有冻结换算。 */
+        private String stockUnit;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal stockUnitsPerSaleUnit;
     }
 
     /** 分拣绑定：这个码在分拣现场被绑到了哪张任务行的哪个客户。 */

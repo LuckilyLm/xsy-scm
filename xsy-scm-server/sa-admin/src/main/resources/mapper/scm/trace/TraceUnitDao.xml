@@ -30,6 +30,14 @@
         SELECT COALESCE(SUM(quantity), 0) FROM xsy_trace_unit WHERE lot_id = #{lotId}
     </select>
 
+    <!-- 出库腿为负、退回腿为正，取相反数得净离场量（正数） -->
+    <select id="sumSalesOutboundNetByLot" resultType="java.math.BigDecimal">
+        SELECT COALESCE(-SUM(quantity), 0)
+        FROM xsy_inventory_lot_movement
+        WHERE lot_id = #{lotId}
+          AND movement_type IN ('SALES_OUT', 'PROMOTION_GIFT_OUT', 'SALES_RETURN_IN')
+    </select>
+
     <select id="lotUnit" resultType="java.lang.String">
         SELECT unit FROM xsy_inventory_lot_balance WHERE lot_id = #{lotId} LIMIT 1
     </select>
@@ -132,14 +140,20 @@
         LIMIT 1
     </select>
 
-    <!-- 分拣任务行：绑定校验的客户/商品/实拣量来源；锁行以串行化同一行上的并发绑定 -->
+    <!--
+      分拣任务行：绑定校验的客户/商品/实拣量来源；锁行以串行化同一行上的并发绑定。
+      实拣量是销售单位口径，绑定总量比较前必须按订单行冻结的换算折成库存记账量，因此一并取出冻结换算。
+    -->
     <select id="lockSortingItem" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$SortingItem">
         SELECT i.task_id AS taskId, i.id AS itemId, i.sku_id AS skuId, i.sales_order_id AS salesOrderId,
                i.sales_order_item_id AS salesOrderItemId, i.customer_id AS customerId,
                i.customer_name_snapshot AS customerName, i.order_no_snapshot AS orderNo,
-               i.sorted_quantity AS sortedQuantity, t.status AS taskStatus, t.warehouse_id AS warehouseId
+               i.sorted_quantity AS sortedQuantity, i.sale_unit_snapshot AS saleUnit,
+               oi.mall_stock_unit_snapshot AS stockUnit, oi.mall_stock_units_per_sale_unit AS stockUnitsPerSaleUnit,
+               t.status AS taskStatus, t.warehouse_id AS warehouseId
         FROM xsy_sorting_task_item i
         JOIN xsy_sorting_task t ON t.id = i.task_id
+        LEFT JOIN xsy_sales_order_item oi ON oi.id = i.sales_order_item_id
         WHERE i.id = #{itemId} AND i.deleted = FALSE
         FOR UPDATE OF i
     </select>

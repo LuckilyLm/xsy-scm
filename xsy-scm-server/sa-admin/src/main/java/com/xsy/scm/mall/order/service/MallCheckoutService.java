@@ -169,13 +169,12 @@ public class MallCheckoutService {
         if (!fingerprint(quantities, products).equals(form.getPriceFingerprint())) {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
         }
-        // 预选券在提交时按当前状态完整试算一次（归属 / AVAILABLE / 模板生效 / 门槛）：
-        // 让不成立的券在下单前失败，而不是把一笔确认时必然冻结失败的单塞进后台。
+        // 提交试算必须与预览同一口径：不选券也要算活动优惠，否则预览按优惠后应付放行、
+        // 提交却按原价判定结算方式，余额介于两者之间时会出现「预览允许但提交拒绝」。
+        // 预选券按当前状态完整试算一次（归属 / AVAILABLE / 模板生效 / 门槛），让不成立的券在下单前失败。
         // 试算不锁券；全标品自动确认仍会在冻结时按最新券状态重新校验。
-        MallCheckoutPromotionVO promotion = null;
-        if (form.getCouponInstanceId() != null) {
-            promotion = previewPromotion(customer.getCustomerId(), form.getCouponInstanceId(), quantities, products);
-        }
+        MallCheckoutPromotionVO promotion = previewPromotion(customer.getCustomerId(), form.getCouponInstanceId(),
+                quantities, products);
         // 结算方式：用与预览同一口径的应付金额重新判定可用性，避免客户端拿旧预览的结论下单。
         BigDecimal gross = estimatedAmount(quantities, products);
         BigDecimal payable = promotion == null ? gross : promotion.getPayableAmount();

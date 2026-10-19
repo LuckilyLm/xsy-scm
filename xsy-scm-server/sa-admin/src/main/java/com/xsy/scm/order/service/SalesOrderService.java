@@ -19,6 +19,7 @@ import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.dao.OrderAddressSnapshotDao;
 import com.xsy.scm.order.dao.OrderBundleComponentDao;
+import com.xsy.scm.order.dao.OrderExchangeLinkDao;
 import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.dao.SalesOrderItemDao;
 import com.xsy.scm.order.domain.entity.OrderAddressSnapshotEntity;
@@ -93,6 +94,8 @@ public class SalesOrderService {
     private final SalesOrderItemDao salesOrderItemDao;
     private final OrderAddressSnapshotDao orderAddressSnapshotDao;
     private final OrderBundleComponentDao orderBundleComponentDao;
+    /** 删除换货草稿时清掉换货关联：残留关联会让退货单无法再建换货、详情对着已删草稿报错。 */
+    private final OrderExchangeLinkDao orderExchangeLinkDao;
     private final OrderOperationLogRecorder orderLogs;
     private final CustomerService customerService;
     private final PriceResolver priceResolver;
@@ -121,8 +124,12 @@ public class SalesOrderService {
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO create(SalesOrderAddForm salesOrderAddForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_CREATE", key, salesOrderAddForm);
-        if (claim.replay())
-            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        if (claim.replay()) {
+            var result = orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+            // 重放也要按当前负责人范围放行：归属收窄后不能再凭旧幂等键拿到这单的快照
+            salesOrderQueryService.detail(result.getOrderId());
+            return result;
+        }
         var result = createDraft(salesOrderAddForm);
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(),
                 result.getOrderId(), result);
@@ -132,8 +139,11 @@ public class SalesOrderService {
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO createAndProgress(SalesOrderAddForm salesOrderAddForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_CREATE_AND_PROGRESS", key, salesOrderAddForm);
-        if (claim.replay())
-            return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+        if (claim.replay()) {
+            var result = orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
+            salesOrderQueryService.detail(result.getOrderId());
+            return result;
+        }
         var result = createDraft(salesOrderAddForm);
         result = submitOrder(result.getOrderId(), result.getVersion());
         if (result.getItems().stream()
@@ -744,6 +754,8 @@ public class SalesOrderService {
             removeItem(row);
         if (salesOrderDao.softDelete(salesOrder.getId(), salesOrder.getVersion(), ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
+        // 草稿若是换货单，关联一并移除：return_id 有唯一索引，残留会挡住退货单重新创建换货
+        orderExchangeLinkDao.deleteByReplacementOrderId(salesOrder.getId());
         log(salesOrder.getId(), ScmOrderOperationTypeEnum.UPDATE, "删除草稿", before,
                 Map.of("deleted", true, "version", salesOrder.getVersion() + 1));
     }

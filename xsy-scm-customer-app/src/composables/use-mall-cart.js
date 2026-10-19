@@ -10,13 +10,14 @@ import { smartSentry } from '@/lib/smart-sentry';
 export function useMallCart() {
   /**
    * 加入购物车
-   * @param {{skuId: number}} product
-   * @param {string|number} quantity 字符串定点，默认 1
+   * @param {{skuId: number, minOrderQty?: string|number}} product
+   * @param {string|number} [quantity] 字符串定点；不传时取商品起订量（默认 1），不违反起订量/递增量规则
    * @returns {Promise<boolean>} 是否成功
    */
-  async function addToCart(product, quantity = '1') {
+  async function addToCart(product, quantity) {
     try {
-      const response = await mallCartApi.addItem({ skuId: product.skuId, quantity: String(quantity) });
+      const effective = quantity ?? product?.minOrderQty ?? '1';
+      const response = await mallCartApi.addItem({ skuId: product.skuId, quantity: String(effective) });
       const count = response.data?.availableCount ?? 0;
       uni.showToast({ title: count ? `已加入购物车（可结算 ${count} 项）` : '已加入购物车', icon: 'none' });
       return true;

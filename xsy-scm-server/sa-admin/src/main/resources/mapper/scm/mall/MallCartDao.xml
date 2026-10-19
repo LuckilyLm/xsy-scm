@@ -7,12 +7,25 @@
     <select id="selectByAccountAndSku" resultType="com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity">
         SELECT * FROM xsy_mall_cart_item WHERE account_id = #{accountId} AND sku_id = #{skuId} AND deleted = FALSE
     </select>
+    <!-- 并发加购在行锁上排队：后到的读到前者已提交的数量再累加，不会互相覆盖 -->
+    <select id="lockByAccountAndSku" resultType="com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity">
+        SELECT * FROM xsy_mall_cart_item WHERE account_id = #{accountId} AND sku_id = #{skuId} AND deleted = FALSE
+        FOR UPDATE
+    </select>
     <insert id="insert" parameterType="com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity"
             useGeneratedKeys="true" keyProperty="id">
         INSERT INTO xsy_mall_cart_item(account_id, customer_id, sku_id, quantity, version, deleted,
                                    created_at, updated_at, created_by, updated_by)
         VALUES (#{accountId}, #{customerId}, #{skuId}, #{quantity}, 0, FALSE,
                 #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+    </insert>
+    <!-- 部分唯一索引 uk_mall_cart_item_account_sku 兜底并发首插；冲突即「别人已建行」，返回 0 走累加 -->
+    <insert id="insertOnConflictDoNothing" parameterType="com.xsy.scm.mall.cart.domain.entity.MallCartItemEntity">
+        INSERT INTO xsy_mall_cart_item(account_id, customer_id, sku_id, quantity, version, deleted,
+                                   created_at, updated_at, created_by, updated_by)
+        VALUES (#{accountId}, #{customerId}, #{skuId}, #{quantity}, 0, FALSE,
+                #{createdAt}, #{updatedAt}, #{createdBy}, #{updatedBy})
+        ON CONFLICT DO NOTHING
     </insert>
     <update id="updateQuantity">
         UPDATE xsy_mall_cart_item

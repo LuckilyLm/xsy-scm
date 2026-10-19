@@ -18,9 +18,15 @@ public interface InventoryLotMovementDao {
 
     int insert(InventoryLotMovementEntity movement);
 
-    /** 按来源单据行汇总每个批次的净额（入库为正、出库为负）。 */
+    /**
+     * 按来源单据行汇总每个批次的净额（入库为正、出库为负）。
+     *
+     * <p>
+     * 必须限定来源单据类型：不同单据表的行 id 可能相同，只按行 id 汇总会把其他单据的流水混进净额。
+     */
     List<LotSourceNet> sumByLotForSource(@Param("warehouseId") Long warehouseId, @Param("skuId") Long skuId,
-            @Param("sourceDocumentItemId") Long sourceDocumentItemId);
+            @Param("sourceDocumentItemId") Long sourceDocumentItemId,
+            @Param("sourceDocumentTypes") List<String> sourceDocumentTypes);
 
     /** 来源行在某批次上的净额。 */
     @Data

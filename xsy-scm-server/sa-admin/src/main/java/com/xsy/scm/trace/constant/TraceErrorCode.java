@@ -22,8 +22,8 @@ public enum TraceErrorCode implements ScmErrorCode {
 
     TRACE_LOT_REQUIRED(41503, "批次仓的收货必须逐行登记批次"),
 
-    /** 41504：包装码是实物的身份，不能超过该批次当前库存。 */
-    TRACE_UNIT_EXCEED_BALANCE(41504, "发码总量不能超过该批次当前库存"),
+    /** 41504：包装码是实物的身份，仍在库内的已发码量不能超过该批次当前库存；已出库离场的包装不占额度。 */
+    TRACE_UNIT_EXCEED_BALANCE(41504, "在库包装量与本次发码之和不能超过该批次当前库存"),
 
     TRACE_UNIT_NOT_FOUND(41505, "包装码不存在"),
 
@@ -52,6 +52,9 @@ public enum TraceErrorCode implements ScmErrorCode {
 
     /** 41516：包装码的批次必须来自分拣任务所在仓库。 */
     TRACE_UNIT_WAREHOUSE_MISMATCH(41516, "包装码所属批次与分拣任务不在同一仓库，不能绑定"),
+
+    /** 41517：实拣量是销售单位、包装码量是库存记账单位，缺少冻结换算时两种量不能直接比较。 */
+    TRACE_UNIT_UNIT_MISMATCH(41517, "包装码的计量单位与分拣行销售单位之间没有可用的冻结换算，不能绑定"),
 
     /** 41520：更正申请不存在。 */
     TRACE_CORRECTION_NOT_FOUND(41520, "更正申请不存在"),

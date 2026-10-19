@@ -5,6 +5,7 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
+import com.xsy.scm.inventory.service.InventorySaleUnitConverter;
 import com.xsy.scm.trace.constant.TraceErrorCode;
 import com.xsy.scm.trace.dao.TraceUnitDao;
 import com.xsy.scm.trace.domain.form.TraceUnitBindForm;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -49,7 +51,11 @@ public class TraceUnitService {
      * 发码：同一批次一次发 N 个同规格包装，逐码追加一条发码事件。
      *
      * <p>
-     * 先锁该批次的余额行再读「已发码量」与「余额」：两个事务若各自读到「还能发 3 个」，会一起通过检查发出 6 个。 锁顺序与库存域一致（余额锁是最后取的锁）。
+     * 先锁该批次的余额行再读「在库已发码量」与「余额」：两个事务若各自读到「还能发 3 个」，会一起通过检查发出 6 个。 锁顺序与库存域一致（余额锁是最后取的锁），出库腿也走同批余额锁，因此发码与出库彼此排队。
+     *
+     * <p>
+     * 额度口径是「仍在库内的已发码量 ＋ 本次发码 ≤ 当前余额」：已随销售出库离场的包装不再占用库存额度， 部分发货后剩余库存可以继续发码。批次级出库证明不了单元级离场，这里按「出库优先消耗已发码量」折算——
+     * 绑定发生在分拣、出库在其后，与实际流转顺序一致；作废的码仍计入在库已发码量（作废不等于实物消失）。
      */
     @Transactional(rollbackFor = Exception.class)
     public List<TraceUnitVO.Unit> issue(TraceUnitIssueForm form, String operator) {
@@ -67,7 +73,9 @@ public class TraceUnitService {
         BigDecimal balance = lockedBalance(form.getLotId());
         BigDecimal adding = perPackage.multiply(BigDecimal.valueOf(form.getPackageCount()));
         BigDecimal issued = traceUnitDao.sumIssuedByLot(form.getLotId());
-        if (issued.add(adding).compareTo(balance) > 0) {
+        BigDecimal shipped = traceUnitDao.sumSalesOutboundNetByLot(form.getLotId());
+        BigDecimal codedInStock = issued.subtract(shipped).max(BigDecimal.ZERO);
+        if (codedInStock.add(adding).compareTo(balance) > 0) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_EXCEED_BALANCE);
         }
 
@@ -127,7 +135,8 @@ public class TraceUnitService {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_WAREHOUSE_MISMATCH);
         }
         BigDecimal bound = traceUnitDao.sumBoundBySortingItem(item.getItemId());
-        if (bound.add(unit.getQuantity()).compareTo(item.getSortedQuantity()) > 0) {
+        if (bound.add(unit.getQuantity())
+                .compareTo(saleToStockQuantity(item, item.getSortedQuantity(), unit.getUnit())) > 0) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_BIND_EXCEED);
         }
 
@@ -225,6 +234,52 @@ public class TraceUnitService {
         replay.setLot(traceUnitDao.findLot(unit.getLotId()));
         replay.setBinding(traceUnitDao.findBinding(unit.getId()));
         return replay;
+    }
+
+    /**
+     * 分拣改量守卫（供分拣域调用的正式契约）：新实拣量不得低于该行仍有效绑定的包装总量。
+     *
+     * <p>
+     * 必须在调用方事务内执行（MANDATORY）：本方法锁分拣行，与绑定共用同一把行锁， 否则「改量读到绑定 10」与「绑定读到实拣 10」可以交叉通过，留下绑定总量超过实拣量的状态。 要降量先走解绑更正，再改实拣量。
+     */
+    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
+    public void requireBindingsFitSortedQuantity(Long sortingTaskItemId, BigDecimal newSortedQuantity) {
+        TraceUnitVO.SortingItem item = traceUnitDao.lockSortingItem(sortingTaskItemId);
+        if (item == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_ITEM_NOT_FOUND);
+        }
+        BigDecimal bound = traceUnitDao.sumBoundBySortingItem(sortingTaskItemId);
+        if (bound.signum() <= 0) {
+            return;
+        }
+        // 与 bind 同一口径：绑定量是库存记账单位，新实拣量是销售单位，按冻结换算统一后再比。
+        // 绑定能存在就说明当时换算成立，这里用绑定侧的记账单位做基准。
+        String stockUnit = item.getStockUnit() != null ? item.getStockUnit() : item.getSaleUnit();
+        if (bound.compareTo(saleToStockQuantity(item, newSortedQuantity, stockUnit)) > 0) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_BIND_EXCEED);
+        }
+    }
+
+    /**
+     * 销售量折成库存记账量：实拣量是销售单位口径，包装码数量是批次余额的记账单位口径，两者不能直接比较。
+     *
+     * <p>
+     * 优先用订单行确认时冻结的换算；没有冻结换算时，只有「销售单位就是记账单位」才能同口径比较，否则明确拒绝（41517）， 不猜比例。对侧的库存单位与冻结的库存单位不一致同样拒绝——那说明批次余额的记账单位在发码后变了口径。
+     */
+    private static BigDecimal saleToStockQuantity(TraceUnitVO.SortingItem item, BigDecimal saleQuantity,
+            String stockUnit) {
+        String frozenUnit = item.getStockUnit();
+        BigDecimal factor = item.getStockUnitsPerSaleUnit();
+        if (frozenUnit == null || factor == null) {
+            if (item.getSaleUnit() == null || !item.getSaleUnit().equals(stockUnit)) {
+                throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_UNIT_MISMATCH);
+            }
+            return InventorySaleUnitConverter.toStockQuantity(saleQuantity, null, null);
+        }
+        if (!frozenUnit.equals(stockUnit)) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_UNIT_MISMATCH);
+        }
+        return InventorySaleUnitConverter.toStockQuantity(saleQuantity, frozenUnit, factor);
     }
 
     /** 加锁读该批次余额：锁在行上，两个发码事务必须排队。 */

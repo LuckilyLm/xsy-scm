@@ -26,6 +26,9 @@ public interface TraceUnitDao {
     /** 该批次已发码的包装数量之和（含已作废的码：作废不等于没发过）。 */
     BigDecimal sumIssuedByLot(@Param("lotId") Long lotId);
 
+    /** 该批次销售出库净量（出库减退回，正数）：发码额度口径里「已随出库离场」的量。 */
+    BigDecimal sumSalesOutboundNetByLot(@Param("lotId") Long lotId);
+
     /** 批次余额行上的记账单位；发码沿用同一个单位，不做换算。 */
     String lotUnit(@Param("lotId") Long lotId);
 

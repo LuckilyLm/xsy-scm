@@ -91,6 +91,8 @@ public class SortingTaskService {
     private final SupplierDao supplierDao;
     private final ScmIdempotencyService idempotencyService;
     private final SortingQueryService sortingQueryService;
+    /** 改实拣量前的包装码绑定守卫：跨域只读契约，排序域不写追溯表。 */
+    private final com.xsy.scm.trace.service.TraceUnitService traceUnitService;
 
     /**
      * 建单并指派。幂等键挡住「同一请求重发生成第二套业务事实」；不同请求抢同一订单行由部分唯一索引兜底，报可读的占用冲突。
@@ -161,8 +163,7 @@ public class SortingTaskService {
     }
 
     /**
-     * 追加一笔分次分拣记录。只冻结分次累积事实；正式分拣量/结果必须经过 enter 显式确认。
-     * 任务锁串行化同一任务中的追加、编辑、取消与完成；事件键重复重放仍复核当前仓库和受指派人。
+     * 追加一笔分次分拣记录。只冻结分次累积事实；正式分拣量/结果必须经过 enter 显式确认。 任务锁串行化同一任务中的追加、编辑、取消与完成；事件键重复重放仍复核当前仓库和受指派人。
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingPartRecordVO appendPart(Long id, SortingPartForm form, String key) {
@@ -206,8 +207,8 @@ public class SortingTaskService {
         return event;
     }
 
-    private static SortingPartRecordVO partEvent(Long taskId, Long itemId, String kind,
-            BigDecimal delta, BigDecimal total, String note) {
+    private static SortingPartRecordVO partEvent(Long taskId, Long itemId, String kind, BigDecimal delta,
+            BigDecimal total, String note) {
         var event = new SortingPartRecordVO();
         event.setTaskId(taskId);
         event.setTaskItemId(itemId);
@@ -243,11 +244,14 @@ public class SortingTaskService {
             // 历次分量只保存在追加事件表，不能把它当作已确认分拣量。
             // 若最终量偏离已累计记录，必须显式写原因和差额事件，禁止静默覆盖。
             var previous = sortingPartRecordDao.latest(row.getId());
-            BigDecimal before = previous != null ? previous.getTotalQuantity()
+            BigDecimal before = previous != null
+                    ? previous.getTotalQuantity()
                     : row.getSortedQuantity() != null ? row.getSortedQuantity() : BigDecimal.ZERO;
             BigDecimal difference = entry.getSortedQuantity().subtract(before);
             if (previous != null && difference.signum() != 0 && StringUtils.isBlank(reason))
                 throw new ScmBusinessException(VALIDATION_ERROR);
+            // 已绑定包装码的行不能把实拣量改到有效绑定总量以下；先走解绑更正再改量
+            traceUnitService.requireBindingsFitSortedQuantity(row.getId(), entry.getSortedQuantity());
             row.setSortedQuantity(entry.getSortedQuantity());
             row.setResult(entry.getResult());
             row.setReason(StringUtils.isBlank(reason) ? null : StringUtils.trim(reason));
@@ -257,8 +261,7 @@ public class SortingTaskService {
             // 同一批里重复提交同一行时，第二次带的是已被自己改掉的旧版本，在这里就断掉。
             if (sortingTaskItemDao.updateById(row) != 1)
                 throw new ScmBusinessException(VERSION_CONFLICT);
-            var correction = partEvent(id, row.getId(), "SET_TOTAL", difference,
-                    entry.getSortedQuantity(), reason);
+            var correction = partEvent(id, row.getId(), "SET_TOTAL", difference, entry.getSortedQuantity(), reason);
             if (sortingPartRecordDao.insert(correction) != 1)
                 throw new IllegalStateException("分拣数量审计写入失败");
         }

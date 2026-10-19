@@ -538,8 +538,11 @@ public class InventoryCommandService {
         if (fact.sourceOutboundItemId() == null) {
             throw new ScmBusinessException(INVENTORY_LOT_RETURN_SOURCE_MISSING);
         }
+        // 净额只认「该出库行的出库流水」与「它的退回流水」：不同单据表的行 id 可能相同，类型收窄防止混入
         List<InventoryLotMovementDao.LotSourceNet> nets = inventoryLotMovementDao.sumByLotForSource(fact.warehouseId(),
-                fact.skuId(), fact.sourceOutboundItemId());
+                fact.skuId(), fact.sourceOutboundItemId(),
+                List.of(ScmInventorySourceDocumentTypeEnum.SALES_OUTBOUND_ITEM.name(),
+                        ScmInventorySourceDocumentTypeEnum.SALES_RETURN_RECEIPT_ITEM.name()));
         if (nets.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_LOT_RETURN_SOURCE_MISSING);
         }

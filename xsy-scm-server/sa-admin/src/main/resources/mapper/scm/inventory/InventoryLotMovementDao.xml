@@ -13,12 +13,18 @@
            #{occurredAt}, #{operator}, #{createdBy})
     </insert>
 
-    <!-- 退货按「净额」判断还能退回多少，多次部分退货因此不会把同一批次重复填满 -->
+    <!--
+      退货按「净额」判断还能退回多少，多次部分退货因此不会把同一批次重复填满。
+      必须限定来源单据类型：采购收货行与销售出库行的 id 来自不同表、可能相同，
+      不按类型收窄会把无关单据的流水混进净额。
+    -->
     <select id="sumByLotForSource" resultType="com.xsy.scm.inventory.dao.InventoryLotMovementDao$LotSourceNet">
         SELECT lot_id AS lotId, SUM(quantity) AS netQuantity
         FROM xsy_inventory_lot_movement
         WHERE warehouse_id = #{warehouseId} AND sku_id = #{skuId}
           AND source_document_item_id = #{sourceDocumentItemId}
+          AND source_document_type IN
+          <foreach collection="sourceDocumentTypes" item="type" open="(" separator="," close=")">#{type}</foreach>
         GROUP BY lot_id
         ORDER BY lot_id
     </select>

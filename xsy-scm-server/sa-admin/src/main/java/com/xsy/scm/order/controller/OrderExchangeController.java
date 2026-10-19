@@ -2,6 +2,7 @@ package com.xsy.scm.order.controller;
 
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
+import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.order.domain.form.OrderExchangeCreateForm;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.permission.OrderPermission;
@@ -35,6 +36,10 @@ public class OrderExchangeController {
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> create(@Valid @RequestBody OrderExchangeCreateForm form,
             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        // 换货单内嵌完整建单表单，改价权限与后台录单同一口径：含人工改价行必须持改价权限
+        if (form.getOrder().getItems().stream().anyMatch(item -> Boolean.TRUE.equals(item.getManualPriceOverride()))) {
+            StpUtil.checkPermission(OrderPermission.PRICE_OVERRIDE);
+        }
         return ResponseDTO.ok(exchangeService.create(form, key));
     }
 }

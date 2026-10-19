@@ -72,6 +72,17 @@ public class SupplierSkuSyncManager {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
+        // 先删后写：货号换绑商品（旧行删除、新行插入同一货号）若先插后删会撞上
+        // uk_supplier_sku_item_code_active；软删先释放货号，更新与新增才不会误判冲突。
+        Map<Long, Integer> versionById = new HashMap<>();
+        existing.forEach(row -> versionById.put(row.getId(), row.getVersion()));
+        for (Long removedId : changeSet.removedIds()) {
+            Integer version = versionById.get(removedId);
+            if (supplierSkuDao.softDeleteOwnedWithVersion(supplierId, removedId, version, operator) != 1) {
+                throw new ScmBusinessException(VERSION_CONFLICT);
+            }
+        }
+
         for (Planned planned : retained) {
             SupplierSkuEntity entity = planned.existing();
             fill(entity, planned, operator, now);
@@ -97,15 +108,6 @@ public class SupplierSkuSyncManager {
                 supplierSkuDao.insert(entity);
             } catch (DuplicateKeyException e) {
                 throw new ScmBusinessException(SUPPLIER_SKU_CONFLICT);
-            }
-        }
-
-        Map<Long, Integer> versionById = new HashMap<>();
-        existing.forEach(row -> versionById.put(row.getId(), row.getVersion()));
-        for (Long removedId : changeSet.removedIds()) {
-            Integer version = versionById.get(removedId);
-            if (supplierSkuDao.softDeleteOwnedWithVersion(supplierId, removedId, version, operator) != 1) {
-                throw new ScmBusinessException(VERSION_CONFLICT);
             }
         }
     }

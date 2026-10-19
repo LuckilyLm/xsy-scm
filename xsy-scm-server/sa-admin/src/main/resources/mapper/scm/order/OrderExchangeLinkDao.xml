@@ -1,9 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xsy.scm.order.dao.OrderExchangeLinkDao">
+    <!-- 换货单已删除的关联视为不存在：否则退货详情会对着一张已删草稿加载失败，且无法再建换货 -->
     <select id="replacementOrderId" resultType="long">
-        SELECT replacement_order_id FROM xsy_order_exchange_link WHERE return_id = #{returnId}
+        SELECT l.replacement_order_id FROM xsy_order_exchange_link l
+        JOIN xsy_sales_order o ON o.id = l.replacement_order_id
+        WHERE l.return_id = #{returnId} AND o.deleted = FALSE
     </select>
+    <delete id="deleteByReplacementOrderId">
+        DELETE FROM xsy_order_exchange_link WHERE replacement_order_id = #{replacementOrderId}
+    </delete>
     <insert id="insert">
         INSERT INTO xsy_order_exchange_link(return_id, original_order_id, replacement_order_id, created_by)
         VALUES (#{returnId}, #{originalOrderId}, #{replacementOrderId}, #{operator})

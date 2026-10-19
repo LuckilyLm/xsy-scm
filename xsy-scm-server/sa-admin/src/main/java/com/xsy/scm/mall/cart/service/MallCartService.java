@@ -79,29 +79,40 @@ public class MallCartService {
         return result;
     }
 
+    /**
+     * 加购是累加语义。并发两个「数量 +1」若各自读旧值再覆盖写，会丢一次；因此先在行锁上排队， 行不存在时靠部分唯一索引串行化首次插入，冲突方回退到锁行累加。
+     */
     @Transactional(rollbackFor = Exception.class)
     public MallCartVO add(RequestMallCustomer customer, MallCartAddForm form) {
         BigDecimal quantity = parseQuantity(form.getQuantity());
         MallProductVO product = requireVisible(customer, form.getSkuId());
-        MallCartItemEntity existing = cartDao.selectByAccountAndSku(customer.getAccountId(), form.getSkuId());
-        MallQuantityPolicy.require(product, existing == null ? quantity : existing.getQuantity().add(quantity));
-        if (existing == null) {
-            MallCartItemEntity row = new MallCartItemEntity();
-            row.setAccountId(customer.getAccountId());
-            row.setCustomerId(customer.getCustomerId());
-            row.setSkuId(form.getSkuId());
-            row.setQuantity(quantity);
-            OffsetDateTime now = OffsetDateTime.now();
-            row.setCreatedAt(now);
-            row.setUpdatedAt(now);
-            row.setCreatedBy(ScmOperator.current());
-            row.setUpdatedBy(ScmOperator.current());
-            cartDao.insert(row);
-        } else {
-            cartDao.updateQuantity(customer.getAccountId(), form.getSkuId(), existing.getQuantity().add(quantity),
-                    ScmOperator.current());
+        MallCartItemEntity existing = cartDao.lockByAccountAndSku(customer.getAccountId(), form.getSkuId());
+        while (existing == null) {
+            MallQuantityPolicy.require(product, quantity);
+            if (cartDao.insertOnConflictDoNothing(newRow(customer, form.getSkuId(), quantity)) == 1) {
+                return assemble(customer);
+            }
+            // 唯一索引冲突说明并发方已建行；锁行后转为累加。若对方随即又删掉，循环重试插入。
+            existing = cartDao.lockByAccountAndSku(customer.getAccountId(), form.getSkuId());
         }
+        BigDecimal total = existing.getQuantity().add(quantity);
+        MallQuantityPolicy.require(product, total);
+        cartDao.updateQuantity(customer.getAccountId(), form.getSkuId(), total, ScmOperator.current());
         return assemble(customer);
+    }
+
+    private static MallCartItemEntity newRow(RequestMallCustomer customer, Long skuId, BigDecimal quantity) {
+        MallCartItemEntity row = new MallCartItemEntity();
+        row.setAccountId(customer.getAccountId());
+        row.setCustomerId(customer.getCustomerId());
+        row.setSkuId(skuId);
+        row.setQuantity(quantity);
+        OffsetDateTime now = OffsetDateTime.now();
+        row.setCreatedAt(now);
+        row.setUpdatedAt(now);
+        row.setCreatedBy(ScmOperator.current());
+        row.setUpdatedBy(ScmOperator.current());
+        return row;
     }
 
     @Transactional(rollbackFor = Exception.class)
