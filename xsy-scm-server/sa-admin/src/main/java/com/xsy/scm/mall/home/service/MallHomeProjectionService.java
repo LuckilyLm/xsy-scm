@@ -44,11 +44,12 @@ public class MallHomeProjectionService {
     public MallHomePageVO published(RequestMallCustomer customer, Long warehouseId) {
         Long releaseId = homeDao.pointer().getCurrentReleaseId();
         if (releaseId == null) {
-            return new MallHomePageVO(null, List.of());
+            return new MallHomePageVO(null, null, List.of());
         }
         MallHomeReleaseVO release = homeDao.release(releaseId);
-        return release == null ? new MallHomePageVO(null, List.of())
-                : project(releaseId, release.getContent(), customer, warehouseId);
+        return release == null
+                ? new MallHomePageVO(null, null, List.of())
+                : project(releaseId, release.getThemeCode(), release.getContent(), customer, warehouseId);
     }
 
     @Transactional(readOnly = true)
@@ -57,26 +58,28 @@ public class MallHomeProjectionService {
         RequestMallCustomer customer = new RequestMallCustomer();
         customer.setCustomerId(customerId);
         Long selectedWarehouse = warehouseService.require(customerId, null, warehouseId);
-        return project(null, homeDao.draft().getContent(), customer, selectedWarehouse);
+        var draft = homeDao.draft();
+        return project(null, draft.getThemeCode(), draft.getContent(), customer, selectedWarehouse);
     }
 
-    private MallHomePageVO project(Long releaseId, String content, RequestMallCustomer customer, Long warehouseId) {
+    private MallHomePageVO project(Long releaseId, String themeCode, String content, RequestMallCustomer customer,
+            Long warehouseId) {
         List<MallHomeBlockForm> configured;
         try {
             configured = layoutService.parse(content);
         } catch (IllegalStateException invalidStoredLayout) {
-            return new MallHomePageVO(releaseId, List.of());
+            return new MallHomePageVO(releaseId, themeCode, List.of());
         }
         OffsetDateTime now = OffsetDateTime.now();
         List<MallHomeBlockForm> active = configured.stream().filter(Objects::nonNull)
                 .filter(block -> block.getSortOrder() != null && Boolean.TRUE.equals(block.getEnabled())
-                && (block.getCustomerIds() == null || block.getCustomerIds().isEmpty()
-                        || block.getCustomerIds().contains(customer.getCustomerId()))
-                && (block.getStartAt() == null || !now.isBefore(block.getStartAt()))
-                && (block.getEndAt() == null || now.isBefore(block.getEndAt())))
+                        && (block.getCustomerIds() == null || block.getCustomerIds().isEmpty()
+                                || block.getCustomerIds().contains(customer.getCustomerId()))
+                        && (block.getStartAt() == null || !now.isBefore(block.getStartAt()))
+                        && (block.getEndAt() == null || now.isBefore(block.getEndAt())))
                 .sorted(Comparator.comparing(MallHomeBlockForm::getSortOrder)).toList();
         if (active.isEmpty()) {
-            return new MallHomePageVO(releaseId, List.of());
+            return new MallHomePageVO(releaseId, themeCode, List.of());
         }
         List<Long> skuIds = active.stream().flatMap(block -> {
             List<Long> ids = new ArrayList<>(block.getSkuIds() == null ? List.of() : block.getSkuIds());
@@ -89,12 +92,15 @@ public class MallHomeProjectionService {
             }
             return ids.stream();
         }).distinct().toList();
-        Map<Long, MallProductVO> products = skuIds.isEmpty() ? Map.of()
-                : catalogService.visibleProducts(customer, skuIds, null, warehouseId).stream()
-                        .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity()));
+        Map<Long,
+                MallProductVO> products = skuIds.isEmpty()
+                        ? Map.of()
+                        : catalogService.visibleProducts(customer, skuIds, null, warehouseId).stream()
+                                .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity()));
         Set<Long> activityIds = active.stream().anyMatch(block -> "ACTIVITY".equals(block.getLinkType()))
                 ? promotionService.activities(customer, warehouseId).stream().map(activity -> activity.getId())
-                        .collect(Collectors.toSet()) : Set.of();
+                        .collect(Collectors.toSet())
+                : Set.of();
         Set<Long> categoryIds = new HashSet<>();
         if (active.stream().anyMatch(block -> "CATEGORY".equals(block.getLinkType()))) {
             for (MallCategoryVO category : catalogService.categories(customer)) {
@@ -103,8 +109,8 @@ public class MallHomeProjectionService {
         }
         Map<String, String> imageUrls = new HashMap<>();
         List<String> imageKeys = active.stream().map(MallHomeBlockForm::getImageFileKey)
-                .filter(key -> key != null && !key.isBlank() && key.startsWith(PUBLIC_IMAGE_PREFIX))
-                .distinct().toList();
+                .filter(key -> key != null && !key.isBlank() && key.startsWith(PUBLIC_IMAGE_PREFIX)).distinct()
+                .toList();
         if (!imageKeys.isEmpty()) {
             fileService.getFileList(imageKeys).stream()
                     .filter(file -> file.getFileUrl() != null && !file.getFileUrl().isBlank())
@@ -130,19 +136,21 @@ public class MallHomeProjectionService {
             view.setLinkType(block.getLinkType());
             view.setLinkTarget(block.getLinkTarget());
             if ("RECOMMENDATION".equals(block.getType())) {
-                if (block.getSkuIds() == null) continue;
+                if (block.getSkuIds() == null)
+                    continue;
                 List<MallProductVO> visible = block.getSkuIds().stream().map(products::get)
                         .filter(product -> product != null).toList();
-                if (visible.isEmpty()) continue;
+                if (visible.isEmpty())
+                    continue;
                 view.setProducts(visible);
             }
             blocks.add(view);
         }
-        return new MallHomePageVO(releaseId, blocks);
+        return new MallHomePageVO(releaseId, themeCode, blocks);
     }
 
-    private boolean targetVisible(MallHomeBlockForm block, Map<Long, MallProductVO> products,
-            Set<Long> categoryIds, Set<Long> activityIds) {
+    private boolean targetVisible(MallHomeBlockForm block, Map<Long, MallProductVO> products, Set<Long> categoryIds,
+            Set<Long> activityIds) {
         String type = block.getLinkType();
         if ("EXTERNAL_URL".equals(type)) {
             return validator.allowedExternalUrl(block.getLinkTarget());

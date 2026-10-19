@@ -7,7 +7,7 @@ const api = read('../src/api/business/scm/mall-home-api.ts');
 const page = read('../src/views/business/scm/mall/mall-home-layout.vue');
 
 test('首页草稿、发布和回滚提交各自的乐观锁版本与原因', () => {
-  assert.match(api, /\/draft', \{version, blocks\}/);
+  assert.match(api, /\/draft', \{version, themeCode, blocks\}/);
   assert.match(api, /\/publish', \{draftVersion, pointerVersion\}/);
   assert.match(api, /\/rollback', \{targetReleaseId, pointerVersion, reason\}/);
   assert.match(page, /:disabled="dirty \|\| !blocks\.length"[^>]*@click="publish"/);

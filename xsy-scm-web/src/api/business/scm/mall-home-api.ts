@@ -23,6 +23,7 @@ export interface HomeBlock {
 }
 
 export interface HomeDraft {
+    themeCode?: string;
     version: number;
     pointerVersion: number;
     currentReleaseId: ScmId | null;
@@ -70,8 +71,8 @@ export interface HomePage {
 export const mallHomeApi = {
     draft: () => getRequest('/scm/mall-admin/home/draft', {}) as unknown as Promise<ScmResponse<HomeDraft>>,
     history: () => getRequest('/scm/mall-admin/home/history', {}) as unknown as Promise<ScmResponse<HomeRelease[]>>,
-    save: (version: number, blocks: HomeBlock[]) =>
-        postRequest('/scm/mall-admin/home/draft', {version, blocks}) as unknown as Promise<ScmResponse<HomeDraft>>,
+    save: (version: number, themeCode: string, blocks: HomeBlock[]) =>
+        postRequest('/scm/mall-admin/home/draft', {version, themeCode, blocks}) as unknown as Promise<ScmResponse<HomeDraft>>,
     publish: (draftVersion: number, pointerVersion: number) =>
         postRequest('/scm/mall-admin/home/publish', {draftVersion, pointerVersion}) as unknown as Promise<ScmResponse<ScmId>>,
     rollback: (targetReleaseId: ScmId, pointerVersion: number, reason: string) =>

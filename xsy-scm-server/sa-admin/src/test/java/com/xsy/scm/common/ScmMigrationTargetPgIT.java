@@ -558,6 +558,23 @@ class ScmMigrationTargetPgIT {
         assertThat(constraint).as("授权只能在 GROUP 结算客户上成立").isEqualTo(1);
     }
 
+    /**
+     * V164 起首页主题随草稿与发布版本一起保存，回滚时配色一起回去。
+     */
+    @Test
+    void mallHomeThemeExistsFromV164() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 164) {
+            return;
+        }
+        assertColumn("xsy_mall_home_draft", "theme_code");
+        assertColumn("xsy_mall_home_release", "theme_code");
+        Integer constraints = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname IN "
+                        + "('ck_mall_home_draft_theme', 'ck_mall_home_release_theme')", Integer.class);
+        assertThat(constraints).as("主题取值必须受控").isEqualTo(2);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

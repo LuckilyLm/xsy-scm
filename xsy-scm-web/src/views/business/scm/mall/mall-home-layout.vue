@@ -17,6 +17,8 @@
         <template #action><a-button size="small" @click="load">重新加载</a-button></template>
       </a-alert>
       <a-space wrap class="mall-home-editor__toolbar">
+        <a-select v-model:value="themeCode" :options="themeOptions" style="width: 140px" @change="dirty = true"
+                  aria-label="首页主题"/>
         <a-select v-model:value="newType" :options="blockTypeOptions" style="width: 170px"/>
         <a-button v-privilege="'scm:mall:home:edit'" :disabled="blocks.length >= 30" @click="addBlock">添加组件</a-button>
         <a-button v-privilege="'scm:mall:home:edit'" type="primary" :loading="saving" :disabled="!dirty" @click="saveDraft">保存草稿</a-button>
@@ -180,6 +182,13 @@ const columns: TableColumnsType<HomeBlock> = [
 const newType = ref<HomeBlockType>('BANNER');
 const blocks = ref<HomeBlock[]>([]), releases = ref<HomeRelease[]>([]);
 const draftVersion = ref(0), pointerVersion = ref(0), currentReleaseId = ref<ScmId | null>(null);
+/** 主题只换配色，不换版式；跟着发布版本走，回滚时一起回去。 */
+const themeOptions = [
+  {value: 'FRESH', label: '生鲜绿'},
+  {value: 'WARM', label: '暖橙'},
+  {value: 'OCEAN', label: '海蓝'},
+];
+const themeCode = ref('FRESH');
 const loading = ref(false), saving = ref(false), publishing = ref(false), dirty = ref(false), error = ref('');
 const editorOpen = ref(false), editing = ref<HomeBlock | null>(null);
 const recommendationSkuIds = ref<ScmId | ScmId[]>(), productTargetId = ref<ScmId | ScmId[]>();
@@ -208,6 +217,7 @@ async function load(): Promise<void> {
     draftVersion.value = draft.data.version;
     pointerVersion.value = draft.data.pointerVersion;
     currentReleaseId.value = draft.data.currentReleaseId;
+    themeCode.value = draft.data.themeCode || 'FRESH';
     blocks.value = draft.data.blocks || [];
     releases.value = history.data || [];
     dirty.value = false;
@@ -313,7 +323,7 @@ const uploadImage: UploadProps['customRequest'] = async options => {
 async function saveDraft(): Promise<void> {
   saving.value = true;
   try {
-    const response = await mallHomeApi.save(draftVersion.value, blocks.value);
+    const response = await mallHomeApi.save(draftVersion.value, themeCode.value, blocks.value);
     draftVersion.value = response.data.version;
     dirty.value = false;
     void message.success('草稿已保存');

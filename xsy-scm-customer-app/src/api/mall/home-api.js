@@ -8,7 +8,8 @@ export const mallHomeApi = {
       ...response,
       data: {
         releaseId: response.data?.releaseId ?? null,
-        blocks: (response.data?.blocks || []).map(block => ({
+        themeCode: response.data?.themeCode ?? null,
+        blocks: (response.data?.blocks || []).map((block) => ({
           ...block,
           products: (block.products || []).map(adaptProduct),
         })),
