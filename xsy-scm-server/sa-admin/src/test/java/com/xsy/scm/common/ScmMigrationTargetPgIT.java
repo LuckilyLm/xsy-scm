@@ -502,6 +502,30 @@ class ScmMigrationTargetPgIT {
         assertThat(menus).as("推广码权限应随迁移发布").isEqualTo(1);
     }
 
+    /**
+     * V161 起有时价：规格级、区间半开、价格来源放开到 TIME_PRICE。
+     */
+    @Test
+    void timePriceSchemaExistsFromV161() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 161) {
+            return;
+        }
+        assertColumn("xsy_pricing_time_price", "unit_price");
+        assertColumn("xsy_pricing_time_price", "start_at");
+        Integer draftSource = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_sales_order_item_draft_source' "
+                        + "AND pg_get_constraintdef(oid) LIKE '%TIME_PRICE%'", Integer.class);
+        assertThat(draftSource).as("下单价格来源应放开到时价").isEqualTo(1);
+        Integer lockedSource = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_sales_order_item_locked_source' "
+                        + "AND pg_get_constraintdef(oid) LIKE '%TIME_PRICE%'", Integer.class);
+        assertThat(lockedSource).as("锁价来源应放开到时价").isEqualTo(1);
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id IN (2121, 2122)", Integer.class);
+        assertThat(menus).as("时价页面与维护权限应随迁移发布").isEqualTo(2);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

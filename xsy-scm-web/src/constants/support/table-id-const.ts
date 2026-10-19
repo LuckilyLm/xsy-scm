@@ -30,6 +30,7 @@ export const TABLE_ID_CONST = {
         SCM_PRICING_TYPE_PRICE: 50008,
         SCM_PRICING_HISTORY: 50009,
         SCM_PRICING_BATCH: 50010,
+        SCM_PRICING_TIME_PRICE: 50058,
         SCM_CUSTOMER_SKU_VISIBILITY: 50011,
         // 销售订单保留既有表格 ID（602–605）：改号会让已保存的列配置失效
         SCM_ORDER: 602,

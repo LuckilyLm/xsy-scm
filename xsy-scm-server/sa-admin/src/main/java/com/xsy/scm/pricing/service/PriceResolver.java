@@ -21,6 +21,8 @@ import com.xsy.scm.pricing.constant.AgreementFormulaType;
 import com.xsy.scm.pricing.manager.AgreementFormulaCalculator;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.pricing.dao.CustomerTypePriceDao;
+import com.xsy.scm.pricing.dao.TimePriceDao;
+import com.xsy.scm.pricing.domain.entity.TimePriceEntity;
 import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.pricing.domain.vo.PriceResolveResultVO;
 import com.xsy.scm.pricing.domain.entity.AgreementPriceEntity;
@@ -50,6 +52,7 @@ public class PriceResolver {
     private final CustomerTypeDao customerTypeDao;
     private final AgreementPriceDao agreementPriceDao;
     private final CustomerTypePriceDao customerTypePriceDao;
+    private final TimePriceDao timePriceDao;
     private final ProductSkuOptionDao productSkuOptionDao;
     private final ProductBundleComponentQueryService productBundleDao;
     private final CustomerSkuVisibilityDao customerSkuVisibilityDao;
@@ -112,6 +115,9 @@ public class PriceResolver {
         var customerTypePricesBySkuId = customerTypePriceDao.selectEffective(customerType.getId(), skuIds, priceAt)
                 .stream().collect(Collectors.toMap(CustomerTypePriceEntity::getSkuId, Function.identity(),
                         (first, next) -> first));
+        // 时价压在客户类型价之下、市场价之上：签了协议或分了类的客户不该被临时价顶掉
+        var timePricesBySkuId = timePriceDao.selectEffective(skuIds, priceAt).stream()
+                .collect(Collectors.toMap(TimePriceEntity::getSkuId, Function.identity(), (first, next) -> first));
         boolean allEnabledVisibility = CustomerVisibilityPolicy.ALL_ENABLED
                 .equals(customerSkuVisibilityDao.policy(customerId));
         Set<Long> visibleSkuIds = allEnabledVisibility
@@ -216,6 +222,9 @@ public class PriceResolver {
                 var customerTypePrice = customerTypePricesBySkuId.get(skuId);
                 resolvedPrice.price(customerTypePrice.getUnitPrice(), ScmPriceSourceEnum.CUSTOMER_TYPE,
                         customerTypePrice.getId());
+            } else if (timePricesBySkuId.containsKey(skuId)) {
+                var timePrice = timePricesBySkuId.get(skuId);
+                resolvedPrice.price(timePrice.getUnitPrice(), ScmPriceSourceEnum.TIME_PRICE, timePrice.getId());
             } else {
                 resolvedPrice.price(skuOption == null ? null : skuOption.getMarketPrice(), ScmPriceSourceEnum.MARKET,
                         null);

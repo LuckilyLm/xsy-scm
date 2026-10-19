@@ -16,7 +16,16 @@ public enum PricingErrorCode implements ScmErrorCode {
     PRICE_BATCH_ROW_INVALID(40035, "批量调价存在非法行"),
     PRICE_BATCH_KEY_DUPLICATE(40948, "批次号已成功提交，请勿重复提交"),
     SKU_NOT_SELLABLE(40949, "商品规格不可售、不可见或未定价"),
-    PRICE_RESOLVE_CUSTOMER_TYPE_MISSING(40036, "客户未设置有效的客户类型");
+    PRICE_RESOLVE_CUSTOMER_TYPE_MISSING(40036, "客户未设置有效的客户类型"),
+
+    // ---- 时价 ----
+    TIME_PRICE_NOT_FOUND(40050, "时价记录不存在"),
+
+    TIME_PRICE_WINDOW_INVALID(40051, "生效结束时间必须晚于开始时间"),
+
+    TIME_PRICE_OVERLAP(40052, "同一商品规格的时价区间不能重叠"),
+
+    TIME_PRICE_UPDATE_CONFLICT(40053, "时价已被他人修改，请刷新后重试");
     private final int code;
     private final String msg;
 }
