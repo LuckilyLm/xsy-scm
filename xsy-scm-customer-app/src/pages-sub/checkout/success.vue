@@ -1,7 +1,7 @@
 <template>
-  <view class="done">
+  <view class="done" :style="themeStyle">
     <view class="done__icon">
-      <uni-icons type="checkmarkempty" :size="56" :color="COLOR_PRIMARY" />
+      <uni-icons type="checkmarkempty" :size="56" :color="COLOR_SUCCESS" />
     </view>
     <text class="done__title">订单已提交</text>
     <text v-if="orderNo" class="done__no">订单号 {{ orderNo }}</text>
@@ -23,8 +23,12 @@
 
 <script setup>
   import { computed, ref } from 'vue';
+  import { COLOR_SUCCESS } from '@/constants/theme-color-const';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad } from '@dcloudio/uni-app';
-  import { COLOR_PRIMARY } from '@/constants/theme-color-const';
+
+  const { themeStyle } = useMallTheme();
 
   const orderId = ref('');
   const orderNo = ref('');
@@ -66,7 +70,7 @@
     width: 160rpx;
     height: 160rpx;
     border-radius: 50%;
-    background-color: $color-primary-light;
+    background-color: $color-success-light;
     @include flex-center;
   }
   .done__title {
@@ -132,7 +136,7 @@
     color: $color-text-secondary;
   }
   .done__btn--primary {
-    background-color: $color-primary;
+    background-color: var(--mall-primary, #16a34a);
     color: white;
   }
 </style>

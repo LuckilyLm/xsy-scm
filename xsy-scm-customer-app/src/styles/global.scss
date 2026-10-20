@@ -12,6 +12,17 @@ page {
   color: $color-text-primary;
   font-size: $font-size-base;
   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /*
+   * 品牌色运行时通道：默认值为 FRESH 主题，页面根节点通过 use-mall-theme
+   * 绑定同组变量实现主题切换（发布主题见 store/modules/mall/theme.js）。
+   * 这里是全局兜底，保证弹层、未绑定的页面也拿到合法品牌色。
+   * 品牌相关样式一律消费 var(--mall-*)，语义色（成功 / 警告 / 危险）不随主题变化。
+   */
+  --mall-primary: #{$color-primary};
+  --mall-primary-dark: #{$color-primary-dark};
+  --mall-primary-light: #{$color-primary-light};
+  --mall-primary-disabled: #{$color-primary-disabled};
 }
 
 /* ============================ 工具类 ============================ */

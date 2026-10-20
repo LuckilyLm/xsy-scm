@@ -120,6 +120,38 @@ class MallHomeLayoutPgIT extends ScmW5PgITBase {
                 .getAnnotation(SaCheckPermission.class).value()).containsExactly(MallPermission.HOME_PUBLISH);
     }
 
+    @Test
+    void globalThemeFollowsPublishedPointerAndRollbackWithoutCustomerOrWarehouse() {
+        var initial = layouts.draft();
+        var before = projection.publishedTheme();
+        var warm = save(initial.version(), announcement("warm", "暖色主题", null));
+        warm.setThemeCode("WARM");
+        var warmDraft = layouts.save(warm);
+        assertThat(projection.publishedTheme()).isEqualTo(before);
+        Long warmRelease = layouts.publish(publish(warmDraft.version(), warmDraft.pointerVersion()));
+        assertThat(projection.publishedTheme().getThemeCode()).isEqualTo("WARM");
+        var ocean = save(warmDraft.version(), announcement("ocean", "蓝色主题", null));
+        ocean.setThemeCode("OCEAN");
+        var oceanDraft = layouts.save(ocean);
+        Long oceanRelease = layouts.publish(publish(oceanDraft.version(), oceanDraft.pointerVersion()));
+        assertThat(projection.publishedTheme().getThemeCode()).isEqualTo("OCEAN");
+        var rollback = new MallHomeRollbackForm();
+        rollback.setTargetReleaseId(warmRelease);
+        rollback.setPointerVersion(layouts.draft().pointerVersion());
+        rollback.setReason("恢复暖色主题");
+        Long rollbackRelease = layouts.rollback(rollback);
+        var operator = SmartRequestUtil.getRequestUser();
+        SmartRequestUtil.remove();
+        try {
+            assertThat(projection.publishedTheme().getThemeCode()).isEqualTo("WARM");
+            assertThat(projection.publishedTheme().getReleaseId()).isEqualTo(rollbackRelease);
+        } finally {
+            SmartRequestUtil.setRequestUser(operator);
+        }
+        assertThat(jdbc.queryForObject("SELECT theme_code FROM xsy_mall_home_release WHERE id=?",
+                String.class, oceanRelease)).isEqualTo("OCEAN");
+    }
+
     private static MallHomeDraftSaveForm save(int version, MallHomeBlockForm block) {
         var form = new MallHomeDraftSaveForm();
         form.setVersion(version);

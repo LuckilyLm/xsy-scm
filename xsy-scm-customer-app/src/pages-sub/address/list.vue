@@ -1,5 +1,5 @@
 <template>
-  <view class="addr">
+  <view class="addr" :style="themeStyle">
     <view v-if="loading && !list.length" class="addr__hint">加载中…</view>
 
     <view v-else-if="!list.length" class="addr__empty">
@@ -33,11 +33,15 @@
 
 <script setup>
   import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onShow } from '@dcloudio/uni-app';
   import { mallAddressApi } from '@/api/mall/address-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
   import { CHECKOUT_ADDRESS } from '@/constants/local-storage-key-const';
+
+  const { themeStyle } = useMallTheme();
 
   const list = ref([]);
   const loading = ref(false);
@@ -165,8 +169,8 @@
     margin-left: $space-2;
     padding: 2rpx 12rpx;
     border-radius: $radius-pill;
-    background-color: $color-primary-light;
-    color: $color-primary;
+    background-color: var(--mall-primary-light, #e8f5ec);
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-xs;
   }
   .addr-item__tag--pick {
@@ -204,7 +208,7 @@
     height: 80rpx;
     @include flex-center;
     border-radius: $radius-pill;
-    background-color: $color-primary;
+    background-color: var(--mall-primary, #16a34a);
     color: white;
     font-size: $font-size-base;
   }

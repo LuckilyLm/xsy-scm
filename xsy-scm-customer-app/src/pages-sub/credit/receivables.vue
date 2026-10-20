@@ -1,5 +1,5 @@
 <template>
-  <view class="bills">
+  <view class="bills" :style="themeStyle">
     <scroll-view scroll-x class="bills__tabs">
       <view class="bills__tab-row">
         <text
@@ -39,11 +39,15 @@
 
 <script setup>
   import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, formatDate } from '@/utils/order-display';
   import { RECEIVABLE_FILTERS, receivableStateText } from '@/utils/funds-display';
+
+  const { themeStyle } = useMallTheme();
 
   const PAGE_SIZE = 20;
   const state = ref('');
@@ -122,7 +126,7 @@
     font-size: $font-size-sm;
   }
   .bills__tab--active {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-weight: $font-weight-bold;
   }
   .bills__state {
@@ -133,7 +137,7 @@
   .bills__retry {
     display: block;
     margin-top: $space-4;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .bills__card {
     margin: $space-3 $space-4 0;
@@ -146,7 +150,7 @@
     font-weight: $font-weight-medium;
   }
   .bills__status {
-    color: $color-primary;
+    color: $color-success;
     font-size: $font-size-sm;
     flex-shrink: 0;
   }

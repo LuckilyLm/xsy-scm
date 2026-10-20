@@ -1,5 +1,5 @@
 <template>
-  <view class="coupons">
+  <view class="coupons" :style="themeStyle">
     <view class="coupons__nav" @click="goMine">查看我的优惠券 ›</view>
     <view v-if="loading && !rows.length" class="coupons__state">优惠券加载中…</view>
     <view v-else-if="error && !rows.length" class="coupons__state">{{ error }}<text class="coupons__retry" @click="load(true)">重试</text></view>
@@ -19,10 +19,14 @@
 
 <script setup>
   import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
   import MallCouponCard from '@/components/business/mall-coupon-card.vue';
   import { mallPromotionApi } from '@/api/mall/promotion-api';
   import { smartSentry } from '@/lib/smart-sentry';
+
+  const { themeStyle } = useMallTheme();
 
   const PAGE_SIZE = 20;
   const rows = ref([]);
@@ -101,7 +105,7 @@
   .coupons__nav {
     padding: $space-4;
     background: $color-bg-card;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     text-align: right;
     font-size: $font-size-sm;
   }
@@ -114,7 +118,7 @@
     display: block;
     padding: $space-4;
     text-align: center;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .coupons__bottom {
     padding: $space-5;

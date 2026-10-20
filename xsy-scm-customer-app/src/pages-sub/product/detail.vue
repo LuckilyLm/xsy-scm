@@ -1,5 +1,5 @@
 <template>
-  <view class="detail">
+  <view class="detail" :style="themeStyle">
     <scroll-view class="detail__body" scroll-y>
       <view v-if="loading" class="detail__hint">
         <text class="detail__hint-text">加载中…</text>
@@ -114,6 +114,8 @@
 
 <script setup>
   import { computed, ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad } from '@dcloudio/uni-app';
   import { mallCatalogApi } from '@/api/mall';
   import { isApiError } from '@/lib/smart-request';
@@ -132,6 +134,8 @@
     stockText,
     thumbText,
   } from '@/utils/product-display';
+
+  const { themeStyle } = useMallTheme();
 
   const skuId = ref(0);
   const product = ref(null);
@@ -338,14 +342,14 @@
     }
 
     &__missing-action-text {
-      color: $color-primary;
+      color: var(--mall-primary, #16a34a);
       font-size: $font-size-base;
     }
 
     /* ---------------------------- 主图 ---------------------------- */
     &__gallery {
       height: 560rpx;
-      background-color: $color-primary-light;
+      background-color: var(--mall-primary-light, #e8f5ec);
       @include flex-center;
     }
 
@@ -357,7 +361,7 @@
     &__gallery-text {
       font-size: 120rpx;
       font-weight: $font-weight-bold;
-      color: $color-primary;
+      color: var(--mall-primary, #16a34a);
     }
 
     /* ---------------------------- 通用块 ---------------------------- */
@@ -414,8 +418,8 @@
 
       /* 档位来自 priceSourceLevel()，与 ProductCard 的语义配色一致 */
       &--agreement {
-        background-color: $color-primary-light;
-        color: $color-primary;
+        background-color: var(--mall-primary-light, #e8f5ec);
+        color: var(--mall-primary, #16a34a);
       }
 
       &--type {
@@ -623,16 +627,16 @@
       /* Figma：主按钮 358×44 */
       height: 85rpx;
       border-radius: $radius-md;
-      background-color: $color-primary;
+      background-color: var(--mall-primary, #16a34a);
       @include flex-center;
 
       /* 询价：白底 + primary 描边 + primary 字。可点击，不是 disabled */
       &--inquiry {
         background-color: $color-bg-card;
-        border: 1px solid $color-primary;
+        border: 1px solid var(--mall-primary, #16a34a);
 
         .detail__footer-text {
-          color: $color-primary;
+          color: var(--mall-primary, #16a34a);
         }
       }
 

@@ -1,5 +1,5 @@
 <template>
-  <view class="summary">
+  <view class="summary" :style="themeStyle">
     <view class="summary__filters">
       <picker mode="date" :value="startDate" :end="endDate || today" @change="onStartChange">
         <text class="summary__date">{{ startDate || '开始日期' }}</text>
@@ -57,11 +57,15 @@
 
 <script setup>
   import { reactive, ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
   import { mallOrderApi } from '@/api/mall/order-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
   import { displayAmount, displayQuantity } from '@/utils/order-display';
+
+  const { themeStyle } = useMallTheme();
 
   const PAGE_SIZE = 20;
   const today = formatDateInput(new Date());
@@ -163,7 +167,7 @@
   }
   .summary__clear {
     margin-left: auto;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-sm;
   }
   .summary__totals {
@@ -197,7 +201,7 @@
   .summary__retry {
     display: block;
     margin-top: $space-4;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .summary__card {
     display: flex;

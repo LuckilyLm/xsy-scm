@@ -12,7 +12,7 @@
     <!-- 搜索框：公告之下，白底绿描边胶囊 -->
     <view class="home__search-wrap">
       <view class="home__search" @click="goSearch">
-        <uni-icons type="search" :size="18" :color="COLOR_PRIMARY" />
+        <uni-icons type="search" :size="18" :color="theme.primary" />
         <text class="home__search-text">搜索商品名称或规格</text>
       </view>
     </view>
@@ -29,7 +29,7 @@
           </view>
           <view v-if="userStore.isLogin" class="home__rail-item" @click="goCoupons">
             <view class="home__rail-icon">
-              <uni-icons type="gift" :size="20" :color="COLOR_PRIMARY" />
+              <uni-icons type="gift" :size="20" :color="theme.primary" />
             </view>
             <text class="home__rail-text">领券中心</text>
           </view>
@@ -114,22 +114,6 @@
 
 <script setup>
   import { computed, ref, watch } from 'vue';
-
-  /** 主题只换配色：取值受控，未知值回落到默认绿。 */
-  const MALL_THEMES = {
-    FRESH: { primary: '#16a34a', dark: '#12833c', light: '#e8f5ec' },
-    WARM: { primary: '#f97316', dark: '#ea580c', light: '#fff1e6' },
-    OCEAN: { primary: '#0284c7', dark: '#0369a1', light: '#e6f4fb' },
-  };
-  const themeCode = ref('FRESH');
-  const themeStyle = computed(() => {
-    const theme = MALL_THEMES[themeCode.value] || MALL_THEMES.FRESH;
-    return {
-      '--mall-primary': theme.primary,
-      '--mall-primary-dark': theme.dark,
-      '--mall-primary-light': theme.light,
-    };
-  });
   import { onReachBottom, onShow } from '@dcloudio/uni-app';
   import ProductCard from '@/components/business/product-card.vue';
   import { mallCatalogApi } from '@/api/mall';
@@ -139,11 +123,18 @@
   import { useMallNavigationStore } from '@/store/modules/mall/navigation';
   import { useUserStore } from '@/store/modules/system/user';
   import { useSystemLayout } from '@/composables/use-system-layout';
+  import { useMallTheme } from '@/composables/use-mall-theme';
   import { useMallCart } from '@/composables/use-mall-cart';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { COLOR_PRIMARY } from '@/constants/theme-color-const';
   import { formatDate } from '@/utils/order-display';
   import { categoryEmoji } from '@/utils/category-icon';
+
+  const { theme, themeStyle } = useMallTheme();
+
+  /*
+   * 主题来自全局状态（store/modules/mall/theme.js）：根节点绑定 CSS 变量，
+   * 首页内容请求不再修改全局主题，避免较慢的首页响应覆盖新主题。
+   */
 
   const PAGE_SIZE = 10;
   const { statusBarHeight, menuButtonRect } = useSystemLayout();
@@ -291,7 +282,6 @@
       const page = (await mallHomeApi.published()).data;
       if (request !== homeRequest || !userStore.isLogin || userStore.customerId !== customerId) return;
       homeLayout.value = page;
-      themeCode.value = page?.themeCode || 'FRESH';
     } catch (error) {
       if (request !== homeRequest || userStore.customerId !== customerId) return;
       homeLayout.value = null;

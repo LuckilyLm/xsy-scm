@@ -1,5 +1,5 @@
 <template>
-  <view class="al">
+  <view class="al" :style="themeStyle">
     <view v-if="loading && !records.length" class="al__state">售后单加载中…</view>
     <view v-else-if="!records.length" class="al__state">暂无售后单</view>
 
@@ -35,12 +35,16 @@
 
 <script setup>
   import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app';
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
   import { displayAmount, formatDateTime } from '@/utils/order-display';
   import { afterSaleStatusLevel, afterSaleStatusText } from '@/utils/after-sale-display';
+
+  const { themeStyle } = useMallTheme();
 
   const PAGE_SIZE = 10;
   const records = ref([]);
@@ -152,7 +156,7 @@
     color: $color-warning;
   }
   .al-card__status--primary {
-    color: $color-primary;
+    color: $color-success;
   }
   .al-card__status--ok {
     color: $color-success;

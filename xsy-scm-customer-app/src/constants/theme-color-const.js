@@ -40,3 +40,26 @@ export const COLOR_DIVIDER = '#f0f1f3';
 /** TabBar 配色（须与 src/pages.json 的 tabBar 保持一致） */
 export const COLOR_TABBAR_NORMAL = '#8f959e';
 export const COLOR_TABBAR_SELECTED = '#16a34a';
+
+/*
+ * ============================ 商城主题 ============================
+ *
+ * 主题只换品牌配色（主色 / 深色 / 浅色 / 禁用态），语义色（成功、警告、危险）不随主题变化。
+ * themeCode 来自首页发布记录（GET /scm/mall/home/theme），由全局 Pinia 状态归一化后使用。
+ * 全局状态见 store/modules/mall/theme.js；页面注入见 composables/use-mall-theme.js。
+ */
+
+/** 默认主题（空发布、历史缺失、未知值、请求失败时的统一回退） */
+export const MALL_THEME_DEFAULT_CODE = 'FRESH';
+
+/** 已发布可选主题：key 与后台装修的主题编码一一对应 */
+export const MALL_THEMES = {
+  FRESH: { primary: '#16a34a', dark: '#12833c', light: '#e8f5ec', disabled: '#a7d8b9' },
+  WARM: { primary: '#f97316', dark: '#ea580c', light: '#fff1e6', disabled: '#fdba74' },
+  OCEAN: { primary: '#0284c7', dark: '#0369a1', light: '#e6f4fb', disabled: '#8ec7ec' },
+};
+
+/** 未知 / 空值一律回退默认主题，页面不得直接信任服务端返回的 themeCode */
+export function normalizeMallThemeCode(code) {
+  return code && Object.prototype.hasOwnProperty.call(MALL_THEMES, code) ? code : MALL_THEME_DEFAULT_CODE;
+}

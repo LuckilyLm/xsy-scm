@@ -1,5 +1,5 @@
 <template>
-  <view class="activities">
+  <view class="activities" :style="themeStyle">
     <view v-if="loading" class="activities__state">活动加载中…</view>
     <view v-else-if="error" class="activities__state">{{ error }}<text class="activities__retry" @click="load">重试</text></view>
     <view v-else-if="!rows.length" class="activities__state">当前暂无可参加的活动</view>
@@ -17,10 +17,14 @@
 
 <script setup>
   import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
   import { mallPromotionApi } from '@/api/mall/promotion-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { formatDateTime } from '@/utils/order-display';
+
+  const { themeStyle } = useMallTheme();
 
   const rows = ref([]);
   const loading = ref(false);
@@ -64,7 +68,7 @@
   .activities__retry {
     display: block;
     margin-top: $space-4;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .activities__card {
     margin: $space-3 $space-4 0;
@@ -80,7 +84,7 @@
     font-weight: $font-weight-bold;
   }
   .activities__type {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-xs;
     white-space: nowrap;
   }
@@ -98,7 +102,7 @@
   .activities__link {
     display: block;
     margin-top: $space-3;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-sm;
   }
 </style>

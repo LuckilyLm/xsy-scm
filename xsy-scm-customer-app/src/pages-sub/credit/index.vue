@@ -1,5 +1,5 @@
 <template>
-  <view class="credit">
+  <view class="credit" :style="themeStyle">
     <view v-if="loading && !summary" class="credit__state">账期信息加载中…</view>
     <view v-else-if="error && !summary" class="credit__state">
       <text>{{ error }}</text
@@ -47,11 +47,15 @@
 
 <script setup>
   import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, formatDate } from '@/utils/order-display';
   import { receivableStateText } from '@/utils/funds-display';
+
+  const { themeStyle } = useMallTheme();
 
   const summary = ref(null);
   const recent = ref([]);
@@ -125,7 +129,7 @@
   .credit__retry {
     display: block;
     margin-top: $space-4;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .credit__stale {
     margin-bottom: $space-3;
@@ -140,7 +144,7 @@
     flex-direction: column;
     padding: $space-6;
     border-radius: $radius-lg;
-    background: $color-primary;
+    background: var(--mall-primary, #16a34a);
     color: $color-text-inverse;
   }
   .credit__hero-label {
@@ -200,7 +204,7 @@
     font-weight: $font-weight-bold;
   }
   .credit__link {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-sm;
     font-weight: $font-weight-regular;
   }
@@ -218,7 +222,7 @@
     font-weight: $font-weight-medium;
   }
   .credit__bill-state {
-    color: $color-primary;
+    color: $color-success;
     font-size: $font-size-sm;
   }
   .credit__bill-sub {

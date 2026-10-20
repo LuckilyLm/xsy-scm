@@ -1,5 +1,5 @@
 <template>
-  <view class="login">
+  <view class="login" :style="themeStyle">
     <view class="login__hero">
       <text class="login__mark">鲜</text>
       <text class="login__title">鲜蔬源商城</text>
@@ -26,7 +26,10 @@
   import { reactive, ref } from 'vue';
   import { mallAuthApi } from '@/api/mall';
   import { useUserStore } from '@/store/modules/system/user';
+  import { useMallTheme } from '@/composables/use-mall-theme';
   import { smartSentry } from '@/lib/smart-sentry';
+
+  const { themeStyle } = useMallTheme();
 
   const submitting = ref(false);
   const form = reactive({ phone: '', password: '' });
@@ -75,7 +78,7 @@
     width: 144rpx;
     height: 144rpx;
     border-radius: 36rpx;
-    background: $color-primary;
+    background: var(--mall-primary, #16a34a);
     color: white;
     font-size: 72rpx;
     font-weight: $font-weight-bold;
@@ -115,13 +118,13 @@
     margin-top: $space-6;
     height: 88rpx;
     border-radius: $radius-md;
-    background: $color-primary;
+    background: var(--mall-primary, #16a34a);
     color: white;
     @include flex-center;
     font-size: $font-size-lg;
   }
   .login__submit--disabled {
-    background: $color-primary-disabled;
+    background: var(--mall-primary-disabled, #a7d8b9);
   }
   .login__help {
     display: block;

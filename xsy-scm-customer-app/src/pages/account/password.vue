@@ -1,5 +1,5 @@
 <template>
-  <view class="password-page">
+  <view class="password-page" :style="themeStyle">
     <view class="password-card">
       <text class="password-title">{{ required ? '首次登录，请修改临时密码' : '修改登录密码' }}</text>
       <text class="password-hint">新密码设置成功后，需要使用新密码重新登录。</text>
@@ -15,7 +15,10 @@
   import { computed, reactive, ref } from 'vue';
   import { mallAuthApi } from '@/api/mall';
   import { useUserStore } from '@/store/modules/system/user';
+  import { useMallTheme } from '@/composables/use-mall-theme';
   import { smartSentry } from '@/lib/smart-sentry';
+
+  const { themeStyle } = useMallTheme();
 
   const userStore = useUserStore();
   const required = computed(() => userStore.passwordChangeRequired);
@@ -81,7 +84,7 @@
   }
   .password-submit {
     margin-top: $space-6;
-    background: $color-primary;
+    background: var(--mall-primary, #16a34a);
     color: white;
     font-size: $font-size-base;
   }

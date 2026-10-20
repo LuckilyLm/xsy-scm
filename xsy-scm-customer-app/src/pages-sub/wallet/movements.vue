@@ -1,5 +1,5 @@
 <template>
-  <view class="movements">
+  <view class="movements" :style="themeStyle">
     <scroll-view scroll-x class="movements__filters">
       <view class="movements__filter-row">
         <text
@@ -51,11 +51,15 @@
 
 <script setup>
   import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, formatDateTime } from '@/utils/order-display';
   import { MOVEMENT_FILTERS, movementTypeText } from '@/utils/funds-display';
+
+  const { themeStyle } = useMallTheme();
 
   const PAGE_SIZE = 20;
   const directions = [
@@ -148,7 +152,7 @@
     font-size: $font-size-sm;
   }
   .movements__filter--active {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-weight: $font-weight-bold;
   }
   .movements__directions {
@@ -162,7 +166,7 @@
     font-size: $font-size-sm;
   }
   .movements__direction--active {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-weight: $font-weight-bold;
   }
   .movements__state {
@@ -173,7 +177,7 @@
   .movements__retry {
     display: block;
     margin-top: $space-4;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .movements__card {
     margin: $space-3 $space-4 0;
@@ -191,7 +195,7 @@
     font-weight: $font-weight-bold;
   }
   .movements__amount--in {
-    color: $color-primary;
+    color: $color-success;
   }
   .movements__meta {
     display: block;
@@ -202,7 +206,7 @@
   .movements__link {
     display: block;
     margin-top: $space-3;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-sm;
   }
   .movements__bottom {

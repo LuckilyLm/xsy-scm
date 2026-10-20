@@ -1,5 +1,5 @@
 <template>
-  <view class="orders">
+  <view class="orders" :style="themeStyle">
     <view class="orders__toolbar">
       <text class="orders__summary" @click="goSummary">商品汇总</text>
     </view>
@@ -66,6 +66,8 @@
   import { mallOrderApi } from '@/api/mall/order-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import {
     CANCEL_REASONS,
     ORDER_TABS,
@@ -75,6 +77,8 @@
     formatDateTime,
     isAbnormalFulfillment,
   } from '@/utils/order-display';
+
+  const { themeStyle } = useMallTheme();
 
   const PAGE_SIZE = 10;
   const orders = ref([]);
@@ -218,7 +222,7 @@
     background: $color-bg-card;
   }
   .orders__summary {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-sm;
   }
   .orders__tabs {
@@ -237,7 +241,7 @@
     color: $color-text-secondary;
   }
   .orders__tab--active .orders__tab-text {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-weight: $font-weight-bold;
   }
   .orders__state {
@@ -285,7 +289,7 @@
     color: $color-warning;
   }
   .order-card__status--primary {
-    color: $color-primary;
+    color: $color-success;
   }
   .order-card__status--ok {
     color: $color-text-secondary;
@@ -316,7 +320,7 @@
   }
   .order-card__thumb--empty {
     @include flex-center;
-    background: $color-primary-light;
+    background: var(--mall-primary-light, #e8f5ec);
   }
   .order-card__image {
     width: 100%;
@@ -376,8 +380,8 @@
     font-size: $font-size-sm;
   }
   .order-card__btn--primary {
-    border-color: $color-primary;
-    background: $color-primary;
+    border-color: var(--mall-primary, #16a34a);
+    background: var(--mall-primary, #16a34a);
     color: $color-text-inverse;
   }
 </style>

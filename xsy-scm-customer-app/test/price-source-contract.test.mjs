@@ -50,7 +50,7 @@ test('时价单独成档：档位函数与两处配色都认识 time 档', () =>
 });
 
 test('商品卡主色读主题变量：首页切主题时卡内加购与价格同步变色', () => {
-  // 主题变量只挂在首页根节点；其他页面未定义时回落默认绿，观感不变
+  // 主题变量由各页面根节点统一提供；未加载主题时回落默认绿
   assert.doesNotMatch(card, /\$color-primary/);
   const varCount = (card.match(/var\(--mall-primary/g) || []).length;
   assert.ok(varCount >= 10, `商品卡应全部改读主题变量，当前 ${varCount} 处`);

@@ -1,5 +1,5 @@
 <template>
-  <view class="bill">
+  <view class="bill" :style="themeStyle">
     <view v-if="loading && !record" class="bill__state">账单详情加载中…</view>
     <view v-else-if="!record" class="bill__state">
       <text>{{ error || '账单不存在或已不可查看' }}</text>
@@ -42,11 +42,15 @@
 
 <script setup>
   import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, formatDate, formatDateTime } from '@/utils/order-display';
   import { receivableStateText } from '@/utils/funds-display';
+
+  const { themeStyle } = useMallTheme();
 
   const receivableId = ref(null);
   const record = ref(null);
@@ -100,7 +104,7 @@
   .bill__retry {
     display: block;
     margin-top: $space-4;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .bill__hero {
     display: flex;
@@ -122,7 +126,7 @@
   }
   .bill__hero-state {
     margin-top: $space-2;
-    color: $color-primary;
+    color: $color-success;
     font-size: $font-size-sm;
   }
   .bill__card {
@@ -149,7 +153,7 @@
     padding: $space-4;
     @include flex-between;
     @include card(0);
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .bill__note {
     display: block;

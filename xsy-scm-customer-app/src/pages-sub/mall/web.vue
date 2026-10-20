@@ -1,9 +1,11 @@
 <template>
   <web-view v-if="safeUrl" :src="safeUrl"/>
-  <view v-else class="web-error">链接不可用，请返回商城首页。</view>
+  <view v-else class="web-error" :style="themeStyle">链接不可用，请返回商城首页。</view>
 </template>
 <script setup>
 import { ref } from 'vue';
+import { useMallTheme } from '@/composables/use-mall-theme';
+const { themeStyle } = useMallTheme();
 import { onLoad } from '@dcloudio/uni-app';
 import { mallHomeApi } from '@/api/mall/home-api';
 

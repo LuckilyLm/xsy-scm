@@ -9,6 +9,7 @@ import com.xsy.scm.mall.home.domain.form.MallHomeBlockForm;
 import com.xsy.scm.mall.home.domain.vo.MallHomeBlockVO;
 import com.xsy.scm.mall.home.domain.vo.MallHomePageVO;
 import com.xsy.scm.mall.home.domain.vo.MallHomeReleaseVO;
+import com.xsy.scm.mall.home.domain.vo.MallThemeVO;
 import com.xsy.scm.mall.order.service.MallWarehouseService;
 import com.xsy.scm.mall.promotion.service.MallPromotionService;
 import java.time.OffsetDateTime;
@@ -50,6 +51,23 @@ public class MallHomeProjectionService {
         return release == null
                 ? new MallHomePageVO(null, null, List.of())
                 : project(releaseId, release.getThemeCode(), release.getContent(), customer, warehouseId);
+    }
+
+    /**
+     * 只读当前发布的主题指针，不解析装修内容，也不要求登录态；
+     * 无发布、指针缺失或发布记录丢失时如实返回空值，由客户端统一回退默认主题。
+     */
+    @Transactional(readOnly = true)
+    public MallThemeVO publishedTheme() {
+        var pointer = homeDao.pointer();
+        Long releaseId = pointer == null ? null : pointer.getCurrentReleaseId();
+        if (releaseId == null) {
+            return new MallThemeVO(null, null);
+        }
+        MallHomeReleaseVO release = homeDao.release(releaseId);
+        return release == null
+                ? new MallThemeVO(null, null)
+                : new MallThemeVO(releaseId, release.getThemeCode());
     }
 
     @Transactional(readOnly = true)

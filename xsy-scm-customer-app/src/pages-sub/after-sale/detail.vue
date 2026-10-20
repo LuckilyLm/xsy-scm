@@ -1,5 +1,5 @@
 <template>
-  <view class="ad">
+  <view class="ad" :style="themeStyle">
     <view v-if="loading && !record" class="ad__state">售后单加载中…</view>
     <view v-else-if="!record" class="ad__state">售后单不存在或已不可查看</view>
 
@@ -113,11 +113,15 @@
 
 <script setup>
   import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, displayQuantity, formatDateTime } from '@/utils/order-display';
   import { afterSaleStatusLevel, afterSaleStatusText, allocationStatusText, refundMethodText } from '@/utils/after-sale-display';
+
+  const { themeStyle } = useMallTheme();
 
   const returnId = ref(null);
   const record = ref(null);
@@ -212,7 +216,7 @@
     color: $color-warning;
   }
   .ad-head__status--primary {
-    color: $color-primary;
+    color: $color-success;
   }
   .ad-head__status--ok {
     color: $color-success;
@@ -264,7 +268,7 @@
     font-weight: $font-weight-bold;
   }
   .ad__row-value--link {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .ad-step {
     display: flex;
@@ -287,7 +291,7 @@
     background: $color-border;
   }
   .ad-step__dot--done {
-    background: $color-primary;
+    background: $color-success;
   }
   .ad-step__line {
     flex: 1;
@@ -352,7 +356,7 @@
   .ad-item__approved {
     display: block;
     margin-top: $space-1;
-    color: $color-primary;
+    color: $color-success;
     font-size: $font-size-xs;
   }
   .ad-item__amount {

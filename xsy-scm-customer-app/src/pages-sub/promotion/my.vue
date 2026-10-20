@@ -1,5 +1,5 @@
 <template>
-  <view class="my-coupons">
+  <view class="my-coupons" :style="themeStyle">
     <view v-if="selectMode" class="my-coupons__hint">请选择一张优惠券，实际优惠以结算试算为准</view>
     <view class="my-coupons__nav" @click="goClaimable">前往领券中心 ›</view>
     <view class="my-coupons__tabs">
@@ -33,11 +33,15 @@
 
 <script setup>
   import { computed, ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
   import MallCouponCard from '@/components/business/mall-coupon-card.vue';
   import { mallPromotionApi } from '@/api/mall/promotion-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COUPON_TABS, couponStatusText } from '@/utils/promotion-display';
+
+  const { themeStyle } = useMallTheme();
 
   const PAGE_SIZE = 20;
   const tab = ref('AVAILABLE');
@@ -120,7 +124,7 @@
   .my-coupons__nav {
     padding: $space-3 $space-4;
     background: $color-bg-card;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     text-align: right;
     font-size: $font-size-sm;
   }
@@ -135,7 +139,7 @@
     font-size: $font-size-sm;
   }
   .my-coupons__tab--active {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-weight: $font-weight-bold;
   }
   .my-coupons__state {
@@ -147,7 +151,7 @@
     display: block;
     padding: $space-4;
     text-align: center;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .my-coupons__bottom {
     padding: $space-5;

@@ -1,5 +1,5 @@
 <template>
-  <view class="aa">
+  <view class="aa" :style="themeStyle">
     <view v-if="loading && !order" class="aa__state">订单加载中…</view>
     <view v-else-if="!order" class="aa__state">订单不存在或已不可查看</view>
 
@@ -70,12 +70,16 @@
 
 <script setup>
   import { computed, ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad } from '@dcloudio/uni-app';
   import { mallOrderApi } from '@/api/mall/order-api';
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, displayQuantity } from '@/utils/order-display';
   import { AFTERSALE_REASONS, estimateLineAmount, isValidApplyQuantity, sumAmounts } from '@/utils/after-sale-display';
+
+  const { themeStyle } = useMallTheme();
 
   const orderId = ref(null);
   const order = ref(null);
@@ -319,8 +323,8 @@
     font-size: $font-size-sm;
   }
   .aa-reasons__chip--active {
-    border-color: $color-primary;
-    color: $color-primary;
+    border-color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary, #16a34a);
   }
   .aa-reasons__detail {
     width: 100%;
@@ -345,7 +349,7 @@
     height: 80rpx;
     @include flex-center;
     border-radius: $radius-pill;
-    background: $color-primary;
+    background: var(--mall-primary, #16a34a);
     color: $color-text-inverse;
     font-size: $font-size-base;
   }

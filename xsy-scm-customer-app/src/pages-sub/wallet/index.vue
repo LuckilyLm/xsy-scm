@@ -1,5 +1,5 @@
 <template>
-  <view class="wallet">
+  <view class="wallet" :style="themeStyle">
     <view v-if="loading && !summary" class="wallet__state">钱包信息加载中…</view>
     <view v-else-if="error && !summary" class="wallet__state">
       <text>{{ error }}</text>
@@ -35,11 +35,15 @@
 
 <script setup>
   import { ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onPullDownRefresh, onShow } from '@dcloudio/uni-app';
   import { mallFundsApi } from '@/api/mall/funds-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, formatDateTime } from '@/utils/order-display';
   import { movementTypeText } from '@/utils/funds-display';
+
+  const { themeStyle } = useMallTheme();
 
   const summary = ref(null);
   const movements = ref([]);
@@ -102,7 +106,7 @@
   .wallet__retry {
     display: block;
     margin-top: $space-4;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .wallet__stale {
     margin-bottom: $space-3;
@@ -117,7 +121,7 @@
     flex-direction: column;
     padding: $space-6;
     border-radius: $radius-lg;
-    background: $color-primary;
+    background: var(--mall-primary, #16a34a);
     color: $color-text-inverse;
   }
   .wallet__label {
@@ -152,7 +156,7 @@
     font-weight: $font-weight-bold;
   }
   .wallet__link {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-sm;
     font-weight: $font-weight-regular;
   }
@@ -182,7 +186,7 @@
     font-weight: $font-weight-medium;
   }
   .wallet__change--in {
-    color: $color-primary;
+    color: $color-success;
   }
   .wallet__note {
     margin-top: $space-4;

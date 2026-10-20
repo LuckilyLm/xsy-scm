@@ -1,5 +1,5 @@
 <template>
-  <view class="co">
+  <view class="co" :style="themeStyle">
     <!-- 收货地址 -->
     <view class="co-card co-address" @click="chooseAddress">
       <template v-if="address">
@@ -127,6 +127,8 @@
 
 <script setup>
   import { computed, ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onShow } from '@dcloudio/uni-app';
   import { mallCartApi } from '@/api/mall/cart-api';
   import { mallAddressApi } from '@/api/mall/address-api';
@@ -134,6 +136,8 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { shanghaiDate } from '@/utils/mall-date';
   import { CHECKOUT_ADDRESS } from '@/constants/local-storage-key-const';
+
+  const { themeStyle } = useMallTheme();
 
   const skuIds = ref([]);
   const items = ref([]);
@@ -580,7 +584,7 @@
   .co-coupon__hint {
     display: block;
     margin-top: $space-3;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-sm;
   }
   .co-promotion .co-row + .co-row {
@@ -617,8 +621,8 @@
     border-radius: $radius-md;
   }
   .co-settlement__option--active {
-    border-color: $color-primary;
-    background-color: $color-primary-light;
+    border-color: var(--mall-primary, #16a34a);
+    background-color: var(--mall-primary-light, #e8f5ec);
   }
   .co-settlement__option--disabled {
     opacity: 0.55;
@@ -650,7 +654,7 @@
   }
   .co-settlement__check {
     margin-left: $space-3;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-lg;
   }
 
@@ -797,11 +801,11 @@
     height: 72rpx;
     @include flex-center;
     border-radius: $radius-pill;
-    background-color: $color-primary;
+    background-color: var(--mall-primary, #16a34a);
     color: white;
     font-size: $font-size-base;
   }
   .co-bar__submit--disabled {
-    background-color: $color-primary-disabled;
+    background-color: var(--mall-primary-disabled, #a7d8b9);
   }
 </style>

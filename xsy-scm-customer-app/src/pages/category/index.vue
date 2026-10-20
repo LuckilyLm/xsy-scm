@@ -1,10 +1,10 @@
 <template>
-  <view class="category">
+  <view class="category" :style="themeStyle">
     <xsy-nav-bar title="分类">
       <template #bottom>
         <!-- 与首页搜索框统一：绿描边胶囊、76rpx 高、图标品牌绿 -->
         <view class="category__search" @click="goSearch">
-          <uni-icons type="search" :size="18" :color="COLOR_PRIMARY" />
+          <uni-icons type="search" :size="18" :color="theme.primary" />
           <text class="category__search-ph">搜商品或规格</text>
         </view>
       </template>
@@ -80,7 +80,10 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { useMallNavigationStore } from '@/store/modules/mall/navigation';
   import { useMallCart } from '@/composables/use-mall-cart';
-  import { COLOR_PRIMARY, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
+  const { theme, themeStyle } = useMallTheme();
 
   const PAGE_SIZE = 10;
 
@@ -318,7 +321,7 @@
       margin: $space-2 $space-4 $space-3;
       height: 76rpx;
       padding: 0 $space-3;
-      border: 1px solid $color-primary;
+      border: 1px solid var(--mall-primary, #16a34a);
       border-radius: $radius-pill;
       background-color: $color-bg-card;
     }
@@ -359,7 +362,7 @@
       padding: 0 $space-1;
 
       &--active {
-        background-color: $color-primary-light;
+        background-color: var(--mall-primary-light, #e8f5ec);
         border-radius: $radius-sm;
 
         &::before {
@@ -372,7 +375,7 @@
           width: 6rpx;
           height: 40rpx;
           border-radius: 2px;
-          background-color: $color-primary;
+          background-color: var(--mall-primary, #16a34a);
         }
       }
     }
@@ -390,7 +393,7 @@
     /* 选中态：字号放大到 14px 并转主色，Active 比未选中明显 */
     &__rail-item--active &__rail-text {
       font-size: $font-size-base;
-      color: $color-primary;
+      color: var(--mall-primary, #16a34a);
       font-weight: $font-weight-medium;
     }
 
@@ -438,12 +441,12 @@
     }
 
     &__grid-item--active &__grid-icon {
-      background-color: $color-primary-light;
-      color: $color-primary;
+      background-color: var(--mall-primary-light, #e8f5ec);
+      color: var(--mall-primary, #16a34a);
     }
 
     &__grid-item--active &__grid-text {
-      color: $color-primary;
+      color: var(--mall-primary, #16a34a);
       font-weight: $font-weight-medium;
     }
 

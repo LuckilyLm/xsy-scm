@@ -1,5 +1,5 @@
 <template>
-  <view class="od">
+  <view class="od" :style="themeStyle">
     <view v-if="loading && !order" class="od__state">订单加载中…</view>
     <view v-else-if="!order" class="od__state">订单不存在或已不可查看</view>
 
@@ -236,6 +236,8 @@
 
 <script setup>
   import { computed, ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad, onPullDownRefresh } from '@dcloudio/uni-app';
   import { mallOrderApi } from '@/api/mall/order-api';
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
@@ -254,6 +256,8 @@
     settlementMethodText,
   } from '@/utils/order-display';
   import { afterSaleStatusLevel, afterSaleStatusText, canApplyAfterSale } from '@/utils/after-sale-display';
+
+  const { themeStyle } = useMallTheme();
 
   const orderId = ref(null);
   const order = ref(null);
@@ -430,7 +434,7 @@
     color: $color-warning;
   }
   .od-head__status--primary {
-    color: $color-primary;
+    color: $color-success;
   }
   .od-head__status--ok {
     color: $color-success;
@@ -482,7 +486,7 @@
     font-weight: $font-weight-bold;
   }
   .od__row-value--link {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     text-decoration: underline;
   }
   .od__row-value--danger {
@@ -492,17 +496,17 @@
   .od-aftersale__apply {
     margin-top: $space-3;
     padding: $space-2 0;
-    border: 1px solid $color-primary;
+    border: 1px solid var(--mall-primary, #16a34a);
     border-radius: $radius-pill;
     text-align: center;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-sm;
   }
   .od-aftersale__status--warn {
     color: $color-warning;
   }
   .od-aftersale__status--primary {
-    color: $color-primary;
+    color: $color-success;
   }
   .od-aftersale__status--ok {
     color: $color-success;
@@ -534,7 +538,7 @@
     background: $color-border;
   }
   .od-step__dot--done {
-    background: $color-primary;
+    background: $color-success;
   }
   .od-step__line {
     flex: 1;
@@ -629,7 +633,7 @@
   .od-item__actual {
     display: block;
     margin-top: $space-1;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-xs;
   }
   .od-item__amount {
@@ -666,7 +670,7 @@
     height: 14rpx;
     margin-top: 8rpx;
     border-radius: 50%;
-    background: $color-primary;
+    background: var(--mall-primary, #16a34a);
   }
   .od-log__line {
     flex: 1;
@@ -711,8 +715,8 @@
     margin-left: $space-3;
   }
   .od-bar__btn--primary {
-    border-color: $color-primary;
-    background: $color-primary;
+    border-color: var(--mall-primary, #16a34a);
+    background: var(--mall-primary, #16a34a);
     color: $color-text-inverse;
   }
 </style>

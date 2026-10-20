@@ -1,5 +1,5 @@
 <template>
-  <view class="addr-edit">
+  <view class="addr-edit" :style="themeStyle">
     <view class="addr-edit__card">
       <view class="field">
         <text class="field__label">收货人</text>
@@ -42,7 +42,7 @@
       </view>
       <view class="field field--switch">
         <text class="field__label">设为默认地址</text>
-        <switch :checked="form.isDefault" color="#16a34a" @change="onDefaultChange" />
+        <switch :checked="form.isDefault" :color="theme.primary" @change="onDefaultChange" />
       </view>
     </view>
 
@@ -56,10 +56,14 @@
 
 <script setup>
   import { computed, reactive, ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onLoad } from '@dcloudio/uni-app';
   import { mallAddressApi } from '@/api/mall/address-api';
   import { mallMapApi } from '@/api/mall/map-api';
   import { smartSentry } from '@/lib/smart-sentry';
+
+  const { theme, themeStyle } = useMallTheme();
 
   const addressId = ref(null);
   const region = ref([]);
@@ -292,16 +296,16 @@
     height: 80rpx;
     @include flex-center;
     border-radius: $radius-pill;
-    background-color: $color-primary;
+    background-color: var(--mall-primary, #16a34a);
     color: white;
     font-size: $font-size-base;
   }
   .addr-edit__save--disabled {
-    background-color: $color-primary-disabled;
+    background-color: var(--mall-primary-disabled, #a7d8b9);
   }
   .field__link {
     margin-left: $space-3;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .addr-edit__map {
     width: 100%;
@@ -311,7 +315,7 @@
     display: flex;
     justify-content: space-around;
     padding: $space-3;
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
   }
   .addr-edit__map-hint {
     padding: $space-2 $space-4;

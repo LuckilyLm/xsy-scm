@@ -1,5 +1,5 @@
 <template>
-  <view class="cart">
+  <view class="cart" :style="themeStyle">
     <!-- 价格与库存提示：与效果图 04 顶部提示条一致 -->
     <view class="cart__notice">
       <uni-icons type="info-filled" :size="14" :color="COLOR_WARNING" />
@@ -24,7 +24,7 @@
             <uni-icons
               :type="isChecked(item) ? 'checkbox-filled' : 'circle'"
               :size="22"
-              :color="isChecked(item) ? COLOR_PRIMARY : COLOR_TEXT_PLACEHOLDER"
+              :color="isChecked(item) ? theme.primary : COLOR_TEXT_PLACEHOLDER"
             />
           </view>
 
@@ -64,7 +64,7 @@
 
       <view class="cart__bar">
         <view class="cart__all" @click="toggleAll">
-          <uni-icons :type="allChecked ? 'checkbox-filled' : 'circle'" :size="22" :color="allChecked ? COLOR_PRIMARY : COLOR_TEXT_PLACEHOLDER" />
+          <uni-icons :type="allChecked ? 'checkbox-filled' : 'circle'" :size="22" :color="allChecked ? theme.primary : COLOR_TEXT_PLACEHOLDER" />
           <text class="cart__all-text">全选</text>
         </view>
         <view class="cart__amount">
@@ -86,7 +86,10 @@
   import { onShow } from '@dcloudio/uni-app';
   import { mallCartApi } from '@/api/mall/cart-api';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { COLOR_PRIMARY, COLOR_TEXT_PLACEHOLDER, COLOR_WARNING } from '@/constants/theme-color-const';
+  import { COLOR_TEXT_PLACEHOLDER, COLOR_WARNING } from '@/constants/theme-color-const';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
+  const { theme, themeStyle } = useMallTheme();
 
   const items = ref([]);
   /** 所选商品的预估金额，**一律来自服务端** /scm/mall/cart/estimate，客户端不做金额累计 */
@@ -299,7 +302,7 @@
     height: 72rpx;
     @include flex-center;
     border-radius: $radius-pill;
-    background-color: $color-primary;
+    background-color: var(--mall-primary, #16a34a);
     color: white;
     font-size: $font-size-base;
   }
@@ -453,11 +456,11 @@
     height: 72rpx;
     @include flex-center;
     border-radius: $radius-pill;
-    background-color: $color-primary;
+    background-color: var(--mall-primary, #16a34a);
     color: white;
     font-size: $font-size-base;
   }
   .cart__submit--disabled {
-    background-color: $color-primary-disabled;
+    background-color: var(--mall-primary-disabled, #a7d8b9);
   }
 </style>

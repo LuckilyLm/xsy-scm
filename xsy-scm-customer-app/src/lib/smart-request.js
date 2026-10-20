@@ -93,7 +93,7 @@ function handleSessionExpired() {
  * 处理返回的信封。
  * 无论 HTTP 状态码为何都优先解析信封，否则业务错误会退化成「网络错误」。
  */
-function handleResponse(response, resolve, reject, url) {
+function handleResponse(response, resolve, reject, url, options = {}) {
   const res = response.data;
   const code = res && res.code;
 
@@ -103,14 +103,14 @@ function handleResponse(response, resolve, reject, url) {
   }
 
   // 令牌失效
-  if (!isAuthPath(url) && SESSION_EXPIRED_CODES.includes(code)) {
+  if (!options.anonymous && !isAuthPath(url) && SESSION_EXPIRED_CODES.includes(code)) {
     handleSessionExpired();
     reject(new ApiError(code, res.msg, response));
     return;
   }
 
   const message = (res && res.msg) || `请求失败 (${response.statusCode})`;
-  uni.showToast({ title: message, icon: 'none' });
+  if (!options.silent) uni.showToast({ title: message, icon: 'none' });
   reject(new ApiError(code, message, response));
 }
 
@@ -124,7 +124,7 @@ function handleResponse(response, resolve, reject, url) {
 export const request = function (url, method, data, options = {}) {
   const header = { 'Content-Type': 'application/json', ...(options.header || {}) };
   const token = getUserToken();
-  if (token) {
+  if (token && !options.anonymous) {
     header.Authorization = 'Bearer ' + token;
   }
   if (options.idempotencyKey) {
@@ -140,7 +140,7 @@ export const request = function (url, method, data, options = {}) {
           sendReal();
           return;
         }
-        handleResponse({ statusCode: 200, data: mocked }, resolve, reject, url);
+        handleResponse({ statusCode: 200, data: mocked }, resolve, reject, url, options);
       });
       return;
     }
@@ -152,7 +152,7 @@ export const request = function (url, method, data, options = {}) {
         data,
         method,
         header,
-        success: (response) => handleResponse(response, resolve, reject, url),
+        success: (response) => handleResponse(response, resolve, reject, url, options),
         fail: (error) => reject(new ApiError(0, '网络连接失败，请检查网络后重试', error)),
       });
     }
@@ -182,7 +182,7 @@ function pruneQueryParams(params) {
  * @param {string} url    以 / 开头的接口路径
  * @param {object} params 查询参数（uni.request 会把 GET 的 data 拼到 query string）
  */
-export const getRequest = (url, params) => request(url, 'GET', pruneQueryParams(params));
+export const getRequest = (url, params, options) => request(url, 'GET', pruneQueryParams(params), options);
 
 export const postRequest = (url, data, options) => request(url, 'POST', data, options);
 

@@ -1,5 +1,5 @@
 <template>
-  <view class="search">
+  <view class="search" :style="themeStyle">
     <!-- 搜索栏 -->
     <view class="search__bar">
       <view class="search__input-wrap">
@@ -73,6 +73,8 @@
 
 <script setup>
   import { computed, ref } from 'vue';
+  import { useMallTheme } from '@/composables/use-mall-theme';
+
   import { onReachBottom } from '@dcloudio/uni-app';
   import ProductCard from '@/components/business/product-card.vue';
   import { mallCatalogApi } from '@/api/mall';
@@ -80,6 +82,8 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { useMallCart } from '@/composables/use-mall-cart';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+
+  const { themeStyle } = useMallTheme();
 
   const PAGE_SIZE = 10;
   const MAX_HISTORY = 10;
@@ -264,7 +268,7 @@
       flex-shrink: 0;
       margin-left: $space-3;
       font-size: $font-size-base;
-      color: $color-primary;
+      color: var(--mall-primary, #16a34a);
     }
 
     &__panel {
@@ -314,7 +318,7 @@
 
       &--hot {
         /* 热门 tag：浅绿底、无描边 */
-        background-color: $color-primary-light;
+        background-color: var(--mall-primary-light, #e8f5ec);
         border: none;
       }
     }
@@ -324,7 +328,7 @@
       color: $color-text-secondary;
 
       &--hot {
-        color: $color-primary;
+        color: var(--mall-primary, #16a34a);
       }
     }
 

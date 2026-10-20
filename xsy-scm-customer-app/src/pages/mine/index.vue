@@ -1,5 +1,5 @@
 <template>
-  <view class="mine">
+  <view class="mine" :style="themeStyle">
     <view class="mine__header" :style="{ paddingTop: statusBarHeight + 'px', paddingRight: headerRightGap + 'px' }">
       <view class="mine__avatar">{{ avatarText }}</view>
       <view class="mine__identity">
@@ -26,7 +26,10 @@
 <script setup>
   import { computed } from 'vue';
   import { useSystemLayout } from '@/composables/use-system-layout';
+  import { useMallTheme } from '@/composables/use-mall-theme';
   import { useUserStore } from '@/store/modules/system/user';
+
+  const { themeStyle } = useMallTheme();
 
   const { statusBarHeight, menuButtonRect } = useSystemLayout();
   /** 未登录时右侧有「登录」按钮，必须让开右上角胶囊 */
@@ -97,7 +100,7 @@
   .mine__header {
     @include flex-start;
     padding: $space-6 $space-4 $space-8;
-    background: linear-gradient(180deg, $color-primary, $color-primary-dark);
+    background: linear-gradient(180deg, var(--mall-primary, #16a34a), var(--mall-primary-dark, #12833c));
   }
   .mine__avatar {
     width: 112rpx;
