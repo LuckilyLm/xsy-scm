@@ -105,6 +105,8 @@ export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
     settleMode: SettleMode;
     /** 商城货到付款由后台显式开通，默认关闭。 */
     codAllowed?: boolean;
+    /** 集团主体是否允许子客户使用集团钱包结算；仅 GROUP 结算模式可置真。 */
+    sharedSettlementEnabled?: boolean;
     creditLimit?: string | null;
     creditPeriodType?: CreditPeriodType | null;
     creditAmountThreshold?: string | null;

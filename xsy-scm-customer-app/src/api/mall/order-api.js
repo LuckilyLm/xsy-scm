@@ -59,4 +59,11 @@ export const mallOrderApi = {
    * @param {string} idempotencyKey 必带：重复点击返回首次结果，不会二次扣款
    */
   pay: (orderId, idempotencyKey) => postRequest(`/scm/mall/orders/${orderId}/pay`, {}, { idempotencyKey }),
+
+  /**
+   * 下单商品汇总：按商品规格聚合当前客户自己的历史下单。
+   * @param {{pageNum: number, pageSize: number, startDate?: string, endDate?: string}} param
+   *        startDate / endDate 为 yyyy-MM-dd，均含当天；留空表示不限区间
+   */
+  getSummary: (param) => getRequest('/scm/mall/orders/summary', param),
 };

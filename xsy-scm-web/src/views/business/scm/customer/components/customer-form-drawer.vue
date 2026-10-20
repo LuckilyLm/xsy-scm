@@ -79,6 +79,15 @@
                 <SmartEnumSelect v-model:value="form.settleMode" enum-name="SETTLE_MODE_ENUM" width="100%"/>
               </a-form-item>
             </a-col>
+            <a-col v-if="form.settleMode === 'GROUP'" :xs="24" :sm="12">
+              <a-form-item name="sharedSettlementEnabled">
+                <template #label>
+                  允许子客户使用集团钱包
+                  <ScmFieldHelp label="允许子客户使用集团钱包" text="默认关闭；打开后子客户在商城可直接扣集团钱包余额，看不到集团总额"/>
+                </template>
+                <a-switch v-model:checked="form.sharedSettlementEnabled"/>
+              </a-form-item>
+            </a-col>
             <a-col :xs="24" :sm="12">
               <a-form-item label="绑定供应商" name="supplierId">
                 <SupplierSelect v-model:value="form.supplierId" placeholder="请选择供应商"/>
@@ -229,6 +238,7 @@ import type {FormInstance} from 'ant-design-vue';
 import {message} from 'ant-design-vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
+import {customerPromotionApi} from '/@/api/business/scm/customer-promotion-api';
 import type {
   CreditPeriodType,
   CreditPeriodUnit,
@@ -327,6 +337,15 @@ async function open(customerId?: ScmId) {
   if (customerId == null) {
     await nextTick();
     formRef.value?.clearValidate();
+    // 扫码带来的线索：业务员按最近一次扫码归属预填，管理员仍可改
+    try {
+      const attribution = await customerPromotionApi.attribution();
+      if (attribution.data?.sellerId != null) {
+        form.sellerId = Number(attribution.data.sellerId);
+      }
+    } catch {
+      // 预填失败不影响新建
+    }
     return;
   }
   loading.value = true;
@@ -360,6 +379,7 @@ async function open(customerId?: ScmId) {
       districtCode: detail.districtCode ?? null,
       districtName: detail.districtName ?? null,
       settleMode: detail.settleMode,
+      sharedSettlementEnabled: detail.sharedSettlementEnabled === true,
       codAllowed: detail.codAllowed === true,
       creditLimit: detail.creditLimit ?? '0.0000',
       creditPeriodType: detail.creditPeriodType ?? undefined,

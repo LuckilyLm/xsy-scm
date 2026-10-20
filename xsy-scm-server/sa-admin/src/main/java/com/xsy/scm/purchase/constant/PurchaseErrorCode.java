@@ -64,7 +64,20 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_TOLERANCE_CONFIG_INVALID(40999, "采购超收容差配置无效"),
 
     // ---- 收货入库确认 ----
-    PURCHASE_RECEIPT_PUTAWAY_STATE_INVALID(41008, "收货单当前状态不允许入库确认");
+    PURCHASE_RECEIPT_PUTAWAY_STATE_INVALID(41008, "收货单当前状态不允许入库确认"),
+
+    // ---- 采购单二维码分享 ----
+    PURCHASE_SHARE_NOT_FOUND(41090, "分享链接不存在或已失效"),
+
+    PURCHASE_SHARE_EXPIRED(41091, "分享链接已过期，请让采购员重新分享"),
+
+    PURCHASE_SHARE_REVOKED(41092, "分享链接已被撤销"),
+
+    PURCHASE_SHARE_STATE_INVALID(41093, "采购单当前状态不允许分享"),
+
+    PURCHASE_SHARE_FEEDBACK_INVALID(41094, "回填的单价与重量至少填一项，且不能为负"),
+
+    PURCHASE_SHARE_ITEM_NOT_OWNED(41095, "回填明细不属于该采购单");
 
     private final int code;
     private final String msg;

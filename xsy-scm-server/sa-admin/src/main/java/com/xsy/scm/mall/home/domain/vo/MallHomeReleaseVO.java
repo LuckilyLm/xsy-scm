@@ -9,6 +9,7 @@ import lombok.Data;
 public class MallHomeReleaseVO {
     private Long id;
     private String content;
+    private String themeCode;
     private String publishKind;
     private Long sourceReleaseId;
     private String reason;

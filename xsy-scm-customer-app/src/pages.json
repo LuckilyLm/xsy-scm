@@ -39,7 +39,8 @@
     {
       "root": "pages-sub/order",
       "pages": [
-        { "path": "detail", "style": { "navigationBarTitleText": "订单详情", "enablePullDownRefresh": true } }
+        { "path": "detail", "style": { "navigationBarTitleText": "订单详情", "enablePullDownRefresh": true } },
+        { "path": "summary", "style": { "navigationBarTitleText": "下单商品汇总", "enablePullDownRefresh": true, "onReachBottomDistance": 80 } }
       ]
     },
     {

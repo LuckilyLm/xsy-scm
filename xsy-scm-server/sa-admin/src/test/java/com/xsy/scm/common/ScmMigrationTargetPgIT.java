@@ -448,6 +448,167 @@ class ScmMigrationTargetPgIT {
         assertThat(unbindSource).contains("FOR UPDATE", "xsy_inventory_outbound_item");
     }
 
+    /**
+     * V159 起采购单可二维码分享：令牌只存哈希、一单一条有效链接、回填只追加。
+     */
+    @Test
+    void purchaseShareSchemaExistsFromV159() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 159) {
+            return;
+        }
+        assertColumn("xsy_purchase_share_token", "token_hash");
+        assertColumn("xsy_purchase_share_token", "expires_at");
+        assertColumn("xsy_purchase_share_feedback", "purchase_order_item_id");
+        Integer uniqueIndexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname IN ('uk_purchase_share_token_hash', 'uk_purchase_share_active_order')",
+                Integer.class);
+        assertThat(uniqueIndexes).as("令牌哈希唯一且一单只有一条有效链接").isEqualTo(2);
+        Integer appendOnly = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_purchase_share_feedback_append_only' "
+                        + "AND NOT tgisinternal",
+                Integer.class);
+        assertThat(appendOnly).as("回填事实必须只追加").isEqualTo(1);
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id BETWEEN 2118 AND 2119", Integer.class);
+        assertThat(menus).as("分享与撤销权限应随迁移发布").isEqualTo(2);
+    }
+
+    /**
+     * V160 起客户可发推广二维码：一客一条有效码，扫码记录只追加。
+     */
+    @Test
+    void customerPromotionSchemaExistsFromV160() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 160) {
+            return;
+        }
+        assertColumn("xsy_customer_promotion_code", "code");
+        assertColumn("xsy_customer_promotion_scan", "seller_id");
+        Integer uniqueIndexes = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname IN ('uk_customer_promotion_code', 'uk_customer_promotion_active')",
+                Integer.class);
+        assertThat(uniqueIndexes).as("码全局唯一且一客只有一条有效码").isEqualTo(2);
+        Integer appendOnly = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_customer_promotion_scan_append_only' "
+                        + "AND NOT tgisinternal",
+                Integer.class);
+        assertThat(appendOnly).as("扫码记录必须只追加").isEqualTo(1);
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id = 2120 "
+                        + "AND api_perms = 'scm:customer:promotion:manage'", Integer.class);
+        assertThat(menus).as("推广码权限应随迁移发布").isEqualTo(1);
+    }
+
+    /**
+     * V161 起有时价：规格级、区间半开、价格来源放开到 TIME_PRICE。
+     */
+    @Test
+    void timePriceSchemaExistsFromV161() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 161) {
+            return;
+        }
+        assertColumn("xsy_pricing_time_price", "unit_price");
+        assertColumn("xsy_pricing_time_price", "start_at");
+        Integer draftSource = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_sales_order_item_draft_source' "
+                        + "AND pg_get_constraintdef(oid) LIKE '%TIME_PRICE%'", Integer.class);
+        assertThat(draftSource).as("下单价格来源应放开到时价").isEqualTo(1);
+        Integer lockedSource = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_sales_order_item_locked_source' "
+                        + "AND pg_get_constraintdef(oid) LIKE '%TIME_PRICE%'", Integer.class);
+        assertThat(lockedSource).as("锁价来源应放开到时价").isEqualTo(1);
+        Integer menus = jdbc.queryForObject(
+                "SELECT count(*) FROM t_menu WHERE menu_id IN (2121, 2122)", Integer.class);
+        assertThat(menus).as("时价页面与维护权限应随迁移发布").isEqualTo(2);
+    }
+
+    /**
+     * V162 起分拣小票抬头带供应商来源，代分拣的货能直接把票交给供应商。
+     */
+    @Test
+    void sortingTicketShowsSupplierFromV162() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 162) {
+            return;
+        }
+        Integer tickets = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_print_template WHERE document_type = 'SORTING_TICKET' "
+                        + "AND default_flag = TRUE AND (model -> 'headerFields') @> jsonb_build_array('supplierName')",
+                Integer.class);
+        assertThat(tickets).as("分拣小票默认模板应包含供应商来源").isEqualTo(1);
+    }
+
+    /**
+     * V163 起集团主体可显式授权子客户使用集团钱包结算，且只有 GROUP 客户能置真。
+     */
+    @Test
+    void sharedSettlementGrantExistsFromV163() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 163) {
+            return;
+        }
+        assertColumn("xsy_customer", "shared_settlement_enabled");
+        Integer constraint = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname = 'ck_customer_shared_settlement_scope'",
+                Integer.class);
+        assertThat(constraint).as("授权只能在 GROUP 结算客户上成立").isEqualTo(1);
+    }
+
+    /**
+     * V164 起首页主题随草稿与发布版本一起保存，回滚时配色一起回去。
+     */
+    @Test
+    void mallHomeThemeExistsFromV164() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 164) {
+            return;
+        }
+        assertColumn("xsy_mall_home_draft", "theme_code");
+        assertColumn("xsy_mall_home_release", "theme_code");
+        Integer constraints = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_constraint WHERE conname IN "
+                        + "('ck_mall_home_draft_theme', 'ck_mall_home_release_theme')", Integer.class);
+        assertThat(constraints).as("主题取值必须受控").isEqualTo(2);
+    }
+
+    /**
+     * V165 起帮助中心按模块提供岗位操作说明；不含尚未提供的助手与语音入口。
+     */
+    @Test
+    void helpDocOperationsExistFromV165() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 165) {
+            return;
+        }
+        Integer docs = jdbc.queryForObject(
+                "SELECT count(*) FROM t_help_doc WHERE help_doc_id BETWEEN 7 AND 18", Integer.class);
+        assertThat(docs).as("十二个模块各一篇操作说明").isEqualTo(12);
+        Integer leaked = jdbc.queryForObject(
+                "SELECT count(*) FROM t_help_doc WHERE help_doc_id BETWEEN 7 AND 18 "
+                        + "AND (title LIKE '%助手%' OR title LIKE '%语音%')", Integer.class);
+        assertThat(leaked).as("不写尚未提供的功能入口").isZero();
+    }
+
+    /**
+     * V166 起时价有独立审计表，且只追加。
+     */
+    @Test
+    void timePriceAuditExistsFromV166() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 166) {
+            return;
+        }
+        assertColumn("xsy_pricing_time_price_operation_log", "before_data");
+        Integer appendOnly = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'trg_time_price_log_append_only' "
+                        + "AND NOT tgisinternal", Integer.class);
+        assertThat(appendOnly).as("审计日志必须只追加").isEqualTo(1);
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "

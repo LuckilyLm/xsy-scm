@@ -177,6 +177,37 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     }
 
     @Test
+    @DisplayName("集团共享结算：子客户支付扣的是集团钱包，自己的余额一分不动")
+    void sharedSettlementPaysFromGroupWallet() {
+        asAdmin();
+        // 走正式建档命令而不是改库：上级客户必须是集团类型、结算主体要指向集团，这些校验只在命令里跑
+        Long groupId = customerService.add(groupForm(null));
+        cooperate(groupId);
+        jdbc.update("UPDATE xsy_customer SET shared_settlement_enabled=TRUE WHERE id = ?", groupId);
+        Long groupWalletId = fundWallet(groupId, "50.0000");
+        Long memberId = customerService.add(groupForm(groupId));
+        cooperate(memberId);
+        jdbc.update("UPDATE xsy_customer SET mall_delivery_warehouse_id=? WHERE id=?", seedWarehouseId(), memberId);
+        Long memberWalletId = fundWallet(memberId, "999.0000");
+        evictMybatisCache();
+
+        WalletOrder fixture = mallOrderFor(memberId, memberWalletId, "group", ScmSettlementMethodEnum.WALLET, true);
+        MallOrderVO paid = pay(fixture, prefix + ":pay-group");
+
+        assertThat(paid.getPaidAmount()).isEqualByComparingTo(paid.getPayableAmount());
+        assertThat(walletDebits(groupWalletId))
+                .as("集团共享结算扣的是集团钱包")
+                .isEqualByComparingTo(paid.getPayableAmount());
+        assertThat(walletDebits(memberWalletId))
+                .as("子客户自己的余额不该被动")
+                .isEqualByComparingTo("0.0000");
+        assertThat(jdbc.queryForObject("SELECT settlement_customer_id FROM xsy_customer_balance_movement"
+                + " WHERE account_id = ? AND direction = 'DEBIT' AND deleted = FALSE", Long.class, groupWalletId))
+                .as("流水落在集团账上")
+                .isEqualTo(groupId);
+    }
+
+    @Test
     @DisplayName("同一幂等键重放返回已付订单，钱包不出现第二笔扣款")
     void replayingTheSameIdempotencyKeyNeverDeductsASecondTime() {
         WalletOrder fixture = mallOrder("replay", "10.0000", ScmSettlementMethodEnum.WALLET, true);
@@ -288,6 +319,27 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
     // 夹具
     // ------------------------------------------------------------------
 
+    /** 新建的客户是「潜在」状态，不能交易；商城链路要求「合作中」。 */
+    private void cooperate(Long customerId) {
+        var status = new com.xsy.scm.customer.domain.form.CustomerStatusForm();
+        status.setCustomerId(customerId);
+        status.setVersion(0);
+        status.setStatus("COOPERATING");
+        customerService.updateStatus(status);
+    }
+
+    /** 集团（{@code parentId=null}）或集团成员；成员的上级与结算主体都指向集团。 */
+    private com.xsy.scm.customer.domain.form.CustomerAddForm groupForm(Long parentId) {
+        var form = new com.xsy.scm.customer.domain.form.CustomerAddForm();
+        form.setName(prefix + "-G" + java.util.UUID.randomUUID().toString().substring(0, 6));
+        form.setCustomerTypeId(customerTypeId(parentId == null ? "GROUP" : "ENTERPRISE"));
+        form.setSettleMode("GROUP");
+        form.setSellerId(anyEmployeeId());
+        form.setParentCustomerId(parentId);
+        form.setSettlementCustomerId(parentId);
+        return form;
+    }
+
     private record WalletOrder(Long orderId, Long customerId, Long walletId, RequestMallCustomer customer) {
     }
 
@@ -301,7 +353,6 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
             boolean confirm) {
         // 建客户与挂商品都要员工数据范围；上一次 signIn 留下的商城身份会在这里被拒，因此先切回后台。
         asAdmin();
-        Long skuId = newOnShelfSku("pay-" + tag);
         Long customerId = newCustomer();
         jdbc.update("UPDATE xsy_customer SET mall_delivery_warehouse_id=? WHERE id=?", seedWarehouseId(),
                 customerId);
@@ -312,6 +363,16 @@ class MallWalletPaymentPgIT extends ScmW5PgITBase {
                     customerId);
             evictMybatisCache();
         }
+        return mallOrderFor(customerId, walletId, tag, settlementMethod, confirm);
+    }
+
+    /**
+     * 用既有客户走完商城链路下单；客户由调用方准备（例如集团共享结算的成员客户）。
+     */
+    private WalletOrder mallOrderFor(Long customerId, Long walletId, String tag,
+            ScmSettlementMethodEnum settlementMethod, boolean confirm) {
+        asAdmin();
+        Long skuId = newOnShelfSku("pay-" + tag);
         RequestMallCustomer customer = signIn(openMallAccount(customerId));
         Long addressId = mallAddressService.create(customer, address()).getFirst().getAddressId();
         MallCheckoutPreviewVO preview = mallCheckoutService.preview(customer, previewForm(skuId, addressId));

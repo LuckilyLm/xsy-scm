@@ -297,6 +297,9 @@ public class CustomerService {
         entity.setName(CustomerValidator.normalizeName(form.getName()));
         entity.setCustomerTypeId(form.getCustomerTypeId());
         entity.setSettleMode(form.getSettleMode());
+        // 只有集团主体才谈得上授权；切成独立结算时授权自动作废，不留下悬空权限
+        entity.setSharedSettlementEnabled(ScmSettleModeEnum.GROUP.name().equals(form.getSettleMode())
+                && Boolean.TRUE.equals(form.getSharedSettlementEnabled()));
         if (form.getCodAllowed() != null) {
             entity.setCodAllowed(form.getCodAllowed());
         }

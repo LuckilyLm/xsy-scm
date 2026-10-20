@@ -4,9 +4,11 @@ import com.xsy.scm.mall.account.support.MallRequestSupport;
 import com.xsy.scm.mall.order.domain.form.MallCheckoutPreviewForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderCancelForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderQueryForm;
+import com.xsy.scm.mall.order.domain.form.MallOrderSummaryQueryForm;
 import com.xsy.scm.mall.order.domain.form.MallOrderSubmitForm;
 import com.xsy.scm.mall.order.domain.vo.MallCheckoutPreviewVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderSubmitVO;
+import com.xsy.scm.mall.order.domain.vo.MallOrderSummaryVO;
 import com.xsy.scm.mall.order.domain.vo.MallOrderVO;
 import com.xsy.scm.mall.order.domain.vo.MallReorderVO;
 import com.xsy.scm.mall.order.service.MallCheckoutService;
@@ -39,6 +41,18 @@ public class MallOrderController {
     public ResponseDTO<PageResult<MallOrderVO>> list(@Valid MallOrderQueryForm form) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(orderQueryService.list(MallRequestSupport.current(), form));
+    }
+
+    /**
+     * 下单商品汇总：按商品规格聚合当前客户的历史下单，可按日期区间收窄。
+     *
+     * <p>
+     * 路径是字面量 {@code /summary}，不会被下面的 {@code /{orderId}} 吞掉：Spring 优先匹配精确路径。
+     */
+    @GetMapping("/summary")
+    public ResponseDTO<MallOrderSummaryVO> summary(@Valid MallOrderSummaryQueryForm form) {
+        MallRequestSupport.requirePasswordChanged();
+        return ResponseDTO.ok(orderQueryService.summary(MallRequestSupport.current(), form));
     }
 
     @GetMapping("/{orderId}")

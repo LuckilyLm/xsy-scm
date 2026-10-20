@@ -15,6 +15,7 @@ export const SCM_ORDER_SOURCE_ENUM: SmartEnum<string> = {
 export const SCM_ORDER_PRICE_SOURCE_ENUM: SmartEnum<string> = {
     AGREEMENT: {value: 'AGREEMENT', desc: '客户协议价'},
     CUSTOMER_TYPE: {value: 'CUSTOMER_TYPE', desc: '客户类型价'},
+    TIME_PRICE: {value: 'TIME_PRICE', desc: '时价'},
     MARKET: {value: 'MARKET', desc: '市场价'},
     OVERRIDE: {value: 'OVERRIDE', desc: '人工改价'}
 };

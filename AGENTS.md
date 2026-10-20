@@ -26,6 +26,18 @@
 - 文档入口：[docs/README.md](docs/README.md)
 - 代码评审与验证：[CONTRIBUTING.md](CONTRIBUTING.md)
 
+## Agent skills
+
+本仓库安装的工程技能（`mattpocock/skills`）按 `docs/agents/` 下的配置工作。
+
+### Issue tracker
+
+本地 markdown：spec 与工单写在 `.scratch/<feature>/`，不入版本库。见 [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md)。
+
+### Domain docs
+
+单上下文：术语表用根目录 `GLOSSARY.md`（按需创建）；决策一律并入 [docs/decisions.md](docs/decisions.md)，不另建 ADR。见 [docs/agents/domain.md](docs/agents/domain.md)。
+
 ## 协作与 Git
 
 - 保持用户开始时的分支；没有明确要求时不切分支、不推送、不发布。

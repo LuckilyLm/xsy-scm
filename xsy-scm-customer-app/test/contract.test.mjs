@@ -474,3 +474,18 @@ test('checkout settlement options come from the server preview', () => {
   // mock 也必须返回同形的可选项，否则开发环境走不到支付链路
   assert.match(mock, /settlementOptions: \[/);
 });
+
+test('order summary aggregates on the server and reuses the shared quantity formatter', () => {
+  const api = read('../src/api/mall/order-api.js');
+  const page = read('../src/pages-sub/order/summary.vue');
+  const pages = read('../src/pages.json');
+  // 汇总必须走服务端聚合：客户端拿分页行自己加，会漏掉没翻到的页
+  assert.match(api, /getSummary: \(param\) => getRequest\('\/scm\/mall\/orders\/summary', param\)/);
+  assert.match(page, /mallOrderApi\.getSummary\(/);
+  // 数量展示复用统一格式化，不在这里另写一套小数截断
+  assert.match(page, /displayQuantity\(row\.quantity\)/);
+  assert.doesNotMatch(page, /toFixed\(/);
+  // 区间按日期传，客户端不拼时间戳
+  assert.match(page, /startDate: startDate\.value \|\| undefined/);
+  assert.match(pages, /"path": "summary"/);
+});

@@ -81,6 +81,9 @@ public class CustomerAddForm extends ScmLocationForm {
     @ScmEnumValue(enumClass = ScmSettleModeEnum.class, message = "结算模式无效")
     private String settleMode = ScmSettleModeEnum.INDEPENDENT.name();
 
+    /** 仅结算模式为 GROUP 的集团主体可用：允许子客户用集团钱包结算。 */
+    private Boolean sharedSettlementEnabled;
+
     /** 商城货到付款准入；未提供时新增默认关闭，编辑不改变已有设置。 */
     private Boolean codAllowed;
 

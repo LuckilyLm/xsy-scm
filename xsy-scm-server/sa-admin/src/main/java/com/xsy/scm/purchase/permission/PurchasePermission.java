@@ -38,6 +38,12 @@ public final class PurchasePermission {
 
     public static final String SHORT_CLOSE = "scm:purchase:short-close";
 
+    /** 生成采购单分享链接（二维码）。 */
+    public static final String SHARE_CREATE = "scm:purchase:share:create";
+
+    /** 撤销采购单分享链接。 */
+    public static final String SHARE_REVOKE = "scm:purchase:share:revoke";
+
     public static final String DELETE = "scm:purchase:delete";
 
     public static final String RECEIPT_QUERY = "scm:purchase:receipt:query";

@@ -75,6 +75,22 @@ class MallSettlementOptionsPgIT extends ScmW5PgITBase {
     }
 
     @Test
+    @DisplayName("集团钱包授权只放行余额：账期仍由集团主体统一办理，不随授权打开")
+    void sharedWalletGrantDoesNotOpenGroupCredit() {
+        Long group = groupCustomer(null);
+        Long member = groupCustomer(group);
+        jdbc.update("UPDATE xsy_customer SET shared_settlement_enabled = TRUE WHERE id = ?", group);
+        evictMybatisCache();
+
+        Map<String, MallSettlementOptionVO> memberOptions = options(identity(member));
+        assertThat(memberOptions.get("WALLET").getEnabled()).as("授权后可用集团钱包").isTrue();
+        assertThat(memberOptions.get("WALLET").getAmountVisible()).as("授权不等于能看集团余额").isFalse();
+        assertThat(memberOptions.get("WALLET").getAvailableAmount()).isNull();
+        assertThat(memberOptions.get("CREDIT").getEnabled()).as("钱包授权不覆盖集团账期").isFalse();
+        assertThat(memberOptions.get("CREDIT").getDisabledReason()).isNotBlank();
+    }
+
+    @Test
     @DisplayName("账期可用性按正式授信口径：占用、超限与逾期都会让账期不可选")
     void creditOptionFollowsExposureOverdueAndLimit() {
         Long customerId = newCustomer();

@@ -113,6 +113,7 @@
 
   <PurchaseOrderForm ref="drawer" @saved="queryData"/>
   <PurchaseOrderDetail ref="detail" @saved="queryData"/>
+  <PurchaseShareModal ref="shareModal"/>
   <PrintDocumentModal
       :open="printBatch.open"
       document-type="PURCHASE_ORDER"
@@ -166,6 +167,7 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import PurchaseShareModal from '/@/views/business/scm/purchase/components/purchase-share-modal.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
@@ -194,6 +196,7 @@ const error = ref('');
 const selected = ref<(string | number)[]>([]);
 const drawer = ref<InstanceType<typeof PurchaseOrderForm>>();
 const detail = ref<InstanceType<typeof PurchaseOrderDetail>>();
+const shareModal = ref<InstanceType<typeof PurchaseShareModal>>();
 
 /** 打印对话框：单张与批量共用，只传要打印的采购单 id（渲染与冻结都在服务端）。 */
 const printBatch = reactive({open: false, ids: [] as (string | number)[]});
@@ -310,6 +313,9 @@ const canAssign = computed(() => hasPermission('scm:purchase:assign'));
 const canCancel = computed(() => hasPermission('scm:purchase:cancel'));
 const canShortClose = computed(() => hasPermission('scm:purchase:short-close'));
 const canDelete = computed(() => hasPermission('scm:purchase:delete'));
+/** 只有进入正式采购流程的单才能分享给现场：草稿还没定，取消的没有任务。 */
+const SHAREABLE_STATUSES = ['SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED'];
+const canShare = computed(() => hasPermission('scm:purchase:share:create'));
 
 /**
  * 行内常驻当前状态最高频的两个动作，其余收进「更多」。
@@ -320,6 +326,7 @@ function moreActions(row: Order): ScmActionItem[] {
   return [
     {key: 'detail', label: '详情', hidden: !draft},
     {key: 'print', label: '打印', hidden: !draft},
+    {key: 'share', label: '分享', hidden: !(canShare.value && SHAREABLE_STATUSES.includes(row.status ?? ''))},
     {key: 'reassign', label: '改派', hidden: !canAssign.value},
     {key: 'cancel', label: '取消', hidden: !(canCancel.value && ['DRAFT', 'SUBMITTED'].includes(row.status ?? ''))},
     {
@@ -332,7 +339,11 @@ function moreActions(row: Order): ScmActionItem[] {
 }
 
 function onRowAction(key: string, row: Order) {
-  if (key === 'detail') {
+  if (key === 'share') {
+    if (row.id != null) {
+      shareModal.value?.openFor(row.id, row.orderNo);
+    }
+  } else if (key === 'detail') {
     // `Order.id` 在 VO 里是可选的，详情抽屉要求确定的 Id，这里按同一口径先判空。
     if (row.id != null) {
       detail.value?.open(row.id);

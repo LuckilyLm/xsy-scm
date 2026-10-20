@@ -1,5 +1,5 @@
 <template>
-  <view class="home">
+  <view class="home" :style="themeStyle">
     <!-- 顶部只有定位：高度与右上角胶囊一致，垂直居中对齐 -->
     <view class="home__header" :style="{ paddingTop: statusBarHeight + 'px' }">
       <view class="home__location" :style="locationStyle" @click="goAddress">
@@ -21,12 +21,7 @@
     <view v-if="categoryRail.length" class="home__rail">
       <scroll-view class="home__rail-scroll" scroll-x :show-scrollbar="false">
         <view class="home__rail-inner">
-          <view
-            v-for="item in categoryRail"
-            :key="item.categoryId"
-            class="home__rail-item"
-            @click="goCategory(item.categoryId)"
-          >
+          <view v-for="item in categoryRail" :key="item.categoryId" class="home__rail-item" @click="goCategory(item.categoryId)">
             <view class="home__rail-icon">
               <text class="home__rail-emoji">{{ categoryEmoji(item.categoryName) }}</text>
             </view>
@@ -44,10 +39,9 @@
 
     <template v-for="section in contentSections" :key="section.key">
       <view v-if="section.type === 'BANNER_GROUP'" class="home__banner-wrap">
-        <swiper class="home__banner" :indicator-dots="section.items.length > 1" :autoplay="section.items.length > 1"
-                :interval="4500" circular>
+        <swiper class="home__banner" :indicator-dots="section.items.length > 1" :autoplay="section.items.length > 1" :interval="4500" circular>
           <swiper-item v-for="item in section.items" :key="item.key" class="home__banner-slide" @click="goHomeLink(item)">
-            <image class="home__banner-image" :src="item.imageUrl" :alt="item.title || '商城活动'" mode="aspectFill"/>
+            <image class="home__banner-image" :src="item.imageUrl" :alt="item.title || '商城活动'" mode="aspectFill" />
             <view v-if="item.title || item.subtitle" class="home__banner-caption">
               <text v-if="item.title" class="home__banner-title">{{ item.title }}</text>
               <text v-if="item.subtitle" class="home__banner-subtitle">{{ item.subtitle }}</text>
@@ -56,7 +50,7 @@
         </swiper>
       </view>
       <view v-else-if="section.type === 'ACTIVITY_TOPIC'" class="home__topic" @click="goHomeLink(section)">
-        <image v-if="section.imageUrl" :src="section.imageUrl" class="home__topic-image" mode="aspectFill"/>
+        <image v-if="section.imageUrl" :src="section.imageUrl" class="home__topic-image" mode="aspectFill" />
         <view class="home__topic-copy">
           <text class="home__section-title">{{ section.title }}</text>
           <text v-if="section.subtitle" class="home__topic-subtitle">{{ section.subtitle }}</text>
@@ -68,8 +62,7 @@
           <text class="home__section-link" @click="goCategory">全部商品</text>
         </view>
         <view class="home__list">
-          <ProductCard v-for="item in section.products" :key="item.skuId" :product="item"
-                       @click="goDetail" @add="addToCart" @inquiry="inquiry"/>
+          <ProductCard v-for="item in section.products" :key="item.skuId" :product="item" @click="goDetail" @add="addToCart" @inquiry="inquiry" />
         </view>
       </view>
     </template>
@@ -121,6 +114,22 @@
 
 <script setup>
   import { computed, ref, watch } from 'vue';
+
+  /** 主题只换配色：取值受控，未知值回落到默认绿。 */
+  const MALL_THEMES = {
+    FRESH: { primary: '#16a34a', dark: '#12833c', light: '#e8f5ec' },
+    WARM: { primary: '#f97316', dark: '#ea580c', light: '#fff1e6' },
+    OCEAN: { primary: '#0284c7', dark: '#0369a1', light: '#e6f4fb' },
+  };
+  const themeCode = ref('FRESH');
+  const themeStyle = computed(() => {
+    const theme = MALL_THEMES[themeCode.value] || MALL_THEMES.FRESH;
+    return {
+      '--mall-primary': theme.primary,
+      '--mall-primary-dark': theme.dark,
+      '--mall-primary-light': theme.light,
+    };
+  });
   import { onReachBottom, onShow } from '@dcloudio/uni-app';
   import ProductCard from '@/components/business/product-card.vue';
   import { mallCatalogApi } from '@/api/mall';
@@ -166,8 +175,7 @@
       if (!chosen) {
         return;
       }
-      locationText.value =
-        [chosen.cityName, chosen.districtName].filter(Boolean).join('') || chosen.detailAddress || '选择收货地址';
+      locationText.value = [chosen.cityName, chosen.districtName].filter(Boolean).join('') || chosen.detailAddress || '选择收货地址';
     } catch (error) {
       smartSentry.captureError(error);
     }
@@ -191,16 +199,13 @@
       const groupType = block.type === 'BANNER' ? 'BANNER_GROUP' : block.type === 'SHORTCUT' ? 'SHORTCUT_GROUP' : null;
       const previous = result[result.length - 1];
       if (groupType && previous?.type === groupType) previous.items.push(block);
-      else if (groupType) result.push({type: groupType, key: block.key, items: [block]});
+      else if (groupType) result.push({ type: groupType, key: block.key, items: [block] });
       else result.push(block);
     }
     return result;
   });
-  const contentSections = computed(
-    () =>
-      configuredSections.value.filter(
-        (section) => section.type !== 'ANNOUNCEMENT' && section.type !== 'SHORTCUT_GROUP'
-      )
+  const contentSections = computed(() =>
+    configuredSections.value.filter((section) => section.type !== 'ANNOUNCEMENT' && section.type !== 'SHORTCUT_GROUP')
   );
   /** 分类横滑：服务端三级分类（蔬菜 / 水果 / 猪肉 …），比固定的快捷入口更贴近采购习惯 */
   const categoryRail = ref([]);
@@ -278,11 +283,15 @@
   async function loadHomeLayout() {
     const request = ++homeRequest;
     const customerId = userStore.customerId;
-    if (!userStore.isLogin) { homeLayout.value = null; return; }
+    if (!userStore.isLogin) {
+      homeLayout.value = null;
+      return;
+    }
     try {
       const page = (await mallHomeApi.published()).data;
       if (request !== homeRequest || !userStore.isLogin || userStore.customerId !== customerId) return;
       homeLayout.value = page;
+      themeCode.value = page?.themeCode || 'FRESH';
     } catch (error) {
       if (request !== homeRequest || userStore.customerId !== customerId) return;
       homeLayout.value = null;
@@ -293,28 +302,40 @@
     }
   }
 
-  watch(() => userStore.customerId, () => {
-    homeRequest += 1;
-    homeLayout.value = null;
-    if (userStore.isLogin) loadHomeLayout();
-  });
+  watch(
+    () => userStore.customerId,
+    () => {
+      homeRequest += 1;
+      homeLayout.value = null;
+      if (userStore.isLogin) loadHomeLayout();
+    }
+  );
 
   function goHomeLink(block) {
     const target = block.linkTarget;
     switch (block.linkType) {
       case 'PRODUCT':
-        if (/^\d+$/.test(String(target))) goDetail({skuId: target});
+        if (/^\d+$/.test(String(target))) goDetail({ skuId: target });
         break;
-      case 'CATEGORY': goCategory(target); break;
-      case 'ACTIVITY': goActivities(); break;
-      case 'COUPONS': goCoupons(); break;
-      case 'SEARCH': goSearch(); break;
+      case 'CATEGORY':
+        goCategory(target);
+        break;
+      case 'ACTIVITY':
+        goActivities();
+        break;
+      case 'COUPONS':
+        goCoupons();
+        break;
+      case 'SEARCH':
+        goSearch();
+        break;
       case 'EXTERNAL_URL':
         if (typeof target === 'string' && /^https:\/\//i.test(target)) {
-          uni.navigateTo({url: `/pages-sub/mall/web?url=${encodeURIComponent(target)}`});
+          uni.navigateTo({ url: `/pages-sub/mall/web?url=${encodeURIComponent(target)}` });
         }
         break;
-      default: break;
+      default:
+        break;
     }
   }
 
@@ -372,7 +393,7 @@
   }
   .home__header {
     padding: 0 $space-4 $space-3;
-    background: linear-gradient(180deg, $color-primary, $color-primary-dark);
+    background: linear-gradient(180deg, var(--mall-primary, #16a34a), var(--mall-primary-dark, #12833c));
   }
   .home__section-head {
     @include flex-between;
@@ -401,7 +422,7 @@
     @include flex-start;
     height: 76rpx;
     padding: 0 $space-3;
-    border: 1px solid $color-primary;
+    border: 1px solid var(--mall-primary, #16a34a);
     border-radius: $radius-pill;
     background: white;
   }
@@ -436,7 +457,7 @@
     width: 88rpx;
     height: 88rpx;
     border-radius: $radius-pill;
-    background: $color-primary-light;
+    background: var(--mall-primary-light, #e8f5ec);
     @include flex-center;
   }
   .home__rail-emoji {
@@ -468,7 +489,9 @@
     width: 100%;
     height: 280rpx;
   }
-  .home__banner-slide {position: relative}
+  .home__banner-slide {
+    position: relative;
+  }
   .home__banner-caption {
     position: absolute;
     right: 0;
@@ -481,8 +504,13 @@
     background: rgba(0, 0, 0, 0.62);
     color: white;
   }
-  .home__banner-title {font-size: $font-size-base; font-weight: $font-weight-bold}
-  .home__banner-subtitle {font-size: $font-size-sm}
+  .home__banner-title {
+    font-size: $font-size-base;
+    font-weight: $font-weight-bold;
+  }
+  .home__banner-subtitle {
+    font-size: $font-size-sm;
+  }
   .home__topic {
     margin-top: $space-3;
     background: white;
@@ -529,7 +557,7 @@
     @include ellipsis;
   }
   .home__activity-summary {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-sm;
   }
   .home__activity-time {
@@ -548,7 +576,7 @@
     color: $color-text-primary;
   }
   .home__section-link {
-    color: $color-primary;
+    color: var(--mall-primary, #16a34a);
     font-size: $font-size-sm;
   }
   .home__empty,

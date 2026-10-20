@@ -6,7 +6,7 @@ import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public record MallHomeDraftVO(Integer version, Integer pointerVersion, Long currentReleaseId,
+public record MallHomeDraftVO(Integer version, Integer pointerVersion, Long currentReleaseId, String themeCode,
         List<MallHomeBlockForm> blocks, OffsetDateTime updatedAt,
         @JsonSerialize(using = ScmOperatorNameSerializer.class) String updatedBy) {
 }

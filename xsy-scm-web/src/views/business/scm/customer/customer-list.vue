@@ -110,6 +110,7 @@
     </a-card>
 
     <CustomerDrawer ref="drawer" @saved="load"/>
+    <CustomerPromotionModal ref="promotionModal"/>
 
     <a-modal
         v-model:open="reassignVisible"
@@ -147,6 +148,7 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
+import CustomerPromotionModal from '/@/views/business/scm/customer/components/customer-promotion-modal.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
@@ -327,12 +329,15 @@ async function remove(row: CustomerRow) {
 
 /** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
 const canAssign = computed(() => hasPermission('scm:customer:assign'));
+const canPromotion = computed(() => hasPermission('scm:customer:promotion:manage'));
+const promotionModal = ref<InstanceType<typeof CustomerPromotionModal>>();
 const canDelete = computed(() => hasPermission('scm:customer:delete'));
 
 /** 操作列常驻「编辑 + 状态」，其余低频与危险动作收进「更多」，把宽度留给业务字段。 */
 function rowActions(): ScmActionItem[] {
   return [
     {key: 'detail', label: '详情'},
+    {key: 'promotion', label: '推广二维码', hidden: !canPromotion.value},
     {key: 'reassign', label: '改派业务员', hidden: !canAssign.value},
     {key: 'delete', label: '删除', danger: true, hidden: !canDelete.value},
   ];
@@ -341,6 +346,8 @@ function rowActions(): ScmActionItem[] {
 function onRowAction(key: string, row: CustomerRow) {
   if (key === 'detail') {
     detail(row.customerId);
+  } else if (key === 'promotion') {
+    promotionModal.value?.openFor(row.customerId, row.name);
   } else if (key === 'reassign') {
     openReassign(row);
   } else if (key === 'delete') {

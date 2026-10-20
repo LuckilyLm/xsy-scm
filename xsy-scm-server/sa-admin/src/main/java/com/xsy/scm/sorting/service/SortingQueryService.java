@@ -87,14 +87,13 @@ public class SortingQueryService {
 
     /** 分次事件先判任务可见，再核对明细归属；列表按该明细游标分页，累计量取全部历史最新事件。 */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
-    public SortingPartHistoryVO parts(Long taskId, Long itemId, Long beforeId,
-            int limit) {
+    public SortingPartHistoryVO parts(Long taskId, Long itemId, Long beforeId, int limit) {
         var task = detail(taskId);
         if (itemId == null || limit < 1 || limit > 100 || beforeId != null && beforeId <= 0) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-        if (task.getItems().stream().noneMatch(item -> itemId.equals(item.getId())
-                && item.getSalesOrderItemId() != null)) {
+        if (task.getItems().stream()
+                .noneMatch(item -> itemId.equals(item.getId()) && item.getSalesOrderItemId() != null)) {
             throw new ScmDataScopeException();
         }
         SortingPartRecordVO latest = sortingPartRecordDao.latestInTask(taskId, itemId);
@@ -102,8 +101,8 @@ public class SortingQueryService {
         boolean hasMore = fetched.size() > limit;
         var records = hasMore ? fetched.subList(0, limit) : fetched;
         Long nextBeforeId = hasMore ? records.getLast().getId() : null;
-        return new SortingPartHistoryVO(records,
-                latest == null ? null : latest.getTotalQuantity(), hasMore, nextBeforeId);
+        return new SortingPartHistoryVO(records, latest == null ? null : latest.getTotalQuantity(), hasMore,
+                nextBeforeId);
     }
 
     /**
@@ -119,6 +118,7 @@ public class SortingQueryService {
         result.setTaskNo(detail.getTask().getTaskNo());
         result.setWarehouseNameSnapshot(detail.getTask().getWarehouseNameSnapshot());
         result.setAssigneeName(detail.getTask().getAssigneeName());
+        result.setSupplierNameSnapshot(detail.getTask().getSupplierNameSnapshot());
         result.setStatus(detail.getTask().getStatus());
         result.setPrintCount(detail.getTask().getPrintCount());
         result.setGeneratedAt(OffsetDateTime.now());

@@ -17,6 +17,9 @@ public final class CustomerPermission {
     public static final String TYPE_DELETE = "scm:customer:type:delete";
     public static final String VISIBILITY_QUERY = "scm:customer:visibility:query";
 
+    /** 客户专属推广二维码的生成、撤销与扫码记录查看。 */
+    public static final String PROMOTION_MANAGE = "scm:customer:promotion:manage";
+
     private CustomerPermission() {
     }
 }

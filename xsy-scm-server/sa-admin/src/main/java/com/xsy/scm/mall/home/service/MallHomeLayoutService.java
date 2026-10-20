@@ -30,6 +30,12 @@ import static com.xsy.scm.mall.home.constant.MallHomeErrorCode.RELEASE_NOT_FOUND
 @Service
 @RequiredArgsConstructor
 public class MallHomeLayoutService {
+
+    /** 受控主题：只改配色，不换版式。 */
+    private static final String DEFAULT_THEME = "FRESH";
+
+    private static final java.util.Set<String> THEMES = java.util.Set.of("FRESH", "WARM", "OCEAN");
+
     private static final TypeReference<List<MallHomeBlockForm>> BLOCKS = new TypeReference<>() {
     };
     private final MallHomeDao homeDao;
@@ -43,7 +49,7 @@ public class MallHomeLayoutService {
         MallHomeStorageVO draft = homeDao.draft();
         MallHomeStorageVO pointer = homeDao.pointer();
         return new MallHomeDraftVO(draft.getVersion(), pointer.getVersion(), pointer.getCurrentReleaseId(),
-                parse(draft.getContent()), draft.getUpdatedAt(), draft.getUpdatedBy());
+                draft.getThemeCode(), parse(draft.getContent()), draft.getUpdatedAt(), draft.getUpdatedBy());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -56,7 +62,8 @@ public class MallHomeLayoutService {
         validator.validate(form.getBlocks());
         List<MallHomeBlockForm> ordered = form.getBlocks().stream()
                 .sorted(Comparator.comparing(MallHomeBlockForm::getSortOrder)).toList();
-        if (homeDao.saveDraft(draft.getVersion(), stringify(ordered), ScmOperator.current()) != 1) {
+        String themeCode = themeOf(form.getThemeCode());
+        if (homeDao.saveDraft(draft.getVersion(), stringify(ordered), themeCode, ScmOperator.current()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         return draft();
@@ -78,6 +85,8 @@ public class MallHomeLayoutService {
         validator.validate(blocks);
         MallHomeReleaseVO release = new MallHomeReleaseVO();
         release.setContent(stringify(blocks));
+        // 主题跟着发布版本走：回滚时配色一起回去，不会出现「旧版式配新配色」
+        release.setThemeCode(draft.getThemeCode());
         release.setPublishKind(MallHomePublishKind.PUBLISH.name());
         release.setPublishedBy(ScmOperator.current());
         homeDao.insertRelease(release);
@@ -102,6 +111,7 @@ public class MallHomeLayoutService {
         validator.validate(parse(target.getContent()));
         MallHomeReleaseVO release = new MallHomeReleaseVO();
         release.setContent(target.getContent());
+        release.setThemeCode(target.getThemeCode());
         release.setPublishKind(MallHomePublishKind.ROLLBACK.name());
         release.setSourceReleaseId(target.getId());
         release.setReason(form.getReason().trim());
@@ -115,6 +125,18 @@ public class MallHomeLayoutService {
     public List<MallHomeReleaseVO> history() {
         requireGlobalCustomerScope();
         return homeDao.history();
+    }
+
+    /** 主题只接受受控取值；不传按默认绿色，避免历史调用方一次性全部失败。 */
+    private String themeOf(String themeCode) {
+        if (themeCode == null || themeCode.isBlank()) {
+            return DEFAULT_THEME;
+        }
+        String normalized = themeCode.trim().toUpperCase(java.util.Locale.ROOT);
+        if (!THEMES.contains(normalized)) {
+            throw new ScmBusinessException(INVALID_LAYOUT);
+        }
+        return normalized;
     }
 
     public void requireGlobalCustomerScope() {

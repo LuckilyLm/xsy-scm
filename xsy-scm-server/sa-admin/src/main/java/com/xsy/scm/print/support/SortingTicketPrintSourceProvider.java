@@ -38,6 +38,7 @@ public class SortingTicketPrintSourceProvider implements ScmPrintSourceProvider 
         var header = ScmPrintSource.values();
         header.put("warehouseName", ScmPrintText.text(ticket.getWarehouseNameSnapshot()));
         header.put("assigneeName", ScmPrintText.text(ticket.getAssigneeName()));
+        header.put("supplierName", ScmPrintText.text(ticket.getSupplierNameSnapshot()));
         var rows = new ArrayList<Map<String, String>>();
         for (var item : ticket.getItems()) {
             // 赠品是只读合并进来的第二类来源：不挂订单行、也不会有分拣结果。

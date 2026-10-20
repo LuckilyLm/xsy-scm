@@ -149,6 +149,7 @@ async function trial() {
 const PRICE_SOURCE_TONE: Record<string, ScmStatusTone> = {
   AGREEMENT: 'processing',
   CUSTOMER_TYPE: 'success',
+  TIME_PRICE: 'warning',
   MARKET: 'neutral',
 };
 

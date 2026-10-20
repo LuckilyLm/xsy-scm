@@ -17,7 +17,7 @@ public interface MallHomeDao {
     MallHomeStorageVO lockPointer();
 
     int saveDraft(@Param("version") Integer version, @Param("content") String content,
-            @Param("operator") String operator);
+            @Param("themeCode") String themeCode, @Param("operator") String operator);
 
     int activate(@Param("version") Integer version, @Param("releaseId") Long releaseId,
             @Param("operator") String operator);
