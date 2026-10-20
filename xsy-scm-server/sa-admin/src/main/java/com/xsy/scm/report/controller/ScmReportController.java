@@ -56,32 +56,17 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 public class ScmReportController {
 
     private static final int TOP_LIMIT = 5;
-    private static final List<Column> SALES_ORDER_EXPORT_COLUMNS = List.of(
-            new Column("confirmedAt", "确认时间"),
-            new Column("orderNo", "订单号"),
-            new Column("customerCode", "客户编码"),
-            new Column("customerName", "客户名称"),
-            new Column("sellerName", "销售员"),
-            new Column("orderSource", "订单来源"),
-            new Column("settleMode", "结算方式"),
-            new Column("lineCount", "订单行数"),
-            new Column("skuKindCount", "商品规格数"),
-            new Column("settlementAmount", "结算金额"),
-            new Column("completedRefundAmount", "已完成退款金额")
-    );
-    private static final List<Column> PURCHASE_PRODUCT_EXPORT_COLUMNS = List.of(
-            new Column("productName", "商品名称"),
-            new Column("skuCode", "商品规格编码"),
-            new Column("skuName", "商品规格"),
-            new Column("purchaseUnit", "采购单位"),
-            new Column("orderCount", "采购单数"),
-            new Column("plannedQuantity", "计划采购数量"),
-            new Column("receivedQuantity", "已收数量"),
-            new Column("orderAmount", "采购订单金额"),
-            new Column("avgPurchasePrice", "采购成交均价"),
-            new Column("inboundQuantityText", "采购入库数量"),
-            new Column("inboundCostAmount", "采购入库成本金额", true)
-    );
+    private static final List<Column> SALES_ORDER_EXPORT_COLUMNS = List.of(new Column("confirmedAt", "确认时间"),
+            new Column("orderNo", "订单号"), new Column("customerCode", "客户编码"), new Column("customerName", "客户名称"),
+            new Column("sellerName", "销售员"), new Column("orderSource", "订单来源"), new Column("settleMode", "结算方式"),
+            new Column("lineCount", "订单行数"), new Column("skuKindCount", "商品规格数"),
+            new Column("settlementAmount", "结算金额"), new Column("completedRefundAmount", "已完成退款金额"));
+    private static final List<Column> PURCHASE_PRODUCT_EXPORT_COLUMNS = List.of(new Column("productName", "商品名称"),
+            new Column("skuCode", "商品规格编码"), new Column("skuName", "商品规格"), new Column("purchaseUnit", "采购单位"),
+            new Column("orderCount", "采购单数"), new Column("plannedQuantity", "计划采购数量"),
+            new Column("receivedQuantity", "已收数量"), new Column("orderAmount", "采购订单金额"),
+            new Column("avgPurchasePrice", "采购成交均价"), new Column("inboundQuantityText", "采购入库数量"),
+            new Column("inboundCostAmount", "采购入库成本金额", true));
 
     private static final List<String> OVERVIEW_DAILY_TITLES = List.of("业务日期", "确认订单数", "客户数", "确认订单金额", "已完成退款金额",
             "提交采购金额", "采购入库成本金额", "成本缺失行数");
@@ -294,10 +279,11 @@ public class ScmReportController {
                 "商品规格", "商品类型", "销售单位", "订购数量", "实际数量", "锁定成交单价", "价格来源", "结算金额", "是否手工改价", "手工改价原因");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.itemList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getConfirmedAt(), r.getOrderNo(), r.getCustomerCode(),
-                        r.getCustomerName(), r.getSellerName(), r.getOrderSource(), r.getSettleMode(), r.getSpuCode(),
-                        r.getProductName(), r.getSkuCode(), r.getSpecName(), r.getProductType(), r.getSaleUnit(),
-                        r.getOrderedQuantity(), r.getActualQuantity(), r.getLockedUnitPrice(), r.getLockedPriceSource(),
-                        r.getSettlementLineAmount(), yesNo(r.getManualPriceOverride()), r.getManualPriceReason()))
+                        r.getCustomerName(), r.getSellerName(), r.getOrderSource(), settleModeLabel(r.getSettleMode()),
+                        r.getSpuCode(), r.getProductName(), r.getSkuCode(), r.getSpecName(), r.getProductType(),
+                        r.getSaleUnit(), r.getOrderedQuantity(), r.getActualQuantity(), r.getLockedUnitPrice(),
+                        priceSourceLabel(r.getLockedPriceSource()), r.getSettlementLineAmount(),
+                        yesNo(r.getManualPriceOverride()), r.getManualPriceReason()))
                 .toList();
         ScmReportExcel.write(response, "销售分析-订单明细.xlsx", "订单明细", titles, rows);
     }
@@ -314,10 +300,8 @@ public class ScmReportController {
                         r.getCustomerName(), r.getSellerName(), r.getOrderSource(), r.getSettleMode(), r.getLineCount(),
                         r.getSkuKindCount(), r.getSettlementAmount(), r.getCompletedRefundAmount()))
                 .toList();
-        var selection = ScmExportColumnSelection.resolve(
-                form.getExportColumnKeys(), SALES_ORDER_EXPORT_COLUMNS, true);
-        ScmReportExcel.write(response, "销售分析-客户订单明细.xlsx", "客户订单明细",
-                selection.titles(), selection.project(rows));
+        var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(), SALES_ORDER_EXPORT_COLUMNS, true);
+        ScmReportExcel.write(response, "销售分析-客户订单明细.xlsx", "客户订单明细", selection.titles(), selection.project(rows));
     }
 
     // ==================== 采购分析 ====================
@@ -430,10 +414,9 @@ public class ScmReportController {
                         r.getOrderAmount(), r.getAvgPurchasePrice(), r.getInboundQuantityText(),
                         r.getInboundCostAmount()))
                 .toList();
-        var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(),
-                PURCHASE_PRODUCT_EXPORT_COLUMNS, StpUtil.hasPermission(ScmReportPermission.COST_QUERY));
-        ScmReportExcel.write(response, "采购分析-按商品.xlsx", "按商品",
-                selection.titles(), selection.project(rows));
+        var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(), PURCHASE_PRODUCT_EXPORT_COLUMNS,
+                StpUtil.hasPermission(ScmReportPermission.COST_QUERY));
+        ScmReportExcel.write(response, "采购分析-按商品.xlsx", "按商品", selection.titles(), selection.project(rows));
     }
 
     @PostMapping("/purchase/supplier/export")
@@ -645,5 +628,18 @@ public class ScmReportController {
 
     private String yesNo(Boolean value) {
         return value == null ? "" : (value ? "是" : "否");
+    }
+
+    /** Excel 给人看：结算方式与价格来源都翻成中文，不直出枚举名。 */
+    private static String settleModeLabel(String settleMode) {
+        return com.xsy.scm.common.constant.ScmSettleModeEnum.labelOf(settleMode);
+    }
+
+    private static String priceSourceLabel(String priceSource) {
+        // OVERRIDE（手工改价）不进解析器枚举：它不是价格来源的取数路径，而是人对锁定价的覆盖
+        if ("OVERRIDE".equals(priceSource)) {
+            return "人工改价";
+        }
+        return com.xsy.scm.pricing.constant.ScmPriceSourceEnum.labelOf(priceSource);
     }
 }
