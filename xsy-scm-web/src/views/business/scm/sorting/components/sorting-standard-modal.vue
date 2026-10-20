@@ -42,8 +42,8 @@ const columns: TableColumnsType<SortingStandardItem> = [
   {title: '客户', dataIndex: 'customerName', width: 130},
   {title: '商品', dataIndex: 'productName', width: 150},
   {title: '商品规格', dataIndex: 'specName', width: 130},
-  {title: '确认数量', dataIndex: 'quantity', width: 110, align: 'right'},
-  {title: '单位', dataIndex: 'unit', width: 70, align: 'center'},
+  {title: '确认数量', dataIndex: 'quantity', width: 110},
+  {title: '单位', dataIndex: 'unit', width: 70},
   {title: '可处理状态', dataIndex: 'reason', width: 200},
 ];
 const rowSelection = computed(() => ({

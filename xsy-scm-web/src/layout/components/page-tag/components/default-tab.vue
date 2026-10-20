@@ -4,9 +4,9 @@
 -->
 <template>
   <!-- 标签页，共两部分：1、标签 ；2、标签操作区 -->
-  <a-row style=" position: relative" v-show="pageTagFlag">
+  <a-row style="position: relative" v-show="pageTagFlag" class="smart-page-tag-row">
     <a-dropdown :trigger="['contextmenu']">
-      <div class="smart-page-tag">
+      <div class="smart-page-tag" ref="tagRoot" :class="{ 'is-scrolled': tagScrolled }">
         <a-tabs style="width: 100%" :tab-position="mode" v-model:activeKey="selectedKey" size="small"
                 @tabClick="selectTab">
           <a-tab-pane v-for="item in tagNav" :key="item.menuName">
@@ -57,7 +57,7 @@
 
 <script setup lang="ts">
 import {AppstoreOutlined, CloseOutlined} from '@ant-design/icons-vue';
-import {computed, ref, watch} from 'vue';
+import {computed, nextTick, onBeforeUnmount, onMounted, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
 import {HOME_PAGE_NAME} from '/@/constants/system/home-const';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
@@ -70,8 +70,25 @@ const pageTagFlag = computed(() => useAppConfigStore().$state.pageTagFlag);
 const router = useRouter();
 const route = useRoute();
 const mode = ref('top');
+const tagRoot = ref<HTMLElement | null>(null);
 const tagNav = computed(() => useUserStore().getTagNav || []);
 const selectedKey = ref(route.name);
+const tagScrolled = ref(false);
+let tagNavWrap: HTMLElement | null = null;
+
+// 页签向左滚动后左侧会被硬切，用一层渐隐提示「前面还有页签」
+function syncTagScroll() {
+  tagScrolled.value = (tagNavWrap?.scrollLeft ?? 0) > 0;
+}
+
+onMounted(async () => {
+  await nextTick();
+  tagNavWrap = tagRoot.value?.querySelector<HTMLElement>('.ant-tabs-nav-wrap') ?? null;
+  tagNavWrap?.addEventListener('scroll', syncTagScroll, {passive: true});
+  syncTagScroll();
+});
+
+onBeforeUnmount(() => tagNavWrap?.removeEventListener('scroll', syncTagScroll));
 
 watch(
     () => route.name,
@@ -80,6 +97,15 @@ watch(
     },
     {immediate: true}
 );
+
+// 页签多到溢出时，激活的页签可能被挤到可视区外（右侧只剩「...」）。
+// 切换路由后把它滚进可视区，保证用户始终能看到当前所在页。
+watch(selectedKey, async () => {
+  await nextTick();
+  const activeTab = tagRoot.value?.querySelector<HTMLElement>('.ant-tabs-tab-active');
+  activeTab?.scrollIntoView({inline: 'nearest', block: 'nearest'});
+  syncTagScroll();
+});
 
 //选择某个标签页
 function selectTab(name) {
@@ -146,6 +172,7 @@ const borderRadius = token.value.borderRadius + 'px';
 @color-primary-bg: v-bind('token.colorPrimaryBg');
 
 .smart-page-tag-operate {
+  flex: 0 0 @smart-page-tag-operate-width;
   width: @smart-page-tag-operate-width;
   height: @smart-page-tag-operate-width;
   font-size: 17px;
@@ -213,6 +240,13 @@ const borderRadius = token.value.borderRadius + 'px';
   cursor: pointer;
 }
 
+.smart-page-tag-row {
+  // a-row 默认 flex-wrap: wrap，页签占满一行后会把「标签操作」图标挤到第二行
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
 .smart-page-tag {
   position: relative;
   box-sizing: border-box;
@@ -224,7 +258,8 @@ const borderRadius = token.value.borderRadius + 'px';
   padding-right: 20px;
   padding-left: 20px;
   user-select: none;
-  width: calc(100% - @smart-page-tag-operate-width);
+  flex: 1 1 auto;
+  min-width: 0;
 
   .smart-page-tag-icon {
     margin-right: 4px;
@@ -254,8 +289,23 @@ const borderRadius = token.value.borderRadius + 'px';
     flex-wrap: nowrap;
   }
 
+  /* 页签溢出时右侧渐隐：否则最后一个页签会被容器直接切断，看着像坏掉 */
+  :deep(.ant-tabs-nav:has(.ant-tabs-nav-operations:not(.ant-tabs-nav-operations-hidden)) .ant-tabs-nav-wrap) {
+    mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent 100%);
+  }
+
+  /* 向左滚动后左侧同样渐隐，提示前面还有页签 */
+  &.is-scrolled :deep(.ant-tabs-nav-wrap) {
+    mask-image: linear-gradient(to right, transparent 0, #000 24px);
+  }
+
+  &.is-scrolled :deep(.ant-tabs-nav:has(.ant-tabs-nav-operations:not(.ant-tabs-nav-operations-hidden)) .ant-tabs-nav-wrap) {
+    mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 28px), transparent 100%);
+  }
+
   :deep(.ant-tabs-small > .ant-tabs-nav .ant-tabs-tab) {
-    padding: 5px 8px 3px 20px;
+    // 左内边距原来是 20px，一个页签白占 10px；收到 10px 后同样的宽度能多放下一个页签
+    padding: 5px 6px 3px 10px;
     border-radius: v-bind(borderRadius);
     margin: 0 4px 0 0 !important;
     // 宽度按标签文字自适应：固定 168px 时短名字（首页/退货单）右边会空一大块，
