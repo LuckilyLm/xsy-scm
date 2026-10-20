@@ -305,9 +305,15 @@ const {token} = useToken();
   }
 
   .location-breadcrumb {
-    width: calc(100% - 56px);
+    // 头部左侧是 flex 行：折叠按钮 + 首页按钮 + 页签区。
+    // 原来写死 calc(100% - 56px)，而两个按钮实际占 82px，多出的 26px 会把
+    // 右侧的「标签操作」图标顶出容器（.layout-header-box 是 overflow: hidden，表现为被切掉）。
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
     margin-left: 15px;
     line-height: @header-user-height;
+    overflow: hidden;
   }
 }
 

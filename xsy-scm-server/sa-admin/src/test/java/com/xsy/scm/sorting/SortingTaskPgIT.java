@@ -205,6 +205,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         int balances = count("SELECT count(*) FROM xsy_inventory_balance");
         int movements = count("SELECT count(*) FROM xsy_inventory_movement");
         int outbounds = count("SELECT count(*) FROM xsy_inventory_outbound");
+        int receivables = count("SELECT count(*) FROM xsy_finance_receivable");
 
         Long taskId = as(lead, QUEUE_MANAGER,
                 () -> sorting.create(createForm("c6", List.of(order.item()), sorterA), key("c6"))).getTask().getId();
