@@ -609,6 +609,23 @@ class ScmMigrationTargetPgIT {
         assertThat(appendOnly).as("审计日志必须只追加").isEqualTo(1);
     }
 
+    /**
+     * V167 起所有仍启用的分拣小票模板（含存量自定义模板）抬头都带供应商来源。
+     */
+    @Test
+    void sortingTicketAllEnabledTemplatesHaveSupplierFromV167() {
+        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        if (target < 167) {
+            return;
+        }
+        Integer missing = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_print_template WHERE document_type = 'SORTING_TICKET' "
+                        + "AND enabled_flag = TRUE "
+                        + "AND NOT (model -> 'headerFields') @> jsonb_build_array('supplierName')",
+                Integer.class);
+        assertThat(missing).as("存量自定义小票模板也应带供应商来源").isZero();
+    }
+
     private void assertColumn(String table, String column) {
         Integer count = jdbc.queryForObject(
                 "SELECT count(*) FROM information_schema.columns "
