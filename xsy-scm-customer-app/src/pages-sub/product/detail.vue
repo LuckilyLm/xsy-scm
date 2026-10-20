@@ -423,6 +423,11 @@
         color: $color-info;
       }
 
+      &--time {
+        background-color: $color-warning-light;
+        color: $color-warning;
+      }
+
       &--standard {
         background-color: $color-bg-page;
         color: $color-text-tertiary;

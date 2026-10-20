@@ -115,6 +115,7 @@ const PRICE_SOURCE_LABELS = {
   MARKET: '市场价',
   AGREEMENT: '协议价',
   CUSTOMER_TYPE: '类型价',
+  TIME_PRICE: '时价',
 };
 
 export function priceSourceLabel(product) {
@@ -126,10 +127,10 @@ export function priceSourceLabel(product) {
 }
 
 /**
- * 价格来源语义档位：agreement / type / standard / unpriced。
+ * 价格来源语义档位：agreement / type / time / standard / unpriced。
  *
  * 与 stockLevel 同一套路：这里只给语义名，各组件自己映射成 BEM 类名与配色，
- * 避免把色值或类名写进展示口径层。
+ * 避免把色值或类名写进展示口径层。时价是短期价格，单独成档以免和市场价混色。
  */
 export function priceSourceLevel(product) {
   const source = product && product.priceSource;
@@ -138,6 +139,9 @@ export function priceSourceLevel(product) {
   }
   if (source === 'CUSTOMER_TYPE') {
     return 'type';
+  }
+  if (source === 'TIME_PRICE') {
+    return 'time';
   }
   if (source === 'UNPRICED') {
     return 'unpriced';

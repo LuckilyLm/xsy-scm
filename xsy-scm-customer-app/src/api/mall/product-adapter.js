@@ -4,12 +4,12 @@
  * 其他商品提示直接使用服务端返回值。
  */
 
-/** 价格来源文案，与后端价格来源枚举对应；MARKET 是服务端实际返回的市场价档 */
+/** 价格来源文案，与后端价格来源枚举一一对应；MARKET 是服务端实际返回的市场价档 */
 const PRICE_SOURCE_LABEL = {
   MARKET: '市场价',
   AGREEMENT: '客户协议价',
   CUSTOMER_TYPE: '客户类型价',
-  STANDARD: '标准价',
+  TIME_PRICE: '时价',
 };
 
 /** 单个商品：后端 VO → 展示模型 */

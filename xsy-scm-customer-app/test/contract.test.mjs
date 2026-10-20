@@ -217,7 +217,8 @@ test('order actions only offer cancel when the server says it is cancelable', ()
 test('order list labels the amount as an estimate and drops stale tab responses', () => {
   const page = read('../src/pages/order/index.vue');
   // orderedTotalAmount 是订货金额，不等于实付；接入真实支付事实前不得写成「实付金额」
-  assert.match(page, /预计订单金额/);
+  // 标签在 d33dc21e 缩短为「预计金额」；关键意图是不写成「实付金额」
+  assert.match(page, /预计金额/);
   assert.doesNotMatch(page, /实付金额/);
   // 切分类要作废旧请求，否则会把上一分类的结果显示到新分类
   assert.match(page, /let loadSeq = 0/);
@@ -355,7 +356,8 @@ test('cart quantities travel as strings, never summed on the client', () => {
   const page = read('../src/pages/cart/index.vue');
   const composable = read('../src/composables/use-mall-cart.js');
   assert.match(api, /updateItem: \(skuId, quantity\)/);
-  assert.match(composable, /String\(quantity\)/);
+  // 5a8b821f 把加购数量参数改名 effective；关键意图是数量以字符串下发
+  assert.match(composable, /String\(effective\)/);
   // 数量以字符串下发，禁止客户端做金额求和
   assert.doesNotMatch(page, /Number\(item\.unitPrice\)/);
 });
