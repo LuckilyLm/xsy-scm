@@ -15,15 +15,9 @@ const pricingConst = read('../src/constants/business/scm/pricing-const.ts');
 const display = read('../src/views/business/scm/pricing/pricing-display.ts');
 const preview = read('../src/views/business/scm/pricing/price-preview.vue');
 
-/** 从 Java 枚举体里取常量名：跳过注释与空行。 */
+/** 从 Java 枚举体里取常量名：形如 `AGREEMENT("客户协议价"),`，取左括号前的标识符。 */
 function backendSources() {
-  const body = backend.slice(backend.indexOf('{') + 1, backend.lastIndexOf('}'));
-  return body
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith('/') && !line.startsWith('*'))
-      .map((line) => line.replace(/[,;].*$/, '').trim())
-      .filter((line) => /^[A-Z_]+$/.test(line));
+  return [...backend.matchAll(/^\s{4}([A-Z_]+)\(/gm)].map((m) => m[1]);
 }
 
 test('后端价格来源枚举非空，避免契约空转', () => {

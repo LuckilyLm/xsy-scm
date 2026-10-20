@@ -155,7 +155,7 @@
       width: 152rpx;
       height: 152rpx;
       border-radius: $radius-md;
-      background-color: $color-primary-light;
+      background-color: var(--mall-primary-light, #e8f5ec);
       @include flex-center;
       flex-shrink: 0;
       overflow: hidden;
@@ -169,7 +169,7 @@
     &__thumb-fallback {
       width: 100%;
       height: 100%;
-      background-color: $color-primary-light;
+      background-color: var(--mall-primary-light, #e8f5ec);
       @include flex-center;
     }
 
@@ -177,7 +177,7 @@
       font-size: 48rpx;
       line-height: 1;
       font-weight: $font-weight-medium;
-      color: $color-primary;
+      color: var(--mall-primary, #16a34a);
     }
 
     /* 缺货时图片降透明度，避免与在售商品混淆 */
@@ -246,8 +246,8 @@
       white-space: nowrap;
 
       &--agreement {
-        background-color: $color-primary-light;
-        color: $color-primary;
+        background-color: var(--mall-primary-light, #e8f5ec);
+        color: var(--mall-primary, #16a34a);
       }
 
       &--type {
@@ -350,13 +350,13 @@
 
       /* 主操作：实心品牌绿，白字，与询价（描边）区分 */
       &--add {
-        background-color: $color-primary;
+        background-color: var(--mall-primary, #16a34a);
       }
 
       /* 缺货预订：描边样式，可点击但视觉弱于现货 */
       &--preorder {
         background-color: $color-bg-card;
-        border: 1px solid $color-primary;
+        border: 1px solid var(--mall-primary, #16a34a);
       }
 
       &--unavailable {
@@ -366,7 +366,7 @@
 
       &--inquiry {
         background-color: $color-bg-card;
-        border: 1px solid $color-primary;
+        border: 1px solid var(--mall-primary, #16a34a);
       }
 
       &--disabled {
@@ -381,11 +381,11 @@
     }
 
     &__action--inquiry &__action-text {
-      color: $color-primary;
+      color: var(--mall-primary, #16a34a);
     }
 
     &__action--preorder &__action-text {
-      color: $color-primary;
+      color: var(--mall-primary, #16a34a);
     }
 
     &__action--unavailable &__action-text {
