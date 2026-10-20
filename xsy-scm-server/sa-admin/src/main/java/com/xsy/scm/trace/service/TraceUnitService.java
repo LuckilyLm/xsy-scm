@@ -236,6 +236,17 @@ public class TraceUnitService {
         return replay;
     }
 
+    /** 预览沿用正式绑定守卫，但在事务代理内部转为不可处理原因，避免业务拒绝把只读预览标为 rollback-only。 */
+    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
+    public String previewSortedQuantityRejection(Long sortingTaskItemId, BigDecimal newSortedQuantity) {
+        try {
+            requireBindingsFitSortedQuantity(sortingTaskItemId, newSortedQuantity);
+            return null;
+        } catch (ScmBusinessException exception) {
+            return exception.getErrorCode().getMsg();
+        }
+    }
+
     /**
      * 分拣改量守卫（供分拣域调用的正式契约）：新实拣量不得低于该行仍有效绑定的包装总量。
      *

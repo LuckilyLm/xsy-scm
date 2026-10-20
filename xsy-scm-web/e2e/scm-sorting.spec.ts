@@ -407,3 +407,49 @@ test('按商品汇总是同一套事实的只读视角，页面不提供任何�
         .reduce((sum, i) => sum + Number(i.plannedQuantitySnapshot), 0);
     expect(Number(row.plannedQuantity)).toBeCloseTo(planned, 4);
 });
+
+
+test('标品一键分拣显示服务端预览，只确认所选行且不完成任务', async ({page}) => {
+    const standardSkuId = await createSku(api, tag, 'STANDARD', 'STANDARD');
+    let order = await post<Row>('/scm/order/create', {
+        customerId, orderSource: 'ADMIN',
+        address: {receiverName: '标品验收', receiverPhone: '13800000000', address: '分拣验收路1号'},
+        items: [{skuId: standardSkuId, orderedQuantity: '2.0000', manualPriceOverride: false}],
+    });
+    if (order.status === 'DRAFT') {
+        order = await post<Row>('/scm/order/submit', {orderId: order.orderId, version: order.version});
+    }
+    if (order.status !== 'CONFIRMED') {
+        order = await post<Row>('/scm/order/confirm', {orderId: order.orderId, version: order.version});
+    }
+    const created = await post<Row>('/scm/sorting/tasks', {
+        warehouseId, assigneeEmployeeId: sorterEmployeeId,
+        salesOrderItemIds: [order.items[0].itemId], remark: `${tag} 标品批量`,
+    });
+    const taskId = created.task.id;
+    const beforeMovements = await movementTotal();
+    authenticate(page, sorterToken);
+    await page.goto('/#/sorting/tasks');
+    const keyword = page.locator('.smart-query-form input').first();
+    await keyword.fill(String(created.task.taskNo));
+    await keyword.press('Enter');
+    const row = page.locator('.ant-table-tbody tr').filter({hasText: String(created.task.taskNo)});
+    await button(row, '详情').click();
+    await button(page.locator('.ant-drawer-content'), '标品一键分拣').click();
+    const modal = page.locator('.ant-modal-content:visible').last();
+    await expect(modal).toContainText('2.0000');
+    await expect(modal).toContainText('不会自动完成任务');
+    await expect(button(modal, '确认所选标品')).toBeDisabled();
+    await modal.locator('.ant-table-tbody input[type=checkbox]').first().check();
+    await button(modal, '确认所选标品').click();
+    await expect(modal).not.toBeVisible();
+    const confirmed = await taskDetail(sorterClient, taskId);
+    expect(confirmed.task.status).toBe('SORTING');
+    expect(confirmed.items[0].sortedQuantity).toBe('2.0000');
+    expect(confirmed.items[0].result).toBe('NORMAL');
+    const history = await get<Row>(`/scm/sorting/tasks/${taskId}/items/${confirmed.items[0].id}/parts`, sorterClient);
+    expect(history.records).toHaveLength(1);
+    expect(await movementTotal()).toBe(beforeMovements);
+    const denied = await envelope(leadClient, `/scm/sorting/tasks/${taskId}/standard-preview`, undefined, 'get');
+    expect(denied.code).not.toBe(0);
+});

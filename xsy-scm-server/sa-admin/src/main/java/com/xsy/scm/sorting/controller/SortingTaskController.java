@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.xsy.scm.sorting.domain.form.SortingActionForm;
+import com.xsy.scm.sorting.domain.form.SortingStandardConfirmForm;
+import com.xsy.scm.sorting.domain.vo.SortingStandardPreviewVO;
+import com.xsy.scm.sorting.domain.vo.SortingStandardResultVO;
+import com.xsy.scm.sorting.service.SortingStandardService;
 import com.xsy.scm.sorting.domain.form.SortingAssignForm;
 import com.xsy.scm.sorting.domain.form.SortingCandidateQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryForm;
@@ -48,6 +52,7 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 public class SortingTaskController {
 
     private final SortingTaskService sortingTaskService;
+    private final SortingStandardService sortingStandardService;
     private final SortingQueryService sortingQueryService;
 
     @GetMapping("/tasks")
@@ -138,6 +143,21 @@ public class SortingTaskController {
     public ResponseDTO<String> enter(@PathVariable Long id, @Valid @RequestBody SortingEntryForm form) {
         sortingTaskService.enter(id, form);
         return ResponseDTO.ok();
+    }
+
+    @GetMapping("/tasks/{id}/standard-preview")
+    @SaCheckPermission(SortingPermission.ITEM_UPDATE)
+    public ResponseDTO<SortingStandardPreviewVO> standardPreview(@PathVariable Long id) {
+        return ResponseDTO.ok(sortingStandardService.preview(id));
+    }
+
+    @PostMapping("/tasks/{id}/standard-confirm")
+    @SaCheckPermission(SortingPermission.ITEM_UPDATE)
+    @OperateLog
+    public ResponseDTO<SortingStandardResultVO> standardConfirm(@PathVariable Long id,
+            @Valid @RequestBody SortingStandardConfirmForm form,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return ResponseDTO.ok(sortingStandardService.confirm(id, form, key));
     }
 
     @PostMapping("/tasks/{id}/complete")

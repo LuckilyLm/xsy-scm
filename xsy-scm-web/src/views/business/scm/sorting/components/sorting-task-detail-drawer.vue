@@ -160,6 +160,11 @@
         </a-table>
 
         <div class="entry-footer">
+          <a-button v-privilege="'scm:sorting:item:update'"
+                    :disabled="!canEditItems || busy || dirtyCount > 0" @click="standardOpen = true">
+            标品一键分拣
+          </a-button>
+          <span v-if="dirtyCount > 0">请先提交手工录入，再使用标品一键分拣。</span>
           <a-button
               type="primary"
               v-privilege="'scm:sorting:item:update'"
@@ -171,6 +176,8 @@
       </template>
       <a-empty v-else-if="!detailLoading" description="任务尚未加载"/>
     </a-spin>
+    <SortingStandardModal v-model:open="standardOpen" :task-id="detail?.task.id"
+                          @saved="emit('standardSaved')" />
     <SortingPartModal
         v-model:open="partOpen" :row="partRow" :task-id="detail?.task.id"
         :can-edit="partRow ? canEditRow(partRow) : false"
@@ -183,6 +190,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import SortingPartModal from './sorting-part-modal.vue';
+import SortingStandardModal from './sorting-standard-modal.vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {datetime} from '../../common/scm-display';
 import {
@@ -231,6 +239,7 @@ const emit = defineEmits<{
   complete: [task: SortingTask];
   draftChange: [itemId: Id, field: DraftField, value: string];
   submitEntry: [];
+  standardSaved: [];
 }>();
 
 const resultOptions = Object.values(SCM_SORTING_RESULT_ENUM).map((item) => ({value: item.value, label: item.desc}));
@@ -250,6 +259,7 @@ const itemColumns = ref<TableColumnsType<SortingTaskItem>>([
   {title: '占用', dataIndex: 'occupationStatus', align: 'center', width: 100},
 ]);
 
+const standardOpen = ref(false);
 const partOpen = ref(false);
 const partRow = ref<SortingTaskItem>();
 function openPartRecords(row: SortingTaskItem) {

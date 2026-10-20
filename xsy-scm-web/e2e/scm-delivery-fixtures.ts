@@ -41,7 +41,8 @@ async function createCategoryChain(client: APIRequestContext, runTag: string): P
 }
 
 /** 一个非标品 SKU：非标才会走「录实重 → 确认」这条真实链路。 */
-export async function createSku(client: APIRequestContext, runTag: string, tag: string): Promise<string> {
+export async function createSku(client: APIRequestContext, runTag: string, tag: string,
+                                productType: 'STANDARD' | 'NON_STANDARD' = 'NON_STANDARD'): Promise<string> {
     const categoryId = await createCategoryChain(client, `${runTag}${tag}`);
     const code = `${runTag}-${tag}`.toUpperCase();
     const spuId = await call(client, 'post', '/scm/product/add', {
@@ -52,7 +53,7 @@ export async function createSku(client: APIRequestContext, runTag: string, tag: 
         images: [],
         skuList: [{
             skuCode: code, specName: `散装${tag}`, specValues: {规格: '散装'}, saleUnit: 'kg',
-            productType: 'NON_STANDARD', marketPrice: '3.5000', status: 'ON_SHELF', defaultFlag: true, sortOrder: 0,
+            productType, marketPrice: '3.5000', status: 'ON_SHELF', defaultFlag: true, sortOrder: 0,
         }],
     });
     // V147 起 SPU / SKU 编码由服务端发号：造数传入的字符串不落库，只能回读详情再按真实编码检索。

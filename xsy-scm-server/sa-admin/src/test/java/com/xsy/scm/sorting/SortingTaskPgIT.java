@@ -31,6 +31,11 @@ import com.xsy.scm.sorting.domain.form.SortingTaskQueryForm;
 import com.xsy.scm.sorting.domain.vo.SortingTaskItemVO;
 import com.xsy.scm.sorting.service.SortingQueryService;
 import com.xsy.scm.sorting.service.SortingTaskService;
+import com.xsy.scm.sorting.service.SortingStandardService;
+import com.xsy.scm.trace.service.TraceUnitService;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import com.xsy.scm.sorting.domain.form.SortingStandardConfirmForm;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.code.UserErrorCode;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
@@ -78,6 +83,15 @@ class SortingTaskPgIT extends ScmW6PgITBase {
 
     @Autowired
     private SortingTaskService sorting;
+
+    @Autowired
+    private SortingStandardService standardSorting;
+
+    @Autowired
+    private TraceUnitService traceUnitService;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @Autowired
     private SortingQueryService queries;
@@ -199,6 +213,7 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         assertThat(count("SELECT count(*) FROM xsy_inventory_balance")).isEqualTo(balances);
         assertThat(count("SELECT count(*) FROM xsy_inventory_movement")).isEqualTo(movements);
         assertThat(count("SELECT count(*) FROM xsy_inventory_outbound")).isEqualTo(outbounds);
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable")).isEqualTo(receivables);
     }
 
     // ------------------------------------------------------------------
@@ -693,6 +708,122 @@ class SortingTaskPgIT extends ScmW6PgITBase {
     // 夹具
     // ------------------------------------------------------------------
 
+    @Test
+    void packagingPreviewRejectionDoesNotMarkTransactionRollbackOnly() {
+        new TransactionTemplate(transactionManager).execute(status -> {
+            assertThat(traceUnitService.previewSortedQuantityRejection(-1L, BigDecimal.ONE)).isNotBlank();
+            assertThat(status.isRollbackOnly()).isFalse();
+            return null;
+        });
+    }
+
+    @Test
+    void standardConfirmationUsesFrozenQuantityAndReplaysWithoutNewFacts() {
+        var order = standardOrder("standard", "3.5000");
+        var task = as(lead, QUEUE_MANAGER,
+                () -> sorting.create(createForm("standard", List.of(order.item()), sorterA), key("create")));
+        Long taskId = task.getTask().getId();
+        Long itemId = task.getItems().getFirst().getId();
+        var preview = as(sorterA, SORTER, () -> standardSorting.preview(taskId));
+        assertThat(preview.items().getFirst().eligible()).isTrue();
+        assertThat(preview.items().getFirst().quantity()).isEqualTo("3.5000");
+        int movements = count("SELECT count(*) FROM xsy_inventory_movement");
+        int outbounds = count("SELECT count(*) FROM xsy_inventory_outbound");
+        int receivables = count("SELECT count(*) FROM xsy_finance_receivable");
+        var orderBefore = jdbc.queryForMap("SELECT * FROM xsy_sales_order_item WHERE id=?", order.item());
+        var form = standardForm(taskId, itemId);
+        String commandKey = key("standard-confirm");
+        var result = as(sorterA, SORTER, () -> standardSorting.confirm(taskId, form, commandKey));
+        var replay = as(sorterA, SORTER, () -> standardSorting.confirm(taskId, form, commandKey));
+        assertThat(replay).isEqualTo(result);
+        assertThat(taskStatus(taskId)).isEqualTo("SORTING");
+        assertThat(jdbc.queryForObject("SELECT sorted_quantity FROM xsy_sorting_task_item WHERE id=?",
+                BigDecimal.class, itemId)).isEqualByComparingTo("3.5000");
+        assertThat(count("SELECT count(*) FROM xsy_sorting_part_record WHERE task_item_id=?", itemId)).isEqualTo(1);
+        assertThat(jdbc.queryForMap("SELECT * FROM xsy_sales_order_item WHERE id=?", order.item())).isEqualTo(orderBefore);
+        assertThat(count("SELECT count(*) FROM xsy_inventory_movement")).isEqualTo(movements);
+        assertThat(count("SELECT count(*) FROM xsy_inventory_outbound")).isEqualTo(outbounds);
+        assertThat(count("SELECT count(*) FROM xsy_finance_receivable")).isEqualTo(receivables);
+        var fresh = standardForm(taskId, itemId);
+        expectCode(() -> as(sorterA, SORTER, () -> standardSorting.confirm(taskId, fresh, key("again"))), 41873);
+        expectCode(() -> as(sorterB, SORTER, () -> standardSorting.confirm(taskId, form, commandKey)), 30005);
+    }
+
+    @Test
+    void standardBatchRejectsMixedTypesAndStaleRowsWithoutPartialConfirmation() {
+        var standard = standardOrder("mixed-standard", "2.0000");
+        var weighted = order("mixed-weighted", "1.0000");
+        jdbc.update("UPDATE xsy_sales_order_item SET product_type_snapshot='NON_STANDARD' WHERE id=?", weighted.item());
+        evictMybatisCache();
+        var task = as(lead, QUEUE_MANAGER, () -> sorting.create(
+                createForm("mixed", List.of(standard.item(), weighted.item()), sorterA), key("mixed")));
+        Long taskId = task.getTask().getId();
+        var preview = as(sorterA, SORTER, () -> standardSorting.preview(taskId));
+        assertThat(preview.items()).filteredOn(item -> item.eligible()).hasSize(1);
+        var form = new SortingStandardConfirmForm();
+        form.setVersion(preview.version());
+        form.setItems(preview.items().stream().map(item -> new SortingStandardConfirmForm.Item(item.id(), item.version())).toList());
+        expectCode(() -> as(sorterA, SORTER, () -> standardSorting.confirm(taskId, form, key("mixed-confirm"))), 41873);
+        assertThat(count("SELECT count(*) FROM xsy_sorting_part_record WHERE task_id=?", taskId)).isZero();
+        assertThat(taskStatus(taskId)).isEqualTo("PENDING");
+        var eligible = preview.items().stream().filter(item -> item.eligible()).findFirst().orElseThrow();
+        form.setItems(List.of(new SortingStandardConfirmForm.Item(eligible.id(), eligible.version() + 1)));
+        expectCode(() -> as(sorterA, SORTER, () -> standardSorting.confirm(taskId, form, key("stale"))), 40921);
+    }
+
+    @Test
+    void standardPreviewAndWriteRequirePermissionWarehouseAndExactAssignee() {
+        var order = standardOrder("auth-standard", "2.0000");
+        var task = as(lead, QUEUE_MANAGER, () -> sorting.create(
+                createForm("auth-standard", List.of(order.item()), sorterA), key("auth-standard")));
+        Long taskId = task.getTask().getId();
+        var form = standardForm(taskId, task.getItems().getFirst().getId());
+        expectCode(() -> as(sorterA, Set.of(QUERY_PERM), () -> standardSorting.preview(taskId)), 30005);
+        expectCode(() -> as(sorterB, SORTER, () -> standardSorting.preview(taskId)), 30005);
+        expectCode(() -> as(lead, SORTER, () -> {
+            ((RequestEmployee) SmartRequestUtil.getRequestUser()).setAdministratorFlag(true);
+            return standardSorting.confirm(taskId, form, key("admin"));
+        }), 30005);
+        jdbc.update("DELETE FROM xsy_employee_warehouse_scope WHERE employee_id=?", sorterA);
+        evictMybatisCache();
+        expectCode(() -> as(sorterA, SORTER, () -> standardSorting.preview(taskId)), 30005);
+        expectCode(() -> as(sorterA, SORTER, () -> standardSorting.confirm(taskId, form, key("warehouse"))), 30005);
+    }
+
+    @Test
+    void standardConfirmationRejectsPartialDifferenceAndCancelledTask() {
+        var order = standardOrder("parts-standard", "3.0000");
+        var task = as(lead, QUEUE_MANAGER, () -> sorting.create(
+                createForm("parts-standard", List.of(order.item()), sorterA), key("parts-standard")));
+        Long taskId = task.getTask().getId();
+        Long itemId = task.getItems().getFirst().getId();
+        var part = new SortingPartForm();
+        part.setTaskItemId(itemId);
+        part.setVersion(itemVersion(itemId));
+        part.setQuantity(new BigDecimal("1.0000"));
+        as(sorterA, SORTER, () -> sorting.appendPart(taskId, part, key("partial")));
+        var form = standardForm(taskId, itemId);
+        assertThat(as(sorterA, SORTER, () -> standardSorting.preview(taskId)).items().getFirst().eligible()).isFalse();
+        expectCode(() -> as(sorterA, SORTER, () -> standardSorting.confirm(taskId, form, key("partial-confirm"))), 41873);
+        assertThat(count("SELECT count(*) FROM xsy_sorting_part_record WHERE task_item_id=?", itemId)).isEqualTo(1);
+        doAs(lead, QUEUE_MANAGER, () -> sorting.cancel(taskId, action(currentVersion(taskId), "取消待处理任务")));
+        expectCode(() -> as(sorterA, SORTER, () -> standardSorting.confirm(taskId, form, key("cancelled"))), 41121);
+    }
+
+    private OrderLine standardOrder(String tag, String quantity) {
+        var order = order(tag, quantity);
+        jdbc.update("UPDATE xsy_sales_order_item SET product_type_snapshot='STANDARD' WHERE id=?", order.item());
+        evictMybatisCache();
+        return order;
+    }
+
+    private SortingStandardConfirmForm standardForm(Long taskId, Long itemId) {
+        var form = new SortingStandardConfirmForm();
+        form.setVersion(currentVersion(taskId));
+        form.setItems(List.of(new SortingStandardConfirmForm.Item(itemId, itemVersion(itemId))));
+        return form;
+    }
+
     private record OrderLine(Long order, Long item) {
     }
 
@@ -871,8 +1002,8 @@ class SortingTaskPgIT extends ScmW6PgITBase {
         return jdbc.queryForObject("SELECT print_count FROM xsy_sorting_task WHERE id = ?", Integer.class, taskId);
     }
 
-    private int count(String sql) {
-        return jdbc.queryForObject(sql, Integer.class);
+    private int count(String sql, Object... args) {
+        return jdbc.queryForObject(sql, Integer.class, args);
     }
 
     /**

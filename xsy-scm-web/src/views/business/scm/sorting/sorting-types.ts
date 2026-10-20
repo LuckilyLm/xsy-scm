@@ -328,3 +328,29 @@ export const sortingScaleStatuses: Record<SortingScaleStatus, { label: string; c
     ACCEPTED: {label: '已接受', color: 'green'},
     REJECTED: {label: '已驳回', color: 'default'},
 };
+
+export interface SortingStandardItem {
+    id: Id;
+    version: number;
+    orderNo: string;
+    customerName: string;
+    productName: string;
+    specName: string;
+    quantity: string | null;
+    unit: string;
+    eligible: boolean;
+    reason: string | null;
+}
+export interface SortingStandardPreview {
+    taskId: Id;
+    version: number;
+    items: SortingStandardItem[];
+}
+export interface SortingStandardPayload {
+    version: number;
+    items: {id: Id; version: number}[];
+}
+export interface SortingStandardResult {
+    taskId: Id;
+    confirmedItemIds: Id[];
+}

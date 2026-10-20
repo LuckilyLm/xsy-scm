@@ -163,6 +163,7 @@
     @complete="confirmComplete"
     @draft-change="updateDraft"
     @submit-entry="submitEntry"
+    @standard-saved="() => { reloadDetail(); queryData(); }"
 />
 
   <SortingTaskActionModal

@@ -3,6 +3,9 @@ import {request, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import type {
     Id,
+    SortingStandardPreview,
+    SortingStandardPayload,
+    SortingStandardResult,
     SortingActionPayload,
     SortingAssignPayload,
     SortingCandidateLine,
@@ -55,6 +58,9 @@ async function command<T>(path: string, data: unknown): Promise<ScmResponse<T>> 
 }
 
 export const sortingApi = {
+    standardPreview: (id: Id) => call<SortingStandardPreview>('get', `/tasks/${id}/standard-preview`),
+    confirmStandard: (id: Id, payload: SortingStandardPayload) =>
+        command<SortingStandardResult>(`/tasks/${id}/standard-confirm`, payload),
     tasks: (query: SortingTaskQuery) => call<ScmPage<SortingTask>>('get', '/tasks', query),
     detail: (id: Id) => call<SortingTaskDetail>('get', `/tasks/${id}`),
     partRecords: (taskId: Id, itemId: Id, beforeId?: Id) =>

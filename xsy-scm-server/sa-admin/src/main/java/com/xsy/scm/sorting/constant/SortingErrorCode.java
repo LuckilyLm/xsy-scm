@@ -46,7 +46,9 @@ public enum SortingErrorCode implements ScmErrorCode {
     SCALE_EVENT_RESULT_REQUIRED(41871, "非标品称重必须选择分拣结果"),
 
     /** 同一设备事件标识不得被用于另一笔重量或另一张任务。 */
-    SCALE_EVENT_KEY_CONFLICT(41872, "电子秤事件编号已用于另一笔读数，请检查设备上报");
+    SCALE_EVENT_KEY_CONFLICT(41872, "电子秤事件编号已用于另一笔读数，请检查设备上报"),
+
+    STANDARD_CONFIRM_INVALID(41873, "所选明细不能按计划量确认，请刷新预览或使用人工录入");
 
     private final int code;
     private final String msg;

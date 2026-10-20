@@ -26,6 +26,10 @@ import com.xsy.scm.sorting.domain.form.SortingEntryForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryItemForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskCreateForm;
 import com.xsy.scm.sorting.service.SortingTaskService;
+import com.xsy.scm.sorting.service.SortingStandardService;
+import com.xsy.scm.sorting.domain.form.SortingStandardConfirmForm;
+import cn.dev33.satoken.stp.StpUtil;
+import static org.mockito.Mockito.mockStatic;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
@@ -57,6 +61,9 @@ class SortingTaskConcurrencyPgIT extends ScmW6PgITBase {
 
     @Autowired
     private SortingTaskService sorting;
+
+    @Autowired
+    private SortingStandardService standardSorting;
 
     @Test
     @DisplayName("两个主管并发抢同一订单行建单：恰一成功，任务与明细都恰一条")
@@ -131,6 +138,60 @@ class SortingTaskConcurrencyPgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
     // 并发夹具
     // ------------------------------------------------------------------
+
+    @Test
+    void concurrentStandardRetriesWriteOneAuditFact() throws Exception {
+        Long warehouse = seedWarehouseId();
+        Long sorter = newEmployee("STANDARD");
+        grantWarehouseScope(sorter, warehouse);
+        var order = order("standard-race", "5.0000");
+        jdbc.update("UPDATE xsy_sales_order_item SET product_type_snapshot='STANDARD' WHERE id=?", order.item());
+        var task = create(sorter, warehouse, "standard-race", order.item());
+        Long itemId = jdbc.queryForObject("SELECT id FROM xsy_sorting_task_item WHERE task_id=?", Long.class, task.id());
+        var form = new SortingStandardConfirmForm();
+        form.setVersion(task.version());
+        form.setItems(List.of(new SortingStandardConfirmForm.Item(itemId, itemVersion(itemId))));
+        String requestKey = prefix + ":standard-race";
+        var outcomes = runConcurrently(List.of(
+                () -> confirmStandard(sorter, task.id(), form, requestKey),
+                () -> confirmStandard(sorter, task.id(), form, requestKey)));
+        assertThat(outcomes).allMatch(outcome -> !outcome.failed());
+        assertThat(count("SELECT count(*) FROM xsy_sorting_part_record WHERE task_item_id=?", itemId)).isEqualTo(1);
+        assertThat(sortedQuantity(itemId)).isEqualByComparingTo("5.0000");
+        assertThat(taskStatus(task.id())).isEqualTo("SORTING");
+    }
+
+    @Test
+    void concurrentStandardAndManualEntryCannotBothConfirmSameVersion() throws Exception {
+        Long warehouse = seedWarehouseId();
+        Long sorter = newEmployee("STANDARDMANUAL");
+        grantWarehouseScope(sorter, warehouse);
+        var order = order("standard-manual", "5.0000");
+        jdbc.update("UPDATE xsy_sales_order_item SET product_type_snapshot='STANDARD' WHERE id=?", order.item());
+        var task = create(sorter, warehouse, "standard-manual", order.item());
+        Long itemId = jdbc.queryForObject("SELECT id FROM xsy_sorting_task_item WHERE task_id=?", Long.class, task.id());
+        int version = itemVersion(itemId);
+        var form = new SortingStandardConfirmForm();
+        form.setVersion(task.version());
+        form.setItems(List.of(new SortingStandardConfirmForm.Item(itemId, version)));
+        var outcomes = runConcurrently(List.of(
+                () -> confirmStandard(sorter, task.id(), form, prefix + ":standard-manual"),
+                () -> enter(task.id(), sorter, itemId, version, "4.0000")));
+        assertThat(outcomes.stream().filter(outcome -> !outcome.failed()).count()).isEqualTo(1);
+        assertThat(outcomes.stream().filter(Outcome::failed)).allMatch(outcome -> outcome.code() == 40921);
+        assertThat(count("SELECT count(*) FROM xsy_sorting_part_record WHERE task_item_id=?", itemId)).isEqualTo(1);
+        assertThat(itemVersion(itemId)).isEqualTo(version + 1);
+    }
+
+    private Long confirmStandard(Long sorter, Long taskId, SortingStandardConfirmForm form, String key) {
+        loginAs(sorter);
+        try (var permissions = mockStatic(StpUtil.class)) {
+            permissions.when(() -> StpUtil.hasPermission("scm:sorting:item:update")).thenReturn(true);
+            return standardSorting.confirm(taskId, form, key).taskId();
+        } finally {
+            SmartRequestUtil.remove();
+        }
+    }
 
     private record Outcome(boolean failed, Long id, int code) {
     }
