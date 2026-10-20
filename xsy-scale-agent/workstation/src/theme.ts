@@ -1,0 +1,2 @@
+/** 与根DESIGN对齐，公共组件只通过统一token调整，触屏差异采用touch variant。 */
+export const theme = {token:{colorPrimary:'#1677ff',colorSuccess:'#52c41a',colorWarning:'#faad14',colorError:'#ff4d4f',colorText:'#1f1f1f',colorBorder:'#d9d9d9',borderRadius:6,fontSize:16,controlHeight:48,controlHeightSM:48,fontFamily:'"Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif'},components:{Button:{fontWeight:600},Table:{cellPaddingBlock:14,headerBg:'#f7f9fc'},Modal:{paddingContentHorizontal:28}}};

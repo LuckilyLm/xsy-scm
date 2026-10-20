@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+state/
+publish/
+appsettings.Local.json
+*.db*
+**/node_modules/
+workstation/dist/
+src/Xsy.Scale.Agent/wwwroot/
+# 已取消方案的本地保留文件，不作为交付源码。
+**/delete/
