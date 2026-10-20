@@ -13,6 +13,8 @@
 - [地图部署说明](map-deployment.md)：高德配置、坐标系、降级行为和现场核对项。
 - [首衡电子秤接口联调交接](sohe-scale-integration-handoff.md)：跨系统接口草案、设备绑定、称重与打印回执、离线同步及验收；拟新增 API 不代表已经实现。
 
+- [商城主题与标品分拣操作说明](user-guide/mall-theme-and-standard-sorting.md)：主题发布入口、所选标品确认和失败处理。
+
 ## 文档维护
 
 - 新规则合并进 `decisions.md`，不再另建 ADR、设计副本或“最新版”文档。
