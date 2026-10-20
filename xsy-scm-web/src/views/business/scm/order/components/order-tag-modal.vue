@@ -1,7 +1,7 @@
 <template>
   <a-modal :open="visible" title="订单标签" :confirm-loading="saving" :ok-button-props="{disabled: !tagId}"
            ok-text="应用标签" @ok="apply" @cancel="close">
-    <a-alert type="info" show-icon :message="`对已选 ${ids.length} 张订单操作，仅增加或移除辅助标签，不改变订单业务状态`"/>
+    <a-alert type="info" show-icon :message="`对已选 ${ids.length} 张订单操作`"/>
     <a-form layout="vertical" class="smart-margin-top10">
       <a-form-item label="选择标签" required>
         <a-select v-model:value="tagId" :options="tagOptions" :loading="loading"

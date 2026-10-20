@@ -473,7 +473,7 @@ class MallPromotionCheckoutPgIT extends ScmW5PgITBase {
         form.setProvinceName("上海市");
         form.setCityName("上海市");
         form.setDistrictName("浦东新区");
-        form.setDetailAddress("IT 测试路 1 号");
+        form.setDetailAddress("张江路 1 号");
         form.setIsDefault(true);
         return form;
     }

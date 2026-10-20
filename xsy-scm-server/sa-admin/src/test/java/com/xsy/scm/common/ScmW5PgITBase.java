@@ -70,9 +70,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -196,12 +194,12 @@ public abstract class ScmW5PgITBase {
 
     @BeforeEach
     void setUpOperator() {
-        prefix = "W5-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase(Locale.ROOT);
+        prefix = PgITFixtureNames.brand();
         salesOrderSequence = 0;
         customerSequence = 0;
         RequestEmployee employee = new RequestEmployee();
         employee.setEmployeeId(1L);
-        employee.setActualName("W5 IT");
+        employee.setActualName(PgITFixtureNames.operator());
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
         // 本夹具代表「不受数据范围约束的操作者」，不是某个正式业务角色：造数链路会
         // 为每个用例新建仓库，逐仓授权既无意义也会把夹具变成被测对象。
@@ -296,7 +294,7 @@ public abstract class ScmW5PgITBase {
      *
      * <p>默认就是 V15 迁移建立的 {@code WH001}。这个可覆盖点存在的原因是：种子仓库被整个测试
      * 体系共享，任何一处给它新增一个 (warehouse, sku) 余额行，都会改变
-     * 「按整仓出快照」的那类夹具的输出规模。盘点 Excel 导入正是这样的夹具 —— 它的快照凭证
+     * 「按整仓出快照」的那类夹具的输出规模。盘点 Excel 导入正是这样的夹具 —— 它的模板校验码
      * 要为仓库里每条活跃余额带上 skuCode / 单位 / 账面量，并被逐行写进模板单元格，
      * 而 POI 单元格有 32767 字符上限（见 {@code StocktakeSnapshotSigner#sign} 的压缩说明）。
      * 也就是说这条链路对「共享仓库里有多少别人留下的行」敏感，一旦行数被别的执行顺序改变，

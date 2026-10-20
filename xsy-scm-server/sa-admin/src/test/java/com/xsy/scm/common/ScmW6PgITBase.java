@@ -25,7 +25,6 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -89,7 +88,7 @@ public abstract class ScmW6PgITBase extends ScmW5PgITBase {
     void setUpW6Prefix() {
         // 父类的 @BeforeEach 先跑并写好前缀；JUnit5 保证父类先于子类，
         // 因此这里的覆盖是安全的、也是必需的。
-        prefix = "W6-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase(Locale.ROOT);
+        prefix = PgITFixtureNames.brand();
     }
 
     // ------------------------------------------------------------------

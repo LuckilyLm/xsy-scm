@@ -1,89 +1,125 @@
-<!-- 供应商详情按基础信息、联系地址、采购设置和关联商品分区展示。已关联商品保留下单时的名称信息。 -->
+<!-- 供应商详情按 SCM 资料模板组织：页头、联系与地址、采购与账期、已关联商品快照和系统信息。已关联商品保留下单时的名称信息。 -->
 <template>
   <a-card size="small" :bordered="false" :loading="loading">
-    <a-space class="smart-margin-bottom10">
-      <a-button @click="router.push('/supplier/supplier-list')">返回供应商列表</a-button>
-    </a-space>
+    <header class="scm-detail-header">
+      <div class="scm-detail-header__main">
+        <a-button type="link" class="scm-detail-header__back" @click="router.push('/supplier/supplier-list')">
+          <ArrowLeftOutlined/>
+          返回供应商列表
+        </a-button>
+        <div class="scm-detail-header__title-row">
+          <h1 class="scm-detail-header__title">{{ supplier?.name || '供应商详情' }}</h1>
+          <ScmStatusTag v-if="supplier" :tone="supplier.status === 'ENABLED' ? 'success' : 'neutral'"
+                        :label="statusText(supplier.status)"/>
+        </div>
+        <p v-if="supplier" class="scm-detail-header__meta">
+          <span class="scm-mono">{{ supplier.supplierCode }}</span>
+        </p>
+      </div>
+    </header>
+
     <a-alert v-if="error" :message="error" type="error" show-icon>
       <template #action>
         <a-button size="small" @click="load">重新加载</a-button>
       </template>
     </a-alert>
     <template v-else-if="supplier">
-      <div class="detail-doc-title">{{ supplier.name }}</div>
+      <div class="scm-detail-read">
+        <div class="scm-detail-grid">
+          <section class="scm-detail-card">
+            <h3 class="scm-detail-card__title">联系与地址</h3>
+            <dl class="scm-field-list">
+              <div class="scm-field">
+                <dt class="scm-field__label">联系人</dt>
+                <dd class="scm-field__value">{{ supplier.contactName || '—' }}</dd>
+              </div>
+              <div class="scm-field">
+                <dt class="scm-field__label">联系电话</dt>
+                <dd class="scm-field__value">{{ supplier.contactPhone || '—' }}</dd>
+              </div>
+              <div class="scm-field scm-field--wide">
+                <dt class="scm-field__label">地址</dt>
+                <dd class="scm-field__value">{{ supplier.address || '—' }}</dd>
+              </div>
+              <div class="scm-field scm-field--wide">
+                <dt class="scm-field__label">地图定位</dt>
+                <dd class="scm-field__value">
+                  <a-tooltip v-if="isLocated(supplier)" :title="`经度：${supplier.longitude}，纬度：${supplier.latitude}`">
+                    <span>已设置地图位置</span>
+                  </a-tooltip>
+                  <span v-else>尚未设置地图位置</span>
+                </dd>
+              </div>
+            </dl>
+          </section>
 
-      <!-- 1. 概览 -->
-      <section class="detail-section">
-        <h3>概览</h3>
-        <a-descriptions size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
-          <a-descriptions-item label="供应商编码">{{ supplier.supplierCode }}</a-descriptions-item>
-          <a-descriptions-item label="状态">
-            <a-tag :color="supplier.status === 'ENABLED' ? 'green' : 'default'">{{ statusText(supplier.status) }}</a-tag>
-          </a-descriptions-item>
-          <a-descriptions-item label="关联商品数">{{ supplier.skuCount ?? 0 }}</a-descriptions-item>
-        </a-descriptions>
+          <section class="scm-detail-card">
+            <h3 class="scm-detail-card__title">采购与账期</h3>
+            <dl class="scm-field-list">
+              <div class="scm-field">
+                <dt class="scm-field__label">付款账期</dt>
+                <dd class="scm-field__value">{{ supplier.paymentPeriodDays ?? 0 }} 天</dd>
+              </div>
+              <div class="scm-field">
+                <dt class="scm-field__label">关联商品数</dt>
+                <dd class="scm-field__value">{{ supplier.skuCount ?? 0 }}</dd>
+              </div>
+            </dl>
+          </section>
+        </div>
 
-        <!-- 2. 联系方式 -->
-        <h3 class="detail-section--nested">联系方式</h3>
-        <a-descriptions size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
-          <a-descriptions-item label="联系人">{{ supplier.contactName || '—' }}</a-descriptions-item>
-          <a-descriptions-item label="联系电话">{{ supplier.contactPhone || '—' }}</a-descriptions-item>
-        </a-descriptions>
+        <section class="scm-detail-card scm-detail-block">
+          <h3 class="scm-detail-card__title">已关联商品</h3>
+          <a-table
+              :data-source="relations"
+              :columns="relationColumns"
+              row-key="id"
+              size="small"
+              bordered
+              :pagination="false"
+              :scroll="{ x: scmColumnsWidth(relationColumns) }"
+          >
+            <template #bodyCell="{ column, record }">
+              <span v-if="column.dataIndex === 'skuNameSnapshot'">{{ record.skuNameSnapshot }}</span>
+              <span v-else-if="column.dataIndex === 'spec'">{{ specText(record.specValuesSnapshot) }}</span>
+              <span v-else-if="column.dataIndex === 'referencePrice'" class="scm-money">{{
+                  record.referencePrice ?? '—'
+                }}</span>
+              <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
+              <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
+                {{ record.defaultFlag ? '优先采购' : '—' }}
+              </a-tag>
+              <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
+                {{ skuStatusText(record.status) }}
+              </a-tag>
+            </template>
+          </a-table>
+          <a-empty v-if="!loading && relations.length === 0" description="尚未关联任何商品"/>
+        </section>
 
-        <!-- 3. 地址与地图 -->
-        <h3 class="detail-section--nested">地址与地图</h3>
-        <a-descriptions size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
-          <a-descriptions-item label="地址" :span="3">{{ supplier.address || '—' }}</a-descriptions-item>
-          <a-descriptions-item label="地图定位" :span="3">
-            <a-tooltip v-if="isLocated(supplier)" :title="`经度：${supplier.longitude}，纬度：${supplier.latitude}`">
-              <span>已设置地图位置</span>
-            </a-tooltip>
-            <span v-else>尚未设置地图位置</span>
-          </a-descriptions-item>
-        </a-descriptions>
-
-        <!-- 4. 采购与账期 -->
-        <h3 class="detail-section--nested">采购与账期</h3>
-        <a-descriptions size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
-          <a-descriptions-item label="付款账期">{{ supplier.paymentPeriodDays ?? 0 }} 天</a-descriptions-item>
-        </a-descriptions>
-
-        <!-- 6. 系统信息：编码与时间放最后，不占核心区域 -->
-        <h3 class="detail-section--nested">系统信息</h3>
-        <a-descriptions size="small" :column="{ xs: 1, sm: 2, lg: 3 }">
-          <a-descriptions-item label="创建时间">{{ datetime(supplier.createdAt) }}</a-descriptions-item>
-          <a-descriptions-item label="更新时间">{{ datetime(supplier.updatedAt) }}</a-descriptions-item>
-          <a-descriptions-item label="备注" :span="3">{{ supplier.remark || '—' }}</a-descriptions-item>
-        </a-descriptions>
-
-        <!-- 5. 关联商品 -->
-        <h3 class="detail-section--nested">已关联商品（快照）</h3>
-        <a-table
-            :data-source="relations"
-            :columns="relationColumns"
-            row-key="id"
-            size="small"
-            bordered
-            :pagination="false"
-            :scroll="{ x: scmColumnsWidth(relationColumns) }"
-        >
-          <template #bodyCell="{ column, record }">
-            <span v-if="column.dataIndex === 'skuNameSnapshot'">{{ record.skuNameSnapshot }}</span>
-            <span v-else-if="column.dataIndex === 'spec'">{{ specText(record.specValuesSnapshot) }}</span>
-            <span v-else-if="column.dataIndex === 'referencePrice'" class="scm-money">{{
-                record.referencePrice ?? '—'
-              }}</span>
-            <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
-            <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
-              {{ record.defaultFlag ? '优先采购' : '—' }}
-            </a-tag>
-            <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
-              {{ skuStatusText(record.status) }}
-            </a-tag>
-          </template>
-        </a-table>
-        <a-empty v-if="!loading && relations.length === 0" description="尚未关联任何商品"/>
-      </section>
+        <!-- 系统信息：弱化卡片，编码与时间不占核心区域 -->
+        <section class="scm-detail-card scm-detail-card--muted scm-detail-block">
+          <h3 class="scm-detail-card__title">系统信息</h3>
+          <dl class="scm-field-list scm-field-list--3">
+            <div class="scm-field">
+              <dt class="scm-field__label">供应商编码</dt>
+              <dd class="scm-field__value scm-mono">{{ supplier.supplierCode }}</dd>
+            </div>
+            <div class="scm-field">
+              <dt class="scm-field__label">创建时间</dt>
+              <dd class="scm-field__value">{{ datetime(supplier.createdAt) }}</dd>
+            </div>
+            <div class="scm-field">
+              <dt class="scm-field__label">更新时间</dt>
+              <dd class="scm-field__value">{{ datetime(supplier.updatedAt) }}</dd>
+            </div>
+            <div class="scm-field scm-field--wide">
+              <dt class="scm-field__label">备注</dt>
+              <dd class="scm-field__value">{{ supplier.remark || '—' }}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
     </template>
   </a-card>
 </template>
@@ -92,11 +128,13 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
+import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {supplierApi} from '/@/api/business/scm/supplier-api';
 import {supplierSkuApi} from '/@/api/business/scm/supplier-sku-api';
 import type {EnableStatus, SupplierDetail, SupplierSkuRow} from '/@/types/business/scm/supplier';
 import {SUPPLIER_SKU_STATUS_ENUM, SUPPLIER_STATUS_ENUM} from '/@/constants/business/scm/supplier-const';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {supplierError} from './supplier-errors';
 import {datetime} from '../common/scm-display';
 import {isLocated} from '/@/components/business/scm/map/types';
@@ -164,34 +202,3 @@ async function load() {
 
 watch(() => route.query.supplierId, load, {immediate: true});
 </script>
-
-<style scoped>
-/* 文档标题：比描述列表更突出（「核心业务信息优先」） */
-.detail-doc-title {
-  color: var(--scm-text);
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 16px;
-}
-
-.detail-section h3 {
-  margin: 0 0 12px;
-  font-weight: 600;
-}
-
-/* 同一段里的后续小标题（概览段串起 联系/地址/采购/系统信息/关联商品）；
-   选择器必须压过 `.detail-section h3`，否则上边距被它的 margin 简写吃掉 */
-.detail-section h3.detail-section--nested {
-  margin-top: 24px;
-  padding-top: 18px;
-  border-top: 1px solid var(--scm-border, #f0f0f0);
-}
-
-.detail-section :deep(.ant-descriptions-item-label) {
-  color: var(--scm-text-secondary, #777);
-}
-
-.detail-section :deep(.ant-descriptions-item-content) {
-  color: var(--scm-text, #262626);
-}
-</style>

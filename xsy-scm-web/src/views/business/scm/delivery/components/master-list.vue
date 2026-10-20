@@ -242,7 +242,7 @@ function save() {
   // 校验交给 antd 表单：错误逐项显示在对应输入框下方，不再用顶部一条汇总红条。
   formRef.value?.validate().then(() => {
     if (originalStatus === 'ENABLED' && form.value.status === 'DISABLED')
-      Modal.confirm({title: `停用该${label.value}？`, content: '停用后不能分配到新线路，历史计划保留快照。', onOk: submit});
+      Modal.confirm({title: `停用该${label.value}？`, content: '停用后不能分配到新线路，已有计划不受影响。', onOk: submit});
     else submit();
   }).catch(() => undefined);
 }

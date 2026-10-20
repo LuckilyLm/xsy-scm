@@ -65,7 +65,7 @@ class ScmStocktakeImportPgIT extends ScmW6PgITBase {
     // ------------------------------------------------------------------
 
     /**
-     * 本类独占的仓库：快照凭证按整仓出，规模必须只由本用例自己决定。
+     * 本类独占的仓库：模板校验码按整仓出，规模必须只由本用例自己决定。
      *
      * <p>JUnit 5 默认逐方法新建实例，所以这个字段天然每个用例重新求值；基类 {@code @Transactional}
      * 逐方法回滚，仓库行连同它的余额与流水都不会留到下一个用例。
@@ -226,7 +226,7 @@ class ScmStocktakeImportPgIT extends ScmW6PgITBase {
     }
 
     @Test
-    @DisplayName("篡改快照凭证 → CREDENTIAL_INVALID，整批拒绝")
+    @DisplayName("篡改模板校验码 → CREDENTIAL_INVALID，整批拒绝")
     void tamperedCredentialIsRejected() throws Exception {
         Object[] s = stocked("si4", "10.0000");
         Long wh = (Long) s[0];

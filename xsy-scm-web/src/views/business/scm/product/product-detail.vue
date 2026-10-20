@@ -81,7 +81,6 @@
       <a-divider orientation="left">商品规格</a-divider>
       <SkuTable :rows="product.skuList"/>
       <a-divider orientation="left">商城库存单位换算</a-divider>
-      <a-alert type="info" show-icon message="库存按配送仓的记账单位维护，销售单位可与记账单位不同；库存换算比例在订单确认时冻结。"/>
       <StockConversionEditor v-for="sku in product.skuList" :key="sku.skuId" :sku="sku"/>
       <a-divider orientation="left">组合商品组成</a-divider>
       <BundleEditor v-for="sku in product.skuList" :key="`bundle-${sku.skuId}`" :sku="sku" @saved="load"/>

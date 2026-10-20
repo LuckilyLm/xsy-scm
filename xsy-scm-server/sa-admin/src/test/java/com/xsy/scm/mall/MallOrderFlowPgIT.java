@@ -476,7 +476,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         actual.setItemId(order.getItems().getFirst().getItemId());
         actual.setVersion(order.getItems().getFirst().getVersion());
         actual.setActualQuantity(actualQuantity);
-        actual.setReason("IT 实重");
+        actual.setReason("实重复核");
         SalesOrderDetailVO weighted = salesOrderService.actualQuantity(actual, prefix + ":actual:" + orderId);
         OrderVersionForm confirm = new OrderVersionForm();
         confirm.setOrderId(weighted.getOrderId());
@@ -544,7 +544,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         assertThat(inTransit.getDisplayStatus()).isEqualTo(MallOrderDisplayStatusEnum.DELIVERING.name());
         assertThat(inTransit.getDelivery()).isNotNull();
         assertThat(inTransit.getDelivery().getRouteName()).isEqualTo(prefix + "线路");
-        assertThat(inTransit.getDelivery().getDriverName()).isEqualTo("IT 司机");
+        assertThat(inTransit.getDelivery().getDriverName()).isEqualTo("刘建国");
         assertThat(inTransit.getDelivery().getDispatchedAt()).as("发车时刻来自线路行").isNotNull();
         assertThat(doneCodes(inTransit)).containsExactly("SUBMITTED", "CONFIRMED", "DISPATCHED");
 
@@ -600,7 +600,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
                 + " created_at, updated_at)"
                 + " VALUES (?, ?, CURRENT_DATE, ?, ?, ?, ?, ?, now(), 'DISPATCHED', now(), 'it', 0, FALSE,"
                 + " now(), now())",
-                routeNo, prefix + "线路", fixtureWarehouseId(), prefix + "仓", "IT 司机", "13900000000", "沪A00001");
+                routeNo, prefix + "线路", fixtureWarehouseId(), prefix + "仓", "刘建国", "13900000000", "沪A00001");
         return jdbc.queryForObject("SELECT id FROM xsy_delivery_route WHERE route_no = ?", Long.class, routeNo);
     }
 
@@ -609,7 +609,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         jdbc.update("INSERT INTO xsy_delivery_route_stop (route_id, stop_seq, customer_id,"
                 + " customer_name_snapshot, address_snapshot, version, deleted, created_at, updated_at)"
                 + " VALUES (?, 1, ?, ?, ?, 0, FALSE, now(), now())",
-                routeId, customerId, prefix + "客户", "IT 配送地址");
+                routeId, customerId, prefix + "客户", "张江路 88 号");
         Long stopId = jdbc.queryForObject(
                 "SELECT id FROM xsy_delivery_route_stop WHERE route_id = ? AND stop_seq = 1", Long.class, routeId);
         jdbc.update("INSERT INTO xsy_delivery_route_order (route_id, stop_id, order_id, customer_id,"
@@ -710,7 +710,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         form.setProvinceName("上海市");
         form.setCityName("上海市");
         form.setDistrictName("浦东新区");
-        form.setDetailAddress("IT 测试路 1 号");
+        form.setDetailAddress("张江路 1 号");
         form.setIsDefault(true);
         form.setLongitude(new BigDecimal("121.544000"));
         form.setLatitude(new BigDecimal("31.221000"));
@@ -730,7 +730,7 @@ class MallOrderFlowPgIT extends ScmW5PgITBase {
         form.setAddressId(addressId);
         form.setPriceFingerprint(priceFingerprint);
         form.setWarehouseId(seedWarehouseId());
-        form.setRemark("IT 商城下单");
+        form.setRemark("商城下单");
         form.setSettlementMethod("COD");
         return form;
     }

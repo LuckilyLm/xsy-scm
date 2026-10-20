@@ -38,8 +38,7 @@
       </template>
     </a-table>
     <a-typography-text v-if="detail.status === 'CONFIRMED'" type="secondary" style="display: block; margin-top: 8px">
-      差异 = 实盘量 − 账面量快照。确认时系统把差异施加到确认瞬间的账面量上，
-      因此若在保存草稿之后发生过收货或出库，确认后的账面不会等于实盘量 —— 那笔变动被保留了。
+      差异按确认时的账面量计算；草稿保存后若有收货或出库，确认结果以当时账面为准。
     </a-typography-text>
   </a-drawer>
 </template>

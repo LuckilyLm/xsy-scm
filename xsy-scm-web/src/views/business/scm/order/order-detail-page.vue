@@ -1,101 +1,171 @@
 <template>
-  <div class="order-detail-page">
-    <div class="order-detail-header">
-      <div>
-        <a-button type="link" class="order-back" @click="router.push('/order/order-list')">返回订单列表</a-button>
-        <h2>{{ order?.orderNo || '销售订单详情' }}</h2>
+  <a-card size="small" :bordered="false">
+    <header class="scm-detail-header">
+      <div class="scm-detail-header__main">
+        <a-button type="link" class="scm-detail-header__back" @click="router.push('/order/order-list')">
+          <ArrowLeftOutlined/>
+          返回订单列表
+        </a-button>
+        <div class="scm-detail-header__title-row">
+          <h1 class="scm-detail-header__title">{{ order?.orderNo || '销售订单详情' }}</h1>
+          <ScmStatusTag v-if="order" :tone="orderStatusTone(order.status)"
+                        :label="SCM_ORDER_STATUS_ENUM[order.status ?? '']?.desc ?? order.status"/>
+          <a-tag v-for="tag in order?.tags ?? []" :key="String(tag.tagId)"
+                 :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
+        </div>
+        <p v-if="order" class="scm-detail-header__meta">
+          <span>{{ order.customerNameSnapshot || '—' }}</span>
+          <template v-if="order.customerCodeSnapshot"> · <span class="scm-mono">{{ order.customerCodeSnapshot }}</span></template>
+          <template v-if="order.orderSource"> · {{ SCM_ORDER_SOURCE_ENUM[order.orderSource]?.desc ?? order.orderSource }}</template>
+        </p>
       </div>
-      <a-space>
+      <div class="scm-detail-header__actions">
         <a-button :loading="loading" @click="load">刷新</a-button>
         <a-button v-if="order && canPrint" @click="printOpen = true">打印订单</a-button>
         <a-button v-if="order && canOperate" type="primary" @click="operation?.open(order.orderId!)">订单操作</a-button>
-      </a-space>
-    </div>
+      </div>
+    </header>
 
-    <a-alert v-if="error" :message="error" type="error" show-icon class="order-detail-error">
+    <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
       <template #action><a-button @click="load">重试</a-button></template>
     </a-alert>
     <a-spin :spinning="loading">
       <template v-if="order">
-        <a-card size="small" :bordered="false">
-          <a-tag>{{ SCM_ORDER_STATUS_ENUM[order.status ?? '']?.desc ?? order.status }}</a-tag>
-          <a-tag v-for="tag in order.tags ?? []" :key="String(tag.tagId)"
-                 :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
-          <a-descriptions class="order-detail-overview" size="small" bordered :column="{xs: 1, sm: 2, lg: 3}">
-            <a-descriptions-item label="客户">{{ order.customerNameSnapshot || '—' }}</a-descriptions-item>
-            <a-descriptions-item label="客户编码">{{ order.customerCodeSnapshot || '—' }}</a-descriptions-item>
-            <a-descriptions-item label="订单来源">
-              {{ SCM_ORDER_SOURCE_ENUM[order.orderSource]?.desc ?? order.orderSource }}
-            </a-descriptions-item>
-            <a-descriptions-item label="下单金额">{{ amount(order.orderedTotalAmount, true) }}</a-descriptions-item>
-            <a-descriptions-item label="结算金额">{{ amount(order.settlementTotalAmount) }}</a-descriptions-item>
-            <a-descriptions-item label="结算约定">{{ settlementLabel(order.settlementMethod) }}</a-descriptions-item>
-            <a-descriptions-item label="确认时间">{{ datetime(order.confirmedAt) }}</a-descriptions-item>
-            <a-descriptions-item label="期望配送时间">{{ datetime(order.expectDeliveryTime) }}</a-descriptions-item>
-            <a-descriptions-item label="收货人">
-              {{ order.address?.receiverName || '—' }} / {{ order.address?.receiverPhone || '—' }}
-            </a-descriptions-item>
-            <a-descriptions-item label="收货地址" :span="3">{{ order.address?.address || '—' }}</a-descriptions-item>
-          </a-descriptions>
+        <div class="scm-detail-read">
+          <section class="scm-summary-section">
+            <div class="scm-summary">
+              <div class="scm-summary__item">
+                <span class="scm-summary__label">下单金额</span>
+                <span class="scm-summary__value scm-money">{{ amount(order.orderedTotalAmount, true) }}</span>
+              </div>
+              <div class="scm-summary__item">
+                <span class="scm-summary__label">结算金额</span>
+                <span class="scm-summary__value scm-money">{{ amount(order.settlementTotalAmount) }}</span>
+              </div>
+              <div class="scm-summary__item">
+                <span class="scm-summary__label">结算约定</span>
+                <span class="scm-summary__value">{{ settlementLabel(order.settlementMethod) }}</span>
+              </div>
+              <div class="scm-summary__item">
+                <span class="scm-summary__label">期望配送时间</span>
+                <span class="scm-summary__value">{{ datetime(order.expectDeliveryTime) }}</span>
+              </div>
+            </div>
+          </section>
 
-          <h3 class="order-section-title">商品明细</h3>
-          <a-table :data-source="order.items ?? []" :columns="itemColumns" row-key="itemId"
-                   :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(itemColumns) }">
-            <template #bodyCell="{record, column}">
-              <template v-if="column.dataIndex === 'draftUnitPrice'">
-                {{ amount(record.draftUnitPrice, true) }}
-              </template>
-              <template v-else-if="column.dataIndex === 'lockedUnitPrice'">
-                {{ amount(record.lockedUnitPrice) }}
-              </template>
-              <template v-else-if="column.dataIndex === 'orderedLineAmount'">
-                {{ amount(record.orderedLineAmount, true) }}
-              </template>
-              <template v-else-if="column.dataIndex === 'settlementLineAmount'">
-                {{ amount(record.settlementLineAmount) }}
-              </template>
-            </template>
-          </a-table>
+          <div class="scm-detail-grid">
+            <section class="scm-detail-card">
+              <h3 class="scm-detail-card__title">客户与订单</h3>
+              <dl class="scm-field-list">
+                <div class="scm-field">
+                  <dt class="scm-field__label">客户</dt>
+                  <dd class="scm-field__value">{{ order.customerNameSnapshot || '—' }}</dd>
+                </div>
+                <div class="scm-field">
+                  <dt class="scm-field__label">客户编码</dt>
+                  <dd class="scm-field__value scm-mono">{{ order.customerCodeSnapshot || '—' }}</dd>
+                </div>
+                <div class="scm-field">
+                  <dt class="scm-field__label">订单来源</dt>
+                  <dd class="scm-field__value">{{ SCM_ORDER_SOURCE_ENUM[order.orderSource]?.desc ?? order.orderSource }}</dd>
+                </div>
+                <div class="scm-field">
+                  <dt class="scm-field__label">确认时间</dt>
+                  <dd class="scm-field__value">{{ datetime(order.confirmedAt) }}</dd>
+                </div>
+              </dl>
+            </section>
 
-          <template v-if="order.discount || order.gifts?.length">
-            <h3 class="order-section-title">优惠与赠品</h3>
-            <a-descriptions v-if="order.discount" size="small" bordered :column="{xs: 1, sm: 2}">
-              <a-descriptions-item label="优惠合计">{{ amount(order.discount.discountAmount) }}</a-descriptions-item>
-              <a-descriptions-item label="限时特价让利">{{ amount(order.discount.specialDiscountAmount) }}</a-descriptions-item>
-              <a-descriptions-item label="优惠券">
-                {{ order.discount.couponSnapshot?.couponName || '未使用' }}
-              </a-descriptions-item>
-              <a-descriptions-item label="券优惠">{{ amount(order.discount.couponSnapshot?.couponDiscount) }}</a-descriptions-item>
-            </a-descriptions>
+            <section class="scm-detail-card">
+              <h3 class="scm-detail-card__title">收货信息</h3>
+              <dl class="scm-field-list">
+                <div class="scm-field">
+                  <dt class="scm-field__label">收货人</dt>
+                  <dd class="scm-field__value">
+                    {{ order.address?.receiverName || '—' }} / {{ order.address?.receiverPhone || '—' }}
+                  </dd>
+                </div>
+                <div class="scm-field scm-field--wide">
+                  <dt class="scm-field__label">收货地址</dt>
+                  <dd class="scm-field__value">{{ order.address?.address || '—' }}</dd>
+                </div>
+              </dl>
+            </section>
+          </div>
+
+          <section class="scm-detail-card scm-detail-block">
+            <h3 class="scm-detail-card__title">商品明细</h3>
+            <a-table :data-source="order.items ?? []" :columns="itemColumns" row-key="itemId"
+                     :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(itemColumns) }">
+              <template #bodyCell="{record, column}">
+                <template v-if="column.dataIndex === 'draftUnitPrice'">
+                  {{ amount(record.draftUnitPrice, true) }}
+                </template>
+                <template v-else-if="column.dataIndex === 'lockedUnitPrice'">
+                  {{ amount(record.lockedUnitPrice) }}
+                </template>
+                <template v-else-if="column.dataIndex === 'orderedLineAmount'">
+                  {{ amount(record.orderedLineAmount, true) }}
+                </template>
+                <template v-else-if="column.dataIndex === 'settlementLineAmount'">
+                  {{ amount(record.settlementLineAmount) }}
+                </template>
+              </template>
+            </a-table>
+          </section>
+
+          <section v-if="order.discount || order.gifts?.length" class="scm-detail-card scm-detail-block">
+            <h3 class="scm-detail-card__title">优惠与赠品</h3>
+            <dl v-if="order.discount" class="scm-field-list scm-field-list--2">
+              <div class="scm-field">
+                <dt class="scm-field__label">优惠合计</dt>
+                <dd class="scm-field__value scm-money">{{ amount(order.discount.discountAmount) }}</dd>
+              </div>
+              <div class="scm-field">
+                <dt class="scm-field__label">限时特价让利</dt>
+                <dd class="scm-field__value scm-money">{{ amount(order.discount.specialDiscountAmount) }}</dd>
+              </div>
+              <div class="scm-field">
+                <dt class="scm-field__label">优惠券</dt>
+                <dd class="scm-field__value">{{ order.discount.couponSnapshot?.couponName || '未使用' }}</dd>
+              </div>
+              <div class="scm-field">
+                <dt class="scm-field__label">券优惠</dt>
+                <dd class="scm-field__value scm-money">{{ amount(order.discount.couponSnapshot?.couponDiscount) }}</dd>
+              </div>
+            </dl>
             <div v-for="gift in order.gifts ?? []" :key="`${gift.activityId}-${gift.skuId}`" class="order-gift">
               {{ gift.productName }}（{{ gift.specName }}）× {{ gift.quantity }} {{ gift.saleUnit }}
             </div>
-          </template>
+          </section>
 
           <OrderFacts :order="order"/>
           <OrderReceivedCorrections :order="order"/>
-        </a-card>
+        </div>
       </template>
     </a-spin>
     <OrderDetail ref="operation" @saved="load"/>
     <PrintDocumentModal :open="printOpen" document-type="SALES_ORDER"
                         :business-ids="order?.orderId == null ? [] : [order.orderId]"
                         @close="printOpen = false"/>
-  </div>
+  </a-card>
 </template>
 
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref, watch} from 'vue';
 import {useRoute, useRouter} from 'vue-router';
+import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
 import {tagColor} from '/@/api/business/scm/order-tag-api';
 import {SCM_ORDER_SOURCE_ENUM, SCM_ORDER_STATUS_ENUM} from '/@/constants/business/scm/order-const';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {datetime} from '../common/scm-display';
 import {hasPermission} from '../common/scm-permission';
 import {amount} from './order-form-model';
 import {orderError} from './order-errors';
+import {orderStatusTone} from './order-status-tone';
 import type {Item, Order} from './order-types';
 import OrderDetail from './order-detail.vue';
 import OrderFacts from './components/order-facts.vue';
@@ -174,12 +244,7 @@ watch(() => route.params.orderId, () => {
 </script>
 
 <style scoped>
-.order-detail-page { padding: 16px; }
-.order-detail-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-.order-detail-header h2 { margin: 0; }
-.order-back { padding-left: 0; }
-.order-detail-error { margin-bottom: 12px; }
-.order-detail-overview { margin-top: 16px; }
-.order-section-title { margin: 24px 0 12px; }
-.order-gift { margin-top: 8px; }
+.order-gift {
+  margin-top: 8px;
+}
 </style>

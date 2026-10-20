@@ -133,5 +133,6 @@ watch(() => props.order.orderId, () => { void load(); }, {immediate: true});
 </script>
 
 <style scoped>
+.order-section-title { margin: 24px 0 12px; }
 .correction-table { margin-top: 10px; }
 </style>

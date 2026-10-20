@@ -26,6 +26,6 @@ public class PurchaseDailyReportJob implements SmartJob {
             throw new IllegalArgumentException("任务参数请留空（生成昨日）或填写 yyyy-MM-dd 补生成日期", exception);
         }
         boolean generated = purchaseDailyGenerationService.generate(reportDate);
-        return "采购商品清单 " + reportDate + (generated ? " 已生成" : " 已存在，保留原始快照");
+        return "采购商品清单 " + reportDate + (generated ? " 已生成" : " 已存在，保留原始数据");
     }
 }

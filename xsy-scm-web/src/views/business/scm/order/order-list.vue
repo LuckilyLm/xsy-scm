@@ -45,6 +45,11 @@
                   :disabled="!selected.length || !selectedAllDraft" @click="batchDelete">
           批量删除草稿
         </a-button>
+        <!-- 批量操作按钮只按选中数置灰，看不出「选了几单」；这里补一句上下文，与商品档案同一位置同一口径。
+             混选到非草稿单时说明哪几个按钮为什么不可用，避免用户反复点灰按钮猜原因。 -->
+        <span v-if="selected.length" class="scm-query-table-context">
+          已选 {{ selected.length }} 单<template v-if="!selectedAllDraft"> · 含非草稿单，核价与删除不可用</template>
+        </span>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator v-model="columns" :table-id="602" :refresh="queryData"/>
@@ -68,7 +73,7 @@
           </a-space>
         </template>
         <template v-else-if="column.dataIndex==='status'">
-          <ScmStatusTag :tone="statusTone(record.status)"
+          <ScmStatusTag :tone="orderStatusTone(record.status)"
                         :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc"/>
         </template>
         <template v-else-if="column.dataIndex==='orderSource'">{{ SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc }}
@@ -125,7 +130,6 @@ import {useRoute, useRouter} from 'vue-router';
 import {Modal} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {orderApi} from '/@/api/business/scm/order-api';
-import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
@@ -135,6 +139,7 @@ import {SCM_ORDER_STATUS_ENUM, SCM_ORDER_SOURCE_ENUM} from '/@/constants/busines
 import type {Order, Query} from './order-types';
 import {amount} from './order-form-model';
 import {orderError} from './order-errors';
+import {orderStatusTone} from './order-status-tone';
 import {hasPermission} from '../common/scm-permission';
 import OrderForm from './components/order-form-drawer.vue';
 import OrderImportModal from './components/order-import-modal.vue';
@@ -204,15 +209,6 @@ const columns = ref<OrderListColumn[]>([
 ]);
 // 宽屏剩余宽度补给文本列；用户改过列宽则原样渲染。
 const {tableRef, displayColumns, scrollX} = useScmTableFill(columns, () => SCM_COLUMN_WIDTH.selection);
-
-/** 草稿/待确认=待处理，已确认=处理中，已取消=失效。 */
-const STATUS_TONE: Record<string, ScmStatusTone> = {
-  DRAFT: 'warning',
-  PENDING: 'warning',
-  CONFIRMED: 'processing',
-  CANCELLED: 'neutral',
-};
-const statusTone = (value?: string | null): ScmStatusTone => STATUS_TONE[value ?? ''] ?? 'neutral';
 
 /** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
 const canAdd = computed(() => hasPermission('scm:order:add'));

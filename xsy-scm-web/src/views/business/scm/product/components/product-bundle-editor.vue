@@ -1,7 +1,7 @@
 <template>
   <section class="bundle-editor">
     <a-space class="bundle-editor__head">
-      <strong>{{ sku.specName }}（{{ sku.skuCode }}）</strong>
+      <strong>{{ sku.specName }}</strong>
       <a-button v-privilege="'scm:product:update'" size="small" @click="open">{{ rows.length ? '修改组成' : '设置组合' }}</a-button>
     </a-space>
     <a-alert v-if="error" type="error" :message="error" show-icon/>
@@ -10,7 +10,6 @@
     <a-table v-else :data-source="rows" :columns="columns" :row-key="(row: BundleRow) => String(row.componentSkuId)"
              size="small" bordered :pagination="false"/>
     <a-modal :open="visible" title="组合商品组成" :confirm-loading="saving" @ok="save" @cancel="visible=false">
-      <a-alert type="info" show-icon message="每套用量按组成商品规格的销售单位填写；确认订单时冻结清单及库存换算。"/>
       <div v-for="(row, index) in draft" :key="index" class="bundle-editor__line">
         <SkuSelect v-model:value="row.skuId" :disabled-statuses="[]"/>
         <a-input v-model:value="row.quantityPerBundleSaleUnit" placeholder="每套用量，如 1.0000"/>

@@ -4,7 +4,7 @@
            :ok-button-props="{disabled: loading || !selectedIds.length}"
            :cancel-button-props="{disabled: saving}" ok-text="确认所选标品"
            @cancel="close" @ok="submit">
-    <a-alert type="info" show-icon message="将所选标准品按下方计划数量确认为正常分拣；不会自动完成任务。" />
+    <a-alert type="info" show-icon message="将所选标准品按下方计划数量确认为正常分拣。" />
     <a-alert v-if="error" type="error" show-icon :message="error" />
     <a-button :disabled="saving || loading" @click="load">刷新预览</a-button>
     <a-table size="small" row-key="id" :loading="loading" :data-source="preview?.items || []"

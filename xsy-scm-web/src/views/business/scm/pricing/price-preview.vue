@@ -64,7 +64,6 @@
       </template>
     </a-table>
     <a-modal :open="trialOpen" title="协议价计算依据" :footer="null" width="760px" @cancel="trialOpen=false">
-      <a-alert type="info" show-icon message="依据取所选配送仓的当前事实；订单提交后使用订单冻结快照。"/>
       <a-table :data-source="trialRows" :columns="trialColumns" row-key="skuId" size="small"
                :pagination="false" style="margin-top: 12px">
         <template #bodyCell="{record, column}">

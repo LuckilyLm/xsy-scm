@@ -12,7 +12,7 @@ public class StocktakeSnapshotDriftException extends RuntimeException {
     private final String skuCode;
 
     public StocktakeSnapshotDriftException(String skuCode) {
-        super("盘点快照与当前余额不一致：" + skuCode);
+        super("盘点数据与当前余额不一致：" + skuCode);
         this.skuCode = skuCode;
     }
 

@@ -12,16 +12,16 @@
     "src/views/business/scm/"
   ],
   "summary": {
-    "total": 1774,
+    "total": 1760,
     "scm": 0,
     "by_code": {
-      "TS7006": 815,
-      "TS2339": 355,
+      "TS7006": 814,
+      "TS2339": 346,
       "TS6133": 130,
-      "TS2322": 104,
+      "TS2322": 101,
       "TS7016": 76,
       "TS18046": 53,
-      "TS2345": 42,
+      "TS2345": 41,
       "TS7053": 41,
       "TS7005": 32,
       "TS18047": 30,
@@ -41,8 +41,8 @@
       "src/views/support": 425,
       "src/views/system": 279,
       "src/views/business": 228,
-      "src/layout/components": 203,
-      "src/components/support": 141,
+      "src/layout/components": 190,
+      "src/components/support": 140,
       "src/api/support": 80,
       "src/store/modules": 64,
       "src/components/framework": 57,
@@ -2459,35 +2459,35 @@
     },
     {
       "file": "src/components/support/table-operator/index.vue",
-      "line": 195,
+      "line": 191,
       "column": 26,
       "code": "TS2339",
       "message": "Property 'newColumns' does not exist on type '{}'."
     },
     {
       "file": "src/components/support/table-operator/index.vue",
-      "line": 196,
+      "line": 192,
       "column": 22,
       "code": "TS7006",
       "message": "Parameter 'item' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/index.vue",
-      "line": 197,
+      "line": 193,
       "column": 9,
       "code": "TS2339",
       "message": "Property 'newColumns' does not exist on type '{}'."
     },
     {
       "file": "src/components/support/table-operator/index.vue",
-      "line": 197,
+      "line": 193,
       "column": 29,
       "code": "TS7006",
       "message": "Parameter 'itemNewColumns' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/index.vue",
-      "line": 205,
+      "line": 201,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
@@ -2501,224 +2501,217 @@
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-merge.ts",
-      "line": 13,
+      "line": 20,
       "column": 29,
       "code": "TS7006",
       "message": "Parameter 'originalTableColumnArray' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-merge.ts",
-      "line": 13,
+      "line": 20,
       "column": 55,
       "code": "TS7006",
       "message": "Parameter 'userTableColumnArray' implicitly has an 'any' type."
     },
     {
-      "file": "src/components/support/table-operator/smart-table-column-merge.ts",
-      "line": 53,
-      "column": 40,
-      "code": "TS7006",
-      "message": "Parameter 'e' implicitly has an 'any' type."
-    },
-    {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 84,
+      "line": 85,
       "column": 15,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'lodash'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/lodash` if it exists or add a new declaration (.d.ts) file containing `declare module 'lodash';`"
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 85,
+      "line": 86,
       "column": 22,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'sortablejs'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/sortablejs` if it exists or add a new declaration (.d.ts) file containing `declare module 'sortablejs';`"
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 96,
+      "line": 97,
       "column": 5,
       "code": "TS7034",
       "message": "Variable 'tableId' implicitly has type 'any' in some locations where its type cannot be determined."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 100,
+      "line": 102,
       "column": 15,
       "code": "TS7006",
       "message": "Parameter 'columns' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 100,
+      "line": 102,
       "column": 24,
       "code": "TS7006",
       "message": "Parameter 'showTableId' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 114,
+      "line": 126,
       "column": 36,
       "code": "TS7006",
       "message": "Parameter 'tableId' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 114,
+      "line": 126,
       "column": 45,
       "code": "TS7006",
       "message": "Parameter 'columns' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 141,
+      "line": 153,
       "column": 14,
       "code": "TS2339",
       "message": "Property 'showFlag' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 142,
+      "line": 154,
       "column": 37,
       "code": "TS2345",
       "message": "Argument of type 'any' is not assignable to parameter of type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 142,
+      "line": 154,
       "column": 42,
       "code": "TS2339",
       "message": "Property 'columnKey' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 186,
+      "line": 197,
       "column": 12,
       "code": "TS7031",
       "message": "Binding element 'newIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 186,
+      "line": 197,
       "column": 22,
       "code": "TS7031",
       "message": "Binding element 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 196,
+      "line": 207,
       "column": 13,
       "code": "TS7006",
       "message": "Parameter 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 202,
+      "line": 213,
       "column": 33,
       "code": "TS2339",
       "message": "Property 'fixed' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 209,
+      "line": 220,
       "column": 15,
       "code": "TS7006",
       "message": "Parameter 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 216,
+      "line": 227,
       "column": 33,
       "code": "TS2339",
       "message": "Property 'fixed' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 224,
+      "line": 235,
       "column": 24,
       "code": "TS7006",
       "message": "Parameter 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 224,
+      "line": 235,
       "column": 34,
       "code": "TS7006",
       "message": "Parameter 'newIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 232,
+      "line": 243,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'keyArray' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 250,
+      "line": 261,
       "column": 46,
       "code": "TS7005",
       "message": "Variable 'tableId' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 275,
+      "line": 286,
       "column": 25,
       "code": "TS2339",
       "message": "Property 'columnKey' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 278,
+      "line": 289,
       "column": 16,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 279,
+      "line": 290,
       "column": 16,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type '{ columnKey: any; sort: number; }'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 279,
+      "line": 290,
       "column": 29,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 281,
+      "line": 292,
       "column": 14,
       "code": "TS2339",
       "message": "Property 'showFlag' does not exist on type '{ columnKey: any; sort: number; }'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 281,
+      "line": 292,
       "column": 58,
       "code": "TS2345",
       "message": "Argument of type 'any' is not assignable to parameter of type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 281,
+      "line": 292,
       "column": 63,
       "code": "TS2339",
       "message": "Property 'columnKey' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 285,
+      "line": 296,
       "column": 40,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 288,
+      "line": 299,
       "column": 7,
       "code": "TS7005",
       "message": "Variable 'tableId' implicitly has an 'any' type."
@@ -3306,63 +3299,63 @@
     },
     {
       "file": "src/layout/components/page-tag/components/default-tab.vue",
-      "line": 78,
+      "line": 95,
       "column": 16,
       "code": "TS6133",
       "message": "'oldValue' is declared but its value is never read."
     },
     {
       "file": "src/layout/components/page-tag/components/default-tab.vue",
-      "line": 85,
+      "line": 111,
       "column": 20,
       "code": "TS7006",
       "message": "Parameter 'name' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/page-tag/components/default-tab.vue",
-      "line": 90,
+      "line": 116,
       "column": 32,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/page-tag/components/default-tab.vue",
-      "line": 100,
+      "line": 126,
       "column": 22,
       "code": "TS7006",
       "message": "Parameter 'closeAll' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/page-tag/components/default-tab.vue",
-      "line": 101,
+      "line": 127,
       "column": 33,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/page-tag/components/default-tab.vue",
-      "line": 110,
+      "line": 136,
       "column": 19,
       "code": "TS7006",
       "message": "Parameter 'item' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/page-tag/components/default-tab.vue",
-      "line": 110,
+      "line": 136,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'closeAll' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/page-tag/components/default-tab.vue",
-      "line": 115,
+      "line": 141,
       "column": 88,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/page-tag/components/default-tab.vue",
-      "line": 120,
+      "line": 146,
       "column": 43,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
@@ -3726,129 +3719,38 @@
     },
     {
       "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 8,
-      "column": 51,
-      "code": "TS2339",
-      "message": "Property 'menuId' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 9,
-      "column": 28,
-      "code": "TS2339",
-      "message": "Property 'visibleFlag' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 9,
-      "column": 49,
-      "code": "TS2339",
-      "message": "Property 'disabledFlag' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 10,
-      "column": 46,
-      "code": "TS2339",
-      "message": "Property 'children' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 11,
-      "column": 35,
-      "code": "TS2339",
-      "message": "Property 'menuId' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 13,
+      "line": 20,
       "column": 31,
       "code": "TS7053",
       "message": "Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Object'."
     },
     {
       "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 13,
-      "column": 46,
-      "code": "TS2339",
-      "message": "Property 'icon' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 15,
-      "column": 21,
-      "code": "TS2339",
-      "message": "Property 'menuName' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 19,
-      "column": 49,
-      "code": "TS2339",
-      "message": "Property 'menuId' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 26,
+      "line": 33,
       "column": 15,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'lodash'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/lodash` if it exists or add a new declaration (.d.ts) file containing `declare module 'lodash';`"
     },
     {
       "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 45,
-      "column": 74,
-      "code": "TS2339",
-      "message": "Property 'menuId' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 53,
+      "line": 63,
       "column": 21,
       "code": "TS7006",
       "message": "Parameter 'menu' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 64,
-      "column": 25,
-      "code": "TS2322",
-      "message": "Type 'any' is not assignable to type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 80,
-      "column": 5,
-      "code": "TS2322",
-      "message": "Type 'any[]' is not assignable to type 'never[]'. / Type 'any' is not assignable to type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 97,
+      "line": 107,
       "column": 23,
       "code": "TS7006",
       "message": "Parameter 'openKeysParams' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 101,
+      "line": 113,
       "column": 46,
       "code": "TS7006",
       "message": "Parameter 'key' implicitly has an 'any' type."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 101,
-      "column": 77,
-      "code": "TS2345",
-      "message": "Argument of type 'any' is not assignable to parameter of type 'never'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 105,
-      "column": 5,
-      "code": "TS2322",
-      "message": "Type 'any[]' is not assignable to type 'never[]'. / Type 'any' is not assignable to type 'never'."
     },
     {
       "file": "src/layout/components/side-menu/sub-menu.vue",
@@ -5413,35 +5315,35 @@
     },
     {
       "file": "src/router/index.ts",
-      "line": 64,
+      "line": 70,
       "column": 40,
       "code": "TS7006",
       "message": "Parameter 'val' implicitly has an 'any' type."
     },
     {
       "file": "src/router/index.ts",
-      "line": 93,
+      "line": 99,
       "column": 29,
       "code": "TS7006",
       "message": "Parameter 'menuRouterList' implicitly has an 'any' type."
     },
     {
       "file": "src/router/index.ts",
-      "line": 142,
+      "line": 148,
       "column": 19,
       "code": "TS2339",
       "message": "Property 'component' does not exist on type '{ path: any; name: any; meta: { id: any; componentName: any; title: any; icon: any; hideInMenu: boolean; keepAlive: any; frameFlag: any; frameUrl: any; renameComponentFlag: boolean; }; }'."
     },
     {
       "file": "src/router/index.ts",
-      "line": 147,
+      "line": 153,
       "column": 19,
       "code": "TS2339",
       "message": "Property 'component' does not exist on type '{ path: any; name: any; meta: { id: any; componentName: any; title: any; icon: any; hideInMenu: boolean; keepAlive: any; frameFlag: any; frameUrl: any; renameComponentFlag: boolean; }; }'."
     },
     {
       "file": "src/router/index.ts",
-      "line": 158,
+      "line": 164,
       "column": 9,
       "code": "TS2322",
       "message": "Type '{ path: any; name: any; meta: { id: any; componentName: any; title: any; icon: any; hideInMenu: boolean; keepAlive: any; frameFlag: any; frameUrl: any; renameComponentFlag: boolean; }; }[]' is not assignable to type 'RouteRecordRaw[]'. / Type '{ path: any; name: any; meta: { id: any; componentName: any; title: any; icon: any; hideInMenu: boolean; keepAlive: any; frameFlag: any; frameUrl: any; renameComponentFlag: boolean; }; }' is not assignable to type 'RouteRecordRaw'. / Property 'redirect' is missing in type '{ path: any; name: any; meta: { id: any; componentName: any; title: any; icon: any; hideInMenu: boolean; keepAlive: any; frameFlag: any; frameUrl: any; renameComponentFlag: boolean; }; }' but required in type 'RouteRecordRedirect'."
@@ -5630,273 +5532,273 @@
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 173,
+      "line": 162,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'data' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 194,
+      "line": 183,
       "column": 57,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 200,
+      "line": 189,
       "column": 53,
       "code": "TS7006",
       "message": "Parameter 'menu' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 206,
+      "line": 195,
       "column": 18,
       "code": "TS7006",
       "message": "Parameter 'token' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 211,
+      "line": 200,
       "column": 19,
       "code": "TS7006",
       "message": "Parameter 'route' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 211,
+      "line": 200,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'from' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 221,
+      "line": 210,
       "column": 61,
       "code": "TS2339",
       "message": "Property 'menuName' does not exist on type 'never'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 225,
+      "line": 214,
       "column": 25,
       "code": "TS2339",
       "message": "Property 'fromMenuQuery' does not exist on type 'never'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 226,
+      "line": 215,
       "column": 25,
       "code": "TS2339",
       "message": "Property 'menuQuery' does not exist on type 'never'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 244,
+      "line": 233,
       "column": 21,
       "code": "TS7006",
       "message": "Parameter 'menuName' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 244,
+      "line": 233,
       "column": 31,
       "code": "TS7006",
       "message": "Parameter 'closeAll' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 247,
+      "line": 236,
       "column": 17,
       "code": "TS2322",
       "message": "Type 'never[]' is not assignable to type 'null'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 248,
+      "line": 237,
       "column": 22,
       "code": "TS2554",
       "message": "Expected 1 arguments, but got 0."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 250,
+      "line": 239,
       "column": 72,
       "code": "TS2339",
       "message": "Property 'menuName' does not exist on type 'never'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 253,
+      "line": 242,
       "column": 25,
       "code": "TS2322",
       "message": "Type 'never[]' is not assignable to type 'null'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 254,
+      "line": 243,
       "column": 30,
       "code": "TS2554",
       "message": "Expected 1 arguments, but got 0."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 257,
+      "line": 246,
       "column": 25,
       "code": "TS2322",
       "message": "Type 'never[]' is not assignable to type 'null'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 258,
+      "line": 247,
       "column": 67,
       "code": "TS2339",
       "message": "Property 'menuName' does not exist on type 'never'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 268,
+      "line": 257,
       "column": 19,
       "code": "TS7006",
       "message": "Parameter 'route' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 268,
+      "line": 257,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'router' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 268,
+      "line": 257,
       "column": 34,
       "code": "TS7006",
       "message": "Parameter 'path' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 274,
+      "line": 263,
       "column": 55,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 279,
+      "line": 268,
       "column": 69,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 291,
+      "line": 280,
       "column": 31,
       "code": "TS7006",
       "message": "Parameter 'val' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 301,
+      "line": 290,
       "column": 49,
       "code": "TS2345",
       "message": "Argument of type 'any' is not assignable to parameter of type 'never'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 306,
+      "line": 295,
       "column": 33,
       "code": "TS7006",
       "message": "Parameter 'val' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 316,
+      "line": 305,
       "column": 32,
       "code": "TS7006",
       "message": "Parameter 'val' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 317,
+      "line": 306,
       "column": 58,
       "code": "TS2345",
       "message": "Argument of type 'any' is not assignable to parameter of type 'never'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 321,
+      "line": 310,
       "column": 39,
       "code": "TS2322",
       "message": "Type 'any' is not assignable to type 'never'."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 329,
+      "line": 318,
       "column": 35,
       "code": "TS7006",
       "message": "Parameter 'menuTree' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 335,
+      "line": 324,
       "column": 44,
       "code": "TS7006",
       "message": "Parameter 'menuList' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 335,
+      "line": 324,
       "column": 54,
       "code": "TS7006",
       "message": "Parameter 'parentMenuList' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 335,
+      "line": 324,
       "column": 70,
       "code": "TS7006",
       "message": "Parameter 'menuParentIdListMap' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 359,
+      "line": 348,
       "column": 24,
       "code": "TS7006",
       "message": "Parameter 'menuList' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 361,
+      "line": 350,
       "column": 47,
       "code": "TS7006",
       "message": "Parameter 'menu' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 364,
+      "line": 353,
       "column": 53,
       "code": "TS7006",
       "message": "Parameter 'menu' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 371,
+      "line": 360,
       "column": 28,
       "code": "TS7006",
       "message": "Parameter 'menu' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 371,
+      "line": 360,
       "column": 34,
       "code": "TS7006",
       "message": "Parameter 'allMenuList' implicitly has an 'any' type."
     },
     {
       "file": "src/store/modules/system/user.ts",
-      "line": 372,
+      "line": 361,
       "column": 40,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
@@ -6071,42 +5973,42 @@
     },
     {
       "file": "src/views/business/oa/enterprise/components/enterprise-employee-list.vue",
-      "line": 147,
+      "line": 146,
       "column": 3,
       "code": "TS2322",
       "message": "Type '\"\"' is not assignable to type 'undefined'."
     },
     {
       "file": "src/views/business/oa/enterprise/components/enterprise-employee-list.vue",
-      "line": 159,
+      "line": 158,
       "column": 5,
       "code": "TS2322",
       "message": "Type 'number' is not assignable to type 'undefined'."
     },
     {
       "file": "src/views/business/oa/enterprise/components/enterprise-employee-list.vue",
-      "line": 170,
+      "line": 169,
       "column": 27,
       "code": "TS7006",
       "message": "Parameter 'list' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/enterprise/components/enterprise-employee-list.vue",
-      "line": 198,
+      "line": 197,
       "column": 38,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/enterprise/components/enterprise-employee-list.vue",
-      "line": 205,
+      "line": 204,
       "column": 31,
       "code": "TS7006",
       "message": "Parameter 'employeeId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/enterprise/components/enterprise-employee-list.vue",
-      "line": 237,
+      "line": 236,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'selectedRowKeys' implicitly has an 'any' type."
@@ -7072,7 +6974,7 @@
     },
     {
       "file": "src/views/business/oa/notice/components/notice-view-record-list.vue",
-      "line": 117,
+      "line": 116,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'userAgent' implicitly has an 'any' type."
@@ -7359,84 +7261,84 @@
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 156,
+      "line": 155,
       "column": 28,
       "code": "TS7006",
       "message": "Parameter 'value' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 157,
+      "line": 156,
       "column": 3,
       "code": "TS2322",
       "message": "Type 'boolean | null' is not assignable to type 'boolean'. / Type 'null' is not assignable to type 'boolean'."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 192,
+      "line": 191,
       "column": 28,
       "code": "TS6133",
       "message": "'dates' is declared but its value is never read."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 192,
+      "line": 191,
       "column": 28,
       "code": "TS7006",
       "message": "Parameter 'dates' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 192,
+      "line": 191,
       "column": 35,
       "code": "TS7006",
       "message": "Parameter 'dateStrings' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 200,
+      "line": 199,
       "column": 10,
       "code": "TS6133",
       "message": "'createDateChange' is declared but its value is never read."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 200,
+      "line": 199,
       "column": 27,
       "code": "TS6133",
       "message": "'dates' is declared but its value is never read."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 200,
+      "line": 199,
       "column": 27,
       "code": "TS7006",
       "message": "Parameter 'dates' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 200,
+      "line": 199,
       "column": 34,
       "code": "TS7006",
       "message": "Parameter 'dateStrings' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 201,
+      "line": 200,
       "column": 13,
       "code": "TS2339",
       "message": "Property 'createTimeBegin' does not exist on type '{ noticeTypeId: undefined; keywords: string; publishTimeBegin: null; publishTimeEnd: null; notViewFlag: boolean; pageNum: number; pageSize: number; }'."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 202,
+      "line": 201,
       "column": 13,
       "code": "TS2339",
       "message": "Property 'createTimeEnd' does not exist on type '{ noticeTypeId: undefined; keywords: string; publishTimeBegin: null; publishTimeEnd: null; notViewFlag: boolean; pageNum: number; pageSize: number; }'."
     },
     {
       "file": "src/views/business/oa/notice/notice-employee-list.vue",
-      "line": 210,
+      "line": 209,
       "column": 19,
       "code": "TS7006",
       "message": "Parameter 'noticeId' implicitly has an 'any' type."
@@ -7478,70 +7380,70 @@
     },
     {
       "file": "src/views/business/oa/notice/notice-list.vue",
-      "line": 301,
+      "line": 299,
       "column": 28,
       "code": "TS6133",
       "message": "'dates' is declared but its value is never read."
     },
     {
       "file": "src/views/business/oa/notice/notice-list.vue",
-      "line": 301,
+      "line": 299,
       "column": 28,
       "code": "TS7006",
       "message": "Parameter 'dates' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-list.vue",
-      "line": 301,
+      "line": 299,
       "column": 35,
       "code": "TS7006",
       "message": "Parameter 'dateStrings' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-list.vue",
-      "line": 309,
+      "line": 307,
       "column": 27,
       "code": "TS6133",
       "message": "'dates' is declared but its value is never read."
     },
     {
       "file": "src/views/business/oa/notice/notice-list.vue",
-      "line": 309,
+      "line": 307,
       "column": 27,
       "code": "TS7006",
       "message": "Parameter 'dates' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-list.vue",
-      "line": 309,
+      "line": 307,
       "column": 34,
       "code": "TS7006",
       "message": "Parameter 'dateStrings' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-list.vue",
-      "line": 319,
+      "line": 317,
       "column": 22,
       "code": "TS7006",
       "message": "Parameter 'noticeId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-list.vue",
-      "line": 326,
+      "line": 324,
       "column": 19,
       "code": "TS7006",
       "message": "Parameter 'noticeId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-list.vue",
-      "line": 337,
+      "line": 335,
       "column": 29,
       "code": "TS7006",
       "message": "Parameter 'noticeId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/business/oa/notice/notice-list.vue",
-      "line": 355,
+      "line": 353,
       "column": 19,
       "code": "TS7006",
       "message": "Parameter 'noticeId' implicitly has an 'any' type."
@@ -7702,21 +7604,21 @@
     },
     {
       "file": "src/views/support/code-generator/code-generator-list.vue",
-      "line": 164,
+      "line": 167,
       "column": 21,
       "code": "TS7006",
       "message": "Parameter 'rowData' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/code-generator-list.vue",
-      "line": 172,
+      "line": 175,
       "column": 22,
       "code": "TS7006",
       "message": "Parameter 'rowData' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/code-generator-list.vue",
-      "line": 178,
+      "line": 181,
       "column": 19,
       "code": "TS7006",
       "message": "Parameter 'rowData' implicitly has an 'any' type."
@@ -7975,266 +7877,266 @@
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 90,
+      "line": 91,
       "column": 15,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'lodash'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/lodash` if it exists or add a new declaration (.d.ts) file containing `declare module 'lodash';`"
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 168,
+      "line": 169,
       "column": 18,
       "code": "TS7006",
       "message": "Parameter 'tableColumns' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 168,
+      "line": 169,
       "column": 32,
       "code": "TS7006",
       "message": "Parameter 'config' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 174,
+      "line": 175,
       "column": 31,
       "code": "TS18046",
       "message": "'tableInfo' is of type 'unknown'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 175,
+      "line": 176,
       "column": 20,
       "code": "TS18046",
       "message": "'tableInfo' is of type 'unknown'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 206,
+      "line": 207,
       "column": 3,
       "code": "TS2322",
       "message": "Type '{ columnName: any; columnComment: any; dataType: any; nullableFlag: any; primaryKeyFlag: any; autoIncreaseFlag: any; fieldName: any; label: any; javaType: any; jsType: any; dict: any; enumName: any; }[]' is not assignable to type 'never[]'. / Type '{ columnName: any; columnComment: any; dataType: any; nullableFlag: any; primaryKeyFlag: any; autoIncreaseFlag: any; fieldName: any; label: any; javaType: any; jsType: any; dict: any; enumName: any; }' is not assignable to type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 210,
+      "line": 211,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'configFields' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 210,
+      "line": 211,
       "column": 39,
       "code": "TS7006",
       "message": "Parameter 'columnName' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 215,
+      "line": 216,
       "column": 37,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 223,
+      "line": 224,
       "column": 21,
       "code": "TS2339",
       "message": "Property 'columnName' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 224,
+      "line": 225,
       "column": 24,
       "code": "TS2339",
       "message": "Property 'columnComment' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 225,
+      "line": 226,
       "column": 16,
       "code": "TS2339",
       "message": "Property 'label' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 226,
+      "line": 227,
       "column": 20,
       "code": "TS2339",
       "message": "Property 'fieldName' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 227,
+      "line": 228,
       "column": 19,
       "code": "TS2339",
       "message": "Property 'javaType' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 228,
+      "line": 229,
       "column": 17,
       "code": "TS2339",
       "message": "Property 'jsType' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 229,
+      "line": 230,
       "column": 15,
       "code": "TS2339",
       "message": "Property 'dict' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 230,
+      "line": 231,
       "column": 19,
       "code": "TS2339",
       "message": "Property 'enumName' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 231,
+      "line": 232,
       "column": 25,
       "code": "TS2339",
       "message": "Property 'primaryKeyFlag' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-field.vue",
-      "line": 232,
+      "line": 233,
       "column": 27,
       "code": "TS2339",
       "message": "Property 'autoIncreaseFlag' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 121,
+      "line": 122,
       "column": 7,
       "code": "TS6133",
       "message": "'tableInfo' is declared but its value is never read."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 146,
+      "line": 147,
       "column": 19,
       "code": "TS2345",
       "message": "Argument of type 'number' is not assignable to parameter of type 'string'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 202,
+      "line": 203,
       "column": 18,
       "code": "TS7006",
       "message": "Parameter 'tableColumns' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 202,
+      "line": 203,
       "column": 32,
       "code": "TS7006",
       "message": "Parameter 'config' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 227,
+      "line": 228,
       "column": 11,
       "code": "TS2339",
       "message": "Property 'requiredFlag' does not exist on type '{ columnName: any; columnComment: any; dataType: any; nullableFlag: any; primaryKeyFlag: any; autoIncreaseFlag: any; }'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 228,
+      "line": 229,
       "column": 11,
       "code": "TS2339",
       "message": "Property 'insertFlag' does not exist on type '{ columnName: any; columnComment: any; dataType: any; nullableFlag: any; primaryKeyFlag: any; autoIncreaseFlag: any; }'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 229,
+      "line": 230,
       "column": 11,
       "code": "TS2339",
       "message": "Property 'updateFlag' does not exist on type '{ columnName: any; columnComment: any; dataType: any; nullableFlag: any; primaryKeyFlag: any; autoIncreaseFlag: any; }'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 232,
+      "line": 233,
       "column": 13,
       "code": "TS2339",
       "message": "Property 'frontComponent' does not exist on type '{ columnName: any; columnComment: any; dataType: any; nullableFlag: any; primaryKeyFlag: any; autoIncreaseFlag: any; }'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 234,
+      "line": 235,
       "column": 13,
       "code": "TS2339",
       "message": "Property 'frontComponent' does not exist on type '{ columnName: any; columnComment: any; dataType: any; nullableFlag: any; primaryKeyFlag: any; autoIncreaseFlag: any; }'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 240,
+      "line": 241,
       "column": 3,
       "code": "TS2322",
       "message": "Type '{ columnName: any; columnComment: any; dataType: any; nullableFlag: any; primaryKeyFlag: any; autoIncreaseFlag: any; }[]' is not assignable to type 'never[]'. / Type '{ columnName: any; columnComment: any; dataType: any; nullableFlag: any; primaryKeyFlag: any; autoIncreaseFlag: any; }' is not assignable to type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 244,
+      "line": 245,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'configFields' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 244,
+      "line": 245,
       "column": 39,
       "code": "TS7006",
       "message": "Parameter 'columnName' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 249,
+      "line": 250,
       "column": 37,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 257,
+      "line": 258,
       "column": 21,
       "code": "TS2339",
       "message": "Property 'columnName' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 258,
+      "line": 259,
       "column": 23,
       "code": "TS2339",
       "message": "Property 'requiredFlag' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 259,
+      "line": 260,
       "column": 21,
       "code": "TS2339",
       "message": "Property 'insertFlag' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 260,
+      "line": 261,
       "column": 21,
       "code": "TS2339",
       "message": "Property 'updateFlag' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 261,
+      "line": 262,
       "column": 25,
       "code": "TS2339",
       "message": "Property 'frontComponent' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-insert-and-update.vue",
-      "line": 282,
+      "line": 283,
       "column": 17,
       "code": "TS7006",
       "message": "Parameter 'error' implicitly has an 'any' type."
@@ -8290,231 +8192,231 @@
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 133,
+      "line": 131,
       "column": 18,
       "code": "TS7006",
       "message": "Parameter 'tableColumnInfos' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 133,
+      "line": 131,
       "column": 36,
       "code": "TS7006",
       "message": "Parameter 'config' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 150,
+      "line": 148,
       "column": 24,
       "code": "TS2345",
       "message": "Argument of type '{ rowKey: string; label: string; fieldName: string; queryTypeEnum: string; columnNameList: null; width: string; }' is not assignable to parameter of type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 161,
+      "line": 159,
       "column": 19,
       "code": "TS7006",
       "message": "Parameter 'index' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 180,
+      "line": 178,
       "column": 14,
       "code": "TS7031",
       "message": "Binding element 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 180,
+      "line": 178,
       "column": 24,
       "code": "TS7031",
       "message": "Binding element 'newIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 188,
+      "line": 186,
       "column": 28,
       "code": "TS7006",
       "message": "Parameter 'queryType' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 188,
+      "line": 186,
       "column": 39,
       "code": "TS7006",
       "message": "Parameter 'record' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 196,
+      "line": 194,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'record' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 209,
+      "line": 207,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'configFields' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 209,
+      "line": 207,
       "column": 39,
       "code": "TS7006",
       "message": "Parameter 'columnName' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 214,
+      "line": 212,
       "column": 37,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 224,
+      "line": 222,
       "column": 19,
       "code": "TS2339",
       "message": "Property 'label' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 225,
+      "line": 223,
       "column": 19,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 226,
+      "line": 224,
       "column": 23,
       "code": "TS2339",
       "message": "Property 'fieldName' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 227,
+      "line": 225,
       "column": 27,
       "code": "TS2339",
       "message": "Property 'queryTypeEnum' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 229,
+      "line": 227,
       "column": 28,
       "code": "TS2339",
       "message": "Property 'columnNameList' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 229,
+      "line": 227,
       "column": 58,
       "code": "TS2339",
       "message": "Property 'columnNameList' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 229,
+      "line": 227,
       "column": 94,
       "code": "TS2339",
       "message": "Property 'columnNameList' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-query-field.vue",
-      "line": 229,
+      "line": 227,
       "column": 117,
       "code": "TS2339",
       "message": "Property 'columnNameList' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 54,
+      "line": 55,
       "column": 7,
       "code": "TS6133",
       "message": "'tableInfo' is declared but its value is never read."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 108,
+      "line": 109,
       "column": 18,
       "code": "TS7006",
       "message": "Parameter 'tableColumns' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 108,
+      "line": 109,
       "column": 32,
       "code": "TS7006",
       "message": "Parameter 'config' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 128,
+      "line": 129,
       "column": 3,
       "code": "TS2322",
       "message": "Type '{ columnName: any; columnComment: any; dataType: any; showFlag: any; label: any; fieldName: any; width: any; ellipsisFlag: any; }[]' is not assignable to type 'never[]'. / Type '{ columnName: any; columnComment: any; dataType: any; showFlag: any; label: any; fieldName: any; width: any; ellipsisFlag: any; }' is not assignable to type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 132,
+      "line": 133,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'configFields' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 132,
+      "line": 133,
       "column": 39,
       "code": "TS7006",
       "message": "Parameter 'columnName' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 137,
+      "line": 138,
       "column": 37,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 145,
+      "line": 146,
       "column": 21,
       "code": "TS2339",
       "message": "Property 'columnName' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 146,
+      "line": 147,
       "column": 16,
       "code": "TS2339",
       "message": "Property 'label' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 147,
+      "line": 148,
       "column": 20,
       "code": "TS2339",
       "message": "Property 'fieldName' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 148,
+      "line": 149,
       "column": 19,
       "code": "TS2339",
       "message": "Property 'showFlag' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 149,
+      "line": 150,
       "column": 16,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type 'never'."
     },
     {
       "file": "src/views/support/code-generator/components/form/code-generator-table-config-form-table-field.vue",
-      "line": 150,
+      "line": 151,
       "column": 23,
       "code": "TS2339",
       "message": "Property 'ellipsisFlag' does not exist on type 'never'."
@@ -8927,21 +8829,21 @@
     },
     {
       "file": "src/views/support/feedback/feedback-list.vue",
-      "line": 144,
+      "line": 143,
       "column": 27,
       "code": "TS6133",
       "message": "'value' is declared but its value is never read."
     },
     {
       "file": "src/views/support/feedback/feedback-list.vue",
-      "line": 144,
+      "line": 143,
       "column": 27,
       "code": "TS7006",
       "message": "Parameter 'value' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/feedback/feedback-list.vue",
-      "line": 144,
+      "line": 143,
       "column": 34,
       "code": "TS7006",
       "message": "Parameter 'dateString' implicitly has an 'any' type."
@@ -8962,49 +8864,49 @@
     },
     {
       "file": "src/views/support/file/file-list.vue",
-      "line": 222,
+      "line": 223,
       "column": 10,
       "code": "TS6133",
       "message": "'onSearch' is declared but its value is never read."
     },
     {
       "file": "src/views/support/file/file-list.vue",
-      "line": 243,
+      "line": 244,
       "column": 29,
       "code": "TS6133",
       "message": "'dates' is declared but its value is never read."
     },
     {
       "file": "src/views/support/file/file-list.vue",
-      "line": 243,
+      "line": 244,
       "column": 29,
       "code": "TS7006",
       "message": "Parameter 'dates' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/file/file-list.vue",
-      "line": 243,
+      "line": 244,
       "column": 36,
       "code": "TS7006",
       "message": "Parameter 'dateStrings' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/file/file-list.vue",
-      "line": 248,
+      "line": 249,
       "column": 22,
       "code": "TS7006",
       "message": "Parameter 'size' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/file/file-list.vue",
-      "line": 262,
+      "line": 263,
       "column": 15,
       "code": "TS7006",
       "message": "Parameter 'file' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/file/file-list.vue",
-      "line": 267,
+      "line": 268,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'file' implicitly has an 'any' type."
@@ -9515,7 +9417,7 @@
     },
     {
       "file": "src/views/support/help-doc/user-view/components/help-doc-view-record-list.vue",
-      "line": 114,
+      "line": 113,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'userAgent' implicitly has an 'any' type."
@@ -9676,42 +9578,42 @@
     },
     {
       "file": "src/views/support/job/components/deleted-job-list.vue",
-      "line": 252,
+      "line": 255,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'jobClass' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/components/deleted-job-list.vue",
-      "line": 257,
+      "line": 260,
       "column": 30,
       "code": "TS7006",
       "message": "Parameter 'result' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/components/deleted-job-list.vue",
-      "line": 279,
+      "line": 282,
       "column": 16,
       "code": "TS6133",
       "message": "'queryJobInfo' is declared but its value is never read."
     },
     {
       "file": "src/views/support/job/components/deleted-job-list.vue",
-      "line": 279,
+      "line": 282,
       "column": 29,
       "code": "TS7006",
       "message": "Parameter 'jobId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/components/deleted-job-list.vue",
-      "line": 291,
+      "line": 294,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'jobId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/components/deleted-job-list.vue",
-      "line": 291,
+      "line": 294,
       "column": 33,
       "code": "TS7006",
       "message": "Parameter 'name' implicitly has an 'any' type."
@@ -9809,126 +9711,126 @@
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 289,
+      "line": 292,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'jobClass' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 294,
+      "line": 297,
       "column": 30,
       "code": "TS7006",
       "message": "Parameter 'result' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 316,
+      "line": 319,
       "column": 36,
       "code": "TS7006",
       "message": "Parameter 'checked' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 316,
+      "line": 319,
       "column": 45,
       "code": "TS7006",
       "message": "Parameter 'record' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 337,
+      "line": 340,
       "column": 29,
       "code": "TS7006",
       "message": "Parameter 'jobId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 349,
+      "line": 352,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'jobId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 349,
+      "line": 352,
       "column": 33,
       "code": "TS7006",
       "message": "Parameter 'name' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 355,
+      "line": 358,
       "column": 24,
       "code": "TS7006",
       "message": "Parameter 'jobId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 355,
+      "line": 358,
       "column": 31,
       "code": "TS7006",
       "message": "Parameter 'jobName' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 370,
+      "line": 373,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'jobId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 387,
+      "line": 390,
       "column": 26,
       "code": "TS7006",
       "message": "Parameter 'record' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/job/job-list.vue",
-      "line": 392,
+      "line": 395,
       "column": 27,
       "code": "TS7006",
       "message": "Parameter 'record' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/level3protect/data-masking-list.vue",
-      "line": 52,
+      "line": 53,
       "column": 20,
       "code": "TS6133",
       "message": "'reactive' is declared but its value is never read."
     },
     {
       "file": "src/views/support/level3protect/data-masking-list.vue",
-      "line": 53,
+      "line": 54,
       "column": 1,
       "code": "TS6133",
       "message": "'heartBeatApi' is declared but its value is never read."
     },
     {
       "file": "src/views/support/level3protect/data-masking-list.vue",
-      "line": 54,
+      "line": 55,
       "column": 1,
       "code": "TS6133",
       "message": "'PAGE_SIZE_OPTIONS' is declared but its value is never read."
     },
     {
       "file": "src/views/support/level3protect/data-masking-list.vue",
-      "line": 55,
+      "line": 56,
       "column": 1,
       "code": "TS6133",
       "message": "'defaultTimeRanges' is declared but its value is never read."
     },
     {
       "file": "src/views/support/level3protect/data-masking-list.vue",
-      "line": 57,
+      "line": 58,
       "column": 1,
       "code": "TS6133",
       "message": "'TableOperator' is declared but its value is never read."
     },
     {
       "file": "src/views/support/level3protect/data-masking-list.vue",
-      "line": 58,
+      "line": 59,
       "column": 1,
       "code": "TS6133",
       "message": "'TABLE_ID_CONST' is declared but its value is never read."
@@ -9970,35 +9872,35 @@
     },
     {
       "file": "src/views/support/login-fail/login-fail-list.vue",
-      "line": 178,
+      "line": 177,
       "column": 3,
       "code": "TS2322",
       "message": "Type 'undefined' is not assignable to type 'boolean'."
     },
     {
       "file": "src/views/support/login-fail/login-fail-list.vue",
-      "line": 202,
+      "line": 201,
       "column": 37,
       "code": "TS6133",
       "message": "'dates' is declared but its value is never read."
     },
     {
       "file": "src/views/support/login-fail/login-fail-list.vue",
-      "line": 202,
+      "line": 201,
       "column": 37,
       "code": "TS7006",
       "message": "Parameter 'dates' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/login-fail/login-fail-list.vue",
-      "line": 202,
+      "line": 201,
       "column": 44,
       "code": "TS7006",
       "message": "Parameter 'dateStrings' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/login-fail/login-fail-list.vue",
-      "line": 214,
+      "line": 213,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'selectedRowKeys' implicitly has an 'any' type."
@@ -10075,21 +9977,21 @@
     },
     {
       "file": "src/views/support/message/components/message-receiver-modal.vue",
-      "line": 134,
+      "line": 132,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'keyArray' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/message/components/message-receiver-modal.vue",
-      "line": 134,
+      "line": 132,
       "column": 35,
       "code": "TS7006",
       "message": "Parameter 'selectedRows' implicitly has an 'any' type."
     },
     {
       "file": "src/views/support/message/components/message-receiver-modal.vue",
-      "line": 142,
+      "line": 140,
       "column": 60,
       "code": "TS2339",
       "message": "Property 'actualName' does not exist on type 'never'."
@@ -10572,21 +10474,21 @@
     },
     {
       "file": "src/views/system/account/components/login-log/index.vue",
-      "line": 127,
+      "line": 126,
       "column": 27,
       "code": "TS6133",
       "message": "'dates' is declared but its value is never read."
     },
     {
       "file": "src/views/system/account/components/login-log/index.vue",
-      "line": 127,
+      "line": 126,
       "column": 27,
       "code": "TS7006",
       "message": "Parameter 'dates' implicitly has an 'any' type."
     },
     {
       "file": "src/views/system/account/components/login-log/index.vue",
-      "line": 127,
+      "line": 126,
       "column": 34,
       "code": "TS7006",
       "message": "Parameter 'dateStrings' implicitly has an 'any' type."
@@ -11272,21 +11174,21 @@
     },
     {
       "file": "src/views/system/employee/components/employee-list/index.vue",
-      "line": 110,
+      "line": 111,
       "column": 15,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'lodash'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/lodash` if it exists or add a new declaration (.d.ts) file containing `declare module 'lodash';`"
     },
     {
       "file": "src/views/system/employee/components/employee-list/index.vue",
-      "line": 133,
+      "line": 134,
       "column": 22,
       "code": "TS7006",
       "message": "Parameter 'accountName' implicitly has an 'any' type."
     },
     {
       "file": "src/views/system/employee/components/employee-list/index.vue",
-      "line": 133,
+      "line": 134,
       "column": 35,
       "code": "TS7006",
       "message": "Parameter 'passWord' implicitly has an 'any' type."
@@ -12210,56 +12112,56 @@
     },
     {
       "file": "src/views/system/role/components/role-employee-list/index.vue",
-      "line": 168,
+      "line": 167,
       "column": 46,
       "code": "TS18046",
       "message": "'selectRoleId' is of type 'unknown'."
     },
     {
       "file": "src/views/system/role/components/role-employee-list/index.vue",
-      "line": 169,
+      "line": 168,
       "column": 38,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/views/system/role/components/role-employee-list/index.vue",
-      "line": 173,
+      "line": 172,
       "column": 27,
       "code": "TS7006",
       "message": "Parameter 'list' implicitly has an 'any' type."
     },
     {
       "file": "src/views/system/role/components/role-employee-list/index.vue",
-      "line": 182,
+      "line": 181,
       "column": 15,
       "code": "TS18046",
       "message": "'selectRoleId' is of type 'unknown'."
     },
     {
       "file": "src/views/system/role/components/role-employee-list/index.vue",
-      "line": 196,
+      "line": 195,
       "column": 35,
       "code": "TS7006",
       "message": "Parameter 'employeeId' implicitly has an 'any' type."
     },
     {
       "file": "src/views/system/role/components/role-employee-list/index.vue",
-      "line": 205,
+      "line": 204,
       "column": 54,
       "code": "TS18046",
       "message": "'selectRoleId' is of type 'unknown'."
     },
     {
       "file": "src/views/system/role/components/role-employee-list/index.vue",
-      "line": 225,
+      "line": 224,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'selectedRowKeys' implicitly has an 'any' type."
     },
     {
       "file": "src/views/system/role/components/role-employee-list/index.vue",
-      "line": 245,
+      "line": 244,
       "column": 19,
       "code": "TS18046",
       "message": "'selectRoleId' is of type 'unknown'."

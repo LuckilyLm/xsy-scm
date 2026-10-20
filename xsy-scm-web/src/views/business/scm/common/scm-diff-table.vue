@@ -13,7 +13,7 @@
     <template v-else-if="mode === 'created'">
       <div class="scm-diff-head">
         <a-tag color="blue">初始记录</a-tag>
-        <span class="scm-diff-head-note">该操作没有变更前快照，以下是记录时的内容</span>
+        <span class="scm-diff-head-note">该操作没有变更前内容，以下是操作时的记录</span>
       </div>
       <a-descriptions v-if="createdFields.length" bordered size="small" class="scm-diff-desc"
                       :column="{xs: 1, sm: 2, xl: 3}">

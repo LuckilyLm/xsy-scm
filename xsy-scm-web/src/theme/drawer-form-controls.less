@@ -1,41 +1,57 @@
-/* 抽屉表单按控件语义控制宽度，长文本和多选按需放宽。 */
+/*
+ * 抽屉表单控件宽度契约：所在列是默认尺寸边界。
+ *
+ * 默认（无修饰类）：控件填满所在列，同一行的输入框、下拉框、数字框长度一致；
+ * 仅在超宽单列表单里用 --drawer-field-max 限制阅读宽度。
+ * full    `.app-drawer-field--wide`    突破阅读上限填满整列（商品简介等长文本）。
+ * compact `.app-drawer-field--compact` 短数字 / 日期类短字段，在字段组级别按需使用。
+ * fixed   `.app-drawer-field--fixed`   按控件类型的固定上限（--drawer-*-width），
+ *                                      单列简单表单需要短控件时显式选用。
+ */
 .app-drawer-form {
+  --drawer-field-max: 560px;
+  --drawer-compact-max: 240px;
   --drawer-text-width: 320px;
   --drawer-select-width: 280px;
   --drawer-number-width: 220px;
   --drawer-date-width: 240px;
   --drawer-range-width: 440px;
 
-  .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper) {
-    max-width: min(100%, var(--drawer-text-width));
-  }
-
-  .ant-form-item-control-input-content > .ant-select {
-    max-width: min(100%, var(--drawer-select-width));
-  }
-
-  .ant-form-item-control-input-content > :is(.ant-input-number, .ant-input-number-group-wrapper) {
-    max-width: min(100%, var(--drawer-number-width));
-  }
-
-  .ant-form-item-control-input-content > .ant-picker:not(.ant-picker-range) {
-    max-width: min(100%, var(--drawer-date-width));
-  }
-
-  .ant-form-item-control-input-content > .ant-picker-range {
-    max-width: min(100%, var(--drawer-range-width));
+  .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-number, .ant-input-number-group-wrapper, .ant-picker) {
+    width: 100%;
+    max-width: min(100%, var(--drawer-field-max));
   }
 
   .ant-form-item-control-input-content > :is(.ant-input-textarea, textarea.ant-input) {
     max-width: min(100%, 720px);
   }
 
-  .app-drawer-field--wide .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-textarea, textarea.ant-input) {
+  .app-drawer-field--wide .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-number, .ant-input-number-group-wrapper, .ant-picker, .ant-input-textarea, textarea.ant-input) {
     max-width: 100%;
   }
 
-  .app-drawer-field--compact .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-number, .ant-input-number-group-wrapper) {
-    max-width: min(100%, 240px);
+  .app-drawer-field--compact .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-number, .ant-input-number-group-wrapper, .ant-picker) {
+    max-width: min(100%, var(--drawer-compact-max));
+  }
+
+  .app-drawer-field--fixed .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper) {
+    max-width: min(100%, var(--drawer-text-width));
+  }
+
+  .app-drawer-field--fixed .ant-form-item-control-input-content > .ant-select {
+    max-width: min(100%, var(--drawer-select-width));
+  }
+
+  .app-drawer-field--fixed .ant-form-item-control-input-content > :is(.ant-input-number, .ant-input-number-group-wrapper) {
+    max-width: min(100%, var(--drawer-number-width));
+  }
+
+  .app-drawer-field--fixed .ant-form-item-control-input-content > .ant-picker:not(.ant-picker-range) {
+    max-width: min(100%, var(--drawer-date-width));
+  }
+
+  .app-drawer-field--fixed .ant-form-item-control-input-content > .ant-picker-range {
+    max-width: min(100%, var(--drawer-range-width));
   }
 
   .app-drawer-field--multi .ant-form-item-control-input-content > .ant-select {

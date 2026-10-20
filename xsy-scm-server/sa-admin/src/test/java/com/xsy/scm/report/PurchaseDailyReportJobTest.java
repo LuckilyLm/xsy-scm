@@ -34,7 +34,7 @@ class PurchaseDailyReportJobTest {
         LocalDate date = LocalDate.of(2020, 1, 2);
         when(generationService.generate(date)).thenReturn(false);
 
-        assertThat(job.run(" 2020-01-02 ")).contains("已存在", "保留原始快照");
+        assertThat(job.run(" 2020-01-02 ")).contains("已存在", "保留原始数据");
         verify(generationService).generate(date);
     }
 

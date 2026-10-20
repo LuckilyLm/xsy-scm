@@ -76,27 +76,27 @@
                 </a-form-item>
               </a-col>
               <a-col :xs="24" :sm="12">
-                <a-form-item label="保质期" name="shelfLifeDays">
+                <a-form-item label="保质期" name="shelfLifeDays" class="app-drawer-field--compact">
                   <a-input-number v-model:value="form.shelfLifeDays" :min="0" :max="36500" :precision="0"
-                                  addon-after="天" style="width: 100%" placeholder="未维护"/>
+                                  addon-after="天" placeholder="未维护"/>
                 </a-form-item>
               </a-col>
               <a-col :xs="24" :sm="12">
-                <a-form-item label="采购预警" name="purchaseWarningDays">
+                <a-form-item label="采购预警" name="purchaseWarningDays" class="app-drawer-field--compact">
                   <a-input-number v-model:value="form.purchaseWarningDays" :min="0" :max="365" :precision="0"
-                                  addon-after="天" style="width: 100%" placeholder="未维护"/>
+                                  addon-after="天" placeholder="未维护"/>
                 </a-form-item>
               </a-col>
               <a-col :xs="24" :sm="12">
-                <a-form-item label="损耗率" name="lossRate">
+                <a-form-item label="损耗率" name="lossRate" class="app-drawer-field--compact">
                   <a-input-number v-model:value="form.lossRate" :min="0" :max="100" :precision="4" :controls="false"
-                                  addon-after="%" style="width: 100%"/>
+                                  addon-after="%"/>
                 </a-form-item>
               </a-col>
               <a-col :xs="24" :sm="12">
-                <a-form-item label="税率" name="taxRate">
+                <a-form-item label="税率" name="taxRate" class="app-drawer-field--compact">
                   <a-input-number v-model:value="form.taxRate" :min="0" :max="100" :precision="4" :controls="false"
-                                  addon-after="%" style="width: 100%"/>
+                                  addon-after="%"/>
                 </a-form-item>
               </a-col>
               <a-col :xs="24" :sm="12">

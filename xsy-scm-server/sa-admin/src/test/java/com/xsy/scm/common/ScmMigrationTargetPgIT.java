@@ -5,7 +5,13 @@ import net.lab1024.sa.admin.test.PgITPaths;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,9 +25,35 @@ class ScmMigrationTargetPgIT {
     @Autowired
     private JdbcTemplate jdbc;
 
+    /**
+     * 目标迁移版本：默认取 classpath 上最新的 {@code V*.sql}，不再写死数字。
+     *
+     * <p>写死时每加一个迁移都要回来改一次测试；忘了改就是「库已经迁到新版、测试还在断言旧版」，
+     * 这类红与业务无关，却会让人以为迁移没跑。要验证旧版本兼容时用
+     * {@code -Dxsy.migration.expected-version=NNN} 显式指定。
+     */
+    private static String targetVersion() {
+        String override = System.getProperty("xsy.migration.expected-version");
+        if (override != null && !override.isBlank()) {
+            return override.trim();
+        }
+        try {
+            Resource[] resources = new PathMatchingResourcePatternResolver()
+                    .getResources("classpath:db/migration/V*.sql");
+            return Arrays.stream(resources)
+                    .map(Resource::getFilename)
+                    .filter(name -> name != null && name.matches("V\\d+__.*"))
+                    .map(name -> name.substring(1, name.indexOf("__")))
+                    .max(Comparator.comparingInt(Integer::parseInt))
+                    .orElseThrow(() -> new IllegalStateException("classpath:db/migration 下没有 V*.sql"));
+        } catch (IOException exception) {
+            throw new IllegalStateException("读取迁移脚本失败", exception);
+        }
+    }
+
     @Test
     void reachesTheRequestedMigrationVersion() {
-        String expected = System.getProperty("xsy.migration.expected-version", "137");
+        String expected = targetVersion();
         String current = jdbc.queryForObject("SELECT version FROM flyway_schema_history "
                 + "WHERE version IS NOT NULL ORDER BY installed_rank DESC LIMIT 1", String.class);
         assertThat(current).isEqualTo(expected);
@@ -33,7 +65,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void mallClaimColumnsExistWhenTargetIs128OrLater() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 128) {
             return;
         }
@@ -50,7 +82,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void settlementMethodColumnExistsWhenTargetIs129OrLater() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 129) {
             return;
         }
@@ -76,7 +108,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void orderExceptionCompensationTablesExistFromV148() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 148) {
             return;
         }
@@ -93,7 +125,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void codPermissionDefaultsToDisabledFromV130() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 130) {
             return;
         }
@@ -110,7 +142,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void codInstallmentOrderColumnExistsFromV132() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 132) {
             return;
         }
@@ -119,7 +151,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void mallWarehouseAndConversionSchemaExistsAt137() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 137) {
             return;
         }
@@ -148,7 +180,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void sortingPartRecordSchemaExistsAt141() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 141)
             return;
         assertColumn("xsy_sorting_part_record", "task_id");
@@ -164,7 +196,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void purchaseInquiryAndImmutableQuoteSchemaExistAt143() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 143)
             return;
         assertColumn("xsy_purchase_inquiry", "accepted_quote_id");
@@ -180,7 +212,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void personalFilterPresetSchemaExistsAt144() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 144) return;
         assertColumn("xsy_user_filter_preset", "owner_key");
         assertColumn("xsy_user_filter_preset", "view_key");
@@ -193,7 +225,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void orderTagSchemaExistsAt145() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 145) return;
         assertColumn("xsy_order_tag", "name");
         assertColumn("xsy_order_tag", "color");
@@ -208,7 +240,7 @@ class ScmMigrationTargetPgIT {
 
     @Test
     void salesOrderPrintTypeAndDefaultTemplateExistAt146() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 146) return;
         Integer defaults = jdbc.queryForObject(
                 "SELECT count(*) FROM xsy_print_template "
@@ -231,7 +263,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void inventoryLotSchemaExistsFromV151() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 151) {
             return;
         }
@@ -267,7 +299,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitSchemaExistsFromV152() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 152) {
             return;
         }
@@ -293,7 +325,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitBindingSchemaExistsFromV153() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 153) {
             return;
         }
@@ -336,7 +368,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitPrintSchemaExistsFromV154() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 154) {
             return;
         }
@@ -367,7 +399,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitVoidPermissionExistsFromV155() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 155) {
             return;
         }
@@ -382,7 +414,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitBindingActiveGuardExistsFromV156() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 156) {
             return;
         }
@@ -398,7 +430,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void traceUnitCorrectionSchemaExistsFromV157() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 157) {
             return;
         }
@@ -424,7 +456,7 @@ class ScmMigrationTargetPgIT {
     /** V158：有效绑定共享码行锁，正式出库与解绑共享原订单行锁。 */
     @Test
     void traceUnitConsistencyGuardsExistFromV158() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 158) {
             return;
         }
@@ -453,7 +485,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void purchaseShareSchemaExistsFromV159() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 159) {
             return;
         }
@@ -480,7 +512,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void customerPromotionSchemaExistsFromV160() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 160) {
             return;
         }
@@ -507,7 +539,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void timePriceSchemaExistsFromV161() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 161) {
             return;
         }
@@ -531,7 +563,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void sortingTicketShowsSupplierFromV162() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 162) {
             return;
         }
@@ -547,7 +579,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void sharedSettlementGrantExistsFromV163() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 163) {
             return;
         }
@@ -563,7 +595,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void mallHomeThemeExistsFromV164() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 164) {
             return;
         }
@@ -580,7 +612,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void helpDocOperationsExistFromV165() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 165) {
             return;
         }
@@ -598,7 +630,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void timePriceAuditExistsFromV166() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 166) {
             return;
         }
@@ -614,7 +646,7 @@ class ScmMigrationTargetPgIT {
      */
     @Test
     void sortingTicketAllEnabledTemplatesHaveSupplierFromV167() {
-        int target = Integer.parseInt(System.getProperty("xsy.migration.expected-version", "137"));
+        int target = Integer.parseInt(targetVersion());
         if (target < 167) {
             return;
         }

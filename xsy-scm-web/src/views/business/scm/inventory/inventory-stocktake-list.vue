@@ -53,7 +53,7 @@
             @click="onDownloadTemplate"
             v-privilege="'scm:inventory:stocktake:import'"
         >
-          导出快照模板
+          导出盘点模板
         </a-button>
         <a-upload
             :show-upload-list="false"
@@ -213,7 +213,7 @@
         type="error"
         show-icon
         :message="`整批未导入：${importResult.totalErrors} / ${importResult.totalRows} 行存在问题，未生成任何草稿`"
-        description="来源行由导出快照锁定，不能增删 / 替换；实盘量不能为空；快照过期或账面版本已变动需重新导出并核对。"
+        description="来源行按导出时的盘点清单锁定，不能增删或替换；实盘量不能为空；清单过期或账面已变动时请重新导出。"
     />
     <a-table
         v-if="importResult && importResult.errors.length"

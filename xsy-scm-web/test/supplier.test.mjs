@@ -1,0 +1,174 @@
+/**
+ * 供应商模块契约测试。
+ *
+ * 由 1 个独立测试文件按模块合并：每个 `{ … }` 块对应原来一份文件，
+ * 块内 helper / 常量各自作用域隔离；只有 import 提到顶部并去重。
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {removeSkuDraft, emptySupplier, validateSkuDrafts, toReplaceItems, toSupplierPayload, validateSupplier, fromRows, emptySkuDraft} from '../src/views/business/scm/supplier/supplier-form-model.ts';
+
+// ---------------------------------------------------------------- 来源：supplier-form-model.test.mjs
+{
+  /*
+   * 供应商表单模型单测
+   *
+   * 运行方式与断言风格与 `test/product-form-model.test.mjs` 一致。
+   *
+   * 重点覆盖两条反直觉的业务规则，它们是最容易写错的地方：
+   * 1. legacy R12：同一供应商允许多条 `defaultFlag = true`，前端绝不能做单选限制；
+   * 2. `supplier_sku` 是整表替换：已存在的行必须带 `id` + `version`，新增行不能带。
+   */
+
+  test('新建供应商不含状态字段，且新行默认启用且非默认来源', () => {
+    const form = emptySupplier();
+    // 状态不在表单里：新建强制 ENABLED（legacy S7），变更走独立的 updateStatus。
+    assert.equal('status' in form, false);
+    assert.equal(form.supplierCode, '');
+    // 区划六列必须由新建初值显式置 null：漏一列（undefined）就会让上一条记录的区划串进新供应商。
+    for (const key of ['provinceCode', 'provinceName', 'cityCode', 'cityName', 'districtCode', 'districtName']) {
+      assert.equal(form[key], null, `emptySupplier 缺少区划列 ${key}`);
+    }
+
+    const draft = emptySkuDraft();
+    assert.equal(draft.defaultFlag, false);
+    assert.equal(draft.status, 'ENABLED');
+    assert.equal(draft.referencePrice, null);
+    assert.equal(draft.purchaserId, null);
+  });
+
+  test('服务端行转草稿时保留 id 与 version，否则保存会退化成「全新增」', () => {
+    const drafts = fromRows([
+      {
+        id: 5,
+        version: 3,
+        skuId: 9,
+        purchaseUnit: 'kg',
+        referencePrice: '3.5000',
+        purchaserId: 2,
+        defaultFlag: true,
+        status: 'ENABLED',
+      },
+    ]);
+    assert.deepEqual(drafts[0], {
+      id: 5,
+      version: 3,
+      skuId: 9,
+      purchaseUnit: 'kg',
+      supplierItemCode: null,
+      referencePrice: '3.5000',
+      purchaserId: 2,
+      defaultFlag: true,
+      status: 'ENABLED',
+    });
+  });
+
+  test('校验供应商必填项与电话格式', () => {
+    // 编码由服务端生成：不带编码的合法表单必须直接通过校验。
+    assert.match(validateSupplier(emptySupplier()), /供应商名称/);
+    assert.equal(validateSupplier({ ...emptySupplier(), name: '供应商甲' }), undefined);
+    assert.match(validateSupplier({ ...emptySupplier(), name: '甲', contactPhone: 'abc' }), /联系电话/);
+  });
+
+  test('校验关联行：规格必选、不得重复、单位必填、参考价最多四位小数', () => {
+    assert.equal(validateSkuDrafts([]), undefined);
+
+    assert.match(validateSkuDrafts([{ purchaseUnit: 'kg', defaultFlag: false }]), /请选择商品规格/);
+    assert.match(
+      validateSkuDrafts([
+        { skuId: 1, purchaseUnit: 'kg', defaultFlag: false },
+        { skuId: 1, purchaseUnit: '箱', defaultFlag: false },
+      ]),
+      /不能重复添加/
+    );
+    assert.match(validateSkuDrafts([{ skuId: 1, purchaseUnit: '   ', defaultFlag: false }]), /采购单位/);
+    assert.match(
+      validateSkuDrafts([{ skuId: 1, purchaseUnit: 'kg', referencePrice: '1.23456', defaultFlag: false }]),
+      /四位小数/
+    );
+    assert.equal(validateSkuDrafts([{ skuId: 1, purchaseUnit: 'kg', referencePrice: '3.5000', defaultFlag: false }]), undefined);
+  });
+
+  test('多条默认来源必须被接受，前端不做单选限制', () => {
+    const items = toReplaceItems([
+      { id: 1, version: 2, skuId: 10, purchaseUnit: 'kg', referencePrice: '3.5000', purchaserId: null, defaultFlag: true },
+      { skuId: 11, purchaseUnit: '箱', referencePrice: '', purchaserId: 3, defaultFlag: true },
+    ]);
+
+    assert.equal(items.length, 2);
+    assert.equal(items[0].defaultFlag, true);
+    assert.equal(items[1].defaultFlag, true);
+    // 校验函数也必须放行这个组合。
+    assert.equal(
+      validateSkuDrafts([
+        { skuId: 10, purchaseUnit: 'kg', defaultFlag: true },
+        { skuId: 11, purchaseUnit: '箱', defaultFlag: true },
+      ]),
+      undefined
+    );
+  });
+
+  test('整表替换请求：已有行带 id+version，新增行不带，空白参考价转 null', () => {
+    const items = toReplaceItems([
+      { id: 1, version: 2, skuId: 10, purchaseUnit: ' kg ', referencePrice: null, purchaserId: null, defaultFlag: false },
+      { skuId: 11, purchaseUnit: '箱', referencePrice: '   ', purchaserId: 3, defaultFlag: false },
+    ]);
+
+    assert.equal(items[0].id, 1);
+    assert.equal(items[0].version, 2);
+    assert.equal(items[0].purchaseUnit, 'kg');
+    // 新增行绝不能带 id，否则后端会当成「更新一个不存在的行」。
+    assert.equal('id' in items[1], false);
+    assert.equal('version' in items[1], false);
+    assert.equal(items[1].referencePrice, null);
+    assert.equal(items[1].status, 'ENABLED');
+    assert.equal(items[1].purchaserId, 3);
+  });
+
+  test('移除行是纯函数，不改动入参数组', () => {
+    const drafts = [
+      { purchaseUnit: 'a', defaultFlag: false },
+      { purchaseUnit: 'b', defaultFlag: false },
+    ];
+    const left = removeSkuDraft(drafts, 0);
+    assert.equal(left.length, 1);
+    assert.equal(left[0].purchaseUnit, 'b');
+    assert.equal(drafts.length, 2);
+  });
+
+  test('提交前归一化：空白串转 null', () => {
+    const payload = toSupplierPayload({ ...emptySupplier(), name: ' 供应商甲 ', address: '  ', remark: ' 备注 ' });
+    assert.equal(payload.name, '供应商甲');
+    assert.equal(payload.address, null);
+    assert.equal(payload.remark, '备注');
+  });
+
+  test('写请求体不含供应商编码：编码由服务端生成', () => {
+    const payload = toSupplierPayload({ ...emptySupplier(), supplierCode: 'SUP000001', name: '供应商甲' });
+    // 编码只在 UI 表单模型（SupplierFormModel）上做只读回显，写请求体（SupplierPayload）没有这个键。
+    assert.equal('supplierCode' in payload, false);
+    assert.equal(payload.name, '供应商甲');
+  });
+
+  test('供应商货号是外部标识：保留前导零和大小写，重复映射拒绝', () => {
+    const input = [
+      {skuId: 10, purchaseUnit: 'kg', supplierItemCode: '  Ab-00007  ', defaultFlag: false},
+      {skuId: 11, purchaseUnit: 'kg', supplierItemCode: '', defaultFlag: false},
+    ];
+    assert.equal(validateSkuDrafts(input), undefined);
+    const items = toReplaceItems(input);
+    assert.equal(items[0].supplierItemCode, 'Ab-00007');
+    assert.equal(items[1].supplierItemCode, null);
+    assert.equal(validateSkuDrafts([
+      input[0],
+      {skuId: 11, purchaseUnit: 'kg', supplierItemCode: 'Ab-00007', defaultFlag: false},
+    ]).includes('供应商货号'), true);
+    assert.equal(validateSkuDrafts([
+      input[0],
+      {skuId: 11, purchaseUnit: 'kg', supplierItemCode: 'ab-00007', defaultFlag: false},
+    ]), undefined);
+    assert.match(validateSkuDrafts([
+      {skuId: 10, purchaseUnit: 'kg', supplierItemCode: 'a'.repeat(101), defaultFlag: false},
+    ]), /100/);
+  });
+}

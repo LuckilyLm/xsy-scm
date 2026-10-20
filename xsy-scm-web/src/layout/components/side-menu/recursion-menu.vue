@@ -49,7 +49,9 @@ const props = defineProps({
   },
 });
 
-const menuTree = computed(() => useUserStore().getMenuTree || []);
+// 菜单树来自 SmartAdmin 的用户 store（`menuTree` 初值空数组，元素类型未声明）；
+// 不显式放宽的话 computed 会被推成 never[]，模板里读 item.menuName 直接报错。
+const menuTree = computed<any[]>(() => useUserStore().getMenuTree || []);
 const rootSubmenuKeys = computed(() => menuTree.value.map((item) => item.menuId));
 
 //展开的菜单

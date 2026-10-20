@@ -212,7 +212,7 @@ const logColumns: TableColumnsType<FinanceOperationLog> = [
     {title: '时间', dataIndex: 'createdAt', width: 180, customRender: ({text}) => dateTimeText(text)},
     {title: '操作', dataIndex: 'operationType', align: 'center', width: 160, customRender: ({text}) => operationTypeText(text)},
     {title: '操作人', dataIndex: 'operator', width: 130},
-    {title: '原因', dataIndex: 'reason', width: 200}, {title: '快照', dataIndex: 'snapshot', width: 150},
+    {title: '原因', dataIndex: 'reason', width: 200}, {title: '记录内容', dataIndex: 'snapshot', width: 150},
 ];
 
 // 审计快照弹窗：整张表只共用一个，靠 auditLog 指向当前点开的那一行。

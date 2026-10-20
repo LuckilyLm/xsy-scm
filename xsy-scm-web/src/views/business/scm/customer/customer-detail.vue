@@ -366,6 +366,7 @@ import {customerVisibilityApi} from '/@/api/business/scm/customer-visibility-api
 import type {CustomerDetail, CustomerFrequentSku, CustomerStatus} from '/@/types/business/scm/customer';
 import type {PriceRow, VisibilityRow} from '/@/types/business/scm/pricing';
 import type {Order} from '/@/views/business/scm/order/order-types';
+import {orderStatusTone} from '/@/views/business/scm/order/order-status-tone';
 import {
   CREDIT_PERIOD_TYPE_ENUM,
   CREDIT_PERIOD_UNIT_ENUM,
@@ -726,15 +727,6 @@ const visRows = computed(() => visibility.rows.value.filter((r) => r.skuId != nu
 
 const shelfStatusTone = (value?: string | null): ScmStatusTone =>
     value === 'ON_SHELF' ? 'success' : value === 'OFF_SHELF' ? 'neutral' : 'warning';
-
-/** 草稿/待确认=待处理，已确认=处理中，已取消=失效（与订单列表同一套档位）。 */
-const ORDER_STATUS_TONE: Record<string, ScmStatusTone> = {
-  DRAFT: 'warning',
-  PENDING: 'warning',
-  CONFIRMED: 'processing',
-  CANCELLED: 'neutral',
-};
-const orderStatusTone = (value?: string | null): ScmStatusTone => ORDER_STATUS_TONE[value ?? ''] ?? 'neutral';
 
 /** 协议价有效期：无结束时间即长期有效（不是缺数据，不能显示破折号）。 */
 const effectivePeriodText = (row: PriceRow): string =>

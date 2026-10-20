@@ -642,7 +642,7 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         actual.setItemId(order.getItems().getFirst().getItemId());
         actual.setVersion(order.getItems().getFirst().getVersion());
         actual.setActualQuantity(actualQuantity);
-        actual.setReason("IT 实重");
+        actual.setReason("实重复核");
         SalesOrderDetailVO weighted = salesOrderService.actualQuantity(actual, prefix + ":actual:" + orderId);
 
         OrderVersionForm confirm = new OrderVersionForm();
@@ -758,7 +758,7 @@ class MallAfterSaleFlowPgIT extends ScmW6PgITBase {
         form.setProvinceName("上海市");
         form.setCityName("上海市");
         form.setDistrictName("浦东新区");
-        form.setDetailAddress("IT 测试路 3 号");
+        form.setDetailAddress("张江路 3 号");
         form.setIsDefault(true);
         return form;
     }

@@ -42,7 +42,7 @@ public class InventoryStocktakeImportService {
 
     public static final String TEMPLATE_VERSION = "1.0";
     private static final List<
-            String> HEADERS = List.of("快照凭证", "商品规格编码", "商品名称", "商品规格", "记账单位", "账面数量快照", "实盘数量", "备注");
+            String> HEADERS = List.of("模板校验码", "商品规格编码", "商品名称", "商品规格", "记账单位", "账面数量", "实盘数量", "备注");
     private static final int COL_CREDENTIAL = 0;
     private static final int COL_SKU_CODE = 1;
     private static final int COL_ACTUAL = 6;
@@ -64,7 +64,7 @@ public class InventoryStocktakeImportService {
     private long ttlMinutes;
 
     /**
-     * 生成某仓库的盘点导入模板：一行表头 + 每余额一行，每行携带同一份签名快照凭证。
+     * 生成某仓库的盘点导入模板：一行表头 + 每余额一行，每行携带同一份签名模板校验码。
      *
      * @return xlsx 字节；仓库不存在时 {@code warehouseService.require} 直接抛业务异常
      */
@@ -125,19 +125,19 @@ public class InventoryStocktakeImportService {
             payload = signer.verify(sheet.credential, OffsetDateTime.now().toEpochSecond());
         } catch (StocktakeSnapshotSigner.SnapshotPayloadUnreadable exception) {
             // 载荷是我们自己签出去的，解析失败属于服务端故障：留下真因，且不能叫用户重导模板空转。
-            log.error("盘点快照凭证验签通过但载荷解析失败，属服务端缺陷", exception);
-            addError(result, 0, null, "快照凭证", "SNAPSHOT_UNREADABLE", "快照凭证无法解析，请联系运维查看服务端日志");
+            log.error("盘点模板校验码验签通过但载荷解析失败，属服务端缺陷", exception);
+            addError(result, 0, null, "模板校验码", "SNAPSHOT_UNREADABLE", "模板校验码无法解析，请联系运维查看服务端日志");
             return result;
         } catch (StocktakeSnapshotSigner.SnapshotCredentialException exception) {
-            addError(result, 0, null, "快照凭证", "CREDENTIAL_INVALID", exception.getMessage() + "；请重新导出模板");
+            addError(result, 0, null, "模板校验码", "CREDENTIAL_INVALID", exception.getMessage() + "；请重新导出模板");
             return result;
         }
         if (!TEMPLATE_VERSION.equals(payload.templateVersion())) {
-            addError(result, 0, null, "快照凭证", "CREDENTIAL_INVALID", "模板版本不受支持，请重新下载模板");
+            addError(result, 0, null, "模板校验码", "CREDENTIAL_INVALID", "模板版本不受支持，请重新下载模板");
             return result;
         }
         if (!ScmOperator.current().equals(payload.operator())) {
-            addError(result, 0, null, "快照凭证", "OPERATOR_MISMATCH", "该模板由他人导出，请用本人重新导出的模板导入");
+            addError(result, 0, null, "模板校验码", "OPERATOR_MISMATCH", "该模板由他人导出，请用本人重新导出的模板导入");
             return result;
         }
         // 仓库授权必须在幂等认领之前判：认领本身就是写，越权的导入请求不能在库里留下任何痕迹
@@ -152,13 +152,13 @@ public class InventoryStocktakeImportService {
         for (var filled : sheet.rows) {
             if (!authoritative.containsKey(filled.skuCode)) {
                 addError(result, filled.rowNumber, filled.skuCode, "商品规格编码", "SOURCE_UNKNOWN",
-                        "该行不在本次快照来源集合内，请重新导出模板，不要手工增删行");
+                        "该行不在本次导出的来源集合内，请重新导出模板，不要手工增删行");
             }
             sheetCodes.add(filled.skuCode);
         }
         for (var code : authoritative.keySet()) {
             if (!sheetCodes.contains(code)) {
-                addError(result, 0, code, "商品规格编码", "SOURCE_MISSING", "快照来源行 " + code + " 在文件中缺失，请重新导出并填写完整");
+                addError(result, 0, code, "商品规格编码", "SOURCE_MISSING", "来源行 " + code + " 在文件中缺失，请重新导出并填写完整");
             }
         }
         if (result.getTotalErrors() > 0) {
@@ -181,7 +181,7 @@ public class InventoryStocktakeImportService {
             return result;
         } catch (StocktakeSnapshotDriftException exception) {
             // 整事务（含幂等认领）已回滚：不落任何草稿，要求重导。
-            addError(result, 0, exception.getSkuCode(), "账面数量快照", "SNAPSHOT_STALE",
+            addError(result, 0, exception.getSkuCode(), "账面数量", "SNAPSHOT_STALE",
                     "余额自导出后已变动（商品规格" + exception.getSkuCode() + "），整批未导入，请重新导出并核对实盘");
             return result;
         }
@@ -256,11 +256,11 @@ public class InventoryStocktakeImportService {
                 // 凭证：每行携带同一份；首行确立基准，后续不一致即视为被篡改 / 混用两份导出。
                 var rowCredential = cells.get(COL_CREDENTIAL);
                 if (rowCredential == null) {
-                    addError(result, rowNumber, null, "快照凭证", "CREDENTIAL_MISSING", "该行缺少快照凭证，请勿删除凭证列");
+                    addError(result, rowNumber, null, "模板校验码", "CREDENTIAL_MISSING", "该行缺少模板校验码，请勿删除凭证列");
                 } else if (credential == null) {
                     credential = rowCredential;
                 } else if (!credential.equals(rowCredential)) {
-                    addError(result, rowNumber, null, "快照凭证", "CREDENTIAL_MISMATCH", "所有行的快照凭证必须一致，请勿混用多次导出");
+                    addError(result, rowNumber, null, "模板校验码", "CREDENTIAL_MISMATCH", "所有行的模板校验码必须一致，请勿混用多次导出");
                 }
 
                 var skuCode = cells.get(COL_SKU_CODE);

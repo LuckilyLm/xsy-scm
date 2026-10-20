@@ -61,7 +61,9 @@
           </div>
         </div>
         <div class="scm-summary-section">
-          <div class="scm-summary">
+          <!-- 摘要只放可比较的数值指标；仓库、司机属于身份信息，见「基础信息」卡片。
+               无金额权限时只剩 3 项，用三列变体避免末行留白。 -->
+          <div class="scm-summary" :class="canViewAmount ? '' : 'scm-summary--3'">
             <div class="scm-summary__item">
               <span class="scm-summary__label">停靠点</span>
               <span class="scm-summary__value">{{ detail.route.stopCount }}</span>
@@ -77,14 +79,6 @@
             <div class="scm-summary__item">
               <span class="scm-summary__label">停靠点定位</span>
               <span class="scm-summary__value">{{ detail.route.locatedCount }} / {{ detail.route.stopCount }}</span>
-            </div>
-            <div class="scm-summary__item">
-              <span class="scm-summary__label">仓库</span>
-              <span class="scm-summary__value">{{ detail.route.warehouseNameSnapshot || '—' }}</span>
-            </div>
-            <div class="scm-summary__item">
-              <span class="scm-summary__label">司机</span>
-              <span class="scm-summary__value">{{ detail.route.driverNameSnapshot || '未分配' }}</span>
             </div>
           </div>
         </div>

@@ -22,9 +22,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -66,10 +64,10 @@ public abstract class ScmW2PgITBase {
 
     @BeforeEach
     void setUpOperator() {
-        prefix = "W2-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase(Locale.ROOT);
+        prefix = PgITFixtureNames.brand();
         RequestEmployee employee = new RequestEmployee();
         employee.setEmployeeId(1L);
-        employee.setActualName("W2 IT");
+        employee.setActualName(PgITFixtureNames.operator());
         employee.setUserType(UserTypeEnum.ADMIN_EMPLOYEE);
         SmartRequestUtil.setRequestUser(employee);
     }

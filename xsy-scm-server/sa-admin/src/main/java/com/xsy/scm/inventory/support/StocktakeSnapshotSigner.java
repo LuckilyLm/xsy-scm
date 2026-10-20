@@ -38,7 +38,7 @@ public class StocktakeSnapshotSigner {
     }
 
     /**
-     * 一份完整快照凭证。
+     * 一份完整模板校验码。
      *
      * @param operator
      *            导出人（{@code ScmOperator#current}），导入时要求同一人，防止跨人复用离线清单
@@ -63,7 +63,7 @@ public class StocktakeSnapshotSigner {
      */
     public static class SnapshotPayloadUnreadable extends SnapshotCredentialException {
         public SnapshotPayloadUnreadable(Throwable cause) {
-            super("快照凭证内容无法解析", cause);
+            super("模板校验码内容无法解析", cause);
         }
     }
 
@@ -110,7 +110,7 @@ public class StocktakeSnapshotSigner {
             byte[] mac = hmac(body);
             return ENCODER.encodeToString(body) + "." + ENCODER.encodeToString(mac);
         } catch (Exception exception) {
-            throw new IllegalStateException("无法生成盘点快照凭证", exception);
+            throw new IllegalStateException("无法生成盘点模板校验码", exception);
         }
     }
 
@@ -158,11 +158,11 @@ public class StocktakeSnapshotSigner {
      */
     public Payload verify(String token, long nowEpochSec) {
         if (token == null) {
-            throw new SnapshotCredentialException("快照凭证缺失");
+            throw new SnapshotCredentialException("模板校验码缺失");
         }
         int dot = token.lastIndexOf('.');
         if (dot <= 0 || dot == token.length() - 1) {
-            throw new SnapshotCredentialException("快照凭证格式非法");
+            throw new SnapshotCredentialException("模板校验码格式非法");
         }
         byte[] body;
         byte[] mac;
@@ -170,10 +170,10 @@ public class StocktakeSnapshotSigner {
             body = DECODER.decode(token.substring(0, dot));
             mac = DECODER.decode(token.substring(dot + 1));
         } catch (IllegalArgumentException exception) {
-            throw new SnapshotCredentialException("快照凭证无法解码");
+            throw new SnapshotCredentialException("模板校验码无法解码");
         }
         if (!MessageDigest.isEqual(hmac(body), mac)) {
-            throw new SnapshotCredentialException("快照凭证签名校验失败");
+            throw new SnapshotCredentialException("模板校验码签名校验失败");
         }
         Payload payload;
         try {
@@ -187,7 +187,7 @@ public class StocktakeSnapshotSigner {
             throw new SnapshotPayloadUnreadable(exception);
         }
         if (payload.expiresAtEpochSec() < nowEpochSec) {
-            throw new SnapshotCredentialException("快照凭证已过期，请重新导出模板");
+            throw new SnapshotCredentialException("模板校验码已过期，请重新导出模板");
         }
         return payload;
     }
@@ -198,7 +198,7 @@ public class StocktakeSnapshotSigner {
             mac.init(new SecretKeySpec(secret, HMAC_ALGORITHM));
             return mac.doFinal(body);
         } catch (Exception exception) {
-            throw new IllegalStateException("无法计算快照凭证签名", exception);
+            throw new IllegalStateException("无法计算模板校验码签名", exception);
         }
     }
 }

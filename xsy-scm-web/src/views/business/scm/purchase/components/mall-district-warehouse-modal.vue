@@ -1,6 +1,6 @@
 <template>
   <a-modal v-model:open="visible" title="商城区县配送仓配置" :footer="null" width="740px">
-    <a-alert type="info" show-icon message="客户未绑定配送仓时按收货地址区县匹配；同区县按优先级从小到大选择，未配置则禁止下单。" />
+    <a-alert type="info" show-icon message="客户未绑定配送仓时，按收货地址区县匹配。" />
     <a-form layout="vertical" class="district-form">
       <a-form-item label="配送区县" required>
         <AreaCascader type="province_city_district" v-model:value="area" placeholder="选择省 / 市 / 区县"

@@ -1,17 +1,16 @@
 <template>
   <div class="conversion-row">
-    <span>{{ sku.skuCode }} · {{ sku.specName }}（销售单位：{{ sku.saleUnit }}）</span>
-    <a-button size="small" @click="open">维护库存换算</a-button>
+    <span>{{ sku.specName }} · 销售单位 {{ sku.saleUnit }}</span>
+    <a-button size="small" @click="open">维护换算</a-button>
     <a-modal v-model:open="visible" :title="`${sku.specName} · 库存单位换算`" :footer="null" width="680px">
-      <a-alert type="info" show-icon message="按商品规格和库存记账单位配置；订单确认后将冻结换算比例，后续修改不会改变历史订单。" />
       <a-spin :spinning="loading">
         <div v-for="row in rows" :key="row.stockUnit" class="conversion-item">
           <span>1 {{ sku.saleUnit }} = {{ row.stockUnitsPerSaleUnit }} {{ row.stockUnit }}</span>
-          <a-popconfirm title="确定删除此单位换算配置？历史订单不受影响。" @confirm="remove(row.stockUnit)">
+          <a-popconfirm title="确定删除这条换算？" @confirm="remove(row.stockUnit)">
             <a-button size="small" danger>删除</a-button>
           </a-popconfirm>
         </div>
-        <a-empty v-if="!rows.length && !loading" description="尚未配置；销售单位与记账单位相同时默认按 1:1 处理" />
+        <a-empty v-if="!rows.length && !loading" description="尚未配置换算"/>
       </a-spin>
       <a-divider>新增或更新换算规则</a-divider>
       <a-form layout="vertical">

@@ -70,7 +70,6 @@
       </div>
     </a-card>
     <a-modal v-model:open="compareOpen" title="多供应商参考价对比" :footer="null" width="1000px">
-      <a-alert type="info" show-icon message="仅比较当前可采购且同一商品规格、同一采购单位的有效供应商参考价；不是采购合同价、实际成交价或入库成本。" class="smart-margin-bottom10"/>
       <a-table :columns="compareColumns" :data-source="compareRows" row-key="supplierId" :loading="compareLoading"
                size="small" bordered :pagination="false" :scroll="{ x: scmColumnsWidth(compareColumns) }">
         <template #bodyCell="{column, record}">

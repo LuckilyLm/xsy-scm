@@ -1,7 +1,7 @@
 <template>
   <a-modal :open="visible" title="草稿订单批量核价" :width="1120" :footer="null" @cancel="close">
     <a-alert type="info" show-icon class="smart-margin-bottom10"
-             message="仅比较当前价格，不修改订单。人工改价不参与重算；正式执行时系统会重新解析价格并检查版本。"/>
+             message="仅比较当前价格，不修改订单。"/>
     <a-space class="smart-margin-bottom10" wrap>
       <span>已选 {{ entries.length }} 单，最多 8 单</span>
       <a-button size="small" :loading="loading" @click="reload">重新核价</a-button>

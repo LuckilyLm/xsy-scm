@@ -43,17 +43,21 @@
     </template>
   </a-alert>
 
-  <a-row :gutter="[12, 12]" class="smart-margin-top10">
-    <a-col v-for="card in kpiCards" :key="card.label" :xs="24" :sm="12" :md="8" :lg="6" :xl="6">
+  <!-- 区间指标与当前时点指标分开排：前者随查询区间变化，后者是余额快照，
+       混在一行会让「本月订单额」和「此刻库存金额」看起来同源。 -->
+  <section v-for="band in kpiBands" :key="band.key" class="report-kpi-band">
+    <h3 class="report-kpi-band__title">{{ band.title }}</h3>
+    <div class="report-kpi-grid" :class="`report-kpi-grid--${band.key}`">
       <ReportKpiCard
+          v-for="card in band.cards"
+          :key="card.label"
           :label="card.label"
           :value="card.value"
           :sub="card.sub"
           :warning="card.warning"
-          :current-point="card.currentPoint"
       />
-    </a-col>
-  </a-row>
+    </div>
+  </section>
 
   <ReportLineChart
       class="smart-margin-top10"
@@ -238,7 +242,8 @@ const kpiCards = computed(() => {
         value: string;
         sub?: string;
         warning?: string;
-        currentPoint?: boolean;
+        /** 当前时点余额，不随查询区间变化。 */
+        point?: boolean;
         cost?: boolean;
     }> = [
         {
@@ -274,11 +279,23 @@ const kpiCards = computed(() => {
             label: '当前库存账面金额',
             value: costText(data.inventoryBookValue, canViewCost.value),
             sub: `截至 ${datetime(data.snapshotAt)}｜有账面库存 ${countText(data.stockedSkuCount)} 行`,
-            currentPoint: true,
+            point: true,
             cost: true,
         },
     ];
     return cards.filter((card) => !card.cost || canViewCost.value);
+});
+
+/**
+ * 两段指标：区间统计随「确认日期」筛选变化，当前时点是余额快照。
+ * 权限裁剪后某段可能为空，空段整段不渲染，避免只剩标题。
+ */
+const kpiBands = computed(() => {
+    const cards = kpiCards.value;
+    return [
+        {key: 'range', title: '区间统计', cards: cards.filter((card) => !card.point)},
+        {key: 'point', title: '当前时点', cards: cards.filter((card) => card.point)},
+    ].filter((band) => band.cards.length > 0);
 });
 
 const trendAxis = computed(() => trendRows.value.map((row) => row.bizDate));
@@ -394,6 +411,35 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/*
+ * KPI 分段：段标题说明这组数字的口径（随查询区间变化 / 当前余额快照）。
+ * 列数由可用宽度决定，卡片数量少于列数时 auto-fit 会收起空轨道、让已有卡片均分整行，
+ * 因此权限裁掉成本指标后也不会留下尾部空格。
+ */
+.report-kpi-band {
+  margin-top: 12px;
+}
+
+.report-kpi-band__title {
+  margin: 0 0 8px;
+  color: var(--scm-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.report-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+/* 时点指标通常只有一张：固定阅读宽度，不跟着整行拉满 */
+.report-kpi-grid--point {
+  grid-template-columns: minmax(0, 320px);
+  justify-content: start;
+}
+
 .report-warn-icon {
   color: var(--scm-warning);
   margin-left: 4px;
