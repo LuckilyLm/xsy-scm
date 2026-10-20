@@ -48,7 +48,7 @@ public class OrderRecentPriceVO {
     private BigDecimal unitPrice;
 
     /**
-     * 价格来源（AGREEMENT / CUSTOMER_TYPE / MARKET / OVERRIDE），沿用 {@code ScmOrderPriceSourceEnum}；可能为空。
+     * 价格来源（AGREEMENT / CUSTOMER_TYPE / TIME_PRICE / MARKET / OVERRIDE），可能为空。
      */
     private String priceSource;
 

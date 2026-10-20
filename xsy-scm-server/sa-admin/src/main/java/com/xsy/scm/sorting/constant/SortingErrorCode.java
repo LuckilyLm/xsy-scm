@@ -36,11 +36,6 @@ public enum SortingErrorCode implements ScmErrorCode {
     /** 只有待处理的读数可以接受或驳回。 */
     SCALE_EVENT_STATE_INVALID(41131, "秤读数当前状态不允许此操作"),
 
-    /**
-     * 一键分拣只处理标准品：非标品的数量是称重结果，必须人工录入并说明差异， 由一键操作推断会绕过「人工确认」这条链路。
-     */
-    SCALE_EVENT_ITEM_NOT_STANDARD(41132, "该明细不是标准品，不能一键分拣，请人工录入"),
-
     /** 读数未标记为稳定：不稳定读数不能作为分拣结果。 */
     SCALE_EVENT_NOT_STABLE(41133, "读数未稳定，请等待稳定后再接受"),
 
