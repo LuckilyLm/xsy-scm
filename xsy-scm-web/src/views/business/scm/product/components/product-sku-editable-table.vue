@@ -1,6 +1,6 @@
 <template>
   <div class="sku-editor">
-    <div v-for="(sku, index) in modelValue" :key="sku.skuId ?? `new-${index}`" class="scm-form-section scm-form-section--nested sku-card">
+    <div v-for="(sku, index) in modelValue" :key="sku.skuId ?? `new-${index}`" class="sku-card">
       <div class="sku-card__head">
         <a-radio :checked="sku.defaultFlag" :aria-label="`将第 ${index + 1} 个商品规格设为默认商品规格`"
                  @change="makeDefault(index)">默认</a-radio>
@@ -14,57 +14,57 @@
           </a-button>
         </a-popconfirm>
       </div>
-      <a-row :gutter="16">
-        <a-col :xs="24" :sm="12">
+      <div class="sku-fields">
+        <div class="sku-field-cell">
           <a-form-item label="商品规格" required class="sku-field">
             <a-input v-model:value="sku.specName" :maxlength="150" :aria-label="`第 ${index + 1} 个商品规格名称`"/>
           </a-form-item>
-        </a-col>
-        <a-col :xs="24" :sm="12">
+        </div>
+        <div class="sku-field-cell">
           <a-form-item label="单位" required class="sku-field">
             <a-select v-model:value="sku.saleUnit" :options="unitOptions" show-search option-filter-prop="label"
                       placeholder="选择单位" :aria-label="`第 ${index + 1} 个商品规格的单位`"/>
           </a-form-item>
-        </a-col>
-        <a-col :xs="24" :sm="12">
+        </div>
+        <div class="sku-field-cell">
           <a-form-item label="市场价" required class="sku-field">
             <a-input-number :value="sku.marketPrice" string-mode :min="0" step="0.0001" :controls="false"
                             addon-before="¥" style="width: 100%" :aria-label="`第 ${index + 1} 个商品规格的市场价`"
                             @update:value="sku.marketPrice = $event === null ? '' : String($event)"/>
           </a-form-item>
-        </a-col>
-        <a-col :xs="24" :sm="12">
+        </div>
+        <div class="sku-field-cell">
           <a-form-item :label="`商城起订量（${sku.saleUnit || '销售单位'}）`" required class="sku-field">
             <a-input-number :value="sku.mallMinQuantity" string-mode :min="'0.0001'" step="0.0001"
                             :precision="4" :controls="false" style="width: 100%"
                             @update:value="sku.mallMinQuantity = $event === null ? '' : String($event)"/>
           </a-form-item>
-        </a-col>
-        <a-col :xs="24" :sm="12">
+        </div>
+        <div class="sku-field-cell">
           <a-form-item :label="`商城递增量（${sku.saleUnit || '销售单位'}）`" required class="sku-field">
             <a-input-number :value="sku.mallQuantityStep" string-mode :min="'0.0001'" step="0.0001"
                             :precision="4" :controls="false" style="width: 100%"
                             @update:value="sku.mallQuantityStep = $event === null ? '' : String($event)"/>
           </a-form-item>
-        </a-col>
-        <a-col :xs="24" :sm="12">
+        </div>
+        <div class="sku-field-cell">
           <a-form-item label="类型" class="sku-field">
             <a-select v-model:value="sku.productType" :options="PRODUCT_TYPE_ENUM"
                       :aria-label="`第 ${index + 1} 个商品规格的类型`"/>
           </a-form-item>
-        </a-col>
-        <a-col :xs="24" :sm="12">
+        </div>
+        <div class="sku-field-cell">
           <a-form-item label="条码" class="sku-field">
             <a-input v-model:value="sku.barcode" :maxlength="64" :aria-label="`第 ${index + 1} 个商品规格的条码`"/>
           </a-form-item>
-        </a-col>
-        <a-col :xs="24" :sm="12">
+        </div>
+        <div class="sku-field-cell">
           <a-form-item label="状态" class="sku-field">
             <a-select v-model:value="sku.status" :options="SHELF_STATUS_ENUM"
                       :aria-label="`第 ${index + 1} 个商品规格的状态`"/>
           </a-form-item>
-        </a-col>
-        <a-col :span="24">
+        </div>
+        <div class="sku-field-cell sku-field-cell--wide">
           <a-form-item label="规格值" class="sku-field">
             <div v-for="([key, value], pairIndex) in Object.entries(sku.specValues)" :key="pairIndex"
                  class="spec-pair">
@@ -83,8 +83,8 @@
               添加规格项
             </a-button>
           </a-form-item>
-        </a-col>
-      </a-row>
+        </div>
+      </div>
     </div>
     <a-button class="scm-btn-secondary scm-btn-add-row" block
               @click="emit('update:modelValue', [...modelValue, emptySku(modelValue.length)])">
@@ -133,13 +133,47 @@ function renameKey(sku: ProductSku, previous: string, key: string) {
 }
 </script>
 <style scoped>
+.sku-card {
+  padding: 12px 0 16px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--scm-border);
+}
+
+.sku-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.sku-field-cell {
+  min-width: 0;
+}
+
+.sku-field-cell--wide {
+  grid-column: 1 / -1;
+}
+
+.sku-fields :deep(.ant-form-item) {
+  margin-bottom: 0;
+}
+
+@container (max-width: 680px) {
+  .sku-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 480px) {
+  .sku-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .sku-card__head {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-bottom: 12px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--scm-border, #f0f0f0);
+  margin-bottom: 12px;
 }
 
 .sku-card__title {
@@ -166,6 +200,10 @@ function renameKey(sku: ProductSku, previous: string, key: string) {
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.spec-pair :deep(.ant-input) {
+  min-width: 0;
 }
 
 .spec-pair__remove {

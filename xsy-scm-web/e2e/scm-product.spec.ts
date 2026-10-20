@@ -119,6 +119,7 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await selectBox(category).locator('input').fill(prefix + '三级');
   await page.locator(`.ant-select-dropdown:visible .ant-select-tree-title:text-is("${prefix}三级")`).click();
   // PCO-1 主档扩展：助记码由运营自维护，储存方式与标签一起进入同一个抽屉
+  await drawer.getByRole('button', { name: '商品属性与简介', exact: true }).click();
   await drawer.getByLabel('助记码', { exact: true }).fill(prefix + 'PG');
   await pick(page, drawer.getByLabel('储存方式', { exact: true }), '冷藏');
   await pick(page, drawer.getByLabel('第 1 个商品规格的单位', { exact: true }), 'kg');
@@ -126,6 +127,7 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await drawer.getByText('新增商品规格', { exact: true }).click();
   await pick(page, drawer.getByLabel('第 2 个商品规格的单位', { exact: true }), 'kg');
   await drawer.getByLabel('第 2 个商品规格名称', { exact: true }).fill('小果'); await drawer.getByLabel('第 2 个商品规格的条码', { exact: true }).fill(prefix + 'BAR');
+  await drawer.getByRole('button', { name: /^商品图片（/ }).click();
   await drawer.locator('input[type=file]').setInputFiles({ name: 'pilot.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=', 'base64') });
   await expect(drawer.getByText('主图', { exact: true })).toBeVisible();
   const created = page.waitForResponse(r => r.url().endsWith('/scm/product/add'));
