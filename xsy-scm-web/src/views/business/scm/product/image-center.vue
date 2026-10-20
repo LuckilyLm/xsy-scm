@@ -91,9 +91,6 @@
           <ScmFieldHelp label="未绑定图片" text="已上传到公开图片目录、但还没挂到任何商品的图片。先选中左侧商品，再把它拖到右边，或点「绑到当前商品」。"/>
         </span>
       </template>
-      <template #extra>
-        <a-button size="small" :loading="poolLoading" @click="loadPool">刷新</a-button>
-      </template>
       <a-alert v-if="poolError" :message="poolError" type="error" show-icon class="gap"/>
       <a-spin :spinning="poolLoading">
         <a-empty v-if="!pool.length" description="没有待绑定的图片"/>

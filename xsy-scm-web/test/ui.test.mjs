@@ -788,12 +788,13 @@ import ts from 'typescript';
     assert.equal(tableColumnsWidth([{width: '50%'}]), 0);
   });
 
-  test('saved user widths persist until the user explicitly chooses recommended widths', () => {
+  test('saved user widths persist; 列设置不再提供「系统推荐列宽」一键覆盖', () => {
     const merged = mergeColumn([{title: '金额', dataIndex: 'amount', width: 136}],
         [{columnKey: 'amount', sort: 1, showFlag: true, width: 180}]);
     assert.equal(merged.newColumns[0].width, 180);
-    assert.match(COLUMN_MODAL, /使用系统推荐列宽/);
-    assert.match(COLUMN_MODAL, /recommendedColumns\.map/);
+    // 用户调过的宽度就是最终宽度：不再有「用系统推荐值覆盖我」的入口
+    assert.doesNotMatch(COLUMN_MODAL, /使用系统推荐列宽/);
+    assert.doesNotMatch(COLUMN_MODAL, /recommendedColumns/);
   });
 
   test('商品表格铺满内容区，但只让仍在使用默认宽度的文本列吸收宽屏额外空间', () => {
@@ -1588,8 +1589,11 @@ import ts from 'typescript';
         '配置迁移逻辑被改动，本断言的前提失效，请重新核对',
     );
     const configStore = code('../src/store/modules/system/app-config.ts');
-    assert.match(configStore, /cached\.configVersion === 3[\s\S]{0,350}sideMenuWidth:\s*appDefaultConfig\.sideMenuWidth/,
-        '版本 3 → 4 应迁移侧栏宽度并保留其他缓存偏好');
+    // 迁移表按版本列出「默认值改过的键」，只重置这些键；其余保留用户缓存。
+    assert.match(configStore, /CONFIG_MIGRATIONS[\s\S]{0,300}sideMenuWidth/,
+        '版本迁移表应包含侧栏宽度，否则改了默认值也不会生效');
+    assert.match(configStore, /\.\.\.appDefaultConfig,\s*\.\.\.cached/,
+        '迁移必须在默认值之上覆盖用户缓存，保留用户其他界面偏好');
   });
 
   test('传统侧栏使用组件库的实心倒三角，右侧垂直居中，展开式侧栏仍隐藏自带折角', () => {

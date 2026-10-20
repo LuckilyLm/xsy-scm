@@ -20,7 +20,6 @@
         </p>
       </div>
       <div class="scm-detail-header__actions">
-        <a-button :loading="loading" @click="load">刷新</a-button>
         <a-button v-if="order && canPrint" @click="printOpen = true">打印订单</a-button>
         <a-button v-if="order && canOperate" type="primary" @click="operation?.open(order.orderId!)">订单操作</a-button>
       </div>

@@ -94,7 +94,7 @@
                      :title="priceRange(record.minMarketPrice, record.maxMarketPrice)">
             <span class="scm-money">{{ priceRange(record.minMarketPrice, record.maxMarketPrice) }}</span>
           </a-tooltip>
-          <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ON_SHELF' ? 'green' : 'default'">
+          <a-tag v-else-if="column.dataIndex === 'status'" :color="shelfStatusColor(record.status)">
             {{ record.status === 'ON_SHELF' ? '上架' : '下架' }}
           </a-tag>
           <a-tag v-else-if="column.dataIndex === 'masterStatus'" :color="MASTER_STATUS_COLOR[record.masterStatus]">
@@ -160,6 +160,7 @@ import {
   priceRange,
   PRODUCT_TYPE_ENUM,
   SHELF_STATUS_ENUM,
+  shelfStatusColor,
   STORAGE_METHOD_ENUM,
   YES_NO_ENUM
 } from '/@/constants/business/scm/product-const';

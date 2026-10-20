@@ -7,9 +7,8 @@
       <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
     </a-row>
   </a-form>
-  <a-row class="smart-table-btn-block" justify="space-between">
+  <a-row class="smart-table-btn-block">
     <a-button v-privilege="'scm:product:tag:add'" type="primary" @click="modal?.open()">新增标签</a-button>
-    <a-button :loading="loading" @click="load">刷新</a-button>
   </a-row>
   <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10">
     <template #action>

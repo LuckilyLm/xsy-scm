@@ -69,12 +69,14 @@
     </div>
 
     <template #footer>
-      <a-button key="back" @click="hide">取消</a-button>
-      <a-button v-if="tableId" key="recommended" :loading="submitLoading" @click="useRecommendedWidths">使用系统推荐列宽</a-button>
-      <a-button v-if="tableId" key="submit" type="primary" :loading="submitLoading" @click="save">保存</a-button>
-      <a-button v-if="tableId" key="back" :loading="submitLoading" @click="reset" danger style="margin-left: 20px">
-        恢复默认
-      </a-button>
+      <!-- 破坏性操作放最左，确认类按钮靠右：避免「恢复默认」和「保存」挨着被误点 -->
+      <div class="smart-table-column-footer">
+        <a-button v-if="tableId" key="reset" class="smart-table-column-footer__reset"
+                  :loading="submitLoading" @click="reset" danger>恢复默认
+        </a-button>
+        <a-button key="back" @click="hide">取消</a-button>
+        <a-button v-if="tableId" key="submit" type="primary" :loading="submitLoading" @click="save">保存</a-button>
+      </div>
     </template>
   </a-modal>
 </template>
@@ -95,24 +97,14 @@ defineExpose({show});
 
 // ---------------- 显示 / 隐藏 --------------------
 let tableId = null;
-let recommendedColumns: Array<{dataIndex?: unknown; width?: number | string}> = [];
 const visible = ref(false);
 
 //显示
-function show(columns, showTableId, defaults: typeof recommendedColumns) {
+function show(columns, showTableId) {
   tableId = showTableId;
-  recommendedColumns = _.cloneDeep(defaults);
   visible.value = true;
   selectedRowKeyList.value = [];
   getUserTableColumns(tableId, _.cloneDeep(columns));
-}
-
-function useRecommendedWidths() {
-  const widths = new Map(recommendedColumns.map((column) => [column.dataIndex, column.width]));
-  for (const column of tableData.value as typeof recommendedColumns) {
-    if (widths.has(column.dataIndex)) column.width = widths.get(column.dataIndex);
-  }
-  message.info('已采用系统推荐列宽；保存后生效，列顺序和显隐保持当前设置');
 }
 
 //隐藏
@@ -313,6 +305,18 @@ async function save(closeFlag = true) {
 }
 </script>
 <style scoped lang="less">
+.smart-table-column-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* 恢复默认推到最左；没有它时（无 tableId）其余按钮自然靠右 */
+.smart-table-column-footer__reset {
+  margin-right: auto;
+}
+
 .column-row:hover {
   background-color: red !important;
 }

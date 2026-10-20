@@ -13,7 +13,7 @@
         <a-descriptions-item label="商品编码">{{ product.spuCode }}</a-descriptions-item>
         <a-descriptions-item label="分类">{{ product.categoryPath }}</a-descriptions-item>
         <a-descriptions-item label="在售状态">
-          <a-tag :color="product.status === 'ON_SHELF' ? 'green' : 'default'">
+          <a-tag :color="shelfStatusColor(product.status)">
             {{ product.status === 'ON_SHELF' ? '上架' : '下架' }}
           </a-tag>
         </a-descriptions-item>
@@ -98,6 +98,7 @@ import {
   MASTER_STATUS_COLOR,
   MASTER_STATUS_ENUM,
   priceRange,
+  shelfStatusColor,
   STORAGE_METHOD_ENUM
 } from '/@/constants/business/scm/product-const';
 import SkuTable from './components/product-sku-table.vue';

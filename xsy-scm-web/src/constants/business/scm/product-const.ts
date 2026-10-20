@@ -1,4 +1,12 @@
 export const SHELF_STATUS_ENUM = [{value: 'ON_SHELF', label: '上架'}, {value: 'OFF_SHELF', label: '下架'}];
+/**
+ * 在售状态配色：上架=可售（绿），下架=停售（红）。
+ *
+ * 原来下架用 antd 的 default，渲染出来就是近黑文字 + 极浅底，跟普通文本没区别，
+ * 一列「上架」里夹着一个「下架」看不出来。红绿对比是一眼能记住的一组。
+ */
+export const SHELF_STATUS_COLOR: Record<string, string> = {ON_SHELF: 'green', OFF_SHELF: 'red'};
+export const shelfStatusColor = (value?: string | null): string => SHELF_STATUS_COLOR[value ?? ''] ?? 'default';
 export const PRODUCT_TYPE_ENUM = [{value: 'STANDARD', label: '标品'}, {value: 'NON_STANDARD', label: '非标品'}];
 export const ENABLE_STATUS_ENUM = [{value: 'ENABLED', label: '启用'}, {value: 'DISABLED', label: '停用'}];
 /** 主档生命周期：与「是否在售」正交，DISABLED 只停止新引用，不改动在售状态。 */

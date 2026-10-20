@@ -24,9 +24,6 @@
       <div class="smart-table-operate-block">
         <span>未分配的商城订单</span>
       </div>
-      <div class="smart-table-setting-block">
-        <a-button @click="load">刷新</a-button>
-      </div>
     </a-row>
     <a-table size="small" :data-source="rows" :columns="columns" row-key="orderId" bordered
              :loading="loading" :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">

@@ -9,7 +9,7 @@ export const appDefaultConfig: Omit<AppConfig, 'fullScreenFlag'> = {
     // 已有浏览器里 localStorage 缓存的旧配置会被自动迁移到新默认值，
     // 否则老用户永远停留在旧样式上（详见 store/modules/system/app-config.ts）。
     // 6：侧栏宽度 208 → 168、主题色改极光绿、标签页位置改顶部、默认隐藏水印与帮助文档。
-    configVersion: 6,
+    configVersion: 7,
     // i18n 语言选择
     language: 'zh_CN',
     // 布局: side 或者 side-expand 或者 top
@@ -37,8 +37,9 @@ export const appDefaultConfig: Omit<AppConfig, 'fullScreenFlag'> = {
     pageTagStyle: 'default',
     // 面包屑
     breadCrumbFlag: true,
-    // 页脚
-    footerFlag: true,
+    // 页脚：默认关闭。页脚只放版权与备案号，占掉一行高度却每页都在，
+    // 需要的人可以在「界面设置」里打开。
+    footerFlag: false,
     // 帮助文档
     helpDocFlag: false,
     // 帮助文档默认展开

@@ -1,8 +1,7 @@
 <template>
   <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block" justify="space-between">
+    <a-row class="smart-table-btn-block">
       <a-button v-privilege="'scm:product:category:add'" type="primary" @click="modal?.open()">新增分类</a-button>
-      <a-button :loading="loading" @click="load">刷新</a-button>
     </a-row>
     <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10">
       <template #action>

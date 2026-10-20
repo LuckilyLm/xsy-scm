@@ -9,7 +9,6 @@
                   @confirm="removeSelected">
       <a-button size="small" danger :disabled="!selectedId || loading">删除方案</a-button>
     </a-popconfirm>
-    <a-button size="small" :loading="loading" @click="reload">刷新</a-button>
     <a-typography-text type="secondary">只保存组合条件，不保存日期、数据或其他筛选条件</a-typography-text>
   </a-space>
   <a-modal :open="saveOpen" title="保存个人筛选方案" :confirm-loading="saving"

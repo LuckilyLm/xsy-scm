@@ -179,7 +179,7 @@ function exitElementFullscreen(element) {
 const smartTableColumnModal = ref();
 
 function showModal() {
-  smartTableColumnModal.value.show(newColumn, props.tableId, originalColumn);
+  smartTableColumnModal.value.show(newColumn, props.tableId);
 }
 
 // 将弹窗修改的列数据，赋值给原表格 列数组

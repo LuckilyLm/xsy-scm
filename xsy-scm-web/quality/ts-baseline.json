@@ -2112,7 +2112,7 @@
       "line": 102,
       "column": 52,
       "code": "TS2339",
-      "message": "Property 'length' does not exist on type 'string | number | unknown[] | Record<string, any>'. / Property 'length' does not exist on type 'number'."
+      "message": "Property 'length' does not exist on type 'string | number | Record<string, any> | unknown[]'. / Property 'length' does not exist on type 'number'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
@@ -2126,7 +2126,7 @@
       "line": 102,
       "column": 79,
       "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | number | unknown[] | Record<string, any>'. / Property '0' does not exist on type 'string | number | unknown[] | Record<string, any>'."
+      "message": "Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | number | Record<string, any> | unknown[]'. / Property '0' does not exist on type 'string | number | Record<string, any> | unknown[]'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
@@ -2140,7 +2140,7 @@
       "line": 102,
       "column": 109,
       "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'string | number | unknown[] | Record<string, any>'. / Property '1' does not exist on type 'string | number | unknown[] | Record<string, any>'."
+      "message": "Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'string | number | Record<string, any> | unknown[]'. / Property '1' does not exist on type 'string | number | Record<string, any> | unknown[]'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
@@ -2161,7 +2161,7 @@
       "line": 103,
       "column": 42,
       "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | number | unknown[] | Record<string, any>'. / Property '0' does not exist on type 'string | number | unknown[] | Record<string, any>'."
+      "message": "Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | number | Record<string, any> | unknown[]'. / Property '0' does not exist on type 'string | number | Record<string, any> | unknown[]'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
@@ -2182,14 +2182,14 @@
       "line": 103,
       "column": 65,
       "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'string | number | unknown[] | Record<string, any>'. / Property '1' does not exist on type 'string | number | unknown[] | Record<string, any>'."
+      "message": "Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'string | number | Record<string, any> | unknown[]'. / Property '1' does not exist on type 'string | number | Record<string, any> | unknown[]'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
       "line": 108,
       "column": 9,
       "code": "TS2322",
-      "message": "Type 'string | number | unknown[] | Record<string, any> | undefined' is not assignable to type 'undefined'. / Type 'string' is not assignable to type 'undefined'."
+      "message": "Type 'string | number | Record<string, any> | unknown[] | undefined' is not assignable to type 'undefined'. / Type 'string' is not assignable to type 'undefined'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
@@ -2238,7 +2238,7 @@
       "line": 152,
       "column": 48,
       "code": "TS2339",
-      "message": "Property 'length' does not exist on type 'string | number | unknown[] | Record<string, any>'. / Property 'length' does not exist on type 'number'."
+      "message": "Property 'length' does not exist on type 'string | number | Record<string, any> | unknown[]'. / Property 'length' does not exist on type 'number'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
@@ -2252,7 +2252,7 @@
       "line": 152,
       "column": 75,
       "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | number | unknown[] | Record<string, any>'. / Property '0' does not exist on type 'string | number | unknown[] | Record<string, any>'."
+      "message": "Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | number | Record<string, any> | unknown[]'. / Property '0' does not exist on type 'string | number | Record<string, any> | unknown[]'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
@@ -2266,7 +2266,7 @@
       "line": 152,
       "column": 105,
       "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'string | number | unknown[] | Record<string, any>'. / Property '1' does not exist on type 'string | number | unknown[] | Record<string, any>'."
+      "message": "Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'string | number | Record<string, any> | unknown[]'. / Property '1' does not exist on type 'string | number | Record<string, any> | unknown[]'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
@@ -2287,7 +2287,7 @@
       "line": 153,
       "column": 38,
       "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | number | unknown[] | Record<string, any>'. / Property '0' does not exist on type 'string | number | unknown[] | Record<string, any>'."
+      "message": "Element implicitly has an 'any' type because expression of type '0' can't be used to index type 'string | number | Record<string, any> | unknown[]'. / Property '0' does not exist on type 'string | number | Record<string, any> | unknown[]'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
@@ -2308,14 +2308,14 @@
       "line": 153,
       "column": 61,
       "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'string | number | unknown[] | Record<string, any>'. / Property '1' does not exist on type 'string | number | unknown[] | Record<string, any>'."
+      "message": "Element implicitly has an 'any' type because expression of type '1' can't be used to index type 'string | number | Record<string, any> | unknown[]'. / Property '1' does not exist on type 'string | number | Record<string, any> | unknown[]'."
     },
     {
       "file": "src/components/support/table-header-cell/index.vue",
       "line": 158,
       "column": 5,
       "code": "TS2322",
-      "message": "Type 'string | number | unknown[] | Record<string, any> | undefined' is not assignable to type 'undefined'. / Type 'string' is not assignable to type 'undefined'."
+      "message": "Type 'string | number | Record<string, any> | unknown[] | undefined' is not assignable to type 'undefined'. / Type 'string' is not assignable to type 'undefined'."
     },
     {
       "file": "src/components/support/table-operator/index.vue",
@@ -2515,203 +2515,203 @@
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 85,
+      "line": 87,
       "column": 15,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'lodash'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/lodash` if it exists or add a new declaration (.d.ts) file containing `declare module 'lodash';`"
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 86,
+      "line": 88,
       "column": 22,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'sortablejs'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/sortablejs` if it exists or add a new declaration (.d.ts) file containing `declare module 'sortablejs';`"
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 97,
+      "line": 99,
       "column": 5,
       "code": "TS7034",
       "message": "Variable 'tableId' implicitly has type 'any' in some locations where its type cannot be determined."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 102,
+      "line": 103,
       "column": 15,
       "code": "TS7006",
       "message": "Parameter 'columns' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 102,
+      "line": 103,
       "column": 24,
       "code": "TS7006",
       "message": "Parameter 'showTableId' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 126,
+      "line": 118,
       "column": 36,
       "code": "TS7006",
       "message": "Parameter 'tableId' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 126,
+      "line": 118,
       "column": 45,
       "code": "TS7006",
       "message": "Parameter 'columns' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 153,
+      "line": 145,
       "column": 14,
       "code": "TS2339",
       "message": "Property 'showFlag' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 154,
+      "line": 146,
       "column": 37,
       "code": "TS2345",
       "message": "Argument of type 'any' is not assignable to parameter of type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 154,
+      "line": 146,
       "column": 42,
       "code": "TS2339",
       "message": "Property 'columnKey' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 197,
+      "line": 189,
       "column": 12,
       "code": "TS7031",
       "message": "Binding element 'newIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 197,
+      "line": 189,
       "column": 22,
       "code": "TS7031",
       "message": "Binding element 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 207,
+      "line": 199,
       "column": 13,
       "code": "TS7006",
       "message": "Parameter 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 213,
+      "line": 205,
       "column": 33,
       "code": "TS2339",
       "message": "Property 'fixed' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 220,
+      "line": 212,
       "column": 15,
       "code": "TS7006",
       "message": "Parameter 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 227,
+      "line": 219,
       "column": 33,
       "code": "TS2339",
       "message": "Property 'fixed' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 235,
+      "line": 227,
       "column": 24,
       "code": "TS7006",
       "message": "Parameter 'oldIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 235,
+      "line": 227,
       "column": 34,
       "code": "TS7006",
       "message": "Parameter 'newIndex' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 243,
+      "line": 235,
       "column": 25,
       "code": "TS7006",
       "message": "Parameter 'keyArray' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 261,
+      "line": 253,
       "column": 46,
       "code": "TS7005",
       "message": "Variable 'tableId' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 286,
+      "line": 278,
       "column": 25,
       "code": "TS2339",
       "message": "Property 'columnKey' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 289,
+      "line": 281,
       "column": 16,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 290,
+      "line": 282,
       "column": 16,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type '{ columnKey: any; sort: number; }'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 290,
+      "line": 282,
       "column": 29,
       "code": "TS2339",
       "message": "Property 'width' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 292,
+      "line": 284,
       "column": 14,
       "code": "TS2339",
       "message": "Property 'showFlag' does not exist on type '{ columnKey: any; sort: number; }'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 292,
+      "line": 284,
       "column": 58,
       "code": "TS2345",
       "message": "Argument of type 'any' is not assignable to parameter of type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 292,
+      "line": 284,
       "column": 63,
       "code": "TS2339",
       "message": "Property 'columnKey' does not exist on type 'never'."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 296,
+      "line": 288,
       "column": 40,
       "code": "TS7006",
       "message": "Parameter 'e' implicitly has an 'any' type."
     },
     {
       "file": "src/components/support/table-operator/smart-table-column-modal.vue",
-      "line": 299,
+      "line": 291,
       "column": 7,
       "code": "TS7005",
       "message": "Variable 'tableId' implicitly has an 'any' type."

@@ -3,7 +3,7 @@
     <template #bodyCell="{ column, record }">
       <span v-if="column.dataIndex === 'marketPrice'"
             class="price">{{ record.marketPrice === null ? '未定价' : `¥ ${record.marketPrice}` }}</span>
-      <a-tag v-else-if="column.dataIndex === 'status'" :color="record.status === 'ON_SHELF' ? 'green' : 'default'">
+      <a-tag v-else-if="column.dataIndex === 'status'" :color="shelfStatusColor(record.status)">
         {{ record.status === 'ON_SHELF' ? '上架' : '下架' }}
       </a-tag>
       <a-tag v-else-if="column.dataIndex === 'defaultFlag' && record.defaultFlag" color="green">默认</a-tag>
@@ -20,6 +20,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {TableColumnsType} from 'ant-design-vue';
 import type {ProductSku} from '/@/types/business/scm/product';
+import {shelfStatusColor} from '/@/constants/business/scm/product-const';
 
 defineProps<{ rows: ProductSku[] }>();
 const columns: TableColumnsType<ProductSku> = [
