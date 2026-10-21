@@ -14,7 +14,7 @@ public enum LoginDeviceEnum implements BaseEnum {
 
     APPLE(3, "苹果"),
 
-    H5(4, "H5"),
+    H5(4, "H5 网页"),
 
     WEIXIN_MP(5, "微信小程序");
 
