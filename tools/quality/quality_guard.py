@@ -536,6 +536,63 @@ def print_migration_progress() -> None:
         print(f"  {source_set:5s} {side:7s} {count:5d}")
 
 
+ENUM_CONST_LINE_RE = re.compile(r"^\s{4}([A-Z][A-Z0-9_]*)\s*[(,;]")
+CJK_RE = re.compile(r"[\u4e00-\u9fff]")
+
+
+def enum_chinese_desc_findings(sources: list[JavaSource]) -> list[Finding]:
+    """业务枚举的每个常量都必须带中文字符串。
+
+    页面、导出、打印都直接取枚举中文；缺了只能露出 NORMAL / ON_SHELF 这类内部取值，
+    而让每个调用点各写一份映射迟早漂移。按常量粒度记账，补一个降一条。
+    """
+    findings: list[Finding] = []
+    for source in sources:
+        if not source.path.name.endswith("Enum.java"):
+            continue
+        findings.extend(enum_missing_labels(source.path, source.relative_path))
+    return findings
+
+
+def enum_missing_labels(path: Path, relative_path: str) -> list[Finding]:
+    """一个枚举文件里所有缺中文的常量。
+
+    逐行累积「常量块」而不是只匹配 ``NAME("中文")``：``ADMIN(1, "员工")`` 这种
+    带序号的构造同样是合规写法，用单正则会把它们全部误判成缺失。
+    """
+    findings: list[Finding] = []
+    lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    current: str | None = None
+    start_line = 0
+    block: list[str] = []
+
+    def flush() -> None:
+        nonlocal current
+        if current is not None and not any(CJK_RE.search(item) for item in block):
+            findings.append(
+                Finding(
+                    "enum-chinese-desc",
+                    relative_path,
+                    current,
+                    f"枚举常量 {current} 缺少中文说明",
+                    start_line,
+                )
+            )
+        current = None
+
+    for index, line in enumerate(lines, start=1):
+        match = ENUM_CONST_LINE_RE.match(line)
+        if match:
+            flush()
+            current = match.group(1)
+            start_line = index
+            block = [line]
+        elif current is not None:
+            block.append(line)
+    flush()
+    return findings
+
+
 def checkstyle_findings(result_file: Path) -> list[Finding]:
     """Fold a ``checkstyle-result.xml`` into one aggregate finding per file and check.
 
@@ -621,6 +678,15 @@ FAMILIES: tuple[RuleFamily, ...] = (
         "以及 readiness 的 domain-completeness。",
     ),
     RuleFamily(
+        "enum-chinese-desc",
+        "业务枚举缺中文说明",
+        "SCM 生产代码（com/xsy/scm）下的 *Enum.java",
+        "枚举每个常量所在的声明块内必须出现中文字符串，例如 NORMAL(\"正常\") 或 "
+        "ADMIN(1, \"员工\")；整块不含中文即记一条。页面、导出与打印都直接取枚举中文，"
+        "缺了只能露出 NORMAL / ON_SHELF 这类内部取值，而让每个调用点各写一份映射迟早漂移。"
+        "按常量粒度记账：补一个降一条，新增无中文的枚举常量立即成为 NEW DEFECT。",
+    ),
+    RuleFamily(
         "checkstyle",
         "Checkstyle 违规",
         "由 mvn -N checkstyle:check 产出的 target/checkstyle-result.xml",
@@ -660,6 +726,7 @@ def collect(checkstyle_result: Path | None) -> Scan:
         findings.extend(raw_permission_literals(source))
         findings.extend(stage_comments(source))
     findings.extend(legacy_package_files())
+    findings.extend(enum_chinese_desc_findings(main_sources))
     scanned = set(PYTHON_FAMILIES)
 
     if checkstyle_result is not None:
