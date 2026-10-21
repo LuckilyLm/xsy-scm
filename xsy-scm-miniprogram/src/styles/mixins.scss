@@ -75,13 +75,18 @@
 
 /* 固定底部操作条 */
 @mixin fixed-bottom-bar {
+  /*
+   * hairline-top 会写入 position: relative（供 ::before 定位用），
+   * 必须放在 position: fixed 之前，否则会把固定定位覆盖掉，
+   * 底栏变成跟随内容滚动的普通块。
+   */
+  @include hairline-top;
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: $z-index-fixed-bar;
   background-color: $color-bg-card;
-  @include hairline-top;
   @include safe-area-bottom;
 }
 
@@ -100,4 +105,77 @@
     transform: scaleY(0.5);
     transform-origin: 0 0;
   }
+}
+
+/* ============================ 响应式 ============================ */
+/*
+ * 手机端断点。断点值只在 tokens.scss 维护，这里只提供使用方式：
+ *   @include screen-compact { ... }   320–359px
+ *   @include screen-wide    { ... }   ≥414px
+ *
+ * 判断标准是「这一行在 320px 下会不会挤」：会挤才加断点。
+ * 纯粹按屏宽放大的 rpx 尺寸不需要断点。
+ */
+@mixin screen-compact {
+  @media (max-width: #{$bp-compact - 0.02px}) {
+    @content;
+  }
+}
+
+@mixin screen-wide {
+  @media (min-width: $bp-wide) {
+    @content;
+  }
+}
+
+/*
+ * 横屏（含 H5 手机横屏、平板横屏）。
+ * 固定视口高度的两栏页在横屏下会把内容压成一条缝，需要用这个断点改成整页滚动。
+ */
+@mixin screen-landscape {
+  @media (orientation: landscape) and (max-height: 520px) {
+    @content;
+  }
+}
+
+/*
+ * 视口高度。
+ *
+ * H5 手机浏览器的地址栏收起/展开会改变可视高度，100vh 取的是「最大可视高度」，
+ * 于是底部固定条会被地址栏顶出屏幕，页面还会多出一段可滚动的空白。
+ * 先写 100vh 兜底，再用 dvh 跟随真实可视区；不支持 dvh 的内核会忽略第二行。
+ */
+@mixin viewport-min-height {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+@mixin viewport-height {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/*
+ * 底部固定条下方的内容留白。
+ *
+ * 固定条自身高度用 rpx 表达（随屏宽缩放），安全区用 px 表达（不缩放），
+ * 两者单位不同，只能相加，不能用一个固定 rpx 值糊过去。
+ */
+@mixin content-clear-bottom($bar-height, $extra: 0px) {
+  padding-bottom: calc(#{$bar-height} + #{$extra} + constant(safe-area-inset-bottom));
+  padding-bottom: calc(#{$bar-height} + #{$extra} + env(safe-area-inset-bottom));
+}
+
+/*
+ * 触控反馈。
+ *
+ * 小程序没有 :active 伪类，按压态靠 view 的 hover-class 实现；
+ * H5 两种都支持。这里只声明过渡，按压视觉由 global.scss 的
+ * .xsy-press--active 统一提供，避免每页各写一套。
+ */
+@mixin pressable {
+  transition:
+    opacity 0.12s ease,
+    background-color 0.12s ease,
+    transform 0.12s ease;
 }

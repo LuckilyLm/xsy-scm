@@ -29,9 +29,9 @@ $color-primary-disabled: #a7d8b9;
 /* ============================ 语义色 ============================ */
 $color-success: #16a34a;
 $color-success-light: #e8f5ec;
-$color-warning: #f59e0b;
+$color-warning: #b45309;
 $color-warning-light: #fef6e7;
-$color-danger: #e5484d;
+$color-danger: #d92d20;
 $color-danger-light: #fdeced;
 $color-info: #3b82f6;
 $color-info-light: #eaf2fe;
@@ -39,7 +39,7 @@ $color-info-light: #eaf2fe;
 /* ============================ 文字色 ============================ */
 $color-text-primary: #1f2329;
 $color-text-secondary: #646a73;
-$color-text-tertiary: #8f959e;
+$color-text-tertiary: #667085;
 $color-text-placeholder: #bbbfc4;
 $color-text-inverse: #ffffff;
 $color-text-link: $color-primary;
@@ -86,3 +86,20 @@ $font-weight-bold: 600;
 $z-index-sticky: 10;
 $z-index-fixed-bar: 20;
 $z-index-popup: 100;
+
+/* ============================ 断点（只覆盖手机） ============================ */
+/*
+ * 本项目同时跑微信小程序与 H5 手机浏览器，不面向桌面端：
+ *   compact  320–359px  iPhone SE / 小屏安卓
+ *   default  360–413px  主流机型（360 / 375 / 390 / 393）
+ *   wide     ≥414px     Plus / Max / 大屏安卓
+ *
+ * 只在「rpx 缩放后仍会挤压」的地方用断点（文字、按钮、双栏比例），
+ * 纯 rpx 尺寸本身会随屏宽等比缩放，不需要重复声明。
+ * 用法见 mixins.scss 的 screen-compact / screen-wide。
+ */
+$bp-compact: 360px;
+$bp-wide: 414px;
+
+/* 触控目标最小边长：低于这个值的可点区域在手机上容易点错 */
+$tap-min: 44px;

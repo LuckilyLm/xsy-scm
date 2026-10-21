@@ -36,6 +36,7 @@ export const useMallThemeStore = defineStore('mall-theme', {
       return {
         '--mall-primary': theme.primary,
         '--mall-primary-dark': theme.dark,
+        '--mall-primary-ink': theme.ink,
         '--mall-primary-light': theme.light,
         '--mall-primary-disabled': theme.disabled,
       };

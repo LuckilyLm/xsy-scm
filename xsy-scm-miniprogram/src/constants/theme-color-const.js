@@ -17,14 +17,14 @@ export const COLOR_PRIMARY_DISABLED = '#a7d8b9';
 
 /** 语义色 */
 export const COLOR_SUCCESS = '#16a34a';
-export const COLOR_WARNING = '#f59e0b';
-export const COLOR_DANGER = '#e5484d';
+export const COLOR_WARNING = '#b45309';
+export const COLOR_DANGER = '#d92d20';
 export const COLOR_INFO = '#3b82f6';
 
 /** 文字色 */
 export const COLOR_TEXT_PRIMARY = '#1f2329';
 export const COLOR_TEXT_SECONDARY = '#646a73';
-export const COLOR_TEXT_TERTIARY = '#8f959e';
+export const COLOR_TEXT_TERTIARY = '#667085';
 export const COLOR_TEXT_PLACEHOLDER = '#bbbfc4';
 export const COLOR_TEXT_INVERSE = '#ffffff';
 
@@ -54,9 +54,9 @@ export const MALL_THEME_DEFAULT_CODE = 'FRESH';
 
 /** 已发布可选主题：key 与后台装修的主题编码一一对应 */
 export const MALL_THEMES = {
-  FRESH: { primary: '#16a34a', dark: '#12833c', light: '#e8f5ec', disabled: '#a7d8b9' },
-  WARM: { primary: '#f97316', dark: '#ea580c', light: '#fff1e6', disabled: '#fdba74' },
-  OCEAN: { primary: '#0284c7', dark: '#0369a1', light: '#e6f4fb', disabled: '#8ec7ec' },
+  FRESH: { primary: '#16a34a', dark: '#12833c', ink: '#12833c', light: '#e8f5ec', disabled: '#a7d8b9' },
+  WARM: { primary: '#f97316', dark: '#ea580c', ink: '#c2410c', light: '#fff1e6', disabled: '#fdba74' },
+  OCEAN: { primary: '#0284c7', dark: '#0369a1', ink: '#0369a1', light: '#e6f4fb', disabled: '#8ec7ec' },
 };
 
 /** 未知 / 空值一律回退默认主题，页面不得直接信任服务端返回的 themeCode */

@@ -21,8 +21,36 @@ page {
    */
   --mall-primary: #{$color-primary};
   --mall-primary-dark: #{$color-primary-dark};
+  /* 文字专用主题色：主色当正文只有 3.3:1，这里用深一档保证 4.5:1 */
+  --mall-primary-ink: #{$color-primary-dark};
   --mall-primary-light: #{$color-primary-light};
   --mall-primary-disabled: #{$color-primary-disabled};
+
+  /*
+   * 页面横向节奏：卡片左右内边距、栅格间距随屏宽微调。
+   * 只有「px 值不随屏宽变化、在 320px 下会挤」的地方才消费这两个变量；
+   * rpx 尺寸本身会等比缩放，不需要。
+   */
+  --xsy-page-x: #{$space-4};
+  --xsy-gutter: #{$space-3};
+
+  /* 自绘底部导航的总高度（含安全区）：页面内容与固定底栏都要让开 */
+  --xsy-tabbar-h: calc(100rpx + constant(safe-area-inset-bottom));
+  --xsy-tabbar-h: calc(100rpx + env(safe-area-inset-bottom));
+}
+
+@include screen-compact {
+  page {
+    --xsy-page-x: #{$space-3};
+    --xsy-gutter: #{$space-2};
+  }
+}
+
+@include screen-wide {
+  page {
+    --xsy-page-x: #{$space-5};
+    --xsy-gutter: #{$space-4};
+  }
 }
 
 /* ============================ 工具类 ============================ */
@@ -83,3 +111,92 @@ page {
   @include card;
   margin: $space-3 $space-4;
 }
+
+/* ============================ 触控反馈 ============================ */
+
+/*
+ * 按压态的唯一实现。
+ *
+ * 小程序没有 :active 伪类，可点的 view 要显式写 hover-class；
+ * H5 的 hover-class 由 uni-app 模拟，同一套写法两端都能用。
+ * 统一收在这里，避免每个页面自己发明一套透明度。
+ *
+ * 用法：<view class="btn" hover-class="xsy-press--active" :hover-stay-time="80">
+ */
+.xsy-press--active {
+  opacity: 0.7;
+}
+
+/* 列表项按压：整行变底色，比整体降透明度更轻 */
+.xsy-press-row--active {
+  background-color: $color-bg-hover;
+}
+
+/* 主按钮按压：轻微下沉，给到「按下去了」的物理感 */
+.xsy-press-button--active {
+  opacity: 0.86;
+  transform: scale(0.98);
+}
+
+/* ============================ 图标排布 ============================ */
+
+/*
+ * 「文字 + 右向箭头」的通用排布。
+ *
+ * 以前各处把箭头写成文本字符「›」，字号、基线和颜色都跟着文字走，
+ * 不同页面粗细不一。现在箭头统一用 uni-icons 的 right，这里只负责
+ * 让文字与图标在同一条基线上并保持 2px 间距。
+ */
+.xsy-chevron {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ============================ 安全区 ============================ */
+/* 底部安全区留白：给没有固定条、但内容需要避开 Home 指示条的页面用 */
+.xsy-safe-bottom {
+  @include safe-area-bottom;
+}
+
+/* ============================ 无障碍 ============================ */
+
+/*
+ * 以下两条只对 H5 生效：
+ *   - prefers-reduced-motion 用通配选择器重置动画，而 WXSS 不支持 `*`，
+ *     写进小程序会直接编译失败（app.wxss unexpected token）；
+ *   - 小程序没有键盘焦点，:focus-visible 无意义。
+ */
+/* #ifdef H5 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--mall-primary-ink, #12833c);
+  outline-offset: 2px;
+}
+/* #endif */
+
+/* ============================ 平台修正 ============================ */
+
+/*
+ * H5：手机浏览器点击时默认给一层灰色高亮，和自定义按压态叠在一起很脏。
+ * 小程序没有这个行为，加在全局也不影响。
+ */
+/* #ifdef H5 */
+page {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 禁止双击缩放，避免快速连点按钮时页面被放大 */
+body {
+  touch-action: manipulation;
+}
+/* #endif */
