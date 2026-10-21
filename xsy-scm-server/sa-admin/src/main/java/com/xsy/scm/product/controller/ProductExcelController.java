@@ -9,6 +9,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.product.constant.ProductEnumLabels;
 import com.xsy.scm.product.domain.form.ProductSpuQueryForm;
 import com.xsy.scm.product.domain.vo.ProductExportExcelVO;
 import com.xsy.scm.product.domain.vo.ProductImportResultVO;
@@ -45,32 +46,15 @@ import java.util.stream.Collectors;
 public class ProductExcelController {
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
     private static final int EXPORT_MAX_ROWS = 100000;
-    private static final List<Column> PRODUCT_EXPORT_COLUMNS = List.of(
-            new Column("spuId", "商品ID"),
-            new Column("spuVersion", "商品版本"),
-            new Column("skuId", "商品规格ID"),
-            new Column("skuVersion", "商品规格版本"),
-            new Column("spuCode", "商品编码"),
-            new Column("spuName", "商品名称"),
-            new Column("alias", "别名"),
-            new Column("categoryPath", "分类"),
-            new Column("mnemonicCode", "助记码"),
-            new Column("brandName", "品牌"),
-            new Column("origin", "产地"),
-            new Column("storageMethod", "储存方式"),
-            new Column("masterStatus", "主档状态"),
-            new Column("spuStatus", "商品状态"),
-            new Column("tagNames", "标签"),
-            new Column("skuCode", "商品规格编码"),
-            new Column("barcode", "条码"),
-            new Column("specName", "商品规格名称"),
-            new Column("saleUnit", "销售单位"),
-            new Column("productType", "商品类型"),
-            new Column("marketPrice", "市场价"),
-            new Column("skuStatus", "商品规格状态"),
-            new Column("defaultFlag", "默认商品规格"),
-            new Column("sortOrder", "排序")
-    );
+    private static final List<Column> PRODUCT_EXPORT_COLUMNS = List.of(new Column("spuId", "商品ID"),
+            new Column("spuVersion", "商品版本"), new Column("skuId", "商品规格ID"), new Column("skuVersion", "商品规格版本"),
+            new Column("spuCode", "商品编码"), new Column("spuName", "商品名称"), new Column("alias", "别名"),
+            new Column("categoryPath", "分类"), new Column("mnemonicCode", "助记码"), new Column("brandName", "品牌"),
+            new Column("origin", "产地"), new Column("storageMethod", "储存方式"), new Column("masterStatus", "主档状态"),
+            new Column("spuStatus", "商品状态"), new Column("tagNames", "标签"), new Column("skuCode", "商品规格编码"),
+            new Column("barcode", "条码"), new Column("specName", "商品规格名称"), new Column("saleUnit", "销售单位"),
+            new Column("productType", "商品类型"), new Column("marketPrice", "市场价"), new Column("skuStatus", "商品规格状态"),
+            new Column("defaultFlag", "默认商品规格"), new Column("sortOrder", "排序"));
     /** 更新导入改写既存商品，除导入权外还要求商品编辑权；权限串与 ProductController 保持一致。 */
 
     private final ProductImportService productImportService;
@@ -134,15 +118,17 @@ public class ProductExcelController {
             SmartExcelUtil.exportExcel(response, "商品档案导出.xlsx", "商品", ProductExportExcelVO.class, rows);
             return;
         }
-        if (rows.size() > EXPORT_MAX_ROWS) throw new ScmBusinessException(VALIDATION_ERROR);
+        if (rows.size() > EXPORT_MAX_ROWS)
+            throw new ScmBusinessException(VALIDATION_ERROR);
         var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(), PRODUCT_EXPORT_COLUMNS, true);
-        List<List<Object>> values = rows.stream().map(row -> Arrays.<Object>asList(
-                row.getSpuId(), row.getSpuVersion(), row.getSkuId(), row.getSkuVersion(),
-                row.getSpuCode(), row.getSpuName(), row.getAlias(), row.getCategoryPath(),
-                row.getMnemonicCode(), row.getBrandName(), row.getOrigin(), row.getStorageMethod(),
-                row.getMasterStatus(), row.getSpuStatus(), row.getTagNames(), row.getSkuCode(),
-                row.getBarcode(), row.getSpecName(), row.getSaleUnit(), row.getProductType(),
-                row.getMarketPrice(), row.getSkuStatus(), row.getDefaultFlag(), row.getSortOrder())).toList();
+        List<List<Object>> values = rows.stream()
+                .map(row -> Arrays.<Object>asList(row.getSpuId(), row.getSpuVersion(), row.getSkuId(),
+                        row.getSkuVersion(), row.getSpuCode(), row.getSpuName(), row.getAlias(), row.getCategoryPath(),
+                        row.getMnemonicCode(), row.getBrandName(), row.getOrigin(), row.getStorageMethod(),
+                        row.getMasterStatus(), row.getSpuStatus(), row.getTagNames(), row.getSkuCode(),
+                        row.getBarcode(), row.getSpecName(), row.getSaleUnit(), row.getProductType(),
+                        row.getMarketPrice(), row.getSkuStatus(), row.getDefaultFlag(), row.getSortOrder()))
+                .toList();
         ScmExportColumnSelection.writeSelected(response, "商品档案导出.xlsx", "商品", selection, values);
     }
 
@@ -166,17 +152,18 @@ public class ProductExcelController {
             vo.setMnemonicCode(spu.getMnemonicCode());
             vo.setBrandName(spu.getBrandName());
             vo.setOrigin(spu.getOrigin());
-            vo.setStorageMethod(spu.getStorageMethod());
-            vo.setMasterStatus(spu.getMasterStatus());
-            vo.setSpuStatus(spu.getStatus());
+            // 导出给人看，枚举一律写业务中文；落库与接口仍用枚举名，对应关系集中在 ProductEnumLabels。
+            vo.setStorageMethod(ProductEnumLabels.label("储存方式", spu.getStorageMethod()));
+            vo.setMasterStatus(ProductEnumLabels.label("主档状态", spu.getMasterStatus()));
+            vo.setSpuStatus(ProductEnumLabels.label("商品状态", spu.getStatus()));
             vo.setTagNames(tagNames);
             vo.setSkuCode(sku.getSkuCode());
             vo.setBarcode(sku.getBarcode());
             vo.setSpecName(sku.getSpecName());
             vo.setSaleUnit(sku.getSaleUnit());
-            vo.setProductType(sku.getProductType());
+            vo.setProductType(ProductEnumLabels.label("商品类型", sku.getProductType()));
             vo.setMarketPrice(sku.getMarketPrice() == null ? "" : sku.getMarketPrice().toPlainString());
-            vo.setSkuStatus(sku.getStatus());
+            vo.setSkuStatus(ProductEnumLabels.label("商品规格状态", sku.getStatus()));
             vo.setDefaultFlag(Boolean.TRUE.equals(sku.getDefaultFlag()) ? "是" : "否");
             vo.setSortOrder(sku.getSortOrder() == null ? "" : String.valueOf(sku.getSortOrder()));
             out.add(vo);

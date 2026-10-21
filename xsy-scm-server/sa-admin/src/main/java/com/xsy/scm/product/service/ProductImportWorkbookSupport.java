@@ -1,15 +1,16 @@
 package com.xsy.scm.product.service;
 
-import com.xsy.scm.common.constant.ScmProductTypeEnum;
-import com.xsy.scm.common.constant.ScmShelfStatusEnum;
-import com.xsy.scm.product.constant.ScmStorageMethodEnum;
+import com.xsy.scm.product.constant.ProductEnumLabels;
 import com.xsy.scm.product.domain.dto.ProductImportRow;
 import com.xsy.scm.product.domain.vo.ProductImportResultVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.util.CellRangeAddressList;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.ss.util.NumberToTextConverter;
+import org.apache.poi.xssf.usermodel.XSSFDataValidationHelper;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import static com.xsy.scm.product.service.ProductImportValueRules.addError;
 import static com.xsy.scm.product.service.ProductImportValueRules.trim;
@@ -26,6 +28,14 @@ import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 @Slf4j
 @Component
 public class ProductImportWorkbookSupport {
+    /**
+     * 模板下拉选项与解析归一化都取自 {@link ProductEnumLabels}， 与导出用的中文标签是同一份定义，避免三处各写一套后漂移。
+     */
+    private static final Map<String, List<String>> ENUM_OPTIONS = ProductEnumLabels.OPTIONS;
+
+    /** 数据验证覆盖到第 2000 行：模板上限 20000 行，但下拉预置到这个深度足够日常使用且不撑大文件。 */
+    private static final int VALIDATION_LAST_ROW = 2000;
+
     // 分组标记仅用于本次导入把多行规格归入一个商品，不是落库的 SPU 编码。
     private static final List<String> CREATE_HEADERS = List.of("模板版本", "导入商品分组", "商品名称", "别名", "分类编码", "助记码", "品牌",
             "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
@@ -71,9 +81,37 @@ public class ProductImportWorkbookSupport {
             for (int column = 0; column < headers.size(); column++) {
                 header.createCell(column).setCellValue(headers.get(column));
                 sample.createCell(column).setCellValue(sampleValue(mode, column));
+                sheet.setColumnWidth(column, Math.min(28, Math.max(12, headers.get(column).length() * 3)) * 256);
             }
+            applyEnumValidations(sheet, headers);
+            // 冻结表头与示例行：几千行数据往下翻时列名还在。
+            sheet.createFreezePane(0, 2);
             workbook.write(out);
             return out.toByteArray();
+        }
+    }
+
+    /**
+     * 给枚举列挂下拉验证。填了列表之外的值 Excel 直接拦下，不必等到服务端才报错。
+     *
+     * <p>
+     * 允许空单元格：非必填列留空是正常用法，必填性由服务端校验统一裁决，避免 Excel 与后端两套规则。
+     */
+    private void applyEnumValidations(XSSFSheet sheet, List<String> headers) {
+        var helper = new XSSFDataValidationHelper(sheet);
+        for (int column = 0; column < headers.size(); column++) {
+            var options = ENUM_OPTIONS.get(headers.get(column));
+            if (options == null)
+                continue;
+            var constraint = helper.createExplicitListConstraint(options.toArray(String[]::new));
+            var address = new CellRangeAddressList(1, VALIDATION_LAST_ROW, column, column);
+            var validation = helper.createValidation(constraint, address);
+            validation.setShowErrorBox(true);
+            validation.createErrorBox("取值无效", "请从下拉列表选择：" + String.join(" / ", options));
+            validation.setShowPromptBox(true);
+            validation.createPromptBox(headers.get(column), String.join(" / ", options));
+            validation.setEmptyCellAllowed(true);
+            sheet.addValidationData(validation);
         }
     }
 
@@ -128,7 +166,7 @@ public class ProductImportWorkbookSupport {
                     } else {
                         if (cell.getCellType() == CellType.NUMERIC)
                             value = NumberToTextConverter.toText(cell.getNumericCellValue());
-                        setters.get(column).accept(row, value);
+                        setters.get(column).accept(row, normalizeEnumValue(headers.get(column), value));
                     }
                 }
                 if (hasData)
@@ -185,6 +223,13 @@ public class ProductImportWorkbookSupport {
         };
     }
 
+    /**
+     * 把中文标签归一化成枚举名。不在映射表里的值原样返回，交给服务端的枚举校验去拒绝并给出可读提示。
+     */
+    private static String normalizeEnumValue(String header, String value) {
+        return ProductEnumLabels.normalize(header, value);
+    }
+
     private String sampleValue(ProductImportService.ImportMode mode, int column) {
         if (mode == ProductImportService.ImportMode.UPDATE) {
             return switch (column) {
@@ -197,14 +242,14 @@ public class ProductImportWorkbookSupport {
                 case 6 -> "示例蔬菜";
                 case 8 -> "FRESH-FRUIT";
                 case 11 -> "本地";
-                case 12 -> ScmStorageMethodEnum.CHILLED.name();
-                case 15 -> ScmShelfStatusEnum.ON_SHELF.name();
+                case 12 -> "冷藏";
+                case 15 -> "上架";
                 case 16 -> "G000001";
                 case 18 -> "500g/份";
                 case 19 -> "份";
-                case 20 -> ScmProductTypeEnum.STANDARD.name();
+                case 20 -> "标品";
                 case 21 -> "9.9000";
-                case 22 -> ScmShelfStatusEnum.ON_SHELF.name();
+                case 22 -> "上架";
                 case 23 -> "是";
                 case 24 -> "0";
                 default -> "";
@@ -216,13 +261,13 @@ public class ProductImportWorkbookSupport {
             case 2 -> "示例蔬菜";
             case 4 -> "FRESH-FRUIT";
             case 7 -> "本地";
-            case 8 -> ScmStorageMethodEnum.CHILLED.name();
-            case 11 -> ScmShelfStatusEnum.ON_SHELF.name();
+            case 8 -> "冷藏";
+            case 11 -> "上架";
             case 13 -> "500g/份";
             case 14 -> "份";
-            case 15 -> ScmProductTypeEnum.STANDARD.name();
+            case 15 -> "标品";
             case 16 -> "9.9000";
-            case 17 -> ScmShelfStatusEnum.ON_SHELF.name();
+            case 17 -> "上架";
             case 18 -> "是";
             case 19 -> "0";
             default -> "";
