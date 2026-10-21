@@ -39,7 +39,7 @@ public class MallHomeLayoutService {
     private static final TypeReference<List<MallHomeBlockForm>> BLOCKS = new TypeReference<>() {
     };
     private final MallHomeDao homeDao;
-    private final MallHomeLayoutValidator validator;
+    private final MallHomeLayoutValidator layoutValidator;
     private final ObjectMapper objectMapper;
     private final ScmDataScopeService scopeService;
 
@@ -59,7 +59,7 @@ public class MallHomeLayoutService {
         if (!Objects.equals(draft.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        validator.validate(form.getBlocks());
+        layoutValidator.validate(form.getBlocks());
         List<MallHomeBlockForm> ordered = form.getBlocks().stream()
                 .sorted(Comparator.comparing(MallHomeBlockForm::getSortOrder)).toList();
         String themeCode = themeOf(form.getThemeCode());
@@ -82,7 +82,7 @@ public class MallHomeLayoutService {
         if (blocks.isEmpty()) {
             throw new ScmBusinessException(INVALID_LAYOUT);
         }
-        validator.validate(blocks);
+        layoutValidator.validate(blocks);
         MallHomeReleaseVO release = new MallHomeReleaseVO();
         release.setContent(stringify(blocks));
         // 主题跟着发布版本走：回滚时配色一起回去，不会出现「旧版式配新配色」
@@ -108,7 +108,7 @@ public class MallHomeLayoutService {
         if (Objects.equals(pointer.getCurrentReleaseId(), target.getId())) {
             throw new ScmBusinessException(INVALID_LAYOUT);
         }
-        validator.validate(parse(target.getContent()));
+        layoutValidator.validate(parse(target.getContent()));
         MallHomeReleaseVO release = new MallHomeReleaseVO();
         release.setContent(target.getContent());
         release.setThemeCode(target.getThemeCode());

@@ -22,26 +22,26 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/scm/order/tags")
 public class OrderTagController {
-    private final OrderTagService service;
+    private final OrderTagService orderTagService;
 
     @GetMapping
     @SaCheckPermission(OrderPermission.QUERY)
     public ResponseDTO<List<OrderTagVO>> list() {
-        return ResponseDTO.ok(service.list());
+        return ResponseDTO.ok(orderTagService.list());
     }
 
     @PostMapping("/create")
     @SaCheckPermission(value = {OrderPermission.QUERY, OrderPermission.UPDATE}, mode = SaMode.AND)
     @OperateLog
     public ResponseDTO<Long> create(@Valid @RequestBody OrderTagCreateForm form) {
-        return ResponseDTO.ok(service.create(form));
+        return ResponseDTO.ok(orderTagService.create(form));
     }
 
     @PostMapping("/apply")
     @SaCheckPermission(value = {OrderPermission.QUERY, OrderPermission.UPDATE}, mode = SaMode.AND)
     @OperateLog
     public ResponseDTO<String> apply(@Valid @RequestBody OrderTagAssignForm form) {
-        service.apply(form);
+        orderTagService.apply(form);
         return ResponseDTO.ok();
     }
 }

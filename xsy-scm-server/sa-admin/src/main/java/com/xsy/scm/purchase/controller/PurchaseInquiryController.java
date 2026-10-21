@@ -23,31 +23,31 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/scm/purchase/inquiry")
 public class PurchaseInquiryController {
-    private final PurchaseInquiryService service;
+    private final PurchaseInquiryService purchaseInquiryService;
 
     @PostMapping("/batch")
     @SaCheckPermission(PurchasePermission.INQUIRY_QUERY)
     public ResponseDTO<PurchaseInquiryVO.BatchPage> byBatch(@Valid @RequestBody PurchaseInquiryForm.Batch form) {
-        return ResponseDTO.ok(service.byBatch(form.getBatchId(), form.getPage()));
+        return ResponseDTO.ok(purchaseInquiryService.byBatch(form.getBatchId(), form.getPage()));
     }
 
     @PostMapping("/batch/candidates")
     @SaCheckPermission(PurchasePermission.INQUIRY_QUERY)
     public ResponseDTO<List<PurchaseInquiryVO.Candidate>> candidates(
             @Valid @RequestBody PurchaseInquiryForm.Batch form) {
-        return ResponseDTO.ok(service.candidates(form.getBatchId()));
+        return ResponseDTO.ok(purchaseInquiryService.candidates(form.getBatchId()));
     }
 
     @PostMapping("/history")
     @SaCheckPermission(PurchasePermission.INQUIRY_QUERY)
     public ResponseDTO<PurchaseInquiryVO.HistoryPage> history(@Valid @RequestBody PurchaseInquiryForm.History form) {
-        return ResponseDTO.ok(service.history(form.getInquiryId(), form.getBeforeId()));
+        return ResponseDTO.ok(purchaseInquiryService.history(form.getInquiryId(), form.getBeforeId()));
     }
 
     @GetMapping("/{id}")
     @SaCheckPermission(PurchasePermission.INQUIRY_QUERY)
     public ResponseDTO<PurchaseInquiryVO.Detail> detail(@PathVariable @Positive Long id) {
-        return ResponseDTO.ok(service.detail(id));
+        return ResponseDTO.ok(purchaseInquiryService.detail(id));
     }
 
     @PostMapping("/create")
@@ -55,7 +55,7 @@ public class PurchaseInquiryController {
     @OperateLog
     public ResponseDTO<PurchaseInquiryVO.Detail> create(@Valid @RequestBody PurchaseInquiryForm.Create form,
             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(service.create(form, key));
+        return ResponseDTO.ok(purchaseInquiryService.create(form, key));
     }
 
     @PostMapping("/quote")
@@ -63,7 +63,7 @@ public class PurchaseInquiryController {
     @OperateLog
     public ResponseDTO<PurchaseInquiryVO.Detail> quote(@Valid @RequestBody PurchaseInquiryForm.Quote form,
             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(service.quote(form, key));
+        return ResponseDTO.ok(purchaseInquiryService.quote(form, key));
     }
 
     @PostMapping("/accept")
@@ -71,6 +71,6 @@ public class PurchaseInquiryController {
     @OperateLog
     public ResponseDTO<PurchaseInquiryVO.Detail> accept(@Valid @RequestBody PurchaseInquiryForm.Accept form,
             @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        return ResponseDTO.ok(service.accept(form, key));
+        return ResponseDTO.ok(purchaseInquiryService.accept(form, key));
     }
 }

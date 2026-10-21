@@ -27,14 +27,16 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 @RequiredArgsConstructor
 public class UserFilterPresetService {
     private static final int MAX_PRESETS = 20;
-    private static final TypeReference<List<Condition>> CONDITIONS = new TypeReference<>() {};
-    private final UserFilterPresetDao dao;
-    private final ObjectMapper mapper;
+    private static final TypeReference<List<Condition>> CONDITIONS = new TypeReference<>() {
+    };
+    private final UserFilterPresetDao userFilterPresetDao;
+    private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
     public List<Preset> list(String viewKey) {
         var fields = authorizedFields(viewKey);
-        return dao.list(ScmOperator.current(), viewKey).stream().map(row -> preset(row, fields)).toList();
+        return userFilterPresetDao.list(ScmOperator.current(), viewKey).stream().map(row -> preset(row, fields))
+                .toList();
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -44,14 +46,16 @@ public class UserFilterPresetService {
         ScmAdvancedFilterCatalog.resolve(conditions, fields);
         String owner = ScmOperator.current();
         String name = form.getName().trim();
-        if (name.isEmpty()) throw new ScmBusinessException(VALIDATION_ERROR);
-        dao.lockOwner(owner, form.getViewKey());
-        if (dao.count(owner, form.getViewKey()) >= MAX_PRESETS) {
+        if (name.isEmpty())
+            throw new ScmBusinessException(VALIDATION_ERROR);
+        userFilterPresetDao.lockOwner(owner, form.getViewKey());
+        if (userFilterPresetDao.count(owner, form.getViewKey()) >= MAX_PRESETS) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         Row row = new Row();
         try {
-            dao.insert(owner, form.getViewKey(), name, mapper.writeValueAsString(conditions), row);
+            userFilterPresetDao.insert(owner, form.getViewKey(), name, objectMapper.writeValueAsString(conditions),
+                    row);
         } catch (DuplicateKeyException duplicate) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (JsonProcessingException invalid) {
@@ -66,16 +70,17 @@ public class UserFilterPresetService {
         if (form.getId() == null || form.getId() <= 0) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
-        if (dao.remove(form.getId(), ScmOperator.current(), form.getViewKey()) != 1) {
+        if (userFilterPresetDao.remove(form.getId(), ScmOperator.current(), form.getViewKey()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
 
     private Preset preset(Row row, List<ScmAdvancedFilterCatalog.Field> fields) {
         try {
-            List<Condition> conditions = mapper.readValue(row.getConditionsJson(), CONDITIONS);
+            List<Condition> conditions = objectMapper.readValue(row.getConditionsJson(), CONDITIONS);
             ScmAdvancedFilterCatalog.resolve(conditions, fields);
-            if (conditions.isEmpty()) throw new ScmBusinessException(VALIDATION_ERROR);
+            if (conditions.isEmpty())
+                throw new ScmBusinessException(VALIDATION_ERROR);
             return new Preset(row.getId(), row.getName(), conditions, true, row.getCreatedAt());
         } catch (JsonProcessingException | ScmBusinessException outdated) {
             // 老方案不因字段权限或规则更新绕过校验；仍允许当前用户删除。
@@ -84,7 +89,8 @@ public class UserFilterPresetService {
     }
 
     private List<ScmAdvancedFilterCatalog.Field> authorizedFields(String viewKey) {
-        if (viewKey == null) throw new ScmBusinessException(VALIDATION_ERROR);
+        if (viewKey == null)
+            throw new ScmBusinessException(VALIDATION_ERROR);
         return switch (viewKey) {
             case "PRODUCT" -> {
                 StpUtil.checkPermission(ProductPermission.QUERY);

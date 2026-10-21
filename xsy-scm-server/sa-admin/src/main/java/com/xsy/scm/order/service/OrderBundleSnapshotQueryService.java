@@ -11,9 +11,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class OrderBundleSnapshotQueryService {
 
-    private final OrderBundleComponentDao dao;
+    private final OrderBundleComponentDao orderBundleComponentDao;
 
     public List<OrderBundleComponentEntity> listByOrderItemIds(List<Long> orderItemIds) {
-        return orderItemIds == null || orderItemIds.isEmpty() ? List.of() : dao.listByOrderItemIds(orderItemIds);
+        return orderItemIds == null || orderItemIds.isEmpty()
+                ? List.of()
+                : orderBundleComponentDao.listByOrderItemIds(orderItemIds);
     }
 }

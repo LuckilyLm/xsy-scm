@@ -14,24 +14,23 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/scm/preferences/filters")
 public class UserFilterPresetController {
-    private final UserFilterPresetService service;
+    private final UserFilterPresetService userFilterPresetService;
 
     @PostMapping("/list")
-    public ResponseDTO<List<UserFilterPresetModel.Preset>> list(
-            @Valid @RequestBody UserFilterPresetModel.View form) {
-        return ResponseDTO.ok(service.list(form.getViewKey()));
+    public ResponseDTO<List<UserFilterPresetModel.Preset>> list(@Valid @RequestBody UserFilterPresetModel.View form) {
+        return ResponseDTO.ok(userFilterPresetService.list(form.getViewKey()));
     }
 
     @PostMapping("/create")
     @OperateLog
     public ResponseDTO<Long> create(@Valid @RequestBody UserFilterPresetModel.Create form) {
-        return ResponseDTO.ok(service.create(form));
+        return ResponseDTO.ok(userFilterPresetService.create(form));
     }
 
     @PostMapping("/remove")
     @OperateLog
     public ResponseDTO<String> remove(@Valid @RequestBody UserFilterPresetModel.Remove form) {
-        service.remove(form);
+        userFilterPresetService.remove(form);
         return ResponseDTO.ok();
     }
 }

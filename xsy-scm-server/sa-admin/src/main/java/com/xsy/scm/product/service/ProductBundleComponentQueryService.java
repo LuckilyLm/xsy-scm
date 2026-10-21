@@ -11,13 +11,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ProductBundleComponentQueryService {
 
-    private final ProductBundleComponentDao dao;
+    private final ProductBundleComponentDao productBundleComponentDao;
 
     public List<ProductBundleComponentEntity> listByBundleSku(Long bundleSkuId) {
-        return dao.listByBundleSku(bundleSkuId);
+        return productBundleComponentDao.listByBundleSku(bundleSkuId);
     }
 
     public List<ProductBundleComponentEntity> listByBundleSkus(List<Long> bundleSkuIds) {
-        return bundleSkuIds == null || bundleSkuIds.isEmpty() ? List.of() : dao.listByBundleSkus(bundleSkuIds);
+        return bundleSkuIds == null || bundleSkuIds.isEmpty()
+                ? List.of()
+                : productBundleComponentDao.listByBundleSkus(bundleSkuIds);
     }
 }
