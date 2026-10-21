@@ -3,28 +3,7 @@
 # detection : 枚举每个常量所在的声明块内必须出现中文字符串，例如 NORMAL("正常") 或 ADMIN(1, "员工")；整块不含中文即记一条。页面、导出与打印都直接取枚举中文，缺了只能露出 NORMAL / ON_SHELF 这类内部取值，而让每个调用点各写一份映射迟早漂移。按常量粒度记账：补一个降一条，新增无中文的枚举常量立即成为 NEW DEFECT。
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 48 occurrences in 48 identities
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/account/constant/MallAccountStatusEnum.java	ENABLED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/catalog/constant/MallStockStatusEnum.java	AVAILABLE
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/catalog/constant/MallStockStatusEnum.java	INSUFFICIENT
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/catalog/constant/MallStockStatusEnum.java	OUT_OF_STOCK
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/funds/constant/MallReceivableStateEnum.java	OPEN
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/funds/constant/MallReceivableStateEnum.java	PARTIAL
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/order/constant/MallWarehouseSourceEnum.java	CUSTOMER
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/promotion/constant/MallCouponTabEnum.java	AVAILABLE
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/promotion/constant/MallCouponTabEnum.java	USED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundFundingAllocationStatusEnum.java	PENDING
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundFundingAllocationStatusEnum.java	PROCESSING
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundFundingAllocationStatusEnum.java	SUCCEEDED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundRecoveryResultEnum.java	AMOUNT_MISMATCH
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundRecoveryResultEnum.java	FAILED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundRecoveryResultEnum.java	PENDING
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundRecoveryResultEnum.java	STARTED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundRecoveryResultEnum.java	SUCCEEDED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/constant/ScmUomCategoryEnum.java	COUNT
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/constant/ScmUomCategoryEnum.java	LENGTH
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/constant/ScmUomCategoryEnum.java	VOLUME
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/constant/ScmUomCategoryEnum.java	WEIGHT
+# captured  : 18 occurrences in 18 identities
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseOperationTypeEnum.java	CANCEL
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseOperationTypeEnum.java	CREATE
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseOperationTypeEnum.java	DEMAND_GENERATE
@@ -34,7 +13,6 @@
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseOperationTypeEnum.java	SHORT_CLOSE
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseOperationTypeEnum.java	SUBMIT
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/constant/ScmPurchaseOperationTypeEnum.java	UPDATE
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmFinanceAgingAccountTypeEnum.java	RECEIVABLE
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventoryMovementFilterEnum.java	CONVERT_OUT
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventoryMovementFilterEnum.java	GAIN_REPORT
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventoryMovementFilterEnum.java	LOSS_REPORT
@@ -44,11 +22,3 @@
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventoryMovementFilterEnum.java	STOCKTAKE_LOSS
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventoryMovementFilterEnum.java	TRANSFER_IN
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventoryMovementFilterEnum.java	TRANSFER_OUT
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventorySourceDocumentFilterEnum.java	CONVERT_OUT_ITEM
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventorySourceDocumentFilterEnum.java	LOSS_GAIN_ITEM
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventorySourceDocumentFilterEnum.java	PURCHASE_RECEIPT_ITEM
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventorySourceDocumentFilterEnum.java	SALES_OUTBOUND_ITEM
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventorySourceDocumentFilterEnum.java	STOCKTAKE_ITEM
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventorySourceDocumentFilterEnum.java	TRANSFER_IN_ITEM
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/report/constant/ScmInventorySourceDocumentFilterEnum.java	TRANSFER_OUT_ITEM
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/warehouse/constant/ScmWarehouseStatusEnum.java	ENABLED
