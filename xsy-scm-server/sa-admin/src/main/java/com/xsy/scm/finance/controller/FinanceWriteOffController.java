@@ -11,6 +11,7 @@ import com.xsy.scm.finance.domain.form.FinanceWriteOffReverseForm;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffAddResultVO;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffVO;
 import com.xsy.scm.finance.support.FinanceExcel;
+import com.xsy.scm.finance.support.FinanceExportLabels;
 import com.xsy.scm.finance.permission.FinancePermission;
 import com.xsy.scm.finance.service.FinanceWriteOffQueryService;
 import com.xsy.scm.finance.service.FinanceWriteOffService;
@@ -68,9 +69,11 @@ public class FinanceWriteOffController {
             throws IOException {
         List<FinanceWriteOffVO> rows = financeWriteOffQueryService.exportRows(form);
         List<List<Object>> data = rows.stream()
-                .map(row -> FinanceExcel.row(EXPORT_TITLES, row.getWriteOffNo(), row.getSourceType(), row.getSourceNo(),
-                        row.getSourceName(), row.getTargetType(), row.getTargetNo(), row.getTargetName(),
-                        row.getAmount(), row.getEntryType(), row.getReason(), row.getWrittenOffAt(), row.getOperator()))
+                .map(row -> FinanceExcel.row(EXPORT_TITLES, row.getWriteOffNo(),
+                        FinanceExportLabels.businessType(row.getSourceType()), row.getSourceNo(), row.getSourceName(),
+                        FinanceExportLabels.businessType(row.getTargetType()), row.getTargetNo(), row.getTargetName(),
+                        row.getAmount(), FinanceExportLabels.entryType(row.getEntryType()), row.getReason(),
+                        row.getWrittenOffAt(), row.getOperator()))
                 .toList();
         FinanceExcel.write(response, "核销明细.xlsx", "核销明细", EXPORT_TITLES, data);
     }
