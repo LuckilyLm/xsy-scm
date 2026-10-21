@@ -32,11 +32,7 @@
                     @click="batch?.open('TAG', selectedItems)">批量打标签
           </a-button>
           <a-button v-privilege="'scm:product:import'" @click="importModal?.show()">导入</a-button>
-          <a-select v-privilege="'scm:product:export'" v-model:value="exportColumnKeys" mode="multiple"
-                    allow-clear :options="exportColumnOptions" option-filter-prop="label"
-                    placeholder="导出列：不选则全部" style="width: 300px"
-                    @focus="loadExportColumnOptions"/>
-          <a-button v-privilege="'scm:product:export'" :loading="exporting" @click="exportCurrent">导出</a-button>
+          <a-button v-privilege="'scm:product:export'" @click="openExport">导出</a-button>
           <span v-if="selectedRows.length" class="scm-cell-hint">已选 {{ selectedRows.length }} 个</span>
         </a-space>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRODUCT" :refresh="load"/>
@@ -133,6 +129,7 @@
     <ProductDrawer ref="drawer" @saved="load"/>
     <ProductBatchModal ref="batch" :categories="categories" :tag-options="batchTagOptions" @done="batchDone"/>
     <ProductImportModal ref="importModal" @imported="load"/>
+    <ProductExportModal ref="exportModal"/>
   </section>
 </template>
 <script setup lang="ts">
@@ -172,6 +169,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ProductDrawer from './components/product-form-drawer.vue';
 import ProductBatchModal from './components/product-batch-modal.vue';
 import ProductImportModal from './components/product-import-modal.vue';
+import ProductExportModal from './components/product-export-modal.vue';
 import SkuTable from './components/product-sku-table.vue';
 import {productError} from './product-errors';
 
@@ -189,15 +187,18 @@ function imageFailed(url: string) {
   failedImageUrls.value = new Set([...failedImageUrls.value, url]);
 }
 const drawer = ref<InstanceType<typeof ProductDrawer>>(), batch = ref<InstanceType<typeof ProductBatchModal>>();
-const importModal = ref<InstanceType<typeof ProductImportModal>>(), exporting = ref(false);
-const exportColumnKeys = ref<string[]>([]);
+const importModal = ref<InstanceType<typeof ProductImportModal>>();
+const exportModal = ref<InstanceType<typeof ProductExportModal>>();
 const exportColumnOptions = ref<{label: string; value: string}[]>([]);
 const exportColumnsLoaded = ref(false);
 async function loadExportColumnOptions(): Promise<void> {
   if (exportColumnsLoaded.value) return;
   try {
     const response = await productApi.exportColumns();
-    exportColumnOptions.value = response.data.map(column => ({label: column.title, value: column.key}));
+    // 「排序」是商品规格的内部排序值，不是业务字段，不放进导出勾选。
+    exportColumnOptions.value = response.data
+      .filter(column => column.key !== 'sortOrder')
+      .map(column => ({label: column.title, value: column.key}));
     exportColumnsLoaded.value = true;
   } catch {
     void message.error('获取商品可导出字段失败');
@@ -340,20 +341,24 @@ function detail(id: ProductId) {
   void router.push({path: '/product/product-detail', query: {spuId: String(id)}});
 }
 
-async function exportCurrent() {
-  exporting.value = true;
-  try {
-    await productApi.exportProducts({
-      ...filters,
-      createdFrom: createdRange.value?.[0] || undefined,
-      createdTo: createdRange.value?.[1] || undefined,
-      exportColumnKeys: exportColumnKeys.value.length ? exportColumnKeys.value : undefined
-    });
-  } catch {
-    // 导出失败只走全局 toast
-  } finally {
-    exporting.value = false;
+async function exportCurrent(exportColumnKeys: string[]) {
+  await productApi.exportProducts({
+    ...filters,
+    createdFrom: createdRange.value?.[0] || undefined,
+    createdTo: createdRange.value?.[1] || undefined,
+    exportColumnKeys: exportColumnKeys.length ? exportColumnKeys : undefined
+  });
+}
+
+/**
+ * 点「导出」先选字段：字段默认全选，由弹窗负责确认与加载态。
+ */
+async function openExport() {
+  await loadExportColumnOptions();
+  if (!exportColumnOptions.value.length) {
+    return;
   }
+  exportModal.value?.show(exportColumnOptions.value, exportCurrent);
 }
 
 function batchDone() {

@@ -269,4 +269,6 @@ function handleDownloadData(response) {
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
+    // 文件流交给浏览器下载，页面不会有任何跳转；不给提示的话用户会以为按钮没反应。
+    message.success('文件已开始下载');
 }

@@ -26,46 +26,38 @@
       </a-alert>
     </div>
     <div v-else>
-      <FormNote :lines="['可以通过拖拽行直接修改顺序；带「固定」标记的列不可拖拽。']"/>
-      <a-table
-          id="smartTableColumnModalTable"
-          rowKey="columnKey"
-          row-class-name="column-row"
-          :columns="tableColumns"
-          :dataSource="tableData"
-          :rowSelection="{ checkStrictly: false, selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }"
-          :pagination="false"
-          size="small"
-          bordered
-      >
-        <template #bodyCell="{ text, record, index, column }">
-          <template v-if="column.dataIndex === 'title'">
-            <a-button type="text" :class="record.fixed ? '' : 'handle'" size="small"
-                      style="width: 100%; text-align: left">
-              <template #icon>
-                <drag-outlined v-if="!record.fixed"/>
-                <pushpin-outlined v-else/>
-              </template>
-              {{ text }}
-            </a-button>
-          </template>
-          <template v-if="column.dataIndex === 'width'">
-            <a-input-number v-model:value="record.width" style="width: 90px; margin-left: 10px; margin-right: 3px"
-                            size="small"/>
-            px
-          </template>
-          <template v-if="column.dataIndex === 'operate'">
-            <div class="smart-table-operate" v-if="!record.fixed">
-              <a-button @click="up(index)" v-show="index > 0" type="link" class="handle" size="small"
-                        style="margin-right: 12px"> 上移
-              </a-button>
-              <a-button @click="down(index)" type="link" class="handle" size="small"
-                        v-show="index !== tableData.length - 1"> 下移
-              </a-button>
-            </div>
-          </template>
-        </template>
-      </a-table>
+      <FormNote :lines="['勾选需要显示的列；拖动左侧手柄可调整顺序。带图钉标记的固定列不可拖动或取消。']"/>
+      <!-- 网格勾选而不是表格：一屏能看完全部列，不必为了勾一项反复滚动。 -->
+      <div ref="gridRef" class="scm-column-grid">
+        <div
+            v-for="item in tableData"
+            :key="item.columnKey"
+            class="scm-column-grid__cell"
+            :class="{
+              'is-fixed': item.fixed,
+              'is-off': !isColumnShown(item) && !item.fixed,
+            }"
+            @click="toggleColumn(item)"
+        >
+          <span class="scm-column-grid__handle" :class="{'is-locked': item.fixed}">
+            <pushpin-outlined v-if="item.fixed"/>
+            <span v-else class="scm-column-grid__grip" aria-hidden="true"></span>
+          </span>
+          <span
+              class="scm-column-grid__check"
+              :class="{
+                'is-on': isColumnShown(item) && !item.fixed,
+                'is-off': !isColumnShown(item) && !item.fixed,
+                'is-locked': item.fixed,
+              }"
+              :aria-pressed="isColumnShown(item)"
+              role="checkbox"
+          >
+            <check-outlined v-if="isColumnShown(item) && !item.fixed"/>
+          </span>
+          <span class="scm-column-grid__label" :title="item.title">{{ item.title }}</span>
+        </div>
+      </div>
     </div>
 
     <template #footer>
@@ -98,6 +90,7 @@ defineExpose({show});
 // ---------------- 显示 / 隐藏 --------------------
 let tableId = null;
 const visible = ref(false);
+const gridRef = ref();
 
 //显示
 function show(columns, showTableId) {
@@ -155,37 +148,42 @@ async function getUserTableColumns(tableId, columns) {
   });
 }
 
-// --------------------- 表格渲染 --------------------------------
+// --------------------- 网格渲染 --------------------------------
 const tableData = ref([]);
 
-const tableColumns = [
-  {
-    title: '列',
-    dataIndex: 'title',
-  },
-  {
-    title: '宽度(像素)',
-    dataIndex: 'width',
-    width: 150,
-  },
-  {
-    title: '操作',
-    dataIndex: 'operate', align: 'center',
-    width: 150,
-    rowDrag: true,
-  },
-];
+function isColumnShown(item) {
+  return selectedRowKeyList.value.indexOf(item.columnKey) > -1;
+}
 
-// --------------------- 表格移动【拖拽移动、上移、下移】 --------------------------------
-//初始化拖拽
+/**
+ * 切换单列的显示状态。固定列始终显示，点它不产生任何变化。
+ */
+function toggleColumn(item) {
+  if (item.fixed) {
+    return;
+  }
+  const index = selectedRowKeyList.value.indexOf(item.columnKey);
+  if (index > -1) {
+    selectedRowKeyList.value.splice(index, 1);
+  } else {
+    selectedRowKeyList.value.push(item.columnKey);
+  }
+}
+
+// --------------------- 拖拽排序 --------------------------------
 function initDrag() {
-  let tbody = document.querySelector('#smartTableColumnModalTable tbody');
-  Sortable.create(tbody, {
-    animation: 300,
-    dragClass: 'smart-ghost-class', //设置拖拽样式类名
-    ghostClass: 'smart-ghost-class', //设置拖拽停靠样式类名
-    chosenClass: 'smart-ghost-class', //设置选中样式类名
-    handle: '.handle',
+  if (!gridRef.value) {
+    return;
+  }
+  Sortable.create(gridRef.value, {
+    animation: 150,
+    handle: '.scm-column-grid__handle:not(.is-locked)',
+    ghostClass: 'scm-column-grid__cell--ghost',
+    chosenClass: 'scm-column-grid__cell--chosen',
+    // 固定列是表格尾部的能力列，不允许被普通列挤到中间。
+    onMove(event) {
+      return !event.related.classList.contains('is-fixed');
+    },
     onEnd({newIndex, oldIndex}) {
       if (newIndex === oldIndex) {
         return;
@@ -195,46 +193,14 @@ function initDrag() {
   });
 }
 
-//上移
-function up(oldIndex) {
-  let newIndex = oldIndex - 1;
-  if (newIndex < 0) {
-    return;
-  }
-  //如果下一个是固定列，则也不可移动
-  if (tableData.value[newIndex].fixed) {
-    return;
-  }
-  moveTableData(oldIndex, newIndex);
-}
-
-//下移
-function down(oldIndex) {
-  let newIndex = oldIndex + 1;
-  if (newIndex >= tableData.value.length) {
-    return;
-  }
-
-  //如果下一个是固定列，则也不可移动
-  if (tableData.value[newIndex].fixed) {
-    return;
-  }
-
-  moveTableData(oldIndex, newIndex);
-}
-
 //移动表格数据
 function moveTableData(oldIndex, newIndex) {
   const currRow = tableData.value.splice(oldIndex, 1)[0];
   tableData.value.splice(newIndex, 0, currRow);
 }
 
-// ----------- table 批量操作 start -----------
+// ------------------------- 选中集合 ------------------------
 const selectedRowKeyList = ref([]);
-
-function onSelectChange(keyArray) {
-  selectedRowKeyList.value = keyArray;
-}
 
 // -------------------------提交表单【恢复默认、保存、取消】 ------------------------
 const submitLoading = ref(false);
@@ -281,7 +247,8 @@ async function save(closeFlag = true) {
       if (item.width) {
         column.width = item.width;
       }
-      column.showFlag = selectedRowKeyList.value.indexOf(item.columnKey) > -1;
+      // 固定列永远可见，不跟随勾选集合。
+      column.showFlag = item.fixed ? true : isColumnShown(item);
       columnList.push(column);
     }
 
@@ -317,21 +284,109 @@ async function save(closeFlag = true) {
   margin-right: auto;
 }
 
-.column-row:hover {
-  background-color: red !important;
+.scm-column-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px 12px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 4px 0;
 }
 
-.column-row {
+.scm-column-grid__cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 6px;
   cursor: pointer;
-}
+  transition: background-color 0.2s;
 
-.blue-background-class {
-  background-color: red !important;
-}
-
-:deep(.ant-table-tbody) {
-  .ant-table-row-selected > td {
-    background-color: #ffffff;
+  &:hover {
+    background-color: #f0f9eb;
   }
+
+  &.is-fixed {
+    cursor: default;
+
+    &:hover {
+      background-color: transparent;
+    }
+  }
+}
+
+.scm-column-grid__cell--ghost {
+  opacity: 0.4;
+}
+
+.scm-column-grid__cell--chosen {
+  background-color: #f0f9eb;
+}
+
+.scm-column-grid__handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 12px;
+  height: 16px;
+  color: #bfbfbf;
+  cursor: grab;
+
+  &.is-locked {
+    cursor: default;
+    color: #8c8c8c;
+  }
+}
+
+/* 两列点阵，和拖拽手柄的视觉重量一致，不抢字段名 */
+.scm-column-grid__grip {
+  width: 8px;
+  height: 12px;
+  background-image: radial-gradient(circle, #bfbfbf 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+.scm-column-grid__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: #ffffff;
+
+  &.is-on {
+    background-color: #52c41a;
+  }
+
+  &.is-off {
+    background-color: #d9d9d9;
+  }
+
+  /* 固定列画成空心方框：表示「一定显示、不可取消」 */
+  &.is-locked {
+    background-color: transparent;
+    border: 1px solid #d9d9d9;
+  }
+}
+
+.scm-column-grid__label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: rgba(0, 0, 0, 0.88);
+}
+
+.scm-column-grid__cell.is-off .scm-column-grid__label {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.scm-column-grid__cell.is-fixed .scm-column-grid__label {
+  color: rgba(0, 0, 0, 0.45);
 }
 </style>
