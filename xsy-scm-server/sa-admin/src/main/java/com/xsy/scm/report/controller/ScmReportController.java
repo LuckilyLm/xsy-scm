@@ -21,7 +21,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.xsy.scm.common.constant.ScmSettleModeEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.report.constant.ReportErrorCode;
 import com.xsy.scm.report.domain.form.ScmInventoryReportQueryForm;
 import com.xsy.scm.report.domain.form.ScmOverviewReportQueryForm;
@@ -297,8 +299,9 @@ public class ScmReportController {
                 "已完成退款金额");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.orderList(form)).stream()
                 .map(r -> ScmReportExcel.row(titles, r.getConfirmedAt(), r.getOrderNo(), r.getCustomerCode(),
-                        r.getCustomerName(), r.getSellerName(), r.getOrderSource(), r.getSettleMode(), r.getLineCount(),
-                        r.getSkuKindCount(), r.getSettlementAmount(), r.getCompletedRefundAmount()))
+                        r.getCustomerName(), r.getSellerName(), ScmOrderSourceEnum.descOf(r.getOrderSource()),
+                        ScmSettleModeEnum.labelOf(r.getSettleMode()), r.getLineCount(), r.getSkuKindCount(),
+                        r.getSettlementAmount(), r.getCompletedRefundAmount()))
                 .toList();
         var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(), SALES_ORDER_EXPORT_COLUMNS, true);
         ScmReportExcel.write(response, "销售分析-客户订单明细.xlsx", "客户订单明细", selection.titles(), selection.project(rows));

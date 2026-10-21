@@ -9,6 +9,7 @@ import com.xsy.scm.report.domain.vo.ScmOrderExceptionRowVO;
 import com.xsy.scm.report.domain.vo.ScmOrderExceptionSummaryVO;
 import com.xsy.scm.report.service.ScmOrderExceptionService;
 import com.xsy.scm.report.support.ScmReportExcel;
+import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.io.IOException;
@@ -48,12 +49,15 @@ public class ScmOrderExceptionController {
     @OperateLog
     public void export(@Valid @RequestBody ScmOrderExceptionQueryForm form, HttpServletResponse response)
             throws IOException {
-        var rows = orderExceptionService.export(form).stream().map(row -> ScmReportExcel.row(TITLES,
-                ScmOrderExceptionTypeEnum.valueOf(row.getExceptionType()).getLabel(), row.getOccurredAt(),
-                row.getSourceNo(), row.getSourceRowId(), row.getOrderNo(), row.getCustomerName(),
-                row.getWarehouseName(), row.getProductName(), row.getUnit(), row.getStockUnit(), row.getStockQuantity(),
-                row.getStockReservedQuantity(), row.getStockAvailableQuantity(), row.getPlannedQuantity(),
-                row.getActualQuantity(), row.getDifferenceQuantity(), row.getSourceStatus(), row.getReason())).toList();
+        var rows = orderExceptionService.export(form).stream()
+                .map(row -> ScmReportExcel.row(TITLES,
+                        ScmOrderExceptionTypeEnum.valueOf(row.getExceptionType()).getLabel(), row.getOccurredAt(),
+                        row.getSourceNo(), row.getSourceRowId(), row.getOrderNo(), row.getCustomerName(),
+                        row.getWarehouseName(), row.getProductName(), row.getUnit(), row.getStockUnit(),
+                        row.getStockQuantity(), row.getStockReservedQuantity(), row.getStockAvailableQuantity(),
+                        row.getPlannedQuantity(), row.getActualQuantity(), row.getDifferenceQuantity(),
+                        ScmSortingResultEnum.valueOf(row.getSourceStatus()).getDesc(), row.getReason()))
+                .toList();
         ScmReportExcel.write(response, "异常订单分析.xlsx", "异常事实", TITLES, rows);
     }
 }
