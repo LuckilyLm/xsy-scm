@@ -27,7 +27,7 @@ export function supplierError(error: unknown): string {
     if (code === 40947) {
         return '该供应商已被商品关联引用，不能删除';
     }
-    if (code === 40040) {
+    if (code === 40443) {
         return '默认采购员不存在，请重新选择';
     }
     if (code === 40442) {

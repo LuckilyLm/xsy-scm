@@ -131,10 +131,6 @@
     "FinanceErrorCode.PAYABLE_NOT_FOUND",
     "SortingErrorCode.SCALE_EVENT_STATE_INVALID"
   ],
-  "41132": [
-    "FinanceErrorCode.RECEIPT_NOT_FOUND",
-    "SortingErrorCode.SCALE_EVENT_ITEM_NOT_STANDARD"
-  ],
   "41133": [
     "FinanceErrorCode.PAYMENT_NOT_FOUND",
     "SortingErrorCode.SCALE_EVENT_NOT_STABLE"

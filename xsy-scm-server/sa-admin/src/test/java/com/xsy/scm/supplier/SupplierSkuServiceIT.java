@@ -240,14 +240,14 @@ class SupplierSkuServiceIT extends ScmW2PgITBase {
     }
 
     @Test
-    @DisplayName("默认采购员必须存在（40040）")
+    @DisplayName("默认采购员必须存在（40443）")
     void unknownPurchaserRejected() {
         Long supplierId = supplier("j");
         Long skuId = newOnShelfSku("J1");
         SupplierSkuItemForm item = item(skuId);
         item.setPurchaserId(-1L);
 
-        expectCode(() -> replace(supplierId, List.of(item)), 40040);
+        expectCode(() -> replace(supplierId, List.of(item)), 40443);
 
         item.setPurchaserId(anyEmployeeId());
         replace(supplierId, List.of(item));

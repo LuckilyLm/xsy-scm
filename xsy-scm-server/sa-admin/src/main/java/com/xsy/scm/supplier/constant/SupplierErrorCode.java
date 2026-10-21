@@ -52,7 +52,7 @@ public enum SupplierErrorCode implements ScmErrorCode {
     /**
      * 新增：默认采购员不存在。
      */
-    SUPPLIER_SKU_PURCHASER_INVALID(40040, "默认采购员不正确");
+    SUPPLIER_SKU_PURCHASER_INVALID(40443, "默认采购员不正确");
 
     private final int code;
     private final String msg;
