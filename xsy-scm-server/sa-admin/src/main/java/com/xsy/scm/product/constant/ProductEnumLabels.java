@@ -3,8 +3,11 @@ package com.xsy.scm.product.constant;
 import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.common.constant.ScmShelfStatusEnum;
 
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * 商品导入导出共用的枚举中文标签。
@@ -13,26 +16,41 @@ import java.util.Map;
  * 一份定义同时供三处使用：模板下拉选项、导入解析归一化、导出单元格取值。 分开维护迟早漂移成「导出写中文、导入只认英文」这种自相矛盾。
  *
  * <p>
- * 中文标签是给现场看的业务用语；落库与接口仍用枚举名，两边的对应关系只在这里维护。
+ * 中文标签一律取自枚举的 {@code desc}，本类只声明「哪一列对应哪个枚举」。 落库与接口仍用枚举名。
  */
 public final class ProductEnumLabels {
 
     /** 列名 → 下拉选项。顺序即模板下拉里的展示顺序。 */
     public static final Map<String,
-            List<String>> OPTIONS = Map.of("储存方式", List.of("常温", "冷藏", "冷冻"), "主档状态", List.of("启用", "停用", "归档"), "商品状态",
-                    List.of("上架", "下架"), "商品规格状态", List.of("上架", "下架"), "商品类型", List.of("标品", "非标品"));
+            List<String>> OPTIONS = Map.of("储存方式", labels(ScmStorageMethodEnum.values(), ScmStorageMethodEnum::getDesc),
+                    "主档状态", labels(ScmProductMasterStatusEnum.values(), ScmProductMasterStatusEnum::getDesc), "商品状态",
+                    labels(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品规格状态",
+                    labels(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品类型",
+                    labels(ScmProductTypeEnum.values(), ScmProductTypeEnum::getDesc));
 
-    private static final Map<String, Map<String, String>> ALIASES = Map.of("储存方式",
-            Map.of("常温", ScmStorageMethodEnum.AMBIENT.name(), "冷藏", ScmStorageMethodEnum.CHILLED.name(), "冷冻",
-                    ScmStorageMethodEnum.FROZEN.name()),
-            "主档状态",
-            Map.of("启用", ScmProductMasterStatusEnum.ENABLED.name(), "停用", ScmProductMasterStatusEnum.DISABLED.name(),
-                    "归档", ScmProductMasterStatusEnum.ARCHIVED.name()),
-            "商品状态", Map.of("上架", ScmShelfStatusEnum.ON_SHELF.name(), "下架", ScmShelfStatusEnum.OFF_SHELF.name()),
-            "商品规格状态", Map.of("上架", ScmShelfStatusEnum.ON_SHELF.name(), "下架", ScmShelfStatusEnum.OFF_SHELF.name()),
-            "商品类型", Map.of("标品", ScmProductTypeEnum.STANDARD.name(), "非标品", ScmProductTypeEnum.NON_STANDARD.name()));
+    private static final Map<String,
+            Map<String, String>> ALIASES = Map.of("储存方式",
+                    aliases(ScmStorageMethodEnum.values(), ScmStorageMethodEnum::getDesc), "主档状态",
+                    aliases(ScmProductMasterStatusEnum.values(), ScmProductMasterStatusEnum::getDesc), "商品状态",
+                    aliases(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品规格状态",
+                    aliases(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品类型",
+                    aliases(ScmProductTypeEnum.values(), ScmProductTypeEnum::getDesc));
 
     private ProductEnumLabels() {
+    }
+
+    /** 枚举的 {@code desc} 即模板下拉的展示值，顺序沿用枚举声明顺序。 */
+    private static <E extends Enum<E>> List<String> labels(E[] values, Function<E, String> desc) {
+        return Arrays.stream(values).map(desc).toList();
+    }
+
+    /** 中文标签 → 枚举名，供导入解析把「常温」还原成 {@code AMBIENT}。 */
+    private static <E extends Enum<E>> Map<String, String> aliases(E[] values, Function<E, String> desc) {
+        Map<String, String> aliases = new LinkedHashMap<>(values.length);
+        for (E value : values) {
+            aliases.put(desc.apply(value), value.name());
+        }
+        return Map.copyOf(aliases);
     }
 
     /**
