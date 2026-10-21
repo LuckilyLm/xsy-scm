@@ -166,89 +166,25 @@ class ScmPurchaseMigrationIT extends ScmW5PgITBase {
     }
 
     @Test
-    // 版本清单逐条列举，而不是只断言 contains：已应用的迁移只追加，新版本只能出现在尾部，
-    // 因此任何回改、重排或漏账都会让这个断言立刻失败。
-    // 各版本的内容口径：
-    //   V17 = 仅数据，t_config 文件上传大小
-    //   V18 = 仅数据，t_menu 侧边栏图标
-    //   V19 = inventory_balance / inventory_movement 两张库存表
-    //         + 历史已确认收货行的期初回填
-    //   V20 = 仅数据，t_menu 库存菜单与权限
-    //   V21 = 库存流水不可改删触发器
-    //   V22 = purchase_receipt 双入库生命周期 + 操作日志类型扩展
-    //   V23 = 仅数据，t_menu 入库确认 / 仓库启停权限
-    //   V24 = 仅数据，补齐 15 表 + 323 字段 COMMENT，并覆盖 V5 遗留的上游品牌列注释
-    //   V25 = SALES_OUT 流水类型 + reserved_quantity + 出库单/预留三张表 + 菜单
-    //   V26–V37 = 出库权限 / 日志类型 / 大屏 / 盘点 / 报损报溢 / 调拨 / 预警 / 转换 / 成本 / 导入
-    //   V40 = scm_region 省市字典 + 三张主档地理归属列 + 存量地址保守解析
-    //   V41 = product_image 删 file_url 列（预签名地址不入库，按 file_key 现算）
-    //   V42–V43 = 物流配送：五张配送表 + 地理快照约束；菜单与权限
-    //   V44–V45 = product_image 图集分组列；导入导出与图片中心菜单权限
-    //   V46 = 仅数据，scm:todo:query 菜单与权限
-    //   V47 = delivery_route_order 打印计次三列
-    //   V48 = 仅数据，盘点批量导入权限
-    //   V49 = image_type 改为 GALLERY/DETAIL，主图唯一事实回归 is_primary
-    //   V50 = 仅数据，报表中心菜单与 scm:report:* 权限 1200-1216
-    //   V51 = sales_order / order_refund / purchase_receipt 三条报表日期轴部分索引
-    //   V63 = 出库行订单来源 + 线路履约状态
-    //   V64 = 仅数据，配送三个权限点
-    //   V65 = 8 张财务事实表 + 5 条单号序列，零既有表改动
-    //   V66 = 仅数据，财务收款登记权限（财务第一个受保护端点）
-    //   V67 = 仅数据，付款登记权限
-    //   V68 = 仅数据，收款 / 付款反向权限
-    //   V69 = 仅数据，核销、反向核销与应付红字权限
-    //   V70 = 仅数据，财务查询与导出权限
-    //   V71–V72 = 仅数据，五个财务页面菜单与折叠导航图标
-    //   V73 = 仅数据，报表中心往来概览页面与查询权限
-    //   V74 = report_purchase_daily 每日清单表 + 部分索引
-    //   V75 起对应 ADM 系列决策追加的版本（ADM-02/03/04 结算与退货、ADM-12 支付与余额）
-    // 没有受保护端点也没有真实页面的一次交付不发布菜单与权限点：财务菜单/权限只随第一次
-    // 出现受保护 API 或页面的那次迁移发布，不提前占号，
-    // Finance 跨域只读与迁移追加边界见 docs/decisions.md 的工程边界及 Finance 事实规则。
-    //
-    // 注意：本用例只读 flyway_schema_history（DB 侧），不扫描磁盘上的迁移文件，
-    // 因此它无法发现「文件层重复版本号」这类问题——那需要单独的版本唯一性检查。
-    @DisplayName("flyway_schema_history：V1–V133 全部 success，V15–V133 只追加（V1–V14 未被改写）")
+    // 只守性质，不守清单：版本号必须从 1 开始、连续、按应用顺序排列。
+    // 早先这里逐条列举到某一个数字，每次新增迁移都要回来补一行，忘了补就是「库已经迁到新版、
+    // 测试还在断言旧版」——这类红与业务无关，却让人以为迁移没跑（曾停在 V133，库到 V167）。
+    // 真正要守的是「已应用的迁移只追加，不回改、不重排、不漏账」，等价于下面这个连续升序断言。
+    @DisplayName("flyway_schema_history：版本连续升序、全部 success，无失败记录")
     void flywayHistoryIsAppendOnly() {
-        List<String> versions = jdbc.queryForList(
+        List<Integer> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history "
                         + "WHERE success = TRUE AND version IS NOT NULL ORDER BY installed_rank",
-                String.class);
-        // 逐条列举而不是只断言 contains：V1–V14 一旦被重写/重排，这个断言会立刻失败
-        assertThat(versions).containsExactly(
-                "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18",
-                "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35",
-                "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52",
-                "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67",
-                "68", "69", "70", "71", "72", "73", "74",
-                // ADM 系列决策追加的版本（ADM-02/03/04 结算与退货、ADM-12 支付与余额）；
-                // 同样逐条列举而不是 contains：只增不减，且顺序不变。
-                "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90",
-                "91", "92", "93", "94", "95", "96", "97", "98", "99", "100", "101", "102", "103", "104", "105",
-                "106", "107", "108", "109", "110", "111", "112", "113", "114", "115",
-                // 合并远程后本地保留的一版：菜单名去技术缩写（本地库 xsy_scm 已应用 116）。
-                "116",
-                // 支付回调拒绝事件可重试。
-                "117",
-                // SCM 自有表统一 xsy_ 前缀。
-                "118",
-                // 重建两个触发器函数（函数体里的表名不会被 RENAME 改写）。
-                "119",
-                // 退款来源分摊与客户商城账号、购物车、地址。
-                "120", "121", "122", "123", "124", "125",
-                // 待分配订单池的权限、日志类型与部分索引。
-                "126",
-                // 移除 V125 内联进列定义的外键，回到全库零外键。
-                "127",
-                // 商城自助领券、结算方式约定、客户级 COD 准入（V128～V130，随远程合并落地）。
-                "128", "129", "130",
-                // 货到付款收款来源类型，以及分笔收款的订单归属列。
-                "131", "132",
-                // 菜单 435 的名字改回「商品可见性」。
-                "133");
+                Integer.class);
+        assertThat(versions).as("迁移记录不应为空，否则本用例是空跑").isNotEmpty();
+        int latest = versions.get(versions.size() - 1);
+        assertThat(versions)
+                .as("已应用的迁移必须从 V1 起连续升序：回改、重排、漏号或插入旧版本都会在这里失败")
+                .containsExactlyElementsOf(
+                        java.util.stream.IntStream.rangeClosed(1, latest).boxed().toList());
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE success = FALSE", Integer.class)).isZero();
-        // 除上面逐条列举的版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
+        // 除版本化迁移外，只有 1 条 << Flyway Schema Creation >> 基线（version 为空）
         assertThat(jdbc.queryForObject(
                 "SELECT count(*) FROM flyway_schema_history WHERE version IS NULL", Integer.class)).isEqualTo(1);
     }

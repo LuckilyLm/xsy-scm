@@ -17,7 +17,8 @@
         <template v-if="$lodash.isEmpty(item.children)">
           <a-menu-item :key="item.menuId" @click="turnToPage(item)">
             <template #icon>
-              <component :is="$antIcons[item.icon]"/>
+              <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)"/>
+              <span v-else class="smart-menu-icon-blank"/>
             </template>
             <span class="smart-menu-label" :title="item.menuName">{{ item.menuName }}</span>
           </a-menu-item>
@@ -34,6 +35,7 @@ import _ from 'lodash';
 import {computed, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import SubMenu from './sub-menu.vue';
+import {resolveMenuIcon} from '/@/lib/menu-icon';
 import {CaretDownFilled} from '@ant-design/icons-vue';
 import {router} from '/@/router/index';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
@@ -171,6 +173,13 @@ defineExpose({
   :deep(.ant-menu-item .anticon),
   :deep(.ant-menu-submenu-title .anticon) {
     font-size: 16px;
+  }
+
+  // 没有图标的菜单留一个等宽空位：antd 不会为空图标留位，不留的话同级菜单行首会差一格。
+  :deep(.smart-menu-icon-blank) {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
   }
 
   :deep(.ant-menu-submenu-title) {

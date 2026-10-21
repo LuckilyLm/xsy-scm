@@ -12,17 +12,17 @@
     "src/views/business/scm/"
   ],
   "summary": {
-    "total": 1760,
+    "total": 1746,
     "scm": 0,
     "by_code": {
       "TS7006": 814,
-      "TS2339": 346,
+      "TS2339": 338,
       "TS6133": 130,
       "TS2322": 101,
       "TS7016": 76,
       "TS18046": 53,
       "TS2345": 41,
-      "TS7053": 41,
+      "TS7053": 35,
       "TS7005": 32,
       "TS18047": 30,
       "TS18048": 19,
@@ -41,7 +41,7 @@
       "src/views/support": 425,
       "src/views/system": 279,
       "src/views/business": 228,
-      "src/layout/components": 190,
+      "src/layout/components": 176,
       "src/components/support": 140,
       "src/api/support": 80,
       "src/store/modules": 64,
@@ -3719,63 +3719,42 @@
     },
     {
       "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 20,
-      "column": 31,
-      "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Object'."
-    },
-    {
-      "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 33,
+      "line": 34,
       "column": 15,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'lodash'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/lodash` if it exists or add a new declaration (.d.ts) file containing `declare module 'lodash';`"
     },
     {
       "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 63,
+      "line": 65,
       "column": 21,
       "code": "TS7006",
       "message": "Parameter 'menu' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 107,
+      "line": 109,
       "column": 23,
       "code": "TS7006",
       "message": "Parameter 'openKeysParams' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/side-menu/recursion-menu.vue",
-      "line": 113,
+      "line": 115,
       "column": 46,
       "code": "TS7006",
       "message": "Parameter 'key' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/side-menu/sub-menu.vue",
-      "line": 8,
-      "column": 23,
-      "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Object'."
-    },
-    {
-      "file": "src/layout/components/side-menu/sub-menu.vue",
-      "line": 16,
-      "column": 31,
-      "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Object'."
-    },
-    {
-      "file": "src/layout/components/side-menu/sub-menu.vue",
-      "line": 29,
+      "line": 33,
       "column": 7,
       "code": "TS6133",
       "message": "'props' is declared but its value is never read."
     },
     {
       "file": "src/layout/components/side-menu/sub-menu.vue",
-      "line": 37,
+      "line": 41,
       "column": 21,
       "code": "TS7006",
       "message": "Parameter 'menu' implicitly has an 'any' type."
@@ -4097,112 +4076,35 @@
     },
     {
       "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 13,
-      "column": 51,
-      "code": "TS2339",
-      "message": "Property 'menuId' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 14,
-      "column": 28,
-      "code": "TS2339",
-      "message": "Property 'visibleFlag' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 14,
-      "column": 49,
-      "code": "TS2339",
-      "message": "Property 'disabledFlag' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 15,
-      "column": 46,
-      "code": "TS2339",
-      "message": "Property 'children' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 16,
-      "column": 35,
-      "code": "TS2339",
-      "message": "Property 'menuId' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 18,
-      "column": 31,
-      "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Object'."
-    },
-    {
-      "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 18,
-      "column": 46,
-      "code": "TS2339",
-      "message": "Property 'icon' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 20,
-      "column": 21,
-      "code": "TS2339",
-      "message": "Property 'menuName' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 24,
-      "column": 49,
-      "code": "TS2339",
-      "message": "Property 'menuId' does not exist on type 'never'."
-    },
-    {
-      "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 31,
+      "line": 32,
       "column": 15,
       "code": "TS7016",
       "message": "Could not find a declaration file for module 'lodash'. '<path>' implicitly has an 'any' type. / Try `npm i --save-dev @types/lodash` if it exists or add a new declaration (.d.ts) file containing `declare module 'lodash';`"
     },
     {
       "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 49,
+      "line": 52,
       "column": 21,
       "code": "TS7006",
       "message": "Parameter 'menu' implicitly has an 'any' type."
     },
     {
       "file": "src/layout/components/top-menu/recursion-menu.vue",
-      "line": 60,
+      "line": 63,
       "column": 25,
       "code": "TS2322",
       "message": "Type 'any' is not assignable to type 'never'."
     },
     {
       "file": "src/layout/components/top-menu/sub-menu.vue",
-      "line": 8,
-      "column": 23,
-      "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Object'."
-    },
-    {
-      "file": "src/layout/components/top-menu/sub-menu.vue",
-      "line": 16,
-      "column": 31,
-      "code": "TS7053",
-      "message": "Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Object'."
-    },
-    {
-      "file": "src/layout/components/top-menu/sub-menu.vue",
-      "line": 29,
+      "line": 33,
       "column": 7,
       "code": "TS6133",
       "message": "'props' is declared but its value is never read."
     },
     {
       "file": "src/layout/components/top-menu/sub-menu.vue",
-      "line": 37,
+      "line": 41,
       "column": 21,
       "code": "TS7006",
       "message": "Parameter 'menu' implicitly has an 'any' type."

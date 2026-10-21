@@ -15,7 +15,8 @@
         <template v-if="$lodash.isEmpty(item.children)">
           <a-menu-item :key="item.menuId" @click="turnToPage(item)">
             <template #icon>
-              <component :is="$antIcons[item.icon]"/>
+              <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)"/>
+              <span v-else class="smart-menu-icon-blank"/>
             </template>
             {{ item.menuName }}
           </a-menu-item>
@@ -32,13 +33,15 @@ import _ from 'lodash';
 import {computed, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import SubMenu from './sub-menu.vue';
+import {resolveMenuIcon} from '/@/lib/menu-icon';
 import {router} from '/@/router/index';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
 import {useUserStore} from '/@/store/modules/system/user';
 
 const theme = computed(() => useAppConfigStore().$state.sideMenuTheme);
 
-const menuTree = computed(() => useUserStore().getMenuTree || []);
+// 与侧边栏同一处放宽：菜单树元素类型未声明，computed 会被推成 never[]，模板里读 item.icon 报错。
+const menuTree = computed<any[]>(() => useUserStore().getMenuTree || []);
 
 //展开的菜单
 let currentRoute = useRoute();
@@ -85,5 +88,12 @@ defineExpose({
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
+
+  // 没有图标的菜单留一个等宽空位，避免项宽随有无图标跳变。
+  :deep(.smart-menu-icon-blank) {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+  }
 }
 </style>

@@ -5,7 +5,8 @@
 <template>
   <a-sub-menu :key="menuInfo.menuId">
     <template #icon>
-      <component :is="$antIcons[menuInfo.icon]"/>
+      <component :is="resolveMenuIcon(menuInfo.icon)" v-if="resolveMenuIcon(menuInfo.icon)"/>
+      <span v-else class="smart-menu-icon-blank"/>
     </template>
     <template #title>{{ menuInfo.menuName }}</template>
     <template v-for="item in menuInfo.children" :key="item.menuId">
@@ -13,7 +14,8 @@
         <template v-if="!item.children">
           <a-menu-item :key="item.menuId" @click="turnToPage(item)">
             <template #icon>
-              <component :is="$antIcons[item.icon]"/>
+              <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)"/>
+              <span v-else class="smart-menu-icon-blank"/>
             </template>
             {{ item.menuName }}
           </a-menu-item>
@@ -26,6 +28,8 @@
   </a-sub-menu>
 </template>
 <script setup lang="ts">
+import {resolveMenuIcon} from '/@/lib/menu-icon';
+
 const props = defineProps({
   menuInfo: {
     type: Object,

@@ -64,4 +64,31 @@ class ScmMenuComponentExistencePgIT extends ScmW2PgITBase {
                 .isEmpty();
         assertThat(components).as("扫描到的组件清单不应为空，否则本用例是空跑").isNotEmpty();
     }
+
+    @Test
+    @DisplayName("可见的一级与二级菜单都有图标，且图标名是 antd 的组件名")
+    void everyVisibleMenuHasIcon() {
+        List<String> withoutIcon = jdbc.queryForList(
+                "SELECT menu_id || ' ' || menu_name FROM t_menu"
+                        + " WHERE deleted_flag = FALSE AND visible_flag = TRUE AND menu_type IN (1, 2)"
+                        + "   AND (icon IS NULL OR btrim(icon) = '')"
+                        + " ORDER BY parent_id, sort", String.class);
+
+        // 菜单项不会为空图标留位：少一个图标，这一行的文字就比同级菜单左移一个图标位，
+        // 展开目录时一组里缺几个图标、行首也对不齐。图标名存在库里，前端契约扫不到，只能在这拦。
+        assertThat(withoutIcon)
+                .as("以下菜单没有图标，侧边栏里会比同级菜单少一格、文字错位")
+                .isEmpty();
+
+        List<String> oddNames = jdbc.queryForList(
+                "SELECT menu_id || ' ' || menu_name || ' -> ' || icon FROM t_menu"
+                        + " WHERE deleted_flag = FALSE AND icon IS NOT NULL AND btrim(icon) <> ''"
+                        + "   AND icon !~ '^[A-Z][A-Za-z0-9]*(Outlined|Filled|TwoTone)$'"
+                        + " ORDER BY menu_id", String.class);
+
+        // 图标名对不上组件时页面不报错，只是这一项静默没有图标 —— 拼错一个字母就会中招。
+        assertThat(oddNames)
+                .as("以下图标名不符合 antd 组件命名，前端解析不到，菜单会静默少一个图标")
+                .isEmpty();
+    }
 }
