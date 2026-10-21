@@ -8,8 +8,8 @@ export const appDefaultConfig: Omit<AppConfig, 'fullScreenFlag'> = {
     // 默认配置版本号：只要本文件的默认值发生变更，就把它 +1，
     // 已有浏览器里 localStorage 缓存的旧配置会被自动迁移到新默认值，
     // 否则老用户永远停留在旧样式上（详见 store/modules/system/app-config.ts）。
-    // 6：侧栏宽度 208 → 168、主题色改极光绿、标签页位置改顶部、默认隐藏水印与帮助文档。
-    configVersion: 7,
+    // 8：仅把沿用旧默认品牌名的浏览器配置迁移到新名称，保留用户自定义名称。
+    configVersion: 8,
     // i18n 语言选择
     language: 'zh_CN',
     // 布局: side 或者 side-expand 或者 top
@@ -47,7 +47,7 @@ export const appDefaultConfig: Omit<AppConfig, 'fullScreenFlag'> = {
     // 水印
     watermarkFlag: false,
     // 网站名称
-    websiteName: '鲜蔬源智链',
+    websiteName: '鲜蔬园智链',
     // 主题颜色
     primaryColor: '#1677ff',
     // 紧凑

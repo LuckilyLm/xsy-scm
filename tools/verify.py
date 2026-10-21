@@ -19,7 +19,7 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parents[1]
 SERVER = ROOT / "xsy-scm-server"
 WEB = ROOT / "xsy-scm-web"
-CUSTOMER_APP = ROOT / "xsy-scm-customer-app"
+MINIPROGRAM = ROOT / "xsy-scm-miniprogram"
 
 
 class Verification:
@@ -200,9 +200,9 @@ class Verification:
         for script in ("lint", "typecheck:e2e", "test", "build"):
             self.run(f"frontend-{script}", ["npm", "run", script], WEB)
 
-    def customer_app(self):
+    def miniprogram(self):
         for script in ("lint", "test", "build:mp-weixin"):
-            self.run(f"customer-app-{script}", ["npm", "run", script], CUSTOMER_APP)
+            self.run(f"miniprogram-{script}", ["npm", "run", script], MINIPROGRAM)
 
     def e2e(self):
         # Local account provisioning remains a prerequisite, including on clean clones.
@@ -278,7 +278,7 @@ class Verification:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("scope", nargs="?", choices=("all", "quality", "backend", "frontend", "customer-app", "e2e"), default="all")
+    parser.add_argument("scope", nargs="?", choices=("all", "quality", "backend", "frontend", "miniprogram", "e2e"), default="all")
     args = parser.parse_args()
     verification = Verification()
     # Quality runs first in `all`: it is seconds-long and fails fast, so a style or
@@ -289,8 +289,8 @@ def main():
         verification.backend()
     if args.scope in ("all", "frontend"):
         verification.frontend()
-    if args.scope in ("all", "customer-app"):
-        verification.customer_app()
+    if args.scope in ("all", "miniprogram"):
+        verification.miniprogram()
     if args.scope in ("all", "e2e"):
         verification.e2e()
     return verification.summary()

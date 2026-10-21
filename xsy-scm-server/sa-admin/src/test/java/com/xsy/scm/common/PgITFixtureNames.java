@@ -17,7 +17,7 @@ final class PgITFixtureNames {
     /**
      * 品牌名池：覆盖生鲜供应链里常见的自营 / 合作品牌，避免所有夹具都叫同一个名字。
      */
-    private static final String[] BRANDS = {"鲜蔬源", "绿源", "禾丰", "优鲜达", "鲜果记", "青禾"};
+    private static final String[] BRANDS = {"鲜蔬园", "绿源", "禾丰", "优鲜达", "鲜果记", "青禾"};
 
     /**
      * 操作人姓名池：审计日志里的「操作人」列直接用这些名字。

@@ -63,10 +63,10 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .components(components())
                 .info(new Info()
-                        .title("鲜蔬源智链 接口文档")
-                        .contact(new Contact().name("鲜蔬源智慧供应链管理平台"))
+                        .title("鲜蔬园智链 接口文档")
+                        .contact(new Contact().name("鲜蔬园智慧供应链管理平台"))
                         .version("v2.0")
-                        .description("鲜蔬源智慧供应链管理平台后端接口文档，覆盖商品、客户、供应商、价格、销售订单、采购、收货、仓储等全链路业务。" +
+                        .description("鲜蔬园智慧供应链管理平台后端接口文档，覆盖商品、客户、供应商、价格、销售订单、采购、收货、仓储等全链路业务。" +
                                 "<br/>支持客户专属定价、实际重量收货、订单全流程追溯，并提供登录限制、接口加解密等安全能力。")
                 )
                 .addSecurityItem(new SecurityRequirement().addList(RequestHeaderConst.TOKEN));

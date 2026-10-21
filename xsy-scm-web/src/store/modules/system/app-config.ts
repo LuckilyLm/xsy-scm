@@ -19,6 +19,8 @@ const CONFIG_MIGRATIONS: Record<number, string[]> = {
     6: ['sideMenuWidth', 'colorIndex', 'pageTagLocation', 'watermarkFlag', 'helpDocFlag'],
     // 7：页脚默认关闭（页脚只有版权行，却每页占一行高度）。
     7: ['footerFlag'],
+    // 8：品牌名称单独判断，不能覆盖用户自行设置的网站名称。
+    8: [],
 };
 
 /** 把旧版本的缓存配置逐版升级到当前版本。 */
@@ -27,6 +29,9 @@ function migrateConfig(cached: Record<string, any>): AppConfig {
     for (let version = cached.configVersion + 1; version <= appDefaultConfig.configVersion; version += 1) {
         for (const key of CONFIG_MIGRATIONS[version] ?? []) {
             next[key] = (appDefaultConfig as Record<string, any>)[key];
+        }
+        if (version === 8 && next.websiteName === '鲜蔬源智链') {
+            next.websiteName = appDefaultConfig.websiteName;
         }
     }
     next.configVersion = appDefaultConfig.configVersion;

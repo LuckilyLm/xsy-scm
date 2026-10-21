@@ -1,6 +1,6 @@
 # Both platform entry points share checks and exit codes.
 param(
-    [ValidateSet('all', 'quality', 'backend', 'frontend', 'e2e')]
+    [ValidateSet('all', 'quality', 'backend', 'frontend', 'miniprogram', 'e2e')]
     [string]$Scope = 'all'
 )
 $ErrorActionPreference = 'Stop'

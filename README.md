@@ -1,10 +1,10 @@
-# 鲜蔬源智慧供应链管理平台
+# 鲜蔬园智慧供应链管理平台
 
-鲜蔬源智链（`xsy-scm`）V2，以 SmartAdmin v3.31 为系统底座，供应链业务采用模块化单体架构。
+鲜蔬园智链（`xsy-scm`）V2，以 SmartAdmin v3.31 为系统底座，供应链业务采用模块化单体架构。
 
 ## 当前范围
 
-管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前代码事实、验证边界和未闭环工作统一见[项目状态](docs/status.md)。正式 uni-app 客户商城已有认证、目录、购物车、地址、结算下单、订单中心、履约售后、钱包与账期等源码；legacy 小程序保持冻结。
+管理后台主干已覆盖商品、客户、供应商、订单、采购、库存、分拣、配送、财务、报表、营销、支付与客户余额；当前代码事实、验证边界和未闭环工作统一见[项目状态](docs/status.md)。给用户使用的正式微信小程序已有认证、目录、购物车、地址、结算下单、订单中心、履约售后、钱包与账期等源码。
 
 业务需求以 [需求基线](docs/requirements/产品功能需求基线.md) 和 [负责人确认口径](docs/requirements/2026-09-09-负责人确认口径.md) 为准，当前边界见 [项目决策](docs/decisions.md)。历史参考实现仍可通过 Git 历史查阅。
 
@@ -14,7 +14,7 @@
 | --- | --- |
 | `xsy-scm-server/` | 正式后端：Java 21、Spring Boot、MyBatis-Plus、Sa-Token、Redis、PostgreSQL、Flyway |
 | `xsy-scm-web/` | 正式后台：Vue3、TypeScript、Ant Design Vue、Vite、Pinia |
-| `xsy-scm-customer-app/` | 正式客户商城：uni-app、Vue3、Vite、Pinia |
+| [`xsy-scm-miniprogram/`](xsy-scm-miniprogram/README.md) | 给用户使用的正式微信小程序：uni-app、Vue3、Vite、Pinia |
 | [`xsy-scale-agent/`](xsy-scale-agent/README.md) | 独立 Windows 秤端与触屏工作台；正式平台多筐接口待联调 |
 | `docs/` | 当前状态、有效决策、需求与参考资料 |
 | [`tools/`](tools/README.md) | 版本控制的质量、迁移、E2E 与验证工具；统一入口和职责见目录说明 |
@@ -51,10 +51,10 @@ npm run dev
 
 Vite 默认端口为 `18081`，可通过 `VITE_DEV_PORT` 覆盖。API 地址由 `VITE_APP_API_URL` 配置；开发环境默认连接 `http://127.0.0.1:18080`，不是 Vite 代理。
 
-客户商城：
+微信小程序：
 
 ```powershell
-cd xsy-scm-customer-app
+cd xsy-scm-miniprogram
 npm ci
 npm run dev:mp-weixin:api
 ```

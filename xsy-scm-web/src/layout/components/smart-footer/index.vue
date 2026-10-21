@@ -4,7 +4,7 @@
 -->
 <template>
   <div class="version">
-    <a class="smart-copyright"> ©2026-{{ currentYear }} 鲜蔬源智慧供应链管理平台 </a>
+    <a class="smart-copyright"> ©2026-{{ currentYear }} 鲜蔬园智慧供应链管理平台 </a>
   </div>
 </template>
 <script setup lang="ts">

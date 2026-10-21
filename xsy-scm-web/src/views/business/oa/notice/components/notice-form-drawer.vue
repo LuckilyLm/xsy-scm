@@ -23,7 +23,7 @@
         </a-select>
       </a-form-item>
       <a-form-item label="文号" name="documentNumber">
-        <a-input v-model:value="formData.documentNumber" :maxlength="1000" placeholder="文号，如：鲜蔬源〔2026〕字第36号"/>
+        <a-input v-model:value="formData.documentNumber" :maxlength="1000" placeholder="文号，如：鲜蔬园〔2026〕字第36号"/>
       </a-form-item>
       <a-form-item label="作者" name="author">
         <a-input v-model:value="formData.author" :maxlength="1000" placeholder="请输入作者"/>

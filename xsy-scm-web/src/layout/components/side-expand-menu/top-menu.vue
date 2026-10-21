@@ -4,9 +4,9 @@
 -->
 <template>
   <div class="top-menu-container">
-    <!-- 顶部logo区域：直接展示鲜蔬源横版 logo（已含品牌文字） -->
+    <!-- 顶部品牌区域 -->
     <div class="logo" @click="onGoHome">
-      <img class="logo-img" :src="logoImg"/>
+      <XsyBrandLockup/>
     </div>
     <!-- 一级菜单展示 -->
     <a-menu :selectedKeys="selectedKeys" mode="inline" :theme="theme">
@@ -31,7 +31,7 @@ import {MENU_TYPE_ENUM} from '/@/constants/system/menu-const';
 import {router} from '/@/router';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
 import {useUserStore} from '/@/store/modules/system/user';
-import logoImg from '/@/assets/images/logo/xsy-logo.png';
+import XsyBrandLockup from '/@/components/framework/xsy-brand-lockup/index.vue';
 import menuEmitter from './side-expand-menu-mitt';
 
 const theme = computed(() => useAppConfigStore().$state.sideMenuTheme);
@@ -87,12 +87,5 @@ defineExpose({updateSelectKey});
   align-items: center;
   cursor: pointer;
 
-  .logo-img {
-    // 鲜蔬源横版 logo（含品牌文字），按高度撑满、宽度自适应
-    height: 30px;
-    width: auto;
-    max-width: 100%;
-    object-fit: contain;
-  }
 }
 </style>
