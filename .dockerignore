@@ -17,8 +17,6 @@ deploy
 **/test-results
 **/playwright-report
 **/playwright/.auth
-xsy-scm-miniapp
-project-reference-examples
 docs
 *.log
 .env

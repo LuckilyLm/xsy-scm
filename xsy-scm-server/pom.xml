@@ -33,7 +33,6 @@
         <commons-io.version>2.19.0</commons-io.version>
         <commons-lang3.version>3.18.0</commons-lang3.version>
         <commons-collections4.version>4.5.0</commons-collections4.version>
-        <commons-compress.version>1.27.1</commons-compress.version>
         <commons-codec.version>1.18.0</commons-codec.version>
         <commons-text.version>1.13.1</commons-text.version>
         <fast-excel.version>1.2.0</fast-excel.version>
@@ -41,8 +40,6 @@
         <awssdk-s3.version>2.42.6</awssdk-s3.version>
         <mysql-connector-j.version>9.3.0</mysql-connector-j.version>
         <hutool.version>5.8.39</hutool.version>
-        <velocity-engine-core.version>2.4.1</velocity-engine-core.version>
-        <velocity-tools.version>3.1</velocity-tools.version>
         <sa-token.version>1.44.0</sa-token.version>
         <ip2region.version>2.7.0</ip2region.version>
         <bcprov.version>1.80</bcprov.version>
@@ -162,11 +159,6 @@
                 <version>${commons-collections4.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.apache.commons</groupId>
-                <artifactId>commons-compress</artifactId>
-                <version>${commons-compress.version}</version>
-            </dependency>
 
             <dependency>
                 <artifactId>commons-codec</artifactId>
@@ -197,18 +189,6 @@
                 <artifactId>hutool-all</artifactId>
                 <version>${hutool.version}</version>
             </dependency>
-            <!--velocity begin-->
-            <dependency>
-                <groupId>org.apache.velocity</groupId>
-                <artifactId>velocity-engine-core</artifactId>
-                <version>${velocity-engine-core.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.velocity.tools</groupId>
-                <artifactId>velocity-tools-generic</artifactId>
-                <version>${velocity-tools.version}</version>
-            </dependency>
-            <!--velocity end-->
 
             <!-- Sa-Token 权限认证，在线文档：https://sa-token.cc -->
             <dependency>

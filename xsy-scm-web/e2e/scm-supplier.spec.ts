@@ -120,7 +120,7 @@ async function seedProduct(prefix: string) {
 }
 
 test.beforeAll(async () => {
-  execFileSync('python', ['../tools/w2_e2e_accounts.py', 'setup'], { env, stdio: 'pipe' });
+  execFileSync('python', ['../tools/e2e_accounts.py', 'setup', '--wave', 'w2'], { env, stdio: 'pipe' });
   token = await login(name);
   api = await request.newContext({ baseURL: apiUrl, extraHTTPHeaders: { Authorization: `Bearer ${token}` } });
 });
@@ -148,7 +148,7 @@ test.afterAll(async () => {
     await api.get('/login/logout');
     await api.dispose();
   }
-  execFileSync('python', ['../tools/w2_e2e_accounts.py', 'cleanup'], { env, stdio: 'pipe' });
+  execFileSync('python', ['../tools/e2e_accounts.py', 'cleanup', '--wave', 'w2'], { env, stdio: 'pipe' });
 });
 
 async function authenticate(page: Page, value = token) {

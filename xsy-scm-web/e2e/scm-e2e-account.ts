@@ -19,8 +19,8 @@ import smCrypto from 'sm-crypto';
 
 export const apiUrl = process.env.SCM_E2E_API_BASE || 'http://127.0.0.1:18080';
 
-/** `tools/wN_e2e_accounts.py` 的波次前缀；脚本按 `<prefix>e2e_<随机>` 建管理员 + 只读 + 零角色（可选扣权）账号。 */
-export type WavePrefix = 'f0' | 'p1' | 'w1' | 'w2' | 'w3' | 'w4' | 'w5' | 'w6' | 'w7' | 'w8';
+/** 统一账号工具的波次前缀；脚本按 `<prefix>e2e_<随机>` 建管理员 + 只读 + 零角色（可选扣权）账号。 */
+export type WavePrefix = 'f0' | 'p1' | 'w1' | 'w2' | 'w3' | 'w4' | 'w5' | 'w6' | 'w7' | 'w8' | 'w9';
 
 export type TempAccounts = {
   /** 临时管理员 login_name（administrator_flag，菜单全开） */
@@ -61,7 +61,7 @@ export function provisionTempAccounts(
   const envKey = wave.toUpperCase() + '_E2E';
   const name = `${wave}_e2e_` + Date.now().toString(36);
   const password = `${wave.toUpperCase()}@` + randomBytes(6).toString('hex');
-  const script = `../tools/${wave}_e2e_accounts.py`;
+  const script = '../tools/e2e_accounts.py';
   const env = {
     ...process.env,
     [`${envKey}_NAME`]: name,
@@ -73,7 +73,7 @@ export function provisionTempAccounts(
     ...(secondAdmin ? {E2E_SECOND_ADMIN: '1'} : {}),
   };
   // 账号名与 employee_id 一律取脚本回显，不在两边各写一遍派生/截断规则
-  const stdout = execFileSync('python', [script, 'setup'], {env, stdio: 'pipe'}).toString();
+  const stdout = execFileSync('python', [script, 'setup', '--wave', wave], {env, stdio: 'pipe'}).toString();
   const roleAccounts: Record<string, string> = {};
   for (const pair of /roles=(\S+)/.exec(stdout)?.[1]?.split(',') ?? []) {
     const [roleCode, loginName] = pair.split('=');
@@ -98,7 +98,7 @@ export function provisionTempAccounts(
     secondAdmin: secondAdmin ? name + '_two' : undefined,
     roleAccounts,
     employeeIds,
-    cleanup: () => execFileSync('python', [script, 'cleanup'], {env, stdio: 'pipe'}),
+    cleanup: () => execFileSync('python', [script, 'cleanup', '--wave', wave], {env, stdio: 'pipe'}),
   };
 }
 

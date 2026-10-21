@@ -1,8 +1,8 @@
 /*
  * W5.5 SmartAdmin 原生功能 Playwright smoke
  * =============================================================================
- * 覆盖范围（工作单 §9 明确的 11 项 + 若干必查项）：
- *   代码生成 / 监控服务 / 定时任务 / 缓存 / 系统配置 / 字典 / 文件 /
+ * 覆盖范围：
+ *   监控服务 / 定时任务 / 缓存 / 系统配置 / 字典 / 文件 /
  *   登录日志 / 操作日志 / 文档中心 / 网络安全
  *   另加：心跳监控、单号管理、更新日志、意见反馈、Reload、数据脱敏、菜单管理
  *
@@ -41,10 +41,10 @@ const accountManagedExternally = process.env.W5_E2E_MANAGED_EXTERNALLY === '1';
 /** 不设 python 时的兜底：只在能真正跑起来时才建号。 */
 function tryRunAccountsScript(action: 'setup' | 'cleanup') {
   try {
-    execFileSync('python', ['../tools/w5_e2e_accounts.py', action], { env, stdio: 'pipe' });
+    execFileSync('python', ['../tools/e2e_accounts.py', action, '--wave', 'w5'], { env, stdio: 'pipe' });
   } catch (error) {
     throw new Error(
-      `无法执行 tools/w5_e2e_accounts.py ${action}（账号 ${name}）。\n` +
+      `无法执行 tools/e2e_accounts.py ${action}（账号 ${name}）。\n` +
         '若当前环境没有 python，请在宿主机先建号，然后带上：\n' +
         '  W5_E2E_NAME=<账号> W5_E2E_PASSWORD=<密码> W5_E2E_MANAGED_EXTERNALLY=1 npx playwright test\n' +
         `原始错误：${(error as Error).message}`,
@@ -167,17 +167,8 @@ async function openNative(
 }
 
 // =============================================================================
-// 工作单 §9 点名要求的 11 项
+// SmartAdmin 正式页面
 // =============================================================================
-
-test('smartadmin native: 代码生成页面加载并成功查询表清单', async ({ page }) => {
-  await openNative(page, {
-    path: '/support/code-generator',
-    apiPath: '/support/codeGenerator/table/queryTableList',
-    apiBody: {},
-    marker: () => page.locator('.ant-table-tbody'),
-  });
-});
 
 test('smartadmin native: 监控服务-心跳监控页面加载并成功查询', async ({ page }) => {
   await openNative(page, {

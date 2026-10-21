@@ -23,7 +23,7 @@ const writeRowsScript=`from openpyxl import load_workbook\nimport sys,json\np=sy
 function fillRows(path:string,rows:unknown[][]){execFileSync('python',['-c',writeRowsScript,path,JSON.stringify(rows)]);}
 async function select(page:Page,label:string,value:string){const box=page.locator(`.ant-form-item:has(#form_item_${label}) .ant-select-selector`);await box.click();await box.locator('input').fill(value);await page.locator('.ant-select-dropdown:visible').getByText(value,{exact:false}).first().click();}
 test.beforeAll(async()=>{
- execFileSync('python',['../tools/w4_e2e_accounts.py','setup'],{env,stdio:'pipe'});token=await login(name);api=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${token}`}});
+ execFileSync('python',['../tools/e2e_accounts.py', 'setup', '--wave', 'w4'],{env,stdio:'pipe'});token=await login(name);api=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${token}`}});
  const types=(await(await api.post('/scm/customer/type/option/list',{data:{}})).json()).data;
  customerId=await post('/scm/customer/add',{name:name,customerTypeId:types[0].typeId,settleMode:'INDEPENDENT',contactName:'W4验收',contactPhone:'13800000000',address:'验收地址'});
  // 客户编码由服务端生成（CUS + 6 位序号）：后面的 Excel 导入必须以回读的真实编码为匹配键。
@@ -32,7 +32,7 @@ test.beforeAll(async()=>{
  await post('/scm/product/add',{spuCode:name.toUpperCase(),name:name+'商品',categoryId:category.categoryId,status:'ON_SHELF',images:[],skuList:[{skuCode:name.toUpperCase()+'-KG',specName:'散装',specValues:{规格:'散装'},saleUnit:'kg',productType:'NON_STANDARD',marketPrice:'3.5000',status:'ON_SHELF',defaultFlag:true,sortOrder:0},{skuCode:name.toUpperCase()+'-BOX',specName:'整箱',specValues:{规格:'整箱'},saleUnit:'箱',productType:'STANDARD',marketPrice:'0.0000',status:'ON_SHELF',defaultFlag:false,sortOrder:1}]});
  const options=(await(await api.post('/scm/product/sku/option-list',{data:{keyword:name,limit:10}})).json()).data.options;skuId=options.find((x:any)=>x.specName==='散装').skuId;standardSkuId=options.find((x:any)=>x.specName==='整箱').skuId;weightSkuCode=String(options.find((x:any)=>x.specName==='散装').skuCode);standardSkuCode=String(options.find((x:any)=>x.specName==='整箱').skuCode);
 });
-test.afterAll(async()=>{if(api){await api.get('/login/logout');await api.dispose();}execFileSync('python',['../tools/w4_e2e_accounts.py','cleanup'],{env,stdio:'pipe'});});
+test.afterAll(async()=>{if(api){await api.get('/login/logout');await api.dispose();}execFileSync('python',['../tools/e2e_accounts.py', 'cleanup', '--wave', 'w4'],{env,stdio:'pipe'});});
 
 test('1 UI draft entry, diff identity, submit locks price',async({page})=>{
  const consoleErrors:string[]=[];page.on('pageerror',e=>consoleErrors.push(e.message));await browse(page);await expect(page.locator('#order-table')).toBeVisible();await page.getByRole('button',{name:'新建订单',exact:true}).click();await select(page,'customerId',name);

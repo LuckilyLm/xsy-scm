@@ -51,7 +51,7 @@ async function createSku() {
 }
 
 test.beforeAll(async () => {
-  execFileSync('python', ['../tools/w3_e2e_accounts.py', 'setup'], { env, stdio: 'pipe' });
+  execFileSync('python', ['../tools/e2e_accounts.py', 'setup', '--wave', 'w3'], { env, stdio: 'pipe' });
   token = await login(name);
   api = await request.newContext({ baseURL: apiUrl, extraHTTPHeaders: { Authorization: `Bearer ${token}` } });
 });
@@ -72,7 +72,7 @@ test.afterAll(async () => {
     }
     await api.get('/login/logout'); await api.dispose();
   }
-  execFileSync('python', ['../tools/w3_e2e_accounts.py', 'cleanup'], { env, stdio: 'pipe' });
+  execFileSync('python', ['../tools/e2e_accounts.py', 'cleanup', '--wave', 'w3'], { env, stdio: 'pipe' });
 });
 
 test('pricing resolver keeps price and sale eligibility independent', async ({ page }) => {

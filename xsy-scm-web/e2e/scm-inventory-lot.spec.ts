@@ -68,7 +68,7 @@ async function createReceipt(purchaseOrderId: string) {
 }
 
 test.beforeAll(async () => {
-  execFileSync('python', ['../tools/w9_e2e_accounts.py', 'setup'], {env, stdio: 'pipe'});
+  execFileSync('python', ['../tools/e2e_accounts.py', 'setup', '--wave', 'w9'], {env, stdio: 'pipe'});
   token = await login(name);
   api = await request.newContext({baseURL: apiUrl, extraHTTPHeaders: {Authorization: `Bearer ${token}`}});
 
@@ -99,7 +99,7 @@ test.afterAll(async () => {
     await api.get('/login/logout');
     await api.dispose();
   }
-  execFileSync('python', ['../tools/w9_e2e_accounts.py', 'cleanup'], {env, stdio: 'pipe'});
+  execFileSync('python', ['../tools/e2e_accounts.py', 'cleanup', '--wave', 'w9'], {env, stdio: 'pipe'});
 });
 
 test('1｜确认收货时登记两个批次，批次库存按批次展开且合计等于收货量', async ({page}) => {

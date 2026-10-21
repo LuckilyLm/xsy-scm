@@ -17,7 +17,6 @@ import notice from './business/oa/notice-const';
 import loginLog from './support/login-log-const';
 import enterprise from './business/oa/enterprise-const';
 import message from './business/message/message-const';
-import codeGeneratorConst from './support/code-generator-const';
 import changeLogConst from './support/change-log-const';
 import jobConst from './support/job-const';
 import dictConst from './support/dict-const';
@@ -41,7 +40,6 @@ const constantsInfo = {
     ...notice,
     ...enterprise,
     ...message,
-    ...codeGeneratorConst,
     ...changeLogConst,
     ...jobConst,
     ...dictConst,

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-W1–W5 e2e 临时账号工具（共用实现）
+E2E 临时账号统一工具（w1–w9、f0、p1）
 ===============================================================================
 为 Playwright 用例创建/回收一个**隔离的临时超级管理员员工账号**。
 
@@ -26,10 +26,10 @@ SmartAdmin 口令规则（从正式源码反推，勿凭记忆猜）：
 本仓库当前 Compose 的便利值；调用方应按实际容器显式传 XSY_V2_PG_CONTAINER / XSY_V2_PG_USER 覆盖。
 
 命令行：
-    python tools/e2e_accounts.py setup   --prefix w1_e2e_ --name NAME --password PASS
-    python tools/e2e_accounts.py cleanup --prefix w1_e2e_ --name NAME
+    python tools/e2e_accounts.py setup   --wave w1 --name NAME --password PASS
+    python tools/e2e_accounts.py cleanup --wave w1 --name NAME
 或（供 Playwright execFileSync 使用的简化形式，通过环境变量传参）：
-    W1_E2E_NAME / W1_E2E_PASSWORD  + argv[1] = setup|cleanup
+    W1_E2E_NAME / W1_E2E_PASSWORD + --wave w1 + argv[1] = setup|cleanup
 
 安全约束：
   · login_name 必须以 `<波次>_e2e_` 开头（`_e2e_` 是硬性标记，波次如 w1 / w8 / f0），否则拒绝执行；
@@ -65,9 +65,13 @@ def _arg(flag: str, env_keys: list[str], default: str = "") -> str:
 
 
 ACTION = sys.argv[1] if len(sys.argv) > 1 else ""
-NAME = _arg("--name", ["E2E_NAME"] + [f"W{i}_E2E_NAME" for i in range(1, 8)])
-PASSWORD = _arg("--password", ["E2E_PASSWORD"] + [f"W{i}_E2E_PASSWORD" for i in range(1, 8)])
-PREFIX = _arg("--prefix", ["E2E_PREFIX"], "")
+WAVE = _arg("--wave", ["E2E_WAVE"], "")
+if WAVE and not re.fullmatch(r"(?:w[1-9]|f0|p1)", WAVE):
+    raise SystemExit("[e2e-accounts] --wave 仅支持 w1…w9、f0、p1")
+wave_env = WAVE.upper() if WAVE else ""
+NAME = _arg("--name", ([f"{wave_env}_E2E_NAME"] if wave_env else []) + ["E2E_NAME"])
+PASSWORD = _arg("--password", ([f"{wave_env}_E2E_PASSWORD"] if wave_env else []) + ["E2E_PASSWORD"])
+PREFIX = f"{WAVE}_e2e_" if WAVE else _arg("--prefix", ["E2E_PREFIX"], "")
 
 # 伴随账号有两种，语义互斥，不能共用一个：
 #   `<NAME>_read`：挂只读角色（页面菜单 + 只读按钮），用于「页面能打开、写入按钮被隐藏、写接口 30005」；
@@ -126,8 +130,7 @@ def deny_codes() -> list[str]:
 def companion_names() -> tuple[str, str]:
     """按当前 NAME 现算伴随账号名。
 
-    w1..w6 薄封装在导入后才设置 impl.NAME，模块级的 READ_NAME 那时还是空串；
-    setup/cleanup 一律走这里，避免封装脚本各修各的。
+    setup/cleanup 均从当前 NAME 派生，避免调用方各自维护伴随账号规则。
     """
     return (NAME + READ_SUFFIX if NAME else "", NAME + NONE_SUFFIX if NAME else "")
 
@@ -187,7 +190,7 @@ def guard() -> None:
     if not NAME or (ACTION == "setup" and not PASSWORD):
         raise SystemExit(
             "[e2e-accounts] 缺少账号参数。请提供 --name/--password（cleanup 只需 --name），或设置 "
-            "W{1..7}_E2E_NAME / W{1..7}_E2E_PASSWORD 环境变量。"
+            "<WAVE>_E2E_NAME / <WAVE>_E2E_PASSWORD 环境变量，并指定 --wave。"
         )
     # 波次令牌可以是 w1…w9（按交付波次）或 f0（对象存储取证），但 `_e2e_` 这个硬标记必须有：
     # 它是「临时账号」与正式账号之间唯一的判据，cleanup 按精确前缀删人，缺了这道标记
@@ -540,7 +543,6 @@ if __name__ == "__main__":
         cleanup()
     else:
         raise SystemExit(
-            "用法: e2e_accounts.py setup|cleanup "
-            "[--name NAME] [--password PASS] [--prefix PREFIX]\n"
-            "  或通过环境变量 W{1..7}_E2E_NAME / W{1..7}_E2E_PASSWORD 传参"
+            "用法: e2e_accounts.py setup|cleanup --wave w1|...|w9|f0|p1 "
+            "[--name NAME] [--password PASS]"
         )

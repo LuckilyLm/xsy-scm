@@ -23,7 +23,7 @@ const apiUrl = process.env.W8_E2E_API_BASE || 'http://127.0.0.1:18080';
 const account = 'w2_e2e_' + Date.now().toString(36);
 const password = 'W8@' + randomBytes(6).toString('hex');
 const env = {...process.env, W2_E2E_NAME: account, W2_E2E_PASSWORD: password};
-const ACCOUNT_SCRIPT = '../tools/w2_e2e_accounts.py';
+const ACCOUNT_SCRIPT = '../tools/e2e_accounts.py';
 
 // antd 在两个 CJK 字符间插入视觉空格（"查询" → "查 询"），按字符间可选空白精确匹配。
 const escapeRe = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -84,7 +84,7 @@ async function createPilotCustomer() {
 }
 
 test.beforeAll(async () => {
-  execFileSync('python', [ACCOUNT_SCRIPT, 'setup'], {env, stdio: 'pipe'});
+  execFileSync('python', [ACCOUNT_SCRIPT, 'setup', '--wave', 'w2'], {env, stdio: 'pipe'});
   adminToken = await login(account);
   adminApi = await request.newContext({baseURL: apiUrl, extraHTTPHeaders: {Authorization: `Bearer ${adminToken}`}});
   readToken = await login(account + '_read');
@@ -96,7 +96,7 @@ test.afterAll(async () => {
     await adminApi.post('/scm/customer/delete', {data: {customerId: pilotCustomer.customerId, version: pilotCustomer.version}});
   }
   await adminApi?.dispose();
-  execFileSync('python', [ACCOUNT_SCRIPT, 'cleanup'], {env, stdio: 'pipe'});
+  execFileSync('python', [ACCOUNT_SCRIPT, 'cleanup', '--wave', 'w2'], {env, stdio: 'pipe'});
 });
 
 test('操作日志页按 PRODUCT 业务上下文下钻（原商品详情入口已移除）', async ({page}) => {

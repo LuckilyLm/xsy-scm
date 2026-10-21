@@ -206,7 +206,7 @@ class Verification:
 
     def e2e(self):
         # Local account provisioning remains a prerequisite, including on clean clones.
-        helpers = [f"w{wave}_e2e_accounts.py" for wave in range(1, 7)]
+        helpers = ["e2e_accounts.py", "e2e_report_fixture.py"]
         missing = [name for name in helpers if not (ROOT / "tools" / name).is_file()]
         if missing:
             self.incomplete.append("E2E: local account helpers missing: " + ", ".join(missing))

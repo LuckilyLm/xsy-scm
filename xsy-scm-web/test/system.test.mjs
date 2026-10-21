@@ -182,7 +182,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   // ------------------------------------------------------------------
 
   const PROCESS_MARKERS = [
-    ['来源：project-reference-examples', /来源\s*[:：]\s*\**\s*project-reference-examples/],
+    ['来源：历史参考实现', /来源\s*[:：]\s*\**\s*(历史参考实现|旧系统代码|legacy)/],
     ['来源：新写', /来源\s*[:：]\s*\**\s*新写/],
     // `来源：W1 派生` 是第三种形态，P4.1 的组合匹配没覆盖到
     ['来源：Wn 派生', /来源\s*[:：]\s*\**\s*派生/],
@@ -192,7 +192,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     // 不能只匹配 `Playwright`：`表格 DOM id —— 给 Playwright 定位用` 是在解释
     // 「为什么有两套 id」，属正常约束（实测 4 处误报）。要求 `验收/测试` 在前。
     ['测试 / 验收记录', /(验收|测试)[^\n]{0,20}(Playwright|E2E|单测)|单测已过|测试已过|已通过测试/],
-    ['参考项目 / 旧项目对比', /project-reference-examples|参考项目|参考实现|legacy 项目|V2 W\d/],
+    ['参考项目 / 旧项目对比', /参考项目|参考实现|legacy 项目|V2 W\d/],
     ['为什么新增此文件', /为什么(必须)?(新增|新建)此?文件/],
     ['AI 指令式措辞', /绝不能改|不要乱动|刻意这样|不得改动|禁止修改|必须照做/],
     // closeout 补：这一批是「没有被 marker 集合覆盖」的历史计划标签，
@@ -1317,7 +1317,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    *
    * 注释层的同类规则在 `scm-comment-noise-contract`，那里只扫注释，因此写在正文里的
    * `**加粗**` 会原样显示成星号 —— 实测在库存盘点详情与转换单页各漏了一处。
-   * 只扫 SCM 自己的页面：SmartAdmin 的代码生成器里有真实的 JSDoc 代码示例。
+   * 只扫 SCM 自己的页面；SmartAdmin 页面按各自的界面契约检查。
    */
   const VISIBLE_MARKDOWN = [
     {label: 'markdown 加粗', pattern: /\*\*/},

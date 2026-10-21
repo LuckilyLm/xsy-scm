@@ -59,7 +59,7 @@ async function dropAssistant(kind: 'uom' | 'tag', keyName: 'uomId' | 'tagId', id
   }
 }
 test.beforeAll(async () => {
-  execFileSync('python', ['../tools/w1_e2e_accounts.py', 'setup'], { env, stdio: 'pipe' });
+  execFileSync('python', ['../tools/e2e_accounts.py', 'setup', '--wave', 'w1'], { env, stdio: 'pipe' });
   token = await login(name); api = await request.newContext({ baseURL: apiUrl, extraHTTPHeaders: { Authorization: `Bearer ${token}` } });
 });
 test.afterAll(async () => {
@@ -76,7 +76,7 @@ test.afterAll(async () => {
     await dropAssistant('tag', 'tagId', tagIds); await dropAssistant('uom', 'uomId', uomIds);
     await api.get('/login/logout'); await api.dispose();
   }
-  execFileSync('python', ['../tools/w1_e2e_accounts.py', 'cleanup'], { env, stdio: 'pipe' });
+  execFileSync('python', ['../tools/e2e_accounts.py', 'cleanup', '--wave', 'w1'], { env, stdio: 'pipe' });
 });
 async function authenticate(page: Page, value = token) {
   await page.addInitScript(value => localStorage.setItem('smart_admin_user_token', value), value);

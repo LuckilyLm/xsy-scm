@@ -58,7 +58,7 @@ const confirmReceipt=(receipt:any,items:any[],key=randomUUID())=>post('/scm/purc
 async function row(page:Page,tableId:string,text:string){await page.getByRole('button',{name:/^查\s*询$/}).click();return page.locator(`#${tableId} tr`).filter({hasText:text});}
 
 test.beforeAll(async()=>{
- execFileSync('python',['../tools/w5_e2e_accounts.py','setup'],{env,stdio:'pipe'});
+ execFileSync('python',['../tools/e2e_accounts.py', 'setup', '--wave', 'w5'],{env,stdio:'pipe'});
  token=await login(name);api=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${token}`}});
  // 仓库：用 V15 播种的默认仓（W5 只做「新建 / 编辑基础信息」，无启停写入路径 → G1）
  const warehouses=await get('/scm/warehouse/list');warehouseId=String((warehouses.find((w:any)=>w.warehouseCode==='WH001')??warehouses[0]).id);
@@ -77,7 +77,7 @@ test.beforeAll(async()=>{
 test.afterAll(async()=>{
  if(api&&printTemplateId){const template=await get(`/scm/print/template/${printTemplateId}`);await post(`/scm/print/template/${printTemplateId}/delete?version=${template.version}`,{});}
  if(api){await api.get('/login/logout');await api.dispose();}
- execFileSync('python',['../tools/w5_e2e_accounts.py','cleanup'],{env,stdio:'pipe'});
+ execFileSync('python',['../tools/e2e_accounts.py', 'cleanup', '--wave', 'w5'],{env,stdio:'pipe'});
 });
 
 test('1 demand generation from a confirmed sales order',async({page})=>{

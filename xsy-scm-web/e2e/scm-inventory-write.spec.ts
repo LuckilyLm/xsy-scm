@@ -5,7 +5,7 @@
   每个入口都跑真实链路（HTTP + 真实 PG + 真实浏览器），并断言三件事同时成立：
       单据状态机 · 余额与流水（append-only 链） · 金额守恒。
   其中调拨与转换的「成本随货平移」是本轮修的账务缺陷，断言在测试 4 与 5。
-  账号密钥只存在内存里，跑完由 tools/w6_e2e_accounts.py 清理。
+  账号密钥只存在内存里，跑完由 tools/e2e_accounts.py 清理。
 */
 import {test,expect,request,type APIRequestContext,type Page} from '@playwright/test';
 import {randomBytes,randomUUID} from 'node:crypto';
@@ -138,7 +138,7 @@ async function stockIn(skuId:string,quantity:string){
 test.describe.configure({mode:'serial'});
 
 test.beforeAll(async()=>{
-  execFileSync('python',['../tools/w6_e2e_accounts.py','setup'],{env,stdio:'pipe'});
+  execFileSync('python',['../tools/e2e_accounts.py', 'setup', '--wave', 'w6'],{env,stdio:'pipe'});
   token=await login(name,password);
   api=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${token}`}});
   // 审批账号与录单账号分开：同一人审批报损报溢会被 41065 挡下（裁决第 8 条制衡）
@@ -159,7 +159,7 @@ test.beforeAll(async()=>{
 test.afterAll(async()=>{
   if(auditor){await auditor.get('/login/logout');await auditor.dispose();}
   if(api){await api.get('/login/logout');await api.dispose();}
-  execFileSync('python',['../tools/w6_e2e_accounts.py','cleanup'],{env,stdio:'pipe'});
+  execFileSync('python',['../tools/e2e_accounts.py', 'cleanup', '--wave', 'w6'],{env,stdio:'pipe'});
 });
 
 test.beforeEach(async({page})=>{

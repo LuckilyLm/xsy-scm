@@ -92,7 +92,7 @@ async function browse(page: Page, path: string) {
 }
 
 function w6Fixture(action: string, args: string[] = []) {
-    return execFileSync('python', ['../tools/w6_e2e_accounts.py', action, ...args], {env, encoding: 'utf8'}).trim();
+    return execFileSync('python', ['../tools/e2e_report_fixture.py', action, '--wave', 'w6', ...args], {env, encoding: 'utf8'}).trim();
 }
 
 async function purchaseDailyQuery(reportDate: string, filters: Record<string, unknown> = {}) {
@@ -161,7 +161,7 @@ async function confirmedReceipt(receiptMode: 'DIRECT' | 'WAREHOUSE_CONFIRM', qua
 }
 
 test.beforeAll(async () => {
-    execFileSync('python', ['../tools/w6_e2e_accounts.py', 'setup'], {env, stdio: 'pipe'});
+    execFileSync('python', ['../tools/e2e_accounts.py', 'setup', '--wave', 'w6'], {env, stdio: 'pipe'});
     token = await login(name, password);
     api = await request.newContext({baseURL: apiUrl, extraHTTPHeaders: {Authorization: `Bearer ${token}`}});
     // 未挂角色的伴随账号：用来证明权限是服务端拦的，不是前端藏起来的
@@ -199,7 +199,7 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-    execFileSync('python', ['../tools/w6_e2e_accounts.py', 'cleanup'], {env, stdio: 'pipe'});
+    execFileSync('python', ['../tools/e2e_accounts.py', 'cleanup', '--wave', 'w6'], {env, stdio: 'pipe'});
 });
 
 test('1 经营概览：0 pageerror、默认本月、指标卡命名不含收入类词', async ({page}) => {

@@ -566,8 +566,6 @@ def build() -> Metrics:
         "tests": " + ".join(guard.relative(root) + "/**/*.java" for root in guard.package_roots(guard.TEST_SOURCE_ROOT)),
         "mapperXml": guard.relative(MAPPER_ROOT) + "/**/*.xml",
         "excluded": [
-            "project-reference-examples/**",
-            "xsy-scm-miniapp/**",
             "sa-base/** 与 module/system/**、module/support/**（SmartAdmin 底座，非本团队所有）",
             "target/**",
         ],

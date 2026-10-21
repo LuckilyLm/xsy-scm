@@ -7,7 +7,6 @@
 - [下一阶段开发计划](next-development-plan.md)：按原始 13 模块、44 条功能描述收敛为 MVP 主链验收、基础缺口补齐和轻量回归；蔬东坡只参考常规业务操作，不自动扩展需求。
 - [需求基线](requirements/产品功能需求基线.md)及[负责人确认口径](requirements/2026-09-09-负责人确认口径.md)：产品需求和原始业务确认。
 - [业务身份与追溯架构](architecture/business-identity-and-traceability.md)：L1 批次、L2 包装码的身份边界、已实施内容与后续目标模型；实施状态以状态文档为准。
-- [参考项目目录](../project-reference-examples/xsy-scm/)：只读的旧系统及上游参考资料。
 - [贡献与评审约定](../CONTRIBUTING.md)及[代理协作规则](../AGENTS.md)：工程实践、用户界面与 Git 约束。
 - [工程技能配置](agents/)：`mattpocock/skills` 使用的 issue tracker 与领域文档约定；`.scratch/` 是本地工作区，不入库。
 - [地图部署说明](map-deployment.md)：高德配置、坐标系、降级行为和现场核对项。

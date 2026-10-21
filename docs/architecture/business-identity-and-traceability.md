@@ -1,16 +1,15 @@
-# XSY-SCM 业务编号、主数据标识与一物一码溯源设计（仓库核对修订版）
+# XSY-SCM 业务编号、主数据标识与一物一码溯源设计
 
 > 核对日期：2026-10-18
-> 本地仓库：D:\Browser Download\xsy-scm / main / cb2e7338（读取时工作区无未提交变更）
-> 状态：**当前工作区已修改 SPU/SKU/分类/标签发号并新增 V147（尚未迁移数据库/生产部署）；追溯部分仍为目标架构建议**
-> 依据优先级：现有代码/SQL + docs/decisions.md + docs/requirements/产品功能需求基线.md；参考工程仅作对照，不能当作现行能力或已确认产品决定。
+> 核对基线：`cb2e7338`。后续实现与验证状态见 [项目状态](../status.md)；本文的追溯目标不代表已经交付。
+> 规则来源依照 `AGENTS.md`；业务决策和需求分别见 [有效决策](../decisions.md)、[需求基线](../requirements/产品功能需求基线.md)。
 
 ## 0. 撤回前几版不准确的建议
 
 1. **撤回“所有单据每天重置六位流水”**：实际 ScmDocumentNumbers.format 使用北京时间日期和至少六位 PG 序列，序列全局递增、不按日重置。6 位只是最小展示宽度，不是容量硬上限；跳号正常。无充分理由不得改成每日重置。
 2. **撤回随意定义的前缀表**：如 PR=采购退货、TR=调拨、ST=盘点、DL=配送等都不符合当前代码。实际 PR 是采购收货，TRF 是调拨，STK 是盘点，DR 是配送线路。禁止用空想字典覆盖在用编号。
 3. **撤回把 P00001234、SKU00005678 或 FRU-APL-00128 当作行业统一标准**：SPU/SKU 的身份边界、供应商货号、包装、计量与追溯颗粒度应先确定。编码格式是次级选择；不能把可变分类/产地/价格/批次塞进稳定身份码。
-4. **撤回“参考工程已有一物一码就能直接迁移”的暗示**：project-reference-examples 中 TraceCodeService 为一码一批，traceCode=batchNo，**并不是一箱一码/一件一码**。产品需求明确提出一物一码，二者存在差异。
+4. **批次码不能直接充当一物一码**：历史参考实现中的 TraceCodeService 使用一码一批，traceCode=batchNo，**并不是一箱一码/一件一码**。产品需求明确提出一物一码，二者存在差异。
 5. **撤回“当前已有统一 BusinessNumberService 管理所有编号”的说法**：现有 ScmBusinessNoService 只服务 CUSTOMER/SUPPLIER/WAREHOUSE 主数据；各业务域各取 PG Sequence，并共享格式化工具。统一规范 ≠ 立即重写所有生成器。
 6. **不使用编号推断数据可信性**：某日的日期段说明取号/业务日期策略，不证明采收时间、发货时间；一个订单号不是批次或唯一实物码；一张二维码不等于有可审计的追溯事实。
 
@@ -58,7 +57,7 @@
 
 - **2026-10-19 实施进度**：正式工程已有 V151 的 `xsy_trace_lot`、`xsy_inventory_lot_balance` 与批次流水，以及 V152～V158 的 `xsy_trace_unit`、`xsy_trace_event`、分拣绑定、更正解绑与触发器；这是 L1 批次及 L2 独立包装身份底座，**还不是逐包装正式出库、签收与退回证据闭环，也未实现完整 EPCIS 模型**。不可将参考工程的 `trace_batch/trace_code` 命名当作本项目正式表。
 - docs/requirements/产品功能需求基线.md 明确列“一物一码扫码溯源”；docs/decisions.md 的“后续产品工作边界”已明确 **以批次及包装码建立可追溯关系、公开查询使用批准字段白名单**。这已经确定 L1 批次与 L2 包装两个维度，但具体每袋/箱/筐的发码和收货现场操作仍要细化。
-- 参考工程 project-reference-examples/xsy-scm/.../trace：TraceBatchEntity 包含外部生产批号、供应商、产地、生产日期；TraceCodeEntity / TraceCodeService 采用**一码一批**。可以参考字段与权限交互，不得直接复制其颗粒度来冒充“一物一码”。
+- 历史参考实现的 TraceBatchEntity 包含外部生产批号、供应商、产地、生产日期；TraceCodeEntity / TraceCodeService 采用**一码一批**。这些代码已从工作树移除，仍可通过 Git 历史查阅；不能把该颗粒度当作“一物一码”。
 - 已有库存/采购/分拣/配送/订单存在业务明细、实重及来源关联；应在这些确认事实中补充批次、实际单元、转换、出入库的追溯关联，而不是凭扫码页面反推不存在的真实物流事实。
 
 **实施边界（2026-10-18 裁决）**：分两期落地。一期只做 **L1 批次**——收货行登记批次、批次独立子账（余额 + 只追加流水）、出库按先进先出分摊、退货回原批次；批次仓暂不支持盘点/调拨/损溢/规格转换。二期再做 **L2 包装码**（`unit_code` 不透明、永不复用、一码一批），L3 单件级仍不做。批次身份与包装实物身份始终独立，批次码不冒充逐包装码。
@@ -251,10 +250,6 @@
 - xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/domain/form/ProductSkuForm.java
 - xsy-scm-server/sa-admin/src/main/resources/db/migration/V6__scm_product.sql
 - xsy-scm-server/sa-admin/src/main/resources/db/migration/V111__scm_business_no_sequences.sql
-
-**仅供差距对照的参考工程**：
-- project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-server/src/main/java/com/xsy/scm/admin/module/business/trace/service/TraceCodeService.java
-- project-reference-examples/xsy-scm/xsy-scm-server/xsy-scm-server/src/main/java/com/xsy/scm/admin/module/business/trace/domain/entity/TraceCodeEntity.java
 
 **外部标准（不等于 XSY 已认证/已实现）**：
 - GS1 Global Traceability Standard：https://www.gs1.org/standards/gs1-global-traceability-standard/current-standard

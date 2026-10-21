@@ -1,1 +1,0 @@
-ALTER TABLE `t_dict_data`  ADD COLUMN `data_style` varchar(500) NULL COMMENT '字典项样式' AFTER `data_label` ;

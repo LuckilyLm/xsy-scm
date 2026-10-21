@@ -1,6 +1,6 @@
 # 鲜蔬源客户商城
 
-`xsy-scm-customer-app/` 是客户商城正式移动工作区，采用 uni-app + Vue 3 + Vite，首发目标为微信小程序。它与冻结的 `xsy-scm-miniapp/`、后续员工端相互独立。
+`xsy-scm-customer-app/` 是客户商城正式移动工作区，采用 uni-app + Vue 3 + Vite，首发目标为微信小程序。旧 Taro/React 客户端已归档于 Git 历史；后续员工端使用独立工作区。
 
 ## 当前范围
 

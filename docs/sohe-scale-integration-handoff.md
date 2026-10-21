@@ -38,7 +38,7 @@
 - 正式后端：`xsy-scm-server/sa-admin/`（Spring Boot / Java / PostgreSQL）。
 - 管理后台：`xsy-scm-web/`（**Vue 3 + TypeScript**，不要误认 React）。
 - 客户端：`xsy-scm-customer-app/`（uni-app）。秤端人员登录不使用客户账号。
-- 历史 `xsy-scm-miniapp/` 已冻结；新设备程序不要以该目录为基础。
+- 旧客户小程序已归档于 Git 历史；新设备程序应使用独立工程。
 
 ### 3.2 推荐分工与仓库权限
 

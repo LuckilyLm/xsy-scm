@@ -53,7 +53,7 @@ function line(receipt:any,declared:string,actualWeight:string|null){const item=r
 const confirmReceipt=(receipt:any,quantity:string)=>post('/scm/purchase/receipt/confirm',{id:receipt.id,version:receipt.version,items:[line(receipt,quantity,quantity)]});
 
 test.beforeAll(async()=>{
-  execFileSync('python',['../tools/w6_e2e_accounts.py','setup'],{env,stdio:'pipe'});
+  execFileSync('python',['../tools/e2e_accounts.py', 'setup', '--wave', 'w6'],{env,stdio:'pipe'});
   token=await login(name);
   api=await request.newContext({baseURL:apiUrl,extraHTTPHeaders:{Authorization:`Bearer ${token}`}});
   // 仓库：用 V15 播种的默认仓（W5 只做「新建 / 编辑基础信息」，无启停写入路径 → G1）。
@@ -80,7 +80,7 @@ test.beforeAll(async()=>{
   supplierId=await post('/scm/supplier/add',{name:name+'供应商'});
   await post('/scm/supplier/sku/replace',{supplierId,items:[{skuId,purchaseUnit:'kg',defaultFlag:true,status:'ENABLED'}]});
 });
-test.afterAll(async()=>{if(api){await api.get('/login/logout');await api.dispose();}execFileSync('python',['../tools/w6_e2e_accounts.py','cleanup'],{env,stdio:'pipe'});});
+test.afterAll(async()=>{if(api){await api.get('/login/logout');await api.dispose();}execFileSync('python',['../tools/e2e_accounts.py', 'cleanup', '--wave', 'w6'],{env,stdio:'pipe'});});
 
 // ------------------------------------------------------------------
 // 1. 收货确认即入库 → 余额页出现该 SKU 行
