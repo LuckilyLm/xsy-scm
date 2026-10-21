@@ -52,9 +52,9 @@ public class MallHomeLayoutValidator {
         ScmValueScope audienceScope = scopeService.resolve().getCustomerSellerScope();
         for (MallHomeBlockForm block : blocks) {
             if (block == null || block.getKey() == null || !block.getKey().matches("[A-Za-z0-9_-]{1,64}")
-                    || !keys.add(block.getKey()) || block.getSortOrder() == null
-                    || !positions.add(block.getSortOrder()) || !Objects.equals(block.getSchemaVersion(), 1)
-                    || block.getEnabled() == null || block.getType() == null) {
+                    || !keys.add(block.getKey()) || block.getSortOrder() == null || !positions.add(block.getSortOrder())
+                    || !Objects.equals(block.getSchemaVersion(), 1) || block.getEnabled() == null
+                    || block.getType() == null) {
                 throw new ScmBusinessException(INVALID_LAYOUT);
             }
             MallHomeBlockType type;
@@ -79,12 +79,11 @@ public class MallHomeLayoutValidator {
             if (block.getSkuIds() != null) {
                 referencedSkus.addAll(block.getSkuIds());
             }
-            if ("PRODUCT".equals(block.getLinkType())) {
+            if (MallHomeLinkType.PRODUCT.name().equals(block.getLinkType())) {
                 referencedSkus.add(parseId(block.getLinkTarget()));
             }
         }
-        if (!referencedSkus.isEmpty()
-                && referencedSkus.size() > 100) {
+        if (!referencedSkus.isEmpty() && referencedSkus.size() > 100) {
             throw new ScmBusinessException(INVALID_LAYOUT);
         }
         if (!referencedSkus.isEmpty()
@@ -120,17 +119,18 @@ public class MallHomeLayoutValidator {
                 || block.getSkuIds().stream().distinct().count() != block.getSkuIds().size())) {
             throw new ScmBusinessException(INVALID_LAYOUT);
         }
-        if (type != MallHomeBlockType.RECOMMENDATION && block.getSkuIds() != null
-                && !block.getSkuIds().isEmpty()) {
+        if (type != MallHomeBlockType.RECOMMENDATION && block.getSkuIds() != null && !block.getSkuIds().isEmpty()) {
             throw new ScmBusinessException(INVALID_LAYOUT);
         }
         switch (type) {
             case BANNER -> {
-                if (blank(block.getImageFileKey())) throw new ScmBusinessException(INVALID_IMAGE);
+                if (blank(block.getImageFileKey()))
+                    throw new ScmBusinessException(INVALID_IMAGE);
             }
             case SHORTCUT -> {
-                if (blank(block.getTitle())) throw new ScmBusinessException(INVALID_LAYOUT);
-                if (block.getLinkType() == null || "NONE".equals(block.getLinkType())) {
+                if (blank(block.getTitle()))
+                    throw new ScmBusinessException(INVALID_LAYOUT);
+                if (block.getLinkType() == null || MallHomeLinkType.NONE.name().equals(block.getLinkType())) {
                     throw new ScmBusinessException(INVALID_LINK);
                 }
             }
@@ -138,17 +138,18 @@ public class MallHomeLayoutValidator {
                 if (blank(block.getTitle()) || block.getSkuIds() == null || block.getSkuIds().isEmpty()) {
                     throw new ScmBusinessException(INVALID_LAYOUT);
                 }
-                if (block.getLinkType() != null && !"NONE".equals(block.getLinkType())) {
+                if (block.getLinkType() != null && !MallHomeLinkType.NONE.name().equals(block.getLinkType())) {
                     throw new ScmBusinessException(INVALID_LINK);
                 }
             }
             case ACTIVITY_TOPIC -> {
-                if (blank(block.getTitle()) || !"ACTIVITY".equals(block.getLinkType())) {
+                if (blank(block.getTitle()) || !MallHomeLinkType.ACTIVITY.name().equals(block.getLinkType())) {
                     throw new ScmBusinessException(INVALID_LAYOUT);
                 }
             }
             case ANNOUNCEMENT -> {
-                if (blank(block.getText())) throw new ScmBusinessException(INVALID_LAYOUT);
+                if (blank(block.getText()))
+                    throw new ScmBusinessException(INVALID_LAYOUT);
             }
         }
     }
@@ -156,14 +157,14 @@ public class MallHomeLayoutValidator {
     private void validateLink(MallHomeBlockForm block) {
         MallHomeLinkType link;
         try {
-            link = block.getLinkType() == null ? MallHomeLinkType.NONE
-                    : MallHomeLinkType.valueOf(block.getLinkType());
+            link = block.getLinkType() == null ? MallHomeLinkType.NONE : MallHomeLinkType.valueOf(block.getLinkType());
         } catch (IllegalArgumentException invalidType) {
             throw new ScmBusinessException(INVALID_LINK);
         }
         switch (link) {
             case NONE, COUPONS, SEARCH -> {
-                if (!blank(block.getLinkTarget())) throw new ScmBusinessException(INVALID_LINK);
+                if (!blank(block.getLinkTarget()))
+                    throw new ScmBusinessException(INVALID_LINK);
             }
             case PRODUCT -> parseId(block.getLinkTarget());
             case CATEGORY -> {
@@ -188,15 +189,14 @@ public class MallHomeLayoutValidator {
     }
 
     public boolean allowedExternalUrl(String target) {
-        if (target == null) return false;
+        if (target == null)
+            return false;
         try {
             URI uri = URI.create(target);
-            Set<String> hosts = Arrays.stream(allowedExternalHosts.split(","))
-                    .map(host -> host.trim().toLowerCase()).filter(host -> !host.isEmpty())
-                    .collect(Collectors.toSet());
-            return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null
-                    && uri.getUserInfo() == null && uri.getPort() == -1
-                    && hosts.contains(uri.getHost().toLowerCase());
+            Set<String> hosts = Arrays.stream(allowedExternalHosts.split(",")).map(host -> host.trim().toLowerCase())
+                    .filter(host -> !host.isEmpty()).collect(Collectors.toSet());
+            return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null && uri.getUserInfo() == null
+                    && uri.getPort() == -1 && hosts.contains(uri.getHost().toLowerCase());
         } catch (IllegalArgumentException invalidUri) {
             return false;
         }
@@ -205,7 +205,8 @@ public class MallHomeLayoutValidator {
     private static Long parseId(String raw) {
         try {
             long value = Long.parseLong(raw);
-            if (value > 0) return value;
+            if (value > 0)
+                return value;
         } catch (RuntimeException invalidId) {
             // Invalid targets receive the same business error as unknown links.
         }

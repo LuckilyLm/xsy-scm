@@ -4,6 +4,8 @@ import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.catalog.domain.vo.MallCategoryVO;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.service.MallCatalogService;
+import com.xsy.scm.mall.home.constant.MallHomeBlockType;
+import com.xsy.scm.mall.home.constant.MallHomeLinkType;
 import com.xsy.scm.mall.home.dao.MallHomeDao;
 import com.xsy.scm.mall.home.domain.form.MallHomeBlockForm;
 import com.xsy.scm.mall.home.domain.vo.MallHomeBlockVO;
@@ -35,7 +37,7 @@ public class MallHomeProjectionService {
     private static final String PUBLIC_IMAGE_PREFIX = FileFolderTypeEnum.PUBLIC_IMAGE.getFolder();
     private final MallHomeDao homeDao;
     private final MallHomeLayoutService layoutService;
-    private final MallHomeLayoutValidator validator;
+    private final MallHomeLayoutValidator layoutValidator;
     private final MallCatalogService catalogService;
     private final MallWarehouseService warehouseService;
     private final MallPromotionService promotionService;
@@ -54,8 +56,7 @@ public class MallHomeProjectionService {
     }
 
     /**
-     * 只读当前发布的主题指针，不解析装修内容，也不要求登录态；
-     * 无发布、指针缺失或发布记录丢失时如实返回空值，由客户端统一回退默认主题。
+     * 只读当前发布的主题指针，不解析装修内容，也不要求登录态； 无发布、指针缺失或发布记录丢失时如实返回空值，由客户端统一回退默认主题。
      */
     @Transactional(readOnly = true)
     public MallThemeVO publishedTheme() {
@@ -65,9 +66,7 @@ public class MallHomeProjectionService {
             return new MallThemeVO(null, null);
         }
         MallHomeReleaseVO release = homeDao.release(releaseId);
-        return release == null
-                ? new MallThemeVO(null, null)
-                : new MallThemeVO(releaseId, release.getThemeCode());
+        return release == null ? new MallThemeVO(null, null) : new MallThemeVO(releaseId, release.getThemeCode());
     }
 
     @Transactional(readOnly = true)
@@ -101,7 +100,7 @@ public class MallHomeProjectionService {
         }
         List<Long> skuIds = active.stream().flatMap(block -> {
             List<Long> ids = new ArrayList<>(block.getSkuIds() == null ? List.of() : block.getSkuIds());
-            if ("PRODUCT".equals(block.getLinkType())) {
+            if (MallHomeLinkType.PRODUCT.name().equals(block.getLinkType())) {
                 try {
                     ids.add(Long.parseLong(block.getLinkTarget()));
                 } catch (RuntimeException invalidTarget) {
@@ -115,12 +114,13 @@ public class MallHomeProjectionService {
                         ? Map.of()
                         : catalogService.visibleProducts(customer, skuIds, null, warehouseId).stream()
                                 .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity()));
-        Set<Long> activityIds = active.stream().anyMatch(block -> "ACTIVITY".equals(block.getLinkType()))
-                ? promotionService.activities(customer, warehouseId).stream().map(activity -> activity.getId())
-                        .collect(Collectors.toSet())
-                : Set.of();
+        Set<Long> activityIds = active.stream()
+                .anyMatch(block -> MallHomeLinkType.ACTIVITY.name().equals(block.getLinkType()))
+                        ? promotionService.activities(customer, warehouseId).stream().map(activity -> activity.getId())
+                                .collect(Collectors.toSet())
+                        : Set.of();
         Set<Long> categoryIds = new HashSet<>();
-        if (active.stream().anyMatch(block -> "CATEGORY".equals(block.getLinkType()))) {
+        if (active.stream().anyMatch(block -> MallHomeLinkType.CATEGORY.name().equals(block.getLinkType()))) {
             for (MallCategoryVO category : catalogService.categories(customer)) {
                 addCategoryIds(category, categoryIds);
             }
@@ -153,7 +153,7 @@ public class MallHomeProjectionService {
             view.setImageUrl(imageUrls.get(block.getImageFileKey()));
             view.setLinkType(block.getLinkType());
             view.setLinkTarget(block.getLinkTarget());
-            if ("RECOMMENDATION".equals(block.getType())) {
+            if (MallHomeBlockType.RECOMMENDATION.name().equals(block.getType())) {
                 if (block.getSkuIds() == null)
                     continue;
                 List<MallProductVO> visible = block.getSkuIds().stream().map(products::get)
@@ -169,23 +169,34 @@ public class MallHomeProjectionService {
 
     private boolean targetVisible(MallHomeBlockForm block, Map<Long, MallProductVO> products, Set<Long> categoryIds,
             Set<Long> activityIds) {
-        String type = block.getLinkType();
-        if ("EXTERNAL_URL".equals(type)) {
-            return validator.allowedExternalUrl(block.getLinkTarget());
+        MallHomeLinkType linkType = linkTypeOf(block.getLinkType());
+        if (linkType == MallHomeLinkType.EXTERNAL_URL) {
+            return layoutValidator.allowedExternalUrl(block.getLinkTarget());
         }
-        if (!"PRODUCT".equals(type) && !"CATEGORY".equals(type) && !"ACTIVITY".equals(type)) {
+        if (linkType != MallHomeLinkType.PRODUCT && linkType != MallHomeLinkType.CATEGORY
+                && linkType != MallHomeLinkType.ACTIVITY) {
             return true;
         }
         try {
             Long id = Long.valueOf(block.getLinkTarget());
-            return switch (type) {
-                case "PRODUCT" -> products.containsKey(id);
-                case "CATEGORY" -> categoryIds.contains(id);
+            return switch (linkType) {
+                case PRODUCT -> products.containsKey(id);
+                case CATEGORY -> categoryIds.contains(id);
                 default -> activityIds.contains(id);
             };
         } catch (RuntimeException invalidTarget) {
             return false;
         }
+    }
+
+    /** 表单里的链接类型是字符串，未知取值按「没有链接」处理，与既有校验的宽容度一致。 */
+    private static MallHomeLinkType linkTypeOf(String value) {
+        for (MallHomeLinkType candidate : MallHomeLinkType.values()) {
+            if (candidate.name().equals(value)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     private static void addCategoryIds(MallCategoryVO category, Set<Long> ids) {

@@ -7,6 +7,7 @@ xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/service/DeliveryRoute
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/service/InventoryWarningThresholdService.java	com.xsy.scm.product.dao.ProductSkuDao	selectById	Threshold configuration validates the selected SKU.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/support/WarehouseDisableGuardImpl.java	com.xsy.scm.purchase.dao.PurchaseOrderDao	selectCount	Warehouse disable checks for active purchase orders.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/support/WarehouseDisableGuardImpl.java	com.xsy.scm.purchase.dao.PurchaseReceiptDao	selectCount	Warehouse disable checks for confirmed receipts awaiting putaway.
+xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/home/service/MallHomeLayoutValidator.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Mall home layout rejects blocks that reference SKUs which no longer exist.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderImportService.java	com.xsy.scm.customer.dao.CustomerDao	selectActiveByCodes	Order import resolves customer codes to active customer records.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderImportService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByCodes	Order import resolves SKU codes and snapshots.
 xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/SalesOrderService.java	com.xsy.scm.product.dao.ProductSkuOptionDao	selectByIds	Order commands resolve product options for snapshots.

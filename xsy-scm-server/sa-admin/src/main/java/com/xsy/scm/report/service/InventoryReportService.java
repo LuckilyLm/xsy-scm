@@ -69,10 +69,10 @@ public class InventoryReportService {
                 context.getWarehouseScope());
         if (vo == null)
             vo = new InventoryReportVO.LossSummary();
-        List<InventoryReportVO.LossUnitRow> units = reportDao.lossQuantitySummary(range.startAt(), range.endAt(),
-                form, context.getWarehouseScope());
-        vo.setStocktakeLossQuantityText(lossQuantityText(units, "STOCKTAKE_LOSS"));
-        vo.setLossReportQuantityText(lossQuantityText(units, "LOSS_REPORT"));
+        List<InventoryReportVO.LossUnitRow> units = reportDao.lossQuantitySummary(range.startAt(), range.endAt(), form,
+                context.getWarehouseScope());
+        vo.setStocktakeLossQuantityText(lossQuantityText(units, ScmInventoryMovementTypeEnum.STOCKTAKE_LOSS.name()));
+        vo.setLossReportQuantityText(lossQuantityText(units, ScmInventoryMovementTypeEnum.LOSS_REPORT.name()));
         if (!context.isCostVisible()) {
             vo.setStocktakeLossCostAmount(null);
             vo.setLossReportCostAmount(null);
@@ -80,8 +80,8 @@ public class InventoryReportService {
             vo.setCostMissingCount(null);
             vo.setDailyTrend(List.of());
         } else {
-            vo.setDailyTrend(reportDao.lossDailyTrend(range.startAt(), range.endAt(),
-                    form, context.getWarehouseScope()));
+            vo.setDailyTrend(
+                    reportDao.lossDailyTrend(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         }
         return vo;
     }
@@ -90,11 +90,10 @@ public class InventoryReportService {
     static String lossQuantityText(List<InventoryReportVO.LossUnitRow> units, String movementType) {
         if (units == null)
             return null;
-        String grouped = units.stream()
-                .filter(row -> row != null && Objects.equals(movementType, row.getMovementType())
-                        && row.getQuantity() != null)
-                .map(row -> row.getQuantity().setScale(4, RoundingMode.UNNECESSARY).toPlainString()
-                        + " " + (row.getUnit() == null ? "单位缺失" : row.getUnit()))
+        String grouped = units.stream().filter(
+                row -> row != null && Objects.equals(movementType, row.getMovementType()) && row.getQuantity() != null)
+                .map(row -> row.getQuantity().setScale(4, RoundingMode.UNNECESSARY).toPlainString() + " "
+                        + (row.getUnit() == null ? "单位缺失" : row.getUnit()))
                 .collect(Collectors.joining("、"));
         return grouped.isEmpty() ? null : grouped;
     }

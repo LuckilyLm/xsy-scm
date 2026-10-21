@@ -4,6 +4,8 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
+import com.xsy.scm.trace.constant.ScmTraceCorrectionStatusEnum;
+import com.xsy.scm.trace.constant.ScmTraceUnitStatusEnum;
 import com.xsy.scm.trace.constant.TraceErrorCode;
 import com.xsy.scm.trace.dao.TraceCorrectionDao;
 import com.xsy.scm.trace.dao.TraceUnitDao;
@@ -45,7 +47,7 @@ public class TraceCorrectionService {
         if (unit == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
         }
-        if (!"ACTIVE".equals(unit.getStatus())) {
+        if (!ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_VOID);
         }
         warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(unit.getLotId()));
@@ -80,7 +82,7 @@ public class TraceCorrectionService {
     public TraceCorrectionVO approve(TraceCorrectionDecisionForm form, String operator) {
         TraceCorrectionVO correction = requirePending(form, operator);
         TraceUnitVO.Unit unit = traceUnitDao.lockById(correction.getUnitId());
-        if (unit == null || !"ACTIVE".equals(unit.getStatus())
+        if (unit == null || !ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())
                 || !correction.getBindingId().equals(traceUnitDao.findActiveBindingId(unit.getId()))) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NO_BINDING);
         }
@@ -91,7 +93,7 @@ public class TraceCorrectionService {
                 correction.getReason(), now, operator);
         traceCorrectionDao.appendUnbindEvent(correction.getUnitId(), correction.getLotId(), correction.getId(), now,
                 operator, correction.getReason());
-        decide(form, operator, "APPROVED", now);
+        decide(form, operator, ScmTraceCorrectionStatusEnum.APPROVED.name(), now);
         return traceCorrectionDao.findById(correction.getId());
     }
 
@@ -99,7 +101,7 @@ public class TraceCorrectionService {
     @Transactional(rollbackFor = Exception.class)
     public TraceCorrectionVO reject(TraceCorrectionDecisionForm form, String operator) {
         TraceCorrectionVO correction = requirePending(form, operator);
-        decide(form, operator, "REJECTED", OffsetDateTime.now());
+        decide(form, operator, ScmTraceCorrectionStatusEnum.REJECTED.name(), OffsetDateTime.now());
         return traceCorrectionDao.findById(correction.getId());
     }
 
@@ -120,7 +122,7 @@ public class TraceCorrectionService {
             throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NOT_FOUND);
         }
         warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(correction.getLotId()));
-        if (!"PENDING".equals(correction.getStatus())) {
+        if (!ScmTraceCorrectionStatusEnum.PENDING.name().equals(correction.getStatus())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_STATE_INVALID);
         }
         if (operator != null && operator.equals(correction.getRequestedBy())) {

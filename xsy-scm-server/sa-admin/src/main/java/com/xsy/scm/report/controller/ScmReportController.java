@@ -23,6 +23,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.constant.ScmSettleModeEnum;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.order.constant.ScmOrderPriceSourceEnum;
 import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import com.xsy.scm.report.constant.ReportErrorCode;
 import com.xsy.scm.report.domain.form.ScmInventoryReportQueryForm;
@@ -639,9 +640,9 @@ public class ScmReportController {
     }
 
     private static String priceSourceLabel(String priceSource) {
-        // OVERRIDE（手工改价）不进解析器枚举：它不是价格来源的取数路径，而是人对锁定价的覆盖
-        if ("OVERRIDE".equals(priceSource)) {
-            return "人工改价";
+        // OVERRIDE（人工改价）不进 ScmPriceSourceEnum：它不是价格来源的取数路径，而是人对锁定价的覆盖
+        if (ScmOrderPriceSourceEnum.OVERRIDE.name().equals(priceSource)) {
+            return ScmOrderPriceSourceEnum.OVERRIDE.getDesc();
         }
         return com.xsy.scm.pricing.constant.ScmPriceSourceEnum.labelOf(priceSource);
     }

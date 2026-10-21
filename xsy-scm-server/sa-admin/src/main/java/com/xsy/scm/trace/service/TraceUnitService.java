@@ -6,6 +6,8 @@ import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import com.xsy.scm.inventory.service.InventorySaleUnitConverter;
+import com.xsy.scm.sorting.constant.ScmSortingTaskStatusEnum;
+import com.xsy.scm.trace.constant.ScmTraceUnitStatusEnum;
 import com.xsy.scm.trace.constant.TraceErrorCode;
 import com.xsy.scm.trace.dao.TraceUnitDao;
 import com.xsy.scm.trace.domain.form.TraceUnitBindForm;
@@ -51,9 +53,7 @@ public class TraceUnitService {
      * 发码：同一批次一次发 N 个同规格包装，逐码追加一条发码事件。
      *
      * <p>
-     * 先锁批次余额行再检查发码额度，序列化同批次发码和库存出库。
-     * 在建立包装码级出库事实前，批次级出库不能证明某一已发码实物离场；
-     * 因此累计发码量（含作废码）不扣批次出库，保守地与当前批次余额比较。
+     * 先锁批次余额行再检查发码额度，序列化同批次发码和库存出库。 在建立包装码级出库事实前，批次级出库不能证明某一已发码实物离场； 因此累计发码量（含作废码）不扣批次出库，保守地与当前批次余额比较。
      * 出库后无法自动释放额度，必须等未来单元级出库/退回关联落地，不能靠猜测复用包装身份。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -107,7 +107,7 @@ public class TraceUnitService {
         if (unit == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
         }
-        if (!"ACTIVE".equals(unit.getStatus())) {
+        if (!ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_VOID);
         }
         if (traceUnitDao.findBinding(unit.getId()) != null) {
@@ -118,7 +118,8 @@ public class TraceUnitService {
             throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_ITEM_NOT_FOUND);
         }
         // 已取消的任务不能再承接实物；未开始的任务也还没有实拣量
-        if (!"SORTING".equals(item.getTaskStatus()) && !"COMPLETED".equals(item.getTaskStatus())) {
+        if (!ScmSortingTaskStatusEnum.SORTING.name().equals(item.getTaskStatus())
+                && !ScmSortingTaskStatusEnum.COMPLETED.name().equals(item.getTaskStatus())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_TASK_STATE_INVALID);
         }
         warehouseScopeGuard.require(item.getWarehouseId());
@@ -169,7 +170,7 @@ public class TraceUnitService {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
         }
         warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(unit.getLotId()));
-        if (!"ACTIVE".equals(unit.getStatus())) {
+        if (!ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_VOID);
         }
         if (traceUnitDao.findBinding(unit.getId()) != null) {

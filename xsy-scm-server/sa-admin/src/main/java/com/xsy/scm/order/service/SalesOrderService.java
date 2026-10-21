@@ -46,6 +46,7 @@ import com.xsy.scm.order.manager.OrderStateMachine;
 import com.xsy.scm.order.manager.OrderValidator;
 import com.xsy.scm.order.manager.SalesOrderItemChangeSet;
 import com.xsy.scm.order.permission.OrderPermission;
+import com.xsy.scm.pricing.constant.AgreementFormulaType;
 import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.pricing.service.PriceResolver;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
@@ -460,7 +461,7 @@ public class SalesOrderService {
         Map<String, Object> before = row.getPriceBasisSnapshot();
         Map<String, Object> after = current.getPriceBasisSnapshot();
         if (before == null || after == null) {
-            if (before == null && after != null && "FIXED".equals(after.get("formulaType"))) {
+            if (before == null && after != null && AgreementFormulaType.FIXED.name().equals(after.get("formulaType"))) {
                 return true;
             }
             return before == null && after == null;

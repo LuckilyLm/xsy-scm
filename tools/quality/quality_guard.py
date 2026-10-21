@@ -48,7 +48,7 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 
-from java_source import JavaSource
+from java_source import JavaSource, StringLiteral
 
 ROOT = Path(__file__).resolve().parents[2]
 SERVER = ROOT / "xsy-scm-server"
@@ -295,6 +295,70 @@ def generic_dependency_fields(source: JavaSource) -> list[Finding]:
     return findings
 
 
+# 与某个 SCM 枚举同名的字面量，但业务字段不同。撞名不等于重复定义，可是「这个字符串
+# 属于哪个字段」只有人知道，所以每条都要写清理由，下一个人不会照着加一行空例外。
+# 元组：路径后缀、字面量、该行必须命中的上下文、理由。
+MAGIC_STRING_RULINGS: tuple[tuple[str, str, str, str], ...] = (
+    (
+        "com/xsy/scm/customer/manager/CustomerValidator.java",
+        "GROUP",
+        r'\bGROUP_TYPE_CODE\s*=\s*"GROUP"\s*;',
+        "GROUP_TYPE_CODE 是客户类型编码；ScmSettleModeEnum.GROUP 是结算方式。",
+    ),
+    (
+        "com/xsy/scm/purchase/domain/form/PurchaseReceiptConfirmForm.java",
+        "MANUAL",
+        r'@Pattern\s*\(\s*regexp\s*=\s*"MANUAL"',
+        "W5 只接受 MANUAL：DEVICE 是枚举扩展点，但数据库 CHECK 与采购流程仍拒绝它。",
+    ),
+    (
+        "com/xsy/scm/purchase/support/PurchaseInventoryContract.java",
+        "PURCHASE_RECEIPT_ITEM",
+        r'SOURCE_DOCUMENT_TYPE\s*=\s*"PURCHASE_RECEIPT_ITEM"\s*;',
+        "采购的稳定契约常量，让采购在编译期不依赖库存；库存侧的来源单据枚举刻意同值。",
+    ),
+    (
+        "com/xsy/scm/product/service/ProductImportService.java",
+        "CATEGORY_DISABLED",
+        r'\baddError\s*\([^;\r\n]*,\s*"CATEGORY_DISABLED"\s*,',
+        "这是导入行的错误码 token，不是落库的状态或类型。",
+    ),
+    (
+        "com/xsy/scm/order/service/OrderTagService.java",
+        "RED",
+        r"\bCOLORS\s*=\s*List\.of\(",
+        "分类标签的色板取值；ScmFinanceEntryTypeEnum.RED 是红字冲销。",
+    ),
+    (
+        "com/xsy/scm/preference/filter/UserFilterPresetService.java",
+        "PRODUCT",
+        r'case\s+"PRODUCT"\s*->',
+        "筛选预设的前端页面键，对应 ProductAdvancedFilters.FIELDS。",
+    ),
+    (
+        "com/xsy/scm/preference/filter/UserFilterPresetService.java",
+        "SALES_ORDER",
+        r'case\s+"SALES_ORDER"\s*->',
+        "筛选预设的前端页面键，对应 ScmReportAdvancedFilters.SALES_ORDER。",
+    ),
+    (
+        "com/xsy/scm/trace/service/TraceLotService.java",
+        "PURCHASE_RECEIPT",
+        r'ORIGIN_PURCHASE_RECEIPT\s*=\s*"PURCHASE_RECEIPT"\s*;',
+        "批次的来源类型，与 ScmFinancePayableSourceTypeEnum.PURCHASE_RECEIPT 只是同词；追溯不依赖财务。",
+    ),
+)
+
+
+def _ruled_name_collision(source: JavaSource, literal: StringLiteral) -> bool:
+    """True when the literal is a documented name collision rather than a duplicated enum value."""
+    line = source.code.splitlines()[literal.line - 1]
+    for suffix, value, pattern, _reason in MAGIC_STRING_RULINGS:
+        if source.relative_path.endswith(suffix) and literal.value == value and re.search(pattern, line):
+            return True
+    return False
+
+
 def magic_string_literals(source: JavaSource, vocabulary: dict[str, set[str]]) -> list[Finding]:
     """Flag a String literal that duplicates an existing SCM enum constant.
 
@@ -307,53 +371,7 @@ def magic_string_literals(source: JavaSource, vocabulary: dict[str, set[str]]) -
     for literal in source.string_literals:
         if literal.text_block or literal.value not in vocabulary:
             continue
-        if (
-            source.relative_path == (
-                "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/customer/manager/CustomerValidator.java"
-            )
-            and literal.value == "GROUP"
-            and re.search(
-                r"\bGROUP_TYPE_CODE\s*=\s*\"GROUP\"\s*;",
-                source.code.splitlines()[literal.line - 1],
-            )
-        ):
-            # GROUP_TYPE_CODE is a reserved customer-type code. Its value happens to match
-            # ScmSettleModeEnum.GROUP, but the two strings represent different business fields.
-            continue
-        if (
-            source.relative_path == (
-                "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/domain/form/PurchaseReceiptConfirmForm.java"
-            )
-            and literal.value == "MANUAL"
-            and re.search(r'@Pattern\s*\(\s*regexp\s*=\s*"MANUAL"', source.code.splitlines()[literal.line - 1])
-        ):
-            # W5 deliberately accepts only MANUAL on this form: DEVICE is an enum extension point,
-            # but the current database CHECK and purchase workflow still reject it.
-            continue
-        if (
-            source.relative_path == (
-                "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/purchase/support/PurchaseInventoryContract.java"
-            )
-            and literal.value == "PURCHASE_RECEIPT_ITEM"
-            and re.search(
-                r'SOURCE_DOCUMENT_TYPE\s*=\s*"PURCHASE_RECEIPT_ITEM"\s*;',
-                source.code.splitlines()[literal.line - 1],
-            )
-        ):
-            # This stable contract constant keeps purchase compile-time independent from inventory;
-            # the inventory source-document enum intentionally carries the same wire value.
-            continue
-        if (
-            source.relative_path
-            == "xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/product/service/ProductImportService.java"
-            and literal.value == "CATEGORY_DISABLED"
-            and re.search(
-                r'\baddError\s*\([^;\r\n]*,\s*"CATEGORY_DISABLED"\s*,',
-                source.code.splitlines()[literal.line - 1],
-            )
-        ):
-            # This exact value is the product import row's errorCode token, not a persisted status/type/source.
-            # Reusing the pricing enum here would make product depend on pricing for an import diagnostic.
+        if _ruled_name_collision(source, literal):
             continue
         owners = sorted(vocabulary[literal.value])
         findings.append(
@@ -645,7 +663,9 @@ FAMILIES: tuple[RuleFamily, ...] = (
         "SCM 生产代码（com/xsy/scm；迁移期新旧两个包都扫）",
         "非 text block 的字符串字面量，内容恰好等于某个 SCM enum 常量名；enum 词汇表由扫描根"
         "下的生产源码构建，否则引用了新包 enum 的常量会漏判；"
-        "*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 快照不在扫描范围",
+        "*ErrorCode 枚举不计入词汇表；测试源码、SQL、文档、JSON 快照不在扫描范围；"
+        "撞名但属于别的业务字段的取值记在 MAGIC_STRING_RULINGS，逐条写清理由，"
+        "且只对那一个文件的那一行生效",
     ),
     RuleFamily(
         "raw-permission-literal",

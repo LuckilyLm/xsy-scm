@@ -1,5 +1,7 @@
 package com.xsy.scm.print.support;
 
+import com.xsy.scm.order.constant.ScmOrderSourceEnum;
+import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
 import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
 import com.xsy.scm.order.permission.OrderPermission;
@@ -12,8 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 销售订单打印只读正式订单详情，沿用业务员负责人数据范围。
- * 不读取当前商品价格，也不改变历史锁价、结算或库存事实。
+ * 销售订单打印只读正式订单详情，沿用业务员负责人数据范围。 不读取当前商品价格，也不改变历史锁价、结算或库存事实。
  */
 @Component
 @RequiredArgsConstructor
@@ -76,24 +77,30 @@ public class SalesOrderPrintSourceProvider implements ScmPrintSourceProvider {
     }
 
     private static String statusLabel(String status) {
-        if (status == null) return "";
-        return switch (status) {
-            case "DRAFT" -> "草稿";
-            case "PENDING" -> "待确认";
-            case "CONFIRMED" -> "已确认";
-            case "CANCELLED" -> "已取消";
-            default -> status;
-        };
+        if (status == null)
+            return "";
+        for (ScmOrderStatusEnum value : ScmOrderStatusEnum.values()) {
+            if (value.name().equals(status)) {
+                return value.getDesc();
+            }
+        }
+        return status;
     }
 
+    /** 打印件沿用仓库现场的叫法，与页面 desc 不同，因此这里按枚举逐项给文案。 */
     private static String sourceLabel(String source) {
-        if (source == null) return "";
-        return switch (source) {
-            case "ADMIN" -> "后台录单";
-            case "MALL" -> "微信小程序";
-            case "SUPPLEMENT" -> "补单";
-            case "IMPORT" -> "导入";
-            default -> source;
-        };
+        if (source == null)
+            return "";
+        for (ScmOrderSourceEnum value : ScmOrderSourceEnum.values()) {
+            if (value.name().equals(source)) {
+                return switch (value) {
+                    case ADMIN -> "后台录单";
+                    case MALL -> "微信小程序";
+                    case SUPPLEMENT -> "补单";
+                    case IMPORT -> "导入";
+                };
+            }
+        }
+        return source;
     }
 }

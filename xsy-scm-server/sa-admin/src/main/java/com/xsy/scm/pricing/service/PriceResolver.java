@@ -199,7 +199,9 @@ public class PriceResolver {
                     basis.put("basisSource",
                             formula == AgreementFormulaType.COST_MARKUP_RATE
                                     ? "WAREHOUSE_WEIGHTED_AVG_COST"
-                                    : formula == AgreementFormulaType.FIXED ? "FIXED" : "MARKET_PRICE");
+                                    : formula == AgreementFormulaType.FIXED
+                                            ? AgreementFormulaType.FIXED.name()
+                                            : "MARKET_PRICE");
                     basis.put("basisUnitPrice",
                             ScmDecimalStrings.format(formula == AgreementFormulaType.COST_MARKUP_RATE
                                     ? saleUnitCost
