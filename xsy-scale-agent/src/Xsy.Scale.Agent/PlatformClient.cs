@@ -82,6 +82,17 @@ internal sealed class PlatformClient(AgentOptions options, StateStore store, Htt
     internal Task<JsonElement> Upload(Measurement measurement, CancellationToken cancellation) =>
         Send<JsonElement>(HttpMethod.Post, "/measurements", measurement, cancellation);
 
+    /// <summary>上报一筐读数；员工会话取自冻结的测量事实，不重新登录。</summary>
+    internal Task<JsonElement> UploadBasket(PlatformBasketUpload basket, string operatorSession,
+        CancellationToken cancellation) =>
+        Send<JsonElement>(HttpMethod.Post, "/measurements", basket, cancellation, operatorSession);
+
+    /// <summary>提交商品集合完成；累计总量由平台按筐重算，本机只提交集合摘要。</summary>
+    internal Task<JsonElement> CompleteItem(PlatformItemCompletion completion, string operatorSession,
+        CancellationToken cancellation) =>
+        Send<JsonElement>(HttpMethod.Post,
+            $"/items/{Uri.EscapeDataString(completion.TaskItemId)}/complete", completion, cancellation, operatorSession);
+
     internal Task<PrintPage> PrintJobs(CancellationToken cancellation) =>
         Send<PrintPage>(HttpMethod.Get, "/print-jobs/pull?limit=5", null, cancellation);
 

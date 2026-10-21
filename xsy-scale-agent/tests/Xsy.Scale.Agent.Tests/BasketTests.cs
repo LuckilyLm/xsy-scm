@@ -153,6 +153,64 @@ internal static class BasketTests
             Throws("INVALID_PAGINATION", () => c.Service.Records(c.Scope, -1));
             Throws("INVALID_PAGINATION", () => c.Service.Queue(c.Scope, limit: 101));
             Equal(1, c.Service.Queue(c.Scope).Length);
+        })),
+        ("多筐命令按序派发，筐未受理不提交完成", () => Run(() =>
+        {
+            var c = new Context(root);
+            c.Record(8.84m); c.Record(8.86m);
+            c.Service.Complete(c.Completion(), "operator");
+            PendingBasketCommand[] pending = c.Store.PendingBasketCommands(10);
+            Equal(3, pending.Length);
+            Equal("CAPTURE_BASKET", pending[0].Kind);
+            Equal("CAPTURE_BASKET", pending[1].Kind);
+            Equal("COMPLETE_ITEM", pending[2].Kind);
+            // 完成命令必须等全部筐落地，否则平台按不完整集合求和。
+            Equal(true, c.Store.HasUnsentCaptures(pending[2].ScopeKey));
+            c.Store.SetBasketCommandState(pending[0].Sequence, BasketCommandState.Sent);
+            Equal(true, c.Store.HasUnsentCaptures(pending[2].ScopeKey));
+            c.Store.SetBasketCommandState(pending[1].Sequence, BasketCommandState.Sent);
+            Equal(false, c.Store.HasUnsentCaptures(pending[2].ScopeKey));
+            Equal(1, c.Store.PendingBasketCommands(10).Length);
+            Equal("COMPLETE_ITEM", c.Store.PendingBasketCommands(10)[0].Kind);
+        })),
+        ("已发送命令不回退，晚到失败不覆盖成功事实", () => Run(() =>
+        {
+            var c = new Context(root);
+            c.Record(5m);
+            PendingBasketCommand first = c.Store.PendingBasketCommands(10)[0];
+            c.Store.SetBasketCommandState(first.Sequence, BasketCommandState.Sent);
+            c.Store.SetBasketCommandState(first.Sequence, BasketCommandState.Retry);
+            Equal(0, c.Store.PendingBasketCommands(10).Length);
+            Equal("SENT", c.Service.Queue(c.Scope)[0].State);
+        })),
+        ("平台拒绝时同范围命令转人工且不再自动重试", () => Run(() =>
+        {
+            var c = new Context(root);
+            c.Record(5m); c.Record(4m);
+            c.Service.Complete(c.Completion(), "operator");
+            PendingBasketCommand[] pending = c.Store.PendingBasketCommands(10);
+            c.Store.ParkBasketCommands(pending[0].ScopeKey);
+            Equal(0, c.Store.PendingBasketCommands(10).Length);
+            Equal(0, c.Store.PendingBasketCommandCount());
+            Equal("NEEDS_REVIEW", c.Service.Queue(c.Scope)[0].State);
+            Equal("NEEDS_REVIEW", c.Service.Queue(c.Scope)[2].State);
+        })),
+        ("派发请求不重算重量，累计由平台按筐复核", () => Run(() =>
+        {
+            var c = new Context(root);
+            BasketRecord first = c.Record(8.84m);
+            PlatformBasketUpload upload = PlatformBasketUpload.From(first.Measurement, first.OperationId, first.BasketNumber);
+            Equal(1, upload.BasketNo);
+            Equal(first.Measurement.NetWeight, upload.NetWeight);
+            Equal(first.EventKey, upload.EventKey);
+            Equal("kg", upload.BusinessUnit);
+            var completion = c.Completion() with { Result = "SHORT", Reason = "实物短少1.16kg" };
+            c.Service.Complete(completion, "operator");
+            PlatformItemCompletion request = PlatformItemCompletion.From(
+                c.Summary().Completion!, c.Summary().ManifestHash);
+            Equal(completion.ManifestHash, request.ManifestHash);
+            Equal("SHORT", request.Result);
+            Equal("实物短少1.16kg", request.Reason);
         }))
     ];
 

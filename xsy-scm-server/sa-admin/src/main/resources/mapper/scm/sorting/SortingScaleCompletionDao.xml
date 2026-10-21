@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.sorting.dao.SortingScaleCompletionDao">
+
+    <sql id="columns">
+        id, operation_id, task_id, task_item_id, device_id, device_session_id, employee_id,
+        basket_count, total_quantity, business_unit, manifest_hash, result, reason,
+        quantity_before, created_at, created_by
+    </sql>
+
+    <select id="selectByOperationId" resultType="com.xsy.scm.sorting.domain.entity.SortingScaleCompletionEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM xsy_scale_item_completion
+        WHERE operation_id = #{operationId}
+    </select>
+
+    <!-- 同一明细只能有一次完成：后续更正走分拣域的重开与重新确认，不在设备侧叠加。 -->
+    <select id="selectByTaskItem" resultType="com.xsy.scm.sorting.domain.entity.SortingScaleCompletionEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM xsy_scale_item_completion
+        WHERE task_item_id = #{taskItemId}
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+</mapper>

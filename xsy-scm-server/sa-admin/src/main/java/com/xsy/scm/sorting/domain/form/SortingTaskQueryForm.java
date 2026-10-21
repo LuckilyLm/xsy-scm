@@ -2,6 +2,7 @@ package com.xsy.scm.sorting.domain.form;
 
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 import lombok.Data;
 import com.xsy.scm.common.validation.ScmEnumValue;
 import com.xsy.scm.sorting.constant.ScmSortingTaskStatusEnum;
@@ -17,6 +18,14 @@ public class SortingTaskQueryForm extends PageParam {
 
     @ScmEnumValue(enumClass = ScmSortingTaskStatusEnum.class, message = "分拣任务状态无效")
     private String status;
+
+    /**
+     * 一次取多个作业中状态；非空时优先于 {@code status}。
+     *
+     * <p>
+     * 秤端作业队列要同时看到「待分拣」和「分拣中」，逐个状态查会把分页口径拆散。
+     */
+    private List<String> statusList;
 
     @Positive(message = "仓库 ID 必须大于0")
     private Long warehouseId;

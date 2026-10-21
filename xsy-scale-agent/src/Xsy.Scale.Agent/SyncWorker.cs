@@ -18,6 +18,8 @@ internal sealed class SyncWorker(AgentOptions options, StateStore store, Platfor
                 {
                     for (int count = 0; count < 10 && platform.Credential() != null; count++)
                         if (!await UploadOne(stoppingToken)) break;
+                    // 多筐是新主流程：先按 sequence 派发，失败即停，保证筐先于完成命令到达平台。
+                    if (platform.Credential() != null) await SyncBasketCommands(stoppingToken);
                     // 三类同步互不阻塞：打印接口故障不能让设备心跳消失。
                     if (platform.Credential() != null && DateTimeOffset.UtcNow - lastHeartbeat >= TimeSpan.FromSeconds(options.HeartbeatSeconds))
                     {
@@ -77,5 +79,73 @@ internal sealed class SyncWorker(AgentOptions options, StateStore store, Platfor
         }
         catch (Exception error) when (error is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)
         { store.FinishEvent(record, "RETRY_WAIT", null, "NETWORK_OR_RESPONSE_ERROR"); return false; }
+    }
+
+    /// <summary>
+    /// 按 sequence 派发多筐命令。任一命令未成功就结束本轮，避免完成命令越过尚未受理的筐。
+    /// </summary>
+    private async Task SyncBasketCommands(CancellationToken cancellation)
+    {
+        foreach (PendingBasketCommand pending in store.PendingBasketCommands(20))
+        {
+            if (cancellation.IsCancellationRequested) return;
+            if (!await DispatchBasketCommand(pending, cancellation)) return;
+        }
+    }
+
+    /// <returns>true 表示可以继续下一条；false 表示本轮应停止。</returns>
+    private async Task<bool> DispatchBasketCommand(PendingBasketCommand pending, CancellationToken cancellation)
+    {
+        try
+        {
+            if (pending.Kind == "COMPLETE_ITEM")
+            {
+                // 完成命令必须等全部筐落地，否则平台按不完整集合求和。
+                if (store.HasUnsentCaptures(pending.ScopeKey)) return false;
+                ItemCompletion completion = WireJson.Decode<ItemCompletion>(pending.Payload);
+                JsonElement completed = await platform.CompleteItem(
+                    PlatformItemCompletion.From(completion, pending.RequestHash), completion.OperatorSessionId,
+                    cancellation);
+                RequireAccepted(completed, "completionId");
+                store.SetBasketCommandState(pending.Sequence, BasketCommandState.Sent);
+                return true;
+            }
+            BasketRecord record = WireJson.Decode<BasketRecord>(pending.Payload);
+            JsonElement uploaded = await platform.UploadBasket(
+                PlatformBasketUpload.From(record.Measurement, pending.OperationId, record.BasketNumber),
+                record.Measurement.OperatorSessionId, cancellation);
+            RequireAccepted(uploaded, "measurementId");
+            store.SetBasketCommandState(pending.Sequence, BasketCommandState.Sent);
+            return true;
+        }
+        catch (PlatformFault error)
+        {
+            // 凭证失效与可重试错误保留队列等下一轮；明确拒绝转人工，并停止同范围的自动重试。
+            if (error.Retryable || error.Code == "DEVICE_UNAUTHORIZED")
+            {
+                store.SetBasketCommandState(pending.Sequence, BasketCommandState.Retry);
+                return false;
+            }
+            store.ParkBasketCommands(pending.ScopeKey);
+            return true;
+        }
+        catch (Exception error) when (error is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)
+        {
+            store.SetBasketCommandState(pending.Sequence, BasketCommandState.Retry);
+            return false;
+        }
+    }
+
+    /// <summary>成功响应必须带业务标识；只有 code=OK 却没有标识说明契约不一致，按可重试处理。</summary>
+    private static void RequireAccepted(JsonElement data, string idField)
+    {
+        if (!data.TryGetProperty(idField, out JsonElement id)) throw new PlatformFault("INVALID_RESPONSE", true);
+        bool valid = id.ValueKind switch
+        {
+            JsonValueKind.String => !string.IsNullOrWhiteSpace(id.GetString()),
+            JsonValueKind.Number => true,
+            _ => false
+        };
+        if (!valid) throw new PlatformFault("INVALID_RESPONSE", true);
     }
 }

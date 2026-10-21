@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.device.dao.ScaleDeviceDao">
+
+    <sql id="columns">
+        id, device_code, device_name, device_model, warehouse_id, station_code, status,
+        protocol_type, agent_version, pairing_code_hash, pairing_expires_at, credential_hash,
+        credential_expires_at, last_seen_at, last_reading_at, queue_depth, scale_connected,
+        printer_connected, revoked_at, revoked_by, version
+    </sql>
+
+    <select id="selectByDeviceCode" resultType="com.xsy.scm.device.domain.entity.ScaleDeviceEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM xsy_scale_device
+        WHERE device_code = #{deviceCode}
+          AND deleted = FALSE
+    </select>
+
+    <!-- 凭证按摘要查找：明文不入库，请求头里的令牌也只在内存里比对摘要。 -->
+    <select id="selectByCredentialHash" resultType="com.xsy.scm.device.domain.entity.ScaleDeviceEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM xsy_scale_device
+        WHERE credential_hash = #{credentialHash}
+          AND deleted = FALSE
+    </select>
+
+    <select id="lockById" resultType="com.xsy.scm.device.domain.entity.ScaleDeviceEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM xsy_scale_device
+        WHERE id = #{id}
+          AND deleted = FALSE
+            FOR UPDATE
+    </select>
+
+    <!-- 配对码一次性：WHERE 里同时要求状态与未过期的原配对码摘要，
+         并发或重放激活只能有一笔命中，其余影响 0 行。 -->
+    <update id="activate">
+        UPDATE xsy_scale_device
+        SET status                = 'ACTIVE',
+            credential_hash       = #{credentialHash},
+            credential_expires_at = #{credentialExpiresAt},
+            protocol_type         = #{protocolType},
+            agent_version         = #{agentVersion},
+            pairing_code_hash     = NULL,
+            pairing_expires_at    = NULL,
+            last_seen_at          = CURRENT_TIMESTAMP,
+            updated_at            = CURRENT_TIMESTAMP,
+            version               = version + 1
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'PENDING_ACTIVATION'
+          AND pairing_code_hash = #{pairingCodeHash}
+          AND pairing_expires_at IS NOT NULL
+          AND pairing_expires_at > CURRENT_TIMESTAMP
+    </update>
+
+    <!-- 心跳只碰观测字段：不能让心跳顺手改掉绑定仓库或凭证有效期。 -->
+    <update id="heartbeat">
+        UPDATE xsy_scale_device
+        SET last_seen_at       = CURRENT_TIMESTAMP,
+            agent_version      = #{agentVersion},
+            protocol_type      = #{protocolType},
+            scale_connected    = #{scaleConnected},
+            printer_connected  = #{printerConnected},
+            queue_depth        = #{queueDepth},
+            last_reading_at    = COALESCE(#{lastReadingAt}, last_reading_at),
+            updated_at         = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status = 'ACTIVE'
+    </update>
+
+    <!-- 撤销保留历史：只改状态并清空凭证，不删行。已撤销的设备不能再激活，
+         否则历史读数会被同一编号的另一台物理秤继承。 -->
+    <update id="markRevoked">
+        UPDATE xsy_scale_device
+        SET status                = 'REVOKED',
+            credential_hash       = NULL,
+            credential_expires_at = NULL,
+            pairing_code_hash     = NULL,
+            pairing_expires_at    = NULL,
+            revoked_at            = CURRENT_TIMESTAMP,
+            revoked_by            = #{operator},
+            updated_at            = CURRENT_TIMESTAMP,
+            version               = version + 1
+        WHERE id = #{id}
+          AND deleted = FALSE
+          AND status &lt;&gt; 'REVOKED'
+    </update>
+
+</mapper>

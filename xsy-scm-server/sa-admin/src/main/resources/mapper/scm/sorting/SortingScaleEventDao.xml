@@ -5,7 +5,10 @@
     <sql id="columns">
         id, event_key, task_id, task_item_id, sku_id, device_code, raw_reading, unit, stable_flag,
         captured_at, received_at, status, accepted_quantity, accepted_at, accepted_by,
-        rejected_at, rejected_by, reject_reason, version
+        rejected_at, rejected_by, reject_reason, version,
+        basket_no, operation_id, device_session_id, job_version, task_item_version,
+        business_unit, net_weight, weight_kind, conversion_rule, tare_weight,
+        stability_source, protocol_type, agent_version, completion_id
     </sql>
 
     <!-- 重复上报走 ON CONFLICT DO NOTHING：返回 0 让调用方重读既有记录并回同一份结果，
@@ -71,6 +74,69 @@
         WHERE id = #{id}
           AND status = 'PENDING'
           AND version = #{version}
+    </update>
+
+    <!-- 多筐上报同时受 event_key 与 operation_id 两个唯一索引约束，
+         因此用不带列名的 ON CONFLICT DO NOTHING 兜住两种冲突，由调用方重查后判定是重放还是换内容。 -->
+    <insert id="insertBasket" useGeneratedKeys="true" keyProperty="row.id">
+        INSERT INTO xsy_sorting_scale_event (
+            event_key, task_id, task_item_id, sku_id, device_code, raw_reading, unit, stable_flag,
+            captured_at, received_at, status, version,
+            basket_no, operation_id, device_session_id, job_version, task_item_version,
+            business_unit, net_weight, weight_kind, conversion_rule, tare_weight,
+            stability_source, protocol_type, agent_version)
+        VALUES (#{row.eventKey}, #{row.taskId}, #{row.taskItemId}, #{row.skuId}, #{row.deviceCode},
+                #{row.rawReading}, #{row.unit}, #{row.stableFlag}, #{row.capturedAt}, #{row.receivedAt},
+                'PENDING', 0,
+                #{row.basketNo}, #{row.operationId}, #{row.deviceSessionId}, #{row.jobVersion},
+                #{row.taskItemVersion}, #{row.businessUnit}, #{row.netWeight}, #{row.weightKind},
+                #{row.conversionRule}, #{row.tareWeight}, #{row.stabilitySource}, #{row.protocolType},
+                #{row.agentVersion})
+        ON CONFLICT DO NOTHING
+    </insert>
+
+    <select id="selectByOperationId" resultType="com.xsy.scm.sorting.domain.entity.SortingScaleEventEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM xsy_sorting_scale_event
+        WHERE operation_id = #{operationId}
+    </select>
+
+    <!-- 集合完成只认尚未被覆盖的筐；按筐号升序复算，与设备端摘要顺序一致。 -->
+    <select id="listPendingBaskets" resultType="com.xsy.scm.sorting.domain.entity.SortingScaleEventEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM xsy_sorting_scale_event
+        WHERE task_item_id = #{taskItemId}
+          AND basket_no IS NOT NULL
+          AND completion_id IS NULL
+        ORDER BY basket_no
+    </select>
+
+    <select id="lockPendingBaskets" resultType="com.xsy.scm.sorting.domain.entity.SortingScaleEventEntity">
+        SELECT
+        <include refid="columns"/>
+        FROM xsy_sorting_scale_event
+        WHERE task_item_id = #{taskItemId}
+          AND basket_no IS NOT NULL
+          AND completion_id IS NULL
+        ORDER BY basket_no
+            FOR UPDATE
+    </select>
+
+    <!-- 已被别的完成操作覆盖的筐影响 0 行，调用方据此判断是否发生了并发完成。 -->
+    <update id="markBasketCompleted">
+        UPDATE xsy_sorting_scale_event
+        SET status            = 'ACCEPTED',
+            accepted_quantity = net_weight,
+            accepted_at       = CURRENT_TIMESTAMP,
+            accepted_by       = #{operator},
+            completion_id     = #{completionId},
+            version           = version + 1
+        WHERE id IN
+        <foreach collection="ids" item="basketId" open="(" separator="," close=")">#{basketId}</foreach>
+          AND status = 'PENDING'
+          AND completion_id IS NULL
     </update>
 
 </mapper>

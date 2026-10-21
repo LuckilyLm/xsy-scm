@@ -8,6 +8,8 @@ import com.xsy.scm.common.scope.ScmDataScopeException;
 import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.sorting.dao.SortingPartRecordDao;
 import com.xsy.scm.sorting.dao.SortingQueryDao;
+import com.xsy.scm.sorting.dao.SortingTaskDao;
+import com.xsy.scm.sorting.domain.entity.SortingTaskEntity;
 import com.xsy.scm.sorting.domain.form.SortingCandidateQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingSummaryQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingTaskQueryForm;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.sorting.constant.SortingConstant.PRINTABLE;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.STATE_INVALID;
+import static com.xsy.scm.sorting.constant.SortingErrorCode.TASK_NOT_FOUND;
 
 /**
  * 分拣读侧：任务列表、任务详情、按商品汇总（只读）与建单用的候选订单行。
@@ -47,6 +50,7 @@ public class SortingQueryService {
 
     private final SortingQueryDao sortingQueryDao;
     private final SortingPartRecordDao sortingPartRecordDao;
+    private final SortingTaskDao sortingTaskDao;
     private final SortingAccess access;
 
     private Page<?> page(PageParam form) {
@@ -83,6 +87,22 @@ public class SortingQueryService {
         items.addAll(sortingQueryDao.giftItems(id));
         result.setItems(items);
         return result;
+    }
+
+    /**
+     * 设备接入需要的任务投影：秤端作业要用任务版本做乐观锁，而列表与详情 VO 不暴露 version。
+     *
+     * <p>
+     * 返回实体而不是扩宽 {@link SortingTaskVO}：设备端只取版本、状态、仓库与受指派人， 没必要让所有后台调用方都多看到一个内部版本字段。可见性仍按当前员工数据范围判定。
+     */
+    @Transactional(readOnly = true)
+    public SortingTaskEntity requireTaskForDevice(Long taskId) {
+        SortingTaskEntity task = sortingTaskDao.selectById(taskId);
+        if (task == null || Boolean.TRUE.equals(task.getDeleted())) {
+            throw new ScmBusinessException(TASK_NOT_FOUND);
+        }
+        access.requireVisible(access.scope(), task);
+        return task;
     }
 
     /** 分次事件先判任务可见，再核对明细归属；列表按该明细游标分页，累计量取全部历史最新事件。 */

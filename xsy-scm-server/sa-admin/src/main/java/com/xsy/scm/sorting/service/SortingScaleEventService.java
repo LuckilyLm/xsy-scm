@@ -1,5 +1,7 @@
 package com.xsy.scm.sorting.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.common.error.ScmCommonErrorCode;
@@ -8,25 +10,37 @@ import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
 import com.xsy.scm.sorting.constant.ScmSortingScaleEventStatusEnum;
 import com.xsy.scm.sorting.constant.SortingErrorCode;
+import com.xsy.scm.sorting.dao.SortingScaleCompletionDao;
 import com.xsy.scm.sorting.dao.SortingScaleEventDao;
 import com.xsy.scm.sorting.dao.SortingTaskDao;
 import com.xsy.scm.sorting.dao.SortingTaskItemDao;
+import com.xsy.scm.sorting.domain.entity.SortingScaleCompletionEntity;
 import com.xsy.scm.sorting.domain.entity.SortingScaleEventEntity;
 import com.xsy.scm.sorting.domain.entity.SortingTaskEntity;
 import com.xsy.scm.sorting.domain.entity.SortingTaskItemEntity;
 import com.xsy.scm.sorting.domain.form.SortingEntryForm;
 import com.xsy.scm.sorting.domain.form.SortingEntryItemForm;
 import com.xsy.scm.sorting.domain.form.SortingScaleAcceptForm;
+import com.xsy.scm.sorting.domain.form.SortingScaleBasketForm;
+import com.xsy.scm.sorting.domain.form.SortingScaleCompleteForm;
 import com.xsy.scm.sorting.domain.form.SortingScaleRejectForm;
 import com.xsy.scm.sorting.domain.form.SortingScaleReportForm;
+import com.xsy.scm.sorting.domain.vo.SortingScaleBasketVO;
+import com.xsy.scm.sorting.domain.vo.SortingScaleCompletionVO;
 import com.xsy.scm.sorting.domain.vo.SortingScaleEventVO;
 import com.xsy.scm.sorting.support.SortingAccess;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -45,7 +59,11 @@ public class SortingScaleEventService {
 
     private final SortingTaskService sortingTaskService;
 
+    private final SortingScaleCompletionDao sortingScaleCompletionDao;
+
     private final SortingAccess access;
+
+    private final ObjectMapper objectMapper;
 
     /**
      * 上报一个秤读数。重复上报返回既有记录并置 {@code duplicated}，不报错。
@@ -106,6 +124,218 @@ public class SortingScaleEventService {
     }
 
     /**
+     * 上报一筐读数。只记录设备事实，不改分拣结果。
+     *
+     * <p>
+     * 单位必须与明细销售单位一致：未知单位按公斤兜底会让斤与件混入同一累计。 毛重在未去皮时同样拒绝，因为把毛重当净重会系统性多记。
+     *
+     * <p>
+     * 幂等分两层：{@code operationId} 标识一次人工操作，{@code eventKey} 标识一筐事实。 两者任一命中既有记录时返回原事实并置 {@code duplicated}；同一键换了内容则显式报冲突。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SortingScaleBasketVO reportBasket(SortingScaleBasketForm form) {
+        requireVisibleTask(form.getTaskId());
+        SortingTaskItemEntity item = sortingTaskItemDao.selectById(form.getTaskItemId());
+        if (item == null || Boolean.TRUE.equals(item.getDeleted()) || !form.getTaskId().equals(item.getTaskId())) {
+            throw new ScmBusinessException(SortingErrorCode.ITEM_NOT_IN_TASK);
+        }
+        if (form.getCapturedAt().isAfter(OffsetDateTime.now().plusMinutes(5))) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_STATE_INVALID);
+        }
+        if (!Objects.equals(item.getSaleUnitSnapshot(), form.getBusinessUnit().trim())) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_UNIT_MISMATCH);
+        }
+        if (!"NET".equals(form.getWeightKind())) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_NOT_NET_WEIGHT);
+        }
+
+        SortingScaleEventEntity row = new SortingScaleEventEntity();
+        row.setEventKey(form.getEventKey().trim());
+        row.setOperationId(form.getOperationId().trim());
+        row.setTaskId(form.getTaskId());
+        row.setTaskItemId(form.getTaskItemId());
+        row.setSkuId(item.getSkuId());
+        row.setDeviceCode(form.getDeviceCode().trim());
+        row.setDeviceSessionId(form.getDeviceSessionId());
+        row.setBasketNo(form.getBasketNo());
+        row.setRawReading(form.getRawReading());
+        row.setUnit(form.getRawUnit().trim());
+        row.setNetWeight(form.getNetWeight());
+        row.setBusinessUnit(form.getBusinessUnit().trim());
+        row.setWeightKind(form.getWeightKind());
+        row.setConversionRule(StringUtils.trimToNull(form.getConversionRule()));
+        row.setTareWeight(form.getTareWeight());
+        row.setStableFlag(form.getStableFlag());
+        row.setStabilitySource(StringUtils.trimToNull(form.getStabilitySource()));
+        row.setJobVersion(StringUtils.trimToNull(form.getJobVersion()));
+        row.setTaskItemVersion(form.getTaskItemVersion());
+        row.setProtocolType(StringUtils.trimToNull(form.getProtocolType()));
+        row.setAgentVersion(StringUtils.trimToNull(form.getAgentVersion()));
+        row.setCapturedAt(form.getCapturedAt());
+        row.setReceivedAt(OffsetDateTime.now());
+
+        if (sortingScaleEventDao.insertBasket(row) == 1) {
+            return toBasketVO(row, false);
+        }
+        // 两个唯一索引任一冲突都会走到这里：重查后判定是重放还是换了内容。
+        SortingScaleEventEntity existing = sortingScaleEventDao.selectByOperationId(row.getOperationId());
+        if (existing == null) {
+            existing = sortingScaleEventDao.selectByEventKey(row.getEventKey());
+        }
+        if (existing == null) {
+            throw new IllegalStateException("秤筐插入冲突但重读为空，eventKey=" + row.getEventKey());
+        }
+        if (!sameBasket(existing, row)) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_KEY_CONFLICT);
+        }
+        return toBasketVO(existing, true);
+    }
+
+    /**
+     * 商品集合完成：把该明细当前全部待完成筐作为一个整体确认，并写入正式分拣结果。
+     *
+     * <p>
+     * 总量由服务端按筐重算，设备提交的合计不参与判定；{@code manifestHash} 只用来确认 「设备看到的筐集合」与「服务端读到的筐集合」是同一批，避免漏掉并发新增的一筐。
+     *
+     * <p>
+     * 正式写入仍经 {@link SortingTaskService#enter}，与手工录入共用同一条路径， 因此任务状态、明细版本、结果枚举、原因必填这些约束一条都不会被绕过。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SortingScaleCompletionVO completeBaskets(SortingScaleCompleteForm form) {
+        SortingScaleCompletionEntity replay = sortingScaleCompletionDao
+                .selectByOperationId(form.getOperationId().trim());
+        if (replay != null) {
+            return toCompletionVO(replay, true);
+        }
+        requireAssigneeTask(form.getTaskId());
+        SortingTaskItemEntity item = sortingTaskItemDao.selectById(form.getTaskItemId());
+        if (item == null || Boolean.TRUE.equals(item.getDeleted()) || !form.getTaskId().equals(item.getTaskId())) {
+            throw new ScmBusinessException(SortingErrorCode.ITEM_NOT_IN_TASK);
+        }
+        if (sortingScaleCompletionDao.selectByTaskItem(form.getTaskItemId()) != null) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_ALREADY_COMPLETED);
+        }
+        List<SortingScaleEventEntity> baskets = sortingScaleEventDao.lockPendingBaskets(form.getTaskItemId());
+        if (baskets.isEmpty()) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_EMPTY);
+        }
+        for (SortingScaleEventEntity basket : baskets) {
+            if (form.getJobVersion() != null && !Objects.equals(basket.getJobVersion(), form.getJobVersion().trim())) {
+                throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_CONTEXT_CHANGED);
+            }
+            if (form.getTaskItemVersion() != null
+                    && !Objects.equals(basket.getTaskItemVersion(), form.getTaskItemVersion())) {
+                throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_CONTEXT_CHANGED);
+            }
+            if (!Objects.equals(basket.getBusinessUnit(), item.getSaleUnitSnapshot())) {
+                throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_UNIT_MISMATCH);
+            }
+            if (!"NET".equals(basket.getWeightKind())) {
+                throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_NOT_NET_WEIGHT);
+            }
+        }
+        List<String> eventKeys = baskets.stream().map(SortingScaleEventEntity::getEventKey).toList();
+        if (!manifestDigest(eventKeys).equalsIgnoreCase(form.getManifestHash().trim())) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_MANIFEST_MISMATCH);
+        }
+        BigDecimal total = baskets.stream().map(SortingScaleEventEntity::getNetWeight).reduce(BigDecimal.ZERO,
+                BigDecimal::add);
+
+        SortingScaleCompletionEntity completion = new SortingScaleCompletionEntity();
+        completion.setOperationId(form.getOperationId().trim());
+        completion.setTaskId(form.getTaskId());
+        completion.setTaskItemId(form.getTaskItemId());
+        completion.setDeviceId(form.getDeviceId());
+        completion.setDeviceSessionId(form.getDeviceSessionId());
+        completion.setEmployeeId(form.getEmployeeId());
+        completion.setBasketCount(baskets.size());
+        completion.setTotalQuantity(total);
+        completion.setBusinessUnit(item.getSaleUnitSnapshot());
+        completion.setManifestHash(form.getManifestHash().trim().toUpperCase());
+        completion.setResult(form.getResult());
+        completion.setReason(StringUtils.trimToNull(form.getReason()));
+        completion.setQuantityBefore(item.getSortedQuantity());
+        completion.setCreatedBy(ScmOperator.current());
+        sortingScaleCompletionDao.insert(completion);
+
+        List<Long> basketIds = baskets.stream().map(SortingScaleEventEntity::getId).toList();
+        if (sortingScaleEventDao.markBasketCompleted(basketIds, completion.getId(), ScmOperator.current()) != basketIds
+                .size()) {
+            throw new IllegalStateException("筐状态已被并发修改，taskItemId=" + form.getTaskItemId());
+        }
+
+        SortingEntryItemForm line = new SortingEntryItemForm();
+        line.setId(item.getId());
+        line.setVersion(item.getVersion());
+        line.setSortedQuantity(total);
+        line.setResult(form.getResult());
+        line.setReason(completion.getReason());
+        SortingEntryForm entry = new SortingEntryForm();
+        entry.setItems(List.of(line));
+        sortingTaskService.enter(form.getTaskId(), entry);
+
+        SortingScaleCompletionVO vo = toCompletionVO(completion, false);
+        vo.setSortedQuantity(total);
+        return vo;
+    }
+
+    /**
+     * 有序事件键集合的摘要，与秤端 {@code WireJson.Digest} 保持同一算法： 紧凑 JSON 数组序列化后取 SHA-256，输出大写十六进制。
+     */
+    private String manifestDigest(List<String> eventKeys) {
+        try {
+            String json = objectMapper.writeValueAsString(eventKeys);
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(json.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().withUpperCase().formatHex(digest);
+        } catch (JsonProcessingException | NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("集合摘要计算失败", exception);
+        }
+    }
+
+    /**
+     * 同一幂等键的重放必须内容一致：换了重量、筐号或任务就不是重试，而是另一笔事实。
+     */
+    private static boolean sameBasket(SortingScaleEventEntity existing, SortingScaleEventEntity row) {
+        return Objects.equals(existing.getTaskId(), row.getTaskId())
+                && Objects.equals(existing.getTaskItemId(), row.getTaskItemId())
+                && Objects.equals(existing.getBasketNo(), row.getBasketNo())
+                && Objects.equals(existing.getDeviceCode(), row.getDeviceCode())
+                && existing.getRawReading().compareTo(row.getRawReading()) == 0 && existing.getNetWeight() != null
+                && row.getNetWeight() != null && existing.getNetWeight().compareTo(row.getNetWeight()) == 0
+                && Objects.equals(existing.getUnit(), row.getUnit())
+                && Objects.equals(existing.getBusinessUnit(), row.getBusinessUnit())
+                && Objects.equals(existing.getStableFlag(), row.getStableFlag())
+                && existing.getCapturedAt().isEqual(row.getCapturedAt());
+    }
+
+    private static SortingScaleBasketVO toBasketVO(SortingScaleEventEntity row, boolean duplicated) {
+        SortingScaleBasketVO vo = new SortingScaleBasketVO();
+        vo.setMeasurementId(row.getId());
+        vo.setEventKey(row.getEventKey());
+        vo.setOperationId(row.getOperationId());
+        vo.setBasketNo(row.getBasketNo());
+        vo.setStatus(row.getStatus());
+        vo.setDuplicated(duplicated);
+        vo.setAccepted(false);
+        vo.setReceivedAt(row.getReceivedAt());
+        return vo;
+    }
+
+    private static SortingScaleCompletionVO toCompletionVO(SortingScaleCompletionEntity row, boolean duplicated) {
+        SortingScaleCompletionVO vo = new SortingScaleCompletionVO();
+        vo.setCompletionId(row.getId());
+        vo.setOperationId(row.getOperationId());
+        vo.setTaskItemId(row.getTaskItemId());
+        vo.setBasketCount(row.getBasketCount());
+        vo.setTotalQuantity(row.getTotalQuantity());
+        vo.setBusinessUnit(row.getBusinessUnit());
+        vo.setResult(row.getResult());
+        vo.setStatus(ScmSortingScaleEventStatusEnum.ACCEPTED.name());
+        vo.setDuplicated(duplicated);
+        return vo;
+    }
+
+    /**
      * 接受读数：把该读数写进分拣结果。
      *
      * <p>
@@ -137,7 +367,7 @@ public class SortingScaleEventService {
                 throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_RESULT_REQUIRED);
             }
             result = form.getResult();
-            reason = org.apache.commons.lang3.StringUtils.trimToNull(form.getReason());
+            reason = StringUtils.trimToNull(form.getReason());
             if (!ScmSortingResultEnum.NORMAL.name().equals(result) && reason == null) {
                 throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
             }

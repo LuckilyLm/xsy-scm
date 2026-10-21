@@ -24,6 +24,41 @@ internal sealed record BasketSummary(int BasketCount, string TotalQuantity, stri
     string PlannedQuantity, string PlatformSnapshotQuantity, string ManifestHash, bool AuthorizationExpired,
     bool LocallyCompleted, ItemCompletion? Completion, string QueueState);
 
+/// <summary>
+/// 平台筐上报请求。只从已冻结的测量事实与命令字段组装，不重新读秤、不改写重量。
+/// </summary>
+/// <remarks>
+/// 设备编码与员工身份不由本机提交：平台按设备凭证与员工会话判定，避免一台秤冒充另一台。
+/// </remarks>
+internal sealed record PlatformBasketUpload(string EventKey, string OperationId, int BasketNo, string TaskId,
+    string TaskItemId, long TaskItemVersion, string JobId, string JobVersion, DateTimeOffset CapturedAt,
+    string RawValue, string RawUnit, string NetWeight, string BusinessUnit, string WeightKind,
+    bool StableFlag, string StabilitySource, string ConversionRule, string? TareWeight,
+    string ReadingSequence, string ProtocolType, string AgentVersion)
+{
+    internal static PlatformBasketUpload From(Measurement measurement, string operationId, int basketNo) => new(
+        measurement.EventKey, operationId, basketNo, measurement.TaskId, measurement.TaskItemId,
+        measurement.TaskItemVersion, measurement.JobId, measurement.JobVersion, measurement.CapturedAt,
+        measurement.RawValue, measurement.RawUnit, measurement.NetWeight, measurement.BusinessUnit,
+        measurement.WeightKind, measurement.StableFlag, measurement.StabilitySource, measurement.ConversionRule,
+        measurement.TareWeight, measurement.ReadingSequence, measurement.ProtocolType, measurement.AgentVersion);
+}
+
+/// <summary>
+/// 平台集合完成请求。累计总量不提交：平台按筐重算，本机只证明筐集合与摘要一致。
+/// </summary>
+internal sealed record PlatformItemCompletion(string OperationId, string JobId, string JobVersion,
+    string TaskId, string TaskItemId, long TaskItemVersion, string ManifestHash, string Result, string? Reason)
+{
+    internal static PlatformItemCompletion From(ItemCompletion completion, string manifestHash) => new(
+        completion.OperationId, completion.JobId, completion.JobVersion, completion.TaskId,
+        completion.TaskItemId, completion.TaskItemVersion, manifestHash, completion.Result, completion.Reason);
+}
+
+/// <summary>待发送的多筐命令；状态只表示本机派发进度，不是平台业务结论。</summary>
+internal sealed record PendingBasketCommand(long Sequence, string OperationId, string ScopeKey, string Kind,
+    string? EventKey, string RequestHash, string Payload);
+
 /// <summary>本地记录分页，累计另查全量投影，不能从当前页计算总量。</summary>
 internal sealed record BasketPage(BasketRecord[] Items, int? NextAfter);
 

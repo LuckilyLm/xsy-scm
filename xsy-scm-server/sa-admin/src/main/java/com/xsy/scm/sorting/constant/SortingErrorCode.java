@@ -48,7 +48,25 @@ public enum SortingErrorCode implements ScmErrorCode {
     /** 同一设备事件标识不得被用于另一笔重量或另一张任务。 */
     SCALE_EVENT_KEY_CONFLICT(41872, "电子秤事件编号已用于另一笔读数，请检查设备上报"),
 
-    STANDARD_CONFIRM_INVALID(41873, "所选明细不能按计划量确认，请刷新预览或使用人工录入");
+    STANDARD_CONFIRM_INVALID(41873, "所选明细不能按计划量确认，请刷新预览或使用人工录入"),
+
+    /** 只有净重可以计入分拣量；毛重在未去皮时不得入库。 */
+    SCALE_BASKET_NOT_NET_WEIGHT(41874, "只有净重可以计入分拣量，请先完成去皮"),
+
+    /** 设备确认的筐集合与服务端读到的集合不一致，说明期间有新增或撤销。 */
+    SCALE_BASKET_MANIFEST_MISMATCH(41875, "称重集合已变化，请刷新累计后重新确认"),
+
+    /** 筐记录的任务或明细版本与当前不一致：任务已改派、重开或明细已变更。 */
+    SCALE_BASKET_CONTEXT_CHANGED(41876, "任务或明细版本已变化，请重新领取作业"),
+
+    /** 该明细当前没有待完成的筐。 */
+    SCALE_BASKET_EMPTY(41877, "当前没有待完成的筐记录，请先记录本筐"),
+
+    /** 该明细已经完成过称重，更正需走分拣域的重开流程。 */
+    SCALE_BASKET_ALREADY_COMPLETED(41878, "该商品已完成称重，请勿重复确认"),
+
+    /** 读数为负：属于设备侧无效采集，不放宽数据库约束掩盖。 */
+    SCALE_MEASUREMENT_NEGATIVE(41879, "读数不能为负值，请检查去皮与置零后重新采集");
 
     private final int code;
     private final String msg;

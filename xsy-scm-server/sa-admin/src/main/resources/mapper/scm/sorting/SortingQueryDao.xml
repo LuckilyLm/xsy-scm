@@ -43,7 +43,13 @@
         FROM xsy_sorting_task t
         LEFT JOIN t_employee e ON e.employee_id=t.assignee_employee_id AND e.deleted_flag=FALSE
         WHERE t.deleted=FALSE
-        <if test="q.status != null and q.status != ''">AND t.status=#{q.status}</if>
+        <if test="q.statusList != null and q.statusList.size() > 0">
+            AND t.status IN
+            <foreach collection="q.statusList" item="taskStatus" open="(" separator="," close=")">#{taskStatus}</foreach>
+        </if>
+        <if test="(q.statusList == null or q.statusList.size() == 0) and q.status != null and q.status != ''">
+            AND t.status=#{q.status}
+        </if>
         <if test="q.warehouseId != null">AND t.warehouse_id=#{q.warehouseId}</if>
         <if test="q.assigneeEmployeeId != null">AND t.assignee_employee_id=#{q.assigneeEmployeeId}</if>
         <if test="q.unassignedOnly != null and q.unassignedOnly">AND t.assignee_employee_id IS NULL</if>
