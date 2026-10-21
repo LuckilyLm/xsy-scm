@@ -1,9 +1,29 @@
 package com.xsy.scm.delivery.constant;
 
-/** Order-level fulfillment states matching the delivery_route_order database check. */
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 订单级配送履约状态，与 {@code delivery_route_order} 的 CHECK 约束一致。
+ *
+ * <p>
+ * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ */
+@Getter
+@RequiredArgsConstructor
 public enum ScmDeliveryFulfillmentStatusEnum {
-    PENDING,
-    IN_TRANSIT,
-    SIGNED,
-    EXCEPTION
+
+    /** 待配送：已排线，尚未发车。 */
+    PENDING("待配送"),
+
+    /** 配送中：已发车在途。 */
+    IN_TRANSIT("配送中"),
+
+    /** 已签收：客户确认收货。 */
+    SIGNED("已签收"),
+
+    /** 异常：签收异常，需人工跟进。 */
+    EXCEPTION("异常");
+
+    private final String desc;
 }

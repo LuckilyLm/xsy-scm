@@ -3,23 +3,7 @@
 # detection : 枚举每个常量所在的声明块内必须出现中文字符串，例如 NORMAL("正常") 或 ADMIN(1, "员工")；整块不含中文即记一条。页面、导出与打印都直接取枚举中文，缺了只能露出 NORMAL / ON_SHELF 这类内部取值，而让每个调用点各写一份映射迟早漂移。按常量粒度记账：补一个降一条，新增无中文的枚举常量立即成为 NEW DEFECT。
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 81 occurrences in 81 identities
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryAssignmentStatusEnum.java	ACTIVE
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryCustomerPrintFilterEnum.java	ALL
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryCustomerPrintFilterEnum.java	PRINTED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryCustomerPrintFilterEnum.java	UNPRINTED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryFulfillmentStatusEnum.java	IN_TRANSIT
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryFulfillmentStatusEnum.java	PENDING
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryFulfillmentStatusEnum.java	SIGNED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryOrderPrintFilterEnum.java	ALL
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryOrderPrintFilterEnum.java	PRINTED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryPlanStatusEnum.java	APPLIED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryPlanStatusEnum.java	PROPOSED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryRouteStatusEnum.java	COMPLETED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryRouteStatusEnum.java	DISPATCHED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryRouteStatusEnum.java	DRAFT
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryRouteStatusEnum.java	PLANNED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliverySignResultEnum.java	SIGNED
+# captured  : 65 occurrences in 65 identities
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/account/constant/MallAccountStatusEnum.java	ENABLED
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/catalog/constant/MallStockStatusEnum.java	AVAILABLE
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/catalog/constant/MallStockStatusEnum.java	INSUFFICIENT

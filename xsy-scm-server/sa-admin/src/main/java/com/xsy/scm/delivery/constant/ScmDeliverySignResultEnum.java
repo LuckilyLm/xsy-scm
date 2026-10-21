@@ -1,7 +1,23 @@
 package com.xsy.scm.delivery.constant;
 
-/** Sign-off results accepted by the delivery sign command. */
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 签收命令接受的结果。
+ *
+ * <p>
+ * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ */
+@Getter
+@RequiredArgsConstructor
 public enum ScmDeliverySignResultEnum {
-    SIGNED,
-    EXCEPTION
+
+    /** 正常签收。 */
+    SIGNED("正常签收"),
+
+    /** 异常签收：需填写原因并跟进。 */
+    EXCEPTION("异常签收");
+
+    private final String desc;
 }
