@@ -8,6 +8,10 @@ skills-lock.json
 # 目录本身不要删除，只是不进版本库。
 .workbuddy/
 
+# 本地临时工作目录（构建备份、测试产物、一次性截图脚本等）。
+# 只在本机保留，任何 .codex- 前缀的目录都不入库。
+.codex-*/
+
 # 工程技能的本地工作区（to-spec / to-tickets 产出的 spec 与工单）。
 # 只放本次工作的分解与草稿；需要长期留存的结论进 docs/decisions.md，状态进 docs/status.md。
 # 若希望工单随仓库共享，删掉这一行即可。
