@@ -15,6 +15,7 @@
 | `xsy-scm-server/` | 正式后端：Java 21、Spring Boot、MyBatis-Plus、Sa-Token、Redis、PostgreSQL、Flyway |
 | `xsy-scm-web/` | 正式后台：Vue3、TypeScript、Ant Design Vue、Vite、Pinia |
 | `xsy-scm-customer-app/` | 正式客户商城：uni-app、Vue3、Vite、Pinia |
+| [`xsy-scale-agent/`](xsy-scale-agent/README.md) | 独立 Windows 秤端与触屏工作台；正式平台多筐接口待联调 |
 | `docs/` | 当前状态、有效决策、需求与参考资料 |
 | [`tools/`](tools/README.md) | 版本控制的质量、迁移、E2E 与验证工具；统一入口和职责见目录说明 |
 | `deploy/minio/` | F0 本地对象存储与集成验证环境 |
