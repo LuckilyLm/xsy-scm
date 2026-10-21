@@ -34,7 +34,7 @@
     <view v-else-if="!rows.length" class="summary__state">所选区间内没有下单记录</view>
 
     <view v-for="row in rows" :key="row.skuId" class="summary__card">
-      <image v-if="row.imageUrl" class="summary__image" :src="row.imageUrl" mode="aspectFill" />
+      <image v-if="row.imageUrl" class="summary__image" :src="row.imageUrl" mode="aspectFill" lazy-load />
       <view v-else class="summary__image summary__image--empty">
         <uni-icons type="image" :size="20" :color="COLOR_TEXT_PLACEHOLDER" />
       </view>
@@ -145,7 +145,7 @@
 
 <style lang="scss" scoped>
   .summary {
-    min-height: 100vh;
+    @include viewport-min-height;
     padding-bottom: $space-8;
     background: $color-bg-page;
   }
@@ -167,7 +167,7 @@
   }
   .summary__clear {
     margin-left: auto;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
   }
   .summary__totals {
@@ -201,7 +201,7 @@
   .summary__retry {
     display: block;
     margin-top: $space-4;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .summary__card {
     display: flex;

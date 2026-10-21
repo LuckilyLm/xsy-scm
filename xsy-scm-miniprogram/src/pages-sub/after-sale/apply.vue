@@ -8,7 +8,7 @@
         <view class="aa-card__title">选择要退的商品</view>
         <view v-for="line in lines" :key="line.item.itemId" class="aa-item">
           <view class="aa-item__thumb">
-            <image v-if="line.item.primaryImageUrl" class="aa-item__image" :src="line.item.primaryImageUrl" mode="aspectFill" />
+            <image v-if="line.item.primaryImageUrl" class="aa-item__image" :src="line.item.primaryImageUrl" mode="aspectFill" lazy-load />
             <view v-else class="aa-item__thumb-fallback">{{ (line.item.productName || '商').slice(0, 1) }}</view>
           </view>
           <view class="aa-item__main">
@@ -25,6 +25,8 @@
                 type="digit"
                 :value="line.quantity"
                 :placeholder="`最多 ${displayQuantity(line.available)}`"
+                confirm-type="done"
+                :cursor-spacing="24"
                 @input="(event) => updateQuantity(line, event.detail.value)"
               />
             </view>
@@ -50,7 +52,15 @@
             {{ option }}
           </view>
         </view>
-        <textarea v-model="reasonDetail" class="aa-reasons__detail" maxlength="200" placeholder="补充说明（选填）：如破损程度、短缺数量等"></textarea>
+        <textarea
+          v-model="reasonDetail"
+          class="aa-reasons__detail"
+          maxlength="200"
+          placeholder="补充说明（选填）：如破损程度、短缺数量等"
+          :cursor-spacing="96"
+          show-confirm-bar
+          auto-height
+        ></textarea>
       </view>
 
       <view class="aa-card">
@@ -61,7 +71,7 @@
         <text class="aa__tip">预估金额按申请数量 × 成交单价计算，核定退款金额以平台审核为准</text>
       </view>
 
-      <view class="aa-bar">
+      <view class="aa-bar" :style="barStyle">
         <view class="aa-bar__btn" :class="{ 'aa-bar__btn--disabled': submitting }" @click="submit">提交申请</view>
       </view>
     </template>
@@ -78,8 +88,11 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, displayQuantity } from '@/utils/order-display';
   import { AFTERSALE_REASONS, estimateLineAmount, isValidApplyQuantity, sumAmounts } from '@/utils/after-sale-display';
+  import { useKeyboardHeight } from '@/composables/use-keyboard-height';
 
   const { themeStyle } = useMallTheme();
+  /** 键盘弹出时把提交栏抬到键盘上沿 */
+  const { barStyle } = useKeyboardHeight();
 
   const orderId = ref(null);
   const order = ref(null);
@@ -182,7 +195,7 @@
 
 <style lang="scss" scoped>
   .aa {
-    min-height: 100vh;
+    @include viewport-min-height;
     background: $color-bg-page;
     box-sizing: border-box;
     padding-bottom: 160rpx;
@@ -324,7 +337,7 @@
   }
   .aa-reasons__chip--active {
     border-color: var(--mall-primary, #16a34a);
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .aa-reasons__detail {
     width: 100%;

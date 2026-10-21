@@ -11,7 +11,7 @@
 
     <!-- 搜索框：公告之下，白底绿描边胶囊 -->
     <view class="home__search-wrap">
-      <view class="home__search" @click="goSearch">
+      <view class="home__search" hover-class="xsy-press--active" :hover-stay-time="80" @click="goSearch">
         <uni-icons type="search" :size="18" :color="theme.primary" />
         <text class="home__search-text">搜索商品名称或规格</text>
       </view>
@@ -21,13 +21,20 @@
     <view v-if="categoryRail.length" class="home__rail">
       <scroll-view class="home__rail-scroll" scroll-x :show-scrollbar="false">
         <view class="home__rail-inner">
-          <view v-for="item in categoryRail" :key="item.categoryId" class="home__rail-item" @click="goCategory(item.categoryId)">
+          <view
+            v-for="item in categoryRail"
+            :key="item.categoryId"
+            class="home__rail-item"
+            hover-class="xsy-press--active"
+            :hover-stay-time="80"
+            @click="goCategory(item.categoryId)"
+          >
             <view class="home__rail-icon">
-              <text class="home__rail-emoji">{{ categoryEmoji(item.categoryName) }}</text>
+              <text class="home__rail-emoji" aria-hidden="true">{{ categoryEmoji(item.categoryName) }}</text>
             </view>
             <text class="home__rail-text">{{ item.categoryName }}</text>
           </view>
-          <view v-if="userStore.isLogin" class="home__rail-item" @click="goCoupons">
+          <view v-if="userStore.isLogin" class="home__rail-item" hover-class="xsy-press--active" :hover-stay-time="80" @click="goCoupons">
             <view class="home__rail-icon">
               <uni-icons type="gift" :size="20" :color="theme.primary" />
             </view>
@@ -73,13 +80,19 @@
         <text class="home__section-link" @click="goActivities">全部活动</text>
       </view>
       <view v-for="activity in activities.slice(0, 3)" :key="activity.id" class="home__activity" @click="goActivity(activity)">
-        <image v-if="activity.product?.primaryImageUrl" class="home__activity-image" :src="activity.product.primaryImageUrl" mode="aspectFill" />
+        <image
+          v-if="activity.product?.primaryImageUrl"
+          class="home__activity-image"
+          :src="activity.product.primaryImageUrl"
+          mode="aspectFill"
+          lazy-load
+        />
         <view class="home__activity-main">
           <text class="home__activity-name">{{ activity.activityName }}</text>
           <text class="home__activity-summary">{{ activity.summary }}</text>
           <text class="home__activity-time">至 {{ formatDate(activity.validTo) }}</text>
         </view>
-        <text class="home__activity-arrow">›</text>
+        <uni-icons type="right" :size="16" :color="COLOR_TEXT_TERTIARY" />
       </view>
     </view>
 
@@ -91,7 +104,7 @@
       <view v-if="frequentProducts.length" class="home__list">
         <ProductCard v-for="item in frequentProducts" :key="item.skuId" :product="item" @click="goDetail" @add="addToCart" @inquiry="inquiry" />
       </view>
-      <text v-else class="home__empty">{{ userStore.isLogin ? '暂无常购商品' : '登录后展示常购商品' }}</text>
+      <XsyEmpty v-else :title="userStore.isLogin ? '暂无常购商品' : '登录后展示常购商品'" compact />
     </view>
 
     <view v-if="!hasPublishedLayout && newProducts.length" class="home__section">
@@ -103,12 +116,16 @@
 
     <view class="home__section">
       <view class="home__section-head"><text class="home__section-title">商品目录</text></view>
-      <view v-if="products.length" class="home__list">
-        <ProductCard v-for="item in products" :key="item.skuId" :product="item" @click="goDetail" @add="addToCart" @inquiry="inquiry" />
+      <view v-if="loading && !products.length">
+        <XsySkeleton variant="list" :rows="4" />
       </view>
-      <text v-else-if="!loading" class="home__empty">暂无可见商品</text>
-      <text class="home__loading">{{ loading ? '加载中…' : hasMore ? '上拉加载更多' : products.length ? '没有更多了' : '' }}</text>
+      <view v-else-if="products.length" class="home__list">
+        <ProductCard v-for="item in products" :key="item.skuId" :product="item" @click="goDetail" @add="addToCart" @inquiry="inquiry" />
+        <uni-load-more :status="loadMoreStatus" :content-text="LOAD_MORE_TEXT" />
+      </view>
+      <XsyEmpty v-else icon="shop" title="暂无可见商品" desc="商品上架后会显示在这里" compact />
     </view>
+    <XsyTabBar :active="0" />
   </view>
 </template>
 
@@ -116,6 +133,10 @@
   import { computed, ref, watch } from 'vue';
   import { onReachBottom, onShow } from '@dcloudio/uni-app';
   import ProductCard from '@/components/business/product-card.vue';
+  import XsySkeleton from '@/components/common/xsy-skeleton.vue';
+  import XsyEmpty from '@/components/common/xsy-empty.vue';
+  import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
+  import { LOAD_MORE_TEXT } from '@/constants/load-more-const';
   import { mallCatalogApi } from '@/api/mall';
   import { mallAddressApi } from '@/api/mall/address-api';
   import { mallPromotionApi } from '@/api/mall/promotion-api';
@@ -128,6 +149,7 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { formatDate } from '@/utils/order-display';
   import { categoryEmoji } from '@/utils/category-icon';
+  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
   const { theme, themeStyle } = useMallTheme();
 
@@ -204,9 +226,13 @@
     try {
       const response = await mallCatalogApi.getCategories();
       const result = [];
+      /*
+       * 取最末级分类作为横滑入口：三级目录直接用三级，
+       * 只有两级时（部分客户只维护到二级）退到二级，避免整条横滑消失。
+       */
       const walk = (nodes) => {
         (nodes || []).forEach((node) => {
-          if (node.level === 3) {
+          if (node.level === 3 || !(node.children || []).length) {
             result.push(node);
           } else {
             walk(node.children);
@@ -223,6 +249,11 @@
   const total = ref(0);
   const loading = ref(false);
   const hasMore = computed(() => products.value.length < total.value);
+  /** uni-load-more 的状态只有三种：more / loading / noMore */
+  const loadMoreStatus = computed(() => {
+    if (loading.value) return 'loading';
+    return hasMore.value ? 'more' : 'noMore';
+  });
   const greeting = computed(() => (new Date().getHours() < 12 ? '上午好' : new Date().getHours() < 18 ? '下午好' : '晚上好'));
 
   async function loadProducts(reset = false) {
@@ -377,12 +408,13 @@
 
 <style lang="scss" scoped>
   .home {
-    min-height: 100vh;
+    @include viewport-min-height;
     background: $color-bg-page;
-    padding-bottom: $space-6;
+    /* 让开自绘底部导航 */
+    padding-bottom: calc(var(--xsy-tabbar-h, 100rpx) + #{$space-6});
   }
   .home__header {
-    padding: 0 $space-4 $space-3;
+    padding: 0 var(--xsy-page-x) $space-3;
     background: linear-gradient(180deg, var(--mall-primary, #16a34a), var(--mall-primary-dark, #12833c));
   }
   .home__section-head {
@@ -405,10 +437,11 @@
   }
   /* 搜索框与分类横滑同处一张白卡，避免出现「白框浮在灰底上」的碎块 */
   .home__search-wrap {
-    padding: $space-3 $space-4 0;
+    padding: $space-3 var(--xsy-page-x) 0;
     background: white;
   }
   .home__search {
+    @include pressable;
     @include flex-start;
     height: 76rpx;
     padding: 0 $space-3;
@@ -433,9 +466,10 @@
     display: flex;
     align-items: flex-start;
     gap: $space-4;
-    padding: 0 $space-4;
+    padding: 0 var(--xsy-page-x);
   }
   .home__rail-item {
+    @include pressable;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -467,7 +501,7 @@
     background: white;
   }
   .home__banner-wrap {
-    padding: $space-3 $space-4 0;
+    padding: $space-3 var(--xsy-page-x) 0;
   }
   .home__banner {
     height: 280rpx;
@@ -514,18 +548,19 @@
     display: flex;
     flex-direction: column;
     gap: $space-1;
-    padding: $space-3 $space-4;
+    padding: $space-3 var(--xsy-page-x);
   }
   .home__topic-subtitle {
     color: $color-text-tertiary;
     font-size: $font-size-sm;
   }
   .home__activity {
+    @include pressable;
     display: flex;
     align-items: center;
     gap: $space-3;
     min-height: 120rpx;
-    padding: $space-3 $space-4;
+    padding: $space-3 var(--xsy-page-x);
     @include hairline-bottom;
   }
   .home__activity-image {
@@ -547,18 +582,15 @@
     @include ellipsis;
   }
   .home__activity-summary {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
   }
   .home__activity-time {
     color: $color-text-tertiary;
     font-size: $font-size-xs;
   }
-  .home__activity-arrow {
-    color: $color-text-tertiary;
-  }
   .home__section-head {
-    padding: $space-3 $space-4;
+    padding: $space-3 var(--xsy-page-x);
   }
   .home__section-title {
     font-size: $font-size-lg;
@@ -566,15 +598,8 @@
     color: $color-text-primary;
   }
   .home__section-link {
-    color: var(--mall-primary, #16a34a);
-    font-size: $font-size-sm;
-  }
-  .home__empty,
-  .home__loading {
-    display: block;
-    padding: $space-5;
-    text-align: center;
-    color: $color-text-tertiary;
+    @include pressable;
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
   }
 </style>

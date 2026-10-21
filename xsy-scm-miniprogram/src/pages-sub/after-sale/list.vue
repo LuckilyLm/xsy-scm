@@ -13,13 +13,16 @@
       <view class="al-card__goods">
         <view class="al-card__thumbs">
           <view v-for="(thumb, index) in record.itemThumbnails || []" :key="index" class="al-card__thumb">
-            <image class="al-card__image" :src="thumb" mode="aspectFill" />
+            <image class="al-card__image" :src="thumb" mode="aspectFill" lazy-load />
           </view>
           <view v-for="index in emptyThumbCount(record)" :key="`empty-${index}`" class="al-card__thumb al-card__thumb--empty">
             <uni-icons type="image" :size="20" :color="COLOR_TEXT_PLACEHOLDER" />
           </view>
         </view>
-        <text class="al-card__count">共 {{ record.itemCount || 0 }} 件 ›</text>
+        <view class="al-card__count xsy-chevron">
+          <text>共 {{ record.itemCount || 0 }} 件</text>
+          <uni-icons type="right" :size="12" :color="COLOR_TEXT_TERTIARY" />
+        </view>
       </view>
       <view class="al-card__foot">
         <text class="al-card__label">{{ amountLabel(record) }}</text>
@@ -40,7 +43,7 @@
   import { onLoad, onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app';
   import { mallAfterSaleApi } from '@/api/mall/after-sale-api';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
+  import { COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
   import { displayAmount, formatDateTime } from '@/utils/order-display';
   import { afterSaleStatusLevel, afterSaleStatusText } from '@/utils/after-sale-display';
 
@@ -118,7 +121,7 @@
 
 <style lang="scss" scoped>
   .al {
-    min-height: 100vh;
+    @include viewport-min-height;
     background: $color-bg-page;
     box-sizing: border-box;
     padding-bottom: $space-6;

@@ -1,26 +1,36 @@
 <template>
   <view class="cart" :style="themeStyle">
     <!-- 价格与库存提示：与效果图 04 顶部提示条一致 -->
-    <view class="cart__notice">
-      <uni-icons type="info-filled" :size="14" :color="COLOR_WARNING" />
-      <text class="cart__notice-text">价格与库存在结算时重新校验，非标品按实际称重结算</text>
-    </view>
+    <uni-notice-bar
+      text="价格与库存在结算时重新校验，非标品按实际称重结算"
+      :scrollable="false"
+      :show-icon="true"
+      :show-close="false"
+      background-color="#fff8e6"
+      :color="COLOR_WARNING"
+      :font-size="12"
+    >
+      <template #noticebarIcon>
+        <uni-icons type="info-filled" :size="14" :color="COLOR_WARNING" />
+      </template>
+    </uni-notice-bar>
 
-    <view v-if="loading && !items.length" class="cart__hint">
-      <text>加载中…</text>
+    <!-- 首屏骨架：只有一屏都没有数据时才用，改数量后的局部刷新仍保留原列表 -->
+    <view v-if="loading && !items.length" class="cart__skeleton">
+      <XsySkeleton variant="list" :rows="3" />
     </view>
 
     <view v-else-if="!items.length" class="cart__empty">
       <uni-icons type="cart" :size="64" :color="COLOR_TEXT_PLACEHOLDER" />
       <text class="cart__empty-title">购物车暂无商品</text>
       <text class="cart__empty-desc">去首页或分类页挑选商品吧</text>
-      <view class="cart__empty-action" @click="goHome">去逛逛</view>
+      <view class="cart__empty-action" hover-class="xsy-press-button--active" :hover-stay-time="80" @click="goHome">去逛逛</view>
     </view>
 
     <template v-else>
       <view class="cart__list">
         <view v-for="item in items" :key="item.skuId" class="cart-item" :class="{ 'cart-item--off': !isSettleable(item) }">
-          <view class="cart-item__check" @click="toggle(item)">
+          <view class="cart-item__check" aria-label="选择该商品" hover-class="xsy-press--active" :hover-stay-time="80" @click="toggle(item)">
             <uni-icons
               :type="isChecked(item) ? 'checkbox-filled' : 'circle'"
               :size="22"
@@ -34,6 +44,7 @@
               class="cart-item__image"
               :src="item.primaryImageUrl"
               mode="aspectFill"
+              lazy-load
               @error="onImageError(item.skuId)"
             />
             <view v-else class="cart-item__thumb-fallback">{{ thumb(item) }}</view>
@@ -52,18 +63,24 @@
 
             <view class="cart-item__foot">
               <view class="stepper">
-                <view class="stepper__btn" @click="step(item, -1)">−</view>
+                <view class="stepper__btn" aria-label="减少数量" hover-class="xsy-press--active" :hover-stay-time="80" @click="step(item, -1)">
+                  <uni-icons type="minus" :size="14" :color="COLOR_TEXT_SECONDARY" />
+                </view>
                 <text class="stepper__value">{{ displayQuantity(item) }}</text>
-                <view class="stepper__btn" @click="step(item, 1)">+</view>
+                <view class="stepper__btn" aria-label="增加数量" hover-class="xsy-press--active" :hover-stay-time="80" @click="step(item, 1)">
+                  <uni-icons type="plus" :size="14" :color="COLOR_TEXT_SECONDARY" />
+                </view>
               </view>
-              <text class="cart-item__remove" @click="remove(item)">移除</text>
+              <text class="cart-item__remove" aria-label="移除该商品" hover-class="xsy-press--active" :hover-stay-time="80" @click="remove(item)"
+                >移除</text
+              >
             </view>
           </view>
         </view>
       </view>
 
       <view class="cart__bar">
-        <view class="cart__all" @click="toggleAll">
+        <view class="cart__all" hover-class="xsy-press--active" :hover-stay-time="80" @click="toggleAll">
           <uni-icons :type="allChecked ? 'checkbox-filled' : 'circle'" :size="22" :color="allChecked ? theme.primary : COLOR_TEXT_PLACEHOLDER" />
           <text class="cart__all-text">全选</text>
         </view>
@@ -73,20 +90,29 @@
           <text v-else-if="estimateState === 'error'" class="cart__amount-error" @click="retryEstimate">金额获取失败，点击重试</text>
           <text v-else class="cart__amount-value">¥{{ selectedAmount }}</text>
         </view>
-        <view class="cart__submit" :class="{ 'cart__submit--disabled': !checkedCount || submitting || estimateState !== 'idle' }" @click="goCheckout">
+        <view
+          class="cart__submit"
+          :class="{ 'cart__submit--disabled': !checkedCount || submitting || estimateState !== 'idle' }"
+          hover-class="xsy-press-button--active"
+          :hover-stay-time="80"
+          @click="goCheckout"
+        >
           去结算{{ checkedCount ? `(${checkedCount})` : '' }}
         </view>
       </view>
     </template>
+    <XsyTabBar :active="2" />
   </view>
 </template>
 
 <script setup>
   import { computed, reactive, ref } from 'vue';
   import { onShow } from '@dcloudio/uni-app';
+  import XsySkeleton from '@/components/common/xsy-skeleton.vue';
+  import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
   import { mallCartApi } from '@/api/mall/cart-api';
   import { smartSentry } from '@/lib/smart-sentry';
-  import { COLOR_TEXT_PLACEHOLDER, COLOR_WARNING } from '@/constants/theme-color-const';
+  import { COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_SECONDARY, COLOR_WARNING } from '@/constants/theme-color-const';
   import { useMallTheme } from '@/composables/use-mall-theme';
 
   const { theme, themeStyle } = useMallTheme();
@@ -261,25 +287,14 @@
 
 <style lang="scss" scoped>
   .cart {
-    min-height: 100vh;
+    @include viewport-min-height;
     background-color: $color-bg-page;
-    padding-bottom: 140rpx;
+    /* 底部固定条 108rpx，安全区单独相加，否则 iPhone 上最后一行会被压住 */
+    /* 底部结算条 + 自绘导航，两段高度相加 */
+    padding-bottom: calc(108rpx + 32rpx + var(--xsy-tabbar-h, 100rpx));
   }
-  .cart__notice {
-    @include flex-start;
-    padding: $space-3 $space-4;
-    background-color: #fff8e6;
-  }
-  .cart__notice-text {
-    margin-left: $space-1;
-    font-size: $font-size-xs;
-    color: $color-warning;
-  }
-  .cart__hint {
-    display: block;
-    padding: $space-6;
-    text-align: center;
-    color: $color-text-tertiary;
+  .cart__skeleton {
+    margin-top: $space-3;
   }
   .cart__empty {
     @include flex-center;
@@ -321,7 +336,10 @@
   }
   .cart-item__check {
     flex-shrink: 0;
+    min-width: 88rpx;
+    min-height: 88rpx;
     padding-right: $space-2;
+    @include flex-start;
   }
   .cart-item__thumb {
     width: 128rpx;
@@ -388,19 +406,22 @@
     margin-top: $space-2;
   }
   .cart-item__remove {
+    padding: $space-3 0 $space-3 $space-3;
     font-size: $font-size-xs;
     color: $color-text-tertiary;
   }
   .stepper {
     @include flex-start;
   }
+  /*
+   * uni-icons 的 plus / minus 本身是圆形图标，再套一层描边会变成双层框。
+   * 尺寸按 44px 触控下限给（88rpx），图标视觉大小由 :size 控制，不跟着放大。
+   */
   .stepper__btn {
-    width: 48rpx;
-    height: 48rpx;
+    @include pressable;
+    width: 88rpx;
+    height: 88rpx;
     @include flex-center;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
   }
   .stepper__value {
     min-width: 64rpx;
@@ -413,7 +434,10 @@
     @include fixed-bottom-bar;
     @include flex-between;
     height: 108rpx;
-    padding: 0 $space-4;
+    padding: 0 var(--xsy-page-x);
+    /* 结算条压在自绘导航之上，安全区由导航承担 */
+    bottom: var(--xsy-tabbar-h, 100rpx);
+    padding-bottom: 0;
   }
   .cart__all {
     @include flex-start;
@@ -462,5 +486,24 @@
   }
   .cart__submit--disabled {
     background-color: var(--mall-primary-disabled, #a7d8b9);
+  }
+
+  /*
+   * 小屏（≤359px）：底部条三段并排最容易溢出。
+   * 收紧左右内边距与字号，保证「合计金额 + 去结算」在同一行。
+   */
+  @include screen-compact {
+    .cart__bar {
+      padding: 0 var(--xsy-page-x);
+    }
+    .cart__submit {
+      padding: 0 $space-4;
+    }
+    .cart__all-text {
+      font-size: $font-size-sm;
+    }
+    .cart__amount-value {
+      font-size: $font-size-lg;
+    }
   }
 </style>

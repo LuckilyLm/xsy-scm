@@ -6,7 +6,10 @@
       ><text class="credit__retry" @click="load">重试</text>
     </view>
     <template v-else-if="summary">
-      <view v-if="stale" class="credit__stale" @click="load"> 更新失败，当前为上次查询结果。点击重试 › </view>
+      <view v-if="stale" class="credit__stale xsy-chevron" @click="load">
+        <text>更新失败，当前为上次查询结果。点击重试</text>
+        <uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY" />
+      </view>
       <view class="credit__hero">
         <text class="credit__hero-label">本客户应收未结</text>
         <text class="credit__hero-amount">¥{{ displayAmount(summary.openReceivableAmount) }}</text>
@@ -31,13 +34,21 @@
         <text v-if="summary.sharedSettlement" class="credit__note">这里只展示本客户账单，集团整体授信需另行授权。</text>
       </view>
       <view class="credit__card">
-        <view class="credit__head" @click="goReceivables"><text>最近账单</text><text class="credit__link">全部账单 ›</text></view>
+        <view class="credit__head" @click="goReceivables"
+          ><text>最近账单</text>
+          <view class="credit__link xsy-chevron">
+            <text>全部账单</text>
+            <uni-icons type="right" :size="14" :color="COLOR_PRIMARY" />
+          </view>
+        </view>
         <view v-if="!recent.length" class="credit__empty">暂无应收账单</view>
         <view v-for="row in recent" :key="row.receivableId" class="credit__bill" @click="goDetail(row.receivableId)">
           <view class="credit__bill-main"
             ><text>{{ row.orderNo || row.receivableNo }}</text
-            ><text class="credit__bill-state">{{ receivableStateText(row.settleState) }} ›</text></view
-          >
+            ><view class="credit__bill-state xsy-chevron"
+              ><text>{{ receivableStateText(row.settleState) }}</text
+              ><uni-icons type="right" :size="12" :color="COLOR_SUCCESS" /></view
+          ></view>
           <text class="credit__bill-sub">未结 ¥{{ displayAmount(row.openAmount) }} · 到期 {{ formatDate(row.dueDate) || '未设置' }}</text>
         </view>
       </view>
@@ -54,6 +65,7 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, formatDate } from '@/utils/order-display';
   import { receivableStateText } from '@/utils/funds-display';
+  import { COLOR_PRIMARY, COLOR_SUCCESS, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
   const { themeStyle } = useMallTheme();
 
@@ -116,7 +128,7 @@
 
 <style lang="scss" scoped>
   .credit {
-    min-height: 100vh;
+    @include viewport-min-height;
     padding: $space-4 $space-4 $space-8;
     box-sizing: border-box;
     background: $color-bg-page;
@@ -129,7 +141,7 @@
   .credit__retry {
     display: block;
     margin-top: $space-4;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .credit__stale {
     margin-bottom: $space-3;
@@ -204,7 +216,7 @@
     font-weight: $font-weight-bold;
   }
   .credit__link {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
     font-weight: $font-weight-regular;
   }

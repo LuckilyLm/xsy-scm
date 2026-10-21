@@ -177,7 +177,7 @@
       font-size: 48rpx;
       line-height: 1;
       font-weight: $font-weight-medium;
-      color: var(--mall-primary, #16a34a);
+      color: var(--mall-primary-ink, #12833c);
     }
 
     /* 缺货时图片降透明度，避免与在售商品混淆 */
@@ -247,7 +247,7 @@
 
       &--agreement {
         background-color: var(--mall-primary-light, #e8f5ec);
-        color: var(--mall-primary, #16a34a);
+        color: var(--mall-primary-ink, #12833c);
       }
 
       &--type {
@@ -344,7 +344,8 @@
       flex-shrink: 0;
       margin-left: $space-3;
       padding: 0 $space-4;
-      height: 60rpx;
+      /* 44px 触控下限；文字仍是小字号，只是可点区域变大 */
+      height: 72rpx;
       border-radius: $radius-pill;
       @include flex-center;
 
@@ -381,11 +382,11 @@
     }
 
     &__action--inquiry &__action-text {
-      color: var(--mall-primary, #16a34a);
+      color: var(--mall-primary-ink, #12833c);
     }
 
     &__action--preorder &__action-text {
-      color: var(--mall-primary, #16a34a);
+      color: var(--mall-primary-ink, #12833c);
     }
 
     &__action--unavailable &__action-text {

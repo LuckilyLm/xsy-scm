@@ -9,17 +9,36 @@
       <text v-if="!userStore.isLogin" class="mine__login" @click="goLogin">登录</text>
     </view>
     <view class="mine__card">
-      <view class="mine__row" @click="goCart"><text>购物车</text><text>›</text></view>
-      <view class="mine__row" @click="goAddress"><text>收货地址</text><text>›</text></view>
-      <view class="mine__row" @click="goAfterSales"><text>售后服务</text><text>›</text></view>
-      <view class="mine__row" @click="goWallet"><text>我的钱包</text><text>›</text></view>
-      <view class="mine__row" @click="goCredit"><text>账期与账单</text><text>›</text></view>
-      <view class="mine__row" @click="goMyCoupons"><text>我的优惠券</text><text>›</text></view>
-      <view class="mine__row" @click="goCoupons"><text>领券中心</text><text>›</text></view>
-      <view class="mine__row" @click="changePassword"><text>修改登录密码</text><text>›</text></view>
-      <view class="mine__row" @click="goOrders"><text>我的订单</text><text>›</text></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goCart"
+        ><text>购物车</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goAddress"
+        ><text>收货地址</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goAfterSales"
+        ><text>售后服务</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goWallet"
+        ><text>我的钱包</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goCredit"
+        ><text>账期与账单</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goMyCoupons"
+        ><text>我的优惠券</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goCoupons"
+        ><text>领券中心</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="changePassword"
+        ><text>修改登录密码</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goOrders"
+        ><text>我的订单</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
     </view>
-    <view v-if="userStore.isLogin" class="mine__logout" @click="logout">退出登录</view>
+    <view v-if="userStore.isLogin" class="mine__logout" hover-class="xsy-press--active" :hover-stay-time="80" @click="logout">退出登录</view>
+    <XsyTabBar :active="4" />
   </view>
 </template>
 
@@ -28,6 +47,8 @@
   import { useSystemLayout } from '@/composables/use-system-layout';
   import { useMallTheme } from '@/composables/use-mall-theme';
   import { useUserStore } from '@/store/modules/system/user';
+  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
 
   const { themeStyle } = useMallTheme();
 
@@ -93,13 +114,13 @@
 
 <style lang="scss" scoped>
   .mine {
-    min-height: 100vh;
-    padding-bottom: $space-8;
+    @include viewport-min-height;
+    padding-bottom: calc(var(--xsy-tabbar-h, 100rpx) + #{$space-8});
     background: $color-bg-page;
   }
   .mine__header {
     @include flex-start;
-    padding: $space-6 $space-4 $space-8;
+    padding: $space-6 var(--xsy-page-x) $space-8;
     background: linear-gradient(180deg, var(--mall-primary, #16a34a), var(--mall-primary-dark, #12833c));
   }
   .mine__avatar {
@@ -136,19 +157,21 @@
     color: white;
   }
   .mine__card {
-    margin: -$space-4 $space-4 0;
+    margin: -$space-4 var(--xsy-page-x) 0;
     @include card(0);
     overflow: hidden;
   }
   .mine__row {
+    @include pressable;
     height: 100rpx;
-    padding: 0 $space-4;
+    padding: 0 var(--xsy-page-x);
     @include flex-between;
     @include hairline-bottom;
     color: $color-text-primary;
   }
   .mine__logout {
-    margin: $space-6 $space-4 0;
+    @include pressable;
+    margin: $space-6 var(--xsy-page-x) 0;
     height: 88rpx;
     @include flex-center;
     @include card(0);

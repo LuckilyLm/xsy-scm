@@ -1,18 +1,16 @@
 <template>
   <view class="detail" :style="themeStyle">
     <scroll-view class="detail__body" scroll-y>
-      <view v-if="loading" class="detail__hint">
-        <text class="detail__hint-text">加载中…</text>
-      </view>
+      <XsySkeleton v-if="loading" variant="detail" :rows="3" />
 
       <!-- 商品不存在 / 对该客户不可见：走页面内空态，不做「跳回列表」的强制行为 -->
-      <view v-else-if="!product" class="detail__missing">
-        <text class="detail__missing-title">商品不存在或已下架</text>
-        <text class="detail__missing-desc">若确认该商品应可见，请联系业务员核对。</text>
-        <view class="detail__missing-action" @click="goCategory">
-          <text class="detail__missing-action-text">去看其他商品</text>
-        </view>
-      </view>
+      <XsyEmpty
+        v-else-if="!product"
+        title="商品不存在或已下架"
+        desc="若确认该商品应可见，请联系业务员核对。"
+        action-text="去看其他商品"
+        @action="goCategory"
+      />
 
       <template v-else>
         <!-- 主图：业主提供 fileKey 前用首字占位；真实图片加载失败同样回退首字，不出裂图 -->
@@ -75,12 +73,26 @@
           <view class="detail__qty-row">
             <text class="detail__qty-label">购买数量</text>
             <view class="detail__stepper">
-              <view class="detail__step" :class="{ 'detail__step--disabled': !canDecrease }" @click="decrease">
-                <text class="detail__step-text">-</text>
+              <view
+                class="detail__step"
+                :class="{ 'detail__step--disabled': !canDecrease }"
+                aria-label="减少数量"
+                hover-class="xsy-press--active"
+                :hover-stay-time="80"
+                @click="decrease"
+              >
+                <uni-icons type="minus" :size="14" :color="canDecrease ? COLOR_TEXT_PRIMARY : COLOR_TEXT_PLACEHOLDER" />
               </view>
               <text class="detail__qty-value">{{ quantity }}</text>
-              <view class="detail__step" :class="{ 'detail__step--disabled': !canIncrease }" @click="increase">
-                <text class="detail__step-text">+</text>
+              <view
+                class="detail__step"
+                :class="{ 'detail__step--disabled': !canIncrease }"
+                aria-label="增加数量"
+                hover-class="xsy-press--active"
+                :hover-stay-time="80"
+                @click="increase"
+              >
+                <uni-icons type="plus" :size="14" :color="canIncrease ? COLOR_TEXT_PRIMARY : COLOR_TEXT_PLACEHOLDER" />
               </view>
             </view>
           </view>
@@ -105,7 +117,13 @@
 
     <!-- 底部固定操作条：只有一个主操作，形态由 submitKind 决定（add / inquiry / disabled） -->
     <view v-if="product" class="detail__footer">
-      <view class="detail__footer-button" :class="`detail__footer-button--${submitKind}`" @click="onFooterAction">
+      <view
+        class="detail__footer-button"
+        :class="`detail__footer-button--${submitKind}`"
+        hover-class="xsy-press-button--active"
+        :hover-stay-time="80"
+        @click="onFooterAction"
+      >
         <text class="detail__footer-text">{{ submitText }}</text>
       </view>
     </view>
@@ -114,7 +132,10 @@
 
 <script setup>
   import { computed, ref } from 'vue';
+  import XsySkeleton from '@/components/common/xsy-skeleton.vue';
+  import XsyEmpty from '@/components/common/xsy-empty.vue';
   import { useMallTheme } from '@/composables/use-mall-theme';
+  import { COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_PRIMARY } from '@/constants/theme-color-const';
 
   import { onLoad } from '@dcloudio/uni-app';
   import { mallCatalogApi } from '@/api/mall';
@@ -297,7 +318,7 @@
 
 <style lang="scss" scoped>
   .detail {
-    height: 100vh;
+    @include viewport-height;
     display: flex;
     flex-direction: column;
     background-color: $color-bg-page;
@@ -307,42 +328,8 @@
       min-height: 0;
     }
 
-    &__hint,
-    &__missing-action {
-      @include flex-center;
-      padding: $space-6 0;
-    }
-
-    &__hint-text,
     &__missing-action-text {
-      font-size: $font-size-sm;
-      color: $color-text-tertiary;
-    }
-
-    &__missing {
-      padding: $space-8 $space-4;
-      text-align: center;
-    }
-
-    &__missing-title,
-    &__missing-desc {
-      display: block;
-    }
-
-    &__missing-title {
-      font-size: $font-size-lg;
-      font-weight: $font-weight-bold;
-      color: $color-text-primary;
-    }
-
-    &__missing-desc {
-      margin-top: $space-2;
-      font-size: $font-size-sm;
-      color: $color-text-tertiary;
-    }
-
-    &__missing-action-text {
-      color: var(--mall-primary, #16a34a);
+      color: var(--mall-primary-ink, #12833c);
       font-size: $font-size-base;
     }
 
@@ -361,7 +348,7 @@
     &__gallery-text {
       font-size: 120rpx;
       font-weight: $font-weight-bold;
-      color: var(--mall-primary, #16a34a);
+      color: var(--mall-primary-ink, #12833c);
     }
 
     /* ---------------------------- 通用块 ---------------------------- */
@@ -419,7 +406,7 @@
       /* 档位来自 priceSourceLevel()，与 ProductCard 的语义配色一致 */
       &--agreement {
         background-color: var(--mall-primary-light, #e8f5ec);
-        color: var(--mall-primary, #16a34a);
+        color: var(--mall-primary-ink, #12833c);
       }
 
       &--type {
@@ -560,9 +547,9 @@
 
     &__stepper {
       @include flex-start;
-      /* Figma：步进器容器高 38px、底色 #F5F6F8、圆角 4px */
+      /* 高度按 44px 触控下限给；底色 #F5F6F8、圆角 4px 沿用设计稿 */
       box-sizing: border-box;
-      height: 73rpx;
+      height: 88rpx;
       border-radius: $radius-sm;
       background-color: $color-bg-page;
       overflow: hidden;
@@ -571,22 +558,9 @@
     &__step {
       /* Figma：加减按钮 34×38，底色 #F2F3F5；禁用态只把文字转灰 */
       box-sizing: border-box;
-      width: 66rpx;
+      width: 88rpx;
       height: 100%;
-      background-color: $color-bg-hover;
       @include flex-center;
-
-      &--disabled {
-        .detail__step-text {
-          color: $color-text-tertiary;
-        }
-      }
-    }
-
-    &__step-text {
-      font-size: $font-size-base;
-      color: $color-text-primary;
-      line-height: 1;
     }
 
     &__qty-value {
@@ -636,7 +610,7 @@
         border: 1px solid var(--mall-primary, #16a34a);
 
         .detail__footer-text {
-          color: var(--mall-primary, #16a34a);
+          color: var(--mall-primary-ink, #12833c);
         }
       }
 

@@ -56,7 +56,7 @@
 
 <style lang="scss" scoped>
   .activities {
-    min-height: 100vh;
+    @include viewport-min-height;
     padding: $space-1 0 $space-8;
     background: $color-bg-page;
   }
@@ -68,7 +68,7 @@
   .activities__retry {
     display: block;
     margin-top: $space-4;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .activities__card {
     margin: $space-3 $space-4 0;
@@ -84,7 +84,7 @@
     font-weight: $font-weight-bold;
   }
   .activities__type {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-xs;
     white-space: nowrap;
   }
@@ -102,7 +102,7 @@
   .activities__link {
     display: block;
     margin-top: $space-3;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
   }
 </style>

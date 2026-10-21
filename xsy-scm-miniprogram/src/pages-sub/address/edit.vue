@@ -1,14 +1,38 @@
 <template>
   <view class="addr-edit" :style="themeStyle">
     <view class="addr-edit__card">
+      <!-- #ifdef MP-WEIXIN -->
+      <view class="addr-edit__wechat" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="fillFromWechatAddress">
+        <uni-icons type="contact" :size="16" :color="COLOR_PRIMARY" />
+        <text class="addr-edit__wechat-text">使用微信收货地址</text>
+        <text class="addr-edit__wechat-hint">自动填入姓名、电话、详细地址</text>
+      </view>
+      <!-- #endif -->
       <view class="field">
         <text class="field__label">收货人</text>
-        <input class="field__input" v-model="form.receiverName" :maxlength="64" placeholder="请输入收货人姓名" />
+        <input
+          class="field__input"
+          v-model="form.receiverName"
+          :maxlength="64"
+          placeholder="请输入收货人姓名"
+          confirm-type="next"
+          :cursor-spacing="24"
+          hold-keyboard
+        />
       </view>
       <view class="field">
         <text class="field__label">联系电话</text>
         <!-- 座机含区号/分机与 +，需要文本键盘；用 type="number" 会打不出这些字符，与校验规则冲突 -->
-        <input class="field__input" type="text" v-model="form.receiverPhone" :maxlength="32" placeholder="手机或座机号码" />
+        <input
+          class="field__input"
+          type="text"
+          v-model="form.receiverPhone"
+          :maxlength="32"
+          placeholder="手机或座机号码"
+          confirm-type="next"
+          :cursor-spacing="24"
+          hold-keyboard
+        />
       </view>
       <picker mode="region" :value="region" @change="onRegionChange">
         <view class="field">
@@ -20,7 +44,15 @@
       </picker>
       <view class="field">
         <text class="field__label">搜索位置</text>
-        <input class="field__input" v-model="searchKeyword" placeholder="小区、楼宇或街道" confirm-type="search" @confirm="searchPlaces" />
+        <input
+          class="field__input"
+          v-model="searchKeyword"
+          placeholder="小区、楼宇或街道"
+          confirm-type="search"
+          :cursor-spacing="24"
+          hold-keyboard
+          @confirm="searchPlaces"
+        />
         <text class="field__link" @click="searchPlaces">搜索</text>
       </view>
       <view v-if="searching" class="addr-edit__map-hint">正在搜索高德地点…</view>
@@ -38,7 +70,16 @@
       </view>
       <view class="field field--textarea">
         <text class="field__label">详细地址</text>
-        <textarea class="field__textarea" v-model="form.detailAddress" :maxlength="255" placeholder="街道、门牌号、楼层等" auto-height></textarea>
+        <textarea
+          class="field__textarea"
+          v-model="form.detailAddress"
+          :maxlength="255"
+          placeholder="街道、门牌号、楼层等"
+          auto-height
+          :cursor-spacing="96"
+          show-confirm-bar
+          hold-keyboard
+        ></textarea>
       </view>
       <view class="field field--switch">
         <text class="field__label">设为默认地址</text>
@@ -46,7 +87,7 @@
       </view>
     </view>
 
-    <view class="addr-edit__bar">
+    <view class="addr-edit__bar" :style="barStyle">
       <view class="addr-edit__save" :class="{ 'addr-edit__save--disabled': saving }" @click="save">
         {{ saving ? '保存中…' : '保存' }}
       </view>
@@ -62,8 +103,14 @@
   import { mallAddressApi } from '@/api/mall/address-api';
   import { mallMapApi } from '@/api/mall/map-api';
   import { smartSentry } from '@/lib/smart-sentry';
+  import { useKeyboardHeight } from '@/composables/use-keyboard-height';
+  import { getCurrentLocation, requestLocationPermission } from '@/composables/use-location-permission';
+  import { guideToSetting } from '@/composables/use-permission';
+  import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 
   const { theme, themeStyle } = useMallTheme();
+  /** 键盘弹出时把保存栏抬到键盘上沿，避免被遮住 */
+  const { barStyle } = useKeyboardHeight();
 
   const addressId = ref(null);
   const region = ref([]);
@@ -172,14 +219,49 @@
     });
   }
 
-  function chooseCurrentLocation() {
-    uni.getLocation({
-      type: 'gcj02',
-      success: ({ longitude, latitude }) => {
-        void selectCoordinates(longitude, latitude);
+  /**
+   * 读取微信收货地址。
+   *
+   * 只回填姓名、电话与详细地址：微信地址不带 GCJ-02 坐标，行政区与坐标
+   * 必须由地图选点产生，否则保存时会被服务端重新解析拒绝。
+   */
+  function fillFromWechatAddress() {
+    uni.chooseAddress({
+      success: (res) => {
+        form.receiverName = res.userName || form.receiverName;
+        form.receiverPhone = res.telNumber || form.receiverPhone;
+        form.detailAddress = res.detailInfo || form.detailAddress;
+        uni.showToast({ title: '已填入，请继续在地图上选择位置', icon: 'none' });
       },
-      fail: () => uni.showToast({ title: '请开启定位权限后重试', icon: 'none' }),
+      fail: (error) => {
+        if (/auth|deny|denied/i.test(String(error?.errMsg || ''))) {
+          guideToSetting('scope.address', {
+            title: '需要收货地址授权',
+            content: '开启后才能读取微信收货地址，是否前往设置开启？',
+          }).then((granted) => {
+            if (granted) fillFromWechatAddress();
+          });
+          return;
+        }
+        uni.showToast({ title: '未能读取微信收货地址', icon: 'none' });
+      },
     });
+  }
+
+  async function chooseCurrentLocation() {
+    const allowed = await requestLocationPermission();
+    if (!allowed) {
+      uni.showToast({ title: '未开启定位权限，可在右上角设置中打开', icon: 'none' });
+      return;
+    }
+    try {
+      const { longitude, latitude } = await getCurrentLocation();
+      void selectCoordinates(longitude, latitude);
+    } catch (error) {
+      // 权限已给但系统定位关闭、超时或无网络时，getLocation 仍会失败
+      const denied = /auth|deny|denied/i.test(String(error?.errMsg || ''));
+      uni.showToast({ title: denied ? '定位权限未开启' : '定位失败，请检查系统定位开关', icon: 'none' });
+    }
   }
   function onDefaultChange(event) {
     form.isDefault = event.detail.value === true;
@@ -237,13 +319,30 @@
 
 <style lang="scss" scoped>
   .addr-edit {
-    min-height: 100vh;
+    @include viewport-min-height;
     background-color: $color-bg-page;
     padding-bottom: 140rpx;
   }
   .addr-edit__card {
     margin-top: $space-3;
     background-color: $color-bg-card;
+  }
+  /* 微信收货地址入口：放在表单最上方，填完仍需地图选点确认坐标 */
+  .addr-edit__wechat {
+    @include flex-start;
+    gap: $space-2;
+    padding: $space-3 $space-4;
+    @include hairline-bottom;
+  }
+  .addr-edit__wechat-text {
+    color: var(--mall-primary-ink, #12833c);
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+  }
+  .addr-edit__wechat-hint {
+    margin-left: auto;
+    color: $color-text-tertiary;
+    font-size: $font-size-xs;
   }
   .field {
     @include flex-between;
@@ -305,7 +404,7 @@
   }
   .field__link {
     margin-left: $space-3;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .addr-edit__map {
     width: 100%;
@@ -315,7 +414,7 @@
     display: flex;
     justify-content: space-around;
     padding: $space-3;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .addr-edit__map-hint {
     padding: $space-2 $space-4;

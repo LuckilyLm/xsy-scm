@@ -110,7 +110,12 @@ export function nonStandardTip(product) {
   return '本商品按实际称重结算，下单量为预估量，最终金额以出库实重为准。';
 }
 
-/** 价格来源文案：服务端给 label 优先，退化到原始枚举，最后兜底 */
+/**
+ * 价格来源文案：服务端给 label 优先，其次按枚举翻译。
+ *
+ * 认不出的枚举一律不显示标签 —— 宁可少一个角标，也不要把 STANDARD 这类
+ * 英文常量端给客户；新增来源时由 price-source-contract 契约测试拦下。
+ */
 const PRICE_SOURCE_LABELS = {
   MARKET: '市场价',
   AGREEMENT: '协议价',
@@ -123,7 +128,7 @@ export function priceSourceLabel(product) {
     return '';
   }
   // 后端只给枚举值，缺省时按枚举翻译，避免把 MARKET 之类的英文直出给用户。
-  return product.priceSourceLabel || PRICE_SOURCE_LABELS[product.priceSource] || product.priceSource || '';
+  return product.priceSourceLabel || PRICE_SOURCE_LABELS[product.priceSource] || '';
 }
 
 /**

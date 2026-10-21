@@ -12,11 +12,15 @@ async function withData(promise, map) {
 }
 
 /** 分类树（只返回有可见 SKU 的分类） */
-/** 服务端分类节点用 name，页面统一读 categoryName（与商品卡片字段一致） */
+/**
+ * 服务端分类节点用 name，页面统一读 categoryName（与商品卡片字段一致）。
+ * 已经带 categoryName 的数据（mock 契约层、历史响应）保留原值，
+ * 否则整列分类名会变成空字符串，只剩图标。
+ */
 function adaptCategory(node) {
   return {
     ...node,
-    categoryName: node.name,
+    categoryName: node.name || node.categoryName || '',
     children: (node.children || []).map(adaptCategory),
   };
 }

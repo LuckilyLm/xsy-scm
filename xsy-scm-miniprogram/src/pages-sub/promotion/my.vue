@@ -111,7 +111,7 @@
 
 <style lang="scss" scoped>
   .my-coupons {
-    min-height: 100vh;
+    @include viewport-min-height;
     padding-bottom: $space-8;
     background: $color-bg-page;
   }
@@ -124,7 +124,7 @@
   .my-coupons__nav {
     padding: $space-3 $space-4;
     background: $color-bg-card;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     text-align: right;
     font-size: $font-size-sm;
   }
@@ -139,7 +139,7 @@
     font-size: $font-size-sm;
   }
   .my-coupons__tab--active {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-weight: $font-weight-bold;
   }
   .my-coupons__state {
@@ -151,7 +151,7 @@
     display: block;
     padding: $space-4;
     text-align: center;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .my-coupons__bottom {
     padding: $space-5;

@@ -10,13 +10,16 @@
         <text class="co-address__detail">{{ fullAddress(address) }}</text>
       </template>
       <text v-else class="co-address__empty">请选择收货地址</text>
-      <text class="co-address__arrow">›</text>
+      <uni-icons class="co-address__arrow" type="right" :size="16" :color="COLOR_TEXT_TERTIARY" />
     </view>
 
     <picker v-if="warehouseOptions.length" :range="warehouseOptions" range-key="warehouseName" :value="warehouseIndex" @change="onWarehouseChange">
       <view class="co-card co-row">
         <text class="co-row__label">配送仓</text>
-        <text class="co-row__value">{{ selectedWarehouse?.warehouseName || '请选择配送仓' }} ›</text>
+        <view class="co-row__value xsy-chevron">
+          <text>{{ selectedWarehouse?.warehouseName || '请选择配送仓' }}</text>
+          <uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY" />
+        </view>
       </view>
     </picker>
     <view v-if="warehouseError" class="co-alert">
@@ -44,7 +47,7 @@
       <view class="co-card__title">商品明细</view>
       <view v-for="item in items" :key="item.skuId" class="co-item" :class="{ 'co-item--off': !isAvailable(item) }">
         <view class="co-item__thumb">
-          <image v-if="item.primaryImageUrl" class="co-item__image" :src="item.primaryImageUrl" mode="aspectFill" />
+          <image v-if="item.primaryImageUrl" class="co-item__image" :src="item.primaryImageUrl" mode="aspectFill" lazy-load />
           <view v-else class="co-item__thumb-fallback">{{ (item.productName || '商').slice(0, 1) }}</view>
         </view>
         <view class="co-item__main">
@@ -65,7 +68,10 @@
     <view class="co-card co-coupon">
       <view class="co-row" @click="chooseCoupon">
         <text class="co-row__label">优惠券</text>
-        <text class="co-row__value">{{ selectedCouponName || '选择优惠券' }} ›</text>
+        <view class="co-row__value xsy-chevron">
+          <text>{{ selectedCouponName || '选择优惠券' }}</text>
+          <uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY" />
+        </view>
       </view>
       <text v-if="selectedCouponId" class="co-coupon__clear" @click="clearCoupon">不使用优惠券</text>
       <text v-if="promotionError" class="co-coupon__error">{{ promotionError }}</text>
@@ -108,17 +114,32 @@
     <!-- 备注 -->
     <view class="co-card">
       <view class="co-card__title">订单备注</view>
-      <textarea class="co-remark" v-model="remark" :maxlength="500" placeholder="如有特殊要求可在此说明" auto-height></textarea>
+      <textarea
+        class="co-remark"
+        v-model="remark"
+        :maxlength="500"
+        placeholder="如有特殊要求可在此说明"
+        auto-height
+        :cursor-spacing="96"
+        show-confirm-bar
+        hold-keyboard
+      ></textarea>
     </view>
 
-    <view class="co-bar">
+    <view class="co-bar" :style="barStyle">
       <view class="co-bar__amount">
         <text class="co-bar__label">优惠后预估</text>
         <text v-if="previewing" class="co-bar__hint">计算中…</text>
         <text v-else-if="!previewReady" class="co-bar__error" @click="refreshPreview">{{ promotionError || '金额获取失败，点击重试' }}</text>
         <text v-else class="co-bar__value">¥{{ promotion?.payableAmount || estimatedAmount }}</text>
       </view>
-      <view class="co-bar__submit" :class="{ 'co-bar__submit--disabled': !canSubmit }" @click="submit">
+      <view
+        class="co-bar__submit"
+        :class="{ 'co-bar__submit--disabled': !canSubmit }"
+        hover-class="xsy-press-button--active"
+        :hover-stay-time="80"
+        @click="submit"
+      >
         {{ submitting ? '提交中…' : '提交订单' }}
       </view>
     </view>
@@ -136,8 +157,12 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { shanghaiDate } from '@/utils/mall-date';
   import { CHECKOUT_ADDRESS } from '@/constants/local-storage-key-const';
+  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { useKeyboardHeight } from '@/composables/use-keyboard-height';
 
   const { themeStyle } = useMallTheme();
+  /** 键盘弹出时把提交栏抬到键盘上沿 */
+  const { barStyle } = useKeyboardHeight();
 
   const skuIds = ref([]);
   const items = ref([]);
@@ -504,9 +529,10 @@
 
 <style lang="scss" scoped>
   .co {
-    min-height: 100vh;
+    @include viewport-min-height;
     background-color: $color-bg-page;
-    padding-bottom: 140rpx;
+    /* 底部固定条 108rpx，安全区单独相加 */
+    @include content-clear-bottom(108rpx, 32rpx);
   }
   .co-card {
     margin-top: $space-3;
@@ -551,7 +577,6 @@
     right: $space-4;
     top: 50%;
     transform: translateY(-50%);
-    color: $color-text-tertiary;
   }
 
   .co-row {
@@ -584,7 +609,7 @@
   .co-coupon__hint {
     display: block;
     margin-top: $space-3;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
   }
   .co-promotion .co-row + .co-row {
@@ -654,7 +679,7 @@
   }
   .co-settlement__check {
     margin-left: $space-3;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-lg;
   }
 
@@ -768,7 +793,7 @@
     @include fixed-bottom-bar;
     @include flex-between;
     height: 108rpx;
-    padding: 0 $space-4;
+    padding: 0 var(--xsy-page-x);
   }
   .co-bar__amount {
     @include flex-start;

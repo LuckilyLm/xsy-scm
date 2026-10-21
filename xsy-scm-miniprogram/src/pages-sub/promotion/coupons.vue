@@ -98,14 +98,14 @@
 
 <style lang="scss" scoped>
   .coupons {
-    min-height: 100vh;
+    @include viewport-min-height;
     padding-bottom: $space-8;
     background: $color-bg-page;
   }
   .coupons__nav {
     padding: $space-4;
     background: $color-bg-card;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     text-align: right;
     font-size: $font-size-sm;
   }
@@ -118,7 +118,7 @@
     display: block;
     padding: $space-4;
     text-align: center;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .coupons__bottom {
     padding: $space-5;

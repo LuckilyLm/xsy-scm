@@ -134,7 +134,7 @@
 
 <style lang="scss" scoped>
   .movements {
-    min-height: 100vh;
+    @include viewport-min-height;
     padding-bottom: $space-8;
     background: $color-bg-page;
   }
@@ -152,7 +152,7 @@
     font-size: $font-size-sm;
   }
   .movements__filter--active {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-weight: $font-weight-bold;
   }
   .movements__directions {
@@ -166,7 +166,7 @@
     font-size: $font-size-sm;
   }
   .movements__direction--active {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-weight: $font-weight-bold;
   }
   .movements__state {
@@ -177,7 +177,7 @@
   .movements__retry {
     display: block;
     margin-top: $space-4;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .movements__card {
     margin: $space-3 $space-4 0;
@@ -206,7 +206,7 @@
   .movements__link {
     display: block;
     margin-top: $space-3;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
   }
   .movements__bottom {

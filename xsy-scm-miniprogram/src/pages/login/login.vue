@@ -8,13 +8,38 @@
     <view class="login__panel">
       <view class="field">
         <text class="field__label">手机号</text>
-        <input class="field__input" type="number" maxlength="11" placeholder="请输入管理员开通的手机号" v-model="form.phone" />
+        <input
+          class="field__input"
+          type="number"
+          maxlength="11"
+          placeholder="请输入管理员开通的手机号"
+          v-model="form.phone"
+          confirm-type="next"
+          :cursor-spacing="24"
+          @confirm="focusPassword"
+        />
       </view>
       <view class="field">
         <text class="field__label">密码</text>
-        <input class="field__input" :password="true" placeholder="请输入密码" v-model="form.password" />
+        <input
+          class="field__input"
+          :password="true"
+          placeholder="请输入密码"
+          v-model="form.password"
+          confirm-type="done"
+          :cursor-spacing="24"
+          :focus="passwordFocused"
+          @confirm="submit"
+          @blur="passwordFocused = false"
+        />
       </view>
-      <view class="login__submit" :class="{ 'login__submit--disabled': submitting }" @click="submit">
+      <view
+        class="login__submit"
+        :class="{ 'login__submit--disabled': submitting }"
+        hover-class="xsy-press-button--active"
+        :hover-stay-time="80"
+        @click="submit"
+      >
         {{ submitting ? '登录中…' : '登录' }}
       </view>
       <text class="login__help">账号由鲜蔬园后台管理员开通。如无法登录，请联系业务员。</text>
@@ -33,6 +58,11 @@
 
   const submitting = ref(false);
   const form = reactive({ phone: '', password: '' });
+  /** 手机号键盘点「下一项」时把焦点交给密码框，省一次点击 */
+  const passwordFocused = ref(false);
+  function focusPassword() {
+    passwordFocused.value = true;
+  }
 
   async function submit() {
     if (submitting.value) return;
@@ -66,7 +96,7 @@
 
 <style lang="scss" scoped>
   .login {
-    min-height: 100vh;
+    @include viewport-min-height;
     background: $color-bg-card;
   }
   .login__hero {

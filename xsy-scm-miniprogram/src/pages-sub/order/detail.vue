@@ -108,7 +108,7 @@
         <view class="od-card__title">商品明细</view>
         <view v-for="item in order.items || []" :key="item.itemId" class="od-item">
           <view class="od-item__thumb">
-            <image v-if="item.primaryImageUrl" class="od-item__image" :src="item.primaryImageUrl" mode="aspectFill" />
+            <image v-if="item.primaryImageUrl" class="od-item__image" :src="item.primaryImageUrl" mode="aspectFill" lazy-load />
             <view v-else class="od-item__thumb-fallback">{{ (item.productName || '商').slice(0, 1) }}</view>
           </view>
           <view class="od-item__main">
@@ -404,7 +404,7 @@
 
 <style lang="scss" scoped>
   .od {
-    min-height: 100vh;
+    @include viewport-min-height;
     background: $color-bg-page;
     box-sizing: border-box;
     padding-bottom: 160rpx;
@@ -486,7 +486,7 @@
     font-weight: $font-weight-bold;
   }
   .od__row-value--link {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     text-decoration: underline;
   }
   .od__row-value--danger {
@@ -499,7 +499,7 @@
     border: 1px solid var(--mall-primary, #16a34a);
     border-radius: $radius-pill;
     text-align: center;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
   }
   .od-aftersale__status--warn {
@@ -633,7 +633,7 @@
   .od-item__actual {
     display: block;
     margin-top: $space-1;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-xs;
   }
   .od-item__amount {

@@ -1,7 +1,7 @@
 <template>
   <view class="orders" :style="themeStyle">
     <view class="orders__toolbar">
-      <text class="orders__summary" @click="goSummary">商品汇总</text>
+      <text class="orders__summary" hover-class="xsy-press--active" :hover-stay-time="80" @click="goSummary">商品汇总</text>
     </view>
     <view class="orders__tabs">
       <view
@@ -9,17 +9,23 @@
         :key="tab.value"
         class="orders__tab"
         :class="{ 'orders__tab--active': tab.value === displayStatus }"
+        hover-class="xsy-press--active"
+        :hover-stay-time="80"
         @click="switchTab(tab.value)"
       >
         <text class="orders__tab-text">{{ tab.label }}</text>
       </view>
     </view>
 
-    <view v-if="loading && !orders.length" class="orders__state">订单加载中…</view>
-    <view v-else-if="!orders.length" class="orders__state">{{ emptyText }}</view>
+    <view v-if="loading && !orders.length" class="orders__skeleton">
+      <XsySkeleton variant="card" :rows="2" />
+    </view>
+    <view v-else-if="!orders.length" class="orders__empty">
+      <XsyEmpty icon="list" :title="emptyText" desc="下单后可以在这里查看配送进度" action-text="去逛逛" @action="goHome" />
+    </view>
 
     <view v-for="order in orders" :key="order.orderId" class="order-card">
-      <view class="order-card__head" @click="goDetail(order.orderId)">
+      <view class="order-card__head" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goDetail(order.orderId)">
         <text class="order-card__no">订单号：{{ order.orderNo }}</text>
         <view class="order-card__badges">
           <text v-if="isAbnormalFulfillment(order.fulfillmentStatus)" class="order-card__abnormal">配送异常</text>
@@ -29,10 +35,10 @@
         </view>
       </view>
 
-      <view class="order-card__goods" @click="goDetail(order.orderId)">
+      <view class="order-card__goods" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goDetail(order.orderId)">
         <view class="order-card__thumbs">
           <view v-for="(thumb, index) in order.itemThumbnails || []" :key="index" class="order-card__thumb">
-            <image class="order-card__image" :src="thumb" mode="aspectFill" />
+            <image class="order-card__image" :src="thumb" mode="aspectFill" lazy-load />
           </view>
           <view v-for="index in emptyThumbCount(order)" :key="`empty-${index}`" class="order-card__thumb order-card__thumb--empty">
             <uni-icons type="image" :size="20" :color="COLOR_TEXT_PLACEHOLDER" />
@@ -44,25 +50,33 @@
         </view>
       </view>
 
-      <view class="order-card__foot" @click="goDetail(order.orderId)">
+      <view class="order-card__foot" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goDetail(order.orderId)">
         <text class="order-card__label">预计金额</text>
         <text class="order-card__amount">¥{{ displayAmount(order.orderedTotalAmount) }}</text>
       </view>
 
       <view class="order-card__actions">
-        <view v-if="order.cancelable" class="order-card__btn" @click="cancelOrder(order)">取消订单</view>
-        <view class="order-card__btn order-card__btn--primary" @click="reorder(order)">再次购买</view>
+        <view v-if="order.cancelable" class="order-card__btn" hover-class="xsy-press--active" :hover-stay-time="80" @click="cancelOrder(order)">
+          取消订单
+        </view>
+        <view class="order-card__btn order-card__btn--primary" hover-class="xsy-press-button--active" :hover-stay-time="80" @click="reorder(order)">
+          再次购买
+        </view>
       </view>
     </view>
 
-    <view v-if="loading && orders.length" class="orders__more">加载中…</view>
-    <view v-else-if="orders.length && !hasMore" class="orders__more">没有更多订单了</view>
+    <uni-load-more v-if="orders.length" :status="loadMoreStatus" :content-text="{ ...LOAD_MORE_TEXT, contentnomore: '没有更多订单了' }" />
+    <XsyTabBar :active="3" />
   </view>
 </template>
 
 <script setup>
   import { computed, ref } from 'vue';
   import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app';
+  import XsySkeleton from '@/components/common/xsy-skeleton.vue';
+  import XsyEmpty from '@/components/common/xsy-empty.vue';
+  import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
+  import { LOAD_MORE_TEXT } from '@/constants/load-more-const';
   import { mallOrderApi } from '@/api/mall/order-api';
   import { smartSentry } from '@/lib/smart-sentry';
   import { COLOR_TEXT_PLACEHOLDER } from '@/constants/theme-color-const';
@@ -94,6 +108,12 @@
   let loadSeq = 0;
 
   const emptyText = computed(() => (displayStatus.value ? `暂无${displayStatusText(displayStatus.value)}订单` : '暂无订单'));
+
+  /** 底部只有三种状态：翻页中、还能拉、到底了 */
+  const loadMoreStatus = computed(() => {
+    if (loading.value) return 'loading';
+    return hasMore.value ? 'more' : 'noMore';
+  });
 
   onShow(() => load(true));
   onPullDownRefresh(async () => {
@@ -153,6 +173,10 @@
     uni.navigateTo({ url: '/pages-sub/order/summary' });
   }
 
+  function goHome() {
+    uni.switchTab({ url: '/pages/home/index' });
+  }
+
   function cancelOrder(order) {
     uni.showActionSheet({
       itemList: CANCEL_REASONS,
@@ -210,19 +234,19 @@
 
 <style lang="scss" scoped>
   .orders {
-    min-height: 100vh;
+    @include viewport-min-height;
     background: $color-bg-page;
     box-sizing: border-box;
-    padding-bottom: $space-8;
+    padding-bottom: calc(var(--xsy-tabbar-h, 100rpx) + #{$space-8});
   }
   .orders__toolbar {
     display: flex;
     justify-content: flex-end;
-    padding: $space-2 $space-4;
+    padding: $space-2 var(--xsy-page-x);
     background: $color-bg-card;
   }
   .orders__summary {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
   }
   .orders__tabs {
@@ -241,23 +265,19 @@
     color: $color-text-secondary;
   }
   .orders__tab--active .orders__tab-text {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-weight: $font-weight-bold;
   }
-  .orders__state {
-    padding-top: 240rpx;
-    text-align: center;
-    color: $color-text-tertiary;
-    font-size: $font-size-base;
+  .orders__skeleton {
+    margin-top: $space-3;
+    background: $color-bg-card;
   }
-  .orders__more {
-    padding: $space-4 0;
-    text-align: center;
-    color: $color-text-tertiary;
-    font-size: $font-size-sm;
+  /* 空态直接落在页面底色上，不套白底，避免出现一块突然截断的白板 */
+  .orders__empty {
+    margin-top: $space-3;
   }
   .order-card {
-    margin: $space-3 $space-4 0;
+    margin: $space-3 var(--xsy-page-x) 0;
     /* card() 的 padding 参数会覆盖前面的 padding 声明，这里必须传内边距，否则内容贴边 */
     @include card($space-4);
   }
@@ -371,7 +391,8 @@
   }
   .order-card__btn {
     min-width: 152rpx;
-    height: 60rpx;
+    /* 44px 触控下限；按钮里的文字仍是 12px */
+    height: 72rpx;
     @include flex-center;
     border: 1px solid $color-border;
     border-radius: $radius-pill;

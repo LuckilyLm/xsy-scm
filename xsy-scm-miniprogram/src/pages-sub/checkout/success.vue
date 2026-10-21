@@ -62,7 +62,7 @@
   .done {
     @include flex-center;
     flex-direction: column;
-    min-height: 100vh;
+    @include viewport-min-height;
     padding: 0 $space-6;
     background-color: $color-bg-page;
   }

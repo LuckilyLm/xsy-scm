@@ -3,9 +3,34 @@
     <view class="password-card">
       <text class="password-title">{{ required ? '首次登录，请修改临时密码' : '修改登录密码' }}</text>
       <text class="password-hint">新密码设置成功后，需要使用新密码重新登录。</text>
-      <input class="password-input" :password="true" v-model="form.oldPassword" placeholder="当前密码" />
-      <input class="password-input" :password="true" v-model="form.newPassword" placeholder="新密码" />
-      <input class="password-input" :password="true" v-model="form.confirmPassword" placeholder="再次输入新密码" />
+      <input
+        class="password-input"
+        :password="true"
+        v-model="form.oldPassword"
+        placeholder="当前密码"
+        confirm-type="next"
+        :cursor-spacing="24"
+        hold-keyboard
+      />
+      <input
+        class="password-input"
+        :password="true"
+        v-model="form.newPassword"
+        placeholder="新密码"
+        confirm-type="next"
+        :cursor-spacing="24"
+        hold-keyboard
+      />
+      <input
+        class="password-input"
+        :password="true"
+        v-model="form.confirmPassword"
+        placeholder="再次输入新密码"
+        confirm-type="done"
+        :cursor-spacing="24"
+        hold-keyboard
+        @confirm="save"
+      />
       <button class="password-submit" :loading="saving" @click="save">确认修改</button>
     </view>
   </view>
@@ -55,7 +80,7 @@
 
 <style lang="scss" scoped>
   .password-page {
-    min-height: 100vh;
+    @include viewport-min-height;
     padding: $space-4;
     background: $color-bg-page;
   }

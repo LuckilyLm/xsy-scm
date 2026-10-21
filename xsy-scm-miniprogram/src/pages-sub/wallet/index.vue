@@ -93,7 +93,7 @@
 
 <style lang="scss" scoped>
   .wallet {
-    min-height: 100vh;
+    @include viewport-min-height;
     padding: $space-4 $space-4 $space-8;
     box-sizing: border-box;
     background: $color-bg-page;
@@ -106,7 +106,7 @@
   .wallet__retry {
     display: block;
     margin-top: $space-4;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .wallet__stale {
     margin-bottom: $space-3;
@@ -156,7 +156,7 @@
     font-weight: $font-weight-bold;
   }
   .wallet__link {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
     font-weight: $font-weight-regular;
   }

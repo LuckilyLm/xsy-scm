@@ -12,11 +12,22 @@
           placeholder="搜商品名称或规格"
           placeholder-class="search__placeholder"
           confirm-type="search"
+          :cursor-spacing="16"
+          hold-keyboard
           :focus="autoFocus"
           @input="onInput"
           @confirm="doSearch()"
         />
-        <text v-if="keyword" class="search__clear" @click="clearKeyword">×</text>
+        <view
+          v-if="keyword"
+          class="search__clear"
+          aria-label="清空搜索词"
+          hover-class="xsy-press--active"
+          :hover-stay-time="80"
+          @click="clearKeyword"
+        >
+          <uni-icons type="clear" :size="18" :color="COLOR_TEXT_PLACEHOLDER" />
+        </view>
       </view>
       <text class="search__action" @click="doSearch()">搜索</text>
     </view>
@@ -51,9 +62,7 @@
     <view v-else class="search__result">
       <view v-if="products.length" class="search__list">
         <ProductCard v-for="p in products" :key="p.skuId" :product="p" @click="goDetail" @add="addToCart" @inquiry="onInquiry" />
-        <view class="search__more">
-          <text class="search__more-text">{{ loadMoreText }}</text>
-        </view>
+        <uni-load-more :status="loadMoreStatus" :content-text="LOAD_MORE_TEXT" />
       </view>
 
       <view v-else-if="!loading" class="search__empty">
@@ -65,7 +74,7 @@
         分页时已有列表，只由列表底部的 loadMoreText 呈现「加载中…」，两处不同时出现。
       -->
       <view v-if="loading && !products.length" class="search__loading">
-        <text class="search__loading-text">搜索中…</text>
+        <uni-load-more status="loading" :content-text="{ contentrefresh: '搜索中…' }" />
       </view>
     </view>
   </view>
@@ -81,7 +90,8 @@
   import { SEARCH_HISTORY } from '@/constants/local-storage-key-const';
   import { smartSentry } from '@/lib/smart-sentry';
   import { useMallCart } from '@/composables/use-mall-cart';
-  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
+  import { LOAD_MORE_TEXT } from '@/constants/load-more-const';
 
   const { themeStyle } = useMallTheme();
 
@@ -102,11 +112,12 @@
   const hotKeywords = ref([]);
 
   const hasMore = computed(() => products.value.length < total.value);
-  const loadMoreText = computed(() => {
+  /** uni-load-more 的状态只有三种：more / loading / noMore */
+  const loadMoreStatus = computed(() => {
     if (loading.value) {
-      return '加载中…';
+      return 'loading';
     }
-    return hasMore.value ? '上拉加载更多' : '没有更多了';
+    return hasMore.value ? 'more' : 'noMore';
   });
 
   function readHistory() {
@@ -222,7 +233,7 @@
 
 <style lang="scss" scoped>
   .search {
-    min-height: 100vh;
+    @include viewport-min-height;
     background-color: $color-bg-page;
 
     &__bar {
@@ -258,17 +269,16 @@
     }
 
     &__clear {
+      display: flex;
+      align-items: center;
       padding: 0 $space-1;
-      font-size: $font-size-lg;
-      color: $color-text-placeholder;
-      line-height: 1;
     }
 
     &__action {
       flex-shrink: 0;
       margin-left: $space-3;
       font-size: $font-size-base;
-      color: var(--mall-primary, #16a34a);
+      color: var(--mall-primary-ink, #12833c);
     }
 
     &__panel {
@@ -328,24 +338,12 @@
       color: $color-text-secondary;
 
       &--hot {
-        color: var(--mall-primary, #16a34a);
+        color: var(--mall-primary-ink, #12833c);
       }
     }
 
     &__list {
       background-color: $color-bg-card;
-    }
-
-    &__more,
-    &__loading {
-      @include flex-center;
-      padding: $space-4 0;
-    }
-
-    &__more-text,
-    &__loading-text {
-      font-size: $font-size-sm;
-      color: $color-text-tertiary;
     }
 
     &__empty {

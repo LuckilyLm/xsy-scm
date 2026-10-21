@@ -46,7 +46,7 @@
   }
   .coupon-card__benefit {
     min-width: 144rpx;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-xl;
     font-weight: $font-weight-bold;
     font-variant-numeric: tabular-nums;
@@ -79,7 +79,7 @@
     font-size: $font-size-xs;
   }
   .coupon-card__action {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
     flex-shrink: 0;

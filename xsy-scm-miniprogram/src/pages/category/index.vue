@@ -3,7 +3,7 @@
     <xsy-nav-bar title="分类">
       <template #bottom>
         <!-- 与首页搜索框统一：绿描边胶囊、76rpx 高、图标品牌绿 -->
-        <view class="category__search" @click="goSearch">
+        <view class="category__search" hover-class="xsy-press--active" :hover-stay-time="80" @click="goSearch">
           <uni-icons type="search" :size="18" :color="theme.primary" />
           <text class="category__search-ph">搜商品或规格</text>
         </view>
@@ -18,6 +18,8 @@
           :key="item.categoryId"
           class="category__rail-item"
           :class="{ 'category__rail-item--active': item.categoryId === activePrimaryId }"
+          hover-class="xsy-press--active"
+          :hover-stay-time="80"
           @click="selectPrimary(item)"
         >
           <text class="category__rail-text">{{ item.categoryName }}</text>
@@ -34,6 +36,8 @@
           <view
             class="category__grid-item"
             :class="{ 'category__grid-item--active': activeSubId === null }"
+            hover-class="xsy-press--active"
+            :hover-stay-time="80"
             @click="selectAllSubs"
           >
             <view class="category__grid-icon">🛍️</view>
@@ -44,9 +48,11 @@
             :key="sub.categoryId"
             class="category__grid-item"
             :class="{ 'category__grid-item--active': sub.categoryId === activeSubId }"
+            hover-class="xsy-press--active"
+            :hover-stay-time="80"
             @click="selectSub(sub)"
           >
-            <view class="category__grid-icon">{{ gridIcon(sub) }}</view>
+            <view class="category__grid-icon" aria-hidden="true">{{ gridIcon(sub) }}</view>
             <text class="category__grid-text">{{ sub.categoryName }}</text>
           </view>
         </view>
@@ -54,20 +60,17 @@
         <!-- 商品列表 -->
         <view v-if="products.length" class="category__list">
           <ProductCard v-for="p in products" :key="p.skuId" :product="p" @click="goDetail" @add="addToCart" @inquiry="onInquiry" />
-          <view class="category__more">
-            <text class="category__more-text">{{ loadMoreText }}</text>
-          </view>
+          <uni-load-more :status="loadMoreStatus" :content-text="LOAD_MORE_TEXT" />
         </view>
 
-        <view v-else-if="!loading" class="category__empty">
-          <text class="category__empty-text">该分类暂无可见商品</text>
-        </view>
+        <XsyEmpty v-else-if="!loading" icon="shop" title="该分类暂无可见商品" desc="换个分类看看" compact />
 
-        <view v-if="loading" class="category__loading">
-          <text class="category__loading-text">加载中…</text>
+        <view v-if="loading && !products.length">
+          <XsySkeleton variant="list" :rows="3" />
         </view>
       </scroll-view>
     </view>
+    <XsyTabBar :active="1" />
   </view>
 </template>
 
@@ -76,10 +79,15 @@
   import { onShow } from '@dcloudio/uni-app';
   import XsyNavBar from '@/components/common/xsy-nav-bar.vue';
   import ProductCard from '@/components/business/product-card.vue';
+  import XsySkeleton from '@/components/common/xsy-skeleton.vue';
+  import XsyEmpty from '@/components/common/xsy-empty.vue';
+  import XsyTabBar from '@/components/common/xsy-tab-bar.vue';
+  import { LOAD_MORE_TEXT } from '@/constants/load-more-const';
   import { mallCatalogApi } from '@/api/mall';
   import { smartSentry } from '@/lib/smart-sentry';
   import { useMallNavigationStore } from '@/store/modules/mall/navigation';
   import { useMallCart } from '@/composables/use-mall-cart';
+  import { categoryEmoji } from '@/utils/category-icon';
   import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
   import { useMallTheme } from '@/composables/use-mall-theme';
 
@@ -106,44 +114,19 @@
     return hit ? hit.children || [] : [];
   });
 
-  /**
-   * 分类图标：页面内自带一份映射，避免依赖外部模块的运行时取值差异；
-   * 服务端节点可能只有 name 或 categoryName，两个都兜住。
-   */
-  const GRID_ICONS = {
-    生鲜: '🥬',
-    果蔬: '🍎',
-    肉禽: '🥩',
-    水产: '🐟',
-    蛋奶: '🥛',
-    粮油干货: '🌾',
-    水果: '🍎',
-    蔬菜: '🥬',
-    猪肉: '🥩',
-    牛肉: '🥩',
-    禽类: '🍗',
-    羊肉: '🍖',
-    鱼类: '🐟',
-    虾蟹: '🦐',
-    蛋类: '🥚',
-    奶制品: '🥛',
-    米面: '🍚',
-    食用油: '🫒',
-    干货: '🌰',
-    调味品: '🧂',
-  };
+  /** 分类图标与首页横滑共用同一份映射，避免两处图标对不上 */
   function gridIcon(node) {
-    const name = (node && (node.categoryName || node.name)) || '';
-    return GRID_ICONS[name] || '🛒';
+    return categoryEmoji((node && (node.categoryName || node.name)) || '');
   }
 
   const hasMore = computed(() => products.value.length < total.value);
 
-  const loadMoreText = computed(() => {
+  /** uni-load-more 的状态只有三种：more / loading / noMore */
+  const loadMoreStatus = computed(() => {
     if (loading.value) {
-      return '加载中…';
+      return 'loading';
     }
-    return hasMore.value ? '上拉加载更多' : '没有更多了';
+    return hasMore.value ? 'more' : 'noMore';
   });
 
   /** 当前生效的分类 id：优先二级，其次一级 */
@@ -256,12 +239,12 @@
     let hit = null;
     for (const primary of categories.value) {
       if (primary.categoryId === Number(pendingId)) {
-        hit = {primary};
+        hit = { primary };
         break;
       }
-      const sub = (primary.children || []).find(child => child.categoryId === Number(pendingId));
+      const sub = (primary.children || []).find((child) => child.categoryId === Number(pendingId));
       if (sub) {
-        hit = {primary, sub};
+        hit = { primary, sub };
         break;
       }
     }
@@ -311,14 +294,17 @@
 
 <style lang="scss" scoped>
   .category {
-    height: 100vh;
+    @include viewport-height;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    /* 让开自绘底部导航 */
+    padding-bottom: var(--xsy-tabbar-h, 100rpx);
     background-color: $color-bg-card;
 
     &__search {
       @include flex-start;
-      margin: $space-2 $space-4 $space-3;
+      margin: $space-2 var(--xsy-page-x) $space-3;
       height: 76rpx;
       padding: 0 $space-3;
       border: 1px solid var(--mall-primary, #16a34a);
@@ -393,7 +379,7 @@
     /* 选中态：字号放大到 14px 并转主色，Active 比未选中明显 */
     &__rail-item--active &__rail-text {
       font-size: $font-size-base;
-      color: var(--mall-primary, #16a34a);
+      color: var(--mall-primary-ink, #12833c);
       font-weight: $font-weight-medium;
     }
 
@@ -442,28 +428,16 @@
 
     &__grid-item--active &__grid-icon {
       background-color: var(--mall-primary-light, #e8f5ec);
-      color: var(--mall-primary, #16a34a);
+      color: var(--mall-primary-ink, #12833c);
     }
 
     &__grid-item--active &__grid-text {
-      color: var(--mall-primary, #16a34a);
+      color: var(--mall-primary-ink, #12833c);
       font-weight: $font-weight-medium;
     }
 
     &__list {
       background-color: $color-bg-card;
-    }
-
-    &__more,
-    &__loading {
-      @include flex-center;
-      padding: $space-4 0;
-    }
-
-    &__more-text,
-    &__loading-text {
-      font-size: $font-size-sm;
-      color: $color-text-tertiary;
     }
 
     &__empty {

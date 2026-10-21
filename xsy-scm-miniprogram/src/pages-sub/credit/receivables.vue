@@ -30,15 +30,18 @@
       >
       <view class="bills__foot"
         ><text>到期日 {{ formatDate(row.dueDate) || '未设置' }}</text
-        ><text v-if="row.overdue" class="bills__overdue">已逾期</text><text v-else>查看详情 ›</text></view
-      >
+        ><text v-if="row.overdue" class="bills__overdue">已逾期</text>
+        <view v-else class="bills__link xsy-chevron">
+          <text>查看详情</text>
+          <uni-icons type="right" :size="12" :color="COLOR_TEXT_TERTIARY" /> </view
+      ></view>
     </view>
-    <view v-if="rows.length" class="bills__bottom">{{ loading ? '加载中…' : hasMore ? '上拉加载更多' : '没有更多账单了' }}</view>
+    <uni-load-more v-if="rows.length" :status="loadMoreStatus" :content-text="{ ...LOAD_MORE_TEXT, contentnomore: '没有更多账单了' }" />
   </view>
 </template>
 
 <script setup>
-  import { ref } from 'vue';
+  import { computed, ref } from 'vue';
   import { useMallTheme } from '@/composables/use-mall-theme';
 
   import { onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
@@ -46,6 +49,8 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, formatDate } from '@/utils/order-display';
   import { RECEIVABLE_FILTERS, receivableStateText } from '@/utils/funds-display';
+  import { LOAD_MORE_TEXT } from '@/constants/load-more-const';
+  import { COLOR_TEXT_TERTIARY } from '@/constants/theme-color-const';
 
   const { themeStyle } = useMallTheme();
 
@@ -57,6 +62,12 @@
   const loading = ref(false);
   const error = ref('');
   let requestSeq = 0;
+
+  /** uni-load-more 的状态只有三种：more / loading / noMore */
+  const loadMoreStatus = computed(() => {
+    if (loading.value) return 'loading';
+    return hasMore.value ? 'more' : 'noMore';
+  });
 
   onLoad(() => load(true));
   onPullDownRefresh(async () => {
@@ -108,7 +119,7 @@
 
 <style lang="scss" scoped>
   .bills {
-    min-height: 100vh;
+    @include viewport-min-height;
     padding-bottom: $space-8;
     background: $color-bg-page;
   }
@@ -126,7 +137,7 @@
     font-size: $font-size-sm;
   }
   .bills__tab--active {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-weight: $font-weight-bold;
   }
   .bills__state {
@@ -137,7 +148,7 @@
   .bills__retry {
     display: block;
     margin-top: $space-4;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .bills__card {
     margin: $space-3 $space-4 0;
@@ -180,11 +191,5 @@
   }
   .bills__overdue {
     color: $color-danger;
-  }
-  .bills__bottom {
-    padding: $space-5;
-    text-align: center;
-    color: $color-text-tertiary;
-    font-size: $font-size-xs;
   }
 </style>

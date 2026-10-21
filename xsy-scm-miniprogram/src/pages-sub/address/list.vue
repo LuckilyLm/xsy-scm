@@ -118,7 +118,7 @@
 
 <style lang="scss" scoped>
   .addr {
-    min-height: 100vh;
+    @include viewport-min-height;
     background-color: $color-bg-page;
     padding-bottom: 140rpx;
   }
@@ -170,7 +170,7 @@
     padding: 2rpx 12rpx;
     border-radius: $radius-pill;
     background-color: var(--mall-primary-light, #e8f5ec);
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
     font-size: $font-size-xs;
   }
   .addr-item__tag--pick {

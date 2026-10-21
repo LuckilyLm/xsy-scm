@@ -36,7 +36,7 @@
         <view class="ad-card__title">退货商品</view>
         <view v-for="item in record.items || []" :key="item.returnItemId" class="ad-item">
           <view class="ad-item__thumb">
-            <image v-if="item.primaryImageUrl" class="ad-item__image" :src="item.primaryImageUrl" mode="aspectFill" />
+            <image v-if="item.primaryImageUrl" class="ad-item__image" :src="item.primaryImageUrl" mode="aspectFill" lazy-load />
             <view v-else class="ad-item__thumb-fallback">{{ (item.productName || '商').slice(0, 1) }}</view>
           </view>
           <view class="ad-item__main">
@@ -88,7 +88,10 @@
         </view>
         <view class="ad__row" @click="goOrder">
           <text class="ad__row-label">关联订单</text>
-          <text class="ad__row-value ad__row-value--link">{{ record.orderNo || record.orderId }} ›</text>
+          <view class="ad__row-value ad__row-value--link xsy-chevron">
+            <text>{{ record.orderNo || record.orderId }}</text>
+            <uni-icons type="right" :size="14" :color="COLOR_PRIMARY" />
+          </view>
         </view>
         <view class="ad__row">
           <text class="ad__row-label">申请金额（预估）</text>
@@ -120,6 +123,7 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, displayQuantity, formatDateTime } from '@/utils/order-display';
   import { afterSaleStatusLevel, afterSaleStatusText, allocationStatusText, refundMethodText } from '@/utils/after-sale-display';
+  import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 
   const { themeStyle } = useMallTheme();
 
@@ -180,7 +184,7 @@
 
 <style lang="scss" scoped>
   .ad {
-    min-height: 100vh;
+    @include viewport-min-height;
     background: $color-bg-page;
     box-sizing: border-box;
     padding-bottom: 160rpx;
@@ -268,7 +272,7 @@
     font-weight: $font-weight-bold;
   }
   .ad__row-value--link {
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .ad-step {
     display: flex;

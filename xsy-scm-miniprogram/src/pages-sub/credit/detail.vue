@@ -32,8 +32,11 @@
         >
       </view>
       <view v-if="record.orderId" class="bill__order" @click="goOrder">
-        <text>关联订单 {{ record.orderNo || '' }}</text
-        ><text>查看订单 ›</text>
+        <text>关联订单 {{ record.orderNo || '' }}</text>
+        <view class="bill__order-link xsy-chevron">
+          <text>查看订单</text>
+          <uni-icons type="right" :size="14" :color="COLOR_PRIMARY" />
+        </view>
       </view>
       <text class="bill__note">账单金额依据正式应收、红字和核销记录计算。钱包余额不会自动抵扣应收。</text>
     </template>
@@ -49,6 +52,7 @@
   import { smartSentry } from '@/lib/smart-sentry';
   import { displayAmount, formatDate, formatDateTime } from '@/utils/order-display';
   import { receivableStateText } from '@/utils/funds-display';
+  import { COLOR_PRIMARY } from '@/constants/theme-color-const';
 
   const { themeStyle } = useMallTheme();
 
@@ -91,7 +95,7 @@
 
 <style lang="scss" scoped>
   .bill {
-    min-height: 100vh;
+    @include viewport-min-height;
     padding: $space-4 $space-4 $space-8;
     box-sizing: border-box;
     background: $color-bg-page;
@@ -104,7 +108,7 @@
   .bill__retry {
     display: block;
     margin-top: $space-4;
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .bill__hero {
     display: flex;
@@ -153,7 +157,7 @@
     padding: $space-4;
     @include flex-between;
     @include card(0);
-    color: var(--mall-primary, #16a34a);
+    color: var(--mall-primary-ink, #12833c);
   }
   .bill__note {
     display: block;
