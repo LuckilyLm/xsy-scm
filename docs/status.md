@@ -5,7 +5,7 @@
 ## 独立秤端工作区（2026-10-21，多筐已接通、本地回归通过）
 
 - 新增 `xsy-scale-agent/`：.NET 10 Windows 设备服务、Vue 3 触屏工作台、SQLite 本地筐记录与待同步命令、独立模拟平台、打印与配置脚本。正式 SCM 订单、分拣、库存及财务事实仍由 V2 服务端维护。
-- 后端新增 `/scm/device/scale/v1`（V170 设备绑定与租约、V171 多筐与集合完成）：设备凭证与员工会话分离，逐筐幂等受理，集合完成按筐重算总量后经 `SortingTaskService.enter` 写入正式分拣量。
+- 后端新增 `/scm/device/scale/v1`（V171 设备绑定与租约、V172 多筐与集合完成）：设备凭证与员工会话分离，逐筐幂等受理，集合完成按筐重算总量后经 `SortingTaskService.enter` 写入正式分拣量。
 - 秤端新增多筐命令派发：按命令序号发送，全部筐受理后才提交完成命令；`basket_commands.state` 取 `WAITING_CONTRACT` / `SYNC_RETRY` / `SENT` / `NEEDS_REVIEW`，只表示本机派发进度，不代表平台已确认数量。
 - 本轮验证：`verify.ps1` 全流程通过，本地回归 **74/74**、HTTP 冒烟 PASS（.NET SDK 10.0.402）。未做：真实电子秤与打印机现场验收、浏览器回归、正式员工 SSO、公开溯源页。
 
