@@ -12,7 +12,22 @@
         "setting" : {
             "urlCheck" : false
         },
-        "usingComponents" : true
+        "usingComponents" : true,
+        /* 按需注入：启动时只注入当前页面用到的组件代码，缩短冷启动 */
+        "lazyCodeLoading" : "requiredComponents",
+        /* 分包优化：分包内的静态资源与 JS 不重复计入主包 */
+        "optimization" : {
+            "subPackages" : true
+        },
+        /* 收货地址需要取当前位置，未声明时 getLocation / chooseLocation 直接失败 */
+        "permission" : {
+            "scope.userLocation" : {
+                "desc" : "用于获取收货地址的位置信息"
+            }
+        },
+        "requiredPrivateInfos" : [ "getLocation", "chooseLocation" ],
+        /* 启用微信隐私协议校验，requirePrivacyAuthorize 才会生效 */
+        "__usePrivacyCheck__" : true
     },
     "h5" : {
         "title" : "鲜蔬园"

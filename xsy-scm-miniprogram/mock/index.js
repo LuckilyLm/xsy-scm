@@ -28,6 +28,7 @@ import { orderRoutes } from './routes/order';
 import { afterSaleRoutes } from './routes/after-sale';
 import { fundsRoutes } from './routes/funds';
 import { promotionRoutes } from './routes/promotion';
+import { homeRoutes } from './routes/home';
 import { delay } from './helpers';
 import { findSession } from './session';
 import { USER_TOKEN } from '@/constants/local-storage-key-const';
@@ -44,6 +45,7 @@ const ROUTES = [
   ...afterSaleRoutes,
   ...fundsRoutes,
   ...promotionRoutes,
+  ...homeRoutes,
 ];
 
 /**

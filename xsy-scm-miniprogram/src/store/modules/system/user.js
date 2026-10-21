@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { USER_TOKEN } from '@/constants/local-storage-key-const';
+import { PLATFORM_ERROR_CODE } from '@/constants/error-code-const';
 import { mallAuthApi } from '@/api/mall/auth-api';
 import { setSessionExpiredHandler } from '@/lib/smart-request';
 import { smartSentry } from '@/lib/smart-sentry';
@@ -48,6 +49,15 @@ export const useUserStore = defineStore({
           uni.reLaunch({ url: '/pages/account/password' });
         }
       } catch (error) {
+        /*
+         * 令牌过期是正常路径（卸载重装、换设备、Redis 过期），
+         * 清掉本地令牌回到未登录态即可，不要当成异常上报，
+         * 否则冷启动每次都会在控制台留一条错误，掩盖真正的问题。
+         */
+        if (error && error.code === PLATFORM_ERROR_CODE.LOGIN_STATE_INVALID) {
+          this.clearUserLoginInfo();
+          return;
+        }
         smartSentry.captureError(error);
       }
     },
