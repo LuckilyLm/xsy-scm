@@ -87,5 +87,5 @@
     "type": "git",
     "url": "https://github.com/1024-lab/smart-admin.git"
   },
-  "description": "鲜蔬源智慧供应链管理平台 V2 管理后台（Vue3 + TypeScript，基于 SmartAdmin v3.31）"
+  "description": "鲜蔬园智慧供应链管理平台 V2 管理后台（Vue3 + TypeScript，基于 SmartAdmin v3.31）"
 }

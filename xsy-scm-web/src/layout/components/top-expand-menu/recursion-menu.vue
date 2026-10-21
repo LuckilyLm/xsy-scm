@@ -4,9 +4,9 @@
 -->
 <template>
   <div class="recursion-container" v-show="topMenu.children && topMenu.children.length > 0">
-    <!-- 顶部logo区域：直接展示鲜蔬源横版 logo（已含品牌文字） -->
+    <!-- 顶部品牌区域 -->
     <div class="logo" @click="onGoHome" :style="sideMenuWidth" v-if="!collapsed">
-      <img class="logo-img" :src="logoImg"/>
+      <XsyBrandLockup dark/>
     </div>
     <div class="min-logo" @click="onGoHome" v-if="collapsed">
       <img class="logo-img" :src="logoMinImg"/>
@@ -41,7 +41,7 @@ import _ from 'lodash';
 import menuEmitter from './top-expand-menu-mitt';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
 import {useUserStore} from '/@/store/modules/system/user';
-import logoImg from '/@/assets/images/logo/xsy-logo.png';
+import XsyBrandLockup from '/@/components/framework/xsy-brand-lockup/index.vue';
 import logoMinImg from '/@/assets/images/logo/xsy-logo-min.png';
 
 const props = defineProps({
@@ -171,12 +171,5 @@ const logoHeight = computed(() => {
   cursor: pointer;
   background-color: #001529;
 
-  .logo-img {
-    // 深色底用白色版 logo，避免绿色/橙色在 #001529 上对比不足
-    height: 30px;
-    width: auto;
-    max-width: 100%;
-    object-fit: contain;
-  }
 }
 </style>

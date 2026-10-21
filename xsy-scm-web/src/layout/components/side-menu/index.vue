@@ -5,9 +5,9 @@
 <template>
   <!--左侧菜单分为两部分：1、顶部logo区域，包含 logo和名称;2、下方菜单区域-->
 
-  <!-- 1、顶部logo区域：直接展示鲜蔬源横版 logo（已含品牌文字，不再重复渲染名称） -->
+  <!-- 1、顶部品牌区域 -->
   <div class="logo" @click="onGoHome" :style="sideMenuWidth" v-if="!collapsed">
-    <img class="logo-img" :src="logoImg"/>
+    <XsyBrandLockup/>
   </div>
   <div class="min-logo" @click="onGoHome" v-if="collapsed">
     <img class="logo-img" :src="logoMinImg"/>
@@ -23,7 +23,7 @@
 import {computed, nextTick, ref, watch} from 'vue';
 import {useRouter} from 'vue-router';
 import RecursionMenu from './recursion-menu.vue';
-import logoImg from '/@/assets/images/logo/xsy-logo.png';
+import XsyBrandLockup from '/@/components/framework/xsy-brand-lockup/index.vue';
 import logoMinImg from '/@/assets/images/logo/xsy-logo-min.png';
 import {HOME_PAGE_NAME} from '/@/constants/system/home-const';
 import {useAppConfigStore} from '/@/store/modules/system/app-config';
@@ -110,14 +110,6 @@ const color = computed(() => {
     justify-content: center;
     align-items: center;
 
-    .logo-img {
-      // 鲜蔬源横版 logo（含品牌文字），按高度撑满、宽度自适应，
-      // 避免固定 30x30 把 2.88:1 的横版图压扁
-      height: 30px;
-      width: auto;
-      max-width: 100%;
-      object-fit: contain;
-    }
   }
 }
 

@@ -14,7 +14,7 @@ class SupplierValidatorTest {
     @Test
     @DisplayName("名称归一化：仅 trim，保留大小写")
     void normalizesName() {
-        assertThat(SupplierValidator.normalizeName("  鲜蔬源基地  ")).isEqualTo("鲜蔬源基地");
+        assertThat(SupplierValidator.normalizeName("  鲜蔬园基地  ")).isEqualTo("鲜蔬园基地");
         assertThat(SupplierValidator.normalizeName("Acme Farms")).isEqualTo("Acme Farms");
         assertThat(SupplierValidator.normalizeName(null)).isNull();
     }

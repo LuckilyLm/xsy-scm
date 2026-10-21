@@ -37,8 +37,8 @@
 - 本地工作区：`D:\Browser Download\xsy-scm`，当前在 `main`。电子秤工作台与非标品确认源码已本地提交为 `b2b39db3`；远程可克隆版本以推送后实际包含该提交的 Git SHA 为准。
 - 正式后端：`xsy-scm-server/sa-admin/`（Spring Boot / Java / PostgreSQL）。
 - 管理后台：`xsy-scm-web/`（**Vue 3 + TypeScript**，不要误认 React）。
-- 客户端：`xsy-scm-customer-app/`（uni-app）。秤端人员登录不使用客户账号。
-- 旧客户小程序已归档于 Git 历史；新设备程序应使用独立工程。
+- 用户端：`xsy-scm-miniprogram/`（微信小程序，uni-app）。秤端人员登录不使用该端账号。
+- 旧版小程序已归档于 Git 历史；新设备程序应使用独立工程。
 
 ### 3.2 推荐分工与仓库权限
 

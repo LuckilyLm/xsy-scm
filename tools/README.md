@@ -4,7 +4,7 @@
 
 | 功能 | 入口 | 职责 |
 | --- | --- | --- |
-| 项目验证 | `verify.ps1`、`verify.sh` → `verify.py` | 统一编排质量、后端、管理后台、商城和浏览器验证，报告通过、失败与未覆盖 |
+| 项目验证 | `verify.ps1`、`verify.sh` → `verify.py` | 统一编排质量、后端、管理后台、微信小程序和浏览器验证，报告通过、失败与未覆盖 |
 | E2E 账号 | `e2e_accounts.py setup\|cleanup --wave w1…w9\|f0\|p1` | 创建/清理指定波次的隔离临时账号；原各波次薄封装已收敛至这一入口 |
 | E2E 报表夹具 | `e2e_report_fixture.py <action> --wave w6` | 查找空闲报表日期、受限回填采购单时间、清理该夹具；与账号生命周期分离 |
 | E2E Excel 夹具 | `patch_product_create_xlsx.py`、`patch_product_update_xlsx.py`、`fill_stocktake_template.py` | 对不同正式模板填值；独立保留，因为列契约与签名保护要求不同 |

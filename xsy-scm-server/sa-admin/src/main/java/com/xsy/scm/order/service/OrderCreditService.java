@@ -41,7 +41,7 @@ public class OrderCreditService {
                 dataScopeService.resolve().getOrderSellerScope());
     }
 
-    /** 客户商城结算时按完整结算主体核对授信与逾期情况，最终结果仍需在订单确认时重新校验。 */
+    /** 微信小程序结算时按完整结算主体核对授信与逾期情况，最终结果仍需在订单确认时重新校验。 */
     public CustomerCreditCheckVO checkSelfSettlement(Long settlementCustomerId, BigDecimal requestedAmount) {
         return calculateSettlement(customerService.require(settlementCustomerId), requestedAmount, true,
                 ScmValueScope.all());

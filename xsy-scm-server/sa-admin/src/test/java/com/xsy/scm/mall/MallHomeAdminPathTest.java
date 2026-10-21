@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 class MallHomeAdminPathTest {
 
     @Test
-    @DisplayName("管理端路径不落进客户商城的 /scm/mall/ 拦截范围")
+    @DisplayName("管理端路径不落进微信小程序的 /scm/mall/ 拦截范围")
     void adminPathIsNotUnderMallCustomerPrefix() {
         RequestMapping mapping = MallHomeAdminController.class.getAnnotation(RequestMapping.class);
         assertThat(mapping).isNotNull();

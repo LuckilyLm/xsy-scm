@@ -30,7 +30,7 @@
 │   ├── decisions.md          ← 决策事实源（替代 ADR）
 │   ├── status.md             ← 交付状态与验证证据
 │   └── agents/               ← 本目录：技能配置
-└── xsy-scm-server/ xsy-scm-web/ xsy-scm-customer-app/
+└── xsy-scm-server/ xsy-scm-web/ xsy-scm-miniprogram/
 ```
 
 出现 `GLOSSARY-MAP.md` 时才视为多上下文（multi-context），届时每个上下文各自持有 `GLOSSARY.md`。

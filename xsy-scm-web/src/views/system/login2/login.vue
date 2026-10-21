@@ -7,8 +7,8 @@
   <div class="login-container">
     <div class="box-item desc">
       <div class="welcome">
-        <p>欢迎登录 鲜蔬源智链</p>
-        <p class="sub-welcome">鲜蔬源智慧供应链管理平台</p>
+        <p>欢迎登录 鲜蔬园智链</p>
+        <p class="sub-welcome">鲜蔬园智慧供应链管理平台</p>
       </div>
     </div>
     <div class="box-item login">

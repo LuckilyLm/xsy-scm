@@ -121,7 +121,7 @@ import ts from 'typescript';
     assert.doesNotMatch(page, /var\(--scm-border-color\)|var\(--scm-fill-color\)/);
   });
 
-  test('装修管理端走后台前缀，不落进客户商城的 /scm/mall/ 拦截范围', () => {
+  test('装修管理端走后台前缀，不落进微信小程序的 /scm/mall/ 拦截范围', () => {
     // 员工令牌打 /scm/mall/** 会被 MallCustomerInterceptor 判成非客户身份（30007）
     assert.doesNotMatch(api, /['"`]\/scm\/mall\//);
     assert.match(api, /\/scm\/mall-admin\/home\/draft/);

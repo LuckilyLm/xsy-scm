@@ -90,7 +90,7 @@ public class SalesOrderPrintSourceProvider implements ScmPrintSourceProvider {
         if (source == null) return "";
         return switch (source) {
             case "ADMIN" -> "后台录单";
-            case "MALL" -> "客户商城";
+            case "MALL" -> "微信小程序";
             case "SUPPLEMENT" -> "补单";
             case "IMPORT" -> "导入";
             default -> source;

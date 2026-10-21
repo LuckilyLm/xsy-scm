@@ -8,7 +8,7 @@
     <packaging>pom</packaging>
 
     <name>xsy-scm-v2-parent</name>
-    <description>鲜蔬源智链 V2 后台服务（基于 SmartAdmin v3.31 基线，Java 21 + PostgreSQL）</description>
+    <description>鲜蔬园智链 V2 后台服务（基于 SmartAdmin v3.31 基线，Java 21 + PostgreSQL）</description>
 
 	<modules>
         <module>sa-base</module>
