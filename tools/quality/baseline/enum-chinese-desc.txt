@@ -3,7 +3,7 @@
 # detection : 枚举每个常量所在的声明块内必须出现中文字符串，例如 NORMAL("正常") 或 ADMIN(1, "员工")；整块不含中文即记一条。页面、导出与打印都直接取枚举中文，缺了只能露出 NORMAL / ON_SHELF 这类内部取值，而让每个调用点各写一份映射迟早漂移。按常量粒度记账：补一个降一条，新增无中文的枚举常量立即成为 NEW DEFECT。
 # identity  : rule<TAB>repo-relative path<TAB>locator（不含行号：行移动不会让 baseline 失效）
 # format    : occurrences<TAB>identity。只允许下降，新增必须为 0
-# captured  : 108 occurrences in 108 identities
+# captured  : 88 occurrences in 88 identities
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryAssignmentStatusEnum.java	ACTIVE
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryCustomerPrintFilterEnum.java	ALL
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/delivery/constant/ScmDeliveryCustomerPrintFilterEnum.java	PRINTED
@@ -29,26 +29,6 @@
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/order/constant/MallWarehouseSourceEnum.java	CUSTOMER
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/promotion/constant/MallCouponTabEnum.java	AVAILABLE
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/mall/promotion/constant/MallCouponTabEnum.java	USED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	ACTUAL_QUANTITY
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	ASSIGN
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	CANCEL
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	CONFIRM
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	CREATE
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	CREDIT_OVERRIDE
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	REFUND
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	RESERVE_STOCK
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	RETURN
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	SUBMIT
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java	UPDATE
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderPriceSourceEnum.java	AGREEMENT
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderPriceSourceEnum.java	CUSTOMER_TYPE
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderPriceSourceEnum.java	MARKET
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderQuantitySourceEnum.java	SYSTEM
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderRefundStatusEnum.java	PENDING
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderReturnStatusEnum.java	APPROVED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderReturnStatusEnum.java	PENDING
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderReturnStatusEnum.java	REJECTED
-1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmReturnReceiptDispositionEnum.java	RETURN_TO_STOCK
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundFundingAllocationStatusEnum.java	PENDING
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundFundingAllocationStatusEnum.java	PROCESSING
 1	enum-chinese-desc	xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/payment/constant/ScmRefundFundingAllocationStatusEnum.java	SUCCEEDED
