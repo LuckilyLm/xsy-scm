@@ -79,6 +79,17 @@ export default [
   },
   {
     /*
+     * 契约测试跑在 node:test 里，需要 URL / Buffer / process 等 node 全局变量。
+     * 它们不参与小程序打包，只是同目录下的 .mjs 测试文件。
+     */
+    files: ['test/**/*.mjs'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: { ...globals.node },
+    },
+  },
+  {
+    /*
      * mock 契约层的 Node 侧脚本（冒烟测试 + 运行器）需要 node 全局变量。
      * 它们在 src/ 之外，也不参与小程序打包，走的是 Node 而不是小程序运行时。
      */

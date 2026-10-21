@@ -2,6 +2,51 @@
 
 最后更新：2026-10-21。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
 
+## 设计规范体检 + 图标去图片化（2026-10-22，H5 与模拟器验证通过）
+
+- 本地安装 `ui-ux-pro-max` 设计知识库技能到 `.workbuddy-ai/skills/`（该目录 gitignored，只在本机生效；重装命令 `npx ui-ux-pro-max-cli init --ai codebuddy`）。按它的交付清单逐项体检，只采纳与本项目相关的项。
+- **对比度**：正文级文字全部提到 WCAG AA 4.5:1 —— `text-tertiary` #8f959e→#667085（3.02→4.97）、`warning` #f59e0b→#b45309（2.03→4.74）、`danger` #e5484d→#d92d20（3.91→4.83）。新增 `--mall-primary-ink` 文字专用主题色（FRESH #12833c 4.84 / WARM #c2410c 5.18 / OCEAN #0369a1 5.93），53 处「主题色当文字色」改用它；按钮底色仍用品牌主色（白字 3.3:1，属品牌取舍，未改）。
+- **触控目标**：购物车步进器 48rpx→88rpx（44px）、勾选框补 88rpx 命中区、列表主操作按钮 60rpx→72rpx；纯图标控件补 `aria-label`，装饰性 emoji 标 `aria-hidden`。
+- **图标去图片化**：微信原生 tabBar 只接受图片（`iconfont` 仅 App/H5 支持），改为自绘 `components/common/xsy-tab-bar.vue`（uni-icons + 主题变量）并在挂载时隐藏原生栏；删除 20 张 tabbar PNG、`pages.json` 去掉 `iconPath`/`selectedIconPath`；`theme-native.js` 只保留颜色同步；`mall-theme.test.mjs` 改为守「自绘导航 5 个 uni-icons + 全仓无 tabbar 图片引用」。
+- 踩坑：`prefers-reduced-motion` 里的通配选择器 `*` 会让 WXSS 编译失败（`app.wxss unexpected token '*'`，小程序直接起不来），必须 `#ifdef H5`；`hairline-top` 会覆盖 `position: fixed`，自绘导航里要放在 `fixed` 之前。
+- 验证：`npm test` 55/55、H5 与 mp-weixin 构建通过；H5 实测原生栏 `display:none`、自绘栏 5 项、购物车结算条 `bottom=730`（780-50）；开发者工具登录页正常渲染。分类 emoji 保留（uni-icons 无生鲜品类图标，且始终有文字标签）。
+
+
+## 小程序其他权限与开发者工具联调（2026-10-21，模拟器实测通过）
+
+- **权限盘点**：除定位外此前没有任何权限流程——没有微信登录（`uni.login` / `getPhoneNumber`）、没有录音（语音下单）、没有相册/相机（无上传接口）、没有 `uni.chooseAddress`、没有网络状态监听。
+- 新增 `composables/use-permission.js`（`guideToSetting` + `ensurePrivacyAuthorized`），`use-location-permission.js` 改为复用同一份引导逻辑。收货地址页新增「使用微信收货地址」（`uni.chooseAddress`，仅小程序），授权被拒时引导设置页；只回填姓名/电话/详细地址，行政区与坐标仍须地图选点（微信地址没有 GCJ-02 坐标）。
+- 新增 `composables/use-network-status.js`（进程级单例监听），App 启动时在断网/恢复各提示一次。
+- 修复两处联调噪音：mock 缺 `/scm/mall/home` 与 `/scm/mall/home/theme`，导致请求拼成 `undefined/scm/mall/home`（新增 `mock/routes/home.js`，返回「未发布」让首页回退默认组合）；令牌过期不再当作异常上报，冷启动控制台不再常驻 30007。
+- 开发者工具联调链路：`VITE_APP_USE_MOCK=true npm run dev:mp-weixin` → `cli auto --project dist/dev/mp-weixin --auto-port 9420` → `miniprogram-automator` 驱动。实测「登录 → 首页（分类横滑 / 常购 / 商品卡）→ 购物车 → 地址编辑」，运行期错误 0；`app.json` 已含 `permission` / `requiredPrivateInfos` / `__usePrivacyCheck__`。
+- 仍未完成（卡后端或平台配置）：微信登录（后端仅手机号+密码）、语音下单（无 ASR 与同声传译插件）、相册上传（无文件上传接口）、订阅消息（无模板 ID）、微信支付与余额充值。
+
+## 小程序键盘与定位授权（2026-10-21，H5 渲染验证通过）
+
+- **键盘**：8 处输入框/文本域补齐 `confirm-type`、`:cursor-spacing`、`hold-keyboard`（登录、改密、收货地址、搜索、售后数量与说明、结算备注）。新增 `composables/use-keyboard-height.js`，把固定底栏按键盘高度上移：地址编辑、结算、售后申请三页的提交栏不再被键盘盖住；登录页手机号键盘「下一项」直接把焦点交给密码框。
+- **定位授权**：`manifest.json` 的 `mp-weixin` 补 `permission.scope.userLocation.desc`、`requiredPrivateInfos: [getLocation, chooseLocation]`、`__usePrivacyCheck__`。**此前没有声明，`uni.getLocation` 在微信端会直接失败**（H5 与开发者工具不报错，只有真机/正式版才暴露）。
+- 新增 `composables/use-location-permission.js`：隐私协议授权 → `getSetting` → 未询问则 `authorize` → 曾拒绝则弹窗引导 `openSetting`，统一返回 `Promise<boolean>`；地址页「使用当前位置」改走该流程，并区分「权限未开启」与「系统定位关闭/超时」两种失败文案。
+- 基线缺口盘点（下单商城 5 条）：**未完成**——智能语音下单（需 ASR/同声传译插件与后端）、在线支付（仅余额支付，无 `uni.requestPayment`，缺后端 prepay）、余额充值（页面明示暂未开通，funds API 只读且有契约测试守着）、微信/短信登录（README 已声明未开放）、订单订阅消息（无 `requestSubscribeMessage` 与模板 ID）。其余（定制首页/多主题/搜索/分类下单/购物车/再来一单/账期/货到付款/商品汇总）已有源码。
+- 验证：`npm test` 55/55、H5 与 mp-weixin 构建通过；产物 `app.json` 已含 `permission`、`requiredPrivateInfos`、`lazyCodeLoading`、`__usePrivacyCheck__` 与 4 条 `preloadRule`；地址编辑页底栏仍固定在视口底部、无横向溢出。未做微信真机（键盘高度回调与授权弹窗只能在真机确认）。
+
+## 小程序改用 uni-ui 组件与 uni-icons（2026-10-21，H5 渲染验证通过）
+
+- 删除自建 `components/common/xsy-load-more.vue`：首页、分类、订单、搜索、应收账单五处改用 `uni-load-more`，底部文案集中在 `constants/load-more-const.js`。
+- 购物车顶部提示改用 `uni-notice-bar`，通过 `noticebarIcon` 插槽保留 info 图标；原先自写的提示条与样式一并删除。
+- 手写字形全部换成 `uni-icons`：右向箭头 `›` → `right`（我的 9 处、首页活动、结算地址/配送仓/优惠券、账期与售后，共 21 处），步进器 `−/+` → `minus/plus`（购物车、商品详情），搜索清除 `×` → `clear`。新增全局 `.xsy-chevron` 负责文字与图标的基线对齐。
+- 修复 `fixed-bottom-bar` 被 `hairline-top` 覆盖成 `position: relative` 的缺陷：购物车与结算的底部操作条此前并未固定在屏幕底部。H5 的 tabBar 覆盖在页面之上，购物车底栏用 `--window-bottom` 上移、内容留白同步加大，条件编译只作用于 H5；小程序产物实测不含该偏移。
+- `pages.json`：`preloadRule` 扩到 4 个入口（购物车→结算、订单→订单详情、我的→钱包/账期/售后/营销），分类与商品详情加 `disableScroll`，新增 `condition` 开发直达页。`manifest.json` 的 `mp-weixin` 增加 `lazyCodeLoading: requiredComponents` 与 `optimization.subPackages`；列表图片补 `lazy-load`（首屏 banner、专题图不加）。
+- 刻意保留：`xsy-empty`（uni-ui 无空态组件）、`xsy-skeleton`（无骨架屏组件）、`xsy-nav-bar`（需按微信胶囊高度对齐）、`product-card` / `mall-coupon-card`（业务组件）。
+- 验证：`npm test` 55/55、H5 与 mp-weixin 构建通过；Playwright 覆盖首页/分类/购物车/结算/商品详情/我的/搜索/订单，横向溢出 0，底栏固定在视口底部。未做微信真机。已知 mock 限制：结算预览在 mock 下返回业务错误，与本次改动无关。
+
+## 小程序手机端响应式与交互基础层（2026-10-21，H5 渲染验证通过）
+
+- 新增断点与视口 mixin（`screen-compact` ≤359px、`screen-wide` ≥414px、`screen-landscape`、`viewport-height`、`content-clear-bottom`），`page` 增加 `--xsy-page-x` / `--xsy-gutter` 两档横向节奏；首页、分类、购物车、订单、我的、商品详情、结算、登录改用它。断点值只维护在 `styles/tokens.scss`。
+- 19 处 `min-height: 100vh` 统一改为 `100vh → 100dvh` 兜底，H5 手机浏览器地址栏收起/展开不再把底部条顶出屏幕；购物车与结算的固定底栏内容留白改为「条高 + 安全区」相加。
+- 新增 `xsy-empty` / `xsy-skeleton` / `xsy-load-more` 三个公共组件：首页、分类、购物车、订单首屏加载改骨架屏，空态与翻页状态统一，翻页失败提供重试入口。全站补 `hover-class` 按压反馈（`.xsy-press--active` / `.xsy-press-row--active` / `.xsy-press-button--active`），此前为 0 处。
+- 修复三处真实缺陷：H5 主题同步把选中态图标写成路由相对路径（`/pages/home/static/...`）导致选中 TabBar 裂图；`adaptCategory` 用 `node.name` 覆盖 `categoryName` 导致分类名整列为空；价格来源未知枚举直出英文（`STANDARD`）。
+- 验证：`npm test` 55/55、H5 与 mp-weixin 构建通过、Playwright 在 320/375/414 三档 × 首页/分类/购物车/订单/我的五页横向溢出均为 0，骨架屏与 TabBar 图标实测正常。未做：微信真机、iOS 安全区真机、桌面宽屏（本期不覆盖）。
+
 ## 微信小程序目录与品牌名称（2026-10-21，源码待验证）
 
 - 给用户使用的微信小程序目录现为 `xsy-scm-miniprogram/`；npm 包名、应用名称、页面标题、验证入口及共享文档引用同步更新。业务客户身份、`/scm/mall/**` 接口和订单来源编码保持原有契约。
