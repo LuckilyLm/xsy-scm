@@ -184,7 +184,21 @@
           <a-descriptions-item label="来源生产批号">{{ replay.lot?.sourceLotNo || '—' }}</a-descriptions-item>
           <a-descriptions-item label="商品规格">{{ replay.lot?.skuName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="包装数量">{{ quantityText(replay.unit.quantity) }} {{ replay.unit.unit }}</a-descriptions-item>
+          <a-descriptions-item label="净重">{{ weightText(replay.unit) }}</a-descriptions-item>
+          <a-descriptions-item label="称重来源">{{ weightSourceLabel(replay.unit.weightSource) }}</a-descriptions-item>
         </a-descriptions>
+
+        <div v-if="publicLink(replay.unit.publicToken)" class="replay-link">
+          <a-input :value="publicLink(replay.unit.publicToken)" readonly aria-label="公开扫码链接"/>
+          <a-button size="small" @click="copyLink(replay.unit.publicToken)">复制链接</a-button>
+        </div>
+
+        <TraceAttachmentPanel
+            scope="LOT"
+            :target-id="replay.lot?.lotId"
+            title="批次检测报告"
+            :can-manage="canManageAttachment"
+            empty-text="该批次还没有上传检测报告"/>
 
         <h4 class="replay-title">收货来源</h4>
         <a-descriptions v-if="replay.receipt" bordered size="small" :column="2">
@@ -247,6 +261,48 @@ import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {quantityText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 import type {TraceUnit, TraceUnitQuery, TraceUnitReplay} from './inventory-types';
+import TraceAttachmentPanel from '/@/views/business/scm/trace/components/trace-attachment-panel.vue';
+import {message} from 'ant-design-vue';
+
+const canManageAttachment = hasPermission('scm:trace:file:manage');
+
+/** 净重只在称过之后才有值；没称过的码要显式说「待称重」，不能显示成 0。 */
+function weightText(unit: TraceUnit): string {
+  if (!unit.netWeight) {
+    return '待称重';
+  }
+  return `${unit.netWeight}${unit.weightUnit || ''}`;
+}
+
+const WEIGHT_SOURCE_ENUM: Record<string, string> = {
+  SCALE: '电子秤',
+  MANUAL: '人工补录',
+};
+
+function weightSourceLabel(source?: string | null): string {
+  if (!source) {
+    return '—';
+  }
+  return WEIGHT_SOURCE_ENUM[source] || source;
+}
+
+/** 公开扫码链接与标签二维码同一口径：哈希路由，路径里的 # 不能省。 */
+function publicLink(publicToken?: string): string {
+  if (!publicToken) {
+    return '';
+  }
+  const {origin, pathname} = window.location;
+  return `${origin}${pathname}#/t/${publicToken}`;
+}
+
+async function copyLink(publicToken?: string) {
+  const link = publicLink(publicToken);
+  if (!link) {
+    return;
+  }
+  await navigator.clipboard.writeText(link);
+  message.success('链接已复制');
+}
 
 const PACKAGE_TYPE_ENUM: Record<string, {value: string; desc: string}> = {
   BAG: {value: 'BAG', desc: '袋'},
@@ -566,5 +622,12 @@ onMounted(queryData);
 <style scoped>
 .replay-title {
   margin: 16px 0 8px;
+}
+
+.replay-link {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
 }
 </style>

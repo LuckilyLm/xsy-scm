@@ -53,7 +53,7 @@ import {computed, ref, watch} from 'vue';
 import {notification} from 'ant-design-vue';
 import {printApi} from '/@/api/business/scm/print-api';
 import type {Id, PrintDocumentType, PrintRender, PrintTemplate} from './print-types';
-import {renderPrintHtml, printRenders} from './print-render';
+import {renderPrintHtml, printRenders, prepareQrCodes} from './print-render';
 import {printError} from './print-errors';
 
 const props = defineProps<{
@@ -100,7 +100,18 @@ function snapshotHint(render: PrintRender): string {
   return `模板 ${template ?? '—'} v${render.templateVersion ?? '—'}，打印时间 ${render.printedAt ?? '—'}。再次打印使用这次保存的内容，不会随单据后续修改而变化。`;
 }
 
-const previewHtml = computed(() => renders.value.map(renderPrintHtml).join(''));
+/**
+ * 预览 HTML。
+ *
+ * 不用 computed：包装码标签的二维码要先异步编码再渲染，computed 里拿不到。
+ * 由 `refreshPreview()` 在版面变化后统一刷新。
+ */
+const previewHtml = ref('');
+
+async function refreshPreview() {
+  await prepareQrCodes(renders.value);
+  previewHtml.value = renders.value.map(renderPrintHtml).join('');
+}
 
 async function loadTemplates(id: number) {
   const firstId = props.businessIds[0];
@@ -119,12 +130,14 @@ async function reloadPreview() {
   frozenByBusiness.clear();
   if (!props.businessIds.length) {
     renders.value = [];
+    previewHtml.value = '';
     return;
   }
   const id = ++requestId;
   loading.value = true;
   error.value = '';
   renders.value = [];
+  previewHtml.value = '';
   try {
     const list: PrintRender[] = [];
     for (const businessId of props.businessIds) {
@@ -134,10 +147,12 @@ async function reloadPreview() {
     }
     if (id === requestId) {
       renders.value = list;
+      await refreshPreview();
     }
   } catch (e) {
     if (id === requestId) {
       renders.value = [];
+      previewHtml.value = '';
       error.value = printError(e);
     }
   } finally {
@@ -172,6 +187,7 @@ async function print() {
       frozen.push(render);
     }
     renders.value = frozen;
+    await refreshPreview();
     emit('printed');
     await printRenders(frozen);
     frozenByBusiness.clear();

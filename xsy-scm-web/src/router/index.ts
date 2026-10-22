@@ -39,6 +39,12 @@ router.beforeEach(async (to, from, next) => {
         return;
     }
 
+    // 扫码溯源页面向客户与监管：标签上的令牌即凭证，不登录也不套后台布局
+    if (to.path.startsWith('/t/')) {
+        next();
+        return;
+    }
+
     // 验证登录
     const token = localRead(LocalStorageKeyConst.USER_TOKEN);
     if (!token) {

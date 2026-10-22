@@ -1,5 +1,14 @@
 /** 前端只对服务端给出的打印结果排序、转义与排版，不决定金额列也不计算金额。所有业务文本进入 HTML 前必须转义。 */
+import QRCode from 'qrcode';
 import type {PrintRender} from './print-types';
+
+/**
+ * 已生成的二维码图片，按内容缓存。
+ *
+ * 二维码只有包装码标签需要，而 `renderPrintHtml` 是同步的：先把图片算好放进这里，
+ * 渲染时同步取用。缓存键就是二维码内容，重印同一张标签不会重复编码。
+ */
+const qrImages = new Map<string, string>();
 
 function esc(value: unknown): string {
     if (value === null || value === undefined) {
@@ -59,12 +68,48 @@ export function renderPrintHtml(render: PrintRender): string {
         '<section class="doc">' +
         `<h2>${esc(render.title || '')}${render.businessNo ? ' ' + esc(render.businessNo) : ''}</h2>` +
         `<div class="meta">${header}</div>` +
+        qrBlock(render) +
         `<table><thead>${head}</thead><tbody>${body}</tbody></table>` +
         totals +
         (render.footerNote ? `<p class="note">${esc(render.footerNote)}</p>` : '') +
         traceLine(render) +
         '</section>'
     );
+}
+
+/**
+ * 包装码标签上的二维码。
+ *
+ * 只对 `TRACE_UNIT` 生效：其它单据的字段契约是纯文本，加图片位会改变所有模板的排版语义。
+ * 扫码链接本身不再以文字印出——标签只有 80mm 宽，一串 40 字符的 URL 印上去既挤又没人读。
+ */
+function qrBlock(render: PrintRender): string {
+    if (render.documentType !== 'TRACE_UNIT') {
+        return '';
+    }
+    const traceUrl = render.headerFields.find((field) => field.key === 'traceUrl')?.value;
+    const image = traceUrl ? qrImages.get(traceUrl) : undefined;
+    if (!image) {
+        return '';
+    }
+    return `<div class="qr"><img src="${image}" alt="${esc(traceUrl)}"/></div>`;
+}
+
+/**
+ * 预生成包装码标签的二维码。
+ *
+ * 二维码编码是异步的，而渲染是同步的；打印前先算一遍，渲染时就能同步取到图片。
+ * 没有公开地址（未配置 `scm.trace.public-base-url`）时 `traceUrl` 为空，标签只印码不印二维码。
+ */
+export async function prepareQrCodes(renders: PrintRender[]): Promise<void> {
+    const urls = renders
+        .filter((render) => render.documentType === 'TRACE_UNIT')
+        .map((render) => render.headerFields.find((field) => field.key === 'traceUrl')?.value)
+        .filter((url): url is string => Boolean(url) && !qrImages.has(url as string));
+    for (const url of new Set(urls)) {
+        // 标签只有 80mm 宽，240px 足够打印分辨率，再大只会拖慢生成
+        qrImages.set(url, await QRCode.toDataURL(url, {margin: 0, width: 240}));
+    }
 }
 
 /** 把若干份版面拼成一页完整打印文档（批量打印时一份一页）。 */
@@ -89,6 +134,8 @@ export function renderPrintDocument(renders: PrintRender[]): string {
         '.r{text-align:right;font-variant-numeric:tabular-nums;}' +
         '.totals{margin-top:8px;}' +
         '.note{margin-top:10px;}' +
+        '.qr{margin:6px 0;}' +
+        '.qr img{width:22mm;height:22mm;}' +
         '.trace{margin-top:6px;color:#86909C;font-size:11px;}' +
         '</style></head><body class="' +
         (first ? bodyClass(first) : 'a4') +
@@ -106,6 +153,7 @@ export function renderPrintDocument(renders: PrintRender[]): string {
  */
 export async function printRenders(renders: PrintRender[]): Promise<void> {
     if (!renders.length) return;
+    await prepareQrCodes(renders);
     const iframe = document.createElement('iframe');
     iframe.setAttribute('aria-hidden', 'true');
     iframe.title = '单据打印';

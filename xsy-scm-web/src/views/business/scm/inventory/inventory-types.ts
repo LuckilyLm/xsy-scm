@@ -812,12 +812,20 @@ export interface TraceUnitQuery extends Page {
 export interface TraceUnit {
     id: Id;
     unitCode: string;
+    /** 标签二维码里的公开凭据；后台据此拼出扫码链接。 */
+    publicToken?: string;
     lotId: Id;
     lotNo: string;
     sourceLotNo?: string | null;
     packageType: string;
     quantity: string;
     unit: string;
+    /** 净重；未称重时为 null。 */
+    netWeight?: string | null;
+    weightUnit?: string | null;
+    /** SCALE 电子秤 / MANUAL 后台补录。 */
+    weightSource?: string | null;
+    measuredAt?: string | null;
     status: string;
     remark?: string | null;
     createdAt: string;

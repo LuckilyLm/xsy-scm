@@ -38,6 +38,12 @@
         <a-descriptions-item label="创建时间">{{ datetime(product.createdAt) }}</a-descriptions-item>
         <a-descriptions-item label="商品简介" :span="3">{{ product.description || '—' }}</a-descriptions-item>
       </a-descriptions>
+      <TraceAttachmentPanel
+          scope="PRODUCT"
+          :target-id="spuId"
+          title="商品资质"
+          :can-manage="canManageAttachment"
+          empty-text="还没有上传资质文件"/>
       <a-divider orientation="left">主档扩展信息</a-divider>
       <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 4 }">
         <a-descriptions-item label="助记码">{{ product.mnemonicCode || '—' }}</a-descriptions-item>
@@ -104,8 +110,12 @@ import {
 import SkuTable from './components/product-sku-table.vue';
 import StockConversionEditor from './components/product-stock-conversion-editor.vue';
 import BundleEditor from './components/product-bundle-editor.vue';
+import TraceAttachmentPanel from '/@/views/business/scm/trace/components/trace-attachment-panel.vue';
+import {hasPermission} from '../common/scm-permission';
 import {productError} from './product-errors';
 import {datetime} from '../common/scm-display';
+
+const canManageAttachment = hasPermission('scm:trace:file:manage');
 
 const route = useRoute(), router = useRouter();
 const product = ref<ProductRow>(), loading = ref(false), error = ref('');
