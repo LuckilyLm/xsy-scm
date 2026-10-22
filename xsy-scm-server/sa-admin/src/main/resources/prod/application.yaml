@@ -27,3 +27,7 @@ scm:
     stocktake:
       snapshot:
         secret: ${SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET:}
+  trace:
+    # 包装码标签二维码里的公开页地址（后台是哈希路由，配到站点根即可，例如 https://scm.example.com）。
+    # 留空时标签只印码不印二维码，扫码入口等于不可用，因此对外部署必须显式配置。
+    public-base-url: ${SCM_TRACE_PUBLIC_BASE_URL:}

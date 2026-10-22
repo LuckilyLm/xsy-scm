@@ -57,6 +57,8 @@ services:
       XSY_MAIL_PASSWORD: ${XSY_MAIL_PASSWORD:-unset}
       # prod 下盘点快照签名密钥必须显式配置，否则 StocktakeSnapshotSigner 拒绝启动。
       SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET: ${SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET:?Set SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET in .env}
+      # 标签二维码里的公开溯源页地址；留空时标签只印码不印二维码（见 TracePublicLinkBuilder）
+      SCM_TRACE_PUBLIC_BASE_URL: ${SCM_TRACE_PUBLIC_BASE_URL:-}
       XSY_FILE_STORAGE_MODE: cloud
       XSY_FILE_REGION: us-east-1
       # S3 client 和 Presigner 共用地址，必须同时对浏览器和容器可达。

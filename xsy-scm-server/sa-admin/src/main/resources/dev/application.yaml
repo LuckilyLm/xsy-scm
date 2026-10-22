@@ -36,3 +36,6 @@ scm:
     stocktake:
       snapshot:
         secret: xsy-scm-stocktake-snapshot-dev-secret-change-in-production
+  trace:
+    # 标签二维码里的公开页地址；本地开发默认指向 vite 前端，留空则标签只印码不印二维码
+    public-base-url: ${SCM_TRACE_PUBLIC_BASE_URL:http://localhost:18081}
