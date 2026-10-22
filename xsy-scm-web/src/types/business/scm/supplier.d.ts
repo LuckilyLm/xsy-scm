@@ -108,6 +108,21 @@ export interface SupplierDeletePayload {
 // ---------------------------------------------------------------------------
 
 /** 关系行（对应 SupplierSkuVO），含冻结快照列。 */
+/** 一家供应商的可供货汇总，列表页的公司卡片使用。 */
+export interface SupplierSkuSupplierSummary {
+    supplierId: ScmId;
+    supplierName: string;
+    supplierCode: string;
+    /** 可供商品数（按 SPU 去重）。 */
+    productCount: number;
+    /** 商品规格数：一行一个规格。 */
+    specCount: number;
+    /** 标记为优先采购的规格数。 */
+    defaultCount: number;
+    minReferencePrice?: string | null;
+    maxReferencePrice?: string | null;
+}
+
 export interface SupplierSkuRow {
     id: ScmId;
     version: number;

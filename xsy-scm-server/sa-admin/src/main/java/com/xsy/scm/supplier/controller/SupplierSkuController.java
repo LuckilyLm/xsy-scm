@@ -8,6 +8,7 @@ import com.xsy.scm.supplier.domain.form.SupplierSkuQueryForm;
 import com.xsy.scm.supplier.domain.form.SupplierSkuReplaceForm;
 import com.xsy.scm.supplier.domain.vo.SupplierSkuVO;
 import com.xsy.scm.supplier.domain.vo.SupplierSkuComparisonVO;
+import com.xsy.scm.supplier.domain.vo.SupplierSkuSupplierSummaryVO;
 import jakarta.validation.constraints.Positive;
 import com.xsy.scm.supplier.permission.SupplierPermission;
 import com.xsy.scm.supplier.service.SupplierSkuService;
@@ -17,6 +18,7 @@ import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,6 +55,14 @@ public class SupplierSkuController {
     @SaCheckPermission(SupplierPermission.SKU_QUERY)
     public ResponseDTO<PageResult<SupplierSkuVO>> query(@Valid @RequestBody SupplierSkuQueryForm form) {
         return ResponseDTO.ok(supplierSkuService.query(form));
+    }
+
+    /** 按供应商汇总可供货情况，列表页的公司卡片使用。 */
+    @GetMapping("/supplier-summary")
+    @SaCheckPermission(SupplierPermission.SKU_QUERY)
+    public ResponseDTO<List<SupplierSkuSupplierSummaryVO>> supplierSummary(
+            @RequestParam(required = false) String status) {
+        return ResponseDTO.ok(supplierSkuService.summarizeBySupplier(status));
     }
 
     /** 同商品规格、同采购单位的有效供货来源参考价比较。 */

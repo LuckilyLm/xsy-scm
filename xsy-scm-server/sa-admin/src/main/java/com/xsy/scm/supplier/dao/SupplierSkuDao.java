@@ -6,6 +6,7 @@ import com.xsy.scm.supplier.domain.entity.SupplierSkuEntity;
 import com.xsy.scm.supplier.domain.form.SupplierSkuQueryForm;
 import com.xsy.scm.supplier.domain.vo.OrderableSkuVO;
 import com.xsy.scm.supplier.domain.vo.SupplierSkuCountVO;
+import com.xsy.scm.supplier.domain.vo.SupplierSkuSupplierSummaryVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -40,6 +41,17 @@ public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
      * 只读反查分页。
      */
     List<SupplierSkuEntity> queryPage(Page<?> page, @Param("query") SupplierSkuQueryForm query);
+
+    /**
+     * 按供应商汇总可供货情况（公司卡片用）。
+     *
+     * <p>
+     * 商品数按 SPU 去重、规格数按关联行计数：两者不等是常态，一个商品常挂多个规格。
+     *
+     * @param status
+     *            可选的关联状态过滤；为空表示全部
+     */
+    List<SupplierSkuSupplierSummaryVO> summarizeBySupplier(@Param("status") String status);
 
     /**
      * 原子软删：{@code supplier_id + id + version} 三谓词。

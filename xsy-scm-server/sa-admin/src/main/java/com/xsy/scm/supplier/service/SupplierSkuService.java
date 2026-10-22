@@ -11,6 +11,7 @@ import com.xsy.scm.supplier.domain.form.SupplierSkuQueryForm;
 import com.xsy.scm.supplier.domain.form.SupplierSkuReplaceForm;
 import com.xsy.scm.supplier.domain.vo.SupplierSkuVO;
 import com.xsy.scm.supplier.domain.vo.SupplierSkuComparisonVO;
+import com.xsy.scm.supplier.domain.vo.SupplierSkuSupplierSummaryVO;
 import com.xsy.scm.supplier.manager.SupplierSkuReferencePriceComparison;
 import com.xsy.scm.supplier.manager.SupplierSkuSyncManager;
 import net.lab1024.sa.base.common.domain.PageResult;
@@ -62,14 +63,30 @@ public class SupplierSkuService {
 
     /**
      * 只读反查分页（按 SKU 找供应商）。
+     *
+     * <p>
+     * 默认顺序是「供应商 → 优先采购 → 规格编码」：这张表是按公司看它供哪些货，同一供应商的行必须连续， 否则用户读不完一家公司的清单。排序写在这里而不是 SQL 里，因为分页插件会用这里的 orders 覆盖语句自身的
+     * ORDER BY；只在 SQL 里加排序不会生效。
      */
     public PageResult<SupplierSkuVO> query(SupplierSkuQueryForm form) {
         var page = SmartPageUtil.convert2PageQuery(form);
         if (page.orders().isEmpty()) {
-            page.addOrder(OrderItem.desc("is_default"), OrderItem.asc("id"));
+            page.addOrder(OrderItem.asc("supplier_id"), OrderItem.desc("is_default"),
+                    OrderItem.asc("sku_code_snapshot"), OrderItem.asc("id"));
         }
         List<SupplierSkuEntity> rows = supplierSkuDao.queryPage(page, form);
         return SmartPageUtil.convert2PageResult(page, enrich(rows));
+    }
+
+    /**
+     * 按供应商汇总可供货情况：列表页的公司卡片直接消费这一份。
+     *
+     * <p>
+     * 不分页——公司数量远小于关联行数，一次取全量比给卡片做分页更简单，也不会把同一家公司拆到两页。
+     */
+    @Transactional(readOnly = true)
+    public List<SupplierSkuSupplierSummaryVO> summarizeBySupplier(String status) {
+        return supplierSkuDao.summarizeBySupplier(status);
     }
 
     /**

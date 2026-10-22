@@ -78,6 +78,30 @@
         </if>
     </select>
 
+    <!--
+      公司卡片用的汇总：商品数按 SPU 去重，规格数按关联行计数。
+      LEFT JOIN 商品规格而不是 INNER JOIN：SKU 被删后关联行还在，卡片上要能看见「规格数不为零但商品数少一个」，
+      而不是整家公司从列表里消失。
+    -->
+    <select id="summarizeBySupplier" resultType="com.xsy.scm.supplier.domain.vo.SupplierSkuSupplierSummaryVO">
+        SELECT ss.supplier_id AS supplierId,
+               ss.supplier_name_snapshot AS supplierName,
+               ss.supplier_code_snapshot AS supplierCode,
+               COUNT(DISTINCT k.spu_id) AS productCount,
+               COUNT(*) AS specCount,
+               COUNT(*) FILTER (WHERE ss.is_default) AS defaultCount,
+               MIN(ss.reference_price) AS minReferencePrice,
+               MAX(ss.reference_price) AS maxReferencePrice
+        FROM xsy_supplier_sku ss
+        LEFT JOIN xsy_product_sku k ON k.id = ss.sku_id
+        WHERE ss.deleted = FALSE
+        <if test="status != null and status != ''">
+            AND ss.status = #{status}
+        </if>
+        GROUP BY ss.supplier_id, ss.supplier_name_snapshot, ss.supplier_code_snapshot
+        ORDER BY ss.supplier_name_snapshot NULLS LAST, ss.supplier_id
+    </select>
+
     <update id="softDeleteOwnedWithVersion">
         UPDATE xsy_supplier_sku
         SET deleted    = TRUE,
