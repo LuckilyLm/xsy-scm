@@ -1,5 +1,7 @@
 package net.lab1024.sa.admin.module.system.support;
 
+import com.xsy.scm.common.scope.ScmDataScopeService;
+import com.xsy.scm.trace.permission.TracePermission;
 import net.lab1024.sa.base.common.domain.RequestUser;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
@@ -17,8 +19,11 @@ public class AdminFileAccessIdentity implements FileAccessIdentity {
 
     private final FileBizVisibilityDao visibilityDao;
 
-    public AdminFileAccessIdentity(FileBizVisibilityDao visibilityDao) {
+    private final ScmDataScopeService dataScopeService;
+
+    public AdminFileAccessIdentity(FileBizVisibilityDao visibilityDao, ScmDataScopeService dataScopeService) {
         this.visibilityDao = visibilityDao;
+        this.dataScopeService = dataScopeService;
     }
 
     @Override
@@ -68,6 +73,10 @@ public class AdminFileAccessIdentity implements FileAccessIdentity {
             // 批次检测报告随包装码查看权：批次在召回与追溯里出现的地方都能读到报告。
             case LOT_INSPECTION -> StpUtil.hasPermission("scm:inventory:unit:query")
                     && visibilityDao.countTraceLot(bizId) > 0;
+            case TRACE_INSPECTION_REPORT -> (StpUtil.hasPermission(TracePermission.UNIT_QUERY)
+                    || StpUtil.hasPermission(TracePermission.INSPECTION_MANAGE))
+                    && visibilityDao.countVisibleInspectionReport(bizId,
+                            dataScopeService.resolve().getWarehouseScope()) > 0;
         };
     }
 }

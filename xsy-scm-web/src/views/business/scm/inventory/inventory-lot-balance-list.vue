@@ -82,6 +82,9 @@
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
+        <template v-else-if="column.dataIndex === 'operation'">
+          <a-button v-if="canViewInspection" type="link" size="small" @click="inspectionLot = record">检测报告</a-button>
+        </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
     </a-table>
@@ -98,6 +101,12 @@
       />
     </div>
   </a-card>
+  <a-drawer :open="!!inspectionLot" title="批次检测报告" :width="scmDrawerWidth('m')" @close="inspectionLot = undefined">
+    <template v-if="inspectionLot">
+      <p>{{ inspectionLot.productName }} · {{ inspectionLot.skuName }}</p>
+      <TraceInspectionPanel :lot-id="inspectionLot.lotId" :lot-no="inspectionLot.lotNo" :can-manage="canManageInspection"/>
+    </template>
+  </a-drawer>
 </template>
 
 <script setup lang="ts">
@@ -114,6 +123,13 @@ import {quantityText, skuMainText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 import type {InventoryLotBalance, InventoryLotBalanceQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
+import {hasPermission} from '../common/scm-permission';
+import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
+import TraceInspectionPanel from '/@/views/business/scm/trace/components/trace-inspection-panel.vue';
+
+const canManageInspection = hasPermission('scm:trace:inspection:manage');
+const canViewInspection = canManageInspection || hasPermission('scm:inventory:unit:query');
+const inspectionLot = ref<InventoryLotBalance>();
 
 const queryForm = reactive<InventoryLotBalanceQuery>({pageNum: 1, pageSize: 20});
 const tableData = ref<InventoryLotBalance[]>([]);
@@ -135,6 +151,7 @@ const columns = ref<InventoryLotBalanceColumn[]>([
   {title: '数量', dataIndex: 'quantity', width: 110},
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '更新时间', dataIndex: 'updatedAt', width: 170},
+  ...(canViewInspection ? [{title: '操作', dataIndex: 'operation', width: 100, align: 'center' as const, fixed: 'right' as const}] : []),
 ]);
 
 async function queryData() {

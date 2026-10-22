@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.trace.dao.TraceInspectionReportDao">
+    <sql id="columns">
+        SELECT r.id, r.lot_id AS lotId, r.report_no AS reportNo, r.report_name AS reportName,
+               r.inspection_date AS inspectionDate, r.inspection_org AS inspectionOrg,
+               r.conclusion, r.expires_at AS expiresAt, r.status, r.version,
+               r.published_by AS publishedBy, r.published_at AS publishedAt,
+               r.withdrawn_by AS withdrawnBy, r.withdrawn_at AS withdrawnAt,
+               r.created_by AS createdBy, r.created_at AS createdAt,
+               r.updated_by AS updatedBy, r.updated_at AS updatedAt
+        FROM xsy_trace_inspection_report r
+    </sql>
+
+    <sql id="scope">
+        <choose>
+            <when test="scope == null or scope.empty">AND FALSE</when>
+            <when test="!scope.all">
+                AND EXISTS (
+                    SELECT 1 FROM xsy_purchase_receipt_item_lot rl
+                    JOIN xsy_purchase_receipt_item ri ON ri.id = rl.purchase_receipt_item_id
+                    JOIN xsy_purchase_receipt pr ON pr.id = ri.purchase_receipt_id
+                    WHERE rl.lot_id = r.lot_id AND pr.deleted = FALSE AND pr.warehouse_id IN
+                    <foreach collection="scope.ids" item="warehouseId" open="(" separator="," close=")">#{warehouseId}</foreach>
+                )
+            </when>
+        </choose>
+    </sql>
+
+    <select id="listByLot" resultType="com.xsy.scm.trace.domain.vo.TraceInspectionReportVO">
+        <include refid="columns"/>
+        WHERE r.lot_id = #{lotId}
+        <include refid="scope"/>
+        ORDER BY r.inspection_date DESC, r.id DESC
+    </select>
+
+    <select id="lockById" resultType="com.xsy.scm.trace.domain.vo.TraceInspectionReportVO">
+        <include refid="columns"/>
+        WHERE r.id = #{id}
+        <include refid="scope"/>
+        FOR UPDATE OF r
+    </select>
+
+    <select id="publishedByLot" resultType="com.xsy.scm.trace.domain.vo.TraceInspectionReportVO">
+        <include refid="columns"/>
+        WHERE r.lot_id = #{lotId} AND r.status = 'PUBLISHED'
+        ORDER BY r.inspection_date DESC, r.id DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO xsy_trace_inspection_report
+            (lot_id, report_no, report_name, inspection_date, inspection_org, conclusion, expires_at,
+             created_by, updated_by, operation_history)
+        VALUES (#{lotId}, #{reportNo}, #{reportName}, #{inspectionDate}, #{inspectionOrg}, #{conclusion}, #{expiresAt},
+                #{createdBy}, #{updatedBy},
+                jsonb_build_array(jsonb_build_object('action', 'CREATE', 'operator', CAST(#{createdBy} AS text),
+                                                     'at', CURRENT_TIMESTAMP)))
+    </insert>
+
+    <update id="updateDraft">
+        UPDATE xsy_trace_inspection_report
+        SET report_no = #{reportNo}, report_name = #{reportName}, inspection_date = #{inspectionDate},
+            inspection_org = #{inspectionOrg}, conclusion = #{conclusion}, expires_at = #{expiresAt},
+            updated_by = #{updatedBy}, updated_at = CURRENT_TIMESTAMP, version = version + 1,
+            operation_history = operation_history || jsonb_build_array(jsonb_build_object(
+                'action', 'SAVE', 'operator', CAST(#{updatedBy} AS text), 'at', CURRENT_TIMESTAMP))
+        WHERE id = #{id} AND status = 'DRAFT' AND version = #{version}
+    </update>
+
+    <update id="publish">
+        UPDATE xsy_trace_inspection_report
+        SET status = 'PUBLISHED', published_by = #{updatedBy}, published_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy}, updated_at = CURRENT_TIMESTAMP, version = version + 1,
+            operation_history = operation_history || jsonb_build_array(jsonb_build_object(
+                'action', 'PUBLISH', 'operator', CAST(#{updatedBy} AS text), 'at', CURRENT_TIMESTAMP))
+        WHERE id = #{id} AND status = 'DRAFT' AND version = #{version}
+    </update>
+
+    <update id="withdraw">
+        UPDATE xsy_trace_inspection_report
+        SET status = 'WITHDRAWN', withdrawn_by = #{updatedBy}, withdrawn_at = CURRENT_TIMESTAMP,
+            updated_by = #{updatedBy}, updated_at = CURRENT_TIMESTAMP, version = version + 1,
+            operation_history = operation_history || jsonb_build_array(jsonb_build_object(
+                'action', 'WITHDRAW', 'operator', CAST(#{updatedBy} AS text), 'at', CURRENT_TIMESTAMP))
+        WHERE id = #{id} AND status = 'PUBLISHED' AND version = #{version}
+    </update>
+</mapper>

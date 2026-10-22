@@ -46,4 +46,8 @@
         WHERE l.id = #{lotId}
     </select>
 
+    <select id="countVisibleInspectionReport" resultType="int">
+        SELECT count(*) FROM xsy_trace_inspection_report r WHERE r.id = #{reportId}
+        <include refid="com.xsy.scm.trace.dao.TraceInspectionReportDao.scope"/>
+    </select>
 </mapper>

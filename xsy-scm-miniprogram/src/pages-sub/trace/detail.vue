@@ -11,7 +11,7 @@
 
     <template v-else>
       <view class="trace__banner" :class="voided ? 'trace__banner--void' : 'trace__banner--active'">
-        {{ voided ? '该码已作废，请勿食用' : '溯源信息已核验' }}
+        {{ voided ? '该码已作废，请勿食用' : '溯源信息查询' }}
       </view>
 
       <view class="trace__card">
@@ -53,8 +53,32 @@
         >
       </view>
 
-      <view v-if="attachments.length" class="trace__card">
-        <text class="trace__section">资质与检测报告</text>
+      <view class="trace__card">
+        <text class="trace__section">批次检测报告</text>
+        <text v-if="!reports.length">{{ voided ? '包装码已作废，不提供检测报告' : '暂无检测报告' }}</text>
+        <view v-for="report in reports" :key="report.reportNo" class="trace__report">
+          <text class="trace__section">{{ report.reportName }}</text>
+          <text class="trace__report-line trace__mono">{{ report.reportNo }}</text>
+          <text class="trace__report-result"
+            :class="'trace__report-result--' + inspectionPublicResult(report).tone">
+            {{ inspectionPublicResult(report).label }}
+          </text>
+          <text class="trace__report-line">检测日期：{{ report.inspectionDate }}</text>
+          <text class="trace__report-line">检测机构：{{ report.inspectionOrg }}</text>
+          <text class="trace__report-line">报告状态：{{ inspectionStatusLabel(report.status) }}{{ report.expired ? ' · 已过期' : '' }}</text>
+          <text v-if="report.expiresAt" class="trace__report-line">有效期至：{{ formatBeijingTime(report.expiresAt) }}（北京时间）</text>
+          <text v-if="report.expired" class="trace__report-line">报告已过期，不作为当前检测合格依据。</text>
+          <text v-if="report.expired" class="trace__report-line">原报告结论：{{ inspectionConclusionLabel(report.conclusion) }}</text>
+          <view v-for="file in report.attachments" :key="file.fileKey" class="trace__file"
+            hover-class="xsy-press--row--active" @click="openFile(file)">
+            <text class="trace__file-name">{{ file.fileName }}</text>
+            <uni-icons type="download" :size="16" :color="COLOR_PRIMARY" />
+          </view>
+        </view>
+      </view>
+
+      <view v-if="attachments.length && !voided" class="trace__card">
+        <text class="trace__section">长期资质证明</text>
         <view
           v-for="file in attachments"
           :key="file.fileKey"
@@ -74,9 +98,10 @@
 
 <script setup>
   import { computed, ref } from 'vue';
-  import { onLoad } from '@dcloudio/uni-app';
+  import { onLoad, onShow, onUnload } from '@dcloudio/uni-app';
   import { tracePublicApi } from '@/api/trace/trace-public-api';
   import { useMallTheme } from '@/composables/use-mall-theme';
+  import { inspectionStatusLabel, inspectionConclusionLabel, inspectionPublicResult } from '@/constants/trace-const';
 
   const COLOR_PRIMARY = '#12833c';
 
@@ -86,9 +111,11 @@
   const loading = ref(false);
   const error = ref('');
   const view = ref(null);
+  let requestId = 0;
 
   const voided = computed(() => view.value?.status === 'VOID');
   const attachments = computed(() => view.value?.attachments || []);
+  const reports = computed(() => voided.value ? [] : view.value?.inspectionReports || []);
 
   const PACKAGE_LABEL = { BAG: '袋', BOX: '箱', CRATE: '筐' };
   const packageLabel = computed(() => PACKAGE_LABEL[view.value?.packageType] || '—');
@@ -111,7 +138,14 @@
     return value ? value.replace('T', ' ').slice(0, 16) : '—';
   });
 
+  function formatBeijingTime(value) {
+    const time = Date.parse(value);
+    if (!Number.isFinite(time)) return '—';
+    return new Date(time + 8 * 60 * 60 * 1000).toISOString().slice(0, 16).replace('T', ' ');
+  }
+
   async function load() {
+    const current = ++requestId;
     if (!token.value) {
       error.value = '链接缺少溯源码，请重新扫码';
       return;
@@ -119,21 +153,19 @@
     loading.value = true;
     error.value = '';
     try {
-      view.value = await tracePublicApi.detail(token.value);
+      const result = await tracePublicApi.detail(token.value);
+      if (current === requestId) view.value = result;
     } catch (e) {
-      view.value = null;
-      error.value = e?.msg || e?.message || '加载失败，请重试';
+      if (current === requestId) {
+        view.value = null;
+        error.value = e?.msg || e?.message || '加载失败，请重试';
+      }
     } finally {
-      loading.value = false;
+      if (current === requestId) loading.value = false;
     }
   }
 
-  /**
-   * 打开附件。
-   *
-   * PDF 在微信内可以直接预览；Word 在 iOS 上常常打不开，失败时把链接复制出去，
-   * 而不是只弹一句「打开失败」让人无从下手。
-   */
+  // 每次从受控下载接口读取，避免复用撤回前的远程文件地址。
   function openFile(file) {
     const url = tracePublicApi.fileUrl(token.value, file.fileKey);
     uni.showLoading({ title: '正在打开' });
@@ -141,32 +173,39 @@
       url,
       success: (res) => {
         if (res.statusCode !== 200) {
-          fallbackCopy(url);
+          fileUnavailable();
+          return;
+        }
+        if (/\.(jpg|jpeg|png|webp)$/i.test(file.fileName || '')) {
+          uni.previewImage({
+            urls: [res.tempFilePath],
+            fail: fileUnavailable,
+            complete: () => uni.hideLoading(),
+          });
           return;
         }
         uni.openDocument({
           filePath: res.tempFilePath,
           showMenu: true,
-          fail: () => fallbackCopy(url),
+          fail: fileUnavailable,
           complete: () => uni.hideLoading(),
         });
       },
-      fail: () => fallbackCopy(url),
+      fail: fileUnavailable,
     });
   }
 
-  function fallbackCopy(url) {
+  function fileUnavailable() {
     uni.hideLoading();
-    uni.setClipboardData({
-      data: url,
-      success: () => uni.showToast({ title: '链接已复制，请在浏览器打开', icon: 'none' }),
-    });
+    uni.showToast({ title: '文件暂时无法查看，请刷新报告后重试', icon: 'none' });
+    load();
   }
 
   onLoad((options) => {
     token.value = options?.token || '';
-    load();
   });
+  onShow(() => { if (token.value) load(); });
+  onUnload(() => { requestId++; });
 </script>
 
 <style lang="scss" scoped>
@@ -197,8 +236,8 @@
   }
 
   .trace__banner--active {
-    color: $color-success;
-    background: #eaf7ef;
+    color: $color-text-secondary;
+    background: $color-bg-card;
   }
 
   .trace__banner--void {
@@ -268,6 +307,13 @@
     margin-bottom: $space-2;
     font-weight: $font-weight-bold;
   }
+
+  .trace__report { padding: $space-3 0; border-top: 1px solid $color-border; overflow-wrap: anywhere; }
+  .trace__report-line { display: block; margin-top: $space-2; font-size: $font-size-sm; }
+  .trace__report-result { display: block; margin-top: $space-2; font-weight: $font-weight-bold; }
+  .trace__report-result--success { color: $color-success; }
+  .trace__report-result--error { color: $color-danger; }
+  .trace__report-result--warning { color: $color-warning; }
 
   .trace__file {
     display: flex;

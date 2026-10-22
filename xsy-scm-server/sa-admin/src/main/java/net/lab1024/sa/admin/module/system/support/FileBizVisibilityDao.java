@@ -1,5 +1,6 @@
 package net.lab1024.sa.admin.module.system.support;
 
+import com.xsy.scm.common.scope.ScmValueScope;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -38,4 +39,6 @@ public interface FileBizVisibilityDao {
      * <p>批次没有软删除列：批次事实只追加，回收整批要走库存流水而不是删行。
      */
     int countTraceLot(@Param("lotId") Long lotId);
+
+    int countVisibleInspectionReport(@Param("reportId") Long reportId, @Param("scope") ScmValueScope scope);
 }

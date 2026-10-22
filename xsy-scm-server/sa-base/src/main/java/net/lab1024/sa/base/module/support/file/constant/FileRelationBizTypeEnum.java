@@ -30,7 +30,9 @@ public enum FileRelationBizTypeEnum {
     PRODUCT_QUALIFICATION("商品资质"),
 
     /** SCM 批次检测报告，biz_id = xsy_trace_lot.id */
-    LOT_INSPECTION("批次检测报告");
+    LOT_INSPECTION("批次检测报告"),
+
+    TRACE_INSPECTION_REPORT("检测报告");
 
     private final String desc;
 

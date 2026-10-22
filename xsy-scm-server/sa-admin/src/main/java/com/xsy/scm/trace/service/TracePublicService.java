@@ -1,20 +1,22 @@
 package com.xsy.scm.trace.service;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.trace.constant.ScmTraceUnitStatusEnum;
 import com.xsy.scm.trace.constant.TraceErrorCode;
 import com.xsy.scm.trace.dao.TracePublicQueryDao;
 import com.xsy.scm.trace.dao.TraceUnitDao;
+import com.xsy.scm.trace.domain.vo.TraceAttachmentVO;
 import com.xsy.scm.trace.domain.vo.TracePublicVO;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import com.xsy.scm.trace.support.TracePublicRateLimiter;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
-import net.lab1024.sa.base.module.support.file.constant.FileRelationBizTypeEnum;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileDownloadVO;
-import net.lab1024.sa.base.module.support.file.service.IFileStorageService;
+import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.springframework.stereotype.Service;
 
 /**
@@ -43,7 +45,9 @@ public class TracePublicService {
 
     private final TracePublicRateLimiter tracePublicRateLimiter;
 
-    private final IFileStorageService fileStorageService;
+    private final FileService fileService;
+
+    private final TracePublicInspectionService tracePublicInspectionService;
 
     public TracePublicVO query(String publicToken, String clientIp, String userAgent) {
         String token = normalizeToken(publicToken);
@@ -79,8 +83,11 @@ public class TracePublicService {
             result.setCustomerName(maskName(binding.getCustomerName()));
             result.setOrderNo(maskOrderNo(binding.getOrderNo()));
         }
-        result.setAttachments(
-                traceAttachmentService.publicAttachments(unit.getLotId(), lot == null ? null : lot.getSpuId()));
+        result.setAttachments(ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())
+                ? traceAttachmentService.publicAttachments(unit.getLotId(), lot == null ? null : lot.getSpuId())
+                : List.of());
+        result.setInspectionReports(ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())
+                ? tracePublicInspectionService.reports(unit.getLotId()) : List.of());
         audit(unit, token, clientIp, userAgent);
         return result;
     }
@@ -98,18 +105,20 @@ public class TracePublicService {
         if (unit == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_PUBLIC_TOKEN_NOT_FOUND);
         }
-        TraceUnitVO.Lot lot = traceUnitDao.findLot(unit.getLotId());
-        Set<String> allowed = new HashSet<>(
-                traceAttachmentService.attachmentKeysOf(FileRelationBizTypeEnum.LOT_INSPECTION, unit.getLotId()));
-        if (lot != null && lot.getSpuId() != null) {
-            allowed.addAll(traceAttachmentService.attachmentKeysOf(FileRelationBizTypeEnum.PRODUCT_QUALIFICATION,
-                    lot.getSpuId()));
+        if (!ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_PUBLIC_FILE_NOT_ALLOWED);
         }
+        TraceUnitVO.Lot lot = traceUnitDao.findLot(unit.getLotId());
+        Set<String> allowed = new HashSet<>(traceAttachmentService
+                .publicAttachments(unit.getLotId(), lot == null ? null : lot.getSpuId()).stream()
+                .map(TraceAttachmentVO::getFileKey).toList());
+        tracePublicInspectionService.reports(unit.getLotId()).forEach(report ->
+                report.getAttachments().forEach(file -> allowed.add(file.getFileKey())));
         String key = fileKey == null ? "" : fileKey.trim();
         if (key.isEmpty() || !allowed.contains(key)) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_PUBLIC_FILE_NOT_ALLOWED);
         }
-        ResponseDTO<FileDownloadVO> download = fileStorageService.download(key);
+        ResponseDTO<FileDownloadVO> download = fileService.getDownloadFile(key, null);
         if (!download.getOk() || download.getData() == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_PUBLIC_FILE_NOT_ALLOWED);
         }

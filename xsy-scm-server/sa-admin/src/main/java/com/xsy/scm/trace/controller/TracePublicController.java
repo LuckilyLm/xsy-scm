@@ -35,13 +35,16 @@ public class TracePublicController {
     private final TracePublicService tracePublicService;
 
     @GetMapping("/{publicToken}")
-    public ResponseDTO<TracePublicVO> query(@PathVariable String publicToken, HttpServletRequest request) {
+    public ResponseDTO<TracePublicVO> query(@PathVariable String publicToken, HttpServletRequest request,
+            HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-store");
         return ResponseDTO.ok(tracePublicService.query(publicToken, clientIp(request), userAgent(request)));
     }
 
     @GetMapping("/{publicToken}/files")
     public void file(@PathVariable String publicToken, @RequestParam String fileKey, HttpServletRequest request,
             HttpServletResponse response) throws IOException {
+        response.setHeader("Cache-Control", "no-store");
         FileDownloadVO file = tracePublicService.file(publicToken, fileKey, clientIp(request));
         SmartResponseUtil.setDownloadFileHeader(response, file.getMetadata().getFileName(),
                 file.getMetadata().getFileSize());

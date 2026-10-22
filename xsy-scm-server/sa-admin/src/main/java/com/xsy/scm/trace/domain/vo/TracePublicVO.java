@@ -56,4 +56,6 @@ public class TracePublicVO {
     private String orderNo;
 
     private List<TraceAttachmentVO> attachments;
+
+    private List<TracePublicInspectionReportVO> inspectionReports;
 }

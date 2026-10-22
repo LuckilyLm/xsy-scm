@@ -2,6 +2,7 @@ import scmOrder from './business/scm/order-const';
 import * as scmPricing from './business/scm/pricing-const';
 import scmPurchase from './business/scm/purchase-const';
 import scmInventory from './business/scm/inventory-const';
+import scmTrace from './business/scm/trace-const';
 /*
  * 所有常量入口
  *
@@ -49,6 +50,7 @@ const constantsInfo = {
     ...scmOrder,
     ...scmPurchase,
     ...scmInventory,
+    ...scmTrace,
     ...scmReport,
 };
 

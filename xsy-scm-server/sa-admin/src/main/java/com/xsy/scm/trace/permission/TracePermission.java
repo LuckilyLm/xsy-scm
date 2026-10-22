@@ -29,4 +29,6 @@ public final class TracePermission {
 
     /** 商品资质与批次检测报告的增删改；查看分别沿用商品查看权与包装码查看权。 */
     public static final String FILE_MANAGE = "scm:trace:file:manage";
+
+    public static final String INSPECTION_MANAGE = "scm:trace:inspection:manage";
 }

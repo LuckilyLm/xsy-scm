@@ -102,7 +102,14 @@ public enum TraceErrorCode implements ScmErrorCode {
     TRACE_PUBLIC_FILE_NOT_ALLOWED(41535, "该文件不属于这个溯源码"),
 
     /** 41536：已集合完成的筐不再补发码，否则分拣结果与包装身份会各说一套。 */
-    TRACE_WEIGHING_EVENT_COMPLETED(41536, "该称重筐已完成集合确认，不能再发码");
+    TRACE_WEIGHING_EVENT_COMPLETED(41536, "该称重筐已完成集合确认，不能再发码"),
+
+    TRACE_REPORT_NOT_FOUND(41537, "检测报告不存在或无权访问"),
+    TRACE_REPORT_STATE_INVALID(41538, "报告已变更，请刷新；只有草稿可以编辑和发布，已发布报告可以撤回"),
+    TRACE_REPORT_DATE_INVALID(41539, "检测日期不能晚于今天，有效期不能早于检测日期；过期报告不能发布"),
+    TRACE_REPORT_FILE_INVALID(41540, "请上传有权访问的私有PDF或图片，单个不超过20MB；发布时至少需要一个附件"),
+    TRACE_REPORT_NO_EXISTS(41541, "报告编号已存在，请刷新列表或核对编号"),
+    TRACE_REPORT_LOT_IMMUTABLE(41542, "报告所属批次不能修改，请在正确批次下新建报告");
 
     private final int code;
 

@@ -1,6 +1,7 @@
 package net.lab1024.sa.admin.module.system.support;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.xsy.scm.common.scope.ScmDataScopeService;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
@@ -203,12 +204,14 @@ class FileAccessGuardTest {
     @Test
     void administratorNeedsNoRoleOrPermissionLookup() {
         employee.setAdministratorFlag(true);
-        assertThat(new AdminFileAccessIdentity(mock(FileBizVisibilityDao.class)).canReadAllFiles(employee)).isTrue();
+        assertThat(new AdminFileAccessIdentity(mock(FileBizVisibilityDao.class), mock(ScmDataScopeService.class))
+                .canReadAllFiles(employee)).isTrue();
     }
 
     @Test
     void nonAdministratorUsesExistingFileQueryPermission() {
-        AdminFileAccessIdentity identity = new AdminFileAccessIdentity(mock(FileBizVisibilityDao.class));
+        AdminFileAccessIdentity identity = new AdminFileAccessIdentity(mock(FileBizVisibilityDao.class),
+                mock(ScmDataScopeService.class));
         try (var stp = mockStatic(StpUtil.class)) {
             stp.when(() -> StpUtil.hasPermission("support:file:query")).thenReturn(true);
             assertThat(identity.canReadAllFiles(employee)).isTrue();
@@ -223,7 +226,7 @@ class FileAccessGuardTest {
     @Test
     void bizPolicyMapsEachTypeToItsOwnDomainRule() {
         FileBizVisibilityDao visibility = mock(FileBizVisibilityDao.class);
-        AdminFileAccessIdentity policy = new AdminFileAccessIdentity(visibility);
+        AdminFileAccessIdentity policy = new AdminFileAccessIdentity(visibility, mock(ScmDataScopeService.class));
         try (var stp = mockStatic(StpUtil.class)) {
             stp.when(() -> StpUtil.hasPermission("scm:product:query")).thenReturn(true);
             when(visibility.countLiveSpu(5L)).thenReturn(1);

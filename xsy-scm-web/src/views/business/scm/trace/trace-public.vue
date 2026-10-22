@@ -10,7 +10,7 @@
 
         <template v-if="view">
           <div class="trace-page__status" :class="voided ? 'trace-page__status--void' : 'trace-page__status--active'">
-            {{ voided ? '该码已作废，请勿食用' : '溯源信息已核验' }}
+            {{ voided ? '该码已作废，请勿食用' : '溯源信息查询' }}
           </div>
 
           <h1 class="trace-page__title">{{ view.productName || '未知商品' }}</h1>
@@ -31,8 +31,26 @@
             <a-descriptions-item label="订单号">{{ view.orderNo || '—' }}</a-descriptions-item>
           </a-descriptions>
 
-          <div v-if="attachments.length" class="trace-page__files">
-            <div class="trace-page__files-title">资质与检测报告</div>
+          <section class="trace-page__reports" aria-label="检测报告">
+            <h2 class="trace-page__files-title">批次检测报告</h2>
+            <p v-if="!reports.length">{{ voided ? '包装码已作废，不提供检测报告' : '暂无检测报告' }}</p>
+            <article v-for="report in reports" :key="report.reportNo" class="trace-page__report">
+              <strong>{{ report.reportName }}</strong>
+              <p class="trace-page__code">{{ report.reportNo }}</p>
+              <ScmStatusTag :tone="inspectionPublicResult(report).tone" :label="inspectionPublicResult(report).label"/>
+              <p>检测日期：{{ report.inspectionDate }}</p>
+              <p>检测机构：{{ report.inspectionOrg }}</p>
+              <p>报告状态：{{ inspectionStatusLabel(report.status) }}{{ report.expired ? ' · 已过期' : '' }}</p>
+              <p v-if="report.expiresAt">有效期至：{{ formatTime(report.expiresAt) }}（北京时间）</p>
+              <p v-if="report.expired">报告已过期，不作为当前检测合格依据。</p>
+              <p v-if="report.expired">原报告结论：{{ inspectionConclusionLabel(report.conclusion) }}</p>
+              <a v-for="file in report.attachments" :key="file.fileKey" class="trace-page__file"
+                  :href="fileUrl(file.fileKey)" target="_blank" rel="noopener">{{ file.fileName }}</a>
+            </article>
+          </section>
+
+          <div v-if="attachments.length && !voided" class="trace-page__files">
+            <div class="trace-page__files-title">长期资质证明</div>
             <a
                 v-for="file in attachments"
                 :key="file.fileKey"
@@ -54,13 +72,19 @@
 </template>
 
 <script setup lang="ts">
-  import {computed, onMounted, ref} from 'vue';
+  import {computed, onBeforeUnmount, onMounted, ref, watch} from 'vue';
   import {useRoute} from 'vue-router';
   import {tracePublicApi} from '/@/api/business/scm/trace-public-api';
   import type {TracePublicView} from '/@/api/business/scm/trace-public-api';
+  import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
+  import {inspectionPublicResult, inspectionStatusLabel, inspectionConclusionLabel} from '/@/constants/business/scm/trace-const';
+  import dayjs from 'dayjs';
+  import utc from 'dayjs/plugin/utc';
+  dayjs.extend(utc);
 
   const route = useRoute();
-  const token = String(route.params.token ?? '');
+  const token = computed(() => String(route.params.token ?? ''));
+  let requestId = 0;
 
   const loading = ref(false);
   const error = ref('');
@@ -68,6 +92,7 @@
 
   const voided = computed(() => view.value?.status === 'VOID');
   const attachments = computed(() => view.value?.attachments ?? []);
+  const reports = computed(() => voided.value ? [] : view.value?.inspectionReports ?? []);
 
   const packageLabel = computed(() => {
     switch (view.value?.packageType) {
@@ -97,34 +122,47 @@
   /** 时间只展示到分钟：扫码的人看的是「哪天到的货」，秒级精度没有意义还会挤满一行。 */
   function formatTime(value?: string): string {
     if (!value) return '—';
-    return value.replace('T', ' ').slice(0, 16);
+    return dayjs(value).utcOffset(8).format('YYYY-MM-DD HH:mm');
   }
 
   const receivedText = computed(() => formatTime(view.value?.receivedAt));
 
   function fileUrl(fileKey: string): string {
-    return tracePublicApi.fileUrl(token, fileKey);
+    return tracePublicApi.fileUrl(token.value, fileKey);
   }
 
   async function load() {
-    if (!token) {
+    const current = ++requestId;
+    if (!token.value) {
+      view.value = null;
+      loading.value = false;
       error.value = '链接缺少溯源码，请重新扫码';
       return;
     }
     loading.value = true;
     error.value = '';
     try {
-      const result = await tracePublicApi.detail(token);
-      view.value = result.data ?? null;
+      const result = await tracePublicApi.detail(token.value);
+      if (current === requestId) view.value = result.data ?? null;
     } catch (e) {
-      view.value = null;
-      error.value = e instanceof Error ? e.message : '加载失败，请重试';
+      if (current === requestId) {
+        view.value = null;
+        error.value = e instanceof Error ? e.message : '加载失败，请重试';
+      }
     } finally {
-      loading.value = false;
+      if (current === requestId) loading.value = false;
     }
   }
 
-  onMounted(load);
+  function refreshVisible() {
+    if (document.visibilityState === 'visible') void load();
+  }
+  watch(token, () => { view.value = null; void load(); }, {immediate: true});
+  onMounted(() => document.addEventListener('visibilitychange', refreshVisible));
+  onBeforeUnmount(() => {
+    requestId++;
+    document.removeEventListener('visibilitychange', refreshVisible);
+  });
 </script>
 
 <style scoped>
@@ -154,8 +192,8 @@
   }
 
   .trace-page__status--active {
-    color: #12833c;
-    background: #eaf7ef;
+    color: #344054;
+    background: #f2f4f7;
   }
 
   .trace-page__status--void {
@@ -187,7 +225,12 @@
   .trace-page__files-title {
     margin-bottom: 8px;
     font-weight: 600;
+    font-size: 14px;
   }
+
+  .trace-page__report { padding: 12px 0; border-bottom: 1px solid #e5e7eb; overflow-wrap: anywhere; }
+  .trace-page__report p { margin: 8px 0; }
+  .trace-page__reports { margin-bottom: 20px; }
 
   .trace-page__file {
     display: block;

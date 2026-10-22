@@ -5,6 +5,7 @@
  */
 import {getRequest} from '/@/lib/axios';
 import type {ScmResponse} from '/@/types/business/scm/customer';
+import type {InspectionConclusion, InspectionStatus} from '/@/constants/business/scm/trace-const';
 
 export interface TracePublicAttachment {
     fileKey: string;
@@ -36,6 +37,19 @@ export interface TracePublicView {
     /** 已脱敏。 */
     orderNo?: string;
     attachments?: TracePublicAttachment[];
+    inspectionReports?: TracePublicInspectionReport[];
+}
+
+export interface TracePublicInspectionReport {
+    reportNo: string;
+    reportName: string;
+    inspectionDate: string;
+    inspectionOrg: string;
+    conclusion: InspectionConclusion;
+    expiresAt?: string;
+    status: InspectionStatus;
+    expired: boolean;
+    attachments: TracePublicAttachment[];
 }
 
 const REQUEST_OPTIONS = {suppressGlobalErrorMessage: true};

@@ -193,12 +193,17 @@
           <a-button size="small" @click="copyLink(replay.unit.publicToken)">复制链接</a-button>
         </div>
 
+        <TraceInspectionPanel v-if="replayOpen"
+            :lot-id="replay.lot?.lotId"
+            :lot-no="replay.lot?.lotNo"
+            :can-manage="canManageInspection"/>
+
         <TraceAttachmentPanel
             scope="LOT"
             :target-id="replay.lot?.lotId"
-            title="批次检测报告"
-            :can-manage="canManageAttachment"
-            empty-text="该批次还没有上传检测报告"/>
+            title="历史批次附件（仅内部查看）"
+            :can-manage="false"
+            empty-text="暂无历史批次附件"/>
 
         <h4 class="replay-title">收货来源</h4>
         <a-descriptions v-if="replay.receipt" bordered size="small" :column="2">
@@ -262,9 +267,10 @@ import {quantityText} from './inventory-model';
 import {inventoryError} from './inventory-errors';
 import type {TraceUnit, TraceUnitQuery, TraceUnitReplay} from './inventory-types';
 import TraceAttachmentPanel from '/@/views/business/scm/trace/components/trace-attachment-panel.vue';
+import TraceInspectionPanel from '/@/views/business/scm/trace/components/trace-inspection-panel.vue';
 import {message} from 'ant-design-vue';
 
-const canManageAttachment = hasPermission('scm:trace:file:manage');
+const canManageInspection = hasPermission('scm:trace:inspection:manage');
 
 /** 净重只在称过之后才有值；没称过的码要显式说「待称重」，不能显示成 0。 */
 function weightText(unit: TraceUnit): string {

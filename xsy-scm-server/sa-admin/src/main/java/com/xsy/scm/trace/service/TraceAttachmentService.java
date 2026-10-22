@@ -103,10 +103,10 @@ public class TraceAttachmentService {
     }
 
     /**
-     * 不带数据范围的附件读取：供公开扫码页使用。
+     * 商品资质的公开读取；批次旧附件不作为已发布检测报告。
      *
      * <p>
-     * 公开页没有登录身份，仓库范围无从判定；能扫到这个码本身就是访问凭据。 这是唯一一处跳过 {@code ScmWarehouseScopeGuard} 的附件读路径，后台入口仍然必须过守卫。
+     * 公开页以包装令牌限定商品与批次；报告附件另由发布状态控制，后台入口仍校验仓库范围。
      */
     List<TraceAttachmentVO> publicAttachments(Long lotId, Long spuId) {
         List<TraceAttachmentVO> result = new ArrayList<>();
@@ -114,9 +114,21 @@ public class TraceAttachmentService {
             result.addAll(attachmentsOf(FileRelationBizTypeEnum.PRODUCT_QUALIFICATION, spuId,
                     TraceAttachmentCategoryEnum.QUALIFICATION));
         }
-        result.addAll(
-                attachmentsOf(FileRelationBizTypeEnum.LOT_INSPECTION, lotId, TraceAttachmentCategoryEnum.INSPECTION));
-        return result;
+        // 同一文件即便又被挂为商品资质，也不能绕过检测报告的发布控制。
+        List<String> keys = result.stream().map(TraceAttachmentVO::getFileKey).toList();
+        if (keys.isEmpty()) {
+            return result;
+        }
+        var reportKeys = fileRelationDao.listActiveByFileKeys(keys).stream()
+                .filter(relation -> FileRelationBizTypeEnum.TRACE_INSPECTION_REPORT.name().equals(relation.getBizType())
+                        || FileRelationBizTypeEnum.LOT_INSPECTION.name().equals(relation.getBizType()))
+                .map(relation -> relation.getFileKey()).collect(Collectors.toSet());
+        return result.stream().filter(file -> !reportKeys.contains(file.getFileKey())).toList();
+    }
+
+    List<TraceAttachmentVO> reportAttachments(Long reportId) {
+        return attachmentsOf(FileRelationBizTypeEnum.TRACE_INSPECTION_REPORT, reportId,
+                TraceAttachmentCategoryEnum.INSPECTION);
     }
 
     /** 某个业务对象当前引用的全部 fileKey：公开下载入口据此判断「这个文件是否属于这个码」。 */
