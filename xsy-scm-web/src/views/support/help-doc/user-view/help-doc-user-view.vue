@@ -173,6 +173,33 @@ function print() {
     padding: 0;
   }
 
+  /* 对照表：正文默认没有表格样式，不补的话单元格会挤成一团、也看不出行列关系 */
+  table {
+    width: 100%;
+    margin: 12px 0 20px;
+    border-collapse: collapse;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  th, td {
+    padding: 8px 12px;
+    border: 1px solid #e5e6eb;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    background: #f5f7fa;
+    color: #0D366F;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody tr:nth-child(even) td {
+    background: #fafbfc;
+  }
+
   p {
     padding: 0;
     margin-bottom: 16px;
