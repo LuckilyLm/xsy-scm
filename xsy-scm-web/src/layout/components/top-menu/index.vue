@@ -7,7 +7,7 @@
   <div class="header-main">
     <!-- 1、品牌区域 -->
     <div class="logo" @click="onGoHome">
-      <XsyBrandLockup/>
+      <XsyBrandLockup :dark="isDarkMenu"/>
     </div>
     <!-- 2、菜单区域 -->
     <RecursionMenu ref="menuRef"/>
@@ -78,6 +78,8 @@ watch(
       }
     }
 );
+
+const isDarkMenu = computed(() => useAppConfigStore().sideMenuTheme === 'dark');
 
 const color = computed(() => {
   let isLight = useAppConfigStore().$state.sideMenuTheme === 'light';

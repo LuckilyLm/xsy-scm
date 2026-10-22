@@ -9,7 +9,7 @@
       <XsyBrandLockup dark/>
     </div>
     <div class="min-logo" @click="onGoHome" v-if="collapsed">
-      <img class="logo-img" :src="logoMinImg"/>
+      <img class="logo-img" :src="logoMinImg" alt="鲜蔬园"/>
     </div>
     <!-- 次级菜单展示 -->
     <a-menu :selectedKeys="selectedKeys" theme="light" :openKeys="openKeys" mode="inline">

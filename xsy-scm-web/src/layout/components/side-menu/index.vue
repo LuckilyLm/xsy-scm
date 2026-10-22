@@ -7,10 +7,10 @@
 
   <!-- 1、顶部品牌区域 -->
   <div class="logo" @click="onGoHome" :style="sideMenuWidth" v-if="!collapsed">
-    <XsyBrandLockup/>
+    <XsyBrandLockup :dark="sidebarStore.sideMenuTheme === 'dark'"/>
   </div>
   <div class="min-logo" @click="onGoHome" v-if="collapsed">
-    <img class="logo-img" :src="logoMinImg"/>
+    <img class="logo-img" :src="logoMinImg" alt="鲜蔬园"/>
   </div>
 
   <!-- 2、下方菜单区域： 这里使用一个递归菜单解决 -->
@@ -89,8 +89,6 @@ const color = computed(() => {
     align-items: center;
 
     .logo-img {
-      // 收起态用方形图标版。64px 栏里放 28px 图标：既不像 26px 那样显得空，
-      // 也不至于顶满整栏；与展开态 30px 的高度观感基本齐平。
       width: 28px;
       height: 28px;
       object-fit: contain;

@@ -1,13 +1,12 @@
 <template>
-  <span class="xsy-brand-lockup" :class="{'xsy-brand-lockup--dark': dark}">
-    <img :src="dark ? darkMark : mark" alt="" aria-hidden="true"/>
-    <span>鲜蔬园</span>
+  <span class="xsy-brand-lockup">
+    <img :src="dark ? darkMark : mark" alt="鲜蔬园"/>
   </span>
 </template>
 
 <script setup lang="ts">
-import mark from '/@/assets/images/logo/xsy-logo-min.png';
-import darkMark from '/@/assets/images/logo/xsy-logo-min-white.png';
+import mark from '/@/assets/images/logo/xsy-logo.png';
+import darkMark from '/@/assets/images/logo/xsy-logo-white.png';
 
 defineProps<{dark?: boolean}>();
 </script>
@@ -16,23 +15,15 @@ defineProps<{dark?: boolean}>();
 .xsy-brand-lockup {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  min-width: 0;
   max-width: 100%;
-  color: #146b3a;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.2;
-  white-space: nowrap;
 }
 
 .xsy-brand-lockup img {
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: auto;
+  height: 32px;
+  max-width: 100%;
   object-fit: contain;
-}
-
-.xsy-brand-lockup--dark {
-  color: #fff;
 }
 </style>
