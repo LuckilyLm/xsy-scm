@@ -119,7 +119,6 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await selectBox(category).locator('input').fill(prefix + '三级');
   await page.locator(`.ant-select-dropdown:visible .ant-select-tree-title:text-is("${prefix}三级")`).click();
   // PCO-1 主档扩展：助记码由运营自维护，储存方式与标签一起进入同一个抽屉
-  await drawer.getByRole('button', { name: '商品属性与简介', exact: true }).click();
   await drawer.getByLabel('助记码', { exact: true }).fill(prefix + 'PG');
   await pick(page, drawer.getByLabel('储存方式', { exact: true }), '冷藏');
   await pick(page, drawer.getByLabel('第 1 个商品规格的单位', { exact: true }), 'kg');
@@ -127,7 +126,6 @@ test('live product pilot: categories, SKU delta, SPU images, search, deep link a
   await drawer.getByText('新增商品规格', { exact: true }).click();
   await pick(page, drawer.getByLabel('第 2 个商品规格的单位', { exact: true }), 'kg');
   await drawer.getByLabel('第 2 个商品规格名称', { exact: true }).fill('小果'); await drawer.getByLabel('第 2 个商品规格的条码', { exact: true }).fill(prefix + 'BAR');
-  await drawer.getByRole('button', { name: /^商品图片（/ }).click();
   await drawer.locator('input[type=file]').setInputFiles({ name: 'pilot.png', mimeType: 'image/png', buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aRZkAAAAASUVORK5CYII=', 'base64') });
   await expect(drawer.getByText('主图', { exact: true })).toBeVisible();
   const created = page.waitForResponse(r => r.url().endsWith('/scm/product/add'));
@@ -290,7 +288,7 @@ test('PCO-2 excel entry: import modal gates submit until a file is chosen', asyn
     mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     buffer: Buffer.from('UEsDBBQAAAAIAA==', 'base64')
   });
-  await expect(modal.getByText(/已选文件/)).toBeVisible();
+  await expect(modal.getByText(prefix + '.xlsx')).toBeVisible();
   await expect(start).toBeEnabled();
   await button(modal, '下载模板').click();
   // 导入弹窗的页脚只有「下载模板 / 选择文件 / 开始导入」，关闭走弹窗自身的 Close 控件
@@ -389,13 +387,12 @@ test('Wave 1 UPDATE import: real page round trip preserves blank columns and rej
     await authenticate(page); await page.goto('/#/product/product-list');
     await button(page, '导入').click();
     const modal = page.locator('.ant-modal:visible');
-    await modal.locator('.ant-radio-button-wrapper', { hasText: '更新既存商品' }).click();
-    // 提示语必须把「留空=不改写」讲清楚，否则更新语义只存在于后端
-    await expect(modal.getByText('空白列保持原值')).toBeVisible();
+    // 导入模式由模板自身决定，弹窗不再提供模式切换；提示语必须把「留空=不改写」讲清楚
+    await expect(modal.getByText('空白列不会覆盖原值')).toBeVisible();
     let responded = page.waitForResponse(r => r.url().includes('/scm/product/import'), { timeout: 30000 });
     await modal.locator('input[type=file]').setInputFiles(updatePath);
-    await expect(modal.getByText(/已选文件/)).toBeVisible();
-    await button(modal, '开始更新').click();
+    await expect(modal.getByText('update.xlsx')).toBeVisible();
+    await button(modal, '开始导入').click();
     const vo = await (await responded).json();
     expect(vo.code, vo.msg).toBe(0);
     expect(vo.data.mode).toBe('UPDATE');
@@ -412,10 +409,9 @@ test('Wave 1 UPDATE import: real page round trip preserves blank columns and rej
     await modal.getByRole('button', { name: 'Close' }).click();
     await expect(modal).not.toBeVisible();
     await button(page, '导入').click();
-    await modal.locator('.ant-radio-button-wrapper', { hasText: '更新既存商品' }).click();
     responded = page.waitForResponse(r => r.url().includes('/scm/product/import'), { timeout: 30000 });
     await modal.locator('input[type=file]').setInputFiles(updatePath);
-    await button(modal, '开始更新').click();
+    await button(modal, '开始导入').click();
     const stale = await (await responded).json();
     expect(stale.code).toBe(0);
     expect(stale.data.updatedProducts, '过期版本仍被写入了').toBe(0);
@@ -486,12 +482,11 @@ test('Wave 1 CREATE import: real page round trip writes a multi-SKU product and 
     await authenticate(page); await page.goto('/#/product/product-list');
     await button(page, '导入').click();
     const modal = page.locator('.ant-modal:visible');
-    // 默认即新增模式，且提示语必须把「整批事务」讲清楚，不能只存在于后端
-    // 整批事务的长句提示已随文案治理清退，语义由失败后的「本次没有任何商品写入」覆盖
-    await expect(modal.getByText('新增商品', { exact: true })).toBeVisible();
+    // 导入入口只有一种模式：模板决定新增还是更新，响应里的 mode 断言继续校验实际走的是 CREATE
+    await expect(modal.getByText('导入商品', { exact: true })).toBeVisible();
     let responded = page.waitForResponse(r => r.url().includes('/scm/product/import'), { timeout: 30000 });
     await modal.locator('input[type=file]').setInputFiles(goodPath);
-    await expect(modal.getByText(/已选文件/)).toBeVisible();
+    await expect(modal.getByText('create.xlsx')).toBeVisible();
     await button(modal, '开始导入').click();
     const vo = await (await responded).json();
     expect(vo.code, vo.msg).toBe(0);
