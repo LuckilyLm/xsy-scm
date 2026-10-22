@@ -13,7 +13,7 @@
     <!-- 顶部头部信息 -->
     <a-layout-header class="layout-header">
       <a-row class="layout-header-title">
-        <img class="logo-img" :src="logoImg" alt="鲜蔬园"/>
+        <img class="logo-img" :src="logoImg" alt=""/>
         <div class="title">{{ websiteName }}</div>
         <div class="title">帮助文档</div>
         <a-col class="avatar">
@@ -249,6 +249,7 @@ function buildHelpDocCatalogTree(data, parentId, helpDocMap) {
     margin-bottom: 10px;
 
     .logo-img {
+      // 方形图标版（白色剪影），配合右侧品牌文字使用
       width: 28px;
       height: 28px;
       object-fit: contain;
