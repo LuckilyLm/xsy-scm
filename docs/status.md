@@ -1,6 +1,21 @@
 # 项目状态
 
-最后更新：2026-10-21。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
+最后更新：2026-10-22。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
+
+## 一物一码溯源闭环：公开扫码、附件、称重打通（2026-10-22，编译与契约测试通过，未做环境验收）
+
+按 [MVP 收敛计划](next-development-plan.md) 中「扫码溯源」这一条补齐，范围只到溯源闭环，未触碰库存账本与出库扣减。
+
+- **公开扫码**：新增 `TracePublicController`（`/scm/trace/public/{token}`），在 `MvcConfig` 排除员工登录拦截器；凭据是新增的 `public_token`（16 位随机，约 80 bit），不是 `unit_code`——后者由自增序列发号、相邻码可推算。返回字段裁剪为商品/批次/供应商/净重/脱敏客户与订单，并写 `xsy_trace_public_query` 审计、按 IP 与令牌限流。
+- **H5 扫码页**：`views/business/scm/trace/trace-public.vue`，路由 `/#/t/:token`，已加入免登录白名单；作废码显示「请勿食用」。
+- **附件**：商品资质挂 `PRODUCT_QUALIFICATION`（biz_id=spu_id）、批次检测报告挂 `LOT_INSPECTION`（biz_id=lot_id），复用 `t_file_relation` 并扩展 biz_type 白名单；查看沿用商品/包装码查看权，写入单独收在 `scm:trace:file:manage`（菜单 2123/2124）。后台面板 `trace-attachment-panel.vue` 同时用于商品详情与包装码回放抽屉。
+- **称重打通**：`xsy_trace_unit` 新增 `net_weight`/`weight_unit`/`weight_source`/`weighing_event_id`/`measured_at`；秤端新增 `GET /items/{taskItemId}/lots`、`POST /units/issue`、`GET /units/{unitCode}/label`。发码幂等靠 `weighing_event_id` 唯一索引。
+- **绑定时机**：`bind` 校验依赖实拣量，而实拣量要等集合完成才写入，所以称重筐只发码、不立即绑定；`ScaleItemCompletionService.complete` 在写完实拣量后调用 `bindWeighedUnits` 整批绑定。装不下的码留在未绑定，不中断分拣完成。
+- **二维码**：前端 `qrcode` 生成，`print-render.ts` 只对 `TRACE_UNIT` 插入二维码块，不改 `ScmPrintRenderVO` 契约；链接规则唯一来源 `TracePublicLinkBuilder`（配置 `scm.trace.public-base-url`，未配置时标签只印码）。
+- **小程序**：`pages-sub/trace/detail.vue` + 「我的 → 扫码溯源」入口（`uni.scanCode`）；附件走 `uni.downloadFile` + `uni.openDocument`，iOS 打不开 Word 时复制链接兜底。
+- 迁移：`V173`（重量/令牌/WEIGH 事件/2125 菜单）、`V174`（附件 biz_type/2123-2124 菜单）、`V175`（公开查询审计表）。
+- 验证：后端 `mvn compile` 通过、`spotless:check` 通过；前端 `vue-tsc` 对改动文件无新增错误、`npm test` 480 项中 3 项失败——其中 2 项（订单操作枚举集合、商品列表自选列参数名）为既有失败，另 1 项（过程标记）已修。小程序 eslint 通过。
+- 未执行：数据库迁移实跑（需 `XSY_V2_DB_PASSWORD`）、Flyway IT、真实秤与标签打印机联调、小程序真机扫码、公网域名与 `downloadFile` 合法域名配置。
 
 ## 设计规范体检 + 图标去图片化（2026-10-22，H5 与模拟器验证通过）
 
