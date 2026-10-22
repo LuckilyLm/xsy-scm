@@ -79,6 +79,18 @@
       "pages": [
         { "path": "web", "style": { "navigationBarTitleText": "网页" } }
       ]
+    },
+    {
+      "root": "pages-sub/trace",
+      "pages": [
+        {
+          "path": "detail",
+          "style": {
+            "navigationBarTitleText": "溯源信息",
+            "enablePullDownRefresh": true
+          }
+        }
+      ]
     }
   ],
   "preloadRule": {

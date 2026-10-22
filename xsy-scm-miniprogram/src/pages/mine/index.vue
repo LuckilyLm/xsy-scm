@@ -36,6 +36,9 @@
       <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="goOrders"
         ><text>我的订单</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
       /></view>
+      <view class="mine__row" hover-class="xsy-press-row--active" :hover-stay-time="80" @click="scanTrace"
+        ><text>扫码溯源</text><uni-icons type="right" :size="14" :color="COLOR_TEXT_TERTIARY"
+      /></view>
     </view>
     <view v-if="userStore.isLogin" class="mine__logout" hover-class="xsy-press--active" :hover-stay-time="80" @click="logout">退出登录</view>
     <XsyTabBar :active="4" />
@@ -99,6 +102,29 @@
   function changePassword() {
     userStore.isLogin ? uni.navigateTo({ url: '/pages/account/password' }) : goLogin();
   }
+
+  /**
+   * 扫码溯源：扫标签上的二维码。
+   *
+   * 不要求登录——客户和监管都可能只是扫一下看看货从哪来。
+   * 标签里的地址是哈希路由，令牌在 `#/t/` 之后，所以先按 URL 解析再退回整串。
+   */
+  function scanTrace() {
+    uni.scanCode({
+      scanType: ['qrCode'],
+      success: ({ result }) => {
+        const matched = /#\/t\/([^/?#]+)/.exec(result || '');
+        const token = matched ? matched[1] : (result || '').trim();
+        if (!token) {
+          uni.showToast({ title: '未识别到溯源码', icon: 'none' });
+          return;
+        }
+        uni.navigateTo({ url: `/pages-sub/trace/detail?token=${encodeURIComponent(token)}` });
+      },
+      fail: () => uni.showToast({ title: '已取消扫码', icon: 'none' }),
+    });
+  }
+
   function logout() {
     uni.showModal({
       title: '退出登录',
