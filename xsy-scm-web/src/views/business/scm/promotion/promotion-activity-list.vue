@@ -109,7 +109,7 @@
       @ok="submit"
       @cancel="editOpen = false"
   >
-    <a-form ref="formRef" :model="{...form, ...rule}" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <section class="scm-form-section">
         <div class="scm-form-section__head">
           <h3 class="scm-form-section__title">活动基础</h3>
@@ -391,7 +391,6 @@ const emptyRule = (): RuleForm => ({
   giftQuantity: null,
 });
 
-const rule = reactive<RuleForm>(emptyRule());
 const formRef = ref();
 /**
  * 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。
@@ -412,7 +411,12 @@ const formRules = {
   validTo: [{required: true, message: '请选择失效时间', trigger: 'change'}],
 };
 
-const form = reactive<PromotionActivitySave>({
+/**
+ * 表单模型必须是稳定对象：原来写 `:model="{...form, ...rule}"`，每次渲染都会新建对象，
+ * 而 blur/change 触发的校验发生在重渲染之前，读到的是上一份快照——填了值仍提示未填写。
+ * 规则区字段因此并入同一个模型；提交时用 `RULE_FIELDS` 剔掉，服务端 DTO 不接受这些扁平字段。
+ */
+const form = reactive<PromotionActivitySave & RuleForm>({
   activityCode: '',
   activityName: '',
   activityType: 'FULL_REDUCE',
@@ -422,7 +426,11 @@ const form = reactive<PromotionActivitySave>({
   validTo: '',
   rule: {},
   remark: null,
+  ...emptyRule(),
 });
+/** 规则区字段与表单同属一个模型，保留 `rule.xxx` 这个读法以免模板与规则装配两处各写一套。 */
+const rule = form;
+const RULE_FIELDS = Object.keys(emptyRule());
 
 /** 规则的可读描述：受控键值 → 一句话，便于在列表上直接看出「这条活动减多少」。 */
 function ruleText(source?: PromotionRule): string {
@@ -553,7 +561,9 @@ async function submit() {
   }
   saving.value = true;
   try {
-    await promotionApi.activitySave({...form, rule: formToRule(rule)});
+    const payload: Record<string, unknown> = {...form};
+    for (const key of RULE_FIELDS) delete payload[key];
+    await promotionApi.activitySave({...payload, rule: formToRule(rule)} as PromotionActivitySave);
     message.success('活动已保存');
     editOpen.value = false;
     await queryData();

@@ -139,7 +139,7 @@
       @ok="submit"
       @cancel="editOpen = false"
   >
-    <a-form ref="formRef" :model="{...form, discountValue}" :rules="formRules" layout="vertical">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <section class="scm-form-section">
         <div class="scm-form-section__head">
           <h3 class="scm-form-section__title">券基础</h3>
@@ -170,10 +170,10 @@
             </a-form-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item :label="form.discountType === 'RATE' ? '折扣率' : '减免金额'" name="discountValue">
+            <a-form-item :label="form.discountType === 'RATE' ? '折扣率' : '减免金额'" name="discountValueInput">
               <a-input-number
                   v-if="form.discountType === 'RATE'"
-                  v-model:value="discountValue"
+                  v-model:value="form.discountValueInput"
                   :min="0.01"
                   :max="100"
                   :precision="2"
@@ -184,7 +184,7 @@
               />
               <a-input-number
                   v-else
-                  v-model:value="discountValue"
+                  v-model:value="form.discountValueInput"
                   :min="0"
                   :precision="4"
                   :step="1"
@@ -361,11 +361,17 @@ const columns: TableColumnsType<PromotionCoupon> = [
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
 
-const form = reactive<PromotionCouponSave>({
+/**
+ * 表单模型必须是稳定对象：原来写 `:model="{...form, discountValue}"`，每次渲染都会新建对象，
+ * 而 blur/change 触发的校验发生在重渲染之前，读到的是上一份快照——填了优惠值仍提示未填写。
+ * 优惠值输入框用数字，提交时才由 fixed4 / percentToRate 收口成后端要的定点字符串。
+ */
+const form = reactive<PromotionCouponSave & {discountValueInput: number | null}>({
   couponCode: '',
   couponName: '',
   discountType: 'AMOUNT',
   discountValue: '',
+  discountValueInput: null,
   minOrderAmount: '0',
   validFrom: '',
   validTo: '',
@@ -380,8 +386,8 @@ const formRules = {
   couponCode: [{required: true, message: '请填写券编码', trigger: 'blur'}],
   couponName: [{required: true, message: '请填写券名称', trigger: 'blur'}],
   discountType: [{required: true, message: '请选择优惠类型', trigger: 'change'}],
-  discountValue: [{
-    validator: () => (discountValue.value == null
+  discountValueInput: [{
+    validator: () => (form.discountValueInput == null
         ? Promise.reject(new Error(form.discountType === 'RATE' ? '请填写折扣率' : '请填写减免金额'))
         : Promise.resolve()),
     trigger: 'blur',
@@ -390,12 +396,7 @@ const formRules = {
   validTo: [{required: true, message: '请选择失效时间', trigger: 'change'}],
 };
 
-/**
- * 优惠值与门槛金额在表单里是 `number`（InputNumber 只接受数字），
- * 提交时才由 `fixed4` / `percentToRate` 收口回后端要的定点字符串。
- * 不做双向桥接，免得每次击键都往返一次格式化把控件自己的编辑态冲掉。
- */
-const discountValue = ref<number | null>(null);
+/** 门槛金额同样用数字控件，提交时才收口回定点字符串。 */
 const minOrderAmount = ref<number | null>(0);
 
 const issueForm = reactive<{ couponId?: Id; customerId?: Id; quantity: number }>({quantity: 1});
@@ -415,7 +416,7 @@ function discountText(record: PromotionCoupon): string {
 
 /** 比率与金额是两种量纲：切换类型后残留的数值会被按新类型解释（0.95 变成 0.95 元），必须清空。 */
 function onDiscountTypeChange() {
-  discountValue.value = null;
+  form.discountValueInput = null;
 }
 
 async function queryData() {
@@ -460,7 +461,7 @@ function openCreate() {
     remark: null,
     version: undefined,
   });
-  discountValue.value = null;
+  form.discountValueInput = null;
   minOrderAmount.value = 0;
   editOpen.value = true;
 }
@@ -481,7 +482,7 @@ function openEdit(record: PromotionCoupon) {
     remark: record.remark ?? null,
     version: record.version,
   });
-  discountValue.value = record.discountValue == null || record.discountValue === ''
+  form.discountValueInput = record.discountValue == null || record.discountValue === ''
       ? null
       : record.discountType === 'RATE'
           ? rateToPercent(record.discountValue)
@@ -492,8 +493,8 @@ function openEdit(record: PromotionCoupon) {
 
 async function submit() {
   form.discountValue = form.discountType === 'RATE'
-      ? percentToRate(discountValue.value) ?? ''
-      : fixed4(discountValue.value) ?? '';
+      ? percentToRate(form.discountValueInput) ?? ''
+      : fixed4(form.discountValueInput) ?? '';
   form.minOrderAmount = fixed4(minOrderAmount.value) ?? '0';
   // 必填项走表单校验：错误显示在对应输入框下方
   try {

@@ -137,14 +137,14 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
   });
 
   test('优惠券的优惠值与门槛金额都是 InputNumber，切换券类型要清空量纲', () => {
-    assert.match(coupon, /v-model:value="discountValue"/);
+    assert.match(coupon, /v-model:value="form\.discountValueInput"/);
     assert.match(coupon, /v-model:value="minOrderAmount"/);
     assert.match(coupon, /addon-after="%"/);
     assert.match(coupon, /addon-before="¥"/);
     // 比率与金额是两种量纲：切换类型后残留值会被按新类型解释
-    assert.match(coupon, /function onDiscountTypeChange\(\)[\s\S]{0,200}discountValue\.value = null/);
+    assert.match(coupon, /function onDiscountTypeChange\(\)[\s\S]{0,200}form\.discountValueInput = null/);
     // 提交收口
-    assert.match(coupon, /percentToRate\(discountValue\.value\) \?\? ''/);
+    assert.match(coupon, /percentToRate\(form\.discountValueInput\) \?\? ''/);
     assert.match(coupon, /fixed4\(minOrderAmount\.value\) \?\? '0'/);
     assert.doesNotMatch(coupon, /toFixed\(/, '定点转换应统一走 fixed4 / percentToRate');
     // 发券张数本来就是 InputNumber，别在重构里退回裸输入框

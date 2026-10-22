@@ -17,10 +17,10 @@
   >
     <a-alert v-if="error" :message="error" type="error" show-icon/>
     <FormNote title="含开始日，不含结束日" :lines="['只汇总区间内「已确认」的销售订单行']"/>
-    <a-form ref="formRef" :model="{...form, range}" :rules="formRules" layout="vertical" class="form">
+    <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>
         <a-range-picker
-            v-model:value="range"
+            v-model:value="form.range"
             show-time
             value-format="YYYY-MM-DD HH:mm:ss"
             style="width: 100%"
@@ -65,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-import {computed, ref, watch} from 'vue';
+import {computed, reactive, ref, watch} from 'vue';
 import {message} from 'ant-design-vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
@@ -78,13 +78,21 @@ import FormNote from '/@/components/framework/form-note/index.vue';
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: []; generated: []; viewBatch: [batchId: Id] }>();
 
-const range = ref<[string, string] | undefined>(undefined);
-const form = ref<{ warehouseId?: Id; supplierId?: Id; purchaserId?: Id }>({});
+/**
+ * 表单模型必须是稳定对象：原来写 `:model="{...form, range}"`，每次渲染都会新建对象，
+ * 而 change 触发的校验发生在重渲染之前，读到的是上一份快照——选了区间仍提示未选择。
+ */
+const form = reactive<{
+  warehouseId?: Id;
+  supplierId?: Id;
+  purchaserId?: Id;
+  range?: [string, string];
+}>({});
 const formRef = ref();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
   range: [{
-    validator: () => (range.value?.[0] && range.value?.[1]
+    validator: () => (form.range?.[0] && form.range?.[1]
         ? Promise.resolve()
         : Promise.reject(new Error('请选择统计时间段'))),
     trigger: 'change',
@@ -111,9 +119,9 @@ const warehouseOptions = computed(() =>
  * 本弹窗的 `purchaserId` 本就是可选（提交时 `?? null`），因此清空写回 `undefined`。
  */
 const purchaserValue = computed<number | undefined>({
-  get: () => (form.value.purchaserId == null ? undefined : Number(form.value.purchaserId)),
+  get: () => (form.purchaserId == null ? undefined : Number(form.purchaserId)),
   set: (value) => {
-    form.value.purchaserId = value;
+    form.purchaserId = value;
   },
 });
 
@@ -138,7 +146,7 @@ watch(
     () => props.open,
     (open) => {
       if (open) {
-        range.value = undefined;
+        form.range = undefined;
         result.value = undefined;
         batch.value = undefined;
         error.value = '';
@@ -155,18 +163,18 @@ async function generate() {
   } catch {
     return;
   }
-  if (!range.value || form.value.warehouseId === undefined) {
+  if (!form.range || form.warehouseId === undefined) {
     error.value = '请选择时间范围与仓库';
     return;
   }
   saving.value = true;
   try {
     const r = await purchaseDemandApi.createBatch({
-      startAt: range.value[0],
-      endAt: range.value[1],
-      warehouseId: form.value.warehouseId,
-      supplierId: form.value.supplierId ?? null,
-      purchaserId: form.value.purchaserId ?? null,
+      startAt: form.range[0],
+      endAt: form.range[1],
+      warehouseId: form.warehouseId,
+      supplierId: form.supplierId ?? null,
+      purchaserId: form.purchaserId ?? null,
     });
     batch.value = r.data;
     const generated = await purchaseDemandApi.generateBatch({batchId: r.data.batchId});

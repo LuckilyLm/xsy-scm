@@ -119,7 +119,7 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(pageCode.payment, /label="往来方"[\s\S]*query\.counterpartyName/);
     assert.match(pageCode.payment, /FinanceRefundPicker/);
     assert.match(code(API_PATH), /refundOptions:[\s\S]*\/payment\/refund-options/);
-    assert.match(pageCode.payment, /selectedRefund\.value\?\.customerId/);
+    assert.match(pageCode.payment, /addForm\.selectedRefund\?\.customerId/);
     assert.match(pageCode.payment, /selectedRefund\.refundAmount/);
     assert.match(code(`${VIEW_DIR}finance-refund-picker.vue`), /退款单号[\s\S]*客户[\s\S]*退款金额/);
   });

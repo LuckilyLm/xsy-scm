@@ -100,7 +100,11 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     assert.match(drawer, /:precision="4"/);
     assert.match(drawer, /:min="0"/);
     // 提交前必须收口回 4 位定点字符串：后端拒绝 JSON 数字，也拒绝空串
-    assert.match(drawer, /form\.unitPrice = form\.formulaType === 'FIXED' \? fixed4\(unitPrice\.value\) as string : null/);
+    assert.match(drawer, /form\.unitPrice = form\.formulaType === 'FIXED' \? fixed4\(form\.unitPriceInput\) as string : null/);
+    // 模型必须是稳定对象：`:model="{...form, ...}"` 每次渲染新建对象，change 校验读到的是上一份快照，
+    // 表现为「选了客户仍提示请选择客户」「填了单价仍提示请填写单价」
+    assert.doesNotMatch(drawer, /:model="\{\.\.\./);
+    assert.match(drawer, /:model="form"/);
     assert.match(drawer, /form\.formulaParameter = form\.formulaType === 'FIXED' \? null/);
     assert.match(drawer, /'COST_MARKUP_RATE'/);
     assert.match(drawer, /'MARKET_MARKUP_RATE'/);

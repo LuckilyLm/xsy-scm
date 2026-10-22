@@ -80,7 +80,7 @@
 
   <a-modal v-model:open="addOpen" title="登记付款" :confirm-loading="addSaving" @ok="submitAdd">
     <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
-    <a-form ref="addFormRef" :model="{...addForm, supplierId, selectedRefund}" :rules="addRules" layout="vertical">
+    <a-form ref="addFormRef" :model="addForm" :rules="addRules" layout="vertical">
       <a-form-item name="counterpartyType">
         <template #label>
           往来方类型
@@ -89,17 +89,17 @@
         <a-select v-model:value="addForm.counterpartyType" :options="partyTypeOptions" @change="onPartyTypeChange"/>
       </a-form-item>
       <a-form-item v-if="addForm.counterpartyType==='SUPPLIER'" label="供应商" name="supplierId">
-        <SupplierSelect v-model:value="supplierId" placeholder="搜索供应商名称或编码" width="100%"/>
+        <SupplierSelect v-model:value="addForm.supplierId" placeholder="搜索供应商名称或编码" width="100%"/>
       </a-form-item>
       <a-form-item v-if="addForm.counterpartyType==='CUSTOMER'" label="已完成退款来源" name="selectedRefund">
-        <a-input :value="selectedRefund ? `${selectedRefund.refundNo} · ${selectedRefund.customerName} · ${moneyText(selectedRefund.refundAmount)}` : ''"
+        <a-input :value="addForm.selectedRefund ? `${addForm.selectedRefund.refundNo} · ${addForm.selectedRefund.customerName} · ${moneyText(addForm.selectedRefund.refundAmount)}` : ''"
                  readonly placeholder="选择已完成退款">
           <template #addonAfter><a-button type="link" @click="refundPickerOpen=true">选择退款</a-button></template>
         </a-input>
       </a-form-item>
       <a-form-item label="付款金额" name="amount">
         <a-input-number v-if="addForm.counterpartyType==='SUPPLIER'" v-model:value="addForm.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width:100%"/>
-        <a-input v-else :value="selectedRefund ? moneyText(selectedRefund.refundAmount) : ''" disabled placeholder="选择退款来源后自动带入"/>
+        <a-input v-else :value="addForm.selectedRefund ? moneyText(addForm.selectedRefund.refundAmount) : ''" disabled placeholder="选择退款来源后自动带入"/>
       </a-form-item>
       <a-form-item label="付款方式" name="method"><a-select v-model:value="addForm.method" :options="addMethodOptions" placeholder="选择方式"/></a-form-item>
       <a-form-item label="付款时间" name="paidAt"><a-date-picker v-model:value="addForm.paidAt" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width:100%"/></a-form-item>
@@ -145,12 +145,20 @@ const {open: detailOpen, loading: detailLoading, data: detailData, error: detail
     (id) => financeApi.paymentDetail(id, {suppressGlobalErrorMessage: true})
 );
 const addOpen = ref(false), addSaving = ref(false), addError = ref(''), refundPickerOpen = ref(false);
-const selectedRefund = ref<FinanceRefundOption | null>(null);
-const supplierId = ref<ScmId>();
 const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinancePayment | null>(null);
-const addForm = reactive<Omit<FinancePaymentAddForm, 'counterpartyId'> & {counterpartyType: 'CUSTOMER' | 'SUPPLIER'}>({
+/**
+ * 表单模型必须是稳定对象：原来写 `:model="{...addForm, supplierId, selectedRefund}"`，
+ * 每次渲染都会新建对象，而 change 触发的校验发生在重渲染之前，读到的是上一份快照——
+ * 选了供应商仍提示「请选择供应商」。付款对象与退款来源因此并入同一个模型。
+ */
+const addForm = reactive<Omit<FinancePaymentAddForm, 'counterpartyId'> & {
+    counterpartyType: 'CUSTOMER' | 'SUPPLIER';
+    supplierId?: ScmId;
+    selectedRefund: FinanceRefundOption | null;
+}>({
     counterpartyType: 'SUPPLIER', amount: '', method: 'BANK_TRANSFER', paidAt: nowDateTimeValue(), externalReference: '',
     sourceType: undefined, sourceId: undefined, remark: '',
+    supplierId: undefined, selectedRefund: null,
 });
 const addFormRef = ref();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
@@ -158,7 +166,7 @@ const addRules = {
     counterpartyType: [{required: true, message: '请选择往来方类型', trigger: 'change'}],
     supplierId: [{required: true, message: '请选择供应商', trigger: 'change'}],
     selectedRefund: [{
-        validator: () => (selectedRefund.value ? Promise.resolve() : Promise.reject(new Error('请选择已完成退款'))),
+        validator: () => (addForm.selectedRefund ? Promise.resolve() : Promise.reject(new Error('请选择已完成退款'))),
         trigger: 'change',
     }],
     amount: [{
@@ -223,16 +231,16 @@ function openAdd() {
     addError.value = '';
     Object.assign(addForm, {counterpartyType: 'SUPPLIER', amount: '', method: 'BANK_TRANSFER', paidAt: nowDateTimeValue(),
         externalReference: '', sourceType: undefined, sourceId: undefined, remark: ''});
-    selectedRefund.value = null; supplierId.value = undefined; addOpen.value = true;
+    addForm.selectedRefund = null; addForm.supplierId = undefined; addOpen.value = true;
 }
 
 function onPartyTypeChange() {
     addForm.sourceType = undefined; addForm.sourceId = undefined; addForm.amount = '';
-    selectedRefund.value = null; supplierId.value = undefined;
+    addForm.selectedRefund = null; addForm.supplierId = undefined;
 }
 
 function selectRefund(option: FinanceRefundOption) {
-    selectedRefund.value = option;
+    addForm.selectedRefund = option;
     addForm.amount = option.refundAmount;
 }
 
@@ -243,19 +251,19 @@ async function submitAdd() {
     } catch {
         return;
     }
-    const counterpartyId = addForm.counterpartyType === 'CUSTOMER' ? selectedRefund.value?.customerId : supplierId.value;
+    const counterpartyId = addForm.counterpartyType === 'CUSTOMER' ? addForm.selectedRefund?.customerId : addForm.supplierId;
     if (counterpartyId === undefined) {
         addError.value = '请选择付款对象';
         return;
     }
-    const amount = addForm.counterpartyType === 'CUSTOMER' ? selectedRefund.value?.refundAmount : addForm.amount;
+    const amount = addForm.counterpartyType === 'CUSTOMER' ? addForm.selectedRefund?.refundAmount : addForm.amount;
     addSaving.value = true; addError.value = '';
     try {
         const payload: FinancePaymentAddForm = {
             counterpartyType: addForm.counterpartyType, counterpartyId, amount: amount!, method: addForm.method,
             paidAt: addForm.paidAt, externalReference: trimOptional(addForm.externalReference), remark: trimOptional(addForm.remark),
             sourceType: addForm.counterpartyType === 'CUSTOMER' ? 'ORDER_REFUND' : null,
-            sourceId: addForm.counterpartyType === 'CUSTOMER' ? selectedRefund.value?.refundId : null,
+            sourceId: addForm.counterpartyType === 'CUSTOMER' ? addForm.selectedRefund?.refundId : null,
         };
         await financeApi.paymentAdd(payload);
         message.success('付款已登记'); addOpen.value = false; await queryData();
