@@ -23,4 +23,10 @@ public final class TracePermission {
 
     /** 更正审批。 */
     public static final String CORRECTION_APPROVE = "scm:inventory:unit:correct:approve";
+
+    /** 包装码称重补录：只对没有净重的码生效。 */
+    public static final String UNIT_WEIGH = "scm:inventory:unit:weigh";
+
+    /** 商品资质与批次检测报告的增删改；查看分别沿用商品查看权与包装码查看权。 */
+    public static final String FILE_MANAGE = "scm:trace:file:manage";
 }

@@ -23,6 +23,8 @@ public final class TraceUnitVO {
     public static class Unit {
         private Long id;
         private String unitCode;
+        /** 标签二维码里的公开凭据；与 unitCode 解耦，泄露 unitCode 不等于泄露扫码入口。 */
+        private String publicToken;
         private Long lotId;
         private String lotNo;
         private String sourceLotNo;
@@ -30,6 +32,15 @@ public final class TraceUnitVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal quantity;
         private String unit;
+        /** 净重；未称重时为 null，页面展示「待称重」。 */
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal netWeight;
+        private String weightUnit;
+        /** SCALE 表示来自电子秤，MANUAL 表示后台补录。 */
+        private String weightSource;
+        private OffsetDateTime measuredAt;
+        /** 来源称重筐；为空表示这枚码没有经过电子秤。 */
+        private Long weighingEventId;
         private String status;
         private String remark;
         private OffsetDateTime createdAt;
@@ -42,7 +53,10 @@ public final class TraceUnitVO {
         private Long lotId;
         private String lotNo;
         private String sourceLotNo;
+        /** 批次所属商品：商品资质按这个 id 挂载。 */
+        private Long spuId;
         private Long skuId;
+        private String spuName;
         private String skuCode;
         private String skuName;
     }
@@ -96,6 +110,18 @@ public final class TraceUnitVO {
         private String customerName;
         private OffsetDateTime boundAt;
         private String boundBy;
+    }
+
+    /** 秤端选批次用的候选：本仓该商品仍有余额的批次。 */
+    @Data
+    public static class LotOption {
+        private Long lotId;
+        private String lotNo;
+        private String sourceLotNo;
+        /** 批次余额的记账单位，发码与称重换算都以它为准。 */
+        private String unit;
+        @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
+        private BigDecimal balance;
     }
 
     /** 一个包装码的完整回放：单元 → 批次 → 收货来源 → 分拣绑定 → 出库去向。 */

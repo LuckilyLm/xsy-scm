@@ -72,7 +72,37 @@ public enum TraceErrorCode implements ScmErrorCode {
     /** 已有正式出库事实，不再允许解绑重新绑定到其他订单。 */
     TRACE_CORRECTION_ALREADY_OUTBOUND(41525, "该包装码原绑定订单行已正式出库，不能解绑，请走退货或售后补偿"),
 
-    TRACE_UNIT_ALREADY_OUTBOUND(41526, "该分拣行已正式出库，不可再补绑包装码");
+    TRACE_UNIT_ALREADY_OUTBOUND(41526, "该分拣行已正式出库，不可再补绑包装码"),
+
+    /** 41527：附件只能挂到还活着的商品上，已删商品不接收新资质。 */
+    TRACE_PRODUCT_NOT_FOUND(41527, "商品不存在或已删除"),
+
+    /** 41528：附件标识必须在文件表里真实存在，否则会写出谁也读不到的关系行。 */
+    TRACE_ATTACHMENT_NOT_FOUND(41528, "附件不存在，请重新上传后再保存"),
+
+    /** 41529：净重只能补录一次，已有重量的码要走称重更正而不是覆盖。 */
+    TRACE_UNIT_WEIGHT_ALREADY_SET(41529, "该包装码已有净重，不能重复补录"),
+
+    /** 41530：称重事件不存在或不属于该分拣行。 */
+    TRACE_WEIGHING_EVENT_NOT_FOUND(41530, "称重记录不存在或不属于该分拣任务行"),
+
+    /** 41531：没有净重的码无法自动绑定，重量是「这一筐装了多少」的唯一依据。 */
+    TRACE_UNIT_WEIGHT_REQUIRED(41531, "该包装码没有净重，不能按称重结果绑定"),
+
+    /** 41532：净重与每包数量是两列，校验口径相同但提示必须分开，否则补录时看不懂在说什么。 */
+    TRACE_UNIT_WEIGHT_INVALID(41532, "净重必须为大于零的四位定点数"),
+
+    /** 41533：公开页不区分「码不存在」与「码已删除」，避免变成枚举探测的判据。 */
+    TRACE_PUBLIC_TOKEN_NOT_FOUND(41533, "未找到该溯源码，请确认标签完整"),
+
+    /** 41534：扫码页免登录，限流是唯一的滥用防线。 */
+    TRACE_PUBLIC_RATE_LIMITED(41534, "查询过于频繁，请稍后再试"),
+
+    /** 41535：只能下载挂在该码所属批次或商品上的文件，不能拿 token 当任意文件的通行证。 */
+    TRACE_PUBLIC_FILE_NOT_ALLOWED(41535, "该文件不属于这个溯源码"),
+
+    /** 41536：已集合完成的筐不再补发码，否则分拣结果与包装身份会各说一套。 */
+    TRACE_WEIGHING_EVENT_COMPLETED(41536, "该称重筐已完成集合确认，不能再发码");
 
     private final int code;
 

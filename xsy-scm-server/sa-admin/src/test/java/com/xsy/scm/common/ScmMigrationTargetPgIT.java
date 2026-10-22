@@ -123,6 +123,41 @@ class ScmMigrationTargetPgIT {
         assertThat(uniqueIndexes).isEqualTo(2);
     }
 
+    /**
+     * V173～V175：包装码称重与公开令牌、溯源附件类型、公开查询审计表。
+     *
+     * <p>
+     * 断言的是「列与约束真的建出来了」，而不是迁移文件存在：NOT NULL 与唯一索引缺失时，
+     * 服务端写入才会暴露问题，而那时已经在跑业务了。
+     */
+    @Test
+    void traceWeightTokenAndAttachmentSchemaExistsFromV173() {
+        int target = Integer.parseInt(targetVersion());
+        if (target < 175) {
+            return;
+        }
+        assertColumn("xsy_trace_unit", "public_token");
+        assertColumn("xsy_trace_unit", "net_weight");
+        assertColumn("xsy_trace_unit", "weighing_event_id");
+        assertColumn("xsy_trace_public_query", "public_token");
+        Integer tokenIndex = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_indexes WHERE schemaname = 'xsy_v2' "
+                        + "AND indexname IN ('uk_trace_unit_public_token', 'uk_trace_unit_weighing_event')",
+                Integer.class);
+        assertThat(tokenIndex).isEqualTo(2);
+        // 附件白名单：两个新类型必须真的落在 CHECK 里，否则关系行写不进去
+        String bizTypeCheck = jdbc.queryForObject(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+                        + "WHERE conname = 'ck_t_file_relation_biz_type'",
+                String.class);
+        assertThat(bizTypeCheck).contains("PRODUCT_QUALIFICATION").contains("LOT_INSPECTION");
+        // 称重事件类型：补录与设备称重都要能落库
+        String eventCheck = jdbc.queryForObject(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'ck_trace_event_type'",
+                String.class);
+        assertThat(eventCheck).contains("WEIGH");
+    }
+
     @Test
     void codPermissionDefaultsToDisabledFromV130() {
         int target = Integer.parseInt(targetVersion());

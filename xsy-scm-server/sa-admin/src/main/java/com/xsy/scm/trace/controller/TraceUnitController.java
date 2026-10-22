@@ -6,6 +6,7 @@ import com.xsy.scm.trace.domain.form.TraceUnitBindForm;
 import com.xsy.scm.trace.domain.form.TraceUnitIssueForm;
 import com.xsy.scm.trace.domain.form.TraceUnitQueryForm;
 import com.xsy.scm.trace.domain.form.TraceUnitVoidForm;
+import com.xsy.scm.trace.domain.form.TraceUnitWeightForm;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import com.xsy.scm.trace.permission.TracePermission;
 import com.xsy.scm.trace.service.TraceUnitService;
@@ -65,5 +66,12 @@ public class TraceUnitController {
     @SaCheckPermission(TracePermission.UNIT_QUERY)
     public ResponseDTO<TraceUnitVO.Replay> replay(@PathVariable String unitCode) {
         return ResponseDTO.ok(traceUnitService.replay(unitCode));
+    }
+
+    @PostMapping("/{unitCode}/weight")
+    @SaCheckPermission(TracePermission.UNIT_WEIGH)
+    public ResponseDTO<TraceUnitVO.Unit> weigh(@PathVariable String unitCode,
+            @RequestBody @Valid TraceUnitWeightForm form) {
+        return ResponseDTO.ok(traceUnitService.weigh(unitCode, form, ScmOperator.current()));
     }
 }

@@ -37,4 +37,14 @@
         </if>
     </update>
 
+    <!-- 按对象取附件：只读关系行，授权由读侧守卫再判一次 -->
+    <select id="listActiveByBiz" resultType="net.lab1024.sa.base.module.support.file.domain.entity.FileRelationEntity">
+        SELECT relation_id, file_key, biz_type, biz_id, deleted_flag, create_time, update_time
+        FROM t_file_relation
+        WHERE deleted_flag = FALSE
+          AND biz_type = #{bizType}
+          AND biz_id = #{bizId}
+        ORDER BY relation_id
+    </select>
+
 </mapper>

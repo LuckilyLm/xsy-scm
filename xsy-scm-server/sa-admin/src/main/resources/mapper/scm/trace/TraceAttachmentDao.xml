@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xsy.scm.trace.dao.TraceAttachmentDao">
+
+    <!-- 删除商品时不回收附件关系行，所以「能看商品资质」必须同时要求商品还活着 -->
+    <select id="countLiveSpu" resultType="int">
+        SELECT count(*)
+        FROM xsy_product_spu p
+        WHERE p.id = #{spuId}
+          AND p.deleted = FALSE
+    </select>
+
+    <select id="countLot" resultType="int">
+        SELECT count(*)
+        FROM xsy_trace_lot l
+        WHERE l.id = #{lotId}
+    </select>
+
+</mapper>

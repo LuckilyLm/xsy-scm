@@ -24,7 +24,13 @@ public enum FileRelationBizTypeEnum {
     FEEDBACK("反馈"),
 
     /** SCM 商品图片（含仍留在私有目录的存量行），biz_id = product_image.spu_id */
-    PRODUCT("商品");
+    PRODUCT("商品"),
+
+    /** SCM 商品资质（营业执照、生产许可、检测报告等），biz_id = xsy_product_spu.id */
+    PRODUCT_QUALIFICATION("商品资质"),
+
+    /** SCM 批次检测报告，biz_id = xsy_trace_lot.id */
+    LOT_INSPECTION("批次检测报告");
 
     private final String desc;
 

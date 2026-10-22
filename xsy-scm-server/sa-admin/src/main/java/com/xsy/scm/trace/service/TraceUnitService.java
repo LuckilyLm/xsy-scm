@@ -8,14 +8,20 @@ import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import com.xsy.scm.inventory.service.InventorySaleUnitConverter;
 import com.xsy.scm.sorting.constant.ScmSortingTaskStatusEnum;
 import com.xsy.scm.trace.constant.ScmTraceUnitStatusEnum;
+import com.xsy.scm.trace.constant.ScmTraceWeightSourceEnum;
 import com.xsy.scm.trace.constant.TraceErrorCode;
 import com.xsy.scm.trace.dao.TraceUnitDao;
+import com.xsy.scm.trace.domain.form.TraceScaleUnitIssueForm;
 import com.xsy.scm.trace.domain.form.TraceUnitBindForm;
 import com.xsy.scm.trace.domain.form.TraceUnitIssueForm;
 import com.xsy.scm.trace.domain.form.TraceUnitQueryForm;
 import com.xsy.scm.trace.domain.form.TraceUnitVoidForm;
+import com.xsy.scm.trace.domain.form.TraceUnitWeightForm;
+import com.xsy.scm.trace.domain.vo.TraceScaleUnitVO;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
+import com.xsy.scm.trace.support.TracePublicLinkBuilder;
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +47,11 @@ public class TraceUnitService {
 
     private static final char[] CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
 
+    /** 公开令牌长度：16 位 32 进制约 80 bit，标签上放得下，也扛得住按 token 枚举。 */
+    private static final int PUBLIC_TOKEN_LENGTH = 16;
+
+    private static final SecureRandom TOKEN_RANDOM = new SecureRandom();
+
     private final TraceUnitDao traceUnitDao;
 
     private final ScmBusinessNoDao businessNoDao;
@@ -48,6 +59,8 @@ public class TraceUnitService {
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     private final ScmDataScopeService dataScopeService;
+
+    private final TracePublicLinkBuilder tracePublicLinkBuilder;
 
     /**
      * 发码：同一批次一次发 N 个同规格包装，逐码追加一条发码事件。
@@ -81,6 +94,7 @@ public class TraceUnitService {
         for (int index = 0; index < form.getPackageCount(); index++) {
             TraceUnitVO.Unit row = new TraceUnitVO.Unit();
             row.setUnitCode(nextCode());
+            row.setPublicToken(nextPublicToken());
             row.setLotId(form.getLotId());
             row.setPackageType(form.getPackageType());
             row.setQuantity(perPackage);
@@ -181,6 +195,182 @@ public class TraceUnitService {
         }
         traceUnitDao.appendVoidEvent(unit.getId(), unit.getLotId(), OffsetDateTime.now(), operator,
                 form.getReason().trim());
+    }
+
+    /**
+     * 净重补录：只对还没有重量的码生效。
+     *
+     * <p>
+     * 与作废共用同一把包装码行锁：否则两个补录请求会各自读到「还没有重量」，后写入的一方静默覆盖前一方。 已经称过的码要走称重更正，不能在这里改数——原始结论一旦可覆盖，标签上印的净重就没有意义。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public TraceUnitVO.Unit weigh(String unitCode, TraceUnitWeightForm form, String operator) {
+        TraceUnitVO.Unit unit = traceUnitDao.lockByCode(unitCode.trim());
+        if (unit == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
+        }
+        warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(unit.getLotId()));
+        if (unit.getNetWeight() != null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_WEIGHT_ALREADY_SET);
+        }
+        BigDecimal weight = parseWeight(form.getNetWeight());
+        OffsetDateTime now = OffsetDateTime.now();
+        if (traceUnitDao.updateWeight(unit.getId(), weight, form.getWeightUnit().trim(),
+                ScmTraceWeightSourceEnum.MANUAL.name(), now) != 1) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_WEIGHT_ALREADY_SET);
+        }
+        traceUnitDao.appendWeighEvent(unit.getId(), unit.getLotId(), now, operator, form.getReason().trim());
+        return traceUnitDao.findById(unit.getId());
+    }
+
+    /**
+     * 秤端按筐发码：一筐一次称重对应一枚包装码。
+     *
+     * <p>
+     * 以称重记录为入口，所以码上的重量一定对得回那条设备事实。幂等靠 {@code weighing_event_id} 上的唯一索引： 重试命中已有码时原样返回，不再发第二枚。批次由现场选定，{@code bind}
+     * 只校验商品与仓库一致—— 出库不按批次扣减，这里也不替库存账本做批次分配。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public TraceScaleUnitVO issueForWeighing(TraceScaleUnitIssueForm form, String operator) {
+        TraceUnitDao.WeighingEvent event = traceUnitDao.findWeighingEvent(form.getWeighingEventId());
+        if (event == null || !form.getTaskItemId().equals(event.getTaskItemId())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_WEIGHING_EVENT_NOT_FOUND);
+        }
+        TraceUnitVO.Unit existing = traceUnitDao.findByWeighingEventId(event.getId());
+        if (existing != null) {
+            return toScaleVO(existing, true);
+        }
+        if (event.getCompletionId() != null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_WEIGHING_EVENT_COMPLETED);
+        }
+        if (event.getNetWeight() == null || event.getNetWeight().signum() <= 0) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_WEIGHT_INVALID);
+        }
+        TraceUnitVO.SortingItem item = traceUnitDao.lockSortingItem(form.getTaskItemId());
+        if (item == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_ITEM_NOT_FOUND);
+        }
+        warehouseScopeGuard.require(item.getWarehouseId());
+        TraceUnitVO.Lot lot = traceUnitDao.findLot(form.getLotId());
+        if (lot == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_LOT_NOT_FOUND);
+        }
+        if (!item.getSkuId().equals(lot.getSkuId())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_SKU_MISMATCH);
+        }
+        Long lotWarehouseId = traceUnitDao.lotWarehouseId(form.getLotId());
+        if (lotWarehouseId == null || !lotWarehouseId.equals(item.getWarehouseId())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_WAREHOUSE_MISMATCH);
+        }
+        String lotUnit = traceUnitDao.lotUnit(form.getLotId());
+        if (lotUnit == null || lotUnit.isBlank()) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_EXCEED_BALANCE);
+        }
+        // 净重是销售单位口径，包装数量是批次记账单位口径，按订单行冻结的换算折一次
+        BigDecimal quantity = saleToStockQuantity(item, event.getNetWeight(), lotUnit);
+        BigDecimal balance = lockedBalance(form.getLotId());
+        BigDecimal issued = traceUnitDao.sumIssuedByLot(form.getLotId());
+        if (issued.add(quantity).compareTo(balance) > 0) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_EXCEED_BALANCE);
+        }
+
+        OffsetDateTime now = OffsetDateTime.now();
+        TraceUnitVO.Unit row = new TraceUnitVO.Unit();
+        row.setUnitCode(nextCode());
+        row.setPublicToken(nextPublicToken());
+        row.setLotId(form.getLotId());
+        row.setPackageType(form.getPackageType());
+        row.setQuantity(quantity);
+        row.setUnit(lotUnit);
+        row.setNetWeight(event.getNetWeight());
+        row.setWeightUnit(event.getBusinessUnit());
+        row.setWeightSource(ScmTraceWeightSourceEnum.SCALE.name());
+        row.setMeasuredAt(now);
+        row.setWeighingEventId(event.getId());
+        row.setCreatedBy(operator);
+        traceUnitDao.createUnit(row);
+        traceUnitDao.appendIssueEvent(row.getId(), form.getLotId(), now, operator, null);
+        traceUnitDao.appendWeighEvent(row.getId(), form.getLotId(), now, operator, "电子秤称重");
+        return toScaleVO(row, false);
+    }
+
+    /**
+     * 明细完成时把该行已称重的码整批绑定。
+     *
+     * <p>
+     * 不逐筐绑定：{@code bind} 校验的是「已绑定量 + 本码数量 ≤ 实拣量」，而实拣量要等集合完成才写入， 逐筐绑定会在第一筐就撞上 {@code TRACE_UNIT_BIND_EXCEED}。
+     *
+     * <p>
+     * 装不下的码留在「未绑定」，不因此中断分拣完成：分拣完成是业务事实，追溯绑定是它的附属结果。 未绑定的码在包装码列表里仍然可见，可人工补绑或走更正——反过来把完成卡住，现场只会去删数据。
+     */
+    @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
+    public int bindWeighedUnits(Long sortingTaskItemId, String operator) {
+        List<TraceUnitVO.Unit> units = traceUnitDao.listUnboundWeighedUnits(sortingTaskItemId);
+        if (units.isEmpty()) {
+            return 0;
+        }
+        TraceUnitVO.SortingItem item = traceUnitDao.lockSortingItem(sortingTaskItemId);
+        if (item == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_ITEM_NOT_FOUND);
+        }
+        if (traceUnitDao.countConfirmedOutboundBySortingItem(sortingTaskItemId) > 0) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_OUTBOUND);
+        }
+        String stockUnit = item.getStockUnit() != null ? item.getStockUnit() : item.getSaleUnit();
+        BigDecimal remaining = saleToStockQuantity(item, item.getSortedQuantity(), stockUnit)
+                .subtract(traceUnitDao.sumBoundBySortingItem(sortingTaskItemId));
+        OffsetDateTime now = OffsetDateTime.now();
+        BigDecimal used = BigDecimal.ZERO;
+        int bound = 0;
+        for (TraceUnitVO.Unit unit : units) {
+            if (used.add(unit.getQuantity()).compareTo(remaining) > 0) {
+                break;
+            }
+            traceUnitDao.insertBinding(unit.getId(), unit.getLotId(), item.getTaskId(), sortingTaskItemId,
+                    item.getSalesOrderId(), item.getSalesOrderItemId(), item.getCustomerId(), item.getCustomerName(),
+                    item.getOrderNo(), now, operator);
+            traceUnitDao.appendBindEvent(unit.getId(), unit.getLotId(), sortingTaskItemId, now, operator);
+            used = used.add(unit.getQuantity());
+            bound++;
+        }
+        return bound;
+    }
+
+    /** 秤端只需要码、链接与重量，不返回批次与客户等后台字段。 */
+    private TraceScaleUnitVO toScaleVO(TraceUnitVO.Unit unit, boolean duplicated) {
+        TraceScaleUnitVO result = new TraceScaleUnitVO();
+        result.setUnitId(unit.getId());
+        result.setUnitCode(unit.getUnitCode());
+        result.setPublicToken(unit.getPublicToken());
+        result.setTraceUrl(tracePublicLinkBuilder.build(unit.getPublicToken()));
+        result.setNetWeight(unit.getNetWeight());
+        result.setWeightUnit(unit.getWeightUnit());
+        result.setQuantity(unit.getQuantity());
+        result.setUnit(unit.getUnit());
+        result.setDuplicated(duplicated);
+        return result;
+    }
+
+    /** 秤端选批次：本仓该商品仍有余额的批次，按先进先出排序。 */
+    @Transactional(readOnly = true)
+    public List<TraceUnitVO.LotOption> candidateLots(Long sortingTaskItemId) {
+        TraceUnitVO.SortingItem item = traceUnitDao.findSortingItem(sortingTaskItemId);
+        if (item == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_ITEM_NOT_FOUND);
+        }
+        warehouseScopeGuard.require(item.getWarehouseId());
+        return traceUnitDao.candidateLots(item.getWarehouseId(), item.getSkuId());
+    }
+
+    /** 秤端补打：按码取回二维码链接与重量，不重新发码。 */
+    @Transactional(readOnly = true)
+    public TraceScaleUnitVO label(String unitCode) {
+        TraceUnitVO.Unit unit = traceUnitDao.findByCode(unitCode.trim());
+        if (unit == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
+        }
+        warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(unit.getLotId()));
+        return toScaleVO(unit, false);
     }
 
     /** 列表按仓库数据范围收窄：没有范围就是空页，不是「不加条件」。 */
@@ -332,5 +522,28 @@ public class TraceUnitService {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_QUANTITY_INVALID);
         }
         return value.setScale(4, java.math.RoundingMode.UNNECESSARY);
+    }
+
+    /** 净重与每包数量共用同一套定点口径，但提示必须分开：补录时看不懂「每包数量」在说什么。 */
+    private static BigDecimal parseWeight(String text) {
+        BigDecimal value;
+        try {
+            value = new BigDecimal(text.trim());
+        } catch (RuntimeException error) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_WEIGHT_INVALID);
+        }
+        if (value.signum() <= 0 || value.stripTrailingZeros().scale() > 4) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_WEIGHT_INVALID);
+        }
+        return value.setScale(4, java.math.RoundingMode.UNNECESSARY);
+    }
+
+    /** 公开令牌：随机而非序列，扫码入口不能靠猜相邻码拿到别人的溯源页。 */
+    private static String nextPublicToken() {
+        char[] token = new char[PUBLIC_TOKEN_LENGTH];
+        for (int index = 0; index < PUBLIC_TOKEN_LENGTH; index++) {
+            token[index] = CODE_ALPHABET[TOKEN_RANDOM.nextInt(CODE_ALPHABET.length)];
+        }
+        return new String(token);
     }
 }

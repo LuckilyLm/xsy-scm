@@ -85,6 +85,44 @@ public interface TraceUnitDao {
             @Param("occurredAt") OffsetDateTime occurredAt, @Param("operator") String operator,
             @Param("reason") String reason);
 
+    /** 补录净重：只对还没有重量的码生效，返回受影响行数由调用方判定是否已被并发补录。 */
+    int updateWeight(@Param("id") Long id, @Param("netWeight") BigDecimal netWeight,
+            @Param("weightUnit") String weightUnit, @Param("weightSource") String weightSource,
+            @Param("measuredAt") OffsetDateTime measuredAt);
+
+    /** 追加称重事件：补录与设备称重走同一条事件类型，事后无法区分是谁在什么时候改了重量。 */
+    int appendWeighEvent(@Param("unitId") Long unitId, @Param("lotId") Long lotId,
+            @Param("occurredAt") OffsetDateTime occurredAt, @Param("operator") String operator,
+            @Param("remark") String remark);
+
+    /** 按标签上的公开令牌查码：扫码页免登录，只认这个凭据。 */
+    TraceUnitVO.Unit findByPublicToken(@Param("publicToken") String publicToken);
+
+    /** 不加锁读分拣行：秤端选批次时只需要商品与仓库，锁行会与并发的分拣写入互相等待。 */
+    TraceUnitVO.SortingItem findSortingItem(@Param("itemId") Long itemId);
+
+    /** 本仓该商品还有余额的批次，按先进先出排序：现场默认取第一个，避免每次都要人工判断。 */
+    List<TraceUnitVO.LotOption> candidateLots(@Param("warehouseId") Long warehouseId, @Param("skuId") Long skuId);
+
+    /** 称重事件归属与完成状态：发码前要确认这筐属于该分拣行且还没被完成覆盖。 */
+    WeighingEvent findWeighingEvent(@Param("eventId") Long eventId);
+
+    /** 称重事件行（只取发码需要的几列）。 */
+    @Data
+    class WeighingEvent {
+        private Long id;
+        private Long taskItemId;
+        private BigDecimal netWeight;
+        private String businessUnit;
+        private Long completionId;
+    }
+
+    /** 已经发过码的称重事件对应的包装码：重试发码时原样返回，不再发第二枚。 */
+    TraceUnitVO.Unit findByWeighingEventId(@Param("weighingEventId") Long weighingEventId);
+
+    /** 该分拣行上「有净重但还没绑定」的包装码：明细完成时整批建立绑定。 */
+    List<TraceUnitVO.Unit> listUnboundWeighedUnits(@Param("itemId") Long itemId);
+
     /** 该包装码当前有效绑定的 id（没有返回 null）：更正申请要指向具体那一条绑定。 */
     Long findActiveBindingId(@Param("unitId") Long unitId);
 

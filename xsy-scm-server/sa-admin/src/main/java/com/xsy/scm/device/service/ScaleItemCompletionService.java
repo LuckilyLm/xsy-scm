@@ -1,5 +1,6 @@
 package com.xsy.scm.device.service;
 
+import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.device.constant.ScaleDeviceErrorCode;
 import com.xsy.scm.device.domain.form.ScaleItemCompletionForm;
@@ -9,6 +10,7 @@ import com.xsy.scm.device.support.ScaleDevicePrincipal;
 import com.xsy.scm.sorting.domain.form.SortingScaleCompleteForm;
 import com.xsy.scm.sorting.domain.vo.SortingScaleCompletionVO;
 import com.xsy.scm.sorting.service.SortingScaleEventService;
+import com.xsy.scm.trace.service.TraceUnitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,8 @@ public class ScaleItemCompletionService {
 
     private final SortingScaleEventService sortingScaleEventService;
 
+    private final TraceUnitService traceUnitService;
+
     @Transactional(rollbackFor = Exception.class)
     public ScaleItemCompletionVO complete(String taskItemId, ScaleItemCompletionForm form) {
         ScaleDevicePrincipal principal = ScaleDeviceContext.require();
@@ -40,7 +44,10 @@ public class ScaleItemCompletionService {
         complete.setDeviceId(principal.deviceId());
         complete.setDeviceSessionId(principal.sessionId());
         complete.setEmployeeId(principal.employeeId());
-        return toVO(sortingScaleEventService.completeBaskets(complete));
+        ScaleItemCompletionVO result = toVO(sortingScaleEventService.completeBaskets(complete));
+        // 集合完成写入实拣量之后，才谈得上把该行的称重筐绑到客户：绑定校验依赖实拣量，顺序反了必然超量。
+        traceUnitService.bindWeighedUnits(parseId(taskItemId), ScmOperator.current());
+        return result;
     }
 
     private static ScaleItemCompletionVO toVO(SortingScaleCompletionVO source) {

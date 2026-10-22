@@ -39,4 +39,11 @@
           AND p.deleted = FALSE
     </select>
 
+    <!-- 批次事实只追加，没有软删除列：存在即活动 -->
+    <select id="countTraceLot" resultType="int">
+        SELECT count(*)
+        FROM xsy_trace_lot l
+        WHERE l.id = #{lotId}
+    </select>
+
 </mapper>

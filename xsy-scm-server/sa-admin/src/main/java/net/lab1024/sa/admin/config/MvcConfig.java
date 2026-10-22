@@ -42,6 +42,8 @@ public class MvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/scm/device/scale/v1/**")
                 // 采购单分享页由令牌授权：手机端不登录，令牌的签发与撤销都在后台完成
                 .excludePathPatterns("/scm/purchase/share/public/**")
+                // 扫码溯源页面向客户与监管：凭据是标签上的公开令牌，没有员工登录态可用
+                .excludePathPatterns("/scm/trace/public/**")
                 .addPathPatterns("/**");
     }
 

@@ -4,9 +4,11 @@
 
     <insert id="createUnit" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO xsy_trace_unit
-          (unit_code, lot_id, package_type, quantity, unit, status, remark, created_by)
+          (unit_code, public_token, lot_id, package_type, quantity, unit, status, remark, created_by,
+           net_weight, weight_unit, weight_source, weighing_event_id, measured_at)
         VALUES
-          (#{unitCode}, #{lotId}, #{packageType}, #{quantity}, #{unit}, 'ACTIVE', #{remark}, #{createdBy})
+          (#{unitCode}, #{publicToken}, #{lotId}, #{packageType}, #{quantity}, #{unit}, 'ACTIVE', #{remark},
+           #{createdBy}, #{netWeight}, #{weightUnit}, #{weightSource}, #{weighingEventId}, #{measuredAt})
     </insert>
 
     <insert id="appendIssueEvent">
@@ -19,9 +21,10 @@
 
     <select id="findLot" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Lot">
         SELECT t.id AS lotId, t.lot_no AS lotNo, t.source_lot_no AS sourceLotNo, t.sku_id AS skuId,
-               k.sku_code AS skuCode, k.spec_name AS skuName
+               k.spu_id AS spuId, p.name AS spuName, k.sku_code AS skuCode, k.spec_name AS skuName
         FROM xsy_trace_lot t
         LEFT JOIN xsy_product_sku k ON k.id = t.sku_id
+        LEFT JOIN xsy_product_spu p ON p.id = k.spu_id
         WHERE t.id = #{lotId}
     </select>
 
@@ -61,8 +64,10 @@
     </select>
 
     <select id="queryPage" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit">
-        SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, t.lot_no AS lotNo,
-               t.source_lot_no AS sourceLotNo, u.package_type AS packageType, u.quantity, u.unit,
+        SELECT u.id, u.unit_code AS unitCode, u.public_token AS publicToken, u.lot_id AS lotId,
+               t.lot_no AS lotNo, t.source_lot_no AS sourceLotNo, u.package_type AS packageType,
+               u.quantity, u.unit, u.net_weight AS netWeight, u.weight_unit AS weightUnit,
+               u.weight_source AS weightSource, u.measured_at AS measuredAt,
                u.status, u.remark, u.created_at AS createdAt, u.created_by AS createdBy
         FROM xsy_trace_unit u
         LEFT JOIN xsy_trace_lot t ON t.id = u.lot_id
@@ -90,8 +95,10 @@
     </select>
 
     <select id="findByCode" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit">
-        SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, t.lot_no AS lotNo,
-               t.source_lot_no AS sourceLotNo, u.package_type AS packageType, u.quantity, u.unit,
+        SELECT u.id, u.unit_code AS unitCode, u.public_token AS publicToken, u.lot_id AS lotId,
+               t.lot_no AS lotNo, t.source_lot_no AS sourceLotNo, u.package_type AS packageType,
+               u.quantity, u.unit, u.net_weight AS netWeight, u.weight_unit AS weightUnit,
+               u.weight_source AS weightSource, u.measured_at AS measuredAt,
                u.status, u.remark, u.created_at AS createdAt, u.created_by AS createdBy
         FROM xsy_trace_unit u
         LEFT JOIN xsy_trace_lot t ON t.id = u.lot_id
@@ -103,8 +110,10 @@
       没有锁时，「绑定读到 ACTIVE」与「作废读到无绑定」可以同时通过，最终留下「已作废的码挂着绑定」。
     -->
     <select id="lockByCode" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit">
-        SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, t.lot_no AS lotNo,
-               t.source_lot_no AS sourceLotNo, u.package_type AS packageType, u.quantity, u.unit,
+        SELECT u.id, u.unit_code AS unitCode, u.public_token AS publicToken, u.lot_id AS lotId,
+               t.lot_no AS lotNo, t.source_lot_no AS sourceLotNo, u.package_type AS packageType,
+               u.quantity, u.unit, u.net_weight AS netWeight, u.weight_unit AS weightUnit,
+               u.weight_source AS weightSource, u.measured_at AS measuredAt,
                u.status, u.remark, u.created_at AS createdAt, u.created_by AS createdBy
         FROM xsy_trace_unit u
         LEFT JOIN xsy_trace_lot t ON t.id = u.lot_id
@@ -112,9 +121,22 @@
         FOR UPDATE OF u
     </select>
 
+    <select id="findByPublicToken" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit">
+        SELECT u.id, u.unit_code AS unitCode, u.public_token AS publicToken, u.lot_id AS lotId,
+               t.lot_no AS lotNo, t.source_lot_no AS sourceLotNo, u.package_type AS packageType,
+               u.quantity, u.unit, u.net_weight AS netWeight, u.weight_unit AS weightUnit,
+               u.weight_source AS weightSource, u.measured_at AS measuredAt,
+               u.status, u.remark, u.created_at AS createdAt, u.created_by AS createdBy
+        FROM xsy_trace_unit u
+        LEFT JOIN xsy_trace_lot t ON t.id = u.lot_id
+        WHERE u.public_token = #{publicToken}
+    </select>
+
     <select id="findById" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit">
-        SELECT u.id, u.unit_code AS unitCode, u.lot_id AS lotId, t.lot_no AS lotNo,
-               t.source_lot_no AS sourceLotNo, u.package_type AS packageType, u.quantity, u.unit,
+        SELECT u.id, u.unit_code AS unitCode, u.public_token AS publicToken, u.lot_id AS lotId,
+               t.lot_no AS lotNo, t.source_lot_no AS sourceLotNo, u.package_type AS packageType,
+               u.quantity, u.unit, u.net_weight AS netWeight, u.weight_unit AS weightUnit,
+               u.weight_source AS weightSource, u.measured_at AS measuredAt,
                u.status, u.remark, u.created_at AS createdAt, u.created_by AS createdBy
         FROM xsy_trace_unit u
         LEFT JOIN xsy_trace_lot t ON t.id = u.lot_id
@@ -207,6 +229,24 @@
           (#{unitId}, #{lotId}, 'VOID', #{occurredAt}, #{operator}, #{reason}, #{operator})
     </insert>
 
+    <!-- 只补还没有重量的码：已有重量要走称重更正，不能靠这条语句覆盖 -->
+    <update id="updateWeight">
+        UPDATE xsy_trace_unit
+        SET net_weight        = #{netWeight},
+            weight_unit       = #{weightUnit},
+            weight_source     = #{weightSource},
+            measured_at       = #{measuredAt}
+        WHERE id = #{id}
+          AND net_weight IS NULL
+    </update>
+
+    <insert id="appendWeighEvent">
+        INSERT INTO xsy_trace_event
+          (unit_id, lot_id, event_type, occurred_at, operator, remark, created_by)
+        VALUES
+          (#{unitId}, #{lotId}, 'WEIGH', #{occurredAt}, #{operator}, #{remark}, #{operator})
+    </insert>
+
     <!-- 有效绑定：排除已解绑，解绑后可以重新绑定 -->
     <select id="findActiveBindingId" resultType="java.lang.Long">
         SELECT b.id FROM xsy_trace_unit_binding b
@@ -234,6 +274,77 @@
         GROUP BY o.outbound_no, m.occurred_at
         ORDER BY m.occurred_at DESC
         LIMIT 20
+    </select>
+
+    <!--
+      不加锁版本：秤端选批次是只读动作，锁住分拣行会和并发的分拣写入互相等待。
+      列与 lockSortingItem 保持一致，避免两处口径分叉。
+    -->
+    <select id="findSortingItem" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$SortingItem">
+        SELECT i.task_id AS taskId, i.id AS itemId, i.sku_id AS skuId, i.sales_order_id AS salesOrderId,
+               i.sales_order_item_id AS salesOrderItemId, i.customer_id AS customerId,
+               i.customer_name_snapshot AS customerName, i.order_no_snapshot AS orderNo,
+               i.sorted_quantity AS sortedQuantity, i.sale_unit_snapshot AS saleUnit,
+               oi.mall_stock_unit_snapshot AS stockUnit, oi.mall_stock_units_per_sale_unit AS stockUnitsPerSaleUnit,
+               t.status AS taskStatus, t.warehouse_id AS warehouseId
+        FROM xsy_sorting_task_item i
+        JOIN xsy_sorting_task t ON t.id = i.task_id
+        LEFT JOIN xsy_sales_order_item oi ON oi.id = i.sales_order_item_id
+        WHERE i.id = #{itemId} AND i.deleted = FALSE
+    </select>
+
+    <!--
+      候选批次：本仓、该商品、余额为正，按批次先后排序。
+      出库不按批次扣减，所以这里只能给「还有余额的批次」，具体用哪一批由现场确认。
+    -->
+    <select id="candidateLots" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$LotOption">
+        SELECT l.id AS lotId, l.lot_no AS lotNo, l.source_lot_no AS sourceLotNo,
+               b.unit AS unit, SUM(b.quantity) AS balance
+        FROM xsy_trace_lot l
+        JOIN xsy_inventory_lot_balance b ON b.lot_id = l.id
+        WHERE b.warehouse_id = #{warehouseId}
+          AND l.sku_id = #{skuId}
+        GROUP BY l.id, l.lot_no, l.source_lot_no, b.unit
+        HAVING SUM(b.quantity) > 0
+        ORDER BY l.id
+    </select>
+
+    <select id="findWeighingEvent" resultType="com.xsy.scm.trace.dao.TraceUnitDao$WeighingEvent">
+        SELECT e.id, e.task_item_id AS taskItemId, e.net_weight AS netWeight,
+               e.business_unit AS businessUnit, e.completion_id AS completionId
+        FROM xsy_sorting_scale_event e
+        WHERE e.id = #{eventId}
+    </select>
+
+    <select id="findByWeighingEventId" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit">
+        SELECT u.id, u.unit_code AS unitCode, u.public_token AS publicToken, u.lot_id AS lotId,
+               t.lot_no AS lotNo, t.source_lot_no AS sourceLotNo, u.package_type AS packageType,
+               u.quantity, u.unit, u.net_weight AS netWeight, u.weight_unit AS weightUnit,
+               u.weight_source AS weightSource, u.measured_at AS measuredAt,
+               u.status, u.remark, u.created_at AS createdAt, u.created_by AS createdBy
+        FROM xsy_trace_unit u
+        LEFT JOIN xsy_trace_lot t ON t.id = u.lot_id
+        WHERE u.weighing_event_id = #{weighingEventId}
+    </select>
+
+    <!--
+      该分拣行上「有净重但还没绑定」的码：绑定关系挂在称重事件上，
+      因为包装码本身不知道自己在哪张任务行（批次归属只存在于发码环节）。
+    -->
+    <select id="listUnboundWeighedUnits" resultType="com.xsy.scm.trace.domain.vo.TraceUnitVO$Unit">
+        SELECT u.id, u.unit_code AS unitCode, u.public_token AS publicToken, u.lot_id AS lotId,
+               u.package_type AS packageType, u.quantity, u.unit,
+               u.net_weight AS netWeight, u.weight_unit AS weightUnit, u.status
+        FROM xsy_trace_unit u
+        JOIN xsy_sorting_scale_event e ON e.id = u.weighing_event_id
+        WHERE e.task_item_id = #{itemId}
+          AND u.status = 'ACTIVE'
+          AND NOT EXISTS (
+              SELECT 1 FROM xsy_trace_unit_binding b
+              WHERE b.unit_id = u.id
+                AND NOT EXISTS (SELECT 1 FROM xsy_trace_unit_unbind ub WHERE ub.binding_id = b.id)
+          )
+        ORDER BY e.basket_no NULLS LAST, u.id
     </select>
 
 </mapper>

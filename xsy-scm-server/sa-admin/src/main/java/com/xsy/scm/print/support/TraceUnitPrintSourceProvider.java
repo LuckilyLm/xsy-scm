@@ -4,6 +4,7 @@ import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import com.xsy.scm.trace.permission.TracePermission;
 import com.xsy.scm.trace.service.TraceUnitService;
+import com.xsy.scm.trace.support.TracePublicLinkBuilder;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,8 @@ import org.springframework.stereotype.Component;
 public class TraceUnitPrintSourceProvider implements ScmPrintSourceProvider {
 
     private final TraceUnitService traceUnitService;
+
+    private final TracePublicLinkBuilder tracePublicLinkBuilder;
 
     @Override
     public ScmPrintDocumentTypeEnum documentType() {
@@ -51,6 +54,10 @@ public class TraceUnitPrintSourceProvider implements ScmPrintSourceProvider {
         header.put("packageType", packageTypeLabel(unit.getPackageType()));
         header.put("quantity", ScmPrintText.fixed(unit.getQuantity()));
         header.put("unit", ScmPrintText.text(unit.getUnit()));
+        header.put("netWeight", ScmPrintText.fixed(unit.getNetWeight()));
+        header.put("weightUnit", ScmPrintText.text(unit.getWeightUnit()));
+        // 扫码链接：前端据此生成二维码。未配置公开地址时为空，标签只印码。
+        header.put("traceUrl", ScmPrintText.text(tracePublicLinkBuilder.build(unit.getPublicToken())));
         // 未绑定时留空：标签可以先贴，客户是分拣现场才确定的
         header.put("customerName", ScmPrintText.text(binding == null ? null : binding.getCustomerName()));
         header.put("orderNo", ScmPrintText.text(binding == null ? null : binding.getOrderNo()));

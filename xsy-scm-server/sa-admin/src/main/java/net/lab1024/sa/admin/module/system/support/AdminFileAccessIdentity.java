@@ -61,6 +61,13 @@ public class AdminFileAccessIdentity implements FileAccessIdentity {
             // 企业档案（营业执照等）的查看权归属 OA 模块，其权限码随正式业务角色一起落地；
             // 在此之前不猜测字符串，维持现状（上传者/管理员可读）。
             case ENTERPRISE -> false;
+            // 商品资质随商品查看权：能看这个商品，就能看它的资质；同样要求 SPU 还活着，
+            // 否则已删商品的资质会对全体有商品查看权的人长期可读。
+            case PRODUCT_QUALIFICATION -> StpUtil.hasPermission("scm:product:query")
+                    && visibilityDao.countLiveSpu(bizId) > 0;
+            // 批次检测报告随包装码查看权：批次在召回与追溯里出现的地方都能读到报告。
+            case LOT_INSPECTION -> StpUtil.hasPermission("scm:inventory:unit:query")
+                    && visibilityDao.countTraceLot(bizId) > 0;
         };
     }
 }

@@ -1,5 +1,6 @@
 package com.xsy.scm.device.controller;
 
+import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.device.domain.form.ScaleActivateForm;
 import com.xsy.scm.device.domain.form.ScaleHeartbeatForm;
 import com.xsy.scm.device.domain.form.ScaleItemCompletionForm;
@@ -16,10 +17,15 @@ import com.xsy.scm.device.service.ScaleDeviceAuthService;
 import com.xsy.scm.device.service.ScaleDeviceJobService;
 import com.xsy.scm.device.service.ScaleItemCompletionService;
 import com.xsy.scm.device.service.ScaleMeasurementService;
+import com.xsy.scm.device.service.ScaleUnitService;
 import com.xsy.scm.device.support.ScaleDeviceResponse;
+import com.xsy.scm.trace.domain.form.TraceScaleUnitIssueForm;
+import com.xsy.scm.trace.domain.vo.TraceScaleUnitVO;
+import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -51,6 +57,8 @@ public class ScaleDeviceController {
     private final ScaleMeasurementService scaleMeasurementService;
 
     private final ScaleItemCompletionService scaleItemCompletionService;
+
+    private final ScaleUnitService scaleUnitService;
 
     /**
      * 用配对码换取设备凭证。配对码一次性，成功后立即失效。
@@ -130,5 +138,35 @@ public class ScaleDeviceController {
     public ScaleDeviceResponse<ScaleItemCompletionVO> complete(@PathVariable("taskItemId") String taskItemId,
             @Valid @RequestBody ScaleItemCompletionForm form) {
         return ScaleDeviceResponse.ok(scaleItemCompletionService.complete(taskItemId, form));
+    }
+
+    /**
+     * 该明细可选的批次：本仓、该商品、余额为正，按先进先出排序。
+     *
+     * <p>
+     * 出库不按批次扣减，服务端不替现场做批次分配；这里只回答「还有哪些批次可用」。
+     */
+    @GetMapping("/items/{taskItemId}/lots")
+    public ScaleDeviceResponse<List<TraceUnitVO.LotOption>> lots(@PathVariable("taskItemId") String taskItemId) {
+        return ScaleDeviceResponse.ok(scaleUnitService.candidateLots(taskItemId));
+    }
+
+    /**
+     * 为一筐称重结果发包装码。
+     *
+     * <p>
+     * 幂等靠 {@code weighingEventId}：同一筐重试返回同一枚码，不会在标签上出现两个身份。
+     */
+    @PostMapping("/units/issue")
+    public ScaleDeviceResponse<TraceScaleUnitVO> issueUnit(@Valid @RequestBody TraceScaleUnitIssueForm form) {
+        return ScaleDeviceResponse.ok(scaleUnitService.issue(form, ScmOperator.current()));
+    }
+
+    /**
+     * 补打标签：按码取回二维码链接与重量，不重新发码。
+     */
+    @GetMapping("/units/{unitCode}/label")
+    public ScaleDeviceResponse<TraceScaleUnitVO> label(@PathVariable("unitCode") String unitCode) {
+        return ScaleDeviceResponse.ok(scaleUnitService.label(unitCode));
     }
 }

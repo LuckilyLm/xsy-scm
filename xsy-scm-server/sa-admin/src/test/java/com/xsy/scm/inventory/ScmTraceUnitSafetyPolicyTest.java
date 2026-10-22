@@ -13,6 +13,7 @@ import com.xsy.scm.trace.domain.vo.TraceCorrectionVO;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import com.xsy.scm.trace.service.TraceCorrectionService;
 import com.xsy.scm.trace.service.TraceUnitService;
+import com.xsy.scm.trace.support.TracePublicLinkBuilder;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ class ScmTraceUnitSafetyPolicyTest {
     private final TraceUnitDao units = mock(TraceUnitDao.class);
     private final ScmWarehouseScopeGuard warehouses = mock(ScmWarehouseScopeGuard.class);
     private final TraceUnitService trace = new TraceUnitService(units, mock(ScmBusinessNoDao.class),
-            warehouses, mock(ScmDataScopeService.class));
+            warehouses, mock(ScmDataScopeService.class), mock(TracePublicLinkBuilder.class));
 
     @Test
     void issuedLabelsDoNotRecoverQuotaFromUnattributedLotOutbounds() {

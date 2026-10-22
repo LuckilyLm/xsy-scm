@@ -27,4 +27,13 @@ public interface FileRelationDao extends BaseMapper<FileRelationEntity> {
     int softDeleteExcluding(@Param("bizType") String bizType,
                             @Param("bizId") Long bizId,
                             @Param("keepFileKeys") Collection<String> keepFileKeys);
+
+    /**
+     * 取某个业务对象当前引用的活动关系行，按创建时间正序。
+     *
+     * <p>只回答「这个对象挂了哪些 key」，不做授权判定：授权由读侧的
+     * {@code FileAccessGuard} 按同一批 key 再判一次。
+     */
+    List<FileRelationEntity> listActiveByBiz(@Param("bizType") String bizType,
+                                             @Param("bizId") Long bizId);
 }
