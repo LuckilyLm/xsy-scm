@@ -82,7 +82,7 @@
           </a-form-item>
         </fieldset>
         <a-space>
-          <a-button type="primary" html-type="submit" :loading="busy">保存草稿</a-button>
+          <a-button type="primary" :loading="busy" @click="submit">保存草稿</a-button>
           <a-button :disabled="busy" @click="editing = false">取消</a-button>
         </a-space>
       </a-form>
@@ -167,6 +167,19 @@ function edit(report?: InspectionReport) {
 function filesChanged(files: Array<{fileKey?: string}>) {
   form.value.fileKeys = files.flatMap((file) => file.fileKey ? [file.fileKey] : []);
 }
+/**
+ * 保存前显式跑一遍表单校验：项目禁止业务页用 html-type="submit"，所以不能靠 a-form 的 finish 事件触发，
+ * 校验失败时停留在表单上，不把必填错误推给后端。
+ */
+async function submit() {
+  if (busy.value) return;
+  try {
+    await formRef.value?.validate();
+  } catch {
+    return;
+  }
+  await save();
+}
 async function save() {
   if (busy.value) return;
   const lotId = props.lotId;
@@ -208,7 +221,7 @@ onBeforeUnmount(() => { requestId++; });
 .inspection-panel__head h4 { margin: 0; }
 .inspection-panel__head strong { min-width: 0; overflow-wrap: anywhere; }
 .inspection-panel__context, .inspection-panel__hint { color: var(--scm-text-secondary, #667085); }
-.inspection-panel__report { padding: 16px 0; border-bottom: 1px solid var(--scm-border-color, #e5e7eb); }
+.inspection-panel__report { padding: 16px 0; border-bottom: 1px solid var(--scm-border); }
 .inspection-panel__report p { margin: 6px 0; overflow-wrap: anywhere; }
 .inspection-panel__files { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 12px; }
 .inspection-panel__files :deep(.ant-btn) { max-width: 100%; height: auto; padding-left: 0; white-space: normal; text-align: left; overflow-wrap: anywhere; }

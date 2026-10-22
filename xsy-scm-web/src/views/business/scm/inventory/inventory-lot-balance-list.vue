@@ -82,7 +82,7 @@
         <template v-else-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'operation'">
+        <template v-else-if="column.dataIndex === 'action'">
           <a-button v-if="canViewInspection" type="link" size="small" @click="inspectionLot = record">检测报告</a-button>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -151,7 +151,7 @@ const columns = ref<InventoryLotBalanceColumn[]>([
   {title: '数量', dataIndex: 'quantity', width: 110},
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '更新时间', dataIndex: 'updatedAt', width: 170},
-  ...(canViewInspection ? [{title: '操作', dataIndex: 'operation', width: 100, align: 'center' as const, fixed: 'right' as const}] : []),
+  ...(canViewInspection ? [{title: '操作', dataIndex: 'action', width: 100, align: 'center' as const, fixed: 'right' as const}] : []),
 ]);
 
 async function queryData() {
