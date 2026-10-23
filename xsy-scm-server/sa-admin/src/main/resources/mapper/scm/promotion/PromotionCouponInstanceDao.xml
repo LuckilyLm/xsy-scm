@@ -29,10 +29,10 @@
         SELECT i.coupon_id AS couponId, COUNT(*) FILTER (WHERE i.issue_source = 'ADMIN_ISSUE') AS adminIssuedCount,
             COUNT(*) FILTER (WHERE i.issue_source = 'MALL_CLAIM') AS mallClaimedCount,
             COUNT(*) FILTER (WHERE i.status = 'USED') AS usedCount,
-            COALESCE(SUM((od.coupon_snapshot - &gt; &gt; 'couponDiscount')::numeric) FILTER (WHERE i.status = 'USED'),
+            COALESCE(SUM((od.coupon_snapshot ->> 'couponDiscount')::numeric) FILTER (WHERE i.status = 'USED'),
             0) AS usedDiscountAmount,
             COUNT(*) FILTER (WHERE i.status = 'USED' AND
-            (od.id IS NULL OR od.coupon_snapshot - &gt; &gt; 'couponDiscount' IS NULL)) AS discountMissingCount
+            (od.id IS NULL OR od.coupon_snapshot ->> 'couponDiscount' IS NULL)) AS discountMissingCount
         FROM xsy_promotion_coupon_instance i
         LEFT JOIN xsy_order_discount od ON od.sales_order_id = i.used_order_id
             AND od.coupon_instance_id = i.id

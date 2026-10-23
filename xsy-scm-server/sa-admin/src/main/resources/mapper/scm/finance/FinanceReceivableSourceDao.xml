@@ -132,8 +132,8 @@
       是行级计算，放在 Service 里与正常、红字两条路径共用同一段代码。
     -->
     <select id="selectOrderDiscountLines" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto">
-        SELECT (allocation - &gt; &gt; 'orderItemId')::bigint AS orderItemId,
-            (allocation - &gt; &gt; 'discountAmount')::numeric AS discountAmount
+        SELECT (allocation ->> 'orderItemId')::bigint AS orderItemId,
+            (allocation ->> 'discountAmount')::numeric AS discountAmount
         FROM xsy_order_discount od
         CROSS JOIN LATERAL jsonb_array_elements(od.allocations) AS allocation
         WHERE od.sales_order_id = #{salesOrderId}
@@ -162,8 +162,8 @@
 
     <!-- 批量版：与单订单取数同源同列，行上带 sales_order_id 供调用方归回订单。 -->
     <select id="selectDiscountLinesByOrders" resultType="com.xsy.scm.finance.domain.dto.FinanceOrderDiscountLineDto">
-        SELECT od.sales_order_id AS salesOrderId, (allocation - &gt; &gt; 'orderItemId')::bigint AS orderItemId,
-            (allocation - &gt; &gt; 'discountAmount')::numeric AS discountAmount
+        SELECT od.sales_order_id AS salesOrderId, (allocation ->> 'orderItemId')::bigint AS orderItemId,
+            (allocation ->> 'discountAmount')::numeric AS discountAmount
         FROM xsy_order_discount od
         CROSS JOIN LATERAL jsonb_array_elements(od.allocations) AS allocation
         WHERE od.sales_order_id IN
