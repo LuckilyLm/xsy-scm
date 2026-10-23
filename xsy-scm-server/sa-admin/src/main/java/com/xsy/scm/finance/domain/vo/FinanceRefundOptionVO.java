@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * Completed, unpaid refund facts available for a customer refund payment.
+ * 可用于客户退款付款的已完成、未付款退款单。
  */
 @Data
 public class FinanceRefundOptionVO {

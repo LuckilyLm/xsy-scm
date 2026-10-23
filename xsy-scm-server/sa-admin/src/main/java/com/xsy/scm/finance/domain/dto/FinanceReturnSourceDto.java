@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 /**
- * 红字应收取已批准退货单的时间和批准人，不能用财务登记时的当前时间或操作人替代。
+ * 红字应收取已批准退货单的时间和批准人，不能用登记时的当前时间或操作人替代。
  */
 @Data
 public class FinanceReturnSourceDto {
@@ -13,7 +13,7 @@ public class FinanceReturnSourceDto {
     private Long orderReturnId;
 
     /**
-     * 退货单号，只进操作日志快照供追溯，不落财务列。
+     * 退货单号，只进操作日志供追溯，不写财务列。
      */
     private String returnNo;
 
@@ -25,13 +25,13 @@ public class FinanceReturnSourceDto {
     private OffsetDateTime approvedAt;
 
     /**
-     * 批准人。{@code approve} 在把状态写成 {@code APPROVED} 的同一条 UPDATE 里落 {@code updated_by}，且 {@code APPROVED} 之后没有任何命令再改这一行
+     * 批准人。{@code approve} 在把状态写成 {@code APPROVED} 的同一条 UPDATE 里写 {@code updated_by}，且 {@code APPROVED} 之后没有任何命令再改这一行
      * （{@code reject / cancel} 要求 {@code PENDING}），所以这一列就是批准人本身。
      */
     private String approvedBy;
 
     /**
-     * 红字原因 = {@code xsy_order_return.reason}（建单时填写的退货原因，已成立的业务事实）。
+     * 红字原因 = {@code xsy_order_return.reason}（建单时填写的退货原因）。
      */
     private String reason;
 }

@@ -17,7 +17,7 @@ import lombok.Data;
  * 活动新建 / 编辑。
  *
  * <p>
- * {@code rule} 收成 {@code Map}：具体键由活动类型决定，交给服务端的规则校验器统一回答 「哪些键是这类活动允许的」，而不是让 Jackson 在反序列化阶段抛一个位置不明的 400。
+ * {@code rule} 用 {@code Map} 接收：具体键由活动类型决定，交给规则校验器判断，不在反序列化阶段抛一个位置不明的 400。
  */
 @Data
 public class PromotionActivityForm {

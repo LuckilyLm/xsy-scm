@@ -21,34 +21,26 @@ public class DeliveryPlanProposalVO {
 
     private Long routeId;
 
-    /**
-     * {@code PROPOSED} / {@code APPLIED} / {@code DISCARDED}。
-     */
+    /** {@code PROPOSED} / {@code APPLIED} / {@code DISCARDED}。 */
     private String status;
 
     private String providerCode;
 
     private String providerVersion;
 
-    /**
-     * true = 估算（非真实路网 / 非实时交通）。
-     */
+    /** true = 估算（非真实路网 / 非实时交通）。 */
     private boolean estimated;
 
     private String ruleCode;
 
     private Integer stopCount;
 
-    /**
-     * 冻结建议生成时的线路版本，用于页面预警；正式应用仍由服务端重验快照。
-     */
+    /** 保存建议生成时的线路版本，用于页面预警；正式应用仍由服务端重验。 */
     private Integer sourceRouteVersion;
     private String sourceGeomCrs;
     private BigDecimal sourceLongitude;
     private BigDecimal sourceLatitude;
-    /**
-     * 排线未采用的限制条件，页面必须显式说明，不能把启发式距离当成容量/时间窗承诺。
-     */
+    /** 排线未采用的限制条件，页面必须显式说明，不能把启发式距离当成容量 / 时间窗承诺。 */
     private List<String> ignoredFactors = new ArrayList<>();
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

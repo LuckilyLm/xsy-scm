@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 券的优惠类型。
- *
- * <p>
- * 金额与折扣率不合并成一列：它们在展示、对账与门槛判定上完全不同， 用「一列 + 一个类型标记」是唯一不会读错的表达。
+ * 券的优惠类型。金额与折扣率不合并成一列：二者在展示、对账和门槛判定上完全不同，用「一列 + 一个类型标记」才不会读错。
  */
 @Getter
 @RequiredArgsConstructor

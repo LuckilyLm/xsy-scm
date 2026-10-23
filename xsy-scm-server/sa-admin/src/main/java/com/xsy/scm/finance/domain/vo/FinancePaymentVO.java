@@ -8,10 +8,10 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 付款命令的结果视图：只回本次事实本身，够支撑幂等重放与调用确认。
+ * 付款命令的结果：只回本次记录本身，够支撑幂等重放与调用确认。
  *
  * <p>
- * 刻意不含派生列（待核销余额、已用额、结清状态、核销行）—— 那些是的读时派生。
+ * 刻意不含派生列（待核销余额、已用额、结清状态、核销行），那些由查询时计算。
  */
 @Data
 public class FinancePaymentVO {

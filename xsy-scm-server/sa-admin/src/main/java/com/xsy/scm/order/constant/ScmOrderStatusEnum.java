@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 销售订单状态，与订单表的 CHECK 约束逐值对应。
  *
  * <p>
- * {@code desc} 供页面、导出与打印使用，落库仍用枚举名。
+ * {@code desc} 供页面、导出与打印使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

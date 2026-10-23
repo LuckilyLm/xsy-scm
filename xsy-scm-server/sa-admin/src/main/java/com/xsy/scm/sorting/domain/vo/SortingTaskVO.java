@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 /**
- * 分拣任务列表行。刻意<b>不</b>汇总计划量/分拣量：一个任务里的行可以来自不同单位，跨单位求和出来的数字没有业务含义。行数与「已处理行数」才是这一层可加的量。
+ * 分拣任务列表行。不汇总计划量和分拣量：任务里的行单位不同，跨单位求和没有意义。只给行数和已处理行数。
  */
 @Data
 public class SortingTaskVO {
@@ -20,19 +20,13 @@ public class SortingTaskVO {
     private Integer processedCount;
     private String remark;
 
-    /**
-     * 建单时冻结的送货时间；筛选与展示都按它，不按订单当前值。
-     */
+    /** 建单时保存的送货时间；筛选与展示都按它，不按订单当前值。 */
     private OffsetDateTime deliveryTimeSnapshot;
 
-    /**
-     * 预配送波次；线路维度由它表达。
-     */
+    /** 预配送波次；线路维度由它表达。 */
     private String deliveryWave;
 
-    /**
-     * 建单时显式指定的供应商来源与名称快照。
-     */
+    /** 建单时显式指定的供应商来源与名称。 */
     private Long supplierId;
 
     private String supplierNameSnapshot;

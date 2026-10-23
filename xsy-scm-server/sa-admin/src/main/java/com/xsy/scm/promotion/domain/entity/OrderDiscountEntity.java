@@ -14,13 +14,10 @@ import java.util.Map;
 import lombok.Data;
 
 /**
- * 订单优惠冻结。
+ * 订单优惠。一个订单至多一份（唯一约束）。
  *
  * <p>
- * 一个订单至多一份（唯一约束）。活动快照与券快照一起冻结：退款按原分摊反向，不用退款时的 当前活动重算 —— 否则「双十一买的单」在双十二退款会得到另一个优惠金额。
- *
- * <p>
- * 表上有触发器拒绝改动金额、分摊与快照。
+ * 活动与券的内容在订单确认时一起保存：退款按原分摊反向处理，不用退款时的当前活动重算， 否则「双十一买的单」在双十二退款会得到另一个优惠金额。表上有触发器拒绝改动金额、分摊和保存的内容。
  */
 @Data
 @TableName(value = "xsy_order_discount", autoResultMap = true)
@@ -47,19 +44,13 @@ public class OrderDiscountEntity {
 
     private BigDecimal discountAmount;
 
-    /**
-     * 限时特价让利已经包含在总优惠和明细分配中，单独保存只为统计。该金额不能大于订单总优惠。
-     */
+    /** 限时特价让利已包含在总优惠和明细分配中，单独保存只为统计；不能大于订单总优惠。 */
     private BigDecimal specialDiscountAmount;
 
-    /**
-     * 逐行分摊：{@code [{orderItemId, baseAmount, discountAmount}]}。
-     */
+    /** 逐行分摊：{@code [{orderItemId, baseAmount, discountAmount}]}。 */
     private String allocations;
 
-    /**
-     * 承接舍入差额的行；没有差额时为 {@code null}。
-     */
+    /** 承接舍入差额的行；没有差额时为 {@code null}。 */
     private Long roundingTargetItemId;
 
     private OffsetDateTime createdAt;

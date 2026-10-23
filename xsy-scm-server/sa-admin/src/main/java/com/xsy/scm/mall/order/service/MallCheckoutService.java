@@ -131,8 +131,8 @@ public class MallCheckoutService {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_IDEMPOTENCY_REQUIRED);
         }
         Map<Long, BigDecimal> quantities = normalize(form.getItems());
-        // 幂等指纹只绑稳定的客户请求（客户 / 地址 ID / 备注 / 期望配送时间 / 预选券 / 规格与数量），不含地址内容快照：
-        // 地址会被同一客户的其他采购账号编辑，用快照算指纹会让「第一次已成功、重试时地址已改」认不出原订单。
+        // 幂等指纹只绑稳定的客户请求（客户 / 地址 ID / 备注 / 期望配送时间 / 预选券 / 规格与数量），不含地址内容副本：
+        // 地址会被同一客户的其他采购账号编辑，用副本算指纹会让「第一次已成功、重试时地址已改」认不出原订单。
         // 它只取请求里的地址 ID，因此不需要先把地址读出来。
         Map<String, Object> idempotencyRequest = idempotencyRequest(customer, form, quantities);
         // 幂等预检必须排在所有「会被后续操作改变的前置校验」之前：
@@ -173,13 +173,13 @@ public class MallCheckoutService {
         if (!fingerprint(quantities, products).equals(form.getPriceFingerprint())) {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
         }
-        // 提交试算必须与预览同一口径：不选券也要算活动优惠，否则预览按优惠后应付放行、
+        // 提交试算必须与预览使用同一算法：不选券也要算活动优惠，否则预览按优惠后应付放行、
         // 提交却按原价判定结算方式，余额介于两者之间时会出现「预览允许但提交拒绝」。
         // 预选券按当前状态完整试算一次（归属 / AVAILABLE / 模板生效 / 门槛），让不成立的券在下单前失败。
-        // 试算不锁券；全标品自动确认仍会在冻结时按最新券状态重新校验。
+        // 试算不锁券；全标品自动确认仍会在锁定时按最新券状态重新校验。
         MallCheckoutPromotionVO promotion = previewPromotion(customer.getCustomerId(), form.getCouponInstanceId(),
             quantities, products);
-        // 结算方式：用与预览同一口径的应付金额重新判定可用性，避免客户端拿旧预览的结论下单。
+        // 结算方式：用与预览同一算法的应付金额重新判定可用性，避免客户端拿旧预览的结论下单。
         BigDecimal gross = estimatedAmount(quantities, products);
         BigDecimal payable = promotion == null ? gross : promotion.getPayableAmount();
         boolean enabled = settlementService.options(customer, payable).stream()
@@ -199,7 +199,7 @@ public class MallCheckoutService {
 
     private static void requireMatchingLockedPrices(SalesOrderDetailVO order, Map<Long, BigDecimal> quantities,
         Map<Long, MallProductVO> products) {
-        // 正式订单提交会重新解析价格；必须在同一事务提交前核对最终快照，覆盖变价和协议到期窗口。
+        // 正式订单提交会重新解析价格；必须在同一事务提交前核对最终单价，覆盖变价和协议到期窗口。
         if (order.getItems() == null || order.getItems().size() != quantities.size()) {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
         }
@@ -217,7 +217,7 @@ public class MallCheckoutService {
     }
 
     /**
-     * 结算优惠试算：只取可结算行（与预估金额同一口径），行 id 用顺序号占位—— 预览阶段没有订单行，分摊结果只汇总展示、不回映射到具体行。
+     * 结算优惠试算：只取可结算行（与预估金额同一算法），行 id 用顺序号占位——预览阶段没有订单行， 分摊结果只汇总展示、不回映射到具体行。
      */
     private MallCheckoutPromotionVO previewPromotion(Long customerId, Long couponInstanceId,
         Map<Long, BigDecimal> quantities, Map<Long, MallProductVO> products) {
@@ -294,7 +294,7 @@ public class MallCheckoutService {
             items.add(item);
         }
         orderForm.setItems(items);
-        // 客户预选券随订单持久化：确认命令默认带入它完成冻结（操作员可改可去），后台订单不经过这里。
+        // 客户预选券随订单保存：确认命令默认带入它完成锁定（操作员可改可去），后台订单不经过这里。
         orderForm.setMallCouponInstanceId(form.getCouponInstanceId());
         // 结算方式同为「客户约定」：只记录选择，实际资金动作由余额 / 授信 / 收款各自领域在既有节点驱动。
         orderForm.setSettlementMethod(form.getSettlementMethod());
@@ -302,7 +302,7 @@ public class MallCheckoutService {
     }
 
     /**
-     * 可结算行的预估金额合计（与预览 {@code estimatedAmount} 同一口径：只累计有客户价的行）。
+     * 可结算行的预估金额合计（与预览 {@code estimatedAmount} 同一算法：只累计有客户价的行）。
      */
     private static BigDecimal estimatedAmount(Map<Long, BigDecimal> quantities, Map<Long, MallProductVO> products) {
         BigDecimal total = BigDecimal.ZERO.setScale(SCALE);

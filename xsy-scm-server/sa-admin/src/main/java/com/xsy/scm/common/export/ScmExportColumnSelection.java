@@ -17,7 +17,7 @@ import java.util.Set;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * 自定义导出列只投影已通过原查询权限检查的数据，不允许客户端拼接 SQL 字段名。
+ * 自定义导出列只从原查询结果里挑字段，不允许客户端拼 SQL 字段名。
  */
 public final class ScmExportColumnSelection {
     private ScmExportColumnSelection() {
@@ -56,14 +56,14 @@ public final class ScmExportColumnSelection {
 
     public static Selection resolve(List<String> requested, List<Column> schema, boolean canViewCost) {
         if (schema.isEmpty())
-            throw new IllegalStateException("导出字段白名单不能为空");
+            throw new IllegalStateException("导出字段列表不能为空");
         if (requested != null && (requested.isEmpty() || requested.size() > 30)) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         Map<String, Integer> positionByKey = new HashMap<>();
         for (int i = 0; i < schema.size(); i++) {
             if (positionByKey.putIfAbsent(schema.get(i).key(), i) != null) {
-                throw new IllegalStateException("导出字段白名单存在重复标识");
+                throw new IllegalStateException("导出字段列表存在重复标识");
             }
         }
         List<String> keys = requested == null ? schema.stream().map(Column::key).toList() : requested;
@@ -76,7 +76,7 @@ public final class ScmExportColumnSelection {
                 throw new ScmBusinessException(VALIDATION_ERROR);
             Column column = schema.get(index);
             if (column.costRestricted() && !canViewCost) {
-                // 旧导出接口的默认全列行为另行按原规则处理；显式选择敏感列需拒绝。
+                // 不传字段时沿用旧的全列导出；显式选到受限列就拒绝。
                 if (requested != null)
                     throw new ScmDataScopeException();
             }

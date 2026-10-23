@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * AR header, source lines, linked RED facts, write-offs and audit history.
+ * 应收单头、明细、关联红字、核销与操作日志。
  */
 @Data
 public class FinanceReceivableDetailVO {

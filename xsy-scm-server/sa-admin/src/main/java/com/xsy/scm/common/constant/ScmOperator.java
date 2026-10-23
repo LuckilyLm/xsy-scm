@@ -15,9 +15,7 @@ public final class ScmOperator {
         return operator;
     }
 
-    /**
-     * 后台任务等没有登录上下文时可以返回空操作人。普通业务写入仍必须明确操作人，不能因此放宽权限检查。
-     */
+    /** 后台任务等没有登录上下文时可以返回空操作人；普通业务写入仍必须明确操作人。 */
     public static String currentOrNull() {
         var user = SmartRequestUtil.getRequestUser();
         if (user == null || user.getUserId() == null) {

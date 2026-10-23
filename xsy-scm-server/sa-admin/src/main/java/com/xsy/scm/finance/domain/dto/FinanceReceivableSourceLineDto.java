@@ -5,10 +5,10 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * 应收生成所需的<b>签收事实</b>（明细维度）：一条 {@code xsy_inventory_outbound_item} 一行应收明细。
+ * 应收生成所需的签收数据（明细维度）：一条出库明细对应一行应收明细。
  *
  * <p>
- * 量与价刻意来自两张表：出库行是「实际发了多少」的唯一事实，订单行是「按什么价格结算」的唯一事实。两者都不允许被订单结算列或库存成本列替代。
+ * 数量与价格来自两张表：出库行记录「实际发了多少」，订单行记录「按什么价格结算」，两者都不能用订单结算列或库存成本列替代。
  */
 @Data
 public class FinanceReceivableSourceLineDto {
@@ -44,7 +44,7 @@ public class FinanceReceivableSourceLineDto {
      * 订单行的下单金额 {@code xsy_sales_order_item.ordered_line_amount}（下单量 × 锁定单价）。
      *
      * <p>
-     * 只用来把订单确认时冻结的行优惠分摊<b>等比折算</b>到本次实际出库量上：优惠是按下单金额冻结的， 少发时该行应承担的优惠也要按比例变小，不能整额落到部分出库行上。
+     * 只用来把订单确认时保存的行优惠分摊按比例折算到本次实际出库量上：优惠是按下单金额保存的， 少发时该行应承担的优惠也要按比例变小，不能整额落到部分出库行上。
      */
     private BigDecimal orderedLineAmount;
 }

@@ -20,9 +20,7 @@ public enum ScmBusinessNoType {
     PRODUCT_SKU("SKU", "product_sku_code_seq"),
     PRODUCT_CATEGORY("CAT", "product_category_code_seq"),
     PRODUCT_TAG("TAG", "product_tag_code_seq"),
-    /**
-     * 追溯批次：批次有业务日期语义，按「前缀 + 业务日 + 序号」发号。
-     */
+    /** 追溯批次带业务日期，按「前缀 + 业务日 + 序号」发号。 */
     TRACE_LOT("LOT", "trace_lot_no_seq");
 
     private final String prefix;

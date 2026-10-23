@@ -32,7 +32,7 @@ public class PurchaseNumberGenerator {
     }
 
     /**
-     * Formats a sequence value without accessing the database.
+     * 只做格式化，不访问数据库。
      */
     public static String format(String prefix, long number) {
         return ScmDocumentNumbers.format(prefix, number);

@@ -8,17 +8,16 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 称重记录（<b>只追加</b>；：无 {@code version} / {@code deleted}；：无 {@code scale_precision}）。
+ * 称重记录，只追加：没有 {@code version} / {@code deleted}，也没有 {@code scale_precision}。
  *
  * <p>
- * <b>刻意只有 insert 与 select</b>：审计事实不可修改、不可删除。缺少 update / delete 方法本身就是「只追加」这一不变量的实现 （与
- * {@code xsy_purchase_operation_log} 同一纪律）。
+ * 刻意只有 insert 与 select：审计记录不可修改、不可删除，缺少 update / delete 方法本身就是「只追加」的实现 （与 {@code xsy_purchase_operation_log} 同一规则）。
  */
 @Mapper
 public interface ReceiptWeighingRecordDao extends BaseMapper<ReceiptWeighingRecordEntity> {
 
     /**
-     * 追加一条称重事实。
+     * 追加一条称重记录。
      */
     int append(@Param("row") ReceiptWeighingRecordEntity row);
 
@@ -33,7 +32,7 @@ public interface ReceiptWeighingRecordDao extends BaseMapper<ReceiptWeighingReco
     List<ReceiptWeighingRecordEntity> listByReceiptId(@Param("purchaseReceiptId") Long purchaseReceiptId);
 
     /**
-     * 某收货行的称重记录条数（「非标品确认必有一条称重事实」的断言用）。
+     * 某收货行的称重记录条数（校验「非标品确认必有一条称重记录」）。
      */
     int countByReceiptItemId(@Param("purchaseReceiptItemId") Long purchaseReceiptItemId);
 }

@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 打印渲染只使用模板白名单字段；金额字段按业务单据权限裁剪，不能通过打印查看无权数据。
+ * 打印渲染只使用模板允许的字段；金额字段按业务单据权限裁剪，不能借打印查看无权数据。
  */
 @Service
 @RequiredArgsConstructor
@@ -29,9 +29,7 @@ public class ScmPrintRenderService {
 
     private final List<ScmPrintSourceProvider> providers;
 
-    /**
-     * 按单据类型取数据源实现。
-     */
+    /** 按单据类型取数据源实现。 */
     public ScmPrintSourceProvider provider(ScmPrintDocumentTypeEnum type) {
         for (ScmPrintSourceProvider provider : providers) {
             if (provider.documentType() == type) {
@@ -42,9 +40,7 @@ public class ScmPrintRenderService {
         throw new ScmBusinessException(ScmPrintErrorCode.DOCUMENT_TYPE_UNSUPPORTED);
     }
 
-    /**
-     * 当前调用者对该单据类型是否可见金额。
-     */
+    /** 当前调用者对该单据类型是否可见金额。 */
     public boolean amountVisible(ScmPrintDocumentTypeEnum type) {
         return !type.requiresMoneyPermission() || ScmDataScopeService.hasPermission(type.getMoneyPermission());
     }
@@ -53,7 +49,7 @@ public class ScmPrintRenderService {
      * 渲染一份版面。
      *
      * @param type
-     *            单据类型（白名单来源）
+     *            单据类型（字段来源）
      * @param source
      *            数据源
      * @param model
@@ -102,8 +98,7 @@ public class ScmPrintRenderService {
             render.getRows().add(cells);
         }
         if (model.isShowTotals()) {
-            // 合计按类型的全部合计字段打印：模板只控制「要不要合计行」，
-            // 逐项挑选合计字段在只有一两个字段时只是多一层配置负担。
+            // 合计按类型的全部合计字段打印：模板只控制要不要合计行，逐项挑选只是多一层配置负担。
             for (ScmPrintField field : type.getTotals()) {
                 if (field.money() && !amountVisible) {
                     hidden.add(field.key());
@@ -117,10 +112,10 @@ public class ScmPrintRenderService {
     }
 
     /**
-     * 版面 → 冻结数据快照。
+     * 版面转成要保存的打印数据。
      *
      * <p>
-     * 存的是<b>版面本身</b>（列定义、行、合计、被剔除的字段），不是业务数据：重印因此不需要 再认识任何一种业务单据，也不会随业务数据变化而改变。
+     * 存的是版面本身（列定义、行、合计、被剔除的字段），不是业务数据。重印不需要再认识任何一种业务单据，也不随业务数据变化。
      */
     public static Map<String, Object> toDataSnapshot(ScmPrintRenderVO render) {
         Map<String, Object> snapshot = new LinkedHashMap<>();
@@ -150,10 +145,10 @@ public class ScmPrintRenderService {
     }
 
     /**
-     * 冻结数据快照 → 版面（历史重印）。
+     * 保存的打印数据还原成版面，用于历史重印。
      *
      * <p>
-     * 对结构缺失一律按空处理：一份结构坏掉的快照应该退化成一个空版面并让人看见， 而不是把整次重印打成 500。
+     * 结构缺失一律按空处理：坏掉的数据退化成空版面让人看见，而不是把整次重印打成 500。
      */
     public static void applyDataSnapshot(ScmPrintRenderVO render, Map<String, Object> snapshot) {
         if (snapshot == null) {

@@ -7,11 +7,11 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.xsy.scm.report.constant.ScmReportPermission;
 
 /**
- * 报表的字段级权限收口：成本列在服务端按字段抹掉，不靠前端隐藏列。
+ * 报表的字段级权限控制：成本列在服务端按字段抹掉，不靠前端隐藏列。
  *
  * <p>
- * 抹除是失败关闭的 —— 取不到权限（未登录、依赖未装配）时按「无权限」处理。已经解析过数据范围的调用方应直接读
- * {@code ScmDataScopeContext#isCostVisible()}（同一个权限码、同一次解析），不要在一次请求里重复问 Sa-Token； {@link #canViewCost()} 留给没有范围上下文的调用方。
+ * 取不到权限（未登录、依赖未装配）时按「无权限」处理。已经解析过数据范围的调用方应直接读 {@code ScmDataScopeContext#isCostVisible()}（同一个权限码、同一次解析），不要在一次请求里重复问
+ * Sa-Token； {@link #canViewCost()} 留给没有范围上下文的调用方。
  */
 public final class ScmReportAccess {
 
@@ -38,7 +38,7 @@ public final class ScmReportAccess {
      * 无成本权限时清空所有成本字段：把 {@code rows} 每个元素的 {@code reader}/{@code writer} 组成的字段对置为 {@code null}。
      *
      * <p>
-     * 用 {@code null} 而不是 {@code 0}：0 是「成本确实是零」这一事实，null 才是「调用者无权知道」。前端把 null 渲染成 {@code —}，两者在页面上必须可辨。
+     * 用 {@code null} 而不是 {@code 0}：0 表示「成本确实是零」，null 表示「调用者无权知道」。 前端把 null 渲染成 {@code —}，两者在页面上必须可辨。
      */
     public static <T> void maskCost(Collection<T> rows, boolean costVisible, Consumer<T> costClearer) {
         if (costVisible || rows == null) {

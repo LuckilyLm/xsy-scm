@@ -45,7 +45,7 @@ public class InventoryOutboundService {
      * 新建草稿出库单。
      *
      * <p>
-     * 草稿阶段<b>不校验可用量与单位</b> —— 那是确认出库时的判断。草稿允许「先录单再补货」，提前卡住反而让录单不可用。
+     * 草稿阶段不校验可用量与单位 —— 那是确认出库时的判断。草稿允许「先录单再补货」，提前卡住反而让录单不可用。
      *
      * @return 新单 id
      */
@@ -53,7 +53,7 @@ public class InventoryOutboundService {
     public Long create(InventoryOutboundAddForm form) {
         requireItems(form);
         String operator = ScmOperator.current();
-        // 新单还没有库存行，表单的仓库就是即将落库的仓库，按它判等价于按行判
+        // 新单还没有库存行，表单的仓库就是即将写入的仓库，按它判等价于按行判
         warehouseScopeGuard.require(form.getWarehouseId());
 
         InventoryOutboundEntity entity = new InventoryOutboundEntity();

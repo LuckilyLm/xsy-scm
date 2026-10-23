@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 采购收货操作日志快照映射，不执行业务写入。
+ * 采购收货操作日志的数据映射，不执行业务写入。
  */
 final class PurchaseReceiptSnapshotMapper {
 

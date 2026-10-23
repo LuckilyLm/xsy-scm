@@ -49,7 +49,7 @@ public enum ScmInventoryConversionStatusEnum {
     }
 
     /**
-     * 该值是否允许写入 {@code xsy_inventory_conversion.status}（DB CHECK 白名单的同源判定）。
+     * 该值是否允许写入 {@code xsy_inventory_conversion.status}（与数据库 CHECK 约束同源判定）。
      */
     public static boolean isSupported(String conversionStatus) {
         for (ScmInventoryConversionStatusEnum item : values()) {

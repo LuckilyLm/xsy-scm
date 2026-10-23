@@ -25,15 +25,11 @@ import org.springframework.stereotype.Service;
  * 免登录扫码页的读路径。
  *
  * <p>
- * 与后台回放的区别有三处，都是刻意的：
- * <ul>
- * <li>凭据是标签上的 {@code public_token}，不是员工登录态；因此不做仓库数据范围校验——能扫到这个码就是访问凭据。</li>
- * <li>返回字段经过裁剪，客户名与订单号脱敏，不返回内部主键、操作人与批次级出库明细。</li>
- * <li>每次都写一条审计并受本地限流约束，用来发现按令牌枚举的爬取。</li>
- * </ul>
+ * 与后台回放有三处不同：凭据是标签上的 {@code public_token}，不做仓库数据范围校验（扫到码本身就是访问凭据）；
+ * 返回字段经过裁剪，客户名和订单号脱敏，不返回内部主键、操作人和批次级出库明细；每次查询写一条审计并受本地限流约束，用来发现按令牌枚举。
  *
  * <p>
- * 这里不加 {@code @Transactional}：几条读语句各自成事务，换来的是「审计写入失败不会把整次查询拖成 500」。 公开页对一致性没有强要求，一次刷新看到的状态差几毫秒可以接受。
+ * 这里不加 {@code @Transactional}：几条读语句各自成事务，审计写入失败不会把整次查询拖成 500。公开页对一致性没有强要求。
  */
 @Service
 @RequiredArgsConstructor
@@ -99,7 +95,7 @@ public class TracePublicService {
      * 附件下载：令牌只能取到「挂在这个码所属批次或商品上」的文件。
      *
      * <p>
-     * 不能把 fileKey 直接交给通用下载接口：那一侧按员工身份判权，匿名请求一律拒绝；也不能让它 302 到静态目录， 那样等于绕过鉴权。所以归属判定在这里做，字节由存储层直接读出来。
+     * 不能把 fileKey 直接交给通用下载接口：那一侧按员工身份判权，匿名请求一律拒绝；也不能 302 到静态目录，那样等于绕过鉴权。 所以归属判定在这里做，字节由存储层直接读出。
      */
     public FileDownloadVO file(String publicToken, String fileKey, String clientIp) {
         String token = normalizeToken(publicToken);
@@ -136,9 +132,7 @@ public class TracePublicService {
         return token;
     }
 
-    /**
-     * 审计写入失败只丢审计，不丢这次查询：扫码的人不该因为一条日志写不进去而看到错误页。
-     */
+    /** 审计写入失败只丢审计，不丢这次查询：扫码的人不该因为一条日志写不进去而看到错误页。 */
     private void audit(TraceUnitVO.Unit unit, String token, String clientIp, String userAgent) {
         try {
             tracePublicQueryDao.insert(unit.getId(), token, truncate(clientIp, 64), truncate(userAgent, 200),
@@ -159,9 +153,7 @@ public class TracePublicService {
         return trimmed.length() <= maxLength ? trimmed : trimmed.substring(0, maxLength);
     }
 
-    /**
-     * 客户名只留姓氏：扫码的人只需要确认「这是我这单的货」，不需要看到别人的全名。
-     */
+    /** 客户名只留姓氏：扫码的人只需要确认「这是我这单的货」，不需要看到别人的全名。 */
     private static String maskName(String name) {
         if (name == null || name.isBlank()) {
             return null;
@@ -170,9 +162,7 @@ public class TracePublicService {
         return trimmed.length() <= 1 ? trimmed : trimmed.charAt(0) + "**";
     }
 
-    /**
-     * 订单号保留首尾各 4 位：够客户对照自己的订单，又不足以被拿来猜别的单号。
-     */
+    /** 订单号保留首尾各 4 位：够客户对照自己的订单，又不足以被拿来猜别的单号。 */
     private static String maskOrderNo(String orderNo) {
         if (orderNo == null || orderNo.isBlank()) {
             return null;

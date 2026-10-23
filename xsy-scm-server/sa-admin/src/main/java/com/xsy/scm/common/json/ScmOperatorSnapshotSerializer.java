@@ -9,18 +9,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 操作日志快照里的操作人字段统一转换为姓名，包括嵌套对象。转换深度有限制，不修改原始 JSONB 历史数据。
+ * 操作日志里的操作人字段统一转成人名，嵌套对象也处理。递归有深度限制，不改原始 JSONB 数据。
  */
 public class ScmOperatorSnapshotSerializer extends JsonSerializer<Map<String, Object>> {
 
-    /**
-     * 快照里可能承载操作人的键名。
-     */
+    /** 审计内容里可能承载操作人的键名。 */
     private static final Set<String> OPERATOR_KEYS = Set.of("operator", "createdBy", "updatedBy", "printedBy");
 
-    /**
-     * 递归深度上限；正常快照只有一层嵌套。
-     */
+    /** 递归深度上限；正常内容只有一层嵌套。 */
     private static final int MAX_DEPTH = 6;
 
     @Override

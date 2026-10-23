@@ -28,7 +28,7 @@ public interface MallCatalogDao {
      * 按 SKU 批量取主图 file_key，供订单列表缩略图使用。
      *
      * <p>
-     * 刻意<b>不带</b>上架与可见性条件：订单是历史事实，商品下架后仍要能显示它当时的图； 可见性只在「能不能再买」时判定，不影响「当时买过什么」的展示。
+     * 刻意不带上架与可见性条件：订单是历史记录，商品下架后仍要能显示它当时的图；可见性只在「能不能再买」时判定， 不影响「当时买过什么」的展示。
      */
     List<MallSkuImageVO> primaryImagesBySkuIds(@Param("skuIds") List<Long> skuIds);
 }

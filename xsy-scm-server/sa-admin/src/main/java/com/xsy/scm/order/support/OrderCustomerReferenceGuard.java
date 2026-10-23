@@ -10,7 +10,7 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_REFERENCED;
 
 /**
- * Checks sales-order references before customer soft deletion, using the caller's customer-row lock.
+ * 客户软删除前检查销售订单引用，复用调用方持有的客户行锁。
  */
 @Aspect
 @Component

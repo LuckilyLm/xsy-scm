@@ -57,10 +57,6 @@ public class ProductExcelController {
         new Column("barcode", "条码"), new Column("specName", "商品规格名称"), new Column("saleUnit", "销售单位"),
         new Column("productType", "商品类型"), new Column("marketPrice", "市场价"), new Column("skuStatus", "商品规格状态"),
         new Column("defaultFlag", "默认商品规格"), new Column("sortOrder", "排序"));
-    /**
-     * 更新导入改写既存商品，除导入权外还要求商品编辑权；权限串与 ProductController 保持一致。
-     */
-
     private final ProductImportService productImportService;
     private final ProductQueryService productQueryService;
     private final SecurityFileService securityFileService;
@@ -156,7 +152,7 @@ public class ProductExcelController {
             vo.setMnemonicCode(spu.getMnemonicCode());
             vo.setBrandName(spu.getBrandName());
             vo.setOrigin(spu.getOrigin());
-            // 导出给人看，枚举一律写业务中文；落库与接口仍用枚举名，对应关系集中在 ProductEnumLabels。
+            // 导出给人看，枚举一律写业务中文；保存与接口仍用枚举名，对应关系集中在 ProductEnumLabels。
             vo.setStorageMethod(ProductEnumLabels.label("储存方式", spu.getStorageMethod()));
             vo.setMasterStatus(ProductEnumLabels.label("主档状态", spu.getMasterStatus()));
             vo.setSpuStatus(ProductEnumLabels.label("商品状态", spu.getStatus()));

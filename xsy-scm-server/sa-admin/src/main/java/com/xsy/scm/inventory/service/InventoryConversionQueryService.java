@@ -73,7 +73,7 @@ public class InventoryConversionQueryService {
      * 独立明细 VO → 头内嵌明细。
      *
      * <p>
-     * 两个类字段一致但<b>不复用同一个类</b>：头内嵌明细是「详情的组成部分」，独立投影是「一行的视图」，两者演进理由不同 —— 因此需要这一层显式映射 （与出库 / 盘点 / 报损报溢 / 调拨同一取向）。
+     * 两个类字段一致但不复用同一个类：头内嵌明细是「详情的组成部分」，独立视图是「一行的视图」，两者演进理由不同 —— 因此需要这一层显式映射（与出库 / 盘点 / 报损报溢 / 调拨做法一致）。
      */
     private static InventoryConversionVO.Item toItem(InventoryConversionItemVO src) {
         InventoryConversionVO.Item item = new InventoryConversionVO.Item();

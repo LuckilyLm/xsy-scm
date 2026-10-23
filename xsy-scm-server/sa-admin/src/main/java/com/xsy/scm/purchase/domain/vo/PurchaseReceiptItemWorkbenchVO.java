@@ -7,7 +7,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import java.math.BigDecimal;
 
 /**
- * 收货工作台按商品规格和采购单位汇总待收量；不同单位不能相加。已收量与待收量从原采购和收货记录计算，不新增第二套收货事实。
+ * 收货工作台按商品规格和采购单位汇总待收量；不同单位不能相加。已收量与待收量从原采购和收货记录计算，不另建一套收货数据。
  */
 @Data
 public class PurchaseReceiptItemWorkbenchVO {

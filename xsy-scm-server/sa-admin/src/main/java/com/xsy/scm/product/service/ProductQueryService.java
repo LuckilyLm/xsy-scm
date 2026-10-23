@@ -42,7 +42,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 @RequiredArgsConstructor
 public class ProductQueryService {
     /**
-     * 单条 IN 的分片上限，见 {@link #enrich}。
+     * IN 查询的分片上限，见 {@link #enrich}。
      */
     private static final int IN_BATCH = 500;
     private final ProductSpuDao productSpuDao;

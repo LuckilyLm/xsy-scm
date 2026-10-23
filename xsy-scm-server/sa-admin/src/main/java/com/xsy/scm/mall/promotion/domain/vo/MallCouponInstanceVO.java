@@ -12,7 +12,7 @@ import lombok.Data;
  * 「我的优惠券」里的一张客户券。
  *
  * <p>
- * {@code effectiveStatus} 由服务端按实例状态与模板有效期派生： {@code AVAILABLE / USED / EXPIRED / RELEASED}，客户端按它分 Tab 展示，不自行判断过期。
+ * {@code effectiveStatus} 由服务端按实例状态与模板有效期计算：{@code AVAILABLE / USED / EXPIRED / RELEASED}， 客户端按它分 Tab 展示，不自行判断过期。
  */
 @Data
 public class MallCouponInstanceVO {

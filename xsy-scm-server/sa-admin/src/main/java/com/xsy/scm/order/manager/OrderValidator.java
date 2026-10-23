@@ -32,7 +32,7 @@ public final class OrderValidator {
     }
 
     /**
-     * 解析最多四位小数的数量或单价。数量必须大于 0，单价可以为 0。 负数、科学计数法和超过四位小数的输入会被拒绝。
+     * 解析最多四位小数的数量或单价：数量必须大于 0，单价可以为 0；负数、科学计数法和超四位小数一律拒绝。
      */
     public static BigDecimal decimal(String decimalText, boolean positive) {
         BigDecimal result;

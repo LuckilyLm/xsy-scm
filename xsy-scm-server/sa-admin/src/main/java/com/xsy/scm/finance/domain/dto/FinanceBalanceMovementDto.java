@@ -5,11 +5,10 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 /**
- * 财务只读到的余额消费流水事实。
+ * 财务读取的余额消费流水。
  *
  * <p>
- * <b>为什么是财务自己的 DTO 而不是余额域的实体</b>：财务域的只读契约不能把别的域的模型当返回值 —— 那等于让余额域的表结构变化直接成为财务域的编译期依赖（见 {@code ScmArchitectureTest}）。
- * 这里只取财务判定与核销真正用到的那几列。
+ * 财务用自己的 DTO 而不是余额域的实体：直接返回别的域的模型，会让余额域的表结构变化成为财务域的编译期依赖（见 {@code ScmArchitectureTest}）。 这里只取财务判定与核销真正用到的列。
  */
 @Data
 public class FinanceBalanceMovementDto {
@@ -20,7 +19,7 @@ public class FinanceBalanceMovementDto {
     private Long id;
 
     /**
-     * 流水号，落核销快照用。
+     * 流水号，核销时保存。
      */
     private String movementNo;
 

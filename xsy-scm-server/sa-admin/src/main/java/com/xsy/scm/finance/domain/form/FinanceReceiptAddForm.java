@@ -11,7 +11,7 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 import java.time.OffsetDateTime;
 
 /**
- * 收款登记请求，只创建 {@code NORMAL} 收款事实。
+ * 收款登记请求，只创建 {@code NORMAL} 收款记录。
  *
  * <p>
  * 收款登记只携带客户、金额、方式、业务时点、资金凭据号和备注；核销、审批、附件、币种、账期与余额不属于这条命令。
@@ -37,15 +37,15 @@ public class FinanceReceiptAddForm {
     private String method;
 
     /**
-     * 实际收款业务时点由登记人填写。服务端不以 {@code now()} 代替，因为业务时点不同于落库时刻。
+     * 实际收款业务时点由登记人填写。服务端不以 {@code now()} 代替，因为业务时点不同于写入时刻。
      */
     @NotNull(message = "收款时间不能为空")
     private OffsetDateTime receivedAt;
 
     /**
-     * 资金凭据号（银行流水号等），只是文本：允许为空、允许重复，既不参与幂等也不建唯一约束。 NORMAL 收款是人工登记的资金事实，本表<b>没有</b> {@code source_type/source_id}，
-     * 因此不存在业务来源唯一索引：重复请求防护只有请求级 {@code Idempotency-Key} 一层， {@code uk_finance_receipt_no} 只是单据号唯一、不是业务事实幂等键。
-     * 金额、凭据号、时点全部相同的两笔真实收款，只要来自两条命令就都应当成立。
+     * 资金凭据号（银行流水号等），只是文本：允许为空、允许重复，既不参与幂等也不建唯一约束。NORMAL 收款是人工登记的资金记录，表里没有
+     * {@code source_type/source_id}，因此没有业务来源唯一索引：重复请求防护只有请求级 {@code Idempotency-Key} 一层，{@code uk_finance_receipt_no}
+     * 只是单据号唯一，不是业务幂等键。金额、凭据号、时点都相同的两笔真实收款，只要来自两条命令就都应当成立。
      */
     @Size(max = 128, message = "资金凭据号长度不能超过128")
     private String externalReference;

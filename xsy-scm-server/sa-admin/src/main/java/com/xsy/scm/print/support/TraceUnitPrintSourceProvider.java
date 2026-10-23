@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
  * 包装码标签的打印数据源。
  *
  * <p>
- * 标签是贴在实物上的身份：只放码、批次、商品与包装量，以及绑定后的客户与订单号；不含价格与成本， 也不允许模板放宽这些字段。取数走追溯域的查询服务，与详情页同一套数据范围。
+ * 标签贴在实物上，只放码、批次、商品、包装量，以及绑定后的客户与订单号；不含价格与成本，模板也不能放宽这些字段。 取数走追溯域的查询服务，与详情页同一套数据范围。
  */
 @Component
 @RequiredArgsConstructor
@@ -58,7 +58,7 @@ public class TraceUnitPrintSourceProvider implements ScmPrintSourceProvider {
         header.put("unit", ScmPrintText.text(unit.getUnit()));
         header.put("netWeight", ScmPrintText.fixed(unit.getNetWeight()));
         header.put("weightUnit", ScmPrintText.text(unit.getWeightUnit()));
-        // 扫码链接：前端据此生成二维码。未配置公开地址时为空，标签只印码。
+        // 扫码链接，前端据此生成二维码；未配置公开地址时为空，标签只印码。
         header.put("traceUrl", ScmPrintText.text(tracePublicLinkBuilder.build(unit.getPublicToken())));
         // 未绑定时留空：标签可以先贴，客户是分拣现场才确定的
         header.put("customerName", ScmPrintText.text(binding == null ? null : binding.getCustomerName()));

@@ -53,7 +53,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_NOT
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_NOT_FOUND;
 
 /**
- * 提供采购单、需求和收货记录的只读查询。 列表和详情按采购员权限过滤，汇总按仓库权限过滤。 收货剩余量和超收量统一使用 PurchaseReceiptQuantityCalculator 计算。
+ * 提供采购单、需求和收货记录的只读查询。列表和详情按采购员权限过滤，汇总按仓库权限过滤。 收货剩余量和超收量统一使用 PurchaseReceiptQuantityCalculator 计算。
  */
 @Service
 @RequiredArgsConstructor
@@ -78,10 +78,6 @@ public class PurchaseQueryService {
     private final com.xsy.scm.trace.support.TraceLotContract traceLotContract;
 
     private final com.xsy.scm.warehouse.service.WarehouseService warehouseService;
-
-    // ------------------------------------------------------------------
-    // 采购需求
-    // ------------------------------------------------------------------
 
     /**
      * 需求列表：按当前调用者的采购员范围收窄。表单里没有采购员筛选项，因此不存在「用户筛选放大范围」的入口。
@@ -117,7 +113,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * Reads every grouped row for a calculation snapshot with the exact preview scope and criteria.
+     * 按预览相同的范围和条件读出全部分组行，用于生成批次。
      */
     @Transactional(readOnly = true)
     public List<PurchaseDemandSummaryVO> summaryPreviewAll(PurchaseDemandSummaryPreviewForm form, int maximumRows) {
@@ -191,10 +187,6 @@ public class PurchaseQueryService {
         return order == null ? null : order.getPurchaserId();
     }
 
-    // ------------------------------------------------------------------
-    // 采购单
-    // ------------------------------------------------------------------
-
     /**
      * 采购单列表：先按调用者范围，再与表单的 {@code purchaserId} 取交集（用户筛选只能缩小授权范围，不能放大）。
      */
@@ -244,7 +236,7 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 采购单行（含每行的分配集合，<b>：N allocations</b>）。
+     * 采购单行（含每行的分配集合，每行 N 条分配）。
      *
      * <p>
      * 它是独立端点 {@code GET /scm/purchase/item/{orderId}} 的实现，因此与详情同样受范围约束：只挡详情、放行行清单等于把别人单据的价格与数量照样端出去。
@@ -279,12 +271,8 @@ public class PurchaseQueryService {
         return purchaseOperationLogDao.listByOrderId(orderId);
     }
 
-    // ------------------------------------------------------------------
-    // 收货单
-    // ------------------------------------------------------------------
-
     /**
-     * 收货单列表：采购员维度按父采购单继承（表上没有采购员列），谓词见 {@code PurchaseReceiptDao.xml} 的 EXISTS 半连。仓库维度由库存/仓库侧口径负责，这里不重复实现。
+     * 收货单列表：采购员维度按父采购单继承（表上没有采购员列），谓词见 {@code PurchaseReceiptDao.xml} 的 EXISTS 半连。 仓库维度由库存/仓库侧的规则负责，这里不重复实现。
      */
     @Transactional(readOnly = true)
     public PageResult<PurchaseReceiptVO> receiptQuery(PurchaseReceiptQueryForm form) {
@@ -330,10 +318,9 @@ public class PurchaseQueryService {
     }
 
     /**
-     * 收货明细：独立端点 {@code GET /scm/purchase/receipt/item/{receiptId}}，与详情同一口径收范围。
+     * 一次性装配整张收货单的批次，避免按行查询；未启用批次的仓库自然得到空列表。
      */
     @Transactional(readOnly = true)
-    /** 一次性装配整张收货单的批次，避免按行查询；未启用批次的仓库自然得到空列表。 */
     private void attachLots(List<PurchaseReceiptItemVO> items) {
         if (items.isEmpty()) {
             return;
@@ -345,6 +332,9 @@ public class PurchaseQueryService {
         items.forEach(item -> item.setLots(grouped.getOrDefault(item.getId(), List.of())));
     }
 
+    /**
+     * 收货明细：独立端点 {@code GET /scm/purchase/receipt/item/{receiptId}}，与详情同样受范围约束。
+     */
     public List<PurchaseReceiptItemVO> receiptItems(Long receiptId) {
         return receiptItems(receiptId, dataScopeService.resolve().getPurchaserScope());
     }
@@ -352,7 +342,7 @@ public class PurchaseQueryService {
     @Transactional(readOnly = true)
     public List<PurchaseReceiptItemVO> receiptItems(Long receiptId, ScmValueScope purchaserScope) {
         if (!purchaserScope.isAll()) {
-            // 收货明细挂在收货单上，归属仍按父采购单判定（与列表的 EXISTS 同一口径）
+            // 收货明细挂在收货单上，归属仍按父采购单判定（与列表的 EXISTS 同一规则）
             PurchaseReceiptEntity receipt = purchaseReceiptDao.selectById(receiptId);
             Long parentOrderId = receipt == null ? null : receipt.getPurchaseOrderId();
             requirePurchaserVisible(purchaserScope, orderPurchaserId(parentOrderId));
@@ -380,12 +370,8 @@ public class PurchaseQueryService {
         return SmartPageUtil.convert2PageResult(page, purchaseOrderItemDao.workbench(page, form, warehouseScope));
     }
 
-    // ------------------------------------------------------------------
-    // 实体 → VO（显式映射：列名快照与 VO 字段名<b>故意不同</b>，不用 BeanUtils 猜）
-    // ------------------------------------------------------------------
-
     /**
-     * 批量装配采购单行 VO。
+     * 批量装配采购单行 VO。列名与 VO 字段名故意保持不同，显式映射，不用 BeanUtils 猜。
      *
      * <p>
      * 一次取全部行的 allocation，再按 {@code purchaseOrderItemId} 分组 —— 避免逐行查库（N+1）。
@@ -443,8 +429,8 @@ public class PurchaseQueryService {
      * 分配 VO。
      *
      * <p>
-     * {@code demandUnit} / {@code demandVersion} / {@code demandStatus}
-     * 取自<b>需求当前值</b>（不是分配行上的快照）：它们表达的是「这条分配现在挂在一个什么状态的需求上」，快照表达不了「需求已补齐」。 {@code quantity} 取分配行自己的数量（一条分配一个数量）。
+     * {@code demandUnit} / {@code demandVersion} / {@code demandStatus} 取自需求当前值（不是分配行上的旧数据）：
+     * 它们回答「这条分配现在挂在一个什么状态的需求上」，旧数据表达不了「需求已补齐」。 {@code quantity} 取分配行自己的数量（一条分配一个数量）。
      */
     private static PurchaseOrderAllocationVO allocationVo(PurchaseDemandAllocationEntity row,
         PurchaseDemandEntity demand) {
@@ -490,7 +476,7 @@ public class PurchaseQueryService {
         vo.setRemainingQuantity(row.getRemainingQuantity());
         vo.setOverReceiptQuantity(row.getOverReceiptQuantity());
         vo.setReceiptDifference(row.getReceiptDifference());
-        // 标品为 null（不是 0.0000）：三字段同生同灭
+        // 标品为 null（不是 0.0000）：实重三字段同时有值或同时为空
         vo.setActualWeight(row.getActualWeight());
         vo.setWeightUnit(row.getWeightUnit());
         vo.setWeighingSource(row.getWeighingSource());

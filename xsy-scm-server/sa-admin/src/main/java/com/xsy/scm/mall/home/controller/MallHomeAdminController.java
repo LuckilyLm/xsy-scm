@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 商城装修管理端。
  *
  * <p>
- * 路径刻意不落在 {@code /scm/mall/**} 下：那个前缀归 {@code MallCustomerInterceptor} 管， 员工令牌会被判成非客户身份（30007）。管理端与客户端共用域名，但走两套拦截器。
+ * 路径刻意不落在 {@code /scm/mall/**} 下：那个前缀归 {@code MallCustomerInterceptor} 管，员工令牌会被判成非客户身份（30007）。 管理端与客户端共用域名，但走两套拦截器。
  */
 @RequestMapping("/scm/mall-admin/home")
 public class MallHomeAdminController {

@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_STATE_INVALID;
 
 /**
- * 只有显式整单预留命令才消费订单确认时冻结的组合组成数量。
+ * 只有显式整单预留命令才使用订单确认时保存的组合组成数量。
  */
 public final class OrderBundleReservationPlanner {
 

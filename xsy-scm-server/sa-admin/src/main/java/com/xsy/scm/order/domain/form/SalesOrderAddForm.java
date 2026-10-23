@@ -34,21 +34,21 @@ public class SalesOrderAddForm {
     @Size(max = 500, message = "订单明细不能超过500项")
     private List<SalesOrderItemForm> items;
     /**
-     * 商城客户预选的券实例；仅 {@code orderSource = MALL} 的建单路径持久化， 后台录单忽略该字段（后台用券在确认命令上显式给出）。
+     * 商城客户预选的优惠券；仅 {@code orderSource = MALL} 的建单路径保存，后台录单忽略（后台在确认时显式指定）。
      */
     private Long mallCouponInstanceId;
     /**
-     * 仅商城渠道写入；由商城地址与配送仓服务授权后传入。
+     * 仅商城渠道写入；由商城地址与配送仓服务校验后传入。
      */
     private Long mallDeliveryWarehouseId;
     /**
-     * 后台录单显式选择的配送仓；不影响商城原有仓库选择和权限流程。
+     * 后台录单显式选择的配送仓；不影响商城的仓库选择和权限流程。
      */
     @jakarta.validation.constraints.Positive(message = "配送仓必须大于0")
     private Long deliveryWarehouseId;
 
     /**
-     * 商城客户在结算页选定的结算方式（WALLET / CREDIT / COD）。仅商城来源的订单会带；后台建单不填。
+     * 商城客户在结算页选定的结算方式（WALLET / CREDIT / COD）；仅商城来源的订单会带，后台建单不填。
      */
     private String settlementMethod;
 }

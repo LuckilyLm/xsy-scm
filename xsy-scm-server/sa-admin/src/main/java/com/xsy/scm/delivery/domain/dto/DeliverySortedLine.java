@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * 配送发车使用分拣已登记的实发量，不复制计划量与分拣结果判定，避免两套发货数量口径。
+ * 发车用分拣登记的实发量，不再复制计划量和分拣判断，免得有两套发货数量规则。
  */
 @Data
 public class DeliverySortedLine {

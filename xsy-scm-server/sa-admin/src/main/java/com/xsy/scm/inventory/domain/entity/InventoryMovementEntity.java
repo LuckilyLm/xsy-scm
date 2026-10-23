@@ -23,7 +23,7 @@ public class InventoryMovementEntity {
     private Long skuId;
 
     /**
-     * {@code ScmInventoryMovementTypeEnum}；仅 {@code PURCHASE_IN}（DB CHECK 白名单）。
+     * {@code ScmInventoryMovementTypeEnum}；仅 {@code PURCHASE_IN}（数据库 CHECK 约束）。
      */
     private String movementType;
 
@@ -53,7 +53,7 @@ public class InventoryMovementEntity {
     private String unitSnapshot;
 
     /**
-     * 采购成本事实快照；可空只为未来的无成本 movement 类型预留表达空间。
+     * 采购成本；可空，只为未来无成本流水类型预留。
      */
     private BigDecimal unitCost;
 
@@ -62,20 +62,20 @@ public class InventoryMovementEntity {
     private BigDecimal afterQuantity;
 
     /**
-     * 发生时刻 —— <b>等于 {@code xsy_purchase_receipt.confirmed_at}</b>，不是写入时刻。
+     * 发生时刻：等于 {@code xsy_purchase_receipt.confirmed_at}，不是写入时刻。
      *
      * <p>
-     * 实时路径与 backfill 路径同口径：都由收货确认事实传入，禁止 {@code now()} 替代。
+     * 实时路径与 backfill 路径规则相同：都由收货确认记录传入，禁止用 {@code now()} 替代。
      */
     private OffsetDateTime occurredAt;
 
     /**
-     * 操作者 —— <b>等于 {@code xsy_purchase_receipt.operator}</b>（已冻结的收货确认事实）。
+     * 操作者：等于 {@code xsy_purchase_receipt.operator}（已保存的收货确认人）。
      */
     private String operator;
 
     /**
-     * 恒为 FALSE（{@code ck_inventory_movement_append_only}），保留列只为匹配契约索引谓词。
+     * 恒为 FALSE（{@code ck_inventory_movement_append_only}），保留列只为匹配索引条件。
      */
     private Boolean deleted = false;
 

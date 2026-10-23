@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 /**
- * 库存流水保留来源类型和来源明细 ID 作为防重依据，来源单号供页面查看原单据。数量、成本及发生时间保存当时的事实；商品与仓库名称可以按当前主档展示。
+ * 库存流水保留来源类型和来源明细 ID 作为防重依据，来源单号供页面查看原单据。数量、成本及发生时间保存当时的数据；商品与仓库名称按当前主数据展示。
  */
 @Data
 public class InventoryMovementVO {
@@ -56,7 +56,7 @@ public class InventoryMovementVO {
      * 出库单号，关联 {@code xsy_inventory_outbound}。
      *
      * <p>
-     * 仅 {@code SALES_OUT} 有值。与 {@code receiptNo} 分开两个字段而不是合并成 「来源单号」一个：两者的跳转目标不同（收货单 vs 出库单），前端要按类型渲染不同链接。
+     * 仅 {@code SALES_OUT} 有值。与 {@code receiptNo} 分开两个字段而不是合并成「来源单号」一个：两者的跳转目标不同（收货单 vs 出库单），前端要按类型渲染不同链接。
      */
     private String sourceDocumentNo;
 

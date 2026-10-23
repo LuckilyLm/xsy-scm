@@ -61,8 +61,8 @@ public class PaymentCallbackService {
         PaymentCallbackEventEntity event = new PaymentCallbackEventEntity();
         event.setProvider(providerCode);
         event.setProviderEventId(callback.providerEventId());
-        // 归一化类型优先；不认识时<b>原样存渠道给的名字</b>（payload 里有什么就存什么），
-        // 两个都没有才留空 —— 留证比编一个本地占位值诚实，也避免造出与其它域撞值的魔法字符串。
+        // 归一化类型优先；不认识时原样保存渠道给的名字（payload 里有什么就存什么），
+        // 两个都没有才留空 —— 保存原值比编一个本地占位值诚实，也避免造出与其它域撞值的魔法字符串。
         event.setEventType(callback.eventType() != null ? callback.eventType().name() : callback.rawEventType());
         event.setSignatureVerified(callback.signatureVerified());
         event.setPayloadHash(hash(rawBody));
@@ -70,7 +70,7 @@ public class PaymentCallbackService {
         event.setProcessStatus(ScmPaymentCallbackProcessStatusEnum.RECEIVED.name());
         event.setCreatedBy(operator);
 
-        // 2) 幂等：已存在则静默返回「重复事件」，<b>不做任何状态转换</b>
+        // 2) 幂等：已存在则静默返回「重复事件」，不做任何状态转换
         if (paymentCallbackEventDao.insertIgnoreDuplicate(event) != 1) {
             log.info("支付回调重复投递，已忽略：provider={} eventId={}", providerCode, callback.providerEventId());
             return paymentCallbackEventDao.selectClaimedByProviderEventId(providerCode, callback.providerEventId());
@@ -91,7 +91,7 @@ public class PaymentCallbackService {
             return reject(event.getId(), "找不到对应的支付交易：" + callback.providerTransactionNo());
         }
 
-        // 5) 状态机：支付与退款都走<b>这一个</b> dispatcher，各自复用与发起时同一段判定，
+        // 5) 状态机：支付与退款都走同一个 dispatcher，各自复用与发起时同一段判定，
         // 不各写一份，也不留第二条处理路径
         Long linkedTransactionId = transaction.getId();
         switch (callback.eventType()) {
@@ -100,7 +100,7 @@ public class PaymentCallbackService {
             case PAYMENT_FAILED -> paymentIntentService.applyOutcome(transaction.getIntentId(), transaction.getId(),
                 ScmPaymentProvider.Outcome.FAILED, "PROVIDER_FAILED", "渠道回调支付失败", null, operator);
             case REFUND_SUCCEEDED, REFUND_FAILED -> {
-                // 退款回调按<b>渠道退款号</b>匹配退款事实；缺它就无从定位，宁可拒收也不猜
+                // 退款回调按渠道退款号匹配退款记录；缺它就无从定位，宁可拒收也不猜
                 if (callback.providerRefundNo() == null || callback.providerRefundNo().isBlank()) {
                     return reject(event.getId(), "退款回调缺少渠道退款号");
                 }

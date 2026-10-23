@@ -38,7 +38,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Freezes the read-side net-demand calculation before any demand write occurs.
+ * 在写需求之前，把只读的净需求计算结果固定下来。
  */
 @Service
 @RequiredArgsConstructor
@@ -90,7 +90,7 @@ public class PurchaseDemandCalculationBatchService {
                 .collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
         Map<Long, PurchaseDemandEntity> existing = existing(sourceItems);
 
-        // 批次头记录<b>解析后</b>的归属，与稍后由同一批次生成的需求保持同一个 owner：
+        // 批次头记录解析后的归属，与稍后由同一批次生成的需求保持同一个 owner：
         // 只存表单原值会让「没分配权的采购员建了自己的批次却读不回来」。
         Long resolvedPurchaserId = ownerResolver.resolveForCreate(form.getPurchaserId());
 
@@ -106,7 +106,7 @@ public class PurchaseDemandCalculationBatchService {
         batch.setSourceLineCount(sourceItems.size());
         batch.setCreatedAt(OffsetDateTime.now());
         batch.setCreatedBy(ScmOperator.current());
-        // V78 的 ck_purchase_demand_batch_summary 要求 summary_snapshot 是 JSON 对象而不是数组，
+        // ck_purchase_demand_batch_summary 要求 summary_snapshot 是 JSON 对象而不是数组，
         // 因此解释行整体挂在 "rows" 键下；数字全部在这里定成四位定点字符串，回看时不再重算。
         Map<String, Object> summarySnapshot = PurchaseSnapshotFactory.snapshot();
         summarySnapshot.put("rows", summary.stream().map(row -> {
@@ -242,10 +242,10 @@ public class PurchaseDemandCalculationBatchService {
     }
 
     /**
-     * 回看一个冻结批次：批次头 + 冻结解释行 + 逐行建议量。
+     * 回看一个已固定的批次：批次头 + 解释行 + 逐行建议量。
      *
      * <p>
-     * <b>只读</b>：所有数字都取自冻结快照，不回表重算，因此回看结果与当初生成时逐字一致。这是 ADM-05「建议量可以逐项解释」的落点 —— 没有这一步，批次一旦生成就只剩计数，解释链断了。
+     * 只读：所有数字都取自保存的批次数据，不回表重算，因此回看结果与当初生成时一致。 这样才能逐项解释建议量，否则批次生成后只剩计数。
      */
     @Transactional(readOnly = true)
     public PurchaseDemandCalculationBatchDetailVO detail(Long batchId) {
@@ -265,7 +265,7 @@ public class PurchaseDemandCalculationBatchService {
      * 批次可见性：仓库范围管解释行里的库存数字，采购员范围管这个采购归属的批次本身。
      *
      * <p>
-     * 两个维度<b>相交而不互相替代</b>：只判仓库会让任何有查看权的人按 id 猜出别人的采购批次；只判采购员则会把未授权仓库的库存量随解释行一起发出去。
+     * 两个维度都要判，不能互相替代：只判仓库会让有查看权的人按 id 猜出别人的采购批次； 只判采购员则会把未授权仓库的库存量随解释行一起发出去。
      */
     private void requireVisible(PurchaseDemandCalculationBatchDetailVO detail) {
         if (!dataScopeService.resolve().getWarehouseScope().allows(detail.getWarehouseId())) {
@@ -312,10 +312,10 @@ public class PurchaseDemandCalculationBatchService {
     }
 
     /**
-     * 冻结快照里的解释行（快照是 {@code {"rows":[...]}}）。
+     * 批次数据里的解释行（结构是 {@code {"rows":[...]}}）。
      *
      * <p>
-     * 结构不符或字段缺失时退化成空列表而不是抛异常：批次头本身仍然可读，让一个损坏的快照把整次回看打成 500 是拿不到任何信息的。
+     * 结构不符或字段缺失时退化成空列表而不是抛异常：批次头本身仍然可读， 让损坏的数据把整次回看变成 500 就什么信息都拿不到。
      */
     private static List<Map<String, Object>> summaryRows(Map<String, Object> snapshot) {
         if (snapshot == null || !(snapshot.get("rows") instanceof List<?> rows)) {

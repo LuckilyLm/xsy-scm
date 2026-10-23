@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Shared error contract for synchronous exports that exceed the row cap.
+ * 同步导出超过行数上限时的公共错误码。
  */
 @Getter
 @RequiredArgsConstructor

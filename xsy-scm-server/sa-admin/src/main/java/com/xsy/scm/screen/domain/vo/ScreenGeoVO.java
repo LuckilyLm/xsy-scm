@@ -58,8 +58,8 @@ public class ScreenGeoVO {
     }
 
     /**
-     * 省级分布。与底图要素对齐的键是 {@code provinceCode}（= GeoJSON 的 {@code adcode}，同为 GB/T 2260 六位码），<b>不是</b>名称：字典里港澳用简称（香港 / 澳门），
-     * 官方边界数据用全称（香港特别行政区 / 澳门特别行政区），按名称匹配会静默丢省。 {@code provinceName} 只是字典侧的展示名。
+     * 省级分布。与底图对齐用 {@code provinceCode}（= GeoJSON 的 {@code adcode}，同为 GB/T 2260 六位码），而不是名称：
+     * 字典里港澳用简称，官方边界数据用全称，按名称匹配会静默丢省。{@code provinceName} 只是字典侧的展示名。
      */
     @Data
     @Schema(description = "省级地理节点")
@@ -88,7 +88,7 @@ public class ScreenGeoVO {
      * 覆盖度：{@code *Total} 是参与统计的全部主档，{@code *Located} 是其中已解析出市级归属的。
      *
      * <p>
-     * 两者之差就是「地图上找不到位置」的量，大屏必须把它显性化，而不是让用户以为看到的分布等于全部业务量。仓库口径与地图节点一致：只统计启用仓。
+     * 两者之差就是「地图上找不到位置」的量，大屏必须显示出来，避免用户以为看到的分布就是全部业务量。仓库与地图节点一致：只统计启用仓。
      */
     @Data
     @Schema(description = "地理归属覆盖度")

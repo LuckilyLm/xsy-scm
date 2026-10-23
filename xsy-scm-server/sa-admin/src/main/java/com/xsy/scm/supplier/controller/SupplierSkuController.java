@@ -26,10 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * SCM 商品-供应商关系（SKU 级）。
- *
- * <p>
- * 唯一写入口是 {@code /replace}，使用整表替换；不提供行级 add / update / delete，避免两套规则漂移。
+ * SCM 商品-供应商关系（SKU 级）。唯一写入口是 {@code /replace}，整表替换，不提供行级增删改。
  */
 @RestController
 @RequestMapping("/scm/supplier/sku")
@@ -39,27 +36,21 @@ public class SupplierSkuController {
 
     private final SupplierSkuService supplierSkuService;
 
-    /**
-     * 按供应商列出活动关联行，供替换编辑页回填。
-     */
+    /** 按供应商列出活动关联行，供替换编辑页回填。 */
     @GetMapping("/list/{supplierId}")
     @SaCheckPermission(SupplierPermission.SKU_QUERY)
     public ResponseDTO<List<SupplierSkuVO>> listBySupplierId(@PathVariable Long supplierId) {
         return ResponseDTO.ok(supplierSkuService.listBySupplierId(supplierId));
     }
 
-    /**
-     * 只读反查：按 SKU 找供应商。
-     */
+    /** 只读反查：按 SKU 找供应商。 */
     @PostMapping("/query")
     @SaCheckPermission(SupplierPermission.SKU_QUERY)
     public ResponseDTO<PageResult<SupplierSkuVO>> query(@Valid @RequestBody SupplierSkuQueryForm form) {
         return ResponseDTO.ok(supplierSkuService.query(form));
     }
 
-    /**
-     * 按供应商汇总可供货情况，列表页的公司卡片使用。
-     */
+    /** 按供应商汇总可供货情况，列表页的公司卡片使用。 */
     @GetMapping("/supplier-summary")
     @SaCheckPermission(SupplierPermission.SKU_QUERY)
     public ResponseDTO<List<SupplierSkuSupplierSummaryVO>> supplierSummary(
@@ -67,9 +58,7 @@ public class SupplierSkuController {
         return ResponseDTO.ok(supplierSkuService.summarizeBySupplier(status));
     }
 
-    /**
-     * 同商品规格、同采购单位的有效供货来源参考价比较。
-     */
+    /** 同商品规格、同采购单位的有效供货来源参考价比较。 */
     @GetMapping("/compare/{skuId}")
     @SaCheckPermission(SupplierPermission.SKU_QUERY)
     public ResponseDTO<List<SupplierSkuComparisonVO>> compare(@PathVariable @Positive Long skuId) {

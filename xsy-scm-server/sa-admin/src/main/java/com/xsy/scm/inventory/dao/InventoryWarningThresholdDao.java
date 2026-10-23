@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 查询和维护库存预警阈值。 阈值配置不创建或修改库存余额；预警列表只关联余额做查询。 更新阈值使用专用 SQL，避免覆盖创建时间等不可修改字段。
+ * 查询和维护库存预警阈值。阈值配置不创建或修改库存余额；预警列表只关联余额做查询。更新阈值使用专用 SQL，避免覆盖创建时间等不可修改字段。
  */
 @Mapper
 public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarningThresholdEntity> {
@@ -26,7 +26,7 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
     int countByWarehouseAndSku(@Param("warehouseId") Long warehouseId, @Param("skuId") Long skuId);
 
     /**
-     * 编辑配置（手写 SQL，带 {@code version} 乐观锁 + {@code deleted} 守卫）。
+     * 编辑配置（手写 SQL，带 {@code version} 乐观锁和 {@code deleted} 条件）。
      *
      * <p>
      * {@code warn_min} / {@code warn_max} 允许传 {@code null}（= 清空该边界），所以不能依赖 MyBatis 的默认非空策略 —— 手写 SQL 天然支持这一点。
@@ -52,19 +52,19 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
      * 预警列表：阈值配置 LEFT JOIN 余额。
      *
      * <p>
-     * 用 LEFT JOIN 而不是 JOIN：配置了阈值但<b>没有余额行</b>的 (仓库, SKU) 必须出现 （那正是「设了下限却一件没有」，应当预警），数量用 {@code COALESCE} 按 0 计。
+     * 用 LEFT JOIN 而不是 JOIN：配置了阈值但没有余额行的 (仓库, SKU) 必须出现（那正是「设了下限却一件没有」，应当预警），数量用 {@code COALESCE} 按 0 计。
      *
      * <p>
-     * {@code status} 为空时只返回异常项（LOW / HIGH）—— 预警列表的默认语义。状态表达式与过滤谓词共用 XML 里的同一个 {@code <sql>} 片段，避免「判定规则写两遍」这种必然漂移的写法。
+     * {@code status} 为空时只返回异常项（LOW / HIGH）—— 预警列表的默认语义。状态表达式与过滤条件共用 XML 里的同一个 {@code <sql>} 片段，避免判定规则写两遍导致前后不一致。
      */
     List<InventoryWarningVO> queryWarningPage(Page<?> page, @Param("query") InventoryWarningQueryForm query,
         @Param("scope") ScmValueScope scope);
 
     /**
-     * 预警通知扫描用的配置行（<b>不按状态过滤</b>）。
+     * 预警通知扫描用的配置行（不按状态过滤）。
      *
      * <p>
-     * 与 {@link #queryWarningPage} 的关键区别：这里必须看到 {@code NORMAL} 的行。判定 「异常 → 正常」的恢复需要知道它现在是正常的，而预警列表默认只返回异常项 —— 用它去
+     * 与 {@link #queryWarningPage} 的关键区别：这里必须看到 {@code NORMAL} 的行。判定「异常 → 正常」的恢复需要知道它现在是正常的，而预警列表默认只返回异常项 —— 用它去
      * 扫描的话，恢复永远观察不到，纪元也就永远不会推进，于是「恢复后再次异常」再也不会提醒。
      *
      * <p>
@@ -73,7 +73,7 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
      * @param limit
      *            单轮上限；超出部分留给下一轮，避免一次扫描把整库读进内存
      * @param scope
-     *            仓库范围；{@code null} 按失败关闭返回 0 行（与其它 SCM 查询同一纪律）
+     *            仓库范围；{@code null} 时直接返回 0 行（与其它 SCM 查询同一规则）
      */
     List<InventoryWarningVO> listScanRows(@Param("limit") int limit, @Param("scope") ScmValueScope scope);
 }

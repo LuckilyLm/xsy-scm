@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 收款事实与有效额、已用额、待核销额派生值。
+ * 收款记录及有效额、已用额、待核销额。
  */
 @Data
 public class FinanceReceiptQueryVO {

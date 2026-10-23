@@ -21,9 +21,7 @@ public class TracePublicLinkBuilder {
         this.baseUrl = baseUrl == null ? "" : stripTrailingSlash(baseUrl.trim());
     }
 
-    /**
-     * 返回可直接编码进二维码的绝对地址；未配置时为空串。
-     */
+    /** 返回可直接编码进二维码的绝对地址；未配置时为空串。 */
     public String build(String publicToken) {
         if (baseUrl.isEmpty() || publicToken == null || publicToken.isBlank()) {
             return "";

@@ -3,7 +3,7 @@ package com.xsy.scm.inventory.permission;
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 
 /**
- * Stable permission identifiers published by the inventory API.
+ * 库存模块对外发布的权限码。
  */
 public final class InventoryPermission {
 
@@ -79,7 +79,7 @@ public final class InventoryPermission {
     public static final String WARNING_QUERY = "scm:inventory:warning:query";
 
     /**
-     * 主动检查库存阈值并投递预警通知。与 {@link #WARNING_QUERY} 分开：查看预警是只读， 本权限会给别人发站内信。
+     * 主动检查库存阈值并投递预警通知。与 {@link #WARNING_QUERY} 分开：查看预警是只读，本权限会给别人发站内信。
      */
     public static final String WARNING_SCAN = "scm:inventory:warning:scan";
 

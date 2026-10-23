@@ -10,8 +10,6 @@ public class ProductTagVO {
     private String name;
     private String status;
     private Integer sortOrder;
-    /**
-     * 当前挂了这个标签的 SPU 数；大于 0 时禁止删除。
-     */
+    /** 当前挂了这个标签的 SPU 数；大于 0 时禁止删除。 */
     private Long productCount;
 }

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 推广码扫码落地（免登录）。
  *
  * <p>
- * 挂在 {@code /scm/mall/promo/**} 下并被排除在商城登录拦截器之外：扫码的人可能还不是客户， 没有账号也就没有令牌。码撤销后立即不可用。
+ * 挂在 {@code /scm/mall/promo/**} 下，不经过商城登录拦截器：扫码的人可能还不是客户，没有账号也就没有令牌。码撤销后立即失效。
  */
 @RestController
 @RequestMapping("/scm/mall/promo")

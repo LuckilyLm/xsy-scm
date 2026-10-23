@@ -19,7 +19,7 @@ import java.util.List;
  *
  * <p>
  * {@code scm:todo:query} 只授权访问待办本身，不隐含库存 / 收货 / 审批 / 配送权限；服务端按「待办权限 ∩ 领域权限」逐卡计算，无权卡片省略，动作仍由各领域接口鉴权。
- * 本接口不写任何业务表、不发消息、不落快照。
+ * 本接口不写业务表、不发消息、不写操作日志。
  */
 @RestController
 @RequestMapping("/scm/dashboard")

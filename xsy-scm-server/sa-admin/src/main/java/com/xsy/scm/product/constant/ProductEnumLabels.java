@@ -16,7 +16,7 @@ import java.util.function.Function;
  * 一份定义同时供三处使用：模板下拉选项、导入解析归一化、导出单元格取值。 分开维护迟早漂移成「导出写中文、导入只认英文」这种自相矛盾。
  *
  * <p>
- * 中文标签一律取自枚举的 {@code desc}，本类只声明「哪一列对应哪个枚举」。 落库与接口仍用枚举名。
+ * 中文标签一律取自枚举的 {@code desc}，本类只声明「哪一列对应哪个枚举」。保存与接口仍用枚举名。
  */
 public final class ProductEnumLabels {
 

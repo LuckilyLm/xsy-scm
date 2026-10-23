@@ -25,7 +25,7 @@ public interface PurchaseDemandAllocationDao extends BaseMapper<PurchaseDemandAl
     List<PurchaseDemandAllocationEntity> listActiveByOrderItemIds(@Param("ids") List<Long> ids);
 
     /**
-     * 指定需求的全部活动分配（<b>跨采购单</b>，用于重算 allocated_quantity）。
+     * 指定需求的全部活动分配（跨采购单，用于重算 allocated_quantity）。
      */
     List<PurchaseDemandAllocationEntity> listActiveByDemandIds(@Param("ids") List<Long> ids);
 
@@ -42,7 +42,7 @@ public interface PurchaseDemandAllocationDao extends BaseMapper<PurchaseDemandAl
         @Param("allocatedQuantity") BigDecimal allocatedQuantity, @Param("operator") String operator);
 
     /**
-     * 软删单条（<b>只删这一条</b>，不波及同一行的其它分配）。
+     * 软删单条，不波及同一行的其它分配。
      */
     int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);
 

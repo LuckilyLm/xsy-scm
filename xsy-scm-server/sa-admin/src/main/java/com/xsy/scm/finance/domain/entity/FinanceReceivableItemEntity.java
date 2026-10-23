@@ -7,7 +7,7 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 
 /**
- * 正常应收按出库明细生成，退货红字按已批准退货明细生成。来源身份独立防重，金额按原订单的冻结结算价与优惠分摊处理，不按当前商品价格重新计算。
+ * 正常应收按出库明细生成，退货红字按已批准退货明细生成。来源身份独立防重，金额按原订单保存的结算价与优惠分摊处理，不按当前商品价格重新计算。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -46,13 +46,13 @@ public class FinanceReceivableItemEntity extends FinanceRecord {
     private BigDecimal quantity;
 
     /**
-     * 正常 = {@code xsy_sales_order_item.locked_unit_price}（唯一价格源）；红字 = 退货行锁定单价。 <b>禁止</b>取
-     * {@code xsy_inventory_movement.unit_cost} —— 那是出库时的库存移动加权均价，不是售价。
+     * 正常 = {@code xsy_sales_order_item.locked_unit_price}（唯一价格源）；红字 = 退货行锁定单价。不能取
+     * {@code xsy_inventory_movement.unit_cost}：那是出库时的库存移动加权均价，不是售价。
      */
     private BigDecimal unitPrice;
 
     /**
-     * 应收明细的优惠额来自订单确认时冻结的分配，正常与红字均按同一口径处理，不能用现行活动重新折算。
+     * 应收明细的优惠额来自订单确认时保存的分摊，正常与红字处理一致，不能用当前活动重新折算。
      */
     private BigDecimal discountAmount;
 
@@ -68,7 +68,7 @@ public class FinanceReceivableItemEntity extends FinanceRecord {
      * 行毛额 = {@link #amount} + {@link #discountAmount}。
      *
      * <p>
-     * <b>刻意不落库</b>：毛额可由净额与优惠精确还原，多存一列派生态就会与既有 「不落余额 / 结清状态列」的纪律冲突，也会给「三列互相漂移」留出空间。
+     * 刻意不存库：毛额可由净额与优惠精确还原，多存一列派生值会违背「不存余额、结清状态列」的约定，也给三列互相不一致留出空间。
      */
     public BigDecimal getGrossAmount() {
         if (amount == null) {

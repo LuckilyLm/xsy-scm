@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 渠道退款前确认退款单客户与原支付客户相同，金额与批准退款额一致。退款状态的拒绝原因由服务层判断。
+ * 渠道退款前确认退款单客户与原支付客户相同、金额与批准退款额一致；具体拒绝原因由服务层给出。
  */
 public record PaymentOrderRefundFact(Long refundId, String refundNo, Long orderId, Long customerId,
     BigDecimal refundAmount, String status, OffsetDateTime completedAt) {

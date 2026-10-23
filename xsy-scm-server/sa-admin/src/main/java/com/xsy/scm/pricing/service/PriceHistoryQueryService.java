@@ -22,7 +22,7 @@ public class PriceHistoryQueryService {
         }
         if (form.getOperationType() != null && form.getOperationType().isBlank())
             form.setOperationType(null);
-        // History has a stable audit ordering; user supplied ordering is not accepted.
+        // 历史审计有固定顺序，不接受客户端指定排序。
         form.setSortItemList(java.util.List.of());
         var page = SmartPageUtil.convert2PageQuery(form);
         return SmartPageUtil.convert2PageResult(page, priceHistoryDao.query(page, form));

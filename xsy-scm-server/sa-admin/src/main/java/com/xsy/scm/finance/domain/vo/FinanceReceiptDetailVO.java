@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * Receipt row, allocations, reversal link and audit history.
+ * 收款单、分配、反向关联与操作日志。
  */
 @Data
 public class FinanceReceiptDetailVO {

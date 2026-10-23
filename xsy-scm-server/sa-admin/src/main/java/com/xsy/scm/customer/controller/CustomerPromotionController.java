@@ -30,9 +30,7 @@ public class CustomerPromotionController {
 
     private final CustomerPromotionService customerPromotionService;
 
-    /**
-     * 生成推广码：该客户上的旧码当场失效。
-     */
+    /** 生成推广码：该客户上的旧码当场失效。 */
     @PostMapping("/create")
     @SaCheckPermission(CustomerPermission.PROMOTION_MANAGE)
     public ResponseDTO<CustomerPromotionVO> create(@RequestBody @Valid CustomerForm form) {
@@ -59,9 +57,7 @@ public class CustomerPromotionController {
         return ResponseDTO.ok(customerPromotionService.scans(codeId, limit));
     }
 
-    /**
-     * 最近一次扫码归属；新增客户时用来预填业务员。
-     */
+    /** 最近一次扫码归属，新增客户时用来预填业务员。 */
     @GetMapping("/attribution")
     @SaCheckPermission(CustomerPermission.PROMOTION_MANAGE)
     public ResponseDTO<CustomerPromotionVO.Scan> attribution() {

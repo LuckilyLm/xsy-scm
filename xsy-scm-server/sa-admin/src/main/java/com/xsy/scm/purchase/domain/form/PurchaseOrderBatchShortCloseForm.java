@@ -12,8 +12,7 @@ import java.util.List;
  * 批量少收关单。
  *
  * <p>
- * 整批共享一个关单原因；{@code orders} 每行携带各自的 {@code version}，被他人改过即显式版本冲突。服务侧在同一事务内按 id 升序逐单套用与单单少收关单完全相同的状态机与「至少一行已收且一行未收齐」校验，
- * 任一单非法即整批回滚（不允许中间部分成功）。
+ * 整批共享一个关单原因；每行携带各自的 {@code version}，被他人改过即报版本冲突。服务端在同一事务内按 id 升序 逐单执行与单张相同的校验，任一单非法即整批回滚。
  */
 @Data
 public class PurchaseOrderBatchShortCloseForm {

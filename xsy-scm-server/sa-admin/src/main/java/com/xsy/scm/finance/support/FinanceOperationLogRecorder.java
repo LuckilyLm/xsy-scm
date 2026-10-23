@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
- * 统一登记财务操作日志，必须与对应财务写入处于同一事务。 日志保存变更前后的金额事实，涉及余额时应在取得行锁后读取。
+ * 统一登记财务操作日志，必须与对应财务写入处于同一事务。日志保存变更前后的金额数据，涉及余额时应在取得行锁后读取。
  */
 @Component
 @RequiredArgsConstructor
@@ -26,8 +26,8 @@ public class FinanceOperationLogRecorder {
      * 追加一条财务操作日志。
      *
      * <p>
-     * {@code reason} 对破坏性动作必填（由调用方与对应事实表的 CHECK 共同保证）；{@code before} 可为 {@code null}（生成类动作没有「改前」）。{@code businessId}
-     * 存的是事实主键而不是单号 —— 单号是读时 join 取得的派生展示值。
+     * {@code reason} 对破坏性动作必填（由调用方与对应业务表的 CHECK 共同保证）；{@code before} 可为 {@code null}（生成类动作没有「改前」）。{@code businessId}
+     * 存的是业务记录主键而不是单号，单号读时从业务表取得。
      */
     public void record(ScmFinanceBusinessTypeEnum businessType, Long businessId, ScmFinanceOperationTypeEnum operation,
         String reason, Object before, Object after) {
@@ -35,7 +35,7 @@ public class FinanceOperationLogRecorder {
     }
 
     /**
-     * 财务派生事实写日志时明确传入原业务操作人：正常应收用签收人、红字应收用退货批准人，不能替换成后台任务当前账户。
+     * 派生记录写日志时明确传入原业务操作人：正常应收用签收人、红字应收用退货批准人，不能换成后台任务的当前账户。
      */
     public void record(ScmFinanceBusinessTypeEnum businessType, Long businessId, ScmFinanceOperationTypeEnum operation,
         String reason, Object before, Object after, String operator) {

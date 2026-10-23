@@ -3,47 +3,33 @@ package com.xsy.scm.common.scope;
 import lombok.Getter;
 
 /**
- * 某次调用在当前登录员工下的 SCM 数据范围解析结果（不可变值对象）。
+ * 当前登录员工的数据范围解析结果（不可变值对象）。
  *
  * <p>
- * 由 {@link ScmDataScopeService#resolve()} 集中产出，Service 层显式下传给 Mapper；不使用底座 {@code @DataScope} 插件，避免空范围被解释为全量数据。
+ * 由 {@link ScmDataScopeService#resolve()} 集中产出，Service 层显式下传给 Mapper；不用底座的 {@code @DataScope} 插件，避免空范围被当成全量数据。
  */
 @Getter
 public final class ScmDataScopeContext {
 
-    /**
-     * 当前员工 id；{@link #denied()} 时为 {@code null}。
-     */
+    /** 当前员工 id；{@link #denied()} 时为 {@code null}。 */
     private final Long employeeId;
 
-    /**
-     * 仓库维度：只来自 {@code xsy_employee_warehouse_scope} 授权行，不做隐式默认。
-     */
+    /** 仓库维度：只来自 {@code xsy_employee_warehouse_scope} 授权行。 */
     private final ScmValueScope warehouseScope;
 
-    /**
-     * 客户负责人维度：{@code xsy_customer.seller_id}。
-     */
+    /** 客户负责人维度：{@code xsy_customer.seller_id}。 */
     private final ScmValueScope customerSellerScope;
 
-    /**
-     * 销售订单负责人维度：{@code xsy_sales_order.seller_id}。
-     */
+    /** 销售订单负责人维度：{@code xsy_sales_order.seller_id}。 */
     private final ScmValueScope orderSellerScope;
 
-    /**
-     * 采购负责人维度：{@code xsy_purchase_order.purchaser_id} / {@code xsy_purchase_demand.purchaser_id}。
-     */
+    /** 采购负责人维度：{@code xsy_purchase_order.purchaser_id} / {@code xsy_purchase_demand.purchaser_id}。 */
     private final ScmValueScope purchaserScope;
 
-    /**
-     * 司机维度：{@code xsy_delivery_route.driver_id}，经 {@code xsy_delivery_driver.employee_id} 反查。
-     */
+    /** 司机维度：{@code xsy_delivery_route.driver_id}，经 {@code xsy_delivery_driver.employee_id} 反查。 */
     private final ScmValueScope driverScope;
 
-    /**
-     * 成本字段是否可见；沿用 V50 已种下的独立成本权限，缺省时由调用方抹成 null 而非 0。
-     */
+    /** 成本字段是否可见；没有成本权限时由调用方输出 null 而不是 0。 */
     private final boolean costVisible;
 
     ScmDataScopeContext(Long employeeId, ScmValueScope warehouseScope, ScmValueScope customerSellerScope,
@@ -58,8 +44,7 @@ public final class ScmDataScopeContext {
     }
 
     /**
-     * break-glass：{@code administratorFlag=true} 与既有底座语义一致，绕过数据范围。正式业务角色的验收必须用 {@code administratorFlag=false}
-     * 的账号，超管通过不算证据。
+     * 超管（{@code administratorFlag=true}）不受数据范围限制。验收业务角色时要用非超管账号。
      */
     static ScmDataScopeContext unrestricted(Long employeeId, boolean costVisible) {
         return new ScmDataScopeContext(employeeId, ScmValueScope.all(), ScmValueScope.all(), ScmValueScope.all(),
@@ -67,7 +52,7 @@ public final class ScmDataScopeContext {
     }
 
     /**
-     * 取不到登录员工时的结果：所有维度都无授权。SCM 读接口不应在无身份上下文里被调用，真出现了按「什么都看不到」处理，绝不回退成全量。
+     * 取不到登录员工时的结果：所有维度都无授权。宁可什么都看不到，也不回退成全量。
      */
     static ScmDataScopeContext denied() {
         return new ScmDataScopeContext(null, ScmValueScope.none(), ScmValueScope.none(), ScmValueScope.none(),
@@ -75,7 +60,7 @@ public final class ScmDataScopeContext {
     }
 
     /**
-     * 便捷入口：本上下文里「按仓库收窄」的维度（库存族、收货、出库、调拨）是否必然 0 行，调用方据此短路成空分页，不必让数据库跑一次恒假谓词。
+     * 按仓库收窄的查询是否必然 0 行，调用方据此直接返回空分页。
      */
     public boolean warehouseNowhere() {
         return warehouseScope.isEmpty();

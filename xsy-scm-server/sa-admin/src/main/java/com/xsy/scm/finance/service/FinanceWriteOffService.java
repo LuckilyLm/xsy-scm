@@ -69,8 +69,7 @@ public class FinanceWriteOffService {
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * Allocate one receipt or supplier payment across one or more open targets. Locks are acquired in rank order:
-     * source account, sorted targets, then inserted facts.
+     * 把一张收款或供应商付款分配到一或多个未结目标。加锁顺序固定为：来源单据、排序后的目标、最后写入记录。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinanceWriteOffAddResultVO add(FinanceWriteOffAddForm form, String idempotencyKey) {
@@ -142,7 +141,7 @@ public class FinanceWriteOffService {
             writeOff.setCreatedBy(operator);
             writeOff.setUpdatedBy(operator);
             if (financeWriteOffDao.insert(writeOff) != 1) {
-                throw new IllegalStateException("核销记录未落库: " + writeOff.getWriteOffNo());
+                throw new IllegalStateException("核销记录未保存: " + writeOff.getWriteOffNo());
             }
 
             TargetBalance after = before.apply(allocation.amount());
@@ -161,7 +160,7 @@ public class FinanceWriteOffService {
     }
 
     /**
-     * Append an equal and opposite allocation fact; the original row is never edited.
+     * 追加一条金额相等、方向相反的核销记录；原记录永不修改。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinanceWriteOffVO reverse(FinanceWriteOffReverseForm form, String idempotencyKey) {

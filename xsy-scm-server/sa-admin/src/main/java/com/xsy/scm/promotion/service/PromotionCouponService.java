@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 优惠券模板与客户券。
  *
  * <p>
- * 券模板只在 {@code DRAFT/STOPPED} 可改；发券一次一条 INSERT 批量落库， 每张券带自己的 {@code instance_no}，因此「这个客户有几张、用到第几张」都能查。
+ * 券模板只在 {@code DRAFT/STOPPED} 可改；发券一次批量写入，每张券有自己的 {@code instance_no}， 能查到客户有几张、用了哪张。
  */
 @Service
 @RequiredArgsConstructor
@@ -154,7 +154,7 @@ public class PromotionCouponService {
      * 发券：给某客户发 N 张可用券。
      *
      * <p>
-     * 只有生效中的券模板可以发：发出去的券立刻可用，模板还没生效等于发了一批用不了的券。
+     * 只有生效中的券模板可以发：发出去的券立刻可用，模板没生效就发等于发了一批用不了的券。
      */
     @Transactional(rollbackFor = Exception.class)
     public int issue(PromotionCouponIssueForm form, String key) {
@@ -194,10 +194,10 @@ public class PromotionCouponService {
     }
 
     /**
-     * 商城客户自助领券：与后台发券共用同一套实例落库，但只认「开放领取」的模板， 并受每人限领与总量上限约束。
+     * 商城客户自助领券：与后台发券走同一套实例写入，但只认「开放领取」的模板，并受每人限领与总量上限约束。
      *
      * <p>
-     * 上限在模板行锁内计数：并发领取在同一模板上串行，不会超限。客户身份来自商城登录会话， 本方法不做员工数据范围判定（商城身份在数据范围服务里是 {@code denied()}）。
+     * 上限在模板行锁内计数：同一模板的并发领取串行处理，不会超限。客户身份来自商城登录会话，不做员工数据范围判定。
      */
     @Transactional(rollbackFor = Exception.class)
     public Long claimFromMall(Long customerId, Long couponId, String key) {

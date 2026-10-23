@@ -22,7 +22,7 @@ import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
 /**
- * 库存分析以库存流水与当前余额为数据来源。历史出入库按流水统计，当前库存按余额统计，不能混用时间口径。
+ * 库存分析以库存流水与当前余额为数据来源。历史出入库按流水统计，当前库存按余额统计，不能混用时间范围。
  */
 @Service
 @RequiredArgsConstructor
@@ -64,7 +64,7 @@ public class InventoryReportService {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
         if (context.warehouseNowhere()) {
-            // 损耗汇总的每个指标都是流水上的仓库事实：无授权仓库时一个都不可知，给空对象而不是 0。
+            // 损耗汇总的每个指标都来自仓库流水：无授权仓库时一个都不可知，给空对象而不是 0。
             return new InventoryReportVO.LossSummary();
         }
         InventoryReportVO.LossSummary vo = reportDao.lossSummary(range.startAt(), range.endAt(), form,
@@ -138,7 +138,7 @@ public class InventoryReportService {
     }
 
     /**
-     * 收发存是数量口径，不需要成本权限；但仍与其余库存查询共用同一份仓库范围。
+     * 收发存是数量报表，不需要成本权限；但仍与其余库存查询共用同一份仓库范围。
      */
     public PageResult<InventoryReportVO.FlowSummaryRow> flowSummary(ScmInventoryReportQueryForm form) {
         SalesReportService.rejectClientSort(form);

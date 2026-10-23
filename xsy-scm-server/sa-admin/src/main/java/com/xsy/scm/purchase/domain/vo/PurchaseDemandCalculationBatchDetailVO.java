@@ -33,7 +33,7 @@ public class PurchaseDemandCalculationBatchDetailVO {
     private String supplierName;
 
     /**
-     * 批次归属采购员（已解析落库值）；可见性按它判定。
+     * 批次归属采购员（保存的 ID），可见性按它判定。
      */
     private Long purchaserId;
 

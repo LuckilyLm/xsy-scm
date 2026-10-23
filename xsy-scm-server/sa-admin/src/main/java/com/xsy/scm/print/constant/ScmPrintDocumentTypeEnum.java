@@ -7,15 +7,13 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 /**
- * 每种打印单据只允许使用字段白名单里的键。金额列按业务查看权限剔除，模板本身不能放宽权限。
+ * 每种打印单据只能使用允许的字段。金额列按业务查看权限剔除，模板本身不能放宽权限。
  */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPrintDocumentTypeEnum {
 
-    /**
-     * 销售单只使用正式订单详情快照；订单查询权限本身允许查看订单金额。
-     */
+    /** 销售单使用正式订单详情；订单查询权限本身允许查看订单金额。 */
     SALES_ORDER("销售订单", null, List.of(new ScmPrintField("orderNo", "销售订单号", false, false),
         new ScmPrintField("customerName", "客户", false, false), new ScmPrintField("customerCode", "客户编码", false, false),
         new ScmPrintField("orderStatus", "订单状态", false, false), new ScmPrintField("orderSource", "订单来源", false, false),
@@ -73,8 +71,7 @@ public enum ScmPrintDocumentTypeEnum {
             new ScmPrintField("supplierName", "供应商来源", false, false)),
         List.of(new ScmPrintField("orderNo", "订单号", false, false),
             new ScmPrintField("customerName", "客户", false, false),
-            // 来源：商品 / 赠品。满赠赠品随订单一起拣，但<b>不挂订单行</b>，
-            // 因此小票必须自己说清这一行是赠品，否则仓库会按订单量去核。
+            // 来源：商品 / 赠品。赠品随订单一起拣但不挂订单行，小票要自己标清楚，否则仓库会按订单量核。
             new ScmPrintField("sourceType", "来源", false, false), new ScmPrintField("productName", "商品", false, false),
             new ScmPrintField("skuCode", "商品规格编码", false, false), new ScmPrintField("specName", "规格", false, false),
             new ScmPrintField("saleUnit", "单位", false, false), new ScmPrintField("plannedQuantity", "计划量", false, true),
@@ -93,34 +90,22 @@ public enum ScmPrintDocumentTypeEnum {
             new ScmPrintField("traceUrl", "溯源二维码", false, false)),
         List.of(), List.of());
 
-    /**
-     * 展示名（模板列表与错误信息用）。
-     */
+    /** 展示名（模板列表与错误信息用）。 */
     private final String label;
 
-    /**
-     * 该类型看金额所需的权限码；{@code null} 表示无额外门禁。
-     */
+    /** 查看金额所需的权限码；{@code null} 表示无额外限制。 */
     private final String moneyPermission;
 
-    /**
-     * 表头字段白名单（单头信息）。
-     */
+    /** 表头允许字段（单据头信息）。 */
     private final List<ScmPrintField> headerFields;
 
-    /**
-     * 明细列白名单。
-     */
+    /** 明细允许字段。 */
     private final List<ScmPrintField> columns;
 
-    /**
-     * 合计字段白名单（整单级）。
-     */
+    /** 合计允许字段（整单级）。 */
     private final List<ScmPrintField> totals;
 
-    /**
-     * 是否支持该类型字符串（入参解析用；不接受 null）。
-     */
+    /** 是否支持该类型字符串（入参解析用，不接受 null）。 */
     public static boolean isSupported(String documentType) {
         for (ScmPrintDocumentTypeEnum item : values()) {
             if (item.name().equals(documentType)) {
@@ -130,30 +115,22 @@ public enum ScmPrintDocumentTypeEnum {
         return false;
     }
 
-    /**
-     * 按 key 找表头字段；不存在返回 {@code null}（调用方按「白名单外」处理）。
-     */
+    /** 按 key 找表头字段；不存在返回 {@code null}，调用方按「字段不支持」处理。 */
     public ScmPrintField headerField(String key) {
         return find(headerFields, key);
     }
 
-    /**
-     * 按 key 找明细列；不存在返回 {@code null}。
-     */
+    /** 按 key 找明细列；不存在返回 {@code null}。 */
     public ScmPrintField column(String key) {
         return find(columns, key);
     }
 
-    /**
-     * 按 key 找合计字段；不存在返回 {@code null}。
-     */
+    /** 按 key 找合计字段；不存在返回 {@code null}。 */
     public ScmPrintField total(String key) {
         return find(totals, key);
     }
 
-    /**
-     * 该类型是否要求金额权限。
-     */
+    /** 该类型是否要求金额权限。 */
     public boolean requiresMoneyPermission() {
         return moneyPermission != null;
     }

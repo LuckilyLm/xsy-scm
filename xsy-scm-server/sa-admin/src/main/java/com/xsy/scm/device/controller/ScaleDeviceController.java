@@ -41,10 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 电子秤设备接入 v1。
  *
  * <p>
- * 设备主动出站访问服务端，服务端不连接现场串口或 Windows 内网端口。响应体用设备协议自己的 {@code OK} / {@code DUPLICATED} 字符串码，不复用后台的 {@code ResponseDTO}。
- *
- * <p>
- * 这里只做身份、作业队列与心跳。读数上报与多筐受理属于下一步，本版不会写入任何分拣数量。
+ * 设备主动出站访问服务端，服务端不连现场串口或内网端口。响应体用设备协议自己的 {@code OK} / {@code DUPLICATED} 字符串码，不用后台的 {@code ResponseDTO}。
  */
 @RestController
 @RequestMapping("/scm/device/scale/v1")
@@ -62,34 +59,26 @@ public class ScaleDeviceController {
 
     private final ScaleUnitService scaleUnitService;
 
-    /**
-     * 用配对码换取设备凭证。配对码一次性，成功后立即失效。
-     */
+    /** 用配对码换取设备凭证。配对码一次性，成功后立即失效。 */
     @PostMapping("/agents/activate")
     public ScaleDeviceResponse<ScaleDeviceCredentialVO> activate(@Valid @RequestBody ScaleActivateForm form) {
         return ScaleDeviceResponse.ok(scaleDeviceAuthService.activate(form));
     }
 
-    /**
-     * 心跳：报告读数与打印状态。只更新观测字段，不代表云端已收齐历史事件。
-     */
+    /** 心跳：报告读数与打印状态。只更新观测字段，不代表云端已收齐历史事件。 */
     @PostMapping("/agents/heartbeat")
     public ScaleDeviceResponse<ScaleAckVO> heartbeat(@Valid @RequestBody ScaleHeartbeatForm form) {
         scaleDeviceAuthService.heartbeat(form);
         return ScaleDeviceResponse.ok(new ScaleAckVO(true, OffsetDateTime.now()));
     }
 
-    /**
-     * 读取本设备配置：绑定仓库、工作站与凭证到期时间。
-     */
+    /** 读取本设备配置：绑定仓库、工作站与凭证到期时间。 */
     @GetMapping("/agents/config")
     public ScaleDeviceResponse<ScaleDeviceConfigVO> config() {
         return ScaleDeviceResponse.ok(scaleDeviceAuthService.config());
     }
 
-    /**
-     * 当前员工可作业的任务分页。游标原样回传即可，不据此推断任务完整性。
-     */
+    /** 当前员工可作业的任务分页。游标原样回传即可，不据此推断任务完整性。 */
     @GetMapping("/jobs")
     public ScaleDeviceResponse<ScaleJobPageVO> jobs(@RequestParam(value = "cursor", required = false) String cursor,
         @RequestParam(value = "limit", defaultValue = "100") int limit) {
@@ -101,18 +90,14 @@ public class ScaleDeviceController {
         return ScaleDeviceResponse.ok(scaleDeviceJobService.job(jobId));
     }
 
-    /**
-     * 领取作业租约。同一任务同时只能被一台设备持有。
-     */
+    /** 领取作业租约。同一任务同时只能被一台设备持有。 */
     @PostMapping("/jobs/{jobId}/claim")
     public ScaleDeviceResponse<ScaleJobVO> claim(@PathVariable("jobId") String jobId,
         @Valid @RequestBody ScaleJobActionForm form) {
         return ScaleDeviceResponse.ok(scaleDeviceJobService.claim(jobId, form));
     }
 
-    /**
-     * 释放作业租约。重复释放按幂等处理。
-     */
+    /** 释放作业租约。重复释放按幂等处理。 */
     @PostMapping("/jobs/{jobId}/release")
     public ScaleDeviceResponse<ScaleJobVO> release(@PathVariable("jobId") String jobId,
         @Valid @RequestBody ScaleJobActionForm form) {
@@ -120,10 +105,10 @@ public class ScaleDeviceController {
     }
 
     /**
-     * 上报一筐读数。只记录设备事实，不改分拣结果。
+     * 上报一筐读数，只记录设备上报的读数，不改分拣结果。
      *
      * <p>
-     * 同一 {@code operationId} 或 {@code eventKey} 重复提交且内容一致时返回原记录并标注重复， 不报错也不重复累计。
+     * 同一 {@code operationId} 或 {@code eventKey} 重复提交且内容一致时返回原记录并标注重复，不报错也不重复累计。
      */
     @PostMapping("/measurements")
     public ScaleDeviceResponse<ScaleMeasurementVO> report(@Valid @RequestBody ScaleMeasurementForm form) {
@@ -164,9 +149,7 @@ public class ScaleDeviceController {
         return ScaleDeviceResponse.ok(scaleUnitService.issue(form, ScmOperator.current()));
     }
 
-    /**
-     * 补打标签：按码取回二维码链接与重量，不重新发码。
-     */
+    /** 补打标签：按码取回二维码链接与重量，不重新发码。 */
     @GetMapping("/units/{unitCode}/label")
     public ScaleDeviceResponse<TraceScaleUnitVO> label(@PathVariable("unitCode") String unitCode) {
         return ScaleDeviceResponse.ok(scaleUnitService.label(unitCode));

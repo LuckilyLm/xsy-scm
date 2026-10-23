@@ -10,48 +10,34 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmPaymentIntentStatusEnum {
 
-    /**
-     * 已创建、尚未向渠道发起。
-     */
+    /** 已创建、尚未向渠道发起。 */
     CREATED("已创建", false),
 
-    /**
-     * 已向渠道发起，等渠道结果。
-     */
+    /** 已向渠道发起，等渠道结果。 */
     PENDING("待支付", false),
 
-    /**
-     * 渠道确认收款成功。<b>唯一可以派生 Finance 收款事实的状态</b>。
-     */
+    /** 渠道确认收款成功。唯一可以生成 Finance 收款记录的状态。 */
     SUCCEEDED("支付成功", true),
 
-    /**
-     * 渠道明确失败。
-     */
+    /** 渠道明确失败。 */
     FAILED("支付失败", true),
 
-    /**
-     * 超过有效期仍未支付（本地判定，渠道可能也有一条过期回调）。
-     */
+    /** 超过有效期仍未支付（本地判定，渠道可能也有一条过期回调）。 */
     EXPIRED("已过期", true),
 
-    /**
-     * 人工关闭：未支付前放弃这笔意图。
-     */
+    /** 人工关闭：未支付前放弃这笔意图。 */
     CLOSED("已关闭", true);
 
     private final String desc;
 
-    /**
-     * 终态：不可再转换。
-     */
+    /** 终态：不可再转换。 */
     private final boolean terminal;
 
     /**
      * 状态转换表（唯一的转换实现，别在 Service 里再写一份 if）。
      *
      * <p>
-     * {@code PENDING} 允许直接回到 {@code CREATED} 吗？不允许 —— 发起过就是发起过， 要重试就新建一个意图，这样「发起了几次」是可数的。
+     * {@code PENDING} 不允许直接回到 {@code CREATED}：发起过就是发起过，要重试就新建一个意图，这样「发起了几次」是可数的。
      */
     public static boolean canTransition(String from, String to) {
         ScmPaymentIntentStatusEnum source = of(from);

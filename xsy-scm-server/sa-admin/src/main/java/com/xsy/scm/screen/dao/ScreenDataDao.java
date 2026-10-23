@@ -29,12 +29,12 @@ public interface ScreenDataDao {
      * 按市聚合的主档归属行，坐标取 {@code xsy_region} 的区划质心。
      *
      * <p>
-     * 只返回<b>已解析出市级归属、且编码能在区划字典里查到</b>的行；省级分布由调用方在这里的结果上向上卷一层， 避免两份 SQL 各自演算导致省界与气泡对不上。
+     * 只返回已解析出市级归属、且编码能在区划字典里查到的行；省级分布由调用方在结果上汇总，避免两份 SQL 各算一次导致省界与气泡对不上。
      */
     List<ScreenGeoVO.CityNode> geoCityRows(@Param("scope") ScmDataScopeContext scope);
 
     /**
-     * 三张主档各自的「总数 / 已归属数」，与 {@link #geoCityRows(ScmDataScopeContext)} 共用同一份口径片段。
+     * 三张主档各自的「总数 / 已归属数」，与 {@link #geoCityRows(ScmDataScopeContext)} 共用同一段统计逻辑。
      */
     ScreenGeoVO.Coverage geoCoverage(@Param("scope") ScmDataScopeContext scope);
 }

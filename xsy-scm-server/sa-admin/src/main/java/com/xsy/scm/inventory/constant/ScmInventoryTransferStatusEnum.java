@@ -19,7 +19,7 @@ public enum ScmInventoryTransferStatusEnum {
      * 在途：源仓已扣减、目标仓未增加。
      *
      * <p>
-     * 此期间这批货不在任何余额行里（{@code xsy_inventory_balance} 只表达「在仓库里的货」，没有虚拟在途仓）， 因此全仓总库存会暂时减少。这是两步式的必然结果，不是缺陷。
+     * 此期间这批货不在任何余额行里（{@code xsy_inventory_balance} 只表达「在仓库里的货」，没有虚拟在途仓）， 因此全仓总库存会暂时减少。这是两步式操作的必然结果，不是缺陷。
      */
     SHIPPED("在途"),
 
@@ -78,7 +78,7 @@ public enum ScmInventoryTransferStatusEnum {
     }
 
     /**
-     * 该值是否允许写入 {@code xsy_inventory_transfer.status}（DB CHECK 白名单的同源判定）。
+     * 该值是否允许写入 {@code xsy_inventory_transfer.status}（与数据库 CHECK 约束同源判定）。
      */
     public static boolean isSupported(String transferStatus) {
         for (ScmInventoryTransferStatusEnum item : values()) {

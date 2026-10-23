@@ -36,7 +36,7 @@ public class OrderExchangeController {
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> create(@Valid @RequestBody OrderExchangeCreateForm form,
         @RequestHeader(value = "Idempotency-Key", required = false) String key) {
-        // 换货单内嵌完整建单表单，改价权限与后台录单同一口径：含人工改价行必须持改价权限
+        // 换货单内嵌完整建单表单，改价权限与后台录单一致：含人工改价行必须持改价权限
         if (form.getOrder().getItems().stream().anyMatch(item -> Boolean.TRUE.equals(item.getManualPriceOverride()))) {
             StpUtil.checkPermission(OrderPermission.PRICE_OVERRIDE);
         }

@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  * SCM 包装码更正。
  *
  * <p>
- * 解绑不是删除：申请 → 他人审批 → 追加解绑事实，三步都留痕；批准后包装码回到可绑定状态。 申请与审批分离，避免现场自己改自己绑错的码。
+ * 解绑不是删除：申请 → 他人审批 → 追加解绑记录，三步都留痕；批准后包装码回到可绑定状态。 申请与审批分离，避免现场自己改自己绑错的码。
  */
 @RestController
 @RequestMapping("/scm/inventory/unit/correction")

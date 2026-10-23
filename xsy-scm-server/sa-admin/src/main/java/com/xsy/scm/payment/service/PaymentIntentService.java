@@ -44,7 +44,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 支付编排：外部渠道收款与内部钱包消费共享意图和交易状态，成功副作用分别处理。
+ * 支付编排：外部渠道收款与内部余额消费共享意图和交易状态，成功副作用分别处理。
  */
 @Service
 @RequiredArgsConstructor
@@ -63,7 +63,7 @@ public class PaymentIntentService {
     private final PaymentNumberGenerator paymentNumberGenerator;
 
     /**
-     * 只读外部事实：按订单 id 解析正式订单（订单号 / 客户 / 业务员）。
+     * 只读外部数据：按订单 id 解析正式订单（订单号 / 客户 / 业务员）。
      */
     private final PaymentSourceDao paymentSourceDao;
 
@@ -90,7 +90,7 @@ public class PaymentIntentService {
      * 创建支付意图并向渠道发起。
      *
      * <p>
-     * <b>应付金额只认入参</b>：不从订单金额推断，也不从已收金额倒算 —— 一张订单可以只收一部分、也可以拆成余额 + 在线支付两条意图。
+     * 应付金额只认入参：不从订单金额推断，也不从已收金额倒算 —— 一张订单可以只收一部分、也可以拆成余额 + 在线支付两条意图。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity create(PaymentIntentCreateForm form, String idempotencyKey) {
@@ -101,7 +101,7 @@ public class PaymentIntentService {
      * 商城客户支付入口：与后台共用同一条意图创建与资金编排，只跳过员工负责人范围（商城客户没有该范围）。
      *
      * <p>
-     * 订单状态门槛、退款互斥、钱包消费与幂等一律不变；归属由商城适配器在入口按登录客户判定， 金额同样由调用方（商城适配器按正式口径算出的待付额）显式给出，本入口仍不做金额推断。
+     * 订单状态门槛、退款互斥、余额消费与幂等一律不变；归属由商城适配器在入口按登录客户判定， 金额同样由调用方（商城适配器按正式规则算出的待付额）显式给出，本入口仍不做金额推断。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity createFromMall(PaymentIntentCreateForm form, String idempotencyKey) {
@@ -110,7 +110,7 @@ public class PaymentIntentService {
 
     private PaymentIntentEntity create(PaymentIntentCreateForm form, String idempotencyKey,
         boolean enforceEmployeeScope) {
-        // 幂等：<b>收钱也要幂等</b>。这里往下会真的调用 provider.createIntent()，
+        // 幂等：收钱也要幂等。这里往下会真的调用 provider.createIntent()，
         // 后台双击 / 网络重试 / 前端超时重试都会造出第二个意图与第二笔渠道交易。
         var claim = idempotencyService.claim(IDEMPOTENCY_SCOPE, idempotencyKey, form);
         PaymentOrderFact order = requireOrder(form, enforceEmployeeScope);
@@ -162,7 +162,7 @@ public class PaymentIntentService {
     }
 
     /**
-     * 余额充值支付只能由余额模块在充值单建立后发起，不能开放客户端随意传充值 ID。充值资金来源始终为在线支付，不是钱包余额扣减。
+     * 余额充值支付只能由余额模块在充值单建立后发起，不能开放客户端随意传充值 ID。充值资金来源始终为在线支付，不是余额扣减。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity createForBalanceRecharge(BalanceRechargeIntentFact fact, String idempotencyKey) {
@@ -190,15 +190,15 @@ public class PaymentIntentService {
      * 意图创建的共享实现（订单支付与余额充值都走这里）。
      *
      * <p>
-     * 共享意图和交易事实的建立；ONLINE 调外部渠道，BALANCE 在本地消费成功后推进状态。
+     * 共享意图和交易记录的创建；ONLINE 调外部渠道，BALANCE 在本地消费成功后推进状态。
      */
     private PaymentIntentEntity createInternal(IntentDraft draft, ScmIdempotencyService.Claim claim) {
         String operator = ScmOperator.current();
         PaymentIntentEntity intent = new PaymentIntentEntity();
         intent.setIntentNo(paymentNumberGenerator.nextIntentNo());
         intent.setCustomerId(draft.customerId());
-        // 冻结<b>正式</b>客户名与业务单号：存 id 字符串不仅是显示问题 ——
-        // 支付成功后会顺着 customer_id 进 Finance 收款事实，来源身份必须从一开始就是对的
+        // 保存正式客户名与业务单号：存 id 字符串不只是显示问题 ——
+        // 支付成功后会顺着 customer_id 进 Finance 收款记录，来源身份必须从一开始就是对的
         intent.setCustomerNameSnapshot(draft.customerName());
         intent.setSourceType(draft.sourceType());
         intent.setSourceId(draft.sourceId());
@@ -275,7 +275,7 @@ public class PaymentIntentService {
      * 把渠道的发起结果落到状态机上。
      *
      * <p>
-     * 抽成方法是为了让回调路径能复用同一段判定：发起时同步成功与之后回调成功，落到本地必须是<b>同一条</b>状态转换，不能各写一份。
+     * 抽成方法是为了让回调路径能复用同一段判定：发起时同步成功与之后回调成功，在本地必须是同一条状态转换，不能各写一份。
      */
     @Transactional(rollbackFor = Exception.class)
     public void applyOutcome(Long intentId, Long transactionId, ScmPaymentProvider.Outcome outcome, String failureCode,
@@ -311,10 +311,10 @@ public class PaymentIntentService {
                         operator);
                 }
                 // 金额不符时保留渠道成功交易和 provider_amount，等待对账；不完成支付意图，
-                // 也不派生 Finance 收款、订单资金关联或余额权益。
-                // <b>金额一致时，无论是否首次都确保 Finance 收款事实存在</b>：
+                // 也不生成 Finance 收款、订单资金关联或余额权益。
+                // 金额一致时，无论是否首次都确保 Finance 收款记录存在：
                 // 「渠道已成功、本地事务当时失败」的场景靠下一次回调 / 对账重新驱动恢复，
-                // 而恢复的入口就是这一句。注册本身按来源键幂等，重复调用不会多记一笔收款。
+                // 恢复的入口就是这一句。注册本身按来源键幂等，重复调用不会多记一笔收款。
                 if (amountMatchesIntent) {
                     registerFinanceReceipt(intentId, transactionId, operator);
                 }
@@ -338,7 +338,7 @@ public class PaymentIntentService {
     private void registerFinanceReceipt(Long intentId, Long transactionId, String operator) {
         PaymentTransactionEntity transaction = paymentTransactionDao.selectById(transactionId);
         if (transaction == null || !ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())) {
-            // 交易没成功就没有收款事实可言：这里是唯一的守卫，调用方不必各自判一遍
+            // 交易没成功就没有收款记录可言：这里是唯一的守卫，调用方不必各自判一遍
             return;
         }
         PaymentIntentEntity intent = paymentIntentDao.selectById(intentId);
@@ -349,9 +349,9 @@ public class PaymentIntentService {
             .registerFromPaymentTransaction(new FinancePaymentReceiptFact(transaction.getId(), intent.getCustomerId(),
                 transaction.getProviderAmount(), transaction.getPaidAt(), transaction.getProviderTransactionNo()));
 
-        // 充值来源还要把<b>钱包权益</b>同时记上：两条事实回答两个不同问题 ——
-        // Finance 收款说「公司实际进账了多少」，余额流水说「这笔钱形成了多少钱包权益」。
-        // 不是重复记账：一个回答资金，一个回答权益。
+        // 充值来源还要同时记上余额权益：两条记录回答两个不同问题 ——
+        // Finance 收款说「公司实际进账了多少」，余额流水说「这笔钱形成了多少余额权益」。
+        // 不是重复记账：一个记资金，一个记权益。
         if (ScmPaymentSourceTypeEnum.BALANCE_RECHARGE.name().equals(intent.getSourceType())) {
             balanceRechargeSinkProvider.getObject().rechargeFromPayment(intent.getSourceId(), intent.getCustomerId(),
                 transaction.getProviderAmount(), transaction.getId(), transaction.getPaidAt());
@@ -364,7 +364,7 @@ public class PaymentIntentService {
      * 状态转换的唯一入口：先判状态机，再带「当前状态」做条件更新。
      *
      * <p>
-     * 受影响行数 != 1 说明有人先改了 —— 宁可报错也不覆盖，因为支付状态是外部事实的投影。
+     * 受影响行数 != 1 说明有人先改了 —— 宁可报错也不覆盖，因为支付状态是外部结果的投影。
      */
     @Transactional(rollbackFor = Exception.class)
     public void transition(Long intentId, ScmPaymentIntentStatusEnum from, ScmPaymentIntentStatusEnum to,
@@ -403,7 +403,7 @@ public class PaymentIntentService {
     }
 
     /**
-     * 仅本地模拟渠道可带剧本；真实渠道带剧本一律拒收（DDL 也有同义 CHECK 兜底）。
+     * 仅本地模拟渠道可带剧本；真实渠道带剧本一律拒收（数据库也有同样的 CHECK 兜底）。
      */
     private static ScmPaymentMockScenarioEnum resolveScenario(PaymentIntentCreateForm form) {
         if (form.getMockScenario() == null || form.getMockScenario().isBlank()) {

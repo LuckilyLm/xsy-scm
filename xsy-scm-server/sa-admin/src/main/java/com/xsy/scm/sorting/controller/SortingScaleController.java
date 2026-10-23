@@ -43,9 +43,7 @@ public class SortingScaleController {
         return ResponseDTO.ok(sortingScaleEventService.report(form));
     }
 
-    /**
-     * 某任务的读数列表；{@code status} 为空返回全部（默认看全部，便于追溯被驳回的读数）。
-     */
+    /** 某任务的读数列表；{@code status} 为空返回全部（默认看全部，便于追溯被驳回的读数）。 */
     @GetMapping("/tasks/{taskId}")
     @SaCheckPermission(SortingPermission.SCALE_QUERY)
     public ResponseDTO<List<SortingScaleEventVO>> list(@PathVariable("taskId") Long taskId,
@@ -53,9 +51,7 @@ public class SortingScaleController {
         return ResponseDTO.ok(sortingScaleEventService.list(taskId, status));
     }
 
-    /**
-     * 人工接受稳定读数：非标品须选择结果并填写必要原因；单位不一致拒绝落地。
-     */
+    /** 人工接受稳定读数：非标品须选择结果并填写必要原因；单位不一致直接拒绝。 */
     @PostMapping("/{id}/accept")
     @SaCheckPermission(SortingPermission.SCALE_ACCEPT)
     @OperateLog
@@ -64,9 +60,7 @@ public class SortingScaleController {
         return ResponseDTO.ok();
     }
 
-    /**
-     * 驳回读数：不写分拣结果，留原因。
-     */
+    /** 驳回读数：不写分拣结果，留原因。 */
     @PostMapping("/{id}/reject")
     @SaCheckPermission(SortingPermission.SCALE_ACCEPT)
     @OperateLog

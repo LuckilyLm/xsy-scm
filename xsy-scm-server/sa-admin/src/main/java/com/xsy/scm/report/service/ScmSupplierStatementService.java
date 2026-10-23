@@ -26,7 +26,7 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Read-side snapshot of supplier payables and independently recorded supplier payments.
+ * 供应商应付与单独记录的供应商付款的只读版本。
  */
 @Service
 @RequiredArgsConstructor
@@ -105,7 +105,7 @@ public class ScmSupplierStatementService {
         result.setPaymentNet(payment);
         result.setClosingPayable(payable);
         if (result.getPartialScope()) {
-            // Payments have no purchaser or warehouse ownership. Do not call a partial allocation a cash balance.
+            // 付款没有采购员或仓库归属，局部范围不能对未核销余额下结论。
             result.setOpeningUnallocated(null);
             result.setClosingUnallocated(null);
         } else {

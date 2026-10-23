@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
- * Canonical request hashing shared by SCM write commands.
+ * SCM 写命令共用的请求指纹计算。
  */
 public final class ScmIdempotencyRequestHasher {
 
@@ -68,7 +68,7 @@ public final class ScmIdempotencyRequestHasher {
                 return objectMapper.getNodeFactory()
                     .textNode(new BigDecimal(node.textValue()).stripTrailingZeros().toPlainString());
             } catch (NumberFormatException ignored) {
-                // Preserve text that cannot be represented as a BigDecimal.
+                // 无法转成 BigDecimal 的文本按原值保留。
             }
         }
         return node;

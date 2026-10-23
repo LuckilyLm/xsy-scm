@@ -9,7 +9,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 营销规则只接受已定义的键和值，未知项直接拒绝。金额统一按四位小数处理，订单冻结使用校验后的规则。
+ * 营销规则只接受已定义的键和值，未知项直接拒绝。金额统一保留四位小数，保存时使用校验后的规则。
  */
 public final class PromotionRuleValidator {
 
@@ -18,9 +18,7 @@ public final class PromotionRuleValidator {
     private PromotionRuleValidator() {
     }
 
-    /**
-     * 按活动类型校验并归一化规则。
-     */
+    /** 按活动类型校验并整理规则。 */
     public static Map<String, Object> validate(ScmPromotionActivityTypeEnum type, Map<String, Object> rule) {
         if (rule == null) {
             throw new ScmBusinessException(PromotionErrorCode.RULE_INVALID);
@@ -32,7 +30,7 @@ public final class PromotionRuleValidator {
                 BigDecimal threshold = positive(rule.get("thresholdAmount"));
                 BigDecimal reduce = positive(rule.get("reduceAmount"));
                 if (reduce.compareTo(threshold) > 0) {
-                    // 满 100 减 200 在数学上成立，在业务上是配置错误，直接拒收
+                    // 满 100 减 200 数学上成立，业务上是配置错误，直接拒收
                     throw new ScmBusinessException(PromotionErrorCode.RULE_INVALID);
                 }
                 normalized.put("thresholdAmount", threshold.toPlainString());
@@ -63,9 +61,7 @@ public final class PromotionRuleValidator {
         return normalized;
     }
 
-    /**
-     * 只接受声明的键：未知键拒收（见类说明）。
-     */
+    /** 只接受声明的键，未知键拒收。 */
     private static void requireOnly(Map<String, Object> rule, String... allowed) {
         for (String key : rule.keySet()) {
             boolean known = false;

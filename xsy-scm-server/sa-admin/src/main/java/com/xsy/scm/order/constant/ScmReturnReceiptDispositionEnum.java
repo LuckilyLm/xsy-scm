@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 退货收货后的处置方式。
  *
  * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * {@code desc} 供页面与导出使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

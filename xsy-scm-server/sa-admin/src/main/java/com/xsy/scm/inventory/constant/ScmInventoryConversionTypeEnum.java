@@ -7,10 +7,10 @@ import lombok.RequiredArgsConstructor;
  * 规格转换类型（{@code SPLIT} / {@code COMBINE}）。
  *
  * <p>
- * 本枚举只表达<b>业务形态</b>，不参与任何计算：折算关系（源数量 : 目标数量）由单据显式声明。系统不推断折算率 —— 一箱到底是 9.5 kg 还是 10 kg 取决于供应商与批次，猜错会直接污染两边余额。
+ * 本枚举只表达业务形态，不参与任何计算：折算关系（源数量 : 目标数量）由单据显式声明。系统不推断折算率—— 一箱到底是 9.5 kg 还是 10 kg 取决于供应商与批次，猜错会直接污染两边余额。
  *
  * <p>
- * <b>方向不由本枚举决定</b>：无论拆零还是组合，源 SKU 一律「出」、目标 SKU 一律「入」。类型只影响展示与统计（「本月拆零多少单」）。
+ * 方向不由本枚举决定：无论拆零还是组合，源 SKU 一律「出」、目标 SKU 一律「入」。类型只影响展示与统计（「本月拆零多少单」）。
  */
 @Getter
 @RequiredArgsConstructor
@@ -29,7 +29,7 @@ public enum ScmInventoryConversionTypeEnum {
     private final String desc;
 
     /**
-     * 该值是否允许写入 {@code xsy_inventory_conversion.convert_type}（DB CHECK 白名单的同源判定）。
+     * 该值是否允许写入 {@code xsy_inventory_conversion.convert_type}（与数据库 CHECK 约束同源判定）。
      */
     public static boolean isSupported(String conversionType) {
         for (ScmInventoryConversionTypeEnum item : values()) {

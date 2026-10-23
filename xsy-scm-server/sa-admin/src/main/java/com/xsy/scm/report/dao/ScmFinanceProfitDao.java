@@ -13,7 +13,7 @@ import com.xsy.scm.report.domain.vo.ScmFinanceProfitRowVO;
 import com.xsy.scm.report.domain.vo.ScmFinanceProfitSummaryVO;
 
 /**
- * Read-only gross-profit projection over Finance, order and inventory facts.
+ * 基于财务、订单与库存数据的只读毛利查询。
  */
 @Mapper
 public interface ScmFinanceProfitDao {

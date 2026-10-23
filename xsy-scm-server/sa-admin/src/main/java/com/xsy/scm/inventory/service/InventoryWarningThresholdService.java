@@ -39,7 +39,7 @@ public class InventoryWarningThresholdService {
      * 新建阈值配置。
      *
      * <p>
-     * 同一个 (仓库, SKU) 只允许一条有效配置：两条会让「按哪条判断」变得没有答案，而预警是给人看的，含糊的预警等于没有预警。DB 有部分唯一索引兜底，这里先给出可读错误。
+     * 同一个 (仓库, SKU) 只允许一条有效配置：两条会让「按哪条判断」变得没有答案，而预警是给人看的，含糊的预警等于没有预警。数据库有部分唯一索引兜底，这里先给出可读错误。
      *
      * @return 新配置 id
      */
@@ -85,7 +85,7 @@ public class InventoryWarningThresholdService {
         }
 
         // 改了 (仓库, SKU) 就要重新防重：否则会把两条配置合成一条，撞唯一索引时报出的
-        // 是 DB 错误而不是可读的业务错误。
+        // 是数据库错误而不是可读的业务错误。
         // 阈值是按仓生效的配置：行上的旧仓与表单的新仓都要授权，否则等于允许往别人仓塞阈值
         warehouseScopeGuard.requireAll(existing.getWarehouseId(), form.getWarehouseId());
         if (!Objects.equals(existing.getWarehouseId(), form.getWarehouseId())
@@ -128,7 +128,7 @@ public class InventoryWarningThresholdService {
      * 阈值区间校验：至少一个边界、都非负、下限不高于上限。
      *
      * <p>
-     * 三条判据合成一个错误码，因为对用户的补救动作是同一个「改一下配置」；具体是哪一种由前端表单先提示，后端只做兜底（DB 的 CHECK 再兜一层）。
+     * 三条规则合成一个错误码，因为对用户的补救动作都是「改一下配置」；具体是哪一种由前端表单先提示，后端只做兜底（数据库 CHECK 再兜一层）。
      */
     private static void requireRange(InventoryWarningThresholdAddForm form) {
         if (form == null || (form.getWarnMin() == null && form.getWarnMax() == null)) {
@@ -150,8 +150,7 @@ public class InventoryWarningThresholdService {
      * SKU 必须存在。
      *
      * <p>
-     * 其它库存单据不校验 SKU 存在（它们总由已存在的 SKU 选择器驱动），但<b>配置表是长期驻留的</b>：一条指向不存在 SKU 的配置会永远留在预警列表里 （没有余额 → 数量按 0 计 →
-     * 触发下限预警），成为永远清不掉的噪声。
+     * 其它库存单据不校验 SKU 存在（它们总由已存在的 SKU 选择器驱动），但配置表是长期保留的：一条指向不存在 SKU 的配置会永远留在预警列表里（没有余额 → 数量按 0 计 → 触发下限预警），成为永远清不掉的噪声。
      */
     private void requireSkuExists(Long skuId) {
         if (skuId == null || productSkuDao.selectById(skuId) == null) {

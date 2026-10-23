@@ -36,7 +36,7 @@ import static com.xsy.scm.delivery.constant.DeliveryErrorCode.NOT_FOUND;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.STATE_INVALID;
 
 /**
- * Route-scoped print registration and result construction.
+ * 线路范围内的打印登记与结果组装。
  */
 @Service
 public class DeliveryRoutePrintService {
@@ -55,9 +55,7 @@ public class DeliveryRoutePrintService {
         this.idempotencyService = idempotencyService;
     }
 
-    /**
-     * Count only explicitly selected orders that remain active under the locked route.
-     */
+    /** 只统计锁定线路下仍活动、且被显式选中的订单。 */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printOrders(Long id, DeliveryPrintOrdersForm form, String key) {
         var claim = idempotencyService.claim("DELIVERY_PRINT_ORDERS:" + id, key, form);
@@ -75,9 +73,7 @@ public class DeliveryRoutePrintService {
         return DeliveryVisibility.current().printResult(result);
     }
 
-    /**
-     * Re-evaluate customer and order filters while holding the route lock before recording prints.
-     */
+    /** 先持线路锁重新计算客户与订单筛选，再登记打印。 */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printCustomers(Long id, DeliveryPrintCustomersForm form, String key) {
         var claim = idempotencyService.claim("DELIVERY_PRINT_CUSTOMERS:" + id, key, form);

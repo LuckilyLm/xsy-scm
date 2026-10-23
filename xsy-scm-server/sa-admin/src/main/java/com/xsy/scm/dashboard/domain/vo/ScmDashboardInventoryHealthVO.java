@@ -3,7 +3,7 @@ package com.xsy.scm.dashboard.domain.vo;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
- * 首页库存健康度按仓库与商品规格汇总，包含缺货和未配置阈值等状态。库存预警卡片仅统计低库存和高库存，两者口径不同。
+ * 首页库存健康度按仓库与商品规格汇总，包含缺货和未配置阈值等状态。库存预警卡片只统计低库存和高库存，两者统计范围不同。
  */
 @Schema(description = "首页库存健康度五档")
 public record ScmDashboardInventoryHealthVO(@Schema(description = "参与评估的 (仓库, 商品规格) 数 = 五档之和") long total,

@@ -8,7 +8,7 @@ import lombok.Data;
  * 商城订单详情里的一格配送进度节点。
  *
  * <p>
- * {@code done} 由服务端按「对应的正式事实是否存在」给出，客户端只负责渲染，不再自己推导进度； 未发生的节点 {@code time} 为空。文案也由服务端给，避免客户端拼业务口径。
+ * {@code done} 由服务端按「对应的正式记录是否存在」给出，客户端只负责渲染，不再自己推导进度；未发生的节点 {@code time} 为空。 文案也由服务端给，避免客户端自行拼接业务文案。
  */
 @Data
 public class MallOrderProgressNodeVO {

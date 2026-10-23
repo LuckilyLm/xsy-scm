@@ -198,10 +198,7 @@ public class SalesOrderController {
     }
 
     /**
-     * 为已确认的订单预留库存。
-     *
-     * <p>
-     * 显式操作而非确认时自动预留：本业务的库存在订单确认之后才产生，把预留挂在确认上会让「先接单→再采购」链路无法运转（见 docs/decisions.md）。货到之后由业务人员对本单执行预留，占用可用量。
+     * 预留库存是显式操作：本业务的库存通常在订单确认之后才到货，若在确认时自动预留，「先接单再采购」就无法运转（见 docs/decisions.md）。
      */
     @PostMapping("/reserve-stock/{orderId}")
     @SaCheckPermission(OrderPermission.RESERVE_STOCK)

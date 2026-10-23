@@ -18,12 +18,8 @@ public class DeliveryCustomerViewVO {
     private Integer itemCount;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal totalAmount;
-    /**
-     * 有效订单中已生成过打印（{@code print_count > 0}）的张数，供上层判定 PARTIAL。
-     */
+    /** 有效订单中已生成过打印（{@code print_count > 0}）的张数，供上层判定 PARTIAL。 */
     private Integer printedOrderCount;
-    /**
-     * PRINTED / UNPRINTED / PARTIAL，由打印计数在 Java 侧判定。
-     */
+    /** PRINTED / UNPRINTED / PARTIAL，由打印计数在 Java 侧判定。 */
     private String printStatus;
 }

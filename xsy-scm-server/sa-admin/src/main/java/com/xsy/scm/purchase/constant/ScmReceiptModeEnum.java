@@ -4,10 +4,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 收货入库模式。直接入库在确认收货时记库存；仓库二次确认先只记收货事实，等待入库操作。 不允许用收货完成状态代替入库状态。
+ * 收货入库模式。直接入库在确认收货时记库存；仓库二次确认先只记录收货，等待入库操作。 不允许用收货完成状态代替入库状态。
  *
  * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * {@code desc} 供页面与导出使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

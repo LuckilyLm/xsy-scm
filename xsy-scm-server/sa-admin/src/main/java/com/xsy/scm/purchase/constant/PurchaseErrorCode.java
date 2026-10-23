@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
- * 采购错误码只定义采购业务的失败原因。仓库本身的不存在、编码重复等错误由仓库模块定义；跨模块共享错误码不能形成反向依赖。
+ * 这里只定义采购业务的失败原因；仓库不存在、编码重复等错误码由仓库模块定义，跨模块共享不形成反向依赖。
  */
 @Getter
 @RequiredArgsConstructor
@@ -31,8 +31,8 @@ public enum PurchaseErrorCode implements ScmErrorCode {
     PURCHASE_RECEIPT_LOT_NOT_TRACKED(40097, "该仓库未启用批次追踪，不能登记批次"),
 
     // ---- 40480–40488 NOT_FOUND ----
-    // 40485 属仓库域、40486 属库存域（InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND，
-    // 已被 ScmInventoryConstantTest 冻结），采购批次因此取 40487，不与两者共用一个码值。
+    // 40485 属仓库域、40486 属库存域（InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND），
+    // 采购批次因此取 40487，避免码值冲突。
     PURCHASE_DEMAND_NOT_FOUND(40480, "采购需求不存在"),
     PURCHASE_ORDER_NOT_FOUND(40481, "采购单不存在"),
     PURCHASE_ORDER_ITEM_NOT_FOUND(40482, "采购明细不存在"),

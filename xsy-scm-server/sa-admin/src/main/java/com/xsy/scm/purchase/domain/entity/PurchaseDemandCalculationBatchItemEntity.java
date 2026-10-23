@@ -13,7 +13,7 @@ import java.util.Map;
 import lombok.Data;
 
 /**
- * One frozen allocation of a SKU-level net gap to a sales-order source line.
+ * 一条 SKU 级净缺口分配到销售订单来源行的固定记录。
  */
 @Data
 @TableName(value = "xsy_purchase_demand_calculation_batch_item", autoResultMap = true)

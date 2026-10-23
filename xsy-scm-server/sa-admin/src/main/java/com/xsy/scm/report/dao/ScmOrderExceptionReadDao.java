@@ -13,7 +13,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 只读源域事实，不持有更新或处理状态接口。
+ * 只读源域数据，不提供更新或处理状态的接口。
  */
 @Mapper
 public interface ScmOrderExceptionReadDao {

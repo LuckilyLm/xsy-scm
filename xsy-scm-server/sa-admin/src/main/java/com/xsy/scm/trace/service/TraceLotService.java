@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
  * 批次档案的写入与读取。
  *
  * <p>
- * 内部批次号由 {@link ScmBusinessNoService} 按「前缀 + 北京时间业务日 + 全局序号」发号，不进入任何前端控件； 来源生产批号只做 trim 与长度校验，原样保存且不参与唯一约束。批次档案创建后不改写。
+ * 内部批次号由 {@link ScmBusinessNoService} 按「前缀 + 北京时间业务日 + 全局序号」发号，不展示给前端； 来源生产批号只做 trim 与长度校验，原样保存且不参与唯一约束。批次档案创建后不改写。
  */
 @Service
 @RequiredArgsConstructor

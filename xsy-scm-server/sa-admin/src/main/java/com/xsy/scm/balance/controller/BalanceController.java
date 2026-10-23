@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 客户余额：概览、流水、人工更正。
  *
  * <p>
- * <b>没有「编辑余额」接口</b>：更正也是追加一条流水，历史不可改（库上 append-only）。
+ * 没有「编辑余额」接口：更正也是追加一条流水，历史不可改（数据库上只允许追加）。
  */
 @RestController
 @RequestMapping("/scm/balance")
@@ -54,7 +54,7 @@ public class BalanceController {
     }
 
     /**
-     * 余额概览：服务端解析结算主体，不接受客户端指定钱包账户 id。
+     * 余额概览：服务端解析结算主体，不接受客户端指定余额账户 id。
      */
     @PostMapping("/query")
     @SaCheckPermission(ScmBalancePermission.QUERY)
@@ -72,7 +72,7 @@ public class BalanceController {
      * 发起在线充值。
      *
      * <p>
-     * 由余额域创建充值事实后<b>内部</b>创建支付意图；客户端拿不到「拿任意 rechargeId 拼一笔支付」 的能力。要求 {@code Idempotency-Key}：这里往下会真的调用渠道。
+     * 余额域创建充值记录后自行创建支付意图，客户端不能拿任意 rechargeId 拼一笔支付。要求 {@code Idempotency-Key}：这里往下会真的调用渠道。
      */
     @PostMapping("/recharge/create")
     @SaCheckPermission(ScmBalancePermission.RECHARGE)
@@ -86,7 +86,7 @@ public class BalanceController {
      * 人工更正余额。
      *
      * <p>
-     * 动的是客户的钱，因此要求独立权限 + 方向 + 金额 + 原因 + {@code Idempotency-Key} （重复提交的代价是真金白银）+ 操作人（落流水）。
+     * 动的是客户的钱，因此要求独立权限 + 方向 + 金额 + 原因 + {@code Idempotency-Key}（重复提交会重复扣款）+ 操作人（写入流水）。
      */
     @PostMapping("/correction")
     @SaCheckPermission(ScmBalancePermission.CORRECTION)

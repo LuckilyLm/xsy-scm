@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 渠道退款记录实际退付金额和原支付交易，与售后退款单的批准金额是两种不同事实。同一售后退款单最多执行一笔渠道退款。
+ * 渠道退款记录实际退付金额和原支付交易；它与售后退款单的批准金额是两回事。同一售后退款单最多执行一笔渠道退款。
  */
 @Data
 @TableName("xsy_payment_refund")
@@ -31,16 +31,14 @@ public class PaymentRefundEntity {
 
     private String provider;
 
-    /**
-     * <b>申请</b>退款金额（本地决定）。
-     */
+    /** 申请退款金额（本地决定）。 */
     private BigDecimal amount;
 
     /**
-     * <b>渠道实际退款金额</b>。成功态必有值（库上有 CHECK）。
+     * 渠道实际退款金额。成功态必有值（数据库 CHECK）。
      *
      * <p>
-     * 与 {@link #amount} 分开：申请 100 而渠道实际退了 98 是可能发生的， 资金反向事实认的是这一列，不是申请额。
+     * 与 {@link #amount} 分开：申请 100 而渠道实际退了 98 是可能发生的，退款资金记录认的是这一列，不是申请额。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal providerAmount;
@@ -56,9 +54,7 @@ public class PaymentRefundEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String providerRefundNo;
 
-    /**
-     * 仅 MOCK：回放剧本（成功 / 失败）。
-     */
+    /** 仅 MOCK：回放剧本（成功 / 失败）。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String mockScenario;
 

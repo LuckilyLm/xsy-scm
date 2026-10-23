@@ -11,7 +11,7 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 import java.time.OffsetDateTime;
 
 /**
- * 付款登记只新增正常付款事实。供应商付款和客户退款按对方类型、来源与金额分别验证；客户退款必须关联已完成的真实退款单。
+ * 付款登记只新增正常付款记录。供应商付款和客户退款按对方类型、来源与金额分别验证；客户退款必须关联已完成的退款单。
  */
 @Data
 public class FinancePaymentAddForm {
@@ -23,8 +23,8 @@ public class FinancePaymentAddForm {
     private String counterpartyType;
 
     /**
-     * 对方主键：{@code SUPPLIER} 时为 {@code xsy_supplier.id}； {@code CUSTOMER} 时<b>以 {@code xsy_order_refund.customer_id}
-     * 为权威</b>，本字段只用于一致性校验。
+     * 对方主键：{@code SUPPLIER} 时为 {@code xsy_supplier.id}；{@code CUSTOMER} 时以 {@code xsy_order_refund.customer_id}
+     * 为准，本字段只做一致性校验。
      */
     @NotNull(message = "往来方编号不能为空")
     private Long counterpartyId;
@@ -53,7 +53,7 @@ public class FinancePaymentAddForm {
      * 资金凭据号，只是文本：可空、可重复、不建唯一约束。
      *
      * <p>
-     * <b>不会从 {@code xsy_order_refund.external_reference} 自动带入</b>：那一列属于订单域的退款事实，本列属于财务的真实资金动作，两者职责不同，必须由登记人独立提供。
+     * 不会从 {@code xsy_order_refund.external_reference} 自动带入：那一列属于订单域的退款记录，本列属于财务的实际资金动作，两者职责不同，必须由登记人单独提供。
      */
     @Size(max = 128, message = "资金凭据号长度不能超过128")
     private String externalReference;

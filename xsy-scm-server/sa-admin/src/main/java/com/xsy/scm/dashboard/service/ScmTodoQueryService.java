@@ -39,9 +39,7 @@ public class ScmTodoQueryService {
     private final InventoryLossGainQueryService inventoryLossGainQueryService;
     private final DeliveryRouteQueryService deliveryRouteQueryService;
 
-    /**
-     * 当前登录员工的待办卡片列表。
-     */
+    /** 当前登录员工的待办卡片列表。 */
     public List<ScmTodoVO> currentEmployeeTodos() {
         RequestUser user = SmartRequestUtil.getRequestUser();
         if (user == null || user.getUserId() == null) {
@@ -53,7 +51,7 @@ public class ScmTodoQueryService {
     }
 
     /**
-     * 按给定权限集合计算卡片（与登录态解耦，便于负向夹具直接验证省略 / 零值语义）。
+     * 按给定权限集合计算卡片（与登录态解耦，便于负向夹具直接验证省略 / 零值）。
      */
     public List<ScmTodoVO> todosFor(List<String> heldPermissions) {
         List<String> held = heldPermissions == null ? List.of() : heldPermissions;
@@ -74,7 +72,7 @@ public class ScmTodoQueryService {
 
     private long countOf(ScmTodoCardEnum card) {
         return switch (card) {
-            // status 为空即预警列表默认口径：只含异常（LOW / HIGH），与列表页一致
+            // status 为空即预警列表的默认筛选：只含异常（LOW / HIGH），与列表页一致
             case INVENTORY_WARNING -> total(inventoryWarningQueryService.queryWarningPage(newWarningForm()));
             case RECEIPT_PUTAWAY -> total(purchaseQueryService.receiptQuery(putawayForm()));
             // PENDING 即待审批列表筛选，approve / reject 权限由卡片可见性把关

@@ -8,7 +8,7 @@ import lombok.Data;
  * 申请更正：撤销一条已经生效的绑定。
  *
  * <p>
- * 申请与审批必须不是同一个人；批准后包装码回到可绑定状态，可以重新绑到正确的分拣行。
+ * 申请与审批不能是同一个人；批准后包装码回到可绑定状态，可以重新绑到正确的分拣行。
  */
 @Data
 public class TraceCorrectionApplyForm {

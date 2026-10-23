@@ -149,7 +149,7 @@ public class DeliveryRouteController {
         return ResponseDTO.ok();
     }
 
-    // 发车会产生库存事实，因此必须带 Idempotency-Key：重复请求回放原结果，不重复扣库存。
+    // 发车会写库存记录，因此必须带 Idempotency-Key：重复请求回放原结果，不重复扣库存。
     @PostMapping("/routes/{id}/dispatch")
     @SaCheckPermission(DeliveryPermission.ROUTE_DISPATCH)
     @OperateLog
@@ -159,7 +159,7 @@ public class DeliveryRouteController {
         return ResponseDTO.ok(deliveryRouteService.dispatch(id, form, key));
     }
 
-    // 签收落在订单上而不是线路上，因此权限点也是订单维度；司机维度收窄在服务层按读侧同源判定。
+    // 签收落在订单上，所以权限点也是订单维度；司机范围在服务层按读侧同样的规则收窄。
     @PostMapping("/routes/{id}/orders/{orderId}/sign")
     @SaCheckPermission(DeliveryPermission.ORDER_SIGN)
     @OperateLog
@@ -177,8 +177,8 @@ public class DeliveryRouteController {
         return ResponseDTO.ok();
     }
 
-    // 候选池是「尚未分配」的订单 + 客户地址电话，只有调度/规划岗可查；司机即使有线路查询权也拿不到。
-    // 服务层还要再判一次组单权 + 授权仓库：那才是权威判定，本注解只是把无权请求挡在接口边界。
+    // 候选池是「还没分配」的订单 + 客户地址电话，只有调度/规划岗能查；司机有线路查询权也拿不到。
+    // 服务层还要再判一次组单权和授权仓库，那才是最终判断，这个注解只是先把无权请求挡在接口外。
     @GetMapping("/candidate-orders")
     @SaCheckPermission(DeliveryPermission.ROUTE_PLAN)
     public ResponseDTO<PageResult<DeliveryCandidateVO>> candidates(@Valid @ModelAttribute DeliveryQueryForm form) {
@@ -219,7 +219,7 @@ public class DeliveryRouteController {
         return ResponseDTO.ok();
     }
 
-    // Route selectors share route-query permission, avoiding an implicit dependency on master-data menus.
+    // 线路选择器共用线路查询权限，避免隐式依赖主档菜单。
     @GetMapping("/options/drivers")
     @SaCheckPermission(DeliveryPermission.ROUTE_QUERY)
     public ResponseDTO<List<DeliveryDriverEntity>> driverOptions() {

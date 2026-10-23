@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Param;
  * 商品集合完成记录读写。
  *
  * <p>
- * 按 {@code operation_id} 查询是幂等入口：同一操作号重复提交必须返回原结果， 不能因为网络重试再确认一次分拣数量。
+ * 按 {@code operation_id} 查询是幂等入口：同一操作号重复提交必须返回原结果，不能因为网络重试再确认一次分拣数量。
  */
 @Mapper
 public interface SortingScaleCompletionDao extends BaseMapper<SortingScaleCompletionEntity> {

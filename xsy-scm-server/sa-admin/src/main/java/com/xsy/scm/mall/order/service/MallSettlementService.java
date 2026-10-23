@@ -56,7 +56,7 @@ public class MallSettlementService {
     }
 
     /**
-     * 账期：先按共享可见性收口，再用正式授信口径判定。
+     * 账期：先按是否共享结算处理，再用正式授信规则判定。
      *
      * <p>
      * 「有额度」不等于「可用」：逾期、或本单占用后超限，都会让账期不可选 —— 避免结算页允许选择、后台确认时又被拒。
@@ -92,7 +92,7 @@ public class MallSettlementService {
             return option;
         }
         option.setEnabled(Boolean.TRUE);
-        option.setNote("账期按优惠后应付占用，确认时按实重与已冻结优惠重验");
+        option.setNote("账期按优惠后应付占用，确认时按实重与已保存的优惠重新校验");
         return option;
     }
 

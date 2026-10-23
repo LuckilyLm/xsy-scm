@@ -6,10 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * SCM 内部编码的唯一出口：业务代码只依赖类型枚举，不关心底层序列实现。
+ * 内部编码都从这里发：业务代码只依赖类型枚举，不管序列怎么实现。换发号机制只改这里。
  *
  * <p>
- * 上层的创建命令只负责带上生成的编码落库；换用其他发号机制时改本类即可，业务代码不动。
+ * 创建命令拿到编码后自己保存。
  */
 @Service
 @RequiredArgsConstructor
@@ -21,17 +21,14 @@ public class ScmBusinessNoService {
      * 生成下一个内部编码（如 {@code CUS000001}）。
      *
      * <p>
-     * 并发唯一性由 PG 序列保证；各主数据表的唯一索引是最后一道保险。
+     * 并发唯一性由 PG 序列保证，各主数据表的唯一索引兜底。
      */
     public String next(ScmBusinessNoType type) {
         return ScmDocumentNumbers.masterCode(type.getPrefix(), businessNoDao.nextSequence(type.getSequence()));
     }
 
     /**
-     * 生成带业务日期的内部编码（如 {@code LOT20261018000001}）。
-     *
-     * <p>
-     * 只给确有业务日期语义的编号使用；主数据编码没有日期段，仍走 {@link #next(ScmBusinessNoType)}。
+     * 生成带业务日期的内部编码（如 {@code LOT20261018000001}）。只有确有业务日期的编号才用它。
      */
     public String nextDated(ScmBusinessNoType type) {
         return ScmDocumentNumbers.format(type.getPrefix(), businessNoDao.nextSequence(type.getSequence()));

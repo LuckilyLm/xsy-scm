@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 应收事实及其只读派生余额。
+ * 应收记录及其按查询计算的余额数据。
  */
 @Data
 public class FinanceReceivableVO {

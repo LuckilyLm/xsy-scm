@@ -13,11 +13,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 结算主体的授信敞口只读取数；客户锁与订单裁定属于调用方。
+ * 结算主体的授信敞口只负责取数；客户锁与订单判断由调用方负责。
  *
  * <p>
- * <b>未开应收的占用与签收应收同金额口径</b>：只有账期订单参与预占；历史空结算方式订单沿用旧口径。 已开正常应收无论原结算方式如何，按未结净额计入。订单金额逐单走
- * {@link FinanceOrderPayableQueryService} 的冻结优惠折算。
+ * 未开应收的占用与签收应收算法一致：只有账期订单参与预占，历史上没有结算方式的订单沿用旧算法；已开正常应收无论原结算方式如何，按未结净额计入。 订单金额逐单走
+ * {@link FinanceOrderPayableQueryService} 的优惠折算。
  */
 @Service
 @RequiredArgsConstructor

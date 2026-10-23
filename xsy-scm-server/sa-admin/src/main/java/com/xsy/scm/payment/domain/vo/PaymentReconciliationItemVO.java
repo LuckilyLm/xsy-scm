@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 逐条对账差异（冻结事实）。
+ * 逐条对账差异。
  */
 @Data
 public class PaymentReconciliationItemVO {
@@ -18,9 +18,7 @@ public class PaymentReconciliationItemVO {
 
     private Long reconciliationId;
 
-    /**
-     * {@code LOCAL_MISSING} / {@code PROVIDER_MISSING} / {@code AMOUNT_MISMATCH} / {@code STATUS_MISMATCH}。
-     */
+    /** {@code LOCAL_MISSING} / {@code PROVIDER_MISSING} / {@code AMOUNT_MISMATCH} / {@code STATUS_MISMATCH}。 */
     private String category;
 
     private String providerTransactionNo;

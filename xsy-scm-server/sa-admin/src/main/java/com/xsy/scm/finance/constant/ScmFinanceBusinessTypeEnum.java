@@ -5,10 +5,10 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * 财务操作日志的业务对象类型，对应 {@code xsy_finance_operation_log.business_type} 的 {@code ck_finance_operation_log_business_type}
- * 白名单。
+ * CHECK 约束。
  *
  * <p>
- * 日志按「对象类型 + 对象 id」定位，不存对象单号：单号是可读的派生展示值，读时 join 对应事实表取得，落两份就会漂移。
+ * 日志按「对象类型 + 对象 id」定位，不存单号：单号读时从对应业务表取，存两份容易不一致。
  */
 @Getter
 @RequiredArgsConstructor

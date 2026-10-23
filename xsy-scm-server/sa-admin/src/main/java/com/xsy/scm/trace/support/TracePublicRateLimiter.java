@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
  * 扫码页免登录，凭据只有标签上的令牌，所以限流是唯一的滥用防线：按 IP 挡批量枚举，按令牌挡针对单个码的高频抓取。
  *
  * <p>
- * 计数放在本机内存里：当前部署是单实例，跨实例共享要换成 Redis 键。这里刻意不引入分布式依赖——限流值本身是 兜底，不是计费依据，多实例部署时放宽一倍也可以接受。
+ * 计数放在本机内存：当前是单实例部署，跨实例共享要换成 Redis。限流只是兜底，不是计费依据，多实例时放宽一倍可以接受。
  */
 @Component
 public class TracePublicRateLimiter {
@@ -32,9 +32,7 @@ public class TracePublicRateLimiter {
     private final Cache<String, AtomicInteger> tokenCounters = Caffeine.newBuilder()
         .expireAfterWrite(Duration.ofHours(1)).maximumSize(50_000).build();
 
-    /**
-     * 任一维度超限即拒绝；IP 未知时只按令牌计。
-     */
+    /** 任一维度超限即拒绝；IP 未知时只按令牌计。 */
     public void check(String clientIp, String publicToken) {
         if (clientIp != null && !clientIp.isBlank() && increment(ipCounters, clientIp) > IP_LIMIT_PER_MINUTE) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_PUBLIC_RATE_LIMITED);

@@ -18,9 +18,7 @@ public class PromotionActivityVO {
 
     private String activityType;
 
-    /**
-     * 类型展示名（服务端填，前端不硬编码字典）。
-     */
+    /** 类型展示名，由服务端填，前端不用自带字典。 */
     private String activityTypeLabel;
 
     private String exclusiveGroup;

@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Synchronous finance Excel output with fixed decimal and timestamp text formats.
+ * 同步导出财务 Excel，金额与时间按固定文本格式输出。
  */
 public final class FinanceExcel {
 

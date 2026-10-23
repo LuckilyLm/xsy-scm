@@ -52,7 +52,7 @@ public class PurchaseDemandSummaryVO {
      * 全仓净可用 = 现有量 − 全量已预留量；SQL 内算好的派生列，{@code NO_BALANCE} 时按 0 展示。
      *
      * <p>
-     * 它<b>包含</b>本批订单自身已占用的预留，因此不能用来判断本批是否缺料，见 {@link #stockAvailableForSelectedOrders}。
+     * 它包含本批订单自身已占用的预留，因此不能用来判断本批是否缺料，见 {@link #stockAvailableForSelectedOrders}。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal availableQuantity;
@@ -80,13 +80,13 @@ public class PurchaseDemandSummaryVO {
      * null（不返回伪造差额）。
      *
      * <p>
-     * 这是<b>已确认订单与当前库存/预留的对比结果，不是最终净采购建议</b>；本视图不扣减未收采购单数量或已履约量。
+     * 这是已确认订单与当前库存/预留的对比结果，不是最终净采购建议；本视图不扣减未收采购单数量或已履约量。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal stockComparisonGap;
 
     /**
-     * Open purchase coverage split into unallocated in-transit quantity and allocated coverage.
+     * 未分配的采购在途数量。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal inTransitQuantity;
@@ -95,7 +95,7 @@ public class PurchaseDemandSummaryVO {
     private BigDecimal purchaseCoverageQuantity;
 
     /**
-     * Net purchase gap after stock, in-transit quantity and existing purchase coverage.
+     * 扣除库存、在途数量和已有采购覆盖后的净采购缺口。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal netPurchaseGap;

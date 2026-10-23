@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 追溯码单元状态，与 {@code xsy_trace_unit} 的 CHECK 约束逐值对应。
- *
- * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * 追溯码单元状态，与 {@code xsy_trace_unit} 的 CHECK 约束逐值对应。{@code desc} 供页面与导出使用，保存时仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

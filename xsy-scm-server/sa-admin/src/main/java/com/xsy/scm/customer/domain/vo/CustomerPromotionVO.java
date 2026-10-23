@@ -21,9 +21,7 @@ public class CustomerPromotionVO {
     private String createdBy;
     private OffsetDateTime createdAt;
 
-    /**
-     * 扫码记录（后台查看来源）。
-     */
+    /** 扫码记录，供后台查看来源。 */
     @Data
     public static class Scan {
         private Long id;

@@ -44,9 +44,7 @@ public class ScmPrintController {
 
     private final ScmPrintService scmPrintService;
 
-    // ------------------------------------------------------------------
     // 模板
-    // ------------------------------------------------------------------
 
     @PostMapping("/template/query")
     @SaCheckPermission(ScmPrintPermission.TEMPLATE_QUERY)
@@ -55,21 +53,17 @@ public class ScmPrintController {
         return ResponseDTO.ok(scmPrintTemplateService.queryPage(form));
     }
 
-    /**
-     * 字段目录：模板配置页据此渲染可选项，不硬编码字段清单。
-     */
+    /** 字段目录：模板配置页据此渲染可选项。 */
     @GetMapping("/template/catalog")
     @SaCheckPermission(ScmPrintPermission.TEMPLATE_QUERY)
     public ResponseDTO<ScmPrintFieldCatalogVO> catalog(@RequestParam("documentType") String documentType) {
         return ResponseDTO.ok(scmPrintTemplateService.catalog(documentType));
     }
 
-    /**
-     * 可配置打印的单据类型清单（前端类型下拉用）。
-     */
+    /** 可配置打印的单据类型清单，供前端下拉使用。 */
     @GetMapping("/template/document-types")
-    @SaCheckPermission(value = {ScmPrintPermission.TEMPLATE_QUERY,
-        ScmPrintPermission.RECORD_QUERY}, mode = cn.dev33.satoken.annotation.SaMode.OR)
+    @SaCheckPermission(value = {ScmPrintPermission.TEMPLATE_QUERY, ScmPrintPermission.RECORD_QUERY},
+        mode = cn.dev33.satoken.annotation.SaMode.OR)
     public ResponseDTO<List<ScmPrintDocumentTypeVO>> documentTypes() {
         return ResponseDTO.ok(scmPrintTemplateService.documentTypes());
     }
@@ -95,9 +89,7 @@ public class ScmPrintController {
         return ResponseDTO.ok();
     }
 
-    /**
-     * 设为默认模板（同类型只保留一个默认）。
-     */
+    /** 设为默认模板，同类型只保留一个默认。 */
     @PostMapping("/template/{id}/default")
     @SaCheckPermission(ScmPrintPermission.TEMPLATE_UPDATE)
     @OperateLog
@@ -114,9 +106,7 @@ public class ScmPrintController {
         return ResponseDTO.ok();
     }
 
-    // ------------------------------------------------------------------
     // 渲染与打印
-    // ------------------------------------------------------------------
 
     @GetMapping("/{documentType}/{businessId}/templates")
     public ResponseDTO<List<ScmPrintTemplateVO>> templateOptions(@PathVariable("documentType") String documentType,
@@ -125,10 +115,7 @@ public class ScmPrintController {
     }
 
     /**
-     * 打印预览：只读，不计次、不留痕。
-     *
-     * <p>
-     * {@code templateId} 为空时用该类型的默认模板。
+     * 打印预览：只读，不计次、不留痕；{@code templateId} 为空时用默认模板。
      */
     @GetMapping("/{documentType}/{businessId}/preview")
     public ResponseDTO<ScmPrintRenderVO> preview(@PathVariable("documentType") String documentType,
@@ -137,9 +124,7 @@ public class ScmPrintController {
         return ResponseDTO.ok(scmPrintService.preview(documentType, businessId, templateId));
     }
 
-    /**
-     * 正式打印：冻结模板版本、模型快照与版面快照，并返回这份冻结版面。
-     */
+    /** 正式打印：保存模板版本、模板内容和版面内容，并返回这份结果。 */
     @PostMapping("/{documentType}/{businessId}/print")
     @OperateLog
     public ResponseDTO<ScmPrintRenderVO> print(@PathVariable("documentType") String documentType,
@@ -148,9 +133,7 @@ public class ScmPrintController {
         return ResponseDTO.ok(scmPrintService.print(documentType, businessId, form, idempotencyKey));
     }
 
-    /**
-     * 历史重印：只读冻结快照，并按当前调用者的金额权限重新剔除。
-     */
+    /** 历史重印：只读当时保存的内容，并按当前调用者的金额权限重新过滤。 */
     @GetMapping("/record/{recordId}/reprint")
     @SaCheckPermission(ScmPrintPermission.RECORD_QUERY)
     public ResponseDTO<ScmPrintRenderVO> reprint(@PathVariable("recordId") Long recordId) {

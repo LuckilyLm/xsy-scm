@@ -21,7 +21,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND;
 
 /**
- * 只读查询库存余额，不修改库存。 未指定仓库时不自动选择默认仓库；此行为由前端处理。 排序按服务端固定规则执行，拒绝客户端自定义排序，避免多表字段冲突。
+ * 只读查询库存余额，不修改库存。未指定仓库时不自动选择默认仓库，由前端处理。排序按服务端固定规则执行，拒绝客户端自定义排序，避免多表字段冲突。
  */
 @Service
 @RequiredArgsConstructor
@@ -62,7 +62,7 @@ public class InventoryBalanceQueryService {
     }
 
     /**
-     * 均价与账面金额同源（都来自 {@code avg_cost}），无成本权限时一并抹成 null；抹成 0 会被读成「这批货没有成本」，那是一个事实，不是无权知道。
+     * 均价与账面金额同源（都来自 {@code avg_cost}），无成本权限时一并置为 null；置成 0 会被读成「这批货没有成本」，这是一个结论，而不是无权知道。
      */
     private static void clearCost(InventoryBalanceVO vo) {
         vo.setAvgCost(null);

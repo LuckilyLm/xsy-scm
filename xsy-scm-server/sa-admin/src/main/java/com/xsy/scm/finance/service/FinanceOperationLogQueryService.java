@@ -38,7 +38,7 @@ import java.util.List;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * Finance audit history; both function permission and owner scope are checked per business type.
+ * 财务操作日志；按业务类型同时校验功能权限和归属范围。
  */
 @Service
 @RequiredArgsConstructor

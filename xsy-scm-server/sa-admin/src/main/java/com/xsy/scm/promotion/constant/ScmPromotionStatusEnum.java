@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 活动与优惠券模板的发布状态。
- *
- * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * 活动与优惠券模板的发布状态。{@code desc} 供页面与导出使用，保存时仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

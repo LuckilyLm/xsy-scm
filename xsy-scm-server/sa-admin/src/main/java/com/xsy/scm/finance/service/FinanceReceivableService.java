@@ -33,7 +33,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 根据签收生成应收，根据批准退货生成红字应收。 红字金额按已批准退货计算，不受当前未收余额限制，也不能阻止退货审批。 本服务只写财务应收及操作日志，不直接修改订单和库存。
+ * 根据签收生成应收，根据批准退货生成红字应收。红字金额按已批准退货计算，不受当前未收余额限制，也不能阻止退货审批。 本服务只写财务应收及操作日志，不直接修改订单和库存。
  */
 @Service
 @RequiredArgsConstructor
@@ -46,7 +46,7 @@ public class FinanceReceivableService {
     private final FinanceOrderFundingSettlementService financeOrderFundingSettlementService;
 
     /**
-     * 签收后生成正常应收，并补齐之前已批准退货的红字应收。 签收和退货审批通过订单行锁串行处理，避免并发漏账。 生成过程与签收处于同一事务。
+     * 签收后生成正常应收，并补齐之前已批准退货的红字应收。签收和退货审批通过订单行锁串行处理，避免并发漏账。生成过程与签收处于同一事务。
      *
      * @param deliveryRouteOrderId
      *            已签收的配送线路订单 ID。
@@ -55,7 +55,7 @@ public class FinanceReceivableService {
     public void generateOnSign(Long deliveryRouteOrderId) {
         FinanceReceivableSourceDto source = financeReceivableSourceDao.selectSignedAssignment(deliveryRouteOrderId);
         if (source == null) {
-            // 调用点把没签收（或不存在）的分配行当成签收事实。静默跳过会留下
+            // 调用点把没签收（或不存在）的分配行当成已签收。跳过会留下
             // 「配送以为已挂账、财务什么都没记」的缺口，因此必须失败并让签收回滚。
             throw new IllegalStateException("配送分配行未处于 SIGNED 状态，不能生成应收: " + deliveryRouteOrderId);
         }
@@ -70,11 +70,11 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 退货批准后生成红字应收。 原应收尚未生成时先跳过，后续签收会补齐；重复执行不会重复记账。
+     * 退货批准后生成红字应收。原应收尚未生成时先跳过，后续签收会补齐；重复执行不会重复记账。
      *
      * @param orderReturnId
      *            已批准的退货单 ID
-     * @return 按已冻结优惠分摊计算的退货净额
+     * @return 按保存的优惠分摊计算的退货净额
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public BigDecimal generateRedOnReturnApproved(Long orderReturnId) {
@@ -89,10 +89,10 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 确保该订单的正常应收存在：本次插入，或已被并发的另一次签收插入（那一次才是事实的产生者）。
+     * 确保该订单的正常应收存在：本次插入，或已被并发的另一次签收插入（那一次才是这条记录的创建者）。
      *
      * <p>
-     * 零实发与整单金额为 0 时什么都不写、静默返回 —— 跳过是成功语义，不是失败。
+     * 零实发与整单金额为 0 时什么都不写、直接返回——跳过是正常成功，不是失败。
      */
     private void ensureNormalFromSigning(FinanceReceivableSourceDto source) {
         if (financeReceivableSourceDao.countIncompleteBundleOutbound(source.getSalesOrderId()) > 0) {
@@ -106,15 +106,14 @@ public class FinanceReceivableService {
 
         if (amount.signum() <= 0) {
             // 两种形状都在这里跳过：① 签收成功但零实发；② 售价全为 0。
-            // 跳过是成功语义：绝不为此回滚合法签收，也绝不造空单头或 0 元事实留痕。
+            // 跳过是正常结果：绝不为此回滚合法签收，也绝不建空单头或留 0 元记录。
             return;
         }
 
         FinanceReceivableEntity receivable = normalHeader(source, amount);
         if (financeReceivableDao.insertOnConflictDoNothing(receivable) == 0) {
             // 该订单已经有正常应收了（生成器可重放：签收重试、同一派生被再次触发）。
-            // 首笔已经把明细与日志写全，这里既不再插也不重复留痕 —— 仲裁者是那条唯一索引，
-            // 不是「先查再插」。
+            // 首笔已经把明细与日志写全，这里不再插入也不重复记录——由那条唯一索引仲裁，不靠「先查再插」。
             return;
         }
         for (FinanceReceivableItemEntity item : items) {
@@ -140,8 +139,8 @@ public class FinanceReceivableService {
         for (Long returnId : financeReceivableSourceDao.selectApprovedReturnIds(salesOrderId)) {
             FinanceReturnSourceDto returned = financeReceivableSourceDao.selectApprovedReturn(returnId);
             if (returned == null) {
-                // 同一事务内刚按 APPROVED 查出这一张，现在读不到说明数据被旁路改过：宁可失败不可漏账。
-                throw new IllegalStateException("已批准退货读不到事实，不能补生成红字应收: " + returnId);
+                // 同一事务内刚按 APPROVED 查出这一张，现在读不到说明数据被其他途径改过：宁可失败不可漏账。
+                throw new IllegalStateException("已批准退货读不到记录，不能补生成红字应收: " + returnId);
             }
             generateRed(returned, normal);
         }
@@ -151,8 +150,7 @@ public class FinanceReceivableService {
      * 红字金额计算与生成（唯一实现）。
      *
      * <p>
-     * 结算对方与名称快照一律继承原正常应收：红字与正常必须落在同一个客户账上，从订单或退货行重新解析快照会让同一笔债权出现两个对方身份 （「必须引用原
-     * {@code Receivable}」的含意之一）。正常应收尚未生成时，本方法仍返回相同净额，签收后再补生成红字。
+     * 结算对方与名称一律继承原正常应收：红字与正常必须落在同一个客户账上，从订单或退货行重新取值会让同一笔债权出现两个对方身份。 正常应收尚未生成时，本方法仍返回相同净额，签收后再补生成红字。
      */
     private BigDecimal generateRed(FinanceReturnSourceDto returned, FinanceReceivableEntity normal) {
         List<FinanceReceivableItemEntity> items = toRedItems(returned,
@@ -163,7 +161,7 @@ public class FinanceReceivableService {
 
         if (amount.signum() <= 0 || normal == null) {
             // 整张退货没有有效红字行（全部非正金额行）：成功跳过，
-            // 或正常应收尚未生成；两种情况都不生成红字，但退款仍按冻结优惠口径计算。
+            // 或正常应收尚未生成；两种情况都不生成红字，但退款仍按保存的优惠分摊计算。
             return amount;
         }
 
@@ -212,7 +210,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 红字应收单头。事件时点与原因继承退货业务事实，金额取已批准红字行之和； <b>不做任何上限比较</b>。
+     * 红字应收单头。事件时间与原因取自退货记录，金额取已批准红字行之和；不做任何上限比较。
      */
     private FinanceReceivableEntity redHeader(FinanceReturnSourceDto returned, FinanceReceivableEntity normal,
         BigDecimal amount) {
@@ -235,7 +233,7 @@ public class FinanceReceivableService {
         red.setAmount(amount);
         red.setEventAt(returned.getApprovedAt());
         // 红字原因必须非空（ck_finance_receivable_entry_pairing）；order_return.reason
-        // 由 ck_order_return_reason 在库级保证非空白，因此不需要财务侧另造一句原因。
+        // 已由 ck_order_return_reason 在数据库层保证非空白，因此不需要财务侧另造一句原因。
         red.setReason(returned.getReason());
         red.setCreatedAt(now);
         red.setUpdatedAt(now);
@@ -245,8 +243,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 正常明细：量取出库行、价取订单行的冻结售价，毛额 {@code ROUND(量 × 价, 4, HALF_UP)}， 再扣该订单行承担的优惠分摊得到净额；单头是<b>已舍入行净额之和</b>。
-     * 一条订单行对应多条出库行时逐条成行、不合并。
+     * 正常明细：数量取出库行、价格取订单行保存的售价，毛额 {@code ROUND(量 × 价, 4, HALF_UP)}，再扣该订单行承担的优惠分摊得到净额； 单头是已舍入行净额之和。一条订单行对应多条出库行时逐条成行、不合并。
      */
     private List<FinanceReceivableItemEntity> toNormalItems(FinanceReceivableSourceDto source,
         List<FinanceReceivableSourceLineDto> lines, Map<Long, BigDecimal> orderLineDiscounts) {
@@ -274,8 +271,8 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 红字明细：毛额直接采用订单域已落库的 {@code approved_amount}， <b>不重算</b> {@code quantity × unit_price}；
-     * 再扣按同一把尺子算出的反向优惠得到净额。也不存行级原明细指针 ——一条订单行可能对应多条出库行，不存在唯一的原正常明细。
+     * 红字明细：毛额直接采用订单域已保存的 {@code approved_amount}，不重算 {@code quantity × unit_price}；
+     * 再扣按同一算法算出的反向优惠得到净额。也不存行级原明细指针——一条订单行可能对应多条出库行，不存在唯一的原正常明细。
      */
     private List<FinanceReceivableItemEntity> toRedItems(FinanceReturnSourceDto returned,
         List<FinanceReturnSourceLineDto> lines, Map<Long, BigDecimal> orderLineDiscounts) {
@@ -302,7 +299,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 订单确认时冻结的行级优惠分摊：{@code orderItemId -> discountAmount}；订单无优惠时为空表。
+     * 订单确认时保存的行级优惠分摊：{@code orderItemId -> discountAmount}；订单无优惠时为空表。
      */
     private Map<Long, BigDecimal> orderLineDiscounts(Long salesOrderId) {
         Map<Long, BigDecimal> discounts = new HashMap<>();
@@ -315,16 +312,16 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 行级优惠分摊：把冻结的<b>订单行</b>优惠按「该行本次金额 / 该订单行下单金额」等比折算到本次行金额上。
+     * 行级优惠分摊：把保存的订单行优惠按「该行本次金额 / 该订单行下单金额」等比折算到本次行金额上。
      *
      * <p>
-     * <b>为什么必须等比</b>：优惠是按下单金额冻结的，少发或部分退货时该行应承担的优惠要按比例变小。 整额落到部分金额上会减出负数（被库上 CHECK 拒绝），也会让部分退货多冲优惠。
+     * 必须等比：优惠是按下单金额保存的，少发或部分退货时该行应承担的优惠要按比例变小。整额落到部分金额上会减出负数（被数据库 CHECK 拒绝）， 也会让部分退货多冲优惠。
      *
      * <p>
-     * 正常与红字共用本方法，因此「已确认优惠 × 退货金额 / 已出库金额」与 「冻结行分摊 × 退货金额 / 下单金额」恒等 —— 红字不必回读正常应收明细就能得到一致的反向额。
+     * 正常与红字共用本方法，因此「已确认优惠 × 退货金额 / 已出库金额」与「保存的行分摊 × 退货金额 / 下单金额」恒等， 红字不必回读正常应收明细就能得到一致的反向额。
      *
      * <p>
-     * 下单金额缺失或为 0（历史数据 / 0 元单）时按 0 处理，而不是把整额优惠压到这一行： 没有可依的比例时「不减」比「乱减」更可解释。
+     * 下单金额缺失或为 0（历史数据 / 0 元单）时按 0 处理，而不是把整额优惠压到这一行：没有可依的比例时「不减」比「乱减」更可解释。
      */
     static BigDecimal discountShare(Long orderItemId, BigDecimal lineAmount, BigDecimal orderedLineAmount,
         Map<Long, BigDecimal> orderLineDiscounts) {
@@ -348,7 +345,7 @@ public class FinanceReceivableService {
     }
 
     /**
-     * 生成类动作的 {@code after_data} 单头快照。金额与时间落成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是未注册 JavaTimeModule 的裸
+     * 生成类动作的 {@code after_data} 单头快照。金额与时间写成字符串：JSONB 侧的 {@code JsonbObjectMapTypeHandler} 用的是未注册 JavaTimeModule 的
      * ObjectMapper。
      */
     private Map<String, Object> generatedSnapshot(FinanceReceivableEntity receivable, int itemCount) {

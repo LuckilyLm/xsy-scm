@@ -33,7 +33,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 @RequiredArgsConstructor
 public class ProductImageSyncManager {
     /**
-     * 目录前缀只有一个来源：上传白名单枚举，避免业务侧与存储侧各写一份口径。
+     * 目录前缀只有一个来源：上传白名单枚举，避免业务侧与存储侧各写一份定义。
      */
     private static final String PUBLIC_IMAGE_FOLDER = FileFolderTypeEnum.PUBLIC_IMAGE.getFolder();
     /**

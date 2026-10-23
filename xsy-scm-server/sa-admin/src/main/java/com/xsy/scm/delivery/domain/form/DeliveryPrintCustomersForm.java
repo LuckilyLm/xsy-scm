@@ -21,14 +21,10 @@ public class DeliveryPrintCustomersForm {
     private Integer version;
     @Size(max = 500, message = "客户数量不能超过500个")
     private List<@NotNull(message = "客户编号不能为空") @Positive(message = "客户编号必须为正数") Long> customerIds;
-    /**
-     * ALL / PRINTED / UNPRINTED / PARTIAL，默认 ALL；缺省 {@code customerIds} 时不允许 ALL，否则一次请求会无选择地重打整条线路。
-     */
+    /** ALL / PRINTED / UNPRINTED / PARTIAL，默认 ALL；缺省 {@code customerIds} 时不允许 ALL，否则会无选择地重打整条线路。 */
     @ScmEnumValue(enumClass = ScmDeliveryCustomerPrintFilterEnum.class, message = "客户打印状态筛选值无效")
     private String customerStatusFilter = ScmDeliveryCustomerPrintFilterEnum.ALL.name();
-    /**
-     * ALL / PRINTED / UNPRINTED，默认 ALL；不接受 PARTIAL（PARTIAL 是客户维度状态，不是订单筛选）。
-     */
+    /** ALL / PRINTED / UNPRINTED，默认 ALL；不接受 PARTIAL（PARTIAL 是客户维度状态，不是订单筛选）。 */
     @ScmEnumValue(enumClass = ScmDeliveryOrderPrintFilterEnum.class, message = "订单打印状态筛选值无效")
     private String orderPrintFilter = ScmDeliveryOrderPrintFilterEnum.ALL.name();
 }

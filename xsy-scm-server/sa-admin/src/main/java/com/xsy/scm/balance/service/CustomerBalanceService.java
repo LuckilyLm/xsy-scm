@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 客户余额追加账本；账户行锁保护来源查重及 CREDIT - DEBIT 的重新汇总。
+ * 客户余额只追加流水；写之前先锁账户行，再查重和重算可用余额。
  */
 @Slf4j
 @Service
@@ -58,9 +58,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
 
     private final ScmIdempotencyService idempotencyService;
 
-    /**
-     * 客户余额变动以流水为依据，账面余额与充值、抵扣和退款的记录保持一致。
-     */
+    /** 返回客户的结算主体，也就是余额账户所有者。 */
     @Transactional(readOnly = true)
     public CustomerEntity settlementCustomerOf(Long customerId) {
         CustomerEntity customer = customerService.require(customerId);
@@ -68,10 +66,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 钱包余额（只读）。
-     *
-     * <p>
-     * <b>不创建账户</b>：读路径不该写库。没有账户就是 0 元 —— 「还没有钱包」与「钱包是空的」在金额上等价，不必为此落一行。
+     * 余额只读，不创建账户。没有账户就是 0 元：没开户和余额为空在金额上一样。
      */
     @Transactional(readOnly = true)
     public BigDecimal balanceOf(Long customerId) {
@@ -79,10 +74,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 按<b>结算主体</b>读余额（供查询层复用）。
-     *
-     * <p>
-     * 查询层已经解析过结算主体，再走一遍 {@link #balanceOf} 会重复解析客户关系 —— 而解析里含「客户必须合法可结算」这类校验，重复调用只会多一次查询、不改结果。
+     * 按结算主体读余额，供查询层复用，少解析一次客户关系。
      */
     @Transactional(readOnly = true)
     public BigDecimal balanceOfSettlement(Long settlementCustomerId) {
@@ -92,7 +84,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 订单余额消费必须带支付来源，锁内查重并重新汇总可用权益。
+     * 订单用余额支付：锁内查重，再算一遍可用余额。
      */
     @Override
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
@@ -123,7 +115,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 返还原消费所属钱包，不随客户当前集团关系重新解析归属。
+     * 退回原消费的那个余额账户，不按客户现在的集团关系重新解析。
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public CustomerBalanceMovementEntity refundToSettlement(Long refundId, Long customerId, Long settlementCustomerId,
@@ -156,7 +148,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 钱包返还失败回滚到当前来源的保存点；外层订单事务继续记录该分摊为失败。
+     * 余额返还失败时回滚到保存点，外层订单事务继续把该分摊记为失败。
      */
     @Override
     @Transactional(propagation = Propagation.NESTED, rollbackFor = Exception.class)
@@ -198,10 +190,10 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 人工更正：管理员对账后修正余额。
+     * 人工更正：对账后修正余额。
      *
      * <p>
-     * 要求权限（Controller 层）＋ 方向 ＋ 金额 ＋ 原因 ＋ {@code Idempotency-Key} ＋ 操作人。 <b>没有「编辑余额」接口</b>：更正也是追加流水，历史不可改。
+     * 更正也是追加一条流水，历史不可改。
      */
     @Transactional(rollbackFor = Exception.class)
     public CustomerBalanceMovementEntity correct(BalanceCorrectionForm form, String idempotencyKey) {
@@ -226,7 +218,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
 
         CustomerBalanceAccountEntity account = lockAccount(settlement);
         if (direction == ScmBalanceDirectionEnum.DEBIT) {
-            // 更正也不能把余额扣成负数：否则「不允许负余额」这条纪律可以从更正绕过去
+            // 更正也不能扣成负数，否则「不允许负余额」这条规则可以被绕过
             BigDecimal available = signedBalance(account.getId());
             if (available.compareTo(value) < 0) {
                 throw new ScmBusinessException(BalanceErrorCode.BALANCE_INSUFFICIENT);
@@ -240,7 +232,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 充值成功后按支付渠道实际到账金额增加钱包余额，金额不一致留待对账，不按申请金额虚记。
+     * 充值成功后按渠道实际到账金额入账；不一致留待对账，不按申请金额记。
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -254,7 +246,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_RECHARGE_NOT_FOUND);
         }
         if (!recharge.getCustomerId().equals(customerId)) {
-            // 充值的业务客户与支付意图的客户不一致：来源身份已经分叉，宁可失败
+            // 充值的客户和支付意图的客户不一致：来源对不上，宁可失败
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
         }
         if (providerAmount.compareTo(recharge.getAmount()) != 0) {
@@ -271,10 +263,10 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 落一条流水（所有入账路径的唯一出口）。
+     * 写一条流水，所有入账都走这里。
      *
      * <p>
-     * 方向与类型的一致性在这里校验，库上的 {@code ck_customer_balance_movement_type_direction} 是第二层：类型固定方向的（充值 / 消费 / 退款返还）不接受调用方改写方向。
+     * 方向与类型在这里校验，数据库的 {@code ck_customer_balance_movement_type_direction} 兜底；充值 / 消费 / 退款返还的方向是固定的，不接受调用方改写。
      */
     private CustomerBalanceMovementEntity record(CustomerBalanceAccountEntity account, Long customerId,
         ScmBalanceMovementTypeEnum type, ScmBalanceDirectionEnum direction, BigDecimal amount,
@@ -317,10 +309,10 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 取钱包账户并在必要时创建，然后<b>加锁</b>。
+     * 取余额账户，必要时创建，然后加锁。
      *
      * <p>
-     * 创建放在锁路径里而不是读路径里：读余额不该写库，而真正要动钱时必须有一个可锁的行。唯一索引保证同一结算主体只有一个账户；并发下第二个事务会命中冲突，因此先查再插，冲突时读回已有行。
+     * 只在动钱时创建，读余额不写库。唯一索引保证一个结算主体只有一个账户；并发冲突后读回已有行。
      */
     private CustomerBalanceAccountEntity lockAccount(CustomerEntity settlement) {
         return lockAccount(settlement.getId(), settlement.getName());
@@ -357,7 +349,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
     }
 
     /**
-     * 余额 = SUM(CREDIT) − SUM(DEBIT)。方向字面量由枚举提供，SQL 里不写死。
+     * 余额 = SUM(CREDIT) − SUM(DEBIT)；方向名从枚举取，不写死在 SQL 里。
      */
     private BigDecimal signedBalance(Long accountId) {
         BigDecimal value = customerBalanceMovementDao.sumSignedByAccount(accountId,
@@ -367,7 +359,7 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
 
     private static BigDecimal positiveAmount(BigDecimal amount) {
         if (amount == null || amount.signum() <= 0 || amount.scale() > SCALE) {
-            // 金额恒正：方向由 direction 表达，0 或负数没有意义
+            // 金额恒正，方向由 direction 表达；0 或负数没意义
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_AMOUNT_INVALID);
         }
         return amount.setScale(SCALE, RoundingMode.HALF_UP);

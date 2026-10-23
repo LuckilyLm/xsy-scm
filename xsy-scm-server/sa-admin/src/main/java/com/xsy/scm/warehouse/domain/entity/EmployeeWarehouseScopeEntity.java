@@ -17,14 +17,10 @@ public class EmployeeWarehouseScopeEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /**
-     * 员工 id，对应 {@code t_employee.employee_id}；按项目约定不建数据库外键，存在性在服务层校验。
-     */
+    /** 员工 id，对应 {@code t_employee.employee_id}；不建外键，存在性在服务层校验。 */
     private Long employeeId;
 
-    /**
-     * 仓库 id，对应 {@code xsy_warehouse.id}；同样无外键。
-     */
+    /** 仓库 id，对应 {@code xsy_warehouse.id}；同样无外键。 */
     private Long warehouseId;
 
     private Boolean deletedFlag;

@@ -98,7 +98,7 @@ public class FinanceOrderFundingWriteOffService {
         if (balance && available.compareTo(effective) != 0) {
             throw invalid();
         }
-        // 订单专属资金完整关联原债权，RED 或少发导致的超额只在读侧表达。
+        // 订单专属资金完整关联原债权；RED 或少发造成的超额只在查询时体现。
         BigDecimal before = financeWriteOffDao
             .selectTargetWrittenOffAmount(ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name(), receivableId);
         FinanceWriteOffEntity entity = new FinanceWriteOffEntity();

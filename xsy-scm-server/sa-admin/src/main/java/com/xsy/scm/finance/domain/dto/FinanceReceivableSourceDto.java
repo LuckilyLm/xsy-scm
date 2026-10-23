@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 public class FinanceReceivableSourceDto {
 
     /**
-     * 被签收的配送分配行 id（{@code xsy_delivery_route_order.id}）：应收的来源锚点是订单，但时点与操作人只存在于这一行上。
+     * 被签收的配送分配行 id（{@code xsy_delivery_route_order.id}）：应收的来源是订单，但时点与操作人只存在于这一行上。
      */
     private Long deliveryRouteOrderId;
 

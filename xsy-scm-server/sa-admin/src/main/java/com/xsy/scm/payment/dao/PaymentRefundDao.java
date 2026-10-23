@@ -56,7 +56,7 @@ public interface PaymentRefundDao extends BaseMapper<PaymentRefundEntity> {
     BigDecimal sumSucceededByTransaction(@Param("transactionId") Long transactionId);
 
     /**
-     * 成功：同时落<b>渠道实退金额</b>（成功态必须有它，库上有 CHECK）。
+     * 成功：同时写入渠道实退金额（成功态必须有它，数据库 CHECK）。
      */
     int markSucceeded(@Param("id") Long id, @Param("providerRefundNo") String providerRefundNo,
         @Param("providerAmount") BigDecimal providerAmount, @Param("operator") String operator);

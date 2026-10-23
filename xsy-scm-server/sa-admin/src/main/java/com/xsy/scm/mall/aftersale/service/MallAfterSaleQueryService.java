@@ -49,7 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 商城售后只读查询。
  *
  * <p>
- * 售后事实只来自正式退货单、退款单与资金分摊行；归属一律按退货单的 {@code customer_id} 与登录客户等值收窄， 本服务不写任何表。渠道失败码、内部失败原因等内部事实不下发客户。
+ * 售后数据只来自正式退货单、退款单与资金分摊行；归属一律按退货单的 {@code customer_id} 与登录客户逐值比较， 本服务不写任何表。渠道失败码、内部失败原因等内部信息不下发客户。
  */
 @Service
 @RequiredArgsConstructor
@@ -188,7 +188,7 @@ public class MallAfterSaleQueryService {
     }
 
     /**
-     * 退款结果与原路退回明细。资金分摊存在时按分摊行给出每个资金来源的实退进度； 无分摊计划的旧路径（纯余额返还）以余额流水事实拼出一行，客户看到的是同一个口径。
+     * 退款结果与原路退回明细。资金分摊存在时按分摊行给出每个资金来源的实退进度；无分摊计划的旧路径（纯余额返还） 以余额流水记录拼出一行，客户看到的结果一致。
      */
     private MallAfterSaleRefundVO refundVo(OrderRefundEntity refund, OffsetDateTime fundedAt) {
         if (refund == null) {
@@ -236,7 +236,7 @@ public class MallAfterSaleQueryService {
     }
 
     /**
-     * 售后进度节点：{@code done} 只按「对应正式事实是否存在」判定，不推导状态、不预测下一步。
+     * 售后进度节点：{@code done} 只按「对应正式记录是否存在」判定，不推导状态、不预测下一步。
      *
      * <p>
      * 被驳回与已撤销在对应节点即止；审核通过后没有退款单（净额为 0）时末节点为「无需退款」。

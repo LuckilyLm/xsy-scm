@@ -23,7 +23,7 @@ public interface MallOrderSummaryDao {
         @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt);
 
     /**
-     * 区间合计，口径与分页行完全一致。
+     * 区间合计，统计方式与分页行完全一致。
      */
     MallOrderSummaryVO.Totals summaryTotals(@Param("customerId") Long customerId,
         @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt);

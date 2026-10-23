@@ -14,7 +14,7 @@ import lombok.Data;
  * 商城售后单的退款结果与原路退回明细。
  *
  * <p>
- * 只含客户可见字段：渠道失败码、内部失败原因、来源交易 id 等内部事实不下发。
+ * 只含客户可见字段：渠道失败码、内部失败原因、来源交易 id 等内部信息不下发。
  */
 @Data
 public class MallAfterSaleRefundVO {
@@ -27,7 +27,7 @@ public class MallAfterSaleRefundVO {
      */
     private String status;
     /**
-     * 实际 Finance 付款或余额返还时间；正式退款单完成但资金未到时为空。
+     * 实际付款或余额返还时间；正式退款单完成但资金未到时为空。
      */
     private OffsetDateTime completedAt;
     /**

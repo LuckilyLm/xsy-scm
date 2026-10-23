@@ -23,7 +23,7 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * Finance gross-profit read model. It does not create or mutate financial facts.
+ * 财务毛利查询；不创建也不修改任何财务记录。
  */
 @Service
 @RequiredArgsConstructor

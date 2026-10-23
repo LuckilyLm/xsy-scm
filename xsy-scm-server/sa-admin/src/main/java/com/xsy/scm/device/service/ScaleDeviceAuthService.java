@@ -34,23 +34,19 @@ import org.springframework.transaction.annotation.Transactional;
  * 设备身份与员工授权的签发、校验与撤销。
  *
  * <p>
- * 设备凭证与员工会话分开校验：设备凭证只回答「哪台秤」，员工会话只回答「谁在操作」。 两者都通过才建立 {@link ScaleDevicePrincipal}，业务层据此写真实员工，不用设备身份代替人工签名。
+ * 设备凭证与员工会话分开校验：设备凭证只回答「哪台秤」，员工会话只回答「谁在操作」。 两者都通过才建立 {@link ScaleDevicePrincipal}，业务层据此记真实员工，不用设备身份代替人工签名。
  *
  * <p>
- * 所有令牌只在签发时返回明文，库里只有摘要；因此即使拿到数据库也无法冒充设备或员工。
+ * 所有令牌只在签发时返回明文，库里只有摘要，因此拿到数据库也无法冒充设备或员工。
  */
 @Service
 @RequiredArgsConstructor
 public class ScaleDeviceAuthService {
 
-    /**
-     * 配对码由现场手工输入，熵低于令牌，因此有效期要短。
-     */
+    /** 配对码由现场手工输入，熵低于令牌，因此有效期要短。 */
     private static final int PAIRING_VALID_MINUTES = 30;
 
-    /**
-     * 设备凭证有效期；到期前需重新激活，不能靠续期绕过撤销。
-     */
+    /** 设备凭证有效期；到期前需重新激活，不能靠续期绕过撤销。 */
     private static final int CREDENTIAL_VALID_DAYS = 30;
 
     private final ScaleDeviceDao scaleDeviceDao;
@@ -61,9 +57,7 @@ public class ScaleDeviceAuthService {
 
     private final EmployeeService employeeService;
 
-    /**
-     * 后台登记设备并生成一次性配对码。仓库经正式查询服务校验，管理员只能登记自己有数据范围的仓库。
-     */
+    /** 后台登记设备并生成一次性配对码。仓库经正式查询服务校验，管理员只能登记自己有数据范围的仓库。 */
     @Transactional(rollbackFor = Exception.class)
     public ScaleDeviceRegisterVO register(ScaleDeviceRegisterForm form) {
         warehouseQueryService.detail(form.getWarehouseId());
@@ -88,9 +82,7 @@ public class ScaleDeviceAuthService {
         return new ScaleDeviceRegisterVO(device.getId(), deviceCode, pairingCode, device.getPairingExpiresAt());
     }
 
-    /**
-     * 为设备上的员工签发操作会话。同一设备可以有多位员工先后登录，各自一条会话记录。
-     */
+    /** 为设备上的员工签发操作会话。同一设备可以有多位员工先后登录，各自一条会话记录。 */
     @Transactional(rollbackFor = Exception.class)
     public ScaleOperatorSessionVO issueOperatorSession(Long deviceId, ScaleOperatorSessionForm form) {
         ScaleDeviceEntity device = scaleDeviceDao.selectById(deviceId);
@@ -114,9 +106,7 @@ public class ScaleDeviceAuthService {
         return new ScaleOperatorSessionVO(sessionToken, session.getExpiresAt(), form.getEmployeeId());
     }
 
-    /**
-     * 撤销绑定：设备不能再领取任务或上报读数，该设备上仍在有效期内的员工会话同时结束。 历史读数与打印记录保留，仍按原设备编号追溯。
-     */
+    /** 撤销绑定：设备不能再领取任务或上报读数，该设备上仍在有效期内的员工会话同时结束；历史读数与打印记录保留。 */
     @Transactional(rollbackFor = Exception.class)
     public void revoke(Long deviceId) {
         ScaleDeviceEntity device = scaleDeviceDao.lockById(deviceId);
@@ -132,9 +122,7 @@ public class ScaleDeviceAuthService {
         scaleDeviceSessionDao.endActiveSessions(deviceId, "设备已撤销", OffsetDateTime.now());
     }
 
-    /**
-     * 用配对码换取设备凭证。配对码一次性：并发或重放激活只能成功一次。
-     */
+    /** 用配对码换取设备凭证。配对码一次性：并发或重放激活只能成功一次。 */
     @Transactional(rollbackFor = Exception.class)
     public ScaleDeviceCredentialVO activate(ScaleActivateForm form) {
         ScaleDeviceEntity device = scaleDeviceDao.selectByDeviceCode(form.getDeviceCode().trim());
@@ -155,9 +143,7 @@ public class ScaleDeviceAuthService {
         return new ScaleDeviceCredentialVO(accessToken, expiresAt);
     }
 
-    /**
-     * 心跳只更新观测字段。它证明设备在线，但不证明云端没有遗漏事件，因此不能作为对账依据。
-     */
+    /** 心跳只更新观测字段：能证明设备在线，不能证明云端没有遗漏事件，因此不作为对账依据。 */
     @Transactional(rollbackFor = Exception.class)
     public void heartbeat(ScaleHeartbeatForm form) {
         ScaleDevicePrincipal principal = ScaleDeviceContext.require();
@@ -166,9 +152,7 @@ public class ScaleDeviceAuthService {
             form.getQueueDepth(), form.getLastWeightAt());
     }
 
-    /**
-     * 读取设备自身配置。只返回本设备的绑定信息，不含其他设备或其他仓库。
-     */
+    /** 读取设备自身配置。只返回本设备的绑定信息，不含其他设备或其他仓库。 */
     @Transactional(readOnly = true)
     public ScaleDeviceConfigVO config() {
         ScaleDevicePrincipal principal = ScaleDeviceContext.require();
@@ -191,7 +175,7 @@ public class ScaleDeviceAuthService {
      * 解析一次设备请求的双重身份，供设备拦截器调用。
      *
      * <p>
-     * 员工会话必须由本设备签发：同一员工在另一台秤上登录不能直接拿到本机权限， 否则一台被借用的设备就能继承别处签发的授权。
+     * 员工会话必须由本设备签发：同一员工在另一台秤上登录不能直接拿到本机权限，否则一台被借用的设备就能继承别处签发的授权。
      */
     @Transactional(readOnly = true)
     public ScaleDevicePrincipal authenticate(String credentialToken, String operatorSessionToken) {

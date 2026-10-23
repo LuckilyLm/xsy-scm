@@ -14,7 +14,7 @@ import com.xsy.scm.pricing.constant.ScmUnavailableReasonEnum;
 import com.xsy.scm.pricing.constant.ScmUnpricedReasonEnum;
 
 /**
- * Price availability and sale eligibility are independent. Zero is a price.
+ * 价格可用性与可售性互相独立；0 也是有效价格。
  */
 @Data
 public class ResolvedPriceVO {

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 生成路线建议只计算，不改线路；应用建议才更新站点顺序。生成和应用权限分开，应用后仍需单独发车。
+ * 生成建议只计算，不改线路；应用建议才重排站点。生成和应用权限分开，应用后还要单独发车。
  */
 @RestController
 @RequestMapping("/scm/delivery/plan")
@@ -33,9 +33,7 @@ public class DeliveryPlanController {
 
     private final DeliveryPlanProposalService deliveryPlanProposalService;
 
-    /**
-     * 生成建议（会作废该线路原有的待确认建议）。
-     */
+    /** 生成建议（会作废该线路原有的待确认建议）。 */
     @PostMapping("/route/{routeId}/propose")
     @SaCheckPermission(value = {DeliveryPermission.PLAN_PROPOSE, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)
     @OperateLog
@@ -43,18 +41,14 @@ public class DeliveryPlanController {
         return ResponseDTO.ok(deliveryPlanProposalService.propose(routeId));
     }
 
-    /**
-     * 建议历史（最新在前），供比较多次生成的结果。
-     */
+    /** 建议历史（最新在前），供比较多次生成的结果。 */
     @GetMapping("/route/{routeId}/history")
     @SaCheckPermission(value = {DeliveryPermission.PLAN_QUERY, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)
     public ResponseDTO<List<DeliveryPlanProposalVO>> history(@PathVariable("routeId") Long routeId) {
         return ResponseDTO.ok(deliveryPlanProposalService.history(routeId));
     }
 
-    /**
-     * 应用建议：按建议顺序重排停靠点。{@code version} 是<b>线路</b>版本。
-     */
+    /** 应用建议：按建议顺序重排停靠点。{@code version} 是线路版本。 */
     @PostMapping("/proposal/{proposalId}/apply")
     @SaCheckPermission(value = {DeliveryPermission.PLAN_APPLY, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)
     @OperateLog
@@ -64,9 +58,7 @@ public class DeliveryPlanController {
         return ResponseDTO.ok();
     }
 
-    /**
-     * 放弃建议：不改线路。
-     */
+    /** 放弃建议：不改线路。 */
     @PostMapping("/proposal/{proposalId}/discard")
     @SaCheckPermission(value = {DeliveryPermission.PLAN_APPLY, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)
     @OperateLog

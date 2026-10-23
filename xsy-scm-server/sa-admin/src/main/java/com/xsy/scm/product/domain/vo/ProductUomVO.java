@@ -12,8 +12,6 @@ public class ProductUomVO {
     private Integer precisionScale;
     private String status;
     private Integer sortOrder;
-    /**
-     * 被商品销售单位与供应商采购单位引用的次数；大于 0 时禁止删除，只允许停用。
-     */
+    /** 被商品销售单位与供应商采购单位引用的次数；大于 0 时禁止删除，只允许停用。 */
     private Long referencedCount;
 }

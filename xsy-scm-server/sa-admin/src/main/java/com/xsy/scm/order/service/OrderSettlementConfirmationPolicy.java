@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 商城订单确认时复核结算约定；资金动作由 Balance、Payment 和 Finance 领域执行。
+ * 商城订单确认时复核结算约定；资金动作由余额、支付和财务模块执行。
  */
 @Service
 @RequiredArgsConstructor
@@ -41,13 +41,12 @@ public class OrderSettlementConfirmationPolicy {
         ScmSettlementMethodEnum method = ScmSettlementMethodEnum.valueOf(order.getSettlementMethod());
         switch (method) {
             case CREDIT -> {
-                // 共享账期一律拒绝：钱包授权不覆盖账期，集团账期由集团主体统一办理。
+                // 共享账期一律拒绝：余额授权不覆盖账期，集团账期由集团主体统一办理。
                 if (shared) {
                     throw new ScmBusinessException(OrderErrorCode.ORDER_SETTLEMENT_METHOD_BLOCKED);
                 }
-                // 占用额取正式净额（实重 × 锁定价 − 已冻结优惠等比分摊），与签收生成的应收同一把尺子。
-                // 确认命令已把优惠冻结排在本判定之前，因此这里的优惠额是已成立的事实，不是预估。
-                // 按优惠前毛额判定会让客户被自己的优惠挡住（额度够、实际账单更小，却确认不了）。
+                // 占用额取正式净额（实重 × 锁定价 − 已按比例分摊的优惠），与签收生成的应收一致。
+                // 优惠在确认时已先保存，按优惠前毛额判定会让额度够的客户被自己的优惠挡住。
                 var check = orderCreditService.checkForSettlementConfirmation(settlement.getId(),
                     payableQueryService.payableOfConfirmedOrder(order.getId()));
                 if (check.getCreditLimit() == null || check.getCreditLimit().signum() <= 0
@@ -60,7 +59,7 @@ public class OrderSettlementConfirmationPolicy {
                     .sharedCheckoutAllowed(Boolean.TRUE.equals(settlement.getSharedSettlementEnabled()))) {
                     throw new ScmBusinessException(OrderErrorCode.ORDER_SETTLEMENT_METHOD_BLOCKED);
                 }
-                // 钱包资金在支付命令中按实重与已冻结优惠原子扣减；确认本身不冒充付款。
+                // 余额在支付命令中按实重与已保存的优惠原子扣减；确认本身不代表已付款。
             }
             case COD -> {
                 if (!Boolean.TRUE.equals(buyer.getCodAllowed()) || Boolean.TRUE.equals(orderCreditService

@@ -21,9 +21,7 @@ public class StraightLineDistanceMatrixProvider implements DeliveryDistanceMatri
 
     private static final double EARTH_RADIUS_METERS = 6_371_008.8d;
 
-    /**
-     * 距离保留 4 位小数（米），与全仓数量金额的定点口径一致。
-     */
+    /** 距离保留 4 位小数（米），与全仓数量金额的精度一致。 */
     private static final int SCALE = 4;
 
     @Override

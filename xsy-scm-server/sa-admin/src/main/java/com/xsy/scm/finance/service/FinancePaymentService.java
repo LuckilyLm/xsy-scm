@@ -42,7 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 登记供应商付款和客户退款付款。 客户付款必须关联退款单；退款付款只记录实际支出，不再次冲减应收。 幂等处理沿用统一的 IdempotencyService，不另建一套机制。
+ * 登记供应商付款和客户退款付款。客户付款必须关联退款单；退款付款只记录实际支出，不再次冲减应收。幂等沿用统一的 IdempotencyService，不另建机制。
  */
 @Service
 @RequiredArgsConstructor
@@ -57,7 +57,7 @@ public class FinancePaymentService {
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * 登记付款，并在同一事务中完成幂等校验、付款写入和操作日志。 客户退款来源先加锁，避免重复付款。
+     * 登记付款，并在同一事务中完成幂等校验、付款写入和操作日志。客户退款来源先加锁，避免重复付款。
      *
      * @param idempotencyKey
      *            请求幂等键；重复请求返回首次结果，内容不同则报冲突。
@@ -82,7 +82,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 追加一条 {@code REVERSE} 付款事实。原记录保持不变；反向行不继承退款来源，避免与原付款争用来源唯一键。
+     * 追加一条 {@code REVERSE} 付款记录。原记录保持不变；反向行不继承退款来源，避免与原付款争用来源唯一键。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentVO reverse(FinancePaymentReverseForm form, String idempotencyKey) {
@@ -127,7 +127,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 付款先校验方式与来源，再检查对方数据权限，最后登记事实。客户退款的不存在、越权、金额不符等情况返回同一拒绝码，避免暴露其他客户退款是否存在。
+     * 付款先校验方式与来源，再检查对方数据权限，最后登记记录。客户退款的不存在、越权、金额不符等情况返回同一拒绝码，避免暴露其他客户退款是否存在。
      */
     private FinancePaymentEntity register(FinancePaymentAddForm form) {
         String counterpartyType = counterpartyType(form.getCounterpartyType());
@@ -220,8 +220,8 @@ public class FinancePaymentService {
     }
 
     /**
-     * 模式 A：供应商付款 / 预付。<b>没有任何应付、没有采购单也可以付</b>（预付），因此这里不接受也不校验 payableId / purchaseOrderId / purchaseReceiptId。
-     * 只判供应商存在性与 deleted；{@code status} 不做前置（停用的供应商也可能要结清历史债务）。
+     * 模式 A：供应商付款 / 预付。没有任何应付、没有采购单也可以付（预付），因此这里不接受也不校验 payableId / purchaseOrderId / purchaseReceiptId。只判供应商存在性与
+     * deleted；{@code status} 不做前置（停用的供应商也可能要结清历史债务）。
      */
     private void fillSupplier(FinancePaymentEntity payment, FinancePaymentAddForm form) {
         if (form.getSourceType() != null || form.getSourceId() != null) {
@@ -241,21 +241,21 @@ public class FinancePaymentService {
     }
 
     /**
-     * 系统入口：渠道退款成功后登记付款事实（ADM-12）。
+     * 系统入口：渠道退款成功后登记付款记录。
      *
      * <p>
-     * <b>不复用人工的 {@code add(FinancePaymentAddForm)}</b>：那个入口假设「有人在填」。 系统来源固定生成
-     * {@code CUSTOMER + ORDER_REFUND + ONLINE_PAYMENT}，金额取<b>渠道实退</b>， 时点取渠道退款成功时间，渠道退款号落 {@code external_reference}。
+     * 不复用人工的 {@code add(FinancePaymentAddForm)}：那个入口假设「有人在填」。系统来源固定生成
+     * {@code CUSTOMER + ORDER_REFUND + ONLINE_PAYMENT}，金额取渠道实退，时点取渠道退款成功时间，渠道退款号写入 {@code external_reference}。
      *
      * <p>
-     * <b>财务域再校验一遍业务退款单</b>（不因为支付域校验过就跳过）：退款单存在且 COMPLETED、 客户一致、金额与应退额逐值一致、客户在当前调用者的客户数据范围内。 已有
-     * {@code uk_finance_payment_source_active} 是并发下最终的仲裁点。
+     * 财务域再校验一遍退款单（不因为支付域校验过就跳过）：退款单存在且 COMPLETED、客户一致、金额与应退额逐值一致、
+     * 客户在当前调用者的客户数据范围内。{@code uk_finance_payment_source_active} 是并发下最终的仲裁点。
      *
      * <p>
-     * <b>金额不一致时这里会拒绝</b>：但正常情况下走不到这里 —— 支付域已按口径「金额不一致就不生成」 提前跳过（见
-     * {@code PaymentRefundService.applyOutcome}）。真走到这里说明两边口径分叉了， 宁可失败也不要落一笔金额对不上的付款。
+     * 金额不一致时这里会拒绝，但正常情况下走不到这里：支付域已按「金额不一致就不生成」提前跳过（见
+     * {@code PaymentRefundService.applyOutcome}）。真走到这里说明两边算法分叉了，宁可失败也不要记一笔金额对不上的付款。
      *
-     * @return 已存在的或新登记的付款事实
+     * @return 已存在的或新登记的付款记录
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentEntity registerFromPaymentRefund(FinancePaymentRefundFact fact) {
@@ -263,7 +263,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 支付域已核实的退款事实可由回调或恢复任务派生，不依赖员工会话。
+     * 支付域已核实的退款数据可由回调或恢复任务派生，不依赖员工会话。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentEntity registerFromPaymentRefund(FinancePaymentRefundFact fact, String operator) {
@@ -323,7 +323,7 @@ public class FinancePaymentService {
         payment.setUpdatedBy(operator);
 
         if (financePaymentDao.insertNormalOnConflictDoNothing(payment) != 1) {
-            // 并发下另一个事务先插进去了：唯一索引仲裁，读回已有事实。
+            // 并发下另一个事务先插进去了：唯一索引仲裁，读回已有记录。
             // 这条 INSERT 用的是 ON CONFLICT DO NOTHING，不会让事务进入失败状态，因此可以安全读回。
             FinancePaymentEntity raced = financePaymentDao
                 .selectBySource(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name(), fact.orderRefundId());
@@ -338,7 +338,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 模式 B：客户退款付款。来源必须是 {@code ORDER_REFUND}，退款必须 {@code COMPLETED}，金额与对方必须与 {@code xsy_order_refund} <b>逐值一致</b>。
+     * 模式 B：客户退款付款。来源必须是 {@code ORDER_REFUND}，退款必须 {@code COMPLETED}，金额与对方必须与 {@code xsy_order_refund} 逐值一致。
      */
     private void fillCustomerRefund(FinancePaymentEntity payment, FinancePaymentAddForm form, BigDecimal amount) {
         if (!ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name().equals(StringUtils.trimToNull(form.getSourceType()))
@@ -362,20 +362,20 @@ public class FinancePaymentService {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         if (amount.compareTo(refund.getRefundAmount()) != 0) {
-            // scale 4 逐值判等，不允许四舍五入到 2 位再比：refund_amount 与付款金额都是 18,4
+            // 按 4 位小数逐值比较，不允许四舍五入到 2 位再比：refund_amount 与付款金额都是 18,4
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         financeOrderFundingPolicy.requireCashRefundAllowed(refund.getOrderId(), false);
         if (financePaymentSourceDao.selectActivePaymentRefund(refund.getRefundId()) != null
             || financePaymentSourceDao.hasRefundFundingAllocations(refund.getOrderId())) {
             // 线上退款已发起/完成：再人工退一次，就是同一张退款单被退两遍。
-            // 与支付域的 requireOrderRefundSource 构成<b>双向互斥</b>，两边都锁同一行 order_refund。
+            // 与支付域的 requireOrderRefundSource 双向互斥，两边都锁同一行 order_refund。
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
 
         payment.setCounterpartyId(refund.getCustomerId());
-        // 名称取付款发生时客户主档并冻结，绝不采用前端提交的任何名称；
-        // 也不回读订单快照 —— 付款的语义是「真实付款发生时的对方」。
+        // 名称取付款发生时客户主档并固定，绝不采用前端提交的任何名称；
+        // 也不回读订单快照 —— 付款的含义是「真实付款发生时的对方」。
         payment.setCounterpartyNameSnapshot(customer.getCustomerName());
         payment.setSourceType(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name());
         payment.setSourceId(refund.getRefundId());
@@ -402,7 +402,7 @@ public class FinancePaymentService {
     }
 
     /**
-     * 金额形态与正负：与收款同一条契约（严格字符串 + scale 4），库级 {@code CHECK (amount > 0)} 是第二层。
+     * 金额形态与正负：与收款规则相同（严格字符串 + 4 位小数），数据库层 {@code CHECK (amount > 0)} 是第二层。
      */
     private static BigDecimal amount(String raw) {
         BigDecimal amount = ScmDecimalStrings.parseScale4Required(raw);
@@ -413,10 +413,10 @@ public class FinancePaymentService {
     }
 
     /**
-     * 方式按<b>对手方</b>校验，与 {@code ck_finance_payment_method} 的分组逐字一致： 供应商付款只有三值；客户退款多一个 {@code ONLINE_PAYMENT}（系统退款固定用它）。
+     * 方式按对手方校验，与 {@code ck_finance_payment_method} 的分组完全一致：供应商付款只有三值； 客户退款多一个 {@code ONLINE_PAYMENT}（系统退款固定用它）。
      *
      * <p>
-     * 不按对手方分组校验，就会出现「前端能选、后端必然失败」的最差一种支持： 供应商付款带 ONLINE_PAYMENT 会被数据库拒绝。
+     * 不按对手方分组校验，就会出现「前端能选、后端必然失败」的最差情况：供应商付款带 ONLINE_PAYMENT 会被数据库拒绝。
      */
     private static String method(String counterpartyType, String raw) {
         String value = StringUtils.trimToNull(raw);
@@ -443,7 +443,7 @@ public class FinancePaymentService {
         snapshot.put("counterpartyNameSnapshot", payment.getCounterpartyNameSnapshot());
         snapshot.put("amount", payment.getAmount().toPlainString());
         snapshot.put("method", payment.getMethod());
-        // 时间一律落 ISO 字符串：JSONB 侧的 typeHandler 用的是未注册 JavaTimeModule 的裸 ObjectMapper。
+        // 时间一律写 ISO 字符串：JSONB 侧的 typeHandler 用的是未注册 JavaTimeModule 的 ObjectMapper。
         snapshot.put("paidAt", payment.getPaidAt().toString());
         snapshot.put("externalReference", payment.getExternalReference());
         snapshot.put("sourceType", payment.getSourceType());

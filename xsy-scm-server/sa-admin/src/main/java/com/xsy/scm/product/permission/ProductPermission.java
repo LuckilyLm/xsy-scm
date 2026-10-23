@@ -1,7 +1,7 @@
 package com.xsy.scm.product.permission;
 
 /**
- * Stable permission identifiers published by product-management APIs.
+ * 商品管理接口使用的权限码（稳定标识）。
  */
 public final class ProductPermission {
 

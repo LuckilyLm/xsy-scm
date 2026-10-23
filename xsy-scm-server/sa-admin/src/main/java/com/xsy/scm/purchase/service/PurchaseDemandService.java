@@ -47,7 +47,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_QUANTITY_INVALID;
 
 /**
- * 根据已确认订单生成采购需求，并把需求分配到采购单。 生成时按来源去重；分配时要求需求单位与采购单位一致，不自动换算。 分配先锁采购单，再锁需求记录，避免与修改、取消采购单发生并发冲突。
+ * 根据已确认订单生成采购需求，并把需求分配到采购单。生成时按来源去重；分配时要求需求单位与采购单位一致，不自动换算。 分配先锁采购单，再锁需求记录，避免与修改、取消采购单发生并发冲突。
  */
 @Service
 @RequiredArgsConstructor
@@ -81,7 +81,7 @@ public class PurchaseDemandService {
      * {@code generate} 的返回体。
      *
      * <p>
-     * 与 {@code DEMAND_GENERATE} 日志 {@code after_data} 同构 —— 日志与返回值不是两套口径。 {@code skippedCount} 统计的是「来源行已存在活动需求」的数量（重复
+     * 与 {@code DEMAND_GENERATE} 日志 {@code after_data} 结构一致，日志与返回值共用一套数据。{@code skippedCount} 统计的是 「来源行已存在活动需求」的数量（重复
      * generate 的正常结果，不是错误）。
      */
     @Data
@@ -92,16 +92,12 @@ public class PurchaseDemandService {
         private int skippedCount;
     }
 
-    // ------------------------------------------------------------------
-    // demand.generate
-    // ------------------------------------------------------------------
-
     /**
      * 汇总窗口内的已确认订单行 → 采购需求。
      *
      * <p>
-     * 半开区间 {@code [startAt, endAt)}；{@code demand_date} 按 <b>Asia/Shanghai</b> 取 {@code xsy_sales_order.confirmed_at}
-     * 的日期，<b>不是</b> {@code date(startAt)}。
+     * 半开区间 {@code [startAt, endAt)}；{@code demand_date} 按 Asia/Shanghai 取 {@code xsy_sales_order.confirmed_at} 的日期，不是
+     * {@code date(startAt)}。
      */
     @Transactional(rollbackFor = Exception.class)
     public GenerateResult generate(PurchaseDemandGenerateForm form, String idempotencyKey) {
@@ -117,9 +113,9 @@ public class PurchaseDemandService {
         }
 
         // 命令取数不按仓库范围收窄：来源行是销售订单行，本身不带仓库，本次需求落哪个仓由
-        // form.warehouseId 显式给出并由 warehouseReferenceGuard 校验启用态；「这个仓归不归他管」
-        // 是收货上架 / 出库这些改库存事实的写路径的判据（ScmWarehouseScopeGuard），不在这里重复。
-        // 传 all() 而不是省略参数，是为了让 Dao 的 scope 语义在两处调用点都显式可查。
+        // form.warehouseId 显式给出，并由 warehouseReferenceGuard 校验启用态；仓库归属判定属于
+        // 收货上架、出库这些改库存的写路径（ScmWarehouseScopeGuard），不在这里重复。
+        // 传 all() 而不是省略参数，是为了让 Dao 的 scope 语义在调用点显式可查。
         List<SalesOrderItemEntity> sourceItems = purchaseDemandDao.listSourceItems(form.getStartAt(), form.getEndAt(),
             ScmValueScope.all());
 
@@ -132,8 +128,8 @@ public class PurchaseDemandService {
 
             for (SalesOrderItemEntity source : sourceItems) {
                 SalesOrderEntity order = orders.get(source.getOrderId());
-                // 40980：来源订单必须已确认且未软删。SQL 已按 status 过滤，这里是<b>不变量断言</b> ——
-                // 口径（取哪些行）与不变量（取到的行是否可信）是两层防线，不允许被合并。
+                // 40980：来源订单必须已确认且未软删。SQL 已按 status 过滤，这里是补充断言：
+                // 取哪些行（查询条件）与取到的行是否可信是两层防线，不能合并。
                 PurchaseDemandSourceGuard.requireConfirmed(order);
 
                 Long existing = existingDemandIds.get(source.getId());
@@ -146,7 +142,7 @@ public class PurchaseDemandService {
                 PurchaseDemandEntity demand = PurchaseSnapshotFactory.demand(source, order, form.getSupplierId(),
                     form.getWarehouseId(),
                     // 需求上的采购员同样是归属依据（generate 的「默认采购员」只是建议值）：
-                    // 无分配权时一律落成当前员工，否则列表范围可以被一个表单字段放大
+                    // 无分配权时一律记为当前员工，否则列表范围可以被一个表单字段放大
                     purchaseOwnerResolver.resolveForCreate(form.getPurchaserId()));
                 if (purchaseDemandDao.insertIgnore(demand) == 1) {
                     result.getDemandIds().add(demand.getId());
@@ -173,15 +169,11 @@ public class PurchaseDemandService {
         return result;
     }
 
-    // ------------------------------------------------------------------
-    // demand.allocate
-    // ------------------------------------------------------------------
-
     /**
-     * 把一条需求分配到某个采购行上（一次一条 allocation；：单位必须一致）。
+     * 把一条需求分配到某个采购行上（一次一条分配，单位必须一致）。
      *
      * <p>
-     * 需求侧 {@code allocated_quantity} 是<b>跨采购单累计值</b>，因此这里读的是需求行自身的 {@code allocated_quantity}（已在锁内），加上本次数量后回写。
+     * 需求侧 {@code allocated_quantity} 是跨采购单累计值，因此这里读的是需求行自身的 {@code allocated_quantity}（已在锁内）， 加上本次数量后回写。
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseDemandVO allocate(PurchaseDemandAllocateForm form, String idempotencyKey) {
@@ -192,13 +184,8 @@ public class PurchaseDemandService {
         }
 
         // 锁序与 PurchaseOrderService 的 update / cancel / delete 一致：采购单 → 需求。
-        //
-        // 早期版本先锁需求、再<b>无锁</b>读采购单，理由是「需求是锁序第 1 层，反着取单锁会
-        // 与 update 成环」。那个判断是错的：update / cancel / delete 全都是「单 → 需求」，
-        // allocate 跟它们同向才是对齐；反倒是它原来的「需求 → 单（无锁读）」制造了下面的幻读窗口 ——
-        // cancel 先读「本单没有分配」→ 早退（没有分配时不取需求锁）→ allocate 插入并提交 →
-        // cancel 提交 CANCELLED，于是分配永久悬挂在已取消的单上、需求 allocated_quantity 不回落。
-        // 先取采购单行锁后，cancel 与 allocate 在单据行上串行，该窗口不存在。
+        // 先取采购单行锁后，cancel 与 allocate 在单据行上串行；否则 cancel 读到「本单没有分配」提前返回，
+        // allocate 随后插入并提交，分配就会永久挂在已取消的单上、需求的 allocated_quantity 也不回落。
         PurchaseOrderItemEntity orderItem = purchaseOrderItemDao.selectById(form.getPurchaseOrderItemId());
         if (orderItem == null) {
             throw new ScmBusinessException(PURCHASE_ORDER_ITEM_NOT_FOUND);
@@ -216,8 +203,8 @@ public class PurchaseDemandService {
         }
         PurchaseDemandAllocator.assignable(demand.getStatus());
         PurchaseDemandAllocator.demandVersion(form.getVersion(), demand.getVersion());
-        // 归属守卫：分配会把需求量并进别人名下的采购单，两头都必须在调用者范围内。
-        // 只判需求会留下一条侧门——用自己的采购单接住别人的需求，两边数字同时被改。
+        // 归属校验：分配会把需求量并进别人名下的采购单，两头都必须在调用者范围内；
+        // 只判需求会留下侧门——用自己的采购单接住别人的需求，两边数字同时被改。
         purchaseOwnerResolver.requireVisible(demand.getPurchaserId());
 
         // 需求单位（销售单位快照）必须等于采购单位（supplier_sku.purchase_unit 快照）
@@ -254,7 +241,7 @@ public class PurchaseDemandService {
             throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT);
         }
 
-        // DEMAND_ALLOCATE 的 purchase_order_id 由 purchaseOrderItemId <b>反查</b>得到，非空；
+        // DEMAND_ALLOCATE 的 purchase_order_id 由 purchaseOrderItemId 反查得到，非空；
         // purchase_receipt_id 为 NULL。ck_purchase_operation_log_owner 会复核这一分支。
         Map<String, Object> before = PurchaseSnapshotFactory.snapshot();
         before.put("allocatedQuantity", PurchaseSnapshotFactory.fixed(previousAllocated));
@@ -275,10 +262,6 @@ public class PurchaseDemandService {
         purchaseIdempotencyService.complete(claim, "PURCHASE_DEMAND", demand.getId(), result);
         return result;
     }
-
-    // ------------------------------------------------------------------
-    // 内部
-    // ------------------------------------------------------------------
 
     /**
      * 采购单状态必须是 {@code SUBMITTED}（{@code null} 视为单据不存在）。

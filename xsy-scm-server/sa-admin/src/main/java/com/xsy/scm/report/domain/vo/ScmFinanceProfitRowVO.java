@@ -8,7 +8,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import lombok.Data;
 
 /**
- * Sales gross-profit row; profit remains null when any source cost is missing.
+ * 销售毛利行；任一来源成本缺失时毛利为 null。
  */
 @Data
 public class ScmFinanceProfitRowVO {
@@ -21,7 +21,7 @@ public class ScmFinanceProfitRowVO {
     private BigDecimal revenueAmount;
 
     /**
-     * Net sales COGS; accepted return-to-stock cost is a negative adjustment.
+     * 销售成本净额；已验收的退货入库成本作为负数冲减。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal salesCostAmount;
@@ -30,7 +30,7 @@ public class ScmFinanceProfitRowVO {
      * 促销赠品成本（满赠赠品的出库成本，正数表示成本）。
      *
      * <p>
-     * 与 {@link #salesCostAmount} 分开：赠品<b>不减收入</b>，它是订单的履约成本之一； 单独一列才能直接回答「这个月营销活动送掉多少成本」，而不必回头从库存流水重拼。
+     * 与 {@link #salesCostAmount} 分开：赠品不减收入，它是订单的履约成本之一；单独一列才能直接回答 「这个月营销活动送掉多少成本」，而不必回头从库存流水重拼。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal giftCostAmount;
@@ -39,7 +39,7 @@ public class ScmFinanceProfitRowVO {
     private BigDecimal grossProfit;
 
     /**
-     * Percentage in 0-100 scale, not a ratio.
+     * 百分数，取值 0–100，不是 0–1 的比例。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal grossMarginRate;

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 销售订单来源，与订单表的 {@code order_source} 取值对应。
  *
  * <p>
- * {@code desc} 供导出与页面展示使用，落库仍用枚举名。
+ * {@code desc} 供导出与页面展示使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

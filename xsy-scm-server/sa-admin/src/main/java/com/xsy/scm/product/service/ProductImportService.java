@@ -151,10 +151,6 @@ public class ProductImportService {
         return productImportWorkbookSupport.buildTemplate(mode);
     }
 
-    // ------------------------------------------------------------------
-    // CREATE
-    // ------------------------------------------------------------------
-
     private Assembly assembleCreates(List<ProductImportRow> rows, ProductImportResultVO result) {
         result.setTotalRows(rows.size());
         if (rows.isEmpty())
@@ -195,12 +191,8 @@ public class ProductImportService {
         return new Assembly(forms, orderedGroups);
     }
 
-    // ------------------------------------------------------------------
-    // UPDATE
-    // ------------------------------------------------------------------
-
     /**
-     * 更新模式先按定位键读回现状，再把 Excel 的非空单元格覆盖到现状之上：空白保持原值、未列出的 SKU 保持原样、Excel 之外的字段（详情描述、税率、图片等）一律原值回写，因此不会把「只改一个市场价」变成整单替换。
+     * 更新模式先按商品ID读回现状，再用 Excel 的非空单元格覆盖：空白保持原值、未列出的 SKU 保持原样、 Excel 之外的字段（详情描述、税率、图片等）原值回写，不会把「只改一个市场价」变成整单替换。
      */
     private UpdateAssembly assembleUpdates(List<ProductImportRow> rows, ProductImportResultVO result) {
         result.setTotalRows(rows.size());
@@ -325,7 +317,7 @@ public class ProductImportService {
                     defaults++;
                 continue;
             }
-            // 新增 SKU 走与新增导入相同的必填口径；SKU 版本对新增行没有意义
+            // 新增 SKU 与新增导入的必填项相同；新增行不应填 SKU 版本
             if (trim(row.getSkuVersion()) != null)
                 addError(result, rowNumber, trim(row.getSkuCode()), "商品规格版本", "NEW_SKU_VERSION", "新增商品规格不应填写商品规格版本");
 
@@ -359,7 +351,7 @@ public class ProductImportService {
         var form = new ProductSpuUpdateForm();
         form.setSpuId(spu.getId());
         form.setVersion(spu.getVersion());
-        // 编码是身份不是属性：一律按库内值回写，校验阶段已保证 Excel 值与之一致
+        // 编码不能通过导入修改，一律按库内值回写
         form.setSpuCode(spu.getSpuCode());
         form.setName(keep(trim(first.getSpuName()), spu.getName()));
         form.setAlias(keepOrClear(trim(first.getAlias()), spu.getAlias()));
@@ -408,7 +400,7 @@ public class ProductImportService {
             var form = new ProductSkuForm();
             form.setSkuCode(row.getSkuCode());
             form.setSpecName(trim(row.getSpecName()));
-            // 新增 SKU 与新增导入使用同一套规格快照口径
+            // 新增 SKU 与新增导入的规格值写法一致
             form.setSpecValues(new LinkedHashMap<>(Map.of("规格", trim(row.getSpecName()))));
             applySkuOverride(form, row);
             created.add(form);
@@ -472,7 +464,7 @@ public class ProductImportService {
     }
 
     /**
-     * 图片不经导入编辑，按现状回写即可保持主图与排序不变；内容角色由同步链不更新该列来保证。
+     * 图片不经导入编辑，按现状回写即可保持主图和排序；image_type 由同步逻辑不更新该列来保证。
      */
     private ProductImageForm toImageForm(ProductImageEntity entity) {
         var form = new ProductImageForm();
@@ -485,10 +477,6 @@ public class ProductImportService {
         form.setSortOrder(entity.getSortOrder() == null ? 0 : entity.getSortOrder());
         return form;
     }
-
-    // ------------------------------------------------------------------
-    // 共享校验
-    // ------------------------------------------------------------------
 
     private Map<String, ProductCategoryEntity> loadCategories(List<ProductImportRow> rows) {
         var codes = rows.stream().map(row -> trim(row.getCategoryCode())).filter(Objects::nonNull).distinct().toList();
@@ -558,7 +546,7 @@ public class ProductImportService {
     }
 
     /**
-     * 两模式共用的取值与长度校验；必填口径由各模式的调用方决定。
+     * 两种模式共用的取值与长度校验；必填项由各模式自行检查。
      */
     private void validateSharedCells(ProductImportRow row, Map<String, ProductCategoryEntity> categoryMap,
         Map<String, ProductTagEntity> tagMap, ProductImportResultVO result, boolean allowClearToken,
@@ -583,8 +571,8 @@ public class ProductImportService {
         else if (categoryCode != null
             && !ScmEnableStatusEnum.ENABLED.name().equals(categoryMap.get(categoryCode).getStatus()))
             addError(result, rowNumber, key, "分类编码", "CATEGORY_DISABLED", "分类已停用，不能作为新商品分类");
-        // 层级规则与写入路径的 ProductCategoryService.requireSelectableCategory 同口径；前置到逐行校验，
-        // 免得填了一 / 二级分类要等整批写入才收到 CATEGORY_PARENT_INVALID，看不出是哪个单元格的问题
+        // 层级规则与 ProductCategoryService.requireSelectableCategory 一致；提前到逐行校验，
+        // 免得填了一 / 二级分类要等整批写入才报 CATEGORY_PARENT_INVALID，看不出是哪个单元格的问题
         else if (categoryCode != null && !Integer.valueOf(3).equals(categoryMap.get(categoryCode).getLevel()))
             addError(result, rowNumber, key, "分类编码", "CATEGORY_LEVEL_INVALID", "商品只能绑定三级分类，请改填该分类下的三级分类");
 
@@ -596,10 +584,10 @@ public class ProductImportService {
         decimal(result, rowNumber, key, "市场价", row.getMarketPrice(), false);
         integer(result, rowNumber, key, "保质期天数", row.getShelfLifeDays(), 0, 36500);
         integer(result, rowNumber, key, "排序", row.getSortOrder(), 0, Integer.MAX_VALUE);
-        // 单位与标签的「存在 + 启用」只在 CREATE 模式逐行预判。
-        // UPDATE 不预判：写入口劲只复核<b>变动过</b>的单位（ProductSpuService.update 的 changedUnits）
-        // 与<b>新挂</b>的标签（assertNewBindings 允许已绑的停用标签原样保留），
-        // 在这里照抄「必须在字典且启用」会把合法的历史值误拒成单元格错误。
+        // 单位与标签的「存在 + 启用」只在 CREATE 模式逐行检查。
+        // UPDATE 不检查：写入路径只复核变动过的单位（ProductSpuService.update 的 changedUnits）
+        // 和新挂的标签（assertNewBindings 允许已绑的停用标签保留），
+        // 在这里照抄「必须在字典且启用」会把合法的历史值误判成单元格错误。
         if (!allowClearToken) {
             var unit = trim(row.getSaleUnit());
             if (unit != null) {

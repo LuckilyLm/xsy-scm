@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * 每个 SKU 可以配置销售单位到不同库存单位的换算；历史订单使用确认时快照，不回溯当前配置。
+ * 每个 SKU 可以配置销售单位到不同库存单位的换算；历史订单按确认时的配置换算，不回溯当前配置。
  */
 @Service
 @RequiredArgsConstructor

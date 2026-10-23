@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
  * {@link #DEVICE} 当前不被收货命令接受；接入电子秤前不得写入该来源。
  *
  * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * {@code desc} 供页面与导出使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

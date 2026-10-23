@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 发货单读正式线路快照，逐行保留客户、停靠点和订单来源。
+ * 发货单读正式线路数据，逐行保留客户、停靠点和订单来源。
  */
 @Component
 @RequiredArgsConstructor

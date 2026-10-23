@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 /**
- * 商城未分配订单的独立领取与指派入口；只修改订单自身的负责人快照。
+ * 商城未分配订单的领取与指派；只修改订单上的负责人。
  */
 @Service
 @RequiredArgsConstructor

@@ -16,12 +16,12 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 经营指标 SQL 只负责汇总真实业务事实，统计日期按北京时间对齐。
+ * 经营指标 SQL 只负责汇总业务数据，统计日期按北京时间对齐。
  */
 @Mapper
 public interface ScmBusinessMetricsDao {
 
-    // ---------- 销售（确认轴） ----------
+    // 销售（按确认时间）
 
     /**
      * 区间内确认的订单数。时间轴 {@code confirmed_at}。
@@ -38,7 +38,7 @@ public interface ScmBusinessMetricsDao {
         @Param("scope") ScmDataScopeContext scope);
 
     /**
-     * 区间内创建的确认订单金额，即「下单金额」。时间轴 {@code created_at}，与销售额<b>不是同一个数</b>。
+     * 区间内创建的确认订单金额，即「下单金额」。时间轴 {@code created_at}，与销售额不是同一个数。
      */
     BigDecimal sumOrderedAmountByCreatedAt(@Param("startTime") OffsetDateTime startTime,
         @Param("endTime") OffsetDateTime endTime, @Param("scope") ScmDataScopeContext scope);
@@ -75,7 +75,7 @@ public interface ScmBusinessMetricsDao {
     List<RankItem> topProductsByConfirmedAt(@Param("startTime") OffsetDateTime startTime,
         @Param("endTime") OffsetDateTime endTime, @Param("limit") int limit, @Param("scope") ScmDataScopeContext scope);
 
-    // ---------- 主档 ----------
+    // 主档
 
     Long countCustomers(@Param("scope") ScmDataScopeContext scope);
 
@@ -83,7 +83,7 @@ public interface ScmBusinessMetricsDao {
 
     Long countSkus();
 
-    // ---------- 库存 ----------
+    // 库存
 
     BigDecimal sumInventoryQuantity(@Param("scope") ScmDataScopeContext scope);
 
@@ -99,20 +99,20 @@ public interface ScmBusinessMetricsDao {
         @Param("scope") ScmDataScopeContext scope);
 
     /**
-     * 库存健康度判定输入行：只取事实，不在这里分类（分类见 {@code ScmInventoryWarningStatusEnum#evaluate}）。
+     * 库存健康度判定输入行：只取原始数据，不在这里分类（分类见 {@code ScmInventoryWarningStatusEnum#evaluate}）。
      *
      * <p>
-     * 返回「有阈值的 (仓库, 规格)」∪「有余额但无阈值的 (仓库, 规格)」：前者以阈值配置为准（左连余额，可能没有余额行）， 后者只有余额没有判定依据。
+     * 返回「有阈值的 (仓库, 规格)」∪「有余额但无阈值的 (仓库, 规格)」：前者以阈值配置为准，后者只有余额没有判定依据。
      */
     List<InventoryHealthRow> inventoryHealthRows(@Param("scope") ScmDataScopeContext scope);
 
-    // ---------- 采购（提交轴 + 已提交状态） ----------
+    // 采购（按提交时间，只算已提交状态）
 
     /**
      * 区间内已提交的采购单数。时间轴 {@code submitted_at}。
      *
      * <p>
-     * 状态清单由调用方从 {@code ScmPurchaseStatusEnum.committedNames()} 传入，<b>不在 SQL 里硬编码</b> —— 抄一份状态数组的副本，新增状态时就会静默少算。
+     * 状态清单由调用方从 {@code ScmPurchaseStatusEnum.committedNames()} 传入，不在 SQL 里写死：另抄一份，新增状态时就会静默少算。
      */
     Long countPurchaseOrdersBySubmittedAt(@Param("committedStatuses") List<String> committedStatuses,
         @Param("startTime") OffsetDateTime startTime, @Param("endTime") OffsetDateTime endTime,
@@ -138,7 +138,7 @@ public interface ScmBusinessMetricsDao {
         @Param("scope") ScmDataScopeContext scope);
 
     /**
-     * 收货单数。<b>确认轴 + {@code status = 'CONFIRMED'}</b>：草稿收货单只是还没提交的草稿， 与报表的「已确认收货单数」同一个口径。
+     * 收货单数：按确认时间，且 {@code status = 'CONFIRMED'}。草稿收货单不算，与报表的「已确认收货单数」一致。
      */
     Long countReceipts(@Param("startTime") OffsetDateTime startTime, @Param("endTime") OffsetDateTime endTime,
         @Param("scope") ScmDataScopeContext scope);
@@ -150,10 +150,10 @@ public interface ScmBusinessMetricsDao {
         @Param("startTime") OffsetDateTime startTime, @Param("endTime") OffsetDateTime endTime,
         @Param("scope") ScmDataScopeContext scope);
 
-    // ---------- 趋势 ----------
+    // 趋势
 
     /**
-     * 趋势按北京时间每天汇总，销售按确认日、采购按提交日统计；各序列需与对应今日指标同口径。
+     * 趋势按北京时间每天汇总，销售按确认日、采购按提交日统计；各序列与对应的今日指标保持一致。
      */
     List<TrendPoint> trendByDay(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
         @Param("inboundTypes") List<String> inboundTypes, @Param("outboundTypes") List<String> outboundTypes,

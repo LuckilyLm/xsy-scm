@@ -33,29 +33,21 @@ public class DeliveryRouteOrderEntity extends DeliveryRecord {
     private OffsetDateTime expectDeliveryTimeSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String assignmentStatus;
-    /**
-     * 生成打印预览 / 打印任务的历史次数；不代表物理出纸，也不代表当前内容版本已打印。
-     */
+    /** 生成打印预览 / 打印任务的历史次数；不代表物理出纸，也不代表当前内容版本已打印。 */
     private Integer printCount;
-    /**
-     * 最后一次生成打印的时间；{@code null} 表示从未生成。
-     */
+    /** 最后一次生成打印的时间；{@code null} 表示从未生成。 */
     private OffsetDateTime lastPrintedAt;
     private String lastPrintedBy;
     /**
      * 订单级履约状态：{@code PENDING → IN_TRANSIT → SIGNED | EXCEPTION}。
      *
      * <p>
-     * 与 {@code assignmentStatus} 正交：一个说「货到没到手」，一个说「这单还在不在线路上」。不拿 RELEASED 表达签收 —— 取消线路也会写 RELEASED，那与拒收不是同一个事实。
+     * 和 {@code assignmentStatus} 相互独立：一个说货到没到手，一个说这单还在不在线路上。不用 RELEASED 表示签收——取消线路也会写 RELEASED，和拒收是两回事。
      */
     private String fulfillmentStatus;
-    /**
-     * 签收或异常登记时点，服务端写入；终态必填（DB CHECK）。
-     */
+    /** 签收或异常登记时点，服务端写入；终态必填（数据库 CHECK）。 */
     private OffsetDateTime signedAt;
     private String signedBy;
-    /**
-     * 异常签收必填原因；正常签收可留空备注。
-     */
+    /** 异常签收必填原因；正常签收可留空备注。 */
     private String signReason;
 }

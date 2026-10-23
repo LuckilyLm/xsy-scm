@@ -34,10 +34,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 营销中心：活动、优惠券与优惠试算 / 冻结。
+ * 营销中心：活动、优惠券与优惠试算 / 保存。
  *
  * <p>
- * 试算是只读的（{@code POST} 只是因为要传订单行数组），不占用券、不写任何表；只有 {@code confirm} 才占用券并冻结优惠。
+ * 试算只读（{@code POST} 只是因为要传订单行数组），不占用券、不写任何表；只有 {@code confirm} 才占用券并保存优惠。
  */
 @RestController
 @RequestMapping("/scm/promotion")
@@ -51,9 +51,7 @@ public class PromotionController {
 
     private final PromotionDiscountService promotionDiscountService;
 
-    // ------------------------------------------------------------------
     // 活动
-    // ------------------------------------------------------------------
 
     @PostMapping("/activity/query")
     @SaCheckPermission(PromotionPermission.ACTIVITY_QUERY)
@@ -87,9 +85,7 @@ public class PromotionController {
         return ResponseDTO.ok();
     }
 
-    // ------------------------------------------------------------------
     // 优惠券
-    // ------------------------------------------------------------------
 
     @PostMapping("/coupon/query")
     @SaCheckPermission(PromotionPermission.COUPON_QUERY)
@@ -145,15 +141,13 @@ public class PromotionController {
         return ResponseDTO.ok(promotionCouponService.listInstances(customerId, status));
     }
 
-    // ------------------------------------------------------------------
-    // 优惠试算与冻结
-    // ------------------------------------------------------------------
+    // 优惠试算与保存
 
     /**
      * 试算：只读，不占用券。
      *
      * <p>
-     * 冻结（{@code confirm}）已并入订单确认：优惠由订单确认在服务端按订单事实冻结， 客户端不能再单独调冻结接口，否则会出现「订单确认了但优惠没冻结」的中间态。
+     * 保存（{@code confirm}）已并入订单确认：优惠由订单确认在服务端按订单数据算好后保存， 客户端不能再单独调保存接口，否则会出现「订单确认了但优惠没保存」的中间态。
      */
     @PostMapping("/discount/preview")
     @SaCheckPermission(PromotionPermission.ACTIVITY_QUERY)

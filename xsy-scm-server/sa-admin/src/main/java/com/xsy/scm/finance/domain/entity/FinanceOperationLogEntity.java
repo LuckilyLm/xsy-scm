@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 /**
- * 一次财务写操作追加一条不可改日志。日志不继承财务账单字段，记录原单、动作、操作人及前后快照；不允许通过软删或更新覆盖历史。
+ * 一次财务写操作追加一条不可改日志。日志不继承财务单据字段，记录原单、动作、操作人及前后数据，不允许软删或更新覆盖历史。
  */
 @Data
 @TableName(value = "xsy_finance_operation_log", autoResultMap = true)
@@ -31,7 +31,7 @@ public class FinanceOperationLogEntity {
     private Long businessId;
 
     /**
-     * {@code ScmFinanceOperationTypeEnum}；白名单由 {@code ck_finance_operation_log_type} 在库级强制。
+     * {@code ScmFinanceOperationTypeEnum}；取值由 {@code ck_finance_operation_log_type} 在数据库层限定。
      */
     private String operationType;
 
@@ -46,13 +46,13 @@ public class FinanceOperationLogEntity {
     private String reason;
 
     /**
-     * 改前快照：生成类动作为 {@code null}；核销与反向类为目标的派生余额快照。
+     * 改前数据：生成类动作为 {@code null}；核销与反向类为目标当时的余额数据。
      */
     @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
     private Map<String, Object> beforeData;
 
     /**
-     * 改后快照：生成类为单头快照；核销与反向类为写入后的派生余额快照。
+     * 改后数据：生成类为单头数据；核销与反向类为写入后的余额数据。
      */
     @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
     private Map<String, Object> afterData;

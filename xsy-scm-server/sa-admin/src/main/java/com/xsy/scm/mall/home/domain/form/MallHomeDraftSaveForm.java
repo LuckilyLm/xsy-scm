@@ -14,9 +14,11 @@ public class MallHomeDraftSaveForm {
     @NotNull(message = "草稿版本不能为空")
     @Min(value = 0, message = "草稿版本不能小于0")
     private Integer version;
+    /**
+     * 主题编码：FRESH / WARM / OCEAN。
+     */
     @NotNull(message = "首页组件不能为空")
     @Size(max = 30, message = "首页最多配置30个组件")
-    /** 主题编码：FRESH / WARM / OCEAN。 */
     private String themeCode;
 
     private List<@Valid MallHomeBlockForm> blocks;

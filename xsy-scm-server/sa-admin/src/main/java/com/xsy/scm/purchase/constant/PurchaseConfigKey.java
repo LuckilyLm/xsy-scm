@@ -14,7 +14,7 @@ public final class PurchaseConfigKey {
     public static final String OVER_RECEIPT_TOLERANCE_PERCENT = "scm.purchase.over_receipt_tolerance_percent";
 
     /**
-     * 配置缺失时的回退值，与配置种子值及计算器默认值一致。
+     * 配置缺失时的默认值，与配置种子值及计算器默认值一致。
      */
     public static final String OVER_RECEIPT_TOLERANCE_PERCENT_DEFAULT = "10";
 

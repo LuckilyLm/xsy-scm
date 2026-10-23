@@ -43,7 +43,7 @@ public class InventoryLossGainEntity {
     private String status;
 
     /**
-     * 报损报溢原因，必填（DB CHECK 也挡空串）。
+     * 报损报溢原因，必填（数据库 CHECK 也挡空串）。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String reason;
@@ -52,7 +52,7 @@ public class InventoryLossGainEntity {
     private String remark;
 
     /**
-     * 审核时刻；仅已审核（通过 / 驳回）非空（DB CHECK 保证）。
+     * 审核时刻；仅已审核（通过 / 驳回）非空（数据库 CHECK 保证）。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime auditedAt;

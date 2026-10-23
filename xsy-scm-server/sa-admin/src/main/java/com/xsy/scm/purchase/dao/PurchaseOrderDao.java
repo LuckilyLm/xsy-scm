@@ -15,7 +15,7 @@ import java.util.List;
  * 采购单。
  *
  * <p>
- * {@link #nextOrderNo()} 取全局序列，<b>不按日 reset</b>：单号形如 {@code PO + yyyyMMdd + 至少 6 位}，超过 999999 自然扩位，由
+ * {@link #nextOrderNo()} 取全局序列，不按日重置：单号形如 {@code PO + yyyyMMdd + 至少 6 位}，超过 999999 自然扩位，由
  * {@code PurchaseNumberGenerator} 负责拼接与补零。
  */
 @Mapper
@@ -25,8 +25,8 @@ public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {
      * 分页查询（联 supplier / warehouse / 收货进度）。
      *
      * <p>
-     * {@code scope} 是采购员维度的授权范围，由 Service 显式下传： {@code null} 在 Mapper 里按失败关闭处理（0 行），不表示「全部」； {@code detail} /
-     * {@code lock} 刻意不带范围，读取范围只在查询端点判定，命令侧由写权限把关。
+     * {@code scope} 是采购员维度的授权范围，由 Service 显式下传：{@code null} 在 Mapper 里按拒绝处理（0 行），不表示「全部」； {@code detail} / {@code lock}
+     * 刻意不带范围，读取范围只在查询端点判定，命令侧由写权限把关。
      */
     List<PurchaseOrderVO> query(Page<?> page, @Param("query") PurchaseOrderQueryForm query,
         @Param("scope") ScmValueScope scope);

@@ -4,10 +4,10 @@ import com.xsy.scm.balance.domain.entity.CustomerBalanceMovementEntity;
 import com.xsy.scm.balance.domain.vo.BalanceMovementVO;
 
 /**
- * 实体 → VO 的转换（纯函数）。
+ * 实体转 VO 的纯函数。
  *
  * <p>
- * 单独放一处而不是让 Controller 各拼各的：VO 是<b>对外契约</b>，拼装散在多个入口里， 迟早出现「列表接口有金额、更正接口漏了金额」这种不一致。
+ * 单独放一处，别让 Controller 各拼各的：VO 是对外接口，分散拼装迟早漏字段。
  */
 public final class BalanceVoAssembler {
 

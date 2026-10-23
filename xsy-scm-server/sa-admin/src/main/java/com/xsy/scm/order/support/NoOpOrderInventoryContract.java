@@ -1,7 +1,7 @@
 package com.xsy.scm.order.support;
 
 /**
- * Preserves the inventory command contract while order commands use the inventory reservation service directly.
+ * 兼容用的空实现；订单命令现在直接使用库存预留服务。
  */
 public final class NoOpOrderInventoryContract implements OrderInventoryContract {
     @Override

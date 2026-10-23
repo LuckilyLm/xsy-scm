@@ -33,25 +33,21 @@ import org.springframework.transaction.annotation.Transactional;
  * 秤端作业队列：列出员工可作业的任务、领取与释放租约。
  *
  * <p>
- * 可见范围永远是「设备绑定仓库 ∩ 员工数据范围 ∩ 员工受指派」，三者取交集。 秤端不能通过改请求参数越权：仓库来自设备绑定，员工来自服务端会话，两者都不接受客户端自报。
+ * 可见范围是「设备绑定仓库 ∩ 员工数据范围 ∩ 员工受指派」的交集。秤端不能通过改请求参数越权： 仓库来自设备绑定，员工来自服务端会话，两者都不接受客户端自报。
  *
  * <p>
- * 本服务只读分拣域并写自己的租约表，不修改任何分拣数量；正式分拣结果仍由员工在确认时 经 {@code SortingTaskService.enter} 写入。
+ * 本服务只读分拣域并写自己的租约表，不修改任何分拣数量；正式分拣结果仍由员工在确认时经 {@code SortingTaskService.enter} 写入。
  */
 @Service
 @RequiredArgsConstructor
 public class ScaleDeviceJobService {
 
-    /**
-     * 租约有效期：一个班次内够用，又不能长到让离场设备长期占住任务。
-     */
+    /** 租约有效期：一个班次内够用，又不会让离场设备长期占住任务。 */
     private static final int LEASE_MINUTES = 120;
 
     private static final int MAX_PAGE_SIZE = 100;
 
-    /**
-     * 可作业状态：待分拣与分拣中。已完成或已取消的任务不再出现在秤端队列。
-     */
+    /** 可作业状态：待分拣与分拣中。已完成或已取消的任务不再出现在秤端队列。 */
     private static final List<String> OPEN_STATUSES = List.of(ScmSortingTaskStatusEnum.PENDING.name(),
         ScmSortingTaskStatusEnum.SORTING.name());
 
@@ -92,7 +88,7 @@ public class ScaleDeviceJobService {
      * 领取作业租约。同一设备重复领取返回当前租约；被其他设备持有时明确拒绝。
      *
      * <p>
-     * 并发仲裁靠 {@code uk_scale_job_lease_active_task} 这个部分唯一索引，不靠先查后插： 两台秤同时点「领取」时只有一笔能插入成功。
+     * 并发依靠 {@code uk_scale_job_lease_active_task} 这个部分唯一索引，不靠先查后插： 两台秤同时点「领取」时只有一笔能插入成功。
      */
     @Transactional(rollbackFor = Exception.class)
     public ScaleJobVO claim(String jobId, ScaleJobActionForm form) {
@@ -120,15 +116,13 @@ public class ScaleDeviceJobService {
         try {
             scaleJobLeaseDao.insert(lease);
         } catch (DuplicateKeyException exception) {
-            // 并发下另一台设备刚插入：回明确拒绝，不把冲突报成服务器错误。
+            // 并发下另一台设备刚插入：直接拒绝，不把冲突报成服务器错误。
             throw new ScmBusinessException(ScaleDeviceErrorCode.JOB_LEASED_BY_OTHER);
         }
         return toJobVO(task, lease, principal);
     }
 
-    /**
-     * 释放租约。没有有效租约时按幂等处理：秤端重试不会报错，也不会影响其他设备的租约。
-     */
+    /** 释放租约。没有有效租约时按幂等处理：秤端重试不会报错，也不影响其他设备的租约。 */
     @Transactional(rollbackFor = Exception.class)
     public ScaleJobVO release(String jobId, ScaleJobActionForm form) {
         ScaleDevicePrincipal principal = ScaleDeviceContext.require();
@@ -141,9 +135,7 @@ public class ScaleDeviceJobService {
         return toJobVO(taskId, principal, now);
     }
 
-    /**
-     * 领取前置校验：可见、可作业、属于本设备仓库、由当前员工受指派，且版本与秤端看到的一致。
-     */
+    /** 领取前置校验：可见、可作业、属于本设备仓库、由当前员工受指派，且版本与秤端看到的一致。 */
     private SortingTaskEntity requireClaimable(Long taskId, String jobVersion, ScaleDevicePrincipal principal) {
         SortingTaskEntity task = sortingQueryService.requireTaskForDevice(taskId);
         if (!OPEN_STATUSES.contains(task.getStatus())) {
@@ -205,9 +197,7 @@ public class ScaleDeviceJobService {
         return vo;
     }
 
-    /**
-     * 数量转字符串保留原始小数：业务数量不经过浮点，也不把 8.84 显示成 8.8400 之外的值。
-     */
+    /** 数量转字符串保留原始小数：业务数量不经过浮点，也不会多出或丢掉小数位。 */
     private static String plain(BigDecimal value) {
         return value == null ? null : value.toPlainString();
     }

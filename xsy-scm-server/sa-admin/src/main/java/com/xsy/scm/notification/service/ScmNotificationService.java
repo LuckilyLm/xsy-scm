@@ -14,17 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ScmNotificationService {
 
-    /**
-     * 定时任务没有登录用户时使用系统操作人标记，避免通知记录被错误归属到普通员工。
-     */
+    /** 定时任务没有登录用户时使用系统操作人，避免通知记录被归属到普通员工。 */
     public static final String SYSTEM_OPERATOR = "system";
 
     private final ScmNotificationEventDao eventDao;
     private final MessageService messageService;
 
-    /**
-     * 订单类事件的通知（保持既有调用点不变）。
-     */
+    /** 订单类事件的通知。 */
     @Transactional(rollbackFor = Exception.class)
     public boolean sendOnce(String eventKey, String eventType, Long receiverUserId, Long dataId, String title,
         String content) {
@@ -32,7 +28,7 @@ public class ScmNotificationService {
     }
 
     /**
-     * 同一事件对同一接收人只发一次站内信；不同接收人各自接收。 去重记录与通知在同一事务内保存，失败时一起回滚。
+     * 同一事件对同一接收人只发一次站内信；去重记录与通知在同一事务内保存，失败一起回滚。
      *
      * @param messageType
      *            消息类型，决定业务单据的跳转目标

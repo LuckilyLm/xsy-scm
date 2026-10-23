@@ -8,7 +8,7 @@ import net.lab1024.sa.base.common.domain.PageParam;
 import java.time.LocalDate;
 
 /**
- * Finance list filters use closed business-date ranges, converted centrally to half-open timestamps.
+ * 财务列表筛选用闭区间的业务日期，统一换算成半开区间的时间戳。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

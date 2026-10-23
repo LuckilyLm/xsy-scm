@@ -44,7 +44,7 @@ public class OrderBundleSnapshotService {
         }
         if (orderItem.getActualQuantity() == null || orderItem.getActualQuantity().signum() <= 0
             || orderItem.getLockedUnitPrice() == null || warehouseId == null) {
-            // 组合销售必须冻结本次配送仓，不使用系统默认仓悄悄替代。
+            // 组合销售必须用本次配送仓，不能悄悄换成系统默认仓。
             throw new ScmBusinessException(BUNDLE_COMPONENT_INVALID);
         }
         BigDecimal bundleSaleAmount = OrderAmountCalculator.lineAmount(orderItem.getActualQuantity(),
@@ -57,7 +57,7 @@ public class OrderBundleSnapshotService {
         if (options.size() != components.size()) {
             throw new ScmBusinessException(BUNDLE_COMPONENT_INVALID);
         }
-        // 全部组成规格验价、验单位与库存换算完成后，才开始写入冻结快照。
+        // 全部组成规格验价、验单位与库存换算完成后，才开始写入组合数据。
         List<PreparedComponent> prepared = new ArrayList<>(components.size());
         for (ProductBundleComponentEntity component : components) {
             ProductSkuOptionVO option = options.get(component.getComponentSkuId());

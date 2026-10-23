@@ -21,9 +21,7 @@ public class DeliveryEligibilityPolicy {
         return List.of(ScmOrderStatusEnum.CONFIRMED.name());
     }
 
-    /**
-     * 判据必须在<b>已加锁</b>的订单上调用：调用方先 {@code orders.lock(id)} 再问这里，否则「读明细覆盖」与「写线路占用」之间存在重开/取消的竞态窗口。
-     */
+    /** 必须在已加锁的订单上调用：调用方先 {@code orders.lock(id)} 再问这里，否则「读明细覆盖」与「写线路占用」之间存在重开 / 取消的竞态窗口。 */
     public boolean eligible(SalesOrderEntity order) {
         return order != null && !Boolean.TRUE.equals(order.getDeleted())
             && candidateStatuses().contains(order.getStatus())

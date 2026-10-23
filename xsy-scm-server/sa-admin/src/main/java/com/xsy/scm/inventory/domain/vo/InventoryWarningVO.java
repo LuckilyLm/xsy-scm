@@ -52,7 +52,7 @@ public class InventoryWarningVO {
     private BigDecimal reservedQuantity;
 
     /**
-     * 可用量 = 现有量 − 预留量。<b>判定基准</b>。
+     * 可用量 = 现有量 − 预留量，预警按它判断。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal availableQuantity;

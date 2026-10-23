@@ -9,7 +9,7 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
 /**
- * Shared conversion from business dates to Asia/Shanghai half-open timestamp intervals.
+ * 业务日期转北京时间左闭右开区间的公共方法。
  */
 public final class ScmDateTimeRangeResolver {
 
@@ -24,9 +24,7 @@ public final class ScmDateTimeRangeResolver {
         return resolve(startDate, endDate, ScmCommonErrorCode.VALIDATION_ERROR);
     }
 
-    /**
-     * The caller supplies the domain error used when the inclusive date span exceeds the limit.
-     */
+    /** 日期跨度超限时抛的错误码由调用方传入。 */
     public static ScmDateTimeRange resolve(LocalDate startDate, LocalDate endDate, ScmErrorCode spanError) {
         if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);

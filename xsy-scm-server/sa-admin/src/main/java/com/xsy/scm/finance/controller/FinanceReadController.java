@@ -43,7 +43,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Finance read-only pages, details, exports and financial operation history.
+ * 财务的只读列表、详情、导出与操作日志。
  */
 @RestController
 @RequestMapping("/scm/finance")

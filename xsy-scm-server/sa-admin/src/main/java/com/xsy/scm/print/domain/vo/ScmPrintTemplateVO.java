@@ -18,9 +18,7 @@ public class ScmPrintTemplateVO {
 
     private String documentType;
 
-    /**
-     * 单据类型展示名（服务端按枚举填，前端不硬编码字典）。
-     */
+    /** 单据类型展示名，由服务端填，前端不用自带字典。 */
     private String documentTypeLabel;
 
     private String templateCode;
@@ -31,9 +29,7 @@ public class ScmPrintTemplateVO {
 
     private Boolean enabledFlag;
 
-    /**
-     * 受控模型；列表也返回，便于用户在列表上直接看出「这份模板打了哪几列」。
-     */
+    /** 受控模型；列表也返回，便于直接看出「这份模板打了哪几列」。 */
     private ScmPrintTemplateModel model;
 
     private String remark;

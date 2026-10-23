@@ -9,14 +9,10 @@ import java.util.List;
  */
 public final class NearestNeighbourPlanner {
 
-    /**
-     * 规则代码；冻结进建议，界面按它展示「按什么规则排的」。
-     */
+    /** 规则代码；写入建议，界面按它展示「按什么规则排的」。 */
     public static final String RULE_CODE = "NEAREST_NEIGHBOUR_FROM_START";
 
-    /**
-     * 距离保留 4 位小数（米），与距离矩阵同一口径。
-     */
+    /** 距离保留 4 位小数（米），与距离矩阵一致。 */
     private static final int SCALE = 4;
 
     private NearestNeighbourPlanner() {
@@ -26,7 +22,7 @@ public final class NearestNeighbourPlanner {
      * @param order
      *            访问顺序（索引），首元素恒为 0（起点），其余为停靠点在入参列表中的下标
      * @param legDistances
-     *            与 {@code order} 对齐的<b>每段</b>距离；第 0 段为 0（起点自身）
+     *            与 {@code order} 对齐的每段距离；第 0 段为 0（起点自身）
      * @param cumulativeDistances
      *            与 {@code order} 对齐的累计距离
      * @param totalDistance
@@ -37,7 +33,7 @@ public final class NearestNeighbourPlanner {
     }
 
     /**
-     * 计算访问顺序。矩阵必须是方阵且对称（由 provider 契约保证）。
+     * 计算访问顺序。矩阵必须是方阵且对称（由 provider 约定保证）。
      *
      * @param matrix
      *            距离矩阵；索引 0 约定为起点

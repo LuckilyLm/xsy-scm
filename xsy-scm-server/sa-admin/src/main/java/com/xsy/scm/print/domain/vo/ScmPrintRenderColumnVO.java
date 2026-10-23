@@ -12,8 +12,6 @@ public class ScmPrintRenderColumnVO {
 
     private String label;
 
-    /**
-     * 是否右对齐（数量与金额）。
-     */
+    /** 是否右对齐（数量与金额）。 */
     private boolean numeric;
 }

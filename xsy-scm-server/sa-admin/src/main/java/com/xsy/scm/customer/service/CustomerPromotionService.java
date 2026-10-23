@@ -17,15 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
  * 客户专属推广二维码。
  *
  * <p>
- * 码属于客户，归属业务员取该客户的 seller_id 快照：客户换业务员后，历史扫码仍能说清当时是谁的线索。 扫码只追加记录，不改任何归属；真正把人挂到业务员名下发生在后台建客户时。
+ * 码属于客户，业务员取扫码时客户当时的 seller_id：客户换了业务员，历史扫码仍能看出当时是谁的线索。扫码只追加记录，不改归属；真正挂到业务员名下是后台建客户时。
  */
 @Service
 @RequiredArgsConstructor
 public class CustomerPromotionService {
 
-    /**
-     * 去掉容易看错的 0/O/1/I，现场抄码不会抄错。
-     */
+    /** 去掉容易看错的 0/O/1/I，现场抄码不会抄错。 */
     private static final String ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     private static final int CODE_LENGTH = 10;
@@ -41,10 +39,7 @@ public class CustomerPromotionService {
     private final CustomerService customerService;
 
     /**
-     * 生成推广码：先撤销该客户上的旧码，再签一个新的。
-     *
-     * <p>
-     * 旧码必须当场失效，否则同一个客户会同时存在多个入口，扫码来源就说不清了。
+     * 生成推广码：先撤销旧码再发新的。旧码要当场失效，否则同一客户有多个入口，扫码来源就说不清。
      */
     @Transactional(rollbackFor = Exception.class)
     public CustomerPromotionVO create(Long customerId, String operator) {
@@ -86,9 +81,7 @@ public class CustomerPromotionService {
         return customerPromotionDao.listScans(codeId, size);
     }
 
-    /**
-     * 最近一次扫码带来的归属，供新增客户时预填业务员。
-     */
+    /** 最近一次扫码带来的归属，供新增客户时预填业务员。 */
     @Transactional(readOnly = true)
     public CustomerPromotionVO.Scan latestAttribution() {
         return customerPromotionDao.latestAttribution();
@@ -98,7 +91,7 @@ public class CustomerPromotionService {
      * 扫码落地：记录来源并返回归属信息。
      *
      * <p>
-     * 这里不登录也能调用，令牌就是码本身；码撤销后立即不可用。
+     * 不登录也能调用，凭证就是码本身；码撤销后立即不可用。
      */
     @Transactional(rollbackFor = Exception.class)
     public CustomerPromotionVO.Landing landing(String code, String clientIp, String userAgent) {

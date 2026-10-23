@@ -36,8 +36,8 @@ import static com.xsy.scm.product.constant.ProductErrorCode.IMAGE_NOT_OWNED;
 import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 
 /**
- * 图片中心：脱离商品编辑弹窗、按 SPU 单独维护图片的服务。所有写操作都收敛到 {@link ProductImageSyncManager#sync} 一条链路，从而复用其对 public/image/ 前缀、文件存在性与「每
- * SPU 至多一张主图」的既有校验，不在此处另写一套图片落库逻辑。
+ * 图片中心：脱离商品编辑弹窗、按 SPU 单独维护图片。所有写操作都走 {@link ProductImageSyncManager#sync} 一条链路， 复用它对 public/image/ 前缀、文件存在性与「每 SPU
+ * 至多一张主图」的校验，不在这里另写一套图片写入逻辑。
  */
 @Service
 @RequiredArgsConstructor

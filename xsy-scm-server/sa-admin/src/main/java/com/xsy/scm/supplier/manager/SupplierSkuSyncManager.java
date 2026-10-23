@@ -53,7 +53,6 @@ public class SupplierSkuSyncManager {
      * 空列表表示清空全部关联，不表示「无操作」。
      */
     public void replace(Long supplierId, List<SupplierSkuItemForm> items) {
-        // ---- 锁段 ----
         SupplierEntity supplier = supplierDao.selectActiveByIdForUpdate(supplierId);
         if (supplier == null) {
             throw new ScmBusinessException(SUPPLIER_NOT_FOUND);
@@ -63,14 +62,11 @@ public class SupplierSkuSyncManager {
         }
         List<SupplierSkuEntity> existing = supplierSkuDao.selectActiveBySupplierIdForUpdate(supplierId);
 
-        // ---- 校验段 A（差量计算内含请求内一致性校验） ----
+        // 先算差量并校验，再统一写入。
         SupplierSkuChangeSet changeSet = SupplierSkuChangeSet.between(existing, items);
-
-        // ---- 校验段 B：只构造、不写库 ----
         List<Planned> retained = planRetained(changeSet, supplier);
         List<Planned> inserted = planInserted(changeSet, supplier);
 
-        // ---- 写段 ----
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
 
@@ -151,7 +147,7 @@ public class SupplierSkuSyncManager {
      * 批量取可下单 SKU（SPU 与 SKU 同时上架）。
      *
      * <p>
-     * 缺任何一个 skuId 都意味着它不存在 / 已软删 / 未上架 → 40942。
+     * 缺任何一个 skuId 都意味着它不存在、已删除或未上架，返回 40942。
      */
     private Map<Long, OrderableSkuVO> loadOrderableSkus(Set<Long> skuIds) {
         Map<Long, OrderableSkuVO> map = new HashMap<>();
@@ -201,9 +197,7 @@ public class SupplierSkuSyncManager {
         }
     }
 
-    /**
-     * 把请求行与快照写入实体；不负责主键、版本与审计字段。
-     */
+    /** 把请求行与商品信息写入实体；不负责主键、版本与审计字段。 */
     private void fill(SupplierSkuEntity entity, Planned planned, String operator, OffsetDateTime now) {
         SupplierSkuItemForm item = planned.requested();
         OrderableSkuVO sku = planned.sku();
@@ -227,9 +221,7 @@ public class SupplierSkuSyncManager {
         entity.setUpdatedBy(operator);
     }
 
-    /**
-     * 一条待写行：既有实体（新增时为 {@code null}）+ 请求行 + 快照来源 + 供应商。
-     */
+    /** 一条待写行：既有实体（新增时为 null）+ 请求行 + 商品信息 + 供应商。 */
     private record Planned(SupplierSkuEntity existing, SupplierSkuItemForm requested, OrderableSkuVO sku,
         SupplierEntity supplier) {
     }

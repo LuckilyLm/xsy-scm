@@ -1,7 +1,7 @@
 package com.xsy.scm.delivery.constant;
 
 /**
- * Resource type stored with a completed delivery idempotency request.
+ * 配送幂等请求完成时记录的资源类型。
  */
 public enum ScmDeliveryIdempotencyResourceTypeEnum {
     DELIVERY_ROUTE

@@ -27,7 +27,7 @@ public class DeliveryDriverForm {
     @Pattern(regexp = "[0-9+() -]{5,32}", message = "联系电话格式无效")
     private String phone;
     /**
-     * 绑定的系统员工 id；启用状态必填（历史行可为空，但一旦保存为 ENABLED 就必须有归属）。
+     * 绑定的系统员工 id；启用时必填（历史行可以为空，但存成 ENABLED 就必须有人）。
      */
     @Positive(message = "员工编号必须为正数")
     private Long employeeId;

@@ -7,7 +7,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import lombok.Data;
 
 /**
- * Query-wide gross-profit totals, never calculated from the current page.
+ * 整个查询范围的毛利合计，不按当前页计算。
  */
 @Data
 public class ScmFinanceProfitSummaryVO {

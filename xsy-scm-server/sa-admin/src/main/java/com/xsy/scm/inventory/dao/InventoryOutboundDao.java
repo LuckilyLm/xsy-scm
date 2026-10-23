@@ -16,7 +16,7 @@ import java.util.List;
  * 出库单头读写。
  *
  * <p>
- * 与余额 DAO 的关键差别：本表是<b>普通有状态单据</b>（草稿可改、可取消），因此有 update 方法。真正的不可变纪律在 {@code xsy_inventory_movement} 上，不在这里。
+ * 与余额 DAO 的关键差别：本表是普通有状态单据（草稿可改、可取消），因此有 update 方法。真正不可改的是 {@code xsy_inventory_movement}，不在这里。
  */
 @Mapper
 public interface InventoryOutboundDao extends BaseMapper<InventoryOutboundEntity> {
@@ -30,7 +30,7 @@ public interface InventoryOutboundDao extends BaseMapper<InventoryOutboundEntity
      * 取下一个单号序列值（PG sequence）。
      *
      * <p>
-     * 与采购/收货同口径：全局单调递增、不按日 reset，<b>事务回滚后跳号是可接受的</b>。
+     * 与采购/收货同一规则：全局单调递增、不按日重置，事务回滚后跳号可以接受。
      */
     long nextOutboundNo();
 
@@ -43,7 +43,7 @@ public interface InventoryOutboundDao extends BaseMapper<InventoryOutboundEntity
      * 锁定单据行（{@code SELECT ... FOR UPDATE}）。
      *
      * <p>
-     * 锁序纪律：<b>单据锁先于余额锁</b>。确认出库时先锁本行，再按 {@code (warehouse_id, sku_id)} 升序锁余额行，与收货确认同一顺序，避免两条链路以相反顺序拿锁。
+     * 加锁顺序：先锁单据行，再锁余额行。确认出库时先锁本行，再按 {@code (warehouse_id, sku_id)} 升序锁余额行，与收货确认同一顺序，避免两条链路以相反顺序拿锁。
      */
     InventoryOutboundEntity lockById(@Param("id") Long id);
 

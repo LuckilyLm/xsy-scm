@@ -34,16 +34,12 @@ public class WarehouseService {
 
     private final WarehouseDao warehouseDao;
 
-    /**
-     * 停用前置守卫由库存域实现，避免仓库域反向依赖库存域。
-     */
+    /** 停用前置检查由库存域实现，避免仓库域反向依赖库存域。 */
     private final WarehouseDisableGuard warehouseDisableGuard;
 
     private final ScmBusinessNoService businessNoService;
 
-    /**
-     * 读取仓库，不存在或已删除 → 40485。
-     */
+    /** 读取仓库，不存在或已删除返回 40485。 */
     public WarehouseEntity require(Long id) {
         WarehouseEntity entity = id == null ? null : warehouseDao.selectById(id);
         if (entity == null) {
@@ -52,24 +48,18 @@ public class WarehouseService {
         return entity;
     }
 
-    /**
-     * 查询仓库状态只返回是否启用，停用仓库的具体业务拒绝码由采购等调用方判断。
-     */
+    /** 只返回仓库是否启用；停用时用哪个错误码由采购等调用方决定。 */
     public boolean enabled(Long id) {
         return ScmWarehouseStatusEnum.ENABLED.name().equals(require(id).getStatus());
     }
 
-    /**
-     * 全量仓库（含 DISABLED），供内部逻辑使用。
-     */
+    /** 全部仓库（含停用），供内部逻辑使用。 */
     public List<WarehouseEntity> all() {
         return warehouseDao.selectList(new LambdaQueryWrapper<WarehouseEntity>()
             .orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId));
     }
 
-    /**
-     * 只有恰好一个启用仓库时才能自动选为默认仓库。无启用仓或多个启用仓都返回明确错误，不能猜仓库。
-     */
+    /** 只有恰好一个启用仓库时才自动选为默认仓库；没有或多个都报错，不能猜。 */
     public WarehouseEntity defaultEnabledWarehouse() {
         List<WarehouseEntity> enabled = all().stream()
             .filter(w -> ScmWarehouseStatusEnum.ENABLED.name().equals(w.getStatus())).toList();
@@ -125,10 +115,10 @@ public class WarehouseService {
     }
 
     /**
-     * 启用仓库：{@code DISABLED → ENABLED}，靠乐观锁 version。
+     * 启用仓库（{@code DISABLED → ENABLED}），靠乐观锁 version。
      *
      * <p>
-     * 重复 enable（已是 ENABLED）抛 {@code WAREHOUSE_STATE_INVALID}，不做隐式状态覆盖。
+     * 已启用再启用抛 {@code WAREHOUSE_STATE_INVALID}，不做隐式覆盖。
      */
     @Transactional(rollbackFor = Exception.class)
     public void enable(WarehouseStatusForm form) {
@@ -147,10 +137,10 @@ public class WarehouseService {
     }
 
     /**
-     * 停用仓库：{@code ENABLED → DISABLED}。
+     * 停用仓库（{@code ENABLED → DISABLED}）。
      *
      * <p>
-     * 任一阻塞条件成立（库存余额 / 在途采购单 / 待入库收货单）即拒绝，并返回对应错误码，不使用 {@code WAREHOUSE_NOT_FOUND} 掩盖真实原因。阻塞检查与状态写入在同一事务。
+     * 任一阻塞条件成立（库存余额 / 在途采购单 / 待入库收货单）即拒绝，并返回对应错误码。 阻塞检查与状态写入在同一事务。
      */
     @Transactional(rollbackFor = Exception.class)
     public void disable(WarehouseStatusForm form) {
@@ -172,9 +162,7 @@ public class WarehouseService {
         }
     }
 
-    /**
-     * 省 / 市 / 区整组随表单覆盖：实体列均为 updateStrategy = ALWAYS，清空选择即写回 NULL。
-     */
+    /** 省 / 市 / 区整组随表单覆盖；清空选择即写回 NULL。 */
     private void applyRegion(WarehouseEntity entity, WarehouseAddForm form) {
         entity.setProvinceCode(form.getProvinceCode());
         entity.setProvinceName(form.getProvinceName());

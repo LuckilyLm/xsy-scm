@@ -7,7 +7,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import java.math.BigDecimal;
 
 /**
- * Frozen receipt/manual line details for an AP fact.
+ * 应付记录下的收货明细或手工明细。
  */
 @Data
 public class FinancePayableItemVO {

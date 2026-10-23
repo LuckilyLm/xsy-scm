@@ -24,7 +24,7 @@ public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity
     int countByLossGainNo(@Param("lossGainNo") String lossGainNo);
 
     /**
-     * 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset，跳号可接受）。
+     * 取下一个单号序列值（PG sequence，全局单调递增、不按日重置，跳号可接受）。
      */
     long nextLossGainNo();
 
@@ -37,7 +37,7 @@ public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity
      * 锁定单据行（{@code SELECT ... FOR UPDATE}）。
      *
      * <p>
-     * 锁序纪律：<b>单据锁先于余额锁</b>。审批通过时先锁本行，再按 {@code (warehouse_id, sku_id)} 升序锁余额行，与收货 / 出库 / 盘点确认同一顺序，避免四条链路以相反顺序拿锁而死锁。
+     * 加锁顺序：先锁单据行，再锁余额行。审批通过时先锁本行，再按 {@code (warehouse_id, sku_id)} 升序锁余额行，与收货 / 出库 / 盘点确认同一顺序，避免四条链路以相反顺序拿锁而死锁。
      */
     InventoryLossGainEntity lockById(@Param("id") Long id);
 

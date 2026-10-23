@@ -37,14 +37,10 @@ public class ScmPurchaseReportQueryForm extends PageParam implements ScmReportDa
      */
     private String status;
 
-    /**
-     * 商品名称 / SPU 编码 / SKU 编码模糊匹配。
-     */
+    /** 商品名称 / SPU 编码 / SKU 编码模糊匹配。 */
     private String keyword;
 
-    /**
-     * 价格波动维度：按 SKU 收窄，避免把不同单位的价格画进同一条线。
-     */
+    /** 价格波动维度：按 SKU 收窄，避免把不同单位的价格画进同一条线。 */
     private Long skuId;
 
     @Size(max = 30, message = "最多选择30个导出字段")

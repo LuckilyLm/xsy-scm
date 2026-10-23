@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 客户联系人、地址和账期直接保存在客户记录中。可选字段允许保存 null，以支持在编辑时清空旧值。
+ * 客户联系人、地址和账期直接保存在客户记录中。可选字段允许保存 null，以便编辑时清空旧值。
  */
 @Data
 @TableName(value = "xsy_customer", autoResultMap = true)
@@ -58,23 +58,16 @@ public class CustomerEntity {
 
     private String settleMode;
 
-    /**
-     * 集团主体是否允许子客户使用集团钱包结算；默认关闭。
-     */
+    /** 集团主体是否允许子客户使用集团余额结算；默认关闭。 */
     private Boolean sharedSettlementEnabled;
 
-    /**
-     * 后台明确开通后，客户才可在商城选择货到付款。
-     */
+    /** 后台明确开通后，客户才可在商城选择货到付款。 */
     private Boolean codAllowed = false;
-    /**
-     * 商城默认配送仓；为空时按地址区县规则匹配。
-     */
+
+    /** 商城默认配送仓；为空时按地址区县规则匹配。 */
     private Long mallDeliveryWarehouseId;
 
-    /**
-     * 授信额度，{@code NUMERIC(18,4)}，非空、默认 0。
-     */
+    /** 授信额度，{@code NUMERIC(18,4)}，非空，默认 0。 */
     private BigDecimal creditLimit;
 
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
@@ -97,9 +90,7 @@ public class CustomerEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String address;
 
-    /**
-     * 省 / 市 / 区编码为国标六位码，名称是同一条选择的快照，展示与导出用，不参与关联。
-     */
+    /** 省 / 市 / 区编码为国标六位码；名称随同一次选择保存，展示与导出用，不参与关联。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer provinceCode;
 

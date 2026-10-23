@@ -11,15 +11,11 @@ public class PaymentCallbackQueryForm extends PageParam {
 
     private String provider;
 
-    /**
-     * {@code RECEIVED} / {@code APPLIED} / {@code DUPLICATE} / {@code REJECTED}。
-     */
+    /** {@code RECEIVED} / {@code APPLIED} / {@code DUPLICATE} / {@code REJECTED}。 */
     private String processStatus;
 
     private Long transactionId;
 
-    /**
-     * 渠道事件 id 的模糊匹配。
-     */
+    /** 渠道事件 id 的模糊匹配。 */
     private String keyword;
 }

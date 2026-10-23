@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.function.Function;
 
 /**
- * Bounds synchronous finance exports without changing the list query's filters or scope.
+ * 限制财务同步导出的行数，不改变列表查询的筛选和范围。
  */
 public final class FinanceExportGuard {
 

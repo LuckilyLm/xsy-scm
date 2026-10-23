@@ -36,7 +36,7 @@ public interface TimePriceDao extends BaseMapper<TimePriceEntity> {
     int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);
 
     /**
-     * 变更审计：只追加，记录改动前后快照。
+     * 变更审计：只追加，记录改动前后的值。
      */
     void log(@Param("id") Long id, @Param("operation") String operationType, @Param("operator") String operator,
         @Param("before") String beforeSnapshot, @Param("after") String afterSnapshot);

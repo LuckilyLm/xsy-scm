@@ -1,7 +1,7 @@
 package com.xsy.scm.screen.permission;
 
 /**
- * Stable permission identifiers published by dashboard-screen APIs.
+ * 数据大屏接口使用的权限码。
  */
 public final class ScreenPermission {
 

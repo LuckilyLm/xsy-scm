@@ -12,7 +12,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 /**
- * 调拨分发出和收货两步，源仓发出后在途，目标仓收货后完成。单据保存两端仓库、实际发出和收货操作事实；不能把在途调拨当作已入库。
+ * 调拨分发出和收货两步，源仓发出后在途，目标仓收货后完成。单据保存两端仓库、实际发出和收货记录；不能把在途调拨当作已入库。
  */
 @Data
 @TableName(value = "xsy_inventory_transfer", autoResultMap = true)
@@ -43,7 +43,7 @@ public class InventoryTransferEntity {
     private String remark;
 
     /**
-     * 发出时刻；仅 SHIPPED / RECEIVED 非空（DB CHECK 保证）。
+     * 发出时刻；仅 SHIPPED / RECEIVED 非空（数据库 CHECK 保证）。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime shippedAt;

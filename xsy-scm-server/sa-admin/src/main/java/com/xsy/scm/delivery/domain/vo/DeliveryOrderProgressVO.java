@@ -6,7 +6,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 配送进度只展示线路、发车、签收和异常事实。所有时间来自原始业务记录，不单独复制配送状态。
+ * 配送进度只展示线路、发车、签收和异常记录。时间都来自原始数据，不另存一份配送状态。
  */
 @Data
 public class DeliveryOrderProgressVO {
@@ -15,9 +15,7 @@ public class DeliveryOrderProgressVO {
     private String routeNo;
     private String routeName;
     private LocalDate deliveryDate;
-    /**
-     * 线路状态：DRAFT / PLANNED / DISPATCHED / COMPLETED / CANCELLED
-     */
+    /** 线路状态：DRAFT / PLANNED / DISPATCHED / COMPLETED / CANCELLED。 */
     private String routeStatus;
     private String warehouseNameSnapshot;
     private String driverNameSnapshot;
@@ -26,9 +24,7 @@ public class DeliveryOrderProgressVO {
     private OffsetDateTime plannedDepartureTime;
     private OffsetDateTime dispatchedAt;
     private OffsetDateTime completedAt;
-    /**
-     * 订单级履约状态：PENDING / IN_TRANSIT / SIGNED / EXCEPTION
-     */
+    /** 订单级履约状态：PENDING / IN_TRANSIT / SIGNED / EXCEPTION。 */
     private String fulfillmentStatus;
     private OffsetDateTime signedAt;
     private String signReason;

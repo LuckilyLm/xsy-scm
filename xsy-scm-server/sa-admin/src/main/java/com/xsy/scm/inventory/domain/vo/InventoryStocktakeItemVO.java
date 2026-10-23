@@ -11,8 +11,7 @@ import java.util.Map;
  * 盘点单明细行（独立 VO，供 mapper 与命令侧复用）。
  *
  * <p>
- * 与 {@link InventoryStocktakeVO.Item} 字段一致但<b>不复用同一个类</b>，理由与出库单明细相同：头内嵌明细是「详情的组成部分」，独立投影是「一行的视图」，
- * 两者演进理由不同。用同名字段保持前端一致即可。
+ * 与 {@link InventoryStocktakeVO.Item} 字段一致但不复用同一个类，理由与出库单明细相同：头内嵌明细是「详情的组成部分」，独立视图是「一行的视图」， 两者演进理由不同。用同名字段保持前端一致即可。
  */
 @Data
 public class InventoryStocktakeItemVO {
@@ -32,7 +31,7 @@ public class InventoryStocktakeItemVO {
     private Map<String, String> specValues;
 
     /**
-     * 账面量快照（保存草稿那一刻）。
+     * 账面量（保存草稿时记录）。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal bookQuantity;
@@ -50,7 +49,7 @@ public class InventoryStocktakeItemVO {
     private BigDecimal deltaQuantity;
 
     /**
-     * 确认时写入的记账单位快照；草稿态为空。
+     * 确认时写入的记账单位；草稿态为空。
      */
     private String unitSnapshot;
 

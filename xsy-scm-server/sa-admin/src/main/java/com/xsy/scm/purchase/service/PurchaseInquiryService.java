@@ -42,7 +42,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_INQUIRY_S
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_UNIT_CONVERSION_REQUIRED;
 
 /**
- * 询价是冻结净需求之上的采购决策记录，不自动写采购单、采购需求或库存。
+ * 询价是在已固定的净需求之上做采购决策，不自动写采购单、采购需求或库存。
  */
 @Service
 @RequiredArgsConstructor

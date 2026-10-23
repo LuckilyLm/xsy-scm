@@ -12,7 +12,7 @@ import java.util.Map;
 import lombok.Data;
 
 /**
- * Immutable demand-calculation inputs; only lifecycle/result columns change after generation.
+ * 净需求计算的输入在生成后不再变化，只有生命周期与结果列会更新。
  */
 @Data
 @TableName(value = "xsy_purchase_demand_calculation_batch", autoResultMap = true)

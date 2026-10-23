@@ -107,7 +107,7 @@ public class PaymentQueryService {
     }
 
     /**
-     * 回调记录。{@code processStatus = REJECTED} 的记录<b>必须能查</b>：它回答「有没有人伪造过回调」，这正是把未验签事件也落库的理由。
+     * 回调记录。{@code processStatus = REJECTED} 的记录必须能查：它回答「有没有人伪造过回调」，这也是未验签事件也要保存的理由。
      */
     @Transactional(readOnly = true)
     public PageResult<PaymentCallbackEventVO> callbackPage(PaymentCallbackQueryForm form) {

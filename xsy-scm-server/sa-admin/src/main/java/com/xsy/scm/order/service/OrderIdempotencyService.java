@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Compatibility facade for order commands; shared mechanics live in common.
+ * 订单命令的兼容封装；通用幂等逻辑在 common 层。
  */
 @Service
 @RequiredArgsConstructor
@@ -26,10 +26,10 @@ public class OrderIdempotencyService {
     }
 
     /**
-     * 只读预检：同键且请求指纹一致的<b>已完成</b>记录存在时返回它，否则返回空。
+     * 只读预检：存在同键、请求内容一致且已完成的记录时返回它，否则返回空。
      *
      * <p>
-     * 给「先确认是否已经成功」的入口使用，语义见 {@link ScmIdempotencyService#peekCompleted}。
+     * 供「先看是否已经成功」的入口使用，语义见 {@link ScmIdempotencyService#peekCompleted}。
      */
     public Optional<Claim> peekCompleted(String operationScope, String idempotencyKey, Object request) {
         return idempotencyService.peekCompleted(operationScope, idempotencyKey, request)

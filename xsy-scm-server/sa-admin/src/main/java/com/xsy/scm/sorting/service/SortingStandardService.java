@@ -99,7 +99,7 @@ public class SortingStandardService {
         }
         var entryForm = new SortingEntryForm();
         entryForm.setItems(entries);
-        // 跨 Spring Service 调用加入当前事务；保留正式录入的包装码守卫、行版本和追加审计。
+        // 跨 Spring Service 调用加入当前事务；沿用正式录入的包装码校验、行版本和追加审计。
         sortingTaskService.enter(taskId, entryForm);
         var result = new SortingStandardResultVO(taskId, entries.stream().map(SortingEntryItemForm::getId).toList());
         idempotencyService.complete(claim, "SORTING_TASK", taskId, result);

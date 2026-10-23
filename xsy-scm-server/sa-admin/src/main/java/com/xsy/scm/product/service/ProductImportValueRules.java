@@ -8,7 +8,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Shared cell normalization and validation rules for product workbook imports.
+ * 商品 Excel 导入共用的单元格取值与校验规则。
  */
 final class ProductImportValueRules {
 

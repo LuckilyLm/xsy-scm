@@ -10,7 +10,7 @@ import java.util.Base64;
  * 设备凭证、配对码与员工会话令牌的生成与摘要。
  *
  * <p>
- * 三类令牌都只在签发时返回明文一次，库里只存摘要：拿到数据库不足以冒充设备或员工。 摘要用 SHA-256 而不是加密，因为这些值本身就是高熵随机串，不需要可逆。
+ * 三类令牌都只在签发时返回明文一次，库里只存摘要：拿到数据库不足以冒充设备或员工。 用 SHA-256 而不是加密，因为这些值本身就是高熵随机串，不需要还原。
  */
 public final class ScaleCredentialCodec {
 
@@ -21,18 +21,14 @@ public final class ScaleCredentialCodec {
     private ScaleCredentialCodec() {
     }
 
-    /**
-     * URL 安全且无填充，便于放进请求头与二维码。
-     */
+    /** URL 安全且无填充，便于放进请求头与二维码。 */
     public static String newToken() {
         byte[] bytes = new byte[TOKEN_BYTES];
         RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    /**
-     * 配对码给人手工输入，用短数字串；熵低于令牌，因此必须短有效期且一次性。
-     */
+    /** 配对码给人手工输入，用短数字串；熵低于令牌，因此必须有效期短且一次性。 */
     public static String newPairingCode() {
         int value = RANDOM.nextInt(100_000_000);
         return String.format("%08d", value);

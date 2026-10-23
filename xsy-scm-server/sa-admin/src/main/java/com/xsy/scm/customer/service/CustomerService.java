@@ -50,9 +50,7 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_TRADA
 @RequiredArgsConstructor
 public class CustomerService {
 
-    /**
-     * 新建客户的初始状态。
-     */
+    /** 新建客户的初始状态。 */
     public static final String INITIAL_STATUS = ScmCustomerStatusEnum.POTENTIAL.name();
 
     private final CustomerDao customerDao;
@@ -68,9 +66,7 @@ public class CustomerService {
     private final WarehouseService warehouseService;
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
-    /**
-     * 读取客户，不存在或已删除 → 40430。
-     */
+    /** 读取客户，不存在或已删除 → 40430。 */
     public CustomerEntity require(Long customerId) {
         CustomerEntity entity = customerId == null ? null : customerDao.selectById(customerId);
         if (entity == null) {
@@ -85,9 +81,7 @@ public class CustomerService {
         return entity;
     }
 
-    /**
-     * 读取客户并校验乐观锁版本：不存在 → 40430，版本不一致 → 40921。
-     */
+    /** 读取客户并校验乐观锁版本：不存在 → 40430，版本不一致 → 40921。 */
     public CustomerEntity require(Long customerId, Integer version) {
         CustomerEntity entity = require(customerId);
         if (!Objects.equals(entity.getVersion(), version)) {
@@ -106,9 +100,7 @@ public class CustomerService {
         return requireSettlementAccount(customer, true);
     }
 
-    /**
-     * Resolve a legally configured settlement account without changing historical finance tradability rules.
-     */
+    /** 解析配置合法的结算主体，但不改变财务侧原有的可交易判定。 */
     public CustomerEntity requireSettlementAccount(CustomerEntity customer) {
         return requireSettlementAccount(customer, false);
     }
@@ -135,9 +127,7 @@ public class CustomerService {
         return settlement;
     }
 
-    /**
-     * Historical documents retain their settlement account even after group membership changes.
-     */
+    /** 历史单据仍保留原来的结算主体，即使集团归属后来变了。 */
     public CustomerEntity lockCreditAccount(Long settlementCustomerId) {
         CustomerEntity locked = customerDao.lock(settlementCustomerId);
         if (locked == null) {
@@ -191,10 +181,8 @@ public class CustomerService {
         customerTypeService.requireSelectableType(form.getCustomerTypeId());
         customerValidator.validateParent(form.getParentCustomerId(), form.getCustomerId());
 
-        // apply 不触碰 status；状态只能通过 updateStatus 变更。
-        // 也不触碰 seller_id —— 归属只能通过 reassignSeller 变更（裁决 第 6 条）：
-        // 编辑表单里的 sellerId 对任何角色都只是回显值，否则普通销售把客户回传成别人的 id
-        // 就能把它挪出自己的范围（或挪进别人的范围），行级范围随之失效。
+        // apply 不碰 status：状态只能走 updateStatus；也不碰 seller_id：归属只能走 reassignSeller。
+        // 编辑表单里的 sellerId 只是回显，否则普通销售把客户回传成别人的 id，就能把客户挪出自己的范围。
         apply(entity, form);
         applyMallDeliveryWarehouse(entity, form);
         entity.setVersion(form.getVersion());
@@ -211,7 +199,7 @@ public class CustomerService {
     }
 
     /**
-     * 改派客户负责人只能通过独立授权接口执行，必须校验分配权限及单据版本；普通编辑不能顺带改客户归属。
+     * 改派负责人只能走这个接口：要有分配权限，也要带版本号；普通编辑不能顺带改归属。
      */
     @Transactional(rollbackFor = Exception.class)
     public void reassignSeller(CustomerSellerReassignForm form) {
@@ -226,7 +214,7 @@ public class CustomerService {
     }
 
     /**
-     * 普通员工新建客户时负责人默认是自己；只有有分配权的人可以指定别人或暂不分配。无法识别当前员工时必须拒绝创建。
+     * 普通员工新建客户，负责人默认是自己；有分配权的人才能指定别人或留空。认不出当前员工就拒绝创建。
      */
     private Long resolveSellerOnCreate(Long submittedSellerId) {
         if (ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM)) {
@@ -241,7 +229,7 @@ public class CustomerService {
     }
 
     /**
-     * 配送仓绑定是客户主档写入；商城服务先校验目标仓授权，本服务保留客户范围和乐观锁。 不存在的客户与越权客户统一按数据范围拒绝，避免泄露其它业务员客户。
+     * 商城绑定配送仓时先校验仓库授权，这里只管客户范围和乐观锁。客户不存在和越权都按数据范围拒绝，别让人看出是谁的客户。
      */
     @Transactional(rollbackFor = Exception.class)
     public void bindMallDeliveryWarehouse(Long customerId, Integer version, Long warehouseId) {
@@ -268,10 +256,7 @@ public class CustomerService {
     }
 
     /**
-     * 删除客户（软删）。
-     *
-     * <p>
-     * 使用 {@code id + version} 原子谓词，而不是先查后改：并发删除时只有一次能成功。
+     * 删除客户（软删）。使用 {@code id + version} 原子条件，而不是先查后改：并发删除时只有一次能成功。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(CustomerDeleteForm form) {
@@ -325,7 +310,7 @@ public class CustomerService {
                 throw new ScmDataScopeException();
             }
         }
-        // 归属只由创建时解析或专用改派命令变更。
+        // 归属只在创建时解析，或走专用改派命令。
         entity.setSupplierId(form.getSupplierId());
         entity.setContactName(CustomerValidator.normalizeOptional(form.getContactName()));
         entity.setContactPhone(CustomerValidator.normalizeOptional(form.getContactPhone()));

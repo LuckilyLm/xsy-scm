@@ -24,7 +24,7 @@ public class StocktakeSnapshotSigner {
     static final String DEV_SECRET = "xsy-scm-stocktake-snapshot-dev-secret-change-in-production";
 
     /**
-     * 来源集合里的一行：导入持锁核验时逐项比对的权威事实。
+     * 来源集合里的一行：导入持锁核对时逐项比对的数据。
      *
      * @param skuCode
      *            用于把用户填写的实盘量映射回来源行（身份键，仍来自受保护凭证）
@@ -35,7 +35,7 @@ public class StocktakeSnapshotSigner {
      * @param unit
      *            导出时刻的记账单位
      * @param bookQuantity
-     *            导出时刻的账面量快照
+     *            导出时刻的账面量
      */
     public record Entry(String skuCode, Long skuId, Long balanceId, String unit, Integer version,
         BigDecimal bookQuantity) {
@@ -92,8 +92,8 @@ public class StocktakeSnapshotSigner {
      * pre / prod 下密钥必须显式配置且不等于仓库默认值，否则构造失败即启动失败。
      *
      * <p>
-     * 只看 profile 字符串而不是 {@code SystemEnvironment#isProd()}：后者把 {@code pre} 判为非生产，而预发布同样是不能用公开密钥的环境。口径与
-     * {@code FileConfig#validateCloudConfig} 保持一致。
+     * 只看 profile 字符串而不是 {@code SystemEnvironment#isProd()}：后者把 {@code pre} 判为非生产，而预发布同样是不能用公开密钥的环境。规则与
+     * {@code FileConfig#validateCloudConfig} 一致。
      */
     static void requireNonPublicSecret(String secret, String activeProfiles) {
         boolean production = java.util.Arrays.stream(activeProfiles.split(",")).map(String::trim)
@@ -110,7 +110,7 @@ public class StocktakeSnapshotSigner {
      */
     public String sign(Payload payload) {
         try {
-            // 载荷先压缩再 base64：快照要为仓库里每一条活跃余额带上 skuCode / 单位 / 账面量，
+            // 载荷先压缩再 base64：凭证要为仓库里每一条活跃余额带上 skuCode / 单位 / 账面量，
             // 而凭证会被写进模板每一行的单元格。POI 的单元格上限是 32767 字符，活跃余额一多，
             // 未压缩的 JSON 就会顶过这条线，大仓库将导不出盘点模板。
             // 载荷内容不变、校验语义不变，只是编码多一层 DEFLATE。
@@ -162,8 +162,7 @@ public class StocktakeSnapshotSigner {
     }
 
     /**
-     * 验签并反序列化；签名不符、结构损坏或 {@code expiresAtEpochSec < nowEpochSec} 均抛
-     * {@link SnapshotCredentialException}。验签<b>通过之后</b>仍解析不出载荷时抛
+     * 验签并反序列化；签名不符、结构损坏或 {@code expiresAtEpochSec < nowEpochSec} 均抛 {@link SnapshotCredentialException}。验签通过之后仍解析不出载荷时抛
      * {@link SnapshotPayloadUnreadable}——那是服务端故障，调用方不得按「用户凭证坏了」处理。模板版本 / 仓库 / 操作者的匹配由调用方负责。
      */
     public Payload verify(String token, long nowEpochSec) {

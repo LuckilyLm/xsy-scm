@@ -58,7 +58,7 @@ public class MallHomeProjectionService {
     }
 
     /**
-     * 只读当前发布的主题指针，不解析装修内容，也不要求登录态； 无发布、指针缺失或发布记录丢失时如实返回空值，由客户端统一回退默认主题。
+     * 只读当前发布的主题指针，不解析装修内容，也不要求登录态；无发布、指针缺失或发布记录丢失时如实返回空值， 由客户端使用默认主题。
      */
     @Transactional(readOnly = true)
     public MallThemeVO publishedTheme() {

@@ -16,37 +16,30 @@ import java.util.List;
 @Mapper
 public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
 
-    /**
-     * 活动关联行，按 id 升序（替换编辑页回填用）。
-     */
+    /** 活动关联行，按 id 升序，供替换编辑页回填。 */
     List<SupplierSkuEntity> selectActiveBySupplierId(@Param("supplierId") Long supplierId);
 
     /**
-     * 加行锁读取某供应商的全部活动关联行（写入路径的<b>第二把锁</b>）。
+     * 加行锁读取某供应商的全部活动关联行，是写入路径的第二把锁。
      *
      * <p>
-     * {@code ORDER BY id ... FOR UPDATE} 保证多行加锁顺序确定，配合 {@code xsy_supplier} 行锁形成固定锁序。
+     * {@code ORDER BY id ... FOR UPDATE} 保证多行加锁顺序固定，配合 supplier 行锁形成稳定锁序。
      */
     List<SupplierSkuEntity> selectActiveBySupplierIdForUpdate(@Param("supplierId") Long supplierId);
 
     /**
-     * 检查某个 SKU 是否有可采购的供应商来源。
-     *
-     * <p>
-     * 该查询统一检查供应商、供应商 SKU、商品 SPU 与 SKU 的启用状态，供 {@code SupplierSkuService.requireEnabledForPurchasing} 复用。
+     * 检查某个 SKU 是否有可采购的供应商来源，统一检查供应商、供应商 SKU、SPU 与 SKU 的启用状态。
      */
     List<SupplierSkuEntity> selectEnabledBySkuId(@Param("skuId") Long skuId);
 
-    /**
-     * 只读反查分页。
-     */
+    /** 只读反查分页。 */
     List<SupplierSkuEntity> queryPage(Page<?> page, @Param("query") SupplierSkuQueryForm query);
 
     /**
-     * 按供应商汇总可供货情况（公司卡片用）。
+     * 按供应商汇总可供货情况。
      *
      * <p>
-     * 商品数按 SPU 去重、规格数按关联行计数：两者不等是常态，一个商品常挂多个规格。
+     * 商品数按 SPU 去重、规格数按关联行计数：一个商品常挂多个规格，两者不等是常态。
      *
      * @param status
      *            可选的关联状态过滤；为空表示全部
@@ -54,29 +47,22 @@ public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
     List<SupplierSkuSupplierSummaryVO> summarizeBySupplier(@Param("status") String status);
 
     /**
-     * 原子软删：{@code supplier_id + id + version} 三谓词。
-     *
-     * <p>
-     * {@code supplier_id} 谓词保证不会误删其他供应商的行——即使调用方传错了 id。
+     * 原子软删：{@code supplier_id + id + version} 三个条件。 {@code supplier_id} 保证不会误删其他供应商的行。
      */
     int softDeleteOwnedWithVersion(@Param("supplierId") Long supplierId, @Param("id") Long id,
         @Param("version") Integer version, @Param("operator") String operator);
 
-    /**
-     * 删除供应商前的活动关联检查。
-     */
+    /** 删除供应商前的活动关联检查。 */
     long countActiveBySupplierId(@Param("supplierId") Long supplierId);
 
-    /**
-     * 列表批量补全 {@code skuCount}，一次查询完成，不 N+1。
-     */
+    /** 列表批量补全 {@code skuCount}，一次查询完成，不走 N+1。 */
     List<SupplierSkuCountVO> countActiveBySupplierIds(@Param("supplierIds") Collection<Long> supplierIds);
 
     /**
-     * 读取可下单 SKU（SPU 与 SKU 同时 {@code ON_SHELF}）用于构造快照。
+     * 读取可下单 SKU（SPU 与 SKU 同时上架），用于构造订单行保存的商品信息。
      *
      * <p>
-     * 空结果表示 SKU 不存在、已软删、或 SPU/SKU 任一未上架 → 调用方报 40942。
+     * 空结果表示 SKU 不存在、已删除或未上架，调用方报 40942。
      */
     List<OrderableSkuVO> selectOrderableSkuByIds(@Param("skuIds") Collection<Long> skuIds);
 }

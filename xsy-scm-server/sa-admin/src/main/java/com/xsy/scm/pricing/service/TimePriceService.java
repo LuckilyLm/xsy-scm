@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 时价维护。
  *
  * <p>
- * 时价是商品规格级的短期价格，生效区间半开 [start, end)。同一规格的区间不允许重叠： 重叠会让「现在按哪条算」没有唯一答案，而价格不能靠猜。
+ * 时价是商品规格级的短期价格，生效区间为半开区间 [start, end)。 同一规格的区间不允许重叠：重叠会让「现在按哪条算」没有唯一答案，而价格不能靠猜。
  */
 @Service
 @RequiredArgsConstructor
@@ -112,7 +112,7 @@ public class TimePriceService {
     }
 
     /**
-     * 审计快照：只放人能读懂的业务字段，不放数据库内部键。
+     * 审计记录：只放人能看懂的业务字段，不放数据库内部键。
      */
     private String snapshot(TimePriceEntity entity) {
         var fields = new java.util.LinkedHashMap<String, Object>();
@@ -128,7 +128,7 @@ public class TimePriceService {
         try {
             return objectMapper.writeValueAsString(fields);
         } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
-            throw new IllegalStateException("Cannot serialize time price audit", ex);
+            throw new IllegalStateException("时价审计快照序列化失败", ex);
         }
     }
 

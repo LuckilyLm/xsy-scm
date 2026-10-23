@@ -31,7 +31,7 @@ public class SalesOrderEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String orderSource;
     /**
-     * 商城下单时冻结的配送仓；后台及历史订单为空。
+     * 商城下单时选定的配送仓；后台及历史订单为空。
      */
     private Long mallDeliveryWarehouseId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
@@ -61,14 +61,14 @@ public class SalesOrderEntity {
     private String cancelReason;
 
     /**
-     * 商城客户下单时预选的券实例；仅 {@code orderSource = MALL} 使用，正式占用在确认命令内完成。
+     * 商城客户下单时预选的优惠券；仅 {@code orderSource = MALL} 使用，确认时才正式占用。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long mallCouponInstanceId;
 
     /**
-     * 商城客户选定的结算方式（{@code WALLET} / {@code CREDIT} / {@code COD}）；仅商城来源的订单会带。
-     * 它是「结算约定」而不是资金事实：余额扣减、账期占用、货到付款收款分别由对应领域在各自节点完成。
+     * 商城客户选定的结算方式（{@code WALLET} / {@code CREDIT} / {@code COD}），仅商城来源的订单会带。
+     * 它只是结算约定，不代表资金已处理：余额扣减、账期占用、货到付款收款分别由对应模块在各自节点完成。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String settlementMethod;

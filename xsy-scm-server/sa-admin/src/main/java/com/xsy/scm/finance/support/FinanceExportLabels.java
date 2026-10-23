@@ -12,7 +12,7 @@ import com.xsy.scm.finance.constant.ScmFinanceSettleStateEnum;
  * 财务导出用的枚举中文标签。
  *
  * <p>
- * 导出文件是给人看的，不能把 {@code NORMAL}、{@code SETTLED} 这类内部取值直接写进单元格。 落库与接口仍用枚举名，两边的对应关系由各枚举的 {@code desc} 承担。
+ * 导出文件是给人看的，不能把 {@code NORMAL}、{@code SETTLED} 这类内部取值直接写进单元格。保存与接口仍用枚举名，对应关系由各枚举的 {@code desc} 承担。
  *
  * <p>
  * 取值不在枚举里时原样返回：宁可让人看到异常值去核查，也不要导出成空白。

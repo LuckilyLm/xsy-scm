@@ -81,7 +81,7 @@ public class SalesOrderImportService {
         try {
             return salesOrderService.importOrders(assembled.forms(), fileHash, key, rows.size());
         } catch (SalesOrderService.ImportOrderException exception) {
-            // importOrders is a separate proxied bean: its entire transaction has rolled back here.
+            // importOrders 是独立的代理 Bean，到这里它的整个事务已回滚。
             var group = assembled.groups().get(exception.getOrderIndex());
             var cause = exception.getCause();
             var code = cause instanceof ScmBusinessException business
@@ -135,7 +135,7 @@ public class SalesOrderImportService {
                     } else if (column >= HEADERS.size()) {
                         addError(result, row.getRowNumber(), null, name, "COLUMN_UNEXPECTED", "模板之外的列不能填写订单数据");
                     } else {
-                        // Read the stored number, not its rounded display format.
+                        // 取存储的数字，而不是显示时四舍五入后的文本。
                         if (cell.getCellType() == CellType.NUMERIC)
                             value = org.apache.poi.ss.util.NumberToTextConverter.toText(cell.getNumericCellValue());
                         SETTERS.get(column).accept(row, value);
@@ -150,8 +150,8 @@ public class SalesOrderImportService {
                 }
             }
         } catch (Exception exception) {
-            // 对调用方仍收敛成稳定的 FILE_INVALID，但服务端必须留下真因：解析循环里的 NPE、越界与 POI
-            // 内部异常若只被改写成「请使用最新模板」，用户会反复重导模板而运维零线索。
+            // 对调用方仍返回 FILE_INVALID，但服务端要留下原因：解析异常若只改写成「请使用最新模板」，
+            // 用户会反复重导模板，运维也拿不到线索。
             log.error("订单导入文件解析失败，整批按 FILE_INVALID 拒绝", exception);
             addError(result, 0, null, "文件", "FILE_INVALID", "Excel 文件无法读取，请使用最新模板");
         }

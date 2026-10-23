@@ -19,9 +19,7 @@ public class ScmPrintRecordQueryForm extends PageParam {
     @ScmEnumValue(enumClass = ScmPrintDocumentTypeEnum.class, message = "单据类型无效")
     private String documentType;
 
-    /**
-     * 业务单号模糊匹配（采购单号等）。
-     */
+    /** 业务单号模糊匹配（采购单号等）。 */
     @Size(max = 64, message = "业务单号不能超过64个字符")
     private String businessNo;
 

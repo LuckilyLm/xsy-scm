@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 /**
- * A business-date range translated to a half-open timestamp range.
+ * 业务日期区间换算后的时间范围，左闭右开。
  */
 public record ScmDateTimeRange(LocalDate startDate, LocalDate endDate, OffsetDateTime startAt, OffsetDateTime endAt) {
 

@@ -14,7 +14,7 @@ public interface OrderExchangeLinkDao {
         @Param("replacementOrderId") Long replacementOrderId, @Param("operator") String operator);
 
     /**
-     * 换货草稿被删除时物理移除关联。关联是关系簿记而非业务事实； uk_order_exchange_return 是唯一索引，残留会挡住退货单重新创建换货。
+     * 换货草稿被删除时物理移除关联。关联只是关系记录；uk_order_exchange_return 是唯一索引，残留会挡住退货单重新创建换货。
      */
     int deleteByReplacementOrderId(@Param("replacementOrderId") Long replacementOrderId);
 }

@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * Read-only finance projection over immutable facts.
+ * 基于不可变财务记录的只读查询。
  */
 @Mapper
 public interface ScmFinanceReportDao {

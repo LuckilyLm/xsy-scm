@@ -9,7 +9,7 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 
 /**
- * 分拣两张表的公共审计列，字段口径与 {@code DeliveryRecord} 一致。
+ * 分拣两张表的公共审计列，字段定义与 {@code DeliveryRecord} 一致。
  */
 @Data
 public abstract class SortingRecord {

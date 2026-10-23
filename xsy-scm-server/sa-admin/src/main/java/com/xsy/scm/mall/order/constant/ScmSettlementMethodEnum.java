@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 public enum ScmSettlementMethodEnum {
 
     /**
-     * 余额支付：下单前用钱包余额直接支付。
+     * 余额支付：下单前用余额直接支付。
      */
     WALLET("余额支付"),
 

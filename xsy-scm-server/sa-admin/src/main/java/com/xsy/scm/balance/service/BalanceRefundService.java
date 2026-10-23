@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 纯余额售后返还；只追加钱包 CREDIT，不产生 Finance 付款或反向核销。
+ * 纯余额退款：只给余额加一笔入账，不产生财务付款或反向核销。
  */
 @Service
 @RequiredArgsConstructor
@@ -39,7 +39,7 @@ public class BalanceRefundService {
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * 订单退款完成事务中的自动派生；线上、线下或混合订单交给原资金路径处理。
+     * 退款完成时自动触发；线上、线下或混合订单走原来的资金路径。
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void refundOnCompletion(Long refundId) {
@@ -47,7 +47,7 @@ public class BalanceRefundService {
     }
 
     /**
-     * 订单已有资金分摊计划时，退款应走分摊返还路径，不再调用旧钱包退款。必须先判定路径，避免事务异常导致整笔退款回滚。
+     * 订单有资金分摊计划时，退款走分摊返还，不再走余额退款。必须先判断路径，避免事务异常导致整笔退款回滚。
      */
     @Transactional(readOnly = true)
     public boolean hasFundingAllocationPlan(Long orderId) {
@@ -55,7 +55,7 @@ public class BalanceRefundService {
     }
 
     /**
-     * 历史完成单或响应丢失的显式重试入口；不能自行指定返还金额和钱包。
+     * 历史完成单或响应丢失时的重试入口；不能自行指定退款金额和余额账户。
      */
     @Transactional(rollbackFor = Exception.class)
     public CustomerBalanceMovementEntity refund(BalanceRefundForm form, String key) {
@@ -92,7 +92,7 @@ public class BalanceRefundService {
         if (balanceRefundSourceDao.hasFundingAllocations(refund.orderId())) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_PATH_CONFLICT);
         }
-        // 共用支付成功事实的身份与金额校验；该 Policy 只读来源，不执行任何财务写入。
+        // 共用支付成功数据的身份与金额校验；Policy 只读，不写财务数据。
         var funding = financeOrderFundingPolicy.requireCompleteOrderFunding(refund.orderId());
         boolean balance = funding.stream().anyMatch(f -> ScmPaymentMethodEnum.BALANCE.name().equals(f.getMethod()));
         boolean online = funding.stream().anyMatch(f -> ScmPaymentMethodEnum.ONLINE.name().equals(f.getMethod()));

@@ -7,7 +7,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * The six fixed finance measures: period flows and end-of-period open balances.
+ * 六项固定财务指标：区间流水与期末未结余额。
  */
 @Data
 public class ScmFinanceOverviewVO {

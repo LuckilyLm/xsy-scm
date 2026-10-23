@@ -41,7 +41,7 @@ public class PurchaseReportService {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
         if (context.warehouseNowhere()) {
-            // 概览四个指标全部来自采购/收货/库存事实，无授权仓库时没有一个指标可知：
+            // 概览四个指标全部来自采购 / 收货 / 库存数据，无授权仓库时没有一个指标可知：
             // 返回空对象而不是 0，否则页面会显示「本期采购 0 元」。
             return new PurchaseReportVO.Overview();
         }

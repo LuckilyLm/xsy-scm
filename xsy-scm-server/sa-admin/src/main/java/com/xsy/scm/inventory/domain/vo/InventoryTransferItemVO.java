@@ -11,7 +11,7 @@ import java.util.Map;
  * 调拨单明细行（独立 VO，供 mapper 与命令侧复用）。
  *
  * <p>
- * 与 {@link InventoryTransferVO.Item} 字段一致但<b>不复用同一个类</b>，理由与其它库存单据明细相同：头内嵌明细是「详情的组成部分」，独立投影是「一行的视图」，两者演进理由不同。
+ * 与 {@link InventoryTransferVO.Item} 字段一致但不复用同一个类，理由与其它库存单据明细相同：头内嵌明细是「详情的组成部分」，独立视图是「一行的视图」，两者演进理由不同。
  */
 @Data
 public class InventoryTransferItemVO {
@@ -37,7 +37,7 @@ public class InventoryTransferItemVO {
     private BigDecimal quantity;
 
     /**
-     * 发出时写入的源仓记账单位快照；草稿态为空。
+     * 发出时写入的源仓记账单位；草稿态为空。
      */
     private String unitSnapshot;
 

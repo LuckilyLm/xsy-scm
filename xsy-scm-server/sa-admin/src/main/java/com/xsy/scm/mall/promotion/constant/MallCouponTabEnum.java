@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 商城「我的优惠券」页签。
  *
  * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * {@code desc} 供页面与导出使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

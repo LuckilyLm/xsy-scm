@@ -7,7 +7,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import java.math.BigDecimal;
 
 /**
- * Frozen sales/outbound/return line details for an AR fact.
+ * 应收记录下的销售、出库或退货明细。
  */
 @Data
 public class FinanceReceivableItemVO {

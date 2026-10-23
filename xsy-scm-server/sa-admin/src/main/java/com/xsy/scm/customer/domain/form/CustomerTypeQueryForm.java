@@ -16,9 +16,7 @@ import com.xsy.scm.common.validation.ScmEnumValue;
 @EqualsAndHashCode(callSuper = true)
 public class CustomerTypeQueryForm extends PageParam {
 
-    /**
-     * 关键字：类型编码 / 类型名称。
-     */
+    /** 关键字：类型编码 / 类型名称。 */
     @Size(max = 100, message = "关键字不能超过100个字符")
     private String keyword;
 

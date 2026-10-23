@@ -30,9 +30,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 @RequiredArgsConstructor
 public class WarehouseQueryService {
 
-    /**
-     * 排序白名单：只有这些列允许来自客户端。
-     */
+    /** 允许客户端排序的列。 */
     private static final Set<String> SORTABLE = Set.of("warehouse_code", "name", "status", "created_at", "updated_at");
 
     private final WarehouseDao warehouseDao;
@@ -41,9 +39,7 @@ public class WarehouseQueryService {
 
     private final ScmDataScopeService dataScopeService;
 
-    /**
-     * 下拉选择器：只返回 {@code ENABLED} 且落在授权范围内的仓库，按编码排序。
-     */
+    /** 下拉选择器：只返回已启用且落在授权范围内的仓库，按编码排序。 */
     public List<WarehouseVO> list() {
         ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
         if (scope.isEmpty()) {
@@ -75,7 +71,7 @@ public class WarehouseQueryService {
     }
 
     /**
-     * 仓库详情；未授权的仓按无权限回答（30005），不按「不存在」回答，否则探测仓库编号与探测授权可以分辨出来。
+     * 仓库详情。未授权的仓按无权限回答（30005），不回答「不存在」，避免用编号探测授权。
      */
     public WarehouseVO detail(Long id) {
         WarehouseEntity entity = warehouseService.require(id);

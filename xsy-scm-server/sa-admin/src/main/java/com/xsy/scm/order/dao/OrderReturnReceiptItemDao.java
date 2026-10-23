@@ -15,7 +15,7 @@ public interface OrderReturnReceiptItemDao extends BaseMapper<OrderReturnReceipt
     BigDecimal receivedOrderItemQuantity(@Param("orderItemId") Long orderItemId);
 
     /**
-     * 同一原销售出库流水已经由退货接收占用的库存记账数量。
+     * 某条销售出库流水已被退货接收占用的数量。
      */
     BigDecimal allocatedStockQuantity(@Param("sourceSalesOutMovementId") Long sourceSalesOutMovementId);
 

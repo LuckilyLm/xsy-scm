@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 下单结果。订单事实来自正式销售订单，本 VO 只是面向商城的投影。
+ * 下单结果。订单数据来自正式销售订单，本 VO 只是面向商城的展示视图。
  */
 @Data
 public class MallOrderSubmitVO {

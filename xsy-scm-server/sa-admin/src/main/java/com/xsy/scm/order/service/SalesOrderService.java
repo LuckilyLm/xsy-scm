@@ -99,7 +99,7 @@ public class SalesOrderService {
     private final OrderAddressSnapshotDao orderAddressSnapshotDao;
     private final OrderBundleComponentDao orderBundleComponentDao;
     /**
-     * 删除换货草稿时清掉换货关联：残留关联会让退货单无法再建换货、详情对着已删草稿报错。
+     * 删除换货草稿时清掉换货关联：残留关联会让退货单无法再建换货，详情也会指向已删草稿。
      */
     private final OrderExchangeLinkDao orderExchangeLinkDao;
     private final OrderOperationLogRecorder orderLogs;
@@ -110,14 +110,14 @@ public class SalesOrderService {
     private final OrderNumberGenerator numbers;
     private final OrderIdempotencyService orderIdempotencyService;
     /**
-     * 显式预留库存、取消时释放；库存变更通过库存域服务完成。
+     * 显式预留库存、取消时释放；库存变更走库存模块的服务。
      */
     private final InventoryReservationService inventoryReservationService;
     private final MallStockAvailabilityService mallStockAvailabilityService;
     private final OrderBundleSnapshotService bundleSnapshotService;
     private final SalesOrderQueryService salesOrderQueryService;
     /**
-     * SCM 数据范围的唯一解析入口；只在「能否对这户客户开单」这类归属判定上用。
+     * 数据范围的统一解析入口；只用于「能否对这户客户开单」这类归属判定。
      */
     private final ScmDataScopeService dataScopeService;
     private final com.xsy.scm.common.scope.ScmWarehouseScopeGuard warehouseScopeGuard;
@@ -127,7 +127,7 @@ public class SalesOrderService {
     private final ScmNotificationService notificationService;
 
     /**
-     * 优惠冻结由订单确认编排：营销域只按订单事实计算，订单域不重复实现优惠规则。
+     * 优惠在订单确认时计算并保存：营销模块按订单数据计算，订单域不重复实现优惠规则。
      */
     private final PromotionDiscountService promotionDiscountService;
 
@@ -136,7 +136,7 @@ public class SalesOrderService {
         var claim = orderIdempotencyService.claim("ORDER_CREATE", key, salesOrderAddForm);
         if (claim.replay()) {
             var result = orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
-            // 重放也要按当前负责人范围放行：归属收窄后不能再凭旧幂等键拿到这单的快照
+            // 重放也要按当前负责人范围放行：归属收窄后不能再凭旧幂等键拿到这单的详情
             salesOrderQueryService.detail(result.getOrderId());
             return result;
         }
@@ -187,7 +187,7 @@ public class SalesOrderService {
     }
 
     /**
-     * 相同幂等键和请求指纹已成功下单时，直接返回原订单，不再按当前价格或地址重复校验。不同请求指纹必须按新请求处理或报冲突。
+     * 同键、同请求内容且已成功下单时直接返回原订单，不再按当前价格或地址校验；内容不同的请求按新请求处理或报冲突。
      */
     public Optional<MallOrderCreationResult> replayMallOrder(Object idempotencyRequest, String key) {
         return orderIdempotencyService.peekCompleted("ORDER_CREATE_MALL", key, idempotencyRequest)
@@ -199,7 +199,7 @@ public class SalesOrderService {
      * 商城取消的幂等指纹：只绑定订单与原因（客户身份已由幂等 scope 里的操作者体现）。
      *
      * <p>
-     * 用 {@link LinkedHashMap} 而不是 {@code Map.of}：后者的迭代顺序在不同 JVM 之间会变， 序列化后哈希跟着漂移，重启后就认不出同一个键了。包内可见，便于直接验证指纹稳定性。
+     * 用 {@link LinkedHashMap} 而不是 {@code Map.of}：后者迭代顺序不固定，序列化后的哈希会漂移，重启后就认不出同一个键。包内可见，便于直接验证指纹稳定性。
      */
     static Map<String, Object> cancelFingerprint(OrderCancelForm orderCancelForm) {
         Map<String, Object> fingerprint = new LinkedHashMap<>();
@@ -228,7 +228,7 @@ public class SalesOrderService {
                     order = confirmOrder(order.getOrderId(), order.getVersion());
                 imported.add(order);
             } catch (ScmBusinessException | org.springframework.dao.DataIntegrityViolationException exception) {
-                // Let the exception cross the transaction proxy before the import service formats errors.
+                // 让异常先穿过事务代理，再由导入服务整理错误。
                 throw new ImportOrderException(index, exception);
             }
         }
@@ -265,10 +265,8 @@ public class SalesOrderService {
     private SalesOrderDetailVO createDraft(SalesOrderAddForm salesOrderAddForm, boolean enforceEmployeeScope) {
         OrderValidator.draft(salesOrderAddForm);
         var customer = customerService.requireTradable(salesOrderAddForm.getCustomerId());
-        // 新建订单前必须确认当前调用者能读取该客户；订单负责人取自客户快照，
-        // 只收窄列表等于「看不见但仍然能往别人名下塞单」，行级范围就不成立；因此新建入口按同一范围判定。
-        // 分配权（scm:customer:assign）与全量订单范围同等放行：主管刚把客户指定给某人，
-        // 就该能替他录单，否则「主管建客户 + 指定负责人」这条路会把主管自己挡在门外。
+        // 新建订单前必须确认当前调用者能读取该客户：只收窄列表等于「看不见但仍能往别人名下塞单」，
+        // 行级范围就不成立。有客户分配权（scm:customer:assign）时同样放行，主管把客户指定给某人后就该能替他录单。
         if (enforceEmployeeScope && !dataScopeService.resolve().getOrderSellerScope().allows(customer.getSellerId())
             && !ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM))
             throw new ScmDataScopeException();
@@ -289,15 +287,15 @@ public class SalesOrderService {
         salesOrder.setOrderNo(numbers.order());
         salesOrder.setStatus(ScmOrderStatusEnum.DRAFT.name());
         header(salesOrder, salesOrderAddForm);
-        // 客户预选券只随商城建单持久化；后台录单即使误带该字段也不落库， 后台用券一律由确认命令显式给出。
+        // 客户预选券只随商城建单保存；后台录单即使误带该字段也不保存，后台用券一律在确认时显式指定。
         if (ScmOrderSourceEnum.MALL.name().equals(salesOrder.getOrderSource())) {
-            // 本次商城下单选定的配送仓是不可变订单事实，不能在确认时重新按客户当前地址猜测。
+            // 本次商城下单选定的配送仓不可再改，确认时不能按客户当前地址重新推断。
             salesOrder.setMallDeliveryWarehouseId(salesOrderAddForm.getMallDeliveryWarehouseId());
             salesOrder.setMallCouponInstanceId(salesOrderAddForm.getMallCouponInstanceId());
-            // 结算方式与预选券同源：只认商城渠道，后台录单不采信请求体里的结算方式。
+            // 结算方式与预选券一样只认商城渠道，后台录单不采信请求体里的结算方式。
             salesOrder.setSettlementMethod(salesOrderAddForm.getSettlementMethod());
         } else {
-            // 后台与补单也冻结明确选择的配送仓；沿用既有订单仓库字段，不新建平行事实。
+            // 后台与补单也保存明确选择的配送仓，沿用订单现有的仓库字段，不另建字段。
             salesOrder.setMallDeliveryWarehouseId(selectedWarehouse);
         }
         salesOrder.setOrderedTotalAmount(total(rows));
@@ -338,7 +336,7 @@ public class SalesOrderService {
         requireOrderSellerScope(salesOrder);
         version(salesOrder.getVersion(), salesOrderUpdateForm.getVersion());
         OrderStateMachine.editable(salesOrder.getStatus());
-        // Customer and address identity belong to the creation snapshot; editing cannot replace it.
+        // 客户和地址在创建时确定，编辑不能替换。
         if (!Objects.equals(salesOrder.getCustomerId(), salesOrderUpdateForm.getCustomerId()))
             throw new ScmBusinessException(ORDER_ORIGINAL_INVALID);
         customerService.requireTradable(salesOrder.getCustomerId());
@@ -354,7 +352,7 @@ public class SalesOrderService {
             .collect(Collectors.toMap(SalesOrderItemEntity::getId, Function.identity()));
         var requested = materialize(salesOrderUpdateForm);
         var changes = SalesOrderItemChangeSet.between(existing, requested);
-        // Remove before insert so a removed SKU may be added again without violating the active unique index.
+        // 先删后插：被移除的 SKU 可以重新加回，不会撞上有效唯一索引。
         for (var row : changes.removed())
             removeItem(row);
         for (var row : changes.updated()) {
@@ -390,8 +388,8 @@ public class SalesOrderService {
         var claim = orderIdempotencyService.claim("ORDER_SUBMIT:" + orderVersionForm.getOrderId(), key,
             orderVersionForm);
         if (claim.replay()) {
-            // 重放也要过范围：幂等 scope 含 operator，A 与 B 的键本就不同（跨人重放不可能），
-            // 但同一个人换了负责范围后再重放同一个键仍会绕开写命令里的守卫。detail 会重新判范围。
+            // 重放也要过范围：幂等 scope 含 operator，A 与 B 的键本就不同，
+            // 但同一个人换了负责范围后重放同一个键仍会绕过写命令的校验。detail 会重新判范围。
             salesOrderQueryService.detail(orderVersionForm.getOrderId());
             return orderIdempotencyService.replay(claim, SalesOrderDetailVO.class);
         }
@@ -550,7 +548,7 @@ public class SalesOrderService {
         row.setActualQuantitySource(ScmOrderQuantitySourceEnum.MANUAL.name());
         row.setActualQuantityReason(orderActualQuantityForm.getReason().trim());
         saveItem(row);
-        // Advance the aggregate version too: stale confirm forms must refresh after any item change.
+        // 一并推进订单版本：明细变了之后，旧的确认表单必须刷新。
         save(salesOrder);
         var result = salesOrderQueryService.detailSnapshot(salesOrder.getId());
         log(salesOrder.getId(), ScmOrderOperationTypeEnum.ACTUAL_QUANTITY, orderActualQuantityForm.getReason(), before,
@@ -561,7 +559,7 @@ public class SalesOrderService {
     }
 
     public CustomerCreditCheckVO creditCheck(Long orderId) {
-        // 先走订单详情的 seller scope，再读取任何结算主体或敞口信息，避免用不可见订单探测集团授信。
+        // 先走订单详情的业务员范围，再读取结算主体或敞口，避免用不可见订单探测集团授信。
         salesOrderQueryService.detail(orderId);
         var order = salesOrderDao.selectById(orderId);
         if (order == null || !dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId())) {
@@ -638,18 +636,16 @@ public class SalesOrderService {
                 OrderAmountCalculator.lineAmount(row.getActualQuantity(), row.getLockedUnitPrice()));
             saveItem(row);
         }
-        // 组合组成规格及售价分摊已在 freeze() 冻结，但确认订单不自动占库存。
-        // 组成 SKU 的实际预留统一走 reserveStock() 显式命令，支持先采购收货后再履约。
+        // 组合组成及售价分摊已在 freeze() 中保存，但确认订单不自动占库存；
+        // 组成 SKU 的预留统一走 reserveStock()，支持先采购收货再履约。
         salesOrder.setSettlementTotalAmount(OrderAmountCalculator
             .orderAmount(rows.stream().map(SalesOrderItemEntity::getSettlementLineAmount).toList()));
-        // 优惠冻结并入确认命令，而不是让客户端确认后再单独调一次：否则会出现
-        // 「订单已确认、优惠却没冻结」的中间态。行基础金额取 ordered_line_amount
-        // （下单量 × 锁定单价），该口径由负责人 2026-10-03 确认。
-        // 券来源：确认表单显式给出的优先；表单为空时回退到商城客户下单时的预选券
-        // （仅 MALL 来源订单可能有）。冻结会重验券的归属、状态、模板生效与门槛，
-        // 预选券在确认前已失效的，确认按券校验规则失败，由操作员改选或客户取消重下。
-        // <b>冻结排在授信判定之前</b>：账期占用必须与签收应收同口径（实重 × 锁定价 − 冻结优惠等比分摊），
-        // 而优惠额只有冻结之后才存在。整笔仍是同一个事务，授信不过时券的占用随之回滚。
+        // 优惠在确认命令内保存，而不是让客户端确认后再单独调用，避免出现「订单已确认、优惠却没保存」的中间态。
+        // 行基础金额取 ordered_line_amount（下单量 × 锁定单价），该规则由负责人 2026-10-03 确认。
+        // 券来源：确认表单显式给出的优先；为空时用商城下单时的预选券（仅 MALL 来源可能有）。
+        // 保存时会重新校验券的归属、状态、模板生效与门槛；预选券在确认前已失效的，确认失败，由操作员改选或客户取消重下。
+        // 优惠保存排在授信判定之前：账期占用要与签收应收算法一致（实重 × 锁定价 − 按比例分摊的优惠），
+        // 而优惠额只有保存之后才存在。整笔仍是同一个事务，授信不过时券的占用随之回滚。
         boolean clearMallCoupon = confirmation != null && Boolean.TRUE.equals(confirmation.getClearMallCoupon());
         if (clearMallCoupon && confirmation.getCouponInstanceId() != null) {
             throw new ScmBusinessException(VALIDATION_ERROR);
@@ -702,10 +698,10 @@ public class SalesOrderService {
     }
 
     /**
-     * 商城客户取消入口：与管理端共用同一条取消路径与同一套状态机，只跳过员工负责人范围（商城客户没有该范围）。
+     * 商城客户取消：与管理端共用同一条取消路径和状态机，只跳过员工负责人范围。
      *
      * <p>
-     * 状态机与取消原因校验一律不变：只有 {@code DRAFT} / {@code PENDING} 可取消，已确认订单一律拒绝， 客户不能绕过已确认、已履约、已支付订单的处理规则。归属由商城适配器在入口按登录客户判定。
+     * 只有 {@code DRAFT} / {@code PENDING} 可取消，已确认订单一律拒绝；归属由商城适配器按登录客户判定。
      */
     @Transactional(rollbackFor = Exception.class)
     public SalesOrderDetailVO cancelFromMall(OrderCancelForm orderCancelForm, String key) {
@@ -713,15 +709,14 @@ public class SalesOrderService {
     }
 
     private SalesOrderDetailVO cancel(OrderCancelForm orderCancelForm, String key, boolean enforceEmployeeScope) {
-        // 商城取消的幂等指纹只绑定订单与原因：version 是并发控制字段，第一次执行成功后订单版本就会前进，
-        // 把它算进指纹会让「同一请求重试」被判成内容不同，合法重放变成幂等冲突。
-        // 管理端保持原样（整表单参与指纹），版本规则不变。
+        // 商城取消的幂等指纹只绑定订单与原因：version 是并发控制字段，执行成功后就会前进，
+        // 算进指纹会让同一请求重试被判成内容不同。管理端保持原样（整表单参与指纹）。
         Object requestFingerprint = enforceEmployeeScope ? orderCancelForm : cancelFingerprint(orderCancelForm);
         var claim = orderIdempotencyService.claim("ORDER_CANCEL:" + orderCancelForm.getOrderId(), key,
             requestFingerprint);
         if (claim.replay()) {
-            // 重放也要过归属：管理端用员工范围重新判一次；商城入口已在 MallOrderService 按登录客户校验过归属，
-            // 这里若再套员工范围，商城客户的重试会被自己挡掉，幂等就白做了。
+            // 重放也要过归属：管理端用员工范围重新判一次；商城入口已由 MallOrderService 按登录客户校验，
+            // 这里再套员工范围会挡掉商城客户的重试。
             if (enforceEmployeeScope) {
                 salesOrderQueryService.detail(orderCancelForm.getOrderId());
             }
@@ -737,8 +732,8 @@ public class SalesOrderService {
         salesOrder.setCancelReason(orderCancelForm.getReason().trim());
         salesOrder.setCancelledAt(OffsetDateTime.now());
         save(salesOrder);
-        // 取消时释放该订单的预留（若存在）。当前没有触发点会创建预留，因此通常是空操作；
-        // 保留这行是为了让「预留一旦启用」时取消路径自动正确，不需要再改这里。
+        // 取消时释放该订单的预留（若存在）。目前通常没有预留，是空操作；
+        // 保留是为了启用预留后取消路径自动正确。
         inventoryReservationService.releaseBySalesOrder(salesOrder.getId());
         var result = salesOrderQueryService.detailSnapshot(salesOrder.getId());
         log(salesOrder.getId(), ScmOrderOperationTypeEnum.CANCEL, orderCancelForm.getReason(), before, result);

@@ -10,7 +10,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import lombok.Data;
 
 /**
- * Published reconciliation version; values and rows are never recomputed on download.
+ * 已生成的对账单版本；下载时不重新计算金额和明细。
  */
 @Data
 public class ScmCustomerStatementVO {

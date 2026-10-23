@@ -75,8 +75,8 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_RECEIPT_S
 import static com.xsy.scm.purchase.service.PurchaseReceiptSnapshotMapper.receiptSnapshot;
 
 /**
- * 处理采购收货。收货单从草稿确认后就不能再改；分次收货要创建多张收货单。 标品按申报数量入库，非标品按实际重量入库。 锁顺序为采购单、收货单、采购明细、收货明细；明细按 ID 升序。
- * 确认时在同一事务内登记入库和应付；超收容差读取系统配置，默认 10%。
+ * 处理采购收货。收货单确认后不能再改；分次收货要创建多张收货单。标品按申报数量入库，非标品按实际重量入库。 锁顺序为采购单、收货单、采购明细、收货明细；明细按 ID 升序。确认时在同一事务内登记入库和应付； 超收容差读取系统配置，默认
+ * 10%。
  */
 @Service
 @RequiredArgsConstructor
@@ -135,15 +135,11 @@ public class PurchaseReceiptService {
      */
     private final FinancePayableService financePayableService;
 
-    // ------------------------------------------------------------------
-    // receipt.create
-    // ------------------------------------------------------------------
-
     /**
-     * 建收货单（{@code DRAFT}，<b>不产生任何副作用</b>）。
+     * 建收货单（{@code DRAFT}，不产生任何副作用）。
      *
      * <p>
-     * 行由服务端按采购单的<b>全部活动行</b>自动生成：不允许调用方挑行，否则「确认时必须覆盖全部行」这条规则（40998）就失去了基准集合。
+     * 行由服务端按采购单的全部活动行自动生成：不允许调用方挑行，否则「确认时必须覆盖全部行」（40998） 就失去了基准集合。
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO create(PurchaseReceiptCreateForm form, String idempotencyKey) {
@@ -201,10 +197,6 @@ public class PurchaseReceiptService {
         return result;
     }
 
-    // ------------------------------------------------------------------
-    // receipt.update（只改备注）
-    // ------------------------------------------------------------------
-
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO update(PurchaseReceiptUpdateForm form) {
         PurchaseReceiptEntity receipt = lockReceipt(form.getId());
@@ -231,10 +223,6 @@ public class PurchaseReceiptService {
             receipt.getPurchaseOrderId(), receipt.getId(), null, before, after));
         return purchaseQueryService.receiptDetailForCommand(receipt.getId());
     }
-
-    // ------------------------------------------------------------------
-    // receipt.confirm（的 15 步）
-    // ------------------------------------------------------------------
 
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO confirm(PurchaseReceiptConfirmForm form, String idempotencyKey) {
@@ -292,8 +280,8 @@ public class PurchaseReceiptService {
 
         List<Map<String, Object>> beforeItems = new ArrayList<>(receiptItems.size());
         List<Map<String, Object>> afterItems = new ArrayList<>(receiptItems.size());
-        // 本行入库事实的最小元组（行 / 采购行 / 有效数量）。<b>循环内只收集，不调用契约</b> ——
-        // 事实装配必须发生在收货单 CONFIRMED 落库之后（occurredAt/operator 取自那一刻的冻结事实）。
+        // 本行入库数据的最小元组（行 / 采购行 / 有效数量）。循环内只收集，不调用库存接口：
+        // 数据装配必须发生在收货单保存为 CONFIRMED 之后（occurredAt/operator 取自那一刻的记录）。
         List<InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
         // 批次追踪按仓库开关：开启后每行必须登记批次，数量之和必须等于本次收货量。
         boolean lotTracking = Boolean.TRUE
@@ -319,7 +307,7 @@ public class PurchaseReceiptService {
             BigDecimal effective = PurchaseReceiptQuantityCalculator.effectiveQuantity(
                 orderItem.getProductTypeSnapshot(), declared, actualWeight, weighingSource, correctionReason);
 
-            // 本次有效数量 > 可收上限 → 40989，<b>整笔回滚</b>（不在行级部分提交）
+            // 本次有效数量 > 可收上限 → 40989，整笔回滚（不做行级部分提交）
             BigDecimal ceiling = PurchaseReceiptQuantityCalculator.ceiling(orderItem.getPlannedQuantity(), tolerance);
             BigDecimal available = PurchaseReceiptQuantityCalculator.available(ceiling,
                 orderItem.getReceivedQuantity());
@@ -354,7 +342,7 @@ public class PurchaseReceiptService {
             }
 
             if (actualWeight != null) {
-                // 只追加的审计事实（无 version / deleted / updated_*），与 {@code xsy_inventory_movement} 的纪律一致
+                // 只追加的审计记录（无 version / deleted / updated_*），与 {@code xsy_inventory_movement} 的规则一致
                 appendWeighingRecord(line.getId(), actualWeight, weightUnit, correctionReason);
             }
 
@@ -366,7 +354,7 @@ public class PurchaseReceiptService {
             afterLine.put("difference", PurchaseSnapshotFactory.fixed(difference));
             afterItems.add(afterLine);
 
-            // 收集入库事实元组（不在此处调用契约，见 inboundLines 声明处的说明）
+            // 收集入库数据元组（不在此处调用库存接口，见 inboundLines 声明处的说明）
             List<TraceLotContract.LotAllocation> allocations = resolveLots(lotTracking, order, line, input, effective,
                 ScmOperator.current());
             inboundLines.add(new InboundLine(line, orderItem, effective, allocations));
@@ -394,7 +382,7 @@ public class PurchaseReceiptService {
             receipt.setPutawayAt(now);
             receipt.setPutawayBy(receipt.getOperator());
         }
-        // WAREHOUSE_CONFIRM：此处<b>不写库存</b>，putaway_status 保持 PENDING，等待仓库二次确认。
+        // WAREHOUSE_CONFIRM：此处不写库存，putaway_status 保持 PENDING，等待仓库二次确认。
         stamp(receipt, false);
         if (purchaseReceiptDao.updateById(receipt) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -407,16 +395,16 @@ public class PurchaseReceiptService {
         after.put("orderStatus", order.getStatus());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
             ScmPurchaseOperationTypeEnum.RECEIPT_CONFIRM, order.getId(), receipt.getId(), null, before, after));
-        // 第 15 步：库存入库 —— 与采购侧写入同事务。
+        // 库存入库 —— 与采购侧写入同事务。
         // 位置固定：操作日志之后、幂等 complete 之前。幂等 complete 落在库存写入之后，
-        // 保证「重放返回的结果」= 库存已写入的成功结果。
+        // 保证重放返回的结果就是库存已写入的成功结果。
         if (direct) {
             postInbound(order, receipt, inboundLines, receipt.getConfirmedAt(), receipt.getOperator());
         }
 
         // 应付时点：企业确认收到货即形成供应商债务，仓库何时 putaway 不决定应付时点，
         // 因此 DIRECT 与 WAREHOUSE_CONFIRM 两条路径都只在这里生成一次，putaway 不再调用。
-        // 位置在库存写入之后：财务只消费已经成立的收货事实，自身不锁业务表也不锁余额（全局不变量 4），
+        // 位置在库存写入之后：财务只消费已经成立的收货记录，自身不锁业务表也不锁余额，
         // 并发的重复触发由 finance_payable 的来源唯一索引仲裁。抛错即整笔 confirm 回滚。
         financePayableService.generateOnReceiptConfirm(receipt.getId());
 
@@ -426,12 +414,8 @@ public class PurchaseReceiptService {
         return result;
     }
 
-    // ------------------------------------------------------------------
-    // receipt.putaway（仓库二次确认入库，独立事务）
-    // ------------------------------------------------------------------
-
     /**
-     * 仅已确认且待入库的仓库二次确认收货单可以入库。先锁收货单，再按顺序锁余额；重复确认应拒绝或返回同一幂等结果，不能二次生成入库流水。
+     * 仅已确认且待入库的仓库二次确认收货单可以入库。先锁收货单，再按顺序锁余额；重复确认应拒绝或返回同一幂等结果， 不能二次生成入库流水。
      */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseReceiptVO putaway(PurchaseReceiptPutawayForm form, String idempotencyKey) {
@@ -464,7 +448,7 @@ public class PurchaseReceiptService {
             .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
         List<PurchaseReceiptItemEntity> receiptItems = purchaseReceiptItemDao.listByReceiptId(receipt.getId());
 
-        // 入库事实的最小元组：数量取确认时已落库的 received_quantity，单位/单价取采购行快照。
+        // 入库数据的最小元组：数量取确认时已保存的 received_quantity，单位/单价取采购行记录。
         Map<Long, List<TraceLotContract.LotAllocation>> lotsByItem = lotsByReceiptItem(receiptItems);
         List<InboundLine> inboundLines = new ArrayList<>(receiptItems.size());
         for (PurchaseReceiptItemEntity line : receiptItems) {
@@ -490,14 +474,14 @@ public class PurchaseReceiptService {
         before.put("putawayStatus", ScmPutawayStatusEnum.PENDING.name());
         Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("putawayStatus", ScmPutawayStatusEnum.COMPLETED.name());
-        // 审计快照只放字符串：PurchaseJsonbTypeHandler 的 ObjectMapper 未注册 JavaTimeModule，
-        // 直接放 OffsetDateTime 会抛「Invalid purchase JSON」（与确认日志同纪律）。
+        // 审计记录只放字符串：PurchaseJsonbTypeHandler 的 ObjectMapper 未注册 JavaTimeModule，
+        // 直接放 OffsetDateTime 会抛「Invalid purchase JSON」（与确认日志同一规则）。
         after.put("putawayAt", now.toString());
         after.put("putawayBy", operator);
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(
             ScmPurchaseOperationTypeEnum.RECEIPT_PUTAWAY, order.getId(), receipt.getId(), null, before, after));
 
-        // 位置固定：putaway 状态落库之后、幂等 complete 之前（与 confirm 同纪律）。
+        // 位置固定：putaway 状态保存之后、幂等 complete 之前（与 confirm 同一规则）。
         postInbound(order, receipt, inboundLines, now, operator);
 
         PurchaseReceiptVO result = purchaseQueryService.receiptDetailForCommand(receipt.getId());
@@ -506,15 +490,11 @@ public class PurchaseReceiptService {
         return result;
     }
 
-    // ------------------------------------------------------------------
-    // receipt.delete
-    // ------------------------------------------------------------------
-
     @Transactional(rollbackFor = Exception.class)
     public void delete(PurchaseReceiptDeleteForm form) {
         PurchaseReceiptEntity receipt = purchaseReceiptDao.lock(form.getId());
         if (receipt == null) {
-            // 幂等：已删除视为成功（同的 delete 语义）
+            // 幂等：已删除视为成功（与单张删除一致）
             return;
         }
         purchaseOwnerResolver.requireVisible(orderPurchaserId(receipt));
@@ -542,15 +522,11 @@ public class PurchaseReceiptService {
             .forEach(row -> delete(deleteForm(row)));
     }
 
-    // ------------------------------------------------------------------
-    // 内部
-    // ------------------------------------------------------------------
-
     /**
-     * 请求行集合必须<b>恰好等于</b>本收货单的全部活动行集合（修 /G11）。
+     * 请求行集合必须恰好等于本收货单的全部活动行集合。
      *
      * <p>
-     * 不允许只提交子集：否则「确认了但仍有 0 数量行」的歧义会一直存在，而 {@code received_quantity} 的累计口径也会变得不可推理。
+     * 不允许只提交子集：否则「确认了但仍有 0 数量行」的歧义会一直存在，{@code received_quantity} 的累计规则也会变得难以推理。
      */
     private static Map<Long, PurchaseReceiptConfirmForm.Item> requestedLines(PurchaseReceiptConfirmForm form,
         List<PurchaseReceiptItemEntity> receiptItems) {
@@ -580,8 +556,7 @@ public class PurchaseReceiptService {
             .map(line -> new PurchaseInventoryContract.InboundFact(order.getId(), receipt.getId(), line.line().getId(),
                 order.getWarehouseId(), line.line().getSkuId(), receipt.getWarehouseCodeSnapshot(),
                 receipt.getWarehouseNameSnapshot(), line.line().getSkuCodeSnapshot(), line.line().getSkuNameSnapshot(),
-                // 单位统一取 purchase_unit_snapshot，
-                // <b>不得</b>用 confirm 循环里的 weightUnit（标品时为 null）
+                // 单位统一取 purchase_unit_snapshot，不能用 confirm 循环里的 weightUnit（标品时为 null）
                 line.orderItem().getPurchaseUnitSnapshot(), line.effective(), line.orderItem().getPurchasePrice(),
                 PurchaseInventoryContract.SOURCE_DOCUMENT_TYPE + ":" + line.line().getId(), occurredAt, operator,
                 line.lots().stream()
@@ -604,8 +579,8 @@ public class PurchaseReceiptService {
      * 一行入库事实的最小元组。
      *
      * <p>
-     * 刻意<b>不</b>在收货循环里直接装配 {@code InboundFact}：那时 {@code receipt} 还没落库成 CONFIRMED，{@code confirmedAt} /
-     * {@code operator} 仍是 null —— 用它装配出来的流水会把「发生时刻」写成 null，或者被迫在库存侧补一个 {@code now()}。
+     * 刻意不在收货循环里直接装配 {@code InboundFact}：那时 {@code receipt} 还没保存成 CONFIRMED， {@code confirmedAt} / {@code operator} 仍是
+     * null，用它装配出来的流水会把「发生时刻」写成 null。
      */
     private record InboundLine(PurchaseReceiptItemEntity line, PurchaseOrderItemEntity orderItem, BigDecimal effective,
         List<TraceLotContract.LotAllocation> lots) {
@@ -661,7 +636,7 @@ public class PurchaseReceiptService {
         String correctionReason) {
         ReceiptWeighingRecordEntity record = new ReceiptWeighingRecordEntity();
         record.setPurchaseReceiptItemId(receiptItemId);
-        // （手工录入）：原始读数与确认读数同值；{@code DEVICE} 是 + 的扩展点（CHECK 目前只允许 MANUAL）
+        // 手工录入：原始读数与确认读数同值；{@code DEVICE} 是后续扩展点（CHECK 目前只允许 MANUAL）
         record.setRawReading(actualWeight);
         record.setConfirmedReading(actualWeight);
         record.setUnit(weightUnit);

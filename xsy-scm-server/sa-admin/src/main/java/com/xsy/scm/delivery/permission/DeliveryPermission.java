@@ -3,7 +3,7 @@ package com.xsy.scm.delivery.permission;
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 
 /**
- * Stable permission identifiers published by the delivery API.
+ * 配送域对外发布的稳定权限标识。
  */
 public final class DeliveryPermission {
 
@@ -34,10 +34,10 @@ public final class DeliveryPermission {
     public static final String ORDER_SIGN = "scm:delivery:order:sign";
 
     /**
-     * 排线建议：查询 / 生成 / 应用分开授权。
+     * 排线建议的查询、生成、应用分开授权。
      *
      * <p>
-     * 「生成」只是算一份建议（不碰线路），「应用」才写回停靠顺序 —— 两者合并会让 「只是想看看怎么排」的人顺手获得改线路的能力。
+     * 生成只算一份建议，不碰线路；应用才写回停靠顺序。合成一个权限的话，只想看看怎么排的人也能顺手改线路。
      */
     public static final String PLAN_QUERY = "scm:delivery:plan:query";
 

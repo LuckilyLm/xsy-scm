@@ -21,7 +21,7 @@ public class ProductSpuVO {
     private String description;
     private String status;
     /**
-     * 主档生命周期：ENABLED 可用 / DISABLED 停止新引用 / ARCHIVED 已归档，与 status（是否在售）正交。
+     * 主档生命周期：ENABLED 可用 / DISABLED 停止新引用 / ARCHIVED 已归档，与 status（是否在售）相互独立。
      */
     private String masterStatus;
     private String mnemonicCode;

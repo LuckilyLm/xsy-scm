@@ -25,7 +25,7 @@ import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 
 /**
- * 客户余额充值与渠道支付结果分开处理；只按实际确认的收款入账，重复通知不得重复充值。
+ * 充值和支付结果分开处理：只按确认到账的收款入账，重复通知不会重复充值。
  */
 @Service
 @RequiredArgsConstructor
@@ -50,10 +50,10 @@ public class BalanceRechargeService {
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * 发起充值：先落充值事实，再创建支付意图。
+     * 发起充值：先保存充值记录，再创建支付意图。
      *
      * <p>
-     * <b>幂等在外层先占</b>：如果等内部创建意图时才 claim，一次超时重试会先多出一条充值事实。同一个 {@code Idempotency-Key} 回放首次结果；换 key 再提就是一笔新充值（允许多次充值）。
+     * 幂等键先占住：否则超时重试会先多出一条充值记录。同一个 {@code Idempotency-Key} 返回首次结果，换 key 再提就是新充值。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity create(BalanceRechargeCreateForm form, String idempotencyKey) {

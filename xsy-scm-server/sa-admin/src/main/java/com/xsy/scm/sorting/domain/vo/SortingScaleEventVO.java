@@ -13,7 +13,7 @@ import lombok.Data;
  * 秤读数（作业台展示与追溯）。
  *
  * <p>
- * 原始读数与接受数量都返回：两者不一致时（当前规则下不会发生，但历史数据可能有） 必须能看出来，而不是只留一个「最终值」。
+ * 原始读数与接受数量都返回：两者不一致时（当前规则下不会发生，但历史数据可能有）必须能看出来，而不是只留一个「最终值」。
  */
 @Data
 public class SortingScaleEventVO {
@@ -45,9 +45,7 @@ public class SortingScaleEventVO {
 
     private OffsetDateTime receivedAt;
 
-    /**
-     * {@code PENDING} / {@code ACCEPTED} / {@code REJECTED}。
-     */
+    /** {@code PENDING} / {@code ACCEPTED} / {@code REJECTED}。 */
     private String status;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
@@ -67,8 +65,6 @@ public class SortingScaleEventVO {
 
     private Integer version;
 
-    /**
-     * 本次上报是否为重复事件（服务端已有同键记录）；不是错误。
-     */
+    /** 本次上报是否为重复事件（服务端已有同键记录）；不是错误。 */
     private boolean duplicated;
 }

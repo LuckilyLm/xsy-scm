@@ -35,7 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 服务端购物车：按登录账号隔离，商品可见性、客户价与库存读取时实时解析，不在此固化。 库存与价格的最终校验在结算与下单时由服务端重验。
+ * 服务端购物车：按登录账号隔离，商品可见性、客户价与库存读取时实时解析，不在此保存。 库存与价格的最终校验在结算与下单时由服务端重新执行。
  */
 @Service
 @RequiredArgsConstructor
@@ -53,7 +53,7 @@ public class MallCartService {
      * 所选商品的预估金额与可结算行数。
      *
      * <p>
-     * 客户端不得自行累计业务金额，勾选变化后由本接口给出权威结果。
+     * 客户端不得自行累计业务金额，勾选变化后由本接口给出准确结果。
      */
     @Transactional(readOnly = true)
     public MallCartEstimateVO estimate(RequestMallCustomer customer, List<Long> skuIds) {
@@ -156,10 +156,10 @@ public class MallCartService {
     }
 
     /**
-     * 把某规格的数量<b>设为</b>指定值（覆盖，不是累加）。「再来一单」用它。
+     * 把某规格的数量设为指定值（覆盖，不是累加）。「再来一单」用它。
      *
      * <p>
-     * 刻意不写成累加：再来一单重复点击必须得到同一结果，累加会让客户点两次就买两份。 可见性由调用方先按当前客户价重新校验，本方法只管数量落库。
+     * 刻意不写成累加：再来一单重复点击必须得到同一结果，累加会让客户点两次就买两份。 可见性由调用方先按当前客户价重新校验，本方法只管保存数量。
      */
     @Transactional(rollbackFor = Exception.class)
     public void setQuantity(RequestMallCustomer customer, Long skuId, BigDecimal quantity) {

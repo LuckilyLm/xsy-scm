@@ -14,7 +14,7 @@ import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
 import java.math.BigDecimal;
 
 /**
- * 一行明细的分拣结果。非标品这里录的是实重，单位即明细行上的销售单位快照 （不做单位换算，也不记毛重 / 皮重 / 净重）。
+ * 一行明细的分拣结果。非标品这里录的是实重，单位即明细行上保存的销售单位（不做单位换算，也不记毛重 / 皮重 / 净重）。
  */
 @Data
 public class SortingEntryItemForm {
@@ -26,9 +26,7 @@ public class SortingEntryItemForm {
     @Min(value = 0, message = "版本号不能小于0")
     private Integer version;
 
-    /**
-     * 允许 0：整行缺货是合法结果，不能靠「不提交这行」表达，否则任务永远无法完成。
-     */
+    /** 允许 0：整行缺货是合法结果，不能靠「不提交这行」表达，否则任务永远无法完成。 */
     @NotNull(message = "分拣数量不能为空")
     @DecimalMin(value = "0", message = "分拣数量不能小于0")
     @Digits(integer = 14, fraction = 4, message = "分拣数量最多14位整数和4位小数")

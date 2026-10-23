@@ -86,7 +86,7 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * 收货单头快照：供应商 / 仓库 / 采购单号从采购单<b>继承</b>。
+     * 收货单头：供应商 / 仓库 / 采购单号从采购单继承。
      */
     public static PurchaseReceiptEntity receipt(PurchaseOrderEntity order, String receiptNo, String remark) {
         PurchaseReceiptEntity receipt = new PurchaseReceiptEntity();
@@ -135,11 +135,10 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * {@code demand_date} = {@code source_confirmed_at} 在 <b>Asia/Shanghai</b> 下的日期。
+     * {@code demand_date} = {@code source_confirmed_at} 在 Asia/Shanghai 下的日期。
      *
      * <p>
-     * <b>禁止</b>用汇总窗口的第一天（{@code date(startAt)}）—— 跨多日窗口会把全部需求压平成同一天。结果由的 {@code ck_purchase_demand_date} 在 DB
-     * 层复核，两侧口径必须一致。
+     * 不能使用汇总窗口的第一天（{@code date(startAt)}），否则跨多日窗口会把全部需求压平成同一天。 数据库的 {@code ck_purchase_demand_date} 会复核，两侧必须一致。
      */
     public static LocalDate demandDate(OffsetDateTime sourceConfirmedAt) {
         return sourceConfirmedAt.atZoneSameInstant(ASIA_SHANGHAI).toLocalDate();
@@ -181,8 +180,7 @@ public final class PurchaseSnapshotFactory {
      * 分配行上的 {@code demand_snapshot}。
      *
      * <p>
-     * 作用：让每条 allocation <b>自带证据</b>，即使需求行之后被改/被删，也能从分配行回答「当初挂的是哪张订单行、什么单位、多少量」。数量按的 4 位定点<b>字符串</b>存（不是 JSON 数字）—— 避免
-     * JSON 数字的浮点语义污染定点纪律。
+     * 让每条 allocation 自带证据：即使需求行之后被改或被删，也能从分配行回答「当初挂的是哪张订单行、什么单位、多少量」。 数量按 4 位定点字符串存（不是 JSON 数字），避免浮点语义破坏定点约定。
      */
     public static Map<String, Object> allocationDemandSnapshot(PurchaseDemandEntity demand) {
         Map<String, Object> snapshot = new LinkedHashMap<>();
@@ -210,14 +208,14 @@ public final class PurchaseSnapshotFactory {
      * 操作日志行。
      *
      * <p>
-     * <b>日志的归属由调用方决定，本方法不做推断</b>： {@code DEMAND_GENERATE} 传两个 {@code null}；{@code DEMAND_ALLOCATE} 传反查得到的
-     * {@code purchaseOrderId} + {@code null}； {@code RECEIPT_*} 传两个非空。DB 的 {@code ck_purchase_operation_log_owner} 会复核
-     * —— 传错就写不进去，这是<b>故意</b>的（让错误在写入点暴露，而不是留一条脏日志）。
+     * 日志的归属由调用方决定，本方法不做推断：{@code DEMAND_GENERATE} 传两个 {@code null}；{@code DEMAND_ALLOCATE} 传反查得到的
+     * {@code purchaseOrderId} + {@code null}；{@code RECEIPT_*} 传两个非空。数据库的 {@code ck_purchase_operation_log_owner} 会复核，
+     * 传错就写不进去，这是故意的（让错误在写入点暴露，而不是留一条脏日志）。
      *
      * @param before
-     *            变更前快照；{@code null} 表示「无前态」（如 {@code CREATE} / {@code DEMAND_GENERATE}）
+     *            变更前的数据；{@code null} 表示「无前态」（如 {@code CREATE} / {@code DEMAND_GENERATE}）
      * @param after
-     *            变更后快照
+     *            变更后的数据
      */
     public static PurchaseOperationLogEntity operationLog(ScmPurchaseOperationTypeEnum operationType,
         Long purchaseOrderId, Long purchaseReceiptId, String reason, Map<String, Object> before,
@@ -235,14 +233,14 @@ public final class PurchaseSnapshotFactory {
     }
 
     /**
-     * 可变的 JSONB 快照容器（{@code Map.of} 不可变，日志快照需要逐项 put）。
+     * 可变的 JSONB 记录容器（{@code Map.of} 不可变，日志记录需要逐项 put）。
      */
     public static Map<String, Object> snapshot() {
         return new LinkedHashMap<>();
     }
 
     /**
-     * DB 列是 {@code NOT NULL DEFAULT '{}'::JSONB}，因此空值统一落成空 Map 而不是 null。
+     * 数据库列是 {@code NOT NULL DEFAULT '{}'::JSONB}，因此空值统一写成空 Map 而不是 null。
      */
     public static Map<String, Object> copySpecValues(Map<?, ?> source) {
         if (source == null || source.isEmpty()) {

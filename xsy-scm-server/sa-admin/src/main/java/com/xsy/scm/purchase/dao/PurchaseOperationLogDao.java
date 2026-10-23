@@ -35,7 +35,7 @@ public interface PurchaseOperationLogDao extends BaseMapper<PurchaseOperationLog
     List<PurchaseOperationLogVO> listDemandGenerate();
 
     /**
-     * 按操作类型统计条数（验收断言 12 种类型全部落库）。
+     * 按操作类型统计条数（验收断言 12 种类型都已保存）。
      */
     int countByType(@Param("operationType") String operationType);
 }

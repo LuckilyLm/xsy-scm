@@ -15,7 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
 
 /**
- * 报表 Excel 导出使用同一套字段和金额口径，并遵守当前用户的数据范围与导出权限。
+ * 报表 Excel 导出使用同一套字段和金额格式，并遵守当前用户的数据范围与导出权限。
  */
 public final class ScmReportExcel {
 

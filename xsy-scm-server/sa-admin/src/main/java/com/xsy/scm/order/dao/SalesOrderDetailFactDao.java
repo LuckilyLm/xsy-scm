@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 订单详情跨域只读投影；只读取正式履约、应收与退款事实。
+ * 订单详情跨域只读查询；只读取正式履约、应收与退款数据。
  */
 @Mapper
 public interface SalesOrderDetailFactDao {

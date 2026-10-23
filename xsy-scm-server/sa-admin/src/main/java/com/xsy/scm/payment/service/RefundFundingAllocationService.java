@@ -33,7 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 订单级资金退款：先冻结比例分摊，再逐来源幂等执行。
+ * 订单级资金退款：先固定比例分摊，再逐来源幂等执行。
  */
 @Slf4j
 @Service
@@ -184,7 +184,7 @@ public class RefundFundingAllocationService {
                 Long resultId;
                 if (ScmPaymentMethodEnum.BALANCE.name().equals(row.getSourceMethod())) {
                     // 返还时刻取「执行时刻」，不取 refund.completedAt()：分摊只由人工与重试入口触发，
-                    // 钱包真正加钱发生在这一行执行的时候，两者可以相隔很久。旧钱包路径
+                    // 余额真正增加发生在这一行执行的时候，两者可以相隔很久。旧的余额退款路径
                     // （CustomerBalanceService.refundToSettlement）与退款完成同事务，才要求 occurred_at 等于
                     // completed_at 并被 hasInvalidReturns 校验；本路径没有那条约束，沿用业务完成时间会让
                     // 客户流水与商城「资金到账时间」都显示成退款单完成时刻。

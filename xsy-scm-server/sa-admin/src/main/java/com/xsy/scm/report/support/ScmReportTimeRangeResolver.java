@@ -8,8 +8,8 @@ import com.xsy.scm.report.constant.ReportErrorCode;
  * 报表唯一允许的日界换算入口。
  *
  * <p>
- * 库中时间列是 {@code TIMESTAMPTZ}，而用户选的是「哪几天」。两者之间的换算规则就是口径本身：起始日 00:00（含）到结束日次日 00:00（不含）。这里刻意用固定的 Asia/Shanghai 而不是 JVM
- * 默认时区—— 应用容器时区一变，同一份报表的历史数字就会集体漂移一位，且很难归因。
+ * 库中时间列是 {@code TIMESTAMPTZ}，而用户选的是「哪几天」。换算规则是：起始日 00:00（含）到结束日次日 00:00（不含）。 这里刻意用固定的 Asia/Shanghai 而不是 JVM 默认时区 ——
+ * 应用容器时区一变，同一份报表的历史数字就会集体漂移一位，且很难归因。
  */
 public final class ScmReportTimeRangeResolver {
 

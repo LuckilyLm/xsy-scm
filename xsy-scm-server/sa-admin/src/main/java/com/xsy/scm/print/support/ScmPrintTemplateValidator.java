@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * 打印模板的字段与结构必须符合白名单，未知字段直接拒绝。标题和备注不允许 HTML 标记，打印模板不能执行脚本。
+ * 打印模板的字段与结构必须在允许范围内，未知字段直接拒绝。标题和备注不允许 HTML 标记，模板不能执行脚本。
  */
 public final class ScmPrintTemplateValidator {
 
@@ -26,7 +26,7 @@ public final class ScmPrintTemplateValidator {
     }
 
     /**
-     * 校验并返回<b>归一化后</b>的模型（去重、trim）。
+     * 校验并返回整理后的模型（去重、trim）。
      *
      * @throws ScmBusinessException
      *             任一规则不满足；错误码区分「字段不被支持」与「模型不合法」两类
@@ -91,9 +91,7 @@ public final class ScmPrintTemplateValidator {
         return orientation;
     }
 
-    /**
-     * 逐项校验白名单并去重。重复 key 不做静默去重后放行 —— 重复说明调用方拼错了，直接拒绝。
-     */
+    /** 逐项校验字段并去重；重复的 key 说明调用方拼错了，直接拒绝，不做静默去重。 */
     private static List<String> requireFields(List<String> keys, ScmPrintDocumentTypeEnum type, FieldScope scope) {
         List<String> normalized = new ArrayList<>();
         if (keys == null) {

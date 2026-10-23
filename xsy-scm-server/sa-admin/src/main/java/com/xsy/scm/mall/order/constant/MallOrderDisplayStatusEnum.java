@@ -4,7 +4,7 @@ import com.xsy.scm.delivery.constant.ScmDeliveryFulfillmentStatusEnum;
 import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 
 /**
- * 商城订单阶段由订单状态和配送进度合成，只用于页面展示，不落库也不改变订单状态机；能否取消仍由订单规则决定。
+ * 商城订单阶段由订单状态和配送进度合成，只用于页面展示，不保存也不改变订单状态机；能否取消仍由订单规则决定。
  */
 public enum MallOrderDisplayStatusEnum {
     /**

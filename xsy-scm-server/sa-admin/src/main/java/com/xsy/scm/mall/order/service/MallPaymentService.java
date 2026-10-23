@@ -24,7 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 商城钱包支付沿用现有支付与余额服务，不另建状态机。应付金额在服务端锁定订单后计算，客户端不能指定金额；余额及集团共享权限在钱包扣款时校验。
+ * 商城余额支付沿用现有支付与余额服务，不另建状态机。应付金额在服务端锁定订单后计算，客户端不能指定金额； 余额及集团共享权限在扣减余额时校验。
  */
 @Service
 @RequiredArgsConstructor
@@ -40,7 +40,7 @@ public class MallPaymentService {
      * 客户对「已确认且约定余额结算」的订单发起余额支付。
      *
      * <p>
-     * 前置判定只为客户可读：权威门槛在支付意图创建与钱包消费。同键请求先回放已完成结果；不同键并发由订单行锁串行化，后到事务看到待付归零即拒绝。
+     * 前置判定只为给出客户可读的提示：真正的限制在支付意图创建与余额扣减。同键请求先回放已完成结果； 不同键并发由订单行锁串行化，后到事务看到待付归零即拒绝。
      */
     @Transactional(rollbackFor = Exception.class)
     public MallOrderVO pay(RequestMallCustomer customer, Long orderId, String idempotencyKey) {

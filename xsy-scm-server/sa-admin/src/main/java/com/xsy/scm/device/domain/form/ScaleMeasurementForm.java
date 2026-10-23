@@ -13,10 +13,10 @@ import lombok.Data;
  * 一筐秤读数上报，对应秤端 {@code POST /measurements}。
  *
  * <p>
- * 数量与重量都是字符串：设备原始读数可能带尾随零，用字符串可以原样保留，避免经过浮点。
+ * 数量与重量都用字符串：设备原始读数可能带尾随零，字符串能原样保留，不经过浮点。
  *
  * <p>
- * 设备编码与员工身份不从这里取：设备编码来自已校验的设备凭证，员工来自授权会话。 请求体里即便带了这两个字段也不会被采用。
+ * 设备编码与员工身份不从这里取：设备编码来自已校验的设备凭证，员工来自授权会话；请求体里即便带了这两个字段也不会采用。
  */
 @Data
 public class ScaleMeasurementForm {
@@ -28,16 +28,12 @@ public class ScaleMeasurementForm {
     @Size(max = 160, message = "事件键最多 160 个字符")
     private String eventKey;
 
-    /**
-     * 一次人工操作的幂等号；重试必须复用，不能重新生成。
-     */
+    /** 一次人工操作的幂等号；重试必须复用，不能重新生成。 */
     @NotBlank(message = "操作编号不能为空")
     @Size(max = 160, message = "操作编号最多 160 个字符")
     private String operationId;
 
-    /**
-     * 明细内递增的筐号，从 1 开始。
-     */
+    /** 明细内递增的筐号，从 1 开始。 */
     @NotNull(message = "筐号不能为空")
     @Min(value = 1, message = "筐号必须从 1 开始")
     private Integer basketNo;
@@ -59,9 +55,7 @@ public class ScaleMeasurementForm {
     @NotNull(message = "采集时间不能为空")
     private OffsetDateTime capturedAt;
 
-    /**
-     * 设备原始读数，非负。
-     */
+    /** 设备原始读数，非负。 */
     @NotBlank(message = "读数不能为空")
     @Size(max = 40, message = "读数最多 40 个字符")
     private String rawValue;
@@ -70,9 +64,7 @@ public class ScaleMeasurementForm {
     @Size(max = 32, message = "原始单位最多 32 个字符")
     private String rawUnit;
 
-    /**
-     * 换算后的净重；毛重在未去皮时不允许上报为可计入的读数。
-     */
+    /** 换算后的净重；未去皮的毛重不能作为可计入的读数上报。 */
     @NotBlank(message = "净重不能为空")
     @Size(max = 40, message = "净重最多 40 个字符")
     private String netWeight;

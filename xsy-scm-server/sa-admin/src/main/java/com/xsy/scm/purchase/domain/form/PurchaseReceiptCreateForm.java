@@ -8,16 +8,10 @@ import com.xsy.scm.common.validation.ScmEnumValue;
 import com.xsy.scm.purchase.constant.ScmReceiptModeEnum;
 
 /**
- * 新建采购收货单（扩展）。
+ * 新建采购收货单。收货行由服务端按采购单的全部活动行自动生成（草稿不产生任何副作用）， 因此表单只需要采购单 id、入库方式与备注。
  *
  * <p>
- * 收货单的行由服务端<b>按采购单的全部活动行</b>自动生成（DRAFT 状态<b>不产生任何副作用</b>），因此表单只需要采购单 id、入库方式与备注。
- *
- * <p>
- * <b>不允许直接填状态</b>：状态由 {@code confirm} 命令驱动。
- *
- * <p>
- * <b>入库方式必选、无默认值</b>：不允许隐藏成隐式行为。
+ * 不允许直接填状态，状态由 {@code confirm} 命令驱动；入库方式必选、无默认值。
  */
 @Data
 public class PurchaseReceiptCreateForm {

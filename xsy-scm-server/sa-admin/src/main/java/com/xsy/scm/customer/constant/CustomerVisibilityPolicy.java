@@ -1,7 +1,7 @@
 package com.xsy.scm.customer.constant;
 
 /**
- * Stored customer visibility policies, also constrained by {@code ck_customer_visibility_policy}.
+ * 客户可见性策略的取值，与 {@code ck_customer_visibility_policy} 约束一致。
  */
 public final class CustomerVisibilityPolicy {
 

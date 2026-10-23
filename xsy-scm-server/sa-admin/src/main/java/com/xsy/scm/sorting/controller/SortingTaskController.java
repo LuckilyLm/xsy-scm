@@ -42,9 +42,7 @@ import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
 
-/**
- * 分拣管理。写侧全部经服务端权限 + 数据范围（授权仓 ∩ 可见指派人）双重判定；生成入口带 {@code Idempotency-Key}，预览类入口只读、不计次。
- */
+/** 分拣管理。写操作都要过权限和数据范围（授权仓 ∩ 可见指派人）双重校验；建单等入口支持 {@code Idempotency-Key}，预览只读、不计次。 */
 @RestController
 @RequestMapping("/scm/sorting")
 @RequiredArgsConstructor
@@ -110,9 +108,7 @@ public class SortingTaskController {
         return ResponseDTO.ok(sortingQueryService.candidateLines(form));
     }
 
-    /**
-     * 打印预览：内容与正式生成同源，但既不改状态也不计次。
-     */
+    /** 打印预览：内容与正式生成同源，但既不改状态也不计次。 */
     @GetMapping("/tasks/{id}/print")
     @SaCheckPermission(SortingPermission.TASK_PRINT)
     public ResponseDTO<SortingPrintVO> printPreview(@PathVariable Long id) {

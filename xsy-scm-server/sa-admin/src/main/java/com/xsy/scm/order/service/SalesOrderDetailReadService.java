@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 员工订单详情的只读事实组合；写命令及操作日志仍使用订单域原有快照。
+ * 员工订单详情的只读数据汇总；写命令及操作日志仍使用订单域原有的详情。
  */
 @Service
 @RequiredArgsConstructor

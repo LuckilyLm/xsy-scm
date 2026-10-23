@@ -29,7 +29,7 @@ public class PurchaseWarehouseReferenceGuard {
      * 存在 + 启用（40485 / 40987）。
      *
      * <p>
-     * 用于需求生成与收货单创建：这两条路径都会把 {@code warehouse_id} 落成<b>快照</b>，一旦落库就不会再回读主数据，因此必须在写入前确认仓库当时是可用的。
+     * 用于需求生成与收货单创建：这两条路径都会把 {@code warehouse_id} 另存一份，一旦保存就不再回读主数据， 因此必须在写入前确认仓库当时可用。
      */
     public WarehouseEntity requireEnabled(Long warehouseId) {
         WarehouseEntity warehouse = warehouseService.require(warehouseId);

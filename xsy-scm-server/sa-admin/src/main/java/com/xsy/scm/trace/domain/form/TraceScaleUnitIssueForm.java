@@ -9,14 +9,12 @@ import lombok.Data;
  * 秤端为一筐称重结果发码。
  *
  * <p>
- * 以称重记录为入口而不是以分拣行为入口：一筐一码，码上的重量必须能对回那条设备事实， 否则「这个码多重」就没有来源。
+ * 以称重记录为入口而不是分拣行：一筐一码，码上的重量必须能对回那条设备读数，否则「这个码多重」就没有来源。
  */
 @Data
 public class TraceScaleUnitIssueForm {
 
-    /**
-     * 设备上报 {@code /measurements} 时返回的 measurementId。
-     */
+    /** 设备上报 {@code /measurements} 时返回的 measurementId。 */
     @NotNull(message = "称重记录不能为空")
     private Long weighingEventId;
 

@@ -32,7 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 支付对账以渠道返回的真实结果为依据，对不一致的记录进行核对，不擅自重写已成立的业务事实。
+ * 支付对账以渠道返回的真实结果为依据，对不一致的记录进行核对，不擅自重写已成立的业务记录。
  */
 @Service
 @RequiredArgsConstructor
@@ -41,7 +41,7 @@ public class PaymentReconciliationService {
     private static final int SCALE = 4;
 
     /**
-     * 业务日按 Asia/Shanghai 切，与单号日期段同一个时区口径。
+     * 业务日按 Asia/Shanghai 切，与单号日期段使用同一个时区。
      */
     private static final ZoneId BIZ_ZONE = ZoneId.of("Asia/Shanghai");
 
@@ -59,7 +59,7 @@ public class PaymentReconciliationService {
      * 执行一次对账。
      *
      * <p>
-     * 同一渠道同一业务日<b>只出一次结论</b>：允许重复生成会得到两份互相矛盾的结论，而后台没法判断该信哪一份。
+     * 同一渠道同一业务日只出一次结论：允许重复生成会得到两份互相矛盾的结论，而后台没法判断该信哪一份。
      */
     @Transactional(rollbackFor = Exception.class)
     public PaymentReconciliationEntity run(String providerCode, LocalDate bizDate) {
@@ -72,7 +72,7 @@ public class PaymentReconciliationService {
         OffsetDateTime startAt = bizDate.atStartOfDay(BIZ_ZONE).toOffsetDateTime();
         OffsetDateTime endAt = bizDate.plusDays(1).atStartOfDay(BIZ_ZONE).toOffsetDateTime();
         // 成功交易按 paid_at 归结算日，未决交易按 created_at 归创建日；两窗口合并后按交易号去重。
-        // 同一笔若两边都命中（当天创建、当天成功），成功那条优先 —— 它才是与渠道对应的收款事实。
+        // 同一笔若两边都命中（当天创建、当天成功），成功那条优先 —— 它才是与渠道对应的收款记录。
         Map<String, PaymentTransactionEntity> localByNo = new LinkedHashMap<>();
         for (PaymentTransactionEntity local : paymentTransactionDao.listByWindow(providerCode, startAt, endAt)) {
             localByNo.put(local.getProviderTransactionNo(), local);
@@ -142,8 +142,8 @@ public class PaymentReconciliationService {
         reconciliation.setProviderCount(settlement.count());
         reconciliation.setLocalCount(locals.size());
         reconciliation.setDifferenceCount(items.size());
-        // 参与比对的交易数 = 渠道侧与本地侧的<b>并集</b>（同一笔两边都有时只算一次）；
-        // 平账数 = 总数 − 差异数。平不平以<b>差异条数</b>为准，不看净差额：
+        // 参与比对的交易数 = 渠道侧与本地侧的并集（同一笔两边都有时只算一次）；
+        // 平账数 = 总数 − 差异数。平不平以差异条数为准，不看净差额：
         // 一正一负的差异会让净差额归零，但账其实不平。
         int totalCount = unionCount(providerNos, localByNo);
         reconciliation.setTotalCount(totalCount);
@@ -171,7 +171,7 @@ public class PaymentReconciliationService {
     }
 
     /**
-     * 逐条差异明细（后台展示用）。只含异常项：平账的靠批次汇总表达，不逐笔落库。
+     * 逐条差异明细（后台展示用）。只含异常项：平账的靠批次汇总表达，不逐笔保存。
      */
     @Transactional(readOnly = true)
     public List<PaymentReconciliationItemEntity> items(Long reconciliationId) {
@@ -204,7 +204,7 @@ public class PaymentReconciliationService {
     }
 
     /**
-     * 分类汇总，落进 {@code detail}，页面不必再聚合一次。
+     * 分类汇总，写入 {@code detail}，页面不必再聚合一次。
      */
     private static Map<String, Object> summaryOf(List<PaymentReconciliationItemEntity> items) {
         Map<String, Object> summary = new LinkedHashMap<>();

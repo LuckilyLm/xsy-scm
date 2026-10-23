@@ -12,7 +12,7 @@ import java.util.List;
  * 报损报溢单明细读写。
  *
  * <p>
- * 明细整行替换只发生在<b>待审核态</b>（先逻辑删旧行再插新行，同一事务内）。审批之后不再有任何写方法被调用 —— 由服务层状态机与 {@code InventoryLossGainDao} 的 SQL 守卫共同保证。
+ * 明细整行替换只发生在待审核态（先逻辑删旧行再插新行，同一事务内）。审批之后不再有任何写方法被调用 —— 由服务层状态机与 {@code InventoryLossGainDao} 的 SQL 条件共同保证。
  */
 @Mapper
 public interface InventoryLossGainItemDao extends BaseMapper<InventoryLossGainItemEntity> {
@@ -28,7 +28,7 @@ public interface InventoryLossGainItemDao extends BaseMapper<InventoryLossGainIt
     int deleteByLossGainId(@Param("lossGainId") Long lossGainId, @Param("operator") String operator);
 
     /**
-     * 回写单位快照（审批通过时按余额记账单位写入）。
+     * 回写单位记录（审批通过时按余额记账单位写入）。
      */
     int updateUnitSnapshot(@Param("id") Long id, @Param("unit") String unit, @Param("operator") String operator);
 }

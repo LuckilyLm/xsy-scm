@@ -1,7 +1,7 @@
 package com.xsy.scm.supplier.permission;
 
 /**
- * Stable permission identifiers published by supplier-management APIs.
+ * 供应商管理接口使用的权限码。
  */
 public final class SupplierPermission {
 

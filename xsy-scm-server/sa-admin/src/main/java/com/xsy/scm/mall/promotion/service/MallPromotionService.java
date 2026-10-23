@@ -32,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 商城营销适配层：活动展示、领券中心与「我的优惠券」。
  *
  * <p>
- * 只读投影走商城自有 DAO，写操作（领券）复用营销域正式服务； 不复制活动与券的计算规则，也不把后台 {@code /scm/promotion/**} 接口开放给客户。
+ * 只读查询走商城自有 DAO，写操作（领券）复用营销域正式服务；不复制活动与券的计算规则，也不把后台 {@code /scm/promotion/**} 接口开放给客户。
  */
 @Service
 @RequiredArgsConstructor

@@ -15,10 +15,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 仓库主数据。
- *
- * <p>
- * 订单没有仓库字段，预留库存时必须能解析出唯一启用仓库；数据库不限制仓库记录总数。
+ * 仓库主数据。订单没有仓库字段，预留库存时必须能解析出唯一启用的仓库。
  */
 @Data
 @TableName(value = "xsy_warehouse", autoResultMap = true)
@@ -32,9 +29,7 @@ public class WarehouseEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String geomCrs;
 
-    /**
-     * 是否启用批次追踪：只在新建空仓时写入，之后任何更新都不改（开启后不可关闭）。
-     */
+    /** 是否启用批次追踪：只在新建空仓时写入，开启后不可关闭。 */
     @TableField(updateStrategy = FieldStrategy.NEVER)
     private Boolean lotTrackingEnabled;
 
@@ -48,9 +43,7 @@ public class WarehouseEntity {
     private String status;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String address;
-    /**
-     * 省 / 市 / 区编码为国标六位码，名称是同一条选择的快照，展示与导出用，不参与关联。
-     */
+    /** 省 / 市 / 区编码为国标六位码；名称是选择时保存的文本，只用于展示和导出，不参与关联。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer provinceCode;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)

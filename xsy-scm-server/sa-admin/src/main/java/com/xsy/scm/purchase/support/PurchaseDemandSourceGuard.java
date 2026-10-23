@@ -10,8 +10,8 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_SO
  * 采购需求来源约束：只有未删除且 {@code CONFIRMED} 的销售订单可以生成采购需求。
  *
  * <p>
- * {@code uk_purchase_demand_source_active} 只约束「一个销售订单行只产生一条活动需求」，不约束来源订单状态；数据库层也没有外键。 这条不变量独立于查询 SQL
- * 的取数口径，由本类对所有生成入口统一承担。
+ * {@code uk_purchase_demand_source_active} 只约束「一个销售订单行只产生一条活动需求」，不约束来源订单状态；数据库层也没有外键。 这条规则独立于查询 SQL
+ * 的取数条件，由本类对所有生成入口统一承担。
  */
 public final class PurchaseDemandSourceGuard {
 

@@ -11,7 +11,7 @@ import java.util.Set;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * 配置化高级筛选只绑定正式查询表单的已支持字段，不生成 SQL 或改变数据权限。
+ * 高级筛选只绑定查询表单支持的字段，不拼 SQL，也不改数据权限。
  */
 public final class ScmAdvancedFilterCatalog {
     private ScmAdvancedFilterCatalog() {

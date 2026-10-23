@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 批次库存与批次流水的只读查询。
  *
  * <p>
- * 只读聚合：数量直接取批次子账，不在查询层二次计算，也不回表重算总账；仓库范围与余额查询同源，空范围失败关闭。
+ * 只读聚合：数量直接取批次子账，不在查询层二次计算，也不回表重算总账；仓库范围与余额查询一致，空范围直接返回空结果。
  */
 @Service
 @RequiredArgsConstructor

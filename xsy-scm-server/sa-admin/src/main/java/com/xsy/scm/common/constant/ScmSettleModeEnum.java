@@ -9,9 +9,7 @@ public enum ScmSettleModeEnum {
 
     GROUP("集团结算");
 
-    /**
-     * 展示名：导出等后端输出与前端文案共用同一份口径。
-     */
+    /** 展示名：导出等后端输出与前端文案共用。 */
     private final String label;
 
     ScmSettleModeEnum(String label) {
@@ -22,9 +20,7 @@ public enum ScmSettleModeEnum {
         return label;
     }
 
-    /**
-     * 枚举名转展示名；未知值原样返回，导出不因脏数据失败。
-     */
+    /** 枚举名转展示名；未知值原样返回，导出不因脏数据失败。 */
     public static String labelOf(String name) {
         if (name == null || name.isBlank()) {
             return name;

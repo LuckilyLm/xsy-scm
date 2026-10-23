@@ -31,27 +31,21 @@ public class WarehouseScopeController {
 
     private final WarehouseScopeService warehouseScopeService;
 
-    /**
-     * 某仓库下被授权的员工。
-     */
+    /** 某仓库下被授权的员工。 */
     @GetMapping("/employees")
     @SaCheckPermission(WarehousePermission.SCOPE_QUERY)
     public ResponseDTO<List<WarehouseScopeEmployeeVO>> employees(@RequestParam Long warehouseId) {
         return ResponseDTO.ok(warehouseScopeService.listEmployees(warehouseId));
     }
 
-    /**
-     * 某员工被授权的仓库。
-     */
+    /** 某员工被授权的仓库。 */
     @GetMapping("/warehouses")
     @SaCheckPermission(WarehousePermission.SCOPE_QUERY)
     public ResponseDTO<List<WarehouseScopeWarehouseVO>> warehouses(@RequestParam Long employeeId) {
         return ResponseDTO.ok(warehouseScopeService.listWarehouses(employeeId));
     }
 
-    /**
-     * 整体替换某员工的活动授权；空清单即全部回收。
-     */
+    /** 整体替换某员工的授权；空清单即全部回收。 */
     @PostMapping("/update")
     @SaCheckPermission(WarehousePermission.SCOPE_UPDATE)
     @OperateLog

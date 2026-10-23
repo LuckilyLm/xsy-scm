@@ -34,9 +34,7 @@ public class ProductSpuQueryForm extends net.lab1024.sa.base.common.domain.PageP
     private String masterStatus;
     @ScmEnumValue(enumClass = ScmStorageMethodEnum.class, message = "储存方式取值无效")
     private String storageMethod;
-    /**
-     * 命中任一标签即返回（或语义），与分类的多选筛选保持一致。
-     */
+    /** 命中任一标签即返回（或语义），与分类的多选筛选保持一致。 */
     @Size(max = 50, message = "标签 ID 列表不能超过50项")
     private List<@NotNull(message = "标签 ID 列表不能为空") @Positive(message = "标签 ID 列表必须大于0") Long> tagIds;
     private Boolean hasPrimaryImage;
@@ -47,7 +45,7 @@ public class ProductSpuQueryForm extends net.lab1024.sa.base.common.domain.PageP
     private List<Condition> advancedFilters;
 
     /**
-     * 仅用于导出的服务端白名单键；查询接口忽略该字段。
+     * 仅用于导出的服务端字段清单；查询接口忽略该字段。
      */
     @Size(max = 30, message = "最多选择30个导出字段")
     private List<String> exportColumnKeys;

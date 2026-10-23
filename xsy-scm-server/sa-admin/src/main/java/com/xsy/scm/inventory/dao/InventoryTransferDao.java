@@ -25,7 +25,7 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
     int countByTransferNo(@Param("transferNo") String transferNo);
 
     /**
-     * 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset，跳号可接受）。
+     * 取下一个单号序列值（PG sequence，全局单调递增、不按日重置，跳号可接受）。
      */
     long nextTransferNo();
 
@@ -38,7 +38,7 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
      * 锁定单据行（{@code SELECT ... FOR UPDATE}）。
      *
      * <p>
-     * 锁序纪律：<b>单据锁先于余额锁</b>。发出时先锁本行再按 {@code (warehouse_id, sku_id)} 升序锁源仓余额行；收货时同理锁目标仓余额行。与收货 / 出库 / 盘点 / 报损报溢同一顺序。
+     * 加锁顺序：先锁单据行，再锁余额行。发出时先锁本行再按 {@code (warehouse_id, sku_id)} 升序锁源仓余额行；收货时同理锁目标仓余额行。与收货 / 出库 / 盘点 / 报损报溢同一顺序。
      */
     InventoryTransferEntity lockById(@Param("id") Long id);
 
@@ -69,7 +69,7 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
      * 分页查询（联两次 warehouse 取源仓 / 目标仓展示字段）。
      *
      * <p>
-     * 调拨的可见口径是「源仓或目标仓任一被授权」，只授权一端的人看不见在途单就没法对账。
+     * 调拨的可见范围是「源仓或目标仓任一被授权」，只授权一端的人看不见在途单就没法对账。
      */
     List<InventoryTransferVO> queryPage(Page<?> page, @Param("query") InventoryTransferQueryForm query,
         @Param("scope") ScmValueScope scope);

@@ -10,8 +10,6 @@ public class RefundFundingExecuteForm {
     @Positive(message = "退款单 ID 必须大于0")
     private Long refundId;
 
-    /**
-     * 仅 mock 渠道失败场景回归使用。
-     */
+    /** 仅 mock 渠道的失败场景回归使用。 */
     private String mockScenario;
 }

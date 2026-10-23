@@ -108,8 +108,6 @@ public class ScmReportController {
             .filter(column -> !column.costRestricted() || canViewCost).toList());
     }
 
-    // ==================== 经营概览 ====================
-
     @PostMapping("/overview")
     @SaCheckPermission(ScmReportPermission.OVERVIEW_QUERY)
     public ResponseDTO<ReportOverviewVO> overview(@Valid @RequestBody ScmOverviewReportQueryForm form) {
@@ -132,8 +130,7 @@ public class ScmReportController {
      * 每日统计导出。
      *
      * <p>
-     * 与列表调用<b>同一个</b> {@code dailyStat}：日期轴由 SQL 补齐（无单据的天也是零值行），且成本 / 仓库字段按调用者范围同样抹除，导出不会比页面多看到一列。跨度上限 366 天，
-     * 行数天然有界，因此不再探超限。
+     * 与列表调用同一个 {@code dailyStat}：日期轴由 SQL 补齐（无单据的天也是零值行），且成本 / 仓库字段按调用者范围 同样抹除，导出不会比页面多看到一列。跨度上限 366 天，行数天然有界，因此不再探超限。
      */
     @PostMapping("/overview/daily/export")
     @SaCheckPermission(value = {ScmReportPermission.OVERVIEW_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
@@ -147,8 +144,6 @@ public class ScmReportController {
             .toList();
         ScmReportExcel.write(response, "经营概览-每日统计.xlsx", "每日统计", OVERVIEW_DAILY_TITLES, rows);
     }
-
-    // ==================== 销售分析 ====================
 
     @PostMapping("/sales/product")
     @SaCheckPermission(ScmReportPermission.SALES_QUERY)
@@ -263,7 +258,7 @@ public class ScmReportController {
     @OperateLog
     public void exportSalesSeller(@RequestBody ScmSalesReportQueryForm form, HttpServletResponse response)
         throws IOException {
-        // 销售员业绩是订单金额口径，不含成本，因此只 AND 导出权限，不要求成本权限。
+        // 销售员业绩按订单金额统计，不含成本，因此只要求导出权限，不要求成本权限。
         List<String> titles = List.of("销售员", "订单笔数", "客户数", "确认订单金额", "已完成退款金额", "最近确认时间");
         List<List<Object>> rows = exportRows(form, () -> salesReportService.bySeller(form)).stream()
             .map(r -> ScmReportExcel.row(titles, r.getSellerName(), r.getOrderCount(), r.getCustomerCount(),
@@ -306,8 +301,6 @@ public class ScmReportController {
         var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(), SALES_ORDER_EXPORT_COLUMNS, true);
         ScmReportExcel.write(response, "销售分析-客户订单明细.xlsx", "客户订单明细", selection.titles(), selection.project(rows));
     }
-
-    // ==================== 采购分析 ====================
 
     @PostMapping("/purchase/overview")
     @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
@@ -453,8 +446,6 @@ public class ScmReportController {
         ScmReportExcel.write(response, "采购分析-采购明细.xlsx", "采购明细", titles, rows);
     }
 
-    // ==================== 收货与入库 ====================
-
     @PostMapping("/receipt/query")
     @SaCheckPermission(ScmReportPermission.PURCHASE_QUERY)
     public ResponseDTO<PageResult<ReceiptReportVO.ReceiptRow>> receiptList(
@@ -529,8 +520,6 @@ public class ScmReportController {
         ScmReportExcel.write(response, "入库明细.xlsx", "入库明细", titles, rows);
     }
 
-    // ==================== 库存分析 ====================
-
     @PostMapping("/inventory/movement/query")
     @SaCheckPermission(ScmReportPermission.INVENTORY_QUERY)
     public ResponseDTO<PageResult<InventoryReportVO.MovementRow>> movementList(
@@ -601,8 +590,9 @@ public class ScmReportController {
     }
 
     @PostMapping("/inventory/value/export")
-    @SaCheckPermission(value = {ScmReportPermission.INVENTORY_QUERY, ScmReportPermission.COST_QUERY,
-        ScmReportPermission.EXPORT}, mode = SaMode.AND)
+    @SaCheckPermission(
+        value = {ScmReportPermission.INVENTORY_QUERY, ScmReportPermission.COST_QUERY, ScmReportPermission.EXPORT},
+        mode = SaMode.AND)
     @OperateLog
     public void exportInventoryValue(@RequestBody ScmInventoryReportQueryForm form, HttpServletResponse response)
         throws IOException {
@@ -615,10 +605,8 @@ public class ScmReportController {
         ScmReportExcel.write(response, "当前库存价值.xlsx", "当前库存价值", titles, rows);
     }
 
-    // ==================== 内部 ====================
-
     /**
-     * 导出与列表走<b>同一个</b>查询方法，只是把分页换成「第 1 页 + 上限多一行」；多出一行即判定超限并抛 41112，避免静默只导前 N 行。
+     * 导出与列表走同一个查询方法，只是把分页换成「第 1 页 + 上限多一行」； 多出一行即判定超限并抛 41112，避免静默只导前 N 行。
      */
     private <T> List<T> exportRows(PageParam form, Supplier<PageResult<T>> query) {
         form.setPageNum(1L);

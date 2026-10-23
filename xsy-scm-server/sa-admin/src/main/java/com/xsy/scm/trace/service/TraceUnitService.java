@@ -41,7 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 包装码是贴在被包装实物上的身份：一码一批、码由系统发号且不透明、永不复用；作废只追加事件，不改写原行。 发码总量受批次余额约束——包装码描述已经存在的实物，不能在库存之外凭空造出实物身份。
  *
  * <p>
- * 三条硬约束：所有入口都先过仓库数据范围（批次归属仓库由首次收货单决定）；发码先锁批次余额行再算可发量； 绑定与作废先锁同一个包装码行，避免「作废后仍被绑定」的交叉状态。
+ * 三条硬约束：所有入口都先过仓库数据范围（批次归属仓库由首次收货单决定）；发码先锁批次余额行再算可发量； 绑定与作废先锁同一个包装码行，避免「作废后仍被绑定」。
  */
 @Service
 @RequiredArgsConstructor
@@ -49,9 +49,7 @@ public class TraceUnitService {
 
     private static final char[] CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
 
-    /**
-     * 公开令牌长度：16 位 32 进制约 80 bit，标签上放得下，也扛得住按 token 枚举。
-     */
+    /** 公开令牌长度：16 位 32 进制约 80 bit，标签上放得下，也扛得住按 token 枚举。 */
     private static final int PUBLIC_TOKEN_LENGTH = 16;
 
     private static final SecureRandom TOKEN_RANDOM = new SecureRandom();
@@ -70,8 +68,7 @@ public class TraceUnitService {
      * 发码：同一批次一次发 N 个同规格包装，逐码追加一条发码事件。
      *
      * <p>
-     * 先锁批次余额行再检查发码额度，序列化同批次发码和库存出库。 在建立包装码级出库事实前，批次级出库不能证明某一已发码实物离场； 因此累计发码量（含作废码）不扣批次出库，保守地与当前批次余额比较。
-     * 出库后无法自动释放额度，必须等未来单元级出库/退回关联落地，不能靠猜测复用包装身份。
+     * 先锁批次余额行再检查额度，让同批次发码与库存出库串行。目前没有单元级出库关联，批次出库不能证明某一袋已离场， 所以累计发码量（含作废码）不与批次出库相抵，直接和当前余额比较。额度不会自动释放，也不能猜着复用包装身份。
      */
     @Transactional(rollbackFor = Exception.class)
     public List<TraceUnitVO.Unit> issue(TraceUnitIssueForm form, String operator) {
@@ -83,7 +80,7 @@ public class TraceUnitService {
         BigDecimal perPackage = parseQuantity(form.getQuantityPerPackage());
         String unit = traceUnitDao.lotUnit(form.getLotId());
         if (unit == null || unit.isBlank()) {
-            // 批次还没有任何余额行：先有入库事实，才谈得上包装身份
+            // 批次还没有任何余额行：先有入库，才有包装身份
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_EXCEED_BALANCE);
         }
         BigDecimal balance = lockedBalance(form.getLotId());
@@ -116,8 +113,8 @@ public class TraceUnitService {
      * 分拣扫码绑定：把包装码绑到分拣任务行。
      *
      * <p>
-     * 先锁包装码行、再锁分拣行，两步都在同一事务内：前者让绑定与作废串行化，后者让同一分拣行上的并发绑定串行化， 否则两枚码各自读到相同的剩余可绑定量、合计超出实拣量。校验顺序即语义：码存在且有效 → 未绑过（一码一物） →
-     * 分拣任务可绑定 → 商品规格一致 → 仓库一致 → 该行绑定总量不超过实拣量。
+     * 先锁包装码行、再锁分拣行，都在同一事务内：前者让绑定与作废串行化，后者让同一分拣行上的并发绑定串行化， 否则两枚码各自读到相同的剩余可绑定量、合计超出实拣量。 校验顺序：码存在且有效 → 未绑过（一码一物）→ 分拣任务可绑定
+     * → 商品规格一致 → 仓库一致 → 该行绑定总量不超过实拣量。
      */
     @Transactional(rollbackFor = Exception.class)
     public TraceUnitVO.Binding bind(TraceUnitBindForm form, String operator) {
@@ -179,7 +176,7 @@ public class TraceUnitService {
      * 作废：只对未绑定的码生效。
      *
      * <p>
-     * 与绑定共用同一把包装码行锁：否则「绑定读到 ACTIVE」与「作废读到无绑定」可以同时通过， 留下「已作废的码挂着绑定」这种谁也解释不了的状态。数据库侧另有触发器兜底。
+     * 与绑定共用同一把包装码行锁：否则「绑定读到 ACTIVE」与「作废读到无绑定」可以同时通过，留下「已作废的码挂着绑定」。 数据库侧另有触发器兜底。
      */
     @Transactional(rollbackFor = Exception.class)
     public void voidUnit(TraceUnitVoidForm form, String operator) {
@@ -205,7 +202,7 @@ public class TraceUnitService {
      * 净重补录：只对还没有重量的码生效。
      *
      * <p>
-     * 与作废共用同一把包装码行锁：否则两个补录请求会各自读到「还没有重量」，后写入的一方静默覆盖前一方。 已经称过的码要走称重更正，不能在这里改数——原始结论一旦可覆盖，标签上印的净重就没有意义。
+     * 与作废共用同一把包装码行锁：否则两个补录请求会各自读到「还没有重量」，后写入的一方静默覆盖前一方。 已经称过的码不能在这里改数，否则标签上印的净重就没有意义。
      */
     @Transactional(rollbackFor = Exception.class)
     public TraceUnitVO.Unit weigh(String unitCode, TraceUnitWeightForm form, String operator) {
@@ -231,7 +228,7 @@ public class TraceUnitService {
      * 秤端按筐发码：一筐一次称重对应一枚包装码。
      *
      * <p>
-     * 以称重记录为入口，所以码上的重量一定对得回那条设备事实。幂等靠 {@code weighing_event_id} 上的唯一索引： 重试命中已有码时原样返回，不再发第二枚。批次由现场选定，{@code bind}
+     * 以称重记录为入口，所以码上的重量一定对得回那条设备记录。幂等靠 {@code weighing_event_id} 上的唯一索引： 重试命中已有码时原样返回，不再发第二枚。批次由现场选定，{@code bind}
      * 只校验商品与仓库一致—— 出库不按批次扣减，这里也不替库存账本做批次分配。
      */
     @Transactional(rollbackFor = Exception.class)
@@ -271,7 +268,7 @@ public class TraceUnitService {
         if (lotUnit == null || lotUnit.isBlank()) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_EXCEED_BALANCE);
         }
-        // 净重是销售单位口径，包装数量是批次记账单位口径，按订单行冻结的换算折一次
+        // 净重按销售单位计，包装数量按批次记账单位计，按订单行保存的换算折算一次
         BigDecimal quantity = saleToStockQuantity(item, event.getNetWeight(), lotUnit);
         BigDecimal balance = lockedBalance(form.getLotId());
         BigDecimal issued = traceUnitDao.sumIssuedByLot(form.getLotId());
@@ -306,7 +303,7 @@ public class TraceUnitService {
      * 不逐筐绑定：{@code bind} 校验的是「已绑定量 + 本码数量 ≤ 实拣量」，而实拣量要等集合完成才写入， 逐筐绑定会在第一筐就撞上 {@code TRACE_UNIT_BIND_EXCEED}。
      *
      * <p>
-     * 装不下的码留在「未绑定」，不因此中断分拣完成：分拣完成是业务事实，追溯绑定是它的附属结果。 未绑定的码在包装码列表里仍然可见，可人工补绑或走更正——反过来把完成卡住，现场只会去删数据。
+     * 装不下的码留在「未绑定」，不因此中断分拣完成：分拣完成是业务结果，追溯绑定只是附属。未绑定的码仍然可见， 可人工补绑或走更正——把完成卡住，现场只会去删数据。
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public int bindWeighedUnits(Long sortingTaskItemId, Long completionId, String operator) {
@@ -341,9 +338,7 @@ public class TraceUnitService {
         return bound;
     }
 
-    /**
-     * 秤端只需要码、链接与重量，不返回批次与客户等后台字段。
-     */
+    /** 秤端只需要码、链接与重量，不返回批次与客户等后台字段。 */
     private TraceScaleUnitVO toScaleVO(TraceUnitVO.Unit unit, boolean duplicated) {
         TraceScaleUnitVO result = new TraceScaleUnitVO();
         result.setUnitId(unit.getId());
@@ -358,9 +353,7 @@ public class TraceUnitService {
         return result;
     }
 
-    /**
-     * 秤端选批次：本仓该商品仍有余额的批次，按先进先出排序。
-     */
+    /** 秤端选批次：本仓该商品仍有余额的批次，按先进先出排序。 */
     @Transactional(readOnly = true)
     public List<TraceUnitVO.LotOption> candidateLots(Long sortingTaskItemId) {
         TraceUnitVO.SortingItem item = traceUnitDao.findSortingItem(sortingTaskItemId);
@@ -371,9 +364,7 @@ public class TraceUnitService {
         return traceUnitDao.candidateLots(item.getWarehouseId(), item.getSkuId());
     }
 
-    /**
-     * 秤端补打：按码取回二维码链接与重量，不重新发码。
-     */
+    /** 秤端补打：按码取回二维码链接与重量，不重新发码。 */
     @Transactional(readOnly = true)
     public TraceScaleUnitVO label(String unitCode) {
         TraceUnitVO.Unit unit = traceUnitDao.findByCode(unitCode.trim());
@@ -384,9 +375,7 @@ public class TraceUnitService {
         return toScaleVO(unit, false);
     }
 
-    /**
-     * 列表按仓库数据范围收窄：没有范围就是空页，不是「不加条件」。
-     */
+    /** 列表按仓库数据范围收窄：没有范围就是空页，不是「不加条件」。 */
     @Transactional(readOnly = true)
     public PageResult<TraceUnitVO.Unit> query(TraceUnitQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
@@ -440,9 +429,7 @@ public class TraceUnitService {
         return replay;
     }
 
-    /**
-     * 预览沿用正式绑定守卫，但在事务代理内部转为不可处理原因，避免业务拒绝把只读预览标为 rollback-only。
-     */
+    /** 预览沿用正式绑定校验，但把业务拒绝转成不可处理原因，避免只读预览被标为 rollback-only。 */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public String previewSortedQuantityRejection(Long sortingTaskItemId, BigDecimal newSortedQuantity) {
         try {
@@ -454,10 +441,10 @@ public class TraceUnitService {
     }
 
     /**
-     * 分拣改量守卫（供分拣域调用的正式契约）：新实拣量不得低于该行仍有效绑定的包装总量。
+     * 分拣改量校验（供分拣域调用）：新实拣量不得低于该行仍有效绑定的包装总量。
      *
      * <p>
-     * 必须在调用方事务内执行（MANDATORY）：本方法锁分拣行，与绑定共用同一把行锁， 否则「改量读到绑定 10」与「绑定读到实拣 10」可以交叉通过，留下绑定总量超过实拣量的状态。 要降量先走解绑更正，再改实拣量。
+     * 必须在调用方事务内执行（MANDATORY）：本方法锁分拣行，与绑定共用同一把行锁，否则「改量读到绑定 10」与 「绑定读到实拣 10」会交叉通过，留下绑定总量超过实拣量的状态。要降量先走解绑更正，再改实拣量。
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void requireBindingsFitSortedQuantity(Long sortingTaskItemId, BigDecimal newSortedQuantity) {
@@ -469,7 +456,7 @@ public class TraceUnitService {
         if (bound.signum() <= 0) {
             return;
         }
-        // 与 bind 同一口径：绑定量是库存记账单位，新实拣量是销售单位，按冻结换算统一后再比。
+        // 与 bind 一致：绑定量按库存记账单位，新实拣量按销售单位，按保存的换算统一后再比。
         // 绑定能存在就说明当时换算成立，这里用绑定侧的记账单位做基准。
         String stockUnit = item.getStockUnit() != null ? item.getStockUnit() : item.getSaleUnit();
         if (bound.compareTo(saleToStockQuantity(item, newSortedQuantity, stockUnit)) > 0) {
@@ -478,10 +465,10 @@ public class TraceUnitService {
     }
 
     /**
-     * 销售量折成库存记账量：实拣量是销售单位口径，包装码数量是批次余额的记账单位口径，两者不能直接比较。
+     * 销售量折算成库存记账量：实拣量按销售单位，包装码数量按批次余额的记账单位，两者不能直接比较。
      *
      * <p>
-     * 优先用订单行确认时冻结的换算；没有冻结换算时，只有「销售单位就是记账单位」才能同口径比较，否则明确拒绝（41517）， 不猜比例。对侧的库存单位与冻结的库存单位不一致同样拒绝——那说明批次余额的记账单位在发码后变了口径。
+     * 优先用订单行确认时保存的换算；没有换算时，只有「销售单位就是记账单位」才能直接比较，否则明确拒绝（41517），不猜比例。 传入的库存单位与保存的换算单位不一致同样拒绝——说明批次余额的记账单位在发码后变了。
      */
     private static BigDecimal saleToStockQuantity(TraceUnitVO.SortingItem item, BigDecimal saleQuantity,
         String stockUnit) {
@@ -499,9 +486,7 @@ public class TraceUnitService {
         return InventorySaleUnitConverter.toStockQuantity(saleQuantity, frozenUnit, factor);
     }
 
-    /**
-     * 加锁读该批次余额：锁在行上，两个发码事务必须排队。
-     */
+    /** 加锁读该批次余额：锁在行上，两个发码事务必须排队。 */
     private BigDecimal lockedBalance(Long lotId) {
         BigDecimal total = BigDecimal.ZERO;
         for (TraceUnitDao.LotBalanceRow row : traceUnitDao.lockLotBalances(lotId)) {
@@ -514,7 +499,7 @@ public class TraceUnitService {
      * 不透明包装码：序号经 Base32 编码，前缀 U。
      *
      * <p>
-     * 刻意不嵌日期、不嵌业务含义：码一旦贴上实物就不再变化，日期段会让「同一天发的码」看起来像同一批， 也会把业务信息泄露给扫码方。唯一性由序列保证，作废后原码不复用。
+     * 刻意不嵌日期、不嵌业务含义：码一旦贴上实物就不再变化，日期段会让「同一天发的码」看起来像同一批，也会泄露业务信息。 唯一性由序列保证，作废后原码不复用。
      */
     private String nextCode() {
         long sequence = businessNoDao.nextSequence("trace_unit_seq");
@@ -541,9 +526,7 @@ public class TraceUnitService {
         return value.setScale(4, java.math.RoundingMode.UNNECESSARY);
     }
 
-    /**
-     * 净重与每包数量共用同一套定点口径，但提示必须分开：补录时看不懂「每包数量」在说什么。
-     */
+    /** 净重与每包数量用同一套定点规则，但错误提示分开：补录时看不懂「每包数量」在说什么。 */
     private static BigDecimal parseWeight(String text) {
         BigDecimal value;
         try {
@@ -557,9 +540,7 @@ public class TraceUnitService {
         return value.setScale(4, java.math.RoundingMode.UNNECESSARY);
     }
 
-    /**
-     * 公开令牌：随机而非序列，扫码入口不能靠猜相邻码拿到别人的溯源页。
-     */
+    /** 公开令牌：随机而非序列，扫码入口不能靠猜相邻码拿到别人的溯源页。 */
     private static String nextPublicToken() {
         char[] token = new char[PUBLIC_TOKEN_LENGTH];
         for (int index = 0; index < PUBLIC_TOKEN_LENGTH; index++) {

@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 付款事实与有效额、已用额、待核销额派生值。
+ * 付款记录及有效额、已用额、待核销额。
  */
 @Data
 public class FinancePaymentQueryVO {

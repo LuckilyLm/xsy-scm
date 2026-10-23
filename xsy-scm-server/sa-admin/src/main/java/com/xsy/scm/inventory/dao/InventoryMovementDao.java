@@ -13,14 +13,14 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 库存流水只允许新增和查询，不允许修改、删除历史记录。 冲销需要新增反向流水，原始记录继续保留。
+ * 库存流水只允许新增和查询，不允许修改、删除历史记录。冲销时新增反向流水，原始记录继续保留。
  */
 @Mapper
 public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity> {
     List<BundleSalesOutAllocationVO> listBundleSalesOutAllocations(@Param("orderItemId") Long orderItemId);
 
     /**
-     * 追加一条流水，源身份冲突时<b>不做任何事</b>（防重）。
+     * 追加一条流水，来源记录冲突时不做任何事（防重）。
      *
      * <p>
      * 冲突目标与部分唯一索引 {@code uk_inventory_movement_source_active} 完全匹配：
@@ -28,14 +28,13 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
      * WHERE deleted = FALSE AND source_document_item_id IS NOT NULL DO NOTHING}。
      *
      * <p>
-     * <b>返回值的语义由调用方区分</b>：
+     * 返回值的含义由调用方区分：
      * <ul>
-     * <li>实时 confirm 路径：返回 0 = 该源事实已入库，属于<b>不可能发生的数据异常</b> → 抛 {@code INVENTORY_DUPLICATE_INBOUND(41002)}
-     * 让事务整体回滚（fail-fast，绝不静默吞掉）；</li>
-     * <li>backfill 路径：返回 0 是<b>预期值</b>（幂等跳过），不抛错。</li>
+     * <li>实时确认路径：返回 0 说明该来源记录已写入，属于不可能发生的数据异常 → 抛 {@code INVENTORY_DUPLICATE_INBOUND(41002)} 让事务整体回滚（直接失败，不静默吞掉）；</li>
+     * <li>补录路径：返回 0 是正常结果（幂等跳过），不抛错。</li>
      * </ul>
      *
-     * @return 1 = 已追加；0 = 源身份已存在，本次未写入
+     * @return 1 = 已追加；0 = 来源记录已存在，本次未写入
      */
     int insertOnConflictDoNothing(InventoryMovementEntity entity);
 
@@ -49,15 +48,14 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
      * 按来源行读回那一条活动流水。
      *
      * <p>
-     * 流水是 append-only，跨事务的两步动作（调拨「发出 → 收货」）拿不到上一步的内存值，只能回读<b>已冻结的事实</b>。列对
-     * {@code (source_document_type, source_document_item_id)} 上的部分唯一索引 {@code uk_inventory_movement_source_active}
-     * 逐字匹配，因此至多一行。
+     * 流水只追加，跨事务的两步动作（调拨「发出 → 收货」）拿不到上一步的内存值，只能回读已写入的记录。列对 {@code (source_document_type, source_document_item_id)}
+     * 上的部分唯一索引 {@code uk_inventory_movement_source_active} 逐字匹配，因此至多一行。
      */
     InventoryMovementEntity selectBySourceItem(@Param("sourceDocumentType") String sourceDocumentType,
         @Param("sourceDocumentItemId") Long sourceDocumentItemId);
 
     /**
-     * 某个收货行是否已有活动流水（IT / 对账用，只读）。
+     * 某个收货行是否已有活动流水（集成测试 / 对账用，只读）。
      */
     int countActiveBySourceItem(@Param("sourceDocumentType") String sourceDocumentType,
         @Param("sourceDocumentItemId") Long sourceDocumentItemId);

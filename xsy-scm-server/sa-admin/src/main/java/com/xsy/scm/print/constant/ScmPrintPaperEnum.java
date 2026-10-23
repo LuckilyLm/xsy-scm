@@ -16,9 +16,7 @@ public enum ScmPrintPaperEnum {
 
     private final String label;
 
-    /**
-     * 是否允许横向。小票是定宽卷纸，没有横向这一说。
-     */
+    /** 是否允许横向。小票是定宽卷纸，没有横向。 */
     private final boolean landscapeAllowed;
 
     public static boolean isSupported(String paper) {

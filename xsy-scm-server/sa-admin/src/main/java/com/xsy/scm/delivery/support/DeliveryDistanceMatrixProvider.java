@@ -8,26 +8,20 @@ import java.util.List;
  */
 public interface DeliveryDistanceMatrixProvider {
 
-    /**
-     * 稳定标识，例如 {@code STRAIGHT_LINE_HAVERSINE}。
-     */
+    /** 稳定标识，例如 {@code STRAIGHT_LINE_HAVERSINE}。 */
     String providerCode();
 
-    /**
-     * 算法版本；同一 provider 改变算法时必须升版本，历史建议因此可区分。
-     */
+    /** 算法版本；同一 provider 改变算法时必须升版本，历史建议因此可区分。 */
     String providerVersion();
 
-    /**
-     * 是否为估算（非真实路网 / 非实时交通）。
-     */
+    /** 是否为估算（非真实路网 / 非实时交通）。 */
     boolean estimated();
 
     /**
-     * 计算对称距离矩阵，单位<b>米</b>，{@code matrix[i][j]} 为点 i 到点 j 的距离。
+     * 计算对称距离矩阵，单位为米，{@code matrix[i][j]} 为点 i 到点 j 的距离。
      *
      * <p>
-     * 点序必须与入参一致；对角线为 0。所有点必须同一坐标系，混用坐标系时实现应直接拒绝 —— 不同 CRS 的经纬度相减得到的距离在几百米量级上是错的。
+     * 点序必须与入参一致，对角线为 0。所有点必须同一坐标系，混用坐标系时实现要直接拒绝：不同坐标系的经纬度相减，几百米内就是错的。
      */
     BigDecimal[][] matrix(List<GeoPoint> points);
 }

@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
- * Account exposure read in one PostgreSQL snapshot.
+ * 一次查询读出结算主体的敞口数据。
  */
 @Data
 public class FinanceCreditExposureDto {

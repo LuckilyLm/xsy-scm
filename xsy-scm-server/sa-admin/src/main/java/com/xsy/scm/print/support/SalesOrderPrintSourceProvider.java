@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 销售订单打印只读正式订单详情，沿用业务员负责人数据范围。 不读取当前商品价格，也不改变历史锁价、结算或库存事实。
+ * 销售订单打印只读正式订单详情，沿用业务员的数据范围；不读当前商品价格，也不改变锁价、结算或库存。
  */
 @Component
 @RequiredArgsConstructor
@@ -89,9 +89,7 @@ public class SalesOrderPrintSourceProvider implements ScmPrintSourceProvider {
         return status;
     }
 
-    /**
-     * 打印件沿用仓库现场的叫法，与页面 desc 不同，因此这里按枚举逐项给文案。
-     */
+    /** 打印件沿用仓库现场的叫法，与页面文案不同，因此按枚举逐项给文案。 */
     private static String sourceLabel(String source) {
         if (source == null)
             return "";

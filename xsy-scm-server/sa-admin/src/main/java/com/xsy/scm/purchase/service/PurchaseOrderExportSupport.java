@@ -12,8 +12,8 @@ import java.util.function.Function;
  * 采购单导出的列目录（只读）。
  *
  * <p>
- * 列的<b>唯一事实源在这里</b>：前端「导出设置」只回传它勾选的列 key，本目录按固定顺序过滤并落表头，未知 key 直接忽略、勾选为空则导出整目录 —— 前端拿不到后端不认识的列，也不会因前端拼字段而改变导出内容。
- * 导出不触碰任何采购状态，是纯粹的读取投影。
+ * 列目录的唯一来源在这里：前端「导出设置」只回传勾选的列 key，本目录按固定顺序过滤并输出表头， 未知 key 直接忽略、勾选为空则导出整目录。前端拿不到后端不认识的列，也不会因前端拼字段而改变导出内容。
+ * 导出不修改任何采购状态，只是读取。
  */
 public final class PurchaseOrderExportSupport {
 
@@ -85,7 +85,7 @@ public final class PurchaseOrderExportSupport {
      * 状态列导出中文名。
      *
      * <p>
-     * 导出是服务端生成的 xlsx，没有前端可以翻译，直接落 {@code SUBMITTED} 这类枚举名对业务用户没有意义。 认不出的值原样回落，不吞掉数据。
+     * 导出是服务端生成的 xlsx，不经过前端翻译，直接输出 {@code SUBMITTED} 这类枚举名对业务用户没有意义。 认不出的值原样返回，不吞掉数据。
      */
     private static String statusLabel(String status) {
         ScmPurchaseStatusEnum value = ScmPurchaseStatusEnum.of(status);

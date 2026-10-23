@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 仅以客户绑定仓和地址区县配置解析配送仓；无匹配时失败关闭。
+ * 仅以客户绑定仓和地址区县配置解析配送仓；无匹配时直接拒绝。
  */
 @Service
 @RequiredArgsConstructor

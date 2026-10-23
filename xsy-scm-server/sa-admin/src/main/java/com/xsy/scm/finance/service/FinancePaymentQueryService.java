@@ -41,7 +41,7 @@ import java.util.List;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * Read-only payment query, detail and export row selection.
+ * 付款的只读列表、详情与导出行选择。
  */
 @Service
 @RequiredArgsConstructor

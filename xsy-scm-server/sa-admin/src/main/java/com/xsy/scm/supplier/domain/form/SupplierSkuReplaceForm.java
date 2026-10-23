@@ -19,9 +19,7 @@ public class SupplierSkuReplaceForm {
     @Positive(message = "供应商 ID 必须大于0")
     private Long supplierId;
 
-    /**
-     * 上限 500：限制单个替换命令的规模。
-     */
+    /** 上限 500，限制单个替换命令的规模。 */
     @Valid
     @NotNull(message = "供应商商品清单不能为空")
     @Size(max = 500, message = "供应商商品清单不能超过500项")

@@ -5,11 +5,10 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
 /**
- * 打印域使用 41301–41310 错误码（41150/412xx 已被报表域占用）。
+ * 打印域使用 41301–41310 错误码（41150 / 412xx 已被报表域占用）。
  *
  * <p>
- * 「不属于你的单据」不走这里的业务码：那等于回答「这个 id 存在但你不该看」，
- * 由各域既有的范围判定统一回 30005，打印不新增一套可见性回答。
+ * 「不属于你的单据」不走这里的业务码：那等于回答「这个 id 存在但你不该看」， 统一由各域的范围判定返回 30005。
  */
 @Getter
 @RequiredArgsConstructor

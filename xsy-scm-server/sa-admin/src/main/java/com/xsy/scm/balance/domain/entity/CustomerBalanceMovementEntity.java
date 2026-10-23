@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 钱包流水只能追加，不能修改历史记录。金额始终为正，由收入或支出方向决定加减。
+ * 余额流水只能追加，不能修改历史记录。金额始终为正，由收入或支出方向决定加减。
  */
 @Data
 @TableName("xsy_customer_balance_movement")
@@ -24,24 +24,16 @@ public class CustomerBalanceMovementEntity {
 
     private Long accountId;
 
-    /**
-     * 钱包所有者（结算主体）。冗余存一份：按结算主体查流水不必回表。
-     */
+    /** 余额账户所有者（结算主体）。冗余一份，按结算主体查流水不必回表。 */
     private Long settlementCustomerId;
 
-    /**
-     * 本次业务实际发生的客户；集团场景下与钱包所有者不同，用于追溯。
-     */
+    /** 本次业务实际发生的客户；集团场景下与余额账户所有者不同，用于追溯。 */
     private Long customerId;
 
-    /**
-     * {@code RECHARGE} / {@code CONSUME} / {@code REFUND} / {@code CORRECTION}。
-     */
+    /** {@code RECHARGE} / {@code CONSUME} / {@code REFUND} / {@code CORRECTION}。 */
     private String type;
 
-    /**
-     * {@code CREDIT} / {@code DEBIT}。
-     */
+    /** {@code CREDIT} / {@code DEBIT}。 */
     private String direction;
 
     private BigDecimal amount;
@@ -50,9 +42,7 @@ public class CustomerBalanceMovementEntity {
 
     private Long sourceId;
 
-    /**
-     * 人工更正必填（库上有 CHECK）。
-     */
+    /** 人工更正必填（数据库有 CHECK）。 */
     private String reason;
 
     private OffsetDateTime occurredAt;

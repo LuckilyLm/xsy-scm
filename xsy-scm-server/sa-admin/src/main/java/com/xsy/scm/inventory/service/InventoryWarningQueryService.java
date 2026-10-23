@@ -20,7 +20,7 @@ import java.util.List;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_NOT_FOUND;
 
 /**
- * 只读查询预警阈值和当前库存预警。 预警状态由可用量与阈值计算，不单独存库。 SQL 的状态筛选与 Java 的状态计算必须保持一致。
+ * 只读查询预警阈值和当前库存预警。预警状态由可用量与阈值计算，不单独保存。SQL 的状态筛选与 Java 的状态计算必须保持一致。
  */
 @Service
 @RequiredArgsConstructor
@@ -62,10 +62,10 @@ public class InventoryWarningQueryService {
      * 预警列表。
      *
      * <p>
-     * {@code status} 为空时 SQL 只返回异常项（LOW / HIGH）—— 这是<b>预警列表</b>的默认语义，一个全是正常项的列表对使用者没有意义。
+     * {@code status} 为空时 SQL 只返回异常项（LOW / HIGH）—— 这是预警列表的默认行为，一个全是正常项的列表对使用者没有意义。
      *
      * <p>
-     * 每行的状态在这里按<b>可用量</b>重算（而不是信 SQL 的结果）：可用量是 SQL 算出来的数字，而「数字 vs 阈值 → 状态」这条规则只在枚举里实现一次。
+     * 每行的状态在这里按可用量重算（而不是沿用 SQL 的结果）：可用量是 SQL 算出来的数字，而「数字 vs 阈值 → 状态」这条规则只在枚举里实现一次。
      */
     public PageResult<InventoryWarningVO> queryWarningPage(InventoryWarningQueryForm query) {
         ScmDataScopeContext scope = dataScopeService.resolve();

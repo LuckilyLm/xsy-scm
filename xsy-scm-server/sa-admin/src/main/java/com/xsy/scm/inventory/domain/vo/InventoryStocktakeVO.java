@@ -14,7 +14,7 @@ import java.util.Map;
  * 盘点单（头 + 明细）。
  *
  * <p>
- * 展示字段（仓库编码/名称、SKU 编码/名称、商品名）是<b>实时联表结果，不是快照</b> —— 与库存余额、出库单同一取向：单据上真正需要冻结的是明细行的 {@code bookQuantity} /
+ * 展示字段（仓库编码/名称、SKU 编码/名称、商品名）是实时联表结果，不是保存的副本 —— 与库存余额、出库单一致：单据上真正需要保存的是明细行的 {@code bookQuantity} /
  * {@code actualQuantity} / {@code unitSnapshot}。
  */
 @Data
@@ -74,7 +74,7 @@ public class InventoryStocktakeVO {
         private Map<String, String> specValues;
 
         /**
-         * 账面量快照（保存草稿那一刻）。
+         * 账面量（保存草稿时记录）。
          */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal bookQuantity;
@@ -86,13 +86,13 @@ public class InventoryStocktakeVO {
         private BigDecimal actualQuantity;
 
         /**
-         * 差异 = 实盘量 − 账面量。<b>派生值</b>，只用于展示，不落库 （落库会与两个真值列失去同步）。
+         * 差异 = 实盘量 − 账面量。派生值，只用于展示，不保存（保存会与两个实际数据列失去同步）。
          */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal deltaQuantity;
 
         /**
-         * 确认时写入的记账单位快照；草稿态为空。
+         * 确认时写入的记账单位；草稿态为空。
          */
         private String unitSnapshot;
 

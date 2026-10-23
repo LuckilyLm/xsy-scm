@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 活动草稿可以编辑，生效后不能直接修改规则。每个版本用于生成订单优惠记录，方便按当时规则对账。
+ * 活动草稿可以编辑，生效后不能直接改规则；每次编辑生成新版本，订单优惠记录版本号，便于按当时规则对账。
  */
 @Service
 @RequiredArgsConstructor
@@ -93,9 +93,7 @@ public class PromotionActivityService {
         return row.getId();
     }
 
-    /**
-     * 启停：{@code DRAFT/STOPPED → ACTIVE}，{@code ACTIVE → STOPPED}。
-     */
+    /** 启停：{@code DRAFT/STOPPED → ACTIVE}，{@code ACTIVE → STOPPED}。 */
     @Transactional(rollbackFor = Exception.class)
     public void updateStatus(Long id, PromotionStatusForm form) {
         if (!Set.of(ScmPromotionStatusEnum.ACTIVE.name(), ScmPromotionStatusEnum.STOPPED.name())

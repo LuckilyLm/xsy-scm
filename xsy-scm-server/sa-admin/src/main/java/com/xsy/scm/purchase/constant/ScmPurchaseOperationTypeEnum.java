@@ -4,10 +4,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 采购操作类型，与数据库白名单保持一致。生成需求、需求分配和收货操作的归属字段不同， 必须按操作类型写入并由数据库约束校验。
+ * 采购操作类型，与数据库 CHECK 约束一致。生成需求、需求分配和收货操作的归属字段不同， 必须按操作类型写入并由数据库约束校验。
  *
  * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * {@code desc} 供页面与导出使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 退款返还所需的跨域只读来源，订单锁串行同订单的消费及退款本金使用。
+ * 退款返还所需的跨域只读来源；订单锁用来串行同一订单的消费与退款本金。
  */
 @Mapper
 public interface BalanceRefundSourceDao {

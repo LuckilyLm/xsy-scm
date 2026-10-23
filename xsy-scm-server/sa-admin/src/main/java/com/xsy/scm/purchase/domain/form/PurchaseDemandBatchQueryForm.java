@@ -5,10 +5,10 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 /**
- * 冻结批次回看入参（只读）。
+ * 批次回看入参（只读）。
  *
  * <p>
- * 只有一个批次号：回看不接受任何筛选或分页条件 —— 批次本身就是一次冻结的完整输入，让调用方再加筛选会让「回看」和「重新计算」的边界变模糊。
+ * 只有一个批次号：批次本身就是一次计算固定的完整输入，不再接受筛选或分页，避免「回看」变成「重新计算」。
  */
 @Data
 public class PurchaseDemandBatchQueryForm {

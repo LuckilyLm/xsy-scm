@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 优惠券实例的产生来源；自助领取额度只统计商城领取事实。
- *
- * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * 优惠券实例的产生来源；自助领取额度只统计商城领取的记录。{@code desc} 供页面与导出使用，保存时仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

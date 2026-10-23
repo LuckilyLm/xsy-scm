@@ -18,46 +18,33 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_PARENT_INVALID;
 
 /**
- * 客户单条业务规则：账期组合、上级关系、字段归一化。
- *
- * <p>
- * 只做「一条规则一件事」的判断，不控制事务、不写库——事务边界在 {@code CustomerService}。
+ * 客户单条规则：账期组合、上级关系、字段归一化。只做判断，不控制事务、不写库。
  */
 @Component
 @RequiredArgsConstructor
 public class CustomerValidator {
 
-    /**
-     * 上级客户上溯的最大层数；超过即判定为环，避免脏数据让请求无限遍历。
-     */
+    /** 上级客户上溯的最大层数；超过即判定为环，避免脏数据让请求无限遍历。 */
     public static final int MAX_PARENT_DEPTH = 20;
 
-    /**
-     * 可以作为上级客户（集团）的类型编码。
-     */
+    /** 可以作为上级客户（集团）的类型编码。 */
     public static final String GROUP_TYPE_CODE = "GROUP";
 
     private final CustomerDao customerDao;
 
     private final CustomerTypeDao customerTypeDao;
 
-    /**
-     * 编码归一化：去空白 + 转大写，保证「abc 」与「ABC」被视为同一编码。
-     */
+    /** 编码归一化：去空白并转大写，保证「abc 」与「ABC」被视为同一编码。 */
     public static String normalizeCode(String raw) {
         return raw == null ? null : raw.trim().toUpperCase();
     }
 
-    /**
-     * 名称归一化：仅去首尾空白，保留大小写（中文名称大小写无意义，英文名称有意义）。
-     */
+    /** 名称归一化：只去首尾空白，保留大小写。 */
     public static String normalizeName(String raw) {
         return raw == null ? null : raw.trim();
     }
 
-    /**
-     * 可选文本归一化：去首尾空白，空白视作「未填写」返回 {@code null}，以便真正清空列。
-     */
+    /** 可选文本归一化：去首尾空白，空白视作「未填写」返回 {@code null}，以便真正清空列。 */
     public static String normalizeOptional(String raw) {
         if (raw == null) {
             return null;
@@ -70,7 +57,7 @@ public class CustomerValidator {
      * 账期组合校验。
      *
      * <p>
-     * 三种合法形态互斥且穷尽：不设置 / 按金额 / 按时间。DB 侧有等价的 {@code ck_customer_credit_period} 约束；这里先拦一次，让错误码是 40000 而不是数据库异常。
+     * 三种合法组合：不设置 / 按金额 / 按时间。数据库有同样的 {@code ck_customer_credit_period} 约束，这里先拦，错误码才是 40000 而不是数据库异常。
      */
     public void validateCreditPeriod(CustomerAddForm form) {
         String type = form.getCreditPeriodType();
@@ -158,9 +145,7 @@ public class CustomerValidator {
         }
     }
 
-    /**
-     * 上级客户必须属于「集团」类型（业务语义：只有集团才能作为结算/归属上级）。
-     */
+    /** 上级客户必须属于「集团」类型：只有集团才能作为结算 / 归属上级。 */
     private boolean isGroupType(Long customerTypeId) {
         if (customerTypeId == null) {
             return false;
@@ -170,11 +155,11 @@ public class CustomerValidator {
     }
 
     /**
-     * 是否为「共享结算」：结算主体不是客户本人，或者结算主体本身就是集团。
+     * 是否共享结算：结算主体不是本人，或结算主体本身就是集团。
      *
      * <p>
-     * 这是客户资金的<b>唯一可见性判定点</b>：共享结算下不得向成员账号（以及集团主体自己）展示共享钱包总额与集团授信总额， 口径见
-     * {@code docs/decisions.md §微信小程序账号与退款分摊口径}。商城钱包/账期概览与商城结算方式选项都必须调用本方法，不允许各自比较 id 或类型编码 —— 否则同一笔钱在两个入口的可见性会漂移。
+     * 客户的资金可见性只看这里：共享结算下不向成员账号展示共享余额和集团授信总额（见 {@code docs/decisions.md §微信小程序账号与退款分摊口径}）。商城余额 / 账期概览和结算方式选项都要调它，别各自比较
+     * id 或类型编码，否则同一笔钱在两个入口的可见性会不一致。
      *
      * @param customerId
      *            当前登录的业务客户 id

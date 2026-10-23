@@ -21,7 +21,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_NOT_FOUND;
 
 /**
- * 分类标签只写独立关系表。所有批量写入先锁定订单，验证当前业务员范围，不能从标签反查越权订单。
+ * 标签只写独立关系表。批量写入前先锁定订单并校验业务员范围，避免从标签越权查看订单。
  */
 @Service
 @RequiredArgsConstructor

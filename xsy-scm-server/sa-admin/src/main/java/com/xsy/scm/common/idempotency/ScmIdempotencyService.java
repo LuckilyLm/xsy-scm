@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Shared persistence and replay mechanics for idempotent SCM commands.
+ * 幂等命令共用的记录、重放与完成逻辑。
  */
 @Service
 @RequiredArgsConstructor
@@ -67,9 +67,7 @@ public class ScmIdempotencyService {
         return new Claim(row, true);
     }
 
-    /**
-     * 同幂等键及请求指纹已成功时，可在重新校验易变数据之前返回原结果。预检不占用键也不写记录，指纹冲突由正式执行阶段处理。
-     */
+    /** 同键同请求已成功时直接返回原结果；预检查不占键，指纹对不上留给正式执行时再报。 */
     public Optional<Claim> peekCompleted(String scope, String key, Object request) {
         if (StringUtils.isBlank(key)) {
             return Optional.empty();

@@ -75,7 +75,7 @@ public class OrderRefundService {
     }
 
     /**
-     * 退款单详情读 + 显式范围。退款金额是财务事实，读不到原订单的人也不能读到它，因此父订单缺失或不在范围内都按 30005 处理。
+     * 退款单详情读 + 显式范围。退款金额属于财务数据，读不到原订单的人也不能读，父订单缺失或不在范围内都按 30005 处理。
      */
     public OrderRefundVO detail(Long refundId, ScmDataScopeContext dataScopeContext) {
         var refundEntity = orderRefundDao.selectById(refundId);
@@ -91,7 +91,7 @@ public class OrderRefundService {
     }
 
     /**
-     * 未收窄的详情：退款完成命令在同一事务里取改前/改后镜像并回传结果，该路径的门槛是订单锁与状态机，不是读范围。
+     * 不带范围的详情：退款完成命令在同一事务里取改前/改后数据并回传，这条路径靠订单锁与状态机把关，不受读范围限制。
      */
     public OrderRefundVO detailSnapshot(Long refundId) {
         var refundEntity = orderRefundDao.selectById(refundId);
@@ -146,14 +146,14 @@ public class OrderRefundService {
             throw new ScmBusinessException(ORDER_REFUND_STATUS_INVALID);
         }
         if (!balanceRefundService.hasFundingAllocationPlan(refundEntity.getOrderId())) {
-            // 已有分摊计划的订单由分摊路径负责这笔钱，旧钱包返还整体让位。
-            // 必须在这里分流，而不是调用后再兜异常：refundOnCompletion 是 MANDATORY 传播，
-            // 它抛出的冲突会逃出本事务并把事务标记成 rollback-only，退款完成会整笔回滚。
+            // 已有分摊计划的订单由分摊路径负责退款，旧的余额返还不再执行。
+            // 必须在这里分流而不是事后捕获异常：refundOnCompletion 是 MANDATORY 传播，
+            // 冲突会逃出本事务并标记 rollback-only，导致整笔回滚。
             balanceRefundService.refundOnCompletion(refundEntity.getId());
         }
         var result = detailSnapshot(refundEntity.getId());
-        // 退款完成同样是必须留痕的订单状态变更。镜像取未收窄的 detailSnapshot，
-        // 日志要记真实状态，而不是按调用者读范围裁过的视图。
+        // 退款完成也要留痕。日志取不带范围的 detailSnapshot，记录真实状态，
+        // 而不是按调用者范围裁剪后的视图。
         orderLogs.record(refundEntity.getOrderId(), ScmOrderOperationTypeEnum.REFUND,
             "退款单 " + refundEntity.getRefundNo() + " 已完成", Map.of("status", before.getStatus()),
             Map.of("status", result.getStatus()));

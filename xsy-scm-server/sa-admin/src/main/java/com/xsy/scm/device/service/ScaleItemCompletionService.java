@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 商品集合完成的协议适配层。
  *
  * <p>
- * 累计总量由分拣域按筐重算，设备提交的合计不参与判定。设备与员工身份取自已校验的上下文， 不接受请求体自报。
+ * 累计总量由分拣域按筐重算，设备提交的合计不参与判定。设备与员工身份取自已校验的上下文，不接受请求体自报。
  */
 @Service
 @RequiredArgsConstructor
@@ -78,9 +78,7 @@ public class ScaleItemCompletionService {
         }
     }
 
-    /**
-     * 设备协议的明细版本是无符号长整型，库里是整型。超出范围说明设备与平台契约不一致， 直接拒绝而不是截断成另一个版本号。
-     */
+    /** 设备协议的明细版本是无符号长整型，库里是整型。超出范围说明设备与平台的数据格式对不上，直接拒绝，不截断成另一个版本号。 */
     private static Integer toItemVersion(Long value) {
         if (value == null) {
             return null;

@@ -12,18 +12,13 @@ import com.xsy.scm.common.validation.ScmEnumValue;
 import net.lab1024.sa.base.common.domain.PageParam;
 
 /**
- * 客户列表查询条件。
- *
- * <p>
- * 分页限制为 1–100，并在 DTO 上声明，避免每个调用方各写一遍。
+ * 客户列表查询条件。分页限制为 1–100，在 DTO 上统一声明。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class CustomerQueryForm extends PageParam {
 
-    /**
-     * 关键字：客户编码 / 客户名称 / 联系人 / 联系电话。
-     */
+    /** 关键字：客户编码 / 客户名称 / 联系人 / 联系电话。 */
     @Size(max = 150, message = "关键字不能超过150个字符")
     private String keyword;
 
@@ -36,9 +31,7 @@ public class CustomerQueryForm extends PageParam {
     @ScmEnumValue(enumClass = ScmSettleModeEnum.class, message = "结算模式无效")
     private String settleMode;
 
-    /**
-     * 按上级集团客户反查下属单位。
-     */
+    /** 按上级集团客户反查下属单位。 */
     @Positive(message = "上级客户 ID 必须大于0")
     private Long parentCustomerId;
 

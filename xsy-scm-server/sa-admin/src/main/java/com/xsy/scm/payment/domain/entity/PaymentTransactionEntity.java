@@ -14,10 +14,10 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 交易事实：渠道那一次流水。
+ * 交易记录：渠道那一次流水。
  *
  * <p>
- * {@code amount}（本地应付）与 {@code providerAmount}（渠道回报）<b>分开两列</b>： 渠道回报不覆盖本地金额，不一致时由对账发现，而不是静默改账。
+ * {@code amount}（本地应付）与 {@code providerAmount}（渠道回报）分开两列：渠道回报不覆盖本地金额， 不一致时由对账发现，而不是静默改账。
  *
  * <p>
  * 表上有 append-only CHECK，因此这个实体不提供删除语义。
@@ -35,9 +35,7 @@ public class PaymentTransactionEntity {
 
     private String provider;
 
-    /**
-     * 渠道交易号：回调匹配与对账的主键。
-     */
+    /** 渠道交易号：回调匹配与对账的主键。 */
     private String providerTransactionNo;
 
     private BigDecimal amount;

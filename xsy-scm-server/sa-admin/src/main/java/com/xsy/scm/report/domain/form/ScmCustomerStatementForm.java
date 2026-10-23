@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 /**
- * A frozen statement belongs to a historical settlement account, not today's group hierarchy.
+ * 已生成的对账单属于当时的历史结算户，不随当前的客户分组层级变化。
  */
 @Data
 public class ScmCustomerStatementForm implements ScmReportDateFilter {

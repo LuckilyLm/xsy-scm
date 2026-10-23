@@ -22,7 +22,7 @@ public interface MallCartDao {
     int insert(MallCartItemEntity row);
 
     /**
-     * 冲突时不报错：行不存在时插入；已存在（并发加购抢到先）返回 0，由调用方锁行后累加。
+     * 冲突时不报错：行不存在时插入；已存在（并发加购先插入）返回 0，由调用方锁行后累加。
      */
     int insertOnConflictDoNothing(MallCartItemEntity row);
 

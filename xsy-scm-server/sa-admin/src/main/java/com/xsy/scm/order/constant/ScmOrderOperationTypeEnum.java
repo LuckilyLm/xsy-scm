@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 销售订单上发生过的操作类型，用于订单操作日志。
  *
  * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * {@code desc} 供页面与导出使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

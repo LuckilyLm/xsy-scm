@@ -57,14 +57,10 @@ public class DeliveryRouteEntity extends DeliveryRecord {
     private String remark;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String cancelReason;
-    /**
-     * 发车时间和操作人与发车状态在同一事务中保存。后续普通表单更新不能清空这些已确认的发车事实。
-     */
+    /** 发车时间和操作人与发车状态在同一事务中保存。后续普通表单更新不能清空这些已确认的发车记录。 */
     private OffsetDateTime dispatchedAt;
     private String dispatchedBy;
-    /**
-     * 线路完成时刻与操作人；要求全部活动订单已进入 SIGNED / EXCEPTION。
-     */
+    /** 线路完成时刻与操作人；要求全部活动订单已进入 SIGNED / EXCEPTION。 */
     private OffsetDateTime completedAt;
     private String completedBy;
 }

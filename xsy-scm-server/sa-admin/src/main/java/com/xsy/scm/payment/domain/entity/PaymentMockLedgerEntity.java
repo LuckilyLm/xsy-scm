@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 模拟渠道账本独立追加保存，用于对账差异测试；不允许编辑或删除历史渠道事实。
+ * 模拟渠道账本独立追加保存，用于对账差异测试；不允许编辑或删除历史渠道记录。
  */
 @Data
 @TableName("xsy_payment_mock_ledger")

@@ -28,8 +28,8 @@ public interface SalesOrderDao extends BaseMapper<SalesOrderEntity> {
     boolean hasPriceFreezeBlockingFact(@Param("orderId") Long orderId);
 
     /**
-     * 列表读；{@code scope} 必须由 Service 用 {@code ScmDataScopeService#resolve()} 传入，传 {@code null} 在 SQL
-     * 侧渲染成恒假谓词（失败关闭），不会被读成「不加限制」。 {@code lock} / {@code selectById} 等写路径入口刻意不带范围。
+     * 列表查询；{@code scope} 必须由 Service 通过 {@code ScmDataScopeService#resolve()} 传入，传 {@code null} 时 SQL
+     * 渲染成恒假条件，按拒绝处理。{@code lock} / {@code selectById} 等写路径不带范围。
      */
     List<SalesOrderEntity> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
         @Param("scope") ScmValueScope scope);

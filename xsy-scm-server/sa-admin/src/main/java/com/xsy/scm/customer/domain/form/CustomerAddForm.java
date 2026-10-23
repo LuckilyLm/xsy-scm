@@ -83,27 +83,19 @@ public class CustomerAddForm extends ScmLocationForm {
     @ScmEnumValue(enumClass = ScmSettleModeEnum.class, message = "结算模式无效")
     private String settleMode = ScmSettleModeEnum.INDEPENDENT.name();
 
-    /**
-     * 仅结算模式为 GROUP 的集团主体可用：允许子客户用集团钱包结算。
-     */
+    /** 仅结算模式为 GROUP 的集团主体可用：允许子客户用集团余额结算。 */
     private Boolean sharedSettlementEnabled;
 
-    /**
-     * 商城货到付款准入；未提供时新增默认关闭，编辑不改变已有设置。
-     */
+    /** 商城货到付款准入；未提供时新增默认关闭，编辑不改变已有设置。 */
     private Boolean codAllowed;
 
-    /**
-     * 商城默认配送仓；仅同时持客户编辑与仓库编辑权时可设置。
-     */
+    /** 商城默认配送仓；仅同时持客户编辑与仓库编辑权时可设置。 */
     @Positive(message = "商城配送仓必须大于0")
     private Long mallDeliveryWarehouseId;
 
     private Boolean clearMallDeliveryWarehouse;
 
-    /**
-     * 授信额度，4 位定点字符串；缺省视作 0。
-     */
+    /** 授信额度，4 位定点字符串；缺省视作 0。 */
     @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "授信额度格式不正确")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String creditLimit;
@@ -111,28 +103,20 @@ public class CustomerAddForm extends ScmLocationForm {
     @ScmEnumValue(enumClass = ScmCreditPeriodTypeEnum.class, message = "账期类型无效")
     private String creditPeriodType;
 
-    /**
-     * 仅 {@code BY_AMOUNT} 时有效。
-     */
+    /** 仅 {@code BY_AMOUNT} 时有效。 */
     @Pattern(regexp = ScmDecimalStrings.PATTERN, message = "授信金额阈值格式不正确")
     @JsonDeserialize(using = ScmStrictDecimalStringDeserializer.class)
     private String creditAmountThreshold;
 
-    /**
-     * 仅 {@code BY_TIME} 时有效，必须为正。
-     */
+    /** 仅 {@code BY_TIME} 时有效，必须为正。 */
     @Min(value = 1, message = "账期值必须至少为1")
     private Integer creditPeriodValue;
 
-    /**
-     * 仅 {@code BY_TIME} 时有效。
-     */
+    /** 仅 {@code BY_TIME} 时有效。 */
     @ScmEnumValue(enumClass = ScmCreditPeriodUnitEnum.class, message = "账期单位无效")
     private String creditPeriodUnit;
 
-    /**
-     * 仅 {@code BY_TIME} + {@code MONTH} 时有效；上限 28 保证每个自然月都存在该日。
-     */
+    /** 仅 {@code BY_TIME} + {@code MONTH} 时有效；上限 28 保证每个自然月都有这一天。 */
     @Min(value = 1, message = "月结日必须在1至28之间")
     @Max(value = 28, message = "月结日必须在1至28之间")
     private Integer settleDay;

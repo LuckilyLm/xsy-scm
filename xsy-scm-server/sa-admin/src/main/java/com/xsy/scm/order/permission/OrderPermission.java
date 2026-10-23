@@ -1,7 +1,7 @@
 package com.xsy.scm.order.permission;
 
 /**
- * Stable permission identifiers published by the sales-order API.
+ * 订单接口对外发布的权限码（稳定标识）。
  */
 public final class OrderPermission {
 

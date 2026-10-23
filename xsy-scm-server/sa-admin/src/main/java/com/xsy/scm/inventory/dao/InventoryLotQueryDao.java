@@ -16,7 +16,7 @@ import org.apache.ibatis.annotations.Param;
  * 批次库存与批次流水的只读查询。SQL 见 mapper/scm/inventory/InventoryLotQueryDao.xml。
  *
  * <p>
- * 仓库数据范围由 Service 显式下传：{@code scope} 为 null 时必须恒假，否则任何漏传范围的调用点都会静默变成全仓可见 （与余额查询同一条失败关闭口径）。
+ * 仓库数据范围由 Service 显式下传：{@code scope} 为 null 时必须恒假，否则任何漏传范围的调用点都会静默变成全仓可见（与余额查询同一条规则）。
  */
 @Mapper
 public interface InventoryLotQueryDao {

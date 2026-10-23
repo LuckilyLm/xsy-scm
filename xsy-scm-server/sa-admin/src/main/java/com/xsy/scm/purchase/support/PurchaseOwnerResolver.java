@@ -22,9 +22,9 @@ public class PurchaseOwnerResolver {
      *
      * @param requestedPurchaserId
      *            表单值，只在调用方有分配权时被采纳
-     * @return 落库的归属员工 id；{@code null} 只可能来自「有分配权且刻意留空」
+     * @return 保存的归属员工 id；{@code null} 只可能来自「有分配权且刻意留空」
      * @throws BusinessException
-     *             无分配权又解析不出当前员工 —— 归属不成立时宁可拒绝创建，也不能退化成表单值或一条无人负责的记录
+     *             无分配权又解析不出当前员工；归属不成立时宁可拒绝创建，也不能退化成表单值或一条无人负责的记录
      */
     public Long resolveForCreate(Long requestedPurchaserId) {
         if (canAssign()) {
@@ -50,8 +50,8 @@ public class PurchaseOwnerResolver {
      * 是否有权把采购归属指定 / 改派给别人。失败关闭：拿不到 Sa-Token 上下文即无权限。
      *
      * <p>
-     * 本模块的编辑接口（{@code /scm/purchase/update}）<b>永远</b>不动归属，即使调用方有分配权：改派只有 {@code /scm/purchase/reassign} 一条路。两条路都能移动归属时，
-     * 「一次整单编辑顺带换人」就会藏在一次普通保存里，审计与授权都失去着力点。
+     * 本模块的编辑接口（{@code /scm/purchase/update}）永远不动归属，即使调用方有分配权：改派只有 {@code /scm/purchase/reassign}
+     * 一条路。两条路都能改归属时，「一次整单编辑顺带换人」就会藏在普通保存里，审计与授权都失去着力点。
      */
     public boolean canAssign() {
         return ScmDataScopeService.hasPermission(PurchasePermission.ASSIGN);

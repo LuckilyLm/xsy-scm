@@ -31,11 +31,10 @@ import org.springframework.transaction.annotation.Transactional;
  * 溯源附件：商品资质与批次检测报告。
  *
  * <p>
- * 关系行由通用文件层维护，这里只做两件事：把对象侧的存在性/数据范围校验补上， 以及把「关系行 + 文件元数据」拼成页面要的列表。不返回 URL——URL 由下载入口按调用者身份现算。
+ * 关系行由通用文件层维护，这里只补对象侧的存在性和数据范围校验，再把「关系行 + 文件元数据」拼成页面要的列表。 不返回 URL，下载时按调用者身份现算。
  *
  * <p>
- * 两个入口的授权口径不同：商品资质沿用商品查看权（能看商品就能看它的资质），批次检测报告沿用包装码查看权并叠加仓库数据范围。 管理动作统一收在一枚 {@code scm:trace:file:manage}
- * 上，避免给仓库岗顺带打开商品写入口。
+ * 两个入口的授权不同：商品资质沿用商品查看权，批次检测报告沿用包装码查看权并叠加仓库数据范围。 管理动作统一收在 {@code scm:trace:file:manage} 上，避免给仓库岗顺带打开商品写入口。
  */
 @Service
 @RequiredArgsConstructor
@@ -69,9 +68,7 @@ public class TraceAttachmentService {
         return attachmentsOf(FileRelationBizTypeEnum.LOT_INSPECTION, lotId, TraceAttachmentCategoryEnum.INSPECTION);
     }
 
-    /**
-     * 同步商品资质：列表里没有的旧附件只撤销授权，不删除物理文件。
-     */
+    /** 同步商品资质：列表里没有的旧附件只撤销授权，不删除物理文件。 */
     @Transactional(rollbackFor = Exception.class)
     public void syncProductAttachments(Long spuId, Collection<String> fileKeys) {
         if (traceAttachmentDao.countLiveSpu(spuId) == 0) {
@@ -93,7 +90,7 @@ public class TraceAttachmentService {
      * 去空白、去重并确认每个 key 都在文件表里存在。
      *
      * <p>
-     * 不存在的 key 会写出一条谁也读不到的关系行：数据库挡不住，读侧只会静默丢掉它， 事后没人能解释「为什么这个附件不显示」。所以在写入前直接拒绝。
+     * 不存在的 key 会写出谁也读不到的关系行：读侧只会静默丢掉，事后没人能解释「为什么附件不显示」， 所以写入前直接拒绝。
      */
     private List<String> requireExisting(Collection<String> fileKeys) {
         if (fileKeys == null || fileKeys.isEmpty()) {
@@ -141,9 +138,7 @@ public class TraceAttachmentService {
             TraceAttachmentCategoryEnum.INSPECTION);
     }
 
-    /**
-     * 某个业务对象当前引用的全部 fileKey：公开下载入口据此判断「这个文件是否属于这个码」。
-     */
+    /** 某个业务对象当前引用的全部 fileKey：公开下载入口据此判断「这个文件是否属于这个码」。 */
     List<String> attachmentKeysOf(FileRelationBizTypeEnum bizType, Long bizId) {
         return fileRelationDao.listActiveByBiz(bizType.name(), bizId).stream().map(relation -> relation.getFileKey())
             .toList();

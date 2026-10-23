@@ -20,26 +20,20 @@ public class SortingTaskCreateForm {
     @Positive(message = "仓库 ID 必须大于0")
     private Long warehouseId;
 
-    /**
-     * 可留空（未指派），未指派任务只有持建单与指派权的人可见。
-     */
+    /** 可留空（未指派），未指派任务只有持建单与指派权的人可见。 */
     @Positive(message = "分拣员 ID 必须大于0")
     private Long assigneeEmployeeId;
 
     @Size(max = 500, message = "备注不能超过500个字符")
     private String remark;
 
-    /**
-     * 送货时间（可选）；建单时冻结成快照，之后不再跟随订单变化。
-     */
+    /** 送货时间（可选）；建单时保存，之后不再跟随订单变化。 */
     private OffsetDateTime deliveryTime;
 
     @Size(max = 64, message = "预配送波次不能超过64个字符")
     private String deliveryWave;
 
-    /**
-     * 供应商来源（可选）；显式指定并冻结名称快照。
-     */
+    /** 供应商来源（可选）；显式指定并保存名称。 */
     @Positive(message = "供应商 ID 必须大于0")
     private Long supplierId;
 

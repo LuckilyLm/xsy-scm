@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * 建议输入的版本约束与历史明细还原；回看只读快照，不读当前停靠点。
+ * 建议输入的版本约束和历史明细还原；回看只读当时保存的数据，不读当前停靠点。
  */
 public final class DeliveryPlanSnapshotPolicy {
     private DeliveryPlanSnapshotPolicy() {
@@ -93,9 +93,7 @@ public final class DeliveryPlanSnapshotPolicy {
         }
     }
 
-    /**
-     * 只从生成时的输入快照还原地图起点、旧顺序和约束说明；旧快照缺字段时安全降级。
-     */
+    /** 只从生成时保存的输入还原地图起点、旧顺序和约束说明；缺字段时安全降级。 */
     public static void fillPreviewSource(DeliveryPlanProposalEntity proposal, DeliveryPlanProposalVO view) {
         Map<String, Object> frozen = proposal.getInputSnapshot();
         if (frozen == null)

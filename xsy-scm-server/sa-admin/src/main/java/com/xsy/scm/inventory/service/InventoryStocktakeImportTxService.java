@@ -15,7 +15,7 @@ import java.util.List;
 public class InventoryStocktakeImportTxService {
 
     /**
-     * 一次提交的结果：新建草稿 id + 是否命中幂等重放。
+     * 一次提交的结果：新建草稿 id + 是否命中幂等重试。
      */
     public record CommitResult(Long stocktakeId, boolean replayed) {
     }
@@ -26,7 +26,7 @@ public class InventoryStocktakeImportTxService {
 
     /**
      * @param fingerprint
-     *            参与哈希的请求指纹（凭证令牌 + 各行实盘量）：内容变了即视为不同请求，不会把「改了实盘数的重传」误判成首次请求的重放。
+     *            参与哈希的请求指纹（凭证令牌 + 各行实盘量）：内容变了即视为不同请求，不会把「改了实盘数的重传」误判成首次请求的重试。
      */
     @Transactional(rollbackFor = Exception.class)
     public CommitResult commit(Long warehouseId, List<InventoryStocktakeService.SnapshotLine> lines,

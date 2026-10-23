@@ -20,7 +20,7 @@ import lombok.Data;
  * 对账结论：渠道账 vs 本地账。
  *
  * <p>
- * 差额<b>落库</b>而不是每次现算：对账结论是要被审计的历史事实，不能随之后的交易变动而变。 表上有 CHECK 保证 {@code MATCHED} 当且仅当差额为 0。
+ * 差额直接保存而不是每次现算：对账结论要留档，不能随之后的交易变动而变。 表上有 CHECK 保证 {@code MATCHED} 当且仅当差额为 0。
  */
 @Data
 @TableName(value = "xsy_payment_reconciliation", autoResultMap = true)

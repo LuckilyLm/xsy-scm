@@ -34,7 +34,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSF
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_TRANSFER_WAREHOUSE_DISABLED;
 
 /**
- * 管理跨仓调拨：草稿、发出、在途、收货。 在途调拨不能取消，需用反向调拨冲回。 发出和收货分别在事务中更新对应仓库；先锁单据，再按仓库和商品规格顺序锁余额。
+ * 管理跨仓调拨：草稿、发出、在途、收货。在途调拨不能取消，需用反向调拨冲回。发出和收货分别在事务中更新对应仓库；先锁单据，再按仓库和商品规格顺序锁余额。
  */
 @Service
 @RequiredArgsConstructor
@@ -56,7 +56,7 @@ public class InventoryTransferService {
      * 新建草稿调拨单。
      *
      * <p>
-     * 草稿阶段<b>不校验源仓是否有货</b>（那是发出时的判断）：草稿允许「先开单再备货」。
+     * 草稿阶段不校验源仓是否有货（那是发出时的判断）：草稿允许「先开单再备货」。
      *
      * @return 新单 id
      */
@@ -73,7 +73,7 @@ public class InventoryTransferService {
         entity.setToWarehouseId(form.getToWarehouseId());
         entity.setStatus(ScmInventoryTransferStatusEnum.DRAFT.name());
         entity.setRemark(form.getRemark());
-        // 草稿态不得有发出 / 收货信息（DB CHECK 也要求两者按状态为空）
+        // 草稿态不得有发出 / 收货信息（数据库 CHECK 也要求两者按状态为空）
         entity.setShippedAt(null);
         entity.setShippedBy(null);
         entity.setReceivedAt(null);
@@ -111,13 +111,13 @@ public class InventoryTransferService {
     }
 
     /**
-     * 发出：从源仓扣减并写 {@code TRANSFER_OUT} 流水，单据进入<b>在途</b>。
+     * 发出：从源仓扣减并写 {@code TRANSFER_OUT} 流水，单据进入在途状态。
      *
      * <p>
-     * 明细行的 {@code unitSnapshot} 在此刻按源仓记账单位回写 —— 草稿态它为空。这个快照是收货时断言目标仓单位一致的依据。
+     * 明细行的 {@code unitSnapshot} 在此刻按源仓记账单位回写 —— 草稿态它为空。这个值是收货时核对目标仓单位一致的依据。
      *
      * <p>
-     * 源仓必须<b>启用</b>：停用仓库不能用于新的调拨业务（41048）。
+     * 源仓必须启用：停用仓库不能用于新的调拨业务（41048）。
      */
     @Transactional(rollbackFor = Exception.class)
     public void ship(Long transferId) {
@@ -154,7 +154,7 @@ public class InventoryTransferService {
      * 收货：向目标仓累加并写 {@code TRANSFER_IN} 流水，单据完成。
      *
      * <p>
-     * 目标仓必须<b>启用</b>（41048）。目标仓若从没有过该 SKU 的余额行，由本次调入建立（单位取明细快照）；已有则断言单位一致，不一致直接 41044。
+     * 目标仓必须启用（41048）。目标仓若从没有过该 SKU 的余额行，由本次调入建立（单位取明细记录）；已有则核对单位一致，不一致直接 41044。
      */
     @Transactional(rollbackFor = Exception.class)
     public void receive(Long transferId) {
@@ -175,7 +175,7 @@ public class InventoryTransferService {
         items.stream().sorted(Comparator.comparing(InventoryTransferItemVO::getSkuId))
             .forEach(item -> inventoryCommandService.postTransferIn(new InventoryTransferFact(locked.getToWarehouseId(),
                 item.getSkuId(), locked.getId(), item.getId(), item.getQuantity(),
-                // 收货必须传期望单位（来自发出时写入的快照）
+                // 收货必须传期望单位（来自发出时写入的单位）
                 item.getUnitSnapshot(), now, operator)));
 
         if (inventoryTransferDao.markReceived(transferId, now, operator) != 1) {
@@ -236,7 +236,7 @@ public class InventoryTransferService {
      * 单据级校验：至少一行、同一 SKU 不得重复、源仓与目标仓必须不同且都存在。
      *
      * <p>
-     * 源仓 == 目标仓在这里判（而不是只靠 DB 的 {@code ck_inventory_transfer_distinct}）： DB 约束给不出可读原因，而这是用户最容易犯的错。
+     * 源仓 == 目标仓在这里判（而不是只靠数据库的 {@code ck_inventory_transfer_distinct}）：数据库约束给不出可读原因，而这是用户最容易犯的错。
      */
     private void requireForm(InventoryTransferAddForm form) {
         if (form == null || form.getItems() == null || form.getItems().isEmpty()) {
@@ -257,10 +257,10 @@ public class InventoryTransferService {
     }
 
     /**
-     * 断言仓库<b>启用</b>。
+     * 要求仓库已启用。
      *
      * <p>
-     * 与采购侧的 {@code PurchaseWarehouseReferenceGuard} 同一取向： 「不允许用停用仓库建单」不是仓库域自身的不变量，因此错误码留在调用方域（41048）。
+     * 与采购侧的 {@code PurchaseWarehouseReferenceGuard} 做法一致：「不允许用停用仓库建单」不是仓库域自身的固定规则，因此错误码留在调用方域（41048）。
      */
     private void requireEnabled(Long warehouseId) {
         WarehouseEntity warehouse = warehouseService.require(warehouseId);

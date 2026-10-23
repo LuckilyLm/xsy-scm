@@ -27,7 +27,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_INSUFF
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERVATION_INVALID;
 
 /**
- * 处理库存预留：增加预留量，不改变实际库存。 可用量 = 实际库存 - 预留量，预留与出库采用相同口径。 先锁预留记录，再按仓库和商品规格顺序锁余额；可在订单确认事务内调用。
+ * 处理库存预留：增加预留量，不改变实际库存。可用量 = 实际库存 - 预留量，预留与出库采用同一规则。先锁预留记录，再按仓库和商品规格顺序锁余额；可在订单确认事务内调用。
  */
 @Service
 @RequiredArgsConstructor
@@ -45,7 +45,7 @@ public class InventoryReservationService {
      * 预留库存。
      *
      * <p>
-     * 校验顺序：仓库存在 → 余额行存在（否则无货可占）→ 可用量足够。可用量 = {@code quantity - reserved_quantity}，与出库共用同一口径。
+     * 校验顺序：仓库存在 → 余额行存在（否则无货可占）→ 可用量足够。可用量 = {@code quantity - reserved_quantity}，与出库同一规则。
      *
      * @return 新建的预留 id
      */
@@ -92,8 +92,8 @@ public class InventoryReservationService {
         entity.setUpdatedBy(operator);
 
         if (inventoryReservationDao.insertOnConflictDoNothing(entity) != 1) {
-            // 同一来源行已有有效预留：视为幂等成功还是错误，由调用方语义决定。
-            // 这里 fail-fast —— 静默返回会让「订单重复确认」看起来成功。
+            // 同一来源行已有有效预留：视为幂等成功还是错误，由调用方决定。
+            // 这里直接失败 —— 静默返回会让「订单重复确认」看起来成功。
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
         }
 
@@ -110,7 +110,7 @@ public class InventoryReservationService {
      * 只有 {@code ACTIVE} 可释放；重复释放会因状态条件失败（41009），避免「释放两次」把可用量虚增。
      *
      * <p>
-     * 这是预留页上的显式动作，归还是<b>某个仓</b>的可用量，因此仓库必须在授权范围内。
+     * 这是预留页上的显式动作，归还的是某个仓的可用量，因此仓库必须在授权范围内。
      */
     @Transactional(rollbackFor = Exception.class)
     public void release(Long reservationId) {
@@ -124,8 +124,7 @@ public class InventoryReservationService {
      * 按来源行释放（销售订单取消 / 关闭时调用）。
      *
      * <p>
-     * 来源行没有有效预留时<b>静默返回</b> —— 取消一张从未预留过库存的订单是正常操作，不该报错。这与 {@link #release} 的 fail-fast 语义刻意不同：那里是「点名释放某条预留」，
-     * 点不到名字说明调用方传错了 id。
+     * 来源行没有有效预留时静默返回 —— 取消一张从未预留过库存的订单是正常操作，不该报错。这与 {@link #release} 直接失败的做法刻意不同：那里是「点名释放某条预留」， 点不到名字说明调用方传错了 id。
      */
     @Transactional(rollbackFor = Exception.class)
     public void releaseBySource(String sourceDocumentType, Long sourceDocumentItemId) {
@@ -148,16 +147,16 @@ public class InventoryReservationService {
     }
 
     /**
-     * 为销售订单执行<b>整单预留</b>。
+     * 为销售订单执行整单预留。
      *
      * <p>
-     * 仓库由 {@link WarehouseService#defaultEnabledWarehouse()} 解析 —— 销售订单没有仓库字段 （单仓库口径），启用仓库不唯一时<b>不猜</b>，直接失败（41018）。
+     * 仓库由 {@link WarehouseService#defaultEnabledWarehouse()} 解析 —— 销售订单没有仓库字段（单仓库），启用仓库不唯一时不猜，直接失败（41018）。
      *
      * <p>
-     * <b>严格语义</b>：任一行可用量不足就抛 41011，整次显式预留事务回滚；这不会阻断此前的订单确认。
+     * 严格语义：任一行可用量不足就抛 41011，整次显式预留事务回滚；这不会阻断此前的订单确认。
      *
      * <p>
-     * 锁序：按 {@code skuId} 升序逐行预留，与出库确认同一顺序。
+     * 加锁顺序：按 {@code skuId} 升序逐行预留，与出库确认同一顺序。
      *
      * @param lines
      *            订单行（只取 itemId / skuId / quantity）
@@ -182,7 +181,7 @@ public class InventoryReservationService {
     }
 
     /**
-     * 销售订单取消 / 关闭时<b>整单释放</b>。
+     * 销售订单取消 / 关闭时整单释放。
      *
      * <p>
      * 按头级查全部有效预留并逐条释放；没有预留时静默返回（取消一张从未预留过的订单是正常的）。
@@ -231,7 +230,7 @@ public class InventoryReservationService {
         InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(locked.getWarehouseId(),
             locked.getSkuId());
         if (balance == null) {
-            // 余额行不该消失（append-only 语义下余额只增减、不删除）；这里 fail-fast 暴露数据异常。
+            // 余额行不该消失（余额只增减、不删除）；这里直接失败，暴露数据异常。
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
         }
         if (inventoryReservationDao.markReleased(locked.getId(), operator) != 1) {

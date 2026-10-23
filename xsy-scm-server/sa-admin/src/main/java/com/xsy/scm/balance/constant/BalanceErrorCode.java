@@ -6,9 +6,6 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * 余额域使用 41360–41379 错误码。
- *
- * <p>
- * 分配前已 grep 全仓已用码值：既有区间到 41359（支付域 41340–41359 已用满），41360 起空闲。
  */
 @Getter
 @RequiredArgsConstructor
@@ -16,7 +13,7 @@ public enum BalanceErrorCode implements ScmErrorCode {
 
     BALANCE_ACCOUNT_NOT_FOUND(41360, "客户余额账户不存在"),
 
-    /** 余额不足：<b>不允许负余额</b>，宁可失败也不透支。 */
+    /** 余额不足：不允许负余额，宁可失败也不透支。 */
     BALANCE_INSUFFICIENT(41361, "客户余额不足"),
 
     BALANCE_MOVEMENT_NOT_FOUND(41362, "余额流水不存在"),

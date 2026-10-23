@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 应付明细的来源类型，{@code source_id} 的空 / 非空由 {@code ck_finance_payable_item_source_pairing} 在库级配对。
+ * 应付明细的来源类型；{@code source_id} 是否为空由 {@code ck_finance_payable_item_source_pairing} 在数据库层约束。
  */
 @Getter
 @RequiredArgsConstructor

@@ -19,7 +19,7 @@ public class OrderReturnReceiptItemEntity {
     private Long sourceOutboundItemId;
     private String disposition;
     /**
-     * 接收数量按销售单位；库存记账量单独冻结，历史退货这两列为空。
+     * 接收数量按销售单位；库存数量单独记录，历史退货这两列为空。
      */
     private BigDecimal quantity;
     private String unitSnapshot;

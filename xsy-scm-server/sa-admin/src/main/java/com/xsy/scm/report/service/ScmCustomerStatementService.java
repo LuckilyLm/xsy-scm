@@ -26,7 +26,7 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Snapshot only: the source Finance facts stay immutable and authoritative.
+ * 只生成对账单版本；源头的财务记录保持不变，仍是权威数据。
  */
 @Service
 @RequiredArgsConstructor
@@ -107,7 +107,7 @@ public class ScmCustomerStatementService {
         result.setRefundNet(refund);
         result.setClosingReceivable(debt);
         if (result.getPartialScope()) {
-            // Applied receipts may belong to another, invisible customer/order; a partial view cannot reconcile cash.
+            // 已核销的收款可能属于其他不可见的客户 / 订单，局部范围不对未核销余额下结论。
             result.setOpeningUnallocated(null);
             result.setClosingUnallocated(null);
         } else {

@@ -22,7 +22,7 @@ public class MallOrderSubmitForm {
     @NotNull(message = "请选择收货地址")
     private Long addressId;
     /**
-     * 提交时必须是该客户配送仓选项之一；由订单服务冻结。
+     * 提交时必须是该客户配送仓选项之一；由订单服务固定。
      */
     @Positive(message = "配送仓必须大于0")
     private Long warehouseId;
@@ -34,12 +34,12 @@ public class MallOrderSubmitForm {
     @Size(max = 500, message = "订单备注不能超过500个字符")
     private String remark;
     /**
-     * 期望配送日期 yyyy-MM-dd，可空；服务端按当日 00:00（Asia/Shanghai）落库
+     * 期望配送日期 yyyy-MM-dd，可空；服务端按当日 00:00（Asia/Shanghai）保存
      */
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "期望配送日期格式应为 yyyy-MM-dd")
     private String expectDeliveryDate;
     /**
-     * 客户预选的券实例。提交时服务端重验归属、状态与门槛后随订单持久化； 正式占用（冻结）仍在订单确认命令内完成，预览与预选都不占用券。
+     * 客户预选的券实例。提交时服务端重验归属、状态与门槛后随订单保存；正式占用（锁定）仍在订单确认命令内完成， 预览与预选都不占用券。
      */
     @Positive(message = "券实例 ID 必须大于0")
     private Long couponInstanceId;

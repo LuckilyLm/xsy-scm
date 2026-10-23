@@ -13,7 +13,7 @@ import com.xsy.scm.delivery.domain.vo.DeliveryRouteVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryPrintItemVO;
 
 /**
- * 配送金额只有具备对应权限时才返回。无权查看返回 null，不返回零；整次查询统一判断权限，避免列表中出现不同口径。
+ * 配送金额只有具备对应权限时才返回。无权查看返回 null，不返回零；整次查询统一判断权限，避免列表中出现不同规则。
  */
 public final class DeliveryVisibility {
 
@@ -60,9 +60,7 @@ public final class DeliveryVisibility {
         return detail;
     }
 
-    /**
-     * 打印预览明细：发货单上的行金额与结算金额同样属于订单金额。清空的是本次查询新读出的实体字段，只影响响应体，不回写数据库。
-     */
+    /** 打印预览明细：发货单上的行金额与结算金额同样属于订单金额。清空的是本次查询读出的字段，只影响响应体，不回写数据库。 */
     public List<DeliveryPrintItemVO> printItems(List<DeliveryPrintItemVO> rows) {
         return mask(rows, item -> {
             item.setOrderedLineAmount(null);
@@ -70,9 +68,7 @@ public final class DeliveryVisibility {
         });
     }
 
-    /**
-     * 正式生成打印的返回体：计次结果里的金额走同一口径，否则一次打印就绕过了字段级收口。
-     */
+    /** 正式生成打印的返回体：计次结果里的金额走同一规则，否则一次打印就绕过了字段级限制。 */
     public DeliveryPrintResultVO printResult(DeliveryPrintResultVO result) {
         if (result == null || amountVisible)
             return result;
@@ -81,9 +77,7 @@ public final class DeliveryVisibility {
         return result;
     }
 
-    /**
-     * 无权限才逐行清空，有权限原样返回。
-     */
+    /** 无权限才逐行清空，有权限原样返回。 */
     private <T> List<T> mask(List<T> rows, Consumer<T> clear) {
         if (amountVisible || rows == null)
             return rows;

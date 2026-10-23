@@ -24,9 +24,7 @@ public class SupplierVO {
 
     private String contactPhone;
 
-    /**
-     * 关联商品数，批量补全（不 N+1）。
-     */
+    /** 关联商品数，批量补全（不走 N+1）。 */
     private Long skuCount;
 
     private OffsetDateTime updatedAt;

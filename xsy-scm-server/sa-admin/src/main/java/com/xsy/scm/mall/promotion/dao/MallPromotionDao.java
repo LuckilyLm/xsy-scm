@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 商城营销只读投影：活动、可领券模板与当前客户的券。
+ * 商城营销只读查询：活动、可领券模板与当前客户的券。
  *
  * <p>
  * 商城自有的只读 DAO（与 {@code MallFundsSourceDao} 同一模式）：客户券一律按登录客户 id 收窄； 写操作（领券、占用、核销）不经过这里，全部走营销域正式服务。

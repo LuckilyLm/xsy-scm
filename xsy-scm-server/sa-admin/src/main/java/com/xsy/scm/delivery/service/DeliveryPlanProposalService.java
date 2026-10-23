@@ -63,9 +63,7 @@ public class DeliveryPlanProposalService {
 
     private final DeliveryRouteQueryService deliveryRouteQueryService;
 
-    /**
-     * 生成建议（只读业务数据 + 追加一条建议记录）。
-     */
+    /** 生成建议（只读业务数据 + 追加一条建议记录）。 */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPlanProposalVO propose(Long routeId) {
         DeliveryRouteEntity route = lockVisibleRoute(routeId);
@@ -175,9 +173,7 @@ public class DeliveryPlanProposalService {
         }
     }
 
-    /**
-     * 放弃建议：不改线路。
-     */
+    /** 放弃建议：不改线路。 */
     @Transactional(rollbackFor = Exception.class)
     public void discard(Long proposalId, DeliveryPlanDiscardForm form) {
         DeliveryPlanProposalEntity initial = requireProposal(proposalId);
@@ -194,19 +190,13 @@ public class DeliveryPlanProposalService {
         }
     }
 
-    /**
-     * 某线路的建议历史（最新在前），供比较多次生成的结果。
-     */
+    /** 某线路的建议历史（最新在前），供比较多次生成的结果。 */
     @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public List<DeliveryPlanProposalVO> history(Long routeId) {
         deliveryRouteQueryService.requireVisible(routeId);
         return deliveryPlanProposalDao.listByRoute(routeId, HISTORY_LIMIT).stream()
             .map(DeliveryPlanProposalService::toVO).toList();
     }
-
-    // ------------------------------------------------------------------
-    // 内部
-    // ------------------------------------------------------------------
 
     private DeliveryRouteEntity lockVisibleRoute(Long routeId) {
         var scope = dataScopeService.resolve().getDriverScope();
@@ -236,9 +226,7 @@ public class DeliveryPlanProposalService {
         }
     }
 
-    /**
-     * 起点与全部停靠点都要有坐标且同一坐标系 —— 与 {@code DeliveryRouteService#plan} 同一条规则， 因为排线建议喂给它的正是这份坐标。
-     */
+    /** 起点与全部停靠点都要有坐标且同一坐标系，与 {@code DeliveryRouteService#plan} 同一条规则，因为排线建议喂给它的正是这份坐标。 */
     private static void requireLocations(DeliveryRouteEntity route, List<DeliveryRouteStopEntity> stops) {
         if (route.getStartLongitude() == null || route.getStartLatitude() == null || route.getStartGeomCrs() == null
             || stops.isEmpty()) {

@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 查询和下载复用同一投影：仅已发布报告可见，过期报告只返回状态与检测信息。
+ * 查询与下载共用同一份数据：仅已发布报告可见，过期报告只返回状态与检测信息。
  */
 @Service
 @RequiredArgsConstructor

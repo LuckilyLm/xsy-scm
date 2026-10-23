@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 渠道退款事实。
+ * 渠道退款记录。
  */
 @Data
 public class PaymentRefundVO {
@@ -36,9 +36,7 @@ public class PaymentRefundVO {
     private String recoveryMessage;
     private OffsetDateTime nextRecoveryAt;
 
-    /**
-     * 业务来源，当前只有 {@code ORDER_REFUND}。
-     */
+    /** 业务来源类型，当前只有 {@code ORDER_REFUND}。 */
     private String sourceType;
 
     private Long sourceId;

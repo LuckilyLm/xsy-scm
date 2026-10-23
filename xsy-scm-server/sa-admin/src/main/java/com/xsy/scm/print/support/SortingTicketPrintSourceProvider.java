@@ -45,7 +45,7 @@ public class SortingTicketPrintSourceProvider implements ScmPrintSourceProvider 
         header.put("supplierName", ScmPrintText.text(ticket.getSupplierNameSnapshot()));
         var rows = new ArrayList<Map<String, String>>();
         for (var item : ticket.getItems()) {
-            // 赠品是只读合并进来的第二类来源：不挂订单行、也不会有分拣结果。
+            // 赠品是只读合并进来的第二类来源：不挂订单行，也不会有分拣结果。
             var gift = SortingTaskItemVO.PROMOTION_GIFT.equals(item.getSourceType());
             var row = ScmPrintSource.row();
             row.put("sourceType", gift ? "赠品" : "商品");
@@ -57,7 +57,7 @@ public class SortingTicketPrintSourceProvider implements ScmPrintSourceProvider 
             row.put("saleUnit", ScmPrintText.text(item.getSaleUnitSnapshot()));
             row.put("plannedQuantity", ScmPrintText.fixed(item.getPlannedQuantitySnapshot()));
             row.put("sortedQuantity", ScmPrintText.fixed(item.getSortedQuantity()));
-            // 赠品留空而不是「未录入」：它不会、也不该被录入 —— 分拣只拣货，不写回赠品事实
+            // 赠品留空而不是「未录入」：赠品不会被录入，分拣只拣货，不写回赠品。
             row.put("result", gift ? "" : resultLabel(item.getResult()));
             row.put("reason", ScmPrintText.text(item.getReason()));
             rows.add(row);

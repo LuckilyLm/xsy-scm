@@ -19,7 +19,7 @@ public class ProductSkuOptionQueryService {
     private final ProductSkuOptionDao productSkuOptionDao;
 
     /**
-     * 提供跨领域安全的商品规格选项查询，集中处理商品数据访问。
+     * 供其他模块按 ID 查询商品规格选项。
      */
     public List<ProductSkuOptionVO> byIds(List<Long> skuIds) {
         return skuIds == null || skuIds.isEmpty() ? List.of() : productSkuOptionDao.selectByIds(skuIds);

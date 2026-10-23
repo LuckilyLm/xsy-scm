@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Keeps String-backed request fields aligned with their existing enum vocabulary.
+ * 让字符串请求字段的取值与对应枚举保持一致。
  */
 public class ScmEnumValueValidator implements ConstraintValidator<ScmEnumValue, String> {
 

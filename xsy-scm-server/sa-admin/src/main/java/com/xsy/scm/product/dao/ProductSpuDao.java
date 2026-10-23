@@ -15,7 +15,7 @@ public interface ProductSpuDao extends BaseMapper<ProductSpuEntity> {
         @Param("categoryIds") List<Long> categoryIds);
 
     /**
-     * 商品是否产生过订单、采购、库存或价格事实；为真时禁止删除档案。
+     * 商品是否产生过订单、采购、库存或价格记录；为真时禁止删除档案。
      */
     boolean hasBusinessReference(@Param("spuId") Long spuId);
 

@@ -41,7 +41,7 @@ public class ScreenDataService {
      * 业务时区。
      *
      * <p>
-     * 大屏自己的两条查询（网络节点的今日出库量）仍要算「今日」。用 UTC 日界会把窗口整体平移 8 小时，与其余面板的口径不一致。
+     * 大屏自己的查询（网络节点的今日出库量）也要算「今日」。用 UTC 日界会把窗口整体平移 8 小时， 与其余面板的时间基准不一致。
      */
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
 
@@ -107,7 +107,7 @@ public class ScreenDataService {
      * 趋势数据（近 7 / 30 天，含今天）。
      *
      * <p>
-     * 区间是<b>闭区间且含今天</b>：{@code 7d} = 今天往前数 6 天到今天，共 7 个点。序列口径由 metrics 服务负责， 这里只把结果搬进大屏 VO。
+     * 区间包含今天：{@code 7d} = 今天往前数 6 天到今天，共 7 个点。各序列的计算由 metrics 服务负责，这里只把结果搬进大屏 VO。
      */
     public ScreenTrendVO getTrendData(String range) {
         TrendMetrics metrics = metricsService.trend(range, dataScopeService.resolve());
@@ -138,9 +138,7 @@ public class ScreenDataService {
         return vo;
     }
 
-    /**
-     * 省级上卷：只累加市级事实，不引入任何新的判定。
-     */
+    /** 省级汇总：只累加市级数据，不引入新的判定。 */
     private static List<ScreenGeoVO.ProvinceNode> rollUpProvinces(List<ScreenGeoVO.CityNode> cities) {
         Map<Integer, ScreenGeoVO.ProvinceNode> byProvince = new LinkedHashMap<>();
         for (ScreenGeoVO.CityNode city : cities) {

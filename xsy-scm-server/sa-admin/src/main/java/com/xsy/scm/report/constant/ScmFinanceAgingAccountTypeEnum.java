@@ -7,20 +7,16 @@ import lombok.RequiredArgsConstructor;
  * 账龄分析统计的往来方向。
  *
  * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * {@code desc} 供页面与导出使用，保存时仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor
 public enum ScmFinanceAgingAccountTypeEnum {
 
-    /**
-     * 应收：客户欠款。
-     */
+    /** 应收：客户欠款。 */
     RECEIVABLE("应收"),
 
-    /**
-     * 应付：欠供应商款项。
-     */
+    /** 应付：欠供应商款项。 */
     PAYABLE("应付");
 
     private final String desc;

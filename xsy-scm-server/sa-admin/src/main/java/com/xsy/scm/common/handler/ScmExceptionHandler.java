@@ -19,7 +19,7 @@ public class ScmExceptionHandler {
     }
 
     /**
-     * 数据范围越权与功能权限不足对客户端表现一致（30005），调用方无法据此探测行是否存在。
+     * 数据越权和没有功能权限返回同一个错误（30005），调用方没法借此探测数据是否存在。
      */
     @ExceptionHandler(ScmDataScopeException.class)
     public ResponseDTO<Void> handleDataScope(ScmDataScopeException exception) {

@@ -59,8 +59,7 @@ public class FinancePayableService {
     private final ScmIdempotencyService idempotencyService;
 
     /**
-     * Append one manual RED payable. The NORMAL payable row is locked before checking the cumulative red amount, which
-     * serializes competing red entries for the same source.
+     * 追加一张手工红字应付。先锁正常应付行再检查累计红字金额，让同一来源的并发红字串行执行。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinancePayableRedVO red(FinancePayableRedForm form, String idempotencyKey) {
@@ -110,13 +109,13 @@ public class FinancePayableService {
         red.setCreatedBy(operator);
         red.setUpdatedBy(operator);
         if (financePayableDao.insert(red) != 1) {
-            throw new IllegalStateException("手工红字应付未落库: " + red.getPayableNo());
+            throw new IllegalStateException("手工红字应付未保存: " + red.getPayableNo());
         }
 
         for (FinancePayableItemEntity item : items) {
             item.setPayableId(red.getId());
             if (financePayableItemDao.insert(item) != 1) {
-                throw new IllegalStateException("手工红字应付明细未落库: " + item.getPurchaseOrderItemId());
+                throw new IllegalStateException("手工红字应付明细未保存: " + item.getPurchaseOrderItemId());
             }
         }
 
@@ -207,16 +206,15 @@ public class FinancePayableService {
      * 收货确认 → 正常应付。
      *
      * <p>
-     * <b>必须与触发它的事务同成败</b>，因此传播级别是 {@code MANDATORY} 而不是 {@code REQUIRED}：
-     * 后者会在没有外层事务时<b>自己提交</b>，那会造出「收货单还是草稿、应付已经入账」的孤立事实，而 {@code confirm} 后续的库存写入一旦失败也没有回滚它的机会。脱离事务调用即
-     * {@code IllegalTransactionStateException}，这是刻意的失败。
+     * 必须与触发它的事务同成败，因此传播级别是 {@code MANDATORY} 而不是 {@code REQUIRED}：后者在没有外层事务时会自己提交， 造出「收货单还是草稿、应付已经入账」的孤立记录，而
+     * {@code confirm} 后续库存写入失败时也没有回滚它的机会。
      *
      * <p>
-     * <b>不是用户命令，因此不吃 {@code Idempotency-Key}</b>：防重复请求由 {@code confirm} 自身的幂等三段式与「只有 DRAFT 可确认」的状态守卫承担；
-     * 防重复<b>事实</b>由库级来源唯一索引承担，命中即视为已生成并成功返回。
+     * 不是用户命令，因此不使用 {@code Idempotency-Key}：防重复请求由 {@code confirm} 自身的幂等与「只有 DRAFT 可确认」的状态校验承担；
+     * 防重复数据由数据库来源唯一索引承担，命中即视为已生成并成功返回。
      *
      * <p>
-     * <b>不锁任何行、不碰任何业务表</b>：业务锁已由 {@code confirm} 持有，并发的双触发由 {@code uk_finance_payable_source_active} 仲裁。
+     * 不锁任何行、不碰任何业务表：业务锁已由 {@code confirm} 持有，并发的双触发由 {@code uk_finance_payable_source_active} 仲裁。
      *
      * @param purchaseReceiptId
      *            刚被置为 {@code CONFIRMED} 的收货单 id
@@ -225,7 +223,7 @@ public class FinancePayableService {
     public void generateOnReceiptConfirm(Long purchaseReceiptId) {
         FinancePayableSourceDto source = financePayableSourceDao.selectConfirmedReceipt(purchaseReceiptId);
         if (source == null) {
-            // 走到这里说明调用点把未确认（或不存在）的收货单当成收货事实，静默跳过会留下一个
+            // 走到这里说明调用点把未确认（或不存在）的收货单当成已确认收货，跳过会留下
             // 「业务以为财务已挂账、财务什么都没记」的缺口，因此必须失败并让收货确认一起回滚。
             throw new IllegalStateException("收货单未处于 CONFIRMED 状态，不能生成应付: " + purchaseReceiptId);
         }
@@ -237,8 +235,8 @@ public class FinancePayableService {
             BigDecimal::add);
 
         if (amount.signum() <= 0) {
-            // 没有有效明细，或单价为 0 导致金额为 0：不产生 0 元财务事实，也不造一张空单头留痕
-            // 0 元事实会永久挂在待核销列表里且无法核销。
+            // 没有有效明细，或单价为 0 导致金额为 0：不产生 0 元财务记录，也不建空单头；
+            // 0 元记录会永久挂在待核销列表里且无法核销。
             return;
         }
 
@@ -285,8 +283,7 @@ public class FinancePayableService {
     }
 
     /**
-     * 明细装配：量取收货行的有效量、价取采购行的结算单价，金额按四位精度 HALF_UP 舍入。单头金额是<b>已按四位舍入的行金额之和</b>，不是「先求和再舍入」——
-     * 后者会让单头与明细对不上账，而对账时没人能解释那半分钱的差额。
+     * 明细装配：数量取收货行的有效量、价格取采购行的结算单价，金额按 4 位小数 HALF_UP 舍入。单头金额是已按 4 位舍入的行金额之和， 不是「先求和再舍入」——后者会让单头与明细对不上账，对账时也没人能解释那半分钱的差额。
      */
     private List<FinancePayableItemEntity> toItems(List<FinancePayableSourceLineDto> lines) {
         String operator = ScmOperator.current();
@@ -315,7 +312,7 @@ public class FinancePayableService {
     }
 
     /**
-     * 财务生成日志的金额和时间写入 JSON 快照前须转成字符串，避免通用 JSONB 转换器无法序列化时间类型。
+     * 财务生成日志的金额和时间写入 JSON 前须转成字符串，避免通用 JSONB 转换器无法序列化时间类型。
      */
     private Map<String, Object> generatedSnapshot(FinancePayableEntity payable, int itemCount) {
         Map<String, Object> snapshot = new LinkedHashMap<>();

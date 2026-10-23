@@ -10,9 +10,7 @@ import lombok.Data;
 @Data
 public class BalanceQueryForm {
 
-    /**
-     * 实际业务客户。服务端据此解析<b>结算主体</b>再去取钱包， 不接受客户端直接指定钱包账户 id —— 那会绕开客户与结算主体的关系。
-     */
+    /** 实际业务客户。服务端据此解析结算主体再取余额账户，不接受客户端指定余额账户 id。 */
     @NotNull(message = "客户不能为空")
     @Positive(message = "客户 ID 必须大于0")
     private Long customerId;

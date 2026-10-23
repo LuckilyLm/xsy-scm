@@ -39,8 +39,6 @@ public class WarehouseAddForm extends com.xsy.scm.common.domain.ScmLocationForm 
     @Size(max = 500, message = "备注不能超过500个字符")
     private String remark;
 
-    /**
-     * 是否启用批次追踪；只在新建时设置，编辑态不可改。
-     */
+    /** 是否启用批次追踪；只在新建时设置，编辑时不可改。 */
     private Boolean lotTrackingEnabled;
 }

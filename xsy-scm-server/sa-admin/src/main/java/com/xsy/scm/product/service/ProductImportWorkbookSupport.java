@@ -32,7 +32,7 @@ import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 @Component
 public class ProductImportWorkbookSupport {
     /**
-     * 模板下拉选项与解析归一化都取自 {@link ProductEnumLabels}， 与导出用的中文标签是同一份定义，避免三处各写一套后漂移。
+     * 模板下拉、解析归一化与导出中文标签都取自 {@link ProductEnumLabels}，避免多处定义不一致。
      */
     private static final Map<String, List<String>> ENUM_OPTIONS = ProductEnumLabels.OPTIONS;
 
@@ -41,7 +41,7 @@ public class ProductImportWorkbookSupport {
      */
     private static final int VALIDATION_LAST_ROW = 2000;
 
-    // 分组标记仅用于本次导入把多行规格归入一个商品，不是落库的 SPU 编码。
+    // 分组标记只用于把本次导入的多行规格归入一个商品，不是保存的 SPU 编码。
     private static final List<String> CREATE_HEADERS = List.of("模板版本", "导入商品分组", "商品名称", "别名", "分类编码", "助记码", "品牌",
         "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
     private static final List<
@@ -97,10 +97,7 @@ public class ProductImportWorkbookSupport {
     }
 
     /**
-     * 给枚举列挂下拉验证。填了列表之外的值 Excel 直接拦下，不必等到服务端才报错。
-     *
-     * <p>
-     * 允许空单元格：非必填列留空是正常用法，必填性由服务端校验统一裁决，避免 Excel 与后端两套规则。
+     * 给枚举列加下拉选项，填了列表外的值 Excel 直接拦下。允许空单元格，必填项由服务端校验。
      */
     private void applyEnumValidations(XSSFSheet sheet, List<String> headers) {
         var helper = new XSSFDataValidationHelper(sheet);
@@ -195,7 +192,7 @@ public class ProductImportWorkbookSupport {
     }
 
     /**
-     * Accept previously downloaded technical headers while exporting only business-facing labels.
+     * 兼容早前下载的技术表头，导出只给业务列名。
      */
     private boolean headerMatches(ProductImportService.ImportMode mode, int column, String value,
         boolean legacyCreate) {
@@ -231,7 +228,7 @@ public class ProductImportWorkbookSupport {
     }
 
     /**
-     * 把中文标签归一化成枚举名。不在映射表里的值原样返回，交给服务端的枚举校验去拒绝并给出可读提示。
+     * 把中文标签转成枚举名；不在映射表里的值原样返回，交给服务端校验。
      */
     private static String normalizeEnumValue(String header, String value) {
         return ProductEnumLabels.normalize(header, value);

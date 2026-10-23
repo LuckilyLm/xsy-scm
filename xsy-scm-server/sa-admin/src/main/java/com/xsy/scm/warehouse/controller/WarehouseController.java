@@ -25,10 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * SCM 仓库（最小主数据）。
- *
- * <p>
- * 共 7 个端点。没有删除端点：仓库是主数据，{@code status} 通过独立命令表达启停。
+ * SCM 仓库主数据。没有删除端点，启停由 {@code enable} / {@code disable} 表达。
  */
 @RestController
 @RequestMapping("/scm/warehouse")
@@ -40,9 +37,7 @@ public class WarehouseController {
 
     private final WarehouseQueryService warehouseQueryService;
 
-    /**
-     * 下拉选择器：只返回 ENABLED 仓库。
-     */
+    /** 下拉选择器：只返回启用的仓库。 */
     @GetMapping("/list")
     @SaCheckPermission(WarehousePermission.QUERY)
     public ResponseDTO<List<WarehouseVO>> list() {
@@ -76,9 +71,7 @@ public class WarehouseController {
         return ResponseDTO.ok();
     }
 
-    /**
-     * 启用仓库。
-     */
+    /** 启用仓库。 */
     @PostMapping("/enable")
     @SaCheckPermission(WarehousePermission.ENABLE)
     @OperateLog
@@ -87,9 +80,7 @@ public class WarehouseController {
         return ResponseDTO.ok();
     }
 
-    /**
-     * 停用仓库。
-     */
+    /** 停用仓库。 */
     @PostMapping("/disable")
     @SaCheckPermission(WarehousePermission.DISABLE)
     @OperateLog

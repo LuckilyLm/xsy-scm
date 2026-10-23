@@ -4,20 +4,16 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 支付方式（渠道大类）。持久化到 {@code xsy_payment_intent.method}。
+ * 支付方式（渠道大类）。保存到 {@code xsy_payment_intent.method}。
  */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPaymentMethodEnum {
 
-    /**
-     * 在线支付：走渠道（当前为本地模拟）。
-     */
+    /** 在线支付：走渠道（当前为本地模拟）。 */
     ONLINE("在线支付"),
 
-    /**
-     * 客户余额抵扣：不经过外部渠道，但同样落 Finance 收款事实（ADM-12）。
-     */
+    /** 客户余额抵扣：不经过外部渠道，但同样生成 Finance 收款记录。 */
     BALANCE("客户余额");
 
     private final String desc;

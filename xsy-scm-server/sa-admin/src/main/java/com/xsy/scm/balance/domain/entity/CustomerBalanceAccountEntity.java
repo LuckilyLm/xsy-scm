@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 客户钱包按结算主体管理。余额由收入与支出流水计算，不另存一份可修改余额；账户记录用作并发扣款的加锁对象。
+ * 客户余额账户按结算主体管理。余额由流水计算，不另存可修改的余额；账户行用作并发扣款的加锁对象。
  */
 @Data
 @TableName("xsy_customer_balance_account")
@@ -20,9 +20,7 @@ public class CustomerBalanceAccountEntity {
     @TableId(type = IdType.AUTO)
     private Long id;
 
-    /**
-     * 钱包所有者（结算主体）。
-     */
+    /** 余额账户所有者（结算主体）。 */
     private Long settlementCustomerId;
 
     private String settlementCustomerNameSnapshot;

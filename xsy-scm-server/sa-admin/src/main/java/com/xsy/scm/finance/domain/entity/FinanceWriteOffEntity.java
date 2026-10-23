@@ -58,12 +58,12 @@ public class FinanceWriteOffEntity extends FinanceRecord {
     private String reason;
 
     /**
-     * 核销时点。核销额按本列取窗，与应收发生额按 {@code event_at} 取窗是<b>两个不同的时间轴</b>，混用会算出既非流量也非存量的数字。
+     * 核销时点。核销额按本列取时间范围，与应收按 {@code event_at} 取范围是两个不同的时间轴，混用会算出既非流量也非存量的数字。
      */
     private OffsetDateTime writtenOffAt;
 
     /**
-     * 操作人（loginId 形态，与审计列同口径）。
+     * 操作人（loginId 形态，与审计列一致）。
      */
     private String operator;
 }

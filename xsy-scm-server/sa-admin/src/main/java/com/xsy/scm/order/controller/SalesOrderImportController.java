@@ -45,7 +45,7 @@ public class SalesOrderImportController {
             SmartResponseUtil.write(response, ResponseDTO.userErrorParam("导入模板缺失，请重新部署应用后再试"));
             return;
         }
-        // 一次性读入内存再写出：长度取实际字节数，避免 JAR 内资源二次定位，也保证 Content-Length 与正文一致。
+        // 一次读入内存再写出：长度用实际字节数，保证 Content-Length 与正文一致。
         var content = template.getContentAsByteArray();
         SmartResponseUtil.setDownloadFileHeader(response, TEMPLATE_FILE_NAME, (long) content.length);
         response.getOutputStream().write(content);

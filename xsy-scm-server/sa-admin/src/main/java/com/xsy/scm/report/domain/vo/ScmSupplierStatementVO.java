@@ -10,7 +10,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import lombok.Data;
 
 /**
- * Payables, actual payments and applied payments stay separate in the frozen version.
+ * 已生成的版本中，应付、实际付款与已核销付款分别列示。
  */
 @Data
 public class ScmSupplierStatementVO {

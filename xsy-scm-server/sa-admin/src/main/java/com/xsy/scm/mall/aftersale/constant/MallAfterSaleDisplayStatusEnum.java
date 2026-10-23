@@ -3,7 +3,7 @@ package com.xsy.scm.mall.aftersale.constant;
 import com.xsy.scm.order.constant.ScmOrderReturnStatusEnum;
 
 /**
- * 商城售后单的展示分类：由正式退货单与实际退款资金事实派生，不新增状态机。
+ * 商城售后单的展示分类：由正式退货单与实际退款记录派生，不新增状态机。
  */
 public enum MallAfterSaleDisplayStatusEnum {
     /**

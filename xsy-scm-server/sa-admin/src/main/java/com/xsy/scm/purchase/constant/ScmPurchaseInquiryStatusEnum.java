@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 采购询价单状态，与 {@code xsy_purchase_inquiry} 的 CHECK 约束逐值对应。
  *
  * <p>
- * 只有两种状态：询价中可继续报价，接受某个报价后询价即关闭。 {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * 只有两种状态：询价中可继续报价，接受某个报价后询价即关闭。{@code desc} 供页面与导出使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

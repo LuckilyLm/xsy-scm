@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 业务退款按原成功资金来源冻结的分摊事实。
+ * 业务退款按原成功资金来源拆分出的分摊记录。
  */
 @Data
 @TableName("xsy_refund_funding_allocation")

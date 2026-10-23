@@ -22,6 +22,6 @@ public class ScmStrictDecimalStringDeserializer extends JsonDeserializer<String>
         if (token == JsonToken.VALUE_STRING) {
             return parser.getText();
         }
-        throw JsonMappingException.from(parser, "SCM fixed-point value must be a JSON string, but got " + token);
+        throw JsonMappingException.from(parser, "SCM 定点数值必须是 JSON 字符串，实际为 " + token);
     }
 }

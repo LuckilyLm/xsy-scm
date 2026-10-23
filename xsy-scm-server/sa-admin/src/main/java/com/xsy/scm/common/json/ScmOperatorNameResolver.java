@@ -11,20 +11,16 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * 后台操作人编号按员工表解析成人名，使用短期缓存避免逐字段查库。非员工用户及找不到的员工编号保持原文。
+ * 操作人编号按员工表解析成人名，用短期缓存避免每个字段查一次库。非员工用户和找不到的编号原样返回。
  */
 @Component
 @RequiredArgsConstructor
 public class ScmOperatorNameResolver {
 
-    /**
-     * 缓存有效期。姓名变更不敏感，一分钟的延迟可以接受。
-     */
+    /** 缓存有效期。名字改了晚一分钟生效没关系。 */
     private static final long TTL_MILLIS = 60_000L;
 
-    /**
-     * {@code userType:userId} 的形状。只认这个形状，避免误改真实人名或其它标识。
-     */
+    /** {@code userType:userId} 的格式。只认这个格式，避免把真名或别的标识改错。 */
     private static final Pattern OPERATOR_ID = Pattern.compile("^(\\d+):(\\d+)$");
 
     private final EmployeeDao employeeDao;
@@ -38,9 +34,7 @@ public class ScmOperatorNameResolver {
         ScmOperatorNameSerializer.bind(this::display);
     }
 
-    /**
-     * 展示用姓名；认不出形状 / 解析不到时原样返回。
-     */
+    /** 展示用姓名；形状不对或解析不到时原样返回。 */
     public String display(String operator) {
         Long employeeId = adminEmployeeId(operator);
         if (employeeId == null) {
@@ -53,7 +47,7 @@ public class ScmOperatorNameResolver {
      * 从 {@code userType:userId} 里取出管理端员工 id。
      *
      * <p>
-     * 形状不对、或不是管理端员工（其它 userType 的数字 id 与员工 id 不在同一空间，拿员工表查会张冠李戴）时返回 {@code null}，由调用方原样回落。
+     * 格式不对、或不是管理端员工时返回 {@code null}：其它 userType 的 id 和员工 id 不是一套编号，查员工表会张冠李戴。
      */
     static Long adminEmployeeId(String operator) {
         if (operator == null) {

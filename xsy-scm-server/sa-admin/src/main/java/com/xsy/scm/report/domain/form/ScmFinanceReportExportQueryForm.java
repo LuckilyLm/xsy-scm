@@ -7,7 +7,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 /**
- * Export filters deliberately omit pagination; exports are guarded and streamed in full.
+ * 导出筛选不包含分页；导出受行数限制保护，并完整输出。
  */
 @Data
 public class ScmFinanceReportExportQueryForm implements ScmFinanceReportFilter {

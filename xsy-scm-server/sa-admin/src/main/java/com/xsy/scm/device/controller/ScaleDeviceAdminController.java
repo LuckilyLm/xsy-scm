@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 电子秤设备管理（员工侧）。
  *
  * <p>
- * 与设备接入接口分开授权：这里的每个动作都由后台员工发起并记入操作日志， 设备凭证无法调用，因此设备不能自己给自己发配对码或延长授权。
+ * 和设备接入接口分开授权：这里都是后台员工操作、会记日志，设备凭证调不了，所以设备不能给自己发配对码或延长授权。
  */
 @RestController
 @RequestMapping("/scm/scale/device")

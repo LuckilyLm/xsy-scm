@@ -27,14 +27,14 @@ public enum ScmInventorySourceDocumentTypeEnum {
      */
     SALES_ORDER_ITEM("销售订单行"),
 
-    ORDER_BUNDLE_COMPONENT("组合商品冻结组成行"),
+    ORDER_BUNDLE_COMPONENT("组合商品组成行"),
 
     /**
      * 盘点单行：{@code source_document_item_id = xsy_inventory_stocktake_item.id}。
      *
      * <p>
-     * 一条盘点明细行最多产生<b>一条</b>流水：{@code delta = 0} 的行不写流水 （数量恒为正，写不出「零差异」的流水），因此
-     * {@code uk_inventory_movement_source_active} 的一行一流水语义在这里依然成立。
+     * 一条盘点明细行最多产生一条流水：{@code delta = 0} 的行不写流水（数量恒为正，写不出「零差异」的流水）， 因此 {@code uk_inventory_movement_source_active}
+     * 的一行一流水规则在这里依然成立。
      */
     STOCKTAKE_ITEM("盘点单行"),
 
@@ -42,8 +42,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
      * 报损报溢单行：{@code source_document_item_id = xsy_inventory_loss_gain_item.id}。
      *
      * <p>
-     * 报损与报溢<b>共用一个来源类型</b>（方向由流水的 {@code movement_type}
-     * 表达）：它们出自同一张单据表的同一种行，拆成两个来源类型只会让查询多一次分支，而「这张单据是报损还是报溢」在单据头上已经能读到。
+     * 报损与报溢共用一个来源类型（方向由流水的 {@code movement_type} 表达）：它们出自同一张单据表的同一种行， 拆成两个来源类型只会让查询多一次分支，而「这张单据是报损还是报溢」在单据头上已经能读到。
      */
     LOSS_GAIN_ITEM("报损报溢单行"),
 
@@ -53,7 +52,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
     TRANSFER_OUT_ITEM("调拨单行（转出）"),
 
     /**
-     * 调拨<b>转入</b>行的来源类型；与 {@link #TRANSFER_OUT_ITEM} 分开以满足源身份唯一索引。
+     * 调拨转入行的来源类型；与 {@link #TRANSFER_OUT_ITEM} 分开以满足源身份唯一索引。
      */
     TRANSFER_IN_ITEM("调拨单行（转入）"),
 
@@ -63,7 +62,7 @@ public enum ScmInventorySourceDocumentTypeEnum {
     CONVERT_OUT_ITEM("转换单行（转出）"),
 
     /**
-     * 规格转换<b>转入</b>行的来源类型；与 {@link #CONVERT_OUT_ITEM} 分开以满足源身份唯一索引。
+     * 规格转换转入行的来源类型；与 {@link #CONVERT_OUT_ITEM} 分开以满足源身份唯一索引。
      */
     CONVERT_IN_ITEM("转换单行（转入）"),
 

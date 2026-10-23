@@ -21,30 +21,22 @@ public class BalanceMovementVO {
 
     private Long accountId;
 
-    /**
-     * 钱包所有者（结算主体）。
-     */
+    /** 余额账户所有者（结算主体）。 */
     private Long settlementCustomerId;
 
     private String settlementCustomerName;
 
-    /**
-     * 本次业务实际发生的客户；集团场景下与钱包所有者不同。
-     */
+    /** 本次业务实际发生的客户；集团场景下与余额账户所有者不同。 */
     private Long customerId;
 
     private String customerName;
 
-    /**
-     * {@code RECHARGE} / {@code CONSUME} / {@code REFUND} / {@code CORRECTION}。
-     */
+    /** {@code RECHARGE} / {@code CONSUME} / {@code REFUND} / {@code CORRECTION}。 */
     private String movementType;
 
     private String direction;
 
-    /**
-     * 金额恒正；正负由 {@link #direction} 表达。
-     */
+    /** 金额恒正；正负由 {@link #direction} 表达。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal amount;
 
@@ -58,9 +50,7 @@ public class BalanceMovementVO {
 
     private OffsetDateTime createdAt;
 
-    /**
-     * 操作人（写入流水的人；系统入账时为服务账号）。
-     */
+    /** 操作人（写入流水的人；系统入账时为服务账号）。 */
     @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String operator;
 }

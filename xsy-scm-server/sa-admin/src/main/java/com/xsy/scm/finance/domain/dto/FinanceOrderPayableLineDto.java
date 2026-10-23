@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 import lombok.Data;
 
 /**
- * 已确认订单的应付行事实：量取实重、价取冻结售价，供应付净额与签收应收共用同一把尺子。
+ * 已确认订单的应付行数据：数量取实重，价格取保存的售价，与签收应收算法一致。
  */
 @Data
 public class FinanceOrderPayableLineDto {
@@ -21,17 +21,17 @@ public class FinanceOrderPayableLineDto {
     private Long orderItemId;
 
     /**
-     * 实重数量（确认前已录齐， confirmed 订单不存在空值行）。
+     * 实重数量（确认前已录齐，已确认订单没有空值行）。
      */
     private BigDecimal actualQuantity;
 
     /**
-     * 订单行冻结售价。
+     * 订单行保存的售价。
      */
     private BigDecimal lockedUnitPrice;
 
     /**
-     * 下单金额（下单量 × 锁定价），优惠等比分摊的分母。
+     * 下单金额（下单量 × 锁定价），优惠按比例分摊的分母。
      */
     private BigDecimal orderedLineAmount;
 }

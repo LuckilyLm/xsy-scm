@@ -26,7 +26,7 @@ public class OrderBundleComponentEntity {
     private BigDecimal quantityPerBundleSaleUnit;
     private BigDecimal stockUnitsPerComponentSaleUnit;
     /**
-     * 冻结的实际组成销售数量（已含组合订购套数）。
+     * 实际组成的销售数量（已包含组合套数）。
      */
     private BigDecimal componentSaleQuantitySnapshot;
     private BigDecimal marketUnitPriceSnapshot;

@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 候选订单行：可进入分拣的 CONFIRMED 明细，及其将被冻结为计划量的实发口径。
+ * 候选订单行：可进入分拣的 CONFIRMED 明细，以及它将成为分拣计划量的实发数量。
  */
 @Data
 public class SortingCandidateLineVO {

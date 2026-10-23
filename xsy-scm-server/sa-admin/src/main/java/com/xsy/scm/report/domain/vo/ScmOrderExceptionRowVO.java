@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 一条源事实，数量只用于分拣明细，不跨单位汇总。
+ * 一条源记录，数量只用于分拣明细，不跨单位汇总。
  */
 @Data
 public class ScmOrderExceptionRowVO {

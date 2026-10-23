@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 规格转换由源规格、目标规格以及两端数量和单位明确表达。待审核可修改，审批后按该折算关系同时执行出库和入库，不做隐式单位换算。
+ * 规格转换由源规格、目标规格以及两端数量和单位明确表达。待审核可修改，审批后按该折算关系同时执行出库和入库，不做自动单位换算。
  */
 @Data
 public class InventoryConversionAddForm {

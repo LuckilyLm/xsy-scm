@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 支付交易：创建支付意图、查意图与交易。
  *
  * <p>
- * 回调入口<b>不是</b>这个 Controller：渠道回调走受控的模拟入口（见 {@code PaymentCallbackController}），登录态 + 权限，不开放匿名 URL。
+ * 回调入口不是这个 Controller：渠道回调走受控的模拟入口（见 {@code PaymentCallbackController}），要求登录态与权限，不开放匿名 URL。
  */
 @RestController
 @RequestMapping("/scm/payment/intent")

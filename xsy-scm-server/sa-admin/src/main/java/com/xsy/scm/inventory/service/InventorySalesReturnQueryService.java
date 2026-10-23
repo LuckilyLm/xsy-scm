@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Original sales-out cost and quantity; missing costs must remain incomplete.
+ * 销售出库的原始成本与数量；缺少成本的记录保持不完整。
  */
 @Service
 @RequiredArgsConstructor

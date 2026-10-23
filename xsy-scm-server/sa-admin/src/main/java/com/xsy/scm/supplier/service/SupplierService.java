@@ -41,9 +41,7 @@ public class SupplierService {
 
     private final ScmBusinessNoService businessNoService;
 
-    /**
-     * 读取供应商，不存在或已删除 → 40440。
-     */
+    /** 读取供应商，不存在或已删除返回 40440。 */
     public SupplierEntity require(Long supplierId) {
         SupplierEntity entity = supplierId == null ? null : supplierDao.selectById(supplierId);
         if (entity == null) {
@@ -52,9 +50,7 @@ public class SupplierService {
         return entity;
     }
 
-    /**
-     * 读取供应商并校验乐观锁版本：不存在 → 40440，版本不一致 → 40921。
-     */
+    /** 读取供应商并校验版本：不存在返回 40440，版本不一致返回 40921。 */
     public SupplierEntity require(Long supplierId, Integer version) {
         SupplierEntity entity = require(supplierId);
         if (!Objects.equals(entity.getVersion(), version)) {
@@ -63,9 +59,7 @@ public class SupplierService {
         return entity;
     }
 
-    /**
-     * 读取可用供应商；记录必须存在且状态为 {@code ENABLED}。
-     */
+    /** 读取可用供应商：必须存在且状态为启用。 */
     public SupplierEntity requireEnabled(Long supplierId) {
         SupplierEntity entity = require(supplierId);
         if (!ScmEnableStatusEnum.ENABLED.name().equals(entity.getStatus())) {
@@ -120,10 +114,7 @@ public class SupplierService {
     }
 
     /**
-     * 删除供应商。
-     *
-     * <p>
-     * 被活动 {@code xsy_supplier_sku} 引用时拒绝删除—— 否则商品关联会指向一个不存在的供应商。
+     * 删除供应商。仍被 {@code xsy_supplier_sku} 引用时拒绝，否则商品关联会指向不存在的供应商。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(SupplierDeleteForm form) {
@@ -148,8 +139,8 @@ public class SupplierService {
         entity.setCityName(SupplierValidator.normalizeOptional(form.getCityName()));
         entity.setDistrictCode(form.getDistrictCode());
         entity.setDistrictName(SupplierValidator.normalizeOptional(form.getDistrictName()));
-        // 点位成组落库：半组坐标在地图上无法解释，DB 的 ck_supplier_location_complete 也会拒绝。
-        // 表单侧的 ScmLocationForm 已做同一条断言，这里是服务端不变量断言 —— 与客户同一取向。
+        // 经纬度和坐标系必须一起保存：半组坐标在地图上没法用，数据库的 ck_supplier_location_complete 也会拒绝。
+        // 表单侧的 ScmLocationForm 已校验一次，这里再断言一次，与客户模块做法一致。
         if (!form.isLocationComplete()) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }

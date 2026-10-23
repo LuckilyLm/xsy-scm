@@ -17,7 +17,7 @@ import lombok.Data;
  * 一筐秤读数。与单事件上报分开：这里带筐号、净重与换算依据，但同样不写分拣结果。
  *
  * <p>
- * 净重与业务单位成对出现：只有净重没有单位，或单位不明，都无法参与求和，服务端直接拒绝， 不按公斤兜底。
+ * 净重与业务单位成对出现：只有净重没有单位，或单位不明，都无法参与求和，服务端直接拒绝，不按公斤兜底。
  */
 @Data
 public class SortingScaleBasketForm {
@@ -40,21 +40,15 @@ public class SortingScaleBasketForm {
     @Size(max = 64, message = "设备编码最多 64 个字符")
     private String deviceCode;
 
-    /**
-     * 设备授权会话；由设备接入层解析后写入，不接受请求体自报。
-     */
+    /** 设备授权会话；由设备接入层解析后写入，不接受请求体自报。 */
     private Long deviceSessionId;
 
-    /**
-     * 明细内递增的筐号，从 1 开始。
-     */
+    /** 明细内递增的筐号，从 1 开始。 */
     @NotNull(message = "筐号不能为空")
     @Min(value = 1, message = "筐号必须从 1 开始")
     private Integer basketNo;
 
-    /**
-     * 设备原始读数；负值属于无效采集，服务端拒绝。
-     */
+    /** 设备原始读数；负值属于无效采集，服务端拒绝。 */
     @NotNull(message = "读数不能为空")
     @DecimalMin(value = "0", message = "读数不能小于 0")
     @Digits(integer = 14, fraction = 4, message = "读数最多14位整数和4位小数")
@@ -73,9 +67,7 @@ public class SortingScaleBasketForm {
     @Size(max = 32, message = "业务单位最多 32 个字符")
     private String businessUnit;
 
-    /**
-     * {@code NET} 或 {@code GROSS}；毛重不得在未去皮时直接入库。
-     */
+    /** {@code NET} 或 {@code GROSS}；毛重不得在未去皮时直接入库。 */
     @NotBlank(message = "重量类型不能为空")
     @Pattern(regexp = "NET|GROSS", message = "重量类型只能是 NET 或 GROSS")
     private String weightKind;

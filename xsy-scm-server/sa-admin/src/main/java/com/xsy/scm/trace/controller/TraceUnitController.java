@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  * SCM 包装码（一物一码）。
  *
  * <p>
- * 发码是唯一的写入口：码由系统生成、不透明、永不复用；回放只读，回答「这个码从哪来、到哪去」。 包装码与批次严格分层——批次码不冒充逐包装码。
+ * 码由系统生成、不透明、永不复用；回放只读，回答「这个码从哪来、到哪去」。 包装码与批次严格分层，批次码不冒充逐包装码。
  */
 @RestController
 @RequestMapping("/scm/inventory/unit")

@@ -25,18 +25,14 @@ public class ScaleDeviceSessionEntity {
 
     private Long employeeId;
 
-    /**
-     * 会话令牌摘要；不保存明文。
-     */
+    /** 会话令牌摘要；不保存明文。 */
     private String sessionTokenHash;
 
     private OffsetDateTime issuedAt;
 
     private OffsetDateTime expiresAt;
 
-    /**
-     * 会话结束时间；结束原因写入 {@code endReason}，不删除历史。
-     */
+    /** 会话结束时间；结束原因写入 {@code endReason}，不删除历史。 */
     private OffsetDateTime endedAt;
 
     private String endReason;

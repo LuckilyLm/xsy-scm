@@ -12,23 +12,19 @@ import java.util.function.UnaryOperator;
  */
 public class ScmOperatorNameSerializer extends JsonSerializer<String> {
 
-    /**
-     * 默认恒等：解析器尚未绑定（如纯单元测试）时保持原值，不改变任何行为。
-     */
+    /** 默认恒等：解析器尚未绑定（如纯单元测试）时保持原值。 */
     private static volatile UnaryOperator<String> resolver = UnaryOperator.identity();
 
-    /**
-     * 由 {@code ScmOperatorNameResolver} 在启动时调用。
-     */
+    /** 由 {@code ScmOperatorNameResolver} 在启动时调用。 */
     static void bind(UnaryOperator<String> operatorNameResolver) {
         resolver = operatorNameResolver;
     }
 
     /**
-     * 把单个原始值换成人名；认不出形状时原样返回。
+     * 把单个原始值换成人名；形状不对时原样返回。
      *
      * <p>
-     * 给 {@link ScmOperatorSnapshotSerializer} 复用：审计快照里的操作人藏在 Map 的键上，走不了字段注解。
+     * 给 {@link ScmOperatorSnapshotSerializer} 复用：审计内容里的操作人藏在 Map 的键上，走不了字段注解。
      */
     static String resolve(String value) {
         return value == null ? null : resolver.apply(value);

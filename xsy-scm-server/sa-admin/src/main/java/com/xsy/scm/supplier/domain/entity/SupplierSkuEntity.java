@@ -18,7 +18,7 @@ import java.util.Map;
  * 商品-供应商关系（SKU 级）。
  *
  * <p>
- * 关系以 SKU 为粒度；快照列冻结供应商与 SKU 的展示信息，使主数据改名后关联行仍然可读。
+ * 关系行同时保存供应商与 SKU 的名称等信息，主数据改名后仍然可读。
  */
 @Data
 @TableName(value = "xsy_supplier_sku", autoResultMap = true)
@@ -45,9 +45,7 @@ public class SupplierSkuEntity {
 
     private Long skuId;
 
-    /**
-     * 供应商给该商品的外部货号，非 XSY 的 SKU 编码，也非批次号。
-     */
+    /** 供应商给该商品的外部货号，不是系统 SKU 编码，也不是批次号。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String supplierItemCode;
 
@@ -71,10 +69,7 @@ public class SupplierSkuEntity {
     private Long purchaserId;
 
     /**
-     * 是否默认采购来源。
-     *
-     * <p>
-     * 同一供应商允许多个默认来源，因此这里不做互斥校验，也不建立限制基数的唯一索引。
+     * 是否默认采购来源。同一供应商允许多个默认来源，因此不做互斥校验。
      */
     @TableField("is_default")
     private Boolean defaultFlag;

@@ -18,7 +18,7 @@ import java.util.List;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * Read-only, seller-scoped selector for completed refunds that have not been paid yet.
+ * 已完成但尚未付款的退款单选择器，只读，按所属销售员限定范围。
  */
 @Service
 @RequiredArgsConstructor

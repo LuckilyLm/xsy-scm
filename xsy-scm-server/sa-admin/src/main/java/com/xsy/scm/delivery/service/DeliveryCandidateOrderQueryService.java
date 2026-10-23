@@ -15,14 +15,11 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
  * 全量候选订单（待排线池）的只读入口。
  *
  * <p>
- * 候选池暴露<b>尚未分配</b>的订单、客户地址与电话，因此需要线路规划权限和至少一个授权仓库；司机只持签收权限，不能读取候选池。
+ * 候选池暴露尚未分配的订单、客户地址与电话，因此需要线路规划权限和至少一个授权仓库；司机只持签收权限，不能读取候选池。
  */
 @Service
 @RequiredArgsConstructor
 public class DeliveryCandidateOrderQueryService {
-    /**
-     * 读取候选池前必须持有线路规划权限。
-     */
 
     private final DeliveryQueryDao deliveryQueryDao;
     private final DeliveryEligibilityPolicy policy;

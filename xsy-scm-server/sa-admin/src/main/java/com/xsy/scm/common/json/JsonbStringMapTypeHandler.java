@@ -26,7 +26,7 @@ public class JsonbStringMapTypeHandler extends BaseTypeHandler<Map<String, Strin
             json.setValue(JSON.writeValueAsString(value));
             statement.setObject(index, json);
         } catch (JsonProcessingException e) {
-            throw new SQLException("Invalid specification JSON", e);
+            throw new SQLException("商品规格 JSON 无效", e);
         }
     }
 
@@ -37,7 +37,7 @@ public class JsonbStringMapTypeHandler extends BaseTypeHandler<Map<String, Strin
             return JSON.readValue(value, new TypeReference<>() {
             });
         } catch (JsonProcessingException e) {
-            throw new SQLException("Invalid specification JSON", e);
+            throw new SQLException("商品规格 JSON 无效", e);
         }
     }
 

@@ -14,8 +14,8 @@ import java.util.Map;
  * 调拨单（头 + 明细）。
  *
  * <p>
- * <b>源仓与目标仓各带一套编码 / 名称</b>（而不是一个 {@code warehouseName}）：调拨的语义天然是「从哪到哪」，列表页只显示一个仓名会让用户必须点进详情才能确认方向。
- * 展示字段是<b>实时联表结果，不是快照</b> —— 与其它库存单据同一取向。
+ * 源仓与目标仓各带一套编码 / 名称（而不是一个 {@code warehouseName}）：调拨的语义天然是「从哪到哪」，列表页只显示一个仓名会让用户必须点进详情才能确认方向。 展示字段是实时联表结果，不是保存的副本 ——
+ * 与其它库存单据一致。
  */
 @Data
 public class InventoryTransferVO {
@@ -100,7 +100,7 @@ public class InventoryTransferVO {
         private BigDecimal quantity;
 
         /**
-         * 发出时写入的源仓记账单位快照；草稿态为空。
+         * 发出时写入的源仓记账单位；草稿态为空。
          */
         private String unitSnapshot;
 

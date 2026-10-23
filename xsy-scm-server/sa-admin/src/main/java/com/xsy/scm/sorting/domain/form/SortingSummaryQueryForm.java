@@ -8,7 +8,7 @@ import com.xsy.scm.sorting.constant.ScmSortingTaskStatusEnum;
 import net.lab1024.sa.base.common.domain.PageParam;
 
 /**
- * 按商品汇总的只读视角：跨订单按 SKU + 单位分组，<b>不跨单位求和</b>。本视角不承载录入动作。
+ * 按商品汇总的只读视图：跨订单按 SKU + 单位分组，不跨单位求和。本视图不承载录入动作。
  */
 @Data
 public class SortingSummaryQueryForm extends PageParam {
@@ -21,8 +21,6 @@ public class SortingSummaryQueryForm extends PageParam {
     @ScmEnumValue(enumClass = ScmSortingTaskStatusEnum.class, message = "分拣任务状态无效")
     private String taskStatus;
 
-    /**
-     * 建单时冻结的送货日期，按 Asia/Shanghai 日历日筛选，不回查当前订单。
-     */
+    /** 建单时保存的送货日期，按 Asia/Shanghai 日历日筛选，不回查当前订单。 */
     private java.time.LocalDate deliveryDate;
 }

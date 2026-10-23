@@ -14,7 +14,7 @@ import java.util.Map;
 import lombok.Data;
 
 /**
- * 满赠赠品单独记录赠品、活动和数量，不作为金额优惠分摊。赠品信息在订单确认时冻结，分拣、出库和打印读取同一份权益。
+ * 满赠赠品单独记录赠品、活动和数量，不参与金额优惠分摊。赠品信息在订单确认时保存，分拣、出库和打印读取同一份数据。
  */
 @Data
 @TableName(value = "xsy_order_promotion_gift", autoResultMap = true)
@@ -39,14 +39,10 @@ public class OrderPromotionGiftEntity {
 
     private String saleUnitSnapshot;
 
-    /**
-     * 赠品数量，恒 &gt; 0。
-     */
+    /** 赠品数量，恒 &gt; 0。 */
     private BigDecimal quantity;
 
-    /**
-     * 活动规则原文（受控键值），供解释「满多少赠多少」。
-     */
+    /** 活动规则原文（受控键值），用于解释「满多少赠多少」。 */
     @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
     private Map<String, Object> ruleSnapshot;
 

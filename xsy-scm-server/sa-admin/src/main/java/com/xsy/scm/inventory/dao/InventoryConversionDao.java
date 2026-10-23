@@ -24,7 +24,7 @@ public interface InventoryConversionDao extends BaseMapper<InventoryConversionEn
     int countByConversionNo(@Param("conversionNo") String conversionNo);
 
     /**
-     * 取下一个单号序列值（PG sequence，全局单调递增、不按日 reset）。
+     * 取下一个单号序列值（PG sequence，全局单调递增、不按日重置）。
      */
     long nextConversionNo();
 
@@ -37,7 +37,7 @@ public interface InventoryConversionDao extends BaseMapper<InventoryConversionEn
      * 锁定单据行（{@code SELECT ... FOR UPDATE}）。
      *
      * <p>
-     * 锁序纪律：<b>单据锁先于余额锁</b>。审批时先锁本行，再按 {@code (warehouse_id, sku_id)} 升序锁本次涉及的所有余额行 （源 SKU 与目标 SKU 都要锁，见
+     * 加锁顺序：先锁单据行，再锁余额行。审批时先锁本行，再按 {@code (warehouse_id, sku_id)} 升序锁本次涉及的所有余额行（源 SKU 与目标 SKU 都要锁，见
      * {@code InventoryConversionService}）。
      */
     InventoryConversionEntity lockById(@Param("id") Long id);

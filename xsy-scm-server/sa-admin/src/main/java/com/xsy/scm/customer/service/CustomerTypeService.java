@@ -37,18 +37,13 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_TYPE_IN_U
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_TYPE_NOT_FOUND;
 
 /**
- * 客户类型读写。
- *
- * <p>
- * 客户类型是「可维护字典」：编码唯一、名称允许重复、没有独立的状态端点。
+ * 客户类型读写。客户类型是可维护字典：编码唯一、名称允许重复、没有独立的状态端点。
  */
 @Service
 @RequiredArgsConstructor
 public class CustomerTypeService {
 
-    /**
-     * 排序白名单：客户端只能选择这些列，避免把任意字段拼入 SQL。
-     */
+    /** 允许的排序字段：客户端只能选这些列，避免把任意字段拼入 SQL。 */
     private static final Set<String> SORTABLE = Set.of("type_code", "name", "status", "updated_at");
 
     private final CustomerTypeDao customerTypeDao;
@@ -57,17 +52,13 @@ public class CustomerTypeService {
     private final CustomerSkuVisibilityDao customerSkuVisibilityDao;
     private final CustomerTypePriceDao customerTypePriceDao;
 
-    /**
-     * 全量客户类型（含 DISABLED），供内部逻辑使用。
-     */
+    /** 全量客户类型（含 DISABLED），供内部逻辑使用。 */
     public List<CustomerTypeEntity> all() {
         return customerTypeDao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
             .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId));
     }
 
-    /**
-     * 读取客户类型，不存在或已删除 → 40431。
-     */
+    /** 读取客户类型，不存在或已删除 → 40431。 */
     public CustomerTypeEntity require(Long typeId) {
         CustomerTypeEntity entity = typeId == null ? null : customerTypeDao.selectById(typeId);
         if (entity == null) {
@@ -77,10 +68,10 @@ public class CustomerTypeService {
     }
 
     /**
-     * 读取「可用于新建 / 编辑客户」的类型：必须存在、未删除且 {@code ENABLED}。
+     * 读取可用于新建 / 编辑客户的类型：必须存在、未删除且 {@code ENABLED}。
      *
      * <p>
-     * 停用类型不允许被新引用，但已引用它的客户仍然可读、可改其它字段。
+     * 停用类型不允许被新引用，但已引用它的客户仍可读取、修改其它字段。
      */
     public CustomerTypeEntity requireSelectableType(Long typeId) {
         CustomerTypeEntity entity = require(typeId);
@@ -90,9 +81,7 @@ public class CustomerTypeService {
         return entity;
     }
 
-    /**
-     * 下拉选项：只返回 {@code ENABLED}，按名称排序。
-     */
+    /** 下拉选项：只返回 {@code ENABLED}，按名称排序。 */
     public List<CustomerTypeVO> optionList() {
         return customerTypeDao
             .selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
@@ -144,7 +133,7 @@ public class CustomerTypeService {
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
-        // 客户类型编码是稳定业务语义键（例如 GROUP）；创建后不得通过编辑改变身份。
+        // 客户类型编码是固定语义键（例如 GROUP），编辑时不允许改。
         entity.setName(CustomerTypeValidator.normalizeName(form.getName()));
         entity.setStatus(form.getStatus());
         entity.setVersion(form.getVersion());
@@ -159,10 +148,7 @@ public class CustomerTypeService {
     }
 
     /**
-     * 删除客户类型。
-     *
-     * <p>
-     * 被活动客户引用时拒绝删除—— 否则会把存量客户指向一个不存在的类型。
+     * 删除客户类型。被活动客户引用时拒绝删除，否则会把存量客户指向一个不存在的类型。
      */
     @Transactional(rollbackFor = Exception.class)
     public void delete(CustomerTypeDeleteForm form) {

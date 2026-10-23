@@ -21,9 +21,7 @@ import java.time.OffsetDateTime;
 @TableName(value = "xsy_supplier", autoResultMap = true)
 public class SupplierEntity {
 
-    /**
-     * {@code null} 序列化为 JSON {@code null} 而不是省略：前端要靠「字段存在且为 null」区分「未采集」。
-     */
+    /** {@code null} 序列化为 JSON null 而不是省略，前端靠「有字段且为 null」判断未采集。 */
     @JsonSerialize(nullsUsing = NullSerializer.class)
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal longitude;
@@ -69,9 +67,7 @@ public class SupplierEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String address;
 
-    /**
-     * 省 / 市 / 区编码为国标六位码，名称是同一条选择的快照，展示与导出用，不参与关联。
-     */
+    /** 省 / 市 / 区编码为国标六位码；名称是选择时保存的文本，只用于展示和导出。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Integer provinceCode;
 

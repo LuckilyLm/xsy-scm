@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 /**
- * 计量单位编辑表单。编码与名称刻意不可改：商品与供应商关系表按单位名称字符串记账，改名会让既有数据指向一个字典里不存在的单位，只能停用旧单位再新建。
+ * 计量单位编辑表单。编码与名称不能修改：商品和供应商数据按单位名称保存，改名会让既有数据指向字典里不存在的单位， 只能停用旧单位再新建。
  */
 @Data
 public class ProductUomUpdateForm {

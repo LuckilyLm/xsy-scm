@@ -35,9 +35,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 @Service
 @RequiredArgsConstructor
 public class DeliveryDriverService {
-    /**
-     * 一个员工最多绑定一个活动司机；冲突消息按索引名区分，避免把绑定冲突报成编码重复。
-     */
+    /** 一个员工最多绑定一个活动司机；冲突消息按索引名区分，避免把绑定冲突报成编码重复。 */
     private static final String EMPLOYEE_BINDING_INDEX = "uk_delivery_driver_active_employee";
 
     private final DeliveryDriverDao deliveryDriverDao;
@@ -93,7 +91,7 @@ public class DeliveryDriverService {
     }
 
     /**
-     * 启用即要求绑定：未绑定的司机档案无法把登录人映射回 {@code xsy_delivery_route.driver_id}，数据范围收不出来，因此「正式司机」必须有员工归属（历史行可以留空，但要重新启用就得补）。
+     * 启用就要求绑定：没绑员工的司机档案映射不回登录人，数据范围算不出来。历史行可以留空，但重新启用时要补上。
      */
     private void requireBindableEmployee(Long employeeId, String status) {
         if (employeeId == null) {
@@ -110,9 +108,7 @@ public class DeliveryDriverService {
         return String.valueOf(e.getMostSpecificCause().getMessage()).contains(EMPLOYEE_BINDING_INDEX);
     }
 
-    /**
-     * 绑定员工姓名；已删除的员工不显示名字（列表留空即提示这条绑定需要重新处理）。
-     */
+    /** 绑定员工姓名；已删除的员工不显示名字（列表留空即提示这条绑定需要重新处理）。 */
     private Map<Long, String> employeeNames(Set<Long> employeeIds) {
         if (employeeIds.isEmpty())
             return Map.of();

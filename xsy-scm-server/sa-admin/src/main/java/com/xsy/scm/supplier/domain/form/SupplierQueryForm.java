@@ -16,9 +16,7 @@ import com.xsy.scm.common.validation.ScmEnumValue;
 @EqualsAndHashCode(callSuper = true)
 public class SupplierQueryForm extends PageParam {
 
-    /**
-     * 关键字：供应商编码 / 名称 / 联系人 / 联系电话。
-     */
+    /** 关键字：供应商编码 / 名称 / 联系人 / 联系电话。 */
     @Size(max = 150, message = "关键字不能超过150个字符")
     private String keyword;
 

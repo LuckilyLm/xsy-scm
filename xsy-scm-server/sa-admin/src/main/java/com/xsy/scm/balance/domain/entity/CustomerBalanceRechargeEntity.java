@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 充值单只记录充值人、钱包和申请金额。支付是否成功由支付交易记录维护，不能再建一套充值状态。
+ * 充值单只记录充值人、余额账户和申请金额。支付是否成功由支付交易记录维护，不能再建一套充值状态。
  */
 @Data
 @TableName("xsy_customer_balance_recharge")
@@ -25,16 +25,12 @@ public class CustomerBalanceRechargeEntity {
 
     private String rechargeNo;
 
-    /**
-     * 钱包所有者（结算主体）。
-     */
+    /** 余额账户所有者（结算主体）。 */
     private Long settlementCustomerId;
 
     private String settlementCustomerNameSnapshot;
 
-    /**
-     * 实际发起充值的业务客户。
-     */
+    /** 实际发起充值的业务客户。 */
     private Long customerId;
 
     private String customerNameSnapshot;

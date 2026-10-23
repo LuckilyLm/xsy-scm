@@ -34,7 +34,7 @@ public class PaymentRefundRecoveryService {
     private final ScmNotificationService notificationService;
 
     /**
-     * 渠道调用只能发生在持久化意图提交之后，禁止被外层业务事务包裹。
+     * 渠道调用只能发生在意图提交之后，禁止被外层业务事务包裹。
      */
     @Transactional(propagation = Propagation.NEVER)
     public PaymentRefundEntity recover(Long refundId, String operator, String reason, boolean force) {
@@ -67,7 +67,7 @@ public class PaymentRefundRecoveryService {
             if (outcome.outcome() == ScmPaymentProvider.Outcome.SUCCEEDED
                 && (providerAmount == null || providerAmount.compareTo(refund.getAmount()) != 0)) {
                 result = ScmRefundRecoveryResultEnum.AMOUNT_MISMATCH;
-                detail = "渠道实退与申请金额不一致，保留渠道事实，禁止自动补退或冲账";
+                detail = "渠道实退与申请金额不一致，保留渠道记录，禁止自动补退或冲账";
             } else {
                 result = switch (outcome.outcome()) {
                     case SUCCEEDED -> ScmRefundRecoveryResultEnum.SUCCEEDED;
@@ -81,7 +81,7 @@ public class PaymentRefundRecoveryService {
                 && businessException.getErrorCode() == PaymentErrorCode.PAYMENT_REFUND_AMOUNT_MISMATCH) {
                 result = ScmRefundRecoveryResultEnum.AMOUNT_MISMATCH;
             }
-            // 网络或落账异常不等于渠道拒绝：保留原退款号，下一次先查单，绝不另建退款。
+            // 网络或写入异常不等于渠道拒绝：保留原退款号，下一次先查单，绝不另建退款。
             detail = exception.getClass().getSimpleName() + ": " + exception.getMessage();
             log.warn("退款恢复未完成：refundId={}，保留原渠道幂等号", refundId, exception);
         }

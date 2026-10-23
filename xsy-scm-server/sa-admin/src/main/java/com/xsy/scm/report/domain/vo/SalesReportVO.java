@@ -26,7 +26,7 @@ public class SalesReportVO {
     }
 
     /**
-     * 粒度 = SKU × 销售单位快照。
+     * 粒度 = SKU × 销售单位。
      */
     @Data
     public static class ProductRow {
@@ -35,7 +35,7 @@ public class SalesReportVO {
         private String productName;
         private String skuCode;
         /**
-         * 订单行上的规格快照，不实时回查商品主档。
+         * 订单行上记录的规格，不实时回查商品主档。
          */
         private String specName;
         private String saleUnit;
@@ -125,8 +125,8 @@ public class SalesReportVO {
      * 粒度 = {@code xsy_sales_order}（订单表头级）。
      *
      * <p>
-     * 与 {@link ItemRow} 的分工：行级回答「这单买了什么」，本行回答「这个客户有几单、每单多少」。因此筛选语义也不同——{@code categoryId} / {@code keyword}
-     * 是<b>行级</b>条件，在本维度下用 {@code EXISTS} 判定「该订单是否命中」，命中后金额仍按<b>整单</b>汇总，不会因为只匹配部分行而把订单金额算小。
+     * 与 {@link ItemRow} 的分工：行级回答「这单买了什么」，本行回答「这个客户有几单、每单多少」。 因此筛选语义也不同：{@code categoryId} / {@code keyword}
+     * 是行级条件，在本维度下用 {@code EXISTS} 判定「该订单是否命中」；命中后金额仍按整单汇总，不会因为只匹配部分行而把订单金额算小。
      *
      * <p>
      * 退款按 {@code xsy_order_refund} 独立聚合后按订单关联，不经订单行 JOIN，否则一单多行会把退款放大。 与按客户 / 按销售员一致：退款只统计窗口内 {@code COMPLETED}
@@ -157,7 +157,7 @@ public class SalesReportVO {
     }
 
     /**
-     * 粒度 = {@code xsy_sales_order_item}。全部业务字段取订单行快照。
+     * 粒度 = {@code xsy_sales_order_item}。全部业务字段取订单行当时的记录。
      */
     @Data
     public static class ItemRow {

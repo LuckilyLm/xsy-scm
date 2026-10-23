@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 /**
- * Operation history is requested by its owning financial fact.
+ * 按所属财务单据查询操作日志。
  */
 @Data
 public class FinanceOperationLogQueryForm {

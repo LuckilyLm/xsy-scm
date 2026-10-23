@@ -50,7 +50,7 @@ public class AgreementPriceService {
 
     @Transactional(rollbackFor = Exception.class)
     public void update(AgreementPriceUpdateForm form) {
-        // Lock old and new parents in ascending order if the dimension is changed.
+        // 维度变更时，按 id 升序锁住新旧父记录。
         var existing = require(form.getAgreementPriceId(), form.getVersion());
         java.util.stream.Stream.of(existing.getCustomerId(), form.getCustomerId()).filter(Objects::nonNull).distinct()
             .sorted().forEach(agreementPriceDao::lockParent);
@@ -154,7 +154,7 @@ public class AgreementPriceService {
         try {
             return objectMapper.writeValueAsString(fields);
         } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
-            throw new IllegalStateException("Cannot serialize price audit", ex);
+            throw new IllegalStateException("价格审计快照序列化失败", ex);
         }
     }
 

@@ -48,10 +48,6 @@ public class PurchaseOrderValidator {
 
     private final WarehouseService warehouseService;
 
-    // ------------------------------------------------------------------
-    // 静态纯函数
-    // ------------------------------------------------------------------
-
     /**
      * 去首尾空白；空白视作 {@code null}。
      */
@@ -121,15 +117,11 @@ public class PurchaseOrderValidator {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 引用校验（需要主数据）
-    // ------------------------------------------------------------------
-
     /**
      * 供应商必须存在且启用，否则 40986。
      *
      * <p>
-     * 存在性走的 {@code require}（40440），<b>启用判定用的码</b> —— 因为 「供应商已停用，不能用于新采购单」是采购侧规则，不是供应商域自身的不变量。
+     * 存在性由 {@code require} 判定（40440），停用则返回 40986：「供应商已停用，不能用于新采购单」是采购侧规则， 不是供应商域自身的不变量。
      */
     public SupplierEntity requireEnabledSupplier(Long supplierId) {
         SupplierEntity supplier = supplierService.require(supplierId);
@@ -154,8 +146,8 @@ public class PurchaseOrderValidator {
      * 该 SKU 必须能由该供应商供货（的唯一判定入口）。
      *
      * <p>
-     * 返回的 {@code xsy_supplier_sku} 提供需要的 {@code purchase_unit}（→
-     * {@code xsy_purchase_order_item.purchase_unit_snapshot}）与 {@code reference_price}（只作建议值）。的失败码在这里被翻译成 40992。
+     * 返回的 {@code xsy_supplier_sku} 提供 {@code purchase_unit}（写入 {@code xsy_purchase_order_item.purchase_unit_snapshot}）与
+     * {@code reference_price}（只作建议值）； 供应商域的错误码在这里统一翻译成 40992。
      */
     public SupplierSkuEntity requirePurchasableSku(Long supplierId, Long skuId) {
         try {

@@ -17,8 +17,6 @@ public enum PricingErrorCode implements ScmErrorCode {
     PRICE_BATCH_KEY_DUPLICATE(40948, "批次号已成功提交，请勿重复提交"),
     SKU_NOT_SELLABLE(40949, "商品规格不可售、不可见或未定价"),
     PRICE_RESOLVE_CUSTOMER_TYPE_MISSING(40036, "客户未设置有效的客户类型"),
-
-    // ---- 时价 ----
     TIME_PRICE_NOT_FOUND(40050, "时价记录不存在"),
 
     TIME_PRICE_WINDOW_INVALID(40051, "生效结束时间必须晚于开始时间"),

@@ -63,7 +63,7 @@ public class ProductCategoryService {
     }
 
     public ProductCategoryEntity requireSelectableCategory(Long id) {
-        // Serialize category deletion with creation/moving of a product referencing it.
+        // 分类删除与「新增 / 改挂商品到该分类」互斥。
         var category = productCategoryDao.selectOne(
             new LambdaQueryWrapper<ProductCategoryEntity>().eq(ProductCategoryEntity::getId, id).last("FOR UPDATE"));
         if (category == null)
@@ -146,7 +146,7 @@ public class ProductCategoryService {
      * 返回所选分类及全部后代分类，使叶子分类筛选覆盖整条分支。
      *
      * <p>
-     * 父→子索引 + 逐层展开，每个节点只访问一次。原先的定点迭代每收敛一层都要重扫全表，分类树越深越接近 O(层数 × 分类总数)，而它挂在商品列表的筛选路径上。用集合去重同时兜住历史脏数据里的父子环。
+     * 父→子索引 + 逐层展开，每个节点只访问一次，分类树很深时也不会反复扫描全表。 集合去重同时兜住历史脏数据里的父子环。
      */
     public List<Long> descendantIds(Long id, List<ProductCategoryEntity> rows) {
         Map<Long, List<Long>> children = new HashMap<>();
@@ -190,7 +190,7 @@ public class ProductCategoryService {
             throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
         lockParent(form.getParentId());
         int level = resolveLevel(form.getParentId(), entity.getId());
-        // A move must not silently invalidate descendant levels or products' level-three selection.
+        // 移动分类不能默默让后代层级或商品已选的末级分类失效。
         if (level != entity.getLevel() && (descendants.size() > 1 || countProducts(entity.getId()) > 0))
             throw new ScmBusinessException(CATEGORY_PARENT_INVALID);
         apply(entity, form, entity.getId());

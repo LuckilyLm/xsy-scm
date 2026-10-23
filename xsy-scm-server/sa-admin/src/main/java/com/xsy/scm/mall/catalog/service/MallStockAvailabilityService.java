@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 当前配送仓可售量只扣余额中的 reserved_quantity；没有独立冻结列，不能重复扣减同一占用。
+ * 当前配送仓可售量只扣库存余额中的 reserved_quantity；没有单独的冻结列，不能重复扣减同一占用。
  */
 @Service
 @RequiredArgsConstructor
@@ -105,7 +105,7 @@ public class MallStockAvailabilityService {
     public Conversion requireConversion(Long warehouseId, Long skuId, String saleUnit) {
         List<MallStockFact> facts = stockDao.bySkus(warehouseId, List.of(skuId));
         if (facts.isEmpty()) {
-            // 新订单允许先接单再采购；无库存余额时只能选唯一显式配置，或按同单位冻结。
+            // 新订单允许先接单再采购；无库存余额时只能选唯一显式配置，或按同单位换算。
             List<MallStockFact> configured = stockDao.configuredConversions(skuId, saleUnit);
             if (configured.size() > 1)
                 throw new ScmBusinessException(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE);

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 订单行成交价的来源，用于解释这个价格是怎么定出来的。
  *
  * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * {@code desc} 供页面与导出使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

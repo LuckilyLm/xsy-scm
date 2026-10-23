@@ -16,14 +16,10 @@ import lombok.Data;
 @Data
 public class TimePriceForm {
 
-    /**
-     * 修改时必填。
-     */
+    /** 修改时必填。 */
     private Long id;
 
-    /**
-     * 乐观锁版本；修改时必填。
-     */
+    /** 乐观锁版本；修改时必填。 */
     private Integer version;
 
     @NotNull(message = "商品规格不能为空")

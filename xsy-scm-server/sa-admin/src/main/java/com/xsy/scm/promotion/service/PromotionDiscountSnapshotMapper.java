@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 将订单优惠计算结果转换为确认订单保存的不可变快照。
+ * 把优惠计算结果转成确认订单时要保存的内容。
  */
 final class PromotionDiscountSnapshotMapper {
 
@@ -31,10 +31,10 @@ final class PromotionDiscountSnapshotMapper {
     }
 
     /**
-     * 冻结每条实际生效活动及被互斥组挤掉的活动，不能只保存主活动。
+     * 保存每条实际生效活动及被互斥组挤掉的活动，不能只保存主活动。
      *
      * <p>
-     * 退款按冻结分摊反向追加事实；漏掉叠加活动就无法还原原优惠。顶层保持为 object 以满足 JSONB 约束。
+     * 退款按保存的分摊反向处理；漏掉叠加活动就无法还原原优惠。顶层保持为 object 以满足 JSONB 约束。
      */
     static Map<String, Object> activitySnapshot(PromotionDiscountVO vo) {
         List<Map<String, Object>> applied = new ArrayList<>();

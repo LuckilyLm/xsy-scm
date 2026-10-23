@@ -60,8 +60,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 商城订单只读查询。
  *
  * <p>
- * 订单事实只来自正式销售订单，履约进度只来自配送域的生效线路订单；本服务不写任何表， 也不做状态推导之外的业务判断。归属一律由 {@code customer_id + order_source='MALL'} 收窄，客户端传入的 id
- * 不被信任。
+ * 订单数据只来自正式销售订单，履约进度只来自配送域中生效的线路订单；本服务不写任何表，也不做状态推导之外的业务判断。 归属一律由 {@code customer_id + order_source='MALL'} 收窄，客户端传入的
+ * id 不被信任。
  */
 @Service
 @RequiredArgsConstructor
@@ -169,22 +169,22 @@ public class MallOrderQueryService {
             result.setReceiverPhone(address.getReceiverPhone());
             result.setAddress(address.getAddress());
         });
-        // 处理记录按客户可见白名单收窄：内部审计日志（授信放行、改价原因、库存预留）不进客户时间线
+        // 处理记录按客户可见的操作类型收窄：内部审计日志（授信放行、改价原因、库存预留）不进客户时间线
         result.setTimeline(orderOperationLogDao.listByOrderId(orderId).stream()
             .filter(
                 log -> log.getOperationType() != null && CUSTOMER_VISIBLE_OPERATIONS.contains(log.getOperationType()))
             .map(this::timeline).toList());
-        // 配送详情与进度只读配送域的正式事实：线路 / 司机 / 车辆 / 发车 / 完成 + 订单级签收。
+        // 配送详情与进度只读配送域记录：线路 / 司机 / 车辆 / 发车 / 完成 + 订单级签收。
         // 线路被移出或逻辑删除时不返回投影，页面按「暂无配送信息」处理。
         DeliveryOrderProgressVO deliveryProgress = deliveryRouteOrderDao.selectProgressByOrderIds(List.of(orderId))
             .stream().findFirst().orElse(null);
         result.setDelivery(delivery(deliveryProgress));
         result.setProgress(progressNodes(order, deliveryProgress));
         result.setDiscount(discount(orderId));
-        // 资金投影只在已确认订单计算：确认前实重未齐，应付没有权威口径；支付时点也只可能在确认后。
+        // 资金数据只在已确认订单计算：确认前实重未齐，应付没有确定算法；支付时点也只可能在确认后。
         if (ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus())) {
             BigDecimal payable = payableQueryService.payableOfConfirmedOrder(orderId);
-            // 客户看到的「已付」是实收：余额 / 在线走支付事实，货到付款走收款事实。
+            // 客户看到的「已付」是实收：余额 / 在线走支付记录，货到付款走收款记录。
             BigDecimal paid = payableQueryService.receivedAmountOf(orderId);
             result.setPayableAmount(payable);
             result.setPaidAmount(paid);
@@ -241,7 +241,7 @@ public class MallOrderQueryService {
     }
 
     /**
-     * 取生效中的线路订单整行：状态、签收时刻与签收备注都来自同一条正式事实，不另外存快照。
+     * 取生效中的线路订单整行：状态、签收时刻与签收备注都来自同一条记录，不另外保存副本。
      */
     private Map<Long, DeliveryRouteOrderEntity> fulfillmentByOrder(List<Long> orderIds) {
         if (orderIds.isEmpty()) {
@@ -307,7 +307,7 @@ public class MallOrderQueryService {
         result.setConfirmedAt(order.getConfirmedAt());
         result.setCancelledAt(order.getCancelledAt());
         result.setCancelReason(order.getCancelReason());
-        // 签收时刻与备注直接回读配送事实，不在订单侧另存快照，避免两处口径漂移
+        // 签收时刻与备注直接回读配送记录，不在订单侧另存副本，避免两处数据不一致
         if (fulfillment != null) {
             result.setSignedAt(fulfillment.getSignedAt());
             result.setSignReason(fulfillment.getSignReason());
@@ -358,7 +358,7 @@ public class MallOrderQueryService {
     }
 
     /**
-     * 配送进度节点：{@code done} 只按「对应正式事实是否存在」判定，不推导状态、不预测下一步。
+     * 配送进度节点：{@code done} 只按「对应正式记录是否存在」判定，不推导状态、不预测下一步。
      *
      * <p>
      * 已取消订单只保留「已提交 + 已取消」两格：取消之后不会再发车，继续列出后面几格会让客户以为还有后续。 异常签收（拒收/破损等）在最后一格显式写成「配送异常」并带上原因，不冒充正常签收。

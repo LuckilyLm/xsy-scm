@@ -41,7 +41,7 @@ public class MallAfterSaleController {
     }
 
     /**
-     * 申请售后：按行选数量，订单状态与可退数量由正式退货建单路径权威校验。 携带 {@code Idempotency-Key}，重复提交返回首次结果而不是重复建单。
+     * 申请售后：按行选数量，订单状态与可退数量由正式退货建单路径统一校验。携带 {@code Idempotency-Key}，重复提交返回首次结果而不是重复建单。
      */
     @PostMapping
     public ResponseDTO<MallAfterSaleVO> apply(@Valid @RequestBody MallAfterSaleApplyForm form,

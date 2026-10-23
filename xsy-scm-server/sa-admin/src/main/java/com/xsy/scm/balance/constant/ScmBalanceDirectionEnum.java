@@ -10,14 +10,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmBalanceDirectionEnum {
 
-    /**
-     * 增加余额（充值 / 退款返还 / 正数更正）。
-     */
+    /** 增加余额（充值 / 退款返还 / 正数更正）。 */
     CREDIT("增加"),
 
-    /**
-     * 减少余额（消费 / 负数更正）。
-     */
+    /** 减少余额（消费 / 负数更正）。 */
     DEBIT("减少");
 
     private final String desc;

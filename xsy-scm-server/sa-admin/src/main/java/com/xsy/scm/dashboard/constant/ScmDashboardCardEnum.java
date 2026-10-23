@@ -11,33 +11,23 @@ import java.util.List;
  */
 public enum ScmDashboardCardEnum {
 
-    /**
-     * 今日销售额（确认口径）。
-     */
+    /** 今日销售额（按确认时间）。 */
     SALES_AMOUNT("sales-amount", OrderPermission.QUERY, ScmDashboardValueType.CNY, "/order/order-list",
         ScmDashboardCardGroup.SALES),
 
-    /**
-     * 今日订单（确认口径）。
-     */
+    /** 今日订单（按确认时间）。 */
     ORDER_COUNT("order-count", OrderPermission.QUERY, ScmDashboardValueType.COUNT, "/order/order-list",
         ScmDashboardCardGroup.SALES),
 
-    /**
-     * 今日采购额（提交口径）。
-     */
+    /** 今日采购额（按提交时间）。 */
     PURCHASE_AMOUNT("purchase-amount", PurchasePermission.QUERY, ScmDashboardValueType.CNY,
         "/purchase/purchase-order-list", ScmDashboardCardGroup.PURCHASE),
 
-    /**
-     * 今日收货单（确认口径）。
-     */
+    /** 今日收货单（按确认时间）。 */
     RECEIPT_COUNT("receipt-count", PurchasePermission.RECEIPT_QUERY, ScmDashboardValueType.COUNT,
         "/purchase/purchase-receipt-list", ScmDashboardCardGroup.PURCHASE),
 
-    /**
-     * 首页库存预警数量与库存预警列表的筛选范围一致，不直接用更宽的库存健康度分档数量代替。
-     */
+    /** 库存预警数量与预警列表的筛选范围一致，不用范围更宽的库存健康度分档代替。 */
     INVENTORY_WARNING("inventory-warning", InventoryPermission.WARNING_QUERY, ScmDashboardValueType.COUNT,
         "/inventory/inventory-warning-list", ScmDashboardCardGroup.INVENTORY_WARNING);
 
@@ -56,9 +46,7 @@ public enum ScmDashboardCardEnum {
         this.group = group;
     }
 
-    /**
-     * 当前权限集合是否足以看到本卡片（不代表能执行动作，动作仍由各领域接口鉴权）。
-     */
+    /** 当前权限集合是否足以看到本卡片；能否执行动作仍由各领域接口鉴权。 */
     public boolean visibleTo(List<String> heldPermissions) {
         return heldPermissions != null && heldPermissions.contains(queryPermission);
     }
@@ -79,9 +67,7 @@ public enum ScmDashboardCardEnum {
         return route;
     }
 
-    /**
-     * 本卡片出自哪一组聚合，供取数裁剪使用。
-     */
+    /** 本卡片出自哪一组聚合，供取数裁剪使用。 */
     public ScmDashboardCardGroup group() {
         return group;
     }

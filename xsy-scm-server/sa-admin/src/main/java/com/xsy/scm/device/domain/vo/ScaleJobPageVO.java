@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
  * 任务分页结果。
  *
  * <p>
- * {@code operatorSessionExpiresAt} 让秤端知道离线操作还能持续多久：会话过期后即使缓存里还有任务， 也只能查看历史，不能再写业务。
+ * {@code operatorSessionExpiresAt} 告诉秤端离线操作还能持续多久：会话过期后即使缓存里还有任务，也只能查看历史，不能再写业务。
  */
 @Data
 @NoArgsConstructor

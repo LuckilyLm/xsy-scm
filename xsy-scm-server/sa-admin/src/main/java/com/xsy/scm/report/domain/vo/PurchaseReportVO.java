@@ -12,7 +12,7 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
  * 采购分析返回行（采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动）。
  *
  * <p>
- * 本报表刻意<b>不返回应付金额</b>。采购单金额是采购承诺，收货参考金额是履约事实，两者都不等于应付；应付应从财务应付事实读取，不能由采购或收货金额推算。
+ * 本报表刻意不返回应付金额。采购单金额是采购承诺，收货参考金额反映履约情况，两者都不等于应付； 应付应从财务应付记录读取，不能由采购或收货金额推算。
  */
 @Data
 public class PurchaseReportVO {
@@ -26,22 +26,18 @@ public class PurchaseReportVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal submittedAmount;
         private Long confirmedReceiptCount;
-        /**
-         * 收货数量 × 采购单价，只用于对价格与数量的交叉核对。
-         */
+        /** 收货数量 × 采购单价，只用于对价格与数量的交叉核对。 */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal receiptReferenceAmount;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal purchaseInCostAmount;
         private Integer purchaseInCostMissingCount;
-        /**
-         * {@code WAREHOUSE_CONFIRM + CONFIRMED + PENDING} 的收货单数。
-         */
+        /** {@code WAREHOUSE_CONFIRM + CONFIRMED + PENDING} 的收货单数。 */
         private Long pendingPutawayReceiptCount;
     }
 
     /**
-     * 粒度 = SKU × 采购单位快照。
+     * 粒度 = SKU × 采购单位。
      *
      * <p>
      * 采购入库数量以 {@link #inboundQuantityText} 表达（按库存记账单位分组），因为它与 {@link #purchaseUnit} 可能不同单位；把两者相加会得到无量纲的合计数。
@@ -61,9 +57,7 @@ public class PurchaseReportVO {
         private BigDecimal receivedQuantity;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal orderAmount;
-        /**
-         * 采购成交均价 = 采购行金额合计 / 计划数量合计，不是若干单价的算术平均。
-         */
+        /** 采购成交均价 = 采购行金额合计 / 计划数量合计，不是若干单价的算术平均。 */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal avgPurchasePrice;
         private String inboundQuantityText;
@@ -125,9 +119,7 @@ public class PurchaseReportVO {
         private String supplierName;
         private String purchaserName;
         private String warehouseName;
-        /**
-         * {@code xsy_purchase_order.planned_arrival_date} 是 DATE，不是瞬间。
-         */
+        /** {@code xsy_purchase_order.planned_arrival_date} 是 DATE，不是时间点。 */
         private java.time.LocalDate plannedArrivalDate;
         private String spuCode;
         private String productName;
@@ -159,16 +151,12 @@ public class PurchaseReportVO {
         private String purchaseUnit;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal weightedAvgPrice;
-        /**
-         * 当前筛选窗口内同规格与采购单位的上一有效均价。
-         */
+        /** 当前筛选窗口内同规格与采购单位的上一有效均价。 */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal previousWeightedAvgPrice;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal priceChangeAmount;
-        /**
-         * 百分数单位：12.5000 表示上涨 12.5%；零基期没有可用百分比。
-         */
+        /** 百分数单位：12.5000 表示上涨 12.5%；零基期没有可用百分比。 */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal priceChangePercent;
         private Long sampleLineCount;

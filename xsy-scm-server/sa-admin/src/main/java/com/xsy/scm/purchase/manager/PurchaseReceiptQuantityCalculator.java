@@ -25,16 +25,11 @@ public final class PurchaseReceiptQuantityCalculator {
      * 解析超收容差百分比。
      *
      * <p>
-     * 解析口径是 <b>trim + {@link Integer#parseInt(String)}</b>，因此：
-     * <ul>
-     * <li>首尾空白被接受（{@code "  15 "} → 15）；</li>
-     * <li>前导 {@code +} 被接受（{@code "+10"} → 10）—— 这是<b>有意为之的宽松</b>： 值由管理员在配置页手工输入，数值语义无歧义，没有理由因写法而拒绝；</li>
-     * <li>小数、科学计数、百分号、千分位一律拒绝（{@code "10.5"} / {@code "1e2"} / {@code "10%"} → 40999）——
-     * 它们代表「作者以为可以填别的单位」，静默截断会掩盖真实意图。</li>
-     * </ul>
+     * 按 trim + {@link Integer#parseInt(String)} 解析：首尾空白和前导 {@code +} 可接受（值由管理员手工输入， 写法不影响语义）；小数、科学计数、百分号、千分位一律拒绝（→
+     * 40999），避免静默截断掩盖意图。
      *
      * @param raw
-     *            {@code t_config} 里读到的原始值；{@code null} 或空白 → <b>回退默认 10</b>
+     *            {@code t_config} 里读到的原始值；{@code null} 或空白回退默认 10
      * @return 0–100（含端点）
      * @throws ScmBusinessException
      *             非整数 / 负数 / &gt; 100 → 40999
@@ -88,7 +83,7 @@ public final class PurchaseReceiptQuantityCalculator {
     }
 
     /**
-     * 收货差异 = cumulative − planned（<b>可为负</b>）。
+     * 收货差异 = cumulative − planned（可为负）。
      */
     public static BigDecimal difference(BigDecimal plannedQuantity, BigDecimal cumulativeReceivedQuantity) {
         return cumulativeReceivedQuantity.subtract(plannedQuantity);
@@ -98,9 +93,8 @@ public final class PurchaseReceiptQuantityCalculator {
      * 解析收货数量 / 实重（4 位定点字符串，必须 &gt; 0）。
      *
      * <p>
-     * <b>为什么不复用 {@code PurchaseOrderValidator.decimal}</b>：那个方法的失败码是
-     * {@code PURCHASE_QUANTITY_INVALID(40080)}（采购数量），而收货侧的错误码契约是
-     * {@code PURCHASE_RECEIPT_QUANTITY_INVALID(40083)}。两个码必须各归其位 —— 否则前端无法区分「建单时数量写错」与「收货时数量写错」。
+     * 不复用 {@code PurchaseOrderValidator.decimal}：那个方法返回 {@code PURCHASE_QUANTITY_INVALID(40080)}，收货侧要的是
+     * {@code PURCHASE_RECEIPT_QUANTITY_INVALID(40083)}。 两个码各归其位，前端才能区分「建单时数量写错」与「收货时数量写错」。
      *
      * @throws ScmBusinessException
      *             形态不符或 &le; 0（40083）

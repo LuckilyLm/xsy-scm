@@ -41,7 +41,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * Read-only AR query, detail and export row selection.
+ * 应收的只读列表、详情与导出行选择。
  */
 @Service
 @RequiredArgsConstructor

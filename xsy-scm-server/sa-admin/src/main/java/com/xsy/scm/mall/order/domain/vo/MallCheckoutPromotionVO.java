@@ -13,7 +13,7 @@ import lombok.Data;
  * 结算预览的优惠块：活动与券的试算结果，不占用券。
  *
  * <p>
- * 金额一律来自营销域试算，客户端只展示；{@code payableAmount} 为优惠后预估应付， 非标品最终仍以实重结算金额为准。
+ * 金额一律来自营销域试算，客户端只展示；{@code payableAmount} 为优惠后预估应付，非标品最终仍以实重结算金额为准。
  */
 @Data
 public class MallCheckoutPromotionVO {

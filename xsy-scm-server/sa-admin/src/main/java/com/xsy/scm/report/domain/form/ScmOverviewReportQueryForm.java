@@ -4,7 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 经营概览筛选条件。指标卡、趋势与每日统计共用同一条件，保证「图上那个点」与 「表里那一行」以及「卡片那个数」是同一个口径。
+ * 经营概览筛选条件。指标卡、趋势与每日统计共用同一条件，保证「图上那个点」「表里那一行」 与「卡片那个数」来自同一份数据。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

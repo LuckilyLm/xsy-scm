@@ -150,7 +150,7 @@ public class ProductSpuService {
         entity.setOrigin(trimToNull(form.getOrigin()));
         entity.setInvoiceName(trimToNull(form.getInvoiceName()));
         entity.setTaxCategoryCode(trimToNull(form.getTaxCategoryCode()));
-        // 主档状态与在售状态正交：表单不传就是「不改」，新增时才落到 ENABLED。
+        // 主档状态与在售状态互不影响：表单不传表示不改，新增时默认 ENABLED。
         if (form.getMasterStatus() != null)
             entity.setMasterStatus(form.getMasterStatus());
         if (entity.getMasterStatus() == null)
@@ -166,7 +166,7 @@ public class ProductSpuService {
     }
 
     /**
-     * 只复核新增或改过单位的 SKU：单位字典晚于既有商品建立，未改动的历史值即便不在字典里也必须允许原样保存，否则每次编辑都会被拦住。
+     * 只校验新增或改过单位的 SKU：单位字典晚于既有商品建立，未改动的历史值即使不在字典里也要允许保存，否则每次编辑都会被拦住。
      */
     private Collection<String> changedUnits(List<ProductSkuEntity> existing, ProductSkuChangeSet changes) {
         Map<Long, String> before = new HashMap<>();

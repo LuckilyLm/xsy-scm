@@ -26,7 +26,7 @@ public class RefundFundingCompletionService {
     private final FinancePaymentService financePaymentService;
 
     /**
-     * 调用方已持有订单锁；渠道回调与钱包返还共用完成判定及唯一 Finance 来源。
+     * 调用方已持有订单锁；渠道回调与余额返还共用同一套完成判定和同一条 Finance 付款记录。
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public Long complete(Long refundId, String operator) {

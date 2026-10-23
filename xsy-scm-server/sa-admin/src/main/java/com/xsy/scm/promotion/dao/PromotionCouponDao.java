@@ -16,9 +16,7 @@ public interface PromotionCouponDao extends BaseMapper<PromotionCouponEntity> {
 
     List<PromotionCouponEntity> queryPage(Page<?> page, @Param("query") PromotionCouponQueryForm query);
 
-    /**
-     * 取当前生效中的券模板（状态 ACTIVE 且落在有效窗口内）。
-     */
+    /** 取当前生效中的券模板（状态 ACTIVE 且在有效期内）。 */
     List<PromotionCouponEntity> listActive(@Param("at") OffsetDateTime at);
 
     PromotionCouponEntity lockById(@Param("id") Long id);

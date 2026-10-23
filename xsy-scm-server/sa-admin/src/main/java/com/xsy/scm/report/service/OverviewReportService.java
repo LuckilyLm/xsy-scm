@@ -18,7 +18,7 @@ import com.xsy.scm.report.support.ScmReportTimeRange;
 import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 
 /**
- * 经营概览只读，图表和日汇总共用同一统计口径。只有能明确归属仓库的指标才按仓库授权过滤。
+ * 经营概览只读，图表和日汇总共用同一套统计规则。只有能明确归属仓库的指标才按仓库授权过滤。
  */
 @Service
 @RequiredArgsConstructor

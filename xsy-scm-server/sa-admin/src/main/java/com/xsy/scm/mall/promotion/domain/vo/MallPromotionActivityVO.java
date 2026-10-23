@@ -15,7 +15,7 @@ import lombok.Data;
  * 商城首页展示的进行中的活动。
  *
  * <p>
- * {@code rule} 是受控键值（已由营销域校验器收窄），商城只展示、不解释计算； 优惠如何作用在订单上由 {@code PromotionDiscountService} 统一计算。
+ * {@code rule} 是受控键值（已由营销域校验器限定取值范围），商城只展示、不解释计算； 优惠如何作用在订单上由 {@code PromotionDiscountService} 统一计算。
  */
 @Data
 public class MallPromotionActivityVO {

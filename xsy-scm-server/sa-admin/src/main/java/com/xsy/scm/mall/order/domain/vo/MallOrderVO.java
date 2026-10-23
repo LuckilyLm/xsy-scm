@@ -14,7 +14,7 @@ import lombok.Data;
  * 商城订单（列表与详情共用）。
  *
  * <p>
- * 金额、状态、履约进度全部来自正式销售订单与配送事实，本 VO 只是面向客户的投影，不引入第二套订单状态。
+ * 金额、状态、履约进度全部来自正式销售订单与配送记录，本 VO 只是面向客户的展示视图，不引入第二套订单状态。
  */
 @Data
 public class MallOrderVO {
@@ -33,7 +33,7 @@ public class MallOrderVO {
      */
     private String fulfillmentStatus;
     /**
-     * 是否允许客户取消：由订单状态机与履约事实共同决定，前端据此置灰
+     * 是否允许客户取消：由订单状态机与履约状态共同决定，前端据此置灰
      */
     private Boolean cancelable;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
@@ -74,7 +74,7 @@ public class MallOrderVO {
      */
     private List<MallOrderProgressNodeVO> progress = new ArrayList<>();
     /**
-     * 确认时冻结的客户可见优惠；未确认或无优惠时为 null。
+     * 确认时固定的客户可见优惠；未确认或无优惠时为 null。
      */
     private MallOrderDiscountVO discount;
     /**
@@ -87,13 +87,13 @@ public class MallOrderVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal payableAmount;
     /**
-     * 已付金额（该订单实际收到的钱：支付事实 + 货到付款收款），仅已确认订单返回
+     * 已付金额（该订单实际收到的钱：支付记录 + 货到付款收款），仅已确认订单返回
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal paidAmount;
 
     /**
-     * 已收金额高于当前应付的差额；只展示事实，不自动退款。
+     * 已收金额高于当前应付的差额；只展示差额，不自动退款。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal excessPaidAmount;

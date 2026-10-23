@@ -18,11 +18,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * SCM 批次库存——<b>全只读</b>。
+ * SCM 批次库存：全只读。
  *
  * <p>
- * 批次余额是子账，不是可以被直接赋值的状态：写入只发生在采购收货确认与销售出库命令里，与总账同事务。 两个端点共用权限码 {@code scm:inventory:lot:query}（菜单 2101 与之逐字对应，由权限 IT
- * 校验）。
+ * 批次余额是子账，不是可以被直接赋值的状态：写入只发生在采购收货确认与销售出库命令里，与总账同事务。 两个端点共用权限码 {@code scm:inventory:lot:query}（菜单 2101 与之对应，由权限集成测试校验）。
  */
 @RestController
 @RequestMapping("/scm/inventory/lot")

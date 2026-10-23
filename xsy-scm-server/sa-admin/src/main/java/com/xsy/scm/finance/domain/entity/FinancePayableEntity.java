@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 /**
- * 正常应付由已确认收货生成，红字应付独立新增而不改原单。应付金额、核销及结清状态分别保存事实与派生结果，历史单据只能追加纠错。
+ * 正常应付由已确认收货生成，红字应付独立新增而不改原单。金额等基础数据直接保存，核销与结清状态由查询计算，历史单据只能追加纠错。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -23,7 +23,7 @@ public class FinancePayableEntity extends FinanceRecord {
     private String sourceType;
 
     /**
-     * 正常 = {@code xsy_purchase_receipt.id}；手工红字<b>必须为 {@code null}</b>。
+     * 正常 = {@code xsy_purchase_receipt.id}；手工红字必须为 {@code null}。
      */
     private Long sourceId;
 
@@ -52,7 +52,7 @@ public class FinancePayableEntity extends FinanceRecord {
     private BigDecimal amount;
 
     /**
-     * 业务事件时点 = {@code xsy_purchase_receipt.confirmed_at}。{@code DIRECT} 与 {@code WAREHOUSE_CONFIRM} 同口径 —— putaway
+     * 业务事件时点 = {@code xsy_purchase_receipt.confirmed_at}。{@code DIRECT} 与 {@code WAREHOUSE_CONFIRM} 一致：上架
      * 是内部库存作业，不决定应付时点。
      */
     private OffsetDateTime eventAt;

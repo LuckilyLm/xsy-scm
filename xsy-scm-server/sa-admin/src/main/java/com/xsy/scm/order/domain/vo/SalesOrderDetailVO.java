@@ -19,23 +19,23 @@ public class SalesOrderDetailVO extends SalesOrderVO {
     private OrderAddressSnapshotVO address;
 
     /**
-     * 已冻结的订单优惠；没有优惠时为 {@code null}。
+     * 订单优惠；没有优惠时为 {@code null}。
      *
      * <p>
-     * 订单金额列仍是结算口径（不含优惠），优惠作为<b>独立事实</b>返回：把两者合成一个「净额」字段 会让「原价多少、减了多少」无法回答，退款反向也就没有可对账的依据。
+     * 订单金额列仍是结算金额（不含优惠），优惠单独返回：合并成一个净额会让「原价多少、减了多少」无法回答，退款也就没有可对账的依据。
      */
     private OrderDiscountVO discount;
 
     /**
-     * 满赠赠品权益；没有赠品时为空列表。
+     * 满赠赠品；没有赠品时为空列表。
      *
      * <p>
-     * 与 {@link #discount} 分开：赠品是<b>非金额权益</b>，只有赠品没有金额优惠的订单不会有优惠行， 混在一起会让这种订单看起来「什么都没有」。
+     * 与 {@link #discount} 分开：赠品不是金额优惠，只有赠品没有优惠的订单需要单独展示。
      */
     private List<PromotionDiscountVO.GiftEntitlementVO> gifts;
 
     /**
-     * null 表示当前调用者没有该领域的查询权限；空列表表示授权范围内没有事实。
+     * null 表示当前调用者没有该领域的查询权限；空列表表示授权范围内没有数据。
      */
     private List<ReservationFact> inventoryReservations;
     private List<SortingFact> sortingProgress;
@@ -116,7 +116,7 @@ public class SalesOrderDetailVO extends SalesOrderVO {
         private BigDecimal approvedAmount;
         private OffsetDateTime approvedAt;
         /**
-         * null 表示无应收查询权限，false 表示没有红字事实。
+         * null 表示无应收查询权限，false 表示没有红字应收。
          */
         private Boolean redReceivableRecorded;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
@@ -141,7 +141,7 @@ public class SalesOrderDetailVO extends SalesOrderVO {
         private BigDecimal refundAmount;
         private OffsetDateTime completedAt;
         /**
-         * 资金分摊执行状态；无资金事实时为 NO_FACT，不能用退款单完成代替到账。
+         * 资金分摊状态；没有资金记录时为 NO_FACT，退款单完成不等于已到账。
          */
         private String fundingStatus;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

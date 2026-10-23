@@ -136,7 +136,7 @@ public class PriceResolver {
                 allEnabledVisibility || visibleSkuIds.contains(skuId));
             resolvedPrice.setUnavailableReason(unavailableReason);
             resolvedPrice.setSellable(unavailableReason == null);
-            // Eligibility never short-circuits price lookup or erases a valid zero price.
+            // 可售性不短路价格查找，也不抹掉有效的 0 元价。
             if (agreementPricesBySkuId.containsKey(skuId)) {
                 var agreementPrice = agreementPricesBySkuId.get(skuId);
                 AgreementFormulaType formula = agreementPrice.getFormulaType() == null

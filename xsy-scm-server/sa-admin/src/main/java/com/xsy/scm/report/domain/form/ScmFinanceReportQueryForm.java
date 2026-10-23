@@ -9,7 +9,7 @@ import net.lab1024.sa.base.common.domain.PageParam;
 import java.time.LocalDate;
 
 /**
- * Aging-free account detail query; ending balances are evaluated at {@code endDate}.
+ * 不按账龄的往来明细；期末余额按 {@code endDate} 计算。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

@@ -5,8 +5,6 @@ package com.xsy.scm.common.constant;
  */
 public enum ScmCurrencyEnum {
 
-    /**
-     * 人民币。
-     */
+    /** 人民币。 */
     CNY
 }

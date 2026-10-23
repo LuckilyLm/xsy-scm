@@ -44,11 +44,7 @@ public class SupplierDetailVO {
     private String districtName;
 
     /**
-     * 点位经度 / 纬度 / 坐标系；三列同生同灭。
-     *
-     * <p>
-     * 经度与纬度显式声明 {@code null} 序列化：前端要靠「字段存在且为 null」区分「尚未采集点位」，
-     * 省略字段会被读成「这个字段不存在」。
+     * 点位经度 / 纬度 / 坐标系，三列同生同灭。经纬度显式输出 null， 前端靠「有字段且为 null」区分「尚未采集点位」。
      */
     @JsonSerialize(nullsUsing = NullSerializer.class)
     private BigDecimal longitude;

@@ -3,7 +3,7 @@ package com.xsy.scm.report.constant;
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 
 /**
- * Stable permission identifiers used by report endpoints.
+ * 报表接口使用的权限码（稳定标识）。
  */
 public final class ScmReportPermission {
 
@@ -15,7 +15,7 @@ public final class ScmReportPermission {
     public static final String FINANCE_QUERY = "scm:report:finance:query";
     public static final String FINANCE_AGING_QUERY = "scm:report:finance:aging:query";
     /**
-     * Financial margin access; endpoints also require the independent cost permission.
+     * 查看毛利；接口同时要求独立的成本权限。
      */
     public static final String FINANCE_PROFIT_QUERY = "scm:report:finance:profit:query";
     public static final String CUSTOMER_STATEMENT_QUERY = "scm:report:customer:statement:query";

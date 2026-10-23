@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Finance read model. All balances are derived from append-only facts.
+ * 财务只读查询，所有余额都由只追加的记录计算得出。
  */
 @Service
 @RequiredArgsConstructor

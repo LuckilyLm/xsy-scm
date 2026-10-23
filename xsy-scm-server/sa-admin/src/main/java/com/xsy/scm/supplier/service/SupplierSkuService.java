@@ -65,8 +65,7 @@ public class SupplierSkuService {
      * 只读反查分页（按 SKU 找供应商）。
      *
      * <p>
-     * 默认顺序是「供应商 → 优先采购 → 规格编码」：这张表是按公司看它供哪些货，同一供应商的行必须连续， 否则用户读不完一家公司的清单。排序写在这里而不是 SQL 里，因为分页插件会用这里的 orders 覆盖语句自身的
-     * ORDER BY；只在 SQL 里加排序不会生效。
+     * 默认按「供应商 → 优先采购 → 规格编码」排序，同一供应商的行必须连续。 排序只能写在这里：分页插件会用这里的 orders 覆盖 SQL 自身的 ORDER BY。
      */
     public PageResult<SupplierSkuVO> query(SupplierSkuQueryForm form) {
         var page = SmartPageUtil.convert2PageQuery(form);
@@ -79,10 +78,7 @@ public class SupplierSkuService {
     }
 
     /**
-     * 按供应商汇总可供货情况：列表页的公司卡片直接消费这一份。
-     *
-     * <p>
-     * 不分页——公司数量远小于关联行数，一次取全量比给卡片做分页更简单，也不会把同一家公司拆到两页。
+     * 按供应商汇总可供货情况，列表页的公司卡片直接使用。不分页： 公司数量远小于关联行数，也不会把同一家公司拆到两页。
      */
     @Transactional(readOnly = true)
     public List<SupplierSkuSupplierSummaryVO> summarizeBySupplier(String status) {
@@ -90,7 +86,7 @@ public class SupplierSkuService {
     }
 
     /**
-     * 按 SKU 比较当前可采购供应商的参考价，只按原始采购单位分组。 不需要另外扫描分页，也不将参考价作为真实成交或入库成本。
+     * 按 SKU 比较当前可采购供应商的参考价，只按原始采购单位分组。参考价不是成交价或入库成本。
      */
     public List<SupplierSkuComparisonVO> compareReferencePrices(Long skuId) {
         return SupplierSkuReferencePriceComparison.compare(enrich(supplierSkuDao.selectEnabledBySkuId(skuId)));
@@ -100,7 +96,7 @@ public class SupplierSkuService {
      * 整表替换某供应商的商品关联。
      *
      * <p>
-     * 事务边界在这里，而不是在 Manager——Manager 只负责规则与落库，不决定事务范围。
+     * 事务边界在这里；Manager 只负责规则和写入，不决定事务范围。
      */
     @Transactional(rollbackFor = Exception.class)
     public void replace(SupplierSkuReplaceForm form) {
@@ -108,10 +104,7 @@ public class SupplierSkuService {
     }
 
     /**
-     * 校验「某 SKU 可以由某供应商供货」。
-     *
-     * <p>
-     * 采购写路径通过此方法确认供应商与 SKU 均可采购，避免采购服务绕过主数据直接查 {@code xsy_supplier_sku} 表。
+     * 校验「某 SKU 可以由某供应商供货」。采购写路径通过此方法确认， 避免采购服务绕过主数据直接查 {@code xsy_supplier_sku} 表。
      */
     public SupplierSkuEntity requireEnabledForPurchasing(Long supplierId, Long skuId) {
         supplierService.requireEnabled(supplierId);

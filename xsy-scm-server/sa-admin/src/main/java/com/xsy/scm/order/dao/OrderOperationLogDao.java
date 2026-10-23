@@ -15,13 +15,13 @@ public interface OrderOperationLogDao {
     int insert(OrderOperationLogEntity row);
 
     /**
-     * 列表读；日志行本身无归属列，范围经父订单收窄，见 OrderOperationLogMapper.xml。
+     * 列表查询；日志行本身无归属列，范围经父订单收窄，见 OrderOperationLogMapper.xml。
      */
     List<OrderOperationLogEntity> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
         @Param("scope") ScmValueScope scope);
 
     /**
-     * 订单日志只能在调用方完成订单归属校验后读取。商城客户按客户归属校验，不使用员工的数据范围过滤。
+     * 调用方必须先校验订单归属；商城客户按客户校验，不使用员工数据范围。
      */
     List<OrderOperationLogEntity> listByOrderId(@Param("orderId") Long orderId);
 }

@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 库存预警状态表记录上一次通知状态和变化轮次，不是实时库存事实。恢复正常后再异常属于新一轮通知，旧通知不能重复发送。
+ * 库存预警状态表记录上一次通知状态和变化轮次，不是实时库存。恢复正常后再异常属于新一轮通知，旧通知不能重复发送。
  */
 @Data
 public class InventoryWarningStateEntity {

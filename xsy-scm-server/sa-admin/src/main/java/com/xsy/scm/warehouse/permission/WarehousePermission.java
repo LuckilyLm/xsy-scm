@@ -1,7 +1,7 @@
 package com.xsy.scm.warehouse.permission;
 
 /**
- * Stable permission identifiers published by warehouse-management APIs.
+ * 仓库管理接口使用的权限码。
  */
 public final class WarehousePermission {
 

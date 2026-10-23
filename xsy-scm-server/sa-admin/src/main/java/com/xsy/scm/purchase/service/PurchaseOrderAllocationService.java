@@ -62,7 +62,7 @@ public class PurchaseOrderAllocationService {
      * 请求行 + 请求分配（一行 N 条分配）。
      *
      * <p>
-     * {@code allocations} 中保存已关联的 {@link PurchaseDemandAllocationEntity}。快照字段只能从已锁定的需求行读取，避免装配采购商品时生成来源不明的数据。
+     * {@code allocations} 中保存已关联的 {@link PurchaseDemandAllocationEntity}。数据字段只能从已锁定的需求行读取， 避免装配采购商品时生成来源不明的数据。
      */
     public static final class RequestedRow {
 
@@ -133,7 +133,7 @@ public class PurchaseOrderAllocationService {
                 totals.merge(demand.getId(), quantity, BigDecimal::add);
 
                 PurchaseDemandAllocationEntity allocation = new PurchaseDemandAllocationEntity();
-                // 保留行此刻已有真实 itemId（身份的一半）；新增行落库后再回填
+                // 保留行此刻已有真实 itemId（身份的一半）；新增行保存后再回填
                 allocation.setPurchaseOrderItemId(row.item.getId());
                 allocation.setPurchaseDemandId(demand.getId());
                 allocation.setSalesOrderId(demand.getSalesOrderId());
@@ -147,7 +147,7 @@ public class PurchaseOrderAllocationService {
 
         for (Map.Entry<Long, BigDecimal> entry : totals.entrySet()) {
             PurchaseDemandEntity demand = demands.get(entry.getKey());
-            // 扣除本单旧分配后再比 required（见方法注释）。create 时 oldTotals 为空 → 退化为原口径。
+            // 扣除本单旧分配后再比 required（见方法注释）。create 时 oldTotals 为空，退化为原规则。
             BigDecimal otherAllocated = demand.getAllocatedQuantity()
                 .subtract(oldTotals.getOrDefault(entry.getKey(), BigDecimal.ZERO));
             PurchaseDemandAllocator.withinRequired(demand.getRequiredQuantity(), otherAllocated.add(entry.getValue()));
@@ -159,8 +159,8 @@ public class PurchaseOrderAllocationService {
      * 按 {@code 旧 ∪ 新} 的 demandId 升序逐个重算需求侧。
      *
      * <p>
-     * <b>必须遍历并集</b>：只在旧集合出现的 demand（被删空 / 整单取消）也要重算，否则 {@code allocated_quantity} 不会回落、{@code status} 也不会从
-     * {@code ALLOCATED} 退回 {@code PENDING}。
+     * 必须遍历并集：只在旧集合出现的 demand（被删空 / 整单取消）也要重算，否则 {@code allocated_quantity} 不会回落、 {@code status} 也不会从 {@code ALLOCATED}
+     * 退回 {@code PENDING}。
      */
     public void recomputeDemands(Map<Long, PurchaseDemandEntity> locked, Map<Long, BigDecimal> oldTotals,
         Map<Long, BigDecimal> newTotals, Long orderSupplierId) {
@@ -190,10 +190,10 @@ public class PurchaseOrderAllocationService {
     }
 
     /**
-     * 单行内的分配集合差量（<b>禁止</b>「一个 item 对一个 allocation」的算法）。
+     * 单行内的分配集合差量（不能用「一个 item 对一个 allocation」的算法）。
      */
     public void applyAllocationChanges(RequestedRow row, List<PurchaseDemandAllocationEntity> existing) {
-        // 新增采购行在落库后才取得 ID；差量身份和插入记录都必须使用该 ID。
+        // 新增采购行在保存后才取得 ID；差量身份和插入记录都必须使用该 ID。
         row.allocations.forEach(allocation -> allocation.setPurchaseOrderItemId(row.item.getId()));
         PurchaseOrderAllocationChangeSet changes = PurchaseOrderAllocationChangeSet.between(existing, row.allocations);
         for (PurchaseDemandAllocationEntity removed : changes.removed()) {
@@ -248,10 +248,6 @@ public class PurchaseOrderAllocationService {
         recomputeDemands(demands, oldTotals, Map.of(), order.getSupplierId());
     }
 
-    // ------------------------------------------------------------------
-    // 内部工具
-    // ------------------------------------------------------------------
-
     public Map<Long, List<PurchaseDemandAllocationEntity>> loadAllocations(List<PurchaseOrderItemEntity> items) {
         if (items.isEmpty()) {
             return Map.of();
@@ -267,7 +263,7 @@ public class PurchaseOrderAllocationService {
     }
 
     /**
-     * 锁序第 1 层：需求必须<b>按 id 升序</b>一次性锁完（{@code ORDER BY id ASC FOR UPDATE}）。
+     * 需求必须按 id 升序一次性锁完（{@code ORDER BY id ASC FOR UPDATE}）。
      */
     public Map<Long, PurchaseDemandEntity> lockDemands(Collection<Long> demandIds) {
         List<Long> ascending = PurchaseDemandAllocator.ascendingDemandIds(demandIds);

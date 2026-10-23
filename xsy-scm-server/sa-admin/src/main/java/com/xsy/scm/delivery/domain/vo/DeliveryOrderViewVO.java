@@ -25,8 +25,6 @@ public class DeliveryOrderViewVO {
     private BigDecimal orderAmount;
     private Integer printCount;
     private OffsetDateTime lastPrintedAt;
-    /**
-     * PRINTED / UNPRINTED；订单维度不存在 PARTIAL。
-     */
+    /** PRINTED / UNPRINTED；订单维度不存在 PARTIAL。 */
     private String printStatus;
 }

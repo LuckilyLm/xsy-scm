@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 正常应付按业务来源防重；没有来源 ID 的手工红字应付用金额限制和请求幂等键防重。应付事实只能追加。
+ * 正常应付按业务来源防重；没有来源 ID 的手工红字应付用金额限制和请求幂等键防重。应付记录只能追加。
  */
 @Mapper
 public interface FinancePayableDao extends BaseMapper<FinancePayableEntity> {
@@ -32,8 +32,8 @@ public interface FinancePayableDao extends BaseMapper<FinancePayableEntity> {
      * 插入正常应付，来源身份已存在时什么都不做。
      *
      * <p>
-     * 冲突目标与 {@code uk_finance_payable_source_active} 的列和谓词<b>逐字一致</b>（纪律），不使用无目标的 {@code ON CONFLICT DO NOTHING} ——
-     * 无目标写法会把 {@code payable_no} 撞号也一起吞掉，那是一笔永远不会被发现的单号异常。
+     * 冲突目标与 {@code uk_finance_payable_source_active} 的列和条件完全一致，不能用无目标的 {@code ON CONFLICT DO NOTHING}： 那样会把
+     * {@code payable_no} 撞号也一起吞掉，单号异常将永远发现不了。
      *
      * @return 1 = 本次生成了应付（{@code id} 已回填）；0 = 该收货单已有应付，调用方按「已生成」成功返回
      */

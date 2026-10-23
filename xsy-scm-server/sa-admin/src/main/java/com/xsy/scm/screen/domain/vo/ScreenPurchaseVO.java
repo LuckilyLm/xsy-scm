@@ -6,7 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 /**
- * 数据大屏-采购数据快照（只读聚合）。
+ * 数据大屏-采购数据（只读聚合）。
  */
 @Data
 @Schema(description = "数据大屏-采购数据")

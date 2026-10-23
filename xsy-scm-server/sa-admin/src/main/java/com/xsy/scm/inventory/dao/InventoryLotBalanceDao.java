@@ -12,7 +12,7 @@ import org.apache.ibatis.annotations.Param;
  * 批次余额子账的读写。SQL 见 mapper/scm/inventory/InventoryLotBalanceDao.xml。
  *
  * <p>
- * 并发口径与总账一致：先锁总账余额行，再按 {@code lot_id} 升序锁批次余额行，避免两个事务交叉等待。 批次余额只能增减，不能直接覆盖数量。
+ * 并发规则与总账一致：先锁总账余额行，再按 {@code lot_id} 升序锁批次余额行，避免两个事务交叉等待。批次余额只能增减，不能直接覆盖数量。
  */
 @Mapper
 public interface InventoryLotBalanceDao {

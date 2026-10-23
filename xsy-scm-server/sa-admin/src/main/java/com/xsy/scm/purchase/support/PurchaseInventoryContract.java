@@ -5,21 +5,21 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 采购确认通过本接口把已保存的收货事实交给库存模块。采购不直接更新库存余额，库存模块统一校验单位、锁定余额和生成流水。
+ * 采购确认通过本接口把已保存的收货记录交给库存模块。采购不直接更新库存余额，库存模块统一校验单位、锁定余额和生成流水。
  */
 public interface PurchaseInventoryContract {
 
     /**
-     * Stable inventory source type used with a receipt item id for duplicate protection.
+     * 与收货明细 ID 一起使用的稳定库存来源类型，用于防重。
      */
     String SOURCE_DOCUMENT_TYPE = "PURCHASE_RECEIPT_ITEM";
 
     /**
-     * 一张已确认收货行所代表的库存事实（采购域对库存域的中立契约）。
+     * 一张已确认收货行对应的入库数据（采购域给库存域的中立接口）。
      *
      * <p>
-     * 数量是<b>有效收货量</b>、单位与成本都是采购侧的<b>快照</b>；{@code idempotencyKey} 是稳定防重键， {@code occurredAt} / {@code operator}
-     * 取<b>持久化的收货确认时刻与确认人</b>，不是写入时刻与当前登录人。
+     * 数量是有效收货量，单位与成本都是采购侧当时的记录；{@code idempotencyKey} 是稳定防重键， {@code occurredAt} / {@code operator}
+     * 取持久化的收货确认时刻与确认人，不是写入时刻与当前登录人。
      */
     record InboundFact(Long purchaseOrderId, Long receiptId, Long receiptItemId, Long warehouseId, Long skuId,
         String warehouseCode, String warehouseName, String skuCode, String skuName, String unit, BigDecimal quantity,
@@ -37,19 +37,18 @@ public interface PurchaseInventoryContract {
     }
 
     /**
-     * Available and reserved quantities returned by inventory. A null value means the inventory integration is
-     * unavailable; zero means the balance is empty.
+     * 库存返回的可用量与预留量。null 表示库存集成不可用，0 表示余额为空。
      */
     record Availability(BigDecimal available, BigDecimal reserved) {
     }
 
     /**
-     * Posts the receipt fact inside the caller's transaction; failures must propagate to receipt confirmation.
+     * 在调用方事务内提交收货数据；失败必须抛到收货确认。
      */
     void postInbound(InboundFact fact);
 
     /**
-     * Reads availability; null denotes an unavailable integration, while an empty balance is returned as zero.
+     * 读取可用量；null 表示集成不可用，余额为空时返回 0。
      */
     Availability queryAvailability(Long skuId, Long warehouseId);
 }

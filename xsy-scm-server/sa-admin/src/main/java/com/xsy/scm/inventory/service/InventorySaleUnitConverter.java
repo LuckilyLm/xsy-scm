@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * 订单销售数量与库存记账量的边界：只接受已冻结的精确换算，不四舍五入库存事实。
+ * 订单销售数量与库存记账量之间的换算：只接受已确定的精确换算，不对库存数量做四舍五入。
  */
 public final class InventorySaleUnitConverter {
     private InventorySaleUnitConverter() {
@@ -31,7 +31,7 @@ public final class InventorySaleUnitConverter {
     }
 
     /**
-     * 一笔出库流水还有多少库存量可退，按冻结比例向下折成销售单位；不超额退款。
+     * 一笔出库流水还有多少库存量可退，按已确定的比例向下折成销售单位；不超额退款。
      */
     public static BigDecimal availableSaleQuantity(BigDecimal stockQuantity, String stockUnit, BigDecimal factor) {
         if (stockQuantity == null || stockQuantity.signum() < 0) {

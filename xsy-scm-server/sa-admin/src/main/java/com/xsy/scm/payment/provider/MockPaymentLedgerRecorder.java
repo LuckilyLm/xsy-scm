@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 模拟渠道账本通过独立事务写入，不能与本地支付事务共用事务回滚；这用于测试真实渠道成功但本地失败的对账差异。
+ * 模拟渠道账本通过独立事务写入，不随本地支付事务回滚；这用于测试「渠道成功但本地失败」的对账差异。
  */
 @Component
 @RequiredArgsConstructor
@@ -25,7 +25,7 @@ public class MockPaymentLedgerRecorder {
     private final PaymentMockLedgerDao paymentMockLedgerDao;
 
     /**
-     * 渠道记账。<b>独立事务</b>：渠道的账不随本地事务回滚。
+     * 渠道记账。独立事务：渠道的账不随本地事务回滚。
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void record(String providerTransactionNo, String providerRefundNo, String direction, BigDecimal amount) {

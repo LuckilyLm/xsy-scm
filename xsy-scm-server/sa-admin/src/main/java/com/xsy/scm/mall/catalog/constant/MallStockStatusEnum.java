@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 商城配送仓下按销售单位展示的可售库存状态。
  *
  * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * {@code desc} 供页面与导出使用，保存仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

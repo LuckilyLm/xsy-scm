@@ -6,7 +6,7 @@ import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_STATE_INVALID;
 
 /**
- * Order lifecycle only. Fulfillment never enters this state graph.
+ * 只管订单生命周期，履约状态不进入这张状态图。
  */
 public final class OrderStateMachine {
     private OrderStateMachine() {

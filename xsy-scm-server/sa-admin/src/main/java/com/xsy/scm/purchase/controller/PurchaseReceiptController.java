@@ -31,11 +31,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * 采购收货端点（的 8 个端点）。
- *
- * <p>
- * {@code create} 与 {@code confirm} 要求 {@code Idempotency-Key} 头（缺失 → 40084，因此声明为
- * {@code required = false}）；{@code update} 只改备注，靠行级 {@code @Version} 保证重复提交安全。
+ * 采购收货接口。{@code create} 与 {@code confirm} 要求 {@code Idempotency-Key} 头，缺失返回 40084，因此声明为
+ * {@code required = false}；{@code update} 只改备注，靠行级 {@code @Version} 保证重复提交安全。
  */
 @RestController
 @RequiredArgsConstructor
@@ -45,10 +42,6 @@ public class PurchaseReceiptController {
     private final PurchaseReceiptService purchaseReceiptService;
 
     private final PurchaseQueryService purchaseQueryService;
-
-    // ------------------------------------------------------------------
-    // 查询
-    // ------------------------------------------------------------------
 
     @PostMapping("/query")
     @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
@@ -70,7 +63,7 @@ public class PurchaseReceiptController {
 
     /**
      * 按商品收货工作台（只读）：跨可收货采购单按 SKU×采购单位汇总计划 / 已收 / 欠收 / 超收，复用
-     * {@code scm:purchase:receipt:query}。它只是视图，不新增收货事实，确认收货仍走各收货单既有端点。
+     * {@code scm:purchase:receipt:query}。只是视图，不写入收货数据；确认收货仍走各收货单的端点。
      */
     @PostMapping("/item-workbench/query")
     @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
@@ -78,10 +71,6 @@ public class PurchaseReceiptController {
         @Valid @RequestBody PurchaseReceiptItemWorkbenchQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.receiptItemWorkbench(form));
     }
-
-    // ------------------------------------------------------------------
-    // 命令
-    // ------------------------------------------------------------------
 
     @PostMapping("/create")
     @SaCheckPermission(PurchasePermission.RECEIPT_ADD)

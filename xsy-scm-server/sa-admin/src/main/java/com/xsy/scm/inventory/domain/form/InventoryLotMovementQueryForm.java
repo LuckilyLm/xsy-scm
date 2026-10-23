@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 
 /**
- * 批次流水查询条件：按仓库、商品规格、批次号与流水类型收窄，数据范围与余额同源。
+ * 批次流水查询条件：按仓库、商品规格、批次号与流水类型筛选，数据范围与余额一致。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

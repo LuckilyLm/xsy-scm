@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 采购单打印读取提交时保存的业务信息，避免商品或供应商资料后来修改影响历史单据。
+ * 采购单打印读取提交时保存的业务信息，商品或供应商资料后来修改不影响历史单据。
  */
 @Component
 @RequiredArgsConstructor

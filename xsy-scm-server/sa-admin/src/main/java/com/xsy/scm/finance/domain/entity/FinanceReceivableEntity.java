@@ -62,12 +62,12 @@ public class FinanceReceivableEntity extends FinanceRecord {
     private Long originalReceivableId;
 
     /**
-     * 单头金额 = 明细之和，scale 4、{@code HALF_UP}、恒 &gt; 0；合计为 0 时不生成事实。
+     * 单头金额 = 明细之和，4 位小数、{@code HALF_UP}、恒 &gt; 0；合计为 0 时不生成记录。
      */
     private BigDecimal amount;
 
     /**
-     * 业务事件时点：正常 = 签收 {@code signed_at}，红字 = 退货 {@code approved_at}。 <b>不是写入时刻</b>，禁止用 {@code now()} 替代。
+     * 业务事件时点：正常 = 签收 {@code signed_at}，红字 = 退货 {@code approved_at}。不是写入时刻，不能用 {@code now()} 替代。
      */
     private OffsetDateTime eventAt;
 

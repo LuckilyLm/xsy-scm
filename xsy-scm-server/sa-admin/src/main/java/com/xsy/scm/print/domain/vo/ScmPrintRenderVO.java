@@ -11,7 +11,7 @@ import java.util.Map;
 import lombok.Data;
 
 /**
- * 打印渲染结果已包含表头、列顺序、单元格文本与合计。前端只负责排版，金额权限由服务端处理；历史重印使用冻结内容。
+ * 打印渲染结果：表头、列顺序、单元格文本与合计。前端只负责排版；金额权限由服务端处理，历史重印使用当时保存的内容。
  */
 @Data
 public class ScmPrintRenderVO {
@@ -52,13 +52,11 @@ public class ScmPrintRenderVO {
      * 模板里选了、但因调用者金额权限不足被剔除的字段 key。
      *
      * <p>
-     * 必须回报：静默少一列会让人以为模板没配好，而实际原因是他自己没有金额权限。
+     * 必须回报：静默少一列会让人以为模板没配好，实际是他没有金额权限。
      */
     private List<String> hiddenFields = new ArrayList<>();
 
-    /**
-     * 是否为冻结快照（历史重印）。
-     */
+    /** 是否为历史重印。 */
     private boolean frozen;
 
     private Long recordId;

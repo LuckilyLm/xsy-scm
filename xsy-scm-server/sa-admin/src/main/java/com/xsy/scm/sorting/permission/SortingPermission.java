@@ -1,7 +1,7 @@
 package com.xsy.scm.sorting.permission;
 
 /**
- * Stable permission identifiers published by the sorting API.
+ * 分拣域对外发布的稳定权限标识。
  */
 public final class SortingPermission {
 
@@ -24,10 +24,10 @@ public final class SortingPermission {
     public static final String TASK_REOPEN = "scm:sorting:task:reopen";
 
     /**
-     * 电子秤：查询 / 上报 / 接受分开授权。
+     * 电子秤：查询、上报、接受分开授权。
      *
      * <p>
-     * 上报只是把设备读数记下来，接受才写进分拣结果 —— 合并成一个权限会让「把秤接进来」 顺手获得「用秤上的数字直接改分拣结果」的能力。
+     * 上报只记录设备读数，接受才写进分拣结果；合并成一个权限，会让「把秤接进来」顺手获得「用秤上的数字直接改分拣结果」的能力。
      */
     public static final String SCALE_QUERY = "scm:sorting:scale:query";
 

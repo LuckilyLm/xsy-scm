@@ -57,13 +57,12 @@ public final class FinanceConstant {
      * 货到付款收款的幂等 scope。
      *
      * <p>
-     * 它防的是<b>重复请求</b>；重复<b>事实</b>另有一层 —— {@code uk_finance_receipt_source_active} 按 （来源类型, 订单 id）唯一，因此两个不同幂等键同时收同一张 COD
-     * 订单，也只会留下一笔收款。
+     * 它只防重复请求；重复数据另由 {@code uk_finance_receipt_source_active} 按（来源类型, 订单 id）唯一约束兜底： 两个不同幂等键同时收同一张 COD 订单，也只会留下一笔收款。
      */
     public static final String COD_COLLECTION_SCOPE = "FINANCE_COD_COLLECTION";
 
     /**
-     * 付款登记使用幂等键防重复请求。退款付款还按退款单来源唯一约束防重复事实；两者都不能省略。
+     * 幂等键防重复请求；退款付款还靠退款单来源唯一约束防重复数据，两者都不能省。
      */
     public static final String PAYMENT_ADD_SCOPE = "FINANCE_PAYMENT_ADD";
 
@@ -93,14 +92,14 @@ public final class FinanceConstant {
     public static final String PAYABLE_RED_SCOPE = "FINANCE_PAYABLE_RED";
 
     /**
-     * 四个破坏性动作各一条独立权限：能登记一笔款的人不必然是能冲掉一笔款的人，因此它们既不与 {@code *:add} 合并，也不合成一个 {@code scm:finance:reverse}。
+     * 四个反向/冲减动作各用一条独立权限：能登记一笔款的人不必然能冲掉一笔款，因此不与 {@code *:add} 合并，也不合成一个 {@code scm:finance:reverse}。
      */
     public static final String WRITE_OFF_REVERSE_PERM = FinancePermission.WRITE_OFF_REVERSE;
     public static final String RECEIPT_REVERSE_PERM = FinancePermission.RECEIPT_REVERSE;
     public static final String PAYMENT_REVERSE_PERM = FinancePermission.PAYMENT_REVERSE;
 
     /**
-     * 导出许可，<b>绝不扩大查询范围</b>：导出端点要求 「对应 {@code *:query} AND 本权限」，且与列表共用同一次范围解析结果。
+     * 导出许可，不扩大查询范围：导出端点要求「对应的 {@code *:query} AND 本权限」，并与列表共用同一次范围解析结果。
      */
     public static final String EXPORT_PERM = FinancePermission.EXPORT;
 
@@ -114,7 +113,7 @@ public final class FinanceConstant {
     public static final int LOCK_RANK_WRITE_OFF = 5;
 
     /**
-     * 财务事实的统一精度：scale 4。
+     * 财务金额的统一精度：4 位小数。
      */
     public static final int AMOUNT_SCALE = 4;
 

@@ -25,8 +25,6 @@ public class TimePriceVO {
     private String createdBy;
     private OffsetDateTime createdAt;
 
-    /**
-     * 当前时刻是否落在生效区间内。
-     */
+    /** 当前时刻是否落在生效区间内。 */
     private Boolean effectiveNow;
 }

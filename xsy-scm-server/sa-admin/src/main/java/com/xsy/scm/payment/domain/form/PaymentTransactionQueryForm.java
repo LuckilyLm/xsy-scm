@@ -17,8 +17,6 @@ public class PaymentTransactionQueryForm extends PageParam {
 
     private String status;
 
-    /**
-     * 本地交易号 / 渠道交易号 / 业务单号的模糊匹配。
-     */
+    /** 本地交易号 / 渠道交易号 / 业务单号的模糊匹配。 */
     private String keyword;
 }

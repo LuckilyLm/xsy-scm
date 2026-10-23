@@ -30,11 +30,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 采购需求端点（的 3 个端点）。
- *
- * <p>
- * 权限码三段式 {@code scm:purchase:demand:<action>}；两个写命令都要求 {@code Idempotency-Key} 头 （缺失 → 40084，由
- * {@code PurchaseIdempotencyService} 抛出，因此<b>不能</b>把该头标成 {@code required = true} —— 那会变成 30001，与错误码契约不符）。
+ * 采购需求接口。写命令要求 {@code Idempotency-Key} 头，缺失时返回 40084（由 {@code PurchaseIdempotencyService} 抛出）， 所以不能声明成
+ * {@code required = true}，否则会先返回 30001，与错误码约定不符。
  */
 @RestController
 @RequiredArgsConstructor
@@ -53,15 +50,15 @@ public class PurchaseDemandController {
     }
 
     /**
-     * 订单汇总 / 库存缺口预览（只读查询工作台：不写业务表、不做幂等）。
+     * 订单汇总 / 库存缺口预览（只读，不写业务表、不走幂等）。
      *
      * <p>
-     * 返回体带库存现有量与预留量，因此<b>同时</b>要求 {@code scm:purchase:demand:query} 与
-     * {@code scm:inventory:balance:query}（{@link SaMode#AND}）：只有采购需求查看权的人不能经此聚合接口读到库存余额，前端隐藏按钮不作为权限保护。
+     * 返回体含库存现有量与预留量，因此同时要求 {@code scm:purchase:demand:query} 与
+     * {@code scm:inventory:balance:query}（{@link SaMode#AND}）：只有需求查看权的人不能经此读到库存余额，前端隐藏按钮不算权限保护。
      */
     @PostMapping("/summary-preview")
-    @SaCheckPermission(value = {PurchasePermission.DEMAND_QUERY,
-        ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY}, mode = SaMode.AND)
+    @SaCheckPermission(value = {PurchasePermission.DEMAND_QUERY, ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY},
+        mode = SaMode.AND)
     public ResponseDTO<PageResult<PurchaseDemandSummaryVO>> summaryPreview(
         @Valid @RequestBody PurchaseDemandSummaryPreviewForm form) {
         return ResponseDTO.ok(purchaseQueryService.summaryPreview(form));
@@ -86,15 +83,16 @@ public class PurchaseDemandController {
     }
 
     /**
-     * 冻结批次回看（只读：不重算、不写业务表、不做幂等）。
+     * 批次回看（只读：不重算、不写业务表、不走幂等）。
      *
      * <p>
-     * 返回体含该仓的库存与预留数字，因此与 {@code summary-preview} 同样<b>同时</b>要求 {@code scm:purchase:demand:batch:query} 与
-     * {@code scm:inventory:balance:query}（{@link SaMode#AND}）：只有批次查看权的人不能经此接口读到库存余额。
+     * 返回体含该仓的库存与预留数字，因此与 {@code summary-preview} 一样同时要求 {@code scm:purchase:demand:batch:query} 与
+     * {@code scm:inventory:balance:query}（{@link SaMode#AND}）：只有批次查看权的人不能经此读到库存余额。
      */
     @PostMapping("/batch/detail")
-    @SaCheckPermission(value = {PurchasePermission.DEMAND_BATCH_QUERY,
-        ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY}, mode = SaMode.AND)
+    @SaCheckPermission(
+        value = {PurchasePermission.DEMAND_BATCH_QUERY, ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY},
+        mode = SaMode.AND)
     public ResponseDTO<PurchaseDemandCalculationBatchDetailVO> batchDetail(
         @Valid @RequestBody PurchaseDemandBatchQueryForm form) {
         return ResponseDTO.ok(purchaseDemandCalculationBatchService.detail(form.getBatchId()));

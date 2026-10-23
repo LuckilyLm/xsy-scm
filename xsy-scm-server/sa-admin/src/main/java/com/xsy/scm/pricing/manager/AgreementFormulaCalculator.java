@@ -11,7 +11,7 @@ public final class AgreementFormulaCalculator {
 
     public static BigDecimal calculate(AgreementFormulaType type, BigDecimal fixedPrice, BigDecimal parameter,
         BigDecimal marketPrice, BigDecimal saleUnitCost) {
-        // Bad imported configuration must not become a silent discount or throw from a pricing read path.
+        // 导入的配置有误时，不能悄悄变成折扣，也不能让定价读取路径抛异常。
         if (type == null || (type != AgreementFormulaType.FIXED && (parameter == null || parameter.signum() < 0))) {
             return null;
         }

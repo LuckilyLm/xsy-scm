@@ -4,14 +4,14 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 财务日志操作类型与数据库白名单对应。新增动作时必须同步数据库约束，确保所有财务操作都能准确审计。
+ * 财务日志的操作类型，与数据库 CHECK 约束对应。新增动作时要同步更新约束，保证所有财务操作都能审计。
  */
 @Getter
 @RequiredArgsConstructor
 public enum ScmFinanceOperationTypeEnum {
 
     /**
-     * 生成正常应收 / 应付：业务事实（签收 / 收货确认）在财务域的派生写，不挂权限点。
+     * 生成正常应收 / 应付：由签收、收货确认等业务数据派生写入，不挂权限点。
      */
     GENERATE("生成"),
 

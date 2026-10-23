@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * SCM 溯源附件：商品资质与批次检测报告。
  *
  * <p>
- * 查看沿用被挂对象自身的权限（商品查看权 / 包装码查看权），只有写入单独收在 {@code scm:trace:file:manage}。 这样「能看这个商品」和「能改它的资质」是两件事，仓库岗不会因为要传检测报告而拿到商品写权限。
+ * 查看沿用被挂对象自身的权限（商品查看权 / 包装码查看权），写入单独收在 {@code scm:trace:file:manage}。 这样「能看这个商品」和「能改它的资质」是两件事，仓库岗不会因为要传检测报告而拿到商品写权限。
  */
 @RestController
 @RequestMapping("/scm/trace/attachment")

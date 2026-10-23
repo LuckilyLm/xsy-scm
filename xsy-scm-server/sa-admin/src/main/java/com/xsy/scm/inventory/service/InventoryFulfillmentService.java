@@ -36,7 +36,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOU
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_RESERVATION_INVALID;
 
 /**
- * 配送发车时确认出库，没有出库草稿。 必须先释放预留量，再按实发量扣减库存，否则可能触发预留量不能大于库存量的约束。 先锁配送单据，再按仓库和商品规格顺序锁余额。 少拣时释放整笔预留，只扣实际发货仓的库存。
+ * 配送发车时确认出库，没有出库草稿。必须先释放预留量，再按实发量扣减库存，否则可能触发预留量不能大于库存量的约束。先锁配送单据，再按仓库和商品规格顺序锁余额。少拣时释放整笔预留，只扣实际发货仓的库存。
  */
 @Service
 @RequiredArgsConstructor
@@ -92,11 +92,11 @@ public class InventoryFulfillmentService {
 
     /**
      * @param routeId
-     *            来源配送线路 id，落进入库单头的 source_document_id 并参与防重唯一索引
+     *            来源配送线路 id，记入出库单头的 source_document_id 并参与防重唯一索引
      * @param warehouseId
      *            发货仓，即本次 SALES_OUT 的仓库
      * @param occurredAt
-     *            出库发生时刻 —— 由调用方给出<b>发车时刻</b>，不在这里取 now()
+     *            出库发生时刻 —— 由调用方给出真正的发车时刻，不在这里取 now()
      * @param operator
      *            发车操作人，同时作为流水与单据的操作者
      */
@@ -114,7 +114,7 @@ public class InventoryFulfillmentService {
     }
 
     /**
-     * 一条赠品出库明细：一个冻结的赠品权益行。
+     * 一条赠品出库明细：一个已确定的赠品权益行。
      *
      * @param giftId
      *            {@code xsy_order_promotion_gift.id}，同时是防重锚点
@@ -126,7 +126,7 @@ public class InventoryFulfillmentService {
 
     /**
      * @param routeId
-     *            发车业务事实（配送线路 id），只做流水头级溯源
+     *            发车业务数据（配送线路 id），只做流水头级溯源
      */
     public record GiftCommand(Long routeId, Long warehouseId, java.time.OffsetDateTime occurredAt, String operator,
         List<GiftLine> lines) {
@@ -136,7 +136,7 @@ public class InventoryFulfillmentService {
      * 发车正式出库：归还预留 → 生成已确认出库单 → 逐行写 SALES_OUT 并扣余额。
      *
      * <p>
-     * 必须在调用方事务内调用（与 {@link InventoryCommandService} 同一纪律），任一环节失败整条线路一起回滚 —— 不允许「出一半」。
+     * 必须在调用方事务内调用（与 {@link InventoryCommandService} 同一要求），任一环节失败整条线路一起回滚 —— 不允许「出一半」。
      */
     @Transactional(rollbackFor = Exception.class)
     public Result dispatchOutbound(Command command) {
@@ -153,7 +153,7 @@ public class InventoryFulfillmentService {
             .lines().stream().filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0).sorted(Comparator
                 .comparing(Line::skuId).thenComparing(Line::salesOrderItemId).thenComparing(Line::reservationItemId))
             .toList();
-        // 全部订单行都缺：没有实物离开仓库，因此<b>不是一张空出库单</b>，outbound 相关字段留空。
+        // 全部订单行都缺：没有实物离开仓库，因此不生成空出库单，outbound 相关字段留空。
         if (shipped.isEmpty()) {
             return new Result(null, null, 0);
         }
@@ -174,11 +174,11 @@ public class InventoryFulfillmentService {
      * 促销赠品发车出库。
      *
      * <p>
-     * 与 {@link #dispatchOutbound} 同一事务纪律（任一环节失败整条线路一起回滚），但<b>不碰预留</b>：赠品从不预留，它只在发车这一刻从可用量里出。全部赠品按
-     * {@code (warehouse_id, sku_id)} 升序逐条写流水，与销售出库同一锁序，避免与其它库存命令形成死锁。
+     * 与 {@link #dispatchOutbound} 同一事务要求（任一环节失败整条线路一起回滚），但不碰预留：赠品从不预留，只在发车这一刻从可用量里出。全部赠品按
+     * {@code (warehouse_id, sku_id)} 升序逐条写流水，与销售出库同一加锁顺序，避免与其它库存命令形成死锁。
      *
      * <p>
-     * 缺货由调用方先用 {@link #requirePromotionGiftStock} 预检；这里逐条再校验一次是纵深防御 —— 预检与出库之间若有并发，仍以出库时的可用量为准。
+     * 缺货由调用方先用 {@link #requirePromotionGiftStock} 预检；这里逐条再校验一次是额外保护 —— 预检与出库之间若有并发，仍以出库时的可用量为准。
      */
     @Transactional(rollbackFor = Exception.class)
     public int dispatchPromotionGiftOutbound(GiftCommand command) {
@@ -197,13 +197,13 @@ public class InventoryFulfillmentService {
     }
 
     /**
-     * 赠品库存预检：只锁余额并校验可用量，<b>不写任何流水</b>。
+     * 赠品库存预检：只锁余额并校验可用量，不写任何流水。
      *
      * <p>
      * 发车时先跑一遍，让「赠品缺货」在动正常商品之前就暴露出来：整笔发车本来就是一个事务、失败都会回滚，但先失败能省掉一次完整出库的代价，也让报错直接指向真正的缺口。
      *
      * <p>
-     * 同一 SKU 可能被多张订单的赠品同时要，因此按 SKU <b>汇总后</b>再比可用量 —— 逐条都比得过、合起来不够，是赠品场景下最容易漏的一种缺货。
+     * 同一 SKU 可能被多张订单的赠品同时要，因此按 SKU 汇总后再比可用量 —— 逐条都比得过、合起来不够，是赠品场景下最容易漏的一种缺货。
      */
     @Transactional(rollbackFor = Exception.class)
     public void requirePromotionGiftStock(Long warehouseId, List<GiftLine> lines) {
@@ -316,7 +316,7 @@ public class InventoryFulfillmentService {
     }
 
     /**
-     * 预锁本事务要用到的全部余额行：发货仓的每个出库 SKU，加上每条预留自己所在仓的 SKU。跨仓释放与本地扣减因此落在同一把升序锁序里。
+     * 预锁本事务要用到的全部余额行：发货仓的每个出库 SKU，加上每条预留自己所在仓的 SKU。跨仓释放与本地扣减因此使用同一个升序加锁顺序。
      */
     private Map<String, InventoryBalanceEntity> lockBalances(Command command,
         Map<String, InventoryReservationEntity> reservations) {
@@ -350,7 +350,7 @@ public class InventoryFulfillmentService {
     }
 
     /**
-     * 整条归还预留：先动 {@code reserved_quantity}（必须早于任何实物扣减，见类注释），再收口状态。
+     * 整条归还预留：先动 {@code reserved_quantity}（必须早于任何实物扣减，见类注释），再更新状态。
      */
     private void retireReservations(Command command, Map<String, InventoryReservationEntity> reservations,
         Map<String, InventoryBalanceEntity> balances) {
@@ -396,7 +396,7 @@ public class InventoryFulfillmentService {
         try {
             inventoryOutboundDao.insert(entity);
         } catch (DuplicateKeyException e) {
-            // 线路行锁已经串行化了正常路径；撞到这里说明有并发或旁路在重复生成同一张单。
+            // 线路行锁已经串行化了正常路径；撞到这里说明有并发或其他途径在重复生成同一张单。
             throw new ScmBusinessException(InventoryErrorCode.INVENTORY_SOURCE_ALREADY_OUTBOUND);
         }
         return entity;

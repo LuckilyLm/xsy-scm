@@ -62,7 +62,7 @@ public class SalesOrderQueryService {
     private final CustomerService customerService;
 
     /**
-     * 订单详情带上已冻结优惠（只读事实）。订单域不重复实现优惠规则，只把营销域的读模型嵌进来， 让「这单减了多少、用了哪张券」在详情页可查；没有优惠时为 null。
+     * 订单详情带上优惠（只读）。订单域不重复实现优惠规则，直接引用营销域的读结果，让详情页能看到减免金额和所用券；没有优惠时为 null。
      */
     private final PromotionDiscountService promotionDiscountService;
 
@@ -74,8 +74,7 @@ public class SalesOrderQueryService {
 
     public PageResult<SalesOrderVO> query(SalesOrderQueryForm salesOrderQueryForm) {
         ScmDataScopeContext dataScopeContext = dataScopeService.resolve();
-        // 维度里一个授权 id 都没有时直接给空分页：不必让数据库跑一次恒假的 IN，
-        // 也避免把空集合送进 IN () 变成非法 SQL。
+        // 没有任何授权 id 时直接返回空分页，避免空集合拼成非法的 IN ()。
         if (dataScopeContext.getOrderSellerScope().isEmpty())
             return ScmDataScopeService.emptyPage(salesOrderQueryForm);
         var page = SmartPageUtil.convert2PageQuery(salesOrderQueryForm);
@@ -98,20 +97,20 @@ public class SalesOrderQueryService {
     }
 
     /**
-     * 详情读（HTTP 入口用的默认形态）：按当前调用者的订单业务员范围判定，越权 30005。
+     * 详情读（HTTP 入口默认形态）：按当前调用者的订单业务员范围判定，越权按 30005 拒绝。
      *
      * <p>
-     * 范围判定放在这里而不是各个 Controller 里，是为了让「新加的读入口自动带范围」。写路径需要的是同一行的<b>未收窄</b>快照，见 {@link #detailSnapshot(Long)}。
+     * 范围判定放在这里，新加的读入口就自动带范围；写路径需要不带范围的同一行数据，见 {@link #detailSnapshot(Long)}。
      */
     public SalesOrderDetailVO detail(Long orderId) {
         return detail(orderId, dataScopeService.resolve());
     }
 
     /**
-     * 详情读 + 显式范围：调用方已经解析过范围时用它，避免同一请求里解析两次。
+     * 详情读 + 显式范围：调用方已解析过范围时用它，避免重复解析。
      *
      * <p>
-     * 订单不存在仍按 {@code ORDER_NOT_FOUND} 处理；存在但负责人不在授权范围内按 30005 拒绝 ——否则列表收窄只是「藏起来」，猜到 id 直接调详情就能读到别人的整单（含价格与收货地址）。
+     * 订单不存在按 {@code ORDER_NOT_FOUND} 处理；存在但负责人不在授权范围内按 30005 拒绝，否则猜 id 就能读到别人的整单（含价格与收货地址）。
      */
     public SalesOrderDetailVO detail(Long orderId, ScmDataScopeContext dataScopeContext) {
         var salesOrder = salesOrderDao.selectById(orderId);
@@ -124,8 +123,7 @@ public class SalesOrderQueryService {
     }
 
     /**
-     * 详情快照（<b>刻意不收范围</b>）：写路径在同一事务里取操作日志的前后镜像 （create/submit/confirm/cancel/actual-quantity，见
-     * {@code SalesOrderService}），读的是自己刚写下的行，不是「查看别人的单」。数据范围只约束读接口，不约束写流程的自取快照。
+     * 详情快照（刻意不限定范围）：写路径在同一事务里取操作日志的前后数据，读的是自己刚写下的行；数据范围只约束读接口。
      */
     public SalesOrderDetailVO detailSnapshot(Long orderId) {
         var salesOrder = salesOrderDao.selectById(orderId);
@@ -157,10 +155,10 @@ public class SalesOrderQueryService {
     }
 
     /**
-     * 某客户某 SKU 的最近成交参考价（只读）：仅供录单旁证，不回算当前价格、不参与定价。
+     * 某客户某 SKU 的最近成交参考价（只读）：只供录单参考，不回算当前价格、不参与定价。
      *
      * <p>
-     * 历史成交价属于指定客户的只读事实；查询前按当前客户负责人范围校验，避免猜测客户 ID 读取其他业务员的成交记录。
+     * 查询前校验客户归属，避免猜客户 ID 读取其他业务员的成交记录。
      */
     public List<OrderRecentPriceVO> recentPrices(Long customerId, Long skuId, int limit) {
         customerService.requireInCurrentScope(customerId);

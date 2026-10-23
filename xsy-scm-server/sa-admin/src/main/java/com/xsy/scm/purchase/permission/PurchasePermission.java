@@ -3,7 +3,7 @@ package com.xsy.scm.purchase.permission;
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 
 /**
- * Stable permission identifiers published by the purchasing API.
+ * 采购接口对外发布的权限码（稳定标识）。
  */
 public final class PurchasePermission {
 

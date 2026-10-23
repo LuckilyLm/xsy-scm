@@ -25,7 +25,7 @@ public class PurchaseDemandQueryForm extends PageParam {
     @ScmEnumValue(enumClass = ScmPurchaseDemandStatusEnum.class, message = "采购需求状态无效")
     private String status;
     /**
-     * 需求日期区间（含端点）。：demand_date 来自 source_confirmed_at 的 Asia/Shanghai 日期。
+     * 需求日期区间（含端点）；demand_date 取 source_confirmed_at 的北京时间日期。
      */
     private LocalDate demandDateFrom;
     private LocalDate demandDateTo;

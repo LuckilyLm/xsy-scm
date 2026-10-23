@@ -32,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 商城订单的客户侧写操作：受控取消与再来一单。
  *
  * <p>
- * 两条路径都不新建订单状态机、不复制历史价格：取消走正式 {@link SalesOrderService} 的取消命令， 再来一单只把历史明细的<b>数量</b>写回购物车，价格留到结算时由服务端按当前客户价重新解析。
+ * 两条路径都不新建订单状态机、不复制历史价格：取消走正式 {@link SalesOrderService} 的取消命令， 再来一单只把历史明细的数量写回购物车，价格留到结算时由服务端按当前客户价重新解析。
  */
 @Service
 @RequiredArgsConstructor
@@ -62,7 +62,7 @@ public class MallOrderService {
     }
 
     /**
-     * 把「能不能取消」翻译成客户可读的原因；真正的门禁在订单状态机。
+     * 把「能不能取消」翻译成客户可读的原因；真正的限制在订单状态机。
      */
     private void requireCancellable(SalesOrderEntity order, Long orderId) {
         if (!OrderStateMachine.canTransition(order.getStatus(), ScmOrderStatusEnum.CANCELLED.name())) {
@@ -78,8 +78,8 @@ public class MallOrderService {
      * 再来一单：把历史明细按原数量写回服务端购物车。
      *
      * <p>
-     * 逐条按<b>当前</b>可见性与客户价重新校验，不可见的进 {@code skipped} 并给出原因； 数量取历史下单量且是<b>覆盖</b>而不是累加，重复点击得到同一结果。
-     * 历史成交价一律不复制：真正下单时的价格由结算与订单服务按当时的客户价重新解析。
+     * 逐条按当前可见性与客户价重新校验，不可见的进 {@code skipped} 并给出原因；数量取历史下单量且是覆盖而不是累加，
+     * 重复点击得到同一结果。历史成交价一律不复制：真正下单时的价格由结算与订单服务按当时的客户价重新解析。
      */
     @Transactional(rollbackFor = Exception.class)
     public MallReorderVO reorder(RequestMallCustomer customer, Long orderId) {

@@ -28,8 +28,6 @@ import com.xsy.scm.report.domain.vo.SalesReportVO;
 @Mapper
 public interface ReportDao {
 
-    // ---------- 经营概览 ----------
-
     ReportOverviewVO overviewKpi(@Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
         @Param("query") ScmOverviewReportQueryForm query, @Param("committedStatuses") List<String> committedStatuses,
         @Param("scope") ScmValueScope scope);
@@ -37,8 +35,6 @@ public interface ReportDao {
     List<ReportDailyStatVO> dailyStat(@Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate,
         @Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
         @Param("query") ScmOverviewReportQueryForm query, @Param("scope") ScmValueScope scope);
-
-    // ---------- 销售分析 ----------
 
     List<SalesReportVO.ProductRow> salesByProduct(Page<?> page, @Param("startAt") OffsetDateTime startAt,
         @Param("endAt") OffsetDateTime endAt, @Param("query") ScmSalesReportQueryForm query);
@@ -67,8 +63,6 @@ public interface ReportDao {
     List<SalesReportVO.OrderRow> salesOrderList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
         @Param("endAt") OffsetDateTime endAt, @Param("query") ScmSalesReportQueryForm query);
 
-    // ---------- 采购分析 ----------
-
     PurchaseReportVO.Overview purchaseOverview(@Param("startAt") OffsetDateTime startAt,
         @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,
         @Param("committedStatuses") List<String> committedStatuses, @Param("scope") ScmValueScope scope);
@@ -96,8 +90,6 @@ public interface ReportDao {
     List<PurchaseReportVO.PriceTrendPoint> purchasePriceTrend(@Param("startAt") OffsetDateTime startAt,
         @Param("endAt") OffsetDateTime endAt, @Param("query") ScmPurchaseReportQueryForm query,
         @Param("scope") ScmValueScope scope);
-
-    // ---------- 收货 / 入库 ----------
 
     List<ReceiptReportVO.ReceiptRow> receiptItemList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
         @Param("endAt") OffsetDateTime endAt, @Param("query") ScmReceiptReportQueryForm query,
@@ -131,8 +123,6 @@ public interface ReportDao {
 
     List<ReceiptReportVO.UnitQuantity> pendingPutawayQuantitySummary(@Param("query") ScmReceiptReportQueryForm query,
         @Param("scope") ScmValueScope scope);
-
-    // ---------- 库存分析 ----------
 
     List<InventoryReportVO.MovementRow> movementList(Page<?> page, @Param("startAt") OffsetDateTime startAt,
         @Param("endAt") OffsetDateTime endAt, @Param("inboundTypes") List<String> inboundTypes,

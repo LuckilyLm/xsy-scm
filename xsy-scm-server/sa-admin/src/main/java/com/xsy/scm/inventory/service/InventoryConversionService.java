@@ -41,7 +41,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVER
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_CONVERSION_WAREHOUSE_DISABLED;
 
 /**
- * 管理同仓库不同商品规格之间的库存转换。 审批时在同一事务里按商品规格 ID 顺序处理出入库，避免死锁。 链式转换先入后出，使上一项转入的库存可供下一项使用。 每条转换明细分别留下转出、转入流水，不合并记录。
+ * 管理同仓库不同商品规格之间的库存转换。审批时在同一事务里按商品规格 ID 顺序处理出入库，避免死锁。链式转换先入后出，使上一项转入的库存可供下一项使用。每条转换明细分别留下转出、转入流水，不合并记录。
  */
 @Service
 @RequiredArgsConstructor
@@ -60,7 +60,7 @@ public class InventoryConversionService {
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     /**
-     * 新建规格转换单（<b>创建即待审核</b>）。
+     * 新建规格转换单（创建即待审核）。
      *
      * <p>
      * 不校验「能不能真的转换」：待审核阶段不影响库存，源 SKU 够不够货、单位是否一致都要等到审批时才知道（期间可能有出库）。提前卡住会让录单不可用。
@@ -81,7 +81,7 @@ public class InventoryConversionService {
         entity.setStatus(ScmInventoryConversionStatusEnum.PENDING.name());
         entity.setReason(form.getReason());
         entity.setRemark(form.getRemark());
-        // 待审核态不得有审核信息（DB 双侧 CHECK 也要求两者同时为空）
+        // 待审核态不得有审核信息（数据库双侧 CHECK 也要求两者同时为空）
         entity.setAuditedAt(null);
         entity.setAuditor(null);
         entity.setAuditOpinion(null);
@@ -121,7 +121,7 @@ public class InventoryConversionService {
      * 审批通过：按明细写 {@code CONVERT_OUT} + {@code CONVERT_IN} 流水并调整两边余额。
      *
      * <p>
-     * 锁序见类注释。全部明细在同一事务内：任一条腿失败整单回滚，不允许「转了一半」—— 那会让源 SKU 的货凭空消失。
+     * 加锁顺序见类注释。全部明细在同一事务内：任一步失败整单回滚，不允许「转了一半」—— 那会让源 SKU 的货凭空消失。
      */
     @Transactional(rollbackFor = Exception.class)
     public void approve(Long conversionId, InventoryConversionAuditForm form) {
@@ -140,10 +140,10 @@ public class InventoryConversionService {
             throw new ScmBusinessException(INVENTORY_CONVERSION_EMPTY_ITEMS);
         }
 
-        // 成本基准必须在<b>任何腿写入之前</b>定好：下面的腿按 (skuId, 先入后出) 排序执行，
-        // 同一条明细的转入腿完全可能先于转出腿跑。等到腿里再读均价，读到的会是被本单前半段
-        // 改过的值，两条腿于是不同源 —— 守恒的是总成本，这一步就是它的唯一来源。
-        // lockCostBasis 同时承担锁序职责：按 skuId 升序把本单涉及的行一次锁齐。
+        // 成本基准必须在任何一步写入之前定好：下面的步骤按 (skuId, 先入后出) 排序执行，
+        // 同一条明细的转入完全可能先于转出运行。等执行时再读均价，读到的会是被本单前半段
+        // 改过的值，两条记录于是不一致 —— 守恒的是总成本，这一步就是它的唯一来源。
+        // lockCostBasis 同时承担加锁顺序的职责：按 skuId 升序把本单涉及的行一次锁齐。
         List<Long> involvedSkuIds = new ArrayList<>(items.size() * 2);
         for (InventoryConversionItemVO item : items) {
             involvedSkuIds.add(item.getSourceSkuId());
@@ -152,7 +152,7 @@ public class InventoryConversionService {
         Map<Long, BigDecimal> costBasis = resolveOutboundCostBasis(items,
             inventoryCommandService.lockCostBasis(locked.getWarehouseId(), involvedSkuIds));
 
-        // 把每行拆成两条腿，再全局排序 —— 这是本能力与既有六条写入路径的<b>唯一实质差异</b>。
+        // 把每行拆成入、出两步，再全局排序 —— 这是本能力与既有六条写入路径唯一的实质差异。
         List<Leg> legs = new ArrayList<>(items.size() * 2);
         for (InventoryConversionItemVO item : items) {
             // 一条明细的两条腿共用同一个基准值，所以总成本必然守恒。
@@ -164,7 +164,7 @@ public class InventoryConversionService {
                     item.getTargetQuantity())));
         }
         // 按 skuId 升序（同仓，等价于 (warehouse_id, sku_id) 升序）；
-        // 同一 skuId 时<b>先入后出</b>，让链式转换（A→B 且 B→C）能成立。
+        // 同一 skuId 时先入后出，让链式转换（A→B 且 B→C）能成立。
         legs.sort(Comparator.comparing(Leg::skuId).thenComparing(leg -> leg.inbound() ? 0 : 1));
 
         for (Leg leg : legs) {
@@ -184,7 +184,7 @@ public class InventoryConversionService {
     }
 
     /**
-     * 驳回：只允许 PENDING，<b>不产生任何库存影响</b>。审核意见必填（41063）。
+     * 驳回：只允许 PENDING，不产生任何库存影响。审核意见必填（41063）。
      */
     @Transactional(rollbackFor = Exception.class)
     public void reject(Long conversionId, InventoryConversionAuditForm form) {
@@ -233,11 +233,11 @@ public class InventoryConversionService {
     }
 
     /**
-     * 求「某 SKU 作为转出腿时的单位成本基准」，输入是审批开始时持锁取到的期初快照。
+     * 求「某 SKU 作为转出时的单位成本基准」，输入是审批开始时持锁取到的期初数据。
      *
      * <p>
-     * 不能直接拿期初均价当基准：腿的执行顺序保证同一 SKU <b>先入后出</b>，所以一个在本单里既收又发的 SKU（链式转换 A→B 且 B→C 里的 B），它的转出腿在真实账本上看到的均价是 「进完之后」的加权值。B
-     * 没有期初行时期初均价为 0，直接取 0 会把 C 记成零成本 —— 与修掉的「调拨转入清零」是同一个缺陷。
+     * 不能直接拿期初均价当基准：执行顺序保证同一 SKU 先入后出，所以一个在本单里既收又发的 SKU（链式转换 A→B 且 B→C 里的 B），它的转出在真实账本上看到的均价是「进完之后」的加权值。B 没有期初行时期初均价为
+     * 0，直接取 0 会把 C 记成零成本 —— 与修掉的「调拨转入清零」是同一个缺陷。
      */
     private Map<Long, BigDecimal> resolveOutboundCostBasis(List<InventoryConversionItemVO> items,
         Map<Long, InventoryCommandService.CostBasis> opening) {
@@ -307,11 +307,11 @@ public class InventoryConversionService {
     }
 
     /**
-     * 单据级校验：至少一行、每行源 SKU ≠ 目标 SKU、类型属于白名单、仓库存在。
+     * 单据级校验：至少一行、每行源 SKU ≠ 目标 SKU、类型属于已知值、仓库存在。
      *
      * <p>
-     * <b>同一 SKU 允许出现在多行</b>（既是某行的源、又是另一行的目标），这是链式转换的合法形态，因此不做「SKU 不得重复」的校验 —— 与调拨 / 报损报溢相反（那里同一 SKU 重复一定是录单错误）。需要去重的不是
-     * SKU 而是<b>余额行</b>，由审批时的全局排序保证。
+     * 同一 SKU 允许出现在多行（既是某行的源、又是另一行的目标），这是链式转换的合法形态，因此不做「SKU 不得重复」的校验 —— 与调拨 / 报损报溢相反（那里同一 SKU 重复一定是录单错误）。需要去重的不是 SKU
+     * 而是余额行，由审批时的全局排序保证。
      */
     private void requireForm(InventoryConversionAddForm form) {
         if (form == null || form.getItems() == null || form.getItems().isEmpty()) {
@@ -335,7 +335,7 @@ public class InventoryConversionService {
     }
 
     /**
-     * 断言仓库<b>启用</b>（与调拨 / 采购同一取向：码留在调用方域）。
+     * 要求仓库已启用（与调拨 / 采购做法一致：错误码留在调用方域）。
      */
     private void requireEnabled(Long warehouseId) {
         WarehouseEntity warehouse = warehouseService.require(warehouseId);
@@ -345,7 +345,7 @@ public class InventoryConversionService {
     }
 
     /**
-     * 乐观锁早失败：版本不符时<b>在写流水之前</b>就报错，不做无用功。
+     * 乐观锁提前失败：版本不符时在写流水之前就报错，不做无用功。
      */
     private static void requireVersion(InventoryConversionEntity entity, InventoryConversionAuditForm form) {
         if (!Objects.equals(entity.getVersion(), form.getVersion())) {

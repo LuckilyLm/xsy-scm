@@ -47,13 +47,13 @@ public class InventoryReservationEntity {
     private Long sourceDocumentItemId;
 
     /**
-     * 恒为正（DB CHECK）；释放/消耗通过改 status 表达，不改数量。
+     * 恒为正（数据库 CHECK）；释放 / 消耗通过改 status 表达，不改数量。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal quantity;
 
     /**
-     * 预留时的记账单位快照（= 该 (仓库, SKU) 的余额单位）。
+     * 预留时的记账单位（= 该 (仓库, SKU) 的余额单位）。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;

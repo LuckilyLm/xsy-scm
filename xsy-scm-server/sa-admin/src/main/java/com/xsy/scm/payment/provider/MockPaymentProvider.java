@@ -30,25 +30,21 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class MockPaymentProvider implements ScmPaymentProvider {
 
-    /**
-     * 本地模拟渠道的签名请求头。真实渠道各有自己的头名。
-     */
+    /** 本地模拟渠道的签名请求头。真实渠道各有自己的头名。 */
     public static final String SIGNATURE_HEADER = "X-Scm-Mock-Signature";
 
-    /**
-     * 本地模拟渠道的事件 id 请求头；缺省时回落到报文里的 eventId 字段。
-     */
+    /** 本地模拟渠道的事件 id 请求头；缺省时回落到报文里的 eventId 字段。 */
     public static final String EVENT_ID_HEADER = "X-Scm-Mock-Event-Id";
 
     private final PaymentMockLedgerDao paymentMockLedgerDao;
 
     /**
-     * 渠道账本写入口。<b>必须经由这个独立 Bean</b>：{@code REQUIRES_NEW} 只有经过 Spring 代理才生效， 在同类内自调用会让渠道账并入本地业务事务一起回滚。
+     * 渠道账本写入口。必须经由这个独立 Bean：{@code REQUIRES_NEW} 只有经过 Spring 代理才生效， 在同类内自调用会让渠道账并入本地业务事务一起回滚。
      */
     private final MockPaymentLedgerRecorder ledgerRecorder;
 
     /**
-     * 模拟渠道的签名密钥。<b>只在这里读</b>：渠道密钥不进业务规则、不进客户端、不落库。
+     * 模拟渠道的签名密钥。只在这里读：渠道密钥不进业务规则、不进客户端、不写入数据库。
      */
     @Value("${scm.payment.mock.secret:scm-local-mock-secret}")
     private String secret;
@@ -160,7 +156,7 @@ public class MockPaymentProvider implements ScmPaymentProvider {
     }
 
     /**
-     * 渠道收款对账明细：按业务日汇总渠道自己的账（<b>只取 IN</b>，退款对账是后续独立一项）。
+     * 渠道收款对账明细：按业务日汇总渠道自己的账（只取 IN；退款对账是后续独立一项）。
      */
     @Override
     public Settlement fetchSettlement(LocalDate bizDate) {

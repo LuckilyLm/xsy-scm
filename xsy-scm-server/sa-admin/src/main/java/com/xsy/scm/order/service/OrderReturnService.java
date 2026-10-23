@@ -62,7 +62,7 @@ import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_QUANTITY_EX
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_STATUS_INVALID;
 
 /**
- * Serialize every after-sales write on the original order, before return/refund locks.
+ * 售后写操作先在原订单上加锁，再锁退货单和退款单。
  */
 @Service
 @RequiredArgsConstructor
@@ -79,7 +79,7 @@ public class OrderReturnService {
     private final OrderOperationLogRecorder orderLogs;
     private final ScmDataScopeService dataScopeService;
     /**
-     * 红字应收生成器。依赖方向是 order → finance， finance 对订单与退货表只读、不反向 import 订单域，因此不构成环；生成失败即整笔批准回滚（与库存/幂等写入同一事务纪律）。
+     * 红字应收生成器。依赖方向是 order → finance，finance 只读订单与退货表、不反向引用订单域，因此不成环；生成失败则整笔批准回滚。
      */
     private final FinanceReceivableService financeReceivableService;
 
@@ -112,7 +112,7 @@ public class OrderReturnService {
     }
 
     /**
-     * 退货单详情读 + 显式范围。父订单读不到时同样按 30005 处理：退货单本身没有归属列，「看不到订单却能看它的退货」就是绕过。
+     * 退货单详情读 + 显式范围。父订单读不到时同样按 30005 处理：退货单本身没有归属列，看不到订单却能看它的退货就是绕过。
      */
     public OrderReturnDetailVO detail(Long orderReturnId, ScmDataScopeContext dataScopeContext) {
         var orderReturnEntity = orderReturnDao.selectById(orderReturnId);
@@ -123,7 +123,7 @@ public class OrderReturnService {
     }
 
     /**
-     * 未收窄的详情快照：审批/驳回/取消等写命令在同一事务里回读自己刚改过的单据，归属判定只属于读接口，不给写流程加第二次门槛（写流程的门槛在订单锁与状态机上）。
+     * 不带范围的详情：审批、驳回、取消等写命令在同一事务里回读自己刚改过的单据；归属判定只属于读接口，写流程靠订单锁与状态机把关。
      */
     public OrderReturnDetailVO detailSnapshot(Long orderReturnId) {
         var orderReturnEntity = orderReturnDao.selectById(orderReturnId);
@@ -182,10 +182,10 @@ public class OrderReturnService {
     }
 
     /**
-     * 商城客户申请售后入口：与管理端共用同一条建单路径与同一套数量上限，只跳过员工负责人范围（商城客户没有该范围）。
+     * 商城客户申请售后：与管理端共用同一条建单路径和数量上限，只跳过员工负责人范围。
      *
      * <p>
-     * 仅已确认订单可退、累计申请不超过实数量的校验一律不变；归属由商城适配器在入口按登录客户判定。
+     * 仅已确认订单可退、累计申请不超过实数量等校验不变；归属由商城适配器按登录客户判定。
      */
     @Transactional(rollbackFor = Exception.class)
     public OrderReturnDetailVO createFromMall(OrderReturnAddForm orderReturnAddForm, String key) {
@@ -196,8 +196,8 @@ public class OrderReturnService {
         boolean enforceEmployeeScope) {
         var claim = orderIdempotencyService.claim("ORDER_RETURN_CREATE", key, orderReturnAddForm);
         if (claim.replay()) {
-            // 重放同样要过范围：幂等 scope 含 operator，B 拿不到 A 的记录；
-            // 但同一个人换了负责范围后重放旧键仍会绕开写命令内的门禁。
+            // 重放也要过范围：幂等 scope 含 operator，B 拿不到 A 的记录；
+            // 但同一个人换了负责范围后重放旧键仍会绕过写命令内的校验。
             // 商城入口已由 MallAfterSaleService 按登录客户判过归属，不再套员工范围。
             if (enforceEmployeeScope) {
                 requireParentOrderVisible(orderReturnAddForm.getOrderId(),
@@ -227,7 +227,7 @@ public class OrderReturnService {
             var original = originals.get(returnItem.getOrderItemId());
             if (original == null || !seen.add(returnItem.getOrderItemId()))
                 throw new ScmBusinessException(ORDER_RETURN_ITEM_INVALID);
-            // Lock order item explicitly; all competing return commands follow the same order-first lock sequence.
+            // 显式锁订单明细；所有退货命令都按先订单后明细的顺序加锁。
             salesOrderItemDao.lock(original.getId());
             var quantity = OrderValidator.decimal(returnItem.getRequestedQuantity(), true);
             if (original.getActualQuantity() == null || orderReturnItemDao.reserved(original.getId()).add(quantity)
@@ -303,8 +303,8 @@ public class OrderReturnService {
         stamp(orderReturnEntity, false);
         if (orderReturnDao.updateById(orderReturnEntity) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
-        // 红字应收与退款单共用订单确认时冻结的优惠分摊和净额算法。
-        // 这一步仍在退货批准事务内；正常应收尚未生成时先计算退款净额，签收生成正常应收后再补红字。
+        // 红字应收与退款单共用订单确认时保存的优惠分摊和净额算法。
+        // 这一步仍在退货批准事务内；正常应收尚未生成时先算退款净额，签收后再补红字。
         BigDecimal refundAmount = financeReceivableService.generateRedOnReturnApproved(orderReturnEntity.getId());
         var result = detailSnapshot(orderReturnEntity.getId());
         if (refundAmount.signum() > 0) {
@@ -325,9 +325,8 @@ public class OrderReturnService {
                 Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()), Map.of("status", result.getStatus(),
                     "approvedAmount", String.valueOf(total), "refundAmount", String.valueOf(refund.getRefundAmount())));
         } else {
-            // 优惠抵满订单金额时退款净额为 0：退货本身仍然成立，只是没有可退的钱。
-            // 不建退款单（order_refund.refund_amount 恒 > 0），也不留 0 元事实，
-            // 因此这里是「允许退货、无需退款」而不是失败。
+            // 优惠抵满订单金额时退款净额为 0：退货仍然成立，只是没有可退的钱。
+            // 不建退款单（refund_amount 恒 > 0），也不记 0 元记录，这是「允许退货、无需退款」，不是失败。
             orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
                 "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，退款净额为 0，无需退款",
                 Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()), Map.of("status", result.getStatus(),
@@ -350,10 +349,10 @@ public class OrderReturnService {
     }
 
     /**
-     * 商城客户撤销售后申请入口：与管理端共用同一条撤销路径与同一个待审核状态门槛，只跳过员工负责人范围（商城客户没有该范围）。
+     * 商城客户撤销售后申请：与管理端共用同一条撤销路径和待审核状态门槛，只跳过员工负责人范围。
      *
      * <p>
-     * 只有 {@code PENDING} 可撤销；归属由商城适配器在入口按退货单的客户归属判定。
+     * 只有 {@code PENDING} 可撤销；归属由商城适配器按退货单客户判定。
      */
     @Transactional(rollbackFor = Exception.class)
     public OrderReturnDetailVO cancelFromMall(OrderReturnDecisionForm orderReturnDecisionForm, String key) {
@@ -362,8 +361,8 @@ public class OrderReturnService {
 
     private OrderReturnDetailVO decide(OrderReturnDecisionForm orderReturnDecisionForm, String key,
         ScmOrderReturnStatusEnum state, boolean enforceEmployeeScope) {
-        // 商城撤销的版本会在首次成功后变化；指纹只包含稳定的售后单与固定撤销原因。
-        // 管理端驳回/撤销保留原表单指纹与版本并发约束。
+        // 商城撤销后版本会变化，因此指纹只含售后单与撤销原因；
+        // 管理端驳回/撤销仍用原表单指纹和版本并发约束。
         Object requestFingerprint = !enforceEmployeeScope && state == ScmOrderReturnStatusEnum.CANCELLED
             ? mallCancelFingerprint(orderReturnDecisionForm)
             : orderReturnDecisionForm;
@@ -411,7 +410,7 @@ public class OrderReturnService {
     }
 
     /**
-     * 退货操作先锁退货单，再锁父订单和明细，并校验父订单的业务员归属。所有退货写命令都必须经过该校验，不能只依赖详情页的数据权限。
+     * 退货写命令统一先锁父订单，再锁明细和退货单，并校验父订单的业务员归属；不能只依赖详情页的数据权限。
      */
     private OrderReturnEntity lock(Long orderReturnId) {
         return lock(orderReturnId, true);

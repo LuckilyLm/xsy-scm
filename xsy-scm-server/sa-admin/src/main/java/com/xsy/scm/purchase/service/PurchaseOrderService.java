@@ -60,7 +60,7 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STA
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_SHORT_CLOSE_REASON_REQUIRED;
 
 /**
- * 处理采购单创建、编辑、提交、取消和需求分配。 采购行按商品规格区分，分配记录按需求区分，一行商品可关联多条需求。 新建先锁需求；修改和取消先锁采购单，再处理关联需求，避免并发重复分配。
+ * 处理采购单创建、编辑、提交、取消和需求分配。采购行按商品规格区分，分配记录按需求区分，一行商品可关联多条需求。 新建先锁需求；修改和取消先锁采购单，再处理关联需求，避免并发重复分配。
  */
 @Service
 @RequiredArgsConstructor
@@ -88,10 +88,6 @@ public class PurchaseOrderService {
 
     private final PurchaseOwnerResolver purchaseOwnerResolver;
 
-    // ------------------------------------------------------------------
-    // create
-    // ------------------------------------------------------------------
-
     @Transactional(rollbackFor = Exception.class)
     public PurchaseOrderVO create(PurchaseOrderAddForm form, String idempotencyKey) {
         var claim = purchaseIdempotencyService.claim(SCOPE_CREATE, idempotencyKey, form);
@@ -101,7 +97,7 @@ public class PurchaseOrderService {
 
         PurchaseOrderValidator.draft(form);
         if (form.getItems().stream().anyMatch(item -> item.getId() != null)) {
-            // 新建不接受任何既有行 id（同 的 ORDER_ITEM_NOT_OWNED）
+            // 新建不接受任何既有行 id（与更新同属 ORDER_ITEM_NOT_OWNED）
             throw new ScmBusinessException(PURCHASE_ORDER_ITEM_NOT_OWNED);
         }
         SupplierEntity supplier = purchaseOrderValidator.requireEnabledSupplier(form.getSupplierId());
@@ -145,18 +141,13 @@ public class PurchaseOrderService {
         return result;
     }
 
-    // ------------------------------------------------------------------
-    // update（A–D 四段）
-    // ------------------------------------------------------------------
-
     @Transactional(rollbackFor = Exception.class)
     public PurchaseOrderVO update(PurchaseOrderUpdateForm form) {
         PurchaseOrderValidator.draft(form);
         PurchaseOrderEntity order = lockOrder(form.getId());
         version(order.getVersion(), form.getVersion());
-        // 只有 DRAFT 可编辑行与分配。注意这里<b>必须判返回值</b>：
-        // {@code editable(...)} 是纯布尔判定，写成裸语句会静默放过 SUBMITTED / 终态单，
-        // 让后续的分配校验（40082）抢先抛出，把一个状态错误伪装成数量错误。
+        // 只有 DRAFT 可编辑行与分配。必须判返回值：{@code editable(...)} 是纯布尔判定，
+        // 写成裸语句会静默放过 SUBMITTED / 终态单，让后续的数量校验（40082）抢先抛出，把状态错误伪装成数量错误。
         if (!PurchaseOrderStateMachine.editable(order.getStatus())) {
             throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
         }
@@ -172,9 +163,8 @@ public class PurchaseOrderService {
             .loadAllocations(existing);
 
         List<RequestedRow> rows = purchaseOrderAllocationService.materialize(form);
-        // 保留行沿用库中的已收数量：请求只表达「计划量」，不表达「已收量」。
-        // （DRAFT 单的已收恒为 0，但把不变量写出来比依赖它更安全 —— 否则一个可编辑状态
-        // 的松动就会把 received_quantity 静默清 0。）
+        // 保留行沿用库中的已收数量：请求只表达计划量，不表达已收量。
+        // 草稿单的已收恒为 0，但不能依赖这一点，否则可编辑状态一松动就会把 received_quantity 静默清零。
         for (RequestedRow row : rows) {
             PurchaseOrderItemEntity old = existingById.get(row.item.getId());
             if (old != null) {
@@ -182,14 +172,14 @@ public class PurchaseOrderService {
             }
         }
 
-        // 锁序：需求（旧 ∪ 新，按 id 升序）—— 并集是硬要求，只在旧集合出现的 demand
-        // 也必须锁，否则删除后 allocated 不会回落
+        // 锁序：需求（旧 ∪ 新，按 id 升序）。只在旧集合出现的 demand 也必须锁，
+        // 否则删除后 allocated 不会回落
         Collection<Long> involved = new LinkedHashSet<>(PurchaseOrderAllocationService.requestedDemandIds(rows));
         existingAllocations.values()
             .forEach(list -> list.forEach(allocation -> involved.add(allocation.getPurchaseDemandId())));
         Map<Long, PurchaseDemandEntity> demands = purchaseOrderAllocationService.lockDemands(involved);
 
-        // 本单<b>已有</b>的分配合计（按 demandId）。校验新请求时必须先把它减掉 ——
+        // 本单已有的分配合计（按 demandId）。校验新请求时必须先把它减掉 ——
         // 库里的 {@code demand.allocated_quantity} 已经包含了本单的旧分配，直接相加会把自己数两遍，
         // 于是「数量没变的一次编辑」也会撞 40082。
         Map<Long, BigDecimal> oldTotals = PurchaseOrderAllocationService.totals(existingAllocations.values());
@@ -249,10 +239,6 @@ public class PurchaseOrderService {
         return result;
     }
 
-    // ------------------------------------------------------------------
-    // .1 reassign（改派采购归属）
-    // ------------------------------------------------------------------
-
     /**
      * 有采购分配权限的员工可以独立改派负责人。改派与编辑采购内容分开，记录版本及操作历史，不混同于列表可见范围。
      */
@@ -277,10 +263,6 @@ public class PurchaseOrderService {
             order.getId(), null, form.getReason(), before, after));
         return result;
     }
-
-    // ------------------------------------------------------------------
-    // submit / cancel / shortClose / delete
-    // ------------------------------------------------------------------
 
     @Transactional(rollbackFor = Exception.class)
     public PurchaseOrderVO submit(PurchaseOrderVersionForm form, String idempotencyKey) {
@@ -355,10 +337,10 @@ public class PurchaseOrderService {
     }
 
     /**
-     * 少收关单的核心转换：锁单 → 版本校验 → 状态机 → 「至少一行已收且一行未收齐」→ 落库 → 操作日志。
+     * 少收关单的核心转换：锁单 → 版本校验 → 状态机 → 「至少一行已收且一行未收齐」→ 保存 → 操作日志。
      *
      * <p>
-     * 单单命令与批量命令共用此方法，二者对合法性 / 版本 / 原因的要求完全一致；区别只在批量命令不走每单幂等（整批在同一事务内要么全成要么全回滚）。
+     * 单张命令与批量命令共用此方法，对合法性、版本、原因的要求完全一致；区别只在批量命令不走每单幂等 （整批在同一事务内要么全成要么全回滚）。
      */
     private PurchaseOrderVO applyShortClose(PurchaseOrderShortCloseForm form) {
         PurchaseOrderEntity order = lockOrder(form.getId());
@@ -394,7 +376,7 @@ public class PurchaseOrderService {
     public void delete(PurchaseOrderDeleteForm form) {
         PurchaseOrderEntity order = purchaseOrderDao.lock(form.getId());
         if (order == null) {
-            // 幂等：已删除视为成功（同 的 delete 语义）
+            // 幂等：已删除视为成功（与单张删除一致）
             return;
         }
         // 删除没走 lockOrder，归属守卫单独补一次；批量删除逐单委托本方法，因此同样生效
@@ -429,8 +411,8 @@ public class PurchaseOrderService {
     }
 
     /**
-     * 批量少收关单。整批共享原因，逐单套用与单单 {@link #applyShortClose} 完全相同的合法性 / 版本 / 状态校验；本方法自带
-     * {@code @Transactional}，任一单非法即整批回滚——不存在部分成功。锁序按 id 升序，与批量删除一致，避免交叉持锁死锁。
+     * 批量少收关单。整批共享原因，逐单执行与单张 {@link #applyShortClose} 相同的合法性、版本、状态校验； 本方法自带
+     * {@code @Transactional}，任一单非法即整批回滚，不存在部分成功。锁序按 id 升序，与批量删除一致，避免交叉持锁死锁。
      */
     @Transactional(rollbackFor = Exception.class)
     public void batchShortClose(PurchaseOrderBatchShortCloseForm form) {
@@ -445,10 +427,6 @@ public class PurchaseOrderService {
         form.setShortCloseReason(reason);
         return form;
     }
-
-    // ------------------------------------------------------------------
-    // 内部工具
-    // ------------------------------------------------------------------
 
     private static BigDecimal totalAmount(List<RequestedRow> rows) {
         return PurchaseAmountCalculator.totalAmount(rows.stream().map(row -> row.item.getLineAmount()).toList());

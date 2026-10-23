@@ -54,7 +54,7 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_RESERVE_STATE_INVALID(40945, "当前订单状态不允许预留库存（仅已确认订单可预留）");
 
     /**
-     * Compatibility aliases; idempotency errors are owned by the shared SCM layer.
+     * 兼容别名；幂等错误码由共享 SCM 层定义。
      */
     @Deprecated
     public static final ScmErrorCode ORDER_IDEMPOTENCY_KEY_REQUIRED = ScmCommonErrorCode.IDEMPOTENCY_KEY_REQUIRED;

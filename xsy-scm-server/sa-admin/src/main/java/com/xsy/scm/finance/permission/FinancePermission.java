@@ -1,7 +1,7 @@
 package com.xsy.scm.finance.permission;
 
 /**
- * Stable permission identifiers for protected finance endpoints.
+ * 财务受保护端点的权限码（稳定标识）。
  */
 public final class FinancePermission {
 

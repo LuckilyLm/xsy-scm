@@ -1,7 +1,7 @@
 package com.xsy.scm.order.support;
 
 /**
- * Legacy command shape retained for compatibility; production order commands use the inventory reservation service.
+ * 为兼容保留的旧命令接口；生产环境的订单命令直接使用库存预留服务。
  */
 public interface OrderInventoryContract {
     record Reserve(Long orderId, Long skuId, Long warehouseId, java.math.BigDecimal quantity, String idempotencyKey) {

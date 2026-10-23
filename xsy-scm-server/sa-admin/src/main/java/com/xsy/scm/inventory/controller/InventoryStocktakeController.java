@@ -77,7 +77,7 @@ public class InventoryStocktakeController {
      * 导出某仓库的盘点 Excel 模板（含签名的模板校验码）。
      *
      * <p>
-     * 需要导入权限；模板里的账面量 / 单位来自余额，读取受 {@code:import} 约束（计划）。
+     * 需要导入权限；模板里的账面量 / 单位取自余额。
      */
     @GetMapping("/import/template")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)
@@ -92,7 +92,7 @@ public class InventoryStocktakeController {
      * 导入填好实盘量的 Excel → 新建草稿盘点单。
      *
      * <p>
-     * <b>只建草稿，不改动库存</b>；整批校验或快照核验任一不过即整批拒绝、不落库。 {@code Idempotency-Key} 让响应丢失后的同请求重试不产生第二张草稿。
+     * 只建草稿，不改动库存；整批校验或快照核验任一不过即整批拒绝、不写入。 {@code Idempotency-Key} 让响应丢失后的同请求重试不产生第二张草稿。
      */
     @PostMapping("/import")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)
@@ -117,7 +117,7 @@ public class InventoryStocktakeController {
     }
 
     /**
-     * 改草稿（仅 DRAFT）；会重新快照账面量。
+     * 改草稿（仅 DRAFT）；会重新记录账面量。
      */
     @PostMapping("/update/{id}")
     @SaCheckPermission(InventoryPermission.STOCKTAKE_UPDATE)

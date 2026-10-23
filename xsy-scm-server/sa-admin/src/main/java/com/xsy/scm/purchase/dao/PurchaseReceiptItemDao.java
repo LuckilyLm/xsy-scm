@@ -38,7 +38,7 @@ public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEn
      * 一次性写全 5 个对账数量 + 实重三字段（标品三字段全空）。
      *
      * <p>
-     * 实重三字段与 {@code actual_weight} 必须<b>同生同灭</b>（{@code ck_purchase_receipt_item_weight_fields}），因此它们和 5 个对账数量放在同一条
+     * 实重三字段与 {@code actual_weight} 必须同时有值或同时为空（{@code ck_purchase_receipt_item_weight_fields}）， 因此它们和 5 个对账数量放在同一条
      * UPDATE 里，不做两步写。
      */
     int updateReconciliation(@Param("id") Long id, @Param("version") Integer version,

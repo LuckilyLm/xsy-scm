@@ -1,7 +1,7 @@
 package com.xsy.scm.common.permission;
 
 /**
- * Permission identifiers that one SCM domain needs to reference without importing another domain.
+ * 一个 SCM 域引用另一个域权限码时使用，避免模块间直接依赖。
  */
 public final class ScmCrossDomainPermission {
 

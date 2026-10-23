@@ -13,7 +13,7 @@ import java.util.Map;
  * 库存预留行。
  *
  * <p>
- * 展示字段（仓库 / SKU / 商品）实时联表，不是快照；{@code unitSnapshot} 才是预留时的快照。
+ * 展示字段（仓库 / SKU / 商品）实时联表，不是保存的副本；{@code unitSnapshot} 才是预留时的单位。
  */
 @Data
 public class InventoryReservationVO {

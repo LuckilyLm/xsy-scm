@@ -52,10 +52,6 @@ public class PurchaseOrderController {
 
     private static final int EXPORT_MAX_ROWS = 100000;
 
-    // ------------------------------------------------------------------
-    // 查询
-    // ------------------------------------------------------------------
-
     @PostMapping("/query")
     @SaCheckPermission(PurchasePermission.QUERY)
     public ResponseDTO<PageResult<PurchaseOrderVO>> query(@Valid @RequestBody PurchaseOrderQueryForm form) {
@@ -82,7 +78,7 @@ public class PurchaseOrderController {
 
     /**
      * 采购单列表导出（只读）：复用 {@code scm:purchase:query}，一次取「第 1 页 + 上限行」的当前筛选结果，按前端勾选列和 {@link PurchaseOrderExportSupport}
-     * 的列目录生成动态表头 xlsx。与列表页共用同一投影，导出内容 == 列表可见内容；<b>不触碰任何采购状态</b>。
+     * 的列目录生成动态表头 xlsx。与列表页共用同一投影，导出内容与列表可见内容一致，不修改任何采购状态。
      */
     @PostMapping("/export")
     @SaCheckPermission(PurchasePermission.QUERY)
@@ -97,10 +93,6 @@ public class PurchaseOrderController {
             .autoCloseStream(Boolean.FALSE).sheet("采购单")
             .doWrite(PurchaseOrderExportSupport.rows(form.getExportColumns(), orders));
     }
-
-    // ------------------------------------------------------------------
-    // 命令
-    // ------------------------------------------------------------------
 
     @PostMapping("/create")
     @SaCheckPermission(PurchasePermission.ADD)
@@ -118,11 +110,10 @@ public class PurchaseOrderController {
     }
 
     /**
-     * 改派采购归属（{@code scm:purchase:assign}，与「新建时指定别人」同一项权利）。
+     * 改派采购归属（{@code scm:purchase:assign}，与「新建时指定别人」是同一项权利）。
      *
      * <p>
-     * 单独一个端点，而不是把改派混在 {@code /update} 里：归属同时是<b>数据范围依据</b>，谁把它换成了谁必须是一个显式、单独可授权、可审计的动作。不接幂等头，与 {@code /update} 同一取向 ——
-     * 重复提交由 {@code id + version} 乐观锁挡住。
+     * 单独一个端点，不混在 {@code /update} 里：归属决定数据范围，改派必须是一个显式、可单独授权、可审计的动作。 不接幂等头，重复提交由 {@code id + version} 乐观锁挡住。
      */
     @PostMapping("/reassign")
     @SaCheckPermission(PurchasePermission.ASSIGN)
@@ -156,7 +147,7 @@ public class PurchaseOrderController {
     }
 
     /**
-     * 批量少收关单：整批共享原因，在同一事务内逐单套用与单单完全相同的合法性 / 版本校验，任一单非法即整批回滚。复用 {@code scm:purchase:short-close} 权限；不接幂等头（批量本身原子）。
+     * 批量少收关单：整批共享原因，同一事务内逐单执行与单张单相同的校验，任一单非法即整批回滚。 不接幂等头，批量本身原子。
      */
     @PostMapping("/batch/short-close")
     @SaCheckPermission(PurchasePermission.SHORT_CLOSE)

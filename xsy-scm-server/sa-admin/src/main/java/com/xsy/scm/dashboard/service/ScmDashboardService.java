@@ -43,14 +43,10 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ScmDashboardService {
 
-    /**
-     * 首页排行默认取前 5。
-     */
+    /** 首页排行默认取前 5。 */
     public static final int HOME_RANK_LIMIT = 5;
 
-    /**
-     * 首页与大屏共用指标层的排行上限。
-     */
+    /** 首页与大屏共用指标层的排行上限。 */
     public static final int MAX_RANK_LIMIT = ScmBusinessMetricsService.TOP_RANK_LIMIT;
 
     private final LoginManager loginManager;
@@ -61,15 +57,13 @@ public class ScmDashboardService {
 
     private final InventoryWarningQueryService inventoryWarningQueryService;
 
-    /**
-     * 当前登录员工的 KPI 卡片。
-     */
+    /** 当前登录员工的 KPI 卡片。 */
     public List<ScmDashboardCardVO> overview() {
         return overviewFor(heldPermissions());
     }
 
     /**
-     * 首页先按用户权限选出可见指标，再只查询相关业务汇总。没有查询的分组与已查询但结果为零必须区分。
+     * 先按权限选出可见指标，再只查相关汇总。「没查」和「查了是零」必须区别对待。
      */
     public List<ScmDashboardCardVO> overviewFor(List<String> heldPermissions) {
         List<ScmDashboardCardEnum> visibleCards = new ArrayList<>();
@@ -99,10 +93,10 @@ public class ScmDashboardService {
     }
 
     /**
-     * 按给定权限集合与指标计算卡片（与登录态解耦，便于负向夹具直接验证省略语义）。
+     * 按给定权限集合与指标计算卡片（与登录态解耦，便于负向夹具直接验证）。
      *
      * <p>
-     * 只接受<b>已经筛好</b>的卡片集合，可见性判断不在这里重复做一遍 —— 两次判断就有两处可能漂移。
+     * 只接受已经筛好的卡片集合，可见性判断不在这里重复做，避免两处判断结果不一致。
      */
     public List<ScmDashboardCardVO> cardsFor(List<ScmDashboardCardEnum> visibleCards, SalesRangeMetrics sales,
         PurchaseMetrics purchase, long warningTotal) {
@@ -115,7 +109,7 @@ public class ScmDashboardService {
     }
 
     /**
-     * 首页卡片类型必须逐一处理，新增卡片需要明确数据来源。未查询的指标不能用零替代，避免把遗漏伪装成无业务。
+     * 卡片类型逐一处理，新增卡片要明确数据来源。未查询的指标不能用零替代。
      */
     private static BigDecimal valueOf(ScmDashboardCardEnum card, SalesRangeMetrics sales, PurchaseMetrics purchase,
         long warningTotal) {
@@ -139,10 +133,10 @@ public class ScmDashboardService {
     }
 
     /**
-     * 库存预警总数：与库存预警列表同源（同一个查询服务、同一套默认筛选），因此「卡片数字 = 点进去的条数」。
+     * 库存预警总数：与预警列表一致（同一个查询服务、同一套默认筛选），所以「卡片数字 = 点进去的条数」。
      *
      * <p>
-     * 不在这里写统计 SQL，也不把指标层的健康度分档拿来求和 —— 后者的口径更宽（含缺货与未配置阈值）， 会让首页与明细对不上。
+     * 不在这里写统计 SQL，也不拿健康度分档求和：后者范围更宽（含缺货与未配置阈值），会让首页与明细对不上。
      */
     private long warningTotal() {
         InventoryWarningQueryForm form = new InventoryWarningQueryForm();
@@ -156,7 +150,7 @@ public class ScmDashboardService {
      * 库存健康度五档，供首页的库存健康卡使用。
      *
      * <p>
-     * 与顶部的「库存预警」是<b>两个指标</b>：这里含缺货与未配置阈值，预警列表只收低于下限 / 高于上限。 权限同样按库存预警权校验（看到分档等于看到库存状况）。
+     * 与顶部的「库存预警」是两个指标：这里含缺货与未配置阈值，预警列表只收低于下限 / 高于上限。权限同样按库存预警权校验（看到分档等于看到库存状况）。
      */
     public ScmDashboardInventoryHealthVO inventoryHealth() {
         StpUtil.checkPermission(InventoryPermission.WARNING_QUERY);
@@ -191,7 +185,7 @@ public class ScmDashboardService {
      * 逐个指标校验领域权限。
      *
      * <p>
-     * 入口权限 {@code scm:dashboard:query} 只授权访问工作台本身；不在这里逐个校验，拿到入口权限的人就能顺着 {@code metric} 参数把订单、采购、库存的曲线都拉出来。
+     * 入口权限 {@code scm:dashboard:query} 只授权访问工作台本身；不逐个校验的话，拿到入口权限就能顺着 {@code metric} 参数拉出订单、采购、库存的曲线。
      */
     private static void requireQueryPermission(ScmDashboardTrendMetric metric) {
         switch (metric) {
@@ -216,7 +210,7 @@ public class ScmDashboardService {
     }
 
     /**
-     * 两个排行维度都来自销售事实，因此都需要订单查询权。
+     * 两个排行维度都来自销售数据，因此都需要订单查询权。
      */
     private static void requireQueryPermission(ScmDashboardRankDimension dimension) {
         switch (dimension) {

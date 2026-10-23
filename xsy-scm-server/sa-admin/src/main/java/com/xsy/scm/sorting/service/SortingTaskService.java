@@ -70,15 +70,11 @@ import static com.xsy.scm.sorting.constant.SortingErrorCode.WAREHOUSE_INVALID;
 @RequiredArgsConstructor
 public class SortingTaskService {
 
-    /**
-     * 一次建单并入的订单行上限，避免生成上千行的巨型任务。
-     */
+    /** 一次建单并入的订单行上限，避免生成上千行的巨型任务。 */
     private static final int MAX_LINES_PER_TASK = 500;
 
     private final InventoryOutboundItemDao inventoryOutboundItemDao;
-    /**
-     * 只为重开前锁订单行而注入：发车与重开必须在同一批订单行上互相排队。
-     */
+    /** 只为重开前锁订单行而注入：发车与重开必须在同一批订单行上互相排队。 */
     private final SalesOrderDao salesOrderDao;
     private final SortingTaskDao sortingTaskDao;
     private final SortingTaskItemDao sortingTaskItemDao;
@@ -87,19 +83,15 @@ public class SortingTaskService {
     private final SortingAccess access;
     private final WarehouseDao warehouseDao;
     private final EmployeeDao employeeDao;
-    /**
-     * 供应商只读校验（建单时冻结来源）：排序域不写供应商表，只按 id 读一行。
-     */
+    /** 供应商只读校验（建单时保存来源）：排序域不写供应商表，只按 id 读一行。 */
     private final SupplierDao supplierDao;
     private final ScmIdempotencyService idempotencyService;
     private final SortingQueryService sortingQueryService;
-    /**
-     * 改实拣量前的包装码绑定守卫：跨域只读契约，排序域不写追溯表。
-     */
+    /** 改实拣量前的包装码绑定校验：跨域只读，排序域不写追溯表。 */
     private final com.xsy.scm.trace.service.TraceUnitService traceUnitService;
 
     /**
-     * 建单并指派。幂等键挡住「同一请求重发生成第二套业务事实」；不同请求抢同一订单行由部分唯一索引兜底，报可读的占用冲突。
+     * 建单并指派。幂等键挡住「同一请求重发生成第二套数据」；不同请求抢同一订单行由部分唯一索引兜底，报可读的占用冲突。
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingTaskDetailVO create(SortingTaskCreateForm form, String key) {
@@ -121,9 +113,9 @@ public class SortingTaskService {
         task.setStatus(ScmSortingTaskStatusEnum.PENDING.name());
         String remark = form.getRemark();
         task.setRemark(StringUtils.isBlank(remark) ? null : StringUtils.trim(remark));
-        // 三个筛选维度在<b>建单时</b>冻结：任务一旦建出来，作业口径就不该随主档或配送线路变化。
-        // 供应商必须显式给出并校验启用态 —— 从 SKU 与供应商的多对多关系反推会得到一个
-        // 「可能对、也可能不对」的来源，而分拣台上正是按它找货的。
+        // 三个筛选维度在建单时保存：任务建出来后就不该随主档或配送线路变化。
+        // 供应商必须显式给出并校验启用状态；从 SKU 与供应商的关系反推会得到一个
+        // 不确定的来源，而分拣台上正是按它找货。
         task.setDeliveryTimeSnapshot(form.getDeliveryTime());
         task.setDeliveryWave(
             StringUtils.isBlank(form.getDeliveryWave()) ? null : StringUtils.trim(form.getDeliveryWave()));
@@ -150,9 +142,7 @@ public class SortingTaskService {
         return result;
     }
 
-    /**
-     * 指派 / 改派：换人不换已录入内容；已完成与已取消的任务不再改派。
-     */
+    /** 指派 / 改派：换人不换已录入内容；已完成与已取消的任务不再改派。 */
     @Transactional(rollbackFor = Exception.class)
     public void assign(Long id, SortingAssignForm form) {
         ScmDataScopeContext scope = access.scope();
@@ -167,7 +157,7 @@ public class SortingTaskService {
     }
 
     /**
-     * 追加一笔分次分拣记录。只冻结分次累积事实；正式分拣量/结果必须经过 enter 显式确认。 任务锁串行化同一任务中的追加、编辑、取消与完成；事件键重复重放仍复核当前仓库和受指派人。
+     * 追加一笔分次分拣记录。只保存分次累计，正式分拣量和结果必须经过 enter 确认。 任务锁让同一任务的追加、编辑、取消、完成串行；重放同样复核当前仓库和受指派人。
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingPartRecordVO appendPart(Long id, SortingPartForm form, String key) {
@@ -226,7 +216,7 @@ public class SortingTaskService {
     }
 
     /**
-     * 批量录入分拣结果。允许一次只处理任务里的部分行（边称边录是常态），但每条提交行都必须属于本任务且带它自己读到的版本；首次录入把任务从 {@code PENDING} 推到 {@code SORTING}。
+     * 批量录入分拣结果。允许一次只处理任务里的部分行（边称边录是常态），但每条提交行都必须属于本任务且带它自己读到的版本； 首次录入把任务从 {@code PENDING} 推到 {@code SORTING}。
      */
     @Transactional(rollbackFor = Exception.class)
     public void enter(Long id, SortingEntryForm form) {
@@ -277,9 +267,7 @@ public class SortingTaskService {
         }
     }
 
-    /**
-     * 完成：硬前置是任务内每条活动明细都已有结果。一张订单要分多次完成时靠「剩余有效行另建新任务」实现，不靠带洞完成。
-     */
+    /** 完成：任务内每条活动明细都必须已有结果。一张订单要分多次完成，就为剩余行另建任务。 */
     @Transactional(rollbackFor = Exception.class)
     public void complete(Long id, SortingActionForm form) {
         ScmDataScopeContext scope = access.scope();
@@ -297,7 +285,7 @@ public class SortingTaskService {
     }
 
     /**
-     * 取消：同一事务里释放该任务全部活动明细的占用位，被释放的订单行才能重新进入新任务。已完成的任务不能直接取消，必须先重开 —— 否则「完成」这一事实会被静默抹掉。
+     * 取消：同一事务里释放全部活动明细的占用位，释放后订单行才能进新任务。 已完成的任务要先重开才能取消，否则「完成」会被悄悄抹掉。
      */
     @Transactional(rollbackFor = Exception.class)
     public void cancel(Long id, SortingActionForm form) {
@@ -314,9 +302,7 @@ public class SortingTaskService {
         save(task);
     }
 
-    /**
-     * 重开已完成分拣任务时，保留原分拣数量及原因，供继续修改。已确认销售出库的任务不能重开；发车前会再次检查任务状态。
-     */
+    /** 重开已完成分拣任务时，保留原分拣数量及原因，供继续修改。已确认销售出库的任务不能重开；发车前会再次检查任务状态。 */
     @Transactional(rollbackFor = Exception.class)
     public void reopen(Long id, SortingActionForm form) {
         ScmDataScopeContext scope = access.scope();
@@ -329,7 +315,7 @@ public class SortingTaskService {
         requireReason(form.getReason());
         var items = activeItems(id).values();
         // 先锁订单行再查出库，否则「发车提交」与「重开提交」可以交错到两边都成功：
-        // 结果是一张已真实出库的订单行还能继续改分拣量，而这正是本条守卫要拦的事。
+        // 结果是一张已真实出库的订单行还能继续改分拣量，而这正是本条校验要拦的事。
         // 配送侧同样按订单 id 升序加锁（DeliveryRouteService#dispatch），因此这里不会构成反向锁序。
         items.stream().map(SortingTaskItemEntity::getSalesOrderId).filter(Objects::nonNull).distinct().sorted()
             .forEach(salesOrderDao::lock);
@@ -344,7 +330,7 @@ public class SortingTaskService {
     }
 
     /**
-     * 正式生成打印：只登记计次、时间与操作人。打印不改状态也不写库存，并且不 bump 版本 —— 内容没变，让计次把别人的编辑顶成版本冲突是假冲突；计次累加由本方法持有的任务聚合锁串行化。
+     * 正式生成打印：只登记计次、时间与操作人。打印不改状态、不写库存，也不递增版本—— 内容没变，让计次把别人的编辑顶成版本冲突是假冲突；计次累加由本方法持有的任务锁串行化。
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingPrintResultVO print(Long id, SortingActionForm form, String key) {
@@ -369,9 +355,7 @@ public class SortingTaskService {
         return result;
     }
 
-    /**
-     * 校验并冻结候选订单行：一次读回全部请求行，行数不等即说明有 id 根本不存在。
-     */
+    /** 校验并保存候选订单行：一次读回全部请求行，行数不等即说明有 id 根本不存在。 */
     private List<SortingOrderLineSnapshot> sortableLines(List<Long> requested) {
         var ids = requested.stream().filter(Objects::nonNull).distinct().sorted().toList();
         if (ids.isEmpty() || ids.size() > MAX_LINES_PER_TASK)
@@ -404,7 +388,7 @@ public class SortingTaskService {
         item.setSpecNameSnapshot(line.getSpecNameSnapshot());
         item.setSaleUnitSnapshot(line.getSaleUnitSnapshot());
         item.setProductTypeSnapshot(line.getProductTypeSnapshot());
-        // 计划量 = 建单时冻结的订单行实发量；订单侧的值之后怎么变都不追溯已生成的任务。
+        // 计划量 = 建单时保存的订单行实发量；订单侧的值之后怎么变都不影响已生成的任务。
         item.setPlannedQuantitySnapshot(line.getActualQuantity());
         item.setOccupationStatus(ScmSortingOccupationStatusEnum.ACTIVE.name());
         item.setVersion(0);
@@ -412,9 +396,7 @@ public class SortingTaskService {
         return item;
     }
 
-    /**
-     * 任务当前的活动明细，按明细 id 索引。已随取消释放的行不在其中：它们不再代表待办量。
-     */
+    /** 任务当前的活动明细，按明细 id 索引。已随取消释放的行不在其中：它们不再代表待办量。 */
     private Map<Long, SortingTaskItemEntity> activeItems(Long taskId) {
         var map = new LinkedHashMap<Long, SortingTaskItemEntity>();
         sortingTaskItemDao
@@ -432,9 +414,7 @@ public class SortingTaskService {
         return task;
     }
 
-    /**
-     * 未指派是合法状态（建单时可以后派），因此只在显式给了人时校验身份。
-     */
+    /** 未指派是合法状态（建单时可以后派），因此只在显式给了人时校验身份。 */
     private void requireUsableAssignee(Long employeeId) {
         if (employeeId == null)
             return;

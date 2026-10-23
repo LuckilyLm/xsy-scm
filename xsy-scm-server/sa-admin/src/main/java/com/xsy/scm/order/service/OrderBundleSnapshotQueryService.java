@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * 配送等履约领域只读取已确认订单冻结的组合组成事实，不写快照账本。
+ * 配送等履约模块只读取已确认订单保存的组合组成数据，不写快照表。
  */
 @Service
 @RequiredArgsConstructor

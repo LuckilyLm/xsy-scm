@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Read-only account overview and aging-free detail endpoints.
+ * 只读的往来概览与不按账龄的明细接口。
  */
 @RestController
 @RequestMapping("/scm/report/finance")

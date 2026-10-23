@@ -27,10 +27,10 @@ public interface PaymentSourceDao {
     boolean customerVisible(@Param("customerId") Long customerId, @Param("scope") ScmValueScope scope);
 
     /**
-     * 销售订单事实（订单号 / 客户 / 业务员 / 结算约定）。
+     * 销售订单数据（订单号 / 客户 / 业务员 / 结算规则）。
      *
      * <p>
-     * 创建支付意图时锁订单，保证状态和结算约定检查与同单并发命令串行；只读详情用 {@link #selectOrder}。
+     * 创建支付意图时锁订单，保证状态和结算规则检查与同单并发命令串行；只读详情用 {@link #selectOrder}。
      */
     PaymentOrderFact lockOrder(@Param("orderId") Long orderId);
 
@@ -40,7 +40,7 @@ public interface PaymentSourceDao {
      * 锁定业务退款单。
      *
      * <p>
-     * <b>必须加锁</b>：线上退款（本域）与人工退款付款（财务域）要<b>互斥</b>， 两边都锁同一行 {@code xsy_order_refund} 才能把「先查后写」的窗口关掉。
+     * 必须加锁：线上退款（本域）与人工退款付款（财务域）要互斥，两边都锁同一行 {@code xsy_order_refund} 才能把「先查后写」的窗口关掉。
      */
     PaymentOrderRefundFact lockOrderRefund(@Param("refundId") Long refundId);
 
@@ -50,7 +50,7 @@ public interface PaymentSourceDao {
      * 该业务退款单是否已有人工登记的退款付款（财务域 {@code xsy_finance_payment}）。
      *
      * <p>
-     * 返回付款单 id；没有则返回 {@code null}。有值时线上退款必须拒绝 —— 否则同一张退款单会被退两次（人工退一次、渠道再退一次）。
+     * 返回付款单 id；没有则返回 {@code null}。有值时线上退款必须拒绝，否则同一张退款单会被退两次 （人工退一次、渠道再退一次）。
      */
     Long selectActiveRefundPayment(@Param("orderRefundId") Long orderRefundId);
 }

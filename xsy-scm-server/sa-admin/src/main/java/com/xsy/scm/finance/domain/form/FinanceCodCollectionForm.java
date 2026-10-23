@@ -26,7 +26,7 @@ public class FinanceCodCollectionForm {
     private Long orderId;
 
     /**
-     * 实收金额：一律 JSON 字符串，服务端统一成 scale 4 并要求大于 0。
+     * 实收金额：一律 JSON 字符串，服务端统一保留 4 位小数并要求大于 0。
      *
      * <p>
      * 少收按实收登记（应收剩余仍未结），多收由核销命令按「不得超过可核销余额」拒绝。
@@ -37,10 +37,10 @@ public class FinanceCodCollectionForm {
     private String amount;
 
     /**
-     * 实际资金形式，取收款方式白名单里的 CASH / BANK_TRANSFER 等值。
+     * 实际资金形式，取收款方式的允许值（CASH / BANK_TRANSFER 等）。
      *
      * <p>
-     * <b>不出现 COD</b>：货到付款是结算时机，不是资金形式；实收方式仍应填写现金或转账，见 docs/decisions.md 的商城结算规则。
+     * 不含 COD：货到付款是结算时机，不是资金形式；实收方式仍填现金或转账，见 docs/decisions.md 的商城结算规则。
      */
     @NotNull(message = "收款方式不能为空")
     private String method;

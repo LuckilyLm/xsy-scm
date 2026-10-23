@@ -48,9 +48,7 @@ import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND
 @RequiredArgsConstructor
 public class CustomerQueryService {
 
-    /**
-     * 排序白名单：客户端不能把任意字段名带入 SQL。
-     */
+    /** 允许的排序字段：客户端不能把任意字段名带入 SQL。 */
     private static final Set<String> SORTABLE = Set.of("customer_code", "name", "status", "updated_at");
 
     /**
@@ -65,9 +63,7 @@ public class CustomerQueryService {
     private final CustomerDao customerDao;
     private final CustomerSkuVisibilityService customerSkuVisibilityService;
 
-    /**
-     * 跨域只读：常购商品由订单事实（sales_order / sales_order_item）现算，不落副本。
-     */
+    /** 跨域只读：常购商品从订单表现算，不存副本。 */
     private final CustomerFrequentSkuDao customerFrequentSkuDao;
 
     private final CustomerTypeDao customerTypeDao;
@@ -83,14 +79,14 @@ public class CustomerQueryService {
     private final EmployeeDao employeeDao;
 
     /**
-     * SCM 数据范围解析入口：客户读路径唯一允许「能看哪些行」的判断来源。
+     * 数据范围都从这里判断，客户读路径不再各写一套。
      */
     private final ScmDataScopeService dataScopeService;
 
     public PageResult<CustomerVO> query(CustomerQueryForm form) {
         assertSortable(form);
         ScmDataScopeContext scope = dataScopeService.resolve();
-        // 维度里一个授权 id 都没有 → 直接空分页，既不给数据库跑恒假谓词，也不会把空集合送进 IN ()。
+        // 一个授权 id 都没有就直接返回空分页，不用让数据库跑恒假条件。
         if (scope.getCustomerSellerScope().isEmpty()) {
             return ScmDataScopeService.emptyPage(form);
         }
@@ -144,14 +140,14 @@ public class CustomerQueryService {
     }
 
     /**
-     * 客户「常购商品」（客户 360°，只读）：近 {@code days} 天已确认订单按 (SKU, 单位) 现算聚合，不落副本。
+     * 客户常购商品（只读）：近 {@code days} 天已确认订单按 (SKU, 单位) 现算，不存副本。
      *
      * <p>
-     * days / limit 一律服务端裁剪到安全区间；窗口按 <b>Asia/Shanghai 日界</b>对齐——「近 N 天含今天」下界取当天零点往前 {@code days-1}
-     * 天，避免按时分秒滚动窗口导致的边界抖动。客户不存在时与详情同样报 {@code CUSTOMER_NOT_FOUND}。
+     * days / limit 服务端裁剪到安全区间；窗口按北京时间日切，「近 N 天含今天」从当天零点往前推 {@code days-1} 天，避免窗口随分钟滚动。客户不存在时和详情一样报
+     * {@code CUSTOMER_NOT_FOUND}。
      *
      * <p>
-     * 取数源是别人的成交价与用量，因此与详情同一套归属判定：读不到该客户就 30005。
+     * 这里读的是成交价和用量，所以和详情用同一套归属判断：看不到该客户就 30005。
      */
     public List<CustomerFrequentSkuVO> frequentSkus(Long customerId, int days, int limit) {
         CustomerEntity customer = customerDao.selectById(customerId);
@@ -169,7 +165,7 @@ public class CustomerQueryService {
     }
 
     /**
-     * 客户选择列表遵守当前客户数据范围，可按客户类型过滤。客户状态不等同供应商启停状态，不能只按 ENABLED 筛选。
+     * 客户选择列表按客户数据范围过滤，可按客户类型。客户状态不是供应商的启停状态，不能只按 ENABLED 筛。
      */
     public List<CustomerOptionVO> optionList() {
         var customerScope = dataScopeService.resolve().getCustomerSellerScope();
@@ -223,7 +219,7 @@ public class CustomerQueryService {
     }
 
     /**
-     * 一次性把一批客户行需要的外部名称全部取回来。
+     * 一次性把一批客户行需要的外部名称取回来。
      *
      * <p>
      * 四次批量查询封顶，与行数无关；空集合显式跳过，避免生成 {@code IN ()} 这种非法 SQL。
@@ -279,9 +275,7 @@ public class CustomerQueryService {
         return ids;
     }
 
-    /**
-     * 补全所需的四张名称表，一次构造、多次复用。
-     */
+    /** 补全名称用的四张表，一次构造、多次复用。 */
     private record EnrichmentContext(Map<Long, String> typeNames, Map<Long, String> customerNames,
         Map<Long, String> employeeNames, Map<Long, String> supplierNames) {
     }

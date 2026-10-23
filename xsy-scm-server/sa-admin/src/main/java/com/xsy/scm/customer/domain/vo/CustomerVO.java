@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
  * 客户列表行。
  *
  * <p>
- * 列表<b>不</b>返回明细字段：地址 / 备注 / 账期细节只在 {@link CustomerDetailVO} 出现，避免列表接口在客户量增长后变重。
+ * 列表不返回明细字段：地址、备注、账期细节只在 {@link CustomerDetailVO} 出现，避免列表接口随客户量变重。
  */
 @Data
 public class CustomerVO {
@@ -37,9 +37,7 @@ public class CustomerVO {
 
     private Long mallDeliveryWarehouseId;
 
-    /**
-     * 授信额度，4 位定点字符串；{@code null} 保持 {@code null}。
-     */
+    /** 授信额度，4 位定点字符串；{@code null} 保持 {@code null}。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal creditLimit;
 

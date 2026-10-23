@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 首页趋势数据按日期返回；销售、采购等指标各自遵守对应业务时间口径。
+ * 首页趋势数据按日期返回；销售、采购等指标各自按对应的业务时间统计。
  */
 @Schema(description = "首页趋势图")
 public record ScmDashboardTrendVO(@Schema(description = "指标族：sales / purchase / inventory") String metric,

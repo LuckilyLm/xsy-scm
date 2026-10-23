@@ -71,7 +71,7 @@ public final class PurchaseOrderStateMachine {
     }
 
     /**
-     * 可取消：{@code DRAFT} 或 {@code SUBMITTED}。<b>不含</b> {@code PARTIALLY_RECEIVED}。
+     * 可取消：{@code DRAFT} 或 {@code SUBMITTED}，不含 {@code PARTIALLY_RECEIVED}。
      */
     public static boolean cancellable(String purchaseOrderStatus) {
         return ScmPurchaseStatusEnum.DRAFT.name().equals(purchaseOrderStatus)
@@ -98,7 +98,7 @@ public final class PurchaseOrderStateMachine {
      * 收货确认后由「全部行是否收齐」推导出的采购单新状态。
      *
      * <p>
-     * 注意：<b>已收满的采购单不再回到 {@code PARTIALLY_RECEIVED}</b>；只要所有活动行 {@code received >= planned} 就是 {@code RECEIVED}，否则
+     * 已收满的采购单不再回到 {@code PARTIALLY_RECEIVED}：只要所有活动行 {@code received >= planned} 就是 {@code RECEIVED}， 否则
      * {@code PARTIALLY_RECEIVED}。
      */
     public static String afterReceipt(boolean allLinesFulfilled) {

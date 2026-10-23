@@ -29,7 +29,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 /**
- * 商品批量维护：上下架、主档启停、改分类、打标签。整批一个事务，且先逐行预校验再落库：任何一行不存在或版本冲突时 updatedCount 为 0、不做任何写入，并将每个失败商品及其错误原因逐条返回。
+ * 商品批量维护：上下架、主档启停、改分类、打标签。整批一个事务，且先逐行预校验再写入： 任何一行不存在或版本冲突时 updatedCount 为 0、不做任何写入，并将每个失败商品及其错误原因逐条返回。
  */
 @Service
 @RequiredArgsConstructor
@@ -115,7 +115,7 @@ public class ProductBatchService {
     }
 
     /**
-     * 预校验有失败行时只回结果、不落库；全部通过才执行这一次批量写入。
+     * 预校验有失败行时只返回结果、不写入；全部通过才执行这一次批量写入。
      */
     private ProductBatchResultVO commit(List<Failure> failures, List<ProductBatchItemForm> items,
         java.util.function.Consumer<List<Long>> write) {

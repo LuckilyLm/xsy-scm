@@ -6,10 +6,10 @@ import java.util.Map;
 import lombok.Data;
 
 /**
- * 回调事件（留证）。
+ * 回调事件记录。
  *
  * <p>
- * {@code processStatus = REJECTED} 的记录<b>必须能查</b>：它回答「有没有人伪造过回调」， 而这正是把未验签事件也落库的理由。
+ * {@code processStatus = REJECTED} 的记录必须能查：它回答「有没有人伪造过回调」，这也是未验签事件也要保存的理由。
  */
 @Data
 public class PaymentCallbackEventVO {
@@ -20,9 +20,7 @@ public class PaymentCallbackEventVO {
 
     private String providerEventId;
 
-    /**
-     * 归一化事件名；渠道给的名字不认识时是渠道原文。
-     */
+    /** 归一化事件名；不认识渠道给的名字时保留渠道原文。 */
     private String eventType;
 
     private Boolean signatureVerified;

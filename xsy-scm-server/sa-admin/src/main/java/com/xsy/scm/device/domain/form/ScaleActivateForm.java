@@ -8,7 +8,7 @@ import lombok.Data;
  * 设备激活请求，对应秤端 {@code POST /agents/activate}。
  *
  * <p>
- * 配对码由后台员工签发，一次性且短有效期。激活成功后服务端清空配对码摘要， 重放同一配对码不能再换到第二个凭证。
+ * 配对码由后台员工签发，一次性且有效期短。激活成功后服务端清空配对码摘要，重放同一配对码不能再换到第二个凭证。
  */
 @Data
 public class ScaleActivateForm {

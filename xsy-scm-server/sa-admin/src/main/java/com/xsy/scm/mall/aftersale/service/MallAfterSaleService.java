@@ -21,8 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 商城售后的客户侧写操作：申请与撤销。
  *
  * <p>
- * 两条路径都不新建售后状态机：申请走正式 {@link OrderReturnService} 的建单命令（仅已确认订单、 累计申请不超过实数量），撤销走同一条取消命令（仅待审核）。
- * 归属由本服务在入口按登录客户判定，员工负责人范围不适用商城身份。
+ * 两条路径都不新建售后状态机：申请走正式 {@link OrderReturnService} 的建单命令（仅已确认订单、累计申请不超过实数量），
+ * 撤销走同一条取消命令（仅待审核）。归属由本服务在入口按登录客户判定，员工负责人范围不适用于商城身份。
  */
 @Service
 @RequiredArgsConstructor
@@ -52,7 +52,7 @@ public class MallAfterSaleService {
      * 客户撤销待审核的售后申请。
      *
      * <p>
-     * 前置状态判定只为给出客户可读的原因；权威门槛在正式取消命令（仅 {@code PENDING} 可撤销）。 处理意见固定为「客户自行撤销」，与后台驳回 / 取消的操作日志区分。
+     * 前置状态判定只为给出客户可读的原因；真正的门槛在正式取消命令（仅 {@code PENDING} 可撤销）。 处理意见固定为「客户自行撤销」，与后台驳回 / 取消的操作日志区分。
      */
     @Transactional(rollbackFor = Exception.class)
     public MallAfterSaleVO cancel(RequestMallCustomer customer, Long returnId, String idempotencyKey) {

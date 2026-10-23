@@ -39,7 +39,7 @@ import java.util.List;
  * SCM 客户档案。
  *
  * <p>
- * 所有写端点都记录操作日志并执行对应的客户域权限检查。
+ * 写接口都记操作日志，并按客户域权限校验。
  */
 @RestController
 @RequestMapping("/scm/customer")
@@ -112,7 +112,7 @@ public class CustomerController {
     }
 
     /**
-     * 客户归属变更只能走独立改派接口，要求专门权限和版本校验，并单独记录操作日志。
+     * 客户改派只能走这个接口：单独权限、版本校验、单独记日志。
      */
     @PostMapping("/reassignSeller")
     @SaCheckPermission(CustomerPermission.ASSIGN)

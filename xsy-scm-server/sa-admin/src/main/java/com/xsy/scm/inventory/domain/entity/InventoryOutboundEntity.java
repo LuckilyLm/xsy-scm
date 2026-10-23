@@ -40,7 +40,7 @@ public class InventoryOutboundEntity {
     private String remark;
 
     /**
-     * 确认时刻；仅 CONFIRMED 非空（DB CHECK 保证）。
+     * 确认时刻；仅 CONFIRMED 非空（数据库 CHECK 保证）。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime confirmedAt;
@@ -52,12 +52,12 @@ public class InventoryOutboundEntity {
     private String operator;
 
     /**
-     * 来源单据类型（{@code ScmInventorySourceDocumentTypeEnum}），手工出库单为 null。刻意不加 {@code ALWAYS}：来源是这张单的出身，一旦写入就不允许被后续整行更新抹掉。
+     * 来源单据类型（{@code ScmInventorySourceDocumentTypeEnum}），手工出库单为 null。刻意不加 {@code ALWAYS}： 来源是这张单的源头，一旦写入就不允许被后续整行更新抹掉。
      */
     private String sourceDocumentType;
 
     /**
-     * 来源单据 id，如 {@code xsy_delivery_route.id}；与 {@link #sourceDocumentType} 成对（DB CHECK）。
+     * 来源单据 id，如 {@code xsy_delivery_route.id}；与 {@link #sourceDocumentType} 成对（数据库 CHECK）。
      */
     private Long sourceDocumentId;
 

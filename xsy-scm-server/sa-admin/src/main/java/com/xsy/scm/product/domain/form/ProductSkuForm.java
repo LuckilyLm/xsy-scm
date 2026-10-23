@@ -59,7 +59,7 @@ public class ProductSkuForm {
     private Integer sortOrder = 0;
 
     /**
-     * 没有规格项时默认使用空表；容器初始化另起一行，以满足项目格式及行宽检查。
+     * 没有规格项时默认为空表。
      */
     public ProductSkuForm() {
         this.specValues = new LinkedHashMap<>();

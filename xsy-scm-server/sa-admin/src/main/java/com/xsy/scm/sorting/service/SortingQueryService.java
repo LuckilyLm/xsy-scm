@@ -39,10 +39,10 @@ import static com.xsy.scm.sorting.constant.SortingErrorCode.STATE_INVALID;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.TASK_NOT_FOUND;
 
 /**
- * 分拣读侧：任务列表、任务详情、按商品汇总（只读）与建单用的候选订单行。
+ * 分拣查询：任务列表、任务详情、按商品汇总和建单候选行。
  *
  * <p>
- * SQL 负责排序与分页，客户端不能传排序列；范围一律由 {@link SortingAccess} 解析后下传，页面能看到的行与打印预览看到的行是同一套口径。
+ * 排序分页都在 SQL 里，客户端不能传排序列；可见范围统一由 {@link SortingAccess} 解析， 页面和打印预览用同一套规则。
  */
 @Service
 @RequiredArgsConstructor
@@ -64,15 +64,13 @@ public class SortingQueryService {
     public PageResult<SortingTaskVO> query(SortingTaskQueryForm form) {
         var page = page(form);
         ScmDataScopeContext scope = access.scope();
-        // 无授权仓时给形状完整的空分页：不跑恒假谓词，也不让空集合渲染成 IN ()。
+        // 没有授权仓时直接返回完整形状的空分页：不跑恒假条件，也不让空集合渲染成 IN ()。
         if (scope.getWarehouseScope().isEmpty())
             return ScmDataScopeService.emptyPage(form);
         return SmartPageUtil.convert2PageResult(page, sortingQueryDao.tasks(page, form, scope, access.crossAssignee()));
     }
 
-    /**
-     * 任务详情。读不到行时统一按无权访问处理：分拣任务的存在性本身不是公开信息，分成 404 与 30005 会让探测主键与探测权限可分辨。
-     */
+    /** 任务详情。读不到行统一按无权访问处理：任务是否存在不是公开信息，分开 404 和 30005 就能被拿来探测主键。 */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public SortingTaskDetailVO detail(Long id) {
         var task = sortingQueryDao.task(id, access.scope(), access.crossAssignee());
@@ -80,9 +78,9 @@ public class SortingQueryService {
             throw new ScmDataScopeException();
         var result = new SortingTaskDetailVO();
         result.setTask(task);
-        // 明细挂在已经放行的任务下，不再各自收窄：子集收窄会破坏「按订单与按商品同一套事实」。
-        // 满赠赠品是<b>只读合并</b>的第二类来源：它不落 sorting_task_item（那张表强制挂订单行），
-        // 但仓库照单要备货，因此追加在订单行之后并带 sourceType，界面据它打「赠品」标记。
+        // 明细挂在已经放行的任务下，不再各自收窄：子集收窄会破坏「按订单与按商品同一套数据」。
+        // 满赠赠品是第二类来源：它不写 sorting_task_item（那张表必须挂订单行），
+        // 但仓库要备货，追加在订单行之后并带 sourceType，界面据此标「赠品」。
         var items = new ArrayList<>(sortingQueryDao.items(id));
         items.addAll(sortingQueryDao.giftItems(id));
         result.setItems(items);
@@ -90,10 +88,10 @@ public class SortingQueryService {
     }
 
     /**
-     * 设备接入需要的任务投影：秤端作业要用任务版本做乐观锁，而列表与详情 VO 不暴露 version。
+     * 设备接入需要的任务视图：秤端作业要用任务版本做乐观锁，而列表与详情 VO 不暴露 version。
      *
      * <p>
-     * 返回实体而不是扩宽 {@link SortingTaskVO}：设备端只取版本、状态、仓库与受指派人， 没必要让所有后台调用方都多看到一个内部版本字段。可见性仍按当前员工数据范围判定。
+     * 返回实体而不扩宽 {@link SortingTaskVO}：设备端只取版本、状态、仓库和受指派人， 免得所有后台调用方都多看到内部版本字段。可见性仍按当前员工数据范围判定。
      */
     @Transactional(readOnly = true)
     public SortingTaskEntity requireTaskForDevice(Long taskId) {
@@ -105,9 +103,7 @@ public class SortingQueryService {
         return task;
     }
 
-    /**
-     * 分次事件先判任务可见，再核对明细归属；列表按该明细游标分页，累计量取全部历史最新事件。
-     */
+    /** 分次事件先判任务可见，再核对明细归属；列表按该明细游标分页，累计量取全部历史最新事件。 */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public SortingPartHistoryVO parts(Long taskId, Long itemId, Long beforeId, int limit) {
         var task = detail(taskId);
@@ -127,9 +123,7 @@ public class SortingQueryService {
             nextBeforeId);
     }
 
-    /**
-     * 打印预览：固定版式的标签 / 小票内容，现算不留副本，也不计次。
-     */
+    /** 打印预览：固定版式的标签 / 小票内容，现算不留副本，也不计次。 */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public SortingPrintVO printPreview(Long id) {
         var detail = detail(id);
@@ -158,9 +152,7 @@ public class SortingQueryService {
             sortingQueryDao.skuSummary(page, form, scope, access.crossAssignee()));
     }
 
-    /**
-     * 按客户/订单明细展示同一份活动任务事实，不跨销售单位汇总，也不提供批量写操作。
-     */
+    /** 按客户 / 订单明细展示同一份活动任务数据，不跨销售单位汇总，也不提供批量写操作。 */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PageResult<SortingCustomerLineVO> customerLines(SortingSummaryQueryForm form) {
         var page = page(form);
@@ -171,9 +163,7 @@ public class SortingQueryService {
             sortingQueryDao.customerLines(page, form, scope, access.crossAssignee()));
     }
 
-    /**
-     * 仅聚合已完成任务中最后确认人登记的行，数量按原销售单位独立分组。
-     */
+    /** 仅聚合已完成任务中最后确认人登记的行，数量按原销售单位独立分组。 */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PageResult<SortingPerformanceVO> confirmedPerformance(SortingSummaryQueryForm form) {
         var page = page(form);
@@ -184,9 +174,7 @@ public class SortingQueryService {
             sortingQueryDao.confirmedPerformance(page, form, scope, access.crossAssignee()));
     }
 
-    /**
-     * 建单用的候选订单行队列，不按订单业务员维度收窄：仓库岗位通过建单权限读取候选项，返回列不含价格或金额。
-     */
+    /** 建单用的候选订单行队列，不按订单业务员维度收窄：仓库岗位通过建单权限读取候选项，返回列不含价格或金额。 */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PageResult<SortingCandidateLineVO> candidateLines(SortingCandidateQueryForm form) {
         var page = page(form);

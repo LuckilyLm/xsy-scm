@@ -28,7 +28,7 @@ public class PriceBatchAuditService {
                     "submittedCount", submittedRowCount)),
                 ScmOperator.current());
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new IllegalStateException("Cannot serialize batch audit", e);
+            throw new IllegalStateException("批量调价审计序列化失败", e);
         }
     }
 }

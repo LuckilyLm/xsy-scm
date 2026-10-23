@@ -53,9 +53,7 @@ public class TracePublicController {
         response.getOutputStream().write(file.getData());
     }
 
-    /**
-     * 反向代理会把真实来源写在 X-Forwarded-For 的第一个位置；直连时退回 remoteAddr。
-     */
+    /** 反向代理会把真实来源写在 X-Forwarded-For 的第一个位置；直连时退回 remoteAddr。 */
     private static String clientIp(HttpServletRequest request) {
         String forwarded = request.getHeader(HEADER_FORWARDED_FOR);
         if (forwarded != null && !forwarded.isBlank()) {

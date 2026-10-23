@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 /**
- * 打印数量与金额沿用后端四位定点口径，空值输出空字符串，不混同于零。
+ * 打印里的数量与金额保留四位小数；空值输出空字符串，不当作零。
  */
 public final class ScmPrintText {
 

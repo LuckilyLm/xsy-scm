@@ -19,12 +19,12 @@ public class FinanceRefundFactDto {
     private Long customerId;
 
     /**
-     * True only when the source order refund has completed and may be paid.
+     * 仅在原退款单已完成、可以付款时为 true。
      */
     private boolean completed;
 
     /**
-     * 本次退款的应退金额。付款金额必须与它<b>逐值相等</b>（scale 4，不四舍五入到 2 位再比）。
+     * 本次退款的应退金额。付款金额必须与之逐值相等（4 位小数，不先四舍五入到 2 位再比）。
      */
     private BigDecimal refundAmount;
 }

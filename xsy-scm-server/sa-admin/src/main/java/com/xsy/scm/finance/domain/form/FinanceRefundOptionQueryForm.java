@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 
 /**
- * Paginated, scope-filtered picker for completed refunds not yet paid by Finance.
+ * 已完成且未付款退款单的分页选择器（按范围过滤）。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

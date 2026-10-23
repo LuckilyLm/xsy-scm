@@ -11,7 +11,7 @@ import net.lab1024.sa.base.common.domain.PageParam;
  * 批次库存查询条件。
  *
  * <p>
- * 与余额查询同一口径：不传仓库就返回「当前调用者被授权的那些仓库」的批次行，服务端不会因为没筛仓库而绕过数据范围。
+ * 与余额查询同一规则：不传仓库就返回当前调用者被授权的那些仓库的批次行，服务端不会因为没筛仓库而绕过数据范围。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

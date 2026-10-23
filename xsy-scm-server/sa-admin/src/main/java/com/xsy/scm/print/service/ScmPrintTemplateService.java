@@ -46,9 +46,7 @@ public class ScmPrintTemplateService {
         return scmPrintTemplateDao.enabledOptions(documentType).stream().map(ScmPrintTemplateService::toVO).toList();
     }
 
-    /**
-     * 可配置打印的单据类型清单（前端类型下拉据此渲染，不硬编码类型）。
-     */
+    /** 可配置打印的单据类型清单，供前端下拉使用。 */
     @Transactional(readOnly = true)
     public List<ScmPrintDocumentTypeVO> documentTypes() {
         List<ScmPrintDocumentTypeVO> result = new ArrayList<>();
@@ -63,9 +61,7 @@ public class ScmPrintTemplateService {
         return result;
     }
 
-    /**
-     * 某单据类型的字段目录（模板配置页据此渲染可选项）。
-     */
+    /** 某单据类型的字段目录，模板配置页据此渲染可选项。 */
     @Transactional(readOnly = true)
     public ScmPrintFieldCatalogVO catalog(String documentType) {
         ScmPrintDocumentTypeEnum type = requireType(documentType);
@@ -97,8 +93,7 @@ public class ScmPrintTemplateService {
         requireCodeAvailable(type, form.getTemplateCode(), null);
 
         String operator = ScmOperator.current();
-        // 该类型还没有默认模板时，新建的这一份直接成为默认：否则「不指定模板」的打印在
-        // 只有一份模板时会失败，而那正是最常见的情形。
+        // 该类型还没有默认模板时，新建的这份直接成为默认；否则只有一份模板时，「不指定模板」的打印会失败。
         boolean makeDefault = Boolean.TRUE.equals(form.getDefaultFlag())
             || scmPrintTemplateDao.selectDefault(type.name()) == null;
         if (makeDefault) {
@@ -129,7 +124,7 @@ public class ScmPrintTemplateService {
             throw new ScmBusinessException(ScmPrintErrorCode.TEMPLATE_NOT_FOUND);
         }
         if (!existing.getDocumentType().equals(form.getDocumentType())) {
-            // 模型里的字段是相对原类型校验过的，换类型等于把按 A 校验的配置挂到 B 上
+            // 模型里的字段是按原类型校验过的，换类型等于把按 A 校验的配置挂到 B 上
             throw new ScmBusinessException(ScmPrintErrorCode.MODEL_INVALID);
         }
         ScmPrintDocumentTypeEnum type = requireType(form.getDocumentType());
@@ -149,9 +144,7 @@ public class ScmPrintTemplateService {
         }
     }
 
-    /**
-     * 列表上的「设为默认」快捷动作。
-     */
+    /** 列表上的「设为默认」快捷动作。 */
     @Transactional(rollbackFor = Exception.class)
     public void setDefault(Long id) {
         ScmPrintTemplateEntity existing = scmPrintTemplateDao.lock(id);
@@ -181,10 +174,10 @@ public class ScmPrintTemplateService {
     }
 
     /**
-     * 供打印侧按 id 取一份<b>启用中</b>的模板；不存在或已停用时抛「模板不存在」。
+     * 供打印侧按 id 取一份启用中的模板；不存在或已停用时抛「模板不存在」。
      *
      * <p>
-     * 停用模板与不存在同样处理：停用就是「别再用了」，把停用报成另一个错误只会让调用方 多写一个分支。
+     * 停用与不存在同样处理：停用就是「别再用了」，再分一个错误只会让调用方多写一个分支。
      */
     @Transactional(readOnly = true)
     public ScmPrintTemplateEntity requireEnabled(Long templateId) {
@@ -195,9 +188,7 @@ public class ScmPrintTemplateService {
         return row;
     }
 
-    /**
-     * 该类型的默认模板；没有时抛「模板不存在」（由调用方回答「先配一份模板」）。
-     */
+    /** 该类型的默认模板；没有时抛「模板不存在」，由调用方提示先配一份模板。 */
     @Transactional(readOnly = true)
     public ScmPrintTemplateEntity requireDefault(String documentType) {
         ScmPrintTemplateEntity row = scmPrintTemplateDao.selectDefault(documentType);

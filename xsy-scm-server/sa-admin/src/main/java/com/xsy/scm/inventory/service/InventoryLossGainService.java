@@ -38,7 +38,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_G
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_LOSS_GAIN_STATUS_INVALID;
 
 /**
- * 管理报损报溢单。待审核可以修改或删除，审批或驳回后不能回退。 审批时先锁单据，再按仓库和商品规格顺序锁余额；所有明细在同一事务中处理。 审批人不能是录单人，审批时必须核对单据版本。
+ * 管理报损报溢单。待审核可以修改或删除，审批或驳回后不能回退。审批时先锁单据，再按仓库和商品规格顺序锁余额；所有明细在同一事务中处理。审批人不能是录单人，审批时必须核对单据版本。
  */
 @Service
 @RequiredArgsConstructor
@@ -59,7 +59,7 @@ public class InventoryLossGainService {
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     /**
-     * 新建报损报溢单（<b>创建即待审核</b>）。
+     * 新建报损报溢单（创建即待审核）。
      *
      * <p>
      * 不校验「能不能真的调整」：待审核阶段不影响库存，负库存 / 低于预留都要等到审批时才知道（期间可能有出库）。提前卡住会让录单不可用。
@@ -82,7 +82,7 @@ public class InventoryLossGainService {
         entity.setStatus(ScmInventoryLossGainStatusEnum.PENDING.name());
         entity.setReason(form.getReason());
         entity.setRemark(form.getRemark());
-        // 待审核态不得有审核信息（DB CHECK 也要求两者同时为空）
+        // 待审核态不得有审核信息（数据库 CHECK 也要求两者同时为空）
         entity.setAuditedAt(null);
         entity.setAuditor(null);
         entity.setAuditOpinion(null);
@@ -163,7 +163,7 @@ public class InventoryLossGainService {
     }
 
     /**
-     * 驳回：只允许 PENDING，<b>不产生任何库存影响</b>。
+     * 驳回：只允许 PENDING，不产生任何库存影响。
      *
      * <p>
      * 审核意见必填（41037）：驳回是唯一会把「为什么不行」传达给录单人的渠道，允许空意见的驳回会让录单人只能反复试。
@@ -231,7 +231,7 @@ public class InventoryLossGainService {
      * 明细校验：至少一行，且同一 SKU 不得重复。
      *
      * <p>
-     * 重复 SKU 会让同一份数量被调整两次，而结果看起来完全正常（余额确实变了），只是变错了。因此必须在写库前挡掉，而不是静默去重。
+     * 重复 SKU 会让同一份数量被调整两次，而结果看起来完全正常（余额确实变了），只是变错了。因此必须在写入前挡掉，而不是静默去重。
      */
     private static void requireItems(InventoryLossGainAddForm form) {
         if (form == null || form.getItems() == null || form.getItems().isEmpty()) {
@@ -246,7 +246,7 @@ public class InventoryLossGainService {
     }
 
     /**
-     * 类型白名单（与 DB CHECK / 前端枚举同源；@Pattern 已挡一层，这里是服务层兜底）。
+     * 类型校验（与数据库 CHECK / 前端枚举一致；@Pattern 已挡一层，这里是服务层兜底）。
      */
     private static void requireKnownType(String adjustType) {
         if (!ScmInventoryLossGainTypeEnum.isSupported(adjustType)) {
@@ -255,7 +255,7 @@ public class InventoryLossGainService {
     }
 
     /**
-     * 乐观锁早失败：版本不符时<b>在写流水之前</b>就报错，不做无用功。
+     * 乐观锁提前失败：版本不符时在写流水之前就报错，不做无用功。
      *
      * <p>
      * SQL 的 {@code WHERE version = ?} 仍是必需的 —— 它才是并发下真正生效的那道；这里的判断只是让错误来得更早、更明确。
@@ -310,7 +310,7 @@ public class InventoryLossGainService {
     }
 
     /**
-     * 驳回后向制单人发一条站内信。制单人取自单据 {@code created_by} （{@link ScmOperator} 写入的 {@code userType:userId} 串），解析不出合法接收人时跳过——
+     * 驳回后向制单人发一条站内信。制单人取自单据 {@code created_by}（{@link ScmOperator} 写入的 {@code userType:userId} 串），解析不出合法接收人时跳过——
      * 不能因为一条历史脏数据把有效的驳回整体回滚。
      */
     private void notifyMakerRejected(InventoryLossGainEntity order, String opinion) {

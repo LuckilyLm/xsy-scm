@@ -16,11 +16,10 @@ import java.time.OffsetDateTime;
  * 报损报溢单明细行。
  *
  * <p>
- * <b>{@code quantity} 恒为正</b>：方向由单据头的 {@code adjustType} 决定，不在行上用正负号表达 —— 那样会出现「同一张单里两行方向相反」的状态，
- * 既难校验（审批人看不出这张单到底是加还是减）也难展示。
+ * {@code quantity} 恒为正：方向由单据头的 {@code adjustType} 决定，不在行上用正负号表达——那样会出现「同一张单里两行方向相反」 的状态，既难校验（审批人看不出这张单到底是加还是减）也难展示。
  *
  * <p>
- * <b>{@code unitSnapshot} 在审批通过时写入</b>（= 该 (仓库, SKU) 的余额记账单位），待审核态允许为空 —— 与出库单 / 盘点单明细同一取向。
+ * {@code unitSnapshot} 在审批通过时写入（= 该 (仓库, SKU) 的余额记账单位），待审核态允许为空，与出库单 / 盘点单明细一致。
  */
 @Data
 @TableName(value = "xsy_inventory_loss_gain_item", autoResultMap = true)
@@ -42,7 +41,7 @@ public class InventoryLossGainItemEntity {
     private BigDecimal quantity;
 
     /**
-     * 审批通过时写入的记账单位快照；待审核态为空。
+     * 审批通过时写入的记账单位；待审核态为空。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;

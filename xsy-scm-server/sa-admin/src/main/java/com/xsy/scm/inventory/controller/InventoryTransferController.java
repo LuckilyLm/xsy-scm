@@ -81,7 +81,7 @@ public class InventoryTransferController {
     }
 
     /**
-     * 发出：从源仓扣减并写 {@code TRANSFER_OUT} 流水，单据进入<b>在途</b>。
+     * 发出：从源仓扣减并写 {@code TRANSFER_OUT} 流水，单据进入在途状态。
      *
      * <p>
      * 这是两步式的第一步。发出后源仓库存立即减少、目标仓尚未增加 —— 期间这批货不在任何余额行里（没有虚拟在途仓），全仓总库存会暂时减少。

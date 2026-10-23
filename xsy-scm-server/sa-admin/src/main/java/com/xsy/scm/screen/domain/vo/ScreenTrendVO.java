@@ -22,10 +22,10 @@ public class ScreenTrendVO {
     @Schema(description = "日期轴（YYYY-MM-DD，用于 tooltip 完整展示）")
     private List<String> fullDates;
 
-    @Schema(description = "每日销售额（确认口径：confirmed_at 归属，取结算金额）")
+    @Schema(description = "每日销售额（按 confirmed_at 归属，取结算金额）")
     private List<BigDecimal> sales;
 
-    @Schema(description = "每日订单数（确认口径：confirmed_at 归属）")
+    @Schema(description = "每日订单数（按 confirmed_at 归属）")
     private List<Long> orders;
 
     @Schema(description = "每日采购金额")

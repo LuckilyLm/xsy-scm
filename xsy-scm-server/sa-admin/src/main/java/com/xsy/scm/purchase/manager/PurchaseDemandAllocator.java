@@ -28,7 +28,7 @@ public final class PurchaseDemandAllocator {
      * 需求单位必须与采购单位一致，否则返回 40971。
      *
      * <p>
-     * 比较是<b>大小写敏感的字符串相等</b>：单位是主数据里冻结的展示值，不做归一化（归一化会把 {@code kg} 与 {@code KG} 视为可互换，从而掩盖真实的单位不一致）。
+     * 比较是大小写敏感的字符串相等：单位是主数据里的展示值，不做归一化（归一化会把 {@code kg} 与 {@code KG} 视为可互换，掩盖真实的单位不一致）。
      */
     public static void unitCompatible(String demandUnit, String purchaseUnit) {
         if (demandUnit == null || purchaseUnit == null || !demandUnit.equals(purchaseUnit)) {
@@ -49,7 +49,7 @@ public final class PurchaseDemandAllocator {
      * 需求状态必须允许分配（{@code PENDING} / {@code PARTIALLY_ALLOCATED} / {@code ALLOCATED} 三者都允许）。
      *
      * <p>
-     * 这是对<b>未知取值</b>的白名单防护，不是业务上的「不可分配」判定 —— 分配本身可以重复发生（补分配）。
+     * 这是对未知取值的防护，不是业务上的「不可分配」判定，分配本身可以重复发生（补分配）。
      */
     public static void assignable(String demandStatus) {
         for (ScmPurchaseDemandStatusEnum candidate : ScmPurchaseDemandStatusEnum.values()) {
@@ -94,7 +94,7 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * 首次分配且供应商尚未固定 → 调用方应把 {@code supplier_id} 落为采购单的供应商。
+     * 首次分配且供应商尚未固定 → 调用方应把 {@code supplier_id} 记为采购单的供应商。
      */
     public static boolean shouldFixSupplier(PurchaseDemandEntity demand) {
         return isFirstAllocation(demand) && demand.getSupplierId() == null;
@@ -124,7 +124,7 @@ public final class PurchaseDemandAllocator {
     }
 
     /**
-     * 锁序：需求必须<b>按 demandId 升序</b>逐个 {@code SELECT... FOR UPDATE}，避免与 {@code order.create} 路径交叉成环。返回去重后的升序列表。
+     * 需求必须按 demandId 升序逐个 {@code SELECT... FOR UPDATE}，避免与 {@code order.create} 路径交叉成环。返回去重后的升序列表。
      *
      * <p>
      * 调用方在锁定前校验需求 ID。这里过滤空值并去重，保证后续锁始终按升序获取。

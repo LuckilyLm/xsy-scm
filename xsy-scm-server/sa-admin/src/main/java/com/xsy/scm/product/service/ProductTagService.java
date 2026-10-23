@@ -38,7 +38,7 @@ import static com.xsy.scm.product.constant.ProductErrorCode.TAG_REFERENCED;
 import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 
 /**
- * 商品标签字典与打标关系。标签是独立关系表，商品扩展字段一律不退化成 tag1/tag2 列。
+ * 商品标签字典与打标关系，标签单独存在关系表里。
  */
 @Service
 @RequiredArgsConstructor
@@ -123,7 +123,8 @@ public class ProductTagService {
     }
 
     /**
-     * REPLACE 语义：活动关系收敛到 tagIds 全集，多退少补。整批一次锁定标签行，与删除标签互斥；调用方必须已持有这些 SPU 的行锁。这里不校验标签可用性：新建与批量打标由调用方全量校验，单商品编辑只校验新增绑定。
+     * REPLACE 语义：把商品现有的有效标签改成 tagIds 全集，多退少补。整批一次锁定标签行，与删除标签互斥； 调用方必须已持有这些 SPU
+     * 的行锁。这里不校验标签可用性：新建与批量打标由调用方校验，单商品编辑只校验新增绑定。
      */
     @Transactional
     public void replaceTags(Collection<Long> spuIds, Collection<Long> tagIds) {
@@ -183,7 +184,7 @@ public class ProductTagService {
     }
 
     /**
-     * 单商品编辑口径：只校验本次新增的绑定。已绑定的停用标签允许原样保留，否则运营改一个无关字段就会被迫先摘标签；要换掉时前端本来就会重选。
+     * 单商品编辑：只校验本次新增的绑定。已绑定的停用标签允许保留，否则运营改一个无关字段就得先摘标签。
      */
     public void assertNewBindings(Long spuId, Collection<Long> tagIds) {
         if (tagIds == null || tagIds.isEmpty())

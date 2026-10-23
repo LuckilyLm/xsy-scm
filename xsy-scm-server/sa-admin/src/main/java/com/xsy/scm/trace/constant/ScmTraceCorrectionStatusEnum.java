@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 追溯码更正申请状态，与 {@code xsy_trace_unit_correction} 的 CHECK 约束逐值对应。
  *
  * <p>
- * 申请与审批是同一行记录的状态流转，因此不存在「已撤销」：驳回后要改只能重新申请。 {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * 申请与审批是同一行记录的状态流转，因此没有「已撤销」：驳回后要改只能重新申请。 {@code desc} 供页面与导出使用，保存时仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

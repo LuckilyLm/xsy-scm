@@ -27,7 +27,7 @@ public class PurchaseDemandSummaryPreviewForm extends PageParam {
     private Long warehouseId;
 
     /**
-     * 可选：按三级分类过滤（命中 {@code xsy_product_spu.category_id}）。仅辅助决策，不改变聚合口径。
+     * 可选：按三级分类过滤（命中 {@code xsy_product_spu.category_id}）。仅辅助决策，不改变汇总结果。
      */
     private Long categoryId;
 

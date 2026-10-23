@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 包装码更正：带审批的解绑。
  *
  * <p>
- * 绑定只追加，撤销也追加一条解绑事实，原绑定行不动；解绑后该码回到可绑定状态，可以重新绑到正确的分拣行。 申请与审批必须不是同一个人 —— 这是「不得无痕解绑」的落点：谁提出、谁批准、为什么，全部留痕。
+ * 绑定只追加，撤销也追加一条解绑记录，原绑定行不动；解绑后该码回到可绑定状态，可以重新绑到正确的分拣行。 申请与审批必须是不同的人：谁提出、谁批准、为什么，全部留痕。
  */
 @Service
 @RequiredArgsConstructor
@@ -42,9 +42,7 @@ public class TraceCorrectionService {
 
     private final ScmDataScopeService dataScopeService;
 
-    /**
-     * 申请更正：撤销当前这条绑定。
-     */
+    /** 申请更正：撤销当前这条绑定。 */
     @Transactional(rollbackFor = Exception.class)
     public TraceCorrectionVO apply(TraceCorrectionApplyForm form, String operator) {
         TraceUnitVO.Unit unit = traceUnitDao.lockByCode(form.getUnitCode().trim());
@@ -77,10 +75,10 @@ public class TraceCorrectionService {
     }
 
     /**
-     * 批准：追加解绑事实 + UNBIND 事件，绑定不再生效。
+     * 批准：追加解绑记录 + UNBIND 事件，绑定不再生效。
      *
      * <p>
-     * 自审禁止按操作者标识比较（{@code <userType>:<userId>}），与报损报溢同一口径。
+     * 自审禁止按操作者标识比较（{@code <userType>:<userId>}），与报损报溢一致。
      */
     @Transactional(rollbackFor = Exception.class)
     public TraceCorrectionVO approve(TraceCorrectionDecisionForm form, String operator) {
@@ -101,9 +99,7 @@ public class TraceCorrectionService {
         return traceCorrectionDao.findById(correction.getId());
     }
 
-    /**
-     * 驳回：只留审批意见，绑定继续有效。
-     */
+    /** 驳回：只留审批意见，绑定继续有效。 */
     @Transactional(rollbackFor = Exception.class)
     public TraceCorrectionVO reject(TraceCorrectionDecisionForm form, String operator) {
         TraceCorrectionVO correction = requirePending(form, operator);

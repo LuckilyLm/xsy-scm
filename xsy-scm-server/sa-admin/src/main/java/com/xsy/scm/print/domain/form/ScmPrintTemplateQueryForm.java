@@ -16,21 +16,15 @@ import net.lab1024.sa.base.common.domain.PageParam;
 @EqualsAndHashCode(callSuper = true)
 public class ScmPrintTemplateQueryForm extends PageParam {
 
-    /**
-     * 单据类型（可选）；为空则列出全部已接入的类型。
-     */
+    /** 单据类型（可选）；为空列出全部已接入的类型。 */
     @ScmEnumValue(enumClass = ScmPrintDocumentTypeEnum.class, message = "单据类型无效")
     private String documentType;
 
-    /**
-     * 模板编码 / 名称模糊匹配。
-     */
+    /** 模板编码 / 名称模糊匹配。 */
     @Size(max = 64, message = "搜索关键词不能超过64个字符")
     private String keyword;
 
-    /**
-     * 是否启用；为空表示不限。
-     */
+    /** 是否启用；为空表示不限。 */
     private Boolean enabledFlag;
 
     @Override

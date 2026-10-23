@@ -31,7 +31,7 @@ import static com.xsy.scm.delivery.constant.DeliveryErrorCode.STATE_INVALID;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
 /**
- * 配送线路的只读入口：线路级数据范围与金额字段可见性都在这里收口， Mapper 只负责按 {@link ScmValueScope} 拼谓词，不在 SQL 里判断权限。
+ * 配送线路的只读入口：线路级数据范围与金额字段可见性都在这里统一处理， Mapper 只按 {@link ScmValueScope} 拼谓词，不在 SQL 里判断权限。
  */
 @Service
 @RequiredArgsConstructor
@@ -42,7 +42,7 @@ public class DeliveryRouteQueryService {
     private final ScmDataScopeService dataScopeService;
 
     public static Page<?> page(DeliveryQueryForm form) {
-        // SQL owns deterministic sorting. Never pass arbitrary client sort columns to MyBatis.
+        // 排序由 SQL 固定，不接受客户端传排序列。
         if (form.getPageNum() == null || form.getPageNum() < 1 || form.getPageSize() == null || form.getPageSize() < 1
             || form.getPageSize() > 500 || form.getSortItemList() != null && !form.getSortItemList().isEmpty())
             throw new ScmBusinessException(VALIDATION_ERROR);
@@ -64,7 +64,7 @@ public class DeliveryRouteQueryService {
         var route = scopedRoute(id, dataScopeService.resolve());
         var result = new DeliveryDetailVO();
         result.setRoute(route);
-        // 停靠点与订单关系都挂在已经放行的线路下，因此不再各自收窄：收窄子集会破坏聚合口径。
+        // 停靠点与订单关系都挂在已经放行的线路下，因此不再各自收窄：收窄子集会破坏聚合结果。
         result.setStops(deliveryQueryDao.stops(id));
         result.setOrders(deliveryRouteOrderDao
             .selectList(new LambdaQueryWrapper<DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, id)
@@ -99,17 +99,17 @@ public class DeliveryRouteQueryService {
     }
 
     /**
-     * 按<b>当前登录态</b>的司机维度校验线路可见性：不存在抛 41100，越权抛 30005。
+     * 按当前登录态的司机维度校验线路可见性：不存在抛 41100，越权抛 30005。
      *
      * <p>
-     * 供配送子资源（排线建议等）复用：它们挂在线路下，可见性判定必须与线路读侧同源， 避免子资源绕过司机范围。
+     * 供配送子资源（排线建议等）复用：它们挂在线路下，可见性判定必须与线路读侧一致，避免子资源绕过司机范围。
      */
     public DeliveryRouteVO requireVisible(Long id) {
         return scopedRoute(id, dataScopeService.resolve());
     }
 
     /**
-     * 按司机维度读线路；SQL 已经收口，取不到行时再分「不存在」与「存在但不归本范围」。后者按无权访问处理：越权读不是「没有这条线路」，把它报成 404 会让调度台以为数据丢了。
+     * 按司机范围读线路。SQL 已经限定范围，取不到行时再区分「不存在」和「存在但不在范围内」。后者按无权处理：报成 404 会让调度台以为数据丢了。
      */
     private DeliveryRouteVO scopedRoute(Long id, ScmDataScopeContext context) {
         var scope = context.getDriverScope();

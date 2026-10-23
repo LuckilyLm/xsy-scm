@@ -52,7 +52,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 记录客户收款。错误收款要新增反向记录，不修改原记录。 人工收款和核销分开处理；货到付款收款与对应应收核销在同一事务。 幂等记录沿用统一服务，外部凭据号只用于查账，不用于防重。
+ * 记录客户收款。错误收款要新增反向记录，不修改原记录。人工收款和核销分开处理；货到付款收款与对应应收核销在同一事务。 幂等沿用统一服务，外部凭据号只用于查账，不用于防重。
  */
 @Service
 @RequiredArgsConstructor
@@ -74,12 +74,12 @@ public class FinanceReceiptService {
      * 登记一笔 {@code NORMAL} 收款。
      *
      * <p>
-     * <b>整条链必须同事务</b>：幂等 claim、收款事实、操作日志、幂等 complete 要么一起成，要么一起不成。留下「收款已落库、日志没落」或「claim 已占、结果为空」都是不可接受的半成品 ——
-     * 前者是证据链断裂，后者会让同一 key 的后续重放读到空结果。
+     * 整条链必须同事务：幂等 claim、收款记录、操作日志、幂等 complete 要么一起成，要么一起不成。留下「收款已保存、日志没落」 或「claim 已占、结果为空」都是不可接受的半成品——前者是记录链断裂，后者会让同一
+     * key 的后续重放读到空结果。
      *
      * <p>
-     * 范围判定在读到客户事实之后立刻做，且拒绝方式与「客户不存在」共用 {@link ScmDataScopeException}（对外 30005）：能分辨「存在但无权」就等于把主键探测
-     * 变成了一个可用信号，因此有权与无权的客户查询返回相同结果。
+     * 范围判定在读到客户之后立刻做，且拒绝方式与「客户不存在」共用 {@link ScmDataScopeException}（对外 30005）：
+     * 能分辨「存在但无权」就等于把主键探测变成了一个可用信号，因此有权与无权的客户查询返回相同结果。
      *
      * @param idempotencyKey
      *            请求级幂等键；同键同内容重放首次结果，同键异内容按既有语义报冲突
@@ -173,7 +173,7 @@ public class FinanceReceiptService {
         if (!order.getCustomerId().equals(receivable.getCustomerId())) {
             throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ORDER_NOT_APPLICABLE);
         }
-        // 当前客户与订单范围只用于授权；收款事实的结算主体沿用正常应收冻结快照。
+        // 当前客户与订单范围只用于授权；收款记录的结算主体沿用正常应收保存的结算主体。
         FinanceCustomerFactDto customer = requireAuthorizedCustomer(order.getCustomerId());
         requireCodOrderScope(order);
         if (financeOrderFundingSourceDao.hasActiveOrderPaymentIntent(order.getOrderId())) {
@@ -193,7 +193,7 @@ public class FinanceReceiptService {
                 claim.record().getId(), receivable.getCustomerNameSnapshot(), receivable.getSettlementCustomerId(),
                 receivable.getSettlementCustomerNameSnapshot(), order.getOrderId());
         } catch (DuplicateKeyException duplicate) {
-            // 同一命令记录只能生成一张收款单；不同命令的金额上限仍由核销串行裁决。
+            // 同一命令记录只能生成一张收款单；不同命令的金额上限仍由核销串行控制。
             throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ALREADY_REGISTERED);
         }
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
@@ -214,7 +214,7 @@ public class FinanceReceiptService {
     }
 
     /**
-     * 追加一条 {@code REVERSE} 收款事实。原记录保持不变；该命令与核销共用原收款行锁，因而在并发下也能保证反向前的有效已用额为 0。
+     * 追加一条 {@code REVERSE} 收款记录。原记录保持不变；该命令与核销共用原收款行锁，因而在并发下也能保证反向前的有效已用额为 0。
      */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptVO reverse(FinanceReceiptReverseForm form, String idempotencyKey) {
@@ -227,9 +227,9 @@ public class FinanceReceiptService {
             throw new ScmBusinessException(FinanceErrorCode.ALREADY_REVERSED);
         }
         if (original.getSourceType() != null) {
-            // 人工 reverse 的语义是「整笔登记错了，撤销这笔登记」，而支付退款是<b>业务退款</b>：
+            // 人工 reverse 的含义是「整笔登记错了，撤销这笔登记」，而支付退款是业务退款：
             // 可能部分、可能多次（100 退 30 再退 20）。现有 REVERSE 模型表达不了，
-            // 硬套会把「退款」记成「纠错」，审计上再也分不开。退款的资金反向由付款事实表达。
+            // 硬套会把「退款」记成「纠错」，审计上再也分不开。退款的资金反向由付款记录表达。
             throw new ScmBusinessException(FinanceErrorCode.SYSTEM_RECEIPT_REVERSE_FORBIDDEN);
         }
 
@@ -265,25 +265,25 @@ public class FinanceReceiptService {
     }
 
     /**
-     * 系统入口：支付交易成功后登记收款事实（ADM-12）。
+     * 系统入口：支付交易成功后登记收款记录。
      *
      * <p>
-     * <b>不复用人工的 {@code add(FinanceReceiptAddForm)}</b>：那个入口的字段假设「有人在填」，方式、时点、外部凭据都由人给。系统来源必须由财务域自己决定这些 ——
-     * 让支付域去凑一个人工表单，等于把财务规则复制到支付域，两边迟早不一致。
+     * 不复用人工的 {@code add(FinanceReceiptAddForm)}：那个入口的字段假设「有人在填」，方式、时点、外部凭据都由人给。
+     * 系统来源必须由财务域自己决定这些——让支付域去凑一个人工表单，等于把财务规则复制到支付域，两边迟早不一致。
      *
      * <p>
      * 三条与人工入口不同的地方：
      * <ol>
      * <li>方式固定 {@code ONLINE_PAYMENT}，不取调用方输入；</li>
-     * <li>金额取<b>渠道实际成功捕获/结算的金额</b>（{@code providerAmount}），不取本地应付金额 —— 本地应付 100、渠道实收 98 时凭空登记 100 会让账实不符；</li>
+     * <li>金额取渠道实际成功捕获/结算的金额（{@code providerAmount}），不取本地应付金额——本地应付 100、渠道实收 98 时凭空登记 100 会让账实不符；</li>
      * <li>时点取渠道成功时间，不是本地登记时间。</li>
      * </ol>
      *
      * <p>
-     * <b>幂等两层</b>：这里先按来源键查一次（常见的重复回调），库上的 {@code uk_finance_receipt_source_active} 是并发下真正的仲裁者。第二层刻意不吞异常：事务里吞掉唯一键冲突会让
-     * PostgreSQL 的整个事务进入失败状态，反而更危险；让冲突冒出来，渠道重试时前置查询就能命中已有事实。
+     * 幂等两层：这里先按来源键查一次（常见的重复回调），数据库上的 {@code uk_finance_receipt_source_active} 是并发下真正的仲裁者。 第二层刻意不吞异常：事务里吞掉唯一键冲突会让
+     * PostgreSQL 的整个事务进入失败状态，反而更危险；让冲突冒出来，渠道重试时前置查询就能命中已有记录。
      *
-     * @return 已存在的或新登记的收款事实
+     * @return 已存在的或新登记的收款记录
      */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptEntity registerFromPaymentTransaction(FinancePaymentReceiptFact fact) {
@@ -314,7 +314,7 @@ public class FinanceReceiptService {
             return existing;
         }
 
-        // 客户与结算主体同样按客户域规则解析：系统来源不是绕过这条纪律的理由
+        // 客户与结算主体同样按客户域规则解析：系统来源不是绕过这条规则的理由
         FinanceCustomerFactDto customer = financeCounterpartySourceDao.selectCustomer(fact.customerId());
         if (customer == null) {
             throw new ScmDataScopeException();
@@ -346,7 +346,7 @@ public class FinanceReceiptService {
         receipt.setCreatedBy(operator);
         receipt.setUpdatedBy(operator);
         if (financeReceiptDao.insert(receipt) != 1) {
-            throw new IllegalStateException("支付收款登记未落库: " + receipt.getReceiptNo());
+            throw new IllegalStateException("支付收款登记未保存: " + receipt.getReceiptNo());
         }
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
             null, null, snapshot(receipt), operator);
@@ -383,7 +383,7 @@ public class FinanceReceiptService {
         reversal.setEntryType(ScmFinanceReverseEntryTypeEnum.REVERSE.name());
         reversal.setReverseOfId(original.getId());
         reversal.setReason(reason);
-        // 反向单据是本次纠错事实，不沿用原资金凭据或备注。
+        // 反向单据是本次纠错记录，不沿用原资金凭据或备注。
         reversal.setExternalReference(null);
         reversal.setRemark(null);
         reversal.setCreatedAt(now);
@@ -417,12 +417,12 @@ public class FinanceReceiptService {
 
         BigDecimal amount = ScmDecimalStrings.parseScale4Required(form.getAmount());
         if (amount.signum() <= 0) {
-            // 0 元收款不是财务事实：库级 CHECK (amount > 0) 是第二层，这里先给出可解释的 40000。
+            // 0 元收款不是有效收款：数据库层 CHECK (amount > 0) 是第二层，这里先给出可解释的 40000。
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
-        // 客户域只读契约先验证当前结算关系；快照值仍来自 FinanceCounterpartySourceDao，财务域不重算或替换。
+        // 客户域只读接口先验证当前结算关系；结算主体仍取自 FinanceCounterpartySourceDao，财务域不重算或替换。
         // 已声明结算主体却读不到未删除的那一行说明主档悬空：这两列在 finance_receipt 上都是 NOT NULL，
-        // 宁可拒绝登记，也不能把付款客户自己的名字写成结算主体快照（历史事实不可改，写错就永久错）。
+        // 宁可拒绝登记，也不能把付款客户自己的名字写成结算主体（历史记录不可改，写错就永久错）。
         if (settlementCustomerId == null || settlementCustomerNameSnapshot == null || customerNameSnapshot == null) {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
@@ -455,13 +455,13 @@ public class FinanceReceiptService {
         receipt.setCreatedBy(operator);
         receipt.setUpdatedBy(operator);
         if (financeReceiptDao.insert(receipt) != 1) {
-            throw new IllegalStateException("收款登记未落库: " + receipt.getReceiptNo());
+            throw new IllegalStateException("收款登记未保存: " + receipt.getReceiptNo());
         }
         return receipt;
     }
 
     /**
-     * 收款方式以收款枚举和数据库约束为准。钱包余额抵扣不属于实际资金收款，不能作为收款方式登记。
+     * 收款方式以收款枚举和数据库约束为准。余额抵扣不属于实际资金收款，不能作为收款方式登记。
      */
     private static String method(String raw) {
         String value = StringUtils.trimToNull(raw);
@@ -479,8 +479,8 @@ public class FinanceReceiptService {
         snapshot.put("customerNameSnapshot", receipt.getCustomerNameSnapshot());
         snapshot.put("amount", receipt.getAmount().toPlainString());
         snapshot.put("method", receipt.getMethod());
-        // 时间一律落 ISO 字符串：JSONB 侧的 JsonbObjectMapTypeHandler 用的是未注册
-        // JavaTimeModule 的裸 ObjectMapper，直接放 OffsetDateTime 会在写入时抛异常。
+        // 时间一律写 ISO 字符串：JSONB 侧的 JsonbObjectMapTypeHandler 用的是未注册
+        // JavaTimeModule 的 ObjectMapper，直接放 OffsetDateTime 会在写入时抛异常。
         snapshot.put("receivedAt", receipt.getReceivedAt().toString());
         snapshot.put("externalReference", receipt.getExternalReference());
         snapshot.put("remark", receipt.getRemark());

@@ -38,7 +38,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 预览只读业务数据；正式打印保存当时的版面，历史重印使用已保存内容，不重新生成业务数据。
+ * 预览只读业务数据；正式打印保存当时的版面，历史重印直接用已保存内容，不重新生成。
  */
 @Service
 @RequiredArgsConstructor
@@ -86,7 +86,7 @@ public class ScmPrintService {
             ? scmPrintTemplateService.requireDefault(type.name())
             : scmPrintTemplateService.requireEnabled(templateId);
         if (!type.name().equals(template.getDocumentType())) {
-            // 拿采购单的模板去打印发货单：字段白名单完全不同，按「模板不存在」拒绝
+            // 拿采购单的模板去打印发货单：字段完全不同，按「模板不存在」拒绝
             throw new ScmBusinessException(ScmPrintErrorCode.TEMPLATE_NOT_FOUND);
         }
         return template;
@@ -110,10 +110,10 @@ public class ScmPrintService {
     }
 
     /**
-     * 正式打印：冻结模板版本、模型快照与版面快照，并返回这份冻结版面。
+     * 正式打印：保存模板版本、模板内容与版面内容，并返回这份结果。
      *
      * <p>
-     * 要求幂等键：一次提交重试不该产生两条「打过一次」的记录。同键重放直接返回首次的冻结版面，因此重放拿到的是<b>当时</b>那张，而不是重新渲染的现在这张。
+     * 要求幂等键：一次提交重试不该产生两条记录。同键重放直接返回首次的结果，拿到的是当时那张，而不是重新渲染的现在这张。
      */
     @Transactional(rollbackFor = Exception.class)
     public ScmPrintRenderVO print(String documentType, Long businessId, ScmPrintActionForm form, String key) {
@@ -152,11 +152,10 @@ public class ScmPrintService {
     }
 
     /**
-     * 历史重印：只读冻结快照。
+     * 历史重印：只读当时保存的内容。
      *
      * <p>
-     * 金额按<b>当前</b>调用者重新套一遍权限：快照里可能有原打印人有权限、而当前人没权限的金额列，直接回放等于用一条历史消息把金额权限绕过去。剔除时行里的 key 也一并删掉 ——
-     * 只删列定义而把值留在行里，等于「界面上看不到、接口里拿得到」。
+     * 金额按当前调用者重新检查一遍权限：保存的内容里可能有原打印人有权限、当前人没权限的金额列， 直接回放等于用一条历史记录绕过金额权限。剔除时行里的值也一并删掉，只删列定义会把值留在行里。
      */
     @Transactional(readOnly = true)
     public ScmPrintRenderVO reprint(Long recordId) {
@@ -165,7 +164,7 @@ public class ScmPrintService {
             throw new ScmBusinessException(ScmPrintErrorCode.RECORD_NOT_FOUND);
         }
         ScmPrintDocumentTypeEnum type = requireType(record.getDocumentType());
-        // 重印同样要该单据的查看权：快照里有单据内容，只有记录查询权不该能读出它。
+        // 重印同样要该单据的查看权：保存的内容里有单据信息，只有记录查询权不该能读出它。
         requireVisible(type, record.getBusinessId());
         ScmPrintTemplateModel model = ScmPrintTemplateModel.fromMap(record.getModelSnapshot());
 

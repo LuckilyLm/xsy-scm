@@ -1,7 +1,7 @@
 package com.xsy.scm.common.contract;
 
 /**
- * Read-only customer-domain contract for validating a configured settlement relationship.
+ * 客户域的只读接口，用来校验结算关系配置。
  */
 public interface CustomerSettlementAccountValidator {
 

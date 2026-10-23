@@ -8,49 +8,33 @@ import java.util.Map;
 import lombok.Data;
 
 /**
- * 打印模板只支持标题、纸张、列、表头、合计和页脚，不支持脚本、HTML 或自由表达式。结构错误交给统一校验器处理。
+ * 打印模板只支持标题、纸张、列、表头、合计和页脚，不支持脚本、HTML 或自由表达式。结构校验由统一校验器负责。
  */
 @Data
 public class ScmPrintTemplateModel {
 
-    /**
-     * 单据标题；纯文本。
-     */
+    /** 单据标题，纯文本。 */
     private String title;
 
-    /**
-     * 纸张：{@code A4} / {@code TICKET_80}。
-     */
+    /** 纸张：{@code A4} / {@code TICKET_80}。 */
     private String paper;
 
-    /**
-     * 方向：{@code PORTRAIT} / {@code LANDSCAPE}。
-     */
+    /** 方向：{@code PORTRAIT} / {@code LANDSCAPE}。 */
     private String orientation;
 
-    /**
-     * 表头字段 key（单据类型白名单内）。
-     */
+    /** 表头字段 key（单据类型允许范围内）。 */
     private List<String> headerFields = new ArrayList<>();
 
-    /**
-     * 明细列 key（单据类型白名单内）。
-     */
+    /** 明细列 key（单据类型允许范围内）。 */
     private List<String> columns = new ArrayList<>();
 
-    /**
-     * 是否打印整单合计行。
-     */
+    /** 是否打印整单合计行。 */
     private boolean showTotals;
 
-    /**
-     * 页脚备注；纯文本，可为空。
-     */
+    /** 页脚备注，纯文本，可为空。 */
     private String footerNote;
 
-    /**
-     * 转成 JSONB 列的形状。字段顺序固定，便于人工比对与日志复现。
-     */
+    /** 转成 JSONB 列的形状；字段顺序固定，便于比对和复现。 */
     public Map<String, Object> toMap() {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("title", title);
@@ -63,9 +47,7 @@ public class ScmPrintTemplateModel {
         return map;
     }
 
-    /**
-     * 从 JSONB 列还原。结构缺失按空处理，不做隐式默认（默认值属于种子数据，不属于解析）。
-     */
+    /** 从 JSONB 列还原；结构缺失按空处理，默认值由种子数据给出。 */
     public static ScmPrintTemplateModel fromMap(Map<String, Object> map) {
         ScmPrintTemplateModel model = new ScmPrintTemplateModel();
         if (map == null) {

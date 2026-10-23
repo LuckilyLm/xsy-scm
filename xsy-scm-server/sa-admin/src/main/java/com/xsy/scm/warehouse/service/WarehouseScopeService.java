@@ -30,9 +30,7 @@ public class WarehouseScopeService {
 
     private final EmployeeDao employeeDao;
 
-    /**
-     * 某仓库下被授权的员工。
-     */
+    /** 某仓库下被授权的员工。 */
     public List<WarehouseScopeEmployeeVO> listEmployees(Long warehouseId) {
         if (warehouseId == null) {
             throw new ScmBusinessException(VALIDATION_ERROR);
@@ -40,9 +38,7 @@ public class WarehouseScopeService {
         return employeeWarehouseScopeDao.listEmployeesByWarehouse(warehouseId);
     }
 
-    /**
-     * 某员工被授权的仓库。
-     */
+    /** 某员工被授权的仓库。 */
     public List<WarehouseScopeWarehouseVO> listWarehouses(Long employeeId) {
         if (employeeId == null) {
             throw new ScmBusinessException(VALIDATION_ERROR);
@@ -51,10 +47,10 @@ public class WarehouseScopeService {
     }
 
     /**
-     * 用 {@code warehouseIds} 整体替换该员工的活动授权；空清单即全部回收。
+     * 用 {@code warehouseIds} 整体替换该员工的授权；空清单即全部回收。
      *
      * <p>
-     * 回收与写入必须同事务：只成功一半会把员工留在「看不到任何仓」的状态，而这是失败关闭的状态，调用方看到成功却没人会立刻发现。
+     * 回收与写入必须同事务：只成功一半会让员工看不到任何仓，调用方却以为成功了。
      */
     @Transactional(rollbackFor = Exception.class)
     public void update(WarehouseScopeUpdateForm form) {
@@ -74,9 +70,7 @@ public class WarehouseScopeService {
         }
     }
 
-    /**
-     * 批量存在性校验：一次查回真实存在的 id 再比集合，逐个 require 会把一次维护变成 N 次查询，而且报错时说不清是哪几个 id。
-     */
+    /** 批量存在性校验：一次查回已有的 id 再比集合，避免逐条查询。 */
     private void requireWarehousesExist(Set<Long> warehouseIds) {
         if (warehouseIds.isEmpty()) {
             return;
@@ -88,9 +82,7 @@ public class WarehouseScopeService {
         }
     }
 
-    /**
-     * 去重并剔除 null：清单里的 {@code null} 不是「未填」而是会写成一行 {@code warehouse_id IS NULL} 的授权，而部分唯一索引不收 NULL 之外的重复值，这类行既查不到数据也删不掉。
-     */
+    /** 去重并剔除 null，否则会写入 {@code warehouse_id IS NULL} 的授权行，既查不到也删不掉。 */
     private static Set<Long> distinctIds(Collection<Long> ids) {
         Set<Long> distinct = new LinkedHashSet<>();
         if (ids == null) {

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
  * 溯源附件的类别。
  *
  * <p>
- * 两类附件挂在不同的业务对象上：商品资质随商品，检测报告随批次。扫码页把两类合并展示， 但落库时的 biz_type 不同，不能用同一个枚举值掩盖。
+ * 商品资质挂在商品上，检测报告挂在批次上。扫码页合并展示，但保存时 biz_type 不同，不能共用一个枚举值。
  */
 @Getter
 @RequiredArgsConstructor

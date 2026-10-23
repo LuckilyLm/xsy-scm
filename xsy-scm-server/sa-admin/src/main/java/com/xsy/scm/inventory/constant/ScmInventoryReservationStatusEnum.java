@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
  * </pre>
  *
  * <p>
- * 与出库单状态一样<b>不可回退</b>：一旦释放或消耗，只能通过新增一条预留来表达新的占用，而不是把旧记录改回 ACTIVE —— 否则「为什么曾经释放过」这段历史会丢失。
+ * 与出库单状态一样不可回退：一旦释放或消耗，只能通过新增一条预留来表达新的占用，而不是把旧记录改回 ACTIVE—— 否则「为什么曾经释放过」这段历史会丢失。
  */
 @Getter
 @RequiredArgsConstructor
@@ -44,7 +44,7 @@ public enum ScmInventoryReservationStatusEnum {
     }
 
     /**
-     * 该值是否允许写入 {@code xsy_inventory_reservation.status}（DB CHECK 白名单的同源判定）。
+     * 该值是否允许写入 {@code xsy_inventory_reservation.status}（与数据库 CHECK 约束同源判定）。
      */
     public static boolean isSupported(String reservationStatus) {
         for (ScmInventoryReservationStatusEnum item : values()) {

@@ -9,7 +9,7 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 /**
- * Finance-specific audit entry with before/after monetary snapshots.
+ * 财务操作日志，带变更前后的金额数据。
  */
 @Data
 public class FinanceOperationLogVO {

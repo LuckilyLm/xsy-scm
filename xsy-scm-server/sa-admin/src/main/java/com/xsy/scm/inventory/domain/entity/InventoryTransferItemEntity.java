@@ -16,11 +16,10 @@ import java.time.OffsetDateTime;
  * 调拨单明细行。
  *
  * <p>
- * <b>{@code quantity} 恒为正</b>：方向由「发出 / 收货」这个<b>动作</b>决定，不在行上用正负号表达 ——
- * 同一行会先产生一条转出流水、再产生一条转入流水，用一个正数同时服务两个方向是唯一不会自相矛盾的做法。
+ * {@code quantity} 恒为正：方向由「发出 / 收货」这个动作决定，不在行上用正负号表达——同一行会先产生一条转出流水、 再产生一条转入流水，用一个正数同时服务两个方向是唯一不会自相矛盾的做法。
  *
  * <p>
- * <b>{@code unitSnapshot} 在发出时写入</b>（= 源仓的记账单位）。收货时用它断言目标仓的记账单位一致（不做隐式换算），并在目标仓从未有过该 SKU 时用它建立新余额行的单位。
+ * {@code unitSnapshot} 在发出时写入（= 源仓的记账单位）。收货时用它断言目标仓的记账单位一致（不做自动换算）， 并在目标仓从未有过该 SKU 时用它建立新余额行的单位。
  */
 @Data
 @TableName(value = "xsy_inventory_transfer_item", autoResultMap = true)
@@ -36,13 +35,13 @@ public class InventoryTransferItemEntity {
     private Long skuId;
 
     /**
-     * 调拨数量，恒为正（DB CHECK）。
+     * 调拨数量，恒为正（数据库 CHECK）。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal quantity;
 
     /**
-     * 发出时写入的记账单位快照（源仓单位）；草稿态为空。
+     * 发出时写入的记账单位（源仓单位）；草稿态为空。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String unitSnapshot;

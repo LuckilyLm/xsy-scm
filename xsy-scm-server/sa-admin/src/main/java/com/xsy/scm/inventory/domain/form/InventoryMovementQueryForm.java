@@ -16,8 +16,8 @@ import java.time.OffsetDateTime;
  * 库存流水列表查询条件。
  *
  * <p>
- * 时间范围过滤的是 {@code occurred_at}（业务发生时刻 = 收货确认时刻）， <b>不是</b> {@code created_at}（写入时刻）：backfill 回放历史收货时两者相差很远，用 created_at
- * 过滤会让「按业务时间查流水」这件事在 backfill 数据上完全失效。
+ * 时间范围过滤的是 {@code occurred_at}（业务发生时刻 = 收货确认时刻），不是 {@code created_at}（写入时刻）：补录历史收货时两者相差很远，用 created_at
+ * 过滤会让「按业务时间查流水」在补录数据上完全失效。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -31,14 +31,14 @@ public class InventoryMovementQueryForm extends PageParam {
      * SKU 编码模糊匹配（联 {@code xsy_product_sku}）。
      *
      * <p>
-     * <b>为什么必须有它</b>：流水页的筛选不能只给 {@code skuId} —— 用户在页面上看到的是 SKU 编码，手上也只有编码。只提供 id 筛选等于要求用户先知道 id，那是一个只对开发者成立的筛选条件（#5
-     * 的「sku 编码关键字」）。
+     * 为什么必须有它：流水页的筛选不能只给 {@code skuId} —— 用户在页面上看到的是 SKU 编码，手上也只有编码。只提供 id 筛选等于要求用户先知道 id，那是一个只对开发者成立的筛选条件（#5 的「sku
+     * 编码关键字」）。
      */
     @Size(max = 64, message = "商品规格编码不能超过64个字符")
     private String skuCode;
 
     /**
-     * 库存流水查询只接受已定义的流水类型。增加类型时必须同步后端枚举、数据库约束和查询参数白名单，否则新类型会无法筛选。
+     * 库存流水查询只接受已定义的流水类型。增加类型时必须同步后端枚举、数据库约束和查询参数校验，否则新类型会无法筛选。
      */
     @ScmEnumValue(enumClass = ScmInventoryMovementTypeEnum.class, message = "流水类型无效")
     private String movementType;
@@ -47,7 +47,7 @@ public class InventoryMovementQueryForm extends PageParam {
      * 来源单据类型过滤；与 {@code ScmInventorySourceDocumentTypeEnum} 同源。
      *
      * <p>
-     * 调拨与规格转换各占<b>两个</b>来源类型：它们的同一条明细行都会产生两条流水，若共用一个来源类型会撞上 {@code uk_inventory_movement_source_active}。
+     * 调拨与规格转换各占两个来源类型：它们的同一条明细行都会产生两条流水，若共用一个来源类型会撞上 {@code uk_inventory_movement_source_active}。
      */
     @ScmEnumValue(enumClass = ScmInventorySourceDocumentTypeEnum.class, message = "来源单据类型无效")
     private String sourceDocumentType;
@@ -63,7 +63,7 @@ public class InventoryMovementQueryForm extends PageParam {
     private OffsetDateTime occurredFrom;
 
     /**
-     * {@code occurred_at < occurredTo}（左闭右开，与收货时间范围口径一致）。
+     * {@code occurred_at < occurredTo}（左闭右开，与收货时间范围规则一致）。
      */
     private OffsetDateTime occurredTo;
 

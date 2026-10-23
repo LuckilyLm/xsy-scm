@@ -6,22 +6,14 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 打印记录读写。
- *
- * <p>
- * <b>没有更新与删除</b>：表上的触发器会拒绝它们，接口层也不提供 —— 冻结快照一旦能改，
- * 「历史重印与当初那张一致」就不再成立。
+ * 打印记录读写。没有更新与删除：表上的触发器会拒绝，接口层也不提供。 保存的打印内容一旦能改，历史重印就和当初那张对不上了。
  */
 @Mapper
 public interface ScmPrintRecordDao extends BaseMapper<ScmPrintRecordEntity> {
 
-    /**
-     * 按 id 取一条记录（含快照），供历史重印。
-     */
+    /** 按 id 取一条记录（含当时保存的内容），供历史重印。 */
     ScmPrintRecordEntity selectRecord(@Param("id") Long id);
 
-    /**
-     * 新增一条冻结记录。
-     */
+    /** 新增一条打印记录。 */
     int insertRecord(@Param("row") ScmPrintRecordEntity row);
 }

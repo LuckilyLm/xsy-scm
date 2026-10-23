@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 客户券实例的权益状态，与券模板启停状态分开。
- *
- * <p>
- * {@code desc} 供页面与导出使用，落库仍用枚举名。
+ * 客户券实例的权益状态，与券模板的启停状态分开。{@code desc} 供页面与导出使用，保存时仍用枚举名。
  */
 @Getter
 @RequiredArgsConstructor

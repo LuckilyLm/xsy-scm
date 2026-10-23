@@ -28,7 +28,7 @@ public class SortingStandardPolicy {
             return "计划数量无效，请人工核对";
         }
         if (StringUtils.isBlank(row.getSaleUnitSnapshot())) {
-            return "缺少冻结销售单位，请人工核对";
+            return "缺少销售单位，请人工核对";
         }
         if (previous != null
             && (previous.getTotalQuantity() == null || previous.getTotalQuantity().compareTo(quantity) != 0)) {

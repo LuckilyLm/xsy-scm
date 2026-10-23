@@ -67,8 +67,8 @@ public class FinanceReceiptEntity extends FinanceRecord {
      * 系统来源类型；人工登记的收款为空。
      *
      * <p>
-     * 与 {@link #sourceId} 成对（库上有 CHECK），且只出现在 {@code NORMAL} 行上； 唯一索引 {@code uk_finance_receipt_source_active}
-     * 保证同一来源只有一条正常收款事实。
+     * 与 {@link #sourceId} 成对（数据库有 CHECK），且只出现在 {@code NORMAL} 行上；唯一索引 {@code uk_finance_receipt_source_active}
+     * 保证同一来源只有一条正常收款记录。
      */
     private String sourceType;
 
@@ -78,7 +78,7 @@ public class FinanceReceiptEntity extends FinanceRecord {
     private Long sourceId;
 
     /**
-     * 分笔 COD 收款所属订单；V131 的历史行仍以 source_id 表示订单。
+     * 分笔 COD 收款所属订单；历史行仍以 source_id 表示订单。
      */
     private Long codOrderId;
 }

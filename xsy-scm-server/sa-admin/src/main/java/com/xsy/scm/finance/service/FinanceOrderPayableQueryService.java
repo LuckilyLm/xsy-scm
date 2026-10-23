@@ -24,10 +24,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 订单资金金额的只读口径：确认后应付净额与已付金额。
+ * 订单资金金额的只读计算：确认后应付净额与已付金额。
  *
  * <p>
- * 签收前按确认实重与冻结优惠计算预收应付；签收后以实际出库形成的正常应收净额为准。 分拣出库量可以小于确认实重，已付超过实发应收的部分按既有超额资金与售后规则处理，不自动退款。本服务不写任何表。
+ * 签收前按确认实重与保存的优惠计算预付应付；签收后以实际出库形成的正常应收净额为准。分拣出库量可以小于确认实重， 已付超过实发应收的部分按超额资金与售后规则处理，不自动退款。本服务不写表。
  */
 @Service
 @RequiredArgsConstructor
@@ -71,8 +71,8 @@ public class FinanceOrderPayableQueryService {
      * 一批已确认订单的应付净额，一次取数算完。
      *
      * <p>
-     * 授信敞口要按结算主体把所有「已确认未开应收」的订单加总，逐单调用会退化成 N+1 次查询；这里换成两条 IN 查询， 但逐行折算仍走同一段
-     * {@code discountShare}，不另写一套口径。没有行的订单不出现在结果里（按 0 处理）。
+     * 授信敞口要按结算主体把所有「已确认未开应收」的订单加总，逐单调用会退化成 N+1 次查询；这里换成两条 IN 查询，但逐行折算仍走同一段
+     * {@code discountShare}，不另写一套算法。没有行的订单不出现在结果里（按 0 处理）。
      */
     @Transactional(readOnly = true)
     public Map<Long, BigDecimal> payableOfConfirmedOrders(Collection<Long> salesOrderIds) {
@@ -100,7 +100,7 @@ public class FinanceOrderPayableQueryService {
     }
 
     /**
-     * 逐行 {@code 实重 × 锁定价 − 该行承担的冻结优惠}，行先舍入再汇总。
+     * 逐行计算 {@code 实重 × 锁定价 − 该行承担的优惠}，行先舍入再汇总。
      */
     private static BigDecimal net(List<FinanceOrderPayableLineDto> lines, Map<Long, BigDecimal> discounts) {
         BigDecimal payable = BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE);
@@ -114,10 +114,10 @@ public class FinanceOrderPayableQueryService {
     }
 
     /**
-     * 已付金额：该订单全部已成功支付事实的本金合计（余额消费与在线实收都以登记的本金为准）。
+     * 已付金额：该订单全部已成功支付记录的本金合计（余额消费与在线实收都以登记的本金为准）。
      *
      * <p>
-     * <b>不含货到付款收款</b>：这个数是「支付事实」，用在余额支付命令算待付的口径上； 客户看到的「已付」还要算上交付时真正收到的钱，见 {@link #receivedAmountOf(Long)}。
+     * 不含货到付款收款：这个数是支付记录，用于余额支付命令计算待付；客户看到的「已付」还要加上交付时实收的钱，见 {@link #receivedAmountOf(Long)}。
      */
     @Transactional(readOnly = true)
     public BigDecimal paidAmountOf(Long salesOrderId) {
@@ -127,7 +127,7 @@ public class FinanceOrderPayableQueryService {
     }
 
     /**
-     * 实收金额：支付事实、专用 COD 分笔收款，以及人工收款对该订单正常应收的有效核销。
+     * 实收金额：支付记录、COD 分笔收款，以及人工收款对该订单正常应收的有效核销。
      *
      * <p>
      * 新订单的结算方式互斥；账期和历史 COD 人工补收通过有效核销归属订单，避免财务已结清而客户仍看到待付。

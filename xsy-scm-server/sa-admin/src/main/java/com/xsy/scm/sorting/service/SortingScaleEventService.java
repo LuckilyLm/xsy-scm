@@ -72,9 +72,7 @@ public class SortingScaleEventService {
 
     private final ObjectMapper objectMapper;
 
-    /**
-     * 上报一个秤读数。重复上报返回既有记录并置 {@code duplicated}，不报错。
-     */
+    /** 上报一个秤读数。重复上报返回既有记录并置 {@code duplicated}，不报错。 */
     @Transactional(rollbackFor = Exception.class)
     public SortingScaleEventVO report(SortingScaleReportForm form) {
         SortingTaskEntity task = requireVisibleTask(form.getTaskId());
@@ -119,9 +117,7 @@ public class SortingScaleEventService {
         return toVO(existing, item, true);
     }
 
-    /**
-     * 某任务的读数列表；{@code status} 为空返回全部。
-     */
+    /** 某任务的读数列表；{@code status} 为空返回全部。 */
     @Transactional(readOnly = true)
     public List<SortingScaleEventVO> list(Long taskId, String status) {
         requireVisibleTask(taskId);
@@ -131,13 +127,13 @@ public class SortingScaleEventService {
     }
 
     /**
-     * 上报一筐读数。只记录设备事实，不改分拣结果。
+     * 上报一筐读数。只记录设备读数，不改分拣结果。
      *
      * <p>
-     * 单位必须与明细销售单位一致：未知单位按公斤兜底会让斤与件混入同一累计。 毛重在未去皮时同样拒绝，因为把毛重当净重会系统性多记。
+     * 单位必须与明细销售单位一致：未知单位按公斤兜底会让斤与件混入同一累计。毛重在未去皮时同样拒绝，因为把毛重当净重会系统性多记。
      *
      * <p>
-     * 幂等分两层：{@code operationId} 标识一次人工操作，{@code eventKey} 标识一筐事实。 两者任一命中既有记录时返回原事实并置 {@code duplicated}；同一键换了内容则显式报冲突。
+     * 幂等分两层：{@code operationId} 标识一次人工操作，{@code eventKey} 标识一筐读数。 两者任一命中既有记录时返回原记录并置 {@code duplicated}；同一键换了内容则显式报冲突。
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingScaleBasketVO reportBasket(SortingScaleBasketForm form) {
@@ -202,10 +198,10 @@ public class SortingScaleEventService {
      * 商品集合完成：把该明细当前全部待完成筐作为一个整体确认，并写入正式分拣结果。
      *
      * <p>
-     * 总量由服务端按筐重算，设备提交的合计不参与判定；{@code manifestHash} 只用来确认 「设备看到的筐集合」与「服务端读到的筐集合」是同一批，避免漏掉并发新增的一筐。
+     * 总量由服务端按筐重算；{@code manifestHash} 只确认设备看到的筐集合与服务端读到的是同一批， 避免漏掉并发新增的一筐。
      *
      * <p>
-     * 正式写入仍经 {@link SortingTaskService#enter}，与手工录入共用同一条路径， 因此任务状态、明细版本、结果枚举、原因必填这些约束一条都不会被绕过。
+     * 正式写入仍经 {@link SortingTaskService#enter}，与手工录入同一条路径， 任务状态、明细版本、结果枚举、原因必填都绕不过去。
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingScaleCompletionVO completeBaskets(SortingScaleCompleteForm form) {
@@ -300,9 +296,7 @@ public class SortingScaleEventService {
         return vo;
     }
 
-    /**
-     * 有序事件键集合的摘要，与秤端 {@code WireJson.Digest} 保持同一算法： 紧凑 JSON 数组序列化后取 SHA-256，输出大写十六进制。
-     */
+    /** 有序事件键集合的摘要，与秤端 {@code WireJson.Digest} 保持同一算法：紧凑 JSON 数组序列化后取 SHA-256，输出大写十六进制。 */
     private String manifestDigest(List<String> eventKeys) {
         try {
             String json = objectMapper.writeValueAsString(eventKeys);
@@ -313,9 +307,7 @@ public class SortingScaleEventService {
         }
     }
 
-    /**
-     * 同一幂等键的重放必须内容一致：换了重量、筐号或任务就不是重试，而是另一笔事实。
-     */
+    /** 同一幂等键的重放必须内容一致：换了重量、筐号或任务就不是重试，而是另一笔数据。 */
     private static boolean sameBasket(SortingScaleEventEntity existing, SortingScaleEventEntity row) {
         return Objects.equals(existing.getTaskId(), row.getTaskId())
             && Objects.equals(existing.getTaskItemId(), row.getTaskItemId())
@@ -360,7 +352,7 @@ public class SortingScaleEventService {
      * 接受读数：把该读数写进分拣结果。
      *
      * <p>
-     * 写入经 {@link SortingTaskService#enter}（与手工录入同一入口），因此任务状态、明细版本、结果枚举、原因必填这些约束一条都不会被绕过。
+     * 写入经 {@link SortingTaskService#enter}（与手工录入同一入口），任务状态、明细版本、结果枚举、原因必填这些约束都不会被绕过。
      */
     @Transactional(rollbackFor = Exception.class)
     public void accept(Long id, SortingScaleAcceptForm form) {
@@ -372,7 +364,7 @@ public class SortingScaleEventService {
         if (item == null || Boolean.TRUE.equals(item.getDeleted())) {
             throw new ScmBusinessException(SortingErrorCode.ITEM_NOT_IN_TASK);
         }
-        // 设备接入协议尚未确定。当前仅允许原始读数的单位与订单行冻结销售单位完全相同，
+        // 设备接入协议尚未确定。当前仅允许原始读数的单位与订单行保存的销售单位完全相同，
         // 禁止把 kg/斤/件等不同单位的数值直接写进实分量。
         if (!Objects.equals(event.getUnit(), item.getSaleUnitSnapshot())) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_UNIT_MISMATCH);
@@ -381,7 +373,7 @@ public class SortingScaleEventService {
         String result = ScmSortingResultEnum.NORMAL.name();
         String reason = null;
         if (nonStandard) {
-            // 非标品以实重为准，但是否短少、超出容差属于人工业务裁定，不在设备网关猜测。
+            // 非标品以实重为准，但是否短少、超出容差属于人工业务判定，不在设备网关猜测。
             // 非正常结果必须留下原因，并与手工 enter 命令保持同样的规则。
             if (form.getResult() == null) {
                 throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_RESULT_REQUIRED);
@@ -410,9 +402,7 @@ public class SortingScaleEventService {
         }
     }
 
-    /**
-     * 驳回读数：不写分拣结果，留原因。
-     */
+    /** 驳回读数：不写分拣结果，留原因。 */
     @Transactional(rollbackFor = Exception.class)
     public void reject(Long id, SortingScaleRejectForm form) {
         SortingScaleEventEntity event = requirePending(id, form.getVersion());
@@ -422,13 +412,7 @@ public class SortingScaleEventService {
         }
     }
 
-    // ------------------------------------------------------------------
-    // 内部
-    // ------------------------------------------------------------------
-
-    /**
-     * 上报与查看要求「看得见这个任务」：否则任何登录人都能往别人仓的任务里灌读数。
-     */
+    /** 上报与查看要求「看得见这个任务」：否则任何登录人都能往别人仓的任务里灌读数。 */
     private SortingTaskEntity requireVisibleTask(Long taskId) {
         ScmDataScopeContext scope = access.scope();
         SortingTaskEntity task = sortingTaskDao.selectById(taskId);
@@ -439,9 +423,7 @@ public class SortingScaleEventService {
         return task;
     }
 
-    /**
-     * 接受 / 驳回会写分拣结果或留下处理痕迹，因此要求与录入同样的权限：受指派本人或队列管理者。
-     */
+    /** 接受 / 驳回会写分拣结果或留下处理痕迹，因此要求与录入同样的权限：受指派本人或队列管理者。 */
     private SortingTaskEntity requireAssigneeTask(Long taskId) {
         ScmDataScopeContext scope = access.scope();
         SortingTaskEntity task = sortingQueryDao.lockTask(taskId);

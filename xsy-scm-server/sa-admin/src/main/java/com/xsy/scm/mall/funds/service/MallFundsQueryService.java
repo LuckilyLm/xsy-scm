@@ -114,7 +114,7 @@ public class MallFundsQueryService {
     }
 
     private boolean sharedSettlement(CustomerEntity customer, CustomerEntity settlement) {
-        // 唯一判定点见 CustomerValidator.sharedSettlement：商城结算方式选项必须与这里同口径。
+        // 唯一判定点见 CustomerValidator.sharedSettlement：商城结算方式选项必须与这里保持一致。
         return CustomerValidator.sharedSettlement(customer.getId(), settlement.getId(),
             customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
     }

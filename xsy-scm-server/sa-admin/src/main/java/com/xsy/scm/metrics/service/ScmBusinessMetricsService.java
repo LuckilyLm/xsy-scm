@@ -48,7 +48,7 @@ public class ScmBusinessMetricsService {
      * 业务时区。
      *
      * <p>
-     * 「今日」必须是北京时间的今天。用 {@code ZoneOffset.UTC} 的日界会把窗口变成「北京时间 08:00 → 次日 08:00」， 早上 07:00 下的单会被算进前一天 —— 这不是显示问题而是口径错误。
+     * 「今日」必须是北京时间的今天。用 UTC 日界会把窗口变成「北京时间 08:00 → 次日 08:00」，早上 07:00 下的单会被算进前一天 —— 这不是显示问题，是统计错误。
      */
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
 
@@ -58,7 +58,7 @@ public class ScmBusinessMetricsService {
     private final ScmBusinessMetricsDao metricsDao;
 
     /**
-     * 销售指标按订单确认时间统计。首页和大屏复用这份汇总，报表单独处理数据范围但须保持同一时间口径。
+     * 销售指标按订单确认时间统计。首页和大屏复用这份汇总，报表可以另取数据范围，但时间基准必须一致。
      */
     public SalesRangeMetrics salesRange(LocalDate startDate, LocalDate endDate, SalesFilter filter,
         ScmDataScopeContext scope) {
@@ -111,7 +111,7 @@ public class ScmBusinessMetricsService {
     }
 
     /**
-     * 采购汇总按提交日期和已提交状态统计。首页与大屏共用此口径；报表可以使用不同权限范围，但时间、状态、金额定义必须一致。
+     * 采购汇总按提交日期和已提交状态统计。首页与大屏共用；报表可以另取数据范围，但时间、状态、金额定义必须一致。
      */
     public PurchaseRangeMetrics purchaseRange(LocalDate startDate, LocalDate endDate, PurchaseFilter filter,
         ScmDataScopeContext scope) {
@@ -126,7 +126,7 @@ public class ScmBusinessMetricsService {
      * 今日采购经营指标（首页 / 大屏）。
      *
      * <p>
-     * 区间内的两个数直接复用 {@link #purchaseRange}，不另写一份 SQL；累计口径与今日同源（也是已提交）。
+     * 区间内的两个数直接复用 {@link #purchaseRange}，不另写 SQL；累计值也只算已提交。
      */
     public PurchaseMetrics todayPurchase(ScmDataScopeContext scope) {
         OffsetDateTime[] range = todayRange();
@@ -143,7 +143,7 @@ public class ScmBusinessMetricsService {
      * 今日活跃供应商数（有已提交采购单的供应商去重）。
      *
      * <p>
-     * 单独暴露给只需要这一个数字的调用方（大屏经营面板就是）：它不必为了一个值去跑整组采购指标。 与 {@link #todayPurchase} 内部走的是同一条 SQL，不存在第二个口径。
+     * 单独暴露给只需要这一个数字的调用方（大屏经营面板就是），不必为它跑整组采购指标。与 {@link #todayPurchase} 走同一条 SQL，不存在第二套统计。
      */
     public long activeSupplierCount(ScmDataScopeContext scope) {
         return activeSupplierCount(scope, todayRange());
@@ -169,7 +169,7 @@ public class ScmBusinessMetricsService {
      * 趋势：近 7 / 30 天（闭区间含今天），转置成按序列的数组。
      *
      * <p>
-     * 转置放在服务层，SQL 保持「一天一行」这种最好读也最好核对的形状。{@code range} 取非 30d 一律按 7d 处理， 不抛错 —— URL 上的取值不该让整个面板失败。
+     * 转置放在服务层，SQL 保持「一天一行」这种好核对的形状。{@code range} 不是 30d 就按 7d 处理，不抛错：URL 上的取值不该让整个面板失败。
      */
     public TrendMetrics trend(String range, ScmDataScopeContext scope) {
         return trend(range, scope, TrendSeriesSelection.ALL);
@@ -256,7 +256,7 @@ public class ScmBusinessMetricsService {
     }
 
     /**
-     * 闭区间日期 → 半开瞬间区间，与报表的日界换算同源（起始日 00:00 含，结束日次日 00:00 不含）。
+     * 闭区间日期转半开时间区间：起始日 00:00 含，结束日次日 00:00 不含。
      */
     private static OffsetDateTime[] dayRange(LocalDate startDate, LocalDate endDate) {
         return new OffsetDateTime[]{startDate.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),

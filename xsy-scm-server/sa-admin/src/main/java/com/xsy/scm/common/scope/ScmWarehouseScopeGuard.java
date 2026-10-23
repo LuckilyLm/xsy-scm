@@ -16,7 +16,7 @@ public class ScmWarehouseScopeGuard {
      * 单个仓库必须落在授权范围内。
      *
      * <p>
-     * {@code null} 只有全部范围可通过：没有仓库就无从判定归属，失败关闭比「放过」安全，而 {@code warehouseId} 在各表单上本就是 {@code @NotNull}。
+     * {@code null} 只有全部范围可通过；各表单的 {@code warehouseId} 本就是 {@code @NotNull}。
      */
     public void require(Long warehouseId) {
         if (!dataScopeService.resolve().getWarehouseScope().allows(warehouseId)) {
@@ -25,10 +25,10 @@ public class ScmWarehouseScopeGuard {
     }
 
     /**
-     * 涉及的<b>每个</b>仓库都要授权：调拨建单/改单的两端、以及改单时「行上的旧仓 + 表单的新仓」。
+     * 涉及的每个仓库都要授权：调拨建单/改单的两端，以及改单时「行上的旧仓 + 表单的新仓」。
      *
      * <p>
-     * 只授权一端的调用者不能把货写进另一端：能建一张 {@code B→A} 的调拨单，等于往自己读不到的 A 仓里塞一张待发出的单。
+     * 只授权一端时不能把货写进另一端，否则等于往自己读不到的仓里塞一张待发出的单。
      */
     public void requireAll(Long... warehouseIds) {
         ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
@@ -40,8 +40,7 @@ public class ScmWarehouseScopeGuard {
     }
 
     /**
-     * 任一端授权即可：与调拨<b>查询</b>同一条 OR 判据，只用于不改动任何库存余额的单据动作 （草稿的取消 / 删除）。调拨三个动作的判据互不相同，实现处有说明： <b>查询</b>任一端、<b>发出</b>只看
-     * {@code from}、<b>收货</b>只看 {@code to}。
+     * 任一端授权即可，和调拨查询同一个 OR 规则，只用于草稿取消 / 删除这种不改库存的动作。调拨三个动作判断不同：查询看任一端，发出只看 {@code from}，收货只看 {@code to}。
      */
     public void requireAny(Long... warehouseIds) {
         ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();

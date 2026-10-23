@@ -27,7 +27,7 @@ public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEnti
     }
 
     /**
-     * 计算差量。{@code requested} 的 {@code purchaseOrderItemId} 由调用方在行落库后回填。
+     * 计算差量。{@code requested} 的 {@code purchaseOrderItemId} 由调用方在行保存后回填。
      */
     public static PurchaseOrderAllocationChangeSet between(List<PurchaseDemandAllocationEntity> existing,
         List<PurchaseDemandAllocationEntity> requested) {
@@ -52,7 +52,7 @@ public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEnti
                 continue; // 数量未变：不写库、不动版本
             }
             row.setId(old.getId());
-            // 行级乐观锁的版本必须<b>继承库中值</b>：请求只带 {@code demandVersion}（需求的版本），
+            // 行级乐观锁的版本必须继承库中值：请求只带 {@code demandVersion}（需求的版本），
             // 不带 allocation 自己的版本。漏掉这一步会让 {@code updateQuantity} 的
             // {@code WHERE version = ?} 拿到 null → 0 行受影响 → 并发写被误判为冲突。
             row.setVersion(old.getVersion());
@@ -65,7 +65,7 @@ public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEnti
     }
 
     /**
-     * 本次涉及的全部 demandId（<b>旧集合 ∪ 新集合</b>），已去重且保持稳定顺序。
+     * 本次涉及的全部 demandId（旧集合 ∪ 新集合），已去重且保持稳定顺序。
      */
     public List<Long> involvedDemandIds(List<PurchaseDemandAllocationEntity> existing) {
         var ids = new java.util.LinkedHashSet<Long>();

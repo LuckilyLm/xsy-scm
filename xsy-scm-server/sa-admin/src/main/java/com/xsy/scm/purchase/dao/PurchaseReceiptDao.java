@@ -15,10 +15,10 @@ import java.util.List;
  * 收货单：一个采购单可以对应多张独立收货单。
  *
  * <p>
- * 收货单<b>继承并快照</b>采购单的供应商 / 仓库，因此这里没有任何 「按入参改供应商 / 仓库」的写方法 —— 跨仓收货在结构上不可能发生。
+ * 收货单继承并复制采购单的供应商 / 仓库，因此这里没有按入参修改供应商 / 仓库的写方法，跨仓收货在结构上不可能发生。
  *
  * <p>
- * {@link #nextReceiptNo()} 取全局序列（不按日 reset），由 {@code PurchaseNumberGenerator} 拼成 {@code PR + yyyyMMdd + 至少 6 位}。
+ * {@link #nextReceiptNo()} 取全局序列（不按日重置），由 {@code PurchaseNumberGenerator} 拼成 {@code PR + yyyyMMdd + 至少 6 位}。
  */
 @Mapper
 public interface PurchaseReceiptDao extends BaseMapper<PurchaseReceiptEntity> {
@@ -27,8 +27,8 @@ public interface PurchaseReceiptDao extends BaseMapper<PurchaseReceiptEntity> {
      * 分页查询。
      *
      * <p>
-     * 收货单本身没有采购员列，{@code scope}（采购员维度）在 Mapper 里按 {@code EXISTS} 半连父采购单的 {@code purchaser_id} 判定；{@code null} 失败关闭返回 0
-     * 行。仓库维度的收窄属库存/仓库侧口径，不在本语句里重复实现。
+     * 收货单本身没有采购员列，{@code scope}（采购员维度）在 Mapper 里按 {@code EXISTS} 半连父采购单的 {@code purchaser_id} 判定； {@code null} 按拒绝处理，返回
+     * 0 行。仓库维度的收窄属于库存/仓库侧的规则，不在本语句里重复实现。
      */
     List<PurchaseReceiptVO> query(Page<?> page, @Param("query") PurchaseReceiptQueryForm query,
         @Param("scope") ScmValueScope scope);

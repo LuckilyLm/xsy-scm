@@ -16,9 +16,7 @@ public interface ScaleDeviceSessionDao extends BaseMapper<ScaleDeviceSessionEnti
 
     ScaleDeviceSessionEntity selectByTokenHash(@Param("sessionTokenHash") String sessionTokenHash);
 
-    /**
-     * 结束某设备上仍在有效期内的全部会话：重新登录、设备暂停或撤销时都要走这里， 避免旧会话在设备被接管后继续可用。
-     */
+    /** 结束某设备上仍在有效期内的全部会话：重新登录、设备暂停或撤销时都走这里，避免旧会话在设备被接管后继续可用。 */
     int endActiveSessions(@Param("deviceId") Long deviceId, @Param("reason") String reason,
         @Param("endedAt") OffsetDateTime endedAt);
 }

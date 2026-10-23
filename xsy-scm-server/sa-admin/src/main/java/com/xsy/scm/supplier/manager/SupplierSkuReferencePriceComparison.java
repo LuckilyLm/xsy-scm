@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 比较同一个 SKU 的供应商参考价；不能把“箱”和“公斤”价格直接相比。 缺失参考价不按零计；仅有一个可报价供应商时不产生没有意义的溢价。
+ * 比较同一个 SKU 的供应商参考价；不同采购单位的价格不能直接相比。 缺失参考价不按零算；只有一个报价时不计算溢价。
  */
 public final class SupplierSkuReferencePriceComparison {
 

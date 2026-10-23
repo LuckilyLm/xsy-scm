@@ -23,7 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 余额查询按客户结算主体与数据权限过滤，不向无权账户返回资金信息。
+ * 余额查询按结算主体和数据权限过滤，不向无权账户返回资金信息。
  */
 @Service
 @RequiredArgsConstructor
@@ -40,10 +40,7 @@ public class CustomerBalanceQueryService {
     private final ScmDataScopeService dataScopeService;
 
     /**
-     * 余额概览。
-     *
-     * <p>
-     * 入参只有 {@code customerId}：结算主体由服务端解析，<b>不接受客户端直接指定钱包账户 id</b>。 否则客户端可以拿任意 accountId 去看别人的钱包。
+     * 余额概览。结算主体由服务端解析，不接受客户端指定余额账户 id，否则拿任意 id 就能看别人的余额。
      */
     @Transactional(readOnly = true)
     public CustomerBalanceVO balanceView(BalanceQueryForm form) {
@@ -59,7 +56,7 @@ public class CustomerBalanceQueryService {
 
         CustomerBalanceAccountEntity account = customerBalanceAccountDao
             .selectBySettlementCustomerId(settlement.getId());
-        // 没有账户就是 0 元：「还没有钱包」与「钱包是空的」在金额上等价，不必为此落一行
+        // 没有账户就是 0 元：没开户和余额为空在金额上一样，不必为此建一行
         vo.setAccountId(account == null ? null : account.getId());
         vo.setAvailableBalance(
             account == null ? BigDecimal.ZERO : customerBalanceService.balanceOfSettlement(settlement.getId()));
@@ -67,7 +64,7 @@ public class CustomerBalanceQueryService {
     }
 
     /**
-     * 流水分页。范围收窄在 SQL 里做（见 Mapper 的说明），因此翻页不会漏掉越权行。
+     * 流水分页。范围在 SQL 里收窄（见 Mapper），翻页不会漏掉越权行。
      */
     @Transactional(readOnly = true)
     public PageResult<BalanceMovementVO> movementPage(BalanceMovementQueryForm form) {
@@ -80,7 +77,7 @@ public class CustomerBalanceQueryService {
     }
 
     /**
-     * 越权与「客户不存在」共用同一个拒绝（对外 30005）：能分辨两者就等于把主键探测变成可用信号。
+     * 越权和「客户不存在」返回同样的拒绝（30005）：能区分两者就等于能探测主键。
      */
     private void requireVisible(CustomerEntity settlement) {
         if (!dataScopeService.resolve().getCustomerSellerScope().allows(settlement.getSellerId())) {

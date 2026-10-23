@@ -14,12 +14,12 @@ import java.util.List;
 public interface CustomerFrequentSkuDao {
 
     /**
-     * 近 {@code since}（含）之后已确认订单，按 (SKU, 销售单位快照) 聚合出常购行。
+     * {@code since}（含）之后已确认的订单，按 (SKU, 销售单位) 聚合出常购行。
      *
      * @param customerId
-     *            客户 ID，聚合的唯一上下文
+     *            客户 ID，聚合的唯一范围
      * @param since
-     *            窗口下界（Asia/Shanghai 日界算出的时刻），过滤 {@code confirmed_at}
+     *            时间下界（Asia/Shanghai 日界算出的时刻），过滤 {@code confirmed_at}
      * @param limit
      *            返回分组数上限（Service 已裁剪到安全区间）
      */

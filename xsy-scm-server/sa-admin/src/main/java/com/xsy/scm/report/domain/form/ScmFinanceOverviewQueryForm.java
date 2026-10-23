@@ -7,7 +7,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 /**
- * Date window for finance flow metrics and end-of-period balances.
+ * 财务流水指标与期末余额的日期范围。
  */
 @Data
 public class ScmFinanceOverviewQueryForm implements ScmReportDateFilter {

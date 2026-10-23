@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 /**
- * 应付明细读写，append-only 契约同 {@link FinanceReceivableDao}。
+ * 应付明细读写，只能追加，规则同 {@link FinanceReceivableDao}。
  */
 @Mapper
 public interface FinancePayableItemDao extends BaseMapper<FinancePayableItemEntity> {

@@ -10,10 +10,10 @@ import java.time.OffsetDateTime;
 import lombok.Data;
 
 /**
- * 逐条对账差异（冻结的差异事实）。
+ * 逐条对账差异。
  *
  * <p>
- * 只有追加，没有 {@code deleted} / {@code version}：对账结论一旦生成就不该被改写 —— 改了它，「上一次对账说平了」这件事就无据可查。
+ * 只有追加，没有 {@code deleted} / {@code version}：对账结论一旦生成就不能改写， 否则「上一次对账说平了」就无据可查。
  */
 @Data
 @TableName("xsy_payment_reconciliation_item")

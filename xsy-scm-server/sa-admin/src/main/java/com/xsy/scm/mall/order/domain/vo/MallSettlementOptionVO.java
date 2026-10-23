@@ -27,7 +27,7 @@ public class MallSettlementOptionVO {
     private String disabledReason;
 
     /**
-     * 该方式当前可用于本单的金额口径：余额为钱包可用余额，账期为<b>剩余可用授信额度</b>； 货到付款为交付时按实际交付金额收款，故为空。共享结算下恒为空（{@code amountVisible=false}）。
+     * 该方式当前可用于本单的金额：余额为可用余额，账期为剩余可用授信额度；货到付款为交付时按实际交付金额收款，故为空。 共享结算下恒为空（{@code amountVisible=false}）。
      */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     @Schema(description = "该方式当前可用金额；共享结算或货到付款时为空")

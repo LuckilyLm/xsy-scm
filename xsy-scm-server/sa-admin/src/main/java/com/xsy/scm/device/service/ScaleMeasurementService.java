@@ -20,10 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
  * 秤端读数上报的协议适配层。
  *
  * <p>
- * 只做三件事：把设备协议字段映射成分拣域的筐上报，补上服务端已校验的设备与员工身份， 再转成设备协议要求的响应。业务校验（单位、净重、幂等、任务归属）全部留在分拣域， 避免同一规则在两个域各写一遍而慢慢分叉。
+ * 只做三件事：把设备协议字段映射成分拣域的筐上报，补上服务端已校验的设备与员工身份，再转成设备协议要求的响应。 业务校验（单位、净重、幂等、任务归属）全部留在分拣域，避免同一规则在两个域各写一遍。
  *
  * <p>
- * 设备编码与员工身份一律取自已校验的上下文：请求体里即便带了这两个字段也不采用， 否则一台设备可以冒充另一台。
+ * 设备编码与员工身份一律取自已校验的上下文，请求体里即便带了这两个字段也不采用，否则一台设备可以冒充另一台。
  */
 @Service
 @RequiredArgsConstructor
@@ -76,9 +76,7 @@ public class ScaleMeasurementService {
         return vo;
     }
 
-    /**
-     * 数量字符串转十进制。设备原值可能带尾随零，用字符串接收再转，避免经过浮点丢精度。
-     */
+    /** 数量字符串转十进制。设备原值可能带尾随零，用字符串接收再转，避免经过浮点丢精度。 */
     private static BigDecimal parseQuantity(String value) {
         try {
             return new BigDecimal(value.trim());
@@ -94,9 +92,7 @@ public class ScaleMeasurementService {
         return parseQuantity(value);
     }
 
-    /**
-     * 设备协议的明细版本是无符号长整型，库里是整型。超出范围说明设备与平台契约不一致， 直接拒绝而不是截断成另一个版本号。
-     */
+    /** 设备协议的明细版本是无符号长整型，库里是整型。超出范围说明设备与平台的数据格式对不上，直接拒绝，不截断成另一个版本号。 */
     private static Integer toItemVersion(Long value) {
         if (value == null) {
             return null;

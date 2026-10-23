@@ -7,7 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * 优惠金额按订单明细分配，保持分配后的合计与订单优惠总额一致；尾差按固定规则处理。
+ * 优惠金额按订单明细分配，分配后的合计与订单优惠总额一致；尾差按固定规则处理。
  */
 public final class PromotionDiscountAllocator {
 
@@ -111,7 +111,7 @@ public final class PromotionDiscountAllocator {
      * 归集顺序：基础金额降序、同额按行 id 升序。
      *
      * <p>
-     * 不用「入参顺序」或「金额最大但并列时随意」：那会让同一份订单在两次计算中把差额放到不同行上，而分摊是要冻结进订单的。
+     * 不用入参顺序或并列时随意处理：那样同一份订单两次计算会把差额放到不同行，而分摊要保存进订单。
      */
     private static List<Integer> targetOrder(List<Allocation> allocations) {
         List<Integer> order = new ArrayList<>(allocations.size());

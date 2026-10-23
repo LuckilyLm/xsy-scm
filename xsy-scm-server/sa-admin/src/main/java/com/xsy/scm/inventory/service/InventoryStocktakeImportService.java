@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 导出带签名的盘点 Excel 模板，校验导入内容后创建盘点草稿。 只验证表格、凭证和当前库存，不直接调整余额或写流水。 只要有一项无效、过期或与当前库存不一致，整批拒绝导入。
+ * 导出带签名的盘点 Excel 模板，校验导入内容后创建盘点草稿。只验证表格、校验码和当前库存，不直接调整余额或写流水。只要有一项无效、过期或与当前库存不一致，整批拒绝导入。
  */
 @Slf4j
 @Service
@@ -109,7 +109,7 @@ public class InventoryStocktakeImportService {
      * 导入用户填好实盘量的 Excel → 新建草稿盘点单。
      *
      * @param idempotencyKey
-     *            客户端为「同一次上传」稳定生成的键；响应丢失后原样重发即命中重放，不建第二张草稿
+     *            客户端为「同一次上传」稳定生成的键；响应丢失后原样重发即命中幂等重试，不建第二张草稿
      */
     public InventoryStocktakeImportResultVO importFile(MultipartFile file, String idempotencyKey) throws Exception {
         var result = new InventoryStocktakeImportResultVO();
@@ -180,7 +180,7 @@ public class InventoryStocktakeImportService {
             result.setImportedItems(lines.size());
             return result;
         } catch (StocktakeSnapshotDriftException exception) {
-            // 整事务（含幂等认领）已回滚：不落任何草稿，要求重导。
+            // 整事务（含幂等认领）已回滚：不写入任何草稿，要求重导。
             addError(result, 0, exception.getSkuCode(), "账面数量", "SNAPSHOT_STALE",
                 "余额自导出后已变动（商品规格" + exception.getSkuCode() + "），整批未导入，请重新导出并核对实盘");
             return result;

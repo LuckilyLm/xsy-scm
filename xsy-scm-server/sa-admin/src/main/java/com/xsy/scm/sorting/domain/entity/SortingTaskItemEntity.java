@@ -58,9 +58,7 @@ public class SortingTaskItemEntity extends SortingRecord {
     private String reason;
     private String sortedBy;
     private OffsetDateTime sortedAt;
-    /**
-     * {@code ACTIVE} 占用该订单行；任务取消时同一事务内置 {@code RELEASED}，行保留作历史。
-     */
+    /** {@code ACTIVE} 占用该订单行；任务取消时同一事务内置 {@code RELEASED}，行保留作历史。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String occupationStatus;
 }

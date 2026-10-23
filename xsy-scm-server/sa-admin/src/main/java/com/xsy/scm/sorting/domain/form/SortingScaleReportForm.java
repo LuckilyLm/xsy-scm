@@ -43,9 +43,7 @@ public class SortingScaleReportForm {
     @Size(max = 32, message = "单位不能超过32个字符")
     private String unit;
 
-    /**
-     * 设备给出的稳定判定；未稳定的读数可以上报（便于观察跳动），但不能被接受。
-     */
+    /** 设备给出的稳定判定；未稳定的读数可以上报（便于观察跳动），但不能被接受。 */
     @NotNull(message = "稳定判定不能为空")
     private Boolean stableFlag;
 

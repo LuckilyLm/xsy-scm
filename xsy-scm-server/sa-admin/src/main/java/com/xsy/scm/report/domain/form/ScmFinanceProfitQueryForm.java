@@ -12,7 +12,7 @@ import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 
 /**
- * Read-only sales gross-profit query over Finance and inventory facts.
+ * 按财务与库存数据只读查询销售毛利。
  */
 @Data
 @EqualsAndHashCode(callSuper = true)

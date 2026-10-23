@@ -36,9 +36,7 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND
 @RequiredArgsConstructor
 public class SupplierQueryService {
 
-    /**
-     * 排序白名单：客户端不能把任意字段名带入 SQL。
-     */
+    /** 允许客户端排序的列，避免任意字段名进入 SQL。 */
     private static final Set<String> SORTABLE = Set.of("supplier_code", "name", "status", "updated_at");
 
     private final SupplierDao supplierDao;
@@ -77,9 +75,7 @@ public class SupplierQueryService {
         return vo;
     }
 
-    /**
-     * 下拉选项：只返回 {@code ENABLED}，按名称排序。
-     */
+    /** 下拉选项：只返回已启用供应商，按名称排序。 */
     public List<SupplierOptionVO> optionList() {
         List<SupplierEntity> rows = supplierDao
             .selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SupplierEntity>()

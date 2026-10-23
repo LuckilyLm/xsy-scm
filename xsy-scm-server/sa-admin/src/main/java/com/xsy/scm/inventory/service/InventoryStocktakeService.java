@@ -36,7 +36,7 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKT
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_STOCKTAKE_STATUS_INVALID;
 
 /**
- * 管理盘点草稿、确认和取消。已确认盘点不能退回草稿。 确认时先锁盘点单，再按仓库和商品规格顺序锁余额；任一明细失败则整单回滚。 账面数量在每次保存草稿时重新读取，确认后通过库存流水保留调整记录。
+ * 管理盘点草稿、确认和取消。已确认盘点不能退回草稿。确认时先锁盘点单，再按仓库和商品规格顺序锁余额；任一明细失败则整单回滚。账面数量在每次保存草稿时重新读取，确认后通过库存流水保留调整记录。
  */
 @Service
 @RequiredArgsConstructor
@@ -57,7 +57,7 @@ public class InventoryStocktakeService {
     private final ScmWarehouseScopeGuard warehouseScopeGuard;
 
     /**
-     * 新建盘点草稿，只要求对应仓库和商品规格存在余额记录。 草稿不检查调整后是否缺货或低于预留量，这些条件在确认时校验。
+     * 新建盘点草稿，只要求对应仓库和商品规格存在余额记录。草稿不检查调整后是否缺货或低于预留量，这些条件在确认时校验。
      *
      * @return 新单 ID
      */
@@ -85,14 +85,14 @@ public class InventoryStocktakeService {
     }
 
     /**
-     * Excel 导入建草稿：在<b>同一事务内</b>先按 {@code (warehouseId, skuId)} 升序锁定并逐项核验每条来源余额，全部与导出快照一致后才复用 {@link #create} 落草稿。
+     * Excel 导入建草稿：在同一事务内先按 {@code (warehouseId, skuId)} 升序锁定并逐项核对每条来源余额，全部与导出时记录一致后才复用 {@link #create} 建草稿。
      *
      * <p>
-     * <b>为什么锁与创建必须在同一事务</b>：{@code create} 会在保存时重新快照账面量（非加锁读）。若「先校验、再另起事务保存」，两次之间任何入出库都会让保存的账面量偏离被核验的快照 ——
-     * 正是要杜绝的「先校验再保存」竞态。这里持锁核验后直接在同一事务内 {@code create}，其重新快照读到的是本事务已锁定的行，必然等于核验值。
+     * 为什么加锁与创建必须在同一事务：{@code create} 会在保存时重新读取账面量（不加锁）。若「先校验、再另起事务保存」，两次之间任何入出库都会让保存的账面量偏离被核对的值 ——
+     * 正是要杜绝的「先校验再保存」竞态。这里持锁核对后直接在同一事务内 {@code create}，其重新读取到的是本事务已锁定的行，必然等于核对值。
      *
      * <p>
-     * <b>任一漂移即整批失败</b>：只要有一条来源余额的 id / 版本 / 单位 / 账面量与快照不符，就抛 {@link StocktakeSnapshotDriftException}
+     * 任一条不一致即整批失败：只要有一条来源余额的 id / 版本 / 单位 / 账面量与导出时记录不符，就抛 {@link StocktakeSnapshotDriftException}
      * 回滚，不产生任何草稿（版本变化不可忽略，即便数量变动后又恢复，版本也已在 {@link #confirm} 链路自增）。
      *
      * @return 新草稿单 id
@@ -128,7 +128,7 @@ public class InventoryStocktakeService {
     }
 
     /**
-     * 导入建草稿的一行：既携带受保护快照（核验用），又携带用户填写的实盘量与备注。
+     * 导入建草稿的一行：既携带受保护的导出数据（核对用），又携带用户填写的实盘量与备注。
      *
      * <p>
      * {@code actualQuantity} / {@code remark} 来自用户在 Excel 里的编辑；其余四项来自签名凭证，导入方不得信任单元格。
@@ -138,7 +138,7 @@ public class InventoryStocktakeService {
     }
 
     /**
-     * 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新），并<b>重新快照账面量</b>。
+     * 改草稿：只允许 DRAFT；明细整表替换（逻辑删旧 + 插新），并重新记录账面量。
      */
     @Transactional(rollbackFor = Exception.class)
     public void update(Long stocktakeId, InventoryStocktakeAddForm form) {
@@ -165,7 +165,7 @@ public class InventoryStocktakeService {
      * 先锁单据再锁余额；余额按 {@code (warehouseId, skuId)} 升序处理。明细行的 {@code unitSnapshot} 在此刻按余额记账单位回写 —— 草稿态它为空。
      *
      * <p>
-     * 差异为 0 的行<b>不写流水</b>（数量恒为正），但仍会回写单位快照。
+     * 差异为 0 的行不写流水（数量恒为正），但仍会回写单位。
      */
     @Transactional(rollbackFor = Exception.class)
     public void confirm(Long stocktakeId) {
@@ -230,10 +230,10 @@ public class InventoryStocktakeService {
     // ------------------------------------------------------------------
 
     /**
-     * 插入明细，并为每行<b>重新快照账面量</b>。
+     * 插入明细，并为每行重新记录账面量。
      *
      * <p>
-     * 快照取 {@code selectByWarehouseAndSku}（不加锁）：这是给仓管看的参考值与差异基线，不是账。真正决定调整结果的账面量在确认时持锁读取（见
+     * 这里取 {@code selectByWarehouseAndSku}（不加锁）：这是给仓管看的参考值与差异基线，不是账。真正决定调整结果的账面量在确认时持锁读取（见
      * {@code InventoryCommandService#postStocktakeAdjust}），因此这里不需要锁，也不需要与确认时的值一致。
      */
     private void insertItems(Long stocktakeId, InventoryStocktakeAddForm form, String operator) {
@@ -261,7 +261,7 @@ public class InventoryStocktakeService {
      * 明细校验：至少一行，且同一 SKU 不得重复。
      *
      * <p>
-     * 重复 SKU 会让同一份差异被施加两次，而结果看起来完全正常（余额确实变了，只是变错了），因此必须在写库前挡掉，而不是静默去重。
+     * 重复 SKU 会让同一份差异被施加两次，而结果看起来完全正常（余额确实变了，只是变错了），因此必须在写入前挡掉，而不是静默去重。
      */
     private static void requireItems(InventoryStocktakeAddForm form) {
         if (form == null || form.getItems() == null || form.getItems().isEmpty()) {

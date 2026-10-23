@@ -56,7 +56,7 @@ public class CustomerSkuVisibilityService {
     }
 
     public PageResult<CustomerSkuVisibilityReverseVO> reverse(CustomerVisibilityQueryForm form) {
-        // 反向列表的主体是客户，因此与客户列表同一套归属范围：读不到客户的人也不该看到它的商品白名单。
+        // 反向列表的主体是客户，因此与客户列表同一套归属范围：看不到客户的人，也不该看到它的商品可见范围。
         ScmDataScopeContext scope = dataScopeService.resolve();
         if (scope.getCustomerSellerScope().isEmpty()) {
             return ScmDataScopeService.emptyPage(form);
@@ -70,9 +70,8 @@ public class CustomerSkuVisibilityService {
     @Transactional(rollbackFor = Exception.class)
     public void replace(Long customerId, String visibilityPolicy,
         List<CustomerSkuVisibilityItemForm> requestedVisibilities) {
-        // 调用方在「只改可见性策略、不动清单」时不会带 visibilities，此时 null 与空清单同义：
-        // 按空清单收敛，否则切回 ALL_ENABLED 这个唯一合法请求会被 40034 拒掉，
-        // 而那个错误码描述的是清单项非法，与真实原因无关。策略取值本身仍要校验。
+        // 调用方只改可见性策略、不动清单时不会带 visibilities，此时 null 与空清单同义，按空清单处理；
+        // 否则切回 ALL_ENABLED 这个合法请求会被「清单项非法」拒掉。策略取值本身仍要校验。
         if (requestedVisibilities == null)
             requestedVisibilities = List.of();
         if (!CustomerVisibilityPolicy.ALL_ENABLED.equals(visibilityPolicy)

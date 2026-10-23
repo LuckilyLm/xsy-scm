@@ -29,9 +29,7 @@ public enum ScmDashboardTrendMetric {
         this.code = code;
     }
 
-    /**
-     * 未知取值按参数不合法拒绝，不静默回落到某一个指标。
-     */
+    /** 未知取值按参数不合法拒绝，不静默回落。 */
     public static ScmDashboardTrendMetric parse(String code) {
         for (ScmDashboardTrendMetric metric : values()) {
             if (metric.code.equalsIgnoreCase(code)) {

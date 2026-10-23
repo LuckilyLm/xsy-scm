@@ -6,7 +6,7 @@ import java.util.List;
  * 业务待办卡片定义：入口权限 {@code scm:todo:query} 只授权访问待办接口本身，每张卡片的可见性由「待办权限 ∩ 本卡片所需领域权限」决定。
  *
  * <p>
- * {@code allPerms} 必须全部持有，{@code anyPerms} 非空时至少要持有一项；计数口径与所列权限对应的领域列表一致（复用其查询服务，不另写一套统计）。
+ * {@code allPerms} 必须全部持有，{@code anyPerms} 非空时至少持有一项；计数复用领域列表的查询服务，不另写统计。
  */
 public enum ScmTodoCardEnum {
 
@@ -38,9 +38,7 @@ public enum ScmTodoCardEnum {
         this.anyPerms = anyPerms;
     }
 
-    /**
-     * 当前权限集合是否足以看到本卡片（不代表能执行动作，动作仍由原接口鉴权）。
-     */
+    /** 当前权限集合是否足以看到本卡片；能否执行动作仍由原接口鉴权。 */
     public boolean visibleTo(List<String> heldPermissions) {
         return heldPermissions.containsAll(allPerms)
             && (anyPerms.isEmpty() || anyPerms.stream().anyMatch(heldPermissions::contains));

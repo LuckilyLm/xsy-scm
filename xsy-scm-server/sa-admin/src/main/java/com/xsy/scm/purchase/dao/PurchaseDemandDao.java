@@ -17,40 +17,40 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * 采购需求的数据读写。 生成需求只取已确认订单的实际数量，并按稳定顺序查询。 多条需求按 ID 排序加锁；创建时用数据库唯一约束防止重复插入。
+ * 采购需求的数据读写。生成需求只取已确认订单的实际数量，并按稳定顺序查询；多条需求按 ID 排序加锁， 创建时用数据库唯一约束防止重复插入。
  */
 @Mapper
 public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
 
     /**
-     * 生成采购需求只取已确认且有实际数量的销售订单行，并按稳定顺序查询以保证重复生成结果一致。订单行没有仓库字段；入库仓库的授权由后续采购和仓库校验负责。
+     * 只取已确认且有实际数量的销售订单行，按稳定顺序查询，保证重复生成结果一致。 订单行没有仓库字段，入库仓库的授权由后续采购和仓库校验负责。
      */
     List<SalesOrderItemEntity> listSourceItems(@Param("startAt") OffsetDateTime startAt,
         @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmValueScope scope);
 
     /**
-     * 分页查询（联 supplier / warehouse 取名称快照）。
+     * 分页查询（联 supplier / warehouse 取名称）。
      *
      * <p>
      * {@code scope} 是采购员维度的授权范围（{@code xsy_purchase_demand.purchaser_id}），与 {@code PurchaseOrderDao.query}
-     * 同一口径；{@code null} 在 Mapper 里失败关闭，不表示「全部」。
+     * 同一规则；{@code null} 在 Mapper 里按拒绝处理，不表示「全部」。
      */
     List<PurchaseDemandVO> query(Page<?> page, @Param("query") PurchaseDemandQueryForm query,
         @Param("scope") ScmValueScope scope);
 
     /**
-     * 按已确认订单的实际数量汇总需求，并与指定仓库的余额比较。缺口与状态由 SQL 精确计算；仓库范围必须限制请求仓库，聚合分页按组数统计。
+     * 按已确认订单的实际数量汇总需求，并与指定仓库的余额比较。缺口与状态由 SQL 计算； 仓库范围限制在请求仓库，聚合分页按组数统计。
      */
     List<PurchaseDemandSummaryVO> summaryPreview(Page<?> page, @Param("query") PurchaseDemandSummaryPreviewForm query,
         @Param("scope") ScmValueScope scope);
 
     /**
-     * 单条详情（同一套投影，保证列表与详情字段口径一致）。
+     * 单条详情（同一套查询，保证列表与详情字段一致）。
      */
     PurchaseDemandVO detail(@Param("id") Long id);
 
     /**
-     * 按 id 升序逐个 {@code FOR UPDATE} 锁定需求（<b>锁序</b>）。
+     * 按 id 升序逐个 {@code FOR UPDATE} 锁定需求，保证固定的加锁顺序。
      *
      * <p>
      * 调用方必须先经 {@code PurchaseDemandAllocator.ascendingDemandIds} 去重排序，否则不同事务可能以不同顺序取锁而成环。

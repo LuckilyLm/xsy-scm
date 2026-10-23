@@ -37,7 +37,7 @@ public class OrderCreditService {
     }
 
     /**
-     * Called after the order owner is authorized; uses its frozen settlement account.
+     * 在订单归属已校验后调用，使用订单上保存的结算主体。
      */
     public CustomerCreditCheckVO checkForSettlementConfirmation(Long settlementCustomerId, BigDecimal requestedAmount) {
         var settlement = customerService.lockCreditAccount(settlementCustomerId);

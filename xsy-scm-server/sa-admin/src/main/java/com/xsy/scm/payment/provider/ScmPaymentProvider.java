@@ -29,7 +29,7 @@ public interface ScmPaymentProvider {
     IntentResult createIntent(IntentRequest request);
 
     /**
-     * 同一 refundNo 必须幂等；超时或本地落账失败后仍使用原编号，不得重复出款。
+     * 同一 refundNo 必须幂等；超时或本地写入失败后仍使用原编号，不得重复出款。
      */
     RefundResult refund(RefundRequest request);
 
@@ -42,8 +42,8 @@ public interface ScmPaymentProvider {
      * 验签并归一化回调。
      *
      * <p>
-     * <b>不抛异常</b>：验签失败或报文不合法时返回 {@code signatureVerified = false} 并带上 {@code rejectReason}，由业务侧落一条 {@code REJECTED}
-     * 事件留证 —— 「有人伪造回调」必须是看得见的，而不是被异常吞掉。
+     * 不抛异常：验签失败或报文不合法时返回 {@code signatureVerified = false} 并带上 {@code rejectReason}， 由业务侧写一条 {@code REJECTED} 事件留证 ——
+     * 「有人伪造回调」必须是看得见的，而不是被异常吞掉。
      */
     Callback parseCallback(Map<String, String> headers, String rawBody);
 
@@ -53,10 +53,10 @@ public interface ScmPaymentProvider {
     TransactionResult queryTransaction(String providerTransactionNo);
 
     /**
-     * 拉取某业务日的渠道<b>收款</b>明细。
+     * 拉取某业务日的渠道收款明细。
      *
      * <p>
-     * 首版只对收款：退款的渠道账与本地退款事实是另一组口径，混进同一个合计会让 「渠道合计含退款、本地合计不含」这种不对称的比较永远报差异 —— 那不是发现了问题， 是拿两把尺子量。退款对账作为后续独立一项。
+     * 首版只对收款：退款的渠道账与本地退款记录是两组数据，混进同一个合计会让「渠道合计含退款、 本地合计不含」这种不对称的比较永远报差异 —— 那不是发现了问题，是拿两把尺子量。退款对账作为后续独立一项。
      */
     Settlement fetchSettlement(LocalDate bizDate);
 
@@ -84,7 +84,7 @@ public interface ScmPaymentProvider {
      * @param providerTransactionNo
      *            渠道交易号；回调按它匹配本地交易
      * @param amount
-     *            <b>渠道确认收到的金额</b>。只有同步成功（{@code SUCCEEDED}）才有值； 延迟 / 失败时为空，等回调再报。它是 Finance 收款金额的唯一依据 —— 本地绝不拿应付金额去顶替它
+     *            渠道确认收到的金额。只有同步成功（{@code SUCCEEDED}）才有值；延迟 / 失败时为空，等回调再报。 它是 Finance 收款金额的唯一依据 —— 本地绝不拿应付金额去顶替它
      */
     record IntentResult(String externalIntentId, String providerTransactionNo, Outcome outcome, BigDecimal amount,
         String failureCode, String failureMessage) {
@@ -101,7 +101,7 @@ public interface ScmPaymentProvider {
      * 退款结果。
      *
      * @param amount
-     *            <b>渠道实际退回的金额</b>；只有成功时才有值。与申请退款额分开： 申请 100 而渠道实退 98 是可能发生的，资金反向事实认的是它
+     *            渠道实际退回的金额；只有成功时才有值。与申请退款额分开：申请 100 而渠道实退 98 是可能发生的， 退款资金记录认的是它
      */
     record RefundResult(String providerRefundNo, Outcome outcome, BigDecimal amount, String failureCode,
         String failureMessage) {
@@ -111,11 +111,11 @@ public interface ScmPaymentProvider {
      * 归一化后的回调。
      *
      * @param providerEventId
-     *            渠道事件 id —— <b>回调幂等的主锚点</b>
+     *            渠道事件 id —— 回调幂等的主锚点
      * @param eventType
      *            归一化事件类型；类型不认识时为 {@code null}
      * @param rawEventType
-     *            渠道原始事件名。类型不认识时<b>原样保留</b>：落库留证比编一个本地占位值诚实 （也避免在业务代码里造一个与其它域撞值的魔法字符串）
+     *            渠道原始事件名。类型不认识时原样保留：保存留证比编一个本地占位值诚实 （也避免在业务代码里造一个与其它域撞值的魔法字符串）
      * @param providerTransactionNo
      *            渠道交易号
      * @param amount
@@ -123,7 +123,7 @@ public interface ScmPaymentProvider {
      * @param providerRefundNo
      *            退款回调才有
      * @param payload
-     *            原文解析结果，落库留证
+     *            原文解析结果，保存留证
      * @param signatureVerified
      *            验签结果
      * @param rejectReason

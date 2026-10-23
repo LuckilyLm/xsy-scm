@@ -80,7 +80,7 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
 /**
- * Route is the aggregate lock. Order rows are locked in ID order before assignment/plan/release.
+ * 线路是聚合锁。分配、排线、释放之前，都按订单 id 升序锁住订单行。
  */
 @Service
 @RequiredArgsConstructor
@@ -97,22 +97,22 @@ public class DeliveryRouteService {
     private final ScmIdempotencyService idempotencyService;
     private final DeliveryRoutePrintService deliveryRoutePrintService;
     /**
-     * 库存域唯一的写入口：本类不直接修改余额、预留或库存流水。
+     * 库存只走这一个入口：本类不直接改余额、预留和库存流水。
      */
     private final InventoryFulfillmentService inventoryFulfillmentService;
     private final OrderBundleSnapshotQueryService orderBundleComponentDao;
     /**
-     * 只为「签收」这一件事注入：司机维度收窄必须与读侧同源，见 {@link #sign} 里的说明。
+     * 只为签收注入：司机范围要和读侧一致，见 {@link #sign}。
      */
     private final ScmDataScopeService dataScopeService;
     /**
-     * 应收生成器：签收成功即在同一事务内派生正常应收。依赖方向是 delivery → finance，finance 对配送 / 订单 / 库存表只读、不反向 import 配送域，因此不构成环；生成失败即整笔签收回滚，与
-     * {@link #inventoryFulfillmentService} 的库存写入同事务。
+     * 签收成功就在同一事务里生成应收。依赖方向 delivery → finance，finance 对配送 / 订单 / 库存只读、不反过来 import 配送域，所以没有循环依赖； 生成失败整笔签收回滚，和
+     * {@link #inventoryFulfillmentService} 的库存写入同一事务。
      */
     private final FinanceReceivableService financeReceivableService;
 
     /**
-     * 券核销：正常签收与应收同一个时点，也在同一个事务里。依赖方向是 delivery → promotion， 营销域不回读配送表，因此不构成环；核销失败即整笔签收回滚。
+     * 券核销：和应收同一时点、同一事务。依赖方向 delivery → promotion，营销域不回读配送表，不会成环；核销失败整笔签收回滚。
      */
     private final PromotionDiscountService promotionDiscountService;
 
@@ -178,7 +178,7 @@ public class DeliveryRouteService {
         var current = active(id);
         if (current.size() + ids.size() > 500)
             throw new ScmBusinessException(LIMIT_EXCEEDED);
-        // Lock all requested orders before reading snapshots or testing the unique ACTIVE assignment.
+        // 先锁住全部请求订单，再读快照、判断 ACTIVE 唯一占用。
         for (Long orderId : ids) {
             var order = salesOrderDao.lock(orderId);
             if (!eligibility.eligible(order) || (order.getMallDeliveryWarehouseId() != null
@@ -188,8 +188,8 @@ public class DeliveryRouteService {
         var routeStops = new ArrayList<>(
             deliveryRouteStopDao.selectList(new LambdaQueryWrapper<DeliveryRouteStopEntity>()
                 .eq(DeliveryRouteStopEntity::getRouteId, id).orderByAsc(DeliveryRouteStopEntity::getStopSeq)));
-        // ACTIVE 占用判断与订单快照读取各合成一条：原先逐单查，500 单就是 1000 次往返。
-        // 上面已把所有请求订单加锁，这里读到的是稳定快照；ids 受 LIMIT_EXCEEDED 约束在 500 以内。
+        // ACTIVE 占用和订单快照各查一次：以前逐单查，500 单就是 1000 次往返。
+        // 上面已经锁住所有请求订单，这里读到的数据是稳定的。
         var alreadyAssigned = new HashSet<Long>();
         var snapshots = new HashMap<Long, DeliveryCandidateVO>();
         if (!ids.isEmpty()) {
@@ -258,7 +258,7 @@ public class DeliveryRouteService {
             .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name())) == 0) {
             deliveryRouteStopDao.deleteById(assignment.getStopId());
         }
-        // Repack gaps so stop count and displayed sequence stay consistent.
+        // 重排序号，保证停靠点数量与展示顺序一致。
         var remaining = deliveryQueryDao.stops(id);
         deliveryQueryDao.bumpStopSequences(id);
         int seq = 0;
@@ -280,7 +280,7 @@ public class DeliveryRouteService {
         if (ids.size() != form.getStopIds().size() || ids.size() != existing.size()
             || !ids.equals(new HashSet<>(existing.stream().map(DeliveryRouteStopEntity::getId).toList())))
             throw new ScmBusinessException(STOP_ORDER_INVALID);
-        // Move to a disjoint positive sequence range before swapping; partial unique index remains active.
+        // 先整体挪到不相交的正数区间再逐个赋值，避免撞上部分唯一索引。
         deliveryQueryDao.bumpStopSequences(id);
         var byId = new HashMap<Long, DeliveryRouteStopEntity>();
         existing.forEach(s -> byId.put(s.getId(), s));
@@ -476,15 +476,15 @@ public class DeliveryRouteService {
     }
 
     /**
-     * 签收先锁配送线路，再按订单 ID 顺序锁订单，避免与退货审批并发漏记应收。已签收的订单不能重复签收；异常签收不自动恢复已出库库存，需要通过退货处理。
+     * 签收先锁配送线路，再按订单 id 顺序锁订单，避免与退货审批并发漏记应收。 已签收的订单不能重复签收；异常签收不自动恢复已出库库存，需要通过退货处理。
      */
     @Transactional(rollbackFor = Exception.class)
     public void sign(Long routeId, Long orderId, DeliverySignForm form) {
         var route = deliveryQueryDao.lockRoute(routeId);
         if (route == null)
             throw new ScmBusinessException(NOT_FOUND);
-        // 签收要按司机维度收窄，与本域其它写动作不同：plan / cancel 的执行者是持全量范围的调度岗，
-        // 而 SCM_DRIVER 也持签收权。不在这一步收口，任何司机都能凭一个 routeId 替别人的线路签收。
+        // 签收按司机范围收窄，和本域其它写操作不同：plan / cancel 是持全量范围的调度岗在做，
+        // 而 SCM_DRIVER 也有签收权。不在这里限制，任何司机拿到一个 routeId 就能替别人的线路签收。
         if (!dataScopeService.resolve().getDriverScope().allows(route.getDriverId()))
             throw new ScmDataScopeException();
         if (!ScmDeliveryRouteStatusEnum.DISPATCHED.name().equals(route.getStatus()))
@@ -499,35 +499,30 @@ public class DeliveryRouteService {
             .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name()));
         if (assignment == null)
             throw new ScmBusinessException(NOT_FOUND);
-        // 签收与退货批准必须在同一订单行锁上串行，否则两边都可能看不见对方：
-        // 批准方在 salesOrderDao.lock 之后才写 APPROVED，签收方若不锁同一行就可能在 APPROVED 提交前完成
-        // 「查已批准退货」这一步，红字于是永久漏生成（来源唯一索引修不了「没人尝试 INSERT」）。
-        // 锁序 route → sales_order 与本域 dispatch / plan / addOrders 完全一致；
-        // 订单、退货、退款域都只锁 sales_order 及其子行，从不锁 delivery_route，因此不存在反向路径。
+        // 签收和退货批准必须在同一订单行锁上串行，否则两边可能都看不到对方：
+        // 批准方在 salesOrderDao.lock 之后才写 APPROVED，签收方若不锁同一行，可能在它提交前就查完「已批准退货」，
+        // 红字于是永久漏生成。锁序 route → sales_order 和 dispatch / plan / addOrders 一致；
+        // 其它域只锁 sales_order 及其子行，从不锁 delivery_route，不会出现反向路径。
         salesOrderDao.lock(orderId);
         String reason = form.getReason() == null ? null : form.getReason().trim();
-        // 状态条件与 version 一起进 WHERE：受影响行数 != 1 就是「有人比你先签了」或「这单已不在线路上」。
+        // 状态条件和 version 一起进 WHERE：影响行数不是 1，就是有人先签了，或这单已不在线路上。
         if (deliveryQueryDao.markSigned(assignment.getId(), form.getVersion(), form.getResult(), reason,
             ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
 
-        // 客户签收是订单级终态，也是应收的形成时点。
-        // 只有 markSigned 真的改到那一行才生成 —— 返回 0 已经先抛 VERSION_CONFLICT，
-        // 那一笔应收归那次成功的签收所有，绝不出现两笔。EXCEPTION 不形成应收，
-        // 也不反冲 SALES_OUT；签收时刻与签收人由生成器回读 delivery_route_order，
-        // 因为 markSigned 的 signed_at 是数据库时钟，在这里现取 now() 会造出第二个时点事实。
+        // 签收是订单级终态，也是应收的形成时点。只有 markSigned 真改到那一行才生成——返回 0 已经先抛了冲突，
+        // 应收只属于那次成功的签收，不会出现两笔。EXCEPTION 不形成应收，也不反冲 SALES_OUT。
+        // 签收时间和签收人由生成器回读 delivery_route_order：signed_at 用的是数据库时钟，这里另取 now() 会多出一个时间点。
         if (!exception) {
-            // 券生命周期与签收同生共死：签收是订单级不可逆终态，也正是应收的形成时点，
-            // 券「已被一笔真实成交用掉」的判定与它对齐（RESERVED → USED）。
-            // 异常签收不核销：它既不形成应收，也不该把券算作用掉，等异常解决后真正签收再核销。
+            // 券核销跟着签收走：签收是订单级不可逆终态，也是应收的形成时点，
+            // 券「已经被一单成交用掉」的判定就和它对齐（RESERVED → USED）。
+            // 异常签收不核销：不形成应收，也不能把券算成用掉，等异常解决后真签收再核销。
             promotionDiscountService.markCouponUsed(orderId);
             financeReceivableService.generateOnSign(assignment.getId());
         }
     }
 
-    /**
-     * 完成线路：{@code DISPATCHED → COMPLETED}，硬前置是全部活动订单已进入终态。
-     */
+    /** 完成线路：{@code DISPATCHED → COMPLETED}，硬性前提是全部活动订单已进入终态。 */
     @Transactional(rollbackFor = Exception.class)
     public void complete(Long id, DeliveryVersionForm form) {
         var route = lock(id, form.getVersion());
@@ -541,17 +536,14 @@ public class DeliveryRouteService {
         save(route);
     }
 
-    /**
-     * 按订单正式生成打印：只对本次显式提交且当前仍为 ACTIVE 的订单计次。持有线路聚合锁，故同一线路的计次串行累加，不丢失；同一幂等键重试只计一次。
-     */
+    /** 按订单正式生成打印：只对本次显式提交且当前仍为 ACTIVE 的订单计次。持有线路锁，同一线路的计次串行累加；同一幂等键重试只计一次。 */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printOrders(Long id, DeliveryPrintOrdersForm form, String key) {
         return deliveryRoutePrintService.printOrders(id, form, key);
     }
 
     /**
-     * 按客户正式生成打印：先按客户状态圈定客户，再决定这些客户中打印哪些订单。客户状态在线路锁内按当前 ACTIVE 订单重新聚合，前端名单只是候选范围——预览后计数已变的
-     * 客户会被排除，而不是按过期状态重打；展开后无订单则拒绝而非生成零单打印。
+     * 按客户生成打印：先按客户状态圈定客户，再决定这些客户里打印哪些订单。客户状态在线路锁内按当前 ACTIVE 订单重新算， 前端名单只是候选：预览后计数变了的客户会被排除，不按过期状态重打；展开后没有订单就拒绝，不生成零单打印。
      */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printCustomers(Long id, DeliveryPrintCustomersForm form, String key) {

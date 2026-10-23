@@ -16,7 +16,7 @@ import com.xsy.scm.common.json.ScmOperatorNameSerializer;
  *
  * <p>
  * 数据源是 append-only 的 {@code xsy_inventory_movement}：报表只读它，永不改它。方向不另存一份枚举清单，由
- * {@code ScmInventoryMovementTypeEnum.isInbound()} 在服务层派生，避免报表维护出第二套 IN / OUT 口径。
+ * {@code ScmInventoryMovementTypeEnum.isInbound()} 在服务层派生，避免报表维护出第二套 IN / OUT 判断。
  */
 @Data
 public class InventoryReportVO {
@@ -34,14 +34,10 @@ public class InventoryReportVO {
         private String productName;
         private String skuCode;
         private String movementType;
-        /**
-         * 由流水类型派生的方向描述（入库 / 出库）。
-         */
+        /** 由流水类型派生的方向描述（入库 / 出库）。 */
         private String direction;
         private String sourceDocumentType;
-        /**
-         * 来源单号：当前可稳定回查的来源类型才有值，其余为 null 并回落到下方两个 ID。
-         */
+        /** 来源单号：当前可稳定回查的来源类型才有值，其余为 null 并回落到下方两个 ID。 */
         private String sourceDocumentNo;
         private Long sourceDocumentId;
         private Long sourceDocumentItemId;
@@ -61,16 +57,14 @@ public class InventoryReportVO {
     }
 
     /**
-     * 损耗 KPI。只统计 {@code STOCKTAKE_LOSS}（盘亏）与 {@code LOSS_REPORT}（报损）；盘盈 / 报溢不是损耗，不得混进来。当前系统没有「采购损耗」「退货损耗」的独立事实，
-     * 因此本类也不提供这两项。
+     * 损耗 KPI。只统计 {@code STOCKTAKE_LOSS}（盘亏）与 {@code LOSS_REPORT}（报损）；盘盈 / 报溢不是损耗，不得混进来。
+     * 当前系统没有「采购损耗」「退货损耗」的独立记录，因此本类也不提供这两项。
      */
     @Data
     public static class LossSummary {
         private Long stocktakeLossCount;
         private Long lossReportCount;
-        /**
-         * 同一种损耗可有多种库存记账单位，显示按单位分组的文本而不跨单位求和。
-         */
+        /** 同一种损耗可有多种库存记账单位，显示按单位分组的文本而不跨单位求和。 */
         private String stocktakeLossQuantityText;
         private String lossReportQuantityText;
         private List<LossTrendRow> dailyTrend;
@@ -136,7 +130,7 @@ public class InventoryReportVO {
     }
 
     /**
-     * 粒度 = 一条 {@code xsy_inventory_balance} 行，即「当前时点」快照，不受查询区间影响。
+     * 粒度 = 一条 {@code xsy_inventory_balance} 行，即当前时点的余额，不受查询区间影响。
      */
     @Data
     public static class ValueRow {

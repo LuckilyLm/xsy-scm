@@ -133,7 +133,7 @@ public class OrderReturnReceiptService {
                     throw new ScmBusinessException(
                         com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_COST_INCOMPLETE);
                 }
-                // SALES_OUT 流水记录库存记账量；退货申请/批准/累计接收记录销售单位数量。
+                // SALES_OUT 流水记的是库存单位数量，退货申请/批准/累计接收记的是销售单位数量；
                 // 两种量不能直接相减，否则 1 箱=10 kg 时退回 2 箱会错记成 2 kg。
                 String stockUnit = orderItem.getMallStockUnitSnapshot();
                 BigDecimal factor = orderItem.getMallStockUnitsPerSaleUnit();

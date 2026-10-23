@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 批次档案与收货行批次事实的读写。批次档案一经创建不改写，批次流水另表且只追加。SQL 见 mapper/scm/trace/TraceLotDao.xml。
+ * 批次档案与收货行批次数据的读写。批次档案一经创建不改写，批次流水另表且只追加。 SQL 见 mapper/scm/trace/TraceLotDao.xml。
  */
 @Mapper
 public interface TraceLotDao {

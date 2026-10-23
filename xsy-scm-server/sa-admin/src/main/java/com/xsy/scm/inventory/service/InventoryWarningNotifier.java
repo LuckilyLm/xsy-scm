@@ -77,7 +77,7 @@ public class InventoryWarningNotifier {
      * 向该仓的授权员工投递站内信。
      *
      * <p>
-     * 接收人来自 {@code xsy_employee_warehouse_scope}：授权行是「谁负责这个仓」的唯一正式来源。没有授权行时<b>不广播、不猜人</b>，只记一条日志 —— 把预警发给全公司比不发更糟。
+     * 接收人来自 {@code xsy_employee_warehouse_scope}：授权行是「谁负责这个仓」的唯一正式来源。没有授权行时不广播、不猜人，只记一条日志 —— 把预警发给全公司比不发更糟。
      */
     private int notify(InventoryWarningVO row, ScmInventoryWarningStatusEnum status, int epoch) {
         List<Long> receivers = employeeWarehouseScopeDao.listEnabledEmployeeIdsByWarehouse(row.getWarehouseId());
@@ -104,7 +104,7 @@ public class InventoryWarningNotifier {
      * 通知正文。
      *
      * <p>
-     * 只写可用量、阈值与仓库 / SKU 标识，<b>不带金额与成本</b>：接收人来自仓库授权行，其中包含默认看不到采购价与均价仓管角色，通知正文不能成为绕过金额权限的旁路。
+     * 只写可用量、阈值与仓库 / SKU 标识，不带金额与成本：接收人来自仓库授权行，其中包含默认看不到采购价与均价的仓管角色，通知正文不能成为绕过金额权限的其他途径。
      */
     private static String content(InventoryWarningVO row, ScmInventoryWarningStatusEnum status) {
         StringBuilder text = new StringBuilder();

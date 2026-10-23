@@ -39,7 +39,7 @@ public class FinanceOrderFundingSettlementService {
                 f -> new FinanceFundingAllocationResult(f.getTransactionId(), Status.NO_RECEIVABLE, BigDecimal.ZERO))
                 .toList();
         }
-        // 先锁全部来源再锁目标，避免下一笔来源与人工核销形成目标 → 来源反向锁链。
+        // 先锁全部来源再锁目标，避免与人工核销形成目标到来源的反向加锁顺序。
         for (var fact : funding) {
             if (ScmPaymentMethodEnum.BALANCE.name().equals(fact.getMethod())) {
                 financeOrderFundingSourceDao.lockMovement(fact.getMovementId());

@@ -8,7 +8,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 /**
- * 商城只读投影：只返回已成立的退款资金事实及其发生时刻。
+ * 商城只读查询：只返回已完成的退款记录及其发生时间。
  */
 @Mapper
 public interface MallAfterSaleFundingSourceDao {

@@ -6,10 +6,7 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 /**
- * 删除客户类型。
- *
- * <p>
- * 删除前检查客户类型是否仍被活动客户引用。
+ * 删除客户类型。删除前检查是否仍被活动客户引用。
  */
 @Data
 public class CustomerTypeDeleteForm {

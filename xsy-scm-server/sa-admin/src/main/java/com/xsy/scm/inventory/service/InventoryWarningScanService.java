@@ -38,7 +38,7 @@ public class InventoryWarningScanService {
     public InventoryWarningScanVO scan(ScmValueScope warehouseScope) {
         InventoryWarningScanVO result = new InventoryWarningScanVO();
         if (warehouseScope == null || warehouseScope.isEmpty()) {
-            // 空范围失败关闭：不是「没有预警」，而是「没有可检查的仓」
+            // 范围为空时直接返回：不是「没有预警」，而是「没有可检查的仓」
             return result;
         }
         List<InventoryWarningVO> rows = inventoryWarningThresholdDao.listScanRows(MAX_SCAN_ROWS, warehouseScope);

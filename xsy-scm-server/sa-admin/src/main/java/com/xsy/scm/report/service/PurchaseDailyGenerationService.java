@@ -13,7 +13,7 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 只由后台任务调用；生成全量快照，读取时再应用登录用户的数据范围。
+ * 只由后台任务调用；生成全量数据，读取时再应用登录用户的数据范围。
  */
 @Service
 @RequiredArgsConstructor

@@ -40,7 +40,7 @@ public class InventoryStocktakeEntity {
     private String remark;
 
     /**
-     * 确认时刻；仅 CONFIRMED 非空（DB CHECK 保证）。
+     * 确认时刻；仅 CONFIRMED 非空（数据库 CHECK 保证）。
      */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private OffsetDateTime confirmedAt;

@@ -28,14 +28,10 @@ public class ScmInventoryReportQueryForm extends PageParam implements ScmReportD
 
     private Long skuId;
 
-    /**
-     * 商品名称 / SKU 编码模糊匹配。
-     */
+    /** 商品名称 / SKU 编码模糊匹配。 */
     private String keyword;
 
-    /**
-     * 流水类型；取值与 {@code ck_inventory_movement_type} 同源，由前端枚举提供候选。
-     */
+    /** 流水类型；取值与 {@code ck_inventory_movement_type} 同源，由前端枚举提供候选。 */
     @ScmEnumValue(enumClass = ScmInventoryMovementFilterEnum.class, message = "流水类型不合法")
     private String movementType;
 

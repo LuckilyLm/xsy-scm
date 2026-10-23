@@ -27,14 +27,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
- * 设备接入的身份闸门。
+ * 设备接入的身份校验。
  *
  * <p>
- * 校验设备凭证与员工授权会话，并把员工写入请求上下文，使下游 {@code ScmOperator}、 {@code ScmDataScopeService} 与 {@code SortingTaskAccess}
- * 都能正常解析出真实员工。 不做这一步，任何复用员工业务命令的设备接口都会因为没有登录人而直接失败。
+ * 校验设备凭证和员工授权会话，把员工写进请求上下文，下游 {@code ScmOperator}、{@code ScmDataScopeService} 与 {@code SortingTaskAccess}
+ * 才能解析出真实员工；不做这一步，设备接口复用员工业务命令时会因为没登录人直接失败。
  *
  * <p>
- * 员工身份来自服务端会话表，不接受客户端自报员工 ID：否则秤端可以伪造成任意员工做分拣确认。
+ * 员工身份来自服务端会话表，不接受客户端自报员工 ID，否则秤端可以伪造成任意员工做分拣确认。
  */
 @Component
 @RequiredArgsConstructor
@@ -98,9 +98,7 @@ public class ScaleDeviceInterceptor implements HandlerInterceptor {
         return user;
     }
 
-    /**
-     * 拒绝时用设备协议自己的响应体：{@code code} 必须是可判定的字符串错误码， 后台的 {@code ResponseDTO} 在这里会被秤端当成解析失败。
-     */
+    /** 拒绝时用设备协议自己的响应体：{@code code} 必须是可判定的字符串，后台的 {@code ResponseDTO} 会被秤端当成解析失败。 */
     private void writeRejection(HttpServletResponse response, HttpStatus status, ScmBusinessException exception)
         throws IOException {
         String code = exception.getErrorCode() instanceof Enum<?> enumCode ? enumCode.name() : "DEVICE_REJECTED";

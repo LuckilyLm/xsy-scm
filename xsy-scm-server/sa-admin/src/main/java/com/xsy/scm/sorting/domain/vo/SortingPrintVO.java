@@ -14,9 +14,7 @@ public class SortingPrintVO {
     private String taskNo;
     private String warehouseNameSnapshot;
     private String assigneeName;
-    /**
-     * 供应商来源；自拣时为空。
-     */
+    /** 供应商来源；自拣时为空。 */
     private String supplierNameSnapshot;
     private String status;
     private Integer printCount;

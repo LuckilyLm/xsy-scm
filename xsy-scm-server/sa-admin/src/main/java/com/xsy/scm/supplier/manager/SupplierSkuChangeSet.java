@@ -20,24 +20,11 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_DUPLI
  */
 public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemForm> inserted, List<Long> removedIds) {
 
-    /**
-     * 需要更新（含「无 id 但命中已存在 (supplierId, skuId) 而复用」）的一对行。
-     */
+    /** 需要更新的行，包括「无 id 但命中已存在的 (supplierId, skuId)」而复用的情况。 */
     public record Matched(SupplierSkuEntity existing, SupplierSkuItemForm requested) {
     }
 
-    /**
-     * 计算整表替换差量。
-     *
-     * <p>
-     * {@code requested} 为空列表表示<b>清空全部关联</b>，不是「无操作」。
-     *
-     * @throws ScmBusinessException
-     *             40943（请求内 skuId 重复 / id 不属于该供应商 / skuId 被变更）、 40921（带 id 的行版本不一致）
-     */
-    /**
-     * 外部货号保留大小写和前导零，只去掉首尾空格，空串当作未提供。
-     */
+    /** 外部货号保留大小写和前导零，只去掉首尾空格，空串当作未提供。 */
     public static String normalizeSupplierItemCode(String raw) {
         if (raw == null)
             return null;
@@ -45,10 +32,16 @@ public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemF
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    /**
+     * 计算整表替换差量。{@code requested} 为空列表表示清空全部关联，不是「无操作」。
+     *
+     * @throws ScmBusinessException
+     *             40943（请求内 skuId 重复 / id 不属于该供应商 / skuId 被变更）、40921（版本不一致）
+     */
     public static SupplierSkuChangeSet between(List<SupplierSkuEntity> existing, List<SupplierSkuItemForm> requested) {
         List<SupplierSkuItemForm> items = requested == null ? List.of() : requested;
 
-        // 校验段 A：请求内 skuId 不得重复。
+        // 请求内 skuId 不得重复。
         Set<Long> requestedSkuIds = new HashSet<>();
         Set<String> supplierItemCodes = new HashSet<>();
         for (SupplierSkuItemForm item : items) {

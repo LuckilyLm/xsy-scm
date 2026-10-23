@@ -8,7 +8,7 @@ import lombok.Data;
  * 领取或释放作业租约，对应秤端 {@code POST /jobs/{jobId}/claim|release}。
  *
  * <p>
- * 携带 {@code jobVersion} 是领取时的乐观锁依据：任务在秤端看到它之后被改派或重开， 版本就对不上，必须重新拉取任务而不是继续作业。
+ * {@code jobVersion} 是领取时的乐观锁依据：任务在秤端看到它之后被改派或重开，版本就对不上，必须重新拉取任务而不是继续作业。
  */
 @Data
 public class ScaleJobActionForm {

@@ -15,39 +15,27 @@ public class CustomerFrequentSkuVO {
 
     private Long skuId;
 
-    /**
-     * 商品快照：取该分组「最近一次已确认订单行」的快照，而非任意历史行。
-     */
+    /** 商品名称取该分组最近一次已确认订单行的记录，而不是任意历史行。 */
     private String skuCode;
 
     private String productName;
 
     private String specName;
 
-    /**
-     * 销售单位快照：分组键之一，行内单位与总计无关，跨单位不做求和。
-     */
+    /** 销售单位是分组键之一；行内单位与总计无关，跨单位不做求和。 */
     private String unit;
 
-    /**
-     * 订单次数 = 该 (SKU, 单位) 分组命中的已确认订单数（{@code COUNT(DISTINCT order_id)}）。
-     */
+    /** 订单次数 = 该 (SKU, 单位) 分组命中的已确认订单数（{@code COUNT(DISTINCT order_id)}）。 */
     private Long orderCount;
 
-    /**
-     * 订购量：分组内 {@code ordered_quantity} 之和，四位定点字符串，非实重 / 结算量。
-     */
+    /** 订购量：分组内 {@code ordered_quantity} 之和，四位定点字符串，不是实重或结算量。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal orderedQuantity;
 
-    /**
-     * 最近一次确认时间（Asia/Shanghai 日界窗口内）。
-     */
+    /** 最近一次确认时间（Asia/Shanghai 日界窗口内）。 */
     private OffsetDateTime lastConfirmedAt;
 
-    /**
-     * 最近已确认订单行的锁定单价；可能为 {@code null}，表示历史锁定价缺失，前端不兜底。
-     */
+    /** 最近已确认订单行的锁定单价；可能为 {@code null}，表示历史锁定价缺失，前端不兜底。 */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal recentUnitPrice;
 }

@@ -12,7 +12,7 @@ import lombok.Data;
  * 商城领券中心的一张可领券模板。
  *
  * <p>
- * {@code claimableNow} 由服务端按当前客户的已领数量与模板上限给出， 客户端只据此置灰「领取」按钮，不自行推导上限。
+ * {@code claimableNow} 由服务端按当前客户的已领数量与模板上限给出，客户端只据此置灰「领取」按钮，不自行推导上限。
  */
 @Data
 public class MallClaimableCouponVO {
