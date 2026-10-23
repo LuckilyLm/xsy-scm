@@ -232,12 +232,18 @@ public class TraceUnitService {
      */
     @Transactional(rollbackFor = Exception.class)
     public TraceScaleUnitVO issueForWeighing(TraceScaleUnitIssueForm form, String operator) {
+        TraceUnitVO.SortingItem item = traceUnitDao.lockSortingItem(form.getTaskItemId());
+        if (item == null) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_ITEM_NOT_FOUND);
+        }
+        warehouseScopeGuard.require(item.getWarehouseId());
         TraceUnitDao.WeighingEvent event = traceUnitDao.findWeighingEvent(form.getWeighingEventId());
         if (event == null || !form.getTaskItemId().equals(event.getTaskItemId())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_WEIGHING_EVENT_NOT_FOUND);
         }
         TraceUnitVO.Unit existing = traceUnitDao.findByWeighingEventId(event.getId());
         if (existing != null) {
+            warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(existing.getLotId()));
             return toScaleVO(existing, true);
         }
         if (event.getCompletionId() != null) {
@@ -246,11 +252,6 @@ public class TraceUnitService {
         if (event.getNetWeight() == null || event.getNetWeight().signum() <= 0) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_WEIGHT_INVALID);
         }
-        TraceUnitVO.SortingItem item = traceUnitDao.lockSortingItem(form.getTaskItemId());
-        if (item == null) {
-            throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_ITEM_NOT_FOUND);
-        }
-        warehouseScopeGuard.require(item.getWarehouseId());
         TraceUnitVO.Lot lot = traceUnitDao.findLot(form.getLotId());
         if (lot == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_LOT_NOT_FOUND);
@@ -304,8 +305,8 @@ public class TraceUnitService {
      * 装不下的码留在「未绑定」，不因此中断分拣完成：分拣完成是业务事实，追溯绑定是它的附属结果。 未绑定的码在包装码列表里仍然可见，可人工补绑或走更正——反过来把完成卡住，现场只会去删数据。
      */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
-    public int bindWeighedUnits(Long sortingTaskItemId, String operator) {
-        List<TraceUnitVO.Unit> units = traceUnitDao.listUnboundWeighedUnits(sortingTaskItemId);
+    public int bindWeighedUnits(Long sortingTaskItemId, Long completionId, String operator) {
+        List<TraceUnitVO.Unit> units = traceUnitDao.listUnboundWeighedUnits(sortingTaskItemId, completionId);
         if (units.isEmpty()) {
             return 0;
         }

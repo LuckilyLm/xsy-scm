@@ -120,8 +120,9 @@ public interface TraceUnitDao {
     /** 已经发过码的称重事件对应的包装码：重试发码时原样返回，不再发第二枚。 */
     TraceUnitVO.Unit findByWeighingEventId(@Param("weighingEventId") Long weighingEventId);
 
-    /** 该分拣行上「有净重但还没绑定」的包装码：明细完成时整批建立绑定。 */
-    List<TraceUnitVO.Unit> listUnboundWeighedUnits(@Param("itemId") Long itemId);
+    /** 仅绑定本次完成已接受的筐，驳回和未确认的称重记录不能生成客户归属。 */
+    List<TraceUnitVO.Unit> listUnboundWeighedUnits(@Param("itemId") Long itemId,
+            @Param("completionId") Long completionId);
 
     /** 该包装码当前有效绑定的 id（没有返回 null）：更正申请要指向具体那一条绑定。 */
     Long findActiveBindingId(@Param("unitId") Long unitId);

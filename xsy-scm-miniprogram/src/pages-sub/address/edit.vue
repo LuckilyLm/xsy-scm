@@ -231,6 +231,12 @@
         form.receiverName = res.userName || form.receiverName;
         form.receiverPhone = res.telNumber || form.receiverPhone;
         form.detailAddress = res.detailInfo || form.detailAddress;
+        region.value = [];
+        regionCodes.value = [];
+        form.longitude = null;
+        form.latitude = null;
+        places.value = [];
+        searchKeyword.value = [res.provinceName, res.cityName, res.countyName, res.detailInfo].filter(Boolean).join('');
         uni.showToast({ title: '已填入，请继续在地图上选择位置', icon: 'none' });
       },
       fail: (error) => {

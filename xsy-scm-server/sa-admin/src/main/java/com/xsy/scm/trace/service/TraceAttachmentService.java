@@ -15,9 +15,11 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.constant.FileRelationBizTypeEnum;
 import net.lab1024.sa.base.module.support.file.dao.FileRelationDao;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileVO;
+import net.lab1024.sa.base.module.support.file.service.FileAccessGuard;
 import net.lab1024.sa.base.module.support.file.service.FileRelationService;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,8 @@ public class TraceAttachmentService {
     private final FileRelationService fileRelationService;
 
     private final FileService fileService;
+
+    private final FileAccessGuard fileAccessGuard;
 
     private final TraceAttachmentDao traceAttachmentDao;
 
@@ -99,6 +103,8 @@ public class TraceAttachmentService {
         if (fileService.getFileMetadata(keys).size() != keys.size()) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_ATTACHMENT_NOT_FOUND);
         }
+        // 新关系会授予附件读取权，必须先以原有权限校验，不能靠刚建立的关系自我授权。
+        fileAccessGuard.checkRead(String.join(",", keys), SmartRequestUtil.getRequestUser());
         return keys;
     }
 

@@ -26,9 +26,11 @@ public class SortingScaleCompleteForm {
     private Long taskItemId;
 
     /** 采集时冻结的作业版本；与筐记录不一致说明任务已改派或重开。 */
+    @NotBlank(message = "作业版本不能为空")
     @Size(max = 40, message = "作业版本最多 40 个字符")
     private String jobVersion;
 
+    @NotNull(message = "分拣明细版本不能为空")
     private Integer taskItemVersion;
 
     @NotBlank(message = "集合摘要不能为空")

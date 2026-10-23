@@ -84,8 +84,11 @@ public class MallCartService {
      */
     @Transactional(rollbackFor = Exception.class)
     public MallCartVO add(RequestMallCustomer customer, MallCartAddForm form) {
-        BigDecimal quantity = parseQuantity(form.getQuantity());
         MallProductVO product = requireVisible(customer, form.getSkuId());
+        boolean quickAdd = Boolean.TRUE.equals(form.getQuickAdd());
+        BigDecimal quantity = quickAdd
+                ? (product.getMinOrderQty() == null ? BigDecimal.ONE : product.getMinOrderQty())
+                : parseQuantity(form.getQuantity());
         MallCartItemEntity existing = cartDao.lockByAccountAndSku(customer.getAccountId(), form.getSkuId());
         while (existing == null) {
             MallQuantityPolicy.require(product, quantity);
@@ -95,7 +98,9 @@ public class MallCartService {
             // 唯一索引冲突说明并发方已建行；锁行后转为累加。若对方随即又删掉，循环重试插入。
             existing = cartDao.lockByAccountAndSku(customer.getAccountId(), form.getSkuId());
         }
-        BigDecimal total = existing.getQuantity().add(quantity);
+        BigDecimal increment = quickAdd
+                ? (product.getStepQty() == null ? BigDecimal.ONE : product.getStepQty()) : quantity;
+        BigDecimal total = existing.getQuantity().add(increment);
         MallQuantityPolicy.require(product, total);
         cartDao.updateQuantity(customer.getAccountId(), form.getSkuId(), total, ScmOperator.current());
         return assemble(customer);

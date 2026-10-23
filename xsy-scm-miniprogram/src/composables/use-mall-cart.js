@@ -11,13 +11,17 @@ export function useMallCart() {
   /**
    * 加入购物车
    * @param {{skuId: number, minOrderQty?: string|number}} product
-   * @param {string|number} [quantity] 字符串定点；不传时取商品起订量（默认 1），不违反起订量/递增量规则
+   * @param {string|number} [quantity] 字符串定点；不传时由服务器按起订量或递增量快捷加购
    * @returns {Promise<boolean>} 是否成功
    */
   async function addToCart(product, quantity) {
     try {
       const effective = quantity ?? product?.minOrderQty ?? '1';
-      const response = await mallCartApi.addItem({ skuId: product.skuId, quantity: String(effective) });
+      const response = await mallCartApi.addItem({
+        skuId: product.skuId,
+        quantity: String(effective),
+        quickAdd: quantity == null,
+      });
       const count = response.data?.availableCount ?? 0;
       uni.showToast({ title: count ? `已加入购物车（可结算 ${count} 项）` : '已加入购物车', icon: 'none' });
       return true;

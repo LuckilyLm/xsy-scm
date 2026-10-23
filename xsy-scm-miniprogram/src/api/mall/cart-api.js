@@ -16,7 +16,7 @@ export const mallCartApi = {
 
   /**
    * 加入购物车（同商品规格累加数量）
-   * @param {{skuId: number, quantity: string}} param quantity 必须是字符串
+   * @param {{skuId: number, quantity: string, quickAdd?: boolean}} param 快捷加购时数量由服务端决定
    */
   addItem: (param) => postRequest('/scm/mall/cart/items', param),
 

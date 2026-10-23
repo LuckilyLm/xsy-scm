@@ -275,7 +275,8 @@
       const response = await mallAddressApi.getList();
       const list = response.data || [];
       const picked = uni.getStorageSync(CHECKOUT_ADDRESS);
-      const chosen = picked ? list.find((item) => item.addressId === Number(picked)) : null;
+      const selectedId = picked || address.value?.addressId;
+      const chosen = selectedId ? list.find((item) => String(item.addressId) === String(selectedId)) : null;
       address.value = chosen || list.find((item) => item.isDefault) || list[0] || null;
       if (picked) uni.removeStorageSync(CHECKOUT_ADDRESS);
     } catch (error) {

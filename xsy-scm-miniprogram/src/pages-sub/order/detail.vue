@@ -335,7 +335,7 @@
   async function doCancel(reason) {
     try {
       // 幂等键与「订单 + 原因」绑定：网络重试复用同一个键，不会二次取消
-      const key = `cancel-${orderId.value}-${reason}`;
+      const key = `cancel-${orderId.value}-${CANCEL_REASONS.indexOf(reason)}`;
       await mallOrderApi.cancel(orderId.value, reason, key);
       uni.showToast({ title: '订单已取消', icon: 'none' });
       load();

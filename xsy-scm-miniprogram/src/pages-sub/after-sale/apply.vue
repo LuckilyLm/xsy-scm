@@ -102,6 +102,7 @@
   const quantities = ref({});
   const reasonChoice = ref('');
   const reasonDetail = ref('');
+  const requestKeys = new Map();
 
   const lines = computed(() =>
     (order.value?.items || []).map((item) => ({
@@ -175,8 +176,14 @@
     submitting.value = true;
     try {
       // 幂等键与「订单 + 明细 + 原因」绑定：网络重试复用同一个键，不会重复建单
-      const key = `aftersale-${orderId.value}-${items.map((item) => `${item.orderItemId}:${item.quantity}`).join(';')}-${reason.value}`;
-      const response = await mallAfterSaleApi.apply({ orderId: orderId.value, reason: reason.value, items }, key);
+      const payload = { orderId: orderId.value, reason: reason.value, items };
+      const signature = JSON.stringify(payload);
+      let key = requestKeys.get(signature);
+      if (!key) {
+        key = `aftersale-${orderId.value}-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+        requestKeys.set(signature, key);
+      }
+      const response = await mallAfterSaleApi.apply(payload, key);
       const returnId = response.data?.returnId;
       uni.showToast({ title: '售后申请已提交', icon: 'none' });
       if (returnId) {

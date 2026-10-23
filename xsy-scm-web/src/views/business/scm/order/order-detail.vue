@@ -148,9 +148,12 @@
         </a-form-item>
       </a-form>
     </a-modal>
-    <a-modal :open="creditOpen" title="确认订单与授信检查" :confirm-loading="saving"
-             @ok="confirmWithCredit" @cancel="creditOpen=false" :ok-button-props="{disabled: !creditCheck?.allowed && !creditOverride}">
+    <a-modal :open="creditOpen" title="确认订单" :confirm-loading="saving"
+             @ok="confirmWithCredit" @cancel="creditOpen=false"
+             :ok-button-props="{disabled: !usesMallSettlement && !creditCheck?.allowed && !creditOverride}">
       <a-alert v-if="error" :message="error" type="error" show-icon/>
+      <a-alert v-if="usesMallSettlement" type="info" show-icon
+               message="确认时将按订单的结算方式、实际数量和优惠重新校验，确认订单不会自动扣款。"/>
       <template v-if="creditCheck">
         <a-alert :type="creditCheck.allowed ? 'success' : 'warning'" show-icon
                  :message="creditCheck.allowed ? '当前授信检查通过，提交时将再次校验' : '额度不足或存在逾期，订单暂不能确认'"/>
@@ -163,6 +166,8 @@
           <a-descriptions-item v-if="creditCheck.overdue" label="最早逾期到期日">{{ creditCheck.earliestOverdueDate }}</a-descriptions-item>
         </a-descriptions>
         <p v-if="creditCheck.amountThresholdHint">{{ creditCheck.amountThresholdHint }}</p>
+      </template>
+      <template v-if="usesMallSettlement || creditCheck">
         <a-divider style="margin: 12px 0"/>
         <a-form-item label="优惠券">
           <a-select
@@ -186,7 +191,7 @@
           <a-descriptions-item label="合计优惠">{{ amount(discountPreview.discountAmount) }}</a-descriptions-item>
           <a-descriptions-item label="客户实付">{{ amount(discountPreview.finalAmount) }}</a-descriptions-item>
         </a-descriptions>
-        <div v-if="!creditCheck.allowed" v-privilege="'scm:order:credit:override'">
+        <div v-if="!usesMallSettlement && creditCheck && !creditCheck.allowed" v-privilege="'scm:order:credit:override'">
           <a-checkbox v-model:checked="creditOverride">申请授信例外放行（将记录操作日志）</a-checkbox>
           <a-form-item v-if="creditOverride" label="例外原因" required>
             <a-textarea v-model:value="creditOverrideReason" :maxlength="500" :auto-size="{minRows: 2, maxRows: 5}"/>
@@ -322,6 +327,7 @@ async function loadLogs() {
 }
 
 const creditOpen = ref(false), creditCheck = ref<CreditCheck>(), creditOverride = ref(false), creditOverrideReason = ref('');
+const usesMallSettlement = computed(() => order.value?.orderSource === 'MALL' && !!order.value?.settlementMethod);
 
 /**
  * 券选择与试算：券是客户自己的权益，必须显式指定券实例 id，服务端不自动挑券；
@@ -412,7 +418,11 @@ async function confirm() {
   saving.value = true;
   error.value = '';
   try {
-    creditCheck.value = (await orderApi.orderCreditCheck(order.value.orderId, {suppressGlobalErrorMessage: true})).data;
+    // 商城结算复核由正式确认命令处理，旧授信接口的毛额检查不能作为钱包、货到付款或净额账期的门槛。
+    creditCheck.value = undefined;
+    if (!usesMallSettlement.value) {
+      creditCheck.value = (await orderApi.orderCreditCheck(order.value.orderId, {suppressGlobalErrorMessage: true})).data;
+    }
     creditOverride.value = false;
     creditOverrideReason.value = '';
     creditOpen.value = true;
@@ -428,14 +438,16 @@ async function confirm() {
 
 async function confirmWithCredit() {
   if (!order.value || saving.value) return;
-  if (!creditCheck.value?.allowed && (!creditOverride.value || !creditOverrideReason.value.trim())) {
+  if (!usesMallSettlement.value && !creditCheck.value?.allowed
+      && (!creditOverride.value || !creditOverrideReason.value.trim())) {
     message.error('授信未通过；例外放行必须填写原因');
     return;
   }
   saving.value = true;
   try {
     await orderApi.confirm({orderId: order.value.orderId, version: order.value.version,
-      creditOverride: creditOverride.value, creditOverrideReason: creditOverride.value ? creditOverrideReason.value.trim() : undefined,
+      creditOverride: !usesMallSettlement.value && creditOverride.value,
+      creditOverrideReason: !usesMallSettlement.value && creditOverride.value ? creditOverrideReason.value.trim() : undefined,
       couponInstanceId: couponInstanceId.value ?? undefined,
       clearMallCoupon: clearMallCoupon.value});
     creditOpen.value = false;

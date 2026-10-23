@@ -102,7 +102,11 @@ export const cartRoutes = [
       }
       const cart = cartOf(session);
       const current = Number(cart.get(skuId) || 0);
-      cart.set(skuId, (current + Number(quantity)).toFixed(4));
+      const product = findProduct(skuId);
+      const increment = data?.quickAdd
+        ? Number(cart.has(skuId) ? product?.stepQty ?? 1 : product?.minOrderQty ?? 1)
+        : Number(quantity);
+      cart.set(skuId, (current + increment).toFixed(4));
       return ok(snapshot(session));
     },
   },

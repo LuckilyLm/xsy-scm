@@ -46,7 +46,9 @@ public class ScaleItemCompletionService {
         complete.setEmployeeId(principal.employeeId());
         ScaleItemCompletionVO result = toVO(sortingScaleEventService.completeBaskets(complete));
         // 集合完成写入实拣量之后，才谈得上把该行的称重筐绑到客户：绑定校验依赖实拣量，顺序反了必然超量。
-        traceUnitService.bindWeighedUnits(parseId(taskItemId), ScmOperator.current());
+        if (!Boolean.TRUE.equals(result.getDuplicated())) {
+            traceUnitService.bindWeighedUnits(parseId(taskItemId), result.getCompletionId(), ScmOperator.current());
+        }
         return result;
     }
 

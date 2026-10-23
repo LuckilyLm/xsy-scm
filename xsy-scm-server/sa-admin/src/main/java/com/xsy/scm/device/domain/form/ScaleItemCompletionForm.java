@@ -1,6 +1,7 @@
 package com.xsy.scm.device.domain.form;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -21,6 +22,7 @@ public class ScaleItemCompletionForm {
     @Size(max = 160, message = "作业标识最多 160 个字符")
     private String jobId;
 
+    @NotBlank(message = "作业版本不能为空")
     @Size(max = 40, message = "作业版本最多 40 个字符")
     private String jobVersion;
 
@@ -28,6 +30,7 @@ public class ScaleItemCompletionForm {
     @Size(max = 40, message = "分拣任务标识最多 40 个字符")
     private String taskId;
 
+    @NotNull(message = "分拣明细版本不能为空")
     private Long taskItemVersion;
 
     @NotBlank(message = "集合摘要不能为空")

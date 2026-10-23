@@ -10,6 +10,7 @@ import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
 import com.xsy.scm.sorting.constant.ScmSortingScaleEventStatusEnum;
 import com.xsy.scm.sorting.constant.SortingErrorCode;
+import com.xsy.scm.sorting.dao.SortingQueryDao;
 import com.xsy.scm.sorting.dao.SortingScaleCompletionDao;
 import com.xsy.scm.sorting.dao.SortingScaleEventDao;
 import com.xsy.scm.sorting.dao.SortingTaskDao;
@@ -54,6 +55,8 @@ public class SortingScaleEventService {
     private final SortingScaleEventDao sortingScaleEventDao;
 
     private final SortingTaskDao sortingTaskDao;
+
+    private final SortingQueryDao sortingQueryDao;
 
     private final SortingTaskItemDao sortingTaskItemDao;
 
@@ -202,15 +205,30 @@ public class SortingScaleEventService {
      */
     @Transactional(rollbackFor = Exception.class)
     public SortingScaleCompletionVO completeBaskets(SortingScaleCompleteForm form) {
+        // 与人工改量、改派及任务重开共用聚合锁，版本检查到正式写入之间不能被插入另一笔修改。
+        SortingTaskEntity task = requireAssigneeTask(form.getTaskId());
         SortingScaleCompletionEntity replay = sortingScaleCompletionDao
                 .selectByOperationId(form.getOperationId().trim());
         if (replay != null) {
+            if (!Objects.equals(replay.getTaskId(), form.getTaskId())
+                    || !Objects.equals(replay.getTaskItemId(), form.getTaskItemId())
+                    || !Objects.equals(replay.getDeviceId(), form.getDeviceId())
+                    || !Objects.equals(replay.getEmployeeId(), form.getEmployeeId())
+                    || !replay.getManifestHash().equalsIgnoreCase(form.getManifestHash().trim())
+                    || !Objects.equals(replay.getResult(), form.getResult())
+                    || !Objects.equals(replay.getReason(), StringUtils.trimToNull(form.getReason()))) {
+                throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_KEY_CONFLICT);
+            }
             return toCompletionVO(replay, true);
         }
-        requireAssigneeTask(form.getTaskId());
         SortingTaskItemEntity item = sortingTaskItemDao.selectById(form.getTaskItemId());
         if (item == null || Boolean.TRUE.equals(item.getDeleted()) || !form.getTaskId().equals(item.getTaskId())) {
             throw new ScmBusinessException(SortingErrorCode.ITEM_NOT_IN_TASK);
+        }
+        if (!Objects.equals(String.valueOf(task.getVersion()), StringUtils.trimToNull(form.getJobVersion()))
+                || form.getTaskItemVersion() == null
+                || !Objects.equals(item.getVersion(), form.getTaskItemVersion())) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_CONTEXT_CHANGED);
         }
         if (sortingScaleCompletionDao.selectByTaskItem(form.getTaskItemId()) != null) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_ALREADY_COMPLETED);
@@ -266,7 +284,7 @@ public class SortingScaleEventService {
 
         SortingEntryItemForm line = new SortingEntryItemForm();
         line.setId(item.getId());
-        line.setVersion(item.getVersion());
+        line.setVersion(form.getTaskItemVersion());
         line.setSortedQuantity(total);
         line.setResult(form.getResult());
         line.setReason(completion.getReason());
@@ -344,7 +362,6 @@ public class SortingScaleEventService {
     @Transactional(rollbackFor = Exception.class)
     public void accept(Long id, SortingScaleAcceptForm form) {
         SortingScaleEventEntity event = requirePending(id, form.getVersion());
-        requireAssigneeTask(event.getTaskId());
         if (!Boolean.TRUE.equals(event.getStableFlag())) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_NOT_STABLE);
         }
@@ -396,7 +413,6 @@ public class SortingScaleEventService {
     @Transactional(rollbackFor = Exception.class)
     public void reject(Long id, SortingScaleRejectForm form) {
         SortingScaleEventEntity event = requirePending(id, form.getVersion());
-        requireAssigneeTask(event.getTaskId());
         if (sortingScaleEventDao.markRejected(event.getId(), event.getVersion(), form.getReason().trim(),
                 ScmOperator.current()) != 1) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_STATE_INVALID);
@@ -425,7 +441,7 @@ public class SortingScaleEventService {
      */
     private SortingTaskEntity requireAssigneeTask(Long taskId) {
         ScmDataScopeContext scope = access.scope();
-        SortingTaskEntity task = sortingTaskDao.selectById(taskId);
+        SortingTaskEntity task = sortingQueryDao.lockTask(taskId);
         if (task == null || Boolean.TRUE.equals(task.getDeleted())) {
             throw new ScmBusinessException(SortingErrorCode.TASK_NOT_FOUND);
         }
@@ -445,6 +461,12 @@ public class SortingScaleEventService {
     }
 
     private SortingScaleEventEntity requirePending(Long id, Integer version) {
+        SortingScaleEventEntity source = sortingScaleEventDao.selectById(id);
+        if (source == null) {
+            throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_NOT_FOUND);
+        }
+        // 接受、驳回与集合完成统一先锁任务，再锁称重记录，避免相反锁序形成死锁。
+        requireAssigneeTask(source.getTaskId());
         SortingScaleEventEntity event = sortingScaleEventDao.lockById(id);
         if (event == null) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_NOT_FOUND);

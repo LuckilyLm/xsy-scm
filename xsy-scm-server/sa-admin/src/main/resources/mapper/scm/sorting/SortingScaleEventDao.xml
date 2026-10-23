@@ -110,6 +110,7 @@
         WHERE task_item_id = #{taskItemId}
           AND basket_no IS NOT NULL
           AND completion_id IS NULL
+          AND status = 'PENDING'
         ORDER BY basket_no
     </select>
 
@@ -120,6 +121,7 @@
         WHERE task_item_id = #{taskItemId}
           AND basket_no IS NOT NULL
           AND completion_id IS NULL
+          AND status = 'PENDING'
         ORDER BY basket_no
             FOR UPDATE
     </select>

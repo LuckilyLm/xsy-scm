@@ -338,6 +338,8 @@
         FROM xsy_trace_unit u
         JOIN xsy_sorting_scale_event e ON e.id = u.weighing_event_id
         WHERE e.task_item_id = #{itemId}
+          AND e.completion_id = #{completionId}
+          AND e.status = 'ACCEPTED'
           AND u.status = 'ACTIVE'
           AND NOT EXISTS (
               SELECT 1 FROM xsy_trace_unit_binding b
