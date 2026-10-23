@@ -6,6 +6,7 @@ import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.customer.domain.entity.CustomerSkuVisibilityEntity;
 import com.xsy.scm.customer.domain.form.CustomerVisibilityQueryForm;
 import com.xsy.scm.customer.domain.vo.CustomerSkuVisibilityReverseVO;
+import com.xsy.scm.customer.domain.vo.CustomerSkuVisibilitySummaryVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -25,6 +26,9 @@ public interface CustomerSkuVisibilityDao extends BaseMapper<CustomerSkuVisibili
     /** 反向列表读；范围按客户归属（{@code xsy_customer.seller_id}）收窄，传 null 即恒假条件。 */
     List<CustomerSkuVisibilityReverseVO> reverse(Page<?> page, @Param("query") CustomerVisibilityQueryForm query,
         @Param("scope") ScmValueScope scope);
+
+    /** 客户卡片汇总；范围与反向列表相同，传 null 即恒假条件。 */
+    List<CustomerSkuVisibilitySummaryVO> summarizeCustomers(@Param("scope") ScmValueScope scope);
 
     String policy(@Param("customerId") Long customerId);
 

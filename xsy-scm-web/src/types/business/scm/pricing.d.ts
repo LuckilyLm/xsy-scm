@@ -118,6 +118,16 @@ export interface HistoryRow {
   currentDeleted: boolean;
 }
 
+export interface CustomerVisibilitySummary {
+  customerId: ScmId;
+  customerCode: string;
+  customerName: string;
+  customerTypeName: string | null;
+  visibilityPolicy: string;
+  productCount: number;
+  specCount: number;
+}
+
 export interface VisibilityRow {
   customerId: ScmId;
   customerCode: string;

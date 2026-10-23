@@ -79,4 +79,23 @@
         ORDER BY c.customer_code, v.id
     </select>
 
+    <select id="summarizeCustomers" resultType="com.xsy.scm.customer.domain.vo.CustomerSkuVisibilitySummaryVO">
+        SELECT c.id customer_id, c.customer_code, c.name customer_name, t.name customer_type_name, c.visibility_policy,
+            COUNT(DISTINCT s.spu_id) product_count, COUNT(v.id) spec_count
+        FROM xsy_customer c
+        LEFT JOIN xsy_customer_type t ON t.id = c.customer_type_id
+        LEFT JOIN xsy_customer_sku_visibility v ON v.customer_id = c.id
+            AND v.deleted = FALSE
+        LEFT JOIN xsy_product_sku s ON s.id = v.sku_id
+        WHERE c.deleted = FALSE
+        <!-- 卡片与反向列表同一套客户归属范围，谓词同样落在驱动表 c 上。 -->
+        <if test="scope != null and scope.all == false">
+            AND c.seller_id IN
+            <foreach collection="scope.ids" item="scopeId" open="(" separator="," close=")">#{scopeId}</foreach>
+        </if>
+        <if test="scope == null">AND FALSE</if>
+        GROUP BY c.id, c.customer_code, c.name, t.name, c.visibility_policy
+        ORDER BY c.customer_code, c.id
+    </select>
+
 </mapper>

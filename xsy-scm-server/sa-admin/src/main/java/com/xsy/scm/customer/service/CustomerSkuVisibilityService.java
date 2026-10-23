@@ -19,6 +19,7 @@ import com.xsy.scm.customer.domain.entity.CustomerSkuVisibilityEntity;
 import com.xsy.scm.customer.domain.form.CustomerSkuVisibilityItemForm;
 import com.xsy.scm.customer.domain.form.CustomerVisibilityQueryForm;
 import com.xsy.scm.customer.domain.vo.CustomerSkuVisibilityReverseVO;
+import com.xsy.scm.customer.domain.vo.CustomerSkuVisibilitySummaryVO;
 import com.xsy.scm.customer.domain.vo.CustomerSkuVisibilityVO;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.pricing.manager.PriceValidation;
@@ -65,6 +66,14 @@ public class CustomerSkuVisibilityService {
         var page = SmartPageUtil.convert2PageQuery(form);
         return SmartPageUtil.convert2PageResult(page,
             customerSkuVisibilityDao.reverse(page, form, scope.getCustomerSellerScope()));
+    }
+
+    public List<CustomerSkuVisibilitySummaryVO> summarizeCustomers() {
+        ScmDataScopeContext scope = dataScopeService.resolve();
+        if (scope.getCustomerSellerScope().isEmpty()) {
+            return List.of();
+        }
+        return customerSkuVisibilityDao.summarizeCustomers(scope.getCustomerSellerScope());
     }
 
     @Transactional(rollbackFor = Exception.class)
