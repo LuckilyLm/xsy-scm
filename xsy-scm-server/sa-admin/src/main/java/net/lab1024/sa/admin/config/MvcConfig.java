@@ -6,6 +6,7 @@ import net.lab1024.sa.admin.interceptor.MallCustomerInterceptor;
 import com.xsy.scm.device.interceptor.ScaleDeviceInterceptor;
 import net.lab1024.sa.base.config.SwaggerConfig;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -25,6 +26,9 @@ public class MvcConfig implements WebMvcConfigurer {
 
     @Resource
     private ScaleDeviceInterceptor scaleDeviceInterceptor;
+
+    @Resource
+    private Environment environment;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -49,8 +53,15 @@ public class MvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("doc.html").addResourceLocations("classpath:/META-INF/resources/");
-        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
+        // Swagger 只在开发与测试环境开放；prod 下 springdoc/knife4j 已关闭，
+        // 但 knife4j 的静态 doc.html 仍在 classpath，必须显式映射到空目录阻断。
+        if (environment.matchesProfiles("dev", "test")) {
+            registry.addResourceHandler("doc.html").addResourceLocations("classpath:/META-INF/resources/");
+            registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
+        } else {
+            registry.addResourceHandler("doc.html", "/webjars/**")
+                    .addResourceLocations("classpath:/static/__api-docs-disabled__/");
+        }
     }
 
 }
