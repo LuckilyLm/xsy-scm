@@ -202,7 +202,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {financeApi} from '/@/api/business/scm/finance-api';
 import {
   SCM_FINANCE_COUNTERPARTY_TYPE_ENUM,
@@ -273,7 +273,7 @@ const addForm = reactive<
   supplierId: undefined,
   selectedRefund: null,
 });
-const addFormRef = ref();
+const addFormRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */
 const addRules = {
   counterpartyType: [{required: true, message: '请选择往来方类型', trigger: 'change'}],

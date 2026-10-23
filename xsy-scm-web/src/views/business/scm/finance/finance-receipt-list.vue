@@ -215,7 +215,7 @@ import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref, watch} from 'vue';
 import {useRoute} from 'vue-router';
 import {message} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {financeApi} from '/@/api/business/scm/finance-api';
 import {
@@ -287,7 +287,7 @@ const addForm = reactive({
   externalReference: '',
   remark: '',
 });
-const addFormRef = ref();
+const addFormRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */
 const addRules = {
   customerId: [{required: true, message: '请选择客户', trigger: 'change'}],

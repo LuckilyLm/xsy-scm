@@ -64,7 +64,7 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
@@ -82,7 +82,7 @@ const employees = ref<WarehouseScopeEmployee[]>([]);
 
 /** 员工选择器的 value 只接受数字，未选时用 undefined。 */
 const employeeId = ref<number | undefined>(undefined);
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {employeeId: [{required: true, message: '请先选择员工', trigger: 'change'}]};
 const warehouseIds = ref<Id[]>([]);

@@ -74,7 +74,7 @@
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, reactive, ref} from 'vue';
-import {message, type TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType, type FormInstance} from 'ant-design-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import type {AreaNode} from '/@/types/business/scm/area';
@@ -100,7 +100,7 @@ const rows = ref<CandidateOrder[]>([]),
 const route = ref<DeliveryRoute>(),
   reason = ref('');
 let generation = 0;
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {reason: [{required: true, message: '请填写组单原因', trigger: 'blur'}]};
 // 金额列按当前用户权限显示

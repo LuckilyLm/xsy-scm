@@ -92,7 +92,7 @@
 </template>
 <script setup lang="ts">
 import {reactive, ref} from 'vue';
-import {message} from 'ant-design-vue';
+import {message, type FormInstance} from 'ant-design-vue';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import type {ScmId} from '/@/types/business/scm/customer';
@@ -124,7 +124,7 @@ const formulaOptions: {value: AgreementFormulaType; label: string}[] = [
   {value: 'COST_MARKUP_RATE', label: '配送仓成本加价率'},
   {value: 'MARKET_MARKUP_RATE', label: '市场价加价率'},
 ];
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */
 const formRules = {
   customerId: [{required: true, message: '请选择客户', trigger: 'change'}],

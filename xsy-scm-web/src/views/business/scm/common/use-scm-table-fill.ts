@@ -2,8 +2,18 @@ import {computed, onBeforeUnmount, onMounted, ref} from 'vue';
 import type {Ref} from 'vue';
 import {fillDefaultColumnWidths, scmColumnsWidth} from './scm-column';
 
+/** 列宽计算只依赖这几个字段，兼容 Ant Design 的列类型。 */
+export interface ScmTableColumn {
+  dataIndex?: unknown;
+  width?: number | string;
+  fixed?: unknown;
+  ellipsis?: unknown;
+  align?: 'left' | 'center' | 'right';
+  showFlag?: boolean;
+}
+
 /** 表格列宽铺满内容区；用户手动调过的列保持原值。 */
-export function useScmTableFill(columns: Ref<readonly any[]>, auxiliaryWidth: () => number = () => 0) {
+export function useScmTableFill<T extends ScmTableColumn>(columns: Ref<readonly T[]>, auxiliaryWidth: () => number = () => 0) {
   // 初始化时记录默认宽度；优先拉伸可省略的文本列，其次是左对齐列
   const candidates = columns.value.filter((column) => typeof column?.width === 'number' && !column?.fixed);
   const ellipsisColumns = candidates.filter((column) => column?.ellipsis);
@@ -12,7 +22,7 @@ export function useScmTableFill(columns: Ref<readonly any[]>, auxiliaryWidth: ()
     : candidates.filter((column) => column?.align !== 'center' && column?.align !== 'right');
   const defaultWidths: Record<string, number> = {};
   for (const column of fillableColumns) {
-    if (typeof column?.dataIndex === 'string') {
+    if (typeof column?.dataIndex === 'string' && typeof column.width === 'number') {
       defaultWidths[column.dataIndex] = column.width;
     }
   }
@@ -72,13 +82,13 @@ export function useScmTableFill(columns: Ref<readonly any[]>, auxiliaryWidth: ()
     return Number.isFinite(value) ? Math.round(value) : 0;
   }
 
-  const tableRef = ref();
+  const tableRef = ref<{$el?: HTMLElement}>();
   const hostWidth = ref(0);
   let observer: ResizeObserver | undefined;
 
   /** 取表格内容区宽度；量不到时退回外层容器。 */
   function availableWidth(): number {
-    const host = tableRef.value?.$el as HTMLElement | undefined;
+    const host = tableRef.value?.$el;
     if (!host) {
       return 0;
     }
@@ -86,25 +96,25 @@ export function useScmTableFill(columns: Ref<readonly any[]>, auxiliaryWidth: ()
     return Math.floor((inner ?? host).clientWidth);
   }
 
-  const displayColumns = computed(() => {
-    const extra = hostWidth.value - auxiliaryWidth() - scmColumnsWidth(columns.value as any);
+  const displayColumns = computed<T[]>(() => {
+    const extra = hostWidth.value - auxiliaryWidth() - scmColumnsWidth(columns.value);
     if (extra > 0) {
-      return fillDefaultColumnWidths(columns.value as any, extra, defaultWidths);
+      return fillDefaultColumnWidths(columns.value, extra, defaultWidths);
     }
     // 差 1~3px 是取整误差，从文本列扣掉，避免出现假滚动条
     if (extra > -ROUNDING_TOLERANCE) {
-      return absorbRounding(columns.value as any, -extra);
+      return absorbRounding(columns.value, -extra);
     }
     // 差距不到可用宽度的 20% 时压缩文本列；压不动就保留横向滚动
     if (-extra <= hostWidth.value * MAX_SHRINK_RATIO) {
-      return shrinkToFit(columns.value as any, -extra);
+      return shrinkToFit(columns.value, -extra);
     }
-    return [...(columns.value as any[])];
+    return [...columns.value];
   });
-  const scrollX = computed(() => scmColumnsWidth(displayColumns.value as any) + auxiliaryWidth());
+  const scrollX = computed(() => scmColumnsWidth(displayColumns.value) + auxiliaryWidth());
 
   onMounted(() => {
-    const host = tableRef.value?.$el as HTMLElement | undefined;
+    const host = tableRef.value?.$el;
     if (!host) {
       return;
     }

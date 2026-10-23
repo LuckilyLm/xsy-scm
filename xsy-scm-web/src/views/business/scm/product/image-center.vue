@@ -186,13 +186,13 @@ import {productApi, productImageApi} from '/@/api/business/scm/product-api';
 import {fileApi} from '/@/api/support/file-api';
 import {FILE_FOLDER_TYPE_ENUM} from '/@/constants/support/file-const';
 import {useUserStore} from '/@/store/modules/system/user';
-import type {ImageCenterView, ProductId, ProductImage, ProductRow, ScmResponse, UnboundImage} from '/@/types/business/scm/product';
+import type {ImageCenterView, ProductId, ProductImage, ProductRow, UnboundImage} from '/@/types/business/scm/product';
 import type {FileMatchResult, SpuTarget, UploadedImageFile} from './product-import-model';
 import {matchFilesBySpuCode} from './product-import-model';
 import {productError} from './product-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
-type Uploaded = ScmResponse<{fileKey: string; fileUrl: string; fileName?: string; fileSize?: number}>;
+type UploadedFile = {fileKey: string; fileUrl: string; fileName?: string; fileSize?: number};
 
 const user = useUserStore();
 const canWrite = computed(
@@ -370,9 +370,9 @@ async function runWrite(action: () => Promise<unknown>, successMsg: string) {
 async function uploadFile(file: File): Promise<{fileKey: string}> {
   const data = new FormData();
   data.append('file', file);
-  const response = (await fileApi.uploadFile(data, FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value, {
+  const response = await fileApi.uploadFile<UploadedFile>(data, FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value, {
     suppressGlobalErrorMessage: true,
-  })) as unknown as Uploaded;
+  });
   return {fileKey: response.data.fileKey};
 }
 

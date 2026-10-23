@@ -84,7 +84,7 @@
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {paymentApi, type PaymentIntent, type PaymentCreate} from '/@/api/business/scm/payment-api';
 import type {Order} from '../order-types';
 import {financeError} from '../../finance/finance-errors';
@@ -99,7 +99,7 @@ const visible = ref(false),
 const order = ref<Order>(),
   amount = ref(''),
   method = ref<'BALANCE' | 'ONLINE'>('BALANCE');
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
   amount: [

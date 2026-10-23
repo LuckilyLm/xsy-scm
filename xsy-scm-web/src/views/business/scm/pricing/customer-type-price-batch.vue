@@ -64,7 +64,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {ref} from 'vue';
 import {message} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {useRouter} from 'vue-router';
 import dayjs from 'dayjs';
 import CustomerTypeSelect from '/@/components/business/scm/customer-type-select/index.vue';
@@ -81,7 +81,7 @@ const router = useRouter(),
   saving = ref(false),
   error = ref('');
 let number = 0;
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */
 const formRules = {batchKey: [{required: true, message: '请填写批次号', trigger: 'blur'}]};
 const columns: TableColumnsType<BatchRow> = [

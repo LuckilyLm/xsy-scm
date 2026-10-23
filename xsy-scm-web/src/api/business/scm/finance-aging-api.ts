@@ -1,6 +1,5 @@
 import {postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
-import type {ScmId, ScmPage, ScmResponse} from '/@/types/business/scm/customer';
-
+import type {ScmId, ScmPage} from '/@/types/business/scm/customer';
 export type AgingAccountType = 'RECEIVABLE' | 'PAYABLE';
 export type AgingBucket = 'UNKNOWN' | 'NOT_DUE' | 'DAYS_1_30' | 'DAYS_31_60' | 'DAYS_61_90' | 'DAYS_91_180' | 'OVER_180';
 export interface AgingQuery {
@@ -42,9 +41,7 @@ export interface AgingSummary {
 }
 const base = '/scm/report/finance/aging';
 export const financeAgingApi = {
-  query: (data: AgingQuery, options?: RequestOptions) =>
-    postRequest(`${base}/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<AgingRow>>>,
-  summary: (data: AgingQuery, options?: RequestOptions) =>
-    postRequest(`${base}/summary`, data, options) as unknown as Promise<ScmResponse<AgingSummary[]>>,
+  query: (data: AgingQuery, options?: RequestOptions) => postRequest<ScmPage<AgingRow>>(`${base}/query`, data, options),
+  summary: (data: AgingQuery, options?: RequestOptions) => postRequest<AgingSummary[]>(`${base}/summary`, data, options),
   export: (data: AgingQuery) => postDownload(`${base}/export`, data),
 };

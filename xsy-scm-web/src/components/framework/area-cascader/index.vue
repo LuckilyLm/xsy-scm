@@ -51,32 +51,39 @@ const emit = defineEmits(['update:value', 'change']);
 // ============ 组件业务 ============
 const areaOptionData = props.type === TYPE_PROVINCE_CITY_DISTRICT ? PROVINCE_CITY_DISTRICT : PROVINCE_CITY;
 
+type AreaValue = string | number;
+interface AreaOption {
+  value?: AreaValue;
+  label?: string;
+  children?: AreaOption[];
+}
+
 // 绑定地区数据
-const areaValue = ref([]);
-// 监听value变化
+const areaValue = ref<AreaValue[]>([]);
+// 监听value变化；首次渲染也要回显已有地区
 watch(
   () => props.value,
   (newValue) => {
-    if (newValue) {
-      let array = [];
-      for (let index = 0; index < 3; index++) {
-        if (newValue[index]) {
-          array.push(newValue[index].value);
-        }
-      }
-      areaValue.value = array;
-    } else {
-      areaValue.value = [];
-    }
-  }
+    const selected = Array.isArray(newValue) ? newValue : [];
+    areaValue.value = selected
+      .slice(0, 3)
+      .map((item) => (item as AreaOption | undefined)?.value)
+      .filter((value): value is AreaValue => value !== undefined);
+  },
+  {immediate: true}
 );
 
-function handleChange(value, selectedOptions) {
+function handleChange(value: AreaValue[], selectedOptions: AreaOption[]) {
   emit('update:value', toRaw(selectedOptions));
   emit('change', value, toRaw(selectedOptions));
 }
 
-const filter = (inputValue, path) => {
-  return path.some((option) => option.label.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
+const filter = (inputValue: string, path: Array<{label?: string | number}>): boolean => {
+  return path.some(
+    (option) =>
+      String(option.label ?? '')
+        .toLowerCase()
+        .indexOf(inputValue.toLowerCase()) > -1
+  );
 };
 </script>

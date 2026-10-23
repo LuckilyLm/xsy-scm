@@ -8,8 +8,8 @@ import type {RequestOptions} from '/@/lib/axios';
 export const fileApi = {
   // 文件上传
   uploadUrl: '/support/file/upload',
-  uploadFile: (param: FormData, folder: number, options?: RequestOptions) => {
-    return postRequest(`/support/file/upload?folder=${folder}`, param, options);
+  uploadFile: <T = any>(param: FormData, folder: number, options?: RequestOptions) => {
+    return postRequest<T>(`/support/file/upload?folder=${folder}`, param, options);
   },
 
   /**

@@ -82,7 +82,7 @@
 <script setup lang="ts">
 import {computed, ref} from 'vue';
 import dayjs from 'dayjs';
-import {message} from 'ant-design-vue';
+import {message, type FormInstance} from 'ant-design-vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import {isLocated} from '/@/components/business/scm/map/types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
@@ -97,7 +97,7 @@ const visible = ref(false),
   error = ref('');
 const routeId = ref<Id>();
 const form = ref<RouteForm>({routeName: '', deliveryDate: dayjs().format('YYYY-MM-DD')});
-const formRef = ref();
+const formRef = ref<FormInstance>();
 
 /** 逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {

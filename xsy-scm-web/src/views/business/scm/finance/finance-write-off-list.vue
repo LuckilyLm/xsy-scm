@@ -180,7 +180,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {financeApi} from '/@/api/business/scm/finance-api';
 import {
   SCM_FINANCE_BUSINESS_TYPE_ENUM,
@@ -221,8 +221,8 @@ const reverseOpen = ref(false),
   reverseError = ref(''),
   reverseReason = ref(''),
   reverseRow = ref<FinanceWriteOff | null>(null);
-const addFormRef = ref();
-const reverseFormRef = ref();
+const addFormRef = ref<FormInstance>();
+const reverseFormRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */
 const addRules = {
   sourceType: [{required: true, message: '请选择资金类型', trigger: 'change'}],

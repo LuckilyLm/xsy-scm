@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import {ref} from 'vue';
-import {message} from 'ant-design-vue';
+import {message, type FormInstance} from 'ant-design-vue';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
 import {SCM_PUTAWAY_STATUS_ENUM, SCM_RECEIPT_MODE_ENUM, SCM_RECEIPT_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
@@ -83,7 +83,7 @@ const emit = defineEmits<{saved: []; created: [id: Id]}>();
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
 
 const form = ref<Receipt>({});
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
   purchaseOrderId: [{required: true, message: '请选择采购单', trigger: 'change'}],

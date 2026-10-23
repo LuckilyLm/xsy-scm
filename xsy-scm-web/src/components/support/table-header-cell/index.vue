@@ -65,7 +65,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import {ref, useSlots, watch, onMounted, defineAsyncComponent} from 'vue';
+import {ref, useSlots, watch, defineAsyncComponent} from 'vue';
 import dayjs from 'dayjs';
 import _ from 'lodash';
 import {defaultTimeRanges} from '/@/lib/default-time-ranges';
@@ -90,10 +90,17 @@ const components = {
 
 const componentsKey = Object.keys(components);
 
-function getComponent(key) {
-  return components[key];
+function getComponent(key: string) {
+  return components[key as keyof typeof components];
 }
 
+const slots = useSlots();
+
+const emits = defineEmits(['change', 'update:value']);
+const createDateRange = ref<dayjs.Dayjs[]>([]);
+const modelValue = ref<any>(undefined);
+
+// 首次渲染与后续变化共用一套同步逻辑
 watch(
   () => props.value,
   () => {
@@ -106,16 +113,11 @@ watch(
     } else {
       modelValue.value = props.value;
     }
-  }
+  },
+  {immediate: true}
 );
 
-const slots = useSlots();
-
-const emits = defineEmits(['change', 'update:value']);
-const createDateRange = ref([]);
-const modelValue = ref(undefined);
-
-function changeCreateDate(dates, dateStrings) {
+function changeCreateDate(_dates: dayjs.Dayjs[], dateStrings: [string, string]) {
   // emits('update:value',dates)
   emits('change', {
     type: props.column.filterOptions.type,
@@ -126,7 +128,7 @@ function changeCreateDate(dates, dateStrings) {
 }
 
 //是否立即查询
-function change(search) {
+function change(search?: unknown) {
   let isSearch = true;
   if (search === 'no-search') {
     isSearch = false;
@@ -145,18 +147,6 @@ function submit() {
     search: true,
   });
 }
-
-onMounted(() => {
-  if (props.column.filterOptions && (props.column.filterOptions.type === 'date-range' || props.column.filterOptions.type === 'datetime-range')) {
-    if (!_.isEmpty(props.value) && props.value.length === 2 && !_.isEmpty(props.value[0]) && !_.isEmpty(props.value[1])) {
-      createDateRange.value = [dayjs(props.value[0]), dayjs(props.value[1])];
-    } else {
-      createDateRange.value = [];
-    }
-  } else {
-    modelValue.value = props.value;
-  }
-});
 </script>
 <style scoped lang="less">
 .container {

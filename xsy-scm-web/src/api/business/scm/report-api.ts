@@ -1,7 +1,7 @@
 /** 报表接口只读；导出不传分页参数。 */
 import {getRequest, postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmAdvancedFilterField} from '/@/types/business/scm/advanced-filter';
-import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
+import type {ScmPage} from '/@/types/business/scm/customer';
 import type {
   InventoryFlowSummaryRow,
   InventoryLossRow,
@@ -53,14 +53,11 @@ export interface ScmExportColumn {
 /** 经营概览：指标卡 / 日趋势 / 每日统计。 */
 export const reportOverviewApi = {
   /** 指标卡。 */
-  overview: (data: OverviewQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/overview`, data, options) as unknown as Promise<ScmResponse<ReportOverview>>,
+  overview: (data: OverviewQuery, options?: RequestOptions) => postRequest<ReportOverview>(`${BASE}/overview`, data, options),
   /** 日趋势：返回补齐的完整日期轴，无单据的天为零值。 */
-  trend: (data: OverviewQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/overview/trend`, data, options) as unknown as Promise<ScmResponse<ReportDailyStat[]>>,
+  trend: (data: OverviewQuery, options?: RequestOptions) => postRequest<ReportDailyStat[]>(`${BASE}/overview/trend`, data, options),
   /** 每日统计：返回整段数组，不分页（跨度上限 366 天）。 */
-  daily: (data: OverviewQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/overview/daily`, data, options) as unknown as Promise<ScmResponse<ReportDailyStat[]>>,
+  daily: (data: OverviewQuery, options?: RequestOptions) => postRequest<ReportDailyStat[]>(`${BASE}/overview/daily`, data, options),
 
   /** 每日统计导出：查询条件与页面一致。 */
   dailyExport: (data: Partial<OverviewQuery>) => postDownload(`${BASE}/overview/daily/export`, data),
@@ -68,27 +65,18 @@ export const reportOverviewApi = {
 
 /** 销售分析：按商品 / 按分类 / 按客户 / 按销售员 / 订单明细。 */
 export const reportSalesApi = {
-  product: (data: SalesQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/sales/product`, data, options) as unknown as Promise<ScmResponse<ScmPage<SalesProductRow>>>,
-  category: (data: SalesQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/sales/category`, data, options) as unknown as Promise<ScmResponse<ScmPage<SalesCategoryRow>>>,
-  customer: (data: SalesQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/sales/customer`, data, options) as unknown as Promise<ScmResponse<ScmPage<SalesCustomerRow>>>,
-  seller: (data: SalesQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/sales/seller`, data, options) as unknown as Promise<ScmResponse<ScmPage<SalesSellerRow>>>,
-  item: (data: SalesQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/sales/item/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<SalesItemRow>>>,
+  product: (data: SalesQuery, options?: RequestOptions) => postRequest<ScmPage<SalesProductRow>>(`${BASE}/sales/product`, data, options),
+  category: (data: SalesQuery, options?: RequestOptions) => postRequest<ScmPage<SalesCategoryRow>>(`${BASE}/sales/category`, data, options),
+  customer: (data: SalesQuery, options?: RequestOptions) => postRequest<ScmPage<SalesCustomerRow>>(`${BASE}/sales/customer`, data, options),
+  seller: (data: SalesQuery, options?: RequestOptions) => postRequest<ScmPage<SalesSellerRow>>(`${BASE}/sales/seller`, data, options),
+  item: (data: SalesQuery, options?: RequestOptions) => postRequest<ScmPage<SalesItemRow>>(`${BASE}/sales/item/query`, data, options),
   /** 订单表头级：一行 = 一个订单（「这个客户有几单、每单多少」）。 */
-  order: (data: SalesQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/sales/order/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<SalesOrderRow>>>,
+  order: (data: SalesQuery, options?: RequestOptions) => postRequest<ScmPage<SalesOrderRow>>(`${BASE}/sales/order/query`, data, options),
 
   /** TOP5 由数据库直接截取。 */
-  productTop: (data: SalesQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/sales/product/top`, data, options) as unknown as Promise<ScmResponse<SalesTopItem[]>>,
-  categoryTop: (data: SalesQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/sales/category/top`, data, options) as unknown as Promise<ScmResponse<SalesTopItem[]>>,
-  customerTop: (data: SalesQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/sales/customer/top`, data, options) as unknown as Promise<ScmResponse<SalesTopItem[]>>,
+  productTop: (data: SalesQuery, options?: RequestOptions) => postRequest<SalesTopItem[]>(`${BASE}/sales/product/top`, data, options),
+  categoryTop: (data: SalesQuery, options?: RequestOptions) => postRequest<SalesTopItem[]>(`${BASE}/sales/category/top`, data, options),
+  customerTop: (data: SalesQuery, options?: RequestOptions) => postRequest<SalesTopItem[]>(`${BASE}/sales/customer/top`, data, options),
 
   productExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/product/export`, data),
   categoryExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/category/export`, data),
@@ -96,33 +84,30 @@ export const reportSalesApi = {
   sellerExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/seller/export`, data),
   itemExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/item/export`, data),
   orderExport: (data: Partial<SalesQuery>) => postDownload(`${BASE}/sales/order/export`, data),
-  orderFilterFields: () => getRequest(`${BASE}/sales/order/query/filters`, {}) as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
-  orderExportColumns: () => getRequest(`${BASE}/sales/order/export/columns`, {}) as unknown as Promise<ScmResponse<ScmExportColumn[]>>,
+  orderFilterFields: () => getRequest<ScmAdvancedFilterField[]>(`${BASE}/sales/order/query/filters`, {}),
+  orderExportColumns: () => getRequest<ScmExportColumn[]>(`${BASE}/sales/order/export/columns`, {}),
 };
 
 /** 采购分析：采购概览 / 按商品 / 按供应商 / 按采购员 / 采购明细 / 价格波动。 */
 export const reportPurchaseApi = {
   overview: (data: ReportFilterQuery<PurchaseQuery>, options?: RequestOptions) =>
-    postRequest(`${BASE}/purchase/overview`, data, options) as unknown as Promise<ScmResponse<PurchaseOverview>>,
-  product: (data: PurchaseQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/purchase/product`, data, options) as unknown as Promise<ScmResponse<ScmPage<PurchaseProductRow>>>,
-  supplier: (data: PurchaseQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/purchase/supplier`, data, options) as unknown as Promise<ScmResponse<ScmPage<PurchaseSupplierRow>>>,
+    postRequest<PurchaseOverview>(`${BASE}/purchase/overview`, data, options),
+  product: (data: PurchaseQuery, options?: RequestOptions) => postRequest<ScmPage<PurchaseProductRow>>(`${BASE}/purchase/product`, data, options),
+  supplier: (data: PurchaseQuery, options?: RequestOptions) => postRequest<ScmPage<PurchaseSupplierRow>>(`${BASE}/purchase/supplier`, data, options),
   purchaser: (data: PurchaseQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/purchase/purchaser`, data, options) as unknown as Promise<ScmResponse<ScmPage<PurchasePurchaserRow>>>,
-  item: (data: PurchaseQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/purchase/item/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<PurchaseItemRow>>>,
+    postRequest<ScmPage<PurchasePurchaserRow>>(`${BASE}/purchase/purchaser`, data, options),
+  item: (data: PurchaseQuery, options?: RequestOptions) => postRequest<ScmPage<PurchaseItemRow>>(`${BASE}/purchase/item/query`, data, options),
 
   /** 供应商采购入库成本 TOP10：按入库流水统计，不是采购单金额。 */
   supplierTop: (data: ReportFilterQuery<PurchaseQuery>, options?: RequestOptions) =>
-    postRequest(`${BASE}/purchase/supplier/top`, data, options) as unknown as Promise<ScmResponse<PurchaseTopItem[]>>,
+    postRequest<PurchaseTopItem[]>(`${BASE}/purchase/supplier/top`, data, options),
   /** 价格波动：按业务日、商品规格和采购单位分组，不同单位不合并。 */
   priceTrend: (data: ReportFilterQuery<PurchaseQuery>, options?: RequestOptions) =>
-    postRequest(`${BASE}/purchase/price-trend`, data, options) as unknown as Promise<ScmResponse<PurchasePriceTrendPoint[]>>,
+    postRequest<PurchasePriceTrendPoint[]>(`${BASE}/purchase/price-trend`, data, options),
 
   productExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/product/export`, data),
-  productFilterFields: () => getRequest(`${BASE}/purchase/product/query/filters`, {}) as unknown as Promise<ScmResponse<ScmAdvancedFilterField[]>>,
-  productExportColumns: () => getRequest(`${BASE}/purchase/product/export/columns`, {}) as unknown as Promise<ScmResponse<ScmExportColumn[]>>,
+  productFilterFields: () => getRequest<ScmAdvancedFilterField[]>(`${BASE}/purchase/product/query/filters`, {}),
+  productExportColumns: () => getRequest<ScmExportColumn[]>(`${BASE}/purchase/product/export/columns`, {}),
   supplierExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/supplier/export`, data),
   itemExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/item/export`, data),
   overviewExport: (data: Partial<PurchaseQuery>) => postDownload(`${BASE}/purchase/overview/export`, data),
@@ -133,20 +118,16 @@ export const reportPurchaseApi = {
 /** 收货与入库：三张报表的统计规则不同。 */
 export const reportReceiptApi = {
   /** 收货明细：粒度 = `purchase_receipt_item`，按 `confirmed_at`。 */
-  query: (data: ReceiptQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/receipt/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<ReceiptRow>>>,
-  summary: (data: ReceiptQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/receipt/summary`, data, options) as unknown as Promise<ScmResponse<ReceiptSummary>>,
+  query: (data: ReceiptQuery, options?: RequestOptions) => postRequest<ScmPage<ReceiptRow>>(`${BASE}/receipt/query`, data, options),
+  summary: (data: ReceiptQuery, options?: RequestOptions) => postRequest<ReceiptSummary>(`${BASE}/receipt/summary`, data, options),
   /** 入库明细：一行对应一条入库流水。 */
-  inboundQuery: (data: ReceiptQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/inbound/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<InboundRow>>>,
-  inboundSummary: (data: ReceiptQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/inbound/summary`, data, options) as unknown as Promise<ScmResponse<InboundSummary>>,
+  inboundQuery: (data: ReceiptQuery, options?: RequestOptions) => postRequest<ScmPage<InboundRow>>(`${BASE}/inbound/query`, data, options),
+  inboundSummary: (data: ReceiptQuery, options?: RequestOptions) => postRequest<InboundSummary>(`${BASE}/inbound/summary`, data, options),
   /** 待入库：`WAREHOUSE_CONFIRM + CONFIRMED + PENDING`。只读，入库动作在采购收货页。 */
   pendingPutawayQuery: (data: ReceiptQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/pending-putaway/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<PendingPutawayRow>>>,
+    postRequest<ScmPage<PendingPutawayRow>>(`${BASE}/pending-putaway/query`, data, options),
   pendingPutawaySummary: (data: ReceiptQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/pending-putaway/summary`, data, options) as unknown as Promise<ScmResponse<PendingPutawaySummary>>,
+    postRequest<PendingPutawaySummary>(`${BASE}/pending-putaway/summary`, data, options),
 
   receiptExport: (data: Partial<ReceiptQuery>) => postDownload(`${BASE}/receipt/export`, data),
   inboundExport: (data: Partial<ReceiptQuery>) => postDownload(`${BASE}/inbound/export`, data),
@@ -154,14 +135,11 @@ export const reportReceiptApi = {
 
 /** 财务报表：与经营指标分开。 */
 export const reportFinanceApi = {
-  overview: (data: FinanceOverviewQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/finance/overview`, data, options) as unknown as Promise<ScmResponse<FinanceReportOverview>>,
+  overview: (data: FinanceOverviewQuery, options?: RequestOptions) => postRequest<FinanceReportOverview>(`${BASE}/finance/overview`, data, options),
   receivableDetails: (data: FinanceReportQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/finance/receivable/aging-free-detail`, data, options) as unknown as Promise<
-      ScmResponse<ScmPage<FinanceReceivableDetailRow>>
-    >,
+    postRequest<ScmPage<FinanceReceivableDetailRow>>(`${BASE}/finance/receivable/aging-free-detail`, data, options),
   payableDetails: (data: FinanceReportQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/finance/payable/aging-free-detail`, data, options) as unknown as Promise<ScmResponse<ScmPage<FinancePayableDetailRow>>>,
+    postRequest<ScmPage<FinancePayableDetailRow>>(`${BASE}/finance/payable/aging-free-detail`, data, options),
   overviewExport: (data: FinanceOverviewQuery) => postDownload(`${BASE}/finance/overview/export`, data),
   receivableExport: (data: Omit<FinanceReportQuery, 'pageNum' | 'pageSize'>) =>
     postDownload(`${BASE}/finance/receivable/aging-free-detail/export`, data),
@@ -171,16 +149,16 @@ export const reportFinanceApi = {
 /** 库存分析：库存流水 / 损耗分析 / 当前库存价值 / 收发存数量版。 */
 export const reportInventoryApi = {
   movementQuery: (data: InventoryReportQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/inventory/movement/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<InventoryMovementRow>>>,
+    postRequest<ScmPage<InventoryMovementRow>>(`${BASE}/inventory/movement/query`, data, options),
   lossSummary: (data: ReportFilterQuery<InventoryReportQuery>, options?: RequestOptions) =>
-    postRequest(`${BASE}/inventory/loss/summary`, data, options) as unknown as Promise<ScmResponse<InventoryLossSummary>>,
+    postRequest<InventoryLossSummary>(`${BASE}/inventory/loss/summary`, data, options),
   lossQuery: (data: InventoryReportQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/inventory/loss/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<InventoryLossRow>>>,
+    postRequest<ScmPage<InventoryLossRow>>(`${BASE}/inventory/loss/query`, data, options),
   /** 当前库存价值：忽略日期区间，页面也要禁用日期筛选。 */
   valueQuery: (data: InventoryReportQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/inventory/value/query`, data, options) as unknown as Promise<ScmResponse<InventoryValuePage>>,
+    postRequest<InventoryValuePage>(`${BASE}/inventory/value/query`, data, options),
   flowSummaryQuery: (data: InventoryReportQuery, options?: RequestOptions) =>
-    postRequest(`${BASE}/inventory/flow-summary/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<InventoryFlowSummaryRow>>>,
+    postRequest<ScmPage<InventoryFlowSummaryRow>>(`${BASE}/inventory/flow-summary/query`, data, options),
 
   movementExport: (data: Partial<InventoryReportQuery>) => postDownload(`${BASE}/inventory/movement/export`, data),
   lossExport: (data: Partial<InventoryReportQuery>) => postDownload(`${BASE}/inventory/loss/export`, data),

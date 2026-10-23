@@ -164,7 +164,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import {printApi} from '/@/api/business/scm/print-api';
 import type {
   Id,
@@ -246,7 +246,7 @@ const form = reactive<PrintTemplateSave & {id?: Id}>({
     footerNote: null,
   },
 });
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 展平一份只给表单校验用，避免用数组路径配 rules。 */
 const flatModel = computed(() => ({...form, title: form.model.title}));
 /** 必填项逐项校验，错误显示在对应输入框下方。 */

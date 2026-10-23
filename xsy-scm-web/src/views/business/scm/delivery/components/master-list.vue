@@ -107,7 +107,7 @@
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
-import {message, Modal, type TableColumnsType} from 'ant-design-vue';
+import {message, Modal, type TableColumnsType, type FormInstance} from 'ant-design-vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
@@ -129,7 +129,7 @@ const rows = ref<(Driver | Vehicle)[]>([]),
 const visible = ref(false),
   saving = ref(false);
 const form = ref<Partial<Driver & Vehicle>>({status: 'ENABLED'});
-const formRef = ref();
+const formRef = ref<FormInstance>();
 
 /** 校验错误显示在输入框下方。启用的司机必须绑定员工，与后端规则一致。 */
 const formRules = computed(() =>

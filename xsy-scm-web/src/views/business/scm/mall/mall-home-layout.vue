@@ -381,7 +381,7 @@ const uploadImage: UploadProps['customRequest'] = async (options) => {
   try {
     const data = new FormData();
     data.append('file', options.file);
-    const response = (await fileApi.uploadFile(data, FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value)) as unknown as {data: {fileKey: string}};
+    const response = await fileApi.uploadFile<{fileKey: string}>(data, FILE_FOLDER_TYPE_ENUM.PUBLIC_IMAGE.value);
     if (editing.value?.key === editingKey) editing.value.imageFileKey = response.data.fileKey;
     options.onSuccess?.(response.data);
     void message.success('图片已上传');

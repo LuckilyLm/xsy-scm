@@ -60,7 +60,7 @@
 
 <script setup lang="ts">
 import {computed, ref} from 'vue';
-import {message} from 'ant-design-vue';
+import {message, type FormInstance} from 'ant-design-vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
@@ -76,7 +76,7 @@ import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 const emit = defineEmits<{saved: []}>();
 
 const form = ref<Order>(newOrder());
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
   supplierId: [{required: true, message: '请选择供应商', trigger: 'change'}],

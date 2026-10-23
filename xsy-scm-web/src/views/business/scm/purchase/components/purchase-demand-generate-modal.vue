@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import {computed, reactive, ref, watch} from 'vue';
-import {message} from 'ant-design-vue';
+import {message, type FormInstance} from 'ant-design-vue';
 import SupplierSelect from '/@/components/business/scm/supplier-select/index.vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
@@ -65,7 +65,7 @@ const form = reactive<{
   purchaserId?: Id;
   range?: [string, string];
 }>({});
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
   range: [
@@ -120,7 +120,8 @@ watch(
       error.value = '';
       void loadWarehouses();
     }
-  }
+  },
+  {immediate: true}
 );
 
 async function generate() {

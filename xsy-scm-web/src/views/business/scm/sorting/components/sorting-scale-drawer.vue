@@ -186,7 +186,7 @@
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref, watch} from 'vue';
-import {message, type TableColumnsType} from 'ant-design-vue';
+import {message, type TableColumnsType, type FormInstance} from 'ant-design-vue';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
 import {datetime} from '../../common/scm-display';
 import {SCM_SORTING_RESULT_ENUM} from '/@/constants/business/scm/sorting-const';
@@ -212,7 +212,7 @@ const acceptReason = ref('');
 const rejectOpen = ref(false);
 const rejectTarget = ref<SortingScaleEvent>();
 const rejectReason = ref('');
-const rejectFormRef = ref();
+const rejectFormRef = ref<FormInstance>();
 const rejectRules = {rejectReason: [{required: true, message: '请填写驳回原因', trigger: 'blur'}]};
 const resultOptions = Object.values(SCM_SORTING_RESULT_ENUM).map((x) => ({value: x.value, label: x.desc}));
 let requestGeneration = 0;
@@ -298,7 +298,8 @@ watch(
       events.value = [];
       void reload();
     }
-  }
+  },
+  {immediate: true}
 );
 
 function lineOf(record: SortingScaleEvent): SortingTaskItem | undefined {

@@ -267,7 +267,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
@@ -354,7 +354,7 @@ const form = reactive<PromotionCouponSave & {discountValueInput: number | null}>
   totalLimit: null,
   remark: null,
 });
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验。 */
 const formRules = {
   couponCode: [{required: true, message: '请填写券编码', trigger: 'blur'}],

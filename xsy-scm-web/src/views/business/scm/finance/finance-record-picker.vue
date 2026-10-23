@@ -53,6 +53,8 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref, watch} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
+import type {ApiResponse} from '/@/lib/axios';
+import type {ScmPage} from '/@/types/business/scm/customer';
 import {financeApi} from '/@/api/business/scm/finance-api';
 import {SCM_FINANCE_SETTLE_STATE_ENUM} from '/@/constants/business/scm/finance-const';
 import {financeError} from './finance-errors';
@@ -140,14 +142,17 @@ function toCandidate(row: FinanceReceipt | FinancePayment | FinanceReceivable | 
   };
 }
 
+let requestId = 0;
+
 async function search() {
+  const current = ++requestId;
   loading.value = true;
   error.value = '';
   try {
     const base = {pageNum: pageNum.value, pageSize: pageSize.value, startDate: startDate.value, endDate: endDate.value};
     // 加载失败由弹窗内 Alert 提示，不再弹全局 toast
     const quiet = {suppressGlobalErrorMessage: true};
-    let response;
+    let response: ApiResponse<ScmPage<FinanceReceipt | FinancePayment | FinanceReceivable | FinancePayable>>;
     if (props.kind === 'RECEIPT') {
       response = await financeApi.receiptQuery({...base, pendingOnly: true, receiptId: recordId.value}, quiet);
     } else if (props.kind === 'PAYMENT') {
@@ -157,12 +162,14 @@ async function search() {
     } else {
       response = await financeApi.payableQuery({...base, settleState: settleState.value, payableId: recordId.value}, quiet);
     }
+    if (current !== requestId) return;
     rows.value = response.data.list.map(toCandidate);
     total.value = response.data.total;
   } catch (cause) {
+    if (current !== requestId) return;
     error.value = financeError(cause);
   } finally {
-    loading.value = false;
+    if (current === requestId) loading.value = false;
   }
 }
 
@@ -181,9 +188,10 @@ watch(
     if (isOpen) {
       pageNum.value = 1;
       recordId.value = undefined;
-      search();
+      void search();
     }
-  }
+  },
+  {immediate: true}
 );
 </script>
 

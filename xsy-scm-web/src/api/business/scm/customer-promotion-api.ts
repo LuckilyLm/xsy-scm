@@ -1,8 +1,6 @@
 /** 客户推广二维码：生成、撤销、扫码记录。扫码只记录来源，不改归属。 */
 import {getRequest, postRequest} from '/@/lib/axios';
-import type {ScmResponse} from '/@/types/business/scm/customer';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';
-
 export interface CustomerPromotion {
   id: Id;
   customerId: Id;
@@ -15,7 +13,6 @@ export interface CustomerPromotion {
   createdBy: string;
   createdAt: string;
 }
-
 export interface CustomerPromotionScan {
   id: Id;
   scannedAt: string;
@@ -24,13 +21,11 @@ export interface CustomerPromotionScan {
   clientIp?: string | null;
   userAgent?: string | null;
 }
-
 export const customerPromotionApi = {
-  create: (customerId: Id) => postRequest('/scm/customer/promotion/create', {customerId}) as unknown as Promise<ScmResponse<CustomerPromotion>>,
-  revoke: (id: Id) => postRequest('/scm/customer/promotion/revoke', {id}) as unknown as Promise<ScmResponse<string>>,
-  list: (customerId: Id) => getRequest('/scm/customer/promotion/list', {customerId}) as unknown as Promise<ScmResponse<CustomerPromotion[]>>,
-  scans: (codeId: Id, limit = 20) =>
-    getRequest('/scm/customer/promotion/scans', {codeId, limit}) as unknown as Promise<ScmResponse<CustomerPromotionScan[]>>,
+  create: (customerId: Id) => postRequest<CustomerPromotion>('/scm/customer/promotion/create', {customerId}),
+  revoke: (id: Id) => postRequest<string>('/scm/customer/promotion/revoke', {id}),
+  list: (customerId: Id) => getRequest<CustomerPromotion[]>('/scm/customer/promotion/list', {customerId}),
+  scans: (codeId: Id, limit = 20) => getRequest<CustomerPromotionScan[]>('/scm/customer/promotion/scans', {codeId, limit}),
   /** 最近一次扫码归属，用于新增客户时预填业务员。 */
-  attribution: () => getRequest('/scm/customer/promotion/attribution', {}) as unknown as Promise<ScmResponse<CustomerPromotionScan | null>>,
+  attribution: () => getRequest<CustomerPromotionScan | null>('/scm/customer/promotion/attribution', {}),
 };

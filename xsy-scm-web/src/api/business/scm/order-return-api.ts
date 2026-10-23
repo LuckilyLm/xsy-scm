@@ -1,14 +1,11 @@
 import {getRequest, postRequest} from '/@/lib/axios';
 import type {RequestOptions} from '/@/lib/axios';
 import {orderCommand} from './order-api';
-import type {ScmResponse, ScmPage} from '/@/types/business/scm/customer';
+import type {ScmPage} from '/@/types/business/scm/customer';
 import type {ReturnRow, Query, Id} from '/@/views/business/scm/order/order-types';
-
 export const orderReturnApi = {
-  query: (data: Query, options?: RequestOptions) =>
-    postRequest('/scm/order/return/query', data, options) as unknown as Promise<ScmResponse<ScmPage<ReturnRow>>>,
-  detail: (id: Id, options?: RequestOptions) =>
-    getRequest('/scm/order/return/detail/' + id, {}, options) as unknown as Promise<ScmResponse<ReturnRow>>,
+  query: (data: Query, options?: RequestOptions) => postRequest<ScmPage<ReturnRow>>('/scm/order/return/query', data, options),
+  detail: (id: Id, options?: RequestOptions) => getRequest<ReturnRow>('/scm/order/return/detail/' + id, {}, options),
   create: (data: unknown) => orderCommand<ReturnRow>('/scm/order/return/create', data),
   approve: (data: unknown) => orderCommand<ReturnRow>('/scm/order/return/approve', data),
   receive: (data: unknown) => orderCommand('/scm/order/return/receive', data),

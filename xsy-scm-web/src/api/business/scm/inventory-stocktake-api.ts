@@ -20,12 +20,12 @@ async function importStocktake(file: File): Promise<ScmResponse<StocktakeImportR
     key = crypto.randomUUID();
     importKeys.set(file, key);
   }
-  const result = (await request({
+  const result = await request<StocktakeImportResult>({
     url: '/scm/inventory/stocktake/import',
     method: 'post',
     data,
     headers: {'Idempotency-Key': key},
-  })) as unknown as ScmResponse<StocktakeImportResult>;
+  });
   if (result.code === 0) {
     importKeys.delete(file);
   }
@@ -34,19 +34,18 @@ async function importStocktake(file: File): Promise<ScmResponse<StocktakeImportR
 
 export const inventoryStocktakeApi = {
   query: (data: InventoryStocktakeQuery, options?: RequestOptions) =>
-    postRequest('/scm/inventory/stocktake/query', data, options) as unknown as Promise<ScmResponse<ScmPage<InventoryStocktake>>>,
-  detail: (id: Id) => getRequest(`/scm/inventory/stocktake/detail/${id}`, {}) as unknown as Promise<ScmResponse<InventoryStocktake>>,
+    postRequest<ScmPage<InventoryStocktake>>('/scm/inventory/stocktake/query', data, options),
+  detail: (id: Id) => getRequest<InventoryStocktake>(`/scm/inventory/stocktake/detail/${id}`, {}),
   /** 新建草稿，返回新单 id。保存时记录当前账面量。 */
-  create: (data: InventoryStocktakeAdd) => postRequest('/scm/inventory/stocktake/create', data) as unknown as Promise<ScmResponse<Id>>,
+  create: (data: InventoryStocktakeAdd) => postRequest<Id>('/scm/inventory/stocktake/create', data),
   /** 改草稿（仅 DRAFT 可改）；会重新记录当前账面量。 */
-  update: (id: Id, data: InventoryStocktakeAdd) =>
-    postRequest(`/scm/inventory/stocktake/update/${id}`, data) as unknown as Promise<ScmResponse<string>>,
+  update: (id: Id, data: InventoryStocktakeAdd) => postRequest<string>(`/scm/inventory/stocktake/update/${id}`, data),
   /** 确认盘点：差异转盘盈 / 盘亏流水并调整余额。 */
-  confirm: (id: Id) => postRequest(`/scm/inventory/stocktake/confirm/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
+  confirm: (id: Id) => postRequest<string>(`/scm/inventory/stocktake/confirm/${id}`, {}),
   /** 取消草稿（无库存影响）。 */
-  cancel: (id: Id) => postRequest(`/scm/inventory/stocktake/cancel/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
+  cancel: (id: Id) => postRequest<string>(`/scm/inventory/stocktake/cancel/${id}`, {}),
   /** 删除草稿（逻辑删）。 */
-  delete: (id: Id) => postRequest(`/scm/inventory/stocktake/delete/${id}`, {}) as unknown as Promise<ScmResponse<string>>,
+  delete: (id: Id) => postRequest<string>(`/scm/inventory/stocktake/delete/${id}`, {}),
   /** 导出当前余额的盘点模板（带签名凭证）；用户只填实盘数，原行不能增删替换。 */
   downloadImportTemplate: (warehouseId: Id) => getDownload('/scm/inventory/stocktake/import/template', {warehouseId}),
   /** 导入 Excel，凭证校验通过后新建草稿（不写库存）。 */

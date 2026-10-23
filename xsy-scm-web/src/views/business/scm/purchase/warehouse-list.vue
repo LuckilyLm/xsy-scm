@@ -126,7 +126,7 @@ import {emptyLocation, isLocated, locationError} from '/@/components/business/sc
 import {CheckCircleOutlined, ExclamationCircleOutlined} from '@ant-design/icons-vue';
 import {computed, nextTick, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue';
 import AreaCascader from '/@/components/framework/area-cascader/index.vue';
 import type {AreaNode} from '/@/types/business/scm/area';
@@ -153,7 +153,7 @@ const visible = ref(false);
 const saving = ref(false);
 const formError = ref('');
 const form = ref<WarehouseFormModel>({warehouseCode: '', name: ''});
-const formRef = ref();
+const formRef = ref<FormInstance>();
 
 /** 逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {

@@ -6,7 +6,7 @@
       {{ index < dataList.length - 1 ? ',' : '' }}
     </template>
   </template>
-  <!--����ʾ���Ե���ɫ��ʾ-->
+  <!-- 未开启样式时直接显示标签文本 -->
   <template v-else>
     <span>{{ dataList }}</span>
   </template>

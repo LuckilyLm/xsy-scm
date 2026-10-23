@@ -12,15 +12,15 @@ export interface SmartEnum<T> {
   [key: string]: SmartEnumItem<T>;
 }
 
-interface SmartEnumItem<T> {
+export interface SmartEnumItem<T> {
   value: T;
   desc: string;
 }
 
-interface SmartEnumPlugin {
-  getDescByValue(constantName: string, value: string | number | undefined): string;
+export interface SmartEnumPlugin {
+  getDescByValue(constantName: string, value: unknown): string;
 
-  getValueDescList(constantName: string): SmartEnumItem[];
+  getValueDescList(constantName: string): SmartEnumItem<unknown>[];
 
   getValueDesc(constantName: string): {[key: string]: string};
 }

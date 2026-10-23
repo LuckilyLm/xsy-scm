@@ -20,12 +20,12 @@ import type {
 } from '/@/views/business/scm/delivery/delivery-types';
 
 function call<T>(method: string, path: string, data?: unknown, options?: RequestOptions): Promise<ScmResponse<T>> {
-  return request({
+  return request<T>({
     url: `/scm/delivery${path}`,
     method,
     ...(method === 'get' ? {params: data} : {data}),
     ...options,
-  }) as unknown as Promise<ScmResponse<T>>;
+  });
 }
 
 // 幂等命令通道：失败保留同一 UUID 供重试，成功即释放，内容变化后换新键。
@@ -39,12 +39,12 @@ async function idempotentCommand<T>(path: string, data: unknown): Promise<ScmRes
     key = crypto.randomUUID();
     idempotentKeys.set(signature, key);
   }
-  const result = (await request({
+  const result = await request<T>({
     url: `/scm/delivery${path}`,
     method: 'post',
     data,
     headers: {'Idempotency-Key': key},
-  })) as unknown as ScmResponse<T>;
+  });
   idempotentKeys.delete(signature);
   return result;
 }

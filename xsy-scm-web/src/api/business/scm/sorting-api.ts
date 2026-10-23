@@ -30,12 +30,12 @@ import type {
 const BASE = '/scm/sorting';
 
 function call<T>(method: string, path: string, data?: unknown, options?: RequestOptions): Promise<ScmResponse<T>> {
-  return request({
+  return request<T>({
     url: `${BASE}${path}`,
     method,
     ...(method === 'get' ? {params: data} : {data}),
     ...options,
-  }) as unknown as Promise<ScmResponse<T>>;
+  });
 }
 
 const idempotentKeys = new Map<string, string>();
@@ -47,12 +47,12 @@ async function command<T>(path: string, data: unknown): Promise<ScmResponse<T>> 
     key = crypto.randomUUID();
     idempotentKeys.set(signature, key);
   }
-  const result = (await request({
+  const result = await request<T>({
     url: `${BASE}${path}`,
     method: 'post',
     data,
     headers: {'Idempotency-Key': key},
-  })) as unknown as ScmResponse<T>;
+  });
   idempotentKeys.delete(signature);
   return result;
 }

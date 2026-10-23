@@ -1,10 +1,8 @@
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
-import type {ProductCategory, ProductCategoryForm, ProductId, ScmResponse} from '/@/types/business/scm/product';
-
+import type {ProductCategory, ProductCategoryForm, ProductId} from '/@/types/business/scm/product';
 export const productCategoryApi = {
-  tree: (options?: RequestOptions) => postRequest('/scm/product/category/tree', {}, options) as unknown as Promise<ScmResponse<ProductCategory[]>>,
-  detail: (id: ProductId, options?: RequestOptions) =>
-    getRequest(`/scm/product/category/${id}`, {}, options) as unknown as Promise<ScmResponse<ProductCategory>>,
+  tree: (options?: RequestOptions) => postRequest<ProductCategory[]>('/scm/product/category/tree', {}, options),
+  detail: (id: ProductId, options?: RequestOptions) => getRequest<ProductCategory>(`/scm/product/category/${id}`, {}, options),
   add: (form: ProductCategoryForm) => postRequest('/scm/product/category/add', form),
   update: (form: ProductCategoryForm) => postRequest('/scm/product/category/update', form),
   delete: (categoryId: ProductId, version: number) =>

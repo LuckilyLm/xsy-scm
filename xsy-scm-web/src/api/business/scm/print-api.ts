@@ -24,12 +24,12 @@ async function printCommand<T>(path: string, data: unknown): Promise<ScmResponse
     key = crypto.randomUUID();
     keys.set(signature, key);
   }
-  const result = (await request({
+  const result = await request<T>({
     url: path,
     method: 'post',
     data,
     headers: {'Idempotency-Key': key},
-  })) as unknown as ScmResponse<T>;
+  });
   keys.delete(signature);
   return result;
 }
@@ -37,34 +37,32 @@ async function printCommand<T>(path: string, data: unknown): Promise<ScmResponse
 export const printApi = {
   // ---- 模板 ----
   templateQuery: (data: PrintTemplateQuery, options?: RequestOptions) =>
-    postRequest('/scm/print/template/query', data, options) as unknown as Promise<ScmResponse<ScmPage<PrintTemplate>>>,
+    postRequest<ScmPage<PrintTemplate>>('/scm/print/template/query', data, options),
 
   templateCatalog: (documentType: PrintDocumentType, options?: RequestOptions) =>
-    getRequest('/scm/print/template/catalog', {documentType}, options) as unknown as Promise<ScmResponse<PrintFieldCatalog>>,
+    getRequest<PrintFieldCatalog>('/scm/print/template/catalog', {documentType}, options),
 
   /** 可配置打印的单据类型，供类型下拉使用。 */
-  documentTypes: (options?: RequestOptions) =>
-    getRequest('/scm/print/template/document-types', {}, options) as unknown as Promise<ScmResponse<PrintDocumentTypeOption[]>>,
+  documentTypes: (options?: RequestOptions) => getRequest<PrintDocumentTypeOption[]>('/scm/print/template/document-types', {}, options),
 
-  templateDetail: (id: Id) => getRequest(`/scm/print/template/${id}`, {}) as unknown as Promise<ScmResponse<PrintTemplate>>,
+  templateDetail: (id: Id) => getRequest<PrintTemplate>(`/scm/print/template/${id}`, {}),
 
-  templateCreate: (data: PrintTemplateSave) => postRequest('/scm/print/template', data) as unknown as Promise<ScmResponse<Id>>,
+  templateCreate: (data: PrintTemplateSave) => postRequest<Id>('/scm/print/template', data),
 
-  templateUpdate: (data: PrintTemplateSave) => postRequest('/scm/print/template/update', data) as unknown as Promise<ScmResponse<string>>,
+  templateUpdate: (data: PrintTemplateSave) => postRequest<string>('/scm/print/template/update', data),
 
-  templateSetDefault: (id: Id) => postRequest(`/scm/print/template/${id}/default`, {}) as unknown as Promise<ScmResponse<string>>,
+  templateSetDefault: (id: Id) => postRequest<string>(`/scm/print/template/${id}/default`, {}),
 
-  templateDelete: (id: Id, version: number) =>
-    postRequest(`/scm/print/template/${id}/delete?version=${version}`, {}) as unknown as Promise<ScmResponse<string>>,
+  templateDelete: (id: Id, version: number) => postRequest<string>(`/scm/print/template/${id}/delete?version=${version}`, {}),
 
   // ---- 渲染与打印 ----
   templateOptions: (documentType: PrintDocumentType, businessId: Id, options?: RequestOptions) =>
-    getRequest(`/scm/print/${documentType}/${businessId}/templates`, {}, options) as unknown as Promise<ScmResponse<PrintTemplate[]>>,
+    getRequest<PrintTemplate[]>(`/scm/print/${documentType}/${businessId}/templates`, {}, options),
 
   /** 预览：只读，不计次、不留痕。`templateId` 为空用默认模板。 */
   preview: (documentType: PrintDocumentType, businessId: Id, templateId?: Id, options?: RequestOptions) => {
     const query = templateId === undefined || templateId === null ? '' : `?templateId=${templateId}`;
-    return getRequest(`/scm/print/${documentType}/${businessId}/preview${query}`, {}, options) as unknown as Promise<ScmResponse<PrintRender>>;
+    return getRequest<PrintRender>(`/scm/print/${documentType}/${businessId}/preview${query}`, {}, options);
   },
 
   /** 正式打印：保存模板版本和版面内容，返回本次打印版面。 */
@@ -74,10 +72,9 @@ export const printApi = {
     }),
 
   /** 历史重印：使用当时保存的内容，金额按当前权限重新过滤。 */
-  reprint: (recordId: Id) => getRequest(`/scm/print/record/${recordId}/reprint`, {}) as unknown as Promise<ScmResponse<PrintRender>>,
+  reprint: (recordId: Id) => getRequest<PrintRender>(`/scm/print/record/${recordId}/reprint`, {}),
 
-  recordQuery: (data: PrintRecordQuery, options?: RequestOptions) =>
-    postRequest('/scm/print/record/query', data, options) as unknown as Promise<ScmResponse<ScmPage<PrintRecord>>>,
+  recordQuery: (data: PrintRecordQuery, options?: RequestOptions) => postRequest<ScmPage<PrintRecord>>('/scm/print/record/query', data, options),
 };
 
 export default printApi;

@@ -1,7 +1,6 @@
 import {getRequest, postRequest} from '/@/lib/axios';
-import type {ScmId, ScmResponse} from '/@/types/business/scm/customer';
+import type {ScmId} from '/@/types/business/scm/customer';
 import {purchaseCommand} from '/@/api/business/scm/purchase-order-api';
-
 export interface InquiryCandidate {
   skuId: ScmId;
   skuCode: string;
@@ -58,14 +57,12 @@ export interface PurchaseInquiryDetail {
   hasMoreQuotes: boolean;
   nextQuoteBeforeId: ScmId | null;
 }
-
 const prefix = '/scm/purchase/inquiry';
 export const purchaseInquiryApi = {
-  byBatch: (batchId: ScmId, page = 1) => postRequest(prefix + '/batch', {batchId, page}) as unknown as Promise<ScmResponse<InquiryBatchPage>>,
-  candidates: (batchId: ScmId) => postRequest(prefix + '/batch/candidates', {batchId}) as unknown as Promise<ScmResponse<InquiryCandidate[]>>,
-  detail: (id: ScmId) => getRequest(prefix + '/' + id, {}) as unknown as Promise<ScmResponse<PurchaseInquiryDetail>>,
-  history: (inquiryId: ScmId, beforeId: ScmId) =>
-    postRequest(prefix + '/history', {inquiryId, beforeId}) as unknown as Promise<ScmResponse<InquiryHistoryPage>>,
+  byBatch: (batchId: ScmId, page = 1) => postRequest<InquiryBatchPage>(prefix + '/batch', {batchId, page}),
+  candidates: (batchId: ScmId) => postRequest<InquiryCandidate[]>(prefix + '/batch/candidates', {batchId}),
+  detail: (id: ScmId) => getRequest<PurchaseInquiryDetail>(prefix + '/' + id, {}),
+  history: (inquiryId: ScmId, beforeId: ScmId) => postRequest<InquiryHistoryPage>(prefix + '/history', {inquiryId, beforeId}),
   create: (data: {batchId: ScmId; skuId: ScmId; demandUnit: string; deadlineAt: string}) =>
     purchaseCommand<PurchaseInquiryDetail>(prefix + '/create', data),
   quote: (data: {inquiryId: ScmId; supplierId: ScmId; version: number; unitPrice: string; validUntil: string; remark?: string}) =>

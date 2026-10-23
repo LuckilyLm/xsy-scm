@@ -260,7 +260,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
@@ -350,7 +350,7 @@ const emptyRule = (): RuleForm => ({
   giftQuantity: null,
 });
 
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验；未挂载的规则字段不会被校验。 */
 const formRules = {
   activityCode: [{required: true, message: '请填写活动编码', trigger: 'blur'}],

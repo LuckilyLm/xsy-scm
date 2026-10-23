@@ -103,7 +103,7 @@
 <script setup lang="ts">
 import {computed, onBeforeUnmount, ref, watch} from 'vue';
 import {onBeforeRouteLeave} from 'vue-router';
-import {message, Modal} from 'ant-design-vue';
+import {message, Modal, type FormInstance} from 'ant-design-vue';
 import CustomerSelect from '/@/components/business/scm/customer-select/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
@@ -136,7 +136,7 @@ const form = ref<Order>(newOrder()),
   error = ref(''),
   originals = ref<{value: Id; label: string}[]>([]);
 const exchangeReturnId = ref<Id>();
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 收货信息在 `form.address.*` 里，展平一份给表单校验用（顶层 `address` 就是详细地址）。 */
 const flatModel = computed(() => ({...form.value, ...form.value.address}));
 const warehouseValue = computed<Id | undefined>({

@@ -22,9 +22,10 @@
 
 <script setup lang="ts">
 import {ref, watch, onMounted, getCurrentInstance} from 'vue';
+import type {SmartEnumItem} from '/@/types/smart-enum';
 
 const props = defineProps({
-  enumName: String,
+  enumName: {type: String, required: true},
   value: [Number, String],
   width: {
     type: String,
@@ -55,12 +56,12 @@ const props = defineProps({
   },
 });
 
-const valueDescList = ref([]);
+const valueDescList = ref<SmartEnumItem<unknown>[]>([]);
 
 onMounted(() => {
   const internalInstance = getCurrentInstance(); // 有效  全局
-  const smartEnumPlugin = internalInstance.appContext.config.globalProperties.$smartEnumPlugin;
-  valueDescList.value = smartEnumPlugin.getValueDescList(props.enumName).filter((item) => !props.hiddenOption.includes(item.value));
+  const smartEnumPlugin = internalInstance?.appContext.config.globalProperties.$smartEnumPlugin;
+  valueDescList.value = (smartEnumPlugin?.getValueDescList(props.enumName) ?? []).filter((item) => !props.hiddenOption.includes(item.value));
 });
 
 const selectValue = ref(props.value);

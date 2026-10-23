@@ -179,7 +179,7 @@ const responseStr = ref('');
 async function testResponseEncrypt() {
   responseEncryptFormStr.value = JSON.stringify(responseEncryptForm);
   const result = await encryptApi.testResponseEncrypt(responseEncryptForm);
-  responseEncryptStr.value = result.encryptData;
+  responseEncryptStr.value = result.encryptData ?? '';
   responseStr.value = JSON.stringify(result.data);
 }
 
@@ -199,7 +199,7 @@ async function testBoth() {
   formStr.value = JSON.stringify(form);
   formEncryptStr.value = encryptData(form);
   const result = await encryptApi.testDecryptAndEncrypt(form);
-  responseEncrypt.value = result.encryptData;
+  responseEncrypt.value = result.encryptData ?? '';
   responseDecryptStr.value = JSON.stringify(result.data);
 }
 
@@ -229,7 +229,7 @@ async function testArray() {
   arrayFormStr.value = JSON.stringify(arrayForm);
   arrayFormEncryptStr.value = encryptData(arrayForm);
   const result = await encryptApi.testArray(arrayForm);
-  arrayFormResponseEncrypt.value = result.encryptData;
+  arrayFormResponseEncrypt.value = result.encryptData ?? '';
   arrayFormResponseDecryptStr.value = JSON.stringify(result.data);
 }
 </script>

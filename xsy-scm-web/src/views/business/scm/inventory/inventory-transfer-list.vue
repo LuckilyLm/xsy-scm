@@ -188,7 +188,7 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
 import {message, Modal} from 'ant-design-vue';
-import type {TableColumnsType} from 'ant-design-vue';
+import type {TableColumnsType, FormInstance} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
@@ -337,7 +337,7 @@ interface EditableItem {
 
 const drawerOpen = ref(false);
 const saving = ref(false);
-const formRef = ref();
+const formRef = ref<FormInstance>();
 let keySeq = 0;
 
 const form = reactive<{
@@ -437,7 +437,7 @@ function buildPayload(): InventoryTransferAdd | null {
 }
 
 async function onSubmit() {
-  await formRef.value.validate();
+  await formRef.value?.validate();
   const payload = buildPayload();
   if (!payload) return;
   saving.value = true;

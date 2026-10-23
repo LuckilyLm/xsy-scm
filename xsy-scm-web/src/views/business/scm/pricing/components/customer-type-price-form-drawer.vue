@@ -55,7 +55,7 @@
 </template>
 <script setup lang="ts">
 import {reactive, ref} from 'vue';
-import {message} from 'ant-design-vue';
+import {message, type FormInstance} from 'ant-design-vue';
 import {pricingApi} from '/@/api/business/scm/pricing-api';
 import type {ScmId} from '/@/types/business/scm/customer';
 import type {PriceForm} from '/@/types/business/scm/pricing';
@@ -75,7 +75,7 @@ const visible = ref(false),
   saving = ref(false),
   error = ref('');
 const form = reactive<CustomerTypePriceModel>({...emptyPrice(), effectiveRange: undefined});
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验，错误显示在输入框下方。 */
 const formRules = {
   customerTypeId: [{required: true, message: '请选择客户类型', trigger: 'change'}],

@@ -24,6 +24,7 @@
 </template>
 <script setup lang="ts">
 import {ref} from 'vue';
+import type {FormInstance} from 'ant-design-vue';
 import {orderReturnApi} from '/@/api/business/scm/order-return-api';
 import type {Order, Item, Id} from '../order-types';
 import {fixed} from '../order-form-model';
@@ -35,7 +36,7 @@ const visible = ref(false),
   error = ref(''),
   orderId = ref<Id>(),
   rows = ref<(Item & {quantity: string})[]>([]);
-const formRef = ref();
+const formRef = ref<FormInstance>();
 /** 必填项逐项校验：错误显示在输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {reason: [{required: true, message: '请输入退货原因', trigger: 'blur'}]};
 const columns = [

@@ -175,10 +175,10 @@ function exitElementFullscreen(element) {
 
 // ----------------- 弹窗 修改表格列 -------------------
 
-const smartTableColumnModal = ref();
+const smartTableColumnModal = ref<{show: (columns: unknown[], tableId?: number | string) => void}>();
 
 function showModal() {
-  smartTableColumnModal.value.show(newColumn, props.tableId);
+  smartTableColumnModal.value?.show(newColumn, props.tableId);
 }
 
 // 将弹窗修改的列数据，赋值给原表格 列数组

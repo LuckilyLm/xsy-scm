@@ -1,9 +1,7 @@
 import {postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
-import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
+import type {ScmPage} from '/@/types/business/scm/customer';
 import type {ReportDateQuery, ReportId, ReportPage} from '/@/views/business/scm/report/report-types';
-
 export type FinanceProfitDimension = 'DAY' | 'CUSTOMER' | 'PRODUCT' | 'CATEGORY' | 'SELLER' | 'WAREHOUSE';
-
 export interface FinanceProfitQuery extends ReportPage, ReportDateQuery {
   dimension: FinanceProfitDimension;
   customerId?: ReportId;
@@ -13,7 +11,6 @@ export interface FinanceProfitQuery extends ReportPage, ReportDateQuery {
   warehouseId?: ReportId;
   keyword?: string;
 }
-
 export interface FinanceProfitRow {
   dimensionId?: ReportId | null;
   dimensionName: string;
@@ -27,7 +24,6 @@ export interface FinanceProfitRow {
   grossMarginRate: string | null;
   costMissingCount: number | null;
 }
-
 export interface FinanceProfitSummary {
   revenueAmount: string | null;
   salesCostAmount: string | null;
@@ -37,12 +33,9 @@ export interface FinanceProfitSummary {
   grossMarginRate: string | null;
   costMissingCount: number | null;
 }
-
 const base = '/scm/report/finance/profit';
 export const financeProfitApi = {
-  query: (data: FinanceProfitQuery, options?: RequestOptions) =>
-    postRequest(`${base}/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<FinanceProfitRow>>>,
-  summary: (data: Partial<FinanceProfitQuery>, options?: RequestOptions) =>
-    postRequest(`${base}/summary`, data, options) as unknown as Promise<ScmResponse<FinanceProfitSummary>>,
+  query: (data: FinanceProfitQuery, options?: RequestOptions) => postRequest<ScmPage<FinanceProfitRow>>(`${base}/query`, data, options),
+  summary: (data: Partial<FinanceProfitQuery>, options?: RequestOptions) => postRequest<FinanceProfitSummary>(`${base}/summary`, data, options),
   export: (data: Partial<FinanceProfitQuery>) => postDownload(`${base}/export`, data),
 };

@@ -1,7 +1,6 @@
 import {postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
-import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
+import type {ScmPage} from '/@/types/business/scm/customer';
 import type {ReportId} from '/@/views/business/scm/report/report-types';
-
 export type OrderExceptionType =
   | 'SORTING_SHORTAGE'
   | 'SORTING_DIFFERENCE'
@@ -49,9 +48,7 @@ export interface OrderExceptionSummary {
 }
 const base = '/scm/report/order-exceptions';
 export const orderExceptionApi = {
-  query: (data: OrderExceptionQuery, options?: RequestOptions) =>
-    postRequest(`${base}/query`, data, options) as unknown as Promise<ScmResponse<ScmPage<OrderExceptionRow>>>,
-  summary: (data: OrderExceptionQuery, options?: RequestOptions) =>
-    postRequest(`${base}/summary`, data, options) as unknown as Promise<ScmResponse<OrderExceptionSummary[]>>,
+  query: (data: OrderExceptionQuery, options?: RequestOptions) => postRequest<ScmPage<OrderExceptionRow>>(`${base}/query`, data, options),
+  summary: (data: OrderExceptionQuery, options?: RequestOptions) => postRequest<OrderExceptionSummary[]>(`${base}/summary`, data, options),
   export: (data: OrderExceptionQuery) => postDownload(`${base}/export`, data),
 };

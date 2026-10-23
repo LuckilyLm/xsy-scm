@@ -62,21 +62,27 @@ const saving = ref(false);
 const editError = ref('');
 const defaultFileList = ref<Record<string, unknown>[]>([]);
 const pendingKeys = ref<string[]>([]);
+let requestId = 0;
 
 async function load() {
+  const current = ++requestId;
   if (!props.targetId) {
     list.value = [];
+    loading.value = false;
     return;
   }
   loading.value = true;
   error.value = '';
   try {
-    list.value = await traceAttachmentApi.list(props.scope, props.targetId);
+    const result = await traceAttachmentApi.list(props.scope, props.targetId);
+    if (current !== requestId) return;
+    list.value = result;
   } catch (e) {
+    if (current !== requestId) return;
     list.value = [];
     error.value = e instanceof Error ? e.message : '附件加载失败，请重试';
   } finally {
-    loading.value = false;
+    if (current === requestId) loading.value = false;
   }
 }
 

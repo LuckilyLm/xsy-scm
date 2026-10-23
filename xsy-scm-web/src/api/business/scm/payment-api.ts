@@ -1,5 +1,5 @@
 import {getRequest, postRequest, request, type RequestOptions} from '/@/lib/axios';
-import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
+import type {ScmPage} from '/@/types/business/scm/customer';
 import type {Id} from '/@/views/business/scm/order/order-types';
 
 export interface PaymentTransaction {
@@ -43,11 +43,9 @@ export interface BalanceMovement {
 }
 export const paymentApi = {
   create: (data: PaymentCreate, key: string) =>
-    request({url: '/scm/payment/intent/create', method: 'post', data, headers: {'Idempotency-Key': key}}) as unknown as Promise<
-      ScmResponse<PaymentIntent>
-    >,
+    request<PaymentIntent>({url: '/scm/payment/intent/create', method: 'post', data, headers: {'Idempotency-Key': key}}),
   query: (orderId: Id, pageNum: number, options?: RequestOptions) =>
-    postRequest(
+    postRequest<ScmPage<PaymentIntent>>(
       '/scm/payment/intent/query',
       {
         sourceType: 'SALES_ORDER',
@@ -56,11 +54,8 @@ export const paymentApi = {
         pageSize: 10,
       },
       options
-    ) as unknown as Promise<ScmResponse<ScmPage<PaymentIntent>>>,
-  detail: (id: Id, options?: RequestOptions) =>
-    getRequest(`/scm/payment/intent/detail/${id}`, {}, options) as unknown as Promise<ScmResponse<PaymentIntent>>,
+    ),
+  detail: (id: Id, options?: RequestOptions) => getRequest<PaymentIntent>(`/scm/payment/intent/detail/${id}`, {}, options),
   movements: (filter: {movementId?: Id; sourceType?: string; sourceId?: Id}, options?: RequestOptions) =>
-    postRequest('/scm/balance/movement/query', {...filter, pageNum: 1, pageSize: 10}, options) as unknown as Promise<
-      ScmResponse<ScmPage<BalanceMovement>>
-    >,
+    postRequest<ScmPage<BalanceMovement>>('/scm/balance/movement/query', {...filter, pageNum: 1, pageSize: 10}, options),
 };

@@ -13,9 +13,10 @@
 
 <script setup lang="ts">
 import {ref, watch, getCurrentInstance, onMounted} from 'vue';
+import type {SmartEnumItem} from '/@/types/smart-enum';
 
 const props = defineProps({
-  enumName: String,
+  enumName: {type: String, required: true},
   value: Array,
   width: {
     type: String,
@@ -40,12 +41,12 @@ const props = defineProps({
 
 // ------------ 枚举数据 加载和构建 ------------
 
-const valueDescList = ref([]);
+const valueDescList = ref<SmartEnumItem<unknown>[]>([]);
 
 onMounted(() => {
   const internalInstance = getCurrentInstance(); // 有效  全局
-  const smartEnumPlugin = internalInstance.appContext.config.globalProperties.$smartEnumPlugin;
-  valueDescList.value = smartEnumPlugin.getValueDescList(props.enumName).filter((item) => !props.hiddenOption.includes(item.value));
+  const smartEnumPlugin = internalInstance?.appContext.config.globalProperties.$smartEnumPlugin;
+  valueDescList.value = (smartEnumPlugin?.getValueDescList(props.enumName) ?? []).filter((item) => !props.hiddenOption.includes(item.value));
 });
 
 // ------------ 数据选中 事件及其相关 ------------

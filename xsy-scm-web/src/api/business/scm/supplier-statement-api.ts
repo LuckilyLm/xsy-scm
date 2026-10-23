@@ -1,7 +1,5 @@
 import {getRequest, postDownload, postRequest, type RequestOptions} from '/@/lib/axios';
-import type {ScmResponse} from '/@/types/business/scm/customer';
 import type {ReportId} from '/@/views/business/scm/report/report-types';
-
 export interface SupplierStatementForm {
   supplierId: ReportId;
   warehouseId?: ReportId;
@@ -42,9 +40,8 @@ export interface SupplierStatement {
 }
 const base = '/scm/report/supplier/statement';
 export const supplierStatementApi = {
-  freeze: (form: SupplierStatementForm) => postRequest(`${base}/freeze`, form) as unknown as Promise<ScmResponse<SupplierStatement>>,
-  history: (supplierId: ReportId, options?: RequestOptions) =>
-    getRequest(`${base}/history`, {supplierId}, options) as unknown as Promise<ScmResponse<SupplierStatement[]>>,
-  detail: (id: ReportId, options?: RequestOptions) => getRequest(`${base}/${id}`, {}, options) as unknown as Promise<ScmResponse<SupplierStatement>>,
+  freeze: (form: SupplierStatementForm) => postRequest<SupplierStatement>(`${base}/freeze`, form),
+  history: (supplierId: ReportId, options?: RequestOptions) => getRequest<SupplierStatement[]>(`${base}/history`, {supplierId}, options),
+  detail: (id: ReportId, options?: RequestOptions) => getRequest<SupplierStatement>(`${base}/${id}`, {}, options),
   export: (id: ReportId) => postDownload(`${base}/${id}/export`, {}),
 };

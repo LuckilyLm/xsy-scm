@@ -2,7 +2,6 @@ import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {
   ScmId,
   ScmPage,
-  ScmResponse,
   SupplierDeletePayload,
   SupplierDetail,
   SupplierOption,
@@ -11,16 +10,12 @@ import type {
   SupplierRow,
   SupplierStatusPayload,
 } from '/@/types/business/scm/supplier';
-
 export const supplierApi = {
-  query: (form: SupplierQuery, options?: RequestOptions) =>
-    postRequest('/scm/supplier/query', form, options) as unknown as Promise<ScmResponse<ScmPage<SupplierRow>>>,
-  detail: (supplierId: ScmId, options?: RequestOptions) =>
-    getRequest(`/scm/supplier/detail/${supplierId}`, {}, options) as unknown as Promise<ScmResponse<SupplierDetail>>,
-  optionList: (options?: RequestOptions) =>
-    postRequest('/scm/supplier/option/list', {}, options) as unknown as Promise<ScmResponse<SupplierOption[]>>,
-  add: (form: SupplierPayload) => postRequest('/scm/supplier/add', form) as unknown as Promise<ScmResponse<ScmId>>,
-  update: (form: SupplierPayload) => postRequest('/scm/supplier/update', form) as unknown as Promise<ScmResponse<null>>,
+  query: (form: SupplierQuery, options?: RequestOptions) => postRequest<ScmPage<SupplierRow>>('/scm/supplier/query', form, options),
+  detail: (supplierId: ScmId, options?: RequestOptions) => getRequest<SupplierDetail>(`/scm/supplier/detail/${supplierId}`, {}, options),
+  optionList: (options?: RequestOptions) => postRequest<SupplierOption[]>('/scm/supplier/option/list', {}, options),
+  add: (form: SupplierPayload) => postRequest<ScmId>('/scm/supplier/add', form),
+  update: (form: SupplierPayload) => postRequest<null>('/scm/supplier/update', form),
   updateStatus: (payload: SupplierStatusPayload) => postRequest('/scm/supplier/updateStatus', payload),
   delete: (payload: SupplierDeletePayload) => postRequest('/scm/supplier/delete', payload),
 };

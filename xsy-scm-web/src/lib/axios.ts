@@ -1,6 +1,6 @@
 /* ajax 请求 */
 import {message, Modal} from 'ant-design-vue';
-import axios from 'axios';
+import axios, {type AxiosRequestConfig, type AxiosResponse} from 'axios';
 import {localRead} from '/@/utils/local-util';
 import {useUserStore} from '/@/store/modules/system/user';
 import {decryptData, encryptData} from './encrypt';
@@ -18,6 +18,18 @@ declare module 'axios' {
 export type RequestOptions = {
   suppressGlobalErrorMessage?: boolean;
 };
+
+/** SmartAdmin 统一响应信封；文件流等其他响应不经过此类型。 */
+export interface ApiResponse<T = any> {
+  code: number;
+  ok: boolean;
+  msg: string;
+  data: T;
+  level?: string;
+  dataType?: number;
+  /** 返回加密时保留的密文，供调试页面展示；解密结果在 data。 */
+  encryptData?: string;
+}
 
 const TOKEN_HEADER = 'Authorization';
 
@@ -129,48 +141,51 @@ smartAxios.interceptors.response.use(
 
 // 对外请求方法
 
+/**
+ * JSON 响应在拦截器里被替换成业务信封，文件流仍返回原始 AxiosResponse；
+ * 运行时分支无法用单一类型表达，只在 dispatch 出口做一次收口。
+ */
+function dispatch(config: AxiosRequestConfig): Promise<unknown> {
+  return smartAxios.request(config);
+}
+
 /** GET 请求 */
-export const getRequest = (url: string, params?: any, options?: RequestOptions) => {
-  return request({url, method: 'get', params, ...options});
-};
+export const getRequest = <T = any>(url: string, params?: unknown, options?: RequestOptions): Promise<ApiResponse<T>> =>
+  dispatch({url, method: 'get', params, ...options}) as Promise<ApiResponse<T>>;
 
 /** 通用请求封装 */
-export const request = (config) => {
-  return smartAxios.request(config);
-};
+export const request = <T = any>(config: AxiosRequestConfig): Promise<ApiResponse<T>> => dispatch(config) as Promise<ApiResponse<T>>;
 
 /** POST 请求 */
-export const postRequest = (url: string, data?: any, options?: RequestOptions) => {
-  return request({
+export const postRequest = <T = any>(url: string, data?: unknown, options?: RequestOptions): Promise<ApiResponse<T>> =>
+  dispatch({
     data,
     url,
     method: 'post',
     ...options,
-  });
-};
+  }) as Promise<ApiResponse<T>>;
 
 // 加密
 
 /** 加密请求参数的 POST 请求 */
-export const postEncryptRequest = (url, data) => {
-  return request({
+export const postEncryptRequest = <T = any>(url: string, data: unknown): Promise<ApiResponse<T>> =>
+  dispatch({
     data: {encryptData: encryptData(data)},
     url,
     method: 'post',
-  });
-};
+  }) as Promise<ApiResponse<T>>;
 
 // 下载
 
-export const postDownload = function (url, data) {
-  return request({
+export const postDownload = function (url: string, data: unknown) {
+  return dispatch({
     method: 'post',
     url,
     data,
     responseType: 'blob',
   })
     .then((data) => {
-      handleDownloadData(data);
+      handleDownloadData(data as AxiosResponse);
     })
     .catch((error) => {
       handleDownloadError(error);
@@ -178,15 +193,15 @@ export const postDownload = function (url, data) {
 };
 
 /** 文件下载；失败已在此处提示，Promise 不会 reject。 */
-export const getDownload = function (url, params) {
-  return request({
+export const getDownload = function (url: string, params?: unknown) {
+  return dispatch({
     method: 'get',
     url,
     params,
     responseType: 'blob',
   })
     .then((data) => {
-      handleDownloadData(data);
+      handleDownloadData(data as AxiosResponse);
     })
     .catch((error) => {
       handleDownloadError(error);
@@ -230,7 +245,7 @@ function downloadFileName(contentDisposition: string | undefined) {
   }
 }
 
-function handleDownloadData(response) {
+function handleDownloadData(response?: AxiosResponse) {
   if (!response) return;
   const contentType = response.headers['content-type'] || response.headers['Content-Type'] || 'application/octet-stream';
   const contentDisposition = response.headers['content-disposition'] || response.headers['Content-Disposition'];

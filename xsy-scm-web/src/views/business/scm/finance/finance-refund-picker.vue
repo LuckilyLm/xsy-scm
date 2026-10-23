@@ -71,7 +71,10 @@ const columns = computed<TableColumnsType<FinanceRefundOption>>(() => [
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ]);
 
+let requestId = 0;
+
 async function queryData() {
+  const current = ++requestId;
   loading.value = true;
   error.value = '';
   try {
@@ -80,12 +83,14 @@ async function queryData() {
       {pageNum: pageNum.value, pageSize: pageSize.value, keyword: keyword.value.trim() || undefined},
       {suppressGlobalErrorMessage: true}
     );
+    if (current !== requestId) return;
     rows.value = response.data.list ?? [];
     total.value = response.data.total ?? 0;
   } catch (cause) {
+    if (current !== requestId) return;
     error.value = financeError(cause);
   } finally {
-    loading.value = false;
+    if (current === requestId) loading.value = false;
   }
 }
 
@@ -109,9 +114,10 @@ watch(
     if (isOpen) {
       keyword.value = '';
       pageNum.value = 1;
-      queryData();
+      void queryData();
     }
-  }
+  },
+  {immediate: true}
 );
 </script>
 

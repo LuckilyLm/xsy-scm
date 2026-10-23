@@ -88,13 +88,13 @@ const emit = defineEmits(['change']);
 defineExpose({show});
 
 // ---------------- 显示 / 隐藏 --------------------
-let tableId = null;
+let tableId: number | string | null = null;
 const visible = ref(false);
-const gridRef = ref();
+const gridRef = ref<HTMLElement>();
 
 //显示
-function show(columns, showTableId) {
-  tableId = showTableId;
+function show(columns: unknown[], showTableId?: number | string) {
+  tableId = showTableId ?? null;
   visible.value = true;
   selectedRowKeyList.value = [];
   getUserTableColumns(tableId, _.cloneDeep(columns));
@@ -108,7 +108,7 @@ function hide() {
 const saveFlag = ref(false);
 
 //获取用户的列数据
-async function getUserTableColumns(tableId, columns) {
+async function getUserTableColumns(tableId: number | string | null, columns: unknown[]) {
   if (!tableId) {
     return;
   }
@@ -149,16 +149,25 @@ async function getUserTableColumns(tableId, columns) {
 }
 
 // --------------------- 网格渲染 --------------------------------
-const tableData = ref([]);
+interface ColumnGridItem {
+  columnKey: string;
+  title?: string;
+  width?: number | string;
+  showFlag?: boolean;
+  fixed?: boolean | 'left' | 'right';
+  [key: string]: unknown;
+}
 
-function isColumnShown(item) {
+const tableData = ref<ColumnGridItem[]>([]);
+
+function isColumnShown(item: ColumnGridItem) {
   return selectedRowKeyList.value.indexOf(item.columnKey) > -1;
 }
 
 /**
  * 切换单列的显示状态。固定列始终显示，点它不产生任何变化。
  */
-function toggleColumn(item) {
+function toggleColumn(item: ColumnGridItem) {
   if (item.fixed) {
     return;
   }
@@ -181,7 +190,7 @@ function initDrag() {
     ghostClass: 'scm-column-grid__cell--ghost',
     chosenClass: 'scm-column-grid__cell--chosen',
     // 固定列是表格尾部的能力列，不允许被普通列挤到中间。
-    onMove(event) {
+    onMove(event: {related: Element}) {
       return !event.related.classList.contains('is-fixed');
     },
     onEnd({newIndex, oldIndex}) {
@@ -194,13 +203,13 @@ function initDrag() {
 }
 
 //移动表格数据
-function moveTableData(oldIndex, newIndex) {
+function moveTableData(oldIndex: number, newIndex: number) {
   const currRow = tableData.value.splice(oldIndex, 1)[0];
   tableData.value.splice(newIndex, 0, currRow);
 }
 
 // ------------------------- 选中集合 ------------------------
-const selectedRowKeyList = ref([]);
+const selectedRowKeyList = ref<string[]>([]);
 
 // -------------------------提交表单【恢复默认、保存、取消】 ------------------------
 const submitLoading = ref(false);
@@ -239,7 +248,7 @@ async function save(closeFlag = true) {
     let columnList = [];
     for (let index = 0; index < tableData.value.length; index++) {
       let item = tableData.value[index];
-      let column = {
+      const column: {columnKey: string; sort: number; width?: number | string; showFlag?: boolean} = {
         columnKey: item.columnKey,
         sort: index + 1,
       };

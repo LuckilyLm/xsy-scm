@@ -230,7 +230,7 @@ function omitEmpty(source: LooseFilters): LooseFilters {
   return result;
 }
 
-/** 组装查询体：日期 + 共享筛选，空值不发送；导出时不传分页。 */
+/** 组装查询体：日期 + 共享筛选，空值不发送；导出时不传分页。返回类型由调用方声明，函数本身不做形状校验。 */
 export function buildReportQuery<T extends object>(
   range: DateRange | undefined | null,
   shared: LooseFilters,
