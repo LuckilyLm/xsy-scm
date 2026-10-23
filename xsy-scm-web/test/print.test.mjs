@@ -119,3 +119,19 @@ import {readFileSync} from 'node:fs';
     assert.match(detail, /hasPermission\('scm:order:query'\)/);
   });
 }
+
+// ---------------------------------------------------------------- 来源：trace-unit-print-qr.test.mjs
+{
+  const read = p => readFileSync(new URL(p, import.meta.url), 'utf8');
+  const render = read('../src/views/business/scm/print/print-render.ts');
+  const type = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintDocumentTypeEnum.java');
+  const migration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V177__scm_trace_unit_label_qr.sql');
+
+  test('包装码标签的扫码地址只生成二维码，不印 URL 文本', () => {
+    assert.match(render, /field\.key !== 'traceUrl'/, '表头文本必须排除 traceUrl');
+    assert.match(render, /qrImages\.get\(traceUrl\)/, '二维码仍从 traceUrl 生成');
+    assert.match(type, /new ScmPrintField\("traceUrl", "溯源二维码"/, '白名单必须允许 traceUrl');
+    assert.match(migration, /document_type = 'TRACE_UNIT'/, '迁移只改包装码标签');
+    assert.match(migration, /traceUrl/, '迁移必须补扫码地址');
+  });
+}

@@ -99,7 +99,9 @@ public enum ScmPrintDocumentTypeEnum {
             new ScmPrintField("productName", "商品", false, false), new ScmPrintField("skuName", "规格", false, false),
             new ScmPrintField("packageType", "包装类型", false, false), new ScmPrintField("quantity", "数量", false, true),
             new ScmPrintField("unit", "单位", false, false), new ScmPrintField("customerName", "客户", false, false),
-            new ScmPrintField("orderNo", "订单号", false, false)), List.of(), List.of());
+            new ScmPrintField("orderNo", "订单号", false, false),
+            // 只用于生成二维码，不在标签上印 URL 文本
+            new ScmPrintField("traceUrl", "溯源二维码", false, false)), List.of(), List.of());
 
     /**
      * 展示名（模板列表与错误信息用）。

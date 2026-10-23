@@ -430,6 +430,23 @@ class ScmMigrationTargetPgIT {
     }
 
     /**
+     * V177 起包装码标签模板包含扫码地址，前端据此生成二维码。
+     */
+    @Test
+    void traceUnitLabelCarriesQrUrlFromV177() {
+        int target = Integer.parseInt(targetVersion());
+        if (target < 177) {
+            return;
+        }
+        Integer missing = jdbc.queryForObject(
+                "SELECT count(*) FROM xsy_print_template WHERE document_type = 'TRACE_UNIT' "
+                        + "AND enabled_flag = TRUE AND deleted = FALSE "
+                        + "AND NOT (model->'headerFields') @> '[\"traceUrl\"]'::jsonb",
+                Integer.class);
+        assertThat(missing).as("启用的包装码标签模板都应包含扫码地址").isZero();
+    }
+
+    /**
      * V155 起包装码可以作废：作废权限随迁移发布。
      */
     @Test

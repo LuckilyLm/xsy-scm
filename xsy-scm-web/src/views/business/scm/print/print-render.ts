@@ -49,6 +49,8 @@ function traceLine(render: PrintRender): string {
 /** 一张单据的打印片段。 */
 export function renderPrintHtml(render: PrintRender): string {
     const header = render.headerFields
+        // traceUrl 只用于生成二维码；80mm 标签上没有空间再印一串 URL
+        .filter((field) => field.key !== 'traceUrl')
         .map((field) => `<span class="f"><b>${esc(field.label)}</b>：${esc(field.value)}</span>`)
         .join('');
     const head = '<tr>' + render.columns
