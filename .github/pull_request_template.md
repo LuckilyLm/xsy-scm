@@ -40,7 +40,7 @@
 <!--
   提示：`mvn test` 会同时执行 *Test.java 与 *IT.java。若输出里只有 *Test 类，
   说明集成测试又被静默跳过了 —— 那是本次改动未验证，不是验证通过。
-  也可以直接跑 ./verify.sh（Windows：.\verify.ps1）。
+  也可以直接从仓库根目录运行 tools/verify.ps1（Windows）或 tools/verify.sh（Linux/macOS）。
 -->
 
 **未覆盖到的部分**（必填；确实没有就写「无」）：

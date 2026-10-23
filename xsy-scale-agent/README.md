@@ -104,4 +104,4 @@ npm.cmd test
 
 累计按员工会话＋作业＋任务＋明细隔离，不含平台缓存已分拣量。当前无接班、零筐缺货、作废、更正、重开、价格或库存功能；新增时应由平台定义正式业务规则。补传必须对接真实多筐受理/集合完成契约，不能向旧accept塞累计总量冒充秤读数。
 
-[厂家及平台交接](../docs/sohe-scale-integration-handoff.md)，[第一代秤端交付及深圳接入清单](FIRST-GENERATION-HANDOFF.md)。正式平台接口仍须由双方确认后联调；本模块不依赖个人工作区中的工具目录。
+[第一代秤端交付及深圳接入清单](FIRST-GENERATION-HANDOFF.md)。正式平台接口以 `xsy-scm-server` 的 `/scm/device/scale/v1` 和 [项目状态](../docs/status.md) 记录为准；本模块不依赖个人工作区中的工具目录。
