@@ -365,7 +365,7 @@ def magic_string_literals(source: JavaSource, vocabulary: dict[str, set[str]]) -
     Only that case is gated. An ALL-CAPS literal with no enum behind it may be a
     document-number prefix, a spreadsheet header or vocabulary that still needs a
     ruling; deciding that automatically would produce debt nobody can act on.
-    Those are counted by ``scm_metrics.py`` instead.
+    They stay informational: only literals that duplicate an existing enum are gated.
     """
     findings = []
     for literal in source.string_literals:

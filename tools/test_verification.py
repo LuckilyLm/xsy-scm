@@ -80,7 +80,7 @@ class VerificationTest(unittest.TestCase):
         with contextlib.ExitStack() as stack:
             stack.enter_context(patch.object(verify.Verification, "__init__", return_value=None))
             stack.enter_context(patch.object(verify.Verification, "summary", return_value=0))
-            for name in ("quality", "backend", "frontend", "e2e"):
+            for name in ("quality", "backend", "frontend", "miniprogram", "e2e"):
                 stack.enter_context(patch.object(verify.Verification, name,
                                                  side_effect=lambda n=name: calls.update([n])))
             stack.enter_context(patch("sys.argv", ["verify.py", scope]))
@@ -96,7 +96,7 @@ class VerificationTest(unittest.TestCase):
         self.assertEqual({"e2e": 1}, self.dispatch("e2e"))
 
     def test_all_scope_runs_every_step(self):
-        self.assertEqual({"quality": 1, "backend": 1, "frontend": 1, "e2e": 1},
+        self.assertEqual({"quality": 1, "backend": 1, "frontend": 1, "miniprogram": 1, "e2e": 1},
                          self.dispatch("all"))
 
 

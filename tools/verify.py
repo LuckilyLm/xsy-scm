@@ -141,24 +141,26 @@ class Verification:
         )
         self.run("scm-error-code-registry",
                  [sys.executable, str(ROOT / "tools/quality/scm_error_code_registry.py")], ROOT)
+        # 自测合集按 TestCase 分组执行：合并文件只是少几个入口，失败仍归属到具体门禁。
+        quality_tests = str(ROOT / "tools/quality/test_quality_tools.py")
         self.run("cross-domain-dao-guard-selftest",
-                 [sys.executable, str(ROOT / "tools/quality/test_scm_cross_domain_dao_guard.py")],
+                 [sys.executable, quality_tests, "CrossDomainDaoGuardFixtureTest"],
                  ROOT / "tools/quality")
         self.run("common-source-domain-guard-selftest",
-                 [sys.executable, str(ROOT / "tools/quality/test_scm_common_domain_source_guard.py")],
+                 [sys.executable, quality_tests, "CommonDomainSourceGuardTest"],
                  ROOT / "tools/quality")
         self.run("quality-source-rules-selftest",
-                 [sys.executable, str(ROOT / "tools/quality/test_quality_guard_source_rules.py")],
+                 [sys.executable, quality_tests, "StageCommentScannerTest", "MagicStringRulingTest"],
                  ROOT / "tools/quality")
         self.run("baseline-migration-selftest",
-                 [sys.executable, str(ROOT / "tools/quality/test_baseline_path_migration.py")],
+                 [sys.executable, quality_tests, "MigrateLineTest", "MigrateFileReportTest",
+                  "MovedOnDiskTest", "DomainMappingTest", "BaselineFileSelectionTest"],
                  ROOT / "tools/quality")
         self.run("ledger-safety-selftest",
-                 [sys.executable, str(ROOT / "tools/quality/test_quality_guard_ledger.py")],
+                 [sys.executable, quality_tests, "LedgerBreachTest", "CaptureRefusalTest"],
                  ROOT / "tools/quality")
         self.run("migration-manifest-selftest",
-                 [sys.executable,
-                  str(ROOT / "tools/quality/test_package_migration_manifest.py")],
+                 [sys.executable, quality_tests, "ManifestTreeTest", "CaptureAttackTest"],
                  ROOT / "tools/quality")
         self.run("package-migration-readiness",
                  [sys.executable, str(ROOT / "tools/quality/package_migration_readiness.py")],
@@ -205,22 +207,16 @@ class Verification:
             self.run(f"miniprogram-{script}", ["npm", "run", script], MINIPROGRAM)
 
     def e2e(self):
-        # Local account provisioning remains a prerequisite, including on clean clones.
-        helpers = ["e2e_accounts.py", "e2e_report_fixture.py"]
-        missing = [name for name in helpers if not (ROOT / "tools" / name).is_file()]
-        if missing:
-            self.incomplete.append("E2E: local account helpers missing: " + ", ".join(missing))
+        # Account provisioning, report fixtures and xlsx template filling share one entry point;
+        # the specs invoke it directly, so a missing file would fail mid-run rather than skip.
+        helper = ROOT / "tools" / "e2e_fixtures.py"
+        if not helper.is_file():
+            self.incomplete.append(f"E2E: local fixture helper missing: {helper.name}")
             return
         # Upload specs build their xlsx fixtures with Python + openpyxl, and account provisioning
         # hashes passwords with argon2-cffi. Without them the specs fail mid-run with
         # ModuleNotFoundError, which reads like a broken spec rather than a missing prerequisite.
         # tools/requirements-dev.txt pins the versions.
-        xlsx_helpers = ["patch_product_create_xlsx.py", "patch_product_update_xlsx.py",
-                        "fill_stocktake_template.py"]
-        missing_xlsx = [name for name in xlsx_helpers if not (ROOT / "tools" / name).is_file()]
-        if missing_xlsx:
-            self.incomplete.append("E2E: xlsx fixture helpers missing: " + ", ".join(missing_xlsx))
-            return
         for module, package in (("openpyxl", "openpyxl"), ("argon2", "argon2-cffi")):
             try:
                 importlib.import_module(module)

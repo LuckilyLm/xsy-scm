@@ -1,11 +1,12 @@
 /*
  * E2E 临时账号与真实登录的共用实现。
  *
- * 为什么要有这个文件：`scm-stocktake-import.spec.ts` 与 `scm-customer-360.spec.ts` 原先靠
- * 外部注入的一次性管理员令牌（`W6I_E2E_ADMIN_TOKEN` / `W7_E2E_ADMIN_TOKEN`）门控，
+ * 为什么要有这个文件：盘点导入与客户 360 用例（现分别位于 `scm-purchase-inventory.spec.ts`
+ * 与 `scm-master-data.spec.ts`）原先靠外部注入的一次性管理员令牌
+ * （`W6I_E2E_ADMIN_TOKEN` / `W7_E2E_ADMIN_TOKEN`）门控，
  * 缺令牌即整组 `test.skip` —— 于是「用例文件存在」被当成了「场景已验收」，
  * 而默认 web 地址还写死成 8080（本机栈在 18081），即使注入令牌也打不开页面。
- * 这里改成与 `scm-product.spec.ts` 同款的**自给自足**链路：脚本自己建临时账号、
+ * 这里改成与商品用例同款的**自给自足**链路：脚本自己建临时账号、
  * 自己走真实登录（验证码 + SM4 传输加密 + Sa-Token），令牌只活在内存里、收尾即删账号。
  *
  * 浏览器地址一律用 `page.goto('/#/...')` 相对路径，由 playwright.config 的 baseURL 提供，
@@ -42,6 +43,13 @@ export type TempAccounts = {
 };
 
 /**
+ * 同一文件里多组用例会在同一毫秒内建号：没有序号时它们拿到完全相同的 login_name，
+ * 后一次 setup 会复用并改掉前一次的密码，前一组随后登录必失败。
+ * 序号只加在 `_e2e_` 名尾，cleanup 仍按精确 login_name 删除，互不牵连。
+ */
+let provisionSeq = 0;
+
+/**
  * 建立本组用例专用的临时账号。返回的 `cleanup` 必须放进 `afterAll`：
  * 账号只写进 t_employee / t_role / t_role_menu，删掉即回到干净库。
  *
@@ -59,9 +67,9 @@ export function provisionTempAccounts(
     secondAdmin?: boolean,
 ): TempAccounts {
   const envKey = wave.toUpperCase() + '_E2E';
-  const name = `${wave}_e2e_` + Date.now().toString(36);
+  const name = `${wave}_e2e_` + Date.now().toString(36) + (++provisionSeq).toString(36);
   const password = `${wave.toUpperCase()}@` + randomBytes(6).toString('hex');
-  const script = '../tools/e2e_accounts.py';
+  const script = '../tools/e2e_fixtures.py';
   const env = {
     ...process.env,
     [`${envKey}_NAME`]: name,
@@ -73,7 +81,7 @@ export function provisionTempAccounts(
     ...(secondAdmin ? {E2E_SECOND_ADMIN: '1'} : {}),
   };
   // 账号名与 employee_id 一律取脚本回显，不在两边各写一遍派生/截断规则
-  const stdout = execFileSync('python', [script, 'setup', '--wave', wave], {env, stdio: 'pipe'}).toString();
+  const stdout = execFileSync('python', [script, 'account-setup', '--wave', wave], {env, stdio: 'pipe'}).toString();
   const roleAccounts: Record<string, string> = {};
   for (const pair of /roles=(\S+)/.exec(stdout)?.[1]?.split(',') ?? []) {
     const [roleCode, loginName] = pair.split('=');
@@ -98,7 +106,7 @@ export function provisionTempAccounts(
     secondAdmin: secondAdmin ? name + '_two' : undefined,
     roleAccounts,
     employeeIds,
-    cleanup: () => execFileSync('python', [script, 'cleanup', '--wave', wave], {env, stdio: 'pipe'}),
+    cleanup: () => execFileSync('python', [script, 'account-cleanup', '--wave', wave], {env, stdio: 'pipe'}),
   };
 }
 

@@ -2,6 +2,13 @@
 
 最后更新：2026-10-23。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
 
+## E2E 用例与工具按模块合并（2026-10-23，静态检查通过，未跑浏览器）
+
+- `xsy-scm-web/e2e` 的 31 份按域拆分 spec 合并为 7 份：`scm-master-data`、`scm-order`、`scm-purchase-inventory`、`scm-sorting-delivery`、`scm-finance`、`scm-report-dashboard`、`scm-platform`；`e2e-chains` 的 8 份黄金链合并为 `golden-chain.spec.ts`。每份来源文件保留为一个独立 `test.describe`，块内夹具、`beforeAll/afterAll` 与 serial 配置只作用于本块。
+- 临时账号名追加进程内序号：合并后同一文件内多组用例会在同一毫秒建号，原先会拿到相同 `login_name` 并互相改密；`scm-customer` / `scm-supplier` 与 `scm-inventory` / `scm-inventory-write` 两组同波次账号名另加固定后缀。
+- `tools` 收敛：账号、报表夹具与三类 xlsx 模板填值合并为 `tools/e2e_fixtures.py`（`account-setup` / `account-cleanup` / `report` / `product-create` / `product-update` / `stocktake`），`verify.py` 与全部 E2E 调用点同步；`quality/` 的 6 份门禁自测合并为 `test_quality_tools.py`，`verify.py` 仍按 TestCase 分组执行并保留各自失败标签；删除已完成的 Q1/Q2 迁包与命名审计一次性脚本。
+- 已验证：`tsc -p tsconfig.e2e.json`、`eslint e2e/**/*.ts` 通过；`playwright test --list` 收集 168 条（7 文件），黄金链配置收集 39 条（1 文件），逐来源条数与原 207 条声明一致；合并后的质量自测 58 项全过，`e2e_fixtures.py` 三个 xlsx 子命令与账号/报表分发已用临时文件实跑。本机 API/数据库未启动，**未运行浏览器用例、未真实建号**。
+
 ## 静态审查问题修复（2026-10-23，源码完成，未验证）
 
 - 附件绑定在建立授权关系前校验原文件读取权；秤端发码的首次请求与幂等返回均检查当前仓库范围。

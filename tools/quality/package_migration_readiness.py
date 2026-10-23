@@ -48,7 +48,8 @@ ARCHITECTURE_TEST_RELATIVE = "ScmArchitectureTest.java"
 W5_BASE_RELATIVE = "common/ScmW5PgITBase.java"
 STOCKTAKE_IT_RELATIVE = "inventory/ScmStocktakeImportPgIT.java"
 MIGRATION_TOOL = Path(__file__).resolve().parent / "migrate_baseline_paths.py"
-MIGRATION_SELFTEST = Path(__file__).resolve().parent / "test_baseline_path_migration.py"
+MIGRATION_SELFTEST = Path(__file__).resolve().parent / "test_quality_tools.py"
+MIGRATION_SELFTEST_MARKER = "class MigrateLineTest"
 EDITORCONFIG = ROOT / ".editorconfig"
 READINESS_DOC = ROOT / "tools/quality/package-migration-readiness.md"
 
@@ -262,7 +263,8 @@ def check_baseline_migration_tooling() -> Check:
     if not MIGRATION_TOOL.is_file():
         check.failures.append("tools/quality/migrate_baseline_paths.py is missing")
         return check
-    if not MIGRATION_SELFTEST.is_file():
+    if not MIGRATION_SELFTEST.is_file() or \
+            MIGRATION_SELFTEST_MARKER not in MIGRATION_SELFTEST.read_text(encoding="utf-8"):
         check.failures.append("the rewriter's self-test is missing")
         return check
     module = __import__("migrate_baseline_paths")
