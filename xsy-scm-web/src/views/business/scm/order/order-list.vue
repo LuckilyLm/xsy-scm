@@ -227,8 +227,8 @@ const columns = ref<OrderListColumn[]>([
   {title: '来源', dataIndex: 'orderSource', align: 'center', width: 100},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '标签', dataIndex: 'tags', width: 180},
-  {title: '下单金额', dataIndex: 'orderedTotalAmount', width: 130, align: 'right'},
-  {title: '结算金额', dataIndex: 'settlementTotalAmount', width: 130, align: 'right'},
+  {title: '下单金额', dataIndex: 'orderedTotalAmount', width: 130},
+  {title: '结算金额', dataIndex: 'settlementTotalAmount', width: 130},
   {title: '期望配送时间', dataIndex: 'expectDeliveryTime', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);

@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.product.domain.form.ProductImageCenterForms;
 import com.xsy.scm.product.domain.vo.ProductImageCenterVO;
+import com.xsy.scm.product.domain.vo.ProductImageMatchTargetVO;
 import com.xsy.scm.product.domain.vo.ProductUnboundImageVO;
 import com.xsy.scm.product.service.ProductImageCenterService;
 import com.xsy.scm.product.permission.ProductPermission;
@@ -43,6 +44,13 @@ public class ProductImageCenterController {
     public ResponseDTO<List<ProductUnboundImageVO>> unbound(
         @RequestParam(defaultValue = "100") @Min(1) @Max(300) Integer limit) {
         return ResponseDTO.ok(productImageCenterService.unboundImages(limit));
+    }
+
+    @PostMapping("/match-targets")
+    @SaCheckPermission(ProductPermission.IMAGE_QUERY)
+    public ResponseDTO<List<ProductImageMatchTargetVO>> matchTargets(
+        @Valid @RequestBody ProductImageCenterForms.MatchTargetsForm form) {
+        return ResponseDTO.ok(productImageCenterService.matchTargets(form));
     }
 
     @PostMapping("/batch-bind")

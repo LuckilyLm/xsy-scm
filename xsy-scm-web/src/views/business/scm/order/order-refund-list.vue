@@ -160,9 +160,8 @@ const columns = ref<TableColumnsType<RefundRow>>([
     title: '退款金额',
     dataIndex: 'refundAmount',
     width: 140,
-    align: 'right',
   },
-  {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200, align: 'right'},
+  {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200},
   {
     title: '外部凭证',
     dataIndex: 'externalReference',

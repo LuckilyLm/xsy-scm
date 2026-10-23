@@ -305,4 +305,12 @@ import {groupErrorsByRow, hasBlockingErrors, matchFilesBySpuCode} from '../src/v
     );
     assert.equal(results[0].candidates.length, 2);
   });
+
+  test('批量导入按编码向后端反查目标，不再只匹配当前页商品', () => {
+    const source = readFileSync(new URL('../src/views/business/scm/product/image-center.vue', import.meta.url), 'utf8');
+    assert.match(source, /productImageApi\.matchTargets\(/, '批量导入未请求后端匹配接口');
+    assert.match(source, /matchCache/, '批量导入没有编码缓存');
+    assert.match(source, /matchFilesBySpuCode\(stagedFiles\.value, \[\.\.\.matchCache\.values\(\)\]\.flat\(\)\)/, '匹配目标未来自编码缓存');
+    assert.doesNotMatch(source, /products\.value\.map\(\(row\) => \(\{spuId: row\.spuId, spuCode: row\.spuCode\}\)\)/, '匹配目标仍取当前页商品');
+  });
 }

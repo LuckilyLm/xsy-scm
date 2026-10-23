@@ -86,7 +86,7 @@ const columns = ref<TableColumnsType<PurchasePriceTrendPoint>>([
   {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '加权平均成交价', dataIndex: 'weightedAvgPrice', width: 148},
   {title: '上次有效均价', dataIndex: 'previousWeightedAvgPrice', width: 150},
-  {title: '涨跌金额', dataIndex: 'priceChangeAmount', width: 140, align: 'right'},
+  {title: '涨跌金额', dataIndex: 'priceChangeAmount', width: 140},
   {title: '涨跌幅', dataIndex: 'priceChangePercent', width: 108},
   {title: '样本行数', dataIndex: 'sampleLineCount', width: 92},
 ]);

@@ -193,7 +193,7 @@ const columns: TableColumnsType<PurchaseInquiry> = [
 const quoteColumns: TableColumnsType<PurchaseInquiryQuote> = [
   {title: '供应商', dataIndex: 'supplierNameSnapshot', width: 185},
   {title: '版本', dataIndex: 'revision', width: 85},
-  {title: '单价', dataIndex: 'unitPrice', width: 148, align: 'right'},
+  {title: '单价', dataIndex: 'unitPrice', width: 148},
   {title: '有效期', dataIndex: 'validUntil', width: 180},
   {title: '登记人', dataIndex: 'recordedBy', width: 130},
   {title: '备注', dataIndex: 'remark', width: 155},
@@ -203,7 +203,7 @@ const quoteColumns: TableColumnsType<PurchaseInquiryQuote> = [
 const historyColumns: TableColumnsType<PurchaseInquiryQuote> = [
   {title: '供应商', dataIndex: 'supplierNameSnapshot', width: 180},
   {title: '版本', dataIndex: 'revision', width: 80},
-  {title: '单价', dataIndex: 'unitPrice', width: 130, align: 'right'},
+  {title: '单价', dataIndex: 'unitPrice', width: 130},
   {title: '单位', dataIndex: 'purchaseUnit', width: 76},
   {title: '有效期', dataIndex: 'validUntil', width: 180},
   {title: '登记人', dataIndex: 'recordedBy', width: 120},

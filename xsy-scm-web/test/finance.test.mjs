@@ -234,11 +234,49 @@ import {readFileSync, existsSync} from 'node:fs';
     assert.match(payment, /counterpartyTypeText\(record\.counterpartyType\)/);
   });
 
-  test('收付款页的金额列统一走 scm-money（右对齐 + 等宽数字）', () => {
+  test('收付款页的金额列统一走 scm-money（等宽数字与语义颜色）', () => {
     for (const key of ['receipt', 'payment']) {
       const source = pageCode[key];
-      assert.match(source, /class="scm-money"/, `${PAGES[key]} 的金额未走 scm-money`);
+      assert.match(source, /class="scm-money"|moneyClass\(text,/, `${PAGES[key]} 的金额未走 scm-money`);
       assert.doesNotMatch(source, /<a-tag :color="SCM_FINANCE_ENTRY_COLOR/, `${PAGES[key]} 的方向标签应走 ScmStatusTag`);
+    }
+  });
+
+  test('余额类金额列按全站口径左对齐，金额样式只负责等宽数字与颜色', () => {
+    const REQUIRED = {
+      payable: [
+        ['未核销', 'openAmount'],
+        ['已核销', 'writtenOffAmount'],
+        ['超额核销', 'overAppliedAmount'],
+      ],
+      receivable: [
+        ['未核销', 'openAmount'],
+        ['已核销', 'writtenOffAmount'],
+        ['超额核销', 'overAppliedAmount'],
+      ],
+      receipt: [
+        ['待核销', 'pendingWriteOffAmount'],
+        ['已核销', 'usedAmount'],
+      ],
+      payment: [
+        ['待核销', 'pendingWriteOffAmount'],
+        ['已核销', 'usedAmount'],
+      ],
+    };
+    for (const [key, columns] of Object.entries(REQUIRED)) {
+      for (const [title, index] of columns) {
+        assert.doesNotMatch(
+          pageCode[key],
+          new RegExp(`title: '${title}', dataIndex: '${index}'[^}]*align:`),
+          `${PAGES[key]} 的「${title}」列不应单独设置对齐`
+        );
+      }
+    }
+  });
+
+  test('窄屏财务列表只保留卡片，避免表格与卡片重复', () => {
+    for (const key of ['receivable', 'payable', 'receipt', 'payment']) {
+      assert.match(pageCode[key], /@media \(max-width: 768px\)[\s\S]*?\.finance-table\s*\{\s*display:\s*none/, `${PAGES[key]} 未隐藏窄屏表格`);
     }
   });
 }
@@ -286,8 +324,8 @@ import {readFileSync, existsSync} from 'node:fs';
 
   test('金额组成比 ID / 编码更突出', () => {
     // 金额摘要走独立的 amount-grid 结构，而不是普通 descriptions 行
-    assert.match(drawer, /class="amount-grid"/);
-    assert.match(drawer, /amount-cell__value scm-money/);
+    assert.match(drawer, /class="amount-grid scm-summary"/);
+    assert.match(drawer, /amount-cell__value scm-summary__value scm-money/);
     // 净额 / 有效金额放在摘要的第一格
     assert.match(drawer, /净应收 \/ 净应付/);
     assert.match(drawer, /有效金额/);

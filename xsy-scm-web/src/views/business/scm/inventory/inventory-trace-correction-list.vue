@@ -1,7 +1,7 @@
 <!-- 包装码更正：申请后由他人审批，批准后包装码恢复可绑定。 -->
 <template>
-  <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
-    <div class="scm-filter-fields">
+  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
+    <a-row class="smart-query-form-row">
       <a-form-item label="状态">
         <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px" />
       </a-form-item>
@@ -11,11 +11,13 @@
       <a-form-item label="批次号">
         <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-    </div>
-    <div class="scm-filter-actions">
-      <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:unit:query'">查询</a-button>
-      <a-button @click="resetQuery">重置</a-button>
-    </div>
+      <a-form-item class="smart-query-form-item">
+        <a-space>
+          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:unit:query'">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-row>
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>

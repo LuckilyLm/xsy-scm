@@ -4,6 +4,7 @@ import type {
   ImageBatchBindForm,
   ImageBatchRemoveForm,
   ImageCenterView,
+  ImageMatchTarget,
   ImageReorderForm,
   ImageSetPrimaryForm,
   MasterStatus,
@@ -83,4 +84,6 @@ export const productImageApi = {
   setPrimary: (form: ImageSetPrimaryForm) => postRequest<null>('/scm/product/image/set-primary', form),
   reorder: (form: ImageReorderForm) => postRequest<null>('/scm/product/image/reorder', form),
   unboundImages: (limit = 100) => getRequest<UnboundImage[]>(`/scm/product/image/unbound?limit=${limit}`, {}),
+  /** 批量按编码反查商品身份；一次最多 500 个编码，空结果表示全部未命中。 */
+  matchTargets: (codes: string[], options?: RequestOptions) => postRequest<ImageMatchTarget[]>('/scm/product/image/match-targets', {codes}, options),
 };

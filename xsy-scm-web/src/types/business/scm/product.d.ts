@@ -286,6 +286,12 @@ export interface ImageReorderForm {
   orderedImageIds: ProductId[];
 }
 
+/** 图片批量匹配的轻量目标：只含商品身份，不含规格、状态与图片。 */
+export interface ImageMatchTarget {
+  spuId: ProductId;
+  spuCode: string;
+}
+
 /** 已上传但还没挂到任何商品的公开图片；来自文件表，不是商品图片表。 */
 export interface UnboundImage {
   fileKey: string;

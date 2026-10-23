@@ -1,7 +1,12 @@
 package com.xsy.scm.product;
 
+import cn.dev33.satoken.annotation.SaCheckPermission;
+import jakarta.validation.Validation;
 import net.lab1024.sa.admin.AdminApplication;
 import com.xsy.scm.common.exception.ScmBusinessException;
+import com.xsy.scm.product.controller.ProductImageCenterController;
+import com.xsy.scm.product.domain.vo.ProductImageMatchTargetVO;
+import com.xsy.scm.product.permission.ProductPermission;
 import com.xsy.scm.product.domain.form.ProductImageForm;
 import com.xsy.scm.product.domain.form.ProductImageCenterForms;
 import com.xsy.scm.product.domain.form.ProductSkuForm;
@@ -19,6 +24,7 @@ import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import org.junit.jupiter.api.*;
+import org.mybatis.spring.SqlSessionTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -54,6 +60,8 @@ class ProductImageCenterPgIT {
     FileService files;
     @Autowired
     JdbcTemplate jdbc;
+    @Autowired
+    SqlSessionTemplate sqlSession;
     private String prefix;
 
     @BeforeEach
@@ -436,6 +444,59 @@ class ProductImageCenterPgIT {
                 bindItem(spuId, same, false), bindItem(spuId, same, false))));
         conflict(() -> service.batchBind(duplicateKey), 40026);
         assertThat(imageIds(spuId)).as("重复 key 不能静默插成两张同图").isEqualTo(before);
+    }
+
+    @Test
+    void matchTargetsNormalizesCodesAndReturnsOnlyActiveProducts() {
+        Long spuId = newSpu();
+        String code = jdbc.queryForObject("SELECT spu_code FROM xsy_product_spu WHERE id = ?", String.class, spuId);
+        var form = new ProductImageCenterForms.MatchTargetsForm();
+        form.setCodes(new ArrayList<>(List.of("  " + code.toLowerCase(Locale.ROOT) + "  ")));
+
+        List<ProductImageMatchTargetVO> rows = service.matchTargets(form);
+
+        assertThat(rows).hasSize(1);
+        assertThat(rows.getFirst().getSpuId()).isEqualTo(spuId);
+        assertThat(rows.getFirst().getSpuCode()).isEqualTo(code);
+    }
+
+    @Test
+    void matchTargetsExcludesDeletedProductsAndKeepsCaseAmbiguity() {
+        String code = prefix + "-MATCH";
+        Long categoryId = jdbc.queryForObject(
+                "SELECT id FROM xsy_product_category WHERE category_code='FRESH-FRUIT' AND deleted=FALSE", Long.class);
+        jdbc.update("INSERT INTO xsy_product_spu (spu_code,name,category_id,status) VALUES (?,?,?,'OFF_SHELF')",
+                code, code + "商品", categoryId);
+        jdbc.update("INSERT INTO xsy_product_spu (spu_code,name,category_id,status) VALUES (?,?,?,'OFF_SHELF')",
+                code.toLowerCase(Locale.ROOT), code + "商品小写", categoryId);
+
+        var form = new ProductImageCenterForms.MatchTargetsForm();
+        form.setCodes(new ArrayList<>(List.of(code)));
+        assertThat(service.matchTargets(form)).as("大小写不同的编码都要作为歧义候选返回").hasSize(2);
+
+        jdbc.update("UPDATE xsy_product_spu SET deleted = TRUE WHERE lower(trim(spu_code)) = ?",
+                code.toLowerCase(Locale.ROOT));
+        // 直连 JdbcTemplate 的写入不会清 MyBatis 会话缓存，手动清掉再验证删除过滤
+        sqlSession.clearCache();
+        assertThat(service.matchTargets(form)).as("已删除商品不能参与匹配").isEmpty();
+    }
+
+    @Test
+    void matchTargetsFormRejectsMoreThan500Codes() {
+        var form = new ProductImageCenterForms.MatchTargetsForm();
+        form.setCodes(new ArrayList<>(Collections.nCopies(501, "SPU0001")));
+        try (var factory = Validation.buildDefaultValidatorFactory()) {
+            assertThat(factory.getValidator().validate(form)).isNotEmpty();
+        }
+    }
+
+    @Test
+    void matchTargetsEndpointRequiresImageQueryPermission() throws NoSuchMethodException {
+        var method = ProductImageCenterController.class.getMethod(
+                "matchTargets", ProductImageCenterForms.MatchTargetsForm.class);
+        var permission = method.getAnnotation(SaCheckPermission.class);
+        assertThat(permission).as("批量匹配必须声明功能权限").isNotNull();
+        assertThat(permission.value()).contains(ProductPermission.IMAGE_QUERY);
     }
 
     private ProductImageCenterForms.BindItem bindItem(Long spuId, String fileKey, boolean primary) {

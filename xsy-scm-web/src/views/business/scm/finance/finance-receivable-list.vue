@@ -153,7 +153,7 @@ const columns = ref<TableColumnsType<FinanceReceivable>>([
   {title: '客户', dataIndex: 'customerName', width: 190},
   {title: '订单号', dataIndex: 'orderNo', width: 170},
   {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
-  {title: '金额', dataIndex: 'amount', width: 136, align: 'right'},
+  {title: '金额', dataIndex: 'amount', width: 136},
   {title: '已核销', dataIndex: 'writtenOffAmount', width: 148},
   {title: '超额核销', dataIndex: 'overAppliedAmount', width: 148},
   {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},
@@ -264,6 +264,10 @@ onMounted(async () => {
 @media (max-width: 768px) {
   .finance-mobile-balance-list {
     display: block;
+  }
+  /* 窄屏只保留卡片列表，避免表格和卡片重复展示 */
+  .finance-table {
+    display: none;
   }
   .finance-table :deep(.ant-table-cell-fix-right) {
     position: static !important;

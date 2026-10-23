@@ -496,9 +496,20 @@ import ts from 'typescript';
   // 1 / 2 / 3. 必须走公共分级，不得硬编码
   // ------------------------------------------------------------------
 
+  /**
+   * 允许抽屉按业务类型在已定义档位间切换：`:width="drawerWidth"` 可以用，
+   * 但文件里必须有 `const drawerWidth = computed(() => scmDrawerWidth(...))`。
+   * 这样既保留“宽度只能来自公共分档”，也避免为同一内容复制两个抽屉。
+   */
+  function usesTierComputed(instance) {
+    if (!/^[A-Za-z_$][\w$]*$/.test(instance.expr ?? '')) return false;
+    const file = files.find((item) => item.rel === instance.rel);
+    return !!file && new RegExp(`const\\s+${instance.expr}\\s*=\\s*computed\\(\\s*\\(\\)\\s*=>\\s*scmDrawerWidth\\(`).test(file.source);
+  }
+
   test('所有 a-drawer 都必须用 scmDrawerWidth 取值', () => {
     const offenders = instances
-      .filter((i) => !i.isBound || !/^scmDrawerWidth\('(?:s|m|l|xl|workspace)'\)$/.test(i.expr.trim()))
+      .filter((i) => !i.isBound || (!/^scmDrawerWidth\('(?:s|m|l|xl|workspace)'\)$/.test(i.expr.trim()) && !usesTierComputed(i)))
       .map((i) => `${i.rel}:${i.line} width=${i.expr ?? '(未声明)'}`);
     assert.deepEqual(
       offenders,
@@ -512,9 +523,18 @@ import ts from 'typescript';
     const offenders = [];
     for (const i of instances) {
       if (!i.isBound) continue;
-      const level = i.expr.match(/scmDrawerWidth\('([^']*)'\)/)?.[1];
-      if (level !== undefined && !ALLOWED_LEVELS.includes(level)) {
-        offenders.push(`${i.rel}:${i.line} level=${level}`);
+      let levels = [];
+      const direct = i.expr.match(/scmDrawerWidth\('([^']*)'\)/)?.[1];
+      if (direct !== undefined) {
+        levels = [direct];
+      } else if (usesTierComputed(i)) {
+        const file = files.find((item) => item.rel === i.rel);
+        levels = [...(file?.source ?? '').matchAll(/scmDrawerWidth\('([^']*)'\)/g)].map((match) => match[1]);
+      }
+      for (const level of levels) {
+        if (!ALLOWED_LEVELS.includes(level)) {
+          offenders.push(`${i.rel}:${i.line} level=${level}`);
+        }
       }
     }
     assert.deepEqual(offenders, [], `出现了未定义的等级：\n${offenders.join('\n')}`);
@@ -609,7 +629,7 @@ import ts from 'typescript';
     assert.match(productApi, /product\/export\/columns/);
     assert.match(sales, /exportColumnKeys: orderExportKeys\.value\.length/);
     assert.match(purchase, /exportColumnKeys: purchaseProductExportKeys\.value\.length/);
-    assert.match(product, /exportColumnKeys: exportColumnKeys\.value\.length/);
+    assert.match(product, /exportColumnKeys: exportColumnKeys\.length \? exportColumnKeys : undefined/);
   });
 }
 
@@ -628,36 +648,36 @@ import ts from 'typescript';
     source('../src/views/business/scm/finance/finance-payable-list.vue'),
     source('../src/views/business/scm/purchase/purchase-demand-list.vue'),
     source('../src/views/business/scm/inventory/inventory-warning-threshold-list.vue'),
+    source('../src/views/business/scm/inventory/inventory-lot-balance-list.vue'),
+    source('../src/views/business/scm/inventory/inventory-trace-unit-list.vue'),
+    source('../src/views/business/scm/inventory/inventory-trace-correction-list.vue'),
   ];
 
-  test('SCM filter fields wrap with aligned controls and separate actions', () => {
-    assert.match(FILTER_STYLE, /\.scm-filter-bar\s*\{[\s\S]*?align-items:\s*center[\s\S]*?flex-wrap:\s*wrap[\s\S]*?gap:\s*8px 12px/);
-    assert.match(FILTER_STYLE, /\.scm-filter-fields\s*\{[\s\S]*?display:\s*flex[\s\S]*?flex-wrap:\s*wrap/);
-    assert.match(FILTER_STYLE, /\.scm-filter-actions\s*\{[\s\S]*?display:\s*flex[\s\S]*?gap:\s*8px[\s\S]*?margin-left:\s*auto/);
-    assert.match(FILTER_STYLE, /\.scm-filter-range[\s\S]*?\.ant-picker\s*\{[\s\S]*?min-width:\s*0/);
-    assert.match(FILTER_STYLE, /@media\s*\(max-width:\s*768px\)[\s\S]*?\.scm-filter-fields\s*\{[\s\S]*?flex:\s*1 1 100%/);
+  test('SCM 筛选区统一使用 smart-query-form', () => {
+    for (const page of PAGES) {
+      assert.match(page, /class="smart-query-form"/, '筛选区未使用 smart-query-form');
+      assert.match(page, /class="smart-query-form-row"/, '筛选区未使用 smart-query-form-row');
+      assert.doesNotMatch(page, /scm-filter-(?:bar|fields|actions|range)/, '仍在使用已停用的 scm-filter-* 标记');
+      assert.doesNotMatch(page, /<a-button-group>/, '查询按钮应使用 a-space');
+      assert.match(page, /查询/);
+      assert.match(page, /重置/);
+    }
   });
 
-  test('SCM toolbars use flex gaps while SmartAdmin keeps its separate query rules', () => {
+  test('SCM toolbars keep their flex gap rules', () => {
     assert.match(FILTER_STYLE, /\.scm-table-toolbar\.smart-table-btn-block\s*\{[\s\S]*?flex-wrap:\s*wrap/);
     assert.match(
       FILTER_STYLE,
       /\.smart-table-setting-block\s*\{[\s\S]*?display:\s*flex[\s\S]*?gap:\s*8px[\s\S]*?float:\s*none[\s\S]*?margin-left:\s*auto/
     );
     assert.match(FILTER_STYLE, /\.smart-table-operate-block[\s\S]*?gap:\s*8px[\s\S]*?margin-right:\s*0/);
-    assert.doesNotMatch(SMART_ADMIN_STYLE, /scm-filter-bar|scm-table-toolbar/);
+    assert.doesNotMatch(SMART_ADMIN_STYLE, /scm-table-toolbar/);
     assert.match(SMART_ADMIN_STYLE, /\.smart-query-form\.ant-form-inline/);
   });
 
-  test('payables, purchase demand and thresholds share the filter and toolbar layout', () => {
+  test('迁移后的页面保留表格工具栏', () => {
     for (const page of PAGES) {
-      assert.match(page, /class="scm-filter-bar"/);
-      assert.match(page, /class="scm-filter-fields"/);
-      assert.match(page, /class="scm-filter-actions"/);
       assert.match(page, /class="smart-table-btn-block scm-table-toolbar"/);
-      assert.doesNotMatch(page, /<a-button-group>/);
-      assert.match(page, /查询/);
-      assert.match(page, /重置/);
     }
   });
 }
@@ -702,7 +722,7 @@ import ts from 'typescript';
       ['仓库编码', 'warehouseCode'],
       ['商品', 'productName'],
       ['商品规格', 'skuName'],
-      ['规格编码', 'skuCode'],
+      ['商品规格编码', 'skuCode'],
     ]) {
       assert.match(THRESHOLD, new RegExp(`title: '${title}', dataIndex: '${dataIndex}'`));
     }
@@ -715,7 +735,7 @@ import ts from 'typescript';
     const makeColumns = () => [
       {title: '仓库', dataIndex: 'warehouseName'},
       {title: '仓库编码', dataIndex: 'warehouseCode', showFlag: false},
-      {title: '规格编码', dataIndex: 'skuCode'},
+      {title: '商品规格编码', dataIndex: 'skuCode'},
     ];
     const defaults = mergeColumn(makeColumns(), []);
     assert.deepEqual(
@@ -810,7 +830,7 @@ import ts from 'typescript';
   test('customer lists expose split code columns through TableOperator', () => {
     for (const [page, titles] of [
       [CUSTOMER_LIST, ['客户编码']],
-      [VISIBILITY, ['客户编码', '规格编码']],
+      [VISIBILITY, ['客户编码', '商品规格编码']],
     ]) {
       for (const title of titles) {
         assert.match(page, new RegExp(`title: '${title}', dataIndex:`));
@@ -818,7 +838,7 @@ import ts from 'typescript';
     }
     assert.match(CUSTOMER_LIST, /title: '客户编码',[\s\S]{0,100}showFlag: false/);
     assert.match(VISIBILITY, /title: '客户编码',[\s\S]{0,100}showFlag: false/);
-    assert.match(VISIBILITY, /title: '规格编码',[\s\S]{0,100}showFlag: false/);
+    assert.match(VISIBILITY, /title: '商品规格编码',[\s\S]{0,100}showFlag: false/);
     assert.match(VISIBILITY, /<TableOperator[\s\S]{0,220}SCM_CUSTOMER_SKU_VISIBILITY/);
     assert.doesNotMatch(CUSTOMER_LIST, /class="scm-cell-stack/);
     assert.doesNotMatch(VISIBILITY, /class="scm-cell-stack/);
@@ -830,7 +850,7 @@ import ts from 'typescript';
         INVENTORY_BALANCE,
         [
           ['仓库编码', 'warehouseCode'],
-          ['规格编码', 'skuCode'],
+          ['商品规格编码', 'skuCode'],
         ],
       ],
       [ORDER_LIST, [['客户编码', 'customerCodeSnapshot']]],
@@ -838,14 +858,14 @@ import ts from 'typescript';
         AGREEMENT_PRICE,
         [
           ['客户编码', 'customerCode'],
-          ['规格编码', 'skuCode'],
+          ['商品规格编码', 'skuCode'],
         ],
       ],
       [
         CUSTOMER_TYPE_PRICE,
         [
           ['客户类型编码', 'customerTypeCode'],
-          ['规格编码', 'skuCode'],
+          ['商品规格编码', 'skuCode'],
         ],
       ],
     ]) {

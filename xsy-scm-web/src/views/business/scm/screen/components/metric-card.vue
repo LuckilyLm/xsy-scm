@@ -123,7 +123,7 @@ const deltaText = computed(() => formatDeltaText(props.delta ?? null));
 
   .scm-metric-delta-label {
     color: @text-3;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   // 层级

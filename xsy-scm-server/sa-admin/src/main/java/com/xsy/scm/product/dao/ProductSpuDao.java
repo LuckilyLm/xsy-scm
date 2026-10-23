@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.product.domain.entity.ProductSpuEntity;
 import com.xsy.scm.product.domain.form.ProductSpuQueryForm;
+import com.xsy.scm.product.domain.vo.ProductImageMatchTargetVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -30,4 +31,9 @@ public interface ProductSpuDao extends BaseMapper<ProductSpuEntity> {
     int batchApply(@Param("spuIds") List<Long> spuIds, @Param("status") String status,
         @Param("masterStatus") String masterStatus, @Param("categoryId") Long categoryId,
         @Param("operator") String operator);
+
+    /**
+     * 图片批量匹配：按已归一化（trim + lower）的商品编码反查活动商品，重复编码会返回多行。
+     */
+    List<ProductImageMatchTargetVO> findByNormalizedCodes(@Param("codes") List<String> codes);
 }

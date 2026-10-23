@@ -52,7 +52,12 @@
             <a-button v-privilege="PERM.EXPORT" :loading="movementExport.exporting" @click="exportMovement">导出</a-button>
           </div>
           <div class="smart-table-setting-block">
-            <TableOperator v-model="movementColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_MOVEMENT" :refresh="loadMovement" />
+            <TableOperator
+              v-model="movementColumns"
+              :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_MOVEMENT"
+              :refresh="loadMovement"
+              :exclude-column-keys="canViewCost ? [] : COST_INDEXES"
+            />
           </div>
         </a-row>
         <a-alert v-if="movement.error" :message="movement.error" type="error" show-icon class="smart-margin-bottom10">

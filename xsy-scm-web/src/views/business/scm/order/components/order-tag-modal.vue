@@ -8,7 +8,7 @@
     @ok="apply"
     @cancel="close"
   >
-    <a-alert type="info" show-icon :message="`对已选 ${ids.length} 张订单操作`" />
+    <p class="smart-margin-bottom10">对已选 {{ ids.length }} 张订单操作</p>
     <a-form layout="vertical" class="smart-margin-top10">
       <a-form-item label="选择标签" required>
         <a-select

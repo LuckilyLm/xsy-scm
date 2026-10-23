@@ -1,6 +1,6 @@
 <template>
-  <a-drawer :open="open" :title="title" :width="scmDrawerWidth('xl')" :destroy-on-close="true" @close="close">
-    <a-alert v-if="error" :message="error" type="error" show-icon>
+  <a-drawer :open="open" :title="title" :width="drawerWidth" :destroy-on-close="true" @close="close">
+    <a-alert v-if="error" class="finance-detail-error" :message="error" type="error" show-icon>
       <template #action><a-button :loading="loading" @click="emit('retry')">重试</a-button></template>
     </a-alert>
     <a-spin class="finance-detail-content" :spinning="loading">
@@ -26,22 +26,28 @@
           </a-descriptions>
 
           <h3 class="detail-section--nested">金额组成</h3>
-          <div class="amount-grid">
-            <div class="amount-cell">
-              <span class="amount-cell__label">{{ isAccount ? '净应收 / 净应付' : '有效金额' }}</span>
-              <span class="amount-cell__value scm-money">{{ moneyText(isAccount ? header.netAmount : header.effectiveAmount) }}</span>
+          <div class="amount-grid scm-summary">
+            <div class="amount-cell scm-summary__item">
+              <span class="amount-cell__label scm-summary__label">{{ isAccount ? '净应收 / 净应付' : '有效金额' }}</span>
+              <span class="amount-cell__value scm-summary__value scm-money">{{
+                moneyText(isAccount ? header.netAmount : header.effectiveAmount)
+              }}</span>
             </div>
-            <div class="amount-cell">
-              <span class="amount-cell__label">金额</span>
-              <span class="amount-cell__value scm-money">{{ moneyText(header.amount) }}</span>
+            <div class="amount-cell scm-summary__item">
+              <span class="amount-cell__label scm-summary__label">金额</span>
+              <span class="amount-cell__value scm-summary__value scm-money">{{ moneyText(header.amount) }}</span>
             </div>
-            <div class="amount-cell">
-              <span class="amount-cell__label">已核销</span>
-              <span class="amount-cell__value scm-money">{{ moneyText(isAccount ? header.writtenOffAmount : header.usedAmount) }}</span>
+            <div class="amount-cell scm-summary__item">
+              <span class="amount-cell__label scm-summary__label">已核销</span>
+              <span class="amount-cell__value scm-summary__value scm-money">{{
+                moneyText(isAccount ? header.writtenOffAmount : header.usedAmount)
+              }}</span>
             </div>
-            <div class="amount-cell">
-              <span class="amount-cell__label">{{ isAccount ? '未核销' : '待核销' }}</span>
-              <span class="amount-cell__value scm-money">{{ moneyText(isAccount ? header.openAmount : header.pendingWriteOffAmount) }}</span>
+            <div class="amount-cell scm-summary__item">
+              <span class="amount-cell__label scm-summary__label">{{ isAccount ? '未核销' : '待核销' }}</span>
+              <span class="amount-cell__value scm-summary__value scm-money">{{
+                moneyText(isAccount ? header.openAmount : header.pendingWriteOffAmount)
+              }}</span>
             </div>
           </div>
           <a-descriptions v-if="!isAccount && walletFunding" size="small" :column="1" class="smart-margin-top10">
@@ -71,7 +77,12 @@
             row-key="receivableItemId"
             :pagination="false"
             :scroll="{x: scmColumnsWidth(receivableColumns)}"
-          />
+          >
+            <template #bodyCell="{record, column}">
+              <span v-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ numberText(record.quantity) }}</span>
+              <span v-else-if="isMoneyColumn(column.dataIndex)" class="scm-money">{{ moneyText(record[column.dataIndex]) }}</span>
+            </template>
+          </a-table>
           <a-table
             v-else
             size="small"
@@ -80,11 +91,21 @@
             row-key="payableItemId"
             :pagination="false"
             :scroll="{x: scmColumnsWidth(payableColumns)}"
-          />
+          >
+            <template #bodyCell="{record, column}">
+              <span v-if="column.dataIndex === 'quantity'" class="scm-quantity">{{ numberText(record.quantity) }}</span>
+              <span v-else-if="isMoneyColumn(column.dataIndex)" class="scm-money">{{ moneyText(record[column.dataIndex]) }}</span>
+            </template>
+          </a-table>
         </section>
 
-        <section v-if="relationText || writeOffs.length || redEntries.length" class="detail-section">
+        <section class="detail-section">
           <h3>核销 / 红字关系</h3>
+          <a-empty
+            v-if="!relationText && !writeOffs.length && !redEntries.length"
+            description="暂无核销或红字关系"
+            :image="Empty.PRESENTED_IMAGE_SIMPLE"
+          />
           <a-alert v-if="relationText" class="relation-alert" type="info" show-icon :message="relationText" />
           <h4 v-if="writeOffs.length" class="detail-subtitle">核销记录</h4>
           <a-table
@@ -95,14 +116,34 @@
             row-key="writeOffId"
             :pagination="false"
             :scroll="{x: scmColumnsWidth(writeOffColumns)}"
-          />
+          >
+            <template #bodyCell="{record, column}">
+              <span v-if="column.dataIndex === 'amount'" class="scm-money">{{ moneyText(record.amount) }}</span>
+              <span v-else-if="column.dataIndex === 'entryType'">{{ entryTypeText(record.entryType) }}</span>
+            </template>
+          </a-table>
           <h4 v-if="redEntries.length" class="detail-subtitle">红字关联</h4>
-          <a-table v-if="redEntries.length" size="small" :data-source="redEntries" :columns="redColumns" :row-key="redEntryKey" :pagination="false" />
+          <a-table
+            v-if="redEntries.length"
+            size="small"
+            :data-source="redEntries"
+            :columns="redColumns"
+            :row-key="redEntryKey"
+            :pagination="false"
+            :scroll="{x: scmColumnsWidth(redColumns)}"
+          >
+            <template #bodyCell="{record, column}">
+              <span v-if="column.dataIndex === 'amount'" class="scm-money">{{ moneyText(record.amount) }}</span>
+              <span v-else-if="column.dataIndex === 'eventAt'">{{ dateTimeText(record.eventAt) }}</span>
+            </template>
+          </a-table>
         </section>
 
-        <section v-if="operationLogs.length" class="detail-section">
+        <section class="detail-section">
           <h3>流水记录</h3>
+          <a-empty v-if="!operationLogs.length" description="暂无流水记录" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
           <a-table
+            v-else
             size="small"
             :data-source="operationLogs"
             :columns="logColumns"
@@ -128,8 +169,6 @@
             <a-descriptions-item label="更新人">{{ header.updatedBy || '—' }}</a-descriptions-item>
           </a-descriptions>
         </section>
-
-        <a-empty v-if="!writeOffs.length && !operationLogs.length && !redEntries.length" description="暂无核销或操作记录" />
       </template>
       <a-empty v-else-if="!loading && !error" description="暂无单据详情" />
     </a-spin>
@@ -144,6 +183,7 @@
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, ref} from 'vue';
+import {Empty} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import type {
@@ -177,6 +217,10 @@ const walletFunding = computed(() => !!(detail.value && 'receipt' in detail.valu
 const isAccount = computed(() => isReceivable.value || isPayable.value);
 const overApplied = computed(() => !!header.value.overAppliedAmount && header.value.overAppliedAmount !== '0.0000');
 const title = computed(() => ({RECEIVABLE: '应收明细', PAYABLE: '应付明细', RECEIPT: '收款明细', PAYMENT: '付款明细'})[props.kind]);
+/** 应收/应付字段多、明细表宽，用 xl；收款/付款信息量小，用 l 避免大面积留白。 */
+const drawerWidth = computed(() => scmDrawerWidth(isAccount.value ? 'xl' : 'l'));
+const MONEY_COLUMNS = new Set(['unitPrice', 'grossAmount', 'discountAmount', 'amount']);
+const isMoneyColumn = (dataIndex?: string | number) => MONEY_COLUMNS.has(String(dataIndex ?? ''));
 const header = computed(() => {
   if (!detail.value) return {} as Record<string, string | null | undefined>;
   if ('receivable' in detail.value) return detail.value.receivable as unknown as Record<string, string | null | undefined>;
@@ -212,29 +256,30 @@ const relationText = computed(() => {
 const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
   {title: '出库来源', dataIndex: 'sourceId', width: 120},
   {title: '商品', dataIndex: 'skuName', width: 200},
-  {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text), align: 'right'},
-  {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text), align: 'right'},
+  {title: '数量', dataIndex: 'quantity', width: 112},
+  {title: '单价', dataIndex: 'unitPrice', width: 136},
   // 毛额 − 优惠 = 净额
-  {title: '毛额', dataIndex: 'grossAmount', width: 148, customRender: ({text}) => moneyText(text)},
-  {title: '订单优惠', dataIndex: 'discountAmount', width: 148, customRender: ({text}) => moneyText(text)},
-  {title: '净额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
+  {title: '毛额', dataIndex: 'grossAmount', width: 148},
+  {title: '订单优惠', dataIndex: 'discountAmount', width: 148},
+  {title: '净额', dataIndex: 'amount', width: 148},
 ];
 const payableColumns: TableColumnsType<FinancePayableItem> = [
   {title: '收货来源', dataIndex: 'sourceId', width: 120},
   {title: '商品', dataIndex: 'skuName', width: 200},
-  {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text), align: 'right'},
-  {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text), align: 'right'},
-  {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text), align: 'right'},
+  {title: '数量', dataIndex: 'quantity', width: 112},
+  {title: '单价', dataIndex: 'unitPrice', width: 136},
+  {title: '金额', dataIndex: 'amount', width: 148},
 ];
 const redColumns: TableColumnsType<FinanceReceivable | FinancePayable> = [
   {
     title: '红字单号',
     dataIndex: 'receivableNo',
+    width: 190,
     customRender: ({record}) => ('receivableNo' in record ? record.receivableNo : record.payableNo),
   },
-  {title: '金额', dataIndex: 'amount', customRender: ({text}) => moneyText(text), align: 'right'},
-  {title: '原因', dataIndex: 'reason'},
-  {title: '业务时点', dataIndex: 'eventAt', customRender: ({text}) => dateTimeText(text)},
+  {title: '金额', dataIndex: 'amount', width: 148},
+  {title: '原因', dataIndex: 'reason', width: 240, ellipsis: true},
+  {title: '业务时点', dataIndex: 'eventAt', width: 170},
 ];
 
 function redEntryKey(row: FinanceReceivable | FinancePayable) {
@@ -244,8 +289,8 @@ const writeOffColumns: TableColumnsType<FinanceWriteOff> = [
   {title: '核销单号', dataIndex: 'writeOffNo', width: 190},
   {title: '资金单', dataIndex: 'sourceNo', width: 180},
   {title: '目标单', dataIndex: 'targetNo', width: 180},
-  {title: '方向', dataIndex: 'entryType', width: 90, customRender: ({text}) => entryTypeText(text), align: 'center'},
-  {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text), align: 'right'},
+  {title: '方向', dataIndex: 'entryType', width: 90, align: 'center'},
+  {title: '金额', dataIndex: 'amount', width: 148},
   {title: '原因', dataIndex: 'reason', width: 240},
 ];
 const logColumns: TableColumnsType<FinanceOperationLog> = [
@@ -289,32 +334,8 @@ function close() {
   margin-top: 20px;
 }
 
-/* 四格金额摘要，数值比标签大 */
-.amount-grid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-}
-
-.amount-cell {
-  min-width: 0;
-  background: var(--scm-fill, #fafafa);
-  border-radius: 6px;
-  padding: 10px 12px;
-}
-
-.amount-cell__label {
-  color: var(--scm-text-secondary);
-  display: block;
-  font-size: 12px;
-}
-
-.amount-cell__value {
-  overflow-wrap: anywhere;
-  display: block;
-  font-size: 18px;
-  line-height: 1.5;
-  margin-top: 4px;
+.finance-detail-error {
+  margin-bottom: 16px;
 }
 
 .detail-subtitle {

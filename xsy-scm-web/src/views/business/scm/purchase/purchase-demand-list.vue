@@ -2,8 +2,8 @@
 <template>
   <a-tabs v-model:activeKey="activeTab">
     <a-tab-pane key="list" tab="采购需求">
-      <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
-        <div class="scm-filter-fields">
+      <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
+        <a-row class="smart-query-form-row">
           <a-form-item label="来源销售单号">
             <a-input v-model:value="queryForm.salesOrderNo" placeholder="销售单号" allow-clear @pressEnter="onSearch" />
           </a-form-item>
@@ -16,11 +16,13 @@
           <a-form-item label="需求日期">
             <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD" />
           </a-form-item>
-        </div>
-        <div class="scm-filter-actions">
-          <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </div>
+          <a-form-item class="smart-query-form-item">
+            <a-space>
+              <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询</a-button>
+              <a-button @click="resetQuery">重置</a-button>
+            </a-space>
+          </a-form-item>
+        </a-row>
       </a-form>
 
       <a-alert v-if="error" :message="error" type="error" show-icon>

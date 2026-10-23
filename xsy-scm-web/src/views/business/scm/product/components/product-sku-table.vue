@@ -1,10 +1,14 @@
 <template>
   <a-table :columns="columns" :data-source="rows" row-key="skuId" :pagination="false" size="small" :scroll="{x: scmColumnsWidth(columns)}">
     <template #bodyCell="{column, record}">
-      <span v-if="column.dataIndex === 'marketPrice'" class="price">{{ record.marketPrice === null ? '未定价' : `¥ ${record.marketPrice}` }}</span>
-      <a-tag v-else-if="column.dataIndex === 'status'" :color="shelfStatusColor(record.status)">
-        {{ record.status === 'ON_SHELF' ? '上架' : '下架' }}
-      </a-tag>
+      <span v-if="column.dataIndex === 'marketPrice'" class="scm-money">{{
+        record.marketPrice === null ? '未定价' : `¥ ${record.marketPrice}`
+      }}</span>
+      <ScmStatusTag
+        v-else-if="column.dataIndex === 'status'"
+        :tone="record.status === 'ON_SHELF' ? 'success' : 'neutral'"
+        :label="enumLabel(SHELF_STATUS_ENUM, record.status)"
+      />
       <a-tag v-else-if="column.dataIndex === 'defaultFlag' && record.defaultFlag" color="green">默认</a-tag>
       <span v-else-if="column.dataIndex === 'productType'">{{ record.productType === 'STANDARD' ? '标品' : '非标品' }}</span>
       <span v-else-if="column.dataIndex === 'specValues'">{{
@@ -19,7 +23,8 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {TableColumnsType} from 'ant-design-vue';
 import type {ProductSku} from '/@/types/business/scm/product';
-import {shelfStatusColor} from '/@/constants/business/scm/product-const';
+import {enumLabel, SHELF_STATUS_ENUM} from '/@/constants/business/scm/product-const';
+import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 
 defineProps<{rows: ProductSku[]}>();
 const columns: TableColumnsType<ProductSku> = [
@@ -39,9 +44,3 @@ const columns: TableColumnsType<ProductSku> = [
   {title: '默认', dataIndex: 'defaultFlag', width: 70, align: 'center'},
 ];
 </script>
-<style scoped>
-.price {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-</style>

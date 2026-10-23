@@ -86,7 +86,9 @@
           <span v-else class="scm-cell-hint">—</span>
         </template>
         <template v-else-if="['amount', 'effectiveAmount', 'usedAmount', 'pendingWriteOffAmount'].includes(column.dataIndex)">
-          <span class="scm-money">{{ moneyText(text) }}</span>
+          <span :class="moneyClass(text, ['usedAmount', 'pendingWriteOffAmount'].includes(column.dataIndex) ? 'balance' : 'fact')">{{
+            moneyText(text)
+          }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'paidAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
@@ -225,6 +227,7 @@ import {
   entryTypeText,
   initialFinanceDateRange,
   isValidPositiveAmount,
+  moneyClass,
   moneyText,
   nowDateTimeValue,
   paymentMethodText,
@@ -329,8 +332,8 @@ const columns = ref<TableColumnsType<FinancePayment>>([
   {title: '往来方', dataIndex: 'counterpartyName', width: 190},
   {title: '往来方类型', dataIndex: 'counterpartyType', align: 'center', width: 112},
   {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
-  {title: '金额', dataIndex: 'amount', width: 136, align: 'right'},
-  {title: '有效金额', dataIndex: 'effectiveAmount', width: 148, align: 'right'},
+  {title: '金额', dataIndex: 'amount', width: 136},
+  {title: '有效金额', dataIndex: 'effectiveAmount', width: 148},
   {title: '已核销', dataIndex: 'usedAmount', width: 148},
   {title: '方式', dataIndex: 'method', width: 105, align: 'center'},
   {title: '来源', dataIndex: 'sourceType', align: 'center', width: 95},
@@ -522,6 +525,10 @@ onMounted(queryData);
 @media (max-width: 768px) {
   .finance-mobile-balance-list {
     display: block;
+  }
+  /* 窄屏只保留卡片列表，避免表格和卡片重复展示 */
+  .finance-table {
+    display: none;
   }
   .finance-table :deep(.ant-table-cell-fix-right) {
     position: static !important;

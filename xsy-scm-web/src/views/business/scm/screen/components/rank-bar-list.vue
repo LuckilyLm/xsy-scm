@@ -94,7 +94,7 @@ function barWidth(value: string | number): string {
   align-items: center;
   justify-content: center;
   font-family: @font-num;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: @text-3;
   border: 1px solid rgba(88, 122, 154, 0.45);

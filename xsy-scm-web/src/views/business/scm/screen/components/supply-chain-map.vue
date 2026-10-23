@@ -202,7 +202,7 @@ function render() {
       itemWidth: 8,
       itemHeight: 60,
       text: [`${provinceMax}`, '0'],
-      textStyle: {color: C.text2, fontSize: 10},
+      textStyle: {color: C.text2, fontSize: 12},
       inRange: {color: ['#0b2f52', '#1565b8', C.blue, C.cyan]},
     },
     geo: {
@@ -281,13 +281,13 @@ watch(() => props.geo, render);
 @import '../styles/variables.less';
 
 .scm-map-legend {
-  font-size: 11px;
+  font-size: 12px;
   color: @text-3;
 }
 
 .scm-map-unlocated {
   margin-left: 10px;
-  font-size: 11px;
+  font-size: 12px;
   color: @state-warn;
 }
 
@@ -347,7 +347,7 @@ watch(() => props.geo, render);
 
 .scm-map-rail-title {
   flex: 0 0 auto;
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 1px;
   color: @text-3;
 }
@@ -387,7 +387,7 @@ watch(() => props.geo, render);
 }
 
 .scm-map-rail-figure {
-  font-size: 11px;
+  font-size: 12px;
   color: @text-2;
   white-space: nowrap;
 
@@ -430,7 +430,7 @@ watch(() => props.geo, render);
   }
 
   .scm-map-stat-label {
-    font-size: 11px;
+    font-size: 12px;
     color: @text-3;
   }
 }

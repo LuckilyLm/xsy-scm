@@ -92,7 +92,9 @@
           <ScmStatusTag tone="processing" label="已转钱包权益" />
         </template>
         <template v-else-if="['amount', 'effectiveAmount', 'usedAmount', 'pendingWriteOffAmount'].includes(column.dataIndex)">
-          <span class="scm-money">{{ moneyText(text) }}</span>
+          <span :class="moneyClass(text, ['usedAmount', 'pendingWriteOffAmount'].includes(column.dataIndex) ? 'balance' : 'fact')">{{
+            moneyText(text)
+          }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'receivedAt'">{{ dateTimeText(text) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
@@ -239,6 +241,7 @@ import {
   entryTypeText,
   initialFinanceDateRange,
   isValidPositiveAmount,
+  moneyClass,
   moneyText,
   nowDateTimeValue,
   paymentMethodText,
@@ -320,8 +323,8 @@ const columns = ref<TableColumnsType<FinanceReceipt>>([
   {title: '客户', dataIndex: 'customerName', width: 190},
   {title: '方向', dataIndex: 'entryType', width: 80, align: 'center'},
   {title: '来源订单', dataIndex: 'codOrderNo', width: 170, ellipsis: true},
-  {title: '金额', dataIndex: 'amount', width: 136, align: 'right'},
-  {title: '有效金额', dataIndex: 'effectiveAmount', width: 148, align: 'right'},
+  {title: '金额', dataIndex: 'amount', width: 136},
+  {title: '有效金额', dataIndex: 'effectiveAmount', width: 148},
   {title: '已核销', dataIndex: 'usedAmount', width: 148},
   {title: '方式', dataIndex: 'method', width: 110, align: 'center'},
   {title: '凭据号', dataIndex: 'externalReference', width: 160},
@@ -588,6 +591,10 @@ watch(
 @media (max-width: 768px) {
   .finance-mobile-balance-list {
     display: block;
+  }
+  /* 窄屏只保留卡片列表，避免表格和卡片重复展示 */
+  .finance-table {
+    display: none;
   }
 }
 @media (max-width: 768px) {

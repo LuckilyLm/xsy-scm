@@ -509,7 +509,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     const api = code(API);
     assert.match(
       api,
-      /frequentSkus:\s*\(customerId:\s*ScmId,\s*days\s*=\s*90,\s*limit\s*=\s*20\)\s*=>\s*getRequest\(`\/scm\/customer\/\$\{customerId\}\/frequent-skus`,\s*\{days,\s*limit\}\)/
+      /frequentSkus:\s*\(customerId:\s*ScmId,\s*days\s*=\s*90,\s*limit\s*=\s*20\)\s*=>\s*getRequest(?:<[^'`]*>)?\(`\/scm\/customer\/\$\{customerId\}\/frequent-skus`,\s*\{days,\s*limit\}\)/
     );
     // 只读：绝不能用 postRequest 打到 frequent-skus
     assert.doesNotMatch(api, /postRequest\(`\/scm\/customer\/\$\{customerId\}\/frequent-skus/);

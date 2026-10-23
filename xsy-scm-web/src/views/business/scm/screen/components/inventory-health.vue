@@ -71,7 +71,7 @@ function barWidth(count: number): string {
 @import '../styles/variables.less';
 
 .scm-health-total {
-  font-size: 11px;
+  font-size: 12px;
   color: @text-3;
 
   b {
@@ -154,7 +154,7 @@ function barWidth(count: number): string {
   gap: 5px;
   padding-top: 6px;
   border-top: 1px dashed rgba(27, 77, 122, 0.7);
-  font-size: 11px;
+  font-size: 12px;
   color: @text-3;
 
   .scm-health-foot-dot {

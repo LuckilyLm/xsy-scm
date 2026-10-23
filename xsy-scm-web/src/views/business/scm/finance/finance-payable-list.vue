@@ -1,7 +1,7 @@
 <template>
-  <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
-    <div class="scm-filter-fields">
-      <a-form-item class="scm-filter-range" label="业务日期">
+  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
+    <a-row class="smart-query-form-row">
+      <a-form-item label="业务日期">
         <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" />
         <span class="date-separator">至</span>
         <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" />
@@ -16,11 +16,13 @@
       <a-form-item label="结清状态">
         <a-select v-model:value="query.settleState" allow-clear :options="settleOptions" placeholder="全部" style="width: 140px" />
       </a-form-item>
-    </div>
-    <div class="scm-filter-actions">
-      <a-button type="primary" v-privilege="PERM.PAYABLE_QUERY" @click="onSearch">查询</a-button>
-      <a-button @click="resetQuery">重置</a-button>
-    </div>
+      <a-form-item class="smart-query-form-item">
+        <a-space>
+          <a-button type="primary" v-privilege="PERM.PAYABLE_QUERY" @click="onSearch">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-row>
   </a-form>
 
   <a-alert v-if="page.error.value" class="page-error" type="error" show-icon :message="page.error.value">
@@ -145,7 +147,10 @@
         :scroll="{x: scmColumnsWidth(redDraftColumns)}"
       >
         <template #bodyCell="{record, column}">
-          <template v-if="column.dataIndex === 'redQuantity'">
+          <template v-if="column.dataIndex === 'quantity'">
+            <span class="scm-quantity">{{ record.quantity }}</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'redQuantity'">
             <a-input-number
               v-model:value="record.redQuantity"
               :disabled="redSaving"
@@ -268,7 +273,7 @@ const columns = ref<TableColumnsType<FinancePayable>>([
   {title: '供应商', dataIndex: 'supplierName', width: 190},
   {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 170},
   {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
-  {title: '金额', dataIndex: 'amount', width: 136, align: 'right'},
+  {title: '金额', dataIndex: 'amount', width: 136},
   {title: '已核销', dataIndex: 'writtenOffAmount', width: 148},
   {title: '超额核销', dataIndex: 'overAppliedAmount', width: 148},
   {title: '结清状态', dataIndex: 'settleState', align: 'center', width: 110},
@@ -278,10 +283,10 @@ const columns = ref<TableColumnsType<FinancePayable>>([
 const redDraftColumns: TableColumnsType<RedDraft> = [
   {title: '商品', dataIndex: 'skuName', width: 190},
   {title: '单位', dataIndex: 'unit', width: 76},
-  {title: '原数量', dataIndex: 'quantity', width: 130, customRender: ({text}) => text, align: 'right'},
-  {title: '红字数量', dataIndex: 'redQuantity', width: 120, align: 'right'},
-  {title: '红字单价', dataIndex: 'redUnitPrice', width: 136, align: 'right'},
-  {title: '红字金额', dataIndex: 'redAmount', width: 148, align: 'right'},
+  {title: '原数量', dataIndex: 'quantity', width: 130},
+  {title: '红字数量', dataIndex: 'redQuantity', width: 120},
+  {title: '红字单价', dataIndex: 'redUnitPrice', width: 136},
+  {title: '红字金额', dataIndex: 'redAmount', width: 148},
 ];
 useFinanceMobileActionColumn(
   (compact) => {
@@ -444,6 +449,10 @@ onMounted(queryData);
 @media (max-width: 768px) {
   .finance-mobile-balance-list {
     display: block;
+  }
+  /* 窄屏只保留卡片列表，避免表格和卡片重复展示 */
+  .finance-table {
+    display: none;
   }
   .finance-table :deep(.ant-table-cell-fix-right) {
     position: static !important;

@@ -91,8 +91,8 @@ const columns = ref<TableColumnsType<SalesSellerRow>>([
   {title: '销售员', dataIndex: 'sellerName', width: 160},
   {title: '订单笔数', dataIndex: 'orderCount', width: 92},
   {title: '客户数', dataIndex: 'customerCount', width: 92},
-  {title: '确认订单金额', dataIndex: 'settlementAmount', width: 148, align: 'right'},
-  {title: '已完成退款金额', dataIndex: 'completedRefundAmount', width: 148, align: 'right'},
+  {title: '确认订单金额', dataIndex: 'settlementAmount', width: 148},
+  {title: '已完成退款金额', dataIndex: 'completedRefundAmount', width: 148},
   {title: '最近确认时间', dataIndex: 'lastConfirmedAt', width: 180},
 ]);
 

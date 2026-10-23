@@ -370,6 +370,8 @@ async function runWrite(action: () => Promise<unknown>, successMsg: string) {
   try {
     await action();
     message.success(successMsg);
+    // 图片归属变化后让编码缓存失效，下次批量导入重新取目标
+    matchCache.clear();
     if (view.value) await select(view.value.spuId);
   } catch (e) {
     imageError.value = productError(e);
@@ -393,6 +395,9 @@ const batchOpen = ref(false),
   binding = ref(false),
   matches = ref<FileMatchResult[]>([]);
 const stagedFiles = ref<UploadedImageFile[]>([]);
+/** 编码 → 目标商品；空数组表示已确认未命中，避免重复请求。 */
+const matchCache = new Map<string, SpuTarget[]>();
+let matchGeneration = 0;
 const matchColumns = [
   {title: '文件', dataIndex: 'fileName', width: 220, customRender: ({record}: {record: FileMatchResult}) => record.file.fileName},
   {title: '状态', dataIndex: 'status', width: 90, align: 'center'},
@@ -412,8 +417,57 @@ function closeBatch() {
 }
 
 function clearMatches() {
+  // 关闭或清空时同时让在途匹配失效，避免旧响应把新弹窗重新填满
+  matchGeneration++;
+  matchCache.clear();
   matches.value = [];
   stagedFiles.value = [];
+}
+
+const fileCode = (file: UploadedImageFile) =>
+  file.fileName
+    .replace(/\.[^.]+$/, '')
+    .trim()
+    .toLowerCase();
+
+/**
+ * 只按编码反查目标商品，不依赖当前分页列表；负结果也缓存，避免同一编码反复请求。
+ * 后端一次最多 500 个编码，超出时按块并发请求。
+ */
+async function ensureMatchTargets(codes: string[]) {
+  const missing = [...new Set(codes)].filter((code) => !matchCache.has(code));
+  if (!missing.length) {
+    return;
+  }
+  const chunks: string[][] = [];
+  for (let index = 0; index < missing.length; index += 500) {
+    chunks.push(missing.slice(index, index + 500));
+  }
+  const responses = await Promise.all(chunks.map((chunk) => productImageApi.matchTargets(chunk, {suppressGlobalErrorMessage: true})));
+  const grouped = new Map<string, SpuTarget[]>();
+  for (const target of responses.flatMap((response) => response.data ?? [])) {
+    const key = target.spuCode.trim().toLowerCase();
+    const list = grouped.get(key);
+    if (list) list.push(target);
+    else grouped.set(key, [target]);
+  }
+  for (const code of missing) {
+    matchCache.set(code, grouped.get(code) ?? []);
+  }
+}
+
+// 多选上传会并发触发 beforeUpload；匹配串行排队，保证最后展示的是全部已上传文件。
+let matchQueue: Promise<void> = Promise.resolve();
+function refreshMatches() {
+  const task = matchQueue.then(async () => {
+    const generation = matchGeneration;
+    await ensureMatchTargets(stagedFiles.value.map(fileCode));
+    if (generation === matchGeneration) {
+      matches.value = matchFilesBySpuCode(stagedFiles.value, [...matchCache.values()].flat());
+    }
+  });
+  matchQueue = task.catch(() => undefined);
+  return task;
 }
 
 const stageFiles: UploadProps['beforeUpload'] = async (selected) => {
@@ -422,8 +476,7 @@ const stageFiles: UploadProps['beforeUpload'] = async (selected) => {
     const uploaded = await uploadFile(selected as File);
     const file = {fileName: (selected as File).name, fileKey: uploaded.fileKey};
     stagedFiles.value = [...stagedFiles.value, file];
-    const targets: SpuTarget[] = products.value.map((row) => ({spuId: row.spuId, spuCode: row.spuCode}));
-    matches.value = matchFilesBySpuCode(stagedFiles.value, targets);
+    await refreshMatches();
   } catch (e) {
     message.error(productError(e));
   } finally {

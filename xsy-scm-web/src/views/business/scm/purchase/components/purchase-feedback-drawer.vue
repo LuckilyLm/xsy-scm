@@ -47,9 +47,9 @@ let generation = 0;
 const columns = [
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '规格', dataIndex: 'skuName', width: 140},
-  {title: '单位', dataIndex: 'purchaseUnit', width: 76, align: 'center' as const},
-  {title: '回填单价', dataIndex: 'unitPrice', width: 140, align: 'right' as const},
-  {title: '回填实收量', dataIndex: 'receivedQuantity', width: 128, align: 'right' as const},
+  {title: '单位', dataIndex: 'purchaseUnit', width: 76},
+  {title: '回填单价', dataIndex: 'unitPrice', width: 140},
+  {title: '回填实收量', dataIndex: 'receivedQuantity', width: 128},
   {title: '回填时间', dataIndex: 'submittedAt', width: 180},
   {title: '备注', dataIndex: 'remark', width: 220},
 ];

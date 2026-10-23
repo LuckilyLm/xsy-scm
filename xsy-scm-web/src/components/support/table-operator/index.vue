@@ -56,6 +56,11 @@ const props = defineProps({
     type: Number,
     require: true,
   },
+  // 列设置中不展示的列键（如无权限查看的成本列），不影响本地列数据与保存合并
+  excludeColumnKeys: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -178,7 +183,14 @@ function exitElementFullscreen(element) {
 const smartTableColumnModal = ref<{show: (columns: unknown[], tableId?: number | string) => void}>();
 
 function showModal() {
-  smartTableColumnModal.value?.show(newColumn, props.tableId);
+  const excluded = new Set(props.excludeColumnKeys);
+  const visibleColumns = excluded.size
+    ? newColumn.filter((item: any) => {
+        const key = item.columnKey ?? item.dataIndex;
+        return !excluded.has(key);
+      })
+    : newColumn;
+  smartTableColumnModal.value?.show(visibleColumns, props.tableId);
 }
 
 // 将弹窗修改的列数据，赋值给原表格 列数组

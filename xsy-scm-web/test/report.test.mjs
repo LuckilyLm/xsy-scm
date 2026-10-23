@@ -316,6 +316,12 @@ import {
     assert.match(PAGES.overview, /filterCostColumns/);
   });
 
+  test('列设置也不向无成本权限用户展示成本列键', () => {
+    for (const page of [PAGES.inventory, PAGES.receipt, PAGES.overview]) {
+      assert.match(page, /:exclude-column-keys="canViewCost \? \[\] : COST_INDEXES"/, '列设置未按成本权限排除列键');
+    }
+  });
+
   // ------------------------------------------------------------------
   // 命名即口径
   // ------------------------------------------------------------------

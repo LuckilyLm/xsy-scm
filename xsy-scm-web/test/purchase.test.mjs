@@ -85,7 +85,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.match(demand, /title: '来源单号', dataIndex: 'salesOrderNoSnapshot'/);
     assert.match(demand, /title: '需求来源 \/ 批次', dataIndex: 'calculationBatchId'/);
     assert.match(demand, /title: '商品名称', dataIndex: 'productName'/);
-    assert.match(demand, /title: '规格编码', dataIndex: 'skuCode'[\s\S]{0,80}showFlag: false/);
+    assert.match(demand, /title: '商品规格编码', dataIndex: 'skuCode'[\s\S]{0,80}showFlag: false/);
     assert.ok(!demand.includes(`title: '需求单位'`), '采购需求仍有独立的需求单位列');
     // 单位跟在每个数量后面（量纲注脚），三个数量列都要有
     assert.match(demand, /dataIndex === 'requiredQuantity'[\s\S]{0,200}record\.demandUnit/);
@@ -116,8 +116,8 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.match(purchaseLog, /title: '时间'/);
     // 内部主键不是业务标识，上列只会被误读成单号
     assert.ok(!purchaseLog.includes(`title: '采购单 id'`), '采购日志仍有裸的「采购单 id」列');
-    // 收货单列仍在，但列名必须点明它是内部编号而不是单号
-    assert.match(purchaseLog, /title: '关联收货单（内部编号）'/);
+    // 内部主键不进入日志列表；若未来恢复关联列，必须点明它是内部编号
+    assert.doesNotMatch(purchaseLog, /title: '(采购单 id|关联收货单（内部编号）)'/);
     assert.match(purchaseLog, /title: '操作人'/);
     assert.match(purchaseLog, /title: '原因'/);
   });
@@ -161,16 +161,16 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   const batchDrawer = read('../src/views/business/scm/purchase/components/purchase-demand-batch-detail-drawer.vue');
 
   test('询价与报价写请求复用采购幂等封装，确认需明确版本', () => {
-    assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/create', data\)/);
-    assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/quote', data\)/);
-    assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/accept', data\)/);
+    assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/create', data(?:, options)?\)/);
+    assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/quote', data(?:, options)?\)/);
+    assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/accept', data(?:, options)?\)/);
     assert.match(page, /quoteId:\s*quote\.id,\s*version:\s*current\.version/);
     assert.match(page, /采购单仍需单独创建和提交/);
   });
 
   test('询价批次分页和报价修订历史都使用服务端分页', () => {
-    assert.match(api, /postRequest\(prefix \+ '\/batch', \{batchId, page\}\)/);
-    assert.match(api, /postRequest\(prefix \+ '\/history', \{inquiryId, beforeId\}\)/);
+    assert.match(api, /postRequest(?:<[^']*>)?\(prefix \+ '\/batch', \{batchId, page\}(?:, options)?\)/);
+    assert.match(api, /postRequest(?:<[^']*>)?\(prefix \+ '\/history', \{inquiryId, beforeId\}(?:, options)?\)/);
     assert.match(page, /quoteHistoryMore/);
     assert.match(page, /onPageChange/);
     assert.match(page, /c\.existingInquiryId/);
@@ -222,7 +222,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     const api = code('../src/api/business/scm/purchase-demand-api.ts');
     assert.match(
       api,
-      /summaryPreview:\s*\(data:\s*DemandSummaryPreviewQuery(,\s*options\?:\s*RequestOptions)?\)\s*=>\s*postRequest\('\/scm\/purchase\/demand\/summary-preview'/
+      /summaryPreview:\s*\(data:\s*DemandSummaryPreviewQuery(,\s*options\?:\s*RequestOptions)?\)\s*=>\s*postRequest(?:<[^']*>)?\('\/scm\/purchase\/demand\/summary-preview'/
     );
     // 只读：预览自身不得走带 Idempotency-Key 的命令式封装（只看 summaryPreview 到其 postRequest 之间）
     assert.doesNotMatch(api, /summaryPreview:[^\n]*purchaseCommand/);
@@ -299,7 +299,10 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
 
   test('批量少收关单走只读 postRequest，不复用带幂等键的 purchaseCommand', () => {
     const api = code('../src/api/business/scm/purchase-order-api.ts');
-    assert.match(api, /batchShortClose:\s*\(data:\s*OrderBatchShortClosePayload\)\s*=>\s*postRequest\('\/scm\/purchase\/batch\/short-close'/);
+    assert.match(
+      api,
+      /batchShortClose:\s*\(data:\s*OrderBatchShortClosePayload\)\s*=>\s*postRequest(?:<[^']*>)?\('\/scm\/purchase\/batch\/short-close'/
+    );
     assert.doesNotMatch(api, /batchShortClose:[^\n]*purchaseCommand/);
   });
 
@@ -307,7 +310,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     const api = code('../src/api/business/scm/purchase-receipt-api.ts');
     assert.match(
       api,
-      /itemWorkbench:\s*\(data:\s*ReceiptItemWorkbenchQuery(,\s*options\?:\s*RequestOptions)?\)\s*=>\s*postRequest\('\/scm\/purchase\/receipt\/item-workbench\/query'/
+      /itemWorkbench:\s*\(data:\s*ReceiptItemWorkbenchQuery(,\s*options\?:\s*RequestOptions)?\)\s*=>\s*postRequest(?:<[^']*>)?\('\/scm\/purchase\/receipt\/item-workbench\/query'/
     );
     assert.doesNotMatch(api, /itemWorkbench:[^\n]*purchaseCommand/);
   });
@@ -841,8 +844,8 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.match(receiptApi, /purchaseCommand<Receipt>\('\/scm\/purchase\/receipt\/putaway'/);
 
     const warehouseApi = code('../src/api/business/scm/warehouse-api.ts');
-    assert.match(warehouseApi, /postRequest\('\/scm\/warehouse\/enable'/);
-    assert.match(warehouseApi, /postRequest\('\/scm\/warehouse\/disable'/);
+    assert.match(warehouseApi, /postRequest(?:<[^']*>)?\('\/scm\/warehouse\/enable'/);
+    assert.match(warehouseApi, /postRequest(?:<[^']*>)?\('\/scm\/warehouse\/disable'/);
 
     const receiptList = code('../src/views/business/scm/purchase/purchase-receipt-list.vue');
     assert.match(

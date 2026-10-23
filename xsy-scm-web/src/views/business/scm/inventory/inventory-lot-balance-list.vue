@@ -1,7 +1,7 @@
 <!-- 批次库存：按仓库 + 商品规格 + 批次展开；页面只读，批次写入发生在收货和出库命令中。 -->
 <template>
-  <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
-    <div class="scm-filter-fields">
+  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
+    <a-row class="smart-query-form-row">
       <a-form-item label="仓库">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
       </a-form-item>
@@ -14,11 +14,13 @@
       <a-form-item label="商品名称">
         <a-input v-model:value="queryForm.productName" placeholder="商品名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-    </div>
-    <div class="scm-filter-actions">
-      <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:lot:query'">查询</a-button>
-      <a-button @click="resetQuery">重置</a-button>
-    </div>
+      <a-form-item class="smart-query-form-item">
+        <a-space>
+          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:lot:query'">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-row>
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>
@@ -129,7 +131,7 @@ const columns = ref<InventoryLotBalanceColumn[]>([
   {title: '商品规格编码', dataIndex: 'skuCode', width: 130, ellipsis: true, showFlag: false},
   {title: '批次号', dataIndex: 'lotNo', width: 190, ellipsis: true},
   {title: '来源生产批号', dataIndex: 'sourceLotNo', width: 160, ellipsis: true},
-  {title: '数量', dataIndex: 'quantity', width: 110, align: 'right'},
+  {title: '数量', dataIndex: 'quantity', width: 110},
   {title: '单位', dataIndex: 'unit', width: 80},
   {title: '更新时间', dataIndex: 'updatedAt', width: 170},
   ...(canViewInspection ? [{title: '操作', dataIndex: 'action', width: 100, align: 'center' as const, fixed: 'right' as const}] : []),

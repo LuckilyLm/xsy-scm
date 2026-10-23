@@ -150,7 +150,9 @@
       :scroll="{x: scmColumnsWidth(targetColumns)}"
     >
       <template #bodyCell="{record, column}">
-        <template v-if="column.dataIndex === 'availableAmount'">{{ moneyText(record.availableAmount) }}</template>
+        <template v-if="column.dataIndex === 'availableAmount'">
+          <span class="scm-money">{{ moneyText(record.availableAmount) }}</span>
+        </template>
         <template v-else-if="column.dataIndex === 'amount'">
           <a-input-number v-model:value="record.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width: 150px" />
         </template>
@@ -264,7 +266,7 @@ const columns = ref<TableColumnsType<FinanceWriteOff>>([
   {title: '核销目标', dataIndex: 'targetName', width: 190},
   {title: '目标类型', dataIndex: 'targetType', align: 'center', width: 90},
   {title: '目标单号', dataIndex: 'targetNo', width: 175},
-  {title: '核销金额', dataIndex: 'amount', width: 136, align: 'right'},
+  {title: '核销金额', dataIndex: 'amount', width: 136},
   {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
   {title: '原因', dataIndex: 'reason', width: 180},
   {title: '核销时点', dataIndex: 'writtenOffAt', width: 180},
@@ -275,8 +277,8 @@ const targetColumns: TableColumnsType<AllocationDraft> = [
   {title: '目标单号', dataIndex: 'documentNo', width: 210},
   {title: '往来方', dataIndex: 'partyName', width: 170},
   {title: '关联单号', dataIndex: 'linkedDocumentNo', width: 180},
-  {title: '可核销金额', dataIndex: 'availableAmount', width: 150, align: 'right'},
-  {title: '本次金额', dataIndex: 'amount', width: 180, align: 'right'},
+  {title: '可核销金额', dataIndex: 'availableAmount', width: 150},
+  {title: '本次金额', dataIndex: 'amount', width: 180},
   {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ];
 useFinanceMobileActionColumn(

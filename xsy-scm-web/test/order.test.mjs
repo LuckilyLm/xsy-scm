@@ -550,10 +550,10 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 
   test('最近已确认订单价走只读 getRequest 的 reference 端点，不复用幂等命令封装', () => {
     const api = code('../src/api/business/scm/order-api.ts');
-    assert.match(api, /recentPrices:[\s\S]*?getRequest\('\/scm\/order\/reference\/recent-prices'/);
+    assert.match(api, /recentPrices:[\s\S]*?getRequest(?:<[^']*>)?\('\/scm\/order\/reference\/recent-prices'/);
     assert.doesNotMatch(api, /recentPrices:[^\n]*orderCommand/);
     // 既有写命令与价格预览路径保持不变
-    assert.match(api, /preview:[\s\S]*?postRequest\('\/scm\/order\/price\/preview'/);
+    assert.match(api, /preview:[\s\S]*?postRequest(?:<[^']*>)?\('\/scm\/order\/price\/preview'/);
   });
 
   test('录单页把草稿恢复 / 历史复用接在既有 Drawer，创建成功清草稿', () => {

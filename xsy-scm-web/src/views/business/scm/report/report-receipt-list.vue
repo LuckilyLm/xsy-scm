@@ -164,7 +164,12 @@
             <a-button v-privilege="PERM.EXPORT" :loading="inboundExport.exporting" @click="exportInbound">导出</a-button>
           </div>
           <div class="smart-table-setting-block">
-            <TableOperator v-model="inboundColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INBOUND" :refresh="loadInboundTab" />
+            <TableOperator
+              v-model="inboundColumns"
+              :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INBOUND"
+              :refresh="loadInboundTab"
+              :exclude-column-keys="canViewCost ? [] : COST_INDEXES"
+            />
           </div>
         </a-row>
         <a-alert v-if="inbound.error" :message="inbound.error" type="error" show-icon class="smart-margin-bottom10">

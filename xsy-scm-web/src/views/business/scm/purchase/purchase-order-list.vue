@@ -281,7 +281,7 @@ const columns = ref<TableColumnsType<Order>>([
   {title: '收货仓库', dataIndex: 'warehouseName', width: 140},
   {title: '状态', dataIndex: 'status', align: 'center', width: 100},
   {title: '计划到货', dataIndex: 'plannedArrivalDate', width: 120},
-  {title: '采购金额', dataIndex: 'totalAmount', width: 148, align: 'right'},
+  {title: '采购金额', dataIndex: 'totalAmount', width: 148},
   {title: '收货进度', dataIndex: 'receivedProgress', width: 110},
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 160},
 ]);

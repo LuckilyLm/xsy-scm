@@ -1,4 +1,4 @@
-/* SCM 列表筛选区与工具栏；SmartAdmin 系统页继续使用自己的表单规则。 */
+/* SCM 列表工具栏。筛选区统一使用 SmartAdmin 的 smart-query-form，不再维护 scm-filter-*。 */
 /* 只有表格工具的列表：工具条放到查询行右端 */
 .scm-query-table-tools {
   display: inline-flex;
@@ -25,72 +25,6 @@
   color: var(--scm-text-secondary, rgba(0, 0, 0, 0.45));
   font-size: 12px;
   white-space: nowrap;
-}
-
-.scm-filter-bar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-bottom: 14px;
-}
-
-.scm-filter-fields {
-  display: flex;
-  /* 只占内容宽度，查询按钮紧随字段之后 */
-  flex: 0 1 auto;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  min-width: 0;
-
-  .ant-form-item {
-    flex: 0 1 auto;
-    align-items: center;
-    min-width: 0;
-    margin: 0;
-  }
-
-  .ant-form-item-label {
-    padding-inline-end: 8px;
-  }
-
-  /* 控件高度交给全站基线 28px，这里只限制最大宽度 */
-
-  .ant-input,
-  .ant-input-affix-wrapper,
-  .ant-picker,
-  .ant-select {
-    max-width: 100%;
-  }
-}
-
-.scm-filter-actions {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 8px;
-  /* 按钮紧跟字段，不推到最右 */
-
-  .ant-btn {
-    margin: 0;
-    padding-inline: 12px;
-  }
-}
-
-.scm-filter-range {
-  .ant-form-item-control-input-content {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-
-  .ant-picker {
-    flex: 1 1 0;
-    width: 0;
-    min-width: 0;
-  }
 }
 
 .scm-table-toolbar.smart-table-btn-block {
@@ -121,27 +55,6 @@
     .ant-btn {
       margin-right: 0;
     }
-  }
-}
-
-@media (max-width: 768px) {
-  .scm-filter-bar {
-    align-items: stretch;
-  }
-
-  .scm-filter-fields {
-    flex: 1 1 100%;
-    width: 100%;
-
-    .ant-form-item {
-      flex: 1 1 100%;
-    }
-  }
-
-  .scm-filter-actions {
-    flex: 1 1 100%;
-    justify-content: flex-end;
-    margin-left: 0;
   }
 }
 

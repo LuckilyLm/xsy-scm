@@ -9,6 +9,7 @@ import com.xsy.scm.product.domain.entity.ProductSpuEntity;
 import com.xsy.scm.product.domain.form.ProductImageCenterForms;
 import com.xsy.scm.product.domain.form.ProductImageForm;
 import com.xsy.scm.product.domain.vo.ProductImageCenterVO;
+import com.xsy.scm.product.domain.vo.ProductImageMatchTargetVO;
 import com.xsy.scm.product.domain.vo.ProductImageVO;
 import com.xsy.scm.product.domain.vo.ProductUnboundImageVO;
 import com.xsy.scm.product.manager.ProductAggregateValidator;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -76,6 +78,18 @@ public class ProductImageCenterService {
         result.setName(spu.getName());
         result.setImages(images);
         return result;
+    }
+
+    /**
+     * 图片文件名里的商品编码 → 商品身份。编码按 trim + lower 归一化后去重， 库内再用 lower(trim(spu_code)) 匹配；返回空列表表示这些编码都没有对应活动商品。
+     */
+    public List<ProductImageMatchTargetVO> matchTargets(ProductImageCenterForms.MatchTargetsForm form) {
+        List<String> codes = form.getCodes().stream().filter(Objects::nonNull)
+            .map(code -> code.trim().toLowerCase(Locale.ROOT)).filter(code -> !code.isEmpty()).distinct().toList();
+        if (codes.isEmpty()) {
+            return List.of();
+        }
+        return productSpuDao.findByNormalizedCodes(codes);
     }
 
     @Transactional(rollbackFor = Exception.class)

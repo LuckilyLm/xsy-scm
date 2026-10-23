@@ -84,7 +84,7 @@ const inventoryChart = useEcharts(inventoryEl);
 const C = {
   text1: '#eaf6ff',
   text2: '#8fb7d9',
-  text3: '#587a9a',
+  text3: '#7d9dbd',
   cyan: '#27d7fe',
   blue: '#2f80ed',
   green: '#34d399',
@@ -95,7 +95,7 @@ const C = {
 
 const AXIS = {
   axisLine: {lineStyle: {color: C.border}},
-  axisLabel: {color: C.text2, fontSize: 10},
+  axisLabel: {color: C.text2, fontSize: 12},
   splitLine: {lineStyle: {color: 'rgba(27, 77, 122, 0.35)'}},
 };
 
@@ -103,7 +103,7 @@ const TOOLTIP = {
   trigger: 'axis',
   backgroundColor: 'rgba(7, 30, 66, 0.94)',
   borderColor: '#1b4d7a',
-  textStyle: {color: C.text1, fontSize: 11},
+  textStyle: {color: C.text1, fontSize: 12},
 };
 
 const LEGEND = {
@@ -111,7 +111,7 @@ const LEGEND = {
   right: 6,
   itemWidth: 10,
   itemHeight: 6,
-  textStyle: {color: C.text2, fontSize: 10},
+  textStyle: {color: C.text2, fontSize: 12},
 };
 
 /** 折线/面积用的公共 series 片段。 */

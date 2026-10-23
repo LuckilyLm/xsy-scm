@@ -1,18 +1,20 @@
 <!-- 预警阈值配置。同一仓库和商品规格只能有一条配置，修改后立即生效。 -->
 <template>
-  <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
-    <div class="scm-filter-fields">
+  <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
+    <a-row class="smart-query-form-row">
       <a-form-item label="仓库">
         <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
       </a-form-item>
       <a-form-item label="商品规格编码">
         <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
-    </div>
-    <div class="scm-filter-actions">
-      <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
-      <a-button @click="resetQuery">重置</a-button>
-    </div>
+      <a-form-item class="smart-query-form-item">
+        <a-space>
+          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:threshold:query'">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </a-space>
+      </a-form-item>
+    </a-row>
   </a-form>
 
   <a-alert v-if="error" :message="error" type="error" show-icon>

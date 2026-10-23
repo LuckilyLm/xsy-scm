@@ -1565,7 +1565,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   const home = code('../src/views/system/home/index.vue');
 
   test('待办接口是只读 GET，不引入写命令或幂等封装', () => {
-    assert.match(api, /todo:[\s\S]*?getRequest\('\/scm\/dashboard\/todo',\s*\{\},\s*REGION_REQUEST_OPTIONS\)/);
+    assert.match(api, /todo:[\s\S]*?getRequest(?:<[^']*>)?\('\/scm\/dashboard\/todo',\s*\{\},\s*REGION_REQUEST_OPTIONS\)/);
     assert.match(api, /const REGION_REQUEST_OPTIONS = \{suppressGlobalErrorMessage: true\}/);
     assert.doesNotMatch(api, /postRequest|putRequest|deleteRequest|Idempotency|sendMessage/);
   });

@@ -1,9 +1,11 @@
 package com.xsy.scm.product.domain.form;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -52,6 +54,17 @@ public final class ProductImageCenterForms {
         @NotNull(message = "图片 ID不能为空")
         @Positive(message = "图片 ID必须大于0")
         private Long imageId;
+    }
+
+    /**
+     * 批量匹配只需要上传文件名里的商品编码；上限与前端一次选图数量一致，避免超长 IN 列表。
+     */
+    @Data
+    public static class MatchTargetsForm {
+        @NotEmpty(message = "商品编码列表不能为空")
+        @Size(max = 500, message = "一次最多匹配 500 个商品编码")
+        private List<@NotBlank(message = "商品编码不能为空") @Size(max = 64,
+            message = "商品编码不能超过 64 个字符") String> codes = new ArrayList<>();
     }
 
     @Data

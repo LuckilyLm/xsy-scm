@@ -56,18 +56,15 @@
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
         <a-space>
           <a-button v-privilege="'scm:product:add'" type="primary" @click="drawer?.open()">新增商品</a-button>
-          <a-button v-privilege="'scm:product:batch'" :disabled="!selectedRows.length" @click="batch?.open('STATUS', selectedItems)"
-            >批量改状态
-          </a-button>
-          <a-button v-privilege="'scm:product:batch'" :disabled="!selectedRows.length" @click="batch?.open('CATEGORY', selectedItems)"
-            >批量改分类
-          </a-button>
-          <a-button v-privilege="'scm:product:batch'" :disabled="!selectedRows.length" @click="batch?.open('TAG', selectedItems)"
-            >批量打标签
-          </a-button>
           <a-button v-privilege="'scm:product:import'" @click="importModal?.show()">导入</a-button>
           <a-button v-privilege="'scm:product:export'" @click="openExport">导出</a-button>
-          <span v-if="selectedRows.length" class="scm-cell-hint">已选 {{ selectedRows.length }} 个</span>
+          <!-- 批量操作只在选中记录后出现，避免常驻工具栏过挤 -->
+          <template v-if="selectedRows.length">
+            <a-button v-privilege="'scm:product:batch'" @click="batch?.open('STATUS', selectedItems)">批量改状态</a-button>
+            <a-button v-privilege="'scm:product:batch'" @click="batch?.open('CATEGORY', selectedItems)">批量改分类</a-button>
+            <a-button v-privilege="'scm:product:batch'" @click="batch?.open('TAG', selectedItems)">批量打标签</a-button>
+            <span class="scm-cell-hint">已选 {{ selectedRows.length }} 个</span>
+          </template>
         </a-space>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRODUCT" :refresh="load" />
       </a-row>
@@ -278,7 +275,7 @@ const columns = ref<TableColumnsType<ProductRow>>([
   {title: '损耗率', dataIndex: 'lossRate', width: 90},
   {title: '采购预警天数', dataIndex: 'purchaseWarningDays', width: 120},
   {title: '单位', dataIndex: 'saleUnit', width: SCM_COLUMN_WIDTH.unit},
-  {title: '市场价', dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange, align: 'right'},
+  {title: '市场价', dataIndex: 'price', width: SCM_COLUMN_WIDTH.moneyRange},
   {title: '规格数', dataIndex: 'skuCount', width: SCM_COLUMN_WIDTH.count},
   {title: '在售状态', dataIndex: 'status', width: SCM_COLUMN_WIDTH.status, align: 'center', sorter: true},
   {title: '主档状态', dataIndex: 'masterStatus', width: SCM_COLUMN_WIDTH.status, align: 'center'},

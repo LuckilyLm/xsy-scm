@@ -92,7 +92,14 @@
       />
     </div>
   </a-card>
-  <FinanceDetailDrawer v-model:open="detailOpen" :loading="detailLoading" :kind="detailKind" :detail="detail" />
+  <FinanceDetailDrawer
+    v-model:open="detailOpen"
+    :loading="detailLoading"
+    :error="detailError"
+    :kind="detailKind"
+    :detail="detail"
+    @retry="retryDetail"
+  />
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -140,6 +147,8 @@ const detailOpen = ref(false),
   detailLoading = ref(false),
   detailKind = ref<AgingAccountType>('RECEIVABLE');
 const detail = ref<FinanceReceivableDetail | FinancePayableDetail>();
+const detailRow = ref<AgingRow>();
+const detailError = ref('');
 let requestId = 0,
   detailRequestId = 0;
 const bucketLabel = (bucket: AgingBucket) => bucketOptions.find((option) => option.value === bucket)?.label ?? bucket;
@@ -242,9 +251,11 @@ async function exportRows() {
 }
 async function openDetail(row: AgingRow) {
   const id = ++detailRequestId;
+  detailRow.value = row;
   detailOpen.value = true;
   detailLoading.value = true;
   detail.value = undefined;
+  detailError.value = '';
   detailKind.value = row.accountType;
   try {
     const response =
@@ -253,13 +264,15 @@ async function openDetail(row: AgingRow) {
         : await financeApi.payableDetail(row.documentId, {suppressGlobalErrorMessage: true});
     if (id === detailRequestId) detail.value = response.data;
   } catch (e) {
-    if (id === detailRequestId) {
-      error.value = reportError(e);
-      detailOpen.value = false;
-    }
+    // 明细失败留在抽屉内提示，避免把整页报表切成错误态
+    if (id === detailRequestId) detailError.value = reportError(e);
   } finally {
     if (id === detailRequestId) detailLoading.value = false;
   }
+}
+
+function retryDetail() {
+  if (detailRow.value) void openDetail(detailRow.value);
 }
 onMounted(load);
 </script>
