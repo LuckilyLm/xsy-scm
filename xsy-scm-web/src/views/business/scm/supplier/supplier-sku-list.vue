@@ -19,7 +19,6 @@
           <button v-for="item in visibleCards" :key="item.supplierId" type="button" class="supplier-card" @click="openSupplier(item)">
             <span class="supplier-card__head">
               <span class="supplier-card__name" :title="item.supplierName">{{ item.supplierName }}</span>
-              <RightOutlined class="supplier-card__arrow" />
             </span>
             <span class="supplier-card__stats">
               <span class="supplier-card__stat"
@@ -27,9 +26,6 @@
               >
               <span class="supplier-card__stat"
                 ><b>{{ item.specCount }}</b> 个规格</span
-              >
-              <span v-if="item.defaultCount" class="supplier-card__stat"
-                ><b>{{ item.defaultCount }}</b> 个优先</span
               >
             </span>
           </button>
@@ -41,10 +37,13 @@
     <!-- 某家公司的商品明细 -->
     <a-card v-else size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
-        <a-button type="link" class="scm-detail-header__back" @click="backToCards">
-          <ArrowLeftOutlined />
-          返回公司列表
-        </a-button>
+        <a-space size="middle">
+          <a-button type="link" class="scm-detail-header__back" @click="backToCards">
+            <ArrowLeftOutlined />
+            返回公司列表
+          </a-button>
+          <h3 class="supplier-detail-name">{{ selected.supplierName }}</h3>
+        </a-space>
         <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER_SKU" :refresh="load" />
       </a-row>
 
@@ -139,7 +138,7 @@
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
-import {ArrowLeftOutlined, RightOutlined} from '@ant-design/icons-vue';
+import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {supplierSkuApi} from '/@/api/business/scm/supplier-sku-api';
 import type {
@@ -351,18 +350,6 @@ onMounted(loadCards);
   white-space: nowrap;
 }
 
-/* 箭头只作提示，不单独交互 */
-.supplier-card__arrow {
-  color: var(--scm-text-secondary, #667085);
-  font-size: 12px;
-  transition: color 0.2s;
-}
-
-.supplier-card:hover .supplier-card__arrow,
-.supplier-card:focus-visible .supplier-card__arrow {
-  color: var(--scm-primary, #1677ff);
-}
-
 .supplier-card__stats {
   display: flex;
   flex-wrap: wrap;
@@ -379,5 +366,11 @@ onMounted(loadCards);
 /* 返回链接与列设置同一行，去掉公共下边距 */
 :deep(.scm-detail-header__back.ant-btn) {
   margin-bottom: 0;
+}
+
+.supplier-detail-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
 }
 </style>

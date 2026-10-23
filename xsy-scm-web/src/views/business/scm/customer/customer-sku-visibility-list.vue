@@ -25,16 +25,13 @@
           <button v-for="item in visibleCards" :key="item.customerId" type="button" class="customer-card" @click="openCustomer(item)">
             <span class="customer-card__head">
               <span class="customer-card__name" :title="item.customerName">{{ item.customerName }}</span>
-              <RightOutlined class="customer-card__arrow" />
             </span>
             <span class="customer-card__meta">
               {{ item.customerCode }}
               <template v-if="item.customerTypeName"> · {{ item.customerTypeName }}</template>
             </span>
             <span class="customer-card__stats">
-              <a-tag :color="item.visibilityPolicy === 'ALLOWLIST' ? 'blue' : 'default'">
-                {{ visibilityPolicyLabel(item.visibilityPolicy) }}
-              </a-tag>
+              <span class="customer-card__stat">{{ visibilityPolicyLabel(item.visibilityPolicy) }}</span>
               <template v-if="item.visibilityPolicy === 'ALLOWLIST'">
                 <span class="customer-card__stat"
                   ><b>{{ item.productCount }}</b> 个商品</span
@@ -63,11 +60,6 @@
 
       <div class="customer-visibility-head">
         <h3 class="customer-visibility-head__name">{{ selected.customerName }}</h3>
-        <span class="scm-mono">{{ selected.customerCode }}</span>
-        <a-tag :color="selected.visibilityPolicy === 'ALLOWLIST' ? 'blue' : 'default'">
-          {{ visibilityPolicyLabel(selected.visibilityPolicy) }}
-        </a-tag>
-        <a-button v-privilege="'scm:customer:query'" type="link" size="small" @click="openCustomerDetail(selected.customerId)"> 客户详情 </a-button>
       </div>
 
       <a-empty v-if="selected.visibilityPolicy === 'ALL_ENABLED'" description="该客户设置为「全部可售」，不限制具体商品规格" />
@@ -136,9 +128,8 @@
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import {computed, onMounted, reactive, ref} from 'vue';
-import {useRouter} from 'vue-router';
 import type {TableColumnsType} from 'ant-design-vue';
-import {ArrowLeftOutlined, RightOutlined} from '@ant-design/icons-vue';
+import {ArrowLeftOutlined} from '@ant-design/icons-vue';
 import {customerVisibilityApi} from '/@/api/business/scm/customer-visibility-api';
 import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import type {ScmId} from '/@/types/business/scm/customer';
@@ -153,7 +144,6 @@ import {datetime} from '../common/scm-display';
 
 // 客户卡片
 
-const router = useRouter();
 const cards = ref<CustomerVisibilitySummary[]>([]);
 const cardLoading = ref(false);
 const cardError = ref('');
@@ -194,10 +184,6 @@ function openCustomer(item: CustomerVisibilitySummary) {
   if (item.visibilityPolicy === 'ALLOWLIST') {
     void load();
   }
-}
-
-function openCustomerDetail(customerId: ScmId) {
-  void router.push({path: '/customer/customer-detail', query: {customerId: String(customerId)}});
 }
 
 function backToCards() {
@@ -333,18 +319,6 @@ onMounted(loadCards);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-/* 箭头只作提示，不单独交互 */
-.customer-card__arrow {
-  color: var(--scm-text-secondary, #667085);
-  font-size: 12px;
-  transition: color 0.2s;
-}
-
-.customer-card:hover .customer-card__arrow,
-.customer-card:focus-visible .customer-card__arrow {
-  color: var(--scm-primary, #1677ff);
 }
 
 .customer-card__meta {
