@@ -52,3 +52,11 @@ test('only a published unexpired qualified report receives the qualified badge o
   assert.equal(inspectionStatusLabel('UNKNOWN'), '未知状态');
   assert.equal(inspectionConclusionLabel('UNKNOWN'), '未知结论');
 });
+
+test('public trace page keeps the backend business error message', () => {
+  const source = read('../src/views/business/scm/trace/trace-public.vue');
+  // axios 以响应对象拒绝业务错误；只判断 Error 会把「未找到该溯源码」吞成通用失败
+  assert.match(source, /response\?\.data\?\.msg/);
+  assert.match(source, /errorText\(e\)/);
+  assert.doesNotMatch(source, /e instanceof Error \? e\.message/);
+});

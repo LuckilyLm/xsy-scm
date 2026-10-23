@@ -131,6 +131,16 @@
     return tracePublicApi.fileUrl(token.value, fileKey);
   }
 
+  /** axios 以响应对象拒绝业务错误，不是 Error；优先保留后端可读提示。 */
+  function errorText(e: unknown): string {
+    const response = e as {
+      data?: { msg?: string };
+      response?: { data?: { msg?: string } };
+      message?: string;
+    };
+    return response?.data?.msg || response?.response?.data?.msg || response?.message || '加载失败，请重试';
+  }
+
   async function load() {
     const current = ++requestId;
     if (!token.value) {
@@ -147,7 +157,7 @@
     } catch (e) {
       if (current === requestId) {
         view.value = null;
-        error.value = e instanceof Error ? e.message : '加载失败，请重试';
+        error.value = errorText(e);
       }
     } finally {
       if (current === requestId) loading.value = false;
