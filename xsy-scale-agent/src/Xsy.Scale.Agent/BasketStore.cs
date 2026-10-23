@@ -26,6 +26,14 @@ internal sealed partial class StateStore
               WHERE kind='COMPLETE_ITEM';
             """;
         command.ExecuteNonQuery();
+        command.CommandText = "PRAGMA table_info(basket_commands)";
+        bool hasError = false;
+        using (var columns = command.ExecuteReader())
+            while (columns.Read()) hasError |= columns.GetString(1) == "last_error";
+        if (!hasError) {
+            command.CommandText = "ALTER TABLE basket_commands ADD COLUMN last_error TEXT";
+            command.ExecuteNonQuery();
+        }
     }
 
     private bool HasBasketOperation(string operationId)
@@ -166,10 +174,18 @@ internal sealed partial class StateStore
         string key = WireJson.Digest(scope);
         BasketRecord[] rows = ReadBaskets(db, transaction, key);
         ItemCompletion? completion = ReadCompletion(db, transaction, key);
+        string queueState = rows.Any(row => row.QueueState == BasketCommandState.NeedsReview)
+            ? BasketCommandState.NeedsReview : BasketCommandState.Waiting;
+        string? lastError = rows.FirstOrDefault(row => row.LastError != null)?.LastError;
+        using var state = db.CreateCommand(); state.Transaction = transaction;
+        state.CommandText = "SELECT state,last_error FROM basket_commands WHERE scope_key=$scope AND kind='COMPLETE_ITEM'";
+        state.Parameters.AddWithValue("$scope", key);
+        using (var current = state.ExecuteReader())
+            if (current.Read()) { queueState = current.GetString(0); lastError = current.IsDBNull(1) ? lastError : current.GetString(1); }
         return new BasketSummary(rows.Length, rows.Sum(row => decimal.Parse(row.Measurement.NetWeight, CultureInfo.InvariantCulture))
             .ToString(CultureInfo.InvariantCulture), rows.FirstOrDefault()?.Measurement.BusinessUnit ?? item.SaleUnit,
             item.PlannedQuantity, item.SortedQuantity, WireJson.Digest(rows.Select(row => row.EventKey).ToArray()),
-            authorizationExpired, completion != null, completion, "WAITING_CONTRACT");
+            authorizationExpired, completion != null, completion, queueState, lastError);
     }
 
     /// <summary>按筐序号分页读取，结果不包含原始帧或平台凭证。</summary>
@@ -224,7 +240,7 @@ internal sealed partial class StateStore
     {
         using var command = db.CreateCommand(); command.Transaction = transaction;
         command.CommandText = """
-            SELECT r.event_key,r.operation_id,r.basket_number,r.sample_id,r.payload,r.print_intent_id,r.print_state,c.state
+            SELECT r.event_key,r.operation_id,r.basket_number,r.sample_id,r.payload,r.print_intent_id,r.print_state,c.state,c.last_error
             FROM basket_records r JOIN basket_commands c ON c.operation_id=r.operation_id
             WHERE r.scope_key=$scope AND r.basket_number>$after ORDER BY r.basket_number
             """ + (limit.HasValue ? " LIMIT $limit" : "");
@@ -232,7 +248,8 @@ internal sealed partial class StateStore
         if (limit.HasValue) command.Parameters.AddWithValue("$limit", limit.Value);
         using var rows = command.ExecuteReader(); var result = new List<BasketRecord>();
         while (rows.Read()) result.Add(new(rows.GetString(0), rows.GetString(1), rows.GetInt32(2), rows.GetString(3),
-            WireJson.Decode<Measurement>(rows.GetString(4)), rows.GetString(5), rows.GetString(6), rows.GetString(7)));
+            WireJson.Decode<Measurement>(rows.GetString(4)), rows.GetString(5), rows.GetString(6), rows.GetString(7),
+            rows.IsDBNull(8) ? null : rows.GetString(8)));
         return result.ToArray();
     }
 

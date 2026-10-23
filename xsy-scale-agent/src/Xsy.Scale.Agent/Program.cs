@@ -46,6 +46,7 @@ builder.Services.AddSingleton<IRawPrinter, WindowsRawPrinter>();
 builder.Services.AddSingleton(new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false })
 { Timeout = TimeSpan.FromSeconds(options.PlatformTimeoutSeconds) });
 builder.Services.AddSingleton<PlatformClient>();
+builder.Services.AddSingleton<TraceLabelService>();
 builder.Services.AddSingleton<PrintService>();
 builder.Services.AddHostedService<SyncWorker>();
 
@@ -101,8 +102,13 @@ app.Use(async (context, next) =>
             AgentFault fault => fault.Code, PlatformFault fault => fault.Code,
             OperationCanceledException => "REQUEST_TIMEOUT", HttpRequestException => "PLATFORM_UNAVAILABLE", _ => "AGENT_ERROR"
         };
-        context.Response.StatusCode = error is AgentFault ? 409 : 503;
-        await context.Response.WriteAsJsonAsync(new { code, message = error is AgentFault ? error.Message : "请求未完成，请查看连接状态" });
+        context.Response.StatusCode = error switch {
+            AgentFault => 409,
+            PlatformFault { Code: "DEVICE_UNAUTHORIZED" or "OPERATOR_SESSION_INVALID" or "OPERATOR_SESSION_DEVICE_MISMATCH" } => 401,
+            PlatformFault { Retryable: false } => 422,
+            _ => 503
+        };
+        await context.Response.WriteAsJsonAsync(new { code, message = error is AgentFault or PlatformFault ? error.Message : "请求未完成，请查看连接状态" });
     }
 });
 app.UseDefaultFiles();
@@ -127,9 +133,14 @@ app.MapPost("/api/agent/workstation/config", (DeviceSetup input, HttpContext con
 });
 app.MapGet("/api/agent/local-tickets", (string jobId, string taskId, string taskItemId, HttpContext context, WorkstationService workstation) =>
     Results.Ok(workstation.Tickets(new(Session(context), jobId, taskId, taskItemId))));
-app.MapPost("/api/agent/local-tickets/reprint", (string jobId, string taskId, string taskItemId,
-    ReprintRequest input, HttpContext context, WorkstationService workstation) =>
-    Results.Ok(workstation.Reprint(new(Session(context), jobId, taskId, taskItemId), input)));
+app.MapPost("/api/agent/local-tickets/reprint", async (string jobId, string taskId, string taskItemId,
+    ReprintRequest input, HttpContext context, WorkstationService workstation, PlatformClient platform, CancellationToken cancellation) => {
+    var scope = new BasketScope(Session(context), jobId, taskId, taskItemId);
+    var previous = workstation.Tickets(scope).LastOrDefault(ticket => ticket.Snapshot.EventKey == input.EventKey);
+    if (previous?.Snapshot.TemplateVersion == "PLATFORM_TRACE_V1")
+        await platform.TraceLabel(previous.Snapshot.TraceReference!, scope.OperatorSessionId, cancellation);
+    return Results.Ok(workstation.Reprint(scope, input));
+});
 
 app.MapGet("/health", () => new { status = "running", version = WireJson.Version });
 app.MapGet("/api/agent/status", (ScaleState scale, PlatformClient platform) =>
@@ -192,6 +203,12 @@ app.MapGet("/api/agent/basket-queue", (string jobId, string taskId, string taskI
     Results.Ok(baskets.Queue(new(Session(context), jobId, taskId, taskItemId), after ?? 0, limit ?? 50)));
 app.MapPost("/api/agent/item-completions", (CompleteItemRequest input, HttpContext context, BasketService baskets) =>
     Results.Ok(new { state = "WAITING_CONTRACT", locallyCompleted = true, completion = baskets.Complete(input, Session(context)) }));
+app.MapGet("/api/agent/trace-lots", async (string jobId, string taskId, string taskItemId, HttpContext context,
+    TraceLabelService labels, CancellationToken cancellation) =>
+    Results.Ok(await labels.Lots(new(Session(context), jobId, taskId, taskItemId), cancellation)));
+app.MapPost("/api/agent/trace-labels", async (string jobId, string taskId, string taskItemId, TraceLabelRequest input,
+    HttpContext context, TraceLabelService labels, CancellationToken cancellation) =>
+    Results.Ok(await labels.Print(new(Session(context), jobId, taskId, taskItemId), input, cancellation)));
 app.MapGet("/api/agent/jobs/{jobId}", async (string jobId, HttpContext context, PlatformClient platform, CancellationToken cancellation) =>
     Results.Ok(await platform.Job(jobId, Session(context), cancellation)));
 app.MapPost("/api/agent/jobs/{jobId}/{action}", async (string jobId, string action, HttpContext context,

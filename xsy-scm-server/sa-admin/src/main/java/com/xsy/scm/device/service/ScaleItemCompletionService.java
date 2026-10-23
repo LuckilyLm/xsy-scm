@@ -28,9 +28,11 @@ public class ScaleItemCompletionService {
     private final SortingScaleEventService sortingScaleEventService;
 
     private final TraceUnitService traceUnitService;
+    private final ScaleDeviceJobService scaleDeviceJobService;
 
     @Transactional(rollbackFor = Exception.class)
     public ScaleItemCompletionVO complete(String taskItemId, ScaleItemCompletionForm form) {
+        scaleDeviceJobService.requireLease(parseId(form.getTaskId()));
         ScaleDevicePrincipal principal = ScaleDeviceContext.require();
         SortingScaleCompleteForm complete = new SortingScaleCompleteForm();
         complete.setOperationId(form.getOperationId());

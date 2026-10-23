@@ -88,6 +88,10 @@ public class MallCartService {
     public MallCartVO add(RequestMallCustomer customer, MallCartAddForm form) {
         MallProductVO product = requireVisible(customer, form.getSkuId());
         boolean quickAdd = Boolean.TRUE.equals(form.getQuickAdd());
+        boolean replaceQuantity = Boolean.TRUE.equals(form.getReplaceQuantity());
+        if (quickAdd && replaceQuantity) {
+            throw new ScmBusinessException(MallErrorCode.CART_QUANTITY_RULE_INVALID);
+        }
         BigDecimal quantity = quickAdd
             ? (product.getMinOrderQty() == null ? BigDecimal.ONE : product.getMinOrderQty())
             : parseQuantity(form.getQuantity());
@@ -103,7 +107,7 @@ public class MallCartService {
         BigDecimal increment = quickAdd
             ? (product.getStepQty() == null ? BigDecimal.ONE : product.getStepQty())
             : quantity;
-        BigDecimal total = existing.getQuantity().add(increment);
+        BigDecimal total = replaceQuantity ? quantity : existing.getQuantity().add(increment);
         MallQuantityPolicy.require(product, total);
         cartDao.updateQuantity(customer.getAccountId(), form.getSkuId(), total, ScmOperator.current());
         return assemble(customer);

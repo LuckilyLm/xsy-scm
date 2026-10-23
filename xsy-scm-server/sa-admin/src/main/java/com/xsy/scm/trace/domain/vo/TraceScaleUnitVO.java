@@ -19,6 +19,8 @@ public class TraceScaleUnitVO {
     private Long unitId;
 
     private String unitCode;
+    private Long lotId;
+    private String lotNo;
 
     private String publicToken;
 

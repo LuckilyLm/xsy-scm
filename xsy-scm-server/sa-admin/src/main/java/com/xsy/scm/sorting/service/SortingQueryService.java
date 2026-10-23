@@ -9,6 +9,8 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.sorting.dao.SortingPartRecordDao;
 import com.xsy.scm.sorting.dao.SortingQueryDao;
 import com.xsy.scm.sorting.dao.SortingTaskDao;
+import com.xsy.scm.sorting.dao.SortingTaskItemDao;
+import org.springframework.transaction.annotation.Propagation;
 import com.xsy.scm.sorting.domain.entity.SortingTaskEntity;
 import com.xsy.scm.sorting.domain.form.SortingCandidateQueryForm;
 import com.xsy.scm.sorting.domain.form.SortingSummaryQueryForm;
@@ -51,7 +53,28 @@ public class SortingQueryService {
     private final SortingQueryDao sortingQueryDao;
     private final SortingPartRecordDao sortingPartRecordDao;
     private final SortingTaskDao sortingTaskDao;
+    private final SortingTaskItemDao sortingTaskItemDao;
     private final SortingAccess access;
+
+    @Transactional(readOnly = true)
+    public SortingTaskEntity requireTaskForDeviceItem(Long itemId) {
+        var item = sortingTaskItemDao.selectById(itemId);
+        if (item == null || Boolean.TRUE.equals(item.getDeleted())) {
+            throw new ScmDataScopeException();
+        }
+        return requireTaskForDevice(item.getTaskId());
+    }
+
+    /** 设备写入与改派、取消共用任务聚合锁。 */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public SortingTaskEntity lockTaskForDevice(Long taskId) {
+        var task = sortingQueryDao.lockTask(taskId);
+        if (task == null) {
+            throw new ScmDataScopeException();
+        }
+        access.requireVisible(access.scope(), task);
+        return task;
+    }
 
     private Page<?> page(PageParam form) {
         // 排序由 SQL 固定，客户端排序列一律不接受；分页上限与 SCM 其它列表页一致。

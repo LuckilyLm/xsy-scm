@@ -55,6 +55,36 @@ public class ScaleDeviceJobService {
 
     private final ScaleJobLeaseDao scaleJobLeaseDao;
 
+    public void requireItemLease(Long itemId) {
+        requireLease(sortingQueryService.requireTaskForDeviceItem(itemId).getId());
+    }
+
+    public void requireItemVisible(Long itemId) {
+        requireDeviceTask(sortingQueryService.requireTaskForDeviceItem(itemId), ScaleDeviceContext.require());
+    }
+
+    /** 客户端禁用按钮不能代替服务端租约检查。任务锁持续至正式写入提交。 */
+    public void requireLease(Long taskId) {
+        ScaleDevicePrincipal principal = ScaleDeviceContext.require();
+        SortingTaskEntity task = sortingQueryService.lockTaskForDevice(taskId);
+        requireDeviceTask(task, principal);
+        ScaleJobLeaseEntity lease = scaleJobLeaseDao.selectActiveByTaskAndDevice(taskId, principal.deviceId(),
+            OffsetDateTime.now());
+        if (lease == null || !Objects.equals(lease.getSessionId(), principal.sessionId())
+            || !Objects.equals(lease.getEmployeeId(), principal.employeeId())) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.JOB_LEASED_BY_OTHER);
+        }
+    }
+
+    private void requireDeviceTask(SortingTaskEntity task, ScaleDevicePrincipal principal) {
+        if (!Objects.equals(task.getWarehouseId(), principal.warehouseId())) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_WAREHOUSE_MISMATCH);
+        }
+        if (!Objects.equals(task.getAssigneeEmployeeId(), principal.employeeId())) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_NOT_ASSIGNEE);
+        }
+    }
+
     /**
      * 当前员工在本设备仓库内可作业的任务，按任务主键顺序分页。
      *
@@ -98,7 +128,9 @@ public class ScaleDeviceJobService {
         OffsetDateTime now = OffsetDateTime.now();
         ScaleJobLeaseEntity existing = scaleJobLeaseDao.selectActiveByTask(taskId, now);
         if (existing != null) {
-            if (Objects.equals(existing.getDeviceId(), principal.deviceId())) {
+            if (Objects.equals(existing.getDeviceId(), principal.deviceId())
+                && Objects.equals(existing.getSessionId(), principal.sessionId())
+                && Objects.equals(existing.getEmployeeId(), principal.employeeId())) {
                 return toJobVO(task, existing, principal);
             }
             throw new ScmBusinessException(ScaleDeviceErrorCode.JOB_LEASED_BY_OTHER);
@@ -127,6 +159,7 @@ public class ScaleDeviceJobService {
     public ScaleJobVO release(String jobId, ScaleJobActionForm form) {
         ScaleDevicePrincipal principal = ScaleDeviceContext.require();
         Long taskId = parseId(jobId);
+        requireDeviceTask(sortingQueryService.lockTaskForDevice(taskId), principal);
         OffsetDateTime now = OffsetDateTime.now();
         ScaleJobLeaseEntity lease = scaleJobLeaseDao.selectActiveByTaskAndDevice(taskId, principal.deviceId(), now);
         if (lease != null) {
@@ -137,7 +170,7 @@ public class ScaleDeviceJobService {
 
     /** 领取前置校验：可见、可作业、属于本设备仓库、由当前员工受指派，且版本与秤端看到的一致。 */
     private SortingTaskEntity requireClaimable(Long taskId, String jobVersion, ScaleDevicePrincipal principal) {
-        SortingTaskEntity task = sortingQueryService.requireTaskForDevice(taskId);
+        SortingTaskEntity task = sortingQueryService.lockTaskForDevice(taskId);
         if (!OPEN_STATUSES.contains(task.getStatus())) {
             throw new ScmBusinessException(ScaleDeviceErrorCode.JOB_STATE_INVALID);
         }
@@ -156,6 +189,7 @@ public class ScaleDeviceJobService {
 
     private ScaleJobVO toJobVO(Long taskId, ScaleDevicePrincipal principal, OffsetDateTime now) {
         SortingTaskEntity task = sortingQueryService.requireTaskForDevice(taskId);
+        requireDeviceTask(task, principal);
         ScaleJobLeaseEntity lease = scaleJobLeaseDao.selectActiveByTaskAndDevice(taskId, principal.deviceId(), now);
         return toJobVO(task, lease, principal);
     }

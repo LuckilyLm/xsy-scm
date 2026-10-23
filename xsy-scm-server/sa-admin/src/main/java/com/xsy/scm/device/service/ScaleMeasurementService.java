@@ -30,9 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class ScaleMeasurementService {
 
     private final SortingScaleEventService sortingScaleEventService;
+    private final ScaleDeviceJobService scaleDeviceJobService;
 
     @Transactional(rollbackFor = Exception.class)
     public ScaleMeasurementVO upload(ScaleMeasurementForm form) {
+        scaleDeviceJobService.requireLease(form.getTaskId());
         ScaleDevicePrincipal principal = ScaleDeviceContext.require();
         BigDecimal rawReading = parseQuantity(form.getRawValue());
         BigDecimal netWeight = parseQuantity(form.getNetWeight());

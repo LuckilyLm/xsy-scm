@@ -108,6 +108,7 @@
   <PurchaseOrderForm ref="drawer" @saved="queryData" />
   <PurchaseOrderDetail ref="detail" @saved="queryData" />
   <PurchaseShareModal ref="shareModal" />
+  <PurchaseFeedbackDrawer ref="feedbackDrawer" @detail="(id) => detail?.open(id)" />
   <PrintDocumentModal :open="printBatch.open" document-type="PURCHASE_ORDER" :business-ids="printBatch.ids" @close="printBatch.open = false" />
 
   <a-modal
@@ -160,6 +161,7 @@ import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue';
 import PurchaseShareModal from '/@/views/business/scm/purchase/components/purchase-share-modal.vue';
+import PurchaseFeedbackDrawer from '/@/views/business/scm/purchase/components/purchase-feedback-drawer.vue';
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
@@ -186,6 +188,7 @@ const selected = ref<(string | number)[]>([]);
 const drawer = ref<InstanceType<typeof PurchaseOrderForm>>();
 const detail = ref<InstanceType<typeof PurchaseOrderDetail>>();
 const shareModal = ref<InstanceType<typeof PurchaseShareModal>>();
+const feedbackDrawer = ref<InstanceType<typeof PurchaseFeedbackDrawer>>();
 
 /** 打印对话框：单张与批量共用，只传要打印的采购单 id（渲染与冻结都在服务端）。 */
 const printBatch = reactive({open: false, ids: [] as (string | number)[]});
@@ -310,6 +313,7 @@ function moreActions(row: Order): ScmActionItem[] {
     {key: 'detail', label: '详情', hidden: !draft},
     {key: 'print', label: '打印', hidden: !draft},
     {key: 'share', label: '分享', hidden: !(canShare.value && SHAREABLE_STATUSES.includes(row.status ?? ''))},
+    {key: 'feedback', label: '现场回填', hidden: draft},
     {key: 'reassign', label: '改派', hidden: !canAssign.value},
     {key: 'cancel', label: '取消', hidden: !(canCancel.value && ['DRAFT', 'SUBMITTED'].includes(row.status ?? ''))},
     {
@@ -322,7 +326,9 @@ function moreActions(row: Order): ScmActionItem[] {
 }
 
 function onRowAction(key: string, row: Order) {
-  if (key === 'share') {
+  if (key === 'feedback') {
+    if (row.id != null) feedbackDrawer.value?.open(row.id);
+  } else if (key === 'share') {
     if (row.id != null) {
       shareModal.value?.openFor(row.id, row.orderNo);
     }

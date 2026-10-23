@@ -138,7 +138,9 @@ internal sealed class WorkstationService(AgentOptions options, WorkstationOption
     /// <exception cref="AgentFault">策略未启用、权限失效或参数/原凭条不合格。</exception>
     internal LocalTicket Reprint(BasketScope scope, ReprintRequest request)
     {
-        if (!policy.LocalTicketsEnabled) throw new AgentFault("LOCAL_TICKET_DISABLED", "本机尚未启用待同步凭条");
+        bool formalLabel = store.LocalTickets(scope).LastOrDefault(ticket => ticket.Snapshot.EventKey == request.EventKey)
+            ?.Snapshot.TemplateVersion == "PLATFORM_TRACE_V1";
+        if (!policy.LocalTicketsEnabled && !formalLabel) throw new AgentFault("LOCAL_TICKET_DISABLED", "本机尚未启用待同步凭条");
         if (new[] { request.OperationId, request.EventKey }.Any(s => string.IsNullOrWhiteSpace(s) || s.Length > 160)
             || string.IsNullOrWhiteSpace(request.Reason) || request.Reason.Length > 500)
             throw new AgentFault("INVALID_REPRINT", "请提供原记录、唯一操作号和不超过500字符的补打原因");

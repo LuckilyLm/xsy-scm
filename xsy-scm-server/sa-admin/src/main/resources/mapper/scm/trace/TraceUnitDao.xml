@@ -301,7 +301,7 @@
 
     <select id="findWeighingEvent" resultType="com.xsy.scm.trace.dao.TraceUnitDao$WeighingEvent">
         SELECT e.id, e.task_item_id AS taskItemId, e.net_weight AS netWeight, e.business_unit AS businessUnit,
-            e.completion_id AS completionId
+            e.completion_id AS completionId, e.status
         FROM xsy_sorting_scale_event e
         WHERE e.id = #{eventId}
     </select>

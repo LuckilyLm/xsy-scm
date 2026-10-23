@@ -7,7 +7,7 @@ internal sealed record BasketScope(string OperatorSessionId, string JobId, strin
 
 /// <summary>每筐原始事实及独立处理意图；打印意图不是平台授权的物理打印尝试。</summary>
 internal sealed record BasketRecord(string EventKey, string OperationId, int BasketNumber, string SampleId,
-    Measurement Measurement, string PrintIntentId, string PrintState, string QueueState);
+    Measurement Measurement, string PrintIntentId, string PrintState, string QueueState, string? LastError = null);
 
 /// <summary>完成商品只引用已保存筐集合，不接受手填累计或再次读取设备。</summary>
 internal sealed record CompleteItemRequest(string OperationId, string TaskId, string TaskItemId,
@@ -22,7 +22,7 @@ internal sealed record ItemCompletion(string OperationId, string JobId, string J
 /// <summary>精确本地累计；平台快照为缓存值，不能与本地累计直接相加。</summary>
 internal sealed record BasketSummary(int BasketCount, string TotalQuantity, string Unit,
     string PlannedQuantity, string PlatformSnapshotQuantity, string ManifestHash, bool AuthorizationExpired,
-    bool LocallyCompleted, ItemCompletion? Completion, string QueueState);
+    bool LocallyCompleted, ItemCompletion? Completion, string QueueState, string? LastError = null);
 
 /// <summary>
 /// 平台筐上报请求。只从已冻结的测量事实与命令字段组装，不重新读秤、不改写重量。

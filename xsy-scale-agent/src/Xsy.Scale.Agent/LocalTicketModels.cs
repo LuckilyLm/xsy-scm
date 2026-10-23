@@ -18,7 +18,7 @@ internal sealed class WorkstationOptions
 internal sealed record TicketSnapshot(string EventKey, string TaskNo, string ProductName, string SpecName,
     string? CustomerName, string? OrderNo, int BasketNumber, string NetWeight, string Unit,
     string? TareWeight, string DeviceCode, DateTimeOffset CapturedAt, bool TestOnly, string TemplateVersion = "LOCAL_PENDING_V1",
-    string? TraceReference = null, string? TraceUrl = null);
+    string? TraceReference = null, string? TraceUrl = null, string? LotNo = null);
 
 /// <summary>本地纸票的一次执行尝试；未知或失败不会自动再次发纸。</summary>
 internal sealed record LocalTicket(string AttemptId, string OperationId, string ScopeKey, TicketSnapshot Snapshot,

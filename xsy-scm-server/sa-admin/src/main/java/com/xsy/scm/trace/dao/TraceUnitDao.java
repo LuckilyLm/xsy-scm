@@ -119,6 +119,7 @@ public interface TraceUnitDao {
         private BigDecimal netWeight;
         private String businessUnit;
         private Long completionId;
+        private String status;
     }
 
     /** 已经发过码的称重事件对应的包装码：重试发码时原样返回，不再发第二枚。 */

@@ -11,6 +11,8 @@ import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.xsy.scm.device.support.ScaleDeviceContext;
 
 /**
  * 秤端的包装码入口。
@@ -23,20 +25,24 @@ import org.springframework.stereotype.Service;
 public class ScaleUnitService {
 
     private final TraceUnitService traceUnitService;
+    private final ScaleDeviceJobService scaleDeviceJobService;
 
     /** 可选批次：本仓、该商品、余额为正，按先进先出排序。 */
     public List<TraceUnitVO.LotOption> candidateLots(String taskItemId) {
+        scaleDeviceJobService.requireItemVisible(parseItemId(taskItemId));
         return traceUnitService.candidateLots(parseItemId(taskItemId));
     }
 
     /** 一筐发一枚码；重试命中已有记录时原样返回同一枚。 */
+    @Transactional(rollbackFor = Exception.class)
     public TraceScaleUnitVO issue(TraceScaleUnitIssueForm form, String operator) {
+        scaleDeviceJobService.requireItemLease(form.getTaskItemId());
         return traceUnitService.issueForWeighing(form, operator);
     }
 
     /** 补打标签：按码取回链接与重量，不重新发码。 */
     public TraceScaleUnitVO label(String unitCode) {
-        return traceUnitService.label(unitCode);
+        return traceUnitService.labelInWarehouse(unitCode, ScaleDeviceContext.require().warehouseId());
     }
 
     /** 设备协议的明细编号是字符串，非法值按「明细不存在」回答，不抛 500。 */

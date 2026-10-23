@@ -79,14 +79,15 @@ internal sealed partial class StateStore
     /// 把该范围剩余待发送命令一并转为需人工处理。用于完成命令被平台拒绝时，
     /// 让同范围的筐也停止自动重试，避免继续堆积无法收敛的请求。
     /// </summary>
-    internal void ParkBasketCommands(string scopeKey)
+    internal void ParkBasketCommands(string scopeKey, string? error = null)
     {
         using var db = Open(); using var command = db.CreateCommand();
         command.CommandText = """
-            UPDATE basket_commands SET state=$review
+            UPDATE basket_commands SET state=$review,last_error=$error
             WHERE scope_key=$scope AND state IN ($waiting,$retry)
             """;
         command.Parameters.AddWithValue("$review", BasketCommandState.NeedsReview);
+        command.Parameters.AddWithValue("$error", (object?)error ?? DBNull.Value);
         command.Parameters.AddWithValue("$scope", scopeKey);
         command.Parameters.AddWithValue("$waiting", BasketCommandState.Waiting);
         command.Parameters.AddWithValue("$retry", BasketCommandState.Retry);

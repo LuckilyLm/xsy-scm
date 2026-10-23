@@ -9,6 +9,7 @@ import com.xsy.scm.purchase.domain.form.PurchaseShareFeedbackForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseSharePublicVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseShareVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseShareFeedbackVO;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -87,6 +88,7 @@ public class PurchaseShareService {
         if (row == null) {
             throw new ScmBusinessException(PurchaseErrorCode.PURCHASE_SHARE_NOT_FOUND);
         }
+        purchaseQueryService.orderDetail(row.getPurchaseOrderId());
         if (row.getRevokedAt() != null) {
             return;
         }
@@ -98,6 +100,12 @@ public class PurchaseShareService {
         // 详情读取先过一遍采购员范围，越界直接 30005
         purchaseQueryService.orderDetail(purchaseOrderId);
         return purchaseShareDao.listByOrder(purchaseOrderId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PurchaseShareFeedbackVO> feedback(Long purchaseOrderId, Long beforeId) {
+        purchaseQueryService.orderDetail(purchaseOrderId);
+        return purchaseShareDao.feedback(purchaseOrderId, beforeId);
     }
 
     /**

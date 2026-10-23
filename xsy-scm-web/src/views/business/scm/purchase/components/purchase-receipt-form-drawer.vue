@@ -77,7 +77,7 @@ import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
-const emit = defineEmits<{saved: []}>();
+const emit = defineEmits<{saved: []; created: [id: Id]}>();
 
 /** 只有已提交和部分收货的采购单可以收货。 */
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
@@ -155,12 +155,13 @@ async function save() {
       });
       message.success('备注已保存');
     } else {
-      await purchaseReceiptApi.create({
+      const result = await purchaseReceiptApi.create({
         purchaseOrderId: form.value.purchaseOrderId!,
         receiptMode: form.value.receiptMode!,
         remark: form.value.remark ?? null,
       });
       message.success('草稿收货单已创建');
+      if (result.data.id != null) emit('created', result.data.id);
     }
     visible.value = false;
     emit('saved');
@@ -171,5 +172,23 @@ async function save() {
   }
 }
 
-defineExpose({open});
+async function openForOrder(orderId: Id) {
+  const current = ++requestId;
+  error.value = '';
+  form.value = {purchaseOrderId: orderId};
+  visible.value = true;
+  loading.value = true;
+  try {
+    const result = await purchaseOrderApi.detail(orderId);
+    if (current !== requestId) return;
+    orderOptions.value = [{value: orderId, label: result.data.orderNo ?? String(orderId)}];
+    if (!RECEIVABLE.includes(result.data.status ?? '')) error.value = '该采购单当前不能登记收货';
+  } catch (cause) {
+    if (current === requestId) error.value = purchaseError(cause);
+  } finally {
+    if (current === requestId) loading.value = false;
+  }
+}
+
+defineExpose({open, openForOrder});
 </script>

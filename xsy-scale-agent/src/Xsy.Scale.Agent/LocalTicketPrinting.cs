@@ -94,7 +94,7 @@ internal sealed class LocalTicketWorker(StateStore store, ITicketPrinter printer
         {
             try
             {
-                LocalTicket? ticket = policy.LocalTicketsEnabled ? store.TakeLocalTicket() : null;
+                LocalTicket? ticket = store.TakeLocalTicket(policy.LocalTicketsEnabled);
                 if (ticket != null)
                 {
                     TicketOutput output;

@@ -98,10 +98,16 @@ public class CustomerBalanceService implements BalanceRechargeSink, BalanceConsu
         if (!settlementCustomerId.equals(settlement.getId())) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_SOURCE_INVALID);
         }
+        // 与集团授权开关的编辑共用客户行锁；关闭授权与新扣款必须有确定的先后顺序。
+        settlement = customerService.lockCreditAccount(settlementCustomerId);
         CustomerBalanceAccountEntity account = lockAccount(settlement);
         CustomerBalanceMovementEntity movement = customerBalanceMovementDao
             .selectBySource(ScmBalanceSourceTypeEnum.PAYMENT_INTENT.name(), intentId);
         if (movement == null) {
+            if (!customerId.equals(settlementCustomerId)
+                && !Boolean.TRUE.equals(settlement.getSharedSettlementEnabled())) {
+                throw new ScmBusinessException(BalanceErrorCode.BALANCE_SHARED_NOT_AUTHORIZED);
+            }
             if (signedBalance(account.getId()).compareTo(value) < 0) {
                 throw new ScmBusinessException(BalanceErrorCode.BALANCE_INSUFFICIENT);
             }

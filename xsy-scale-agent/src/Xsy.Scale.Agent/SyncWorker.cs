@@ -126,7 +126,7 @@ internal sealed class SyncWorker(AgentOptions options, StateStore store, Platfor
                 store.SetBasketCommandState(pending.Sequence, BasketCommandState.Retry);
                 return false;
             }
-            store.ParkBasketCommands(pending.ScopeKey);
+            store.ParkBasketCommands(pending.ScopeKey, error.Message);
             return true;
         }
         catch (Exception error) when (error is HttpRequestException or OperationCanceledException or JsonException or InvalidOperationException)

@@ -4,9 +4,9 @@
  * 与后端 /scm/mall/cart/** 同构：服务端购物车、数量为字符串定点、失效行保留并带 availability。
  * 仅用于开发环境（VITE_APP_USE_MOCK=true）；关闭后走真实后端。
  */
-import { currentCustomer, fail, ok } from '../helpers';
-import { findProduct } from '../fixtures';
-import { PLATFORM_ERROR_CODE } from '@/constants/error-code-const';
+import {currentCustomer, fail, ok} from '../helpers';
+import {findProduct} from '../fixtures';
+import {PLATFORM_ERROR_CODE} from '@/constants/error-code-const';
 
 /** 内存购物车：accountKey -> Map<skuId, quantity(string)> */
 const CARTS = new Map();
@@ -26,7 +26,7 @@ function cartOf(session) {
 function toItem(skuId, quantity) {
   const product = findProduct(skuId);
   if (!product) {
-    return { skuId, quantity, availability: 'UNAVAILABLE', unavailableReason: 'NOT_VISIBLE' };
+    return {skuId, quantity, availability: 'UNAVAILABLE', unavailableReason: 'NOT_VISIBLE'};
   }
   const priced = product.unitPrice !== null && product.unitPrice !== undefined && product.unitPrice !== '';
   return {
@@ -87,12 +87,12 @@ export const cartRoutes = [
   {
     method: 'GET',
     path: '/scm/mall/cart',
-    handler: async ({ session }) => guard(session) || ok(snapshot(session)),
+    handler: async ({session}) => guard(session) || ok(snapshot(session)),
   },
   {
     method: 'POST',
     path: '/scm/mall/cart/items',
-    handler: async ({ data, session }) => {
+    handler: async ({data, session}) => {
       const denied = guard(session);
       if (denied) return denied;
       const skuId = Number(data?.skuId);
@@ -103,17 +103,15 @@ export const cartRoutes = [
       const cart = cartOf(session);
       const current = Number(cart.get(skuId) || 0);
       const product = findProduct(skuId);
-      const increment = data?.quickAdd
-        ? Number(cart.has(skuId) ? product?.stepQty ?? 1 : product?.minOrderQty ?? 1)
-        : Number(quantity);
-      cart.set(skuId, (current + increment).toFixed(4));
+      const increment = data?.quickAdd ? Number(cart.has(skuId) ? product?.stepQty ?? 1 : product?.minOrderQty ?? 1) : Number(quantity);
+      cart.set(skuId, (data?.replaceQuantity ? Number(quantity) : current + increment).toFixed(4));
       return ok(snapshot(session));
     },
   },
   {
     method: 'PUT',
     path: '/scm/mall/cart/items/:skuId',
-    handler: async ({ params, data, session }) => {
+    handler: async ({params, data, session}) => {
       const denied = guard(session);
       if (denied) return denied;
       const skuId = Number(params.skuId);
@@ -132,7 +130,7 @@ export const cartRoutes = [
   {
     method: 'DELETE',
     path: '/scm/mall/cart/items/:skuId',
-    handler: async ({ params, session }) => {
+    handler: async ({params, session}) => {
       const denied = guard(session);
       if (denied) return denied;
       cartOf(session).delete(Number(params.skuId));
@@ -142,7 +140,7 @@ export const cartRoutes = [
   {
     method: 'POST',
     path: '/scm/mall/cart/items/remove',
-    handler: async ({ data, session }) => {
+    handler: async ({data, session}) => {
       const denied = guard(session);
       if (denied) return denied;
       const cart = cartOf(session);
@@ -153,7 +151,7 @@ export const cartRoutes = [
   {
     method: 'POST',
     path: '/scm/mall/cart/estimate',
-    handler: async ({ data, session }) => {
+    handler: async ({data, session}) => {
       const denied = guard(session);
       if (denied) return denied;
       const selected = new Set((data?.skuIds || []).map(Number));
@@ -171,7 +169,7 @@ export const cartRoutes = [
   {
     method: 'DELETE',
     path: '/scm/mall/cart',
-    handler: async ({ session }) => {
+    handler: async ({session}) => {
       const denied = guard(session);
       if (denied) return denied;
       cartOf(session).clear();

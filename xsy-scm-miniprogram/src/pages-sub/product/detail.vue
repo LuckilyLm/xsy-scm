@@ -71,11 +71,11 @@
         <!-- 购买数量 -->
         <view class="detail__block">
           <view class="detail__qty-row">
-            <text class="detail__qty-label">购买数量</text>
+            <text class="detail__qty-label">购物车数量</text>
             <view class="detail__stepper">
               <view
                 class="detail__step"
-                :class="{ 'detail__step--disabled': !canDecrease }"
+                :class="{'detail__step--disabled': !canDecrease}"
                 aria-label="减少数量"
                 hover-class="xsy-press--active"
                 :hover-stay-time="80"
@@ -86,7 +86,7 @@
               <text class="detail__qty-value">{{ quantity }}</text>
               <view
                 class="detail__step"
-                :class="{ 'detail__step--disabled': !canIncrease }"
+                :class="{'detail__step--disabled': !canIncrease}"
                 aria-label="增加数量"
                 hover-class="xsy-press--active"
                 :hover-stay-time="80"
@@ -131,503 +131,505 @@
 </template>
 
 <script setup>
-  import { computed, ref } from 'vue';
-  import XsySkeleton from '@/components/common/xsy-skeleton.vue';
-  import XsyEmpty from '@/components/common/xsy-empty.vue';
-  import { useMallTheme } from '@/composables/use-mall-theme';
-  import { COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_PRIMARY } from '@/constants/theme-color-const';
+import {computed, ref} from 'vue';
+import XsySkeleton from '@/components/common/xsy-skeleton.vue';
+import XsyEmpty from '@/components/common/xsy-empty.vue';
+import {useMallTheme} from '@/composables/use-mall-theme';
+import {COLOR_TEXT_PLACEHOLDER, COLOR_TEXT_PRIMARY} from '@/constants/theme-color-const';
 
-  import { onLoad } from '@dcloudio/uni-app';
-  import { mallCatalogApi } from '@/api/mall';
-  import { isApiError } from '@/lib/smart-request';
-  import { smartSentry } from '@/lib/smart-sentry';
-  import { useMallCart } from '@/composables/use-mall-cart';
-  import { PLATFORM_ERROR_CODE } from '@/constants/error-code-const';
-  import {
-    hasPrice,
-    isNonStandard,
-    isOrderable,
-    nonStandardTip,
-    priceSourceLabel,
-    priceSourceLevel,
-    showAvailableQty,
-    stockLevel,
-    stockText,
-    thumbText,
-  } from '@/utils/product-display';
+import {onLoad} from '@dcloudio/uni-app';
+import {mallCartApi} from '@/api/mall/cart-api';
+import {mallCatalogApi} from '@/api/mall';
+import {isApiError} from '@/lib/smart-request';
+import {smartSentry} from '@/lib/smart-sentry';
+import {useMallCart} from '@/composables/use-mall-cart';
+import {PLATFORM_ERROR_CODE} from '@/constants/error-code-const';
+import {
+  hasPrice,
+  isNonStandard,
+  isOrderable,
+  nonStandardTip,
+  priceSourceLabel,
+  priceSourceLevel,
+  showAvailableQty,
+  stockLevel,
+  stockText,
+  thumbText,
+} from '@/utils/product-display';
 
-  const { themeStyle } = useMallTheme();
+const {themeStyle} = useMallTheme();
 
-  const skuId = ref(0);
-  const product = ref(null);
-  const loading = ref(true);
-  const quantity = ref(1);
-  const { addToCart } = useMallCart();
+const skuId = ref(0);
+const product = ref(null);
+const loading = ref(true);
+const quantity = ref(1);
+const {addToCart} = useMallCart();
 
-  /*
-   * 展示口径一律来自 @/utils/product-display，与 ProductCard 同源，
-   * 避免「列表说有货、详情说缺货」这类不一致。
-   */
-  const priced = computed(() => hasPrice(product.value));
-  const nonStandard = computed(() => isNonStandard(product.value));
-  const nonStandardText = computed(() => nonStandardTip(product.value));
-  const orderable = computed(() => isOrderable(product.value));
-  const stockLabel = computed(() => stockText(product.value));
-  const level = computed(() => stockLevel(product.value));
-  const showQty = computed(() => showAvailableQty(product.value));
-  const thumb = computed(() => thumbText(product.value));
-  const sourceLabel = computed(() => priceSourceLabel(product.value));
-  /** 价格来源语义档位（agreement / type / standard / unpriced），与 ProductCard 同一来源 */
-  const sourceLevel = computed(() => priceSourceLevel(product.value));
+/*
+ * 展示口径一律来自 @/utils/product-display，与 ProductCard 同源，
+ * 避免「列表说有货、详情说缺货」这类不一致。
+ */
+const priced = computed(() => hasPrice(product.value));
+const nonStandard = computed(() => isNonStandard(product.value));
+const nonStandardText = computed(() => nonStandardTip(product.value));
+const orderable = computed(() => isOrderable(product.value));
+const stockLabel = computed(() => stockText(product.value));
+const level = computed(() => stockLevel(product.value));
+const showQty = computed(() => showAvailableQty(product.value));
+const thumb = computed(() => thumbText(product.value));
+const sourceLabel = computed(() => priceSourceLabel(product.value));
+/** 价格来源语义档位（agreement / type / standard / unpriced），与 ProductCard 同一来源 */
+const sourceLevel = computed(() => priceSourceLevel(product.value));
 
-  /** 主图加载失败兜底：与 ProductCard 同一做法，失败后退回首字占位，不出裂图 */
-  const imageFailed = ref(false);
+/** 主图加载失败兜底：与 ProductCard 同一做法，失败后退回首字占位，不出裂图 */
+const imageFailed = ref(false);
 
-  function onImageError() {
-    imageFailed.value = true;
+function onImageError() {
+  imageFailed.value = true;
+}
+
+/** 起订量与步进来自服务端契约，客户端只按它约束步进，不自行设定业务规则 */
+const minQty = computed(() => (Number(product.value?.minOrderQty) > 0 ? Number(product.value.minOrderQty) : 1));
+const stepQty = computed(() => (Number(product.value?.stepQty) > 0 ? Number(product.value.stepQty) : 1));
+
+const scaled = (value) => Math.round(Number(value) * 10000);
+const unscaled = (value) => Number((value / 10000).toFixed(4));
+
+/** 数量上限只按当前配送仓的服务端可售量收窄交互，提交仍由后端重验。 */
+const maxQty = computed(() => {
+  const available = scaled(product.value?.availableQty);
+  const minimum = scaled(minQty.value);
+  const step = scaled(stepQty.value);
+  if (!Number.isFinite(available) || available < minimum || step <= 0) return 0;
+  return unscaled(minimum + Math.floor((available - minimum) / step) * step);
+});
+
+const canDecrease = computed(() => orderable.value && scaled(quantity.value) > scaled(minQty.value));
+const canIncrease = computed(() => orderable.value && scaled(quantity.value) + scaled(stepQty.value) <= scaled(maxQty.value));
+
+const quantityHint = computed(() => {
+  const unit = product.value?.unit || '';
+  const tips = [];
+  if (minQty.value !== 1) {
+    tips.push(`起订 ${minQty.value}${unit}`);
   }
-
-  /** 起订量与步进来自服务端契约，客户端只按它约束步进，不自行设定业务规则 */
-  const minQty = computed(() => (Number(product.value?.minOrderQty) > 0 ? Number(product.value.minOrderQty) : 1));
-  const stepQty = computed(() => (Number(product.value?.stepQty) > 0 ? Number(product.value.stepQty) : 1));
-
-  const scaled = (value) => Math.round(Number(value) * 10000);
-  const unscaled = (value) => Number((value / 10000).toFixed(4));
-
-  /** 数量上限只按当前配送仓的服务端可售量收窄交互，提交仍由后端重验。 */
-  const maxQty = computed(() => {
-    const available = scaled(product.value?.availableQty);
-    const minimum = scaled(minQty.value);
-    const step = scaled(stepQty.value);
-    if (!Number.isFinite(available) || available < minimum || step <= 0) return 0;
-    return unscaled(minimum + Math.floor((available - minimum) / step) * step);
-  });
-
-  const canDecrease = computed(() => orderable.value && scaled(quantity.value) > scaled(minQty.value));
-  const canIncrease = computed(() => orderable.value && scaled(quantity.value) + scaled(stepQty.value) <= scaled(maxQty.value));
-
-  const quantityHint = computed(() => {
-    const unit = product.value?.unit || '';
-    const tips = [];
-    if (minQty.value !== 1) {
-      tips.push(`起订 ${minQty.value}${unit}`);
-    }
-    if (stepQty.value !== 1) {
-      tips.push(`按 ${stepQty.value}${unit}递增`);
-    }
-    if (nonStandard.value) {
-      tips.push('数量为预估量，最终按实重结算');
-    }
-    return tips.join(' · ');
-  });
-
-  /**
-   * 底部主操作的形态（纯展示/交互分流，不是新的业务规则）：
-   *   inquiry   无客户价 → 可点击的「询价」，与缺货的 disabled 语义完全不同
-   *   disabled  已缺货   → 灰态不可点
-   *   add       其余     → 加入购物车
-   * 价格是否存在仍只由 hasPrice()（priced）决定，可下单性仍只由 isOrderable() 决定。
-   */
-  const submitKind = computed(() => {
-    if (!priced.value) {
-      return 'inquiry';
-    }
-    if (!orderable.value) {
-      return 'disabled';
-    }
-    return 'add';
-  });
-
-  const submitText = computed(() => {
-    if (submitKind.value === 'inquiry') {
-      return '询价';
-    }
-    if (submitKind.value === 'disabled') {
-      return product.value?.stockStatus === 'UNKNOWN' ? '待确认配送仓' : '暂时缺货';
-    }
-    return '加入购物车';
-  });
-
-  function decrease() {
-    if (canDecrease.value) {
-      quantity.value = unscaled(scaled(quantity.value) - scaled(stepQty.value));
-    }
+  if (stepQty.value !== 1) {
+    tips.push(`按 ${stepQty.value}${unit}递增`);
   }
+  if (nonStandard.value) {
+    tips.push('数量为预估量，最终按实重结算');
+  }
+  return tips.join(' · ');
+});
 
-  function increase() {
-    if (canIncrease.value) {
-      quantity.value = unscaled(Math.min(scaled(maxQty.value), scaled(quantity.value) + scaled(stepQty.value)));
+/**
+ * 底部主操作的形态（纯展示/交互分流，不是新的业务规则）：
+ *   inquiry   无客户价 → 可点击的「询价」，与缺货的 disabled 语义完全不同
+ *   disabled  已缺货   → 灰态不可点
+ *   add       其余     → 加入购物车
+ * 价格是否存在仍只由 hasPrice()（priced）决定，可下单性仍只由 isOrderable() 决定。
+ */
+const submitKind = computed(() => {
+  if (!priced.value) {
+    return 'inquiry';
+  }
+  if (!orderable.value) {
+    return 'disabled';
+  }
+  return 'add';
+});
+
+const submitText = computed(() => {
+  if (submitKind.value === 'inquiry') {
+    return '询价';
+  }
+  if (submitKind.value === 'disabled') {
+    return product.value?.stockStatus === 'UNKNOWN' ? '待确认配送仓' : '暂时缺货';
+  }
+  return '保存购物车数量';
+});
+
+function decrease() {
+  if (canDecrease.value) {
+    quantity.value = unscaled(scaled(quantity.value) - scaled(stepQty.value));
+  }
+}
+
+function increase() {
+  if (canIncrease.value) {
+    quantity.value = unscaled(Math.min(scaled(maxQty.value), scaled(quantity.value) + scaled(stepQty.value)));
+  }
+}
+
+function goCategory() {
+  uni.switchTab({url: '/pages/category/index'});
+}
+
+function onAdd() {
+  if (!orderable.value) return;
+  // 数量以字符串定点传给服务端，客户端不做金额/数量运算
+  addToCart(product.value, String(quantity.value), true);
+}
+
+/** 无客户价商品的引导（与 Home / Category / Search 逐字一致） */
+function onInquiry() {
+  uni.showToast({title: `${product.value.productName} 暂无客户价，请联系业务员询价`, icon: 'none'});
+}
+
+function onFooterAction() {
+  if (submitKind.value === 'add') {
+    onAdd();
+    return;
+  }
+  if (submitKind.value === 'inquiry') {
+    onInquiry();
+  }
+  // disabled：缺货不允许发起任何动作
+}
+
+async function loadProduct() {
+  loading.value = true;
+  // 换商品时给主图一次重新加载的机会，避免上一个商品的失败状态污染这一个
+  imageFailed.value = false;
+  try {
+    const [res, cart] = await Promise.all([mallCatalogApi.getProduct(skuId.value), mallCartApi.getCart()]);
+    product.value = res.data || null;
+    const existing = (cart.data?.items || []).find((item) => String(item.skuId) === String(skuId.value));
+    quantity.value = existing?.quantity ?? minQty.value;
+  } catch (e) {
+    // 「数据不存在」是预期的业务结果，已由页面空态表达，不再当作异常上报
+    if (!isApiError(e, PLATFORM_ERROR_CODE.DATA_NOT_EXIST)) {
+      smartSentry.captureError(e);
     }
+    product.value = null;
+  } finally {
+    loading.value = false;
   }
+}
 
-  function goCategory() {
-    uni.switchTab({ url: '/pages/category/index' });
+onLoad((options) => {
+  skuId.value = Number(options?.skuId) || 0;
+  if (!skuId.value) {
+    loading.value = false;
+    product.value = null;
+    return;
   }
-
-  function onAdd() {
-    if (!orderable.value) return;
-    // 数量以字符串定点传给服务端，客户端不做金额/数量运算
-    addToCart(product.value, String(quantity.value));
-  }
-
-  /** 无客户价商品的引导（与 Home / Category / Search 逐字一致） */
-  function onInquiry() {
-    uni.showToast({ title: `${product.value.productName} 暂无客户价，请联系业务员询价`, icon: 'none' });
-  }
-
-  function onFooterAction() {
-    if (submitKind.value === 'add') {
-      onAdd();
-      return;
-    }
-    if (submitKind.value === 'inquiry') {
-      onInquiry();
-    }
-    // disabled：缺货不允许发起任何动作
-  }
-
-  async function loadProduct() {
-    loading.value = true;
-    // 换商品时给主图一次重新加载的机会，避免上一个商品的失败状态污染这一个
-    imageFailed.value = false;
-    try {
-      const res = await mallCatalogApi.getProduct(skuId.value);
-      product.value = res.data || null;
-      quantity.value = minQty.value;
-    } catch (e) {
-      // 「数据不存在」是预期的业务结果，已由页面空态表达，不再当作异常上报
-      if (!isApiError(e, PLATFORM_ERROR_CODE.DATA_NOT_EXIST)) {
-        smartSentry.captureError(e);
-      }
-      product.value = null;
-    } finally {
-      loading.value = false;
-    }
-  }
-
-  onLoad((options) => {
-    skuId.value = Number(options?.skuId) || 0;
-    if (!skuId.value) {
-      loading.value = false;
-      product.value = null;
-      return;
-    }
-    loadProduct();
-  });
+  loadProduct();
+});
 </script>
 
 <style lang="scss" scoped>
-  .detail {
-    @include viewport-height;
-    display: flex;
-    flex-direction: column;
-    background-color: $color-bg-page;
+.detail {
+  @include viewport-height;
+  display: flex;
+  flex-direction: column;
+  background-color: $color-bg-page;
 
-    &__body {
-      flex: 1;
-      min-height: 0;
-    }
+  &__body {
+    flex: 1;
+    min-height: 0;
+  }
 
-    &__missing-action-text {
-      color: var(--mall-primary-ink, #12833c);
-      font-size: $font-size-base;
-    }
+  &__missing-action-text {
+    color: var(--mall-primary-ink, #12833c);
+    font-size: $font-size-base;
+  }
 
-    /* ---------------------------- 主图 ---------------------------- */
-    &__gallery {
-      height: 560rpx;
-      background-color: var(--mall-primary-light, #e8f5ec);
-      @include flex-center;
-    }
+  /* ---------------------------- 主图 ---------------------------- */
+  &__gallery {
+    height: 560rpx;
+    background-color: var(--mall-primary-light, #e8f5ec);
+    @include flex-center;
+  }
 
-    &__image {
-      width: 100%;
-      height: 100%;
-    }
+  &__image {
+    width: 100%;
+    height: 100%;
+  }
 
-    &__gallery-text {
-      font-size: 120rpx;
-      font-weight: $font-weight-bold;
-      color: var(--mall-primary-ink, #12833c);
-    }
+  &__gallery-text {
+    font-size: 120rpx;
+    font-weight: $font-weight-bold;
+    color: var(--mall-primary-ink, #12833c);
+  }
 
-    /* ---------------------------- 通用块 ---------------------------- */
-    &__block {
-      margin-top: $space-2;
-      padding: $space-4;
-      background-color: $color-bg-card;
+  /* ---------------------------- 通用块 ---------------------------- */
+  &__block {
+    margin-top: $space-2;
+    padding: $space-4;
+    background-color: $color-bg-card;
 
-      /* 非标品提示块：用整块底色强调「按实重结算」，而不是只加一个小标签 */
-      &--warn {
-        background-color: $color-warning-light;
-      }
-    }
-
-    /* ---------------------------- 价格 / 库存 ---------------------------- */
-    &__price-row {
-      @include flex-start;
-    }
-
-    &__price-symbol {
-      font-size: $font-size-lg;
-      color: $color-danger;
-    }
-
-    &__price {
-      font-size: $font-size-xxl;
-      font-weight: $font-weight-bold;
-      color: $color-danger;
-    }
-
-    &__unit {
-      font-size: $font-size-base;
-      color: $color-text-tertiary;
-    }
-
-    &__price-unpriced {
-      font-size: $font-size-xl;
-      font-weight: $font-weight-medium;
-      color: $color-text-secondary;
-    }
-
-    &__source {
-      flex-shrink: 0;
-      margin-left: $space-2;
-      padding: 0 $space-2;
-      /* Figma：来源标签高 24px（46rpx ≈ 23.9px）、圆角 4px、11px Medium */
-      box-sizing: border-box;
-      height: 46rpx;
-      line-height: 46rpx;
-      border-radius: $radius-sm;
-      font-size: $font-size-xs;
-      font-weight: $font-weight-medium;
-      white-space: nowrap;
-
-      /* 档位来自 priceSourceLevel()，与 ProductCard 的语义配色一致 */
-      &--agreement {
-        background-color: var(--mall-primary-light, #e8f5ec);
-        color: var(--mall-primary-ink, #12833c);
-      }
-
-      &--type {
-        background-color: $color-info-light;
-        color: $color-info;
-      }
-
-      &--time {
-        background-color: $color-warning-light;
-        color: $color-warning;
-      }
-
-      &--standard {
-        background-color: $color-bg-page;
-        color: $color-text-tertiary;
-      }
-
-      &--unpriced {
-        background-color: $color-bg-page;
-        color: $color-text-tertiary;
-      }
-    }
-
-    &__stock-row {
-      @include flex-start;
-      margin-top: $space-2;
-    }
-
-    &__stock {
-      font-size: $font-size-sm;
-      font-weight: $font-weight-medium;
-
-      &--ok {
-        color: $color-success;
-      }
-
-      &--warn {
-        color: $color-warning;
-      }
-
-      &--off {
-        color: $color-text-tertiary;
-      }
-    }
-
-    &__available {
-      margin-left: $space-2;
-      font-size: $font-size-sm;
-      color: $color-text-secondary;
-    }
-
-    &__price-hint {
-      display: block;
-      margin-top: $space-2;
-      font-size: $font-size-sm;
-      color: $color-warning;
-    }
-
-    /* ---------------------------- 名称 / 规格 ---------------------------- */
-    &__title-row {
-      @include flex-start;
-    }
-
-    &__name {
-      flex: 1;
-      min-width: 0;
-      /* Figma 主稿：商品名 20px Medium */
-      font-size: $font-size-xl;
-      font-weight: $font-weight-medium;
-      color: $color-text-primary;
-      @include ellipsis(2);
-    }
-
-    &__badge {
-      flex-shrink: 0;
-      margin-left: $space-2;
-      padding: 0 $space-2;
-      /* Figma：按实重 badge 高 24px，与价格来源标签同一量级 */
-      box-sizing: border-box;
-      height: 46rpx;
-      line-height: 46rpx;
-      border-radius: $radius-sm;
+    /* 非标品提示块：用整块底色强调「按实重结算」，而不是只加一个小标签 */
+    &--warn {
       background-color: $color-warning-light;
-      color: $color-warning;
-      font-size: $font-size-xs;
-      white-space: nowrap;
-    }
-
-    &__meta-row {
-      @include flex-start;
-      margin-top: $space-2;
-    }
-
-    &__meta {
-      font-size: $font-size-sm;
-      color: $color-text-tertiary;
-
-      & + & {
-        margin-left: $space-1;
-      }
-    }
-
-    /* ---------------------------- 说明块 ---------------------------- */
-    &__notice-title {
-      display: block;
-      font-size: $font-size-base;
-      font-weight: $font-weight-medium;
-      color: $color-text-primary;
-    }
-
-    &__notice-text {
-      display: block;
-      margin-top: $space-1;
-      font-size: $font-size-sm;
-      line-height: 1.6;
-      color: $color-text-secondary;
-
-      /* 「下单数量 ≠ 最终实际重量」在 Final 里是 11px 弱化一行 */
-      &--muted {
-        font-size: $font-size-xs;
-        color: $color-text-tertiary;
-      }
-    }
-
-    &__block--warn &__notice-title {
-      color: $color-warning;
-    }
-
-    /* ---------------------------- 数量 ---------------------------- */
-    &__qty-row {
-      @include flex-between;
-    }
-
-    &__qty-label {
-      font-size: $font-size-base;
-      color: $color-text-primary;
-    }
-
-    &__stepper {
-      @include flex-start;
-      /* 高度按 44px 触控下限给；底色 #F5F6F8、圆角 4px 沿用设计稿 */
-      box-sizing: border-box;
-      height: 88rpx;
-      border-radius: $radius-sm;
-      background-color: $color-bg-page;
-      overflow: hidden;
-    }
-
-    &__step {
-      /* Figma：加减按钮 34×38，底色 #F2F3F5；禁用态只把文字转灰 */
-      box-sizing: border-box;
-      width: 88rpx;
-      height: 100%;
-      @include flex-center;
-    }
-
-    &__qty-value {
-      /* Figma：数量格 58×38 */
-      box-sizing: border-box;
-      min-width: 112rpx;
-      height: 100%;
-      line-height: 73rpx;
-      text-align: center;
-      background-color: $color-bg-page;
-      font-size: $font-size-base;
-      font-weight: $font-weight-medium;
-      color: $color-text-primary;
-    }
-
-    &__qty-hint {
-      display: block;
-      margin-top: $space-2;
-      font-size: $font-size-xs;
-      color: $color-text-tertiary;
-    }
-
-    /* ---------------------------- 底部条 ---------------------------- */
-    &__tail {
-      height: $space-6;
-    }
-
-    &__footer {
-      /* Figma：底栏 = 1px 分割线 + 5 上 + 44 按钮 + 4 下 ≈ 54px；这里取 token 4/4 近似 */
-      padding: $space-1 $space-4;
-      background-color: $color-bg-card;
-      @include hairline-top($color-divider);
-      @include safe-area-bottom;
-    }
-
-    &__footer-button {
-      box-sizing: border-box;
-      /* Figma：主按钮 358×44 */
-      height: 85rpx;
-      border-radius: $radius-md;
-      background-color: var(--mall-primary, #16a34a);
-      @include flex-center;
-
-      /* 询价：白底 + primary 描边 + primary 字。可点击，不是 disabled */
-      &--inquiry {
-        background-color: $color-bg-card;
-        border: 1px solid var(--mall-primary, #16a34a);
-
-        .detail__footer-text {
-          color: var(--mall-primary-ink, #12833c);
-        }
-      }
-
-      /* 缺货：灰态，点击无动作 */
-      &--disabled {
-        background-color: $color-bg-hover;
-
-        .detail__footer-text {
-          color: $color-text-tertiary;
-        }
-      }
-    }
-
-    &__footer-text {
-      font-size: $font-size-base;
-      font-weight: $font-weight-medium;
-      color: $color-text-inverse;
     }
   }
+
+  /* ---------------------------- 价格 / 库存 ---------------------------- */
+  &__price-row {
+    @include flex-start;
+  }
+
+  &__price-symbol {
+    font-size: $font-size-lg;
+    color: $color-danger;
+  }
+
+  &__price {
+    font-size: $font-size-xxl;
+    font-weight: $font-weight-bold;
+    color: $color-danger;
+  }
+
+  &__unit {
+    font-size: $font-size-base;
+    color: $color-text-tertiary;
+  }
+
+  &__price-unpriced {
+    font-size: $font-size-xl;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+  }
+
+  &__source {
+    flex-shrink: 0;
+    margin-left: $space-2;
+    padding: 0 $space-2;
+    /* Figma：来源标签高 24px（46rpx ≈ 23.9px）、圆角 4px、11px Medium */
+    box-sizing: border-box;
+    height: 46rpx;
+    line-height: 46rpx;
+    border-radius: $radius-sm;
+    font-size: $font-size-xs;
+    font-weight: $font-weight-medium;
+    white-space: nowrap;
+
+    /* 档位来自 priceSourceLevel()，与 ProductCard 的语义配色一致 */
+    &--agreement {
+      background-color: var(--mall-primary-light, #e8f5ec);
+      color: var(--mall-primary-ink, #12833c);
+    }
+
+    &--type {
+      background-color: $color-info-light;
+      color: $color-info;
+    }
+
+    &--time {
+      background-color: $color-warning-light;
+      color: $color-warning;
+    }
+
+    &--standard {
+      background-color: $color-bg-page;
+      color: $color-text-tertiary;
+    }
+
+    &--unpriced {
+      background-color: $color-bg-page;
+      color: $color-text-tertiary;
+    }
+  }
+
+  &__stock-row {
+    @include flex-start;
+    margin-top: $space-2;
+  }
+
+  &__stock {
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+
+    &--ok {
+      color: $color-success;
+    }
+
+    &--warn {
+      color: $color-warning;
+    }
+
+    &--off {
+      color: $color-text-tertiary;
+    }
+  }
+
+  &__available {
+    margin-left: $space-2;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
+  }
+
+  &__price-hint {
+    display: block;
+    margin-top: $space-2;
+    font-size: $font-size-sm;
+    color: $color-warning;
+  }
+
+  /* ---------------------------- 名称 / 规格 ---------------------------- */
+  &__title-row {
+    @include flex-start;
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    /* Figma 主稿：商品名 20px Medium */
+    font-size: $font-size-xl;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+    @include ellipsis(2);
+  }
+
+  &__badge {
+    flex-shrink: 0;
+    margin-left: $space-2;
+    padding: 0 $space-2;
+    /* Figma：按实重 badge 高 24px，与价格来源标签同一量级 */
+    box-sizing: border-box;
+    height: 46rpx;
+    line-height: 46rpx;
+    border-radius: $radius-sm;
+    background-color: $color-warning-light;
+    color: $color-warning;
+    font-size: $font-size-xs;
+    white-space: nowrap;
+  }
+
+  &__meta-row {
+    @include flex-start;
+    margin-top: $space-2;
+  }
+
+  &__meta {
+    font-size: $font-size-sm;
+    color: $color-text-tertiary;
+
+    & + & {
+      margin-left: $space-1;
+    }
+  }
+
+  /* ---------------------------- 说明块 ---------------------------- */
+  &__notice-title {
+    display: block;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+  }
+
+  &__notice-text {
+    display: block;
+    margin-top: $space-1;
+    font-size: $font-size-sm;
+    line-height: 1.6;
+    color: $color-text-secondary;
+
+    /* 「下单数量 ≠ 最终实际重量」在 Final 里是 11px 弱化一行 */
+    &--muted {
+      font-size: $font-size-xs;
+      color: $color-text-tertiary;
+    }
+  }
+
+  &__block--warn &__notice-title {
+    color: $color-warning;
+  }
+
+  /* ---------------------------- 数量 ---------------------------- */
+  &__qty-row {
+    @include flex-between;
+  }
+
+  &__qty-label {
+    font-size: $font-size-base;
+    color: $color-text-primary;
+  }
+
+  &__stepper {
+    @include flex-start;
+    /* 高度按 44px 触控下限给；底色 #F5F6F8、圆角 4px 沿用设计稿 */
+    box-sizing: border-box;
+    height: 88rpx;
+    border-radius: $radius-sm;
+    background-color: $color-bg-page;
+    overflow: hidden;
+  }
+
+  &__step {
+    /* Figma：加减按钮 34×38，底色 #F2F3F5；禁用态只把文字转灰 */
+    box-sizing: border-box;
+    width: 88rpx;
+    height: 100%;
+    @include flex-center;
+  }
+
+  &__qty-value {
+    /* Figma：数量格 58×38 */
+    box-sizing: border-box;
+    min-width: 112rpx;
+    height: 100%;
+    line-height: 73rpx;
+    text-align: center;
+    background-color: $color-bg-page;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+  }
+
+  &__qty-hint {
+    display: block;
+    margin-top: $space-2;
+    font-size: $font-size-xs;
+    color: $color-text-tertiary;
+  }
+
+  /* ---------------------------- 底部条 ---------------------------- */
+  &__tail {
+    height: $space-6;
+  }
+
+  &__footer {
+    /* Figma：底栏 = 1px 分割线 + 5 上 + 44 按钮 + 4 下 ≈ 54px；这里取 token 4/4 近似 */
+    padding: $space-1 $space-4;
+    background-color: $color-bg-card;
+    @include hairline-top($color-divider);
+    @include safe-area-bottom;
+  }
+
+  &__footer-button {
+    box-sizing: border-box;
+    /* Figma：主按钮 358×44 */
+    height: 85rpx;
+    border-radius: $radius-md;
+    background-color: var(--mall-primary, #16a34a);
+    @include flex-center;
+
+    /* 询价：白底 + primary 描边 + primary 字。可点击，不是 disabled */
+    &--inquiry {
+      background-color: $color-bg-card;
+      border: 1px solid var(--mall-primary, #16a34a);
+
+      .detail__footer-text {
+        color: var(--mall-primary-ink, #12833c);
+      }
+    }
+
+    /* 缺货：灰态，点击无动作 */
+    &--disabled {
+      background-color: $color-bg-hover;
+
+      .detail__footer-text {
+        color: $color-text-tertiary;
+      }
+    }
+  }
+
+  &__footer-text {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $color-text-inverse;
+  }
+}
 </style>

@@ -4,6 +4,7 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.common.constant.ScmOperator;
 import com.xsy.scm.purchase.domain.form.PurchaseShareCreateForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseShareVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseShareFeedbackVO;
 import com.xsy.scm.purchase.permission.PurchasePermission;
 import com.xsy.scm.purchase.service.PurchaseShareService;
 import jakarta.validation.Valid;
@@ -30,6 +31,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class PurchaseShareController {
 
     private final PurchaseShareService purchaseShareService;
+
+    @GetMapping("/feedback")
+    @SaCheckPermission(PurchasePermission.QUERY)
+    public ResponseDTO<List<PurchaseShareFeedbackVO>> feedback(@RequestParam Long purchaseOrderId,
+        @RequestParam(required = false) Long beforeId) {
+        return ResponseDTO.ok(purchaseShareService.feedback(purchaseOrderId, beforeId));
+    }
 
     /**
      * 生成分享链接：同一张单上的旧链接当场失效。

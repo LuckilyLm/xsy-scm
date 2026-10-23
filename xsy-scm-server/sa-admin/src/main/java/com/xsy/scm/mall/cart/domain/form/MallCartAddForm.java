@@ -17,4 +17,7 @@ public class MallCartAddForm {
      * 快捷加购由服务器按当前购物车决定起订量或递增量，不采信客户端数量。
      */
     private Boolean quickAdd;
+
+    /** 商品详情编辑的是购物车最终数量，重复提交不再次累加。 */
+    private Boolean replaceQuantity;
 }

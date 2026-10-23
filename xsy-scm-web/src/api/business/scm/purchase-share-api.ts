@@ -17,9 +17,23 @@ export interface PurchaseShare {
 }
 
 export const purchaseShareApi = {
+  feedback: (purchaseOrderId: Id, beforeId?: Id) =>
+    getRequest('/scm/purchase/share/feedback', {purchaseOrderId, beforeId}) as unknown as Promise<ScmResponse<PurchaseShareFeedback[]>>,
   /** 生成分享链接；同一张单上的旧链接当场失效。 */
   create: (purchaseOrderId: Id, validDays?: number) =>
     postRequest('/scm/purchase/share/create', {purchaseOrderId, validDays}) as unknown as Promise<ScmResponse<PurchaseShare>>,
   revoke: (id: Id) => postRequest('/scm/purchase/share/revoke', {id}) as unknown as Promise<ScmResponse<string>>,
   list: (purchaseOrderId: Id) => getRequest('/scm/purchase/share/list', {purchaseOrderId}) as unknown as Promise<ScmResponse<PurchaseShare[]>>,
 };
+
+export interface PurchaseShareFeedback {
+  id: Id;
+  purchaseOrderItemId: Id;
+  productName: string;
+  skuName: string;
+  purchaseUnit: string;
+  unitPrice?: string | null;
+  receivedQuantity?: string | null;
+  remark?: string | null;
+  submittedAt: string;
+}

@@ -2,6 +2,7 @@ package com.xsy.scm.purchase.dao;
 
 import com.xsy.scm.purchase.domain.vo.PurchaseSharePublicVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseShareVO;
+import com.xsy.scm.purchase.domain.vo.PurchaseShareFeedbackVO;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -26,6 +27,9 @@ public interface PurchaseShareDao {
     PurchaseShareVO findById(@Param("id") Long id);
 
     List<PurchaseShareVO> listByOrder(@Param("purchaseOrderId") Long purchaseOrderId);
+
+    List<PurchaseShareFeedbackVO> feedback(@Param("purchaseOrderId") Long purchaseOrderId,
+        @Param("beforeId") Long beforeId);
 
     int touchUsed(@Param("id") Long id, @Param("usedAt") OffsetDateTime usedAt);
 

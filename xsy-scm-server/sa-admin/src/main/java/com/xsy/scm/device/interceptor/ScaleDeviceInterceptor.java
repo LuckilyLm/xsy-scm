@@ -43,7 +43,7 @@ public class ScaleDeviceInterceptor implements HandlerInterceptor {
     public static final String HEADER_OPERATOR_SESSION = "X-Operator-Session";
 
     /**
-     * 激活本身还没有设备凭证，必须放行；其余设备接口一律要求双重身份。
+     * 激活尚无设备凭证；只有心跳和本机配置允许设备单独认证，其余请求要求双重身份。
      */
     private static final String ACTIVATE_PATH = "/agents/activate";
 
@@ -65,6 +65,14 @@ public class ScaleDeviceInterceptor implements HandlerInterceptor {
         }
         try {
             String credential = bearerToken(request);
+            String path = request.getRequestURI().substring(request.getContextPath().length());
+            boolean deviceOnly = (HttpMethod.POST.matches(request.getMethod())
+                && "/scm/device/scale/v1/agents/heartbeat".equals(path))
+                || (HttpMethod.GET.matches(request.getMethod()) && "/scm/device/scale/v1/agents/config".equals(path));
+            if (deviceOnly) {
+                ScaleDeviceContext.set(scaleDeviceAuthService.authenticateDevice(credential));
+                return true;
+            }
             String operatorSession = request.getHeader(HEADER_OPERATOR_SESSION);
             ScaleDevicePrincipal principal = scaleDeviceAuthService.authenticate(credential, operatorSession);
             EmployeeEntity employee = employeeService.getById(principal.employeeId());

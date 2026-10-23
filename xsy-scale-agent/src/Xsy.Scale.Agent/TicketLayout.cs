@@ -35,7 +35,7 @@ internal static class TicketLayout
     {
         graphics.PageUnit = GraphicsUnit.Millimeter;
         var snapshot = ticket.Snapshot;
-        if (snapshot.TemplateVersion is "LOCAL_PENDING_TRACE_V2" or "HARDWARE_TEST_6040_TRACE_V2")
+        if (snapshot.TemplateVersion is "LOCAL_PENDING_TRACE_V2" or "HARDWARE_TEST_6040_TRACE_V2" or "PLATFORM_TRACE_V1")
         { DrawTrace(graphics, ticket); return; }
         bool compact = ticket.PaperWidthMm == 60 && ticket.PaperHeightMm == 40;
         string status = snapshot.TemplateVersion == "HARDWARE_TEST_6040_V1" ? "设备联动测试 · 非业务记录"
@@ -97,7 +97,7 @@ internal static class TicketLayout
         // 先完成所有测量，最后一次性画内容，避免发生半张票。
         foreach (var line in new[] {
             ($"鲜蔬园 · 第{s.BasketNumber}筐" + (ticket.Reprint ? " · 补打" : ""), title),
-            (s.TemplateVersion == "HARDWARE_TEST_6040_TRACE_V2" ? "设备联动测试 · 非业务记录" : s.TestOnly ? "演练样张 · 不出纸" : "待同步 · 非平台正式单据", normal),
+            (s.TemplateVersion == "PLATFORM_TRACE_V1" ? "包装码标签 · 不代表出库" : s.TemplateVersion == "HARDWARE_TEST_6040_TRACE_V2" ? "设备联动测试 · 非业务记录" : s.TestOnly ? "演练样张 · 不出纸" : "待同步 · 非平台正式单据", normal),
             ("客户：" + (s.CustomerName ?? "平台未提供"), normal),
             (s.ProductName + " / " + s.SpecName, title) })
             Add(line.Item1, line.Item2, 2, fullWidth);
@@ -108,7 +108,7 @@ internal static class TicketLayout
             (s.DeviceCode + " 皮重" + (s.TareWeight ?? "未知"), normal) })
             Add(line.Item1, line.Item2, 2, leftWidth);
         y = Math.Max(y, qrTop + 15.5f);
-        Add("记录：" + s.EventKey, normal, 2, fullWidth);
+        Add(s.TemplateVersion == "PLATFORM_TRACE_V1" ? "码：" + s.TraceReference + " 批次：" + s.LotNo : "记录：" + s.EventKey, normal, 2, fullWidth);
         using var qr = s.TraceUrl == null ? null : TraceLink.Matrix(s.TraceUrl);
         float qrLeft = ticket.PaperWidthMm - 17.5f;
         // 15.5mm含标准四模块白边，文字始终位于该区域以外。

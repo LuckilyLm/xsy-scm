@@ -7,6 +7,8 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.common.scope.ScmWarehouseScopeGuard;
 import com.xsy.scm.inventory.service.InventorySaleUnitConverter;
 import com.xsy.scm.sorting.constant.ScmSortingTaskStatusEnum;
+import com.xsy.scm.sorting.constant.ScmSortingScaleEventStatusEnum;
+import com.xsy.scm.common.error.ScmCommonErrorCode;
 import com.xsy.scm.trace.constant.ScmTraceUnitStatusEnum;
 import com.xsy.scm.trace.constant.ScmTraceWeightSourceEnum;
 import com.xsy.scm.trace.constant.TraceErrorCode;
@@ -245,9 +247,17 @@ public class TraceUnitService {
         TraceUnitVO.Unit existing = traceUnitDao.findByWeighingEventId(event.getId());
         if (existing != null) {
             warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(existing.getLotId()));
+            if (!ScmTraceUnitStatusEnum.ACTIVE.name().equals(existing.getStatus())) {
+                throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_VOID);
+            }
+            if (!existing.getLotId().equals(form.getLotId())
+                || !existing.getPackageType().equals(form.getPackageType())) {
+                throw new ScmBusinessException(ScmCommonErrorCode.IDEMPOTENCY_CONFLICT);
+            }
             return toScaleVO(existing, true);
         }
-        if (event.getCompletionId() != null) {
+        if (event.getCompletionId() != null
+            || !ScmSortingScaleEventStatusEnum.PENDING.name().equals(event.getStatus())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_WEIGHING_EVENT_COMPLETED);
         }
         if (event.getNetWeight() == null || event.getNetWeight().signum() <= 0) {
@@ -343,6 +353,9 @@ public class TraceUnitService {
         TraceScaleUnitVO result = new TraceScaleUnitVO();
         result.setUnitId(unit.getId());
         result.setUnitCode(unit.getUnitCode());
+        result.setLotId(unit.getLotId());
+        TraceUnitVO.Lot lot = traceUnitDao.findLot(unit.getLotId());
+        result.setLotNo(lot == null ? null : lot.getLotNo());
         result.setPublicToken(unit.getPublicToken());
         result.setTraceUrl(tracePublicLinkBuilder.build(unit.getPublicToken()));
         result.setNetWeight(unit.getNetWeight());
@@ -372,6 +385,19 @@ public class TraceUnitService {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
         }
         warehouseScopeGuard.require(traceUnitDao.lotWarehouseId(unit.getLotId()));
+        return toScaleVO(unit, false);
+    }
+
+    @Transactional(readOnly = true)
+    public TraceScaleUnitVO labelInWarehouse(String unitCode, Long warehouseId) {
+        TraceUnitVO.Unit unit = traceUnitDao.findByCode(unitCode.trim());
+        if (unit == null || warehouseId == null || !warehouseId.equals(traceUnitDao.lotWarehouseId(unit.getLotId()))) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_NOT_FOUND);
+        }
+        warehouseScopeGuard.require(warehouseId);
+        if (!ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())) {
+            throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_VOID);
+        }
         return toScaleVO(unit, false);
     }
 

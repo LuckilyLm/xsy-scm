@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 设备身份与员工授权的签发、校验与撤销。
  *
  * <p>
- * 设备凭证与员工会话分开校验：设备凭证只回答「哪台秤」，员工会话只回答「谁在操作」。 两者都通过才建立 {@link ScaleDevicePrincipal}，业务层据此记真实员工，不用设备身份代替人工签名。
+ * 设备凭证与员工会话分开校验。业务请求两者都须通过；仅心跳和本机配置允许不建立员工身份。
  *
  * <p>
  * 所有令牌只在签发时返回明文，库里只有摘要，因此拿到数据库也无法冒充设备或员工。
@@ -179,6 +179,32 @@ public class ScaleDeviceAuthService {
      */
     @Transactional(readOnly = true)
     public ScaleDevicePrincipal authenticate(String credentialToken, String operatorSessionToken) {
+        ScaleDeviceEntity device = requireDeviceCredential(credentialToken);
+        OffsetDateTime now = OffsetDateTime.now();
+        if (isBlank(operatorSessionToken)) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_INVALID);
+        }
+        ScaleDeviceSessionEntity session = scaleDeviceSessionDao
+            .selectByTokenHash(ScaleCredentialCodec.digest(operatorSessionToken));
+        if (session == null || session.getEndedAt() != null || !session.getExpiresAt().isAfter(now)) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_INVALID);
+        }
+        if (!Objects.equals(session.getDeviceId(), device.getId())) {
+            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_DEVICE_MISMATCH);
+        }
+        return new ScaleDevicePrincipal(device.getId(), device.getDeviceCode(), device.getWarehouseId(),
+            session.getId(), session.getEmployeeId(), session.getExpiresAt());
+    }
+
+    /** 心跳和本机配置不代表员工业务操作，不建立员工身份。 */
+    @Transactional(readOnly = true)
+    public ScaleDevicePrincipal authenticateDevice(String credentialToken) {
+        ScaleDeviceEntity device = requireDeviceCredential(credentialToken);
+        return new ScaleDevicePrincipal(device.getId(), device.getDeviceCode(), device.getWarehouseId(), null, null,
+            null);
+    }
+
+    private ScaleDeviceEntity requireDeviceCredential(String credentialToken) {
         if (isBlank(credentialToken)) {
             throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_UNAUTHORIZED);
         }
@@ -193,19 +219,7 @@ public class ScaleDeviceAuthService {
         if (device.getCredentialExpiresAt() == null || !device.getCredentialExpiresAt().isAfter(now)) {
             throw new ScmBusinessException(ScaleDeviceErrorCode.DEVICE_UNAUTHORIZED);
         }
-        if (isBlank(operatorSessionToken)) {
-            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_INVALID);
-        }
-        ScaleDeviceSessionEntity session = scaleDeviceSessionDao
-            .selectByTokenHash(ScaleCredentialCodec.digest(operatorSessionToken));
-        if (session == null || session.getEndedAt() != null || !session.getExpiresAt().isAfter(now)) {
-            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_INVALID);
-        }
-        if (!Objects.equals(session.getDeviceId(), device.getId())) {
-            throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_DEVICE_MISMATCH);
-        }
-        return new ScaleDevicePrincipal(device.getId(), device.getDeviceCode(), device.getWarehouseId(),
-            session.getId(), session.getEmployeeId(), session.getExpiresAt());
+        return device;
     }
 
     private static boolean isBlank(String value) {
