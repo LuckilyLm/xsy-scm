@@ -10,13 +10,17 @@ import com.xsy.scm.mall.order.constant.MallWarehouseSourceEnum;
 import com.xsy.scm.mall.order.dao.MallWarehouseDao;
 import com.xsy.scm.mall.order.domain.vo.MallWarehouseOptionVO;
 import com.xsy.scm.warehouse.service.WarehouseService;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 仅以客户绑定仓和地址区县配置解析配送仓；无匹配时失败关闭。 */
+/**
+ * 仅以客户绑定仓和地址区县配置解析配送仓；无匹配时失败关闭。
+ */
 @Service
 @RequiredArgsConstructor
 public class MallWarehouseService {
@@ -29,9 +33,9 @@ public class MallWarehouseService {
     public List<MallWarehouseOptionVO> options(Long customerId, Long addressId) {
         CustomerEntity customer = customerService.require(customerId);
         MallAddressVO address = addressId == null
-                ? addressDao.listByCustomer(customerId).stream().filter(row -> Boolean.TRUE.equals(row.getIsDefault()))
-                        .findFirst().orElse(null)
-                : addressDao.detailById(customerId, addressId);
+            ? addressDao.listByCustomer(customerId).stream().filter(row -> Boolean.TRUE.equals(row.getIsDefault()))
+                .findFirst().orElse(null)
+            : addressDao.detailById(customerId, addressId);
         if (addressId != null && address == null) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_NOT_FOUND);
         }
@@ -66,12 +70,12 @@ public class MallWarehouseService {
             throw new ScmBusinessException(MallErrorCode.WAREHOUSE_REQUIRED);
         }
         return options(customerId, addressId).stream().filter(option -> warehouseId.equals(option.getWarehouseId()))
-                .findFirst().orElseThrow(() -> new ScmBusinessException(MallErrorCode.WAREHOUSE_UNAVAILABLE))
-                .getWarehouseId();
+            .findFirst().orElseThrow(() -> new ScmBusinessException(MallErrorCode.WAREHOUSE_UNAVAILABLE))
+            .getWarehouseId();
     }
 
     public Long preferred(Long customerId, Long addressId) {
         return options(customerId, addressId).stream().findFirst().map(MallWarehouseOptionVO::getWarehouseId)
-                .orElse(null);
+            .orElse(null);
     }
 }

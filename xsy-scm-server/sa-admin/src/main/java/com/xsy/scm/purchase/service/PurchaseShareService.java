@@ -9,6 +9,7 @@ import com.xsy.scm.purchase.domain.form.PurchaseShareFeedbackForm;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseSharePublicVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseShareVO;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -18,6 +19,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +34,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PurchaseShareService {
 
-    /** 默认有效期；现场作业通常当天完成，给一周足够覆盖补录。 */
+    /**
+     * 默认有效期；现场作业通常当天完成，给一周足够覆盖补录。
+     */
     private static final int DEFAULT_VALID_DAYS = 7;
 
     private static final int TOKEN_BYTES = 32;
@@ -96,7 +100,9 @@ public class PurchaseShareService {
         return purchaseShareDao.listByOrder(purchaseOrderId);
     }
 
-    /** 手机端读取任务；令牌即凭证，不再走登录与数据范围。 */
+    /**
+     * 手机端读取任务；令牌即凭证，不再走登录与数据范围。
+     */
     @Transactional(readOnly = true)
     public PurchaseSharePublicVO view(String token) {
         PurchaseShareVO row = requireUsable(token);
@@ -127,13 +133,15 @@ public class PurchaseShareService {
                 throw new ScmBusinessException(PurchaseErrorCode.PURCHASE_SHARE_FEEDBACK_INVALID);
             }
             purchaseShareDao.insertFeedback(row.getId(), row.getPurchaseOrderId(), line.getPurchaseOrderItemId(),
-                    line.getUnitPrice(), line.getReceivedQuantity(), trimToNull(line.getRemark()), operatorIp,
-                    "share:" + row.getTokenPrefix());
+                line.getUnitPrice(), line.getReceivedQuantity(), trimToNull(line.getRemark()), operatorIp,
+                "share:" + row.getTokenPrefix());
         }
         purchaseShareDao.touchUsed(row.getId(), OffsetDateTime.now());
     }
 
-    /** 令牌可用性：存在、未撤销、未过期。 */
+    /**
+     * 令牌可用性：存在、未撤销、未过期。
+     */
     private PurchaseShareVO requireUsable(String token) {
         if (token == null || token.isBlank()) {
             throw new ScmBusinessException(PurchaseErrorCode.PURCHASE_SHARE_NOT_FOUND);
@@ -151,7 +159,9 @@ public class PurchaseShareService {
         return row;
     }
 
-    /** 不透明令牌：32 字节随机数的 Base64URL，不含业务含义，也不含时间。 */
+    /**
+     * 不透明令牌：32 字节随机数的 Base64URL，不含业务含义，也不含时间。
+     */
     private String newToken() {
         byte[] bytes = new byte[TOKEN_BYTES];
         RANDOM.nextBytes(bytes);

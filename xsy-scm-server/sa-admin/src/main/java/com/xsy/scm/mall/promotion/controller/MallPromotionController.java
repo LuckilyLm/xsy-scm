@@ -9,7 +9,9 @@ import com.xsy.scm.mall.promotion.domain.vo.MallCouponInstanceVO;
 import com.xsy.scm.mall.promotion.domain.vo.MallPromotionActivityVO;
 import com.xsy.scm.mall.promotion.service.MallPromotionService;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -56,7 +58,7 @@ public class MallPromotionController {
      */
     @PostMapping("/coupons/{couponId}/claim")
     public ResponseDTO<Long> claim(@PathVariable Long couponId,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(promotionService.claim(MallRequestSupport.current(), couponId, key));
     }

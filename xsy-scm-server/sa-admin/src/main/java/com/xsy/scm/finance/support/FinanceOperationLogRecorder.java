@@ -30,13 +30,15 @@ public class FinanceOperationLogRecorder {
      * 存的是事实主键而不是单号 —— 单号是读时 join 取得的派生展示值。
      */
     public void record(ScmFinanceBusinessTypeEnum businessType, Long businessId, ScmFinanceOperationTypeEnum operation,
-            String reason, Object before, Object after) {
+        String reason, Object before, Object after) {
         record(businessType, businessId, operation, reason, before, after, ScmOperator.current());
     }
 
-    /** 财务派生事实写日志时明确传入原业务操作人：正常应收用签收人、红字应收用退货批准人，不能替换成后台任务当前账户。 */
+    /**
+     * 财务派生事实写日志时明确传入原业务操作人：正常应收用签收人、红字应收用退货批准人，不能替换成后台任务当前账户。
+     */
     public void record(ScmFinanceBusinessTypeEnum businessType, Long businessId, ScmFinanceOperationTypeEnum operation,
-            String reason, Object before, Object after, String operator) {
+        String reason, Object before, Object after, String operator) {
         var entry = new FinanceOperationLogEntity();
         entry.setBusinessType(businessType.name());
         entry.setBusinessId(businessId);

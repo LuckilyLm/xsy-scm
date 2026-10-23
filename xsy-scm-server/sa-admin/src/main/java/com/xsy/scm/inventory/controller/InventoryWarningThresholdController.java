@@ -47,7 +47,7 @@ public class InventoryWarningThresholdController {
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.THRESHOLD_QUERY)
     public ResponseDTO<PageResult<InventoryWarningThresholdVO>> query(
-            @Valid @RequestBody InventoryWarningThresholdQueryForm form) {
+        @Valid @RequestBody InventoryWarningThresholdQueryForm form) {
         return ResponseDTO.ok(inventoryWarningQueryService.queryThresholdPage(form));
     }
 
@@ -74,7 +74,7 @@ public class InventoryWarningThresholdController {
     @SaCheckPermission(InventoryPermission.THRESHOLD_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@PathVariable("id") Long warningThresholdId,
-            @Valid @RequestBody InventoryWarningThresholdAddForm form) {
+        @Valid @RequestBody InventoryWarningThresholdAddForm form) {
         inventoryWarningThresholdService.update(warningThresholdId, form);
         return ResponseDTO.ok();
     }

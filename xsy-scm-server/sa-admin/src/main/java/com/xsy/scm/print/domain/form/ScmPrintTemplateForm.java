@@ -6,10 +6,14 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
 import java.util.Map;
+
 import lombok.Data;
 
-/** 打印模板表单把模型保留为 Map，由统一模板校验器检查结构并返回业务错误。 */
+/**
+ * 打印模板表单把模型保留为 Map，由统一模板校验器检查结构并返回业务错误。
+ */
 @Data
 public class ScmPrintTemplateForm {
 

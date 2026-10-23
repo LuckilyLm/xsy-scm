@@ -13,7 +13,9 @@ import com.xsy.scm.report.constant.ReportErrorCode;
  */
 public final class ScmReportTimeRangeResolver {
 
-    /** 与业务库、单号生成器、大屏一致的日界时区。 */
+    /**
+     * 与业务库、单号生成器、大屏一致的日界时区。
+     */
     public static final java.time.ZoneId BUSINESS_ZONE = ScmDateTimeRangeResolver.BUSINESS_ZONE;
 
     /**
@@ -32,7 +34,7 @@ public final class ScmReportTimeRangeResolver {
      */
     public static ScmReportTimeRange resolve(ScmReportDateFilter filter) {
         ScmDateTimeRange range = ScmDateTimeRangeResolver.resolve(filter.getStartDate(), filter.getEndDate(),
-                ReportErrorCode.REPORT_DATE_RANGE_TOO_LARGE);
+            ReportErrorCode.REPORT_DATE_RANGE_TOO_LARGE);
         return new ScmReportTimeRange(range.startDate(), range.endDate(), range.startAt(), range.endAt());
     }
 }

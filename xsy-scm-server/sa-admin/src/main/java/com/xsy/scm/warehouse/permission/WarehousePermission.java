@@ -1,6 +1,8 @@
 package com.xsy.scm.warehouse.permission;
 
-/** Stable permission identifiers published by warehouse-management APIs. */
+/**
+ * Stable permission identifiers published by warehouse-management APIs.
+ */
 public final class WarehousePermission {
 
     public static final String QUERY = "scm:warehouse:query";

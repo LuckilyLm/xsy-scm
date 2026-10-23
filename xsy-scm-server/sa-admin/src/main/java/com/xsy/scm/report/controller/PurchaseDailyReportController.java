@@ -39,7 +39,7 @@ public class PurchaseDailyReportController {
     @SaCheckPermission(value = {ScmReportPermission.PURCHASE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void export(@Valid @RequestBody PurchaseDailyQueryForm form, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         List<PurchaseDailyReportVO.ProductRow> products = ScmReportExportGuard.exportRows(limit -> {
             form.setPageNum(1L);
             form.setPageSize(limit);
@@ -51,10 +51,10 @@ public class PurchaseDailyReportController {
         });
         List<String> titles = List.of("统计日期", "商品编码", "商品名称", "商品规格编码", "商品规格", "采购单位", "采购单数", "采购数量", "采购金额");
         List<List<Object>> rows = products.stream()
-                .map(row -> ScmReportExcel.row(titles, form.getReportDate(), row.getSpuCode(), row.getProductName(),
-                        row.getSkuCode(), row.getSkuName(), row.getPurchaseUnit(), row.getOrderCount(),
-                        row.getPlannedQuantity(), row.getOrderAmount()))
-                .toList();
+            .map(row -> ScmReportExcel.row(titles, form.getReportDate(), row.getSpuCode(), row.getProductName(),
+                row.getSkuCode(), row.getSkuName(), row.getPurchaseUnit(), row.getOrderCount(),
+                row.getPlannedQuantity(), row.getOrderAmount()))
+            .toList();
         ScmReportExcel.write(response, "采购商品清单-" + form.getReportDate() + ".xlsx", "采购商品清单", titles, rows);
     }
 }

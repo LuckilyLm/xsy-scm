@@ -19,7 +19,9 @@ import java.util.Set;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** 维护员工可管理的仓库范围，写入前校验员工和仓库存在。没有授权记录不等于默认有权查看。 */
+/**
+ * 维护员工可管理的仓库范围，写入前校验员工和仓库存在。没有授权记录不等于默认有权查看。
+ */
 @Service
 @RequiredArgsConstructor
 public class WarehouseScopeService {

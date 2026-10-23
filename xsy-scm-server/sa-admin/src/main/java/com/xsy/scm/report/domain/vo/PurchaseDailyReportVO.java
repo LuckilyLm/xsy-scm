@@ -12,7 +12,9 @@ import net.lab1024.sa.base.common.domain.PageResult;
 @Data
 public class PurchaseDailyReportVO {
     private LocalDate reportDate;
-    /** 空值表示未生成或当前用户无数据范围，不能解释为采购量为零。 */
+    /**
+     * 空值表示未生成或当前用户无数据范围，不能解释为采购量为零。
+     */
     private OffsetDateTime generatedAt;
     private PageResult<ProductRow> products;
 

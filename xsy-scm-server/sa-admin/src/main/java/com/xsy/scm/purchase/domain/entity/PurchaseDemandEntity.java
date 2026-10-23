@@ -18,7 +18,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 
-/** 每条已确认销售订单行最多生成一条有效采购需求。需求日期取订单确认时间的北京时间日期，需求单位在生成时固定，不会被采购单位覆盖。 */
+/**
+ * 每条已确认销售订单行最多生成一条有效采购需求。需求日期取订单确认时间的北京时间日期，需求单位在生成时固定，不会被采购单位覆盖。
+ */
 @Data
 @TableName(value = "xsy_purchase_demand", autoResultMap = true)
 public class PurchaseDemandEntity {

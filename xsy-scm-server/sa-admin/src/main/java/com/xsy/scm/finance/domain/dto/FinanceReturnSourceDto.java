@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/** 红字应收取已批准退货单的时间和批准人，不能用财务登记时的当前时间或操作人替代。 */
+/**
+ * 红字应收取已批准退货单的时间和批准人，不能用财务登记时的当前时间或操作人替代。
+ */
 @Data
 public class FinanceReturnSourceDto {
 

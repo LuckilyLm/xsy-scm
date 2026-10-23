@@ -14,7 +14,9 @@ public interface OrderReturnItemDao extends BaseMapper<OrderReturnItemEntity> {
 
     List<OrderReturnItemEntity> list(@Param("id") Long id);
 
-    /** 按退货单批量读明细：归属由调用方按退货单客户判定，本查询只按 return_id 等值过滤。 */
+    /**
+     * 按退货单批量读明细：归属由调用方按退货单客户判定，本查询只按 return_id 等值过滤。
+     */
     List<OrderReturnItemEntity> listByReturnIds(@Param("returnIds") List<Long> returnIds);
 
     java.math.BigDecimal reserved(@Param("id") Long id);

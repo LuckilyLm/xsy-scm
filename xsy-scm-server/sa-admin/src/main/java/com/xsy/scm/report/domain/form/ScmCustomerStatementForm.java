@@ -7,7 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
-/** A frozen statement belongs to a historical settlement account, not today's group hierarchy. */
+/**
+ * A frozen statement belongs to a historical settlement account, not today's group hierarchy.
+ */
 @Data
 public class ScmCustomerStatementForm implements ScmReportDateFilter {
     @NotNull(message = "结算方不能为空")

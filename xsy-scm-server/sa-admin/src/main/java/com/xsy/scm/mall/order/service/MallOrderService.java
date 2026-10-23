@@ -18,10 +18,12 @@ import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
 import com.xsy.scm.order.domain.form.OrderCancelForm;
 import com.xsy.scm.order.manager.OrderStateMachine;
 import com.xsy.scm.order.service.SalesOrderService;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,10 +43,12 @@ public class MallOrderService {
     private final MallCartService cartService;
     private final MallCatalogService catalogService;
 
-    /** 客户取消订单先校验订单归属；已经取消的订单继续交给正式订单服务处理幂等重试，避免重复点击被误判为失败。 */
+    /**
+     * 客户取消订单先校验订单归属；已经取消的订单继续交给正式订单服务处理幂等重试，避免重复点击被误判为失败。
+     */
     @Transactional(rollbackFor = Exception.class)
     public MallOrderVO cancel(RequestMallCustomer customer, Long orderId, MallOrderCancelForm form,
-            String idempotencyKey) {
+        String idempotencyKey) {
         SalesOrderEntity order = orderQueryService.requireOwnedOrder(customer, orderId);
         if (!ScmOrderStatusEnum.CANCELLED.name().equals(order.getStatus())) {
             requireCancellable(order, orderId);
@@ -57,7 +61,9 @@ public class MallOrderService {
         return orderQueryService.detail(customer, orderId);
     }
 
-    /** 把「能不能取消」翻译成客户可读的原因；真正的门禁在订单状态机。 */
+    /**
+     * 把「能不能取消」翻译成客户可读的原因；真正的门禁在订单状态机。
+     */
     private void requireCancellable(SalesOrderEntity order, Long orderId) {
         if (!OrderStateMachine.canTransition(order.getStatus(), ScmOrderStatusEnum.CANCELLED.name())) {
             throw new ScmBusinessException(MallErrorCode.ORDER_NOT_CANCELABLE);
@@ -84,7 +90,7 @@ public class MallOrderService {
         }
         List<Long> skuIds = items.stream().map(SalesOrderItemEntity::getSkuId).distinct().toList();
         Map<Long, MallProductVO> visible = catalogService.visibleProducts(customer, skuIds).stream()
-                .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity(), (first, ignored) -> first));
+            .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity(), (first, ignored) -> first));
 
         MallReorderVO result = new MallReorderVO();
         for (SalesOrderItemEntity item : items) {

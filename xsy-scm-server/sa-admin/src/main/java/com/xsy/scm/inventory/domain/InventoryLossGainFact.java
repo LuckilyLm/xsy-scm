@@ -14,5 +14,5 @@ import java.time.OffsetDateTime;
  * {@code occurredAt} 取<b>审核时刻</b>，{@code operator} 取<b>审核人</b>，不是创建时刻 / 创建人。
  */
 public record InventoryLossGainFact(Long warehouseId, Long skuId, Long lossGainId, Long lossGainItemId,
-        String adjustType, BigDecimal quantity, OffsetDateTime occurredAt, String operator) {
+    String adjustType, BigDecimal quantity, OffsetDateTime occurredAt, String operator) {
 }

@@ -22,9 +22,11 @@ import java.util.List;
 @Mapper
 public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
 
-    /** 生成采购需求只取已确认且有实际数量的销售订单行，并按稳定顺序查询以保证重复生成结果一致。订单行没有仓库字段；入库仓库的授权由后续采购和仓库校验负责。 */
+    /**
+     * 生成采购需求只取已确认且有实际数量的销售订单行，并按稳定顺序查询以保证重复生成结果一致。订单行没有仓库字段；入库仓库的授权由后续采购和仓库校验负责。
+     */
     List<SalesOrderItemEntity> listSourceItems(@Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmValueScope scope);
+        @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmValueScope scope);
 
     /**
      * 分页查询（联 supplier / warehouse 取名称快照）。
@@ -34,11 +36,13 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      * 同一口径；{@code null} 在 Mapper 里失败关闭，不表示「全部」。
      */
     List<PurchaseDemandVO> query(Page<?> page, @Param("query") PurchaseDemandQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
-    /** 按已确认订单的实际数量汇总需求，并与指定仓库的余额比较。缺口与状态由 SQL 精确计算；仓库范围必须限制请求仓库，聚合分页按组数统计。 */
+    /**
+     * 按已确认订单的实际数量汇总需求，并与指定仓库的余额比较。缺口与状态由 SQL 精确计算；仓库范围必须限制请求仓库，聚合分页按组数统计。
+     */
     List<PurchaseDemandSummaryVO> summaryPreview(Page<?> page, @Param("query") PurchaseDemandSummaryPreviewForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 单条详情（同一套投影，保证列表与详情字段口径一致）。
@@ -76,8 +80,8 @@ public interface PurchaseDemandDao extends BaseMapper<PurchaseDemandEntity> {
      * {@code version} 做乐观锁，影响行数为 0 表示并发冲突。
      */
     int updateAllocation(@Param("id") Long id, @Param("version") Integer version,
-            @Param("allocatedQuantity") BigDecimal allocatedQuantity, @Param("status") String status,
-            @Param("supplierId") Long supplierId, @Param("operator") String operator);
+        @Param("allocatedQuantity") BigDecimal allocatedQuantity, @Param("status") String status,
+        @Param("supplierId") Long supplierId, @Param("operator") String operator);
 
     /**
      * 软删（需求回退用；仅在没有活动分配时允许）。

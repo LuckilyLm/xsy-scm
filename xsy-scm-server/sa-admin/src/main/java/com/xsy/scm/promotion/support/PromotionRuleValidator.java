@@ -3,11 +3,14 @@ package com.xsy.scm.promotion.support;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.promotion.constant.PromotionErrorCode;
 import com.xsy.scm.promotion.constant.ScmPromotionActivityTypeEnum;
+
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** 营销规则只接受已定义的键和值，未知项直接拒绝。金额统一按四位小数处理，订单冻结使用校验后的规则。 */
+/**
+ * 营销规则只接受已定义的键和值，未知项直接拒绝。金额统一按四位小数处理，订单冻结使用校验后的规则。
+ */
 public final class PromotionRuleValidator {
 
     private static final int SCALE = 4;

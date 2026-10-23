@@ -28,18 +28,24 @@ import com.xsy.scm.payment.domain.entity.PaymentRefundEntity;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import com.xsy.scm.payment.domain.form.PaymentRefundCreateForm;
 import com.xsy.scm.payment.domain.vo.PaymentRefundRecoveryLogVO;
+
 import java.util.List;
+
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 退款必须关联已成功收取的款项，累计退款不得超过原支付金额；重复退款请求不得生成重复的财务付款。 */
+/**
+ * 退款必须关联已成功收取的款项，累计退款不得超过原支付金额；重复退款请求不得生成重复的财务付款。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -57,7 +63,9 @@ public class PaymentRefundService {
 
     private final PaymentIntentDao paymentIntentDao;
 
-    /** 只读外部事实：订单 / 退款单 / 财务付款，用于来源校验与互斥。 */
+    /**
+     * 只读外部事实：订单 / 退款单 / 财务付款，用于来源校验与互斥。
+     */
     private final PaymentSourceDao paymentSourceDao;
 
     /**
@@ -87,17 +95,17 @@ public class PaymentRefundService {
 
         PaymentTransactionEntity initial = paymentTransactionDao.selectById(form.getTransactionId());
         PaymentIntentEntity originalIntent = initial == null
-                ? null
-                : paymentIntentDao.selectById(initial.getIntentId());
+            ? null
+            : paymentIntentDao.selectById(initial.getIntentId());
         if (originalIntent == null
-                || !ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(originalIntent.getSourceType())
-                || paymentSourceDao.lockOrder(originalIntent.getSourceId()) == null) {
+            || !ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(originalIntent.getSourceType())
+            || paymentSourceDao.lockOrder(originalIntent.getSourceId()) == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
         }
         var order = paymentSourceDao.selectOrder(originalIntent.getSourceId());
         var scope = dataScopeService.resolve();
         if (!scope.getOrderSellerScope().allows(order.sellerId())
-                || !paymentSourceDao.customerVisible(originalIntent.getCustomerId(), scope.getCustomerSellerScope())) {
+            || !paymentSourceDao.customerVisible(originalIntent.getCustomerId(), scope.getCustomerSellerScope())) {
             throw new ScmDataScopeException();
         }
         if (claim.replay()) {
@@ -165,23 +173,23 @@ public class PaymentRefundService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void applyOutcome(Long refundId, ScmPaymentProvider.Outcome outcome, String providerRefundNo,
-            BigDecimal providerAmount, String failureCode, String failureMessage, String operator) {
+        BigDecimal providerAmount, String failureCode, String failureMessage, String operator) {
         lockRefundOrder(refundId);
         PaymentRefundEntity current = paymentRefundDao.lockById(refundId);
         if (current == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_NOT_FOUND);
         }
         if (providerRefundNo != null
-                && paymentRefundDao.updateProviderReference(refundId, providerRefundNo, operator) != 1) {
+            && paymentRefundDao.updateProviderReference(refundId, providerRefundNo, operator) != 1) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
         }
         if (ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(current.getStatus())
-                && (outcome != ScmPaymentProvider.Outcome.SUCCEEDED || providerAmount == null
-                        || current.getProviderAmount().compareTo(providerAmount) != 0)) {
+            && (outcome != ScmPaymentProvider.Outcome.SUCCEEDED || providerAmount == null
+                || current.getProviderAmount().compareTo(providerAmount) != 0)) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_AMOUNT_MISMATCH);
         }
         if (ScmPaymentRefundStatusEnum.FAILED.name().equals(current.getStatus())
-                && outcome != ScmPaymentProvider.Outcome.FAILED) {
+            && outcome != ScmPaymentProvider.Outcome.FAILED) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_STATE_INVALID);
         }
         switch (outcome) {
@@ -192,7 +200,7 @@ public class PaymentRefundService {
                     throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_PROVIDER_AMOUNT_MISSING);
                 }
                 paymentRefundDao.markSucceeded(refundId, providerRefundNo,
-                        providerAmount.setScale(SCALE, RoundingMode.HALF_UP), operator);
+                    providerAmount.setScale(SCALE, RoundingMode.HALF_UP), operator);
                 // <b>无论是否首次都确保 Finance 付款事实存在</b>：这样「渠道已退、本地在上次落账前失败」
                 // 可以靠下一次回调恢复 —— 与收款的 registerFinanceReceipt 同一条纪律。
                 registerFinancePayment(refundId, operator);
@@ -208,9 +216,11 @@ public class PaymentRefundService {
         }
     }
 
-    /** 渠道退款前先锁原退款单，检查已完成状态、退款客户、金额和既有付款记录。线上与人工退款付款互斥，同一退款单不能重复支付。 */
+    /**
+     * 渠道退款前先锁原退款单，检查已完成状态、退款客户、金额和既有付款记录。线上与人工退款付款互斥，同一退款单不能重复支付。
+     */
     private void requireOrderRefundSource(PaymentRefundCreateForm form, PaymentTransactionEntity transaction,
-            BigDecimal amount) {
+        BigDecimal amount) {
         if (!ScmPaymentSourceTypeEnum.ORDER_REFUND.name().equals(form.getSourceType()) || form.getSourceId() == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
         }
@@ -230,9 +240,9 @@ public class PaymentRefundService {
         // 结果是「公司退了 100、钱包还剩 100」，等于白送一笔余额。
         // 充值退款要单独设计（先查未消费余额 → DEBIT 钱包 → 再退渠道），不借这条链。
         if (!ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(intent.getSourceType())
-                || !refund.orderId().equals(intent.getSourceId())
-                || !ScmPaymentMethodEnum.ONLINE.name().equals(intent.getMethod())
-                || !transaction.getProvider().equals(intent.getProvider())) {
+            || !refund.orderId().equals(intent.getSourceId())
+            || !ScmPaymentMethodEnum.ONLINE.name().equals(intent.getMethod())
+            || !transaction.getProvider().equals(intent.getProvider())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
         }
         if (amount.compareTo(refund.refundAmount().setScale(SCALE, RoundingMode.HALF_UP)) != 0) {
@@ -248,11 +258,13 @@ public class PaymentRefundService {
         }
     }
 
-    /** 渠道退款成功后登记一笔客户退款付款。以退款单 ID 防重，不重复冲减应收。 */
+    /**
+     * 渠道退款成功后登记一笔客户退款付款。以退款单 ID 防重，不重复冲减应收。
+     */
     private void registerFinancePayment(Long refundId, String operator) {
         PaymentRefundEntity refund = paymentRefundDao.selectById(refundId);
         if (refund == null || !ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(refund.getStatus())
-                || refund.getProviderAmount() == null) {
+            || refund.getProviderAmount() == null) {
             return;
         }
         if (ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION.name().equals(refund.getSourceType())) {
@@ -260,23 +272,22 @@ public class PaymentRefundService {
             return;
         }
         if (!ScmPaymentSourceTypeEnum.ORDER_REFUND.name().equals(refund.getSourceType())
-                || refund.getSourceId() == null) {
+            || refund.getSourceId() == null) {
             return;
         }
         if (refund.getProviderAmount().compareTo(refund.getAmount()) != 0) {
             log.warn("渠道实退金额与申请金额不一致，暂不生成 Finance 付款事实：refundNo={} 申请={} 实退={}", refund.getRefundNo(),
-                    refund.getAmount(), refund.getProviderAmount());
+                refund.getAmount(), refund.getProviderAmount());
             return;
         }
         PaymentIntentEntity intent = paymentIntentDao.selectById(refund.getIntentId());
         if (intent == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_NOT_FOUND);
         }
-        financePaymentService
-                .registerFromPaymentRefund(
-                        new FinancePaymentRefundFact(refund.getId(), refund.getSourceId(), intent.getCustomerId(),
-                                refund.getProviderAmount(), refund.getRefundedAt(), refund.getProviderRefundNo()),
-                        operator);
+        financePaymentService.registerFromPaymentRefund(
+            new FinancePaymentRefundFact(refund.getId(), refund.getSourceId(), intent.getCustomerId(),
+                refund.getProviderAmount(), refund.getRefundedAt(), refund.getProviderRefundNo()),
+            operator);
     }
 
     private void syncFundingAllocation(Long paymentRefundId, String operator) {
@@ -289,7 +300,7 @@ public class PaymentRefundService {
 
     private void syncFundingAllocation(PaymentRefundEntity refund, String operator, boolean finishOrderRefund) {
         if (refund == null || !ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION.name().equals(refund.getSourceType())
-                || refund.getSourceId() == null) {
+            || refund.getSourceId() == null) {
             return;
         }
         var allocation = refundFundingAllocationDao.selectById(refund.getSourceId());
@@ -298,9 +309,9 @@ public class PaymentRefundService {
         }
         if (ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(refund.getStatus())) {
             if (refund.getProviderAmount() == null || refund.getProviderAmount().compareTo(refund.getAmount()) != 0
-                    || refund.getProviderAmount().compareTo(allocation.getAllocatedAmount()) != 0) {
+                || refund.getProviderAmount().compareTo(allocation.getAllocatedAmount()) != 0) {
                 log.warn("退款分摊实退金额不一致，保留渠道事实并等待对账：refundNo={} 分摊={} 实退={}", refund.getRefundNo(),
-                        allocation.getAllocatedAmount(), refund.getProviderAmount());
+                    allocation.getAllocatedAmount(), refund.getProviderAmount());
                 return;
             }
             refundFundingAllocationDao.markSucceeded(allocation.getId(), refund.getId(), operator);
@@ -309,14 +320,16 @@ public class PaymentRefundService {
             }
         } else if (ScmPaymentRefundStatusEnum.FAILED.name().equals(refund.getStatus())) {
             refundFundingAllocationDao.markFailed(allocation.getId(), refund.getFailureCode(),
-                    refund.getFailureMessage(), operator);
+                refund.getFailureMessage(), operator);
         }
     }
 
-    /** 单条 ONLINE 准备失败只回滚到保存点；调用方持有订单锁并记录失败分摊。 */
+    /**
+     * 单条 ONLINE 准备失败只回滚到保存点；调用方持有订单锁并记录失败分摊。
+     */
     @Transactional(propagation = Propagation.NESTED, rollbackFor = Exception.class)
     public PaymentRefundEntity executeAllocation(Long allocationId, Long orderRefundId,
-            PaymentTransactionEntity transaction, BigDecimal amount, String reason, String mockScenario) {
+        PaymentTransactionEntity transaction, BigDecimal amount, String reason, String mockScenario) {
         String sourceType = ScmBalanceSourceTypeEnum.REFUND_FUNDING_ALLOCATION.name();
         PaymentRefundEntity existing = paymentRefundDao.selectBySource(sourceType, allocationId);
         if (existing != null && ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(existing.getStatus())) {
@@ -350,7 +363,7 @@ public class PaymentRefundService {
             paymentRefundDao.insert(refund);
         } else if (ScmPaymentRefundStatusEnum.FAILED.name().equals(refund.getStatus())) {
             paymentRefundDao.resetFailed(refund.getId(), operator,
-                    resolveScenario(transaction.getProvider(), mockScenario));
+                resolveScenario(transaction.getProvider(), mockScenario));
             refund = paymentRefundDao.lockById(refund.getId());
         } else {
             return refund;
@@ -369,8 +382,8 @@ public class PaymentRefundService {
         var order = intent == null ? null : paymentSourceDao.selectOrder(intent.getSourceId());
         var scope = dataScopeService.resolve();
         if (order == null || !ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(intent.getSourceType())
-                || !scope.getOrderSellerScope().allows(order.sellerId())
-                || !paymentSourceDao.customerVisible(intent.getCustomerId(), scope.getCustomerSellerScope())) {
+            || !scope.getOrderSellerScope().allows(order.sellerId())
+            || !paymentSourceDao.customerVisible(intent.getCustomerId(), scope.getCustomerSellerScope())) {
             throw new ScmDataScopeException();
         }
         return refund;
@@ -386,26 +399,30 @@ public class PaymentRefundService {
         PaymentRefundEntity refund = paymentRefundDao.selectById(refundId);
         PaymentIntentEntity intent = refund == null ? null : paymentIntentDao.selectById(refund.getIntentId());
         if (intent == null || !ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(intent.getSourceType())
-                || paymentSourceDao.lockOrder(intent.getSourceId()) == null) {
+            || paymentSourceDao.lockOrder(intent.getSourceId()) == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_REFUND_SOURCE_INVALID);
         }
         paymentSourceDao.lockOrderRefunds(intent.getSourceId());
     }
 
-    /** 按渠道退款号定位退款（退款回调的匹配入口）。 */
+    /**
+     * 按渠道退款号定位退款（退款回调的匹配入口）。
+     */
     @Transactional(readOnly = true)
     public PaymentRefundEntity findByProviderRefundNo(String provider, String providerRefundNo) {
         return paymentRefundDao.selectByProviderRefundNo(provider, providerRefundNo);
     }
 
-    /** 可退金额以渠道实际收款减去已成功及处理中退款为准，不使用本地应付金额猜测。缺少可靠渠道实收金额时拒绝退款。 */
+    /**
+     * 可退金额以渠道实际收款减去已成功及处理中退款为准，不使用本地应付金额猜测。缺少可靠渠道实收金额时拒绝退款。
+     */
     private BigDecimal refundableOf(PaymentTransactionEntity transaction) {
         if (transaction.getProviderAmount() == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_PROVIDER_AMOUNT_MISSING);
         }
         BigDecimal refunded = paymentRefundDao.sumReservedByTransaction(transaction.getId());
         return transaction.getProviderAmount().subtract(refunded == null ? BigDecimal.ZERO : refunded)
-                .max(BigDecimal.ZERO).setScale(SCALE, RoundingMode.HALF_UP);
+            .max(BigDecimal.ZERO).setScale(SCALE, RoundingMode.HALF_UP);
     }
 
     private static String resolveScenario(String provider, String scenario) {
@@ -413,8 +430,8 @@ public class PaymentRefundService {
             return null;
         }
         if (!ScmPaymentProviderEnum.MOCK.name().equals(provider)
-                || (ScmPaymentMockScenarioEnum.of(scenario) != ScmPaymentMockScenarioEnum.SUCCESS
-                        && ScmPaymentMockScenarioEnum.of(scenario) != ScmPaymentMockScenarioEnum.FAILURE)) {
+            || (ScmPaymentMockScenarioEnum.of(scenario) != ScmPaymentMockScenarioEnum.SUCCESS
+                && ScmPaymentMockScenarioEnum.of(scenario) != ScmPaymentMockScenarioEnum.FAILURE)) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_MOCK_SCENARIO_INVALID);
         }
         return scenario;

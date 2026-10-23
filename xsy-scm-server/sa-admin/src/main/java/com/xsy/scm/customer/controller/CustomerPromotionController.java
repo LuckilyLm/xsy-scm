@@ -7,7 +7,9 @@ import com.xsy.scm.customer.permission.CustomerPermission;
 import com.xsy.scm.customer.service.CustomerPromotionService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+
 import java.util.List;
+
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -18,7 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 客户专属推广二维码（后台侧）。 */
+/**
+ * 客户专属推广二维码（后台侧）。
+ */
 @RestController
 @RequestMapping("/scm/customer/promotion")
 @RequiredArgsConstructor
@@ -26,7 +30,9 @@ public class CustomerPromotionController {
 
     private final CustomerPromotionService customerPromotionService;
 
-    /** 生成推广码：该客户上的旧码当场失效。 */
+    /**
+     * 生成推广码：该客户上的旧码当场失效。
+     */
     @PostMapping("/create")
     @SaCheckPermission(CustomerPermission.PROMOTION_MANAGE)
     public ResponseDTO<CustomerPromotionVO> create(@RequestBody @Valid CustomerForm form) {
@@ -49,11 +55,13 @@ public class CustomerPromotionController {
     @GetMapping("/scans")
     @SaCheckPermission(CustomerPermission.PROMOTION_MANAGE)
     public ResponseDTO<List<CustomerPromotionVO.Scan>> scans(@RequestParam @NotNull Long codeId,
-            @RequestParam(required = false) Integer limit) {
+        @RequestParam(required = false) Integer limit) {
         return ResponseDTO.ok(customerPromotionService.scans(codeId, limit));
     }
 
-    /** 最近一次扫码归属；新增客户时用来预填业务员。 */
+    /**
+     * 最近一次扫码归属；新增客户时用来预填业务员。
+     */
     @GetMapping("/attribution")
     @SaCheckPermission(CustomerPermission.PROMOTION_MANAGE)
     public ResponseDTO<CustomerPromotionVO.Scan> attribution() {

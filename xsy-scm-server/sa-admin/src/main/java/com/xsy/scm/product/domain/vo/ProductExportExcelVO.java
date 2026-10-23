@@ -8,7 +8,9 @@ import lombok.Data;
  */
 @Data
 public class ProductExportExcelVO {
-    /** 更新导入模板的四个定位键列，顺序与 ProductImportService.UPDATE_HEADERS 一致。 */
+    /**
+     * 更新导入模板的四个定位键列，顺序与 ProductImportService.UPDATE_HEADERS 一致。
+     */
     @ExcelProperty("商品ID")
     private String spuId;
     @ExcelProperty("商品版本")

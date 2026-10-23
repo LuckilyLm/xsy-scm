@@ -3,7 +3,9 @@ package com.xsy.scm.payment.domain.form;
 import lombok.Data;
 import net.lab1024.sa.base.common.domain.PageParam;
 
-/** 退款查询。 */
+/**
+ * 退款查询。
+ */
 @Data
 public class PaymentRefundQueryForm extends PageParam {
 
@@ -19,6 +21,8 @@ public class PaymentRefundQueryForm extends PageParam {
 
     private Long sourceId;
 
-    /** 退款单号 / 渠道退款号的模糊匹配。 */
+    /**
+     * 退款单号 / 渠道退款号的模糊匹配。
+     */
     private String keyword;
 }

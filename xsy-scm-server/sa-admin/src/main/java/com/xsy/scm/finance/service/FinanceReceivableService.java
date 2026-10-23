@@ -18,6 +18,7 @@ import com.xsy.scm.finance.domain.dto.FinanceReturnSourceLineDto;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableItemEntity;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -97,10 +99,10 @@ public class FinanceReceivableService {
             throw new IllegalStateException("组合商品出库组成不完整，不能生成应收: " + source.getSalesOrderId());
         }
         List<FinanceReceivableItemEntity> items = toNormalItems(source,
-                financeReceivableSourceDao.selectOutboundLines(source.getSalesOrderId()),
-                orderLineDiscounts(source.getSalesOrderId()));
+            financeReceivableSourceDao.selectOutboundLines(source.getSalesOrderId()),
+            orderLineDiscounts(source.getSalesOrderId()));
         BigDecimal amount = items.stream().map(FinanceReceivableItemEntity::getAmount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
+            BigDecimal::add);
 
         if (amount.signum() <= 0) {
             // 两种形状都在这里跳过：① 签收成功但零实发；② 售价全为 0。
@@ -124,8 +126,8 @@ public class FinanceReceivableService {
         }
 
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIVABLE, receivable.getId(),
-                ScmFinanceOperationTypeEnum.GENERATE, null, null, generatedSnapshot(receivable, items.size()),
-                source.getSignedBy());
+            ScmFinanceOperationTypeEnum.GENERATE, null, null, generatedSnapshot(receivable, items.size()),
+            source.getSignedBy());
     }
 
     /**
@@ -154,10 +156,10 @@ public class FinanceReceivableService {
      */
     private BigDecimal generateRed(FinanceReturnSourceDto returned, FinanceReceivableEntity normal) {
         List<FinanceReceivableItemEntity> items = toRedItems(returned,
-                financeReceivableSourceDao.selectApprovedReturnLines(returned.getOrderReturnId()),
-                orderLineDiscounts(returned.getOrderId()));
+            financeReceivableSourceDao.selectApprovedReturnLines(returned.getOrderReturnId()),
+            orderLineDiscounts(returned.getOrderId()));
         BigDecimal amount = items.stream().map(FinanceReceivableItemEntity::getAmount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
+            BigDecimal::add);
 
         if (amount.signum() <= 0 || normal == null) {
             // 整张退货没有有效红字行（全部非正金额行）：成功跳过，
@@ -177,8 +179,8 @@ public class FinanceReceivableService {
         }
 
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIVABLE, red.getId(),
-                ScmFinanceOperationTypeEnum.RED_GENERATE, returned.getReason(), null,
-                redGeneratedSnapshot(red, returned, items.size()), returned.getApprovedBy());
+            ScmFinanceOperationTypeEnum.RED_GENERATE, returned.getReason(), null,
+            redGeneratedSnapshot(red, returned, items.size()), returned.getApprovedBy());
         return amount;
     }
 
@@ -190,8 +192,8 @@ public class FinanceReceivableService {
         OffsetDateTime now = OffsetDateTime.now();
 
         FinanceReceivableEntity receivable = new FinanceReceivableEntity();
-        receivable.setReceivableNo(ScmDocumentNumbers.format(FinanceConstant.RECEIVABLE_NO_PREFIX,
-                financeReceivableDao.nextReceivableNo()));
+        receivable.setReceivableNo(
+            ScmDocumentNumbers.format(FinanceConstant.RECEIVABLE_NO_PREFIX, financeReceivableDao.nextReceivableNo()));
         receivable.setSourceType(ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name());
         receivable.setSourceId(source.getSalesOrderId());
         receivable.setOrderId(source.getSalesOrderId());
@@ -213,12 +215,12 @@ public class FinanceReceivableService {
      * 红字应收单头。事件时点与原因继承退货业务事实，金额取已批准红字行之和； <b>不做任何上限比较</b>。
      */
     private FinanceReceivableEntity redHeader(FinanceReturnSourceDto returned, FinanceReceivableEntity normal,
-            BigDecimal amount) {
+        BigDecimal amount) {
         OffsetDateTime now = OffsetDateTime.now();
 
         FinanceReceivableEntity red = new FinanceReceivableEntity();
-        red.setReceivableNo(ScmDocumentNumbers.format(FinanceConstant.RECEIVABLE_NO_PREFIX,
-                financeReceivableDao.nextReceivableNo()));
+        red.setReceivableNo(
+            ScmDocumentNumbers.format(FinanceConstant.RECEIVABLE_NO_PREFIX, financeReceivableDao.nextReceivableNo()));
         red.setSourceType(ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name());
         red.setSourceId(returned.getOrderReturnId());
         red.setOrderId(returned.getOrderId());
@@ -247,14 +249,14 @@ public class FinanceReceivableService {
      * 一条订单行对应多条出库行时逐条成行、不合并。
      */
     private List<FinanceReceivableItemEntity> toNormalItems(FinanceReceivableSourceDto source,
-            List<FinanceReceivableSourceLineDto> lines, Map<Long, BigDecimal> orderLineDiscounts) {
+        List<FinanceReceivableSourceLineDto> lines, Map<Long, BigDecimal> orderLineDiscounts) {
         OffsetDateTime now = OffsetDateTime.now();
 
         return lines.stream().map(line -> {
             BigDecimal gross = line.getQuantity().multiply(line.getUnitPrice()).setScale(FinanceConstant.AMOUNT_SCALE,
-                    RoundingMode.HALF_UP);
+                RoundingMode.HALF_UP);
             BigDecimal discount = discountShare(line.getSalesOrderItemId(), gross, line.getOrderedLineAmount(),
-                    orderLineDiscounts);
+                orderLineDiscounts);
 
             FinanceReceivableItemEntity item = newItem(source.getSignedBy(), now);
             item.setSourceType(ScmFinanceReceivableItemSourceTypeEnum.INVENTORY_OUTBOUND_ITEM.name());
@@ -276,13 +278,13 @@ public class FinanceReceivableService {
      * 再扣按同一把尺子算出的反向优惠得到净额。也不存行级原明细指针 ——一条订单行可能对应多条出库行，不存在唯一的原正常明细。
      */
     private List<FinanceReceivableItemEntity> toRedItems(FinanceReturnSourceDto returned,
-            List<FinanceReturnSourceLineDto> lines, Map<Long, BigDecimal> orderLineDiscounts) {
+        List<FinanceReturnSourceLineDto> lines, Map<Long, BigDecimal> orderLineDiscounts) {
         OffsetDateTime now = OffsetDateTime.now();
 
         return lines.stream().map(line -> {
             BigDecimal gross = line.getApprovedAmount().setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
             BigDecimal discount = discountShare(line.getOrderItemId(), gross, line.getOrderedLineAmount(),
-                    orderLineDiscounts);
+                orderLineDiscounts);
 
             FinanceReceivableItemEntity item = newItem(returned.getApprovedBy(), now);
             item.setSourceType(ScmFinanceReceivableItemSourceTypeEnum.ORDER_RETURN_ITEM.name());
@@ -299,7 +301,9 @@ public class FinanceReceivableService {
         }).toList();
     }
 
-    /** 订单确认时冻结的行级优惠分摊：{@code orderItemId -> discountAmount}；订单无优惠时为空表。 */
+    /**
+     * 订单确认时冻结的行级优惠分摊：{@code orderItemId -> discountAmount}；订单无优惠时为空表。
+     */
     private Map<Long, BigDecimal> orderLineDiscounts(Long salesOrderId) {
         Map<Long, BigDecimal> discounts = new HashMap<>();
         for (FinanceOrderDiscountLineDto line : financeReceivableSourceDao.selectOrderDiscountLines(salesOrderId)) {
@@ -323,14 +327,14 @@ public class FinanceReceivableService {
      * 下单金额缺失或为 0（历史数据 / 0 元单）时按 0 处理，而不是把整额优惠压到这一行： 没有可依的比例时「不减」比「乱减」更可解释。
      */
     static BigDecimal discountShare(Long orderItemId, BigDecimal lineAmount, BigDecimal orderedLineAmount,
-            Map<Long, BigDecimal> orderLineDiscounts) {
+        Map<Long, BigDecimal> orderLineDiscounts) {
         BigDecimal allocated = orderLineDiscounts.get(orderItemId);
         if (allocated == null || allocated.signum() <= 0 || lineAmount.signum() <= 0 || orderedLineAmount == null
-                || orderedLineAmount.signum() <= 0) {
+            || orderedLineAmount.signum() <= 0) {
             return BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE);
         }
         BigDecimal share = lineAmount.multiply(allocated).divide(orderedLineAmount, FinanceConstant.AMOUNT_SCALE,
-                RoundingMode.HALF_UP);
+            RoundingMode.HALF_UP);
         return share.min(lineAmount).max(BigDecimal.ZERO);
     }
 
@@ -357,7 +361,7 @@ public class FinanceReceivableService {
      * 红字的 {@code after_data}：除单头快照外必须能直接看出它冲的是哪张原应收、来源是哪张退货单 ，否则事后核对要连表跳三次。
      */
     private Map<String, Object> redGeneratedSnapshot(FinanceReceivableEntity red, FinanceReturnSourceDto returned,
-            int itemCount) {
+        int itemCount) {
         Map<String, Object> snapshot = baseSnapshot(red);
         snapshot.put("sourceReturnId", returned.getOrderReturnId());
         snapshot.put("returnNo", returned.getReturnNo());

@@ -15,11 +15,15 @@ import com.xsy.scm.report.support.ScmReportDateFilter;
 @Data
 public abstract class ScmReportDateForm implements ScmReportDateFilter {
 
-    /** 起始业务日（闭区间），Asia/Shanghai 日界。 */
+    /**
+     * 起始业务日（闭区间），Asia/Shanghai 日界。
+     */
     @NotNull(message = "起始日期不能为空")
     private LocalDate startDate;
 
-    /** 结束业务日（闭区间）。 */
+    /**
+     * 结束业务日（闭区间）。
+     */
     @NotNull(message = "结束日期不能为空")
     private LocalDate endDate;
 }

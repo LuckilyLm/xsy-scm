@@ -72,8 +72,8 @@ public class InventoryReservationService {
         }
 
         String operator = fact.operator() == null || fact.operator().isBlank()
-                ? ScmOperator.current()
-                : fact.operator();
+            ? ScmOperator.current()
+            : fact.operator();
 
         InventoryReservationEntity entity = new InventoryReservationEntity();
         entity.setWarehouseId(fact.warehouseId());
@@ -133,7 +133,7 @@ public class InventoryReservationService {
             return;
         }
         InventoryReservationEntity active = inventoryReservationDao.selectActiveBySource(sourceDocumentType,
-                sourceDocumentItemId);
+            sourceDocumentItemId);
         if (active == null) {
             return;
         }
@@ -170,15 +170,15 @@ public class InventoryReservationService {
     }
 
     public void reserveForSalesOrder(Long warehouseId, Long salesOrderId, List<OrderReserveLine> lines,
-            OffsetDateTime occurredAt) {
+        OffsetDateTime occurredAt) {
         if (warehouseId == null || lines == null || lines.isEmpty()) {
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
         }
         lines.stream().sorted(Comparator.comparing(OrderReserveLine::skuId))
-                .forEach(line -> reserve(new ReserveInventoryFact(warehouseId, line.skuId(), line.sourceType(),
-                        salesOrderId, line.itemId(),
-                        InventorySaleUnitConverter.toStockQuantity(line.quantity(), line.stockUnit(), line.factor()),
-                        occurredAt, null, line.stockUnit())));
+            .forEach(line -> reserve(
+                new ReserveInventoryFact(warehouseId, line.skuId(), line.sourceType(), salesOrderId, line.itemId(),
+                    InventorySaleUnitConverter.toStockQuantity(line.quantity(), line.stockUnit(), line.factor()),
+                    occurredAt, null, line.stockUnit())));
     }
 
     /**
@@ -192,14 +192,13 @@ public class InventoryReservationService {
             return;
         }
         List<InventoryReservationEntity> normal = inventoryReservationDao
-                .listActiveBySourceDocument(ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), salesOrderId);
-        List<InventoryReservationEntity> bundle = inventoryReservationDao.listActiveBySourceDocument(
-                ScmInventorySourceDocumentTypeEnum.ORDER_BUNDLE_COMPONENT.name(), salesOrderId);
+            .listActiveBySourceDocument(ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), salesOrderId);
+        List<InventoryReservationEntity> bundle = inventoryReservationDao
+            .listActiveBySourceDocument(ScmInventorySourceDocumentTypeEnum.ORDER_BUNDLE_COMPONENT.name(), salesOrderId);
         List<InventoryReservationEntity> actives = java.util.stream.Stream.concat(normal.stream(), bundle.stream())
-                .sorted(Comparator.comparing(InventoryReservationEntity::getWarehouseId)
-                        .thenComparing(InventoryReservationEntity::getSkuId)
-                        .thenComparing(InventoryReservationEntity::getId))
-                .toList();
+            .sorted(Comparator.comparing(InventoryReservationEntity::getWarehouseId)
+                .thenComparing(InventoryReservationEntity::getSkuId).thenComparing(InventoryReservationEntity::getId))
+            .toList();
         for (InventoryReservationEntity active : actives) {
             releaseCascade(active.getId());
         }
@@ -230,7 +229,7 @@ public class InventoryReservationService {
 
     private void applyRelease(InventoryReservationEntity locked, String operator) {
         InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(locked.getWarehouseId(),
-                locked.getSkuId());
+            locked.getSkuId());
         if (balance == null) {
             // 余额行不该消失（append-only 语义下余额只增减、不删除）；这里 fail-fast 暴露数据异常。
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
@@ -247,10 +246,10 @@ public class InventoryReservationService {
      * 订单行维度的预留入参（只带预留需要的最小字段）。
      */
     public record OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity, String stockUnit, BigDecimal factor,
-            String sourceType) {
+        String sourceType) {
         public OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity, String stockUnit, BigDecimal factor) {
             this(itemId, skuId, quantity, stockUnit, factor,
-                    ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name());
+                ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name());
         }
 
         public OrderReserveLine(Long itemId, Long skuId, BigDecimal quantity) {
@@ -260,9 +259,9 @@ public class InventoryReservationService {
 
     private static void requireFact(ReserveInventoryFact fact) {
         if (fact == null || fact.warehouseId() == null || fact.skuId() == null || fact.sourceDocumentType() == null
-                || fact.sourceDocumentType().isBlank() || fact.sourceDocumentId() == null
-                || fact.sourceDocumentItemId() == null || fact.quantity() == null || fact.quantity().signum() <= 0
-                || fact.occurredAt() == null) {
+            || fact.sourceDocumentType().isBlank() || fact.sourceDocumentId() == null
+            || fact.sourceDocumentItemId() == null || fact.quantity() == null || fact.quantity().signum() <= 0
+            || fact.occurredAt() == null) {
             throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
         }
     }

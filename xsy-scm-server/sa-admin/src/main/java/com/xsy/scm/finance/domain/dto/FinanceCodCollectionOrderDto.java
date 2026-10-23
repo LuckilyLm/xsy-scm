@@ -12,16 +12,22 @@ import lombok.Data;
 @Data
 public class FinanceCodCollectionOrderDto {
 
-    /** 销售订单主键。 */
+    /**
+     * 销售订单主键。
+     */
     private Long orderId;
 
     private String orderNo;
 
     private Long sellerId;
 
-    /** 下单客户主键用于当前数据范围校验；收款结算主体由历史应收冻结快照提供。 */
+    /**
+     * 下单客户主键用于当前数据范围校验；收款结算主体由历史应收冻结快照提供。
+     */
     private Long customerId;
 
-    /** 该订单的结算约定是否为货到付款。 */
+    /**
+     * 该订单的结算约定是否为货到付款。
+     */
     private Boolean codSettlement;
 }

@@ -35,6 +35,7 @@ import com.xsy.scm.order.domain.entity.SalesOrderItemEntity;
 import com.xsy.scm.promotion.domain.vo.OrderDiscountVO;
 import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
 import com.xsy.scm.promotion.service.PromotionDiscountService;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -47,6 +48,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
@@ -64,15 +66,19 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class MallOrderQueryService {
-    /** 列表卡片最多展示的缩略图数量，与设计图一致 */
+    /**
+     * 列表卡片最多展示的缩略图数量，与设计图一致
+     */
     private static final int THUMBNAIL_LIMIT = 3;
     private static final String MALL_OPERATOR_PREFIX = UserTypeEnum.MALL_CUSTOMER.getValue() + ":";
     private static final String NON_STANDARD = ScmProductTypeEnum.NON_STANDARD.name();
 
-    /** 商城订单操作记录只展示允许客户查看的动作，不暴露后台专用操作类型。 */
+    /**
+     * 商城订单操作记录只展示允许客户查看的动作，不暴露后台专用操作类型。
+     */
     private static final Set<String> CUSTOMER_VISIBLE_OPERATIONS = Set.of(ScmOrderOperationTypeEnum.CREATE.name(),
-            ScmOrderOperationTypeEnum.SUBMIT.name(), ScmOrderOperationTypeEnum.ACTUAL_QUANTITY.name(),
-            ScmOrderOperationTypeEnum.CONFIRM.name(), ScmOrderOperationTypeEnum.CANCEL.name());
+        ScmOrderOperationTypeEnum.SUBMIT.name(), ScmOrderOperationTypeEnum.ACTUAL_QUANTITY.name(),
+        ScmOrderOperationTypeEnum.CONFIRM.name(), ScmOrderOperationTypeEnum.CANCEL.name());
 
     private final SalesOrderDao salesOrderDao;
     private final SalesOrderItemDao salesOrderItemDao;
@@ -89,19 +95,19 @@ public class MallOrderQueryService {
     public PageResult<MallOrderVO> list(RequestMallCustomer customer, MallOrderQueryForm form) {
         Page<SalesOrderEntity> page = new Page<>(form.getPageNum(), form.getPageSize(), true);
         List<SalesOrderEntity> orders = salesOrderDao.listByCustomer(page, customer.getCustomerId(),
-                form.getDisplayStatus());
+            form.getDisplayStatus());
         List<Long> orderIds = orders.stream().map(SalesOrderEntity::getId).toList();
         Map<Long,
-                List<SalesOrderItemEntity>> itemsByOrder = orderIds.isEmpty()
-                        ? Map.of()
-                        : salesOrderItemDao.listByOrderIds(orderIds).stream()
-                                .collect(Collectors.groupingBy(SalesOrderItemEntity::getOrderId));
+            List<SalesOrderItemEntity>> itemsByOrder = orderIds.isEmpty()
+                ? Map.of()
+                : salesOrderItemDao.listByOrderIds(orderIds).stream()
+                    .collect(Collectors.groupingBy(SalesOrderItemEntity::getOrderId));
         Map<Long, DeliveryRouteOrderEntity> fulfillmentByOrder = fulfillmentByOrder(orderIds);
         Map<Long, String> imageUrls = imageUrls(itemsByOrder.values().stream().flatMap(List::stream).toList());
 
         List<MallOrderVO> rows = orders.stream().map(order -> summary(order,
-                itemsByOrder.getOrDefault(order.getId(), List.of()), fulfillmentByOrder.get(order.getId()), imageUrls))
-                .toList();
+            itemsByOrder.getOrDefault(order.getId(), List.of()), fulfillmentByOrder.get(order.getId()), imageUrls))
+            .toList();
         PageResult<MallOrderVO> result = new PageResult<>();
         result.setPageNum(page.getCurrent());
         result.setPageSize(page.getSize());
@@ -122,16 +128,16 @@ public class MallOrderQueryService {
     public MallOrderSummaryVO summary(RequestMallCustomer customer, MallOrderSummaryQueryForm form) {
         ZoneId zone = ZoneId.systemDefault();
         OffsetDateTime startAt = form.getStartDate() == null
-                ? null
-                : form.getStartDate().atStartOfDay(zone).toOffsetDateTime();
+            ? null
+            : form.getStartDate().atStartOfDay(zone).toOffsetDateTime();
         OffsetDateTime endAt = form.getEndDate() == null
-                ? null
-                : form.getEndDate().plusDays(1).atStartOfDay(zone).toOffsetDateTime();
+            ? null
+            : form.getEndDate().plusDays(1).atStartOfDay(zone).toOffsetDateTime();
 
         MallOrderSummaryVO.Totals totals = mallOrderSummaryDao.summaryTotals(customer.getCustomerId(), startAt, endAt);
         Page<MallOrderSummaryVO.Item> page = new Page<>(form.getPageNum(), form.getPageSize(), false);
         List<MallOrderSummaryVO.Item> items = mallOrderSummaryDao.summaryPage(page, customer.getCustomerId(), startAt,
-                endAt);
+            endAt);
         Map<Long, String> imageUrls = skuImageUrls(items.stream().map(MallOrderSummaryVO.Item::getSkuId).toList());
         items.forEach(item -> item.setImageUrl(imageUrls.get(item.getSkuId())));
 
@@ -155,22 +161,23 @@ public class MallOrderQueryService {
         List<SalesOrderItemEntity> items = salesOrderItemDao.list(orderId);
         Map<Long, String> imageUrls = imageUrls(items);
         MallOrderVO result = summary(order, items, fulfillmentByOrder(List.of(orderId)).get(orderId), imageUrls);
-        result.setItems(items.stream().sorted(
-                Comparator.comparing(SalesOrderItemEntity::getSortOrder).thenComparing(SalesOrderItemEntity::getId))
-                .map(row -> item(row, imageUrls)).toList());
+        result.setItems(items.stream()
+            .sorted(Comparator.comparing(SalesOrderItemEntity::getSortOrder).thenComparing(SalesOrderItemEntity::getId))
+            .map(row -> item(row, imageUrls)).toList());
         addressSnapshotDao.list(orderId).stream().findFirst().ifPresent(address -> {
             result.setReceiverName(address.getReceiverName());
             result.setReceiverPhone(address.getReceiverPhone());
             result.setAddress(address.getAddress());
         });
         // 处理记录按客户可见白名单收窄：内部审计日志（授信放行、改价原因、库存预留）不进客户时间线
-        result.setTimeline(orderOperationLogDao.listByOrderId(orderId).stream().filter(
+        result.setTimeline(orderOperationLogDao.listByOrderId(orderId).stream()
+            .filter(
                 log -> log.getOperationType() != null && CUSTOMER_VISIBLE_OPERATIONS.contains(log.getOperationType()))
-                .map(this::timeline).toList());
+            .map(this::timeline).toList());
         // 配送详情与进度只读配送域的正式事实：线路 / 司机 / 车辆 / 发车 / 完成 + 订单级签收。
         // 线路被移出或逻辑删除时不返回投影，页面按「暂无配送信息」处理。
         DeliveryOrderProgressVO deliveryProgress = deliveryRouteOrderDao.selectProgressByOrderIds(List.of(orderId))
-                .stream().findFirst().orElse(null);
+            .stream().findFirst().orElse(null);
         result.setDelivery(delivery(deliveryProgress));
         result.setProgress(progressNodes(order, deliveryProgress));
         result.setDiscount(discount(orderId));
@@ -202,17 +209,19 @@ public class MallOrderQueryService {
             Map<String, Object> activities = frozen.getActivitySnapshot();
             if (activities != null && activities.get("applied") instanceof List<?> applied) {
                 result.setActivityNames(applied.stream().filter(Map.class::isInstance).map(Map.class::cast)
-                        .map(row -> row.get("activityName")).filter(String.class::isInstance).map(String.class::cast)
-                        .toList());
+                    .map(row -> row.get("activityName")).filter(String.class::isInstance).map(String.class::cast)
+                    .toList());
             }
         }
         result.setGiftDescriptions(
-                gifts.stream().map(gift -> gift.getProductName() + " ×" + gift.getQuantity().toPlainString() + " "
-                        + (gift.getSaleUnit() == null ? "" : gift.getSaleUnit())).toList());
+            gifts.stream().map(gift -> gift.getProductName() + " ×" + gift.getQuantity().toPlainString() + " "
+                + (gift.getSaleUnit() == null ? "" : gift.getSaleUnit())).toList());
         return result;
     }
 
-    /** 按归属取订单；取不到即 404。取消与再来一单复用同一条归属判定。 */
+    /**
+     * 按归属取订单；取不到即 404。取消与再来一单复用同一条归属判定。
+     */
     @Transactional(readOnly = true)
     public SalesOrderEntity requireOwnedOrder(RequestMallCustomer customer, Long orderId) {
         SalesOrderEntity order = salesOrderDao.selectByIdAndCustomer(orderId, customer.getCustomerId());
@@ -222,43 +231,50 @@ public class MallOrderQueryService {
         return order;
     }
 
-    /** 该订单当前生效的履约状态；未排车返回 null。 */
+    /**
+     * 该订单当前生效的履约状态；未排车返回 null。
+     */
     @Transactional(readOnly = true)
     public String activeFulfillmentStatus(Long orderId) {
         DeliveryRouteOrderEntity fulfillment = fulfillmentByOrder(List.of(orderId)).get(orderId);
         return fulfillment == null ? null : fulfillment.getFulfillmentStatus();
     }
 
-    /** 取生效中的线路订单整行：状态、签收时刻与签收备注都来自同一条正式事实，不另外存快照。 */
+    /**
+     * 取生效中的线路订单整行：状态、签收时刻与签收备注都来自同一条正式事实，不另外存快照。
+     */
     private Map<Long, DeliveryRouteOrderEntity> fulfillmentByOrder(List<Long> orderIds) {
         if (orderIds.isEmpty()) {
             return Map.of();
         }
         return deliveryRouteOrderDao.selectActiveByOrderIds(orderIds).stream().collect(
-                Collectors.toMap(DeliveryRouteOrderEntity::getOrderId, Function.identity(), (first, ignored) -> first));
+            Collectors.toMap(DeliveryRouteOrderEntity::getOrderId, Function.identity(), (first, ignored) -> first));
     }
 
-    /** 订单行不存图，展示时按 SKU 回读主图；取不到图的 SKU 不进 map，由客户端兜底。 */
+    /**
+     * 订单行不存图，展示时按 SKU 回读主图；取不到图的 SKU 不进 map，由客户端兜底。
+     */
     private Map<Long, String> imageUrls(List<SalesOrderItemEntity> items) {
         return skuImageUrls(
-                items.stream().map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct().toList());
+            items.stream().map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct().toList());
     }
 
-    /** 按 SKU 批量取主图 URL；取不到图的 SKU 不进 map。订单与售后共用同一套图片解析。 */
+    /**
+     * 按 SKU 批量取主图 URL；取不到图的 SKU 不进 map。订单与售后共用同一套图片解析。
+     */
     public Map<Long, String> skuImageUrls(List<Long> skuIds) {
         if (skuIds.isEmpty()) {
             return Map.of();
         }
-        Map<Long,
-                String> fileKeys = mallCatalogDao.primaryImagesBySkuIds(skuIds).stream()
-                        .filter(row -> row.getPrimaryImageKey() != null).collect(Collectors.toMap(row -> row.getSkuId(),
-                                row -> row.getPrimaryImageKey(), (first, ignored) -> first));
+        Map<Long, String> fileKeys = mallCatalogDao.primaryImagesBySkuIds(skuIds).stream()
+            .filter(row -> row.getPrimaryImageKey() != null).collect(
+                Collectors.toMap(row -> row.getSkuId(), row -> row.getPrimaryImageKey(), (first, ignored) -> first));
         if (fileKeys.isEmpty()) {
             return Map.of();
         }
         Map<String, String> urls = new HashMap<>();
         fileService.getFileList(fileKeys.values().stream().distinct().toList())
-                .forEach(file -> urls.put(file.getFileKey(), file.getFileUrl()));
+            .forEach(file -> urls.put(file.getFileKey(), file.getFileUrl()));
         Map<Long, String> result = new HashMap<>();
         fileKeys.forEach((skuId, key) -> {
             String url = urls.get(key);
@@ -270,10 +286,10 @@ public class MallOrderQueryService {
     }
 
     private MallOrderVO summary(SalesOrderEntity order, List<SalesOrderItemEntity> items,
-            DeliveryRouteOrderEntity fulfillment, Map<Long, String> imageUrls) {
+        DeliveryRouteOrderEntity fulfillment, Map<Long, String> imageUrls) {
         String fulfillmentStatus = fulfillment == null ? null : fulfillment.getFulfillmentStatus();
         MallOrderDisplayStatusEnum displayStatus = MallOrderDisplayStatusEnum.derive(order.getStatus(),
-                fulfillmentStatus);
+            fulfillmentStatus);
         MallOrderVO result = new MallOrderVO();
         result.setOrderId(order.getId());
         result.setOrderNo(order.getOrderNo());
@@ -298,7 +314,7 @@ public class MallOrderQueryService {
         }
         result.setItemCount(items.size());
         result.setItemThumbnails(items.stream().map(item -> imageUrls.get(item.getSkuId())).filter(Objects::nonNull)
-                .limit(THUMBNAIL_LIMIT).toList());
+            .limit(THUMBNAIL_LIMIT).toList());
         return result;
     }
 
@@ -350,26 +366,26 @@ public class MallOrderQueryService {
     private static List<MallOrderProgressNodeVO> progressNodes(SalesOrderEntity order, DeliveryOrderProgressVO row) {
         List<MallOrderProgressNodeVO> nodes = new ArrayList<>();
         nodes.add(node(MallOrderProgressNodeEnum.SUBMITTED.name(), "已提交订单", null,
-                order.getSubmittedAt() == null ? order.getCreatedAt() : order.getSubmittedAt(), true));
+            order.getSubmittedAt() == null ? order.getCreatedAt() : order.getSubmittedAt(), true));
         if (ScmOrderStatusEnum.CANCELLED.name().equals(order.getStatus())) {
             nodes.add(node(MallOrderProgressNodeEnum.CANCELLED.name(), "订单已取消", order.getCancelReason(),
-                    order.getCancelledAt(), true));
+                order.getCancelledAt(), true));
             return nodes;
         }
         nodes.add(node(MallOrderProgressNodeEnum.CONFIRMED.name(), "后台已接单", null, order.getConfirmedAt(),
-                order.getConfirmedAt() != null));
+            order.getConfirmedAt() != null));
         OffsetDateTime dispatchedAt = row == null ? null : row.getDispatchedAt();
         nodes.add(node(MallOrderProgressNodeEnum.DISPATCHED.name(), "已发车配送", null, dispatchedAt, dispatchedAt != null));
         OffsetDateTime signedAt = row == null ? null : row.getSignedAt();
         boolean abnormal = row != null
-                && ScmDeliveryFulfillmentStatusEnum.EXCEPTION.name().equals(row.getFulfillmentStatus());
+            && ScmDeliveryFulfillmentStatusEnum.EXCEPTION.name().equals(row.getFulfillmentStatus());
         nodes.add(node(MallOrderProgressNodeEnum.SIGNED.name(), abnormal ? "配送异常" : "已签收",
-                row == null ? null : row.getSignReason(), signedAt, signedAt != null));
+            row == null ? null : row.getSignReason(), signedAt, signedAt != null));
         return nodes;
     }
 
     private static MallOrderProgressNodeVO node(String code, String text, String detail, OffsetDateTime time,
-            boolean done) {
+        boolean done) {
         MallOrderProgressNodeVO result = new MallOrderProgressNodeVO();
         result.setCode(code);
         result.setText(text);

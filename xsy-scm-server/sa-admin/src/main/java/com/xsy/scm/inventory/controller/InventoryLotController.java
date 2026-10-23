@@ -35,14 +35,14 @@ public class InventoryLotController {
     @PostMapping("/balance/query")
     @SaCheckPermission(InventoryPermission.LOT_QUERY)
     public ResponseDTO<PageResult<InventoryLotBalanceVO>> queryBalance(
-            @RequestBody @Valid InventoryLotBalanceQueryForm form) {
+        @RequestBody @Valid InventoryLotBalanceQueryForm form) {
         return ResponseDTO.ok(inventoryLotQueryService.queryBalance(form));
     }
 
     @PostMapping("/movement/query")
     @SaCheckPermission(InventoryPermission.LOT_QUERY)
     public ResponseDTO<PageResult<InventoryLotMovementVO>> queryMovement(
-            @RequestBody @Valid InventoryLotMovementQueryForm form) {
+        @RequestBody @Valid InventoryLotMovementQueryForm form) {
         return ResponseDTO.ok(inventoryLotQueryService.queryMovement(form));
     }
 }

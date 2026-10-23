@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmTraceUnitStatusEnum {
 
-    /** 在用：可绑定订单行，也可发运。 */
+    /**
+     * 在用：可绑定订单行，也可发运。
+     */
     ACTIVE("在用"),
 
-    /** 已作废：绑定关系已解除，只保留追溯记录。 */
+    /**
+     * 已作废：绑定关系已解除，只保留追溯记录。
+     */
     VOID("已作废");
 
     private final String desc;

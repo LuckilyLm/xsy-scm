@@ -20,7 +20,9 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 @Service
 @RequiredArgsConstructor
 public class DeliveryCandidateOrderQueryService {
-    /** 读取候选池前必须持有线路规划权限。 */
+    /**
+     * 读取候选池前必须持有线路规划权限。
+     */
 
     private final DeliveryQueryDao deliveryQueryDao;
     private final DeliveryEligibilityPolicy policy;
@@ -36,6 +38,6 @@ public class DeliveryCandidateOrderQueryService {
         if (warehouseScope.isEmpty())
             return ScmDataScopeService.emptyPage(form);
         return SmartPageUtil.convert2PageResult(page, DeliveryVisibility.current()
-                .candidates(deliveryQueryDao.candidates(page, form, policy.candidateStatuses(), warehouseScope)));
+            .candidates(deliveryQueryDao.candidates(page, form, policy.candidateStatuses(), warehouseScope)));
     }
 }

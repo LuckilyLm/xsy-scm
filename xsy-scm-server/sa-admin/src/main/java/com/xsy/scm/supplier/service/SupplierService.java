@@ -28,7 +28,9 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_DISABLED;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_IN_USE;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND;
 
-/** 供应商新建后默认启用。编辑资料不会改变启停状态，状态必须通过专用操作修改。 */
+/**
+ * 供应商新建后默认启用。编辑资料不会改变启停状态，状态必须通过专用操作修改。
+ */
 @Service
 @RequiredArgsConstructor
 public class SupplierService {

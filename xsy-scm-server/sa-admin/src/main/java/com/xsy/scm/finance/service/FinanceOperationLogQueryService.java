@@ -37,7 +37,9 @@ import java.util.List;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** Finance audit history; both function permission and owner scope are checked per business type. */
+/**
+ * Finance audit history; both function permission and owner scope are checked per business type.
+ */
 @Service
 @RequiredArgsConstructor
 public class FinanceOperationLogQueryService {
@@ -60,11 +62,11 @@ public class FinanceOperationLogQueryService {
         ScmDataScopeContext scope = dataScopeService.resolve();
         Long logBusinessId = requireBusinessVisible(businessType, form.getBusinessId(), scope);
         return financeOperationLogDao
-                .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
-                        .eq(FinanceOperationLogEntity::getBusinessType, businessType.name())
-                        .eq(FinanceOperationLogEntity::getBusinessId, logBusinessId)
-                        .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
-                .stream().map(FinanceOperationLogQueryService::toVO).toList();
+            .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
+                .eq(FinanceOperationLogEntity::getBusinessType, businessType.name())
+                .eq(FinanceOperationLogEntity::getBusinessId, logBusinessId)
+                .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
+            .stream().map(FinanceOperationLogQueryService::toVO).toList();
     }
 
     private Long requireBusinessVisible(ScmFinanceBusinessTypeEnum type, Long businessId, ScmDataScopeContext scope) {
@@ -75,7 +77,7 @@ public class FinanceOperationLogQueryService {
                     throw new ScmBusinessException(FinanceErrorCode.RECEIVABLE_NOT_FOUND);
                 }
                 require(scope.getOrderSellerScope()
-                        .allows(financeReceivableSourceDao.selectOrderSellerId(receivable.getOrderId())));
+                    .allows(financeReceivableSourceDao.selectOrderSellerId(receivable.getOrderId())));
                 return businessId;
             }
             case PAYABLE -> {
@@ -84,12 +86,12 @@ public class FinanceOperationLogQueryService {
                     throw new ScmBusinessException(FinanceErrorCode.PAYABLE_NOT_FOUND);
                 }
                 FinancePayableEntity normal = payable.getOriginalPayableId() == null
-                        ? payable
-                        : financePayableDao.selectActiveById(payable.getOriginalPayableId());
+                    ? payable
+                    : financePayableDao.selectActiveById(payable.getOriginalPayableId());
                 if (normal == null || !scope.getPurchaserScope()
-                        .allows(normal.getSourceId() == null
-                                ? null
-                                : financePayableSourceDao.selectPurchaserId(normal.getSourceId()))) {
+                    .allows(normal.getSourceId() == null
+                        ? null
+                        : financePayableSourceDao.selectPurchaserId(normal.getSourceId()))) {
                     throw new ScmDataScopeException();
                 }
                 return businessId;
@@ -102,8 +104,8 @@ public class FinanceOperationLogQueryService {
                 var customer = financeCounterpartySourceDao.selectCustomer(receipt.getCustomerId());
                 require(scope.getCustomerSellerScope().allows(customer == null ? null : customer.getSellerId()));
                 return ScmFinanceReverseEntryTypeEnum.REVERSE.name().equals(receipt.getEntryType())
-                        ? receipt.getReverseOfId()
-                        : businessId;
+                    ? receipt.getReverseOfId()
+                    : businessId;
             }
             case PAYMENT -> {
                 FinancePaymentEntity payment = financePaymentDao.selectById(businessId);
@@ -117,8 +119,8 @@ public class FinanceOperationLogQueryService {
                     throw new ScmDataScopeException();
                 }
                 return ScmFinanceReverseEntryTypeEnum.REVERSE.name().equals(payment.getEntryType())
-                        ? payment.getReverseOfId()
-                        : businessId;
+                    ? payment.getReverseOfId()
+                    : businessId;
             }
             case WRITE_OFF -> {
                 FinanceWriteOffEntity writeOff = financeWriteOffDao.selectActiveById(businessId);
@@ -131,22 +133,22 @@ public class FinanceOperationLogQueryService {
                         throw new ScmBusinessException(FinanceErrorCode.RECEIVABLE_NOT_FOUND);
                     }
                     require(scope.getOrderSellerScope()
-                            .allows(financeReceivableSourceDao.selectOrderSellerId(receivable.getOrderId())));
+                        .allows(financeReceivableSourceDao.selectOrderSellerId(receivable.getOrderId())));
                 } else if (ScmFinanceWriteOffTargetTypeEnum.PAYABLE.name().equals(writeOff.getTargetType())) {
                     FinancePayableEntity payable = financePayableDao.selectActiveById(writeOff.getTargetId());
                     if (payable == null) {
                         throw new ScmBusinessException(FinanceErrorCode.PAYABLE_NOT_FOUND);
                     }
                     require(scope.getPurchaserScope()
-                            .allows(payable.getSourceId() == null
-                                    ? null
-                                    : financePayableSourceDao.selectPurchaserId(payable.getSourceId())));
+                        .allows(payable.getSourceId() == null
+                            ? null
+                            : financePayableSourceDao.selectPurchaserId(payable.getSourceId())));
                 } else {
                     throw new ScmBusinessException(VALIDATION_ERROR);
                 }
                 return ScmFinanceReverseEntryTypeEnum.REVERSE.name().equals(writeOff.getEntryType())
-                        ? writeOff.getReverseOfId()
-                        : businessId;
+                    ? writeOff.getReverseOfId()
+                    : businessId;
             }
         }
         throw new ScmBusinessException(VALIDATION_ERROR);

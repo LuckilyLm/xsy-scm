@@ -3,11 +3,15 @@ package com.xsy.scm.payment.dao;
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.payment.domain.dto.PaymentOrderFact;
 import com.xsy.scm.payment.domain.dto.PaymentOrderRefundFact;
+
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-/** 支付模块通过只读 DAO 校验订单、退款单与财务付款，不能通过该 DAO 修改其他业务模块的数据。 */
+/**
+ * 支付模块通过只读 DAO 校验订单、退款单与财务付款，不能通过该 DAO 修改其他业务模块的数据。
+ */
 @Mapper
 public interface PaymentSourceDao {
     List<Long> lockOrderRefunds(@Param("orderId") Long orderId);
@@ -19,6 +23,7 @@ public interface PaymentSourceDao {
     boolean hasLegacyRefundFunding(@Param("orderId") Long orderId);
 
     boolean hasOrderRefundFunding(@Param("orderId") Long orderId);
+
     boolean customerVisible(@Param("customerId") Long customerId, @Param("scope") ScmValueScope scope);
 
     /**

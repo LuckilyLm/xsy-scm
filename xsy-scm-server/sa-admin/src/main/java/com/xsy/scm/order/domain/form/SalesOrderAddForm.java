@@ -37,9 +37,13 @@ public class SalesOrderAddForm {
      * 商城客户预选的券实例；仅 {@code orderSource = MALL} 的建单路径持久化， 后台录单忽略该字段（后台用券在确认命令上显式给出）。
      */
     private Long mallCouponInstanceId;
-    /** 仅商城渠道写入；由商城地址与配送仓服务授权后传入。 */
+    /**
+     * 仅商城渠道写入；由商城地址与配送仓服务授权后传入。
+     */
     private Long mallDeliveryWarehouseId;
-    /** 后台录单显式选择的配送仓；不影响商城原有仓库选择和权限流程。 */
+    /**
+     * 后台录单显式选择的配送仓；不影响商城原有仓库选择和权限流程。
+     */
     @jakarta.validation.constraints.Positive(message = "配送仓必须大于0")
     private Long deliveryWarehouseId;
 

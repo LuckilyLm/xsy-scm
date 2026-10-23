@@ -3,11 +3,15 @@ package com.xsy.scm.pricing.constant;
 public enum ScmPriceSourceEnum {
     AGREEMENT("客户协议价"),
     CUSTOMER_TYPE("客户类型价"),
-    /** 商品规格级、按时间段生效的临时价格；压在客户类型价之下、市场价之上。 */
+    /**
+     * 商品规格级、按时间段生效的临时价格；压在客户类型价之下、市场价之上。
+     */
     TIME_PRICE("时价"),
     MARKET("市场价");
 
-    /** 展示名：导出等后端输出与前端文案共用同一份口径。 */
+    /**
+     * 展示名：导出等后端输出与前端文案共用同一份口径。
+     */
     private final String label;
 
     ScmPriceSourceEnum(String label) {
@@ -18,7 +22,9 @@ public enum ScmPriceSourceEnum {
         return label;
     }
 
-    /** 枚举名转展示名；未知值原样返回，导出不因脏数据失败。 */
+    /**
+     * 枚举名转展示名；未知值原样返回，导出不因脏数据失败。
+     */
     public static String labelOf(String name) {
         if (name == null || name.isBlank()) {
             return name;

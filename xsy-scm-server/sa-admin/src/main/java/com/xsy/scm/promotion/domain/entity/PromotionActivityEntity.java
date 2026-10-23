@@ -8,8 +8,10 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
+
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import lombok.Data;
 
 /**
@@ -29,24 +31,34 @@ public class PromotionActivityEntity {
 
     private String activityName;
 
-    /** {@code FULL_REDUCE} / {@code DISCOUNT} / {@code FULL_GIFT}。 */
+    /**
+     * {@code FULL_REDUCE} / {@code DISCOUNT} / {@code FULL_GIFT}。
+     */
     private String activityType;
 
-    /** 互斥组：同组内不可叠加；{@code null} 表示不参与互斥判定。 */
+    /**
+     * 互斥组：同组内不可叠加；{@code null} 表示不参与互斥判定。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String exclusiveGroup;
 
-    /** 同组内取优先级最高的一条；相同优先级按 id 升序，保证结果可复现。 */
+    /**
+     * 同组内取优先级最高的一条；相同优先级按 id 升序，保证结果可复现。
+     */
     private Integer priority;
 
     private OffsetDateTime validFrom;
 
     private OffsetDateTime validTo;
 
-    /** {@code DRAFT} / {@code ACTIVE} / {@code STOPPED}。 */
+    /**
+     * {@code DRAFT} / {@code ACTIVE} / {@code STOPPED}。
+     */
     private String status;
 
-    /** 受控规则内容：门槛金额、减免金额或折扣率、赠品 SKU 等。 */
+    /**
+     * 受控规则内容：门槛金额、减免金额或折扣率、赠品 SKU 等。
+     */
     @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
     private Map<String, Object> rule;
 

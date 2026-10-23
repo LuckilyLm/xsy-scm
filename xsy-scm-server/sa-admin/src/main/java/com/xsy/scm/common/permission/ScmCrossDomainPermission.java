@@ -1,6 +1,8 @@
 package com.xsy.scm.common.permission;
 
-/** Permission identifiers that one SCM domain needs to reference without importing another domain. */
+/**
+ * Permission identifiers that one SCM domain needs to reference without importing another domain.
+ */
 public final class ScmCrossDomainPermission {
 
     public static final String CUSTOMER_SCOPE_ALL_QUERY = "scm:customer:scope:all:query";

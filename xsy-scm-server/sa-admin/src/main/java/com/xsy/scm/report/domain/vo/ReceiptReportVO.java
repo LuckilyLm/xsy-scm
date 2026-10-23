@@ -51,7 +51,9 @@ public class ReceiptReportVO {
         private List<UnitQuantity> quantities;
     }
 
-    /** 粒度 = {@code xsy_purchase_receipt_item}。 */
+    /**
+     * 粒度 = {@code xsy_purchase_receipt_item}。
+     */
     @Data
     public static class ReceiptRow {
         private Long receiptId;
@@ -61,12 +63,18 @@ public class ReceiptReportVO {
         private Long purchaseOrderId;
         private String supplierName;
         private String warehouseName;
-        /** {@code DIRECT} / {@code WAREHOUSE_CONFIRM}。 */
+        /**
+         * {@code DIRECT} / {@code WAREHOUSE_CONFIRM}。
+         */
         private String receiptMode;
-        /** {@code PENDING} / {@code COMPLETED}，即库存入账状态。 */
+        /**
+         * {@code PENDING} / {@code COMPLETED}，即库存入账状态。
+         */
         private String putawayStatus;
         private OffsetDateTime confirmedAt;
-        /** 收货商业确认时记录的操作者，与仓库入库操作人分开。 */
+        /**
+         * 收货商业确认时记录的操作者，与仓库入库操作人分开。
+         */
         @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String confirmedBy;
         private String spuCode;
@@ -76,7 +84,9 @@ public class ReceiptReportVO {
         private String purchaseUnit;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal receivedQuantity;
-        /** 该采购行在全部收货单上的累计已收量，不应用于本行求和。 */
+        /**
+         * 该采购行在全部收货单上的累计已收量，不应用于本行求和。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal cumulativeReceivedQuantity;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
@@ -87,12 +97,16 @@ public class ReceiptReportVO {
         private BigDecimal receiptDifference;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal purchasePrice;
-        /** 本次收货量 × 采购单价，命名固定为「收货参考金额」，不得叫应付金额。 */
+        /**
+         * 本次收货量 × 采购单价，命名固定为「收货参考金额」，不得叫应付金额。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal receiptReferenceAmount;
     }
 
-    /** 粒度 = 一条 {@code PURCHASE_IN} 流水。 */
+    /**
+     * 粒度 = 一条 {@code PURCHASE_IN} 流水。
+     */
     @Data
     public static class InboundRow {
         private Long movementId;
@@ -110,13 +124,17 @@ public class ReceiptReportVO {
         private BigDecimal unitCost;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal costAmount;
-        /** {@code unit_cost} 缺失或调用者无成本权限时为 true，页面据此显示 {@code —} 而不是 0。 */
+        /**
+         * {@code unit_cost} 缺失或调用者无成本权限时为 true，页面据此显示 {@code —} 而不是 0。
+         */
         private Boolean costMissing;
         @JsonSerialize(using = ScmOperatorNameSerializer.class)
         private String operator;
     }
 
-    /** 粒度 = 一张待入库收货单。 */
+    /**
+     * 粒度 = 一张待入库收货单。
+     */
     @Data
     public static class PendingPutawayRow {
         private Long receiptId;

@@ -39,16 +39,18 @@ import java.util.List;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** Read-only AP query, detail and export row selection. */
+/**
+ * Read-only AP query, detail and export row selection.
+ */
 @Service
 @RequiredArgsConstructor
 public class FinancePayableQueryService {
 
     private static final java.util.Set<String> SETTLE_STATES = java.util.Set.of(ScmFinanceSettleStateEnum.OPEN.name(),
-            ScmFinanceSettleStateEnum.PARTIAL.name(), ScmFinanceSettleStateEnum.SETTLED.name());
+        ScmFinanceSettleStateEnum.PARTIAL.name(), ScmFinanceSettleStateEnum.SETTLED.name());
 
     private static final java.util.Set<String> ENTRY_TYPES = java.util.Set.of(ScmFinanceEntryTypeEnum.NORMAL.name(),
-            ScmFinanceEntryTypeEnum.RED.name());
+        ScmFinanceEntryTypeEnum.RED.name());
 
     private final FinancePayableDao financePayableDao;
     private final FinancePayableItemDao financePayableItemDao;
@@ -96,15 +98,15 @@ public class FinancePayableQueryService {
             throw new ScmBusinessException(FinanceErrorCode.PAYABLE_NOT_FOUND);
         }
         FinancePayableEntity normal = entity.getOriginalPayableId() == null
-                ? entity
-                : financePayableDao.selectActiveById(entity.getOriginalPayableId());
+            ? entity
+            : financePayableDao.selectActiveById(entity.getOriginalPayableId());
         if (normal == null) {
             throw new ScmBusinessException(FinanceErrorCode.PAYABLE_NOT_FOUND);
         }
         ScmDataScopeContext scope = dataScopeService.resolve();
         Long purchaserId = normal.getSourceId() == null
-                ? null
-                : financePayableSourceDao.selectPurchaserId(normal.getSourceId());
+            ? null
+            : financePayableSourceDao.selectPurchaserId(normal.getSourceId());
         if (!scope.getPurchaserScope().allows(purchaserId)) {
             throw new ScmDataScopeException();
         }
@@ -114,16 +116,16 @@ public class FinancePayableQueryService {
             throw new ScmBusinessException(FinanceErrorCode.PAYABLE_NOT_FOUND);
         }
         List<FinancePayableItemVO> items = financePayableItemDao.selectByPayableId(payableId).stream()
-                .map(FinancePayableQueryService::itemVO).toList();
+            .map(FinancePayableQueryService::itemVO).toList();
         List<FinancePayableVO> redEntries = entity.getOriginalPayableId() == null
-                ? financePayableDao.selectRedEntriesByOriginal(payableId)
-                : List.of();
+            ? financePayableDao.selectRedEntriesByOriginal(payableId)
+            : List.of();
         FinancePayableVO original = entity.getOriginalPayableId() == null
-                ? null
-                : financePayableDao.selectSummaryById(entity.getOriginalPayableId());
+            ? null
+            : financePayableDao.selectSummaryById(entity.getOriginalPayableId());
         List<FinanceWriteOffVO> writeOffs = ScmFinanceEntryTypeEnum.NORMAL.name().equals(entity.getEntryType())
-                ? writeOffQueryService.byTarget(ScmFinanceWriteOffTargetTypeEnum.PAYABLE.name(), payableId, scope)
-                : List.of();
+            ? writeOffQueryService.byTarget(ScmFinanceWriteOffTargetTypeEnum.PAYABLE.name(), payableId, scope)
+            : List.of();
 
         List<Long> payableLogIds = new ArrayList<>();
         payableLogIds.add(payableId);
@@ -132,11 +134,11 @@ public class FinancePayableQueryService {
             payableLogIds.add(original.getPayableId());
         }
         List<FinanceOperationLogVO> logs = new ArrayList<>(
-                operationLogs(ScmFinanceBusinessTypeEnum.PAYABLE.name(), payableLogIds));
+            operationLogs(ScmFinanceBusinessTypeEnum.PAYABLE.name(), payableLogIds));
         logs.addAll(operationLogs(ScmFinanceBusinessTypeEnum.WRITE_OFF.name(),
-                writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
+            writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
         logs.sort(
-                Comparator.comparing(FinanceOperationLogVO::getCreatedAt).thenComparing(FinanceOperationLogVO::getId));
+            Comparator.comparing(FinanceOperationLogVO::getCreatedAt).thenComparing(FinanceOperationLogVO::getId));
 
         FinancePayableDetailVO detail = new FinancePayableDetailVO();
         detail.setPayable(header);
@@ -153,11 +155,11 @@ public class FinancePayableQueryService {
             return List.of();
         }
         return financeOperationLogDao
-                .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
-                        .eq(FinanceOperationLogEntity::getBusinessType, businessType)
-                        .in(FinanceOperationLogEntity::getBusinessId, businessIds)
-                        .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
-                .stream().map(FinancePayableQueryService::logVO).toList();
+            .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
+                .eq(FinanceOperationLogEntity::getBusinessType, businessType)
+                .in(FinanceOperationLogEntity::getBusinessId, businessIds)
+                .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
+            .stream().map(FinancePayableQueryService::logVO).toList();
     }
 
     private static FinancePayableItemVO itemVO(FinancePayableItemEntity item) {

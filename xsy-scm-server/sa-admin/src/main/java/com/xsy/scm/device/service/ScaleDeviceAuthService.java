@@ -20,8 +20,10 @@ import com.xsy.scm.device.support.ScaleCredentialCodec;
 import com.xsy.scm.device.support.ScaleDeviceContext;
 import com.xsy.scm.device.support.ScaleDevicePrincipal;
 import com.xsy.scm.warehouse.service.WarehouseQueryService;
+
 import java.time.OffsetDateTime;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity;
 import net.lab1024.sa.admin.module.system.employee.service.EmployeeService;
@@ -41,10 +43,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ScaleDeviceAuthService {
 
-    /** 配对码由现场手工输入，熵低于令牌，因此有效期要短。 */
+    /**
+     * 配对码由现场手工输入，熵低于令牌，因此有效期要短。
+     */
     private static final int PAIRING_VALID_MINUTES = 30;
 
-    /** 设备凭证有效期；到期前需重新激活，不能靠续期绕过撤销。 */
+    /**
+     * 设备凭证有效期；到期前需重新激活，不能靠续期绕过撤销。
+     */
     private static final int CREDENTIAL_VALID_DAYS = 30;
 
     private final ScaleDeviceDao scaleDeviceDao;
@@ -141,8 +147,8 @@ public class ScaleDeviceAuthService {
         String accessToken = ScaleCredentialCodec.newToken();
         OffsetDateTime expiresAt = OffsetDateTime.now().plusDays(CREDENTIAL_VALID_DAYS);
         int affected = scaleDeviceDao.activate(device.getId(), ScaleCredentialCodec.digest(form.getPairingCode()),
-                ScaleCredentialCodec.digest(accessToken), expiresAt, trimToNull(form.getProtocolVersion()),
-                trimToNull(form.getAgentVersion()));
+            ScaleCredentialCodec.digest(accessToken), expiresAt, trimToNull(form.getProtocolVersion()),
+            trimToNull(form.getAgentVersion()));
         if (affected != 1) {
             throw new ScmBusinessException(ScaleDeviceErrorCode.PAIRING_CODE_INVALID);
         }
@@ -156,8 +162,8 @@ public class ScaleDeviceAuthService {
     public void heartbeat(ScaleHeartbeatForm form) {
         ScaleDevicePrincipal principal = ScaleDeviceContext.require();
         scaleDeviceDao.heartbeat(principal.deviceId(), trimToNull(form.getAgentVersion()),
-                trimToNull(form.getProtocolType()), form.getScaleConnected(), form.getPrinterConnected(),
-                form.getQueueDepth(), form.getLastWeightAt());
+            trimToNull(form.getProtocolType()), form.getScaleConnected(), form.getPrinterConnected(),
+            form.getQueueDepth(), form.getLastWeightAt());
     }
 
     /**
@@ -207,7 +213,7 @@ public class ScaleDeviceAuthService {
             throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_INVALID);
         }
         ScaleDeviceSessionEntity session = scaleDeviceSessionDao
-                .selectByTokenHash(ScaleCredentialCodec.digest(operatorSessionToken));
+            .selectByTokenHash(ScaleCredentialCodec.digest(operatorSessionToken));
         if (session == null || session.getEndedAt() != null || !session.getExpiresAt().isAfter(now)) {
             throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_INVALID);
         }
@@ -215,7 +221,7 @@ public class ScaleDeviceAuthService {
             throw new ScmBusinessException(ScaleDeviceErrorCode.OPERATOR_SESSION_DEVICE_MISMATCH);
         }
         return new ScaleDevicePrincipal(device.getId(), device.getDeviceCode(), device.getWarehouseId(),
-                session.getId(), session.getEmployeeId(), session.getExpiresAt());
+            session.getId(), session.getEmployeeId(), session.getExpiresAt());
     }
 
     private static boolean isBlank(String value) {

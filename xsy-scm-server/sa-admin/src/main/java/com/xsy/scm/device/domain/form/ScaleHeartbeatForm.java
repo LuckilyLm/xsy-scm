@@ -2,7 +2,9 @@ package com.xsy.scm.device.domain.form;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
+
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -25,10 +27,14 @@ public class ScaleHeartbeatForm {
 
     private Boolean scaleConnected;
 
-    /** 最近一次成功读数的采集时间；设备失联后该值会停止推进。 */
+    /**
+     * 最近一次成功读数的采集时间；设备失联后该值会停止推进。
+     */
     private OffsetDateTime lastWeightAt;
 
-    /** 打印机连接状态；驱动不提供可信反馈时为 null，不能推断为已连接。 */
+    /**
+     * 打印机连接状态；驱动不提供可信反馈时为 null，不能推断为已连接。
+     */
     private Boolean printerConnected;
 
     private Boolean printerQueueAvailable;

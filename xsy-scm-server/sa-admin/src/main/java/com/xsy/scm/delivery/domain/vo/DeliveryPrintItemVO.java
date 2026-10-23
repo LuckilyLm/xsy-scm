@@ -6,7 +6,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 import java.math.BigDecimal;
 
-/** 配送打印明细只包含纸质单据需要的字段，不返回内部审计信息。数量和金额统一使用四位小数字符串。 */
+/**
+ * 配送打印明细只包含纸质单据需要的字段，不返回内部审计信息。数量和金额统一使用四位小数字符串。
+ */
 @Data
 public class DeliveryPrintItemVO {
     private Long id;

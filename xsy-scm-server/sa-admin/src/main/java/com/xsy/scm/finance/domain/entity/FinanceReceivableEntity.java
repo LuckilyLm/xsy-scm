@@ -3,14 +3,18 @@ package com.xsy.scm.finance.domain.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/** 签收订单生成正常应收，批准退货生成红字应收。结清状态和已核销额从核销记录实时计算，不单独保存；历史应收只能新增不能修改。 */
+/**
+ * 签收订单生成正常应收，批准退货生成红字应收。结清状态和已核销额从核销记录实时计算，不单独保存；历史应收只能新增不能修改。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName(value = "xsy_finance_receivable", autoResultMap = true)

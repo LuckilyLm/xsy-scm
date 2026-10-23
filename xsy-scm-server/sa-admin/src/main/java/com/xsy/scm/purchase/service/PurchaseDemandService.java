@@ -121,7 +121,7 @@ public class PurchaseDemandService {
         // 是收货上架 / 出库这些改库存事实的写路径的判据（ScmWarehouseScopeGuard），不在这里重复。
         // 传 all() 而不是省略参数，是为了让 Dao 的 scope 语义在两处调用点都显式可查。
         List<SalesOrderItemEntity> sourceItems = purchaseDemandDao.listSourceItems(form.getStartAt(), form.getEndAt(),
-                ScmValueScope.all());
+            ScmValueScope.all());
 
         GenerateResult result = new GenerateResult();
         result.setSourceLineCount(sourceItems.size());
@@ -144,10 +144,10 @@ public class PurchaseDemandService {
                 }
 
                 PurchaseDemandEntity demand = PurchaseSnapshotFactory.demand(source, order, form.getSupplierId(),
-                        form.getWarehouseId(),
-                        // 需求上的采购员同样是归属依据（generate 的「默认采购员」只是建议值）：
-                        // 无分配权时一律落成当前员工，否则列表范围可以被一个表单字段放大
-                        purchaseOwnerResolver.resolveForCreate(form.getPurchaserId()));
+                    form.getWarehouseId(),
+                    // 需求上的采购员同样是归属依据（generate 的「默认采购员」只是建议值）：
+                    // 无分配权时一律落成当前员工，否则列表范围可以被一个表单字段放大
+                    purchaseOwnerResolver.resolveForCreate(form.getPurchaserId()));
                 if (purchaseDemandDao.insertIgnore(demand) == 1) {
                     result.getDemandIds().add(demand.getId());
                     result.setCreatedCount(result.getCreatedCount() + 1);
@@ -167,7 +167,7 @@ public class PurchaseDemandService {
         after.put("skippedCount", result.getSkippedCount());
         // DEMAND_GENERATE 时采购单与收货单都还不存在 → 两个 id 都必须为 NULL
         purchaseOperationLogDao.append(PurchaseSnapshotFactory
-                .operationLog(ScmPurchaseOperationTypeEnum.DEMAND_GENERATE, null, null, null, null, after));
+            .operationLog(ScmPurchaseOperationTypeEnum.DEMAND_GENERATE, null, null, null, null, after));
 
         purchaseIdempotencyService.complete(claim, "PURCHASE_DEMAND_GENERATE", null, result);
         return result;
@@ -186,7 +186,7 @@ public class PurchaseDemandService {
     @Transactional(rollbackFor = Exception.class)
     public PurchaseDemandVO allocate(PurchaseDemandAllocateForm form, String idempotencyKey) {
         var claim = purchaseIdempotencyService.claim("PURCHASE_DEMAND_ALLOCATE:" + form.getDemandId(), idempotencyKey,
-                form);
+            form);
         if (claim.replay()) {
             return purchaseIdempotencyService.replay(claim, PurchaseDemandVO.class);
         }
@@ -246,11 +246,11 @@ public class PurchaseDemandService {
         purchaseDemandAllocationDao.insert(allocation);
 
         Long supplierId = PurchaseDemandAllocator.shouldFixSupplier(demand)
-                ? order.getSupplierId()
-                : demand.getSupplierId();
+            ? order.getSupplierId()
+            : demand.getSupplierId();
         String status = PurchaseDemandAllocator.statusFor(demand.getRequiredQuantity(), finalAllocated);
         if (purchaseDemandDao.updateAllocation(demand.getId(), demand.getVersion(), finalAllocated, status, supplierId,
-                ScmOperator.current()) != 1) {
+            ScmOperator.current()) != 1) {
             throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT);
         }
 
@@ -269,7 +269,7 @@ public class PurchaseDemandService {
         after.put("supplierId", supplierId);
         after.put("warehouseId", demand.getWarehouseId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory
-                .operationLog(ScmPurchaseOperationTypeEnum.DEMAND_ALLOCATE, order.getId(), null, null, before, after));
+            .operationLog(ScmPurchaseOperationTypeEnum.DEMAND_ALLOCATE, order.getId(), null, null, before, after));
 
         PurchaseDemandVO result = purchaseQueryService.demandDetailForCommand(demand.getId());
         purchaseIdempotencyService.complete(claim, "PURCHASE_DEMAND", demand.getId(), result);
@@ -307,13 +307,13 @@ public class PurchaseDemandService {
 
     private Map<Long, SalesOrderEntity> ordersOf(List<SalesOrderItemEntity> sourceItems) {
         List<Long> orderIds = sourceItems.stream().map(SalesOrderItemEntity::getOrderId).filter(Objects::nonNull)
-                .distinct().toList();
+            .distinct().toList();
         if (orderIds.isEmpty()) {
             return Map.of();
         }
         // 一次批量取（不是逐行查库）：来源行可能上百条，N+1 会明显拖慢 generate
         return salesOrderDao.selectBatchIds(orderIds).stream()
-                .collect(Collectors.toMap(SalesOrderEntity::getId, order -> order, (a, b) -> a));
+            .collect(Collectors.toMap(SalesOrderEntity::getId, order -> order, (a, b) -> a));
     }
 
     private Map<Long, Long> existingDemandIds(List<SalesOrderItemEntity> sourceItems) {

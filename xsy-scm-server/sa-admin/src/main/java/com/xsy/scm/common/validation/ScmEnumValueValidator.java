@@ -7,7 +7,9 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Keeps String-backed request fields aligned with their existing enum vocabulary. */
+/**
+ * Keeps String-backed request fields aligned with their existing enum vocabulary.
+ */
 public class ScmEnumValueValidator implements ConstraintValidator<ScmEnumValue, String> {
 
     private Set<String> enumNames;
@@ -15,7 +17,7 @@ public class ScmEnumValueValidator implements ConstraintValidator<ScmEnumValue, 
     @Override
     public void initialize(ScmEnumValue constraintAnnotation) {
         enumNames = Arrays.stream(constraintAnnotation.enumClass().getEnumConstants()).map(Enum::name)
-                .collect(Collectors.toUnmodifiableSet());
+            .collect(Collectors.toUnmodifiableSet());
     }
 
     @Override

@@ -1,10 +1,14 @@
 package com.xsy.scm.print.domain.vo;
 
 import com.xsy.scm.print.constant.ScmPrintField;
+
 import java.util.List;
+
 import lombok.Data;
 
-/** 字段目录供模板配置选择，金额字段是否可打印由当前用户权限决定，页面应提示无权限字段不会出现在打印结果里。 */
+/**
+ * 字段目录供模板配置选择，金额字段是否可打印由当前用户权限决定，页面应提示无权限字段不会出现在打印结果里。
+ */
 @Data
 public class ScmPrintFieldCatalogVO {
 

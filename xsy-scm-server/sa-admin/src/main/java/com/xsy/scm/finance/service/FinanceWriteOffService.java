@@ -37,18 +37,22 @@ import com.xsy.scm.finance.domain.form.FinanceWriteOffReverseForm;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffAddResultVO;
 import com.xsy.scm.finance.domain.vo.FinanceWriteOffVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 核销分配、反向核销与目标余额派生。 */
+/**
+ * 核销分配、反向核销与目标余额派生。
+ */
 @Service
 @RequiredArgsConstructor
 public class FinanceWriteOffService {
@@ -72,14 +76,14 @@ public class FinanceWriteOffService {
     public FinanceWriteOffAddResultVO add(FinanceWriteOffAddForm form, String idempotencyKey) {
         String sourceType = sourceType(form.getSourceType());
         if (form.getSourceId() == null || form.getSourceId() <= 0 || form.getItems() == null
-                || form.getItems().isEmpty()) {
+            || form.getItems().isEmpty()) {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
         List<Allocation> allocations = allocations(form.getItems());
         String scopeKey = FinanceConstant.WRITE_OFF_ADD_SCOPE + ":" + sourceType + ":" + form.getSourceId();
         SourceFact source = lockSource(sourceType, form.getSourceId());
         if (ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(sourceType)
-                && financeOrderFundingSourceDao.isRechargeReceipt(source.id())) {
+            && financeOrderFundingSourceDao.isRechargeReceipt(source.id())) {
             throw new ScmBusinessException(FinanceErrorCode.RECHARGE_RECEIPT_RESERVED);
         }
         String targetType = targetType(sourceType);
@@ -98,7 +102,7 @@ public class FinanceWriteOffService {
         BigDecimal sourceUsedAmount = financeWriteOffDao.selectSourceUsedAmount(sourceType, source.id());
         BigDecimal sourceAvailable = source.effectiveAmount().subtract(sourceUsedAmount);
         BigDecimal requestedAmount = allocations.stream().map(Allocation::amount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
+            BigDecimal::add);
         if (sourceAvailable.signum() < 0 || requestedAmount.compareTo(sourceAvailable) > 0) {
             throw new ScmBusinessException(FinanceErrorCode.WRITE_OFF_AMOUNT_EXCEEDED);
         }
@@ -121,8 +125,8 @@ public class FinanceWriteOffService {
             }
 
             FinanceWriteOffEntity writeOff = new FinanceWriteOffEntity();
-            writeOff.setWriteOffNo(ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX,
-                    financeWriteOffDao.nextWriteOffNo()));
+            writeOff.setWriteOffNo(
+                ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX, financeWriteOffDao.nextWriteOffNo()));
             writeOff.setSourceType(sourceType);
             writeOff.setSourceId(source.id());
             writeOff.setTargetType(targetType);
@@ -143,8 +147,8 @@ public class FinanceWriteOffService {
 
             TargetBalance after = before.apply(allocation.amount());
             operationLogs.record(ScmFinanceBusinessTypeEnum.WRITE_OFF, writeOff.getId(),
-                    ScmFinanceOperationTypeEnum.WRITE_OFF, null, balanceSnapshot(target, before),
-                    balanceSnapshot(target, after));
+                ScmFinanceOperationTypeEnum.WRITE_OFF, null, balanceSnapshot(target, before),
+                balanceSnapshot(target, after));
             balances.put(target.id(), after);
             sourceAvailable = sourceAvailable.subtract(allocation.amount());
             results.add(writeOffVO(writeOff, source, target));
@@ -156,7 +160,9 @@ public class FinanceWriteOffService {
         return result;
     }
 
-    /** Append an equal and opposite allocation fact; the original row is never edited. */
+    /**
+     * Append an equal and opposite allocation fact; the original row is never edited.
+     */
     @Transactional(rollbackFor = Exception.class)
     public FinanceWriteOffVO reverse(FinanceWriteOffReverseForm form, String idempotencyKey) {
         FinanceWriteOffEntity initial = financeWriteOffDao.selectActiveById(form.getWriteOffId());
@@ -177,7 +183,7 @@ public class FinanceWriteOffService {
         requireMatchingCounterparty(source, target);
 
         var claim = idempotencyService.claim(FinanceConstant.WRITE_OFF_REVERSE_SCOPE + ":" + initial.getId(),
-                idempotencyKey, form);
+            idempotencyKey, form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, FinanceWriteOffVO.class);
         }
@@ -195,7 +201,7 @@ public class FinanceWriteOffService {
         String operator = ScmOperator.current();
         FinanceWriteOffEntity reversal = new FinanceWriteOffEntity();
         reversal.setWriteOffNo(
-                ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX, financeWriteOffDao.nextWriteOffNo()));
+            ScmDocumentNumbers.format(FinanceConstant.WRITE_OFF_NO_PREFIX, financeWriteOffDao.nextWriteOffNo()));
         reversal.setSourceType(original.getSourceType());
         reversal.setSourceId(original.getSourceId());
         reversal.setTargetType(original.getTargetType());
@@ -216,8 +222,8 @@ public class FinanceWriteOffService {
 
         TargetBalance after = before.apply(original.getAmount().negate());
         operationLogs.record(ScmFinanceBusinessTypeEnum.WRITE_OFF, original.getId(),
-                ScmFinanceOperationTypeEnum.WRITE_OFF_REVERSE, reason, balanceSnapshot(target, before),
-                balanceSnapshot(target, after));
+            ScmFinanceOperationTypeEnum.WRITE_OFF_REVERSE, reason, balanceSnapshot(target, before),
+            balanceSnapshot(target, after));
 
         FinanceWriteOffVO result = writeOffVO(reversal, source, target);
         idempotencyService.complete(claim, "FINANCE_WRITE_OFF", reversal.getId(), result);
@@ -228,7 +234,7 @@ public class FinanceWriteOffService {
         if (ScmFinanceWriteOffSourceTypeEnum.BALANCE_MOVEMENT.name().equals(sourceType)) {
             var movement = financeOrderFundingSourceDao.lockMovement(sourceId);
             if (movement == null || !ScmBalanceMovementTypeEnum.CONSUME.name().equals(movement.getType())
-                    || !ScmBalanceDirectionEnum.DEBIT.name().equals(movement.getDirection())) {
+                || !ScmBalanceDirectionEnum.DEBIT.name().equals(movement.getDirection())) {
                 throw new ScmBusinessException(FinanceErrorCode.ORDER_FUNDING_INVALID);
             }
             var customer = financeCounterpartySourceDao.selectCustomer(movement.getCustomerId());
@@ -239,8 +245,8 @@ public class FinanceWriteOffService {
                 throw new ScmDataScopeException();
             }
             return new SourceFact(sourceType, sourceId, movement.getMovementNo(), customer.getCustomerName(),
-                    ScmFinanceCounterpartyTypeEnum.CUSTOMER.name(), movement.getSettlementCustomerId(),
-                    movement.getAmount());
+                ScmFinanceCounterpartyTypeEnum.CUSTOMER.name(), movement.getSettlementCustomerId(),
+                movement.getAmount());
         }
         if (ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(sourceType)) {
             FinanceReceiptEntity receipt = financeReceiptDao.selectByIdForUpdate(sourceId);
@@ -249,12 +255,12 @@ public class FinanceWriteOffService {
             }
             var customer = financeCounterpartySourceDao.selectCustomer(receipt.getCustomerId());
             if (customer == null
-                    || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
+                || !dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())) {
                 throw new ScmDataScopeException();
             }
             BigDecimal effectiveAmount = receipt.getAmount().subtract(financeReceiptDao.selectReversedAmount(sourceId));
             return new SourceFact(sourceType, sourceId, receipt.getReceiptNo(), receipt.getCustomerNameSnapshot(),
-                    ScmFinanceCounterpartyTypeEnum.CUSTOMER.name(), receipt.getSettlementCustomerId(), effectiveAmount);
+                ScmFinanceCounterpartyTypeEnum.CUSTOMER.name(), receipt.getSettlementCustomerId(), effectiveAmount);
         }
         if (ScmFinanceWriteOffSourceTypeEnum.PAYMENT.name().equals(sourceType)) {
             FinancePaymentEntity payment = financePaymentDao.selectByIdForUpdate(sourceId);
@@ -263,7 +269,7 @@ public class FinanceWriteOffService {
             }
             BigDecimal effectiveAmount = payment.getAmount().subtract(financePaymentDao.selectReversedAmount(sourceId));
             return new SourceFact(sourceType, sourceId, payment.getPaymentNo(), payment.getCounterpartyNameSnapshot(),
-                    payment.getCounterpartyType(), payment.getCounterpartyId(), effectiveAmount);
+                payment.getCounterpartyType(), payment.getCounterpartyId(), effectiveAmount);
         }
         throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
     }
@@ -273,9 +279,9 @@ public class FinanceWriteOffService {
         if (ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name().equals(targetType)) {
             for (FinanceReceivableTargetDto dto : financeReceivableDao.selectNormalTargetsForUpdate(targetIds)) {
                 targets.put(dto.getReceivableId(),
-                        new TargetFact(targetType, dto.getReceivableId(), dto.getReceivableNo(),
-                                dto.getCustomerNameSnapshot(), dto.getSettlementCustomerId(), dto.getSellerId(),
-                                dto.getAmount()));
+                    new TargetFact(targetType, dto.getReceivableId(), dto.getReceivableNo(),
+                        dto.getCustomerNameSnapshot(), dto.getSettlementCustomerId(), dto.getSellerId(),
+                        dto.getAmount()));
             }
             if (targets.size() != targetIds.size()) {
                 throw new ScmBusinessException(FinanceErrorCode.RECEIVABLE_NOT_FOUND);
@@ -284,7 +290,7 @@ public class FinanceWriteOffService {
         }
         for (FinancePayableTargetDto dto : financePayableDao.selectNormalTargetsForUpdate(targetIds)) {
             targets.put(dto.getPayableId(), new TargetFact(targetType, dto.getPayableId(), dto.getPayableNo(),
-                    dto.getSupplierNameSnapshot(), dto.getSupplierId(), dto.getPurchaserId(), dto.getAmount()));
+                dto.getSupplierNameSnapshot(), dto.getSupplierId(), dto.getPurchaserId(), dto.getAmount()));
         }
         if (targets.size() != targetIds.size()) {
             throw new ScmBusinessException(FinanceErrorCode.PAYABLE_NOT_FOUND);
@@ -299,7 +305,7 @@ public class FinanceWriteOffService {
                 throw new ScmBusinessException(FinanceErrorCode.RECEIVABLE_NOT_FOUND);
             }
             return new TargetFact(targetType, dto.getReceivableId(), dto.getReceivableNo(),
-                    dto.getCustomerNameSnapshot(), dto.getSettlementCustomerId(), dto.getSellerId(), dto.getAmount());
+                dto.getCustomerNameSnapshot(), dto.getSettlementCustomerId(), dto.getSellerId(), dto.getAmount());
         }
         if (ScmFinanceWriteOffTargetTypeEnum.PAYABLE.name().equals(targetType)) {
             FinancePayableTargetDto dto = financePayableDao.selectNormalTargetForUpdate(targetId);
@@ -307,15 +313,15 @@ public class FinanceWriteOffService {
                 throw new ScmBusinessException(FinanceErrorCode.PAYABLE_NOT_FOUND);
             }
             return new TargetFact(targetType, dto.getPayableId(), dto.getPayableNo(), dto.getSupplierNameSnapshot(),
-                    dto.getSupplierId(), dto.getPurchaserId(), dto.getAmount());
+                dto.getSupplierId(), dto.getPurchaserId(), dto.getAmount());
         }
         throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
     }
 
     private void requireTargetVisible(ScmDataScopeContext scope, TargetFact target) {
         boolean visible = ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name().equals(target.type())
-                ? scope.getOrderSellerScope().allows(target.ownerId())
-                : scope.getPurchaserScope().allows(target.ownerId());
+            ? scope.getOrderSellerScope().allows(target.ownerId())
+            : scope.getPurchaserScope().allows(target.ownerId());
         if (!visible) {
             throw new ScmDataScopeException();
         }
@@ -323,13 +329,13 @@ public class FinanceWriteOffService {
 
     private void requireMatchingCounterparty(SourceFact source, TargetFact target) {
         boolean receiptToReceivable = (ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name().equals(source.type())
-                || ScmFinanceWriteOffSourceTypeEnum.BALANCE_MOVEMENT.name().equals(source.type()))
-                && ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name().equals(target.type())
-                && source.counterpartyId().equals(target.counterpartyId());
+            || ScmFinanceWriteOffSourceTypeEnum.BALANCE_MOVEMENT.name().equals(source.type()))
+            && ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name().equals(target.type())
+            && source.counterpartyId().equals(target.counterpartyId());
         boolean supplierPaymentToPayable = ScmFinanceWriteOffSourceTypeEnum.PAYMENT.name().equals(source.type())
-                && ScmFinanceWriteOffTargetTypeEnum.PAYABLE.name().equals(target.type())
-                && ScmFinanceCounterpartyTypeEnum.SUPPLIER.name().equals(source.counterpartyType())
-                && source.counterpartyId().equals(target.counterpartyId());
+            && ScmFinanceWriteOffTargetTypeEnum.PAYABLE.name().equals(target.type())
+            && ScmFinanceCounterpartyTypeEnum.SUPPLIER.name().equals(source.counterpartyType())
+            && source.counterpartyId().equals(target.counterpartyId());
         if (!receiptToReceivable && !supplierPaymentToPayable) {
             throw new ScmBusinessException(FinanceErrorCode.COUNTERPARTY_MISMATCH);
         }
@@ -337,8 +343,8 @@ public class FinanceWriteOffService {
 
     private TargetBalance balance(TargetFact target) {
         BigDecimal redAmount = ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name().equals(target.type())
-                ? financeReceivableDao.selectRedAmount(target.id())
-                : financePayableDao.selectRedAmount(target.id());
+            ? financeReceivableDao.selectRedAmount(target.id())
+            : financePayableDao.selectRedAmount(target.id());
         BigDecimal writtenOffAmount = financeWriteOffDao.selectTargetWrittenOffAmount(target.type(), target.id());
         return TargetBalance.from(target.amount().subtract(redAmount), writtenOffAmount);
     }
@@ -361,7 +367,7 @@ public class FinanceWriteOffService {
     private static String sourceType(String raw) {
         String value = StringUtils.trimToNull(raw);
         for (ScmFinanceWriteOffSourceTypeEnum candidate : List.of(ScmFinanceWriteOffSourceTypeEnum.RECEIPT,
-                ScmFinanceWriteOffSourceTypeEnum.PAYMENT)) {
+            ScmFinanceWriteOffSourceTypeEnum.PAYMENT)) {
             if (candidate.name().equals(value)) {
                 return candidate.name();
             }
@@ -413,15 +419,15 @@ public class FinanceWriteOffService {
     }
 
     private record SourceFact(String type, Long id, String documentNo, String counterpartyName, String counterpartyType,
-            Long counterpartyId, BigDecimal effectiveAmount) {
+        Long counterpartyId, BigDecimal effectiveAmount) {
     }
 
     private record TargetFact(String type, Long id, String documentNo, String counterpartyName, Long counterpartyId,
-            Long ownerId, BigDecimal amount) {
+        Long ownerId, BigDecimal amount) {
     }
 
     private record TargetBalance(BigDecimal netAmount, BigDecimal writtenOffAmount, BigDecimal openAmount,
-            BigDecimal overAppliedAmount) {
+        BigDecimal overAppliedAmount) {
 
         private static TargetBalance from(BigDecimal netAmount, BigDecimal writtenOffAmount) {
             BigDecimal openAmount = netAmount.subtract(writtenOffAmount).max(BigDecimal.ZERO);

@@ -48,10 +48,14 @@ public enum OrderErrorCode implements ScmErrorCode {
     ORDER_EXCHANGE_NOT_READY(41212, "退货须批准并完成实物接收后才能创建换货单"),
     ORDER_EXCHANGE_EXISTS(41213, "该退货单已有换货订单"),
 
-    /** 只有已确认订单允许预留库存；草稿、取消和完成订单不得占用库存。 */
+    /**
+     * 只有已确认订单允许预留库存；草稿、取消和完成订单不得占用库存。
+     */
     ORDER_RESERVE_STATE_INVALID(40945, "当前订单状态不允许预留库存（仅已确认订单可预留）");
 
-    /** Compatibility aliases; idempotency errors are owned by the shared SCM layer. */
+    /**
+     * Compatibility aliases; idempotency errors are owned by the shared SCM layer.
+     */
     @Deprecated
     public static final ScmErrorCode ORDER_IDEMPOTENCY_KEY_REQUIRED = ScmCommonErrorCode.IDEMPOTENCY_KEY_REQUIRED;
     @Deprecated

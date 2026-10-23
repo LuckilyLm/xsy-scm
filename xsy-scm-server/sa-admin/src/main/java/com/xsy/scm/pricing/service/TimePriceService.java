@@ -9,8 +9,10 @@ import com.xsy.scm.pricing.domain.entity.TimePriceEntity;
 import com.xsy.scm.pricing.domain.form.TimePriceForm;
 import com.xsy.scm.pricing.domain.form.TimePriceQueryForm;
 import com.xsy.scm.pricing.domain.vo.TimePriceVO;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import org.springframework.stereotype.Service;
@@ -36,7 +38,7 @@ public class TimePriceService {
         List<TimePriceVO> rows = timePriceDao.queryPage(page, form);
         OffsetDateTime now = OffsetDateTime.now();
         rows.forEach(row -> row.setEffectiveNow(row.getStartAt() != null && row.getEndAt() != null
-                && !row.getStartAt().isAfter(now) && row.getEndAt().isAfter(now)));
+            && !row.getStartAt().isAfter(now) && row.getEndAt().isAfter(now)));
         PageResult<TimePriceVO> result = new PageResult<>();
         result.setPageNum(page.getCurrent());
         result.setPageSize(page.getSize());
@@ -109,13 +111,15 @@ public class TimePriceService {
         log(existing, ScmPriceOperationTypeEnum.DELETE, beforeSnapshot);
     }
 
-    /** 审计快照：只放人能读懂的业务字段，不放数据库内部键。 */
+    /**
+     * 审计快照：只放人能读懂的业务字段，不放数据库内部键。
+     */
     private String snapshot(TimePriceEntity entity) {
         var fields = new java.util.LinkedHashMap<String, Object>();
         fields.put("id", entity.getId());
         fields.put("skuId", entity.getSkuId());
         fields.put("unitPrice",
-                entity.getUnitPrice() == null ? null : entity.getUnitPrice().setScale(4).toPlainString());
+            entity.getUnitPrice() == null ? null : entity.getUnitPrice().setScale(4).toPlainString());
         fields.put("startAt", entity.getStartAt() == null ? null : entity.getStartAt().toString());
         fields.put("endAt", entity.getEndAt() == null ? null : entity.getEndAt().toString());
         fields.put("remark", entity.getRemark());
@@ -130,7 +134,7 @@ public class TimePriceService {
 
     private void log(TimePriceEntity entity, ScmPriceOperationTypeEnum operationType, String beforeSnapshot) {
         timePriceDao.log(entity.getId(), operationType.name(), com.xsy.scm.common.constant.ScmOperator.current(),
-                beforeSnapshot, snapshot(entity));
+            beforeSnapshot, snapshot(entity));
     }
 
     private void requireValidWindow(TimePriceForm form) {

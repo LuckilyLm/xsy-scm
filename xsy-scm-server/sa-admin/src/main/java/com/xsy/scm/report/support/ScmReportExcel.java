@@ -14,7 +14,9 @@ import cn.idev.excel.FastExcel;
 import jakarta.servlet.http.HttpServletResponse;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
 
-/** 报表 Excel 导出使用同一套字段和金额口径，并遵守当前用户的数据范围与导出权限。 */
+/**
+ * 报表 Excel 导出使用同一套字段和金额口径，并遵守当前用户的数据范围与导出权限。
+ */
 public final class ScmReportExcel {
 
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -31,14 +33,14 @@ public final class ScmReportExcel {
      *            行数据，每行元素数必须与 {@code titles} 等长（用 {@link #row} 构造可自检）
      */
     public static void write(HttpServletResponse response, String fileName, String sheetName, List<String> titles,
-            List<List<Object>> rows) throws IOException {
+        List<List<Object>> rows) throws IOException {
         SmartResponseUtil.setDownloadFileHeader(response, fileName, null);
         List<List<String>> head = new ArrayList<>(titles.size());
         for (String title : titles) {
             head.add(List.of(title));
         }
         FastExcel.write(response.getOutputStream()).head(head).autoCloseStream(Boolean.FALSE).sheet(sheetName)
-                .doWrite(rows);
+            .doWrite(rows);
     }
 
     /**
@@ -58,7 +60,9 @@ public final class ScmReportExcel {
         return row;
     }
 
-    /** 报表导出时，日期先转换成北京时间文本，金额与数量按完整定点字符串输出，避免 Excel 自动舍入或使用科学计数法。 */
+    /**
+     * 报表导出时，日期先转换成北京时间文本，金额与数量按完整定点字符串输出，避免 Excel 自动舍入或使用科学计数法。
+     */
     private static Object cell(Object value) {
         if (value == null) {
             return "";
@@ -75,7 +79,9 @@ public final class ScmReportExcel {
         return value;
     }
 
-    /** null 与零必须可辨：null 导出成空单元格，不能变成 0。 */
+    /**
+     * null 与零必须可辨：null 导出成空单元格，不能变成 0。
+     */
     public static String text(Object value) {
         return value == null ? "" : String.valueOf(value);
     }

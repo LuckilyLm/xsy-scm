@@ -23,6 +23,7 @@ import com.xsy.scm.delivery.domain.vo.DeliveryPlanProposalVO;
 import com.xsy.scm.delivery.support.DeliveryDistanceMatrixProvider;
 import com.xsy.scm.delivery.support.GeoPoint;
 import com.xsy.scm.delivery.support.NearestNeighbourPlanner;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -34,11 +35,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 排线建议只供查看和选择，不自动改变线路或发车。仅草稿线路可应用建议，并保留计算规则与距离来源。 */
+/**
+ * 排线建议只供查看和选择，不自动改变线路或发车。仅草稿线路可应用建议，并保留计算规则与距离来源。
+ */
 @Service
 @RequiredArgsConstructor
 public class DeliveryPlanProposalService {
@@ -130,7 +134,7 @@ public class DeliveryPlanProposalService {
         DeliveryRouteEntity route = lockVisibleRoute(initial.getRouteId());
         DeliveryPlanProposalEntity proposal = deliveryPlanProposalDao.lockById(proposalId);
         if (proposal == null || !Objects.equals(proposal.getRouteId(), route.getId())
-                || !ScmDeliveryPlanStatusEnum.PROPOSED.name().equals(proposal.getStatus())) {
+            || !ScmDeliveryPlanStatusEnum.PROPOSED.name().equals(proposal.getStatus())) {
             throw new ScmBusinessException(DeliveryErrorCode.PLAN_PROPOSAL_STATE_INVALID);
         }
         if (!Objects.equals(route.getVersion(), form.getVersion())) {
@@ -197,7 +201,7 @@ public class DeliveryPlanProposalService {
     public List<DeliveryPlanProposalVO> history(Long routeId) {
         deliveryRouteQueryService.requireVisible(routeId);
         return deliveryPlanProposalDao.listByRoute(routeId, HISTORY_LIMIT).stream()
-                .map(DeliveryPlanProposalService::toVO).toList();
+            .map(DeliveryPlanProposalService::toVO).toList();
     }
 
     // ------------------------------------------------------------------
@@ -223,7 +227,7 @@ public class DeliveryPlanProposalService {
 
     private List<DeliveryRouteStopEntity> stops(Long routeId) {
         return deliveryRouteStopDao.selectList(new LambdaQueryWrapper<DeliveryRouteStopEntity>()
-                .eq(DeliveryRouteStopEntity::getRouteId, routeId).orderByAsc(DeliveryRouteStopEntity::getStopSeq));
+            .eq(DeliveryRouteStopEntity::getRouteId, routeId).orderByAsc(DeliveryRouteStopEntity::getStopSeq));
     }
 
     private static void requireDraft(DeliveryRouteEntity route) {
@@ -237,12 +241,12 @@ public class DeliveryPlanProposalService {
      */
     private static void requireLocations(DeliveryRouteEntity route, List<DeliveryRouteStopEntity> stops) {
         if (route.getStartLongitude() == null || route.getStartLatitude() == null || route.getStartGeomCrs() == null
-                || stops.isEmpty()) {
+            || stops.isEmpty()) {
             throw new ScmBusinessException(DeliveryErrorCode.LOCATION_REQUIRED);
         }
         for (DeliveryRouteStopEntity stop : stops) {
             if (stop.getLongitude() == null || stop.getLatitude() == null
-                    || !route.getStartGeomCrs().equals(stop.getGeomCrs())) {
+                || !route.getStartGeomCrs().equals(stop.getGeomCrs())) {
                 throw new ScmBusinessException(DeliveryErrorCode.LOCATION_REQUIRED);
             }
         }

@@ -33,7 +33,9 @@ import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_NOT_FOUND
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_CONFLICT;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_PURCHASER_INVALID;
 
-/** 更新供应商关联商品时，先校验全部明细，再统一新增、修改或停用。先锁供应商，再锁关联明细；事务由上层服务控制。 */
+/**
+ * 更新供应商关联商品时，先校验全部明细，再统一新增、修改或停用。先锁供应商，再锁关联明细；事务由上层服务控制。
+ */
 @Component
 @RequiredArgsConstructor
 public class SupplierSkuSyncManager {
@@ -121,7 +123,7 @@ public class SupplierSkuSyncManager {
         validatePurchasers(changeSet);
         for (SupplierSkuChangeSet.Matched matched : changeSet.retained()) {
             planned.add(new Planned(matched.existing(), matched.requested(), skus.get(matched.requested().getSkuId()),
-                    supplier));
+                supplier));
         }
         return planned;
     }
@@ -187,7 +189,7 @@ public class SupplierSkuSyncManager {
             return;
         }
         List<EmployeeEntity> found = employeeDao
-                .selectList(new LambdaQueryWrapper<EmployeeEntity>().in(EmployeeEntity::getEmployeeId, purchaserIds));
+            .selectList(new LambdaQueryWrapper<EmployeeEntity>().in(EmployeeEntity::getEmployeeId, purchaserIds));
         Set<Long> existing = new HashSet<>();
         if (found != null) {
             found.forEach(employee -> existing.add(employee.getEmployeeId()));
@@ -229,6 +231,6 @@ public class SupplierSkuSyncManager {
      * 一条待写行：既有实体（新增时为 {@code null}）+ 请求行 + 快照来源 + 供应商。
      */
     private record Planned(SupplierSkuEntity existing, SupplierSkuItemForm requested, OrderableSkuVO sku,
-            SupplierEntity supplier) {
+        SupplierEntity supplier) {
     }
 }

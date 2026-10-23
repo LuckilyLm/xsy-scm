@@ -37,7 +37,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** Freezes the read-side net-demand calculation before any demand write occurs. */
+/**
+ * Freezes the read-side net-demand calculation before any demand write occurs.
+ */
 @Service
 @RequiredArgsConstructor
 public class PurchaseDemandCalculationBatchService {
@@ -75,17 +77,17 @@ public class PurchaseDemandCalculationBatchService {
         previewForm.setKeyword(form.getKeyword());
         var summary = purchaseQueryService.summaryPreviewAll(previewForm, MAX_ROWS);
         Map<String,
-                BigDecimal> gaps = summary.stream()
-                        .collect(Collectors.toMap(row -> key(row.getSkuId(), row.getDemandUnit()),
-                                row -> row.getNetPurchaseGap() == null ? BigDecimal.ZERO : row.getNetPurchaseGap(),
-                                BigDecimal::add, LinkedHashMap::new));
+            BigDecimal> gaps = summary.stream()
+                .collect(Collectors.toMap(row -> key(row.getSkuId(), row.getDemandUnit()),
+                    row -> row.getNetPurchaseGap() == null ? BigDecimal.ZERO : row.getNetPurchaseGap(), BigDecimal::add,
+                    LinkedHashMap::new));
 
         List<SalesOrderItemEntity> sourceItems = purchaseDemandDao.listSourceItems(form.getStartAt(), form.getEndAt(),
-                ScmValueScope.all());
+            ScmValueScope.all());
         Map<Long,
-                SalesOrderEntity> orders = salesOrderDao
-                        .selectBatchIds(sourceItems.stream().map(SalesOrderItemEntity::getOrderId).distinct().toList())
-                        .stream().collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
+            SalesOrderEntity> orders = salesOrderDao
+                .selectBatchIds(sourceItems.stream().map(SalesOrderItemEntity::getOrderId).distinct().toList()).stream()
+                .collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
         Map<Long, PurchaseDemandEntity> existing = existing(sourceItems);
 
         // 批次头记录<b>解析后</b>的归属，与稍后由同一批次生成的需求保持同一个 owner：
@@ -118,11 +120,11 @@ public class PurchaseDemandCalculationBatchService {
             value.put("onHandQuantity", PurchaseSnapshotFactory.fixed(row.getOnHandQuantity()));
             value.put("reservedQuantity", PurchaseSnapshotFactory.fixed(row.getReservedQuantity()));
             value.put("selectedOrderReservedQuantity",
-                    PurchaseSnapshotFactory.fixed(row.getSelectedOrderReservedQuantity()));
+                PurchaseSnapshotFactory.fixed(row.getSelectedOrderReservedQuantity()));
             value.put("otherReservedQuantity", PurchaseSnapshotFactory.fixed(row.getOtherReservedQuantity()));
             value.put("availableQuantity", PurchaseSnapshotFactory.fixed(row.getAvailableQuantity()));
             value.put("stockAvailableForSelectedOrders",
-                    PurchaseSnapshotFactory.fixed(row.getStockAvailableForSelectedOrders()));
+                PurchaseSnapshotFactory.fixed(row.getStockAvailableForSelectedOrders()));
             value.put("stockComparisonGap", PurchaseSnapshotFactory.fixed(row.getStockComparisonGap()));
             value.put("inTransitQuantity", PurchaseSnapshotFactory.fixed(row.getInTransitQuantity()));
             value.put("purchaseCoverageQuantity", PurchaseSnapshotFactory.fixed(row.getPurchaseCoverageQuantity()));
@@ -141,8 +143,8 @@ public class PurchaseDemandCalculationBatchService {
             }
             PurchaseDemandEntity old = existing.get(source.getId());
             BigDecimal required = old == null
-                    ? consume(gaps, key(source.getSkuId(), source.getSaleUnitSnapshot()), source.getActualQuantity())
-                    : BigDecimal.ZERO.setScale(4);
+                ? consume(gaps, key(source.getSkuId(), source.getSaleUnitSnapshot()), source.getActualQuantity())
+                : BigDecimal.ZERO.setScale(4);
             PurchaseDemandCalculationBatchItemEntity item = new PurchaseDemandCalculationBatchItemEntity();
             item.setBatchId(null);
             item.setLineNo(lineNo++);
@@ -165,7 +167,7 @@ public class PurchaseDemandCalculationBatchService {
             items.add(item);
         }
         batch.setCandidateLineCount(
-                (int) items.stream().filter(item -> item.getRequiredQuantity().signum() > 0).count());
+            (int) items.stream().filter(item -> item.getRequiredQuantity().signum() > 0).count());
         batchDao.insert(batch);
         items.forEach(item -> item.setBatchId(batch.getId()));
         if (!items.isEmpty()) {
@@ -191,10 +193,10 @@ public class PurchaseDemandCalculationBatchService {
         }
         List<PurchaseDemandCalculationBatchItemEntity> items = batchItemDao.listByBatchId(batch.getId());
         Map<Long,
-                SalesOrderEntity> orders = salesOrderDao
-                        .selectBatchIds(items.stream().map(PurchaseDemandCalculationBatchItemEntity::getSalesOrderId)
-                                .distinct().toList())
-                        .stream().collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
+            SalesOrderEntity> orders = salesOrderDao
+                .selectBatchIds(
+                    items.stream().map(PurchaseDemandCalculationBatchItemEntity::getSalesOrderId).distinct().toList())
+                .stream().collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
         PurchaseDemandService.GenerateResult result = new PurchaseDemandService.GenerateResult();
         result.setSourceLineCount(items.size());
         for (PurchaseDemandCalculationBatchItemEntity item : items) {
@@ -217,7 +219,7 @@ public class PurchaseDemandCalculationBatchService {
             source.setProductTypeSnapshot(item.getProductTypeSnapshot());
             source.setActualQuantity(item.getRequiredQuantity());
             PurchaseDemandEntity demand = PurchaseSnapshotFactory.demand(source, order, batch.getSupplierId(),
-                    batch.getWarehouseId(), ownerResolver.resolveForCreate(batch.getPurchaserId()));
+                batch.getWarehouseId(), ownerResolver.resolveForCreate(batch.getPurchaserId()));
             demand.setCalculationBatchId(batch.getId());
             demand.setCalculationBatchItemId(item.getId());
             if (purchaseDemandDao.insertIgnore(demand) == 1) {
@@ -232,7 +234,7 @@ public class PurchaseDemandCalculationBatchService {
         snapshot.put("createdCount", result.getCreatedCount());
         snapshot.put("skippedCount", result.getSkippedCount());
         if (batchDao.markGenerated(batch.getId(), result.getCreatedCount(), result.getSkippedCount(), snapshot,
-                OffsetDateTime.now(), ScmOperator.current()) != 1) {
+            OffsetDateTime.now(), ScmOperator.current()) != 1) {
             throw new ScmBusinessException(PurchaseErrorCode.PURCHASE_DEMAND_ALLOCATION_CONFLICT);
         }
         idempotencyService.complete(claim, "PURCHASE_DEMAND_CALCULATION_BATCH", batch.getId(), result);
@@ -254,8 +256,8 @@ public class PurchaseDemandCalculationBatchService {
         requireVisible(detail);
         PurchaseDemandCalculationBatchEntity batch = batchDao.selectById(batchId);
         detail.setSummary(summaryRows(batch == null ? null : batch.getSummarySnapshot()));
-        detail.setItems(batchItemDao.listByBatchId(batchId).stream().map(PurchaseDemandCalculationBatchService::itemVo)
-                .toList());
+        detail.setItems(
+            batchItemDao.listByBatchId(batchId).stream().map(PurchaseDemandCalculationBatchService::itemVo).toList());
         return detail;
     }
 
@@ -276,8 +278,8 @@ public class PurchaseDemandCalculationBatchService {
         if (sourceItems.isEmpty())
             return Map.of();
         return purchaseDemandDao
-                .listActiveBySourceItemIds(sourceItems.stream().map(SalesOrderItemEntity::getId).toList()).stream()
-                .collect(Collectors.toMap(PurchaseDemandEntity::getSalesOrderItemId, Function.identity()));
+            .listActiveBySourceItemIds(sourceItems.stream().map(SalesOrderItemEntity::getId).toList()).stream()
+            .collect(Collectors.toMap(PurchaseDemandEntity::getSalesOrderItemId, Function.identity()));
     }
 
     private static BigDecimal consume(Map<String, BigDecimal> gaps, String key, BigDecimal sourceQuantity) {

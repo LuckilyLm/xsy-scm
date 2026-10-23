@@ -30,6 +30,7 @@ import com.xsy.scm.sorting.domain.vo.SortingScaleBasketVO;
 import com.xsy.scm.sorting.domain.vo.SortingScaleCompletionVO;
 import com.xsy.scm.sorting.domain.vo.SortingScaleEventVO;
 import com.xsy.scm.sorting.support.SortingAccess;
+
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -40,12 +41,15 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 电子秤上报只记录设备读数，人工确认后才写入实际分拣量。重复事件不能重复写入；异常分拣必须说明原因。 */
+/**
+ * 电子秤上报只记录设备读数，人工确认后才写入实际分拣量。重复事件不能重复写入；异常分拣必须说明原因。
+ */
 @Service
 @RequiredArgsConstructor
 public class SortingScaleEventService {
@@ -104,12 +108,12 @@ public class SortingScaleEventService {
         // 同键只有同一读数才能重放：设备重启、网关重试若复用 key 却换了任务/重量，
         // 必须显式报冲突，不能把另一条读数误认为本次上报成功。
         if (!Objects.equals(existing.getTaskId(), row.getTaskId())
-                || !Objects.equals(existing.getTaskItemId(), row.getTaskItemId())
-                || !Objects.equals(existing.getDeviceCode(), row.getDeviceCode())
-                || existing.getRawReading().compareTo(row.getRawReading()) != 0
-                || !Objects.equals(existing.getUnit(), row.getUnit())
-                || !Objects.equals(existing.getStableFlag(), row.getStableFlag())
-                || !existing.getCapturedAt().isEqual(row.getCapturedAt())) {
+            || !Objects.equals(existing.getTaskItemId(), row.getTaskItemId())
+            || !Objects.equals(existing.getDeviceCode(), row.getDeviceCode())
+            || existing.getRawReading().compareTo(row.getRawReading()) != 0
+            || !Objects.equals(existing.getUnit(), row.getUnit())
+            || !Objects.equals(existing.getStableFlag(), row.getStableFlag())
+            || !existing.getCapturedAt().isEqual(row.getCapturedAt())) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_KEY_CONFLICT);
         }
         return toVO(existing, item, true);
@@ -208,15 +212,15 @@ public class SortingScaleEventService {
         // 与人工改量、改派及任务重开共用聚合锁，版本检查到正式写入之间不能被插入另一笔修改。
         SortingTaskEntity task = requireAssigneeTask(form.getTaskId());
         SortingScaleCompletionEntity replay = sortingScaleCompletionDao
-                .selectByOperationId(form.getOperationId().trim());
+            .selectByOperationId(form.getOperationId().trim());
         if (replay != null) {
             if (!Objects.equals(replay.getTaskId(), form.getTaskId())
-                    || !Objects.equals(replay.getTaskItemId(), form.getTaskItemId())
-                    || !Objects.equals(replay.getDeviceId(), form.getDeviceId())
-                    || !Objects.equals(replay.getEmployeeId(), form.getEmployeeId())
-                    || !replay.getManifestHash().equalsIgnoreCase(form.getManifestHash().trim())
-                    || !Objects.equals(replay.getResult(), form.getResult())
-                    || !Objects.equals(replay.getReason(), StringUtils.trimToNull(form.getReason()))) {
+                || !Objects.equals(replay.getTaskItemId(), form.getTaskItemId())
+                || !Objects.equals(replay.getDeviceId(), form.getDeviceId())
+                || !Objects.equals(replay.getEmployeeId(), form.getEmployeeId())
+                || !replay.getManifestHash().equalsIgnoreCase(form.getManifestHash().trim())
+                || !Objects.equals(replay.getResult(), form.getResult())
+                || !Objects.equals(replay.getReason(), StringUtils.trimToNull(form.getReason()))) {
                 throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_KEY_CONFLICT);
             }
             return toCompletionVO(replay, true);
@@ -226,8 +230,7 @@ public class SortingScaleEventService {
             throw new ScmBusinessException(SortingErrorCode.ITEM_NOT_IN_TASK);
         }
         if (!Objects.equals(String.valueOf(task.getVersion()), StringUtils.trimToNull(form.getJobVersion()))
-                || form.getTaskItemVersion() == null
-                || !Objects.equals(item.getVersion(), form.getTaskItemVersion())) {
+            || form.getTaskItemVersion() == null || !Objects.equals(item.getVersion(), form.getTaskItemVersion())) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_CONTEXT_CHANGED);
         }
         if (sortingScaleCompletionDao.selectByTaskItem(form.getTaskItemId()) != null) {
@@ -242,7 +245,7 @@ public class SortingScaleEventService {
                 throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_CONTEXT_CHANGED);
             }
             if (form.getTaskItemVersion() != null
-                    && !Objects.equals(basket.getTaskItemVersion(), form.getTaskItemVersion())) {
+                && !Objects.equals(basket.getTaskItemVersion(), form.getTaskItemVersion())) {
                 throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_CONTEXT_CHANGED);
             }
             if (!Objects.equals(basket.getBusinessUnit(), item.getSaleUnitSnapshot())) {
@@ -257,7 +260,7 @@ public class SortingScaleEventService {
             throw new ScmBusinessException(SortingErrorCode.SCALE_BASKET_MANIFEST_MISMATCH);
         }
         BigDecimal total = baskets.stream().map(SortingScaleEventEntity::getNetWeight).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
+            BigDecimal::add);
 
         SortingScaleCompletionEntity completion = new SortingScaleCompletionEntity();
         completion.setOperationId(form.getOperationId().trim());
@@ -278,7 +281,7 @@ public class SortingScaleEventService {
 
         List<Long> basketIds = baskets.stream().map(SortingScaleEventEntity::getId).toList();
         if (sortingScaleEventDao.markBasketCompleted(basketIds, completion.getId(), ScmOperator.current()) != basketIds
-                .size()) {
+            .size()) {
             throw new IllegalStateException("筐状态已被并发修改，taskItemId=" + form.getTaskItemId());
         }
 
@@ -315,15 +318,15 @@ public class SortingScaleEventService {
      */
     private static boolean sameBasket(SortingScaleEventEntity existing, SortingScaleEventEntity row) {
         return Objects.equals(existing.getTaskId(), row.getTaskId())
-                && Objects.equals(existing.getTaskItemId(), row.getTaskItemId())
-                && Objects.equals(existing.getBasketNo(), row.getBasketNo())
-                && Objects.equals(existing.getDeviceCode(), row.getDeviceCode())
-                && existing.getRawReading().compareTo(row.getRawReading()) == 0 && existing.getNetWeight() != null
-                && row.getNetWeight() != null && existing.getNetWeight().compareTo(row.getNetWeight()) == 0
-                && Objects.equals(existing.getUnit(), row.getUnit())
-                && Objects.equals(existing.getBusinessUnit(), row.getBusinessUnit())
-                && Objects.equals(existing.getStableFlag(), row.getStableFlag())
-                && existing.getCapturedAt().isEqual(row.getCapturedAt());
+            && Objects.equals(existing.getTaskItemId(), row.getTaskItemId())
+            && Objects.equals(existing.getBasketNo(), row.getBasketNo())
+            && Objects.equals(existing.getDeviceCode(), row.getDeviceCode())
+            && existing.getRawReading().compareTo(row.getRawReading()) == 0 && existing.getNetWeight() != null
+            && row.getNetWeight() != null && existing.getNetWeight().compareTo(row.getNetWeight()) == 0
+            && Objects.equals(existing.getUnit(), row.getUnit())
+            && Objects.equals(existing.getBusinessUnit(), row.getBusinessUnit())
+            && Objects.equals(existing.getStableFlag(), row.getStableFlag())
+            && existing.getCapturedAt().isEqual(row.getCapturedAt());
     }
 
     private static SortingScaleBasketVO toBasketVO(SortingScaleEventEntity row, boolean duplicated) {
@@ -402,7 +405,7 @@ public class SortingScaleEventService {
         sortingTaskService.enter(event.getTaskId(), entryForm);
 
         if (sortingScaleEventDao.markAccepted(event.getId(), event.getVersion(), event.getRawReading(),
-                ScmOperator.current()) != 1) {
+            ScmOperator.current()) != 1) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_STATE_INVALID);
         }
     }
@@ -414,7 +417,7 @@ public class SortingScaleEventService {
     public void reject(Long id, SortingScaleRejectForm form) {
         SortingScaleEventEntity event = requirePending(id, form.getVersion());
         if (sortingScaleEventDao.markRejected(event.getId(), event.getVersion(), form.getReason().trim(),
-                ScmOperator.current()) != 1) {
+            ScmOperator.current()) != 1) {
             throw new ScmBusinessException(SortingErrorCode.SCALE_EVENT_STATE_INVALID);
         }
     }
@@ -451,7 +454,7 @@ public class SortingScaleEventService {
 
     private Map<Long, SortingTaskItemEntity> itemsOf(List<SortingScaleEventEntity> rows) {
         List<Long> itemIds = rows.stream().map(SortingScaleEventEntity::getTaskItemId).filter(Objects::nonNull)
-                .distinct().toList();
+            .distinct().toList();
         if (itemIds.isEmpty()) {
             return Map.of();
         }
@@ -481,7 +484,7 @@ public class SortingScaleEventService {
     }
 
     private static SortingScaleEventVO toVO(SortingScaleEventEntity row, SortingTaskItemEntity item,
-            boolean duplicated) {
+        boolean duplicated) {
         SortingScaleEventVO vo = new SortingScaleEventVO();
         vo.setId(row.getId());
         vo.setEventKey(row.getEventKey());

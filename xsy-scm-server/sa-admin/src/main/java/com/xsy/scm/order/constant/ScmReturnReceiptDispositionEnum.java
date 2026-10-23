@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmReturnReceiptDispositionEnum {
 
-    /** 退回库存：仍可销售，回到可用库存。 */
+    /**
+     * 退回库存：仍可销售，回到可用库存。
+     */
     RETURN_TO_STOCK("退回库存"),
 
-    /** 报损：不可再售，按报损处理。 */
+    /**
+     * 报损：不可再售，按报损处理。
+     */
     DAMAGE("报损");
 
     private final String desc;

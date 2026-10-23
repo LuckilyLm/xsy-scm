@@ -14,16 +14,20 @@ import com.xsy.scm.order.constant.ScmOrderStatusEnum;
 import com.xsy.scm.payment.constant.ScmRefundFundingAllocationStatusEnum;
 import com.xsy.scm.sorting.permission.SortingPermission;
 import com.xsy.scm.sorting.support.SortingAccess;
+
 import java.util.List;
 import java.util.Map;
 import java.math.BigDecimal;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 员工订单详情的只读事实组合；写命令及操作日志仍使用订单域原有快照。 */
+/**
+ * 员工订单详情的只读事实组合；写命令及操作日志仍使用订单域原有快照。
+ */
 @Service
 @RequiredArgsConstructor
 public class SalesOrderDetailReadService {
@@ -42,7 +46,7 @@ public class SalesOrderDetailReadService {
         detail.setTags(tagDao.tagsByOrders(List.of(orderId)));
 
         boolean fundingVisible = ScmDataScopeService.hasPermission(FinancePermission.RECEIVABLE_QUERY)
-                && ScmDataScopeService.hasPermission(FinancePermission.RECEIPT_QUERY);
+            && ScmDataScopeService.hasPermission(FinancePermission.RECEIPT_QUERY);
         detail.setFundingFactsVisible(fundingVisible);
         if (fundingVisible && ScmOrderStatusEnum.CONFIRMED.name().equals(detail.getStatus())) {
             BigDecimal payable = orderPayableQueryService.payableOfConfirmedOrder(orderId);
@@ -56,22 +60,22 @@ public class SalesOrderDetailReadService {
         }
 
         boolean inventoryVisible = ScmDataScopeService.hasPermission(InventoryPermission.RESERVATION_QUERY)
-                && !scope.warehouseNowhere();
+            && !scope.warehouseNowhere();
         detail.setInventoryFactsVisible(inventoryVisible);
         if (inventoryVisible) {
             detail.setInventoryReservations(factDao.reservations(orderId, scope.getWarehouseScope()));
         }
 
         boolean sortingVisible = ScmDataScopeService.hasPermission(SortingPermission.TASK_QUERY)
-                && !scope.warehouseNowhere();
+            && !scope.warehouseNowhere();
         detail.setSortingFactsVisible(sortingVisible);
         if (sortingVisible) {
             detail.setSortingProgress(factDao.sorting(orderId, scope.getWarehouseScope(), scope.getEmployeeId(),
-                    sortingAccess.crossAssignee()));
+                sortingAccess.crossAssignee()));
         }
 
         boolean deliveryVisible = ScmDataScopeService.hasPermission(DeliveryPermission.ROUTE_QUERY)
-                && !scope.getDriverScope().isEmpty();
+            && !scope.getDriverScope().isEmpty();
         detail.setDeliveryFactsVisible(deliveryVisible);
         if (deliveryVisible) {
             detail.setDeliveryProgress(factDao.delivery(orderId, scope.getDriverScope()));
@@ -80,13 +84,13 @@ public class SalesOrderDetailReadService {
         boolean returnsVisible = ScmDataScopeService.hasPermission(OrderPermission.RETURN_QUERY);
         detail.setReturnFactsVisible(returnsVisible);
         boolean receivablesVisible = returnsVisible
-                && ScmDataScopeService.hasPermission(FinancePermission.RECEIVABLE_QUERY);
+            && ScmDataScopeService.hasPermission(FinancePermission.RECEIVABLE_QUERY);
         detail.setReceivableFactsVisible(receivablesVisible);
         if (returnsVisible) {
             List<SalesOrderDetailVO.ReturnFact> returns = factDao.returns(orderId);
             if (receivablesVisible && !returns.isEmpty()) {
                 Map<Long, SalesOrderDetailVO.RedReceivableFact> redByReturn = factDao.redReceivables(orderId).stream()
-                        .collect(Collectors.toMap(SalesOrderDetailVO.RedReceivableFact::getReturnId, fact -> fact));
+                    .collect(Collectors.toMap(SalesOrderDetailVO.RedReceivableFact::getReturnId, fact -> fact));
                 for (SalesOrderDetailVO.ReturnFact row : returns) {
                     SalesOrderDetailVO.RedReceivableFact red = redByReturn.get(row.getReturnId());
                     row.setRedReceivableRecorded(red != null);
@@ -103,11 +107,11 @@ public class SalesOrderDetailReadService {
         if (refundsVisible) {
             List<SalesOrderDetailVO.RefundFact> refunds = factDao.refunds(orderId);
             if (!refunds.isEmpty()) {
-                Map<Long, SalesOrderDetailVO.RefundFundingFact> fundingByRefund = factDao.refundFunding(orderId)
-                        .stream()
+                Map<Long,
+                    SalesOrderDetailVO.RefundFundingFact> fundingByRefund = factDao.refundFunding(orderId).stream()
                         .collect(Collectors.toMap(SalesOrderDetailVO.RefundFundingFact::getRefundId, fact -> fact));
                 factDao.legacyRefundFunding(orderId)
-                        .forEach(fact -> fundingByRefund.putIfAbsent(fact.getRefundId(), fact));
+                    .forEach(fact -> fundingByRefund.putIfAbsent(fact.getRefundId(), fact));
                 for (SalesOrderDetailVO.RefundFact row : refunds) {
                     SalesOrderDetailVO.RefundFundingFact funding = fundingByRefund.get(row.getRefundId());
                     if (funding == null) {

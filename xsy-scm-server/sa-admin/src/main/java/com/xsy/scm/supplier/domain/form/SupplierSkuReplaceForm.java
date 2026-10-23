@@ -9,7 +9,9 @@ import lombok.Data;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 维护商品关联时提交完整列表；传空列表表示清除该供应商全部关联，不是跳过保存。 */
+/**
+ * 维护商品关联时提交完整列表；传空列表表示清除该供应商全部关联，不是跳过保存。
+ */
 @Data
 public class SupplierSkuReplaceForm {
 

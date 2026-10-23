@@ -4,7 +4,9 @@ import com.xsy.scm.common.constant.ScmProductTypeEnum;
 import com.xsy.scm.sorting.constant.ScmSortingOccupationStatusEnum;
 import com.xsy.scm.sorting.domain.entity.SortingTaskItemEntity;
 import com.xsy.scm.sorting.domain.vo.SortingPartRecordVO;
+
 import java.math.BigDecimal;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
@@ -22,14 +24,14 @@ public class SortingStandardPolicy {
         }
         BigDecimal quantity = row.getPlannedQuantitySnapshot();
         if (quantity == null || quantity.signum() <= 0 || quantity.scale() > 4
-                || quantity.compareTo(new BigDecimal("99999999999999.9999")) > 0) {
+            || quantity.compareTo(new BigDecimal("99999999999999.9999")) > 0) {
             return "计划数量无效，请人工核对";
         }
         if (StringUtils.isBlank(row.getSaleUnitSnapshot())) {
             return "缺少冻结销售单位，请人工核对";
         }
-        if (previous != null && (previous.getTotalQuantity() == null
-                || previous.getTotalQuantity().compareTo(quantity) != 0)) {
+        if (previous != null
+            && (previous.getTotalQuantity() == null || previous.getTotalQuantity().compareTo(quantity) != 0)) {
             return "分次累计量与计划量不同，请人工确认并填写原因";
         }
         return null;

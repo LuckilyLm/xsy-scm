@@ -6,7 +6,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 import java.math.BigDecimal;
 
-/** 缺口预览按仓库、商品规格和需求单位汇总。数量由服务端精确计算，单位不一致时明确返回无法比较，前端不猜换算比例。 */
+/**
+ * 缺口预览按仓库、商品规格和需求单位汇总。数量由服务端精确计算，单位不一致时明确返回无法比较，前端不猜换算比例。
+ */
 @Data
 public class PurchaseDemandSummaryVO {
 
@@ -83,14 +85,18 @@ public class PurchaseDemandSummaryVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal stockComparisonGap;
 
-    /** Open purchase coverage split into unallocated in-transit quantity and allocated coverage. */
+    /**
+     * Open purchase coverage split into unallocated in-transit quantity and allocated coverage.
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal inTransitQuantity;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal purchaseCoverageQuantity;
 
-    /** Net purchase gap after stock, in-transit quantity and existing purchase coverage. */
+    /**
+     * Net purchase gap after stock, in-transit quantity and existing purchase coverage.
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal netPurchaseGap;
 

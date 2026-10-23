@@ -13,12 +13,18 @@ import java.math.BigDecimal;
 @Data
 public class FinanceOrderDiscountLineDto {
 
-    /** 所属销售订单主键；批量取数时用来把行归回订单，单订单取数不使用。 */
+    /**
+     * 所属销售订单主键；批量取数时用来把行归回订单，单订单取数不使用。
+     */
     private Long salesOrderId;
 
-    /** 订单行主键，与出库行 / 退货行上的 {@code order_item_id} 对齐。 */
+    /**
+     * 订单行主键，与出库行 / 退货行上的 {@code order_item_id} 对齐。
+     */
     private Long orderItemId;
 
-    /** 该订单行承担的优惠额（正数，表示减免）。 */
+    /**
+     * 该订单行承担的优惠额（正数，表示减免）。
+     */
     private BigDecimal discountAmount;
 }

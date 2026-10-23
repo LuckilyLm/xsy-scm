@@ -1,6 +1,7 @@
 package com.xsy.scm.report.support;
 
 import com.xsy.scm.report.domain.vo.PurchaseReportVO;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ public final class PurchasePriceTrendComparison {
         Map<SeriesKey, List<PurchaseReportVO.PriceTrendPoint>> groups = new HashMap<>();
         for (PurchaseReportVO.PriceTrendPoint point : points) {
             groups.computeIfAbsent(new SeriesKey(point.getSkuId(), point.getPurchaseUnit()), key -> new ArrayList<>())
-                    .add(point);
+                .add(point);
         }
         for (List<PurchaseReportVO.PriceTrendPoint> group : groups.values()) {
             group.sort(Comparator.comparing(PurchaseReportVO.PriceTrendPoint::getBizDate));
@@ -46,7 +47,7 @@ public final class PurchasePriceTrendComparison {
                     point.setPriceChangeAmount(difference);
                     if (previous.signum() != 0) {
                         point.setPriceChangePercent(
-                                difference.multiply(BigDecimal.valueOf(100)).divide(previous, 4, RoundingMode.HALF_UP));
+                            difference.multiply(BigDecimal.valueOf(100)).divide(previous, 4, RoundingMode.HALF_UP));
                     }
                 }
                 previous = current;

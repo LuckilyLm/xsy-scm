@@ -34,6 +34,7 @@ import com.xsy.scm.order.domain.vo.OrderReturnVO;
 import com.xsy.scm.order.manager.OrderAmountCalculator;
 import com.xsy.scm.order.manager.OrderOperationLogRecorder;
 import com.xsy.scm.order.manager.OrderValidator;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
@@ -43,12 +44,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_ITEM_VERSION_CONFLICT;
 import static com.xsy.scm.order.constant.OrderErrorCode.ORDER_RETURN_APPROVAL_INVALID;
@@ -86,7 +89,7 @@ public class OrderReturnService {
             return ScmDataScopeService.emptyPage(orderReturnQueryForm);
         var page = SmartPageUtil.convert2PageQuery(orderReturnQueryForm);
         return SmartPageUtil.convert2PageResult(page,
-                orderReturnDao.query(page, orderReturnQueryForm, dataScopeContext.getOrderSellerScope()));
+            orderReturnDao.query(page, orderReturnQueryForm, dataScopeContext.getOrderSellerScope()));
     }
 
     private OrderReturnVO vo(OrderReturnEntity orderReturnEntity) {
@@ -101,7 +104,9 @@ public class OrderReturnService {
         return orderReturnResultVO;
     }
 
-    /** 退货单详情读（HTTP 入口）：可见性跟随父订单的负责人范围。 */
+    /**
+     * 退货单详情读（HTTP 入口）：可见性跟随父订单的负责人范围。
+     */
     public OrderReturnDetailVO detail(Long orderReturnId) {
         return detail(orderReturnId, dataScopeService.resolve());
     }
@@ -131,14 +136,14 @@ public class OrderReturnService {
         var orderReturnResultVO = new OrderReturnDetailVO();
         BeanUtils.copyProperties(vo(orderReturnEntity), orderReturnResultVO);
         var orderItems = salesOrderItemDao.list(orderReturnEntity.getOrderId()).stream()
-                .collect(Collectors.toMap(SalesOrderItemEntity::getId, Function.identity()));
+            .collect(Collectors.toMap(SalesOrderItemEntity::getId, Function.identity()));
         orderReturnResultVO.setItems(orderReturnItemDao.list(orderReturnEntity.getId()).stream().map(returnItem -> {
             var returnItemVO = new OrderReturnItemVO();
             BeanUtils.copyProperties(returnItem, returnItemVO);
             returnItemVO.setReturnItemId(returnItem.getId());
             returnItemVO.setReceivedQuantity(orderReturnReceiptItemDao.receivedQuantity(returnItem.getId()));
             returnItemVO.setReceiptAllocations(orderReturnReceiptItemDao.listByReturnItemId(returnItem.getId()).stream()
-                    .map(this::receiptAllocation).toList());
+                .map(this::receiptAllocation).toList());
             var orderItem = orderItems.get(returnItem.getOrderItemId());
             if (orderItem != null) {
                 returnItemVO.setProductName(orderItem.getProductNameSnapshot());
@@ -188,7 +193,7 @@ public class OrderReturnService {
     }
 
     private OrderReturnDetailVO create(OrderReturnAddForm orderReturnAddForm, String key,
-            boolean enforceEmployeeScope) {
+        boolean enforceEmployeeScope) {
         var claim = orderIdempotencyService.claim("ORDER_RETURN_CREATE", key, orderReturnAddForm);
         if (claim.replay()) {
             // 重放同样要过范围：幂等 scope 含 operator，B 拿不到 A 的记录；
@@ -196,7 +201,7 @@ public class OrderReturnService {
             // 商城入口已由 MallAfterSaleService 按登录客户判过归属，不再套员工范围。
             if (enforceEmployeeScope) {
                 requireParentOrderVisible(orderReturnAddForm.getOrderId(),
-                        dataScopeService.resolve().getOrderSellerScope());
+                    dataScopeService.resolve().getOrderSellerScope());
             }
             return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
         }
@@ -207,7 +212,7 @@ public class OrderReturnService {
             throw new ScmBusinessException(ORDER_RETURN_ORDER_NOT_CONFIRMED);
         OrderValidator.reason(orderReturnAddForm.getReason(), ORDER_RETURN_ITEM_INVALID);
         var originals = salesOrderItemDao.list(order.getId()).stream()
-                .collect(Collectors.toMap(SalesOrderItemEntity::getId, Function.identity()));
+            .collect(Collectors.toMap(SalesOrderItemEntity::getId, Function.identity()));
         var orderReturnEntity = new OrderReturnEntity();
         orderReturnEntity.setOrderId(order.getId());
         orderReturnEntity.setCustomerId(order.getCustomerId());
@@ -226,7 +231,7 @@ public class OrderReturnService {
             salesOrderItemDao.lock(original.getId());
             var quantity = OrderValidator.decimal(returnItem.getRequestedQuantity(), true);
             if (original.getActualQuantity() == null || orderReturnItemDao.reserved(original.getId()).add(quantity)
-                    .compareTo(original.getActualQuantity()) > 0)
+                .compareTo(original.getActualQuantity()) > 0)
                 throw new ScmBusinessException(ORDER_RETURN_QUANTITY_EXCEEDED);
             var row = new OrderReturnItemEntity();
             row.setOrderItemId(original.getId());
@@ -249,16 +254,16 @@ public class OrderReturnService {
         var result = detailSnapshot(orderReturnEntity.getId());
         // 退货与取消、退款一样必须留操作日志，日志与业务变更使用同一事务。
         orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
-                "退货单 " + orderReturnEntity.getReturnNo() + " 建单", null, Map.of("status", result.getStatus()));
+            "退货单 " + orderReturnEntity.getReturnNo() + " 建单", null, Map.of("status", result.getStatus()));
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
-                orderReturnEntity.getId(), result);
+            orderReturnEntity.getId(), result);
         return result;
     }
 
     @Transactional(rollbackFor = Exception.class)
     public OrderReturnDetailVO approve(OrderReturnApproveForm orderReturnApproveForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_RETURN_APPROVE:" + orderReturnApproveForm.getReturnId(), key,
-                orderReturnApproveForm);
+            orderReturnApproveForm);
         if (claim.replay()) {
             detail(orderReturnApproveForm.getReturnId());
             return orderIdempotencyService.replay(claim, OrderReturnDetailVO.class);
@@ -270,7 +275,7 @@ public class OrderReturnService {
         var quantities = new HashMap<Long, BigDecimal>();
         for (var returnItem : orderReturnApproveForm.getItems()) {
             if (quantities.put(returnItem.getOrderItemId(),
-                    OrderValidator.decimal(returnItem.getApprovedQuantity(), false)) != null)
+                OrderValidator.decimal(returnItem.getApprovedQuantity(), false)) != null)
                 throw new ScmBusinessException(ORDER_RETURN_APPROVAL_INVALID);
         }
         if (quantities.size() != rows.size())
@@ -283,7 +288,7 @@ public class OrderReturnService {
             row.setApprovedAmount(OrderAmountCalculator.lineAmount(qty, row.getLockedUnitPrice()));
         }
         var total = OrderAmountCalculator
-                .orderAmount(rows.stream().map(OrderReturnItemEntity::getApprovedAmount).toList());
+            .orderAmount(rows.stream().map(OrderReturnItemEntity::getApprovedAmount).toList());
         if (total.signum() <= 0)
             throw new ScmBusinessException(ORDER_RETURN_APPROVAL_INVALID);
         for (var row : rows) {
@@ -316,22 +321,21 @@ public class OrderReturnService {
             refund.setUpdatedBy(refund.getCreatedBy());
             orderRefundDao.insert(refund);
             orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
-                    "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
-                    Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
-                    Map.of("status", result.getStatus(), "approvedAmount", String.valueOf(total), "refundAmount",
-                            String.valueOf(refund.getRefundAmount())));
+                "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，并生成退款单 " + refund.getRefundNo(),
+                Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()), Map.of("status", result.getStatus(),
+                    "approvedAmount", String.valueOf(total), "refundAmount", String.valueOf(refund.getRefundAmount())));
         } else {
             // 优惠抵满订单金额时退款净额为 0：退货本身仍然成立，只是没有可退的钱。
             // 不建退款单（order_refund.refund_amount 恒 > 0），也不留 0 元事实，
             // 因此这里是「允许退货、无需退款」而不是失败。
             orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
-                    "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，退款净额为 0，无需退款",
-                    Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()), Map.of("status", result.getStatus(),
-                            "approvedAmount", String.valueOf(total), "refundAmount", refundAmount.toPlainString()));
+                "退货单 " + orderReturnEntity.getReturnNo() + " 审批通过，退款净额为 0，无需退款",
+                Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()), Map.of("status", result.getStatus(),
+                    "approvedAmount", String.valueOf(total), "refundAmount", refundAmount.toPlainString()));
         }
 
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
-                orderReturnEntity.getId(), result);
+            orderReturnEntity.getId(), result);
         return result;
     }
 
@@ -357,14 +361,14 @@ public class OrderReturnService {
     }
 
     private OrderReturnDetailVO decide(OrderReturnDecisionForm orderReturnDecisionForm, String key,
-            ScmOrderReturnStatusEnum state, boolean enforceEmployeeScope) {
+        ScmOrderReturnStatusEnum state, boolean enforceEmployeeScope) {
         // 商城撤销的版本会在首次成功后变化；指纹只包含稳定的售后单与固定撤销原因。
         // 管理端驳回/撤销保留原表单指纹与版本并发约束。
         Object requestFingerprint = !enforceEmployeeScope && state == ScmOrderReturnStatusEnum.CANCELLED
-                ? mallCancelFingerprint(orderReturnDecisionForm)
-                : orderReturnDecisionForm;
+            ? mallCancelFingerprint(orderReturnDecisionForm)
+            : orderReturnDecisionForm;
         var claim = orderIdempotencyService.claim(
-                "ORDER_RETURN_" + state.name() + ":" + orderReturnDecisionForm.getReturnId(), key, requestFingerprint);
+            "ORDER_RETURN_" + state.name() + ":" + orderReturnDecisionForm.getReturnId(), key, requestFingerprint);
         if (claim.replay()) {
             // 商城重放已由 MallAfterSaleService 按客户归属判过，不再套员工范围。
             if (enforceEmployeeScope) {
@@ -387,11 +391,11 @@ public class OrderReturnService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         var result = detailSnapshot(orderReturnEntity.getId());
         orderLogs.record(orderReturnEntity.getOrderId(), ScmOrderOperationTypeEnum.RETURN,
-                orderReturnDecisionForm.getDecisionReason().trim(),
-                Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
-                Map.of("status", state.name(), "decisionReason", orderReturnEntity.getDecisionReason()));
+            orderReturnDecisionForm.getDecisionReason().trim(),
+            Map.of("status", ScmOrderReturnStatusEnum.PENDING.name()),
+            Map.of("status", state.name(), "decisionReason", orderReturnEntity.getDecisionReason()));
         orderIdempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.ORDER_RETURN.name(),
-                orderReturnEntity.getId(), result);
+            orderReturnEntity.getId(), result);
         return result;
     }
 
@@ -406,7 +410,9 @@ public class OrderReturnService {
         return lock(orderReturnId);
     }
 
-    /** 退货操作先锁退货单，再锁父订单和明细，并校验父订单的业务员归属。所有退货写命令都必须经过该校验，不能只依赖详情页的数据权限。 */
+    /**
+     * 退货操作先锁退货单，再锁父订单和明细，并校验父订单的业务员归属。所有退货写命令都必须经过该校验，不能只依赖详情页的数据权限。
+     */
     private OrderReturnEntity lock(Long orderReturnId) {
         return lock(orderReturnId, true);
     }

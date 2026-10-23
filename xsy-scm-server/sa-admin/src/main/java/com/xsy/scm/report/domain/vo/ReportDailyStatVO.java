@@ -16,7 +16,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 @Data
 public class ReportDailyStatVO {
 
-    /** 业务日期，{@code yyyy-MM-dd}（Asia/Shanghai）。 */
+    /**
+     * 业务日期，{@code yyyy-MM-dd}（Asia/Shanghai）。
+     */
     private String bizDate;
 
     private Long confirmedOrderCount;
@@ -35,6 +37,8 @@ public class ReportDailyStatVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal purchaseInCostAmount;
 
-    /** 当日无 {@code unit_cost} 的采购入库流水行数；&gt; 0 表示当日成本金额不完整。 */
+    /**
+     * 当日无 {@code unit_cost} 的采购入库流水行数；&gt; 0 表示当日成本金额不完整。
+     */
     private Integer purchaseInCostMissingCount;
 }

@@ -20,7 +20,7 @@ import java.time.format.ResolverStyle;
 public class ScmOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
 
     private static final DateTimeFormatter INPUT_FORMATTER = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss")
-            .withResolverStyle(ResolverStyle.STRICT);
+        .withResolverStyle(ResolverStyle.STRICT);
 
     @Override
     public OffsetDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
@@ -38,7 +38,7 @@ public class ScmOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTi
 
         try {
             return LocalDateTime.parse(value, INPUT_FORMATTER).atZone(ScmOffsetDateTimeSerializer.DISPLAY_ZONE)
-                    .toOffsetDateTime();
+                .toOffsetDateTime();
         } catch (DateTimeParseException ignored) {
             // 展示格式不匹配时继续兼容 ISO-8601 请求和持久化结果。
         }
@@ -47,7 +47,7 @@ public class ScmOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTi
             return OffsetDateTime.parse(value);
         } catch (DateTimeParseException e) {
             throw InvalidFormatException.from(parser, "无法解析为 OffsetDateTime，请使用 yyyy-MM-dd HH:mm:ss 或 ISO-8601"
-                    + "（例如 2026-09-18T10:51:51+08:00），实际收到：" + value, value, OffsetDateTime.class);
+                + "（例如 2026-09-18T10:51:51+08:00），实际收到：" + value, value, OffsetDateTime.class);
         }
     }
 }

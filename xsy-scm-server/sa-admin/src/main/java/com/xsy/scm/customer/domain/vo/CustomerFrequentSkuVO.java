@@ -7,7 +7,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 常购商品从近 N 天已确认订单汇总，不另存数据。不同销售单位分开统计，订购量不等于实重；最近价格只作参考，不参与当前定价。 */
+/**
+ * 常购商品从近 N 天已确认订单汇总，不另存数据。不同销售单位分开统计，订购量不等于实重；最近价格只作参考，不参与当前定价。
+ */
 @Data
 public class CustomerFrequentSkuVO {
 

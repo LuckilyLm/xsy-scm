@@ -42,7 +42,7 @@ public class FinanceReceiptController {
     @SaCheckPermission(FinancePermission.RECEIPT_ADD)
     @OperateLog
     public ResponseDTO<FinanceReceiptVO> add(@Valid @RequestBody FinanceReceiptAddForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(financeReceiptService.add(form, idempotencyKey));
     }
 
@@ -50,7 +50,7 @@ public class FinanceReceiptController {
     @SaCheckPermission(FinancePermission.RECEIPT_REVERSE)
     @OperateLog
     public ResponseDTO<FinanceReceiptVO> reverse(@Valid @RequestBody FinanceReceiptReverseForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(financeReceiptService.reverse(form, idempotencyKey));
     }
 
@@ -70,7 +70,7 @@ public class FinanceReceiptController {
     @SaCheckPermission(FinancePermission.RECEIPT_ADD)
     @OperateLog
     public ResponseDTO<FinanceReceiptVO> collectCod(@Valid @RequestBody FinanceCodCollectionForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(financeReceiptService.collectCod(form, idempotencyKey));
     }
 }

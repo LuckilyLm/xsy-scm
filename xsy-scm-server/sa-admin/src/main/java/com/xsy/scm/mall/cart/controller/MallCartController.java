@@ -40,7 +40,7 @@ public class MallCartController {
 
     @PutMapping("/items/{skuId}")
     public ResponseDTO<MallCartVO> updateQuantity(@PathVariable Long skuId,
-            @Valid @RequestBody MallCartQuantityForm form) {
+        @Valid @RequestBody MallCartQuantityForm form) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(cartService.updateQuantity(MallRequestSupport.current(), skuId, form));
     }

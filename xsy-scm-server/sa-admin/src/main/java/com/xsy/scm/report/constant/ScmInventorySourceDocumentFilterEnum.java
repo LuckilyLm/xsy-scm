@@ -13,28 +13,44 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmInventorySourceDocumentFilterEnum {
 
-    /** 采购收货明细。 */
+    /**
+     * 采购收货明细。
+     */
     PURCHASE_RECEIPT_ITEM("采购收货"),
 
-    /** 销售出库明细。 */
+    /**
+     * 销售出库明细。
+     */
     SALES_OUTBOUND_ITEM("销售出库"),
 
-    /** 盘点明细。 */
+    /**
+     * 盘点明细。
+     */
     STOCKTAKE_ITEM("盘点"),
 
-    /** 报损报溢明细。 */
+    /**
+     * 报损报溢明细。
+     */
     LOSS_GAIN_ITEM("报损报溢"),
 
-    /** 调拨出库明细。 */
+    /**
+     * 调拨出库明细。
+     */
     TRANSFER_OUT_ITEM("调拨出库"),
 
-    /** 调拨入库明细。 */
+    /**
+     * 调拨入库明细。
+     */
     TRANSFER_IN_ITEM("调拨入库"),
 
-    /** 规格转换出库明细。 */
+    /**
+     * 规格转换出库明细。
+     */
     CONVERT_OUT_ITEM("转换出库"),
 
-    /** 规格转换入库明细。 */
+    /**
+     * 规格转换入库明细。
+     */
     CONVERT_IN_ITEM("转换入库");
 
     private final String desc;

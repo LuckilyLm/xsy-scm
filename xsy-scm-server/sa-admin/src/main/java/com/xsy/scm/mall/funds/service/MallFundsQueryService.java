@@ -17,9 +17,11 @@ import com.xsy.scm.mall.funds.domain.vo.MallCreditSummaryVO;
 import com.xsy.scm.mall.funds.domain.vo.MallReceivableVO;
 import com.xsy.scm.mall.funds.domain.vo.MallWalletMovementVO;
 import com.xsy.scm.mall.funds.domain.vo.MallWalletSummaryVO;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -53,13 +55,13 @@ public class MallFundsQueryService {
 
     @Transactional(readOnly = true)
     public PageResult<MallWalletMovementVO> walletMovements(RequestMallCustomer identity,
-            MallWalletMovementQueryForm form) {
+        MallWalletMovementQueryForm form) {
         CustomerEntity customer = customer(identity);
         CustomerEntity settlement = customerService.requireSettlementAccount(customer);
         Page<MallWalletMovementVO> page = new Page<>(form.getPageNum(), form.getPageSize(), true);
         page.setOptimizeCountSql(false);
         List<MallWalletMovementVO> rows = sourceDao.walletMovements(page, customer.getId(), settlement.getId(),
-                form.getType(), form.getDirection());
+            form.getType(), form.getDirection());
         return SmartPageUtil.convert2PageResult(page, rows);
     }
 
@@ -72,10 +74,10 @@ public class MallFundsQueryService {
         MallCreditSummaryVO result = new MallCreditSummaryVO();
         result.setSharedSettlement(shared);
         result.setCreditLimitVisible(
-                !shared && settlement.getCreditLimit() != null && settlement.getCreditLimit().signum() > 0);
+            !shared && settlement.getCreditLimit() != null && settlement.getCreditLimit().signum() > 0);
         if (!shared) {
             result.setCreditLimit(
-                    Boolean.TRUE.equals(result.getCreditLimitVisible()) ? settlement.getCreditLimit() : null);
+                Boolean.TRUE.equals(result.getCreditLimitVisible()) ? settlement.getCreditLimit() : null);
             result.setCreditPeriodType(settlement.getCreditPeriodType());
             result.setCreditPeriodValue(settlement.getCreditPeriodValue());
             result.setCreditPeriodUnit(settlement.getCreditPeriodUnit());
@@ -94,7 +96,7 @@ public class MallFundsQueryService {
         Page<FinanceReceivableVO> page = new Page<>(form.getPageNum(), form.getPageSize(), true);
         page.setOptimizeCountSql(false);
         List<MallReceivableVO> rows = sourceDao.receivables(page, customerId, form.getSettleState()).stream()
-                .map(MallFundsQueryService::receivableView).toList();
+            .map(MallFundsQueryService::receivableView).toList();
         return SmartPageUtil.convert2PageResult(page, rows);
     }
 
@@ -114,7 +116,7 @@ public class MallFundsQueryService {
     private boolean sharedSettlement(CustomerEntity customer, CustomerEntity settlement) {
         // 唯一判定点见 CustomerValidator.sharedSettlement：商城结算方式选项必须与这里同口径。
         return CustomerValidator.sharedSettlement(customer.getId(), settlement.getId(),
-                customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
+            customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
     }
 
     private static MallReceivableVO receivableView(FinanceReceivableVO row) {
@@ -126,7 +128,7 @@ public class MallFundsQueryService {
         result.setSettleState(row.getSettleState());
         result.setDueDate(row.getDueDate());
         result.setOverdue(row.getDueDate() != null && row.getOpenAmount().signum() > 0
-                && row.getDueDate().isBefore(LocalDate.now(BUSINESS_ZONE)));
+            && row.getDueDate().isBefore(LocalDate.now(BUSINESS_ZONE)));
         result.setEventAt(row.getEventAt());
         result.setAmount(row.getAmount());
         result.setRedAmount(row.getAmount().subtract(row.getNetAmount()));

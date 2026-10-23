@@ -50,14 +50,13 @@ public class SalesOrderImportService {
     private static final int MAX_ITEMS_PER_ORDER = 100;
     private static final int MAX_ERRORS = 1000;
     private static final List<String> HEADERS = List.of("模板版本", "导入订单标识", "客户编码", "收货人", "联系电话", "收货地址", "期望配送时间",
-            "商品规格编码", "下单数量", "人工单价", "改价原因", "订单备注");
+        "商品规格编码", "下单数量", "人工单价", "改价原因", "订单备注");
     private static final List<BiConsumer<SalesOrderImportRow, String>> SETTERS = List.of(
-            SalesOrderImportRow::setTemplateVersion, SalesOrderImportRow::setOrderKey,
-            SalesOrderImportRow::setCustomerCode, SalesOrderImportRow::setReceiverName,
-            SalesOrderImportRow::setReceiverPhone, SalesOrderImportRow::setAddress,
-            SalesOrderImportRow::setExpectDeliveryTime, SalesOrderImportRow::setSkuCode,
-            SalesOrderImportRow::setOrderedQuantity, SalesOrderImportRow::setUnitPrice,
-            SalesOrderImportRow::setOverrideReason, SalesOrderImportRow::setRemark);
+        SalesOrderImportRow::setTemplateVersion, SalesOrderImportRow::setOrderKey, SalesOrderImportRow::setCustomerCode,
+        SalesOrderImportRow::setReceiverName, SalesOrderImportRow::setReceiverPhone, SalesOrderImportRow::setAddress,
+        SalesOrderImportRow::setExpectDeliveryTime, SalesOrderImportRow::setSkuCode,
+        SalesOrderImportRow::setOrderedQuantity, SalesOrderImportRow::setUnitPrice,
+        SalesOrderImportRow::setOverrideReason, SalesOrderImportRow::setRemark);
 
     private final CustomerDao customerDao;
     private final ProductSkuOptionDao productSkuOptionDao;
@@ -65,7 +64,7 @@ public class SalesOrderImportService {
     private final PriceResolver priceResolver;
 
     public SalesOrderImportResultVO importFile(MultipartFile file, String key, boolean priceOverrideAllowed)
-            throws Exception {
+        throws Exception {
         var result = new SalesOrderImportResultVO();
         if (file.getSize() > 5L * 1024 * 1024) {
             addError(result, 0, null, "文件", "FILE_SIZE", "导入文件不能超过 5 MiB");
@@ -86,14 +85,14 @@ public class SalesOrderImportService {
             var group = assembled.groups().get(exception.getOrderIndex());
             var cause = exception.getCause();
             var code = cause instanceof ScmBusinessException business
-                    ? String.valueOf(business.getErrorCode().getCode())
-                    : "WRITE_CONFLICT";
+                ? String.valueOf(business.getErrorCode().getCode())
+                : "WRITE_CONFLICT";
             var message = cause instanceof ScmBusinessException business
-                    ? business.getErrorCode().getMsg()
-                    : "订单数据冲突或金额超出范围，请检查后重试";
+                ? business.getErrorCode().getMsg()
+                : "订单数据冲突或金额超出范围，请检查后重试";
             for (var indexed : group)
                 addError(assembled.result(), indexed.rowNumber(), indexed.row().getOrderKey(), "订单", code,
-                        message + "；整批已回滚");
+                    message + "；整批已回滚");
             return assembled.result();
         }
     }
@@ -111,7 +110,7 @@ public class SalesOrderImportService {
             for (int column = 0; column < HEADERS.size(); column++) {
                 if (header == null || !headerMatches(column, trim(formatter.formatCellValue(header.getCell(column))))) {
                     addError(result, 1, null, CellReference.convertNumToColString(column), "HEADER_INVALID",
-                            "表头应为“" + HEADERS.get(column) + "”，请使用最新模板");
+                        "表头应为“" + HEADERS.get(column) + "”，请使用最新模板");
                 }
             }
             if (result.getTotalErrors() > 0)
@@ -129,8 +128,8 @@ public class SalesOrderImportService {
                     hasData = true;
                     var column = cell.getColumnIndex();
                     var name = column < HEADERS.size()
-                            ? HEADERS.get(column)
-                            : CellReference.convertNumToColString(column);
+                        ? HEADERS.get(column)
+                        : CellReference.convertNumToColString(column);
                     if (cell.getCellType() == CellType.FORMULA || cell.getCellType() == CellType.ERROR) {
                         addError(result, row.getRowNumber(), null, name, "CELL_INVALID", "不能使用公式或错误单元格，请填写实际值");
                     } else if (column >= HEADERS.size()) {
@@ -146,7 +145,7 @@ public class SalesOrderImportService {
                     rows.add(row);
                 if (rows.size() > MAX_ROWS) {
                     addError(result, row.getRowNumber(), row.getOrderKey(), "文件", "ROW_LIMIT",
-                            "数据行不能超过 " + MAX_ROWS + " 行");
+                        "数据行不能超过 " + MAX_ROWS + " 行");
                     break;
                 }
             }
@@ -173,17 +172,17 @@ public class SalesOrderImportService {
             addError(result, 0, null, "文件", "ROW_LIMIT", "数据行不能超过 " + MAX_ROWS + " 行");
 
         var customerCodes = rows.stream().map(SalesOrderImportRow::getCustomerCode).map(this::trim)
-                .filter(Objects::nonNull).distinct().toList();
+            .filter(Objects::nonNull).distinct().toList();
         var skuCodes = rows.stream().map(SalesOrderImportRow::getSkuCode).map(this::trim).filter(Objects::nonNull)
-                .distinct().toList();
+            .distinct().toList();
         var customerMap = customerCodes.isEmpty()
-                ? Map.<String, CustomerEntity>of()
-                : customerDao.selectActiveByCodes(customerCodes).stream()
-                        .collect(Collectors.toMap(CustomerEntity::getCustomerCode, Function.identity()));
+            ? Map.<String, CustomerEntity>of()
+            : customerDao.selectActiveByCodes(customerCodes).stream()
+                .collect(Collectors.toMap(CustomerEntity::getCustomerCode, Function.identity()));
         var skuMap = skuCodes.isEmpty()
-                ? Map.<String, ProductSkuOptionVO>of()
-                : productSkuOptionDao.selectByCodes(skuCodes).stream()
-                        .collect(Collectors.toMap(ProductSkuOptionVO::getSkuCode, Function.identity()));
+            ? Map.<String, ProductSkuOptionVO>of()
+            : productSkuOptionDao.selectByCodes(skuCodes).stream()
+                .collect(Collectors.toMap(ProductSkuOptionVO::getSkuCode, Function.identity()));
 
         var groups = new LinkedHashMap<String, List<IndexedRow>>();
         for (int index = 0; index < rows.size(); index++) {
@@ -204,7 +203,7 @@ public class SalesOrderImportService {
             var first = group.getFirst();
             if (group.size() > MAX_ITEMS_PER_ORDER)
                 addError(result, first.rowNumber(), entry.getKey(), "导入订单标识", "ITEM_LIMIT",
-                        "单张订单明细不能超过 " + MAX_ITEMS_PER_ORDER + " 行");
+                    "单张订单明细不能超过 " + MAX_ITEMS_PER_ORDER + " 行");
             validateGroup(entry.getKey(), group, result);
             validatePrices(entry.getKey(), group, customerMap, skuMap, result);
             if (result.getTotalErrors() == 0)
@@ -214,16 +213,16 @@ public class SalesOrderImportService {
     }
 
     private void validatePrices(String orderKey, List<IndexedRow> rows, Map<String, CustomerEntity> customerMap,
-            Map<String, ProductSkuOptionVO> skuMap, SalesOrderImportResultVO result) {
+        Map<String, ProductSkuOptionVO> skuMap, SalesOrderImportResultVO result) {
         var customer = customerMap.get(trim(rows.getFirst().row().getCustomerCode()));
         if (customer == null
-                || !com.xsy.scm.common.constant.ScmCustomerStatusEnum.valueOf(customer.getStatus()).tradable())
+            || !com.xsy.scm.common.constant.ScmCustomerStatusEnum.valueOf(customer.getStatus()).tradable())
             return;
         var ids = rows.stream().map(indexedRow -> skuMap.get(trim(indexedRow.row().getSkuCode())))
-                .filter(Objects::nonNull).map(ProductSkuOptionVO::getSkuId).distinct().toList();
+            .filter(Objects::nonNull).map(ProductSkuOptionVO::getSkuId).distinct().toList();
         try {
             var resolved = priceResolver.resolve(customer.getId(), ids, OffsetDateTime.now()).stream()
-                    .collect(Collectors.toMap(resolvedPrice -> resolvedPrice.getSkuId(), Function.identity()));
+                .collect(Collectors.toMap(resolvedPrice -> resolvedPrice.getSkuId(), Function.identity()));
             var total = BigDecimal.ZERO;
             for (var indexed : rows) {
                 var row = indexed.row();
@@ -237,7 +236,7 @@ public class SalesOrderImportService {
                 }
                 if (trim(row.getUnitPrice()) == null && price.getPriceStatus() == ScmPriceStatusEnum.UNPRICED) {
                     addError(result, indexed.rowNumber(), orderKey, "人工单价", ScmPriceStatusEnum.UNPRICED.name(),
-                            "商品没有可用价格，请维护价格或由有改价权限的人员填写人工单价及原因");
+                        "商品没有可用价格，请维护价格或由有改价权限的人员填写人工单价及原因");
                     continue;
                 }
                 var quantity = trim(row.getOrderedQuantity());
@@ -255,13 +254,13 @@ public class SalesOrderImportService {
         } catch (ScmBusinessException exception) {
             for (var row : rows)
                 addError(result, row.rowNumber(), orderKey, "客户编码", String.valueOf(exception.getErrorCode().getCode()),
-                        exception.getErrorCode().getMsg());
+                    exception.getErrorCode().getMsg());
         }
     }
 
     private void validateRow(SalesOrderImportRow row, int rowNumber, String orderKey,
-            Map<String, CustomerEntity> customerMap, Map<String, ProductSkuOptionVO> skuMap,
-            boolean priceOverrideAllowed, SalesOrderImportResultVO result) {
+        Map<String, CustomerEntity> customerMap, Map<String, ProductSkuOptionVO> skuMap, boolean priceOverrideAllowed,
+        SalesOrderImportResultVO result) {
         required(result, rowNumber, orderKey, "模板版本", row.getTemplateVersion());
         if (trim(row.getTemplateVersion()) != null && !TEMPLATE_VERSION.equals(trim(row.getTemplateVersion())))
             addError(result, rowNumber, orderKey, "模板版本", "TEMPLATE_VERSION", "模板版本不受支持，请重新下载模板");
@@ -282,7 +281,7 @@ public class SalesOrderImportService {
         if (customerCode != null && !customerMap.containsKey(customerCode))
             addError(result, rowNumber, orderKey, "客户编码", "CUSTOMER_NOT_FOUND", "客户编码不存在");
         else if (customerCode != null && !com.xsy.scm.common.constant.ScmCustomerStatusEnum
-                .valueOf(customerMap.get(customerCode).getStatus()).tradable())
+            .valueOf(customerMap.get(customerCode).getStatus()).tradable())
             addError(result, rowNumber, orderKey, "客户编码", "CUSTOMER_NOT_TRADABLE", "客户状态不可交易");
         var skuCode = trim(row.getSkuCode());
         if (skuCode != null && !skuMap.containsKey(skuCode))
@@ -315,7 +314,7 @@ public class SalesOrderImportService {
             same(result, indexed.rowNumber(), orderKey, "联系电话", first.getReceiverPhone(), row.getReceiverPhone());
             same(result, indexed.rowNumber(), orderKey, "收货地址", first.getAddress(), row.getAddress());
             same(result, indexed.rowNumber(), orderKey, "期望配送时间", first.getExpectDeliveryTime(),
-                    row.getExpectDeliveryTime());
+                row.getExpectDeliveryTime());
             same(result, indexed.rowNumber(), orderKey, "订单备注", first.getRemark(), row.getRemark());
             var skuCode = trim(row.getSkuCode());
             if (skuCode != null && !skuCodes.add(skuCode))
@@ -324,7 +323,7 @@ public class SalesOrderImportService {
     }
 
     private SalesOrderAddForm toForm(List<IndexedRow> rows, Map<String, CustomerEntity> customerMap,
-            Map<String, ProductSkuOptionVO> skuMap) {
+        Map<String, ProductSkuOptionVO> skuMap) {
         var first = rows.getFirst().row();
         var form = new SalesOrderAddForm();
         form.setCustomerId(customerMap.get(trim(first.getCustomerCode())).getId());
@@ -360,13 +359,13 @@ public class SalesOrderImportService {
     }
 
     private void length(SalesOrderImportResultVO result, int row, String key, String column, String cellValue,
-            int max) {
+        int max) {
         if (trim(cellValue) != null && trim(cellValue).length() > max)
             addError(result, row, key, column, "TOO_LONG", column + "不能超过 " + max + " 个字符");
     }
 
     private void decimal(SalesOrderImportResultVO result, int row, String key, String column, String decimalText,
-            boolean positive) {
+        boolean positive) {
         if (trim(decimalText) == null)
             return;
         try {
@@ -377,12 +376,12 @@ public class SalesOrderImportService {
                 throw new NumberFormatException();
         } catch (NumberFormatException exception) {
             addError(result, row, key, column, "DECIMAL_INVALID",
-                    column + "必须是" + (positive ? "大于零的" : "非负") + "四位以内小数");
+                column + "必须是" + (positive ? "大于零的" : "非负") + "四位以内小数");
         }
     }
 
     private void same(SalesOrderImportResultVO result, int row, String key, String column, String expected,
-            String actual) {
+        String actual) {
         if (!Objects.equals(trim(expected), trim(actual)))
             addError(result, row, key, column, "HEADER_CONFLICT", "同一导入订单的" + column + "必须一致");
     }
@@ -399,7 +398,7 @@ public class SalesOrderImportService {
     }
 
     private void addError(SalesOrderImportResultVO result, int row, String key, String column, String code,
-            String message) {
+        String message) {
         result.setTotalErrors(result.getTotalErrors() + 1);
         if (result.getErrors().size() < MAX_ERRORS)
             result.getErrors().add(new SalesOrderImportErrorVO(row, key, column, code, message));
@@ -409,6 +408,6 @@ public class SalesOrderImportService {
     }
 
     private record Assembly(SalesOrderImportResultVO result, List<SalesOrderAddForm> forms,
-            List<List<IndexedRow>> groups) {
+        List<List<IndexedRow>> groups) {
     }
 }

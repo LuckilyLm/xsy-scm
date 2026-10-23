@@ -1,6 +1,8 @@
 package com.xsy.scm.mall.order.constant;
 
-/** 集团共享钱包的使用权限必须统一校验。没有集团授权的成员不能扣减集团资金。 */
+/**
+ * 集团共享钱包的使用权限必须统一校验。没有集团授权的成员不能扣减集团资金。
+ */
 public final class ScmSharedSettlementPolicy {
 
     private ScmSharedSettlementPolicy() {

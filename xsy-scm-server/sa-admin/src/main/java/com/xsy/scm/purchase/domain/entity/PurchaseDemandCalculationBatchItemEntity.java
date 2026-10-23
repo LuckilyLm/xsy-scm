@@ -5,12 +5,16 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import lombok.Data;
 
-/** One frozen allocation of a SKU-level net gap to a sales-order source line. */
+/**
+ * One frozen allocation of a SKU-level net gap to a sales-order source line.
+ */
 @Data
 @TableName(value = "xsy_purchase_demand_calculation_batch_item", autoResultMap = true)
 public class PurchaseDemandCalculationBatchItemEntity {

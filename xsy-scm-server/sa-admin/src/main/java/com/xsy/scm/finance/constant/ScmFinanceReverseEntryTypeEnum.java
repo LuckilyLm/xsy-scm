@@ -3,7 +3,9 @@ package com.xsy.scm.finance.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 错误的收款、付款或核销不能修改原记录，只能新增带原因的反向记录。一笔原始记录最多反向一次；红字应收应付与反向登记不是同一业务。 */
+/**
+ * 错误的收款、付款或核销不能修改原记录，只能新增带原因的反向记录。一笔原始记录最多反向一次；红字应收应付与反向登记不是同一业务。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmFinanceReverseEntryTypeEnum {

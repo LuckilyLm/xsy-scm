@@ -3,10 +3,14 @@ package com.xsy.scm.mall.order.domain.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.math.BigDecimal;
+
 import lombok.Data;
 
-/** 结算页返回当前可用的支付方式及不可用原因。是否可用需要根据实时配置和余额重新判断。 */
+/**
+ * 结算页返回当前可用的支付方式及不可用原因。是否可用需要根据实时配置和余额重新判断。
+ */
 @Data
 public class MallSettlementOptionVO {
 

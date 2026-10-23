@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmDeliveryAssignmentStatusEnum {
 
-    /** 占用中：订单当前归属该线路。 */
+    /**
+     * 占用中：订单当前归属该线路。
+     */
     ACTIVE("占用中"),
 
-    /** 已释放：订单已移出该线路。 */
+    /**
+     * 已释放：订单已移出该线路。
+     */
     RELEASED("已释放");
 
     private final String desc;

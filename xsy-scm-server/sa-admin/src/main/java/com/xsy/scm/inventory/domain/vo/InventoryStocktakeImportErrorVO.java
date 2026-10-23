@@ -15,14 +15,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class InventoryStocktakeImportErrorVO {
 
-    /** Excel 行号（表头为第 1 行，数据行从 2 起）；文件级错误用 0。 */
+    /**
+     * Excel 行号（表头为第 1 行，数据行从 2 起）；文件级错误用 0。
+     */
     private Integer row;
 
     private String skuCode;
 
     private String column;
 
-    /** 机器可判读的码，如 {@code BLANK_ACTUAL}、{@code SNAPSHOT_STALE}、{@code DUPLICATE_SKU}。 */
+    /**
+     * 机器可判读的码，如 {@code BLANK_ACTUAL}、{@code SNAPSHOT_STALE}、{@code DUPLICATE_SKU}。
+     */
     private String code;
 
     private String message;

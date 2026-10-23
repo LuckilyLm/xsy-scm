@@ -3,8 +3,10 @@ package com.xsy.scm.order.domain.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 @Data
@@ -23,7 +25,9 @@ public class OrderBundleComponentEntity {
     private String componentStockUnitSnapshot;
     private BigDecimal quantityPerBundleSaleUnit;
     private BigDecimal stockUnitsPerComponentSaleUnit;
-    /** 冻结的实际组成销售数量（已含组合订购套数）。 */
+    /**
+     * 冻结的实际组成销售数量（已含组合订购套数）。
+     */
     private BigDecimal componentSaleQuantitySnapshot;
     private BigDecimal marketUnitPriceSnapshot;
     private BigDecimal marketReferenceAmountSnapshot;

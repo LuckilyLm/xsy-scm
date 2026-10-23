@@ -2,7 +2,9 @@ package com.xsy.scm.sorting.domain.form;
 
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
 import java.util.List;
+
 import lombok.Data;
 import com.xsy.scm.common.validation.ScmEnumValue;
 import com.xsy.scm.sorting.constant.ScmSortingTaskStatusEnum;

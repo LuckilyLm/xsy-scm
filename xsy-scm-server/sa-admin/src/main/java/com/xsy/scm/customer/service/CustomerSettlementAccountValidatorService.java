@@ -8,7 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Exposes customer-owned settlement validation to consumers through a read-only contract. */
+/**
+ * Exposes customer-owned settlement validation to consumers through a read-only contract.
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomerSettlementAccountValidatorService implements CustomerSettlementAccountValidator {

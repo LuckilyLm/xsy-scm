@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmFinanceAgingAccountTypeEnum {
 
-    /** 应收：客户欠款。 */
+    /**
+     * 应收：客户欠款。
+     */
     RECEIVABLE("应收"),
 
-    /** 应付：欠供应商款项。 */
+    /**
+     * 应付：欠供应商款项。
+     */
     PAYABLE("应付");
 
     private final String desc;

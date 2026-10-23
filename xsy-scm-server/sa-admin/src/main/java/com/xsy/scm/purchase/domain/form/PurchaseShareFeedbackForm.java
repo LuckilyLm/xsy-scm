@@ -6,11 +6,15 @@ import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
 import java.math.BigDecimal;
 import java.util.List;
+
 import lombok.Data;
 
-/** 采购员在手机上回填的单价与实收重量。 */
+/**
+ * 采购员在手机上回填的单价与实收重量。
+ */
 @Data
 public class PurchaseShareFeedbackForm {
 
@@ -18,7 +22,9 @@ public class PurchaseShareFeedbackForm {
     @Valid
     private List<Line> items;
 
-    /** 单行回填：单价与重量至少一项。 */
+    /**
+     * 单行回填：单价与重量至少一项。
+     */
     @Data
     public static class Line {
 

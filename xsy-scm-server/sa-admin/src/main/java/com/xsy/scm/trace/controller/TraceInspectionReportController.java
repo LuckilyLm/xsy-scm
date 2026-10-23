@@ -9,7 +9,9 @@ import com.xsy.scm.trace.domain.vo.TraceInspectionReportVO;
 import com.xsy.scm.trace.permission.TracePermission;
 import com.xsy.scm.trace.service.TraceInspectionReportService;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,14 +41,16 @@ public class TraceInspectionReportController {
 
     @PostMapping("/{id}/publish")
     @SaCheckPermission(TracePermission.INSPECTION_MANAGE)
-    public ResponseDTO<String> publish(@PathVariable Long id, @Valid @RequestBody TraceInspectionReportActionForm form) {
+    public ResponseDTO<String> publish(@PathVariable Long id,
+        @Valid @RequestBody TraceInspectionReportActionForm form) {
         traceInspectionReportService.publish(id, form.getVersion(), ScmOperator.current());
         return ResponseDTO.ok();
     }
 
     @PostMapping("/{id}/withdraw")
     @SaCheckPermission(TracePermission.INSPECTION_MANAGE)
-    public ResponseDTO<String> withdraw(@PathVariable Long id, @Valid @RequestBody TraceInspectionReportActionForm form) {
+    public ResponseDTO<String> withdraw(@PathVariable Long id,
+        @Valid @RequestBody TraceInspectionReportActionForm form) {
         traceInspectionReportService.withdraw(id, form.getVersion(), ScmOperator.current());
         return ResponseDTO.ok();
     }

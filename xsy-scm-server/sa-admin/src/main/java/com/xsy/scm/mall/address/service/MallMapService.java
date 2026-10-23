@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.mall.account.constant.MallErrorCode;
 import com.xsy.scm.mall.address.domain.vo.MallMapLocationVO;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -16,11 +17,14 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-/** 固定高德 Web 服务域名，Key 仅保留在服务端环境变量中。 */
+/**
+ * 固定高德 Web 服务域名，Key 仅保留在服务端环境变量中。
+ */
 @Service
 @RequiredArgsConstructor
 public class MallMapService {
@@ -44,7 +48,7 @@ public class MallMapService {
         if (pois.isArray()) {
             for (JsonNode poi : pois) {
                 MallMapLocationVO location = location(poi.path("location").asText(null),
-                        poi.path("adcode").asText(null));
+                    poi.path("adcode").asText(null));
                 if (location == null)
                     continue;
                 location.setName(poi.path("name").asText(null));
@@ -60,12 +64,12 @@ public class MallMapService {
 
     public MallMapLocationVO reverse(BigDecimal longitude, BigDecimal latitude) {
         if (longitude == null || latitude == null || longitude.compareTo(new BigDecimal("-180")) < 0
-                || longitude.compareTo(new BigDecimal("180")) > 0 || latitude.compareTo(new BigDecimal("-90")) < 0
-                || latitude.compareTo(new BigDecimal("90")) > 0) {
+            || longitude.compareTo(new BigDecimal("180")) > 0 || latitude.compareTo(new BigDecimal("-90")) < 0
+            || latitude.compareTo(new BigDecimal("90")) > 0) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_COORDINATE_INVALID);
         }
         String coordinate = longitude.setScale(6, RoundingMode.HALF_UP).toPlainString() + ","
-                + latitude.setScale(6, RoundingMode.HALF_UP).toPlainString();
+            + latitude.setScale(6, RoundingMode.HALF_UP).toPlainString();
         JsonNode root = request("/geocode/regeo?location=" + encode(coordinate) + "&extensions=base");
         JsonNode regeo = root.path("regeocode");
         JsonNode component = regeo.path("addressComponent");
@@ -88,7 +92,7 @@ public class MallMapService {
         }
         try {
             HttpRequest request = HttpRequest.newBuilder(URI.create(BASE + path + "&key=" + encode(webServiceKey)))
-                    .timeout(Duration.ofSeconds(6)).GET().build();
+                .timeout(Duration.ofSeconds(6)).GET().build();
             HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
                 throw new ScmBusinessException(MallErrorCode.MAP_UNAVAILABLE);

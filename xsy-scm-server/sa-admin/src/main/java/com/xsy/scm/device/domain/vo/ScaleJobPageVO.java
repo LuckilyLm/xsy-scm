@@ -2,6 +2,7 @@ package com.xsy.scm.device.domain.vo;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

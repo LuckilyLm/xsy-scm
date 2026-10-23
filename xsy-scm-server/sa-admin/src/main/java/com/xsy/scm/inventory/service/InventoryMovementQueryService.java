@@ -14,7 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/** 库存流水是不可修改的记账事实，本服务只提供查询。按流水实际发生时间和来源筛选，数据范围由仓库授权决定，不允许用读接口修改历史账。 */
+/**
+ * 库存流水是不可修改的记账事实，本服务只提供查询。按流水实际发生时间和来源筛选，数据范围由仓库授权决定，不允许用读接口修改历史账。
+ */
 @Service
 @RequiredArgsConstructor
 public class InventoryMovementQueryService {

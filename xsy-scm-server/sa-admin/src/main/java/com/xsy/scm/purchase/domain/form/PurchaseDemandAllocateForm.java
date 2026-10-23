@@ -8,7 +8,9 @@ import jakarta.validation.constraints.NotNull;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
-/** 需求分配请求携带采购需求本身的版本。分配会改变需求已分配量，因此必须用需求版本防止并发覆盖。 */
+/**
+ * 需求分配请求携带采购需求本身的版本。分配会改变需求已分配量，因此必须用需求版本防止并发覆盖。
+ */
 @Data
 public class PurchaseDemandAllocateForm {
     @NotNull(message = "采购需求不能为空")

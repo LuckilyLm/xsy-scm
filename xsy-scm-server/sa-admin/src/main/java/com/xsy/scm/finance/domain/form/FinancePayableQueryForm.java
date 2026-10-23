@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/** 应付列表、详情和导出共用筛选条件。 */
+/**
+ * 应付列表、详情和导出共用筛选条件。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class FinancePayableQueryForm extends FinanceDatePageForm {

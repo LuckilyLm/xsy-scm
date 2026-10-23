@@ -7,7 +7,9 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 每笔实收款独立记账，可以暂不关联应收单。与应收的抵扣关系通过核销表保存，收款记录本身不可修改；系统收款与人工登记须保留来源区分。 */
+/**
+ * 每笔实收款独立记账，可以暂不关联应收单。与应收的抵扣关系通过核销表保存，收款记录本身不可修改；系统收款与人工登记须保留来源区分。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_finance_receipt")
@@ -70,9 +72,13 @@ public class FinanceReceiptEntity extends FinanceRecord {
      */
     private String sourceType;
 
-    /** 系统来源主键；支付交易取交易 id，分笔 COD 取幂等命令记录 id。 */
+    /**
+     * 系统来源主键；支付交易取交易 id，分笔 COD 取幂等命令记录 id。
+     */
     private Long sourceId;
 
-    /** 分笔 COD 收款所属订单；V131 的历史行仍以 source_id 表示订单。 */
+    /**
+     * 分笔 COD 收款所属订单；V131 的历史行仍以 source_id 表示订单。
+     */
     private Long codOrderId;
 }

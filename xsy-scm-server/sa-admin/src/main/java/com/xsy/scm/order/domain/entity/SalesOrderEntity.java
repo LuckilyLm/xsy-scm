@@ -30,7 +30,9 @@ public class SalesOrderEntity {
     private String customerNameSnapshot;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String orderSource;
-    /** 商城下单时冻结的配送仓；后台及历史订单为空。 */
+    /**
+     * 商城下单时冻结的配送仓；后台及历史订单为空。
+     */
     private Long mallDeliveryWarehouseId;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long originalOrderId;
@@ -58,7 +60,9 @@ public class SalesOrderEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String cancelReason;
 
-    /** 商城客户下单时预选的券实例；仅 {@code orderSource = MALL} 使用，正式占用在确认命令内完成。 */
+    /**
+     * 商城客户下单时预选的券实例；仅 {@code orderSource = MALL} 使用，正式占用在确认命令内完成。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private Long mallCouponInstanceId;
 

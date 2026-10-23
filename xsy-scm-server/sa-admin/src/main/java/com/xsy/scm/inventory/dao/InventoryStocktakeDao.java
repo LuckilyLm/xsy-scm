@@ -48,7 +48,7 @@ public interface InventoryStocktakeDao extends BaseMapper<InventoryStocktakeEnti
      * 置为已确认（带状态条件，防并发重复确认）。
      */
     int markConfirmed(@Param("id") Long id, @Param("confirmedAt") OffsetDateTime confirmedAt,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     /**
      * 置为已取消（带状态条件，只有草稿能取消）。
@@ -59,13 +59,13 @@ public interface InventoryStocktakeDao extends BaseMapper<InventoryStocktakeEnti
      * 回写草稿头（仓库 / 备注）。
      */
     int updateDraft(@Param("id") Long id, @Param("warehouseId") Long warehouseId, @Param("remark") String remark,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     /**
      * 分页查询（联仓库取展示字段）。
      */
     List<InventoryStocktakeVO> queryPage(Page<?> page, @Param("query") InventoryStocktakeQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。

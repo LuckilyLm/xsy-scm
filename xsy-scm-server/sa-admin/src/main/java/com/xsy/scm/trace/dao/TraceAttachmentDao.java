@@ -12,9 +12,13 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface TraceAttachmentDao {
 
-    /** 商品 SPU 是否存在且未删除。 */
+    /**
+     * 商品 SPU 是否存在且未删除。
+     */
     int countLiveSpu(@Param("spuId") Long spuId);
 
-    /** 追溯批次是否存在；批次事实只追加，没有软删除列。 */
+    /**
+     * 追溯批次是否存在；批次事实只追加，没有软删除列。
+     */
     int countLot(@Param("lotId") Long lotId);
 }

@@ -3,7 +3,9 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 盘点单由草稿确认后写入库存差异流水并成为终态；草稿可取消。确认后不能回到草稿或删除流水，需另建调整业务更正。 */
+/**
+ * 盘点单由草稿确认后写入库存差异流水并成为终态；草稿可取消。确认后不能回到草稿或删除流水，需另建调整业务更正。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryStocktakeStatusEnum {

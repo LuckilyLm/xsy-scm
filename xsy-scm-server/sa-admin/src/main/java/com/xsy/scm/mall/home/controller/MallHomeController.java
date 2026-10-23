@@ -26,14 +26,13 @@ public class MallHomeController {
         MallRequestSupport.requirePasswordChanged();
         var customer = MallRequestSupport.current();
         Long selectedWarehouse = warehouseId == null
-                ? warehouseService.preferred(customer.getCustomerId(), null)
-                : warehouseService.require(customer.getCustomerId(), null, warehouseId);
+            ? warehouseService.preferred(customer.getCustomerId(), null)
+            : warehouseService.require(customer.getCustomerId(), null, warehouseId);
         return ResponseDTO.ok(projectionService.published(customer, selectedWarehouse));
     }
 
     /**
-     * 匿名读取当前发布主题：登录页、改密页在取得客户身份前就需要全局配色。
-     * 只开放主题指针本身，不扩大整个商城路径的匿名权限；草稿与其他数据一律不返回。
+     * 匿名读取当前发布主题：登录页、改密页在取得客户身份前就需要全局配色。 只开放主题指针本身，不扩大整个商城路径的匿名权限；草稿与其他数据一律不返回。
      */
     @GetMapping("/theme")
     @NoNeedLogin

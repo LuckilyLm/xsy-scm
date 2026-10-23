@@ -13,14 +13,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 
-/** 操作日志的前后快照用 JSONB Map 保存，支持金额和嵌套字段。各业务模块通过公共处理器读写，不需要互相依赖。 */
+/**
+ * 操作日志的前后快照用 JSONB Map 保存，支持金额和嵌套字段。各业务模块通过公共处理器读写，不需要互相依赖。
+ */
 public class JsonbObjectMapTypeHandler extends BaseTypeHandler<Map<String, Object>> {
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
     @Override
     public void setNonNullParameter(PreparedStatement statement, int index, Map<String, Object> value, JdbcType type)
-            throws SQLException {
+        throws SQLException {
         try {
             PGobject json = new PGobject();
             json.setType("jsonb");

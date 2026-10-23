@@ -46,10 +46,12 @@ public class ProductAggregateValidator {
         validateImages(images);
     }
 
-    /** 校验商品图片数量、主图唯一性与文件键不重复；图片中心的批量换绑也必须执行这些校验。 */
+    /**
+     * 校验商品图片数量、主图唯一性与文件键不重复；图片中心的批量换绑也必须执行这些校验。
+     */
     public void validateImages(List<ProductImageForm> images) {
         if (images == null || images.size() > 20
-                || images.stream().filter(i -> Boolean.TRUE.equals(i.getPrimaryFlag())).count() > 1)
+            || images.stream().filter(i -> Boolean.TRUE.equals(i.getPrimaryFlag())).count() > 1)
             throw new ScmBusinessException(IMAGE_INVALID);
         Set<String> keys = new HashSet<>();
         for (var img : images) {

@@ -7,7 +7,9 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-/** 每条记录表示一名员工对一个仓库的授权；角色定义功能权限，本表定义仓库数据范围。 */
+/**
+ * 每条记录表示一名员工对一个仓库的授权；角色定义功能权限，本表定义仓库数据范围。
+ */
 @Data
 @TableName("xsy_employee_warehouse_scope")
 public class EmployeeWarehouseScopeEntity {

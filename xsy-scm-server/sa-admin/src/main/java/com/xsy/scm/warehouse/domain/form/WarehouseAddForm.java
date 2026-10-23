@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/** 新建仓库时，编码由服务端生成、状态默认启用。状态变更必须使用专用操作。 */
+/**
+ * 新建仓库时，编码由服务端生成、状态默认启用。状态变更必须使用专用操作。
+ */
 @Data
 public class WarehouseAddForm extends com.xsy.scm.common.domain.ScmLocationForm {
 
@@ -37,6 +39,8 @@ public class WarehouseAddForm extends com.xsy.scm.common.domain.ScmLocationForm 
     @Size(max = 500, message = "备注不能超过500个字符")
     private String remark;
 
-    /** 是否启用批次追踪；只在新建时设置，编辑态不可改。 */
+    /**
+     * 是否启用批次追踪；只在新建时设置，编辑态不可改。
+     */
     private Boolean lotTrackingEnabled;
 }

@@ -8,7 +8,9 @@ import java.util.regex.Pattern;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** 统一解析数量与金额：传输使用定点数字符串，最多四位小数，不接受浮点数字面量、负数或科学计数法。空值与零值不同。 */
+/**
+ * 统一解析数量与金额：传输使用定点数字符串，最多四位小数，不接受浮点数字面量、负数或科学计数法。空值与零值不同。
+ */
 public final class ScmDecimalStrings {
 
     /**

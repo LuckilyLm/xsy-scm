@@ -38,12 +38,14 @@ public class PaymentIntentController {
 
     private final PaymentQueryService paymentQueryService;
 
-    /** 创建支付意图必须携带幂等键，避免重试产生两笔渠道交易。支付金额允许分笔，但订单来源和客户身份由服务端查验。 */
+    /**
+     * 创建支付意图必须携带幂等键，避免重试产生两笔渠道交易。支付金额允许分笔，但订单来源和客户身份由服务端查验。
+     */
     @PostMapping("/create")
     @SaCheckPermission(ScmPaymentPermission.INTENT_CREATE)
     @OperateLog
     public ResponseDTO<PaymentIntentVO> create(@Valid @RequestBody PaymentIntentCreateForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(PaymentVoAssembler.toIntent(paymentIntentService.create(form, key)));
     }
 
@@ -53,7 +55,9 @@ public class PaymentIntentController {
         return ResponseDTO.ok(paymentQueryService.intentPage(form));
     }
 
-    /** 意图详情（含其下交易流水）。 */
+    /**
+     * 意图详情（含其下交易流水）。
+     */
     @GetMapping("/detail/{id}")
     @SaCheckPermission(ScmPaymentPermission.TRANSACTION_QUERY)
     public ResponseDTO<PaymentIntentVO> detail(@PathVariable Long id) {
@@ -63,7 +67,7 @@ public class PaymentIntentController {
     @PostMapping("/transaction/query")
     @SaCheckPermission(ScmPaymentPermission.TRANSACTION_QUERY)
     public ResponseDTO<PageResult<PaymentTransactionVO>> transactionQuery(
-            @Valid @RequestBody PaymentTransactionQueryForm form) {
+        @Valid @RequestBody PaymentTransactionQueryForm form) {
         return ResponseDTO.ok(paymentQueryService.transactionPage(form));
     }
 }

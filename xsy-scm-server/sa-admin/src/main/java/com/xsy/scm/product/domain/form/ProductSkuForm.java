@@ -30,7 +30,7 @@ public class ProductSkuForm {
     @NotNull(message = "规格值不能为空")
     @Size(max = 30, message = "规格值不能超过30个字符")
     private Map<@NotBlank(message = "规格项名称不能为空") @Size(max = 100, message = "规格项名称不能超过100个字符") String,
-            @NotBlank(message = "规格值不能为空") @Size(max = 150, message = "规格值不能超过150个字符") String> specValues;
+        @NotBlank(message = "规格值不能为空") @Size(max = 150, message = "规格值不能超过150个字符") String> specValues;
     @NotBlank(message = "销售单位不能为空")
     @Size(max = 32, message = "销售单位不能超过32个字符")
     private String saleUnit;
@@ -58,7 +58,9 @@ public class ProductSkuForm {
     @Min(value = 0, message = "排序值不能小于0")
     private Integer sortOrder = 0;
 
-    /** 没有规格项时默认使用空表；容器初始化另起一行，以满足项目格式及行宽检查。 */
+    /**
+     * 没有规格项时默认使用空表；容器初始化另起一行，以满足项目格式及行宽检查。
+     */
     public ProductSkuForm() {
         this.specValues = new LinkedHashMap<>();
     }

@@ -13,19 +13,29 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmUnavailableReasonEnum {
 
-    /** 商品规格不存在。 */
+    /**
+     * 商品规格不存在。
+     */
     SKU_NOT_FOUND("规格不存在"),
 
-    /** 商品规格已下架。 */
+    /**
+     * 商品规格已下架。
+     */
     SKU_OFF_SHELF("规格已下架"),
 
-    /** 商品主档已下架。 */
+    /**
+     * 商品主档已下架。
+     */
     SPU_OFF_SHELF("商品已下架"),
 
-    /** 所属分类已停用。 */
+    /**
+     * 所属分类已停用。
+     */
     CATEGORY_DISABLED("分类已停用"),
 
-    /** 客户无权查看该商品。 */
+    /**
+     * 客户无权查看该商品。
+     */
     NOT_VISIBLE("客户不可见");
 
     private final String desc;

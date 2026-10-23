@@ -8,7 +8,9 @@ import net.lab1024.sa.base.common.domain.PageParam;
 
 import java.time.LocalDate;
 
-/** Aging-free account detail query; ending balances are evaluated at {@code endDate}. */
+/**
+ * Aging-free account detail query; ending balances are evaluated at {@code endDate}.
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ScmFinanceReportQueryForm extends PageParam implements ScmFinanceReportFilter {

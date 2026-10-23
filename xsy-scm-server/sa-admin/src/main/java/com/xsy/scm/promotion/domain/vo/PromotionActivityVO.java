@@ -1,8 +1,10 @@
 package com.xsy.scm.promotion.domain.vo;
 
 import com.xsy.scm.promotion.domain.entity.PromotionActivityEntity;
+
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import lombok.Data;
 
 @Data
@@ -16,7 +18,9 @@ public class PromotionActivityVO {
 
     private String activityType;
 
-    /** 类型展示名（服务端填，前端不硬编码字典）。 */
+    /**
+     * 类型展示名（服务端填，前端不硬编码字典）。
+     */
     private String activityTypeLabel;
 
     private String exclusiveGroup;

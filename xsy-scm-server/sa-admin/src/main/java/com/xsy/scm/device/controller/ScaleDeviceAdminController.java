@@ -49,7 +49,7 @@ public class ScaleDeviceAdminController {
     @SaCheckPermission(ScaleDevicePermission.SESSION_ISSUE)
     @OperateLog
     public ResponseDTO<ScaleOperatorSessionVO> issueSession(@PathVariable("id") Long id,
-            @Valid @RequestBody ScaleOperatorSessionForm form) {
+        @Valid @RequestBody ScaleOperatorSessionForm form) {
         return ResponseDTO.ok(scaleDeviceAuthService.issueOperatorSession(id, form));
     }
 

@@ -8,15 +8,19 @@ import com.xsy.scm.product.domain.entity.ProductSkuEntity;
 import com.xsy.scm.product.domain.form.ProductSkuStockConversionDeleteForm;
 import com.xsy.scm.product.domain.form.ProductSkuStockConversionForm;
 import com.xsy.scm.product.domain.vo.ProductSkuStockConversionVO;
+
 import java.math.BigDecimal;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** 每个 SKU 可以配置销售单位到不同库存单位的换算；历史订单使用确认时快照，不回溯当前配置。 */
+/**
+ * 每个 SKU 可以配置销售单位到不同库存单位的换算；历史订单使用确认时快照，不回溯当前配置。
+ */
 @Service
 @RequiredArgsConstructor
 public class ProductSkuStockConversionService {
@@ -42,7 +46,7 @@ public class ProductSkuStockConversionService {
     @Transactional(rollbackFor = Exception.class)
     public void remove(ProductSkuStockConversionDeleteForm form) {
         conversionDao.delete(form.getSkuId(), sku(form.getSkuId()).getSaleUnit(), form.getStockUnit().trim(),
-                ScmOperator.current());
+            ScmOperator.current());
     }
 
     private ProductSkuEntity sku(Long skuId) {

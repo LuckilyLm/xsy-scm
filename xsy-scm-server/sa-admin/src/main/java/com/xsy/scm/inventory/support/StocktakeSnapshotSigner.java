@@ -12,11 +12,15 @@ import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.List;
 
-/** 盘点模板使用签名保存导出时的库存版本。导入时有一条库存发生变化就拒绝整批导入。 */
+/**
+ * 盘点模板使用签名保存导出时的库存版本。导入时有一条库存发生变化就拒绝整批导入。
+ */
 @Component
 public class StocktakeSnapshotSigner {
 
-    /** 仓库里公开的占位密钥：只允许在非生产 profile 下兜底。 */
+    /**
+     * 仓库里公开的占位密钥：只允许在非生产 profile 下兜底。
+     */
     static final String DEV_SECRET = "xsy-scm-stocktake-snapshot-dev-secret-change-in-production";
 
     /**
@@ -34,7 +38,7 @@ public class StocktakeSnapshotSigner {
      *            导出时刻的账面量快照
      */
     public record Entry(String skuCode, Long skuId, Long balanceId, String unit, Integer version,
-            BigDecimal bookQuantity) {
+        BigDecimal bookQuantity) {
     }
 
     /**
@@ -44,10 +48,12 @@ public class StocktakeSnapshotSigner {
      *            导出人（{@code ScmOperator#current}），导入时要求同一人，防止跨人复用离线清单
      */
     public record Payload(String templateVersion, Long warehouseId, String operator, long issuedAtEpochSec,
-            long expiresAtEpochSec, List<Entry> entries) {
+        long expiresAtEpochSec, List<Entry> entries) {
     }
 
-    /** 凭证校验失败（签名不符 / 结构损坏 / 已过期）。调用方据此整批拒绝。 */
+    /**
+     * 凭证校验失败（签名不符 / 结构损坏 / 已过期）。调用方据此整批拒绝。
+     */
     public static class SnapshotCredentialException extends RuntimeException {
         public SnapshotCredentialException(String message) {
             super(message);
@@ -75,8 +81,8 @@ public class StocktakeSnapshotSigner {
     private final byte[] secret;
 
     public StocktakeSnapshotSigner(ObjectMapper json,
-            @Value("${scm.inventory.stocktake.snapshot.secret:" + DEV_SECRET + "}") String secret,
-            @Value("${spring.profiles.active:dev}") String activeProfiles) {
+        @Value("${scm.inventory.stocktake.snapshot.secret:" + DEV_SECRET + "}") String secret,
+        @Value("${spring.profiles.active:dev}") String activeProfiles) {
         requireNonPublicSecret(secret, activeProfiles);
         this.objectMapper = json;
         this.secret = secret.getBytes(StandardCharsets.UTF_8);
@@ -91,15 +97,17 @@ public class StocktakeSnapshotSigner {
      */
     static void requireNonPublicSecret(String secret, String activeProfiles) {
         boolean production = java.util.Arrays.stream(activeProfiles.split(",")).map(String::trim)
-                .anyMatch(profile -> profile.equals("pre") || profile.equals("prod") || profile.equals("production"));
+            .anyMatch(profile -> profile.equals("pre") || profile.equals("prod") || profile.equals("production"));
         if (production && (secret == null || secret.isBlank() || DEV_SECRET.equals(secret))) {
             throw new IllegalStateException("scm.inventory.stocktake.snapshot.secret must be overridden with a"
-                    + " private value in pre/prod (set SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET);"
-                    + " the built-in default is public and would make the snapshot signature unprotected");
+                + " private value in pre/prod (set SCM_INVENTORY_STOCKTAKE_SNAPSHOT_SECRET);"
+                + " the built-in default is public and would make the snapshot signature unprotected");
         }
     }
 
-    /** 序列化为 {@code base64url(json).base64url(hmac)}。 */
+    /**
+     * 序列化为 {@code base64url(json).base64url(hmac)}。
+     */
     public String sign(Payload payload) {
         try {
             // 载荷先压缩再 base64：快照要为仓库里每一条活跃余额带上 skuCode / 单位 / 账面量，
@@ -129,7 +137,9 @@ public class StocktakeSnapshotSigner {
         }
     }
 
-    /** 只在 MAC 校验通过后调用：不解压未经认证的字节。 */
+    /**
+     * 只在 MAC 校验通过后调用：不解压未经认证的字节。
+     */
     private static byte[] inflate(byte[] packed) {
         var inflater = new java.util.zip.Inflater(true);
         try {

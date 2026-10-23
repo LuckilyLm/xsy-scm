@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmShelfStatusEnum {
 
-    /** 上架：可被下单。 */
+    /**
+     * 上架：可被下单。
+     */
     ON_SHELF("上架"),
 
-    /** 下架：不在售，但主档与历史单据保留。 */
+    /**
+     * 下架：不在售，但主档与历史单据保留。
+     */
     OFF_SHELF("下架");
 
     private final String desc;

@@ -15,15 +15,17 @@ import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITE
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_ITEM_VERSION_CONFLICT;
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID;
 
-/** 采购单明细用采购单 ID 与商品规格 ID 唯一确定，需求分配用采购明细 ID 与需求 ID 确定。提交时校验重复规格、行归属和版本，统一计算新增、修改与删除。 */
+/**
+ * 采购单明细用采购单 ID 与商品规格 ID 唯一确定，需求分配用采购明细 ID 与需求 ID 确定。提交时校验重复规格、行归属和版本，统一计算新增、修改与删除。
+ */
 public record PurchaseOrderItemChangeSet(List<PurchaseOrderItemEntity> inserted, List<PurchaseOrderItemEntity> updated,
-        List<PurchaseOrderItemEntity> removed) {
+    List<PurchaseOrderItemEntity> removed) {
 
     /**
      * 计算差量。{@code requested} 里的 {@code id} / {@code version} 由表单带入，其余字段已由 {@code PurchaseSnapshotFactory} 装配完成。
      */
     public static PurchaseOrderItemChangeSet between(List<PurchaseOrderItemEntity> existing,
-            List<PurchaseOrderItemEntity> requested) {
+        List<PurchaseOrderItemEntity> requested) {
         var unmatched = new LinkedHashMap<Long, PurchaseOrderItemEntity>();
         existing.forEach(row -> unmatched.put(row.getId(), row));
 

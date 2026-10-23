@@ -32,6 +32,7 @@ import com.xsy.scm.pricing.constant.ScmUnpricedReasonEnum;
 import com.xsy.scm.promotion.domain.form.PromotionDiscountPreviewForm;
 import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
 import com.xsy.scm.promotion.service.PromotionDiscountService;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -49,11 +50,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 商城下单复用正式的商品、价格和销售订单服务。客户身份来自登录会话，商品及地址须属于当前客户；提交时由服务端重新核价。 */
+/**
+ * 商城下单复用正式的商品、价格和销售订单服务。客户身份来自登录会话，商品及地址须属于当前客户；提交时由服务端重新核价。
+ */
 @Service
 @RequiredArgsConstructor
 public class MallCheckoutService {
@@ -71,19 +75,19 @@ public class MallCheckoutService {
     @Transactional(readOnly = true)
     public MallCheckoutPreviewVO preview(RequestMallCustomer customer, MallCheckoutPreviewForm form) {
         Map<Long, BigDecimal> quantities = normalize(form.getItems());
-        List<MallWarehouseOptionVO> warehouses = warehouseService.options(customer.getCustomerId(),
-                form.getAddressId());
+        List<
+            MallWarehouseOptionVO> warehouses = warehouseService.options(customer.getCustomerId(), form.getAddressId());
         Long warehouseId = form.getWarehouseId() == null
-                ? warehouses.stream().findFirst().map(MallWarehouseOptionVO::getWarehouseId).orElse(null)
-                : warehouseService.require(customer.getCustomerId(), form.getAddressId(), form.getWarehouseId());
-        Map<Long, MallProductVO> products = resolveProducts(customer, quantities.keySet(), form.getAddressId(),
-                warehouseId);
+            ? warehouses.stream().findFirst().map(MallWarehouseOptionVO::getWarehouseId).orElse(null)
+            : warehouseService.require(customer.getCustomerId(), form.getAddressId(), form.getWarehouseId());
+        Map<Long,
+            MallProductVO> products = resolveProducts(customer, quantities.keySet(), form.getAddressId(), warehouseId);
 
         MallCheckoutPreviewVO result = new MallCheckoutPreviewVO();
         result.setWarehouses(warehouses);
         result.setWarehouseId(warehouseId);
         result.setWarehouseName(warehouses.stream().filter(option -> option.getWarehouseId().equals(warehouseId))
-                .findFirst().map(MallWarehouseOptionVO::getWarehouseName).orElse(null));
+            .findFirst().map(MallWarehouseOptionVO::getWarehouseName).orElse(null));
         result.setWarehouseRequired(warehouseId == null);
         BigDecimal estimated = BigDecimal.ZERO.setScale(SCALE);
         List<Long> unavailable = new ArrayList<>();
@@ -136,8 +140,8 @@ public class MallCheckoutService {
         // ② 排在读地址前——重试期间地址可能已被同一客户的其他采购账号删除，
         // 先读地址会直接抛「地址不存在」，把一笔已经成功的订单藏起来。
         // 只有真正的新请求才继续校验地址与价格。
-        Optional<MallOrderCreationResult> replayed = salesOrderService.replayMallOrder(idempotencyRequest,
-                idempotencyKey);
+        Optional<
+            MallOrderCreationResult> replayed = salesOrderService.replayMallOrder(idempotencyRequest, idempotencyKey);
         if (replayed.isPresent()) {
             return toSubmitVO(replayed.get().order());
         }
@@ -149,19 +153,19 @@ public class MallCheckoutService {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_NOT_FOUND);
         }
         Long warehouseId = warehouseService.require(customer.getCustomerId(), address.getAddressId(),
-                form.getWarehouseId());
+            form.getWarehouseId());
         SalesOrderAddForm orderForm = orderForm(customer, form, address, quantities);
         orderForm.setMallDeliveryWarehouseId(warehouseId);
         // 只有新请求才按当前价格严格校验
         Map<Long, MallProductVO> products = resolveProducts(customer, quantities.keySet(), address.getAddressId(),
-                warehouseId);
+            warehouseId);
         for (Long skuId : quantities.keySet()) {
             MallProductVO product = products.get(skuId);
             BigDecimal quantity = quantities.get(skuId);
             if (product == null || product.getUnitPrice() == null
-                    || !MallCartAvailabilityEnum.AVAILABLE.name().equals(product.getStockStatus())
-                    || !MallQuantityPolicy.accepts(product, quantity) || product.getAvailableQty() == null
-                    || product.getAvailableQty().compareTo(quantity) < 0) {
+                || !MallCartAvailabilityEnum.AVAILABLE.name().equals(product.getStockStatus())
+                || !MallQuantityPolicy.accepts(product, quantity) || product.getAvailableQty() == null
+                || product.getAvailableQty().compareTo(quantity) < 0) {
                 throw new ScmBusinessException(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE);
             }
         }
@@ -174,13 +178,13 @@ public class MallCheckoutService {
         // 预选券按当前状态完整试算一次（归属 / AVAILABLE / 模板生效 / 门槛），让不成立的券在下单前失败。
         // 试算不锁券；全标品自动确认仍会在冻结时按最新券状态重新校验。
         MallCheckoutPromotionVO promotion = previewPromotion(customer.getCustomerId(), form.getCouponInstanceId(),
-                quantities, products);
+            quantities, products);
         // 结算方式：用与预览同一口径的应付金额重新判定可用性，避免客户端拿旧预览的结论下单。
         BigDecimal gross = estimatedAmount(quantities, products);
         BigDecimal payable = promotion == null ? gross : promotion.getPayableAmount();
         boolean enabled = settlementService.options(customer, payable).stream()
-                .anyMatch(option -> form.getSettlementMethod().equals(option.getMethod())
-                        && Boolean.TRUE.equals(option.getEnabled()));
+            .anyMatch(option -> form.getSettlementMethod().equals(option.getMethod())
+                && Boolean.TRUE.equals(option.getEnabled()));
         if (!enabled) {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_SETTLEMENT_METHOD_UNAVAILABLE);
         }
@@ -194,7 +198,7 @@ public class MallCheckoutService {
     }
 
     private static void requireMatchingLockedPrices(SalesOrderDetailVO order, Map<Long, BigDecimal> quantities,
-            Map<Long, MallProductVO> products) {
+        Map<Long, MallProductVO> products) {
         // 正式订单提交会重新解析价格；必须在同一事务提交前核对最终快照，覆盖变价和协议到期窗口。
         if (order.getItems() == null || order.getItems().size() != quantities.size()) {
             throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
@@ -204,9 +208,9 @@ public class MallCheckoutService {
             BigDecimal quantity = quantities.get(item.getSkuId());
             MallProductVO product = products.get(item.getSkuId());
             if (!matchedSkuIds.add(item.getSkuId()) || quantity == null || product == null
-                    || product.getUnitPrice() == null || item.getOrderedQuantity() == null
-                    || item.getLockedUnitPrice() == null || quantity.compareTo(item.getOrderedQuantity()) != 0
-                    || product.getUnitPrice().compareTo(item.getLockedUnitPrice()) != 0) {
+                || product.getUnitPrice() == null || item.getOrderedQuantity() == null
+                || item.getLockedUnitPrice() == null || quantity.compareTo(item.getOrderedQuantity()) != 0
+                || product.getUnitPrice().compareTo(item.getLockedUnitPrice()) != 0) {
                 throw new ScmBusinessException(MallErrorCode.CHECKOUT_PRICE_CHANGED);
             }
         }
@@ -216,7 +220,7 @@ public class MallCheckoutService {
      * 结算优惠试算：只取可结算行（与预估金额同一口径），行 id 用顺序号占位—— 预览阶段没有订单行，分摊结果只汇总展示、不回映射到具体行。
      */
     private MallCheckoutPromotionVO previewPromotion(Long customerId, Long couponInstanceId,
-            Map<Long, BigDecimal> quantities, Map<Long, MallProductVO> products) {
+        Map<Long, BigDecimal> quantities, Map<Long, MallProductVO> products) {
         PromotionDiscountPreviewForm form = new PromotionDiscountPreviewForm();
         form.setCustomerId(customerId);
         form.setCouponInstanceId(couponInstanceId);
@@ -225,7 +229,7 @@ public class MallCheckoutService {
         for (Map.Entry<Long, BigDecimal> entry : quantities.entrySet()) {
             MallProductVO product = products.get(entry.getKey());
             if (product == null || product.getUnitPrice() == null
-                    || !MallQuantityPolicy.accepts(product, entry.getValue())) {
+                || !MallQuantityPolicy.accepts(product, entry.getValue())) {
                 continue;
             }
             PromotionDiscountPreviewForm.Line line = new PromotionDiscountPreviewForm.Line();
@@ -249,15 +253,15 @@ public class MallCheckoutService {
         promotion.setCouponInstanceId(computed.getCouponInstanceId());
         promotion.setCouponName(computed.getCouponName());
         promotion.setAppliedActivityNames(computed.getAppliedActivities().stream()
-                .map(PromotionDiscountVO.AppliedActivityVO::getActivityName).toList());
-        promotion.setGiftDescriptions(computed.getGifts().stream().map(gift -> gift.getProductName() + " ×"
-                + gift.getQuantity().toPlainString() + " " + (gift.getSaleUnit() == null ? "" : gift.getSaleUnit()))
-                .toList());
+            .map(PromotionDiscountVO.AppliedActivityVO::getActivityName).toList());
+        promotion.setGiftDescriptions(
+            computed.getGifts().stream().map(gift -> gift.getProductName() + " ×" + gift.getQuantity().toPlainString()
+                + " " + (gift.getSaleUnit() == null ? "" : gift.getSaleUnit())).toList());
         return promotion;
     }
 
     private SalesOrderAddForm orderForm(RequestMallCustomer customer, MallOrderSubmitForm form, MallAddressVO address,
-            Map<Long, BigDecimal> quantities) {
+        Map<Long, BigDecimal> quantities) {
         SalesOrderAddForm orderForm = new SalesOrderAddForm();
         // 客户只从登录身份取，不采信请求体
         orderForm.setCustomerId(customer.getCustomerId());
@@ -297,13 +301,15 @@ public class MallCheckoutService {
         return orderForm;
     }
 
-    /** 可结算行的预估金额合计（与预览 {@code estimatedAmount} 同一口径：只累计有客户价的行）。 */
+    /**
+     * 可结算行的预估金额合计（与预览 {@code estimatedAmount} 同一口径：只累计有客户价的行）。
+     */
     private static BigDecimal estimatedAmount(Map<Long, BigDecimal> quantities, Map<Long, MallProductVO> products) {
         BigDecimal total = BigDecimal.ZERO.setScale(SCALE);
         for (Map.Entry<Long, BigDecimal> entry : quantities.entrySet()) {
             MallProductVO product = products.get(entry.getKey());
             if (product == null || product.getUnitPrice() == null
-                    || !MallQuantityPolicy.accepts(product, entry.getValue())) {
+                || !MallQuantityPolicy.accepts(product, entry.getValue())) {
                 continue;
             }
             total = total.add(product.getUnitPrice().multiply(entry.getValue()).setScale(SCALE, RoundingMode.HALF_UP));
@@ -312,14 +318,16 @@ public class MallCheckoutService {
     }
 
     private Map<Long, MallProductVO> resolveProducts(RequestMallCustomer customer, Iterable<Long> skuIds,
-            Long addressId, Long warehouseId) {
+        Long addressId, Long warehouseId) {
         List<Long> ids = new ArrayList<>();
         skuIds.forEach(ids::add);
-        return catalogService.visibleProducts(customer, ids, addressId, warehouseId).stream().collect(Collectors
-                .toMap(MallProductVO::getSkuId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
+        return catalogService.visibleProducts(customer, ids, addressId, warehouseId).stream().collect(
+            Collectors.toMap(MallProductVO::getSkuId, Function.identity(), (left, right) -> left, LinkedHashMap::new));
     }
 
-    /** 合并重复规格并校验数量；保持提交顺序 */
+    /**
+     * 合并重复规格并校验数量；保持提交顺序
+     */
     private static Map<Long, BigDecimal> normalize(List<MallCheckoutItemForm> items) {
         Map<Long, BigDecimal> quantities = new LinkedHashMap<>();
         for (MallCheckoutItemForm item : items) {
@@ -371,7 +379,7 @@ public class MallCheckoutService {
             return item;
         }
         if (!MallStockStatusEnum.AVAILABLE.name().equals(product.getStockStatus()) || product.getAvailableQty() == null
-                || product.getAvailableQty().compareTo(quantity) < 0) {
+            || product.getAvailableQty().compareTo(quantity) < 0) {
             item.setAvailability(MallCartAvailabilityEnum.UNAVAILABLE.name());
             item.setUnavailableReason(MallErrorCode.CHECKOUT_ITEM_UNAVAILABLE.name());
             return item;
@@ -381,9 +389,11 @@ public class MallCheckoutService {
         return item;
     }
 
-    /** 商城下单的幂等指纹只包含客户请求中稳定的字段，不用后来可能变化的地址或商品资料重新计算同一次请求。 */
+    /**
+     * 商城下单的幂等指纹只包含客户请求中稳定的字段，不用后来可能变化的地址或商品资料重新计算同一次请求。
+     */
     private static Map<String, Object> idempotencyRequest(RequestMallCustomer customer, MallOrderSubmitForm form,
-            Map<Long, BigDecimal> quantities) {
+        Map<Long, BigDecimal> quantities) {
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("customerId", customer.getCustomerId());
         request.put("addressId", form.getAddressId());
@@ -409,8 +419,8 @@ public class MallCheckoutService {
         String canonical = quantities.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> {
             MallProductVO product = products.get(entry.getKey());
             String price = product == null || product.getUnitPrice() == null
-                    ? "null"
-                    : product.getUnitPrice().toPlainString();
+                ? "null"
+                : product.getUnitPrice().toPlainString();
             return entry.getKey() + ":" + entry.getValue().toPlainString() + ":" + price;
         }).collect(Collectors.joining(";"));
         try {
@@ -430,9 +440,8 @@ public class MallCheckoutService {
 
     private static String fullAddress(MallAddressVO address) {
         return java.util.stream.Stream
-                .of(address.getProvinceName(), address.getCityName(), address.getDistrictName(),
-                        address.getDetailAddress())
-                .filter(part -> part != null && !part.isBlank()).collect(Collectors.joining(" "));
+            .of(address.getProvinceName(), address.getCityName(), address.getDistrictName(), address.getDetailAddress())
+            .filter(part -> part != null && !part.isBlank()).collect(Collectors.joining(" "));
     }
 
     private static MallOrderSubmitVO toSubmitVO(SalesOrderDetailVO order) {

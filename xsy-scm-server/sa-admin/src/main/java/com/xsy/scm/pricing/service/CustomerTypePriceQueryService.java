@@ -20,7 +20,7 @@ public class CustomerTypePriceQueryService {
 
     public PageResult<CustomerTypePriceVO> query(CustomerTypePriceQueryForm form) {
         if (form.getSortItemList() != null && form.getSortItemList().stream().anyMatch(sortItem -> !java.util.Set
-                .of("effective_from", "effective_to", "unit_price", "updated_at").contains(sortItem.getColumn())))
+            .of("effective_from", "effective_to", "unit_price", "updated_at").contains(sortItem.getColumn())))
             throw new ScmBusinessException(VALIDATION_ERROR);
         var page = SmartPageUtil.convert2PageQuery(form);
         if (page.orders().isEmpty())

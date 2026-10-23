@@ -12,8 +12,10 @@ import com.xsy.scm.report.support.ScmReportExportGuard;
 import com.xsy.scm.report.support.ScmReportTimeRange;
 import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import com.xsy.scm.sorting.support.SortingAccess;
+
 import java.util.Arrays;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -36,9 +38,8 @@ public class ScmOrderExceptionService {
         Page<?> page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page,
-                orderExceptionReadDao.query(page, form, range.startAt(), range.endAt(), dataScopeService.resolve(),
-                        types, sortingAccess.crossAssignee(),
-                        ScmDataScopeService.hasPermission(InventoryPermission.BALANCE_QUERY)));
+            orderExceptionReadDao.query(page, form, range.startAt(), range.endAt(), dataScopeService.resolve(), types,
+                sortingAccess.crossAssignee(), ScmDataScopeService.hasPermission(InventoryPermission.BALANCE_QUERY)));
     }
 
     public List<ScmOrderExceptionSummaryVO> summary(ScmOrderExceptionQueryForm form) {
@@ -47,7 +48,7 @@ public class ScmOrderExceptionService {
         if (types.isEmpty())
             return List.of();
         return orderExceptionReadDao.summary(form, range.startAt(), range.endAt(), dataScopeService.resolve(), types,
-                sortingAccess.crossAssignee());
+            sortingAccess.crossAssignee());
     }
 
     public List<ScmOrderExceptionRowVO> export(ScmOrderExceptionQueryForm form) {
@@ -58,8 +59,8 @@ public class ScmOrderExceptionService {
         var scope = dataScopeService.resolve();
         boolean crossAssignee = sortingAccess.crossAssignee();
         return ScmReportExportGuard.exportRows(pageSize -> orderExceptionReadDao.query(new Page<>(1, pageSize, false),
-                form, range.startAt(), range.endAt(), scope, types, crossAssignee,
-                ScmDataScopeService.hasPermission(InventoryPermission.BALANCE_QUERY)));
+            form, range.startAt(), range.endAt(), scope, types, crossAssignee,
+            ScmDataScopeService.hasPermission(InventoryPermission.BALANCE_QUERY)));
     }
 
     private ScmReportTimeRange validate(ScmOrderExceptionQueryForm form) {
@@ -69,6 +70,6 @@ public class ScmOrderExceptionService {
 
     private List<String> visibleTypes() {
         return Arrays.stream(ScmOrderExceptionTypeEnum.values())
-                .filter(type -> ScmDataScopeService.hasPermission(type.getQueryPermission())).map(Enum::name).toList();
+            .filter(type -> ScmDataScopeService.hasPermission(type.getQueryPermission())).map(Enum::name).toList();
     }
 }

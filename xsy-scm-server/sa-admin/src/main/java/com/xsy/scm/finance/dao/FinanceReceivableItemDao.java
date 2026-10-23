@@ -16,9 +16,11 @@ import java.util.List;
 @Mapper
 public interface FinanceReceivableItemDao extends BaseMapper<FinanceReceivableItemEntity> {
 
-    /** 同一出库行只能生成一次应收明细。出现来源唯一冲突要检查是否重复入账，不得把异常冲突当成功。 */
+    /**
+     * 同一出库行只能生成一次应收明细。出现来源唯一冲突要检查是否重复入账，不得把异常冲突当成功。
+     */
     int insertOnConflictDoNothing(FinanceReceivableItemEntity entity);
 
     List<FinanceReceivableItemEntity> selectByReceivableId(
-            @org.apache.ibatis.annotations.Param("receivableId") Long receivableId);
+        @org.apache.ibatis.annotations.Param("receivableId") Long receivableId);
 }

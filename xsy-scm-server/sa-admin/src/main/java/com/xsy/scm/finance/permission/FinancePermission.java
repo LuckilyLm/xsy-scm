@@ -1,6 +1,8 @@
 package com.xsy.scm.finance.permission;
 
-/** Stable permission identifiers for protected finance endpoints. */
+/**
+ * Stable permission identifiers for protected finance endpoints.
+ */
 public final class FinancePermission {
 
     public static final String RECEIVABLE_QUERY = "scm:finance:receivable:query";

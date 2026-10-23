@@ -1,6 +1,7 @@
 package com.xsy.scm.order.domain.form;
 
 import java.math.BigDecimal;
+
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

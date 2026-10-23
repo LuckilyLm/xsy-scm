@@ -21,10 +21,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiConsumer;
+
 import static com.xsy.scm.product.service.ProductImportValueRules.addError;
 import static com.xsy.scm.product.service.ProductImportValueRules.trim;
 
-/** Excel 模板生成和工作簿解析；产品领域校验与写入由导入服务负责。 */
+/**
+ * Excel 模板生成和工作簿解析；产品领域校验与写入由导入服务负责。
+ */
 @Slf4j
 @Component
 public class ProductImportWorkbookSupport {
@@ -33,44 +36,46 @@ public class ProductImportWorkbookSupport {
      */
     private static final Map<String, List<String>> ENUM_OPTIONS = ProductEnumLabels.OPTIONS;
 
-    /** 数据验证覆盖到第 2000 行：模板上限 20000 行，但下拉预置到这个深度足够日常使用且不撑大文件。 */
+    /**
+     * 数据验证覆盖到第 2000 行：模板上限 20000 行，但下拉预置到这个深度足够日常使用且不撑大文件。
+     */
     private static final int VALIDATION_LAST_ROW = 2000;
 
     // 分组标记仅用于本次导入把多行规格归入一个商品，不是落库的 SPU 编码。
     private static final List<String> CREATE_HEADERS = List.of("模板版本", "导入商品分组", "商品名称", "别名", "分类编码", "助记码", "品牌",
-            "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
+        "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
     private static final List<
-            String> LEGACY_CREATE_HEADERS = List.of("模板版本", "商品编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式",
-                    "保质期天数", "标签编码", "商品状态", "商品规格编码", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
+        String> LEGACY_CREATE_HEADERS = List.of("模板版本", "商品编码", "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式",
+            "保质期天数", "标签编码", "商品状态", "商品规格编码", "条码", "商品规格名称", "销售单位", "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
     private static final List<String> UPDATE_HEADERS = List.of("模板版本", "商品ID", "商品版本", "商品规格ID", "商品规格版本", "商品编码",
-            "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "商品规格编码", "条码", "商品规格名称", "销售单位",
-            "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
+        "商品名称", "别名", "分类编码", "助记码", "品牌", "产地", "储存方式", "保质期天数", "标签编码", "商品状态", "商品规格编码", "条码", "商品规格名称", "销售单位",
+        "商品类型", "市场价", "商品规格状态", "默认商品规格", "排序");
     private static final List<BiConsumer<ProductImportRow, String>> CREATE_SETTERS = List.of(
-            ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
-            ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
-            ProductImportRow::setBrandName, ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
-            ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes, ProductImportRow::setSpuStatus,
-            ProductImportRow::setBarcode, ProductImportRow::setSpecName, ProductImportRow::setSaleUnit,
-            ProductImportRow::setProductType, ProductImportRow::setMarketPrice, ProductImportRow::setSkuStatus,
-            ProductImportRow::setDefaultFlag, ProductImportRow::setSortOrder);
+        ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
+        ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
+        ProductImportRow::setBrandName, ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
+        ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes, ProductImportRow::setSpuStatus,
+        ProductImportRow::setBarcode, ProductImportRow::setSpecName, ProductImportRow::setSaleUnit,
+        ProductImportRow::setProductType, ProductImportRow::setMarketPrice, ProductImportRow::setSkuStatus,
+        ProductImportRow::setDefaultFlag, ProductImportRow::setSortOrder);
     private static final List<BiConsumer<ProductImportRow, String>> LEGACY_CREATE_SETTERS = List.of(
-            ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
+        ProductImportRow::setTemplateVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
+        ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
+        ProductImportRow::setBrandName, ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
+        ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes, ProductImportRow::setSpuStatus,
+        ProductImportRow::setSkuCode, ProductImportRow::setBarcode, ProductImportRow::setSpecName,
+        ProductImportRow::setSaleUnit, ProductImportRow::setProductType, ProductImportRow::setMarketPrice,
+        ProductImportRow::setSkuStatus, ProductImportRow::setDefaultFlag, ProductImportRow::setSortOrder);
+    private static final List<
+        BiConsumer<ProductImportRow, String>> UPDATE_SETTERS = List.of(ProductImportRow::setTemplateVersion,
+            ProductImportRow::setSpuId, ProductImportRow::setSpuVersion, ProductImportRow::setSkuId,
+            ProductImportRow::setSkuVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
             ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
             ProductImportRow::setBrandName, ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
             ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes, ProductImportRow::setSpuStatus,
             ProductImportRow::setSkuCode, ProductImportRow::setBarcode, ProductImportRow::setSpecName,
             ProductImportRow::setSaleUnit, ProductImportRow::setProductType, ProductImportRow::setMarketPrice,
             ProductImportRow::setSkuStatus, ProductImportRow::setDefaultFlag, ProductImportRow::setSortOrder);
-    private static final List<
-            BiConsumer<ProductImportRow, String>> UPDATE_SETTERS = List.of(ProductImportRow::setTemplateVersion,
-                    ProductImportRow::setSpuId, ProductImportRow::setSpuVersion, ProductImportRow::setSkuId,
-                    ProductImportRow::setSkuVersion, ProductImportRow::setSpuCode, ProductImportRow::setSpuName,
-                    ProductImportRow::setAlias, ProductImportRow::setCategoryCode, ProductImportRow::setMnemonicCode,
-                    ProductImportRow::setBrandName, ProductImportRow::setOrigin, ProductImportRow::setStorageMethod,
-                    ProductImportRow::setShelfLifeDays, ProductImportRow::setTagCodes, ProductImportRow::setSpuStatus,
-                    ProductImportRow::setSkuCode, ProductImportRow::setBarcode, ProductImportRow::setSpecName,
-                    ProductImportRow::setSaleUnit, ProductImportRow::setProductType, ProductImportRow::setMarketPrice,
-                    ProductImportRow::setSkuStatus, ProductImportRow::setDefaultFlag, ProductImportRow::setSortOrder);
 
     public byte[] buildTemplate(ProductImportService.ImportMode mode) throws IOException {
         var headers = headers(mode);
@@ -116,11 +121,11 @@ public class ProductImportWorkbookSupport {
     }
 
     public List<ProductImportRow> readRows(byte[] bytes, ProductImportService.ImportMode mode,
-            ProductImportResultVO result) {
+        ProductImportResultVO result) {
         var rows = new ArrayList<ProductImportRow>();
         var formatter = new DataFormatter(Locale.ROOT);
         try (var workbook = org.apache.poi.ss.usermodel.WorkbookFactory
-                .create(new java.io.ByteArrayInputStream(bytes))) {
+            .create(new java.io.ByteArrayInputStream(bytes))) {
             if (workbook.getNumberOfSheets() != 1) {
                 addError(result, 0, null, "文件", "SHEET_COUNT", "请保留模板中的一个工作表");
                 return rows;
@@ -129,17 +134,17 @@ public class ProductImportWorkbookSupport {
             var header = sheet.getRow(0);
             var secondHeader = header == null ? null : trim(formatter.formatCellValue(header.getCell(1)));
             boolean legacyCreate = mode == ProductImportService.ImportMode.CREATE
-                    && ("商品编码".equals(secondHeader) || "SPU编码".equals(secondHeader));
+                && ("商品编码".equals(secondHeader) || "SPU编码".equals(secondHeader));
             var headers = legacyCreate ? LEGACY_CREATE_HEADERS : headers(mode);
             var setters = mode == ProductImportService.ImportMode.UPDATE
-                    ? UPDATE_SETTERS
-                    : legacyCreate ? LEGACY_CREATE_SETTERS : CREATE_SETTERS;
+                ? UPDATE_SETTERS
+                : legacyCreate ? LEGACY_CREATE_SETTERS : CREATE_SETTERS;
             for (int column = 0; column < headers.size(); column++) {
                 String headerValue = header == null ? null : trim(formatter.formatCellValue(header.getCell(column)));
                 if (!headerMatches(mode, column, headerValue, legacyCreate)) {
                     addError(result, 1, null, CellReference.convertNumToColString(column), "HEADER_INVALID",
-                            "表头应为“" + headers.get(column) + "”，请使用"
-                                    + (mode == ProductImportService.ImportMode.CREATE ? "新增" : "更新") + "模板");
+                        "表头应为“" + headers.get(column) + "”，请使用"
+                            + (mode == ProductImportService.ImportMode.CREATE ? "新增" : "更新") + "模板");
                 }
             }
             if (result.getTotalErrors() > 0)
@@ -157,8 +162,8 @@ public class ProductImportWorkbookSupport {
                     hasData = true;
                     var column = cell.getColumnIndex();
                     var name = column < headers.size()
-                            ? headers.get(column)
-                            : CellReference.convertNumToColString(column);
+                        ? headers.get(column)
+                        : CellReference.convertNumToColString(column);
                     if (cell.getCellType() == CellType.FORMULA || cell.getCellType() == CellType.ERROR) {
                         addError(result, row.getRowNumber(), null, name, "CELL_INVALID", "不能使用公式或错误单元格");
                     } else if (column >= headers.size()) {
@@ -173,7 +178,7 @@ public class ProductImportWorkbookSupport {
                     rows.add(row);
                 if (rows.size() > ProductImportService.MAX_ROWS) {
                     addError(result, row.getRowNumber(), null, "文件", "ROW_LIMIT",
-                            "数据行不能超过 " + ProductImportService.MAX_ROWS + " 行");
+                        "数据行不能超过 " + ProductImportService.MAX_ROWS + " 行");
                     break;
                 }
             }
@@ -189,9 +194,11 @@ public class ProductImportWorkbookSupport {
         return mode == ProductImportService.ImportMode.CREATE ? CREATE_HEADERS : UPDATE_HEADERS;
     }
 
-    /** Accept previously downloaded technical headers while exporting only business-facing labels. */
+    /**
+     * Accept previously downloaded technical headers while exporting only business-facing labels.
+     */
     private boolean headerMatches(ProductImportService.ImportMode mode, int column, String value,
-            boolean legacyCreate) {
+        boolean legacyCreate) {
         var headerList = legacyCreate ? LEGACY_CREATE_HEADERS : headers(mode);
         if (headerList.get(column).equals(value))
             return true;

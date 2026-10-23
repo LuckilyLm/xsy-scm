@@ -26,6 +26,6 @@ public class CustomerPromotionPublicController {
     @GetMapping("/{code}")
     public ResponseDTO<CustomerPromotionVO.Landing> landing(@PathVariable String code, HttpServletRequest request) {
         return ResponseDTO
-                .ok(customerPromotionService.landing(code, request.getRemoteAddr(), request.getHeader("User-Agent")));
+            .ok(customerPromotionService.landing(code, request.getRemoteAddr(), request.getHeader("User-Agent")));
     }
 }

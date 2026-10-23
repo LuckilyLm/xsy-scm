@@ -33,15 +33,19 @@ import com.xsy.scm.payment.support.BalanceConsumptionResult;
 import com.xsy.scm.payment.support.BalanceConsumptionSink;
 import com.xsy.scm.payment.support.BalanceRechargeIntentFact;
 import com.xsy.scm.payment.support.BalanceRechargeSink;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 支付编排：外部渠道收款与内部钱包消费共享意图和交易状态，成功副作用分别处理。 */
+/**
+ * 支付编排：外部渠道收款与内部钱包消费共享意图和交易状态，成功副作用分别处理。
+ */
 @Service
 @RequiredArgsConstructor
 public class PaymentIntentService {
@@ -58,7 +62,9 @@ public class PaymentIntentService {
 
     private final PaymentNumberGenerator paymentNumberGenerator;
 
-    /** 只读外部事实：按订单 id 解析正式订单（订单号 / 客户 / 业务员）。 */
+    /**
+     * 只读外部事实：按订单 id 解析正式订单（订单号 / 客户 / 业务员）。
+     */
     private final PaymentSourceDao paymentSourceDao;
 
     private final ScmDataScopeService dataScopeService;
@@ -72,7 +78,9 @@ public class PaymentIntentService {
      */
     private final FinanceReceiptService financeReceiptService;
 
-    /** 延迟获取余额模块的入账接口，避免启动时循环依赖；接口缺失必须报错，不能静默跳过已成功的支付。 */
+    /**
+     * 延迟获取余额模块的入账接口，避免启动时循环依赖；接口缺失必须报错，不能静默跳过已成功的支付。
+     */
     private final ObjectProvider<BalanceRechargeSink> balanceRechargeSinkProvider;
     private final ObjectProvider<BalanceConsumptionSink> balanceConsumptionSinkProvider;
     private final FinanceOrderFundingSettlementService financeOrderFundingSettlementService;
@@ -101,7 +109,7 @@ public class PaymentIntentService {
     }
 
     private PaymentIntentEntity create(PaymentIntentCreateForm form, String idempotencyKey,
-            boolean enforceEmployeeScope) {
+        boolean enforceEmployeeScope) {
         // 幂等：<b>收钱也要幂等</b>。这里往下会真的调用 provider.createIntent()，
         // 后台双击 / 网络重试 / 前端超时重试都会造出第二个意图与第二笔渠道交易。
         var claim = idempotencyService.claim(IDEMPOTENCY_SCOPE, idempotencyKey, form);
@@ -110,7 +118,7 @@ public class PaymentIntentService {
             return idempotencyService.replay(claim, PaymentIntentEntity.class);
         }
         if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.status()) || order.settlementCustomerId() == null
-                || form.getAmount() == null || form.getAmount().signum() <= 0 || form.getAmount().scale() > SCALE) {
+            || form.getAmount() == null || form.getAmount().signum() <= 0 || form.getAmount().scale() > SCALE) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);
         }
 
@@ -119,17 +127,17 @@ public class PaymentIntentService {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_STATE_INVALID);
         }
         if (order.settlementMethod() != null && !(ScmSettlementMethodEnum.WALLET.name().equals(order.settlementMethod())
-                && method == ScmPaymentMethodEnum.BALANCE)) {
+            && method == ScmPaymentMethodEnum.BALANCE)) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_SETTLEMENT_METHOD_BLOCKED);
         }
         ScmPaymentProviderEnum provider = ScmPaymentProviderEnum.of(form.getProvider());
         if (provider == null
-                || (method == ScmPaymentMethodEnum.BALANCE) != (provider == ScmPaymentProviderEnum.INTERNAL_BALANCE)) {
+            || (method == ScmPaymentMethodEnum.BALANCE) != (provider == ScmPaymentProviderEnum.INTERNAL_BALANCE)) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_PROVIDER_UNSUPPORTED);
         }
         if (ScmSettlementMethodEnum.WALLET.name().equals(order.settlementMethod())) {
             BigDecimal due = financeOrderPayableQueryService.payableOfConfirmedOrder(order.orderId())
-                    .subtract(financeOrderPayableQueryService.paidAmountOf(order.orderId()));
+                .subtract(financeOrderPayableQueryService.paidAmountOf(order.orderId()));
             if (form.getAmount().compareTo(due) > 0) {
                 throw new ScmBusinessException(PaymentErrorCode.PAYMENT_AMOUNT_EXCEEDS_DUE);
             }
@@ -146,13 +154,16 @@ public class PaymentIntentService {
             providerRegistry.require(provider.name());
         }
         ScmPaymentMockScenarioEnum scenario = resolveScenario(form);
-        return createInternal(new IntentDraft(ScmPaymentSourceTypeEnum.SALES_ORDER.name(), order.orderId(),
-                order.orderNo(), order.customerId(), order.customerNameSnapshot(),
+        return createInternal(
+            new IntentDraft(ScmPaymentSourceTypeEnum.SALES_ORDER.name(), order.orderId(), order.orderNo(),
+                order.customerId(), order.customerNameSnapshot(),
                 form.getAmount().setScale(SCALE, RoundingMode.HALF_UP), method, provider, scenario, form.getRemark()),
-                claim);
+            claim);
     }
 
-    /** 余额充值支付只能由余额模块在充值单建立后发起，不能开放客户端随意传充值 ID。充值资金来源始终为在线支付，不是钱包余额扣减。 */
+    /**
+     * 余额充值支付只能由余额模块在充值单建立后发起，不能开放客户端随意传充值 ID。充值资金来源始终为在线支付，不是钱包余额扣减。
+     */
     @Transactional(rollbackFor = Exception.class)
     public PaymentIntentEntity createForBalanceRecharge(BalanceRechargeIntentFact fact, String idempotencyKey) {
         var claim = idempotencyService.claim(RECHARGE_INTENT_SCOPE + ":" + fact.rechargeId(), idempotencyKey, fact);
@@ -163,16 +174,16 @@ public class PaymentIntentService {
         ScmPaymentMockScenarioEnum scenario = null;
         if (fact.mockScenario() != null && !fact.mockScenario().isBlank()) {
             if (!ScmPaymentProviderEnum.MOCK.name().equals(fact.provider())
-                    || ScmPaymentMockScenarioEnum.of(fact.mockScenario()) == null) {
+                || ScmPaymentMockScenarioEnum.of(fact.mockScenario()) == null) {
                 throw new ScmBusinessException(PaymentErrorCode.PAYMENT_MOCK_SCENARIO_INVALID);
             }
             scenario = ScmPaymentMockScenarioEnum.of(fact.mockScenario());
         }
         return createInternal(
-                new IntentDraft(ScmPaymentSourceTypeEnum.BALANCE_RECHARGE.name(), fact.rechargeId(), fact.rechargeNo(),
-                        fact.customerId(), fact.customerName(), fact.amount().setScale(SCALE, RoundingMode.HALF_UP),
-                        ScmPaymentMethodEnum.ONLINE, provider.provider(), scenario, fact.remark()),
-                claim);
+            new IntentDraft(ScmPaymentSourceTypeEnum.BALANCE_RECHARGE.name(), fact.rechargeId(), fact.rechargeNo(),
+                fact.customerId(), fact.customerName(), fact.amount().setScale(SCALE, RoundingMode.HALF_UP),
+                ScmPaymentMethodEnum.ONLINE, provider.provider(), scenario, fact.remark()),
+            claim);
     }
 
     /**
@@ -214,19 +225,19 @@ public class PaymentIntentService {
             transaction.setProviderTransactionNo(transaction.getTransactionNo());
             paymentTransactionDao.insert(transaction);
             transition(intent.getId(), ScmPaymentIntentStatusEnum.CREATED, ScmPaymentIntentStatusEnum.PENDING,
-                    operator);
+                operator);
             PaymentOrderFact order = paymentSourceDao.selectOrder(intent.getSourceId());
             BalanceConsumptionResult consumed = balanceConsumptionSinkProvider.getObject().consumeForPayment(
-                    intent.getId(), intent.getCustomerId(), order.settlementCustomerId(), intent.getAmount());
+                intent.getId(), intent.getCustomerId(), order.settlementCustomerId(), intent.getAmount());
             if (!Objects.equals(consumed.intentId(), intent.getId())
-                    || !Objects.equals(consumed.customerId(), intent.getCustomerId())
-                    || !Objects.equals(consumed.settlementCustomerId(), order.settlementCustomerId())
-                    || consumed.amount().compareTo(intent.getAmount()) != 0 || consumed.occurredAt() == null
-                    || consumed.movementId() == null) {
+                || !Objects.equals(consumed.customerId(), intent.getCustomerId())
+                || !Objects.equals(consumed.settlementCustomerId(), order.settlementCustomerId())
+                || consumed.amount().compareTo(intent.getAmount()) != 0 || consumed.occurredAt() == null
+                || consumed.movementId() == null) {
                 throw new ScmBusinessException(FinanceErrorCode.ORDER_FUNDING_INVALID);
             }
             if (paymentTransactionDao.markBalanceSucceeded(transaction.getId(), consumed.amount(),
-                    consumed.occurredAt(), operator) != 1) {
+                consumed.occurredAt(), operator) != 1) {
                 throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_STATE_INVALID);
             }
             if (paymentIntentDao.markBalanceSucceeded(intent.getId(), consumed.occurredAt(), operator) != 1) {
@@ -235,27 +246,29 @@ public class PaymentIntentService {
             financeOrderFundingSettlementService.settleSalesOrderFunding(intent.getSourceId());
         } else {
             ScmPaymentProvider.IntentResult result = providerRegistry.require(draft.provider().name())
-                    .createIntent(new ScmPaymentProvider.IntentRequest(intent.getIntentNo(), intent.getAmount(),
-                            intent.getSourceNoSnapshot(), draft.scenario()));
+                .createIntent(new ScmPaymentProvider.IntentRequest(intent.getIntentNo(), intent.getAmount(),
+                    intent.getSourceNoSnapshot(), draft.scenario()));
             transaction.setProviderTransactionNo(result.providerTransactionNo());
             paymentTransactionDao.insert(transaction);
             if (result.externalIntentId() != null) {
                 paymentIntentDao.bindExternalIntent(intent.getId(), result.externalIntentId(), operator);
             }
             transition(intent.getId(), ScmPaymentIntentStatusEnum.CREATED, ScmPaymentIntentStatusEnum.PENDING,
-                    operator);
+                operator);
             applyOutcome(intent.getId(), transaction.getId(), result.outcome(), result.failureCode(),
-                    result.failureMessage(), result.amount(), operator);
+                result.failureMessage(), result.amount(), operator);
         }
         PaymentIntentEntity saved = paymentIntentDao.selectById(intent.getId());
         idempotencyService.complete(claim, ScmBalanceSourceTypeEnum.PAYMENT_INTENT.name(), saved.getId(), saved);
         return saved;
     }
 
-    /** 意图创建草稿：把两条入口的差异收在一处，共享实现只认它。 */
+    /**
+     * 意图创建草稿：把两条入口的差异收在一处，共享实现只认它。
+     */
     private record IntentDraft(String sourceType, Long sourceId, String sourceNo, Long customerId, String customerName,
-            BigDecimal amount, ScmPaymentMethodEnum method, ScmPaymentProviderEnum provider,
-            ScmPaymentMockScenarioEnum scenario, String remark) {
+        BigDecimal amount, ScmPaymentMethodEnum method, ScmPaymentProviderEnum provider,
+        ScmPaymentMockScenarioEnum scenario, String remark) {
     }
 
     /**
@@ -266,36 +279,36 @@ public class PaymentIntentService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void applyOutcome(Long intentId, Long transactionId, ScmPaymentProvider.Outcome outcome, String failureCode,
-            String failureMessage, BigDecimal providerAmount, String operator) {
+        String failureMessage, BigDecimal providerAmount, String operator) {
         PaymentIntentEntity initial = paymentIntentDao.selectById(intentId);
         if (initial == null || !ScmPaymentMethodEnum.ONLINE.name().equals(initial.getMethod())
-                || ScmPaymentProviderEnum.INTERNAL_BALANCE.name().equals(initial.getProvider())) {
+            || ScmPaymentProviderEnum.INTERNAL_BALANCE.name().equals(initial.getProvider())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);
         }
         if (ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(initial.getSourceType())
-                && paymentSourceDao.lockOrder(initial.getSourceId()) == null) {
+            && paymentSourceDao.lockOrder(initial.getSourceId()) == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);
         }
         PaymentIntentEntity intent = paymentIntentDao.lockById(intentId);
         PaymentTransactionEntity transaction = paymentTransactionDao.lockById(transactionId);
         if (intent == null || transaction == null || !Objects.equals(transaction.getIntentId(), intentId)
-                || !Objects.equals(transaction.getProvider(), intent.getProvider())) {
+            || !Objects.equals(transaction.getProvider(), intent.getProvider())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);
         }
         if (outcome == ScmPaymentProvider.Outcome.SUCCEEDED && (providerAmount == null || providerAmount.signum() <= 0
-                || (ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())
-                        && (transaction.getProviderAmount() == null
-                                || transaction.getProviderAmount().compareTo(providerAmount) != 0)))) {
+            || (ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())
+                && (transaction.getProviderAmount() == null
+                    || transaction.getProviderAmount().compareTo(providerAmount) != 0)))) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_PROVIDER_AMOUNT_MISMATCH);
         }
         switch (outcome) {
             case SUCCEEDED -> {
                 boolean amountMatchesIntent = intent.getAmount() != null
-                        && providerAmount.compareTo(intent.getAmount()) == 0;
+                    && providerAmount.compareTo(intent.getAmount()) == 0;
                 boolean firstTime = paymentTransactionDao.markSucceeded(transactionId, providerAmount, operator) == 1;
                 if (firstTime && amountMatchesIntent) {
                     transition(intentId, ScmPaymentIntentStatusEnum.PENDING, ScmPaymentIntentStatusEnum.SUCCEEDED,
-                            operator);
+                        operator);
                 }
                 // 金额不符时保留渠道成功交易和 provider_amount，等待对账；不完成支付意图，
                 // 也不派生 Finance 收款、订单资金关联或余额权益。
@@ -319,7 +332,9 @@ public class PaymentIntentService {
         }
     }
 
-    /** 支付成功后，按渠道实际收款金额和成功时间登记财务收款。本地支付状态与收款记录同事务保存，交易 ID 作为防重来源。 */
+    /**
+     * 支付成功后，按渠道实际收款金额和成功时间登记财务收款。本地支付状态与收款记录同事务保存，交易 ID 作为防重来源。
+     */
     private void registerFinanceReceipt(Long intentId, Long transactionId, String operator) {
         PaymentTransactionEntity transaction = paymentTransactionDao.selectById(transactionId);
         if (transaction == null || !ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(transaction.getStatus())) {
@@ -330,16 +345,16 @@ public class PaymentIntentService {
         if (intent == null) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_NOT_FOUND);
         }
-        financeReceiptService.registerFromPaymentTransaction(new FinancePaymentReceiptFact(transaction.getId(),
-                intent.getCustomerId(), transaction.getProviderAmount(), transaction.getPaidAt(),
-                transaction.getProviderTransactionNo()));
+        financeReceiptService
+            .registerFromPaymentTransaction(new FinancePaymentReceiptFact(transaction.getId(), intent.getCustomerId(),
+                transaction.getProviderAmount(), transaction.getPaidAt(), transaction.getProviderTransactionNo()));
 
         // 充值来源还要把<b>钱包权益</b>同时记上：两条事实回答两个不同问题 ——
         // Finance 收款说「公司实际进账了多少」，余额流水说「这笔钱形成了多少钱包权益」。
         // 不是重复记账：一个回答资金，一个回答权益。
         if (ScmPaymentSourceTypeEnum.BALANCE_RECHARGE.name().equals(intent.getSourceType())) {
             balanceRechargeSinkProvider.getObject().rechargeFromPayment(intent.getSourceId(), intent.getCustomerId(),
-                    transaction.getProviderAmount(), transaction.getId(), transaction.getPaidAt());
+                transaction.getProviderAmount(), transaction.getId(), transaction.getPaidAt());
         } else if (ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(intent.getSourceType())) {
             financeOrderFundingSettlementService.settleSalesOrderFunding(intent.getSourceId());
         }
@@ -353,7 +368,7 @@ public class PaymentIntentService {
      */
     @Transactional(rollbackFor = Exception.class)
     public void transition(Long intentId, ScmPaymentIntentStatusEnum from, ScmPaymentIntentStatusEnum to,
-            String operator) {
+        String operator) {
         if (!ScmPaymentIntentStatusEnum.canTransition(from.name(), to.name())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_STATE_INVALID);
         }
@@ -362,14 +377,16 @@ public class PaymentIntentService {
         }
     }
 
-    /** 创建订单支付前，服务端验证订单存在、客户匹配及操作者的数据范围。订单不存在与越权使用相同拒绝响应，不能向客户端泄露订单是否存在。 */
+    /**
+     * 创建订单支付前，服务端验证订单存在、客户匹配及操作者的数据范围。订单不存在与越权使用相同拒绝响应，不能向客户端泄露订单是否存在。
+     */
     private PaymentOrderFact requireOrder(PaymentIntentCreateForm form, boolean enforceEmployeeScope) {
         if (!ScmPaymentSourceTypeEnum.SALES_ORDER.name().equals(form.getSourceType())) {
             throw new ScmBusinessException(PaymentErrorCode.PAYMENT_INTENT_SOURCE_INVALID);
         }
         PaymentOrderFact order = paymentSourceDao.lockOrder(form.getSourceId());
-        if (order == null || (enforceEmployeeScope
-                && !dataScopeService.resolve().getOrderSellerScope().allows(order.sellerId()))) {
+        if (order == null
+            || (enforceEmployeeScope && !dataScopeService.resolve().getOrderSellerScope().allows(order.sellerId()))) {
             throw new ScmDataScopeException();
         }
         if (enforceEmployeeScope) {
@@ -385,7 +402,9 @@ public class PaymentIntentService {
         return order;
     }
 
-    /** 仅本地模拟渠道可带剧本；真实渠道带剧本一律拒收（DDL 也有同义 CHECK 兜底）。 */
+    /**
+     * 仅本地模拟渠道可带剧本；真实渠道带剧本一律拒收（DDL 也有同义 CHECK 兜底）。
+     */
     private static ScmPaymentMockScenarioEnum resolveScenario(PaymentIntentCreateForm form) {
         if (form.getMockScenario() == null || form.getMockScenario().isBlank()) {
             return null;

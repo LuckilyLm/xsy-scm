@@ -3,7 +3,9 @@ package com.xsy.scm.mall.order.domain.form;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
+
 import lombok.Data;
 
 /**
@@ -24,9 +26,13 @@ public class MallOrderSummaryQueryForm {
     @Max(value = 100, message = "每页最多100条")
     private Long pageSize;
 
-    /** 统计区间起（含当天），留空表示不限。 */
+    /**
+     * 统计区间起（含当天），留空表示不限。
+     */
     private LocalDate startDate;
 
-    /** 统计区间止（含当天），留空表示不限。 */
+    /**
+     * 统计区间止（含当天），留空表示不限。
+     */
     private LocalDate endDate;
 }

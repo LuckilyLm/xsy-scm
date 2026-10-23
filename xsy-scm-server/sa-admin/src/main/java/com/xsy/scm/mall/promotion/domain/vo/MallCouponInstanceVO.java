@@ -2,8 +2,10 @@ package com.xsy.scm.mall.promotion.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -33,7 +35,9 @@ public class MallCouponInstanceVO {
 
     private OffsetDateTime validTo;
 
-    /** 实例原始状态：{@code AVAILABLE / RESERVED / USED / RELEASED}。 */
+    /**
+     * 实例原始状态：{@code AVAILABLE / RESERVED / USED / RELEASED}。
+     */
     private String status;
 
     private String effectiveStatus;

@@ -2,7 +2,9 @@ package com.xsy.scm.inventory.permission;
 
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 
-/** Stable permission identifiers published by the inventory API. */
+/**
+ * Stable permission identifiers published by the inventory API.
+ */
 public final class InventoryPermission {
 
     public static final String BALANCE_QUERY = ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY;
@@ -11,7 +13,9 @@ public final class InventoryPermission {
 
     public static final String MOVEMENT_QUERY = "scm:inventory:movement:query";
 
-    /** 批次库存与批次流水查询：与菜单 2101 的 api_perms 逐字对应。 */
+    /**
+     * 批次库存与批次流水查询：与菜单 2101 的 api_perms 逐字对应。
+     */
     public static final String LOT_QUERY = "scm:inventory:lot:query";
 
     public static final String CONVERSION_QUERY = "scm:inventory:conversion:query";

@@ -3,7 +3,9 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 库存流水的类型决定出入库方向，数量始终为正。新增流水类型时须同步后端枚举、数据库类型白名单和出入库数量校验。 */
+/**
+ * 库存流水的类型决定出入库方向，数量始终为正。新增流水类型时须同步后端枚举、数据库类型白名单和出入库数量校验。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryMovementTypeEnum {

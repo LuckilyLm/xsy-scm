@@ -11,7 +11,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 
-/** Read-only sales gross-profit query over Finance and inventory facts. */
+/**
+ * Read-only sales gross-profit query over Finance and inventory facts.
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ScmFinanceProfitQueryForm extends PageParam implements ScmReportDateFilter {

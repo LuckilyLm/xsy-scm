@@ -4,7 +4,9 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
 import java.util.List;
+
 import lombok.Data;
 
 @Data
@@ -20,5 +22,8 @@ public class OrderTagAssignForm {
     @NotNull(message = "请选择打标操作")
     private Action action;
 
-    public enum Action { ADD, REMOVE }
+    public enum Action {
+        ADD,
+        REMOVE
+    }
 }

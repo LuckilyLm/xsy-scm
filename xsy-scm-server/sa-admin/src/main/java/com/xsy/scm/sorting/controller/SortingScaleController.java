@@ -3,7 +3,9 @@ package com.xsy.scm.sorting.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.sorting.domain.form.SortingScaleAcceptForm;
 import com.xsy.scm.sorting.domain.form.SortingScaleRejectForm;
@@ -25,8 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 电子秤读数：上报（设备）→ 查询（作业台）→ 接受 / 驳回（人工）。
  *
  * <p>
- * 上报与接受分开授权：上报只是把设备读数记下来，接受才写进分拣结果。
- * 上报带 {@code eventKey} 幂等键，重复上报返回既有记录并置 {@code duplicated}，不报错。
+ * 上报与接受分开授权：上报只是把设备读数记下来，接受才写进分拣结果。 上报带 {@code eventKey} 幂等键，重复上报返回既有记录并置 {@code duplicated}，不报错。
  */
 @RestController
 @RequestMapping("/scm/sorting/scale")
@@ -48,7 +49,7 @@ public class SortingScaleController {
     @GetMapping("/tasks/{taskId}")
     @SaCheckPermission(SortingPermission.SCALE_QUERY)
     public ResponseDTO<List<SortingScaleEventVO>> list(@PathVariable("taskId") Long taskId,
-            @RequestParam(value = "status", required = false) String status) {
+        @RequestParam(value = "status", required = false) String status) {
         return ResponseDTO.ok(sortingScaleEventService.list(taskId, status));
     }
 
@@ -58,8 +59,7 @@ public class SortingScaleController {
     @PostMapping("/{id}/accept")
     @SaCheckPermission(SortingPermission.SCALE_ACCEPT)
     @OperateLog
-    public ResponseDTO<String> accept(@PathVariable("id") Long id,
-            @Valid @RequestBody SortingScaleAcceptForm form) {
+    public ResponseDTO<String> accept(@PathVariable("id") Long id, @Valid @RequestBody SortingScaleAcceptForm form) {
         sortingScaleEventService.accept(id, form);
         return ResponseDTO.ok();
     }
@@ -70,8 +70,7 @@ public class SortingScaleController {
     @PostMapping("/{id}/reject")
     @SaCheckPermission(SortingPermission.SCALE_ACCEPT)
     @OperateLog
-    public ResponseDTO<String> reject(@PathVariable("id") Long id,
-            @Valid @RequestBody SortingScaleRejectForm form) {
+    public ResponseDTO<String> reject(@PathVariable("id") Long id, @Valid @RequestBody SortingScaleRejectForm form) {
         sortingScaleEventService.reject(id, form);
         return ResponseDTO.ok();
     }

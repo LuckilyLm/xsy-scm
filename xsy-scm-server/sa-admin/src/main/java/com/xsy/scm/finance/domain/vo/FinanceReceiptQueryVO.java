@@ -3,11 +3,15 @@ package com.xsy.scm.finance.domain.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
-/** 收款事实与有效额、已用额、待核销额派生值。 */
+/**
+ * 收款事实与有效额、已用额、待核销额派生值。
+ */
 @Data
 public class FinanceReceiptQueryVO {
     private Boolean walletFunding;

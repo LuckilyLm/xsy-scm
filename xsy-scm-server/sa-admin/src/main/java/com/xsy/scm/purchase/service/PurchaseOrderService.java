@@ -111,15 +111,15 @@ public class PurchaseOrderService {
 
         // 锁序第 1 层：purchase_demand（按 id 升序），必须早于采购单写入
         Map<Long, PurchaseDemandEntity> demands = purchaseOrderAllocationService
-                .lockDemands(PurchaseOrderAllocationService.requestedDemandIds(rows));
+            .lockDemands(PurchaseOrderAllocationService.requestedDemandIds(rows));
         // 新建：本单此前不存在任何分配 → 旧合计为空
         Map<Long, BigDecimal> newTotals = purchaseOrderAllocationService.validateAllocations(rows, demands,
-                form.getSupplierId(), form.getWarehouseId(), Map.of());
+            form.getSupplierId(), form.getWarehouseId(), Map.of());
 
         PurchaseOrderEntity order = PurchaseSnapshotFactory.order(supplier.getSupplierCode(), supplier.getName(),
-                warehouse.getWarehouseCode(), warehouse.getName(),
-                // 归属由服务端确定：普通新建一律是当前员工，表单里的 purchaser_id 不采信。
-                purchaseOwnerResolver.resolveForCreate(form.getPurchaserId()), form);
+            warehouse.getWarehouseCode(), warehouse.getName(),
+            // 归属由服务端确定：普通新建一律是当前员工，表单里的 purchaser_id 不采信。
+            purchaseOwnerResolver.resolveForCreate(form.getPurchaserId()), form);
         order.setOrderNo(numberGenerator.order());
         order.setTotalAmount(totalAmount(rows));
         PurchaseEntityStamper.stamp(order, true);
@@ -139,9 +139,9 @@ public class PurchaseOrderService {
 
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.CREATE,
-                order.getId(), null, null, null, PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(result)));
+            order.getId(), null, null, null, PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(result)));
         purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
-                order.getId(), result);
+            order.getId(), result);
         return result;
     }
 
@@ -167,9 +167,9 @@ public class PurchaseOrderService {
         // 锁序：采购单 → 采购行（按 id 升序）→ 现有分配
         List<PurchaseOrderItemEntity> existing = purchaseOrderItemDao.lockByOrderId(order.getId());
         Map<Long, PurchaseOrderItemEntity> existingById = existing.stream()
-                .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
+            .collect(Collectors.toMap(PurchaseOrderItemEntity::getId, Function.identity(), (a, b) -> a));
         Map<Long, List<PurchaseDemandAllocationEntity>> existingAllocations = purchaseOrderAllocationService
-                .loadAllocations(existing);
+            .loadAllocations(existing);
 
         List<RequestedRow> rows = purchaseOrderAllocationService.materialize(form);
         // 保留行沿用库中的已收数量：请求只表达「计划量」，不表达「已收量」。
@@ -186,7 +186,7 @@ public class PurchaseOrderService {
         // 也必须锁，否则删除后 allocated 不会回落
         Collection<Long> involved = new LinkedHashSet<>(PurchaseOrderAllocationService.requestedDemandIds(rows));
         existingAllocations.values()
-                .forEach(list -> list.forEach(allocation -> involved.add(allocation.getPurchaseDemandId())));
+            .forEach(list -> list.forEach(allocation -> involved.add(allocation.getPurchaseDemandId())));
         Map<Long, PurchaseDemandEntity> demands = purchaseOrderAllocationService.lockDemands(involved);
 
         // 本单<b>已有</b>的分配合计（按 demandId）。校验新请求时必须先把它减掉 ——
@@ -194,10 +194,10 @@ public class PurchaseOrderService {
         // 于是「数量没变的一次编辑」也会撞 40082。
         Map<Long, BigDecimal> oldTotals = PurchaseOrderAllocationService.totals(existingAllocations.values());
         Map<Long, BigDecimal> newTotals = purchaseOrderAllocationService.validateAllocations(rows, demands,
-                form.getSupplierId(), form.getWarehouseId(), oldTotals);
+            form.getSupplierId(), form.getWarehouseId(), oldTotals);
 
         PurchaseOrderItemChangeSet itemChanges = PurchaseOrderItemChangeSet.between(existing,
-                rows.stream().map(row -> row.item).toList());
+            rows.stream().map(row -> row.item).toList());
 
         PurchaseOrderVO before = purchaseQueryService.orderDetailForCommand(order.getId());
 
@@ -224,7 +224,7 @@ public class PurchaseOrderService {
                 }
             }
             purchaseOrderAllocationService.applyAllocationChanges(row,
-                    existingAllocations.getOrDefault(row.item.getId(), List.of()));
+                existingAllocations.getOrDefault(row.item.getId(), List.of()));
         }
 
         purchaseOrderAllocationService.recomputeDemands(demands, oldTotals, newTotals, form.getSupplierId());
@@ -244,8 +244,8 @@ public class PurchaseOrderService {
 
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.UPDATE,
-                order.getId(), null, null, PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(before),
-                PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(result)));
+            order.getId(), null, null, PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(before),
+            PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(result)));
         return result;
     }
 
@@ -253,7 +253,9 @@ public class PurchaseOrderService {
     // .1 reassign（改派采购归属）
     // ------------------------------------------------------------------
 
-    /** 有采购分配权限的员工可以独立改派负责人。改派与编辑采购内容分开，记录版本及操作历史，不混同于列表可见范围。 */
+    /**
+     * 有采购分配权限的员工可以独立改派负责人。改派与编辑采购内容分开，记录版本及操作历史，不混同于列表可见范围。
+     */
     @Transactional(rollbackFor = Exception.class)
     public PurchaseOrderVO reassign(PurchaseOrderReassignForm form) {
         PurchaseOrderEntity order = lockOrder(form.getId());
@@ -272,7 +274,7 @@ public class PurchaseOrderService {
         after.put("purchaserId", order.getPurchaserId());
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.UPDATE,
-                order.getId(), null, form.getReason(), before, after));
+            order.getId(), null, form.getReason(), before, after));
         return result;
     }
 
@@ -301,9 +303,9 @@ public class PurchaseOrderService {
 
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.SUBMIT,
-                order.getId(), null, null, before, PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order)));
+            order.getId(), null, null, before, PurchaseOrderAuditSnapshotFactory.orderStateSnapshot(order)));
         purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
-                order.getId(), result);
+            order.getId(), result);
         return result;
     }
 
@@ -332,23 +334,23 @@ public class PurchaseOrderService {
         after.put("cancelReason", order.getCancelReason());
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.CANCEL,
-                order.getId(), null, order.getCancelReason(), before, after));
+            order.getId(), null, order.getCancelReason(), before, after));
         purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
-                order.getId(), result);
+            order.getId(), result);
         return result;
     }
 
     @Transactional(rollbackFor = Exception.class)
     public PurchaseOrderVO shortClose(PurchaseOrderShortCloseForm form, String idempotencyKey) {
         var claim = purchaseIdempotencyService.claim("PURCHASE_ORDER_SHORT_CLOSE:" + form.getId(), idempotencyKey,
-                form);
+            form);
         if (claim.replay()) {
             return purchaseIdempotencyService.replay(claim, PurchaseOrderVO.class);
         }
 
         PurchaseOrderVO result = applyShortClose(form);
         purchaseIdempotencyService.complete(claim, ScmPurchaseIdempotencyResourceTypeEnum.PURCHASE_ORDER.name(),
-                form.getId(), result);
+            form.getId(), result);
         return result;
     }
 
@@ -366,9 +368,9 @@ public class PurchaseOrderService {
 
         List<PurchaseOrderItemEntity> rows = purchaseOrderItemDao.listByOrderId(order.getId());
         boolean anyReceived = rows.stream()
-                .anyMatch(row -> row.getReceivedQuantity() != null && row.getReceivedQuantity().signum() > 0);
+            .anyMatch(row -> row.getReceivedQuantity() != null && row.getReceivedQuantity().signum() > 0);
         boolean anyOutstanding = rows.stream().anyMatch(row -> row.getReceivedQuantity() == null
-                || row.getReceivedQuantity().compareTo(row.getPlannedQuantity()) < 0);
+            || row.getReceivedQuantity().compareTo(row.getPlannedQuantity()) < 0);
         if (!anyReceived || !anyOutstanding) {
             // 「至少一行已收 且 至少一行未收齐」——两个条件缺一，少收关单就失去语义
             throw new ScmBusinessException(PURCHASE_ORDER_STATE_INVALID);
@@ -384,7 +386,7 @@ public class PurchaseOrderService {
         after.put("shortCloseReason", order.getShortCloseReason());
         PurchaseOrderVO result = purchaseQueryService.orderDetailForCommand(order.getId());
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.SHORT_CLOSE,
-                order.getId(), null, order.getShortCloseReason(), before, after));
+            order.getId(), null, order.getShortCloseReason(), before, after));
         return result;
     }
 
@@ -416,14 +418,14 @@ public class PurchaseOrderService {
         Map<String, Object> after = PurchaseSnapshotFactory.snapshot();
         after.put("deleted", true);
         purchaseOperationLogDao.append(PurchaseSnapshotFactory.operationLog(ScmPurchaseOperationTypeEnum.DELETE,
-                order.getId(), null, null, PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(before), after));
+            order.getId(), null, null, PurchaseOrderAuditSnapshotFactory.orderAuditSnapshot(before), after));
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void batchDelete(PurchaseOrderBatchDeleteForm form) {
         // 按 id 升序：批量删除也必须遵守确定性锁序
         form.getOrders().stream().sorted(Comparator.comparing(PurchaseOrderVersionForm::getId))
-                .forEach(row -> delete(deleteForm(row)));
+            .forEach(row -> delete(deleteForm(row)));
     }
 
     /**
@@ -433,7 +435,7 @@ public class PurchaseOrderService {
     @Transactional(rollbackFor = Exception.class)
     public void batchShortClose(PurchaseOrderBatchShortCloseForm form) {
         form.getOrders().stream().sorted(Comparator.comparing(PurchaseOrderVersionForm::getId))
-                .forEach(row -> applyShortClose(shortCloseForm(row, form.getShortCloseReason())));
+            .forEach(row -> applyShortClose(shortCloseForm(row, form.getShortCloseReason())));
     }
 
     private static PurchaseOrderShortCloseForm shortCloseForm(PurchaseOrderVersionForm row, String reason) {

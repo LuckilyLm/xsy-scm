@@ -4,7 +4,9 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import cn.dev33.satoken.annotation.SaMode;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.delivery.domain.form.DeliveryPlanApplyForm;
 import com.xsy.scm.delivery.domain.form.DeliveryPlanDiscardForm;
@@ -20,7 +22,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 生成路线建议只计算，不改线路；应用建议才更新站点顺序。生成和应用权限分开，应用后仍需单独发车。 */
+/**
+ * 生成路线建议只计算，不改线路；应用建议才更新站点顺序。生成和应用权限分开，应用后仍需单独发车。
+ */
 @RestController
 @RequestMapping("/scm/delivery/plan")
 @Tag(name = "SCM 辅助排线")
@@ -55,7 +59,7 @@ public class DeliveryPlanController {
     @SaCheckPermission(value = {DeliveryPermission.PLAN_APPLY, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)
     @OperateLog
     public ResponseDTO<String> apply(@PathVariable("proposalId") Long proposalId,
-            @Valid @RequestBody DeliveryPlanApplyForm form) {
+        @Valid @RequestBody DeliveryPlanApplyForm form) {
         deliveryPlanProposalService.apply(proposalId, form);
         return ResponseDTO.ok();
     }
@@ -67,7 +71,7 @@ public class DeliveryPlanController {
     @SaCheckPermission(value = {DeliveryPermission.PLAN_APPLY, DeliveryPermission.ROUTE_QUERY}, mode = SaMode.AND)
     @OperateLog
     public ResponseDTO<String> discard(@PathVariable("proposalId") Long proposalId,
-            @Valid @RequestBody DeliveryPlanDiscardForm form) {
+        @Valid @RequestBody DeliveryPlanDiscardForm form) {
         deliveryPlanProposalService.discard(proposalId, form);
         return ResponseDTO.ok();
     }

@@ -3,9 +3,12 @@ package com.xsy.scm.trace.domain.vo;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.Data;
 
-/** 公开投影不包含内部主键、操作人或草稿。 */
+/**
+ * 公开投影不包含内部主键、操作人或草稿。
+ */
 @Data
 public class TracePublicInspectionReportVO {
     private String reportNo;

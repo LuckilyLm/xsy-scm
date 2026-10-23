@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmCreditPeriodTypeEnum {
 
-    /** 按累计金额触发结算。 */
+    /**
+     * 按累计金额触发结算。
+     */
     BY_AMOUNT("按金额"),
 
-    /** 按时间周期结算。 */
+    /**
+     * 按时间周期结算。
+     */
     BY_TIME("按周期");
 
     private final String desc;

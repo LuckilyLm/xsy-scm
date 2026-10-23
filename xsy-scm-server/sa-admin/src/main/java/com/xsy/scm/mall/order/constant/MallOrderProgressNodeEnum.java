@@ -8,27 +8,43 @@ package com.xsy.scm.mall.order.constant;
  */
 public enum MallOrderProgressNodeEnum {
 
-    /** 已提交。 */
+    /**
+     * 已提交。
+     */
     SUBMITTED,
 
-    /** 平台审核。 */
+    /**
+     * 平台审核。
+     */
     REVIEW,
 
-    /** 申请被驳回。 */
+    /**
+     * 申请被驳回。
+     */
     REJECTED,
 
-    /** 订单已取消 / 售后已撤销。 */
+    /**
+     * 订单已取消 / 售后已撤销。
+     */
     CANCELLED,
 
-    /** 后台已接单。 */
+    /**
+     * 后台已接单。
+     */
     CONFIRMED,
 
-    /** 已发车配送。 */
+    /**
+     * 已发车配送。
+     */
     DISPATCHED,
 
-    /** 已签收，含异常签收。 */
+    /**
+     * 已签收，含异常签收。
+     */
     SIGNED,
 
-    /** 退款处理，含无需退款。 */
+    /**
+     * 退款处理，含无需退款。
+     */
     REFUND
 }

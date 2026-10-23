@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmProductImageTypeEnum {
 
-    /** 商品图册，用于列表与详情轮播。 */
+    /**
+     * 商品图册，用于列表与详情轮播。
+     */
     GALLERY("图册"),
 
-    /** 详情长图，用于商品说明。 */
+    /**
+     * 详情长图，用于商品说明。
+     */
     DETAIL("详情图");
 
     private final String desc;

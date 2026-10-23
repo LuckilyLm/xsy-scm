@@ -8,13 +8,19 @@ package com.xsy.scm.device.permission;
  */
 public final class ScaleDevicePermission {
 
-    /** 查询设备台账、绑定状态与最近心跳。 */
+    /**
+     * 查询设备台账、绑定状态与最近心跳。
+     */
     public static final String QUERY = "scm:device:scale:query";
 
-    /** 登记设备、生成配对码、撤销绑定。 */
+    /**
+     * 登记设备、生成配对码、撤销绑定。
+     */
     public static final String BIND = "scm:device:scale:bind";
 
-    /** 为设备上的员工签发操作会话。 */
+    /**
+     * 为设备上的员工签发操作会话。
+     */
     public static final String SESSION_ISSUE = "scm:device:scale:session:issue";
 
     private ScaleDevicePermission() {

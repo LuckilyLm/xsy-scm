@@ -2,6 +2,7 @@ package com.xsy.scm.mall.catalog.domain.vo;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import lombok.Data;
 
 @Data

@@ -5,7 +5,9 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.OffsetDateTime;
 
-/** 采购需求按订单确认时间的半开区间生成；需求日期由每张订单的北京时间确认日决定，不是筛选窗口首日。 */
+/**
+ * 采购需求按订单确认时间的半开区间生成；需求日期由每张订单的北京时间确认日决定，不是筛选窗口首日。
+ */
 @Data
 public class PurchaseDemandGenerateForm {
     @NotNull(message = "开始时间不能为空")

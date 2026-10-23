@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-/** 应收核销目标的锁定事实与当前订单负责人。 */
+/**
+ * 应收核销目标的锁定事实与当前订单负责人。
+ */
 @Data
 public class FinanceReceivableTargetDto {
 

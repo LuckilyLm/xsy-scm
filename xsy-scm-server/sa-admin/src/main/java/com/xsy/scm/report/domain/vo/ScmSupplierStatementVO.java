@@ -9,7 +9,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import lombok.Data;
 
-/** Payables, actual payments and applied payments stay separate in the frozen version. */
+/**
+ * Payables, actual payments and applied payments stay separate in the frozen version.
+ */
 @Data
 public class ScmSupplierStatementVO {
     private Long id;

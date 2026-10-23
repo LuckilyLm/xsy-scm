@@ -14,19 +14,25 @@ public class ScaleJobItemVO {
 
     private String specName;
 
-    /** 销售单位；秤端据此判断设备单位能否直接使用，未知单位不得自动换算。 */
+    /**
+     * 销售单位；秤端据此判断设备单位能否直接使用，未知单位不得自动换算。
+     */
     private String saleUnit;
 
     private String plannedQuantity;
 
     private String sortedQuantity;
 
-    /** 标品或非标品；非标品才需要人工裁定结果。 */
+    /**
+     * 标品或非标品；非标品才需要人工裁定结果。
+     */
     private String productType;
 
     private Boolean active;
 
-    /** 明细版本；采集读数时冻结，用于发现任务重开导致的上下文过时。 */
+    /**
+     * 明细版本；采集读数时冻结，用于发现任务重开导致的上下文过时。
+     */
     private Long taskItemVersion;
 
     private String customerName;

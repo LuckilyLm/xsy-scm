@@ -43,7 +43,7 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
      * 流水分页（联仓库 / SKU / 商品取展示字段，并取收货单号供跳转）。
      */
     List<InventoryMovementVO> queryPage(Page<?> page, @Param("query") InventoryMovementQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 按来源行读回那一条活动流水。
@@ -54,13 +54,13 @@ public interface InventoryMovementDao extends BaseMapper<InventoryMovementEntity
      * 逐字匹配，因此至多一行。
      */
     InventoryMovementEntity selectBySourceItem(@Param("sourceDocumentType") String sourceDocumentType,
-            @Param("sourceDocumentItemId") Long sourceDocumentItemId);
+        @Param("sourceDocumentItemId") Long sourceDocumentItemId);
 
     /**
      * 某个收货行是否已有活动流水（IT / 对账用，只读）。
      */
     int countActiveBySourceItem(@Param("sourceDocumentType") String sourceDocumentType,
-            @Param("sourceDocumentItemId") Long sourceDocumentItemId);
+        @Param("sourceDocumentItemId") Long sourceDocumentItemId);
 
     List<InventoryMovementEntity> listSalesOutAllocations(@Param("orderItemId") Long orderItemId);
 }

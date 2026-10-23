@@ -32,7 +32,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Locale;
 
-/** 库存盘点支持创建、修改、确认和取消。查询、录单与确认分别授权，确认时必须核对库存快照和实际盘点数量。 */
+/**
+ * 库存盘点支持创建、修改、确认和取消。查询、录单与确认分别授权，确认时必须核对库存快照和实际盘点数量。
+ */
 @RestController
 @RequestMapping("/scm/inventory/stocktake")
 @Tag(name = "SCM 库存盘点单")
@@ -96,7 +98,7 @@ public class InventoryStocktakeController {
     @SaCheckPermission(InventoryPermission.STOCKTAKE_IMPORT)
     @OperateLog
     public ResponseDTO<InventoryStocktakeImportResultVO> importStocktake(@RequestParam MultipartFile file,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) throws Exception {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) throws Exception {
         if (file.isEmpty()) {
             return ResponseDTO.userErrorParam("导入文件不能为空");
         }
@@ -121,7 +123,7 @@ public class InventoryStocktakeController {
     @SaCheckPermission(InventoryPermission.STOCKTAKE_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@PathVariable("id") Long stocktakeId,
-            @Valid @RequestBody InventoryStocktakeAddForm form) {
+        @Valid @RequestBody InventoryStocktakeAddForm form) {
         inventoryStocktakeService.update(stocktakeId, form);
         return ResponseDTO.ok();
     }

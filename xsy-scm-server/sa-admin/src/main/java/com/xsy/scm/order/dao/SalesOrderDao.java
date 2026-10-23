@@ -17,7 +17,8 @@ public interface SalesOrderDao extends BaseMapper<SalesOrderEntity> {
     List<SalesOrderEntity> unassignedMallOrders(Page<?> page, @Param("query") OrderPoolQueryForm query);
 
     int assignUnassignedMallOrder(@Param("orderId") Long orderId, @Param("version") Integer version,
-            @Param("sellerId") Long sellerId, @Param("operator") String operator);
+        @Param("sellerId") Long sellerId, @Param("operator") String operator);
+
     Long customerReferences(@Param("id") Long id);
 
     int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);
@@ -31,10 +32,10 @@ public interface SalesOrderDao extends BaseMapper<SalesOrderEntity> {
      * 侧渲染成恒假谓词（失败关闭），不会被读成「不加限制」。 {@code lock} / {@code selectById} 等写路径入口刻意不带范围。
      */
     List<SalesOrderEntity> query(Page<?> page, @Param("query") SalesOrderQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     List<SalesOrderEntity> listByCustomer(Page<?> page, @Param("customerId") Long customerId,
-            @Param("displayStatus") String displayStatus);
+        @Param("displayStatus") String displayStatus);
 
     SalesOrderEntity selectByIdAndCustomer(@Param("orderId") Long orderId, @Param("customerId") Long customerId);
 

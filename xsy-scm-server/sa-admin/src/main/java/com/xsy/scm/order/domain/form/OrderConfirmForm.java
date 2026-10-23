@@ -19,6 +19,8 @@ public class OrderConfirmForm extends OrderVersionForm {
     @Positive(message = "券实例 ID 必须大于0")
     private Long couponInstanceId;
 
-    /** 操作员显式放弃商城订单的预选券；与 {@code couponInstanceId} 不能同时使用。 */
+    /**
+     * 操作员显式放弃商城订单的预选券；与 {@code couponInstanceId} 不能同时使用。
+     */
     private Boolean clearMallCoupon;
 }

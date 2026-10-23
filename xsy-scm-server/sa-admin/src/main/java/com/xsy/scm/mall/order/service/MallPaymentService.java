@@ -15,13 +15,17 @@ import com.xsy.scm.payment.constant.ScmPaymentProviderEnum;
 import com.xsy.scm.payment.constant.ScmPaymentSourceTypeEnum;
 import com.xsy.scm.payment.domain.form.PaymentIntentCreateForm;
 import com.xsy.scm.payment.service.PaymentIntentService;
+
 import java.math.BigDecimal;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 商城钱包支付沿用现有支付与余额服务，不另建状态机。应付金额在服务端锁定订单后计算，客户端不能指定金额；余额及集团共享权限在钱包扣款时校验。 */
+/**
+ * 商城钱包支付沿用现有支付与余额服务，不另建状态机。应付金额在服务端锁定订单后计算，客户端不能指定金额；余额及集团共享权限在钱包扣款时校验。
+ */
 @Service
 @RequiredArgsConstructor
 public class MallPaymentService {
@@ -46,7 +50,7 @@ public class MallPaymentService {
         }
         orderQueryService.requireOwnedOrder(customer, orderId);
         var claim = idempotencyService.claim("MALL_WALLET_PAY:" + orderId, idempotencyKey,
-                List.of(orderId, customer.getCustomerId()));
+            List.of(orderId, customer.getCustomerId()));
         if (claim.replay()) {
             return idempotencyService.replay(claim, MallOrderVO.class);
         }

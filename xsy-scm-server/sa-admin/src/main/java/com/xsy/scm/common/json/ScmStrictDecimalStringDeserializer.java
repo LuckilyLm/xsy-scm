@@ -8,7 +8,9 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import java.io.IOException;
 
-/** 金额和数量只接受 JSON 字符串，不接受数字字面量，避免隐式转换造成精度或格式不一致。 */
+/**
+ * 金额和数量只接受 JSON 字符串，不接受数字字面量，避免隐式转换造成精度或格式不一致。
+ */
 public class ScmStrictDecimalStringDeserializer extends JsonDeserializer<String> {
 
     @Override

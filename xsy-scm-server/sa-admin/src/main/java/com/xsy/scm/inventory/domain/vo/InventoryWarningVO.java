@@ -7,7 +7,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import java.math.BigDecimal;
 import java.util.Map;
 
-/** 库存预警展示现有量、预留量和可用量；按可用量与阈值判断状态。状态不存库；尚无余额记录时按零库存计算，仍可触发低库存预警。 */
+/**
+ * 库存预警展示现有量、预留量和可用量；按可用量与阈值判断状态。状态不存库；尚无余额记录时按零库存计算，仍可触发低库存预警。
+ */
 @Data
 public class InventoryWarningVO {
 

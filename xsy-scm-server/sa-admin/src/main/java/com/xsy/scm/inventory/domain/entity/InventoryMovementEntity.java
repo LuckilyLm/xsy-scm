@@ -8,7 +8,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 库存流水只能新增，不修改历史。数量和方向分别记录，同一业务来源不可重复记账。 */
+/**
+ * 库存流水只能新增，不修改历史。数量和方向分别记录，同一业务来源不可重复记账。
+ */
 @Data
 @TableName(value = "xsy_inventory_movement", autoResultMap = true)
 public class InventoryMovementEntity {

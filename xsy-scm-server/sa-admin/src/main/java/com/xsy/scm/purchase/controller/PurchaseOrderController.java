@@ -38,7 +38,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.List;
 
-/** 采购查询和操作日志使用不同权限。创建等幂等命令由业务层校验 Idempotency-Key；修改依赖行版本检查，不额外使用幂等键。 */
+/**
+ * 采购查询和操作日志使用不同权限。创建等幂等命令由业务层校验 Idempotency-Key；修改依赖行版本检查，不额外使用幂等键。
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/scm/purchase")
@@ -86,14 +88,14 @@ public class PurchaseOrderController {
     @SaCheckPermission(PurchasePermission.QUERY)
     @OperateLog
     public void export(@Valid @RequestBody PurchaseOrderExportForm form, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         form.setPageNum(1L);
         form.setPageSize((long) EXPORT_MAX_ROWS);
         List<PurchaseOrderVO> orders = purchaseQueryService.orderQuery(form).getList();
         SmartResponseUtil.setDownloadFileHeader(response, "采购单导出.xlsx", null);
         FastExcel.write(response.getOutputStream()).head(PurchaseOrderExportSupport.head(form.getExportColumns()))
-                .autoCloseStream(Boolean.FALSE).sheet("采购单")
-                .doWrite(PurchaseOrderExportSupport.rows(form.getExportColumns(), orders));
+            .autoCloseStream(Boolean.FALSE).sheet("采购单")
+            .doWrite(PurchaseOrderExportSupport.rows(form.getExportColumns(), orders));
     }
 
     // ------------------------------------------------------------------
@@ -104,7 +106,7 @@ public class PurchaseOrderController {
     @SaCheckPermission(PurchasePermission.ADD)
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> create(@Valid @RequestBody PurchaseOrderAddForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseOrderService.create(form, idempotencyKey));
     }
 
@@ -133,7 +135,7 @@ public class PurchaseOrderController {
     @SaCheckPermission(PurchasePermission.SUBMIT)
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> submit(@Valid @RequestBody PurchaseOrderVersionForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseOrderService.submit(form, idempotencyKey));
     }
 
@@ -141,7 +143,7 @@ public class PurchaseOrderController {
     @SaCheckPermission(PurchasePermission.CANCEL)
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> cancel(@Valid @RequestBody PurchaseOrderCancelForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseOrderService.cancel(form, idempotencyKey));
     }
 
@@ -149,7 +151,7 @@ public class PurchaseOrderController {
     @SaCheckPermission(PurchasePermission.SHORT_CLOSE)
     @OperateLog
     public ResponseDTO<PurchaseOrderVO> shortClose(@Valid @RequestBody PurchaseOrderShortCloseForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseOrderService.shortClose(form, idempotencyKey));
     }
 

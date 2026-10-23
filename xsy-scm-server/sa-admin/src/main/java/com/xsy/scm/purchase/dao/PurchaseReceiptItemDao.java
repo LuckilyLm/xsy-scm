@@ -8,7 +8,9 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 更新收货对账数量时必须一次写入本次、累计、剩余、超收和差异字段，确保数据库核对公式成立；计划数量不可随收货更新覆盖。 */
+/**
+ * 更新收货对账数量时必须一次写入本次、累计、剩余、超收和差异字段，确保数据库核对公式成立；计划数量不可随收货更新覆盖。
+ */
 @Mapper
 public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEntity> {
 
@@ -40,13 +42,13 @@ public interface PurchaseReceiptItemDao extends BaseMapper<PurchaseReceiptItemEn
      * UPDATE 里，不做两步写。
      */
     int updateReconciliation(@Param("id") Long id, @Param("version") Integer version,
-            @Param("receivedQuantity") BigDecimal receivedQuantity,
-            @Param("cumulativeReceivedQuantity") BigDecimal cumulativeReceivedQuantity,
-            @Param("remainingQuantity") BigDecimal remainingQuantity,
-            @Param("overReceiptQuantity") BigDecimal overReceiptQuantity,
-            @Param("receiptDifference") BigDecimal receiptDifference, @Param("actualWeight") BigDecimal actualWeight,
-            @Param("weightUnit") String weightUnit, @Param("weighingSource") String weighingSource,
-            @Param("correctionReason") String correctionReason, @Param("operator") String operator);
+        @Param("receivedQuantity") BigDecimal receivedQuantity,
+        @Param("cumulativeReceivedQuantity") BigDecimal cumulativeReceivedQuantity,
+        @Param("remainingQuantity") BigDecimal remainingQuantity,
+        @Param("overReceiptQuantity") BigDecimal overReceiptQuantity,
+        @Param("receiptDifference") BigDecimal receiptDifference, @Param("actualWeight") BigDecimal actualWeight,
+        @Param("weightUnit") String weightUnit, @Param("weighingSource") String weighingSource,
+        @Param("correctionReason") String correctionReason, @Param("operator") String operator);
 
     /**
      * 软删单行。

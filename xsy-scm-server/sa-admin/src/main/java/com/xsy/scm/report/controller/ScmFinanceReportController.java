@@ -25,20 +25,22 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.List;
 
-/** Read-only account overview and aging-free detail endpoints. */
+/**
+ * Read-only account overview and aging-free detail endpoints.
+ */
 @RestController
 @RequestMapping("/scm/report/finance")
 @RequiredArgsConstructor
 public class ScmFinanceReportController {
 
     private static final List<
-            String> OVERVIEW_TITLES = List.of("统计起始日", "统计结束日", "应收发生额", "应收已核销", "期末待收", "应付发生额", "应付已核销", "期末待付");
+        String> OVERVIEW_TITLES = List.of("统计起始日", "统计结束日", "应收发生额", "应收已核销", "期末待收", "应付发生额", "应付已核销", "期末待付");
 
     private static final List<String> RECEIVABLE_TITLES = List.of("应收单号", "订单号", "客户", "原应收金额", "红字金额", "净应收", "已核销金额",
-            "期末待收", "超额核销待处理", "业务时点");
+        "期末待收", "超额核销待处理", "业务时点");
 
     private static final List<String> PAYABLE_TITLES = List.of("应付单号", "采购单号", "供应商", "原应付金额", "红字金额", "净应付", "已核销金额",
-            "期末待付", "超额核销待处理", "业务时点");
+        "期末待付", "超额核销待处理", "业务时点");
 
     private final ScmFinanceReportService financeReportService;
 
@@ -51,14 +53,14 @@ public class ScmFinanceReportController {
     @PostMapping("/receivable/aging-free-detail")
     @SaCheckPermission(ScmReportPermission.FINANCE_QUERY)
     public ResponseDTO<PageResult<ScmFinanceReceivableDetailVO>> receivableDetails(
-            @Valid @RequestBody ScmFinanceReportQueryForm form) {
+        @Valid @RequestBody ScmFinanceReportQueryForm form) {
         return ResponseDTO.ok(financeReportService.receivableDetails(form));
     }
 
     @PostMapping("/payable/aging-free-detail")
     @SaCheckPermission(ScmReportPermission.FINANCE_QUERY)
     public ResponseDTO<PageResult<ScmFinancePayableDetailVO>> payableDetails(
-            @Valid @RequestBody ScmFinanceReportQueryForm form) {
+        @Valid @RequestBody ScmFinanceReportQueryForm form) {
         return ResponseDTO.ok(financeReportService.payableDetails(form));
     }
 
@@ -66,12 +68,12 @@ public class ScmFinanceReportController {
     @SaCheckPermission(value = {ScmReportPermission.FINANCE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportOverview(@Valid @RequestBody ScmFinanceOverviewQueryForm form, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         ScmFinanceOverviewVO result = financeReportService.overview(form);
         List<List<Object>> rows = List.of(ScmReportExcel.row(OVERVIEW_TITLES, form.getStartDate(), form.getEndDate(),
-                result.getReceivableOccurredAmount(), result.getReceivableWrittenOffAmount(),
-                result.getEndingReceivableAmount(), result.getPayableOccurredAmount(),
-                result.getPayableWrittenOffAmount(), result.getEndingPayableAmount()));
+            result.getReceivableOccurredAmount(), result.getReceivableWrittenOffAmount(),
+            result.getEndingReceivableAmount(), result.getPayableOccurredAmount(), result.getPayableWrittenOffAmount(),
+            result.getEndingPayableAmount()));
         ScmReportExcel.write(response, "往来概览.xlsx", "往来概览", OVERVIEW_TITLES, rows);
     }
 
@@ -79,12 +81,12 @@ public class ScmFinanceReportController {
     @SaCheckPermission(value = {ScmReportPermission.FINANCE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportReceivables(@Valid @RequestBody ScmFinanceReportExportQueryForm form,
-            HttpServletResponse response) throws IOException {
+        HttpServletResponse response) throws IOException {
         List<List<Object>> rows = financeReportService.exportReceivableDetails(form).stream()
-                .map(row -> ScmReportExcel.row(RECEIVABLE_TITLES, row.getReceivableNo(), row.getOrderNo(),
-                        row.getCustomerName(), row.getAmount(), row.getRedAmount(), row.getNetAmount(),
-                        row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(), row.getEventAt()))
-                .toList();
+            .map(row -> ScmReportExcel.row(RECEIVABLE_TITLES, row.getReceivableNo(), row.getOrderNo(),
+                row.getCustomerName(), row.getAmount(), row.getRedAmount(), row.getNetAmount(),
+                row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(), row.getEventAt()))
+            .toList();
         ScmReportExcel.write(response, "应收明细.xlsx", "应收明细", RECEIVABLE_TITLES, rows);
     }
 
@@ -92,12 +94,12 @@ public class ScmFinanceReportController {
     @SaCheckPermission(value = {ScmReportPermission.FINANCE_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportPayables(@Valid @RequestBody ScmFinanceReportExportQueryForm form, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         List<List<Object>> rows = financeReportService.exportPayableDetails(form).stream()
-                .map(row -> ScmReportExcel.row(PAYABLE_TITLES, row.getPayableNo(), row.getPurchaseOrderNo(),
-                        row.getSupplierName(), row.getAmount(), row.getRedAmount(), row.getNetAmount(),
-                        row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(), row.getEventAt()))
-                .toList();
+            .map(row -> ScmReportExcel.row(PAYABLE_TITLES, row.getPayableNo(), row.getPurchaseOrderNo(),
+                row.getSupplierName(), row.getAmount(), row.getRedAmount(), row.getNetAmount(),
+                row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(), row.getEventAt()))
+            .toList();
         ScmReportExcel.write(response, "应付明细.xlsx", "应付明细", PAYABLE_TITLES, rows);
     }
 }

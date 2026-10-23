@@ -9,7 +9,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import lombok.Data;
 
-/** Published reconciliation version; values and rows are never recomputed on download. */
+/**
+ * Published reconciliation version; values and rows are never recomputed on download.
+ */
 @Data
 public class ScmCustomerStatementVO {
     private Long id;

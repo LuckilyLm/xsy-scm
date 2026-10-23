@@ -32,7 +32,9 @@ import com.xsy.scm.order.service.SalesOrderService;
 import com.xsy.scm.pricing.permission.PricingPermission;
 import com.xsy.scm.pricing.service.PriceResolver;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -83,24 +85,28 @@ public class SalesOrderController {
         return ResponseDTO.ok(salesOrderQueryService.logs(orderLogQueryForm));
     }
 
-    /** 订单录入时的价格预览复用定价服务。调用者必须同时具备订单查询和价格查询权限，客户也必须属于当前数据范围。 */
+    /**
+     * 订单录入时的价格预览复用定价服务。调用者必须同时具备订单查询和价格查询权限，客户也必须属于当前数据范围。
+     */
     @PostMapping("/price/preview")
     @SaCheckPermission(value = {OrderPermission.QUERY, PricingPermission.RESOLVE_QUERY}, mode = SaMode.AND)
     public ResponseDTO<com.xsy.scm.pricing.domain.vo.PriceResolveResultVO> preview(
-            @Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm priceResolveForm) {
+        @Valid @RequestBody com.xsy.scm.pricing.domain.form.PriceResolveForm priceResolveForm) {
         customerService.requireInCurrentScope(priceResolveForm.getCustomerId());
         if (priceResolveForm.getWarehouseId() != null) {
             warehouseScopeGuard.require(priceResolveForm.getWarehouseId());
         }
         return ResponseDTO.ok(priceResolver.preview(priceResolveForm.getCustomerId(), priceResolveForm.getSkuIds(),
-                priceResolveForm.getAt(), priceResolveForm.getWarehouseId()));
+            priceResolveForm.getAt(), priceResolveForm.getWarehouseId()));
     }
 
-    /** 最近成交价只参考该客户已确认订单的锁定价格，不参与当前商品定价。查询必须同时满足订单和客户权限。 */
+    /**
+     * 最近成交价只参考该客户已确认订单的锁定价格，不参与当前商品定价。查询必须同时满足订单和客户权限。
+     */
     @GetMapping("/reference/recent-prices")
     @SaCheckPermission(value = {OrderPermission.QUERY, CustomerPermission.QUERY}, mode = SaMode.AND)
     public ResponseDTO<List<OrderRecentPriceVO>> recentPrices(@RequestParam Long customerId, @RequestParam Long skuId,
-            @RequestParam(defaultValue = "5") int limit) {
+        @RequestParam(defaultValue = "5") int limit) {
         return ResponseDTO.ok(salesOrderQueryService.recentPrices(customerId, skuId, limit));
     }
 
@@ -108,7 +114,7 @@ public class SalesOrderController {
     @SaCheckPermission(OrderPermission.ADD)
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> create(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         overridePermission(salesOrderAddForm);
         return ResponseDTO.ok(salesOrderService.create(salesOrderAddForm, key));
     }
@@ -117,7 +123,7 @@ public class SalesOrderController {
     @SaCheckPermission(OrderPermission.ADD)
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> createAndProgress(@Valid @RequestBody SalesOrderAddForm salesOrderAddForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         overridePermission(salesOrderAddForm);
         return ResponseDTO.ok(salesOrderService.createAndProgress(salesOrderAddForm, key));
     }
@@ -134,14 +140,14 @@ public class SalesOrderController {
     @SaCheckPermission(OrderPermission.SUBMIT)
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> submit(@Valid @RequestBody OrderVersionForm orderVersionForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.submit(orderVersionForm, key));
     }
 
     @GetMapping("/credit-check/{customerId}")
     @SaCheckPermission(OrderPermission.QUERY)
     public ResponseDTO<CustomerCreditCheckVO> creditCheck(@PathVariable Long customerId,
-            @RequestParam(required = false) java.math.BigDecimal requestedAmount) {
+        @RequestParam(required = false) java.math.BigDecimal requestedAmount) {
         return ResponseDTO.ok(orderCreditService.check(customerId, requestedAmount));
     }
 
@@ -155,7 +161,7 @@ public class SalesOrderController {
     @SaCheckPermission(OrderPermission.CONFIRM)
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> confirm(@Valid @RequestBody OrderConfirmForm orderVersionForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.confirm(orderVersionForm, key));
     }
 
@@ -163,7 +169,7 @@ public class SalesOrderController {
     @SaCheckPermission(OrderPermission.CANCEL)
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> cancel(@Valid @RequestBody OrderCancelForm orderCancelForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.cancel(orderCancelForm, key));
     }
 
@@ -171,7 +177,7 @@ public class SalesOrderController {
     @SaCheckPermission(OrderPermission.ACTUAL_QUANTITY)
     @OperateLog
     public ResponseDTO<SalesOrderDetailVO> actual(@Valid @RequestBody OrderActualQuantityForm orderActualQuantityForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(salesOrderService.actualQuantity(orderActualQuantityForm, key));
     }
 
@@ -207,10 +213,10 @@ public class SalesOrderController {
 
     private void overridePermission(SalesOrderAddForm salesOrderForm) {
         if (!java.util.Set.of(ScmOrderSourceEnum.ADMIN.name(), ScmOrderSourceEnum.SUPPLEMENT.name())
-                .contains(salesOrderForm.getOrderSource()))
+            .contains(salesOrderForm.getOrderSource()))
             throw new ScmBusinessException(OrderErrorCode.ORDER_SOURCE_INVALID);
         if (salesOrderForm.getItems().stream()
-                .anyMatch(orderItemForm -> Boolean.TRUE.equals(orderItemForm.getManualPriceOverride())))
+            .anyMatch(orderItemForm -> Boolean.TRUE.equals(orderItemForm.getManualPriceOverride())))
             StpUtil.checkPermission(OrderPermission.PRICE_OVERRIDE);
     }
 }

@@ -29,7 +29,7 @@ public interface PurchaseOrderDao extends BaseMapper<PurchaseOrderEntity> {
      * {@code lock} 刻意不带范围，读取范围只在查询端点判定，命令侧由写权限把关。
      */
     List<PurchaseOrderVO> query(Page<?> page, @Param("query") PurchaseOrderQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 详情（单头，联名称与进度）。

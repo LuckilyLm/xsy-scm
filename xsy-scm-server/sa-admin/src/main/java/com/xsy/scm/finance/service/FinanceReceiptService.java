@@ -37,12 +37,14 @@ import com.xsy.scm.finance.domain.vo.FinanceReceiptVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import com.xsy.scm.finance.support.FinancePaymentReceiptFact;
 import com.xsy.scm.payment.constant.ScmPaymentMethodEnum;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.dao.DuplicateKeyException;
@@ -95,7 +97,7 @@ public class FinanceReceiptService {
         customerSettlementAccountValidator.validateSettlementRelationship(customer.getCustomerId());
         FinanceReceiptEntity receipt = register(form, customer, null, null);
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
-                null, null, snapshot(receipt));
+            null, null, snapshot(receipt));
 
         FinanceReceiptVO result = vo(receipt);
         idempotencyService.complete(claim, "FINANCE_RECEIPT", receipt.getId(), result);
@@ -136,19 +138,21 @@ public class FinanceReceiptService {
         return preview;
     }
 
-    /** 货到付款只有在订单签收并生成正常应收后才能登记收款。实收多少记多少，核销不能超过未结余额；同一幂等键重试不得重复收款。 */
+    /**
+     * 货到付款只有在订单签收并生成正常应收后才能登记收款。实收多少记多少，核销不能超过未结余额；同一幂等键重试不得重复收款。
+     */
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptVO collectCod(FinanceCodCollectionForm form, String idempotencyKey) {
         if (idempotencyKey == null || idempotencyKey.isBlank()) {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
         var claim = idempotencyService.claim(FinanceConstant.COD_COLLECTION_SCOPE + ":" + form.getOrderId(),
-                idempotencyKey, form);
+            idempotencyKey, form);
         if (claim.replay()) {
             FinanceReceiptVO replayed = idempotencyService.replay(claim, FinanceReceiptVO.class);
             requireAuthorizedCustomer(replayed.getCustomerId());
             FinanceCodCollectionOrderDto replayOrder = financeReceivableSourceDao
-                    .selectCodCollectionOrder(form.getOrderId());
+                .selectCodCollectionOrder(form.getOrderId());
             if (replayOrder == null || !replayed.getCustomerId().equals(replayOrder.getCustomerId())) {
                 throw new ScmDataScopeException();
             }
@@ -186,14 +190,14 @@ public class FinanceReceiptService {
         FinanceReceiptEntity receipt;
         try {
             receipt = register(receiptForm, customer, ScmFinanceReceiptSourceTypeEnum.ORDER_COD_INSTALLMENT,
-                    claim.record().getId(), receivable.getCustomerNameSnapshot(), receivable.getSettlementCustomerId(),
-                    receivable.getSettlementCustomerNameSnapshot(), order.getOrderId());
+                claim.record().getId(), receivable.getCustomerNameSnapshot(), receivable.getSettlementCustomerId(),
+                receivable.getSettlementCustomerNameSnapshot(), order.getOrderId());
         } catch (DuplicateKeyException duplicate) {
             // 同一命令记录只能生成一张收款单；不同命令的金额上限仍由核销串行裁决。
             throw new ScmBusinessException(FinanceErrorCode.COD_COLLECTION_ALREADY_REGISTERED);
         }
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
-                null, null, snapshot(receipt));
+            null, null, snapshot(receipt));
 
         FinanceWriteOffAddItemForm item = new FinanceWriteOffAddItemForm();
         item.setTargetId(receivable.getId());
@@ -235,7 +239,7 @@ public class FinanceReceiptService {
         }
 
         var claim = idempotencyService.claim(FinanceConstant.RECEIPT_REVERSE_SCOPE + ":" + original.getId(),
-                idempotencyKey, form);
+            idempotencyKey, form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, FinanceReceiptVO.class);
         }
@@ -251,9 +255,9 @@ public class FinanceReceiptService {
         }
 
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, original.getId(),
-                ScmFinanceOperationTypeEnum.RECEIPT_REVERSE, reason,
-                effectiveAmountSnapshot(original, original.getAmount()),
-                effectiveAmountSnapshot(reversal, BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE)));
+            ScmFinanceOperationTypeEnum.RECEIPT_REVERSE, reason,
+            effectiveAmountSnapshot(original, original.getAmount()),
+            effectiveAmountSnapshot(reversal, BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE)));
 
         FinanceReceiptVO result = vo(reversal);
         idempotencyService.complete(claim, "FINANCE_RECEIPT", reversal.getId(), result);
@@ -284,7 +288,7 @@ public class FinanceReceiptService {
     @Transactional(rollbackFor = Exception.class)
     public FinanceReceiptEntity registerFromPaymentTransaction(FinancePaymentReceiptFact fact) {
         if (fact == null || fact.transactionId() == null || fact.customerId() == null || fact.providerAmount() == null
-                || fact.succeededAt() == null) {
+            || fact.succeededAt() == null) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_RECEIPT_AMOUNT_MISSING);
         }
         BigDecimal amount = fact.providerAmount().setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
@@ -295,17 +299,16 @@ public class FinanceReceiptService {
         var funding = financeOrderFundingSourceDao.selectTransaction(fact.transactionId());
         financeOrderFundingPolicy.requireSuccessful(funding);
         if (!ScmPaymentMethodEnum.ONLINE.name().equals(funding.getMethod())
-                || !fact.customerId().equals(funding.getCustomerId())
-                || amount.compareTo(funding.getProviderAmount()) != 0
-                || !fact.succeededAt().isEqual(funding.getPaidAt())) {
+            || !fact.customerId().equals(funding.getCustomerId()) || amount.compareTo(funding.getProviderAmount()) != 0
+            || !fact.succeededAt().isEqual(funding.getPaidAt())) {
             throw new ScmBusinessException(FinanceErrorCode.ORDER_FUNDING_INVALID);
         }
         FinanceReceiptEntity existing = financeReceiptDao
-                .selectBySource(ScmFinanceReceiptSourceTypeEnum.PAYMENT_TRANSACTION.name(), fact.transactionId());
+            .selectBySource(ScmFinanceReceiptSourceTypeEnum.PAYMENT_TRANSACTION.name(), fact.transactionId());
         if (existing != null) {
             if (!existing.getCustomerId().equals(funding.getCustomerId())
-                    || !existing.getSettlementCustomerId().equals(funding.getSettlementCustomerId())
-                    || existing.getAmount().compareTo(amount) != 0) {
+                || !existing.getSettlementCustomerId().equals(funding.getSettlementCustomerId())
+                || existing.getAmount().compareTo(amount) != 0) {
                 throw new ScmBusinessException(FinanceErrorCode.ORDER_FUNDING_INVALID);
             }
             return existing;
@@ -319,11 +322,11 @@ public class FinanceReceiptService {
 
         OffsetDateTime now = OffsetDateTime.now();
         String operator = funding.getOperator() == null
-                ? FinanceConstant.ORDER_FUNDING_OPERATOR
-                : funding.getOperator();
+            ? FinanceConstant.ORDER_FUNDING_OPERATOR
+            : funding.getOperator();
         FinanceReceiptEntity receipt = new FinanceReceiptEntity();
         receipt.setReceiptNo(
-                ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
+            ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
         receipt.setCustomerId(customer.getCustomerId());
         receipt.setCustomerNameSnapshot(customer.getCustomerName());
         receipt.setSettlementCustomerId(funding.getSettlementCustomerId());
@@ -346,7 +349,7 @@ public class FinanceReceiptService {
             throw new IllegalStateException("支付收款登记未落库: " + receipt.getReceiptNo());
         }
         operationLogs.record(ScmFinanceBusinessTypeEnum.RECEIPT, receipt.getId(), ScmFinanceOperationTypeEnum.RECEIVE,
-                null, null, snapshot(receipt), operator);
+            null, null, snapshot(receipt), operator);
         return receipt;
     }
 
@@ -369,7 +372,7 @@ public class FinanceReceiptService {
         String operator = ScmOperator.current();
         FinanceReceiptEntity reversal = new FinanceReceiptEntity();
         reversal.setReceiptNo(
-                ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
+            ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
         reversal.setCustomerId(original.getCustomerId());
         reversal.setCustomerNameSnapshot(original.getCustomerNameSnapshot());
         reversal.setSettlementCustomerId(original.getSettlementCustomerId());
@@ -391,7 +394,7 @@ public class FinanceReceiptService {
     }
 
     private static Map<String, Object> effectiveAmountSnapshot(FinanceReceiptEntity receipt,
-            BigDecimal effectiveAmount) {
+        BigDecimal effectiveAmount) {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("receiptId", receipt.getId());
         snapshot.put("receiptNo", receipt.getReceiptNo());
@@ -403,14 +406,14 @@ public class FinanceReceiptService {
     }
 
     private FinanceReceiptEntity register(FinanceReceiptAddForm form, FinanceCustomerFactDto customer,
-            ScmFinanceReceiptSourceTypeEnum sourceType, Long sourceId) {
+        ScmFinanceReceiptSourceTypeEnum sourceType, Long sourceId) {
         return register(form, customer, sourceType, sourceId, customer.getCustomerName(),
-                customer.getSettlementCustomerId(), customer.getSettlementCustomerName(), null);
+            customer.getSettlementCustomerId(), customer.getSettlementCustomerName(), null);
     }
 
     private FinanceReceiptEntity register(FinanceReceiptAddForm form, FinanceCustomerFactDto customer,
-            ScmFinanceReceiptSourceTypeEnum sourceType, Long sourceId, String customerNameSnapshot,
-            Long settlementCustomerId, String settlementCustomerNameSnapshot, Long codOrderId) {
+        ScmFinanceReceiptSourceTypeEnum sourceType, Long sourceId, String customerNameSnapshot,
+        Long settlementCustomerId, String settlementCustomerNameSnapshot, Long codOrderId) {
 
         BigDecimal amount = ScmDecimalStrings.parseScale4Required(form.getAmount());
         if (amount.signum() <= 0) {
@@ -429,7 +432,7 @@ public class FinanceReceiptService {
 
         FinanceReceiptEntity receipt = new FinanceReceiptEntity();
         receipt.setReceiptNo(
-                ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
+            ScmDocumentNumbers.format(FinanceConstant.RECEIPT_NO_PREFIX, financeReceiptDao.nextReceiptNo()));
         receipt.setCustomerId(customer.getCustomerId());
         receipt.setCustomerNameSnapshot(customerNameSnapshot);
         receipt.setSettlementCustomerId(settlementCustomerId);
@@ -457,7 +460,9 @@ public class FinanceReceiptService {
         return receipt;
     }
 
-    /** 收款方式以收款枚举和数据库约束为准。钱包余额抵扣不属于实际资金收款，不能作为收款方式登记。 */
+    /**
+     * 收款方式以收款枚举和数据库约束为准。钱包余额抵扣不属于实际资金收款，不能作为收款方式登记。
+     */
     private static String method(String raw) {
         String value = StringUtils.trimToNull(raw);
         ScmFinanceReceiptMethodEnum candidate = ScmFinanceReceiptMethodEnum.of(value);

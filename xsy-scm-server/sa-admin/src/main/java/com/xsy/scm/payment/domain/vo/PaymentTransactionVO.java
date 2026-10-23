@@ -3,11 +3,15 @@ package com.xsy.scm.payment.domain.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
-/** 交易事实。 */
+/**
+ * 交易事实。
+ */
 @Data
 public class PaymentTransactionVO {
 
@@ -21,7 +25,9 @@ public class PaymentTransactionVO {
 
     private String providerTransactionNo;
 
-    /** 本地应付金额。 */
+    /**
+     * 本地应付金额。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal amount;
 

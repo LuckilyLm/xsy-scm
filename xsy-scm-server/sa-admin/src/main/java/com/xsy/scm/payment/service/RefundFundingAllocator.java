@@ -2,13 +2,17 @@ package com.xsy.scm.payment.service;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.springframework.stereotype.Component;
 
-/** 已按稳定来源顺序排列的本金比例分摊；尾差从第一来源起逐个归集。 */
+/**
+ * 已按稳定来源顺序排列的本金比例分摊；尾差从第一来源起逐个归集。
+ */
 @Component
 public class RefundFundingAllocator {
     private static final int SCALE = 4;
@@ -16,7 +20,7 @@ public class RefundFundingAllocator {
 
     public List<BigDecimal> allocate(BigDecimal requestedAmount, List<BigDecimal> principals) {
         if (requestedAmount == null || principals == null || principals.isEmpty()
-                || principals.stream().anyMatch(value -> value == null || value.signum() <= 0)) {
+            || principals.stream().anyMatch(value -> value == null || value.signum() <= 0)) {
             throw new ScmBusinessException(PaymentErrorCode.REFUND_FUNDING_INVALID);
         }
         BigDecimal requested = requestedAmount.setScale(SCALE, RoundingMode.UNNECESSARY);

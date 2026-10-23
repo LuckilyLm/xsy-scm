@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmOrderQuantitySourceEnum {
 
-    /** 系统按规则计算。 */
+    /**
+     * 系统按规则计算。
+     */
     SYSTEM("系统计算"),
 
-    /** 人工录入。 */
+    /**
+     * 人工录入。
+     */
     MANUAL("人工录入");
 
     private final String desc;

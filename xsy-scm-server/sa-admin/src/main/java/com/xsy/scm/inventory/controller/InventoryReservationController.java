@@ -23,8 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
  * SCM 库存预留（查询 + 释放）。
  *
  * <p>
- * <b>为什么没有通用「新建预留」端点</b>：预留必须挂在销售订单上，不能脱离业务单据手工创建。
- * 当前由销售订单的显式“预留库存”命令调用 {@code InventoryReservationService.reserve}，以支持“先接单、后采购”。
+ * <b>为什么没有通用「新建预留」端点</b>：预留必须挂在销售订单上，不能脱离业务单据手工创建。 当前由销售订单的显式“预留库存”命令调用
+ * {@code InventoryReservationService.reserve}，以支持“先接单、后采购”。
  */
 @RestController
 @RequestMapping("/scm/inventory/reservation")
@@ -39,7 +39,7 @@ public class InventoryReservationController {
     @PostMapping("/query")
     @SaCheckPermission(InventoryPermission.RESERVATION_QUERY)
     public ResponseDTO<PageResult<InventoryReservationVO>> query(
-            @Valid @RequestBody InventoryReservationQueryForm form) {
+        @Valid @RequestBody InventoryReservationQueryForm form) {
         return ResponseDTO.ok(inventoryReservationQueryService.queryPage(form));
     }
 

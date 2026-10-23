@@ -2,6 +2,7 @@ package com.xsy.scm.delivery.dao;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
 import java.util.List;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -14,6 +15,7 @@ import com.xsy.scm.delivery.domain.vo.DeliveryPrintItemVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryRouteVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryStopVO;
 import com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity;
+
 /**
  * 配送读侧取数。带 {@code scope} 参数的语句是<b>只读列表 / 详情</b>，必须由 Service 显式下传数据范围，传 {@code null} 在 Mapper 里渲染成恒假谓词（失败关闭）；写侧用的
  * {@link #lockRoute}、{@link #stops}、{@link #candidate}、{@link #markPrinted} 故意不带范围参数，否则司机侧的读取收窄会顺手把主管的调度能力一起关掉。
@@ -31,7 +33,7 @@ public interface DeliveryQueryDao {
     List<DeliveryStopVO> stops(@Param("id") Long id);
 
     List<DeliveryCandidateVO> candidates(Page<?> page, @Param("q") DeliveryQueryForm q,
-            @Param("statuses") List<String> statuses, @Param("scope") ScmValueScope scope);
+        @Param("statuses") List<String> statuses, @Param("scope") ScmValueScope scope);
 
     DeliveryCandidateVO candidate(@Param("id") Long id);
 
@@ -42,9 +44,11 @@ public interface DeliveryQueryDao {
      */
     int unsortedItemCount(@Param("orderId") Long orderId);
 
-    /** 发车只读取已完成分拣任务中仍生效的订单行实发量。必须与未分拣明细的校验条件一致，防止发车时漏扣明细。 */
+    /**
+     * 发车只读取已完成分拣任务中仍生效的订单行实发量。必须与未分拣明细的校验条件一致，防止发车时漏扣明细。
+     */
     List<com.xsy.scm.delivery.domain.dto.DeliverySortedLine> sortedLines(
-            @Param("orderIds") java.util.Collection<Long> orderIds);
+        @Param("orderIds") java.util.Collection<Long> orderIds);
 
     Long nextNumber();
 
@@ -70,7 +74,7 @@ public interface DeliveryQueryDao {
      * 签收：状态条件与 {@code version} 一起进 WHERE，因此「重复签收」与「已不在线路上」都表现为 0 行。
      */
     int markSigned(@Param("id") Long assignmentId, @Param("version") Integer version, @Param("result") String result,
-            @Param("reason") String reason, @Param("operator") String operator);
+        @Param("reason") String reason, @Param("operator") String operator);
 
     /**
      * 该线路尚未进入终态的活动订单数，完成线路的前置判定。

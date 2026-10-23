@@ -13,13 +13,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmStorageMethodEnum {
 
-    /** 常温储存。 */
+    /**
+     * 常温储存。
+     */
     AMBIENT("常温"),
 
-    /** 冷藏储存。 */
+    /**
+     * 冷藏储存。
+     */
     CHILLED("冷藏"),
 
-    /** 冷冻储存。 */
+    /**
+     * 冷冻储存。
+     */
     FROZEN("冷冻");
 
     private final String desc;

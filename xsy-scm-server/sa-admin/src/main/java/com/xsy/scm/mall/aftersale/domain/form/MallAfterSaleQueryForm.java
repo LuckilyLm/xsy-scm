@@ -16,6 +16,8 @@ public class MallAfterSaleQueryForm {
     @Max(value = 100, message = "每页最多100条")
     private Long pageSize;
 
-    /** 只看某一订单的售后；留空为全部 */
+    /**
+     * 只看某一订单的售后；留空为全部
+     */
     private Long orderId;
 }

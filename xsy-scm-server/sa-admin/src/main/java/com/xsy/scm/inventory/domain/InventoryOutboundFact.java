@@ -13,5 +13,5 @@ import java.time.OffsetDateTime;
  * 数量恒为正，方向由 {@code movementType} 表达；{@code occurredAt} 取<b>出库确认时刻</b>， {@code operator} 取出库单确认人。
  */
 public record InventoryOutboundFact(Long warehouseId, Long skuId, Long outboundId, Long outboundItemId,
-        BigDecimal quantity, BigDecimal unitCost, OffsetDateTime occurredAt, String operator) {
+    BigDecimal quantity, BigDecimal unitCost, OffsetDateTime occurredAt, String operator) {
 }

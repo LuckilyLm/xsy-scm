@@ -1,6 +1,7 @@
 package com.xsy.scm.pricing.manager;
 
 import com.xsy.scm.pricing.constant.AgreementFormulaType;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -9,7 +10,7 @@ public final class AgreementFormulaCalculator {
     }
 
     public static BigDecimal calculate(AgreementFormulaType type, BigDecimal fixedPrice, BigDecimal parameter,
-            BigDecimal marketPrice, BigDecimal saleUnitCost) {
+        BigDecimal marketPrice, BigDecimal saleUnitCost) {
         // Bad imported configuration must not become a silent discount or throw from a pricing read path.
         if (type == null || (type != AgreementFormulaType.FIXED && (parameter == null || parameter.signum() < 0))) {
             return null;

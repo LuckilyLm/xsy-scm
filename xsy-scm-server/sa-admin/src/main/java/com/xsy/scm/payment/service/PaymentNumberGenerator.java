@@ -5,7 +5,9 @@ import com.xsy.scm.payment.dao.PaymentDocumentNumberDao;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/** 支付意图、交易、退款和回调使用各自的单号前缀及日期序号。 */
+/**
+ * 支付意图、交易、退款和回调使用各自的单号前缀及日期序号。
+ */
 @Service
 @RequiredArgsConstructor
 public class PaymentNumberGenerator {
@@ -33,7 +35,9 @@ public class PaymentNumberGenerator {
         return format(RECONCILIATION_PREFIX, paymentDocumentNumberDao.nextDocumentNo());
     }
 
-    /** 单号拼接的纯函数（单测可直接覆盖，不需要 DB）。 */
+    /**
+     * 单号拼接的纯函数（单测可直接覆盖，不需要 DB）。
+     */
     public static String format(String prefix, long number) {
         return ScmDocumentNumbers.format(prefix, number);
     }

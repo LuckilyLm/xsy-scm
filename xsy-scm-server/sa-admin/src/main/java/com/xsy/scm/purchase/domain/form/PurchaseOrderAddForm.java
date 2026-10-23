@@ -14,7 +14,9 @@ import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
-/** 一条采购商品规格可分配多条采购需求，按明细内的分配列表提交；同一明细与需求组合不能重复。需求单位与采购单位分别保存，单位不一致时不自动换算。 */
+/**
+ * 一条采购商品规格可分配多条采购需求，按明细内的分配列表提交；同一明细与需求组合不能重复。需求单位与采购单位分别保存，单位不一致时不自动换算。
+ */
 @Data
 public class PurchaseOrderAddForm {
     @NotNull(message = "供应商不能为空")

@@ -4,7 +4,9 @@ import cn.dev33.satoken.annotation.SaCheckPermission;
 import com.xsy.scm.common.export.ScmExportColumnSelection;
 import com.xsy.scm.common.export.ScmExportColumnSelection.Column;
 import com.xsy.scm.common.exception.ScmBusinessException;
+
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
+
 import cn.dev33.satoken.stp.StpUtil;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
@@ -47,15 +49,17 @@ public class ProductExcelController {
     private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
     private static final int EXPORT_MAX_ROWS = 100000;
     private static final List<Column> PRODUCT_EXPORT_COLUMNS = List.of(new Column("spuId", "商品ID"),
-            new Column("spuVersion", "商品版本"), new Column("skuId", "商品规格ID"), new Column("skuVersion", "商品规格版本"),
-            new Column("spuCode", "商品编码"), new Column("spuName", "商品名称"), new Column("alias", "别名"),
-            new Column("categoryPath", "分类"), new Column("mnemonicCode", "助记码"), new Column("brandName", "品牌"),
-            new Column("origin", "产地"), new Column("storageMethod", "储存方式"), new Column("masterStatus", "主档状态"),
-            new Column("spuStatus", "商品状态"), new Column("tagNames", "标签"), new Column("skuCode", "商品规格编码"),
-            new Column("barcode", "条码"), new Column("specName", "商品规格名称"), new Column("saleUnit", "销售单位"),
-            new Column("productType", "商品类型"), new Column("marketPrice", "市场价"), new Column("skuStatus", "商品规格状态"),
-            new Column("defaultFlag", "默认商品规格"), new Column("sortOrder", "排序"));
-    /** 更新导入改写既存商品，除导入权外还要求商品编辑权；权限串与 ProductController 保持一致。 */
+        new Column("spuVersion", "商品版本"), new Column("skuId", "商品规格ID"), new Column("skuVersion", "商品规格版本"),
+        new Column("spuCode", "商品编码"), new Column("spuName", "商品名称"), new Column("alias", "别名"),
+        new Column("categoryPath", "分类"), new Column("mnemonicCode", "助记码"), new Column("brandName", "品牌"),
+        new Column("origin", "产地"), new Column("storageMethod", "储存方式"), new Column("masterStatus", "主档状态"),
+        new Column("spuStatus", "商品状态"), new Column("tagNames", "标签"), new Column("skuCode", "商品规格编码"),
+        new Column("barcode", "条码"), new Column("specName", "商品规格名称"), new Column("saleUnit", "销售单位"),
+        new Column("productType", "商品类型"), new Column("marketPrice", "市场价"), new Column("skuStatus", "商品规格状态"),
+        new Column("defaultFlag", "默认商品规格"), new Column("sortOrder", "排序"));
+    /**
+     * 更新导入改写既存商品，除导入权外还要求商品编辑权；权限串与 ProductController 保持一致。
+     */
 
     private final ProductImportService productImportService;
     private final ProductQueryService productQueryService;
@@ -64,14 +68,14 @@ public class ProductExcelController {
     @GetMapping("/import/template")
     @SaCheckPermission(ProductPermission.IMPORT)
     public void template(@RequestParam(required = false) ImportMode mode, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         ImportMode selectedMode = mode == null ? ImportMode.CREATE : mode;
         // 更新模板带定位键、会改写既存商品，因此下载模板也要编辑权
         if (selectedMode == ImportMode.UPDATE)
             StpUtil.checkPermission(ProductPermission.UPDATE);
         var content = productImportService.buildTemplate(selectedMode);
         SmartResponseUtil.setDownloadFileHeader(response,
-                (selectedMode == ImportMode.UPDATE ? "商品更新导入模板" : "商品导入模板") + ".xlsx", (long) content.length);
+            (selectedMode == ImportMode.UPDATE ? "商品更新导入模板" : "商品导入模板") + ".xlsx", (long) content.length);
         response.getOutputStream().write(content);
         response.flushBuffer();
     }
@@ -80,7 +84,7 @@ public class ProductExcelController {
     @SaCheckPermission(ProductPermission.IMPORT)
     @OperateLog
     public ResponseDTO<ProductImportResultVO> importProducts(@RequestParam MultipartFile file,
-            @RequestParam(required = false) ImportMode mode) throws Exception {
+        @RequestParam(required = false) ImportMode mode) throws Exception {
         ImportMode selectedMode = mode == null ? ImportMode.CREATE : mode;
         // 更新模式直接改写既存商品，导入权不等于编辑权，必须服务端兜底
         if (selectedMode == ImportMode.UPDATE)
@@ -122,21 +126,21 @@ public class ProductExcelController {
             throw new ScmBusinessException(VALIDATION_ERROR);
         var selection = ScmExportColumnSelection.resolve(form.getExportColumnKeys(), PRODUCT_EXPORT_COLUMNS, true);
         List<List<Object>> values = rows.stream()
-                .map(row -> Arrays.<Object>asList(row.getSpuId(), row.getSpuVersion(), row.getSkuId(),
-                        row.getSkuVersion(), row.getSpuCode(), row.getSpuName(), row.getAlias(), row.getCategoryPath(),
-                        row.getMnemonicCode(), row.getBrandName(), row.getOrigin(), row.getStorageMethod(),
-                        row.getMasterStatus(), row.getSpuStatus(), row.getTagNames(), row.getSkuCode(),
-                        row.getBarcode(), row.getSpecName(), row.getSaleUnit(), row.getProductType(),
-                        row.getMarketPrice(), row.getSkuStatus(), row.getDefaultFlag(), row.getSortOrder()))
-                .toList();
+            .map(row -> Arrays.<Object>asList(row.getSpuId(), row.getSpuVersion(), row.getSkuId(), row.getSkuVersion(),
+                row.getSpuCode(), row.getSpuName(), row.getAlias(), row.getCategoryPath(), row.getMnemonicCode(),
+                row.getBrandName(), row.getOrigin(), row.getStorageMethod(), row.getMasterStatus(), row.getSpuStatus(),
+                row.getTagNames(), row.getSkuCode(), row.getBarcode(), row.getSpecName(), row.getSaleUnit(),
+                row.getProductType(), row.getMarketPrice(), row.getSkuStatus(), row.getDefaultFlag(),
+                row.getSortOrder()))
+            .toList();
         ScmExportColumnSelection.writeSelected(response, "商品档案导出.xlsx", "商品", selection, values);
     }
 
     private List<ProductExportExcelVO> flatten(ProductSpuVO spu) {
         var tagNames = spu.getTags() == null
-                ? ""
-                : spu.getTags().stream().map(t -> t.getName()).filter(java.util.Objects::nonNull)
-                        .collect(Collectors.joining(","));
+            ? ""
+            : spu.getTags().stream().map(t -> t.getName()).filter(java.util.Objects::nonNull)
+                .collect(Collectors.joining(","));
         var skus = spu.getSkuList() == null || spu.getSkuList().isEmpty() ? List.<ProductSkuVO>of() : spu.getSkuList();
         var out = new ArrayList<ProductExportExcelVO>();
         for (var sku : skus) {
@@ -191,7 +195,9 @@ public class ProductExcelController {
         return vo;
     }
 
-    /** 定位键列取空即为空串：SKU 缺失的兜底行没有 SKU 定位键，不能成为可导入的更新行。 */
+    /**
+     * 定位键列取空即为空串：SKU 缺失的兜底行没有 SKU 定位键，不能成为可导入的更新行。
+     */
     private String text(Number value) {
         return value == null ? "" : String.valueOf(value);
     }

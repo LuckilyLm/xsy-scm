@@ -13,16 +13,24 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmPaymentCallbackProcessStatusEnum {
 
-    /** 已收下，待处理（同步处理路径下基本不会停留在此）。 */
+    /**
+     * 已收下，待处理（同步处理路径下基本不会停留在此）。
+     */
     RECEIVED("已接收"),
 
-    /** 验签通过且状态转换已应用。 */
+    /**
+     * 验签通过且状态转换已应用。
+     */
     APPLIED("已应用"),
 
-    /** 同一渠道事件 id 已存在：<b>没有重复执行任何副作用</b>。 */
+    /**
+     * 同一渠道事件 id 已存在：<b>没有重复执行任何副作用</b>。
+     */
     DUPLICATE("重复事件"),
 
-    /** 验签失败或报文不合法：只留证，不处理。 */
+    /**
+     * 验签失败或报文不合法：只留证，不处理。
+     */
     REJECTED("已拒绝");
 
     private final String desc;

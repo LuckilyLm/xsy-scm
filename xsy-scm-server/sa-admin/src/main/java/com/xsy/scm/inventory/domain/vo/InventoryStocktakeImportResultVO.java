@@ -21,13 +21,19 @@ public class InventoryStocktakeImportResultVO {
 
     private int totalErrors;
 
-    /** 成功创建的草稿单 id；有错误时为 {@code null}。 */
+    /**
+     * 成功创建的草稿单 id；有错误时为 {@code null}。
+     */
     private Long stocktakeId;
 
-    /** 本次导入写入的明细行数（成功时）。 */
+    /**
+     * 本次导入写入的明细行数（成功时）。
+     */
     private int importedItems;
 
-    /** 命中幂等重放：未重复建单，返回既有草稿。 */
+    /**
+     * 命中幂等重放：未重复建单，返回既有草稿。
+     */
     private boolean replayed;
 
     private List<InventoryStocktakeImportErrorVO> errors = new ArrayList<>();

@@ -15,8 +15,10 @@ import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.domain.form.OrderExchangeCreateForm;
 import com.xsy.scm.order.domain.entity.OrderReturnEntity;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
+
 import java.math.BigDecimal;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,7 +59,7 @@ public class OrderExchangeService {
             throw new ScmBusinessException(ORDER_EXCHANGE_NOT_READY);
         var items = returnItemDao.list(returned.getId());
         if (items.isEmpty() || items.stream()
-                .noneMatch(item -> item.getApprovedQuantity() != null && item.getApprovedQuantity().signum() > 0))
+            .noneMatch(item -> item.getApprovedQuantity() != null && item.getApprovedQuantity().signum() > 0))
             throw new ScmBusinessException(ORDER_EXCHANGE_NOT_READY);
         for (var item : items) {
             BigDecimal approved = item.getApprovedQuantity();
@@ -75,7 +77,7 @@ public class OrderExchangeService {
         var result = salesOrderService.create(replacement, key + ":replacement");
         exchangeLinkDao.insert(returned.getId(), original.getId(), result.getOrderId(), ScmOperator.current());
         idempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(), result.getOrderId(),
-                result);
+            result);
         return result;
     }
 
@@ -94,7 +96,7 @@ public class OrderExchangeService {
             throw new ScmBusinessException(ORDER_RETURN_NOT_FOUND);
         var original = salesOrderDao.selectById(returned.getOrderId());
         if (original == null || Boolean.TRUE.equals(original.getDeleted())
-                || !dataScopeService.resolve().getOrderSellerScope().allows(original.getSellerId()))
+            || !dataScopeService.resolve().getOrderSellerScope().allows(original.getSellerId()))
             throw new ScmDataScopeException();
     }
 }

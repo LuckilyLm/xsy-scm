@@ -7,13 +7,19 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 import java.util.function.UnaryOperator;
 
-/** 将操作人标识转换为可读姓名；无法识别时保留原值，避免历史记录丢失信息。 */
+/**
+ * 将操作人标识转换为可读姓名；无法识别时保留原值，避免历史记录丢失信息。
+ */
 public class ScmOperatorNameSerializer extends JsonSerializer<String> {
 
-    /** 默认恒等：解析器尚未绑定（如纯单元测试）时保持原值，不改变任何行为。 */
+    /**
+     * 默认恒等：解析器尚未绑定（如纯单元测试）时保持原值，不改变任何行为。
+     */
     private static volatile UnaryOperator<String> resolver = UnaryOperator.identity();
 
-    /** 由 {@code ScmOperatorNameResolver} 在启动时调用。 */
+    /**
+     * 由 {@code ScmOperatorNameResolver} 在启动时调用。
+     */
     static void bind(UnaryOperator<String> operatorNameResolver) {
         resolver = operatorNameResolver;
     }

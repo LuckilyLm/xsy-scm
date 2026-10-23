@@ -3,7 +3,9 @@ package com.xsy.scm.common.scope;
 import net.lab1024.sa.base.common.code.UserErrorCode;
 import net.lab1024.sa.base.common.exception.BusinessException;
 
-/** 数据存在但当前用户无权访问时使用独立异常，对外返回统一无权限码，避免泄露对象是否存在。 */
+/**
+ * 数据存在但当前用户无权访问时使用独立异常，对外返回统一无权限码，避免泄露对象是否存在。
+ */
 public class ScmDataScopeException extends BusinessException {
 
     /**

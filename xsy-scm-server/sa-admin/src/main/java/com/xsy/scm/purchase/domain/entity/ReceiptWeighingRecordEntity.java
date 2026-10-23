@@ -13,7 +13,9 @@ import java.time.OffsetDateTime;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/** 收货称重记录只追加，保留设备读数、人工接受结果和采集时间。历史记录不得修改或软删，纠错需要另记事实。 */
+/**
+ * 收货称重记录只追加，保留设备读数、人工接受结果和采集时间。历史记录不得修改或软删，纠错需要另记事实。
+ */
 @Data
 @TableName(value = "xsy_receipt_weighing_record", autoResultMap = true)
 public class ReceiptWeighingRecordEntity {

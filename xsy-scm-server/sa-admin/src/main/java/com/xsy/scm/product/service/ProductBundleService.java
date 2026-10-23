@@ -10,6 +10,7 @@ import com.xsy.scm.product.domain.entity.ProductBundleComponentEntity;
 import com.xsy.scm.product.domain.entity.ProductSkuEntity;
 import com.xsy.scm.product.domain.form.ProductBundleReplaceForm;
 import com.xsy.scm.product.domain.vo.ProductBundleComponentVO;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,30 +42,30 @@ public class ProductBundleService {
     @Transactional(rollbackFor = Exception.class)
     public void replace(ProductBundleReplaceForm form) {
         List<Long> skuIds = java.util.stream.Stream
-                .concat(java.util.stream.Stream.of(form.getBundleSkuId()),
-                        form.getComponents().stream().map(ProductBundleReplaceForm.Component::getSkuId))
-                .filter(Objects::nonNull).distinct().sorted().toList();
+            .concat(java.util.stream.Stream.of(form.getBundleSkuId()),
+                form.getComponents().stream().map(ProductBundleReplaceForm.Component::getSkuId))
+            .filter(Objects::nonNull).distinct().sorted().toList();
         Map<Long, ProductSkuEntity> locked = productSkuDao.lockByIds(skuIds).stream()
-                .collect(Collectors.toMap(ProductSkuEntity::getId, Function.identity()));
+            .collect(Collectors.toMap(ProductSkuEntity::getId, Function.identity()));
         ProductSkuEntity bundle = locked.get(form.getBundleSkuId());
         if (bundle == null || !Objects.equals(bundle.getVersion(), form.getVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         if (!ScmProductTypeEnum.STANDARD.name().equals(bundle.getProductType())
-                || bundleDao.countByComponentSku(form.getBundleSkuId()) > 0) {
+            || bundleDao.countByComponentSku(form.getBundleSkuId()) > 0) {
             throw new ScmBusinessException(BUNDLE_COMPONENT_IN_USE);
         }
         Set<Long> distinct = new HashSet<>();
         for (ProductBundleReplaceForm.Component item : form.getComponents()) {
             if (item == null || item.getSkuId() == null || !distinct.add(item.getSkuId())
-                    || item.getSkuId().equals(form.getBundleSkuId())) {
+                || item.getSkuId().equals(form.getBundleSkuId())) {
                 throw new ScmBusinessException(BUNDLE_COMPONENT_INVALID);
             }
             BigDecimal quantity = ScmDecimalStrings.parseScale4Required(item.getQuantityPerBundleSaleUnit());
             ProductSkuEntity component = locked.get(item.getSkuId());
             if (quantity.signum() <= 0 || component == null || component.getSaleUnit() == null
-                    || !ScmProductTypeEnum.STANDARD.name().equals(component.getProductType())
-                    || !bundleDao.listByBundleSku(item.getSkuId()).isEmpty()) {
+                || !ScmProductTypeEnum.STANDARD.name().equals(component.getProductType())
+                || !bundleDao.listByBundleSku(item.getSkuId()).isEmpty()) {
                 throw new ScmBusinessException(BUNDLE_COMPONENT_INVALID);
             }
         }
@@ -75,7 +77,7 @@ public class ProductBundleService {
             row.setBundleSkuId(form.getBundleSkuId());
             row.setComponentSkuId(item.getSkuId());
             row.setQuantityPerBundleSaleUnit(
-                    ScmDecimalStrings.parseScale4Required(item.getQuantityPerBundleSaleUnit()));
+                ScmDecimalStrings.parseScale4Required(item.getQuantityPerBundleSaleUnit()));
             row.setCreatedAt(now);
             row.setUpdatedAt(now);
             row.setCreatedBy(operator);

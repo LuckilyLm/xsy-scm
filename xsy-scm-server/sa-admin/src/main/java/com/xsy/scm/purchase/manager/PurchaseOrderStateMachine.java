@@ -7,7 +7,9 @@ import java.util.Set;
 
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_ORDER_STATE_INVALID;
 
-/** 采购单草稿可提交或取消；已提交可取消或进入收货流程；部分收货后只能继续收货或少收关单。收货完成、少收关单和取消均不可再流转。 */
+/**
+ * 采购单草稿可提交或取消；已提交可取消或进入收货流程；部分收货后只能继续收货或少收关单。收货完成、少收关单和取消均不可再流转。
+ */
 public final class PurchaseOrderStateMachine {
 
     private PurchaseOrderStateMachine() {
@@ -25,10 +27,10 @@ public final class PurchaseOrderStateMachine {
         return switch (fromStatus) {
             case DRAFT -> Set.of(ScmPurchaseStatusEnum.SUBMITTED, ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
             case SUBMITTED -> Set.of(ScmPurchaseStatusEnum.PARTIALLY_RECEIVED, ScmPurchaseStatusEnum.RECEIVED,
-                    ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
+                ScmPurchaseStatusEnum.CANCELLED).contains(toStatus);
             // 同一状态到自身是合法的：第二次收货后仍是 PARTIALLY_RECEIVED
             case PARTIALLY_RECEIVED -> Set.of(ScmPurchaseStatusEnum.PARTIALLY_RECEIVED, ScmPurchaseStatusEnum.RECEIVED,
-                    ScmPurchaseStatusEnum.SHORT_CLOSED).contains(toStatus);
+                ScmPurchaseStatusEnum.SHORT_CLOSED).contains(toStatus);
             default -> false; // RECEIVED / SHORT_CLOSED / CANCELLED 为终态
         };
     }
@@ -65,7 +67,7 @@ public final class PurchaseOrderStateMachine {
      */
     public static boolean receivable(String purchaseOrderStatus) {
         return ScmPurchaseStatusEnum.SUBMITTED.name().equals(purchaseOrderStatus)
-                || ScmPurchaseStatusEnum.PARTIALLY_RECEIVED.name().equals(purchaseOrderStatus);
+            || ScmPurchaseStatusEnum.PARTIALLY_RECEIVED.name().equals(purchaseOrderStatus);
     }
 
     /**
@@ -73,7 +75,7 @@ public final class PurchaseOrderStateMachine {
      */
     public static boolean cancellable(String purchaseOrderStatus) {
         return ScmPurchaseStatusEnum.DRAFT.name().equals(purchaseOrderStatus)
-                || ScmPurchaseStatusEnum.SUBMITTED.name().equals(purchaseOrderStatus);
+            || ScmPurchaseStatusEnum.SUBMITTED.name().equals(purchaseOrderStatus);
     }
 
     /**
@@ -88,8 +90,8 @@ public final class PurchaseOrderStateMachine {
      */
     public static boolean terminal(String purchaseOrderStatus) {
         return ScmPurchaseStatusEnum.RECEIVED.name().equals(purchaseOrderStatus)
-                || ScmPurchaseStatusEnum.SHORT_CLOSED.name().equals(purchaseOrderStatus)
-                || ScmPurchaseStatusEnum.CANCELLED.name().equals(purchaseOrderStatus);
+            || ScmPurchaseStatusEnum.SHORT_CLOSED.name().equals(purchaseOrderStatus)
+            || ScmPurchaseStatusEnum.CANCELLED.name().equals(purchaseOrderStatus);
     }
 
     /**
@@ -101,7 +103,7 @@ public final class PurchaseOrderStateMachine {
      */
     public static String afterReceipt(boolean allLinesFulfilled) {
         return allLinesFulfilled
-                ? ScmPurchaseStatusEnum.RECEIVED.name()
-                : ScmPurchaseStatusEnum.PARTIALLY_RECEIVED.name();
+            ? ScmPurchaseStatusEnum.RECEIVED.name()
+            : ScmPurchaseStatusEnum.PARTIALLY_RECEIVED.name();
     }
 }

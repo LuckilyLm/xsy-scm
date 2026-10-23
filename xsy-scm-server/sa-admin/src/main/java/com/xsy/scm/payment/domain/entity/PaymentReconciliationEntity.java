@@ -8,10 +8,12 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import lombok.Data;
 
 /**
@@ -45,15 +47,21 @@ public class PaymentReconciliationEntity {
 
     private Integer localCount;
 
-    /** 参与比对的交易数：渠道侧与本地侧的并集（同一笔两边都有时只算一次）。 */
+    /**
+     * 参与比对的交易数：渠道侧与本地侧的并集（同一笔两边都有时只算一次）。
+     */
     private Integer totalCount;
 
     private Integer matchedCount;
 
-    /** 差异条数。净差额可能为 0 而仍有差异（一正一负），所以平不平看条数而不是看差额。 */
+    /**
+     * 差异条数。净差额可能为 0 而仍有差异（一正一负），所以平不平看条数而不是看差额。
+     */
     private Integer differenceCount;
 
-    /** 差异明细：哪些交易只在一边。 */
+    /**
+     * 差异明细：哪些交易只在一边。
+     */
     @TableField(typeHandler = JsonbObjectMapTypeHandler.class)
     private Map<String, Object> detail;
 

@@ -60,7 +60,7 @@ public interface SupplierSkuDao extends BaseMapper<SupplierSkuEntity> {
      * {@code supplier_id} 谓词保证不会误删其他供应商的行——即使调用方传错了 id。
      */
     int softDeleteOwnedWithVersion(@Param("supplierId") Long supplierId, @Param("id") Long id,
-            @Param("version") Integer version, @Param("operator") String operator);
+        @Param("version") Integer version, @Param("operator") String operator);
 
     /**
      * 删除供应商前的活动关联检查。

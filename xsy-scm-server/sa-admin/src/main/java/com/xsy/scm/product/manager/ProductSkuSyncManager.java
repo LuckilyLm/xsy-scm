@@ -29,7 +29,7 @@ public class ProductSkuSyncManager {
 
     public List<ProductSkuEntity> existing(Long spuId) {
         return productSkuDao.selectList(new LambdaQueryWrapper<ProductSkuEntity>().eq(ProductSkuEntity::getSpuId, spuId)
-                .orderByAsc(ProductSkuEntity::getSortOrder, ProductSkuEntity::getId));
+            .orderByAsc(ProductSkuEntity::getSortOrder, ProductSkuEntity::getId));
     }
 
     public void sync(Long spuId, ProductSkuChangeSet changes) {
@@ -63,9 +63,9 @@ public class ProductSkuSyncManager {
             throw new ScmBusinessException(BUNDLE_COMPONENT_IN_USE);
         }
         productSkuDao.update(null,
-                new LambdaUpdateWrapper<ProductSkuEntity>().in(ProductSkuEntity::getId, ids)
-                        .set(ProductSkuEntity::getUpdatedAt, OffsetDateTime.now())
-                        .set(ProductSkuEntity::getUpdatedBy, ScmOperator.current()).setSql("version = version + 1"));
+            new LambdaUpdateWrapper<ProductSkuEntity>().in(ProductSkuEntity::getId, ids)
+                .set(ProductSkuEntity::getUpdatedAt, OffsetDateTime.now())
+                .set(ProductSkuEntity::getUpdatedBy, ScmOperator.current()).setSql("version = version + 1"));
         productSkuDao.deleteByIds(ids);
     }
 

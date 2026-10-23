@@ -12,7 +12,9 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 同一采购单内每个商品规格最多一行，数据库唯一索引保证。数量变更与需求分配由服务层统一校验，不能只靠页面去重。 */
+/**
+ * 同一采购单内每个商品规格最多一行，数据库唯一索引保证。数量变更与需求分配由服务层统一校验，不能只靠页面去重。
+ */
 @Mapper
 public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity> {
 
@@ -59,7 +61,9 @@ public interface PurchaseOrderItemDao extends BaseMapper<PurchaseOrderItemEntity
      */
     int countActiveByOrderId(@Param("purchaseOrderId") Long purchaseOrderId);
 
-    /** 按商品规格和采购单位汇总可收货采购明细，只读不改采购和库存。分页必须统计分组数量，不能把明细行数当作汇总行数。 */
+    /**
+     * 按商品规格和采购单位汇总可收货采购明细，只读不改采购和库存。分页必须统计分组数量，不能把明细行数当作汇总行数。
+     */
     List<PurchaseReceiptItemWorkbenchVO> workbench(Page<?> page,
-            @Param("query") PurchaseReceiptItemWorkbenchQueryForm form, @Param("scope") ScmValueScope scope);
+        @Param("query") PurchaseReceiptItemWorkbenchQueryForm form, @Param("scope") ScmValueScope scope);
 }

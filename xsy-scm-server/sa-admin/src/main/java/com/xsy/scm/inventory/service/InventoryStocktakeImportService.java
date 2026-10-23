@@ -42,7 +42,7 @@ public class InventoryStocktakeImportService {
 
     public static final String TEMPLATE_VERSION = "1.0";
     private static final List<
-            String> HEADERS = List.of("模板校验码", "商品规格编码", "商品名称", "商品规格", "记账单位", "账面数量", "实盘数量", "备注");
+        String> HEADERS = List.of("模板校验码", "商品规格编码", "商品名称", "商品规格", "记账单位", "账面数量", "实盘数量", "备注");
     private static final int COL_CREDENTIAL = 0;
     private static final int COL_SKU_CODE = 1;
     private static final int COL_ACTUAL = 6;
@@ -76,11 +76,11 @@ public class InventoryStocktakeImportService {
         List<StocktakeSnapshotSigner.Entry> entries = new ArrayList<>(balances.size());
         for (InventoryBalanceVO balance : balances) {
             entries.add(new StocktakeSnapshotSigner.Entry(balance.getSkuCode(), balance.getSkuId(), balance.getId(),
-                    balance.getUnit(), balance.getVersion(), balance.getQuantity()));
+                balance.getUnit(), balance.getVersion(), balance.getQuantity()));
         }
         long now = OffsetDateTime.now().toEpochSecond();
         String credential = signer.sign(new StocktakeSnapshotSigner.Payload(TEMPLATE_VERSION, warehouseId, operator,
-                now, now + ttlMinutes * 60, entries));
+            now, now + ttlMinutes * 60, entries));
 
         try (var workbook = new XSSFWorkbook(); var out = new ByteArrayOutputStream()) {
             var sheet = workbook.createSheet("盘点导入");
@@ -97,7 +97,7 @@ public class InventoryStocktakeImportService {
                 row.createCell(3).setCellValue(nullToEmpty(balance.getSkuName()));
                 row.createCell(4).setCellValue(nullToEmpty(balance.getUnit()));
                 row.createCell(5)
-                        .setCellValue(balance.getQuantity() == null ? "" : balance.getQuantity().toPlainString());
+                    .setCellValue(balance.getQuantity() == null ? "" : balance.getQuantity().toPlainString());
                 // 实盘数量 / 备注 留空，由用户填写
             }
             workbook.write(out);
@@ -152,7 +152,7 @@ public class InventoryStocktakeImportService {
         for (var filled : sheet.rows) {
             if (!authoritative.containsKey(filled.skuCode)) {
                 addError(result, filled.rowNumber, filled.skuCode, "商品规格编码", "SOURCE_UNKNOWN",
-                        "该行不在本次导出的来源集合内，请重新导出模板，不要手工增删行");
+                    "该行不在本次导出的来源集合内，请重新导出模板，不要手工增删行");
             }
             sheetCodes.add(filled.skuCode);
         }
@@ -169,12 +169,12 @@ public class InventoryStocktakeImportService {
         for (var filled : sheet.rows) {
             var entry = authoritative.get(filled.skuCode);
             lines.add(new InventoryStocktakeService.SnapshotLine(entry.skuCode(), entry.skuId(), entry.balanceId(),
-                    entry.unit(), entry.version(), entry.bookQuantity(), filled.actualQuantity, filled.remark));
+                entry.unit(), entry.version(), entry.bookQuantity(), filled.actualQuantity, filled.remark));
         }
 
         try {
             var commit = inventoryStocktakeImportTxService.commit(payload.warehouseId(), lines, idempotencyKey,
-                    fingerprint(payload, lines));
+                fingerprint(payload, lines));
             result.setStocktakeId(commit.stocktakeId());
             result.setReplayed(commit.replayed());
             result.setImportedItems(lines.size());
@@ -182,7 +182,7 @@ public class InventoryStocktakeImportService {
         } catch (StocktakeSnapshotDriftException exception) {
             // 整事务（含幂等认领）已回滚：不落任何草稿，要求重导。
             addError(result, 0, exception.getSkuCode(), "账面数量", "SNAPSHOT_STALE",
-                    "余额自导出后已变动（商品规格" + exception.getSkuCode() + "），整批未导入，请重新导出并核对实盘");
+                "余额自导出后已变动（商品规格" + exception.getSkuCode() + "），整批未导入，请重新导出并核对实盘");
             return result;
         }
     }
@@ -212,7 +212,7 @@ public class InventoryStocktakeImportService {
             for (int column = 0; column < HEADERS.size(); column++) {
                 if (header == null || !headerMatches(column, trim(formatter.formatCellValue(header.getCell(column))))) {
                     addError(result, 1, null, CellReference.convertNumToColString(column), "HEADER_INVALID",
-                            "表头应为“" + HEADERS.get(column) + "”，请使用最新模板");
+                        "表头应为“" + HEADERS.get(column) + "”，请使用最新模板");
                 }
             }
             if (result.getTotalErrors() > 0) {
@@ -232,15 +232,15 @@ public class InventoryStocktakeImportService {
                         continue;
                     }
                     var value = trim(cell.getCellType() == CellType.NUMERIC
-                            ? NumberToTextConverter.toText(cell.getNumericCellValue())
-                            : formatter.formatCellValue(cell));
+                        ? NumberToTextConverter.toText(cell.getNumericCellValue())
+                        : formatter.formatCellValue(cell));
                     if (value == null) {
                         continue;
                     }
                     hasData = true;
                     if (cell.getColumnIndex() >= HEADERS.size()) {
                         addError(result, rowNumber, null, CellReference.convertNumToColString(cell.getColumnIndex()),
-                                "COLUMN_UNEXPECTED", "模板之外的列不能填写数据");
+                            "COLUMN_UNEXPECTED", "模板之外的列不能填写数据");
                         continue;
                     }
                     cells.put(cell.getColumnIndex(), value);
@@ -304,14 +304,14 @@ public class InventoryStocktakeImportService {
 
     private static boolean headerMatches(int column, String value) {
         return HEADERS.get(column).equals(value) || column == COL_SKU_CODE && "SKU编码".equals(value)
-                || column == 3 && "规格".equals(value);
+            || column == 3 && "规格".equals(value);
     }
 
     /**
      * 参与幂等哈希的指纹：凭证 + 每行（skuCode / 实盘量 / 备注）的稳定序列，内容变即视为不同请求。
      */
     private static Object fingerprint(StocktakeSnapshotSigner.Payload payload,
-            List<InventoryStocktakeService.SnapshotLine> lines) {
+        List<InventoryStocktakeService.SnapshotLine> lines) {
         var actual = new ArrayList<Map<String, Object>>();
         for (var line : lines) {
             Map<String, Object> row = new LinkedHashMap<>();
@@ -340,7 +340,7 @@ public class InventoryStocktakeImportService {
     }
 
     private static void addError(InventoryStocktakeImportResultVO result, int row, String skuCode, String column,
-            String code, String message) {
+        String code, String message) {
         result.setTotalErrors(result.getTotalErrors() + 1);
         if (result.getErrors().size() < MAX_ERRORS) {
             result.getErrors().add(new InventoryStocktakeImportErrorVO(row, skuCode, column, code, message));

@@ -22,7 +22,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 规格转换仅处理同仓库内的商品规格折算，跨仓库使用调拨。录入、审批、驳回分别检查权限；只有审批通过才修改库存，禁止无审批权限人员自行放行转换。 */
+/**
+ * 规格转换仅处理同仓库内的商品规格折算，跨仓库使用调拨。录入、审批、驳回分别检查权限；只有审批通过才修改库存，禁止无审批权限人员自行放行转换。
+ */
 @RestController
 @RequestMapping("/scm/inventory/conversion")
 @Tag(name = "SCM 库存规格转换单")
@@ -62,7 +64,7 @@ public class InventoryConversionController {
     @SaCheckPermission(InventoryPermission.CONVERSION_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@PathVariable("id") Long conversionId,
-            @Valid @RequestBody InventoryConversionAddForm form) {
+        @Valid @RequestBody InventoryConversionAddForm form) {
         inventoryConversionService.update(conversionId, form);
         return ResponseDTO.ok();
     }
@@ -77,7 +79,7 @@ public class InventoryConversionController {
     @SaCheckPermission(InventoryPermission.CONVERSION_APPROVE)
     @OperateLog
     public ResponseDTO<String> approve(@PathVariable("id") Long conversionId,
-            @Valid @RequestBody InventoryConversionAuditForm form) {
+        @Valid @RequestBody InventoryConversionAuditForm form) {
         inventoryConversionService.approve(conversionId, form);
         return ResponseDTO.ok();
     }
@@ -89,7 +91,7 @@ public class InventoryConversionController {
     @SaCheckPermission(InventoryPermission.CONVERSION_REJECT)
     @OperateLog
     public ResponseDTO<String> reject(@PathVariable("id") Long conversionId,
-            @Valid @RequestBody InventoryConversionAuditForm form) {
+        @Valid @RequestBody InventoryConversionAuditForm form) {
         inventoryConversionService.reject(conversionId, form);
         return ResponseDTO.ok();
     }

@@ -4,7 +4,9 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+
 import java.math.BigDecimal;
+
 import lombok.Data;
 
 /**
@@ -26,14 +28,20 @@ public class PaymentRefundCreateForm {
     @Digits(integer = 14, fraction = 4, message = "退款金额最多14位整数和4位小数")
     private BigDecimal amount;
 
-    /** 业务来源，当前只支持 {@code ORDER_REFUND}。 */
+    /**
+     * 业务来源，当前只支持 {@code ORDER_REFUND}。
+     */
     private String sourceType;
 
-    /** 业务来源 id（售后退款单 id）。与 {@code sourceType} 要么都空、要么都齐。 */
+    /**
+     * 业务来源 id（售后退款单 id）。与 {@code sourceType} 要么都空、要么都齐。
+     */
     private Long sourceId;
 
     private String reason;
 
-    /** 仅本地模拟渠道可指定：{@code SUCCESS} / {@code FAILURE}。 */
+    /**
+     * 仅本地模拟渠道可指定：{@code SUCCESS} / {@code FAILURE}。
+     */
     private String mockScenario;
 }

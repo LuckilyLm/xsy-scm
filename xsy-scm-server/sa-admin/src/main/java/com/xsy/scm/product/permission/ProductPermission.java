@@ -1,6 +1,8 @@
 package com.xsy.scm.product.permission;
 
-/** Stable permission identifiers published by product-management APIs. */
+/**
+ * Stable permission identifiers published by product-management APIs.
+ */
 public final class ProductPermission {
 
     public static final String QUERY = "scm:product:query";

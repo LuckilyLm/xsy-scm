@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-/** 红字应收明细使用退货审批时已经保存的批准金额，不在财务模块用当前价格重新计算。 */
+/**
+ * 红字应收明细使用退货审批时已经保存的批准金额，不在财务模块用当前价格重新计算。
+ */
 @Data
 public class FinanceReturnSourceLineDto {
 

@@ -20,7 +20,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNIN
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_NOT_FOUND;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_WARNING_THRESHOLD_SKU_NOT_FOUND;
 
-/** 库存预警阈值是独立配置，不直接修改库存余额。新增、修改和删除阈值都应校验仓库与商品权限，预警状态由实时可用量计算。 */
+/**
+ * 库存预警阈值是独立配置，不直接修改库存余额。新增、修改和删除阈值都应校验仓库与商品权限，预警状态由实时可用量计算。
+ */
 @Service
 @RequiredArgsConstructor
 public class InventoryWarningThresholdService {
@@ -87,7 +89,7 @@ public class InventoryWarningThresholdService {
         // 阈值是按仓生效的配置：行上的旧仓与表单的新仓都要授权，否则等于允许往别人仓塞阈值
         warehouseScopeGuard.requireAll(existing.getWarehouseId(), form.getWarehouseId());
         if (!Objects.equals(existing.getWarehouseId(), form.getWarehouseId())
-                || !Objects.equals(existing.getSkuId(), form.getSkuId())) {
+            || !Objects.equals(existing.getSkuId(), form.getSkuId())) {
             if (inventoryWarningThresholdDao.countByWarehouseAndSku(form.getWarehouseId(), form.getSkuId()) > 0) {
                 throw new ScmBusinessException(INVENTORY_WARNING_THRESHOLD_DUPLICATE);
             }
@@ -97,7 +99,7 @@ public class InventoryWarningThresholdService {
         // 也写进 SET 子句（更新实体里它们是 null → 违反 NOT NULL）。
         // 手写 SQL 同时天然支持把 warn_min / warn_max 清空成 NULL（取消该方向的预警）。
         if (inventoryWarningThresholdDao.updateThreshold(warningThresholdId, form.getWarehouseId(), form.getSkuId(),
-                form.getWarnMin(), form.getWarnMax(), form.getRemark(), existing.getVersion(), operator) != 1) {
+            form.getWarnMin(), form.getWarnMax(), form.getRemark(), existing.getVersion(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -139,7 +141,7 @@ public class InventoryWarningThresholdService {
             throw new ScmBusinessException(INVENTORY_WARNING_THRESHOLD_INVALID);
         }
         if (form.getWarnMin() != null && form.getWarnMax() != null
-                && form.getWarnMin().compareTo(form.getWarnMax()) > 0) {
+            && form.getWarnMin().compareTo(form.getWarnMax()) > 0) {
             throw new ScmBusinessException(INVENTORY_WARNING_THRESHOLD_INVALID);
         }
     }

@@ -31,6 +31,7 @@ import com.xsy.scm.payment.constant.ScmPaymentMethodEnum;
 import com.xsy.scm.payment.constant.ScmRefundFundingAllocationStatusEnum;
 import com.xsy.scm.payment.dao.RefundFundingAllocationDao;
 import com.xsy.scm.payment.domain.entity.RefundFundingAllocationEntity;
+
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import org.springframework.stereotype.Service;
@@ -52,7 +54,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class MallAfterSaleQueryService {
-    /** 列表卡片最多展示的缩略图数量，与订单列表一致 */
+    /**
+     * 列表卡片最多展示的缩略图数量，与订单列表一致
+     */
     private static final int THUMBNAIL_LIMIT = 3;
 
     private final OrderReturnDao orderReturnDao;
@@ -69,7 +73,7 @@ public class MallAfterSaleQueryService {
     public PageResult<MallAfterSaleVO> list(RequestMallCustomer customer, MallAfterSaleQueryForm form) {
         Page<OrderReturnEntity> page = new Page<>(form.getPageNum(), form.getPageSize(), true);
         List<OrderReturnEntity> returns = orderReturnDao.listByCustomer(page, customer.getCustomerId(),
-                form.getOrderId());
+            form.getOrderId());
         List<MallAfterSaleVO> rows = assemble(returns, false);
         PageResult<MallAfterSaleVO> result = new PageResult<>();
         result.setPageNum(page.getCurrent());
@@ -81,7 +85,9 @@ public class MallAfterSaleQueryService {
         return result;
     }
 
-    /** 按归属取退货单；取不到即 404。申请与撤销复用同一条归属判定。 */
+    /**
+     * 按归属取退货单；取不到即 404。申请与撤销复用同一条归属判定。
+     */
     @Transactional(readOnly = true)
     public OrderReturnEntity requireOwnedReturn(RequestMallCustomer customer, Long returnId) {
         OrderReturnEntity entity = orderReturnDao.selectById(returnId);
@@ -102,32 +108,32 @@ public class MallAfterSaleQueryService {
         }
         List<Long> returnIds = returns.stream().map(OrderReturnEntity::getId).toList();
         Map<Long, List<OrderReturnItemEntity>> itemsByReturn = orderReturnItemDao.listByReturnIds(returnIds).stream()
-                .collect(Collectors.groupingBy(OrderReturnItemEntity::getReturnId));
+            .collect(Collectors.groupingBy(OrderReturnItemEntity::getReturnId));
         List<Long> orderIds = returns.stream().map(OrderReturnEntity::getOrderId).distinct().toList();
         Map<Long, SalesOrderEntity> ordersById = salesOrderDao.selectBatchIds(orderIds).stream()
-                .collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
+            .collect(Collectors.toMap(SalesOrderEntity::getId, Function.identity()));
         Map<Long, SalesOrderItemEntity> orderItemsById = salesOrderItemDao.listByOrderIds(orderIds).stream()
-                .collect(Collectors.toMap(SalesOrderItemEntity::getId, Function.identity()));
+            .collect(Collectors.toMap(SalesOrderItemEntity::getId, Function.identity()));
         // 一张退货单至多一张退款单（批准时按净额生成一次）；取 id 最小的一条，不把异常数据放大成列表。
-        Map<Long, OrderRefundEntity> refundsByReturn = orderRefundDao.listByReturnIds(returnIds).stream().collect(
-                Collectors.toMap(OrderRefundEntity::getReturnId, Function.identity(), (first, ignored) -> first));
+        Map<Long, OrderRefundEntity> refundsByReturn = orderRefundDao.listByReturnIds(returnIds).stream()
+            .collect(Collectors.toMap(OrderRefundEntity::getReturnId, Function.identity(), (first, ignored) -> first));
         List<Long> refundIds = refundsByReturn.values().stream().map(OrderRefundEntity::getId).toList();
         Map<Long, OffsetDateTime> fundedAtByRefund = refundIds.isEmpty()
-                ? Map.of()
-                : fundingSourceDao.completedRefunds(refundIds).stream().collect(Collectors
-                        .toMap(MallAfterSaleFundingTimeVO::getRefundId, MallAfterSaleFundingTimeVO::getSucceededAt));
+            ? Map.of()
+            : fundingSourceDao.completedRefunds(refundIds).stream().collect(
+                Collectors.toMap(MallAfterSaleFundingTimeVO::getRefundId, MallAfterSaleFundingTimeVO::getSucceededAt));
         Map<Long, String> imageUrls = orderQueryService.skuImageUrls(orderItemsById.values().stream()
-                .map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct().toList());
+            .map(SalesOrderItemEntity::getSkuId).filter(Objects::nonNull).distinct().toList());
         return returns.stream()
-                .map(entity -> toVo(entity, itemsByReturn.getOrDefault(entity.getId(), List.of()),
-                        ordersById.get(entity.getOrderId()), orderItemsById, refundsByReturn.get(entity.getId()),
-                        imageUrls, fundedAtByRefund, detail))
-                .toList();
+            .map(entity -> toVo(entity, itemsByReturn.getOrDefault(entity.getId(), List.of()),
+                ordersById.get(entity.getOrderId()), orderItemsById, refundsByReturn.get(entity.getId()), imageUrls,
+                fundedAtByRefund, detail))
+            .toList();
     }
 
     private MallAfterSaleVO toVo(OrderReturnEntity entity, List<OrderReturnItemEntity> items, SalesOrderEntity order,
-            Map<Long, SalesOrderItemEntity> orderItemsById, OrderRefundEntity refund, Map<Long, String> imageUrls,
-            Map<Long, OffsetDateTime> fundedAtByRefund, boolean detail) {
+        Map<Long, SalesOrderItemEntity> orderItemsById, OrderRefundEntity refund, Map<Long, String> imageUrls,
+        Map<Long, OffsetDateTime> fundedAtByRefund, boolean detail) {
         OffsetDateTime fundedAt = refund == null ? null : fundedAtByRefund.get(refund.getId());
         MallAfterSaleVO result = new MallAfterSaleVO();
         result.setReturnId(entity.getId());
@@ -136,12 +142,12 @@ public class MallAfterSaleQueryService {
         result.setOrderNo(order == null ? null : order.getOrderNo());
         result.setStatus(entity.getStatus());
         result.setDisplayStatus(
-                MallAfterSaleDisplayStatusEnum.derive(entity.getStatus(), refund != null, fundedAt != null).name());
+            MallAfterSaleDisplayStatusEnum.derive(entity.getStatus(), refund != null, fundedAt != null).name());
         result.setReason(entity.getReason());
         result.setDecisionReason(entity.getDecisionReason());
         result.setRequestedAmount(OrderAmountCalculator.orderAmount(items.stream()
-                .map(item -> OrderAmountCalculator.lineAmount(item.getRequestedQuantity(), item.getLockedUnitPrice()))
-                .toList()));
+            .map(item -> OrderAmountCalculator.lineAmount(item.getRequestedQuantity(), item.getLockedUnitPrice()))
+            .toList()));
         result.setApprovedAmount(entity.getApprovedAmount());
         result.setCancelable(ScmOrderReturnStatusEnum.PENDING.name().equals(entity.getStatus()));
         result.setCreatedAt(entity.getCreatedAt());
@@ -150,11 +156,11 @@ public class MallAfterSaleQueryService {
         result.setCancelledAt(entity.getCancelledAt());
         result.setItemCount(items.size());
         result.setItemThumbnails(items.stream().map(item -> orderItemsById.get(item.getOrderItemId()))
-                .filter(Objects::nonNull).map(orderItem -> imageUrls.get(orderItem.getSkuId())).filter(Objects::nonNull)
-                .limit(THUMBNAIL_LIMIT).toList());
+            .filter(Objects::nonNull).map(orderItem -> imageUrls.get(orderItem.getSkuId())).filter(Objects::nonNull)
+            .limit(THUMBNAIL_LIMIT).toList());
         if (detail) {
             result.setItems(items.stream()
-                    .map(item -> itemVo(item, orderItemsById.get(item.getOrderItemId()), imageUrls)).toList());
+                .map(item -> itemVo(item, orderItemsById.get(item.getOrderItemId()), imageUrls)).toList());
             result.setRefund(refundVo(refund, fundedAt));
             result.setProgress(progressNodes(entity, refund, fundedAt));
         }
@@ -162,7 +168,7 @@ public class MallAfterSaleQueryService {
     }
 
     private MallAfterSaleItemVO itemVo(OrderReturnItemEntity item, SalesOrderItemEntity orderItem,
-            Map<Long, String> imageUrls) {
+        Map<Long, String> imageUrls) {
         MallAfterSaleItemVO result = new MallAfterSaleItemVO();
         result.setReturnItemId(item.getId());
         result.setOrderItemId(item.getOrderItemId());
@@ -170,7 +176,7 @@ public class MallAfterSaleQueryService {
         result.setApprovedQuantity(item.getApprovedQuantity());
         result.setLockedUnitPrice(item.getLockedUnitPrice());
         result.setEstimatedAmount(
-                OrderAmountCalculator.lineAmount(item.getRequestedQuantity(), item.getLockedUnitPrice()));
+            OrderAmountCalculator.lineAmount(item.getRequestedQuantity(), item.getLockedUnitPrice()));
         result.setApprovedAmount(item.getApprovedAmount());
         if (orderItem != null) {
             result.setProductName(orderItem.getProductNameSnapshot());
@@ -197,19 +203,18 @@ public class MallAfterSaleQueryService {
         List<RefundFundingAllocationEntity> allocations = refundFundingAllocationDao.listByRefund(refund.getId());
         if (!allocations.isEmpty()) {
             Map<Long,
-                    OffsetDateTime> succeededAtByAllocation = fundingSourceDao.allocationSuccessTimes(refund.getId())
-                            .stream().filter(row -> row.getSucceededAt() != null)
-                            .collect(Collectors.toMap(MallAfterSaleFundingTimeVO::getAllocationId,
-                                    MallAfterSaleFundingTimeVO::getSucceededAt));
+                OffsetDateTime> succeededAtByAllocation = fundingSourceDao.allocationSuccessTimes(refund.getId())
+                    .stream().filter(row -> row.getSucceededAt() != null).collect(Collectors.toMap(
+                        MallAfterSaleFundingTimeVO::getAllocationId, MallAfterSaleFundingTimeVO::getSucceededAt));
             result.setAllocations(allocations.stream().map(row -> {
                 MallAfterSaleRefundVO.Allocation allocation = new MallAfterSaleRefundVO.Allocation();
                 allocation.setMethod(row.getSourceMethod());
                 allocation.setAllocatedAmount(row.getAllocatedAmount());
                 OffsetDateTime sourceCompletedAt = succeededAtByAllocation.get(row.getId());
                 allocation.setStatus(ScmRefundFundingAllocationStatusEnum.SUCCEEDED.name().equals(row.getStatus())
-                        && sourceCompletedAt == null
-                                ? ScmRefundFundingAllocationStatusEnum.FAILED.name()
-                                : row.getStatus());
+                    && sourceCompletedAt == null
+                        ? ScmRefundFundingAllocationStatusEnum.FAILED.name()
+                        : row.getStatus());
                 allocation.setSucceededAt(sourceCompletedAt);
                 return allocation;
             }).toList());
@@ -219,14 +224,14 @@ public class MallAfterSaleQueryService {
             return result;
         }
         orderRefundFundingSourceDao.selectBalanceReturns(List.of(refund.getId())).stream()
-                .filter(fact -> fact.amount().compareTo(refund.getRefundAmount()) == 0).findFirst().ifPresent(fact -> {
-                    MallAfterSaleRefundVO.Allocation allocation = new MallAfterSaleRefundVO.Allocation();
-                    allocation.setMethod(ScmPaymentMethodEnum.BALANCE.name());
-                    allocation.setAllocatedAmount(fact.amount());
-                    allocation.setStatus(ScmRefundFundingAllocationStatusEnum.SUCCEEDED.name());
-                    allocation.setSucceededAt(fundedAt);
-                    result.getAllocations().add(allocation);
-                });
+            .filter(fact -> fact.amount().compareTo(refund.getRefundAmount()) == 0).findFirst().ifPresent(fact -> {
+                MallAfterSaleRefundVO.Allocation allocation = new MallAfterSaleRefundVO.Allocation();
+                allocation.setMethod(ScmPaymentMethodEnum.BALANCE.name());
+                allocation.setAllocatedAmount(fact.amount());
+                allocation.setStatus(ScmRefundFundingAllocationStatusEnum.SUCCEEDED.name());
+                allocation.setSucceededAt(fundedAt);
+                result.getAllocations().add(allocation);
+            });
         return result;
     }
 
@@ -237,13 +242,13 @@ public class MallAfterSaleQueryService {
      * 被驳回与已撤销在对应节点即止；审核通过后没有退款单（净额为 0）时末节点为「无需退款」。
      */
     private static List<MallOrderProgressNodeVO> progressNodes(OrderReturnEntity entity, OrderRefundEntity refund,
-            OffsetDateTime fundedAt) {
+        OffsetDateTime fundedAt) {
         List<MallOrderProgressNodeVO> nodes = new ArrayList<>();
         nodes.add(node(MallOrderProgressNodeEnum.SUBMITTED.name(), "已提交申请", null, entity.getCreatedAt(), true));
         String status = entity.getStatus();
         if (ScmOrderReturnStatusEnum.REJECTED.name().equals(status)) {
             nodes.add(node(MallOrderProgressNodeEnum.REJECTED.name(), "申请已驳回", entity.getDecisionReason(),
-                    entity.getRejectedAt(), true));
+                entity.getRejectedAt(), true));
             return nodes;
         }
         if (ScmOrderReturnStatusEnum.CANCELLED.name().equals(status)) {
@@ -261,12 +266,12 @@ public class MallAfterSaleQueryService {
         }
         boolean completed = fundedAt != null;
         nodes.add(
-                node(MallOrderProgressNodeEnum.REFUND.name(), completed ? "退款完成" : "退款处理中", null, fundedAt, completed));
+            node(MallOrderProgressNodeEnum.REFUND.name(), completed ? "退款完成" : "退款处理中", null, fundedAt, completed));
         return nodes;
     }
 
     private static MallOrderProgressNodeVO node(String code, String text, String detail, OffsetDateTime time,
-            boolean done) {
+        boolean done) {
         MallOrderProgressNodeVO result = new MallOrderProgressNodeVO();
         result.setCode(code);
         result.setText(text);

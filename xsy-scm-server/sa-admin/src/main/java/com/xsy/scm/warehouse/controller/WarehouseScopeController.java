@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** 仓库权限分配与仓库资料维护使用不同权限，管理员不能因为能编辑仓库就自动修改员工授权。 */
+/**
+ * 仓库权限分配与仓库资料维护使用不同权限，管理员不能因为能编辑仓库就自动修改员工授权。
+ */
 @RestController
 @RequestMapping("/scm/warehouse/scope")
 @Tag(name = "SCM 仓库授权")

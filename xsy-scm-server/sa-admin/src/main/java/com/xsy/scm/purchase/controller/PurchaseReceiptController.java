@@ -75,7 +75,7 @@ public class PurchaseReceiptController {
     @PostMapping("/item-workbench/query")
     @SaCheckPermission(PurchasePermission.RECEIPT_QUERY)
     public ResponseDTO<PageResult<PurchaseReceiptItemWorkbenchVO>> itemWorkbench(
-            @Valid @RequestBody PurchaseReceiptItemWorkbenchQueryForm form) {
+        @Valid @RequestBody PurchaseReceiptItemWorkbenchQueryForm form) {
         return ResponseDTO.ok(purchaseQueryService.receiptItemWorkbench(form));
     }
 
@@ -87,7 +87,7 @@ public class PurchaseReceiptController {
     @SaCheckPermission(PurchasePermission.RECEIPT_ADD)
     @OperateLog
     public ResponseDTO<PurchaseReceiptVO> create(@Valid @RequestBody PurchaseReceiptCreateForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseReceiptService.create(form, idempotencyKey));
     }
 
@@ -102,7 +102,7 @@ public class PurchaseReceiptController {
     @SaCheckPermission(PurchasePermission.RECEIPT_CONFIRM)
     @OperateLog
     public ResponseDTO<PurchaseReceiptVO> confirm(@Valid @RequestBody PurchaseReceiptConfirmForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseReceiptService.confirm(form, idempotencyKey));
     }
 
@@ -113,7 +113,7 @@ public class PurchaseReceiptController {
     @SaCheckPermission(PurchasePermission.RECEIPT_PUTAWAY)
     @OperateLog
     public ResponseDTO<PurchaseReceiptVO> putaway(@Valid @RequestBody PurchaseReceiptPutawayForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseReceiptService.putaway(form, idempotencyKey));
     }
 

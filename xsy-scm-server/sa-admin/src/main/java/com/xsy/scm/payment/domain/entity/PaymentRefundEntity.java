@@ -7,11 +7,15 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
-/** 渠道退款记录实际退付金额和原支付交易，与售后退款单的批准金额是两种不同事实。同一售后退款单最多执行一笔渠道退款。 */
+/**
+ * 渠道退款记录实际退付金额和原支付交易，与售后退款单的批准金额是两种不同事实。同一售后退款单最多执行一笔渠道退款。
+ */
 @Data
 @TableName("xsy_payment_refund")
 public class PaymentRefundEntity {
@@ -27,7 +31,9 @@ public class PaymentRefundEntity {
 
     private String provider;
 
-    /** <b>申请</b>退款金额（本地决定）。 */
+    /**
+     * <b>申请</b>退款金额（本地决定）。
+     */
     private BigDecimal amount;
 
     /**
@@ -50,7 +56,9 @@ public class PaymentRefundEntity {
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String providerRefundNo;
 
-    /** 仅 MOCK：回放剧本（成功 / 失败）。 */
+    /**
+     * 仅 MOCK：回放剧本（成功 / 失败）。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String mockScenario;
 

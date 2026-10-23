@@ -19,6 +19,8 @@ public class TraceAttachmentVO {
 
     private Integer fileSize;
 
-    /** 见 {@code TraceAttachmentCategoryEnum}。 */
+    /**
+     * 见 {@code TraceAttachmentCategoryEnum}。
+     */
     private String category;
 }

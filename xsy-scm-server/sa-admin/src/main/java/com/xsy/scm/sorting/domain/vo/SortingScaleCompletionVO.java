@@ -1,6 +1,7 @@
 package com.xsy.scm.sorting.domain.vo;
 
 import java.math.BigDecimal;
+
 import lombok.Data;
 
 /**
@@ -30,6 +31,8 @@ public class SortingScaleCompletionVO {
 
     private String status;
 
-    /** 同一操作号重复提交时为 {@code true}。 */
+    /**
+     * 同一操作号重复提交时为 {@code true}。
+     */
     private Boolean duplicated;
 }

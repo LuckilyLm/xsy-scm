@@ -9,7 +9,9 @@ import com.xsy.scm.order.dao.SalesOrderDao;
 import com.xsy.scm.order.domain.form.OrderTagAssignForm;
 import com.xsy.scm.order.domain.form.OrderTagCreateForm;
 import com.xsy.scm.order.domain.vo.OrderTagVO;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -65,8 +67,10 @@ public class OrderTagService {
         // 先锁定并完整检查所有订单，任何一单不存在或不在数据范围内都整批回滚。
         for (Long id : ids) {
             var order = orderDao.lock(id);
-            if (order == null) throw new ScmBusinessException(ORDER_NOT_FOUND);
-            if (!scope.allows(order.getSellerId())) throw new ScmDataScopeException();
+            if (order == null)
+                throw new ScmBusinessException(ORDER_NOT_FOUND);
+            if (!scope.allows(order.getSellerId()))
+                throw new ScmDataScopeException();
         }
         for (Long id : ids) {
             if (form.getAction() == OrderTagAssignForm.Action.ADD) {

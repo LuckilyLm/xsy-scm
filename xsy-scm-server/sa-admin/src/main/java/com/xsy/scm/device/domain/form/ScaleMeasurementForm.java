@@ -4,7 +4,9 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -26,12 +28,16 @@ public class ScaleMeasurementForm {
     @Size(max = 160, message = "事件键最多 160 个字符")
     private String eventKey;
 
-    /** 一次人工操作的幂等号；重试必须复用，不能重新生成。 */
+    /**
+     * 一次人工操作的幂等号；重试必须复用，不能重新生成。
+     */
     @NotBlank(message = "操作编号不能为空")
     @Size(max = 160, message = "操作编号最多 160 个字符")
     private String operationId;
 
-    /** 明细内递增的筐号，从 1 开始。 */
+    /**
+     * 明细内递增的筐号，从 1 开始。
+     */
     @NotNull(message = "筐号不能为空")
     @Min(value = 1, message = "筐号必须从 1 开始")
     private Integer basketNo;
@@ -53,7 +59,9 @@ public class ScaleMeasurementForm {
     @NotNull(message = "采集时间不能为空")
     private OffsetDateTime capturedAt;
 
-    /** 设备原始读数，非负。 */
+    /**
+     * 设备原始读数，非负。
+     */
     @NotBlank(message = "读数不能为空")
     @Size(max = 40, message = "读数最多 40 个字符")
     private String rawValue;
@@ -62,7 +70,9 @@ public class ScaleMeasurementForm {
     @Size(max = 32, message = "原始单位最多 32 个字符")
     private String rawUnit;
 
-    /** 换算后的净重；毛重在未去皮时不允许上报为可计入的读数。 */
+    /**
+     * 换算后的净重；毛重在未去皮时不允许上报为可计入的读数。
+     */
     @NotBlank(message = "净重不能为空")
     @Size(max = 40, message = "净重最多 40 个字符")
     private String netWeight;
@@ -71,7 +81,9 @@ public class ScaleMeasurementForm {
     @Size(max = 32, message = "业务单位最多 32 个字符")
     private String businessUnit;
 
-    /** {@code NET} 或 {@code GROSS}；缺省按 NET 处理但服务端仍会复核。 */
+    /**
+     * {@code NET} 或 {@code GROSS}；缺省按 NET 处理但服务端仍会复核。
+     */
     @Size(max = 8, message = "重量类型最多 8 个字符")
     private String weightKind;
 

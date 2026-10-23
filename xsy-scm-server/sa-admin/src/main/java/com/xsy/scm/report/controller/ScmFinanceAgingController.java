@@ -28,7 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ScmFinanceAgingController {
     private static final List<String> TITLES = List.of("截止日", "往来类型", "财务单号", "来源单号", "往来方", "结算方", "业务时间", "冻结到期日",
-            "逾期天数", "账龄分组", "原金额", "红字金额", "净额", "已核销", "未核销余额");
+        "逾期天数", "账龄分组", "原金额", "红字金额", "净额", "已核销", "未核销余额");
     private final ScmFinanceAgingService financeAgingService;
 
     @PostMapping("/query")
@@ -47,14 +47,14 @@ public class ScmFinanceAgingController {
     @SaCheckPermission(value = {ScmReportPermission.FINANCE_AGING_QUERY, ScmReportPermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void export(@Valid @RequestBody ScmFinanceAgingQueryForm form, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         var rows = financeAgingService.export(form).stream()
-                .map(row -> ScmReportExcel.row(TITLES, form.getAsOfDate(), form.isReceivable() ? "应收" : "应付",
-                        row.getDocumentNo(), row.getSourceNo(), row.getCounterpartyName(),
-                        row.getSettlementCustomerName(), row.getEventAt(), row.getDueDate(), row.getOverdueDays(),
-                        ScmFinanceAgingBucketEnum.valueOf(row.getAgingBucket()).getDescription(), row.getAmount(),
-                        row.getRedAmount(), row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount()))
-                .toList();
+            .map(row -> ScmReportExcel.row(TITLES, form.getAsOfDate(), form.isReceivable() ? "应收" : "应付",
+                row.getDocumentNo(), row.getSourceNo(), row.getCounterpartyName(), row.getSettlementCustomerName(),
+                row.getEventAt(), row.getDueDate(), row.getOverdueDays(),
+                ScmFinanceAgingBucketEnum.valueOf(row.getAgingBucket()).getDescription(), row.getAmount(),
+                row.getRedAmount(), row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount()))
+            .toList();
         ScmReportExcel.write(response, "往来账龄.xlsx", "账龄明细", TITLES, rows);
     }
 }

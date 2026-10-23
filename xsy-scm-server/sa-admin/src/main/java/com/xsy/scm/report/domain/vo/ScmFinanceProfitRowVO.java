@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import lombok.Data;
 
-/** Sales gross-profit row; profit remains null when any source cost is missing. */
+/**
+ * Sales gross-profit row; profit remains null when any source cost is missing.
+ */
 @Data
 public class ScmFinanceProfitRowVO {
     private Long dimensionId;
@@ -18,7 +20,9 @@ public class ScmFinanceProfitRowVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal revenueAmount;
 
-    /** Net sales COGS; accepted return-to-stock cost is a negative adjustment. */
+    /**
+     * Net sales COGS; accepted return-to-stock cost is a negative adjustment.
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal salesCostAmount;
 
@@ -34,7 +38,9 @@ public class ScmFinanceProfitRowVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal grossProfit;
 
-    /** Percentage in 0-100 scale, not a ratio. */
+    /**
+     * Percentage in 0-100 scale, not a ratio.
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal grossMarginRate;
 

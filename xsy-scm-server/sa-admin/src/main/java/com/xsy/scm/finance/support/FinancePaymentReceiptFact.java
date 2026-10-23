@@ -10,5 +10,5 @@ import java.time.OffsetDateTime;
  * 系统来源的收款不走 {@code FinanceReceiptAddForm}（那是人工登记入口，字段假设「有人在填」）：方式、结算客户快照与来源键都由财务域自行决定，不复制到支付域。
  */
 public record FinancePaymentReceiptFact(Long transactionId, Long customerId, BigDecimal providerAmount,
-        OffsetDateTime succeededAt, String providerTransactionNo) {
+    OffsetDateTime succeededAt, String providerTransactionNo) {
 }

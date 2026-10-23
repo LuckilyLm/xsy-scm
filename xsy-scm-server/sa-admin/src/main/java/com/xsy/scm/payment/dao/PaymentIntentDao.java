@@ -5,9 +5,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.payment.domain.entity.PaymentIntentEntity;
 import com.xsy.scm.payment.domain.form.PaymentIntentQueryForm;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -15,11 +17,13 @@ import org.apache.ibatis.annotations.Param;
 public interface PaymentIntentDao extends BaseMapper<PaymentIntentEntity> {
 
     List<PaymentIntentEntity> queryPage(Page<?> page, @Param("query") PaymentIntentQueryForm query,
-            @Param("scope") ScmDataScopeContext scope);
+        @Param("scope") ScmDataScopeContext scope);
 
     PaymentIntentEntity selectByIntentNo(@Param("intentNo") String intentNo);
 
-    /** 行锁：状态转换必须在锁内读-判-写，否则并发回调会各自基于旧状态做决定。 */
+    /**
+     * 行锁：状态转换必须在锁内读-判-写，否则并发回调会各自基于旧状态做决定。
+     */
     PaymentIntentEntity lockById(@Param("id") Long id);
 
     /**
@@ -29,16 +33,19 @@ public interface PaymentIntentDao extends BaseMapper<PaymentIntentEntity> {
      * 受影响行数 != 1 就是「有人先改了」——状态机判定与写入之间不留窗口。
      */
     int updateStatus(@Param("id") Long id, @Param("from") String from, @Param("to") String to,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     int markBalanceSucceeded(@Param("id") Long id, @Param("succeededAt") OffsetDateTime succeededAt,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
-    /** 回填渠道意图号（发起成功后）。 */
+    /**
+     * 回填渠道意图号（发起成功后）。
+     */
     int bindExternalIntent(@Param("id") Long id, @Param("externalIntentId") String externalIntentId,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
-    /** 该来源下已成功收款的合计（判断「这单还欠多少」用，不用于自动推断应付金额）。 */
-    BigDecimal sumSucceededBySource(@Param("sourceType") String sourceType,
-            @Param("sourceId") Long sourceId);
+    /**
+     * 该来源下已成功收款的合计（判断「这单还欠多少」用，不用于自动推断应付金额）。
+     */
+    BigDecimal sumSucceededBySource(@Param("sourceType") String sourceType, @Param("sourceId") Long sourceId);
 }

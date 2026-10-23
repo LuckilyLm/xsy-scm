@@ -7,6 +7,7 @@ import com.xsy.scm.delivery.domain.entity.DeliveryRouteEntity;
 import com.xsy.scm.delivery.domain.entity.DeliveryRouteStopEntity;
 import com.xsy.scm.delivery.domain.vo.DeliveryPlanLegVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryPlanProposalVO;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -14,7 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/** 建议输入的版本约束与历史明细还原；回看只读快照，不读当前停靠点。 */
+/**
+ * 建议输入的版本约束与历史明细还原；回看只读快照，不读当前停靠点。
+ */
 public final class DeliveryPlanSnapshotPolicy {
     private DeliveryPlanSnapshotPolicy() {
     }
@@ -45,13 +48,13 @@ public final class DeliveryPlanSnapshotPolicy {
             rows.add(item);
         }
         snapshot.put("stops", rows);
-        snapshot.put("constraints", Map.of("applied", List.of("SAME_CRS", "START_FIXED"),
-                "notApplied", List.of("TIME_WINDOW", "VEHICLE_CAPACITY", "TRAFFIC")));
+        snapshot.put("constraints", Map.of("applied", List.of("SAME_CRS", "START_FIXED"), "notApplied",
+            List.of("TIME_WINDOW", "VEHICLE_CAPACITY", "TRAFFIC")));
         return snapshot;
     }
 
     public static void requireCurrent(DeliveryPlanProposalEntity proposal, DeliveryRouteEntity route,
-            List<DeliveryRouteStopEntity> stops) {
+        List<DeliveryRouteStopEntity> stops) {
         Map<String, Object> frozen = proposal.getInputSnapshot();
         // 旧建议没有生成时版本，无法证明仍适用；仍可回看，但必须重新生成后应用。
         if (frozen == null || frozen.get("routeVersion") == null) {
@@ -59,15 +62,17 @@ public final class DeliveryPlanSnapshotPolicy {
         }
         Map<String, Object> current = capture(route, stops);
         for (String key : List.of("routeVersion", "warehouseId", "driverId", "vehicleId", "deliveryDate")) {
-            if (!sameValue(frozen.get(key), current.get(key))) stale();
+            if (!sameValue(frozen.get(key), current.get(key)))
+                stale();
         }
         if (!(frozen.get("start") instanceof Map<?, ?> start)
-                || !(current.get("start") instanceof Map<?, ?> currentStart)) {
+            || !(current.get("start") instanceof Map<?, ?> currentStart)) {
             stale();
             return;
         }
         for (String key : List.of("longitude", "latitude", "geomCrs")) {
-            if (!sameValue(start.get(key), currentStart.get(key))) stale();
+            if (!sameValue(start.get(key), currentStart.get(key)))
+                stale();
         }
         if (!(frozen.get("stops") instanceof List<?> oldStops) || oldStops.size() != stops.size()) {
             stale();
@@ -81,13 +86,16 @@ public final class DeliveryPlanSnapshotPolicy {
             }
             Map<?, ?> currentStop = (Map<?, ?>) currentStops.get(i);
             for (String key : List.of("stopId", "version", "stopSeq", "customerNameSnapshot", "addressSnapshot",
-                    "longitude", "latitude", "geomCrs")) {
-                if (!sameValue(oldStop.get(key), currentStop.get(key))) stale();
+                "longitude", "latitude", "geomCrs")) {
+                if (!sameValue(oldStop.get(key), currentStop.get(key)))
+                    stale();
             }
         }
     }
 
-    /** 只从生成时的输入快照还原地图起点、旧顺序和约束说明；旧快照缺字段时安全降级。 */
+    /**
+     * 只从生成时的输入快照还原地图起点、旧顺序和约束说明；旧快照缺字段时安全降级。
+     */
     public static void fillPreviewSource(DeliveryPlanProposalEntity proposal, DeliveryPlanProposalVO view) {
         Map<String, Object> frozen = proposal.getInputSnapshot();
         if (frozen == null)
@@ -111,7 +119,7 @@ public final class DeliveryPlanSnapshotPolicy {
             }
         }
         if (frozen.get("constraints") instanceof Map<?, ?> constraints
-                && constraints.get("notApplied") instanceof List<?> excluded) {
+            && constraints.get("notApplied") instanceof List<?> excluded) {
             view.setIgnoredFactors(excluded.stream().map(String::valueOf).toList());
         }
     }

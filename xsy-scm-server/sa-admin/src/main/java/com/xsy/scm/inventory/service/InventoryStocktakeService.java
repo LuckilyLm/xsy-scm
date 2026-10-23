@@ -105,9 +105,9 @@ public class InventoryStocktakeService {
         for (SnapshotLine line : ordered) {
             InventoryBalanceEntity locked = inventoryBalanceDao.lockByWarehouseAndSku(warehouseId, line.skuId());
             boolean drifted = locked == null || !Objects.equals(locked.getId(), line.balanceId())
-                    || !Objects.equals(locked.getVersion(), line.version())
-                    || !Objects.equals(locked.getUnit(), line.unit())
-                    || locked.getQuantity().compareTo(line.bookQuantity()) != 0;
+                || !Objects.equals(locked.getVersion(), line.version())
+                || !Objects.equals(locked.getUnit(), line.unit())
+                || locked.getQuantity().compareTo(line.bookQuantity()) != 0;
             if (drifted) {
                 throw new StocktakeSnapshotDriftException(line.skuCode());
             }
@@ -134,7 +134,7 @@ public class InventoryStocktakeService {
      * {@code actualQuantity} / {@code remark} 来自用户在 Excel 里的编辑；其余四项来自签名凭证，导入方不得信任单元格。
      */
     public record SnapshotLine(String skuCode, Long skuId, Long balanceId, String unit, Integer version,
-            BigDecimal bookQuantity, BigDecimal actualQuantity, String remark) {
+        BigDecimal bookQuantity, BigDecimal actualQuantity, String remark) {
     }
 
     /**
@@ -185,7 +185,7 @@ public class InventoryStocktakeService {
         // 锁序：余额锁按 (warehouseId, skuId) 升序 —— 同一单内多行也必须固定顺序。
         items.stream().sorted(Comparator.comparing(InventoryStocktakeItemVO::getSkuId)).forEach(item -> {
             InventoryStocktakeFact fact = new InventoryStocktakeFact(locked.getWarehouseId(), item.getSkuId(),
-                    locked.getId(), item.getId(), item.getBookQuantity(), item.getActualQuantity(), now, operator);
+                locked.getId(), item.getId(), item.getBookQuantity(), item.getActualQuantity(), now, operator);
             InventoryStocktakeAdjustment adjustment = inventoryCommandService.postStocktakeAdjust(fact);
             // 单位以余额记账单位为准，由命令服务返回，这里回写到明细行
             inventoryStocktakeItemDao.updateUnitSnapshot(item.getId(), adjustment.unit(), operator);
@@ -239,7 +239,7 @@ public class InventoryStocktakeService {
     private void insertItems(Long stocktakeId, InventoryStocktakeAddForm form, String operator) {
         for (InventoryStocktakeAddForm.Item item : form.getItems()) {
             InventoryBalanceEntity balance = inventoryBalanceDao.selectByWarehouseAndSku(form.getWarehouseId(),
-                    item.getSkuId());
+                item.getSkuId());
             if (balance == null) {
                 throw new ScmBusinessException(INVENTORY_STOCKTAKE_BALANCE_MISSING);
             }

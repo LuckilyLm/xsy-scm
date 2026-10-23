@@ -2,8 +2,10 @@ package com.xsy.scm.inventory.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -33,10 +35,14 @@ public class InventoryLotBalanceVO {
 
     private Long lotId;
 
-    /** 内部批次号：系统发号，只读展示。 */
+    /**
+     * 内部批次号：系统发号，只读展示。
+     */
     private String lotNo;
 
-    /** 来源生产批号：供应商或现场提供，可能为空。 */
+    /**
+     * 来源生产批号：供应商或现场提供，可能为空。
+     */
     private String sourceLotNo;
 
     private String unit;

@@ -5,7 +5,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 
-/** Paginated, scope-filtered picker for completed refunds not yet paid by Finance. */
+/**
+ * Paginated, scope-filtered picker for completed refunds not yet paid by Finance.
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class FinanceRefundOptionQueryForm extends PageParam {

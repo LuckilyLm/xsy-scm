@@ -11,7 +11,9 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/** 报损报溢单创建后待审核，批准时才生成库存流水；驳回不影响库存。已批准或驳回的单据不能重改，历史库存流水只追加不回写。 */
+/**
+ * 报损报溢单创建后待审核，批准时才生成库存流水；驳回不影响库存。已批准或驳回的单据不能重改，历史库存流水只追加不回写。
+ */
 @Data
 @TableName(value = "xsy_inventory_loss_gain", autoResultMap = true)
 public class InventoryLossGainEntity {

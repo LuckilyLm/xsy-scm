@@ -5,7 +5,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/** 审批更正申请：批准即撤销绑定，驳回只留审批意见。 */
+/**
+ * 审批更正申请：批准即撤销绑定，驳回只留审批意见。
+ */
 @Data
 public class TraceCorrectionDecisionForm {
 

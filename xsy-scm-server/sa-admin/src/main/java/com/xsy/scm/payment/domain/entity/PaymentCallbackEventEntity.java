@@ -6,11 +6,15 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
+
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import lombok.Data;
 
-/** 支付回调事件按渠道和事件 ID 唯一防重。重复通知不能重复执行；验签失败也要以拒绝状态记录，回调事件只追加。 */
+/**
+ * 支付回调事件按渠道和事件 ID 唯一防重。重复通知不能重复执行；验签失败也要以拒绝状态记录，回调事件只追加。
+ */
 @Data
 @TableName(value = "xsy_payment_callback_event", autoResultMap = true)
 public class PaymentCallbackEventEntity {

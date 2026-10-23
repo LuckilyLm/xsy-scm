@@ -4,7 +4,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
-/** 采购错误码只定义采购业务的失败原因。仓库本身的不存在、编码重复等错误由仓库模块定义；跨模块共享错误码不能形成反向依赖。 */
+/**
+ * 采购错误码只定义采购业务的失败原因。仓库本身的不存在、编码重复等错误由仓库模块定义；跨模块共享错误码不能形成反向依赖。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum PurchaseErrorCode implements ScmErrorCode {

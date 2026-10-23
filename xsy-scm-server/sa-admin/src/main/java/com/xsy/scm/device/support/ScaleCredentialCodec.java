@@ -21,7 +21,9 @@ public final class ScaleCredentialCodec {
     private ScaleCredentialCodec() {
     }
 
-    /** URL 安全且无填充，便于放进请求头与二维码。 */
+    /**
+     * URL 安全且无填充，便于放进请求头与二维码。
+     */
     public static String newToken() {
         byte[] bytes = new byte[TOKEN_BYTES];
         RANDOM.nextBytes(bytes);

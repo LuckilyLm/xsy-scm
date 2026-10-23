@@ -14,7 +14,9 @@ import com.xsy.scm.report.constant.ScmReportPermission;
 import com.xsy.scm.report.support.ScmReportAdvancedFilters;
 import com.xsy.scm.preference.filter.UserFilterPresetModel.Preset;
 import com.xsy.scm.preference.filter.UserFilterPresetModel.Row;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -36,7 +38,7 @@ public class UserFilterPresetService {
     public List<Preset> list(String viewKey) {
         var fields = authorizedFields(viewKey);
         return userFilterPresetDao.list(ScmOperator.current(), viewKey).stream().map(row -> preset(row, fields))
-                .toList();
+            .toList();
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -55,7 +57,7 @@ public class UserFilterPresetService {
         Row row = new Row();
         try {
             userFilterPresetDao.insert(owner, form.getViewKey(), name, objectMapper.writeValueAsString(conditions),
-                    row);
+                row);
         } catch (DuplicateKeyException duplicate) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         } catch (JsonProcessingException invalid) {

@@ -13,13 +13,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmDeliveryOrderPrintFilterEnum {
 
-    /** 全部订单。 */
+    /**
+     * 全部订单。
+     */
     ALL("全部"),
 
-    /** 已打印。 */
+    /**
+     * 已打印。
+     */
     PRINTED("已打印"),
 
-    /** 未打印。 */
+    /**
+     * 未打印。
+     */
     UNPRINTED("未打印");
 
     private final String desc;

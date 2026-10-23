@@ -4,8 +4,10 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.trace.constant.TraceErrorCode;
+
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,12 +27,14 @@ public class TracePublicRateLimiter {
     private static final int TOKEN_LIMIT_PER_HOUR = 60;
 
     private final Cache<String, AtomicInteger> ipCounters = Caffeine.newBuilder()
-            .expireAfterWrite(Duration.ofMinutes(1)).maximumSize(10_000).build();
+        .expireAfterWrite(Duration.ofMinutes(1)).maximumSize(10_000).build();
 
     private final Cache<String, AtomicInteger> tokenCounters = Caffeine.newBuilder()
-            .expireAfterWrite(Duration.ofHours(1)).maximumSize(50_000).build();
+        .expireAfterWrite(Duration.ofHours(1)).maximumSize(50_000).build();
 
-    /** 任一维度超限即拒绝；IP 未知时只按令牌计。 */
+    /**
+     * 任一维度超限即拒绝；IP 未知时只按令牌计。
+     */
     public void check(String clientIp, String publicToken) {
         if (clientIp != null && !clientIp.isBlank() && increment(ipCounters, clientIp) > IP_LIMIT_PER_MINUTE) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_PUBLIC_RATE_LIMITED);

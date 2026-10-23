@@ -1,6 +1,8 @@
 package com.xsy.scm.customer.constant;
 
-/** Stored customer visibility policies, also constrained by {@code ck_customer_visibility_policy}. */
+/**
+ * Stored customer visibility policies, also constrained by {@code ck_customer_visibility_policy}.
+ */
 public final class CustomerVisibilityPolicy {
 
     public static final String ALL_ENABLED = "ALL_ENABLED";

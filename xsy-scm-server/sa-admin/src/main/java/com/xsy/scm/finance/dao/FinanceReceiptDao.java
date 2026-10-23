@@ -24,7 +24,9 @@ public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
      */
     long nextReceiptNo();
 
-    /** Lock the source receipt so reversal and write-off commands serialize on the same row. */
+    /**
+     * Lock the source receipt so reversal and write-off commands serialize on the same row.
+     */
     FinanceReceiptEntity selectByIdForUpdate(@Param("receiptId") Long receiptId);
 
     /**
@@ -35,10 +37,14 @@ public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
      */
     FinanceReceiptEntity selectBySource(@Param("sourceType") String sourceType, @Param("sourceId") Long sourceId);
 
-    /** Effective write-off amount (NORMAL minus REVERSE) for this source receipt. */
+    /**
+     * Effective write-off amount (NORMAL minus REVERSE) for this source receipt.
+     */
     BigDecimal selectEffectiveWriteOffAmount(@Param("receiptId") Long receiptId);
 
-    /** Insert a reversal, letting the partial unique index arbitrate a second reversal. */
+    /**
+     * Insert a reversal, letting the partial unique index arbitrate a second reversal.
+     */
     int insertReverseOnConflictDoNothing(FinanceReceiptEntity entity);
 
     BigDecimal selectReversedAmount(@Param("receiptId") Long receiptId);
@@ -51,7 +57,9 @@ public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
      */
     BigDecimal sumCodCollectedByOrder(@Param("orderId") Long orderId);
 
-    /** 人工收款经有效核销分配到该订单正常应收的金额。 */
+    /**
+     * 人工收款经有效核销分配到该订单正常应收的金额。
+     */
     BigDecimal sumManualCollectedByOrder(@Param("orderId") Long orderId);
 
     FinanceReceiptQueryVO selectQueryById(@Param("receiptId") Long receiptId);
@@ -59,5 +67,5 @@ public interface FinanceReceiptDao extends BaseMapper<FinanceReceiptEntity> {
     FinanceReceiptQueryVO selectReversalByOriginal(@Param("receiptId") Long receiptId);
 
     List<FinanceReceiptQueryVO> queryPage(Page<?> page, @Param("query") FinanceReceiptQueryForm query,
-            @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
+        @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
 }

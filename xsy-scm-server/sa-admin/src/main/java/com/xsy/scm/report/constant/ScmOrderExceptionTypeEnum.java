@@ -6,7 +6,9 @@ import com.xsy.scm.sorting.permission.SortingPermission;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 异常类别映射源域查看权限；报表权限不授予额外业务访问权。 */
+/**
+ * 异常类别映射源域查看权限；报表权限不授予额外业务访问权。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmOrderExceptionTypeEnum {

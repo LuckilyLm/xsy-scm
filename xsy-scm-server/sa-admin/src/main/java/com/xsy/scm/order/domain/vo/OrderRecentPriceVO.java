@@ -7,7 +7,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 最近成交价只作为录单参考，不参与定价或价格优先级。查询按历史订单返回，不合并同一订单内重复商品行。 */
+/**
+ * 最近成交价只作为录单参考，不参与定价或价格优先级。查询按历史订单返回，不合并同一订单内重复商品行。
+ */
 @Data
 public class OrderRecentPriceVO {
 

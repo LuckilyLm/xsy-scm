@@ -2,6 +2,7 @@ package com.xsy.scm.inventory.domain.entity;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -29,7 +30,9 @@ public class InventoryLotMovementEntity {
 
     private Long sourceDocumentItemId;
 
-    /** 有符号数量：入库为正、出库为负。 */
+    /**
+     * 有符号数量：入库为正、出库为负。
+     */
     private BigDecimal quantity;
 
     private String unitSnapshot;

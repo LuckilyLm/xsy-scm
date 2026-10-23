@@ -2,7 +2,9 @@ package com.xsy.scm.delivery.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+
 import java.math.BigDecimal;
+
 import lombok.Data;
 
 /**
@@ -19,7 +21,9 @@ public class DeliveryPlanLegVO {
      */
     private Integer seq;
 
-    /** 建议生成时该站在原线路中的顺序，用于人工比对，不回读已修改的线路。 */
+    /**
+     * 建议生成时该站在原线路中的顺序，用于人工比对，不回读已修改的线路。
+     */
     private Integer originalSeq;
 
     private Long stopId;

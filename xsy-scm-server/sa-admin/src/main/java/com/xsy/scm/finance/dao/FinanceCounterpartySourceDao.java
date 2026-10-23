@@ -5,7 +5,9 @@ import com.xsy.scm.finance.domain.dto.FinanceSupplierFactDto;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-/** 财务通过只读 DAO 查询客户或供应商资料，不能修改业务主档。客户归属权限必须复用统一的员工范围规则。 */
+/**
+ * 财务通过只读 DAO 查询客户或供应商资料，不能修改业务主档。客户归属权限必须复用统一的员工范围规则。
+ */
 @Mapper
 public interface FinanceCounterpartySourceDao {
 

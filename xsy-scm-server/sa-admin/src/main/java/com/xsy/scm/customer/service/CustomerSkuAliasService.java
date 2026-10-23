@@ -9,9 +9,11 @@ import com.xsy.scm.customer.domain.entity.CustomerSkuAliasEntity;
 import com.xsy.scm.customer.domain.form.CustomerSkuAliasForm;
 import com.xsy.scm.customer.domain.vo.CustomerSkuAliasVO;
 import com.xsy.scm.product.service.ProductQueryService;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
@@ -46,8 +48,8 @@ public class CustomerSkuAliasService {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         CustomerSkuAliasEntity existing = aliasDao.selectOne(new LambdaQueryWrapper<CustomerSkuAliasEntity>()
-                .eq(CustomerSkuAliasEntity::getCustomerId, form.getCustomerId())
-                .eq(CustomerSkuAliasEntity::getSkuId, form.getSkuId()));
+            .eq(CustomerSkuAliasEntity::getCustomerId, form.getCustomerId())
+            .eq(CustomerSkuAliasEntity::getSkuId, form.getSkuId()));
         if (existing == null) {
             if (form.getVersion() != null || alias.isEmpty()) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
@@ -72,7 +74,7 @@ public class CustomerSkuAliasService {
         }
         if (alias.isEmpty()) {
             if (aliasDao.softDelete(existing.getId(), form.getCustomerId(), form.getVersion(),
-                    ScmOperator.current()) != 1) {
+                ScmOperator.current()) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }
             return;

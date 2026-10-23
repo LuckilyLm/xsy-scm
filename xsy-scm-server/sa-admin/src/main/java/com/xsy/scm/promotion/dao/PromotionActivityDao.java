@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.promotion.domain.entity.PromotionActivityEntity;
 import com.xsy.scm.promotion.domain.form.PromotionActivityQueryForm;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -25,5 +27,5 @@ public interface PromotionActivityDao extends BaseMapper<PromotionActivityEntity
     PromotionActivityEntity lockById(@Param("id") Long id);
 
     int updateStatus(@Param("id") Long id, @Param("status") String status, @Param("version") Integer version,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 }

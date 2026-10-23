@@ -20,13 +20,17 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
-/** 采购报表按订单、收货和金额的业务时点统计，时间筛选与汇总保持一致。 */
+/**
+ * 采购报表按订单、收货和金额的业务时点统计，时间筛选与汇总保持一致。
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PurchaseReportService {
 
-    /** 供应商 TOP 榜取前 10，与参考页的 TOP10 习惯一致。 */
+    /**
+     * 供应商 TOP 榜取前 10，与参考页的 TOP10 习惯一致。
+     */
     private static final int SUPPLIER_TOP_LIMIT = 10;
 
     private final ReportDao reportDao;
@@ -42,7 +46,7 @@ public class PurchaseReportService {
             return new PurchaseReportVO.Overview();
         }
         PurchaseReportVO.Overview vo = reportDao.purchaseOverview(range.startAt(), range.endAt(), form,
-                ScmPurchaseStatusEnum.committedNames(), context.getWarehouseScope());
+            ScmPurchaseStatusEnum.committedNames(), context.getWarehouseScope());
         if (vo != null && !context.isCostVisible()) {
             vo.setPurchaseInCostAmount(null);
             vo.setPurchaseInCostMissingCount(null);
@@ -61,7 +65,7 @@ public class PurchaseReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         PageResult<PurchaseReportVO.ProductRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.purchaseByProduct(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+            reportDao.purchaseByProduct(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         maskProductCost(result, context.isCostVisible());
         return result;
     }
@@ -76,7 +80,7 @@ public class PurchaseReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         PageResult<PurchaseReportVO.SupplierRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.purchaseBySupplier(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+            reportDao.purchaseBySupplier(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         maskSupplierCost(result, context.isCostVisible());
         return result;
     }
@@ -88,7 +92,7 @@ public class PurchaseReportService {
             return List.of();
         }
         return reportDao.topPurchaseSupplierInbound(range.startAt(), range.endAt(), SUPPLIER_TOP_LIMIT, form,
-                context.getWarehouseScope());
+            context.getWarehouseScope());
     }
 
     public PageResult<PurchaseReportVO.PurchaserRow> byPurchaser(ScmPurchaseReportQueryForm form) {
@@ -101,7 +105,7 @@ public class PurchaseReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         PageResult<PurchaseReportVO.PurchaserRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.purchaseByPurchaser(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+            reportDao.purchaseByPurchaser(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         List<PurchaseReportVO.PurchaserRow> rows = result.getList();
         if (!context.isCostVisible()) {
             rows.forEach(row -> {
@@ -121,7 +125,7 @@ public class PurchaseReportService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.purchaseItemList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+            reportDao.purchaseItemList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
     }
 
     public List<PurchaseReportVO.PriceTrendPoint> priceTrend(ScmPurchaseReportQueryForm form) {
@@ -130,8 +134,8 @@ public class PurchaseReportService {
         if (context.warehouseNowhere()) {
             return List.of();
         }
-        return PurchasePriceTrendComparison.populate(
-                reportDao.purchasePriceTrend(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+        return PurchasePriceTrendComparison
+            .populate(reportDao.purchasePriceTrend(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
     }
 
     private void maskProductCost(PageResult<PurchaseReportVO.ProductRow> result, boolean costVisible) {

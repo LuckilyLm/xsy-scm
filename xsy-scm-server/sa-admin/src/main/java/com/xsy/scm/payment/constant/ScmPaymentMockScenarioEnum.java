@@ -3,15 +3,21 @@ package com.xsy.scm.payment.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 仅模拟渠道可以携带测试场景。模拟场景只控制渠道行为，不得绕过验签、幂等或状态机。 */
+/**
+ * 仅模拟渠道可以携带测试场景。模拟场景只控制渠道行为，不得绕过验签、幂等或状态机。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPaymentMockScenarioEnum {
 
-    /** 立即成功。 */
+    /**
+     * 立即成功。
+     */
     SUCCESS("立即成功"),
 
-    /** 立即失败（渠道拒付）。 */
+    /**
+     * 立即失败（渠道拒付）。
+     */
     FAILURE("立即失败"),
 
     /**
@@ -22,7 +28,9 @@ public enum ScmPaymentMockScenarioEnum {
      */
     DELAYED("延迟回调"),
 
-    /** 未支付即过期：发起后不产生成功回调。 */
+    /**
+     * 未支付即过期：发起后不产生成功回调。
+     */
     EXPIRED("超时未付");
 
     private final String desc;

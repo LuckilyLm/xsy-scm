@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/** 核销流水分页筛选；可见范围始终跟随目标应收或应付。 */
+/**
+ * 核销流水分页筛选；可见范围始终跟随目标应收或应付。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class FinanceWriteOffQueryForm extends FinanceDatePageForm {

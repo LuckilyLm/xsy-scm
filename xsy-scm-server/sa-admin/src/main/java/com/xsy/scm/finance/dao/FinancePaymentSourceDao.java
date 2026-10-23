@@ -5,8 +5,10 @@ import com.xsy.scm.common.scope.ScmDataScopeContext;
 import com.xsy.scm.finance.domain.dto.FinanceRefundFactDto;
 import com.xsy.scm.finance.domain.form.FinanceRefundOptionQueryForm;
 import com.xsy.scm.finance.domain.vo.FinanceRefundOptionVO;
+
 import java.util.List;
 import java.math.BigDecimal;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -32,12 +34,16 @@ public interface FinancePaymentSourceDao {
     boolean hasRefundFundingAllocations(@Param("orderId") Long orderId);
 
     boolean matchesSuccessfulRefund(@Param("refundId") Long refundId, @Param("paymentRefundId") Long paymentRefundId,
-            @Param("customerId") Long customerId, @Param("amount") BigDecimal amount);
+        @Param("customerId") Long customerId, @Param("amount") BigDecimal amount);
 
-    /** 人工退款付款和渠道退款不能同时支付同一退款单。两者都锁原退款单并检查另一条支付路径是否已执行。 */
+    /**
+     * 人工退款付款和渠道退款不能同时支付同一退款单。两者都锁原退款单并检查另一条支付路径是否已执行。
+     */
     Long selectActivePaymentRefund(@Param("orderRefundId") Long orderRefundId);
 
-    /** Paginated completed refund picker; excludes already-paid sources and follows customer seller scope. */
+    /**
+     * Paginated completed refund picker; excludes already-paid sources and follows customer seller scope.
+     */
     List<FinanceRefundOptionVO> selectCompletedRefundOptions(Page<?> page,
-            @Param("query") FinanceRefundOptionQueryForm query, @Param("scope") ScmDataScopeContext scope);
+        @Param("query") FinanceRefundOptionQueryForm query, @Param("scope") ScmDataScopeContext scope);
 }

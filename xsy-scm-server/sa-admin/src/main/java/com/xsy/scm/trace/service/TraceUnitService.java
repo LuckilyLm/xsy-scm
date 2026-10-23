@@ -20,11 +20,13 @@ import com.xsy.scm.trace.domain.form.TraceUnitWeightForm;
 import com.xsy.scm.trace.domain.vo.TraceScaleUnitVO;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import com.xsy.scm.trace.support.TracePublicLinkBuilder;
+
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -47,7 +49,9 @@ public class TraceUnitService {
 
     private static final char[] CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ".toCharArray();
 
-    /** 公开令牌长度：16 位 32 进制约 80 bit，标签上放得下，也扛得住按 token 枚举。 */
+    /**
+     * 公开令牌长度：16 位 32 进制约 80 bit，标签上放得下，也扛得住按 token 枚举。
+     */
     private static final int PUBLIC_TOKEN_LENGTH = 16;
 
     private static final SecureRandom TOKEN_RANDOM = new SecureRandom();
@@ -133,7 +137,7 @@ public class TraceUnitService {
         }
         // 已取消的任务不能再承接实物；未开始的任务也还没有实拣量
         if (!ScmSortingTaskStatusEnum.SORTING.name().equals(item.getTaskStatus())
-                && !ScmSortingTaskStatusEnum.COMPLETED.name().equals(item.getTaskStatus())) {
+            && !ScmSortingTaskStatusEnum.COMPLETED.name().equals(item.getTaskStatus())) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_SORTING_TASK_STATE_INVALID);
         }
         warehouseScopeGuard.require(item.getWarehouseId());
@@ -151,14 +155,14 @@ public class TraceUnitService {
         }
         BigDecimal bound = traceUnitDao.sumBoundBySortingItem(item.getItemId());
         if (bound.add(unit.getQuantity())
-                .compareTo(saleToStockQuantity(item, item.getSortedQuantity(), unit.getUnit())) > 0) {
+            .compareTo(saleToStockQuantity(item, item.getSortedQuantity(), unit.getUnit())) > 0) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_BIND_EXCEED);
         }
 
         OffsetDateTime now = OffsetDateTime.now();
         traceUnitDao.insertBinding(unit.getId(), unit.getLotId(), item.getTaskId(), item.getItemId(),
-                item.getSalesOrderId(), item.getSalesOrderItemId(), item.getCustomerId(), item.getCustomerName(),
-                item.getOrderNo(), now, operator);
+            item.getSalesOrderId(), item.getSalesOrderItemId(), item.getCustomerId(), item.getCustomerName(),
+            item.getOrderNo(), now, operator);
         traceUnitDao.appendBindEvent(unit.getId(), unit.getLotId(), item.getItemId(), now, operator);
 
         TraceUnitVO.Binding binding = new TraceUnitVO.Binding();
@@ -194,7 +198,7 @@ public class TraceUnitService {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_ALREADY_VOID);
         }
         traceUnitDao.appendVoidEvent(unit.getId(), unit.getLotId(), OffsetDateTime.now(), operator,
-                form.getReason().trim());
+            form.getReason().trim());
     }
 
     /**
@@ -216,7 +220,7 @@ public class TraceUnitService {
         BigDecimal weight = parseWeight(form.getNetWeight());
         OffsetDateTime now = OffsetDateTime.now();
         if (traceUnitDao.updateWeight(unit.getId(), weight, form.getWeightUnit().trim(),
-                ScmTraceWeightSourceEnum.MANUAL.name(), now) != 1) {
+            ScmTraceWeightSourceEnum.MANUAL.name(), now) != 1) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_UNIT_WEIGHT_ALREADY_SET);
         }
         traceUnitDao.appendWeighEvent(unit.getId(), unit.getLotId(), now, operator, form.getReason().trim());
@@ -319,7 +323,7 @@ public class TraceUnitService {
         }
         String stockUnit = item.getStockUnit() != null ? item.getStockUnit() : item.getSaleUnit();
         BigDecimal remaining = saleToStockQuantity(item, item.getSortedQuantity(), stockUnit)
-                .subtract(traceUnitDao.sumBoundBySortingItem(sortingTaskItemId));
+            .subtract(traceUnitDao.sumBoundBySortingItem(sortingTaskItemId));
         OffsetDateTime now = OffsetDateTime.now();
         BigDecimal used = BigDecimal.ZERO;
         int bound = 0;
@@ -328,8 +332,8 @@ public class TraceUnitService {
                 break;
             }
             traceUnitDao.insertBinding(unit.getId(), unit.getLotId(), item.getTaskId(), sortingTaskItemId,
-                    item.getSalesOrderId(), item.getSalesOrderItemId(), item.getCustomerId(), item.getCustomerName(),
-                    item.getOrderNo(), now, operator);
+                item.getSalesOrderId(), item.getSalesOrderItemId(), item.getCustomerId(), item.getCustomerName(),
+                item.getOrderNo(), now, operator);
             traceUnitDao.appendBindEvent(unit.getId(), unit.getLotId(), sortingTaskItemId, now, operator);
             used = used.add(unit.getQuantity());
             bound++;
@@ -337,7 +341,9 @@ public class TraceUnitService {
         return bound;
     }
 
-    /** 秤端只需要码、链接与重量，不返回批次与客户等后台字段。 */
+    /**
+     * 秤端只需要码、链接与重量，不返回批次与客户等后台字段。
+     */
     private TraceScaleUnitVO toScaleVO(TraceUnitVO.Unit unit, boolean duplicated) {
         TraceScaleUnitVO result = new TraceScaleUnitVO();
         result.setUnitId(unit.getId());
@@ -352,7 +358,9 @@ public class TraceUnitService {
         return result;
     }
 
-    /** 秤端选批次：本仓该商品仍有余额的批次，按先进先出排序。 */
+    /**
+     * 秤端选批次：本仓该商品仍有余额的批次，按先进先出排序。
+     */
     @Transactional(readOnly = true)
     public List<TraceUnitVO.LotOption> candidateLots(Long sortingTaskItemId) {
         TraceUnitVO.SortingItem item = traceUnitDao.findSortingItem(sortingTaskItemId);
@@ -363,7 +371,9 @@ public class TraceUnitService {
         return traceUnitDao.candidateLots(item.getWarehouseId(), item.getSkuId());
     }
 
-    /** 秤端补打：按码取回二维码链接与重量，不重新发码。 */
+    /**
+     * 秤端补打：按码取回二维码链接与重量，不重新发码。
+     */
     @Transactional(readOnly = true)
     public TraceScaleUnitVO label(String unitCode) {
         TraceUnitVO.Unit unit = traceUnitDao.findByCode(unitCode.trim());
@@ -374,7 +384,9 @@ public class TraceUnitService {
         return toScaleVO(unit, false);
     }
 
-    /** 列表按仓库数据范围收窄：没有范围就是空页，不是「不加条件」。 */
+    /**
+     * 列表按仓库数据范围收窄：没有范围就是空页，不是「不加条件」。
+     */
     @Transactional(readOnly = true)
     public PageResult<TraceUnitVO.Unit> query(TraceUnitQueryForm form) {
         ScmDataScopeContext scope = dataScopeService.resolve();
@@ -428,7 +440,9 @@ public class TraceUnitService {
         return replay;
     }
 
-    /** 预览沿用正式绑定守卫，但在事务代理内部转为不可处理原因，避免业务拒绝把只读预览标为 rollback-only。 */
+    /**
+     * 预览沿用正式绑定守卫，但在事务代理内部转为不可处理原因，避免业务拒绝把只读预览标为 rollback-only。
+     */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public String previewSortedQuantityRejection(Long sortingTaskItemId, BigDecimal newSortedQuantity) {
         try {
@@ -470,7 +484,7 @@ public class TraceUnitService {
      * 优先用订单行确认时冻结的换算；没有冻结换算时，只有「销售单位就是记账单位」才能同口径比较，否则明确拒绝（41517）， 不猜比例。对侧的库存单位与冻结的库存单位不一致同样拒绝——那说明批次余额的记账单位在发码后变了口径。
      */
     private static BigDecimal saleToStockQuantity(TraceUnitVO.SortingItem item, BigDecimal saleQuantity,
-            String stockUnit) {
+        String stockUnit) {
         String frozenUnit = item.getStockUnit();
         BigDecimal factor = item.getStockUnitsPerSaleUnit();
         if (frozenUnit == null || factor == null) {
@@ -485,7 +499,9 @@ public class TraceUnitService {
         return InventorySaleUnitConverter.toStockQuantity(saleQuantity, frozenUnit, factor);
     }
 
-    /** 加锁读该批次余额：锁在行上，两个发码事务必须排队。 */
+    /**
+     * 加锁读该批次余额：锁在行上，两个发码事务必须排队。
+     */
     private BigDecimal lockedBalance(Long lotId) {
         BigDecimal total = BigDecimal.ZERO;
         for (TraceUnitDao.LotBalanceRow row : traceUnitDao.lockLotBalances(lotId)) {
@@ -525,7 +541,9 @@ public class TraceUnitService {
         return value.setScale(4, java.math.RoundingMode.UNNECESSARY);
     }
 
-    /** 净重与每包数量共用同一套定点口径，但提示必须分开：补录时看不懂「每包数量」在说什么。 */
+    /**
+     * 净重与每包数量共用同一套定点口径，但提示必须分开：补录时看不懂「每包数量」在说什么。
+     */
     private static BigDecimal parseWeight(String text) {
         BigDecimal value;
         try {
@@ -539,7 +557,9 @@ public class TraceUnitService {
         return value.setScale(4, java.math.RoundingMode.UNNECESSARY);
     }
 
-    /** 公开令牌：随机而非序列，扫码入口不能靠猜相邻码拿到别人的溯源页。 */
+    /**
+     * 公开令牌：随机而非序列，扫码入口不能靠猜相邻码拿到别人的溯源页。
+     */
     private static String nextPublicToken() {
         char[] token = new char[PUBLIC_TOKEN_LENGTH];
         for (int index = 0; index < PUBLIC_TOKEN_LENGTH; index++) {

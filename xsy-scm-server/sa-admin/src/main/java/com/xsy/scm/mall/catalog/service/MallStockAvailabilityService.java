@@ -8,6 +8,7 @@ import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.domain.vo.MallStockFact;
 import com.xsy.scm.product.service.ProductBundleComponentQueryService;
 import com.xsy.scm.product.domain.entity.ProductBundleComponentEntity;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.math.BigDecimal;
@@ -16,10 +17,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/** 当前配送仓可售量只扣余额中的 reserved_quantity；没有独立冻结列，不能重复扣减同一占用。 */
+/**
+ * 当前配送仓可售量只扣余额中的 reserved_quantity；没有独立冻结列，不能重复扣减同一占用。
+ */
 @Service
 @RequiredArgsConstructor
 public class MallStockAvailabilityService {
@@ -30,14 +34,14 @@ public class MallStockAvailabilityService {
         if (products.isEmpty() || warehouseId == null)
             return;
         List<ProductBundleComponentEntity> components = bundleDao
-                .listByBundleSkus(products.stream().map(MallProductVO::getSkuId).distinct().toList());
+            .listByBundleSkus(products.stream().map(MallProductVO::getSkuId).distinct().toList());
         Map<Long, List<ProductBundleComponentEntity>> bundles = components.stream()
-                .collect(Collectors.groupingBy(ProductBundleComponentEntity::getBundleSkuId));
+            .collect(Collectors.groupingBy(ProductBundleComponentEntity::getBundleSkuId));
         var skuIds = new LinkedHashSet<Long>();
         products.forEach(product -> skuIds.add(product.getSkuId()));
         components.forEach(component -> skuIds.add(component.getComponentSkuId()));
         Map<Long, MallStockFact> facts = stockDao.bySkus(warehouseId, new ArrayList<>(skuIds)).stream()
-                .collect(Collectors.toMap(MallStockFact::getSkuId, Function.identity()));
+            .collect(Collectors.toMap(MallStockFact::getSkuId, Function.identity()));
         for (MallProductVO product : products) {
             product.setWarehouseId(warehouseId);
             List<ProductBundleComponentEntity> bundle = bundles.get(product.getSkuId());
@@ -60,15 +64,15 @@ public class MallStockAvailabilityService {
             product.setAvailableQty(quantity);
             BigDecimal minimum = product.getMinOrderQty() == null ? BigDecimal.ONE : product.getMinOrderQty();
             product.setStockStatus(quantity.signum() == 0
-                    ? MallStockStatusEnum.OUT_OF_STOCK.name()
-                    : quantity.compareTo(minimum) < 0
-                            ? MallStockStatusEnum.INSUFFICIENT.name()
-                            : MallStockStatusEnum.AVAILABLE.name());
+                ? MallStockStatusEnum.OUT_OF_STOCK.name()
+                : quantity.compareTo(minimum) < 0
+                    ? MallStockStatusEnum.INSUFFICIENT.name()
+                    : MallStockStatusEnum.AVAILABLE.name());
         }
     }
 
     private static void enrichBundle(MallProductVO product, List<ProductBundleComponentEntity> components,
-            Map<Long, MallStockFact> facts) {
+        Map<Long, MallStockFact> facts) {
         BigDecimal available = null;
         for (ProductBundleComponentEntity component : components) {
             MallStockFact fact = facts.get(component.getComponentSkuId());
@@ -92,10 +96,10 @@ public class MallStockAvailabilityService {
         product.setAvailableQty(available);
         BigDecimal minimum = product.getMinOrderQty() == null ? BigDecimal.ONE : product.getMinOrderQty();
         product.setStockStatus(available == null || available.signum() == 0
-                ? MallStockStatusEnum.OUT_OF_STOCK.name()
-                : available.compareTo(minimum) < 0
-                        ? MallStockStatusEnum.INSUFFICIENT.name()
-                        : MallStockStatusEnum.AVAILABLE.name());
+            ? MallStockStatusEnum.OUT_OF_STOCK.name()
+            : available.compareTo(minimum) < 0
+                ? MallStockStatusEnum.INSUFFICIENT.name()
+                : MallStockStatusEnum.AVAILABLE.name());
     }
 
     public Conversion requireConversion(Long warehouseId, Long skuId, String saleUnit) {

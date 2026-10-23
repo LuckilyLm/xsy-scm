@@ -5,6 +5,7 @@ import com.xsy.scm.payment.constant.ScmPaymentMockScenarioEnum;
 import com.xsy.scm.payment.constant.ScmPaymentProviderEnum;
 import com.xsy.scm.payment.dao.PaymentMockLedgerDao;
 import com.xsy.scm.payment.domain.entity.PaymentMockLedgerEntity;
+
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -13,23 +14,30 @@ import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-/** 测试支付渠道只用于模拟支付结果，必须与正式支付渠道明确区分。 */
+/**
+ * 测试支付渠道只用于模拟支付结果，必须与正式支付渠道明确区分。
+ */
 @Slf4j
 @Component
 @Profile("(dev | test) & !pre & !prod")
 @RequiredArgsConstructor
 public class MockPaymentProvider implements ScmPaymentProvider {
 
-    /** 本地模拟渠道的签名请求头。真实渠道各有自己的头名。 */
+    /**
+     * 本地模拟渠道的签名请求头。真实渠道各有自己的头名。
+     */
     public static final String SIGNATURE_HEADER = "X-Scm-Mock-Signature";
 
-    /** 本地模拟渠道的事件 id 请求头；缺省时回落到报文里的 eventId 字段。 */
+    /**
+     * 本地模拟渠道的事件 id 请求头；缺省时回落到报文里的 eventId 字段。
+     */
     public static final String EVENT_ID_HEADER = "X-Scm-Mock-Event-Id";
 
     private final PaymentMockLedgerDao paymentMockLedgerDao;
@@ -53,8 +61,8 @@ public class MockPaymentProvider implements ScmPaymentProvider {
     @Override
     public IntentResult createIntent(IntentRequest request) {
         ScmPaymentMockScenarioEnum scenario = request.scenario() == null
-                ? ScmPaymentMockScenarioEnum.SUCCESS
-                : request.scenario();
+            ? ScmPaymentMockScenarioEnum.SUCCESS
+            : request.scenario();
         String providerTransactionNo = transactionNoOf(request.intentNo());
         String externalIntentId = "MOCK-INTENT-" + request.intentNo();
         return switch (scenario) {
@@ -62,10 +70,10 @@ public class MockPaymentProvider implements ScmPaymentProvider {
                 // 渠道先记账（独立事务），再告诉本地「成功了」
                 ledgerRecorder.record(providerTransactionNo, null, "IN", request.amount());
                 yield new IntentResult(externalIntentId, providerTransactionNo, Outcome.SUCCEEDED, request.amount(),
-                        null, null);
+                    null, null);
             }
             case FAILURE -> new IntentResult(externalIntentId, providerTransactionNo, Outcome.FAILED, null,
-                    "MOCK_DECLINED", "模拟渠道拒付");
+                "MOCK_DECLINED", "模拟渠道拒付");
             case DELAYED, EXPIRED ->
                 // 延迟与过期都不立即记账：等真正成功的那一刻（回调）才入渠道账
                 new IntentResult(externalIntentId, providerTransactionNo, Outcome.PENDING, null, null, null);
@@ -77,15 +85,15 @@ public class MockPaymentProvider implements ScmPaymentProvider {
         RefundResult existing = queryRefund(request.refundNo(), null);
         if (existing != null) {
             if (existing.amount().compareTo(request.amount()) != 0
-                    || paymentMockLedgerDao.selectOutByProviderRefundNo(existing.providerRefundNo()).stream()
-                            .anyMatch(row -> !request.providerTransactionNo().equals(row.getProviderTransactionNo()))) {
+                || paymentMockLedgerDao.selectOutByProviderRefundNo(existing.providerRefundNo()).stream()
+                    .anyMatch(row -> !request.providerTransactionNo().equals(row.getProviderTransactionNo()))) {
                 throw new IllegalStateException("同一模拟退款号的交易或金额不一致");
             }
             return existing;
         }
         ScmPaymentMockScenarioEnum scenario = request.scenario() == null
-                ? ScmPaymentMockScenarioEnum.SUCCESS
-                : request.scenario();
+            ? ScmPaymentMockScenarioEnum.SUCCESS
+            : request.scenario();
         String providerRefundNo = "MOCK-REFUND-" + request.refundNo();
         if (scenario == ScmPaymentMockScenarioEnum.FAILURE) {
             return new RefundResult(providerRefundNo, Outcome.FAILED, null, "MOCK_REFUND_REJECTED", "模拟渠道拒绝退款");
@@ -102,11 +110,13 @@ public class MockPaymentProvider implements ScmPaymentProvider {
             return null;
         }
         BigDecimal total = rows.stream().map(PaymentMockLedgerEntity::getAmount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
+            BigDecimal::add);
         return new RefundResult(reference, Outcome.SUCCEEDED, total, null, null);
     }
 
-    /** 模拟渠道解析和验签回调。验签失败也要返回未验证结果供业务记录拒绝事件，不能直接丢弃审计证据。 */
+    /**
+     * 模拟渠道解析和验签回调。验签失败也要返回未验证结果供业务记录拒绝事件，不能直接丢弃审计证据。
+     */
     @Override
     public Callback parseCallback(Map<String, String> headers, String rawBody) {
         Map<String, Object> payload = readJson(rawBody);
@@ -117,21 +127,21 @@ public class MockPaymentProvider implements ScmPaymentProvider {
         String expected = sign(rawBody);
         String actual = header(headers, SIGNATURE_HEADER);
         boolean verified = actual != null && MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8),
-                actual.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
+            actual.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
         String rawEventType = text(payload.get("eventType"));
         ScmPaymentCallbackEventTypeEnum eventType = ScmPaymentCallbackEventTypeEnum.of(rawEventType);
         BigDecimal amount = decimal(payload.get("amount"));
         String providerRefundNo = text(payload.get("providerRefundNo"));
         if (!verified) {
             return new Callback(eventId, eventType, rawEventType, text(payload.get("providerTransactionNo")), amount,
-                    providerRefundNo, payload, false, "签名不匹配");
+                providerRefundNo, payload, false, "签名不匹配");
         }
         if (eventType == null) {
             return new Callback(eventId, null, rawEventType, text(payload.get("providerTransactionNo")), amount,
-                    providerRefundNo, payload, true, "事件类型不认识");
+                providerRefundNo, payload, true, "事件类型不认识");
         }
         return new Callback(eventId, eventType, rawEventType, text(payload.get("providerTransactionNo")), amount,
-                providerRefundNo, payload, true, null);
+            providerRefundNo, payload, true, null);
     }
 
     /**
@@ -167,7 +177,9 @@ public class MockPaymentProvider implements ScmPaymentProvider {
         return new Settlement(bizDate, total, lines.size(), lines);
     }
 
-    /** 供模拟入口构造报文用：把签名算法留在实现里，业务域不需要知道。 */
+    /**
+     * 供模拟入口构造报文用：把签名算法留在实现里，业务域不需要知道。
+     */
     public String sign(String rawBody) {
         try {
             javax.crypto.Mac mac = javax.crypto.Mac.getInstance("HmacSHA256");
@@ -178,7 +190,9 @@ public class MockPaymentProvider implements ScmPaymentProvider {
         }
     }
 
-    /** 渠道交易号：由本地意图号稳定派生，因此同一意图重发得到同一个渠道号（便于幂等验证）。 */
+    /**
+     * 渠道交易号：由本地意图号稳定派生，因此同一意图重发得到同一个渠道号（便于幂等验证）。
+     */
     private static String transactionNoOf(String intentNo) {
         return "MOCK-TXN-" + intentNo;
     }

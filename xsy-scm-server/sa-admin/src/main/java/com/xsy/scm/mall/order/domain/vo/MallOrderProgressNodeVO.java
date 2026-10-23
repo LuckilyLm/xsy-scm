@@ -1,6 +1,7 @@
 package com.xsy.scm.mall.order.domain.vo;
 
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -11,10 +12,14 @@ import lombok.Data;
  */
 @Data
 public class MallOrderProgressNodeVO {
-    /** 节点标识：SUBMITTED / CONFIRMED / DISPATCHED / SIGNED / CANCELLED */
+    /**
+     * 节点标识：SUBMITTED / CONFIRMED / DISPATCHED / SIGNED / CANCELLED
+     */
     private String code;
     private String text;
-    /** 补充说明：异常签收原因、取消原因等，可空 */
+    /**
+     * 补充说明：异常签收原因、取消原因等，可空
+     */
     private String detail;
     private OffsetDateTime time;
     private Boolean done;

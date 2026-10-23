@@ -16,7 +16,9 @@ public class OrderReturnVO {
     private Long orderId;
     private String orderNo;
     private Long customerId;
-    /** 原销售订单的客户名称快照，不随客户主档改名变化。 */
+    /**
+     * 原销售订单的客户名称快照，不随客户主档改名变化。
+     */
     private String customerName;
     private String status;
     private String reason;

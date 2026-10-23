@@ -13,13 +13,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmProductTagUpdateModeEnum {
 
-    /** 以请求内容整体替换既有标签。 */
+    /**
+     * 以请求内容整体替换既有标签。
+     */
     REPLACE("整体替换"),
 
-    /** 在既有标签上追加。 */
+    /**
+     * 在既有标签上追加。
+     */
     ADD("追加"),
 
-    /** 从既有标签中移除。 */
+    /**
+     * 从既有标签中移除。
+     */
     REMOVE("移除");
 
     private final String desc;

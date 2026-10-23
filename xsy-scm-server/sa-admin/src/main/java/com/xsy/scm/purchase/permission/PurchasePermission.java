@@ -2,7 +2,9 @@ package com.xsy.scm.purchase.permission;
 
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 
-/** Stable permission identifiers published by the purchasing API. */
+/**
+ * Stable permission identifiers published by the purchasing API.
+ */
 public final class PurchasePermission {
 
     public static final String DEMAND_QUERY = "scm:purchase:demand:query";
@@ -38,10 +40,14 @@ public final class PurchasePermission {
 
     public static final String SHORT_CLOSE = "scm:purchase:short-close";
 
-    /** 生成采购单分享链接（二维码）。 */
+    /**
+     * 生成采购单分享链接（二维码）。
+     */
     public static final String SHARE_CREATE = "scm:purchase:share:create";
 
-    /** 撤销采购单分享链接。 */
+    /**
+     * 撤销采购单分享链接。
+     */
     public static final String SHARE_REVOKE = "scm:purchase:share:revoke";
 
     public static final String DELETE = "scm:purchase:delete";

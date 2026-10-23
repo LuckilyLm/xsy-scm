@@ -9,7 +9,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-/** 日期时间统一转为北京时间并输出 yyyy-MM-dd HH:mm:ss，空值保持为 null。 */
+/**
+ * 日期时间统一转为北京时间并输出 yyyy-MM-dd HH:mm:ss，空值保持为 null。
+ */
 public class ScmOffsetDateTimeSerializer extends JsonSerializer<OffsetDateTime> {
 
     /**

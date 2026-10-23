@@ -7,7 +7,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import net.lab1024.sa.base.common.domain.PageParam;
 
-/** 包装码列表查询：按批次号、包装码、状态收窄。 */
+/**
+ * 包装码列表查询：按批次号、包装码、状态收窄。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class TraceUnitQueryForm extends PageParam {

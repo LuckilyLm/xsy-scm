@@ -69,18 +69,16 @@ public class SortingTaskController {
 
     @GetMapping("/tasks/{id}/items/{itemId}/parts")
     @SaCheckPermission(SortingPermission.TASK_QUERY)
-    public ResponseDTO<SortingPartHistoryVO> parts(@PathVariable Long id,
-            @PathVariable Long itemId, @RequestParam(required = false) Long beforeId,
-            @RequestParam(defaultValue = "50") int limit) {
+    public ResponseDTO<SortingPartHistoryVO> parts(@PathVariable Long id, @PathVariable Long itemId,
+        @RequestParam(required = false) Long beforeId, @RequestParam(defaultValue = "50") int limit) {
         return ResponseDTO.ok(sortingQueryService.parts(id, itemId, beforeId, limit));
     }
 
     @PostMapping("/tasks/{id}/parts")
     @SaCheckPermission(SortingPermission.ITEM_UPDATE)
     @OperateLog
-    public ResponseDTO<SortingPartRecordVO> appendPart(@PathVariable Long id,
-            @Valid @RequestBody SortingPartForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+    public ResponseDTO<SortingPartRecordVO> appendPart(@PathVariable Long id, @Valid @RequestBody SortingPartForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(sortingTaskService.appendPart(id, form, key));
     }
 
@@ -93,14 +91,14 @@ public class SortingTaskController {
     @GetMapping("/customer-lines")
     @SaCheckPermission(SortingPermission.TASK_QUERY)
     public ResponseDTO<PageResult<SortingCustomerLineVO>> customerLines(
-            @Valid @ModelAttribute SortingSummaryQueryForm form) {
+        @Valid @ModelAttribute SortingSummaryQueryForm form) {
         return ResponseDTO.ok(sortingQueryService.customerLines(form));
     }
 
     @GetMapping("/confirmed-performance")
     @SaCheckPermission(SortingPermission.SUMMARY_QUERY)
     public ResponseDTO<PageResult<SortingPerformanceVO>> confirmedPerformance(
-            @Valid @ModelAttribute SortingSummaryQueryForm form) {
+        @Valid @ModelAttribute SortingSummaryQueryForm form) {
         return ResponseDTO.ok(sortingQueryService.confirmedPerformance(form));
     }
 
@@ -108,7 +106,7 @@ public class SortingTaskController {
     @GetMapping("/candidate-lines")
     @SaCheckPermission(SortingPermission.TASK_ADD)
     public ResponseDTO<PageResult<SortingCandidateLineVO>> candidateLines(
-            @Valid @ModelAttribute SortingCandidateQueryForm form) {
+        @Valid @ModelAttribute SortingCandidateQueryForm form) {
         return ResponseDTO.ok(sortingQueryService.candidateLines(form));
     }
 
@@ -125,7 +123,7 @@ public class SortingTaskController {
     @SaCheckPermission(SortingPermission.TASK_ADD)
     @OperateLog
     public ResponseDTO<SortingTaskDetailVO> create(@Valid @RequestBody SortingTaskCreateForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(sortingTaskService.create(form, key));
     }
 
@@ -155,8 +153,8 @@ public class SortingTaskController {
     @SaCheckPermission(SortingPermission.ITEM_UPDATE)
     @OperateLog
     public ResponseDTO<SortingStandardResultVO> standardConfirm(@PathVariable Long id,
-            @Valid @RequestBody SortingStandardConfirmForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @Valid @RequestBody SortingStandardConfirmForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(sortingStandardService.confirm(id, form, key));
     }
 
@@ -188,7 +186,7 @@ public class SortingTaskController {
     @SaCheckPermission(SortingPermission.TASK_PRINT)
     @OperateLog
     public ResponseDTO<SortingPrintResultVO> print(@PathVariable Long id, @Valid @RequestBody SortingActionForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(sortingTaskService.print(id, form, key));
     }
 }

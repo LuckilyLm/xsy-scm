@@ -13,6 +13,8 @@ public class MallCartAddForm {
     @Pattern(regexp = "^\\d{1,10}(\\.\\d{1,4})?$", message = "数量必须为大于0、最多4位小数的数字")
     private String quantity;
 
-    /** 快捷加购由服务器按当前购物车决定起订量或递增量，不采信客户端数量。 */
+    /**
+     * 快捷加购由服务器按当前购物车决定起订量或递增量，不采信客户端数量。
+     */
     private Boolean quickAdd;
 }

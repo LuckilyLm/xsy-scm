@@ -2,7 +2,9 @@ package com.xsy.scm.delivery.permission;
 
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 
-/** Stable permission identifiers published by the delivery API. */
+/**
+ * Stable permission identifiers published by the delivery API.
+ */
 public final class DeliveryPermission {
 
     public static final String DRIVER_QUERY = "scm:delivery:driver:query";
@@ -35,16 +37,13 @@ public final class DeliveryPermission {
      * 排线建议：查询 / 生成 / 应用分开授权。
      *
      * <p>
-     * 「生成」只是算一份建议（不碰线路），「应用」才写回停靠顺序 —— 两者合并会让
-     * 「只是想看看怎么排」的人顺手获得改线路的能力。
+     * 「生成」只是算一份建议（不碰线路），「应用」才写回停靠顺序 —— 两者合并会让 「只是想看看怎么排」的人顺手获得改线路的能力。
      */
     public static final String PLAN_QUERY = "scm:delivery:plan:query";
 
     public static final String PLAN_PROPOSE = "scm:delivery:plan:propose";
 
     public static final String PLAN_APPLY = "scm:delivery:plan:apply";
-
-
 
     public static final String SCOPE_ALL_QUERY = ScmCrossDomainPermission.DELIVERY_SCOPE_ALL_QUERY;
 

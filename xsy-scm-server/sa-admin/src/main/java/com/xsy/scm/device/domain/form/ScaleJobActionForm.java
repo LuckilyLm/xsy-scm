@@ -20,7 +20,9 @@ public class ScaleJobActionForm {
     @Size(max = 40, message = "作业版本最多 40 个字符")
     private String jobVersion;
 
-    /** 释放原因；正常退出可留空。 */
+    /**
+     * 释放原因；正常退出可留空。
+     */
     @Size(max = 200, message = "释放原因最多 200 个字符")
     private String reason;
 }

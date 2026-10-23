@@ -13,7 +13,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Synchronous finance Excel output with fixed decimal and timestamp text formats. */
+/**
+ * Synchronous finance Excel output with fixed decimal and timestamp text formats.
+ */
 public final class FinanceExcel {
 
     private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -22,14 +24,14 @@ public final class FinanceExcel {
     }
 
     public static void write(HttpServletResponse response, String fileName, String sheetName, List<String> titles,
-            List<List<Object>> rows) throws IOException {
+        List<List<Object>> rows) throws IOException {
         SmartResponseUtil.setDownloadFileHeader(response, fileName, null);
         List<List<String>> head = new ArrayList<>(titles.size());
         for (String title : titles) {
             head.add(List.of(title));
         }
         FastExcel.write(response.getOutputStream()).head(head).autoCloseStream(Boolean.FALSE).sheet(sheetName)
-                .doWrite(rows);
+            .doWrite(rows);
     }
 
     public static List<Object> row(List<String> titles, Object... cells) {

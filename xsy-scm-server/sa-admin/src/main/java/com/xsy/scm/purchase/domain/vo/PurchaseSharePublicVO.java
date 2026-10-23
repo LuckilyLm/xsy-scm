@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.Data;
 
 /**
@@ -24,7 +25,9 @@ public class PurchaseSharePublicVO {
     private OffsetDateTime expiresAt;
     private List<Line> lines;
 
-    /** 采购单行 + 最近一次回填。 */
+    /**
+     * 采购单行 + 最近一次回填。
+     */
     @Data
     public static class Line {
         private Long itemId;
@@ -34,9 +37,13 @@ public class PurchaseSharePublicVO {
         private BigDecimal plannedQuantity;
         private BigDecimal receivedQuantity;
         private BigDecimal purchasePrice;
-        /** 最近一次回填的单价，没有则为 null。 */
+        /**
+         * 最近一次回填的单价，没有则为 null。
+         */
         private BigDecimal lastUnitPrice;
-        /** 最近一次回填的实收重量，没有则为 null。 */
+        /**
+         * 最近一次回填的实收重量，没有则为 null。
+         */
         private BigDecimal lastReceivedQuantity;
         private String lastRemark;
         private OffsetDateTime lastSubmittedAt;

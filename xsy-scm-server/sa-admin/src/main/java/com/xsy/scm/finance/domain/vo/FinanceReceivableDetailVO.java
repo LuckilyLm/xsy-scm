@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.util.List;
 
-/** AR header, source lines, linked RED facts, write-offs and audit history. */
+/**
+ * AR header, source lines, linked RED facts, write-offs and audit history.
+ */
 @Data
 public class FinanceReceivableDetailVO {
 

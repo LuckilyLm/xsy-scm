@@ -3,15 +3,19 @@ package com.xsy.scm.payment.provider;
 import com.xsy.scm.payment.constant.ScmPaymentProviderEnum;
 import com.xsy.scm.payment.dao.PaymentMockLedgerDao;
 import com.xsy.scm.payment.domain.entity.PaymentMockLedgerEntity;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 模拟渠道账本通过独立事务写入，不能与本地支付事务共用事务回滚；这用于测试真实渠道成功但本地失败的对账差异。 */
+/**
+ * 模拟渠道账本通过独立事务写入，不能与本地支付事务共用事务回滚；这用于测试真实渠道成功但本地失败的对账差异。
+ */
 @Component
 @RequiredArgsConstructor
 public class MockPaymentLedgerRecorder {
@@ -30,7 +34,7 @@ public class MockPaymentLedgerRecorder {
             var existing = paymentMockLedgerDao.selectOutByProviderRefundNo(providerRefundNo);
             if (!existing.isEmpty()) {
                 if (existing.stream().anyMatch(row -> !providerTransactionNo.equals(row.getProviderTransactionNo())
-                        || amount.compareTo(row.getAmount()) != 0)) {
+                    || amount.compareTo(row.getAmount()) != 0)) {
                     throw new IllegalStateException("同一模拟退款号的交易或金额不一致");
                 }
                 return;

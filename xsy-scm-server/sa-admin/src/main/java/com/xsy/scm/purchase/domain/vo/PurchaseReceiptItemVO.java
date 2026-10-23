@@ -8,12 +8,16 @@ import java.util.Map;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/** 收货明细展示计划、本次实收、累计、剩余、超收及差异数量，各指标遵守同一对账恒等式，不混用实际重量和申报量。 */
+/**
+ * 收货明细展示计划、本次实收、累计、剩余、超收及差异数量，各指标遵守同一对账恒等式，不混用实际重量和申报量。
+ */
 @Data
 public class PurchaseReceiptItemVO {
     private Long id;
 
-    /** 本行登记的批次：未启用批次追踪的仓库为空列表。 */
+    /**
+     * 本行登记的批次：未启用批次追踪的仓库为空列表。
+     */
     private java.util.List<com.xsy.scm.trace.domain.vo.TraceLotVO.ReceiptItemLot> lots;
     private Long purchaseOrderItemId;
     private Long skuId;

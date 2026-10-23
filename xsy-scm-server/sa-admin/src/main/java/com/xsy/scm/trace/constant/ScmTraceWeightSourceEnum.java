@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmTraceWeightSourceEnum {
 
-    /** 电子秤称重，随分拣筐一起产生。 */
+    /**
+     * 电子秤称重，随分拣筐一起产生。
+     */
     SCALE("电子秤"),
 
-    /** 后台人工补录，必须写明原因。 */
+    /**
+     * 后台人工补录，必须写明原因。
+     */
     MANUAL("人工补录");
 
     private final String desc;

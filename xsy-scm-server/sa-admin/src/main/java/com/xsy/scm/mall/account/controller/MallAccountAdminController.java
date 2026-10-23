@@ -8,7 +8,9 @@ import com.xsy.scm.mall.account.domain.form.MallPasswordResetForm;
 import com.xsy.scm.mall.account.domain.vo.MallAccountVO;
 import com.xsy.scm.mall.account.service.MallAccountService;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;

@@ -12,7 +12,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 盘点明细保存当时账面数量和实盘数量，确认前仍需校验库存版本。盘点差异由两者计算，确认后才形成不可改的库存流水。 */
+/**
+ * 盘点明细保存当时账面数量和实盘数量，确认前仍需校验库存版本。盘点差异由两者计算，确认后才形成不可改的库存流水。
+ */
 @Data
 @TableName(value = "xsy_inventory_stocktake_item", autoResultMap = true)
 public class InventoryStocktakeItemEntity {

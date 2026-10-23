@@ -14,7 +14,9 @@ import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 
-/** 确认收货必须提交该收货单的全部活动明细，不能只提交部分行。服务端校验每行实际数量、单位及版本后再统一确认。 */
+/**
+ * 确认收货必须提交该收货单的全部活动明细，不能只提交部分行。服务端校验每行实际数量、单位及版本后再统一确认。
+ */
 @Data
 public class PurchaseReceiptConfirmForm {
     @NotNull(message = "收货单 ID 不能为空")

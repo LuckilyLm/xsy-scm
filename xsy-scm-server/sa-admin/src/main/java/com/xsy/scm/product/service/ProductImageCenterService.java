@@ -43,7 +43,9 @@ import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 @RequiredArgsConstructor
 public class ProductImageCenterService {
 
-    /** 未绑定图片池一次最多回多少张：这页是「挑图」而不是「翻库」，给到几百张已经够用。 */
+    /**
+     * 未绑定图片池一次最多回多少张：这页是「挑图」而不是「翻库」，给到几百张已经够用。
+     */
     private static final int MAX_UNBOUND_IMAGES = 300;
 
     private final ProductSpuDao productSpuDao;
@@ -56,11 +58,11 @@ public class ProductImageCenterService {
         ProductSpuEntity spu = requireSpu(spuId);
         List<ProductImageEntity> rows = productImageSyncManager.existing(spuId);
         Map<String,
-                String> urls = fileService
-                        .getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
-                                SmartRequestUtil.getRequestUser())
-                        .stream().filter(Objects::nonNull)
-                        .collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
+            String> urls = fileService
+                .getFileList(rows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
+                    SmartRequestUtil.getRequestUser())
+                .stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
         List<ProductImageVO> images = rows.stream().map(i -> {
             ProductImageVO vo = new ProductImageVO();
             BeanUtils.copyProperties(i, vo);
@@ -78,17 +80,19 @@ public class ProductImageCenterService {
 
     @Transactional(rollbackFor = Exception.class)
     public void batchBind(ProductImageCenterForms.BatchBindForm form) {
-        Map<Long, List<ProductImageCenterForms.BindItem>> bySpu = form.getItems().stream().collect(Collectors
-                .groupingBy(ProductImageCenterForms.BindItem::getSpuId, LinkedHashMap::new, Collectors.toList()));
+        Map<Long, List<ProductImageCenterForms.BindItem>> bySpu = form.getItems().stream().collect(
+            Collectors.groupingBy(ProductImageCenterForms.BindItem::getSpuId, LinkedHashMap::new, Collectors.toList()));
         for (var entry : bySpu.entrySet()) {
             Long spuId = entry.getKey();
             requireSpu(spuId);
             productImageSyncManager.sync(spuId, ProductImageChangeSet.between(productImageSyncManager.existing(spuId),
-                    requestedWithBinds(spuId, entry.getValue())));
+                requestedWithBinds(spuId, entry.getValue())));
         }
     }
 
-    /** 图片重新绑定前先汇总现有及新增图片，检查数量上限、文件键重复和主图唯一性，避免直接触发数据库唯一约束。 */
+    /**
+     * 图片重新绑定前先汇总现有及新增图片，检查数量上限、文件键重复和主图唯一性，避免直接触发数据库唯一约束。
+     */
     private List<ProductImageForm> requestedWithBinds(Long spuId, List<ProductImageCenterForms.BindItem> binds) {
         List<ProductImageForm> requested = formsOf(spuId);
         for (var item : binds) {
@@ -114,7 +118,7 @@ public class ProductImageCenterService {
         }
         Set<Long> removing = new HashSet<>(form.getImageIds());
         List<ProductImageForm> requested = existing.stream().filter(e -> !removing.contains(e.getId()))
-                .map(this::toForm).collect(Collectors.toList());
+            .map(this::toForm).collect(Collectors.toList());
         productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing, requested));
     }
 
@@ -127,7 +131,7 @@ public class ProductImageCenterService {
         if (!owned)
             throw new ScmBusinessException(IMAGE_NOT_OWNED);
         List<ProductImageForm> requested = existing.stream().map(this::toForm)
-                .peek(f -> f.setPrimaryFlag(f.getImageId().equals(form.getImageId()))).collect(Collectors.toList());
+            .peek(f -> f.setPrimaryFlag(f.getImageId().equals(form.getImageId()))).collect(Collectors.toList());
         productImageSyncManager.sync(spuId, ProductImageChangeSet.between(existing, requested));
     }
 
@@ -137,13 +141,13 @@ public class ProductImageCenterService {
         requireSpu(spuId);
         List<ProductImageEntity> existing = productImageSyncManager.existing(spuId);
         Map<Long, ProductImageEntity> byId = existing.stream()
-                .collect(Collectors.toMap(ProductImageEntity::getId, Function.identity()));
+            .collect(Collectors.toMap(ProductImageEntity::getId, Function.identity()));
         List<Long> ordered = form.getOrderedImageIds();
         if (ordered.size() != byId.size() || !new HashSet<>(ordered).equals(byId.keySet())) {
             throw new ScmBusinessException(IMAGE_NOT_OWNED);
         }
         Map<Long, ProductImageForm> forms = existing.stream().map(this::toForm)
-                .collect(Collectors.toMap(ProductImageForm::getImageId, Function.identity()));
+            .collect(Collectors.toMap(ProductImageForm::getImageId, Function.identity()));
         for (int i = 0; i < ordered.size(); i++) {
             forms.get(ordered.get(i)).setSortOrder(i);
         }
@@ -163,16 +167,16 @@ public class ProductImageCenterService {
     public List<ProductUnboundImageVO> unboundImages(int limit) {
         int capped = Math.min(Math.max(limit, 1), MAX_UNBOUND_IMAGES);
         List<ProductUnboundImageVO> rows = productImageDao
-                .selectUnboundPublicImages((Integer) FileFolderTypeEnum.PUBLIC_IMAGE.getValue(), capped);
+            .selectUnboundPublicImages((Integer) FileFolderTypeEnum.PUBLIC_IMAGE.getValue(), capped);
         if (rows.isEmpty()) {
             return rows;
         }
         Map<String,
-                String> urls = fileService
-                        .getFileList(rows.stream().map(ProductUnboundImageVO::getFileKey).distinct().toList(),
-                                SmartRequestUtil.getRequestUser())
-                        .stream().filter(Objects::nonNull)
-                        .collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
+            String> urls = fileService
+                .getFileList(rows.stream().map(ProductUnboundImageVO::getFileKey).distinct().toList(),
+                    SmartRequestUtil.getRequestUser())
+                .stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(FileVO::getFileKey, FileVO::getFileUrl, (a, b) -> a));
         rows.forEach(row -> row.setFileUrl(urls.get(row.getFileKey())));
         return rows;
     }

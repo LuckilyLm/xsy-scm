@@ -78,11 +78,13 @@ public class CustomerController {
         return ResponseDTO.ok(customerQueryService.detail(customerId));
     }
 
-    /** 客户常购商品包含历史成交价，读取时必须同时拥有客户查询和订单查询权限。 */
+    /**
+     * 客户常购商品包含历史成交价，读取时必须同时拥有客户查询和订单查询权限。
+     */
     @GetMapping("/{customerId}/frequent-skus")
     @SaCheckPermission(value = {CustomerPermission.QUERY, OrderPermission.QUERY}, mode = SaMode.AND)
     public ResponseDTO<List<CustomerFrequentSkuVO>> frequentSkus(@PathVariable Long customerId,
-            @RequestParam(defaultValue = "90") int days, @RequestParam(defaultValue = "20") int limit) {
+        @RequestParam(defaultValue = "90") int days, @RequestParam(defaultValue = "20") int limit) {
         return ResponseDTO.ok(customerQueryService.frequentSkus(customerId, days, limit));
     }
 
@@ -109,7 +111,9 @@ public class CustomerController {
         return ResponseDTO.ok();
     }
 
-    /** 客户归属变更只能走独立改派接口，要求专门权限和版本校验，并单独记录操作日志。 */
+    /**
+     * 客户归属变更只能走独立改派接口，要求专门权限和版本校验，并单独记录操作日志。
+     */
     @PostMapping("/reassignSeller")
     @SaCheckPermission(CustomerPermission.ASSIGN)
     @OperateLog

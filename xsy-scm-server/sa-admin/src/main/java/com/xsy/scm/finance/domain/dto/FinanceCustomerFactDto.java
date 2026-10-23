@@ -2,7 +2,9 @@ package com.xsy.scm.finance.domain.dto;
 
 import lombok.Data;
 
-/** 收付款读取客户当前归属用于权限校验，客户名称在财务事实生成时保存，防止历史账随改名改变。 */
+/**
+ * 收付款读取客户当前归属用于权限校验，客户名称在财务事实生成时保存，防止历史账随改名改变。
+ */
 @Data
 public class FinanceCustomerFactDto {
 

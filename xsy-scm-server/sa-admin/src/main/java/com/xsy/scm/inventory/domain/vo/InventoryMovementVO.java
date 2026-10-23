@@ -9,7 +9,9 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-/** 库存流水保留来源类型和来源明细 ID 作为防重依据，来源单号供页面查看原单据。数量、成本及发生时间保存当时的事实；商品与仓库名称可以按当前主档展示。 */
+/**
+ * 库存流水保留来源类型和来源明细 ID 作为防重依据，来源单号供页面查看原单据。数量、成本及发生时间保存当时的事实；商品与仓库名称可以按当前主档展示。
+ */
 @Data
 public class InventoryMovementVO {
 

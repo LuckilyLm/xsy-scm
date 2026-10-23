@@ -20,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/** 核销分页查询；每条记录的可见性跟随目标单据范围。 */
+/**
+ * 核销分页查询；每条记录的可见性跟随目标单据范围。
+ */
 @Service
 @RequiredArgsConstructor
 public class FinanceWriteOffQueryService {

@@ -3,7 +3,9 @@ package com.xsy.scm.device.domain.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -33,7 +35,9 @@ public class ScaleJobLeaseEntity {
 
     private OffsetDateTime expiresAt;
 
-    /** 释放时间；为空表示租约仍有效。 */
+    /**
+     * 释放时间；为空表示租约仍有效。
+     */
     private OffsetDateTime releasedAt;
 
     private String releaseReason;

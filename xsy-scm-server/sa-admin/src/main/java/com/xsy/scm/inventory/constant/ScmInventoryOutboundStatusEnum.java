@@ -3,7 +3,9 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 出库单可由草稿变为已确认，草稿可取消。已确认意味着库存已经扣减，不能回退状态或删除库存流水。 */
+/**
+ * 出库单可由草稿变为已确认，草稿可取消。已确认意味着库存已经扣减，不能回退状态或删除库存流水。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryOutboundStatusEnum {

@@ -2,6 +2,7 @@ package com.xsy.scm.mall.order.domain.vo;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -19,10 +20,16 @@ public class MallOrderDeliveryVO {
     private String driverName;
     private String driverPhone;
     private String vehicleNo;
-    /** 计划发车时刻 */
+    /**
+     * 计划发车时刻
+     */
     private OffsetDateTime plannedDepartureTime;
-    /** 实际发车时刻 */
+    /**
+     * 实际发车时刻
+     */
     private OffsetDateTime dispatchedAt;
-    /** 线路完成时刻 */
+    /**
+     * 线路完成时刻
+     */
     private OffsetDateTime completedAt;
 }

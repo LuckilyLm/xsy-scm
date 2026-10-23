@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum MallWarehouseSourceEnum {
 
-    /** 客户绑定的配送仓。 */
+    /**
+     * 客户绑定的配送仓。
+     */
     CUSTOMER("客户绑定"),
 
-    /** 按区县映射的配送仓。 */
+    /**
+     * 按区县映射的配送仓。
+     */
     DISTRICT("区县映射");
 
     private final String desc;

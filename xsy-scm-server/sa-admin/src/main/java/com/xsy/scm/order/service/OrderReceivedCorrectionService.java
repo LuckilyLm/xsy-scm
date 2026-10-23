@@ -11,10 +11,12 @@ import com.xsy.scm.order.dao.SalesOrderItemDao;
 import com.xsy.scm.order.domain.form.OrderReceivedCorrectionForm;
 import com.xsy.scm.order.domain.vo.OrderReceivedCorrectionCandidateVO;
 import com.xsy.scm.order.domain.vo.OrderReceivedCorrectionVO;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,7 +71,7 @@ public class OrderReceivedCorrectionService {
         if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId()))
             throw new ScmDataScopeException();
         if (!ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus())
-                || correctionDao.signedAssignmentCount(order.getId()) == 0)
+            || correctionDao.signedAssignmentCount(order.getId()) == 0)
             throw new ScmBusinessException(ORDER_RECEIVED_CORRECTION_INVALID);
         var item = salesOrderItemDao.selectById(form.getOrderItemId());
         if (item == null || Boolean.TRUE.equals(item.getDeleted()) || !Objects.equals(item.getOrderId(), order.getId()))
@@ -84,7 +86,7 @@ public class OrderReceivedCorrectionService {
         BigDecimal previous = latest == null ? shipped : latest.getReceivedQuantity();
         BigDecimal received = ScmDecimalStrings.parseScale4Required(form.getReceivedQuantity());
         if (received.signum() < 0 || received.compareTo(shipped) > 0 || received.compareTo(previous) == 0
-                || form.getReason() == null || form.getReason().isBlank())
+            || form.getReason() == null || form.getReason().isBlank())
             throw new ScmBusinessException(ORDER_RECEIVED_CORRECTION_INVALID);
         var correction = new OrderReceivedCorrectionVO();
         correction.setOrderId(order.getId());

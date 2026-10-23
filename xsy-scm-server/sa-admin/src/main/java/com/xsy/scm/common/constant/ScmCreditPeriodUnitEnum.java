@@ -16,10 +16,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmCreditPeriodUnitEnum {
 
-    /** 按天计算账期。 */
+    /**
+     * 按天计算账期。
+     */
     DAY("天"),
 
-    /** 按月计算账期。 */
+    /**
+     * 按月计算账期。
+     */
     MONTH("月");
 
     private final String desc;

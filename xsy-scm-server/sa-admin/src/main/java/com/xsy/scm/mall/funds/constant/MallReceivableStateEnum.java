@@ -13,13 +13,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum MallReceivableStateEnum {
 
-    /** 未结清。 */
+    /**
+     * 未结清。
+     */
     OPEN("未结清"),
 
-    /** 部分结清。 */
+    /**
+     * 部分结清。
+     */
     PARTIAL("部分结清"),
 
-    /** 已结清。 */
+    /**
+     * 已结清。
+     */
     SETTLED("已结清");
 
     private final String desc;

@@ -3,15 +3,21 @@ package com.xsy.scm.balance.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 余额流水方向。持久化到 {@code xsy_customer_balance_movement.direction}。 */
+/**
+ * 余额流水方向。持久化到 {@code xsy_customer_balance_movement.direction}。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmBalanceDirectionEnum {
 
-    /** 增加余额（充值 / 退款返还 / 正数更正）。 */
+    /**
+     * 增加余额（充值 / 退款返还 / 正数更正）。
+     */
     CREDIT("增加"),
 
-    /** 减少余额（消费 / 负数更正）。 */
+    /**
+     * 减少余额（消费 / 负数更正）。
+     */
     DEBIT("减少");
 
     private final String desc;

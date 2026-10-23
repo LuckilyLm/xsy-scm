@@ -24,7 +24,9 @@ import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOU
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOUND_NOT_FOUND;
 import static com.xsy.scm.inventory.constant.InventoryErrorCode.INVENTORY_OUTBOUND_STATUS_INVALID;
 
-/** 手工出库单可创建和修改草稿，确认时扣减库存并写流水，草稿可取消。确认后的出库记录不能回退或删除历史流水。 */
+/**
+ * 手工出库单可创建和修改草稿，确认时扣减库存并写流水，草稿可取消。确认后的出库记录不能回退或删除历史流水。
+ */
 @Service
 @RequiredArgsConstructor
 public class InventoryOutboundService {
@@ -113,7 +115,7 @@ public class InventoryOutboundService {
         // 锁序：余额锁按 (warehouseId, skuId) 升序 —— 同一单内多行也必须固定顺序。
         items.stream().sorted(Comparator.comparing(InventoryOutboundItemVO::getSkuId)).forEach(item -> {
             InventoryOutboundFact fact = new InventoryOutboundFact(locked.getWarehouseId(), item.getSkuId(),
-                    locked.getId(), item.getId(), item.getQuantity(), null, now, operator);
+                locked.getId(), item.getId(), item.getQuantity(), null, now, operator);
             // 单位以余额记账单位为准，由命令服务返回，这里回写到明细行
             String unit = inventoryCommandService.postSalesOutbound(fact);
             inventoryOutboundItemDao.updateUnitSnapshot(item.getId(), unit, operator);

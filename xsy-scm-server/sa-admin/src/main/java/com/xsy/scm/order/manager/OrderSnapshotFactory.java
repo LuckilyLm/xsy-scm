@@ -22,7 +22,7 @@ public final class OrderSnapshotFactory {
     }
 
     public static SalesOrderItemEntity item(SalesOrderItemForm salesOrderItemForm, ProductSkuOptionVO productSku,
-            String spuCode, ResolvedPriceVO resolvedPrice) {
+        String spuCode, ResolvedPriceVO resolvedPrice) {
         if (productSku == null)
             throw new ScmBusinessException(ORDER_ITEM_NOT_FOUND);
         var orderItem = new SalesOrderItemEntity();
@@ -35,29 +35,28 @@ public final class OrderSnapshotFactory {
         orderItem.setSkuCodeSnapshot(productSku.getSkuCode());
         orderItem.setSpecNameSnapshot(productSku.getSpecName());
         orderItem.setSpecValuesSnapshot(
-                new LinkedHashMap<>(productSku.getSpecValues() == null ? Map.of() : productSku.getSpecValues()));
+            new LinkedHashMap<>(productSku.getSpecValues() == null ? Map.of() : productSku.getSpecValues()));
         orderItem.setSaleUnitSnapshot(productSku.getSaleUnit());
         orderItem.setProductTypeSnapshot(productSku.getProductType());
         orderItem.setOrderedQuantity(OrderValidator.decimal(salesOrderItemForm.getOrderedQuantity(), true));
         orderItem.setManualPriceOverride(Boolean.TRUE.equals(salesOrderItemForm.getManualPriceOverride()));
-        orderItem.setManualPriceReason(orderItem.getManualPriceOverride()
-                ? OrderValidator.trim(salesOrderItemForm.getOverrideReason())
-                : null);
+        orderItem.setManualPriceReason(
+            orderItem.getManualPriceOverride() ? OrderValidator.trim(salesOrderItemForm.getOverrideReason()) : null);
         if (orderItem.getManualPriceOverride()) {
             orderItem.setDraftUnitPrice(OrderValidator.decimal(salesOrderItemForm.getUnitPrice(), false));
             orderItem.setDraftPriceSource(ScmOrderPriceSourceEnum.OVERRIDE.name());
         } else
             applyPrice(orderItem, resolvedPrice);
         orderItem.setOrderedLineAmount(
-                OrderAmountCalculator.lineAmount(orderItem.getOrderedQuantity(), orderItem.getDraftUnitPrice()));
+            OrderAmountCalculator.lineAmount(orderItem.getOrderedQuantity(), orderItem.getDraftUnitPrice()));
         orderItem.setSortOrder(salesOrderItemForm.getSortOrder() == null ? 0 : salesOrderItemForm.getSortOrder());
         return orderItem;
     }
 
     public static void applyPrice(SalesOrderItemEntity orderItem, ResolvedPriceVO resolvedPrice) {
         orderItem.setDraftUnitPrice(resolvedPrice.getUnitPrice());
-        orderItem.setDraftPriceSource(
-                resolvedPrice.getPriceSource() == null ? null : resolvedPrice.getPriceSource().name());
+        orderItem
+            .setDraftPriceSource(resolvedPrice.getPriceSource() == null ? null : resolvedPrice.getPriceSource().name());
         orderItem.setDraftPriceSourceId(resolvedPrice.getSourceRecordId());
         orderItem.setPriceBasisSnapshot(resolvedPrice.getPriceBasisSnapshot());
     }
@@ -68,7 +67,7 @@ public final class OrderSnapshotFactory {
         salesOrder.setCustomerNameSnapshot(customer.getName());
         salesOrder.setSettleModeSnapshot(customer.getSettleMode());
         salesOrder.setSettlementCustomerId(
-                customer.getSettlementCustomerId() == null ? customer.getId() : customer.getSettlementCustomerId());
+            customer.getSettlementCustomerId() == null ? customer.getId() : customer.getSettlementCustomerId());
         salesOrder.setSettlementCustomerNameSnapshot(customer.getName());
         salesOrder.setSellerId(customer.getSellerId());
     }

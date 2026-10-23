@@ -5,11 +5,15 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
-/** 业务退款按原成功资金来源冻结的分摊事实。 */
+/**
+ * 业务退款按原成功资金来源冻结的分摊事实。
+ */
 @Data
 @TableName("xsy_refund_funding_allocation")
 public class RefundFundingAllocationEntity {

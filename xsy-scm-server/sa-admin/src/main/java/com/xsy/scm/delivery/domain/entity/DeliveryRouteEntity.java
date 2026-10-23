@@ -5,9 +5,11 @@ import lombok.EqualsAndHashCode;
 import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.NullSerializer;
 
@@ -55,7 +57,9 @@ public class DeliveryRouteEntity extends DeliveryRecord {
     private String remark;
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String cancelReason;
-    /** 发车时间和操作人与发车状态在同一事务中保存。后续普通表单更新不能清空这些已确认的发车事实。 */
+    /**
+     * 发车时间和操作人与发车状态在同一事务中保存。后续普通表单更新不能清空这些已确认的发车事实。
+     */
     private OffsetDateTime dispatchedAt;
     private String dispatchedBy;
     /**

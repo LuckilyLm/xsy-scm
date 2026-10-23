@@ -4,7 +4,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
-/** 余额概览查询。 */
+/**
+ * 余额概览查询。
+ */
 @Data
 public class BalanceQueryForm {
 

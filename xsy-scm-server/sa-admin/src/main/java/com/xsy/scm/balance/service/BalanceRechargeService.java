@@ -16,14 +16,17 @@ import com.xsy.scm.customer.service.CustomerService;
 import com.xsy.scm.payment.domain.entity.PaymentIntentEntity;
 import com.xsy.scm.payment.service.PaymentIntentService;
 import com.xsy.scm.payment.support.BalanceRechargeIntentFact;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.OffsetDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 客户余额充值与渠道支付结果分开处理；只按实际确认的收款入账，重复通知不得重复充值。 */
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.OffsetDateTime;
+
+/**
+ * 客户余额充值与渠道支付结果分开处理；只按实际确认的收款入账，重复通知不得重复充值。
+ */
 @Service
 @RequiredArgsConstructor
 public class BalanceRechargeService {
@@ -73,8 +76,8 @@ public class BalanceRechargeService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         CustomerBalanceRechargeEntity recharge = new CustomerBalanceRechargeEntity();
-        recharge.setRechargeNo(
-                ScmDocumentNumbers.format(RECHARGE_NO_PREFIX, customerBalanceRechargeDao.nextRechargeNo()));
+        recharge
+            .setRechargeNo(ScmDocumentNumbers.format(RECHARGE_NO_PREFIX, customerBalanceRechargeDao.nextRechargeNo()));
         recharge.setSettlementCustomerId(settlement.getId());
         recharge.setSettlementCustomerNameSnapshot(settlement.getName());
         recharge.setCustomerId(customer.getId());
@@ -88,9 +91,9 @@ public class BalanceRechargeService {
         customerBalanceRechargeDao.insert(recharge);
 
         PaymentIntentEntity intent = paymentIntentService.createForBalanceRecharge(
-                new BalanceRechargeIntentFact(recharge.getId(), recharge.getRechargeNo(), customer.getId(),
-                        customer.getName(), amount, form.getProvider(), form.getMockScenario(), form.getRemark()),
-                idempotencyKey);
+            new BalanceRechargeIntentFact(recharge.getId(), recharge.getRechargeNo(), customer.getId(),
+                customer.getName(), amount, form.getProvider(), form.getMockScenario(), form.getRemark()),
+            idempotencyKey);
         idempotencyService.complete(claim, ScmBalanceSourceTypeEnum.PAYMENT_INTENT.name(), intent.getId(), intent);
         return intent;
     }

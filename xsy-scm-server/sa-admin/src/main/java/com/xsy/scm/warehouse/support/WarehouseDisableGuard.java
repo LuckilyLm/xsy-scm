@@ -2,7 +2,9 @@ package com.xsy.scm.warehouse.support;
 
 import com.xsy.scm.warehouse.constant.WarehouseErrorCode;
 
-/** 仓库停用前检查库存和未完成采购。检查规则由相关业务模块提供，仓库模块只调用检查接口。 */
+/**
+ * 仓库停用前检查库存和未完成采购。检查规则由相关业务模块提供，仓库模块只调用检查接口。
+ */
 public interface WarehouseDisableGuard {
 
     /**

@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.pricing.domain.entity.TimePriceEntity;
 import com.xsy.scm.pricing.domain.form.TimePriceQueryForm;
 import com.xsy.scm.pricing.domain.vo.TimePriceVO;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -25,13 +27,17 @@ public interface TimePriceDao extends BaseMapper<TimePriceEntity> {
      */
     List<TimePriceEntity> selectEffective(@Param("skuIds") List<Long> skuIds, @Param("at") OffsetDateTime priceAt);
 
-    /** 同一规格上与给定区间重叠的条数，排除自身。 */
+    /**
+     * 同一规格上与给定区间重叠的条数，排除自身。
+     */
     long countOverlapping(@Param("skuId") Long skuId, @Param("startAt") OffsetDateTime startAt,
-            @Param("endAt") OffsetDateTime endAt, @Param("excludeId") Long excludeId);
+        @Param("endAt") OffsetDateTime endAt, @Param("excludeId") Long excludeId);
 
     int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("operator") String operator);
 
-    /** 变更审计：只追加，记录改动前后快照。 */
+    /**
+     * 变更审计：只追加，记录改动前后快照。
+     */
     void log(@Param("id") Long id, @Param("operation") String operationType, @Param("operator") String operator,
-            @Param("before") String beforeSnapshot, @Param("after") String afterSnapshot);
+        @Param("before") String beforeSnapshot, @Param("after") String afterSnapshot);
 }

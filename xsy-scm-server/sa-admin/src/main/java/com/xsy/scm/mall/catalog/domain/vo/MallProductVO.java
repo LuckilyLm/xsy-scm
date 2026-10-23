@@ -2,7 +2,9 @@ package com.xsy.scm.mall.catalog.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+
 import java.math.BigDecimal;
+
 import lombok.Data;
 
 @Data

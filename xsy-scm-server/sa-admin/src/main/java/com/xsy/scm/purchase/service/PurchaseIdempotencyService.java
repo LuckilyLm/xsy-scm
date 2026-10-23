@@ -28,10 +28,10 @@ public class PurchaseIdempotencyService {
      * 结果存储专用 mapper：写入完整时间精度，并兼容读取旧的秒级展示格式。该 mapper 只负责结果回放；请求哈希由公共幂等服务保持统一规则。
      */
     static final ObjectMapper RESULT_JSON = JsonMapper.builder().addModule(new JavaTimeModule())
-            // 覆盖 JavaTimeModule 的时间读取器，同时接受展示格式和 ISO-8601。
-            .addModule(new SimpleModule().addDeserializer(OffsetDateTime.class, new ScmOffsetDateTimeDeserializer()))
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
+        // 覆盖 JavaTimeModule 的时间读取器，同时接受展示格式和 ISO-8601。
+        .addModule(new SimpleModule().addDeserializer(OffsetDateTime.class, new ScmOffsetDateTimeDeserializer()))
+        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
 
     /**
      * @param record
@@ -50,8 +50,8 @@ public class PurchaseIdempotencyService {
      */
     public Claim claim(String scope, String key, Object request) {
         ScmIdempotencyService.Claim sharedClaim = idempotencyService.claim(scope, key, request,
-                PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_REQUIRED, PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_INVALID,
-                PurchaseErrorCode.PURCHASE_IDEMPOTENCY_CONFLICT, "已提交的幂等记录缺少 result_data（数据完整性异常）");
+            PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_REQUIRED, PurchaseErrorCode.PURCHASE_IDEMPOTENCY_KEY_INVALID,
+            PurchaseErrorCode.PURCHASE_IDEMPOTENCY_CONFLICT, "已提交的幂等记录缺少 result_data（数据完整性异常）");
         return new Claim(sharedClaim.record(), sharedClaim.replay());
     }
 
@@ -60,7 +60,7 @@ public class PurchaseIdempotencyService {
      */
     public <T> T replay(Claim claim, Class<T> resultType) {
         return idempotencyService.replay(new ScmIdempotencyService.Claim(claim.record(), claim.replay()), resultType,
-                RESULT_JSON);
+            RESULT_JSON);
     }
 
     /**
@@ -68,6 +68,6 @@ public class PurchaseIdempotencyService {
      */
     public void complete(Claim claim, String resourceType, Long resourceId, Object result) {
         idempotencyService.complete(new ScmIdempotencyService.Claim(claim.record(), claim.replay()), resourceType,
-                resourceId, result, RESULT_JSON);
+            resourceId, result, RESULT_JSON);
     }
 }

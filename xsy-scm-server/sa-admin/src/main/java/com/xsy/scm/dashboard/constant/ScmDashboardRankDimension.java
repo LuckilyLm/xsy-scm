@@ -21,7 +21,9 @@ public enum ScmDashboardRankDimension {
         this.code = code;
     }
 
-    /** 未知取值按参数不合法拒绝，不静默回落到某一个维度。 */
+    /**
+     * 未知取值按参数不合法拒绝，不静默回落到某一个维度。
+     */
     public static ScmDashboardRankDimension parse(String code) {
         for (ScmDashboardRankDimension dimension : values()) {
             if (dimension.code.equalsIgnoreCase(code)) {

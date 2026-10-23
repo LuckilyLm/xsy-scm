@@ -12,5 +12,5 @@ import java.time.OffsetDateTime;
  */
 public interface RefundBalanceSink {
     Long refundAllocation(Long allocationId, Long customerId, Long settlementCustomerId, BigDecimal amount,
-            OffsetDateTime occurredAt);
+        OffsetDateTime occurredAt);
 }

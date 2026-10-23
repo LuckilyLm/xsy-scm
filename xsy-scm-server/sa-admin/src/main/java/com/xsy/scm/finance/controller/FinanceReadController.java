@@ -42,7 +42,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.util.List;
 
-/** Finance read-only pages, details, exports and financial operation history. */
+/**
+ * Finance read-only pages, details, exports and financial operation history.
+ */
 @RestController
 @RequestMapping("/scm/finance")
 @Tag(name = "SCM 财务查询")
@@ -50,16 +52,16 @@ import java.util.List;
 public class FinanceReadController {
 
     private static final List<String> RECEIVABLE_EXPORT_TITLES = List.of("应收单号", "订单号", "客户名称", "方向", "金额", "净应收",
-            "已核销", "未核销", "超额核销", "结清状态", "事件时点", "原因");
+        "已核销", "未核销", "超额核销", "结清状态", "事件时点", "原因");
 
     private static final List<String> PAYABLE_EXPORT_TITLES = List.of("应付单号", "采购单号", "供应商名称", "方向", "金额", "净应付", "已核销",
-            "未核销", "超额核销", "结清状态", "事件时点", "原因");
+        "未核销", "超额核销", "结清状态", "事件时点", "原因");
 
     private static final List<String> RECEIPT_EXPORT_TITLES = List.of("收款单号", "客户名称", "方向", "金额", "有效金额", "已核销", "待核销",
-            "方式", "收款时点", "资金凭据号", "反向原因");
+        "方式", "收款时点", "资金凭据号", "反向原因");
 
     private static final List<String> PAYMENT_EXPORT_TITLES = List.of("付款单号", "往来方类型", "往来方名称", "方向", "金额", "有效金额",
-            "已核销", "待核销", "方式", "付款时点", "来源类型", "来源编号");
+        "已核销", "待核销", "方式", "付款时点", "来源类型", "来源编号");
 
     private final FinanceReceivableQueryService financeReceivableQueryService;
     private final FinancePayableQueryService financePayableQueryService;
@@ -70,7 +72,7 @@ public class FinanceReadController {
     @PostMapping("/receivable/query")
     @SaCheckPermission(FinancePermission.RECEIVABLE_QUERY)
     public ResponseDTO<PageResult<FinanceReceivableVO>> receivableQuery(
-            @Valid @RequestBody FinanceReceivableQueryForm form) {
+        @Valid @RequestBody FinanceReceivableQueryForm form) {
         return ResponseDTO.ok(financeReceivableQueryService.query(form));
     }
 
@@ -84,14 +86,14 @@ public class FinanceReadController {
     @SaCheckPermission(value = {FinancePermission.RECEIVABLE_QUERY, FinancePermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportReceivables(@Valid @RequestBody FinanceReceivableQueryForm form, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         List<FinanceReceivableVO> rows = financeReceivableQueryService.exportRows(form);
         List<List<Object>> data = rows.stream()
-                .map(row -> FinanceExcel.row(RECEIVABLE_EXPORT_TITLES, row.getReceivableNo(), row.getOrderNo(),
-                        row.getCustomerName(), FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(),
-                        row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(),
-                        FinanceExportLabels.settleState(row.getSettleState()), row.getEventAt(), row.getReason()))
-                .toList();
+            .map(row -> FinanceExcel.row(RECEIVABLE_EXPORT_TITLES, row.getReceivableNo(), row.getOrderNo(),
+                row.getCustomerName(), FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(),
+                row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(),
+                FinanceExportLabels.settleState(row.getSettleState()), row.getEventAt(), row.getReason()))
+            .toList();
         FinanceExcel.write(response, "应收明细.xlsx", "应收明细", RECEIVABLE_EXPORT_TITLES, data);
     }
 
@@ -111,21 +113,21 @@ public class FinanceReadController {
     @SaCheckPermission(value = {FinancePermission.PAYABLE_QUERY, FinancePermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportPayables(@Valid @RequestBody FinancePayableQueryForm form, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         List<FinancePayableVO> rows = financePayableQueryService.exportRows(form);
         List<List<Object>> data = rows.stream()
-                .map(row -> FinanceExcel.row(PAYABLE_EXPORT_TITLES, row.getPayableNo(), row.getPurchaseOrderNo(),
-                        row.getSupplierName(), FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(),
-                        row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(),
-                        FinanceExportLabels.settleState(row.getSettleState()), row.getEventAt(), row.getReason()))
-                .toList();
+            .map(row -> FinanceExcel.row(PAYABLE_EXPORT_TITLES, row.getPayableNo(), row.getPurchaseOrderNo(),
+                row.getSupplierName(), FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(),
+                row.getNetAmount(), row.getWrittenOffAmount(), row.getOpenAmount(), row.getOverAppliedAmount(),
+                FinanceExportLabels.settleState(row.getSettleState()), row.getEventAt(), row.getReason()))
+            .toList();
         FinanceExcel.write(response, "应付明细.xlsx", "应付明细", PAYABLE_EXPORT_TITLES, data);
     }
 
     @PostMapping("/receipt/query")
     @SaCheckPermission(FinancePermission.RECEIPT_QUERY)
     public ResponseDTO<PageResult<FinanceReceiptQueryVO>> receiptQuery(
-            @Valid @RequestBody FinanceReceiptQueryForm form) {
+        @Valid @RequestBody FinanceReceiptQueryForm form) {
         return ResponseDTO.ok(financeReceiptQueryService.query(form));
     }
 
@@ -139,22 +141,21 @@ public class FinanceReadController {
     @SaCheckPermission(value = {FinancePermission.RECEIPT_QUERY, FinancePermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportReceipts(@Valid @RequestBody FinanceReceiptQueryForm form, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         List<FinanceReceiptQueryVO> rows = financeReceiptQueryService.exportRows(form);
         List<List<Object>> data = rows.stream()
-                .map(row -> FinanceExcel.row(RECEIPT_EXPORT_TITLES, row.getReceiptNo(), row.getCustomerName(),
-                        FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(), row.getEffectiveAmount(),
-                        row.getUsedAmount(), row.getPendingWriteOffAmount(),
-                        FinanceExportLabels.receiptMethod(row.getMethod()), row.getReceivedAt(),
-                        row.getExternalReference(), row.getReason()))
-                .toList();
+            .map(row -> FinanceExcel.row(RECEIPT_EXPORT_TITLES, row.getReceiptNo(), row.getCustomerName(),
+                FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(), row.getEffectiveAmount(),
+                row.getUsedAmount(), row.getPendingWriteOffAmount(), FinanceExportLabels.receiptMethod(row.getMethod()),
+                row.getReceivedAt(), row.getExternalReference(), row.getReason()))
+            .toList();
         FinanceExcel.write(response, "收款明细.xlsx", "收款明细", RECEIPT_EXPORT_TITLES, data);
     }
 
     @PostMapping("/payment/query")
     @SaCheckPermission(FinancePermission.PAYMENT_QUERY)
     public ResponseDTO<PageResult<FinancePaymentQueryVO>> paymentQuery(
-            @Valid @RequestBody FinancePaymentQueryForm form) {
+        @Valid @RequestBody FinancePaymentQueryForm form) {
         return ResponseDTO.ok(financePaymentQueryService.query(form));
     }
 
@@ -168,22 +169,21 @@ public class FinanceReadController {
     @SaCheckPermission(value = {FinancePermission.PAYMENT_QUERY, FinancePermission.EXPORT}, mode = SaMode.AND)
     @OperateLog
     public void exportPayments(@Valid @RequestBody FinancePaymentQueryForm form, HttpServletResponse response)
-            throws IOException {
+        throws IOException {
         List<FinancePaymentQueryVO> rows = financePaymentQueryService.exportRows(form);
         List<List<Object>> data = rows.stream()
-                .map(row -> FinanceExcel.row(PAYMENT_EXPORT_TITLES, row.getPaymentNo(),
-                        FinanceExportLabels.counterpartyType(row.getCounterpartyType()), row.getCounterpartyName(),
-                        FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(), row.getEffectiveAmount(),
-                        row.getUsedAmount(), row.getPendingWriteOffAmount(),
-                        FinanceExportLabels.paymentMethod(row.getMethod()), row.getPaidAt(),
-                        FinanceExportLabels.paymentSourceType(row.getSourceType()), row.getSourceId()))
-                .toList();
+            .map(row -> FinanceExcel.row(PAYMENT_EXPORT_TITLES, row.getPaymentNo(),
+                FinanceExportLabels.counterpartyType(row.getCounterpartyType()), row.getCounterpartyName(),
+                FinanceExportLabels.entryType(row.getEntryType()), row.getAmount(), row.getEffectiveAmount(),
+                row.getUsedAmount(), row.getPendingWriteOffAmount(), FinanceExportLabels.paymentMethod(row.getMethod()),
+                row.getPaidAt(), FinanceExportLabels.paymentSourceType(row.getSourceType()), row.getSourceId()))
+            .toList();
         FinanceExcel.write(response, "付款明细.xlsx", "付款明细", PAYMENT_EXPORT_TITLES, data);
     }
 
     @GetMapping("/log/query")
     public ResponseDTO<List<FinanceOperationLogVO>> operationLogs(
-            @Valid @ModelAttribute FinanceOperationLogQueryForm form) {
+        @Valid @ModelAttribute FinanceOperationLogQueryForm form) {
         return ResponseDTO.ok(financeOperationLogQueryService.query(form));
     }
 }

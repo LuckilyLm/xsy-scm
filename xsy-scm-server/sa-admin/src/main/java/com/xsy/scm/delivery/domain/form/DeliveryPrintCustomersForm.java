@@ -11,7 +11,9 @@ import com.xsy.scm.delivery.constant.ScmDeliveryOrderPrintFilterEnum;
 
 import java.util.List;
 
-/** 正式打印按客户范围筛选订单。打印状态由服务端在锁住线路后重新计算，不信任前端提交的打印状态。 */
+/**
+ * 正式打印按客户范围筛选订单。打印状态由服务端在锁住线路后重新计算，不信任前端提交的打印状态。
+ */
 @Data
 public class DeliveryPrintCustomersForm {
     @NotNull(message = "版本号不能为空")

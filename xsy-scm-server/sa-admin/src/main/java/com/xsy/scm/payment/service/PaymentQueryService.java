@@ -23,14 +23,18 @@ import com.xsy.scm.payment.domain.vo.PaymentReconciliationVO;
 import com.xsy.scm.payment.domain.vo.PaymentRefundVO;
 import com.xsy.scm.payment.domain.vo.PaymentTransactionVO;
 import com.xsy.scm.payment.support.PaymentVoAssembler;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 支付列表与详情仅查询，不修改业务状态。排序由 SQL 固定，不接收客户端拼入的排序字段，以确保安全和稳定分页。 */
+/**
+ * 支付列表与详情仅查询，不修改业务状态。排序由 SQL 固定，不接收客户端拼入的排序字段，以确保安全和稳定分页。
+ */
 @Service
 @RequiredArgsConstructor
 public class PaymentQueryService {
@@ -53,7 +57,7 @@ public class PaymentQueryService {
     public PageResult<PaymentIntentVO> intentPage(PaymentIntentQueryForm form) {
         Page<?> page = new Page<>(form.getPageNum(), form.getPageSize());
         var rows = paymentIntentDao.queryPage(page, form, dataScopeService.resolve()).stream()
-                .map(PaymentVoAssembler::toIntent).toList();
+            .map(PaymentVoAssembler::toIntent).toList();
         return SmartPageUtil.convert2PageResult(page, rows);
     }
 
@@ -81,8 +85,8 @@ public class PaymentQueryService {
         }
         PaymentIntentVO vo = PaymentVoAssembler.toIntent(intent);
         List<PaymentTransactionVO> transactions = paymentTransactionDao
-                .queryPage(new Page<>(1, 200), transactionQueryOf(id), dataScopeService.resolve()).stream()
-                .map(PaymentVoAssembler::toTransaction).toList();
+            .queryPage(new Page<>(1, 200), transactionQueryOf(id), dataScopeService.resolve()).stream()
+            .map(PaymentVoAssembler::toTransaction).toList();
         vo.setTransactions(transactions);
         return vo;
     }
@@ -91,7 +95,7 @@ public class PaymentQueryService {
     public PageResult<PaymentTransactionVO> transactionPage(PaymentTransactionQueryForm form) {
         Page<?> page = new Page<>(form.getPageNum(), form.getPageSize());
         var rows = paymentTransactionDao.queryPage(page, form, dataScopeService.resolve()).stream()
-                .map(PaymentVoAssembler::toTransaction).toList();
+            .map(PaymentVoAssembler::toTransaction).toList();
         return SmartPageUtil.convert2PageResult(page, rows);
     }
 
@@ -99,7 +103,7 @@ public class PaymentQueryService {
     public PageResult<PaymentRefundVO> refundPage(PaymentRefundQueryForm form) {
         Page<?> page = new Page<>(form.getPageNum(), form.getPageSize());
         return SmartPageUtil.convert2PageResult(page, paymentRefundDao.queryPage(page, form, dataScopeService.resolve())
-                .stream().map(PaymentVoAssembler::toRefund).toList());
+            .stream().map(PaymentVoAssembler::toRefund).toList());
     }
 
     /**
@@ -108,18 +112,20 @@ public class PaymentQueryService {
     @Transactional(readOnly = true)
     public PageResult<PaymentCallbackEventVO> callbackPage(PaymentCallbackQueryForm form) {
         Page<?> page = new Page<>(form.getPageNum(), form.getPageSize());
-        return SmartPageUtil.convert2PageResult(page, paymentCallbackEventDao.queryPage(page, form).stream()
-                .map(PaymentVoAssembler::toCallbackEvent).toList());
+        return SmartPageUtil.convert2PageResult(page,
+            paymentCallbackEventDao.queryPage(page, form).stream().map(PaymentVoAssembler::toCallbackEvent).toList());
     }
 
     @Transactional(readOnly = true)
     public PageResult<PaymentReconciliationVO> reconciliationPage(PaymentReconciliationQueryForm form) {
         Page<?> page = new Page<>(form.getPageNum(), form.getPageSize());
-        return SmartPageUtil.convert2PageResult(page, paymentReconciliationDao.queryPage(page, form).stream()
-                .map(PaymentVoAssembler::toReconciliation).toList());
+        return SmartPageUtil.convert2PageResult(page,
+            paymentReconciliationDao.queryPage(page, form).stream().map(PaymentVoAssembler::toReconciliation).toList());
     }
 
-    /** 对账详情：连同逐条差异一起返回（平账批次 items 为空）。 */
+    /**
+     * 对账详情：连同逐条差异一起返回（平账批次 items 为空）。
+     */
     @Transactional(readOnly = true)
     public PaymentReconciliationVO reconciliationDetail(Long id) {
         var row = paymentReconciliationDao.selectById(id);
@@ -128,7 +134,7 @@ public class PaymentQueryService {
         }
         PaymentReconciliationVO vo = PaymentVoAssembler.toReconciliation(row);
         vo.setItems(
-                paymentReconciliationService.items(id).stream().map(PaymentVoAssembler::toReconciliationItem).toList());
+            paymentReconciliationService.items(id).stream().map(PaymentVoAssembler::toReconciliationItem).toList());
         return vo;
     }
 

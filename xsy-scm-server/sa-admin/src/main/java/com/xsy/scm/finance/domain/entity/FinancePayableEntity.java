@@ -7,7 +7,9 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 正常应付由已确认收货生成，红字应付独立新增而不改原单。应付金额、核销及结清状态分别保存事实与派生结果，历史单据只能追加纠错。 */
+/**
+ * 正常应付由已确认收货生成，红字应付独立新增而不改原单。应付金额、核销及结清状态分别保存事实与派生结果，历史单据只能追加纠错。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_finance_payable")

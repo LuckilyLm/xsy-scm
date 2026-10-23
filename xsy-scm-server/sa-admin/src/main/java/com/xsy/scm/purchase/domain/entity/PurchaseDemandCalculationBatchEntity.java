@@ -5,11 +5,15 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
+
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import lombok.Data;
 
-/** Immutable demand-calculation inputs; only lifecycle/result columns change after generation. */
+/**
+ * Immutable demand-calculation inputs; only lifecycle/result columns change after generation.
+ */
 @Data
 @TableName(value = "xsy_purchase_demand_calculation_batch", autoResultMap = true)
 public class PurchaseDemandCalculationBatchEntity {

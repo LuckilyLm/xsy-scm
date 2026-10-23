@@ -10,7 +10,9 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 
 import java.time.OffsetDateTime;
 
-/** 付款登记只新增正常付款事实。供应商付款和客户退款按对方类型、来源与金额分别验证；客户退款必须关联已完成的真实退款单。 */
+/**
+ * 付款登记只新增正常付款事实。供应商付款和客户退款按对方类型、来源与金额分别验证；客户退款必须关联已完成的真实退款单。
+ */
 @Data
 public class FinancePaymentAddForm {
 

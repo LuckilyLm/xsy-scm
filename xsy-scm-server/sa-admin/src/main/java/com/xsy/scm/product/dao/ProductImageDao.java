@@ -12,7 +12,9 @@ import java.util.List;
 public interface ProductImageDao extends BaseMapper<ProductImageEntity> {
     int clearPrimary(@Param("spuId") Long spuId);
 
-    /** 查询尚未绑定商品的公开图片。已绑定的依据是商品图片表中存在有效文件键关联。 */
+    /**
+     * 查询尚未绑定商品的公开图片。已绑定的依据是商品图片表中存在有效文件键关联。
+     */
     List<ProductUnboundImageVO> selectUnboundPublicImages(@Param("folderType") Integer folderType,
-            @Param("limit") int limit);
+        @Param("limit") int limit);
 }

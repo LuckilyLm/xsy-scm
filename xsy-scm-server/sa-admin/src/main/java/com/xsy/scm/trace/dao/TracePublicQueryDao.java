@@ -1,6 +1,7 @@
 package com.xsy.scm.trace.dao;
 
 import java.time.OffsetDateTime;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -14,6 +15,6 @@ import org.apache.ibatis.annotations.Param;
 public interface TracePublicQueryDao {
 
     int insert(@Param("unitId") Long unitId, @Param("publicToken") String publicToken,
-            @Param("clientIp") String clientIp, @Param("userAgent") String userAgent,
-            @Param("queriedAt") OffsetDateTime queriedAt);
+        @Param("clientIp") String clientIp, @Param("userAgent") String userAgent,
+        @Param("queriedAt") OffsetDateTime queriedAt);
 }

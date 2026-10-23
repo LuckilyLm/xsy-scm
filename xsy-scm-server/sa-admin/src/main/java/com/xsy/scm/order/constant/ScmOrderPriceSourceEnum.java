@@ -13,16 +13,24 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmOrderPriceSourceEnum {
 
-    /** 客户协议价。 */
+    /**
+     * 客户协议价。
+     */
     AGREEMENT("协议价"),
 
-    /** 客户类型价。 */
+    /**
+     * 客户类型价。
+     */
     CUSTOMER_TYPE("客户类型价"),
 
-    /** 商品市场价。 */
+    /**
+     * 商品市场价。
+     */
     MARKET("市场价"),
 
-    /** 人工改价。 */
+    /**
+     * 人工改价。
+     */
     OVERRIDE("人工改价");
 
     private final String desc;

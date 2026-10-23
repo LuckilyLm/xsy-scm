@@ -37,7 +37,9 @@ public class InventoryMovementQueryForm extends PageParam {
     @Size(max = 64, message = "商品规格编码不能超过64个字符")
     private String skuCode;
 
-    /** 库存流水查询只接受已定义的流水类型。增加类型时必须同步后端枚举、数据库约束和查询参数白名单，否则新类型会无法筛选。 */
+    /**
+     * 库存流水查询只接受已定义的流水类型。增加类型时必须同步后端枚举、数据库约束和查询参数白名单，否则新类型会无法筛选。
+     */
     @ScmEnumValue(enumClass = ScmInventoryMovementTypeEnum.class, message = "流水类型无效")
     private String movementType;
 

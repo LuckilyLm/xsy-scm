@@ -1,6 +1,7 @@
 package com.xsy.scm.mall.account.domain.vo;
 
 import java.io.Serializable;
+
 import lombok.Data;
 import net.lab1024.sa.base.common.domain.RequestUser;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;

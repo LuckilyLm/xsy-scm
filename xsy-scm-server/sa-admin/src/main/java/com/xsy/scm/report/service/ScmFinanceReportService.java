@@ -22,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/** Finance read model. All balances are derived from append-only facts. */
+/**
+ * Finance read model. All balances are derived from append-only facts.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -36,7 +38,7 @@ public class ScmFinanceReportService {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
         return financeReportDao.overview(range.startAt(), range.endAt(), visibleScope(context.getOrderSellerScope()),
-                visibleScope(context.getPurchaserScope()));
+            visibleScope(context.getPurchaserScope()));
     }
 
     public PageResult<ScmFinanceReceivableDetailVO> receivableDetails(ScmFinanceReportQueryForm form) {
@@ -49,7 +51,7 @@ public class ScmFinanceReportService {
         Page<?> page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page,
-                financeReportDao.receivableDetails(page, range.endAt(), form, scope));
+            financeReportDao.receivableDetails(page, range.endAt(), form, scope));
     }
 
     public PageResult<ScmFinancePayableDetailVO> payableDetails(ScmFinanceReportQueryForm form) {
@@ -62,7 +64,7 @@ public class ScmFinanceReportService {
         Page<?> page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page,
-                financeReportDao.payableDetails(page, range.endAt(), form, scope));
+            financeReportDao.payableDetails(page, range.endAt(), form, scope));
     }
 
     public List<ScmFinanceReceivableDetailVO> exportReceivableDetails(ScmFinanceReportExportQueryForm form) {

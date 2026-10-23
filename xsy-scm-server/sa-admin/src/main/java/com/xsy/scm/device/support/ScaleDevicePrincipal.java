@@ -22,5 +22,5 @@ import java.time.OffsetDateTime;
  *            会话到期时间，用于回答秤端「离线还能操作多久」
  */
 public record ScaleDevicePrincipal(Long deviceId, String deviceCode, Long warehouseId, Long sessionId, Long employeeId,
-        OffsetDateTime sessionExpiresAt) {
+    OffsetDateTime sessionExpiresAt) {
 }

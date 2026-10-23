@@ -8,7 +8,9 @@ import com.xsy.scm.purchase.permission.PurchasePermission;
 import com.xsy.scm.purchase.service.PurchaseShareService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+
 import java.util.List;
+
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -19,7 +21,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 采购单二维码分享（后台侧）。 */
+/**
+ * 采购单二维码分享（后台侧）。
+ */
 @RestController
 @RequestMapping("/scm/purchase/share")
 @RequiredArgsConstructor
@@ -27,7 +31,9 @@ public class PurchaseShareController {
 
     private final PurchaseShareService purchaseShareService;
 
-    /** 生成分享链接：同一张单上的旧链接当场失效。 */
+    /**
+     * 生成分享链接：同一张单上的旧链接当场失效。
+     */
     @PostMapping("/create")
     @SaCheckPermission(PurchasePermission.SHARE_CREATE)
     public ResponseDTO<PurchaseShareVO> create(@RequestBody @Valid PurchaseShareCreateForm form) {

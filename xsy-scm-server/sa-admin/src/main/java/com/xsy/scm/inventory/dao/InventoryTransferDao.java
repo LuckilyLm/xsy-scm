@@ -13,7 +13,9 @@ import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/** 调拨单在 SQL 中按状态限制写入：草稿才能修改、删除和发出，发出后才能收货。发出和收货使用单据行锁防止并发重复处理。 */
+/**
+ * 调拨单在 SQL 中按状态限制写入：草稿才能修改、删除和发出，发出后才能收货。发出和收货使用单据行锁防止并发重复处理。
+ */
 @Mapper
 public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity> {
 
@@ -44,13 +46,13 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
      * 置为在途（带状态条件，防并发重复发出）。
      */
     int markShipped(@Param("id") Long id, @Param("shippedAt") OffsetDateTime shippedAt,
-            @Param("shippedBy") String shippedBy);
+        @Param("shippedBy") String shippedBy);
 
     /**
      * 置为已收货（带状态条件，只有在途可收货）。
      */
     int markReceived(@Param("id") Long id, @Param("receivedAt") OffsetDateTime receivedAt,
-            @Param("receivedBy") String receivedBy);
+        @Param("receivedBy") String receivedBy);
 
     /**
      * 置为已取消（带状态条件，只有草稿可取消）。
@@ -61,8 +63,7 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
      * 回写草稿头（源仓 / 目标仓 / 备注）。
      */
     int updateDraft(@Param("id") Long id, @Param("fromWarehouseId") Long fromWarehouseId,
-            @Param("toWarehouseId") Long toWarehouseId, @Param("remark") String remark,
-            @Param("operator") String operator);
+        @Param("toWarehouseId") Long toWarehouseId, @Param("remark") String remark, @Param("operator") String operator);
 
     /**
      * 分页查询（联两次 warehouse 取源仓 / 目标仓展示字段）。
@@ -71,7 +72,7 @@ public interface InventoryTransferDao extends BaseMapper<InventoryTransferEntity
      * 调拨的可见口径是「源仓或目标仓任一被授权」，只授权一端的人看不见在途单就没法对账。
      */
     List<InventoryTransferVO> queryPage(Page<?> page, @Param("query") InventoryTransferQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。

@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponEntity;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 @Data
@@ -73,7 +75,9 @@ public class PromotionCouponVO {
         return vo;
     }
 
-    /** 客户券实例（列表用）。 */
+    /**
+     * 客户券实例（列表用）。
+     */
     @Data
     public static class Instance {
 

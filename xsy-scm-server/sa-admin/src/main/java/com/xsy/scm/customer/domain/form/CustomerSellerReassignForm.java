@@ -5,7 +5,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
-/** 客户负责人必须通过独立改派接口修改，普通客户编辑不能修改归属。负责人可以留空，表示未分配；未分配客户只有有权分配或查询全部客户的人员可见。 */
+/**
+ * 客户负责人必须通过独立改派接口修改，普通客户编辑不能修改归属。负责人可以留空，表示未分配；未分配客户只有有权分配或查询全部客户的人员可见。
+ */
 @Data
 public class CustomerSellerReassignForm {
 

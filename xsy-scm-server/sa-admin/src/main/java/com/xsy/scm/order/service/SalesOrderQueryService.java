@@ -66,7 +66,9 @@ public class SalesOrderQueryService {
      */
     private final PromotionDiscountService promotionDiscountService;
 
-    /** 最近成交参考价取数条数区间：limit 最大 10。 */
+    /**
+     * 最近成交参考价取数条数区间：limit 最大 10。
+     */
     private static final int RECENT_PRICE_MIN_LIMIT = 1;
     private static final int RECENT_PRICE_MAX_LIMIT = 10;
 
@@ -80,9 +82,9 @@ public class SalesOrderQueryService {
         var salesOrders = salesOrderDao.query(page, salesOrderQueryForm, dataScopeContext.getOrderSellerScope());
         var rows = salesOrders.stream().map(this::order).toList();
         if (!rows.isEmpty()) {
-            Map<Long, List<OrderTagVO>> tags = orderTagDao.tagsByOrders(
-                    rows.stream().map(SalesOrderVO::getOrderId).toList()).stream()
-                    .collect(Collectors.groupingBy(OrderTagVO::getOrderId));
+            Map<Long,
+                List<OrderTagVO>> tags = orderTagDao.tagsByOrders(rows.stream().map(SalesOrderVO::getOrderId).toList())
+                    .stream().collect(Collectors.groupingBy(OrderTagVO::getOrderId));
             rows.forEach(row -> row.setTags(tags.getOrDefault(row.getOrderId(), List.of())));
         }
         return SmartPageUtil.convert2PageResult(page, rows);
@@ -135,20 +137,20 @@ public class SalesOrderQueryService {
     private SalesOrderDetailVO detailSnapshot(SalesOrderEntity salesOrder) {
         var salesOrderDetailVO = new SalesOrderDetailVO();
         BeanUtils.copyProperties(order(salesOrder), salesOrderDetailVO);
-        salesOrderDetailVO.setItems(salesOrderItemDao.list(salesOrder.getId()).stream().sorted(
-                Comparator.comparing(SalesOrderItemEntity::getSortOrder).thenComparing(SalesOrderItemEntity::getId))
-                .map(salesOrderItem -> {
-                    var salesOrderItemVO = new SalesOrderItemVO();
-                    BeanUtils.copyProperties(salesOrderItem, salesOrderItemVO);
-                    salesOrderItemVO.setItemId(salesOrderItem.getId());
-                    return salesOrderItemVO;
-                }).toList());
-        salesOrderDetailVO.setAddress(
-                orderAddressSnapshotDao.list(salesOrder.getId()).stream().findFirst().map(addressSnapshot -> {
-                    var addressSnapshotVO = new OrderAddressSnapshotVO();
-                    BeanUtils.copyProperties(addressSnapshot, addressSnapshotVO);
-                    return addressSnapshotVO;
-                }).orElse(null));
+        salesOrderDetailVO.setItems(salesOrderItemDao.list(salesOrder.getId()).stream()
+            .sorted(Comparator.comparing(SalesOrderItemEntity::getSortOrder).thenComparing(SalesOrderItemEntity::getId))
+            .map(salesOrderItem -> {
+                var salesOrderItemVO = new SalesOrderItemVO();
+                BeanUtils.copyProperties(salesOrderItem, salesOrderItemVO);
+                salesOrderItemVO.setItemId(salesOrderItem.getId());
+                return salesOrderItemVO;
+            }).toList());
+        salesOrderDetailVO
+            .setAddress(orderAddressSnapshotDao.list(salesOrder.getId()).stream().findFirst().map(addressSnapshot -> {
+                var addressSnapshotVO = new OrderAddressSnapshotVO();
+                BeanUtils.copyProperties(addressSnapshot, addressSnapshotVO);
+                return addressSnapshotVO;
+            }).orElse(null));
         salesOrderDetailVO.setDiscount(promotionDiscountService.getByOrder(salesOrder.getId()));
         salesOrderDetailVO.setGifts(promotionDiscountService.listGifts(salesOrder.getId()));
         return salesOrderDetailVO;
@@ -178,33 +180,30 @@ public class SalesOrderQueryService {
         String mallCustomerPrefix = UserTypeEnum.MALL_CUSTOMER.getValue() + ":";
         var mallAccountIds = operatorIds(operationLogs, mallCustomerPrefix);
         var mallAccountNameById = mallAccountIds.isEmpty()
-                ? Map.<Long, String>of()
-                : mallCustomerAccountDao.listNamesByIds(mallAccountIds).stream().collect(Collectors.toMap(
-                        account -> account.getAccountId(),
-                        account -> account.getCustomerName() == null
-                                ? "商城客户（账号 " + account.getAccountId() + "）"
-                                : account.getCustomerName() + "（商城客户）",
-                        (first, ignored) -> first));
+            ? Map.<Long, String>of()
+            : mallCustomerAccountDao.listNamesByIds(mallAccountIds).stream()
+                .collect(Collectors.toMap(account -> account.getAccountId(),
+                    account -> account.getCustomerName() == null
+                        ? "商城客户（账号 " + account.getAccountId() + "）"
+                        : account.getCustomerName() + "（商城客户）",
+                    (first, ignored) -> first));
         return SmartPageUtil.convert2PageResult(page, operationLogs.stream().map(operationLog -> {
             var operationLogVO = new OrderOperationLogVO();
             BeanUtils.copyProperties(operationLog, operationLogVO);
             operationLogVO.setLogId(operationLog.getId());
-            operationLogVO.setOperatorName(operatorName(operationLog.getOperator(), mallAccountNameById,
-                    operatorNameResolver::display));
+            operationLogVO.setOperatorName(
+                operatorName(operationLog.getOperator(), mallAccountNameById, operatorNameResolver::display));
             return operationLogVO;
         }).toList());
     }
 
     static List<Long> operatorIds(List<OrderOperationLogEntity> logs, String prefix) {
-        return logs.stream().map(OrderOperationLogEntity::getOperator)
-                .map(operator -> operatorId(operator, prefix))
-                .filter(java.util.Objects::nonNull)
-                .distinct()
-                .toList();
+        return logs.stream().map(OrderOperationLogEntity::getOperator).map(operator -> operatorId(operator, prefix))
+            .filter(java.util.Objects::nonNull).distinct().toList();
     }
 
     static String operatorName(String operator, Map<Long, String> mallAccountNames,
-            UnaryOperator<String> employeeDisplay) {
+        UnaryOperator<String> employeeDisplay) {
         if (operator == null) {
             return null;
         }

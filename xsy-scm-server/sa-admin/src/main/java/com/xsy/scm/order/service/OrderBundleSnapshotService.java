@@ -14,6 +14,7 @@ import com.xsy.scm.product.service.ProductSkuOptionQueryService;
 import com.xsy.scm.product.domain.entity.ProductBundleComponentEntity;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 import com.xsy.scm.product.manager.BundleSalePriceAllocator;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -41,17 +43,17 @@ public class OrderBundleSnapshotService {
             return false;
         }
         if (orderItem.getActualQuantity() == null || orderItem.getActualQuantity().signum() <= 0
-                || orderItem.getLockedUnitPrice() == null || warehouseId == null) {
+            || orderItem.getLockedUnitPrice() == null || warehouseId == null) {
             // 组合销售必须冻结本次配送仓，不使用系统默认仓悄悄替代。
             throw new ScmBusinessException(BUNDLE_COMPONENT_INVALID);
         }
         BigDecimal bundleSaleAmount = OrderAmountCalculator.lineAmount(orderItem.getActualQuantity(),
-                orderItem.getLockedUnitPrice());
+            orderItem.getLockedUnitPrice());
         Long selectedWarehouseId = warehouseId;
         Map<Long,
-                ProductSkuOptionVO> options = productSkuOptionDao
-                        .byIds(components.stream().map(ProductBundleComponentEntity::getComponentSkuId).toList())
-                        .stream().collect(Collectors.toMap(ProductSkuOptionVO::getSkuId, Function.identity()));
+            ProductSkuOptionVO> options = productSkuOptionDao
+                .byIds(components.stream().map(ProductBundleComponentEntity::getComponentSkuId).toList()).stream()
+                .collect(Collectors.toMap(ProductSkuOptionVO::getSkuId, Function.identity()));
         if (options.size() != components.size()) {
             throw new ScmBusinessException(BUNDLE_COMPONENT_INVALID);
         }
@@ -60,16 +62,16 @@ public class OrderBundleSnapshotService {
         for (ProductBundleComponentEntity component : components) {
             ProductSkuOptionVO option = options.get(component.getComponentSkuId());
             if (PriceValidation.unavailable(option, true) != null || option.getMarketPrice() == null
-                    || option.getMarketPrice().signum() <= 0) {
+                || option.getMarketPrice().signum() <= 0) {
                 throw new ScmBusinessException(BUNDLE_COMPONENT_INVALID);
             }
             var conversion = stockAvailabilityService.requireConversion(selectedWarehouseId,
-                    component.getComponentSkuId(), option.getSaleUnit());
+                component.getComponentSkuId(), option.getSaleUnit());
             BigDecimal saleQuantity = orderItem.getActualQuantity().multiply(component.getQuantityPerBundleSaleUnit());
             try {
                 saleQuantity = saleQuantity.setScale(4, RoundingMode.UNNECESSARY);
                 InventorySaleUnitConverter.toStockQuantity(saleQuantity, conversion.stockUnit(),
-                        conversion.stockUnitsPerSaleUnit());
+                    conversion.stockUnitsPerSaleUnit());
             } catch (ArithmeticException invalidQuantity) {
                 throw new ScmBusinessException(BUNDLE_COMPONENT_INVALID);
             }
@@ -78,10 +80,10 @@ public class OrderBundleSnapshotService {
         List<BundleSalePriceAllocator.Share> shares;
         try {
             shares = BundleSalePriceAllocator.allocate(bundleSaleAmount,
-                    prepared.stream()
-                            .map(item -> new BundleSalePriceAllocator.Component(item.component().getComponentSkuId(),
-                                    item.saleQuantity(), item.option().getMarketPrice()))
-                            .toList());
+                prepared.stream()
+                    .map(item -> new BundleSalePriceAllocator.Component(item.component().getComponentSkuId(),
+                        item.saleQuantity(), item.option().getMarketPrice()))
+                    .toList());
         } catch (IllegalArgumentException invalidPriceAllocation) {
             throw new ScmBusinessException(BUNDLE_COMPONENT_INVALID);
         }
@@ -117,6 +119,6 @@ public class OrderBundleSnapshotService {
     }
 
     private record PreparedComponent(ProductBundleComponentEntity component, ProductSkuOptionVO option,
-            MallStockAvailabilityService.Conversion conversion, BigDecimal saleQuantity) {
+        MallStockAvailabilityService.Conversion conversion, BigDecimal saleQuantity) {
     }
 }

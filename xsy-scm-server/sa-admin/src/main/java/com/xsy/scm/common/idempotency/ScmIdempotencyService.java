@@ -17,7 +17,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-/** Shared persistence and replay mechanics for idempotent SCM commands. */
+/**
+ * Shared persistence and replay mechanics for idempotent SCM commands.
+ */
 @Service
 @RequiredArgsConstructor
 public class ScmIdempotencyService {
@@ -33,12 +35,12 @@ public class ScmIdempotencyService {
 
     public Claim claim(String scope, String key, Object request) {
         return claim(scope, key, request, ScmCommonErrorCode.IDEMPOTENCY_KEY_REQUIRED,
-                ScmCommonErrorCode.IDEMPOTENCY_KEY_INVALID, ScmCommonErrorCode.IDEMPOTENCY_CONFLICT,
-                "已提交的幂等记录缺少 result_data（数据完整性异常）");
+            ScmCommonErrorCode.IDEMPOTENCY_KEY_INVALID, ScmCommonErrorCode.IDEMPOTENCY_CONFLICT,
+            "已提交的幂等记录缺少 result_data（数据完整性异常）");
     }
 
     public Claim claim(String scope, String key, Object request, ScmErrorCode missingKeyError,
-            ScmErrorCode invalidKeyError, ScmErrorCode conflictError, String incompleteResultMessage) {
+        ScmErrorCode invalidKeyError, ScmErrorCode conflictError, String incompleteResultMessage) {
         if (StringUtils.isBlank(key))
             throw new ScmBusinessException(missingKeyError);
         String normalizedKey = key.trim();
@@ -65,7 +67,9 @@ public class ScmIdempotencyService {
         return new Claim(row, true);
     }
 
-    /** 同幂等键及请求指纹已成功时，可在重新校验易变数据之前返回原结果。预检不占用键也不写记录，指纹冲突由正式执行阶段处理。 */
+    /**
+     * 同幂等键及请求指纹已成功时，可在重新校验易变数据之前返回原结果。预检不占用键也不写记录，指纹冲突由正式执行阶段处理。
+     */
     public Optional<Claim> peekCompleted(String scope, String key, Object request) {
         if (StringUtils.isBlank(key)) {
             return Optional.empty();
@@ -84,6 +88,7 @@ public class ScmIdempotencyService {
     public <T> T replay(Claim claim, Class<T> resultType) {
         return replay(claim, resultType, objectMapper);
     }
+
     public <T> T replay(Claim claim, Class<T> resultType, ObjectMapper resultMapper) {
         return resultMapper.convertValue(claim.record().getResultData().get("value"), resultType);
     }

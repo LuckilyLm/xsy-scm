@@ -12,7 +12,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 预警阈值按仓库和商品规格设置，不放在库存余额表中。修改阈值不会改变库存数量。 */
+/**
+ * 预警阈值按仓库和商品规格设置，不放在库存余额表中。修改阈值不会改变库存数量。
+ */
 @Data
 @TableName(value = "xsy_inventory_warning_threshold", autoResultMap = true)
 public class InventoryWarningThresholdEntity {

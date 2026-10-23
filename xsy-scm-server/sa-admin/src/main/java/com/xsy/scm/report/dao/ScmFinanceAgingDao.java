@@ -14,7 +14,8 @@ import java.util.List;
 @Mapper
 public interface ScmFinanceAgingDao {
     List<ScmFinanceAgingRowVO> query(Page<?> page, @Param("query") ScmFinanceAgingQueryForm query,
-            @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmDataScopeContext scope);
+        @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmDataScopeContext scope);
+
     List<ScmFinanceAgingSummaryVO> summary(@Param("query") ScmFinanceAgingQueryForm query,
-            @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmDataScopeContext scope);
+        @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmDataScopeContext scope);
 }

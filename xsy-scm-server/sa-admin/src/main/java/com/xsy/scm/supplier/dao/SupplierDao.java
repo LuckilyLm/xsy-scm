@@ -29,5 +29,5 @@ public interface SupplierDao extends BaseMapper<SupplierEntity> {
      * 原子软删：{@code id + version} 双谓词，返回 0 即冲突。
      */
     int softDelete(@Param("supplierId") Long supplierId, @Param("version") Integer version,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 }

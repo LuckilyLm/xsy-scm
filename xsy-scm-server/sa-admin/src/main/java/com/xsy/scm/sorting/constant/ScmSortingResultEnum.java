@@ -13,16 +13,24 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmSortingResultEnum {
 
-    /** 与计划量一致。 */
+    /**
+     * 与计划量一致。
+     */
     NORMAL("正常"),
 
-    /** 实拣少于计划。 */
+    /**
+     * 实拣少于计划。
+     */
     SHORT("短少"),
 
-    /** 整行缺货。 */
+    /**
+     * 整行缺货。
+     */
     OUT_OF_STOCK("缺货"),
 
-    /** 实拣多于计划。 */
+    /**
+     * 实拣多于计划。
+     */
     OVER("超出");
 
     private final String desc;

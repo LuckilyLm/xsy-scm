@@ -25,7 +25,9 @@ import com.xsy.scm.report.support.ScmReportTimeRange;
 import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import lombok.RequiredArgsConstructor;
 
-/** Read-side snapshot of supplier payables and independently recorded supplier payments. */
+/**
+ * Read-side snapshot of supplier payables and independently recorded supplier payments.
+ */
 @Service
 @RequiredArgsConstructor
 public class ScmSupplierStatementService {
@@ -40,7 +42,7 @@ public class ScmSupplierStatementService {
         requireScope(form.getWarehouseId(), scope);
         OffsetDateTime snapshotAt = statementDao.selectSnapshotAt();
         List<ScmSupplierStatementItemVO> facts = statementDao.selectEvents(form, range.endAt(), scope, snapshotAt,
-                MAX_FACTS + 1);
+            MAX_FACTS + 1);
         if (facts.size() > MAX_FACTS) {
             throw new ScmBusinessException(ReportErrorCode.REPORT_STATEMENT_TOO_LARGE);
         }
@@ -57,8 +59,8 @@ public class ScmSupplierStatementService {
         result.setWarehouseId(form.getWarehouseId());
         result.setStartDate(form.getStartDate());
         result.setEndDate(form.getEndDate());
-        result.setPartialScope(form.getWarehouseId() != null || !scope.getWarehouseScope().isAll()
-                || !scope.getPurchaserScope().isAll());
+        result.setPartialScope(
+            form.getWarehouseId() != null || !scope.getWarehouseScope().isAll() || !scope.getPurchaserScope().isAll());
         result.setGeneratedByEmployeeId(scope.getEmployeeId());
         result.setGeneratedAt(snapshotAt);
         BigDecimal payable = BigDecimal.ZERO;
@@ -146,7 +148,7 @@ public class ScmSupplierStatementService {
             List<ScmSupplierStatementVO> page = statementDao.selectHistory(supplierId, scope.getEmployeeId(), offset);
             for (ScmSupplierStatementVO version : page) {
                 if ((version.getWarehouseId() == null || scope.getWarehouseScope().allows(version.getWarehouseId()))
-                        && isStillVisible(version, scope)) {
+                    && isStillVisible(version, scope)) {
                     visible.add(version);
                     if (visible.size() == 50) {
                         break;
@@ -169,19 +171,19 @@ public class ScmSupplierStatementService {
         form.setEndDate(version.getEndDate());
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         List<ScmSupplierStatementItemVO> now = statementDao.selectEvents(form, range.endAt(), scope,
-                version.getGeneratedAt(), MAX_FACTS + 1);
+            version.getGeneratedAt(), MAX_FACTS + 1);
         if (now.size() > MAX_FACTS) {
             return false;
         }
         Set<String> visibleFacts = new HashSet<>();
         now.forEach(row -> visibleFacts.add(row.getFactType() + ":" + row.getFactId()));
         return statementDao.selectSources(version.getId()).stream()
-                .allMatch(row -> visibleFacts.contains(row.getFactType() + ":" + row.getFactId()));
+            .allMatch(row -> visibleFacts.contains(row.getFactType() + ":" + row.getFactId()));
     }
 
     private void requireScope(Long warehouseId, ScmDataScopeContext scope) {
         if (scope.getEmployeeId() == null || scope.getWarehouseScope().isEmpty() || scope.getPurchaserScope().isEmpty()
-                || (warehouseId != null && !scope.getWarehouseScope().allows(warehouseId))) {
+            || (warehouseId != null && !scope.getWarehouseScope().allows(warehouseId))) {
             throw new ScmBusinessException(ReportErrorCode.REPORT_STATEMENT_UNAVAILABLE);
         }
     }

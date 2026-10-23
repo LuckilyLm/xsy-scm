@@ -7,7 +7,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 手工红字应付命令结果。 */
+/**
+ * 手工红字应付命令结果。
+ */
 @Data
 public class FinancePayableRedVO {
 

@@ -36,7 +36,9 @@ public class MallOrderController {
     private final MallOrderService orderService;
     private final MallPaymentService paymentService;
 
-    /** 订单列表；{@code displayStatus} 按展示分类筛选，留空为全部 */
+    /**
+     * 订单列表；{@code displayStatus} 按展示分类筛选，留空为全部
+     */
     @GetMapping
     public ResponseDTO<PageResult<MallOrderVO>> list(@Valid MallOrderQueryForm form) {
         MallRequestSupport.requirePasswordChanged();
@@ -66,12 +68,14 @@ public class MallOrderController {
      */
     @PostMapping("/{orderId}/cancel")
     public ResponseDTO<MallOrderVO> cancel(@PathVariable Long orderId, @Valid @RequestBody MallOrderCancelForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(orderService.cancel(MallRequestSupport.current(), orderId, form, key));
     }
 
-    /** 再来一单：按当前可见性与客户价重新校验后写回购物车，返回加入与跳过明细 */
+    /**
+     * 再来一单：按当前可见性与客户价重新校验后写回购物车，返回加入与跳过明细
+     */
     @PostMapping("/{orderId}/reorder")
     public ResponseDTO<MallReorderVO> reorder(@PathVariable Long orderId) {
         MallRequestSupport.requirePasswordChanged();
@@ -84,12 +88,14 @@ public class MallOrderController {
      */
     @PostMapping("/{orderId}/pay")
     public ResponseDTO<MallOrderVO> pay(@PathVariable Long orderId,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(paymentService.pay(MallRequestSupport.current(), orderId, key));
     }
 
-    /** 结算预览：返回明细、预估金额与价格指纹；不占用库存、不建单 */
+    /**
+     * 结算预览：返回明细、预估金额与价格指纹；不占用库存、不建单
+     */
     @PostMapping("/preview")
     public ResponseDTO<MallCheckoutPreviewVO> preview(@Valid @RequestBody MallCheckoutPreviewForm form) {
         MallRequestSupport.requirePasswordChanged();
@@ -101,7 +107,7 @@ public class MallOrderController {
      */
     @PostMapping
     public ResponseDTO<MallOrderSubmitVO> submit(@Valid @RequestBody MallOrderSubmitForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(checkoutService.submit(MallRequestSupport.current(), form, key));
     }

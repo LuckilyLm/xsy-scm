@@ -6,15 +6,25 @@ import com.xsy.scm.order.constant.ScmOrderReturnStatusEnum;
  * 商城售后单的展示分类：由正式退货单与实际退款资金事实派生，不新增状态机。
  */
 public enum MallAfterSaleDisplayStatusEnum {
-    /** 已提交，等待平台审核 */
+    /**
+     * 已提交，等待平台审核
+     */
     REVIEWING,
-    /** 审核通过，退款处理中 */
+    /**
+     * 审核通过，退款处理中
+     */
     REFUNDING,
-    /** 退款完成（含退款净额为 0、无需退款） */
+    /**
+     * 退款完成（含退款净额为 0、无需退款）
+     */
     REFUNDED,
-    /** 申请被驳回 */
+    /**
+     * 申请被驳回
+     */
     REJECTED,
-    /** 客户自行撤销 */
+    /**
+     * 客户自行撤销
+     */
     CANCELLED;
 
     /**

@@ -1,6 +1,7 @@
 package com.xsy.scm.supplier.domain.vo;
 
 import java.math.BigDecimal;
+
 import lombok.Data;
 
 /**
@@ -18,16 +19,24 @@ public class SupplierSkuSupplierSummaryVO {
 
     private String supplierCode;
 
-    /** 可供商品数（按 SPU 去重）。 */
+    /**
+     * 可供商品数（按 SPU 去重）。
+     */
     private Integer productCount;
 
-    /** 商品规格数：一行一个规格，等于关联行数。 */
+    /**
+     * 商品规格数：一行一个规格，等于关联行数。
+     */
     private Integer specCount;
 
-    /** 标记为优先采购的规格数。 */
+    /**
+     * 标记为优先采购的规格数。
+     */
     private Integer defaultCount;
 
-    /** 参考价区间；全部未填时两者都为空。 */
+    /**
+     * 参考价区间；全部未填时两者都为空。
+     */
     private BigDecimal minReferencePrice;
 
     private BigDecimal maxReferencePrice;

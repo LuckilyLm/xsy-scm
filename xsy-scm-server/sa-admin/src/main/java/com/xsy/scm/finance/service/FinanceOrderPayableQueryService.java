@@ -10,6 +10,7 @@ import com.xsy.scm.finance.domain.dto.FinanceOrderFundingDto;
 import com.xsy.scm.finance.domain.dto.FinanceOrderPayableLineDto;
 import com.xsy.scm.finance.domain.entity.FinanceReceivableEntity;
 import com.xsy.scm.finance.domain.vo.FinanceReceivableVO;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,7 +84,7 @@ public class FinanceOrderPayableQueryService {
         for (FinanceOrderDiscountLineDto line : financeReceivableSourceDao.selectDiscountLinesByOrders(salesOrderIds)) {
             if (line.getSalesOrderId() != null && line.getOrderItemId() != null && line.getDiscountAmount() != null) {
                 discountsByOrder.computeIfAbsent(line.getSalesOrderId(), key -> new HashMap<>())
-                        .put(line.getOrderItemId(), line.getDiscountAmount());
+                    .put(line.getOrderItemId(), line.getDiscountAmount());
             }
         }
         Map<Long, List<FinanceOrderPayableLineDto>> linesByOrder = new HashMap<>();
@@ -97,14 +99,16 @@ public class FinanceOrderPayableQueryService {
         return result;
     }
 
-    /** 逐行 {@code 实重 × 锁定价 − 该行承担的冻结优惠}，行先舍入再汇总。 */
+    /**
+     * 逐行 {@code 实重 × 锁定价 − 该行承担的冻结优惠}，行先舍入再汇总。
+     */
     private static BigDecimal net(List<FinanceOrderPayableLineDto> lines, Map<Long, BigDecimal> discounts) {
         BigDecimal payable = BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE);
         for (FinanceOrderPayableLineDto line : lines) {
             BigDecimal gross = line.getActualQuantity().multiply(line.getLockedUnitPrice())
-                    .setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
+                .setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
             payable = payable.add(gross.subtract(FinanceReceivableService.discountShare(line.getOrderItemId(), gross,
-                    line.getOrderedLineAmount(), discounts)));
+                line.getOrderedLineAmount(), discounts)));
         }
         return payable;
     }
@@ -118,8 +122,8 @@ public class FinanceOrderPayableQueryService {
     @Transactional(readOnly = true)
     public BigDecimal paidAmountOf(Long salesOrderId) {
         return financeOrderFundingSourceDao.selectOrderFunding(salesOrderId).stream()
-                .map(FinanceOrderFundingDto::getAmount)
-                .reduce(BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE), BigDecimal::add);
+            .map(FinanceOrderFundingDto::getAmount)
+            .reduce(BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE), BigDecimal::add);
     }
 
     /**
@@ -133,9 +137,7 @@ public class FinanceOrderPayableQueryService {
         BigDecimal collected = financeReceiptDao.sumCodCollectedByOrder(salesOrderId);
         BigDecimal manualSupplement = financeReceiptDao.sumManualCollectedByOrder(salesOrderId);
         return paidAmountOf(salesOrderId)
-                .add(collected == null ? BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE) : collected)
-                .add(manualSupplement == null
-                        ? BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE)
-                        : manualSupplement);
+            .add(collected == null ? BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE) : collected)
+            .add(manualSupplement == null ? BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE) : manualSupplement);
     }
 }

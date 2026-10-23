@@ -10,7 +10,9 @@ public interface CustomerBalanceRechargeDao extends BaseMapper<CustomerBalanceRe
 
     CustomerBalanceRechargeEntity selectByIdForUpdate(@Param("rechargeId") Long rechargeId);
 
-    /** 充值单号序列。必须在事务内调用（nextval 不回滚，跳号可接受）。 */
+    /**
+     * 充值单号序列。必须在事务内调用（nextval 不回滚，跳号可接受）。
+     */
     @org.apache.ibatis.annotations.Select("SELECT nextval('customer_balance_recharge_seq')")
     long nextRechargeNo();
 }

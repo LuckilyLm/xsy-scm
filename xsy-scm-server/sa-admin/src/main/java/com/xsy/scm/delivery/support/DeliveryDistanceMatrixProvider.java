@@ -3,7 +3,9 @@ package com.xsy.scm.delivery.support;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 配送距离可能来自路网或估算。估算结果必须明确标记，不能当作真实道路里程；同时记录算法版本。 */
+/**
+ * 配送距离可能来自路网或估算。估算结果必须明确标记，不能当作真实道路里程；同时记录算法版本。
+ */
 public interface DeliveryDistanceMatrixProvider {
 
     /**

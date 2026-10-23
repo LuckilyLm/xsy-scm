@@ -16,7 +16,9 @@ import com.xsy.scm.mall.account.domain.vo.RequestMallCustomer;
 import com.xsy.scm.mall.account.exception.MallLoginRejectedException;
 import com.xsy.scm.order.constant.ScmOrderSourceEnum;
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
 import net.lab1024.sa.base.module.support.securityprotect.service.SecurityPasswordService;
@@ -34,7 +36,7 @@ public class MallAuthService {
     @Transactional(rollbackFor = Exception.class, noRollbackFor = MallLoginRejectedException.class)
     public MallLoginVO login(MallLoginForm form, String ip) {
         MallCustomerAccountEntity account = accountDao
-                .selectByPhone(MallAccountService.normalizePhone(form.getPhone()));
+            .selectByPhone(MallAccountService.normalizePhone(form.getPhone()));
         if (account != null) {
             // 同账号登录串行计数，并与改密/停用共用行锁，不能拿旧凭证签发新会话。
             account = accountDao.selectByIdForUpdate(account.getId());
@@ -51,7 +53,7 @@ public class MallAuthService {
         }
         if (!SecurityPasswordService.matchesPwd(form.getPassword(), account.getPasswordHash())) {
             securityLoginService.recordLoginFail(account.getId(), UserTypeEnum.MALL_CUSTOMER, account.getLoginPhone(),
-                    loginCheck.getData());
+                loginCheck.getData());
             throw new MallLoginRejectedException(MallErrorCode.LOGIN_FAILED);
         }
         CustomerEntity customer = customerService.requireTradable(account.getCustomerId());
@@ -120,7 +122,7 @@ public class MallAuthService {
 
     private static MallProfileVO profile(MallCustomerAccountEntity account, CustomerEntity customer) {
         return new MallProfileVO(account.getId(), customer.getId(), customer.getName(), account.getLoginPhone(),
-                account.getFirstPasswordChange());
+            account.getFirstPasswordChange());
     }
 
     public static String loginId(Long accountId, Integer version) {

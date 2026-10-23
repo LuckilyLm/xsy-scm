@@ -4,9 +4,11 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.customer.constant.CustomerErrorCode;
 import com.xsy.scm.customer.dao.CustomerPromotionDao;
 import com.xsy.scm.customer.domain.vo.CustomerPromotionVO;
+
 import java.security.SecureRandom;
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CustomerPromotionService {
 
-    /** 去掉容易看错的 0/O/1/I，现场抄码不会抄错。 */
+    /**
+     * 去掉容易看错的 0/O/1/I，现场抄码不会抄错。
+     */
     private static final String ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
     private static final int CODE_LENGTH = 10;
@@ -82,7 +86,9 @@ public class CustomerPromotionService {
         return customerPromotionDao.listScans(codeId, size);
     }
 
-    /** 最近一次扫码带来的归属，供新增客户时预填业务员。 */
+    /**
+     * 最近一次扫码带来的归属，供新增客户时预填业务员。
+     */
     @Transactional(readOnly = true)
     public CustomerPromotionVO.Scan latestAttribution() {
         return customerPromotionDao.latestAttribution();
@@ -105,7 +111,7 @@ public class CustomerPromotionService {
         }
         OffsetDateTime now = OffsetDateTime.now();
         customerPromotionDao.insertScan(row.getId(), row.getCustomerId(), row.getSellerId(), clientIp,
-                truncate(userAgent));
+            truncate(userAgent));
 
         CustomerPromotionVO.Landing landing = new CustomerPromotionVO.Landing();
         landing.setCustomerName(row.getCustomerName());

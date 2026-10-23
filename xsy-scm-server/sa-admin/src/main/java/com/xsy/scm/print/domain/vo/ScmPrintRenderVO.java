@@ -2,13 +2,17 @@ package com.xsy.scm.print.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import lombok.Data;
 
-/** 打印渲染结果已包含表头、列顺序、单元格文本与合计。前端只负责排版，金额权限由服务端处理；历史重印使用冻结内容。 */
+/**
+ * 打印渲染结果已包含表头、列顺序、单元格文本与合计。前端只负责排版，金额权限由服务端处理；历史重印使用冻结内容。
+ */
 @Data
 public class ScmPrintRenderVO {
 

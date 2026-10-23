@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 手工红字应付入口。 */
+/**
+ * 手工红字应付入口。
+ */
 @RestController
 @RequestMapping("/scm/finance/payable")
 @Tag(name = "SCM 财务应付")
@@ -29,7 +31,7 @@ public class FinancePayableController {
     @SaCheckPermission(FinancePermission.PAYABLE_RED)
     @OperateLog
     public ResponseDTO<FinancePayableRedVO> red(@Valid @RequestBody FinancePayableRedForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(financePayableService.red(form, idempotencyKey));
     }
 }

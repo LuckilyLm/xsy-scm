@@ -6,7 +6,9 @@ import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
-/** 正常应收按出库明细生成，退货红字按已批准退货明细生成。来源身份独立防重，金额按原订单的冻结结算价与优惠分摊处理，不按当前商品价格重新计算。 */
+/**
+ * 正常应收按出库明细生成，退货红字按已批准退货明细生成。来源身份独立防重，金额按原订单的冻结结算价与优惠分摊处理，不按当前商品价格重新计算。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_finance_receivable_item")
@@ -49,7 +51,9 @@ public class FinanceReceivableItemEntity extends FinanceRecord {
      */
     private BigDecimal unitPrice;
 
-    /** 应收明细的优惠额来自订单确认时冻结的分配，正常与红字均按同一口径处理，不能用现行活动重新折算。 */
+    /**
+     * 应收明细的优惠额来自订单确认时冻结的分配，正常与红字均按同一口径处理，不能用现行活动重新折算。
+     */
     private BigDecimal discountAmount;
 
     /**

@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmGeoCoordinateSystemEnum {
 
-    /** 国测局坐标，国内地图底图常用。 */
+    /**
+     * 国测局坐标，国内地图底图常用。
+     */
     GCJ02("国测局坐标"),
 
-    /** 国际通用坐标，GPS 原始输出。 */
+    /**
+     * 国际通用坐标，GPS 原始输出。
+     */
     WGS84("国际坐标");
 
     private final String desc;

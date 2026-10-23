@@ -35,6 +35,6 @@ public final class PurchaseDemandSourceGuard {
      */
     public static boolean isConfirmed(SalesOrderEntity order) {
         return order != null && !Boolean.TRUE.equals(order.getDeleted())
-                && ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus());
+            && ScmOrderStatusEnum.CONFIRMED.name().equals(order.getStatus());
     }
 }

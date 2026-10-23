@@ -56,11 +56,11 @@ public class ProductBatchService {
             // 归档即退出经营：批量入口同样不能造出「已归档还在架」的组合。
             var status = form.getStatus() != null ? form.getStatus() : entity.getStatus();
             if (ScmProductMasterStatusEnum.ARCHIVED.name().equals(form.getMasterStatus())
-                    && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
+                && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
                 failures.add(failure(entity, MASTER_STATUS_SALE_CONFLICT));
         }
         return commit(failures, form.getItems(), (ids) -> productSpuDao.batchApply(ids, form.getStatus(),
-                form.getMasterStatus(), null, ScmOperator.current()));
+            form.getMasterStatus(), null, ScmOperator.current()));
     }
 
     @Transactional
@@ -68,7 +68,7 @@ public class ProductBatchService {
         productCategoryService.requireSelectableCategory(form.getCategoryId());
         var failures = verify(form.getItems());
         return commit(failures, form.getItems(),
-                (ids) -> productSpuDao.batchApply(ids, null, null, form.getCategoryId(), ScmOperator.current()));
+            (ids) -> productSpuDao.batchApply(ids, null, null, form.getCategoryId(), ScmOperator.current()));
     }
 
     /**
@@ -101,7 +101,7 @@ public class ProductBatchService {
      */
     private Map<Long, ProductSpuEntity> lock(List<ProductBatchItemForm> items) {
         return productSpuDao.lockByIds(items.stream().map(ProductBatchItemForm::getSpuId).distinct().sorted().toList())
-                .stream().collect(Collectors.toMap(ProductSpuEntity::getId, Function.identity()));
+            .stream().collect(Collectors.toMap(ProductSpuEntity::getId, Function.identity()));
     }
 
     private Failure check(ProductBatchItemForm item, ProductSpuEntity entity) {
@@ -118,7 +118,7 @@ public class ProductBatchService {
      * 预校验有失败行时只回结果、不落库；全部通过才执行这一次批量写入。
      */
     private ProductBatchResultVO commit(List<Failure> failures, List<ProductBatchItemForm> items,
-            java.util.function.Consumer<List<Long>> write) {
+        java.util.function.Consumer<List<Long>> write) {
         var result = new ProductBatchResultVO();
         if (!failures.isEmpty()) {
             result.setFailedCount(failures.size());

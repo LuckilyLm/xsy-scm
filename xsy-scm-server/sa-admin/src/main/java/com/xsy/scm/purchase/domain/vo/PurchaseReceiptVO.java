@@ -24,7 +24,9 @@ public class PurchaseReceiptVO {
     private Long warehouseId;
     private String warehouseName;
 
-    /** 该仓库是否启用批次追踪：前端据此决定确认时是否要求登记批次。 */
+    /**
+     * 该仓库是否启用批次追踪：前端据此决定确认时是否要求登记批次。
+     */
     private Boolean warehouseLotTrackingEnabled;
     private String status;
     private String receiptMode;

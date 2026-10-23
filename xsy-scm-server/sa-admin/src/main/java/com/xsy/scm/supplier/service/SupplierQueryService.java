@@ -82,9 +82,9 @@ public class SupplierQueryService {
      */
     public List<SupplierOptionVO> optionList() {
         List<SupplierEntity> rows = supplierDao
-                .selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SupplierEntity>()
-                        .eq(SupplierEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
-                        .orderByAsc(SupplierEntity::getName, SupplierEntity::getId));
+            .selectList(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SupplierEntity>()
+                .eq(SupplierEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
+                .orderByAsc(SupplierEntity::getName, SupplierEntity::getId));
         List<SupplierOptionVO> list = new ArrayList<>(rows.size());
         for (SupplierEntity row : rows) {
             SupplierOptionVO vo = new SupplierOptionVO();
@@ -114,7 +114,7 @@ public class SupplierQueryService {
             return;
         }
         boolean illegal = form.getSortItemList().stream()
-                .anyMatch(item -> item.getColumn() == null || !SORTABLE.contains(item.getColumn().toLowerCase()));
+            .anyMatch(item -> item.getColumn() == null || !SORTABLE.contains(item.getColumn().toLowerCase()));
         if (illegal) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }

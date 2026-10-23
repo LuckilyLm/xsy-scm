@@ -44,7 +44,9 @@ public class ProductImportWriteService {
         return forms.size();
     }
 
-    /** 携带失败商品序号，供无事务的导入解析服务把错误映射到对应 Excel 行。 */
+    /**
+     * 携带失败商品序号，供无事务的导入解析服务把错误映射到对应 Excel 行。
+     */
     public static final class ImportProductException extends RuntimeException {
         private final int productIndex;
 

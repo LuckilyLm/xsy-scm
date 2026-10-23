@@ -17,7 +17,9 @@ import java.util.List;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** Read-only, seller-scoped selector for completed refunds that have not been paid yet. */
+/**
+ * Read-only, seller-scoped selector for completed refunds that have not been paid yet.
+ */
 @Service
 @RequiredArgsConstructor
 public class FinanceRefundOptionQueryService {

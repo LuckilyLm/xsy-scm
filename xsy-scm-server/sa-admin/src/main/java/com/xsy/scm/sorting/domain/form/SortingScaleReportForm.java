@@ -6,11 +6,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
-/** 电子秤上报必须包含唯一事件标识和目标分拣明细。重试用同一事件标识去重，读数不能记到不确定的任务上。 */
+/**
+ * 电子秤上报必须包含唯一事件标识和目标分拣明细。重试用同一事件标识去重，读数不能记到不确定的任务上。
+ */
 @Data
 public class SortingScaleReportForm {
 

@@ -26,5 +26,5 @@ public interface WarehouseDao extends BaseMapper<WarehouseEntity> {
      * {@code scope} 是当前员工的仓库授权范围，不是可选筛选：传 {@code null} 按 0 行处理。
      */
     List<WarehouseEntity> queryPage(Page<?> page, @Param("query") WarehouseQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 }

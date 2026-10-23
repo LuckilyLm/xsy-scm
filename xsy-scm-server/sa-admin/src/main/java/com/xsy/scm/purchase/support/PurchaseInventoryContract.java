@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/** 采购确认通过本接口把已保存的收货事实交给库存模块。采购不直接更新库存余额，库存模块统一校验单位、锁定余额和生成流水。 */
+/**
+ * 采购确认通过本接口把已保存的收货事实交给库存模块。采购不直接更新库存余额，库存模块统一校验单位、锁定余额和生成流水。
+ */
 public interface PurchaseInventoryContract {
 
     /**
@@ -20,9 +22,9 @@ public interface PurchaseInventoryContract {
      * 取<b>持久化的收货确认时刻与确认人</b>，不是写入时刻与当前登录人。
      */
     record InboundFact(Long purchaseOrderId, Long receiptId, Long receiptItemId, Long warehouseId, Long skuId,
-            String warehouseCode, String warehouseName, String skuCode, String skuName, String unit,
-            BigDecimal quantity, BigDecimal unitCost, String idempotencyKey, OffsetDateTime occurredAt, String operator,
-            List<LotQuantity> lots) {
+        String warehouseCode, String warehouseName, String skuCode, String skuName, String unit, BigDecimal quantity,
+        BigDecimal unitCost, String idempotencyKey, OffsetDateTime occurredAt, String operator,
+        List<LotQuantity> lots) {
     }
 
     /**

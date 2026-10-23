@@ -89,7 +89,7 @@ public class ProductSpuService {
         productUomService.assertUsable(changedUnits(existing, skuChanges));
         productTagService.assertNewBindings(entity.getId(), form.getTagIds());
         var imageChanges = ProductImageChangeSet.between(productImageSyncManager.existing(entity.getId()),
-                form.getImages());
+            form.getImages());
         apply(entity, form);
         entity.setVersion(form.getVersion());
         try {
@@ -125,9 +125,9 @@ public class ProductSpuService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         productTagService.untagProducts(List.of(entity.getId()));
         productSkuSyncManager
-                .remove(productSkuSyncManager.existing(entity.getId()).stream().map(s -> s.getId()).toList());
+            .remove(productSkuSyncManager.existing(entity.getId()).stream().map(s -> s.getId()).toList());
         productImageSyncManager
-                .remove(productImageSyncManager.existing(entity.getId()).stream().map(i -> i.getId()).toList());
+            .remove(productImageSyncManager.existing(entity.getId()).stream().map(i -> i.getId()).toList());
         productSpuDao.deleteById(entity.getId());
     }
 
@@ -161,7 +161,7 @@ public class ProductSpuService {
 
     private void assertSaleCompatible(String masterStatus, String status) {
         if (ScmProductMasterStatusEnum.ARCHIVED.name().equals(masterStatus)
-                && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
+            && ScmShelfStatusEnum.ON_SHELF.name().equals(status))
             throw new ScmBusinessException(MASTER_STATUS_SALE_CONFLICT);
     }
 

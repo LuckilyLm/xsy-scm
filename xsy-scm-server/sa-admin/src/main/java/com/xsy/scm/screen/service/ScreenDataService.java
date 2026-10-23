@@ -29,7 +29,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** 运营大屏复用统一经营指标和权限范围；各区块只负责组织展示所需的数据。 */
+/**
+ * 运营大屏复用统一经营指标和权限范围；各区块只负责组织展示所需的数据。
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -84,9 +86,9 @@ public class ScreenDataService {
         vo.setWarehouseDistribution(nullToEmpty(screenDataDao.inventoryDistributionByWarehouse(scope)));
         LocalDate today = LocalDate.now(BUSINESS_ZONE);
         vo.setWarehouseNodes(
-                nullToEmpty(screenDataDao.warehouseNetworkNodes(today.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
-                        today.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
-                        ScmMovementDirections.outboundTypes(), scope)));
+            nullToEmpty(screenDataDao.warehouseNetworkNodes(today.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
+                today.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(), ScmMovementDirections.outboundTypes(),
+                scope)));
         return vo;
     }
 
@@ -123,7 +125,9 @@ public class ScreenDataService {
         return vo;
     }
 
-    /** 地图气泡来自市级业务汇总，省级值从市级结果汇总。未能归属地区的数据要保留覆盖率提示，不能直接丢掉。 */
+    /**
+     * 地图气泡来自市级业务汇总，省级值从市级结果汇总。未能归属地区的数据要保留覆盖率提示，不能直接丢掉。
+     */
     public ScreenGeoVO getGeoData() {
         ScmDataScopeContext scope = dataScopeService.resolve();
         List<ScreenGeoVO.CityNode> cities = nullToEmpty(screenDataDao.geoCityRows(scope));
@@ -157,7 +161,7 @@ public class ScreenDataService {
         }
         List<ScreenGeoVO.ProvinceNode> provinces = new ArrayList<>(byProvince.values());
         provinces.sort(Comparator.comparingLong(ScreenGeoVO.ProvinceNode::getCustomerCount).reversed()
-                .thenComparing(ScreenGeoVO.ProvinceNode::getProvinceCode));
+            .thenComparing(ScreenGeoVO.ProvinceNode::getProvinceCode));
         return provinces;
     }
 

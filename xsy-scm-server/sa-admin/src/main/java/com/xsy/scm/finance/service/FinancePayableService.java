@@ -77,14 +77,14 @@ public class FinancePayableService {
             throw new ScmBusinessException(FinanceErrorCode.REVERSE_REASON_REQUIRED);
         }
         var claim = idempotencyService.claim(FinanceConstant.PAYABLE_RED_SCOPE + ":" + original.getPayableId(),
-                idempotencyKey, form);
+            idempotencyKey, form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, FinancePayableRedVO.class);
         }
 
         List<FinancePayableItemEntity> items = manualRedItems(original.getPayableId(), form.getItems());
         BigDecimal redAmount = items.stream().map(FinancePayableItemEntity::getAmount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
+            BigDecimal::add);
         BigDecimal existingRedAmount = financePayableDao.selectRedAmount(original.getPayableId());
         if (redAmount.signum() <= 0 || existingRedAmount.add(redAmount).compareTo(original.getAmount()) > 0) {
             throw new ScmBusinessException(FinanceErrorCode.RED_AMOUNT_EXCEEDED);
@@ -94,7 +94,7 @@ public class FinancePayableService {
         String operator = ScmOperator.current();
         FinancePayableEntity red = new FinancePayableEntity();
         red.setPayableNo(
-                ScmDocumentNumbers.format(FinanceConstant.PAYABLE_NO_PREFIX, financePayableDao.nextPayableNo()));
+            ScmDocumentNumbers.format(FinanceConstant.PAYABLE_NO_PREFIX, financePayableDao.nextPayableNo()));
         red.setSourceType(ScmFinancePayableSourceTypeEnum.MANUAL.name());
         red.setSourceId(null);
         red.setPurchaseOrderId(original.getPurchaseOrderId());
@@ -121,7 +121,7 @@ public class FinancePayableService {
         }
 
         operationLogs.record(ScmFinanceBusinessTypeEnum.PAYABLE, red.getId(), ScmFinanceOperationTypeEnum.RED_GENERATE,
-                reason, null, redSnapshot(red, items.size()));
+            reason, null, redSnapshot(red, items.size()));
 
         FinancePayableRedVO result = redVO(red, items.size());
         idempotencyService.complete(claim, "FINANCE_PAYABLE", red.getId(), result);
@@ -129,13 +129,13 @@ public class FinancePayableService {
     }
 
     private List<FinancePayableItemEntity> manualRedItems(Long originalPayableId,
-            List<FinancePayableRedItemForm> forms) {
+        List<FinancePayableRedItemForm> forms) {
         String operator = ScmOperator.current();
         OffsetDateTime now = OffsetDateTime.now();
         List<FinancePayableItemEntity> items = new ArrayList<>(forms.size());
         for (FinancePayableRedItemForm form : forms) {
             FinancePayableItemEntity originalItem = financePayableItemDao.selectOriginalItem(originalPayableId,
-                    form.getPurchaseOrderItemId());
+                form.getPurchaseOrderItemId());
             if (originalItem == null) {
                 throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
             }
@@ -147,7 +147,7 @@ public class FinancePayableService {
                 throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
             }
             BigDecimal expectedAmount = quantity.multiply(unitPrice).setScale(FinanceConstant.AMOUNT_SCALE,
-                    RoundingMode.HALF_UP);
+                RoundingMode.HALF_UP);
             if (amount.compareTo(expectedAmount) != 0) {
                 throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
             }
@@ -230,11 +230,11 @@ public class FinancePayableService {
             throw new IllegalStateException("收货单未处于 CONFIRMED 状态，不能生成应付: " + purchaseReceiptId);
         }
 
-        List<FinancePayableSourceLineDto> lines = financePayableSourceDao
-                .selectConfirmedReceiptLines(purchaseReceiptId);
+        List<
+            FinancePayableSourceLineDto> lines = financePayableSourceDao.selectConfirmedReceiptLines(purchaseReceiptId);
         List<FinancePayableItemEntity> items = toItems(lines);
         BigDecimal amount = items.stream().map(FinancePayableItemEntity::getAmount).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
+            BigDecimal::add);
 
         if (amount.signum() <= 0) {
             // 没有有效明细，或单价为 0 导致金额为 0：不产生 0 元财务事实，也不造一张空单头留痕
@@ -255,7 +255,7 @@ public class FinancePayableService {
         }
 
         operationLogs.record(ScmFinanceBusinessTypeEnum.PAYABLE, payable.getId(), ScmFinanceOperationTypeEnum.GENERATE,
-                null, null, generatedSnapshot(payable, items.size()));
+            null, null, generatedSnapshot(payable, items.size()));
     }
 
     /**
@@ -268,7 +268,7 @@ public class FinancePayableService {
 
         FinancePayableEntity payable = new FinancePayableEntity();
         payable.setPayableNo(
-                ScmDocumentNumbers.format(FinanceConstant.PAYABLE_NO_PREFIX, financePayableDao.nextPayableNo()));
+            ScmDocumentNumbers.format(FinanceConstant.PAYABLE_NO_PREFIX, financePayableDao.nextPayableNo()));
         payable.setSourceType(ScmFinancePayableSourceTypeEnum.PURCHASE_RECEIPT.name());
         payable.setSourceId(source.getPurchaseReceiptId());
         payable.setPurchaseOrderId(source.getPurchaseOrderId());
@@ -294,7 +294,7 @@ public class FinancePayableService {
 
         return lines.stream().map(line -> {
             BigDecimal amount = line.getQuantity().multiply(line.getUnitPrice()).setScale(FinanceConstant.AMOUNT_SCALE,
-                    RoundingMode.HALF_UP);
+                RoundingMode.HALF_UP);
 
             FinancePayableItemEntity item = new FinancePayableItemEntity();
             item.setSourceType(ScmFinancePayableItemSourceTypeEnum.PURCHASE_RECEIPT_ITEM.name());
@@ -314,7 +314,9 @@ public class FinancePayableService {
         }).toList();
     }
 
-    /** 财务生成日志的金额和时间写入 JSON 快照前须转成字符串，避免通用 JSONB 转换器无法序列化时间类型。 */
+    /**
+     * 财务生成日志的金额和时间写入 JSON 快照前须转成字符串，避免通用 JSONB 转换器无法序列化时间类型。
+     */
     private Map<String, Object> generatedSnapshot(FinancePayableEntity payable, int itemCount) {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("payableNo", payable.getPayableNo());

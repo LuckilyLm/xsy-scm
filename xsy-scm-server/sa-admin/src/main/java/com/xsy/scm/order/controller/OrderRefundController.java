@@ -45,7 +45,7 @@ public class OrderRefundController {
     @SaCheckPermission(OrderPermission.REFUND_COMPLETE)
     @OperateLog
     public ResponseDTO<OrderRefundVO> complete(@Valid @RequestBody OrderRefundCompleteForm refundCompleteForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderRefundService.complete(refundCompleteForm, key));
     }
 

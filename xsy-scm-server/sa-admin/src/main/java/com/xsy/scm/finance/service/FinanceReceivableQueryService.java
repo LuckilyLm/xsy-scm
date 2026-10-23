@@ -40,16 +40,18 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** Read-only AR query, detail and export row selection. */
+/**
+ * Read-only AR query, detail and export row selection.
+ */
 @Service
 @RequiredArgsConstructor
 public class FinanceReceivableQueryService {
 
     private static final java.util.Set<String> SETTLE_STATES = java.util.Set.of(ScmFinanceSettleStateEnum.OPEN.name(),
-            ScmFinanceSettleStateEnum.PARTIAL.name(), ScmFinanceSettleStateEnum.SETTLED.name());
+        ScmFinanceSettleStateEnum.PARTIAL.name(), ScmFinanceSettleStateEnum.SETTLED.name());
 
     private static final java.util.Set<String> ENTRY_TYPES = java.util.Set.of(ScmFinanceEntryTypeEnum.NORMAL.name(),
-            ScmFinanceEntryTypeEnum.RED.name());
+        ScmFinanceEntryTypeEnum.RED.name());
 
     private final FinanceReceivableDao financeReceivableDao;
     private final FinanceReceivableItemDao financeReceivableItemDao;
@@ -107,16 +109,16 @@ public class FinanceReceivableQueryService {
             throw new ScmBusinessException(FinanceErrorCode.RECEIVABLE_NOT_FOUND);
         }
         List<FinanceReceivableItemVO> items = financeReceivableItemDao.selectByReceivableId(receivableId).stream()
-                .map(FinanceReceivableQueryService::itemVO).toList();
+            .map(FinanceReceivableQueryService::itemVO).toList();
         List<FinanceReceivableVO> redEntries = ScmFinanceEntryTypeEnum.NORMAL.name().equals(entity.getEntryType())
-                ? financeReceivableDao.selectRedEntriesByOriginal(receivableId)
-                : List.of();
+            ? financeReceivableDao.selectRedEntriesByOriginal(receivableId)
+            : List.of();
         FinanceReceivableVO original = entity.getOriginalReceivableId() == null
-                ? null
-                : financeReceivableDao.selectSummaryById(entity.getOriginalReceivableId());
+            ? null
+            : financeReceivableDao.selectSummaryById(entity.getOriginalReceivableId());
         List<FinanceWriteOffVO> writeOffs = ScmFinanceEntryTypeEnum.NORMAL.name().equals(entity.getEntryType())
-                ? writeOffQueryService.byTarget(ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name(), receivableId, scope)
-                : List.of();
+            ? writeOffQueryService.byTarget(ScmFinanceWriteOffTargetTypeEnum.RECEIVABLE.name(), receivableId, scope)
+            : List.of();
 
         List<Long> receivableLogIds = new ArrayList<>();
         receivableLogIds.add(receivableId);
@@ -125,11 +127,11 @@ public class FinanceReceivableQueryService {
             receivableLogIds.add(original.getReceivableId());
         }
         List<FinanceOperationLogVO> logs = new ArrayList<>(
-                operationLogs(ScmFinanceBusinessTypeEnum.RECEIVABLE.name(), receivableLogIds));
+            operationLogs(ScmFinanceBusinessTypeEnum.RECEIVABLE.name(), receivableLogIds));
         logs.addAll(operationLogs(ScmFinanceBusinessTypeEnum.WRITE_OFF.name(),
-                writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
+            writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
         logs.sort(
-                Comparator.comparing(FinanceOperationLogVO::getCreatedAt).thenComparing(FinanceOperationLogVO::getId));
+            Comparator.comparing(FinanceOperationLogVO::getCreatedAt).thenComparing(FinanceOperationLogVO::getId));
 
         FinanceReceivableDetailVO detail = new FinanceReceivableDetailVO();
         detail.setReceivable(header);
@@ -146,11 +148,11 @@ public class FinanceReceivableQueryService {
             return List.of();
         }
         return financeOperationLogDao
-                .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
-                        .eq(FinanceOperationLogEntity::getBusinessType, businessType)
-                        .in(FinanceOperationLogEntity::getBusinessId, businessIds)
-                        .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
-                .stream().map(FinanceReceivableQueryService::logVO).toList();
+            .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
+                .eq(FinanceOperationLogEntity::getBusinessType, businessType)
+                .in(FinanceOperationLogEntity::getBusinessId, businessIds)
+                .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
+            .stream().map(FinanceReceivableQueryService::logVO).toList();
     }
 
     private static FinanceReceivableItemVO itemVO(FinanceReceivableItemEntity item) {

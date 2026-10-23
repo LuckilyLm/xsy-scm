@@ -1,8 +1,10 @@
 package com.xsy.scm.inventory.dao;
 
 import com.xsy.scm.inventory.domain.entity.InventoryLotMovementEntity;
+
 import java.math.BigDecimal;
 import java.util.List;
+
 import lombok.Data;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -25,10 +27,12 @@ public interface InventoryLotMovementDao {
      * 必须限定来源单据类型：不同单据表的行 id 可能相同，只按行 id 汇总会把其他单据的流水混进净额。
      */
     List<LotSourceNet> sumByLotForSource(@Param("warehouseId") Long warehouseId, @Param("skuId") Long skuId,
-            @Param("sourceDocumentItemId") Long sourceDocumentItemId,
-            @Param("sourceDocumentTypes") List<String> sourceDocumentTypes);
+        @Param("sourceDocumentItemId") Long sourceDocumentItemId,
+        @Param("sourceDocumentTypes") List<String> sourceDocumentTypes);
 
-    /** 来源行在某批次上的净额。 */
+    /**
+     * 来源行在某批次上的净额。
+     */
     @Data
     class LotSourceNet {
         private Long lotId;

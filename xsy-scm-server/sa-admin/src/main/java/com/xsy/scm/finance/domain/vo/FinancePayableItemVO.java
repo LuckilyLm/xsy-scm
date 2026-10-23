@@ -6,7 +6,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
 import java.math.BigDecimal;
 
-/** Frozen receipt/manual line details for an AP fact. */
+/**
+ * Frozen receipt/manual line details for an AP fact.
+ */
 @Data
 public class FinancePayableItemVO {
 

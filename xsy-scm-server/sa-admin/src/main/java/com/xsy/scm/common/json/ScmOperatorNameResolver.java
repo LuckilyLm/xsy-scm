@@ -10,15 +10,21 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/** 后台操作人编号按员工表解析成人名，使用短期缓存避免逐字段查库。非员工用户及找不到的员工编号保持原文。 */
+/**
+ * 后台操作人编号按员工表解析成人名，使用短期缓存避免逐字段查库。非员工用户及找不到的员工编号保持原文。
+ */
 @Component
 @RequiredArgsConstructor
 public class ScmOperatorNameResolver {
 
-    /** 缓存有效期。姓名变更不敏感，一分钟的延迟可以接受。 */
+    /**
+     * 缓存有效期。姓名变更不敏感，一分钟的延迟可以接受。
+     */
     private static final long TTL_MILLIS = 60_000L;
 
-    /** {@code userType:userId} 的形状。只认这个形状，避免误改真实人名或其它标识。 */
+    /**
+     * {@code userType:userId} 的形状。只认这个形状，避免误改真实人名或其它标识。
+     */
     private static final Pattern OPERATOR_ID = Pattern.compile("^(\\d+):(\\d+)$");
 
     private final EmployeeDao employeeDao;
@@ -32,7 +38,9 @@ public class ScmOperatorNameResolver {
         ScmOperatorNameSerializer.bind(this::display);
     }
 
-    /** 展示用姓名；认不出形状 / 解析不到时原样返回。 */
+    /**
+     * 展示用姓名；认不出形状 / 解析不到时原样返回。
+     */
     public String display(String operator) {
         Long employeeId = adminEmployeeId(operator);
         if (employeeId == null) {
@@ -74,8 +82,8 @@ public class ScmOperatorNameResolver {
                 return nameById;
             }
             nameById = employeeDao.selectList(null).stream().filter(employee -> employee.getActualName() != null)
-                    .collect(Collectors.toMap(employee -> employee.getEmployeeId(),
-                            employee -> employee.getActualName(), (first, second) -> first));
+                .collect(Collectors.toMap(employee -> employee.getEmployeeId(), employee -> employee.getActualName(),
+                    (first, second) -> first));
             loadedAt = System.currentTimeMillis();
             return nameById;
         }

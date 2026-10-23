@@ -9,19 +9,21 @@ import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/** 大屏 DAO 只查仓库分布和地理网络等展示数据；销售、采购等经营指标沿用统一统计服务。 */
+/**
+ * 大屏 DAO 只查仓库分布和地理网络等展示数据；销售、采购等经营指标沿用统一统计服务。
+ */
 @Mapper
 public interface ScreenDataDao {
 
     List<ScreenInventoryVO.WarehouseDistribution> inventoryDistributionByWarehouse(
-            @Param("scope") ScmDataScopeContext scope);
+        @Param("scope") ScmDataScopeContext scope);
 
     /**
      * 供应链网络节点：仅启用仓库，带库存量与今日出库量（出库方向的全部流水类型）。
      */
     List<ScreenInventoryVO.WarehouseNode> warehouseNetworkNodes(@Param("startTime") OffsetDateTime startTime,
-            @Param("endTime") OffsetDateTime endTime, @Param("outboundTypes") List<String> outboundTypes,
-            @Param("scope") ScmDataScopeContext scope);
+        @Param("endTime") OffsetDateTime endTime, @Param("outboundTypes") List<String> outboundTypes,
+        @Param("scope") ScmDataScopeContext scope);
 
     /**
      * 按市聚合的主档归属行，坐标取 {@code xsy_region} 的区划质心。

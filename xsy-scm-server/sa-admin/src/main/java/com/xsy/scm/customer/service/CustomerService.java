@@ -25,9 +25,11 @@ import com.xsy.scm.customer.manager.CustomerValidator;
 import com.xsy.scm.warehouse.permission.WarehousePermission;
 import com.xsy.scm.warehouse.service.WarehouseService;
 import cn.dev33.satoken.stp.StpUtil;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.system.login.domain.RequestEmployee;
 import net.lab1024.sa.base.common.domain.RequestUser;
@@ -35,12 +37,15 @@ import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_CODE_DUPLICATE;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_TRADABLE;
 
-/** 客户资料的修改都在事务中完成，依次校验输入、版本和业务归属后再保存。 */
+/**
+ * 客户资料的修改都在事务中完成，依次校验输入、版本和业务归属后再保存。
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomerService {
@@ -101,34 +106,38 @@ public class CustomerService {
         return requireSettlementAccount(customer, true);
     }
 
-    /** Resolve a legally configured settlement account without changing historical finance tradability rules. */
+    /**
+     * Resolve a legally configured settlement account without changing historical finance tradability rules.
+     */
     public CustomerEntity requireSettlementAccount(CustomerEntity customer) {
         return requireSettlementAccount(customer, false);
     }
 
     private CustomerEntity requireSettlementAccount(CustomerEntity customer, boolean requireTradable) {
         Long settlementCustomerId = customer.getSettlementCustomerId() == null
-                ? customer.getId()
-                : customer.getSettlementCustomerId();
+            ? customer.getId()
+            : customer.getSettlementCustomerId();
         CustomerEntity settlement = requireTradable
-                ? requireTradable(settlementCustomerId)
-                : require(settlementCustomerId);
+            ? requireTradable(settlementCustomerId)
+            : require(settlementCustomerId);
         boolean self = Objects.equals(customer.getId(), settlement.getId());
         boolean directParent = Objects.equals(customer.getParentCustomerId(), settlement.getId());
         boolean groupMode = ScmSettleModeEnum.GROUP.name().equals(customer.getSettleMode())
-                && ScmSettleModeEnum.GROUP.name().equals(settlement.getSettleMode());
+            && ScmSettleModeEnum.GROUP.name().equals(settlement.getSettleMode());
         boolean settlementIsGroup = CustomerValidator.GROUP_TYPE_CODE
-                .equals(customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
+            .equals(customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
         // 结算主体只允许自己或直接上级。兄弟客户即使拥有同一 parent，也不能互相充当结算主体；
         // 集团统一结算必须由 GROUP 类型、GROUP 模式且自身结算的权威父客户承担。
         if ((!self && !(directParent && groupMode && settlementIsGroup))
-                || !Objects.equals(settlement.getSettlementCustomerId(), settlement.getId())) {
+            || !Objects.equals(settlement.getSettlementCustomerId(), settlement.getId())) {
             throw new ScmBusinessException(CustomerErrorCode.CUSTOMER_PARENT_INVALID);
         }
         return settlement;
     }
 
-    /** Historical documents retain their settlement account even after group membership changes. */
+    /**
+     * Historical documents retain their settlement account even after group membership changes.
+     */
     public CustomerEntity lockCreditAccount(Long settlementCustomerId) {
         CustomerEntity locked = customerDao.lock(settlementCustomerId);
         if (locked == null) {
@@ -201,7 +210,9 @@ public class CustomerService {
             customerSkuVisibilityService.replace(entity.getId(), entity.getVisibilityPolicy(), form.getVisibilities());
     }
 
-    /** 改派客户负责人只能通过独立授权接口执行，必须校验分配权限及单据版本；普通编辑不能顺带改客户归属。 */
+    /**
+     * 改派客户负责人只能通过独立授权接口执行，必须校验分配权限及单据版本；普通编辑不能顺带改客户归属。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void reassignSeller(CustomerSellerReassignForm form) {
         customerSkuVisibilityDao.lockCustomer(form.getCustomerId());
@@ -214,7 +225,9 @@ public class CustomerService {
         }
     }
 
-    /** 普通员工新建客户时负责人默认是自己；只有有分配权的人可以指定别人或暂不分配。无法识别当前员工时必须拒绝创建。 */
+    /**
+     * 普通员工新建客户时负责人默认是自己；只有有分配权的人可以指定别人或暂不分配。无法识别当前员工时必须拒绝创建。
+     */
     private Long resolveSellerOnCreate(Long submittedSellerId) {
         if (ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM)) {
             return submittedSellerId;
@@ -234,7 +247,7 @@ public class CustomerService {
     public void bindMallDeliveryWarehouse(Long customerId, Integer version, Long warehouseId) {
         CustomerEntity customer = customerDao.selectById(customerId);
         if (customer == null || (!dataScopeService.resolve().getCustomerSellerScope().allows(customer.getSellerId())
-                && !ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM))) {
+            && !ScmDataScopeService.hasPermission(ScmDataScopeService.CUSTOMER_ASSIGN_PERM))) {
             throw new ScmDataScopeException();
         }
         if (customerDao.updateMallDeliveryWarehouse(customerId, version, warehouseId, ScmOperator.current()) != 1) {
@@ -299,7 +312,7 @@ public class CustomerService {
         entity.setSettleMode(form.getSettleMode());
         // 只有集团主体才谈得上授权；切成独立结算时授权自动作废，不留下悬空权限
         entity.setSharedSettlementEnabled(ScmSettleModeEnum.GROUP.name().equals(form.getSettleMode())
-                && Boolean.TRUE.equals(form.getSharedSettlementEnabled()));
+            && Boolean.TRUE.equals(form.getSharedSettlementEnabled()));
         if (form.getCodAllowed() != null) {
             entity.setCodAllowed(form.getCodAllowed());
         }
@@ -347,8 +360,8 @@ public class CustomerService {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
         boolean changed = clear
-                ? entity.getMallDeliveryWarehouseId() != null
-                : requestedId != null && !Objects.equals(requestedId, entity.getMallDeliveryWarehouseId());
+            ? entity.getMallDeliveryWarehouseId() != null
+            : requestedId != null && !Objects.equals(requestedId, entity.getMallDeliveryWarehouseId());
         if (!changed)
             return;
         StpUtil.checkPermission(WarehousePermission.UPDATE);

@@ -20,10 +20,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmWeighingSourceEnum {
 
-    /** 人工录入。 */
+    /**
+     * 人工录入。
+     */
     MANUAL("人工录入"),
 
-    /** 电子秤设备上报（尚未开放）。 */
+    /**
+     * 电子秤设备上报（尚未开放）。
+     */
     DEVICE("电子秤");
 
     private final String desc;

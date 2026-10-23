@@ -3,11 +3,13 @@ package com.xsy.scm.promotion.domain.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import lombok.Data;
 
 /**
@@ -26,23 +28,33 @@ public class PromotionDiscountVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal baseAmount;
 
-    /** 活动产生的优惠（不含券、不含限时特价）。 */
+    /**
+     * 活动产生的优惠（不含券、不含限时特价）。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal activityDiscount;
 
-    /** 限时特价的让利归属对应商品行，单独保留金额；其余满减与券优惠再按订单规则分摊。 */
+    /**
+     * 限时特价的让利归属对应商品行，单独保留金额；其余满减与券优惠再按订单规则分摊。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal specialDiscount;
 
-    /** 券产生的优惠。 */
+    /**
+     * 券产生的优惠。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal couponDiscount;
 
-    /** 合计优惠（已夹在 [0, 基础合计] 内）。 */
+    /**
+     * 合计优惠（已夹在 [0, 基础合计] 内）。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal discountAmount;
 
-    /** 客户实付 = 基础合计 − 合计优惠。 */
+    /**
+     * 客户实付 = 基础合计 − 合计优惠。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal finalAmount;
 
@@ -62,13 +74,19 @@ public class PromotionDiscountVO {
 
     private List<PromotionDiscountAllocationVO> allocations = new ArrayList<>();
 
-    /** 承接舍入差额的行；没有差额时为 {@code null}。 */
+    /**
+     * 承接舍入差额的行；没有差额时为 {@code null}。
+     */
     private Long roundingTargetItemId;
 
-    /** 试算过程中被互斥组挤掉的活动（可解释：为什么另一条没生效）。 */
+    /**
+     * 试算过程中被互斥组挤掉的活动（可解释：为什么另一条没生效）。
+     */
     private List<String> suppressedActivities = new ArrayList<>();
 
-    /** 订单可能同时命中不同互斥组的多个活动。完整生效活动列表用于冻结和退款，主活动 ID 仅用于快速展示。 */
+    /**
+     * 订单可能同时命中不同互斥组的多个活动。完整生效活动列表用于冻结和退款，主活动 ID 仅用于快速展示。
+     */
     private List<AppliedActivityVO> appliedActivities = new ArrayList<>();
 
     /**
@@ -77,7 +95,9 @@ public class PromotionDiscountVO {
      */
     private List<GiftEntitlementVO> gifts = new ArrayList<>();
 
-    /** 本次结果是否已冻结（确认下单为 true，试算为 false）。 */
+    /**
+     * 本次结果是否已冻结（确认下单为 true，试算为 false）。
+     */
     private boolean frozen;
 
     private OffsetDateTime createdAt;
@@ -85,7 +105,9 @@ public class PromotionDiscountVO {
     @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
 
-    /** 活动规则原文（受控键值），便于界面解释「按什么规则算的」。 */
+    /**
+     * 活动规则原文（受控键值），便于界面解释「按什么规则算的」。
+     */
     private Map<String, Object> activityRule;
 
     @Data
@@ -100,7 +122,9 @@ public class PromotionDiscountVO {
         private BigDecimal discountAmount;
     }
 
-    /** 一条实际生效的活动：规则与它这一次贡献的优惠额一并留下，供退款反向与解释使用。 */
+    /**
+     * 一条实际生效的活动：规则与它这一次贡献的优惠额一并留下，供退款反向与解释使用。
+     */
     @Data
     public static class AppliedActivityVO {
 
@@ -114,14 +138,18 @@ public class PromotionDiscountVO {
 
         private Integer version;
 
-        /** 活动规则原文（受控键值）。 */
+        /**
+         * 活动规则原文（受控键值）。
+         */
         private Map<String, Object> rule;
 
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal discountAmount;
     }
 
-    /** 一条赠品权益：活动、赠品 SKU 快照与数量，冻结后不可改。 */
+    /**
+     * 一条赠品权益：活动、赠品 SKU 快照与数量，冻结后不可改。
+     */
     @Data
     public static class GiftEntitlementVO {
 
@@ -146,7 +174,9 @@ public class PromotionDiscountVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal quantity;
 
-        /** 活动规则原文（受控键值），供解释「满多少赠多少」。 */
+        /**
+         * 活动规则原文（受控键值），供解释「满多少赠多少」。
+         */
         private Map<String, Object> rule;
     }
 }

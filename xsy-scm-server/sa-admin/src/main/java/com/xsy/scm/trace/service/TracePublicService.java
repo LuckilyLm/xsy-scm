@@ -9,10 +9,12 @@ import com.xsy.scm.trace.domain.vo.TraceAttachmentVO;
 import com.xsy.scm.trace.domain.vo.TracePublicVO;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import com.xsy.scm.trace.support.TracePublicRateLimiter;
+
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.file.domain.vo.FileDownloadVO;
@@ -84,10 +86,11 @@ public class TracePublicService {
             result.setOrderNo(maskOrderNo(binding.getOrderNo()));
         }
         result.setAttachments(ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())
-                ? traceAttachmentService.publicAttachments(unit.getLotId(), lot == null ? null : lot.getSpuId())
-                : List.of());
+            ? traceAttachmentService.publicAttachments(unit.getLotId(), lot == null ? null : lot.getSpuId())
+            : List.of());
         result.setInspectionReports(ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())
-                ? tracePublicInspectionService.reports(unit.getLotId()) : List.of());
+            ? tracePublicInspectionService.reports(unit.getLotId())
+            : List.of());
         audit(unit, token, clientIp, userAgent);
         return result;
     }
@@ -109,11 +112,11 @@ public class TracePublicService {
             throw new ScmBusinessException(TraceErrorCode.TRACE_PUBLIC_FILE_NOT_ALLOWED);
         }
         TraceUnitVO.Lot lot = traceUnitDao.findLot(unit.getLotId());
-        Set<String> allowed = new HashSet<>(traceAttachmentService
-                .publicAttachments(unit.getLotId(), lot == null ? null : lot.getSpuId()).stream()
+        Set<String> allowed = new HashSet<>(
+            traceAttachmentService.publicAttachments(unit.getLotId(), lot == null ? null : lot.getSpuId()).stream()
                 .map(TraceAttachmentVO::getFileKey).toList());
-        tracePublicInspectionService.reports(unit.getLotId()).forEach(report ->
-                report.getAttachments().forEach(file -> allowed.add(file.getFileKey())));
+        tracePublicInspectionService.reports(unit.getLotId())
+            .forEach(report -> report.getAttachments().forEach(file -> allowed.add(file.getFileKey())));
         String key = fileKey == null ? "" : fileKey.trim();
         if (key.isEmpty() || !allowed.contains(key)) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_PUBLIC_FILE_NOT_ALLOWED);
@@ -133,11 +136,13 @@ public class TracePublicService {
         return token;
     }
 
-    /** 审计写入失败只丢审计，不丢这次查询：扫码的人不该因为一条日志写不进去而看到错误页。 */
+    /**
+     * 审计写入失败只丢审计，不丢这次查询：扫码的人不该因为一条日志写不进去而看到错误页。
+     */
     private void audit(TraceUnitVO.Unit unit, String token, String clientIp, String userAgent) {
         try {
             tracePublicQueryDao.insert(unit.getId(), token, truncate(clientIp, 64), truncate(userAgent, 200),
-                    OffsetDateTime.now());
+                OffsetDateTime.now());
         } catch (RuntimeException ignored) {
             // 审计是旁路：这里刻意不记录日志，避免被高频枚举刷爆日志文件
         }
@@ -154,7 +159,9 @@ public class TracePublicService {
         return trimmed.length() <= maxLength ? trimmed : trimmed.substring(0, maxLength);
     }
 
-    /** 客户名只留姓氏：扫码的人只需要确认「这是我这单的货」，不需要看到别人的全名。 */
+    /**
+     * 客户名只留姓氏：扫码的人只需要确认「这是我这单的货」，不需要看到别人的全名。
+     */
     private static String maskName(String name) {
         if (name == null || name.isBlank()) {
             return null;
@@ -163,7 +170,9 @@ public class TracePublicService {
         return trimmed.length() <= 1 ? trimmed : trimmed.charAt(0) + "**";
     }
 
-    /** 订单号保留首尾各 4 位：够客户对照自己的订单，又不足以被拿来猜别的单号。 */
+    /**
+     * 订单号保留首尾各 4 位：够客户对照自己的订单，又不足以被拿来猜别的单号。
+     */
     private static String maskOrderNo(String orderNo) {
         if (orderNo == null || orderNo.isBlank()) {
             return null;

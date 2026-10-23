@@ -25,7 +25,9 @@ import java.util.Objects;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
-/** 维护仓库基本信息和启停状态。仓库停用的校验由仓库模块负责；新采购单使用停用仓库的限制由采购模块负责。 */
+/**
+ * 维护仓库基本信息和启停状态。仓库停用的校验由仓库模块负责；新采购单使用停用仓库的限制由采购模块负责。
+ */
 @Service
 @RequiredArgsConstructor
 public class WarehouseService {
@@ -50,7 +52,9 @@ public class WarehouseService {
         return entity;
     }
 
-    /** 查询仓库状态只返回是否启用，停用仓库的具体业务拒绝码由采购等调用方判断。 */
+    /**
+     * 查询仓库状态只返回是否启用，停用仓库的具体业务拒绝码由采购等调用方判断。
+     */
     public boolean enabled(Long id) {
         return ScmWarehouseStatusEnum.ENABLED.name().equals(require(id).getStatus());
     }
@@ -60,13 +64,15 @@ public class WarehouseService {
      */
     public List<WarehouseEntity> all() {
         return warehouseDao.selectList(new LambdaQueryWrapper<WarehouseEntity>()
-                .orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId));
+            .orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId));
     }
 
-    /** 只有恰好一个启用仓库时才能自动选为默认仓库。无启用仓或多个启用仓都返回明确错误，不能猜仓库。 */
+    /**
+     * 只有恰好一个启用仓库时才能自动选为默认仓库。无启用仓或多个启用仓都返回明确错误，不能猜仓库。
+     */
     public WarehouseEntity defaultEnabledWarehouse() {
         List<WarehouseEntity> enabled = all().stream()
-                .filter(w -> ScmWarehouseStatusEnum.ENABLED.name().equals(w.getStatus())).toList();
+            .filter(w -> ScmWarehouseStatusEnum.ENABLED.name().equals(w.getStatus())).toList();
         if (enabled.size() != 1) {
             throw new ScmBusinessException(WarehouseErrorCode.WAREHOUSE_DEFAULT_AMBIGUOUS);
         }

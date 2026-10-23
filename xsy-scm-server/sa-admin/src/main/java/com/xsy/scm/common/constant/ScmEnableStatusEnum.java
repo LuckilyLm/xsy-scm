@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmEnableStatusEnum {
 
-    /** 启用。 */
+    /**
+     * 启用。
+     */
     ENABLED("启用"),
 
-    /** 停用。 */
+    /**
+     * 停用。
+     */
     DISABLED("停用");
 
     private final String desc;

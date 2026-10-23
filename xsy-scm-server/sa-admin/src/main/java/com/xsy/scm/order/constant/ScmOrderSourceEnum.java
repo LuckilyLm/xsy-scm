@@ -13,16 +13,24 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmOrderSourceEnum {
 
-    /** 后台建单。 */
+    /**
+     * 后台建单。
+     */
     ADMIN("后台"),
 
-    /** 客户商城下单。 */
+    /**
+     * 客户商城下单。
+     */
     MALL("商城"),
 
-    /** 补录。 */
+    /**
+     * 补录。
+     */
     SUPPLEMENT("补录"),
 
-    /** 批量导入。 */
+    /**
+     * 批量导入。
+     */
     IMPORT("导入");
 
     private final String desc;

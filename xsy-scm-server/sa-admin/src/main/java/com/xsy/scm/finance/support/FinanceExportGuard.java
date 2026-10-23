@@ -6,7 +6,9 @@ import com.xsy.scm.common.exception.ScmBusinessException;
 import java.util.List;
 import java.util.function.Function;
 
-/** Bounds synchronous finance exports without changing the list query's filters or scope. */
+/**
+ * Bounds synchronous finance exports without changing the list query's filters or scope.
+ */
 public final class FinanceExportGuard {
 
     public static final int EXPORT_MAX_ROWS = 100_000;

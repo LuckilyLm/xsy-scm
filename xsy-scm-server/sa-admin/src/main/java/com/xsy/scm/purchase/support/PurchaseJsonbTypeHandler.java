@@ -23,7 +23,7 @@ public class PurchaseJsonbTypeHandler extends BaseTypeHandler<Map<String, Object
 
     @Override
     public void setNonNullParameter(PreparedStatement statement, int index, Map<String, Object> jsonValue,
-            JdbcType jdbcType) throws SQLException {
+        JdbcType jdbcType) throws SQLException {
         try {
             PGobject pg = new PGobject();
             pg.setType("jsonb");

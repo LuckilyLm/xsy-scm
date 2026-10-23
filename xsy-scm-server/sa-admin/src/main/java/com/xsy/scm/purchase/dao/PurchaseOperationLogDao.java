@@ -8,7 +8,9 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-/** 采购操作日志只能新增和查询，不能更新或删除。日志关联的采购单、收货单由调用方明确给出，数据库校验归属。 */
+/**
+ * 采购操作日志只能新增和查询，不能更新或删除。日志关联的采购单、收货单由调用方明确给出，数据库校验归属。
+ */
 @Mapper
 public interface PurchaseOperationLogDao extends BaseMapper<PurchaseOperationLogEntity> {
 

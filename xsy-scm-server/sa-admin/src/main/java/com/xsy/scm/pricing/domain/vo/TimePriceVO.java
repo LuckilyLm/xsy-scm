@@ -2,9 +2,12 @@ package com.xsy.scm.pricing.domain.vo;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
-/** 时价列表行。 */
+/**
+ * 时价列表行。
+ */
 @Data
 public class TimePriceVO {
 
@@ -22,6 +25,8 @@ public class TimePriceVO {
     private String createdBy;
     private OffsetDateTime createdAt;
 
-    /** 当前时刻是否落在生效区间内。 */
+    /**
+     * 当前时刻是否落在生效区间内。
+     */
     private Boolean effectiveNow;
 }

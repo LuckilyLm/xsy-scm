@@ -1,6 +1,7 @@
 package com.xsy.scm.mall.order.domain.vo;
 
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -13,7 +14,9 @@ import lombok.Data;
 public class MallOrderTimelineVO {
     private Long logId;
     private String operationType;
-    /** 可读操作者：员工显示姓名，商城客户统一显示「客户」，系统操作显示「系统」 */
+    /**
+     * 可读操作者：员工显示姓名，商城客户统一显示「客户」，系统操作显示「系统」
+     */
     private String operatorName;
     private String reason;
     private OffsetDateTime createdAt;

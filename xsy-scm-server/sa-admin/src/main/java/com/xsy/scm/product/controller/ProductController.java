@@ -77,9 +77,9 @@ public class ProductController {
     public ResponseDTO<String> update(@Valid @RequestBody ProductSpuUpdateForm form) {
         var existing = productQueryService.detail(form.getSpuId()).getImages();
         var before = existing.stream()
-                .map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
+            .map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
         var after = form.getImages().stream()
-                .map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
+            .map(i -> Arrays.asList(i.getImageId(), i.getFileKey(), i.getPrimaryFlag(), i.getSortOrder())).toList();
         if (!before.equals(after))
             StpUtil.checkPermission(ProductPermission.IMAGE);
         productSpuService.update(form);

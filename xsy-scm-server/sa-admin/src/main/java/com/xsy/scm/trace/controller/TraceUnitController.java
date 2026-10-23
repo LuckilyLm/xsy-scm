@@ -12,7 +12,9 @@ import com.xsy.scm.trace.permission.TracePermission;
 import com.xsy.scm.trace.service.TraceUnitService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -71,7 +73,7 @@ public class TraceUnitController {
     @PostMapping("/{unitCode}/weight")
     @SaCheckPermission(TracePermission.UNIT_WEIGH)
     public ResponseDTO<TraceUnitVO.Unit> weigh(@PathVariable String unitCode,
-            @RequestBody @Valid TraceUnitWeightForm form) {
+        @RequestBody @Valid TraceUnitWeightForm form) {
         return ResponseDTO.ok(traceUnitService.weigh(unitCode, form, ScmOperator.current()));
     }
 }

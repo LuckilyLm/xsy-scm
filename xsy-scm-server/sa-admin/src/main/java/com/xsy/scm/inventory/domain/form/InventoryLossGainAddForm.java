@@ -14,7 +14,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 报损报溢单的创建和待审核编辑共用表单。数量必须为正，库存变化方向取报损或报溢类型；状态由服务端管理，不能从表单直接指定。 */
+/**
+ * 报损报溢单的创建和待审核编辑共用表单。数量必须为正，库存变化方向取报损或报溢类型；状态由服务端管理，不能从表单直接指定。
+ */
 @Data
 public class InventoryLossGainAddForm {
 

@@ -9,7 +9,9 @@ import lombok.Data;
 
 import java.util.List;
 
-/** 对一张正常应付追加一张手工红字应付。 */
+/**
+ * 对一张正常应付追加一张手工红字应付。
+ */
 @Data
 public class FinancePayableRedForm {
 

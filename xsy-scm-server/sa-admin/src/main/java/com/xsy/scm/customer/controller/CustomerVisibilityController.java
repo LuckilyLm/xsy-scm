@@ -21,7 +21,7 @@ public class CustomerVisibilityController {
     @PostMapping("/scm/customer/visibility/reverse/query")
     @SaCheckPermission(CustomerPermission.VISIBILITY_QUERY)
     public ResponseDTO<PageResult<CustomerSkuVisibilityReverseVO>> reverse(
-            @Valid @RequestBody CustomerVisibilityQueryForm queryForm) {
+        @Valid @RequestBody CustomerVisibilityQueryForm queryForm) {
         return ResponseDTO.ok(customerSkuVisibilityService.reverse(queryForm));
     }
 }

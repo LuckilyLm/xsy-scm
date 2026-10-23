@@ -18,6 +18,7 @@ import com.xsy.scm.mall.catalog.service.MallCatalogService;
 import com.xsy.scm.mall.catalog.service.MallQuantityPolicy;
 import com.xsy.scm.pricing.constant.ScmUnavailableReasonEnum;
 import com.xsy.scm.pricing.constant.ScmUnpricedReasonEnum;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,8 +89,8 @@ public class MallCartService {
         MallProductVO product = requireVisible(customer, form.getSkuId());
         boolean quickAdd = Boolean.TRUE.equals(form.getQuickAdd());
         BigDecimal quantity = quickAdd
-                ? (product.getMinOrderQty() == null ? BigDecimal.ONE : product.getMinOrderQty())
-                : parseQuantity(form.getQuantity());
+            ? (product.getMinOrderQty() == null ? BigDecimal.ONE : product.getMinOrderQty())
+            : parseQuantity(form.getQuantity());
         MallCartItemEntity existing = cartDao.lockByAccountAndSku(customer.getAccountId(), form.getSkuId());
         while (existing == null) {
             MallQuantityPolicy.require(product, quantity);
@@ -99,7 +101,8 @@ public class MallCartService {
             existing = cartDao.lockByAccountAndSku(customer.getAccountId(), form.getSkuId());
         }
         BigDecimal increment = quickAdd
-                ? (product.getStepQty() == null ? BigDecimal.ONE : product.getStepQty()) : quantity;
+            ? (product.getStepQty() == null ? BigDecimal.ONE : product.getStepQty())
+            : quantity;
         BigDecimal total = existing.getQuantity().add(increment);
         MallQuantityPolicy.require(product, total);
         cartDao.updateQuantity(customer.getAccountId(), form.getSkuId(), total, ScmOperator.current());
@@ -142,7 +145,7 @@ public class MallCartService {
     @Transactional(rollbackFor = Exception.class)
     public MallCartVO removeBatch(RequestMallCustomer customer, MallCartRemoveForm form) {
         cartDao.removeBySkus(customer.getAccountId(), form.getSkuIds().stream().distinct().toList(),
-                ScmOperator.current());
+            ScmOperator.current());
         return assemble(customer);
     }
 
@@ -195,9 +198,9 @@ public class MallCartService {
             return result;
         }
         Map<Long,
-                MallProductVO> products = catalogService
-                        .visibleProducts(customer, rows.stream().map(MallCartItemEntity::getSkuId).toList()).stream()
-                        .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity()));
+            MallProductVO> products = catalogService
+                .visibleProducts(customer, rows.stream().map(MallCartItemEntity::getSkuId).toList()).stream()
+                .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity()));
         BigDecimal estimated = BigDecimal.ZERO.setScale(SCALE);
         int available = 0;
         for (MallCartItemEntity row : rows) {

@@ -63,7 +63,9 @@ import static com.xsy.scm.sorting.constant.SortingErrorCode.SUPPLIER_INVALID;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.TASK_NOT_FOUND;
 import static com.xsy.scm.sorting.constant.SortingErrorCode.WAREHOUSE_INVALID;
 
-/** 分拣只记录实际数量，不直接修改销售订单或库存；完成后需要重开才能修改。 */
+/**
+ * 分拣只记录实际数量，不直接修改销售订单或库存；完成后需要重开才能修改。
+ */
 @Service
 @RequiredArgsConstructor
 public class SortingTaskService {
@@ -91,7 +93,9 @@ public class SortingTaskService {
     private final SupplierDao supplierDao;
     private final ScmIdempotencyService idempotencyService;
     private final SortingQueryService sortingQueryService;
-    /** 改实拣量前的包装码绑定守卫：跨域只读契约，排序域不写追溯表。 */
+    /**
+     * 改实拣量前的包装码绑定守卫：跨域只读契约，排序域不写追溯表。
+     */
     private final com.xsy.scm.trace.service.TraceUnitService traceUnitService;
 
     /**
@@ -122,11 +126,11 @@ public class SortingTaskService {
         // 「可能对、也可能不对」的来源，而分拣台上正是按它找货的。
         task.setDeliveryTimeSnapshot(form.getDeliveryTime());
         task.setDeliveryWave(
-                StringUtils.isBlank(form.getDeliveryWave()) ? null : StringUtils.trim(form.getDeliveryWave()));
+            StringUtils.isBlank(form.getDeliveryWave()) ? null : StringUtils.trim(form.getDeliveryWave()));
         if (form.getSupplierId() != null) {
             var supplier = supplierDao.selectById(form.getSupplierId());
             if (supplier == null || Boolean.TRUE.equals(supplier.getDeleted())
-                    || !ScmEnableStatusEnum.ENABLED.name().equals(supplier.getStatus()))
+                || !ScmEnableStatusEnum.ENABLED.name().equals(supplier.getStatus()))
                 throw new ScmBusinessException(SUPPLIER_INVALID);
             task.setSupplierId(supplier.getId());
             task.setSupplierNameSnapshot(supplier.getName());
@@ -208,7 +212,7 @@ public class SortingTaskService {
     }
 
     private static SortingPartRecordVO partEvent(Long taskId, Long itemId, String kind, BigDecimal delta,
-            BigDecimal total, String note) {
+        BigDecimal total, String note) {
         var event = new SortingPartRecordVO();
         event.setTaskId(taskId);
         event.setTaskItemId(itemId);
@@ -245,8 +249,8 @@ public class SortingTaskService {
             // 若最终量偏离已累计记录，必须显式写原因和差额事件，禁止静默覆盖。
             var previous = sortingPartRecordDao.latest(row.getId());
             BigDecimal before = previous != null
-                    ? previous.getTotalQuantity()
-                    : row.getSortedQuantity() != null ? row.getSortedQuantity() : BigDecimal.ZERO;
+                ? previous.getTotalQuantity()
+                : row.getSortedQuantity() != null ? row.getSortedQuantity() : BigDecimal.ZERO;
             BigDecimal difference = entry.getSortedQuantity().subtract(before);
             if (previous != null && difference.signum() != 0 && StringUtils.isBlank(reason))
                 throw new ScmBusinessException(VALIDATION_ERROR);
@@ -310,7 +314,9 @@ public class SortingTaskService {
         save(task);
     }
 
-    /** 重开已完成分拣任务时，保留原分拣数量及原因，供继续修改。已确认销售出库的任务不能重开；发车前会再次检查任务状态。 */
+    /**
+     * 重开已完成分拣任务时，保留原分拣数量及原因，供继续修改。已确认销售出库的任务不能重开；发车前会再次检查任务状态。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void reopen(Long id, SortingActionForm form) {
         ScmDataScopeContext scope = access.scope();
@@ -326,11 +332,11 @@ public class SortingTaskService {
         // 结果是一张已真实出库的订单行还能继续改分拣量，而这正是本条守卫要拦的事。
         // 配送侧同样按订单 id 升序加锁（DeliveryRouteService#dispatch），因此这里不会构成反向锁序。
         items.stream().map(SortingTaskItemEntity::getSalesOrderId).filter(Objects::nonNull).distinct().sorted()
-                .forEach(salesOrderDao::lock);
+            .forEach(salesOrderDao::lock);
         var orderLineIds = items.stream().map(SortingTaskItemEntity::getSalesOrderItemId).filter(Objects::nonNull)
-                .toList();
+            .toList();
         if (!orderLineIds.isEmpty()
-                && !inventoryOutboundItemDao.listOrderLinesWithConfirmedOutbound(orderLineIds).isEmpty()) {
+            && !inventoryOutboundItemDao.listOrderLinesWithConfirmedOutbound(orderLineIds).isEmpty()) {
             throw new ScmBusinessException(OUTBOUND_EXISTS);
         }
         task.setStatus(ScmSortingTaskStatusEnum.SORTING.name());
@@ -375,8 +381,8 @@ public class SortingTaskService {
             throw new ScmBusinessException(ORDER_NOT_SORTABLE);
         for (var line : found) {
             if (!ScmOrderStatusEnum.CONFIRMED.name().equals(line.getOrderStatus())
-                    || Boolean.TRUE.equals(line.getOrderDeleted()) || Boolean.TRUE.equals(line.getItemDeleted())
-                    || line.getActualQuantity() == null)
+                || Boolean.TRUE.equals(line.getOrderDeleted()) || Boolean.TRUE.equals(line.getItemDeleted())
+                || line.getActualQuantity() == null)
                 throw new ScmBusinessException(ORDER_NOT_SORTABLE);
         }
         return found;
@@ -412,10 +418,10 @@ public class SortingTaskService {
     private Map<Long, SortingTaskItemEntity> activeItems(Long taskId) {
         var map = new LinkedHashMap<Long, SortingTaskItemEntity>();
         sortingTaskItemDao
-                .selectList(new LambdaQueryWrapper<SortingTaskItemEntity>().eq(SortingTaskItemEntity::getTaskId, taskId)
-                        .eq(SortingTaskItemEntity::getOccupationStatus, ScmSortingOccupationStatusEnum.ACTIVE.name())
-                        .orderByAsc(SortingTaskItemEntity::getId))
-                .forEach(sortingTaskItem -> map.put(sortingTaskItem.getId(), sortingTaskItem));
+            .selectList(new LambdaQueryWrapper<SortingTaskItemEntity>().eq(SortingTaskItemEntity::getTaskId, taskId)
+                .eq(SortingTaskItemEntity::getOccupationStatus, ScmSortingOccupationStatusEnum.ACTIVE.name())
+                .orderByAsc(SortingTaskItemEntity::getId))
+            .forEach(sortingTaskItem -> map.put(sortingTaskItem.getId(), sortingTaskItem));
         return map;
     }
 
@@ -434,7 +440,7 @@ public class SortingTaskService {
             return;
         EmployeeEntity employee = employeeDao.selectById(employeeId);
         if (employee == null || Boolean.TRUE.equals(employee.getDeletedFlag())
-                || Boolean.TRUE.equals(employee.getDisabledFlag()))
+            || Boolean.TRUE.equals(employee.getDisabledFlag()))
             throw new ScmBusinessException(ASSIGNEE_INVALID);
     }
 

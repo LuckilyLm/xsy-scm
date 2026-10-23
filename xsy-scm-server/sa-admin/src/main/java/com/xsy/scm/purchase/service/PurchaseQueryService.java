@@ -96,7 +96,9 @@ public class PurchaseQueryService {
         return SmartPageUtil.convert2PageResult(page, purchaseDemandDao.query(page, form, purchaserScope));
     }
 
-    /** 按已确认订单实际数量和指定仓库可用库存计算缺口，只读不生成需求。仓库必须明确指定且在授权范围内；无权查看时返回空结果，不当作零库存。 */
+    /**
+     * 按已确认订单实际数量和指定仓库可用库存计算缺口，只读不生成需求。仓库必须明确指定且在授权范围内；无权查看时返回空结果，不当作零库存。
+     */
     @Transactional(readOnly = true)
     public PageResult<PurchaseDemandSummaryVO> summaryPreview(PurchaseDemandSummaryPreviewForm form) {
         if (!form.getStartAt().isBefore(form.getEndAt())) {
@@ -114,7 +116,9 @@ public class PurchaseQueryService {
         return SmartPageUtil.convert2PageResult(page, purchaseDemandDao.summaryPreview(page, form, warehouseScope));
     }
 
-    /** Reads every grouped row for a calculation snapshot with the exact preview scope and criteria. */
+    /**
+     * Reads every grouped row for a calculation snapshot with the exact preview scope and criteria.
+     */
     @Transactional(readOnly = true)
     public List<PurchaseDemandSummaryVO> summaryPreviewAll(PurchaseDemandSummaryPreviewForm form, int maximumRows) {
         ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
@@ -129,7 +133,7 @@ public class PurchaseQueryService {
             List<PurchaseDemandSummaryVO> pageRows = purchaseDemandDao.summaryPreview(page, form, scope);
             if (page.getTotal() > maximumRows) {
                 throw new ScmBusinessException(
-                        com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_BATCH_TOO_LARGE);
+                    com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_BATCH_TOO_LARGE);
             }
             rows.addAll(pageRows);
             if (rows.size() >= page.getTotal() || pageRows.isEmpty()) {
@@ -313,7 +317,7 @@ public class PurchaseQueryService {
         vo.setItems(receiptItems(receiptId, ScmValueScope.all()));
         // 批次开关随详情下发：确认弹窗据此决定是否要求登记批次（仓库不存在时按未启用处理）
         vo.setWarehouseLotTrackingEnabled(vo.getWarehouseId() != null
-                && Boolean.TRUE.equals(warehouseService.require(vo.getWarehouseId()).getLotTrackingEnabled()));
+            && Boolean.TRUE.equals(warehouseService.require(vo.getWarehouseId()).getLotTrackingEnabled()));
         return vo;
     }
 
@@ -334,9 +338,10 @@ public class PurchaseQueryService {
         if (items.isEmpty()) {
             return;
         }
-        Map<Long, List<com.xsy.scm.trace.domain.vo.TraceLotVO.ReceiptItemLot>> grouped = traceLotContract
+        Map<Long,
+            List<com.xsy.scm.trace.domain.vo.TraceLotVO.ReceiptItemLot>> grouped = traceLotContract
                 .listByReceiptItemIds(items.stream().map(PurchaseReceiptItemVO::getId).toList()).stream().collect(
-                        Collectors.groupingBy(com.xsy.scm.trace.domain.vo.TraceLotVO.ReceiptItemLot::getReceiptItemId));
+                    Collectors.groupingBy(com.xsy.scm.trace.domain.vo.TraceLotVO.ReceiptItemLot::getReceiptItemId));
         items.forEach(item -> item.setLots(grouped.getOrDefault(item.getId(), List.of())));
     }
 
@@ -353,12 +358,14 @@ public class PurchaseQueryService {
             requirePurchaserVisible(purchaserScope, orderPurchaserId(parentOrderId));
         }
         List<PurchaseReceiptItemVO> items = purchaseReceiptItemDao.listByReceiptId(receiptId).stream()
-                .map(PurchaseQueryService::receiptItemVo).toList();
+            .map(PurchaseQueryService::receiptItemVo).toList();
         attachLots(items);
         return items;
     }
 
-    /** 按商品规格与采购单位汇总待收货数据，只读不改收货和库存。数据先按授权仓库过滤，再分组计算；聚合分页按分组数量统计。 */
+    /**
+     * 按商品规格与采购单位汇总待收货数据，只读不改收货和库存。数据先按授权仓库过滤，再分组计算；聚合分页按分组数量统计。
+     */
     @Transactional(readOnly = true)
     public PageResult<PurchaseReceiptItemWorkbenchVO> receiptItemWorkbench(PurchaseReceiptItemWorkbenchQueryForm form) {
         if (form.getSortItemList() != null && !form.getSortItemList().isEmpty()) {
@@ -388,26 +395,25 @@ public class PurchaseQueryService {
             return List.of();
         }
         List<Long> itemIds = rows.stream().map(PurchaseOrderItemEntity::getId).toList();
-        List<PurchaseDemandAllocationEntity> allocations = purchaseDemandAllocationDao
-                .listActiveByOrderItemIds(itemIds);
+        List<
+            PurchaseDemandAllocationEntity> allocations = purchaseDemandAllocationDao.listActiveByOrderItemIds(itemIds);
         Map<Long, PurchaseDemandEntity> demands = demandMap(allocations);
 
         Map<Long, List<PurchaseOrderAllocationVO>> byItem = new LinkedHashMap<>();
         for (PurchaseDemandAllocationEntity allocation : allocations) {
             byItem.computeIfAbsent(allocation.getPurchaseOrderItemId(), key -> new ArrayList<>())
-                    .add(allocationVo(allocation, demands.get(allocation.getPurchaseDemandId())));
+                .add(allocationVo(allocation, demands.get(allocation.getPurchaseDemandId())));
         }
 
         return rows.stream()
-                .sorted(Comparator
-                        .comparing(PurchaseOrderItemEntity::getSortOrder,
-                                Comparator.nullsLast(Comparator.naturalOrder()))
-                        .thenComparing(PurchaseOrderItemEntity::getId))
-                .map(row -> itemVo(row, byItem.getOrDefault(row.getId(), List.of()))).toList();
+            .sorted(Comparator
+                .comparing(PurchaseOrderItemEntity::getSortOrder, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(PurchaseOrderItemEntity::getId))
+            .map(row -> itemVo(row, byItem.getOrDefault(row.getId(), List.of()))).toList();
     }
 
     private static PurchaseOrderItemVO itemVo(PurchaseOrderItemEntity row,
-            List<PurchaseOrderAllocationVO> allocations) {
+        List<PurchaseOrderAllocationVO> allocations) {
         PurchaseOrderItemVO vo = new PurchaseOrderItemVO();
         vo.setId(row.getId());
         vo.setSkuId(row.getSkuId());
@@ -422,9 +428,9 @@ public class PurchaseQueryService {
         vo.setReceivedQuantity(row.getReceivedQuantity());
         // 与 DB 的 ck_purchase_receipt_item_reconciliation 用同一个纯函数
         vo.setRemainingQuantity(
-                PurchaseReceiptQuantityCalculator.remaining(row.getPlannedQuantity(), row.getReceivedQuantity()));
+            PurchaseReceiptQuantityCalculator.remaining(row.getPlannedQuantity(), row.getReceivedQuantity()));
         vo.setOverReceiptQuantity(
-                PurchaseReceiptQuantityCalculator.overReceipt(row.getPlannedQuantity(), row.getReceivedQuantity()));
+            PurchaseReceiptQuantityCalculator.overReceipt(row.getPlannedQuantity(), row.getReceivedQuantity()));
         vo.setPurchasePrice(row.getPurchasePrice());
         vo.setLineAmount(row.getLineAmount());
         vo.setSortOrder(row.getSortOrder());
@@ -441,7 +447,7 @@ public class PurchaseQueryService {
      * 取自<b>需求当前值</b>（不是分配行上的快照）：它们表达的是「这条分配现在挂在一个什么状态的需求上」，快照表达不了「需求已补齐」。 {@code quantity} 取分配行自己的数量（一条分配一个数量）。
      */
     private static PurchaseOrderAllocationVO allocationVo(PurchaseDemandAllocationEntity row,
-            PurchaseDemandEntity demand) {
+        PurchaseDemandEntity demand) {
         PurchaseOrderAllocationVO vo = new PurchaseOrderAllocationVO();
         vo.setAllocationId(row.getId());
         vo.setDemandId(row.getPurchaseDemandId());
@@ -460,12 +466,12 @@ public class PurchaseQueryService {
 
     private Map<Long, PurchaseDemandEntity> demandMap(List<PurchaseDemandAllocationEntity> allocations) {
         List<Long> demandIds = allocations.stream().map(PurchaseDemandAllocationEntity::getPurchaseDemandId)
-                .filter(Objects::nonNull).distinct().toList();
+            .filter(Objects::nonNull).distinct().toList();
         if (demandIds.isEmpty()) {
             return Map.of();
         }
         return purchaseDemandDao.selectBatchIds(demandIds).stream()
-                .collect(Collectors.toMap(PurchaseDemandEntity::getId, demand -> demand, (a, b) -> a));
+            .collect(Collectors.toMap(PurchaseDemandEntity::getId, demand -> demand, (a, b) -> a));
     }
 
     private static PurchaseReceiptItemVO receiptItemVo(PurchaseReceiptItemEntity row) {

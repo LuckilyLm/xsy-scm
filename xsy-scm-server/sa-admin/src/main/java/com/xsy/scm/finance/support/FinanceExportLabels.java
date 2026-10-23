@@ -88,7 +88,9 @@ public final class FinanceExportLabels {
         }
     }
 
-    /** 核销导出里的资金类型与目标类型。 */
+    /**
+     * 核销导出里的资金类型与目标类型。
+     */
     public static String businessType(String value) {
         if (value == null || value.isBlank()) {
             return "";

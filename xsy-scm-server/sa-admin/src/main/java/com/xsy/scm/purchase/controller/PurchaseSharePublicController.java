@@ -34,7 +34,7 @@ public class PurchaseSharePublicController {
 
     @PostMapping("/{token}/feedback")
     public ResponseDTO<String> feedback(@PathVariable String token, @RequestBody @Valid PurchaseShareFeedbackForm form,
-            HttpServletRequest request) {
+        HttpServletRequest request) {
         purchaseShareService.submitFeedback(token, form, request.getRemoteAddr());
         return ResponseDTO.ok();
     }

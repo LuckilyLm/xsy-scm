@@ -12,6 +12,7 @@ import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.order.service.MallWarehouseService;
 import com.xsy.scm.pricing.domain.vo.ResolvedPriceVO;
 import com.xsy.scm.pricing.service.PriceResolver;
+
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.HashMap;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.module.support.file.service.FileService;
@@ -41,7 +43,7 @@ public class MallCatalogService {
     public List<MallCategoryVO> categories(RequestMallCustomer customer) {
         List<MallCategoryVO> rows = catalogDao.categories(customer.getCustomerId());
         Map<Long, MallCategoryVO> byId = rows.stream().collect(
-                Collectors.toMap(MallCategoryVO::getCategoryId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
+            Collectors.toMap(MallCategoryVO::getCategoryId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
         rows.forEach(row -> {
             MallCategoryVO parent = byId.get(row.getParentId());
             if (parent != null) {
@@ -55,8 +57,8 @@ public class MallCatalogService {
     public PageResult<MallProductVO> products(RequestMallCustomer customer, MallProductQueryForm query) {
         Page<MallProductVO> page = new Page<>(query.getPageNum(), query.getPageSize(), true);
         Long warehouseId = query.getWarehouseId() == null
-                ? mallWarehouseService.preferred(customer.getCustomerId(), null)
-                : mallWarehouseService.require(customer.getCustomerId(), null, query.getWarehouseId());
+            ? mallWarehouseService.preferred(customer.getCustomerId(), null)
+            : mallWarehouseService.require(customer.getCustomerId(), null, query.getWarehouseId());
         List<MallProductVO> rows = catalogDao.products(page, customer.getCustomerId(), query);
         enrich(customer, rows, warehouseId);
         PageResult<MallProductVO> result = new PageResult<>();
@@ -85,21 +87,21 @@ public class MallCatalogService {
             return List.of();
         }
         List<MallProductVO> rows = catalogDao.productsBySkuIds(customer.getCustomerId(),
-                skuIds.stream().distinct().toList());
+            skuIds.stream().distinct().toList());
         enrich(customer, rows, mallWarehouseService.preferred(customer.getCustomerId(), null));
         return rows;
     }
 
     @Transactional(readOnly = true)
     public List<MallProductVO> visibleProducts(RequestMallCustomer customer, List<Long> skuIds, Long addressId,
-            Long warehouseId) {
+        Long warehouseId) {
         if (skuIds == null || skuIds.isEmpty())
             return List.of();
         Long selectedWarehouse = warehouseId == null
-                ? mallWarehouseService.preferred(customer.getCustomerId(), addressId)
-                : mallWarehouseService.require(customer.getCustomerId(), addressId, warehouseId);
+            ? mallWarehouseService.preferred(customer.getCustomerId(), addressId)
+            : mallWarehouseService.require(customer.getCustomerId(), addressId, warehouseId);
         List<MallProductVO> rows = catalogDao.productsBySkuIds(customer.getCustomerId(),
-                skuIds.stream().distinct().toList());
+            skuIds.stream().distinct().toList());
         enrich(customer, rows, selectedWarehouse);
         return rows;
     }
@@ -110,7 +112,7 @@ public class MallCatalogService {
         int size = Math.min(Math.max(limit, 1), 100);
         var since = LocalDate.now(SHANGHAI).minusDays(window - 1L).atStartOfDay(SHANGHAI).toOffsetDateTime();
         List<Long> skuIds = frequentSkuDao.frequentSkus(customer.getCustomerId(), since, size).stream()
-                .map(item -> item.getSkuId()).distinct().toList();
+            .map(item -> item.getSkuId()).distinct().toList();
         if (skuIds.isEmpty()) {
             return List.of();
         }
@@ -134,15 +136,13 @@ public class MallCatalogService {
         if (rows.isEmpty()) {
             return;
         }
-        Map<Long,
-                ResolvedPriceVO> prices = priceResolver
-                        .resolve(customer.getCustomerId(), rows.stream().map(MallProductVO::getSkuId).toList(), null,
-                                warehouseId)
-                        .stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity()));
+        Map<Long, ResolvedPriceVO> prices = priceResolver
+            .resolve(customer.getCustomerId(), rows.stream().map(MallProductVO::getSkuId).toList(), null, warehouseId)
+            .stream().collect(Collectors.toMap(ResolvedPriceVO::getSkuId, Function.identity()));
         Map<String, String> urls = new HashMap<>();
         fileService
-                .getFileList(rows.stream().map(MallProductVO::getPrimaryImageKey).filter(key -> key != null).toList())
-                .forEach(file -> urls.put(file.getFileKey(), file.getFileUrl()));
+            .getFileList(rows.stream().map(MallProductVO::getPrimaryImageKey).filter(key -> key != null).toList())
+            .forEach(file -> urls.put(file.getFileKey(), file.getFileUrl()));
         for (MallProductVO row : rows) {
             ResolvedPriceVO price = prices.get(row.getSkuId());
             if (price != null) {
@@ -151,7 +151,7 @@ public class MallCatalogService {
                 row.setPriceSource(price.getPriceSource() == null ? null : price.getPriceSource().name());
                 row.setSellable(price.isSellable());
                 row.setUnavailableReason(
-                        price.getUnavailableReason() == null ? null : price.getUnavailableReason().name());
+                    price.getUnavailableReason() == null ? null : price.getUnavailableReason().name());
             }
             row.setPrimaryImageUrl(urls.get(row.getPrimaryImageKey()));
         }

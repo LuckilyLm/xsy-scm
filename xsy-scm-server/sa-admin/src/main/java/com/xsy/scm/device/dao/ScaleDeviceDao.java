@@ -2,7 +2,9 @@ package com.xsy.scm.device.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xsy.scm.device.domain.entity.ScaleDeviceEntity;
+
 import java.time.OffsetDateTime;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -28,17 +30,17 @@ public interface ScaleDeviceDao extends BaseMapper<ScaleDeviceEntity> {
      * 激活：写入设备凭证并清空配对码。返回 0 表示配对码已被并发使用或已过期。
      */
     int activate(@Param("id") Long id, @Param("pairingCodeHash") String pairingCodeHash,
-            @Param("credentialHash") String credentialHash,
-            @Param("credentialExpiresAt") OffsetDateTime credentialExpiresAt,
-            @Param("protocolType") String protocolType, @Param("agentVersion") String agentVersion);
+        @Param("credentialHash") String credentialHash,
+        @Param("credentialExpiresAt") OffsetDateTime credentialExpiresAt, @Param("protocolType") String protocolType,
+        @Param("agentVersion") String agentVersion);
 
     /**
      * 心跳：只更新观测字段，不改变绑定与凭证状态。
      */
     int heartbeat(@Param("id") Long id, @Param("agentVersion") String agentVersion,
-            @Param("protocolType") String protocolType, @Param("scaleConnected") Boolean scaleConnected,
-            @Param("printerConnected") Boolean printerConnected, @Param("queueDepth") Integer queueDepth,
-            @Param("lastReadingAt") OffsetDateTime lastReadingAt);
+        @Param("protocolType") String protocolType, @Param("scaleConnected") Boolean scaleConnected,
+        @Param("printerConnected") Boolean printerConnected, @Param("queueDepth") Integer queueDepth,
+        @Param("lastReadingAt") OffsetDateTime lastReadingAt);
 
     int markRevoked(@Param("id") Long id, @Param("operator") String operator);
 }

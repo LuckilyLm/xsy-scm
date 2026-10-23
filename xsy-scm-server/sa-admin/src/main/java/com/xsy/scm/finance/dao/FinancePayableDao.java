@@ -14,7 +14,9 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 正常应付按业务来源防重；没有来源 ID 的手工红字应付用金额限制和请求幂等键防重。应付事实只能追加。 */
+/**
+ * 正常应付按业务来源防重；没有来源 ID 的手工红字应付用金额限制和请求幂等键防重。应付事实只能追加。
+ */
 @Mapper
 public interface FinancePayableDao extends BaseMapper<FinancePayableEntity> {
 
@@ -50,5 +52,5 @@ public interface FinancePayableDao extends BaseMapper<FinancePayableEntity> {
     List<FinancePayableVO> selectRedEntriesByOriginal(@Param("originalPayableId") Long originalPayableId);
 
     List<FinancePayableVO> queryPage(Page<?> page, @Param("query") FinancePayableQueryForm query,
-            @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
+        @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
 }

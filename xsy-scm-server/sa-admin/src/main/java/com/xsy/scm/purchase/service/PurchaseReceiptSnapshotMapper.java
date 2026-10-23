@@ -4,11 +4,14 @@ import com.xsy.scm.purchase.domain.entity.PurchaseReceiptItemEntity;
 import com.xsy.scm.purchase.domain.vo.PurchaseReceiptItemVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseReceiptVO;
 import com.xsy.scm.purchase.manager.PurchaseSnapshotFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** 采购收货操作日志快照映射，不执行业务写入。 */
+/**
+ * 采购收货操作日志快照映射，不执行业务写入。
+ */
 final class PurchaseReceiptSnapshotMapper {
 
     private PurchaseReceiptSnapshotMapper() {
@@ -24,7 +27,9 @@ final class PurchaseReceiptSnapshotMapper {
         return snapshot;
     }
 
-    /** 草稿收货单删除操作记录的完整前态。 */
+    /**
+     * 草稿收货单删除操作记录的完整前态。
+     */
     static Map<String, Object> receiptSnapshot(PurchaseReceiptVO vo) {
         Map<String, Object> snapshot = PurchaseSnapshotFactory.snapshot();
         snapshot.put("id", vo.getId());

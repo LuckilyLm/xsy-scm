@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import com.xsy.scm.inventory.dao.InventoryStocktakeDao;
 import org.springframework.stereotype.Service;
 
-/** 盘点单号用 STK、日期和数据库序列生成，数据库序列保证并发唯一。业务流水防重仍使用来源类型及来源明细 ID。 */
+/**
+ * 盘点单号用 STK、日期和数据库序列生成，数据库序列保证并发唯一。业务流水防重仍使用来源类型及来源明细 ID。
+ */
 @Service
 @RequiredArgsConstructor
 public class InventoryStocktakeNumberGenerator {

@@ -8,7 +8,9 @@ import com.xsy.scm.trace.permission.TracePermission;
 import com.xsy.scm.trace.service.TraceAttachmentService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,7 +43,7 @@ public class TraceAttachmentController {
     @PostMapping("/product/{spuId}/sync")
     @SaCheckPermission(TracePermission.FILE_MANAGE)
     public ResponseDTO<String> syncProductAttachments(@PathVariable Long spuId,
-            @RequestBody @Valid TraceAttachmentSaveForm form) {
+        @RequestBody @Valid TraceAttachmentSaveForm form) {
         traceAttachmentService.syncProductAttachments(spuId, form.getFileKeys());
         return ResponseDTO.ok();
     }
@@ -55,7 +57,7 @@ public class TraceAttachmentController {
     @PostMapping("/lot/{lotId}/sync")
     @SaCheckPermission(TracePermission.FILE_MANAGE)
     public ResponseDTO<String> syncLotAttachments(@PathVariable Long lotId,
-            @RequestBody @Valid TraceAttachmentSaveForm form) {
+        @RequestBody @Valid TraceAttachmentSaveForm form) {
         traceAttachmentService.syncLotAttachments(lotId, form.getFileKeys());
         return ResponseDTO.ok();
     }

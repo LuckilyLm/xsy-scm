@@ -5,7 +5,9 @@ import com.xsy.scm.trace.service.TracePublicService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.common.util.SmartResponseUtil;
@@ -36,22 +38,24 @@ public class TracePublicController {
 
     @GetMapping("/{publicToken}")
     public ResponseDTO<TracePublicVO> query(@PathVariable String publicToken, HttpServletRequest request,
-            HttpServletResponse response) {
+        HttpServletResponse response) {
         response.setHeader("Cache-Control", "no-store");
         return ResponseDTO.ok(tracePublicService.query(publicToken, clientIp(request), userAgent(request)));
     }
 
     @GetMapping("/{publicToken}/files")
     public void file(@PathVariable String publicToken, @RequestParam String fileKey, HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
+        HttpServletResponse response) throws IOException {
         response.setHeader("Cache-Control", "no-store");
         FileDownloadVO file = tracePublicService.file(publicToken, fileKey, clientIp(request));
         SmartResponseUtil.setDownloadFileHeader(response, file.getMetadata().getFileName(),
-                file.getMetadata().getFileSize());
+            file.getMetadata().getFileSize());
         response.getOutputStream().write(file.getData());
     }
 
-    /** 反向代理会把真实来源写在 X-Forwarded-For 的第一个位置；直连时退回 remoteAddr。 */
+    /**
+     * 反向代理会把真实来源写在 X-Forwarded-For 的第一个位置；直连时退回 remoteAddr。
+     */
     private static String clientIp(HttpServletRequest request) {
         String forwarded = request.getHeader(HEADER_FORWARDED_FOR);
         if (forwarded != null && !forwarded.isBlank()) {

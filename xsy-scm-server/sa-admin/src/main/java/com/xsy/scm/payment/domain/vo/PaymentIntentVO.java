@@ -3,12 +3,16 @@ package com.xsy.scm.payment.domain.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.Data;
 
-/** 支付意图（含其下交易流水）。 */
+/**
+ * 支付意图（含其下交易流水）。
+ */
 @Data
 public class PaymentIntentVO {
 
@@ -26,7 +30,9 @@ public class PaymentIntentVO {
 
     private String sourceNoSnapshot;
 
-    /** 应付金额：<b>显式给出</b>，不从订单金额推断。 */
+    /**
+     * 应付金额：<b>显式给出</b>，不从订单金额推断。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal amount;
 
@@ -38,7 +44,9 @@ public class PaymentIntentVO {
 
     private String externalIntentId;
 
-    /** 仅本地模拟渠道有值。 */
+    /**
+     * 仅本地模拟渠道有值。
+     */
     private String mockScenario;
 
     private OffsetDateTime expireAt;
@@ -54,6 +62,8 @@ public class PaymentIntentVO {
     @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
 
-    /** 该意图下的交易流水（一次发起一条）。 */
+    /**
+     * 该意图下的交易流水（一次发起一条）。
+     */
     private List<PaymentTransactionVO> transactions;
 }

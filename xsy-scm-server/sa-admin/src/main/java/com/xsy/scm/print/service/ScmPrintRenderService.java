@@ -11,14 +11,18 @@ import com.xsy.scm.print.domain.vo.ScmPrintRenderVO;
 import com.xsy.scm.print.support.ScmPrintSource;
 import com.xsy.scm.print.support.ScmPrintSourceProvider;
 import com.xsy.scm.common.exception.ScmBusinessException;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/** 打印渲染只使用模板白名单字段；金额字段按业务单据权限裁剪，不能通过打印查看无权数据。 */
+/**
+ * 打印渲染只使用模板白名单字段；金额字段按业务单据权限裁剪，不能通过打印查看无权数据。
+ */
 @Service
 @RequiredArgsConstructor
 public class ScmPrintRenderService {
@@ -58,7 +62,7 @@ public class ScmPrintRenderService {
      *            调用者是否可见金额
      */
     public ScmPrintRenderVO render(ScmPrintDocumentTypeEnum type, ScmPrintSource source, ScmPrintTemplateModel model,
-            boolean amountVisible) {
+        boolean amountVisible) {
         ScmPrintRenderVO render = new ScmPrintRenderVO();
         render.setDocumentType(type.name());
         render.setBusinessNo(source.documentNo());

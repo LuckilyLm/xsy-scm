@@ -14,12 +14,16 @@ import com.xsy.scm.warehouse.constant.ScmWarehouseStatusEnum;
 import com.xsy.scm.warehouse.domain.entity.WarehouseEntity;
 import com.xsy.scm.warehouse.permission.WarehousePermission;
 import com.xsy.scm.warehouse.service.WarehouseService;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 管理客户默认配送仓与区县仓映射；每个目标仓都受员工当前仓库范围约束。 */
+/**
+ * 管理客户默认配送仓与区县仓映射；每个目标仓都受员工当前仓库范围约束。
+ */
 @Service
 @RequiredArgsConstructor
 public class MallWarehouseAdminService {
@@ -33,8 +37,8 @@ public class MallWarehouseAdminService {
         if (scope.isEmpty())
             return List.of();
         return warehouseService.all().stream()
-                .filter(warehouse -> ScmWarehouseStatusEnum.ENABLED.name().equals(warehouse.getStatus()))
-                .filter(warehouse -> scope.allows(warehouse.getId())).map(MallWarehouseAdminService::option).toList();
+            .filter(warehouse -> ScmWarehouseStatusEnum.ENABLED.name().equals(warehouse.getStatus()))
+            .filter(warehouse -> scope.allows(warehouse.getId())).map(MallWarehouseAdminService::option).toList();
     }
 
     public List<MallWarehouseOptionVO> districtRules(Integer districtCode) {
@@ -43,21 +47,21 @@ public class MallWarehouseAdminService {
         }
         ScmValueScope scope = dataScopeService.resolve().getWarehouseScope();
         return mallWarehouseDao.byDistrict(districtCode).stream()
-                .filter(option -> scope.allows(option.getWarehouseId())).toList();
+            .filter(option -> scope.allows(option.getWarehouseId())).toList();
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void saveDistrictRule(MallDistrictWarehouseForm form) {
         requireEnabledWarehouse(form.getWarehouseId());
         mallWarehouseDao.insertDistrictMapping(form.getDistrictCode(), form.getWarehouseId(), form.getPriority(),
-                com.xsy.scm.common.constant.ScmOperator.current());
+            com.xsy.scm.common.constant.ScmOperator.current());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void removeDistrictRule(Integer districtCode, Long warehouseId) {
         requireEnabledWarehouse(warehouseId);
         mallWarehouseDao.deleteDistrictMapping(districtCode, warehouseId,
-                com.xsy.scm.common.constant.ScmOperator.current());
+            com.xsy.scm.common.constant.ScmOperator.current());
     }
 
     @Transactional(rollbackFor = Exception.class)

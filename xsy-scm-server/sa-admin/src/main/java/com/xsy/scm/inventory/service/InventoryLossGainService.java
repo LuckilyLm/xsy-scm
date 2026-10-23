@@ -112,7 +112,7 @@ public class InventoryLossGainService {
         requireStatus(locked, ScmInventoryLossGainStatusEnum.PENDING);
 
         if (inventoryLossGainDao.updatePending(lossGainId, form.getAdjustType(), form.getWarehouseId(),
-                form.getReason(), form.getRemark(), operator) != 1) {
+            form.getReason(), form.getRemark(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         inventoryLossGainItemDao.deleteByLossGainId(lossGainId, operator);
@@ -150,14 +150,14 @@ public class InventoryLossGainService {
         // 锁序：余额锁按 (warehouseId, skuId) 升序 —— 同一单内多行也必须固定顺序。
         items.stream().sorted(Comparator.comparing(InventoryLossGainItemVO::getSkuId)).forEach(item -> {
             InventoryLossGainFact fact = new InventoryLossGainFact(locked.getWarehouseId(), item.getSkuId(),
-                    locked.getId(), item.getId(), locked.getAdjustType(), item.getQuantity(), now, operator);
+                locked.getId(), item.getId(), locked.getAdjustType(), item.getQuantity(), now, operator);
             // 单位以余额记账单位为准，由命令服务返回，这里回写到明细行
             String unit = inventoryCommandService.postLossGainAdjust(fact);
             inventoryLossGainItemDao.updateUnitSnapshot(item.getId(), unit, operator);
         });
 
         if (inventoryLossGainDao.markCompleted(lossGainId, now, operator, form.getAuditOpinion(),
-                form.getVersion()) != 1) {
+            form.getVersion()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -185,7 +185,7 @@ public class InventoryLossGainService {
         requireNotSelfApproval(locked, operator);
 
         if (inventoryLossGainDao.markRejected(lossGainId, now, operator, form.getAuditOpinion(),
-                form.getVersion()) != 1) {
+            form.getVersion()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         // 驳回是唯一把「为什么不行」传达给录单人的渠道；与状态变更同事务写站内信，
@@ -266,7 +266,9 @@ public class InventoryLossGainService {
         }
     }
 
-    /** 报损报溢审批人与录单人必须不同，按完整操作者身份比较，不能只比较用户名或员工号的一部分。 */
+    /**
+     * 报损报溢审批人与录单人必须不同，按完整操作者身份比较，不能只比较用户名或员工号的一部分。
+     */
     private static void requireNotSelfApproval(InventoryLossGainEntity document, String operator) {
         Long approverId = employeeIdOf(operator);
         Long creatorId = employeeIdOf(document.getCreatedBy());

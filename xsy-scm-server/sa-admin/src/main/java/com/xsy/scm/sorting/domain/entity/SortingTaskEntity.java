@@ -8,7 +8,9 @@ import lombok.EqualsAndHashCode;
 
 import java.time.OffsetDateTime;
 
-/** 任务按仓库和分拣员组织订单行，占用状态保存在明细中。取消任务时必须在同一事务释放全部有效明细占用。 */
+/**
+ * 任务按仓库和分拣员组织订单行，占用状态保存在明细中。取消任务时必须在同一事务释放全部有效明细占用。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_sorting_task")

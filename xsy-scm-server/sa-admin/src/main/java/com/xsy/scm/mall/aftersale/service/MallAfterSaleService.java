@@ -59,7 +59,7 @@ public class MallAfterSaleService {
         OrderReturnEntity entity = afterSaleQueryService.requireOwnedReturn(customer, returnId);
         // 已撤销时仍交给正式幂等记录判断：同键重试回放原结果，换键由正式状态机拒绝。
         if (!ScmOrderReturnStatusEnum.PENDING.name().equals(entity.getStatus())
-                && !ScmOrderReturnStatusEnum.CANCELLED.name().equals(entity.getStatus())) {
+            && !ScmOrderReturnStatusEnum.CANCELLED.name().equals(entity.getStatus())) {
             throw new ScmBusinessException(MallErrorCode.AFTERSALE_NOT_CANCELABLE);
         }
         OrderReturnDecisionForm form = new OrderReturnDecisionForm();

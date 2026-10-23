@@ -13,13 +13,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmPurchaseDemandStatusEnum {
 
-    /** 待分配：尚未生成任何采购单。 */
+    /**
+     * 待分配：尚未生成任何采购单。
+     */
     PENDING("待分配"),
 
-    /** 部分分配：已分配数量小于需求数量。 */
+    /**
+     * 部分分配：已分配数量小于需求数量。
+     */
     PARTIALLY_ALLOCATED("部分分配"),
 
-    /** 已分配：需求数量已全部落到采购单。 */
+    /**
+     * 已分配：需求数量已全部落到采购单。
+     */
     ALLOCATED("已分配");
 
     private final String desc;

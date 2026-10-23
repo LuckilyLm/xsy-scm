@@ -2,7 +2,9 @@ package com.xsy.scm.device.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xsy.scm.device.domain.entity.ScaleJobLeaseEntity;
+
 import java.time.OffsetDateTime;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -24,7 +26,7 @@ public interface ScaleJobLeaseDao extends BaseMapper<ScaleJobLeaseEntity> {
      * 某员工在某设备上的有效租约。
      */
     ScaleJobLeaseEntity selectActiveByTaskAndDevice(@Param("taskId") Long taskId, @Param("deviceId") Long deviceId,
-            @Param("now") OffsetDateTime now);
+        @Param("now") OffsetDateTime now);
 
     int release(@Param("id") Long id, @Param("reason") String reason, @Param("releasedAt") OffsetDateTime releasedAt);
 

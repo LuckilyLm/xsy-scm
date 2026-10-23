@@ -3,7 +3,9 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 调拨依次从草稿、已发出到已收货。草稿可以取消；发出后不能取消或删除，必须通过后续收货或反向业务处理。 */
+/**
+ * 调拨依次从草稿、已发出到已收货。草稿可以取消；发出后不能取消或删除，必须通过后续收货或反向业务处理。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryTransferStatusEnum {

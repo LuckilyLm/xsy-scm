@@ -32,6 +32,8 @@ public interface ScmPrintSourceProvider {
      */
     ScmPrintSource load(Long businessId);
 
-    /** 仅校验当前数据范围；历史重印不受当前可打印状态影响，也不重算内容。 */
+    /**
+     * 仅校验当前数据范围；历史重印不受当前可打印状态影响，也不重算内容。
+     */
     void requireVisible(Long businessId);
 }

@@ -51,31 +51,31 @@ public class PriceBatchWriter {
             throw new ScmBusinessException(PRICE_BATCH_KEY_DUPLICATE);
         }
         var priceBatchRows = form.getRows().stream().sorted(Comparator.comparing(PriceBatchRowForm::getCustomerTypeId))
-                .toList();
+            .toList();
         priceBatchRows.stream().map(PriceBatchRowForm::getCustomerTypeId).distinct()
-                .forEach(customerTypePriceDao::lockParent);
+            .forEach(customerTypePriceDao::lockParent);
         var customerTypeById = new HashMap<Long, CustomerTypeEntity>();
         customerTypeDao
-                .selectByIds(priceBatchRows.stream().map(PriceBatchRowForm::getCustomerTypeId).distinct().toList())
-                .forEach(customerType -> customerTypeById.put(customerType.getId(), customerType));
+            .selectByIds(priceBatchRows.stream().map(PriceBatchRowForm::getCustomerTypeId).distinct().toList())
+            .forEach(customerType -> customerTypeById.put(customerType.getId(), customerType));
         var productSkuOptionById = new HashMap<Long, ProductSkuOptionVO>();
         productSkuOptionDao.selectByIds(priceBatchRows.stream().map(PriceBatchRowForm::getSkuId).distinct().toList())
-                .forEach(skuOption -> productSkuOptionById.put(skuOption.getSkuId(), skuOption));
+            .forEach(skuOption -> productSkuOptionById.put(skuOption.getSkuId(), skuOption));
         List<PriceBatchRowFailureVO> rowFailures = new ArrayList<>();
         for (var priceBatchRow : priceBatchRows) {
             var customerType = customerTypeById.get(priceBatchRow.getCustomerTypeId());
             if (customerType == null || !ScmEnableStatusEnum.ENABLED.name().equals(customerType.getStatus())) {
                 rowFailures.add(new PriceBatchRowFailureVO(priceBatchRow.getRowNumber(),
-                        priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40431, "客户类型不存在或已停用"));
+                    priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40431, "客户类型不存在或已停用"));
             }
             if (PriceValidation.unavailable(productSkuOptionById.get(priceBatchRow.getSkuId()), true) != null) {
                 rowFailures.add(new PriceBatchRowFailureVO(priceBatchRow.getRowNumber(),
-                        priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40949, "商品规格不可售"));
+                    priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40949, "商品规格不可售"));
             }
             if (customerTypePriceDao.countOverlapping(priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(),
-                    priceBatchRow.getEffectiveFrom(), priceBatchRow.getEffectiveTo(), null) > 0) {
+                priceBatchRow.getEffectiveFrom(), priceBatchRow.getEffectiveTo(), null) > 0) {
                 rowFailures.add(new PriceBatchRowFailureVO(priceBatchRow.getRowNumber(),
-                        priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40935, "客户类型价有效期重叠"));
+                    priceBatchRow.getCustomerTypeId(), priceBatchRow.getSkuId(), 40935, "客户类型价有效期重叠"));
             }
         }
         if (!rowFailures.isEmpty())
@@ -91,7 +91,7 @@ public class PriceBatchWriter {
             createdPriceIds.add(customerTypePriceService.add(customerTypePriceForm));
         }
         priceBatchAuditDao.insert(form.getBatchKey(), ScmPriceBatchResultEnum.SUCCESS.name(), priceBatchRows.size(),
-                null, ScmOperator.current());
+            null, ScmOperator.current());
         return new PriceBatchResultVO(form.getBatchKey(), true, createdPriceIds.size(), createdPriceIds, List.of());
     }
 }

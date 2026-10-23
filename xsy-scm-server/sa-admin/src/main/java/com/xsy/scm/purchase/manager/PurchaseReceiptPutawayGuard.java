@@ -17,7 +17,7 @@ public final class PurchaseReceiptPutawayGuard {
 
     public static boolean putawayAllowed(String receiptStatus, String receiptMode, String putawayStatus) {
         return ScmReceiptStatusEnum.CONFIRMED.name().equals(receiptStatus)
-                && ScmReceiptModeEnum.WAREHOUSE_CONFIRM.name().equals(receiptMode)
-                && ScmPutawayStatusEnum.PENDING.name().equals(putawayStatus);
+            && ScmReceiptModeEnum.WAREHOUSE_CONFIRM.name().equals(receiptMode)
+            && ScmPutawayStatusEnum.PENDING.name().equals(putawayStatus);
     }
 }

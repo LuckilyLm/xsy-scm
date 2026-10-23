@@ -41,7 +41,9 @@ import java.util.function.Function;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.customer.constant.CustomerErrorCode.CUSTOMER_NOT_FOUND;
 
-/** 客户列表的类型、上级客户和业务员名称统一批量查询，避免逐条访问数据库。 */
+/**
+ * 客户列表的类型、上级客户和业务员名称统一批量查询，避免逐条访问数据库。
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomerQueryService {
@@ -103,12 +105,16 @@ public class CustomerQueryService {
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
-    /** 客户详情读（HTTP 入口）：按当前调用者的客户负责人范围判定，越权 30005。 */
+    /**
+     * 客户详情读（HTTP 入口）：按当前调用者的客户负责人范围判定，越权 30005。
+     */
     public CustomerDetailVO detail(Long customerId) {
         return detail(customerId, dataScopeService.resolve());
     }
 
-    /** 按客户 ID 查询详情时也必须检查负责人数据范围；客户不存在与当前用户无权查看分别处理，不能通过直接传 ID 绕过列表权限。 */
+    /**
+     * 按客户 ID 查询详情时也必须检查负责人数据范围；客户不存在与当前用户无权查看分别处理，不能通过直接传 ID 绕过列表权限。
+     */
     public CustomerDetailVO detail(Long customerId, ScmDataScopeContext scope) {
         CustomerEntity entity = customerDao.selectById(customerId);
         if (entity == null) {
@@ -162,7 +168,9 @@ public class CustomerQueryService {
         return customerFrequentSkuDao.frequentSkus(customerId, since, rowLimit);
     }
 
-    /** 客户选择列表遵守当前客户数据范围，可按客户类型过滤。客户状态不等同供应商启停状态，不能只按 ENABLED 筛选。 */
+    /**
+     * 客户选择列表遵守当前客户数据范围，可按客户类型过滤。客户状态不等同供应商启停状态，不能只按 ENABLED 筛选。
+     */
     public List<CustomerOptionVO> optionList() {
         var customerScope = dataScopeService.resolve().getCustomerSellerScope();
         if (customerScope.isEmpty()) {
@@ -175,8 +183,8 @@ public class CustomerQueryService {
         Set<Long> typeIds = collect(rows, CustomerEntity::getCustomerTypeId);
         if (!typeIds.isEmpty()) {
             customerTypeDao
-                    .selectList(new LambdaQueryWrapper<CustomerTypeEntity>().in(CustomerTypeEntity::getId, typeIds))
-                    .forEach(customerType -> typeCodes.put(customerType.getId(), customerType.getTypeCode()));
+                .selectList(new LambdaQueryWrapper<CustomerTypeEntity>().in(CustomerTypeEntity::getId, typeIds))
+                .forEach(customerType -> typeCodes.put(customerType.getId(), customerType.getTypeCode()));
         }
 
         List<CustomerOptionVO> list = new ArrayList<>(rows.size());
@@ -198,7 +206,7 @@ public class CustomerQueryService {
             return;
         }
         boolean illegal = form.getSortItemList().stream()
-                .anyMatch(item -> item.getColumn() == null || !SORTABLE.contains(item.getColumn().toLowerCase()));
+            .anyMatch(item -> item.getColumn() == null || !SORTABLE.contains(item.getColumn().toLowerCase()));
         if (illegal) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
@@ -232,14 +240,14 @@ public class CustomerQueryService {
         Map<Long, String> typeNames = new HashMap<>();
         if (!typeIds.isEmpty()) {
             customerTypeDao
-                    .selectList(new LambdaQueryWrapper<CustomerTypeEntity>().in(CustomerTypeEntity::getId, typeIds))
-                    .forEach(customerType -> typeNames.put(customerType.getId(), customerType.getName()));
+                .selectList(new LambdaQueryWrapper<CustomerTypeEntity>().in(CustomerTypeEntity::getId, typeIds))
+                .forEach(customerType -> typeNames.put(customerType.getId(), customerType.getName()));
         }
 
         Map<Long, String> customerNames = new HashMap<>();
         if (!parentIds.isEmpty()) {
             customerDao.selectList(new LambdaQueryWrapper<CustomerEntity>().in(CustomerEntity::getId, parentIds))
-                    .forEach(parentCustomer -> customerNames.put(parentCustomer.getId(), parentCustomer.getName()));
+                .forEach(parentCustomer -> customerNames.put(parentCustomer.getId(), parentCustomer.getName()));
         }
 
         Map<Long, String> employeeNames = new HashMap<>();
@@ -247,14 +255,14 @@ public class CustomerQueryService {
             List<EmployeeVO> found = employeeDao.getEmployeeByIds(sellerIds);
             if (found != null) {
                 found.stream().filter(employee -> employee != null && employee.getEmployeeId() != null)
-                        .forEach(employee -> employeeNames.put(employee.getEmployeeId(), employee.getActualName()));
+                    .forEach(employee -> employeeNames.put(employee.getEmployeeId(), employee.getActualName()));
             }
         }
 
         Map<Long, String> supplierNames = new HashMap<>();
         if (!supplierIds.isEmpty()) {
             supplierDao.selectList(new LambdaQueryWrapper<SupplierEntity>().in(SupplierEntity::getId, supplierIds))
-                    .forEach(supplier -> supplierNames.put(supplier.getId(), supplier.getName()));
+                .forEach(supplier -> supplierNames.put(supplier.getId(), supplier.getName()));
         }
 
         return new EnrichmentContext(typeNames, customerNames, employeeNames, supplierNames);
@@ -275,6 +283,6 @@ public class CustomerQueryService {
      * 补全所需的四张名称表，一次构造、多次复用。
      */
     private record EnrichmentContext(Map<Long, String> typeNames, Map<Long, String> customerNames,
-            Map<Long, String> employeeNames, Map<Long, String> supplierNames) {
+        Map<Long, String> employeeNames, Map<Long, String> supplierNames) {
     }
 }

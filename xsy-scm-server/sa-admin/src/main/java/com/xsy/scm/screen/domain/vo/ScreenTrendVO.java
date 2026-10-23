@@ -6,7 +6,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 大屏一次返回近 7 天或 30 天的销售、采购和库存趋势，保证各图使用同一时间区间。 */
+/**
+ * 大屏一次返回近 7 天或 30 天的销售、采购和库存趋势，保证各图使用同一时间区间。
+ */
 @Data
 @Schema(description = "数据大屏-趋势数据")
 public class ScreenTrendVO {

@@ -11,15 +11,19 @@ import com.xsy.scm.mall.order.constant.ScmSharedSettlementPolicy;
 import com.xsy.scm.mall.order.constant.ScmSettlementMethodEnum;
 import com.xsy.scm.mall.order.domain.vo.MallSettlementOptionVO;
 import com.xsy.scm.order.service.OrderCreditService;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 商城结算方式查询只读返回当前客户可选的支付方式及不可选原因。余额按结算主体查询，不产生扣款或订单状态变化。 */
+/**
+ * 商城结算方式查询只读返回当前客户可选的支付方式及不可选原因。余额按结算主体查询，不产生扣款或订单状态变化。
+ */
 @Service
 @RequiredArgsConstructor
 public class MallSettlementService {
@@ -37,12 +41,12 @@ public class MallSettlementService {
     @Transactional(readOnly = true)
     public List<MallSettlementOptionVO> options(RequestMallCustomer customer, BigDecimal payableAmount) {
         BigDecimal amount = payableAmount == null
-                ? BigDecimal.ZERO.setScale(SCALE, RoundingMode.HALF_UP)
-                : payableAmount.setScale(SCALE, RoundingMode.HALF_UP);
+            ? BigDecimal.ZERO.setScale(SCALE, RoundingMode.HALF_UP)
+            : payableAmount.setScale(SCALE, RoundingMode.HALF_UP);
         CustomerEntity buyer = customerService.requireTradable(customer.getCustomerId());
         CustomerEntity settlement = customerService.requireSettlementCustomer(buyer);
         boolean shared = CustomerValidator.sharedSettlement(buyer.getId(), settlement.getId(),
-                customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
+            customerTypeService.require(settlement.getCustomerTypeId()).getTypeCode());
 
         List<MallSettlementOptionVO> options = new ArrayList<>();
         options.add(creditOption(settlement, shared, amount));
@@ -75,8 +79,8 @@ public class MallSettlementService {
             return option;
         }
         BigDecimal used = nonzero(check.getOpenReceivableAmount()).add(nonzero(check.getConfirmedOrderAmount()));
-        option.setAvailableAmount(
-                creditLimit.subtract(used).max(BigDecimal.ZERO).setScale(SCALE, RoundingMode.HALF_UP));
+        option
+            .setAvailableAmount(creditLimit.subtract(used).max(BigDecimal.ZERO).setScale(SCALE, RoundingMode.HALF_UP));
         if (Boolean.TRUE.equals(check.getOverdue())) {
             option.setEnabled(Boolean.FALSE);
             option.setDisabledReason("存在逾期账单，暂不能使用账期结算");
@@ -96,12 +100,12 @@ public class MallSettlementService {
         MallSettlementOptionVO option = base(ScmSettlementMethodEnum.WALLET, null, !shared);
         if (shared) {
             option.setEnabled(ScmSharedSettlementPolicy
-                    .sharedCheckoutAllowed(Boolean.TRUE.equals(settlement.getSharedSettlementEnabled())));
+                .sharedCheckoutAllowed(Boolean.TRUE.equals(settlement.getSharedSettlementEnabled())));
             option.setDisabledReason(SHARED_WALLET_REASON);
             return option;
         }
         BigDecimal balance = customerBalanceService.balanceOfSettlement(settlement.getId()).setScale(SCALE,
-                RoundingMode.HALF_UP);
+            RoundingMode.HALF_UP);
         option.setAvailableAmount(balance);
         if (balance.compareTo(amount) < 0) {
             option.setEnabled(Boolean.FALSE);
@@ -120,7 +124,7 @@ public class MallSettlementService {
             return option;
         }
         if (Boolean.TRUE
-                .equals(orderCreditService.checkSelfSettlement(settlement.getId(), BigDecimal.ZERO).getOverdue())) {
+            .equals(orderCreditService.checkSelfSettlement(settlement.getId(), BigDecimal.ZERO).getOverdue())) {
             option.setDisabledReason("存在逾期账单，暂不能使用货到付款");
             return option;
         }
@@ -134,7 +138,7 @@ public class MallSettlementService {
     }
 
     private static MallSettlementOptionVO base(ScmSettlementMethodEnum method, BigDecimal availableAmount,
-            boolean amountVisible) {
+        boolean amountVisible) {
         MallSettlementOptionVO option = new MallSettlementOptionVO();
         option.setMethod(method.name());
         option.setLabel(method.getDesc());

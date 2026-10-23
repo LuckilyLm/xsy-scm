@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_WAREHOUSE_DISABLED;
 
-/** 采购单引用仓库时由服务层检查仓库是否存在及可用；数据库不使用外键约束。 */
+/**
+ * 采购单引用仓库时由服务层检查仓库是否存在及可用；数据库不使用外键约束。
+ */
 @Component
 @RequiredArgsConstructor
 public class PurchaseWarehouseReferenceGuard {

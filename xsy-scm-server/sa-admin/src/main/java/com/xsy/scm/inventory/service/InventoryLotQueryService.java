@@ -7,7 +7,9 @@ import com.xsy.scm.inventory.domain.form.InventoryLotBalanceQueryForm;
 import com.xsy.scm.inventory.domain.form.InventoryLotMovementQueryForm;
 import com.xsy.scm.inventory.domain.vo.InventoryLotBalanceVO;
 import com.xsy.scm.inventory.domain.vo.InventoryLotMovementVO;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -47,7 +49,7 @@ public class InventoryLotQueryService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         List<InventoryLotMovementVO> list = inventoryLotQueryDao.queryMovementPage(page, form,
-                scope.getWarehouseScope());
+            scope.getWarehouseScope());
         return SmartPageUtil.convert2PageResult(page, list);
     }
 }

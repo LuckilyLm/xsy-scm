@@ -8,7 +8,9 @@ import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/** 采购明细的剩余量和超收量按当前已收数量计算，不另存冗余结果；订单明细和收货对账保持一致。 */
+/**
+ * 采购明细的剩余量和超收量按当前已收数量计算，不另存冗余结果；订单明细和收货对账保持一致。
+ */
 @Data
 public class PurchaseOrderItemVO {
     private Long id;

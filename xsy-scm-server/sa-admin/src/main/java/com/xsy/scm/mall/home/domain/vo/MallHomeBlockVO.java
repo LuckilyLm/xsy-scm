@@ -1,7 +1,9 @@
 package com.xsy.scm.mall.home.domain.vo;
 
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
+
 import java.util.List;
+
 import lombok.Data;
 
 @Data

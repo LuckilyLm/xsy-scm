@@ -14,6 +14,7 @@ import com.xsy.scm.payment.domain.entity.PaymentReconciliationItemEntity;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -25,18 +26,23 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 支付对账以渠道返回的真实结果为依据，对不一致的记录进行核对，不擅自重写已成立的业务事实。 */
+/**
+ * 支付对账以渠道返回的真实结果为依据，对不一致的记录进行核对，不擅自重写已成立的业务事实。
+ */
 @Service
 @RequiredArgsConstructor
 public class PaymentReconciliationService {
 
     private static final int SCALE = 4;
 
-    /** 业务日按 Asia/Shanghai 切，与单号日期段同一个时区口径。 */
+    /**
+     * 业务日按 Asia/Shanghai 切，与单号日期段同一个时区口径。
+     */
     private static final ZoneId BIZ_ZONE = ZoneId.of("Asia/Shanghai");
 
     private final PaymentReconciliationDao paymentReconciliationDao;
@@ -72,7 +78,7 @@ public class PaymentReconciliationService {
             localByNo.put(local.getProviderTransactionNo(), local);
         }
         for (PaymentTransactionEntity succeeded : paymentTransactionDao.listSucceededBetween(providerCode, startAt,
-                endAt)) {
+            endAt)) {
             localByNo.put(succeeded.getProviderTransactionNo(), succeeded);
         }
         List<PaymentTransactionEntity> locals = new ArrayList<>(localByNo.values());
@@ -87,13 +93,13 @@ public class PaymentReconciliationService {
             PaymentTransactionEntity local = localByNo.get(line.providerTransactionNo());
             if (local == null) {
                 items.add(item(ScmPaymentReconciliationCategoryEnum.LOCAL_MISSING, line.providerTransactionNo(), null,
-                        null, line.amount(), null, ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
+                    null, line.amount(), null, ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
                 continue;
             }
             if (!ScmPaymentTransactionStatusEnum.SUCCEEDED.name().equals(local.getStatus())) {
                 items.add(item(ScmPaymentReconciliationCategoryEnum.STATUS_MISMATCH, line.providerTransactionNo(),
-                        local.getId(), receivedOf(local), line.amount(), local.getStatus(),
-                        ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
+                    local.getId(), receivedOf(local), line.amount(), local.getStatus(),
+                    ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
                 continue;
             }
             BigDecimal receivedAmount = receivedOf(local);
@@ -104,9 +110,9 @@ public class PaymentReconciliationService {
                 // 同时检查本地支付意图与渠道实收：渠道对账单可能与回调金额一致，
                 // 但这仍不能把偏离本地应付金额的交易算作平账。
                 items.add(item(ScmPaymentReconciliationCategoryEnum.AMOUNT_MISMATCH, line.providerTransactionNo(),
-                        local.getId(), intentMismatch ? intentAmount : receivedAmount,
-                        intentMismatch ? receivedAmount : settlementAmount, local.getStatus(),
-                        ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
+                    local.getId(), intentMismatch ? intentAmount : receivedAmount,
+                    intentMismatch ? receivedAmount : settlementAmount, local.getStatus(),
+                    ScmPaymentTransactionStatusEnum.SUCCEEDED.name(), operator));
             }
         }
 
@@ -119,7 +125,7 @@ public class PaymentReconciliationService {
             localTotal = localTotal.add(received);
             if (!providerNos.contains(local.getProviderTransactionNo())) {
                 items.add(item(ScmPaymentReconciliationCategoryEnum.PROVIDER_MISSING, local.getProviderTransactionNo(),
-                        local.getId(), received, null, local.getStatus(), null, operator));
+                    local.getId(), received, null, local.getStatus(), null, operator));
             }
         }
 
@@ -128,8 +134,8 @@ public class PaymentReconciliationService {
         reconciliation.setProvider(providerCode);
         reconciliation.setBizDate(bizDate);
         reconciliation.setStatus(items.isEmpty()
-                ? ScmPaymentReconciliationStatusEnum.MATCHED.name()
-                : ScmPaymentReconciliationStatusEnum.MISMATCHED.name());
+            ? ScmPaymentReconciliationStatusEnum.MATCHED.name()
+            : ScmPaymentReconciliationStatusEnum.MISMATCHED.name());
         reconciliation.setProviderTotal(providerTotal);
         reconciliation.setLocalTotal(localTotal);
         reconciliation.setDifference(localTotal.subtract(providerTotal));
@@ -155,30 +161,36 @@ public class PaymentReconciliationService {
         return paymentReconciliationDao.selectById(reconciliation.getId());
     }
 
-    /** 渠道侧与本地侧交易号的并集大小。 */
+    /**
+     * 渠道侧与本地侧交易号的并集大小。
+     */
     private static int unionCount(Set<String> providerNos, Map<String, PaymentTransactionEntity> localByNo) {
         Set<String> union = new HashSet<>(providerNos);
         union.addAll(localByNo.keySet());
         return union.size();
     }
 
-    /** 逐条差异明细（后台展示用）。只含异常项：平账的靠批次汇总表达，不逐笔落库。 */
+    /**
+     * 逐条差异明细（后台展示用）。只含异常项：平账的靠批次汇总表达，不逐笔落库。
+     */
     @Transactional(readOnly = true)
     public List<PaymentReconciliationItemEntity> items(Long reconciliationId) {
         return paymentReconciliationItemDao.listByReconciliation(reconciliationId);
     }
 
-    /** 本地实际收到的金额：优先渠道回报，没回报才退回本地应付。 */
+    /**
+     * 本地实际收到的金额：优先渠道回报，没回报才退回本地应付。
+     */
     private static BigDecimal receivedOf(PaymentTransactionEntity transaction) {
         BigDecimal value = transaction.getProviderAmount() == null
-                ? transaction.getAmount()
-                : transaction.getProviderAmount();
+            ? transaction.getAmount()
+            : transaction.getProviderAmount();
         return value.setScale(SCALE, RoundingMode.HALF_UP);
     }
 
     private static PaymentReconciliationItemEntity item(ScmPaymentReconciliationCategoryEnum category,
-            String providerTransactionNo, Long transactionId, BigDecimal localAmount, BigDecimal providerAmount,
-            String localStatus, String providerStatus, String operator) {
+        String providerTransactionNo, Long transactionId, BigDecimal localAmount, BigDecimal providerAmount,
+        String localStatus, String providerStatus, String operator) {
         PaymentReconciliationItemEntity row = new PaymentReconciliationItemEntity();
         row.setCategory(category.name());
         row.setProviderTransactionNo(providerTransactionNo);
@@ -191,7 +203,9 @@ public class PaymentReconciliationService {
         return row;
     }
 
-    /** 分类汇总，落进 {@code detail}，页面不必再聚合一次。 */
+    /**
+     * 分类汇总，落进 {@code detail}，页面不必再聚合一次。
+     */
     private static Map<String, Object> summaryOf(List<PaymentReconciliationItemEntity> items) {
         Map<String, Object> summary = new LinkedHashMap<>();
         for (ScmPaymentReconciliationCategoryEnum category : ScmPaymentReconciliationCategoryEnum.values()) {

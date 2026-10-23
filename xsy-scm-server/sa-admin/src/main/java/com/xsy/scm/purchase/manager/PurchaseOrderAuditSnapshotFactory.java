@@ -39,7 +39,7 @@ public final class PurchaseOrderAuditSnapshotFactory {
         snapshot.put("purchaserId", vo.getPurchaserId());
         snapshot.put("status", vo.getStatus());
         snapshot.put("plannedArrivalDate",
-                vo.getPlannedArrivalDate() == null ? null : vo.getPlannedArrivalDate().toString());
+            vo.getPlannedArrivalDate() == null ? null : vo.getPlannedArrivalDate().toString());
         snapshot.put("totalAmount", PurchaseSnapshotFactory.fixed(vo.getTotalAmount()));
         snapshot.put("version", vo.getVersion());
         snapshot.put("items", orderItemAuditSnapshots(vo.getItems()));

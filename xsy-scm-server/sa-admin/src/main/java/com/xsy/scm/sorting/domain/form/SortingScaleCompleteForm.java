@@ -25,7 +25,9 @@ public class SortingScaleCompleteForm {
     @NotNull(message = "分拣明细不能为空")
     private Long taskItemId;
 
-    /** 采集时冻结的作业版本；与筐记录不一致说明任务已改派或重开。 */
+    /**
+     * 采集时冻结的作业版本；与筐记录不一致说明任务已改派或重开。
+     */
     @NotBlank(message = "作业版本不能为空")
     @Size(max = 40, message = "作业版本最多 40 个字符")
     private String jobVersion;
@@ -44,7 +46,9 @@ public class SortingScaleCompleteForm {
     @Size(max = 500, message = "差异原因不能超过500个字符")
     private String reason;
 
-    /** 以下三项由设备接入层按已校验的设备与员工身份填入，不接受请求体自报。 */
+    /**
+     * 以下三项由设备接入层按已校验的设备与员工身份填入，不接受请求体自报。
+     */
     private Long deviceId;
 
     private Long deviceSessionId;

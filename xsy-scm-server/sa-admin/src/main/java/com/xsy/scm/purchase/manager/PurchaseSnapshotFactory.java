@@ -42,7 +42,7 @@ public final class PurchaseSnapshotFactory {
      * 创建或编辑草稿时更新供应商、仓库信息，提交后冻结。 采购员由服务端确定，不能信任客户端传入的 ID。
      */
     public static PurchaseOrderEntity order(String supplierCode, String supplierName, String warehouseCode,
-            String warehouseName, Long purchaserId, PurchaseOrderAddForm form) {
+        String warehouseName, Long purchaserId, PurchaseOrderAddForm form) {
         PurchaseOrderEntity order = new PurchaseOrderEntity();
         order.setSupplierId(form.getSupplierId());
         order.setSupplierCodeSnapshot(supplierCode);
@@ -59,9 +59,11 @@ public final class PurchaseSnapshotFactory {
         return order;
     }
 
-    /** 采购明细的采购单位来自供应商商品关系，需求单位来自销售订单，两者独立保存并校验一致，不做隐式换算。 */
+    /**
+     * 采购明细的采购单位来自供应商商品关系，需求单位来自销售订单，两者独立保存并校验一致，不做隐式换算。
+     */
     public static PurchaseOrderItemEntity item(PurchaseOrderAddForm.Item form, ProductSkuOptionVO sku, String spuCode,
-            SupplierSkuEntity supplierSku) {
+        SupplierSkuEntity supplierSku) {
         PurchaseOrderItemEntity item = new PurchaseOrderItemEntity();
         item.setId(form.getId());
         item.setVersion(form.getVersion());
@@ -104,9 +106,11 @@ public final class PurchaseSnapshotFactory {
         return receipt;
     }
 
-    /** 收货单明细从采购单继承商品、单位和计划量，累计收货从零开始；剩余量与超收量按对账公式计算。 */
+    /**
+     * 收货单明细从采购单继承商品、单位和计划量，累计收货从零开始；剩余量与超收量按对账公式计算。
+     */
     public static PurchaseReceiptItemEntity receiptItem(PurchaseReceiptEntity receipt,
-            PurchaseOrderItemEntity orderItem, int sortOrder) {
+        PurchaseOrderItemEntity orderItem, int sortOrder) {
         PurchaseReceiptItemEntity item = new PurchaseReceiptItemEntity();
         item.setPurchaseReceiptId(receipt.getId());
         item.setPurchaseOrderItemId(orderItem.getId());
@@ -141,9 +145,11 @@ public final class PurchaseSnapshotFactory {
         return sourceConfirmedAt.atZoneSameInstant(ASIA_SHANGHAI).toLocalDate();
     }
 
-    /** 采购需求在生成时保存销售订单的单位和实际数量，不能用采购单位覆盖。采购单位由供应商商品关系决定，正式分配时校验两者一致。 */
+    /**
+     * 采购需求在生成时保存销售订单的单位和实际数量，不能用采购单位覆盖。采购单位由供应商商品关系决定，正式分配时校验两者一致。
+     */
     public static PurchaseDemandEntity demand(SalesOrderItemEntity source, SalesOrderEntity order, Long supplierId,
-            Long warehouseId, Long purchaserId) {
+        Long warehouseId, Long purchaserId) {
         PurchaseDemandEntity demand = new PurchaseDemandEntity();
         demand.setSalesOrderId(order.getId());
         demand.setSalesOrderItemId(source.getId());
@@ -196,8 +202,8 @@ public final class PurchaseSnapshotFactory {
      */
     public static String fixed(BigDecimal amount) {
         return amount == null
-                ? null
-                : amount.setScale(PurchaseAmountCalculator.SCALE, RoundingMode.HALF_UP).toPlainString();
+            ? null
+            : amount.setScale(PurchaseAmountCalculator.SCALE, RoundingMode.HALF_UP).toPlainString();
     }
 
     /**
@@ -214,8 +220,8 @@ public final class PurchaseSnapshotFactory {
      *            变更后快照
      */
     public static PurchaseOperationLogEntity operationLog(ScmPurchaseOperationTypeEnum operationType,
-            Long purchaseOrderId, Long purchaseReceiptId, String reason, Map<String, Object> before,
-            Map<String, Object> after) {
+        Long purchaseOrderId, Long purchaseReceiptId, String reason, Map<String, Object> before,
+        Map<String, Object> after) {
         PurchaseOperationLogEntity log = new PurchaseOperationLogEntity();
         log.setOperationType(operationType.name());
         log.setPurchaseOrderId(purchaseOrderId);

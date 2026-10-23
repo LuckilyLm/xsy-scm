@@ -24,7 +24,9 @@ public interface EmployeeWarehouseScopeDao extends BaseMapper<EmployeeWarehouseS
      */
     List<WarehouseScopeEmployeeVO> listEmployeesByWarehouse(@Param("warehouseId") Long warehouseId);
 
-    /** 通知只发送给仍在职、且拥有该仓库授权的员工；停用员工的授权记录仍保留供管理查询。 */
+    /**
+     * 通知只发送给仍在职、且拥有该仓库授权的员工；停用员工的授权记录仍保留供管理查询。
+     */
     List<Long> listEnabledEmployeeIdsByWarehouse(@Param("warehouseId") Long warehouseId);
 
     /**

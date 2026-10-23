@@ -3,7 +3,9 @@ package com.xsy.scm.payment.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.payment.domain.form.PaymentCallbackQueryForm;
+
 import java.util.List;
+
 import com.xsy.scm.payment.domain.entity.PaymentCallbackEventEntity;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -28,12 +30,14 @@ public interface PaymentCallbackEventDao extends BaseMapper<PaymentCallbackEvent
     List<PaymentCallbackEventEntity> queryPage(Page<?> page, @Param("query") PaymentCallbackQueryForm query);
 
     PaymentCallbackEventEntity selectByProviderEventId(@Param("provider") String provider,
-            @Param("providerEventId") String providerEventId);
+        @Param("providerEventId") String providerEventId);
 
     PaymentCallbackEventEntity selectClaimedByProviderEventId(@Param("provider") String provider,
-            @Param("providerEventId") String providerEventId);
+        @Param("providerEventId") String providerEventId);
 
-    /** 处理完成后回填结论（只改处理结果，不改事实本身）。 */
+    /**
+     * 处理完成后回填结论（只改处理结果，不改事实本身）。
+     */
     int markProcessed(@Param("id") Long id, @Param("processStatus") String processStatus,
-            @Param("transactionId") Long transactionId, @Param("rejectReason") String rejectReason);
+        @Param("transactionId") Long transactionId, @Param("rejectReason") String rejectReason);
 }

@@ -21,28 +21,44 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ScmDataScopeService {
 
-    /** 查看全部仓库（总部仓管主管、审计类岗位）；否则仓库维度只认授权行。 */
+    /**
+     * 查看全部仓库（总部仓管主管、审计类岗位）；否则仓库维度只认授权行。
+     */
     public static final String WAREHOUSE_ALL_PERM = ScmCrossDomainPermission.INVENTORY_SCOPE_ALL_QUERY;
 
-    /** 查看全部业务员名下客户（销售主管、财务）。 */
+    /**
+     * 查看全部业务员名下客户（销售主管、财务）。
+     */
     public static final String CUSTOMER_ALL_PERM = ScmCrossDomainPermission.CUSTOMER_SCOPE_ALL_QUERY;
 
-    /** 查看全部业务员名下的销售订单。 */
+    /**
+     * 查看全部业务员名下的销售订单。
+     */
     public static final String ORDER_ALL_PERM = ScmCrossDomainPermission.ORDER_SCOPE_ALL_QUERY;
 
-    /** 查看全部采购员的采购单与采购需求。 */
+    /**
+     * 查看全部采购员的采购单与采购需求。
+     */
     public static final String PURCHASE_ALL_PERM = ScmCrossDomainPermission.PURCHASE_SCOPE_ALL_QUERY;
 
-    /** 查看全部司机与线路（调度岗）；普通司机只看绑定到自己名下的线路。 */
+    /**
+     * 查看全部司机与线路（调度岗）；普通司机只看绑定到自己名下的线路。
+     */
     public static final String DELIVERY_ALL_PERM = ScmCrossDomainPermission.DELIVERY_SCOPE_ALL_QUERY;
 
-    /** 客户业务归属分配/改派权；持有者才能把 {@code seller_id} 写成别人，或看到未分配客户。 */
+    /**
+     * 客户业务归属分配/改派权；持有者才能把 {@code seller_id} 写成别人，或看到未分配客户。
+     */
     public static final String CUSTOMER_ASSIGN_PERM = ScmCrossDomainPermission.CUSTOMER_ASSIGN;
 
-    /** 采购负责人分配/改派权，语义同上。 */
+    /**
+     * 采购负责人分配/改派权，语义同上。
+     */
     public static final String PURCHASE_ASSIGN_PERM = ScmCrossDomainPermission.PURCHASE_ASSIGN;
 
-    /** 配送订单金额可见权：司机默认隐藏金额，需要时由这个独立权限开放。 */
+    /**
+     * 配送订单金额可见权：司机默认隐藏金额，需要时由这个独立权限开放。
+     */
     public static final String DELIVERY_AMOUNT_PERM = ScmCrossDomainPermission.DELIVERY_AMOUNT_QUERY;
 
     private final ScmDataScopeDao dataScopeDao;
@@ -66,25 +82,25 @@ public class ScmDataScopeService {
         }
 
         return new ScmDataScopeContextBuilder(employeeId, costVisible)
-                .warehouse(hasPermission(WAREHOUSE_ALL_PERM)
-                        ? ScmValueScope.all()
-                        : ScmValueScope.of(dataScopeDao.listAuthorizedWarehouseIds(employeeId)))
-                .customerSeller(
-                        hasPermission(CUSTOMER_ALL_PERM) ? ScmValueScope.all() : ScmValueScope.of(List.of(employeeId)))
-                .orderSeller(
-                        hasPermission(ORDER_ALL_PERM) ? ScmValueScope.all() : ScmValueScope.of(List.of(employeeId)))
-                .purchaser(
-                        hasPermission(PURCHASE_ALL_PERM) ? ScmValueScope.all() : ScmValueScope.of(List.of(employeeId)))
-                .driver(hasPermission(DELIVERY_ALL_PERM)
-                        ? ScmValueScope.all()
-                        : ScmValueScope.of(dataScopeDao.listDriverIdsByEmployee(employeeId)))
-                .build();
+            .warehouse(hasPermission(WAREHOUSE_ALL_PERM)
+                ? ScmValueScope.all()
+                : ScmValueScope.of(dataScopeDao.listAuthorizedWarehouseIds(employeeId)))
+            .customerSeller(
+                hasPermission(CUSTOMER_ALL_PERM) ? ScmValueScope.all() : ScmValueScope.of(List.of(employeeId)))
+            .orderSeller(hasPermission(ORDER_ALL_PERM) ? ScmValueScope.all() : ScmValueScope.of(List.of(employeeId)))
+            .purchaser(hasPermission(PURCHASE_ALL_PERM) ? ScmValueScope.all() : ScmValueScope.of(List.of(employeeId)))
+            .driver(hasPermission(DELIVERY_ALL_PERM)
+                ? ScmValueScope.all()
+                : ScmValueScope.of(dataScopeDao.listDriverIdsByEmployee(employeeId)))
+            .build();
     }
 
-    /** 超级管理员可以绕过 SCM 的业务数据范围，仓库和负责人范围统一放行；分拣指派等额外维度仍需显式检查超级管理员。 */
+    /**
+     * 超级管理员可以绕过 SCM 的业务数据范围，仓库和负责人范围统一放行；分拣指派等额外维度仍需显式检查超级管理员。
+     */
     public static boolean isAdministrator() {
         return SmartRequestUtil.getRequestUser() instanceof RequestEmployee employee
-                && Boolean.TRUE.equals(employee.getAdministratorFlag());
+            && Boolean.TRUE.equals(employee.getAdministratorFlag());
     }
 
     /**
@@ -107,7 +123,9 @@ public class ScmDataScopeService {
         return SmartPageUtil.convert2PageResult(page, List.of());
     }
 
-    /** 仅供 {@link #resolve()} 组装不可变上下文，避免七参数构造器写错顺序。 */
+    /**
+     * 仅供 {@link #resolve()} 组装不可变上下文，避免七参数构造器写错顺序。
+     */
     private static final class ScmDataScopeContextBuilder {
 
         private final Long employeeId;
@@ -150,7 +168,7 @@ public class ScmDataScopeService {
 
         private ScmDataScopeContext build() {
             return new ScmDataScopeContext(employeeId, warehouse, customerSeller, orderSeller, purchaser, driver,
-                    costVisible);
+                costVisible);
         }
     }
 }

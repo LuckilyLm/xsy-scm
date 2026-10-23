@@ -16,14 +16,18 @@ import com.xsy.scm.finance.constant.FinanceErrorCode;
 import com.xsy.scm.finance.service.FinanceOrderFundingPolicy;
 import com.xsy.scm.order.constant.ScmOrderRefundStatusEnum;
 import com.xsy.scm.payment.constant.ScmPaymentMethodEnum;
+
 import java.math.BigDecimal;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 纯余额售后返还；只追加钱包 CREDIT，不产生 Finance 付款或反向核销。 */
+/**
+ * 纯余额售后返还；只追加钱包 CREDIT，不产生 Finance 付款或反向核销。
+ */
 @Service
 @RequiredArgsConstructor
 public class BalanceRefundService {
@@ -34,19 +38,25 @@ public class BalanceRefundService {
     private final ScmDataScopeService dataScopeService;
     private final ScmIdempotencyService idempotencyService;
 
-    /** 订单退款完成事务中的自动派生；线上、线下或混合订单交给原资金路径处理。 */
+    /**
+     * 订单退款完成事务中的自动派生；线上、线下或混合订单交给原资金路径处理。
+     */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void refundOnCompletion(Long refundId) {
         apply(lockSource(refundId), false);
     }
 
-    /** 订单已有资金分摊计划时，退款应走分摊返还路径，不再调用旧钱包退款。必须先判定路径，避免事务异常导致整笔退款回滚。 */
+    /**
+     * 订单已有资金分摊计划时，退款应走分摊返还路径，不再调用旧钱包退款。必须先判定路径，避免事务异常导致整笔退款回滚。
+     */
     @Transactional(readOnly = true)
     public boolean hasFundingAllocationPlan(Long orderId) {
         return balanceRefundSourceDao.hasFundingAllocations(orderId);
     }
 
-    /** 历史完成单或响应丢失的显式重试入口；不能自行指定返还金额和钱包。 */
+    /**
+     * 历史完成单或响应丢失的显式重试入口；不能自行指定返还金额和钱包。
+     */
     @Transactional(rollbackFor = Exception.class)
     public CustomerBalanceMovementEntity refund(BalanceRefundForm form, String key) {
         BalanceRefundFact fact = lockSource(form.getRefundId());
@@ -59,7 +69,7 @@ public class BalanceRefundService {
         }
         CustomerBalanceMovementEntity movement = apply(fact, true);
         idempotencyService.complete(claim, ScmBalanceIdempotencyResourceTypeEnum.BALANCE_MOVEMENT.name(),
-                movement.getId(), movement);
+            movement.getId(), movement);
         return movement;
     }
 
@@ -71,8 +81,8 @@ public class BalanceRefundService {
         balanceRefundSourceDao.lockOrderRefunds(initial.orderId());
         BalanceRefundFact fact = balanceRefundSourceDao.selectRefund(refundId);
         if (fact == null || !Objects.equals(initial.orderId(), fact.orderId())
-                || !ScmOrderRefundStatusEnum.COMPLETED.name().equals(fact.status()) || fact.completedAt() == null
-                || fact.amount() == null || fact.amount().signum() <= 0) {
+            || !ScmOrderRefundStatusEnum.COMPLETED.name().equals(fact.status()) || fact.completedAt() == null
+            || fact.amount() == null || fact.amount().signum() <= 0) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
         }
         return fact;
@@ -90,8 +100,8 @@ public class BalanceRefundService {
         if (!balance || online || cashAllocated) {
             if (explicit) {
                 throw new ScmBusinessException((online || cashAllocated) && balance
-                        ? FinanceErrorCode.REFUND_ALLOCATION_REQUIRED
-                        : BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
+                    ? FinanceErrorCode.REFUND_ALLOCATION_REQUIRED
+                    : BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
             }
             return null;
         }
@@ -106,7 +116,7 @@ public class BalanceRefundService {
         }
         for (var fact : funding) {
             if (!Objects.equals(fact.getCustomerId(), refund.customerId())
-                    || !Objects.equals(fact.getSettlementCustomerId(), refund.settlementCustomerId())) {
+                || !Objects.equals(fact.getSettlementCustomerId(), refund.settlementCustomerId())) {
                 throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
             }
         }
@@ -117,15 +127,15 @@ public class BalanceRefundService {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_SOURCE_INVALID);
         }
         BigDecimal principal = funding.stream().map(f -> f.getMovementAmount()).reduce(BigDecimal.ZERO,
-                BigDecimal::add);
+            BigDecimal::add);
         BigDecimal returned = balanceRefundSourceDao.returnedAmount(refund.orderId());
         var existing = customerBalanceMovementDao.selectBySource(ScmBalanceSourceTypeEnum.ORDER_REFUND.name(),
-                refund.refundId());
+            refund.refundId());
         BigDecimal projected = existing == null ? returned.add(refund.amount()) : returned;
         if (projected.compareTo(principal) > 0) {
             throw new ScmBusinessException(BalanceErrorCode.BALANCE_REFUND_AMOUNT_EXCEEDED);
         }
         return customerBalanceService.refundToSettlement(refund.refundId(), refund.customerId(),
-                refund.settlementCustomerId(), refund.amount(), refund.completedAt());
+            refund.settlementCustomerId(), refund.amount(), refund.completedAt());
     }
 }

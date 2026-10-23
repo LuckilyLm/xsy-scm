@@ -12,7 +12,9 @@ import com.xsy.scm.delivery.domain.vo.DeliveryPrintResultVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryRouteVO;
 import com.xsy.scm.delivery.domain.vo.DeliveryPrintItemVO;
 
-/** 配送金额只有具备对应权限时才返回。无权查看返回 null，不返回零；整次查询统一判断权限，避免列表中出现不同口径。 */
+/**
+ * 配送金额只有具备对应权限时才返回。无权查看返回 null，不返回零；整次查询统一判断权限，避免列表中出现不同口径。
+ */
 public final class DeliveryVisibility {
 
     private final boolean amountVisible;
@@ -21,7 +23,9 @@ public final class DeliveryVisibility {
         this.amountVisible = amountVisible;
     }
 
-    /** 按当前登录态解析；取不到登录态时按「不可见」处理。 */
+    /**
+     * 按当前登录态解析；取不到登录态时按「不可见」处理。
+     */
     public static DeliveryVisibility current() {
         return new DeliveryVisibility(ScmDataScopeService.hasPermission(ScmDataScopeService.DELIVERY_AMOUNT_PERM));
     }
@@ -42,7 +46,9 @@ public final class DeliveryVisibility {
         return mask(rows, row -> row.setTotalAmount(null));
     }
 
-    /** 线路详情的三个金额出口（线路合计、停靠点合计、订单金额快照）一次抹清。 */
+    /**
+     * 线路详情的三个金额出口（线路合计、停靠点合计、订单金额快照）一次抹清。
+     */
     public DeliveryDetailVO detail(DeliveryDetailVO detail) {
         if (detail == null || amountVisible)
             return detail;
@@ -64,7 +70,9 @@ public final class DeliveryVisibility {
         });
     }
 
-    /** 正式生成打印的返回体：计次结果里的金额走同一口径，否则一次打印就绕过了字段级收口。 */
+    /**
+     * 正式生成打印的返回体：计次结果里的金额走同一口径，否则一次打印就绕过了字段级收口。
+     */
     public DeliveryPrintResultVO printResult(DeliveryPrintResultVO result) {
         if (result == null || amountVisible)
             return result;
@@ -73,7 +81,9 @@ public final class DeliveryVisibility {
         return result;
     }
 
-    /** 无权限才逐行清空，有权限原样返回。 */
+    /**
+     * 无权限才逐行清空，有权限原样返回。
+     */
     private <T> List<T> mask(List<T> rows, Consumer<T> clear) {
         if (amountVisible || rows == null)
             return rows;

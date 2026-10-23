@@ -46,12 +46,16 @@ public final class ScmValueScope {
         return copy.isEmpty() ? NONE : new ScmValueScope(false, Set.copyOf(copy));
     }
 
-    /** MyBatis OGNL 以 {@code scope.all} 读取本方法。 */
+    /**
+     * MyBatis OGNL 以 {@code scope.all} 读取本方法。
+     */
     public boolean isAll() {
         return all;
     }
 
-    /** MyBatis OGNL 以 {@code scope.ids} 读取 foreach 集合；{@link #isAll()} 为真时不会被用到。 */
+    /**
+     * MyBatis OGNL 以 {@code scope.ids} 读取 foreach 集合；{@link #isAll()} 为真时不会被用到。
+     */
     public Set<Long> getIds() {
         return ids;
     }

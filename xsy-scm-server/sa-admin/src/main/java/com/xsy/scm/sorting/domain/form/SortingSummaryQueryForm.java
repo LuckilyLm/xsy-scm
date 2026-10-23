@@ -21,6 +21,8 @@ public class SortingSummaryQueryForm extends PageParam {
     @ScmEnumValue(enumClass = ScmSortingTaskStatusEnum.class, message = "分拣任务状态无效")
     private String taskStatus;
 
-    /** 建单时冻结的送货日期，按 Asia/Shanghai 日历日筛选，不回查当前订单。 */
+    /**
+     * 建单时冻结的送货日期，按 Asia/Shanghai 日历日筛选，不回查当前订单。
+     */
     private java.time.LocalDate deliveryDate;
 }

@@ -2,7 +2,9 @@ package com.xsy.scm.report.constant;
 
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 
-/** Stable permission identifiers used by report endpoints. */
+/**
+ * Stable permission identifiers used by report endpoints.
+ */
 public final class ScmReportPermission {
 
     public static final String OVERVIEW_QUERY = "scm:report:overview:query";
@@ -12,7 +14,9 @@ public final class ScmReportPermission {
     public static final String INVENTORY_QUERY = "scm:report:inventory:query";
     public static final String FINANCE_QUERY = "scm:report:finance:query";
     public static final String FINANCE_AGING_QUERY = "scm:report:finance:aging:query";
-    /** Financial margin access; endpoints also require the independent cost permission. */
+    /**
+     * Financial margin access; endpoints also require the independent cost permission.
+     */
     public static final String FINANCE_PROFIT_QUERY = "scm:report:finance:profit:query";
     public static final String CUSTOMER_STATEMENT_QUERY = "scm:report:customer:statement:query";
     public static final String CUSTOMER_STATEMENT_FREEZE = "scm:report:customer:statement:freeze";

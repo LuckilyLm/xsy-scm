@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.util.List;
 
-/** Payment row, allocations, reversal link and audit history. */
+/**
+ * Payment row, allocations, reversal link and audit history.
+ */
 @Data
 public class FinancePaymentDetailVO {
 

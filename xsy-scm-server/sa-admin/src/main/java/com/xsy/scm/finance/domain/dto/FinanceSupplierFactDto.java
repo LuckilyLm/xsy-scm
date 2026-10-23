@@ -2,7 +2,9 @@ package com.xsy.scm.finance.domain.dto;
 
 import lombok.Data;
 
-/** 供应商付款所需信息只读取得。供应商停用后仍可结清旧款；本对象不承担采购员归属判定。 */
+/**
+ * 供应商付款所需信息只读取得。供应商停用后仍可结清旧款；本对象不承担采购员归属判定。
+ */
 @Data
 public class FinanceSupplierFactDto {
 

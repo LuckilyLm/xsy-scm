@@ -6,7 +6,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 大屏经营数据按今日已确认订单及结算金额汇总。订购金额与结算金额分开，排行按选定时间段取前 N 项。 */
+/**
+ * 大屏经营数据按今日已确认订单及结算金额汇总。订购金额与结算金额分开，排行按选定时间段取前 N 项。
+ */
 @Data
 @Schema(description = "数据大屏-经营数据")
 public class ScreenBusinessVO {

@@ -24,8 +24,10 @@ import com.xsy.scm.trace.domain.vo.TraceScaleUnitVO;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -90,7 +92,7 @@ public class ScaleDeviceController {
      */
     @GetMapping("/jobs")
     public ScaleDeviceResponse<ScaleJobPageVO> jobs(@RequestParam(value = "cursor", required = false) String cursor,
-            @RequestParam(value = "limit", defaultValue = "100") int limit) {
+        @RequestParam(value = "limit", defaultValue = "100") int limit) {
         return ScaleDeviceResponse.ok(scaleDeviceJobService.jobs(cursor, limit));
     }
 
@@ -104,7 +106,7 @@ public class ScaleDeviceController {
      */
     @PostMapping("/jobs/{jobId}/claim")
     public ScaleDeviceResponse<ScaleJobVO> claim(@PathVariable("jobId") String jobId,
-            @Valid @RequestBody ScaleJobActionForm form) {
+        @Valid @RequestBody ScaleJobActionForm form) {
         return ScaleDeviceResponse.ok(scaleDeviceJobService.claim(jobId, form));
     }
 
@@ -113,7 +115,7 @@ public class ScaleDeviceController {
      */
     @PostMapping("/jobs/{jobId}/release")
     public ScaleDeviceResponse<ScaleJobVO> release(@PathVariable("jobId") String jobId,
-            @Valid @RequestBody ScaleJobActionForm form) {
+        @Valid @RequestBody ScaleJobActionForm form) {
         return ScaleDeviceResponse.ok(scaleDeviceJobService.release(jobId, form));
     }
 
@@ -136,7 +138,7 @@ public class ScaleDeviceController {
      */
     @PostMapping("/items/{taskItemId}/complete")
     public ScaleDeviceResponse<ScaleItemCompletionVO> complete(@PathVariable("taskItemId") String taskItemId,
-            @Valid @RequestBody ScaleItemCompletionForm form) {
+        @Valid @RequestBody ScaleItemCompletionForm form) {
         return ScaleDeviceResponse.ok(scaleItemCompletionService.complete(taskItemId, form));
     }
 

@@ -12,17 +12,21 @@ import com.xsy.scm.payment.domain.entity.PaymentRefundEntity;
 import com.xsy.scm.payment.domain.entity.PaymentTransactionEntity;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 支付回调按验签、保存事件、核对交易、更新状态、登记收款的顺序处理。同一渠道事件不能重复入账。 */
+/**
+ * 支付回调按验签、保存事件、核对交易、更新状态、登记收款的顺序处理。同一渠道事件不能重复入账。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -82,7 +86,7 @@ public class PaymentCallbackService {
 
         // 4) 匹配交易：渠道交易号是回调与本地交易的唯一连接点
         PaymentTransactionEntity transaction = paymentTransactionDao.selectByProviderTransactionNo(providerCode,
-                callback.providerTransactionNo());
+            callback.providerTransactionNo());
         if (transaction == null) {
             return reject(event.getId(), "找不到对应的支付交易：" + callback.providerTransactionNo());
         }
@@ -92,36 +96,36 @@ public class PaymentCallbackService {
         Long linkedTransactionId = transaction.getId();
         switch (callback.eventType()) {
             case PAYMENT_SUCCEEDED -> paymentIntentService.applyOutcome(transaction.getIntentId(), transaction.getId(),
-                    ScmPaymentProvider.Outcome.SUCCEEDED, null, null, callback.amount(), operator);
+                ScmPaymentProvider.Outcome.SUCCEEDED, null, null, callback.amount(), operator);
             case PAYMENT_FAILED -> paymentIntentService.applyOutcome(transaction.getIntentId(), transaction.getId(),
-                    ScmPaymentProvider.Outcome.FAILED, "PROVIDER_FAILED", "渠道回调支付失败", null, operator);
+                ScmPaymentProvider.Outcome.FAILED, "PROVIDER_FAILED", "渠道回调支付失败", null, operator);
             case REFUND_SUCCEEDED, REFUND_FAILED -> {
                 // 退款回调按<b>渠道退款号</b>匹配退款事实；缺它就无从定位，宁可拒收也不猜
                 if (callback.providerRefundNo() == null || callback.providerRefundNo().isBlank()) {
                     return reject(event.getId(), "退款回调缺少渠道退款号");
                 }
                 PaymentRefundEntity refund = paymentRefundService.findByProviderRefundNo(providerCode,
-                        callback.providerRefundNo());
+                    callback.providerRefundNo());
                 if (refund == null) {
                     return reject(event.getId(), "找不到对应的支付退款：" + callback.providerRefundNo());
                 }
                 linkedTransactionId = refund.getTransactionId();
                 paymentRefundService.applyOutcome(refund.getId(),
-                        callback.eventType() == ScmPaymentCallbackEventTypeEnum.REFUND_SUCCEEDED
-                                ? ScmPaymentProvider.Outcome.SUCCEEDED
-                                : ScmPaymentProvider.Outcome.FAILED,
-                        callback.providerRefundNo(), callback.amount(), "PROVIDER_REFUND_FAILED", "渠道回调退款失败", operator);
+                    callback.eventType() == ScmPaymentCallbackEventTypeEnum.REFUND_SUCCEEDED
+                        ? ScmPaymentProvider.Outcome.SUCCEEDED
+                        : ScmPaymentProvider.Outcome.FAILED,
+                    callback.providerRefundNo(), callback.amount(), "PROVIDER_REFUND_FAILED", "渠道回调退款失败", operator);
             }
         }
 
         paymentCallbackEventDao.markProcessed(event.getId(), ScmPaymentCallbackProcessStatusEnum.APPLIED.name(),
-                linkedTransactionId, null);
+            linkedTransactionId, null);
         return paymentCallbackEventDao.selectById(event.getId());
     }
 
     private PaymentCallbackEventEntity reject(Long eventId, String reason) {
         paymentCallbackEventDao.markProcessed(eventId, ScmPaymentCallbackProcessStatusEnum.REJECTED.name(), null,
-                reason);
+            reason);
         log.warn("支付回调被拒绝：eventId={} reason={}", eventId, reason);
         return paymentCallbackEventDao.selectById(eventId);
     }
@@ -129,7 +133,7 @@ public class PaymentCallbackService {
     private static String hash(String rawBody) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256")
-                    .digest((rawBody == null ? "" : rawBody).getBytes(StandardCharsets.UTF_8));
+                .digest((rawBody == null ? "" : rawBody).getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 不可用", e);

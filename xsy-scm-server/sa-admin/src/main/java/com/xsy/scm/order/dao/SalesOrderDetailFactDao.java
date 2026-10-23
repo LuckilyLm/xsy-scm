@@ -2,20 +2,24 @@ package com.xsy.scm.order.dao;
 
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.order.domain.vo.SalesOrderDetailVO;
+
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
-/** 订单详情跨域只读投影；只读取正式履约、应收与退款事实。 */
+/**
+ * 订单详情跨域只读投影；只读取正式履约、应收与退款事实。
+ */
 @Mapper
 public interface SalesOrderDetailFactDao {
 
     List<SalesOrderDetailVO.ReservationFact> reservations(@Param("orderId") Long orderId,
-            @Param("scope") ScmValueScope warehouseScope);
+        @Param("scope") ScmValueScope warehouseScope);
 
     List<SalesOrderDetailVO.SortingFact> sorting(@Param("orderId") Long orderId,
-            @Param("scope") ScmValueScope warehouseScope, @Param("employeeId") Long employeeId,
-            @Param("crossAssignee") boolean crossAssignee);
+        @Param("scope") ScmValueScope warehouseScope, @Param("employeeId") Long employeeId,
+        @Param("crossAssignee") boolean crossAssignee);
 
     SalesOrderDetailVO.DeliveryFact delivery(@Param("orderId") Long orderId, @Param("scope") ScmValueScope driverScope);
 

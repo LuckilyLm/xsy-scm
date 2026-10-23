@@ -9,7 +9,9 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.module.support.job.core.SmartJob;
 
-/** 执行时间由 SmartAdmin 定时任务配置；空参数生成昨日，日期参数供人工补生成。 */
+/**
+ * 执行时间由 SmartAdmin 定时任务配置；空参数生成昨日，日期参数供人工补生成。
+ */
 @Component
 @RequiredArgsConstructor
 public class PurchaseDailyReportJob implements SmartJob {
@@ -20,8 +22,8 @@ public class PurchaseDailyReportJob implements SmartJob {
         LocalDate reportDate;
         try {
             reportDate = param == null || param.isBlank()
-                    ? LocalDate.now(ScmReportTimeRangeResolver.BUSINESS_ZONE).minusDays(1)
-                    : LocalDate.parse(param.trim());
+                ? LocalDate.now(ScmReportTimeRangeResolver.BUSINESS_ZONE).minusDays(1)
+                : LocalDate.parse(param.trim());
         } catch (DateTimeParseException exception) {
             throw new IllegalArgumentException("任务参数请留空（生成昨日）或填写 yyyy-MM-dd 补生成日期", exception);
         }

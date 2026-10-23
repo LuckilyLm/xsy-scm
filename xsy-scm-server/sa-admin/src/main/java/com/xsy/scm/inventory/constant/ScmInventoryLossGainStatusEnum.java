@@ -3,7 +3,9 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 报损报溢单创建后直接待审核，可修改或删除；批准后记库存流水，驳回不影响库存。批准和驳回都是终态，不能修改历史流水。 */
+/**
+ * 报损报溢单创建后直接待审核，可修改或删除；批准后记库存流水，驳回不影响库存。批准和驳回都是终态，不能修改历史流水。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryLossGainStatusEnum {

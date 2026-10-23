@@ -2,10 +2,12 @@ package com.xsy.scm.mall.order.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
 import lombok.Data;
 
 /**
@@ -18,13 +20,21 @@ import lombok.Data;
 public class MallOrderVO {
     private Long orderId;
     private String orderNo;
-    /** 正式销售订单状态：DRAFT / PENDING / CONFIRMED / CANCELLED */
+    /**
+     * 正式销售订单状态：DRAFT / PENDING / CONFIRMED / CANCELLED
+     */
     private String status;
-    /** 面向客户的展示分类：PENDING / PREPARING / DELIVERING / COMPLETED / CANCELLED */
+    /**
+     * 面向客户的展示分类：PENDING / PREPARING / DELIVERING / COMPLETED / CANCELLED
+     */
     private String displayStatus;
-    /** 订单级履约状态（来自生效中的线路订单）；未排车时为 null */
+    /**
+     * 订单级履约状态（来自生效中的线路订单）；未排车时为 null
+     */
     private String fulfillmentStatus;
-    /** 是否允许客户取消：由订单状态机与履约事实共同决定，前端据此置灰 */
+    /**
+     * 是否允许客户取消：由订单状态机与履约事实共同决定，前端据此置灰
+     */
     private Boolean cancelable;
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal orderedTotalAmount;
@@ -42,29 +52,49 @@ public class MallOrderVO {
     private String receiverName;
     private String receiverPhone;
     private String address;
-    /** 明细行数 */
+    /**
+     * 明细行数
+     */
     private Integer itemCount;
-    /** 列表卡片用的商品缩略图，最多 3 张；取不到图的商品跳过 */
+    /**
+     * 列表卡片用的商品缩略图，最多 3 张；取不到图的商品跳过
+     */
     private List<String> itemThumbnails = new ArrayList<>();
     private List<MallOrderItemVO> items = new ArrayList<>();
-    /** 真实处理记录，仅详情返回 */
+    /**
+     * 真实处理记录，仅详情返回
+     */
     private List<MallOrderTimelineVO> timeline = new ArrayList<>();
-    /** 配送信息（线路 / 司机 / 发车 / 完成），仅详情返回；未排车时为 null */
+    /**
+     * 配送信息（线路 / 司机 / 发车 / 完成），仅详情返回；未排车时为 null
+     */
     private MallOrderDeliveryVO delivery;
-    /** 配送进度节点（已提交 → 已接单 → 已发车 → 已签收），仅详情返回；已取消订单只到「已取消」 */
+    /**
+     * 配送进度节点（已提交 → 已接单 → 已发车 → 已签收），仅详情返回；已取消订单只到「已取消」
+     */
     private List<MallOrderProgressNodeVO> progress = new ArrayList<>();
-    /** 确认时冻结的客户可见优惠；未确认或无优惠时为 null。 */
+    /**
+     * 确认时冻结的客户可见优惠；未确认或无优惠时为 null。
+     */
     private MallOrderDiscountVO discount;
-    /** 结算方式约定：WALLET / CREDIT / COD；后台订单或未选择时为 null */
+    /**
+     * 结算方式约定：WALLET / CREDIT / COD；后台订单或未选择时为 null
+     */
     private String settlementMethod;
-    /** 签收前按确认实重预估；签收后按实际出库形成的正常应收净额，仅已确认订单返回。 */
+    /**
+     * 签收前按确认实重预估；签收后按实际出库形成的正常应收净额，仅已确认订单返回。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal payableAmount;
-    /** 已付金额（该订单实际收到的钱：支付事实 + 货到付款收款），仅已确认订单返回 */
+    /**
+     * 已付金额（该订单实际收到的钱：支付事实 + 货到付款收款），仅已确认订单返回
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal paidAmount;
 
-    /** 已收金额高于当前应付的差额；只展示事实，不自动退款。 */
+    /**
+     * 已收金额高于当前应付的差额；只展示事实，不自动退款。
+     */
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal excessPaidAmount;
 }

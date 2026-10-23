@@ -5,13 +5,17 @@ import com.xsy.scm.purchase.domain.vo.PurchaseOrderItemVO;
 import com.xsy.scm.purchase.domain.vo.PurchaseOrderVO;
 import com.xsy.scm.purchase.permission.PurchasePermission;
 import com.xsy.scm.purchase.service.PurchaseQueryService;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** 采购单打印读取提交时保存的业务信息，避免商品或供应商资料后来修改影响历史单据。 */
+/**
+ * 采购单打印读取提交时保存的业务信息，避免商品或供应商资料后来修改影响历史单据。
+ */
 @Component
 @RequiredArgsConstructor
 public class PurchaseOrderPrintSourceProvider implements ScmPrintSourceProvider {

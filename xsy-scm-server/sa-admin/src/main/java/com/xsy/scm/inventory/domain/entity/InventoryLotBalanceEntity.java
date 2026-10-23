@@ -2,6 +2,7 @@ package com.xsy.scm.inventory.domain.entity;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**

@@ -14,9 +14,11 @@ import com.xsy.scm.promotion.domain.form.PromotionActivityQueryForm;
 import com.xsy.scm.promotion.domain.form.PromotionStatusForm;
 import com.xsy.scm.promotion.domain.vo.PromotionActivityVO;
 import com.xsy.scm.promotion.support.PromotionRuleValidator;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -24,13 +26,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 活动草稿可以编辑，生效后不能直接修改规则。每个版本用于生成订单优惠记录，方便按当时规则对账。 */
+/**
+ * 活动草稿可以编辑，生效后不能直接修改规则。每个版本用于生成订单优惠记录，方便按当时规则对账。
+ */
 @Service
 @RequiredArgsConstructor
 public class PromotionActivityService {
 
-    private static final Set<String> EDITABLE_STATUS = Set.of(ScmPromotionStatusEnum.DRAFT.name(),
-            ScmPromotionStatusEnum.STOPPED.name());
+    private static final Set<
+        String> EDITABLE_STATUS = Set.of(ScmPromotionStatusEnum.DRAFT.name(), ScmPromotionStatusEnum.STOPPED.name());
 
     private final PromotionActivityDao promotionActivityDao;
 
@@ -38,7 +42,7 @@ public class PromotionActivityService {
     public PageResult<PromotionActivityVO> queryPage(PromotionActivityQueryForm query) {
         Page<?> page = SmartPageUtil.convert2PageQuery(query);
         List<PromotionActivityVO> rows = promotionActivityDao.queryPage(page, query).stream()
-                .map(PromotionActivityService::toVO).toList();
+            .map(PromotionActivityService::toVO).toList();
         return SmartPageUtil.convert2PageResult(page, rows);
     }
 
@@ -95,7 +99,7 @@ public class PromotionActivityService {
     @Transactional(rollbackFor = Exception.class)
     public void updateStatus(Long id, PromotionStatusForm form) {
         if (!Set.of(ScmPromotionStatusEnum.ACTIVE.name(), ScmPromotionStatusEnum.STOPPED.name())
-                .contains(form.getStatus())) {
+            .contains(form.getStatus())) {
             throw new ScmBusinessException(PromotionErrorCode.ACTIVITY_STATE_INVALID);
         }
         PromotionActivityEntity row = promotionActivityDao.lockById(id);
@@ -106,7 +110,7 @@ public class PromotionActivityService {
             return;
         }
         if (ScmPromotionStatusEnum.ACTIVE.name().equals(form.getStatus())
-                && !row.getValidTo().isAfter(OffsetDateTime.now())) {
+            && !row.getValidTo().isAfter(OffsetDateTime.now())) {
             // 已过期的活动上线只会得到一条永远不生效的规则
             throw new ScmBusinessException(PromotionErrorCode.ACTIVITY_WINDOW_INVALID);
         }
@@ -116,7 +120,7 @@ public class PromotionActivityService {
     }
 
     private void apply(PromotionActivityEntity row, PromotionActivityForm form, java.util.Map<String, Object> rule,
-            ScmPromotionActivityTypeEnum type) {
+        ScmPromotionActivityTypeEnum type) {
         row.setActivityName(form.getActivityName().trim());
         row.setActivityType(type.name());
         row.setExclusiveGroup(StringUtils.isBlank(form.getExclusiveGroup()) ? null : form.getExclusiveGroup().trim());
@@ -129,8 +133,7 @@ public class PromotionActivityService {
 
     private void requireCodeAvailable(String code, Long selfId) {
         var wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<PromotionActivityEntity>()
-                .eq(PromotionActivityEntity::getActivityCode, code.trim())
-                .eq(PromotionActivityEntity::getDeleted, false);
+            .eq(PromotionActivityEntity::getActivityCode, code.trim()).eq(PromotionActivityEntity::getDeleted, false);
         if (selfId != null) {
             wrapper.ne(PromotionActivityEntity::getId, selfId);
         }
@@ -148,8 +151,8 @@ public class PromotionActivityService {
 
     static PromotionActivityVO toVO(PromotionActivityEntity row) {
         String label = ScmPromotionActivityTypeEnum.isSupported(row.getActivityType())
-                ? ScmPromotionActivityTypeEnum.valueOf(row.getActivityType()).getDesc()
-                : row.getActivityType();
+            ? ScmPromotionActivityTypeEnum.valueOf(row.getActivityType()).getDesc()
+            : row.getActivityType();
         return PromotionActivityVO.of(row, label);
     }
 }

@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmProductTypeEnum {
 
-    /** 标品：按规格固定数量交易，不需要称重。 */
+    /**
+     * 标品：按规格固定数量交易，不需要称重。
+     */
     STANDARD("标品"),
 
-    /** 非标品：按实际称重计量。 */
+    /**
+     * 非标品：按实际称重计量。
+     */
     NON_STANDARD("非标品");
 
     private final String desc;

@@ -13,16 +13,24 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum MallStockStatusEnum {
 
-    /** 有货。 */
+    /**
+     * 有货。
+     */
     AVAILABLE("有货"),
 
-    /** 缺货。 */
+    /**
+     * 缺货。
+     */
     OUT_OF_STOCK("缺货"),
 
-    /** 库存不足：有货但少于购买量。 */
+    /**
+     * 库存不足：有货但少于购买量。
+     */
     INSUFFICIENT("库存不足"),
 
-    /** 未知：库存服务不可用或未绑定配送仓。 */
+    /**
+     * 未知：库存服务不可用或未绑定配送仓。
+     */
     UNKNOWN("未知");
 
     private final String desc;

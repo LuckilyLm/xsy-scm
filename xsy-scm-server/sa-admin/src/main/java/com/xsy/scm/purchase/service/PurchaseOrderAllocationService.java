@@ -81,14 +81,14 @@ public class PurchaseOrderAllocationService {
     public List<RequestedRow> materialize(PurchaseOrderAddForm form) {
         List<Long> skuIds = form.getItems().stream().map(PurchaseOrderAddForm.Item::getSkuId).distinct().toList();
         Map<Long, ProductSkuOptionVO> products = productSkuOptionDao.selectByIds(skuIds).stream()
-                .collect(Collectors.toMap(ProductSkuOptionVO::getSkuId, Function.identity(), (a, b) -> a));
+            .collect(Collectors.toMap(ProductSkuOptionVO::getSkuId, Function.identity(), (a, b) -> a));
         List<Long> spuIds = products.values().stream().map(ProductSkuOptionVO::getSpuId).filter(Objects::nonNull)
-                .distinct().toList();
+            .distinct().toList();
         Map<Long,
-                String> spuCodes = spuIds.isEmpty()
-                        ? Map.of()
-                        : productSpuDao.selectBatchIds(spuIds).stream().collect(
-                                Collectors.toMap(ProductSpuEntity::getId, ProductSpuEntity::getSpuCode, (a, b) -> a));
+            String> spuCodes = spuIds.isEmpty()
+                ? Map.of()
+                : productSpuDao.selectBatchIds(spuIds).stream()
+                    .collect(Collectors.toMap(ProductSpuEntity::getId, ProductSpuEntity::getSpuCode, (a, b) -> a));
 
         List<RequestedRow> rows = new ArrayList<>(form.getItems().size());
         for (PurchaseOrderAddForm.Item itemForm : form.getItems()) {
@@ -99,17 +99,19 @@ public class PurchaseOrderAllocationService {
                 throw new ScmBusinessException(PURCHASE_SUPPLIER_SKU_DISABLED);
             }
             SupplierSkuEntity supplierSku = purchaseOrderValidator.requirePurchasableSku(form.getSupplierId(),
-                    itemForm.getSkuId());
+                itemForm.getSkuId());
             PurchaseOrderItemEntity item = PurchaseSnapshotFactory.item(itemForm, sku, spuCodes.get(sku.getSpuId()),
-                    supplierSku);
+                supplierSku);
             rows.add(new RequestedRow(item, itemForm.getAllocations()));
         }
         return rows;
     }
 
-    /** 采购需求已分配量包含本单上次分配的数量；修改本单时先扣除旧分配，再检查本次合计是否超过需求量。 */
+    /**
+     * 采购需求已分配量包含本单上次分配的数量；修改本单时先扣除旧分配，再检查本次合计是否超过需求量。
+     */
     public Map<Long, BigDecimal> validateAllocations(List<RequestedRow> rows, Map<Long, PurchaseDemandEntity> demands,
-            Long supplierId, Long warehouseId, Map<Long, BigDecimal> oldTotals) {
+        Long supplierId, Long warehouseId, Map<Long, BigDecimal> oldTotals) {
         Map<Long, BigDecimal> totals = new LinkedHashMap<>();
         for (RequestedRow row : rows) {
             for (PurchaseOrderAddForm.Allocation allocationForm : row.forms) {
@@ -123,7 +125,7 @@ public class PurchaseOrderAllocationService {
                 PurchaseDemandAllocator.itemMatchesDemand(row.item.getSkuId(), demand.getSkuId());
                 // 单位：需求单位必须等于采购单位，不换算（40971）
                 PurchaseDemandAllocator.unitCompatible(demand.getDemandUnitSnapshot(),
-                        row.item.getPurchaseUnitSnapshot());
+                    row.item.getPurchaseUnitSnapshot());
                 // (supplier, warehouse) 一致性；首次分配时由调用方固定 supplier（40981）
                 PurchaseDemandAllocator.assignmentCompatible(supplierId, warehouseId, demand);
 
@@ -147,7 +149,7 @@ public class PurchaseOrderAllocationService {
             PurchaseDemandEntity demand = demands.get(entry.getKey());
             // 扣除本单旧分配后再比 required（见方法注释）。create 时 oldTotals 为空 → 退化为原口径。
             BigDecimal otherAllocated = demand.getAllocatedQuantity()
-                    .subtract(oldTotals.getOrDefault(entry.getKey(), BigDecimal.ZERO));
+                .subtract(oldTotals.getOrDefault(entry.getKey(), BigDecimal.ZERO));
             PurchaseDemandAllocator.withinRequired(demand.getRequiredQuantity(), otherAllocated.add(entry.getValue()));
         }
         return totals;
@@ -161,7 +163,7 @@ public class PurchaseOrderAllocationService {
      * {@code ALLOCATED} 退回 {@code PENDING}。
      */
     public void recomputeDemands(Map<Long, PurchaseDemandEntity> locked, Map<Long, BigDecimal> oldTotals,
-            Map<Long, BigDecimal> newTotals, Long orderSupplierId) {
+        Map<Long, BigDecimal> newTotals, Long orderSupplierId) {
         Collection<Long> involved = new LinkedHashSet<>(oldTotals.keySet());
         involved.addAll(newTotals.keySet());
         for (Long demandId : PurchaseDemandAllocator.ascendingDemandIds(involved)) {
@@ -170,7 +172,7 @@ public class PurchaseOrderAllocationService {
                 throw new ScmBusinessException(PURCHASE_DEMAND_NOT_FOUND);
             }
             BigDecimal otherAllocated = demand.getAllocatedQuantity()
-                    .subtract(oldTotals.getOrDefault(demandId, BigDecimal.ZERO));
+                .subtract(oldTotals.getOrDefault(demandId, BigDecimal.ZERO));
             BigDecimal finalAllocated = otherAllocated.add(newTotals.getOrDefault(demandId, BigDecimal.ZERO));
             PurchaseDemandAllocator.withinRequired(demand.getRequiredQuantity(), finalAllocated);
 
@@ -181,7 +183,7 @@ public class PurchaseOrderAllocationService {
             }
             String status = PurchaseDemandAllocator.statusFor(demand.getRequiredQuantity(), finalAllocated);
             if (purchaseDemandDao.updateAllocation(demand.getId(), demand.getVersion(), finalAllocated, status,
-                    supplierId, ScmOperator.current()) != 1) {
+                supplierId, ScmOperator.current()) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }
         }
@@ -197,14 +199,14 @@ public class PurchaseOrderAllocationService {
         for (PurchaseDemandAllocationEntity removed : changes.removed()) {
             // 只删这一条：同一行的其它 allocation 必须原样保留
             if (purchaseDemandAllocationDao.softDelete(removed.getId(), removed.getVersion(),
-                    ScmOperator.current()) != 1) {
+                ScmOperator.current()) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }
         }
         for (PurchaseDemandAllocationEntity updated : changes.updated()) {
             // 不重建行：同 (item, demand) 的其它分配不受影响
             if (purchaseDemandAllocationDao.updateQuantity(updated.getId(), updated.getVersion(),
-                    updated.getAllocatedQuantity(), ScmOperator.current()) != 1) {
+                updated.getAllocatedQuantity(), ScmOperator.current()) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }
         }
@@ -225,7 +227,9 @@ public class PurchaseOrderAllocationService {
         }
     }
 
-    /** 取消或删除采购单时释放该单的活动需求分配，并重新计算需求已分配量，不删除采购需求。操作前先锁采购单，防止并发插入新分配。 */
+    /**
+     * 取消或删除采购单时释放该单的活动需求分配，并重新计算需求已分配量，不删除采购需求。操作前先锁采购单，防止并发插入新分配。
+     */
     public void releaseAllocations(PurchaseOrderEntity order) {
         List<PurchaseOrderItemEntity> items = purchaseOrderItemDao.listByOrderId(order.getId());
         if (items.isEmpty()) {
@@ -254,12 +258,12 @@ public class PurchaseOrderAllocationService {
         }
         List<Long> itemIds = items.stream().map(PurchaseOrderItemEntity::getId).toList();
         return purchaseDemandAllocationDao.listActiveByOrderItemIds(itemIds).stream()
-                .collect(Collectors.groupingBy(PurchaseDemandAllocationEntity::getPurchaseOrderItemId));
+            .collect(Collectors.groupingBy(PurchaseDemandAllocationEntity::getPurchaseOrderItemId));
     }
 
     public static List<Long> requestedDemandIds(List<RequestedRow> rows) {
         return rows.stream().flatMap(row -> row.forms.stream()).map(PurchaseOrderAddForm.Allocation::getDemandId)
-                .filter(Objects::nonNull).distinct().toList();
+            .filter(Objects::nonNull).distinct().toList();
     }
 
     /**
@@ -282,7 +286,7 @@ public class PurchaseOrderAllocationService {
     public static Map<Long, BigDecimal> totals(Collection<List<PurchaseDemandAllocationEntity>> grouped) {
         Map<Long, BigDecimal> totals = new LinkedHashMap<>();
         grouped.stream().flatMap(List::stream).forEach(allocation -> totals.merge(allocation.getPurchaseDemandId(),
-                allocation.getAllocatedQuantity(), BigDecimal::add));
+            allocation.getAllocatedQuantity(), BigDecimal::add));
         return totals;
     }
 }

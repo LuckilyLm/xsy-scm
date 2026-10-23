@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmReceiptModeEnum {
 
-    /** 直接入库：确认收货即记库存。 */
+    /**
+     * 直接入库：确认收货即记库存。
+     */
     DIRECT("直接入库"),
 
-    /** 仓库二次确认：收货后等仓库确认才入库。 */
+    /**
+     * 仓库二次确认：收货后等仓库确认才入库。
+     */
     WAREHOUSE_CONFIRM("仓库二次确认");
 
     private final String desc;

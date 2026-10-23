@@ -41,7 +41,7 @@ public class ProductImageCenterController {
     @GetMapping("/unbound")
     @SaCheckPermission(ProductPermission.IMAGE_QUERY)
     public ResponseDTO<List<ProductUnboundImageVO>> unbound(
-            @RequestParam(defaultValue = "100") @Min(1) @Max(300) Integer limit) {
+        @RequestParam(defaultValue = "100") @Min(1) @Max(300) Integer limit) {
         return ResponseDTO.ok(productImageCenterService.unboundImages(limit));
     }
 

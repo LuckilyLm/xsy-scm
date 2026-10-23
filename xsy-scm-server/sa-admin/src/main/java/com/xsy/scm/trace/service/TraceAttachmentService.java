@@ -7,6 +7,7 @@ import com.xsy.scm.trace.constant.TraceErrorCode;
 import com.xsy.scm.trace.dao.TraceAttachmentDao;
 import com.xsy.scm.trace.dao.TraceUnitDao;
 import com.xsy.scm.trace.domain.vo.TraceAttachmentVO;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.constant.FileRelationBizTypeEnum;
@@ -58,7 +60,7 @@ public class TraceAttachmentService {
     @Transactional(readOnly = true)
     public List<TraceAttachmentVO> productAttachments(Long spuId) {
         return attachmentsOf(FileRelationBizTypeEnum.PRODUCT_QUALIFICATION, spuId,
-                TraceAttachmentCategoryEnum.QUALIFICATION);
+            TraceAttachmentCategoryEnum.QUALIFICATION);
     }
 
     @Transactional(readOnly = true)
@@ -67,7 +69,9 @@ public class TraceAttachmentService {
         return attachmentsOf(FileRelationBizTypeEnum.LOT_INSPECTION, lotId, TraceAttachmentCategoryEnum.INSPECTION);
     }
 
-    /** 同步商品资质：列表里没有的旧附件只撤销授权，不删除物理文件。 */
+    /**
+     * 同步商品资质：列表里没有的旧附件只撤销授权，不删除物理文件。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void syncProductAttachments(Long spuId, Collection<String> fileKeys) {
         if (traceAttachmentDao.countLiveSpu(spuId) == 0) {
@@ -96,7 +100,7 @@ public class TraceAttachmentService {
             return List.of();
         }
         List<String> keys = fileKeys.stream().filter(key -> key != null && !key.isBlank()).map(String::trim)
-                .collect(Collectors.toCollection(LinkedHashSet::new)).stream().limit(MAX_ATTACHMENTS).toList();
+            .collect(Collectors.toCollection(LinkedHashSet::new)).stream().limit(MAX_ATTACHMENTS).toList();
         if (keys.isEmpty()) {
             return List.of();
         }
@@ -118,7 +122,7 @@ public class TraceAttachmentService {
         List<TraceAttachmentVO> result = new ArrayList<>();
         if (spuId != null) {
             result.addAll(attachmentsOf(FileRelationBizTypeEnum.PRODUCT_QUALIFICATION, spuId,
-                    TraceAttachmentCategoryEnum.QUALIFICATION));
+                TraceAttachmentCategoryEnum.QUALIFICATION));
         }
         // 同一文件即便又被挂为商品资质，也不能绕过检测报告的发布控制。
         List<String> keys = result.stream().map(TraceAttachmentVO::getFileKey).toList();
@@ -126,32 +130,34 @@ public class TraceAttachmentService {
             return result;
         }
         var reportKeys = fileRelationDao.listActiveByFileKeys(keys).stream()
-                .filter(relation -> FileRelationBizTypeEnum.TRACE_INSPECTION_REPORT.name().equals(relation.getBizType())
-                        || FileRelationBizTypeEnum.LOT_INSPECTION.name().equals(relation.getBizType()))
-                .map(relation -> relation.getFileKey()).collect(Collectors.toSet());
+            .filter(relation -> FileRelationBizTypeEnum.TRACE_INSPECTION_REPORT.name().equals(relation.getBizType())
+                || FileRelationBizTypeEnum.LOT_INSPECTION.name().equals(relation.getBizType()))
+            .map(relation -> relation.getFileKey()).collect(Collectors.toSet());
         return result.stream().filter(file -> !reportKeys.contains(file.getFileKey())).toList();
     }
 
     List<TraceAttachmentVO> reportAttachments(Long reportId) {
         return attachmentsOf(FileRelationBizTypeEnum.TRACE_INSPECTION_REPORT, reportId,
-                TraceAttachmentCategoryEnum.INSPECTION);
+            TraceAttachmentCategoryEnum.INSPECTION);
     }
 
-    /** 某个业务对象当前引用的全部 fileKey：公开下载入口据此判断「这个文件是否属于这个码」。 */
+    /**
+     * 某个业务对象当前引用的全部 fileKey：公开下载入口据此判断「这个文件是否属于这个码」。
+     */
     List<String> attachmentKeysOf(FileRelationBizTypeEnum bizType, Long bizId) {
         return fileRelationDao.listActiveByBiz(bizType.name(), bizId).stream().map(relation -> relation.getFileKey())
-                .toList();
+            .toList();
     }
 
     private List<TraceAttachmentVO> attachmentsOf(FileRelationBizTypeEnum bizType, Long bizId,
-            TraceAttachmentCategoryEnum category) {
+        TraceAttachmentCategoryEnum category) {
         List<String> keys = fileRelationDao.listActiveByBiz(bizType.name(), bizId).stream()
-                .map(relation -> relation.getFileKey()).toList();
+            .map(relation -> relation.getFileKey()).toList();
         if (keys.isEmpty()) {
             return List.of();
         }
         Map<String, FileVO> metadata = fileService.getFileMetadata(keys).stream()
-                .collect(Collectors.toMap(FileVO::getFileKey, Function.identity(), (left, right) -> left));
+            .collect(Collectors.toMap(FileVO::getFileKey, Function.identity(), (left, right) -> left));
         List<TraceAttachmentVO> result = new ArrayList<>(keys.size());
         for (String key : keys) {
             FileVO file = metadata.get(key);

@@ -10,7 +10,9 @@ import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-/** 一次财务写操作追加一条不可改日志。日志不继承财务账单字段，记录原单、动作、操作人及前后快照；不允许通过软删或更新覆盖历史。 */
+/**
+ * 一次财务写操作追加一条不可改日志。日志不继承财务账单字段，记录原单、动作、操作人及前后快照；不允许通过软删或更新覆盖历史。
+ */
 @Data
 @TableName(value = "xsy_finance_operation_log", autoResultMap = true)
 public class FinanceOperationLogEntity {

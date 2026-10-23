@@ -10,7 +10,9 @@ import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/** 采购单展示提交、取消、短关等业务时间；收货完成时间取各收货单。收货进度是查询时计算的值，采购明细和需求分配在详情中展示。 */
+/**
+ * 采购单展示提交、取消、短关等业务时间；收货完成时间取各收货单。收货进度是查询时计算的值，采购明细和需求分配在详情中展示。
+ */
 @Data
 public class PurchaseOrderVO {
     private Long id;

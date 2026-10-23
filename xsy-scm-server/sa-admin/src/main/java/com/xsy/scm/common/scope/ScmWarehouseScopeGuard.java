@@ -3,7 +3,9 @@ package com.xsy.scm.common.scope;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** 库存及相关单据写入前必须校验仓库权限，以已保存单据的仓库为准；权限不足时不泄露仓库是否存在。 */
+/**
+ * 库存及相关单据写入前必须校验仓库权限，以已保存单据的仓库为准；权限不足时不泄露仓库是否存在。
+ */
 @Component
 @RequiredArgsConstructor
 public class ScmWarehouseScopeGuard {

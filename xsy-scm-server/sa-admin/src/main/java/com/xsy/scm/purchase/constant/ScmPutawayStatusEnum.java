@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmPutawayStatusEnum {
 
-    /** 待入库：已收货，尚未记入库存。 */
+    /**
+     * 待入库：已收货，尚未记入库存。
+     */
     PENDING("待入库"),
 
-    /** 已入库：库存已入账。 */
+    /**
+     * 已入库：库存已入账。
+     */
     COMPLETED("已入库");
 
     private final String desc;

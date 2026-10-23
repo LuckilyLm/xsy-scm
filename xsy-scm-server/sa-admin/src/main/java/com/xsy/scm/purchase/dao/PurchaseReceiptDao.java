@@ -31,7 +31,7 @@ public interface PurchaseReceiptDao extends BaseMapper<PurchaseReceiptEntity> {
      * 行。仓库维度的收窄属库存/仓库侧口径，不在本语句里重复实现。
      */
     List<PurchaseReceiptVO> query(Page<?> page, @Param("query") PurchaseReceiptQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 详情（单头）。

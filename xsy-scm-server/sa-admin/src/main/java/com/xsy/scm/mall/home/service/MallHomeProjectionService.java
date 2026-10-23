@@ -14,6 +14,7 @@ import com.xsy.scm.mall.home.domain.vo.MallHomeReleaseVO;
 import com.xsy.scm.mall.home.domain.vo.MallThemeVO;
 import com.xsy.scm.mall.order.service.MallWarehouseService;
 import com.xsy.scm.mall.promotion.service.MallPromotionService;
+
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -25,6 +26,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.module.support.file.service.FileService;
 import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
@@ -51,8 +53,8 @@ public class MallHomeProjectionService {
         }
         MallHomeReleaseVO release = homeDao.release(releaseId);
         return release == null
-                ? new MallHomePageVO(null, null, List.of())
-                : project(releaseId, release.getThemeCode(), release.getContent(), customer, warehouseId);
+            ? new MallHomePageVO(null, null, List.of())
+            : project(releaseId, release.getThemeCode(), release.getContent(), customer, warehouseId);
     }
 
     /**
@@ -80,7 +82,7 @@ public class MallHomeProjectionService {
     }
 
     private MallHomePageVO project(Long releaseId, String themeCode, String content, RequestMallCustomer customer,
-            Long warehouseId) {
+        Long warehouseId) {
         List<MallHomeBlockForm> configured;
         try {
             configured = layoutService.parse(content);
@@ -89,12 +91,12 @@ public class MallHomeProjectionService {
         }
         OffsetDateTime now = OffsetDateTime.now();
         List<MallHomeBlockForm> active = configured.stream().filter(Objects::nonNull)
-                .filter(block -> block.getSortOrder() != null && Boolean.TRUE.equals(block.getEnabled())
-                        && (block.getCustomerIds() == null || block.getCustomerIds().isEmpty()
-                                || block.getCustomerIds().contains(customer.getCustomerId()))
-                        && (block.getStartAt() == null || !now.isBefore(block.getStartAt()))
-                        && (block.getEndAt() == null || now.isBefore(block.getEndAt())))
-                .sorted(Comparator.comparing(MallHomeBlockForm::getSortOrder)).toList();
+            .filter(block -> block.getSortOrder() != null && Boolean.TRUE.equals(block.getEnabled())
+                && (block.getCustomerIds() == null || block.getCustomerIds().isEmpty()
+                    || block.getCustomerIds().contains(customer.getCustomerId()))
+                && (block.getStartAt() == null || !now.isBefore(block.getStartAt()))
+                && (block.getEndAt() == null || now.isBefore(block.getEndAt())))
+            .sorted(Comparator.comparing(MallHomeBlockForm::getSortOrder)).toList();
         if (active.isEmpty()) {
             return new MallHomePageVO(releaseId, themeCode, List.of());
         }
@@ -110,15 +112,15 @@ public class MallHomeProjectionService {
             return ids.stream();
         }).distinct().toList();
         Map<Long,
-                MallProductVO> products = skuIds.isEmpty()
-                        ? Map.of()
-                        : catalogService.visibleProducts(customer, skuIds, null, warehouseId).stream()
-                                .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity()));
+            MallProductVO> products = skuIds.isEmpty()
+                ? Map.of()
+                : catalogService.visibleProducts(customer, skuIds, null, warehouseId).stream()
+                    .collect(Collectors.toMap(MallProductVO::getSkuId, Function.identity()));
         Set<Long> activityIds = active.stream()
-                .anyMatch(block -> MallHomeLinkType.ACTIVITY.name().equals(block.getLinkType()))
-                        ? promotionService.activities(customer, warehouseId).stream().map(activity -> activity.getId())
-                                .collect(Collectors.toSet())
-                        : Set.of();
+            .anyMatch(block -> MallHomeLinkType.ACTIVITY.name().equals(block.getLinkType()))
+                ? promotionService.activities(customer, warehouseId).stream().map(activity -> activity.getId())
+                    .collect(Collectors.toSet())
+                : Set.of();
         Set<Long> categoryIds = new HashSet<>();
         if (active.stream().anyMatch(block -> MallHomeLinkType.CATEGORY.name().equals(block.getLinkType()))) {
             for (MallCategoryVO category : catalogService.categories(customer)) {
@@ -127,17 +129,16 @@ public class MallHomeProjectionService {
         }
         Map<String, String> imageUrls = new HashMap<>();
         List<String> imageKeys = active.stream().map(MallHomeBlockForm::getImageFileKey)
-                .filter(key -> key != null && !key.isBlank() && key.startsWith(PUBLIC_IMAGE_PREFIX)).distinct()
-                .toList();
+            .filter(key -> key != null && !key.isBlank() && key.startsWith(PUBLIC_IMAGE_PREFIX)).distinct().toList();
         if (!imageKeys.isEmpty()) {
             fileService.getFileList(imageKeys).stream()
-                    .filter(file -> file.getFileUrl() != null && !file.getFileUrl().isBlank())
-                    .forEach(file -> imageUrls.put(file.getFileKey(), file.getFileUrl()));
+                .filter(file -> file.getFileUrl() != null && !file.getFileUrl().isBlank())
+                .forEach(file -> imageUrls.put(file.getFileKey(), file.getFileUrl()));
         }
         List<MallHomeBlockVO> blocks = new ArrayList<>();
         for (MallHomeBlockForm block : active) {
             if (block.getImageFileKey() != null && !block.getImageFileKey().isBlank()
-                    && !imageUrls.containsKey(block.getImageFileKey())) {
+                && !imageUrls.containsKey(block.getImageFileKey())) {
                 continue;
             }
             if (!targetVisible(block, products, categoryIds, activityIds)) {
@@ -157,7 +158,7 @@ public class MallHomeProjectionService {
                 if (block.getSkuIds() == null)
                     continue;
                 List<MallProductVO> visible = block.getSkuIds().stream().map(products::get)
-                        .filter(product -> product != null).toList();
+                    .filter(product -> product != null).toList();
                 if (visible.isEmpty())
                     continue;
                 view.setProducts(visible);
@@ -168,13 +169,13 @@ public class MallHomeProjectionService {
     }
 
     private boolean targetVisible(MallHomeBlockForm block, Map<Long, MallProductVO> products, Set<Long> categoryIds,
-            Set<Long> activityIds) {
+        Set<Long> activityIds) {
         MallHomeLinkType linkType = linkTypeOf(block.getLinkType());
         if (linkType == MallHomeLinkType.EXTERNAL_URL) {
             return layoutValidator.allowedExternalUrl(block.getLinkTarget());
         }
         if (linkType != MallHomeLinkType.PRODUCT && linkType != MallHomeLinkType.CATEGORY
-                && linkType != MallHomeLinkType.ACTIVITY) {
+            && linkType != MallHomeLinkType.ACTIVITY) {
             return true;
         }
         try {
@@ -189,7 +190,9 @@ public class MallHomeProjectionService {
         }
     }
 
-    /** 表单里的链接类型是字符串，未知取值按「没有链接」处理，与既有校验的宽容度一致。 */
+    /**
+     * 表单里的链接类型是字符串，未知取值按「没有链接」处理，与既有校验的宽容度一致。
+     */
     private static MallHomeLinkType linkTypeOf(String value) {
         for (MallHomeLinkType candidate : MallHomeLinkType.values()) {
             if (candidate.name().equals(value)) {

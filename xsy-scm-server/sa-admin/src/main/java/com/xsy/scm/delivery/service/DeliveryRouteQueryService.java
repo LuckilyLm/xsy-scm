@@ -44,7 +44,7 @@ public class DeliveryRouteQueryService {
     public static Page<?> page(DeliveryQueryForm form) {
         // SQL owns deterministic sorting. Never pass arbitrary client sort columns to MyBatis.
         if (form.getPageNum() == null || form.getPageNum() < 1 || form.getPageSize() == null || form.getPageSize() < 1
-                || form.getPageSize() > 500 || form.getSortItemList() != null && !form.getSortItemList().isEmpty())
+            || form.getPageSize() > 500 || form.getSortItemList() != null && !form.getSortItemList().isEmpty())
             throw new ScmBusinessException(VALIDATION_ERROR);
         return SmartPageUtil.convert2PageQuery(form);
     }
@@ -56,7 +56,7 @@ public class DeliveryRouteQueryService {
         if (scope.isEmpty())
             return ScmDataScopeService.emptyPage(form);
         return SmartPageUtil.convert2PageResult(page,
-                DeliveryVisibility.current().routes(deliveryQueryDao.routes(page, form, scope)));
+            DeliveryVisibility.current().routes(deliveryQueryDao.routes(page, form, scope)));
     }
 
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
@@ -66,10 +66,10 @@ public class DeliveryRouteQueryService {
         result.setRoute(route);
         // 停靠点与订单关系都挂在已经放行的线路下，因此不再各自收窄：收窄子集会破坏聚合口径。
         result.setStops(deliveryQueryDao.stops(id));
-        result.setOrders(deliveryRouteOrderDao.selectList(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
-                .eq(DeliveryRouteOrderEntity::getRouteId, id)
+        result.setOrders(deliveryRouteOrderDao
+            .selectList(new LambdaQueryWrapper<DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, id)
                 .eq(!ScmDeliveryRouteStatusEnum.CANCELLED.name().equals(route.getStatus()),
-                        DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
+                    DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
                 .orderByAsc(DeliveryRouteOrderEntity::getStopId, DeliveryRouteOrderEntity::getId)));
         return DeliveryVisibility.current().detail(result);
     }
@@ -78,7 +78,7 @@ public class DeliveryRouteQueryService {
     public DeliveryPrintVO print(Long id) {
         var detail = detail(id);
         if (!java.util.Set.of(ScmDeliveryRouteStatusEnum.PLANNED.name(), ScmDeliveryRouteStatusEnum.DISPATCHED.name(),
-                ScmDeliveryRouteStatusEnum.COMPLETED.name()).contains(detail.getRoute().getStatus()))
+            ScmDeliveryRouteStatusEnum.COMPLETED.name()).contains(detail.getRoute().getStatus()))
             throw new ScmBusinessException(STATE_INVALID);
         var result = new DeliveryPrintVO();
         result.setDetail(detail);

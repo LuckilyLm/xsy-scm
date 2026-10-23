@@ -20,7 +20,7 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
      * {@code scope} 是 {@code xsy_customer.seller_id} 维度的授权取值：由 Service 显式解析后下传，传 {@code null} 在 SQL 里渲染成恒假谓词而不是「不加限制」。
      */
     List<CustomerEntity> queryPage(Page<?> page, @Param("query") CustomerQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     List<CustomerEntity> selectOptions(@Param("scope") ScmValueScope scope);
 
@@ -31,18 +31,20 @@ public interface CustomerDao extends BaseMapper<CustomerEntity> {
      * 刻意不用 {@code updateById} + {@code deleteById} 两步走：两步之间没有谓词保护，并发删除会互相覆盖 {@code updated_by}。
      */
     int softDelete(@Param("customerId") Long customerId, @Param("version") Integer version,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     /**
      * 活动客户按类型计数，供删除客户类型前的引用检查。
      */
     long countActiveByTypeId(@Param("typeId") Long typeId);
 
-    /** Locks the active customer row used as the authoritative settlement/credit account. */
+    /**
+     * Locks the active customer row used as the authoritative settlement/credit account.
+     */
     CustomerEntity lock(@Param("customerId") Long customerId);
 
     int updateMallDeliveryWarehouse(@Param("customerId") Long customerId, @Param("version") Integer version,
-            @Param("warehouseId") Long warehouseId, @Param("operator") String operator);
+        @Param("warehouseId") Long warehouseId, @Param("operator") String operator);
 
     List<CustomerEntity> selectActiveByCodes(@Param("codes") List<String> codes);
 }

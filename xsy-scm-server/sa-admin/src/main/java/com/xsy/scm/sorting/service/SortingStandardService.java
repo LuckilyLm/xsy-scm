@@ -19,11 +19,13 @@ import com.xsy.scm.sorting.permission.SortingPermission;
 import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
 import com.xsy.scm.sorting.support.SortingAccess;
 import com.xsy.scm.trace.service.TraceUnitService;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,9 +57,9 @@ public class SortingStandardService {
         var items = rows(taskId).stream().map(row -> {
             String reason = rejection(row);
             return new SortingStandardPreviewVO.Item(row.getId(), row.getVersion(), row.getOrderNoSnapshot(),
-                    row.getCustomerNameSnapshot(), row.getProductNameSnapshot(), row.getSpecNameSnapshot(),
-                    row.getPlannedQuantitySnapshot() == null ? null : row.getPlannedQuantitySnapshot().toPlainString(),
-                    row.getSaleUnitSnapshot(), reason == null, reason);
+                row.getCustomerNameSnapshot(), row.getProductNameSnapshot(), row.getSpecNameSnapshot(),
+                row.getPlannedQuantitySnapshot() == null ? null : row.getPlannedQuantitySnapshot().toPlainString(),
+                row.getSaleUnitSnapshot(), reason == null, reason);
         }).toList();
         return new SortingStandardPreviewVO(taskId, task.getVersion(), items);
     }
@@ -76,8 +78,8 @@ public class SortingStandardService {
         }
         var rows = rows(taskId).stream().collect(Collectors.toMap(SortingTaskItemEntity::getId, Function.identity()));
         var entries = new ArrayList<SortingEntryItemForm>();
-        for (var selected : form.getItems().stream().sorted(java.util.Comparator.comparing(
-                SortingStandardConfirmForm.Item::id)).toList()) {
+        for (var selected : form.getItems().stream()
+            .sorted(java.util.Comparator.comparing(SortingStandardConfirmForm.Item::id)).toList()) {
             var row = rows.get(selected.id());
             if (row == null) {
                 throw new ScmBusinessException(ITEM_NOT_IN_TASK);
@@ -116,7 +118,7 @@ public class SortingStandardService {
         sortingAccess.requireAssignee(scope, task);
         // 快捷确认只允许本人，不能借队列管理或超级管理员身份替他人确认。
         if (task.getAssigneeEmployeeId() == null
-                || !Objects.equals(scope.getEmployeeId(), task.getAssigneeEmployeeId())) {
+            || !Objects.equals(scope.getEmployeeId(), task.getAssigneeEmployeeId())) {
             throw new ScmDataScopeException();
         }
         return task;
@@ -130,7 +132,7 @@ public class SortingStandardService {
 
     private List<SortingTaskItemEntity> rows(Long taskId) {
         return sortingTaskItemDao.selectList(new LambdaQueryWrapper<SortingTaskItemEntity>()
-                .eq(SortingTaskItemEntity::getTaskId, taskId).orderByAsc(SortingTaskItemEntity::getId));
+            .eq(SortingTaskItemEntity::getTaskId, taskId).orderByAsc(SortingTaskItemEntity::getId));
     }
 
     private String rejection(SortingTaskItemEntity row) {
@@ -143,11 +145,12 @@ public class SortingStandardService {
 
     private void validate(SortingStandardConfirmForm form) {
         if (form == null || form.getVersion() == null || form.getVersion() < 0 || form.getItems() == null
-                || form.getItems().isEmpty() || form.getItems().size() > 500
-                || form.getItems().stream().anyMatch(item -> item == null || item.id() == null || item.id() <= 0
-                        || item.version() == null || item.version() < 0)
-                || form.getItems().stream().map(SortingStandardConfirmForm.Item::id).distinct().count()
-                        != form.getItems().size()) {
+            || form.getItems().isEmpty() || form.getItems().size() > 500
+            || form.getItems().stream()
+                .anyMatch(item -> item == null || item.id() == null || item.id() <= 0 || item.version() == null
+                    || item.version() < 0)
+            || form.getItems().stream().map(SortingStandardConfirmForm.Item::id).distinct().count() != form.getItems()
+                .size()) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
     }

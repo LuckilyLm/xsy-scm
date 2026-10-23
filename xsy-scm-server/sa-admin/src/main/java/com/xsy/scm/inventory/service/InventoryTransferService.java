@@ -99,11 +99,11 @@ public class InventoryTransferService {
         InventoryTransferEntity locked = lockAndRequire(transferId);
         // 行上的两端 + 表单新选的两端：改单可以把任一端换仓，换进换出都必须在授权范围内
         warehouseScopeGuard.requireAll(locked.getFromWarehouseId(), locked.getToWarehouseId(),
-                form.getFromWarehouseId(), form.getToWarehouseId());
+            form.getFromWarehouseId(), form.getToWarehouseId());
         requireStatus(locked, ScmInventoryTransferStatusEnum.DRAFT);
 
         if (inventoryTransferDao.updateDraft(transferId, form.getFromWarehouseId(), form.getToWarehouseId(),
-                form.getRemark(), operator) != 1) {
+            form.getRemark(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         inventoryTransferItemDao.deleteByTransferId(transferId, operator);
@@ -138,9 +138,9 @@ public class InventoryTransferService {
         // 锁序：余额锁按 (warehouseId, skuId) 升序 —— 同一单内多行也必须固定顺序。
         items.stream().sorted(Comparator.comparing(InventoryTransferItemVO::getSkuId)).forEach(item -> {
             InventoryTransferFact fact = new InventoryTransferFact(locked.getFromWarehouseId(), item.getSkuId(),
-                    locked.getId(), item.getId(), item.getQuantity(),
-                    // 发出不传单位：单位由源仓余额决定，命令服务会返回它
-                    null, now, operator);
+                locked.getId(), item.getId(), item.getQuantity(),
+                // 发出不传单位：单位由源仓余额决定，命令服务会返回它
+                null, now, operator);
             String unit = inventoryCommandService.postTransferOut(fact);
             inventoryTransferItemDao.updateUnitSnapshot(item.getId(), unit, operator);
         });
@@ -173,10 +173,10 @@ public class InventoryTransferService {
         }
 
         items.stream().sorted(Comparator.comparing(InventoryTransferItemVO::getSkuId))
-                .forEach(item -> inventoryCommandService.postTransferIn(new InventoryTransferFact(
-                        locked.getToWarehouseId(), item.getSkuId(), locked.getId(), item.getId(), item.getQuantity(),
-                        // 收货必须传期望单位（来自发出时写入的快照）
-                        item.getUnitSnapshot(), now, operator)));
+            .forEach(item -> inventoryCommandService.postTransferIn(new InventoryTransferFact(locked.getToWarehouseId(),
+                item.getSkuId(), locked.getId(), item.getId(), item.getQuantity(),
+                // 收货必须传期望单位（来自发出时写入的快照）
+                item.getUnitSnapshot(), now, operator)));
 
         if (inventoryTransferDao.markReceived(transferId, now, operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);

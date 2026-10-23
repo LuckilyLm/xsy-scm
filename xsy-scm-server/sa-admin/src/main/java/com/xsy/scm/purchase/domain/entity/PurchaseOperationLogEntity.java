@@ -12,7 +12,9 @@ import java.util.Map;
 
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 
-/** 采购操作日志只允许新增；保留变更前后的单据数据，不能修改或删除历史记录。 */
+/**
+ * 采购操作日志只允许新增；保留变更前后的单据数据，不能修改或删除历史记录。
+ */
 @Data
 @TableName(value = "xsy_purchase_operation_log", autoResultMap = true)
 public class PurchaseOperationLogEntity {

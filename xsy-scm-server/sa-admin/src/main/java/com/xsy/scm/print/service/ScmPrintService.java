@@ -23,19 +23,23 @@ import com.xsy.scm.sorting.support.SortingAccess;
 import com.xsy.scm.print.support.ScmPrintSource;
 import com.xsy.scm.print.support.ScmPrintSourceProvider;
 import cn.dev33.satoken.stp.StpUtil;
+
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 预览只读业务数据；正式打印保存当时的版面，历史重印使用已保存内容，不重新生成业务数据。 */
+/**
+ * 预览只读业务数据；正式打印保存当时的版面，历史重印使用已保存内容，不重新生成业务数据。
+ */
 @Service
 @RequiredArgsConstructor
 public class ScmPrintService {
@@ -68,7 +72,9 @@ public class ScmPrintService {
         return render(type, businessId, template(type, templateId));
     }
 
-    /** 打印操作者只需业务查看权，不依赖模板管理权限。 */
+    /**
+     * 打印操作者只需业务查看权，不依赖模板管理权限。
+     */
     @Transactional(readOnly = true)
     public List<ScmPrintTemplateVO> templateOptions(String documentType, Long businessId) {
         requireVisible(requireType(documentType), businessId);
@@ -77,8 +83,8 @@ public class ScmPrintService {
 
     private ScmPrintTemplateEntity template(ScmPrintDocumentTypeEnum type, Long templateId) {
         ScmPrintTemplateEntity template = templateId == null
-                ? scmPrintTemplateService.requireDefault(type.name())
-                : scmPrintTemplateService.requireEnabled(templateId);
+            ? scmPrintTemplateService.requireDefault(type.name())
+            : scmPrintTemplateService.requireEnabled(templateId);
         if (!type.name().equals(template.getDocumentType())) {
             // 拿采购单的模板去打印发货单：字段白名单完全不同，按「模板不存在」拒绝
             throw new ScmBusinessException(ScmPrintErrorCode.TEMPLATE_NOT_FOUND);
@@ -94,7 +100,7 @@ public class ScmPrintService {
         ScmPrintSource source = provider.load(businessId);
         ScmPrintTemplateModel model = ScmPrintTemplateModel.fromMap(template.getModel());
         ScmPrintRenderVO render = scmPrintRenderService.render(type, source, model,
-                scmPrintRenderService.amountVisible(type));
+            scmPrintRenderService.amountVisible(type));
         render.setBusinessId(businessId);
         render.setTemplateId(template.getId());
         render.setTemplateCode(template.getTemplateCode());
@@ -189,18 +195,18 @@ public class ScmPrintService {
         if (query.getSortItemList() != null && !query.getSortItemList().isEmpty()) {
             throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR);
         }
-        List<String> visibleTypes = java.util.Arrays.stream(ScmPrintDocumentTypeEnum.values()).filter(
-                type -> ScmDataScopeService.hasPermission(scmPrintRenderService.provider(type).queryPermission()))
-                .map(Enum::name).toList();
+        List<String> visibleTypes = java.util.Arrays.stream(ScmPrintDocumentTypeEnum.values())
+            .filter(type -> ScmDataScopeService.hasPermission(scmPrintRenderService.provider(type).queryPermission()))
+            .map(Enum::name).toList();
         if (visibleTypes.isEmpty()) {
             return ScmDataScopeService.emptyPage(query);
         }
         var page = SmartPageUtil.convert2PageQuery(query);
         List<ScmPrintRecordVO> rows = scmPrintRecordQueryReadDao.queryPage(page, query, scmDataScopeService.resolve(),
-                visibleTypes, sortingAccess.crossAssignee());
+            visibleTypes, sortingAccess.crossAssignee());
         rows.forEach(row -> row.setDocumentTypeLabel(ScmPrintDocumentTypeEnum.isSupported(row.getDocumentType())
-                ? ScmPrintDocumentTypeEnum.valueOf(row.getDocumentType()).getLabel()
-                : row.getDocumentType()));
+            ? ScmPrintDocumentTypeEnum.valueOf(row.getDocumentType()).getLabel()
+            : row.getDocumentType()));
         return SmartPageUtil.convert2PageResult(page, rows);
     }
 
@@ -255,7 +261,7 @@ public class ScmPrintService {
             }
         }
         Set<String> hidden = new LinkedHashSet<>(
-                render.getHiddenFields() == null ? List.of() : render.getHiddenFields());
+            render.getHiddenFields() == null ? List.of() : render.getHiddenFields());
         hidden.addAll(removed);
         render.setHiddenFields(new ArrayList<>(hidden));
     }

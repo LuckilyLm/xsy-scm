@@ -41,7 +41,9 @@ import static com.xsy.scm.product.constant.ProductErrorCode.PRODUCT_NOT_FOUND;
 @Service
 @RequiredArgsConstructor
 public class ProductQueryService {
-    /** 单条 IN 的分片上限，见 {@link #enrich}。 */
+    /**
+     * 单条 IN 的分片上限，见 {@link #enrich}。
+     */
     private static final int IN_BATCH = 500;
     private final ProductSpuDao productSpuDao;
     private final ProductSkuDao productSkuDao;
@@ -50,7 +52,9 @@ public class ProductQueryService {
     private final ProductTagService productTagService;
     private final FileService fileService;
 
-    /** 对客户别名等跨领域输入提供只读规格存在性检查。 */
+    /**
+     * 对客户别名等跨领域输入提供只读规格存在性检查。
+     */
     public boolean skuExists(Long skuId) {
         return skuId != null && productSkuDao.selectById(skuId) != null;
     }
@@ -67,9 +71,9 @@ public class ProductQueryService {
             page.addOrder(OrderItem.desc("updated_at"), OrderItem.desc("id"));
         var categoryRows = productCategoryService.all();
         var rows = productSpuDao.queryPage(page, form,
-                form.getCategoryId() == null
-                        ? null
-                        : productCategoryService.descendantIds(form.getCategoryId(), categoryRows));
+            form.getCategoryId() == null
+                ? null
+                : productCategoryService.descendantIds(form.getCategoryId(), categoryRows));
         var enriched = enrich(rows, categoryRows);
         return SmartPageUtil.convert2PageResult(page, new ArrayList<ProductSpuVO>(enriched));
     }
@@ -92,26 +96,26 @@ public class ProductQueryService {
         var imageRows = new ArrayList<ProductImageEntity>();
         for (var batch : Lists.partition(ids, IN_BATCH)) {
             skuRows.addAll(productSkuDao
-                    .selectList(new LambdaQueryWrapper<ProductSkuEntity>().in(ProductSkuEntity::getSpuId, batch)
-                            .orderByAsc(ProductSkuEntity::getSortOrder, ProductSkuEntity::getId)));
+                .selectList(new LambdaQueryWrapper<ProductSkuEntity>().in(ProductSkuEntity::getSpuId, batch)
+                    .orderByAsc(ProductSkuEntity::getSortOrder, ProductSkuEntity::getId)));
             imageRows.addAll(productImageDao
-                    .selectList(new LambdaQueryWrapper<ProductImageEntity>().in(ProductImageEntity::getSpuId, batch)
-                            .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId)));
+                .selectList(new LambdaQueryWrapper<ProductImageEntity>().in(ProductImageEntity::getSpuId, batch)
+                    .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId)));
         }
         var skuMap = skuRows.stream().collect(Collectors.groupingBy(ProductSkuEntity::getSpuId));
         var imageMap = imageRows.stream().collect(Collectors.groupingBy(ProductImageEntity::getSpuId));
         var tagMap = new LinkedHashMap<Long, List<ProductSpuTagVO>>();
         for (var batch : Lists.partition(ids, IN_BATCH))
             productTagService.bySpuIds(batch)
-                    .forEach((spuId, bound) -> tagMap.computeIfAbsent(spuId, k -> new ArrayList<>()).addAll(bound));
+                .forEach((spuId, bound) -> tagMap.computeIfAbsent(spuId, k -> new ArrayList<>()).addAll(bound));
         Map<String, String> urls = new HashMap<>();
         // 分批取私有 URL：一次传整页 fileKey 会顶到 PostgreSQL 单语句 65535 个绑定参数上限。
         for (var batch : Lists.partition(imageRows.stream().map(ProductImageEntity::getFileKey).distinct().toList(),
-                IN_BATCH))
+            IN_BATCH))
             fileService.getFileList(batch, SmartRequestUtil.getRequestUser()).stream().filter(Objects::nonNull)
-                    .forEach(f -> urls.put(f.getFileKey(), f.getFileUrl()));
+                .forEach(f -> urls.put(f.getFileKey(), f.getFileUrl()));
         Map<Long, String> names = categoryRows.stream()
-                .collect(Collectors.toMap(ProductCategoryEntity::getId, ProductCategoryEntity::getName));
+            .collect(Collectors.toMap(ProductCategoryEntity::getId, ProductCategoryEntity::getName));
         // 分类索引在循环外建一次：path(id, rows) 每次都会整表重建，放循环里是 O(页大小 × 分类总数)
         var categoryById = ProductCategoryService.indexById(categoryRows);
         List<ProductSpuDetailVO> result = new ArrayList<>();
@@ -131,11 +135,11 @@ public class ProductQueryService {
             vo.setSkuList(children);
             vo.setSkuCount(children.size());
             vo.setDefaultSku(
-                    children.stream().filter(s -> Boolean.TRUE.equals(s.getDefaultFlag())).findFirst().orElse(null));
+                children.stream().filter(s -> Boolean.TRUE.equals(s.getDefaultFlag())).findFirst().orElse(null));
             vo.setMinMarketPrice(children.stream().map(ProductSkuVO::getMarketPrice).filter(Objects::nonNull)
-                    .min(BigDecimal::compareTo).orElse(null));
+                .min(BigDecimal::compareTo).orElse(null));
             vo.setMaxMarketPrice(children.stream().map(ProductSkuVO::getMarketPrice).filter(Objects::nonNull)
-                    .max(BigDecimal::compareTo).orElse(null));
+                .max(BigDecimal::compareTo).orElse(null));
             var pictures = imageMap.getOrDefault(row.getId(), List.of()).stream().map(i -> {
                 var image = new ProductImageVO();
                 BeanUtils.copyProperties(i, image);
@@ -145,7 +149,7 @@ public class ProductQueryService {
             }).toList();
             vo.setImages(pictures);
             vo.setPrimaryImageUrl(pictures.stream().filter(i -> Boolean.TRUE.equals(i.getPrimaryFlag()))
-                    .map(ProductImageVO::getFileUrl).filter(Objects::nonNull).findFirst().orElse(null));
+                .map(ProductImageVO::getFileUrl).filter(Objects::nonNull).findFirst().orElse(null));
             result.add(vo);
         }
         return result;

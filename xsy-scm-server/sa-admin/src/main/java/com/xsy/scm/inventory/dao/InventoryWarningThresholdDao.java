@@ -34,14 +34,14 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
      * @return 影响行数，必须为 1；为 0 说明行不存在或版本不符
      */
     int updateThreshold(@Param("id") Long id, @Param("warehouseId") Long warehouseId, @Param("skuId") Long skuId,
-            @Param("warnMin") BigDecimal warnMin, @Param("warnMax") BigDecimal warnMax, @Param("remark") String remark,
-            @Param("version") Integer version, @Param("operator") String operator);
+        @Param("warnMin") BigDecimal warnMin, @Param("warnMax") BigDecimal warnMax, @Param("remark") String remark,
+        @Param("version") Integer version, @Param("operator") String operator);
 
     /**
      * 配置列表（联仓库 / SKU / 商品取展示字段）。
      */
     List<InventoryWarningThresholdVO> queryPage(Page<?> page, @Param("query") InventoryWarningThresholdQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 配置详情（按 id）。
@@ -58,7 +58,7 @@ public interface InventoryWarningThresholdDao extends BaseMapper<InventoryWarnin
      * {@code status} 为空时只返回异常项（LOW / HIGH）—— 预警列表的默认语义。状态表达式与过滤谓词共用 XML 里的同一个 {@code <sql>} 片段，避免「判定规则写两遍」这种必然漂移的写法。
      */
     List<InventoryWarningVO> queryWarningPage(Page<?> page, @Param("query") InventoryWarningQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 预警通知扫描用的配置行（<b>不按状态过滤</b>）。

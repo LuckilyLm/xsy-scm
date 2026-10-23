@@ -21,7 +21,9 @@ import com.xsy.scm.customer.constant.CustomerVisibilityPolicy;
 
 import java.util.List;
 
-/** 新客户默认是潜在客户，状态通过专门接口变更。客户编码由服务端生成，不接受客户端自行填写。 */
+/**
+ * 新客户默认是潜在客户，状态通过专门接口变更。客户编码由服务端生成，不接受客户端自行填写。
+ */
 @Data
 public class CustomerAddForm extends ScmLocationForm {
     @Pattern(regexp = CustomerVisibilityPolicy.PATTERN, message = "商品可见性策略无效")
@@ -81,13 +83,19 @@ public class CustomerAddForm extends ScmLocationForm {
     @ScmEnumValue(enumClass = ScmSettleModeEnum.class, message = "结算模式无效")
     private String settleMode = ScmSettleModeEnum.INDEPENDENT.name();
 
-    /** 仅结算模式为 GROUP 的集团主体可用：允许子客户用集团钱包结算。 */
+    /**
+     * 仅结算模式为 GROUP 的集团主体可用：允许子客户用集团钱包结算。
+     */
     private Boolean sharedSettlementEnabled;
 
-    /** 商城货到付款准入；未提供时新增默认关闭，编辑不改变已有设置。 */
+    /**
+     * 商城货到付款准入；未提供时新增默认关闭，编辑不改变已有设置。
+     */
     private Boolean codAllowed;
 
-    /** 商城默认配送仓；仅同时持客户编辑与仓库编辑权时可设置。 */
+    /**
+     * 商城默认配送仓；仅同时持客户编辑与仓库编辑权时可设置。
+     */
     @Positive(message = "商城配送仓必须大于0")
     private Long mallDeliveryWarehouseId;
 

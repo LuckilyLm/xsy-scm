@@ -3,7 +3,9 @@ package com.xsy.scm.finance.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 财务日志操作类型与数据库白名单对应。新增动作时必须同步数据库约束，确保所有财务操作都能准确审计。 */
+/**
+ * 财务日志操作类型与数据库白名单对应。新增动作时必须同步数据库约束，确保所有财务操作都能准确审计。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmFinanceOperationTypeEnum {

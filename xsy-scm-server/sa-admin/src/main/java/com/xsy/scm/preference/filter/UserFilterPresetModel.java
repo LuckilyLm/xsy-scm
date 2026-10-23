@@ -6,12 +6,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.Data;
 
 public final class UserFilterPresetModel {
-    private UserFilterPresetModel() {}
+    private UserFilterPresetModel() {
+    }
 
     @Data
     public static class View {
@@ -43,6 +46,7 @@ public final class UserFilterPresetModel {
         private OffsetDateTime createdAt;
     }
 
-    public record Preset(Long id, String name, List<Condition> conditions,
-            boolean available, OffsetDateTime createdAt) {}
+    public record Preset(Long id, String name, List<Condition> conditions, boolean available,
+        OffsetDateTime createdAt) {
+    }
 }

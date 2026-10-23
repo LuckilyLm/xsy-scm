@@ -9,7 +9,9 @@ import java.util.Objects;
 
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_PRICE_INVALID;
 
-/** 采购行金额按计划数量乘采购价计算，逐行 HALF_UP 保留四位小数，再合计行金额。不要先汇总数量再统一计算，以免尾差。 */
+/**
+ * 采购行金额按计划数量乘采购价计算，逐行 HALF_UP 保留四位小数，再合计行金额。不要先汇总数量再统一计算，以免尾差。
+ */
 public final class PurchaseAmountCalculator {
 
     public static final int SCALE = 4;

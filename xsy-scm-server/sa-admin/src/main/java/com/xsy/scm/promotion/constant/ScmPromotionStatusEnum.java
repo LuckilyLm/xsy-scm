@@ -13,13 +13,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmPromotionStatusEnum {
 
-    /** 草稿：尚未生效。 */
+    /**
+     * 草稿：尚未生效。
+     */
     DRAFT("草稿"),
 
-    /** 进行中：已发布，客户可见可用。 */
+    /**
+     * 进行中：已发布，客户可见可用。
+     */
     ACTIVE("进行中"),
 
-    /** 已停止：不再发放或使用，历史记录保留。 */
+    /**
+     * 已停止：不再发放或使用，历史记录保留。
+     */
     STOPPED("已停止");
 
     private final String desc;

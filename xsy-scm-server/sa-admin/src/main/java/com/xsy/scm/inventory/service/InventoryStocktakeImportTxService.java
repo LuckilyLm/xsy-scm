@@ -7,12 +7,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-/** 盘点导入在一个事务里完成幂等认领、锁定库存、验证库存版本、创建草稿和幂等结果记录；任一失败整批回滚。 */
+/**
+ * 盘点导入在一个事务里完成幂等认领、锁定库存、验证库存版本、创建草稿和幂等结果记录；任一失败整批回滚。
+ */
 @Service
 @RequiredArgsConstructor
 public class InventoryStocktakeImportTxService {
 
-    /** 一次提交的结果：新建草稿 id + 是否命中幂等重放。 */
+    /**
+     * 一次提交的结果：新建草稿 id + 是否命中幂等重放。
+     */
     public record CommitResult(Long stocktakeId, boolean replayed) {
     }
 
@@ -26,7 +30,7 @@ public class InventoryStocktakeImportTxService {
      */
     @Transactional(rollbackFor = Exception.class)
     public CommitResult commit(Long warehouseId, List<InventoryStocktakeService.SnapshotLine> lines,
-            String idempotencyKey, Object fingerprint) {
+        String idempotencyKey, Object fingerprint) {
         var claim = idempotencyService.claim("STOCKTAKE_IMPORT", idempotencyKey, fingerprint);
         if (claim.replay()) {
             Long existing = idempotencyService.replay(claim, Long.class);

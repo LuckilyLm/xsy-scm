@@ -22,7 +22,9 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** Finance gross-profit read model. It does not create or mutate financial facts. */
+/**
+ * Finance gross-profit read model. It does not create or mutate financial facts.
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -39,7 +41,7 @@ public class ScmFinanceProfitService {
         Page<?> page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page,
-                financeProfitDao.query(page, range.startAt(), range.endAt(), form, scope));
+            financeProfitDao.query(page, range.startAt(), range.endAt(), form, scope));
     }
 
     public ScmFinanceProfitSummaryVO summary(ScmFinanceProfitQueryForm form) {
@@ -58,7 +60,7 @@ public class ScmFinanceProfitService {
             return List.of();
         }
         return ScmReportExportGuard.exportRows(pageSize -> financeProfitDao.query(new Page<>(1, pageSize, false),
-                range.startAt(), range.endAt(), form, scope));
+            range.startAt(), range.endAt(), form, scope));
     }
 
     private ScmReportTimeRange validate(ScmFinanceProfitQueryForm form) {
@@ -71,7 +73,7 @@ public class ScmFinanceProfitService {
 
     private boolean denied(ScmFinanceProfitQueryForm form, ScmDataScopeContext scope) {
         return !scope.isCostVisible() || scope.getWarehouseScope().isEmpty() || scope.getOrderSellerScope().isEmpty()
-                || scope.getCustomerSellerScope().isEmpty()
-                || (form.getWarehouseId() != null && !scope.getWarehouseScope().allows(form.getWarehouseId()));
+            || scope.getCustomerSellerScope().isEmpty()
+            || (form.getWarehouseId() != null && !scope.getWarehouseScope().allows(form.getWarehouseId()));
     }
 }

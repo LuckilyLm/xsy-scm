@@ -3,16 +3,21 @@ package com.xsy.scm.payment.provider;
 import com.xsy.scm.payment.constant.ScmPaymentCallbackEventTypeEnum;
 import com.xsy.scm.payment.constant.ScmPaymentMockScenarioEnum;
 import com.xsy.scm.payment.constant.ScmPaymentProviderEnum;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
-/** 支付渠道接口只负责发起支付、查询和核验回调；订单状态、数据库写入和财务记账由业务服务负责。 */
+/**
+ * 支付渠道接口只负责发起支付、查询和核验回调；订单状态、数据库写入和财务记账由业务服务负责。
+ */
 public interface ScmPaymentProvider {
 
-    /** 本实现对应的渠道。 */
+    /**
+     * 本实现对应的渠道。
+     */
     ScmPaymentProviderEnum provider();
 
     /**
@@ -23,10 +28,14 @@ public interface ScmPaymentProvider {
      */
     IntentResult createIntent(IntentRequest request);
 
-    /** 同一 refundNo 必须幂等；超时或本地落账失败后仍使用原编号，不得重复出款。 */
+    /**
+     * 同一 refundNo 必须幂等；超时或本地落账失败后仍使用原编号，不得重复出款。
+     */
     RefundResult refund(RefundRequest request);
 
-    /** 按已提交的本地退款号查渠道；null 仅表示渠道明确确认不存在，查询失败必须抛异常。 */
+    /**
+     * 按已提交的本地退款号查渠道；null 仅表示渠道明确确认不存在，查询失败必须抛异常。
+     */
     RefundResult queryRefund(String refundNo, String providerRefundNo);
 
     /**
@@ -51,7 +60,9 @@ public interface ScmPaymentProvider {
      */
     Settlement fetchSettlement(LocalDate bizDate);
 
-    /** 渠道发起结果。 */
+    /**
+     * 渠道发起结果。
+     */
     enum Outcome {
         PENDING,
         SUCCEEDED,
@@ -76,12 +87,14 @@ public interface ScmPaymentProvider {
      *            <b>渠道确认收到的金额</b>。只有同步成功（{@code SUCCEEDED}）才有值； 延迟 / 失败时为空，等回调再报。它是 Finance 收款金额的唯一依据 —— 本地绝不拿应付金额去顶替它
      */
     record IntentResult(String externalIntentId, String providerTransactionNo, Outcome outcome, BigDecimal amount,
-            String failureCode, String failureMessage) {
+        String failureCode, String failureMessage) {
     }
 
-    /** 退款入参。 */
+    /**
+     * 退款入参。
+     */
     record RefundRequest(String refundNo, String providerTransactionNo, BigDecimal amount, String reason,
-            ScmPaymentMockScenarioEnum scenario) {
+        ScmPaymentMockScenarioEnum scenario) {
     }
 
     /**
@@ -91,7 +104,7 @@ public interface ScmPaymentProvider {
      *            <b>渠道实际退回的金额</b>；只有成功时才有值。与申请退款额分开： 申请 100 而渠道实退 98 是可能发生的，资金反向事实认的是它
      */
     record RefundResult(String providerRefundNo, Outcome outcome, BigDecimal amount, String failureCode,
-            String failureMessage) {
+        String failureMessage) {
     }
 
     /**
@@ -117,11 +130,13 @@ public interface ScmPaymentProvider {
      *            验签或解析失败的原因
      */
     record Callback(String providerEventId, ScmPaymentCallbackEventTypeEnum eventType, String rawEventType,
-            String providerTransactionNo, BigDecimal amount, String providerRefundNo, Map<String, Object> payload,
-            boolean signatureVerified, String rejectReason) {
+        String providerTransactionNo, BigDecimal amount, String providerRefundNo, Map<String, Object> payload,
+        boolean signatureVerified, String rejectReason) {
     }
 
-    /** 查单结果。 */
+    /**
+     * 查单结果。
+     */
     record TransactionResult(String providerTransactionNo, BigDecimal amount, Outcome outcome, OffsetDateTime paidAt) {
     }
 
@@ -136,7 +151,9 @@ public interface ScmPaymentProvider {
     record Settlement(LocalDate bizDate, BigDecimal total, int count, List<SettlementLine> lines) {
     }
 
-    /** 渠道对账的一行。 */
+    /**
+     * 渠道对账的一行。
+     */
     record SettlementLine(String providerTransactionNo, BigDecimal amount) {
     }
 }

@@ -7,12 +7,15 @@ import com.xsy.scm.print.constant.ScmPrintField;
 import com.xsy.scm.print.constant.ScmPrintOrientationEnum;
 import com.xsy.scm.print.constant.ScmPrintPaperEnum;
 import com.xsy.scm.print.domain.model.ScmPrintTemplateModel;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** 打印模板的字段与结构必须符合白名单，未知字段直接拒绝。标题和备注不允许 HTML 标记，打印模板不能执行脚本。 */
+/**
+ * 打印模板的字段与结构必须符合白名单，未知字段直接拒绝。标题和备注不允许 HTML 标记，打印模板不能执行脚本。
+ */
 public final class ScmPrintTemplateValidator {
 
     private static final int MAX_TITLE_LENGTH = 40;

@@ -51,14 +51,14 @@ public class ScmFinanceAgingService {
             return List.of();
         }
         return ScmReportExportGuard
-                .exportRows(size -> financeAgingDao.query(new Page<>(1, size, false), form, endAt, scope));
+            .exportRows(size -> financeAgingDao.query(new Page<>(1, size, false), form, endAt, scope));
     }
 
     private OffsetDateTime validate(ScmFinanceAgingQueryForm form) {
         SalesReportService.rejectClientSort(form);
         if (form.getAccountType() == null || form.getAsOfDate() == null
-                || (form.isReceivable() && form.getSupplierId() != null)
-                || (!form.isReceivable() && (form.getCustomerId() != null || form.getSettlementCustomerId() != null))) {
+            || (form.isReceivable() && form.getSupplierId() != null)
+            || (!form.isReceivable() && (form.getCustomerId() != null || form.getSettlementCustomerId() != null))) {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
         }
         return form.getAsOfDate().plusDays(1).atStartOfDay(ScmReportTimeRangeResolver.BUSINESS_ZONE).toOffsetDateTime();
@@ -66,9 +66,9 @@ public class ScmFinanceAgingService {
 
     private boolean denied(ScmFinanceAgingQueryForm form, ScmDataScopeContext scope) {
         return scope.getWarehouseScope().isEmpty()
-                || (form.getWarehouseId() != null && !scope.getWarehouseScope().allows(form.getWarehouseId()))
-                || (form.isReceivable()
-                        ? scope.getOrderSellerScope().isEmpty() || scope.getCustomerSellerScope().isEmpty()
-                        : scope.getPurchaserScope().isEmpty());
+            || (form.getWarehouseId() != null && !scope.getWarehouseScope().allows(form.getWarehouseId()))
+            || (form.isReceivable()
+                ? scope.getOrderSellerScope().isEmpty() || scope.getCustomerSellerScope().isEmpty()
+                : scope.getPurchaserScope().isEmpty());
     }
 }

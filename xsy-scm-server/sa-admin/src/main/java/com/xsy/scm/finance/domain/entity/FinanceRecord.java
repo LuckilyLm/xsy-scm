@@ -7,7 +7,9 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/** 财务单据共用创建人和时间等审计字段，记录实际资金和应收应付事实；操作日志另行记录。 */
+/**
+ * 财务单据共用创建人和时间等审计字段，记录实际资金和应收应付事实；操作日志另行记录。
+ */
 @Data
 public abstract class FinanceRecord {
     @TableId(type = IdType.AUTO)

@@ -120,10 +120,10 @@ public class ProductUomService {
      */
     private void assertUnique(String code, String name, Long self) {
         if (productUomDao.selectCount(new LambdaQueryWrapper<ProductUomEntity>().eq(ProductUomEntity::getUomCode, code)
-                .ne(self != null, ProductUomEntity::getId, self)) > 0)
+            .ne(self != null, ProductUomEntity::getId, self)) > 0)
             throw new ScmBusinessException(UOM_CODE_DUPLICATE);
         if (productUomDao.selectCount(new LambdaQueryWrapper<ProductUomEntity>().eq(ProductUomEntity::getName, name)
-                .ne(self != null, ProductUomEntity::getId, self)) > 0)
+            .ne(self != null, ProductUomEntity::getId, self)) > 0)
             throw new ScmBusinessException(UOM_NAME_DUPLICATE);
     }
 

@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum TraceAttachmentCategoryEnum {
 
-    /** 商品资质：营业执照、生产许可等，随商品长期有效。 */
+    /**
+     * 商品资质：营业执照、生产许可等，随商品长期有效。
+     */
     QUALIFICATION("商品资质"),
 
-    /** 批次检测报告：针对某一批到货的检验结论。 */
+    /**
+     * 批次检测报告：针对某一批到货的检验结论。
+     */
     INSPECTION("检测报告");
 
     private final String desc;

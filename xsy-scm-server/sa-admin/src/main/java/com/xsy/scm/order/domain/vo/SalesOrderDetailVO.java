@@ -4,9 +4,11 @@ import com.xsy.scm.promotion.domain.vo.OrderDiscountVO;
 import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -32,7 +34,9 @@ public class SalesOrderDetailVO extends SalesOrderVO {
      */
     private List<PromotionDiscountVO.GiftEntitlementVO> gifts;
 
-    /** null 表示当前调用者没有该领域的查询权限；空列表表示授权范围内没有事实。 */
+    /**
+     * null 表示当前调用者没有该领域的查询权限；空列表表示授权范围内没有事实。
+     */
     private List<ReservationFact> inventoryReservations;
     private List<SortingFact> sortingProgress;
     private DeliveryFact deliveryProgress;
@@ -111,7 +115,9 @@ public class SalesOrderDetailVO extends SalesOrderVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal approvedAmount;
         private OffsetDateTime approvedAt;
-        /** null 表示无应收查询权限，false 表示没有红字事实。 */
+        /**
+         * null 表示无应收查询权限，false 表示没有红字事实。
+         */
         private Boolean redReceivableRecorded;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal redReceivableAmount;
@@ -134,7 +140,9 @@ public class SalesOrderDetailVO extends SalesOrderVO {
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal refundAmount;
         private OffsetDateTime completedAt;
-        /** 资金分摊执行状态；无资金事实时为 NO_FACT，不能用退款单完成代替到账。 */
+        /**
+         * 资金分摊执行状态；无资金事实时为 NO_FACT，不能用退款单完成代替到账。
+         */
         private String fundingStatus;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal fundingSucceededAmount;

@@ -9,8 +9,10 @@ import com.xsy.scm.device.support.ScaleDevicePrincipal;
 import com.xsy.scm.device.support.ScaleDeviceResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity;
 import net.lab1024.sa.admin.module.system.employee.service.EmployeeService;
@@ -40,7 +42,9 @@ public class ScaleDeviceInterceptor implements HandlerInterceptor {
 
     public static final String HEADER_OPERATOR_SESSION = "X-Operator-Session";
 
-    /** 激活本身还没有设备凭证，必须放行；其余设备接口一律要求双重身份。 */
+    /**
+     * 激活本身还没有设备凭证，必须放行；其余设备接口一律要求双重身份。
+     */
     private static final String ACTIVATE_PATH = "/agents/activate";
 
     private final ScaleDeviceAuthService scaleDeviceAuthService;
@@ -51,7 +55,7 @@ public class ScaleDeviceInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
-            throws IOException {
+        throws IOException {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             response.setStatus(HttpStatus.NO_CONTENT.value());
             return false;
@@ -78,7 +82,7 @@ public class ScaleDeviceInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler,
-            Exception exception) {
+        Exception exception) {
         ScaleDeviceContext.clear();
         SmartRequestUtil.remove();
     }
@@ -98,13 +102,13 @@ public class ScaleDeviceInterceptor implements HandlerInterceptor {
      * 拒绝时用设备协议自己的响应体：{@code code} 必须是可判定的字符串错误码， 后台的 {@code ResponseDTO} 在这里会被秤端当成解析失败。
      */
     private void writeRejection(HttpServletResponse response, HttpStatus status, ScmBusinessException exception)
-            throws IOException {
+        throws IOException {
         String code = exception.getErrorCode() instanceof Enum<?> enumCode ? enumCode.name() : "DEVICE_REJECTED";
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         objectMapper.writeValue(response.getOutputStream(),
-                ScaleDeviceResponse.error(code, exception.getErrorCode().getMsg()));
+            ScaleDeviceResponse.error(code, exception.getErrorCode().getMsg()));
     }
 
     private static String bearerToken(HttpServletRequest request) {

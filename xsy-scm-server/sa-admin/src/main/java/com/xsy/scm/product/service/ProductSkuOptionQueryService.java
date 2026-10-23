@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.domain.form.ProductSkuOptionQueryForm;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
+
 import java.util.List;
+
 import com.xsy.scm.product.domain.vo.ProductSkuOptionListVO;
 import com.xsy.scm.common.exception.ScmBusinessException;
 
@@ -16,7 +18,9 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 public class ProductSkuOptionQueryService {
     private final ProductSkuOptionDao productSkuOptionDao;
 
-    /** 提供跨领域安全的商品规格选项查询，集中处理商品数据访问。 */
+    /**
+     * 提供跨领域安全的商品规格选项查询，集中处理商品数据访问。
+     */
     public List<ProductSkuOptionVO> byIds(List<Long> skuIds) {
         return skuIds == null || skuIds.isEmpty() ? List.of() : productSkuOptionDao.selectByIds(skuIds);
     }

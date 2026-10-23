@@ -2,12 +2,16 @@ package com.xsy.scm.delivery.support;
 
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.delivery.constant.DeliveryErrorCode;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+
 import org.springframework.stereotype.Component;
 
-/** 使用球面距离估算站点间距离，不代表实际道路距离或行驶时间。没有地图路线服务时才用作备用方案。 */
+/**
+ * 使用球面距离估算站点间距离，不代表实际道路距离或行驶时间。没有地图路线服务时才用作备用方案。
+ */
 @Component
 public class StraightLineDistanceMatrixProvider implements DeliveryDistanceMatrixProvider {
 
@@ -17,7 +21,9 @@ public class StraightLineDistanceMatrixProvider implements DeliveryDistanceMatri
 
     private static final double EARTH_RADIUS_METERS = 6_371_008.8d;
 
-    /** 距离保留 4 位小数（米），与全仓数量金额的定点口径一致。 */
+    /**
+     * 距离保留 4 位小数（米），与全仓数量金额的定点口径一致。
+     */
     private static final int SCALE = 4;
 
     @Override
@@ -74,7 +80,7 @@ public class StraightLineDistanceMatrixProvider implements DeliveryDistanceMatri
         double deltaLat = lat2 - lat1;
         double deltaLng = Math.toRadians(to.longitude().doubleValue() - from.longitude().doubleValue());
         double a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2)
-                + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+            + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return BigDecimal.valueOf(EARTH_RADIUS_METERS * c).setScale(SCALE, RoundingMode.HALF_UP);
     }

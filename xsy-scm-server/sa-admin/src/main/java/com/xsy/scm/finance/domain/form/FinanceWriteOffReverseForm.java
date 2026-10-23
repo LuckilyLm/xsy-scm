@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/** 反向一条正常核销；原因缺失由服务返回财务错误码 41138。 */
+/**
+ * 反向一条正常核销；原因缺失由服务返回财务错误码 41138。
+ */
 @Data
 public class FinanceWriteOffReverseForm {
 

@@ -110,7 +110,7 @@ public class InventoryConversionService {
         requireStatus(locked, ScmInventoryConversionStatusEnum.PENDING);
 
         if (inventoryConversionDao.updatePending(conversionId, form.getWarehouseId(), form.getConvertType(),
-                form.getReason(), form.getRemark(), operator) != 1) {
+            form.getReason(), form.getRemark(), operator) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         inventoryConversionItemDao.deleteByConversionId(conversionId, operator);
@@ -150,7 +150,7 @@ public class InventoryConversionService {
             involvedSkuIds.add(item.getTargetSkuId());
         }
         Map<Long, BigDecimal> costBasis = resolveOutboundCostBasis(items,
-                inventoryCommandService.lockCostBasis(locked.getWarehouseId(), involvedSkuIds));
+            inventoryCommandService.lockCostBasis(locked.getWarehouseId(), involvedSkuIds));
 
         // 把每行拆成两条腿，再全局排序 —— 这是本能力与既有六条写入路径的<b>唯一实质差异</b>。
         List<Leg> legs = new ArrayList<>(items.size() * 2);
@@ -158,10 +158,10 @@ public class InventoryConversionService {
             // 一条明细的两条腿共用同一个基准值，所以总成本必然守恒。
             BigDecimal sourceCost = costBasis.getOrDefault(item.getSourceSkuId(), BigDecimal.ZERO);
             legs.add(new Leg(item.getSourceSkuId(), false, item.getId(), item.getSourceQuantity(), item.getSourceUnit(),
-                    sourceCost));
+                sourceCost));
             legs.add(new Leg(item.getTargetSkuId(), true, item.getId(), item.getTargetQuantity(), item.getTargetUnit(),
-                    InventoryCommandService.convertedUnitCost(item.getSourceQuantity(), sourceCost,
-                            item.getTargetQuantity())));
+                InventoryCommandService.convertedUnitCost(item.getSourceQuantity(), sourceCost,
+                    item.getTargetQuantity())));
         }
         // 按 skuId 升序（同仓，等价于 (warehouse_id, sku_id) 升序）；
         // 同一 skuId 时<b>先入后出</b>，让链式转换（A→B 且 B→C）能成立。
@@ -169,7 +169,7 @@ public class InventoryConversionService {
 
         for (Leg leg : legs) {
             InventoryConversionFact fact = new InventoryConversionFact(locked.getWarehouseId(), locked.getId(),
-                    leg.itemId(), leg.skuId(), leg.quantity(), leg.unit(), leg.unitCost(), now, operator);
+                leg.itemId(), leg.skuId(), leg.quantity(), leg.unit(), leg.unitCost(), now, operator);
             if (leg.inbound()) {
                 inventoryCommandService.postConvertIn(fact);
             } else {
@@ -178,7 +178,7 @@ public class InventoryConversionService {
         }
 
         if (inventoryConversionDao.markCompleted(conversionId, now, operator, form.getAuditOpinion(),
-                form.getVersion()) != 1) {
+            form.getVersion()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -201,7 +201,7 @@ public class InventoryConversionService {
         requireVersion(locked, form);
 
         if (inventoryConversionDao.markRejected(conversionId, now, operator, form.getAuditOpinion(),
-                form.getVersion()) != 1) {
+            form.getVersion()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
     }
@@ -229,7 +229,7 @@ public class InventoryConversionService {
      * 一条腿：一次对某行余额的增减。{@code unitCost} 是本单求解出的单位成本基准。
      */
     private record Leg(Long skuId, boolean inbound, Long itemId, BigDecimal quantity, String unit,
-            BigDecimal unitCost) {
+        BigDecimal unitCost) {
     }
 
     /**
@@ -240,7 +240,7 @@ public class InventoryConversionService {
      * 没有期初行时期初均价为 0，直接取 0 会把 C 记成零成本 —— 与修掉的「调拨转入清零」是同一个缺陷。
      */
     private Map<Long, BigDecimal> resolveOutboundCostBasis(List<InventoryConversionItemVO> items,
-            Map<Long, InventoryCommandService.CostBasis> opening) {
+        Map<Long, InventoryCommandService.CostBasis> opening) {
         Map<Long, List<InventoryConversionItemVO>> inboundByTarget = new HashMap<>();
         for (InventoryConversionItemVO item : items) {
             inboundByTarget.computeIfAbsent(item.getTargetSkuId(), key -> new ArrayList<>()).add(item);
@@ -252,9 +252,11 @@ public class InventoryConversionService {
         return resolved;
     }
 
-    /** 规格转换成本按期初数量、均价及本单转入量递归加权。遇到 A→B→A 循环时使用期初均价作基准，不增加拒绝逻辑；按明细顺序计算，保持各腿总成本守恒。 */
+    /**
+     * 规格转换成本按期初数量、均价及本单转入量递归加权。遇到 A→B→A 循环时使用期初均价作基准，不增加拒绝逻辑；按明细顺序计算，保持各腿总成本守恒。
+     */
     private BigDecimal outboundCostBasis(Long skuId, Map<Long, List<InventoryConversionItemVO>> inboundByTarget,
-            Map<Long, InventoryCommandService.CostBasis> opening, Map<Long, BigDecimal> resolved, Set<Long> visiting) {
+        Map<Long, InventoryCommandService.CostBasis> opening, Map<Long, BigDecimal> resolved, Set<Long> visiting) {
         BigDecimal cached = resolved.get(skuId);
         if (cached != null) {
             return cached;
@@ -272,10 +274,10 @@ public class InventoryConversionService {
         if (inbound != null) {
             for (InventoryConversionItemVO item : inbound) {
                 BigDecimal sourceCost = outboundCostBasis(item.getSourceSkuId(), inboundByTarget, opening, resolved,
-                        visiting);
+                    visiting);
                 basis = InventoryCommandService.weightedAvgCost(quantity, basis, item.getTargetQuantity(),
-                        InventoryCommandService.convertedUnitCost(item.getSourceQuantity(), sourceCost,
-                                item.getTargetQuantity()));
+                    InventoryCommandService.convertedUnitCost(item.getSourceQuantity(), sourceCost,
+                        item.getTargetQuantity()));
                 quantity = quantity.add(item.getTargetQuantity());
             }
         }
@@ -320,10 +322,10 @@ public class InventoryConversionService {
         }
         for (InventoryConversionAddForm.Item item : form.getItems()) {
             if (item == null || item.getSourceSkuId() == null || item.getTargetSkuId() == null
-                    || item.getSourceQuantity() == null || item.getTargetQuantity() == null
-                    || item.getSourceQuantity().signum() <= 0 || item.getTargetQuantity().signum() <= 0
-                    || item.getSourceUnit() == null || item.getSourceUnit().isBlank() || item.getTargetUnit() == null
-                    || item.getTargetUnit().isBlank()) {
+                || item.getSourceQuantity() == null || item.getTargetQuantity() == null
+                || item.getSourceQuantity().signum() <= 0 || item.getTargetQuantity().signum() <= 0
+                || item.getSourceUnit() == null || item.getSourceUnit().isBlank() || item.getTargetUnit() == null
+                || item.getTargetUnit().isBlank()) {
                 throw new ScmBusinessException(INVENTORY_CONVERSION_PARAM_INVALID);
             }
             if (Objects.equals(item.getSourceSkuId(), item.getTargetSkuId())) {

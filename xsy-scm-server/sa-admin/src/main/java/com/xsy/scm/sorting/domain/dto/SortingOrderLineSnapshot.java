@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-/** 建分拣任务前校验订单已确认、未删除且明细有效。读取订单状态和删除标记用于准确返回拒绝原因。 */
+/**
+ * 建分拣任务前校验订单已确认、未删除且明细有效。读取订单状态和删除标记用于准确返回拒绝原因。
+ */
 @Data
 public class SortingOrderLineSnapshot {
     private Long salesOrderItemId;

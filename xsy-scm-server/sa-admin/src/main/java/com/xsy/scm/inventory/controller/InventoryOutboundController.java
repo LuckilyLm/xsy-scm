@@ -70,7 +70,7 @@ public class InventoryOutboundController {
     @SaCheckPermission(InventoryPermission.OUTBOUND_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@PathVariable("id") Long outboundId,
-            @Valid @RequestBody InventoryOutboundAddForm form) {
+        @Valid @RequestBody InventoryOutboundAddForm form) {
         inventoryOutboundService.update(outboundId, form);
         return ResponseDTO.ok();
     }

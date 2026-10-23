@@ -2,6 +2,12 @@
 
 最后更新：2026-10-23。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
 
+## 后端 Java 格式统一（2026-10-23，Spotless 检查通过）
+
+- 采用 IDEA 格式化后的源码风格：4 空格缩进、120 列、续行缩进 4 空格、LF 换行，Javadoc 按列宽重排；恢复 `BalanceErrorCode` 中被 IDE 清理的错误码说明注释。
+- `tools/quality/eclipse-formatter.xml` 增加续行缩进与注释换行设置；`.editorconfig` 同步 IDEA 的缩进、续行、列宽和注释换行参数；`AGENTS.md`、`CONTRIBUTING.md`、`tools/README.md` 补充格式入口。
+- 对 `xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/**` 执行 `spotless:apply`，共 1082 个 Java 文件变更；`python tools/verify.py quality` PASS（含 Checkstyle、Spotless、质量守卫及自测）。未运行编译、测试、数据库迁移或服务。
+
 ## E2E 用例与工具按模块合并（2026-10-23，静态检查通过，未跑浏览器）
 
 - `xsy-scm-web/e2e` 的 31 份按域拆分 spec 合并为 7 份：`scm-master-data`、`scm-order`、`scm-purchase-inventory`、`scm-sorting-delivery`、`scm-finance`、`scm-report-dashboard`、`scm-platform`；`e2e-chains` 的 8 份黄金链合并为 `golden-chain.spec.ts`。每份来源文件保留为一个独立 `test.describe`，块内夹具、`beforeAll/afterAll` 与 serial 配置只作用于本块。

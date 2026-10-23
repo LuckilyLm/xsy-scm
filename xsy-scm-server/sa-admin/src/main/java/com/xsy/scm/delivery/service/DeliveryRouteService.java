@@ -78,6 +78,7 @@ import static com.xsy.scm.delivery.constant.DeliveryErrorCode.STATE_INVALID;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.STOP_ORDER_INVALID;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
+
 /**
  * Route is the aggregate lock. Order rows are locked in ID order before assignment/plan/release.
  */
@@ -181,21 +182,22 @@ public class DeliveryRouteService {
         for (Long orderId : ids) {
             var order = salesOrderDao.lock(orderId);
             if (!eligibility.eligible(order) || (order.getMallDeliveryWarehouseId() != null
-                    && !Objects.equals(order.getMallDeliveryWarehouseId(), route.getWarehouseId())))
+                && !Objects.equals(order.getMallDeliveryWarehouseId(), route.getWarehouseId())))
                 throw new ScmBusinessException(ORDER_INELIGIBLE);
         }
         var routeStops = new ArrayList<>(
-                deliveryRouteStopDao.selectList(new LambdaQueryWrapper<DeliveryRouteStopEntity>()
-                        .eq(DeliveryRouteStopEntity::getRouteId, id).orderByAsc(DeliveryRouteStopEntity::getStopSeq)));
+            deliveryRouteStopDao.selectList(new LambdaQueryWrapper<DeliveryRouteStopEntity>()
+                .eq(DeliveryRouteStopEntity::getRouteId, id).orderByAsc(DeliveryRouteStopEntity::getStopSeq)));
         // ACTIVE 占用判断与订单快照读取各合成一条：原先逐单查，500 单就是 1000 次往返。
         // 上面已把所有请求订单加锁，这里读到的是稳定快照；ids 受 LIMIT_EXCEEDED 约束在 500 以内。
         var alreadyAssigned = new HashSet<Long>();
         var snapshots = new HashMap<Long, DeliveryCandidateVO>();
         if (!ids.isEmpty()) {
-            deliveryRouteOrderDao.selectList(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
+            deliveryRouteOrderDao
+                .selectList(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
                     .select(DeliveryRouteOrderEntity::getOrderId).in(DeliveryRouteOrderEntity::getOrderId, ids)
                     .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name()))
-                    .forEach(assigned -> alreadyAssigned.add(assigned.getOrderId()));
+                .forEach(assigned -> alreadyAssigned.add(assigned.getOrderId()));
             deliveryQueryDao.candidateByIds(ids).forEach(snapshot -> snapshots.put(snapshot.getOrderId(), snapshot));
         }
         int seq = routeStops.stream().mapToInt(DeliveryRouteStopEntity::getStopSeq).max().orElse(0);
@@ -206,7 +208,7 @@ public class DeliveryRouteService {
             if (candidate == null || candidate.getAddress() == null || candidate.getAddress().isBlank())
                 throw new ScmBusinessException(ORDER_INELIGIBLE);
             var stop = routeStops.stream().filter(s -> Objects.equals(s.getCustomerId(), candidate.getCustomerId())
-                    && Objects.equals(s.getAddressSnapshot(), candidate.getAddress())).findFirst().orElse(null);
+                && Objects.equals(s.getAddressSnapshot(), candidate.getAddress())).findFirst().orElse(null);
             if (stop == null) {
                 stop = new DeliveryRouteStopEntity();
                 BeanUtils.copyProperties(candidate, stop, "id", "createdAt", "createdBy");
@@ -246,15 +248,14 @@ public class DeliveryRouteService {
         draft(route);
         salesOrderDao.lock(orderId);
         var assignment = active(id).stream().filter(a -> a.getOrderId().equals(orderId)).findFirst()
-                .orElseThrow(() -> new ScmBusinessException(NOT_FOUND));
+            .orElseThrow(() -> new ScmBusinessException(NOT_FOUND));
         assignment.setAssignmentStatus(ScmDeliveryAssignmentStatusEnum.RELEASED.name());
         stamp(assignment, false);
         deliveryRouteOrderDao.updateById(assignment);
         deliveryRouteOrderDao.deleteById(assignment.getId());
         if (deliveryRouteOrderDao.selectCount(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
-                .eq(DeliveryRouteOrderEntity::getStopId, assignment.getStopId())
-                .eq(DeliveryRouteOrderEntity::getAssignmentStatus,
-                        ScmDeliveryAssignmentStatusEnum.ACTIVE.name())) == 0) {
+            .eq(DeliveryRouteOrderEntity::getStopId, assignment.getStopId())
+            .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name())) == 0) {
             deliveryRouteStopDao.deleteById(assignment.getStopId());
         }
         // Repack gaps so stop count and displayed sequence stay consistent.
@@ -273,11 +274,11 @@ public class DeliveryRouteService {
     public void reorder(Long id, DeliveryReorderForm form) {
         var route = lock(id, form.getVersion());
         draft(route);
-        var existing = deliveryRouteStopDao.selectList(
-                new LambdaQueryWrapper<DeliveryRouteStopEntity>().eq(DeliveryRouteStopEntity::getRouteId, id));
+        var existing = deliveryRouteStopDao
+            .selectList(new LambdaQueryWrapper<DeliveryRouteStopEntity>().eq(DeliveryRouteStopEntity::getRouteId, id));
         var ids = new HashSet<>(form.getStopIds());
         if (ids.size() != form.getStopIds().size() || ids.size() != existing.size()
-                || !ids.equals(new HashSet<>(existing.stream().map(DeliveryRouteStopEntity::getId).toList())))
+            || !ids.equals(new HashSet<>(existing.stream().map(DeliveryRouteStopEntity::getId).toList())))
             throw new ScmBusinessException(STOP_ORDER_INVALID);
         // Move to a disjoint positive sequence range before swapping; partial unique index remains active.
         deliveryQueryDao.bumpStopSequences(id);
@@ -320,7 +321,7 @@ public class DeliveryRouteService {
         if (assigned.isEmpty())
             throw new ScmBusinessException(EMPTY_ROUTE);
         for (var assignment : assigned.stream().sorted(Comparator.comparing(DeliveryRouteOrderEntity::getOrderId))
-                .toList()) {
+            .toList()) {
             if (!eligibility.eligible(salesOrderDao.lock(assignment.getOrderId())))
                 throw new ScmBusinessException(ORDER_INELIGIBLE);
         }
@@ -339,8 +340,8 @@ public class DeliveryRouteService {
         }
         var routeStops = deliveryQueryDao.stops(id);
         if (route.getStartLongitude() == null || route.getStartLatitude() == null || route.getStartGeomCrs() == null
-                || routeStops.isEmpty() || routeStops.stream().anyMatch(s -> s.getLongitude() == null
-                        || s.getLatitude() == null || !Objects.equals(route.getStartGeomCrs(), s.getGeomCrs())))
+            || routeStops.isEmpty() || routeStops.stream().anyMatch(s -> s.getLongitude() == null
+                || s.getLatitude() == null || !Objects.equals(route.getStartGeomCrs(), s.getGeomCrs())))
             throw new ScmBusinessException(LOCATION_REQUIRED);
         route.setStatus(ScmDeliveryRouteStatusEnum.PLANNED.name());
         save(route);
@@ -351,7 +352,7 @@ public class DeliveryRouteService {
         reason(form);
         var route = lock(id, form.getVersion());
         if (!Set.of(ScmDeliveryRouteStatusEnum.DRAFT.name(), ScmDeliveryRouteStatusEnum.PLANNED.name())
-                .contains(route.getStatus()))
+            .contains(route.getStatus()))
             throw new ScmBusinessException(STATE_INVALID);
         var assigned = active(id);
         assigned.stream().map(DeliveryRouteOrderEntity::getOrderId).sorted().forEach(salesOrderDao::lock);
@@ -365,7 +366,9 @@ public class DeliveryRouteService {
         save(route);
     }
 
-    /** 配送发车按整条线路一次性出库，发货数量以已确认分拣结果为准；任一订单不符合条件则整条线路回滚。 */
+    /**
+     * 配送发车按整条线路一次性出库，发货数量以已确认分拣结果为准；任一订单不符合条件则整条线路回滚。
+     */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryDispatchResultVO dispatch(Long id, DeliveryVersionForm form, String key) {
         var claim = idempotencyService.claim("DELIVERY_DISPATCH:" + id, key, form);
@@ -382,20 +385,20 @@ public class DeliveryRouteService {
         for (var orderId : assigned.stream().map(DeliveryRouteOrderEntity::getOrderId).sorted().toList()) {
             var order = salesOrderDao.lock(orderId);
             if (!eligibility.eligible(order) || (order.getMallDeliveryWarehouseId() != null
-                    && !Objects.equals(order.getMallDeliveryWarehouseId(), route.getWarehouseId())))
+                && !Objects.equals(order.getMallDeliveryWarehouseId(), route.getWarehouseId())))
                 throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
         }
 
         var orderIds = assigned.stream().map(DeliveryRouteOrderEntity::getOrderId).toList();
-        var linesByOrder = deliveryQueryDao.sortedLines(orderIds).stream().collect(
-                Collectors.groupingBy(DeliverySortedLine::getOrderId, LinkedHashMap::new, Collectors.toList()));
+        var linesByOrder = deliveryQueryDao.sortedLines(orderIds).stream()
+            .collect(Collectors.groupingBy(DeliverySortedLine::getOrderId, LinkedHashMap::new, Collectors.toList()));
         List<Long> sortedItemIds = linesByOrder.values().stream().flatMap(List::stream)
-                .map(DeliverySortedLine::getSalesOrderItemId).toList();
+            .map(DeliverySortedLine::getSalesOrderItemId).toList();
         Map<Long,
-                List<OrderBundleComponentEntity>> bundles = sortedItemIds.isEmpty()
-                        ? Map.of()
-                        : orderBundleComponentDao.listByOrderItemIds(sortedItemIds).stream()
-                                .collect(Collectors.groupingBy(OrderBundleComponentEntity::getOrderItemId));
+            List<OrderBundleComponentEntity>> bundles = sortedItemIds.isEmpty()
+                ? Map.of()
+                : orderBundleComponentDao.listByOrderItemIds(sortedItemIds).stream()
+                    .collect(Collectors.groupingBy(OrderBundleComponentEntity::getOrderItemId));
         var lines = new ArrayList<InventoryFulfillmentService.Line>();
         for (var orderId : orderIds) {
             var sorted = linesByOrder.get(orderId);
@@ -408,8 +411,8 @@ public class DeliveryRouteService {
                 List<OrderBundleComponentEntity> components = bundles.get(line.getSalesOrderItemId());
                 if (components == null) {
                     lines.add(new InventoryFulfillmentService.Line(orderId, line.getSalesOrderItemId(), line.getSkuId(),
-                            line.getSortedQuantity(), line.getMallStockUnitSnapshot(),
-                            line.getMallStockUnitsPerSaleUnit()));
+                        line.getSortedQuantity(), line.getMallStockUnitSnapshot(),
+                        line.getMallStockUnitsPerSaleUnit()));
                     continue;
                 }
                 for (OrderBundleComponentEntity component : components) {
@@ -419,14 +422,14 @@ public class DeliveryRouteService {
                     BigDecimal quantity;
                     try {
                         quantity = line.getSortedQuantity().multiply(component.getQuantityPerBundleSaleUnit())
-                                .setScale(4, RoundingMode.UNNECESSARY);
+                            .setScale(4, RoundingMode.UNNECESSARY);
                     } catch (ArithmeticException invalid) {
                         throw new ScmBusinessException(DISPATCH_ROUTE_INELIGIBLE);
                     }
                     lines.add(new InventoryFulfillmentService.Line(orderId, line.getSalesOrderItemId(),
-                            component.getComponentSkuId(), quantity, component.getComponentStockUnitSnapshot(),
-                            component.getStockUnitsPerComponentSaleUnit(), component.getId(), line.getSkuId(),
-                            line.getSortedQuantity()));
+                        component.getComponentSkuId(), quantity, component.getComponentStockUnitSnapshot(),
+                        component.getStockUnitsPerComponentSaleUnit(), component.getId(), line.getSkuId(),
+                        line.getSortedQuantity()));
                 }
             }
         }
@@ -438,17 +441,17 @@ public class DeliveryRouteService {
         for (var orderId : orderIds) {
             for (var gift : promotionDiscountService.listGiftFacts(orderId)) {
                 giftLines.add(new InventoryFulfillmentService.GiftLine(gift.giftId(), gift.salesOrderId(), gift.skuId(),
-                        gift.quantity()));
+                    gift.quantity()));
             }
         }
         // 先预检赠品库存：缺货要在动正常商品之前暴露。整笔发车本来就是一个事务、失败都会回滚，
         // 但先失败能省掉一次完整出库的代价，也让报错直接指向真正的缺口。
         inventoryFulfillmentService.requirePromotionGiftStock(route.getWarehouseId(), giftLines);
         var outbound = inventoryFulfillmentService.dispatchOutbound(
-                new InventoryFulfillmentService.Command(id, route.getWarehouseId(), now, operator, lines));
+            new InventoryFulfillmentService.Command(id, route.getWarehouseId(), now, operator, lines));
         if (!giftLines.isEmpty()) {
             inventoryFulfillmentService.dispatchPromotionGiftOutbound(
-                    new InventoryFulfillmentService.GiftCommand(id, route.getWarehouseId(), now, operator, giftLines));
+                new InventoryFulfillmentService.GiftCommand(id, route.getWarehouseId(), now, operator, giftLines));
         }
 
         route.setStatus(ScmDeliveryRouteStatusEnum.DISPATCHED.name());
@@ -472,7 +475,9 @@ public class DeliveryRouteService {
         return result;
     }
 
-    /** 签收先锁配送线路，再按订单 ID 顺序锁订单，避免与退货审批并发漏记应收。已签收的订单不能重复签收；异常签收不自动恢复已出库库存，需要通过退货处理。 */
+    /**
+     * 签收先锁配送线路，再按订单 ID 顺序锁订单，避免与退货审批并发漏记应收。已签收的订单不能重复签收；异常签收不自动恢复已出库库存，需要通过退货处理。
+     */
     @Transactional(rollbackFor = Exception.class)
     public void sign(Long routeId, Long orderId, DeliverySignForm form) {
         var route = deliveryQueryDao.lockRoute(routeId);
@@ -490,8 +495,8 @@ public class DeliveryRouteService {
         if (exception && (form.getReason() == null || form.getReason().isBlank()))
             throw new ScmBusinessException(SIGN_REASON_REQUIRED);
         var assignment = deliveryRouteOrderDao.selectOne(new LambdaQueryWrapper<DeliveryRouteOrderEntity>()
-                .eq(DeliveryRouteOrderEntity::getRouteId, routeId).eq(DeliveryRouteOrderEntity::getOrderId, orderId)
-                .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name()));
+            .eq(DeliveryRouteOrderEntity::getRouteId, routeId).eq(DeliveryRouteOrderEntity::getOrderId, orderId)
+            .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name()));
         if (assignment == null)
             throw new ScmBusinessException(NOT_FOUND);
         // 签收与退货批准必须在同一订单行锁上串行，否则两边都可能看不见对方：
@@ -503,7 +508,7 @@ public class DeliveryRouteService {
         String reason = form.getReason() == null ? null : form.getReason().trim();
         // 状态条件与 version 一起进 WHERE：受影响行数 != 1 就是「有人比你先签了」或「这单已不在线路上」。
         if (deliveryQueryDao.markSigned(assignment.getId(), form.getVersion(), form.getResult(), reason,
-                ScmOperator.current()) != 1)
+            ScmOperator.current()) != 1)
             throw new ScmBusinessException(VERSION_CONFLICT);
 
         // 客户签收是订单级终态，也是应收的形成时点。
@@ -554,11 +559,10 @@ public class DeliveryRouteService {
     }
 
     private List<DeliveryRouteOrderEntity> active(Long id) {
-        return deliveryRouteOrderDao.selectList(
-                new LambdaQueryWrapper<DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, id)
-                        .eq(DeliveryRouteOrderEntity::getAssignmentStatus,
-                                ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
-                        .orderByAsc(DeliveryRouteOrderEntity::getOrderId));
+        return deliveryRouteOrderDao
+            .selectList(new LambdaQueryWrapper<DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, id)
+                .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
+                .orderByAsc(DeliveryRouteOrderEntity::getOrderId));
     }
 
     private DeliveryRouteEntity lock(Long id, Integer version) {

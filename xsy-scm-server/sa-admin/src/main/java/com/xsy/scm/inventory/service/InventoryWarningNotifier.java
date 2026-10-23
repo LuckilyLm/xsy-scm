@@ -8,15 +8,19 @@ import com.xsy.scm.inventory.domain.vo.InventoryWarningVO;
 import com.xsy.scm.notification.service.ScmNotificationService;
 import com.xsy.scm.notification.constant.ScmNotificationEventTypeEnum;
 import com.xsy.scm.warehouse.dao.EmployeeWarehouseScopeDao;
+
 import java.math.BigDecimal;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.base.module.support.message.constant.MessageTypeEnum;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 库存预警只在正常转为偏低或偏高时通知，异常持续期间不重复；恢复正常后再次异常可以重新提醒。事件键必须包含仓库、商品规格、变化轮次、状态和接收人。 */
+/**
+ * 库存预警只在正常转为偏低或偏高时通知，异常持续期间不重复；恢复正常后再次异常可以重新提醒。事件键必须包含仓库、商品规格、变化轮次、状态和接收人。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -38,7 +42,7 @@ public class InventoryWarningNotifier {
     @Transactional(rollbackFor = Exception.class)
     public int evaluateAndNotify(InventoryWarningVO row) {
         ScmInventoryWarningStatusEnum current = ScmInventoryWarningStatusEnum.evaluate(row.getAvailableQuantity(),
-                row.getWarnMin(), row.getWarnMax());
+            row.getWarnMin(), row.getWarnMax());
         Long warehouseId = row.getWarehouseId();
         Long skuId = row.getSkuId();
         String operator = operator();
@@ -79,7 +83,7 @@ public class InventoryWarningNotifier {
         List<Long> receivers = employeeWarehouseScopeDao.listEnabledEmployeeIdsByWarehouse(row.getWarehouseId());
         if (receivers == null || receivers.isEmpty()) {
             log.info("库存预警无接收人，跳过通知 warehouseId={} skuId={} status={}", row.getWarehouseId(), row.getSkuId(),
-                    status.name());
+                status.name());
             return 0;
         }
         String title = status == ScmInventoryWarningStatusEnum.LOW ? "库存低于下限" : "库存高于上限";
@@ -87,9 +91,9 @@ public class InventoryWarningNotifier {
         int sent = 0;
         for (Long receiverUserId : receivers) {
             String eventKey = EVENT_TYPE + ":" + row.getWarehouseId() + ":" + row.getSkuId() + ":" + epoch + ":"
-                    + status.name() + ":" + receiverUserId;
+                + status.name() + ":" + receiverUserId;
             if (notificationService.sendOnce(eventKey, EVENT_TYPE, MessageTypeEnum.SCM_INVENTORY_WARNING.getValue(),
-                    receiverUserId, row.getThresholdId(), title, content)) {
+                receiverUserId, row.getThresholdId(), title, content)) {
                 sent++;
             }
         }
@@ -131,7 +135,9 @@ public class InventoryWarningNotifier {
         return value == null ? "—" : value.toPlainString();
     }
 
-    /** 定时任务没有登录上下文，用 system 标记去重行的来源；业务写路径不受影响。 */
+    /**
+     * 定时任务没有登录上下文，用 system 标记去重行的来源；业务写路径不受影响。
+     */
     private static String operator() {
         String operator = ScmOperator.currentOrNull();
         return operator == null ? ScmNotificationService.SYSTEM_OPERATOR : operator;

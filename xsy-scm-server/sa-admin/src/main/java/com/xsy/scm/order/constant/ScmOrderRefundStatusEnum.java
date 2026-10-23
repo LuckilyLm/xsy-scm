@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmOrderRefundStatusEnum {
 
-    /** 待退款：已登记，尚未实际出款。 */
+    /**
+     * 待退款：已登记，尚未实际出款。
+     */
     PENDING("待退款"),
 
-    /** 已退款：款项已退回客户。 */
+    /**
+     * 已退款：款项已退回客户。
+     */
     COMPLETED("已退款");
 
     private final String desc;

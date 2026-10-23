@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xsy.scm.mall.promotion.domain.vo.MallClaimableCouponVO;
 import com.xsy.scm.mall.promotion.domain.vo.MallCouponInstanceVO;
 import com.xsy.scm.mall.promotion.domain.vo.MallPromotionActivityVO;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -21,8 +23,8 @@ public interface MallPromotionDao {
     List<MallPromotionActivityVO> listActiveActivities(@Param("at") OffsetDateTime at);
 
     List<MallClaimableCouponVO> listClaimableCoupons(Page<?> page, @Param("at") OffsetDateTime at,
-            @Param("customerId") Long customerId, @Param("claimSource") String claimSource);
+        @Param("customerId") Long customerId, @Param("claimSource") String claimSource);
 
     List<MallCouponInstanceVO> listMyInstances(Page<?> page, @Param("customerId") Long customerId,
-            @Param("at") OffsetDateTime at, @Param("tab") String tab);
+        @Param("at") OffsetDateTime at, @Param("tab") String tab);
 }

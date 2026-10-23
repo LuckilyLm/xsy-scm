@@ -40,7 +40,7 @@ public class InventoryWarningQueryService {
         }
         var page = SmartPageUtil.convert2PageQuery(query);
         List<InventoryWarningThresholdVO> list = inventoryWarningThresholdDao.queryPage(page, query,
-                scope.getWarehouseScope());
+            scope.getWarehouseScope());
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
@@ -74,14 +74,14 @@ public class InventoryWarningQueryService {
         }
         var page = SmartPageUtil.convert2PageQuery(query);
         List<InventoryWarningVO> list = inventoryWarningThresholdDao.queryWarningPage(page, query,
-                scope.getWarehouseScope());
+            scope.getWarehouseScope());
         list.forEach(InventoryWarningQueryService::fillStatus);
         return SmartPageUtil.convert2PageResult(page, list);
     }
 
     private static void fillStatus(InventoryWarningVO vo) {
         ScmInventoryWarningStatusEnum status = ScmInventoryWarningStatusEnum.evaluate(vo.getAvailableQuantity(),
-                vo.getWarnMin(), vo.getWarnMax());
+            vo.getWarnMin(), vo.getWarnMax());
         vo.setStatus(status.name());
         vo.setStatusDesc(status.getDesc());
     }

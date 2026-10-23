@@ -16,10 +16,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmWarehouseStatusEnum {
 
-    /** 启用：可参与采购、分拣与配送。 */
+    /**
+     * 启用：可参与采购、分拣与配送。
+     */
     ENABLED("启用"),
 
-    /** 停用：不再接收新业务，历史数据保留。 */
+    /**
+     * 停用：不再接收新业务，历史数据保留。
+     */
     DISABLED("停用");
 
     private final String desc;

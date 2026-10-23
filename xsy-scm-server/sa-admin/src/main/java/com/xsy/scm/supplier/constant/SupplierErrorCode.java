@@ -4,7 +4,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.common.error.ScmErrorCode;
 
-/** 供应商错误码保留历史兼容。SKU 版本冲突统一使用通用版本冲突码，不再新增供应商专用版本冲突。 */
+/**
+ * 供应商错误码保留历史兼容。SKU 版本冲突统一使用通用版本冲突码，不再新增供应商专用版本冲突。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum SupplierErrorCode implements ScmErrorCode {

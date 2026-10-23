@@ -4,9 +4,12 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import lombok.Data;
 
-/** 打印模板只支持标题、纸张、列、表头、合计和页脚，不支持脚本、HTML 或自由表达式。结构错误交给统一校验器处理。 */
+/**
+ * 打印模板只支持标题、纸张、列、表头、合计和页脚，不支持脚本、HTML 或自由表达式。结构错误交给统一校验器处理。
+ */
 @Data
 public class ScmPrintTemplateModel {
 

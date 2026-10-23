@@ -13,15 +13,19 @@ import com.xsy.scm.print.domain.vo.ScmPrintDocumentTypeVO;
 import com.xsy.scm.print.domain.vo.ScmPrintFieldCatalogVO;
 import com.xsy.scm.print.domain.vo.ScmPrintTemplateVO;
 import com.xsy.scm.print.support.ScmPrintTemplateValidator;
+
 import java.util.ArrayList;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 同一单据类型只能有一个默认模板。模板类型建立后不可改，默认模板不能直接删除，须先设置其他默认模板。 */
+/**
+ * 同一单据类型只能有一个默认模板。模板类型建立后不可改，默认模板不能直接删除，须先设置其他默认模板。
+ */
 @Service
 @RequiredArgsConstructor
 public class ScmPrintTemplateService {
@@ -89,14 +93,14 @@ public class ScmPrintTemplateService {
     public Long create(ScmPrintTemplateForm form) {
         ScmPrintDocumentTypeEnum type = requireType(form.getDocumentType());
         ScmPrintTemplateModel model = ScmPrintTemplateValidator.validate(type,
-                ScmPrintTemplateModel.fromMap(form.getModel()));
+            ScmPrintTemplateModel.fromMap(form.getModel()));
         requireCodeAvailable(type, form.getTemplateCode(), null);
 
         String operator = ScmOperator.current();
         // 该类型还没有默认模板时，新建的这一份直接成为默认：否则「不指定模板」的打印在
         // 只有一份模板时会失败，而那正是最常见的情形。
         boolean makeDefault = Boolean.TRUE.equals(form.getDefaultFlag())
-                || scmPrintTemplateDao.selectDefault(type.name()) == null;
+            || scmPrintTemplateDao.selectDefault(type.name()) == null;
         if (makeDefault) {
             scmPrintTemplateDao.clearDefault(type.name(), null, operator);
         }
@@ -130,7 +134,7 @@ public class ScmPrintTemplateService {
         }
         ScmPrintDocumentTypeEnum type = requireType(form.getDocumentType());
         ScmPrintTemplateModel model = ScmPrintTemplateValidator.validate(type,
-                ScmPrintTemplateModel.fromMap(form.getModel()));
+            ScmPrintTemplateModel.fromMap(form.getModel()));
         requireCodeAvailable(type, form.getTemplateCode(), existing.getId());
 
         String operator = ScmOperator.current();
@@ -139,8 +143,8 @@ public class ScmPrintTemplateService {
             scmPrintTemplateDao.clearDefault(type.name(), existing.getId(), operator);
         }
         if (scmPrintTemplateDao.updateTemplate(existing.getId(), form.getTemplateCode().trim(),
-                form.getTemplateName().trim(), makeDefault, form.getEnabledFlag() == null || form.getEnabledFlag(),
-                model.toMap(), form.getRemark(), form.getVersion(), operator) != 1) {
+            form.getTemplateName().trim(), makeDefault, form.getEnabledFlag() == null || form.getEnabledFlag(),
+            model.toMap(), form.getRemark(), form.getVersion(), operator) != 1) {
             throw new ScmBusinessException(com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT);
         }
     }
@@ -222,8 +226,8 @@ public class ScmPrintTemplateService {
         vo.setId(row.getId());
         vo.setDocumentType(row.getDocumentType());
         vo.setDocumentTypeLabel(ScmPrintDocumentTypeEnum.isSupported(row.getDocumentType())
-                ? ScmPrintDocumentTypeEnum.valueOf(row.getDocumentType()).getLabel()
-                : row.getDocumentType());
+            ? ScmPrintDocumentTypeEnum.valueOf(row.getDocumentType()).getLabel()
+            : row.getDocumentType());
         vo.setTemplateCode(row.getTemplateCode());
         vo.setTemplateName(row.getTemplateName());
         vo.setDefaultFlag(row.getDefaultFlag());

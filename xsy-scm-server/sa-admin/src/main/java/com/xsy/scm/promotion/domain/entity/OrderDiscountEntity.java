@@ -6,9 +6,11 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.xsy.scm.common.json.JsonbObjectMapTypeHandler;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import lombok.Data;
 
 /**
@@ -45,13 +47,19 @@ public class OrderDiscountEntity {
 
     private BigDecimal discountAmount;
 
-    /** 限时特价让利已经包含在总优惠和明细分配中，单独保存只为统计。该金额不能大于订单总优惠。 */
+    /**
+     * 限时特价让利已经包含在总优惠和明细分配中，单独保存只为统计。该金额不能大于订单总优惠。
+     */
     private BigDecimal specialDiscountAmount;
 
-    /** 逐行分摊：{@code [{orderItemId, baseAmount, discountAmount}]}。 */
+    /**
+     * 逐行分摊：{@code [{orderItemId, baseAmount, discountAmount}]}。
+     */
     private String allocations;
 
-    /** 承接舍入差额的行；没有差额时为 {@code null}。 */
+    /**
+     * 承接舍入差额的行；没有差额时为 {@code null}。
+     */
     private Long roundingTargetItemId;
 
     private OffsetDateTime createdAt;

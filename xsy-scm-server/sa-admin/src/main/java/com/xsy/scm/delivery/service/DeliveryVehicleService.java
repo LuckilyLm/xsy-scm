@@ -18,6 +18,7 @@ import net.lab1024.sa.base.common.util.SmartPageUtil;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.DUPLICATE;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.NOT_FOUND;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
@@ -30,7 +31,7 @@ public class DeliveryVehicleService {
     public PageResult<DeliveryVehicleEntity> query(DeliveryQueryForm form) {
         var requested = DeliveryRouteQueryService.page(form);
         var page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<DeliveryVehicleEntity>(
-                requested.getCurrent(), requested.getSize(), requested.searchCount());
+            requested.getCurrent(), requested.getSize(), requested.searchCount());
         var wrapper = new LambdaQueryWrapper<DeliveryVehicleEntity>();
         if (form.getKeyword() != null && !form.getKeyword().isBlank())
             wrapper.like(DeliveryVehicleEntity::getVehicleNo, form.getKeyword());
@@ -43,8 +44,8 @@ public class DeliveryVehicleService {
 
     public List<DeliveryVehicleEntity> options() {
         return deliveryVehicleDao.selectList(new LambdaQueryWrapper<DeliveryVehicleEntity>()
-                .eq(DeliveryVehicleEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
-                .orderByAsc(DeliveryVehicleEntity::getVehicleNo));
+            .eq(DeliveryVehicleEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
+            .orderByAsc(DeliveryVehicleEntity::getVehicleNo));
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -72,7 +72,7 @@ public class SupplierSkuService {
         var page = SmartPageUtil.convert2PageQuery(form);
         if (page.orders().isEmpty()) {
             page.addOrder(OrderItem.asc("supplier_id"), OrderItem.desc("is_default"),
-                    OrderItem.asc("sku_code_snapshot"), OrderItem.asc("id"));
+                OrderItem.asc("sku_code_snapshot"), OrderItem.asc("id"));
         }
         List<SupplierSkuEntity> rows = supplierSkuDao.queryPage(page, form);
         return SmartPageUtil.convert2PageResult(page, enrich(rows));
@@ -116,14 +116,14 @@ public class SupplierSkuService {
     public SupplierSkuEntity requireEnabledForPurchasing(Long supplierId, Long skuId) {
         supplierService.requireEnabled(supplierId);
         SupplierSkuEntity entity = supplierSkuDao.selectOne(new LambdaQueryWrapper<SupplierSkuEntity>()
-                .eq(SupplierSkuEntity::getSupplierId, supplierId).eq(SupplierSkuEntity::getSkuId, skuId)
-                .eq(SupplierSkuEntity::getStatus, ScmEnableStatusEnum.ENABLED.name()));
+            .eq(SupplierSkuEntity::getSupplierId, supplierId).eq(SupplierSkuEntity::getSkuId, skuId)
+            .eq(SupplierSkuEntity::getStatus, ScmEnableStatusEnum.ENABLED.name()));
         if (entity == null) {
             throw new ScmBusinessException(SUPPLIER_SKU_NOT_FOUND);
         }
         // SKU 与 SPU 必须同时上架，否则视为不可采购
         boolean orderable = supplierSkuDao.selectEnabledBySkuId(skuId).stream()
-                .anyMatch(row -> Objects.equals(row.getSupplierId(), supplierId));
+            .anyMatch(row -> Objects.equals(row.getSupplierId(), supplierId));
         if (!orderable) {
             throw new ScmBusinessException(SKU_DISABLED);
         }
@@ -159,7 +159,7 @@ public class SupplierSkuService {
         List<EmployeeVO> found = employeeDao.getEmployeeByIds(ids);
         if (found != null) {
             found.stream().filter(e -> e != null && e.getEmployeeId() != null)
-                    .forEach(e -> names.put(e.getEmployeeId(), e.getActualName()));
+                .forEach(e -> names.put(e.getEmployeeId(), e.getActualName()));
         }
         // 员工已被删除时保持 null，不阻断列表展示
         return names;

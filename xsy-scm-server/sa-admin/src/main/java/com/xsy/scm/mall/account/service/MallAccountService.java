@@ -11,8 +11,10 @@ import com.xsy.scm.mall.account.domain.form.MallAccountCreateForm;
 import com.xsy.scm.mall.account.domain.form.MallAccountStatusForm;
 import com.xsy.scm.mall.account.domain.form.MallPasswordResetForm;
 import com.xsy.scm.mall.account.domain.vo.MallAccountVO;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.module.support.securityprotect.service.SecurityPasswordService;
 import net.lab1024.sa.base.module.support.securityprotect.service.SecurityLoginService;
@@ -65,8 +67,8 @@ public class MallAccountService {
     public void updateStatus(MallAccountStatusForm form) {
         MallCustomerAccountEntity row = lockVisible(form.getAccountId());
         String status = Boolean.TRUE.equals(form.getEnabled())
-                ? MallAccountStatusEnum.ENABLED.name()
-                : MallAccountStatusEnum.DISABLED.name();
+            ? MallAccountStatusEnum.ENABLED.name()
+            : MallAccountStatusEnum.DISABLED.name();
         accountDao.updateStatus(row.getId(), status, ScmOperator.current());
     }
 
@@ -74,7 +76,7 @@ public class MallAccountService {
     public void resetPassword(MallPasswordResetForm form) {
         MallCustomerAccountEntity row = lockVisible(form.getAccountId());
         accountDao.resetPassword(row.getId(), SecurityPasswordService.getEncryptPwd(form.getTemporaryPassword()),
-                ScmOperator.current());
+            ScmOperator.current());
         securityLoginService.removeLoginFail(row.getId(), UserTypeEnum.MALL_CUSTOMER);
     }
 

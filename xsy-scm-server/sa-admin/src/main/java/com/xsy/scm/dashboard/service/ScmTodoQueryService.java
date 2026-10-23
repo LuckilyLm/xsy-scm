@@ -26,7 +26,9 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 待办从现有业务表实时查询，不另建一份消息表。无权的待办卡片直接省略；有权但没有任务才显示零。 */
+/**
+ * 待办从现有业务表实时查询，不另建一份消息表。无权的待办卡片直接省略；有权但没有任务才显示零。
+ */
 @Service
 @RequiredArgsConstructor
 public class ScmTodoQueryService {

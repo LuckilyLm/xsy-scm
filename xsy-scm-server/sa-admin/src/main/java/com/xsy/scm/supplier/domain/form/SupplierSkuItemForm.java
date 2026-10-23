@@ -13,7 +13,9 @@ import com.xsy.scm.common.util.ScmDecimalStrings;
 import com.xsy.scm.common.constant.ScmEnableStatusEnum;
 import com.xsy.scm.common.validation.ScmEnumValue;
 
-/** 商品关联带 id 表示更新，且必须携带匹配的版本；不带 id 表示新增。未提交的旧关联会删除，商品规格不能通过更新变更。 */
+/**
+ * 商品关联带 id 表示更新，且必须携带匹配的版本；不带 id 表示新增。未提交的旧关联会删除，商品规格不能通过更新变更。
+ */
 @Data
 public class SupplierSkuItemForm {
 
@@ -33,7 +35,9 @@ public class SupplierSkuItemForm {
     @Positive(message = "商品规格ID必须大于0")
     private Long skuId;
 
-    /** 外部供应商货号可空，保留原始大小写和前导零，不自动拼接。 */
+    /**
+     * 外部供应商货号可空，保留原始大小写和前导零，不自动拼接。
+     */
     @Size(max = 100, message = "供应商货号不能超过100个字符")
     private String supplierItemCode;
 

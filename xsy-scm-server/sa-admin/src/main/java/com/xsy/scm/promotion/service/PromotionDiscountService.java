@@ -26,6 +26,7 @@ import com.xsy.scm.promotion.support.PromotionGiftFact;
 import com.xsy.scm.promotion.support.PromotionOrderFacts;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -35,16 +36,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+
 import static com.xsy.scm.promotion.service.PromotionDiscountSnapshotMapper.activitySnapshot;
 import static com.xsy.scm.promotion.service.PromotionDiscountSnapshotMapper.allocationsJson;
 import static com.xsy.scm.promotion.service.PromotionDiscountSnapshotMapper.appliedActivity;
 import static com.xsy.scm.promotion.service.PromotionDiscountSnapshotMapper.couponSnapshot;
 
-/** 订单优惠先试算，确认订单时重新校验并冻结结果。互斥活动按优先级选择，其他活动按既定顺序计算。 */
+/**
+ * 订单优惠先试算，确认订单时重新校验并冻结结果。互斥活动按优先级选择，其他活动按既定顺序计算。
+ */
 @Service
 @RequiredArgsConstructor
 public class PromotionDiscountService {
@@ -77,20 +82,22 @@ public class PromotionDiscountService {
     @Transactional(readOnly = true)
     public PromotionDiscountVO preview(PromotionDiscountPreviewForm form) {
         List<PromotionOrderFacts.Line> lines = form.getLines().stream()
-                .map(line -> new PromotionOrderFacts.Line(line.getOrderItemId(), line.getSkuId(),
-                        amount(line.getQuantity()), amount(line.getBaseAmount())))
-                .toList();
+            .map(line -> new PromotionOrderFacts.Line(line.getOrderItemId(), line.getSkuId(),
+                amount(line.getQuantity()), amount(line.getBaseAmount())))
+            .toList();
         return compute(form.getCustomerId(), form.getActivityId(), form.getCouponInstanceId(), lines, null);
     }
 
-    /** 订单优惠在确认订单时由服务端计算和冻结。客户、金额取真实订单，活动由服务端选择；重复确认不得新增第二套优惠记录。 */
+    /**
+     * 订单优惠在确认订单时由服务端计算和冻结。客户、金额取真实订单，活动由服务端选择；重复确认不得新增第二套优惠记录。
+     */
     @Transactional(rollbackFor = Exception.class)
     public PromotionDiscountVO freeze(PromotionOrderFacts facts, Long couponInstanceId) {
         if (orderDiscountDao.selectByOrderId(facts.salesOrderId()) != null) {
             throw new ScmBusinessException(PromotionErrorCode.DISCOUNT_ALREADY_FROZEN);
         }
         PromotionDiscountVO computed = compute(facts.customerId(), null, couponInstanceId, facts.lines(),
-                facts.salesOrderId());
+            facts.salesOrderId());
         boolean hasDiscount = computed.getDiscountAmount() != null && computed.getDiscountAmount().signum() > 0;
         boolean hasGifts = computed.getGifts() != null && !computed.getGifts().isEmpty();
         if (!hasDiscount && !hasGifts) {
@@ -126,12 +133,12 @@ public class PromotionDiscountService {
         // 不会出现「优惠已冻结、券却没占上」这种两边不一致的状态。
         if (computed.getCouponInstanceId() != null) {
             PromotionCouponInstanceEntity instance = promotionCouponInstanceDao
-                    .lockById(computed.getCouponInstanceId());
+                .lockById(computed.getCouponInstanceId());
             if (instance == null) {
                 throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_NOT_FOUND);
             }
             if (promotionCouponInstanceDao.markReserved(instance.getId(), instance.getVersion(), facts.salesOrderId(),
-                    operator) != 1) {
+                operator) != 1) {
                 throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_UNAVAILABLE);
             }
         }
@@ -152,7 +159,7 @@ public class PromotionDiscountService {
     @Transactional(readOnly = true)
     public List<PromotionDiscountVO.GiftEntitlementVO> listGifts(Long salesOrderId) {
         return orderPromotionGiftDao.listByOrder(salesOrderId).stream().map(PromotionDiscountService::toGiftVO)
-                .toList();
+            .toList();
     }
 
     /**
@@ -163,9 +170,9 @@ public class PromotionDiscountService {
      */
     @Transactional(readOnly = true)
     public List<PromotionGiftFact> listGiftFacts(Long salesOrderId) {
-        return orderPromotionGiftDao.listByOrder(salesOrderId).stream().map(
-                row -> new PromotionGiftFact(row.getId(), row.getSalesOrderId(), row.getSkuId(), row.getQuantity()))
-                .toList();
+        return orderPromotionGiftDao.listByOrder(salesOrderId).stream()
+            .map(row -> new PromotionGiftFact(row.getId(), row.getSalesOrderId(), row.getSkuId(), row.getQuantity()))
+            .toList();
     }
 
     private static PromotionDiscountVO.GiftEntitlementVO toGiftVO(OrderPromotionGiftEntity row) {
@@ -183,7 +190,7 @@ public class PromotionDiscountService {
     }
 
     private static OrderPromotionGiftEntity giftEntity(Long salesOrderId, PromotionDiscountVO.GiftEntitlementVO gift,
-            String operator) {
+        String operator) {
         OrderPromotionGiftEntity row = new OrderPromotionGiftEntity();
         row.setSalesOrderId(salesOrderId);
         row.setActivityId(gift.getActivityId());
@@ -199,7 +206,9 @@ public class PromotionDiscountService {
         return row;
     }
 
-    /** 优惠券在正常签收时从占用变成已使用，与签收及应收生成同事务。异常签收不核销，签收后退款也不重新激活已使用券。 */
+    /**
+     * 优惠券在正常签收时从占用变成已使用，与签收及应收生成同事务。异常签收不核销，签收后退款也不重新激活已使用券。
+     */
     @Transactional(propagation = Propagation.MANDATORY, rollbackFor = Exception.class)
     public void markCouponUsed(Long salesOrderId) {
         OrderDiscountEntity row = orderDiscountDao.selectByOrderId(salesOrderId);
@@ -215,7 +224,7 @@ public class PromotionDiscountService {
             return;
         }
         if (promotionCouponInstanceDao.markUsed(instance.getId(), instance.getVersion(), salesOrderId,
-                ScmOperator.current()) != 1) {
+            ScmOperator.current()) != 1) {
             // 券不在 RESERVED（例如未来「撤销确认」把它释放了）：宁可失败，也不写出一张状态说不清的券。
             throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_STATE_INVALID);
         }
@@ -250,15 +259,17 @@ public class PromotionDiscountService {
         return vo;
     }
 
-    /** 冻结时写进去的是 JSON 数组文本，这里原样读回，不在读路径上重算分摊。 */
+    /**
+     * 冻结时写进去的是 JSON 数组文本，这里原样读回，不在读路径上重算分摊。
+     */
     private List<OrderDiscountVO.Allocation> parseAllocations(String json) {
         if (json == null || json.isBlank()) {
             return List.of();
         }
         try {
             List<Map<String, Object>> rows = objectMapper.readValue(json,
-                    new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {
-                    });
+                new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {
+                });
             List<OrderDiscountVO.Allocation> allocations = new ArrayList<>(rows.size());
             for (Map<String, Object> row : rows) {
                 OrderDiscountVO.Allocation allocation = new OrderDiscountVO.Allocation();
@@ -285,7 +296,7 @@ public class PromotionDiscountService {
     // ------------------------------------------------------------------
 
     private PromotionDiscountVO compute(Long customerId, Long activityId, Long couponInstanceId,
-            List<PromotionOrderFacts.Line> lines, Long salesOrderId) {
+        List<PromotionOrderFacts.Line> lines, Long salesOrderId) {
         OffsetDateTime now = OffsetDateTime.now();
 
         PromotionDiscountVO vo = new PromotionDiscountVO();
@@ -294,12 +305,12 @@ public class PromotionDiscountService {
 
         // 1) 活动：先选出真正生效的那几条，再按优先级顺序作用
         List<PromotionActivityEntity> candidates = activityId == null
-                ? promotionActivityDao.listActive(now)
-                : List.of(requireActiveActivity(activityId, now));
+            ? promotionActivityDao.listActive(now)
+            : List.of(requireActiveActivity(activityId, now));
         List<PromotionActivityEntity> applied = selectApplied(candidates, vo);
 
         BigDecimal baseTotal = lines.stream().map(line -> amount(line.baseAmount()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(SCALE, RoundingMode.HALF_UP);
+            .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(SCALE, RoundingMode.HALF_UP);
         List<PromotionDiscountVO.AppliedActivityVO> appliedActivities = new ArrayList<>();
         List<PromotionDiscountVO.GiftEntitlementVO> gifts = new ArrayList<>();
 
@@ -317,7 +328,7 @@ public class PromotionDiscountService {
             }
         }
         BigDecimal specialDiscount = specialByItem.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(SCALE, RoundingMode.HALF_UP).min(baseTotal);
+            .setScale(SCALE, RoundingMode.HALF_UP).min(baseTotal);
         BigDecimal remaining = baseTotal.subtract(specialDiscount).max(BigDecimal.ZERO);
 
         // 1b) 满减 / 折扣 / 满赠：逐条作用在<b>特价之后</b>的剩余金额上
@@ -363,12 +374,12 @@ public class PromotionDiscountService {
         // 3) 分摊：满减/折扣与券合成一个总额，在<b>特价之后</b>的行金额上按比例分摊（这样优惠跟着
         // 客户实际要付的钱走）；特价让利再逐行加回。两段相加即逐行优惠，且每行不会超过行金额。
         BigDecimal proportional = activityDiscount.add(couponDiscount).min(remaining).setScale(SCALE,
-                RoundingMode.HALF_UP);
+            RoundingMode.HALF_UP);
         List<PromotionDiscountAllocator.Line> adjusted = lines.stream()
-                .map(line -> new PromotionDiscountAllocator.Line(line.orderItemId(),
-                        amount(line.baseAmount()).subtract(
-                                specialByItem.getOrDefault(line.orderItemId(), BigDecimal.ZERO.setScale(SCALE)))))
-                .toList();
+            .map(line -> new PromotionDiscountAllocator.Line(line.orderItemId(),
+                amount(line.baseAmount())
+                    .subtract(specialByItem.getOrDefault(line.orderItemId(), BigDecimal.ZERO.setScale(SCALE)))))
+            .toList();
         PromotionDiscountAllocator.Result allocation = PromotionDiscountAllocator.allocate(adjusted, proportional);
         Map<Long, BigDecimal> proportionalByItem = new LinkedHashMap<>();
         for (PromotionDiscountAllocator.Allocation item : allocation.allocations()) {
@@ -376,7 +387,7 @@ public class PromotionDiscountService {
         }
 
         BigDecimal total = specialDiscount.add(allocation.discountAmount()).min(baseTotal).setScale(SCALE,
-                RoundingMode.HALF_UP);
+            RoundingMode.HALF_UP);
         vo.setBaseAmount(baseTotal);
         vo.setSpecialDiscount(specialDiscount);
         vo.setActivityDiscount(activityDiscount);
@@ -412,9 +423,11 @@ public class PromotionDiscountService {
         vo.setActivityRule(activity.getRule());
     }
 
-    /** 限时特价只在低于基础价时产生让利，同一商品行只应用一次符合优先级的特价。让利按商品行记录，不分摊到其他商品。 */
+    /**
+     * 限时特价只在低于基础价时产生让利，同一商品行只应用一次符合优先级的特价。让利按商品行记录，不分摊到其他商品。
+     */
     private static BigDecimal specialPriceDelta(PromotionActivityEntity activity, List<PromotionOrderFacts.Line> lines,
-            Map<Long, BigDecimal> specialByItem) {
+        Map<Long, BigDecimal> specialByItem) {
         Map<String, Object> rule = activity.getRule();
         Long skuId = rule == null ? null : longValue(rule.get("skuId"));
         BigDecimal specialPrice = rule == null ? null : decimal(rule.get("specialPrice"));
@@ -428,7 +441,7 @@ public class PromotionDiscountService {
             }
             BigDecimal base = amount(line.baseAmount());
             BigDecimal discounted = amount(line.quantity()).multiply(specialPrice).setScale(SCALE,
-                    RoundingMode.HALF_UP);
+                RoundingMode.HALF_UP);
             BigDecimal lineDelta = base.subtract(discounted).max(BigDecimal.ZERO).min(base);
             if (lineDelta.signum() > 0) {
                 specialByItem.put(line.orderItemId(), lineDelta);
@@ -445,11 +458,13 @@ public class PromotionDiscountService {
      * 无互斥组（{@code null}）的活动各自独立成组，因此可以叠加。
      */
     private static List<PromotionActivityEntity> selectApplied(List<PromotionActivityEntity> candidates,
-            PromotionDiscountVO vo) {
+        PromotionDiscountVO vo) {
         Map<String, PromotionActivityEntity> winners = new LinkedHashMap<>();
-        for (PromotionActivityEntity activity : candidates.stream().sorted(Comparator
+        for (PromotionActivityEntity activity : candidates.stream()
+            .sorted(Comparator
                 .comparing(PromotionActivityEntity::getPriority, Comparator.nullsFirst(Comparator.naturalOrder()))
-                .reversed().thenComparing(PromotionActivityEntity::getId)).toList()) {
+                .reversed().thenComparing(PromotionActivityEntity::getId))
+            .toList()) {
             // 无互斥组时用「自身 id」当组名，等于每组只有自己一条，因此可叠加
             String group = activity.getExclusiveGroup() == null ? "#" + activity.getId() : activity.getExclusiveGroup();
             PromotionActivityEntity existing = winners.get(group);
@@ -477,13 +492,13 @@ public class PromotionDiscountService {
         BigDecimal threshold = decimal(rule.get("thresholdAmount"));
         return switch (type) {
             case FULL_REDUCE -> threshold != null && remaining.compareTo(threshold) >= 0
-                    ? min(decimal(rule.get("reduceAmount")), remaining)
-                    : BigDecimal.ZERO.setScale(SCALE);
+                ? min(decimal(rule.get("reduceAmount")), remaining)
+                : BigDecimal.ZERO.setScale(SCALE);
             case DISCOUNT -> {
                 BigDecimal rate = decimal(rule.get("discountRate"));
                 yield rate == null
-                        ? BigDecimal.ZERO.setScale(SCALE)
-                        : remaining.multiply(BigDecimal.ONE.subtract(rate)).setScale(SCALE, RoundingMode.HALF_UP);
+                    ? BigDecimal.ZERO.setScale(SCALE)
+                    : remaining.multiply(BigDecimal.ONE.subtract(rate)).setScale(SCALE, RoundingMode.HALF_UP);
             }
             case FULL_GIFT -> BigDecimal.ZERO.setScale(SCALE);
             // 特价在 1a 按行归集、调用方已跳过它；这一格只为 switch 穷尽，不构成订单级减免
@@ -499,7 +514,7 @@ public class PromotionDiscountService {
         return switch (type) {
             case AMOUNT -> min(coupon.getDiscountValue(), remaining);
             case RATE -> remaining.multiply(BigDecimal.ONE.subtract(coupon.getDiscountValue())).setScale(SCALE,
-                    RoundingMode.HALF_UP);
+                RoundingMode.HALF_UP);
         };
     }
 
@@ -509,7 +524,7 @@ public class PromotionDiscountService {
             throw new ScmBusinessException(PromotionErrorCode.ACTIVITY_NOT_FOUND);
         }
         if (!ScmPromotionStatusEnum.ACTIVE.name().equals(row.getStatus()) || !row.getValidFrom().isBefore(now)
-                || !row.getValidTo().isAfter(now)) {
+            || !row.getValidTo().isAfter(now)) {
             throw new ScmBusinessException(PromotionErrorCode.ACTIVITY_STATE_INVALID);
         }
         return row;
@@ -521,7 +536,7 @@ public class PromotionDiscountService {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_NOT_FOUND);
         }
         if (!ScmPromotionStatusEnum.ACTIVE.name().equals(row.getStatus()) || !row.getValidFrom().isBefore(now)
-                || !row.getValidTo().isAfter(now)) {
+            || !row.getValidTo().isAfter(now)) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_STATE_INVALID);
         }
         return row;

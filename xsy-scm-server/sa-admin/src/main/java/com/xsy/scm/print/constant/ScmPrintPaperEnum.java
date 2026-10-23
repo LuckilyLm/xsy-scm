@@ -3,7 +3,9 @@ package com.xsy.scm.print.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 打印模板仅支持 A4 单据和 80mm 热敏小票。具体缩放由浏览器和打印机处理，不允许在模板中自定义任意纸张尺寸。 */
+/**
+ * 打印模板仅支持 A4 单据和 80mm 热敏小票。具体缩放由浏览器和打印机处理，不允许在模板中自定义任意纸张尺寸。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmPrintPaperEnum {

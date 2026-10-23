@@ -9,6 +9,7 @@ import com.xsy.scm.trace.dao.TraceInspectionReportDao;
 import com.xsy.scm.trace.dao.TraceUnitDao;
 import com.xsy.scm.trace.domain.form.TraceInspectionReportSaveForm;
 import com.xsy.scm.trace.domain.vo.TraceInspectionReportVO;
+
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.util.SmartRequestUtil;
 import net.lab1024.sa.base.module.support.file.constant.FileRelationBizTypeEnum;
@@ -45,8 +47,8 @@ public class TraceInspectionReportService {
     @Transactional(readOnly = true)
     public List<TraceInspectionReportVO> list(Long lotId) {
         requireLot(lotId);
-        List<TraceInspectionReportVO> reports =
-                traceInspectionReportDao.listByLot(lotId, dataScopeService.resolve().getWarehouseScope());
+        List<TraceInspectionReportVO> reports = traceInspectionReportDao.listByLot(lotId,
+            dataScopeService.resolve().getWarehouseScope());
         reports.forEach(this::fillAttachments);
         return reports;
     }
@@ -95,7 +97,8 @@ public class TraceInspectionReportService {
         TraceInspectionReportVO report = lock(id);
         requireState(report, version, ScmTraceInspectionStatusEnum.DRAFT);
         validateDates(report.getInspectionDate(), report.getExpiresAt(), true);
-        validateFiles(traceAttachmentService.attachmentKeysOf(FileRelationBizTypeEnum.TRACE_INSPECTION_REPORT, id), true);
+        validateFiles(traceAttachmentService.attachmentKeysOf(FileRelationBizTypeEnum.TRACE_INSPECTION_REPORT, id),
+            true);
         report.setUpdatedBy(operator);
         if (traceInspectionReportDao.publish(report) != 1) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_REPORT_STATE_INVALID);
@@ -113,8 +116,8 @@ public class TraceInspectionReportService {
     }
 
     private TraceInspectionReportVO lock(Long id) {
-        TraceInspectionReportVO report =
-                traceInspectionReportDao.lockById(id, dataScopeService.resolve().getWarehouseScope());
+        TraceInspectionReportVO report = traceInspectionReportDao.lockById(id,
+            dataScopeService.resolve().getWarehouseScope());
         if (report == null) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_REPORT_NOT_FOUND);
         }
@@ -142,8 +145,8 @@ public class TraceInspectionReportService {
 
     private void validateDates(LocalDate date, OffsetDateTime expiresAt, boolean publishing) {
         if (date.isAfter(LocalDate.now(BUSINESS_ZONE))
-                || (expiresAt != null && expiresAt.atZoneSameInstant(BUSINESS_ZONE).toLocalDate().isBefore(date))
-                || (publishing && expiresAt != null && !expiresAt.isAfter(OffsetDateTime.now()))) {
+            || (expiresAt != null && expiresAt.atZoneSameInstant(BUSINESS_ZONE).toLocalDate().isBefore(date))
+            || (publishing && expiresAt != null && !expiresAt.isAfter(OffsetDateTime.now()))) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_REPORT_DATE_INVALID);
         }
     }
@@ -151,7 +154,7 @@ public class TraceInspectionReportService {
     private List<String> validateFiles(List<String> fileKeys, boolean publishing) {
         List<String> keys = fileKeys.stream().map(String::trim).distinct().toList();
         if (keys.size() > 20 || (publishing && keys.isEmpty())
-                || keys.stream().anyMatch(key -> !key.startsWith("private/"))) {
+            || keys.stream().anyMatch(key -> !key.startsWith("private/"))) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_REPORT_FILE_INVALID);
         }
         if (keys.isEmpty()) {
@@ -168,8 +171,8 @@ public class TraceInspectionReportService {
     private boolean supportedFile(FileVO file) {
         String name = file.getFileName() == null ? "" : file.getFileName();
         String extension = name.substring(name.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
-        return FILE_TYPES.contains(extension) && file.getFileSize() != null
-                && file.getFileSize() > 0 && file.getFileSize() <= 20 * 1024 * 1024;
+        return FILE_TYPES.contains(extension) && file.getFileSize() != null && file.getFileSize() > 0
+            && file.getFileSize() <= 20 * 1024 * 1024;
     }
 
     private void fillAttachments(TraceInspectionReportVO report) {

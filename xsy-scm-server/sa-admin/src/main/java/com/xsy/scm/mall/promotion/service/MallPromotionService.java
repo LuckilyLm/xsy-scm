@@ -14,12 +14,14 @@ import com.xsy.scm.promotion.constant.ScmPromotionActivityTypeEnum;
 import com.xsy.scm.promotion.constant.ScmPromotionCouponDiscountTypeEnum;
 import com.xsy.scm.promotion.constant.ScmPromotionCouponIssueSourceEnum;
 import com.xsy.scm.promotion.service.PromotionCouponService;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -50,18 +52,17 @@ public class MallPromotionService {
     public List<MallPromotionActivityVO> activities(RequestMallCustomer identity, Long warehouseId) {
         List<MallPromotionActivityVO> rows = promotionDao.listActiveActivities(OffsetDateTime.now());
         List<Long> specialSkuIds = rows.stream()
-                .filter(row -> ScmPromotionActivityTypeEnum.SPECIAL_PRICE.name().equals(row.getActivityType()))
-                .map(row -> Long.valueOf(String.valueOf(row.getRule().get("skuId")))).distinct().toList();
-        Map<Long, MallProductVO> products = catalogService.visibleProducts(identity, specialSkuIds, null,
-                warehouseId).stream()
-                .collect(Collectors.toMap(MallProductVO::getSkuId, product -> product));
+            .filter(row -> ScmPromotionActivityTypeEnum.SPECIAL_PRICE.name().equals(row.getActivityType()))
+            .map(row -> Long.valueOf(String.valueOf(row.getRule().get("skuId")))).distinct().toList();
+        Map<Long, MallProductVO> products = catalogService.visibleProducts(identity, specialSkuIds, null, warehouseId)
+            .stream().collect(Collectors.toMap(MallProductVO::getSkuId, product -> product));
         List<MallPromotionActivityVO> visible = new ArrayList<>(rows.size());
         for (MallPromotionActivityVO row : rows) {
             if (ScmPromotionActivityTypeEnum.SPECIAL_PRICE.name().equals(row.getActivityType())) {
                 MallProductVO product = products.get(Long.valueOf(String.valueOf(row.getRule().get("skuId"))));
                 BigDecimal specialPrice = new BigDecimal(String.valueOf(row.getRule().get("specialPrice")));
                 if (product == null || !Boolean.TRUE.equals(product.getSellable()) || product.getUnitPrice() == null
-                        || specialPrice.compareTo(product.getUnitPrice()) >= 0) {
+                    || specialPrice.compareTo(product.getUnitPrice()) >= 0) {
                     continue;
                 }
                 row.setProduct(product);
@@ -81,15 +82,15 @@ public class MallPromotionService {
 
     @Transactional(readOnly = true)
     public PageResult<MallClaimableCouponVO> claimableCoupons(RequestMallCustomer identity,
-            MallPromotionPageForm form) {
+        MallPromotionPageForm form) {
         Page<MallClaimableCouponVO> page = new Page<>(form.getPageNum(), form.getPageSize(), true);
         page.setOptimizeCountSql(false);
         List<MallClaimableCouponVO> rows = promotionDao.listClaimableCoupons(page, OffsetDateTime.now(),
-                identity.getCustomerId(), ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name());
+            identity.getCustomerId(), ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name());
         for (MallClaimableCouponVO row : rows) {
             row.setDiscountTypeLabel(couponTypeLabel(row.getDiscountType()));
             boolean perCustomerOpen = row.getPerCustomerLimit() == null
-                    || row.getClaimedByCustomer() < row.getPerCustomerLimit();
+                || row.getClaimedByCustomer() < row.getPerCustomerLimit();
             boolean totalOpen = row.getTotalLimit() == null || row.getClaimedTotal() < row.getTotalLimit();
             row.setClaimableNow(perCustomerOpen && totalOpen);
         }
@@ -101,7 +102,7 @@ public class MallPromotionService {
         Page<MallCouponInstanceVO> page = new Page<>(form.getPageNum(), form.getPageSize(), true);
         page.setOptimizeCountSql(false);
         List<MallCouponInstanceVO> rows = promotionDao.listMyInstances(page, identity.getCustomerId(),
-                OffsetDateTime.now(), form.getTab());
+            OffsetDateTime.now(), form.getTab());
         for (MallCouponInstanceVO row : rows) {
             row.setDiscountTypeLabel(couponTypeLabel(row.getDiscountType()));
         }
@@ -118,8 +119,8 @@ public class MallPromotionService {
 
     private static String activityTypeLabel(String activityType) {
         return ScmPromotionActivityTypeEnum.isSupported(activityType)
-                ? ScmPromotionActivityTypeEnum.valueOf(activityType).getDesc()
-                : "活动";
+            ? ScmPromotionActivityTypeEnum.valueOf(activityType).getDesc()
+            : "活动";
     }
 
     private static String activitySummary(MallPromotionActivityVO row) {
@@ -127,7 +128,7 @@ public class MallPromotionService {
         return switch (ScmPromotionActivityTypeEnum.valueOf(row.getActivityType())) {
             case FULL_REDUCE -> "满¥" + rule.get("thresholdAmount") + "减¥" + rule.get("reduceAmount");
             case DISCOUNT -> new BigDecimal(String.valueOf(rule.get("discountRate"))).multiply(BigDecimal.TEN)
-                    .stripTrailingZeros().toPlainString() + "折";
+                .stripTrailingZeros().toPlainString() + "折";
             case FULL_GIFT -> "满¥" + rule.get("thresholdAmount") + "赠礼";
             case SPECIAL_PRICE ->
                 "限时价 ¥" + row.getSpecialPrice().toPlainString() + "/" + row.getProduct().getSaleUnit();
@@ -136,7 +137,7 @@ public class MallPromotionService {
 
     private static String couponTypeLabel(String discountType) {
         return ScmPromotionCouponDiscountTypeEnum.isSupported(discountType)
-                ? ScmPromotionCouponDiscountTypeEnum.valueOf(discountType).getDesc()
-                : discountType;
+            ? ScmPromotionCouponDiscountTypeEnum.valueOf(discountType).getDesc()
+            : discountType;
     }
 }

@@ -11,7 +11,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 每条分拣明细记录订单行的计划量、实拣量和结果。实拣量与结果必须同时填写；分拣不直接修改订单数量。 */
+/**
+ * 每条分拣明细记录订单行的计划量、实拣量和结果。实拣量与结果必须同时填写；分拣不直接修改订单数量。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_sorting_task_item")

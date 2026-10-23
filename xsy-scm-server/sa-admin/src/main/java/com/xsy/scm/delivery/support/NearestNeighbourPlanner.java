@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 从起点开始逐次选择距离最近的未访问站点，这是可解释的排线建议，不保证全局最短路线。 */
+/**
+ * 从起点开始逐次选择距离最近的未访问站点，这是可解释的排线建议，不保证全局最短路线。
+ */
 public final class NearestNeighbourPlanner {
 
     /**
@@ -12,7 +14,9 @@ public final class NearestNeighbourPlanner {
      */
     public static final String RULE_CODE = "NEAREST_NEIGHBOUR_FROM_START";
 
-    /** 距离保留 4 位小数（米），与距离矩阵同一口径。 */
+    /**
+     * 距离保留 4 位小数（米），与距离矩阵同一口径。
+     */
     private static final int SCALE = 4;
 
     private NearestNeighbourPlanner() {
@@ -29,7 +33,7 @@ public final class NearestNeighbourPlanner {
      *            总距离 = 最后一段的累计距离
      */
     public record Plan(List<Integer> order, List<BigDecimal> legDistances, List<BigDecimal> cumulativeDistances,
-            BigDecimal totalDistance) {
+        BigDecimal totalDistance) {
     }
 
     /**

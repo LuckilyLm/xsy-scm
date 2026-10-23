@@ -3,9 +3,11 @@ package com.xsy.scm.payment.provider;
 import com.xsy.scm.common.exception.ScmBusinessException;
 import com.xsy.scm.payment.constant.PaymentErrorCode;
 import com.xsy.scm.payment.constant.ScmPaymentProviderEnum;
+
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,7 +20,7 @@ import org.springframework.stereotype.Component;
 public class ScmPaymentProviderRegistry {
 
     private final Map<ScmPaymentProviderEnum,
-            ScmPaymentProvider> providers = new EnumMap<>(ScmPaymentProviderEnum.class);
+        ScmPaymentProvider> providers = new EnumMap<>(ScmPaymentProviderEnum.class);
 
     public ScmPaymentProviderRegistry(List<ScmPaymentProvider> implementations) {
         for (ScmPaymentProvider implementation : implementations) {
@@ -39,7 +41,9 @@ public class ScmPaymentProviderRegistry {
         return implementation;
     }
 
-    /** 已接入的渠道（供页面下拉用，避免让用户选到一个必然失败的渠道）。 */
+    /**
+     * 已接入的渠道（供页面下拉用，避免让用户选到一个必然失败的渠道）。
+     */
     public List<String> available() {
         return providers.keySet().stream().map(Enum::name).sorted().toList();
     }

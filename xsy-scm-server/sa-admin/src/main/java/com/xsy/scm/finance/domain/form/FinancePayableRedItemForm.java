@@ -8,7 +8,9 @@ import lombok.Data;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 
-/** 手工红字应付明细；商品与单位快照从原应付明细读取。 */
+/**
+ * 手工红字应付明细；商品与单位快照从原应付明细读取。
+ */
 @Data
 public class FinancePayableRedItemForm {
 

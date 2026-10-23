@@ -31,13 +31,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-/** 首页、大屏和报表共用统一经营指标。销售按订单确认时间、采购按提交时间统计；查询必须带对应权限范围。 */
+/**
+ * 首页、大屏和报表共用统一经营指标。销售按订单确认时间、采购按提交时间统计；查询必须带对应权限范围。
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ScmBusinessMetricsService {
 
-    /** 排行默认取前 10：首页取前 5，大屏取前 6，都由调用方截断。 */
+    /**
+     * 排行默认取前 10：首页取前 5，大屏取前 6，都由调用方截断。
+     */
     public static final int TOP_RANK_LIMIT = 10;
 
     /**
@@ -53,13 +57,15 @@ public class ScmBusinessMetricsService {
 
     private final ScmBusinessMetricsDao metricsDao;
 
-    /** 销售指标按订单确认时间统计。首页和大屏复用这份汇总，报表单独处理数据范围但须保持同一时间口径。 */
+    /**
+     * 销售指标按订单确认时间统计。首页和大屏复用这份汇总，报表单独处理数据范围但须保持同一时间口径。
+     */
     public SalesRangeMetrics salesRange(LocalDate startDate, LocalDate endDate, SalesFilter filter,
-            ScmDataScopeContext scope) {
+        ScmDataScopeContext scope) {
         OffsetDateTime[] range = dayRange(startDate, endDate);
         return new SalesRangeMetrics(orZero(metricsDao.countOrdersByConfirmedAt(range[0], range[1], filter, scope)),
-                orZero(metricsDao.sumSettlementAmountByConfirmedAt(range[0], range[1], filter, scope)),
-                orZero(metricsDao.countCustomersWithOrdersByConfirmedAt(range[0], range[1], filter, scope)));
+            orZero(metricsDao.sumSettlementAmountByConfirmedAt(range[0], range[1], filter, scope)),
+            orZero(metricsDao.countCustomersWithOrdersByConfirmedAt(range[0], range[1], filter, scope)));
     }
 
     /**
@@ -73,11 +79,11 @@ public class ScmBusinessMetricsService {
         LocalDate today = LocalDate.now(BUSINESS_ZONE);
         SalesRangeMetrics todayFacts = salesRange(today, today, SalesFilter.NONE, scope);
         return new SalesMetrics(todayFacts.orderCount(),
-                orZero(metricsDao.sumOrderedAmountByCreatedAt(range[0], range[1], scope)),
-                todayFacts.settlementAmount(), orZero(metricsDao.countTotalOrders(scope)),
-                orZero(metricsDao.sumTotalSettlementAmount(scope)), todayFacts.customerCount(),
-                nullToEmpty(metricsDao.topCustomersByConfirmedAt(range[0], range[1], TOP_RANK_LIMIT, scope)),
-                nullToEmpty(metricsDao.topProductsByConfirmedAt(range[0], range[1], TOP_RANK_LIMIT, scope)));
+            orZero(metricsDao.sumOrderedAmountByCreatedAt(range[0], range[1], scope)), todayFacts.settlementAmount(),
+            orZero(metricsDao.countTotalOrders(scope)), orZero(metricsDao.sumTotalSettlementAmount(scope)),
+            todayFacts.customerCount(),
+            nullToEmpty(metricsDao.topCustomersByConfirmedAt(range[0], range[1], TOP_RANK_LIMIT, scope)),
+            nullToEmpty(metricsDao.topProductsByConfirmedAt(range[0], range[1], TOP_RANK_LIMIT, scope)));
     }
 
     public SalesRangeMetrics todaySalesRange(ScmDataScopeContext scope) {
@@ -87,7 +93,7 @@ public class ScmBusinessMetricsService {
 
     public MasterDataMetrics masterData(ScmDataScopeContext scope) {
         return new MasterDataMetrics(orZero(metricsDao.countCustomers(scope)), orZero(metricsDao.countSuppliers()),
-                orZero(metricsDao.countSkus()));
+            orZero(metricsDao.countSkus()));
     }
 
     public List<RankItem> todayTopCustomers(int limit, ScmDataScopeContext scope) {
@@ -104,14 +110,16 @@ public class ScmBusinessMetricsService {
         return Math.max(1, Math.min(limit, TOP_RANK_LIMIT));
     }
 
-    /** 采购汇总按提交日期和已提交状态统计。首页与大屏共用此口径；报表可以使用不同权限范围，但时间、状态、金额定义必须一致。 */
+    /**
+     * 采购汇总按提交日期和已提交状态统计。首页与大屏共用此口径；报表可以使用不同权限范围，但时间、状态、金额定义必须一致。
+     */
     public PurchaseRangeMetrics purchaseRange(LocalDate startDate, LocalDate endDate, PurchaseFilter filter,
-            ScmDataScopeContext scope) {
+        ScmDataScopeContext scope) {
         OffsetDateTime[] range = dayRange(startDate, endDate);
         List<String> committed = ScmPurchaseStatusEnum.committedNames();
         return new PurchaseRangeMetrics(
-                orZero(metricsDao.countPurchaseOrdersBySubmittedAt(committed, range[0], range[1], filter, scope)),
-                orZero(metricsDao.sumPurchaseAmountBySubmittedAt(committed, range[0], range[1], filter, scope)));
+            orZero(metricsDao.countPurchaseOrdersBySubmittedAt(committed, range[0], range[1], filter, scope)),
+            orZero(metricsDao.sumPurchaseAmountBySubmittedAt(committed, range[0], range[1], filter, scope)));
     }
 
     /**
@@ -126,9 +134,9 @@ public class ScmBusinessMetricsService {
         List<String> committed = ScmPurchaseStatusEnum.committedNames();
         PurchaseRangeMetrics todayFacts = purchaseRange(today, today, PurchaseFilter.NONE, scope);
         return new PurchaseMetrics(todayFacts.orderCount(), todayFacts.amount(),
-                orZero(metricsDao.countTotalPurchaseOrders(committed, scope)),
-                orZero(metricsDao.sumTotalPurchaseAmount(committed, scope)),
-                orZero(metricsDao.countReceipts(range[0], range[1], scope)), activeSupplierCount(scope, range));
+            orZero(metricsDao.countTotalPurchaseOrders(committed, scope)),
+            orZero(metricsDao.sumTotalPurchaseAmount(committed, scope)),
+            orZero(metricsDao.countReceipts(range[0], range[1], scope)), activeSupplierCount(scope, range));
     }
 
     /**
@@ -143,18 +151,18 @@ public class ScmBusinessMetricsService {
 
     private long activeSupplierCount(ScmDataScopeContext scope, OffsetDateTime[] range) {
         return orZero(metricsDao.countSuppliersWithOrdersBySubmittedAt(ScmPurchaseStatusEnum.committedNames(), range[0],
-                range[1], scope));
+            range[1], scope));
     }
 
     public InventoryMetrics inventory(ScmDataScopeContext scope) {
         OffsetDateTime[] range = todayRange();
         return new InventoryMetrics(orZero(metricsDao.sumInventoryQuantity(scope)),
-                orZero(metricsDao.countInventorySkus(scope)), orZero(metricsDao.countEnabledWarehouses(scope)),
-                orZero(metricsDao.countMovementsByTypeAndRange(ScmMovementDirections.inboundTypes(), range[0], range[1],
-                        scope)),
-                orZero(metricsDao.countMovementsByTypeAndRange(ScmMovementDirections.outboundTypes(), range[0],
-                        range[1], scope)),
-                inventoryHealth(scope));
+            orZero(metricsDao.countInventorySkus(scope)), orZero(metricsDao.countEnabledWarehouses(scope)),
+            orZero(metricsDao.countMovementsByTypeAndRange(ScmMovementDirections.inboundTypes(), range[0], range[1],
+                scope)),
+            orZero(metricsDao.countMovementsByTypeAndRange(ScmMovementDirections.outboundTypes(), range[0], range[1],
+                scope)),
+            inventoryHealth(scope));
     }
 
     /**
@@ -174,11 +182,10 @@ public class ScmBusinessMetricsService {
         LocalDate start = end.minusDays(thirty ? 29L : 6L);
 
         List<TrendPoint> points = nullToEmpty(TrendSeriesSelection.ALL.equals(selection)
-                ? metricsDao.trendByDay(start, end, ScmMovementDirections.inboundTypes(),
-                        ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope)
-                : metricsDao.selectedTrendByDay(start, end, ScmMovementDirections.inboundTypes(),
-                        ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope,
-                        selection));
+            ? metricsDao.trendByDay(start, end, ScmMovementDirections.inboundTypes(),
+                ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope)
+            : metricsDao.selectedTrendByDay(start, end, ScmMovementDirections.inboundTypes(),
+                ScmMovementDirections.outboundTypes(), ScmPurchaseStatusEnum.committedNames(), scope, selection));
 
         List<String> dates = new ArrayList<>(points.size());
         List<String> fullDates = new ArrayList<>(points.size());
@@ -203,10 +210,12 @@ public class ScmBusinessMetricsService {
         }
 
         return new TrendMetrics(thirty ? RANGE_30D : RANGE_7D, dates, fullDates, sales, orders, purchaseAmounts,
-                purchaseOrders, inventoryQuantity, inboundQuantity, outboundQuantity);
+            purchaseOrders, inventoryQuantity, inboundQuantity, outboundQuantity);
     }
 
-    /** 库存健康度的正常、偏低、偏高状态统一调用预警枚举计算。缺货优先单独计数，不能在 SQL 和 Java 各写一套阈值判断。 */
+    /**
+     * 库存健康度的正常、偏低、偏高状态统一调用预警枚举计算。缺货优先单独计数，不能在 SQL 和 Java 各写一套阈值判断。
+     */
     private InventoryHealth inventoryHealth(ScmDataScopeContext scope) {
         List<InventoryHealthRow> rows = nullToEmpty(metricsDao.inventoryHealthRows(scope));
         long normal = 0L;
@@ -225,7 +234,7 @@ public class ScmBusinessMetricsService {
                 continue;
             }
             ScmInventoryWarningStatusEnum status = ScmInventoryWarningStatusEnum.evaluate(available, row.warnMin(),
-                    row.warnMax());
+                row.warnMax());
             if (status == ScmInventoryWarningStatusEnum.LOW) {
                 low++;
             } else if (status == ScmInventoryWarningStatusEnum.HIGH) {
@@ -246,10 +255,12 @@ public class ScmBusinessMetricsService {
         return dayRange(day, day);
     }
 
-    /** 闭区间日期 → 半开瞬间区间，与报表的日界换算同源（起始日 00:00 含，结束日次日 00:00 不含）。 */
+    /**
+     * 闭区间日期 → 半开瞬间区间，与报表的日界换算同源（起始日 00:00 含，结束日次日 00:00 不含）。
+     */
     private static OffsetDateTime[] dayRange(LocalDate startDate, LocalDate endDate) {
         return new OffsetDateTime[]{startDate.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
-                endDate.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime()};
+            endDate.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime()};
     }
 
     private static long orZero(Long value) {

@@ -13,11 +13,13 @@ import java.util.HexFormat;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/** Canonical request hashing shared by SCM write commands. */
+/**
+ * Canonical request hashing shared by SCM write commands.
+ */
 public final class ScmIdempotencyRequestHasher {
 
     private static final Pattern DECIMAL_TEXT_FIELD = Pattern
-            .compile("(?i).*(amount|quantity|price|weight|cost|rate)$");
+        .compile("(?i).*(amount|quantity|price|weight|cost|rate)$");
 
     private final ObjectMapper objectMapper;
 
@@ -40,7 +42,7 @@ public final class ScmIdempotencyRequestHasher {
         if (node.isObject()) {
             var sorted = objectMapper.createObjectNode();
             node.properties().stream().sorted(Map.Entry.comparingByKey()).forEach(
-                    property -> sorted.set(property.getKey(), canonicalNode(property.getValue(), property.getKey())));
+                property -> sorted.set(property.getKey(), canonicalNode(property.getValue(), property.getKey())));
             return objectMapper.writeValueAsString(sorted);
         }
         return objectMapper.writeValueAsString(canonicalNode(node, propertyName));
@@ -50,7 +52,7 @@ public final class ScmIdempotencyRequestHasher {
         if (node.isObject()) {
             var sorted = objectMapper.createObjectNode();
             node.properties().stream().sorted(Map.Entry.comparingByKey()).forEach(
-                    property -> sorted.set(property.getKey(), canonicalNode(property.getValue(), property.getKey())));
+                property -> sorted.set(property.getKey(), canonicalNode(property.getValue(), property.getKey())));
             return sorted;
         }
         if (node.isArray()) {
@@ -64,7 +66,7 @@ public final class ScmIdempotencyRequestHasher {
         if (node.isTextual() && isDecimalTextField(propertyName) && node.textValue().matches("-?\\d+(\\.\\d+)?")) {
             try {
                 return objectMapper.getNodeFactory()
-                        .textNode(new BigDecimal(node.textValue()).stripTrailingZeros().toPlainString());
+                    .textNode(new BigDecimal(node.textValue()).stripTrailingZeros().toPlainString());
             } catch (NumberFormatException ignored) {
                 // Preserve text that cannot be represented as a BigDecimal.
             }

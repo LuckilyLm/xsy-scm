@@ -2,7 +2,9 @@ package com.xsy.scm.trace.domain.form;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+
 import java.util.List;
+
 import lombok.Data;
 
 /**

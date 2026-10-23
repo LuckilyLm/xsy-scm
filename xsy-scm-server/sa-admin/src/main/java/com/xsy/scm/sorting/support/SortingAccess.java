@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
-/** 分拣权限取授权仓库和任务指派人的交集。未指派任务仅队列管理者可见，越权操作统一拒绝，不透露任务是否存在。 */
+/**
+ * 分拣权限取授权仓库和任务指派人的交集。未指派任务仅队列管理者可见，越权操作统一拒绝，不透露任务是否存在。
+ */
 @Component
 @RequiredArgsConstructor
 public class SortingAccess {
@@ -24,10 +26,12 @@ public class SortingAccess {
         return dataScopeService.resolve();
     }
 
-    /** 队列管理权限或超级管理员权限可查看未分配与跨指派任务。仓库数据范围仍需独立校验，不能因为管理队列就拥有全部仓库。 */
+    /**
+     * 队列管理权限或超级管理员权限可查看未分配与跨指派任务。仓库数据范围仍需独立校验，不能因为管理队列就拥有全部仓库。
+     */
     public boolean crossAssignee() {
         return ScmDataScopeService.hasPermission(SortingPermission.TASK_ASSIGN)
-                || ScmDataScopeService.isAdministrator();
+            || ScmDataScopeService.isAdministrator();
     }
 
     /**
@@ -59,7 +63,7 @@ public class SortingAccess {
             return;
         }
         if (task.getAssigneeEmployeeId() == null
-                || !Objects.equals(scope.getEmployeeId(), task.getAssigneeEmployeeId())) {
+            || !Objects.equals(scope.getEmployeeId(), task.getAssigneeEmployeeId())) {
             throw new ScmDataScopeException();
         }
     }

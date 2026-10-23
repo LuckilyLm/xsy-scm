@@ -6,7 +6,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 大屏地图使用行政区划质心定位汇总气泡，不代表客户真实地址。省级数据由市级汇总上卷，确保数值一致。 */
+/**
+ * 大屏地图使用行政区划质心定位汇总气泡，不代表客户真实地址。省级数据由市级汇总上卷，确保数值一致。
+ */
 @Data
 @Schema(description = "数据大屏-地理分布")
 public class ScreenGeoVO {
@@ -20,7 +22,9 @@ public class ScreenGeoVO {
     @Schema(description = "地理归属覆盖度")
     private Coverage coverage;
 
-    /** 地图坐标来自行政区划字典，缺少坐标的记录不画气泡，但仍计入覆盖率的未定位差额。 */
+    /**
+     * 地图坐标来自行政区划字典，缺少坐标的记录不画气泡，但仍计入覆盖率的未定位差额。
+     */
     @Data
     @Schema(description = "市级地理节点")
     public static class CityNode {

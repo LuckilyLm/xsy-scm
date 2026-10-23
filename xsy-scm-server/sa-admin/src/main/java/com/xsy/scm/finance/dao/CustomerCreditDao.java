@@ -2,14 +2,16 @@ package com.xsy.scm.finance.dao;
 
 import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.finance.domain.dto.FinanceCreditExposureDto;
+
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface CustomerCreditDao {
     FinanceCreditExposureDto selectExposure(@Param("settlementCustomerId") Long settlementCustomerId,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 该结算主体「已确认但还没开应收」的订单主键。

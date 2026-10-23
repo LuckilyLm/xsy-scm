@@ -2,8 +2,10 @@ package com.xsy.scm.payment.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+
 import java.math.BigDecimal;
 import java.util.List;
+
 import lombok.Data;
 
 @Data

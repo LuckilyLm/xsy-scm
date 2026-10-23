@@ -7,7 +7,9 @@ import com.xsy.scm.purchase.permission.PurchasePermission;
 import com.xsy.scm.purchase.service.PurchaseInquiryService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
@@ -34,7 +36,7 @@ public class PurchaseInquiryController {
     @PostMapping("/batch/candidates")
     @SaCheckPermission(PurchasePermission.INQUIRY_QUERY)
     public ResponseDTO<List<PurchaseInquiryVO.Candidate>> candidates(
-            @Valid @RequestBody PurchaseInquiryForm.Batch form) {
+        @Valid @RequestBody PurchaseInquiryForm.Batch form) {
         return ResponseDTO.ok(purchaseInquiryService.candidates(form.getBatchId()));
     }
 
@@ -54,7 +56,7 @@ public class PurchaseInquiryController {
     @SaCheckPermission(PurchasePermission.INQUIRY_CREATE)
     @OperateLog
     public ResponseDTO<PurchaseInquiryVO.Detail> create(@Valid @RequestBody PurchaseInquiryForm.Create form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(purchaseInquiryService.create(form, key));
     }
 
@@ -62,7 +64,7 @@ public class PurchaseInquiryController {
     @SaCheckPermission(PurchasePermission.INQUIRY_QUOTE)
     @OperateLog
     public ResponseDTO<PurchaseInquiryVO.Detail> quote(@Valid @RequestBody PurchaseInquiryForm.Quote form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(purchaseInquiryService.quote(form, key));
     }
 
@@ -70,7 +72,7 @@ public class PurchaseInquiryController {
     @SaCheckPermission(PurchasePermission.INQUIRY_ACCEPT)
     @OperateLog
     public ResponseDTO<PurchaseInquiryVO.Detail> accept(@Valid @RequestBody PurchaseInquiryForm.Accept form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(purchaseInquiryService.accept(form, key));
     }
 }

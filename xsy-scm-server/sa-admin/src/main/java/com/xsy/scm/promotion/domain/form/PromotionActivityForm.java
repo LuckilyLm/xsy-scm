@@ -7,16 +7,17 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import lombok.Data;
 
 /**
  * 活动新建 / 编辑。
  *
  * <p>
- * {@code rule} 收成 {@code Map}：具体键由活动类型决定，交给服务端的规则校验器统一回答
- * 「哪些键是这类活动允许的」，而不是让 Jackson 在反序列化阶段抛一个位置不明的 400。
+ * {@code rule} 收成 {@code Map}：具体键由活动类型决定，交给服务端的规则校验器统一回答 「哪些键是这类活动允许的」，而不是让 Jackson 在反序列化阶段抛一个位置不明的 400。
  */
 @Data
 public class PromotionActivityForm {

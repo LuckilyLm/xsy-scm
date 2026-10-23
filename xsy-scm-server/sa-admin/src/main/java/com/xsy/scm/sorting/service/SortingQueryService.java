@@ -56,7 +56,7 @@ public class SortingQueryService {
     private Page<?> page(PageParam form) {
         // 排序由 SQL 固定，客户端排序列一律不接受；分页上限与 SCM 其它列表页一致。
         if (form.getPageNum() == null || form.getPageNum() < 1 || form.getPageSize() == null || form.getPageSize() < 1
-                || form.getPageSize() > 100 || form.getSortItemList() != null && !form.getSortItemList().isEmpty())
+            || form.getPageSize() > 100 || form.getSortItemList() != null && !form.getSortItemList().isEmpty())
             throw new ScmBusinessException(VALIDATION_ERROR);
         return SmartPageUtil.convert2PageQuery(form);
     }
@@ -105,7 +105,9 @@ public class SortingQueryService {
         return task;
     }
 
-    /** 分次事件先判任务可见，再核对明细归属；列表按该明细游标分页，累计量取全部历史最新事件。 */
+    /**
+     * 分次事件先判任务可见，再核对明细归属；列表按该明细游标分页，累计量取全部历史最新事件。
+     */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public SortingPartHistoryVO parts(Long taskId, Long itemId, Long beforeId, int limit) {
         var task = detail(taskId);
@@ -113,7 +115,7 @@ public class SortingQueryService {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         if (task.getItems().stream()
-                .noneMatch(item -> itemId.equals(item.getId()) && item.getSalesOrderItemId() != null)) {
+            .noneMatch(item -> itemId.equals(item.getId()) && item.getSalesOrderItemId() != null)) {
             throw new ScmDataScopeException();
         }
         SortingPartRecordVO latest = sortingPartRecordDao.latestInTask(taskId, itemId);
@@ -122,7 +124,7 @@ public class SortingQueryService {
         var records = hasMore ? fetched.subList(0, limit) : fetched;
         Long nextBeforeId = hasMore ? records.getLast().getId() : null;
         return new SortingPartHistoryVO(records, latest == null ? null : latest.getTotalQuantity(), hasMore,
-                nextBeforeId);
+            nextBeforeId);
     }
 
     /**
@@ -153,10 +155,12 @@ public class SortingQueryService {
         if (scope.getWarehouseScope().isEmpty())
             return ScmDataScopeService.emptyPage(form);
         return SmartPageUtil.convert2PageResult(page,
-                sortingQueryDao.skuSummary(page, form, scope, access.crossAssignee()));
+            sortingQueryDao.skuSummary(page, form, scope, access.crossAssignee()));
     }
 
-    /** 按客户/订单明细展示同一份活动任务事实，不跨销售单位汇总，也不提供批量写操作。 */
+    /**
+     * 按客户/订单明细展示同一份活动任务事实，不跨销售单位汇总，也不提供批量写操作。
+     */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PageResult<SortingCustomerLineVO> customerLines(SortingSummaryQueryForm form) {
         var page = page(form);
@@ -164,10 +168,12 @@ public class SortingQueryService {
         if (scope.getWarehouseScope().isEmpty())
             return ScmDataScopeService.emptyPage(form);
         return SmartPageUtil.convert2PageResult(page,
-                sortingQueryDao.customerLines(page, form, scope, access.crossAssignee()));
+            sortingQueryDao.customerLines(page, form, scope, access.crossAssignee()));
     }
 
-    /** 仅聚合已完成任务中最后确认人登记的行，数量按原销售单位独立分组。 */
+    /**
+     * 仅聚合已完成任务中最后确认人登记的行，数量按原销售单位独立分组。
+     */
     @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public PageResult<SortingPerformanceVO> confirmedPerformance(SortingSummaryQueryForm form) {
         var page = page(form);
@@ -175,7 +181,7 @@ public class SortingQueryService {
         if (scope.getWarehouseScope().isEmpty())
             return ScmDataScopeService.emptyPage(form);
         return SmartPageUtil.convert2PageResult(page,
-                sortingQueryDao.confirmedPerformance(page, form, scope, access.crossAssignee()));
+            sortingQueryDao.confirmedPerformance(page, form, scope, access.crossAssignee()));
     }
 
     /**

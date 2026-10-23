@@ -8,7 +8,9 @@ import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 核销流水分页行或核销命令结果。 */
+/**
+ * 核销流水分页行或核销命令结果。
+ */
 @Data
 public class FinanceWriteOffVO {
 

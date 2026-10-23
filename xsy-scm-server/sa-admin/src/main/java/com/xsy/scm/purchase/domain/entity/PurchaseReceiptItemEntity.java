@@ -17,7 +17,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.purchase.support.PurchaseJsonbTypeHandler;
 
-/** 收货明细保留计划量、本次实收量、累计收货量、剩余量、超收量及差异。数据库约束保证这些值一致；不在收货行另存采购价格。 */
+/**
+ * 收货明细保留计划量、本次实收量、累计收货量、剩余量、超收量及差异。数据库约束保证这些值一致；不在收货行另存采购价格。
+ */
 @Data
 @TableName(value = "xsy_purchase_receipt_item", autoResultMap = true)
 public class PurchaseReceiptItemEntity {

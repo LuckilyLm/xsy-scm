@@ -10,6 +10,7 @@ import com.xsy.scm.mall.home.domain.form.MallHomeBlockForm;
 import com.xsy.scm.product.dao.ProductSkuOptionDao;
 import com.xsy.scm.product.service.ProductCategoryService;
 import com.xsy.scm.promotion.service.PromotionActivityService;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.module.support.file.constant.FileFolderTypeEnum;
 import net.lab1024.sa.base.module.support.file.service.FileService;
@@ -52,9 +54,9 @@ public class MallHomeLayoutValidator {
         ScmValueScope audienceScope = scopeService.resolve().getCustomerSellerScope();
         for (MallHomeBlockForm block : blocks) {
             if (block == null || block.getKey() == null || !block.getKey().matches("[A-Za-z0-9_-]{1,64}")
-                    || !keys.add(block.getKey()) || block.getSortOrder() == null || !positions.add(block.getSortOrder())
-                    || !Objects.equals(block.getSchemaVersion(), 1) || block.getEnabled() == null
-                    || block.getType() == null) {
+                || !keys.add(block.getKey()) || block.getSortOrder() == null || !positions.add(block.getSortOrder())
+                || !Objects.equals(block.getSchemaVersion(), 1) || block.getEnabled() == null
+                || block.getType() == null) {
                 throw new ScmBusinessException(INVALID_LAYOUT);
             }
             MallHomeBlockType type;
@@ -64,7 +66,7 @@ public class MallHomeLayoutValidator {
                 throw new ScmBusinessException(INVALID_LAYOUT);
             }
             if (block.getStartAt() != null && block.getEndAt() != null
-                    && !block.getEndAt().isAfter(block.getStartAt())) {
+                && !block.getEndAt().isAfter(block.getStartAt())) {
                 throw new ScmBusinessException(INVALID_LAYOUT);
             }
             if (block.getSortOrder() < 0 || block.getSortOrder() > 1000) {
@@ -87,13 +89,13 @@ public class MallHomeLayoutValidator {
             throw new ScmBusinessException(INVALID_LAYOUT);
         }
         if (!referencedSkus.isEmpty()
-                && skuOptionDao.selectByIds(referencedSkus.stream().toList()).size() != referencedSkus.size()) {
+            && skuOptionDao.selectByIds(referencedSkus.stream().toList()).size() != referencedSkus.size()) {
             throw new ScmBusinessException(INVALID_LINK);
         }
         if (!imageKeys.isEmpty()) {
             String prefix = FileFolderTypeEnum.PUBLIC_IMAGE.getFolder();
             if (imageKeys.stream().anyMatch(key -> !key.startsWith(prefix))
-                    || fileService.getFileMetadata(imageKeys.stream().toList()).size() != imageKeys.size()) {
+                || fileService.getFileMetadata(imageKeys.stream().toList()).size() != imageKeys.size()) {
                 throw new ScmBusinessException(INVALID_IMAGE);
             }
         }
@@ -108,7 +110,7 @@ public class MallHomeLayoutValidator {
             return;
         }
         if (customerIds.size() > 100 || customerIds.stream().anyMatch(id -> id == null || id <= 0)
-                || customerIds.stream().distinct().count() != customerIds.size()) {
+            || customerIds.stream().distinct().count() != customerIds.size()) {
             throw new ScmBusinessException(INVALID_LAYOUT);
         }
         audienceIds.addAll(customerIds);
@@ -116,7 +118,7 @@ public class MallHomeLayoutValidator {
 
     private static void validateContent(MallHomeBlockType type, MallHomeBlockForm block) {
         if (block.getSkuIds() != null && (block.getSkuIds().stream().anyMatch(id -> id == null || id <= 0)
-                || block.getSkuIds().stream().distinct().count() != block.getSkuIds().size())) {
+            || block.getSkuIds().stream().distinct().count() != block.getSkuIds().size())) {
             throw new ScmBusinessException(INVALID_LAYOUT);
         }
         if (type != MallHomeBlockType.RECOMMENDATION && block.getSkuIds() != null && !block.getSkuIds().isEmpty()) {
@@ -194,9 +196,9 @@ public class MallHomeLayoutValidator {
         try {
             URI uri = URI.create(target);
             Set<String> hosts = Arrays.stream(allowedExternalHosts.split(",")).map(host -> host.trim().toLowerCase())
-                    .filter(host -> !host.isEmpty()).collect(Collectors.toSet());
+                .filter(host -> !host.isEmpty()).collect(Collectors.toSet());
             return "https".equalsIgnoreCase(uri.getScheme()) && uri.getHost() != null && uri.getUserInfo() == null
-                    && uri.getPort() == -1 && hosts.contains(uri.getHost().toLowerCase());
+                && uri.getPort() == -1 && hosts.contains(uri.getHost().toLowerCase());
         } catch (IllegalArgumentException invalidUri) {
             return false;
         }

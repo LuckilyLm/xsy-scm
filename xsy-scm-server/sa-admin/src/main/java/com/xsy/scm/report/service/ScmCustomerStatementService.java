@@ -25,7 +25,9 @@ import com.xsy.scm.report.support.ScmReportTimeRange;
 import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import lombok.RequiredArgsConstructor;
 
-/** Snapshot only: the source Finance facts stay immutable and authoritative. */
+/**
+ * Snapshot only: the source Finance facts stay immutable and authoritative.
+ */
 @Service
 @RequiredArgsConstructor
 public class ScmCustomerStatementService {
@@ -39,7 +41,7 @@ public class ScmCustomerStatementService {
         ScmDataScopeContext scope = dataScopeService.resolve();
         requireScope(scope);
         List<ScmCustomerStatementItemVO> facts = statementDao.selectEvents(form, range.endAt(), scope, null,
-                MAX_FACTS + 1);
+            MAX_FACTS + 1);
         if (facts.size() > MAX_FACTS) {
             throw new ScmBusinessException(ReportErrorCode.REPORT_STATEMENT_TOO_LARGE);
         }
@@ -57,7 +59,7 @@ public class ScmCustomerStatementService {
         result.setStartDate(form.getStartDate());
         result.setEndDate(form.getEndDate());
         result.setPartialScope(form.getCustomerId() != null || !scope.getWarehouseScope().isAll()
-                || !scope.getOrderSellerScope().isAll() || !scope.getCustomerSellerScope().isAll());
+            || !scope.getOrderSellerScope().isAll() || !scope.getCustomerSellerScope().isAll());
         result.setGeneratedByEmployeeId(scope.getEmployeeId());
         result.setGeneratedAt(OffsetDateTime.now());
         BigDecimal debt = BigDecimal.ZERO;
@@ -163,19 +165,19 @@ public class ScmCustomerStatementService {
         form.setEndDate(version.getEndDate());
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         List<ScmCustomerStatementItemVO> now = statementDao.selectEvents(form, range.endAt(), scope,
-                version.getGeneratedAt(), MAX_FACTS + 1);
+            version.getGeneratedAt(), MAX_FACTS + 1);
         if (now.size() > MAX_FACTS) {
             return false;
         }
         Set<String> visibleFacts = new HashSet<>();
         now.forEach(row -> visibleFacts.add(row.getFactType() + ":" + row.getFactId()));
         return statementDao.selectSources(version.getId()).stream()
-                .allMatch(row -> visibleFacts.contains(row.getFactType() + ":" + row.getFactId()));
+            .allMatch(row -> visibleFacts.contains(row.getFactType() + ":" + row.getFactId()));
     }
 
     private void requireScope(ScmDataScopeContext scope) {
         if (scope.getEmployeeId() == null || scope.getWarehouseScope().isEmpty()
-                || scope.getOrderSellerScope().isEmpty() || scope.getCustomerSellerScope().isEmpty()) {
+            || scope.getOrderSellerScope().isEmpty() || scope.getCustomerSellerScope().isEmpty()) {
             throw new ScmBusinessException(ReportErrorCode.REPORT_STATEMENT_UNAVAILABLE);
         }
     }

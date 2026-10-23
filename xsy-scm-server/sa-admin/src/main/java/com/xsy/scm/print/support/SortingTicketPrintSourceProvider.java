@@ -5,12 +5,16 @@ import com.xsy.scm.sorting.constant.ScmSortingResultEnum;
 import com.xsy.scm.sorting.permission.SortingPermission;
 import com.xsy.scm.sorting.domain.vo.SortingTaskItemVO;
 import com.xsy.scm.sorting.service.SortingQueryService;
+
 import java.util.ArrayList;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** 分拣票据沿用仓库与指派人交集范围，不读价格、不汇总不同单位数量。 */
+/**
+ * 分拣票据沿用仓库与指派人交集范围，不读价格、不汇总不同单位数量。
+ */
 @Component
 @RequiredArgsConstructor
 public class SortingTicketPrintSourceProvider implements ScmPrintSourceProvider {

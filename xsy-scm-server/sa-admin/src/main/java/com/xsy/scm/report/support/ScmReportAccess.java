@@ -15,7 +15,9 @@ import com.xsy.scm.report.constant.ScmReportPermission;
  */
 public final class ScmReportAccess {
 
-    /** 报表成本查看权限，集中定义在 {@link ScmReportPermission}。 */
+    /**
+     * 报表成本查看权限，集中定义在 {@link ScmReportPermission}。
+     */
     public static final String COST_QUERY_PERM = ScmReportPermission.COST_QUERY;
 
     private ScmReportAccess() {

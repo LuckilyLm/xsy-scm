@@ -51,7 +51,7 @@ public final class PurchaseReceiptQuantityCalculator {
             throw new ScmBusinessException(PURCHASE_TOLERANCE_CONFIG_INVALID);
         }
         if (value < PurchaseConfigKey.OVER_RECEIPT_TOLERANCE_PERCENT_MIN
-                || value > PurchaseConfigKey.OVER_RECEIPT_TOLERANCE_PERCENT_MAX) {
+            || value > PurchaseConfigKey.OVER_RECEIPT_TOLERANCE_PERCENT_MAX) {
             throw new ScmBusinessException(PURCHASE_TOLERANCE_CONFIG_INVALID);
         }
         return value;
@@ -62,7 +62,7 @@ public final class PurchaseReceiptQuantityCalculator {
      */
     public static BigDecimal ceiling(BigDecimal plannedQuantity, int tolerancePercent) {
         BigDecimal factor = BigDecimal.ONE
-                .add(BigDecimal.valueOf(tolerancePercent).divide(HUNDRED, 4, RoundingMode.HALF_UP));
+            .add(BigDecimal.valueOf(tolerancePercent).divide(HUNDRED, 4, RoundingMode.HALF_UP));
         return plannedQuantity.multiply(factor);
     }
 
@@ -131,7 +131,7 @@ public final class PurchaseReceiptQuantityCalculator {
      *             形态不符（40083）
      */
     public static BigDecimal effectiveQuantity(String productType, BigDecimal declaredQuantity, BigDecimal actualWeight,
-            String weighingSource, String correctionReason) {
+        String weighingSource, String correctionReason) {
         if (ScmProductTypeEnum.STANDARD.name().equals(productType)) {
             if (actualWeight != null || weighingSource != null || correctionReason != null) {
                 throw new ScmBusinessException(PURCHASE_RECEIPT_QUANTITY_INVALID);

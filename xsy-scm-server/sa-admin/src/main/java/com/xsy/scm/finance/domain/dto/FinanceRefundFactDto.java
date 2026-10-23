@@ -1,9 +1,12 @@
 package com.xsy.scm.finance.domain.dto;
 
 import java.math.BigDecimal;
+
 import lombok.Data;
 
-/** 退款单已完成只代表业务流程结束，不代表钱已实际退付。财务付款需单独登记，其凭据号不能直接复制订单凭据。 */
+/**
+ * 退款单已完成只代表业务流程结束，不代表钱已实际退付。财务付款需单独登记，其凭据号不能直接复制订单凭据。
+ */
 @Data
 public class FinanceRefundFactDto {
 
@@ -15,7 +18,9 @@ public class FinanceRefundFactDto {
      */
     private Long customerId;
 
-    /** True only when the source order refund has completed and may be paid. */
+    /**
+     * True only when the source order refund has completed and may be paid.
+     */
     private boolean completed;
 
     /**

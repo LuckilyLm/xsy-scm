@@ -21,14 +21,16 @@ import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 
-/** 库存分析以库存流水与当前余额为数据来源。历史出入库按流水统计，当前库存按余额统计，不能混用时间口径。 */
+/**
+ * 库存分析以库存流水与当前余额为数据来源。历史出入库按流水统计，当前库存按余额统计，不能混用时间口径。
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class InventoryReportService {
 
     private static final List<String> INBOUND_MOVEMENT_TYPES = Arrays.stream(ScmInventoryMovementTypeEnum.values())
-            .filter(ScmInventoryMovementTypeEnum::isInbound).map(Enum::name).toList();
+        .filter(ScmInventoryMovementTypeEnum::isInbound).map(Enum::name).toList();
 
     private final ReportDao reportDao;
 
@@ -42,9 +44,9 @@ public class InventoryReportService {
             return ScmDataScopeService.emptyPage(form);
         }
         var page = SmartPageUtil.convert2PageQuery(form);
-        PageResult<InventoryReportVO.MovementRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.movementList(page, range.startAt(), range.endAt(), INBOUND_MOVEMENT_TYPES, form,
-                        context.getWarehouseScope()));
+        PageResult<
+            InventoryReportVO.MovementRow> result = SmartPageUtil.convert2PageResult(page, reportDao.movementList(page,
+                range.startAt(), range.endAt(), INBOUND_MOVEMENT_TYPES, form, context.getWarehouseScope()));
         if (result != null && result.getList() != null) {
             result.getList().forEach(row -> {
                 ScmInventoryMovementTypeEnum type = ScmInventoryMovementTypeEnum.of(row.getMovementType());
@@ -66,11 +68,11 @@ public class InventoryReportService {
             return new InventoryReportVO.LossSummary();
         }
         InventoryReportVO.LossSummary vo = reportDao.lossSummary(range.startAt(), range.endAt(), form,
-                context.getWarehouseScope());
+            context.getWarehouseScope());
         if (vo == null)
             vo = new InventoryReportVO.LossSummary();
         List<InventoryReportVO.LossUnitRow> units = reportDao.lossQuantitySummary(range.startAt(), range.endAt(), form,
-                context.getWarehouseScope());
+            context.getWarehouseScope());
         vo.setStocktakeLossQuantityText(lossQuantityText(units, ScmInventoryMovementTypeEnum.STOCKTAKE_LOSS.name()));
         vo.setLossReportQuantityText(lossQuantityText(units, ScmInventoryMovementTypeEnum.LOSS_REPORT.name()));
         if (!context.isCostVisible()) {
@@ -81,20 +83,23 @@ public class InventoryReportService {
             vo.setDailyTrend(List.of());
         } else {
             vo.setDailyTrend(
-                    reportDao.lossDailyTrend(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+                reportDao.lossDailyTrend(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         }
         return vo;
     }
 
-    /** 数量精度来自库存流水，先按单位汇总后拼文字，不将箱/公斤相加。 */
+    /**
+     * 数量精度来自库存流水，先按单位汇总后拼文字，不将箱/公斤相加。
+     */
     static String lossQuantityText(List<InventoryReportVO.LossUnitRow> units, String movementType) {
         if (units == null)
             return null;
-        String grouped = units.stream().filter(
+        String grouped = units.stream()
+            .filter(
                 row -> row != null && Objects.equals(movementType, row.getMovementType()) && row.getQuantity() != null)
-                .map(row -> row.getQuantity().setScale(4, RoundingMode.UNNECESSARY).toPlainString() + " "
-                        + (row.getUnit() == null ? "单位缺失" : row.getUnit()))
-                .collect(Collectors.joining("、"));
+            .map(row -> row.getQuantity().setScale(4, RoundingMode.UNNECESSARY).toPlainString() + " "
+                + (row.getUnit() == null ? "单位缺失" : row.getUnit()))
+            .collect(Collectors.joining("、"));
         return grouped.isEmpty() ? null : grouped;
     }
 
@@ -107,7 +112,7 @@ public class InventoryReportService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         PageResult<InventoryReportVO.LossRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.lossList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+            reportDao.lossList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         if (!context.isCostVisible() && result != null && result.getList() != null) {
             result.getList().forEach(row -> {
                 row.setUnitCost(null);
@@ -129,10 +134,12 @@ public class InventoryReportService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.inventoryValueList(page, form, context.getWarehouseScope()));
+            reportDao.inventoryValueList(page, form, context.getWarehouseScope()));
     }
 
-    /** 收发存是数量口径，不需要成本权限；但仍与其余库存查询共用同一份仓库范围。 */
+    /**
+     * 收发存是数量口径，不需要成本权限；但仍与其余库存查询共用同一份仓库范围。
+     */
     public PageResult<InventoryReportVO.FlowSummaryRow> flowSummary(ScmInventoryReportQueryForm form) {
         SalesReportService.rejectClientSort(form);
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
@@ -143,6 +150,6 @@ public class InventoryReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page, reportDao.flowSummary(page, range.startAt(), range.endAt(),
-                INBOUND_MOVEMENT_TYPES, form, context.getWarehouseScope()));
+            INBOUND_MOVEMENT_TYPES, form, context.getWarehouseScope()));
     }
 }

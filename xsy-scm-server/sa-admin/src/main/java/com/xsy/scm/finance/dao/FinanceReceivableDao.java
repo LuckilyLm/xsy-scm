@@ -39,7 +39,9 @@ public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity
      */
     int insertOnConflictDoNothing(FinanceReceivableEntity entity);
 
-    /** 退货红字应收必须关联原正常应收。正常应收的防重由数据库来源唯一索引承担；查询只是取得原单 ID，不代替防重。 */
+    /**
+     * 退货红字应收必须关联原正常应收。正常应收的防重由数据库来源唯一索引承担；查询只是取得原单 ID，不代替防重。
+     */
     FinanceReceivableEntity selectNormalByOrder(@Param("salesOrderId") Long salesOrderId);
 
     List<FinanceReceivableTargetDto> selectNormalTargetsForUpdate(@Param("targetIds") List<Long> targetIds);
@@ -55,5 +57,5 @@ public interface FinanceReceivableDao extends BaseMapper<FinanceReceivableEntity
     List<FinanceReceivableVO> selectRedEntriesByOriginal(@Param("originalReceivableId") Long originalReceivableId);
 
     List<FinanceReceivableVO> queryPage(Page<?> page, @Param("query") FinanceReceivableQueryForm query,
-            @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
+        @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
 }

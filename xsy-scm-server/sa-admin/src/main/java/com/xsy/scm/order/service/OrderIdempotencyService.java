@@ -2,11 +2,15 @@ package com.xsy.scm.order.service;
 
 import com.xsy.scm.common.domain.entity.ScmIdempotencyRecordEntity;
 import com.xsy.scm.common.idempotency.ScmIdempotencyService;
+
 import java.util.Optional;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-/** Compatibility facade for order commands; shared mechanics live in common. */
+/**
+ * Compatibility facade for order commands; shared mechanics live in common.
+ */
 @Service
 @RequiredArgsConstructor
 public class OrderIdempotencyService {
@@ -29,7 +33,7 @@ public class OrderIdempotencyService {
      */
     public Optional<Claim> peekCompleted(String operationScope, String idempotencyKey, Object request) {
         return idempotencyService.peekCompleted(operationScope, idempotencyKey, request)
-                .map(claim -> new Claim(claim.record(), claim.replay()));
+            .map(claim -> new Claim(claim.record(), claim.replay()));
     }
 
     public <T> T replay(Claim claim, Class<T> resultType) {

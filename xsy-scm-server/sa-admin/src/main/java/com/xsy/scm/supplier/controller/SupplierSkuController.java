@@ -57,15 +57,19 @@ public class SupplierSkuController {
         return ResponseDTO.ok(supplierSkuService.query(form));
     }
 
-    /** 按供应商汇总可供货情况，列表页的公司卡片使用。 */
+    /**
+     * 按供应商汇总可供货情况，列表页的公司卡片使用。
+     */
     @GetMapping("/supplier-summary")
     @SaCheckPermission(SupplierPermission.SKU_QUERY)
     public ResponseDTO<List<SupplierSkuSupplierSummaryVO>> supplierSummary(
-            @RequestParam(required = false) String status) {
+        @RequestParam(required = false) String status) {
         return ResponseDTO.ok(supplierSkuService.summarizeBySupplier(status));
     }
 
-    /** 同商品规格、同采购单位的有效供货来源参考价比较。 */
+    /**
+     * 同商品规格、同采购单位的有效供货来源参考价比较。
+     */
     @GetMapping("/compare/{skuId}")
     @SaCheckPermission(SupplierPermission.SKU_QUERY)
     public ResponseDTO<List<SupplierSkuComparisonVO>> compare(@PathVariable @Positive Long skuId) {

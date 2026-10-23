@@ -3,18 +3,26 @@ package com.xsy.scm.balance.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 每种钱包流水只允许规定的收支方向：充值入账、消费扣款、退款返还入账；人工更正可双向。 */
+/**
+ * 每种钱包流水只允许规定的收支方向：充值入账、消费扣款、退款返还入账；人工更正可双向。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmBalanceMovementTypeEnum {
 
-    /** 充值：真实资金已进入（在线支付成功）后，把等额权益记进钱包。只能增加。 */
+    /**
+     * 充值：真实资金已进入（在线支付成功）后，把等额权益记进钱包。只能增加。
+     */
     RECHARGE("充值", ScmBalanceDirectionEnum.CREDIT),
 
-    /** 消费：用余额抵扣，只能减少。 */
+    /**
+     * 消费：用余额抵扣，只能减少。
+     */
     CONSUME("消费", ScmBalanceDirectionEnum.DEBIT),
 
-    /** 退款返还：原消费退款回到钱包，只能增加。 */
+    /**
+     * 退款返还：原消费退款回到钱包，只能增加。
+     */
     REFUND("退款返还", ScmBalanceDirectionEnum.CREDIT),
 
     /**
@@ -24,10 +32,14 @@ public enum ScmBalanceMovementTypeEnum {
 
     private final String desc;
 
-    /** 该类型固定的方向；{@code null} 表示方向由调用方显式指定（仅 CORRECTION）。 */
+    /**
+     * 该类型固定的方向；{@code null} 表示方向由调用方显式指定（仅 CORRECTION）。
+     */
     private final ScmBalanceDirectionEnum fixedDirection;
 
-    /** 该类型是否允许指定方向。 */
+    /**
+     * 该类型是否允许指定方向。
+     */
     public boolean directionSelectable() {
         return fixedDirection == null;
     }

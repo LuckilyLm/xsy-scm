@@ -3,8 +3,10 @@ package com.xsy.scm.sorting.domain.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -43,7 +45,9 @@ public class SortingScaleEventVO {
 
     private OffsetDateTime receivedAt;
 
-    /** {@code PENDING} / {@code ACCEPTED} / {@code REJECTED}。 */
+    /**
+     * {@code PENDING} / {@code ACCEPTED} / {@code REJECTED}。
+     */
     private String status;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)

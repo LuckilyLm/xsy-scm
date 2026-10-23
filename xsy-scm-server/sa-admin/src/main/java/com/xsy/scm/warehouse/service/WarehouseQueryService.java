@@ -23,7 +23,9 @@ import java.util.Set;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** 仓库查询按员工授权范围过滤；下拉列表只返回可用仓库，管理列表仍显示管理范围内的其他状态。 */
+/**
+ * 仓库查询按员工授权范围过滤；下拉列表只返回可用仓库，管理列表仍显示管理范围内的其他状态。
+ */
 @Service
 @RequiredArgsConstructor
 public class WarehouseQueryService {
@@ -48,12 +50,12 @@ public class WarehouseQueryService {
             return List.of();
         }
         LambdaQueryWrapper<WarehouseEntity> query = new LambdaQueryWrapper<WarehouseEntity>()
-                .eq(WarehouseEntity::getStatus, ScmWarehouseStatusEnum.ENABLED.name());
+            .eq(WarehouseEntity::getStatus, ScmWarehouseStatusEnum.ENABLED.name());
         if (!scope.isAll()) {
             query.in(WarehouseEntity::getId, scope.getIds());
         }
         return warehouseDao.selectList(query.orderByAsc(WarehouseEntity::getWarehouseCode, WarehouseEntity::getId))
-                .stream().map(WarehouseQueryService::toVO).toList();
+            .stream().map(WarehouseQueryService::toVO).toList();
     }
 
     public PageResult<WarehouseVO> query(WarehouseQueryForm form) {
@@ -88,7 +90,7 @@ public class WarehouseQueryService {
             return;
         }
         boolean illegal = form.getSortItemList().stream()
-                .anyMatch(item -> item.getColumn() == null || !SORTABLE.contains(item.getColumn().toLowerCase()));
+            .anyMatch(item -> item.getColumn() == null || !SORTABLE.contains(item.getColumn().toLowerCase()));
         if (illegal) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }

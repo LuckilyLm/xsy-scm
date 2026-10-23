@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -30,7 +32,9 @@ public class PaymentIntentEntity {
 
     private String customerNameSnapshot;
 
-    /** 当前只有 {@code SALES_ORDER}。 */
+    /**
+     * 当前只有 {@code SALES_ORDER}。
+     */
     private String sourceType;
 
     private Long sourceId;
@@ -39,17 +43,23 @@ public class PaymentIntentEntity {
 
     private BigDecimal amount;
 
-    /** {@code ONLINE} / {@code BALANCE}。 */
+    /**
+     * {@code ONLINE} / {@code BALANCE}。
+     */
     private String method;
 
-    /** {@code MOCK} / {@code WECHAT}。 */
+    /**
+     * {@code MOCK} / {@code WECHAT}。
+     */
     private String provider;
 
     private String status;
 
     private String externalIntentId;
 
-    /** 仅 MOCK：回放剧本。表上有 CHECK 保证非 mock 渠道带不上。 */
+    /**
+     * 仅 MOCK：回放剧本。表上有 CHECK 保证非 mock 渠道带不上。
+     */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String mockScenario;
 

@@ -4,7 +4,9 @@ import jakarta.validation.constraints.Positive;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/** 收款列表、详情和导出共用筛选条件。 */
+/**
+ * 收款列表、详情和导出共用筛选条件。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class FinanceReceiptQueryForm extends FinanceDatePageForm {

@@ -10,8 +10,10 @@ import com.xsy.scm.mall.address.domain.entity.MallCustomerAddressEntity;
 import com.xsy.scm.mall.address.domain.form.MallAddressSaveForm;
 import com.xsy.scm.mall.address.domain.vo.MallAddressVO;
 import com.xsy.scm.mall.address.domain.vo.MallMapLocationVO;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -116,13 +118,13 @@ public class MallAddressService {
     }
 
     private static void apply(MallCustomerAddressEntity row, RequestMallCustomer customer, MallAddressSaveForm form,
-            MallMapLocationVO location) {
+        MallMapLocationVO location) {
         if ((form.getLongitude() == null) != (form.getLatitude() == null)) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_COORDINATE_INVALID);
         }
         if (location.getProvinceCode() == null || location.getCityCode() == null || location.getDistrictCode() == null
-                || location.getProvinceName() == null || location.getCityName() == null
-                || location.getDistrictName() == null) {
+            || location.getProvinceName() == null || location.getCityName() == null
+            || location.getDistrictName() == null) {
             throw new ScmBusinessException(MallErrorCode.ADDRESS_COORDINATE_INVALID);
         }
         row.setCustomerId(customer.getCustomerId());

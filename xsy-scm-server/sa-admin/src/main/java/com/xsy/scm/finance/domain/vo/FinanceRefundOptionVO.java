@@ -7,7 +7,9 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** Completed, unpaid refund facts available for a customer refund payment. */
+/**
+ * Completed, unpaid refund facts available for a customer refund payment.
+ */
 @Data
 public class FinanceRefundOptionVO {
 

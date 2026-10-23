@@ -2,7 +2,9 @@ package com.xsy.scm.delivery.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xsy.scm.delivery.domain.entity.DeliveryPlanProposalEntity;
+
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -10,8 +12,7 @@ import org.apache.ibatis.annotations.Param;
  * 排线建议读写。
  *
  * <p>
- * 没有「更新快照」的方法：表上的触发器会拒绝它，接口层也不提供 —— 冻结快照一旦能改，
- * 「建议里看到的距离」与「应用时依据的距离」就不再是同一份。
+ * 没有「更新快照」的方法：表上的触发器会拒绝它，接口层也不提供 —— 冻结快照一旦能改， 「建议里看到的距离」与「应用时依据的距离」就不再是同一份。
  */
 @Mapper
 public interface DeliveryPlanProposalDao extends BaseMapper<DeliveryPlanProposalEntity> {

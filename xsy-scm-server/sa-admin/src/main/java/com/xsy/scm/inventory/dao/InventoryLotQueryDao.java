@@ -6,7 +6,9 @@ import com.xsy.scm.inventory.domain.form.InventoryLotBalanceQueryForm;
 import com.xsy.scm.inventory.domain.form.InventoryLotMovementQueryForm;
 import com.xsy.scm.inventory.domain.vo.InventoryLotBalanceVO;
 import com.xsy.scm.inventory.domain.vo.InventoryLotMovementVO;
+
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -19,11 +21,15 @@ import org.apache.ibatis.annotations.Param;
 @Mapper
 public interface InventoryLotQueryDao {
 
-    /** 批次余额分页：只列出仍有数量的批次，零余额批次留给流水回看。 */
+    /**
+     * 批次余额分页：只列出仍有数量的批次，零余额批次留给流水回看。
+     */
     List<InventoryLotBalanceVO> queryBalancePage(Page<?> page, @Param("query") InventoryLotBalanceQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
-    /** 批次流水分页：按发生时刻倒序，保留有符号数量。 */
+    /**
+     * 批次流水分页：按发生时刻倒序，保留有符号数量。
+     */
     List<InventoryLotMovementVO> queryMovementPage(Page<?> page, @Param("query") InventoryLotMovementQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 }

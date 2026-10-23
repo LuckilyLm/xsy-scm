@@ -8,7 +8,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/** 进入配送候选的订单必须已确认，所有有效明细均完成分拣。候选资格不等于库存足够，发车时仍要校验实发量和余额。 */
+/**
+ * 进入配送候选的订单必须已确认，所有有效明细均完成分拣。候选资格不等于库存足够，发车时仍要校验实发量和余额。
+ */
 @Component
 @RequiredArgsConstructor
 public class DeliveryEligibilityPolicy {
@@ -24,7 +26,7 @@ public class DeliveryEligibilityPolicy {
      */
     public boolean eligible(SalesOrderEntity order) {
         return order != null && !Boolean.TRUE.equals(order.getDeleted())
-                && candidateStatuses().contains(order.getStatus())
-                && deliveryQueryDao.unsortedItemCount(order.getId()) == 0;
+            && candidateStatuses().contains(order.getStatus())
+            && deliveryQueryDao.unsortedItemCount(order.getId()) == 0;
     }
 }

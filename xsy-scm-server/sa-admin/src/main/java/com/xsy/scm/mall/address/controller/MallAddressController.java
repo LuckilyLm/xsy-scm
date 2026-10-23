@@ -5,7 +5,9 @@ import com.xsy.scm.mall.address.domain.form.MallAddressSaveForm;
 import com.xsy.scm.mall.address.domain.vo.MallAddressVO;
 import com.xsy.scm.mall.address.service.MallAddressService;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -43,7 +45,7 @@ public class MallAddressController {
 
     @PutMapping("/{id}")
     public ResponseDTO<List<MallAddressVO>> update(@PathVariable Long id,
-            @Valid @RequestBody MallAddressSaveForm form) {
+        @Valid @RequestBody MallAddressSaveForm form) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(addressService.update(MallRequestSupport.current(), id, form));
     }

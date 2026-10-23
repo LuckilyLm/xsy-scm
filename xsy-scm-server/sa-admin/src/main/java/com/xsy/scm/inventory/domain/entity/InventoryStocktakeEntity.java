@@ -11,7 +11,9 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/** 盘点差异由实盘量减账面量计算，不另存差异列。确认后通过库存流水保存调整前后的数量，并使用实际确认时间和确认人。 */
+/**
+ * 盘点差异由实盘量减账面量计算，不另存差异列。确认后通过库存流水保存调整前后的数量，并使用实际确认时间和确认人。
+ */
 @Data
 @TableName(value = "xsy_inventory_stocktake", autoResultMap = true)
 public class InventoryStocktakeEntity {

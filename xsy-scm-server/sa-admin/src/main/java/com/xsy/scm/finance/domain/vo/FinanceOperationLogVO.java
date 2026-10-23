@@ -8,7 +8,9 @@ import lombok.Data;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-/** Finance-specific audit entry with before/after monetary snapshots. */
+/**
+ * Finance-specific audit entry with before/after monetary snapshots.
+ */
 @Data
 public class FinanceOperationLogVO {
 

@@ -2,6 +2,7 @@ package com.xsy.scm.payment.domain.vo;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
+
 import lombok.Data;
 
 /**
@@ -19,7 +20,9 @@ public class PaymentCallbackEventVO {
 
     private String providerEventId;
 
-    /** 归一化事件名；渠道给的名字不认识时是渠道原文。 */
+    /**
+     * 归一化事件名；渠道给的名字不认识时是渠道原文。
+     */
     private String eventType;
 
     private Boolean signatureVerified;

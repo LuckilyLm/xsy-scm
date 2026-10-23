@@ -14,8 +14,8 @@ import com.xsy.scm.report.domain.vo.ScmCustomerStatementVO;
 @Mapper
 public interface ScmCustomerStatementDao {
     List<ScmCustomerStatementItemVO> selectEvents(@Param("query") ScmCustomerStatementForm query,
-            @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmDataScopeContext scope,
-            @Param("asOfCreatedAt") OffsetDateTime asOfCreatedAt, @Param("limit") int limit);
+        @Param("endAt") OffsetDateTime endAt, @Param("scope") ScmDataScopeContext scope,
+        @Param("asOfCreatedAt") OffsetDateTime asOfCreatedAt, @Param("limit") int limit);
 
     String selectSettlementName(@Param("id") Long id);
 
@@ -24,14 +24,14 @@ public interface ScmCustomerStatementDao {
     void insertItem(ScmCustomerStatementItemVO item);
 
     void insertSource(@Param("statementId") Long statementId, @Param("factType") String factType,
-            @Param("factId") Long factId);
+        @Param("factId") Long factId);
 
     List<ScmCustomerStatementItemVO> selectSources(@Param("id") Long id);
 
     ScmCustomerStatementVO selectStatement(@Param("id") Long id, @Param("employeeId") Long employeeId);
 
     List<ScmCustomerStatementVO> selectHistory(@Param("settlementCustomerId") Long settlementCustomerId,
-            @Param("employeeId") Long employeeId);
+        @Param("employeeId") Long employeeId);
 
     List<ScmCustomerStatementItemVO> selectItems(@Param("id") Long id);
 }

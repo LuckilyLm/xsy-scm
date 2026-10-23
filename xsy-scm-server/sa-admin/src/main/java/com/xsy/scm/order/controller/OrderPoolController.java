@@ -6,7 +6,9 @@ import com.xsy.scm.order.domain.form.OrderPoolClaimForm;
 import com.xsy.scm.order.domain.form.OrderPoolQueryForm;
 import com.xsy.scm.order.domain.vo.SalesOrderVO;
 import com.xsy.scm.order.domain.vo.OrderPoolAssigneeVO;
+
 import java.util.List;
+
 import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.order.service.OrderPoolService;
 import jakarta.validation.Valid;
@@ -43,7 +45,7 @@ public class OrderPoolController {
     @SaCheckPermission(OrderPermission.ASSIGN)
     @OperateLog
     public ResponseDTO<SalesOrderVO> claim(@Valid @RequestBody OrderPoolClaimForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderPoolService.claim(form, key));
     }
 
@@ -51,7 +53,7 @@ public class OrderPoolController {
     @SaCheckPermission(OrderPermission.ASSIGN)
     @OperateLog
     public ResponseDTO<SalesOrderVO> assign(@Valid @RequestBody OrderPoolAssignForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderPoolService.assign(form, key));
     }
 }

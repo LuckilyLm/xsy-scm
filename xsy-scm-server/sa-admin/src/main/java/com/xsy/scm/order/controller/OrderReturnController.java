@@ -52,7 +52,7 @@ public class OrderReturnController {
     @SaCheckPermission(OrderPermission.RETURN_ADD)
     @OperateLog
     public ResponseDTO<OrderReturnDetailVO> create(@Valid @RequestBody OrderReturnAddForm orderReturnAddForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderReturnService.create(orderReturnAddForm, key));
     }
 
@@ -60,7 +60,7 @@ public class OrderReturnController {
     @SaCheckPermission(OrderPermission.RETURN_APPROVE)
     @OperateLog
     public ResponseDTO<OrderReturnDetailVO> approve(@Valid @RequestBody OrderReturnApproveForm orderReturnApproveForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderReturnService.approve(orderReturnApproveForm, key));
     }
 
@@ -68,7 +68,7 @@ public class OrderReturnController {
     @SaCheckPermission(OrderPermission.RETURN_RECEIVE)
     @OperateLog
     public ResponseDTO<OrderReturnReceiptVO> receive(@Valid @RequestBody OrderReturnReceiveForm form,
-            @RequestHeader(value = "Idempotency-Key") String key) {
+        @RequestHeader(value = "Idempotency-Key") String key) {
         return ResponseDTO.ok(orderReturnReceiptService.receive(form, key));
     }
 
@@ -76,7 +76,7 @@ public class OrderReturnController {
     @SaCheckPermission(OrderPermission.RETURN_REJECT)
     @OperateLog
     public ResponseDTO<OrderReturnDetailVO> reject(@Valid @RequestBody OrderReturnDecisionForm orderReturnDecisionForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderReturnService.reject(orderReturnDecisionForm, key));
     }
 
@@ -84,7 +84,7 @@ public class OrderReturnController {
     @SaCheckPermission(OrderPermission.RETURN_CANCEL)
     @OperateLog
     public ResponseDTO<OrderReturnDetailVO> cancel(@Valid @RequestBody OrderReturnDecisionForm orderReturnDecisionForm,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(orderReturnService.cancel(orderReturnDecisionForm, key));
     }
 

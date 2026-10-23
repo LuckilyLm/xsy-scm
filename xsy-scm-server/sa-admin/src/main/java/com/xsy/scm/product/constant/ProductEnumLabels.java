@@ -20,31 +20,37 @@ import java.util.function.Function;
  */
 public final class ProductEnumLabels {
 
-    /** 列名 → 下拉选项。顺序即模板下拉里的展示顺序。 */
+    /**
+     * 列名 → 下拉选项。顺序即模板下拉里的展示顺序。
+     */
     public static final Map<String,
-            List<String>> OPTIONS = Map.of("储存方式", labels(ScmStorageMethodEnum.values(), ScmStorageMethodEnum::getDesc),
-                    "主档状态", labels(ScmProductMasterStatusEnum.values(), ScmProductMasterStatusEnum::getDesc), "商品状态",
-                    labels(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品规格状态",
-                    labels(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品类型",
-                    labels(ScmProductTypeEnum.values(), ScmProductTypeEnum::getDesc));
+        List<String>> OPTIONS = Map.of("储存方式", labels(ScmStorageMethodEnum.values(), ScmStorageMethodEnum::getDesc),
+            "主档状态", labels(ScmProductMasterStatusEnum.values(), ScmProductMasterStatusEnum::getDesc), "商品状态",
+            labels(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品规格状态",
+            labels(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品类型",
+            labels(ScmProductTypeEnum.values(), ScmProductTypeEnum::getDesc));
 
     private static final Map<String,
-            Map<String, String>> ALIASES = Map.of("储存方式",
-                    aliases(ScmStorageMethodEnum.values(), ScmStorageMethodEnum::getDesc), "主档状态",
-                    aliases(ScmProductMasterStatusEnum.values(), ScmProductMasterStatusEnum::getDesc), "商品状态",
-                    aliases(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品规格状态",
-                    aliases(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品类型",
-                    aliases(ScmProductTypeEnum.values(), ScmProductTypeEnum::getDesc));
+        Map<String, String>> ALIASES = Map.of("储存方式",
+            aliases(ScmStorageMethodEnum.values(), ScmStorageMethodEnum::getDesc), "主档状态",
+            aliases(ScmProductMasterStatusEnum.values(), ScmProductMasterStatusEnum::getDesc), "商品状态",
+            aliases(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品规格状态",
+            aliases(ScmShelfStatusEnum.values(), ScmShelfStatusEnum::getDesc), "商品类型",
+            aliases(ScmProductTypeEnum.values(), ScmProductTypeEnum::getDesc));
 
     private ProductEnumLabels() {
     }
 
-    /** 枚举的 {@code desc} 即模板下拉的展示值，顺序沿用枚举声明顺序。 */
+    /**
+     * 枚举的 {@code desc} 即模板下拉的展示值，顺序沿用枚举声明顺序。
+     */
     private static <E extends Enum<E>> List<String> labels(E[] values, Function<E, String> desc) {
         return Arrays.stream(values).map(desc).toList();
     }
 
-    /** 中文标签 → 枚举名，供导入解析把「常温」还原成 {@code AMBIENT}。 */
+    /**
+     * 中文标签 → 枚举名，供导入解析把「常温」还原成 {@code AMBIENT}。
+     */
     private static <E extends Enum<E>> Map<String, String> aliases(E[] values, Function<E, String> desc) {
         Map<String, String> aliases = new LinkedHashMap<>(values.length);
         for (E value : values) {

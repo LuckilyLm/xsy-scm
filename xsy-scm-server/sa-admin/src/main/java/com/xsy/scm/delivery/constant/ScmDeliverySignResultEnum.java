@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmDeliverySignResultEnum {
 
-    /** 正常签收。 */
+    /**
+     * 正常签收。
+     */
     SIGNED("正常签收"),
 
-    /** 异常签收：需填写原因并跟进。 */
+    /**
+     * 异常签收：需填写原因并跟进。
+     */
     EXCEPTION("异常签收");
 
     private final String desc;

@@ -13,19 +13,29 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmUomCategoryEnum {
 
-    /** 重量。 */
+    /**
+     * 重量。
+     */
     WEIGHT("重量"),
 
-    /** 数量。 */
+    /**
+     * 数量。
+     */
     COUNT("数量"),
 
-    /** 体积。 */
+    /**
+     * 体积。
+     */
     VOLUME("体积"),
 
-    /** 长度。 */
+    /**
+     * 长度。
+     */
     LENGTH("长度"),
 
-    /** 其他。 */
+    /**
+     * 其他。
+     */
     OTHER("其他");
 
     private final String desc;

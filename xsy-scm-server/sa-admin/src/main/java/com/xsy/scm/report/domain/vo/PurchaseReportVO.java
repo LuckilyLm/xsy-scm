@@ -17,20 +17,26 @@ import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 @Data
 public class PurchaseReportVO {
 
-    /** 采购概览指标卡。 */
+    /**
+     * 采购概览指标卡。
+     */
     @Data
     public static class Overview {
         private Long submittedOrderCount;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal submittedAmount;
         private Long confirmedReceiptCount;
-        /** 收货数量 × 采购单价，只用于对价格与数量的交叉核对。 */
+        /**
+         * 收货数量 × 采购单价，只用于对价格与数量的交叉核对。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal receiptReferenceAmount;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal purchaseInCostAmount;
         private Integer purchaseInCostMissingCount;
-        /** {@code WAREHOUSE_CONFIRM + CONFIRMED + PENDING} 的收货单数。 */
+        /**
+         * {@code WAREHOUSE_CONFIRM + CONFIRMED + PENDING} 的收货单数。
+         */
         private Long pendingPutawayReceiptCount;
     }
 
@@ -55,7 +61,9 @@ public class PurchaseReportVO {
         private BigDecimal receivedQuantity;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal orderAmount;
-        /** 采购成交均价 = 采购行金额合计 / 计划数量合计，不是若干单价的算术平均。 */
+        /**
+         * 采购成交均价 = 采购行金额合计 / 计划数量合计，不是若干单价的算术平均。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal avgPurchasePrice;
         private String inboundQuantityText;
@@ -64,7 +72,9 @@ public class PurchaseReportVO {
         private Integer inboundCostMissingCount;
     }
 
-    /** 粒度 = 供应商。点击下钻用 {@link ProductRow}（带 supplierId 筛选）。 */
+    /**
+     * 粒度 = 供应商。点击下钻用 {@link ProductRow}（带 supplierId 筛选）。
+     */
     @Data
     public static class SupplierRow {
         private Long supplierId;
@@ -83,7 +93,9 @@ public class PurchaseReportVO {
         private Integer amountRank;
     }
 
-    /** 粒度 = 采购员。 */
+    /**
+     * 粒度 = 采购员。
+     */
     @Data
     public static class PurchaserRow {
         private Long purchaserId;
@@ -100,7 +112,9 @@ public class PurchaseReportVO {
         private OffsetDateTime lastSubmittedAt;
     }
 
-    /** 粒度 = {@code xsy_purchase_order_item}。 */
+    /**
+     * 粒度 = {@code xsy_purchase_order_item}。
+     */
     @Data
     public static class ItemRow {
         private Long purchaseOrderId;
@@ -111,7 +125,9 @@ public class PurchaseReportVO {
         private String supplierName;
         private String purchaserName;
         private String warehouseName;
-        /** {@code xsy_purchase_order.planned_arrival_date} 是 DATE，不是瞬间。 */
+        /**
+         * {@code xsy_purchase_order.planned_arrival_date} 是 DATE，不是瞬间。
+         */
         private java.time.LocalDate plannedArrivalDate;
         private String spuCode;
         private String productName;
@@ -143,12 +159,16 @@ public class PurchaseReportVO {
         private String purchaseUnit;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal weightedAvgPrice;
-        /** 当前筛选窗口内同规格与采购单位的上一有效均价。 */
+        /**
+         * 当前筛选窗口内同规格与采购单位的上一有效均价。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal previousWeightedAvgPrice;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal priceChangeAmount;
-        /** 百分数单位：12.5000 表示上涨 12.5%；零基期没有可用百分比。 */
+        /**
+         * 百分数单位：12.5000 表示上涨 12.5%；零基期没有可用百分比。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal priceChangePercent;
         private Long sampleLineCount;

@@ -11,7 +11,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-/** 订单操作日志统一由本类写入，必须与订单、退货或退款变更处于同一事务。 */
+/**
+ * 订单操作日志统一由本类写入，必须与订单、退货或退款变更处于同一事务。
+ */
 @Component
 @RequiredArgsConstructor
 public class OrderOperationLogRecorder {
@@ -26,8 +28,8 @@ public class OrderOperationLogRecorder {
         entry.setCreatedBy(entry.getOperator());
         entry.setReason(reason);
         entry.setBeforeData(
-                before == null ? null : objectMapper.convertValue(before, new TypeReference<Map<String, Object>>() {
-                }));
+            before == null ? null : objectMapper.convertValue(before, new TypeReference<Map<String, Object>>() {
+            }));
         entry.setAfterData(objectMapper.convertValue(after, new TypeReference<Map<String, Object>>() {
         }));
         orderOperationLogDao.insert(entry);

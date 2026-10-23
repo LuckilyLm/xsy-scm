@@ -14,9 +14,9 @@ import java.util.List;
 import java.util.Objects;
 
 public record SalesOrderItemChangeSet(List<SalesOrderItemEntity> inserted, List<SalesOrderItemEntity> updated,
-        List<SalesOrderItemEntity> removed) {
+    List<SalesOrderItemEntity> removed) {
     public static SalesOrderItemChangeSet between(List<SalesOrderItemEntity> existing,
-            List<SalesOrderItemEntity> requested) {
+        List<SalesOrderItemEntity> requested) {
         var unmatched = new LinkedHashMap<Long, SalesOrderItemEntity>();
         existing.forEach(existingItem -> unmatched.put(existingItem.getId(), existingItem));
         var inserted = new ArrayList<SalesOrderItemEntity>();

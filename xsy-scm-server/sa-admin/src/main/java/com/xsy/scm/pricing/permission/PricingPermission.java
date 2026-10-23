@@ -1,6 +1,8 @@
 package com.xsy.scm.pricing.permission;
 
-/** Stable permission identifiers published by pricing APIs. */
+/**
+ * Stable permission identifiers published by pricing APIs.
+ */
 public final class PricingPermission {
 
     public static final String AGREEMENT_QUERY = "scm:pricing:agreement:query";
@@ -12,7 +14,9 @@ public final class PricingPermission {
     public static final String TYPE_PRICE_UPDATE = "scm:pricing:type-price:update";
     public static final String TYPE_PRICE_DELETE = "scm:pricing:type-price:delete";
 
-    /** 时价维护（增删改查同一把权限）。 */
+    /**
+     * 时价维护（增删改查同一把权限）。
+     */
     public static final String TIME_PRICE_MANAGE = "scm:pricing:time-price:manage";
     public static final String TYPE_PRICE_BATCH = "scm:pricing:type-price:batch";
     public static final String HISTORY_QUERY = "scm:pricing:history:query";

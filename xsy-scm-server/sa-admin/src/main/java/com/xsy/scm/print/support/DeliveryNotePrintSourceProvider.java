@@ -3,16 +3,20 @@ package com.xsy.scm.print.support;
 import com.xsy.scm.delivery.permission.DeliveryPermission;
 import com.xsy.scm.delivery.service.DeliveryRouteQueryService;
 import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** 发货单读正式线路快照，逐行保留客户、停靠点和订单来源。 */
+/**
+ * 发货单读正式线路快照，逐行保留客户、停靠点和订单来源。
+ */
 @Component
 @RequiredArgsConstructor
 public class DeliveryNotePrintSourceProvider implements ScmPrintSourceProvider {
@@ -49,8 +53,7 @@ public class DeliveryNotePrintSourceProvider implements ScmPrintSourceProvider {
         header.put("remark", ScmPrintText.text(route.getRemark()));
         var itemsByOrder = document.getItems().stream().collect(Collectors.groupingBy(item -> item.getOrderId()));
         var rows = new ArrayList<Map<String, String>>();
-        var stops = detail.getStops().stream()
-                .sorted(Comparator.comparing(stop -> stop.getStopSeq())).toList();
+        var stops = detail.getStops().stream().sorted(Comparator.comparing(stop -> stop.getStopSeq())).toList();
         for (var stop : stops) {
             for (var order : detail.getOrders()) {
                 if (!Objects.equals(order.getStopId(), stop.getId())) {
@@ -80,7 +83,7 @@ public class DeliveryNotePrintSourceProvider implements ScmPrintSourceProvider {
         var totals = ScmPrintSource.values();
         // 详情已剔除释放的订单；合计必须与本次打印的活动订单集合一致。
         BigDecimal totalAmount = detail.getOrders().stream().map(order -> order.getOrderAmountSnapshot())
-                .filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+            .filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
         totals.put("totalAmount", ScmPrintText.fixed(totalAmount));
         return new ScmPrintSource(route.getRouteNo(), header, rows, totals);
     }

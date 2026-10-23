@@ -2,11 +2,14 @@ package com.xsy.scm.product.service;
 
 import com.xsy.scm.product.domain.vo.ProductImportErrorVO;
 import com.xsy.scm.product.domain.vo.ProductImportResultVO;
+
 import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Set;
 
-/** Shared cell normalization and validation rules for product workbook imports. */
+/**
+ * Shared cell normalization and validation rules for product workbook imports.
+ */
 final class ProductImportValueRules {
 
     private static final int MAX_ERRORS = 1000;
@@ -70,7 +73,7 @@ final class ProductImportValueRules {
     }
 
     static void enumValue(ProductImportResultVO result, int rowNumber, String key, String column, String value,
-            Set<String> allowed) {
+        Set<String> allowed) {
         var trimmedValue = trim(value);
         if (trimmedValue != null && !allowed.contains(trimmedValue)) {
             addError(result, rowNumber, key, column, "ENUM_INVALID", column + "取值必须是 " + allowed);
@@ -78,7 +81,7 @@ final class ProductImportValueRules {
     }
 
     static void decimal(ProductImportResultVO result, int rowNumber, String key, String column, String value,
-            boolean positive) {
+        boolean positive) {
         var trimmedValue = trim(value);
         if (trimmedValue == null) {
             return;
@@ -93,12 +96,12 @@ final class ProductImportValueRules {
             }
         } catch (NumberFormatException exception) {
             addError(result, rowNumber, key, column, "DECIMAL_INVALID",
-                    column + "必须是" + (positive ? "大于零的" : "非负") + "四位以内小数");
+                column + "必须是" + (positive ? "大于零的" : "非负") + "四位以内小数");
         }
     }
 
     static void integer(ProductImportResultVO result, int rowNumber, String key, String column, String value, int min,
-            int max) {
+        int max) {
         var trimmedValue = trim(value);
         if (trimmedValue == null) {
             return;
@@ -114,7 +117,7 @@ final class ProductImportValueRules {
     }
 
     static void same(ProductImportResultVO result, int rowNumber, String key, String column, String expected,
-            String actual) {
+        String actual) {
         if (!Objects.equals(trim(expected), trim(actual))) {
             addError(result, rowNumber, key, column, "HEADER_CONFLICT", "同一商品的" + column + "必须一致");
         }
@@ -129,7 +132,7 @@ final class ProductImportValueRules {
     }
 
     static void addError(ProductImportResultVO result, int rowNumber, String key, String column, String code,
-            String message) {
+        String message) {
         result.setTotalErrors(result.getTotalErrors() + 1);
         if (result.getErrors().size() < MAX_ERRORS) {
             result.getErrors().add(new ProductImportErrorVO(rowNumber, key, column, code, message));

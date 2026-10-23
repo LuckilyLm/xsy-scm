@@ -3,11 +3,13 @@ package com.xsy.scm.promotion.domain.vo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 import com.xsy.scm.common.json.ScmOperatorNameSerializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import lombok.Data;
 
 /**
@@ -21,7 +23,9 @@ public class OrderDiscountVO {
 
     private Long salesOrderId;
 
-    /** 主活动（第一条产生优惠的活动）；叠加生效的其余活动在 {@link #activitySnapshot} 的 applied 里。 */
+    /**
+     * 主活动（第一条产生优惠的活动）；叠加生效的其余活动在 {@link #activitySnapshot} 的 applied 里。
+     */
     private Long activityId;
 
     private Integer activityVersion;
@@ -34,7 +38,9 @@ public class OrderDiscountVO {
 
     private Long couponInstanceId;
 
-    /** 券快照：券编码 / 名称 / 券优惠额。 */
+    /**
+     * 券快照：券编码 / 名称 / 券优惠额。
+     */
     private Map<String, Object> couponSnapshot;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
@@ -54,7 +60,9 @@ public class OrderDiscountVO {
 
     private List<Allocation> allocations = new ArrayList<>();
 
-    /** 承接舍入差额的行；没有差额时为 {@code null}。 */
+    /**
+     * 承接舍入差额的行；没有差额时为 {@code null}。
+     */
     private Long roundingTargetItemId;
 
     private OffsetDateTime createdAt;
@@ -62,7 +70,9 @@ public class OrderDiscountVO {
     @JsonSerialize(using = ScmOperatorNameSerializer.class)
     private String createdBy;
 
-    /** 逐行分摊：退款按这份分摊反向，不用退款时的当前活动重算。 */
+    /**
+     * 逐行分摊：退款按这份分摊反向，不用退款时的当前活动重算。
+     */
     @Data
     public static class Allocation {
 

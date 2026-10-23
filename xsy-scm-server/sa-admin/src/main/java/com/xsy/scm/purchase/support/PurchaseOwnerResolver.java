@@ -8,7 +8,9 @@ import com.xsy.scm.purchase.permission.PurchasePermission;
 import net.lab1024.sa.base.common.exception.BusinessException;
 import org.springframework.stereotype.Component;
 
-/** 普通员工新建采购单时，采购员固定为当前员工；只有具备分配权限者可以指定其他采购员。已有采购单的负责人只能通过独立改派接口变更，分配权限不代表全部数据查看权。 */
+/**
+ * 普通员工新建采购单时，采购员固定为当前员工；只有具备分配权限者可以指定其他采购员。已有采购单的负责人只能通过独立改派接口变更，分配权限不代表全部数据查看权。
+ */
 @Component
 @RequiredArgsConstructor
 public class PurchaseOwnerResolver {
@@ -35,7 +37,9 @@ public class PurchaseOwnerResolver {
         return context.getEmployeeId();
     }
 
-    /** 采购单写操作除功能权限外，还必须检查采购员数据范围。查询权限不能替代写入前的归属校验，避免凭 ID 改别人的单据。 */
+    /**
+     * 采购单写操作除功能权限外，还必须检查采购员数据范围。查询权限不能替代写入前的归属校验，避免凭 ID 改别人的单据。
+     */
     public void requireVisible(Long purchaserId) {
         if (!dataScopeService.resolve().getPurchaserScope().allows(purchaserId)) {
             throw new ScmDataScopeException();

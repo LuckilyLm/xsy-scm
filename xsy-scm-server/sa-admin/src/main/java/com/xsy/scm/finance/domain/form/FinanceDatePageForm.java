@@ -7,7 +7,9 @@ import net.lab1024.sa.base.common.domain.PageParam;
 
 import java.time.LocalDate;
 
-/** Finance list filters use closed business-date ranges, converted centrally to half-open timestamps. */
+/**
+ * Finance list filters use closed business-date ranges, converted centrally to half-open timestamps.
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public abstract class FinanceDatePageForm extends PageParam {

@@ -17,7 +17,9 @@ import com.xsy.scm.report.domain.vo.ReportOverviewVO;
 import com.xsy.scm.report.support.ScmReportTimeRange;
 import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
 
-/** 经营概览只读，图表和日汇总共用同一统计口径。只有能明确归属仓库的指标才按仓库授权过滤。 */
+/**
+ * 经营概览只读，图表和日汇总共用同一统计口径。只有能明确归属仓库的指标才按仓库授权过滤。
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -31,7 +33,7 @@ public class OverviewReportService {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
         ReportOverviewVO vo = reportDao.overviewKpi(range.startAt(), range.endAt(), form,
-                ScmPurchaseStatusEnum.committedNames(), warehousePredicate(context));
+            ScmPurchaseStatusEnum.committedNames(), warehousePredicate(context));
         if (vo == null) {
             return null;
         }
@@ -50,7 +52,7 @@ public class OverviewReportService {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         ScmDataScopeContext context = dataScopeService.resolve();
         List<ReportDailyStatVO> rows = reportDao.dailyStat(range.startDate(), range.endDate(), range.startAt(),
-                range.endAt(), form, warehousePredicate(context));
+            range.endAt(), form, warehousePredicate(context));
         boolean warehouseNowhere = context.warehouseNowhere();
         boolean costVisible = context.isCostVisible();
         if (warehouseNowhere || !costVisible) {
@@ -67,12 +69,16 @@ public class OverviewReportService {
         return rows;
     }
 
-    /** 经营概览同时包含按仓库统计和不按仓库统计的指标。无仓库权限时只隐藏仓库指标，不影响有权查看的销售和退款指标。 */
+    /**
+     * 经营概览同时包含按仓库统计和不按仓库统计的指标。无仓库权限时只隐藏仓库指标，不影响有权查看的销售和退款指标。
+     */
     private static ScmValueScope warehousePredicate(ScmDataScopeContext context) {
         return context.warehouseNowhere() ? null : context.getWarehouseScope();
     }
 
-    /** 与 {@link #overview} 的采购 / 库存指标同名同范围，日期轴上的每一行都按同一规则抹除。 */
+    /**
+     * 与 {@link #overview} 的采购 / 库存指标同名同范围，日期轴上的每一行都按同一规则抹除。
+     */
     private void clearWarehouseMetrics(ReportOverviewVO vo) {
         vo.setSubmittedPurchaseOrderCount(null);
         vo.setSubmittedPurchaseAmount(null);

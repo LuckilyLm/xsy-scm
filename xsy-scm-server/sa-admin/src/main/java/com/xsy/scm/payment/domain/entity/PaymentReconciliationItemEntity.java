@@ -3,8 +3,10 @@ package com.xsy.scm.payment.domain.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -22,7 +24,9 @@ public class PaymentReconciliationItemEntity {
 
     private Long reconciliationId;
 
-    /** {@code LOCAL_MISSING} / {@code PROVIDER_MISSING} / {@code AMOUNT_MISMATCH} / {@code STATUS_MISMATCH}。 */
+    /**
+     * {@code LOCAL_MISSING} / {@code PROVIDER_MISSING} / {@code AMOUNT_MISMATCH} / {@code STATUS_MISMATCH}。
+     */
     private String category;
 
     private String providerTransactionNo;

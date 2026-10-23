@@ -62,7 +62,7 @@ public class CustomerTypeService {
      */
     public List<CustomerTypeEntity> all() {
         return customerTypeDao.selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
-                .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId));
+            .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId));
     }
 
     /**
@@ -95,10 +95,10 @@ public class CustomerTypeService {
      */
     public List<CustomerTypeVO> optionList() {
         return customerTypeDao
-                .selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
-                        .eq(CustomerTypeEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
-                        .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId))
-                .stream().map(CustomerTypeService::toVO).toList();
+            .selectList(new LambdaQueryWrapper<CustomerTypeEntity>()
+                .eq(CustomerTypeEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
+                .orderByAsc(CustomerTypeEntity::getName, CustomerTypeEntity::getId))
+            .stream().map(CustomerTypeService::toVO).toList();
     }
 
     public PageResult<CustomerTypeVO> query(CustomerTypeQueryForm form) {
@@ -172,7 +172,7 @@ public class CustomerTypeService {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         if (customerDao.countActiveByTypeId(form.getTypeId()) > 0
-                || customerSkuVisibilityDao.typeReferences(form.getTypeId()) > 0) {
+            || customerSkuVisibilityDao.typeReferences(form.getTypeId()) > 0) {
             throw new ScmBusinessException(CUSTOMER_TYPE_IN_USE);
         }
         if (customerTypeDao.softDelete(form.getTypeId(), form.getVersion(), ScmOperator.current()) != 1) {
@@ -182,7 +182,7 @@ public class CustomerTypeService {
 
     private boolean existsCode(String code, Long excludeId) {
         LambdaQueryWrapper<CustomerTypeEntity> wrapper = new LambdaQueryWrapper<CustomerTypeEntity>()
-                .eq(CustomerTypeEntity::getTypeCode, code);
+            .eq(CustomerTypeEntity::getTypeCode, code);
         if (excludeId != null) {
             wrapper.ne(CustomerTypeEntity::getId, excludeId);
         }
@@ -194,7 +194,7 @@ public class CustomerTypeService {
             return;
         }
         boolean illegal = form.getSortItemList().stream()
-                .anyMatch(item -> item.getColumn() == null || !SORTABLE.contains(item.getColumn().toLowerCase()));
+            .anyMatch(item -> item.getColumn() == null || !SORTABLE.contains(item.getColumn().toLowerCase()));
         if (illegal) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }

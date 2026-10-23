@@ -35,7 +35,9 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 @Service
 @RequiredArgsConstructor
 public class DeliveryDriverService {
-    /** 一个员工最多绑定一个活动司机；冲突消息按索引名区分，避免把绑定冲突报成编码重复。 */
+    /**
+     * 一个员工最多绑定一个活动司机；冲突消息按索引名区分，避免把绑定冲突报成编码重复。
+     */
     private static final String EMPLOYEE_BINDING_INDEX = "uk_delivery_driver_active_employee";
 
     private final DeliveryDriverDao deliveryDriverDao;
@@ -44,7 +46,7 @@ public class DeliveryDriverService {
     public PageResult<DeliveryDriverVO> query(DeliveryQueryForm form) {
         var requested = DeliveryRouteQueryService.page(form);
         var page = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<DeliveryDriverEntity>(
-                requested.getCurrent(), requested.getSize(), requested.searchCount());
+            requested.getCurrent(), requested.getSize(), requested.searchCount());
         var wrapper = new LambdaQueryWrapper<DeliveryDriverEntity>();
         if (form.getKeyword() != null && !form.getKeyword().isBlank())
             wrapper.like(DeliveryDriverEntity::getDriverCode, form.getKeyword());
@@ -53,7 +55,7 @@ public class DeliveryDriverService {
         wrapper.orderByAsc(DeliveryDriverEntity::getDriverCode, DeliveryDriverEntity::getId);
         var rows = deliveryDriverDao.selectList(page, wrapper);
         var names = employeeNames(rows.stream().map(DeliveryDriverEntity::getEmployeeId).filter(Objects::nonNull)
-                .collect(Collectors.toSet()));
+            .collect(Collectors.toSet()));
         return SmartPageUtil.convert2PageResult(page, rows.stream().map(row -> {
             var vo = new DeliveryDriverVO();
             BeanUtils.copyProperties(row, vo);
@@ -64,8 +66,8 @@ public class DeliveryDriverService {
 
     public List<DeliveryDriverEntity> options() {
         return deliveryDriverDao.selectList(new LambdaQueryWrapper<DeliveryDriverEntity>()
-                .eq(DeliveryDriverEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
-                .orderByAsc(DeliveryDriverEntity::getDriverCode));
+            .eq(DeliveryDriverEntity::getStatus, ScmEnableStatusEnum.ENABLED.name())
+            .orderByAsc(DeliveryDriverEntity::getDriverCode));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -108,7 +110,9 @@ public class DeliveryDriverService {
         return String.valueOf(e.getMostSpecificCause().getMessage()).contains(EMPLOYEE_BINDING_INDEX);
     }
 
-    /** 绑定员工姓名；已删除的员工不显示名字（列表留空即提示这条绑定需要重新处理）。 */
+    /**
+     * 绑定员工姓名；已删除的员工不显示名字（列表留空即提示这条绑定需要重新处理）。
+     */
     private Map<Long, String> employeeNames(Set<Long> employeeIds) {
         if (employeeIds.isEmpty())
             return Map.of();
@@ -116,7 +120,7 @@ public class DeliveryDriverService {
         if (found == null)
             return Map.of();
         return found.stream()
-                .filter(e -> e != null && e.getEmployeeId() != null && !Boolean.TRUE.equals(e.getDeletedFlag()))
-                .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, EmployeeEntity::getActualName, (a, b) -> a));
+            .filter(e -> e != null && e.getEmployeeId() != null && !Boolean.TRUE.equals(e.getDeletedFlag()))
+            .collect(Collectors.toMap(EmployeeEntity::getEmployeeId, EmployeeEntity::getActualName, (a, b) -> a));
     }
 }

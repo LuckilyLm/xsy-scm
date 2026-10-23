@@ -4,18 +4,26 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
-/** 新增 / 修改时价。 */
+/**
+ * 新增 / 修改时价。
+ */
 @Data
 public class TimePriceForm {
 
-    /** 修改时必填。 */
+    /**
+     * 修改时必填。
+     */
     private Long id;
 
-    /** 乐观锁版本；修改时必填。 */
+    /**
+     * 乐观锁版本；修改时必填。
+     */
     private Integer version;
 
     @NotNull(message = "商品规格不能为空")

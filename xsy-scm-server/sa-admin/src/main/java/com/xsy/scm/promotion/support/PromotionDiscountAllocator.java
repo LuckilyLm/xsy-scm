@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-/** 优惠金额按订单明细分配，保持分配后的合计与订单优惠总额一致；尾差按固定规则处理。 */
+/**
+ * 优惠金额按订单明细分配，保持分配后的合计与订单优惠总额一致；尾差按固定规则处理。
+ */
 public final class PromotionDiscountAllocator {
 
     private static final int SCALE = 4;
@@ -44,7 +46,7 @@ public final class PromotionDiscountAllocator {
      *            承接舍入差额的行；没有差额时为 {@code null}
      */
     public record Result(BigDecimal baseAmount, BigDecimal discountAmount, List<Allocation> allocations,
-            Long roundingTargetItemId) {
+        Long roundingTargetItemId) {
     }
 
     /**
@@ -53,13 +55,13 @@ public final class PromotionDiscountAllocator {
     public static Result allocate(List<Line> lines, BigDecimal requestedDiscount) {
         List<Line> safeLines = lines == null ? List.of() : lines;
         BigDecimal baseTotal = safeLines.stream().map(line -> amount(line.baseAmount()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(SCALE, RoundingMode.HALF_UP);
+            .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(SCALE, RoundingMode.HALF_UP);
         BigDecimal discount = clamp(amount(requestedDiscount), baseTotal);
 
         if (safeLines.isEmpty() || discount.signum() == 0) {
             List<Allocation> zero = new ArrayList<>(safeLines.size());
-            safeLines.forEach(line -> zero.add(
-                    new Allocation(line.orderItemId(), amount(line.baseAmount()), BigDecimal.ZERO.setScale(SCALE))));
+            safeLines.forEach(line -> zero
+                .add(new Allocation(line.orderItemId(), amount(line.baseAmount()), BigDecimal.ZERO.setScale(SCALE))));
             return new Result(baseTotal, discount, zero, null);
         }
 
@@ -69,8 +71,8 @@ public final class PromotionDiscountAllocator {
         for (Line line : safeLines) {
             BigDecimal base = amount(line.baseAmount());
             BigDecimal share = baseTotal.signum() == 0
-                    ? BigDecimal.ZERO
-                    : discount.multiply(base).divide(baseTotal, SCALE, RoundingMode.HALF_UP);
+                ? BigDecimal.ZERO
+                : discount.multiply(base).divide(baseTotal, SCALE, RoundingMode.HALF_UP);
             allocations.add(new Allocation(line.orderItemId(), base, share));
             allocated = allocated.add(share);
         }
@@ -90,9 +92,9 @@ public final class PromotionDiscountAllocator {
                     continue;
                 }
                 BigDecimal applied = residual.abs().min(room)
-                        .multiply(residual.signum() >= 0 ? BigDecimal.ONE : BigDecimal.ONE.negate());
+                    .multiply(residual.signum() >= 0 ? BigDecimal.ONE : BigDecimal.ONE.negate());
                 allocations.set(index, new Allocation(current.orderItemId(), current.baseAmount(),
-                        current.discountAmount().add(applied).setScale(SCALE, RoundingMode.HALF_UP)));
+                    current.discountAmount().add(applied).setScale(SCALE, RoundingMode.HALF_UP)));
                 residual = residual.subtract(applied);
                 if (target == null) {
                     target = current.orderItemId();
@@ -101,7 +103,7 @@ public final class PromotionDiscountAllocator {
         }
 
         BigDecimal finalTotal = allocations.stream().map(Allocation::discountAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(SCALE, RoundingMode.HALF_UP);
+            .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(SCALE, RoundingMode.HALF_UP);
         return new Result(baseTotal, finalTotal, allocations, target);
     }
 
@@ -117,7 +119,7 @@ public final class PromotionDiscountAllocator {
             order.add(index);
         }
         order.sort(Comparator.comparing((Integer index) -> allocations.get(index).baseAmount()).reversed()
-                .thenComparing(index -> allocations.get(index).orderItemId()));
+            .thenComparing(index -> allocations.get(index).orderItemId()));
         return order;
     }
 

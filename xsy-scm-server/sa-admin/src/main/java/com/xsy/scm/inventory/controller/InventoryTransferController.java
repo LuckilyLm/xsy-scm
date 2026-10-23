@@ -24,7 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** 库存调拨支持草稿、发出和目标仓收货。发出与收货独立授权；已发出但未收货的记录不可当作完成调拨，也不能重新修改草稿。 */
+/**
+ * 库存调拨支持草稿、发出和目标仓收货。发出与收货独立授权；已发出但未收货的记录不可当作完成调拨，也不能重新修改草稿。
+ */
 @RestController
 @RequestMapping("/scm/inventory/transfer")
 @Tag(name = "SCM 库存调拨单")
@@ -73,7 +75,7 @@ public class InventoryTransferController {
     @SaCheckPermission(InventoryPermission.TRANSFER_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@PathVariable("id") Long transferId,
-            @Valid @RequestBody InventoryTransferAddForm form) {
+        @Valid @RequestBody InventoryTransferAddForm form) {
         inventoryTransferService.update(transferId, form);
         return ResponseDTO.ok();
     }

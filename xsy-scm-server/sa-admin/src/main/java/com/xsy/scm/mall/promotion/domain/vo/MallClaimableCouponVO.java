@@ -2,8 +2,10 @@ package com.xsy.scm.mall.promotion.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -33,18 +35,28 @@ public class MallClaimableCouponVO {
 
     private OffsetDateTime validTo;
 
-    /** 每个客户可领取的上限；{@code null} 表示不限。 */
+    /**
+     * 每个客户可领取的上限；{@code null} 表示不限。
+     */
     private Integer perCustomerLimit;
 
-    /** 全量领取上限；{@code null} 表示不限。 */
+    /**
+     * 全量领取上限；{@code null} 表示不限。
+     */
     private Integer totalLimit;
 
-    /** 当前客户已领取的张数（含已用与已失效）。 */
+    /**
+     * 当前客户已领取的张数（含已用与已失效）。
+     */
     private Integer claimedByCustomer;
 
-    /** 全客户已领取的总张数。 */
+    /**
+     * 全客户已领取的总张数。
+     */
     private Integer claimedTotal;
 
-    /** 当前客户此刻是否还能领取。 */
+    /**
+     * 当前客户此刻是否还能领取。
+     */
     private Boolean claimableNow;
 }

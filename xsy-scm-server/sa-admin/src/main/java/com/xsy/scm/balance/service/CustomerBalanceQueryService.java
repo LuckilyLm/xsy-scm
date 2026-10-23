@@ -13,14 +13,18 @@ import com.xsy.scm.common.scope.ScmDataScopeService;
 import com.xsy.scm.customer.domain.entity.CustomerEntity;
 import com.xsy.scm.customer.service.CustomerService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+
 import java.math.BigDecimal;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 余额查询按客户结算主体与数据权限过滤，不向无权账户返回资金信息。 */
+/**
+ * 余额查询按客户结算主体与数据权限过滤，不向无权账户返回资金信息。
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomerBalanceQueryService {
@@ -54,11 +58,11 @@ public class CustomerBalanceQueryService {
         vo.setSettlementCustomerName(settlement.getName());
 
         CustomerBalanceAccountEntity account = customerBalanceAccountDao
-                .selectBySettlementCustomerId(settlement.getId());
+            .selectBySettlementCustomerId(settlement.getId());
         // 没有账户就是 0 元：「还没有钱包」与「钱包是空的」在金额上等价，不必为此落一行
         vo.setAccountId(account == null ? null : account.getId());
         vo.setAvailableBalance(
-                account == null ? BigDecimal.ZERO : customerBalanceService.balanceOfSettlement(settlement.getId()));
+            account == null ? BigDecimal.ZERO : customerBalanceService.balanceOfSettlement(settlement.getId()));
         return vo;
     }
 
@@ -75,7 +79,9 @@ public class CustomerBalanceQueryService {
         return SmartPageUtil.convert2PageResult(page, customerBalanceMovementDao.queryPage(page, form, scope));
     }
 
-    /** 越权与「客户不存在」共用同一个拒绝（对外 30005）：能分辨两者就等于把主键探测变成可用信号。 */
+    /**
+     * 越权与「客户不存在」共用同一个拒绝（对外 30005）：能分辨两者就等于把主键探测变成可用信号。
+     */
     private void requireVisible(CustomerEntity settlement) {
         if (!dataScopeService.resolve().getCustomerSellerScope().allows(settlement.getSellerId())) {
             throw new ScmDataScopeException();

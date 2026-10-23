@@ -3,7 +3,9 @@ package com.xsy.scm.promotion.dao;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xsy.scm.promotion.domain.entity.PromotionCouponInstanceEntity;
 import com.xsy.scm.promotion.domain.vo.PromotionCouponVO;
+
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -25,18 +27,18 @@ public interface PromotionCouponInstanceDao extends BaseMapper<PromotionCouponIn
     PromotionCouponInstanceEntity lockById(@Param("id") Long id);
 
     List<PromotionCouponInstanceEntity> listByCustomer(@Param("customerId") Long customerId,
-            @Param("status") String status, @Param("limit") int limit);
+        @Param("status") String status, @Param("limit") int limit);
 
     List<PromotionCouponVO.UsageStats> usageStatsByCouponIds(@Param("couponIds") List<Long> couponIds);
 
     int markReserved(@Param("id") Long id, @Param("version") Integer version, @Param("orderId") Long orderId,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     int markUsed(@Param("id") Long id, @Param("version") Integer version, @Param("orderId") Long orderId,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     int markReleased(@Param("id") Long id, @Param("version") Integer version, @Param("reason") String reason,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     int insertBatch(@Param("rows") List<PromotionCouponInstanceEntity> rows, @Param("issueSource") String issueSource);
 }

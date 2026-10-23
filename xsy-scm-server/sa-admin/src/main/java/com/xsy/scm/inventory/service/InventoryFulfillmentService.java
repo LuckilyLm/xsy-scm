@@ -65,9 +65,9 @@ public class InventoryFulfillmentService {
      *            实发量，{@code >= 0}；为 0 表示该行全缺（OUT_OF_STOCK），不生成出库行
      */
     public record Line(Long salesOrderId, Long salesOrderItemId, Long skuId, BigDecimal quantity, String stockUnit,
-            BigDecimal factor, Long bundleComponentId, Long bundleSkuId, BigDecimal bundleQuantity) {
+        BigDecimal factor, Long bundleComponentId, Long bundleSkuId, BigDecimal bundleQuantity) {
         public Line(Long salesOrderId, Long salesOrderItemId, Long skuId, BigDecimal quantity, String stockUnit,
-                BigDecimal factor) {
+            BigDecimal factor) {
             this(salesOrderId, salesOrderItemId, skuId, quantity, stockUnit, factor, null, null, null);
         }
 
@@ -77,8 +77,8 @@ public class InventoryFulfillmentService {
 
         public String reservationType() {
             return bundleComponentId == null
-                    ? ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name()
-                    : ScmInventorySourceDocumentTypeEnum.ORDER_BUNDLE_COMPONENT.name();
+                ? ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name()
+                : ScmInventorySourceDocumentTypeEnum.ORDER_BUNDLE_COMPONENT.name();
         }
 
         public Long reservationItemId() {
@@ -101,7 +101,7 @@ public class InventoryFulfillmentService {
      *            发车操作人，同时作为流水与单据的操作者
      */
     public record Command(Long routeId, Long warehouseId, java.time.OffsetDateTime occurredAt, String operator,
-            List<Line> lines) {
+        List<Line> lines) {
     }
 
     /**
@@ -129,7 +129,7 @@ public class InventoryFulfillmentService {
      *            发车业务事实（配送线路 id），只做流水头级溯源
      */
     public record GiftCommand(Long routeId, Long warehouseId, java.time.OffsetDateTime occurredAt, String operator,
-            List<GiftLine> lines) {
+        List<GiftLine> lines) {
     }
 
     /**
@@ -149,10 +149,10 @@ public class InventoryFulfillmentService {
         Map<String, InventoryBalanceEntity> balances = lockBalances(command, reservations);
         retireReservations(command, reservations, balances);
 
-        List<Line> shipped = command.lines().stream().filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0)
-                .sorted(Comparator.comparing(Line::skuId).thenComparing(Line::salesOrderItemId)
-                        .thenComparing(Line::reservationItemId))
-                .toList();
+        List<Line> shipped = command
+            .lines().stream().filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0).sorted(Comparator
+                .comparing(Line::skuId).thenComparing(Line::salesOrderItemId).thenComparing(Line::reservationItemId))
+            .toList();
         // 全部订单行都缺：没有实物离开仓库，因此<b>不是一张空出库单</b>，outbound 相关字段留空。
         if (shipped.isEmpty()) {
             return new Result(null, null, 0);
@@ -162,12 +162,12 @@ public class InventoryFulfillmentService {
         for (Line line : shipped) {
             InventoryOutboundItemEntity item = insertItem(outbound.getId(), line, command.operator());
             String unit = inventoryCommandService
-                    .postSalesOutbound(new InventoryOutboundFact(command.warehouseId(), line.skuId(), outbound.getId(),
-                            item.getId(), line.stockQuantity(), null, command.occurredAt(), command.operator()));
+                .postSalesOutbound(new InventoryOutboundFact(command.warehouseId(), line.skuId(), outbound.getId(),
+                    item.getId(), line.stockQuantity(), null, command.occurredAt(), command.operator()));
             inventoryOutboundItemDao.updateUnitSnapshot(item.getId(), unit, command.operator());
         }
         return new Result(outbound.getId(), outbound.getOutboundNo(),
-                (int) shipped.stream().map(Line::salesOrderItemId).distinct().count());
+            (int) shipped.stream().map(Line::salesOrderItemId).distinct().count());
     }
 
     /**
@@ -187,11 +187,11 @@ public class InventoryFulfillmentService {
         warehouseScopeGuard.require(command.warehouseId());
 
         List<GiftLine> shipped = command.lines().stream().filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0)
-                .sorted(Comparator.comparing(GiftLine::skuId).thenComparing(GiftLine::giftId)).toList();
+            .sorted(Comparator.comparing(GiftLine::skuId).thenComparing(GiftLine::giftId)).toList();
         for (GiftLine line : shipped) {
-            inventoryCommandService.postPromotionGiftOutbound(
-                    new InventoryPromotionGiftFact(command.warehouseId(), line.skuId(), command.routeId(),
-                            line.giftId(), line.quantity(), command.occurredAt(), command.operator()));
+            inventoryCommandService
+                .postPromotionGiftOutbound(new InventoryPromotionGiftFact(command.warehouseId(), line.skuId(),
+                    command.routeId(), line.giftId(), line.quantity(), command.occurredAt(), command.operator()));
         }
         return shipped.size();
     }
@@ -235,8 +235,8 @@ public class InventoryFulfillmentService {
         for (Map.Entry<Long, BigDecimal> entry : wanted.entrySet()) {
             InventoryBalanceEntity balance = balances.get(entry.getKey());
             BigDecimal reserved = balance.getReservedQuantity() == null
-                    ? BigDecimal.ZERO
-                    : balance.getReservedQuantity();
+                ? BigDecimal.ZERO
+                : balance.getReservedQuantity();
             if (balance.getQuantity().subtract(reserved).compareTo(entry.getValue()) < 0) {
                 throw new ScmBusinessException(INVENTORY_INSUFFICIENT_AVAILABLE);
             }
@@ -252,17 +252,17 @@ public class InventoryFulfillmentService {
      */
     private static void requireCommand(Command command) {
         if (command == null || command.routeId() == null || command.warehouseId() == null
-                || command.occurredAt() == null || command.operator() == null || command.operator().isBlank()
-                || command.lines() == null || command.lines().isEmpty()) {
+            || command.occurredAt() == null || command.operator() == null || command.operator().isBlank()
+            || command.lines() == null || command.lines().isEmpty()) {
             throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
         }
         Set<String> seenSources = new HashSet<>();
         for (Line line : command.lines()) {
             if (line.salesOrderId() == null || line.salesOrderItemId() == null || line.skuId() == null
-                    || line.quantity() == null || line.quantity().compareTo(BigDecimal.ZERO) < 0
-                    || (line.bundleComponentId() != null && (line.bundleSkuId() == null || line.bundleQuantity() == null
-                            || line.bundleQuantity().signum() < 0))
-                    || !seenSources.add(line.reservationType() + ":" + line.reservationItemId())) {
+                || line.quantity() == null || line.quantity().compareTo(BigDecimal.ZERO) < 0
+                || (line.bundleComponentId() != null && (line.bundleSkuId() == null || line.bundleQuantity() == null
+                    || line.bundleQuantity().signum() < 0))
+                || !seenSources.add(line.reservationType() + ":" + line.reservationItemId())) {
                 throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
             }
         }
@@ -273,14 +273,14 @@ public class InventoryFulfillmentService {
      */
     private static void requireGiftCommand(GiftCommand command) {
         if (command == null || command.routeId() == null || command.warehouseId() == null
-                || command.occurredAt() == null || command.operator() == null || command.operator().isBlank()
-                || command.lines() == null || command.lines().isEmpty()) {
+            || command.occurredAt() == null || command.operator() == null || command.operator().isBlank()
+            || command.lines() == null || command.lines().isEmpty()) {
             throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
         }
         Set<Long> seenGifts = new HashSet<>();
         for (GiftLine line : command.lines()) {
             if (line.giftId() == null || line.skuId() == null || line.quantity() == null
-                    || line.quantity().compareTo(BigDecimal.ZERO) < 0 || !seenGifts.add(line.giftId())) {
+                || line.quantity().compareTo(BigDecimal.ZERO) < 0 || !seenGifts.add(line.giftId())) {
                 throw new ScmBusinessException(INVENTORY_OUTBOUND_PARAM_INVALID);
             }
         }
@@ -291,20 +291,20 @@ public class InventoryFulfillmentService {
      */
     private Map<String, InventoryReservationEntity> lockReservations(Command command) {
         List<Long> orderLineIds = command.lines().stream().filter(line -> line.bundleComponentId() == null)
-                .map(Line::salesOrderItemId).toList();
+            .map(Line::salesOrderItemId).toList();
         List<Long> componentIds = command.lines().stream().map(Line::bundleComponentId)
-                .filter(java.util.Objects::nonNull).toList();
+            .filter(java.util.Objects::nonNull).toList();
         List<InventoryReservationEntity> found = new java.util.ArrayList<>();
         if (!orderLineIds.isEmpty()) {
-            found.addAll(inventoryReservationDao.listActiveBySourceItemIds(
-                    ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), orderLineIds));
+            found.addAll(inventoryReservationDao
+                .listActiveBySourceItemIds(ScmInventorySourceDocumentTypeEnum.SALES_ORDER_ITEM.name(), orderLineIds));
         }
         if (!componentIds.isEmpty()) {
             found.addAll(inventoryReservationDao.listActiveBySourceItemIds(
-                    ScmInventorySourceDocumentTypeEnum.ORDER_BUNDLE_COMPONENT.name(), componentIds));
+                ScmInventorySourceDocumentTypeEnum.ORDER_BUNDLE_COMPONENT.name(), componentIds));
         }
         found.sort(Comparator.comparing(InventoryReservationEntity::getWarehouseId)
-                .thenComparing(InventoryReservationEntity::getSkuId).thenComparing(InventoryReservationEntity::getId));
+            .thenComparing(InventoryReservationEntity::getSkuId).thenComparing(InventoryReservationEntity::getId));
         Map<String, InventoryReservationEntity> locked = new LinkedHashMap<>();
         for (InventoryReservationEntity candidate : found) {
             InventoryReservationEntity row = inventoryReservationDao.lockById(candidate.getId());
@@ -319,18 +319,18 @@ public class InventoryFulfillmentService {
      * 预锁本事务要用到的全部余额行：发货仓的每个出库 SKU，加上每条预留自己所在仓的 SKU。跨仓释放与本地扣减因此落在同一把升序锁序里。
      */
     private Map<String, InventoryBalanceEntity> lockBalances(Command command,
-            Map<String, InventoryReservationEntity> reservations) {
+        Map<String, InventoryReservationEntity> reservations) {
         Map<String, long[]> wanted = new HashMap<>();
         for (Line line : command.lines()) {
             wanted.putIfAbsent(balanceKey(command.warehouseId(), line.skuId()),
-                    new long[]{command.warehouseId(), line.skuId()});
+                new long[]{command.warehouseId(), line.skuId()});
         }
         for (InventoryReservationEntity reservation : reservations.values()) {
             wanted.putIfAbsent(balanceKey(reservation.getWarehouseId(), reservation.getSkuId()),
-                    new long[]{reservation.getWarehouseId(), reservation.getSkuId()});
+                new long[]{reservation.getWarehouseId(), reservation.getSkuId()});
         }
         List<long[]> ordered = wanted.values().stream()
-                .sorted(Comparator.comparingLong((long[] pair) -> pair[0]).thenComparingLong(pair -> pair[1])).toList();
+            .sorted(Comparator.comparingLong((long[] pair) -> pair[0]).thenComparingLong(pair -> pair[1])).toList();
         Map<String, InventoryBalanceEntity> locked = new HashMap<>();
         for (long[] pair : ordered) {
             InventoryBalanceEntity balance = inventoryBalanceDao.lockByWarehouseAndSku(pair[0], pair[1]);
@@ -353,26 +353,26 @@ public class InventoryFulfillmentService {
      * 整条归还预留：先动 {@code reserved_quantity}（必须早于任何实物扣减，见类注释），再收口状态。
      */
     private void retireReservations(Command command, Map<String, InventoryReservationEntity> reservations,
-            Map<String, InventoryBalanceEntity> balances) {
+        Map<String, InventoryBalanceEntity> balances) {
         Set<String> shippedHere = command.lines().stream()
-                .filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0)
-                .map(line -> line.reservationType() + ":" + line.reservationItemId())
-                .collect(java.util.stream.Collectors.toSet());
+            .filter(line -> line.quantity().compareTo(BigDecimal.ZERO) > 0)
+            .map(line -> line.reservationType() + ":" + line.reservationItemId())
+            .collect(java.util.stream.Collectors.toSet());
         for (InventoryReservationEntity reservation : reservations.values()) {
             InventoryBalanceEntity balance = balances
-                    .get(balanceKey(reservation.getWarehouseId(), reservation.getSkuId()));
+                .get(balanceKey(reservation.getWarehouseId(), reservation.getSkuId()));
             if (balance == null) {
                 throw new ScmBusinessException(InventoryErrorCode.INVENTORY_BALANCE_NOT_FOUND);
             }
             if (inventoryBalanceDao.decrementReserved(balance.getId(), reservation.getQuantity(),
-                    command.operator()) != 1) {
+                command.operator()) != 1) {
                 throw new ScmBusinessException(VERSION_CONFLICT);
             }
             boolean consumed = command.warehouseId().equals(reservation.getWarehouseId()) && shippedHere
-                    .contains(reservation.getSourceDocumentType() + ":" + reservation.getSourceDocumentItemId());
+                .contains(reservation.getSourceDocumentType() + ":" + reservation.getSourceDocumentItemId());
             int affected = consumed
-                    ? inventoryReservationDao.markConsumed(reservation.getId(), command.operator())
-                    : inventoryReservationDao.markReleased(reservation.getId(), command.operator());
+                ? inventoryReservationDao.markConsumed(reservation.getId(), command.operator())
+                : inventoryReservationDao.markReleased(reservation.getId(), command.operator());
             if (affected != 1) {
                 throw new ScmBusinessException(INVENTORY_RESERVATION_INVALID);
             }

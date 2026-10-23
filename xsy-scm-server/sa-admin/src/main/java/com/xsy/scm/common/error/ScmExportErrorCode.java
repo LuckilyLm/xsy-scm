@@ -3,7 +3,9 @@ package com.xsy.scm.common.error;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** Shared error contract for synchronous exports that exceed the row cap. */
+/**
+ * Shared error contract for synchronous exports that exceed the row cap.
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmExportErrorCode implements ScmErrorCode {

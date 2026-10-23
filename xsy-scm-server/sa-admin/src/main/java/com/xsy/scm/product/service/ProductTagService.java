@@ -87,7 +87,9 @@ public class ProductTagService {
         return entity.getId();
     }
 
-    /** 标签内部编码不改，名称可维护；所有引用按 tag_id 关联。 */
+    /**
+     * 标签内部编码不改，名称可维护；所有引用按 tag_id 关联。
+     */
     @Transactional
     public void update(ProductTagUpdateForm form) {
         var entity = require(form.getTagId(), form.getVersion());
@@ -195,10 +197,10 @@ public class ProductTagService {
      */
     private void assertUnique(String code, String name, Long self) {
         if (productTagDao.selectCount(new LambdaQueryWrapper<ProductTagEntity>().eq(ProductTagEntity::getTagCode, code)
-                .ne(self != null, ProductTagEntity::getId, self)) > 0)
+            .ne(self != null, ProductTagEntity::getId, self)) > 0)
             throw new ScmBusinessException(TAG_CODE_DUPLICATE);
         if (productTagDao.selectCount(new LambdaQueryWrapper<ProductTagEntity>().eq(ProductTagEntity::getName, name)
-                .ne(self != null, ProductTagEntity::getId, self)) > 0)
+            .ne(self != null, ProductTagEntity::getId, self)) > 0)
             throw new ScmBusinessException(TAG_NAME_DUPLICATE);
     }
 

@@ -40,17 +40,19 @@ public class PaymentReconciliationController {
     @OperateLog
     public ResponseDTO<PaymentReconciliationVO> run(@Valid @RequestBody PaymentReconciliationRunForm form) {
         return ResponseDTO.ok(PaymentVoAssembler
-                .toReconciliation(paymentReconciliationService.run(form.getProvider(), form.getBizDate())));
+            .toReconciliation(paymentReconciliationService.run(form.getProvider(), form.getBizDate())));
     }
 
     @PostMapping("/query")
     @SaCheckPermission(ScmPaymentPermission.RECONCILIATION_QUERY)
     public ResponseDTO<PageResult<PaymentReconciliationVO>> query(
-            @Valid @RequestBody PaymentReconciliationQueryForm form) {
+        @Valid @RequestBody PaymentReconciliationQueryForm form) {
         return ResponseDTO.ok(paymentQueryService.reconciliationPage(form));
     }
 
-    /** 对账详情（含逐条差异；平账批次 items 为空）。 */
+    /**
+     * 对账详情（含逐条差异；平账批次 items 为空）。
+     */
     @GetMapping("/detail/{id}")
     @SaCheckPermission(ScmPaymentPermission.RECONCILIATION_QUERY)
     public ResponseDTO<PaymentReconciliationVO> detail(@PathVariable Long id) {

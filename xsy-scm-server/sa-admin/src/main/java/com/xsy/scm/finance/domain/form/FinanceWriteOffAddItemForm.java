@@ -8,7 +8,9 @@ import lombok.Data;
 import com.xsy.scm.common.json.ScmStrictDecimalStringDeserializer;
 import com.xsy.scm.common.util.ScmDecimalStrings;
 
-/** 一条核销目标及本次分配金额。 */
+/**
+ * 一条核销目标及本次分配金额。
+ */
 @Data
 public class FinanceWriteOffAddItemForm {
 

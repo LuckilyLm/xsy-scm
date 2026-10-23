@@ -1,10 +1,14 @@
 package com.xsy.scm.mall.address.domain.vo;
 
 import com.xsy.scm.common.constant.ScmGeoCoordinateSystemEnum;
+
 import java.math.BigDecimal;
+
 import lombok.Data;
 
-/** 高德地点搜索与逆地理编码统一返回 GCJ-02 坐标。 */
+/**
+ * 高德地点搜索与逆地理编码统一返回 GCJ-02 坐标。
+ */
 @Data
 public class MallMapLocationVO {
     private String name;

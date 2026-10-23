@@ -14,7 +14,9 @@ import lombok.Data;
 @Data
 public class TraceScaleUnitIssueForm {
 
-    /** 设备上报 {@code /measurements} 时返回的 measurementId。 */
+    /**
+     * 设备上报 {@code /measurements} 时返回的 measurementId。
+     */
     @NotNull(message = "称重记录不能为空")
     private Long weighingEventId;
 

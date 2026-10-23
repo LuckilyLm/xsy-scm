@@ -19,10 +19,12 @@ import com.xsy.scm.order.domain.form.OrderRefundQueryForm;
 import com.xsy.scm.order.domain.vo.OrderRefundVO;
 import com.xsy.scm.order.manager.OrderOperationLogRecorder;
 import com.xsy.scm.order.manager.OrderValidator;
+
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -53,7 +55,7 @@ public class OrderRefundService {
         }
         var page = SmartPageUtil.convert2PageQuery(orderRefundQueryForm);
         var rows = orderRefundDao.query(page, orderRefundQueryForm, dataScopeContext.getOrderSellerScope()).stream()
-                .map(this::vo).toList();
+            .map(this::vo).toList();
         enrichBalanceReturns(rows);
         return SmartPageUtil.convert2PageResult(page, rows);
     }
@@ -65,7 +67,9 @@ public class OrderRefundService {
         return refundVO;
     }
 
-    /** 退款单详情读（HTTP 入口）：可见性跟随父订单的负责人范围。 */
+    /**
+     * 退款单详情读（HTTP 入口）：可见性跟随父订单的负责人范围。
+     */
     public OrderRefundVO detail(Long refundId) {
         return detail(refundId, dataScopeService.resolve());
     }
@@ -103,8 +107,8 @@ public class OrderRefundService {
             return;
         }
         var returned = orderRefundFundingSourceDao
-                .selectBalanceReturns(rows.stream().map(OrderRefundVO::getRefundId).toList()).stream()
-                .collect(Collectors.toMap(OrderRefundBalanceFact::refundId, fact -> fact));
+            .selectBalanceReturns(rows.stream().map(OrderRefundVO::getRefundId).toList()).stream()
+            .collect(Collectors.toMap(OrderRefundBalanceFact::refundId, fact -> fact));
         for (var row : rows) {
             var fact = returned.get(row.getRefundId());
             if (fact != null) {
@@ -117,7 +121,7 @@ public class OrderRefundService {
     @Transactional(rollbackFor = Exception.class)
     public OrderRefundVO complete(OrderRefundCompleteForm refundCompleteForm, String key) {
         var claim = orderIdempotencyService.claim("ORDER_REFUND_COMPLETE:" + refundCompleteForm.getRefundId(), key,
-                refundCompleteForm);
+            refundCompleteForm);
         var before = detail(refundCompleteForm.getRefundId());
         var order = salesOrderService.lock(before.getOrderId());
         if (!dataScopeService.resolve().getOrderSellerScope().allows(order.getSellerId())) {
@@ -151,10 +155,10 @@ public class OrderRefundService {
         // 退款完成同样是必须留痕的订单状态变更。镜像取未收窄的 detailSnapshot，
         // 日志要记真实状态，而不是按调用者读范围裁过的视图。
         orderLogs.record(refundEntity.getOrderId(), ScmOrderOperationTypeEnum.REFUND,
-                "退款单 " + refundEntity.getRefundNo() + " 已完成", Map.of("status", before.getStatus()),
-                Map.of("status", result.getStatus()));
+            "退款单 " + refundEntity.getRefundNo() + " 已完成", Map.of("status", before.getStatus()),
+            Map.of("status", result.getStatus()));
         orderIdempotencyService.complete(claim, ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name(),
-                refundEntity.getId(), result);
+            refundEntity.getId(), result);
         return result;
     }
 }

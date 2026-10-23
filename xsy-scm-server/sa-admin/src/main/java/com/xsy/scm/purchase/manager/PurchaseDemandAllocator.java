@@ -72,7 +72,9 @@ public final class PurchaseDemandAllocator {
         }
     }
 
-    /** 采购需求的仓库在生成时确定，必须与采购单相同；需求首次分配后供应商也不能再改变。仓库或供应商不一致返回 40981。 */
+    /**
+     * 采购需求的仓库在生成时确定，必须与采购单相同；需求首次分配后供应商也不能再改变。仓库或供应商不一致返回 40981。
+     */
     public static void assignmentCompatible(Long orderSupplierId, Long orderWarehouseId, PurchaseDemandEntity demand) {
         if (demand.getWarehouseId() != null && !demand.getWarehouseId().equals(orderWarehouseId)) {
             throw new ScmBusinessException(PURCHASE_DEMAND_ALLOCATION_CONFLICT);
@@ -103,12 +105,14 @@ public final class PurchaseDemandAllocator {
      */
     public static void withinRequired(BigDecimal requiredQuantity, BigDecimal finalAllocatedQuantity) {
         if (finalAllocatedQuantity == null || finalAllocatedQuantity.signum() < 0
-                || finalAllocatedQuantity.compareTo(requiredQuantity) > 0) {
+            || finalAllocatedQuantity.compareTo(requiredQuantity) > 0) {
             throw new ScmBusinessException(PURCHASE_DEMAND_ALLOCATION_EXCEEDED);
         }
     }
 
-    /** 需求状态由已分配数量与需求量确定：未分配为待处理，全部分配为已分配，中间为部分分配；不存一套独立的派生状态规则。 */
+    /**
+     * 需求状态由已分配数量与需求量确定：未分配为待处理，全部分配为已分配，中间为部分分配；不存一套独立的派生状态规则。
+     */
     public static String statusFor(BigDecimal requiredQuantity, BigDecimal allocatedQuantity) {
         if (allocatedQuantity == null || allocatedQuantity.signum() == 0) {
             return ScmPurchaseDemandStatusEnum.PENDING.name();

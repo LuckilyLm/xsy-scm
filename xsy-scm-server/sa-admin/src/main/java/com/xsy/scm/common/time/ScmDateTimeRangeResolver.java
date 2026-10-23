@@ -8,7 +8,9 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
-/** Shared conversion from business dates to Asia/Shanghai half-open timestamp intervals. */
+/**
+ * Shared conversion from business dates to Asia/Shanghai half-open timestamp intervals.
+ */
 public final class ScmDateTimeRangeResolver {
 
     public static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Shanghai");
@@ -22,7 +24,9 @@ public final class ScmDateTimeRangeResolver {
         return resolve(startDate, endDate, ScmCommonErrorCode.VALIDATION_ERROR);
     }
 
-    /** The caller supplies the domain error used when the inclusive date span exceeds the limit. */
+    /**
+     * The caller supplies the domain error used when the inclusive date span exceeds the limit.
+     */
     public static ScmDateTimeRange resolve(LocalDate startDate, LocalDate endDate, ScmErrorCode spanError) {
         if (startDate == null || endDate == null || startDate.isAfter(endDate)) {
             throw new ScmBusinessException(ScmCommonErrorCode.VALIDATION_ERROR);
@@ -31,6 +35,6 @@ public final class ScmDateTimeRangeResolver {
             throw new ScmBusinessException(spanError);
         }
         return new ScmDateTimeRange(startDate, endDate, startDate.atStartOfDay(BUSINESS_ZONE).toOffsetDateTime(),
-                endDate.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime());
+            endDate.plusDays(1).atStartOfDay(BUSINESS_ZONE).toOffsetDateTime());
     }
 }

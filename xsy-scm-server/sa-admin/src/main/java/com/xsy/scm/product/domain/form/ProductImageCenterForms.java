@@ -9,7 +9,9 @@ import lombok.Data;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 图片中心批量维护入参集合：绑定 / 移除 / 设主图 / 排序，均以 SPU 为上下文。 */
+/**
+ * 图片中心批量维护入参集合：绑定 / 移除 / 设主图 / 排序，均以 SPU 为上下文。
+ */
 public final class ProductImageCenterForms {
     private ProductImageCenterForms() {
     }
@@ -39,7 +41,7 @@ public final class ProductImageCenterForms {
         private Long spuId;
         @NotEmpty(message = "图片 ID 列表不能为空")
         private List<
-                @NotNull(message = "图片 ID 不能为空") @Positive(message = "图片 ID 必须大于0") Long> imageIds = new ArrayList<>();
+            @NotNull(message = "图片 ID 不能为空") @Positive(message = "图片 ID 必须大于0") Long> imageIds = new ArrayList<>();
     }
 
     @Data
@@ -57,9 +59,11 @@ public final class ProductImageCenterForms {
         @NotNull(message = "商品ID不能为空")
         @Positive(message = "商品ID必须大于0")
         private Long spuId;
-        /** 该 SPU 全部现存图片的目标顺序，必须与集合一一对应。 */
+        /**
+         * 该 SPU 全部现存图片的目标顺序，必须与集合一一对应。
+         */
         @NotEmpty(message = "排序图片 ID 列表不能为空")
         private List<
-                @NotNull(message = "排序ID必填") @Positive(message = "图片ID须大于0") Long> orderedImageIds = new ArrayList<>();
+            @NotNull(message = "排序ID必填") @Positive(message = "图片ID须大于0") Long> orderedImageIds = new ArrayList<>();
     }
 }

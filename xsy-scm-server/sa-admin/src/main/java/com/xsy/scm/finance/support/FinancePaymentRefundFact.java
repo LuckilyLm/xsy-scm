@@ -10,10 +10,10 @@ import java.time.OffsetDateTime;
  * 与 {@link FinancePaymentReceiptFact} 对称：系统来源的方式、时点与外部凭据由财务域自行决定，不复制到支付域。
  */
 public record FinancePaymentRefundFact(Long paymentRefundId, Long orderRefundId, Long customerId,
-        BigDecimal providerAmount, OffsetDateTime refundedAt, String providerRefundNo) {
+    BigDecimal providerAmount, OffsetDateTime refundedAt, String providerRefundNo) {
 
     public static FinancePaymentRefundFact allocated(Long orderRefundId, Long customerId, BigDecimal amount,
-            OffsetDateTime refundedAt, String reference) {
+        OffsetDateTime refundedAt, String reference) {
         return new FinancePaymentRefundFact(null, orderRefundId, customerId, amount, refundedAt, reference);
     }
 

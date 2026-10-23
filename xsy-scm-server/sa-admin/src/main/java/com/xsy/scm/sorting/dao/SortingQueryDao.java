@@ -34,24 +34,26 @@ public interface SortingQueryDao {
     long nextNumber();
 
     List<SortingTaskVO> tasks(Page<?> page, @Param("q") SortingTaskQueryForm q,
-            @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
+        @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
 
     SortingTaskVO task(@Param("id") Long id, @Param("scope") ScmDataScopeContext scope,
-            @Param("crossAssignee") boolean crossAssignee);
+        @Param("crossAssignee") boolean crossAssignee);
 
     List<SortingTaskItemVO> items(@Param("taskId") Long taskId);
 
-    /** 分拣清单每次只读合并任务订单的赠品权益。赠品不写入订单行或分拣明细表，以免污染销售数量与商品排名。 */
+    /**
+     * 分拣清单每次只读合并任务订单的赠品权益。赠品不写入订单行或分拣明细表，以免污染销售数量与商品排名。
+     */
     List<SortingTaskItemVO> giftItems(@Param("taskId") Long taskId);
 
     List<SortingSkuSummaryVO> skuSummary(Page<?> page, @Param("q") SortingSummaryQueryForm q,
-            @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
+        @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
 
     List<SortingCustomerLineVO> customerLines(Page<?> page, @Param("q") SortingSummaryQueryForm q,
-            @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
+        @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
 
     List<SortingPerformanceVO> confirmedPerformance(Page<?> page, @Param("q") SortingSummaryQueryForm q,
-            @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
+        @Param("scope") ScmDataScopeContext scope, @Param("crossAssignee") boolean crossAssignee);
 
     /**
      * 建单用的候选订单行队列：不受订单业务员维度约束，由「只授建单权 + 只取队列必需列」两头收口。

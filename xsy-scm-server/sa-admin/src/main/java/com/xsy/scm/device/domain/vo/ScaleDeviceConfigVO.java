@@ -1,6 +1,7 @@
 package com.xsy.scm.device.domain.vo;
 
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -24,6 +25,8 @@ public class ScaleDeviceConfigVO {
 
     private String agentVersion;
 
-    /** 设备凭证到期时间；到期前需重新激活，不能靠延长有效期绕过撤销。 */
+    /**
+     * 设备凭证到期时间；到期前需重新激活，不能靠延长有效期绕过撤销。
+     */
     private OffsetDateTime credentialExpiresAt;
 }

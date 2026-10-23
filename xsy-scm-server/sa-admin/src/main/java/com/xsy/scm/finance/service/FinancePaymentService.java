@@ -29,11 +29,13 @@ import com.xsy.scm.finance.domain.form.FinancePaymentReverseForm;
 import com.xsy.scm.finance.domain.vo.FinancePaymentVO;
 import com.xsy.scm.finance.support.FinanceOperationLogRecorder;
 import com.xsy.scm.finance.support.FinancePaymentRefundFact;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -72,7 +74,7 @@ public class FinancePaymentService {
 
         FinancePaymentEntity payment = register(form);
         operationLogs.record(ScmFinanceBusinessTypeEnum.PAYMENT, payment.getId(), ScmFinanceOperationTypeEnum.PAY, null,
-                null, snapshot(payment));
+            null, snapshot(payment));
 
         FinancePaymentVO result = vo(payment);
         idempotencyService.complete(claim, "FINANCE_PAYMENT", payment.getId(), result);
@@ -99,7 +101,7 @@ public class FinancePaymentService {
         }
 
         var claim = idempotencyService.claim(FinanceConstant.PAYMENT_REVERSE_SCOPE + ":" + original.getId(),
-                idempotencyKey, form);
+            idempotencyKey, form);
         if (claim.replay()) {
             return idempotencyService.replay(claim, FinancePaymentVO.class);
         }
@@ -115,16 +117,18 @@ public class FinancePaymentService {
         }
 
         operationLogs.record(ScmFinanceBusinessTypeEnum.PAYMENT, original.getId(),
-                ScmFinanceOperationTypeEnum.PAYMENT_REVERSE, reason,
-                effectiveAmountSnapshot(original, original.getAmount()),
-                effectiveAmountSnapshot(reversal, BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE)));
+            ScmFinanceOperationTypeEnum.PAYMENT_REVERSE, reason,
+            effectiveAmountSnapshot(original, original.getAmount()),
+            effectiveAmountSnapshot(reversal, BigDecimal.ZERO.setScale(FinanceConstant.AMOUNT_SCALE)));
 
         FinancePaymentVO result = vo(reversal);
         idempotencyService.complete(claim, "FINANCE_PAYMENT", reversal.getId(), result);
         return result;
     }
 
-    /** 付款先校验方式与来源，再检查对方数据权限，最后登记事实。客户退款的不存在、越权、金额不符等情况返回同一拒绝码，避免暴露其他客户退款是否存在。 */
+    /**
+     * 付款先校验方式与来源，再检查对方数据权限，最后登记事实。客户退款的不存在、越权、金额不符等情况返回同一拒绝码，避免暴露其他客户退款是否存在。
+     */
     private FinancePaymentEntity register(FinancePaymentAddForm form) {
         String counterpartyType = counterpartyType(form.getCounterpartyType());
         BigDecimal amount = amount(form.getAmount());
@@ -150,7 +154,7 @@ public class FinancePaymentService {
         OffsetDateTime now = OffsetDateTime.now();
         String operator = ScmOperator.current();
         payment.setPaymentNo(
-                ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
+            ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
         payment.setCreatedAt(now);
         payment.setUpdatedAt(now);
         payment.setCreatedBy(operator);
@@ -182,7 +186,7 @@ public class FinancePaymentService {
         String operator = ScmOperator.current();
         FinancePaymentEntity reversal = new FinancePaymentEntity();
         reversal.setPaymentNo(
-                ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
+            ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
         reversal.setCounterpartyType(original.getCounterpartyType());
         reversal.setCounterpartyId(original.getCounterpartyId());
         reversal.setCounterpartyNameSnapshot(original.getCounterpartyNameSnapshot());
@@ -204,7 +208,7 @@ public class FinancePaymentService {
     }
 
     private static Map<String, Object> effectiveAmountSnapshot(FinancePaymentEntity payment,
-            BigDecimal effectiveAmount) {
+        BigDecimal effectiveAmount) {
         Map<String, Object> snapshot = new LinkedHashMap<>();
         snapshot.put("paymentId", payment.getId());
         snapshot.put("paymentNo", payment.getPaymentNo());
@@ -258,21 +262,23 @@ public class FinancePaymentService {
         return registerFromPaymentRefund(fact, ScmOperator.current());
     }
 
-    /** 支付域已核实的退款事实可由回调或恢复任务派生，不依赖员工会话。 */
+    /**
+     * 支付域已核实的退款事实可由回调或恢复任务派生，不依赖员工会话。
+     */
     @Transactional(rollbackFor = Exception.class)
     public FinancePaymentEntity registerFromPaymentRefund(FinancePaymentRefundFact fact, String operator) {
         if (fact == null || fact.orderRefundId() == null || fact.customerId() == null || fact.providerAmount() == null
-                || fact.refundedAt() == null) {
+            || fact.refundedAt() == null) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         BigDecimal amount = fact.providerAmount().setScale(FinanceConstant.AMOUNT_SCALE, RoundingMode.HALF_UP);
         if (amount.signum() <= 0 || !financePaymentSourceDao.matchesSuccessfulRefund(fact.orderRefundId(),
-                fact.paymentRefundId(), fact.customerId(), amount)) {
+            fact.paymentRefundId(), fact.customerId(), amount)) {
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
 
         FinancePaymentEntity existing = financePaymentDao
-                .selectBySource(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name(), fact.orderRefundId());
+            .selectBySource(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name(), fact.orderRefundId());
         if (existing != null) {
             return existing;
         }
@@ -295,14 +301,14 @@ public class FinancePaymentService {
         OffsetDateTime now = OffsetDateTime.now();
         FinancePaymentEntity payment = new FinancePaymentEntity();
         payment.setPaymentNo(
-                ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
+            ScmDocumentNumbers.format(FinanceConstant.PAYMENT_NO_PREFIX, financePaymentDao.nextPaymentNo()));
         payment.setCounterpartyType(ScmFinanceCounterpartyTypeEnum.CUSTOMER.name());
         payment.setCounterpartyId(refund.getCustomerId());
         payment.setCounterpartyNameSnapshot(customer.getCustomerName());
         payment.setAmount(amount);
         payment.setMethod(fact.allocatedFunding()
-                ? ScmFinanceCustomerRefundMethodEnum.ORIGINAL_FUNDING.name()
-                : ScmFinanceCustomerRefundMethodEnum.ONLINE_PAYMENT.name());
+            ? ScmFinanceCustomerRefundMethodEnum.ORIGINAL_FUNDING.name()
+            : ScmFinanceCustomerRefundMethodEnum.ONLINE_PAYMENT.name());
         payment.setPaidAt(fact.refundedAt());
         payment.setEntryType(ScmFinanceReverseEntryTypeEnum.NORMAL.name());
         payment.setReverseOfId(null);
@@ -320,14 +326,14 @@ public class FinancePaymentService {
             // 并发下另一个事务先插进去了：唯一索引仲裁，读回已有事实。
             // 这条 INSERT 用的是 ON CONFLICT DO NOTHING，不会让事务进入失败状态，因此可以安全读回。
             FinancePaymentEntity raced = financePaymentDao
-                    .selectBySource(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name(), fact.orderRefundId());
+                .selectBySource(ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name(), fact.orderRefundId());
             if (raced != null) {
                 return raced;
             }
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
         operationLogs.record(ScmFinanceBusinessTypeEnum.PAYMENT, payment.getId(), ScmFinanceOperationTypeEnum.PAY, null,
-                null, snapshot(payment), operator);
+            null, snapshot(payment), operator);
         return payment;
     }
 
@@ -336,7 +342,7 @@ public class FinancePaymentService {
      */
     private void fillCustomerRefund(FinancePaymentEntity payment, FinancePaymentAddForm form, BigDecimal amount) {
         if (!ScmFinancePaymentSourceTypeEnum.ORDER_REFUND.name().equals(StringUtils.trimToNull(form.getSourceType()))
-                || form.getSourceId() == null) {
+            || form.getSourceId() == null) {
             // 客户付款必须关联已完成退款；无来源的客户付款不符合受支持的业务形态。
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);
         }
@@ -361,7 +367,7 @@ public class FinancePaymentService {
         }
         financeOrderFundingPolicy.requireCashRefundAllowed(refund.getOrderId(), false);
         if (financePaymentSourceDao.selectActivePaymentRefund(refund.getRefundId()) != null
-                || financePaymentSourceDao.hasRefundFundingAllocations(refund.getOrderId())) {
+            || financePaymentSourceDao.hasRefundFundingAllocations(refund.getOrderId())) {
             // 线上退款已发起/完成：再人工退一次，就是同一张退款单被退两遍。
             // 与支付域的 requireOrderRefundSource 构成<b>双向互斥</b>，两边都锁同一行 order_refund。
             throw new ScmBusinessException(FinanceErrorCode.PAYMENT_SOURCE_INVALID);

@@ -7,7 +7,9 @@ import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/** 客户常购商品从销售订单只读汇总，不复制一套客户购买明细，也不修改订单。 */
+/**
+ * 客户常购商品从销售订单只读汇总，不复制一套客户购买明细，也不修改订单。
+ */
 @Mapper
 public interface CustomerFrequentSkuDao {
 
@@ -22,5 +24,5 @@ public interface CustomerFrequentSkuDao {
      *            返回分组数上限（Service 已裁剪到安全区间）
      */
     List<CustomerFrequentSkuVO> frequentSkus(@Param("customerId") Long customerId, @Param("since") OffsetDateTime since,
-            @Param("limit") int limit);
+        @Param("limit") int limit);
 }

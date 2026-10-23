@@ -6,7 +6,9 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
-/** Date window for finance flow metrics and end-of-period balances. */
+/**
+ * Date window for finance flow metrics and end-of-period balances.
+ */
 @Data
 public class ScmFinanceOverviewQueryForm implements ScmReportDateFilter {
 

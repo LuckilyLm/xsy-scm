@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmPromotionCouponIssueSourceEnum {
 
-    /** 后台发放。 */
+    /**
+     * 后台发放。
+     */
     ADMIN_ISSUE("后台发放"),
 
-    /** 商城自助领取。 */
+    /**
+     * 商城自助领取。
+     */
     MALL_CLAIM("商城领取");
 
     private final String desc;

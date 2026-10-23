@@ -35,7 +35,9 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 @Transactional(readOnly = true)
 public class SalesReportService {
 
-    /** TOP 图由 DB 直接聚合取前 N，不取全量回 Java 排序。 */
+    /**
+     * TOP 图由 DB 直接聚合取前 N，不取全量回 Java 排序。
+     */
     private static final int TOP_LIMIT = 5;
 
     private final ReportDao reportDao;
@@ -46,7 +48,7 @@ public class SalesReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.salesByProduct(page, range.startAt(), range.endAt(), form));
+            reportDao.salesByProduct(page, range.startAt(), range.endAt(), form));
     }
 
     public List<SalesReportVO.TopItem> topProduct(ScmSalesReportQueryForm form) {
@@ -60,7 +62,7 @@ public class SalesReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.salesByCategory(page, range.startAt(), range.endAt(), form));
+            reportDao.salesByCategory(page, range.startAt(), range.endAt(), form));
     }
 
     public List<SalesReportVO.TopItem> topCategory(ScmSalesReportQueryForm form) {
@@ -74,7 +76,7 @@ public class SalesReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.salesByCustomer(page, range.startAt(), range.endAt(), form));
+            reportDao.salesByCustomer(page, range.startAt(), range.endAt(), form));
     }
 
     public List<SalesReportVO.TopItem> topCustomer(ScmSalesReportQueryForm form) {
@@ -88,7 +90,7 @@ public class SalesReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.salesBySeller(page, range.startAt(), range.endAt(), form));
+            reportDao.salesBySeller(page, range.startAt(), range.endAt(), form));
     }
 
     public PageResult<SalesReportVO.ItemRow> itemList(ScmSalesReportQueryForm form) {
@@ -96,10 +98,12 @@ public class SalesReportService {
         ScmReportTimeRange range = ScmReportTimeRangeResolver.resolve(form);
         var page = SmartPageUtil.convert2PageQuery(form);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.salesItemList(page, range.startAt(), range.endAt(), form));
+            reportDao.salesItemList(page, range.startAt(), range.endAt(), form));
     }
 
-    /** 订单表头级明细：一行 = 一个订单，回答「这个客户有几单、每单多少」。 */
+    /**
+     * 订单表头级明细：一行 = 一个订单，回答「这个客户有几单、每单多少」。
+     */
     public PageResult<SalesReportVO.OrderRow> orderList(ScmSalesReportQueryForm form) {
         ScmReportAdvancedFilters.salesOrder(form);
         rejectClientSort(form);
@@ -107,7 +111,7 @@ public class SalesReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.salesOrderList(page, range.startAt(), range.endAt(), form));
+            reportDao.salesOrderList(page, range.startAt(), range.endAt(), form));
     }
 
     static void rejectClientSort(PageParam form) {

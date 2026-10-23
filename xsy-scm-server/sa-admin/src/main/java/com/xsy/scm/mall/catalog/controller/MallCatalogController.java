@@ -6,7 +6,9 @@ import com.xsy.scm.mall.catalog.domain.vo.MallCategoryVO;
 import com.xsy.scm.mall.catalog.domain.vo.MallProductVO;
 import com.xsy.scm.mall.catalog.service.MallCatalogService;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -42,7 +44,7 @@ public class MallCatalogController {
 
     @GetMapping("/frequent")
     public ResponseDTO<List<MallProductVO>> frequent(@RequestParam(defaultValue = "90") int days,
-            @RequestParam(defaultValue = "20") int limit) {
+        @RequestParam(defaultValue = "20") int limit) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(catalogService.frequent(MallRequestSupport.current(), days, limit));
     }

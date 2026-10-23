@@ -11,7 +11,9 @@ import com.xsy.scm.payment.dao.PaymentTransactionDao;
 import com.xsy.scm.payment.domain.entity.PaymentRefundEntity;
 import com.xsy.scm.payment.provider.ScmPaymentProvider;
 import com.xsy.scm.payment.provider.ScmPaymentProviderRegistry;
+
 import java.math.BigDecimal;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lab1024.sa.base.common.enumeration.UserTypeEnum;
@@ -31,7 +33,9 @@ public class PaymentRefundRecoveryService {
     private final ScmPaymentProviderRegistry providerRegistry;
     private final ScmNotificationService notificationService;
 
-    /** 渠道调用只能发生在持久化意图提交之后，禁止被外层业务事务包裹。 */
+    /**
+     * 渠道调用只能发生在持久化意图提交之后，禁止被外层业务事务包裹。
+     */
     @Transactional(propagation = Propagation.NEVER)
     public PaymentRefundEntity recover(Long refundId, String operator, String reason, boolean force) {
         PaymentRefundEntity refund = recoveryStore.claim(refundId, force, operator, reason);
@@ -50,18 +54,18 @@ public class PaymentRefundRecoveryService {
             var outcome = provider.queryRefund(refund.getRefundNo(), refund.getProviderRefundNo());
             if (outcome == null) {
                 if (ScmPaymentRefundStatusEnum.SUCCEEDED.name().equals(refund.getStatus())
-                        || ScmPaymentRefundStatusEnum.FAILED.name().equals(refund.getStatus())) {
+                    || ScmPaymentRefundStatusEnum.FAILED.name().equals(refund.getStatus())) {
                     throw new IllegalStateException("渠道未查到已终结的退款，需人工对账，禁止重新出款");
                 }
                 outcome = provider.refund(new ScmPaymentProvider.RefundRequest(refund.getRefundNo(),
-                        transaction.getProviderTransactionNo(), refund.getAmount(), refund.getReason(),
-                        ScmPaymentMockScenarioEnum.of(refund.getMockScenario())));
+                    transaction.getProviderTransactionNo(), refund.getAmount(), refund.getReason(),
+                    ScmPaymentMockScenarioEnum.of(refund.getMockScenario())));
             }
             providerAmount = outcome.amount();
             paymentRefundService.applyOutcome(refundId, outcome.outcome(), outcome.providerRefundNo(), outcome.amount(),
-                    outcome.failureCode(), outcome.failureMessage(), operator);
+                outcome.failureCode(), outcome.failureMessage(), operator);
             if (outcome.outcome() == ScmPaymentProvider.Outcome.SUCCEEDED
-                    && (providerAmount == null || providerAmount.compareTo(refund.getAmount()) != 0)) {
+                && (providerAmount == null || providerAmount.compareTo(refund.getAmount()) != 0)) {
                 result = ScmRefundRecoveryResultEnum.AMOUNT_MISMATCH;
                 detail = "渠道实退与申请金额不一致，保留渠道事实，禁止自动补退或冲账";
             } else {
@@ -74,7 +78,7 @@ public class PaymentRefundRecoveryService {
             }
         } catch (RuntimeException exception) {
             if (exception instanceof ScmBusinessException businessException
-                    && businessException.getErrorCode() == PaymentErrorCode.PAYMENT_REFUND_AMOUNT_MISMATCH) {
+                && businessException.getErrorCode() == PaymentErrorCode.PAYMENT_REFUND_AMOUNT_MISMATCH) {
                 result = ScmRefundRecoveryResultEnum.AMOUNT_MISMATCH;
             }
             // 网络或落账异常不等于渠道拒绝：保留原退款号，下一次先查单，绝不另建退款。
@@ -88,8 +92,8 @@ public class PaymentRefundRecoveryService {
 
     private void notifyIfNeeded(PaymentRefundEntity refund, ScmRefundRecoveryResultEnum result) {
         boolean abnormal = result == ScmRefundRecoveryResultEnum.AMOUNT_MISMATCH
-                || result == ScmRefundRecoveryResultEnum.FAILED
-                || (result != ScmRefundRecoveryResultEnum.SUCCEEDED && refund.getRecoveryAttempts() >= 5);
+            || result == ScmRefundRecoveryResultEnum.FAILED
+            || (result != ScmRefundRecoveryResultEnum.SUCCEEDED && refund.getRecoveryAttempts() >= 5);
         if (!abnormal) {
             return;
         }
@@ -101,8 +105,8 @@ public class PaymentRefundRecoveryService {
         try {
             Long employeeId = Long.valueOf(refund.getCreatedBy().substring(prefix.length()));
             notificationService.sendOnce("PAYMENT_REFUND_ATTENTION:" + refund.getId() + ":" + result.name(),
-                    "PAYMENT_REFUND_ATTENTION", MessageTypeEnum.MAIL.getValue(), employeeId, refund.getId(), "退款需要核对",
-                    "退款单 " + refund.getRefundNo() + " 需要核对渠道状态与实退金额，请查看退款恢复记录。");
+                "PAYMENT_REFUND_ATTENTION", MessageTypeEnum.MAIL.getValue(), employeeId, refund.getId(), "退款需要核对",
+                "退款单 " + refund.getRefundNo() + " 需要核对渠道状态与实退金额，请查看退款恢复记录。");
         } catch (RuntimeException exception) {
             log.warn("退款异常通知失败：refundId={}", refund.getId(), exception);
         }

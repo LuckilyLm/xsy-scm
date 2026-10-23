@@ -50,7 +50,7 @@ public class CustomerTypePriceService {
         // Lock old and new parents in ascending order if the dimension is changed.
         var existing = require(form.getCustomerTypePriceId(), form.getVersion());
         java.util.stream.Stream.of(existing.getCustomerTypeId(), form.getCustomerTypeId()).filter(Objects::nonNull)
-                .distinct().sorted().forEach(customerTypePriceDao::lockParent);
+            .distinct().sorted().forEach(customerTypePriceDao::lockParent);
         existing = require(form.getCustomerTypePriceId(), form.getVersion());
         validateAndLock(form, existing.getId());
         String beforeSnapshot = snapshot(existing);
@@ -91,7 +91,7 @@ public class CustomerTypePriceService {
         customerTypeService.requireSelectableType(form.getCustomerTypeId());
         validation.requireSellable(form.getSkuId());
         if (customerTypePriceDao.countOverlapping(form.getCustomerTypeId(), form.getSkuId(), form.getEffectiveFrom(),
-                form.getEffectiveTo(), excludedCustomerTypePriceId) > 0)
+            form.getEffectiveTo(), excludedCustomerTypePriceId) > 0)
             throw new ScmBusinessException(CUSTOMER_TYPE_PRICE_OVERLAP);
     }
 
@@ -117,7 +117,7 @@ public class CustomerTypePriceService {
         fields.put("unitPrice", customerTypePrice.getUnitPrice().setScale(4).toPlainString());
         fields.put("effectiveFrom", customerTypePrice.getEffectiveFrom().toString());
         fields.put("effectiveTo",
-                customerTypePrice.getEffectiveTo() == null ? null : customerTypePrice.getEffectiveTo().toString());
+            customerTypePrice.getEffectiveTo() == null ? null : customerTypePrice.getEffectiveTo().toString());
         fields.put("version", customerTypePrice.getVersion());
         fields.put("deleted", customerTypePrice.getDeleted());
         try {
@@ -128,8 +128,8 @@ public class CustomerTypePriceService {
     }
 
     private void log(CustomerTypePriceEntity customerTypePrice, ScmPriceOperationTypeEnum operationType,
-            String beforeSnapshot) {
+        String beforeSnapshot) {
         customerTypePriceDao.log(customerTypePrice.getId(), operationType.name(), ScmOperator.current(), beforeSnapshot,
-                snapshot(customerTypePrice));
+            snapshot(customerTypePrice));
     }
 }

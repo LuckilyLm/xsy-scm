@@ -1,6 +1,7 @@
 package com.xsy.scm.trace.domain.vo;
 
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**

@@ -14,10 +14,14 @@ import com.xsy.scm.report.constant.ReportErrorCode;
  */
 public final class ScmReportExportGuard {
 
-    /** 同步导出行数上限。超过即拒绝，引导用户缩小范围，而不是静默只导前 N 行。 */
+    /**
+     * 同步导出行数上限。超过即拒绝，引导用户缩小范围，而不是静默只导前 N 行。
+     */
     public static final int EXPORT_MAX_ROWS = 100_000;
 
-    /** 探超限所需的多取一行。 */
+    /**
+     * 探超限所需的多取一行。
+     */
     public static final long PROBE_PAGE_SIZE = EXPORT_MAX_ROWS + 1L;
 
     private ScmReportExportGuard() {

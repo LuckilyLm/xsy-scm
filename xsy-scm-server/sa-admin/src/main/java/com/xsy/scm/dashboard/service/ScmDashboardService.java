@@ -35,16 +35,22 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/** 首页指标统一从经营统计服务读取，并按当前数据权限展示；没有权限的指标隐藏，不用零值冒充。 */
+/**
+ * 首页指标统一从经营统计服务读取，并按当前数据权限展示；没有权限的指标隐藏，不用零值冒充。
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ScmDashboardService {
 
-    /** 首页排行默认取前 5。 */
+    /**
+     * 首页排行默认取前 5。
+     */
     public static final int HOME_RANK_LIMIT = 5;
 
-    /** 首页与大屏共用指标层的排行上限。 */
+    /**
+     * 首页与大屏共用指标层的排行上限。
+     */
     public static final int MAX_RANK_LIMIT = ScmBusinessMetricsService.TOP_RANK_LIMIT;
 
     private final LoginManager loginManager;
@@ -55,12 +61,16 @@ public class ScmDashboardService {
 
     private final InventoryWarningQueryService inventoryWarningQueryService;
 
-    /** 当前登录员工的 KPI 卡片。 */
+    /**
+     * 当前登录员工的 KPI 卡片。
+     */
     public List<ScmDashboardCardVO> overview() {
         return overviewFor(heldPermissions());
     }
 
-    /** 首页先按用户权限选出可见指标，再只查询相关业务汇总。没有查询的分组与已查询但结果为零必须区分。 */
+    /**
+     * 首页先按用户权限选出可见指标，再只查询相关业务汇总。没有查询的分组与已查询但结果为零必须区分。
+     */
     public List<ScmDashboardCardVO> overviewFor(List<String> heldPermissions) {
         List<ScmDashboardCardEnum> visibleCards = new ArrayList<>();
         boolean needsSales = false;
@@ -95,18 +105,20 @@ public class ScmDashboardService {
      * 只接受<b>已经筛好</b>的卡片集合，可见性判断不在这里重复做一遍 —— 两次判断就有两处可能漂移。
      */
     public List<ScmDashboardCardVO> cardsFor(List<ScmDashboardCardEnum> visibleCards, SalesRangeMetrics sales,
-            PurchaseMetrics purchase, long warningTotal) {
+        PurchaseMetrics purchase, long warningTotal) {
         List<ScmDashboardCardVO> cards = new ArrayList<>(visibleCards.size());
         for (ScmDashboardCardEnum card : visibleCards) {
             cards.add(new ScmDashboardCardVO(card.getKey(), valueOf(card, sales, purchase, warningTotal),
-                    card.getUnit(), card.getRoute()));
+                card.getUnit(), card.getRoute()));
         }
         return cards;
     }
 
-    /** 首页卡片类型必须逐一处理，新增卡片需要明确数据来源。未查询的指标不能用零替代，避免把遗漏伪装成无业务。 */
+    /**
+     * 首页卡片类型必须逐一处理，新增卡片需要明确数据来源。未查询的指标不能用零替代，避免把遗漏伪装成无业务。
+     */
     private static BigDecimal valueOf(ScmDashboardCardEnum card, SalesRangeMetrics sales, PurchaseMetrics purchase,
-            long warningTotal) {
+        long warningTotal) {
         return switch (card) {
             case SALES_AMOUNT -> require(sales, card).settlementAmount();
             case ORDER_COUNT -> BigDecimal.valueOf(require(sales, card).orderCount());
@@ -116,7 +128,9 @@ public class ScmDashboardService {
         };
     }
 
-    /** 卡片要求的那组聚合必须取过；取不到说明可见卡片与取数编排对不上，属于编码错误。 */
+    /**
+     * 卡片要求的那组聚合必须取过；取不到说明可见卡片与取数编排对不上，属于编码错误。
+     */
     private static <T> T require(T metrics, ScmDashboardCardEnum card) {
         if (metrics == null) {
             throw new IllegalStateException("卡片 " + card.getKey() + " 可见，但其所属聚合未取数");
@@ -148,10 +162,12 @@ public class ScmDashboardService {
         StpUtil.checkPermission(InventoryPermission.WARNING_QUERY);
         InventoryHealth health = metricsService.inventory(dataScopeService.resolve()).health();
         return new ScmDashboardInventoryHealthVO(health.totalSkuCount(), health.normalCount(), health.lowCount(),
-                health.highCount(), health.unconfiguredCount(), health.outOfStockCount());
+            health.highCount(), health.unconfiguredCount(), health.outOfStockCount());
     }
 
-    /** 趋势：按指标族校验领域权限后再取数。 */
+    /**
+     * 趋势：按指标族校验领域权限后再取数。
+     */
     public ScmDashboardTrendVO trend(String metric, String range) {
         ScmDashboardTrendMetric target = ScmDashboardTrendMetric.parse(metric);
         requireQueryPermission(target);
@@ -163,11 +179,11 @@ public class ScmDashboardService {
         TrendMetrics trend = metricsService.trend(range, dataScopeService.resolve(), selection);
         return switch (target) {
             case SALES -> new ScmDashboardTrendVO(target.getCode(), trend.range(), trend.dates(), trend.sales(),
-                    toAmounts(trend.orders()));
+                toAmounts(trend.orders()));
             case PURCHASE -> new ScmDashboardTrendVO(target.getCode(), trend.range(), trend.dates(),
-                    trend.purchaseAmounts(), toAmounts(trend.purchaseOrders()));
+                trend.purchaseAmounts(), toAmounts(trend.purchaseOrders()));
             case INVENTORY -> new ScmDashboardTrendVO(target.getCode(), trend.range(), trend.dates(),
-                    trend.inboundQuantity(), trend.outboundQuantity());
+                trend.inboundQuantity(), trend.outboundQuantity());
         };
     }
 
@@ -185,7 +201,9 @@ public class ScmDashboardService {
         }
     }
 
-    /** 排行仅查询所选维度，数据范围与销售指标一致。 */
+    /**
+     * 排行仅查询所选维度，数据范围与销售指标一致。
+     */
     public List<RankItem> ranking(String dimension, Integer limit) {
         ScmDashboardRankDimension target = ScmDashboardRankDimension.parse(dimension);
         requireQueryPermission(target);
@@ -197,7 +215,9 @@ public class ScmDashboardService {
         };
     }
 
-    /** 两个排行维度都来自销售事实，因此都需要订单查询权。 */
+    /**
+     * 两个排行维度都来自销售事实，因此都需要订单查询权。
+     */
     private static void requireQueryPermission(ScmDashboardRankDimension dimension) {
         switch (dimension) {
             case CUSTOMER, PRODUCT -> StpUtil.checkPermission(OrderPermission.QUERY);

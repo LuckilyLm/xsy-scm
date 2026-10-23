@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/** 生成应付的收货时间和操作人来自已确认收货记录，财务不重新生成时间戳；金额按已落库的采购收货事实确定。 */
+/**
+ * 生成应付的收货时间和操作人来自已确认收货记录，财务不重新生成时间戳；金额按已落库的采购收货事实确定。
+ */
 @Data
 public class FinancePayableSourceDto {
 

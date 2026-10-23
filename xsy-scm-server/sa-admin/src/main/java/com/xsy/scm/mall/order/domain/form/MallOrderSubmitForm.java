@@ -9,7 +9,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
 import java.util.List;
+
 import lombok.Data;
 
 @Data
@@ -19,7 +21,9 @@ public class MallOrderSubmitForm {
     private List<MallCheckoutItemForm> items;
     @NotNull(message = "请选择收货地址")
     private Long addressId;
-    /** 提交时必须是该客户配送仓选项之一；由订单服务冻结。 */
+    /**
+     * 提交时必须是该客户配送仓选项之一；由订单服务冻结。
+     */
     @Positive(message = "配送仓必须大于0")
     private Long warehouseId;
     /**
@@ -29,7 +33,9 @@ public class MallOrderSubmitForm {
     private String priceFingerprint;
     @Size(max = 500, message = "订单备注不能超过500个字符")
     private String remark;
-    /** 期望配送日期 yyyy-MM-dd，可空；服务端按当日 00:00（Asia/Shanghai）落库 */
+    /**
+     * 期望配送日期 yyyy-MM-dd，可空；服务端按当日 00:00（Asia/Shanghai）落库
+     */
     @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "期望配送日期格式应为 yyyy-MM-dd")
     private String expectDeliveryDate;
     /**

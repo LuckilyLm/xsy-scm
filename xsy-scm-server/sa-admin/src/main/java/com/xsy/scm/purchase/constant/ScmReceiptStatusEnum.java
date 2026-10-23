@@ -16,10 +16,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmReceiptStatusEnum {
 
-    /** 草稿：尚未提交。 */
+    /**
+     * 草稿：尚未提交。
+     */
     DRAFT("草稿"),
 
-    /** 已确认：本收货单已提交。 */
+    /**
+     * 已确认：本收货单已提交。
+     */
     CONFIRMED("已确认");
 
     private final String desc;

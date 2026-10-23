@@ -14,7 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ScmNotificationService {
 
-    /** 定时任务没有登录用户时使用系统操作人标记，避免通知记录被错误归属到普通员工。 */
+    /**
+     * 定时任务没有登录用户时使用系统操作人标记，避免通知记录被错误归属到普通员工。
+     */
     public static final String SYSTEM_OPERATOR = "system";
 
     private final ScmNotificationEventDao eventDao;
@@ -25,7 +27,7 @@ public class ScmNotificationService {
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean sendOnce(String eventKey, String eventType, Long receiverUserId, Long dataId, String title,
-            String content) {
+        String content) {
         return sendOnce(eventKey, eventType, MessageTypeEnum.ORDER.getValue(), receiverUserId, dataId, title, content);
     }
 
@@ -38,14 +40,14 @@ public class ScmNotificationService {
      */
     @Transactional(rollbackFor = Exception.class)
     public boolean sendOnce(String eventKey, String eventType, Integer messageType, Long receiverUserId, Long dataId,
-            String title, String content) {
+        String title, String content) {
         if (receiverUserId == null || receiverUserId <= 0) {
             return false;
         }
         Integer userType = UserTypeEnum.ADMIN_EMPLOYEE.getValue();
         String operator = ScmOperator.currentOrNull();
         if (eventDao.insertIgnore(eventKey, eventType, userType, receiverUserId, dataId,
-                operator == null ? SYSTEM_OPERATOR : operator) != 1) {
+            operator == null ? SYSTEM_OPERATOR : operator) != 1) {
             return false;
         }
         MessageSendForm message = new MessageSendForm();

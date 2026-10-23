@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmPurchaseInquiryStatusEnum {
 
-    /** 询价中：可继续报价与改价。 */
+    /**
+     * 询价中：可继续报价与改价。
+     */
     OPEN("询价中"),
 
-    /** 已接受：已选定报价，询价关闭。 */
+    /**
+     * 已接受：已选定报价，询价关闭。
+     */
     ACCEPTED("已接受");
 
     private final String desc;

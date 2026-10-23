@@ -10,7 +10,9 @@ import net.lab1024.sa.base.common.domain.PageParam;
 
 import java.time.OffsetDateTime;
 
-/** 缺口预览使用已确认订单的半开时间区间，并要求指定仓库作库存比较。订单行没有供应商和采购员字段，不允许按这些维度虚构筛选。 */
+/**
+ * 缺口预览使用已确认订单的半开时间区间，并要求指定仓库作库存比较。订单行没有供应商和采购员字段，不允许按这些维度虚构筛选。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class PurchaseDemandSummaryPreviewForm extends PageParam {

@@ -21,7 +21,9 @@ import com.xsy.scm.common.json.ScmOperatorNameSerializer;
 @Data
 public class InventoryReportVO {
 
-    /** 粒度 = 一条流水。 */
+    /**
+     * 粒度 = 一条流水。
+     */
     @Data
     public static class MovementRow {
         private Long movementId;
@@ -32,10 +34,14 @@ public class InventoryReportVO {
         private String productName;
         private String skuCode;
         private String movementType;
-        /** 由流水类型派生的方向描述（入库 / 出库）。 */
+        /**
+         * 由流水类型派生的方向描述（入库 / 出库）。
+         */
         private String direction;
         private String sourceDocumentType;
-        /** 来源单号：当前可稳定回查的来源类型才有值，其余为 null 并回落到下方两个 ID。 */
+        /**
+         * 来源单号：当前可稳定回查的来源类型才有值，其余为 null 并回落到下方两个 ID。
+         */
         private String sourceDocumentNo;
         private Long sourceDocumentId;
         private Long sourceDocumentItemId;
@@ -62,7 +68,9 @@ public class InventoryReportVO {
     public static class LossSummary {
         private Long stocktakeLossCount;
         private Long lossReportCount;
-        /** 同一种损耗可有多种库存记账单位，显示按单位分组的文本而不跨单位求和。 */
+        /**
+         * 同一种损耗可有多种库存记账单位，显示按单位分组的文本而不跨单位求和。
+         */
         private String stocktakeLossQuantityText;
         private String lossReportQuantityText;
         private List<LossTrendRow> dailyTrend;
@@ -75,7 +83,9 @@ public class InventoryReportVO {
         private Integer costMissingCount;
     }
 
-    /** 期内分组只按损耗类型与真实库存单位聚合。 */
+    /**
+     * 期内分组只按损耗类型与真实库存单位聚合。
+     */
     @Data
     public static class LossUnitRow {
         private String movementType;
@@ -83,7 +93,9 @@ public class InventoryReportVO {
         private BigDecimal quantity;
     }
 
-    /** 服务端以 Asia/Shanghai 的自然日聚合，成本缺失的日金额为 null。 */
+    /**
+     * 服务端以 Asia/Shanghai 的自然日聚合，成本缺失的日金额为 null。
+     */
     @Data
     public static class LossTrendRow {
         private LocalDate bizDate;
@@ -96,7 +108,9 @@ public class InventoryReportVO {
         private Long costMissingCount;
     }
 
-    /** 损耗明细行，粒度 = 一条损耗流水。 */
+    /**
+     * 损耗明细行，粒度 = 一条损耗流水。
+     */
     @Data
     public static class LossRow {
         private Long movementId;
@@ -105,7 +119,9 @@ public class InventoryReportVO {
         private String warehouseName;
         private String productName;
         private String skuCode;
-        /** {@code STOCKTAKE_LOSS} / {@code LOSS_REPORT}。 */
+        /**
+         * {@code STOCKTAKE_LOSS} / {@code LOSS_REPORT}。
+         */
         private String lossType;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal quantity;
@@ -119,7 +135,9 @@ public class InventoryReportVO {
         private String operator;
     }
 
-    /** 粒度 = 一条 {@code xsy_inventory_balance} 行，即「当前时点」快照，不受查询区间影响。 */
+    /**
+     * 粒度 = 一条 {@code xsy_inventory_balance} 行，即「当前时点」快照，不受查询区间影响。
+     */
     @Data
     public static class ValueRow {
         private Long balanceId;
@@ -133,7 +151,9 @@ public class InventoryReportVO {
         private BigDecimal quantity;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal reservedQuantity;
-        /** {@code quantity - reserved_quantity}。 */
+        /**
+         * {@code quantity - reserved_quantity}。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal availableQuantity;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
@@ -142,7 +162,9 @@ public class InventoryReportVO {
         private BigDecimal bookAmount;
     }
 
-    /** 收发存数量报表按仓库、商品规格和单位汇总期内变动。缺少完整历史成本时不推算看似精确的期初、期末金额。 */
+    /**
+     * 收发存数量报表按仓库、商品规格和单位汇总期内变动。缺少完整历史成本时不推算看似精确的期初、期末金额。
+     */
     @Data
     public static class FlowSummaryRow {
         private Long warehouseId;
@@ -170,7 +192,9 @@ public class InventoryReportVO {
         private BigDecimal convertInQuantity;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal convertOutQuantity;
-        /** 期内净变动量，按方向由流水类型求和。 */
+        /**
+         * 期内净变动量，按方向由流水类型求和。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal netChangeQuantity;
     }

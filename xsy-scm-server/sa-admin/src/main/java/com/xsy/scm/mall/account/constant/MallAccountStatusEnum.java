@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum MallAccountStatusEnum {
 
-    /** 启用。 */
+    /**
+     * 启用。
+     */
     ENABLED("启用"),
 
-    /** 停用：不能登录商城，历史订单保留。 */
+    /**
+     * 停用：不能登录商城，历史订单保留。
+     */
     DISABLED("停用");
 
     private final String desc;

@@ -12,7 +12,9 @@ import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/** 报损报溢单可以更新，但所有写入都必须在 SQL 中限制为待审核状态。审批额外校验版本号，防止批准前单据内容被修改。 */
+/**
+ * 报损报溢单可以更新，但所有写入都必须在 SQL 中限制为待审核状态。审批额外校验版本号，防止批准前单据内容被修改。
+ */
 @Mapper
 public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity> {
 
@@ -45,28 +47,28 @@ public interface InventoryLossGainDao extends BaseMapper<InventoryLossGainEntity
      * @return 影响行数，必须为 1；为 0 说明状态已变或版本不符 → 调用方区分后抛 41029 / 40921
      */
     int markCompleted(@Param("id") Long id, @Param("auditedAt") OffsetDateTime auditedAt,
-            @Param("auditor") String auditor, @Param("auditOpinion") String auditOpinion,
-            @Param("version") Integer version);
+        @Param("auditor") String auditor, @Param("auditOpinion") String auditOpinion,
+        @Param("version") Integer version);
 
     /**
      * 置为已驳回，带状态 + 版本双重守卫。
      */
     int markRejected(@Param("id") Long id, @Param("auditedAt") OffsetDateTime auditedAt,
-            @Param("auditor") String auditor, @Param("auditOpinion") String auditOpinion,
-            @Param("version") Integer version);
+        @Param("auditor") String auditor, @Param("auditOpinion") String auditOpinion,
+        @Param("version") Integer version);
 
     /**
      * 回写待审核单据的头（仅 PENDING）。
      */
     int updatePending(@Param("id") Long id, @Param("adjustType") String adjustType,
-            @Param("warehouseId") Long warehouseId, @Param("reason") String reason, @Param("remark") String remark,
-            @Param("operator") String operator);
+        @Param("warehouseId") Long warehouseId, @Param("reason") String reason, @Param("remark") String remark,
+        @Param("operator") String operator);
 
     /**
      * 分页查询（联仓库取展示字段）。
      */
     List<InventoryLossGainVO> queryPage(Page<?> page, @Param("query") InventoryLossGainQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 详情。

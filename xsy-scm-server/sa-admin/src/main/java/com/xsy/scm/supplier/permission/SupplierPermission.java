@@ -1,6 +1,8 @@
 package com.xsy.scm.supplier.permission;
 
-/** Stable permission identifiers published by supplier-management APIs. */
+/**
+ * Stable permission identifiers published by supplier-management APIs.
+ */
 public final class SupplierPermission {
 
     public static final String QUERY = "scm:supplier:query";

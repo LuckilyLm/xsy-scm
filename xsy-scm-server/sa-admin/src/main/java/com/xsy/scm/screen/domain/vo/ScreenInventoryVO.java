@@ -6,7 +6,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 大屏库存数据来自只读汇总，不直接修改库存。 */
+/**
+ * 大屏库存数据来自只读汇总，不直接修改库存。
+ */
 @Data
 @Schema(description = "数据大屏-库存数据")
 public class ScreenInventoryVO {
@@ -44,7 +46,9 @@ public class ScreenInventoryVO {
         private BigDecimal quantity;
     }
 
-    /** 库存健康度按可用量与预警阈值计算。缺货单列用于提示零库存，可能与低库存统计重叠；无阈值配置的记录不能算作正常库存。 */
+    /**
+     * 库存健康度按可用量与预警阈值计算。缺货单列用于提示零库存，可能与低库存统计重叠；无阈值配置的记录不能算作正常库存。
+     */
     @Data
     @Schema(description = "库存健康度")
     public static class InventoryHealth {

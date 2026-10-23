@@ -15,7 +15,9 @@ import java.util.Set;
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.supplier.constant.SupplierErrorCode.SUPPLIER_SKU_DUPLICATE;
 
-/** 供应商商品关联先比较请求与现有记录，得到新增、更新和删除差量；通过校验后再统一保存。一个供应商可以有多个优先采购来源。 */
+/**
+ * 供应商商品关联先比较请求与现有记录，得到新增、更新和删除差量；通过校验后再统一保存。一个供应商可以有多个优先采购来源。
+ */
 public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemForm> inserted, List<Long> removedIds) {
 
     /**
@@ -33,7 +35,9 @@ public record SupplierSkuChangeSet(List<Matched> retained, List<SupplierSkuItemF
      * @throws ScmBusinessException
      *             40943（请求内 skuId 重复 / id 不属于该供应商 / skuId 被变更）、 40921（带 id 的行版本不一致）
      */
-    /** 外部货号保留大小写和前导零，只去掉首尾空格，空串当作未提供。 */
+    /**
+     * 外部货号保留大小写和前导零，只去掉首尾空格，空串当作未提供。
+     */
     public static String normalizeSupplierItemCode(String raw) {
         if (raw == null)
             return null;

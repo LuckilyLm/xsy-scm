@@ -12,7 +12,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 一条转换明细包含来源商品、目标商品、两边数量和单位；数量均为正，方向由转出、转入动作决定。单位按单据声明校验，目标没有余额时可由转入创建余额。 */
+/**
+ * 一条转换明细包含来源商品、目标商品、两边数量和单位；数量均为正，方向由转出、转入动作决定。单位按单据声明校验，目标没有余额时可由转入创建余额。
+ */
 @Data
 @TableName(value = "xsy_inventory_conversion_item", autoResultMap = true)
 public class InventoryConversionItemEntity {

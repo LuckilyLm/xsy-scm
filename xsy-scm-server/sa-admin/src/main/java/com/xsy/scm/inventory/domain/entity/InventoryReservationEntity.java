@@ -12,7 +12,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 库存预留不改变实物库存，因此单独记在预留表，不写入库存流水。预留记录可从占用变为释放或消耗；库存流水仍只能新增。 */
+/**
+ * 库存预留不改变实物库存，因此单独记在预留表，不写入库存流水。预留记录可从占用变为释放或消耗；库存流水仍只能新增。
+ */
 @Data
 @TableName(value = "xsy_inventory_reservation", autoResultMap = true)
 public class InventoryReservationEntity {

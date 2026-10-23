@@ -11,7 +11,9 @@ import com.baomidou.mybatisplus.annotation.Version;
 
 import java.time.OffsetDateTime;
 
-/** 收货确认与库存入账分开记录：直接入库模式在确认时入账；仓库二次确认模式先确认收货，再等待入库。供应商和仓库信息取采购单并在建单时保存。 */
+/**
+ * 收货确认与库存入账分开记录：直接入库模式在确认时入账；仓库二次确认模式先确认收货，再等待入库。供应商和仓库信息取采购单并在建单时保存。
+ */
 @Data
 @TableName(value = "xsy_purchase_receipt", autoResultMap = true)
 public class PurchaseReceiptEntity {

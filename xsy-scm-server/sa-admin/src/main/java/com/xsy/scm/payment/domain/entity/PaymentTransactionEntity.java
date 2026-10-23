@@ -7,8 +7,10 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -33,7 +35,9 @@ public class PaymentTransactionEntity {
 
     private String provider;
 
-    /** 渠道交易号：回调匹配与对账的主键。 */
+    /**
+     * 渠道交易号：回调匹配与对账的主键。
+     */
     private String providerTransactionNo;
 
     private BigDecimal amount;

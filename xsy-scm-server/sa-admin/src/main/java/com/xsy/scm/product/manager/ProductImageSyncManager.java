@@ -32,9 +32,13 @@ import static com.xsy.scm.product.constant.ProductErrorCode.VERSION_CONFLICT;
 @Component
 @RequiredArgsConstructor
 public class ProductImageSyncManager {
-    /** 目录前缀只有一个来源：上传白名单枚举，避免业务侧与存储侧各写一份口径。 */
+    /**
+     * 目录前缀只有一个来源：上传白名单枚举，避免业务侧与存储侧各写一份口径。
+     */
     private static final String PUBLIC_IMAGE_FOLDER = FileFolderTypeEnum.PUBLIC_IMAGE.getFolder();
-    /** 图片类型与主图标记各自独立；只允许绑定 public/ 目录下的文件。 */
+    /**
+     * 图片类型与主图标记各自独立；只允许绑定 public/ 目录下的文件。
+     */
     private static final String PUBLIC_FOLDER_PREFIX = FileFolderTypeEnum.FOLDER_PUBLIC + "/";
     private final ProductImageDao productImageDao;
     private final FileService fileService;
@@ -42,8 +46,8 @@ public class ProductImageSyncManager {
 
     public List<ProductImageEntity> existing(Long spuId) {
         return productImageDao
-                .selectList(new LambdaQueryWrapper<ProductImageEntity>().eq(ProductImageEntity::getSpuId, spuId)
-                        .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId));
+            .selectList(new LambdaQueryWrapper<ProductImageEntity>().eq(ProductImageEntity::getSpuId, spuId)
+                .orderByAsc(ProductImageEntity::getSortOrder, ProductImageEntity::getId));
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -51,11 +55,9 @@ public class ProductImageSyncManager {
         List<ProductImageForm> requested = new ArrayList<>(changes.updated());
         requested.addAll(changes.inserted());
         // 文件是否存在由文件中心验证，图片权限只检查 public/ 路径，不依赖 URL。
-        Map<String,
-                FileVO> metadata = fileService
-                        .getFileMetadata(requested.stream().map(ProductImageForm::getFileKey).toList()).stream()
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toMap(FileVO::getFileKey, Function.identity(), (a, b) -> a));
+        Map<String, FileVO> metadata = fileService
+            .getFileMetadata(requested.stream().map(ProductImageForm::getFileKey).toList()).stream()
+            .filter(Objects::nonNull).collect(Collectors.toMap(FileVO::getFileKey, Function.identity(), (a, b) -> a));
         for (var form : requested)
             if (!metadata.containsKey(form.getFileKey()))
                 throw new ScmBusinessException(IMAGE_INVALID);
@@ -80,24 +82,28 @@ public class ProductImageSyncManager {
         // 商品图都落在公开前缀后，这里恒为空清单；rebind 会收回历史私有 key 的
         // 关系行收回来：删图或搬到公开前缀后都必须同时收回读取权，只增不减会让已删附件长期可读。
         fileRelationService.rebind(FileRelationBizTypeEnum.PRODUCT, spuId, existing(spuId).stream()
-                .map(ProductImageEntity::getFileKey).filter(key -> !key.startsWith(PUBLIC_FOLDER_PREFIX)).toList());
+            .map(ProductImageEntity::getFileKey).filter(key -> !key.startsWith(PUBLIC_FOLDER_PREFIX)).toList());
     }
 
     public void remove(List<Long> ids) {
         if (ids.isEmpty())
             return;
         productImageDao.update(null,
-                new LambdaUpdateWrapper<ProductImageEntity>().in(ProductImageEntity::getId, ids)
-                        .set(ProductImageEntity::getUpdatedAt, OffsetDateTime.now())
-                        .set(ProductImageEntity::getUpdatedBy, ScmOperator.current()).setSql("version = version + 1"));
+            new LambdaUpdateWrapper<ProductImageEntity>().in(ProductImageEntity::getId, ids)
+                .set(ProductImageEntity::getUpdatedAt, OffsetDateTime.now())
+                .set(ProductImageEntity::getUpdatedBy, ScmOperator.current()).setSql("version = version + 1"));
         productImageDao.deleteByIds(ids);
     }
-    /** 商品只能绑定文件模块确认存在的公开图片，不允许把他人的私有附件设为商品图片。 */
+
+    /**
+     * 商品只能绑定文件模块确认存在的公开图片，不允许把他人的私有附件设为商品图片。
+     */
     private void requirePublicImageKey(ProductImageForm form) {
         if (!form.getFileKey().startsWith(PUBLIC_IMAGE_FOLDER)) {
             throw new ScmBusinessException(IMAGE_NOT_PUBLIC);
         }
     }
+
     private ProductImageEntity entity(Long spuId, ProductImageForm form, FileVO file, boolean inserting) {
         var entity = new ProductImageEntity();
         entity.setSpuId(spuId);
@@ -111,7 +117,7 @@ public class ProductImageSyncManager {
         // 一旦按过期实体回写，「改个市场价或切主图」就会把详情图静默降级成图集图。
         if (inserting) {
             entity.setImageType(
-                    form.getImageType() == null ? ScmProductImageTypeEnum.GALLERY.name() : form.getImageType());
+                form.getImageType() == null ? ScmProductImageTypeEnum.GALLERY.name() : form.getImageType());
         }
         entity.setUpdatedAt(OffsetDateTime.now());
         entity.setUpdatedBy(ScmOperator.current());

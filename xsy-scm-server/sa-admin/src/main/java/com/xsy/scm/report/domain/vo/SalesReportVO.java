@@ -8,11 +8,15 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/** 销售分析只统计已确认订单，按确认时间、结算金额计算。全局排名在分页前生成，翻到下一页仍保持原排名。 */
+/**
+ * 销售分析只统计已确认订单，按确认时间、结算金额计算。全局排名在分页前生成，翻到下一页仍保持原排名。
+ */
 @Data
 public class SalesReportVO {
 
-    /** 通用 TOP N 行（金额降序，由 DB 直接 {@code LIMIT}，不取全量回 Java 排序）。 */
+    /**
+     * 通用 TOP N 行（金额降序，由 DB 直接 {@code LIMIT}，不取全量回 Java 排序）。
+     */
     @Data
     public static class TopItem {
         private Long id;
@@ -21,21 +25,27 @@ public class SalesReportVO {
         private BigDecimal amount;
     }
 
-    /** 粒度 = SKU × 销售单位快照。 */
+    /**
+     * 粒度 = SKU × 销售单位快照。
+     */
     @Data
     public static class ProductRow {
         private Long skuId;
         private String spuCode;
         private String productName;
         private String skuCode;
-        /** 订单行上的规格快照，不实时回查商品主档。 */
+        /**
+         * 订单行上的规格快照，不实时回查商品主档。
+         */
         private String specName;
         private String saleUnit;
         private String rootCategoryName;
         private String leafCategoryName;
         private Long orderCount;
         private Long customerCount;
-        /** {@code SUM(actual_quantity)}：确认数量；未回写实量的行为 NULL，不计入。 */
+        /**
+         * {@code SUM(actual_quantity)}：确认数量；未回写实量的行为 NULL，不计入。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal confirmedQuantity;
         /**
@@ -48,16 +58,22 @@ public class SalesReportVO {
         private BigDecimal avgTransactionPrice;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal settlementAmount;
-        /** 查询范围内的该行销售金额占比（%），查询总金额为零时未知。 */
+        /**
+         * 查询范围内的该行销售金额占比（%），查询总金额为零时未知。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal salesAmountSharePercent;
-        /** 按销售额排序的累计占比（%），在分页之前计算。 */
+        /**
+         * 按销售额排序的累计占比（%），在分页之前计算。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal cumulativeSalesAmountSharePercent;
         private Integer amountRank;
     }
 
-    /** 粒度 = 末级分类。三级分类无 path 列，靠 {@code parent_id} 上卷两级。 */
+    /**
+     * 粒度 = 末级分类。三级分类无 path 列，靠 {@code parent_id} 上卷两级。
+     */
     @Data
     public static class CategoryRow {
         private Long categoryId;
@@ -89,7 +105,9 @@ public class SalesReportVO {
         private Integer amountRank;
     }
 
-    /** 粒度 = 销售员；{@code seller_id} 为空归入「未分配销售员」。 */
+    /**
+     * 粒度 = 销售员；{@code seller_id} 为空归入「未分配销售员」。
+     */
     @Data
     public static class SellerRow {
         private Long sellerId;
@@ -124,9 +142,13 @@ public class SalesReportVO {
         private String sellerName;
         private String orderSource;
         private String settleMode;
-        /** 订单行数（{@code xsy_sales_order_item} 未删除行）。 */
+        /**
+         * 订单行数（{@code xsy_sales_order_item} 未删除行）。
+         */
         private Long lineCount;
-        /** 订单涉及的 SKU 种类数。 */
+        /**
+         * 订单涉及的 SKU 种类数。
+         */
         private Long skuKindCount;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal settlementAmount;
@@ -134,7 +156,9 @@ public class SalesReportVO {
         private BigDecimal completedRefundAmount;
     }
 
-    /** 粒度 = {@code xsy_sales_order_item}。全部业务字段取订单行快照。 */
+    /**
+     * 粒度 = {@code xsy_sales_order_item}。全部业务字段取订单行快照。
+     */
     @Data
     public static class ItemRow {
         private Long orderId;
@@ -156,7 +180,9 @@ public class SalesReportVO {
         private BigDecimal orderedQuantity;
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal actualQuantity;
-        /** 确认时锁定的成交单价。 */
+        /**
+         * 确认时锁定的成交单价。
+         */
         @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
         private BigDecimal lockedUnitPrice;
         private String lockedPriceSource;

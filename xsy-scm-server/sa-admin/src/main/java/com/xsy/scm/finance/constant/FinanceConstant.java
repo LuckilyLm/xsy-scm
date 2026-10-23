@@ -2,7 +2,9 @@ package com.xsy.scm.finance.constant;
 
 import com.xsy.scm.finance.permission.FinancePermission;
 
-/** 财务金额与数量统一保留四位小数，按 HALF_UP 处理。应收应付没有独立结清状态，结清和未核销额都从财务记录计算。 */
+/**
+ * 财务金额与数量统一保留四位小数，按 HALF_UP 处理。应收应付没有独立结清状态，结清和未核销额都从财务记录计算。
+ */
 public final class FinanceConstant {
 
     public static final String ORDER_FUNDING_OPERATOR = "SYSTEM:ORDER_FUNDING";
@@ -60,7 +62,9 @@ public final class FinanceConstant {
      */
     public static final String COD_COLLECTION_SCOPE = "FINANCE_COD_COLLECTION";
 
-    /** 付款登记使用幂等键防重复请求。退款付款还按退款单来源唯一约束防重复事实；两者都不能省略。 */
+    /**
+     * 付款登记使用幂等键防重复请求。退款付款还按退款单来源唯一约束防重复事实；两者都不能省略。
+     */
     public static final String PAYMENT_ADD_SCOPE = "FINANCE_PAYMENT_ADD";
 
     /**
@@ -73,13 +77,19 @@ public final class FinanceConstant {
      */
     public static final String PAYMENT_REVERSE_SCOPE = "FINANCE_PAYMENT_REVERSE";
 
-    /** 核销新增命令幂等 scope；实际 scope 还要拼资金来源类型与 id。 */
+    /**
+     * 核销新增命令幂等 scope；实际 scope 还要拼资金来源类型与 id。
+     */
     public static final String WRITE_OFF_ADD_SCOPE = "FINANCE_WRITE_OFF_ADD";
 
-    /** 核销反向命令幂等 scope；实际 scope 还要拼原核销 id。 */
+    /**
+     * 核销反向命令幂等 scope；实际 scope 还要拼原核销 id。
+     */
     public static final String WRITE_OFF_REVERSE_SCOPE = "FINANCE_WRITE_OFF_REVERSE";
 
-    /** 手工红字应付命令幂等 scope；实际 scope 还要拼原应付 id。 */
+    /**
+     * 手工红字应付命令幂等 scope；实际 scope 还要拼原应付 id。
+     */
     public static final String PAYABLE_RED_SCOPE = "FINANCE_PAYABLE_RED";
 
     /**
@@ -94,7 +104,9 @@ public final class FinanceConstant {
      */
     public static final String EXPORT_PERM = FinancePermission.EXPORT;
 
-    /** 财务写入先锁单据再锁收付款，余额锁最后获取；同级锁按 ID 升序。撤销与核销要持有同一原收付款行锁，避免并发重复使用金额。 */
+    /**
+     * 财务写入先锁单据再锁收付款，余额锁最后获取；同级锁按 ID 升序。撤销与核销要持有同一原收付款行锁，避免并发重复使用金额。
+     */
     public static final int LOCK_RANK_RECEIPT = 1;
     public static final int LOCK_RANK_PAYMENT = 2;
     public static final int LOCK_RANK_RECEIVABLE = 3;

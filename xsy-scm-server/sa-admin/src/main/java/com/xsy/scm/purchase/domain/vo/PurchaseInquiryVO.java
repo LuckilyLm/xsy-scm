@@ -2,13 +2,16 @@ package com.xsy.scm.purchase.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.Data;
 
 public final class PurchaseInquiryVO {
-    private PurchaseInquiryVO() {}
+    private PurchaseInquiryVO() {
+    }
 
     @Data
     public static class Inquiry {
@@ -59,10 +62,13 @@ public final class PurchaseInquiryVO {
         private Long existingInquiryId;
     }
 
-    public record BatchPage(List<Inquiry> records, long total) {}
+    public record BatchPage(List<Inquiry> records, long total) {
+    }
 
-    public record HistoryPage(List<Quote> records, boolean hasMore, Long nextBeforeId) {}
+    public record HistoryPage(List<Quote> records, boolean hasMore, Long nextBeforeId) {
+    }
 
-    public record Detail(Inquiry inquiry, List<Quote> currentOffers, List<Quote> quotes,
-            boolean hasMoreQuotes, Long nextQuoteBeforeId) {}
+    public record Detail(Inquiry inquiry, List<Quote> currentOffers, List<Quote> quotes, boolean hasMoreQuotes,
+        Long nextQuoteBeforeId) {
+    }
 }

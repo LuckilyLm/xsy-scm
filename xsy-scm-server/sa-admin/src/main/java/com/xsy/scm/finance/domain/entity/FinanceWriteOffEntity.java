@@ -7,7 +7,9 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 每条核销记录连接一笔收付款与一笔应收应付，未结余额从核销明细计算，不在关系行中重复保存。 */
+/**
+ * 每条核销记录连接一笔收付款与一笔应收应付，未结余额从核销明细计算，不在关系行中重复保存。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_finance_write_off")

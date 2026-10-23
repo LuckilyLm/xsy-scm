@@ -7,9 +7,11 @@ import com.xsy.scm.order.domain.vo.SalesOrderItemVO;
 import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.order.service.SalesOrderQueryService;
 import com.xsy.scm.print.constant.ScmPrintDocumentTypeEnum;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -87,7 +89,9 @@ public class SalesOrderPrintSourceProvider implements ScmPrintSourceProvider {
         return status;
     }
 
-    /** 打印件沿用仓库现场的叫法，与页面 desc 不同，因此这里按枚举逐项给文案。 */
+    /**
+     * 打印件沿用仓库现场的叫法，与页面 desc 不同，因此这里按枚举逐项给文案。
+     */
     private static String sourceLabel(String source) {
         if (source == null)
             return "";

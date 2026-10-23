@@ -17,7 +17,9 @@ public class ScaleActivateForm {
     @Size(max = 64, message = "设备编码最多 64 个字符")
     private String deviceCode;
 
-    /** 安装标识；用于区分同一设备编号下的重装，不参与业务授权。 */
+    /**
+     * 安装标识；用于区分同一设备编号下的重装，不参与业务授权。
+     */
     @Size(max = 128, message = "安装标识最多 128 个字符")
     private String installationId;
 

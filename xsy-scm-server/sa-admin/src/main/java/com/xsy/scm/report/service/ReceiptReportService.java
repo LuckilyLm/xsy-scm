@@ -7,15 +7,19 @@ import com.xsy.scm.report.domain.form.ScmReceiptReportQueryForm;
 import com.xsy.scm.report.domain.vo.ReceiptReportVO;
 import com.xsy.scm.report.support.ScmReportTimeRange;
 import com.xsy.scm.report.support.ScmReportTimeRangeResolver;
+
 import java.math.BigDecimal;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** 收货报表分开展示已确认收货、已入库流水和待入库记录。查询受仓库范围约束，成本无权限时不返回金额，也不把未知成本当作零。 */
+/**
+ * 收货报表分开展示已确认收货、已入库流水和待入库记录。查询受仓库范围约束，成本无权限时不返回金额，也不把未知成本当作零。
+ */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -34,7 +38,7 @@ public class ReceiptReportService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.receiptItemList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+            reportDao.receiptItemList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
     }
 
     public ReceiptReportVO.ReceiptSummary receiptSummary(ScmReceiptReportQueryForm form) {
@@ -50,9 +54,9 @@ public class ReceiptReportService {
             return empty;
         }
         ReceiptReportVO.ReceiptSummary summary = reportDao.receiptSummary(range.startAt(), range.endAt(), form,
-                context.getWarehouseScope());
+            context.getWarehouseScope());
         summary.setQuantities(
-                reportDao.receiptQuantitySummary(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+            reportDao.receiptQuantitySummary(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         return summary;
     }
 
@@ -65,7 +69,7 @@ public class ReceiptReportService {
         }
         var page = SmartPageUtil.convert2PageQuery(form);
         PageResult<ReceiptReportVO.InboundRow> result = SmartPageUtil.convert2PageResult(page,
-                reportDao.inboundList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+            reportDao.inboundList(page, range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         if (!context.isCostVisible() && result != null && result.getList() != null) {
             result.getList().forEach(row -> {
                 row.setUnitCost(null);
@@ -90,9 +94,9 @@ public class ReceiptReportService {
             return empty;
         }
         ReceiptReportVO.InboundSummary summary = reportDao.inboundSummary(range.startAt(), range.endAt(), form,
-                context.getWarehouseScope());
+            context.getWarehouseScope());
         summary.setQuantities(
-                reportDao.inboundQuantitySummary(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
+            reportDao.inboundQuantitySummary(range.startAt(), range.endAt(), form, context.getWarehouseScope()));
         if (!context.isCostVisible()) {
             summary.setKnownCostAmount(null);
             summary.setCostMissingCount(null);
@@ -109,7 +113,7 @@ public class ReceiptReportService {
         var page = SmartPageUtil.convert2PageQuery(form);
         page.setOptimizeCountSql(false);
         return SmartPageUtil.convert2PageResult(page,
-                reportDao.pendingPutawayList(page, form, context.getWarehouseScope()));
+            reportDao.pendingPutawayList(page, form, context.getWarehouseScope()));
     }
 
     public ReceiptReportVO.PendingPutawaySummary pendingPutawaySummary(ScmReceiptReportQueryForm form) {
@@ -122,7 +126,7 @@ public class ReceiptReportService {
             return empty;
         }
         ReceiptReportVO.PendingPutawaySummary summary = reportDao.pendingPutawaySummary(form,
-                context.getWarehouseScope());
+            context.getWarehouseScope());
         summary.setQuantities(reportDao.pendingPutawayQuantitySummary(form, context.getWarehouseScope()));
         return summary;
     }

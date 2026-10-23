@@ -2,7 +2,9 @@ package com.xsy.scm.customer.permission;
 
 import com.xsy.scm.common.permission.ScmCrossDomainPermission;
 
-/** Stable permission identifiers published by customer-management APIs. */
+/**
+ * Stable permission identifiers published by customer-management APIs.
+ */
 public final class CustomerPermission {
 
     public static final String QUERY = "scm:customer:query";
@@ -17,7 +19,9 @@ public final class CustomerPermission {
     public static final String TYPE_DELETE = "scm:customer:type:delete";
     public static final String VISIBILITY_QUERY = "scm:customer:visibility:query";
 
-    /** 客户专属推广二维码的生成、撤销与扫码记录查看。 */
+    /**
+     * 客户专属推广二维码的生成、撤销与扫码记录查看。
+     */
     public static final String PROMOTION_MANAGE = "scm:customer:promotion:manage";
 
     private CustomerPermission() {

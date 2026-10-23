@@ -14,7 +14,9 @@ import com.xsy.scm.mall.home.service.MallHomeLayoutService;
 import com.xsy.scm.mall.home.service.MallHomeProjectionService;
 import com.xsy.scm.mall.permission.MallPermission;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;

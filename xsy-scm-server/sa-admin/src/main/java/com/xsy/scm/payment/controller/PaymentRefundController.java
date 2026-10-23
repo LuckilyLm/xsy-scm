@@ -7,7 +7,9 @@ import com.xsy.scm.payment.domain.form.PaymentRefundRecoveryForm;
 import com.xsy.scm.payment.domain.vo.PaymentRefundRecoveryLogVO;
 import com.xsy.scm.payment.service.PaymentRefundRecoveryService;
 import com.xsy.scm.common.constant.ScmOperator;
+
 import java.util.List;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import com.xsy.scm.payment.domain.form.PaymentRefundQueryForm;
@@ -30,7 +32,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 支付退款：发起退款、查退款。 */
+/**
+ * 支付退款：发起退款、查退款。
+ */
 @RestController
 @RequestMapping("/scm/payment/refund")
 @RequiredArgsConstructor
@@ -49,8 +53,8 @@ public class PaymentRefundController {
     @OperateLog
     public ResponseDTO<PaymentRefundVO> recover(@Valid @RequestBody PaymentRefundRecoveryForm form) {
         paymentRefundService.requireVisibleRefund(form.getRefundId());
-        return ResponseDTO.ok(PaymentVoAssembler.toRefund(paymentRefundRecoveryService.recover(form.getRefundId(),
-                ScmOperator.current(), form.getReason(), true)));
+        return ResponseDTO.ok(PaymentVoAssembler.toRefund(
+            paymentRefundRecoveryService.recover(form.getRefundId(), ScmOperator.current(), form.getReason(), true)));
     }
 
     @GetMapping("/{refundId}/recovery-log")
@@ -69,7 +73,7 @@ public class PaymentRefundController {
     @SaCheckPermission(ScmPaymentPermission.REFUND_CREATE)
     @OperateLog
     public ResponseDTO<PaymentRefundVO> create(@Valid @RequestBody PaymentRefundCreateForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(PaymentVoAssembler.toRefund(paymentRefundService.create(form, key)));
     }
 
@@ -77,7 +81,7 @@ public class PaymentRefundController {
     @SaCheckPermission(ScmPaymentPermission.REFUND_CREATE)
     @OperateLog
     public ResponseDTO<RefundFundingResultVO> executeFunding(@Valid @RequestBody RefundFundingExecuteForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(refundFundingAllocationService.execute(form, key));
     }
 

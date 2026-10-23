@@ -13,22 +13,34 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmRefundRecoveryResultEnum {
 
-    /** 已发起。 */
+    /**
+     * 已发起。
+     */
     STARTED("已发起"),
 
-    /** 成功。 */
+    /**
+     * 成功。
+     */
     SUCCEEDED("成功"),
 
-    /** 待处理。 */
+    /**
+     * 待处理。
+     */
     PENDING("待处理"),
 
-    /** 失败。 */
+    /**
+     * 失败。
+     */
     FAILED("失败"),
 
-    /** 金额不符：回收金额与应回收金额不一致。 */
+    /**
+     * 金额不符：回收金额与应回收金额不一致。
+     */
     AMOUNT_MISMATCH("金额不符"),
 
-    /** 异常：需人工核查。 */
+    /**
+     * 异常：需人工核查。
+     */
     ERROR("异常");
 
     private final String desc;

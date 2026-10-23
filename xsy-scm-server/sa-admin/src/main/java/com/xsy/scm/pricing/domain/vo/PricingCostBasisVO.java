@@ -1,6 +1,7 @@
 package com.xsy.scm.pricing.domain.vo;
 
 import java.math.BigDecimal;
+
 import lombok.Data;
 
 @Data

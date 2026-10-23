@@ -49,11 +49,13 @@ public class BalanceController {
     @SaCheckPermission(ScmBalancePermission.REFUND)
     @OperateLog
     public ResponseDTO<BalanceMovementVO> refund(@Valid @RequestBody BalanceRefundForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(BalanceVoAssembler.toMovement(balanceRefundService.refund(form, key)));
     }
 
-    /** 余额概览：服务端解析结算主体，不接受客户端指定钱包账户 id。 */
+    /**
+     * 余额概览：服务端解析结算主体，不接受客户端指定钱包账户 id。
+     */
     @PostMapping("/query")
     @SaCheckPermission(ScmBalancePermission.QUERY)
     public ResponseDTO<CustomerBalanceVO> query(@Valid @RequestBody BalanceQueryForm form) {
@@ -76,7 +78,7 @@ public class BalanceController {
     @SaCheckPermission(ScmBalancePermission.RECHARGE)
     @OperateLog
     public ResponseDTO<PaymentIntentVO> recharge(@Valid @RequestBody BalanceRechargeCreateForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(PaymentVoAssembler.toIntent(balanceRechargeService.create(form, key)));
     }
 
@@ -90,7 +92,7 @@ public class BalanceController {
     @SaCheckPermission(ScmBalancePermission.CORRECTION)
     @OperateLog
     public ResponseDTO<BalanceMovementVO> correction(@Valid @RequestBody BalanceCorrectionForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(BalanceVoAssembler.toMovement(customerBalanceService.correct(form, key)));
     }
 }

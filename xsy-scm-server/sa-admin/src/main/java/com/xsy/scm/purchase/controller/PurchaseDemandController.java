@@ -61,9 +61,9 @@ public class PurchaseDemandController {
      */
     @PostMapping("/summary-preview")
     @SaCheckPermission(value = {PurchasePermission.DEMAND_QUERY,
-            ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY}, mode = SaMode.AND)
+        ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY}, mode = SaMode.AND)
     public ResponseDTO<PageResult<PurchaseDemandSummaryVO>> summaryPreview(
-            @Valid @RequestBody PurchaseDemandSummaryPreviewForm form) {
+        @Valid @RequestBody PurchaseDemandSummaryPreviewForm form) {
         return ResponseDTO.ok(purchaseQueryService.summaryPreview(form));
     }
 
@@ -71,8 +71,8 @@ public class PurchaseDemandController {
     @SaCheckPermission(PurchasePermission.DEMAND_BATCH_CREATE)
     @OperateLog
     public ResponseDTO<PurchaseDemandCalculationBatchVO> createBatch(
-            @Valid @RequestBody PurchaseDemandBatchCreateForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @Valid @RequestBody PurchaseDemandBatchCreateForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseDemandCalculationBatchService.create(form, idempotencyKey));
     }
 
@@ -80,8 +80,8 @@ public class PurchaseDemandController {
     @SaCheckPermission(PurchasePermission.DEMAND_BATCH_GENERATE)
     @OperateLog
     public ResponseDTO<PurchaseDemandService.GenerateResult> generateBatch(
-            @Valid @RequestBody PurchaseDemandBatchGenerateForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @Valid @RequestBody PurchaseDemandBatchGenerateForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseDemandCalculationBatchService.generate(form, idempotencyKey));
     }
 
@@ -94,9 +94,9 @@ public class PurchaseDemandController {
      */
     @PostMapping("/batch/detail")
     @SaCheckPermission(value = {PurchasePermission.DEMAND_BATCH_QUERY,
-            ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY}, mode = SaMode.AND)
+        ScmCrossDomainPermission.INVENTORY_BALANCE_QUERY}, mode = SaMode.AND)
     public ResponseDTO<PurchaseDemandCalculationBatchDetailVO> batchDetail(
-            @Valid @RequestBody PurchaseDemandBatchQueryForm form) {
+        @Valid @RequestBody PurchaseDemandBatchQueryForm form) {
         return ResponseDTO.ok(purchaseDemandCalculationBatchService.detail(form.getBatchId()));
     }
 
@@ -104,8 +104,8 @@ public class PurchaseDemandController {
     @SaCheckPermission(PurchasePermission.DEMAND_GENERATE)
     @OperateLog
     public ResponseDTO<PurchaseDemandService.GenerateResult> generate(
-            @Valid @RequestBody PurchaseDemandGenerateForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @Valid @RequestBody PurchaseDemandGenerateForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseDemandService.generate(form, idempotencyKey));
     }
 
@@ -113,7 +113,7 @@ public class PurchaseDemandController {
     @SaCheckPermission(PurchasePermission.DEMAND_ALLOCATE)
     @OperateLog
     public ResponseDTO<PurchaseDemandVO> allocate(@Valid @RequestBody PurchaseDemandAllocateForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(purchaseDemandService.allocate(form, idempotencyKey));
     }
 }

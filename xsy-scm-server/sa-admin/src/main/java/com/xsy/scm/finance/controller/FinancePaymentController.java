@@ -40,11 +40,13 @@ public class FinancePaymentController {
 
     private final FinanceRefundOptionQueryService financeRefundOptionQueryService;
 
-    /** Completed, unpaid refunds selectable by the payment form; visibility follows customer seller scope. */
+    /**
+     * Completed, unpaid refunds selectable by the payment form; visibility follows customer seller scope.
+     */
     @PostMapping("/refund-options")
     @SaCheckPermission(FinancePermission.PAYMENT_ADD)
     public ResponseDTO<PageResult<FinanceRefundOptionVO>> refundOptions(
-            @Valid @RequestBody FinanceRefundOptionQueryForm form) {
+        @Valid @RequestBody FinanceRefundOptionQueryForm form) {
         return ResponseDTO.ok(financeRefundOptionQueryService.query(form));
     }
 
@@ -52,7 +54,7 @@ public class FinancePaymentController {
     @SaCheckPermission(FinancePermission.PAYMENT_ADD)
     @OperateLog
     public ResponseDTO<FinancePaymentVO> add(@Valid @RequestBody FinancePaymentAddForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(financePaymentService.add(form, idempotencyKey));
     }
 
@@ -60,7 +62,7 @@ public class FinancePaymentController {
     @SaCheckPermission(FinancePermission.PAYMENT_REVERSE)
     @OperateLog
     public ResponseDTO<FinancePaymentVO> reverse(@Valid @RequestBody FinancePaymentReverseForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(financePaymentService.reverse(form, idempotencyKey));
     }
 }

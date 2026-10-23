@@ -405,16 +405,24 @@ public enum InventoryErrorCode implements ScmErrorCode {
      */
     INVENTORY_SOURCE_ALREADY_OUTBOUND(41066, "该来源单据已产生出库单，不能重复出库"),
 
-    /** 41070：批次仓暂不支持盘点 / 调拨 / 损溢 / 规格转换。 */
+    /**
+     * 41070：批次仓暂不支持盘点 / 调拨 / 损溢 / 规格转换。
+     */
     INVENTORY_LOT_ACTION_UNSUPPORTED(41070, "该仓库启用了批次追踪，暂不支持盘点、调拨、报损报溢与规格转换"),
 
-    /** 41071：批次余额不足以支撑本次出库分摊。 */
+    /**
+     * 41071：批次余额不足以支撑本次出库分摊。
+     */
     INVENTORY_LOT_INSUFFICIENT(41071, "批次库存不足，无法完成本次出库"),
 
-    /** 41072：批次仓的退货必须能定位到原出库批次。 */
+    /**
+     * 41072：批次仓的退货必须能定位到原出库批次。
+     */
     INVENTORY_LOT_RETURN_SOURCE_MISSING(41072, "批次仓的退货必须关联原出库批次"),
 
-    /** 41073：批次数量必须为正。 */
+    /**
+     * 41073：批次数量必须为正。
+     */
     INVENTORY_LOT_QUANTITY_INVALID(41073, "批次数量必须为大于零的四位定点数");
 
     private final int code;

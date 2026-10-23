@@ -13,13 +13,18 @@ import org.apache.ibatis.annotations.Param;
 import java.util.Collection;
 import java.util.List;
 
-/** 财务生成应收时只读订单签收、实际出库和冻结折扣事实，不通过此 DAO 改订单。签收身份及时间以已保存记录为准，异常签收不能生成正常应收。 */
+/**
+ * 财务生成应收时只读订单签收、实际出库和冻结折扣事实，不通过此 DAO 改订单。签收身份及时间以已保存记录为准，异常签收不能生成正常应收。
+ */
 @Mapper
 public interface FinanceReceivableSourceDao {
     long countIncompleteBundleOutbound(@Param("salesOrderId") Long salesOrderId);
+
     boolean hasFinalDeliveryResult(@Param("salesOrderId") Long salesOrderId);
 
-    /** 正常应收仅由已签收订单生成；异常签收不能生成正常应收。获取不到有效签收事实必须失败。 */
+    /**
+     * 正常应收仅由已签收订单生成；异常签收不能生成正常应收。获取不到有效签收事实必须失败。
+     */
     FinanceReceivableSourceDto selectSignedAssignment(@Param("deliveryRouteOrderId") Long deliveryRouteOrderId);
 
     /**
@@ -54,7 +59,9 @@ public interface FinanceReceivableSourceDao {
 
     Long selectOrderSellerId(@Param("salesOrderId") Long salesOrderId);
 
-    /** 应收和退货红字使用下单时冻结的优惠分摊，不按当前活动重新计算；没有优惠时返回空分配。 */
+    /**
+     * 应收和退货红字使用下单时冻结的优惠分摊，不按当前活动重新计算；没有优惠时返回空分配。
+     */
     List<FinanceOrderDiscountLineDto> selectOrderDiscountLines(@Param("salesOrderId") Long salesOrderId);
 
     /**
@@ -73,9 +80,11 @@ public interface FinanceReceivableSourceDao {
      */
     List<FinanceOrderPayableLineDto> selectPayableLinesByOrders(@Param("salesOrderIds") Collection<Long> salesOrderIds);
 
-    /** 多张订单的冻结优惠行分摊（批量），与 {@link #selectOrderDiscountLines(Long)} 同源同列。 */
+    /**
+     * 多张订单的冻结优惠行分摊（批量），与 {@link #selectOrderDiscountLines(Long)} 同源同列。
+     */
     List<FinanceOrderDiscountLineDto> selectDiscountLinesByOrders(
-            @Param("salesOrderIds") Collection<Long> salesOrderIds);
+        @Param("salesOrderIds") Collection<Long> salesOrderIds);
 
     /**
      * 货到付款收款需要的订单事实：订单不存在或已删除返回 {@code null}。

@@ -3,7 +3,9 @@ package com.xsy.scm.finance.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 正常应收明细以出库行 ID 为来源，红字明细以退货行 ID 为来源。订单行可能多次出库，不能假设一条订单行只对应一条应收明细。 */
+/**
+ * 正常应收明细以出库行 ID 为来源，红字明细以退货行 ID 为来源。订单行可能多次出库，不能假设一条订单行只对应一条应收明细。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmFinanceReceivableItemSourceTypeEnum {

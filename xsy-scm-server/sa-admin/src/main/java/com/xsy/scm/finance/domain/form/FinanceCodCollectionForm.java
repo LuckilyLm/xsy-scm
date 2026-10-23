@@ -7,7 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -43,11 +45,15 @@ public class FinanceCodCollectionForm {
     @NotNull(message = "收款方式不能为空")
     private String method;
 
-    /** 实际收款业务时点，由登记人填写；服务端不以 {@code now()} 代替。 */
+    /**
+     * 实际收款业务时点，由登记人填写；服务端不以 {@code now()} 代替。
+     */
     @NotNull(message = "收款时间不能为空")
     private OffsetDateTime receivedAt;
 
-    /** 资金凭据号（银行流水号等），只作文本，不参与幂等。 */
+    /**
+     * 资金凭据号（银行流水号等），只作文本，不参与幂等。
+     */
     @Size(max = 128, message = "资金凭据号长度不能超过128")
     private String externalReference;
 

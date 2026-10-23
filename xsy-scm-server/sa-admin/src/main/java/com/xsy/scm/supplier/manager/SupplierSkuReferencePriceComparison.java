@@ -2,6 +2,7 @@ package com.xsy.scm.supplier.manager;
 
 import com.xsy.scm.supplier.domain.vo.SupplierSkuComparisonVO;
 import com.xsy.scm.supplier.domain.vo.SupplierSkuVO;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ public final class SupplierSkuReferencePriceComparison {
         for (SupplierSkuVO source : sources) {
             List<SupplierSkuVO> peers = byUnit.getOrDefault(source.getPurchaseUnit(), List.of());
             List<BigDecimal> quotes = peers.stream().map(SupplierSkuVO::getReferencePrice)
-                    .filter(price -> price != null && price.signum() >= 0).toList();
+                .filter(price -> price != null && price.signum() >= 0).toList();
             BigDecimal lowest = quotes.stream().min(BigDecimal::compareTo).orElse(null);
             SupplierSkuComparisonVO row = new SupplierSkuComparisonVO();
             row.setSupplierId(source.getSupplierId());
@@ -45,22 +46,20 @@ public final class SupplierSkuReferencePriceComparison {
             row.setLowestReferencePrice(lowest);
             row.setPricedSupplierCount(quotes.size());
             if (quotes.size() >= 2 && source.getReferencePrice() != null && lowest != null
-                    && source.getReferencePrice().signum() >= 0) {
+                && source.getReferencePrice().signum() >= 0) {
                 BigDecimal gap = source.getReferencePrice().subtract(lowest).setScale(4, RoundingMode.HALF_UP);
                 row.setPriceGapAmount(gap);
                 if (lowest.signum() > 0) {
                     row.setPriceGapPercent(
-                            gap.multiply(BigDecimal.valueOf(100)).divide(lowest, 4, RoundingMode.HALF_UP));
+                        gap.multiply(BigDecimal.valueOf(100)).divide(lowest, 4, RoundingMode.HALF_UP));
                 }
             }
             compared.add(row);
         }
         compared.sort(Comparator
-                .comparing(SupplierSkuComparisonVO::getPurchaseUnit, Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(SupplierSkuComparisonVO::getReferencePrice,
-                        Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(SupplierSkuComparisonVO::getSupplierId,
-                        Comparator.nullsLast(Comparator.naturalOrder())));
+            .comparing(SupplierSkuComparisonVO::getPurchaseUnit, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(SupplierSkuComparisonVO::getReferencePrice, Comparator.nullsLast(Comparator.naturalOrder()))
+            .thenComparing(SupplierSkuComparisonVO::getSupplierId, Comparator.nullsLast(Comparator.naturalOrder())));
         return compared;
     }
 }

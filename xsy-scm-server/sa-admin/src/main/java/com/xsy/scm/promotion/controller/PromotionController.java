@@ -3,7 +3,9 @@ package com.xsy.scm.promotion.controller;
 import cn.dev33.satoken.annotation.SaCheckPermission;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import com.xsy.scm.promotion.domain.form.PromotionActivityForm;
 import com.xsy.scm.promotion.domain.form.PromotionActivityQueryForm;
@@ -56,7 +58,7 @@ public class PromotionController {
     @PostMapping("/activity/query")
     @SaCheckPermission(PromotionPermission.ACTIVITY_QUERY)
     public ResponseDTO<PageResult<PromotionActivityVO>> queryActivity(
-            @Valid @RequestBody PromotionActivityQueryForm form) {
+        @Valid @RequestBody PromotionActivityQueryForm form) {
         return ResponseDTO.ok(promotionActivityService.queryPage(form));
     }
 
@@ -80,7 +82,7 @@ public class PromotionController {
     @SaCheckPermission(PromotionPermission.ACTIVITY_STATUS)
     @OperateLog
     public ResponseDTO<String> activityStatus(@PathVariable("id") Long id,
-            @Valid @RequestBody PromotionStatusForm form) {
+        @Valid @RequestBody PromotionStatusForm form) {
         promotionActivityService.updateStatus(id, form);
         return ResponseDTO.ok();
     }
@@ -129,7 +131,7 @@ public class PromotionController {
     @SaCheckPermission(PromotionPermission.COUPON_ISSUE)
     @OperateLog
     public ResponseDTO<Integer> issueCoupon(@Valid @RequestBody PromotionCouponIssueForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(promotionCouponService.issue(form, key));
     }
 
@@ -139,7 +141,7 @@ public class PromotionController {
     @GetMapping("/coupon/instances")
     @SaCheckPermission(PromotionPermission.COUPON_QUERY)
     public ResponseDTO<List<PromotionCouponVO.Instance>> couponInstances(@RequestParam("customerId") Long customerId,
-            @RequestParam(value = "status", required = false) String status) {
+        @RequestParam(value = "status", required = false) String status) {
         return ResponseDTO.ok(promotionCouponService.listInstances(customerId, status));
     }
 

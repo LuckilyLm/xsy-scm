@@ -19,5 +19,5 @@ public interface BalanceRechargeSink {
      * 实现方必须按 {@code (PAYMENT_TRANSACTION, transactionId)} 幂等：同一支付回调重复投递也只产生一条充值流水。
      */
     void rechargeFromPayment(Long rechargeId, Long customerId, BigDecimal providerAmount, Long transactionId,
-            OffsetDateTime succeededAt);
+        OffsetDateTime succeededAt);
 }

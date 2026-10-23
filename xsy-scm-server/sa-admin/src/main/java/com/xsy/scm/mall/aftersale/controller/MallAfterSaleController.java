@@ -25,7 +25,9 @@ public class MallAfterSaleController {
     private final MallAfterSaleService afterSaleService;
     private final MallAfterSaleQueryService afterSaleQueryService;
 
-    /** 售后单列表；{@code orderId} 只看某一订单的售后，留空为全部 */
+    /**
+     * 售后单列表；{@code orderId} 只看某一订单的售后，留空为全部
+     */
     @GetMapping
     public ResponseDTO<PageResult<MallAfterSaleVO>> list(@Valid MallAfterSaleQueryForm form) {
         MallRequestSupport.requirePasswordChanged();
@@ -43,15 +45,17 @@ public class MallAfterSaleController {
      */
     @PostMapping
     public ResponseDTO<MallAfterSaleVO> apply(@Valid @RequestBody MallAfterSaleApplyForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(afterSaleService.apply(MallRequestSupport.current(), form, key));
     }
 
-    /** 撤销待审核的售后申请；已进入审核或已终结的申请由状态机拒绝 */
+    /**
+     * 撤销待审核的售后申请；已进入审核或已终结的申请由状态机拒绝
+     */
     @PostMapping("/{returnId}/cancel")
     public ResponseDTO<MallAfterSaleVO> cancel(@PathVariable Long returnId,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         MallRequestSupport.requirePasswordChanged();
         return ResponseDTO.ok(afterSaleService.cancel(MallRequestSupport.current(), returnId, key));
     }

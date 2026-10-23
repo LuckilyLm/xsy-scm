@@ -1,6 +1,8 @@
 package com.xsy.scm.purchase.constant;
 
-/** 采购配置沿用 SmartAdmin 的 Config 表。这里仅定义键、默认值和范围；读取、解析与参数校验由采购收货服务及数量计算器完成。 */
+/**
+ * 采购配置沿用 SmartAdmin 的 Config 表。这里仅定义键、默认值和范围；读取、解析与参数校验由采购收货服务及数量计算器完成。
+ */
 public final class PurchaseConfigKey {
 
     private PurchaseConfigKey() {

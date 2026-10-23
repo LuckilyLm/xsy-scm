@@ -14,12 +14,16 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 供应商联系人等可选字段允许清空；地图位置必须同时包含经度、纬度和坐标系。 */
+/**
+ * 供应商联系人等可选字段允许清空；地图位置必须同时包含经度、纬度和坐标系。
+ */
 @Data
 @TableName(value = "xsy_supplier", autoResultMap = true)
 public class SupplierEntity {
 
-    /** {@code null} 序列化为 JSON {@code null} 而不是省略：前端要靠「字段存在且为 null」区分「未采集」。 */
+    /**
+     * {@code null} 序列化为 JSON {@code null} 而不是省略：前端要靠「字段存在且为 null」区分「未采集」。
+     */
     @JsonSerialize(nullsUsing = NullSerializer.class)
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private BigDecimal longitude;

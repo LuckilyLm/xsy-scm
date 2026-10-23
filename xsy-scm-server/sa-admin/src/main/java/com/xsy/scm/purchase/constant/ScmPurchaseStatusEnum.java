@@ -34,7 +34,9 @@ public enum ScmPurchaseStatusEnum {
      */
     private final String desc;
 
-    /** 按枚举名解析；未知值返回 {@code null}，由调用方决定回落策略。 */
+    /**
+     * 按枚举名解析；未知值返回 {@code null}，由调用方决定回落策略。
+     */
     public static ScmPurchaseStatusEnum of(String value) {
         for (ScmPurchaseStatusEnum item : values()) {
             if (item.name().equals(value)) {
@@ -44,7 +46,9 @@ public enum ScmPurchaseStatusEnum {
         return null;
     }
 
-    /** 是否进入正式采购流程必须逐个列出允许的状态，不可用“排除草稿和取消”的方式猜测。新增状态时必须明确是否计入已提交采购。 */
+    /**
+     * 是否进入正式采购流程必须逐个列出允许的状态，不可用“排除草稿和取消”的方式猜测。新增状态时必须明确是否计入已提交采购。
+     */
     public boolean committed() {
         return switch (this) {
             case SUBMITTED, PARTIALLY_RECEIVED, RECEIVED, SHORT_CLOSED -> true;

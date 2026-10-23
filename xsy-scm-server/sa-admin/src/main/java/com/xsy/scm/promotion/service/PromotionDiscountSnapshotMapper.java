@@ -3,13 +3,16 @@ package com.xsy.scm.promotion.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.xsy.scm.promotion.domain.entity.PromotionActivityEntity;
 import com.xsy.scm.promotion.domain.vo.PromotionDiscountVO;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** 将订单优惠计算结果转换为确认订单保存的不可变快照。 */
+/**
+ * 将订单优惠计算结果转换为确认订单保存的不可变快照。
+ */
 final class PromotionDiscountSnapshotMapper {
 
     private PromotionDiscountSnapshotMapper() {
@@ -53,7 +56,7 @@ final class PromotionDiscountSnapshotMapper {
     }
 
     static PromotionDiscountVO.AppliedActivityVO appliedActivity(PromotionActivityEntity activity,
-            BigDecimal discountAmount) {
+        BigDecimal discountAmount) {
         PromotionDiscountVO.AppliedActivityVO vo = new PromotionDiscountVO.AppliedActivityVO();
         vo.setActivityId(activity.getId());
         vo.setActivityCode(activity.getActivityCode());

@@ -3,7 +3,9 @@ package com.xsy.scm.finance.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 财务正常单与红字单分别用 NORMAL 和 RED 表示，金额始终为正。红字是新增的冲减事实，不允许通过改原记录金额实现冲销。 */
+/**
+ * 财务正常单与红字单分别用 NORMAL 和 RED 表示，金额始终为正。红字是新增的冲减事实，不允许通过改原记录金额实现冲销。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmFinanceEntryTypeEnum {

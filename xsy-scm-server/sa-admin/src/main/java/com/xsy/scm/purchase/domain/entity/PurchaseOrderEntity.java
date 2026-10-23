@@ -16,7 +16,9 @@ import java.time.OffsetDateTime;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
 
-/** 采购单从草稿提交，允许部分收货、全部收货或少收关单；草稿和已提交单可取消。正式履约及取消时点随状态一同保存。 */
+/**
+ * 采购单从草稿提交，允许部分收货、全部收货或少收关单；草稿和已提交单可取消。正式履约及取消时点随状态一同保存。
+ */
 @Data
 @TableName(value = "xsy_purchase_order", autoResultMap = true)
 public class PurchaseOrderEntity {

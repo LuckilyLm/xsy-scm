@@ -17,10 +17,12 @@ import com.xsy.scm.sorting.domain.vo.SortingTaskDetailVO;
 import com.xsy.scm.sorting.domain.vo.SortingTaskItemVO;
 import com.xsy.scm.sorting.domain.vo.SortingTaskVO;
 import com.xsy.scm.sorting.service.SortingQueryService;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import org.springframework.dao.DuplicateKeyException;
@@ -40,14 +42,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ScaleDeviceJobService {
 
-    /** 租约有效期：一个班次内够用，又不能长到让离场设备长期占住任务。 */
+    /**
+     * 租约有效期：一个班次内够用，又不能长到让离场设备长期占住任务。
+     */
     private static final int LEASE_MINUTES = 120;
 
     private static final int MAX_PAGE_SIZE = 100;
 
-    /** 可作业状态：待分拣与分拣中。已完成或已取消的任务不再出现在秤端队列。 */
+    /**
+     * 可作业状态：待分拣与分拣中。已完成或已取消的任务不再出现在秤端队列。
+     */
     private static final List<String> OPEN_STATUSES = List.of(ScmSortingTaskStatusEnum.PENDING.name(),
-            ScmSortingTaskStatusEnum.SORTING.name());
+        ScmSortingTaskStatusEnum.SORTING.name());
 
     private final SortingQueryService sortingQueryService;
 
@@ -176,7 +182,7 @@ public class ScaleDeviceJobService {
         if (lease != null) {
             vo.setExpiresAt(lease.getExpiresAt());
             vo.setClaimedByDeviceCode(
-                    Objects.equals(lease.getDeviceId(), principal.deviceId()) ? principal.deviceCode() : null);
+                Objects.equals(lease.getDeviceId(), principal.deviceId()) ? principal.deviceCode() : null);
         }
         return vo;
     }

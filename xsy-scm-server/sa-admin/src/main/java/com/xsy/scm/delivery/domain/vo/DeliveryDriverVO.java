@@ -11,6 +11,8 @@ import com.xsy.scm.delivery.domain.entity.DeliveryDriverEntity;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DeliveryDriverVO extends DeliveryDriverEntity {
-    /** 绑定员工的姓名；员工已删除时保留名字快照不可得，故为空。 */
+    /**
+     * 绑定员工的姓名；员工已删除时保留名字快照不可得，故为空。
+     */
     private String employeeName;
 }

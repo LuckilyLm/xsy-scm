@@ -2,7 +2,9 @@ package com.xsy.scm.product.domain.dto;
 
 import lombok.Data;
 
-/** Excel 每行对应一个商品规格，同一商品编码的多行会聚合。所有字段先按文本读取，再由导入服务校验。 */
+/**
+ * Excel 每行对应一个商品规格，同一商品编码的多行会聚合。所有字段先按文本读取，再由导入服务校验。
+ */
 @Data
 public class ProductImportRow {
     private int rowNumber;

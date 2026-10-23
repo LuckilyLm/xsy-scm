@@ -37,7 +37,9 @@ import java.util.List;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** Read-only receipt query, detail and export row selection. */
+/**
+ * Read-only receipt query, detail and export row selection.
+ */
 @Service
 @RequiredArgsConstructor
 public class FinanceReceiptQueryService {
@@ -99,18 +101,18 @@ public class FinanceReceiptQueryService {
         }
         Long sourceId = entity.getReverseOfId() == null ? receiptId : entity.getReverseOfId();
         FinanceReceiptQueryVO original = entity.getReverseOfId() == null
-                ? null
-                : financeReceiptDao.selectQueryById(entity.getReverseOfId());
+            ? null
+            : financeReceiptDao.selectQueryById(entity.getReverseOfId());
         FinanceReceiptQueryVO reversal = entity.getReverseOfId() == null
-                ? financeReceiptDao.selectReversalByOriginal(receiptId)
-                : null;
+            ? financeReceiptDao.selectReversalByOriginal(receiptId)
+            : null;
         List<FinanceWriteOffVO> writeOffs = writeOffQueryService
-                .bySource(ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name(), sourceId, scope);
+            .bySource(ScmFinanceWriteOffSourceTypeEnum.RECEIPT.name(), sourceId, scope);
         List<FinanceOperationLogVO> logs = new ArrayList<>(operationLogs(sourceId));
         logs.addAll(operationLogs(ScmFinanceBusinessTypeEnum.WRITE_OFF.name(),
-                writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
+            writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
         logs.sort(
-                Comparator.comparing(FinanceOperationLogVO::getCreatedAt).thenComparing(FinanceOperationLogVO::getId));
+            Comparator.comparing(FinanceOperationLogVO::getCreatedAt).thenComparing(FinanceOperationLogVO::getId));
 
         FinanceReceiptDetailVO detail = new FinanceReceiptDetailVO();
         detail.setReceipt(header);
@@ -130,23 +132,23 @@ public class FinanceReceiptQueryService {
             return List.of();
         }
         return financeOperationLogDao
-                .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
-                        .eq(FinanceOperationLogEntity::getBusinessType, businessType)
-                        .in(FinanceOperationLogEntity::getBusinessId, businessIds)
-                        .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
-                .stream().map(entity -> {
-                    FinanceOperationLogVO vo = new FinanceOperationLogVO();
-                    vo.setId(entity.getId());
-                    vo.setBusinessType(entity.getBusinessType());
-                    vo.setBusinessId(entity.getBusinessId());
-                    vo.setOperationType(entity.getOperationType());
-                    vo.setOperator(entity.getOperator());
-                    vo.setReason(entity.getReason());
-                    vo.setBeforeData(entity.getBeforeData());
-                    vo.setAfterData(entity.getAfterData());
-                    vo.setCreatedAt(entity.getCreatedAt());
-                    return vo;
-                }).toList();
+            .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
+                .eq(FinanceOperationLogEntity::getBusinessType, businessType)
+                .in(FinanceOperationLogEntity::getBusinessId, businessIds)
+                .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
+            .stream().map(entity -> {
+                FinanceOperationLogVO vo = new FinanceOperationLogVO();
+                vo.setId(entity.getId());
+                vo.setBusinessType(entity.getBusinessType());
+                vo.setBusinessId(entity.getBusinessId());
+                vo.setOperationType(entity.getOperationType());
+                vo.setOperator(entity.getOperator());
+                vo.setReason(entity.getReason());
+                vo.setBeforeData(entity.getBeforeData());
+                vo.setAfterData(entity.getAfterData());
+                vo.setCreatedAt(entity.getCreatedAt());
+                return vo;
+            }).toList();
     }
 
     private static void rejectClientSort(FinanceReceiptQueryForm form) {
@@ -169,7 +171,7 @@ public class FinanceReceiptQueryService {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         if (form.getEntryType() != null
-                && !enumContains(ScmFinanceReverseEntryTypeEnum.values(), form.getEntryType())) {
+            && !enumContains(ScmFinanceReverseEntryTypeEnum.values(), form.getEntryType())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
     }

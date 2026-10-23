@@ -8,7 +8,9 @@ import com.xsy.scm.payment.service.PaymentCallbackService;
 import com.xsy.scm.payment.service.PaymentQueryService;
 import com.xsy.scm.payment.support.PaymentVoAssembler;
 import jakarta.validation.Valid;
+
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
@@ -19,7 +21,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 当前支付回调仅支持有权限的内部模拟投递，不开放匿名渠道回调。模拟投递仍必须走验签、事件防重和支付状态机；接真实渠道时需单独设计公网入口。 */
+/**
+ * 当前支付回调仅支持有权限的内部模拟投递，不开放匿名渠道回调。模拟投递仍必须走验签、事件防重和支付状态机；接真实渠道时需单独设计公网入口。
+ */
 @RestController
 @RequestMapping("/scm/payment/callback")
 @RequiredArgsConstructor
@@ -45,8 +49,8 @@ public class PaymentCallbackController {
     @SaCheckPermission(ScmPaymentPermission.INTENT_CREATE)
     @OperateLog
     public ResponseDTO<PaymentCallbackEventVO> mock(@RequestHeader Map<String, String> headers,
-            @RequestBody String rawBody) {
+        @RequestBody String rawBody) {
         return ResponseDTO.ok(PaymentVoAssembler.toCallbackEvent(paymentCallbackService
-                .handle(com.xsy.scm.payment.constant.ScmPaymentProviderEnum.MOCK.name(), headers, rawBody)));
+            .handle(com.xsy.scm.payment.constant.ScmPaymentProviderEnum.MOCK.name(), headers, rawBody)));
     }
 }

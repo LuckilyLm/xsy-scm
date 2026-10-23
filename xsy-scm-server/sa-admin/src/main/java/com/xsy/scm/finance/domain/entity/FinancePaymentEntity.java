@@ -7,7 +7,9 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** 一笔付款单记录一次实际付款，可以没有对应应付单。订单退款付款须关联退款来源，退款审批完成不等于已经付款。 */
+/**
+ * 一笔付款单记录一次实际付款，可以没有对应应付单。订单退款付款须关联退款来源，退款审批完成不等于已经付款。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("xsy_finance_payment")

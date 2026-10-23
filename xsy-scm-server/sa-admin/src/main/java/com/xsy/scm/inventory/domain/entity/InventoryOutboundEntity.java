@@ -11,7 +11,9 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/** 出库单可由仓库创建草稿并确认，也可在配送发车时直接生成已确认出库单。 */
+/**
+ * 出库单可由仓库创建草稿并确认，也可在配送发车时直接生成已确认出库单。
+ */
 @Data
 @TableName(value = "xsy_inventory_outbound", autoResultMap = true)
 public class InventoryOutboundEntity {

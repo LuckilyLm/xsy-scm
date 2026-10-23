@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** 首页接口仅返回当前用户有权查看的指标与待办，其他业务模块的统计不在控制器中重复计算。 */
+/**
+ * 首页接口仅返回当前用户有权查看的指标与待办，其他业务模块的统计不在控制器中重复计算。
+ */
 @RestController
 @RequestMapping("/scm/dashboard")
 @Tag(name = "SCM 供应链工作台")
@@ -43,7 +45,7 @@ public class ScmDashboardController {
     @GetMapping("/trend")
     @SaCheckPermission(DashboardPermission.QUERY)
     public ResponseDTO<ScmDashboardTrendVO> trend(@RequestParam("metric") String metric,
-            @RequestParam(value = "range", required = false, defaultValue = "7d") String range) {
+        @RequestParam(value = "range", required = false, defaultValue = "7d") String range) {
         return ResponseDTO.ok(dashboardService.trend(metric, range));
     }
 
@@ -53,7 +55,7 @@ public class ScmDashboardController {
     @GetMapping("/ranking")
     @SaCheckPermission(DashboardPermission.QUERY)
     public ResponseDTO<List<RankItem>> ranking(@RequestParam("dimension") String dimension,
-            @RequestParam(value = "limit", required = false) Integer limit) {
+        @RequestParam(value = "limit", required = false) Integer limit) {
         return ResponseDTO.ok(dashboardService.ranking(dimension, limit));
     }
 

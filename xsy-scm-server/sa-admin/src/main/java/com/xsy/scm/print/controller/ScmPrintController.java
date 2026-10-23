@@ -16,7 +16,9 @@ import com.xsy.scm.print.domain.vo.ScmPrintTemplateVO;
 import com.xsy.scm.print.permission.ScmPrintPermission;
 import com.xsy.scm.print.service.ScmPrintService;
 import com.xsy.scm.print.service.ScmPrintTemplateService;
+
 import java.util.List;
+
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
@@ -29,7 +31,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 打印接口按单据及模板权限校验，不能通过打印接口绕过原业务数据范围。 */
+/**
+ * 打印接口按单据及模板权限校验，不能通过打印接口绕过原业务数据范围。
+ */
 @RestController
 @RequestMapping("/scm/print")
 @Tag(name = "SCM 打印中心")
@@ -47,7 +51,7 @@ public class ScmPrintController {
     @PostMapping("/template/query")
     @SaCheckPermission(ScmPrintPermission.TEMPLATE_QUERY)
     public ResponseDTO<PageResult<ScmPrintTemplateVO>> queryTemplate(
-            @Valid @RequestBody ScmPrintTemplateQueryForm form) {
+        @Valid @RequestBody ScmPrintTemplateQueryForm form) {
         return ResponseDTO.ok(scmPrintTemplateService.queryPage(form));
     }
 
@@ -65,7 +69,7 @@ public class ScmPrintController {
      */
     @GetMapping("/template/document-types")
     @SaCheckPermission(value = {ScmPrintPermission.TEMPLATE_QUERY,
-            ScmPrintPermission.RECORD_QUERY}, mode = cn.dev33.satoken.annotation.SaMode.OR)
+        ScmPrintPermission.RECORD_QUERY}, mode = cn.dev33.satoken.annotation.SaMode.OR)
     public ResponseDTO<List<ScmPrintDocumentTypeVO>> documentTypes() {
         return ResponseDTO.ok(scmPrintTemplateService.documentTypes());
     }
@@ -116,7 +120,7 @@ public class ScmPrintController {
 
     @GetMapping("/{documentType}/{businessId}/templates")
     public ResponseDTO<List<ScmPrintTemplateVO>> templateOptions(@PathVariable("documentType") String documentType,
-            @PathVariable("businessId") Long businessId) {
+        @PathVariable("businessId") Long businessId) {
         return ResponseDTO.ok(scmPrintService.templateOptions(documentType, businessId));
     }
 
@@ -128,8 +132,8 @@ public class ScmPrintController {
      */
     @GetMapping("/{documentType}/{businessId}/preview")
     public ResponseDTO<ScmPrintRenderVO> preview(@PathVariable("documentType") String documentType,
-            @PathVariable("businessId") Long businessId,
-            @RequestParam(value = "templateId", required = false) Long templateId) {
+        @PathVariable("businessId") Long businessId,
+        @RequestParam(value = "templateId", required = false) Long templateId) {
         return ResponseDTO.ok(scmPrintService.preview(documentType, businessId, templateId));
     }
 
@@ -139,8 +143,8 @@ public class ScmPrintController {
     @PostMapping("/{documentType}/{businessId}/print")
     @OperateLog
     public ResponseDTO<ScmPrintRenderVO> print(@PathVariable("documentType") String documentType,
-            @PathVariable("businessId") Long businessId, @Valid @RequestBody ScmPrintActionForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        @PathVariable("businessId") Long businessId, @Valid @RequestBody ScmPrintActionForm form,
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         return ResponseDTO.ok(scmPrintService.print(documentType, businessId, form, idempotencyKey));
     }
 

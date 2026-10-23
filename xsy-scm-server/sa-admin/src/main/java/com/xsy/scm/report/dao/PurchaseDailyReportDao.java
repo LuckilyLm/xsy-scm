@@ -21,6 +21,5 @@ public interface PurchaseDailyReportDao {
     OffsetDateTime findGeneratedAt(@Param("reportDate") LocalDate reportDate);
 
     List<PurchaseDailyReportVO.ProductRow> queryProducts(Page<?> page, @Param("query") PurchaseDailyQueryForm query,
-            @Param("warehouseScope") ScmValueScope warehouseScope,
-            @Param("purchaserScope") ScmValueScope purchaserScope);
+        @Param("warehouseScope") ScmValueScope warehouseScope, @Param("purchaserScope") ScmValueScope purchaserScope);
 }

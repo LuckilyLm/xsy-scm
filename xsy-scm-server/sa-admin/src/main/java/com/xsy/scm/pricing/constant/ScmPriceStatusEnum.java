@@ -13,10 +13,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmPriceStatusEnum {
 
-    /** 已定价：可解析出有效价格。 */
+    /**
+     * 已定价：可解析出有效价格。
+     */
     PRICED("已定价"),
 
-    /** 未定价：没有任何价格来源可命中。 */
+    /**
+     * 未定价：没有任何价格来源可命中。
+     */
     UNPRICED("未定价");
 
     private final String desc;

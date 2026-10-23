@@ -26,7 +26,7 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * 赢家与输家最终都会拿到<b>同一行</b>。
      */
     int insertOnConflictDoNothing(@Param("warehouseId") Long warehouseId, @Param("skuId") Long skuId,
-            @Param("unit") String unit, @Param("operator") String operator);
+        @Param("unit") String unit, @Param("operator") String operator);
 
     /**
      * 锁定余额行（{@code SELECT... FOR UPDATE}）。
@@ -51,7 +51,7 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * @return 影响行数，必须为 1（否则说明行被删除或 id 不存在 → 调用方抛 40921）
      */
     int incrementQuantity(@Param("id") Long id, @Param("quantity") BigDecimal quantity,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     /**
      * 持锁后的增量扣减（{@code quantity = quantity - ?}），用于出库。
@@ -62,7 +62,7 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * @return 影响行数，必须为 1（否则说明行被删除或 id 不存在 → 调用方抛 40921）
      */
     int decrementQuantity(@Param("id") Long id, @Param("quantity") BigDecimal quantity,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     /**
      * 持锁后的预留占用自增（{@code reserved_quantity = reserved_quantity + ?}）。
@@ -71,13 +71,13 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * 只改预留计数，<b>不动 {@code quantity}</b> —— 预留不改变物理库存。 「占用不得超过现有量」由 {@code ck_inventory_balance_available} 在 DB 层兜底。
      */
     int incrementReserved(@Param("id") Long id, @Param("quantity") BigDecimal quantity,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     /**
      * 持锁后的预留占用自减（释放预留）。
      */
     int decrementReserved(@Param("id") Long id, @Param("quantity") BigDecimal quantity,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     /**
      * 持锁后的<b>数量增量 + 成本重算</b>，一条语句完成（移动加权）。
@@ -96,7 +96,7 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * @return 影响行数，必须为 1
      */
     int incrementQuantityAndSetAvgCost(@Param("id") Long id, @Param("quantity") BigDecimal quantity,
-            @Param("avgCost") BigDecimal avgCost, @Param("operator") String operator);
+        @Param("avgCost") BigDecimal avgCost, @Param("operator") String operator);
 
     /**
      * 余额分页（联仓库 / SKU / 商品取展示字段，「余额是活状态」）。
@@ -105,7 +105,7 @@ public interface InventoryBalanceDao extends BaseMapper<InventoryBalanceEntity> 
      * {@code scope} 为 null 时 SQL 退化为恒假谓词：数据范围必须由调用方显式下传， 「没传就等于全部」会让任何漏传的新调用点变成越权入口。
      */
     List<InventoryBalanceVO> queryPage(Page<?> page, @Param("query") InventoryBalanceQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     /**
      * 余额详情（按 id）。

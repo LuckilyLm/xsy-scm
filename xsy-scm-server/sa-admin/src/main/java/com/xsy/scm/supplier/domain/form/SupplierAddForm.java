@@ -7,7 +7,9 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/** 新增供应商时，编码和启用状态由服务端生成；经纬度与坐标系必须成组填写。 */
+/**
+ * 新增供应商时，编码和启用状态由服务端生成；经纬度与坐标系必须成组填写。
+ */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class SupplierAddForm extends ScmLocationForm {

@@ -3,6 +3,7 @@ package com.xsy.scm.trace.domain.vo;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.Data;
 
 @Data

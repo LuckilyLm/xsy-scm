@@ -54,7 +54,7 @@ public final class CustomerTypeValidator {
      */
     public static void validateRequired(CustomerTypeAddForm form) {
         if (form.getTypeCode() == null || form.getTypeCode().trim().isEmpty() || form.getName() == null
-                || form.getName().trim().isEmpty()) {
+            || form.getName().trim().isEmpty()) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         validateStatus(form.getStatus());

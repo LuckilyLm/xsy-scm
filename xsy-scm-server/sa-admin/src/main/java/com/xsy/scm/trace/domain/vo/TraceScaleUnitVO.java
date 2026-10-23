@@ -2,7 +2,9 @@ package com.xsy.scm.trace.domain.vo;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.xsy.scm.common.json.ScmFixedScale4Serializer;
+
 import java.math.BigDecimal;
+
 import lombok.Data;
 
 /**
@@ -20,7 +22,9 @@ public class TraceScaleUnitVO {
 
     private String publicToken;
 
-    /** 未配置公开地址时为空串，此时标签只印码不印二维码。 */
+    /**
+     * 未配置公开地址时为空串，此时标签只印码不印二维码。
+     */
     private String traceUrl;
 
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
@@ -31,9 +35,13 @@ public class TraceScaleUnitVO {
     @JsonSerialize(using = ScmFixedScale4Serializer.class, nullsUsing = ScmFixedScale4Serializer.class)
     private BigDecimal quantity;
 
-    /** 包装数量用的记账单位。 */
+    /**
+     * 包装数量用的记账单位。
+     */
     private String unit;
 
-    /** 重试发码时命中已有记录，原样返回同一枚码。 */
+    /**
+     * 重试发码时命中已有记录，原样返回同一枚码。
+     */
     private Boolean duplicated;
 }

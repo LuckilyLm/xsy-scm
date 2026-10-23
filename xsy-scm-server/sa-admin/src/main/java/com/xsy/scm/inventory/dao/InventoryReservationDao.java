@@ -38,7 +38,7 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
      * 按来源行查有效预留（释放时用；不锁）。
      */
     InventoryReservationEntity selectActiveBySource(@Param("sourceDocumentType") String sourceDocumentType,
-            @Param("sourceDocumentItemId") Long sourceDocumentItemId);
+        @Param("sourceDocumentItemId") Long sourceDocumentItemId);
 
     /**
      * 按<b>来源单据头</b>查全部有效预留（订单取消时批量释放用）。
@@ -47,7 +47,7 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
      * 与 {@link #selectActiveBySource} 的区别在粒度：订单确认是逐行预留，订单取消却是整单释放，因此需要一个头级入口，避免调用方自己拿明细再循环。
      */
     List<InventoryReservationEntity> listActiveBySourceDocument(@Param("sourceDocumentType") String sourceDocumentType,
-            @Param("sourceDocumentId") Long sourceDocumentId);
+        @Param("sourceDocumentId") Long sourceDocumentId);
 
     /**
      * 按来源<b>行</b> id 批量查有效预留（发车一次性取整条线路的预留，不逐行往返）。
@@ -57,7 +57,7 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
      * 归还预留要拿余额锁，顺序在这里定好，服务层就不必再排一次。
      */
     List<InventoryReservationEntity> listActiveBySourceItemIds(@Param("sourceDocumentType") String sourceDocumentType,
-            @Param("sourceDocumentItemIds") Collection<Long> sourceDocumentItemIds);
+        @Param("sourceDocumentItemIds") Collection<Long> sourceDocumentItemIds);
 
     /**
      * 锁定预留行（{@code SELECT ... FOR UPDATE}）。
@@ -81,5 +81,5 @@ public interface InventoryReservationDao extends BaseMapper<InventoryReservation
      * 分页查询（联仓库 / SKU / 商品取展示字段）。
      */
     List<InventoryReservationVO> queryPage(Page<?> page, @Param("query") InventoryReservationQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 }

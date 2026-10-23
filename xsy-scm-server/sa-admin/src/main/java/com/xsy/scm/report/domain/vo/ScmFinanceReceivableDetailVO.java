@@ -7,7 +7,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-/** One normal receivable with linked red facts and its balance at the selected end date. */
+/**
+ * One normal receivable with linked red facts and its balance at the selected end date.
+ */
 @Data
 public class ScmFinanceReceivableDetailVO {
 

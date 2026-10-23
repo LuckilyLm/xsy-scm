@@ -22,7 +22,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 库存报损报溢的新建、修改、审批、驳回分开授权。只有待审核可修改；审批后才产生实际库存变化，不能绕过审核。 */
+/**
+ * 库存报损报溢的新建、修改、审批、驳回分开授权。只有待审核可修改；审批后才产生实际库存变化，不能绕过审核。
+ */
 @RestController
 @RequestMapping("/scm/inventory/loss-gain")
 @Tag(name = "SCM 库存报损报溢单")
@@ -62,7 +64,7 @@ public class InventoryLossGainController {
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_UPDATE)
     @OperateLog
     public ResponseDTO<String> update(@PathVariable("id") Long lossGainId,
-            @Valid @RequestBody InventoryLossGainAddForm form) {
+        @Valid @RequestBody InventoryLossGainAddForm form) {
         inventoryLossGainService.update(lossGainId, form);
         return ResponseDTO.ok();
     }
@@ -77,7 +79,7 @@ public class InventoryLossGainController {
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_APPROVE)
     @OperateLog
     public ResponseDTO<String> approve(@PathVariable("id") Long lossGainId,
-            @Valid @RequestBody InventoryLossGainAuditForm form) {
+        @Valid @RequestBody InventoryLossGainAuditForm form) {
         inventoryLossGainService.approve(lossGainId, form);
         return ResponseDTO.ok();
     }
@@ -89,7 +91,7 @@ public class InventoryLossGainController {
     @SaCheckPermission(InventoryPermission.LOSS_GAIN_REJECT)
     @OperateLog
     public ResponseDTO<String> reject(@PathVariable("id") Long lossGainId,
-            @Valid @RequestBody InventoryLossGainAuditForm form) {
+        @Valid @RequestBody InventoryLossGainAuditForm form) {
         inventoryLossGainService.reject(lossGainId, form);
         return ResponseDTO.ok();
     }

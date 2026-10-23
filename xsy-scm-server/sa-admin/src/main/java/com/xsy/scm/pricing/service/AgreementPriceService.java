@@ -53,7 +53,7 @@ public class AgreementPriceService {
         // Lock old and new parents in ascending order if the dimension is changed.
         var existing = require(form.getAgreementPriceId(), form.getVersion());
         java.util.stream.Stream.of(existing.getCustomerId(), form.getCustomerId()).filter(Objects::nonNull).distinct()
-                .sorted().forEach(agreementPriceDao::lockParent);
+            .sorted().forEach(agreementPriceDao::lockParent);
         existing = require(form.getAgreementPriceId(), form.getVersion());
         validateAndLock(form, existing.getId());
         String beforeSnapshot = snapshot(existing);
@@ -87,12 +87,12 @@ public class AgreementPriceService {
     private void validateAndLock(AgreementPriceAddForm form, Long excludedAgreementPriceId) {
         AgreementFormulaType formula = formula(form);
         if (form.getEffectiveFrom() == null
-                || (form.getEffectiveTo() != null && !form.getEffectiveTo().isAfter(form.getEffectiveFrom()))) {
+            || (form.getEffectiveTo() != null && !form.getEffectiveTo().isAfter(form.getEffectiveFrom()))) {
             throw new ScmBusinessException(PERIOD_INVALID);
         }
         boolean fixed = formula == AgreementFormulaType.FIXED;
         if ((fixed && (form.getUnitPrice() == null || form.getFormulaParameter() != null))
-                || (!fixed && (form.getUnitPrice() != null || form.getFormulaParameter() == null))) {
+            || (!fixed && (form.getUnitPrice() != null || form.getFormulaParameter() == null))) {
             throw new ScmBusinessException(PRICE_INVALID);
         }
         if (fixed) {
@@ -108,7 +108,7 @@ public class AgreementPriceService {
         customerService.requireTradable(form.getCustomerId());
         validation.requireSellable(form.getSkuId());
         if (agreementPriceDao.countOverlapping(form.getCustomerId(), form.getSkuId(), form.getEffectiveFrom(),
-                form.getEffectiveTo(), excludedAgreementPriceId) > 0)
+            form.getEffectiveTo(), excludedAgreementPriceId) > 0)
             throw new ScmBusinessException(AGREEMENT_PRICE_OVERLAP);
     }
 
@@ -131,8 +131,8 @@ public class AgreementPriceService {
     private static AgreementFormulaType formula(AgreementPriceAddForm form) {
         try {
             return form.getFormulaType() == null
-                    ? AgreementFormulaType.FIXED
-                    : AgreementFormulaType.valueOf(form.getFormulaType());
+                ? AgreementFormulaType.FIXED
+                : AgreementFormulaType.valueOf(form.getFormulaType());
         } catch (IllegalArgumentException invalid) {
             throw new ScmBusinessException(PRICE_INVALID);
         }
@@ -148,7 +148,7 @@ public class AgreementPriceService {
         fields.put("formulaParameter", ScmDecimalStrings.format(agreementPrice.getFormulaParameter()));
         fields.put("effectiveFrom", agreementPrice.getEffectiveFrom().toString());
         fields.put("effectiveTo",
-                agreementPrice.getEffectiveTo() == null ? null : agreementPrice.getEffectiveTo().toString());
+            agreementPrice.getEffectiveTo() == null ? null : agreementPrice.getEffectiveTo().toString());
         fields.put("version", agreementPrice.getVersion());
         fields.put("deleted", agreementPrice.getDeleted());
         try {
@@ -159,8 +159,8 @@ public class AgreementPriceService {
     }
 
     private void log(AgreementPriceEntity agreementPrice, ScmPriceOperationTypeEnum operationType,
-            String beforeSnapshot) {
+        String beforeSnapshot) {
         agreementPriceDao.log(agreementPrice.getId(), operationType.name(), ScmOperator.current(), beforeSnapshot,
-                snapshot(agreementPrice));
+            snapshot(agreementPrice));
     }
 }

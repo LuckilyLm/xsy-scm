@@ -3,7 +3,9 @@ package com.xsy.scm.inventory.constant;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-/** 规格转换单创建即待审核，审批通过后同时写转出与转入流水，驳回不影响库存。完成和驳回均是终态，不能回滚流水。 */
+/**
+ * 规格转换单创建即待审核，审批通过后同时写转出与转入流水，驳回不影响库存。完成和驳回均是终态，不能回滚流水。
+ */
 @Getter
 @RequiredArgsConstructor
 public enum ScmInventoryConversionStatusEnum {

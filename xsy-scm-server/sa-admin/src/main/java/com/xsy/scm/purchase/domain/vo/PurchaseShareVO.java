@@ -1,7 +1,9 @@
 package com.xsy.scm.purchase.domain.vo;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 /**
@@ -16,10 +18,14 @@ public class PurchaseShareVO {
     private Long id;
     private Long purchaseOrderId;
 
-    /** 令牌哈希；只用于写入与查找，永不下发给客户端。 */
+    /**
+     * 令牌哈希；只用于写入与查找，永不下发给客户端。
+     */
     @JsonIgnore
     private String tokenHash;
-    /** 仅在生成响应里出现；列表查询为 null。 */
+    /**
+     * 仅在生成响应里出现；列表查询为 null。
+     */
     private String token;
     private String tokenPrefix;
     private OffsetDateTime expiresAt;

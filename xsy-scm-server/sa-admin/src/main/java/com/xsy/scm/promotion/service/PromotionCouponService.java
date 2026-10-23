@@ -21,6 +21,7 @@ import com.xsy.scm.promotion.domain.form.PromotionCouponIssueForm;
 import com.xsy.scm.promotion.domain.form.PromotionCouponQueryForm;
 import com.xsy.scm.promotion.domain.form.PromotionStatusForm;
 import com.xsy.scm.promotion.domain.vo.PromotionCouponVO;
+
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -29,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -60,7 +62,7 @@ public class PromotionCouponService {
     public PageResult<PromotionCouponVO> queryPage(PromotionCouponQueryForm query) {
         Page<?> page = SmartPageUtil.convert2PageQuery(query);
         List<PromotionCouponVO> rows = promotionCouponDao.queryPage(page, query).stream()
-                .map(PromotionCouponService::toVO).toList();
+            .map(PromotionCouponService::toVO).toList();
         attachUsageStats(rows);
         return SmartPageUtil.convert2PageResult(page, rows);
     }
@@ -83,7 +85,7 @@ public class PromotionCouponService {
             throw new ScmBusinessException(PromotionErrorCode.ACTIVITY_WINDOW_INVALID);
         }
         if (type == ScmPromotionCouponDiscountTypeEnum.RATE
-                && (form.getDiscountValue().signum() <= 0 || form.getDiscountValue().compareTo(BigDecimal.ONE) >= 0)) {
+            && (form.getDiscountValue().signum() <= 0 || form.getDiscountValue().compareTo(BigDecimal.ONE) >= 0)) {
             // 折扣率必须落在 (0,1)：1 表示不减，>1 表示加价，都不是券
             throw new ScmBusinessException(PromotionErrorCode.COUPON_RATE_INVALID);
         }
@@ -168,7 +170,7 @@ public class PromotionCouponService {
         }
         OffsetDateTime now = OffsetDateTime.now();
         if (!ScmPromotionStatusEnum.ACTIVE.name().equals(coupon.getStatus()) || coupon.getValidFrom().isAfter(now)
-                || !coupon.getValidTo().isAfter(now)) {
+            || !coupon.getValidTo().isAfter(now)) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_STATE_INVALID);
         }
         int quantity = form.getQuantity() == null ? 1 : form.getQuantity();
@@ -184,7 +186,7 @@ public class PromotionCouponService {
             rows.add(row);
         }
         if (promotionCouponInstanceDao.insertBatch(rows,
-                ScmPromotionCouponIssueSourceEnum.ADMIN_ISSUE.name()) != quantity) {
+            ScmPromotionCouponIssueSourceEnum.ADMIN_ISSUE.name()) != quantity) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_INSTANCE_UNAVAILABLE);
         }
         idempotencyService.complete(claim, "PROMOTION_COUPON", coupon.getId(), quantity);
@@ -209,23 +211,23 @@ public class PromotionCouponService {
         PromotionCouponEntity coupon = promotionCouponDao.lockById(couponId);
         OffsetDateTime now = OffsetDateTime.now();
         if (coupon == null || Boolean.TRUE.equals(coupon.getDeleted()) || !Boolean.TRUE.equals(coupon.getClaimable())
-                || !ScmPromotionStatusEnum.ACTIVE.name().equals(coupon.getStatus())
-                || coupon.getValidFrom().isAfter(now) || !coupon.getValidTo().isAfter(now)) {
+            || !ScmPromotionStatusEnum.ACTIVE.name().equals(coupon.getStatus()) || coupon.getValidFrom().isAfter(now)
+            || !coupon.getValidTo().isAfter(now)) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_NOT_CLAIMABLE);
         }
         if (coupon.getPerCustomerLimit() != null
-                && promotionCouponInstanceDao.selectCount(new LambdaQueryWrapper<PromotionCouponInstanceEntity>()
-                        .eq(PromotionCouponInstanceEntity::getCouponId, couponId)
-                        .eq(PromotionCouponInstanceEntity::getCustomerId, customerId)
-                        .eq(PromotionCouponInstanceEntity::getIssueSource,
-                                ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name())) >= coupon.getPerCustomerLimit()) {
+            && promotionCouponInstanceDao.selectCount(new LambdaQueryWrapper<PromotionCouponInstanceEntity>()
+                .eq(PromotionCouponInstanceEntity::getCouponId, couponId)
+                .eq(PromotionCouponInstanceEntity::getCustomerId, customerId)
+                .eq(PromotionCouponInstanceEntity::getIssueSource,
+                    ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name())) >= coupon.getPerCustomerLimit()) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_CLAIM_LIMIT_REACHED);
         }
         if (coupon.getTotalLimit() != null
-                && promotionCouponInstanceDao.selectCount(new LambdaQueryWrapper<PromotionCouponInstanceEntity>()
-                        .eq(PromotionCouponInstanceEntity::getCouponId, couponId)
-                        .eq(PromotionCouponInstanceEntity::getIssueSource,
-                                ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name())) >= coupon.getTotalLimit()) {
+            && promotionCouponInstanceDao.selectCount(new LambdaQueryWrapper<PromotionCouponInstanceEntity>()
+                .eq(PromotionCouponInstanceEntity::getCouponId, couponId)
+                .eq(PromotionCouponInstanceEntity::getIssueSource,
+                    ScmPromotionCouponIssueSourceEnum.MALL_CLAIM.name())) >= coupon.getTotalLimit()) {
             throw new ScmBusinessException(PromotionErrorCode.COUPON_CLAIM_LIMIT_REACHED);
         }
         PromotionCouponInstanceEntity row = new PromotionCouponInstanceEntity();
@@ -251,10 +253,10 @@ public class PromotionCouponService {
             }
         }
         List<PromotionCouponInstanceEntity> rows = promotionCouponInstanceDao.listByCustomer(customerId, status,
-                INSTANCE_LIST_LIMIT);
+            INSTANCE_LIST_LIMIT);
         Map<Long, PromotionCouponEntity> coupons = new HashMap<>();
         List<Long> couponIds = rows.stream().map(PromotionCouponInstanceEntity::getCouponId).filter(Objects::nonNull)
-                .distinct().toList();
+            .distinct().toList();
         if (!couponIds.isEmpty()) {
             promotionCouponDao.selectBatchIds(couponIds).forEach(coupon -> coupons.put(coupon.getId(), coupon));
         }
@@ -281,7 +283,7 @@ public class PromotionCouponService {
         List<Long> ids = rows.stream().map(PromotionCouponVO::getId).toList();
         Map<Long, PromotionCouponVO.UsageStats> statsById = new HashMap<>();
         promotionCouponInstanceDao.usageStatsByCouponIds(ids)
-                .forEach(stats -> statsById.put(stats.getCouponId(), stats));
+            .forEach(stats -> statsById.put(stats.getCouponId(), stats));
         for (PromotionCouponVO row : rows) {
             PromotionCouponVO.UsageStats stats = statsById.get(row.getId());
             if (stats == null) {
@@ -299,7 +301,7 @@ public class PromotionCouponService {
 
     private void requireCodeAvailable(String code, Long selfId) {
         LambdaQueryWrapper<PromotionCouponEntity> wrapper = new LambdaQueryWrapper<PromotionCouponEntity>()
-                .eq(PromotionCouponEntity::getCouponCode, code.trim()).eq(PromotionCouponEntity::getDeleted, false);
+            .eq(PromotionCouponEntity::getCouponCode, code.trim()).eq(PromotionCouponEntity::getDeleted, false);
         if (selfId != null) {
             wrapper.ne(PromotionCouponEntity::getId, selfId);
         }
@@ -317,8 +319,8 @@ public class PromotionCouponService {
 
     static PromotionCouponVO toVO(PromotionCouponEntity row) {
         String label = ScmPromotionCouponDiscountTypeEnum.isSupported(row.getDiscountType())
-                ? ScmPromotionCouponDiscountTypeEnum.valueOf(row.getDiscountType()).getDesc()
-                : row.getDiscountType();
+            ? ScmPromotionCouponDiscountTypeEnum.valueOf(row.getDiscountType()).getDesc()
+            : row.getDiscountType();
         return PromotionCouponVO.of(row, label);
     }
 }

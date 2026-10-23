@@ -13,7 +13,9 @@ import org.apache.ibatis.annotations.Param;
 import java.math.BigDecimal;
 import java.util.List;
 
-/** 财务付款只追加不修改，退款付款以退款单来源唯一索引防重；反向付款无原业务来源 ID，不占用该索引。 */
+/**
+ * 财务付款只追加不修改，退款付款以退款单来源唯一索引防重；反向付款无原业务来源 ID，不占用该索引。
+ */
 @Mapper
 public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
 
@@ -37,7 +39,9 @@ public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
      */
     int insertNormalOnConflictDoNothing(FinancePaymentEntity entity);
 
-    /** Lock the source payment so reversal and write-off commands serialize on the same row. */
+    /**
+     * Lock the source payment so reversal and write-off commands serialize on the same row.
+     */
     FinancePaymentEntity selectByIdForUpdate(@Param("paymentId") Long paymentId);
 
     /**
@@ -48,10 +52,14 @@ public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
      */
     FinancePaymentEntity selectBySource(@Param("sourceType") String sourceType, @Param("sourceId") Long sourceId);
 
-    /** Effective write-off amount (NORMAL minus REVERSE) for this source payment. */
+    /**
+     * Effective write-off amount (NORMAL minus REVERSE) for this source payment.
+     */
     BigDecimal selectEffectiveWriteOffAmount(@Param("paymentId") Long paymentId);
 
-    /** Insert a reversal, letting the partial unique index arbitrate a second reversal. */
+    /**
+     * Insert a reversal, letting the partial unique index arbitrate a second reversal.
+     */
     int insertReverseOnConflictDoNothing(FinancePaymentEntity entity);
 
     BigDecimal selectReversedAmount(@Param("paymentId") Long paymentId);
@@ -61,5 +69,5 @@ public interface FinancePaymentDao extends BaseMapper<FinancePaymentEntity> {
     FinancePaymentQueryVO selectReversalByOriginal(@Param("paymentId") Long paymentId);
 
     List<FinancePaymentQueryVO> queryPage(Page<?> page, @Param("query") FinancePaymentQueryForm query,
-            @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
+        @Param("scope") ScmDataScopeContext scope, @Param("timeRange") ScmDateTimeRange timeRange);
 }

@@ -18,12 +18,14 @@ import com.xsy.scm.order.domain.vo.SalesOrderVO;
 import com.xsy.scm.order.domain.vo.OrderPoolAssigneeVO;
 import com.xsy.scm.order.manager.OrderOperationLogRecorder;
 import com.xsy.scm.order.permission.OrderPermission;
+
 import java.util.LinkedHashMap;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.admin.module.system.employee.dao.EmployeeDao;
 import net.lab1024.sa.admin.module.system.employee.domain.entity.EmployeeEntity;
@@ -32,9 +34,12 @@ import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 
-/** 商城未分配订单的独立领取与指派入口；只修改订单自身的负责人快照。 */
+/**
+ * 商城未分配订单的独立领取与指派入口；只修改订单自身的负责人快照。
+ */
 @Service
 @RequiredArgsConstructor
 public class OrderPoolService {
@@ -51,7 +56,7 @@ public class OrderPoolService {
         requireAssignPermission();
         var page = SmartPageUtil.convert2PageQuery(form);
         List<SalesOrderVO> rows = salesOrderDao.unassignedMallOrders(page, form).stream()
-                .map(salesOrderQueryService::order).toList();
+            .map(salesOrderQueryService::order).toList();
         return SmartPageUtil.convert2PageResult(page, rows);
     }
 
@@ -59,14 +64,14 @@ public class OrderPoolService {
     public List<OrderPoolAssigneeVO> assignees() {
         requireAssignPermission();
         return employeeDao
-                .selectList(new LambdaQueryWrapper<EmployeeEntity>()
-                        .select(EmployeeEntity::getEmployeeId, EmployeeEntity::getActualName,
-                                EmployeeEntity::getAdministratorFlag)
-                        .eq(EmployeeEntity::getDeletedFlag, false).eq(EmployeeEntity::getDisabledFlag, false))
-                .stream().filter(this::canReceiveOrder)
-                .sorted(Comparator.comparing(EmployeeEntity::getActualName, Comparator.nullsLast(String::compareTo))
-                        .thenComparing(EmployeeEntity::getEmployeeId))
-                .map(employee -> new OrderPoolAssigneeVO(employee.getEmployeeId(), employee.getActualName())).toList();
+            .selectList(new LambdaQueryWrapper<EmployeeEntity>()
+                .select(EmployeeEntity::getEmployeeId, EmployeeEntity::getActualName,
+                    EmployeeEntity::getAdministratorFlag)
+                .eq(EmployeeEntity::getDeletedFlag, false).eq(EmployeeEntity::getDisabledFlag, false))
+            .stream().filter(this::canReceiveOrder)
+            .sorted(Comparator.comparing(EmployeeEntity::getActualName, Comparator.nullsLast(String::compareTo))
+                .thenComparing(EmployeeEntity::getEmployeeId))
+            .map(employee -> new OrderPoolAssigneeVO(employee.getEmployeeId(), employee.getActualName())).toList();
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -95,9 +100,9 @@ public class OrderPoolService {
             return idempotencyService.replay(claim, SalesOrderVO.class);
         }
         var order = salesOrderDao.lock(form.getOrderId());
-        if (order == null || !ScmOrderSourceEnum.MALL.name().equals(order.getOrderSource())
-                || !Set.of(ScmOrderStatusEnum.DRAFT.name(), ScmOrderStatusEnum.PENDING.name(),
-                        ScmOrderStatusEnum.CONFIRMED.name()).contains(order.getStatus())) {
+        if (order == null || !ScmOrderSourceEnum.MALL.name().equals(order.getOrderSource()) || !Set
+            .of(ScmOrderStatusEnum.DRAFT.name(), ScmOrderStatusEnum.PENDING.name(), ScmOrderStatusEnum.CONFIRMED.name())
+            .contains(order.getStatus())) {
             throw new ScmBusinessException(OrderErrorCode.ORDER_NOT_FOUND);
         }
         if (order.getSellerId() != null) {
@@ -108,25 +113,25 @@ public class OrderPoolService {
         }
         EmployeeEntity assignee = employeeDao.selectById(form.getSellerId());
         if (assignee == null || Boolean.TRUE.equals(assignee.getDisabledFlag())
-                || Boolean.TRUE.equals(assignee.getDeletedFlag()) || !canReceiveOrder(assignee)) {
+            || Boolean.TRUE.equals(assignee.getDeletedFlag()) || !canReceiveOrder(assignee)) {
             throw new ScmBusinessException(OrderErrorCode.ORDER_ASSIGN_TARGET_INVALID);
         }
         SalesOrderVO before = salesOrderQueryService.order(order);
         if (salesOrderDao.assignUnassignedMallOrder(order.getId(), order.getVersion(), form.getSellerId(),
-                ScmOperator.current()) != 1) {
+            ScmOperator.current()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         SalesOrderVO after = salesOrderQueryService.order(salesOrderDao.selectById(order.getId()));
         operationLogs.record(order.getId(), ScmOrderOperationTypeEnum.ASSIGN, "指派业务员：" + assignee.getActualName(),
-                before, after);
+            before, after);
         idempotencyService.complete(claim, ScmFinanceReceivableSourceTypeEnum.SALES_ORDER.name(), order.getId(), after);
         return after;
     }
 
     private Long requireAssignPermission() {
         var scope = dataScopeService.resolve();
-        if (scope.getEmployeeId() == null || (!ScmDataScopeService.isAdministrator()
-                && !ScmDataScopeService.hasPermission(OrderPermission.ASSIGN))) {
+        if (scope.getEmployeeId() == null
+            || (!ScmDataScopeService.isAdministrator() && !ScmDataScopeService.hasPermission(OrderPermission.ASSIGN))) {
             throw new ScmDataScopeException();
         }
         return scope.getEmployeeId();
@@ -138,6 +143,6 @@ public class OrderPoolService {
         }
         var permission = loginManager.getUserPermission(employee.getEmployeeId());
         return permission != null && permission.getPermissionList() != null
-                && permission.getPermissionList().contains(OrderPermission.QUERY);
+            && permission.getPermissionList().contains(OrderPermission.QUERY);
     }
 }

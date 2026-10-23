@@ -4,12 +4,16 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
 import java.util.List;
 
-/** 创建分拣任务时指定仓库和供应商，保存当前送货时间与波次信息。任务建立后不能随主档变化自动重写这些信息。 */
+/**
+ * 创建分拣任务时指定仓库和供应商，保存当前送货时间与波次信息。任务建立后不能随主档变化自动重写这些信息。
+ */
 @Data
 public class SortingTaskCreateForm {
     @NotNull(message = "仓库不能为空")

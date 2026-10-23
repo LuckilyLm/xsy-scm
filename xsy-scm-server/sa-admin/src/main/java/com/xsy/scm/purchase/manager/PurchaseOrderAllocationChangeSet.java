@@ -10,9 +10,11 @@ import java.util.Objects;
 
 import static com.xsy.scm.purchase.constant.PurchaseErrorCode.PURCHASE_DEMAND_ALLOCATION_DUPLICATE;
 
-/** 按采购明细与需求的组合识别分配记录。先校验本次变更，再统一写入，避免分配数量重复。 */
+/**
+ * 按采购明细与需求的组合识别分配记录。先校验本次变更，再统一写入，避免分配数量重复。
+ */
 public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEntity> inserted,
-        List<PurchaseDemandAllocationEntity> updated, List<PurchaseDemandAllocationEntity> removed) {
+    List<PurchaseDemandAllocationEntity> updated, List<PurchaseDemandAllocationEntity> removed) {
 
     /**
      * allocation 的身份。
@@ -28,7 +30,7 @@ public record PurchaseOrderAllocationChangeSet(List<PurchaseDemandAllocationEnti
      * 计算差量。{@code requested} 的 {@code purchaseOrderItemId} 由调用方在行落库后回填。
      */
     public static PurchaseOrderAllocationChangeSet between(List<PurchaseDemandAllocationEntity> existing,
-            List<PurchaseDemandAllocationEntity> requested) {
+        List<PurchaseDemandAllocationEntity> requested) {
         var unmatched = new LinkedHashMap<Key, PurchaseDemandAllocationEntity>();
         existing.forEach(row -> unmatched.put(key(row), row));
 

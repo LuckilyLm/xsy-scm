@@ -13,13 +13,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmSortingScaleEventStatusEnum {
 
-    /** 待处理：设备已上报，等待人工接受或驳回。 */
+    /**
+     * 待处理：设备已上报，等待人工接受或驳回。
+     */
     PENDING("待处理"),
 
-    /** 已接受：读数已写入正式分拣量。 */
+    /**
+     * 已接受：读数已写入正式分拣量。
+     */
     ACCEPTED("已接受"),
 
-    /** 已驳回：不写分拣结果，保留原因供追溯。 */
+    /**
+     * 已驳回：不写分拣结果，保留原因供追溯。
+     */
     REJECTED("已驳回");
 
     private final String desc;

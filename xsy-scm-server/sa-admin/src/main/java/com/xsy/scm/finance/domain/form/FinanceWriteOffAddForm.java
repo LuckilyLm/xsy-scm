@@ -9,7 +9,9 @@ import lombok.Data;
 
 import java.util.List;
 
-/** 一笔收款或供应商付款向多个应收 / 应付分配。 */
+/**
+ * 一笔收款或供应商付款向多个应收 / 应付分配。
+ */
 @Data
 public class FinanceWriteOffAddForm {
 

@@ -8,7 +8,9 @@ import com.xsy.scm.order.domain.vo.OrderReceivedCorrectionVO;
 import com.xsy.scm.order.permission.OrderPermission;
 import com.xsy.scm.order.service.OrderReceivedCorrectionService;
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.ResponseDTO;
 import net.lab1024.sa.base.module.support.operatelog.annotation.OperateLog;
@@ -35,7 +37,7 @@ public class OrderReceivedCorrectionController {
     @GetMapping("/candidate/{orderId}/{orderItemId}")
     @SaCheckPermission(OrderPermission.QUERY)
     public ResponseDTO<OrderReceivedCorrectionCandidateVO> candidate(@PathVariable Long orderId,
-            @PathVariable Long orderItemId) {
+        @PathVariable Long orderItemId) {
         return ResponseDTO.ok(correctionService.candidate(orderId, orderItemId));
     }
 
@@ -43,7 +45,7 @@ public class OrderReceivedCorrectionController {
     @SaCheckPermission(value = {OrderPermission.QUERY, OrderPermission.UPDATE}, mode = SaMode.AND)
     @OperateLog
     public ResponseDTO<OrderReceivedCorrectionVO> record(@Valid @RequestBody OrderReceivedCorrectionForm form,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) {
         return ResponseDTO.ok(correctionService.record(form, key));
     }
 }

@@ -16,9 +16,11 @@ import com.xsy.scm.mall.home.domain.form.MallHomeRollbackForm;
 import com.xsy.scm.mall.home.domain.vo.MallHomeDraftVO;
 import com.xsy.scm.mall.home.domain.vo.MallHomeReleaseVO;
 import com.xsy.scm.mall.home.domain.vo.MallHomeStorageVO;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +33,9 @@ import static com.xsy.scm.mall.home.constant.MallHomeErrorCode.RELEASE_NOT_FOUND
 @RequiredArgsConstructor
 public class MallHomeLayoutService {
 
-    /** 受控主题：只改配色，不换版式。 */
+    /**
+     * 受控主题：只改配色，不换版式。
+     */
     private static final String DEFAULT_THEME = "FRESH";
 
     private static final java.util.Set<String> THEMES = java.util.Set.of("FRESH", "WARM", "OCEAN");
@@ -49,7 +53,7 @@ public class MallHomeLayoutService {
         MallHomeStorageVO draft = homeDao.draft();
         MallHomeStorageVO pointer = homeDao.pointer();
         return new MallHomeDraftVO(draft.getVersion(), pointer.getVersion(), pointer.getCurrentReleaseId(),
-                draft.getThemeCode(), parse(draft.getContent()), draft.getUpdatedAt(), draft.getUpdatedBy());
+            draft.getThemeCode(), parse(draft.getContent()), draft.getUpdatedAt(), draft.getUpdatedBy());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -61,7 +65,7 @@ public class MallHomeLayoutService {
         }
         layoutValidator.validate(form.getBlocks());
         List<MallHomeBlockForm> ordered = form.getBlocks().stream()
-                .sorted(Comparator.comparing(MallHomeBlockForm::getSortOrder)).toList();
+            .sorted(Comparator.comparing(MallHomeBlockForm::getSortOrder)).toList();
         String themeCode = themeOf(form.getThemeCode());
         if (homeDao.saveDraft(draft.getVersion(), stringify(ordered), themeCode, ScmOperator.current()) != 1) {
             throw new ScmBusinessException(VERSION_CONFLICT);
@@ -75,7 +79,7 @@ public class MallHomeLayoutService {
         MallHomeStorageVO draft = homeDao.lockDraft();
         MallHomeStorageVO pointer = homeDao.lockPointer();
         if (!Objects.equals(draft.getVersion(), form.getDraftVersion())
-                || !Objects.equals(pointer.getVersion(), form.getPointerVersion())) {
+            || !Objects.equals(pointer.getVersion(), form.getPointerVersion())) {
             throw new ScmBusinessException(VERSION_CONFLICT);
         }
         List<MallHomeBlockForm> blocks = parse(draft.getContent());
@@ -127,7 +131,9 @@ public class MallHomeLayoutService {
         return homeDao.history();
     }
 
-    /** 主题只接受受控取值；不传按默认绿色，避免历史调用方一次性全部失败。 */
+    /**
+     * 主题只接受受控取值；不传按默认绿色，避免历史调用方一次性全部失败。
+     */
     private String themeOf(String themeCode) {
         if (themeCode == null || themeCode.isBlank()) {
             return DEFAULT_THEME;

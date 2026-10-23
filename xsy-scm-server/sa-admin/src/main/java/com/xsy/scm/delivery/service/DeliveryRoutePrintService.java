@@ -35,31 +35,35 @@ import static com.xsy.scm.common.error.ScmCommonErrorCode.VERSION_CONFLICT;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.NOT_FOUND;
 import static com.xsy.scm.delivery.constant.DeliveryErrorCode.STATE_INVALID;
 
-/** Route-scoped print registration and result construction. */
+/**
+ * Route-scoped print registration and result construction.
+ */
 @Service
 public class DeliveryRoutePrintService {
 
     private static final Set<String> PRINTABLE = Set.of(ScmDeliveryRouteStatusEnum.PLANNED.name(),
-            ScmDeliveryRouteStatusEnum.DISPATCHED.name(), ScmDeliveryRouteStatusEnum.COMPLETED.name());
+        ScmDeliveryRouteStatusEnum.DISPATCHED.name(), ScmDeliveryRouteStatusEnum.COMPLETED.name());
 
     private final DeliveryQueryDao deliveryQueryDao;
     private final DeliveryRouteOrderDao deliveryRouteOrderDao;
     private final ScmIdempotencyService idempotencyService;
 
     public DeliveryRoutePrintService(DeliveryQueryDao deliveryQueryDao, DeliveryRouteOrderDao deliveryRouteOrderDao,
-            ScmIdempotencyService idempotencyService) {
+        ScmIdempotencyService idempotencyService) {
         this.deliveryQueryDao = deliveryQueryDao;
         this.deliveryRouteOrderDao = deliveryRouteOrderDao;
         this.idempotencyService = idempotencyService;
     }
 
-    /** Count only explicitly selected orders that remain active under the locked route. */
+    /**
+     * Count only explicitly selected orders that remain active under the locked route.
+     */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printOrders(Long id, DeliveryPrintOrdersForm form, String key) {
         var claim = idempotencyService.claim("DELIVERY_PRINT_ORDERS:" + id, key, form);
         if (claim.replay()) {
             return DeliveryVisibility.current()
-                    .printResult(idempotencyService.replay(claim, DeliveryPrintResultVO.class));
+                .printResult(idempotencyService.replay(claim, DeliveryPrintResultVO.class));
         }
         printable(lock(id, form.getVersion()));
         var wanted = new HashSet<>(form.getOrderIds());
@@ -71,32 +75,35 @@ public class DeliveryRoutePrintService {
         return DeliveryVisibility.current().printResult(result);
     }
 
-    /** Re-evaluate customer and order filters while holding the route lock before recording prints. */
+    /**
+     * Re-evaluate customer and order filters while holding the route lock before recording prints.
+     */
     @Transactional(rollbackFor = Exception.class)
     public DeliveryPrintResultVO printCustomers(Long id, DeliveryPrintCustomersForm form, String key) {
         var claim = idempotencyService.claim("DELIVERY_PRINT_CUSTOMERS:" + id, key, form);
         if (claim.replay()) {
             return DeliveryVisibility.current()
-                    .printResult(idempotencyService.replay(claim, DeliveryPrintResultVO.class));
+                .printResult(idempotencyService.replay(claim, DeliveryPrintResultVO.class));
         }
         printable(lock(id, form.getVersion()));
         var customerStatusFilter = customerPrintFilter(form.getCustomerStatusFilter(),
-                ScmDeliveryCustomerPrintFilterEnum.ALL);
+            ScmDeliveryCustomerPrintFilterEnum.ALL);
         var candidates = form.getCustomerIds() == null ? Set.<Long>of() : new HashSet<>(form.getCustomerIds());
         if (candidates.isEmpty() && customerStatusFilter == ScmDeliveryCustomerPrintFilterEnum.ALL) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         var orderFilter = orderPrintFilter(form.getOrderPrintFilter());
         var selected = new ArrayList<DeliveryRouteOrderEntity>();
-        for (var entry : active(id).stream().collect(
+        for (var entry : active(id).stream()
+            .collect(
                 Collectors.groupingBy(DeliveryRouteOrderEntity::getCustomerId, LinkedHashMap::new, Collectors.toList()))
-                .entrySet()) {
+            .entrySet()) {
             if (!candidates.isEmpty() && !candidates.contains(entry.getKey()))
                 continue;
             if (!matchesCustomerStatus(customerStatusFilter, entry.getValue()))
                 continue;
             entry.getValue().stream().filter(assignment -> matchesOrderPrint(orderFilter, assignment))
-                    .forEach(selected::add);
+                .forEach(selected::add);
         }
         if (selected.isEmpty())
             throw new ScmBusinessException(STATE_INVALID);
@@ -106,7 +113,7 @@ public class DeliveryRoutePrintService {
     }
 
     private boolean matchesCustomerStatus(ScmDeliveryCustomerPrintFilterEnum filter,
-            List<DeliveryRouteOrderEntity> customerOrders) {
+        List<DeliveryRouteOrderEntity> customerOrders) {
         if (filter == ScmDeliveryCustomerPrintFilterEnum.ALL)
             return true;
         long printed = customerOrders.stream().filter(this::hasPrinted).count();
@@ -128,7 +135,7 @@ public class DeliveryRoutePrintService {
     }
 
     private ScmDeliveryCustomerPrintFilterEnum customerPrintFilter(String value,
-            ScmDeliveryCustomerPrintFilterEnum defaultValue) {
+        ScmDeliveryCustomerPrintFilterEnum defaultValue) {
         if (value == null)
             return defaultValue;
         try {
@@ -159,13 +166,13 @@ public class DeliveryRoutePrintService {
         }
         var orderIds = new HashSet<>(selected.stream().map(DeliveryRouteOrderEntity::getOrderId).toList());
         var rows = deliveryQueryDao.orderView(id).stream()
-                .filter(orderView -> orderIds.contains(orderView.getOrderId())).toList();
+            .filter(orderView -> orderIds.contains(orderView.getOrderId())).toList();
         var result = new DeliveryPrintResultVO();
         result.setRouteId(id);
         result.setGeneratedAt(OffsetDateTime.now());
         result.setOrderCount(rows.size());
         result.setTotalAmount(rows.stream().map(DeliveryOrderViewVO::getOrderAmount).filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
+            .reduce(BigDecimal.ZERO, BigDecimal::add));
         result.setOrders(rows);
         return result;
     }
@@ -177,10 +184,9 @@ public class DeliveryRoutePrintService {
 
     private List<DeliveryRouteOrderEntity> active(Long routeId) {
         return deliveryRouteOrderDao.selectList(
-                new LambdaQueryWrapper<DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, routeId)
-                        .eq(DeliveryRouteOrderEntity::getAssignmentStatus,
-                                ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
-                        .orderByAsc(DeliveryRouteOrderEntity::getOrderId));
+            new LambdaQueryWrapper<DeliveryRouteOrderEntity>().eq(DeliveryRouteOrderEntity::getRouteId, routeId)
+                .eq(DeliveryRouteOrderEntity::getAssignmentStatus, ScmDeliveryAssignmentStatusEnum.ACTIVE.name())
+                .orderByAsc(DeliveryRouteOrderEntity::getOrderId));
     }
 
     private DeliveryRouteEntity lock(Long routeId, Integer version) {

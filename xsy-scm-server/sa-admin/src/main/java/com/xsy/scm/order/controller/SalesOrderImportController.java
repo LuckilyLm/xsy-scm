@@ -56,7 +56,7 @@ public class SalesOrderImportController {
     @SaCheckPermission(OrderPermission.IMPORT)
     @OperateLog
     public ResponseDTO<SalesOrderImportResultVO> importOrders(@RequestParam MultipartFile file,
-            @RequestHeader(value = "Idempotency-Key", required = false) String key) throws Exception {
+        @RequestHeader(value = "Idempotency-Key", required = false) String key) throws Exception {
         if (file.isEmpty())
             return ResponseDTO.userErrorParam("导入文件不能为空");
         var name = file.getOriginalFilename();
@@ -67,7 +67,7 @@ public class SalesOrderImportController {
         var security = securityFileService.checkFile(file);
         if (!security.getOk())
             return ResponseDTO.error(security);
-        return ResponseDTO.ok(
-                salesOrderImportService.importFile(file, key, StpUtil.hasPermission(OrderPermission.PRICE_OVERRIDE)));
+        return ResponseDTO
+            .ok(salesOrderImportService.importFile(file, key, StpUtil.hasPermission(OrderPermission.PRICE_OVERRIDE)));
     }
 }

@@ -16,15 +16,17 @@ public interface CustomerSkuVisibilityDao extends BaseMapper<CustomerSkuVisibili
     Long lockCustomer(@Param("id") Long id);
 
     int softDelete(@Param("id") Long id, @Param("version") Integer version, @Param("customerId") Long customerId,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     long customerReferences(@Param("id") Long id);
 
     long typeReferences(@Param("id") Long id);
 
-    /** 反向白名单列表读；范围按客户归属（{@code xsy_customer.seller_id}）收窄，传 null 即恒假谓词。 */
+    /**
+     * 反向白名单列表读；范围按客户归属（{@code xsy_customer.seller_id}）收窄，传 null 即恒假谓词。
+     */
     List<CustomerSkuVisibilityReverseVO> reverse(Page<?> page, @Param("query") CustomerVisibilityQueryForm query,
-            @Param("scope") ScmValueScope scope);
+        @Param("scope") ScmValueScope scope);
 
     String policy(@Param("customerId") Long customerId);
 

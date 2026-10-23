@@ -2,9 +2,12 @@ package com.xsy.scm.finance.domain.dto;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+
 import lombok.Data;
 
-/** 财务只读的订单资金来源及其身份。 */
+/**
+ * 财务只读的订单资金来源及其身份。
+ */
 @Data
 public class FinanceOrderFundingDto {
     private Long intentId;

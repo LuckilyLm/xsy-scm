@@ -3,7 +3,9 @@ package com.xsy.scm.mall.order.domain.form;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Positive;
+
 import java.util.List;
+
 import lombok.Data;
 
 @Data
@@ -14,7 +16,9 @@ public class MallCheckoutPreviewForm {
     private Long addressId;
     @Positive(message = "配送仓必须大于0")
     private Long warehouseId;
-    /** 客户选择试算的券实例；预览只试算不占用，正式占用在订单确认时完成 */
+    /**
+     * 客户选择试算的券实例；预览只试算不占用，正式占用在订单确认时完成
+     */
     @Positive(message = "券实例 ID 必须大于0")
     private Long couponInstanceId;
 }

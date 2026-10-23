@@ -13,13 +13,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ScmTraceCorrectionStatusEnum {
 
-    /** 待审批：同一单元同一时刻最多一条。 */
+    /**
+     * 待审批：同一单元同一时刻最多一条。
+     */
     PENDING("待审批"),
 
-    /** 已批准：绑定已解除，解绑事件已追加。 */
+    /**
+     * 已批准：绑定已解除，解绑事件已追加。
+     */
     APPROVED("已批准"),
 
-    /** 已驳回：绑定继续有效，只留审批意见。 */
+    /**
+     * 已驳回：绑定继续有效，只留审批意见。
+     */
     REJECTED("已驳回");
 
     private final String desc;

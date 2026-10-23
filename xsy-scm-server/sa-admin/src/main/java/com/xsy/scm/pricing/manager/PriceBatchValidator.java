@@ -20,25 +20,25 @@ public final class PriceBatchValidator {
         for (int i = 0; i < rows.size(); i++) {
             var priceBatchRow = rows.get(i);
             int rowNumber = priceBatchRow == null || priceBatchRow.getRowNumber() == null
-                    ? i + 1
-                    : priceBatchRow.getRowNumber();
+                ? i + 1
+                : priceBatchRow.getRowNumber();
             if (priceBatchRow == null || priceBatchRow.getCustomerTypeId() == null || priceBatchRow.getSkuId() == null
-                    || rowNumber < 1 || !numbers.add(rowNumber)) {
+                || rowNumber < 1 || !numbers.add(rowNumber)) {
                 failures.add(new PriceBatchRowFailureVO(rowNumber,
-                        priceBatchRow == null ? null : priceBatchRow.getCustomerTypeId(),
-                        priceBatchRow == null ? null : priceBatchRow.getSkuId(), 40035, "批量行标识不合法"));
+                    priceBatchRow == null ? null : priceBatchRow.getCustomerTypeId(),
+                    priceBatchRow == null ? null : priceBatchRow.getSkuId(), 40035, "批量行标识不合法"));
                 continue;
             }
             priceBatchRow.setRowNumber(rowNumber);
             if (!keys.add(priceBatchRow.getCustomerTypeId() + ":" + priceBatchRow.getSkuId()))
                 failures.add(new PriceBatchRowFailureVO(rowNumber, priceBatchRow.getCustomerTypeId(),
-                        priceBatchRow.getSkuId(), 40035, "请求内客户类型与商品规格重复"));
+                    priceBatchRow.getSkuId(), 40035, "请求内客户类型与商品规格重复"));
             try {
                 PriceValidation.amountAndPeriod(priceBatchRow.getUnitPrice(), priceBatchRow.getEffectiveFrom(),
-                        priceBatchRow.getEffectiveTo());
+                    priceBatchRow.getEffectiveTo());
             } catch (ScmBusinessException e) {
                 failures.add(new PriceBatchRowFailureVO(rowNumber, priceBatchRow.getCustomerTypeId(),
-                        priceBatchRow.getSkuId(), e.getErrorCode().getCode(), e.getErrorCode().getMsg()));
+                    priceBatchRow.getSkuId(), e.getErrorCode().getCode(), e.getErrorCode().getMsg()));
             }
         }
         return failures;

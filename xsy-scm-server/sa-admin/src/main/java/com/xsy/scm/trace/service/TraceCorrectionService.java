@@ -14,8 +14,10 @@ import com.xsy.scm.trace.domain.form.TraceCorrectionDecisionForm;
 import com.xsy.scm.trace.domain.form.TraceCorrectionQueryForm;
 import com.xsy.scm.trace.domain.vo.TraceCorrectionVO;
 import com.xsy.scm.trace.domain.vo.TraceUnitVO;
+
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import net.lab1024.sa.base.common.domain.PageResult;
 import net.lab1024.sa.base.common.util.SmartPageUtil;
@@ -40,7 +42,9 @@ public class TraceCorrectionService {
 
     private final ScmDataScopeService dataScopeService;
 
-    /** 申请更正：撤销当前这条绑定。 */
+    /**
+     * 申请更正：撤销当前这条绑定。
+     */
     @Transactional(rollbackFor = Exception.class)
     public TraceCorrectionVO apply(TraceCorrectionApplyForm form, String operator) {
         TraceUnitVO.Unit unit = traceUnitDao.lockByCode(form.getUnitCode().trim());
@@ -83,21 +87,23 @@ public class TraceCorrectionService {
         TraceCorrectionVO correction = requirePending(form, operator);
         TraceUnitVO.Unit unit = traceUnitDao.lockById(correction.getUnitId());
         if (unit == null || !ScmTraceUnitStatusEnum.ACTIVE.name().equals(unit.getStatus())
-                || !correction.getBindingId().equals(traceUnitDao.findActiveBindingId(unit.getId()))) {
+            || !correction.getBindingId().equals(traceUnitDao.findActiveBindingId(unit.getId()))) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_NO_BINDING);
         }
         // 申请以后可能已发车，必须在批准这一事务中重新验证；数据库触发器再兜底。
         requireNotOutbound(correction.getBindingId());
         OffsetDateTime now = OffsetDateTime.now();
         traceCorrectionDao.insertUnbind(correction.getUnitId(), correction.getBindingId(), correction.getId(),
-                correction.getReason(), now, operator);
+            correction.getReason(), now, operator);
         traceCorrectionDao.appendUnbindEvent(correction.getUnitId(), correction.getLotId(), correction.getId(), now,
-                operator, correction.getReason());
+            operator, correction.getReason());
         decide(form, operator, ScmTraceCorrectionStatusEnum.APPROVED.name(), now);
         return traceCorrectionDao.findById(correction.getId());
     }
 
-    /** 驳回：只留审批意见，绑定继续有效。 */
+    /**
+     * 驳回：只留审批意见，绑定继续有效。
+     */
     @Transactional(rollbackFor = Exception.class)
     public TraceCorrectionVO reject(TraceCorrectionDecisionForm form, String operator) {
         TraceCorrectionVO correction = requirePending(form, operator);
@@ -139,7 +145,7 @@ public class TraceCorrectionService {
 
     private void decide(TraceCorrectionDecisionForm form, String operator, String status, OffsetDateTime now) {
         if (traceCorrectionDao.decide(form.getId(), form.getVersion(), status, operator, now,
-                form.getReason() == null ? null : form.getReason().trim()) != 1) {
+            form.getReason() == null ? null : form.getReason().trim()) != 1) {
             throw new ScmBusinessException(TraceErrorCode.TRACE_CORRECTION_STATE_INVALID);
         }
     }

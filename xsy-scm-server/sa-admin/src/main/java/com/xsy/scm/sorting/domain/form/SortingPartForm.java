@@ -6,10 +6,14 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+
 import java.math.BigDecimal;
+
 import lombok.Data;
 
-/** 每次人工分拣的一笔新增量。只追加待确认分次，不自动把任务明细标为完成。 */
+/**
+ * 每次人工分拣的一笔新增量。只追加待确认分次，不自动把任务明细标为完成。
+ */
 @Data
 public class SortingPartForm {
     @NotNull

@@ -12,16 +12,18 @@ import org.apache.ibatis.annotations.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-/** Read-only finance projection over immutable facts. */
+/**
+ * Read-only finance projection over immutable facts.
+ */
 @Mapper
 public interface ScmFinanceReportDao {
 
     ScmFinanceOverviewVO overview(@Param("startAt") OffsetDateTime startAt, @Param("endAt") OffsetDateTime endAt,
-            @Param("orderScope") ScmValueScope orderScope, @Param("purchaserScope") ScmValueScope purchaserScope);
+        @Param("orderScope") ScmValueScope orderScope, @Param("purchaserScope") ScmValueScope purchaserScope);
 
     List<ScmFinanceReceivableDetailVO> receivableDetails(Page<?> page, @Param("endAt") OffsetDateTime endAt,
-            @Param("query") ScmFinanceReportFilter query, @Param("orderScope") ScmValueScope orderScope);
+        @Param("query") ScmFinanceReportFilter query, @Param("orderScope") ScmValueScope orderScope);
 
     List<ScmFinancePayableDetailVO> payableDetails(Page<?> page, @Param("endAt") OffsetDateTime endAt,
-            @Param("query") ScmFinanceReportFilter query, @Param("purchaserScope") ScmValueScope purchaserScope);
+        @Param("query") ScmFinanceReportFilter query, @Param("purchaserScope") ScmValueScope purchaserScope);
 }

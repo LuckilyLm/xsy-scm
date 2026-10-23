@@ -4,7 +4,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
-/** 结算明细项：只提交「哪个规格、多少数量」，价格一律由服务端解析。 */
+/**
+ * 结算明细项：只提交「哪个规格、多少数量」，价格一律由服务端解析。
+ */
 @Data
 public class MallCheckoutItemForm {
     @NotNull(message = "商品规格不能为空")

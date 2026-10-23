@@ -40,7 +40,9 @@ import java.util.List;
 
 import static com.xsy.scm.common.error.ScmCommonErrorCode.VALIDATION_ERROR;
 
-/** Read-only payment query, detail and export row selection. */
+/**
+ * Read-only payment query, detail and export row selection.
+ */
 @Service
 @RequiredArgsConstructor
 public class FinancePaymentQueryService {
@@ -100,19 +102,19 @@ public class FinancePaymentQueryService {
         }
         Long sourceId = entity.getReverseOfId() == null ? paymentId : entity.getReverseOfId();
         FinancePaymentQueryVO original = entity.getReverseOfId() == null
-                ? null
-                : financePaymentDao.selectQueryById(entity.getReverseOfId());
+            ? null
+            : financePaymentDao.selectQueryById(entity.getReverseOfId());
         FinancePaymentQueryVO reversal = entity.getReverseOfId() == null
-                ? financePaymentDao.selectReversalByOriginal(paymentId)
-                : null;
+            ? financePaymentDao.selectReversalByOriginal(paymentId)
+            : null;
         List<FinanceWriteOffVO> writeOffs = writeOffQueryService
-                .bySource(ScmFinanceWriteOffSourceTypeEnum.PAYMENT.name(), sourceId, scope);
+            .bySource(ScmFinanceWriteOffSourceTypeEnum.PAYMENT.name(), sourceId, scope);
         List<FinanceOperationLogVO> logs = new ArrayList<>(
-                operationLogs(ScmFinanceBusinessTypeEnum.PAYMENT.name(), List.of(sourceId)));
+            operationLogs(ScmFinanceBusinessTypeEnum.PAYMENT.name(), List.of(sourceId)));
         logs.addAll(operationLogs(ScmFinanceBusinessTypeEnum.WRITE_OFF.name(),
-                writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
+            writeOffs.stream().map(FinanceWriteOffVO::getWriteOffId).toList()));
         logs.sort(
-                Comparator.comparing(FinanceOperationLogVO::getCreatedAt).thenComparing(FinanceOperationLogVO::getId));
+            Comparator.comparing(FinanceOperationLogVO::getCreatedAt).thenComparing(FinanceOperationLogVO::getId));
 
         FinancePaymentDetailVO detail = new FinancePaymentDetailVO();
         detail.setPayment(header);
@@ -128,23 +130,23 @@ public class FinancePaymentQueryService {
             return List.of();
         }
         return financeOperationLogDao
-                .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
-                        .eq(FinanceOperationLogEntity::getBusinessType, businessType)
-                        .in(FinanceOperationLogEntity::getBusinessId, businessIds)
-                        .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
-                .stream().map(entity -> {
-                    FinanceOperationLogVO vo = new FinanceOperationLogVO();
-                    vo.setId(entity.getId());
-                    vo.setBusinessType(entity.getBusinessType());
-                    vo.setBusinessId(entity.getBusinessId());
-                    vo.setOperationType(entity.getOperationType());
-                    vo.setOperator(entity.getOperator());
-                    vo.setReason(entity.getReason());
-                    vo.setBeforeData(entity.getBeforeData());
-                    vo.setAfterData(entity.getAfterData());
-                    vo.setCreatedAt(entity.getCreatedAt());
-                    return vo;
-                }).toList();
+            .selectList(new LambdaQueryWrapper<FinanceOperationLogEntity>()
+                .eq(FinanceOperationLogEntity::getBusinessType, businessType)
+                .in(FinanceOperationLogEntity::getBusinessId, businessIds)
+                .orderByAsc(FinanceOperationLogEntity::getCreatedAt, FinanceOperationLogEntity::getId))
+            .stream().map(entity -> {
+                FinanceOperationLogVO vo = new FinanceOperationLogVO();
+                vo.setId(entity.getId());
+                vo.setBusinessType(entity.getBusinessType());
+                vo.setBusinessId(entity.getBusinessId());
+                vo.setOperationType(entity.getOperationType());
+                vo.setOperator(entity.getOperator());
+                vo.setReason(entity.getReason());
+                vo.setBeforeData(entity.getBeforeData());
+                vo.setAfterData(entity.getAfterData());
+                vo.setCreatedAt(entity.getCreatedAt());
+                return vo;
+            }).toList();
     }
 
     private static void rejectClientSort(FinancePaymentQueryForm form) {
@@ -164,22 +166,21 @@ public class FinancePaymentQueryService {
 
     private static void validateFilters(FinancePaymentQueryForm form) {
         if (form.getCounterpartyType() != null
-                && !enumContains(ScmFinanceCounterpartyTypeEnum.values(), form.getCounterpartyType())) {
+            && !enumContains(ScmFinanceCounterpartyTypeEnum.values(), form.getCounterpartyType())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         // 付款方式按对手方分两组：供应商三值、客户退款四值。过滤是跨对手方的，
         // 因此两组都要放行 —— 只认一组会把另一组的值当成非法参数拒掉。
-        if (form.getMethod() != null
-                && !enumContains(ScmFinancePaymentMethodEnum.values(), form.getMethod())
-                && !enumContains(ScmFinanceCustomerRefundMethodEnum.values(), form.getMethod())) {
+        if (form.getMethod() != null && !enumContains(ScmFinancePaymentMethodEnum.values(), form.getMethod())
+            && !enumContains(ScmFinanceCustomerRefundMethodEnum.values(), form.getMethod())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         if (form.getSourceType() != null
-                && !enumContains(ScmFinancePaymentSourceTypeEnum.values(), form.getSourceType())) {
+            && !enumContains(ScmFinancePaymentSourceTypeEnum.values(), form.getSourceType())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
         if (form.getEntryType() != null
-                && !enumContains(ScmFinanceReverseEntryTypeEnum.values(), form.getEntryType())) {
+            && !enumContains(ScmFinanceReverseEntryTypeEnum.values(), form.getEntryType())) {
             throw new ScmBusinessException(VALIDATION_ERROR);
         }
     }

@@ -11,7 +11,7 @@ import com.xsy.scm.product.domain.vo.ProductSkuOptionVO;
 @Mapper
 public interface ProductSkuOptionDao {
     List<ProductSkuOptionVO> options(@Param("query") ProductSkuOptionQueryForm query,
-            @Param("limitPlusOne") int limitPlusOne);
+        @Param("limitPlusOne") int limitPlusOne);
 
     List<ProductSkuOptionVO> selectByIds(@Param("ids") List<Long> ids);
 

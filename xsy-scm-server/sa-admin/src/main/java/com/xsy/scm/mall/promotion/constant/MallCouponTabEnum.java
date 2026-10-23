@@ -13,13 +13,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum MallCouponTabEnum {
 
-    /** 可用。 */
+    /**
+     * 可用。
+     */
     AVAILABLE("可用"),
 
-    /** 已使用。 */
+    /**
+     * 已使用。
+     */
     USED("已使用"),
 
-    /** 已失效：过期或被作废。 */
+    /**
+     * 已失效：过期或被作废。
+     */
     INVALID("已失效");
 
     private final String desc;

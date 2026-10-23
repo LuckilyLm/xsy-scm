@@ -4,12 +4,16 @@ import com.xsy.scm.common.scope.ScmValueScope;
 import com.xsy.scm.inventory.dao.InventoryWarningThresholdDao;
 import com.xsy.scm.inventory.domain.vo.InventoryWarningScanVO;
 import com.xsy.scm.inventory.domain.vo.InventoryWarningVO;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-/** 库存预警定时扫描余额和预留变化，不在每次记账时直接发通知。通知可能延迟到下一轮扫描；每个预警由独立事务投递，单条失败不回滚整轮。 */
+/**
+ * 库存预警定时扫描余额和预留变化，不在每次记账时直接发通知。通知可能延迟到下一轮扫描；每个预警由独立事务投递，单条失败不回滚整轮。
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

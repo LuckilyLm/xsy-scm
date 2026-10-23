@@ -4,7 +4,9 @@ import lombok.Data;
 
 import java.time.OffsetDateTime;
 
-/** 生成应收所用的签收时间、签收人必须来自已保存的配送签收记录，不能在财务侧重新取当前时间。 */
+/**
+ * 生成应收所用的签收时间、签收人必须来自已保存的配送签收记录，不能在财务侧重新取当前时间。
+ */
 @Data
 public class FinanceReceivableSourceDto {
 

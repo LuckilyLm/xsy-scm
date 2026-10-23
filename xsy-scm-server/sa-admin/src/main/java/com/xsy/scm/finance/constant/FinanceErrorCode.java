@@ -78,7 +78,9 @@ public enum FinanceErrorCode implements ScmErrorCode {
      */
     SYSTEM_RECEIPT_REVERSE_FORBIDDEN(41144, "系统来源的收款不能人工冲正，请走支付退款流程"),
 
-    /** 支付交易缺少可信的渠道实收金额：不能凭空登记一笔金额不明的收款。 */
+    /**
+     * 支付交易缺少可信的渠道实收金额：不能凭空登记一笔金额不明的收款。
+     */
     PAYMENT_RECEIPT_AMOUNT_MISSING(41145, "支付交易缺少渠道实收金额，无法登记收款"),
     ORDER_FUNDING_INVALID(41146, "订单资金来源不完整或身份金额不一致，请核对支付与资金流水"),
     RECHARGE_RECEIPT_RESERVED(41147, "充值收款已形成钱包权益，请通过余额支付结算订单"),
@@ -87,11 +89,17 @@ public enum FinanceErrorCode implements ScmErrorCode {
     BALANCE_PAYMENT_AFTER_REFUND(41150, "订单已发起资金退款，暂不支持继续余额支付"),
     PAYMENT_AFTER_BALANCE_REFUND(41151, "订单已返还余额，不能继续发起支付，请另建订单"),
 
-    /** 货到付款收款：订单不存在。 */
+    /**
+     * 货到付款收款：订单不存在。
+     */
     COD_COLLECTION_ORDER_NOT_FOUND(41152, "订单不存在"),
-    /** 货到付款收款：订单不是 COD 结算，或尚未签收生成应收（拒收 / 异常签收就没有应收可收）。 */
+    /**
+     * 货到付款收款：订单不是 COD 结算，或尚未签收生成应收（拒收 / 异常签收就没有应收可收）。
+     */
     COD_COLLECTION_ORDER_NOT_APPLICABLE(41153, "该订单不是货到付款结算，或尚未签收生成应收，不能登记收款"),
-    /** 同一货到付款收款命令已有来源事实。 */
+    /**
+     * 同一货到付款收款命令已有来源事实。
+     */
     COD_COLLECTION_ALREADY_REGISTERED(41154, "该笔货到付款收款已登记，不能重复登记"),
     COD_COLLECTION_PAYMENT_CONFLICT(41155, "该订单已有未结束或成功的支付意图，不能再登记货到付款收款");
 

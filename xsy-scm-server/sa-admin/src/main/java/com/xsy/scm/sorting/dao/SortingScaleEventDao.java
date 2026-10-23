@@ -2,7 +2,9 @@ package com.xsy.scm.sorting.dao;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xsy.scm.sorting.domain.entity.SortingScaleEventEntity;
+
 import java.util.List;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -31,13 +33,13 @@ public interface SortingScaleEventDao extends BaseMapper<SortingScaleEventEntity
      * 某任务的读数；{@code status} 为空返回全部。
      */
     List<SortingScaleEventEntity> listByTask(@Param("taskId") Long taskId, @Param("status") String status,
-            @Param("limit") int limit);
+        @Param("limit") int limit);
 
     int markAccepted(@Param("id") Long id, @Param("version") Integer version,
-            @Param("acceptedQuantity") java.math.BigDecimal acceptedQuantity, @Param("operator") String operator);
+        @Param("acceptedQuantity") java.math.BigDecimal acceptedQuantity, @Param("operator") String operator);
 
     int markRejected(@Param("id") Long id, @Param("version") Integer version, @Param("reason") String reason,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 
     /**
      * 按操作幂等号取筐记录；重试命中时返回原事实。
@@ -63,5 +65,5 @@ public interface SortingScaleEventDao extends BaseMapper<SortingScaleEventEntity
      * 把参与本次完成的筐标记为已接受，并写入完成记录号。
      */
     int markBasketCompleted(@Param("ids") List<Long> ids, @Param("completionId") Long completionId,
-            @Param("operator") String operator);
+        @Param("operator") String operator);
 }

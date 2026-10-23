@@ -35,7 +35,7 @@ public final class BundleSalePriceAllocator {
      */
     public static List<Share> allocate(BigDecimal bundleLineAmount, List<Component> components) {
         if (bundleLineAmount == null || bundleLineAmount.signum() < 0 || bundleLineAmount.scale() > SCALE
-                || bundleLineAmount.compareTo(MAX) > 0 || components == null || components.isEmpty()) {
+            || bundleLineAmount.compareTo(MAX) > 0 || components == null || components.isEmpty()) {
             throw new IllegalArgumentException("Invalid bundle line amount or components");
         }
         BigDecimal referenceTotal = BigDecimal.ZERO;
@@ -43,8 +43,8 @@ public final class BundleSalePriceAllocator {
         Set<Long> skuIds = new HashSet<>();
         for (Component component : components) {
             if (component == null || component.skuId() == null || !skuIds.add(component.skuId())
-                    || component.saleQuantity() == null || component.saleQuantity().signum() <= 0
-                    || component.marketUnitPrice() == null || component.marketUnitPrice().signum() <= 0) {
+                || component.saleQuantity() == null || component.saleQuantity().signum() <= 0
+                || component.marketUnitPrice() == null || component.marketUnitPrice().signum() <= 0) {
                 throw new IllegalArgumentException("Bundle component has no valid market amount");
             }
             BigDecimal referenceAmount = component.saleQuantity().multiply(component.marketUnitPrice());
@@ -60,7 +60,7 @@ public final class BundleSalePriceAllocator {
                 allocated = remaining;
             } else {
                 allocated = bundleLineAmount.multiply(references.get(index)).divide(referenceTotal, SCALE,
-                        RoundingMode.HALF_UP);
+                    RoundingMode.HALF_UP);
                 // 组合售价低到只有一个最小金额单位时，仍不能给最后一行分出负价。
                 allocated = allocated.min(remaining);
             }
