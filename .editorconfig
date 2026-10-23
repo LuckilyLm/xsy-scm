@@ -20,6 +20,14 @@ end_of_line = lf
 trim_trailing_whitespace = true
 insert_final_newline = true
 
+# Java 格式以 tools/quality/eclipse-formatter.xml（Spotless）为准；这里同步
+# IntelliJ IDEA 的等价设置，避免 IDE 自动格式化后与 spotless:check 互相覆写。
+[*.java]
+ij_java_indent_size = 4
+ij_java_continuation_indent_size = 4
+ij_java_line_width = 120
+ij_java_wrap_comments = true
+
 # Markdown 用行尾两个空格表示硬换行，修剪它会直接改写文档内容的呈现；
 # 本仓库的裁决与进度文档正是这样排版的。保留 charset / LF / 末尾换行，
 # 只对 trim_trailing_whitespace 开这一条例外。

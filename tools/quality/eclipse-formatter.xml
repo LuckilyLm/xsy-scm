@@ -6,11 +6,21 @@
         <setting id="org.eclipse.jdt.core.formatter.alignment_for_enum_constants" value="49"/>
         <!-- Compact wrapping without forced breaks; enum declarations still keep one constant per line. -->
         <setting id="org.eclipse.jdt.core.formatter.alignment_for_arguments_in_enum_constant" value="16"/>
+        <setting id="org.eclipse.jdt.core.formatter.alignment_for_arguments_in_annotation" value="16"/>
         <setting id="org.eclipse.jdt.core.formatter.alignment_for_parameterized_type_references" value="16"/>
         <setting id="org.eclipse.jdt.core.formatter.alignment_for_type_annotations" value="16"/>
         <setting id="org.eclipse.jdt.core.formatter.tabulation.char" value="space"/>
         <setting id="org.eclipse.jdt.core.formatter.tabulation.size" value="4"/>
         <setting id="org.eclipse.jdt.core.formatter.indentation.size" value="4"/>
         <setting id="org.eclipse.jdt.core.formatter.use_tabs_only_for_leading_indentations" value="false"/>
+        <!-- 续行缩进 1 级（4 空格），与 IntelliJ IDEA 的 Continuation indent = 4 对齐。 -->
+        <setting id="org.eclipse.jdt.core.formatter.continuation_indentation" value="1"/>
+        <setting id="org.eclipse.jdt.core.formatter.continuation_indentation_for_array_initializer" value="1"/>
+        <!-- Javadoc 边界与注释按 120 列重排，与 IDEA 的“Wrap comments”设置对齐。 -->
+        <setting id="org.eclipse.jdt.core.formatter.comment.new_lines_at_javadoc_boundaries" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_javadoc_comments" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_block_comments" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.comment.format_line_comments" value="true"/>
+        <setting id="org.eclipse.jdt.core.formatter.join_wrapped_lines" value="true"/>
     </profile>
 </profiles>

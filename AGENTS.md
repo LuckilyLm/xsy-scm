@@ -53,6 +53,7 @@
 - Service 承担事务编排、状态转换、策略和 DAO 协作。超过 400 行时审查职责，但按业务职责决定是否拆分，不按行数机械拆类。
 - 权限注解使用领域 Permission Catalog；新增表单校验需提供可读 message；业务状态、类型和来源使用现有 Enum，避免重复枚举和 magic string。
 - 依赖字段名称应表达完整业务语义；禁止 wildcard import 和重复包装 JDK / Spring / Apache 工具类。
+- Java 格式统一由 `mvn -pl sa-admin spotless:apply` 维护，配置为 `tools/quality/eclipse-formatter.xml`（4 空格、120 列、续行 4 空格、LF）；不要另建一套格式或手工规避 `spotless:check`。
 - 注释解释当前代码中无法直接看出的约束，不记录代码是怎么被开发出来的；能从类名、方法名、参数名、类型和代码流程直接读出来的信息，不要再用 Javadoc 翻译一遍（如字段名翻译式 `@param`）。不写阶段编号、测试统计、提交过程或过期计划；跨域长期规则放入 `docs/decisions.md`，源码只保留必要说明。
 
 ## 业务不变量

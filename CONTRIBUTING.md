@@ -22,6 +22,12 @@
 
 - Java SCM 业务包使用 `com.xsy.scm`，依赖方向为 Controller → Service → Manager / Policy → DAO。Service 编排事务、状态转换及 DAO 协作；跨域只读，不直接写其他业务域的表。
 
+#### Java 格式
+
+- 唯一格式化入口是 `xsy-scm-server/` 下的 `mvn -B -pl sa-admin spotless:apply`，配置为 `tools/quality/eclipse-formatter.xml`：4 空格缩进、120 列、续行缩进 4 空格、LF 换行。
+- 提交前运行 `mvn -B -pl sa-admin spotless:check`；不要手工制造与 Spotless 冲突的空白或换行。
+- `.editorconfig` 已同步 IDEA 的缩进、续行和注释换行设置。Spotless 只覆盖 `src/main/java/com/xsy/scm/**`，测试源码保持现状。
+
 #### SCM 界面规范
 
 - 页面优先展示业务名称、状态、核心数量/金额与当前可执行动作。桌面端可独立比较的名称、编码、联系人等信息分列；长文本依列宽截断并支持查看全文，不按字符数硬截。
