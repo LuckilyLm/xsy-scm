@@ -1,21 +1,19 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
     <a-form-item :label="isDriver ? '司机编码' : '车牌号'">
-      <a-input v-model:value="query.keyword" allow-clear @pressEnter="search"/>
+      <a-input v-model:value="query.keyword" allow-clear @pressEnter="search" />
     </a-form-item>
     <a-form-item label="状态">
-      <a-select v-model:value="query.status" allow-clear :options="statusOptions" class="status-select"/>
+      <a-select v-model:value="query.status" allow-clear :options="statusOptions" class="status-select" />
     </a-form-item>
-    <a-form-item class="smart-query-form-item"
-    >
+    <a-form-item class="smart-query-form-item">
       <a-space>
         <a-button type="primary" @click="search">查询</a-button>
         <a-button @click="reset">重置</a-button>
       </a-space>
     </a-form-item>
   </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon
-  >
+  <a-alert v-if="error" :message="error" type="error" show-icon>
     <template #action>
       <a-button @click="load">重试</a-button>
     </template>
@@ -25,26 +23,23 @@
       <a-button type="primary" v-privilege="editPermission" @click="open()">新建{{ label }}</a-button>
     </div>
     <a-table
-        :id="`scm-delivery-${kind}-table`"
-        :columns="columns"
-        :data-source="rows"
-        row-key="id"
-        size="small"
-        bordered
-        :pagination="false"
-        :loading="loading"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      :id="`scm-delivery-${kind}-table`"
+      :columns="columns"
+      :data-source="rows"
+      row-key="id"
+      size="small"
+      bordered
+      :pagination="false"
+      :loading="loading"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ column, record }">
+      <template #bodyCell="{column, record}">
         <template v-if="column.dataIndex === 'status'">
-          <ScmStatusTag
-              :tone="record.status === 'ENABLED' ? 'success' : 'neutral'"
-              :label="record.status === 'ENABLED' ? '启用' : '停用'"
-          />
+          <ScmStatusTag :tone="record.status === 'ENABLED' ? 'success' : 'neutral'" :label="record.status === 'ENABLED' ? '启用' : '停用'" />
         </template>
         <template v-else-if="column.dataIndex === 'employeeName'">
           <span v-if="record.employeeName">{{ record.employeeName }}</span>
-          <ScmStatusTag v-else tone="warning" label="未绑定"/>
+          <ScmStatusTag v-else tone="warning" label="未绑定" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
@@ -55,12 +50,12 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          v-model:current="query.pageNum"
-          v-model:page-size="query.pageSize"
-          :total="total"
-          show-size-changer
-          :show-total="(n: number) => `共 ${n} 条`"
-          @change="load"
+        v-model:current="query.pageNum"
+        v-model:page-size="query.pageSize"
+        :total="total"
+        show-size-changer
+        :show-total="(n: number) => `共 ${n} 条`"
+        @change="load"
       />
     </div>
   </a-card>
@@ -68,47 +63,43 @@
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <template v-if="isDriver">
         <a-form-item label="司机编码" name="driverCode">
-          <a-input v-model:value="form.driverCode" :maxlength="64"/>
+          <a-input v-model:value="form.driverCode" :maxlength="64" />
         </a-form-item>
         <a-form-item label="司机姓名" name="driverName">
-          <a-input v-model:value="form.driverName" :maxlength="100"/>
+          <a-input v-model:value="form.driverName" :maxlength="100" />
         </a-form-item>
         <a-form-item label="联系电话" name="phone">
-          <a-input v-model:value="form.phone" :maxlength="32"/>
+          <a-input v-model:value="form.phone" :maxlength="32" />
         </a-form-item>
         <a-form-item label="绑定员工" name="employeeId">
-          <EmployeeSelect v-model:value="employeeValue" placeholder="请选择绑定的系统员工" width="100%"/>
+          <EmployeeSelect v-model:value="employeeValue" placeholder="请选择绑定的系统员工" width="100%" />
         </a-form-item>
       </template>
       <template v-else>
         <a-form-item label="车牌号" name="vehicleNo">
-          <a-input v-model:value="form.vehicleNo" :maxlength="32"/>
+          <a-input v-model:value="form.vehicleNo" :maxlength="32" />
         </a-form-item>
         <a-form-item label="车型">
-          <a-input v-model:value="form.vehicleType" :maxlength="64"/>
+          <a-input v-model:value="form.vehicleType" :maxlength="64" />
         </a-form-item>
-        <a-row :gutter="16"
-        >
-          <a-col :span="12"
-          >
+        <a-row :gutter="16">
+          <a-col :span="12">
             <a-form-item label="载重（kg）">
-              <a-input-number v-model:value="form.loadWeight" string-mode :min="0" :precision="4"/>
+              <a-input-number v-model:value="form.loadWeight" string-mode :min="0" :precision="4" />
             </a-form-item>
           </a-col>
-          <a-col :span="12"
-          >
-            <a-form-item label="容积（m³）"
-            >
-              <a-input-number v-model:value="form.loadVolume" string-mode :min="0" :precision="4"/>
+          <a-col :span="12">
+            <a-form-item label="容积（m³）">
+              <a-input-number v-model:value="form.loadVolume" string-mode :min="0" :precision="4" />
             </a-form-item>
           </a-col>
         </a-row>
       </template>
       <a-form-item label="状态">
-        <a-select v-model:value="form.status" :options="statusOptions"/>
+        <a-select v-model:value="form.status" :options="statusOptions" />
       </a-form-item>
       <a-form-item label="备注">
-        <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2"/>
+        <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" />
       </a-form-item>
     </a-form>
   </a-modal>
@@ -122,7 +113,7 @@ import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {deliveryApi} from '/@/api/business/scm/delivery-api';
 import {deliveryError, type Driver, type Vehicle, type Query} from '../delivery-types';
 
-const props = defineProps<{ kind: 'driver' | 'vehicle' }>();
+const props = defineProps<{kind: 'driver' | 'vehicle'}>();
 const isDriver = computed(() => props.kind === 'driver');
 const label = computed(() => (isDriver.value ? '司机' : '车辆'));
 const editPermission = computed(() => `scm:delivery:${props.kind}:edit`);
@@ -132,11 +123,11 @@ const statusOptions = [
 ];
 const query = reactive<Query>({pageNum: 1, pageSize: 20});
 const rows = ref<(Driver | Vehicle)[]>([]),
-    total = ref(0),
-    loading = ref(false),
-    error = ref('');
+  total = ref(0),
+  loading = ref(false),
+  error = ref('');
 const visible = ref(false),
-    saving = ref(false);
+  saving = ref(false);
 const form = ref<Partial<Driver & Vehicle>>({status: 'ENABLED'});
 const formRef = ref();
 
@@ -146,26 +137,31 @@ const formRef = ref();
  * 「启用司机必须绑定系统员工」是跨字段约束（仅启用时要求），与服务端 requireBindableEmployee 同口径，
  * 放在这里提前挡掉必然失败的提交。
  */
-const formRules = computed(() => (isDriver.value
+const formRules = computed(() =>
+  isDriver.value
     ? {
-      driverCode: [{required: true, message: '请填写司机编码', trigger: 'blur'}],
-      driverName: [{required: true, message: '请填写司机姓名', trigger: 'blur'}],
-      phone: [
-        {required: true, message: '请填写联系电话', trigger: 'blur'},
-        {pattern: /^[0-9+() -]{5,32}$/, message: '联系电话格式不正确', trigger: 'blur'},
-      ],
-      employeeId: [{
-        validator: () => (form.value.status === 'ENABLED' && form.value.employeeId == null
-            ? Promise.reject(new Error('启用司机必须绑定系统员工'))
-            : Promise.resolve()),
-        trigger: 'change',
-      }],
-    }
+        driverCode: [{required: true, message: '请填写司机编码', trigger: 'blur'}],
+        driverName: [{required: true, message: '请填写司机姓名', trigger: 'blur'}],
+        phone: [
+          {required: true, message: '请填写联系电话', trigger: 'blur'},
+          {pattern: /^[0-9+() -]{5,32}$/, message: '联系电话格式不正确', trigger: 'blur'},
+        ],
+        employeeId: [
+          {
+            validator: () =>
+              form.value.status === 'ENABLED' && form.value.employeeId == null
+                ? Promise.reject(new Error('启用司机必须绑定系统员工'))
+                : Promise.resolve(),
+            trigger: 'change',
+          },
+        ],
+      }
     : {
-      vehicleNo: [{required: true, message: '请填写车牌号', trigger: 'blur'}],
-    }));
+        vehicleNo: [{required: true, message: '请填写车牌号', trigger: 'blur'}],
+      }
+);
 let originalStatus = '',
-    generation = 0;
+  generation = 0;
 
 /**
  * 绑定员工下拉的桥接。
@@ -185,12 +181,12 @@ const employeeValue = computed<number | undefined>({
 // 车辆的两个数值列单位写进表头（kg / m³），避免同一列在不同车型下含义漂移。
 const columns = computed<TableColumnsType>(() => [
   ...(isDriver.value
-      ? [
+    ? [
         {title: '姓名', dataIndex: 'driverName', width: 140},
         {title: '电话', dataIndex: 'phone', width: 150},
         {title: '绑定员工', dataIndex: 'employeeName', width: 150},
       ]
-      : [
+    : [
         {title: '车牌号', dataIndex: 'vehicleNo', width: 150},
         {title: '车型', dataIndex: 'vehicleType', align: 'center' as const, width: 140},
         {title: '载重（kg）', dataIndex: 'loadWeight' as const, width: 120},
@@ -208,8 +204,8 @@ async function load() {
   try {
     // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
     const result = await (isDriver.value
-        ? deliveryApi.queryDrivers(query, {suppressGlobalErrorMessage: true})
-        : deliveryApi.queryVehicles(query, {suppressGlobalErrorMessage: true}));
+      ? deliveryApi.queryDrivers(query, {suppressGlobalErrorMessage: true})
+      : deliveryApi.queryVehicles(query, {suppressGlobalErrorMessage: true}));
     if (id === generation) {
       rows.value = result.data.list;
       total.value = result.data.total;
@@ -240,11 +236,14 @@ function open(row?: Driver | Vehicle) {
 
 function save() {
   // 校验交给 antd 表单：错误逐项显示在对应输入框下方，不再用顶部一条汇总红条。
-  formRef.value?.validate().then(() => {
-    if (originalStatus === 'ENABLED' && form.value.status === 'DISABLED')
-      Modal.confirm({title: `停用该${label.value}？`, content: '停用后不能分配到新线路，已有计划不受影响。', onOk: submit});
-    else submit();
-  }).catch(() => undefined);
+  formRef.value
+    ?.validate()
+    .then(() => {
+      if (originalStatus === 'ENABLED' && form.value.status === 'DISABLED')
+        Modal.confirm({title: `停用该${label.value}？`, content: '停用后不能分配到新线路，已有计划不受影响。', onOk: submit});
+      else submit();
+    })
+    .catch(() => undefined);
 }
 
 async function submit() {

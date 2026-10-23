@@ -7,30 +7,28 @@
   <a-form class="smart-query-form" v-privilege="'support:changeLog:query'">
     <a-row class="smart-query-form-row">
       <a-form-item label="更新类型" class="smart-query-form-item">
-        <SmartEnumSelect width="200px" v-model:value="queryForm.type" enumName="CHANGE_LOG_TYPE_ENUM"
-                         placeholder="更新类型"/>
+        <SmartEnumSelect width="200px" v-model:value="queryForm.type" enumName="CHANGE_LOG_TYPE_ENUM" placeholder="更新类型" />
       </a-form-item>
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input style="width: 200px" v-model:value="queryForm.keyword" placeholder="关键字"/>
+        <a-input style="width: 200px" v-model:value="queryForm.keyword" placeholder="关键字" />
       </a-form-item>
       <a-form-item label="发布日期" class="smart-query-form-item">
-        <a-range-picker v-model:value="queryForm.publicDate" :presets="defaultTimeRanges" style="width: 240px"
-                        @change="onChangePublicDate"/>
+        <a-range-picker v-model:value="queryForm.publicDate" :presets="defaultTimeRanges" style="width: 240px" @change="onChangePublicDate" />
       </a-form-item>
       <a-form-item label="创建时间" class="smart-query-form-item">
-        <a-date-picker valueFormat="YYYY-MM-DD" v-model:value="queryForm.createTime" style="width: 150px"/>
+        <a-date-picker valueFormat="YYYY-MM-DD" v-model:value="queryForm.createTime" style="width: 150px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery" class="smart-margin-left10">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -46,42 +44,41 @@
       <div class="smart-table-operate-block">
         <a-button @click="showForm" type="primary" v-privilege="'support:changeLog:add'">
           <template #icon>
-            <PlusOutlined/>
+            <PlusOutlined />
           </template>
           新建
         </a-button>
-        <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0"
-                  v-privilege="'support:changeLog:batchDelete'">
+        <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0" v-privilege="'support:changeLog:batchDelete'">
           <template #icon>
-            <DeleteOutlined/>
+            <DeleteOutlined />
           </template>
           批量删除
         </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :tableId="null" :refresh="queryData"/>
+        <TableOperator v-model="columns" :tableId="null" :refresh="queryData" />
       </div>
     </a-row>
     <!---------- 表格操作行 end ----------->
 
     <!---------- 表格 begin ----------->
     <a-table
-        size="small"
-        :dataSource="tableData"
-        :columns="columns"
-        rowKey="changeLogId"
-        bordered
-        :pagination="false"
-        :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }"
+      size="small"
+      :dataSource="tableData"
+      :columns="columns"
+      rowKey="changeLogId"
+      bordered
+      :pagination="false"
+      :row-selection="{selectedRowKeys: selectedRowKeyList, onChange: onSelectChange}"
     >
-      <template #bodyCell="{ text, record, column }">
+      <template #bodyCell="{text, record, column}">
         <template v-if="column.dataIndex === 'updateVersion'">
           <a-button @click="showModal(record)" type="link">{{ text }}</a-button>
         </template>
         <template v-if="column.dataIndex === 'type'">
           <a-tag color="success">
             <template #icon>
-              <check-circle-outlined/>
+              <check-circle-outlined />
             </template>
             {{ $smartEnumPlugin.getDescByValue('CHANGE_LOG_TYPE_ENUM', text) }}
           </a-tag>
@@ -89,8 +86,7 @@
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button @click="showForm(record)" type="link" v-privilege="'support:changeLog:update'">编辑</a-button>
-            <a-button @click="onDelete(record)" danger type="link" v-privilege="'support:changeLog:delete'">删除
-            </a-button>
+            <a-button @click="onDelete(record)" danger type="link" v-privilege="'support:changeLog:delete'">删除 </a-button>
           </div>
         </template>
       </template>
@@ -99,22 +95,22 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
 
-    <ChangeLogForm ref="formRef" @reloadList="queryData"/>
+    <ChangeLogForm ref="formRef" @reloadList="queryData" />
 
-    <ChangeLogModal ref="modalRef"/>
+    <ChangeLogModal ref="modalRef" />
   </a-card>
 </template>
 <script setup lang="ts">
@@ -266,8 +262,7 @@ function onDelete(data) {
       requestDelete(data);
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 
@@ -305,8 +300,7 @@ function confirmBatchDelete() {
       requestBatchDelete();
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

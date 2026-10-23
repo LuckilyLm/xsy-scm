@@ -2,22 +2,29 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="收款日期">
-        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期"/>
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" />
         <span class="date-separator">至</span>
-        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期"/>
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" />
       </a-form-item>
       <a-form-item label="客户">
-        <a-select v-model:value="query.customerId" allow-clear show-search option-filter-prop="label"
-                  :options="customerOptions" placeholder="全部客户" style="width: 190px"/>
+        <a-select
+          v-model:value="query.customerId"
+          allow-clear
+          show-search
+          option-filter-prop="label"
+          :options="customerOptions"
+          placeholder="全部客户"
+          style="width: 190px"
+        />
       </a-form-item>
       <a-form-item label="方式">
-        <a-select v-model:value="query.method" allow-clear :options="methodOptions" placeholder="全部" style="width: 140px"/>
+        <a-select v-model:value="query.method" allow-clear :options="methodOptions" placeholder="全部" style="width: 140px" />
       </a-form-item>
       <a-form-item label="方向">
-        <a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px"/>
+        <a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px" />
       </a-form-item>
       <a-form-item label="待核销">
-        <a-select v-model:value="query.pendingOnly" allow-clear :options="pendingOptions" placeholder="全部" style="width: 120px"/>
+        <a-select v-model:value="query.pendingOnly" allow-clear :options="pendingOptions" placeholder="全部" style="width: 120px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -39,97 +46,167 @@
         <a-button v-privilege="PERM.RECEIPT_ADD" type="primary" @click="openAdd">登记收款</a-button>
         <a-button v-privilege="PERM.RECEIPT_ADD" @click="openCod">货到付款收款</a-button>
         <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_RECEIPT" :refresh="queryData"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_RECEIPT" :refresh="queryData" />
       </div>
     </a-row>
     <div class="finance-mobile-balance-list">
       <div v-for="record in page.tableData.value" :key="record.receiptId" class="finance-mobile-balance-row">
-        <div class="mobile-balance-heading"><strong>{{ record.receiptNo }}</strong><a-button type="link" @click="showDetail(record)">明细</a-button></div>
-        <div class="mobile-balance-party">{{ record.customerName }} · {{ paymentMethodText(record.method) }} · {{ entryTypeText(record.entryType) }}<span v-if="record.codOrderNo"> · {{ record.codOrderNo }}</span></div>
-        <div class="mobile-balance-values"><span>{{ record.walletFunding ? '已转钱包权益' : '待核销' }} <strong>{{ moneyText(record.pendingWriteOffAmount) }}</strong></span><span>有效 {{ moneyText(record.effectiveAmount) }}</span></div>
+        <div class="mobile-balance-heading">
+          <strong>{{ record.receiptNo }}</strong
+          ><a-button type="link" @click="showDetail(record)">明细</a-button>
+        </div>
+        <div class="mobile-balance-party">
+          {{ record.customerName }} · {{ paymentMethodText(record.method) }} · {{ entryTypeText(record.entryType)
+          }}<span v-if="record.codOrderNo"> · {{ record.codOrderNo }}</span>
+        </div>
+        <div class="mobile-balance-values">
+          <span
+            >{{ record.walletFunding ? '已转钱包权益' : '待核销' }} <strong>{{ moneyText(record.pendingWriteOffAmount) }}</strong></span
+          ><span>有效 {{ moneyText(record.effectiveAmount) }}</span>
+        </div>
       </div>
     </div>
-    <a-table id="scm-finance-receipt-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="receiptId" :loading="page.loading.value" :pagination="false" bordered :scroll="{ x: scmColumnsWidth(columns) }">
-      <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='entryType'">
-          <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
+    <a-table
+      id="scm-finance-receipt-table"
+      class="finance-table"
+      size="small"
+      :data-source="page.tableData.value"
+      :columns="columns"
+      row-key="receiptId"
+      :loading="page.loading.value"
+      :pagination="false"
+      bordered
+      :scroll="{x: scmColumnsWidth(columns)}"
+    >
+      <template #bodyCell="{record, column, text}">
+        <template v-if="column.dataIndex === 'entryType'">
+          <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)" />
         </template>
-        <template v-else-if="column.dataIndex==='method'">{{ paymentMethodText(text) }}</template>
-        <template v-else-if="column.dataIndex==='pendingWriteOffAmount' && record.walletFunding">
-          <ScmStatusTag tone="processing" label="已转钱包权益"/>
+        <template v-else-if="column.dataIndex === 'method'">{{ paymentMethodText(text) }}</template>
+        <template v-else-if="column.dataIndex === 'pendingWriteOffAmount' && record.walletFunding">
+          <ScmStatusTag tone="processing" label="已转钱包权益" />
         </template>
-        <template v-else-if="['amount','effectiveAmount','usedAmount','pendingWriteOffAmount'].includes(column.dataIndex)">
+        <template v-else-if="['amount', 'effectiveAmount', 'usedAmount', 'pendingWriteOffAmount'].includes(column.dataIndex)">
           <span class="scm-money">{{ moneyText(text) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='receivedAt'">{{ dateTimeText(text) }}</template>
-        <template v-else-if="column.dataIndex==='action'">
+        <template v-else-if="column.dataIndex === 'receivedAt'">{{ dateTimeText(text) }}</template>
+        <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="showDetail(record)">明细</a-button>
-            <a-button v-if="record.entryType==='NORMAL'" type="link" size="small" danger v-privilege="PERM.RECEIPT_REVERSE"
-                      :disabled="record.walletFunding || record.usedAmount!=='0.0000'" @click="openReverse(record)">撤销收款</a-button>
+            <a-button
+              v-if="record.entryType === 'NORMAL'"
+              type="link"
+              size="small"
+              danger
+              v-privilege="PERM.RECEIPT_REVERSE"
+              :disabled="record.walletFunding || record.usedAmount !== '0.0000'"
+              @click="openReverse(record)"
+              >撤销收款</a-button
+            >
           </a-space>
         </template>
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination show-size-changer show-quick-jumper v-model:current="query.pageNum" v-model:page-size="query.pageSize"
-                    :total="page.total.value" @change="queryData" :show-total="(count:number)=>`共${count}条`"/>
+      <a-pagination
+        show-size-changer
+        show-quick-jumper
+        v-model:current="query.pageNum"
+        v-model:page-size="query.pageSize"
+        :total="page.total.value"
+        @change="queryData"
+        :show-total="(count: number) => `共${count}条`"
+      />
     </div>
   </a-card>
 
-  <FinanceDetailDrawer v-model:open="detailOpen" kind="RECEIPT" :loading="detailLoading" :detail="detailData"
-                       :error="detailError" @retry="reloadDetail"/>
+  <FinanceDetailDrawer
+    v-model:open="detailOpen"
+    kind="RECEIPT"
+    :loading="detailLoading"
+    :detail="detailData"
+    :error="detailError"
+    @retry="reloadDetail"
+  />
 
   <a-modal v-model:open="addOpen" title="登记收款" :confirm-loading="addSaving" @ok="submitAdd">
-    <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
+    <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError" />
     <a-form ref="addFormRef" :model="addForm" :rules="addRules" layout="vertical">
       <a-form-item label="客户" name="customerId">
-        <a-select v-model:value="addForm.customerId" show-search option-filter-prop="label" :options="customerOptions" placeholder="选择客户"/>
+        <a-select v-model:value="addForm.customerId" show-search option-filter-prop="label" :options="customerOptions" placeholder="选择客户" />
       </a-form-item>
       <a-form-item label="收款金额" name="amount">
-        <a-input-number v-model:value="addForm.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width:100%"/>
+        <a-input-number v-model:value="addForm.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width: 100%" />
       </a-form-item>
-      <a-form-item label="收款方式" name="method"><a-select v-model:value="addForm.method" :options="methodOptions" placeholder="选择方式"/></a-form-item>
-      <a-form-item label="收款时间" name="receivedAt"><a-date-picker v-model:value="addForm.receivedAt" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width:100%"/></a-form-item>
-      <a-form-item label="资金凭据号"><a-input v-model:value="addForm.externalReference" :maxlength="128"/></a-form-item>
-      <a-form-item label="备注"><a-textarea v-model:value="addForm.remark" :maxlength="500" :rows="2" show-count/></a-form-item>
+      <a-form-item label="收款方式" name="method"
+        ><a-select v-model:value="addForm.method" :options="methodOptions" placeholder="选择方式"
+      /></a-form-item>
+      <a-form-item label="收款时间" name="receivedAt"
+        ><a-date-picker v-model:value="addForm.receivedAt" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%"
+      /></a-form-item>
+      <a-form-item label="资金凭据号"><a-input v-model:value="addForm.externalReference" :maxlength="128" /></a-form-item>
+      <a-form-item label="备注"><a-textarea v-model:value="addForm.remark" :maxlength="500" :rows="2" show-count /></a-form-item>
     </a-form>
   </a-modal>
 
-  <a-modal v-model:open="codOpen" title="货到付款收款确认" :confirm-loading="codSaving"
-           :closable="!codSaving" :mask-closable="!codSaving" :keyboard="!codSaving"
-           :cancel-button-props="{disabled: codSaving}" @ok="submitCod">
-    <a-alert v-if="codError" class="form-error" type="error" show-icon :message="codError"/>
+  <a-modal
+    v-model:open="codOpen"
+    title="货到付款收款确认"
+    :confirm-loading="codSaving"
+    :closable="!codSaving"
+    :mask-closable="!codSaving"
+    :keyboard="!codSaving"
+    :cancel-button-props="{disabled: codSaving}"
+    @ok="submitCod"
+  >
+    <a-alert v-if="codError" class="form-error" type="error" show-icon :message="codError" />
     <a-form layout="vertical">
       <a-form-item label="销售订单 ID" required>
-        <a-input v-model:value="codForm.orderId" :disabled="codSaving" placeholder="输入订单 ID 后查询待收金额" @change="clearCodPreview"/>
+        <a-input v-model:value="codForm.orderId" :disabled="codSaving" placeholder="输入订单 ID 后查询待收金额" @change="clearCodPreview" />
         <a-button :loading="codLoading" :disabled="codSaving" style="margin-top: 8px" @click="() => loadCodPreview()">查询订单</a-button>
       </a-form-item>
       <a-alert v-if="codPreview" type="info" show-icon>
         <template #message>{{ codPreview.orderNo }} · {{ codPreview.customerName }}</template>
         <template #description>
-          应收单 {{ codPreview.receivableNo }}；结算主体 {{ codPreview.settlementCustomerName }}；
-          净应收 {{ moneyText(codPreview.netAmount) }}；当前待收 {{ moneyText(codPreview.openAmount) }}。
-          可分笔登记，提交时将再次核对剩余应收金额。
+          应收单 {{ codPreview.receivableNo }}；结算主体 {{ codPreview.settlementCustomerName }}； 净应收
+          {{ moneyText(codPreview.netAmount) }}；当前待收 {{ moneyText(codPreview.openAmount) }}。 可分笔登记，提交时将再次核对剩余应收金额。
         </template>
       </a-alert>
       <a-form-item label="本次实收金额" required>
-        <a-input-number v-model:value="codForm.amount" string-mode :min="0" :precision="4" :max="99999999999999" :disabled="codSaving" style="width:100%"/>
+        <a-input-number
+          v-model:value="codForm.amount"
+          string-mode
+          :min="0"
+          :precision="4"
+          :max="99999999999999"
+          :disabled="codSaving"
+          style="width: 100%"
+        />
       </a-form-item>
-      <a-form-item label="收款方式" required><a-select v-model:value="codForm.method" :options="methodOptions" :disabled="codSaving" placeholder="选择实际资金形式"/></a-form-item>
-      <a-form-item label="收款时间" required><a-date-picker v-model:value="codForm.receivedAt" show-time value-format="YYYY-MM-DD HH:mm:ss" :disabled="codSaving" style="width:100%"/></a-form-item>
-      <a-form-item label="资金凭据号"><a-input v-model:value="codForm.externalReference" :maxlength="128" :disabled="codSaving"/></a-form-item>
-      <a-form-item label="备注"><a-textarea v-model:value="codForm.remark" :maxlength="500" :rows="2" :disabled="codSaving" show-count/></a-form-item>
+      <a-form-item label="收款方式" required
+        ><a-select v-model:value="codForm.method" :options="methodOptions" :disabled="codSaving" placeholder="选择实际资金形式"
+      /></a-form-item>
+      <a-form-item label="收款时间" required
+        ><a-date-picker v-model:value="codForm.receivedAt" show-time value-format="YYYY-MM-DD HH:mm:ss" :disabled="codSaving" style="width: 100%"
+      /></a-form-item>
+      <a-form-item label="资金凭据号"><a-input v-model:value="codForm.externalReference" :maxlength="128" :disabled="codSaving" /></a-form-item>
+      <a-form-item label="备注"
+        ><a-textarea v-model:value="codForm.remark" :maxlength="500" :rows="2" :disabled="codSaving" show-count
+      /></a-form-item>
     </a-form>
   </a-modal>
 
   <a-modal v-model:open="reverseOpen" title="撤销收款" :confirm-loading="reverseSaving" @ok="submitReverse">
-    <a-alert v-if="reverseRow" type="warning" show-icon :message="`将登记一笔等额冲回记录，金额 ${moneyText(reverseRow.amount)}。原收款记录会保留。`"/>
-    <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError"/>
-    <a-form layout="vertical"><a-form-item label="撤销原因" required>
-      <a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/>
-    </a-form-item></a-form>
+    <a-alert
+      v-if="reverseRow"
+      type="warning"
+      show-icon
+      :message="`将登记一笔等额冲回记录，金额 ${moneyText(reverseRow.amount)}。原收款记录会保留。`"
+    />
+    <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError" />
+    <a-form layout="vertical"
+      ><a-form-item label="撤销原因" required> <a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count /> </a-form-item
+    ></a-form>
   </a-modal>
 </template>
 
@@ -141,13 +218,27 @@ import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {financeApi} from '/@/api/business/scm/finance-api';
-import {SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_RECEIPT_METHOD_ENUM, SCM_FINANCE_PERMISSION as PERM} from '/@/constants/business/scm/finance-const';
+import {
+  SCM_FINANCE_ENTRY_COLOR,
+  SCM_FINANCE_ENTRY_TYPE_ENUM,
+  SCM_FINANCE_RECEIPT_METHOD_ENUM,
+  SCM_FINANCE_PERMISSION as PERM,
+} from '/@/constants/business/scm/finance-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import FinanceDetailDrawer from './finance-detail-drawer.vue';
 import {financeError} from './finance-errors';
-import {dateTimeText, entryTypeText, initialFinanceDateRange, isValidPositiveAmount, moneyText, nowDateTimeValue, paymentMethodText, trimOptional} from './finance-form-model';
+import {
+  dateTimeText,
+  entryTypeText,
+  initialFinanceDateRange,
+  isValidPositiveAmount,
+  moneyText,
+  nowDateTimeValue,
+  paymentMethodText,
+  trimOptional,
+} from './finance-form-model';
 import type {FinanceCodCollectionPreview, FinanceReceipt, FinanceReceiptDetail, ReceiptQuery} from './finance-types';
 import type {CustomerOption} from '/@/types/business/scm/customer';
 import {useFinancePage} from './use-finance-page';
@@ -158,210 +249,340 @@ const query = reactive<ReceiptQuery>({pageNum: 1, pageSize: 20, ...initialFinanc
 const route = useRoute();
 const page = useFinancePage<FinanceReceipt, ReceiptQuery>(financeApi.receiptQuery, financeApi.receiptExport);
 const customerOptions = ref<Array<{label: string; value: string | number}>>([]);
-const {open: detailOpen, loading: detailLoading, data: detailData, error: detailError,
-    show: openDetail, load: reloadDetail} = useFinanceDetail<FinanceReceiptDetail>(
-    (id) => financeApi.receiptDetail(id, {suppressGlobalErrorMessage: true})
-);
-const addOpen = ref(false), addSaving = ref(false), addError = ref('');
-const codOpen = ref(false), codSaving = ref(false), codLoading = ref(false), codError = ref('');
+const {
+  open: detailOpen,
+  loading: detailLoading,
+  data: detailData,
+  error: detailError,
+  show: openDetail,
+  load: reloadDetail,
+} = useFinanceDetail<FinanceReceiptDetail>((id) => financeApi.receiptDetail(id, {suppressGlobalErrorMessage: true}));
+const addOpen = ref(false),
+  addSaving = ref(false),
+  addError = ref('');
+const codOpen = ref(false),
+  codSaving = ref(false),
+  codLoading = ref(false),
+  codError = ref('');
 const codPreview = ref<FinanceCodCollectionPreview>();
 let codPreviewGeneration = 0;
-const codForm = reactive({orderId: '', amount: '', method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
-    receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
-const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinanceReceipt | null>(null);
-const addForm = reactive({customerId: undefined as string | number | undefined, amount: '', method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
-    receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
+const codForm = reactive({
+  orderId: '',
+  amount: '',
+  method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
+  receivedAt: nowDateTimeValue(),
+  externalReference: '',
+  remark: '',
+});
+const reverseOpen = ref(false),
+  reverseSaving = ref(false),
+  reverseError = ref(''),
+  reverseReason = ref(''),
+  reverseRow = ref<FinanceReceipt | null>(null);
+const addForm = reactive({
+  customerId: undefined as string | number | undefined,
+  amount: '',
+  method: undefined as 'CASH' | 'BANK_TRANSFER' | 'OTHER' | undefined,
+  receivedAt: nowDateTimeValue(),
+  externalReference: '',
+  remark: '',
+});
 const addFormRef = ref();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const addRules = {
-    customerId: [{required: true, message: '请选择客户', trigger: 'change'}],
-    amount: [{
-        validator: () => (isValidPositiveAmount(addForm.amount)
-            ? Promise.resolve()
-            : Promise.reject(new Error('请输入大于 0 的金额，最多 4 位小数'))),
-        trigger: 'blur',
-    }],
-    method: [{required: true, message: '请选择收款方式', trigger: 'change'}],
-    receivedAt: [{required: true, message: '请选择收款时间', trigger: 'change'}],
+  customerId: [{required: true, message: '请选择客户', trigger: 'change'}],
+  amount: [
+    {
+      validator: () => (isValidPositiveAmount(addForm.amount) ? Promise.resolve() : Promise.reject(new Error('请输入大于 0 的金额，最多 4 位小数'))),
+      trigger: 'blur',
+    },
+  ],
+  method: [{required: true, message: '请选择收款方式', trigger: 'change'}],
+  receivedAt: [{required: true, message: '请选择收款时间', trigger: 'change'}],
 };
 const methodOptions = Object.values(SCM_FINANCE_RECEIPT_METHOD_ENUM).map((item) => ({label: item.desc, value: item.value}));
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
-const pendingOptions = [{label: '仅待核销', value: true}, {label: '全部', value: false}];
+const pendingOptions = [
+  {label: '仅待核销', value: true},
+  {label: '全部', value: false},
+];
 const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 768px)').matches ? undefined : 'right';
 
 const columns = ref<TableColumnsType<FinanceReceipt>>([
-    {title: '收款单号', dataIndex: 'receiptNo', fixed: 'left', width: 170, ellipsis: true},
-    {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', width: 148},
-    {title: '客户', dataIndex: 'customerName', width: 190}, {title: '方向', dataIndex: 'entryType', width: 80, align: 'center'},
-    {title: '来源订单', dataIndex: 'codOrderNo', width: 170, ellipsis: true},
-    {title: '金额', dataIndex: 'amount', width: 136},
-    {title: '有效金额', dataIndex: 'effectiveAmount', width: 148},
-    {title: '已核销', dataIndex: 'usedAmount', width: 148}, {title: '方式', dataIndex: 'method', width: 110, align: 'center'},
-    {title: '凭据号', dataIndex: 'externalReference', width: 160}, {title: '收款时点', dataIndex: 'receivedAt', width: 180},
-    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 140},
+  {title: '收款单号', dataIndex: 'receiptNo', fixed: 'left', width: 170, ellipsis: true},
+  {title: '待核销', dataIndex: 'pendingWriteOffAmount', fixed: 'left', width: 148},
+  {title: '客户', dataIndex: 'customerName', width: 190},
+  {title: '方向', dataIndex: 'entryType', width: 80, align: 'center'},
+  {title: '来源订单', dataIndex: 'codOrderNo', width: 170, ellipsis: true},
+  {title: '金额', dataIndex: 'amount', width: 136},
+  {title: '有效金额', dataIndex: 'effectiveAmount', width: 148},
+  {title: '已核销', dataIndex: 'usedAmount', width: 148},
+  {title: '方式', dataIndex: 'method', width: 110, align: 'center'},
+  {title: '凭据号', dataIndex: 'externalReference', width: 160},
+  {title: '收款时点', dataIndex: 'receivedAt', width: 180},
+  {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 140},
 ]);
-useFinanceMobileActionColumn((compact) => {
+useFinanceMobileActionColumn(
+  (compact) => {
     const action = columns.value[columns.value.length - 1];
     if (action) action.fixed = compact ? undefined : 'right';
-}, () => columns.value.length);
+  },
+  () => columns.value.length
+);
 
-async function queryData() { await page.queryData(query); }
-function onSearch() { query.pageNum = 1; queryData(); }
-function resetQuery() {
-    Object.assign(query, {pageNum: 1, pageSize: 20, ...initialFinanceDateRange(), customerId: undefined,
-        method: undefined, entryType: undefined, pendingOnly: undefined});
-    queryData();
+async function queryData() {
+  await page.queryData(query);
 }
-async function exportData() { await page.exportData(query); }
+function onSearch() {
+  query.pageNum = 1;
+  queryData();
+}
+function resetQuery() {
+  Object.assign(query, {
+    pageNum: 1,
+    pageSize: 20,
+    ...initialFinanceDateRange(),
+    customerId: undefined,
+    method: undefined,
+    entryType: undefined,
+    pendingOnly: undefined,
+  });
+  queryData();
+}
+async function exportData() {
+  await page.exportData(query);
+}
 
 function showDetail(row: FinanceReceipt) {
-    return openDetail(row.receiptId);
+  return openDetail(row.receiptId);
 }
 
 function openAdd() {
-    addError.value = '';
-    Object.assign(addForm, {customerId: undefined, amount: '', method: undefined, receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
-    addOpen.value = true;
+  addError.value = '';
+  Object.assign(addForm, {
+    customerId: undefined,
+    amount: '',
+    method: undefined,
+    receivedAt: nowDateTimeValue(),
+    externalReference: '',
+    remark: '',
+  });
+  addOpen.value = true;
 }
 
 function openCod() {
-    codPreviewGeneration++;
-    codError.value = '';
-    codPreview.value = undefined;
-    Object.assign(codForm, {orderId: '', amount: '', method: undefined, receivedAt: nowDateTimeValue(),
-        externalReference: '', remark: ''});
-    codOpen.value = true;
+  codPreviewGeneration++;
+  codError.value = '';
+  codPreview.value = undefined;
+  Object.assign(codForm, {orderId: '', amount: '', method: undefined, receivedAt: nowDateTimeValue(), externalReference: '', remark: ''});
+  codOpen.value = true;
 }
 
 function clearCodPreview() {
-    codPreviewGeneration++;
-    codPreview.value = undefined;
-    codLoading.value = false;
-    codForm.amount = '';
+  codPreviewGeneration++;
+  codPreview.value = undefined;
+  codLoading.value = false;
+  codForm.amount = '';
 }
 
 async function loadCodPreview(options: {preserveAmount?: boolean} = {}) {
-    const requestedOrderId = codForm.orderId.trim();
-    if (!/^[1-9]\d*$/.test(requestedOrderId)) {
-        codError.value = '请输入有效的销售订单 ID。';
-        return;
-    }
-    const generation = ++codPreviewGeneration;
-    codLoading.value = true; codError.value = ''; codPreview.value = undefined;
-    try {
-        const preview = (await financeApi.receiptCodPreview(requestedOrderId,
-            {suppressGlobalErrorMessage: true})).data;
-        if (generation !== codPreviewGeneration || codForm.orderId.trim() !== requestedOrderId) return;
-        codPreview.value = preview;
-        if (!options.preserveAmount && !codForm.amount) codForm.amount = preview.openAmount;
-    } catch (error) {
-        if (generation === codPreviewGeneration) codError.value = financeError(error);
-    } finally {
-        if (generation === codPreviewGeneration) codLoading.value = false;
-    }
+  const requestedOrderId = codForm.orderId.trim();
+  if (!/^[1-9]\d*$/.test(requestedOrderId)) {
+    codError.value = '请输入有效的销售订单 ID。';
+    return;
+  }
+  const generation = ++codPreviewGeneration;
+  codLoading.value = true;
+  codError.value = '';
+  codPreview.value = undefined;
+  try {
+    const preview = (await financeApi.receiptCodPreview(requestedOrderId, {suppressGlobalErrorMessage: true})).data;
+    if (generation !== codPreviewGeneration || codForm.orderId.trim() !== requestedOrderId) return;
+    codPreview.value = preview;
+    if (!options.preserveAmount && !codForm.amount) codForm.amount = preview.openAmount;
+  } catch (error) {
+    if (generation === codPreviewGeneration) codError.value = financeError(error);
+  } finally {
+    if (generation === codPreviewGeneration) codLoading.value = false;
+  }
 }
 
 async function submitCod() {
-    if (codSaving.value) return;
-    if (!codPreview.value || String(codPreview.value.orderId) !== codForm.orderId.trim()) {
-        codError.value = '请先查询并确认订单。';
-        return;
-    }
-    if (!isValidPositiveAmount(codForm.amount) || !codForm.method || !codForm.receivedAt) {
-        codError.value = '请填写大于 0 的实收金额、收款方式和收款时间。';
-        return;
-    }
-    codSaving.value = true; codError.value = '';
-    try {
-        await financeApi.receiptCodCollect({orderId: codPreview.value.orderId, amount: codForm.amount,
-            method: codForm.method, receivedAt: codForm.receivedAt,
-            externalReference: trimOptional(codForm.externalReference), remark: trimOptional(codForm.remark)});
-        message.success('货到付款收款已登记并核销');
-        codOpen.value = false;
-        await queryData();
-    } catch (error) {
-        const failureMessage = financeError(error);
-        await loadCodPreview({preserveAmount: true});
-        codError.value = failureMessage;
-    } finally { codSaving.value = false; }
+  if (codSaving.value) return;
+  if (!codPreview.value || String(codPreview.value.orderId) !== codForm.orderId.trim()) {
+    codError.value = '请先查询并确认订单。';
+    return;
+  }
+  if (!isValidPositiveAmount(codForm.amount) || !codForm.method || !codForm.receivedAt) {
+    codError.value = '请填写大于 0 的实收金额、收款方式和收款时间。';
+    return;
+  }
+  codSaving.value = true;
+  codError.value = '';
+  try {
+    await financeApi.receiptCodCollect({
+      orderId: codPreview.value.orderId,
+      amount: codForm.amount,
+      method: codForm.method,
+      receivedAt: codForm.receivedAt,
+      externalReference: trimOptional(codForm.externalReference),
+      remark: trimOptional(codForm.remark),
+    });
+    message.success('货到付款收款已登记并核销');
+    codOpen.value = false;
+    await queryData();
+  } catch (error) {
+    const failureMessage = financeError(error);
+    await loadCodPreview({preserveAmount: true});
+    codError.value = failureMessage;
+  } finally {
+    codSaving.value = false;
+  }
 }
 
 async function submitAdd() {
-    // 必填项走表单校验：错误显示在对应输入框下方，顶部 alert 只留服务端错误
-    try {
-        await addFormRef.value?.validate();
-    } catch {
-        return;
-    }
-    if (addForm.customerId === undefined || addForm.method === undefined) {
-        addError.value = '请选择客户与收款方式';
-        return;
-    }
-    addSaving.value = true; addError.value = '';
-    try {
-        await financeApi.receiptAdd({customerId: addForm.customerId, amount: addForm.amount, method: addForm.method,
-            receivedAt: addForm.receivedAt, externalReference: trimOptional(addForm.externalReference), remark: trimOptional(addForm.remark)});
-        message.success('收款已登记'); addOpen.value = false; await queryData();
-    } catch {
-        // 登记失败只走全局 toast；弹窗里的 addError 留给本地校验
-    }
-    finally { addSaving.value = false; }
+  // 必填项走表单校验：错误显示在对应输入框下方，顶部 alert 只留服务端错误
+  try {
+    await addFormRef.value?.validate();
+  } catch {
+    return;
+  }
+  if (addForm.customerId === undefined || addForm.method === undefined) {
+    addError.value = '请选择客户与收款方式';
+    return;
+  }
+  addSaving.value = true;
+  addError.value = '';
+  try {
+    await financeApi.receiptAdd({
+      customerId: addForm.customerId,
+      amount: addForm.amount,
+      method: addForm.method,
+      receivedAt: addForm.receivedAt,
+      externalReference: trimOptional(addForm.externalReference),
+      remark: trimOptional(addForm.remark),
+    });
+    message.success('收款已登记');
+    addOpen.value = false;
+    await queryData();
+  } catch {
+    // 登记失败只走全局 toast；弹窗里的 addError 留给本地校验
+  } finally {
+    addSaving.value = false;
+  }
 }
 
 function openReverse(row: FinanceReceipt) {
-    reverseRow.value = row; reverseReason.value = ''; reverseError.value = ''; reverseOpen.value = true;
+  reverseRow.value = row;
+  reverseReason.value = '';
+  reverseError.value = '';
+  reverseOpen.value = true;
 }
 
 async function submitReverse() {
-    if (!reverseRow.value || !reverseReason.value.trim()) { reverseError.value = '请填写反向原因。'; return; }
-    reverseSaving.value = true; reverseError.value = '';
-    try {
-        await financeApi.receiptReverse({receiptId: reverseRow.value.receiptId, reason: reverseReason.value.trim()});
-        message.success('反向收款已追加'); reverseOpen.value = false; await queryData();
-    } catch {
-        // 反向失败只走全局 toast；弹窗里的 reverseError 留给本地校验
-    }
-    finally { reverseSaving.value = false; }
+  if (!reverseRow.value || !reverseReason.value.trim()) {
+    reverseError.value = '请填写反向原因。';
+    return;
+  }
+  reverseSaving.value = true;
+  reverseError.value = '';
+  try {
+    await financeApi.receiptReverse({receiptId: reverseRow.value.receiptId, reason: reverseReason.value.trim()});
+    message.success('反向收款已追加');
+    reverseOpen.value = false;
+    await queryData();
+  } catch {
+    // 反向失败只走全局 toast；弹窗里的 reverseError 留给本地校验
+  } finally {
+    reverseSaving.value = false;
+  }
 }
 
 onMounted(async () => {
-    try {
-        // 客户选项加载失败也由页头 Alert 承担
-        const response = await customerApi.optionList({suppressGlobalErrorMessage: true});
-        customerOptions.value = response.data.map((item: CustomerOption) => ({label: `${item.customerCode} · ${item.name}`, value: item.customerId}));
-    } catch {
-        page.error.value = '客户选项暂不可用，请稍后重试。';
-    }
-    queryData();
-    if (typeof route.query.codOrderId === 'string' && /^[1-9]\d*$/.test(route.query.codOrderId)) {
-        openCod();
-        codForm.orderId = route.query.codOrderId;
-        await loadCodPreview();
-    }
+  try {
+    // 客户选项加载失败也由页头 Alert 承担
+    const response = await customerApi.optionList({suppressGlobalErrorMessage: true});
+    customerOptions.value = response.data.map((item: CustomerOption) => ({label: `${item.customerCode} · ${item.name}`, value: item.customerId}));
+  } catch {
+    page.error.value = '客户选项暂不可用，请稍后重试。';
+  }
+  queryData();
+  if (typeof route.query.codOrderId === 'string' && /^[1-9]\d*$/.test(route.query.codOrderId)) {
+    openCod();
+    codForm.orderId = route.query.codOrderId;
+    await loadCodPreview();
+  }
 });
 
-watch(() => route.query.codOrderId, async (value) => {
+watch(
+  () => route.query.codOrderId,
+  async (value) => {
     if (codSaving.value || typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) return;
     openCod();
     codForm.orderId = value;
     await loadCodPreview();
-});
+  }
+);
 </script>
 
 <style scoped>
-.date-separator { margin: 0 8px; color: #667085; }
-.page-error,.form-error { margin-bottom: 12px; }
-.finance-mobile-balance-list { display: none; }
+.date-separator {
+  margin: 0 8px;
+  color: #667085;
+}
+.page-error,
+.form-error {
+  margin-bottom: 12px;
+}
+.finance-mobile-balance-list {
+  display: none;
+}
 
-.finance-mobile-balance-row { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-.mobile-balance-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.mobile-balance-heading strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mobile-balance-party { margin: 0 0 6px; color: #667085; font-size: 12px; overflow-wrap: anywhere; }
-.mobile-balance-values { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 14px; font-variant-numeric: tabular-nums; }
-.mobile-balance-values span { color: #667085; font-size: 12px; }
-.mobile-balance-values strong { color: #1d2939; font-weight: 600; }
-@media (max-width: 768px) { .finance-mobile-balance-list { display: block; } }
+.finance-mobile-balance-row {
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+.mobile-balance-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mobile-balance-heading strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mobile-balance-party {
+  margin: 0 0 6px;
+  color: #667085;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.mobile-balance-values {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 14px;
+  font-variant-numeric: tabular-nums;
+}
+.mobile-balance-values span {
+  color: #667085;
+  font-size: 12px;
+}
+.mobile-balance-values strong {
+  color: #1d2939;
+  font-weight: 600;
+}
 @media (max-width: 768px) {
-  .finance-table :deep(.ant-table-cell-fix-right) { position: static !important; right: auto !important; }
+  .finance-mobile-balance-list {
+    display: block;
+  }
+}
+@media (max-width: 768px) {
+  .finance-table :deep(.ant-table-cell-fix-right) {
+    position: static !important;
+    right: auto !important;
+  }
 }
 </style>

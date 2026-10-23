@@ -85,10 +85,7 @@ import ts from 'typescript';
    */
   test('chart composable replays the latest option when a hidden container becomes visible again', () => {
     // 尺寸为 0 时必须早退，不能进 resize 分支（否则会在隐藏态白跑一次重绘）
-    assert.match(
-      USE_ECHARTS,
-      /new ResizeObserver\(\(\) => \{[\s\S]{0,400}if \(!el\.clientWidth \|\| !el\.clientHeight\) \{[\s\S]{0,80}return;/
-    );
+    assert.match(USE_ECHARTS, /new ResizeObserver\(\(\) => \{[\s\S]{0,400}if \(!el\.clientWidth \|\| !el\.clientHeight\) \{[\s\S]{0,80}return;/);
     // 已有实例 + 有 pending ⇒ 必须重新应用配置，而不是只 resize()
     assert.match(USE_ECHARTS, /if \(pending\) \{[\s\S]{0,80}chart\.setOption\(pending, true\);/);
     // setOption 必须同时记住 pending，供上面那条分支消费
@@ -98,7 +95,7 @@ import ts from 'typescript';
 
 // ---------------------------------------------------------------- 来源：mall-home-layout-contract.test.mjs
 {
-  const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   const api = read('../src/api/business/scm/mall-home-api.ts');
   const page = read('../src/views/business/scm/mall/mall-home-layout.vue');
 
@@ -152,25 +149,21 @@ import ts from 'typescript';
 
   const scmRoot = fileURLToPath(new URL('../src/views/business/scm', import.meta.url));
   const srcRoot = fileURLToPath(new URL('../src', import.meta.url));
-  const ACTION_MORE = fileURLToPath(
-      new URL('../src/components/business/scm/scm-action-more/index.vue', import.meta.url),
-  );
-  const ACTION_ITEM = fileURLToPath(
-      new URL('../src/components/business/scm/scm-action-more/action-item.ts', import.meta.url),
-  );
+  const ACTION_MORE = fileURLToPath(new URL('../src/components/business/scm/scm-action-more/index.vue', import.meta.url));
+  const ACTION_ITEM = fileURLToPath(new URL('../src/components/business/scm/scm-action-more/action-item.ts', import.meta.url));
 
   /** 复杂工作台的放宽上限。 */
   const MAX_ACTION_WIDTH = 180;
 
   /** 递归收集指定后缀的文件。 */
   function filesWith(dir, ext) {
-      const out = [];
-      for (const entry of readdirSync(dir)) {
-          const full = path.join(dir, entry);
-          if (statSync(full).isDirectory()) out.push(...filesWith(full, ext));
-          else if (entry.endsWith(ext)) out.push(full);
-      }
-      return out;
+    const out = [];
+    for (const entry of readdirSync(dir)) {
+      const full = path.join(dir, entry);
+      if (statSync(full).isDirectory()) out.push(...filesWith(full, ext));
+      else if (entry.endsWith(ext)) out.push(full);
+    }
+    return out;
   }
 
   /**
@@ -181,31 +174,31 @@ import ts from 'typescript';
    * 列（日志表的「操作类型」）不会被命中，因为它既不是 action 也不叫操作列。
    */
   function actionColumnBlocks(source) {
-      const blocks = [];
-      const re = /(?:dataIndex|key):\s*'action'/g;
-      let match;
-      while ((match = re.exec(source)) !== null) {
-          const start = source.lastIndexOf('{', match.index);
-          const end = source.indexOf('}', match.index);
-          if (start >= 0 && end >= 0) {
-              blocks.push({
-                  block: source.slice(start, end + 1),
-                  line: source.slice(0, match.index).split('\n').length,
-              });
-          }
+    const blocks = [];
+    const re = /(?:dataIndex|key):\s*'action'/g;
+    let match;
+    while ((match = re.exec(source)) !== null) {
+      const start = source.lastIndexOf('{', match.index);
+      const end = source.indexOf('}', match.index);
+      if (start >= 0 && end >= 0) {
+        blocks.push({
+          block: source.slice(start, end + 1),
+          line: source.slice(0, match.index).split('\n').length,
+        });
       }
-      return blocks;
+    }
+    return blocks;
   }
 
   const files = filesWith(scmRoot, '.vue').map((full) => ({
-      full,
-      rel: path.relative(scmRoot, full).replace(/\\/g, '/'),
-      source: readFileSync(full, 'utf8'),
+    full,
+    rel: path.relative(scmRoot, full).replace(/\\/g, '/'),
+    source: readFileSync(full, 'utf8'),
   }));
 
   test('扫描基线有效：确实枚举到操作列', () => {
-      const total = files.reduce((sum, f) => sum + actionColumnBlocks(f.source).length, 0);
-      assert.ok(total >= 40, `只枚举到 ${total} 个操作列，扫描方式可能已失效`);
+    const total = files.reduce((sum, f) => sum + actionColumnBlocks(f.source).length, 0);
+    assert.ok(total >= 40, `只枚举到 ${total} 个操作列，扫描方式可能已失效`);
   });
 
   // ------------------------------------------------------------------
@@ -213,31 +206,27 @@ import ts from 'typescript';
   // ------------------------------------------------------------------
 
   test('操作列必须显式 align center', () => {
-      const offenders = [];
-      for (const {rel, source} of files) {
-          for (const {block, line} of actionColumnBlocks(source)) {
-              if (!/align:\s*'center'/.test(block)) {
-                  offenders.push(`${rel}:${line} → ${block.replace(/\s+/g, ' ')}`);
-              }
-          }
+    const offenders = [];
+    for (const {rel, source} of files) {
+      for (const {block, line} of actionColumnBlocks(source)) {
+        if (!/align:\s*'center'/.test(block)) {
+          offenders.push(`${rel}:${line} → ${block.replace(/\s+/g, ' ')}`);
+        }
       }
-      assert.deepEqual(
-          offenders,
-          [],
-          `以下操作列未显式居中（antd 默认左对齐，表头与按钮中心线会对不上）：\n${offenders.join('\n')}`,
-      );
+    }
+    assert.deepEqual(offenders, [], `以下操作列未显式居中（antd 默认左对齐，表头与按钮中心线会对不上）：\n${offenders.join('\n')}`);
   });
 
   test('操作列不得右对齐', () => {
-      const offenders = [];
-      for (const {rel, source} of files) {
-          for (const {block, line} of actionColumnBlocks(source)) {
-              if (/align:\s*'right'/.test(block)) {
-                  offenders.push(`${rel}:${line} → ${block.replace(/\s+/g, ' ')}`);
-              }
-          }
+    const offenders = [];
+    for (const {rel, source} of files) {
+      for (const {block, line} of actionColumnBlocks(source)) {
+        if (/align:\s*'right'/.test(block)) {
+          offenders.push(`${rel}:${line} → ${block.replace(/\s+/g, ' ')}`);
+        }
       }
-      assert.deepEqual(offenders, [], `以下操作列仍右对齐：\n${offenders.join('\n')}`);
+    }
+    assert.deepEqual(offenders, [], `以下操作列仍右对齐：\n${offenders.join('\n')}`);
   });
 
   // ------------------------------------------------------------------
@@ -245,20 +234,16 @@ import ts from 'typescript';
   // ------------------------------------------------------------------
 
   test(`操作列宽度不得超过 ${MAX_ACTION_WIDTH}px`, () => {
-      const offenders = [];
-      for (const {rel, source} of files) {
-          for (const {block, line} of actionColumnBlocks(source)) {
-              const width = block.match(/width:\s*(\d+)/);
-              if (width && Number(width[1]) > MAX_ACTION_WIDTH) {
-                  offenders.push(`${rel}:${line} width=${width[1]}`);
-              }
-          }
+    const offenders = [];
+    for (const {rel, source} of files) {
+      for (const {block, line} of actionColumnBlocks(source)) {
+        const width = block.match(/width:\s*(\d+)/);
+        if (width && Number(width[1]) > MAX_ACTION_WIDTH) {
+          offenders.push(`${rel}:${line} width=${width[1]}`);
+        }
       }
-      assert.deepEqual(
-          offenders,
-          [],
-          `以下操作列超过 ${MAX_ACTION_WIDTH}px 常驻宽度：\n${offenders.join('\n')}`,
-      );
+    }
+    assert.deepEqual(offenders, [], `以下操作列超过 ${MAX_ACTION_WIDTH}px 常驻宽度：\n${offenders.join('\n')}`);
   });
 
   // ------------------------------------------------------------------
@@ -267,54 +252,51 @@ import ts from 'typescript';
 
   /** 文件 → 该文件内任何操作列都不允许超过的宽度。 */
   const NARROWED = {
-      'inventory/inventory-loss-gain-list.vue': 150,
-      'inventory/inventory-outbound-list.vue': 150,
-      'inventory/inventory-stocktake-list.vue': 150,
-      'inventory/inventory-transfer-list.vue': 180,
-      'inventory/inventory-conversion-list.vue': 160,
-      'sorting/sorting-task-list.vue': 150,
-      'promotion/promotion-coupon-list.vue': 150,
-      'product/components/category-tree-table.vue': 160,
-      'report/report-overview-list.vue': 110,
+    'inventory/inventory-loss-gain-list.vue': 150,
+    'inventory/inventory-outbound-list.vue': 150,
+    'inventory/inventory-stocktake-list.vue': 150,
+    'inventory/inventory-transfer-list.vue': 180,
+    'inventory/inventory-conversion-list.vue': 160,
+    'sorting/sorting-task-list.vue': 150,
+    'promotion/promotion-coupon-list.vue': 150,
+    'product/components/category-tree-table.vue': 160,
+    'report/report-overview-list.vue': 110,
   };
 
   test('已收窄的操作列不得回退', () => {
-      for (const [rel, limit] of Object.entries(NARROWED)) {
-          const file = files.find((f) => f.rel === rel);
-          assert.ok(file, `文件不存在：${rel}`);
-          const blocks = actionColumnBlocks(file.source);
-          assert.ok(blocks.length > 0, `${rel} 未声明操作列，疑似结构被改`);
-          for (const {block, line} of blocks) {
-              const width = block.match(/width:\s*(\d+)/);
-              assert.ok(width, `${rel}:${line} 操作列缺少显式宽度`);
-              assert.ok(
-                  Number(width[1]) <= limit,
-                  `${rel}:${line} 操作列回退为 ${width[1]}px（上限 ${limit}px）`,
-              );
-          }
+    for (const [rel, limit] of Object.entries(NARROWED)) {
+      const file = files.find((f) => f.rel === rel);
+      assert.ok(file, `文件不存在：${rel}`);
+      const blocks = actionColumnBlocks(file.source);
+      assert.ok(blocks.length > 0, `${rel} 未声明操作列，疑似结构被改`);
+      for (const {block, line} of blocks) {
+        const width = block.match(/width:\s*(\d+)/);
+        assert.ok(width, `${rel}:${line} 操作列缺少显式宽度`);
+        assert.ok(Number(width[1]) <= limit, `${rel}:${line} 操作列回退为 ${width[1]}px（上限 ${limit}px）`);
       }
+    }
   });
 
   test('已修复的子组件不得回退', () => {
-      const fixed = [
-          'delivery/components/route-fulfillment-panel.vue',
-          'delivery/components/route-orders-panel.vue',
-          'delivery/components/route-planning-suggestion-panel.vue',
-          'finance/finance-refund-picker.vue',
-          'finance/finance-write-off-list.vue',
-          'order/components/order-item-editable-table.vue',
-          'purchase/components/purchase-order-item-editable-table.vue',
-      ];
-      for (const rel of fixed) {
-          const file = files.find((f) => f.rel === rel);
-          assert.ok(file, `文件不存在：${rel}`);
-          const blocks = actionColumnBlocks(file.source);
-          assert.ok(blocks.length > 0, `${rel} 未声明操作列，疑似结构被改`);
-          for (const {block, line} of blocks) {
-              assert.ok(!/align:\s*'right'/.test(block), `${rel}:${line} 操作列回退为右对齐`);
-              assert.ok(/align:\s*'center'/.test(block), `${rel}:${line} 操作列丢了显式居中`);
-          }
+    const fixed = [
+      'delivery/components/route-fulfillment-panel.vue',
+      'delivery/components/route-orders-panel.vue',
+      'delivery/components/route-planning-suggestion-panel.vue',
+      'finance/finance-refund-picker.vue',
+      'finance/finance-write-off-list.vue',
+      'order/components/order-item-editable-table.vue',
+      'purchase/components/purchase-order-item-editable-table.vue',
+    ];
+    for (const rel of fixed) {
+      const file = files.find((f) => f.rel === rel);
+      assert.ok(file, `文件不存在：${rel}`);
+      const blocks = actionColumnBlocks(file.source);
+      assert.ok(blocks.length > 0, `${rel} 未声明操作列，疑似结构被改`);
+      for (const {block, line} of blocks) {
+        assert.ok(!/align:\s*'right'/.test(block), `${rel}:${line} 操作列回退为右对齐`);
+        assert.ok(/align:\s*'center'/.test(block), `${rel}:${line} 操作列丢了显式居中`);
       }
+    }
   });
 
   // ------------------------------------------------------------------
@@ -322,22 +304,17 @@ import ts from 'typescript';
   // ------------------------------------------------------------------
 
   test('ScmActionMore 本身不依赖 v-privilege（菜单项里指令不生效）', () => {
-      const source = readFileSync(ACTION_MORE, 'utf8');
-      assert.doesNotMatch(
-          source,
-          /v-privilege/,
-          'ScmActionMore 渲染在 a-menu 里，v-privilege 对菜单项不生效，权限必须由调用方算 hidden',
-      );
-      // 必须仍然按 hidden 过滤
-      assert.match(source, /\.filter\(\s*\(?\s*action\s*\)?\s*=>\s*!action\.hidden\s*\)/,
-          'ScmActionMore 不再按 hidden 过滤，无权限动作会被显示出来');
+    const source = readFileSync(ACTION_MORE, 'utf8');
+    assert.doesNotMatch(source, /v-privilege/, 'ScmActionMore 渲染在 a-menu 里，v-privilege 对菜单项不生效，权限必须由调用方算 hidden');
+    // 必须仍然按 hidden 过滤
+    assert.match(source, /\.filter\(\s*\(?\s*action\s*\)?\s*=>\s*!action\.hidden\s*\)/, 'ScmActionMore 不再按 hidden 过滤，无权限动作会被显示出来');
   });
 
   test('ScmActionItem 仍保留 hidden / danger 语义', () => {
-      const source = readFileSync(ACTION_ITEM, 'utf8');
-      assert.match(source, /hidden\?:/, 'action-item 丢了 hidden 字段');
-      assert.match(source, /danger\?:/, 'action-item 丢了 danger 字段');
-      assert.match(source, /label:/, 'action-item 丢了 label 字段');
+    const source = readFileSync(ACTION_ITEM, 'utf8');
+    assert.match(source, /hidden\?:/, 'action-item 丢了 hidden 字段');
+    assert.match(source, /danger\?:/, 'action-item 丢了 danger 字段');
+    assert.match(source, /label:/, 'action-item 丢了 label 字段');
   });
 
   /**
@@ -347,17 +324,13 @@ import ts from 'typescript';
   const READ_ONLY_MORE_CALLERS = new Set(['report/report-overview-list.vue']);
 
   test('每个 ScmActionMore 调用方都用权限助手裁剪菜单项', () => {
-      const callers = files.filter((f) => /ScmActionMore/.test(f.source));
-      assert.ok(callers.length >= 10, `只找到 ${callers.length} 个调用方，扫描可能失效`);
-      const offenders = callers
-          .filter((f) => !READ_ONLY_MORE_CALLERS.has(f.rel))
-          .filter((f) => !/hasPermission\(|hasPerm\(/.test(f.source))
-          .map((f) => f.rel);
-      assert.deepEqual(
-          offenders,
-          [],
-          `以下调用方没有用 hasPermission / hasPerm 裁剪「更多」里的菜单项：\n${offenders.join('\n')}`,
-      );
+    const callers = files.filter((f) => /ScmActionMore/.test(f.source));
+    assert.ok(callers.length >= 10, `只找到 ${callers.length} 个调用方，扫描可能失效`);
+    const offenders = callers
+      .filter((f) => !READ_ONLY_MORE_CALLERS.has(f.rel))
+      .filter((f) => !/hasPermission\(|hasPerm\(/.test(f.source))
+      .map((f) => f.rel);
+    assert.deepEqual(offenders, [], `以下调用方没有用 hasPermission / hasPerm 裁剪「更多」里的菜单项：\n${offenders.join('\n')}`);
   });
 
   // ------------------------------------------------------------------
@@ -365,18 +338,16 @@ import ts from 'typescript';
   // ------------------------------------------------------------------
 
   test('平级的只读入口不人为分主次（报表总览下钻）', () => {
-      const file = files.find((f) => f.rel === 'report/report-overview-list.vue');
-      assert.ok(file, '文件不存在：report/report-overview-list.vue');
-      // 四个维度完全平级，必须同住一个菜单，而不是挑两个提到行内
-      for (const key of ['sales', 'purchase', 'receipt', 'inventory']) {
-          assert.match(file.source, new RegExp(`\\{key: '${key}', label: '[^']+'\\}`),
-              `下钻菜单缺 ${key}`);
-      }
-      assert.match(file.source, /<ScmActionMore label="下钻"/, '下钻应统一走 ScmActionMore');
-      const cell = file.source.match(/column\.dataIndex === 'action'[\s\S]*?<\/template>/)?.[0];
-      assert.ok(cell, '缺 action 单元格');
-      assert.doesNotMatch(cell, /goAnalysis\(/,
-          '行内不应再直接暴露单个下钻跳转，否则又变成了人为分主次');
+    const file = files.find((f) => f.rel === 'report/report-overview-list.vue');
+    assert.ok(file, '文件不存在：report/report-overview-list.vue');
+    // 四个维度完全平级，必须同住一个菜单，而不是挑两个提到行内
+    for (const key of ['sales', 'purchase', 'receipt', 'inventory']) {
+      assert.match(file.source, new RegExp(`\\{key: '${key}', label: '[^']+'\\}`), `下钻菜单缺 ${key}`);
+    }
+    assert.match(file.source, /<ScmActionMore label="下钻"/, '下钻应统一走 ScmActionMore');
+    const cell = file.source.match(/column\.dataIndex === 'action'[\s\S]*?<\/template>/)?.[0];
+    assert.ok(cell, '缺 action 单元格');
+    assert.doesNotMatch(cell, /goAnalysis\(/, '行内不应再直接暴露单个下钻跳转，否则又变成了人为分主次');
   });
 
   // ------------------------------------------------------------------
@@ -384,29 +355,21 @@ import ts from 'typescript';
   // ------------------------------------------------------------------
 
   test('不得用 overflow hidden + nowrap 把操作按钮藏起来冒充收窄', () => {
-      const styleFiles = [
-          ...filesWith(srcRoot, '.vue'),
-          ...filesWith(srcRoot, '.less'),
-          ...filesWith(srcRoot, '.css'),
-      ];
-      const offenders = [];
-      for (const file of styleFiles) {
-          const source = readFileSync(file, 'utf8');
-          for (const match of source.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-              const selector = match[1];
-              const body = match[2];
-              // 只关心操作容器本身，不关心 .scm-tags 之类同样用 nowrap+hidden 的正当场景
-              if (!/scm-table-actions|smart-table-operate/.test(selector)) continue;
-              if (/overflow:\s*hidden/.test(body) && /white-space:\s*nowrap/.test(body)) {
-                  offenders.push(`${path.relative(srcRoot, file).replace(/\\/g, '/')} → ${selector.trim()}`);
-              }
-          }
+    const styleFiles = [...filesWith(srcRoot, '.vue'), ...filesWith(srcRoot, '.less'), ...filesWith(srcRoot, '.css')];
+    const offenders = [];
+    for (const file of styleFiles) {
+      const source = readFileSync(file, 'utf8');
+      for (const match of source.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        const selector = match[1];
+        const body = match[2];
+        // 只关心操作容器本身，不关心 .scm-tags 之类同样用 nowrap+hidden 的正当场景
+        if (!/scm-table-actions|smart-table-operate/.test(selector)) continue;
+        if (/overflow:\s*hidden/.test(body) && /white-space:\s*nowrap/.test(body)) {
+          offenders.push(`${path.relative(srcRoot, file).replace(/\\/g, '/')} → ${selector.trim()}`);
+        }
       }
-      assert.deepEqual(
-          offenders,
-          [],
-          `以下样式把操作按钮裁掉而不是真正收窄：\n${offenders.join('\n')}`,
-      );
+    }
+    assert.deepEqual(offenders, [], `以下样式把操作按钮裁掉而不是真正收窄：\n${offenders.join('\n')}`);
   });
 }
 
@@ -454,65 +417,68 @@ import ts from 'typescript';
    * 每一类都必须能在代码注释里说出「为什么横向空间本身属于业务内容」。
    */
   const WORKSPACE_FILES = new Set([
-      'sorting/components/sorting-task-detail-drawer.vue',
-      'purchase/components/purchase-demand-batch-detail-drawer.vue',
-      'report/report-components/report-drilldown-drawer.vue',
-      'sorting/components/sorting-scale-drawer.vue',
+    'sorting/components/sorting-task-detail-drawer.vue',
+    'purchase/components/purchase-demand-batch-detail-drawer.vue',
+    'report/report-components/report-drilldown-drawer.vue',
+    'sorting/components/sorting-scale-drawer.vue',
   ]);
 
   /** 递归收集 .vue 文件。 */
   function vueFiles(dir) {
-      const out = [];
-      for (const entry of readdirSync(dir, {withFileTypes: true})) {
-          const full = path.join(dir, entry.name);
-          if (entry.isDirectory()) out.push(...vueFiles(full));
-          else if (entry.name.endsWith('.vue')) out.push(full);
-      }
-      return out;
+    const out = [];
+    for (const entry of readdirSync(dir, {withFileTypes: true})) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) out.push(...vueFiles(full));
+      else if (entry.name.endsWith('.vue')) out.push(full);
+    }
+    return out;
   }
 
   /** 取每个 `<a-drawer` 的开标签文本（跨行，忽略引号内的 `>`）。 */
   function drawerTags(source) {
-      const out = [];
-      const re = /<a-drawer\b/g;
-      let match;
-      while ((match = re.exec(source)) !== null) {
-          let i = match.index + match[0].length;
-          let inStr = null;
-          for (; i < source.length; i++) {
-              const ch = source[i];
-              if (inStr) {
-                  if (ch === inStr) inStr = null;
-                  continue;
-              }
-              if (ch === '"' || ch === "'") { inStr = ch; continue; }
-              if (ch === '>') break;
-          }
-          out.push({
-              text: source.slice(match.index, i + 1),
-              line: source.slice(0, match.index).split('\n').length,
-          });
+    const out = [];
+    const re = /<a-drawer\b/g;
+    let match;
+    while ((match = re.exec(source)) !== null) {
+      let i = match.index + match[0].length;
+      let inStr = null;
+      for (; i < source.length; i++) {
+        const ch = source[i];
+        if (inStr) {
+          if (ch === inStr) inStr = null;
+          continue;
+        }
+        if (ch === '"' || ch === "'") {
+          inStr = ch;
+          continue;
+        }
+        if (ch === '>') break;
       }
-      return out;
+      out.push({
+        text: source.slice(match.index, i + 1),
+        line: source.slice(0, match.index).split('\n').length,
+      });
+    }
+    return out;
   }
 
   const files = vueFiles(scmRoot).map((full) => ({
-      rel: path.relative(scmRoot, full).replace(/\\/g, '/'),
-      source: readFileSync(full, 'utf8'),
+    rel: path.relative(scmRoot, full).replace(/\\/g, '/'),
+    source: readFileSync(full, 'utf8'),
   }));
 
   const instances = [];
   for (const file of files) {
-      for (const tag of drawerTags(file.source)) {
-          const bound = tag.text.match(/:width="([^"]*)"/);
-          const plain = tag.text.match(/(?:^|\s)width="([^"]*)"/);
-          instances.push({
-              rel: file.rel,
-              line: tag.line,
-              expr: (bound?.[1] ?? plain?.[1] ?? null),
-              isBound: Boolean(bound),
-          });
-      }
+    for (const tag of drawerTags(file.source)) {
+      const bound = tag.text.match(/:width="([^"]*)"/);
+      const plain = tag.text.match(/(?:^|\s)width="([^"]*)"/);
+      instances.push({
+        rel: file.rel,
+        line: tag.line,
+        expr: bound?.[1] ?? plain?.[1] ?? null,
+        isBound: Boolean(bound),
+      });
+    }
   }
 
   // ------------------------------------------------------------------
@@ -520,10 +486,10 @@ import ts from 'typescript';
   // ------------------------------------------------------------------
 
   test('扫描基线：Drawer 实例数不低于迁移完成时的基线', () => {
-      assert.ok(
-          instances.length >= EXPECTED_INSTANCES,
-          `只枚举到 ${instances.length} 个 <a-drawer>，低于基线 ${EXPECTED_INSTANCES}，扫描方式可能已失效`,
-      );
+    assert.ok(
+      instances.length >= EXPECTED_INSTANCES,
+      `只枚举到 ${instances.length} 个 <a-drawer>，低于基线 ${EXPECTED_INSTANCES}，扫描方式可能已失效`
+    );
   });
 
   // ------------------------------------------------------------------
@@ -531,34 +497,32 @@ import ts from 'typescript';
   // ------------------------------------------------------------------
 
   test('所有 a-drawer 都必须用 scmDrawerWidth 取值', () => {
-      const offenders = instances
-          .filter((i) => !i.isBound || !/^scmDrawerWidth\('(?:s|m|l|xl|workspace)'\)$/.test(i.expr.trim()))
-          .map((i) => `${i.rel}:${i.line} width=${i.expr ?? '(未声明)'}`);
-      assert.deepEqual(
-          offenders,
-          [],
-          `以下抽屉没有通过 scmDrawerWidth 取宽度（禁止硬编码，也禁止 min(NNNpx, 96vw) ——\n` +
-          `视口兜底由 theme/scm/responsive.less 统一负责）：\n${offenders.join('\n')}`,
-      );
+    const offenders = instances
+      .filter((i) => !i.isBound || !/^scmDrawerWidth\('(?:s|m|l|xl|workspace)'\)$/.test(i.expr.trim()))
+      .map((i) => `${i.rel}:${i.line} width=${i.expr ?? '(未声明)'}`);
+    assert.deepEqual(
+      offenders,
+      [],
+      `以下抽屉没有通过 scmDrawerWidth 取宽度（禁止硬编码，也禁止 min(NNNpx, 96vw) ——\n` +
+        `视口兜底由 theme/scm/responsive.less 统一负责）：\n${offenders.join('\n')}`
+    );
   });
 
   test('scmDrawerWidth 只接受 s / m / l / xl / workspace', () => {
-      const offenders = [];
-      for (const i of instances) {
-          if (!i.isBound) continue;
-          const level = i.expr.match(/scmDrawerWidth\('([^']*)'\)/)?.[1];
-          if (level !== undefined && !ALLOWED_LEVELS.includes(level)) {
-              offenders.push(`${i.rel}:${i.line} level=${level}`);
-          }
+    const offenders = [];
+    for (const i of instances) {
+      if (!i.isBound) continue;
+      const level = i.expr.match(/scmDrawerWidth\('([^']*)'\)/)?.[1];
+      if (level !== undefined && !ALLOWED_LEVELS.includes(level)) {
+        offenders.push(`${i.rel}:${i.line} level=${level}`);
       }
-      assert.deepEqual(offenders, [], `出现了未定义的等级：\n${offenders.join('\n')}`);
+    }
+    assert.deepEqual(offenders, [], `出现了未定义的等级：\n${offenders.join('\n')}`);
   });
 
   test('不得再出现 min(NNNpx, Nvw) 形式的抽屉宽度', () => {
-      const offenders = instances
-          .filter((i) => /min\(\s*\d+px/.test(i.expr ?? ''))
-          .map((i) => `${i.rel}:${i.line} width=${i.expr}`);
-      assert.deepEqual(offenders, [], `视口兜底应由 responsive.less 统一提供：\n${offenders.join('\n')}`);
+    const offenders = instances.filter((i) => /min\(\s*\d+px/.test(i.expr ?? '')).map((i) => `${i.rel}:${i.line} width=${i.expr}`);
+    assert.deepEqual(offenders, [], `视口兜底应由 responsive.less 统一提供：\n${offenders.join('\n')}`);
   });
 
   // ------------------------------------------------------------------
@@ -566,42 +530,34 @@ import ts from 'typescript';
   // ------------------------------------------------------------------
 
   test('workspace 只允许出现在已批准的 4 个文件里', () => {
-      const offenders = instances
-          .filter((i) => /scmDrawerWidth\('workspace'\)/.test(i.expr ?? ''))
-          .filter((i) => !WORKSPACE_FILES.has(i.rel))
-          .map((i) => `${i.rel}:${i.line}`);
-      assert.deepEqual(
-          offenders,
-          [],
-          `workspace 是受限特殊档，只允许分拣称重工作台 / 报表下钻 /\n` +
-          `超宽业务数据阅读 / 多面板业务工作台四类（线路详情已页面化，不再占用本档）；\n` +
-          `新增用例要先更新 SCM UI 规范并同步本契约：\n${offenders.join('\n')}`,
-      );
+    const offenders = instances
+      .filter((i) => /scmDrawerWidth\('workspace'\)/.test(i.expr ?? ''))
+      .filter((i) => !WORKSPACE_FILES.has(i.rel))
+      .map((i) => `${i.rel}:${i.line}`);
+    assert.deepEqual(
+      offenders,
+      [],
+      `workspace 是受限特殊档，只允许分拣称重工作台 / 报表下钻 /\n` +
+        `超宽业务数据阅读 / 多面板业务工作台四类（线路详情已页面化，不再占用本档）；\n` +
+        `新增用例要先更新 SCM UI 规范并同步本契约：\n${offenders.join('\n')}`
+    );
   });
 
   test('已批准的 workspace 文件一个都不能少', () => {
-      const used = new Set(
-          instances
-              .filter((i) => /scmDrawerWidth\('workspace'\)/.test(i.expr ?? ''))
-              .map((i) => i.rel),
-      );
-      assert.deepEqual(
-          [...WORKSPACE_FILES].filter((rel) => !used.has(rel)),
-          [],
-          'workspace 白名单里的文件丢失了 workspace 用法，疑似被误降级',
-      );
+    const used = new Set(instances.filter((i) => /scmDrawerWidth\('workspace'\)/.test(i.expr ?? '')).map((i) => i.rel));
+    assert.deepEqual(
+      [...WORKSPACE_FILES].filter((rel) => !used.has(rel)),
+      [],
+      'workspace 白名单里的文件丢失了 workspace 用法，疑似被误降级'
+    );
   });
 
   test('每个 workspace 用例都写明了「为什么横向空间属于业务内容」', () => {
-      for (const rel of WORKSPACE_FILES) {
-          const file = files.find((f) => f.rel === rel);
-          assert.ok(file, `文件不存在：${rel}`);
-          assert.match(
-              file.source,
-              /<!--\s*workspace：/,
-              `${rel} 用了 workspace 但没写明准入类别，后人无法判断它该不该在这里`,
-          );
-      }
+    for (const rel of WORKSPACE_FILES) {
+      const file = files.find((f) => f.rel === rel);
+      assert.ok(file, `文件不存在：${rel}`);
+      assert.match(file.source, /<!--\s*workspace：/, `${rel} 用了 workspace 但没写明准入类别，后人无法判断它该不该在这里`);
+    }
   });
 
   // ------------------------------------------------------------------
@@ -609,34 +565,28 @@ import ts from 'typescript';
   // ------------------------------------------------------------------
 
   test('scm-drawer.ts 定义了五档且取值正确', () => {
-      const source = readFileSync(new URL(DRAWER_TS, import.meta.url), 'utf8');
-      const expected = {s: 600, m: 780, l: 940, xl: 1120, workspace: 1440};
-      for (const [level, width] of Object.entries(expected)) {
-          assert.match(
-              source,
-              new RegExp(`\\b${level}:\\s*${width}\\b`),
-              `scm-drawer.ts 缺少 ${level} = ${width}`,
-          );
-      }
-      // workspace 的受限语义必须写在文件里，而不是只存在于文档
-      assert.match(source, /不是普通.{0,6}第五档|受限特殊档/, 'scm-drawer.ts 未说明 workspace 的受限语义');
-      for (const category of ['地图工作台', '分拣 / 称重工作台', '报表下钻', '超宽业务数据阅读', '多面板业务工作台']) {
-          assert.ok(source.includes(category), `scm-drawer.ts 未列出 workspace 准入类别：${category}`);
-      }
+    const source = readFileSync(new URL(DRAWER_TS, import.meta.url), 'utf8');
+    const expected = {s: 600, m: 780, l: 940, xl: 1120, workspace: 1440};
+    for (const [level, width] of Object.entries(expected)) {
+      assert.match(source, new RegExp(`\\b${level}:\\s*${width}\\b`), `scm-drawer.ts 缺少 ${level} = ${width}`);
+    }
+    // workspace 的受限语义必须写在文件里，而不是只存在于文档
+    assert.match(source, /不是普通.{0,6}第五档|受限特殊档/, 'scm-drawer.ts 未说明 workspace 的受限语义');
+    for (const category of ['地图工作台', '分拣 / 称重工作台', '报表下钻', '超宽业务数据阅读', '多面板业务工作台']) {
+      assert.ok(source.includes(category), `scm-drawer.ts 未列出 workspace 准入类别：${category}`);
+    }
   });
 
   test('responsive.less 的 96vw 兜底仍然存在', () => {
-      const source = readFileSync(new URL(RESPONSIVE_LESS, import.meta.url), 'utf8');
-      assert.match(source, /\.ant-drawer-content-wrapper\s*\{[\s\S]{0,120}max-width:\s*96vw/,
-          '抽屉的视口兜底丢了，workspace 会在大屏之外的场景溢出');
-      assert.match(source, /\.ant-modal\s*\{[\s\S]{0,80}max-width:\s*96vw/,
-          '弹窗的视口兜底丢了');
+    const source = readFileSync(new URL(RESPONSIVE_LESS, import.meta.url), 'utf8');
+    assert.match(source, /\.ant-drawer-content-wrapper\s*\{[\s\S]{0,120}max-width:\s*96vw/, '抽屉的视口兜底丢了，workspace 会在大屏之外的场景溢出');
+    assert.match(source, /\.ant-modal\s*\{[\s\S]{0,80}max-width:\s*96vw/, '弹窗的视口兜底丢了');
   });
 }
 
 // ---------------------------------------------------------------- 来源：scm-export-column-selection.test.mjs
 {
-  const read = file => readFileSync(new URL(file, import.meta.url), 'utf8');
+  const read = (file) => readFileSync(new URL(file, import.meta.url), 'utf8');
   const api = read('../src/api/business/scm/report-api.ts');
   const productApi = read('../src/api/business/scm/product-api.ts');
   const sales = read('../src/views/business/scm/report/report-sales-list.vue');
@@ -690,7 +640,10 @@ import ts from 'typescript';
 
   test('SCM toolbars use flex gaps while SmartAdmin keeps its separate query rules', () => {
     assert.match(FILTER_STYLE, /\.scm-table-toolbar\.smart-table-btn-block\s*\{[\s\S]*?flex-wrap:\s*wrap/);
-    assert.match(FILTER_STYLE, /\.smart-table-setting-block\s*\{[\s\S]*?display:\s*flex[\s\S]*?gap:\s*8px[\s\S]*?float:\s*none[\s\S]*?margin-left:\s*auto/);
+    assert.match(
+      FILTER_STYLE,
+      /\.smart-table-setting-block\s*\{[\s\S]*?display:\s*flex[\s\S]*?gap:\s*8px[\s\S]*?float:\s*none[\s\S]*?margin-left:\s*auto/
+    );
     assert.match(FILTER_STYLE, /\.smart-table-operate-block[\s\S]*?gap:\s*8px[\s\S]*?margin-right:\s*0/);
     assert.doesNotMatch(SMART_ADMIN_STYLE, /scm-filter-bar|scm-table-toolbar/);
     assert.match(SMART_ADMIN_STYLE, /\.smart-query-form\.ant-form-inline/);
@@ -765,16 +718,18 @@ import ts from 'typescript';
       {title: '规格编码', dataIndex: 'skuCode'},
     ];
     const defaults = mergeColumn(makeColumns(), []);
-    assert.deepEqual(defaults.newColumns.map((column) => column.showFlag), [true, false, true]);
+    assert.deepEqual(
+      defaults.newColumns.map((column) => column.showFlag),
+      [true, false, true]
+    );
 
-    const olderConfig = mergeColumn(makeColumns(), [
-      {columnKey: 'warehouseName', sort: 1, showFlag: true},
-    ]);
-    assert.deepEqual(olderConfig.newColumns.map((column) => column.showFlag), [true, false, true]);
+    const olderConfig = mergeColumn(makeColumns(), [{columnKey: 'warehouseName', sort: 1, showFlag: true}]);
+    assert.deepEqual(
+      olderConfig.newColumns.map((column) => column.showFlag),
+      [true, false, true]
+    );
 
-    const userOptIn = mergeColumn(makeColumns(), [
-      {columnKey: 'warehouseCode', sort: 2, showFlag: true},
-    ]);
+    const userOptIn = mergeColumn(makeColumns(), [{columnKey: 'warehouseCode', sort: 2, showFlag: true}]);
     assert.equal(userOptIn.newColumns.find((column) => column.dataIndex === 'warehouseCode')?.showFlag, true);
     assert.match(COLUMN_MERGE, /fontColumn\.showFlag = fontColumn\.showFlag \?\? true/);
   });
@@ -789,8 +744,7 @@ import ts from 'typescript';
   });
 
   test('saved user widths persist; 列设置不再提供「系统推荐列宽」一键覆盖', () => {
-    const merged = mergeColumn([{title: '金额', dataIndex: 'amount', width: 136}],
-        [{columnKey: 'amount', sort: 1, showFlag: true, width: 180}]);
+    const merged = mergeColumn([{title: '金额', dataIndex: 'amount', width: 136}], [{columnKey: 'amount', sort: 1, showFlag: true, width: 180}]);
     assert.equal(merged.newColumns[0].width, 180);
     // 用户调过的宽度就是最终宽度：不再有「用系统推荐值覆盖我」的入口
     assert.doesNotMatch(COLUMN_MODAL, /使用系统推荐列宽/);
@@ -803,7 +757,7 @@ import ts from 'typescript';
     assert.match(PRODUCT_LIST, /ref="tableRef"/);
     assert.match(PRODUCT_LIST, /:columns="displayColumns"/);
     assert.match(PRODUCT_LIST, /table-layout="fixed"/);
-    assert.match(PRODUCT_LIST, /useScmTableFill\(columns/);
+    assert.match(PRODUCT_LIST, /useScmTableFill\(\s*columns/);
     // 用户改过的列宽必须原样渲染：只有等于页面默认宽度的列才吸收剩余空间
     assert.match(SCM_COLUMN, /export function fillDefaultColumnWidths/);
     assert.match(SCM_COLUMN, /toPixelWidth\(column\.width\) === defaultWidths\[key\]/);
@@ -826,10 +780,11 @@ import ts from 'typescript';
       {columnKey: 'name', sort: 2, showFlag: true, width: 220},
     ];
     const migrated = mergeColumn(structuredClone(defaults), saved, 50001);
-    assert.deepEqual(migrated.newColumns.map((column) => column.width), [156, 200]);
-    const custom = mergeColumn(structuredClone(defaults), [
-      {columnKey: 'price', sort: 1, showFlag: true, width: 173},
-    ], 50001);
+    assert.deepEqual(
+      migrated.newColumns.map((column) => column.width),
+      [156, 200]
+    );
+    const custom = mergeColumn(structuredClone(defaults), [{columnKey: 'price', sort: 1, showFlag: true, width: 173}], 50001);
     assert.equal(custom.newColumns[0].width, 173, '明确自定义的非历史默认宽度应保留');
     const otherTable = mergeColumn(structuredClone(defaults), saved, 50005);
     assert.equal(otherTable.newColumns[0].width, 184, '不应将商品历史规则应用到其它表格');
@@ -871,10 +826,28 @@ import ts from 'typescript';
 
   test('inventory, order and pricing lists keep identity codes in separate optional columns', () => {
     for (const [page, fields] of [
-      [INVENTORY_BALANCE, [['仓库编码', 'warehouseCode'], ['规格编码', 'skuCode']]],
+      [
+        INVENTORY_BALANCE,
+        [
+          ['仓库编码', 'warehouseCode'],
+          ['规格编码', 'skuCode'],
+        ],
+      ],
       [ORDER_LIST, [['客户编码', 'customerCodeSnapshot']]],
-      [AGREEMENT_PRICE, [['客户编码', 'customerCode'], ['规格编码', 'skuCode']]],
-      [CUSTOMER_TYPE_PRICE, [['客户类型编码', 'customerTypeCode'], ['规格编码', 'skuCode']]],
+      [
+        AGREEMENT_PRICE,
+        [
+          ['客户编码', 'customerCode'],
+          ['规格编码', 'skuCode'],
+        ],
+      ],
+      [
+        CUSTOMER_TYPE_PRICE,
+        [
+          ['客户类型编码', 'customerTypeCode'],
+          ['规格编码', 'skuCode'],
+        ],
+      ],
     ]) {
       for (const [title, dataIndex] of fields) {
         assert.match(page, new RegExp(`title: '${title}', dataIndex: '${dataIndex}'`));
@@ -889,7 +862,7 @@ import ts from 'typescript';
     assert.match(ROUTE_LIST, /title: '线路名称', dataIndex: 'routeName'/);
     assert.match(ROUTE_LIST, /title: '线路编号', dataIndex: 'routeNo'/);
     assert.doesNotMatch(ROUTE_LIST, /class="scm-cell-stack/);
-    assert.match(ROUTE_LIST, /:scroll="\{ x: tableScrollX \}"/);
+    assert.match(ROUTE_LIST, /:scroll="\{\s*x:\s*tableScrollX\s*\}"/);
   });
 
   test('inventory lists expose warehouse and spec codes separately with dynamic TableOperator widths', () => {
@@ -898,7 +871,7 @@ import ts from 'typescript';
       assert.match(page, /dataIndex: 'warehouseName'/);
       assert.match(page, /dataIndex === 'warehouseCode'[\s\S]{0,120}class="scm-mono"/);
       assert.match(page, /const scrollX = computed\(/);
-      assert.match(page, /:scroll="\{ x: scrollX \}"/);
+      assert.match(page, /:scroll="\{\s*x:\s*scrollX\s*\}"/);
       assert.match(page, /TableOperator/);
     }
     for (const page of INVENTORY_CODE_LISTS.slice(0, 3)) {
@@ -959,7 +932,10 @@ import ts from 'typescript';
 
   test('途经点超限时按共享端点切段', () => {
     const batches = splitDrivingBatches(positions(41));
-    assert.deepEqual(batches.map((batch) => batch.length), [18, 18, 7]);
+    assert.deepEqual(
+      batches.map((batch) => batch.length),
+      [18, 18, 7]
+    );
     // 上一段终点就是下一段起点，各段折线因此首尾相接。
     assert.deepEqual(batches[1][0], batches[0][17]);
     assert.deepEqual(batches[2][0], batches[1][17]);
@@ -1049,9 +1025,9 @@ import ts from 'typescript';
   /** 读源码并剥掉注释 —— 注释里提到反例名字是合规的，不能算违规。 */
   function stripComments(source) {
     return source
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/^\s*\/\/.*$/gm, '');
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   /** 递归收集目录下的文件，可按扩展名过滤。 */
@@ -1083,22 +1059,20 @@ import ts from 'typescript';
   // ------------------------------------------------------------------
 
   test('views/business/scm 下不再定义 .num', () => {
-    const offenders = SCM_VUE.filter((file) =>
-        LOCAL_NUM_DEFINITION.test(stripComments(readFileSync(file, 'utf8'))));
+    const offenders = SCM_VUE.filter((file) => LOCAL_NUM_DEFINITION.test(stripComments(readFileSync(file, 'utf8'))));
     assert.deepEqual(
-        offenders.map((file) => file.slice(SCM_VIEWS.length)),
-        [],
-        'SCM 页面不得再自定义 .num；请改用 .scm-money / .scm-quantity / .scm-mono',
+      offenders.map((file) => file.slice(SCM_VIEWS.length)),
+      [],
+      'SCM 页面不得再自定义 .num；请改用 .scm-money / .scm-quantity / .scm-mono'
     );
   });
 
   test('全仓库业务页面不得重新声明 .num（防止口径再次打散）', () => {
-    const offenders = ALL_SRC_VUE.filter((file) =>
-        LOCAL_NUM_DEFINITION.test(stripComments(readFileSync(file, 'utf8'))));
+    const offenders = ALL_SRC_VUE.filter((file) => LOCAL_NUM_DEFINITION.test(stripComments(readFileSync(file, 'utf8'))));
     assert.deepEqual(
-        offenders.map((file) => file.slice(SRC.length)),
-        [],
-        '任何页面都不得重新声明 .num；三种数值语义必须走 theme/scm 的公共类',
+      offenders.map((file) => file.slice(SRC.length)),
+      [],
+      '任何页面都不得重新声明 .num；三种数值语义必须走 theme/scm 的公共类'
     );
   });
 
@@ -1128,14 +1102,15 @@ import ts from 'typescript';
     assert.match(index, /@import '\.\/table\.less';/, 'theme/scm/index.less 未引入 table.less');
 
     // 金额与数量：比例字体 + tabular-nums（共用一条规则，选择器成组出现）
-    assert.match(table, /\.scm-money,\s*\n\.scm-quantity\s*\{[\s\S]{0,120}font-variant-numeric: tabular-nums/,
-        '.scm-money / .scm-quantity 未共用 tabular-nums 规则');
+    assert.match(
+      table,
+      /\.scm-money,\s*\n\.scm-quantity\s*\{[\s\S]{0,120}font-variant-numeric: tabular-nums/,
+      '.scm-money / .scm-quantity 未共用 tabular-nums 规则'
+    );
 
     // 等宽类：必须是等宽字体，而不是只把数字拉齐 —— 这是它区别于 scm-quantity 的全部意义
-    assert.match(table, /\.scm-mono\s*\{[\s\S]{0,240}font-family:[\s\S]{0,160}ui-monospace/,
-        '.scm-mono 缺少 ui-monospace 等宽字族');
-    assert.match(table, /\.scm-mono\s*\{[\s\S]{0,320}font-variant-numeric: tabular-nums/,
-        '.scm-mono 缺少 tabular-nums');
+    assert.match(table, /\.scm-mono\s*\{[\s\S]{0,240}font-family:[\s\S]{0,160}ui-monospace/, '.scm-mono 缺少 ui-monospace 等宽字族');
+    assert.match(table, /\.scm-mono\s*\{[\s\S]{0,320}font-variant-numeric: tabular-nums/, '.scm-mono 缺少 tabular-nums');
   });
 
   test('迁移结果仍然存在：SCM 视图里确实在用公共数值类', () => {
@@ -1222,7 +1197,10 @@ import ts from 'typescript';
 {
   const tableStyle = readFileSync(new URL('../src/theme/scm/table.less', import.meta.url), 'utf8');
   const supplierPage = readFileSync(new URL('../src/views/business/scm/supplier/supplier-list.vue', import.meta.url), 'utf8');
-  const supplierEditableTable = readFileSync(new URL('../src/views/business/scm/supplier/components/supplier-sku-editable-table.vue', import.meta.url), 'utf8');
+  const supplierEditableTable = readFileSync(
+    new URL('../src/views/business/scm/supplier/components/supplier-sku-editable-table.vue', import.meta.url),
+    'utf8'
+  );
   const payablePage = readFileSync(new URL('../src/views/business/scm/finance/finance-payable-list.vue', import.meta.url), 'utf8');
   const srcRoot = fileURLToPath(new URL('../src', import.meta.url));
 
@@ -1261,13 +1239,34 @@ import ts from 'typescript';
   }
 
   const numericTokens = new Set([
-    'amount', 'price', 'quantity', 'qty', 'count', 'rate', 'ratio', 'percent', 'percentage',
-    'balance', 'stock', 'volume', 'weight', 'distance', 'mileage', 'profit', 'discount',
-    'creditlimit', 'lowerlimit', 'upperlimit', 'minimum', 'maximum',
+    'amount',
+    'price',
+    'quantity',
+    'qty',
+    'count',
+    'rate',
+    'ratio',
+    'percent',
+    'percentage',
+    'balance',
+    'stock',
+    'volume',
+    'weight',
+    'distance',
+    'mileage',
+    'profit',
+    'discount',
+    'creditlimit',
+    'lowerlimit',
+    'upperlimit',
+    'minimum',
+    'maximum',
   ]);
-  const numericTitle = /金额|总额|单价|售价|进价|市场价|数量|进度|(?:商品|规格|订单|关联|浏览|访问|登录失败|生成|行|单据|文档|来源订单|来源行|停靠点|异常|记录)数|库存|销量|折扣率|税率|费率|百分比|占比|比例|额度|余额|核销金额|未核销|已核销|超额核销|分配量|未分配|已分配|实收|上限|下限|载重|容积|距离|里程|耗时|时长|重量|体积|利润|成本|佣金|毛利|合计|入库量|出库量|交付量|登录失败次数|生成数量/;
+  const numericTitle =
+    /金额|总额|单价|售价|进价|市场价|数量|进度|(?:商品|规格|订单|关联|浏览|访问|登录失败|生成|行|单据|文档|来源订单|来源行|停靠点|异常|记录)数|库存|销量|折扣率|税率|费率|百分比|占比|比例|额度|余额|核销金额|未核销|已核销|超额核销|分配量|未分配|已分配|实收|上限|下限|载重|容积|距离|里程|耗时|时长|重量|体积|利润|成本|佣金|毛利|合计|入库量|出库量|交付量|登录失败次数|生成数量/;
   const statusTitle = /状态|方向|策略|结清|启用|停用|是否|类型|级别|等级|默认来源|计算状态|履约状态|打印状态|发布状态|锁定状态|方式/;
-  const textTitle = /名称|编码|编号|单号|标识|联系人|电话|手机号|供应商|客户|商品|规格|仓库|地址|备注|描述|说明|摘要|时间|日期|时点|来源|内容|标题|设备|用户|部门|角色|菜单|批次|流水号|操作人|IP/;
+  const textTitle =
+    /名称|编码|编号|单号|标识|联系人|电话|手机号|供应商|客户|商品|规格|仓库|地址|备注|描述|说明|摘要|时间|日期|时点|来源|内容|标题|设备|用户|部门|角色|菜单|批次|流水号|操作人|IP/;
   const imageTitle = /主图|缩略图|头像|图片|图标|二维码/;
   const shortSourceKeys = new Set(['sourcetype', 'ordersource', 'pricesource', 'lockedpricesource']);
 
@@ -1278,9 +1277,22 @@ import ts from 'typescript';
    * 右对齐会让数字贴到单元格右边缘，与左侧标题轴线错位。
    */
   const CENTER_KEYS = new Set([
-    'direction', 'settleMode', 'receiptMode', 'visibilityPolicy', 'storageMethod',
-    'effectiveness', 'result', 'method', 'state', 'level', 'documentTypeLabel',
-    'taxExempt', 'orderSource', 'bizType', 'documentType', 'sourceType',
+    'direction',
+    'settleMode',
+    'receiptMode',
+    'visibilityPolicy',
+    'storageMethod',
+    'effectiveness',
+    'result',
+    'method',
+    'state',
+    'level',
+    'documentTypeLabel',
+    'taxExempt',
+    'orderSource',
+    'bizType',
+    'documentType',
+    'sourceType',
   ]);
 
   function expectedAlignment(title, dataIndex) {
@@ -1296,9 +1308,7 @@ import ts from 'typescript';
 
   function alignmentViolations(file) {
     const source = readFileSync(file, 'utf8');
-    const scriptBlocks = file.endsWith('.vue')
-      ? [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map((match) => match[1])
-      : [source];
+    const scriptBlocks = file.endsWith('.vue') ? [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map((match) => match[1]) : [source];
     const violations = [];
     for (const block of scriptBlocks) {
       const sourceFile = ts.createSourceFile(file, block, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
@@ -1307,8 +1317,7 @@ import ts from 'typescript';
           const titleProperty = property(node, 'title');
           const dataIndexProperty = property(node, 'dataIndex');
           const keyProperty = property(node, 'key');
-          const hasTableColumnProperty = ['width', 'align', 'sorter', 'fixed', 'customRender']
-            .some((name) => property(node, name));
+          const hasTableColumnProperty = ['width', 'align', 'sorter', 'fixed', 'customRender'].some((name) => property(node, name));
           const dataProperty = dataIndexProperty || (hasTableColumnProperty && keyProperty);
           if (titleProperty && dataProperty) {
             const title = stringValue(titleProperty.initializer);
@@ -1319,7 +1328,11 @@ import ts from 'typescript';
               const actual = alignProperty ? stringValue(alignProperty.initializer) : 'left';
               if (expected && actual !== expected) {
                 const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
-                violations.push(`${path.relative(srcRoot, file).replace(/\\/g, '/')}:${line} ${title}[${dataIndex}] expected ${expected}, got ${actual || 'dynamic'}`);
+                violations.push(
+                  `${path.relative(srcRoot, file).replace(/\\/g, '/')}:${line} ${title}[${dataIndex}] expected ${expected}, got ${
+                    actual || 'dynamic'
+                  }`
+                );
               }
             }
           }
@@ -1407,9 +1420,9 @@ import ts from 'typescript';
   /** 读源码并剥掉注释 —— 注释里提到反例名字（例如本文件的头注释）是合规的。 */
   function stripComments(source) {
     return source
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/^\s*\/\/.*$/gm, '');
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   /** 递归收集 `src/` 下的样式载体文件（.vue / .less / .css）。 */
@@ -1428,17 +1441,15 @@ import ts from 'typescript';
   test('全仓库不再引用从未定义的 --ant-color-* 变量', () => {
     const offenders = FILES.filter((file) => stripComments(readFileSync(file, 'utf8')).includes('--ant-color-'));
     assert.deepEqual(
-        offenders.map((file) => file.slice(SRC.length)),
-        [],
-        'antd-vue 4.2.5 不开 cssVar，--ant-color-* 在项目里从未定义；请改用 useScmThemeVars 的 --scm-*',
+      offenders.map((file) => file.slice(SRC.length)),
+      [],
+      'antd-vue 4.2.5 不开 cssVar，--ant-color-* 在项目里从未定义；请改用 useScmThemeVars 的 --scm-*'
     );
   });
 
   test('用到的每一个 --scm-* 变量都在 useScmThemeVars 里有定义', () => {
     const themeVars = readFileSync(new URL(THEME_VARS, import.meta.url), 'utf8');
-    const defined = new Set(
-        [...themeVars.matchAll(/setProperty\('(--scm-[a-z-]+)'/g)].map((match) => match[1]),
-    );
+    const defined = new Set([...themeVars.matchAll(/setProperty\('(--scm-[a-z-]+)'/g)].map((match) => match[1]));
     assert.ok(defined.size >= 10, `只解析到 ${defined.size} 个变量定义，说明扫描方式失效`);
 
     const missing = new Map();
@@ -1451,11 +1462,7 @@ import ts from 'typescript';
         }
       }
     }
-    assert.deepEqual(
-        [...missing.keys()],
-        [],
-        `以下变量没有定义：\n${[...missing].map(([name, files]) => `  ${name} ← ${files[0]}`).join('\n')}`,
-    );
+    assert.deepEqual([...missing.keys()], [], `以下变量没有定义：\n${[...missing].map(([name, files]) => `  ${name} ← ${files[0]}`).join('\n')}`);
   });
 
   // ------------------------------------------------------------------
@@ -1490,10 +1497,12 @@ import ts from 'typescript';
 
   test('表头服从列语义，数据单元格垂直居中', () => {
     const table = readFileSync(new URL('../src/theme/scm/table.less', import.meta.url), 'utf8');
-    assert.doesNotMatch(table, /\.ant-table-thead\s*>\s*tr\s*>\s*th\s*\{[^}]*text-align:\s*center\s*!important/s,
-        '表头必须保留 column.align 的语义轴');
-    assert.match(table, /\.ant-table-tbody\s*>\s*tr\s*>\s*td\s*\{[^}]*vertical-align:\s*middle/s,
-        '所有表格数据单元格必须垂直居中');
+    assert.doesNotMatch(
+      table,
+      /\.ant-table-thead\s*>\s*tr\s*>\s*th\s*\{[^}]*text-align:\s*center\s*!important/s,
+      '表头必须保留 column.align 的语义轴'
+    );
+    assert.match(table, /\.ant-table-tbody\s*>\s*tr\s*>\s*td\s*\{[^}]*vertical-align:\s*middle/s, '所有表格数据单元格必须垂直居中');
     // 规则必须真的被引进来
     const index = readFileSync(new URL('../src/theme/scm/index.less', import.meta.url), 'utf8');
     assert.match(index, /@import '\.\/table\.less';/);
@@ -1523,9 +1532,9 @@ import ts from 'typescript';
   /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
   function code(relative) {
     return readFileSync(new URL(relative, import.meta.url), 'utf8')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/^\s*\/\/.*$/gm, '');
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   const APP_CONFIG = '../src/config/app-config.ts';
@@ -1539,11 +1548,7 @@ import ts from 'typescript';
     '../src/layout/components/page-tag/components/chrome-tab.vue',
     '../src/layout/components/page-tag/components/antd-tab.vue',
   ];
-  const LAYOUTS = [
-    '../src/layout/side-layout.vue',
-    '../src/layout/side-expand-layout.vue',
-    '../src/layout/top-expand-layout.vue',
-  ];
+  const LAYOUTS = ['../src/layout/side-layout.vue', '../src/layout/side-expand-layout.vue', '../src/layout/top-expand-layout.vue'];
   const V110 = '../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V110__scm_reorder_root_navigation.sql';
 
   const appConfig = code(APP_CONFIG);
@@ -1570,8 +1575,7 @@ import ts from 'typescript';
     const logoBox = num(sideMenu, /\.min-logo\s*\{[\s\S]*?width:\s*(\d+)px/, '收起态 logo 容器宽度');
 
     // 默认值必须落在控件允许的区间内，否则打开设置页看到的是一个「不合法的当前值」
-    assert.ok(minWidth <= defaultWidth && defaultWidth <= maxWidth,
-        `默认宽度 ${defaultWidth} 不在设置控件允许的 [${minWidth}, ${maxWidth}] 内`);
+    assert.ok(minWidth <= defaultWidth && defaultWidth <= maxWidth, `默认宽度 ${defaultWidth} 不在设置控件允许的 [${minWidth}, ${maxWidth}] 内`);
     // 收起态必须比任何允许的展开宽度都窄，否则「收起」反而更宽
     assert.ok(collapsedWidth < minWidth, `收起宽度 ${collapsedWidth} 不应大于等于最小展开宽度 ${minWidth}`);
     // 收起态 logo 容器必须正好等于栏宽，否则 logo 不居中
@@ -1584,88 +1588,88 @@ import ts from 'typescript';
     const version = num(appConfig, /configVersion:\s*(\d+)/, '配置版本号');
     assert.ok(version >= 4, '侧栏默认宽度调整后，configVersion 必须升级到 4 或更高');
     assert.match(
-        code('../src/store/modules/system/app-config.ts'),
-        /cached\.configVersion === appDefaultConfig\.configVersion/,
-        '配置迁移逻辑被改动，本断言的前提失效，请重新核对',
+      code('../src/store/modules/system/app-config.ts'),
+      /cached\.configVersion === appDefaultConfig\.configVersion/,
+      '配置迁移逻辑被改动，本断言的前提失效，请重新核对'
     );
     const configStore = code('../src/store/modules/system/app-config.ts');
     // 迁移表按版本列出「默认值改过的键」，只重置这些键；其余保留用户缓存。
-    assert.match(configStore, /CONFIG_MIGRATIONS[\s\S]{0,300}sideMenuWidth/,
-        '版本迁移表应包含侧栏宽度，否则改了默认值也不会生效');
-    assert.match(configStore, /\.\.\.appDefaultConfig,\s*\.\.\.cached/,
-        '迁移必须在默认值之上覆盖用户缓存，保留用户其他界面偏好');
+    assert.match(configStore, /CONFIG_MIGRATIONS[\s\S]{0,300}sideMenuWidth/, '版本迁移表应包含侧栏宽度，否则改了默认值也不会生效');
+    assert.match(configStore, /\.\.\.appDefaultConfig,\s*\.\.\.cached/, '迁移必须在默认值之上覆盖用户缓存，保留用户其他界面偏好');
   });
 
   test('传统侧栏使用组件库的实心倒三角，右侧垂直居中，展开式侧栏仍隐藏自带折角', () => {
     const sideExpandMenu = code('../src/layout/components/side-expand-menu/recursion-menu.vue');
     // 使用组件库的实心 CaretDownFilled，折叠朝右、展开朝下，不能回退为描边 Chevron。
-    assert.match(recursionMenu, /<template #expandIcon="\{ isOpen \}">/,
-        '分组箭头应使用 expandIcon 插槽');
-    assert.match(recursionMenu, /<CaretDownFilled class="smart-menu-caret"/,
-        '必须使用 Ant Design Vue 的实心三角');
-    assert.match(recursionMenu, /'smart-menu-caret-collapsed': !isOpen/,
-        '展开向下，收起向右');
-    assert.match(recursionMenu, /import \{CaretDownFilled\} from '@ant-design\/icons-vue';/,
-        '三角图标必须从 Ant Design Vue 导入');
-    assert.doesNotMatch(recursionMenu, /UpCircleFilled|DownCircleFilled/,
-        '不再使用实心圆形箭头');
-    assert.match(recursionMenu, /\.smart-menu-caret-frame[\s\S]{0,120}?top:\s*50%/,
-        '三角容器必须定位到标题高度中线');
-    assert.match(recursionMenu, /\.smart-menu-caret-frame[\s\S]{0,270}?translateY\(-50%\)/,
-        '必须以自身高度向上补偿，不能偏到右下角');
-    assert.match(recursionMenu, /\.smart-menu-caret-collapsed[\s\S]{0,60}?rotate\(-90deg\)/,
-        '收起态实心三角朝右');
-    assert.match(recursionMenu, /transition:\s*transform 0\.2s ease/,
-        '箭头旋转动画为 0.2 秒');
-    assert.match(recursionMenu, /color:\s*var\(--scm-text-secondary[^;]*\)/,
-        '实心箭头保持次要文字色');
-    assert.doesNotMatch(recursionMenu, /\.ant-menu-submenu-arrow/,
-        '接管 expandIcon 之后不该再覆盖 antd 自带的折角');
-    assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/,
-        '展开式侧栏的子菜单折角仍应隐藏');
+    assert.match(recursionMenu, /<template #expandIcon="\{\s*isOpen\s*\}">/, '分组箭头应使用 expandIcon 插槽');
+    assert.match(recursionMenu, /<CaretDownFilled class="smart-menu-caret"/, '必须使用 Ant Design Vue 的实心三角');
+    assert.match(recursionMenu, /'smart-menu-caret-collapsed': !isOpen/, '展开向下，收起向右');
+    assert.match(recursionMenu, /import \{CaretDownFilled\} from '@ant-design\/icons-vue';/, '三角图标必须从 Ant Design Vue 导入');
+    assert.doesNotMatch(recursionMenu, /UpCircleFilled|DownCircleFilled/, '不再使用实心圆形箭头');
+    assert.match(recursionMenu, /\.smart-menu-caret-frame[\s\S]{0,120}?top:\s*50%/, '三角容器必须定位到标题高度中线');
+    assert.match(recursionMenu, /\.smart-menu-caret-frame[\s\S]{0,270}?translateY\(-50%\)/, '必须以自身高度向上补偿，不能偏到右下角');
+    assert.match(recursionMenu, /\.smart-menu-caret-collapsed[\s\S]{0,60}?rotate\(-90deg\)/, '收起态实心三角朝右');
+    assert.match(recursionMenu, /transition:\s*transform 0\.2s ease/, '箭头旋转动画为 0.2 秒');
+    assert.match(recursionMenu, /color:\s*var\(--scm-text-secondary[^;]*\)/, '实心箭头保持次要文字色');
+    assert.doesNotMatch(recursionMenu, /\.ant-menu-submenu-arrow/, '接管 expandIcon 之后不该再覆盖 antd 自带的折角');
+    assert.match(sideExpandMenu, /:deep\(\.ant-menu-submenu-arrow\)\s*\{\s*display:\s*none;/, '展开式侧栏的子菜单折角仍应隐藏');
     assert.match(recursionMenu, /mode="inline"/, '传统侧栏必须保留内联子菜单');
     assert.match(sideExpandMenu, /mode="inline"/, '展开式侧栏必须保留内联子菜单');
-    assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/,
-        '菜单图标配色规则仍须排除暗色菜单');
+    assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/, '菜单图标配色规则仍须排除暗色菜单');
   });
 
   test('受控菜单展开正常，Chevron 在亮暗主题下都保持中性灰', () => {
-    assert.match(recursionMenu,
-        /if \(!menuSingleExpandFlag\.value\) \{\s*openKeys\.value = \[\.\.\.openKeysParams\];/,
-        '允许多组展开时也要同步 openKeys');
-    assert.doesNotMatch(recursionMenu,
-        /\.ant-menu-submenu-open > \.ant-menu-submenu-title \.ant-menu-submenu-expand-icon[\s\S]{0,140}color:\s*var\(--scm-primary/,
-        '展开时箭头不应变为主题色');
-    assert.match(recursionMenu,
-        /\.smart-menu\.ant-menu-dark\s*\{[\s\S]{0,140}rgba\(255, 255, 255/,
-        '暗色主题保持足够对比度');
+    assert.match(
+      recursionMenu,
+      /if \(!menuSingleExpandFlag\.value\) \{\s*openKeys\.value = \[\.\.\.openKeysParams\];/,
+      '允许多组展开时也要同步 openKeys'
+    );
+    assert.doesNotMatch(
+      recursionMenu,
+      /\.ant-menu-submenu-open > \.ant-menu-submenu-title \.ant-menu-submenu-expand-icon[\s\S]{0,140}color:\s*var\(--scm-primary/,
+      '展开时箭头不应变为主题色'
+    );
+    assert.match(recursionMenu, /\.smart-menu\.ant-menu-dark\s*\{[\s\S]{0,140}rgba\(255, 255, 255/, '暗色主题保持足够对比度');
   });
 
   test('侧栏滚动条不常驻：auto + 透明轨道 + hover 才显形', () => {
     assert.match(sideLayout, /\.side-menu\s*\{[\s\S]{0,200}overflow-y:\s*auto/, 'overflow-y 应为 auto');
     assert.doesNotMatch(sideLayout, /overflow-y:\s*scroll/, 'overflow-y: scroll 会无条件画滚动条');
-    assert.match(sideLayout, /\.side-menu::-webkit-scrollbar-track\s*\{[\s\S]{0,120}background:\s*transparent/,
-        '轨道应透明');
-    assert.match(sideLayout, /\.side-menu:hover::-webkit-scrollbar-thumb\s*\{[\s\S]{0,120}background:\s*rgba\(0,\s*0,\s*0/,
-        '滑块应只在 hover 侧栏时显形');
+    assert.match(sideLayout, /\.side-menu::-webkit-scrollbar-track\s*\{[\s\S]{0,120}background:\s*transparent/, '轨道应透明');
+    assert.match(
+      sideLayout,
+      /\.side-menu:hover::-webkit-scrollbar-thumb\s*\{[\s\S]{0,120}background:\s*rgba\(0,\s*0,\s*0/,
+      '滑块应只在 hover 侧栏时显形'
+    );
 
     // top-expand 布局渲染的是同一个 `.side-menu`，同一个缺陷要同一口径修
     // （两个布局互斥挂载，所以不存在运行时冲突）
     const topExpand = code('../src/layout/top-expand-layout.vue');
-    assert.match(topExpand, /\.side-menu::-webkit-scrollbar-thumb\s*\{[\s\S]{0,120}background:\s*transparent/,
-        'top-expand 布局的侧栏滑块也应默认透明');
-    assert.match(topExpand, /\.side-menu:hover::-webkit-scrollbar-thumb\s*\{[\s\S]{0,120}background:\s*rgba\(0,\s*0,\s*0/,
-        'top-expand 布局的侧栏滑块也应只在 hover 时显形');
+    assert.match(
+      topExpand,
+      /\.side-menu::-webkit-scrollbar-thumb\s*\{[\s\S]{0,120}background:\s*transparent/,
+      'top-expand 布局的侧栏滑块也应默认透明'
+    );
+    assert.match(
+      topExpand,
+      /\.side-menu:hover::-webkit-scrollbar-thumb\s*\{[\s\S]{0,120}background:\s*rgba\(0,\s*0,\s*0/,
+      'top-expand 布局的侧栏滑块也应只在 hover 时显形'
+    );
   });
 
   test('菜单图标三档配色：普通深色 / hover 主题色 / 当前主题色，且排除暗色菜单', () => {
     // 三档都要显式写出来：antd 亮色菜单的 hover 只换背景不换字色，不写就没有 hover 变色
-    assert.match(recursionMenu, /:deep\(\.ant-menu-item \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-text/,
-        '普通态图标应显式用 --scm-text');
-    assert.match(recursionMenu, /:deep\(\.ant-menu-item:hover \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-primary/,
-        'hover 态图标应用 --scm-primary');
-    assert.match(recursionMenu, /:deep\(\.ant-menu-item-selected \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-primary/,
-        '选中态图标应用 --scm-primary');
+    assert.match(recursionMenu, /:deep\(\.ant-menu-item \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-text/, '普通态图标应显式用 --scm-text');
+    assert.match(
+      recursionMenu,
+      /:deep\(\.ant-menu-item:hover \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-primary/,
+      'hover 态图标应用 --scm-primary'
+    );
+    assert.match(
+      recursionMenu,
+      /:deep\(\.ant-menu-item-selected \.anticon\),[\s\S]{0,200}color:\s*var\(--scm-primary/,
+      '选中态图标应用 --scm-primary'
+    );
     // 暗色菜单必须排除：--scm-text 是深色，染上去图标会看不见
     assert.match(recursionMenu, /\.smart-menu:not\(\.ant-menu-dark\)/, '配色规则必须排除 .ant-menu-dark');
     // 不写死色值：主题色可切换
@@ -1703,11 +1707,17 @@ import ts from 'typescript';
     // 否则迁移头注释里的 `parent_id = 0` 这类说明会被当成真的写库语句
     const sql = code(V110).replace(/--[^\n]*/g, '');
     // 只允许 UPDATE t_menu SET sort = N, update_time = now() WHERE menu_id = M
-    const statements = sql.split(';').map((s) => s.trim()).filter(Boolean);
+    const statements = sql
+      .split(';')
+      .map((s) => s.trim())
+      .filter(Boolean);
     assert.ok(statements.length >= 20, `只解析到 ${statements.length} 条语句，说明扫描方式失效`);
     for (const statement of statements) {
-      assert.match(statement, /^UPDATE xsy_v2\.t_menu SET sort = \d+,\s+update_time = now\(\) WHERE menu_id = \d+$/,
-          `V110 出现了非「只改 sort」的语句：\n${statement}`);
+      assert.match(
+        statement,
+        /^UPDATE xsy_v2\.t_menu SET sort = \d+,\s+update_time = now\(\) WHERE menu_id = \d+$/,
+        `V110 出现了非「只改 sort」的语句：\n${statement}`
+      );
     }
     // 不得出现任何 DDL / 其它 DML
     assert.doesNotMatch(sql, /\b(INSERT|DELETE|ALTER|DROP|TRUNCATE|CREATE)\b/i, 'V110 不得改动表结构或增删行');

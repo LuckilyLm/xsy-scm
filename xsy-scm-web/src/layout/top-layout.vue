@@ -2,40 +2,36 @@
   <a-layout class="admin-layout">
     <!-- 顶部菜单  -->
     <a-layout-header class="top-menu" :theme="theme" :id="LAYOUT_ELEMENT_IDS.menu" v-if="!fullScreenFlag">
-      <TopMenu/>
+      <TopMenu />
     </a-layout-header>
 
     <!--中间内容-->
     <a-layout-content :id="LAYOUT_ELEMENT_IDS.content" class="admin-layout-content">
       <!---标签页-->
-      <div class="page-tag-div" v-show="(pageTagFlag && !fullScreenFlag) || breadCrumbFlag"
-           :id="LAYOUT_ELEMENT_IDS.header">
-        <PageTag/>
+      <div class="page-tag-div" v-show="(pageTagFlag && !fullScreenFlag) || breadCrumbFlag" :id="LAYOUT_ELEMENT_IDS.header">
+        <PageTag />
       </div>
       <div class="bread-crumb-div" v-if="breadCrumbFlag">
-        <MenuLocationBreadcrumb/>
+        <MenuLocationBreadcrumb />
       </div>
 
       <!--不keepAlive的iframe使用单个iframe组件-->
-      <IframeIndex v-if="iframeNotKeepAlivePageFlag" :key="route.name" :name="route.name" :url="route.meta.frameUrl"/>
+      <IframeIndex v-if="iframeNotKeepAlivePageFlag" :key="route.name" :name="route.name" :url="route.meta.frameUrl" />
 
       <!--keepAlive的iframe 每个页面一个iframe组件-->
       <IframeIndex
-          v-for="item in keepAliveIframePages"
-          v-show="route.name === item.name"
-          :key="item.name"
-          :name="item.name"
-          :url="item.meta.frameUrl"
+        v-for="item in keepAliveIframePages"
+        v-show="route.name === item.name"
+        :key="item.name"
+        :name="item.name"
+        :url="item.meta.frameUrl"
       />
 
       <!--非iframe使用router-view-->
-      <div
-          v-show="!iframeNotKeepAlivePageFlag && keepAliveIframePages.every((e) => route.name !== e.name)"
-          class="admin-content"
-      >
-        <router-view v-slot="{ Component }">
+      <div v-show="!iframeNotKeepAlivePageFlag && keepAliveIframePages.every((e) => route.name !== e.name)" class="admin-content">
+        <router-view v-slot="{Component}">
           <keep-alive :include="keepAliveIncludes">
-            <component :is="Component" :key="route.name"/>
+            <component :is="Component" :key="route.name" />
           </keep-alive>
         </router-view>
       </div>
@@ -43,10 +39,10 @@
 
     <!-- footer 版权公司信息 -->
     <a-layout-footer class="layout-footer" v-show="footerFlag">
-      <smart-footer/>
+      <smart-footer />
     </a-layout-footer>
     <!--- 回到顶部 -->
-    <a-back-top :target="backTopTarget" :visibilityHeight="80"/>
+    <a-back-top :target="backTopTarget" :visibilityHeight="80" />
   </a-layout>
 </template>
 
@@ -119,14 +115,14 @@ onMounted(() => {
 });
 
 watch(
-    () => watermarkFlag.value,
-    (newValue) => {
-      if (newValue) {
-        watermark.set(LAYOUT_ELEMENT_IDS.content, useUserStore().actualName);
-      } else {
-        watermark.clear();
-      }
+  () => watermarkFlag.value,
+  (newValue) => {
+    if (newValue) {
+      watermark.set(LAYOUT_ELEMENT_IDS.content, useUserStore().actualName);
+    } else {
+      watermark.clear();
     }
+  }
 );
 
 //回到顶部

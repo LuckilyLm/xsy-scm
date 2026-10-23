@@ -1,15 +1,13 @@
 <template>
   <a-modal :open="visible" title="草稿订单批量核价" :width="1120" :footer="null" @cancel="close">
-    <a-alert type="info" show-icon class="smart-margin-bottom10"
-             message="仅比较当前价格，不修改订单。"/>
+    <a-alert type="info" show-icon class="smart-margin-bottom10" message="仅比较当前价格，不修改订单。" />
     <a-space class="smart-margin-bottom10" wrap>
       <span>已选 {{ entries.length }} 单，最多 8 单</span>
       <a-button size="small" :loading="loading" @click="reload">重新核价</a-button>
       <a-button size="small" @click="close">关闭</a-button>
     </a-space>
     <a-form-item v-if="canUpdate" label="人工重算原因（逐单执行时必填）">
-      <a-textarea v-model:value="reason" :rows="2" :maxlength="500" show-count
-                  placeholder="说明为什么需要采用当前价格"/>
+      <a-textarea v-model:value="reason" :rows="2" :maxlength="500" show-count placeholder="说明为什么需要采用当前价格" />
     </a-form-item>
     <a-spin :spinning="loading">
       <a-collapse v-model:activeKey="expanded">
@@ -25,10 +23,17 @@
               <a-tag v-else color="default">价格无差异</a-tag>
             </a-space>
           </template>
-          <a-alert v-if="entry.error" type="error" show-icon :message="entry.error"/>
+          <a-alert v-if="entry.error" type="error" show-icon :message="entry.error" />
           <template v-else-if="entry.result">
-            <a-table :data-source="entry.result.lines" :columns="columns"
-                     :pagination="false" row-key="itemId" size="small" bordered :scroll="{ x: scmColumnsWidth(columns) }">
+            <a-table
+              :data-source="entry.result.lines"
+              :columns="columns"
+              :pagination="false"
+              row-key="itemId"
+              size="small"
+              bordered
+              :scroll="{x: scmColumnsWidth(columns)}"
+            >
               <template #bodyCell="{record, column}">
                 <span v-if="column.dataIndex === 'oldPrice'" class="scm-money">
                   {{ money(record.oldPrice) }}
@@ -36,26 +41,28 @@
                 <span v-else-if="column.dataIndex === 'currentPrice'" class="scm-money">
                   {{ money(record.currentPrice) }}
                 </span>
-                <a-tag v-else-if="column.dataIndex === 'state'"
-                       :color="tone(record.state)">{{ stateLabel(record.state) }}</a-tag>
+                <a-tag v-else-if="column.dataIndex === 'state'" :color="tone(record.state)">{{ stateLabel(record.state) }}</a-tag>
                 <span v-else-if="column.dataIndex === 'reason'">
                   {{ record.reason || record.priceSource || '—' }}
                 </span>
               </template>
             </a-table>
             <a-space class="smart-margin-top10">
-              <a-button v-if="canUpdate" type="primary" size="small"
-                        :loading="applyingId === String(entry.id)"
-                        :disabled="loading || !!applyingId || entry.applied || !canApplyPriceCheck(entry.result)"
-                        @click="confirmApply(entry)">按当前规则重算此单</a-button>
-              <span v-if="entry.result.blocked" class="scm-cell-hint">
-                商品不可售或未定价，不能在这里执行重算
-              </span>
+              <a-button
+                v-if="canUpdate"
+                type="primary"
+                size="small"
+                :loading="applyingId === String(entry.id)"
+                :disabled="loading || !!applyingId || entry.applied || !canApplyPriceCheck(entry.result)"
+                @click="confirmApply(entry)"
+                >按当前规则重算此单</a-button
+              >
+              <span v-if="entry.result.blocked" class="scm-cell-hint"> 商品不可售或未定价，不能在这里执行重算 </span>
             </a-space>
           </template>
         </a-collapse-panel>
       </a-collapse>
-      <a-empty v-if="!loading && !entries.length" description="没有可核价的草稿订单"/>
+      <a-empty v-if="!loading && !entries.length" description="没有可核价的草稿订单" />
     </a-spin>
   </a-modal>
 </template>
@@ -87,8 +94,7 @@ const expanded = ref<string[]>([]);
 const entries = ref<Entry[]>([]);
 const applyingId = ref('');
 let generation = 0;
-const canUpdate = computed(() => hasPermission('scm:order:update')
-  && hasPermission('scm:pricing:resolve:query'));
+const canUpdate = computed(() => hasPermission('scm:order:update') && hasPermission('scm:pricing:resolve:query'));
 const columns: TableColumnsType<PriceCheckLine> = [
   {title: '商品', dataIndex: 'productName', width: 180},
   {title: '规格编码', dataIndex: 'skuCode', width: 130},
@@ -96,30 +102,41 @@ const columns: TableColumnsType<PriceCheckLine> = [
   {title: '原草稿价', dataIndex: 'oldPrice', width: 120},
   {title: '当前解析价', dataIndex: 'currentPrice', width: 120},
   {title: '比较结果', dataIndex: 'state', align: 'center', width: 120},
-  {title: '说明', dataIndex: 'reason', width: 180}
+  {title: '说明', dataIndex: 'reason', width: 180},
 ];
-const money = (value: string | null) => value == null ? '未定价' : '¥ ' + value;
-const stateLabel = (state: PriceCheckState) => ({
-  UP: '涨价', DOWN: '降价', SAME: '无变化', NEW: '现已定价',
-  MANUAL: '人工改价', BLOCKED: '不可核价'
-}[state]);
-const tone = (state: PriceCheckState) => ({
-  UP: 'red', DOWN: 'green', SAME: 'default', NEW: 'blue',
-  MANUAL: 'default', BLOCKED: 'orange'
-}[state]);
+const money = (value: string | null) => (value == null ? '未定价' : '¥ ' + value);
+const stateLabel = (state: PriceCheckState) =>
+  ({
+    UP: '涨价',
+    DOWN: '降价',
+    SAME: '无变化',
+    NEW: '现已定价',
+    MANUAL: '人工改价',
+    BLOCKED: '不可核价',
+  })[state];
+const tone = (state: PriceCheckState) =>
+  ({
+    UP: 'red',
+    DOWN: 'green',
+    SAME: 'default',
+    NEW: 'blue',
+    MANUAL: 'default',
+    BLOCKED: 'orange',
+  })[state];
 
 function open(orders: Order[]): void {
-  if (!orders.length || orders.length > 8 || orders.some(row =>
-    row.status !== 'DRAFT' || row.orderId == null)) {
+  if (!orders.length || orders.length > 8 || orders.some((row) => row.status !== 'DRAFT' || row.orderId == null)) {
     void message.warning('请选择 1 至 8 张草稿订单');
     return;
   }
   generation++;
-  entries.value = orders.map(row => ({
-    id: row.orderId!, orderNo: row.orderNo || String(row.orderId),
-    customerName: row.customerNameSnapshot || '—', applied: false
+  entries.value = orders.map((row) => ({
+    id: row.orderId!,
+    orderNo: row.orderNo || String(row.orderId),
+    customerName: row.customerNameSnapshot || '—',
+    applied: false,
   }));
-  expanded.value = entries.value.map(entry => String(entry.id));
+  expanded.value = entries.value.map((entry) => String(entry.id));
   reason.value = '';
   visible.value = true;
   void reload();
@@ -134,7 +151,7 @@ async function reload(): Promise<void> {
   if (!visible.value || applyingId.value) return;
   const ticket = ++generation;
   loading.value = true;
-  entries.value = entries.value.map(entry => ({...entry, result: undefined, error: undefined}));
+  entries.value = entries.value.map((entry) => ({...entry, result: undefined, error: undefined}));
   for (const entry of entries.value) {
     try {
       const detail = (await orderApi.detail(entry.id, {suppressGlobalErrorMessage: true})).data;
@@ -142,15 +159,29 @@ async function reload(): Promise<void> {
       if (detail.status !== 'DRAFT' || detail.version == null || !detail.customerId) {
         throw new Error('订单状态已变化，请返回列表刷新');
       }
-      const skus = [...new Set(detail.items.filter(item => !item.manualPriceOverride)
-        .map(item => String(item.skuId)).filter(id => /^[1-9]\d*$/.test(id)))];
-      if (detail.items.some(item => !item.manualPriceOverride) && !skus.length) {
+      const skus = [
+        ...new Set(
+          detail.items
+            .filter((item) => !item.manualPriceOverride)
+            .map((item) => String(item.skuId))
+            .filter((id) => /^[1-9]\d*$/.test(id))
+        ),
+      ];
+      if (detail.items.some((item) => !item.manualPriceOverride) && !skus.length) {
         throw new Error('订单没有可核价的商品规格');
       }
-      const prices = skus.length ? (await orderApi.preview({
-        customerId: detail.customerId, skuIds: skus,
-        warehouseId: detail.mallDeliveryWarehouseId ?? null
-      }, {suppressGlobalErrorMessage: true})).data.items : [];
+      const prices = skus.length
+        ? (
+            await orderApi.preview(
+              {
+                customerId: detail.customerId,
+                skuIds: skus,
+                warehouseId: detail.mallDeliveryWarehouseId ?? null,
+              },
+              {suppressGlobalErrorMessage: true}
+            )
+          ).data.items
+        : [];
       if (ticket !== generation) return;
       entry.result = compareOrderPrices(detail, prices);
       entry.orderNo = detail.orderNo || String(entry.id);
@@ -191,7 +222,7 @@ function confirmApply(entry: Entry): void {
       } finally {
         applyingId.value = '';
       }
-    }
+    },
   });
 }
 

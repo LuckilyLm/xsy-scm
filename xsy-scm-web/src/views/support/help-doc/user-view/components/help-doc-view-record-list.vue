@@ -1,25 +1,25 @@
 <!--
   * 查看记录
-  * 
+  *
 -->
 <template>
   <div>
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item" style="width: 280px">
-          <a-input v-model:value="queryForm.keywords" placeholder="姓名/IP/设备"/>
+          <a-input v-model:value="queryForm.keywords" placeholder="姓名/IP/设备" />
         </a-form-item>
         <a-form-item class="smart-query-form-item smart-margin-left10">
           <a-button-group>
             <a-button type="primary" @click="onSearch">
               <template #icon>
-                <SearchOutlined/>
+                <SearchOutlined />
               </template>
               查询
             </a-button>
             <a-button @click="resetQuery">
               <template #icon>
-                <ReloadOutlined/>
+                <ReloadOutlined />
               </template>
               重置
             </a-button>
@@ -27,25 +27,24 @@
         </a-form-item>
       </a-row>
     </a-form>
-    <a-table rowKey="employeeId" :columns="tableColumns" :dataSource="tableData" :pagination="false"
-             :loading="tableLoading" size="small" bordered>
-      <template #bodyCell="{ column, record, text }">
+    <a-table rowKey="employeeId" :columns="tableColumns" :dataSource="tableData" :pagination="false" :loading="tableLoading" size="small" bordered>
+      <template #bodyCell="{column, record, text}">
         <template v-if="column.dataIndex === 'firstIp'"> {{ text }} ({{ record.firstDevice }})</template>
         <template v-if="column.dataIndex === 'lastIp'"> {{ text }} ({{ record.lastDevice }})</template>
       </template>
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="queryViewRecord"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="queryViewRecord"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
   </div>

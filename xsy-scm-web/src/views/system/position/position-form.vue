@@ -4,27 +4,26 @@
 -->
 <template>
   <a-modal
-      :title="form.positionId ? '编辑' : '添加'"
-      width="600px"
-      :open="visibleFlag"
-      @cancel="onClose"
-      :maskClosable="false"
-      :destroyOnClose="true"
-      forceRender
+    :title="form.positionId ? '编辑' : '添加'"
+    width="600px"
+    :open="visibleFlag"
+    @cancel="onClose"
+    :maskClosable="false"
+    :destroyOnClose="true"
+    forceRender
   >
-    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 6 }">
+    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{span: 6}">
       <a-form-item label="职务名称" name="positionName">
-        <a-input style="width: 100%" v-model:value="form.positionName" placeholder="职务名称"/>
+        <a-input style="width: 100%" v-model:value="form.positionName" placeholder="职务名称" />
       </a-form-item>
       <a-form-item label="职级" name="positionLevel">
-        <a-input style="width: 100%" v-model:value="form.positionLevel" placeholder="职级"/>
+        <a-input style="width: 100%" v-model:value="form.positionLevel" placeholder="职级" />
       </a-form-item>
       <a-form-item label="排序" name="sort">
-        <a-input-number :min="0" :step="1" :precision="0" style="width: 100%" v-model:value="form.sort"
-                        placeholder="排序"/>
+        <a-input-number :min="0" :step="1" :precision="0" style="width: 100%" v-model:value="form.sort" placeholder="排序" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-input style="width: 100%" v-model:value="form.remark" placeholder="备注"/>
+        <a-input style="width: 100%" v-model:value="form.remark" placeholder="备注" />
       </a-form-item>
     </a-form>
 

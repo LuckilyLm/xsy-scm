@@ -16,157 +16,157 @@ import _ from 'lodash';
 import LocalStorageKeyConst from '/@/constants/local-storage-key-const';
 
 export const router = createRouter({
-    history: createWebHashHistory(),
-    routes: routerArray,
-    strict: true,
-    scrollBehavior: () => ({left: 0, top: 0}),
+  history: createWebHashHistory(),
+  routes: routerArray,
+  strict: true,
+  scrollBehavior: () => ({left: 0, top: 0}),
 });
 
 // ----------------------- 路由加载前 -----------------------
 router.beforeEach(async (to, from, next) => {
-    // 进度条开启
-    nProgress.start();
+  // 进度条开启
+  nProgress.start();
 
-    // 公共页面，任何时候都可以跳转
-    if (to.path === PAGE_PATH_404) {
-        next();
-        return;
-    }
-
-    // 采购单分享页与客户推广码落地页由路径里的令牌授权，登录态与菜单权限都不参与
-    if (to.path.startsWith('/purchase-share/') || to.path.startsWith('/promo/')) {
-        next();
-        return;
-    }
-
-    // 扫码溯源页面向客户与监管：标签上的令牌即凭证，不登录也不套后台布局
-    if (to.path.startsWith('/t/')) {
-        next();
-        return;
-    }
-
-    // 验证登录
-    const token = localRead(LocalStorageKeyConst.USER_TOKEN);
-    if (!token) {
-        useUserStore().logout();
-        if (to.path === PAGE_PATH_LOGIN) {
-            next();
-        } else {
-            next({path: PAGE_PATH_LOGIN});
-        }
-        return;
-    }
-
-    // 登录页，则跳转到首页
-    if (to.path === PAGE_PATH_LOGIN) {
-        next({path: HOME_PAGE_PATH});
-        return;
-    }
-
-    // 首页（ 需要登录 ，但不需要验证权限）
-    if (to.path === HOME_PAGE_NAME) {
-        next();
-        return;
-    }
-
-    // 下载路由对应的 页面组件，并修改组件的Name，如果修改过，则不需要修改
-    let toRouterInfo = routerMap.get(to.name);
-    if (toRouterInfo && _.isFunction(toRouterInfo.component) && toRouterInfo.meta.renameComponentFlag === false) {
-        // 因为组件component 为 lazy load是个方法，所以可以直接执行 component()方法
-        toRouterInfo.component().then((val) => {
-            // 修改组件的name
-            val.default.name = to.meta.componentName;
-            // 记录已经修改过 组件的name
-            toRouterInfo.meta.renameComponentFlag = true;
-        });
-    }
-
-    // 设置tagNav
-    useUserStore().setTagNav(to, from);
-
-    // 设置keepAlive
-    if (to.meta.keepAlive) {
-        nextTick(() => {
-            useUserStore().pushKeepAliveIncludes(to.meta.componentName);
-        });
-    }
-
+  // 公共页面，任何时候都可以跳转
+  if (to.path === PAGE_PATH_404) {
     next();
+    return;
+  }
+
+  // 采购单分享页与客户推广码落地页由路径里的令牌授权，登录态与菜单权限都不参与
+  if (to.path.startsWith('/purchase-share/') || to.path.startsWith('/promo/')) {
+    next();
+    return;
+  }
+
+  // 扫码溯源页面向客户与监管：标签上的令牌即凭证，不登录也不套后台布局
+  if (to.path.startsWith('/t/')) {
+    next();
+    return;
+  }
+
+  // 验证登录
+  const token = localRead(LocalStorageKeyConst.USER_TOKEN);
+  if (!token) {
+    useUserStore().logout();
+    if (to.path === PAGE_PATH_LOGIN) {
+      next();
+    } else {
+      next({path: PAGE_PATH_LOGIN});
+    }
+    return;
+  }
+
+  // 登录页，则跳转到首页
+  if (to.path === PAGE_PATH_LOGIN) {
+    next({path: HOME_PAGE_PATH});
+    return;
+  }
+
+  // 首页（ 需要登录 ，但不需要验证权限）
+  if (to.path === HOME_PAGE_NAME) {
+    next();
+    return;
+  }
+
+  // 下载路由对应的 页面组件，并修改组件的Name，如果修改过，则不需要修改
+  let toRouterInfo = routerMap.get(to.name);
+  if (toRouterInfo && _.isFunction(toRouterInfo.component) && toRouterInfo.meta.renameComponentFlag === false) {
+    // 因为组件component 为 lazy load是个方法，所以可以直接执行 component()方法
+    toRouterInfo.component().then((val) => {
+      // 修改组件的name
+      val.default.name = to.meta.componentName;
+      // 记录已经修改过 组件的name
+      toRouterInfo.meta.renameComponentFlag = true;
+    });
+  }
+
+  // 设置tagNav
+  useUserStore().setTagNav(to, from);
+
+  // 设置keepAlive
+  if (to.meta.keepAlive) {
+    nextTick(() => {
+      useUserStore().pushKeepAliveIncludes(to.meta.componentName);
+    });
+  }
+
+  next();
 });
 
 // ----------------------- 路由加载后 -----------------------
 router.afterEach(() => {
-    nProgress.done();
+  nProgress.done();
 });
 
 // ----------------------- 构建router对象 -----------------------
 const routerMap = new Map();
 
 export function buildRoutes(menuRouterList) {
-    let menuList = menuRouterList ? menuRouterList : useUserStore().getMenuRouterList || [];
-    /**
-     * 1、构建整个路由信息
-     * 2、添加到路由里
-     */
-    const routerList = [];
-    // 获取所有vue组件引用地址 用于构建路由
-    const modules = import.meta.glob('../views/**/**.vue');
-    // 获取所有vue组件 用于注入name属性 name属性用于keep-alive
+  let menuList = menuRouterList ? menuRouterList : useUserStore().getMenuRouterList || [];
+  /**
+   * 1、构建整个路由信息
+   * 2、添加到路由里
+   */
+  const routerList = [];
+  // 获取所有vue组件引用地址 用于构建路由
+  const modules = import.meta.glob('../views/**/**.vue');
+  // 获取所有vue组件 用于注入name属性 name属性用于keep-alive
 
-    //1、构建整个路由信息
-    for (const e of menuList) {
-        if (!e.menuId) {
-            continue;
-        }
-        if (!e.path) {
-            continue;
-        }
-        if (e.deletedFlag && e.deletedFlag === true) {
-            continue;
-        }
-        let route = {
-            path: e.path.startsWith('/') ? e.path : `/${e.path}`,
-            // 使用【menuId】作为name唯一标识
-            name: e.menuId.toString(),
-            meta: {
-                // 数据库菜单(页面)id
-                id: e.menuId.toString(),
-                // 组件名称
-                componentName: e.menuId.toString(),
-                // 菜单展示
-                title: e.menuName,
-                // 菜单图标展示
-                icon: e.icon,
-                // 是否在菜单隐藏
-                hideInMenu: !e.visibleFlag,
-                // 页面是否keep-alive缓存
-                keepAlive: e.cacheFlag,
-                // 是否为外链
-                frameFlag: e.frameFlag,
-                // 外链地址
-                frameUrl: e.frameUrl,
-                // 是否 rename了组件的名字
-                renameComponentFlag: false,
-            },
-        };
-
-        if (e.frameFlag) {
-            route.component = () => import('../components/framework/iframe/iframe-index.vue');
-        } else {
-            let componentPath = e.component && e.component.startsWith('/') ? e.component : '/' + e.component;
-            let relativePath = `../views${componentPath}`;
-            // // eslint-disable-next-line no-prototype-builtins
-            route.component = modules[relativePath];
-        }
-        routerList.push(route);
-        routerMap.set(e.menuId.toString(), route);
+  //1、构建整个路由信息
+  for (const e of menuList) {
+    if (!e.menuId) {
+      continue;
     }
+    if (!e.path) {
+      continue;
+    }
+    if (e.deletedFlag && e.deletedFlag === true) {
+      continue;
+    }
+    let route = {
+      path: e.path.startsWith('/') ? e.path : `/${e.path}`,
+      // 使用【menuId】作为name唯一标识
+      name: e.menuId.toString(),
+      meta: {
+        // 数据库菜单(页面)id
+        id: e.menuId.toString(),
+        // 组件名称
+        componentName: e.menuId.toString(),
+        // 菜单展示
+        title: e.menuName,
+        // 菜单图标展示
+        icon: e.icon,
+        // 是否在菜单隐藏
+        hideInMenu: !e.visibleFlag,
+        // 页面是否keep-alive缓存
+        keepAlive: e.cacheFlag,
+        // 是否为外链
+        frameFlag: e.frameFlag,
+        // 外链地址
+        frameUrl: e.frameUrl,
+        // 是否 rename了组件的名字
+        renameComponentFlag: false,
+      },
+    };
 
-    //2、添加到路由里
-    router.addRoute({
-        path: '/',
-        meta: {},
-        component: SmartLayout,
-        children: routerList,
-    });
+    if (e.frameFlag) {
+      route.component = () => import('../components/framework/iframe/iframe-index.vue');
+    } else {
+      let componentPath = e.component && e.component.startsWith('/') ? e.component : '/' + e.component;
+      let relativePath = `../views${componentPath}`;
+      // // eslint-disable-next-line no-prototype-builtins
+      route.component = modules[relativePath];
+    }
+    routerList.push(route);
+    routerMap.set(e.menuId.toString(), route);
+  }
+
+  //2、添加到路由里
+  router.addRoute({
+    path: '/',
+    meta: {},
+    component: SmartLayout,
+    children: routerList,
+  });
 }

@@ -9,7 +9,7 @@
       <div class="checked-box">
         <ul>
           <!--li 菜单模块 start-->
-          <RoleTreeMenu :tree="props.tree" :index="0"/>
+          <RoleTreeMenu :tree="props.tree" :index="0" />
           <!--li 菜单模块 end-->
         </ul>
       </div>
@@ -32,11 +32,11 @@ defineEmits(['update:value']);
 let roleStore = useRoleStore();
 let checkedData = ref();
 watch(
-    () => roleStore.checkedData,
-    (e) => (checkedData.value = e),
-    {
-      deep: true,
-    }
+  () => roleStore.checkedData,
+  (e) => (checkedData.value = e),
+  {
+    deep: true,
+  }
 );
 </script>
 <style scoped lang="less">

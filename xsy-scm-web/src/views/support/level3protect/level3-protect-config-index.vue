@@ -11,105 +11,100 @@
       <pre>
   1.三级等保是中国国家等级保护认证中的最高级别认证，该认证包含了五个等级保护安全技术要求和五个安全管理要求，共涉及测评分类73类，要求非常严格。
   2.三级等保是地市级以上国家机关、重要企事业单位需要达成的认证，在金融行业中，可以看作是除了银行机构以外最高级别的信息安全等级保护。
-  3.具体三级等保要求，请查阅《信息安全技术 网络安全等级保护基本要求》等相关国家标准。</pre>
+  3.具体三级等保要求，请查阅《信息安全技术 网络安全等级保护基本要求》等相关国家标准。</pre
+      >
     </template>
   </a-alert>
-  <br/>
+  <br />
   <!---------- 三级等保配置表单 begin ----------->
   <a-card title="三级等保配置">
     <a-form
-        :model="form"
-        :rules="rules"
-        ref="formRef"
-        style="width: 100%"
-        :label-col="{ span: 6 }"
-        :wrapper-col="{ span: 18 }"
-        autocomplete="off"
-        class="smart-query-form"
+      :model="form"
+      :rules="rules"
+      ref="formRef"
+      style="width: 100%"
+      :label-col="{span: 6}"
+      :wrapper-col="{span: 18}"
+      autocomplete="off"
+      class="smart-query-form"
     >
       <a-form-item
-          label="配置双因子登录模式"
-          class="smart-query-form-item"
-          extra="在用户登录时，需要同时提供用户名和密码以及其他形式的身份验证信息，例如短信验证码等"
+        label="配置双因子登录模式"
+        class="smart-query-form-item"
+        extra="在用户登录时，需要同时提供用户名和密码以及其他形式的身份验证信息，例如短信验证码等"
       >
-        <a-switch v-model:checked="form.twoFactorLoginEnabled" checked-children="开启 " un-checked-children="关闭 "/>
+        <a-switch v-model:checked="form.twoFactorLoginEnabled" checked-children="开启 " un-checked-children="关闭 " />
       </a-form-item>
       <a-form-item
-          label="最大连续登录失败次数"
-          class="smart-query-form-item"
-          extra="连续登录失败超过一定次数，则需要锁定；默认5次；0则不锁定；"
-          name="loginFailMaxTimes"
+        label="最大连续登录失败次数"
+        class="smart-query-form-item"
+        extra="连续登录失败超过一定次数，则需要锁定；默认5次；0则不锁定；"
+        name="loginFailMaxTimes"
       >
-        <a-input-number :min="0" :max="10" v-model:value="form.loginFailMaxTimes" placeholder="最大连续登录失败次数"
-                        addon-after="次"/>
+        <a-input-number :min="0" :max="10" v-model:value="form.loginFailMaxTimes" placeholder="最大连续登录失败次数" addon-after="次" />
       </a-form-item>
       <a-form-item
-          name="loginFailLockMinutes"
-          label="连续登录失败锁定分钟"
-          class="smart-query-form-item"
-          extra="连续登录失败锁定的时间；默认30分钟，0则不锁定"
+        name="loginFailLockMinutes"
+        label="连续登录失败锁定分钟"
+        class="smart-query-form-item"
+        extra="连续登录失败锁定的时间；默认30分钟，0则不锁定"
       >
-        <a-input-number :min="0" v-model:value="form.loginFailLockMinutes" placeholder="连续登录失败锁定时分钟"
-                        addon-after="分钟"/>
+        <a-input-number :min="0" v-model:value="form.loginFailLockMinutes" placeholder="连续登录失败锁定时分钟" addon-after="分钟" />
       </a-form-item>
       <a-form-item
-          name="loginActiveTimeoutMinutes"
-          label="登录后无操作自动退出的分钟"
-          class="smart-query-form-item"
-          extra="如：登录1小时没操作自动退出当前登录状态；默认30分钟"
+        name="loginActiveTimeoutMinutes"
+        label="登录后无操作自动退出的分钟"
+        class="smart-query-form-item"
+        extra="如：登录1小时没操作自动退出当前登录状态；默认30分钟"
       >
-        <a-input-number :min="-1" v-model:value="form.loginActiveTimeoutMinutes"
-                        placeholder="登录后无操作自动退出的分钟" addon-after="分钟"/>
+        <a-input-number :min="-1" v-model:value="form.loginActiveTimeoutMinutes" placeholder="登录后无操作自动退出的分钟" addon-after="分钟" />
       </a-form-item>
       <a-form-item
-          label="开启密码复杂度"
-          class="smart-query-form-item"
-          extra="密码长度为8-20位且必须包含字母、数字、特殊符号（如：@#$%^&*()_+-=）等三种字符"
+        label="开启密码复杂度"
+        class="smart-query-form-item"
+        extra="密码长度为8-20位且必须包含字母、数字、特殊符号（如：@#$%^&*()_+-=）等三种字符"
       >
-        <a-switch v-model:checked="form.passwordComplexityEnabled" checked-children="开启 "
-                  un-checked-children="关闭 "/>
+        <a-switch v-model:checked="form.passwordComplexityEnabled" checked-children="开启 " un-checked-children="关闭 " />
       </a-form-item>
       <a-form-item
-          name="regularChangePasswordMonths"
-          label="定期修改密码时间间隔"
-          class="smart-query-form-item"
-          extra="定期修改密码时间间隔，默认3个月"
+        name="regularChangePasswordMonths"
+        label="定期修改密码时间间隔"
+        class="smart-query-form-item"
+        extra="定期修改密码时间间隔，默认3个月"
       >
-        <a-input-number :min="-1" :max="6" v-model:value="form.regularChangePasswordMonths"
-                        placeholder="定期修改密码时间间隔" addon-after="月"/>
+        <a-input-number :min="-1" :max="6" v-model:value="form.regularChangePasswordMonths" placeholder="定期修改密码时间间隔" addon-after="月" />
       </a-form-item>
       <a-form-item
-          name="regularChangePasswordNotAllowRepeatTimes"
-          label="定期修改密码不允许重复次数"
-          class="smart-query-form-item"
-          extra="定期修改密码不允许重复次数，默认：3次以内密码不能相同"
+        name="regularChangePasswordNotAllowRepeatTimes"
+        label="定期修改密码不允许重复次数"
+        class="smart-query-form-item"
+        extra="定期修改密码不允许重复次数，默认：3次以内密码不能相同"
       >
         <a-input-number
-            :min="-1"
-            :max="6"
-            v-model:value="form.regularChangePasswordNotAllowRepeatTimes"
-            placeholder="相同密码不允许重复次数"
-            addon-after="次"
+          :min="-1"
+          :max="6"
+          v-model:value="form.regularChangePasswordNotAllowRepeatTimes"
+          placeholder="相同密码不允许重复次数"
+          addon-after="次"
         />
       </a-form-item>
       <a-form-item
-          label="文件安全检测"
-          class="smart-query-form-item"
-          extra="对文件类型、恶意文件进行检测；（具体请看后端： SecurityFileService 类 checkFile 方法 ）"
+        label="文件安全检测"
+        class="smart-query-form-item"
+        extra="对文件类型、恶意文件进行检测；（具体请看后端： SecurityFileService 类 checkFile 方法 ）"
       >
-        <a-switch v-model:checked="form.fileDetectFlag" checked-children="开启 " un-checked-children="关闭 "/>
+        <a-switch v-model:checked="form.fileDetectFlag" checked-children="开启 " un-checked-children="关闭 " />
       </a-form-item>
       <a-form-item
-          name="maxUploadFileSizeMb"
-          label="上传文件大小限制"
-          class="smart-query-form-item"
-          extra="上传文件大小限制，默认 50 mb ( 0 表示不限制)"
+        name="maxUploadFileSizeMb"
+        label="上传文件大小限制"
+        class="smart-query-form-item"
+        extra="上传文件大小限制，默认 50 mb ( 0 表示不限制)"
       >
-        <a-input-number :min="0" v-model:value="form.maxUploadFileSizeMb" placeholder="上传文件大小限制"
-                        addon-after="mb(兆)"/>
+        <a-input-number :min="0" v-model:value="form.maxUploadFileSizeMb" placeholder="上传文件大小限制" addon-after="mb(兆)" />
       </a-form-item>
-      <br/>
-      <a-form-item :wrapper-col="{ span: 14, offset: 6 }">
+      <br />
+      <a-form-item :wrapper-col="{span: 14, offset: 6}">
         <a-button type="primary" style="margin-right: 20px" @click.prevent="onSubmit">保存配置</a-button>
         <a-button style="margin-right: 20px" @click="reset">恢复三级等保默认配置</a-button>
         <a-button danger @click="clear">清除所有配置</a-button>
@@ -214,11 +209,11 @@ const formRef = ref();
 // 提交修改
 function onSubmit() {
   formRef.value
-      .validate()
-      .then(save)
-      .catch((error) => {
-        message.error('参数验证错误，请仔细填写表单数据!');
-      });
+    .validate()
+    .then(save)
+    .catch((error) => {
+      message.error('参数验证错误，请仔细填写表单数据!');
+    });
 }
 
 // 提交修改配置
@@ -252,8 +247,7 @@ function clear() {
       save();
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 </script>

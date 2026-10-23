@@ -1,18 +1,17 @@
 <template>
-  <a-table :columns="columns" :data-source="rows" row-key="skuId" :pagination="false" size="small" :scroll="{ x: scmColumnsWidth(columns) }">
-    <template #bodyCell="{ column, record }">
-      <span v-if="column.dataIndex === 'marketPrice'"
-            class="price">{{ record.marketPrice === null ? '未定价' : `¥ ${record.marketPrice}` }}</span>
+  <a-table :columns="columns" :data-source="rows" row-key="skuId" :pagination="false" size="small" :scroll="{x: scmColumnsWidth(columns)}">
+    <template #bodyCell="{column, record}">
+      <span v-if="column.dataIndex === 'marketPrice'" class="price">{{ record.marketPrice === null ? '未定价' : `¥ ${record.marketPrice}` }}</span>
       <a-tag v-else-if="column.dataIndex === 'status'" :color="shelfStatusColor(record.status)">
         {{ record.status === 'ON_SHELF' ? '上架' : '下架' }}
       </a-tag>
       <a-tag v-else-if="column.dataIndex === 'defaultFlag' && record.defaultFlag" color="green">默认</a-tag>
-      <span v-else-if="column.dataIndex === 'productType'">{{
-          record.productType === 'STANDARD' ? '标品' : '非标品'
-        }}</span>
+      <span v-else-if="column.dataIndex === 'productType'">{{ record.productType === 'STANDARD' ? '标品' : '非标品' }}</span>
       <span v-else-if="column.dataIndex === 'specValues'">{{
-          Object.entries(record.specValues || {}).map(([key, value]) => `${key}：${value}`).join(' / ') || '—'
-        }}</span>
+        Object.entries(record.specValues || {})
+          .map(([key, value]) => `${key}：${value}`)
+          .join(' / ') || '—'
+      }}</span>
     </template>
   </a-table>
 </template>
@@ -22,21 +21,27 @@ import type {TableColumnsType} from 'ant-design-vue';
 import type {ProductSku} from '/@/types/business/scm/product';
 import {shelfStatusColor} from '/@/constants/business/scm/product-const';
 
-defineProps<{ rows: ProductSku[] }>();
+defineProps<{rows: ProductSku[]}>();
 const columns: TableColumnsType<ProductSku> = [
-  {title: '商品规格编码', dataIndex: 'skuCode', width: 160}, {title: '商品规格', dataIndex: 'specName', width: 120},
-  {title: '规格值', dataIndex: 'specValues', width: 160}, {title: '条码', dataIndex: 'barcode', width: 130},
-  {title: '单位', dataIndex: 'saleUnit', width: 70}, {title: '类型', dataIndex: 'productType', width: 80, align: 'center'},
-  {title: '市场价', dataIndex: 'marketPrice', width: 130}, {
+  {title: '商品规格编码', dataIndex: 'skuCode', width: 160},
+  {title: '商品规格', dataIndex: 'specName', width: 120},
+  {title: '规格值', dataIndex: 'specValues', width: 160},
+  {title: '条码', dataIndex: 'barcode', width: 130},
+  {title: '单位', dataIndex: 'saleUnit', width: 70},
+  {title: '类型', dataIndex: 'productType', width: 80, align: 'center'},
+  {title: '市场价', dataIndex: 'marketPrice', width: 130},
+  {
     title: '状态',
     dataIndex: 'status',
     width: 80,
-    align: 'center'
+    align: 'center',
   },
   {title: '默认', dataIndex: 'defaultFlag', width: 70, align: 'center'},
 ];
 </script>
-<style scoped>.price {
+<style scoped>
+.price {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}</style>
+}
+</style>

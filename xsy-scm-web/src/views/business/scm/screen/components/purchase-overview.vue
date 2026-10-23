@@ -1,16 +1,10 @@
 <template>
   <screen-panel title="采购概览" flex>
     <div class="scm-grid2">
-      <metric-card label="今日采购单" :value="formatInt(purchase?.todayPurchaseOrderCount)" unit="张" size="lg"/>
-      <metric-card
-          label="今日采购额"
-          prefix="¥"
-          :value="formatAmount(purchase?.todayPurchaseAmount)"
-          size="lg"
-          tone="primary"
-      />
-      <metric-card label="今日收货单" :value="formatInt(purchase?.todayReceiptCount)" unit="张" size="lg"/>
-      <metric-card label="活跃供应商" :value="formatInt(business?.todaySupplierCount)" unit="家" size="lg"/>
+      <metric-card label="今日采购单" :value="formatInt(purchase?.todayPurchaseOrderCount)" unit="张" size="lg" />
+      <metric-card label="今日采购额" prefix="¥" :value="formatAmount(purchase?.todayPurchaseAmount)" size="lg" tone="primary" />
+      <metric-card label="今日收货单" :value="formatInt(purchase?.todayReceiptCount)" unit="张" size="lg" />
+      <metric-card label="活跃供应商" :value="formatInt(business?.todaySupplierCount)" unit="家" size="lg" />
     </div>
   </screen-panel>
 </template>

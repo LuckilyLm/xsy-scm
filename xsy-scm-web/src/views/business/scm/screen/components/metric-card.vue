@@ -14,13 +14,9 @@
       </template>
       <template v-else>
         <svg class="scm-metric-arrow" viewBox="0 0 10 10" aria-hidden="true">
-          <path
-              v-if="direction === 'up'"
-              d="M5 1.5 9 8H1z"
-              fill="currentColor"
-          />
-          <path v-else-if="direction === 'down'" d="M5 8.5 1 2h8z" fill="currentColor"/>
-          <rect v-else x="1.5" y="4.2" width="7" height="1.6" fill="currentColor"/>
+          <path v-if="direction === 'up'" d="M5 1.5 9 8H1z" fill="currentColor" />
+          <path v-else-if="direction === 'down'" d="M5 8.5 1 2h8z" fill="currentColor" />
+          <rect v-else x="1.5" y="4.2" width="7" height="1.6" fill="currentColor" />
         </svg>
         <span class="scm-metric-delta-text">{{ deltaText }}</span>
         <span class="scm-metric-delta-label">较昨日</span>
@@ -42,24 +38,24 @@ import {deltaDirection, formatDeltaText} from '../format';
  * 基数为 0 时（昨天没营业）环比显示「—」而不是 0% —— 见 deltaDirection。
  */
 const props = withDefaults(
-    defineProps<{
-      label: string;
-      value: string | number;
-      /** 单位后缀（kg / 张 / 人） */
-      unit?: string;
-      /** 前缀（金额用 ¥） */
-      prefix?: string;
-      /** 环比百分比；undefined 表示这张卡不显示环比 */
-      delta?: number | null;
-      /** 层级：hero 是整屏最大数字 */
-      size?: 'hero' | 'lg' | 'md' | 'sm';
-      /** 语义色；不传则用默认一级文字色 */
-      tone?: 'primary' | 'ok' | 'warn' | 'danger';
-    }>(),
-    {
-      size: 'md',
-      delta: undefined,
-    }
+  defineProps<{
+    label: string;
+    value: string | number;
+    /** 单位后缀（kg / 张 / 人） */
+    unit?: string;
+    /** 前缀（金额用 ¥） */
+    prefix?: string;
+    /** 环比百分比；undefined 表示这张卡不显示环比 */
+    delta?: number | null;
+    /** 层级：hero 是整屏最大数字 */
+    size?: 'hero' | 'lg' | 'md' | 'sm';
+    /** 语义色；不传则用默认一级文字色 */
+    tone?: 'primary' | 'ok' | 'warn' | 'danger';
+  }>(),
+  {
+    size: 'md',
+    delta: undefined,
+  }
 );
 
 const direction = computed(() => deltaDirection(props.delta ?? null));

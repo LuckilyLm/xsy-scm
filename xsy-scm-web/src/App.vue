@@ -5,8 +5,8 @@
 
 <template>
   <a-config-provider
-      :locale="antdLocale"
-      :theme="{
+    :locale="antdLocale"
+    :theme="{
       algorithm: themeAlgorithm,
       token: {
         colorPrimary: themeColors[colorIndex].primaryColor,
@@ -27,12 +27,12 @@
         },
       },
     }"
-      :transformCellText="transformCellText"
+    :transformCellText="transformCellText"
   >
     <!---全局loading--->
     <a-spin :spinning="spinning" tip="稍等片刻，我在拼命加载中..." size="large">
       <!--- 路由 -->
-      <RouterView/>
+      <RouterView />
     </a-spin>
   </a-config-provider>
 </template>
@@ -76,24 +76,24 @@ const borderRadius = computed(() => {
 function transformCellText({text, column, record, index}) {
   if (column && column.textEllipsisFlag === true) {
     return h(
-        Popover,
-        {placement: 'bottom'},
-        {
-          default: () =>
-              h(
-                  'div',
-                  {
-                    style: {whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'},
-                    id: `${column.dataIndex}${index}`,
-                  },
-                  text
-              ),
-          content: () =>
-              h('div', {style: {display: 'flex'}}, [
-                h('div', text),
-                h(SmartCopyIcon, {value: document.getElementById(`${column.dataIndex}${index}`).innerText}),
-              ]),
-        }
+      Popover,
+      {placement: 'bottom'},
+      {
+        default: () =>
+          h(
+            'div',
+            {
+              style: {whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'},
+              id: `${column.dataIndex}${index}`,
+            },
+            text
+          ),
+        content: () =>
+          h('div', {style: {display: 'flex'}}, [
+            h('div', text),
+            h(SmartCopyIcon, {value: document.getElementById(`${column.dataIndex}${index}`).innerText}),
+          ]),
+      }
     );
   } else {
     return text;

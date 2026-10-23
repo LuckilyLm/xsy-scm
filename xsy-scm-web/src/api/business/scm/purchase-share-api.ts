@@ -8,28 +8,22 @@ import type {ScmResponse} from '/@/types/business/scm/customer';
 import type {Id} from '/@/views/business/scm/inventory/inventory-types';
 
 export interface PurchaseShare {
-    id: Id;
-    purchaseOrderId: Id;
-    token?: string;
-    tokenPrefix: string;
-    expiresAt: string;
-    revokedAt?: string | null;
-    lastUsedAt?: string | null;
-    useCount: number;
-    createdBy: string;
-    createdAt: string;
+  id: Id;
+  purchaseOrderId: Id;
+  token?: string;
+  tokenPrefix: string;
+  expiresAt: string;
+  revokedAt?: string | null;
+  lastUsedAt?: string | null;
+  useCount: number;
+  createdBy: string;
+  createdAt: string;
 }
 
 export const purchaseShareApi = {
-    /** 生成分享链接；同一张单上的旧链接当场失效。 */
-    create: (purchaseOrderId: Id, validDays?: number) =>
-        postRequest('/scm/purchase/share/create', {purchaseOrderId, validDays}) as unknown as Promise<
-            ScmResponse<PurchaseShare>
-        >,
-    revoke: (id: Id) =>
-        postRequest('/scm/purchase/share/revoke', {id}) as unknown as Promise<ScmResponse<string>>,
-    list: (purchaseOrderId: Id) =>
-        getRequest('/scm/purchase/share/list', {purchaseOrderId}) as unknown as Promise<
-            ScmResponse<PurchaseShare[]>
-        >,
+  /** 生成分享链接；同一张单上的旧链接当场失效。 */
+  create: (purchaseOrderId: Id, validDays?: number) =>
+    postRequest('/scm/purchase/share/create', {purchaseOrderId, validDays}) as unknown as Promise<ScmResponse<PurchaseShare>>,
+  revoke: (id: Id) => postRequest('/scm/purchase/share/revoke', {id}) as unknown as Promise<ScmResponse<string>>,
+  list: (purchaseOrderId: Id) => getRequest('/scm/purchase/share/list', {purchaseOrderId}) as unknown as Promise<ScmResponse<PurchaseShare[]>>,
 };

@@ -6,10 +6,10 @@
   <div class="recursion-container" v-show="topMenu.children && topMenu.children.length > 0">
     <!-- 顶部品牌区域 -->
     <div class="logo" @click="onGoHome" :style="sideMenuWidth" v-if="!collapsed">
-      <XsyBrandLockup dark/>
+      <XsyBrandLockup dark />
     </div>
     <div class="min-logo" @click="onGoHome" v-if="collapsed">
-      <img class="logo-img" :src="logoMinImg" alt="鲜蔬园"/>
+      <img class="logo-img" :src="logoMinImg" alt="鲜蔬园" />
     </div>
     <!-- 次级菜单展示 -->
     <a-menu :selectedKeys="selectedKeys" theme="light" :openKeys="openKeys" mode="inline">
@@ -18,13 +18,13 @@
           <template v-if="$lodash.isEmpty(item.children)">
             <a-menu-item :key="item.menuId.toString()" @click="turnToPage(item)">
               <template #icon v-if="item.icon">
-                <component :is="$antIcons[item.icon]"/>
+                <component :is="$antIcons[item.icon]" />
               </template>
               {{ item.menuName }}
             </a-menu-item>
           </template>
           <template v-else>
-            <SubMenu :menu-info="item" :key="item.menuId" @turnToPage="turnToPage"/>
+            <SubMenu :menu-info="item" :key="item.menuId" @turnToPage="turnToPage" />
           </template>
         </template>
       </template>
@@ -60,12 +60,12 @@ menuEmitter.on('selectTopMenu', onSelectTopMenu);
 
 //动态通知顶部菜单栏侧边栏状态
 watch(
-    topMenu,
-    (value) => {
-      let hasSideMenu = value.children && value.children.length > 0;
-      menuEmitter.emit('sideMenuChange', hasSideMenu);
-    },
-    {immediate: true, deep: true}
+  topMenu,
+  (value) => {
+    let hasSideMenu = value.children && value.children.length > 0;
+    menuEmitter.emit('sideMenuChange', hasSideMenu);
+  },
+  {immediate: true, deep: true}
 );
 
 // 监听选中顶级菜单事件
@@ -94,13 +94,13 @@ function updateSelectKeyAndOpenKey(parentList, currentSelectKey) {
 }
 
 watch(
-    currentRoute,
-    (value) => {
-      selectedKeys.value = [value.name];
-    },
-    {
-      immediate: true,
-    }
+  currentRoute,
+  (value) => {
+    selectedKeys.value = [value.name];
+  },
+  {
+    immediate: true,
+  }
 );
 
 // 页面跳转
@@ -170,6 +170,5 @@ const logoHeight = computed(() => {
   align-items: center;
   cursor: pointer;
   background-color: #001529;
-
 }
 </style>

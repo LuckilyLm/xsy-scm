@@ -7,28 +7,28 @@
   <div class="header-main">
     <!-- 1、品牌区域 -->
     <div class="logo" @click="onGoHome">
-      <XsyBrandLockup :dark="isDarkMenu"/>
+      <XsyBrandLockup :dark="isDarkMenu" />
     </div>
     <!-- 2、菜单区域 -->
-    <RecursionMenu ref="menuRef"/>
+    <RecursionMenu ref="menuRef" />
 
     <!-- 3、用户操作区域 -->
     <div class="user-space">
       <div class="setting">
         <!---消息通知--->
-        <HeaderMessage ref="headerMessage"/>
+        <HeaderMessage ref="headerMessage" />
         <!---设置--->
         <a-button type="text" @click="showSetting" class="operate-icon">
           <template #icon>
-            <setting-outlined/>
+            <setting-outlined />
           </template>
         </a-button>
       </div>
       <!---头像信息--->
       <div class="user-space-item">
-        <HeaderAvatar/>
+        <HeaderAvatar />
       </div>
-      <HeaderSetting ref="headerSetting"/>
+      <HeaderSetting ref="headerSetting" />
     </div>
   </div>
 </template>
@@ -70,13 +70,13 @@ const props = defineProps({
 const menuRef = ref();
 
 watch(
-    () => props.collapsed,
-    (newValue, oldValue) => {
-      // 如果是展开菜单的话，重新获取更新菜单的展开项: openkeys和selectKeys
-      if (!newValue) {
-        menuRef.value.updateSelectKeys();
-      }
+  () => props.collapsed,
+  (newValue, oldValue) => {
+    // 如果是展开菜单的话，重新获取更新菜单的展开项: openkeys和selectKeys
+    if (!newValue) {
+      menuRef.value.updateSelectKeys();
     }
+  }
 );
 
 const isDarkMenu = computed(() => useAppConfigStore().sideMenuTheme === 'dark');
@@ -118,7 +118,6 @@ const {token} = useToken();
     flex-direction: row;
     justify-content: center;
     align-items: center;
-
   }
 
   .user-space {

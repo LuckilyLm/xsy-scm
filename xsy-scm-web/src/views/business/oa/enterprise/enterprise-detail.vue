@@ -1,10 +1,10 @@
 <!--
   * 公司 详情
-  * 
+  *
 -->
 <template>
   <div class="smart-detail-header">
-    <a-page-header :title="detail.enterpriseName" :avatar="{ src: logo }">
+    <a-page-header :title="detail.enterpriseName" :avatar="{src: logo}">
       <template #extra>
         <a-button @click="showUpdate" type="primary">编辑</a-button>
       </template>
@@ -19,32 +19,32 @@
           <a-descriptions-item label="创建时间">{{ detail.createTime }}</a-descriptions-item>
           <a-descriptions-item label="创建人">{{ detail.createUserName }}</a-descriptions-item>
           <a-descriptions-item label="营业执照">
-            <FilePreview :file-list="detail.businessLicense"/>
+            <FilePreview :file-list="detail.businessLicense" />
           </a-descriptions-item>
         </a-descriptions>
       </div>
     </a-page-header>
   </div>
   <a-card
-      class="smart-margin-top10"
-      size="small"
-      v-if="$privilege('oa:enterprise:queryEmployee') || $privilege('oa:bank:query') || $privilege('oa:invoice:query')"
+    class="smart-margin-top10"
+    size="small"
+    v-if="$privilege('oa:enterprise:queryEmployee') || $privilege('oa:bank:query') || $privilege('oa:invoice:query')"
   >
     <a-tabs>
       <a-tab-pane key="employee" tab="员工信息" v-if="$privilege('oa:enterprise:queryEmployee')">
-        <EmployeeList :enterpriseId="enterpriseId"/>
+        <EmployeeList :enterpriseId="enterpriseId" />
       </a-tab-pane>
       <a-tab-pane key="bank" tab="银行信息" v-if="$privilege('oa:bank:query')">
-        <BankList :enterpriseId="enterpriseId"/>
+        <BankList :enterpriseId="enterpriseId" />
       </a-tab-pane>
       <a-tab-pane key="invoice" tab="发票信息" v-if="$privilege('oa:invoice:query')">
-        <InvoiceList :enterpriseId="enterpriseId"/>
+        <InvoiceList :enterpriseId="enterpriseId" />
       </a-tab-pane>
       <a-tab-pane key="dataTracer" tab="变更记录">
-        <DataTracer :dataId="enterpriseId" :type="DATA_TRACER_TYPE_ENUM.OA_ENTERPRISE.value"/>
+        <DataTracer :dataId="enterpriseId" :type="DATA_TRACER_TYPE_ENUM.OA_ENTERPRISE.value" />
       </a-tab-pane>
     </a-tabs>
-    <EnterpriseOperate ref="operateRef" @refresh="getDetail"/>
+    <EnterpriseOperate ref="operateRef" @refresh="getDetail" />
   </a-card>
 </template>
 
@@ -121,4 +121,3 @@ const logo = computed(() => {
   return '';
 });
 </script>
-

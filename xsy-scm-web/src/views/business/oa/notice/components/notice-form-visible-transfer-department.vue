@@ -1,19 +1,23 @@
 <!--
   * 通知  可见范围 选择部门
-  * 
+  *
 -->
 <template>
   <div class="wrapper">
     <div class="sider-fl">
-      <a-tree :tree-data="treeData" :fieldNames="{ title: 'departmentName', key: 'departmentId' }" :selectable="false"
-              v-model:expandedKeys="expandedKeys">
-        <template #switcherIcon="{ switcherCls }">
-          <caret-down-outlined :class="switcherCls"/>
+      <a-tree
+        :tree-data="treeData"
+        :fieldNames="{title: 'departmentName', key: 'departmentId'}"
+        :selectable="false"
+        v-model:expandedKeys="expandedKeys"
+      >
+        <template #switcherIcon="{switcherCls}">
+          <caret-down-outlined :class="switcherCls" />
         </template>
-        <template #title="{ departmentName, departmentId }">
-          <div class="list-item" :class="{ active: checkExists(departmentId) }">
+        <template #title="{departmentName, departmentId}">
+          <div class="list-item" :class="{active: checkExists(departmentId)}">
             <div class="list-item-title">{{ departmentName }}</div>
-            <check-circle-filled class="check-icon-style" @click="onSelectAdd(departmentName, departmentId)"/>
+            <check-circle-filled class="check-icon-style" @click="onSelectAdd(departmentName, departmentId)" />
           </div>
         </template>
       </a-tree>
@@ -22,7 +26,7 @@
       <div class="selected-list">
         <div class="list-item" v-for="(item, index) in selectedList" :key="item.dataId">
           <div class="list-item-title">{{ item.dataName }}</div>
-          <close-circle-two-tone @click="onRemove(index)"/>
+          <close-circle-two-tone @click="onRemove(index)" />
         </div>
       </div>
     </div>
@@ -76,11 +80,11 @@ const selectedIds = computed(() => {
 });
 
 watch(
-    () => props.departmentList,
-    (newVal) => {
-      selectedList.value = newVal;
-    },
-    {immediate: true}
+  () => props.departmentList,
+  (newVal) => {
+    selectedList.value = newVal;
+  },
+  {immediate: true}
 );
 
 // 检查是否已选

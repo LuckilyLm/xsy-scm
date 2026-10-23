@@ -1,6 +1,6 @@
 <!--
   * 数据变更记录，以 timeline 形式显示
-  * 
+  *
 -->
 <template>
   <a-timeline>
@@ -8,13 +8,10 @@
       <div class="trace-div">
         <div>
           <div class="operate-content">{{ record.contentText ?? record.content }}</div>
-          <a href="javascript:void(0)" v-if="record.diffOld || record.diffNew"
-             @click="showDetail(record)">（查看修改）</a>
+          <a href="javascript:void(0)" v-if="record.diffOld || record.diffNew" @click="showDetail(record)">（查看修改）</a>
         </div>
         <div class="ip-font">
-          {{ record.createTime }} | {{ record.userName }} | {{ record.ipRegion }} | {{ record.ip }} | {{
-            record.browser
-          }} | {{ record.os }}
+          {{ record.createTime }} | {{ record.userName }} | {{ record.ipRegion }} | {{ record.ip }} | {{ record.browser }} | {{ record.os }}
         </div>
       </div>
     </a-timeline-item>

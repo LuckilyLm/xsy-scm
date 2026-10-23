@@ -7,8 +7,7 @@
   <a-form class="smart-query-form" v-privilege="'oa:notice:query'">
     <a-row class="smart-query-form-row">
       <a-form-item label="分类" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.noticeTypeId" style="width: 100px" :showSearch="true" :allowClear="true"
-                  placeholder="分类">
+        <a-select v-model:value="queryForm.noticeTypeId" style="width: 100px" :showSearch="true" :allowClear="true" placeholder="分类">
           <a-select-option v-for="item in noticeTypeList" :key="item.noticeTypeId" :value="item.noticeTypeId">
             {{ item.noticeTypeName }}
           </a-select-option>
@@ -16,42 +15,40 @@
       </a-form-item>
 
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="标题、作者、来源"/>
+        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="标题、作者、来源" />
       </a-form-item>
 
       <a-form-item label="文号" class="smart-query-form-item">
-        <a-input style="width: 150px" v-model:value="queryForm.documentNumber" placeholder="文号"/>
+        <a-input style="width: 150px" v-model:value="queryForm.documentNumber" placeholder="文号" />
       </a-form-item>
 
       <a-form-item label="创建人" class="smart-query-form-item">
-        <a-input style="width: 100px" v-model:value="queryForm.createUserName" placeholder="创建人"/>
+        <a-input style="width: 100px" v-model:value="queryForm.createUserName" placeholder="创建人" />
       </a-form-item>
 
       <a-form-item label="是否删除" class="smart-query-form-item">
-        <SmartBooleanSelect v-model:value="queryForm.deletedFlag" style="width: 70px"/>
+        <SmartBooleanSelect v-model:value="queryForm.deletedFlag" style="width: 70px" />
       </a-form-item>
 
       <a-form-item label="发布时间" class="smart-query-form-item">
-        <a-range-picker v-model:value="publishDate" :presets="defaultTimeRanges" @change="publishDateChange"
-                        style="width: 220px"/>
+        <a-range-picker v-model:value="publishDate" :presets="defaultTimeRanges" @change="publishDateChange" style="width: 220px" />
       </a-form-item>
 
       <a-form-item label="创建时间" class="smart-query-form-item">
-        <a-range-picker v-model:value="createDate" :presets="defaultTimeRanges" @change="createDateChange"
-                        style="width: 220px"/>
+        <a-range-picker v-model:value="createDate" :presets="defaultTimeRanges" @change="createDateChange" style="width: 220px" />
       </a-form-item>
 
       <a-form-item class="smart-query-form-item smart-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="onReload">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -65,27 +62,27 @@
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="addOrUpdate()" v-privilege="'oa:notice:add'">
           <template #icon>
-            <PlusOutlined/>
+            <PlusOutlined />
           </template>
           新建
         </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="tableColumns" :tableId="TABLE_ID_CONST.BUSINESS.OA.NOTICE" :refresh="queryNoticeList"/>
+        <TableOperator v-model="tableColumns" :tableId="TABLE_ID_CONST.BUSINESS.OA.NOTICE" :refresh="queryNoticeList" />
       </div>
     </a-row>
 
     <a-table
-        rowKey="noticeId"
-        :columns="tableColumns"
-        :dataSource="tableData"
-        :scroll="{ x: 1510 }"
-        :pagination="false"
-        :loading="tableLoading"
-        size="small"
-        bordered
+      rowKey="noticeId"
+      :columns="tableColumns"
+      :dataSource="tableData"
+      :scroll="{x: 1510}"
+      :pagination="false"
+      :loading="tableLoading"
+      size="small"
+      bordered
     >
-      <template #bodyCell="{ column, record, text }">
+      <template #bodyCell="{column, record, text}">
         <template v-if="column.dataIndex === 'title'">
           <a @click="toDetail(record.noticeId)">{{ text }}</a>
         </template>
@@ -103,8 +100,7 @@
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate" v-if="!record.deletedFlag">
             <a-button type="link" @click="addOrUpdate(record.noticeId)" v-privilege="'oa:notice:update'">编辑</a-button>
-            <a-button type="link" @click="onDelete(record.noticeId)" v-privilege="'oa:notice:delete'" danger>删除
-            </a-button>
+            <a-button type="link" @click="onDelete(record.noticeId)" v-privilege="'oa:notice:delete'" danger>删除 </a-button>
           </div>
         </template>
       </template>
@@ -112,21 +108,21 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="queryNoticeList"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="queryNoticeList"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-card>
 
-  <NoticeFormDrawer ref="noticeFormDrawer" @reloadList="queryNoticeList"/>
+  <NoticeFormDrawer ref="noticeFormDrawer" @reloadList="queryNoticeList" />
 </template>
 
 <script setup lang="ts">
@@ -191,7 +187,8 @@ const tableColumns = ref([
 
   {
     title: '可见范围',
-    dataIndex: 'allVisibleFlag', align: 'center',
+    dataIndex: 'allVisibleFlag',
+    align: 'center',
     width: 90,
     ellipsis: true,
   },
@@ -203,7 +200,8 @@ const tableColumns = ref([
   },
   {
     title: '删除',
-    dataIndex: 'deletedFlag', align: 'center',
+    dataIndex: 'deletedFlag',
+    align: 'center',
     width: 80,
   },
   {

@@ -4,40 +4,39 @@
 -->
 <template>
   <a-drawer
-      :title="form.employeeId ? '编辑' : '添加'"
-      :width="600"
-      :open="visible"
-      :body-style="{ paddingBottom: '80px' }"
-      @close="onClose"
-      destroyOnClose
+    :title="form.employeeId ? '编辑' : '添加'"
+    :width="600"
+    :open="visible"
+    :body-style="{paddingBottom: '80px'}"
+    @close="onClose"
+    destroyOnClose
   >
-    <a-alert message="超管需要直接在数据库表 t_employee修改哦" type="error" closable/>
-    <br/>
+    <a-alert message="超管需要直接在数据库表 t_employee修改哦" type="error" closable />
+    <br />
     <a-form ref="formRef" :model="form" :rules="rules" layout="vertical" class="app-drawer-form">
       <a-form-item label="姓名" name="actualName" class="app-drawer-field--compact">
-        <a-input v-model:value.trim="form.actualName" :maxlength="30" placeholder="请输入姓名"/>
+        <a-input v-model:value.trim="form.actualName" :maxlength="30" placeholder="请输入姓名" />
       </a-form-item>
       <a-form-item label="手机号" name="phone" class="app-drawer-field--compact">
-        <a-input v-model:value.trim="form.phone" :maxlength="11" placeholder="请输入手机号"/>
+        <a-input v-model:value.trim="form.phone" :maxlength="11" placeholder="请输入手机号" />
       </a-form-item>
       <a-form-item label="部门" name="departmentId">
-        <DepartmentTreeSelect ref="departmentTreeSelect" width="100%" :init="false" v-model:value="form.departmentId"/>
+        <DepartmentTreeSelect ref="departmentTreeSelect" width="100%" :init="false" v-model:value="form.departmentId" />
       </a-form-item>
       <a-form-item name="loginName">
         <template #label>
           登录名
           <a-tooltip title="新员工的初始密码随机生成" :trigger="['hover', 'focus']">
-            <InfoCircleOutlined class="app-drawer-form__help" tabindex="0" aria-label="初始密码说明"/>
+            <InfoCircleOutlined class="app-drawer-form__help" tabindex="0" aria-label="初始密码说明" />
           </a-tooltip>
         </template>
-        <a-input v-model:value.trim="form.loginName" :maxlength="30" placeholder="请输入登录名"/>
+        <a-input v-model:value.trim="form.loginName" :maxlength="30" placeholder="请输入登录名" />
       </a-form-item>
       <a-form-item label="邮箱" name="email">
-        <a-input v-model:value.trim="form.email" :maxlength="100" placeholder="请输入邮箱"/>
+        <a-input v-model:value.trim="form.email" :maxlength="100" placeholder="请输入邮箱" />
       </a-form-item>
       <a-form-item label="性别" name="gender">
-        <smart-enum-select style="width: 100%" v-model:value="form.gender" placeholder="请选择性别"
-                           enum-name="GENDER_ENUM"/>
+        <smart-enum-select style="width: 100%" v-model:value="form.gender" placeholder="请选择性别" enum-name="GENDER_ENUM" />
       </a-form-item>
       <a-form-item label="状态" name="disabledFlag">
         <a-select v-model:value="form.disabledFlag" placeholder="请选择状态">
@@ -46,15 +45,12 @@
         </a-select>
       </a-form-item>
       <a-form-item label="职务" name="positionId">
-        <PositionSelect v-model:value="form.positionId" placeholder="请选择职务"/>
+        <PositionSelect v-model:value="form.positionId" placeholder="请选择职务" />
       </a-form-item>
 
       <a-form-item label="角色" name="roleIdList" class="app-drawer-field--multi">
         <a-select mode="multiple" v-model:value="form.roleIdList" optionFilterProp="title" placeholder="请选择角色">
-          <a-select-option v-for="item in roleList" :key="item.roleId" :title="item.roleName">{{
-              item.roleName
-            }}
-          </a-select-option>
+          <a-select-option v-for="item in roleList" :key="item.roleId" :title="item.roleName">{{ item.roleName }} </a-select-option>
         </a-select>
       </a-form-item>
     </a-form>
@@ -165,13 +161,13 @@ const rules = {
 function validateForm(formRef) {
   return new Promise((resolve) => {
     formRef
-        .validate()
-        .then(() => {
-          resolve(true);
-        })
-        .catch(() => {
-          resolve(false);
-        });
+      .validate()
+      .then(() => {
+        resolve(true);
+      })
+      .catch(() => {
+        resolve(false);
+      });
   });
 }
 
@@ -242,5 +238,4 @@ defineExpose({
   text-align: right;
   z-index: 1;
 }
-
 </style>

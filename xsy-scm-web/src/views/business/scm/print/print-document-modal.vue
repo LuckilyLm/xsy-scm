@@ -1,30 +1,30 @@
 <!-- 打印对话框提供模板选择、只读预览和正式打印。正式打印先保存冻结记录，再按记录打印，不修改原业务单据。 -->
 <template>
   <a-modal
-      :open="open"
-      title="打印"
-      width="1000px"
-      :confirm-loading="printing"
-      :closable="!printing"
-      :mask-closable="!printing"
-      :keyboard="!printing"
-      ok-text="打印"
-      :ok-button-props="{ disabled: !canPrint }"
-      @ok="print"
-      @cancel="close"
+    :open="open"
+    title="打印"
+    width="1000px"
+    :confirm-loading="printing"
+    :closable="!printing"
+    :mask-closable="!printing"
+    :keyboard="!printing"
+    ok-text="打印"
+    :ok-button-props="{disabled: !canPrint}"
+    @ok="print"
+    @cancel="close"
   >
-    <a-alert v-if="error" :message="error" type="error" show-icon/>
+    <a-alert v-if="error" :message="error" type="error" show-icon />
 
     <a-form layout="inline" class="toolbar">
       <a-form-item label="模板">
         <a-select
-            v-model:value="templateId"
-            :options="templateOptions"
-            :loading="loading"
-            :disabled="loading || printing"
-            style="width: 320px"
-            placeholder="请选择打印模板"
-            @change="reloadPreview"
+          v-model:value="templateId"
+          :options="templateOptions"
+          :loading="loading"
+          :disabled="loading || printing"
+          style="width: 320px"
+          placeholder="请选择打印模板"
+          @change="reloadPreview"
         />
       </a-form-item>
       <a-form-item>
@@ -33,17 +33,17 @@
     </a-form>
 
     <a-alert
-        v-if="hiddenFields.length"
-        class="banner"
-        type="warning"
-        show-icon
-        message="部分字段因权限未打印"
-        :description="`以下字段在你的模板里已选，但你没有该单据类型的金额权限，本次不会出现在纸上：${hiddenFields.join('、')}`"
+      v-if="hiddenFields.length"
+      class="banner"
+      type="warning"
+      show-icon
+      message="部分字段因权限未打印"
+      :description="`以下字段在你的模板里已选，但你没有该单据类型的金额权限，本次不会出现在纸上：${hiddenFields.join('、')}`"
     />
 
     <a-spin :spinning="loading">
-      <div v-if="renders.length" class="preview" v-html="previewHtml"/>
-      <a-empty v-else-if="!loading && !error" description="没有可预览的内容"/>
+      <div v-if="renders.length" class="preview" v-html="previewHtml" />
+      <a-empty v-else-if="!loading && !error" description="没有可预览的内容" />
     </a-spin>
   </a-modal>
 </template>
@@ -63,7 +63,7 @@ const props = defineProps<{
   businessIds: Id[];
 }>();
 
-const emit = defineEmits<{ close: []; printed: [] }>();
+const emit = defineEmits<{close: []; printed: []}>();
 
 const templates = ref<PrintTemplate[]>([]);
 const templateId = ref<Id | undefined>(undefined);
@@ -75,14 +75,20 @@ let requestId = 0;
 const frozenByBusiness = new Map<string, PrintRender>();
 
 const templateOptions = computed(() =>
-    templates.value.map((item) => ({
-      value: item.id,
-      label: `${item.templateName}${item.defaultFlag ? '（默认）' : ''}`,
-    }))
+  templates.value.map((item) => ({
+    value: item.id,
+    label: `${item.templateName}${item.defaultFlag ? '（默认）' : ''}`,
+  }))
 );
 
-const canPrint = computed(() => !loading.value && !printing.value && renders.value.length > 0
-    && renders.value.length === props.businessIds.length && templateId.value !== undefined);
+const canPrint = computed(
+  () =>
+    !loading.value &&
+    !printing.value &&
+    renders.value.length > 0 &&
+    renders.value.length === props.businessIds.length &&
+    templateId.value !== undefined
+);
 
 const hiddenFields = computed(() => {
   const keys = new Set<string>();
@@ -97,7 +103,9 @@ const hiddenFields = computed(() => {
  */
 function snapshotHint(render: PrintRender): string {
   const template = render.templateName || render.templateCode;
-  return `模板 ${template ?? '—'} v${render.templateVersion ?? '—'}，打印时间 ${render.printedAt ?? '—'}。再次打印使用这次保存的内容，不会随单据后续修改而变化。`;
+  return `模板 ${template ?? '—'} v${render.templateVersion ?? '—'}，打印时间 ${
+    render.printedAt ?? '—'
+  }。再次打印使用这次保存的内容，不会随单据后续修改而变化。`;
 }
 
 /**
@@ -207,40 +215,40 @@ async function print() {
 
 // 打开时重载模板与预览；关闭时清空，避免下次打开看到上一次的内容
 watch(
-    () => JSON.stringify([props.open, props.documentType, ...props.businessIds.map(String)]),
-    () => {
-      const id = ++requestId;
-      frozenByBusiness.clear();
-      templates.value = [];
-      templateId.value = undefined;
+  () => JSON.stringify([props.open, props.documentType, ...props.businessIds.map(String)]),
+  () => {
+    const id = ++requestId;
+    frozenByBusiness.clear();
+    templates.value = [];
+    templateId.value = undefined;
+    renders.value = [];
+    error.value = '';
+    loading.value = props.open;
+    const open = props.open;
+    if (!open) {
       renders.value = [];
       error.value = '';
-      loading.value = props.open;
-      const open = props.open;
-      if (!open) {
-        renders.value = [];
-        error.value = '';
-        return;
-      }
-      void (async () => {
-        try {
-          await loadTemplates(id);
-          if (id !== requestId) return;
-          if (!templates.value.length) {
-            error.value = '没有可用模板，请联系管理员启用该单据类型的模板。';
-            loading.value = false;
-            return;
-          }
-          await reloadPreview();
-        } catch (e) {
-          if (id === requestId) {
-            error.value = printError(e);
-            loading.value = false;
-          }
+      return;
+    }
+    void (async () => {
+      try {
+        await loadTemplates(id);
+        if (id !== requestId) return;
+        if (!templates.value.length) {
+          error.value = '没有可用模板，请联系管理员启用该单据类型的模板。';
+          loading.value = false;
+          return;
         }
-      })();
-    },
-    {immediate: true}
+        await reloadPreview();
+      } catch (e) {
+        if (id === requestId) {
+          error.value = printError(e);
+          loading.value = false;
+        }
+      }
+    })();
+  },
+  {immediate: true}
 );
 
 function close() {

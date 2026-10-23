@@ -3,81 +3,88 @@
   <a-form layout="inline" class="smart-query-form">
     <a-row class="smart-query-form-row">
       <a-form-item label="来源" class="smart-query-form-item">
-        <a-select v-model:value="query.source" allow-clear style="width:150px" :options="sourceOptions"/>
+        <a-select v-model:value="query.source" allow-clear style="width: 150px" :options="sourceOptions" />
       </a-form-item>
       <a-form-item label="客户" class="smart-query-form-item">
-        <CustomerSelect v-model:value="query.customerId" width="180px"/>
+        <CustomerSelect v-model:value="query.customerId" width="180px" />
       </a-form-item>
       <a-form-item label="客户类型" class="smart-query-form-item">
-        <CustomerTypeSelect v-model:value="query.customerTypeId" width="150px"/>
+        <CustomerTypeSelect v-model:value="query.customerTypeId" width="150px" />
       </a-form-item>
       <a-form-item label="商品规格" class="smart-query-form-item">
-        <SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]"/>
+        <SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" />
       </a-form-item>
       <a-form-item label="变更类型" class="smart-query-form-item">
-        <a-select v-model:value="query.operationType" allow-clear style="width:110px" :options="operationOptions"/>
+        <a-select v-model:value="query.operationType" allow-clear style="width: 110px" :options="operationOptions" />
       </a-form-item>
       <a-form-item label="有效区间" class="smart-query-form-item">
-        <a-range-picker v-model:value="effective" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true,true]"/>
+        <a-range-picker v-model:value="effective" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" />
       </a-form-item>
       <a-form-item label="变更区间" class="smart-query-form-item">
-        <a-range-picker v-model:value="operated" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true,true]"/>
+        <a-range-picker v-model:value="operated" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button type="primary" @click="search" v-privilege="'scm:pricing:history:query'">查询</a-button>
       </a-form-item>
       <div class="scm-query-table-tools">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_HISTORY" :refresh="load" />
       </div>
     </a-row>
   </a-form>
-  <a-alert v-if="error" type="error" :message="error"/>
+  <a-alert v-if="error" type="error" :message="error" />
   <a-card size="small" :bordered="false">
-
-    <a-table :data-source="rows" :columns="columns" :row-key="(r:HistoryRow)=>`${r.source}-${r.historyId}`"
-             :loading="loading" :pagination="false" size="small" bordered :scroll="{x:scmColumnsWidth(columns)}">
-      <template #bodyCell="{record,column}">
-        <template v-if="column.dataIndex==='source'">
+    <a-table
+      :data-source="rows"
+      :columns="columns"
+      :row-key="(r: HistoryRow) => `${r.source}-${r.historyId}`"
+      :loading="loading"
+      :pagination="false"
+      size="small"
+      bordered
+      :scroll="{x: scmColumnsWidth(columns)}"
+    >
+      <template #bodyCell="{record, column}">
+        <template v-if="column.dataIndex === 'source'">
           {{ historyLabel(HISTORY_SOURCE_LABEL, record.source) }}
         </template>
-        <template v-else-if="column.dataIndex==='customerName'">{{ record.customerName || record.customerTypeName || '—' }}</template>
-        <template v-else-if="column.dataIndex==='customerTypeName'">{{ record.customerTypeName || '—' }}</template>
-        <template v-else-if="column.dataIndex==='specName'">{{ record.specName || '—' }}</template>
-        <template v-else-if="column.dataIndex==='skuCode'">
+        <template v-else-if="column.dataIndex === 'customerName'">{{ record.customerName || record.customerTypeName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'specName'">{{ record.specName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'skuCode'">
           <span class="scm-mono">{{ record.skuCode || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='operationType'">
+        <template v-else-if="column.dataIndex === 'operationType'">
           <ScmStatusTag
-              :tone="HISTORY_OPERATION_TONE[record.operationType] ?? 'neutral'"
-              :label="historyLabel(HISTORY_OPERATION_LABEL, record.operationType)"
+            :tone="HISTORY_OPERATION_TONE[record.operationType] ?? 'neutral'"
+            :label="historyLabel(HISTORY_OPERATION_LABEL, record.operationType)"
           />
         </template>
-        <template v-else-if="column.dataIndex==='currentUnitPrice'">
+        <template v-else-if="column.dataIndex === 'currentUnitPrice'">
           <span class="scm-money">{{ formatAmount(record.currentUnitPrice) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='currentEffectiveFrom'">{{ datetime(record.currentEffectiveFrom) }}</template>
-        <template v-else-if="column.dataIndex==='currentEffectiveTo'">{{ record.currentEffectiveTo ? datetime(record.currentEffectiveTo) : '长期有效' }}</template>
-        <template v-else-if="column.dataIndex==='operatedAt'">{{ datetime(record.operatedAt) }}</template>
-        <template v-else-if="column.dataIndex==='operator'">{{ record.operator || '—' }}</template>
-        <template v-else-if="column.dataIndex==='currentDeleted'">
-          <ScmStatusTag :tone="record.currentDeleted ? 'error' : 'neutral'"
-                        :label="record.currentDeleted ? '已删除' : '有效记录'"/>
+        <template v-else-if="column.dataIndex === 'currentEffectiveFrom'">{{ datetime(record.currentEffectiveFrom) }}</template>
+        <template v-else-if="column.dataIndex === 'currentEffectiveTo'">{{
+          record.currentEffectiveTo ? datetime(record.currentEffectiveTo) : '长期有效'
+        }}</template>
+        <template v-else-if="column.dataIndex === 'operatedAt'">{{ datetime(record.operatedAt) }}</template>
+        <template v-else-if="column.dataIndex === 'operator'">{{ record.operator || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'currentDeleted'">
+          <ScmStatusTag :tone="record.currentDeleted ? 'error' : 'neutral'" :label="record.currentDeleted ? '已删除' : '有效记录'" />
         </template>
-        <template v-else-if="column.dataIndex==='action'">
+        <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <a-button type="link" size="small" @click="selected=record">变更详情</a-button>
+            <a-button type="link" size="small" @click="selected = record">变更详情</a-button>
           </a-space>
         </template>
-        <template v-else>{{record[column.dataIndex]??'—'}}</template>
+        <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination v-model:current="query.pageNum" v-model:page-size="query.pageSize" :total="total"
-                    show-size-changer @change="load"/>
+      <a-pagination v-model:current="query.pageNum" v-model:page-size="query.pageSize" :total="total" show-size-changer @change="load" />
     </div>
   </a-card>
-  <a-modal title="价格变更详情" :open="!!selected" :footer="null" :width="760" @cancel="selected=undefined">
-    <ScmDiffTable :before="selected?.beforeData" :after="selected?.afterData" :scope="selected?.operationType"/>
+  <a-modal title="价格变更详情" :open="!!selected" :footer="null" :width="760" @cancel="selected = undefined">
+    <ScmDiffTable :before="selected?.beforeData" :after="selected?.afterData" :scope="selected?.operationType" />
   </a-modal>
 </template>
 <script setup lang="ts">
@@ -94,18 +101,18 @@ import {pricingApi} from '/@/api/business/scm/pricing-api';
 import {formatAmount} from '/@/utils/scm-amount';
 import type {PriceQuery, HistoryRow} from '/@/types/business/scm/pricing';
 import {pricingError} from './pricing-errors';
-import {
-  HISTORY_OPERATION_LABEL,
-  HISTORY_OPERATION_TONE,
-  HISTORY_SOURCE_LABEL,
-  historyLabel,
-} from './pricing-display';
+import {HISTORY_OPERATION_LABEL, HISTORY_OPERATION_TONE, HISTORY_SOURCE_LABEL, historyLabel} from './pricing-display';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import {datetime} from '../common/scm-display';
 
-const query = reactive<PriceQuery & { source?: string; operationType?: string }>({pageNum: 1, pageSize: 20}),
-    effective = ref<[string, string]>(), operated = ref<[string, string]>(), rows = ref<HistoryRow[]>([]),
-    total = ref(0), loading = ref(false), error = ref(''), selected = ref<HistoryRow>();
+const query = reactive<PriceQuery & {source?: string; operationType?: string}>({pageNum: 1, pageSize: 20}),
+  effective = ref<[string, string]>(),
+  operated = ref<[string, string]>(),
+  rows = ref<HistoryRow[]>([]),
+  total = ref(0),
+  loading = ref(false),
+  error = ref(''),
+  selected = ref<HistoryRow>();
 let requestId = 0;
 
 // 下拉与列表列共用同一份中文（pricing-display），避免两处各写一份
@@ -141,13 +148,16 @@ async function load() {
   error.value = '';
   try {
     // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
-    const r = await pricingApi.history({
-      ...query,
-      effectiveFrom: effective.value?.[0] || null,
-      effectiveTo: effective.value?.[1] || null,
-      operatedFrom: operated.value?.[0] || null,
-      operatedTo: operated.value?.[1] || null
-    }, {suppressGlobalErrorMessage: true});
+    const r = await pricingApi.history(
+      {
+        ...query,
+        effectiveFrom: effective.value?.[0] || null,
+        effectiveTo: effective.value?.[1] || null,
+        operatedFrom: operated.value?.[0] || null,
+        operatedTo: operated.value?.[1] || null,
+      },
+      {suppressGlobalErrorMessage: true}
+    );
     if (id === requestId) {
       rows.value = r.data.list;
       total.value = r.data.total;

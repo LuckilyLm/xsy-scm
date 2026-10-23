@@ -6,7 +6,7 @@
 <template>
   <div class="scm-diff">
     <template v-if="mode === 'empty'">
-      <a-empty :image="simpleImage" description="该记录没有可对比的变更内容"/>
+      <a-empty :image="simpleImage" description="该记录没有可对比的变更内容" />
     </template>
 
     <!-- 无前态：呈现「记录时的内容」 -->
@@ -15,10 +15,9 @@
         <a-tag color="blue">初始记录</a-tag>
         <span class="scm-diff-head-note">该操作没有变更前内容，以下是操作时的记录</span>
       </div>
-      <a-descriptions v-if="createdFields.length" bordered size="small" class="scm-diff-desc"
-                      :column="{xs: 1, sm: 2, xl: 3}">
+      <a-descriptions v-if="createdFields.length" bordered size="small" class="scm-diff-desc" :column="{xs: 1, sm: 2, xl: 3}">
         <a-descriptions-item v-for="field in createdFields" :key="field.key" :label="field.label">
-          <span class="scm-diff-value scm-cell-wrap" :title="field.after" :class="{ 'is-empty': field.after === '—' }">
+          <span class="scm-diff-value scm-cell-wrap" :title="field.after" :class="{'is-empty': field.after === '—'}">
             {{ field.after }}
           </span>
         </a-descriptions-item>
@@ -35,14 +34,19 @@
       </div>
       <div v-if="diffFields.length" class="scm-diff-lines">
         <template v-for="field in diffFields" :key="field.key">
-          <span class="scm-diff-label" :class="{ 'is-quiet': !field.changed }" :title="field.key">
+          <span class="scm-diff-label" :class="{'is-quiet': !field.changed}" :title="field.key">
             {{ field.label }}
           </span>
-          <span class="scm-diff-value scm-cell-wrap" :class="{ 'is-empty': field.before === '—', 'is-quiet': !field.changed }"
-                :title="field.beforeRaw">{{ field.before }}</span>
-          <span class="scm-diff-arrow" :class="{ 'is-quiet': !field.changed }">→</span>
-          <span class="scm-diff-value scm-cell-wrap" :class="{ 'is-empty': field.after === '—', 'is-quiet': !field.changed }"
-                :title="field.afterRaw">{{ field.after }}</span>
+          <span
+            class="scm-diff-value scm-cell-wrap"
+            :class="{'is-empty': field.before === '—', 'is-quiet': !field.changed}"
+            :title="field.beforeRaw"
+            >{{ field.before }}</span
+          >
+          <span class="scm-diff-arrow" :class="{'is-quiet': !field.changed}">→</span>
+          <span class="scm-diff-value scm-cell-wrap" :class="{'is-empty': field.after === '—', 'is-quiet': !field.changed}" :title="field.afterRaw">{{
+            field.after
+          }}</span>
         </template>
       </div>
       <p v-if="!diffFields.length && !changedInArrays()" class="scm-diff-more">本次操作没有字段发生变化</p>
@@ -56,10 +60,18 @@
       </div>
 
       <!-- 无前态：一张明细表，比逐行竖排好扫 -->
-      <a-table v-if="mode === 'created'" class="scm-diff-table" size="small" bordered
-               :data-source="rowsOf(entry.rows)" :columns="columnsOf(entry.rows)" row-key="__row"
-               :pagination="false" :scroll="{x: arrayScroll(entry.rows)}">
-        <template #bodyCell="{ column, record }">
+      <a-table
+        v-if="mode === 'created'"
+        class="scm-diff-table"
+        size="small"
+        bordered
+        :data-source="rowsOf(entry.rows)"
+        :columns="columnsOf(entry.rows)"
+        row-key="__row"
+        :pagination="false"
+        :scroll="{x: arrayScroll(entry.rows)}"
+      >
+        <template #bodyCell="{column, record}">
           <!-- 单元格默认 nowrap + 省略号；快照值要能整段读，加 scm-cell-wrap 退出裁剪 -->
           <span v-if="column.dataIndex !== '__row'" class="scm-cell-wrap">{{ record[String(column.dataIndex)] }}</span>
         </template>
@@ -76,11 +88,11 @@
           <div class="scm-diff-lines">
             <template v-for="field in visibleRowFields(row)" :key="field.key">
               <span class="scm-diff-label" :title="field.key">{{ field.label }}</span>
-              <span class="scm-diff-value scm-cell-wrap" :class="{ 'is-empty': field.before === '—' }"
-                    :title="field.beforeRaw">{{ field.before }}</span>
+              <span class="scm-diff-value scm-cell-wrap" :class="{'is-empty': field.before === '—'}" :title="field.beforeRaw">{{
+                field.before
+              }}</span>
               <span class="scm-diff-arrow">→</span>
-              <span class="scm-diff-value scm-cell-wrap" :class="{ 'is-empty': field.after === '—' }"
-                    :title="field.afterRaw">{{ field.after }}</span>
+              <span class="scm-diff-value scm-cell-wrap" :class="{'is-empty': field.after === '—'}" :title="field.afterRaw">{{ field.after }}</span>
             </template>
           </div>
         </div>
@@ -142,15 +154,20 @@ function display(key: string, text: string): string {
 }
 
 function toRow(field: DiffField): FieldRow {
-  return {...field, label: labelOf(field.key), beforeRaw: field.before, afterRaw: field.after,
-          before: display(field.key, field.before), after: display(field.key, field.after)};
+  return {
+    ...field,
+    label: labelOf(field.key),
+    beforeRaw: field.before,
+    afterRaw: field.after,
+    before: display(field.key, field.before),
+    after: display(field.key, field.after),
+  };
 }
 
 const result = computed(() => diffSnapshot(props.before, props.after, labelOf));
 
 /** 有前态 = before 是个非空对象。空对象与 null 一样视为「没有变更前记录」。 */
-const hasBefore = computed(() => !!props.before && typeof props.before === 'object'
-    && Object.keys(props.before as object).length > 0);
+const hasBefore = computed(() => !!props.before && typeof props.before === 'object' && Object.keys(props.before as object).length > 0);
 
 const mode = computed(() => {
   if (!result.value.fields.length && !result.value.arrays.length) return 'empty';
@@ -178,14 +195,13 @@ const quietFields = computed(() => allFields.value.filter((f) => !f.changed && (
  * 变的全在 `items` 里）—— 那样表头会写着「已变更 0 项」，下面却列着几行变化。
  */
 function changedInArrays(): number {
-  return result.value.arrays.reduce((total, group) => total
-      + group.rows.reduce((n, row) => n + visibleRowFields(row).length, 0), 0);
+  return result.value.arrays.reduce((total, group) => total + group.rows.reduce((n, row) => n + visibleRowFields(row).length, 0), 0);
 }
 
 const changedCount = computed(() => changedFields.value.length + changedInArrays());
 
 const showQuiet = ref(false);
-const diffFields = computed(() => showQuiet.value ? [...changedFields.value, ...quietFields.value] : changedFields.value);
+const diffFields = computed(() => (showQuiet.value ? [...changedFields.value, ...quietFields.value] : changedFields.value));
 
 // ---- 数组：无前态时的明细表 ----
 
@@ -220,10 +236,7 @@ function rowsOf(rows: DiffChild[]): Record<string, string>[] {
 }
 
 function columnsOf(rows: DiffChild[]): TableColumnsType<Record<string, string>> {
-  return [
-    {title: '#', dataIndex: '__row', width: 56},
-    ...groupKeys(rows).map((key) => ({title: labelOf(key), dataIndex: key, width: 160})),
-  ];
+  return [{title: '#', dataIndex: '__row', width: 56}, ...groupKeys(rows).map((key) => ({title: labelOf(key), dataIndex: key, width: 160}))];
 }
 
 function arrayScroll(rows: DiffChild[]): number {
@@ -236,9 +249,7 @@ function shownRows(group: DiffArray): DiffChild[] {
 }
 
 /** 整个数组都没变化就整组不显示，否则会留下一排只有标题的空分组。 */
-const shownGroups = computed(() => result.value.arrays
-    .map((group) => ({group, rows: shownRows(group)}))
-    .filter((entry) => entry.rows.length > 0));
+const shownGroups = computed(() => result.value.arrays.map((group) => ({group, rows: shownRows(group)})).filter((entry) => entry.rows.length > 0));
 
 // ---- 数组：有前后态时的逐行变化 ----
 
@@ -247,8 +258,16 @@ const shownGroups = computed(() => result.value.arrays
  * 只在拿不到可读名时才退回行标识本身 —— `商品规格 ID：2034` 对用户没有意义。
  * 原始标识串留在 `title` 里可追溯。
  */
-const ROW_TITLE_KEYS = ['productNameSnapshot', 'skuCodeSnapshot', 'spuCodeSnapshot', 'specNameSnapshot',
-  'customerNameSnapshot', 'supplierNameSnapshot', 'counterpartyNameSnapshot', 'skuNameSnapshot'];
+const ROW_TITLE_KEYS = [
+  'productNameSnapshot',
+  'skuCodeSnapshot',
+  'spuCodeSnapshot',
+  'specNameSnapshot',
+  'customerNameSnapshot',
+  'supplierNameSnapshot',
+  'counterpartyNameSnapshot',
+  'skuNameSnapshot',
+];
 
 function rowTitle(row: DiffChild): string {
   for (const key of ROW_TITLE_KEYS) {

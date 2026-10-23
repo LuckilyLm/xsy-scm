@@ -1,12 +1,7 @@
 <template>
   <!-- workspace：报表下钻 —— 下钻宽表就是被阅读的内容本身，
        抽屉的价值在于「就地在两个粒度之间对照」，收窄会直接损害对照能力。 -->
-  <a-drawer
-      :open="open"
-      :title="title"
-      :width="scmDrawerWidth('workspace')"
-      @close="emit('update:open', false)"
-  >
+  <a-drawer :open="open" :title="title" :width="scmDrawerWidth('workspace')" @close="emit('update:open', false)">
     <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
       <template #action>
         <a-button size="small" @click="emit('change')">重试</a-button>
@@ -14,35 +9,35 @@
     </a-alert>
 
     <a-table
-        :id="SCM_REPORT_TABLE_ID.PURCHASE_DRILLDOWN"
-        size="small"
-        :data-source="rows"
-        :columns="columns"
-        row-key="skuId"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{emptyText: '暂无该供应商 / 采购员的商品明细'}"
-        :scroll="{x: scmColumnsWidth(columns)}"
+      :id="SCM_REPORT_TABLE_ID.PURCHASE_DRILLDOWN"
+      size="small"
+      :data-source="rows"
+      :columns="columns"
+      row-key="skuId"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无该供应商 / 采购员的商品明细'}"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
-        <slot name="bodyCell" :record="record" :column="column"/>
+      <template #bodyCell="{record, column}">
+        <slot name="bodyCell" :record="record" :column="column" />
       </template>
       <template #summary v-if="showSummary">
-        <slot name="summary"/>
+        <slot name="summary" />
       </template>
     </a-table>
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          :current="pageNum"
-          :page-size="pageSize"
-          :total="total"
-          @change="(page: number) => emit('update:pageNum', page)"
-          @showSizeChange="(_: unknown, size: number) => emit('update:pageSize', size)"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        :current="pageNum"
+        :page-size="pageSize"
+        :total="total"
+        @change="(page: number) => emit('update:pageNum', page)"
+        @showSizeChange="(_: unknown, size: number) => emit('update:pageSize', size)"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-drawer>
@@ -65,23 +60,23 @@ import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
  * 不拥有任何查询口径，因此供应商和采购员两种下钻共用它，不会出现两套列。
  */
 defineProps<{
-    open: boolean;
-    title: string;
-    columns: TableColumnsType<PurchaseProductRow>;
-    rows: PurchaseProductRow[];
-    loading: boolean;
-    error: string;
-    total: number;
-    pageNum: number;
-    pageSize: number;
-    showSummary?: boolean;
+  open: boolean;
+  title: string;
+  columns: TableColumnsType<PurchaseProductRow>;
+  rows: PurchaseProductRow[];
+  loading: boolean;
+  error: string;
+  total: number;
+  pageNum: number;
+  pageSize: number;
+  showSummary?: boolean;
 }>();
 
 const emit = defineEmits<{
-    'update:open': [value: boolean];
-    'update:pageNum': [value: number];
-    'update:pageSize': [value: number];
-    /** 分页变化即重查（与列表页的 `@change="queryData"` 同语义）。 */
-    change: [];
+  'update:open': [value: boolean];
+  'update:pageNum': [value: number];
+  'update:pageSize': [value: number];
+  /** 分页变化即重查（与列表页的 `@change="queryData"` 同语义）。 */
+  change: [];
 }>();
 </script>

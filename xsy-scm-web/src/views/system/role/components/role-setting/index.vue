@@ -1,19 +1,19 @@
 <!--
   * 角色 设置
-  * 
+  *
   *
 -->
 <template>
   <a-card class="role-container">
     <a-tabs v-model:activeKey="activeKey">
       <a-tab-pane key="1" tab="角色-功能权限">
-        <RoleTree/>
+        <RoleTree />
       </a-tab-pane>
       <a-tab-pane key="2" tab="角色-数据范围">
-        <RoleDataScope/>
+        <RoleDataScope />
       </a-tab-pane>
       <a-tab-pane key="3" tab="角色-员工列表">
-        <RoleEmployeeList/>
+        <RoleEmployeeList />
       </a-tab-pane>
     </a-tabs>
   </a-card>

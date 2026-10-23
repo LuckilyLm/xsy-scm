@@ -9,21 +9,17 @@
           <a-form class="smart-query-form">
             <a-row class="smart-query-form-row">
               <a-form-item label="关键字" class="smart-query-form-item">
-                <a-input style="width: 200px" v-model:value="queryForm.searchWord" placeholder="请输入关键字"
-                         :maxlength="30"/>
+                <a-input style="width: 200px" v-model:value="queryForm.searchWord" placeholder="请输入关键字" :maxlength="30" />
               </a-form-item>
               <a-form-item label="触发类型" class="smart-query-form-item">
-                <a-select style="width: 155px" v-model:value="queryForm.triggerType" placeholder="请选择触发类型"
-                          allowClear>
-                  <a-select-option v-for="item in $smartEnumPlugin.getValueDescList('TRIGGER_TYPE_ENUM')"
-                                   :key="item.value" :value="item.value">
+                <a-select style="width: 155px" v-model:value="queryForm.triggerType" placeholder="请选择触发类型" allowClear>
+                  <a-select-option v-for="item in $smartEnumPlugin.getValueDescList('TRIGGER_TYPE_ENUM')" :key="item.value" :value="item.value">
                     {{ item.desc }}
                   </a-select-option>
                 </a-select>
               </a-form-item>
               <a-form-item label="状态" class="smart-query-form-item">
-                <a-select style="width: 150px" v-model:value="queryForm.enabledFlag" placeholder="请选择状态"
-                          allowClear>
+                <a-select style="width: 150px" v-model:value="queryForm.enabledFlag" placeholder="请选择状态" allowClear>
                   <a-select-option :key="1"> 开启</a-select-option>
                   <a-select-option :key="0"> 停止</a-select-option>
                 </a-select>
@@ -33,22 +29,21 @@
                 <a-button-group>
                   <a-button type="primary" @click="onSearch" v-privilege="'support:job:query'">
                     <template #icon>
-                      <SearchOutlined/>
+                      <SearchOutlined />
                     </template>
                     查询
                   </a-button>
                   <a-button @click="resetQuery" v-privilege="'support:job:query'">
                     <template #icon>
-                      <ReloadOutlined/>
+                      <ReloadOutlined />
                     </template>
                     重置
                   </a-button>
                 </a-button-group>
 
-                <a-button class="smart-margin-left20" type="primary" @click="openUpdateModal()"
-                          v-privilege="'support:job:add'">
+                <a-button class="smart-margin-left20" type="primary" @click="openUpdateModal()" v-privilege="'support:job:add'">
                   <template #icon>
-                    <plus-outlined/>
+                    <plus-outlined />
                   </template>
                   添加任务
                 </a-button>
@@ -58,25 +53,25 @@
           <a-flex align="end" vertical>
             <div class="smart-table-setting-block smart-margin-bottom10">
               <TableOperator
-                  class="smart-margin-bottom5 pull-right"
-                  v-model="columns"
-                  :tableId="TABLE_ID_CONST.SUPPORT.JOB"
-                  :refresh="queryJobList"
+                class="smart-margin-bottom5 pull-right"
+                v-model="columns"
+                :tableId="TABLE_ID_CONST.SUPPORT.JOB"
+                :refresh="queryJobList"
               />
             </div>
           </a-flex>
 
           <a-table
-              :scroll="{ x: tableColumnsWidth(columns) }"
-              size="small"
-              :loading="tableLoading"
-              bordered
-              :dataSource="tableData"
-              :columns="columns"
-              rowKey="jobId"
-              :pagination="false"
+            :scroll="{x: tableColumnsWidth(columns)}"
+            size="small"
+            :loading="tableLoading"
+            bordered
+            :dataSource="tableData"
+            :columns="columns"
+            rowKey="jobId"
+            :pagination="false"
           >
-            <template #bodyCell="{ record, column }">
+            <template #bodyCell="{record, column}">
               <template v-if="column.dataIndex === 'jobClass'">
                 <a-tooltip>
                   <template #title>{{ record.jobClass }}</template>
@@ -96,8 +91,8 @@
                 <div v-if="record.lastJobLog">
                   <a-tooltip>
                     <template #title>{{ handleExecuteResult(record.lastJobLog.executeResult) }}</template>
-                    <CheckOutlined v-if="record.lastJobLog.successFlag" style="color: #39c710"/>
-                    <WarningOutlined v-else style="color: #f50"/>
+                    <CheckOutlined v-if="record.lastJobLog.successFlag" style="color: #39c710" />
+                    <WarningOutlined v-else style="color: #f50" />
                     {{ record.lastJobLog.executeStartTime }}
                   </a-tooltip>
                 </div>
@@ -113,25 +108,20 @@
               </template>
               <template v-if="column.dataIndex === 'enabledFlag'">
                 <a-switch
-                    v-model:checked="record.enabledFlag"
-                    checked-children="已启用"
-                    un-checked-children="已禁用"
-                    @change="(checked) => handleEnabledUpdate(checked, record)"
-                    :loading="record.enabledLoading"
+                  v-model:checked="record.enabledFlag"
+                  checked-children="已启用"
+                  un-checked-children="已禁用"
+                  @change="(checked) => handleEnabledUpdate(checked, record)"
+                  :loading="record.enabledLoading"
                 />
               </template>
               <template v-if="column.dataIndex === 'action'">
                 <div class="smart-table-operate">
-                  <a-button v-privilege="'support:job:update'" @click="openUpdateModal(record)" type="link">编辑
-                  </a-button>
-                  <a-button v-privilege="'support:job:execute'" type="link" @click="openExecuteModal(record)">执行
-                  </a-button>
-                  <a-button v-privilege="'support:job:log:query'" @click="openJobLogModal(record.jobId, record.jobName)"
-                            type="link">记录
-                  </a-button>
-                  <a-button danger v-privilege="'support:job:log:delete'"
-                            @click="confirmDelete(record.jobId, record.jobName)" type="link"
-                  >删除
+                  <a-button v-privilege="'support:job:update'" @click="openUpdateModal(record)" type="link">编辑 </a-button>
+                  <a-button v-privilege="'support:job:execute'" type="link" @click="openExecuteModal(record)">执行 </a-button>
+                  <a-button v-privilege="'support:job:log:query'" @click="openJobLogModal(record.jobId, record.jobName)" type="link">记录 </a-button>
+                  <a-button danger v-privilege="'support:job:log:delete'" @click="confirmDelete(record.jobId, record.jobName)" type="link"
+                    >删除
                   </a-button>
                 </div>
               </template>
@@ -139,30 +129,30 @@
           </a-table>
           <div class="smart-query-table-page">
             <a-pagination
-                showSizeChanger
-                showQuickJumper
-                show-less-items
-                :pageSizeOptions="PAGE_SIZE_OPTIONS"
-                :defaultPageSize="queryForm.pageSize"
-                v-model:current="queryForm.pageNum"
-                v-model:pageSize="queryForm.pageSize"
-                :total="total"
-                @change="queryJobList"
-                :show-total="(total) => `共${total}条`"
+              showSizeChanger
+              showQuickJumper
+              show-less-items
+              :pageSizeOptions="PAGE_SIZE_OPTIONS"
+              :defaultPageSize="queryForm.pageSize"
+              v-model:current="queryForm.pageNum"
+              v-model:pageSize="queryForm.pageSize"
+              :total="total"
+              @change="queryJobList"
+              :show-total="(total) => `共${total}条`"
             />
           </div>
         </a-tab-pane>
         <a-tab-pane key="2" tab="已删除任务">
-          <DeletedJobList/>
+          <DeletedJobList />
         </a-tab-pane>
       </a-tabs>
     </a-card>
 
     <!-- 表单操作 -->
-    <JobFormModal ref="jobFormModal" @reloadList="queryJobList"/>
+    <JobFormModal ref="jobFormModal" @reloadList="queryJobList" />
 
     <!-- 记录 -->
-    <JobLogListModal ref="jobLogModal"/>
+    <JobLogListModal ref="jobLogModal" />
   </div>
 </template>
 <script setup lang="ts">
@@ -365,8 +355,7 @@ function confirmDelete(jobId, jobName) {
       deleteJob(jobId);
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

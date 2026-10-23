@@ -57,9 +57,9 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    */
 
   const PATH = [
-    { value: 330000, label: '浙江省' },
-    { value: 330100, label: '杭州市' },
-    { value: 330106, label: '西湖区' },
+    {value: 330000, label: '浙江省'},
+    {value: 330100, label: '杭州市'},
+    {value: 330106, label: '西湖区'},
   ];
 
   test('完整三级选择拆成六列，编码与名称取自同一节点', () => {
@@ -91,12 +91,10 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 
   test('回填只还原连续路径：省 + 空市 + 区停在省', () => {
     assert.deepEqual(areaNodesOf(areaColumnsOf(PATH)), PATH);
-    assert.deepEqual(areaNodesOf({ provinceCode: 330000, provinceName: '浙江省', districtCode: 330106, districtName: '西湖区' }), [
-      PATH[0],
-    ]);
+    assert.deepEqual(areaNodesOf({provinceCode: 330000, provinceName: '浙江省', districtCode: 330106, districtName: '西湖区'}), [PATH[0]]);
     assert.deepEqual(areaNodesOf(null), []);
     // 名称快照缺失时该级不可信，从该级截断（大屏按 city_code 聚合，与是否回填无关）。
-    assert.deepEqual(areaNodesOf({ provinceCode: 330000, provinceName: '浙江省', cityCode: 330100 }), [PATH[0]]);
+    assert.deepEqual(areaNodesOf({provinceCode: 330000, provinceName: '浙江省', cityCode: 330100}), [PATH[0]]);
   });
 }
 
@@ -162,10 +160,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     },
   ];
 
-  const EXCLUDED_DIRECTORIES = new Set([
-    'node_modules', 'dist', 'dist-verify', 'target', '.runtime', 'archive',
-    '__pycache__', '.vite', 'coverage',
-  ]);
+  const EXCLUDED_DIRECTORIES = new Set(['node_modules', 'dist', 'dist-verify', 'target', '.runtime', 'archive', '__pycache__', '.vite', 'coverage']);
 
   /**
    * Flyway 迁移目录：只从扫描中排除，永远不修改。
@@ -256,9 +251,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    * Java 的 Javadoc 用 `{@code}`，反引号在这里纯粹是写作模板的残留。
    * （markdown 粗体 `**x**` 全范围禁，见 `PROCESS_MARKERS` 第 6 条。）
    */
-  const JAVA_ONLY_MARKERS = [
-    ['Javadoc markdown 反引号', /\x60/],
-  ];
+  const JAVA_ONLY_MARKERS = [['Javadoc markdown 反引号', /\x60/]];
 
   /**
    * 只在前端源码范围内判定的标记：注释里的 Javadoc / HTML 强调标签。
@@ -331,18 +324,28 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     // ---- 测试源码范围（`xsy-scm-web/test`）的例外 ----
     // 测试按模块合并后，这些注释随原文件一起进了模块文件；内容仍是「这条用例为什么存在」，
     // 其中的 Pn / Bn 指向现存文档小节，属活锚点，不是「第几批开发」的过程标记。
-    {file: 'xsy-scm-web/test/sorting.test.mjs', marker: 'Pn 批次号（非裁决锚点）',
-      reason: 'P1 指向 docs/decisions.md「P1 分拣管理裁决」现存小节，是活锚点'},
-    {file: 'xsy-scm-web/test/delivery.test.mjs', marker: 'Pn 批次号（非裁决锚点）',
-      reason: 'P2 指向 docs/decisions.md「P2 物流配送 L3 裁决」现存小节，是活锚点'},
-    {file: 'xsy-scm-web/test/delivery.test.mjs', marker: 'Provenance 要求',
-      reason: '说明「剥注释」的顺序，避免把头部说明当成代码 —— 属实现约束'},
-    {file: 'xsy-scm-web/test/purchase.test.mjs', marker: 'Provenance 要求',
-      reason: '同上，说明剥离顺序不能反'},
-    {file: 'xsy-scm-web/test/inventory.test.mjs', marker: 'Bn 批次号（非缺口溯源）',
-      reason: '守卫 docs/status.md 中的后端字段缺口，B1、B4、B5、B7 是逐条校验的对象，属活契约'},
-    {file: 'xsy-scm-web/test/ui.test.mjs', marker: 'AI 指令式措辞',
-      reason: '`V110 不得改动表结构或增删行` 是断言失败消息，描述迁移不得做之事，不是 AI 指令'},
+    {
+      file: 'xsy-scm-web/test/sorting.test.mjs',
+      marker: 'Pn 批次号（非裁决锚点）',
+      reason: 'P1 指向 docs/decisions.md「P1 分拣管理裁决」现存小节，是活锚点',
+    },
+    {
+      file: 'xsy-scm-web/test/delivery.test.mjs',
+      marker: 'Pn 批次号（非裁决锚点）',
+      reason: 'P2 指向 docs/decisions.md「P2 物流配送 L3 裁决」现存小节，是活锚点',
+    },
+    {file: 'xsy-scm-web/test/delivery.test.mjs', marker: 'Provenance 要求', reason: '说明「剥注释」的顺序，避免把头部说明当成代码 —— 属实现约束'},
+    {file: 'xsy-scm-web/test/purchase.test.mjs', marker: 'Provenance 要求', reason: '同上，说明剥离顺序不能反'},
+    {
+      file: 'xsy-scm-web/test/inventory.test.mjs',
+      marker: 'Bn 批次号（非缺口溯源）',
+      reason: '守卫 docs/status.md 中的后端字段缺口，B1、B4、B5、B7 是逐条校验的对象，属活契约',
+    },
+    {
+      file: 'xsy-scm-web/test/ui.test.mjs',
+      marker: 'AI 指令式措辞',
+      reason: '`V110 不得改动表结构或增删行` 是断言失败消息，描述迁移不得做之事，不是 AI 指令',
+    },
   ];
 
   /**
@@ -376,9 +379,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   };
 
   /** 正则字面量只能出现在这些字符之后（`/` 是除号时不能当正则起点）。 */
-  const REGEX_PRECEDERS = new Set([
-    '(', ',', '=', ':', '[', '!', '&', '|', '?', '{', '}', ';', '+', '-', '*', '%', '<', '>', '~', '^',
-  ]);
+  const REGEX_PRECEDERS = new Set(['(', ',', '=', ':', '[', '!', '&', '|', '?', '{', '}', ';', '+', '-', '*', '%', '<', '>', '~', '^']);
 
   /**
    * 抽取 `//` 与 `/* *\/` 注释，返回 `{start, end, body}`（1 基行号）。
@@ -660,13 +661,11 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
       const result = RESULTS.get(scope.key);
       // 测试目录按模块合并成少量文件（每个模块一个），不适用「> 50 个文件」的体量门槛；其余范围沿用。
       const minimum = scope.key === 'xsy-scm-web/test' ? 10 : 50;
-      assert.ok(result.files > minimum,
-          `${scope.key} 只枚举到 ${result.files} 个文件，扫描方式可能已失效`);
+      assert.ok(result.files > minimum, `${scope.key} 只枚举到 ${result.files} 个文件，扫描方式可能已失效`);
     }
     // 反向护栏：如果抽取器坏了（比如把整个文件当成注释），长注释数会异常膨胀
     const web = RESULTS.get('xsy-scm-web/src');
-    assert.ok(web.longCommentCount < 400,
-        `前端长注释块 ${web.longCommentCount} 个，疑似注释抽取器失效`);
+    assert.ok(web.longCommentCount < 400, `前端长注释块 ${web.longCommentCount} 个，疑似注释抽取器失效`);
   });
 
   test('Flyway 已应用 migration 不在扫描范围内', () => {
@@ -676,14 +675,16 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     assert.deepEqual(migrations, [], 'db/migration 被纳入了扫描；已应用的 migration 不得修改');
     assert.ok(files.length > 10, 'resources 范围扫描不到文件，排除规则可能写错了');
     // 直接确认排除规则本身生效（而不是靠扩展名恰好不匹配兜住）
-    assert.ok(readdirSync(`${REPO}xsy-scm-server/sa-admin/src/main/resources/db/migration`).length > 50,
-        'migration 目录不存在或为空，排除规则没有被真正验证');
+    assert.ok(
+      readdirSync(`${REPO}xsy-scm-server/sa-admin/src/main/resources/db/migration`).length > 50,
+      'migration 目录不存在或为空，排除规则没有被真正验证'
+    );
   });
 
   test('过程标记必须为 0（未登记白名单的一律失败）', () => {
     assert.ok(
-        WHITELIST.every((entry) => entry.reason && entry.reason.trim()),
-        'WHITELIST 的每条都要写 reason，否则等于无理由放宽',
+      WHITELIST.every((entry) => entry.reason && entry.reason.trim()),
+      'WHITELIST 的每条都要写 reason，否则等于无理由放宽'
     );
     const allowed = new Set(WHITELIST.map((entry) => `${entry.marker}\u0000${entry.file}`));
     const failures = [];
@@ -704,18 +705,23 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
         }
       }
     }
-    assert.deepEqual(failures, [],
-        '新增了 AI 开发过程残留注释。注释只解释当前代码中无法直接看出的约束，不记录代码是怎么被开发出来的；' +
-        '确需保留请登记到 WHITELIST 并写明理由（见 AGENTS.md）');
+    assert.deepEqual(
+      failures,
+      [],
+      '新增了 AI 开发过程残留注释。注释只解释当前代码中无法直接看出的约束，不记录代码是怎么被开发出来的；' +
+        '确需保留请登记到 WHITELIST 并写明理由（见 AGENTS.md）'
+    );
   });
 
   test('指向现存文档的 § 链接不得被误删', () => {
     for (const scope of SCOPES) {
       const {anchoredSection} = RESULTS.get(scope.key);
       const expected = REPORT_BASELINE[scope.key].anchoredSection;
-      assert.ok(anchoredSection >= expected,
-          `${scope.key} 指向现存文档的 § 链接从 ${expected} 降到 ${anchoredSection}；` +
-          '`长期规则见 CONTRIBUTING.md §SCM 界面规范` 是有效引用，不是过程标记');
+      assert.ok(
+        anchoredSection >= expected,
+        `${scope.key} 指向现存文档的 § 链接从 ${expected} 降到 ${anchoredSection}；` +
+          '`长期规则见 CONTRIBUTING.md §SCM 界面规范` 是有效引用，不是过程标记'
+      );
     }
   });
 
@@ -816,10 +822,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 
     // 销售金额列只允许出现在 metrics：出现在这里就说明有人又抄了一份销售额口径。
     for (const column of ['settlement_total_amount', 'ordered_total_amount']) {
-      assert.ok(
-        !xml.includes(column),
-        `大屏 mapper 不应再出现 ${column}（销售额 / 下单金额的唯一口径在 metrics）`,
-      );
+      assert.ok(!xml.includes(column), `大屏 mapper 不应再出现 ${column}（销售额 / 下单金额的唯一口径在 metrics）`);
     }
   });
 
@@ -854,7 +857,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
       assert.equal(
         sqlFragment(screen, id),
         sqlFragment(metrics, id),
-        `${id} 在两份 mapper 里不一致：范围谓词抄两份就一定会有一边先改，两边先改的那次不会报错`,
+        `${id} 在两份 mapper 里不一致：范围谓词抄两份就一定会有一边先改，两边先改的那次不会报错`
       );
     }
   });
@@ -867,11 +870,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
         offenders.push(path.relative(ROOT, file));
       }
     }
-    assert.deepEqual(
-      offenders,
-      [],
-      `dashboard 只做装配与权限裁剪，指标一律向 ScmBusinessMetricsService 取：${offenders.join(', ')}`,
-    );
+    assert.deepEqual(offenders, [], `dashboard 只做装配与权限裁剪，指标一律向 ScmBusinessMetricsService 取：${offenders.join(', ')}`);
   });
 }
 
@@ -1067,8 +1066,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    * （不带 `v-` 前缀，`rawName` 也不在 `key` 上），因此这里传的是 `'if'` 而不是 `'v-if'`。
    */
   function hasDirective(element, name) {
-    return (element.startTag?.attributes ?? []).some(
-        (attribute) => attribute.directive && attribute.key?.name?.name === name);
+    return (element.startTag?.attributes ?? []).some((attribute) => attribute.directive && attribute.key?.name?.name === name);
   }
 
   /** 从绑定表达式中抽取字面文本；纯动态表达式（`:title="row.name"`）返回空数组。 */
@@ -1202,25 +1200,22 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   const isResidentInfoAlert = (node) => {
     if (!isElement('a-alert')(node)) return false;
     if (hasDirective(node, 'if') || hasDirective(node, 'show')) return false;
-    const typeAttribute = (node.startTag?.attributes ?? []).find(
-        (attribute) => !attribute.directive && attribute.key?.name === 'type');
+    const typeAttribute = (node.startTag?.attributes ?? []).find((attribute) => !attribute.directive && attribute.key?.name === 'type');
     return typeAttribute?.value?.value === 'info';
   };
 
   /** 表单 `help`：不区分静态/绑定，属性名命中即计入。 */
   const hasHelpAttribute = (node) =>
-      node.type === 'VElement' &&
-      (node.startTag?.attributes ?? []).some(
-          (attribute) => attributeName(attribute) === 'help');
+    node.type === 'VElement' && (node.startTag?.attributes ?? []).some((attribute) => attributeName(attribute) === 'help');
 
   /** `type="secondary"` 排版：单元格占位、单位、动态计数与解释性文案共用，只看总量棘轮。 */
   const hasSecondaryType = (node) =>
-      node.type === 'VElement' &&
-      (node.startTag?.attributes ?? []).some((attribute) => {
-        if (attributeName(attribute) !== 'type') return false;
-        if (!attribute.directive) return attribute.value?.value === 'secondary';
-        return literalTexts(attribute.value?.expression).includes('secondary');
-      });
+    node.type === 'VElement' &&
+    (node.startTag?.attributes ?? []).some((attribute) => {
+      if (attributeName(attribute) !== 'type') return false;
+      if (!attribute.directive) return attribute.value?.value === 'secondary';
+      return literalTexts(attribute.value?.expression).includes('secondary');
+    });
 
   /**
    * 解释性提示的另一种形态：`class` 里带 `hint`（`coupon-hint` / `__hint` / `--hint`）。
@@ -1228,14 +1223,16 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    * 会漏掉一大半，因此两种形态各钉一条棘轮。
    */
   const hasHintClass = (node) =>
-      node.type === 'VElement' &&
-      (node.startTag?.attributes ?? []).some((attribute) => {
-        if (attributeName(attribute) !== 'class') return false;
-        const values = attribute.directive
-            ? literalTexts(attribute.value?.expression)
-            : typeof attribute.value?.value === 'string' ? [attribute.value.value] : [];
-        return values.some((value) => /hint/i.test(value));
-      });
+    node.type === 'VElement' &&
+    (node.startTag?.attributes ?? []).some((attribute) => {
+      if (attributeName(attribute) !== 'class') return false;
+      const values = attribute.directive
+        ? literalTexts(attribute.value?.expression)
+        : typeof attribute.value?.value === 'string'
+        ? [attribute.value.value]
+        : [];
+      return values.some((value) => /hint/i.test(value));
+    });
 
   // ------------------------------------------------------------------
   // 基线（治理完成后复扫所得，棘轮只降不升）
@@ -1291,9 +1288,9 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   test('UI 可见文案不含黑名单术语与实现细节', () => {
     const hits = blacklistHits();
     assert.deepEqual(
-        hits.map((hit) => `${hit.file} [${hit.where}] ${hit.label} → ${hit.text}`),
-        [],
-        `UI 文案命中了 ${hits.length} 处黑名单词；业务界面只说「能做什么」，不解释「怎么实现」`,
+      hits.map((hit) => `${hit.file} [${hit.where}] ${hit.label} → ${hit.text}`),
+      [],
+      `UI 文案命中了 ${hits.length} 处黑名单词；业务界面只说「能做什么」，不解释「怎么实现」`
     );
   });
 
@@ -1343,46 +1340,44 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   test('常驻 info alert 数量不超过基线（新增需在 PR 说明理由）', () => {
     const {total, offenders} = countShape(SCM_VIEW_FILES, isResidentInfoAlert);
     assert.ok(
-        total <= BASELINE.residentInfoAlert,
-        `常驻 info alert 从 ${BASELINE.residentInfoAlert} 涨到 ${total}；` +
+      total <= BASELINE.residentInfoAlert,
+      `常驻 info alert 从 ${BASELINE.residentInfoAlert} 涨到 ${total}；` +
         '「不告诉用户就可能操作错误」的信息才留在界面上，其余收进 Tooltip / 口径说明 / 操作时确认。' +
-        `当前分布：${JSON.stringify(offenders)}`,
+        `当前分布：${JSON.stringify(offenders)}`
     );
   });
 
   test('表单 help 数量不超过基线（示例值改用 placeholder）', () => {
     const {total, offenders} = countShape(SCM_VIEW_FILES, hasHelpAttribute);
     assert.ok(
-        total <= BASELINE.formHelp,
-        `表单 help 从 ${BASELINE.formHelp} 涨到 ${total}；示例值走 placeholder，长解释走帮助文档。` +
-        `当前分布：${JSON.stringify(offenders)}`,
+      total <= BASELINE.formHelp,
+      `表单 help 从 ${BASELINE.formHelp} 涨到 ${total}；示例值走 placeholder，长解释走帮助文档。` + `当前分布：${JSON.stringify(offenders)}`
     );
   });
 
   test('secondary 排版数量不超过基线（解释性文案收口后不应反弹）', () => {
     const {total} = countShape(SCM_VIEW_FILES, hasSecondaryType);
     assert.ok(
-        total <= BASELINE.secondaryType,
-        `secondary 排版从 ${BASELINE.secondaryType} 涨到 ${total}；` +
-        '纯渲染占位（`—`、单位、`已选 N 个`）保留，新增解释性说明请先确认必要性。',
+      total <= BASELINE.secondaryType,
+      `secondary 排版从 ${BASELINE.secondaryType} 涨到 ${total}；` + '纯渲染占位（`—`、单位、`已选 N 个`）保留，新增解释性说明请先确认必要性。'
     );
   });
 
   test('hint 类提示数量不超过基线', () => {
     const {total, offenders} = countShape(SCM_VIEW_FILES, hasHintClass);
     assert.ok(
-        total <= BASELINE.hintClass,
-        `hint 类提示从 ${BASELINE.hintClass} 涨到 ${total}：${JSON.stringify(offenders)}；` +
-        '这类文案和 `type="secondary"` 一样属于「常驻解释」，新增前先确认用户不被告知就会操作错误。',
+      total <= BASELINE.hintClass,
+      `hint 类提示从 ${BASELINE.hintClass} 涨到 ${total}：${JSON.stringify(offenders)}；` +
+        '这类文案和 `type="secondary"` 一样属于「常驻解释」，新增前先确认用户不被告知就会操作错误。'
     );
   });
 
   test('常驻正文长句数量不超过基线', () => {
     const {total, offenders} = countResidentLongText(SCM_VIEW_FILES);
     assert.ok(
-        total <= BASELINE.residentLongText,
-        `常驻正文长句从 ${BASELINE.residentLongText} 涨到 ${total}：${JSON.stringify(offenders)}；` +
-        '弹窗 / 提示 / 空态里的长句是「就地」出现的，不算常驻；正文里只该留一句话。',
+      total <= BASELINE.residentLongText,
+      `常驻正文长句从 ${BASELINE.residentLongText} 涨到 ${total}：${JSON.stringify(offenders)}；` +
+        '弹窗 / 提示 / 空态里的长句是「就地」出现的，不算常驻；正文里只该留一句话。'
     );
   });
 
@@ -1393,16 +1388,14 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   test('report 下不再有常驻 info alert', () => {
     const {total, offenders} = countShape(REPORT_FILES, isResidentInfoAlert);
     assert.ok(
-        total <= BASELINE.reportResidentInfoAlert,
-        `report 下仍有 ${total} 处常驻 info alert：${JSON.stringify(offenders)}；` +
-        '统计口径统一收进 report-note 的 Popover / Drawer。',
+      total <= BASELINE.reportResidentInfoAlert,
+      `report 下仍有 ${total} 处常驻 info alert：${JSON.stringify(offenders)}；` + '统计口径统一收进 report-note 的 Popover / Drawer。'
     );
   });
 
   /** 属性名命中即计入，不区分静态与绑定。 */
   const hasNamedAttribute = (name) => (node) =>
-      node.type === 'VElement' &&
-      (node.startTag?.attributes ?? []).some((attribute) => attributeName(attribute) === name);
+    node.type === 'VElement' && (node.startTag?.attributes ?? []).some((attribute) => attributeName(attribute) === name);
 
   test('report-note 组件存在且自带硬规则护栏', () => {
     const component = `${SCM_COMPONENTS}report-note/index.vue`;
@@ -1420,17 +1413,14 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    */
   test('报表模块不再常驻口径说明', () => {
     const note = countShape(REPORT_FILES, isElement('report-note'));
-    assert.equal(
-        note.total, 0,
-        `报表模块仍有 ${note.total} 处 report-note：${JSON.stringify(note.offenders)}；` +
-        '口径不常驻正文，也不做 ⓘ。',
-    );
+    assert.equal(note.total, 0, `报表模块仍有 ${note.total} 处 report-note：${JSON.stringify(note.offenders)}；` + '口径不常驻正文，也不做 ⓘ。');
 
     const hint = countShape(REPORT_FILES, hasNamedAttribute('hint'));
     assert.equal(
-        hint.total, 0,
-        `报表模块仍有 ${hint.total} 处 hint：${JSON.stringify(hint.offenders)}；` +
-        '`hint` 渲染成 ⓘ Tooltip，属常驻解释，需要提示时用数据异常 / 权限 Warning。',
+      hint.total,
+      0,
+      `报表模块仍有 ${hint.total} 处 hint：${JSON.stringify(hint.offenders)}；` +
+        '`hint` 渲染成 ⓘ Tooltip，属常驻解释，需要提示时用数据异常 / 权限 Warning。'
     );
   });
 }
@@ -1448,10 +1438,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 
   const GEO_JSON = new URL('../public/screen/china-province.json', import.meta.url);
   /** 区划字典种子的原文：被测的就是上线的那段 SQL，测试里不复制第二份省名清单。 */
-  const V40 = new URL(
-    '../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V40__scm_geo_region_and_master_location.sql',
-    import.meta.url,
-  );
+  const V40 = new URL('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V40__scm_geo_region_and_master_location.sql', import.meta.url);
 
   function geoFeatures() {
     const collection = JSON.parse(readFileSync(GEO_JSON, 'utf8'));
@@ -1461,9 +1448,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 
   /** V40 Step 2 的省级行（level 1）。 */
   function seededProvinces() {
-    return [...readFileSync(V40, 'utf8').matchAll(/^\((\d{6}), NULL, '([^']+)', [^,]+, [^,]+, 1\),$/gm)].map(
-      ([, code, name]) => ({ code, name }),
-    );
+    return [...readFileSync(V40, 'utf8').matchAll(/^\((\d{6}), NULL, '([^']+)', [^,]+, [^,]+, 1\),$/gm)].map(([, code, name]) => ({code, name}));
   }
 
   test('底图存档结构可用：每个省都有 adcode 与 name，且 adcode 不重复', () => {
@@ -1486,7 +1471,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     assert.deepEqual(
       provinces.filter((province) => !adcodes.has(province.code)),
       [],
-      '这些省在底图里没有对应 adcode，着色层会静默丢省',
+      '这些省在底图里没有对应 adcode，着色层会静默丢省'
     );
   });
 
@@ -1498,17 +1483,12 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
    * 一旦有人把匹配键从 adcode 改回名称，港澳就会从图上消失且没有任何报错。
    */
   test('港澳名称与底图不同源，因此匹配键只能是 adcode', () => {
-    const nameByAdcode = new Map(
-      geoFeatures().map((feature) => [String(feature.properties?.adcode), feature.properties?.name]),
-    );
+    const nameByAdcode = new Map(geoFeatures().map((feature) => [String(feature.properties?.adcode), feature.properties?.name]));
     const drift = seededProvinces()
       .filter((province) => nameByAdcode.get(province.code) !== province.name)
       .map((province) => `${province.code}: 字典「${province.name}」 vs 底图「${nameByAdcode.get(province.code)}」`);
 
-    assert.deepEqual(drift, [
-      '810000: 字典「香港」 vs 底图「香港特别行政区」',
-      '820000: 字典「澳门」 vs 底图「澳门特别行政区」',
-    ]);
+    assert.deepEqual(drift, ['810000: 字典「香港」 vs 底图「香港特别行政区」', '820000: 字典「澳门」 vs 底图「澳门特别行政区」']);
   });
 }
 
@@ -1540,19 +1520,19 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     assert.match(
       store,
       /addCheckedDataAndChildren\(data\) \{[\s\S]*?data\.children\.forEach\(\(item\) => \{\s*this\.addCheckedDataAndChildren\(item\);/,
-      'addCheckedDataAndChildren 必须递归进 children',
+      'addCheckedDataAndChildren 必须递归进 children'
     );
     assert.match(
       store,
       /deleteCheckedDataAndChildren\(data\) \{[\s\S]*?data\.children\.forEach\(\(item\) => \{\s*this\.deleteCheckedDataAndChildren\(item\);/,
-      '取消勾选同样要递归，否则会留下授不出去的孤儿菜单',
+      '取消勾选同样要递归，否则会留下授不出去的孤儿菜单'
     );
   });
 
   test('菜单节点把全部子级铺成可勾选项，隐藏菜单才看得见、点得到', () => {
     const menu = code(MENU);
     // 带功能点子级的菜单走 RoleTreePoint，而它把 module.children 整体铺开（不过滤类型）。
-    assert.match(menu, /<RoleTreePoint :tree="module\.children" @selectCheckbox="selectCheckbox"\/>/);
+    assert.match(menu, /<RoleTreePoint :tree="module\.children" @selectCheckbox="selectCheckbox"\s*\/>/);
 
     const point = code(POINT);
     assert.match(point, /<template v-for="module in props\.tree" :key="module\.menuId">/);
@@ -1632,10 +1612,8 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 
   const ACCOUNT_DETAIL = '../src/views/system/account/components/message/components/message-detail.vue';
   const HEADER_DETAIL = '../src/layout/components/header-user-space/header-message-detail-modal.vue';
-  const BACKEND_ENUM =
-    '../../xsy-scm-server/sa-base/src/main/java/net/lab1024/sa/base/module/support/message/constant/MessageTypeEnum.java';
-  const LOSS_GAIN_SERVICE =
-    '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/service/InventoryLossGainService.java';
+  const BACKEND_ENUM = '../../xsy-scm-server/sa-base/src/main/java/net/lab1024/sa/base/module/support/message/constant/MessageTypeEnum.java';
+  const LOSS_GAIN_SERVICE = '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/inventory/service/InventoryLossGainService.java';
 
   test('驳回消息解析为单据入口，主键原样进 query', () => {
     const link = messageBusinessLink(MESSAGE_TYPE_INVENTORY_LOSS_GAIN, '1234567890123456789');
@@ -1658,11 +1636,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
   });
 
   test('前后端业务类型数值镜像一致，且跳转路径与待办入口同一页面', () => {
-    assert.equal(
-      MESSAGE_TYPE_ENUM.INVENTORY_LOSS_GAIN.value,
-      MESSAGE_TYPE_INVENTORY_LOSS_GAIN,
-      '前端消息类型常量与跳转解析器必须同值'
-    );
+    assert.equal(MESSAGE_TYPE_ENUM.INVENTORY_LOSS_GAIN.value, MESSAGE_TYPE_INVENTORY_LOSS_GAIN, '前端消息类型常量与跳转解析器必须同值');
     const java = readFileSync(new URL(BACKEND_ENUM, import.meta.url), 'utf8');
     assert.match(
       java,
@@ -1670,10 +1644,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
       '后端 MessageTypeEnum 的数值必须与前端镜像一致，否则入口静默失效'
     );
     const todo = readFileSync(
-      new URL(
-        '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/constant/ScmTodoCardEnum.java',
-        import.meta.url
-      ),
+      new URL('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/constant/ScmTodoCardEnum.java', import.meta.url),
       'utf8'
     );
     assert.ok(todo.includes(`"${INVENTORY_LOSS_GAIN_LIST_PATH}`), '消息入口应跳到待办使用的同一个列表页');
@@ -1722,8 +1693,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
       .replace(/^\s*\/\/.*$/gm, '');
   }
 
-  const TODO_ENUM_JAVA =
-    '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/constant/ScmTodoCardEnum.java';
+  const TODO_ENUM_JAVA = '../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/dashboard/constant/ScmTodoCardEnum.java';
 
   const RECEIPT = '../src/views/business/scm/purchase/purchase-receipt-list.vue';
   const LOSS_GAIN = '../src/views/business/scm/inventory/inventory-loss-gain-list.vue';
@@ -1741,10 +1711,7 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
     const java = readFileSync(new URL(TODO_ENUM_JAVA, import.meta.url), 'utf8');
     const keys = new Map();
     for (const match of java.matchAll(/"\/([^"]+)\?([^"]+)"/g)) {
-      keys.set(
-        '/' + match[1],
-        new Set(match[2].split('&').map((pair) => pair.split('=')[0]))
-      );
+      keys.set('/' + match[1], new Set(match[2].split('&').map((pair) => pair.split('=')[0])));
     }
     return keys;
   }
@@ -1917,7 +1884,10 @@ import {maskSensitive} from '../src/views/support/operate-log/operate-log-mask.t
 
   test('逐行规范化：脏 response 退化为 null，单行异常不整页失败', () => {
     const vue = code(LIST);
-    assert.match(vue, /function normalizeRow\(row[^)]*\)\s*\{[\s\S]*?try\s*\{[\s\S]*?JSON\.parse\(row\.response\)[\s\S]*?\}\s*catch\s*\(e\)\s*\{[\s\S]*?row\.response = null;/);
+    assert.match(
+      vue,
+      /function normalizeRow\(row[^)]*\)\s*\{[\s\S]*?try\s*\{[\s\S]*?JSON\.parse\(row\.response\)[\s\S]*?\}\s*catch\s*\(e\)\s*\{[\s\S]*?row\.response = null;/
+    );
     assert.match(vue, /for \(const e of list\) \{\s*normalizeRow\(e\);\s*\}/);
   });
 

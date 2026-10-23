@@ -2,13 +2,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="采购单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="供应商" class="smart-query-form-item">
-        <SupplierSelect v-model:value="queryForm.supplierId" width="200px"/>
+        <SupplierSelect v-model:value="queryForm.supplierId" width="200px" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_PURCHASE_STATUS_ENUM" v-model:value="queryForm.status" width="150px"/>
+        <SmartEnumSelect enum-name="SCM_PURCHASE_STATUS_ENUM" v-model:value="queryForm.status" width="150px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -29,9 +29,7 @@
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:purchase:add'" @click="drawer?.open()">新建采购单</a-button>
-        <a-button danger v-privilege="'scm:purchase:delete'" :disabled="!draftSelected.length" @click="batchDelete">
-          批量删除草稿
-        </a-button>
+        <a-button danger v-privilege="'scm:purchase:delete'" :disabled="!draftSelected.length" @click="batchDelete"> 批量删除草稿 </a-button>
         <a-button danger v-privilege="'scm:purchase:short-close'" :disabled="!partialSelected.length" @click="batchShortClose">
           批量少收关单
         </a-button>
@@ -40,35 +38,35 @@
         <a-button v-privilege="'scm:purchase:query'" @click="exportSettingsOpen = true">导出设置</a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_ORDER" :refresh="queryData"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_ORDER" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_PURCHASE_TABLE_ID.ORDER"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText }"
-        :scroll="{ x: scmColumnsWidth(columns, SCM_COLUMN_WIDTH.selection) }"
-        :row-selection="{
+      :id="SCM_PURCHASE_TABLE_ID.ORDER"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText}"
+      :scroll="{x: scmColumnsWidth(columns, SCM_COLUMN_WIDTH.selection)}"
+      :row-selection="{
         columnWidth: SCM_COLUMN_WIDTH.selection,
         selectedRowKeys: selected,
         onChange: (keys: (string | number)[]) => (selected = keys),
-        getCheckboxProps: (row: Order) => ({ disabled: !['DRAFT', 'PARTIALLY_RECEIVED'].includes(row.status ?? '') }),
+        getCheckboxProps: (row: Order) => ({disabled: !['DRAFT', 'PARTIALLY_RECEIVED'].includes(row.status ?? '')}),
       }"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'orderNo'">
           <a @click="detail?.open(record.id)">{{ record.orderNo }}</a>
         </template>
         <template v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="SCM_PURCHASE_STATUS_ENUM[record.status]?.desc"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="SCM_PURCHASE_STATUS_ENUM[record.status]?.desc" />
         </template>
         <template v-else-if="column.dataIndex === 'plannedArrivalDate'">{{ dateOnly(record.plannedArrivalDate) }}</template>
         <template v-else-if="column.dataIndex === 'totalAmount'">
@@ -81,18 +79,14 @@
           <!-- 行内只留当前状态最高频的两个动作，其余收进「更多」；各状态给出的动作集合与原行内按钮一致 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <template v-if="record.status === 'DRAFT'">
-              <a-button type="link" size="small" v-privilege="'scm:purchase:update'" @click="drawer?.open(record.id)">
-                编辑
-              </a-button>
-              <a-button type="link" size="small" v-privilege="'scm:purchase:submit'" @click="submit(record)">
-                提交
-              </a-button>
+              <a-button type="link" size="small" v-privilege="'scm:purchase:update'" @click="drawer?.open(record.id)"> 编辑 </a-button>
+              <a-button type="link" size="small" v-privilege="'scm:purchase:submit'" @click="submit(record)"> 提交 </a-button>
             </template>
             <template v-else>
               <a-button type="link" size="small" @click="detail?.open(record.id)">详情</a-button>
               <a-button type="link" size="small" @click="printRow(record)">打印</a-button>
             </template>
-            <ScmActionMore :actions="moreActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="moreActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
       </template>
@@ -100,46 +94,44 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
-  <PurchaseOrderForm ref="drawer" @saved="queryData"/>
-  <PurchaseOrderDetail ref="detail" @saved="queryData"/>
-  <PurchaseShareModal ref="shareModal"/>
-  <PrintDocumentModal
-      :open="printBatch.open"
-      document-type="PURCHASE_ORDER"
-      :business-ids="printBatch.ids"
-      @close="printBatch.open = false"
-  />
+  <PurchaseOrderForm ref="drawer" @saved="queryData" />
+  <PurchaseOrderDetail ref="detail" @saved="queryData" />
+  <PurchaseShareModal ref="shareModal" />
+  <PrintDocumentModal :open="printBatch.open" document-type="PURCHASE_ORDER" :business-ids="printBatch.ids" @close="printBatch.open = false" />
 
   <a-modal
-      v-model:open="reassignVisible"
-      title="改派采购员"
-      :confirm-loading="reassignSaving"
-      :ok-button-props="{ disabled: reassignSaving }"
-      @ok="submitReassign"
+    v-model:open="reassignVisible"
+    title="改派采购员"
+    :confirm-loading="reassignSaving"
+    :ok-button-props="{disabled: reassignSaving}"
+    @ok="submitReassign"
   >
-    <p>采购单：<strong>{{ reassignTarget?.orderNo }}</strong>（{{ reassignTarget?.supplierName }}）</p>
+    <p>
+      采购单：<strong>{{ reassignTarget?.orderNo }}</strong
+      >（{{ reassignTarget?.supplierName }}）
+    </p>
     <p>当前采购员：{{ reassignTarget?.purchaserName || '未分配' }}</p>
     <a-form layout="vertical">
       <a-form-item>
         <template #label>
           新采购员
-          <ScmFieldHelp label="新采购员" text="留空会收回分配；未分配单据仅有分配权或全量权限的人员可见"/>
+          <ScmFieldHelp label="新采购员" text="留空会收回分配；未分配单据仅有分配权或全量权限的人员可见" />
         </template>
-        <EmployeeSelect v-model:value="reassignPurchaser" placeholder="留空即收回为未分配" width="100%"/>
+        <EmployeeSelect v-model:value="reassignPurchaser" placeholder="留空即收回为未分配" width="100%" />
       </a-form-item>
       <a-form-item label="改派原因">
-        <a-textarea v-model:value="reassignReason" :maxlength="500" :rows="2" placeholder="选填，用于审计留痕"/>
+        <a-textarea v-model:value="reassignReason" :maxlength="500" :rows="2" placeholder="选填，用于审计留痕" />
       </a-form-item>
     </a-form>
   </a-modal>
@@ -174,18 +166,15 @@ import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {useUserStore} from '/@/store/modules/system/user';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {
-  SCM_PURCHASE_EXPORT_COLUMNS,
-  SCM_PURCHASE_STATUS_ENUM,
-  SCM_PURCHASE_TABLE_ID,
-} from '/@/constants/business/scm/purchase-const';
+import {SCM_PURCHASE_EXPORT_COLUMNS, SCM_PURCHASE_STATUS_ENUM, SCM_PURCHASE_TABLE_ID} from '/@/constants/business/scm/purchase-const';
 import type {Order, OrderQuery} from './purchase-types';
 import {amount, progress} from './purchase-form-model';
 import {hasPermission} from '../common/scm-permission';
 import {useScmExport} from '../common/use-scm-export';
 import {dateOnly} from '../common/scm-display';
 import {purchaseError} from './purchase-errors';
-import PrintDocumentModal from '../print/print-document-modal.vue';import PurchaseOrderForm from './components/purchase-order-form-drawer.vue';
+import PrintDocumentModal from '../print/print-document-modal.vue';
+import PurchaseOrderForm from './components/purchase-order-form-drawer.vue';
 import PurchaseOrderDetail from './components/purchase-order-detail-drawer.vue';
 
 const queryForm = reactive<OrderQuery>({pageNum: 1, pageSize: 20});
@@ -212,9 +201,7 @@ const reassignReason = ref('');
 /** 无全量采购范围权限时，空表可能是授权范围所致而非系统无数据。 */
 const canSeeAllPurchase = computed(() => hasPermission('scm:purchase:scope:all:query'));
 const emptyText = computed(() =>
-  canSeeAllPurchase.value
-    ? '暂无数据'
-    : '当前仅显示您授权范围内的采购单；若无数据，可能是尚未分配采购员或授权范围未配置，请联系管理员确认。'
+  canSeeAllPurchase.value ? '暂无数据' : '当前仅显示您授权范围内的采购单；若无数据，可能是尚未分配采购员或授权范围未配置，请联系管理员确认。'
 );
 
 function openReassign(row: Order) {
@@ -412,14 +399,14 @@ function cancel(row: Order) {
   Modal.confirm({
     title: '取消这张采购单？已占用的采购需求会被释放。',
     content: () =>
-        h('div', [
-          h('p', '取消原因（必填）：'),
-          h(Input.TextArea, {
-            rows: 3,
-            maxlength: 500,
-            'onUpdate:value': (v: string) => (reason = v),
-          }),
-        ]),
+      h('div', [
+        h('p', '取消原因（必填）：'),
+        h(Input.TextArea, {
+          rows: 3,
+          maxlength: 500,
+          'onUpdate:value': (v: string) => (reason = v),
+        }),
+      ]),
     onOk: async () => {
       if (!reason.trim()) {
         // 确认框盖着页面，页头 Alert 看不见，缺原因的提示只能走 message
@@ -437,14 +424,14 @@ function shortClose(row: Order) {
   Modal.confirm({
     title: '少收关单？剩余未收数量将不再补收，采购单进入终态。',
     content: () =>
-        h('div', [
-          h('p', '少收原因（必填）：'),
-          h(Input.TextArea, {
-            rows: 3,
-            maxlength: 500,
-            'onUpdate:value': (v: string) => (reason = v),
-          }),
-        ]),
+      h('div', [
+        h('p', '少收原因（必填）：'),
+        h(Input.TextArea, {
+          rows: 3,
+          maxlength: 500,
+          'onUpdate:value': (v: string) => (reason = v),
+        }),
+      ]),
     onOk: async () => {
       if (!reason.trim()) {
         message.warning('请填写少收关单原因');
@@ -494,15 +481,15 @@ function batchShortClose() {
   Modal.confirm({
     title: `对 ${targets.length} 张「部分收货」采购单批量少收关单？`,
     content: () =>
-        h('div', [
-          h('p', '整批共享一个原因，在同一事务内逐单校验；任一单状态非法或被他人改过版本，整批都会失败回滚。'),
-          h('p', '少收关单原因（必填）：'),
-          h(Input.TextArea, {
-            rows: 3,
-            maxlength: 500,
-            'onUpdate:value': (v: string) => (reason = v),
-          }),
-        ]),
+      h('div', [
+        h('p', '整批共享一个原因，在同一事务内逐单校验；任一单状态非法或被他人改过版本，整批都会失败回滚。'),
+        h('p', '少收关单原因（必填）：'),
+        h(Input.TextArea, {
+          rows: 3,
+          maxlength: 500,
+          'onUpdate:value': (v: string) => (reason = v),
+        }),
+      ]),
     okType: 'danger',
     onOk: async () => {
       if (!reason.trim()) {

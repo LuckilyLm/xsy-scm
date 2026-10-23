@@ -6,7 +6,7 @@
   <div class="top-menu-container">
     <!-- 顶部品牌区域 -->
     <div class="logo" @click="onGoHome">
-      <XsyBrandLockup/>
+      <XsyBrandLockup />
     </div>
     <!-- 一级菜单展示 -->
     <a-menu :selectedKeys="selectedKeys" mode="inline" :theme="theme">
@@ -14,7 +14,7 @@
         <template v-if="item.visibleFlag">
           <a-menu-item :key="item.menuId.toString()" @click="onSelectMenu(item)">
             <template #icon>
-              <component :is="$antIcons[item.icon]"/>
+              <component :is="$antIcons[item.icon]" />
             </template>
             {{ menuNameAdapter(item.menuName) }}
           </a-menu-item>
@@ -86,6 +86,5 @@ defineExpose({updateSelectKey});
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-
 }
 </style>

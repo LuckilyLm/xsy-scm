@@ -6,38 +6,38 @@ import {postRequest, getRequest} from '/@/lib/axios';
 import type {RequestOptions} from '/@/lib/axios';
 
 export const changeLogApi = {
-    /**
-     * 分页查询
-     */
-    queryPage: (param, options?: RequestOptions) => {
-        return postRequest('/support/changeLog/queryPage', param, options);
-    },
+  /**
+   * 分页查询
+   */
+  queryPage: (param, options?: RequestOptions) => {
+    return postRequest('/support/changeLog/queryPage', param, options);
+  },
 
-    /**
-     * 增加
-     */
-    add: (param) => {
-        return postRequest('/support/changeLog/add', param);
-    },
+  /**
+   * 增加
+   */
+  add: (param) => {
+    return postRequest('/support/changeLog/add', param);
+  },
 
-    /**
-     * 修改
-     */
-    update: (param) => {
-        return postRequest('/support/changeLog/update', param);
-    },
+  /**
+   * 修改
+   */
+  update: (param) => {
+    return postRequest('/support/changeLog/update', param);
+  },
 
-    /**
-     * 删除
-     */
-    delete: (id) => {
-        return getRequest(`/support/changeLog/delete/${id}`);
-    },
+  /**
+   * 删除
+   */
+  delete: (id) => {
+    return getRequest(`/support/changeLog/delete/${id}`);
+  },
 
-    /**
-     * 批量删除
-     */
-    batchDelete: (idList) => {
-        return postRequest('/support/changeLog/batchDelete', idList);
-    },
+  /**
+   * 批量删除
+   */
+  batchDelete: (idList) => {
+    return postRequest('/support/changeLog/batchDelete', idList);
+  },
 };

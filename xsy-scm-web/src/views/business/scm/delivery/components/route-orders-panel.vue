@@ -1,17 +1,12 @@
 <template>
   <div class="smart-table-btn-block">
-    <a-button
-        v-if="routeStatus === 'DRAFT'"
-        type="primary"
-        v-privilege="'scm:delivery:route:update'"
-        :disabled="busy"
-        @click="emit('addOrders')"
-    >加入订单
+    <a-button v-if="routeStatus === 'DRAFT'" type="primary" v-privilege="'scm:delivery:route:update'" :disabled="busy" @click="emit('addOrders')"
+      >加入订单
     </a-button>
     <span class="order-count">共 {{ orders.length }} 单</span>
   </div>
   <!-- 1~3 行用轻量列表：一两条数据铺一张宽表格，下面会空出一大片 -->
-  <a-empty v-if="!orders.length" description="还没有订单，请先加入订单"/>
+  <a-empty v-if="!orders.length" description="还没有订单，请先加入订单" />
   <div v-else-if="orders.length <= 3" class="order-cards">
     <div v-for="record in orders" :key="record.id" class="order-card">
       <div class="order-card__head">
@@ -26,30 +21,30 @@
           {{ isLocated(stopOf(record.stopId) ?? {}) ? '已定位' : '未定位' }}
         </a-tag>
         <a-button
-            v-if="routeStatus === 'DRAFT'"
-            type="link"
-            danger
-            size="small"
-            v-privilege="'scm:delivery:route:update'"
-            :disabled="busy"
-            @click="emit('removeOrder', record.orderId)"
-        >移除
+          v-if="routeStatus === 'DRAFT'"
+          type="link"
+          danger
+          size="small"
+          v-privilege="'scm:delivery:route:update'"
+          :disabled="busy"
+          @click="emit('removeOrder', record.orderId)"
+          >移除
         </a-button>
       </div>
     </div>
   </div>
   <a-table
-      v-else
-      id="scm-delivery-route-orders"
-      size="small"
-      :columns="orderColumns"
-      :data-source="orders"
-      row-key="id"
-      :pagination="false"
-      :scroll="{ x: scmColumnsWidth(orderColumns) }"
-      bordered
+    v-else
+    id="scm-delivery-route-orders"
+    size="small"
+    :columns="orderColumns"
+    :data-source="orders"
+    row-key="id"
+    :pagination="false"
+    :scroll="{x: scmColumnsWidth(orderColumns)}"
+    bordered
   >
-    <template #bodyCell="{ column, record }">
+    <template #bodyCell="{column, record}">
       <template v-if="column.dataIndex === 'stop'">
         {{ stopOf(record.stopId)?.stopSeq }} · {{ stopOf(record.stopId)?.customerNameSnapshot }}
       </template>
@@ -69,13 +64,13 @@
       </template>
       <template v-else-if="column.dataIndex === 'action'">
         <a-button
-            v-if="routeStatus === 'DRAFT'"
-            type="link"
-            danger
-            v-privilege="'scm:delivery:route:update'"
-            :disabled="busy"
-            @click="emit('removeOrder', record.orderId)"
-        >移除
+          v-if="routeStatus === 'DRAFT'"
+          type="link"
+          danger
+          v-privilege="'scm:delivery:route:update'"
+          :disabled="busy"
+          @click="emit('removeOrder', record.orderId)"
+          >移除
         </a-button>
       </template>
     </template>
@@ -109,9 +104,7 @@ const orderColumns = computed<TableColumnsType<RouteOrder>>(() => [
   {title: '停靠点 / 客户', dataIndex: 'stop', width: 200},
   {title: '配送地址', dataIndex: 'address', width: 240},
   {title: '期望配送', dataIndex: 'expectDeliveryTimeSnapshot', width: 180},
-  ...(props.canViewAmount
-      ? [{title: '订单金额', dataIndex: 'orderAmountSnapshot' as const, width: 120}]
-      : []),
+  ...(props.canViewAmount ? [{title: '订单金额', dataIndex: 'orderAmountSnapshot' as const, width: 120}] : []),
   {title: '定位', dataIndex: 'location', width: 90},
   {title: '操作', dataIndex: 'action', align: 'center' as const, width: 80},
 ]);

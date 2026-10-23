@@ -1,19 +1,18 @@
 <template>
   <a-modal title="添加" :width="700" :open="visibleFlag" @cancel="onClose" :maskClosable="false" :destroyOnClose="true">
-    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 16 }">
+    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{span: 5}" :wrapper-col="{span: 16}">
       <a-form-item label="标题" name="title">
-        <a-input style="width: 100%" v-model:value="form.title" placeholder="标题"/>
+        <a-input style="width: 100%" v-model:value="form.title" placeholder="标题" />
       </a-form-item>
       <a-form-item label="接收人" name="receiverUserIdList">
         <a-button @click="selectReceiver" type="primary"> 选择接收人</a-button>
         <div>{{ nameListString }}</div>
       </a-form-item>
       <a-form-item label="消息类型" name="messageType">
-        <SmartEnumSelect width="100%" v-model:value="form.messageType" placeholder="请选择类型"
-                         enum-name="MESSAGE_TYPE_ENUM"/>
+        <SmartEnumSelect width="100%" v-model:value="form.messageType" placeholder="请选择类型" enum-name="MESSAGE_TYPE_ENUM" />
       </a-form-item>
       <a-form-item label="推送内容" name="content">
-        <a-textarea style="width: 100%" v-model:value="form.content" placeholder="推送内容"/>
+        <a-textarea style="width: 100%" v-model:value="form.content" placeholder="推送内容" />
       </a-form-item>
     </a-form>
     <template #footer>
@@ -23,7 +22,7 @@
       </a-space>
     </template>
   </a-modal>
-  <MessageReceiverModal ref="receiverModalRef" @reloadList="addReceiverIdList"/>
+  <MessageReceiverModal ref="receiverModalRef" @reloadList="addReceiverIdList" />
 </template>
 <script setup lang="ts">
 import {nextTick, reactive, ref} from 'vue';

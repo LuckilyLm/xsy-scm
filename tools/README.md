@@ -7,6 +7,7 @@
 | 项目验证 | `verify.ps1`、`verify.sh` → `verify.py` | 统一编排质量、后端、管理后台、微信小程序和浏览器验证，报告通过、失败与未覆盖 |
 | E2E 夹具 | `e2e_fixtures.py account-setup\|account-cleanup\|report\|product-create\|product-update\|stocktake` | 统一入口：创建/清理指定波次的隔离临时账号、准备报表日期与采购单、填充三类导入模板；各子命令只作用于自己的数据 |
 | Java 格式 | Maven Spotless、`quality/eclipse-formatter.xml` | 按 4 空格缩进、120 列、续行 4 空格和 LF 格式化 SCM 生产源码 |
+| 前端格式 | `xsy-scm-web` 的 `npm run format` / `format:check`、`.prettierrc.cjs` | 按 2 空格、150 列、单引号、LF 格式化源码、E2E、单测和配置 |
 | 迁移校验 | `migration_checksum_guard.py`、`migration_checksum_snapshot.json` | 校验已应用 Flyway 文件的字节和版本清单 |
 | 前端类型基线 | `ts_baseline_ratchet.py` | 区分历史诊断与新增错误，SCM 源码错误要求为零 |
 | 质量守卫 | `quality/quality_guard.py`、`quality/scm_*_guard.py`、`quality/scm_error_code_registry.py` | 按不同规则检查 Java 质量、领域边界与错误码；门禁自测合集见 `quality/test_quality_tools.py` |

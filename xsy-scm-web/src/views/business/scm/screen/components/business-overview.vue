@@ -1,16 +1,10 @@
 <template>
   <screen-panel title="今日经营" flex>
     <div class="scm-grid2">
-      <metric-card label="今日订单" :value="formatInt(business?.todayOrderCount)" unit="张" size="lg"/>
-      <metric-card
-          label="今日销售额"
-          prefix="¥"
-          :value="formatAmount(business?.todaySettlementAmount)"
-          size="lg"
-          tone="primary"
-      />
-      <metric-card label="成交客户" :value="formatInt(business?.todayCustomerCount)" unit="家" size="lg"/>
-      <metric-card label="客单价" prefix="¥" :value="avgOrderText" size="lg"/>
+      <metric-card label="今日订单" :value="formatInt(business?.todayOrderCount)" unit="张" size="lg" />
+      <metric-card label="今日销售额" prefix="¥" :value="formatAmount(business?.todaySettlementAmount)" size="lg" tone="primary" />
+      <metric-card label="成交客户" :value="formatInt(business?.todayCustomerCount)" unit="家" size="lg" />
+      <metric-card label="客单价" prefix="¥" :value="avgOrderText" size="lg" />
     </div>
   </screen-panel>
 </template>
@@ -29,7 +23,7 @@ import type {BusinessData} from '../types';
  * 大屏要表达的是「现在正在发生什么」。累计数仍然在接口里（totalOrderCount），
  * 需要时可作为副标题补上。
  */
-const props = defineProps<{ business: BusinessData | null }>();
+const props = defineProps<{business: BusinessData | null}>();
 
 /**
  * 客单价 = 今日销售额 / 今日订单数。

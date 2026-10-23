@@ -1,6 +1,6 @@
 <!--
   * 操作记录 详情
-  * 
+  *
 -->
 <template>
   <a-modal :open="visible" title="请求详情" width="60%" :footer="null" @cancel="close">
@@ -20,7 +20,8 @@
             <a-col :span="12"> IP地区： {{ detail.ipRegion }}</a-col>
           </a-row>
           <a-row class="detail-info">
-            <a-col :span="12"> 客户端： {{ detail.os }} / {{ detail.browser }}
+            <a-col :span="12">
+              客户端： {{ detail.os }} / {{ detail.browser }}
               {{ detail.device ? '/' + detail.device : detail.device }}
             </a-col>
           </a-row>
@@ -41,13 +42,11 @@
     </div>
     <div class="info-box">
       <h4>请求参数：</h4>
-      <JsonViewer :value="maskedJson(detail.param)" :expanded="true" :expandDepth="10" copyable
-                  boxed sort theme="light"/>
+      <JsonViewer :value="maskedJson(detail.param)" :expanded="true" :expandDepth="10" copyable boxed sort theme="light" />
     </div>
     <div class="info-box" v-if="detail.successFlag">
       <h4>返回结果：</h4>
-      <JsonViewer :value="maskedJson(detail.response)" :expanded="true" :expandDepth="10"
-                  copyable boxed sort theme="light"/>
+      <JsonViewer :value="maskedJson(detail.response)" :expanded="true" :expandDepth="10" copyable boxed sort theme="light" />
     </div>
     <div class="info-box" v-if="detail.failReason">
       <h4>请求失败原因：</h4>

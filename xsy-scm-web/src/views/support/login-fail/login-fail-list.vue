@@ -7,7 +7,7 @@
   <a-form class="smart-query-form">
     <a-row class="smart-query-form-row">
       <a-form-item label="登录名" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="queryForm.loginName" placeholder="登录名"/>
+        <a-input style="width: 300px" v-model:value="queryForm.loginName" placeholder="登录名" />
       </a-form-item>
       <a-form-item label="快速筛选" class="smart-query-form-item">
         <a-radio-group v-model:value="queryForm.lockFlag" @change="onSearch" button-style="solid">
@@ -18,23 +18,23 @@
       </a-form-item>
       <a-form-item label="锁定时间" class="smart-query-form-item">
         <a-range-picker
-            v-model:value="queryForm.loginLockBeginTime"
-            :presets="defaultTimeRanges"
-            style="width: 220px"
-            @change="onChangeLoginLockBeginTime"
+          v-model:value="queryForm.loginLockBeginTime"
+          :presets="defaultTimeRanges"
+          style="width: 220px"
+          @change="onChangeLoginLockBeginTime"
         />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery" class="smart-margin-left10">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -50,29 +50,29 @@
       <div class="smart-table-operate-block">
         <a-button @click="confirmBatchDelete" danger :disabled="selectedRowKeyList.length === 0">
           <template #icon>
-            <DeleteOutlined/>
+            <DeleteOutlined />
           </template>
           解除锁定
         </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :tableId="null" :refresh="queryData"/>
+        <TableOperator v-model="columns" :tableId="null" :refresh="queryData" />
       </div>
     </a-row>
     <!---------- 表格操作行 end ----------->
 
     <!---------- 表格 begin ----------->
     <a-table
-        size="small"
-        :dataSource="tableData"
-        :columns="columns"
-        rowKey="loginFailId"
-        bordered
-        :loading="tableLoading"
-        :pagination="false"
-        :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }"
+      size="small"
+      :dataSource="tableData"
+      :columns="columns"
+      rowKey="loginFailId"
+      bordered
+      :loading="tableLoading"
+      :pagination="false"
+      :row-selection="{selectedRowKeys: selectedRowKeyList, onChange: onSelectChange}"
     >
-      <template #bodyCell="{ text, column }">
+      <template #bodyCell="{text, column}">
         <template v-if="column.dataIndex === 'userType'">
           <span>{{ $smartEnumPlugin.getDescByValue('USER_TYPE_ENUM', text) }}</span>
         </template>
@@ -90,16 +90,16 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="onSearch"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="onSearch"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-card>
@@ -225,8 +225,7 @@ function confirmBatchDelete() {
       requestBatchDelete();
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

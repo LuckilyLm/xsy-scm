@@ -4,34 +4,33 @@
 -->
 <template>
   <a-modal
-      :title="form.changeLogId ? '编辑' : '添加'"
-      width="600px"
-      :closable="true"
-      :open="visibleFlag"
-      @close="onClose"
-      :onCancel="onClose"
-      :maskClosable="false"
-      :destroyOnClose="true"
+    :title="form.changeLogId ? '编辑' : '添加'"
+    width="600px"
+    :closable="true"
+    :open="visibleFlag"
+    @close="onClose"
+    :onCancel="onClose"
+    :maskClosable="false"
+    :destroyOnClose="true"
   >
-    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 5 }">
+    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{span: 5}">
       <a-form-item label="版本" name="updateVersion">
-        <a-input style="width: 100%" v-model:value="form.updateVersion" placeholder="版本"/>
+        <a-input style="width: 100%" v-model:value="form.updateVersion" placeholder="版本" />
       </a-form-item>
       <a-form-item label="更新类型" name="type">
-        <SmartEnumSelect width="100%" v-model:value="form.type" enumName="CHANGE_LOG_TYPE_ENUM" placeholder="更新类型"/>
+        <SmartEnumSelect width="100%" v-model:value="form.type" enumName="CHANGE_LOG_TYPE_ENUM" placeholder="更新类型" />
       </a-form-item>
       <a-form-item label="发布人" name="publishAuthor">
-        <a-input style="width: 100%" v-model:value="form.publishAuthor" placeholder="发布人"/>
+        <a-input style="width: 100%" v-model:value="form.publishAuthor" placeholder="发布人" />
       </a-form-item>
       <a-form-item label="发布日期" name="publicDate">
-        <a-date-picker valueFormat="YYYY-MM-DD" v-model:value="form.publicDate" style="width: 100%"
-                       placeholder="发布日期"/>
+        <a-date-picker valueFormat="YYYY-MM-DD" v-model:value="form.publicDate" style="width: 100%" placeholder="发布日期" />
       </a-form-item>
       <a-form-item label="跳转链接" name="link">
-        <a-input style="width: 100%" v-model:value="form.link" placeholder="跳转链接"/>
+        <a-input style="width: 100%" v-model:value="form.link" placeholder="跳转链接" />
       </a-form-item>
       <a-form-item label="更新内容" name="content">
-        <a-textarea style="width: 100%" :rows="15" v-model:value="form.content" placeholder="更新内容"/>
+        <a-textarea style="width: 100%" :rows="15" v-model:value="form.content" placeholder="更新内容" />
       </a-form-item>
     </a-form>
 

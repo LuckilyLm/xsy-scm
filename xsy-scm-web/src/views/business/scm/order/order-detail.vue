@@ -1,25 +1,30 @@
 <template>
-  <a-drawer :open="visible" :title="order?.orderNo||'订单详情'" :width="scmDrawerWidth('xl')" @close="visible=false">
-    <a-alert v-if="error" :message="error" type="error" show-icon/>
+  <a-drawer :open="visible" :title="order?.orderNo || '订单详情'" :width="scmDrawerWidth('xl')" @close="visible = false">
+    <a-alert v-if="error" :message="error" type="error" show-icon />
     <a-spin :spinning="loading">
       <template v-if="order">
         <a-space class="actions scm-detail-actions">
           <a-tag>{{ SCM_ORDER_STATUS_ENUM[order.status!]?.desc }}</a-tag>
-          <a-button v-if="['DRAFT','PENDING'].includes(order.status!)"
-                    v-privilege="'scm:order:update'" @click="repriceOpen=true">手动重算价格</a-button>
-          <a-button v-if="order.status==='PENDING'" type="primary" v-privilege="'scm:order:confirm'" @click="confirm">
-            确认订单
+          <a-button v-if="['DRAFT', 'PENDING'].includes(order.status!)" v-privilege="'scm:order:update'" @click="repriceOpen = true"
+            >手动重算价格</a-button
+          >
+          <a-button v-if="order.status === 'PENDING'" type="primary" v-privilege="'scm:order:confirm'" @click="confirm"> 确认订单 </a-button>
+          <a-button v-if="['DRAFT', 'PENDING'].includes(order.status!)" danger v-privilege="'scm:order:cancel'" @click="cancelOpen = true"
+            >取消订单
           </a-button>
-          <a-button v-if="['DRAFT','PENDING'].includes(order.status!)" danger v-privilege="'scm:order:cancel'"
-                    @click="cancelOpen=true">取消订单
-          </a-button>
-          <a-button v-if="order.status==='CONFIRMED'" v-privilege="'scm:order:return:add'"
-                    @click="returnForm?.open(order)">申请退货
-          </a-button>
-          <a-button v-if="order.status === 'CONFIRMED' && (!order.settlementMethod || order.settlementMethod === 'WALLET')" v-privilege="'scm:payment:intent:create'"
-                    @click="paymentDrawer?.open(order)">订单支付</a-button>
-          <a-button v-if="order.status === 'CONFIRMED' && order.settlementMethod === 'COD'"
-                    v-privilege="'scm:finance:receipt:add'" @click="openCodCollection">货到付款收款</a-button>
+          <a-button v-if="order.status === 'CONFIRMED'" v-privilege="'scm:order:return:add'" @click="returnForm?.open(order)">申请退货 </a-button>
+          <a-button
+            v-if="order.status === 'CONFIRMED' && (!order.settlementMethod || order.settlementMethod === 'WALLET')"
+            v-privilege="'scm:payment:intent:create'"
+            @click="paymentDrawer?.open(order)"
+            >订单支付</a-button
+          >
+          <a-button
+            v-if="order.status === 'CONFIRMED' && order.settlementMethod === 'COD'"
+            v-privilege="'scm:finance:receipt:add'"
+            @click="openCodCollection"
+            >货到付款收款</a-button
+          >
           <a-button v-privilege="'scm:payment:transaction:query'" @click="paymentDrawer?.open(order)">支付记录</a-button>
         </a-space>
 
@@ -27,8 +32,7 @@
         <section class="detail-section">
           <h3>状态与核心摘要</h3>
           <a-space :size="4" wrap class="smart-margin-bottom10">
-            <a-tag v-for="tag in order.tags ?? []" :key="String(tag.tagId)"
-                   :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
+            <a-tag v-for="tag in order.tags ?? []" :key="String(tag.tagId)" :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
           </a-space>
           <a-descriptions bordered size="small" :column="2">
             <a-descriptions-item label="订单号">{{ order.orderNo }}</a-descriptions-item>
@@ -40,16 +44,14 @@
           <!-- 2. 客户与配送 -->
           <h3 class="detail-section--nested">客户与配送</h3>
           <a-descriptions bordered size="small" :column="2">
-            <a-descriptions-item label="客户">{{ order.customerNameSnapshot }}（{{ order.customerCodeSnapshot }}）
-            </a-descriptions-item>
+            <a-descriptions-item label="客户">{{ order.customerNameSnapshot }}（{{ order.customerCodeSnapshot }}） </a-descriptions-item>
             <a-descriptions-item label="下单时结算方式">
               {{ SETTLE_MODE_ENUM[order.settleModeSnapshot ?? '']?.desc || '—' }}
             </a-descriptions-item>
             <a-descriptions-item v-if="order.settlementMethod" label="订单结算约定">
               {{ settlementMethodText(order.settlementMethod) }}
             </a-descriptions-item>
-            <a-descriptions-item label="收货人">{{ order.address?.receiverName }} / {{ order.address?.receiverPhone }}
-            </a-descriptions-item>
+            <a-descriptions-item label="收货人">{{ order.address?.receiverName }} / {{ order.address?.receiverPhone }} </a-descriptions-item>
             <a-descriptions-item label="收货地址">{{ order.address?.address }}</a-descriptions-item>
           </a-descriptions>
 
@@ -82,8 +84,7 @@
           <a-descriptions v-if="(order.gifts?.length ?? 0) > 0" bordered size="small" :column="1">
             <a-descriptions-item label="赠品">
               <div v-for="gift in order.gifts ?? []" :key="`${gift.activityId}-${gift.skuId}`">
-                {{ gift.productName }}（{{ gift.skuCode }} / {{ gift.specName }}）
-                × {{ gift.quantity }} {{ gift.saleUnit }}
+                {{ gift.productName }}（{{ gift.skuCode }} / {{ gift.specName }}） × {{ gift.quantity }} {{ gift.saleUnit }}
                 <span class="gift-source">— 来自活动「{{ gift.activityName || gift.activityCode }}」v{{ gift.version }}</span>
               </div>
               <div class="gift-note">赠品金额恒为 0，不计入订单金额；出库成本单独计入本单履约成本。</div>
@@ -92,16 +93,27 @@
 
           <!-- 3. 商品明细 -->
           <h3 class="detail-section--nested">商品明细</h3>
-          <a-table class="items" :data-source="order.items" :columns="columns" row-key="itemId" :pagination="false"
-                   :scroll="{ x: scmColumnsWidth(columns) }" size="small" bordered>
-            <template #bodyCell="{record,column}">
-              <template
-                  v-if="['draftUnitPrice','lockedUnitPrice','orderedLineAmount','settlementLineAmount'].includes(column.dataIndex)">
+          <a-table
+            class="items"
+            :data-source="order.items"
+            :columns="columns"
+            row-key="itemId"
+            :pagination="false"
+            :scroll="{x: scmColumnsWidth(columns)}"
+            size="small"
+            bordered
+          >
+            <template #bodyCell="{record, column}">
+              <template v-if="['draftUnitPrice', 'lockedUnitPrice', 'orderedLineAmount', 'settlementLineAmount'].includes(column.dataIndex)">
                 {{ amount(record[column.dataIndex], column.dataIndex === 'draftUnitPrice' || column.dataIndex === 'orderedLineAmount') }}
               </template>
-              <template v-else-if="column.dataIndex==='action'">
-                <a-button v-if="order.status==='PENDING'&&record.productTypeSnapshot==='NON_STANDARD'" type="link"
-                          v-privilege="'scm:order:actual-quantity'" @click="editActual(record)">录入实重
+              <template v-else-if="column.dataIndex === 'action'">
+                <a-button
+                  v-if="order.status === 'PENDING' && record.productTypeSnapshot === 'NON_STANDARD'"
+                  type="link"
+                  v-privilege="'scm:order:actual-quantity'"
+                  @click="editActual(record)"
+                  >录入实重
                 </a-button>
               </template>
             </template>
@@ -121,7 +133,7 @@
               </span>
               <a-collapse>
                 <a-collapse-panel key="audit" header="变更前后">
-                  <ScmDiffTable :before="log.beforeData" :after="log.afterData" :scope="log.operationType"/>
+                  <ScmDiffTable :before="log.beforeData" :after="log.afterData" :scope="log.operationType" />
                 </a-collapse-panel>
               </a-collapse>
             </a-timeline-item>
@@ -135,54 +147,60 @@
         </section>
       </template>
     </a-spin>
-    <OrderPaymentDrawer ref="paymentDrawer"/>
-    <ReturnForm ref="returnForm" @saved="load"/>
-    <a-modal :open="actualOpen" title="录入实际数量" :confirm-loading="saving" @ok="saveActual"
-             @cancel="actualOpen=false">
+    <OrderPaymentDrawer ref="paymentDrawer" />
+    <ReturnForm ref="returnForm" @saved="load" />
+    <a-modal :open="actualOpen" title="录入实际数量" :confirm-loading="saving" @ok="saveActual" @cancel="actualOpen = false">
       <a-form layout="vertical" class="app-drawer-form">
         <a-form-item label="实际数量" name="actualQuantity" required>
-          <a-input-number v-model:value="actualQuantity" string-mode :precision="4" :min="'0.0001'"/>
+          <a-input-number v-model:value="actualQuantity" string-mode :precision="4" :min="'0.0001'" />
         </a-form-item>
         <a-form-item label="修改原因" name="actualQuantityReason" required>
-          <a-input v-model:value="actualReason" maxlength="500"/>
+          <a-input v-model:value="actualReason" maxlength="500" />
         </a-form-item>
       </a-form>
     </a-modal>
-    <a-modal :open="creditOpen" title="确认订单" :confirm-loading="saving"
-             @ok="confirmWithCredit" @cancel="creditOpen=false"
-             :ok-button-props="{disabled: !usesMallSettlement && !creditCheck?.allowed && !creditOverride}">
-      <a-alert v-if="error" :message="error" type="error" show-icon/>
-      <a-alert v-if="usesMallSettlement" type="info" show-icon
-               message="确认时将按订单的结算方式、实际数量和优惠重新校验，确认订单不会自动扣款。"/>
+    <a-modal
+      :open="creditOpen"
+      title="确认订单"
+      :confirm-loading="saving"
+      @ok="confirmWithCredit"
+      @cancel="creditOpen = false"
+      :ok-button-props="{disabled: !usesMallSettlement && !creditCheck?.allowed && !creditOverride}"
+    >
+      <a-alert v-if="error" :message="error" type="error" show-icon />
+      <a-alert v-if="usesMallSettlement" type="info" show-icon message="确认时将按订单的结算方式、实际数量和优惠重新校验，确认订单不会自动扣款。" />
       <template v-if="creditCheck">
-        <a-alert :type="creditCheck.allowed ? 'success' : 'warning'" show-icon
-                 :message="creditCheck.allowed ? '当前授信检查通过，提交时将再次校验' : '额度不足或存在逾期，订单暂不能确认'"/>
+        <a-alert
+          :type="creditCheck.allowed ? 'success' : 'warning'"
+          show-icon
+          :message="creditCheck.allowed ? '当前授信检查通过，提交时将再次校验' : '额度不足或存在逾期，订单暂不能确认'"
+        />
         <a-descriptions :column="1" size="small" bordered>
           <a-descriptions-item label="未核销应收">{{ amount(creditCheck.openReceivableAmount) }}</a-descriptions-item>
           <a-descriptions-item label="已确认未形成应收">{{ amount(creditCheck.confirmedOrderAmount) }}</a-descriptions-item>
           <a-descriptions-item label="本次实重结算金额">{{ amount(creditCheck.requestedOrderAmount) }}</a-descriptions-item>
           <a-descriptions-item label="确认后授信占用">{{ amount(creditCheck.projectedExposure) }}</a-descriptions-item>
-          <a-descriptions-item label="授信额度">{{ creditCheck.creditLimit === '0.0000' ? '未设置金额上限' : amount(creditCheck.creditLimit) }}</a-descriptions-item>
+          <a-descriptions-item label="授信额度">{{
+            creditCheck.creditLimit === '0.0000' ? '未设置金额上限' : amount(creditCheck.creditLimit)
+          }}</a-descriptions-item>
           <a-descriptions-item v-if="creditCheck.overdue" label="最早逾期到期日">{{ creditCheck.earliestOverdueDate }}</a-descriptions-item>
         </a-descriptions>
         <p v-if="creditCheck.amountThresholdHint">{{ creditCheck.amountThresholdHint }}</p>
       </template>
       <template v-if="usesMallSettlement || creditCheck">
-        <a-divider style="margin: 12px 0"/>
+        <a-divider style="margin: 12px 0" />
         <a-form-item label="优惠券">
           <a-select
-              v-model:value="couponInstanceId"
-              :loading="couponLoading"
-              :options="couponOptions"
-              placeholder="不使用优惠券（试算不占用）"
-              allow-clear
-              style="width: 100%"
+            v-model:value="couponInstanceId"
+            :loading="couponLoading"
+            :options="couponOptions"
+            placeholder="不使用优惠券（试算不占用）"
+            allow-clear
+            style="width: 100%"
           />
-          <span v-if="order?.mallCouponInstanceId" class="scm-cell-hint">
-            商城下单时预选了券；清空选择即可在本次确认时不使用。
-          </span>
+          <span v-if="order?.mallCouponInstanceId" class="scm-cell-hint"> 商城下单时预选了券；清空选择即可在本次确认时不使用。 </span>
         </a-form-item>
-        <a-alert v-if="previewError" :message="previewError" type="warning" show-icon class="coupon-hint"/>
+        <a-alert v-if="previewError" :message="previewError" type="warning" show-icon class="coupon-hint" />
         <a-descriptions v-if="discountPreview" :column="1" size="small" bordered>
           <a-descriptions-item label="行基础金额（下单量口径）">{{ amount(discountPreview.baseAmount) }}</a-descriptions-item>
           <a-descriptions-item label="限时特价让利">{{ amount(discountPreview.specialDiscount) }}</a-descriptions-item>
@@ -194,21 +212,20 @@
         <div v-if="!usesMallSettlement && creditCheck && !creditCheck.allowed" v-privilege="'scm:order:credit:override'">
           <a-checkbox v-model:checked="creditOverride">申请授信例外放行（将记录操作日志）</a-checkbox>
           <a-form-item v-if="creditOverride" label="例外原因" required>
-            <a-textarea v-model:value="creditOverrideReason" :maxlength="500" :auto-size="{minRows: 2, maxRows: 5}"/>
+            <a-textarea v-model:value="creditOverrideReason" :maxlength="500" :auto-size="{minRows: 2, maxRows: 5}" />
           </a-form-item>
         </div>
       </template>
     </a-modal>
-    <a-modal :open="cancelOpen" title="取消订单" :confirm-loading="saving" @ok="cancel" @cancel="cancelOpen=false">
+    <a-modal :open="cancelOpen" title="取消订单" :confirm-loading="saving" @ok="cancel" @cancel="cancelOpen = false">
       <a-form-item label="取消原因" name="cancelReason" required>
-        <a-input v-model:value="cancelReason" maxlength="500"/>
+        <a-input v-model:value="cancelReason" maxlength="500" />
       </a-form-item>
     </a-modal>
-    <a-modal :open="repriceOpen" title="手动重算订单价格" :confirm-loading="saving"
-             @ok="reprice" @cancel="repriceOpen=false">
-      <a-alert type="warning" show-icon message="仅草稿和待确认订单可重算；已有资金或履约事实时会被拒绝。"/>
+    <a-modal :open="repriceOpen" title="手动重算订单价格" :confirm-loading="saving" @ok="reprice" @cancel="repriceOpen = false">
+      <a-alert type="warning" show-icon message="仅草稿和待确认订单可重算；已有资金或履约事实时会被拒绝。" />
       <a-form-item label="重算原因" required style="margin-top: 16px">
-        <a-textarea v-model:value="repriceReason" :maxlength="500" :rows="3"/>
+        <a-textarea v-model:value="repriceReason" :maxlength="500" :rows="3" />
       </a-form-item>
     </a-modal>
   </a-drawer>
@@ -245,12 +262,22 @@ function settlementMethodText(method: 'WALLET' | 'CREDIT' | 'COD') {
   return {WALLET: '余额支付', CREDIT: '账期结算', COD: '货到付款'}[method];
 }
 
-const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), loading = ref(false), saving = ref(false), error = ref(''), order = ref<Order>(),
-    logs = ref<LogRow[]>([]), returnForm = ref<InstanceType<typeof ReturnForm>>();
-const actualOpen = ref(false), cancelOpen = ref(false), actualQuantity = ref('1.0000'), actualReason = ref(''),
-    cancelReason = ref(''), activeItem = ref<Item>();
-const repriceOpen = ref(false), repriceReason = ref('');
+const emit = defineEmits<{saved: []}>();
+const visible = ref(false),
+  loading = ref(false),
+  saving = ref(false),
+  error = ref(''),
+  order = ref<Order>(),
+  logs = ref<LogRow[]>([]),
+  returnForm = ref<InstanceType<typeof ReturnForm>>();
+const actualOpen = ref(false),
+  cancelOpen = ref(false),
+  actualQuantity = ref('1.0000'),
+  actualReason = ref(''),
+  cancelReason = ref(''),
+  activeItem = ref<Item>();
+const repriceOpen = ref(false),
+  repriceReason = ref('');
 
 async function reprice() {
   if (!order.value?.orderId || order.value.version == null || !repriceReason.value.trim()) {
@@ -259,8 +286,7 @@ async function reprice() {
   }
   saving.value = true;
   try {
-    await orderApi.reprice({orderId: order.value.orderId, version: order.value.version,
-      reason: repriceReason.value.trim()});
+    await orderApi.reprice({orderId: order.value.orderId, version: order.value.version, reason: repriceReason.value.trim()});
     repriceOpen.value = false;
     repriceReason.value = '';
     await load();
@@ -272,28 +298,39 @@ async function reprice() {
     saving.value = false;
   }
 }
-const columns: TableColumnsType<Item> = [{title: '商品', dataIndex: 'productNameSnapshot', width: 140}, {
-  title: '商品规格',
-  dataIndex: 'specNameSnapshot',
-  width: 100
-}, {title: '单位', dataIndex: 'saleUnitSnapshot', width: 65}, {
-  title: '下单量',
-  dataIndex: 'orderedQuantity',
-  width: 100
-}, {title: '实数量', dataIndex: 'actualQuantity', width: 100}, {
-  title: '草稿单价',
-  dataIndex: 'draftUnitPrice',
-  width: 110
-}, {title: '锁定单价', dataIndex: 'lockedUnitPrice', width: 110}, {
-  title: '下单金额',
-  dataIndex: 'orderedLineAmount',
-  width: 115
-}, {title: '结算金额', dataIndex: 'settlementLineAmount', width: 115}, {
-  title: '操作',
-  dataIndex: 'action',
-  width: 120,
-  align: 'center'
-}];
+const columns: TableColumnsType<Item> = [
+  {title: '商品', dataIndex: 'productNameSnapshot', width: 140},
+  {
+    title: '商品规格',
+    dataIndex: 'specNameSnapshot',
+    width: 100,
+  },
+  {title: '单位', dataIndex: 'saleUnitSnapshot', width: 65},
+  {
+    title: '下单量',
+    dataIndex: 'orderedQuantity',
+    width: 100,
+  },
+  {title: '实数量', dataIndex: 'actualQuantity', width: 100},
+  {
+    title: '草稿单价',
+    dataIndex: 'draftUnitPrice',
+    width: 110,
+  },
+  {title: '锁定单价', dataIndex: 'lockedUnitPrice', width: 110},
+  {
+    title: '下单金额',
+    dataIndex: 'orderedLineAmount',
+    width: 115,
+  },
+  {title: '结算金额', dataIndex: 'settlementLineAmount', width: 115},
+  {
+    title: '操作',
+    dataIndex: 'action',
+    width: 120,
+    align: 'center',
+  },
+];
 
 async function open(id: Id) {
   visible.value = true;
@@ -318,15 +355,16 @@ async function load() {
 
 async function loadLogs() {
   try {
-    logs.value = (await orderLogApi.query(
-        {orderId: order.value!.orderId, pageNum: 1, pageSize: 100},
-        {suppressGlobalErrorMessage: true})).data.list;
+    logs.value = (await orderLogApi.query({orderId: order.value!.orderId, pageNum: 1, pageSize: 100}, {suppressGlobalErrorMessage: true})).data.list;
   } catch (e) {
     error.value = orderError(e);
   }
 }
 
-const creditOpen = ref(false), creditCheck = ref<CreditCheck>(), creditOverride = ref(false), creditOverrideReason = ref('');
+const creditOpen = ref(false),
+  creditCheck = ref<CreditCheck>(),
+  creditOverride = ref(false),
+  creditOverrideReason = ref('');
 const usesMallSettlement = computed(() => order.value?.orderSource === 'MALL' && !!order.value?.settlementMethod);
 
 /**
@@ -344,8 +382,7 @@ const previewError = ref('');
  * 已冻结优惠里实际生效的活动。只渲染、不重算：每条活动的优惠额是后端冻结时写下的字符串，
  * 前端不做求和（求和会引入第二个真相，与「优惠合计」对不上时无法判断哪个对）。
  */
-const appliedActivities = computed<OrderDiscountAppliedActivity[]>(
-    () => order.value?.discount?.activitySnapshot?.applied ?? []);
+const appliedActivities = computed<OrderDiscountAppliedActivity[]>(() => order.value?.discount?.activitySnapshot?.applied ?? []);
 
 async function loadCoupons() {
   clearMallCoupon.value = false;
@@ -360,7 +397,7 @@ async function loadCoupons() {
   couponLoading.value = true;
   try {
     const rows: PromotionCouponInstance[] =
-        (await promotionApi.couponInstances(customerId, 'AVAILABLE', {suppressGlobalErrorMessage: true})).data ?? [];
+      (await promotionApi.couponInstances(customerId, 'AVAILABLE', {suppressGlobalErrorMessage: true})).data ?? [];
     couponOptions.value = rows.map((row) => ({
       value: row.id,
       label: `${row.couponName ?? row.couponCode ?? '优惠券'}（${row.instanceNo}）`,
@@ -385,24 +422,36 @@ async function loadPreview() {
   previewError.value = '';
   const customerId = order.value?.customerId;
   const lines = (order.value?.items ?? [])
-      .filter((item) => item.itemId !== undefined && item.itemId !== null && item.skuId !== undefined
-          && item.skuId !== null && item.orderedQuantity && item.orderedLineAmount)
-      .map((item) => ({
-        orderItemId: item.itemId as Id,
-        // SKU 与数量是限时特价的命中依据：特价让利 = 基础金额 − 数量 × 特价
-        skuId: item.skuId as Id,
-        quantity: item.orderedQuantity as string,
-        baseAmount: item.orderedLineAmount as string,
-      }));
+    .filter(
+      (item) =>
+        item.itemId !== undefined &&
+        item.itemId !== null &&
+        item.skuId !== undefined &&
+        item.skuId !== null &&
+        item.orderedQuantity &&
+        item.orderedLineAmount
+    )
+    .map((item) => ({
+      orderItemId: item.itemId as Id,
+      // SKU 与数量是限时特价的命中依据：特价让利 = 基础金额 − 数量 × 特价
+      skuId: item.skuId as Id,
+      quantity: item.orderedQuantity as string,
+      baseAmount: item.orderedLineAmount as string,
+    }));
   if (customerId === undefined || customerId === null || lines.length === 0) {
     return;
   }
   try {
-    discountPreview.value = (await promotionApi.discountPreview({
-      customerId,
-      couponInstanceId: couponInstanceId.value ?? null,
-      lines,
-    }, {suppressGlobalErrorMessage: true})).data;
+    discountPreview.value = (
+      await promotionApi.discountPreview(
+        {
+          customerId,
+          couponInstanceId: couponInstanceId.value ?? null,
+          lines,
+        },
+        {suppressGlobalErrorMessage: true}
+      )
+    ).data;
   } catch (e) {
     previewError.value = orderError(e);
   }
@@ -438,18 +487,20 @@ async function confirm() {
 
 async function confirmWithCredit() {
   if (!order.value || saving.value) return;
-  if (!usesMallSettlement.value && !creditCheck.value?.allowed
-      && (!creditOverride.value || !creditOverrideReason.value.trim())) {
+  if (!usesMallSettlement.value && !creditCheck.value?.allowed && (!creditOverride.value || !creditOverrideReason.value.trim())) {
     message.error('授信未通过；例外放行必须填写原因');
     return;
   }
   saving.value = true;
   try {
-    await orderApi.confirm({orderId: order.value.orderId, version: order.value.version,
+    await orderApi.confirm({
+      orderId: order.value.orderId,
+      version: order.value.version,
       creditOverride: !usesMallSettlement.value && creditOverride.value,
       creditOverrideReason: !usesMallSettlement.value && creditOverride.value ? creditOverrideReason.value.trim() : undefined,
       couponInstanceId: couponInstanceId.value ?? undefined,
-      clearMallCoupon: clearMallCoupon.value});
+      clearMallCoupon: clearMallCoupon.value,
+    });
     creditOpen.value = false;
     await load();
     emit('saved');
@@ -479,7 +530,7 @@ async function saveActual() {
       itemId: activeItem.value!.itemId,
       version: activeItem.value!.version,
       actualQuantity: fixed(actualQuantity.value),
-      reason: actualReason.value
+      reason: actualReason.value,
     });
     actualOpen.value = false;
     await load();
@@ -511,7 +562,9 @@ async function cancel() {
 
 defineExpose({open});
 </script>
-<style scoped>.actions, .items {
+<style scoped>
+.actions,
+.items {
   margin: 16px 0;
 }
 
@@ -565,4 +618,5 @@ pre {
 .gift-note {
   color: var(--scm-text-secondary);
   font-size: 12px;
-}</style>
+}
+</style>

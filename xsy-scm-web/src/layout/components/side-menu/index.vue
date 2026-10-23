@@ -7,15 +7,15 @@
 
   <!-- 1、顶部品牌区域 -->
   <div class="logo" @click="onGoHome" :style="sideMenuWidth" v-if="!collapsed">
-    <XsyBrandLockup :dark="sidebarStore.sideMenuTheme === 'dark'"/>
+    <XsyBrandLockup :dark="sidebarStore.sideMenuTheme === 'dark'" />
   </div>
   <div class="min-logo" @click="onGoHome" v-if="collapsed">
-    <img class="logo-img" :src="logoMinImg" alt="鲜蔬园"/>
+    <img class="logo-img" :src="logoMinImg" alt="鲜蔬园" />
   </div>
 
   <!-- 2、下方菜单区域： 这里使用一个递归菜单解决 -->
   <div class="menu">
-    <RecursionMenu :collapsed="collapsed" ref="menuRef"/>
+    <RecursionMenu :collapsed="collapsed" ref="menuRef" />
   </div>
 </template>
 
@@ -42,13 +42,13 @@ const props = defineProps({
 const menuRef = ref();
 
 watch(
-    () => props.collapsed,
-    (newValue) => {
-      // 如果是展开菜单的话，重新获取更新菜单的展开项: openkeys和selectKeys
-      if (!newValue) {
-        nextTick(() => menuRef.value.updateOpenKeysAndSelectKeys());
-      }
+  () => props.collapsed,
+  (newValue) => {
+    // 如果是展开菜单的话，重新获取更新菜单的展开项: openkeys和selectKeys
+    if (!newValue) {
+      nextTick(() => menuRef.value.updateOpenKeysAndSelectKeys());
     }
+  }
 );
 
 const router = useRouter();
@@ -107,7 +107,6 @@ const color = computed(() => {
     cursor: pointer;
     justify-content: center;
     align-items: center;
-
   }
 }
 

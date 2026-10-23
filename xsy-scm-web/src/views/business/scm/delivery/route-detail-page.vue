@@ -1,10 +1,7 @@
 <template>
   <div class="route-detail-page scm-detail-read">
-    <a-button type="link" class="scm-detail-header__back" @click="backToList">
-      <ArrowLeftOutlined/> 返回线路管理
-    </a-button>
-    <a-alert v-if="error" :message="error" type="error" show-icon
-    >
+    <a-button type="link" class="scm-detail-header__back" @click="backToList"> <ArrowLeftOutlined /> 返回线路管理 </a-button>
+    <a-alert v-if="error" :message="error" type="error" show-icon>
       <template #action>
         <a-button @click="reload">刷新线路</a-button>
       </template>
@@ -15,47 +12,39 @@
           <div class="scm-detail-header__main">
             <div class="scm-detail-header__title-row">
               <h2 class="scm-detail-header__title">{{ detail.route.routeName }}</h2>
-              <ScmStatusTag
-                  :tone="ROUTE_STATUS_TONE[detail.route.status as RouteStatus]"
-                  :label="routeStatuses[detail.route.status].label"
-              />
+              <ScmStatusTag :tone="ROUTE_STATUS_TONE[detail.route.status as RouteStatus]" :label="routeStatuses[detail.route.status].label" />
             </div>
             <p class="scm-detail-header__meta">{{ detail.route.routeNo }} · {{ detail.route.deliveryDate }}</p>
           </div>
           <div class="scm-detail-header__actions">
             <a-space wrap>
-              <a-button v-if="detail.route.status === 'DRAFT'" type="primary" v-privilege="'scm:delivery:route:plan'"
-                        :disabled="busy" @click="plan"
-              >确认规划
+              <a-button v-if="detail.route.status === 'DRAFT'" type="primary" v-privilege="'scm:delivery:route:plan'" :disabled="busy" @click="plan"
+                >确认规划
               </a-button>
               <a-button
-                  v-if="detail.route.status === 'PLANNED'"
-                  type="primary"
-                  v-privilege="DELIVERY_PERM.ROUTE_DISPATCH"
-                  :disabled="busy"
-                  @click="dispatch"
-              >发车
+                v-if="detail.route.status === 'PLANNED'"
+                type="primary"
+                v-privilege="DELIVERY_PERM.ROUTE_DISPATCH"
+                :disabled="busy"
+                @click="dispatch"
+                >发车
               </a-button>
               <a-button
-                  v-if="['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.route.status)"
-                  v-privilege="'scm:delivery:route:query'"
-                  @click="printer?.open(detail.route.id)"
-              >打印发货单
+                v-if="['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.route.status)"
+                v-privilege="'scm:delivery:route:query'"
+                @click="printer?.open(detail.route.id)"
+                >打印发货单
+              </a-button>
+              <a-button v-if="detail.route.status === 'DISPATCHED'" v-privilege="DELIVERY_PERM.ROUTE_COMPLETE" :disabled="busy" @click="complete"
+                >完成线路
               </a-button>
               <a-button
-                  v-if="detail.route.status === 'DISPATCHED'"
-                  v-privilege="DELIVERY_PERM.ROUTE_COMPLETE"
-                  :disabled="busy"
-                  @click="complete"
-              >完成线路
-              </a-button>
-              <a-button
-                  v-if="['DRAFT', 'PLANNED'].includes(detail.route.status)"
-                  danger
-                  v-privilege="'scm:delivery:route:cancel'"
-                  :disabled="busy"
-                  @click="openReason('cancel')"
-              >取消线路
+                v-if="['DRAFT', 'PLANNED'].includes(detail.route.status)"
+                danger
+                v-privilege="'scm:delivery:route:cancel'"
+                :disabled="busy"
+                @click="openReason('cancel')"
+                >取消线路
               </a-button>
             </a-space>
           </div>
@@ -84,156 +73,139 @@
         </div>
         <a-tabs v-model:active-key="tab">
           <a-tab-pane key="base" tab="基础信息">
-            <RouteBasePanel
-              :route="detail.route"
-              :start-point="startPoint"
-              :show-outbound="showOutbound"
-              @outbound="goOutbound"
-            />
+            <RouteBasePanel :route="detail.route" :start-point="startPoint" :show-outbound="showOutbound" @outbound="goOutbound" />
           </a-tab-pane>
           <a-tab-pane key="orders" tab="线路订单">
             <RouteOrdersPanel
-                :route-status="detail.route.status"
-                :orders="detail.orders"
-                :stops="detail.stops"
-                :busy="busy"
-                :can-view-amount="canViewAmount"
-                @add-orders="candidates?.open(detail.route)"
-                @remove-order="openReason('remove', $event)"
+              :route-status="detail.route.status"
+              :orders="detail.orders"
+              :stops="detail.stops"
+              :busy="busy"
+              :can-view-amount="canViewAmount"
+              @add-orders="candidates?.open(detail.route)"
+              @remove-order="openReason('remove', $event)"
             />
           </a-tab-pane>
           <a-tab-pane key="map" tab="路线地图">
             <RouteMapPanel
-                :route="detail.route"
-                :stops="detail.stops"
-                :start-point="startPoint"
-                :map-points="mapPoints"
-                :all-located="allLocated"
-                :can-edit="canEdit"
-                :busy="busy"
-                :can-view-amount="canViewAmount"
-                @move-stop="move"
-                @edit-stop="editStop"
+              :route="detail.route"
+              :stops="detail.stops"
+              :start-point="startPoint"
+              :map-points="mapPoints"
+              :all-located="allLocated"
+              :can-edit="canEdit"
+              :busy="busy"
+              :can-view-amount="canViewAmount"
+              @move-stop="move"
+              @edit-stop="editStop"
             />
           </a-tab-pane>
           <a-tab-pane key="print" tab="配送打印">
             <RoutePrintPanel
-                v-model:print-mode="printMode"
-                v-model:customer-status-filter="customerStatusFilter"
-                v-model:customer-filter="customerFilter"
-                v-model:order-selection="orderSelection"
-                v-model:customer-selection="customerSelection"
-                :orders="ordersView"
-                :customers="customersShown"
-                :loading="printLoading"
-                :busy="busy"
-                :can-print="canPrint"
-                :can-record-print="canRecordPrint"
-                :target-count="printTargetCount"
-                :can-view-amount="canViewAmount"
-                @record-print="recordPrint"
+              v-model:print-mode="printMode"
+              v-model:customer-status-filter="customerStatusFilter"
+              v-model:customer-filter="customerFilter"
+              v-model:order-selection="orderSelection"
+              v-model:customer-selection="customerSelection"
+              :orders="ordersView"
+              :customers="customersShown"
+              :loading="printLoading"
+              :busy="busy"
+              :can-print="canPrint"
+              :can-record-print="canRecordPrint"
+              :target-count="printTargetCount"
+              :can-view-amount="canViewAmount"
+              @record-print="recordPrint"
             />
           </a-tab-pane>
           <a-tab-pane key="fulfillment" tab="履约">
             <RouteFulfillmentPanel
-                :orders="activeOrders"
-                :stops="detail.stops"
-                :loading="loading"
-                :busy="busy"
-                :can-sign="canSign"
-                :empty-text="fulfillmentEmptyText"
-                :can-sign-order="signable"
-                :sign-hint-of="signHintOf"
-                @sign="openSign"
+              :orders="activeOrders"
+              :stops="detail.stops"
+              :loading="loading"
+              :busy="busy"
+              :can-sign="canSign"
+              :empty-text="fulfillmentEmptyText"
+              :can-sign-order="signable"
+              :sign-hint-of="signHintOf"
+              @sign="openSign"
             />
           </a-tab-pane>
           <a-tab-pane v-if="hasPerm(DELIVERY_PERM.PLAN_QUERY)" key="plan" tab="辅助排线（可选）">
             <RoutePlanningSuggestionPanel
-                :route="detail.route"
-                :stops="detail.stops"
-                :can-edit="canEdit"
-                :loading="planLoading"
-                :busy="planBusy"
-                :error="planError"
-                :disabled-reason="planDisabledReason"
-                :proposal="proposal"
-                :history="planHistory"
-                @propose="proposePlan"
-                @apply="applyPlan"
-                @discard="discardPlan"
-                @select="showProposal"
+              :route="detail.route"
+              :stops="detail.stops"
+              :can-edit="canEdit"
+              :loading="planLoading"
+              :busy="planBusy"
+              :error="planError"
+              :disabled-reason="planDisabledReason"
+              :proposal="proposal"
+              :history="planHistory"
+              @propose="proposePlan"
+              @apply="applyPlan"
+              @discard="discardPlan"
+              @select="showProposal"
             />
           </a-tab-pane>
         </a-tabs>
       </template>
-      <a-empty v-else-if="!loading" description="线路尚未加载"/>
+      <a-empty v-else-if="!loading" description="线路尚未加载" />
     </a-spin>
   </div>
-  <CandidateOrderModal ref="candidates" @saved="refreshAfterMutation"/>
-  <RoutePrint ref="printer"/>
+  <CandidateOrderModal ref="candidates" @saved="refreshAfterMutation" />
+  <RoutePrint ref="printer" />
   <a-modal
-      v-model:open="reasonVisible"
-      :title="reasonAction === 'cancel' ? '取消线路' : '移除订单'"
-      :confirm-loading="busy"
-      ok-type="danger"
-      @ok="submitReason"
+    v-model:open="reasonVisible"
+    :title="reasonAction === 'cancel' ? '取消线路' : '移除订单'"
+    :confirm-loading="busy"
+    ok-type="danger"
+    @ok="submitReason"
   >
-    <p>{{
-        reasonAction === 'cancel' ? '取消后，该线路的订单将重新进入待配送订单池。此操作不可撤销。' : '移除后，该订单可重新分配到其他线路。'
-      }}</p>
-    <a-form layout="vertical"
-    >
+    <p>{{ reasonAction === 'cancel' ? '取消后，该线路的订单将重新进入待配送订单池。此操作不可撤销。' : '移除后，该订单可重新分配到其他线路。' }}</p>
+    <a-form layout="vertical">
       <a-form-item label="原因" required>
-        <a-textarea v-model:value="reason" :maxlength="500" :rows="3"/>
+        <a-textarea v-model:value="reason" :maxlength="500" :rows="3" />
       </a-form-item>
     </a-form>
   </a-modal>
   <a-modal v-model:open="stopVisible" title="停靠点定位与备注" :width="640" :confirm-loading="busy" @ok="saveStop">
     <template v-if="stopForm"
-    ><p>{{ stopForm.customerNameSnapshot }} · {{ stopForm.addressSnapshot }}</p>
+      ><p>{{ stopForm.customerNameSnapshot }} · {{ stopForm.addressSnapshot }}</p>
       <a-form layout="vertical">
-        <a-form-item label="准确位置"
-        >
-          <ScmMapPicker :value="stopForm" :address="stopForm.addressSnapshot" @change="Object.assign(stopForm!, $event)"
-          />
+        <a-form-item label="准确位置">
+          <ScmMapPicker :value="stopForm" :address="stopForm.addressSnapshot" @change="Object.assign(stopForm!, $event)" />
         </a-form-item>
         <a-form-item label="计划到达">
-          <a-date-picker v-model:value="arrival" show-time value-format="YYYY-MM-DD HH:mm:ss"/>
+          <a-date-picker v-model:value="arrival" show-time value-format="YYYY-MM-DD HH:mm:ss" />
         </a-form-item>
         <a-form-item label="备注">
-          <a-textarea v-model:value="stopForm.remark" :maxlength="500"/>
+          <a-textarea v-model:value="stopForm.remark" :maxlength="500" />
         </a-form-item>
       </a-form>
-      <a-alert v-if="stopError" type="error" :message="stopError" show-icon
-      />
+      <a-alert v-if="stopError" type="error" :message="stopError" show-icon />
     </template>
   </a-modal>
-  <a-modal
-      v-model:open="signVisible"
-      :title="signResults[signForm.result].label"
-      ok-text="确认登记"
-      :confirm-loading="busy"
-      @ok="submitSign"
-  >
+  <a-modal v-model:open="signVisible" :title="signResults[signForm.result].label" ok-text="确认登记" :confirm-loading="busy" @ok="submitSign">
     <template v-if="signTarget">
       <p>{{ signTarget.orderNoSnapshot }} · {{ signTarget.customerName }}</p>
       <a-alert
-          v-if="signForm.result === 'EXCEPTION'"
-          message="异常签收（含拒收）只登记到货事实：库存已按实发出库，此处不冲减，也不改动订单结算量。"
-          type="warning"
-          show-icon
+        v-if="signForm.result === 'EXCEPTION'"
+        message="异常签收（含拒收）只登记到货事实：库存已按实发出库，此处不冲减，也不改动订单结算量。"
+        type="warning"
+        show-icon
       />
       <a-form layout="vertical">
         <a-form-item label="原因" :required="signForm.result === 'EXCEPTION'">
           <a-textarea
-              v-model:value="signForm.reason"
-              :maxlength="500"
-              :rows="3"
-              :placeholder="signForm.result === 'EXCEPTION' ? '拒收 / 破损 / 缺货争议等，必填' : '可留一句备注，如客户不在由邻居代收'"
+            v-model:value="signForm.reason"
+            :maxlength="500"
+            :rows="3"
+            :placeholder="signForm.result === 'EXCEPTION' ? '拒收 / 破损 / 缺货争议等，必填' : '可留一句备注，如客户不在由邻居代收'"
           />
         </a-form-item>
       </a-form>
-      <a-alert v-if="signError" type="error" :message="signError" show-icon/>
+      <a-alert v-if="signError" type="error" :message="signError" show-icon />
     </template>
   </a-modal>
 </template>
@@ -290,13 +262,13 @@ const TAB_KEYS = ['base', 'orders', 'map', 'print', 'fulfillment', 'plan'];
 const route = useRoute();
 const router = useRouter();
 const loading = ref(false),
-    busy = ref(false),
-    error = ref(''),
-    tab = ref('base');
+  busy = ref(false),
+  error = ref(''),
+  tab = ref('base');
 const routeId = ref<Id>(),
-    detail = ref<RouteDetail>();
+  detail = ref<RouteDetail>();
 const candidates = ref<InstanceType<typeof CandidateOrderModal>>(),
-    printer = ref<InstanceType<typeof RoutePrint>>();
+  printer = ref<InstanceType<typeof RoutePrint>>();
 const {canViewAmount, canSign, hasPerm} = useDeliveryPermission();
 // 编辑权 = 草稿态 ∧ route:update；权限判定与 v-privilege 共用 hasPerm 一份口径
 // （超管在其内部放行），不在这里再抄一次 administratorFlag。
@@ -315,7 +287,7 @@ const mapPoints = computed<MapPoint[]>(() => [
     ...s,
     label: `${s.stopSeq} ${s.customerNameSnapshot}`,
     description: `${s.addressSnapshot}\n${s.receiverPhoneSnapshot ?? ''} · ${s.orderCount} 张订单${
-        canViewAmount.value ? ` · ${money(s.totalAmount)}` : ''
+      canViewAmount.value ? ` · ${money(s.totalAmount)}` : ''
     }`,
   })) ?? []),
 ]);
@@ -325,7 +297,8 @@ const mapPoints = computed<MapPoint[]>(() => [
 
 const planBusy = ref(false);
 const planLoading = ref(false);
-let planContext = 0, planRequest = 0;
+let planContext = 0,
+  planRequest = 0;
 const planError = ref('');
 /** 当前展示的建议（默认取最新一条）。 */
 const proposal = ref<DeliveryPlanProposal>();
@@ -348,7 +321,8 @@ function currentPlanContext(id: Id, context: number) {
 }
 
 async function loadPlan(id: Id) {
-  const context = planContext, request = ++planRequest;
+  const context = planContext,
+    request = ++planRequest;
   planLoading.value = true;
   planError.value = '';
   planHistory.value = [];
@@ -367,7 +341,8 @@ async function loadPlan(id: Id) {
 }
 
 async function proposePlan() {
-  const id = routeId.value, context = planContext;
+  const id = routeId.value,
+    context = planContext;
   if (id === undefined || planBusy.value || planLoading.value) return;
   planBusy.value = true;
   planError.value = '';
@@ -384,7 +359,9 @@ async function proposePlan() {
 }
 
 async function applyPlan() {
-  const current = proposal.value, route = detail.value?.route, context = planContext;
+  const current = proposal.value,
+    route = detail.value?.route,
+    context = planContext;
   if (!current || !route || planBusy.value || planLoading.value) return;
   planBusy.value = true;
   planError.value = '';
@@ -403,7 +380,9 @@ async function applyPlan() {
 }
 
 async function discardPlan() {
-  const current = proposal.value, id = routeId.value, context = planContext;
+  const current = proposal.value,
+    id = routeId.value,
+    context = planContext;
   if (!current || id === undefined || planBusy.value || planLoading.value) return;
   planBusy.value = true;
   planError.value = '';
@@ -433,30 +412,23 @@ const customerSelection = ref<Id[]>([]);
 const printLoading = ref(false);
 const printLoaded = ref(false);
 
-const canPrint = computed(() =>
-    ['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? '')
-);
+const canPrint = computed(() => ['PLANNED', 'DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? ''));
 /**
  * 展示用的客户范围筛选：打印状态的事实在服务端（生成时按当前有效订单重算），
  * 这里只决定列表可见行与未勾选时的提交范围。
  */
 const customersShown = computed(() =>
-    customersView.value.filter(
-        (item) => customerStatusFilter.value === 'ALL' || item.printStatus === customerStatusFilter.value
-    )
+  customersView.value.filter((item) => customerStatusFilter.value === 'ALL' || item.printStatus === customerStatusFilter.value)
 );
 const canRecordPrint = computed(() =>
-    printMode.value === 'orders'
-        ? orderSelection.value.length > 0
-        : // 勾选行即候选范围；未勾选时必须给出收窄的状态范围，
-          // 否则一次请求会无选择地重打整条线路。
-          customerSelection.value.length > 0 ||
-          (customerStatusFilter.value !== 'ALL' && customersShown.value.length > 0)
+  printMode.value === 'orders'
+    ? orderSelection.value.length > 0
+    : // 勾选行即候选范围；未勾选时必须给出收窄的状态范围，
+      // 否则一次请求会无选择地重打整条线路。
+      customerSelection.value.length > 0 || (customerStatusFilter.value !== 'ALL' && customersShown.value.length > 0)
 );
 const printTargetCount = computed(() =>
-    printMode.value === 'orders'
-        ? orderSelection.value.length
-        : customerSelection.value.length || customersShown.value.length
+  printMode.value === 'orders' ? orderSelection.value.length : customerSelection.value.length || customersShown.value.length
 );
 /** 出库单只在发车之后存在；DRAFT / PLANNED 显示它只会让人以为漏了什么没填。 */
 const showOutbound = computed(() => ['DISPATCHED', 'COMPLETED'].includes(detail.value?.route.status ?? ''));
@@ -465,15 +437,11 @@ const showOutbound = computed(() => ['DISPATCHED', 'COMPLETED'].includes(detail.
  * 履约视图只看仍挂在线路上的订单：CANCELLED 线路的详情会连 RELEASED 行一起返回，
  * 那些行已退出履约流程，留着它们会让人对着一条已取消的订单去点签收。
  */
-const activeOrders = computed<RouteOrder[]>(() =>
-    (detail.value?.orders ?? []).filter((order) => order.assignmentStatus === 'ACTIVE')
-);
+const activeOrders = computed<RouteOrder[]>(() => (detail.value?.orders ?? []).filter((order) => order.assignmentStatus === 'ACTIVE'));
 
 // 「没有行」有三种原因，文案要能区分：线路没订单 / 线路已取消，用户下一步要做的事完全不同。
 const fulfillmentEmptyText = computed(() =>
-  detail.value?.route.status === 'CANCELLED'
-    ? '线路已取消，不再有履约动作'
-    : '线路还没有订单，请先在「线路订单」页加入订单'
+  detail.value?.route.status === 'CANCELLED' ? '线路已取消，不再有履约动作' : '线路还没有订单，请先在「线路订单」页加入订单'
 );
 
 async function loadPrint() {
@@ -517,11 +485,11 @@ async function recordPrint() {
     } else {
       // 未勾选行即「本状态范围内整条线路」；勾选时名单只作候选范围，状态由服务端复核。
       await deliveryApi.printCustomers(
-          route.id,
-          route.version,
-          customerSelection.value.length ? customerSelection.value : undefined,
-          customerStatusFilter.value,
-          customerFilter.value
+        route.id,
+        route.version,
+        customerSelection.value.length ? customerSelection.value : undefined,
+        customerStatusFilter.value,
+        customerFilter.value
       );
     }
     message.success('已登记打印');
@@ -657,9 +625,9 @@ function dispatch() {
         // 整条线路实发为 0 时不存在出库单，那是合法成功：文案必须说清「为什么没有单号」，
         // 否则用户会把空号当成发车失败再点一次。
         message.success(
-            result.data.outboundNo
-                ? `已发车：${result.data.orderCount} 张订单进入在途，出库单 ${result.data.outboundNo}`
-                : '已发车：本线路实发为 0，未生成出库单'
+          result.data.outboundNo
+            ? `已发车：${result.data.orderCount} 张订单进入在途，出库单 ${result.data.outboundNo}`
+            : '已发车：本线路实发为 0，未生成出库单'
         );
         await refreshAfterMutation();
       } finally {
@@ -701,9 +669,9 @@ function goOutbound(outboundNo: string) {
 }
 
 const signVisible = ref(false),
-    signError = ref(''),
-    signForm = ref<{ result: SignResult; reason: string }>({result: 'SIGNED', reason: ''}),
-    signTarget = ref<RouteOrder & { customerName: string }>();
+  signError = ref(''),
+  signForm = ref<{result: SignResult; reason: string}>({result: 'SIGNED', reason: ''}),
+  signTarget = ref<RouteOrder & {customerName: string}>();
 
 function openSign(record: RouteOrder, result: SignResult) {
   signTarget.value = {...record, customerName: stopOf(record.stopId)?.customerNameSnapshot ?? ''};
@@ -805,9 +773,9 @@ async function move(from: number, to: number) {
 }
 
 const reasonVisible = ref(false),
-    reasonAction = ref<'cancel' | 'remove'>('cancel'),
-    reason = ref(''),
-    removeId = ref<Id>();
+  reasonAction = ref<'cancel' | 'remove'>('cancel'),
+  reason = ref(''),
+  removeId = ref<Id>();
 
 function openReason(action: 'cancel' | 'remove', id?: Id) {
   reasonAction.value = action;
@@ -837,9 +805,9 @@ async function submitReason() {
 }
 
 const stopVisible = ref(false),
-    stopForm = ref<DeliveryStop>(),
-    stopError = ref(''),
-    arrival = ref<string>();
+  stopForm = ref<DeliveryStop>(),
+  stopError = ref(''),
+  arrival = ref<string>();
 
 function editStop(stop: DeliveryStop) {
   stopForm.value = {...stop};
@@ -870,7 +838,6 @@ async function saveStop() {
     busy.value = false;
   }
 }
-
 </script>
 <style scoped>
 .route-detail-page {

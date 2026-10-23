@@ -2,30 +2,30 @@ import Decimal from 'decimal.js';
 import type {Address, Id, Item, Order, RecentPrice} from './order-types.ts';
 
 export function newOrder(): Order {
-    return {orderSource: 'ADMIN', deliveryWarehouseId: null, items: [], address: {receiverName: '', receiverPhone: '', address: ''}};
+  return {orderSource: 'ADMIN', deliveryWarehouseId: null, items: [], address: {receiverName: '', receiverPhone: '', address: ''}};
 }
 
 /** 连续录单只保留客户与本次选定仓库，绝不沿用上单商品、地址快照、定价、补单关联或版本。 */
 export function nextOrderForCustomer(previous: Order): Order {
-    const next = newOrder();
-    next.customerId = previous.customerId;
-    next.deliveryWarehouseId = previous.deliveryWarehouseId ?? previous.mallDeliveryWarehouseId ?? null;
-    return next;
+  const next = newOrder();
+  next.customerId = previous.customerId;
+  next.deliveryWarehouseId = previous.deliveryWarehouseId ?? previous.mallDeliveryWarehouseId ?? null;
+  return next;
 }
 
 export function fixed(value: string | number): string {
-    return new Decimal(value).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
+  return new Decimal(value).toDecimalPlaces(4, Decimal.ROUND_HALF_UP).toFixed(4);
 }
 
 /**
  * 本地未提交草稿的行：只保留用户录入，不含任何服务端解析结果。
  */
 export interface DraftItem {
-    skuId?: string | number;
-    orderedQuantity: string;
-    manualPriceOverride: boolean;
-    unitPrice?: string | null;
-    overrideReason?: string | null;
+  skuId?: string | number;
+  orderedQuantity: string;
+  manualPriceOverride: boolean;
+  unitPrice?: string | null;
+  overrideReason?: string | null;
 }
 
 /**
@@ -35,122 +35,125 @@ export interface DraftItem {
  * 后端 version、服务端计算/快照字段（status、orderNo、lockedUnitPrice 等）。恢复后一律重新解析。
  */
 export interface Draft {
-    customerId?: string | number;
-    deliveryWarehouseId?: string | number | null;
-    orderSource: string;
-    expectDeliveryTime?: string | null;
-    remark?: string | null;
-    supplementReason?: string | null;
-    originalOrderId?: string | number | null;
-    items: DraftItem[];
+  customerId?: string | number;
+  deliveryWarehouseId?: string | number | null;
+  orderSource: string;
+  expectDeliveryTime?: string | null;
+  remark?: string | null;
+  supplementReason?: string | null;
+  originalOrderId?: string | number | null;
+  items: DraftItem[];
 }
 
 /** 草稿存储键：按登录用户隔离，避免不同操作员草稿互串（验收「不同登录用户草稿互不串」）。 */
 export function draftKey(employeeId: string | number): string {
-    return `xsy-scm:order-draft:${employeeId}`;
+  return `xsy-scm:order-draft:${employeeId}`;
 }
 
 /** 把当前新建表单压缩为草稿：逐字段白名单挑选，绝不落入解析价 / version / 快照。 */
 export function serializeDraft(form: Order): Draft {
-    return {
-        customerId: form.customerId,
-        deliveryWarehouseId: form.deliveryWarehouseId ?? null,
-        orderSource: form.orderSource,
-        expectDeliveryTime: form.expectDeliveryTime ?? null,
-        remark: form.remark ?? null,
-        supplementReason: form.orderSource === 'SUPPLEMENT' ? (form.supplementReason ?? null) : null,
-        originalOrderId: form.orderSource === 'SUPPLEMENT' ? (form.originalOrderId ?? null) : null,
-        items: form.items
-            .filter(i => i.skuId != null || (i.orderedQuantity && i.orderedQuantity !== ''))
-            .map(i => ({
-                skuId: i.skuId,
-                orderedQuantity: i.orderedQuantity,
-                manualPriceOverride: !!i.manualPriceOverride,
-                unitPrice: i.manualPriceOverride ? (i.unitPrice ?? null) : null,
-                overrideReason: i.manualPriceOverride ? (i.overrideReason ?? null) : null
-            }))
-    };
+  return {
+    customerId: form.customerId,
+    deliveryWarehouseId: form.deliveryWarehouseId ?? null,
+    orderSource: form.orderSource,
+    expectDeliveryTime: form.expectDeliveryTime ?? null,
+    remark: form.remark ?? null,
+    supplementReason: form.orderSource === 'SUPPLEMENT' ? form.supplementReason ?? null : null,
+    originalOrderId: form.orderSource === 'SUPPLEMENT' ? form.originalOrderId ?? null : null,
+    items: form.items
+      .filter((i) => i.skuId != null || (i.orderedQuantity && i.orderedQuantity !== ''))
+      .map((i) => ({
+        skuId: i.skuId,
+        orderedQuantity: i.orderedQuantity,
+        manualPriceOverride: !!i.manualPriceOverride,
+        unitPrice: i.manualPriceOverride ? i.unitPrice ?? null : null,
+        overrideReason: i.manualPriceOverride ? i.overrideReason ?? null : null,
+      })),
+  };
 }
 
 /** 从草稿还原为可编辑表单：仅回填用户录入字段，解析价 / 地址由调用方重新请求客户与价格填充。 */
 export function applyDraft(draft: Draft): Order {
-    const form = newOrder();
-    form.customerId = draft.customerId;
-    form.deliveryWarehouseId = draft.deliveryWarehouseId ?? null;
-    form.orderSource = draft.orderSource || 'ADMIN';
-    form.expectDeliveryTime = draft.expectDeliveryTime ?? null;
-    form.remark = draft.remark ?? null;
-    form.supplementReason = draft.supplementReason ?? null;
-    form.originalOrderId = draft.originalOrderId ?? null;
-    form.items = (draft.items ?? []).map(i => ({
-        skuId: i.skuId,
-        orderedQuantity: i.orderedQuantity,
-        manualPriceOverride: !!i.manualPriceOverride,
-        unitPrice: i.manualPriceOverride ? (i.unitPrice ?? null) : null,
-        overrideReason: i.manualPriceOverride ? (i.overrideReason ?? null) : null
-    }));
-    return form;
+  const form = newOrder();
+  form.customerId = draft.customerId;
+  form.deliveryWarehouseId = draft.deliveryWarehouseId ?? null;
+  form.orderSource = draft.orderSource || 'ADMIN';
+  form.expectDeliveryTime = draft.expectDeliveryTime ?? null;
+  form.remark = draft.remark ?? null;
+  form.supplementReason = draft.supplementReason ?? null;
+  form.originalOrderId = draft.originalOrderId ?? null;
+  form.items = (draft.items ?? []).map((i) => ({
+    skuId: i.skuId,
+    orderedQuantity: i.orderedQuantity,
+    manualPriceOverride: !!i.manualPriceOverride,
+    unitPrice: i.manualPriceOverride ? i.unitPrice ?? null : null,
+    overrideReason: i.manualPriceOverride ? i.overrideReason ?? null : null,
+  }));
+  return form;
 }
 
 /** 复制历史订单只生成新草稿，不复制单号、状态、旧锁定价、库存预留和操作日志。价格与主档可用性在新订单中重新校验。 */
 export function fromHistory(detail: Order): Order {
-    const form = newOrder();
-    form.customerId = detail.customerId;
-    form.deliveryWarehouseId = detail.mallDeliveryWarehouseId ?? null;
-    form.expectDeliveryTime = detail.expectDeliveryTime ?? null;
-    form.remark = detail.remark ?? null;
-    const addr: Address = detail.address
-        ? {
-            receiverName: detail.address.receiverName ?? '',
-            receiverPhone: detail.address.receiverPhone ?? '',
-            address: detail.address.address ?? ''
-        }
-        : form.address;
-    form.address = addr;
-    form.items = (detail.items ?? []).map((i): Item => ({
-        skuId: i.skuId,
-        orderedQuantity: i.orderedQuantity,
-        manualPriceOverride: false,
-        unitPrice: null,
-        overrideReason: null
-    }));
-    return form;
+  const form = newOrder();
+  form.customerId = detail.customerId;
+  form.deliveryWarehouseId = detail.mallDeliveryWarehouseId ?? null;
+  form.expectDeliveryTime = detail.expectDeliveryTime ?? null;
+  form.remark = detail.remark ?? null;
+  const addr: Address = detail.address
+    ? {
+        receiverName: detail.address.receiverName ?? '',
+        receiverPhone: detail.address.receiverPhone ?? '',
+        address: detail.address.address ?? '',
+      }
+    : form.address;
+  form.address = addr;
+  form.items = (detail.items ?? []).map(
+    (i): Item => ({
+      skuId: i.skuId,
+      orderedQuantity: i.orderedQuantity,
+      manualPriceOverride: false,
+      unitPrice: null,
+      overrideReason: null,
+    })
+  );
+  return form;
 }
 
 export function validateOrder(f: Order): string | undefined {
-    if (!f.customerId) return '请选择客户';
-    if (!f.items.length) return '请添加商品';
-    if (!f.address.receiverName || !f.address.receiverPhone || !f.address.address) return '请填写完整收货信息';
-    if (f.orderSource === 'SUPPLEMENT' && !f.supplementReason?.trim()) return '请填写补单原因';
-    const seen = new Set<string>();
-    for (const i of f.items) {
-        if (!i.skuId) return '请选择商品规格';
-        if (seen.has(String(i.skuId))) return '同一商品规格不能重复';
-        seen.add(String(i.skuId));
-        if (!/^\d{1,14}\.\d{4}$/.test(i.orderedQuantity) || new Decimal(i.orderedQuantity).lte(0)) return '数量必须为正的四位定点数';
-        if (i.manualPriceOverride && (!i.overrideReason?.trim() || i.unitPrice == null || !/^\d{1,14}\.\d{4}$/.test(i.unitPrice))) return '人工改价需要有效价格和原因';
-    }
-    return undefined;
+  if (!f.customerId) return '请选择客户';
+  if (!f.items.length) return '请添加商品';
+  if (!f.address.receiverName || !f.address.receiverPhone || !f.address.address) return '请填写完整收货信息';
+  if (f.orderSource === 'SUPPLEMENT' && !f.supplementReason?.trim()) return '请填写补单原因';
+  const seen = new Set<string>();
+  for (const i of f.items) {
+    if (!i.skuId) return '请选择商品规格';
+    if (seen.has(String(i.skuId))) return '同一商品规格不能重复';
+    seen.add(String(i.skuId));
+    if (!/^\d{1,14}\.\d{4}$/.test(i.orderedQuantity) || new Decimal(i.orderedQuantity).lte(0)) return '数量必须为正的四位定点数';
+    if (i.manualPriceOverride && (!i.overrideReason?.trim() || i.unitPrice == null || !/^\d{1,14}\.\d{4}$/.test(i.unitPrice)))
+      return '人工改价需要有效价格和原因';
+  }
+  return undefined;
 }
 
 export function payload(f: Order): Order {
-    return {
-        ...f,
-        items: f.items.map((i, index) => ({
-            itemId: i.itemId,
-            version: i.version,
-            skuId: i.skuId,
-            orderedQuantity: fixed(i.orderedQuantity),
-            manualPriceOverride: i.manualPriceOverride,
-            unitPrice: i.manualPriceOverride && i.unitPrice != null ? fixed(i.unitPrice) : null,
-            overrideReason: i.manualPriceOverride ? i.overrideReason : null,
-            sortOrder: index
-        }))
-    };
+  return {
+    ...f,
+    items: f.items.map((i, index) => ({
+      itemId: i.itemId,
+      version: i.version,
+      skuId: i.skuId,
+      orderedQuantity: fixed(i.orderedQuantity),
+      manualPriceOverride: i.manualPriceOverride,
+      unitPrice: i.manualPriceOverride && i.unitPrice != null ? fixed(i.unitPrice) : null,
+      overrideReason: i.manualPriceOverride ? i.overrideReason : null,
+      sortOrder: index,
+    })),
+  };
 }
 
 export function amount(value: string | null | undefined, unpriced = false): string {
-    return value == null ? (unpriced ? '未定价' : '—') : '¥ ' + fixed(value);
+  return value == null ? (unpriced ? '未定价' : '—') : '¥ ' + fixed(value);
 }
 
 /**
@@ -158,36 +161,36 @@ export function amount(value: string | null | undefined, unpriced = false): stri
  * 缓存键一旦含行序号，换商品、删行上移、换客户都会静默显示上一个 SKU / 上一个客户的历史成交价。
  */
 export interface RecentPriceCache {
-    loadingKey: string | null;
-    rowsByKey: Record<string, RecentPrice[]>;
+  loadingKey: string | null;
+  rowsByKey: Record<string, RecentPrice[]>;
 }
 
 export function createRecentPriceCache(): RecentPriceCache {
-    return {loadingKey: null, rowsByKey: {}};
+  return {loadingKey: null, rowsByKey: {}};
 }
 
 /** 缓存键 = 客户 + SKU；任一缺失即无键可查，返回 null 让调用方不发起请求。 */
 export function recentPriceKey(customerId: Id | null | undefined, skuId: Id | null | undefined): string | null {
-    if (customerId == null || customerId === '' || skuId == null || skuId === '') {
-        return null;
-    }
-    return `${customerId}:${skuId}`;
+  if (customerId == null || customerId === '' || skuId == null || skuId === '') {
+    return null;
+  }
+  return `${customerId}:${skuId}`;
 }
 
 /** 已缓存（含「查过但确实没有历史价」）；未查过与空结果必须区分，否则空态与加载态混成一团。 */
 export function hasRecentPrices(cache: RecentPriceCache, customerId: Id | null | undefined, skuId: Id | null | undefined): boolean {
-    const key = recentPriceKey(customerId, skuId);
-    return key != null && cache.rowsByKey[key] != null;
+  const key = recentPriceKey(customerId, skuId);
+  return key != null && cache.rowsByKey[key] != null;
 }
 
 export function recentPriceRows(cache: RecentPriceCache, customerId: Id | null | undefined, skuId: Id | null | undefined): RecentPrice[] {
-    const key = recentPriceKey(customerId, skuId);
-    return (key != null && cache.rowsByKey[key]) || [];
+  const key = recentPriceKey(customerId, skuId);
+  return (key != null && cache.rowsByKey[key]) || [];
 }
 
 export function isLoadingRecentPrice(cache: RecentPriceCache, customerId: Id | null | undefined, skuId: Id | null | undefined): boolean {
-    const key = recentPriceKey(customerId, skuId);
-    return key != null && cache.loadingKey === key;
+  const key = recentPriceKey(customerId, skuId);
+  return key != null && cache.loadingKey === key;
 }
 
 /**
@@ -195,25 +198,25 @@ export function isLoadingRecentPrice(cache: RecentPriceCache, customerId: Id | n
  * 否则一次网络失败会让该行永久转圈且再也点不动。缓存不写入，因此下次点击仍可重试。
  */
 export async function loadRecentPrices(
-    cache: RecentPriceCache,
-    customerId: Id | null | undefined,
-    skuId: Id | null | undefined,
-    fetcher: () => Promise<RecentPrice[]>
+  cache: RecentPriceCache,
+  customerId: Id | null | undefined,
+  skuId: Id | null | undefined,
+  fetcher: () => Promise<RecentPrice[]>
 ): Promise<boolean> {
-    const key = recentPriceKey(customerId, skuId);
-    if (!key) {
-        return false;
+  const key = recentPriceKey(customerId, skuId);
+  if (!key) {
+    return false;
+  }
+  if (cache.rowsByKey[key]) {
+    return true;
+  }
+  cache.loadingKey = key;
+  try {
+    cache.rowsByKey[key] = await fetcher();
+    return true;
+  } finally {
+    if (cache.loadingKey === key) {
+      cache.loadingKey = null;
     }
-    if (cache.rowsByKey[key]) {
-        return true;
-    }
-    cache.loadingKey = key;
-    try {
-        cache.rowsByKey[key] = await fetcher();
-        return true;
-    } finally {
-        if (cache.loadingKey === key) {
-            cache.loadingKey = null;
-        }
-    }
+  }
 }

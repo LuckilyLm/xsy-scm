@@ -35,29 +35,25 @@
         <p class="scm-note">一个订单行同一时刻只属于一个活动任务</p>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_TASK" :refresh="queryData" />
       </div>
     </div>
 
     <a-table
-        :id="SCM_SORTING_TABLE_ID.TASK"
-        size="small"
-        :data-source="rows"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText }"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      :id="SCM_SORTING_TABLE_ID.TASK"
+      size="small"
+      :data-source="rows"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText}"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="statusDesc(record.status)"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="statusDesc(record.status)" />
         </template>
         <template v-else-if="column.dataIndex === 'assigneeName'">
           {{ record.assigneeName || '未指派' }}
@@ -80,22 +76,22 @@
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record.id)">详情</a-button>
             <a-button
-                v-if="canAssignNext(record)"
-                type="link"
-                size="small"
-                v-privilege="'scm:sorting:task:assign'"
-                @click="openAction('assign', record)"
-            >指派
+              v-if="canAssignNext(record)"
+              type="link"
+              size="small"
+              v-privilege="'scm:sorting:task:assign'"
+              @click="openAction('assign', record)"
+              >指派
             </a-button>
             <a-button
-                v-else-if="canCompleteNext(record)"
-                type="link"
-                size="small"
-                v-privilege="'scm:sorting:task:complete'"
-                @click="confirmComplete(record)"
-            >完成
+              v-else-if="canCompleteNext(record)"
+              type="link"
+              size="small"
+              v-privilege="'scm:sorting:task:complete'"
+              @click="confirmComplete(record)"
+              >完成
             </a-button>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -104,14 +100,14 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          :page-size-options="['10', '20', '50', '100']"
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共 ${n} 个分拣任务`"
+        show-size-changer
+        show-quick-jumper
+        :page-size-options="['10', '20', '50', '100']"
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共 ${n} 个分拣任务`"
       />
     </div>
   </a-card>
@@ -163,8 +159,13 @@
     @complete="confirmComplete"
     @draft-change="updateDraft"
     @submit-entry="submitEntry"
-    @standard-saved="() => { reloadDetail(); queryData(); }"
-/>
+    @standard-saved="
+      () => {
+        reloadDetail();
+        queryData();
+      }
+    "
+  />
 
   <SortingTaskActionModal
     v-model:open="actionOpen"
@@ -177,23 +178,27 @@
   />
 
   <!-- 打印：预览走只读 GET，「登记打印」才是计次的 POST 命令；两者绝不混用同一个入口 -->
-  <PrintDocumentModal :open="ticketOpen" document-type="SORTING_TICKET"
-                      :business-ids="ticketTaskId === undefined ? [] : [ticketTaskId]" @close="ticketOpen = false"/>
-  <SortingScaleDrawer v-model:open="scaleOpen" :task-id="scaleTaskId" @updated="queryData"/>
+  <PrintDocumentModal
+    :open="ticketOpen"
+    document-type="SORTING_TICKET"
+    :business-ids="ticketTaskId === undefined ? [] : [ticketTaskId]"
+    @close="ticketOpen = false"
+  />
+  <SortingScaleDrawer v-model:open="scaleOpen" :task-id="scaleTaskId" @updated="queryData" />
   <SortingPrintPreviewModal
-      v-model:open="printOpen"
-      :print-task-id="printTaskId"
-      :print-version="printVersion"
-      :print-loading="printLoading"
-      :printing="printing"
-      :print-error="printError"
-      :print="print"
-      :status-desc="statusDesc"
-      :result-desc="resultDesc"
-      :is-gift-row="isGiftRow"
-      @open-ticket="openTicket"
-      @reload="loadPrintPreview"
-      @record="recordPrint"
+    v-model:open="printOpen"
+    :print-task-id="printTaskId"
+    :print-version="printVersion"
+    :print-loading="printLoading"
+    :printing="printing"
+    :print-error="printError"
+    :print="print"
+    :status-desc="statusDesc"
+    :result-desc="resultDesc"
+    :is-gift-row="isGiftRow"
+    @open-ticket="openTicket"
+    @reload="loadPrintPreview"
+    @record="recordPrint"
   />
 </template>
 
@@ -211,13 +216,13 @@ import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
 import {
-    SCM_SORTING_PERMISSION,
-    SCM_SORTING_PRINTABLE_STATUS,
-    SCM_SORTING_RESULT_ENUM,
-    SCM_SORTING_TABLE_ID,
-    SCM_SORTING_TASK_STATUS_ENUM,
-    SCM_SORTING_WORKING_STATUS,
-    SCM_SORTING_PRODUCT_TYPE_ENUM,
+  SCM_SORTING_PERMISSION,
+  SCM_SORTING_PRINTABLE_STATUS,
+  SCM_SORTING_RESULT_ENUM,
+  SCM_SORTING_TABLE_ID,
+  SCM_SORTING_TASK_STATUS_ENUM,
+  SCM_SORTING_WORKING_STATUS,
+  SCM_SORTING_PRODUCT_TYPE_ENUM,
 } from '/@/constants/business/scm/sorting-const';
 import {hasPermission} from '../common/scm-permission';
 import {datetime} from '../common/scm-display';
@@ -228,14 +233,7 @@ import SortingTaskCreateModal from './components/sorting-task-create-modal.vue';
 import SortingTaskActionModal from './components/sorting-task-action-modal.vue';
 import SortingTaskFilterForm from './components/sorting-task-filter-form.vue';
 import {useSortingTaskEntry} from './use-sorting-task-entry';
-import type {
-    Id,
-    SortingActionPayload,
-    SortingCandidateLine,
-    SortingPrint,
-    SortingTask,
-    SortingTaskQuery,
-} from './sorting-types';
+import type {Id, SortingActionPayload, SortingCandidateLine, SortingPrint, SortingTask, SortingTaskQuery} from './sorting-types';
 import {sortingError} from './sorting-types';
 
 type ActionMode = 'assign' | 'cancel' | 'reopen';
@@ -268,7 +266,7 @@ const isQueueManager = computed(() => hasPermission(SCM_SORTING_PERMISSION.TASK_
 
 // 范围收窄后空表有两种成因（没授权 vs 真没数据），文案必须能区分，否则配置缺口被当成业务空档。
 const emptyText = computed(() =>
-    isQueueManager.value ? '暂无分拣任务' : '当前仅显示派给您本人的任务；若无数据，可能是任务尚未指派或本仓未授权给您，请联系分拣主管确认。'
+  isQueueManager.value ? '暂无分拣任务' : '当前仅显示派给您本人的任务；若无数据，可能是任务尚未指派或本仓未授权给您，请联系分拣主管确认。'
 );
 
 // 分拣是操作型工作台，列只留「哪张任务 / 谁在做 / 做到哪了 / 什么时候要送到」。
@@ -302,12 +300,10 @@ const statusTone = (status?: string | null): ScmStatusTone => SORTING_STATUS_TON
  * 缺一即不占行内位置，避免出现「按钮在那儿、点了却没反应」。
  */
 const canAssignNext = (row: SortingTask) =>
-    isWorking(row.status) && row.assigneeEmployeeId == null
-    && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN);
+  isWorking(row.status) && row.assigneeEmployeeId == null && hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN);
 
 const canCompleteNext = (row: SortingTask) =>
-    isWorking(row.status) && row.assigneeEmployeeId != null
-    && hasPermission(SCM_SORTING_PERMISSION.TASK_COMPLETE);
+  isWorking(row.status) && row.assigneeEmployeeId != null && hasPermission(SCM_SORTING_PERMISSION.TASK_COMPLETE);
 
 /** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
 function rowActions(row: SortingTask): ScmActionItem[] {
@@ -340,86 +336,86 @@ function onRowAction(key: string, row: SortingTask) {
 }
 
 function statusDesc(status?: string | null) {
-    return status ? SCM_SORTING_TASK_STATUS_ENUM[status]?.desc ?? status : '—';
+  return status ? SCM_SORTING_TASK_STATUS_ENUM[status]?.desc ?? status : '—';
 }
 
 function resultDesc(result?: string | null) {
-    return result ? SCM_SORTING_RESULT_ENUM[result]?.desc ?? result : '未录入';
+  return result ? SCM_SORTING_RESULT_ENUM[result]?.desc ?? result : '未录入';
 }
 
 function productTypeDesc(type?: string | null) {
-    return type ? SCM_SORTING_PRODUCT_TYPE_ENUM[type]?.desc ?? type : '—';
+  return type ? SCM_SORTING_PRODUCT_TYPE_ENUM[type]?.desc ?? type : '—';
 }
 
 function isWorking(status: string) {
-    return SCM_SORTING_WORKING_STATUS.includes(status);
+  return SCM_SORTING_WORKING_STATUS.includes(status);
 }
 
 const busy = ref(false);
 const {
-    canEditItems,
-    canEditRow,
-    detail,
-    detailError,
-    detailId,
-    detailLoading,
-    detailOpen,
-    dirtyCount,
-    drafts,
-    entryError,
-    entryErrors,
-    isGiftRow,
-    openDetail,
-    readOnlyReason,
-    reloadDetail,
-    submitEntry,
-    updateDraft,
+  canEditItems,
+  canEditRow,
+  detail,
+  detailError,
+  detailId,
+  detailLoading,
+  detailOpen,
+  dirtyCount,
+  drafts,
+  entryError,
+  entryErrors,
+  isGiftRow,
+  openDetail,
+  readOnlyReason,
+  reloadDetail,
+  submitEntry,
+  updateDraft,
 } = useSortingTaskEntry({
-    busy,
-    refreshTaskList: () => {
-        void queryData();
-    },
-    statusDesc,
+  busy,
+  refreshTaskList: () => {
+    void queryData();
+  },
+  statusDesc,
 });
 
 async function queryData() {
-    const current = ++listGeneration;
-    loading.value = true;
-    listError.value = '';
-    try {
-        const result = await sortingApi.tasks({
-            ...queryForm,
-            assigneeEmployeeId: assigneeFilter.value,
-            // 送货时间按冻结快照过滤，半开区间 [from, to)
-            deliveryTimeFrom: deliveryRange.value?.[0],
-            deliveryTimeTo: deliveryRange.value?.[1],
-        });
-        if (current === listGeneration) {
-            rows.value = result.data.list;
-            total.value = result.data.total;
-        }
-    } catch (e) {
-        if (current === listGeneration) listError.value = sortingError(e);
-    } finally {
-        if (current === listGeneration) loading.value = false;
+  const current = ++listGeneration;
+  loading.value = true;
+  listError.value = '';
+  try {
+    const result = await sortingApi.tasks({
+      ...queryForm,
+      assigneeEmployeeId: assigneeFilter.value,
+      // 送货时间按冻结快照过滤，半开区间 [from, to)
+      deliveryTimeFrom: deliveryRange.value?.[0],
+      deliveryTimeTo: deliveryRange.value?.[1],
+    });
+    if (current === listGeneration) {
+      rows.value = result.data.list;
+      total.value = result.data.total;
     }
+  } catch (e) {
+    if (current === listGeneration) listError.value = sortingError(e);
+  } finally {
+    if (current === listGeneration) loading.value = false;
+  }
 }
 
 function onSearch() {
-    queryForm.pageNum = 1;
-    queryData();
+  queryForm.pageNum = 1;
+  queryData();
 }
 
 function resetQuery() {
-    queryForm.keyword = undefined;
-    queryForm.status = undefined;
-    queryForm.warehouseId = undefined;
-    queryForm.unassignedOnly = false;
-    queryForm.deliveryWave = undefined;
-    queryForm.supplierId = undefined;
-    deliveryRange.value = undefined;
-    assigneeFilter.value = undefined;
-    onSearch();
+  queryForm.keyword = undefined;
+  queryForm.status = undefined;
+  queryForm.warehouseId = undefined;
+  queryForm.unassignedOnly = false;
+  queryForm.deliveryWave = undefined;
+  queryForm.supplierId = undefined;
+  deliveryRange.value = undefined;
+  assigneeFilter.value = undefined;
+  onSearch();
 }
 
 // ------------------------------------------------------------------ 任务级动作
@@ -432,83 +428,84 @@ const actionError = ref('');
 const actionRecord = ref<SortingTask>();
 
 function openAction(mode: ActionMode, record: SortingTask) {
-    actionMode.value = mode;
-    actionRecord.value = record;
-    // `EmployeeSelect` 的 value 声明为 Number，这里只做类型层面的收窄（后端对 Long 主键回的是 JSON 数字）。
-    // 不用 Number() 转：id 一旦走数值转换，超长 id 会静默丢精度而页面看起来完全正常。
-    const employeeId = record.assigneeEmployeeId;
-    actionAssignee.value = employeeId === null || employeeId === undefined ? undefined : (employeeId as number);
-    actionReason.value = '';
-    actionError.value = '';
-    actionOpen.value = true;
+  actionMode.value = mode;
+  actionRecord.value = record;
+  // `EmployeeSelect` 的 value 声明为 Number，这里只做类型层面的收窄（后端对 Long 主键回的是 JSON 数字）。
+  // 不用 Number() 转：id 一旦走数值转换，超长 id 会静默丢精度而页面看起来完全正常。
+  const employeeId = record.assigneeEmployeeId;
+  actionAssignee.value = employeeId === null || employeeId === undefined ? undefined : (employeeId as number);
+  actionReason.value = '';
+  actionError.value = '';
+  actionOpen.value = true;
 }
 
 async function submitAction() {
-    const record = actionRecord.value;
-    if (!record) return;
-    actionError.value = '';
-    const reason = actionReason.value.trim();
-    if (actionMode.value !== 'assign' && !reason) {
-        message.warning('请填写原因');
-        return;
+  const record = actionRecord.value;
+  if (!record) return;
+  actionError.value = '';
+  const reason = actionReason.value.trim();
+  if (actionMode.value !== 'assign' && !reason) {
+    message.warning('请填写原因');
+    return;
+  }
+  if (actionMode.value === 'assign' && actionAssignee.value == null) {
+    message.warning('请选择受指派人');
+    return;
+  }
+  busy.value = true;
+  try {
+    if (actionMode.value === 'assign') {
+      await sortingApi.assign(record.id, {
+        assigneeEmployeeId: actionAssignee.value as number,
+        version: record.version,
+        reason: reason || null,
+      });
+      message.success('指派成功');
+    } else {
+      const payload: SortingActionPayload = {version: record.version, reason};
+      await (actionMode.value === 'cancel' ? sortingApi.cancel(record.id, payload) : sortingApi.reopen(record.id, payload));
+      message.success(actionMode.value === 'cancel' ? '取消成功' : '重开成功');
     }
-    if (actionMode.value === 'assign' && actionAssignee.value == null) {
-        message.warning('请选择受指派人');
-        return;
-    }
-    busy.value = true;
-    try {
-        if (actionMode.value === 'assign') {
-            await sortingApi.assign(record.id, {
-                assigneeEmployeeId: actionAssignee.value as number,
-                version: record.version,
-                reason: reason || null,
-            });
-            message.success('指派成功');
-        } else {
-            const payload: SortingActionPayload = {version: record.version, reason};
-            await (actionMode.value === 'cancel' ? sortingApi.cancel(record.id, payload) : sortingApi.reopen(record.id, payload));
-            message.success(actionMode.value === 'cancel' ? '取消成功' : '重开成功');
-        }
-        actionOpen.value = false;
-        await afterTaskChanged(record.id);
-    } catch (e) {
-        // 后端消息原样显示：30005（无权 / 看不到）与 41121（状态不允许）是两种处置
-        actionError.value = sortingError(e);
-    } finally {
-        busy.value = false;
-    }
+    actionOpen.value = false;
+    await afterTaskChanged(record.id);
+  } catch (e) {
+    // 后端消息原样显示：30005（无权 / 看不到）与 41121（状态不允许）是两种处置
+    actionError.value = sortingError(e);
+  } finally {
+    busy.value = false;
+  }
 }
 
 function confirmComplete(record: SortingTask) {
-    Modal.confirm({
-        title: `完成分拣任务 ${record.taskNo}？`,
-        content: `硬前置是任务内每条活动明细都已有结果（当前已处理 ${record.processedCount} / ${record.itemCount}）。`
-            + '完成只锁定任务与实发事实，不扣减库存、不生成出库单，也不回写订单。',
-        okText: '确认完成',
-        cancelText: '返回',
-        onOk: async () => {
-            busy.value = true;
-            try {
-                await sortingApi.complete(record.id, {version: record.version});
-                message.success('任务已完成');
-                await afterTaskChanged(record.id);
-            } catch (e) {
-                // 41125（仍有未处理明细）由服务端给出，前端不预先算一遍：
-                // 行是否活动、是否算已处理都由服务端按占用位判定，前端再判一次就是第二份真相
-                message.error(sortingError(e));
-                await afterTaskChanged(record.id);
-            } finally {
-                busy.value = false;
-            }
-        },
-    });
+  Modal.confirm({
+    title: `完成分拣任务 ${record.taskNo}？`,
+    content:
+      `硬前置是任务内每条活动明细都已有结果（当前已处理 ${record.processedCount} / ${record.itemCount}）。` +
+      '完成只锁定任务与实发事实，不扣减库存、不生成出库单，也不回写订单。',
+    okText: '确认完成',
+    cancelText: '返回',
+    onOk: async () => {
+      busy.value = true;
+      try {
+        await sortingApi.complete(record.id, {version: record.version});
+        message.success('任务已完成');
+        await afterTaskChanged(record.id);
+      } catch (e) {
+        // 41125（仍有未处理明细）由服务端给出，前端不预先算一遍：
+        // 行是否活动、是否算已处理都由服务端按占用位判定，前端再判一次就是第二份真相
+        message.error(sortingError(e));
+        await afterTaskChanged(record.id);
+      } finally {
+        busy.value = false;
+      }
+    },
+  });
 }
 
 /** 动作之后刷新列表；详情抽屉开着时一并刷新，保证版本号与状态是刚读到的那一版。 */
 async function afterTaskChanged(id: Id) {
-    await queryData();
-    if (detailOpen.value && String(detailId.value) === String(id)) await reloadDetail();
+  await queryData();
+  if (detailOpen.value && String(detailId.value) === String(id)) await reloadDetail();
 }
 
 // ------------------------------------------------------------------ 新建任务
@@ -519,88 +516,88 @@ const createLoading = ref(false);
 const createError = ref('');
 // `EmployeeSelect` 的 value prop 声明为 `[Number, Array]`，所以这里不收 `null`：
 // 「不指派」用 undefined 表达，提交时再落成后端要的 `null`（载荷类型见 sorting-types）。
-const createForm = reactive<{ warehouseId?: Id; assigneeEmployeeId?: number; remark?: string }>({});
-const candidateQuery = reactive<{ pageNum: number; pageSize: number; keyword?: string }>({pageNum: 1, pageSize: 20});
+const createForm = reactive<{warehouseId?: Id; assigneeEmployeeId?: number; remark?: string}>({});
+const candidateQuery = reactive<{pageNum: number; pageSize: number; keyword?: string}>({pageNum: 1, pageSize: 20});
 const candidateRows = ref<SortingCandidateLine[]>([]);
 const candidateSelected = ref<Id[]>([]);
 const candidateTotal = ref(0);
 let candidateGeneration = 0;
 
 async function loadCandidates() {
-    const current = ++candidateGeneration;
-    createLoading.value = true;
-    try {
-        const result = await sortingApi.candidateLines({...candidateQuery});
-        if (current === candidateGeneration) {
-            candidateRows.value = result.data.list;
-            candidateTotal.value = result.data.total;
-        }
-    } catch (e) {
-        if (current === candidateGeneration) createError.value = sortingError(e);
-    } finally {
-        if (current === candidateGeneration) createLoading.value = false;
+  const current = ++candidateGeneration;
+  createLoading.value = true;
+  try {
+    const result = await sortingApi.candidateLines({...candidateQuery});
+    if (current === candidateGeneration) {
+      candidateRows.value = result.data.list;
+      candidateTotal.value = result.data.total;
     }
+  } catch (e) {
+    if (current === candidateGeneration) createError.value = sortingError(e);
+  } finally {
+    if (current === candidateGeneration) createLoading.value = false;
+  }
 }
 
 function loadCandidatesPage(pageNum: number, pageSize: number) {
-    candidateQuery.pageNum = pageNum;
-    candidateQuery.pageSize = pageSize;
-    void loadCandidates();
+  candidateQuery.pageNum = pageNum;
+  candidateQuery.pageSize = pageSize;
+  void loadCandidates();
 }
 
 function searchCandidates() {
-    candidateQuery.pageNum = 1;
-    loadCandidates();
+  candidateQuery.pageNum = 1;
+  loadCandidates();
 }
 
 function resetCandidates() {
-    candidateQuery.keyword = undefined;
-    candidateSelected.value = [];
-    searchCandidates();
+  candidateQuery.keyword = undefined;
+  candidateSelected.value = [];
+  searchCandidates();
 }
 
 function openCreate() {
-    createError.value = '';
-    createForm.warehouseId = queryForm.warehouseId;
-    createForm.assigneeEmployeeId = undefined;
-    createForm.remark = undefined;
-    candidateSelected.value = [];
-    candidateRows.value = [];
-    candidateTotal.value = 0;
-    candidateQuery.keyword = undefined;
-    candidateQuery.pageNum = 1;
-    createOpen.value = true;
-    loadCandidates();
+  createError.value = '';
+  createForm.warehouseId = queryForm.warehouseId;
+  createForm.assigneeEmployeeId = undefined;
+  createForm.remark = undefined;
+  candidateSelected.value = [];
+  candidateRows.value = [];
+  candidateTotal.value = 0;
+  candidateQuery.keyword = undefined;
+  candidateQuery.pageNum = 1;
+  createOpen.value = true;
+  loadCandidates();
 }
 
 async function submitCreate() {
-    if (createForm.warehouseId === undefined || createForm.warehouseId === null || createForm.warehouseId === '') {
-        message.warning('请选择分拣仓库');
-        return;
-    }
-    if (!candidateSelected.value.length) {
-        createError.value = '请至少勾选一条订单行。';
-        return;
-    }
-    creating.value = true;
-    createError.value = '';
-    try {
-        const result = await sortingApi.create({
-            warehouseId: createForm.warehouseId,
-            assigneeEmployeeId: createForm.assigneeEmployeeId ?? null,
-            remark: createForm.remark?.trim() || null,
-            // 勾选行即订单行 id；重复提交由幂等键挡住，抢同一行由服务端唯一索引挡住
-            salesOrderItemIds: [...candidateSelected.value],
-        });
-        message.success(`分拣任务创建成功：${result.data.task.taskNo}`);
-        createOpen.value = false;
-        await queryData();
-        openDetail(result.data.task.id);
-    } catch (e) {
-        createError.value = sortingError(e);
-    } finally {
-        creating.value = false;
-    }
+  if (createForm.warehouseId === undefined || createForm.warehouseId === null || createForm.warehouseId === '') {
+    message.warning('请选择分拣仓库');
+    return;
+  }
+  if (!candidateSelected.value.length) {
+    createError.value = '请至少勾选一条订单行。';
+    return;
+  }
+  creating.value = true;
+  createError.value = '';
+  try {
+    const result = await sortingApi.create({
+      warehouseId: createForm.warehouseId,
+      assigneeEmployeeId: createForm.assigneeEmployeeId ?? null,
+      remark: createForm.remark?.trim() || null,
+      // 勾选行即订单行 id；重复提交由幂等键挡住，抢同一行由服务端唯一索引挡住
+      salesOrderItemIds: [...candidateSelected.value],
+    });
+    message.success(`分拣任务创建成功：${result.data.task.taskNo}`);
+    createOpen.value = false;
+    await queryData();
+    openDetail(result.data.task.id);
+  } catch (e) {
+    createError.value = sortingError(e);
+  } finally {
+    creating.value = false;
+  }
 }
 
 // ------------------------------------------------------------------ 打印
@@ -620,60 +617,64 @@ const printVersion = ref<number>();
 const printTaskId = ref<Id>();
 
 function openTicket(id?: Id) {
-    if (id === undefined) return;
-    ticketTaskId.value = id;
-    ticketOpen.value = true;
+  if (id === undefined) return;
+  ticketTaskId.value = id;
+  ticketOpen.value = true;
 }
 
 function openPrint(record: SortingTask) {
-    printTaskId.value = record.id;
-    printVersion.value = record.version;
-    print.value = undefined;
-    printError.value = '';
-    printOpen.value = true;
-    loadPrintPreview();
+  printTaskId.value = record.id;
+  printVersion.value = record.version;
+  print.value = undefined;
+  printError.value = '';
+  printOpen.value = true;
+  loadPrintPreview();
 }
 
 async function loadPrintPreview() {
-    if (printTaskId.value === undefined) return;
-    printLoading.value = true;
-    printError.value = '';
-    try {
-        // 只读预览：GET，不累加打印次数
-        print.value = (await sortingApi.printPreview(printTaskId.value)).data;
-    } catch (e) {
-        printError.value = sortingError(e);
-    } finally {
-        printLoading.value = false;
-    }
+  if (printTaskId.value === undefined) return;
+  printLoading.value = true;
+  printError.value = '';
+  try {
+    // 只读预览：GET，不累加打印次数
+    print.value = (await sortingApi.printPreview(printTaskId.value)).data;
+  } catch (e) {
+    printError.value = sortingError(e);
+  } finally {
+    printLoading.value = false;
+  }
 }
 
 async function recordPrint() {
-    const taskId = printTaskId.value;
-    if (taskId === undefined || printVersion.value == null) return;
-    printing.value = true;
-    printError.value = '';
-    try {
-        const result = await sortingApi.print(taskId, {version: printVersion.value});
-        message.success(`已登记打印，累计 ${result.data.printCount} 次`);
-        print.value = {...print.value, printCount: result.data.printCount} as SortingPrint;
-        await queryData();
-        if (detailOpen.value && String(detailId.value) === String(taskId)) await reloadDetail();
-    } catch (e) {
-        // 计次不 bump 任务版本，所以版本冲突只可能是任务真被改过：刷新后重新登记
-        printError.value = sortingError(e);
-        await queryData();
-        if (detailOpen.value && String(detailId.value) === String(taskId)) await reloadDetail();
-    } finally {
-        printing.value = false;
-    }
+  const taskId = printTaskId.value;
+  if (taskId === undefined || printVersion.value == null) return;
+  printing.value = true;
+  printError.value = '';
+  try {
+    const result = await sortingApi.print(taskId, {version: printVersion.value});
+    message.success(`已登记打印，累计 ${result.data.printCount} 次`);
+    print.value = {...print.value, printCount: result.data.printCount} as SortingPrint;
+    await queryData();
+    if (detailOpen.value && String(detailId.value) === String(taskId)) await reloadDetail();
+  } catch (e) {
+    // 计次不 bump 任务版本，所以版本冲突只可能是任务真被改过：刷新后重新登记
+    printError.value = sortingError(e);
+    await queryData();
+    if (detailOpen.value && String(detailId.value) === String(taskId)) await reloadDetail();
+  } finally {
+    printing.value = false;
+  }
 }
 
 const route = useRoute();
 const taskRouteName = route.name;
-watch([() => route.name, () => route.query.taskId], ([name, id]) => {
+watch(
+  [() => route.name, () => route.query.taskId],
+  ([name, id]) => {
     if (name === taskRouteName && typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) openDetail(id);
-}, {immediate: true});
+  },
+  {immediate: true}
+);
 
 onMounted(queryData);
 </script>

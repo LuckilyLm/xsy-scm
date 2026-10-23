@@ -8,84 +8,91 @@ import _ from 'lodash';
 // 只迁移能精确识别的历史系统默认值；其余用户手工列宽原样保留。
 // 表格设置以前会把所有默认宽度一并保存，因此不能将每个历史 width 都视为用户主动调整。
 const legacyDefaults: Record<number, Record<string, readonly number[]>> = {
-    50001: {
-        primaryImageUrl: [64, 68], name: [200, 220], categoryPath: [200, 210],
-        saleUnit: [70, 72], price: [180, 184], skuCount: [76, 80],
-        status: [84, 96], masterStatus: [88, 96], tags: [150], action: [120, 144],
-    },
-    50003: {name: [180, 220], customerCode: [120, 160]},
+  50001: {
+    primaryImageUrl: [64, 68],
+    name: [200, 220],
+    categoryPath: [200, 210],
+    saleUnit: [70, 72],
+    price: [180, 184],
+    skuCount: [76, 80],
+    status: [84, 96],
+    masterStatus: [88, 96],
+    tags: [150],
+    action: [120, 144],
+  },
+  50003: {name: [180, 220], customerCode: [120, 160]},
 };
 
 /** 将页面默认列和已保存的个人列设置合并、排序。 */
 export function mergeColumn(originalTableColumnArray, userTableColumnArray, tableId?: number | string) {
-    let saveFlag = false;
-    if (!userTableColumnArray) {
-        return originalTableColumnArray;
-    }
+  let saveFlag = false;
+  if (!userTableColumnArray) {
+    return originalTableColumnArray;
+  }
 
-    //第一步：将用户的列数据转为Map，以后备使用
-    let userTableColumnMap = new Map();
-    for (const item of userTableColumnArray) {
-        userTableColumnMap.set(item.columnKey, item);
-    }
+  //第一步：将用户的列数据转为Map，以后备使用
+  let userTableColumnMap = new Map();
+  for (const item of userTableColumnArray) {
+    userTableColumnMap.set(item.columnKey, item);
+  }
 
-    //第二步：以前端的table columns列为基础，将用户后端的数据填充到前端表格列里
-    let fontColumnSort = 1;
-    let newColumns = [];
-    for (const fontColumn of originalTableColumnArray) {
-        // 页面可用原始 showFlag=false 设置默认隐藏项；用户保存的显隐偏好优先。
-        fontColumn.columnKey = fontColumn.dataIndex;
-        fontColumn.showFlag = fontColumn.showFlag ?? true;
-        fontColumn.sort = fontColumnSort;
+  //第二步：以前端的table columns列为基础，将用户后端的数据填充到前端表格列里
+  let fontColumnSort = 1;
+  let newColumns = [];
+  for (const fontColumn of originalTableColumnArray) {
+    // 页面可用原始 showFlag=false 设置默认隐藏项；用户保存的显隐偏好优先。
+    fontColumn.columnKey = fontColumn.dataIndex;
+    fontColumn.showFlag = fontColumn.showFlag ?? true;
+    fontColumn.sort = fontColumnSort;
 
-        // 如果用户存在此列，则覆盖 sort和width、showFlag字段
-        let userColumn = userTableColumnMap.get(fontColumn.columnKey);
-        if (userColumn) {
-            fontColumn.sort = userColumn.sort;
-            fontColumn.showFlag = userColumn.showFlag;
-            if (fontColumn.dragAndDropFlag) {
-                saveFlag = true;
-                delete fontColumn.dragAndDropFlag;
-            } else {
-                const knownDefaults = tableId == null ? [] : (legacyDefaults[Number(tableId)]?.[fontColumn.columnKey] ?? []);
-                if (userColumn.width && !knownDefaults.includes(Number(userColumn.width))) {
-                    fontColumn.width = userColumn.width;
-                }
-            }
+    // 如果用户存在此列，则覆盖 sort和width、showFlag字段
+    let userColumn = userTableColumnMap.get(fontColumn.columnKey);
+    if (userColumn) {
+      fontColumn.sort = userColumn.sort;
+      fontColumn.showFlag = userColumn.showFlag;
+      if (fontColumn.dragAndDropFlag) {
+        saveFlag = true;
+        delete fontColumn.dragAndDropFlag;
+      } else {
+        const knownDefaults = tableId == null ? [] : legacyDefaults[Number(tableId)]?.[fontColumn.columnKey] ?? [];
+        if (userColumn.width && !knownDefaults.includes(Number(userColumn.width))) {
+          fontColumn.width = userColumn.width;
         }
-        newColumns.push(fontColumn);
-        fontColumnSort++;
+      }
     }
+    newColumns.push(fontColumn);
+    fontColumnSort++;
+  }
 
-    //第三步：前端列进行排序
-    //用户保存的顺序优先；页面新增的列按其在页面定义里的位置插入，
-    //否则新旧 sort 会撞号（旧列 1..10、新列 2..26），列序看起来是乱的。
-    const pageKeys = newColumns.map((column: any) => column.columnKey);
-    const savedOrder = (userTableColumnArray || [])
-        .slice()
-        .sort((a: any, b: any) => (a.sort ?? 0) - (b.sort ?? 0))
-        .map((column: any) => column.columnKey)
-        .filter((key: string) => pageKeys.includes(key));
-    const placed = new Set(savedOrder);
-    const finalOrder = savedOrder.slice();
-    for (const key of pageKeys) {
-        if (placed.has(key)) {
-            continue;
-        }
-        const pageIndex = pageKeys.indexOf(key);
-        const nextPlaced = pageKeys.slice(pageIndex + 1).find((next: string) => placed.has(next));
-        const insertAt = nextPlaced == null ? finalOrder.length : finalOrder.indexOf(nextPlaced);
-        finalOrder.splice(insertAt, 0, key);
-        placed.add(key);
+  //第三步：前端列进行排序
+  //用户保存的顺序优先；页面新增的列按其在页面定义里的位置插入，
+  //否则新旧 sort 会撞号（旧列 1..10、新列 2..26），列序看起来是乱的。
+  const pageKeys = newColumns.map((column: any) => column.columnKey);
+  const savedOrder = (userTableColumnArray || [])
+    .slice()
+    .sort((a: any, b: any) => (a.sort ?? 0) - (b.sort ?? 0))
+    .map((column: any) => column.columnKey)
+    .filter((key: string) => pageKeys.includes(key));
+  const placed = new Set(savedOrder);
+  const finalOrder = savedOrder.slice();
+  for (const key of pageKeys) {
+    if (placed.has(key)) {
+      continue;
     }
-    const orderIndex = new Map(finalOrder.map((key: string, index: number) => [key, index]));
-    newColumns = _.sortBy(newColumns, (column: any) => orderIndex.get(column.columnKey) ?? Number.MAX_SAFE_INTEGER);
-    //重排后把 sort 重新编号，避免保存时把撞号的旧值再写回数据库
-    newColumns.forEach((column: any, index: number) => {
-        column.sort = index + 1;
-    });
-    return {
-        newColumns,
-        saveFlag,
-    };
+    const pageIndex = pageKeys.indexOf(key);
+    const nextPlaced = pageKeys.slice(pageIndex + 1).find((next: string) => placed.has(next));
+    const insertAt = nextPlaced == null ? finalOrder.length : finalOrder.indexOf(nextPlaced);
+    finalOrder.splice(insertAt, 0, key);
+    placed.add(key);
+  }
+  const orderIndex = new Map(finalOrder.map((key: string, index: number) => [key, index]));
+  newColumns = _.sortBy(newColumns, (column: any) => orderIndex.get(column.columnKey) ?? Number.MAX_SAFE_INTEGER);
+  //重排后把 sort 重新编号，避免保存时把撞号的旧值再写回数据库
+  newColumns.forEach((column: any, index: number) => {
+    column.sort = index + 1;
+  });
+  return {
+    newColumns,
+    saveFlag,
+  };
 }

@@ -3,18 +3,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="统计时间段" class="smart-query-form-item">
-        <a-range-picker
-            v-model:value="range"
-            show-time
-            value-format="YYYY-MM-DD HH:mm:ss"
-            style="width: 380px"
-        />
+        <a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 380px" />
       </a-form-item>
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="warehouseId" width="200px" placeholder="请选择仓库"/>
+        <WarehouseSelect v-model:value="warehouseId" width="200px" placeholder="请选择仓库" />
       </a-form-item>
       <a-form-item label="商品关键字" class="smart-query-form-item">
-        <a-input v-model:value="keyword" placeholder="商品编码 / 名称 / 商品规格编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="keyword" placeholder="商品编码 / 名称 / 商品规格编码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -33,17 +28,17 @@
 
   <a-card size="small" :bordered="false">
     <a-table
-        id="scm-purchase-demand-summary-preview-table"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="skuId"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      id="scm-purchase-demand-summary-preview-table"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="skuId"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'calculationStatus'">
           <a-tag :color="SCM_DEMAND_SUMMARY_STATUS_COLOR[record.calculationStatus] || 'default'">
             {{ SCM_DEMAND_SUMMARY_STATUS_ENUM[record.calculationStatus]?.desc || record.calculationStatus }}
@@ -63,13 +58,13 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="pageNum"
-          v-model:page-size="pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
@@ -135,10 +130,7 @@ const columns = computed<TableColumnsType<DemandSummaryRow>>(() => [
   {
     // 「净采购缺口」容易被当成「该买这么多」，用表头问号说明它只是预览口径。
     // 放表头而不是页面常驻一行：不操作的人不需要看到，需要的人悬停即可。
-    title: () => h('span', [
-      h('span', '净采购缺口'),
-      h(ScmFieldHelp, {label: '净采购缺口', text: '预览不是最终净采购建议，也不生成采购单。'}),
-    ]),
+    title: () => h('span', [h('span', '净采购缺口'), h(ScmFieldHelp, {label: '净采购缺口', text: '预览不是最终净采购建议，也不生成采购单。'})]),
     dataIndex: 'netPurchaseGap',
     width: 125,
   },
@@ -159,14 +151,17 @@ async function queryData() {
   error.value = '';
   try {
     // 加载失败由页内 Alert 承担（带重试），不再让全局 toast 重复说一遍
-    const r = await purchaseDemandApi.summaryPreview({
-      startAt: range.value[0],
-      endAt: range.value[1],
-      warehouseId: warehouseId.value,
-      keyword: keyword.value || null,
-      pageNum: pageNum.value,
-      pageSize: pageSize.value,
-    }, {suppressGlobalErrorMessage: true});
+    const r = await purchaseDemandApi.summaryPreview(
+      {
+        startAt: range.value[0],
+        endAt: range.value[1],
+        warehouseId: warehouseId.value,
+        keyword: keyword.value || null,
+        pageNum: pageNum.value,
+        pageSize: pageSize.value,
+      },
+      {suppressGlobalErrorMessage: true}
+    );
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;

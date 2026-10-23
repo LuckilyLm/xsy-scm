@@ -17,41 +17,47 @@
           <a-space wrap>
             <a-tag :color="SCM_SORTING_TASK_STATUS_COLOR[detail.task.status]">{{ statusDesc(detail.task.status) }}</a-tag>
             <a-button
-                v-if="SCM_SORTING_PRINTABLE_STATUS.includes(detail.task.status)"
-                v-privilege="'scm:sorting:task:query'"
-                @click="emit('openTicket', detail.task.id)"
-            >打印小票</a-button>
+              v-if="SCM_SORTING_PRINTABLE_STATUS.includes(detail.task.status)"
+              v-privilege="'scm:sorting:task:query'"
+              @click="emit('openTicket', detail.task.id)"
+              >打印小票</a-button
+            >
             <a-button
-                v-if="SCM_SORTING_PRINTABLE_STATUS.includes(detail.task.status)"
-                v-privilege="'scm:sorting:task:print'"
-                @click="emit('openPrint', detail.task)"
-            >打印</a-button>
+              v-if="SCM_SORTING_PRINTABLE_STATUS.includes(detail.task.status)"
+              v-privilege="'scm:sorting:task:print'"
+              @click="emit('openPrint', detail.task)"
+              >打印</a-button
+            >
             <a-button
-                v-if="isWorking(detail.task.status)"
-                v-privilege="'scm:sorting:task:assign'"
-                :disabled="busy"
-                @click="emit('action', 'assign', detail.task)"
-            >{{ detail.task.assigneeEmployeeId == null ? '指派' : '改派' }}</a-button>
+              v-if="isWorking(detail.task.status)"
+              v-privilege="'scm:sorting:task:assign'"
+              :disabled="busy"
+              @click="emit('action', 'assign', detail.task)"
+              >{{ detail.task.assigneeEmployeeId == null ? '指派' : '改派' }}</a-button
+            >
             <a-button
-                v-if="isWorking(detail.task.status)"
-                type="primary"
-                v-privilege="'scm:sorting:task:complete'"
-                :disabled="busy"
-                @click="emit('complete', detail.task)"
-            >完成任务</a-button>
+              v-if="isWorking(detail.task.status)"
+              type="primary"
+              v-privilege="'scm:sorting:task:complete'"
+              :disabled="busy"
+              @click="emit('complete', detail.task)"
+              >完成任务</a-button
+            >
             <a-button
-                v-if="isWorking(detail.task.status)"
-                danger
-                v-privilege="'scm:sorting:task:cancel'"
-                :disabled="busy"
-                @click="emit('action', 'cancel', detail.task)"
-            >取消任务</a-button>
+              v-if="isWorking(detail.task.status)"
+              danger
+              v-privilege="'scm:sorting:task:cancel'"
+              :disabled="busy"
+              @click="emit('action', 'cancel', detail.task)"
+              >取消任务</a-button
+            >
             <a-button
-                v-if="detail.task.status === 'COMPLETED'"
-                v-privilege="'scm:sorting:task:reopen'"
-                :disabled="busy"
-                @click="emit('action', 'reopen', detail.task)"
-            >重开任务</a-button>
+              v-if="detail.task.status === 'COMPLETED'"
+              v-privilege="'scm:sorting:task:reopen'"
+              :disabled="busy"
+              @click="emit('action', 'reopen', detail.task)"
+              >重开任务</a-button
+            >
           </a-space>
         </div>
 
@@ -68,18 +74,18 @@
           <a-descriptions-item label="备注" :span="3">{{ detail.task.remark || '—' }}</a-descriptions-item>
         </a-descriptions>
 
-        <a-alert v-if="!canEditItems" type="warning" show-icon :message="readOnlyReason"/>
-        <a-alert v-if="entryError" type="error" show-icon :message="entryError"/>
+        <a-alert v-if="!canEditItems" type="warning" show-icon :message="readOnlyReason" />
+        <a-alert v-if="entryError" type="error" show-icon :message="entryError" />
 
         <a-table
-            :id="SCM_SORTING_TABLE_ID.TASK_ITEM"
-            size="small"
-            :data-source="detail.items"
-            :columns="itemColumns"
-            row-key="id"
-            bordered
-            :pagination="false"
-            :scroll="{ x: scmColumnsWidth(itemColumns) }"
+          :id="SCM_SORTING_TABLE_ID.TASK_ITEM"
+          size="small"
+          :data-source="detail.items"
+          :columns="itemColumns"
+          row-key="id"
+          bordered
+          :pagination="false"
+          :scroll="{x: scmColumnsWidth(itemColumns)}"
         >
           <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'product'">
@@ -98,42 +104,42 @@
             </template>
             <template v-else-if="column.dataIndex === 'sortedQuantity'">
               <a-input-number
-                  v-if="canEditRow(record)"
-                  :value="drafts[String(record.id)]?.sortedQuantity ?? ''"
-                  string-mode
-                  :min="'0'"
-                  :precision="4"
-                  :disabled="busy"
-                  style="width: 130px"
-                  :aria-label="`分拣量 ${record.orderNoSnapshot} ${record.productNameSnapshot}`"
-                  @update:value="updateDraft(record.id, 'sortedQuantity', $event)"
+                v-if="canEditRow(record)"
+                :value="drafts[String(record.id)]?.sortedQuantity ?? ''"
+                string-mode
+                :min="'0'"
+                :precision="4"
+                :disabled="busy"
+                style="width: 130px"
+                :aria-label="`分拣量 ${record.orderNoSnapshot} ${record.productNameSnapshot}`"
+                @update:value="updateDraft(record.id, 'sortedQuantity', $event)"
               />
               <span v-else class="scm-quantity">{{ quantityText(record.sortedQuantity) }}</span>
             </template>
             <template v-else-if="column.dataIndex === 'result'">
               <a-select
-                  v-if="canEditRow(record)"
-                  :value="drafts[String(record.id)]?.result ?? ''"
-                  :options="resultOptions"
-                  placeholder="未录入"
-                  allow-clear
-                  :disabled="busy"
-                  style="width: 130px"
-                  :aria-label="`分拣结果 ${record.productNameSnapshot}`"
-                  @change="updateDraft(record.id, 'result', $event)"
+                v-if="canEditRow(record)"
+                :value="drafts[String(record.id)]?.result ?? ''"
+                :options="resultOptions"
+                placeholder="未录入"
+                allow-clear
+                :disabled="busy"
+                style="width: 130px"
+                :aria-label="`分拣结果 ${record.productNameSnapshot}`"
+                @change="updateDraft(record.id, 'result', $event)"
               />
               <a-tag v-else :color="resultColor(record.result)">{{ resultDesc(record.result) }}</a-tag>
             </template>
             <template v-else-if="column.dataIndex === 'reason'">
               <template v-if="canEditRow(record)">
                 <a-input
-                    :value="drafts[String(record.id)]?.reason ?? ''"
-                    :maxlength="500"
-                    :status="entryErrors[String(record.id)] ? 'error' : undefined"
-                    :disabled="busy"
-                    placeholder="非正常结果必填"
-                    :aria-label="`分拣原因 ${record.productNameSnapshot}`"
-                    @update:value="updateDraft(record.id, 'reason', $event)"
+                  :value="drafts[String(record.id)]?.reason ?? ''"
+                  :maxlength="500"
+                  :status="entryErrors[String(record.id)] ? 'error' : undefined"
+                  :disabled="busy"
+                  placeholder="非正常结果必填"
+                  :aria-label="`分拣原因 ${record.productNameSnapshot}`"
+                  @update:value="updateDraft(record.id, 'reason', $event)"
                 />
                 <a-typography-text v-if="entryErrors[String(record.id)]" type="danger" class="cell-error">
                   {{ entryErrors[String(record.id)] }}
@@ -143,10 +149,9 @@
             </template>
             <template v-else-if="column.dataIndex === 'sortedAt'">{{ datetime(record.sortedAt) }}</template>
             <template v-else-if="column.dataIndex === 'partRecords'">
-              <a-button
-                  v-if="!isGiftRow(record)" type="link" size="small"
-                  @click="openPartRecords(record)"
-              >{{ canEditRow(record) && record.result == null ? '分次录入/记录' : '查看分次记录' }}</a-button>
+              <a-button v-if="!isGiftRow(record)" type="link" size="small" @click="openPartRecords(record)">{{
+                canEditRow(record) && record.result == null ? '分次录入/记录' : '查看分次记录'
+              }}</a-button>
               <span v-else>—</span>
             </template>
             <template v-else-if="column.dataIndex === 'occupationStatus'">
@@ -160,28 +165,30 @@
         </a-table>
 
         <div class="entry-footer">
-          <a-button v-privilege="'scm:sorting:item:update'"
-                    :disabled="!canEditItems || busy || dirtyCount > 0" @click="standardOpen = true">
+          <a-button v-privilege="'scm:sorting:item:update'" :disabled="!canEditItems || busy || dirtyCount > 0" @click="standardOpen = true">
             标品一键分拣
           </a-button>
           <span v-if="dirtyCount > 0">请先提交手工录入，再使用标品一键分拣。</span>
           <a-button
-              type="primary"
-              v-privilege="'scm:sorting:item:update'"
-              :disabled="!canEditItems || busy || !dirtyCount"
-              :loading="busy"
-              @click="emit('submitEntry')"
-          >提交分拣录入（{{ dirtyCount }} 行）</a-button>
+            type="primary"
+            v-privilege="'scm:sorting:item:update'"
+            :disabled="!canEditItems || busy || !dirtyCount"
+            :loading="busy"
+            @click="emit('submitEntry')"
+            >提交分拣录入（{{ dirtyCount }} 行）</a-button
+          >
         </div>
       </template>
-      <a-empty v-else-if="!detailLoading" description="任务尚未加载"/>
+      <a-empty v-else-if="!detailLoading" description="任务尚未加载" />
     </a-spin>
-    <SortingStandardModal v-model:open="standardOpen" :task-id="detail?.task.id"
-                          @saved="emit('standardSaved')" />
+    <SortingStandardModal v-model:open="standardOpen" :task-id="detail?.task.id" @saved="emit('standardSaved')" />
     <SortingPartModal
-        v-model:open="partOpen" :row="partRow" :task-id="detail?.task.id"
-        :can-edit="partRow ? canEditRow(partRow) : false"
-        @saved="emit('reload')" @use-total="(id, quantity) => emit('draftChange', id, 'sortedQuantity', quantity)"
+      v-model:open="partOpen"
+      :row="partRow"
+      :task-id="detail?.task.id"
+      :can-edit="partRow ? canEditRow(partRow) : false"
+      @saved="emit('reload')"
+      @use-total="(id, quantity) => emit('draftChange', id, 'sortedQuantity', quantity)"
     />
   </a-drawer>
 </template>
@@ -312,5 +319,4 @@ function updateDraft(itemId: Id, field: DraftField, value: unknown) {
   flex-wrap: wrap;
   margin-top: 16px;
 }
-
 </style>

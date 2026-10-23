@@ -2,10 +2,10 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="单号 / 客户" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" placeholder="退货单号、原订单号或客户名称" @pressEnter="onSearch" allow-clear/>
+        <a-input v-model:value="queryForm.keyword" placeholder="退货单号、原订单号或客户名称" @pressEnter="onSearch" allow-clear />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_ORDER_RETURN_STATUS_ENUM" v-model:value="queryForm.status" width="160px"/>
+        <SmartEnumSelect enum-name="SCM_ORDER_RETURN_STATUS_ENUM" v-model:value="queryForm.status" width="160px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -14,7 +14,7 @@
         </a-button-group>
       </a-form-item>
       <div class="scm-query-table-tools">
-        <TableOperator v-model="columns" :table-id="603" :refresh="queryData"/>
+        <TableOperator v-model="columns" :table-id="603" :refresh="queryData" />
       </div>
     </a-row>
   </a-form>
@@ -24,38 +24,61 @@
     </template>
   </a-alert>
   <a-card size="small" :bordered="false">
-
-    <a-table id="order-return-table" size="small" :data-source="tableData" :columns="columns" row-key="returnId"
-             :loading="loading" bordered :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
-      <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='status'">{{ SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc }}</template>
-        <template v-else-if="column.dataIndex==='customerName'">{{ record.customerName || '—' }}</template>
-        <template v-else-if="column.dataIndex==='orderNo'">
+    <a-table
+      id="order-return-table"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="returnId"
+      :loading="loading"
+      bordered
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
+    >
+      <template #bodyCell="{record, column, text}">
+        <template v-if="column.dataIndex === 'status'">{{ SCM_ORDER_RETURN_STATUS_ENUM[text]?.desc }}</template>
+        <template v-else-if="column.dataIndex === 'customerName'">{{ record.customerName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'orderNo'">
           <span class="scm-mono">{{ record.orderNo || '—' }}</span>
         </template>
-        <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
-        <template v-else-if="column.dataIndex==='action'">
+        <template v-else-if="['approvedAmount', 'refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
+        <template v-else-if="column.dataIndex === 'action'">
           <!-- 常驻「详情」与当前状态唯一的推进动作（待审核=批准、已批准=实物接收）；
                驳回 / 取消是低频且不可逆的动作，收进「更多」——
                它们此前与主推进动作同排常驻，240px 里最显眼的却是那排红字 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <a-button type="link" size="small" v-privilege="'scm:order:return:query'"
-                      @click="showDetail(record.returnId)">详情</a-button>
-            <a-button type="link" size="small" v-privilege="'scm:order:return:approve'" v-if="record.status==='PENDING'"
-                      @click="edit(record,'approve')">批准
+            <a-button type="link" size="small" v-privilege="'scm:order:return:query'" @click="showDetail(record.returnId)">详情</a-button>
+            <a-button
+              type="link"
+              size="small"
+              v-privilege="'scm:order:return:approve'"
+              v-if="record.status === 'PENDING'"
+              @click="edit(record, 'approve')"
+              >批准
             </a-button>
-            <a-button type="link" size="small" v-privilege="'scm:order:return:receive'" v-if="record.status==='APPROVED'"
-                      @click="edit(record,'receive')">实物接收
+            <a-button
+              type="link"
+              size="small"
+              v-privilege="'scm:order:return:receive'"
+              v-if="record.status === 'APPROVED'"
+              @click="edit(record, 'receive')"
+              >实物接收
             </a-button>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination show-size-changer show-quick-jumper v-model:current="queryForm.pageNum"
-                    v-model:page-size="queryForm.pageSize" :total="total" @change="queryData"
-                    :show-total="(n:number)=>`共${n}条`"/>
+      <a-pagination
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
+      />
     </div>
   </a-card>
   <a-drawer v-model:open="detailOpen" title="退货单详情" :width="scmDrawerWidth('m')">
@@ -72,53 +95,105 @@
           <a-descriptions-item label="申请原因">{{ detail.reason || '—' }}</a-descriptions-item>
           <a-descriptions-item label="处理原因">{{ detail.decisionReason || '—' }}</a-descriptions-item>
         </a-descriptions>
-        <a-table :data-source="detail.items" row-key="orderItemId" :pagination="false"
-                 :scroll="{x: scmColumnsWidth(detailItemColumns)}" :columns="detailItemColumns"/>
+        <a-table
+          :data-source="detail.items"
+          row-key="orderItemId"
+          :pagination="false"
+          :scroll="{x: scmColumnsWidth(detailItemColumns)}"
+          :columns="detailItemColumns"
+        />
         <a-space class="exchange-actions">
           <a-button v-if="replacementOrderId" @click="router.push(`/order/detail/${replacementOrderId}`)">查看关联换货单</a-button>
-          <a-button v-else-if="exchangeReady" v-privilege="'scm:order:add'" type="primary"
-                    @click="openExchange">创建关联换货单</a-button>
+          <a-button v-else-if="exchangeReady" v-privilege="'scm:order:add'" type="primary" @click="openExchange">创建关联换货单</a-button>
           <span v-else-if="detail.status === 'APPROVED'" class="scm-cell-hint">全部批准数量完成实物接收后可创建换货单</span>
         </a-space>
       </template>
     </a-spin>
   </a-drawer>
-  <a-modal :open="visible" :title="action==='approve'?'审核退货':action==='receive'?'退货实物接收':action==='reject'?'驳回退货':'取消退货'" width="min(800px,96vw)"
-           :confirm-loading="saving" :ok-button-props="{disabled: editLoading || !active}"
-           :cancel-button-props="{disabled: saving}" :closable="!saving" :keyboard="!saving" :mask-closable="!saving"
-           @ok="save" @cancel="closeEdit">
+  <a-modal
+    :open="visible"
+    :title="action === 'approve' ? '审核退货' : action === 'receive' ? '退货实物接收' : action === 'reject' ? '驳回退货' : '取消退货'"
+    width="min(800px,96vw)"
+    :confirm-loading="saving"
+    :ok-button-props="{disabled: editLoading || !active}"
+    :cancel-button-props="{disabled: saving}"
+    :closable="!saving"
+    :keyboard="!saving"
+    :mask-closable="!saving"
+    @ok="save"
+    @cancel="closeEdit"
+  >
     <a-alert v-if="editError" :message="editError" type="error" show-icon>
       <template v-if="!active" #action><a-button :loading="editLoading" @click="retryEdit">重试</a-button></template>
     </a-alert>
     <a-spin class="return-edit-content" :spinning="editLoading">
-    <template v-if="active">
-      <fieldset :disabled="saving" class="return-edit-fields">
-      <a-table v-if="action==='approve'" :data-source="active.items"
-               :columns="[{title:'申请数量',dataIndex:'requestedQuantity'},{title:'锁定单价',dataIndex:'lockedUnitPrice'},{title:'批准数量',dataIndex:'approvedQuantity'}]"
-               row-key="orderItemId" :pagination="false">
-        <template #bodyCell="{record,column}">
-          <a-input-number v-if="column.dataIndex==='approvedQuantity'" v-model:value="record.approvedQuantity"
-                          :disabled="saving" string-mode :precision="4" :min="'0'" :max="record.requestedQuantity" aria-label="批准数量"/>
-        </template>
-      </a-table>
-      <template v-else-if="action==='receive'">
-        <a-form-item label="接收仓库" required><WarehouseSelect v-model:value="warehouseId" :disabled="saving"/></a-form-item>
-        <a-table :data-source="active.items" :scroll="{x: scmColumnsWidth(receiveItemColumns)}"
-                 :columns="receiveItemColumns" row-key="returnItemId" :pagination="false">
-          <template #bodyCell="{record,column}">
-            <a-input-number v-if="column.dataIndex==='receiptQuantity'" v-model:value="record.receiptQuantity" :disabled="saving" string-mode :precision="4" :min="'0'" :max="remainingQuantity(record)" aria-label="本次接收数量"/>
-            <a-select v-else-if="column.dataIndex==='disposition'" v-model:value="record.disposition" :disabled="saving" aria-label="实物处置方式" :options="[{value:'RETURN_TO_STOCK',label:'可售回库'},{value:'DAMAGE',label:'报损'}]"/>
+      <template v-if="active">
+        <fieldset :disabled="saving" class="return-edit-fields">
+          <a-table
+            v-if="action === 'approve'"
+            :data-source="active.items"
+            :columns="[
+              {title: '申请数量', dataIndex: 'requestedQuantity'},
+              {title: '锁定单价', dataIndex: 'lockedUnitPrice'},
+              {title: '批准数量', dataIndex: 'approvedQuantity'},
+            ]"
+            row-key="orderItemId"
+            :pagination="false"
+          >
+            <template #bodyCell="{record, column}">
+              <a-input-number
+                v-if="column.dataIndex === 'approvedQuantity'"
+                v-model:value="record.approvedQuantity"
+                :disabled="saving"
+                string-mode
+                :precision="4"
+                :min="'0'"
+                :max="record.requestedQuantity"
+                aria-label="批准数量"
+              />
+            </template>
+          </a-table>
+          <template v-else-if="action === 'receive'">
+            <a-form-item label="接收仓库" required><WarehouseSelect v-model:value="warehouseId" :disabled="saving" /></a-form-item>
+            <a-table
+              :data-source="active.items"
+              :scroll="{x: scmColumnsWidth(receiveItemColumns)}"
+              :columns="receiveItemColumns"
+              row-key="returnItemId"
+              :pagination="false"
+            >
+              <template #bodyCell="{record, column}">
+                <a-input-number
+                  v-if="column.dataIndex === 'receiptQuantity'"
+                  v-model:value="record.receiptQuantity"
+                  :disabled="saving"
+                  string-mode
+                  :precision="4"
+                  :min="'0'"
+                  :max="remainingQuantity(record)"
+                  aria-label="本次接收数量"
+                />
+                <a-select
+                  v-else-if="column.dataIndex === 'disposition'"
+                  v-model:value="record.disposition"
+                  :disabled="saving"
+                  aria-label="实物处置方式"
+                  :options="[
+                    {value: 'RETURN_TO_STOCK', label: '可售回库'},
+                    {value: 'DAMAGE', label: '报损'},
+                  ]"
+                />
+              </template>
+            </a-table>
           </template>
-        </a-table>
+          <a-form-item v-else label="处理原因" required>
+            <a-input v-model:value="decisionReason" :disabled="saving" maxlength="500" />
+          </a-form-item>
+        </fieldset>
       </template>
-      <a-form-item v-else label="处理原因" required>
-        <a-input v-model:value="decisionReason" :disabled="saving" maxlength="500"/>
-      </a-form-item>
-      </fieldset>
-    </template>
     </a-spin>
   </a-modal>
-  <OrderFormDrawer ref="exchangeDrawer" @saved="onExchangeSaved"/>
+  <OrderFormDrawer ref="exchangeDrawer" @saved="onExchangeSaved" />
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -135,7 +210,7 @@ import ScmActionMore from '/@/components/business/scm/scm-action-more/index.vue'
 import type {ScmActionItem} from '/@/components/business/scm/scm-action-more/action-item';
 import type {ReturnRow, Query, ReturnItem, Id} from './order-types';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
-type ReturnItemWithDisposition = ReturnItem & { disposition: 'RETURN_TO_STOCK' | 'DAMAGE'; receiptQuantity: string };
+type ReturnItemWithDisposition = ReturnItem & {disposition: 'RETURN_TO_STOCK' | 'DAMAGE'; receiptQuantity: string};
 const detailItemColumns: TableColumnsType<ReturnItem> = [
   {title: '商品', dataIndex: 'productName', width: 200},
   {title: '单位', dataIndex: 'unit', width: 72},
@@ -157,31 +232,43 @@ import {hasPermission} from '../common/scm-permission';
 import {orderApi} from '/@/api/business/scm/order-api';
 import OrderFormDrawer from './components/order-form-drawer.vue';
 
-const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<ReturnRow[]>([]), total = ref(0),
-    loading = ref(false), error = ref(''), visible = ref(false), saving = ref(false), active = ref<ReturnRow>();
+const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}),
+  tableData = ref<ReturnRow[]>([]),
+  total = ref(0),
+  loading = ref(false),
+  error = ref(''),
+  visible = ref(false),
+  saving = ref(false),
+  active = ref<ReturnRow>();
 let requestId = 0;
 /**
  * 退货原因可能很长（业务人员会写整句），列表里给它固定宽度 + ellipsis，
  * 完整原因在详情抽屉里看；不设 ellipsis 会让长原因把行撑成两行、破坏表格节奏。
  */
-const columns = ref<TableColumnsType<ReturnRow>>([{
-  title: '退货单号',
-  dataIndex: 'returnNo',
-  width: 220
-}, {title: '客户', dataIndex: 'customerName', width: 150},
-{title: '原订单号', dataIndex: 'orderNo', width: 190},
-{title: '退货原因', dataIndex: 'reason', width: 260, ellipsis: true}, {
-  title: '状态',
-  dataIndex: 'status',
-  width: 120,
-  align: 'center'
-}, {title: '批准金额', dataIndex: 'approvedAmount', width: 140}, {
-  title: '操作',
-  dataIndex: 'action',
-  align: 'center',
-  fixed: 'right',
-  width: 150
-}]);
+const columns = ref<TableColumnsType<ReturnRow>>([
+  {
+    title: '退货单号',
+    dataIndex: 'returnNo',
+    width: 220,
+  },
+  {title: '客户', dataIndex: 'customerName', width: 150},
+  {title: '原订单号', dataIndex: 'orderNo', width: 190},
+  {title: '退货原因', dataIndex: 'reason', width: 260, ellipsis: true},
+  {
+    title: '状态',
+    dataIndex: 'status',
+    width: 120,
+    align: 'center',
+  },
+  {title: '批准金额', dataIndex: 'approvedAmount', width: 140},
+  {
+    title: '操作',
+    dataIndex: 'action',
+    align: 'center',
+    fixed: 'right',
+    width: 150,
+  },
+]);
 
 /** 「更多」里的菜单项挂不上 `v-privilege` 指令，改用同一口径的 hasPermission 裁剪。 */
 const canReject = computed(() => hasPermission('scm:order:return:reject'));
@@ -232,8 +319,12 @@ function resetQuery() {
   onSearch();
 }
 
-const action = ref<'approve' | 'receive' | 'reject' | 'cancel'>('approve'), decisionReason = ref(''), warehouseId = ref<Id>();
-const editLoading = ref(false), editError = ref(''), editRow = ref<ReturnRow>();
+const action = ref<'approve' | 'receive' | 'reject' | 'cancel'>('approve'),
+  decisionReason = ref(''),
+  warehouseId = ref<Id>();
+const editLoading = ref(false),
+  editError = ref(''),
+  editRow = ref<ReturnRow>();
 let editRequestId = 0;
 
 async function edit(row: ReturnRow, mode: 'approve' | 'receive' | 'reject' | 'cancel') {
@@ -251,7 +342,7 @@ async function edit(row: ReturnRow, mode: 'approve' | 'receive' | 'reject' | 'ca
     const response = await api.detail(row.returnId, {suppressGlobalErrorMessage: true});
     if (generation !== editRequestId || !visible.value) return;
     active.value = response.data;
-    active.value.items.forEach(i => {
+    active.value.items.forEach((i) => {
       if (mode === 'approve') i.approvedQuantity = i.requestedQuantity;
       (i as ReturnItemWithDisposition).receiptQuantity = remainingQuantity(i);
       (i as ReturnItemWithDisposition).disposition = 'RETURN_TO_STOCK';
@@ -297,12 +388,12 @@ async function save() {
       editError.value = '请选择接收仓库';
       return;
     }
-    receiveItems = (r.items as ReturnItemWithDisposition[]).filter(i => new Decimal(i.receiptQuantity ?? 0).gt(0));
+    receiveItems = (r.items as ReturnItemWithDisposition[]).filter((i) => new Decimal(i.receiptQuantity ?? 0).gt(0));
     if (!receiveItems.length) {
       editError.value = '请填写至少一行本次接收数量';
       return;
     }
-    if (receiveItems.some(i => new Decimal(i.receiptQuantity).gt(remainingQuantity(i)))) {
+    if (receiveItems.some((i) => new Decimal(i.receiptQuantity).gt(remainingQuantity(i)))) {
       editError.value = '本次接收数量不能超过剩余可接收数量';
       return;
     }
@@ -311,18 +402,28 @@ async function save() {
   saving.value = true;
   try {
     if (action.value === 'receive') {
-      await api.receive({returnId: r.returnId, version: r.version, warehouseId: warehouseId.value, items: receiveItems.map(i => ({
-        returnItemId: i.returnItemId, quantity: fixed(i.receiptQuantity), disposition: i.disposition
-      }))});
+      await api.receive({
+        returnId: r.returnId,
+        version: r.version,
+        warehouseId: warehouseId.value,
+        items: receiveItems.map((i) => ({
+          returnItemId: i.returnItemId,
+          quantity: fixed(i.receiptQuantity),
+          disposition: i.disposition,
+        })),
+      });
     } else {
       await api[action.value]({
         returnId: r.returnId,
-        version: r.version, ...(action.value === 'approve' ? {
-          items: r.items.map(i => ({
-            orderItemId: i.orderItemId,
-            approvedQuantity: fixed(i.approvedQuantity ?? '0')
-          }))
-        } : {decisionReason: decisionReason.value})
+        version: r.version,
+        ...(action.value === 'approve'
+          ? {
+              items: r.items.map((i) => ({
+                orderItemId: i.orderItemId,
+                approvedQuantity: fixed(i.approvedQuantity ?? '0'),
+              })),
+            }
+          : {decisionReason: decisionReason.value}),
       });
     }
     if (generation !== editRequestId) return;
@@ -335,15 +436,23 @@ async function save() {
   }
 }
 
-const detailOpen = ref(false), detailLoading = ref(false), detailError = ref('');
-const detail = ref<ReturnRow>(), detailId = ref<Id>();
-const replacementOrderId = ref<Id | null>(null), replacementLoaded = ref(false);
+const detailOpen = ref(false),
+  detailLoading = ref(false),
+  detailError = ref('');
+const detail = ref<ReturnRow>(),
+  detailId = ref<Id>();
+const replacementOrderId = ref<Id | null>(null),
+  replacementLoaded = ref(false);
 const exchangeDrawer = ref<InstanceType<typeof OrderFormDrawer>>();
 const router = useRouter();
-const exchangeReady = computed(() => replacementLoaded.value && !replacementOrderId.value
-    && detail.value?.status === 'APPROVED' && detail.value.items.some(item =>
-      new Decimal(item.approvedQuantity ?? 0).gt(0)) && detail.value.items.every(item =>
-      new Decimal(item.receivedQuantity ?? 0).gte(item.approvedQuantity ?? 0)));
+const exchangeReady = computed(
+  () =>
+    replacementLoaded.value &&
+    !replacementOrderId.value &&
+    detail.value?.status === 'APPROVED' &&
+    detail.value.items.some((item) => new Decimal(item.approvedQuantity ?? 0).gt(0)) &&
+    detail.value.items.every((item) => new Decimal(item.receivedQuantity ?? 0).gte(item.approvedQuantity ?? 0))
+);
 let detailRequestId = 0;
 async function showDetail(id?: Id) {
   if (id === undefined) return;
@@ -356,22 +465,24 @@ async function showDetail(id?: Id) {
   replacementOrderId.value = null;
   replacementLoaded.value = false;
   try {
-    const [response, linked] = await Promise.all([
-      api.detail(id, {suppressGlobalErrorMessage: true}), orderApi.exchangeReplacement(id)
-    ]);
+    const [response, linked] = await Promise.all([api.detail(id, {suppressGlobalErrorMessage: true}), orderApi.exchangeReplacement(id)]);
     if (generation === detailRequestId) {
       detail.value = response.data;
       replacementOrderId.value = linked.data;
       replacementLoaded.value = true;
     }
-  } catch (e) { if (generation === detailRequestId) detailError.value = orderError(e); }
-  finally { if (generation === detailRequestId) detailLoading.value = false; }
+  } catch (e) {
+    if (generation === detailRequestId) detailError.value = orderError(e);
+  } finally {
+    if (generation === detailRequestId) detailLoading.value = false;
+  }
 }
 function openExchange(): void {
   const current = detail.value;
   if (!current || !exchangeReady.value) return;
-  const lines = current.items.filter(item => new Decimal(item.receivedQuantity ?? 0).gt(0))
-      .map(item => ({orderItemId: item.orderItemId, receivedQuantity: item.receivedQuantity!}));
+  const lines = current.items
+    .filter((item) => new Decimal(item.receivedQuantity ?? 0).gt(0))
+    .map((item) => ({orderItemId: item.orderItemId, receivedQuantity: item.receivedQuantity!}));
   detailOpen.value = false;
   void exchangeDrawer.value?.openForExchange(current.returnId, current.returnNo, current.orderId, lines);
 }
@@ -380,13 +491,17 @@ function onExchangeSaved(): void {
   void queryData();
 }
 const route = useRoute();
-watch(detailOpen, (open) => {
-  if (!open) {
-    detailRequestId += 1;
-    detailLoading.value = false;
-    detail.value = undefined;
-  }
-}, {flush: 'sync'});
+watch(
+  detailOpen,
+  (open) => {
+    if (!open) {
+      detailRequestId += 1;
+      detailLoading.value = false;
+      detail.value = undefined;
+    }
+  },
+  {flush: 'sync'}
+);
 
 function invalidatePanels() {
   editRequestId += 1;
@@ -401,9 +516,13 @@ function invalidatePanels() {
 onDeactivated(invalidatePanels);
 onScopeDispose(invalidatePanels);
 const returnRouteName = route.name;
-watch([() => route.name, () => route.query.returnId], ([name, id]) => {
-  if (name === returnRouteName && typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) void showDetail(id);
-}, {immediate: true});
+watch(
+  [() => route.name, () => route.query.returnId],
+  ([name, id]) => {
+    if (name === returnRouteName && typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) void showDetail(id);
+  },
+  {immediate: true}
+);
 
 onMounted(queryData);
 </script>
@@ -421,4 +540,5 @@ onMounted(queryData);
 pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}</style>
+}
+</style>

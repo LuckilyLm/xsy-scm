@@ -6,19 +6,17 @@
   <a-form class="smart-query-form" v-privilege="'support:operateLog:query'">
     <a-row class="smart-query-form-row">
       <a-form-item label="操作关键字" class="smart-query-form-item">
-        <a-input style="width: 150px" v-model:value="queryForm.keywords" placeholder="模块/操作内容"/>
+        <a-input style="width: 150px" v-model:value="queryForm.keywords" placeholder="模块/操作内容" />
       </a-form-item>
       <a-form-item label="请求关键字" class="smart-query-form-item">
-        <a-input style="width: 270px" v-model:value="queryForm.requestKeywords"
-                 placeholder="请求地址/请求方法/请求参数/返回结果"/>
+        <a-input style="width: 270px" v-model:value="queryForm.requestKeywords" placeholder="请求地址/请求方法/请求参数/返回结果" />
       </a-form-item>
       <a-form-item label="用户名称" class="smart-query-form-item">
-        <a-input style="width: 100px" v-model:value="queryForm.userName" placeholder="用户名称"/>
+        <a-input style="width: 100px" v-model:value="queryForm.userName" placeholder="用户名称" />
       </a-form-item>
 
       <a-form-item label="请求时间" class="smart-query-form-item">
-        <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange"
-                        style="width: 240px"/>
+        <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange" style="width: 240px" />
       </a-form-item>
 
       <a-form-item label="状态：" class="smart-query-form-item">
@@ -33,13 +31,13 @@
         <a-button-group>
           <a-button type="primary" @click="ajaxQuery">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -49,19 +47,19 @@
   </a-form>
 
   <FormNote
-      v-if="businessContextActive"
-      title="正在按当前业务对象查看操作记录"
-      :lines="['该视图按业务类型与 ID 精确匹配；操作时未写入该 ID 的记录（如新建类操作或更早的历史数据）无法归属到本对象，因此此处不保证是该对象的全部历史。']"
+    v-if="businessContextActive"
+    title="正在按当前业务对象查看操作记录"
+    :lines="[
+      '该视图按业务类型与 ID 精确匹配；操作时未写入该 ID 的记录（如新建类操作或更早的历史数据）无法归属到本对象，因此此处不保证是该对象的全部历史。',
+    ]"
   />
 
   <a-card size="small" :bordered="false" :hoverable="true">
     <a-row justify="end">
-      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.CONFIG"
-                     :refresh="ajaxQuery"/>
+      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.CONFIG" :refresh="ajaxQuery" />
     </a-row>
-    <a-table size="small" :loading="tableLoading" :dataSource="tableData" :columns="columns" bordered
-             rowKey="operateLogId" :pagination="false">
-      <template #bodyCell="{ text, record, column }">
+    <a-table size="small" :loading="tableLoading" :dataSource="tableData" :columns="columns" bordered rowKey="operateLogId" :pagination="false">
+      <template #bodyCell="{text, record, column}">
         <template v-if="column.dataIndex === 'response'">
           <a-typography-text v-if="text && text.ok">{{ text ? text.msg : '-' }}</a-typography-text>
           <a-typography-text v-else type="warning">{{ text ? text.msg : '-' }}</a-typography-text>
@@ -81,9 +79,7 @@
 
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
-            <a-button @click="showDetail(record.operateLogId)" type="link" v-privilege="'support:operateLog:detail'">
-              详情
-            </a-button>
+            <a-button @click="showDetail(record.operateLogId)" type="link" v-privilege="'support:operateLog:detail'"> 详情 </a-button>
           </div>
         </template>
       </template>
@@ -91,20 +87,20 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="ajaxQuery"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="ajaxQuery"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
 
-    <OperateLogDetailModal ref="detailModal"/>
+    <OperateLogDetailModal ref="detailModal" />
   </a-card>
 </template>
 <script setup lang="ts">

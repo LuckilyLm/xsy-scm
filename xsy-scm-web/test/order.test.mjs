@@ -9,7 +9,24 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {transformSync} from 'esbuild';
-import {draftKey, nextOrderForCustomer, newOrder, serializeDraft, fromHistory, applyDraft, createRecentPriceCache, isLoadingRecentPrice, loadRecentPrices, recentPriceKey, hasRecentPrices, recentPriceRows, payload, validateOrder, fixed, amount} from '../src/views/business/scm/order/order-form-model.ts';
+import {
+  draftKey,
+  nextOrderForCustomer,
+  newOrder,
+  serializeDraft,
+  fromHistory,
+  applyDraft,
+  createRecentPriceCache,
+  isLoadingRecentPrice,
+  loadRecentPrices,
+  recentPriceKey,
+  hasRecentPrices,
+  recentPriceRows,
+  payload,
+  validateOrder,
+  fixed,
+  amount,
+} from '../src/views/business/scm/order/order-form-model.ts';
 import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 
 // ---------------------------------------------------------------- 来源：order-batch-price-check.test.mjs
@@ -21,27 +38,40 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   new Function('require', 'module', 'exports', compiled)(require, module, module.exports);
   const {compareOrderPrices, canApplyPriceCheck} = module.exports;
 
-  const order = items => ({
-    orderId: '9007199254740993', orderNo: 'SO-123', version: 3, status: 'DRAFT',
-    customerId: '9', customerNameSnapshot: '甲客户', items
+  const order = (items) => ({
+    orderId: '9007199254740993',
+    orderNo: 'SO-123',
+    version: 3,
+    status: 'DRAFT',
+    customerId: '9',
+    customerNameSnapshot: '甲客户',
+    items,
   });
   const item = (skuId, price, manual = false) => ({
-    itemId: String(skuId), skuId: String(skuId), orderedQuantity: '2.0000',
-    draftUnitPrice: price, manualPriceOverride: manual, productNameSnapshot: '商品' + skuId,
-    skuCodeSnapshot: 'A' + skuId
+    itemId: String(skuId),
+    skuId: String(skuId),
+    orderedQuantity: '2.0000',
+    draftUnitPrice: price,
+    manualPriceOverride: manual,
+    productNameSnapshot: '商品' + skuId,
+    skuCodeSnapshot: 'A' + skuId,
   });
   const priced = (skuId, unitPrice, sellable = true) => ({
-    skuId: String(skuId), unitPrice, sellable, priceStatus: unitPrice == null ? 'UNPRICED' : 'PRICED',
-    priceSource: unitPrice == null ? null : 'MARKET'
+    skuId: String(skuId),
+    unitPrice,
+    sellable,
+    priceStatus: unitPrice == null ? 'UNPRICED' : 'PRICED',
+    priceSource: unitPrice == null ? null : 'MARKET',
   });
 
   test('订单核价使用定点十进制比较，不写回历史草稿价或订单版本', () => {
     const input = order([item(1, '1.1000'), item(2, '3.0000'), item(3, '0.0000')]);
     const before = JSON.stringify(input);
-    const result = compareOrderPrices(input, [
-      priced(1, '1.1000'), priced(2, '2.9000'), priced(3, '0.0000')
-    ]);
-    assert.deepEqual(result.lines.map(row => row.state), ['SAME', 'DOWN', 'SAME']);
+    const result = compareOrderPrices(input, [priced(1, '1.1000'), priced(2, '2.9000'), priced(3, '0.0000')]);
+    assert.deepEqual(
+      result.lines.map((row) => row.state),
+      ['SAME', 'DOWN', 'SAME']
+    );
     assert.equal(result.changed, 1);
     assert.equal(result.version, 3);
     assert.equal(JSON.stringify(input), before);
@@ -50,20 +80,26 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 
   test('人工改价不参与重算；缺失价格与不可售均阻止人工应用', () => {
     const input = order([item(1, '12.0000', true), item(2, '1.0000'), item(3, '2.0000')]);
-    const result = compareOrderPrices(input, [
-      priced(1, '15.0000'), priced(2, null), priced(3, '5.0000', false)
-    ]);
-    assert.deepEqual(result.lines.map(row => row.state), ['MANUAL', 'BLOCKED', 'BLOCKED']);
+    const result = compareOrderPrices(input, [priced(1, '15.0000'), priced(2, null), priced(3, '5.0000', false)]);
+    assert.deepEqual(
+      result.lines.map((row) => row.state),
+      ['MANUAL', 'BLOCKED', 'BLOCKED']
+    );
     assert.equal(result.lines[0].currentPrice, '12.0000');
     assert.equal(result.blocked, 2);
     assert.equal(canApplyPriceCheck(result), false);
   });
 
   test('原草稿未定价但已有现价时标记为新定价，涨价与降价分别展示', () => {
-    const result = compareOrderPrices(order([
-      item(1, null), item(2, '5.0000'), item(3, '5.0000')
-    ]), [priced(1, '0.0000'), priced(2, '6.0000'), priced(3, '4.0000')]);
-    assert.deepEqual(result.lines.map(row => row.state), ['NEW', 'UP', 'DOWN']);
+    const result = compareOrderPrices(order([item(1, null), item(2, '5.0000'), item(3, '5.0000')]), [
+      priced(1, '0.0000'),
+      priced(2, '6.0000'),
+      priced(3, '4.0000'),
+    ]);
+    assert.deepEqual(
+      result.lines.map((row) => row.state),
+      ['NEW', 'UP', 'DOWN']
+    );
     assert.equal(result.changed, 3);
   });
 
@@ -88,7 +124,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 
 // ---------------------------------------------------------------- 来源：order-continuous-entry-contract.test.mjs
 {
-  const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   const drawer = read('../src/views/business/scm/order/components/order-form-drawer.vue');
   const model = read('../src/views/business/scm/order/order-form-model.ts');
 
@@ -109,8 +145,10 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.match(drawer, /if \(token !== requestId \|\| !visible\.value\) return/);
     assert.match(drawer, /if \(saving\.value \|\| loading\.value\) return/);
     assert.match(model, /nextOrderForCustomer/);
-    assert.doesNotMatch(model.match(/export function nextOrderForCustomer[\s\S]+?\n\}/)?.[0] || '',
-      /items\s*=|lockedUnitPrice|manualPriceOverride|originalOrderId|orderNo|status/);
+    assert.doesNotMatch(
+      model.match(/export function nextOrderForCustomer[\s\S]+?\n\}/)?.[0] || '',
+      /items\s*=|lockedUnitPrice|manualPriceOverride|originalOrderId|orderNo|status/
+    );
   });
 }
 
@@ -133,18 +171,37 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   test('连续录单只保留客户与仓库，清空来源快照、旧地址、商品、价款及补单关联', () => {
     const previous = {
       ...newOrder(),
-      orderId: '9007199254740993', orderNo: 'SO-900', version: 8,
-      status: 'CONFIRMED', customerId: '12', mallDeliveryWarehouseId: '31',
-      orderSource: 'SUPPLEMENT', originalOrderId: '9', supplementReason: '上一单原因',
-      expectDeliveryTime: '2026-10-17 19:00:00', remark: '仅上一单的备注',
+      orderId: '9007199254740993',
+      orderNo: 'SO-900',
+      version: 8,
+      status: 'CONFIRMED',
+      customerId: '12',
+      mallDeliveryWarehouseId: '31',
+      orderSource: 'SUPPLEMENT',
+      originalOrderId: '9',
+      supplementReason: '上一单原因',
+      expectDeliveryTime: '2026-10-17 19:00:00',
+      remark: '仅上一单的备注',
       address: {receiverName: '旧收货人', receiverPhone: '123456', address: '旧地址'},
-      items: [itemOf({skuId: '4', itemId: '11', version: 2, orderedQuantity: '5.0000',
-        draftUnitPrice: '9.9900', lockedUnitPrice: '9.9900',
-        manualPriceOverride: true, unitPrice: '9.9900', overrideReason: '上一单改价'})]
+      items: [
+        itemOf({
+          skuId: '4',
+          itemId: '11',
+          version: 2,
+          orderedQuantity: '5.0000',
+          draftUnitPrice: '9.9900',
+          lockedUnitPrice: '9.9900',
+          manualPriceOverride: true,
+          unitPrice: '9.9900',
+          overrideReason: '上一单改价',
+        }),
+      ],
     };
     const next = nextOrderForCustomer(previous);
     assert.deepEqual(next, {
-      ...newOrder(), customerId: '12', deliveryWarehouseId: '31'
+      ...newOrder(),
+      customerId: '12',
+      deliveryWarehouseId: '31',
     });
     assert.equal(previous.items.length, 1, '准备下一单不能修改上一单快照');
     assert.notEqual(next.address, previous.address);
@@ -308,7 +365,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 
 // ---------------------------------------------------------------- 来源：order-tag-contract.test.mjs
 {
-  const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   const sql = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V145__scm_order_tags.sql');
   const mapper = read('../../xsy-scm-server/sa-admin/src/main/resources/mapper/scm/order/SalesOrderMapper.xml');
   const service = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/service/OrderTagService.java');
@@ -368,9 +425,9 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
   function code(relative) {
     return readFileSync(new URL(relative, import.meta.url), 'utf8')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/^\s*\/\/.*$/gm, '');
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   const BASE = '../src/views/business/scm/order/';
@@ -399,8 +456,8 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     assert.ok(width <= 160, `退货操作列 ${width}px 超出 160px`);
     // 常驻的仍是详情与当前状态唯一的推进动作
     assert.match(orderReturn, /showDetail\(record\.returnId\)/);
-    assert.match(orderReturn, /record\.status==='PENDING'/);
-    assert.match(orderReturn, /record\.status==='APPROVED'/);
+    assert.match(orderReturn, /record\.status\s*===\s*'PENDING'/);
+    assert.match(orderReturn, /record\.status\s*===\s*'APPROVED'/);
     // 审批 / 接收 / 拒绝 / 取消 不能全部常驻，低频与危险动作按状态进「更多」
     assert.match(orderReturn, /ScmActionMore/);
     assert.match(orderReturn, /hasPermission\('scm:order:return:reject'\)/);
@@ -421,7 +478,11 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   });
 
   test('三个订单页面的操作列全部居中', () => {
-    for (const [name, source] of [['订单日志', orderLog], ['退货', orderReturn], ['退款', orderRefund]]) {
+    for (const [name, source] of [
+      ['订单日志', orderLog],
+      ['退货', orderReturn],
+      ['退款', orderRefund],
+    ]) {
       // 列声明有单行与多行两种写法，不能假设 align 紧跟在 dataIndex 后面
       assert.match(source, /dataIndex: 'action'[\s\S]{0,120}?align: 'center'/, `${name}的操作列未居中`);
     }
@@ -442,8 +503,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
    */
 
   /** 剥掉模板 / 块 / 行注释，门禁只针对代码。 */
-  const src = readFileSync(
-    new URL('../src/views/business/scm/order/components/order-form-drawer.vue', import.meta.url), 'utf8')
+  const src = readFileSync(new URL('../src/views/business/scm/order/components/order-form-drawer.vue', import.meta.url), 'utf8')
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/^\s*\/\/.*$/gm, '');
@@ -544,13 +604,22 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
    * 静默把上一个 SKU / 上一个客户的历史成交价显示成当前行的参考价，而参考价看着完全合理。
    */
 
-  const APPLE = 101, BANANA = 102, CUSTOMER_A = 7, CUSTOMER_B = 8;
+  const APPLE = 101,
+    BANANA = 102,
+    CUSTOMER_A = 7,
+    CUSTOMER_B = 8;
   const priceOf = (skuId, unitPrice) => [{itemId: skuId, skuId, orderNo: `SO${skuId}`, unitPrice}];
 
   /** 记录调用次数的假接口：断言「该请求时必须请求」只能靠计数。 */
   function spy(rows) {
     const calls = [];
-    return {calls, fetcher: async (skuId) => { calls.push(skuId); return rows; }};
+    return {
+      calls,
+      fetcher: async (skuId) => {
+        calls.push(skuId);
+        return rows;
+      },
+    };
   }
 
   test('同一行换商品（Apple → Banana）：必须按新 SKU 重新查询，不能复用旧缓存', async () => {
@@ -570,7 +639,7 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
     const cache = createRecentPriceCache();
     await loadRecentPrices(cache, CUSTOMER_A, APPLE, async () => priceOf(APPLE, '6.50'));
     const rows = [{skuId: APPLE}, {skuId: BANANA}];
-    rows.shift();                                   // 移除第一行，BANANA 从 index 1 变成 index 0
+    rows.shift(); // 移除第一行，BANANA 从 index 1 变成 index 0
     const bananaCalls = [];
     await loadRecentPrices(cache, CUSTOMER_A, rows[0].skuId, async () => {
       bananaCalls.push(rows[0].skuId);
@@ -583,7 +652,10 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   test('切客户（A → B）同 SKU：必须重新查询，不把 A 的成交价显示给 B', async () => {
     const cache = createRecentPriceCache();
     const calls = [];
-    const fetcher = async () => { calls.push(calls.length + 1); return priceOf(APPLE, '6.50'); };
+    const fetcher = async () => {
+      calls.push(calls.length + 1);
+      return priceOf(APPLE, '6.50');
+    };
     await loadRecentPrices(cache, CUSTOMER_A, APPLE, fetcher);
     await loadRecentPrices(cache, CUSTOMER_B, APPLE, fetcher);
     assert.equal(calls.length, 2, '换客户后复用了上一个客户的历史价缓存');
@@ -593,7 +665,10 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   test('同客户同 SKU 复用缓存：第二次点击不再请求', async () => {
     const cache = createRecentPriceCache();
     let calls = 0;
-    const fetcher = async () => { calls += 1; return priceOf(APPLE, '6.50'); };
+    const fetcher = async () => {
+      calls += 1;
+      return priceOf(APPLE, '6.50');
+    };
     assert.equal(await loadRecentPrices(cache, CUSTOMER_A, APPLE, fetcher), true);
     assert.equal(await loadRecentPrices(cache, CUSTOMER_A, APPLE, fetcher), true);
     assert.equal(calls, 1, '同一客户同一 SKU 重复请求');
@@ -602,24 +677,45 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
   test('请求失败：加载态必须落回、缓存不落，下次点击可重试', async () => {
     const cache = createRecentPriceCache();
     let calls = 0;
-    await assert.rejects(loadRecentPrices(cache, CUSTOMER_A, APPLE, async () => {
-      calls += 1;
-      throw new Error('network down');
-    }), /network down/);
+    await assert.rejects(
+      loadRecentPrices(cache, CUSTOMER_A, APPLE, async () => {
+        calls += 1;
+        throw new Error('network down');
+      }),
+      /network down/
+    );
     assert.equal(isLoadingRecentPrice(cache, CUSTOMER_A, APPLE), false, '失败后该行永久处于加载态');
     assert.equal(hasRecentPrices(cache, CUSTOMER_A, APPLE), false, '失败结果被当成缓存写入');
-    await loadRecentPrices(cache, CUSTOMER_A, APPLE, async () => { calls += 1; return priceOf(APPLE, '6.50'); });
+    await loadRecentPrices(cache, CUSTOMER_A, APPLE, async () => {
+      calls += 1;
+      return priceOf(APPLE, '6.50');
+    });
     assert.equal(calls, 2, '失败后无法重试');
   });
 
   test('查过但确无历史价：区分「空结果」与「还没查」，且客户/SKU 缺失时不请求', async () => {
     const cache = createRecentPriceCache();
     let calls = 0;
-    await loadRecentPrices(cache, CUSTOMER_A, APPLE, async () => { calls += 1; return []; });
+    await loadRecentPrices(cache, CUSTOMER_A, APPLE, async () => {
+      calls += 1;
+      return [];
+    });
     assert.equal(hasRecentPrices(cache, CUSTOMER_A, APPLE), true);
     assert.deepEqual(recentPriceRows(cache, CUSTOMER_A, APPLE), []);
-    assert.equal(await loadRecentPrices(cache, null, APPLE, async () => { calls += 1; return []; }), false);
-    assert.equal(await loadRecentPrices(cache, CUSTOMER_A, undefined, async () => { calls += 1; return []; }), false);
+    assert.equal(
+      await loadRecentPrices(cache, null, APPLE, async () => {
+        calls += 1;
+        return [];
+      }),
+      false
+    );
+    assert.equal(
+      await loadRecentPrices(cache, CUSTOMER_A, undefined, async () => {
+        calls += 1;
+        return [];
+      }),
+      false
+    );
     assert.equal(calls, 1, '缺客户或缺 SKU 时仍然发起了请求');
     assert.equal(recentPriceRows(cache, null, APPLE).length, 0);
   });
@@ -627,12 +723,82 @@ import {orderError} from '../src/views/business/scm/order/order-errors.ts';
 
 // ---------------------------------------------------------------- 来源：order-contract.test.mjs
 {
-  function form(){const f=newOrder();f.customerId='1';f.address={receiverName:'客户',receiverPhone:'123',address:'地址'};f.items=[{skuId:'3',orderedQuantity:'1.0000',manualPriceOverride:false}];return f;}
-  test('null, zero and not-yet-settled amounts remain distinguishable',()=>{assert.equal(amount(null,true),'未定价');assert.equal(amount(null),'—');assert.equal(amount('0.0000',true),'¥ 0.0000');assert.equal(fixed('1.00005'),'1.0001');});
-  test('valid draft and supplement validation',()=>{const f=form();assert.equal(validateOrder(f),undefined);f.orderSource='SUPPLEMENT';assert.match(validateOrder(f),/补单原因/);f.supplementReason='补录';assert.equal(validateOrder(f),undefined);});
-  test('duplicate SKU and missing override reason rejected',()=>{const f=form();f.items.push({...f.items[0]});assert.match(validateOrder(f),/重复/);f.items.pop();f.items[0].manualPriceOverride=true;f.items[0].unitPrice='0.0000';assert.match(validateOrder(f),/原因/);f.items[0].overrideReason='免费';assert.equal(validateOrder(f),undefined);});
-  test('payload preserves item identity and removes inactive override',()=>{const f=form();Object.assign(f.items[0],{itemId:'9',version:3,unitPrice:'2.0000',overrideReason:'old'});assert.deepEqual(payload(f).items[0],{itemId:'9',version:3,skuId:'3',orderedQuantity:'1.0000',manualPriceOverride:false,unitPrice:null,overrideReason:null,sortOrder:0});});
-  test('stale data and availability errors are actionable',()=>{assert.match(orderError({code:40921}),/刷新/);assert.match(orderError({code:40949}),/未定价/);assert.equal(orderError({msg:'业务提示'}),'业务提示');assert.match(orderError({data:{code:40921}}),/刷新/);assert.equal(orderError({response:{data:{msg:'业务提示'}}}),'业务提示');});
-  test('frontend enum excludes fulfillment and unpriced source values',()=>{const source=readFileSync(new URL('../src/constants/business/scm/order-const.ts',import.meta.url),'utf8');assert.match(source,/DRAFT[\s\S]*PENDING[\s\S]*CONFIRMED[\s\S]*CANCELLED/);assert.doesNotMatch(source,/UNPRICED|DELIVERING|PURCHASING|SIGNED/);});
-  test('order operation enum matches backend ScmOrderOperationTypeEnum',()=>{const ts=readFileSync(new URL('../src/constants/business/scm/order-const.ts',import.meta.url),'utf8');const block=ts.match(/SCM_ORDER_OPERATION_ENUM[^{]*\{([\s\S]*?)\n\};/)[1];const front=[...block.matchAll(/^ {4}([A-Z_]+):/gm)].map(m=>m[1]);const java=readFileSync(new URL('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java',import.meta.url),'utf8');const back=java.match(/enum ScmOrderOperationTypeEnum \{([^}]*)\}/)[1].split(',').map(s=>s.trim()).filter(Boolean);assert.ok(back.length>0,'后端枚举解析失败');assert.deepEqual(front.slice().sort(),back.slice().sort(),'前端 SCM_ORDER_OPERATION_ENUM 与后端 ScmOrderOperationTypeEnum 取值集合不一致');assert.ok(front.every(k=>ts.includes(`${k}: {value: '${k}'`)),'每个取值都要以自身作为 value，不能用别名');});
+  function form() {
+    const f = newOrder();
+    f.customerId = '1';
+    f.address = {receiverName: '客户', receiverPhone: '123', address: '地址'};
+    f.items = [{skuId: '3', orderedQuantity: '1.0000', manualPriceOverride: false}];
+    return f;
+  }
+  test('null, zero and not-yet-settled amounts remain distinguishable', () => {
+    assert.equal(amount(null, true), '未定价');
+    assert.equal(amount(null), '—');
+    assert.equal(amount('0.0000', true), '¥ 0.0000');
+    assert.equal(fixed('1.00005'), '1.0001');
+  });
+  test('valid draft and supplement validation', () => {
+    const f = form();
+    assert.equal(validateOrder(f), undefined);
+    f.orderSource = 'SUPPLEMENT';
+    assert.match(validateOrder(f), /补单原因/);
+    f.supplementReason = '补录';
+    assert.equal(validateOrder(f), undefined);
+  });
+  test('duplicate SKU and missing override reason rejected', () => {
+    const f = form();
+    f.items.push({...f.items[0]});
+    assert.match(validateOrder(f), /重复/);
+    f.items.pop();
+    f.items[0].manualPriceOverride = true;
+    f.items[0].unitPrice = '0.0000';
+    assert.match(validateOrder(f), /原因/);
+    f.items[0].overrideReason = '免费';
+    assert.equal(validateOrder(f), undefined);
+  });
+  test('payload preserves item identity and removes inactive override', () => {
+    const f = form();
+    Object.assign(f.items[0], {itemId: '9', version: 3, unitPrice: '2.0000', overrideReason: 'old'});
+    assert.deepEqual(payload(f).items[0], {
+      itemId: '9',
+      version: 3,
+      skuId: '3',
+      orderedQuantity: '1.0000',
+      manualPriceOverride: false,
+      unitPrice: null,
+      overrideReason: null,
+      sortOrder: 0,
+    });
+  });
+  test('stale data and availability errors are actionable', () => {
+    assert.match(orderError({code: 40921}), /刷新/);
+    assert.match(orderError({code: 40949}), /未定价/);
+    assert.equal(orderError({msg: '业务提示'}), '业务提示');
+    assert.match(orderError({data: {code: 40921}}), /刷新/);
+    assert.equal(orderError({response: {data: {msg: '业务提示'}}}), '业务提示');
+  });
+  test('frontend enum excludes fulfillment and unpriced source values', () => {
+    const source = readFileSync(new URL('../src/constants/business/scm/order-const.ts', import.meta.url), 'utf8');
+    assert.match(source, /DRAFT[\s\S]*PENDING[\s\S]*CONFIRMED[\s\S]*CANCELLED/);
+    assert.doesNotMatch(source, /UNPRICED|DELIVERING|PURCHASING|SIGNED/);
+  });
+  test('order operation enum matches backend ScmOrderOperationTypeEnum', () => {
+    const ts = readFileSync(new URL('../src/constants/business/scm/order-const.ts', import.meta.url), 'utf8');
+    const block = ts.match(/SCM_ORDER_OPERATION_ENUM[^{]*\{([\s\S]*?)\n\};/)[1];
+    const front = [...block.matchAll(/^ {4}([A-Z_]+):/gm)].map((m) => m[1]);
+    const java = readFileSync(
+      new URL('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/order/constant/ScmOrderOperationTypeEnum.java', import.meta.url),
+      'utf8'
+    );
+    const back = java
+      .match(/enum ScmOrderOperationTypeEnum \{([^}]*)\}/)[1]
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    assert.ok(back.length > 0, '后端枚举解析失败');
+    assert.deepEqual(front.slice().sort(), back.slice().sort(), '前端 SCM_ORDER_OPERATION_ENUM 与后端 ScmOrderOperationTypeEnum 取值集合不一致');
+    assert.ok(
+      front.every((k) => ts.includes(`${k}: {value: '${k}'`)),
+      '每个取值都要以自身作为 value，不能用别名'
+    );
+  });
 }

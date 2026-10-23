@@ -1,6 +1,6 @@
 <!--
   * 帮助文档详情
-  * 
+  *
 -->
 <template>
   <a-card size="small" :bordered="false">
@@ -21,18 +21,19 @@
       <div class="content-html" v-html="helpDocDetail.contentHtml"></div>
       <!--endprint-->
     </div>
-    <a-divider v-if="helpDocDetail.attachment && helpDocDetail.attachment.length > 0"/>
-    <div v-if="helpDocDetail.attachment && helpDocDetail.attachment.length > 0">附件：
-      <FilePreview :fileList="helpDocDetail.attachment"/>
+    <a-divider v-if="helpDocDetail.attachment && helpDocDetail.attachment.length > 0" />
+    <div v-if="helpDocDetail.attachment && helpDocDetail.attachment.length > 0">
+      附件：
+      <FilePreview :fileList="helpDocDetail.attachment" />
     </div>
   </a-card>
 
   <a-card title="阅读记录" size="small" class="smart-margin-top10" :bordered="false">
-    <HelpDocViewRecordList ref="helpDocViewRecordListRef" :helpDocId="route.query.helpDocId"/>
+    <HelpDocViewRecordList ref="helpDocViewRecordListRef" :helpDocId="route.query.helpDocId" />
   </a-card>
 
   <!-- 预览附件 -->
-  <FilePreview ref="filePreviewRef"/>
+  <FilePreview ref="filePreviewRef" />
 </template>
 
 <script setup lang="ts">
@@ -165,8 +166,13 @@ function print() {
     font-size: 16px;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    color: #0D366F;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #0d366f;
     font-weight: bold;
     margin-top: 20px;
     margin-bottom: 10px;
@@ -182,7 +188,8 @@ function print() {
     line-height: 1.6;
   }
 
-  th, td {
+  th,
+  td {
     padding: 8px 12px;
     border: 1px solid #e5e6eb;
     text-align: left;
@@ -191,7 +198,7 @@ function print() {
 
   th {
     background: #f5f7fa;
-    color: #0D366F;
+    color: #0d366f;
     font-weight: 600;
     white-space: nowrap;
   }
@@ -246,7 +253,8 @@ function print() {
     color: #ba68c8;
   }
 
-  ul, ol {
+  ul,
+  ol {
     padding: 0;
     padding-left: 24px;
   }
@@ -255,11 +263,14 @@ function print() {
     line-height: 24px;
   }
 
-  li ul, li ol {
+  li ul,
+  li ol {
     margin-left: 16px;
   }
 
-  p, ul, ol {
+  p,
+  ul,
+  ol {
     font-size: 16px;
     line-height: 24px;
   }
@@ -302,7 +313,7 @@ function print() {
 
   blockquote {
     color: #abb2bf;
-    border-left: .5em solid #abb2bf;
+    border-left: 0.5em solid #abb2bf;
     padding: 0 1em;
     margin-left: 0;
   }
@@ -333,12 +344,12 @@ function print() {
   }
 
   table tr:hover {
-    background-color: #DBE5F2;
+    background-color: #dbe5f2;
   }
 
   table tr th {
     font-weight: bold;
-    background-color: #90BFFF;
+    background-color: #90bfff;
     border: 1px solid #4c5562;
     margin: 0;
     padding: 6px 13px;
@@ -350,11 +361,13 @@ function print() {
     padding: 6px 13px;
   }
 
-  table tr th :first-child, table tr td :first-child {
+  table tr th :first-child,
+  table tr td :first-child {
     margin-top: 0;
   }
 
-  table tr th :last-child, table tr td :last-child {
+  table tr th :last-child,
+  table tr td :last-child {
     margin-bottom: 0;
   }
 }

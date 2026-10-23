@@ -1,13 +1,13 @@
 <!--
   * 展开菜单
-  * 
+  *
 -->
 <template>
   <div class="menu-container">
     <!-- 第一列：一级导航 -->
-    <TopMenu ref="topMenuRef" class="top-menu"/>
+    <TopMenu ref="topMenuRef" class="top-menu" />
     <!-- 第二列：二级导航 -->
-    <RecursionMenu ref="recursionMenuRef" class="recursion-menu"/>
+    <RecursionMenu ref="recursionMenuRef" class="recursion-menu" />
   </div>
 </template>
 <script setup lang="ts">

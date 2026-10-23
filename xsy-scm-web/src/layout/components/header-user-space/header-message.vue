@@ -9,26 +9,25 @@
       <a-button type="text" aria-label="查看未读消息" @click="showMessage" style="padding: 4px 5px">
         <a-badge :count="unreadMessageCount">
           <div style="width: 26px; height: 26px">
-            <BellOutlined :style="{ fontSize: '16px' }"/>
+            <BellOutlined :style="{fontSize: '16px'}" />
           </div>
         </a-badge>
       </a-button>
 
       <template #content>
         <a-spin :spinning="loading">
-          <a-tabs class="dropdown-tabs" centered :tabBarStyle="{ textAlign: 'center' }"
-                  style="width: 300px; z-index: 1030">
+          <a-tabs class="dropdown-tabs" centered :tabBarStyle="{textAlign: 'center'}" style="width: 300px; z-index: 1030">
             <a-tab-pane key="message">
               <template #tab>
                 未读消息
-                <a-badge :count="unreadMessageCount" :show-zero="false" :offset="[-5, -15]"/>
+                <a-badge :count="unreadMessageCount" :show-zero="false" :offset="[-5, -15]" />
               </template>
               <a-list class="tab-pane" size="small">
                 <a-list-item v-for="item in messageList" :key="item.messageId">
                   <a-list-item-meta>
                     <template #title>
                       <div class="title">
-                        <a-badge status="error"/>
+                        <a-badge status="error" />
                         <a @click="showMessageDetail(item)">{{ item.title }}</a>
                       </div>
                     </template>
@@ -46,7 +45,7 @@
         </a-spin>
       </template>
     </a-popover>
-    <MessageDetailModal ref="messageDetailModalRef" @refresh="queryMessage"/>
+    <MessageDetailModal ref="messageDetailModalRef" @refresh="queryMessage" />
   </div>
 </template>
 

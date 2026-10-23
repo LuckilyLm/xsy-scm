@@ -7,7 +7,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {toCustomerPayload, validateCustomer, emptyCustomer, applyCreditPeriodType, applyCreditPeriodUnit} from '../src/views/business/scm/customer/customer-form-model.ts';
+import {
+  toCustomerPayload,
+  validateCustomer,
+  emptyCustomer,
+  applyCreditPeriodType,
+  applyCreditPeriodUnit,
+} from '../src/views/business/scm/customer/customer-form-model.ts';
 import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-filter-key.ts';
 
 // ---------------------------------------------------------------- 来源：customer-360-layout-contract.test.mjs
@@ -45,12 +51,11 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
   const DETAIL_THEME = code('../src/theme/scm/detail.less');
 
   test('客户列表将独立识别字段分列，且不摊开主数据时间列', () => {
-    const titles = [...LIST.matchAll(/\{\s*title:\s*'([^']+)',\s*dataIndex:\s*'([^']+)'/g)]
-        .map((m) => m[1]);
+    const titles = [...LIST.matchAll(/\{\s*title:\s*'([^']+)',\s*dataIndex:\s*'([^']+)'/g)].map((m) => m[1]);
     assert.deepEqual(
-        titles,
-        ['客户名称', '客户编码', '客户类型', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
-        '客户列表列结构被改动'
+      titles,
+      ['客户名称', '客户编码', '客户类型', '业务员', '联系人', '联系电话', '结算方式', '授信额度', '状态', '操作'],
+      '客户列表列结构被改动'
     );
     assert.match(LIST, /title: '客户编码', dataIndex: 'customerCode', width: 160, showFlag: false/);
     assert.doesNotMatch(LIST, /title:\s*'上级集团'/);
@@ -101,8 +106,8 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 
     // 悬停 / 聚焦再补下划线，强化可点反馈
     assert.match(
-        THEME,
-        /\.scm-cell-link\.scm-cell-link:hover,\s*\.scm-cell-link\.scm-cell-link:focus\s*\{[\s\S]{0,120}?color:\s*var\(--scm-primary\)/
+      THEME,
+      /\.scm-cell-link\.scm-cell-link:hover,\s*\.scm-cell-link\.scm-cell-link:focus\s*\{[\s\S]{0,120}?color:\s*var\(--scm-primary\)/
     );
 
     // 复合单元已整体退役：主题里不得再有 .scm-cell-stack 及其 __main/__sub 规则。
@@ -127,20 +132,21 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
   });
 
   test('滚动宽度跟随当前可见列，隐藏列不占空间', () => {
-    const columns = [...LIST.matchAll(/\{\s*title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)([^}]*)\}/g)]
-        .map((m) => ({width: Number(m[1]), hiddenByDefault: /showFlag:\s*false/.test(m[2])}));
+    const columns = [...LIST.matchAll(/\{\s*title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)([^}]*)\}/g)].map((m) => ({
+      width: Number(m[1]),
+      hiddenByDefault: /showFlag:\s*false/.test(m[2]),
+    }));
     assert.equal(columns.length, 10, '客户列表列数被改动');
     const visibleWidth = columns.filter((column) => !column.hiddenByDefault).reduce((sum, column) => sum + column.width, 0);
     assert.ok(visibleWidth > 0);
     // 列宽与铺满统一走 useScmTableFill：scrollX 由它算出
-    assert.match(LIST, /:scroll="\{ x: scrollX \}"/);
+    assert.match(LIST, /:scroll="\{\s*x:\s*scrollX\s*\}"/);
     assert.match(LIST, /useScmTableFill\(columns\)/);
     assert.match(LIST, /<TableOperator v-model="columns"/);
 
-    const supplierWidths = [...SUPPLIER.matchAll(/\{title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)/g)]
-        .map((m) => Number(m[1]));
+    const supplierWidths = [...SUPPLIER.matchAll(/\{title:\s*'[^']+',\s*dataIndex:\s*'[^']+',\s*width:\s*(\d+)/g)].map((m) => Number(m[1]));
     assert.ok(supplierWidths.reduce((a, b) => a + b, 0) > 0);
-    assert.match(SUPPLIER, /:scroll="\{ x: scrollX \}"/);
+    assert.match(SUPPLIER, /:scroll="\{\s*x:\s*scrollX\s*\}"/);
     assert.match(SUPPLIER, /useScmTableFill\(columns\)/);
   });
 
@@ -267,7 +273,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     assert.equal(freshByTime.creditPeriodUnit, 'DAY');
     assert.equal(freshByTime.settleDay, undefined);
 
-    const cleared = applyCreditPeriodType({ ...dirty, creditPeriodType: 'BY_TIME' }, undefined);
+    const cleared = applyCreditPeriodType({...dirty, creditPeriodType: 'BY_TIME'}, undefined);
     assert.equal(cleared.creditPeriodType, undefined);
     assert.equal(cleared.creditPeriodValue, undefined);
     assert.equal(cleared.settleDay, undefined);
@@ -291,36 +297,36 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 
   test('校验必填项、电话格式与金额精度', () => {
     // 编码由服务端生成：不带编码的合法表单必须直接通过校验。
-    const ok = { ...emptyCustomer(), name: '客户甲', customerTypeId: 1 };
+    const ok = {...emptyCustomer(), name: '客户甲', customerTypeId: 1};
     assert.equal(validateCustomer(ok), undefined);
 
-    assert.match(validateCustomer({ ...ok, name: '' }), /客户名称/);
-    assert.match(validateCustomer({ ...ok, customerTypeId: undefined }), /客户类型/);
-    assert.match(validateCustomer({ ...ok, contactPhone: '12345' }), /联系电话/);
-    assert.match(validateCustomer({ ...ok, creditLimit: '1.23456' }), /四位小数/);
-    assert.match(validateCustomer({ ...ok, creditLimit: '-1' }), /四位小数/);
+    assert.match(validateCustomer({...ok, name: ''}), /客户名称/);
+    assert.match(validateCustomer({...ok, customerTypeId: undefined}), /客户类型/);
+    assert.match(validateCustomer({...ok, contactPhone: '12345'}), /联系电话/);
+    assert.match(validateCustomer({...ok, creditLimit: '1.23456'}), /四位小数/);
+    assert.match(validateCustomer({...ok, creditLimit: '-1'}), /四位小数/);
     // 合法的 4 位定点数必须放行。
-    assert.equal(validateCustomer({ ...ok, creditLimit: '1234.5000' }), undefined);
-    assert.equal(validateCustomer({ ...ok, contactPhone: '13800138000' }), undefined);
+    assert.equal(validateCustomer({...ok, creditLimit: '1234.5000'}), undefined);
+    assert.equal(validateCustomer({...ok, contactPhone: '13800138000'}), undefined);
   });
 
   test('按金额账期必须有阈值，按时间账期必须有值且结算日限 1–28', () => {
-    const ok = { ...emptyCustomer(), name: '客户甲', customerTypeId: 1 };
+    const ok = {...emptyCustomer(), name: '客户甲', customerTypeId: 1};
 
-    assert.match(validateCustomer({ ...ok, creditPeriodType: 'BY_AMOUNT' }), /金额阈值/);
-    assert.match(validateCustomer({ ...ok, creditPeriodType: 'BY_AMOUNT', creditAmountThreshold: '1.23456' }), /四位小数/);
-    assert.equal(validateCustomer({ ...ok, creditPeriodType: 'BY_AMOUNT', creditAmountThreshold: '5000.0000' }), undefined);
+    assert.match(validateCustomer({...ok, creditPeriodType: 'BY_AMOUNT'}), /金额阈值/);
+    assert.match(validateCustomer({...ok, creditPeriodType: 'BY_AMOUNT', creditAmountThreshold: '1.23456'}), /四位小数/);
+    assert.equal(validateCustomer({...ok, creditPeriodType: 'BY_AMOUNT', creditAmountThreshold: '5000.0000'}), undefined);
 
-    assert.match(validateCustomer({ ...ok, creditPeriodType: 'BY_TIME' }), /账期值/);
-    assert.match(validateCustomer({ ...ok, creditPeriodType: 'BY_TIME', creditPeriodValue: 0 }), /账期值/);
+    assert.match(validateCustomer({...ok, creditPeriodType: 'BY_TIME'}), /账期值/);
+    assert.match(validateCustomer({...ok, creditPeriodType: 'BY_TIME', creditPeriodValue: 0}), /账期值/);
     // 有账期值但没单位：后端 ck_customer_credit_period 不接受，前端必须提前挡住。
-    assert.match(validateCustomer({ ...ok, creditPeriodType: 'BY_TIME', creditPeriodValue: 30 }), /账期单位/);
-    assert.equal(validateCustomer({ ...ok, creditPeriodType: 'BY_TIME', creditPeriodValue: 30, creditPeriodUnit: 'DAY' }), undefined);
+    assert.match(validateCustomer({...ok, creditPeriodType: 'BY_TIME', creditPeriodValue: 30}), /账期单位/);
+    assert.equal(validateCustomer({...ok, creditPeriodType: 'BY_TIME', creditPeriodValue: 30, creditPeriodUnit: 'DAY'}), undefined);
 
-    const monthly = { ...ok, creditPeriodType: 'BY_TIME', creditPeriodValue: 1, creditPeriodUnit: 'MONTH' };
-    assert.equal(validateCustomer({ ...monthly, settleDay: 28 }), undefined);
-    assert.match(validateCustomer({ ...monthly, settleDay: 29 }), /1 到 28/);
-    assert.match(validateCustomer({ ...monthly, settleDay: 0 }), /1 到 28/);
+    const monthly = {...ok, creditPeriodType: 'BY_TIME', creditPeriodValue: 1, creditPeriodUnit: 'MONTH'};
+    assert.equal(validateCustomer({...monthly, settleDay: 28}), undefined);
+    assert.match(validateCustomer({...monthly, settleDay: 29}), /1 到 28/);
+    assert.match(validateCustomer({...monthly, settleDay: 0}), /1 到 28/);
   });
 
   test('提交前归一化：姓名去空白、空白串转 null、零额度保持字符串', () => {
@@ -357,7 +363,7 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
     const fresh = emptyCustomer();
     assert.equal(fresh.codAllowed, false);
     assert.equal(toCustomerPayload(fresh).codAllowed, false);
-    assert.equal(toCustomerPayload({ ...fresh, codAllowed: true }).codAllowed, true);
+    assert.equal(toCustomerPayload({...fresh, codAllowed: true}).codAllowed, true);
   });
 }
 
@@ -378,10 +384,10 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 
   /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
   function code(relative) {
-      return readFileSync(new URL(relative, import.meta.url), 'utf8')
-          .replace(/<!--[\s\S]*?-->/g, '')
-          .replace(/\/\*[\s\S]*?\*\//g, '')
-          .replace(/^\s*\/\/.*$/gm, '');
+    return readFileSync(new URL(relative, import.meta.url), 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   const customer = code('../src/views/business/scm/customer/customer-detail.vue');
@@ -390,71 +396,86 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
 
   /** 取某标题在源码里的位置；不存在即失败。 */
   function posOf(source, title) {
-      const index = source.search(new RegExp(`<h3[^>]*>${title}</h3>`));
-      assert.ok(index >= 0, `缺少分区标题「${title}」`);
-      return index;
+    const index = source.search(new RegExp(`<h3[^>]*>${title}</h3>`));
+    assert.ok(index >= 0, `缺少分区标题「${title}」`);
+    return index;
   }
 
   test('客户详情按「经营概览 / 联系 / 归属 / 授信 / 系统信息」分区', () => {
-      const sections = ['客户经营概览', '联系与地址', '归属关系', '授信与账期', '系统信息'];
-      const positions = sections.map((title) => posOf(customer, title));
-      // 顺序固定，系统信息在最后
-      assert.deepEqual(positions, [...positions].sort((a, b) => a - b), '客户详情分区顺序不符');
-      assert.ok(positions[positions.length - 1] > positions[0], '系统信息必须在核心业务段之后');
-      // 时间与备注必须落在系统信息段内（label/value 结构用 dt，不再要求 descriptions 的 label 属性）
-      const sysIndex = positions[positions.length - 1];
-      const tail = customer.slice(sysIndex);
-      assert.match(tail, />创建时间</);
-      assert.match(tail, />更新时间</);
-      assert.match(tail, />备注</);
-      // 客户编码仍在系统信息段保留完整值（页头只是 secondary 呈现，不等于下沉掉）
-      assert.match(tail, />客户编码</);
+    const sections = ['客户经营概览', '联系与地址', '归属关系', '授信与账期', '系统信息'];
+    const positions = sections.map((title) => posOf(customer, title));
+    // 顺序固定，系统信息在最后
+    assert.deepEqual(
+      positions,
+      [...positions].sort((a, b) => a - b),
+      '客户详情分区顺序不符'
+    );
+    assert.ok(positions[positions.length - 1] > positions[0], '系统信息必须在核心业务段之后');
+    // 时间与备注必须落在系统信息段内（label/value 结构用 dt，不再要求 descriptions 的 label 属性）
+    const sysIndex = positions[positions.length - 1];
+    const tail = customer.slice(sysIndex);
+    assert.match(tail, />创建时间</);
+    assert.match(tail, />更新时间</);
+    assert.match(tail, />备注</);
+    // 客户编码仍在系统信息段保留完整值（页头只是 secondary 呈现，不等于下沉掉）
+    assert.match(tail, />客户编码</);
   });
 
   test('供应商详情按「联系与地址 / 采购与账期 / 已关联商品 / 系统信息」分区', () => {
-      // 供应商与客户、线路共用 SCM 资料模板：身份信息进页头（名称 + 状态 + 编码），
-      // 正文只留可读的业务分区，因此不再有独立的「概览」段。
-      const sections = ['联系与地址', '采购与账期', '已关联商品', '系统信息'];
-      const positions = sections.map((title) => posOf(supplier, title));
-      assert.deepEqual(positions, [...positions].sort((a, b) => a - b), '供应商详情分区顺序不符');
-      const sysIndex = posOf(supplier, '系统信息');
-      const tail = supplier.slice(sysIndex);
-      // 时间、编码与备注落在系统信息段内（label/value 结构用 dt）
-      assert.match(tail, />创建时间</);
-      assert.match(tail, />更新时间</);
-      assert.match(tail, />供应商编码</);
-      assert.match(tail, />备注</);
-      // 页头承担身份识别：名称、状态、编码
-      assert.match(supplier, /scm-detail-header__title/);
-      assert.match(supplier, /ScmStatusTag/);
+    // 供应商与客户、线路共用 SCM 资料模板：身份信息进页头（名称 + 状态 + 编码），
+    // 正文只留可读的业务分区，因此不再有独立的「概览」段。
+    const sections = ['联系与地址', '采购与账期', '已关联商品', '系统信息'];
+    const positions = sections.map((title) => posOf(supplier, title));
+    assert.deepEqual(
+      positions,
+      [...positions].sort((a, b) => a - b),
+      '供应商详情分区顺序不符'
+    );
+    const sysIndex = posOf(supplier, '系统信息');
+    const tail = supplier.slice(sysIndex);
+    // 时间、编码与备注落在系统信息段内（label/value 结构用 dt）
+    assert.match(tail, />创建时间</);
+    assert.match(tail, />更新时间</);
+    assert.match(tail, />供应商编码</);
+    assert.match(tail, />备注</);
+    // 页头承担身份识别：名称、状态、编码
+    assert.match(supplier, /scm-detail-header__title/);
+    assert.match(supplier, /ScmStatusTag/);
   });
 
   test('订单详情按「摘要 / 客户配送 / 金额 / 商品 / 操作记录 / 系统信息」分区', () => {
-      const sections = ['状态与核心摘要', '客户与配送', '金额结算', '商品明细', '操作记录', '系统信息'];
-      const positions = sections.map((title) => posOf(order, title));
-      assert.deepEqual(positions, [...positions].sort((a, b) => a - b), '订单详情分区顺序不符');
-      // 备注下沉到系统信息（原来是混在第一条描述列表里）
-      const tail = order.slice(posOf(order, '系统信息'));
-      assert.match(tail, /label="备注"/);
+    const sections = ['状态与核心摘要', '客户与配送', '金额结算', '商品明细', '操作记录', '系统信息'];
+    const positions = sections.map((title) => posOf(order, title));
+    assert.deepEqual(
+      positions,
+      [...positions].sort((a, b) => a - b),
+      '订单详情分区顺序不符'
+    );
+    // 备注下沉到系统信息（原来是混在第一条描述列表里）
+    const tail = order.slice(posOf(order, '系统信息'));
+    assert.match(tail, /label="备注"/);
   });
 
   test('页面级分区不再用 a-divider 充当标题', () => {
-      // 客户与供应商详情的页面分区全部改为 h3 标题
-      assert.ok(!/a-divider/.test(customer), '客户详情仍有 a-divider 分区');
-      assert.ok(!/a-divider/.test(supplier), '供应商详情仍有 a-divider 分区');
-      // 订单详情只允许模态框内的合法分隔（授信检查弹窗里的一条），不得用作页面分区
-      const dividerUses = (order.match(/a-divider/g) ?? []).length;
-      assert.ok(dividerUses <= 1, `订单详情有 ${dividerUses} 处 a-divider，疑似页面分区未清理`);
+    // 客户与供应商详情的页面分区全部改为 h3 标题
+    assert.ok(!/a-divider/.test(customer), '客户详情仍有 a-divider 分区');
+    assert.ok(!/a-divider/.test(supplier), '供应商详情仍有 a-divider 分区');
+    // 订单详情只允许模态框内的合法分隔（授信检查弹窗里的一条），不得用作页面分区
+    const dividerUses = (order.match(/a-divider/g) ?? []).length;
+    assert.ok(dividerUses <= 1, `订单详情有 ${dividerUses} 处 a-divider，疑似页面分区未清理`);
   });
 
   test('三个详情页的数值统一走全局 .scm-money / .scm-quantity', () => {
-      for (const [name, source] of [['客户详情', customer], ['供应商详情', supplier]]) {
-          assert.ok(!/class="amount"/.test(source), `${name} 仍用局部 .amount 类`);
-          assert.ok(!/\.amount\s*\{/.test(source), `${name} 仍定义局部 .amount 样式`);
-      }
-      assert.match(customer, /class="scm-money"/);
-      assert.match(customer, /class="scm-quantity"/);
-      assert.match(supplier, /class="scm-money"/);
+    for (const [name, source] of [
+      ['客户详情', customer],
+      ['供应商详情', supplier],
+    ]) {
+      assert.ok(!/class="amount"/.test(source), `${name} 仍用局部 .amount 类`);
+      assert.ok(!/\.amount\s*\{/.test(source), `${name} 仍定义局部 .amount 样式`);
+    }
+    assert.match(customer, /class="scm-money"/);
+    assert.match(customer, /class="scm-quantity"/);
+    assert.match(supplier, /class="scm-money"/);
   });
 }
 
@@ -497,10 +518,10 @@ import {QUERY_FILTER_KEY_PREFIX, queryFilterStorageKey} from '../src/lib/query-f
   test('五个上下文视图全部复用既有查询接口，详情侧不落任何写命令', () => {
     const vue = code(DETAIL);
     assert.match(vue, /customerApi\.detail\(/);
-    assert.match(vue, /orderApi\.query\(\{[^}]*customerId:\s*customerId\.value/);
+    assert.match(vue, /orderApi\s*\.\s*query\(\{[^}]*customerId:\s*customerId\.value/);
     assert.match(vue, /customerApi\.frequentSkus\(customerId\.value/);
-    assert.match(vue, /pricingApi\.agreement\.query\(\{[^}]*customerId:\s*customerId\.value/);
-    assert.match(vue, /customerVisibilityApi\.query\(\{[^}]*customerId:\s*customerId\.value/);
+    assert.match(vue, /pricingApi\s*\.\s*agreement\s*\.\s*query\(\{[^}]*customerId:\s*customerId\.value/);
+    assert.match(vue, /customerVisibilityApi\s*\.\s*query\(\{[^}]*customerId:\s*customerId\.value/);
     // 360° 视图纯只读：不新增 / 编辑 / 删除 / 状态变更客户
     assert.doesNotMatch(vue, /customerApi\.(add|update|updateStatus|delete)\(/);
   });

@@ -2,19 +2,19 @@
   <a-layout class="admin-layout" style="min-height: 100%">
     <!-- 侧边菜单 side-menu -->
     <a-layout-sider
-        :id="LAYOUT_ELEMENT_IDS.menu"
-        class="side-menu"
-        :width="sideMenuWidth"
-        :collapsed-width="isMobile ? 0 : COLLAPSED_MENU_WIDTH"
-        :style="isMobile ? {position: 'fixed', inset: '0 auto 0 0', zIndex: 20} : undefined"
-        v-model:collapsed="collapsed"
-        :theme="theme"
-        v-show="!fullScreenFlag"
+      :id="LAYOUT_ELEMENT_IDS.menu"
+      class="side-menu"
+      :width="sideMenuWidth"
+      :collapsed-width="isMobile ? 0 : COLLAPSED_MENU_WIDTH"
+      :style="isMobile ? {position: 'fixed', inset: '0 auto 0 0', zIndex: 20} : undefined"
+      v-model:collapsed="collapsed"
+      :theme="theme"
+      v-show="!fullScreenFlag"
     >
       <!-- 左侧菜单 -->
-      <SideMenu :collapsed="collapsed"/>
+      <SideMenu :collapsed="collapsed" />
     </a-layout-sider>
-    <div v-if="isMobile && !collapsed" class="mobile-menu-backdrop" @click="collapsed = true"/>
+    <div v-if="isMobile && !collapsed" class="mobile-menu-backdrop" @click="collapsed = true" />
 
     <!--中间内容，一共三部分：1、顶部;2、中间内容区域;3、底部（一般是公司版权信息）;-->
     <a-layout :id="LAYOUT_ELEMENT_IDS.main" :style="`height: ${windowHeight}px`" class="admin-layout-main">
@@ -22,62 +22,57 @@
       <a-layout-header class="layout-header" :id="LAYOUT_ELEMENT_IDS.header" v-show="!fullScreenFlag">
         <a-row class="layout-header-user" justify="space-between">
           <a-col
-              class="layout-header-left"
-              :style="{
+            class="layout-header-left"
+            :style="{
               'max-width': `calc(100% - ${rightWidth}px)`,
             }"
           >
             <div class="layout-header-box">
-              <button
-                type="button"
-                class="collapsed-button"
-                :aria-label="collapsed ? '展开侧栏' : '收起侧栏'"
-                @click="collapsed = !collapsed"
-              >
-                <menu-unfold-outlined v-if="collapsed" class="trigger"/>
-                <menu-fold-outlined v-else class="trigger"/>
+              <button type="button" class="collapsed-button" :aria-label="collapsed ? '展开侧栏' : '收起侧栏'" @click="collapsed = !collapsed">
+                <menu-unfold-outlined v-if="collapsed" class="trigger" />
+                <menu-fold-outlined v-else class="trigger" />
               </button>
               <a-tooltip placement="bottom">
                 <template #title>首页</template>
                 <button class="home-button" type="button" aria-label="首页" @click="goHome">
-                  <home-outlined class="trigger"/>
+                  <home-outlined class="trigger" />
                 </button>
               </a-tooltip>
               <span class="location-breadcrumb">
-                <PageTag v-if="pageTagLocation === 'top'"/>
-                <MenuLocationBreadcrumb/>
+                <PageTag v-if="pageTagLocation === 'top'" />
+                <MenuLocationBreadcrumb />
               </span>
             </div>
           </a-col>
           <!---用戶操作区域-->
           <a-col class="layout-header-right">
-            <HeaderUserSpace/>
+            <HeaderUserSpace />
           </a-col>
         </a-row>
-        <PageTag v-if="pageTagLocation === 'center'"/>
+        <PageTag v-if="pageTagLocation === 'center'" />
       </a-layout-header>
 
       <!--中间内容-->
       <a-layout-content :id="LAYOUT_ELEMENT_IDS.content" class="admin-layout-content">
         <!--不keepAlive的iframe使用单个iframe组件-->
-        <IframeIndex v-if="iframeNotKeepAlivePageFlag" :key="route.name" :name="route.name" :url="route.meta.frameUrl"/>
+        <IframeIndex v-if="iframeNotKeepAlivePageFlag" :key="route.name" :name="route.name" :url="route.meta.frameUrl" />
         <!--keepAlive的iframe 每个页面一个iframe组件-->
         <IframeIndex
-            v-for="item in keepAliveIframePages"
-            v-show="route.name === item.name"
-            :key="item.name"
-            :name="item.name"
-            :url="item.meta.frameUrl"
+          v-for="item in keepAliveIframePages"
+          v-show="route.name === item.name"
+          :key="item.name"
+          :name="item.name"
+          :url="item.meta.frameUrl"
         />
         <!--非iframe使用router-view-->
         <div
-            v-show="!iframeNotKeepAlivePageFlag && keepAliveIframePages.every((e) => route.name != e.name)"
-            style="height: 100%"
-            class="admin-content"
+          v-show="!iframeNotKeepAlivePageFlag && keepAliveIframePages.every((e) => route.name != e.name)"
+          style="height: 100%"
+          class="admin-content"
         >
-          <router-view v-slot="{ Component }">
+          <router-view v-slot="{Component}">
             <keep-alive :include="keepAliveIncludes">
-              <component :is="Component" :key="route.name"/>
+              <component :is="Component" :key="route.name" />
             </keep-alive>
           </router-view>
         </div>
@@ -85,22 +80,22 @@
 
       <!-- footer 版权公司信息 -->
       <a-layout-footer class="layout-footer" v-show="footerFlag">
-        <smart-footer/>
+        <smart-footer />
       </a-layout-footer>
       <!--- 回到顶部 -->
-      <a-back-top :target="backTopTarget" :visibilityHeight="80"/>
+      <a-back-top :target="backTopTarget" :visibilityHeight="80" />
     </a-layout>
     <!-- 右侧帮助文档 help-doc -->
     <a-layout-sider
-        v-if="helpDocFlag"
-        v-show="helpDocExpandFlag"
-        theme="light"
-        :width="180"
-        class="help-doc-sider"
-        :trigger="null"
-        style="min-height: 100%"
+      v-if="helpDocFlag"
+      v-show="helpDocExpandFlag"
+      theme="light"
+      :width="180"
+      class="help-doc-sider"
+      :trigger="null"
+      style="min-height: 100%"
     >
-      <SideHelpDoc/>
+      <SideHelpDoc />
     </a-layout-sider>
   </a-layout>
 </template>
@@ -162,17 +157,17 @@ const dueHeight = computed(() => {
 });
 
 watch(
-    pageTagLocation,
-    (newVal) => {
-      if (newVal === 'top') {
-        nextTick(() => {
-          sizeComputed();
-        });
-      }
-    },
-    {
-      immediate: true,
+  pageTagLocation,
+  (newVal) => {
+    if (newVal === 'top') {
+      nextTick(() => {
+        sizeComputed();
+      });
     }
+  },
+  {
+    immediate: true,
+  }
 );
 
 const rightWidth = ref(0);
@@ -204,14 +199,14 @@ onMounted(() => {
 });
 
 watch(
-    () => watermarkFlag.value,
-    (newValue) => {
-      if (newValue) {
-        watermark.set(LAYOUT_ELEMENT_IDS.content, useUserStore().actualName);
-      } else {
-        watermark.clear();
-      }
+  () => watermarkFlag.value,
+  (newValue) => {
+    if (newValue) {
+      watermark.set(LAYOUT_ELEMENT_IDS.content, useUserStore().actualName);
+    } else {
+      watermark.clear();
     }
+  }
 );
 
 //回到顶部
@@ -234,9 +229,12 @@ window.addEventListener('resize', function () {
 // ----------------------- keep-alive相关 -----------------------
 let {route, keepAliveIncludes, iframeNotKeepAlivePageFlag, keepAliveIframePages} = smartKeepAlive();
 
-watch(() => route.path, () => {
-  if (isMobile.value) collapsed.value = true;
-});
+watch(
+  () => route.path,
+  () => {
+    if (isMobile.value) collapsed.value = true;
+  }
+);
 
 const {useToken} = antDesignTheme;
 const {token} = useToken();
@@ -400,7 +398,7 @@ const {token} = useToken();
     position: relative;
     overflow-x: hidden;
     padding: 12px 16px 16px;
-    height: calc(100% - v-bind(dueHeight)px);
+    height: calc(100% - v-bind(dueHeight) px);
   }
 }
 

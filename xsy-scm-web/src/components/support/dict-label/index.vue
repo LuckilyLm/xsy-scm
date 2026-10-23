@@ -1,7 +1,7 @@
 <template>
   <template v-if="props.showStyle">
     <template v-for="(item, index) in dataList" :key="item.dictDataId">
-      <span v-if="item.color" :style="{ color: token[item.color] }"> {{ item.dataLabel }} </span>
+      <span v-if="item.color" :style="{color: token[item.color]}"> {{ item.dataLabel }} </span>
       <span v-else>{{ item.dataLabel }}</span>
       {{ index < dataList.length - 1 ? ',' : '' }}
     </template>

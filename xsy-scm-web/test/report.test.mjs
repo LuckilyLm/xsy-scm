@@ -7,7 +7,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync, existsSync} from 'node:fs';
-import {enumDescText, createTabView, directionText, movementDirection, rangeOverLimitError, rangeFromQuery, buildReportQuery, countText, filterCostColumns, optionLabel, datePresets, incompleteCostHint, presetRange, dayRange, costText, defaultDateRange, textOrDash, enterTab, yesNoText, chartValue} from '../src/views/business/scm/report/report-model.ts';
+import {
+  enumDescText,
+  createTabView,
+  directionText,
+  movementDirection,
+  rangeOverLimitError,
+  rangeFromQuery,
+  buildReportQuery,
+  countText,
+  filterCostColumns,
+  optionLabel,
+  datePresets,
+  incompleteCostHint,
+  presetRange,
+  dayRange,
+  costText,
+  defaultDateRange,
+  textOrDash,
+  enterTab,
+  yesNoText,
+  chartValue,
+} from '../src/views/business/scm/report/report-model.ts';
 
 // ---------------------------------------------------------------- 来源：finance-report-contract.test.mjs
 {
@@ -56,14 +77,22 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
   };
   const PAGE_COMPONENTS = {
     sales: [
-      'sales-product-tab.vue', 'sales-category-tab.vue', 'sales-customer-tab.vue',
-      'sales-seller-tab.vue', 'sales-item-tab.vue', 'sales-order-tab.vue',
-    ].map(name => code(`${REPORT_COMPONENT_DIR}${name}`)),
+      'sales-product-tab.vue',
+      'sales-category-tab.vue',
+      'sales-customer-tab.vue',
+      'sales-seller-tab.vue',
+      'sales-item-tab.vue',
+      'sales-order-tab.vue',
+    ].map((name) => code(`${REPORT_COMPONENT_DIR}${name}`)),
     purchase: [
-      'purchase-daily-report.vue', 'purchase-product-tab.vue', 'purchase-supplier-tab.vue',
-      'purchase-purchaser-tab.vue', 'purchase-item-tab.vue', 'purchase-price-trend-tab.vue',
-    ].map(name => code(`${REPORT_COMPONENT_DIR}${name}`)),
-    inventory: ['inventory-loss-analysis-tab.vue'].map(name => code(`${REPORT_COMPONENT_DIR}${name}`)),
+      'purchase-daily-report.vue',
+      'purchase-product-tab.vue',
+      'purchase-supplier-tab.vue',
+      'purchase-purchaser-tab.vue',
+      'purchase-item-tab.vue',
+      'purchase-price-trend-tab.vue',
+    ].map((name) => code(`${REPORT_COMPONENT_DIR}${name}`)),
+    inventory: ['inventory-loss-analysis-tab.vue'].map((name) => code(`${REPORT_COMPONENT_DIR}${name}`)),
   };
   const FINANCE_PAGE = code(`${REPORT_DIR}report-finance-overview.vue`);
   const API = code('../src/api/business/scm/report-api.ts');
@@ -273,7 +302,7 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
       assert.ok(!/v-privilege/.test(reset[1]), `${name} 页的重置按钮不应带权限`);
     }
     for (const [name, source] of Object.entries(PAGES)) {
-      if (name === 'overview') continue;   // 概览没有导出端点
+      if (name === 'overview') continue; // 概览没有导出端点
       const panelSources = [source, ...(PAGE_COMPONENTS[name] ?? [])].join('\n');
       assert.match(panelSources, /v-privilege="(?:PERM|SCM_REPORT_PERMISSION)\.EXPORT"/, '导出按钮挂在 export 权限上');
     }
@@ -464,44 +493,44 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
   // ------------------------------------------------------------------
 
   test('快捷日期五个预设的边界正确，周以周一为起点', () => {
-      assert.deepEqual(presetRange('YESTERDAY', WEDNESDAY), ['2026-09-22', '2026-09-22']);
-      assert.deepEqual(presetRange('THIS_WEEK', WEDNESDAY), ['2026-09-21', '2026-09-23']);
-      assert.deepEqual(presetRange('LAST_WEEK', WEDNESDAY), ['2026-09-14', '2026-09-20']);
-      assert.deepEqual(presetRange('THIS_MONTH', WEDNESDAY), ['2026-09-01', '2026-09-23']);
-      assert.deepEqual(presetRange('LAST_MONTH', WEDNESDAY), ['2026-08-01', '2026-08-31']);
+    assert.deepEqual(presetRange('YESTERDAY', WEDNESDAY), ['2026-09-22', '2026-09-22']);
+    assert.deepEqual(presetRange('THIS_WEEK', WEDNESDAY), ['2026-09-21', '2026-09-23']);
+    assert.deepEqual(presetRange('LAST_WEEK', WEDNESDAY), ['2026-09-14', '2026-09-20']);
+    assert.deepEqual(presetRange('THIS_MONTH', WEDNESDAY), ['2026-09-01', '2026-09-23']);
+    assert.deepEqual(presetRange('LAST_MONTH', WEDNESDAY), ['2026-08-01', '2026-08-31']);
   });
 
   test('周日也落在它所在的那一周（周一为起点，不跳到下一周）', () => {
-      // 2026-09-27 是星期日
-      assert.deepEqual(presetRange('THIS_WEEK', '2026-09-27'), ['2026-09-21', '2026-09-27']);
-      assert.deepEqual(presetRange('LAST_WEEK', '2026-09-27'), ['2026-09-14', '2026-09-20']);
+    // 2026-09-27 是星期日
+    assert.deepEqual(presetRange('THIS_WEEK', '2026-09-27'), ['2026-09-21', '2026-09-27']);
+    assert.deepEqual(presetRange('LAST_WEEK', '2026-09-27'), ['2026-09-14', '2026-09-20']);
   });
 
   test('「本周 / 本月」截至今天，不含未来日子', () => {
-      // 未来日子进区间 = 趋势图上凭空多一段零值尾巴，会被读成业绩掉了
-      const thisWeek = presetRange('THIS_WEEK', WEDNESDAY);
-      assert.equal(thisWeek[1], WEDNESDAY);
-      const thisMonth = presetRange('THIS_MONTH', WEDNESDAY);
-      assert.equal(thisMonth[1], WEDNESDAY);
-      // 「上周」是完整周：周一到周日
-      assert.deepEqual(presetRange('LAST_WEEK', WEDNESDAY), ['2026-09-14', '2026-09-20']);
+    // 未来日子进区间 = 趋势图上凭空多一段零值尾巴，会被读成业绩掉了
+    const thisWeek = presetRange('THIS_WEEK', WEDNESDAY);
+    assert.equal(thisWeek[1], WEDNESDAY);
+    const thisMonth = presetRange('THIS_MONTH', WEDNESDAY);
+    assert.equal(thisMonth[1], WEDNESDAY);
+    // 「上周」是完整周：周一到周日
+    assert.deepEqual(presetRange('LAST_WEEK', WEDNESDAY), ['2026-09-14', '2026-09-20']);
   });
 
   test('默认区间是本月，且与预设集合里的同一条完全一致', () => {
-      assert.deepEqual(defaultDateRange(WEDNESDAY), presetRange('THIS_MONTH', WEDNESDAY));
+    assert.deepEqual(defaultDateRange(WEDNESDAY), presetRange('THIS_MONTH', WEDNESDAY));
   });
 
   test('预设标签齐全且顺序固定，日期选择器与文案不会两处各写一份', () => {
-      const presets = datePresets(WEDNESDAY);
-      assert.deepEqual(
-          presets.map((item) => item.label),
-          ['昨日', '本周', '上周', '本月', '上月']
-      );
-      for (const preset of presets) {
-          assert.match(preset.value[0], /^\d{4}-\d{2}-\d{2}$/);
-          assert.match(preset.value[1], /^\d{4}-\d{2}-\d{2}$/);
-          assert.ok(preset.value[0] <= preset.value[1], `${preset.label} 起止倒挂`);
-      }
+    const presets = datePresets(WEDNESDAY);
+    assert.deepEqual(
+      presets.map((item) => item.label),
+      ['昨日', '本周', '上周', '本月', '上月']
+    );
+    for (const preset of presets) {
+      assert.match(preset.value[0], /^\d{4}-\d{2}-\d{2}$/);
+      assert.match(preset.value[1], /^\d{4}-\d{2}-\d{2}$/);
+      assert.ok(preset.value[0] <= preset.value[1], `${preset.label} 起止倒挂`);
+    }
   });
 
   // ------------------------------------------------------------------
@@ -509,16 +538,16 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
   // ------------------------------------------------------------------
 
   test('366 天整放行，367 天拦下并说清改哪里', () => {
-      assert.equal(rangeOverLimitError(['2026-09-23', '2027-09-23']), '');
-      const message = rangeOverLimitError(['2026-09-23', '2027-09-24']);
-      assert.match(message, /366/);
-      assert.match(message, /367/);
+    assert.equal(rangeOverLimitError(['2026-09-23', '2027-09-23']), '');
+    const message = rangeOverLimitError(['2026-09-23', '2027-09-24']);
+    assert.match(message, /366/);
+    assert.match(message, /367/);
   });
 
   test('区间缺失时不在前端报错，交给后端的日期必填', () => {
-      assert.equal(rangeOverLimitError(undefined), '');
-      assert.equal(rangeOverLimitError(null), '');
-      assert.equal(rangeOverLimitError(['2026-09-01', '']), '');
+    assert.equal(rangeOverLimitError(undefined), '');
+    assert.equal(rangeOverLimitError(null), '');
+    assert.equal(rangeOverLimitError(['2026-09-01', '']), '');
   });
 
   // ------------------------------------------------------------------
@@ -526,23 +555,20 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
   // ------------------------------------------------------------------
 
   test('deep-link 只接受两个完整的 yyyy-MM-dd，其余一律按未提供', () => {
-      assert.deepEqual(rangeFromQuery({startDate: '2026-09-01', endDate: '2026-09-30'}), ['2026-09-01', '2026-09-30']);
-      // 半截区间：目标页会因此回落到本月，而不是带着脏值去查
-      assert.equal(rangeFromQuery({startDate: '2026-09-01'}), undefined);
-      assert.equal(rangeFromQuery({endDate: '2026-09-30'}), undefined);
-      assert.equal(rangeFromQuery({startDate: '2026-9-1', endDate: '2026-09-30'}), undefined);
-      assert.equal(rangeFromQuery({startDate: '<script>', endDate: '2026-09-30'}), undefined);
-      assert.equal(rangeFromQuery(undefined), undefined);
-      // `?k=a&k=b` 取第一个值，与站内其它 deep-link 同一规则
-      assert.deepEqual(rangeFromQuery({startDate: ['2026-09-01', '2026-09-02'], endDate: '2026-09-30'}), [
-          '2026-09-01',
-          '2026-09-30',
-      ]);
+    assert.deepEqual(rangeFromQuery({startDate: '2026-09-01', endDate: '2026-09-30'}), ['2026-09-01', '2026-09-30']);
+    // 半截区间：目标页会因此回落到本月，而不是带着脏值去查
+    assert.equal(rangeFromQuery({startDate: '2026-09-01'}), undefined);
+    assert.equal(rangeFromQuery({endDate: '2026-09-30'}), undefined);
+    assert.equal(rangeFromQuery({startDate: '2026-9-1', endDate: '2026-09-30'}), undefined);
+    assert.equal(rangeFromQuery({startDate: '<script>', endDate: '2026-09-30'}), undefined);
+    assert.equal(rangeFromQuery(undefined), undefined);
+    // `?k=a&k=b` 取第一个值，与站内其它 deep-link 同一规则
+    assert.deepEqual(rangeFromQuery({startDate: ['2026-09-01', '2026-09-02'], endDate: '2026-09-30'}), ['2026-09-01', '2026-09-30']);
   });
 
   test('某日区间两端同值；非法日回落默认区间而不是空参数', () => {
-      assert.deepEqual(dayRange('2026-09-15'), ['2026-09-15', '2026-09-15']);
-      assert.deepEqual(dayRange('bad-date'), [defaultDateRange()[0], defaultDateRange()[0]]);
+    assert.deepEqual(dayRange('2026-09-15'), ['2026-09-15', '2026-09-15']);
+    assert.deepEqual(dayRange('bad-date'), [defaultDateRange()[0], defaultDateRange()[0]]);
   });
 
   // ------------------------------------------------------------------
@@ -550,32 +576,32 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
   // ------------------------------------------------------------------
 
   test('空串与 null 的筛选项被省略，不把空字符串发给后端', () => {
-      const query = buildReportQuery(
-          ['2026-09-01', '2026-09-30'],
-          {keyword: '', movementType: null, warehouseId: undefined, supplierId: 7},
-          {pageNum: 2, pageSize: 50}
-      );
-      assert.deepEqual(query, {supplierId: 7, startDate: '2026-09-01', endDate: '2026-09-30', pageNum: 2, pageSize: 50});
-      assert.ok(!('keyword' in query), '空关键字必须省略');
-      assert.ok(!('movementType' in query), '空枚举必须省略');
+    const query = buildReportQuery(
+      ['2026-09-01', '2026-09-30'],
+      {keyword: '', movementType: null, warehouseId: undefined, supplierId: 7},
+      {pageNum: 2, pageSize: 50}
+    );
+    assert.deepEqual(query, {supplierId: 7, startDate: '2026-09-01', endDate: '2026-09-30', pageNum: 2, pageSize: 50});
+    assert.ok(!('keyword' in query), '空关键字必须省略');
+    assert.ok(!('movementType' in query), '空枚举必须省略');
   });
 
   test('导出请求不带分页；带 tab 时才带分页', () => {
-      const exportOnly = buildReportQuery(['2026-09-01', '2026-09-30'], {keyword: 'x'});
-      assert.ok(!('pageNum' in exportOnly) && !('pageSize' in exportOnly), '导出不该带分页参数');
-      const paged = buildReportQuery(['2026-09-01', '2026-09-30'], {keyword: 'x'}, {pageNum: 1, pageSize: 20});
-      assert.equal(paged.pageNum, 1);
+    const exportOnly = buildReportQuery(['2026-09-01', '2026-09-30'], {keyword: 'x'});
+    assert.ok(!('pageNum' in exportOnly) && !('pageSize' in exportOnly), '导出不该带分页参数');
+    const paged = buildReportQuery(['2026-09-01', '2026-09-30'], {keyword: 'x'}, {pageNum: 1, pageSize: 20});
+    assert.equal(paged.pageNum, 1);
   });
 
   test('日期区间不被共享筛选里的同名字段盖掉', () => {
-      // 页面类型上 shared 不含日期，但这条不变量值得钉住：口径不能由一个下拉决定
-      const query = buildReportQuery(['2026-09-01', '2026-09-30'], {startDate: '2020-01-01', endDate: '2020-01-02'});
-      assert.deepEqual([query.startDate, query.endDate], ['2026-09-01', '2026-09-30']);
+    // 页面类型上 shared 不含日期，但这条不变量值得钉住：口径不能由一个下拉决定
+    const query = buildReportQuery(['2026-09-01', '2026-09-30'], {startDate: '2020-01-01', endDate: '2020-01-02'});
+    assert.deepEqual([query.startDate, query.endDate], ['2026-09-01', '2026-09-30']);
   });
 
   test('区间不完整时不发送半截日期', () => {
-      const query = buildReportQuery(['2026-09-01', ''], {keyword: 'x'});
-      assert.ok(!('startDate' in query) && !('endDate' in query));
+    const query = buildReportQuery(['2026-09-01', ''], {keyword: 'x'});
+    assert.ok(!('startDate' in query) && !('endDate' in query));
   });
 
   // ------------------------------------------------------------------
@@ -583,34 +609,34 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
   // ------------------------------------------------------------------
 
   test('每个 Tab 一份状态：归页码只影响目标 Tab', () => {
-      const product = createTabView();
-      const category = createTabView();
-      product.pageNum = 3;
-      category.pageNum = 5;
+    const product = createTabView();
+    const category = createTabView();
+    product.pageNum = 3;
+    category.pageNum = 5;
 
-      enterTab(product);
+    enterTab(product);
 
-      assert.equal(product.pageNum, 1, '目标 Tab 必须回到第 1 页');
-      assert.equal(category.pageNum, 5, '其它 Tab 不能被连带重置（否则就是串状态）');
-      assert.notEqual(product, category, '两个 Tab 必须是不同对象');
+    assert.equal(product.pageNum, 1, '目标 Tab 必须回到第 1 页');
+    assert.equal(category.pageNum, 5, '其它 Tab 不能被连带重置（否则就是串状态）');
+    assert.notEqual(product, category, '两个 Tab 必须是不同对象');
   });
 
   test('enterTab 不重置 pageSize：每页条数是用户偏好，不是查询条件', () => {
-      const view = createTabView();
-      view.pageSize = 100;
-      view.pageNum = 4;
-      enterTab(view);
-      assert.equal(view.pageNum, 1);
-      assert.equal(view.pageSize, 100);
+    const view = createTabView();
+    view.pageSize = 100;
+    view.pageNum = 4;
+    enterTab(view);
+    assert.equal(view.pageNum, 1);
+    assert.equal(view.pageSize, 100);
   });
 
   test('Tab 状态自带空数组与零总数，模板不必判空', () => {
-      const view = createTabView();
-      assert.deepEqual(view.rows, []);
-      assert.equal(view.total, 0);
-      assert.equal(view.error, '');
-      assert.equal(view.loading, false);
-      assert.equal(view.pageNum, 1);
+    const view = createTabView();
+    assert.deepEqual(view.rows, []);
+    assert.equal(view.total, 0);
+    assert.equal(view.error, '');
+    assert.equal(view.loading, false);
+    assert.equal(view.pageNum, 1);
   });
 
   // ------------------------------------------------------------------
@@ -618,50 +644,50 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
   // ------------------------------------------------------------------
 
   test('定点数三态：null 是 —，"0.0000" 原样是 0.0000', () => {
-      assert.equal(textOrDash(null), '—');
-      assert.equal(textOrDash(undefined), '—');
-      assert.equal(textOrDash(''), '—');
-      assert.equal(textOrDash('0.0000'), '0.0000');
-      assert.equal(textOrDash('1234.5600'), '1234.5600');
+    assert.equal(textOrDash(null), '—');
+    assert.equal(textOrDash(undefined), '—');
+    assert.equal(textOrDash(''), '—');
+    assert.equal(textOrDash('0.0000'), '0.0000');
+    assert.equal(textOrDash('1234.5600'), '1234.5600');
   });
 
   test('计数三态：0 笔要显示 0，没有事实才显示 —', () => {
-      assert.equal(countText(0), '0');
-      assert.equal(countText(null), '—');
-      assert.equal(countText(undefined), '—');
-      assert.equal(countText(128), '128');
+    assert.equal(countText(0), '0');
+    assert.equal(countText(null), '—');
+    assert.equal(countText(undefined), '—');
+    assert.equal(countText(128), '128');
   });
 
   test('图表取数保留 null，不把它塌成 0', () => {
-      assert.equal(chartValue(null), null);
-      assert.equal(chartValue(''), null);
-      assert.equal(chartValue('abc'), null, '脏数据不该画成零值');
-      assert.equal(chartValue('0.0000'), 0);
-      assert.equal(chartValue('1234.5600'), 1234.56);
+    assert.equal(chartValue(null), null);
+    assert.equal(chartValue(''), null);
+    assert.equal(chartValue('abc'), null, '脏数据不该画成零值');
+    assert.equal(chartValue('0.0000'), 0);
+    assert.equal(chartValue('1234.5600'), 1234.56);
   });
 
   test('成本门禁：无权限时连 0 都不显示', () => {
-      assert.equal(costText('88.0000', false), '—');
-      assert.equal(costText('0.0000', false), '—');
-      assert.equal(costText('88.0000', true), '88.0000');
-      assert.equal(costText(null, true), '—');
+    assert.equal(costText('88.0000', false), '—');
+    assert.equal(costText('0.0000', false), '—');
+    assert.equal(costText('88.0000', true), '88.0000');
+    assert.equal(costText(null, true), '—');
   });
 
   test('无成本权限时裁掉成本列，有权限时原样返回同一数组', () => {
-      const columns = [{dataIndex: 'warehouseName'}, {dataIndex: 'unitCost'}, {dataIndex: 'costAmount'}, {dataIndex: 'quantity'}];
-      const hidden = filterCostColumns(columns, ['unitCost', 'costAmount'], false);
-      assert.deepEqual(
-          hidden.map((column) => column.dataIndex),
-          ['warehouseName', 'quantity']
-      );
-      assert.equal(filterCostColumns(columns, ['unitCost'], true), columns);
+    const columns = [{dataIndex: 'warehouseName'}, {dataIndex: 'unitCost'}, {dataIndex: 'costAmount'}, {dataIndex: 'quantity'}];
+    const hidden = filterCostColumns(columns, ['unitCost', 'costAmount'], false);
+    assert.deepEqual(
+      hidden.map((column) => column.dataIndex),
+      ['warehouseName', 'quantity']
+    );
+    assert.equal(filterCostColumns(columns, ['unitCost'], true), columns);
   });
 
   test('布尔事实三态：未知不等于否', () => {
-      assert.equal(yesNoText(true), '是');
-      assert.equal(yesNoText(false), '否');
-      assert.equal(yesNoText(null), '—');
-      assert.equal(yesNoText(undefined), '—');
+    assert.equal(yesNoText(true), '是');
+    assert.equal(yesNoText(false), '否');
+    assert.equal(yesNoText(null), '—');
+    assert.equal(yesNoText(undefined), '—');
   });
 
   // ------------------------------------------------------------------
@@ -669,9 +695,9 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
   // ------------------------------------------------------------------
 
   test('跳过无成本行时必须显性提示，0 与缺失则不提示', () => {
-      assert.equal(incompleteCostHint(3, '采购入库成本金额'), '采购入库成本金额已跳过 3 行无成本流水，不是全部采购入库成本金额');
-      assert.equal(incompleteCostHint(0, '采购入库成本金额'), '');
-      assert.equal(incompleteCostHint(null, '采购入库成本金额'), '');
+    assert.equal(incompleteCostHint(3, '采购入库成本金额'), '采购入库成本金额已跳过 3 行无成本流水，不是全部采购入库成本金额');
+    assert.equal(incompleteCostHint(0, '采购入库成本金额'), '');
+    assert.equal(incompleteCostHint(null, '采购入库成本金额'), '');
   });
 
   // ------------------------------------------------------------------
@@ -679,24 +705,24 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
   // ------------------------------------------------------------------
 
   test('枚举文案命不中时回落原值，不把未知类型藏成 —', () => {
-      const labels = {PURCHASE_IN: {value: 'PURCHASE_IN', desc: '采购入库'}};
-      assert.equal(enumDescText('PURCHASE_IN', labels), '采购入库');
-      assert.equal(enumDescText('FUTURE_TYPE', labels), 'FUTURE_TYPE');
-      assert.equal(enumDescText(null, labels), '—');
-      assert.deepEqual(optionLabel([{value: 'STANDARD', label: '标品'}], 'STANDARD'), '标品');
-      assert.equal(optionLabel([{value: 'STANDARD', label: '标品'}], 'OTHER'), 'OTHER');
+    const labels = {PURCHASE_IN: {value: 'PURCHASE_IN', desc: '采购入库'}};
+    assert.equal(enumDescText('PURCHASE_IN', labels), '采购入库');
+    assert.equal(enumDescText('FUTURE_TYPE', labels), 'FUTURE_TYPE');
+    assert.equal(enumDescText(null, labels), '—');
+    assert.deepEqual(optionLabel([{value: 'STANDARD', label: '标品'}], 'STANDARD'), '标品');
+    assert.equal(optionLabel([{value: 'STANDARD', label: '标品'}], 'OTHER'), 'OTHER');
   });
 
   test('方向只由传入的入方向集合派生，报表侧不再判字符串', () => {
-      const inbound = ['PURCHASE_IN', 'STOCKTAKE_GAIN', 'GAIN_REPORT', 'TRANSFER_IN', 'CONVERT_IN'];
-      assert.equal(movementDirection('PURCHASE_IN', inbound), 'IN');
-      assert.equal(movementDirection('SALES_OUT', inbound), 'OUT');
-      assert.equal(movementDirection('LOSS_REPORT', inbound), 'OUT');
-      assert.equal(movementDirection('STOCKTAKE_GAIN', inbound), 'IN');
-      assert.equal(movementDirection(null, inbound), null);
-      assert.equal(directionText('IN'), '入');
-      assert.equal(directionText('OUT'), '出');
-      assert.equal(directionText(null), '—');
+    const inbound = ['PURCHASE_IN', 'STOCKTAKE_GAIN', 'GAIN_REPORT', 'TRANSFER_IN', 'CONVERT_IN'];
+    assert.equal(movementDirection('PURCHASE_IN', inbound), 'IN');
+    assert.equal(movementDirection('SALES_OUT', inbound), 'OUT');
+    assert.equal(movementDirection('LOSS_REPORT', inbound), 'OUT');
+    assert.equal(movementDirection('STOCKTAKE_GAIN', inbound), 'IN');
+    assert.equal(movementDirection(null, inbound), null);
+    assert.equal(directionText('IN'), '入');
+    assert.equal(directionText('OUT'), '出');
+    assert.equal(directionText(null), '—');
   });
 }
 
@@ -723,84 +749,80 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
 
   /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
   function code(relative) {
-      return readFileSync(new URL(relative, import.meta.url), 'utf8')
-          .replace(/<!--[\s\S]*?-->/g, '')
-          .replace(/\/\*[\s\S]*?\*\//g, '')
-          .replace(/^\s*\/\/.*$/gm, '');
+    return readFileSync(new URL(relative, import.meta.url), 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   const receipt = code('../src/views/business/scm/report/report-receipt-list.vue');
 
   /** 取某个列数组声明的全部 width 之和；数组名不存在就断言失败。 */
   function widthSum(source, arrayName) {
-      // 泛型参数里还有 `>`（`ref<TableColumnsType<ReceiptRow>>([])`），不能用 `[^>]*` 收尾
-      const matched = new RegExp(`${arrayName}\\s*=\\s*ref[\\s\\S]*?\\(\\[([\\s\\S]*?)\\]\\);`).exec(source);
-      assert.ok(matched, `找不到列数组 ${arrayName}`);
-      const widths = [...matched[1].matchAll(/width:\s*(\d+)/g)].map((item) => Number(item[1]));
-      assert.ok(widths.length > 0, `${arrayName} 里没有任何列宽`);
-      return widths.reduce((total, item) => total + item, 0);
+    // 泛型参数里还有 `>`（`ref<TableColumnsType<ReceiptRow>>([])`），不能用 `[^>]*` 收尾
+    const matched = new RegExp(`${arrayName}\\s*=\\s*ref[\\s\\S]*?\\(\\[([\\s\\S]*?)\\]\\);`).exec(source);
+    assert.ok(matched, `找不到列数组 ${arrayName}`);
+    const widths = [...matched[1].matchAll(/width:\s*(\d+)/g)].map((item) => Number(item[1]));
+    assert.ok(widths.length > 0, `${arrayName} 里没有任何列宽`);
+    return widths.reduce((total, item) => total + item, 0);
   }
 
   test('收货明细：商品身份只占两列，不复制编码列', () => {
-      assert.match(receipt, /title: '商品', dataIndex: 'productName'/);
-      assert.match(receipt, /title: '商品规格', dataIndex: 'skuName'/);
-      // 编码默认隐藏。商品编码 / 商品规格编码 不得再各占一列
-      assert.ok(!/title: '商品编码'/.test(receipt), '收货明细仍有独立的「商品编码」列');
-      assert.ok(!/title: '商品规格编码'/.test(receipt), '收货明细仍有独立的「商品规格编码」列');
-      assert.ok(!/dataIndex: 'spuCode'/.test(receipt), '收货明细仍在渲染 spuCode');
+    assert.match(receipt, /title: '商品', dataIndex: 'productName'/);
+    assert.match(receipt, /title: '商品规格', dataIndex: 'skuName'/);
+    // 编码默认隐藏。商品编码 / 商品规格编码 不得再各占一列
+    assert.ok(!/title: '商品编码'/.test(receipt), '收货明细仍有独立的「商品编码」列');
+    assert.ok(!/title: '商品规格编码'/.test(receipt), '收货明细仍有独立的「商品规格编码」列');
+    assert.ok(!/dataIndex: 'spuCode'/.test(receipt), '收货明细仍在渲染 spuCode');
   });
 
   test('收款与入库明细：金额与数量列左对齐，且无局部 .num 样式', () => {
-      // 2026-10-18 起全站只有枚举/分类/操作居中，数值列不再右对齐
-      for (const index of [
-          'receivedQuantity',
-          'cumulativeReceivedQuantity',
-          'remainingQuantity',
-          'overReceiptQuantity',
-          'receiptDifference',
-          'purchasePrice',
-          'receiptReferenceAmount',
-          'quantity',
-          'unitCost',
-          'costAmount',
-      ]) {
-          assert.doesNotMatch(
-              receipt,
-              new RegExp(`dataIndex: '${index}'[\\s\\S]{0,60}?align:`),
-              `${index} 列不应再声明 align`,
-          );
-      }
-      // 数值渲染统一走全局类，页面里不得再定义局部 .num
-      assert.ok(!/class="num"/.test(receipt), '仍在用局部 .num 类渲染数值');
-      assert.ok(!/\.num\s*\{/.test(receipt), '仍定义了局部 .num 样式');
-      assert.match(receipt, /class="scm-quantity"/, '数量列未使用 .scm-quantity');
-      assert.match(receipt, /class="scm-money"/, '金额列未使用 .scm-money');
+    // 2026-10-18 起全站只有枚举/分类/操作居中，数值列不再右对齐
+    for (const index of [
+      'receivedQuantity',
+      'cumulativeReceivedQuantity',
+      'remainingQuantity',
+      'overReceiptQuantity',
+      'receiptDifference',
+      'purchasePrice',
+      'receiptReferenceAmount',
+      'quantity',
+      'unitCost',
+      'costAmount',
+    ]) {
+      assert.doesNotMatch(receipt, new RegExp(`dataIndex: '${index}'[\\s\\S]{0,60}?align:`), `${index} 列不应再声明 align`);
+    }
+    // 数值渲染统一走全局类，页面里不得再定义局部 .num
+    assert.ok(!/class="num"/.test(receipt), '仍在用局部 .num 类渲染数值');
+    assert.ok(!/\.num\s*\{/.test(receipt), '仍定义了局部 .num 样式');
+    assert.match(receipt, /class="scm-quantity"/, '数量列未使用 .scm-quantity');
+    assert.match(receipt, /class="scm-money"/, '金额列未使用 .scm-money');
   });
 
   test('明细表按当前列宽计算 scroll.x', () => {
-      for (const [emptyText, columnName] of [
-          ['暂无收货明细', 'receiptColumns'],
-          ['暂无入库明细', 'visibleInboundColumns'],
-          ['暂无待入库收货单', 'pendingColumns'],
-      ]) {
-          const pattern = new RegExp(`emptyText: '${emptyText}'[\\s\\S]{0,80}?:scroll="\\{x: scmColumnsWidth\\(${columnName}\\)\\}"`);
-          assert.match(receipt, pattern);
-      }
-      assert.ok(widthSum(receipt, 'receiptColumns') > 0);
-      assert.ok(widthSum(receipt, 'inboundColumns') > 0);
+    for (const [emptyText, columnName] of [
+      ['暂无收货明细', 'receiptColumns'],
+      ['暂无入库明细', 'visibleInboundColumns'],
+      ['暂无待入库收货单', 'pendingColumns'],
+    ]) {
+      const pattern = new RegExp(`emptyText: '${emptyText}'[\\s\\S]{0,80}?:scroll="\\{x: scmColumnsWidth\\(${columnName}\\)\\}"`);
+      assert.match(receipt, pattern);
+    }
+    assert.ok(widthSum(receipt, 'receiptColumns') > 0);
+    assert.ok(widthSum(receipt, 'inboundColumns') > 0);
   });
 
   test('待入库：操作列居中且只有一个回原单的跳转', () => {
-      assert.match(receipt, /dataIndex: 'action'[\s\S]{0,120}?align: 'center'/);
-      assert.match(receipt, /查看原收货单/);
-      // 报表页不得有入库写入口（finance-report-contract 已锁，这里只锁它没有随列精简被重新引入）
-      assert.ok(!/<a-button[^>]*>[^<]*(确认入库|办理入库)/.test(receipt));
+    assert.match(receipt, /dataIndex: 'action'[\s\S]{0,120}?align: 'center'/);
+    assert.match(receipt, /查看原收货单/);
+    // 报表页不得有入库写入口（finance-report-contract 已锁，这里只锁它没有随列精简被重新引入）
+    assert.ok(!/<a-button[^>]*>[^<]*(确认入库|办理入库)/.test(receipt));
   });
 }
 
 // ---------------------------------------------------------------- 来源：scm-advanced-filter-contract.test.mjs
 {
-  const read = file => readFileSync(new URL(file, import.meta.url), 'utf8');
+  const read = (file) => readFileSync(new URL(file, import.meta.url), 'utf8');
 
   const product = read('../src/views/business/scm/product/product-list.vue');
   const sales = read('../src/views/business/scm/report/report-sales-list.vue');
@@ -832,7 +854,7 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
 
 // ---------------------------------------------------------------- 来源：scm-filter-presets-contract.test.mjs
 {
-  const read = file => readFileSync(new URL(file, import.meta.url), 'utf8');
+  const read = (file) => readFileSync(new URL(file, import.meta.url), 'utf8');
   const api = read('../src/api/business/scm/filter-preset-api.ts');
   const component = read('../src/components/business/scm/advanced-filter/saved-presets.vue');
   const service = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/preference/filter/UserFilterPresetService.java');
@@ -852,7 +874,7 @@ import {enumDescText, createTabView, directionText, movementDirection, rangeOver
   test('报表页面保留方案操作，商品档案不再显示组合筛选方案', () => {
     assert.match(component, /scmFilterPresetApi\.create/);
     assert.match(component, /scmFilterPresetApi\.remove/);
-    assert.match(component, /preset\.conditions\.map\(c => \(\{\.\.\.c\}\)\)/);
+    assert.match(component, /preset\.conditions\.map\(\s*\(?c\)?\s*=>\s*\(\{\s*\.\.\.c\s*\}\)/);
     assert.doesNotMatch(product, /ScmSavedFilterPresets|view-key="PRODUCT"|applySavedFilters/);
     assert.match(sales, /view-key="SALES_ORDER"/);
     assert.match(purchase, /view-key="PURCHASE_PRODUCT"/);

@@ -1,19 +1,19 @@
 <!--
   * 公司的开票信息 下拉选择框
-  * 
+  *
 -->
 <template>
   <a-select
-      v-model:value="selectValue"
-      :style="`width: ${width}`"
-      :placeholder="props.placeholder"
-      :showSearch="true"
-      :allowClear="true"
-      :size="size"
-      @change="handleChange"
-      :disabled="disabled"
-      :mode="multiple ? 'multiple' : ''"
-      optionFilterProp="label"
+    v-model:value="selectValue"
+    :style="`width: ${width}`"
+    :placeholder="props.placeholder"
+    :showSearch="true"
+    :allowClear="true"
+    :size="size"
+    @change="handleChange"
+    :disabled="disabled"
+    :mode="multiple ? 'multiple' : ''"
+    optionFilterProp="label"
   >
     <a-select-option v-for="item in dataList" :key="item.invoiceId" :label="item.invoiceHeads">
       {{ item.invoiceHeads }}
@@ -61,26 +61,26 @@ const selectValue = ref(props.value);
 
 // 箭头value变化
 watch(
-    () => props.value,
-    (newValue) => {
-      selectValue.value = newValue;
-    }
+  () => props.value,
+  (newValue) => {
+    selectValue.value = newValue;
+  }
 );
 
 // 箭头货主ID变化
 watch(
-    () => props.enterpriseId,
-    (newValue) => {
-      queryData();
-    }
+  () => props.enterpriseId,
+  (newValue) => {
+    queryData();
+  }
 );
 
 function handleChange(value) {
   emit('update:value', value);
   emit(
-      'change',
-      value,
-      dataList.value.find((e) => e.invoiceId == value)
+    'change',
+    value,
+    dataList.value.find((e) => e.invoiceId == value)
   );
 }
 

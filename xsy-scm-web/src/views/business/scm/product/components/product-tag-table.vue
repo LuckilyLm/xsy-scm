@@ -2,9 +2,15 @@
 <template>
   <a-form class="smart-query-form" layout="inline">
     <a-row class="smart-query-form-row">
-      <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="query.keyword" allow-clear placeholder="编码 / 名称" style="width: 200px" /></a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item"><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px" /></a-form-item>
-      <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
+      <a-form-item label="关键字" class="smart-query-form-item"
+        ><a-input v-model:value="query.keyword" allow-clear placeholder="编码 / 名称" style="width: 200px"
+      /></a-form-item>
+      <a-form-item label="状态" class="smart-query-form-item"
+        ><a-select v-model:value="query.status" allow-clear :options="ENABLE_STATUS_ENUM" style="width: 110px"
+      /></a-form-item>
+      <a-form-item class="smart-query-form-item"
+        ><a-space><a-button type="primary" @click="search">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item
+      >
     </a-row>
   </a-form>
   <a-row class="smart-table-btn-block">
@@ -15,18 +21,15 @@
       <a-button size="small" @click="load">重新加载</a-button>
     </template>
   </a-alert>
-  <a-table :data-source="rows" :columns="columns" row-key="tagId" :loading="loading" :pagination="false" size="small"
-           bordered>
-    <template #bodyCell="{ column, record }">
+  <a-table :data-source="rows" :columns="columns" row-key="tagId" :loading="loading" :pagination="false" size="small" bordered>
+    <template #bodyCell="{column, record}">
       <a-tag v-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
         {{ enumLabel(ENABLE_STATUS_ENUM, record.status) }}
       </a-tag>
       <span v-else-if="column.dataIndex === 'productCount'" class="scm-quantity">{{ record.productCount }}</span>
       <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate">
-        <a-button v-privilege="'scm:product:tag:update'" type="link" size="small" @click="modal?.open(record)">编辑
-        </a-button>
-        <a-tooltip v-if="record.productCount > 0"
-                   title="仍有商品挂着此标签，只能停用；停用后不再出现在可选标签里，历史绑定保留">
+        <a-button v-privilege="'scm:product:tag:update'" type="link" size="small" @click="modal?.open(record)">编辑 </a-button>
+        <a-tooltip v-if="record.productCount > 0" title="仍有商品挂着此标签，只能停用；停用后不再出现在可选标签里，历史绑定保留">
           <a-button v-privilege="'scm:product:tag:delete'" type="link" size="small" disabled>删除</a-button>
         </a-tooltip>
         <a-popconfirm v-else title="确认删除此标签？" @confirm="remove(record)">
@@ -35,7 +38,7 @@
       </a-space>
     </template>
   </a-table>
-  <TagModal ref="modal" @saved="load"/>
+  <TagModal ref="modal" @saved="load" />
 </template>
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue';
@@ -47,24 +50,30 @@ import {ENABLE_STATUS_ENUM, enumLabel} from '/@/constants/business/scm/product-c
 import {productError} from '../product-errors';
 import TagModal from './product-tag-modal.vue';
 
-const query = reactive<AssistantQuery>({}), rows = ref<ProductTag[]>([]), loading = ref(false), error = ref('');
+const query = reactive<AssistantQuery>({}),
+  rows = ref<ProductTag[]>([]),
+  loading = ref(false),
+  error = ref('');
 const modal = ref<InstanceType<typeof TagModal>>();
 const columns: TableColumnsType<ProductTag> = [
-  {title: '排序', dataIndex: 'sortOrder', width: 70}, {
+  {title: '排序', dataIndex: 'sortOrder', width: 70},
+  {
     title: '标签编码',
     dataIndex: 'tagCode',
-    width: 170
+    width: 170,
   },
-  {title: '标签名称', dataIndex: 'name', width: 170}, {
+  {title: '标签名称', dataIndex: 'name', width: 170},
+  {
     title: '已打标商品',
     dataIndex: 'productCount',
-    width: 110
+    width: 110,
   },
-  {title: '状态', dataIndex: 'status', width: 80, align: 'center'}, {
+  {title: '状态', dataIndex: 'status', width: 80, align: 'center'},
+  {
     title: '操作',
     dataIndex: 'action',
     width: 140,
-    align: 'center'
+    align: 'center',
   },
 ];
 

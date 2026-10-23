@@ -8,16 +8,16 @@
         只是那个值在该 Tab 不参与计算。
       -->
       <a-form-item v-if="activeTab !== 'value'" label="发生日期" class="smart-query-form-item">
-        <ReportDateRangePicker v-model:value="dateRange"/>
+        <ReportDateRangePicker v-model:value="dateRange" />
       </a-form-item>
       <a-form-item v-else label="库存价值" class="smart-query-form-item">
         <a-tag color="blue">当前时点，与查询区间无关</a-tag>
       </a-form-item>
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="filters.warehouseId" width="180px"/>
+        <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
       </a-form-item>
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="filters.keyword" placeholder="商品名称 / 商品规格编码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -31,17 +31,13 @@
     </a-row>
     <a-row v-if="advanced" class="smart-query-form-row">
       <a-form-item label="流水类型" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.movementType" enum-name="SCM_INVENTORY_MOVEMENT_TYPE_ENUM" width="150px"/>
+        <SmartEnumSelect v-model:value="filters.movementType" enum-name="SCM_INVENTORY_MOVEMENT_TYPE_ENUM" width="150px" />
       </a-form-item>
       <a-form-item label="来源单据类型" class="smart-query-form-item">
-        <SmartEnumSelect
-            v-model:value="filters.sourceDocumentType"
-            enum-name="SCM_INVENTORY_SOURCE_TYPE_ENUM"
-            width="180px"
-        />
+        <SmartEnumSelect v-model:value="filters.sourceDocumentType" enum-name="SCM_INVENTORY_SOURCE_TYPE_ENUM" width="180px" />
       </a-form-item>
       <a-form-item label="商品规格" class="smart-query-form-item">
-        <SkuSelect v-model:value="filters.skuId" width="240px"/>
+        <SkuSelect v-model:value="filters.skuId" width="240px" />
       </a-form-item>
     </a-row>
   </a-form>
@@ -61,11 +57,7 @@
             <a-button v-privilege="PERM.EXPORT" :loading="movementExport.exporting" @click="exportMovement">导出</a-button>
           </div>
           <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="movementColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_MOVEMENT"
-                :refresh="loadMovement"
-            />
+            <TableOperator v-model="movementColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_MOVEMENT" :refresh="loadMovement" />
           </div>
         </a-row>
         <a-alert v-if="movement.error" :message="movement.error" type="error" show-icon class="smart-margin-bottom10">
@@ -74,18 +66,18 @@
           </template>
         </a-alert>
         <a-table
-            :id="SCM_REPORT_TABLE_ID.INVENTORY_MOVEMENT"
-            size="small"
-            :data-source="movement.rows"
-            :columns="visibleMovementColumns"
-            row-key="movementId"
-            bordered
-            :loading="movement.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无库存流水'}"
-            :scroll="{x: scmColumnsWidth(visibleMovementColumns)}"
+          :id="SCM_REPORT_TABLE_ID.INVENTORY_MOVEMENT"
+          size="small"
+          :data-source="movement.rows"
+          :columns="visibleMovementColumns"
+          row-key="movementId"
+          bordered
+          :loading="movement.loading"
+          :pagination="false"
+          :locale="{emptyText: '暂无库存流水'}"
+          :scroll="{x: scmColumnsWidth(visibleMovementColumns)}"
         >
-          <template #bodyCell="{ record, column }">
+          <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'occurredAt'">
               {{ datetime(record.occurredAt) }}
             </template>
@@ -120,14 +112,14 @@
         </a-table>
         <div class="smart-query-table-page">
           <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="movement.pageNum"
-              v-model:page-size="movement.pageSize"
-              :total="movement.total"
-              :exporting="movement.exporting"
-              @change="loadMovement"
-              :show-total="(n: number) => `共${n}条`"
+            show-size-changer
+            show-quick-jumper
+            v-model:current="movement.pageNum"
+            v-model:page-size="movement.pageSize"
+            :total="movement.total"
+            :exporting="movement.exporting"
+            @change="loadMovement"
+            :show-total="(n: number) => `共${n}条`"
           />
         </div>
       </a-card>
@@ -136,18 +128,18 @@
     <!-- ==================== 损耗分析 ==================== -->
     <a-tab-pane key="loss" tab="损耗分析">
       <InventoryLossAnalysisTab
-          :summary="lossSummary"
-          :rows="loss.rows"
-          :loading="loss.loading"
-          :error="loss.error"
-          :can-view-cost="canViewCost"
-          :page-num="loss.pageNum"
-          :page-size="loss.pageSize"
-          :total="loss.total"
-          :exporting="loss.exporting"
-          @export="exportLoss"
-          @reload="loadLoss"
-          @page-change="loadLossPage"
+        :summary="lossSummary"
+        :rows="loss.rows"
+        :loading="loss.loading"
+        :error="loss.error"
+        :can-view-cost="canViewCost"
+        :page-num="loss.pageNum"
+        :page-size="loss.pageSize"
+        :total="loss.total"
+        :exporting="loss.exporting"
+        @export="exportLoss"
+        @reload="loadLoss"
+        @page-change="loadLossPage"
       />
     </a-tab-pane>
 
@@ -155,7 +147,7 @@
     <a-tab-pane v-if="canViewCost" key="value" tab="当前库存价值">
       <a-row v-if="hasValueSummary" :gutter="[12, 12]">
         <a-col v-for="card in valueCards" :key="card.label" :xs="24" :sm="12" :md="8">
-          <ReportKpiCard :label="card.label" :value="card.value" :sub="card.sub" current-point/>
+          <ReportKpiCard :label="card.label" :value="card.value" :sub="card.sub" current-point />
         </a-col>
       </a-row>
       <a-card size="small" :bordered="false" :class="hasValueSummary ? 'smart-margin-top10' : ''">
@@ -164,11 +156,7 @@
             <a-button v-privilege="PERM.EXPORT" :loading="valueExport.exporting" @click="exportValue">导出</a-button>
           </div>
           <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="valueColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_VALUE"
-                :refresh="loadValue"
-            />
+            <TableOperator v-model="valueColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_VALUE" :refresh="loadValue" />
           </div>
         </a-row>
         <a-alert v-if="value.error" :message="value.error" type="error" show-icon class="smart-margin-bottom10">
@@ -177,18 +165,18 @@
           </template>
         </a-alert>
         <a-table
-            :id="SCM_REPORT_TABLE_ID.INVENTORY_VALUE"
-            size="small"
-            :data-source="value.rows"
-            :columns="valueColumns"
-            row-key="balanceId"
-            bordered
-            :loading="value.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无库存价值'}"
-            :scroll="{x: scmColumnsWidth(valueColumns)}"
+          :id="SCM_REPORT_TABLE_ID.INVENTORY_VALUE"
+          size="small"
+          :data-source="value.rows"
+          :columns="valueColumns"
+          row-key="balanceId"
+          bordered
+          :loading="value.loading"
+          :pagination="false"
+          :locale="{emptyText: '暂无库存价值'}"
+          :scroll="{x: scmColumnsWidth(valueColumns)}"
         >
-          <template #bodyCell="{ record, column }">
+          <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'quantity'">
               <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
             </template>
@@ -209,14 +197,14 @@
         </a-table>
         <div class="smart-query-table-page">
           <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="value.pageNum"
-              v-model:page-size="value.pageSize"
-              :total="value.total"
-              :exporting="value.exporting"
-              @change="loadValue"
-              :show-total="(n: number) => `共${n}条`"
+            show-size-changer
+            show-quick-jumper
+            v-model:current="value.pageNum"
+            v-model:page-size="value.pageSize"
+            :total="value.total"
+            :exporting="value.exporting"
+            @change="loadValue"
+            :show-total="(n: number) => `共${n}条`"
           />
         </div>
       </a-card>
@@ -226,14 +214,9 @@
     <a-tab-pane key="flow" tab="收发存（数量版）">
       <a-card size="small" :bordered="false">
         <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-          </div>
+          <div class="smart-table-operate-block"></div>
           <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="flowColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_FLOW_SUMMARY"
-                :refresh="loadFlow"
-            />
+            <TableOperator v-model="flowColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_FLOW_SUMMARY" :refresh="loadFlow" />
           </div>
         </a-row>
         <a-alert v-if="flow.error" :message="flow.error" type="error" show-icon class="smart-margin-bottom10">
@@ -242,18 +225,18 @@
           </template>
         </a-alert>
         <a-table
-            :id="SCM_REPORT_TABLE_ID.INVENTORY_FLOW_SUMMARY"
-            size="small"
-            :data-source="flow.rows"
-            :columns="flowColumns"
-            :row-key="(row: InventoryFlowSummaryRow) => `${row.warehouseId}-${row.skuId}-${row.unit}`"
-            bordered
-            :loading="flow.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无收发存数据'}"
-            :scroll="{x: scmColumnsWidth(flowColumns)}"
+          :id="SCM_REPORT_TABLE_ID.INVENTORY_FLOW_SUMMARY"
+          size="small"
+          :data-source="flow.rows"
+          :columns="flowColumns"
+          :row-key="(row: InventoryFlowSummaryRow) => `${row.warehouseId}-${row.skuId}-${row.unit}`"
+          bordered
+          :loading="flow.loading"
+          :pagination="false"
+          :locale="{emptyText: '暂无收发存数据'}"
+          :scroll="{x: scmColumnsWidth(flowColumns)}"
         >
-          <template #bodyCell="{ record, column }">
+          <template #bodyCell="{record, column}">
             <template v-if="QUANTITY_INDEXES.includes(String(column.dataIndex))">
               <span class="scm-quantity">{{ quantityText(record[column.dataIndex]) }}</span>
             </template>
@@ -262,13 +245,13 @@
         </a-table>
         <div class="smart-query-table-page">
           <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="flow.pageNum"
-              v-model:page-size="flow.pageSize"
-              :total="flow.total"
-              @change="loadFlow"
-              :show-total="(n: number) => `共${n}条`"
+            show-size-changer
+            show-quick-jumper
+            v-model:current="flow.pageNum"
+            v-model:page-size="flow.pageSize"
+            :total="flow.total"
+            @change="loadFlow"
+            :show-total="(n: number) => `共${n}条`"
           />
         </div>
       </a-card>
@@ -293,32 +276,32 @@ import {useScmExport} from '../common/use-scm-export';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {
-    SCM_INVENTORY_MOVEMENT_INBOUND_TYPES,
-    SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
-    SCM_INVENTORY_SOURCE_TYPE_ENUM,
+  SCM_INVENTORY_MOVEMENT_INBOUND_TYPES,
+  SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
+  SCM_INVENTORY_SOURCE_TYPE_ENUM,
 } from '/@/constants/business/scm/inventory-const';
 import type {
-    InventoryFlowSummaryRow,
-    InventoryLossRow,
-    InventoryLossSummary,
-    InventoryMovementRow,
-    InventoryReportQuery,
-    InventoryValueRow,
-    ReportFilterQuery,
+  InventoryFlowSummaryRow,
+  InventoryLossRow,
+  InventoryLossSummary,
+  InventoryMovementRow,
+  InventoryReportQuery,
+  InventoryValueRow,
+  ReportFilterQuery,
 } from './report-types';
 import {
-    buildReportQuery,
-    costText,
-    countText,
-    createTabView,
-    defaultDateRange,
-    directionText,
-    enumDescText,
-    enterTab,
-    filterCostColumns,
-    movementDirection,
-    rangeFromQuery,
-    rangeOverLimitError,
+  buildReportQuery,
+  costText,
+  countText,
+  createTabView,
+  defaultDateRange,
+  directionText,
+  enumDescText,
+  enterTab,
+  filterCostColumns,
+  movementDirection,
+  rangeFromQuery,
+  rangeOverLimitError,
 } from './report-model';
 import {moneyText, quantityText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
@@ -339,7 +322,12 @@ const advanced = ref(false);
 const chartError = ref('');
 
 const lossSummary = ref<InventoryLossSummary>();
-const valueSummary = ref<{bookValue?: string | null; stockedSkuCount?: number | null; zeroStockSkuCount?: number | null; snapshotAt?: string | null}>({});
+const valueSummary = ref<{
+  bookValue?: string | null;
+  stockedSkuCount?: number | null;
+  zeroStockSkuCount?: number | null;
+  snapshotAt?: string | null;
+}>({});
 
 const movement = reactive(createTabView<InventoryMovementRow>());
 const loss = reactive(createTabView<InventoryLossRow>());
@@ -353,97 +341,97 @@ const valueExport = useScmExport(value);
 const COST_INDEXES = ['unitCost', 'costAmount'];
 
 const movementColumns = ref<TableColumnsType<InventoryMovementRow>>([
-    {title: '发生时间', dataIndex: 'occurredAt', width: 180},
-    {title: '仓库', dataIndex: 'warehouseName', width: 150},
-    {title: '商品', dataIndex: 'productName', width: 180},
-    {title: '商品规格', dataIndex: 'skuCode', width: 170},
-    {title: '流水类型', dataIndex: 'movementType', width: 120, align: 'center'},
-    {title: '方向', dataIndex: 'direction', align: 'center', width: 80},
-    {title: '来源单据类型', dataIndex: 'sourceDocumentType', width: 150, align: 'center'},
-    {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 190},
-    {title: '来源单据 ID', dataIndex: 'sourceDocumentId', width: 150},
-    {title: '来源行 ID', dataIndex: 'sourceDocumentItemId', width: 150},
-    {title: '数量', dataIndex: 'quantity', width: 120},
-    {title: '单位', dataIndex: 'unitSnapshot', width: 90},
-    {title: '单位成本', dataIndex: 'unitCost', width: 130},
-    {title: '成本金额', dataIndex: 'costAmount', width: 140},
-    {title: '变动前数量', dataIndex: 'beforeQuantity', width: 140},
-    {title: '变动后数量', dataIndex: 'afterQuantity', width: 140},
-    {title: '操作人', dataIndex: 'operator', width: 120},
+  {title: '发生时间', dataIndex: 'occurredAt', width: 180},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '商品', dataIndex: 'productName', width: 180},
+  {title: '商品规格', dataIndex: 'skuCode', width: 170},
+  {title: '流水类型', dataIndex: 'movementType', width: 120, align: 'center'},
+  {title: '方向', dataIndex: 'direction', align: 'center', width: 80},
+  {title: '来源单据类型', dataIndex: 'sourceDocumentType', width: 150, align: 'center'},
+  {title: '来源单号', dataIndex: 'sourceDocumentNo', width: 190},
+  {title: '来源单据 ID', dataIndex: 'sourceDocumentId', width: 150},
+  {title: '来源行 ID', dataIndex: 'sourceDocumentItemId', width: 150},
+  {title: '数量', dataIndex: 'quantity', width: 120},
+  {title: '单位', dataIndex: 'unitSnapshot', width: 90},
+  {title: '单位成本', dataIndex: 'unitCost', width: 130},
+  {title: '成本金额', dataIndex: 'costAmount', width: 140},
+  {title: '变动前数量', dataIndex: 'beforeQuantity', width: 140},
+  {title: '变动后数量', dataIndex: 'afterQuantity', width: 140},
+  {title: '操作人', dataIndex: 'operator', width: 120},
 ]);
 
 const valueColumns = ref<TableColumnsType<InventoryValueRow>>([
-    {title: '仓库', dataIndex: 'warehouseName', width: 150},
-    {title: '商品', dataIndex: 'productName', width: 180},
-    {title: '商品规格', dataIndex: 'skuCode', width: 170},
-    {title: '单位', dataIndex: 'unit', width: 76},
-    {title: '当前数量', dataIndex: 'quantity', width: 130},
-    {title: '预留数量', dataIndex: 'reservedQuantity', width: 130},
-    {title: '可用数量', dataIndex: 'availableQuantity', width: 130},
-    {title: '当前移动平均成本', dataIndex: 'avgCost', width: 170},
-    {title: '当前账面金额', dataIndex: 'amount', width: 148},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '商品', dataIndex: 'productName', width: 180},
+  {title: '商品规格', dataIndex: 'skuCode', width: 170},
+  {title: '单位', dataIndex: 'unit', width: 76},
+  {title: '当前数量', dataIndex: 'quantity', width: 130},
+  {title: '预留数量', dataIndex: 'reservedQuantity', width: 130},
+  {title: '可用数量', dataIndex: 'availableQuantity', width: 130},
+  {title: '当前移动平均成本', dataIndex: 'avgCost', width: 170},
+  {title: '当前账面金额', dataIndex: 'amount', width: 148},
 ]);
 
 /** 收发存的全部数量列（同一份名单既驱动渲染，也说明「这些列不可相加」）。 */
 const QUANTITY_INDEXES = [
-    'purchaseInQuantity',
-    'salesOutQuantity',
-    'stocktakeGainQuantity',
-    'stocktakeLossQuantity',
-    'gainReportQuantity',
-    'lossReportQuantity',
-    'transferInQuantity',
-    'transferOutQuantity',
-    'convertInQuantity',
-    'convertOutQuantity',
-    'netChangeQuantity',
+  'purchaseInQuantity',
+  'salesOutQuantity',
+  'stocktakeGainQuantity',
+  'stocktakeLossQuantity',
+  'gainReportQuantity',
+  'lossReportQuantity',
+  'transferInQuantity',
+  'transferOutQuantity',
+  'convertInQuantity',
+  'convertOutQuantity',
+  'netChangeQuantity',
 ];
 
 const flowColumns = ref<TableColumnsType<InventoryFlowSummaryRow>>([
-    {title: '仓库', dataIndex: 'warehouseName', width: 150},
-    {title: '商品', dataIndex: 'productName', width: 180},
-        {title: '商品规格', dataIndex: 'skuCode', width: 170},
-    {title: '单位', dataIndex: 'unit', width: 76},
-    {title: '期内采购入库数量', dataIndex: 'purchaseInQuantity', width: 160},
-    {title: '期内销售出库数量', dataIndex: 'salesOutQuantity', width: 160},
-    {title: '期内盘盈数量', dataIndex: 'stocktakeGainQuantity', width: 140},
-    {title: '期内盘亏数量', dataIndex: 'stocktakeLossQuantity', width: 140},
-    {title: '期内报溢数量', dataIndex: 'gainReportQuantity', width: 140},
-    {title: '期内报损数量', dataIndex: 'lossReportQuantity', width: 140},
-    {title: '期内调拨入', dataIndex: 'transferInQuantity', width: 130},
-    {title: '期内调拨出', dataIndex: 'transferOutQuantity', width: 130},
-    {title: '期内转换入', dataIndex: 'convertInQuantity', width: 130},
-    {title: '期内转换出', dataIndex: 'convertOutQuantity', width: 130},
-    {title: '期内净变动量', dataIndex: 'netChangeQuantity', width: 150},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '商品', dataIndex: 'productName', width: 180},
+  {title: '商品规格', dataIndex: 'skuCode', width: 170},
+  {title: '单位', dataIndex: 'unit', width: 76},
+  {title: '期内采购入库数量', dataIndex: 'purchaseInQuantity', width: 160},
+  {title: '期内销售出库数量', dataIndex: 'salesOutQuantity', width: 160},
+  {title: '期内盘盈数量', dataIndex: 'stocktakeGainQuantity', width: 140},
+  {title: '期内盘亏数量', dataIndex: 'stocktakeLossQuantity', width: 140},
+  {title: '期内报溢数量', dataIndex: 'gainReportQuantity', width: 140},
+  {title: '期内报损数量', dataIndex: 'lossReportQuantity', width: 140},
+  {title: '期内调拨入', dataIndex: 'transferInQuantity', width: 130},
+  {title: '期内调拨出', dataIndex: 'transferOutQuantity', width: 130},
+  {title: '期内转换入', dataIndex: 'convertInQuantity', width: 130},
+  {title: '期内转换出', dataIndex: 'convertOutQuantity', width: 130},
+  {title: '期内净变动量', dataIndex: 'netChangeQuantity', width: 150},
 ]);
 
 const visibleMovementColumns = computed(() => filterCostColumns(movementColumns.value, COST_INDEXES, canViewCost.value));
 
 function directionOf(movementType: string | null | undefined): 'IN' | 'OUT' | null {
-    return movementDirection(movementType, SCM_INVENTORY_MOVEMENT_INBOUND_TYPES);
+  return movementDirection(movementType, SCM_INVENTORY_MOVEMENT_INBOUND_TYPES);
 }
 
 /** 价值 KPI：后端没给聚合就不显示，绝不把当页金额相加冒充总额。 */
 const hasValueSummary = computed(() => Object.values(valueSummary.value).some((item) => item !== undefined && item !== null));
 const valueCards = computed(() => {
-    const data = valueSummary.value;
-    return [
-        {
-            label: '当前库存账面金额',
-            value: costText(data.bookValue, canViewCost.value),
-            sub: data.snapshotAt ? `截至 ${datetime(data.snapshotAt)}` : undefined,
-        },
-        {label: '有库存商品规格数', value: countText(data.stockedSkuCount)},
-        {label: '零库存商品规格数', value: countText(data.zeroStockSkuCount)},
-    ];
+  const data = valueSummary.value;
+  return [
+    {
+      label: '当前库存账面金额',
+      value: costText(data.bookValue, canViewCost.value),
+      sub: data.snapshotAt ? `截至 ${datetime(data.snapshotAt)}` : undefined,
+    },
+    {label: '有库存商品规格数', value: countText(data.stockedSkuCount)},
+    {label: '零库存商品规格数', value: countText(data.zeroStockSkuCount)},
+  ];
 });
 
 function inventoryQuery(tab: {pageNum: number; pageSize: number}): InventoryReportQuery {
-    return buildReportQuery<InventoryReportQuery>(dateRange.value, {...filters}, tab);
+  return buildReportQuery<InventoryReportQuery>(dateRange.value, {...filters}, tab);
 }
 
 function exportQuery(): Partial<InventoryReportQuery> {
-    return buildReportQuery<Partial<InventoryReportQuery>>(dateRange.value, {...filters});
+  return buildReportQuery<Partial<InventoryReportQuery>>(dateRange.value, {...filters});
 }
 
 const loadMovement = createTabLoader(movement, () => inventoryQuery(movement), reportInventoryApi.movementQuery);
@@ -451,115 +439,118 @@ const loadLoss = createTabLoader(loss, () => inventoryQuery(loss), reportInvento
 const loadFlow = createTabLoader(flow, () => inventoryQuery(flow), reportInventoryApi.flowSummaryQuery);
 
 function loadLossPage(pageNum: number, pageSize: number) {
-    loss.pageNum = pageNum;
-    loss.pageSize = pageSize;
-    void loadLoss();
+  loss.pageNum = pageNum;
+  loss.pageSize = pageSize;
+  void loadLoss();
 }
 
 const loadLossSummary = createGuardedLoader(
-    (options) => reportInventoryApi.lossSummary(buildReportQuery<ReportFilterQuery<InventoryReportQuery>>(dateRange.value, {...filters}), options),
-    (data) => (lossSummary.value = data),
-    chartError
+  (options) => reportInventoryApi.lossSummary(buildReportQuery<ReportFilterQuery<InventoryReportQuery>>(dateRange.value, {...filters}), options),
+  (data) => (lossSummary.value = data),
+  chartError
 );
 
 /** 价值页：日期必填但被后端忽略（当前时点快照），仍带当前区间过去以满足校验。 */
-const loadValue = createTabLoader(value, () => inventoryQuery(value), (query) =>
+const loadValue = createTabLoader(
+  value,
+  () => inventoryQuery(value),
+  (query) =>
     reportInventoryApi.valueQuery(query).then((response) => {
-        valueSummary.value = {
-            bookValue: response.data.bookValue,
-            stockedSkuCount: response.data.stockedSkuCount,
-            zeroStockSkuCount: response.data.zeroStockSkuCount,
-            snapshotAt: response.data.snapshotAt,
-        };
-        return response;
+      valueSummary.value = {
+        bookValue: response.data.bookValue,
+        stockedSkuCount: response.data.stockedSkuCount,
+        zeroStockSkuCount: response.data.zeroStockSkuCount,
+        snapshotAt: response.data.snapshotAt,
+      };
+      return response;
     })
 );
 
 function queryActiveTab() {
-    const overLimit = rangeOverLimitError(dateRange.value);
-    if (overLimit) {
-        chartError.value = overLimit;
-        return;
-    }
-    chartError.value = '';
-    switch (activeTab.value) {
-        case 'movement':
-            void loadMovement();
-            break;
-        case 'loss':
-            void loadLoss();
-            void loadLossSummary();
-            break;
-        case 'value':
-            void loadValue();
-            break;
-        case 'flow':
-            void loadFlow();
-            break;
-        default:
-            break;
-    }
+  const overLimit = rangeOverLimitError(dateRange.value);
+  if (overLimit) {
+    chartError.value = overLimit;
+    return;
+  }
+  chartError.value = '';
+  switch (activeTab.value) {
+    case 'movement':
+      void loadMovement();
+      break;
+    case 'loss':
+      void loadLoss();
+      void loadLossSummary();
+      break;
+    case 'value':
+      void loadValue();
+      break;
+    case 'flow':
+      void loadFlow();
+      break;
+    default:
+      break;
+  }
 }
 
 function onTabChange() {
-    // 无成本权限时价值 Tab 整个不渲染；若权限在停留期间被收回，回落到流水而不是查一个空页
-    if (activeTab.value === 'value' && !canViewCost.value) {
-        activeTab.value = 'movement';
-        enterTab(movement);
-        queryActiveTab();
-        return;
-    }
-    switch (activeTab.value) {
-        case 'movement':
-            enterTab(movement);
-            break;
-        case 'loss':
-            enterTab(loss);
-            break;
-        case 'value':
-            enterTab(value);
-            break;
-        case 'flow':
-            enterTab(flow);
-            break;
-        default:
-            break;
-    }
+  // 无成本权限时价值 Tab 整个不渲染；若权限在停留期间被收回，回落到流水而不是查一个空页
+  if (activeTab.value === 'value' && !canViewCost.value) {
+    activeTab.value = 'movement';
+    enterTab(movement);
     queryActiveTab();
+    return;
+  }
+  switch (activeTab.value) {
+    case 'movement':
+      enterTab(movement);
+      break;
+    case 'loss':
+      enterTab(loss);
+      break;
+    case 'value':
+      enterTab(value);
+      break;
+    case 'flow':
+      enterTab(flow);
+      break;
+    default:
+      break;
+  }
+  queryActiveTab();
 }
 
 function onSearch() {
-    queryActiveTab();
+  queryActiveTab();
 }
 
 function resetQuery() {
-    filters.warehouseId = undefined;
-    filters.skuId = undefined;
-    filters.keyword = undefined;
-    filters.movementType = undefined;
-    filters.sourceDocumentType = undefined;
-    dateRange.value = defaultDateRange();
-    enterTab(movement);
-    enterTab(loss);
-    enterTab(value);
-    enterTab(flow);
-    onSearch();
+  filters.warehouseId = undefined;
+  filters.skuId = undefined;
+  filters.keyword = undefined;
+  filters.movementType = undefined;
+  filters.sourceDocumentType = undefined;
+  dateRange.value = defaultDateRange();
+  enterTab(movement);
+  enterTab(loss);
+  enterTab(value);
+  enterTab(flow);
+  onSearch();
 }
 
 function exportMovement() {
-    void movementExport.run(() => reportInventoryApi.movementExport(exportQuery()));
+  void movementExport.run(() => reportInventoryApi.movementExport(exportQuery()));
 }
 
 function exportLoss() {
-    void lossExport.run(() => reportInventoryApi.lossExport(exportQuery()));
+  void lossExport.run(() => reportInventoryApi.lossExport(exportQuery()));
 }
 
 function exportValue() {
-    void valueExport.run(() => reportInventoryApi.valueExport(exportQuery()));
+  void valueExport.run(() => reportInventoryApi.valueExport(exportQuery()));
 }
 
 onMounted(() => {
-    dateRange.value = rangeFromQuery(route.query) ?? defaultDateRange();
-    queryActiveTab();
+  dateRange.value = rangeFromQuery(route.query) ?? defaultDateRange();
+  queryActiveTab();
 });
 </script>

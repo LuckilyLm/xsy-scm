@@ -29,10 +29,10 @@ import type {ScmActionItem} from './action-item';
  * `label` 默认「更多」；当一组动作完全平级、收纳不是按频率而是按「同类归组」时，
  * 可以换成更准确的说法（例如报表下钻的「下钻」），避免「更多」暗示存在主次。
  */
-const props = withDefaults(defineProps<{ actions: ScmActionItem[]; label?: string }>(), {
+const props = withDefaults(defineProps<{actions: ScmActionItem[]; label?: string}>(), {
   label: '更多',
 });
-const emit = defineEmits<{ select: [key: string] }>();
+const emit = defineEmits<{select: [key: string]}>();
 
 const visibleActions = computed(() => props.actions.filter((action) => !action.hidden));
 

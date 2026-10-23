@@ -3,22 +3,22 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent="onSearch">
     <a-form-item label="关键词" class="smart-query-form-item">
       <a-input
-          v-model:value="queryForm.keyword"
-          :placeholder="viewMode === 'sku' ? '商品名称 / 编码 / 规格' : '客户 / 订单号 / 商品 / 编码'"
-          allow-clear
-          :maxlength="100"
-          style="width: 260px"
-          @pressEnter="onSearch"
+        v-model:value="queryForm.keyword"
+        :placeholder="viewMode === 'sku' ? '商品名称 / 编码 / 规格' : '客户 / 订单号 / 商品 / 编码'"
+        allow-clear
+        :maxlength="100"
+        style="width: 260px"
+        @pressEnter="onSearch"
       />
     </a-form-item>
     <a-form-item label="仓库" class="smart-query-form-item">
-      <WarehouseSelect v-model:value="queryForm.warehouseId" placeholder="全部仓库" width="200px"/>
+      <WarehouseSelect v-model:value="queryForm.warehouseId" placeholder="全部仓库" width="200px" />
     </a-form-item>
     <a-form-item label="送货日期" class="smart-query-form-item">
-      <a-date-picker v-model:value="queryForm.deliveryDate" value-format="YYYY-MM-DD" placeholder="按冻结送货日筛选" style="width: 190px"/>
+      <a-date-picker v-model:value="queryForm.deliveryDate" value-format="YYYY-MM-DD" placeholder="按冻结送货日筛选" style="width: 190px" />
     </a-form-item>
     <a-form-item label="任务状态" class="smart-query-form-item">
-      <a-select v-model:value="queryForm.taskStatus" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px"/>
+      <a-select v-model:value="queryForm.taskStatus" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px" />
     </a-form-item>
     <a-form-item class="smart-query-form-item">
       <a-button-group>
@@ -27,7 +27,7 @@
       </a-button-group>
     </a-form-item>
     <div class="scm-query-table-tools">
-      <TableOperator v-if="viewMode === 'sku'" v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_SUMMARY" :refresh="queryData"/>
+      <TableOperator v-if="viewMode === 'sku'" v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SORTING_SUMMARY" :refresh="queryData" />
     </div>
   </a-form>
 
@@ -45,19 +45,20 @@
     </a-radio-group>
     <p class="scm-note">按商品规格和销售单位分别汇总；最终确认统计不代表个人绩效或工资。</p>
 
-    <a-table v-if="viewMode === 'sku'"
-        :id="SCM_SORTING_TABLE_ID.SUMMARY"
-        size="small"
-        :data-source="rows"
-        :columns="columns"
-        :row-key="(r: SortingSkuSummary) => `${r.skuId}-${r.saleUnitSnapshot}`"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText }"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+    <a-table
+      v-if="viewMode === 'sku'"
+      :id="SCM_SORTING_TABLE_ID.SUMMARY"
+      size="small"
+      :data-source="rows"
+      :columns="columns"
+      :row-key="(r: SortingSkuSummary) => `${r.skuId}-${r.saleUnitSnapshot}`"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText}"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'product'">{{ record.productNameSnapshot || '—' }}</template>
         <template v-else-if="column.dataIndex === 'spuCodeSnapshot'">
           <span class="scm-mono">{{ record.spuCodeSnapshot || '—' }}</span>
@@ -74,36 +75,30 @@
         </template>
         <template v-else-if="column.dataIndex === 'unprocessedCount'">
           <!-- 未处理行数是本页唯一需要「一眼挑出来」的异常信号：0 不强调，非 0 才着色 -->
-          <ScmStatusTag
-              :tone="record.unprocessedCount ? 'warning' : 'neutral'"
-              :label="String(record.unprocessedCount ?? '—')"
-          />
+          <ScmStatusTag :tone="record.unprocessedCount ? 'warning' : 'neutral'" :label="String(record.unprocessedCount ?? '—')" />
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
     </a-table>
 
     <a-table
-        v-else-if="viewMode === 'customer'"
-        size="small"
-        :data-source="customerRows"
-        :columns="customerColumns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText }"
-        :scroll="{ x: scmColumnsWidth(customerColumns) }"
+      v-else-if="viewMode === 'customer'"
+      size="small"
+      :data-source="customerRows"
+      :columns="customerColumns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText}"
+      :scroll="{x: scmColumnsWidth(customerColumns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'taskStatus'">
-          <ScmStatusTag :tone="record.taskStatus === 'COMPLETED' ? 'success' : 'processing'" :label="statusLabel(record.taskStatus)"/>
+          <ScmStatusTag :tone="record.taskStatus === 'COMPLETED' ? 'success' : 'processing'" :label="statusLabel(record.taskStatus)" />
         </template>
         <template v-else-if="column.dataIndex === 'result'">
-          <ScmStatusTag
-              :tone="record.result === 'NORMAL' ? 'success' : record.result ? 'warning' : 'neutral'"
-              :label="resultLabel(record.result)"
-          />
+          <ScmStatusTag :tone="record.result === 'NORMAL' ? 'success' : record.result ? 'warning' : 'neutral'" :label="resultLabel(record.result)" />
         </template>
         <template v-else-if="column.dataIndex === 'deliveryTimeSnapshot'">
           {{ record.deliveryTimeSnapshot ? datetime(record.deliveryTimeSnapshot) : '—' }}
@@ -116,16 +111,16 @@
     </a-table>
 
     <a-table
-        v-else
-        size="small"
-        :data-source="performanceRows"
-        :columns="performanceColumns"
-        :row-key="(r: SortingPerformance) => `${r.warehouseId}-${r.confirmedBy}-${r.saleUnitSnapshot}`"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText }"
-        :scroll="{ x: scmColumnsWidth(performanceColumns) }"
+      v-else
+      size="small"
+      :data-source="performanceRows"
+      :columns="performanceColumns"
+      :row-key="(r: SortingPerformance) => `${r.warehouseId}-${r.confirmedBy}-${r.saleUnitSnapshot}`"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText}"
+      :scroll="{x: scmColumnsWidth(performanceColumns)}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'confirmedQuantity'">
@@ -140,14 +135,16 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          :page-size-options="['10', '20', '50', '100']"
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => viewMode === 'sku' ? `共 ${n} 个商品规格` : viewMode === 'customer' ? `共 ${n} 条客户分拣明细` : `共 ${n} 条最终确认统计`"
+        show-size-changer
+        show-quick-jumper
+        :page-size-options="['10', '20', '50', '100']"
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="
+          (n: number) => (viewMode === 'sku' ? `共 ${n} 个商品规格` : viewMode === 'customer' ? `共 ${n} 条客户分拣明细` : `共 ${n} 条最终确认统计`)
+        "
       />
     </div>
   </a-card>
@@ -163,10 +160,10 @@ import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {sortingApi} from '/@/api/business/scm/sorting-api';
 import {
-    SCM_SORTING_PERMISSION,
-    SCM_SORTING_TABLE_ID,
-    SCM_SORTING_TASK_STATUS_ENUM,
-    SCM_SORTING_RESULT_ENUM,
+  SCM_SORTING_PERMISSION,
+  SCM_SORTING_TABLE_ID,
+  SCM_SORTING_TASK_STATUS_ENUM,
+  SCM_SORTING_RESULT_ENUM,
 } from '/@/constants/business/scm/sorting-const';
 import {hasPermission} from '../common/scm-permission';
 import type {SortingCustomerLine, SortingPerformance, SortingSkuSummary, SortingSummaryQuery} from './sorting-types';
@@ -185,13 +182,13 @@ let generation = 0;
 
 const statusOptions = Object.values(SCM_SORTING_TASK_STATUS_ENUM).map((item) => ({value: item.value, label: item.desc}));
 const statusLabel = (value: string) => SCM_SORTING_TASK_STATUS_ENUM[value]?.desc ?? value;
-const resultLabel = (value?: string | null) => value ? SCM_SORTING_RESULT_ENUM[value]?.desc ?? value : '待处理';
+const resultLabel = (value?: string | null) => (value ? SCM_SORTING_RESULT_ENUM[value]?.desc ?? value : '待处理');
 
 // 汇总行按「授权仓 ∩ 可见指派人」收窄，与任务页同一套口径；空表要能区分是没授权还是真没数据。
 const emptyText = computed(() =>
-    hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN)
-        ? '暂无分拣汇总数据'
-        : '当前仅统计授权仓库内派给您本人的任务；若无数据，可能是尚未生成分拣任务，请联系分拣主管确认。'
+  hasPermission(SCM_SORTING_PERMISSION.TASK_ASSIGN)
+    ? '暂无分拣汇总数据'
+    : '当前仅统计授权仓库内派给您本人的任务；若无数据，可能是尚未生成分拣任务，请联系分拣主管确认。'
 );
 
 /**
@@ -240,53 +237,53 @@ const performanceColumns: TableColumnsType<SortingPerformance> = [
 ];
 
 function switchView() {
-    queryForm.pageNum = 1;
-    queryData();
+  queryForm.pageNum = 1;
+  queryData();
 }
 
 async function queryData() {
-    const current = ++generation;
-    loading.value = true;
-    error.value = '';
-    try {
-        // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
-        if (viewMode.value === 'sku') {
-            const result = await sortingApi.summary({...queryForm}, {suppressGlobalErrorMessage: true});
-            if (current === generation) {
-                rows.value = result.data.list;
-                total.value = result.data.total;
-            }
-        } else if (viewMode.value === 'customer') {
-            const result = await sortingApi.customerLines({...queryForm}, {suppressGlobalErrorMessage: true});
-            if (current === generation) {
-                customerRows.value = result.data.list;
-                total.value = result.data.total;
-            }
-        } else {
-            const result = await sortingApi.confirmedPerformance({...queryForm}, {suppressGlobalErrorMessage: true});
-            if (current === generation) {
-                performanceRows.value = result.data.list;
-                total.value = result.data.total;
-            }
-        }
-    } catch (e) {
-        if (current === generation) error.value = sortingError(e);
-    } finally {
-        if (current === generation) loading.value = false;
+  const current = ++generation;
+  loading.value = true;
+  error.value = '';
+  try {
+    // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
+    if (viewMode.value === 'sku') {
+      const result = await sortingApi.summary({...queryForm}, {suppressGlobalErrorMessage: true});
+      if (current === generation) {
+        rows.value = result.data.list;
+        total.value = result.data.total;
+      }
+    } else if (viewMode.value === 'customer') {
+      const result = await sortingApi.customerLines({...queryForm}, {suppressGlobalErrorMessage: true});
+      if (current === generation) {
+        customerRows.value = result.data.list;
+        total.value = result.data.total;
+      }
+    } else {
+      const result = await sortingApi.confirmedPerformance({...queryForm}, {suppressGlobalErrorMessage: true});
+      if (current === generation) {
+        performanceRows.value = result.data.list;
+        total.value = result.data.total;
+      }
     }
+  } catch (e) {
+    if (current === generation) error.value = sortingError(e);
+  } finally {
+    if (current === generation) loading.value = false;
+  }
 }
 
 function onSearch() {
-    queryForm.pageNum = 1;
-    queryData();
+  queryForm.pageNum = 1;
+  queryData();
 }
 
 function resetQuery() {
-    queryForm.keyword = undefined;
-    queryForm.warehouseId = undefined;
-    queryForm.taskStatus = undefined;
-    queryForm.deliveryDate = undefined;
-    onSearch();
+  queryForm.keyword = undefined;
+  queryForm.warehouseId = undefined;
+  queryForm.taskStatus = undefined;
+  queryForm.deliveryDate = undefined;
+  onSearch();
 }
 
 onMounted(queryData);

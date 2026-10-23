@@ -2,21 +2,21 @@
   <a-card size="small" :bordered="false">
     <a-form :model="queryForm" layout="inline" class="daily-filters" @finish="search">
       <a-form-item label="清单日期">
-        <a-date-picker v-model:value="queryForm.reportDate" value-format="YYYY-MM-DD" :allow-clear="false"
-                       :disabled-date="disabledDate"/>
+        <a-date-picker v-model:value="queryForm.reportDate" value-format="YYYY-MM-DD" :allow-clear="false" :disabled-date="disabledDate" />
       </a-form-item>
       <a-form-item label="仓库">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" width="180px"/>
+        <WarehouseSelect v-model:value="queryForm.warehouseId" width="180px" />
       </a-form-item>
       <a-form-item label="商品">
-        <a-input v-model:value="queryForm.keyword" placeholder="商品名称 / 商品编码 / 商品规格编码" allow-clear :maxlength="100"/>
+        <a-input v-model:value="queryForm.keyword" placeholder="商品名称 / 商品编码 / 商品规格编码" allow-clear :maxlength="100" />
       </a-form-item>
       <a-form-item>
         <a-space wrap>
           <a-button type="primary" :loading="loading" @click="search">查询</a-button>
           <a-button @click="reset">重置</a-button>
-          <a-button v-privilege="PERM.EXPORT" :loading="exporting"
-                    :disabled="!report?.generatedAt || loading || !!error" @click="exportReport">导出清单</a-button>
+          <a-button v-privilege="PERM.EXPORT" :loading="exporting" :disabled="!report?.generatedAt || loading || !!error" @click="exportReport"
+            >导出清单</a-button
+          >
         </a-space>
       </a-form-item>
     </a-form>
@@ -34,18 +34,36 @@
       <span>生成时间：{{ datetime(report.generatedAt) }}</span>
       <span>符合条件的商品规格：{{ report.products.total }} 项</span>
     </p>
-    <a-table size="small" bordered :columns="columns" :data-source="report?.products.list ?? []"
-             :row-key="rowKey" :loading="loading" :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }"
-             :locale="{ emptyText }">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'plannedQuantity'"><span class="scm-quantity">{{ quantityText(record.plannedQuantity) }}</span></template>
-        <template v-else-if="column.dataIndex === 'orderAmount'"><span class="scm-money">{{ moneyText(record.orderAmount) }}</span></template>
+    <a-table
+      size="small"
+      bordered
+      :columns="columns"
+      :data-source="report?.products.list ?? []"
+      :row-key="rowKey"
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
+      :locale="{emptyText}"
+    >
+      <template #bodyCell="{column, record}">
+        <template v-if="column.dataIndex === 'plannedQuantity'"
+          ><span class="scm-quantity">{{ quantityText(record.plannedQuantity) }}</span></template
+        >
+        <template v-else-if="column.dataIndex === 'orderAmount'"
+          ><span class="scm-money">{{ moneyText(record.orderAmount) }}</span></template
+        >
       </template>
     </a-table>
     <div class="daily-pagination">
-      <a-pagination v-model:current="pageNum" v-model:pageSize="pageSize" :total="report?.products.total ?? 0"
-                    :show-size-changer="true" :page-size-options="['10', '20', '50', '100']"
-                    :disabled="loading" @change="changePage"/>
+      <a-pagination
+        v-model:current="pageNum"
+        v-model:pageSize="pageSize"
+        :total="report?.products.total ?? 0"
+        :show-size-changer="true"
+        :page-size-options="['10', '20', '50', '100']"
+        :disabled="loading"
+        @change="changePage"
+      />
     </div>
   </a-card>
 </template>
@@ -66,9 +84,12 @@ import {datetime} from '../../common/scm-display';
 
 function todayInShanghai() {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   }).formatToParts(new Date());
-  const value = (type: string) => parts.find(part => part.type === type)?.value;
+  const value = (type: string) => parts.find((part) => part.type === type)?.value;
   return dayjs(`${value('year')}-${value('month')}-${value('day')}`);
 }
 
@@ -102,9 +123,7 @@ const emptyText = computed(() => {
     ? '清单已生成，当前授权范围和筛选条件下没有采购商品'
     : '该日期清单尚未生成或无访问范围，可联系管理员查看任务记录或补生成';
 });
-const rowKey = (row: PurchaseDailyProduct) => JSON.stringify([
-  row.skuId, row.spuCode, row.productName, row.skuCode, row.skuName, row.purchaseUnit,
-]);
+const rowKey = (row: PurchaseDailyProduct) => JSON.stringify([row.skuId, row.spuCode, row.productName, row.skuCode, row.skuName, row.purchaseUnit]);
 const disabledDate = (date: Dayjs) => !date.isBefore(todayInShanghai(), 'day');
 
 async function load(query: PurchaseDailyQuery) {
@@ -130,8 +149,13 @@ function search() {
     return;
   }
   pageNum.value = 1;
-  void load({reportDate: queryForm.reportDate, warehouseId: queryForm.warehouseId,
-    keyword: queryForm.keyword.trim() || undefined, pageNum: 1, pageSize: pageSize.value});
+  void load({
+    reportDate: queryForm.reportDate,
+    warehouseId: queryForm.warehouseId,
+    keyword: queryForm.keyword.trim() || undefined,
+    pageNum: 1,
+    pageSize: pageSize.value,
+  });
 }
 
 function changePage(current: number, size: number) {
@@ -161,17 +185,43 @@ async function exportReport() {
 }
 
 onMounted(search);
-onBeforeUnmount(() => { requestSequence += 1; });
+onBeforeUnmount(() => {
+  requestSequence += 1;
+});
 </script>
 
 <style scoped>
-.daily-filters { display: flex; flex-wrap: wrap; gap: 12px 0; }
-.daily-description { color: var(--scm-text-secondary, #666); margin: 16px 0; }
-.daily-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 16px 0; }
-.daily-pagination { display: flex; justify-content: flex-end; overflow-x: auto; margin-top: 16px; }
+.daily-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 0;
+}
+.daily-description {
+  color: var(--scm-text-secondary, #666);
+  margin: 16px 0;
+}
+.daily-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 16px 0;
+}
+.daily-pagination {
+  display: flex;
+  justify-content: flex-end;
+  overflow-x: auto;
+  margin-top: 16px;
+}
 @media (max-width: 600px) {
-  .daily-filters :deep(.ant-form-item) { width: 100%; margin-inline-end: 0; }
-  .daily-meta { flex-direction: column; }
-  .daily-pagination { justify-content: flex-start; }
+  .daily-filters :deep(.ant-form-item) {
+    width: 100%;
+    margin-inline-end: 0;
+  }
+  .daily-meta {
+    flex-direction: column;
+  }
+  .daily-pagination {
+    justify-content: flex-start;
+  }
 }
 </style>

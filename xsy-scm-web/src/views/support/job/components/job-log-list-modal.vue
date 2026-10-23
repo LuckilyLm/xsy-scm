@@ -6,8 +6,7 @@
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input style="width: 200px" v-model:value="queryForm.searchWord" placeholder="请输入关键字"
-                   :maxlength="30"/>
+          <a-input style="width: 200px" v-model:value="queryForm.searchWord" placeholder="请输入关键字" :maxlength="30" />
         </a-form-item>
         <a-form-item label="执行结果" class="smart-query-form-item">
           <a-select style="width: 100px" v-model:value="queryForm.successFlag" placeholder="请选择" allowClear>
@@ -17,8 +16,7 @@
         </a-form-item>
         <a-form-item label="执行时间" class="smart-query-form-item">
           <a-space direction="vertical" :size="12">
-            <a-range-picker v-model:value="searchDate" style="width: 220px" :presets="defaultTimeRanges"
-                            @change="dateChange"/>
+            <a-range-picker v-model:value="searchDate" style="width: 220px" :presets="defaultTimeRanges" @change="dateChange" />
           </a-space>
         </a-form-item>
 
@@ -26,13 +24,13 @@
           <a-button-group>
             <a-button type="primary" @click="onSearch">
               <template #icon>
-                <SearchOutlined/>
+                <SearchOutlined />
               </template>
               查询
             </a-button>
             <a-button @click="resetQuery">
               <template #icon>
-                <ReloadOutlined/>
+                <ReloadOutlined />
               </template>
               重置
             </a-button>
@@ -42,13 +40,11 @@
     </a-form>
 
     <a-row justify="end">
-      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.JOB_LOG"
-                     :refresh="queryLogList"/>
+      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.JOB_LOG" :refresh="queryLogList" />
     </a-row>
 
-    <a-table size="small" :loading="tableLoading" bordered :dataSource="tableData" :columns="columns" rowKey="jobLogId"
-             :pagination="false">
-      <template #bodyCell="{ record, column }">
+    <a-table size="small" :loading="tableLoading" bordered :dataSource="tableData" :columns="columns" rowKey="jobLogId" :pagination="false">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'executeStartTime'">
           <div>
             <a-tag color="green">始</a-tag>
@@ -62,11 +58,11 @@
         <template v-if="column.dataIndex === 'executeTimeMillis'"> {{ record.executeTimeMillis }} ms</template>
         <template v-if="column.dataIndex === 'successFlag'">
           <div v-if="record.successFlag" style="color: #39c710">
-            <CheckOutlined/>
+            <CheckOutlined />
             成功
           </div>
           <div v-else style="color: #f50">
-            <WarningOutlined/>
+            <WarningOutlined />
             失败
           </div>
         </template>
@@ -75,16 +71,16 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="queryLogList"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="queryLogList"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-drawer>
@@ -136,7 +132,8 @@ const columns = ref([
   },
   {
     title: '结果',
-    dataIndex: 'successFlag', align: 'center',
+    dataIndex: 'successFlag',
+    align: 'center',
     width: 80,
   },
   {

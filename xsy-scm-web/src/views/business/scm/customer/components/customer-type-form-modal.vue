@@ -5,26 +5,22 @@
 -->
 <template>
   <a-modal
-      v-model:open="visible"
-      :title="form.typeId ? '编辑客户类型' : '新增客户类型'"
-      :confirm-loading="saving"
-      @ok="submit"
-      @cancel="visible = false"
+    v-model:open="visible"
+    :title="form.typeId ? '编辑客户类型' : '新增客户类型'"
+    :confirm-loading="saving"
+    @ok="submit"
+    @cancel="visible = false"
   >
     <a-form ref="formRef" :model="form" layout="vertical">
-      <a-form-item v-if="!form.typeId" name="typeCode"
-                   :rules="[{ required: true, whitespace: true, message: '请输入类型编码' }]">
-        <template #label>
-          类型编码
-        </template>
-        <a-input v-model:value="form.typeCode" :maxlength="64" placeholder="例如 GROUP"/>
+      <a-form-item v-if="!form.typeId" name="typeCode" :rules="[{required: true, whitespace: true, message: '请输入类型编码'}]">
+        <template #label> 类型编码 </template>
+        <a-input v-model:value="form.typeCode" :maxlength="64" placeholder="例如 GROUP" />
       </a-form-item>
-      <a-form-item label="类型名称" name="name"
-                   :rules="[{ required: true, whitespace: true, message: '请输入类型名称' }]">
-        <a-input v-model:value="form.name" :maxlength="64"/>
+      <a-form-item label="类型名称" name="name" :rules="[{required: true, whitespace: true, message: '请输入类型名称'}]">
+        <a-input v-model:value="form.name" :maxlength="64" />
       </a-form-item>
       <a-form-item label="状态" name="status">
-        <SmartEnumSelect v-model:value="form.status" enum-name="CUSTOMER_TYPE_STATUS_ENUM" width="100%"/>
+        <SmartEnumSelect v-model:value="form.status" enum-name="CUSTOMER_TYPE_STATUS_ENUM" width="100%" />
       </a-form-item>
     </a-form>
   </a-modal>
@@ -38,7 +34,7 @@ import SmartEnumSelect from '/@/components/framework/smart-enum-select/index.vue
 import {customerTypeApi} from '/@/api/business/scm/customer-type-api';
 import type {CustomerType, CustomerTypeForm} from '/@/types/business/scm/customer';
 
-const emit = defineEmits<{ saved: [] }>();
+const emit = defineEmits<{saved: []}>();
 
 const visible = ref(false);
 const saving = ref(false);

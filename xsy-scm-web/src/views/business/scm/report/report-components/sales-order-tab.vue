@@ -2,11 +2,10 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting"
-                  @click="emit('export')">导出</a-button>
+        <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')">导出</a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_ORDER" :refresh="refresh"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_SALES_ORDER" :refresh="refresh" />
       </div>
     </a-row>
     <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
@@ -15,18 +14,18 @@
       </template>
     </a-alert>
     <a-table
-        :id="SCM_REPORT_TABLE_ID.SALES_ORDER"
-        size="small"
-        :data-source="rows"
-        :columns="columns"
-        row-key="orderId"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{emptyText: '暂无客户订单明细'}"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      :id="SCM_REPORT_TABLE_ID.SALES_ORDER"
+      size="small"
+      :data-source="rows"
+      :columns="columns"
+      row-key="orderId"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无客户订单明细'}"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'orderNo'">
           <a v-if="record.orderId" @click="openOrder(record.orderId)">{{ record.orderNo }}</a>
           <span v-else>{{ record.orderNo ?? '—' }}</span>
@@ -57,13 +56,13 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          :current="pageNum"
-          :page-size="pageSize"
-          :total="total"
-          @change="changePage"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        :current="pageNum"
+        :page-size="pageSize"
+        :total="total"
+        @change="changePage"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>

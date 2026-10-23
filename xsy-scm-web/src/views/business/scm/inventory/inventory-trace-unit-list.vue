@@ -8,13 +8,13 @@
   <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
     <div class="scm-filter-fields">
       <a-form-item label="批次号">
-        <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="包装码">
-        <a-input v-model:value="queryForm.unitCode" placeholder="包装码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.unitCode" placeholder="包装码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="状态">
-        <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px"/>
+        <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px" />
       </a-form-item>
     </div>
     <div class="scm-filter-actions">
@@ -35,27 +35,23 @@
         <a-button type="primary" @click="openIssue" v-privilege="'scm:inventory:unit:issue'">按批次发码</a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRACE_UNIT"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRACE_UNIT" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.TRACE_UNIT"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '暂无包装码' }"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      :id="SCM_INVENTORY_TABLE_ID.TRACE_UNIT"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无包装码'}"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'unitCode'">
           <span class="scm-mono">{{ record.unitCode }}</span>
         </template>
@@ -69,14 +65,13 @@
           {{ PACKAGE_TYPE_ENUM[record.packageType]?.desc || record.packageType }}
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="record.status === 'ACTIVE' ? 'success' : 'neutral'"
-                        :label="record.status === 'ACTIVE' ? '有效' : '已作废'"/>
+          <ScmStatusTag :tone="record.status === 'ACTIVE' ? 'success' : 'neutral'" :label="record.status === 'ACTIVE' ? '有效' : '已作废'" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openReplay(record)">回放</a-button>
             <a-button type="link" size="small" @click="openBind(record)" v-privilege="'scm:inventory:unit:bind'">绑定分拣</a-button>
-            <ScmActionMore :actions="moreActions(record)" @select="onMore(record, $event)"/>
+            <ScmActionMore :actions="moreActions(record)" @select="onMore(record, $event)" />
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -85,97 +80,110 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <a-modal v-model:open="issueOpen" title="按批次发码" :confirm-loading="issuing" ok-text="发码" @ok="submitIssue">
-    <a-alert v-if="issueError" class="form-error" type="error" show-icon :message="issueError"/>
+    <a-alert v-if="issueError" class="form-error" type="error" show-icon :message="issueError" />
     <a-form layout="vertical">
       <a-form-item label="批次号" required>
-        <a-input v-model:value="issueForm.lotNo" placeholder="输入批次号后确认可发数量" @blur="loadLot"/>
+        <a-input v-model:value="issueForm.lotNo" placeholder="输入批次号后确认可发数量" @blur="loadLot" />
       </a-form-item>
       <a-form-item label="包装类型" required>
-        <a-select v-model:value="issueForm.packageType" :options="PACKAGE_TYPE_OPTIONS" style="width: 160px"/>
+        <a-select v-model:value="issueForm.packageType" :options="PACKAGE_TYPE_OPTIONS" style="width: 160px" />
       </a-form-item>
       <a-form-item label="发码数量" required>
-        <a-input-number v-model:value="issueForm.packageCount" :min="1" :max="500" :precision="0"
-                        aria-label="发码数量" style="width: 160px"/>
+        <a-input-number v-model:value="issueForm.packageCount" :min="1" :max="500" :precision="0" aria-label="发码数量" style="width: 160px" />
       </a-form-item>
       <a-form-item label="每包数量" required>
-        <a-input-number v-model:value="issueForm.quantityPerPackage" string-mode :min="'0.0001'" :precision="4"
-                        aria-label="每包数量" style="width: 160px"/>
+        <a-input-number
+          v-model:value="issueForm.quantityPerPackage"
+          string-mode
+          :min="'0.0001'"
+          :precision="4"
+          aria-label="每包数量"
+          style="width: 160px"
+        />
       </a-form-item>
       <a-form-item label="备注">
-        <a-input v-model:value="issueForm.remark" maxlength="200"/>
+        <a-input v-model:value="issueForm.remark" maxlength="200" />
       </a-form-item>
     </a-form>
     <p v-if="lotHint" class="scm-note">{{ lotHint }}</p>
   </a-modal>
 
   <a-modal v-model:open="bindOpen" title="绑定分拣任务行" :confirm-loading="binding" ok-text="绑定" @ok="submitBind">
-    <a-alert v-if="bindError" class="form-error" type="error" show-icon :message="bindError"/>
+    <a-alert v-if="bindError" class="form-error" type="error" show-icon :message="bindError" />
     <a-form layout="vertical">
       <a-form-item label="包装码" required>
-        <a-input v-model:value="bindForm.unitCode" placeholder="扫码或输入包装码" aria-label="包装码"/>
+        <a-input v-model:value="bindForm.unitCode" placeholder="扫码或输入包装码" aria-label="包装码" />
       </a-form-item>
       <a-form-item label="分拣任务号" required>
-        <a-input-search v-model:value="bindForm.taskNo" placeholder="输入分拣任务号后查询" enter-button="查询任务"
-                        aria-label="分拣任务号" @search="loadTaskItems"/>
+        <a-input-search
+          v-model:value="bindForm.taskNo"
+          placeholder="输入分拣任务号后查询"
+          enter-button="查询任务"
+          aria-label="分拣任务号"
+          @search="loadTaskItems"
+        />
       </a-form-item>
       <a-form-item label="任务行" required>
-        <a-select v-model:value="bindForm.sortingTaskItemId" :options="taskItemOptions" :loading="taskLoading"
-                  placeholder="选择要发给的客户与商品" style="width: 100%"/>
+        <a-select
+          v-model:value="bindForm.sortingTaskItemId"
+          :options="taskItemOptions"
+          :loading="taskLoading"
+          placeholder="选择要发给的客户与商品"
+          style="width: 100%"
+        />
       </a-form-item>
     </a-form>
   </a-modal>
 
-  <a-modal v-model:open="correctOpen" title="申请更正" :confirm-loading="correcting" ok-text="提交申请"
-           @ok="submitCorrect">
-    <a-alert v-if="correctError" class="form-error" type="error" show-icon :message="correctError"/>
+  <a-modal v-model:open="correctOpen" title="申请更正" :confirm-loading="correcting" ok-text="提交申请" @ok="submitCorrect">
+    <a-alert v-if="correctError" class="form-error" type="error" show-icon :message="correctError" />
     <p class="scm-note">提交后需他人审批；批准前绑定仍然有效。</p>
     <a-form layout="vertical">
       <a-form-item label="包装码">
-        <a-input :value="correctRow?.unitCode" disabled/>
+        <a-input :value="correctRow?.unitCode" disabled />
       </a-form-item>
       <a-form-item label="更正原因" required>
-        <a-textarea v-model:value="correctReason" :maxlength="200" :rows="2" aria-label="更正原因"/>
+        <a-textarea v-model:value="correctReason" :maxlength="200" :rows="2" aria-label="更正原因" />
       </a-form-item>
     </a-form>
   </a-modal>
 
-  <a-modal v-model:open="voidOpen" title="作废包装码" :confirm-loading="voidSaving" ok-text="作废"
-           ok-type="danger" @ok="submitVoid">
-    <a-alert v-if="voidError" class="form-error" type="error" show-icon :message="voidError"/>
+  <a-modal v-model:open="voidOpen" title="作废包装码" :confirm-loading="voidSaving" ok-text="作废" ok-type="danger" @ok="submitVoid">
+    <a-alert v-if="voidError" class="form-error" type="error" show-icon :message="voidError" />
     <p class="scm-note">作废只把码标记为已作废并保留原码，不能复用到别的实物；已绑定分拣行的码不能作废。</p>
     <a-form layout="vertical">
       <a-form-item label="包装码">
-        <a-input :value="voidRow?.unitCode" disabled/>
+        <a-input :value="voidRow?.unitCode" disabled />
       </a-form-item>
       <a-form-item label="作废原因" required>
-        <a-textarea v-model:value="voidReason" :maxlength="200" :rows="2" aria-label="作废原因"/>
+        <a-textarea v-model:value="voidReason" :maxlength="200" :rows="2" aria-label="作废原因" />
       </a-form-item>
     </a-form>
   </a-modal>
 
   <PrintDocumentModal
-      :open="printOpen"
-      document-type="TRACE_UNIT"
-      :business-ids="printBusinessIds"
-      @close="printOpen = false"
-      @printed="printOpen = false"
+    :open="printOpen"
+    document-type="TRACE_UNIT"
+    :business-ids="printBusinessIds"
+    @close="printOpen = false"
+    @printed="printOpen = false"
   />
 
   <a-drawer :open="replayOpen" title="包装码回放" :width="scmDrawerWidth('m')" @close="replayOpen = false">
     <a-spin :spinning="replayLoading">
-      <a-alert v-if="replayError" :message="replayError" type="error" show-icon/>
+      <a-alert v-if="replayError" :message="replayError" type="error" show-icon />
       <template v-if="replay">
         <a-descriptions bordered size="small" :column="2">
           <a-descriptions-item label="包装码">{{ replay.unit.unitCode }}</a-descriptions-item>
@@ -189,21 +197,19 @@
         </a-descriptions>
 
         <div v-if="publicLink(replay.unit.publicToken)" class="replay-link">
-          <a-input :value="publicLink(replay.unit.publicToken)" readonly aria-label="公开扫码链接"/>
+          <a-input :value="publicLink(replay.unit.publicToken)" readonly aria-label="公开扫码链接" />
           <a-button size="small" @click="copyLink(replay.unit.publicToken)">复制链接</a-button>
         </div>
 
-        <TraceInspectionPanel v-if="replayOpen"
-            :lot-id="replay.lot?.lotId"
-            :lot-no="replay.lot?.lotNo"
-            :can-manage="canManageInspection"/>
+        <TraceInspectionPanel v-if="replayOpen" :lot-id="replay.lot?.lotId" :lot-no="replay.lot?.lotNo" :can-manage="canManageInspection" />
 
         <TraceAttachmentPanel
-            scope="LOT"
-            :target-id="replay.lot?.lotId"
-            title="历史批次附件（仅内部查看）"
-            :can-manage="false"
-            empty-text="暂无历史批次附件"/>
+          scope="LOT"
+          :target-id="replay.lot?.lotId"
+          title="历史批次附件（仅内部查看）"
+          :can-manage="false"
+          empty-text="暂无历史批次附件"
+        />
 
         <h4 class="replay-title">收货来源</h4>
         <a-descriptions v-if="replay.receipt" bordered size="small" :column="2">
@@ -211,7 +217,7 @@
           <a-descriptions-item label="供应商">{{ replay.receipt.supplierName || '—' }}</a-descriptions-item>
           <a-descriptions-item label="确认时间" :span="2">{{ replay.receipt.confirmedAt || '—' }}</a-descriptions-item>
         </a-descriptions>
-        <a-empty v-else description="该批次还没有收货记录"/>
+        <a-empty v-else description="该批次还没有收货记录" />
 
         <h4 class="replay-title">分拣去向</h4>
         <a-descriptions v-if="replay.binding" bordered size="small" :column="2">
@@ -219,28 +225,28 @@
           <a-descriptions-item label="订单号">{{ replay.binding.orderNo || '—' }}</a-descriptions-item>
           <a-descriptions-item label="绑定时间" :span="2">{{ replay.binding.boundAt || '—' }}</a-descriptions-item>
         </a-descriptions>
-        <a-empty v-else description="该包装码还没有绑定分拣任务行"/>
+        <a-empty v-else description="该包装码还没有绑定分拣任务行" />
 
         <h4 class="replay-title">批次相关出库</h4>
         <a-descriptions bordered size="small" :column="1" style="margin-bottom: 8px">
           <a-descriptions-item label="说明">批次级出库，不代表本包装已出库</a-descriptions-item>
         </a-descriptions>
         <a-table
-            v-if="replay.outbounds?.length"
-            size="small"
-            bordered
-            :data-source="replay.outbounds"
-            :columns="outboundColumns"
-            :pagination="false"
-            row-key="outboundNo"
+          v-if="replay.outbounds?.length"
+          size="small"
+          bordered
+          :data-source="replay.outbounds"
+          :columns="outboundColumns"
+          :pagination="false"
+          row-key="outboundNo"
         >
-          <template #bodyCell="{ record, column }">
+          <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'quantity'">
               <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
             </template>
           </template>
         </a-table>
-        <a-empty v-else description="该批次还没有出库记录"/>
+        <a-empty v-else description="该批次还没有出库记录" />
       </template>
     </a-spin>
   </a-drawer>
@@ -344,7 +350,14 @@ const issueOpen = ref(false);
 const issuing = ref(false);
 const issueError = ref('');
 const lotHint = ref('');
-const issueForm = reactive({lotNo: '', lotId: undefined as string | number | undefined, packageType: 'BAG', packageCount: 1, quantityPerPackage: '0.0000', remark: ''});
+const issueForm = reactive({
+  lotNo: '',
+  lotId: undefined as string | number | undefined,
+  packageType: 'BAG',
+  packageCount: 1,
+  quantityPerPackage: '0.0000',
+  remark: '',
+});
 
 const correctOpen = ref(false);
 const correcting = ref(false);
@@ -427,9 +440,7 @@ async function loadLot() {
     return;
   }
   try {
-    const res = await inventoryLotApi.queryBalance(
-        {pageNum: 1, pageSize: 1, lotNo: issueForm.lotNo.trim()},
-        {suppressGlobalErrorMessage: true});
+    const res = await inventoryLotApi.queryBalance({pageNum: 1, pageSize: 1, lotNo: issueForm.lotNo.trim()}, {suppressGlobalErrorMessage: true});
     const row = res.data?.list?.[0];
     if (!row) {
       lotHint.value = '没有找到该批次，或该批次已无库存';
@@ -472,8 +483,7 @@ function moreActions(record: TraceUnit): ScmActionItem[] {
   return [
     {key: 'print', label: '打印标签', hidden: !hasPermission('scm:inventory:unit:query')},
     {key: 'correct', label: '申请更正', hidden: !hasPermission('scm:inventory:unit:correct:apply')},
-    {key: 'void', label: '作废', danger: true,
-      hidden: !hasPermission('scm:inventory:unit:void') || record.status !== 'ACTIVE'},
+    {key: 'void', label: '作废', danger: true, hidden: !hasPermission('scm:inventory:unit:void') || record.status !== 'ACTIVE'},
   ];
 }
 

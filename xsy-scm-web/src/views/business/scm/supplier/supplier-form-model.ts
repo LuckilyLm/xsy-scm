@@ -21,128 +21,128 @@ const PHONE = /^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$/;
  * 提交时由 toReplaceItems 负责把空行挡掉。
  */
 export interface SkuDraft {
-    id?: ScmId;
-    version?: number;
-    skuId?: ScmId;
-    purchaseUnit: string;
-    supplierItemCode?: string | null;
-    referencePrice?: string | null;
-    /** 采购员 ID 使用数字或 null，和人员选择组件及后端 Long 字段保持一致。 */
-    purchaserId?: number | null;
-    /** 多行可以同时为 true，这不是缺陷而是 legacy 事实。 */
-    defaultFlag: boolean;
-    status?: EnableStatus;
+  id?: ScmId;
+  version?: number;
+  skuId?: ScmId;
+  purchaseUnit: string;
+  supplierItemCode?: string | null;
+  referencePrice?: string | null;
+  /** 采购员 ID 使用数字或 null，和人员选择组件及后端 Long 字段保持一致。 */
+  purchaserId?: number | null;
+  /** 多行可以同时为 true，这不是缺陷而是 legacy 事实。 */
+  defaultFlag: boolean;
+  status?: EnableStatus;
 }
 
 export function emptySupplier(): SupplierFormModel {
-    return {
-        // 区划六列（`AreaColumns`）只能显式列出：本模块要能被 `node --test` 直接加载，
-        // 不能有相对值导入。少一个键就会让上一条记录的区划串进新建的供应商。
-        // 点位三列同理：留着上一条的坐标会把新供应商静默标到旧地点上。
-        longitude: null,
-        latitude: null,
-        geomCrs: null,
-        provinceCode: null,
-        provinceName: null,
-        cityCode: null,
-        cityName: null,
-        districtCode: null,
-        districtName: null,
-        supplierCode: '',
-        name: '',
-        contactName: '',
-        contactPhone: '',
-        paymentPeriodDays: 0,
-        address: '',
-        remark: '',
-    };
+  return {
+    // 区划六列（`AreaColumns`）只能显式列出：本模块要能被 `node --test` 直接加载，
+    // 不能有相对值导入。少一个键就会让上一条记录的区划串进新建的供应商。
+    // 点位三列同理：留着上一条的坐标会把新供应商静默标到旧地点上。
+    longitude: null,
+    latitude: null,
+    geomCrs: null,
+    provinceCode: null,
+    provinceName: null,
+    cityCode: null,
+    cityName: null,
+    districtCode: null,
+    districtName: null,
+    supplierCode: '',
+    name: '',
+    contactName: '',
+    contactPhone: '',
+    paymentPeriodDays: 0,
+    address: '',
+    remark: '',
+  };
 }
 
 export function emptySkuDraft(): SkuDraft {
-    return {purchaseUnit: '', supplierItemCode: null, referencePrice: null, purchaserId: null, defaultFlag: false, status: 'ENABLED'};
+  return {purchaseUnit: '', supplierItemCode: null, referencePrice: null, purchaserId: null, defaultFlag: false, status: 'ENABLED'};
 }
 
 /** 移除某一行（纯函数，便于 `node --test` 直接单测）。 */
 export function removeSkuDraft(drafts: SkuDraft[], index: number): SkuDraft[] {
-    return drafts.filter((_, position) => position !== index);
+  return drafts.filter((_, position) => position !== index);
 }
 
 /** 服务端返回的行 → 可编辑草稿（保留 id / version，提交时才能走「保留」分支）。 */
 export function fromRows(rows: SupplierSkuRow[]): SkuDraft[] {
-    return rows.map((row) => ({
-        id: row.id,
-        version: row.version,
-        skuId: row.skuId,
-        purchaseUnit: row.purchaseUnit,
-        supplierItemCode: row.supplierItemCode ?? null,
-        referencePrice: row.referencePrice,
-        purchaserId: row.purchaserId ?? null,
-        defaultFlag: row.defaultFlag,
-        status: row.status,
-    }));
+  return rows.map((row) => ({
+    id: row.id,
+    version: row.version,
+    skuId: row.skuId,
+    purchaseUnit: row.purchaseUnit,
+    supplierItemCode: row.supplierItemCode ?? null,
+    referencePrice: row.referencePrice,
+    purchaserId: row.purchaserId ?? null,
+    defaultFlag: row.defaultFlag,
+    status: row.status,
+  }));
 }
 
 export function validateSupplier(form: SupplierFormModel): string | undefined {
-    if (!form.name?.trim()) {
-        return '请输入供应商名称';
-    }
-    const phone = form.contactPhone?.trim();
-    if (phone && !PHONE.test(phone)) {
-        return '联系电话格式不正确';
-    }
-    return undefined;
+  if (!form.name?.trim()) {
+    return '请输入供应商名称';
+  }
+  const phone = form.contactPhone?.trim();
+  if (phone && !PHONE.test(phone)) {
+    return '联系电话格式不正确';
+  }
+  return undefined;
 }
 
 export function validateSkuDrafts(drafts: SkuDraft[]): string | undefined {
-    const seen = new Set<string>();
-    const supplierCodes = new Set<string>();
-    for (const [index, draft] of drafts.entries()) {
-        const label = `第 ${index + 1} 行：`;
-        if (draft.skuId == null) {
-            return label + '请选择商品规格';
-        }
-        const key = String(draft.skuId);
-        if (seen.has(key)) {
-            return label + '该商品规格已存在，不能重复添加';
-        }
-        seen.add(key);
-        const externalCode = draft.supplierItemCode?.trim();
-        if (externalCode && externalCode.length > 100) return label + '供应商货号不能超过100个字符';
-        if (externalCode && supplierCodes.has(externalCode)) return label + '供应商货号不能重复指向不同商品';
-        if (externalCode) supplierCodes.add(externalCode);
-        if (!draft.purchaseUnit?.trim()) {
-            return label + '请填写采购单位';
-        }
-        const price = draft.referencePrice?.trim();
-        if (price && !DECIMAL.test(price)) {
-            return label + '参考价须为非负数，最多四位小数';
-        }
+  const seen = new Set<string>();
+  const supplierCodes = new Set<string>();
+  for (const [index, draft] of drafts.entries()) {
+    const label = `第 ${index + 1} 行：`;
+    if (draft.skuId == null) {
+      return label + '请选择商品规格';
     }
-    return undefined;
+    const key = String(draft.skuId);
+    if (seen.has(key)) {
+      return label + '该商品规格已存在，不能重复添加';
+    }
+    seen.add(key);
+    const externalCode = draft.supplierItemCode?.trim();
+    if (externalCode && externalCode.length > 100) return label + '供应商货号不能超过100个字符';
+    if (externalCode && supplierCodes.has(externalCode)) return label + '供应商货号不能重复指向不同商品';
+    if (externalCode) supplierCodes.add(externalCode);
+    if (!draft.purchaseUnit?.trim()) {
+      return label + '请填写采购单位';
+    }
+    const price = draft.referencePrice?.trim();
+    if (price && !DECIMAL.test(price)) {
+      return label + '参考价须为非负数，最多四位小数';
+    }
+  }
+  return undefined;
 }
 
 /** 草稿 → 替换请求体。不校验 `defaultFlag` 的基数（R12）。 */
 export function toReplaceItems(drafts: SkuDraft[]): SupplierSkuItem[] {
-    const blankToNull = (value?: string | null): string | null => {
-        const text = value == null ? '' : String(value).trim();
-        return text === '' ? null : text;
+  const blankToNull = (value?: string | null): string | null => {
+    const text = value == null ? '' : String(value).trim();
+    return text === '' ? null : text;
+  };
+  return drafts.map((draft) => {
+    const item: SupplierSkuItem = {
+      skuId: draft.skuId as ScmId,
+      purchaseUnit: draft.purchaseUnit.trim(),
+      supplierItemCode: blankToNull(draft.supplierItemCode),
+      referencePrice: blankToNull(draft.referencePrice),
+      purchaserId: draft.purchaserId ?? null,
+      defaultFlag: draft.defaultFlag,
+      status: draft.status ?? 'ENABLED',
     };
-    return drafts.map((draft) => {
-        const item: SupplierSkuItem = {
-            skuId: draft.skuId as ScmId,
-            purchaseUnit: draft.purchaseUnit.trim(),
-            supplierItemCode: blankToNull(draft.supplierItemCode),
-            referencePrice: blankToNull(draft.referencePrice),
-            purchaserId: draft.purchaserId ?? null,
-            defaultFlag: draft.defaultFlag,
-            status: draft.status ?? 'ENABLED',
-        };
-        if (draft.id != null) {
-            item.id = draft.id;
-            item.version = draft.version;
-        }
-        return item;
-    });
+    if (draft.id != null) {
+      item.id = draft.id;
+      item.version = draft.version;
+    }
+    return item;
+  });
 }
 
 /**
@@ -152,17 +152,17 @@ export function toReplaceItems(drafts: SkuDraft[]): SupplierSkuItem[] {
  * 所以「客户端 × 编码」是类型层面的事实，不是靠后端忽略。
  */
 export function toSupplierPayload(form: SupplierFormModel): SupplierPayload {
-    const blankToNull = (value?: string | null): string | null => {
-        const text = value == null ? '' : String(value).trim();
-        return text === '' ? null : text;
-    };
-    const {supplierCode, ...rest} = form;
-    return {
-        ...rest,
-        name: (form.name ?? '').trim(),
-        contactName: blankToNull(form.contactName),
-        contactPhone: blankToNull(form.contactPhone),
-        address: blankToNull(form.address),
-        remark: blankToNull(form.remark),
-    };
+  const blankToNull = (value?: string | null): string | null => {
+    const text = value == null ? '' : String(value).trim();
+    return text === '' ? null : text;
+  };
+  const {supplierCode, ...rest} = form;
+  return {
+    ...rest,
+    name: (form.name ?? '').trim(),
+    contactName: blankToNull(form.contactName),
+    contactPhone: blankToNull(form.contactPhone),
+    address: blankToNull(form.address),
+    remark: blankToNull(form.remark),
+  };
 }

@@ -1,7 +1,7 @@
 <template>
   <a-tooltip :title="text" :trigger="['hover', 'focus']">
     <span class="scm-field-help" role="button" tabindex="0" :aria-label="`${label}说明`">
-      <InfoCircleOutlined/>
+      <InfoCircleOutlined />
     </span>
   </a-tooltip>
 </template>

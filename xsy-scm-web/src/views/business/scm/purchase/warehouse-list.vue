@@ -8,13 +8,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="仓库编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.warehouseCode" placeholder="仓库编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.warehouseCode" placeholder="仓库编码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="仓库名称" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.name" placeholder="仓库名称" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.name" placeholder="仓库名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_WAREHOUSE_STATUS_ENUM" v-model:value="queryForm.status" width="140px"/>
+        <SmartEnumSelect enum-name="SCM_WAREHOUSE_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -39,22 +39,22 @@
         <a-button v-privilege="'scm:warehouse:query'" @click="districtModal?.open()">商城配送区县</a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_WAREHOUSE" :refresh="queryData"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_WAREHOUSE" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_PURCHASE_TABLE_ID.WAREHOUSE"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      :id="SCM_PURCHASE_TABLE_ID.WAREHOUSE"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
           <a-tag :color="record.status === 'ENABLED' ? 'green' : 'default'">
             {{ SCM_WAREHOUSE_STATUS_ENUM[record.status]?.desc || record.status }}
@@ -64,8 +64,8 @@
         <template v-else-if="column.dataIndex === 'located'">
           <!-- 未定位的仓库无法参与路线规划，用图标 + Tooltip 表达，不占一整列文字 -->
           <a-tooltip :title="isLocated(record) ? '已定位，可参与路线规划' : '未定位，无法参与路线规划'">
-            <CheckCircleOutlined v-if="isLocated(record)" class="located located--ok"/>
-            <ExclamationCircleOutlined v-else class="located located--warn"/>
+            <CheckCircleOutlined v-if="isLocated(record)" class="located located--ok" />
+            <ExclamationCircleOutlined v-else class="located located--warn" />
           </a-tooltip>
         </template>
         <template v-else-if="column.dataIndex === 'remark'">{{ record.remark || '—' }}</template>
@@ -74,11 +74,10 @@
                停用还会影响「默认仓库」判定（唯一启用仓库），不与普通动作同排常驻 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:warehouse:update'" @click="open(record)">编辑</a-button>
-            <a-button type="link" size="small" v-privilege="'scm:warehouse:scope:query'"
-                      @click="scopeModal?.openEmployees(record.id, record.name)">
+            <a-button type="link" size="small" v-privilege="'scm:warehouse:scope:query'" @click="scopeModal?.openEmployees(record.id, record.name)">
               授权员工
             </a-button>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
       </template>
@@ -86,56 +85,44 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
-  <a-modal
-      :open="visible"
-      :title="form.id ? '编辑仓库' : '新建仓库'"
-      :confirm-loading="saving"
-      @ok="save"
-      @cancel="visible = false"
-  >
-    <a-alert v-if="formError" :message="formError" type="error" show-icon/>
+  <a-modal :open="visible" :title="form.id ? '编辑仓库' : '新建仓库'" :confirm-loading="saving" @ok="save" @cancel="visible = false">
+    <a-alert v-if="formError" :message="formError" type="error" show-icon />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <a-form-item label="仓库名称" name="name">
-        <a-input v-model:value="form.name" maxlength="150"/>
+        <a-input v-model:value="form.name" maxlength="150" />
       </a-form-item>
       <a-form-item label="所在地区">
-        <AreaCascader
-            type="province_city_district"
-            v-model:value="area"
-            style="width: 100%"
-            placeholder="省 / 市 / 区"
-            @change="onAreaChange"
-        />
+        <AreaCascader type="province_city_district" v-model:value="area" style="width: 100%" placeholder="省 / 市 / 区" @change="onAreaChange" />
       </a-form-item>
       <a-form-item label="地址" name="address">
-        <a-input v-model:value="form.address" maxlength="255" @change="Object.assign(form, emptyLocation())"/>
+        <a-input v-model:value="form.address" maxlength="255" @change="Object.assign(form, emptyLocation())" />
       </a-form-item>
       <a-form-item label="地图定位">
-        <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)"/>
+        <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-input v-model:value="form.remark" maxlength="500"/>
+        <a-input v-model:value="form.remark" maxlength="500" />
       </a-form-item>
       <!-- 批次追踪只在新建空仓时决定：开启后不可关闭，因此编辑态只读回显 -->
       <a-form-item label="批次追踪">
-        <a-switch v-model:checked="form.lotTrackingEnabled" :disabled="form.id !== undefined"/>
+        <a-switch v-model:checked="form.lotTrackingEnabled" :disabled="form.id !== undefined" />
       </a-form-item>
     </a-form>
   </a-modal>
 
-  <WarehouseScopeModal ref="scopeModal"/>
-  <MallDistrictWarehouseModal ref="districtModal"/>
+  <WarehouseScopeModal ref="scopeModal" />
+  <MallDistrictWarehouseModal ref="districtModal" />
 </template>
 
 <script setup lang="ts">
@@ -219,9 +206,7 @@ const canDisable = computed(() => hasPermission('scm:warehouse:disable'));
 /** 状态机动作按当前状态二选一，与原行内按钮一一对应。 */
 function rowActions(row: Warehouse): ScmActionItem[] {
   const enabled = row.status === 'ENABLED';
-  return [
-    {key: 'state', label: enabled ? '停用' : '启用', danger: enabled, hidden: enabled ? !canDisable.value : !canEnable.value},
-  ];
+  return [{key: 'state', label: enabled ? '停用' : '启用', danger: enabled, hidden: enabled ? !canDisable.value : !canEnable.value}];
 }
 
 function onRowAction(key: string, row: Warehouse) {
@@ -272,7 +257,7 @@ function resetQuery() {
 async function open(row?: Warehouse) {
   formError.value = '';
   form.value = row
-      ? {
+    ? {
         id: row.id,
         version: row.version,
         warehouseCode: row.warehouseCode ?? '',
@@ -290,7 +275,7 @@ async function open(row?: Warehouse) {
         districtCode: row.districtCode ?? null,
         districtName: row.districtName ?? null,
       }
-      : {warehouseCode: '', name: ''};
+    : {warehouseCode: '', name: ''};
   area.value = [];
   visible.value = true;
   // 弹窗内容首次打开才挂载，而 AreaCascader 只用非 immediate 的 watch 同步 value，

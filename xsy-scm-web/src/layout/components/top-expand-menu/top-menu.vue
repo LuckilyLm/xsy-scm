@@ -10,7 +10,7 @@
         <template v-if="item.visibleFlag">
           <a-menu-item :key="item.menuId.toString()" @click="onSelectMenu(item)">
             <template #icon>
-              <component :is="$antIcons[item.icon]"/>
+              <component :is="$antIcons[item.icon]" />
             </template>
             {{ item.menuName }}
           </a-menu-item>
@@ -93,8 +93,9 @@ const menuInfo = computed(() => {
 <style scoped lang="less">
 .top-menu {
   position: absolute;
-  transition: all 0.2s,
-  background 0s;
+  transition:
+    all 0.2s,
+    background 0s;
   top: 0;
   right: v-bind('menuInfo.right');
   width: v-bind('menuInfo.width');

@@ -53,8 +53,7 @@
     <div v-if="showOutbound" class="scm-detail-card">
       <h3 class="scm-detail-card__title">关联出库单</h3>
       <p class="scm-field__value">
-        <a-button v-if="route.outboundNo" type="link" size="small" class="outbound-link"
-                  @click="emit('outbound', route.outboundNo)">
+        <a-button v-if="route.outboundNo" type="link" size="small" class="outbound-link" @click="emit('outbound', route.outboundNo)">
           {{ route.outboundNo }} →
         </a-button>
         <span v-else>—（整条线路实发为 0，未生成出库单）</span>
@@ -79,9 +78,7 @@ const emit = defineEmits<{
   outbound: [outboundNo: string];
 }>();
 
-const dispatchText = computed(() =>
-  props.route.dispatchedAt ? `${datetime(props.route.dispatchedAt)} · ${props.route.dispatchedBy || '—'}` : '—'
-);
+const dispatchText = computed(() => (props.route.dispatchedAt ? `${datetime(props.route.dispatchedAt)} · ${props.route.dispatchedBy || '—'}` : '—'));
 </script>
 
 <style scoped>

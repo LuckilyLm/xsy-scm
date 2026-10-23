@@ -1,27 +1,29 @@
 <!-- 仓库授权按员工整体保存：编辑某员工可访问的全部仓库；按仓库查看员工仅用于查询，不能只修改其中一项以免覆盖其他授权。 -->
 <template>
   <a-modal
-      v-model:open="visible"
-      :title="isView ? '该仓库已授权员工' : '员工仓库授权维护'"
-      :width="isView ? 560 : 640"
-      :ok-button-props="{ style: isView ? { display: 'none' } : undefined }"
-      :confirm-loading="saving"
-      @ok="save"
+    v-model:open="visible"
+    :title="isView ? '该仓库已授权员工' : '员工仓库授权维护'"
+    :width="isView ? 560 : 640"
+    :ok-button-props="{style: isView ? {display: 'none'} : undefined}"
+    :confirm-loading="saving"
+    @ok="save"
   >
-    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
+    <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
 
     <template v-if="isView">
-      <p>仓库：<strong>{{ viewWarehouseName }}</strong></p>
+      <p>
+        仓库：<strong>{{ viewWarehouseName }}</strong>
+      </p>
       <a-table
-          size="small"
-          :columns="viewColumns"
-          :data-source="employees"
-          row-key="employeeId"
-          :loading="viewLoading"
-          :pagination="false"
-          :locale="{ emptyText: '该仓库暂无被授权员工' }"
+        size="small"
+        :columns="viewColumns"
+        :data-source="employees"
+        row-key="employeeId"
+        :loading="viewLoading"
+        :pagination="false"
+        :locale="{emptyText: '该仓库暂无被授权员工'}"
       >
-        <template #bodyCell="{ column, record }">
+        <template #bodyCell="{column, record}">
           <template v-if="column.dataIndex === 'disabledFlag'">
             <a-tag :color="record.disabledFlag ? 'red' : 'green'">
               {{ record.disabledFlag ? '已停用' : '在职' }}
@@ -35,24 +37,24 @@
       <a-form-item name="employeeId">
         <template #label>
           员工
-          <ScmFieldHelp label="员工" text="选择后载入当前仓库授权；保存时按勾选结果整体替换"/>
+          <ScmFieldHelp label="员工" text="选择后载入当前仓库授权；保存时按勾选结果整体替换" />
         </template>
-        <EmployeeSelect v-model:value="employeeValue" placeholder="请选择要维护授权的员工" width="100%"/>
+        <EmployeeSelect v-model:value="employeeValue" placeholder="请选择要维护授权的员工" width="100%" />
       </a-form-item>
       <a-form-item>
         <template #label>
           可见仓库
-          <ScmFieldHelp label="可见仓库" text="保留已停用仓库的勾选即维持授权，取消勾选即回收"/>
+          <ScmFieldHelp label="可见仓库" text="保留已停用仓库的勾选即维持授权，取消勾选即回收" />
         </template>
         <a-select
-            v-model:value="warehouseIds"
-            mode="multiple"
-            :options="warehouseOptions"
-            :loading="warehouseLoading"
-            :disabled="employeeId == null"
-            show-search
-            option-filter-prop="label"
-            :placeholder="employeeId == null ? '请先选择员工' : '请选择可见仓库'"
+          v-model:value="warehouseIds"
+          mode="multiple"
+          :options="warehouseOptions"
+          :loading="warehouseLoading"
+          :disabled="employeeId == null"
+          show-search
+          option-filter-prop="label"
+          :placeholder="employeeId == null ? '请先选择员工' : '请选择可见仓库'"
         />
       </a-form-item>
     </a-form>
@@ -66,11 +68,7 @@ import type {TableColumnsType} from 'ant-design-vue';
 import EmployeeSelect from '/@/components/system/employee-select/index.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
-import type {
-    Id,
-    Warehouse,
-    WarehouseScopeEmployee,
-} from '../purchase-types';
+import type {Id, Warehouse, WarehouseScopeEmployee} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
 
 const visible = ref(false);
@@ -98,10 +96,10 @@ const viewColumns: TableColumnsType = [
 ];
 
 const warehouseOptions = computed(() =>
-    warehouses.value.map((w) => ({
-      value: w.id,
-      label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）${w.status === 'DISABLED' ? '（已停用）' : ''}`,
-    }))
+  warehouses.value.map((w) => ({
+    value: w.id,
+    label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）${w.status === 'DISABLED' ? '（已停用）' : ''}`,
+  }))
 );
 
 const employeeValue = computed<number | undefined>({

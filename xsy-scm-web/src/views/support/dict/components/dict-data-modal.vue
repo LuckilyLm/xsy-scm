@@ -3,26 +3,26 @@
   *
 -->
 <template>
-  <a-drawer :width="1000" :open="visible" :body-style="{ paddingBottom: '80px' }" title="字典值" @close="onClose">
+  <a-drawer :width="1000" :open="visible" :body-style="{paddingBottom: '80px'}" title="字典值" @close="onClose">
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input style="width: 300px" v-model:value="keywords" @change="search" placeholder="关键字"/>
+          <a-input style="width: 300px" v-model:value="keywords" @change="search" placeholder="关键字" />
         </a-form-item>
         <a-form-item label="禁用" class="smart-query-form-item">
-          <BooleanSelect v-model:value="disabledFlag" @change="search" style="width: 150px"/>
+          <BooleanSelect v-model:value="disabledFlag" @change="search" style="width: 150px" />
         </a-form-item>
 
         <a-form-item class="smart-query-form-item smart-margin-left10">
           <a-button type="primary" @click="queryData">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery" class="smart-margin-left10">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -34,20 +34,20 @@
       <div class="smart-table-operate-block">
         <a-button @click="addOrUpdateData" type="primary" v-privilege="'support:dictData:add'">
           <template #icon>
-            <PlusOutlined/>
+            <PlusOutlined />
           </template>
           新建
         </a-button>
 
         <a-button
-            @click="confirmBatchDelete"
-            type="primary"
-            danger
-            :disabled="selectedRowKeyList.length === 0"
-            v-privilege="'support:dictData:delete'"
+          @click="confirmBatchDelete"
+          type="primary"
+          danger
+          :disabled="selectedRowKeyList.length === 0"
+          v-privilege="'support:dictData:delete'"
         >
           <template #icon>
-            <DeleteOutlined/>
+            <DeleteOutlined />
           </template>
           批量删除
         </a-button>
@@ -56,25 +56,25 @@
     </a-row>
 
     <a-table
-        size="small"
-        :dataSource="tableData"
-        :columns="columns"
-        rowKey="dictDataId"
-        :pagination="false"
-        :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }"
-        bordered
+      size="small"
+      :dataSource="tableData"
+      :columns="columns"
+      rowKey="dictDataId"
+      :pagination="false"
+      :row-selection="{selectedRowKeys: selectedRowKeyList, onChange: onSelectChange}"
+      bordered
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'dataLabel'">
-          <span v-if="record.color" :style="{ color: token[record.color] }">{{ record.dataLabel }}</span>
+          <span v-if="record.color" :style="{color: token[record.color]}">{{ record.dataLabel }}</span>
           <span v-else> {{ record.dataLabel }} </span>
         </template>
         <template v-if="column.dataIndex === 'disabledFlag'">
           <a-switch
-              @change="(checked) => handleChangeDisabled(checked, record)"
-              v-model:checked="record.enabled"
-              checked-children="启用中"
-              un-checked-children="已禁用"
+            @change="(checked) => handleChangeDisabled(checked, record)"
+            v-model:checked="record.enabled"
+            checked-children="启用中"
+            un-checked-children="已禁用"
           />
         </template>
         <template v-if="column.dataIndex === 'action'">
@@ -84,7 +84,7 @@
     </a-table>
 
     <div class="smart-query-table-page">共计 {{ tableData.length }} 条</div>
-    <DictDataFormModal ref="dictDataFormModalRef" @reloadList="queryData"/>
+    <DictDataFormModal ref="dictDataFormModalRef" @reloadList="queryData" />
   </a-drawer>
 </template>
 <script setup lang="ts">
@@ -176,9 +176,9 @@ function search() {
     let keywordsFilterFlag = true;
     if (keywords.value) {
       keywordsFilterFlag =
-          (item.dataValue && _.includes(item.dataValue.toLowerCase(), keywords.value.toLowerCase())) ||
-          (item.dataLabel && _.includes(item.dataLabel.toLowerCase(), keywords.value.toLowerCase())) ||
-          (item.remark && _.includes(item.remark.toLowerCase(), keywords.value.toLowerCase()));
+        (item.dataValue && _.includes(item.dataValue.toLowerCase(), keywords.value.toLowerCase())) ||
+        (item.dataLabel && _.includes(item.dataLabel.toLowerCase(), keywords.value.toLowerCase())) ||
+        (item.remark && _.includes(item.remark.toLowerCase(), keywords.value.toLowerCase()));
     }
     let disabledFilterFlag = _.isNull(disabledFlag.value) ? true : item.disabledFlag === disabledFlag.value;
     return disabledFilterFlag && keywordsFilterFlag;
@@ -236,8 +236,7 @@ function confirmBatchDelete() {
       batchDelete();
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

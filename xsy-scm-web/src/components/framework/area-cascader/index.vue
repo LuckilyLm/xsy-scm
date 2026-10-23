@@ -1,18 +1,18 @@
-<!-- 
+<!--
   * 地区选择框
-  * 
+  *
   *
 -->
 
 <template>
   <a-cascader
-      :style="`width:${width}`"
-      v-model:value="areaValue"
-      :show-search="{ filter }"
-      :options="areaOptionData"
-      :placeholder="placeholder"
-      :size="size"
-      @change="handleChange"
+    :style="`width:${width}`"
+    v-model:value="areaValue"
+    :show-search="{filter}"
+    :options="areaOptionData"
+    :placeholder="placeholder"
+    :size="size"
+    @change="handleChange"
   />
 </template>
 
@@ -55,20 +55,20 @@ const areaOptionData = props.type === TYPE_PROVINCE_CITY_DISTRICT ? PROVINCE_CIT
 const areaValue = ref([]);
 // 监听value变化
 watch(
-    () => props.value,
-    (newValue) => {
-      if (newValue) {
-        let array = [];
-        for (let index = 0; index < 3; index++) {
-          if (newValue[index]) {
-            array.push(newValue[index].value);
-          }
+  () => props.value,
+  (newValue) => {
+    if (newValue) {
+      let array = [];
+      for (let index = 0; index < 3; index++) {
+        if (newValue[index]) {
+          array.push(newValue[index].value);
         }
-        areaValue.value = array;
-      } else {
-        areaValue.value = [];
       }
+      areaValue.value = array;
+    } else {
+      areaValue.value = [];
     }
+  }
 );
 
 function handleChange(value, selectedOptions) {

@@ -5,17 +5,17 @@
 -->
 <template>
   <a-tree-select
-      :value="props.value"
-      :treeData="treeData"
-      :fieldNames="{ label: 'departmentName', key: 'departmentId', value: 'departmentId' }"
-      show-search
-      style="width: 100%"
-      :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
-      placeholder="请选择部门"
-      allow-clear
-      tree-default-expand-all
-      :multiple="props.multiple"
-      @change="onChange"
+    :value="props.value"
+    :treeData="treeData"
+    :fieldNames="{label: 'departmentName', key: 'departmentId', value: 'departmentId'}"
+    show-search
+    style="width: 100%"
+    :dropdown-style="{maxHeight: '400px', overflow: 'auto'}"
+    placeholder="请选择部门"
+    allow-clear
+    tree-default-expand-all
+    :multiple="props.multiple"
+    @change="onChange"
   />
 </template>
 <script setup lang="ts">

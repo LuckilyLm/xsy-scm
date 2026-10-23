@@ -4,17 +4,17 @@
 -->
 <template>
   <a-tree-select
-      :value="props.value"
-      :treeData="treeData"
-      :fieldNames="{ label: 'menuName', key: 'menuId', value: 'menuId' }"
-      show-search
-      tree-checkable
-      style="width: 100%"
-      :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
-      placeholder="请选择菜单"
-      allow-clear
-      tree-default-expand-all
-      @change="onSelectChange"
+    :value="props.value"
+    :treeData="treeData"
+    :fieldNames="{label: 'menuName', key: 'menuId', value: 'menuId'}"
+    show-search
+    tree-checkable
+    style="width: 100%"
+    :dropdown-style="{maxHeight: '400px', overflow: 'auto'}"
+    placeholder="请选择菜单"
+    allow-clear
+    tree-default-expand-all
+    @change="onSelectChange"
   />
 </template>
 <script setup lang="ts">

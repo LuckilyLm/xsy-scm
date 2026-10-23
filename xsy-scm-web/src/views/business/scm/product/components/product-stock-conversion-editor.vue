@@ -10,7 +10,7 @@
             <a-button size="small" danger>删除</a-button>
           </a-popconfirm>
         </div>
-        <a-empty v-if="!rows.length && !loading" description="尚未配置换算"/>
+        <a-empty v-if="!rows.length && !loading" description="尚未配置换算" />
       </a-spin>
       <a-divider>新增或更新换算规则</a-divider>
       <a-form layout="vertical">
@@ -22,8 +22,15 @@
           </a-col>
           <a-col :span="10">
             <a-form-item :label="`1 ${sku.saleUnit} 对应库存数量`" required>
-              <a-input-number :value="factor" string-mode :min="'0.0001'" :precision="4" :controls="false"
-                              style="width:100%" @update:value="factor = $event === null ? '' : String($event)" />
+              <a-input-number
+                :value="factor"
+                string-mode
+                :min="'0.0001'"
+                :precision="4"
+                :controls="false"
+                style="width: 100%"
+                @update:value="factor = $event === null ? '' : String($event)"
+              />
             </a-form-item>
           </a-col>
           <a-col :span="4">
@@ -68,8 +75,7 @@ async function open() {
 async function save() {
   const unit = stockUnit.value.trim();
   const amount = Number(factor.value);
-  if (!props.sku.skuId || !unit || !Number.isFinite(amount) || amount <= 0 ||
-      (unit === props.sku.saleUnit && amount !== 1)) {
+  if (!props.sku.skuId || !unit || !Number.isFinite(amount) || amount <= 0 || (unit === props.sku.saleUnit && amount !== 1)) {
     message.error('请填写有效的库存单位和比例；同单位换算比例必须为 1');
     return;
   }

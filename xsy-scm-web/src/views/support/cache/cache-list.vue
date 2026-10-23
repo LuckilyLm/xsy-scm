@@ -15,18 +15,17 @@ Caffeine ：
 - Caffeine是一个进程内部缓存框架，使用了Java 8最新的[StampedLock]乐观锁技术，极大提高缓存并发吞吐量，一个高性能的 Java 缓存库，被称为最快缓存。
 其他：
 · 对于分布式、集群等应用实现方式可以改为 Redis、CouchBase等
-</pre>
+</pre
+        >
       </template>
     </a-alert>
 
-    <a-table size="small" bordered class="smart-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag"
-             :pagination="false">
-      <template #bodyCell="{ record, column }">
+    <a-table size="small" bordered class="smart-margin-top10" :dataSource="tableData" :columns="columns" rowKey="tag" :pagination="false">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button @click="remove(record.key)" v-privilege="'support:cache:delete'" type="link">清除</a-button>
-            <a-button @click="getAllKeys(record.key)" v-privilege="'support:cache:keys'" type="link">获取所有key
-            </a-button>
+            <a-button @click="getAllKeys(record.key)" v-privilege="'support:cache:keys'" type="link">获取所有key </a-button>
           </div>
         </template>
       </template>

@@ -7,16 +7,16 @@
  * @Email:     lab1024@163.com
  * @Copyright  1024创新实验室 （ https://1024lab.net ），Since 2012
  */
-import { resolve } from 'path';
+import {resolve} from 'path';
 import vue from '@vitejs/plugin-vue';
-import { loadEnv } from 'vite';
+import {loadEnv} from 'vite';
 import customVariables from '/@/theme/custom-variables.js';
 
 const pathResolve = (dir) => {
   return resolve(__dirname, '.', dir);
 };
 
-export default ({ mode }) => {
+export default ({mode}) => {
   const env = loadEnv(mode, process.cwd());
   return {
     base: process.env.NODE_ENV === 'production' ? '/' : '/',

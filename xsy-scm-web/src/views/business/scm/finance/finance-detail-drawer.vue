@@ -51,45 +51,74 @@
             <a-descriptions-item label="资金用途">已转钱包权益，通过余额支付结算订单</a-descriptions-item>
           </a-descriptions>
           <div v-if="overApplied" class="over-applied-row">
-            <a-alert class="over-applied" type="warning" show-icon
-                     :message="`超额核销 ${moneyText(header.overAppliedAmount)}，不代表已退款或钱包余额。`"/>
+            <a-alert
+              class="over-applied"
+              type="warning"
+              show-icon
+              :message="`超额核销 ${moneyText(header.overAppliedAmount)}，不代表已退款或钱包余额。`"
+            />
             <a-tag v-if="isReceivable" color="orange">超额核销待处理</a-tag>
           </div>
           <div v-if="header.netAmount?.startsWith('-')" class="over-applied-row">
-            <a-alert class="over-applied" type="error" show-icon message="净应收为负数，请结合红字和核销记录核对。"/>
+            <a-alert class="over-applied" type="error" show-icon message="净应收为负数，请结合红字和核销记录核对。" />
           </div>
         </section>
 
         <!-- 4. 来源单据：这张财务单是从哪张业务单派生出来的明细。 -->
         <section v-if="receivableItems.length || payableItems.length" class="detail-section">
           <h3>来源单据</h3>
-          <a-table v-if="isReceivable" size="small" :data-source="receivableItems" :columns="receivableColumns"
-                   row-key="receivableItemId" :pagination="false" :scroll="{x:scmColumnsWidth(receivableColumns)}"/>
-          <a-table v-else size="small" :data-source="payableItems" :columns="payableColumns"
-                   row-key="payableItemId" :pagination="false" :scroll="{x:scmColumnsWidth(payableColumns)}"/>
+          <a-table
+            v-if="isReceivable"
+            size="small"
+            :data-source="receivableItems"
+            :columns="receivableColumns"
+            row-key="receivableItemId"
+            :pagination="false"
+            :scroll="{x: scmColumnsWidth(receivableColumns)}"
+          />
+          <a-table
+            v-else
+            size="small"
+            :data-source="payableItems"
+            :columns="payableColumns"
+            row-key="payableItemId"
+            :pagination="false"
+            :scroll="{x: scmColumnsWidth(payableColumns)}"
+          />
         </section>
 
         <!-- 5. 核销 / 退款 / 红字关系：把互相抵消的事实放在一起，便于对账。 -->
         <section v-if="relationText || writeOffs.length || redEntries.length" class="detail-section">
           <h3>核销 / 红字关系</h3>
-          <a-alert v-if="relationText" class="relation-alert" type="info" show-icon :message="relationText"/>
+          <a-alert v-if="relationText" class="relation-alert" type="info" show-icon :message="relationText" />
           <h4 v-if="writeOffs.length" class="detail-subtitle">核销记录</h4>
-          <a-table v-if="writeOffs.length" size="small" :data-source="writeOffs" :columns="writeOffColumns"
-                   row-key="writeOffId" :pagination="false" :scroll="{x:scmColumnsWidth(writeOffColumns)}"/>
+          <a-table
+            v-if="writeOffs.length"
+            size="small"
+            :data-source="writeOffs"
+            :columns="writeOffColumns"
+            row-key="writeOffId"
+            :pagination="false"
+            :scroll="{x: scmColumnsWidth(writeOffColumns)}"
+          />
           <h4 v-if="redEntries.length" class="detail-subtitle">红字关联</h4>
-          <a-table v-if="redEntries.length" size="small" :data-source="redEntries" :columns="redColumns"
-                   :row-key="redEntryKey" :pagination="false"/>
+          <a-table v-if="redEntries.length" size="small" :data-source="redEntries" :columns="redColumns" :row-key="redEntryKey" :pagination="false" />
         </section>
 
         <!-- 6. 流水记录：财务操作审计流水。 -->
         <section v-if="operationLogs.length" class="detail-section">
           <h3>流水记录</h3>
-          <a-table size="small" :data-source="operationLogs" :columns="logColumns" row-key="id"
-                   :pagination="false" :scroll="{ x: scmColumnsWidth(logColumns) }">
-            <template #bodyCell="{record,column}">
-              <template v-if="column.dataIndex==='snapshot'">
-                <a-button v-if="record.beforeData || record.afterData" type="link"
-                          @click="openAudit(record)">变更前后</a-button>
+          <a-table
+            size="small"
+            :data-source="operationLogs"
+            :columns="logColumns"
+            row-key="id"
+            :pagination="false"
+            :scroll="{x: scmColumnsWidth(logColumns)}"
+          >
+            <template #bodyCell="{record, column}">
+              <template v-if="column.dataIndex === 'snapshot'">
+                <a-button v-if="record.beforeData || record.afterData" type="link" @click="openAudit(record)">变更前后</a-button>
                 <span v-else>—</span>
               </template>
             </template>
@@ -106,15 +135,15 @@
           </a-descriptions>
         </section>
 
-        <a-empty v-if="!writeOffs.length && !operationLogs.length && !redEntries.length" description="暂无核销或操作记录"/>
+        <a-empty v-if="!writeOffs.length && !operationLogs.length && !redEntries.length" description="暂无核销或操作记录" />
       </template>
-      <a-empty v-else-if="!loading && !error" description="暂无单据详情"/>
+      <a-empty v-else-if="!loading && !error" description="暂无单据详情" />
     </a-spin>
   </a-drawer>
 
   <!-- 审计快照在抽屉里放不下：150px 的单元格塞不下字段级差异表，改弹窗按行读。 -->
   <a-modal :open="auditOpen" title="变更前后" width="900px" :footer="null" @cancel="auditOpen = false">
-    <ScmDiffTable :before="auditLog?.beforeData" :after="auditLog?.afterData" :scope="auditLog?.operationType"/>
+    <ScmDiffTable :before="auditLog?.beforeData" :after="auditLog?.afterData" :scope="auditLog?.operationType" />
   </a-modal>
 </template>
 
@@ -124,22 +153,28 @@ import {computed, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import type {
-    FinanceOperationLog,
-    FinancePayable,
-    FinancePayableDetail,
-    FinancePayableItem,
-    FinancePaymentDetail,
-    FinanceReceivable,
-    FinanceReceivableDetail,
-    FinanceReceivableItem,
-    FinanceReceiptDetail,
-    FinanceWriteOff,
+  FinanceOperationLog,
+  FinancePayable,
+  FinancePayableDetail,
+  FinancePayableItem,
+  FinancePaymentDetail,
+  FinanceReceivable,
+  FinanceReceivableDetail,
+  FinanceReceivableItem,
+  FinanceReceiptDetail,
+  FinanceWriteOff,
 } from './finance-types';
 import {dateTimeText, entryTypeText, moneyText, numberText, operationTypeText} from './finance-form-model';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
 type FinanceDetail = FinanceReceivableDetail | FinancePayableDetail | FinanceReceiptDetail | FinancePaymentDetail;
-const props = defineProps<{open: boolean; loading: boolean; error?: string; kind: 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT'; detail?: FinanceDetail | null}>();
+const props = defineProps<{
+  open: boolean;
+  loading: boolean;
+  error?: string;
+  kind: 'RECEIVABLE' | 'PAYABLE' | 'RECEIPT' | 'PAYMENT';
+  detail?: FinanceDetail | null;
+}>();
 const emit = defineEmits<{(event: 'update:open', value: boolean): void; (event: 'retry'): void}>();
 const detail = computed(() => props.detail ?? null);
 const isReceivable = computed(() => props.kind === 'RECEIVABLE');
@@ -147,72 +182,84 @@ const isPayable = computed(() => props.kind === 'PAYABLE');
 const walletFunding = computed(() => !!(detail.value && 'receipt' in detail.value && detail.value.receipt.walletFunding));
 const isAccount = computed(() => isReceivable.value || isPayable.value);
 const overApplied = computed(() => !!header.value.overAppliedAmount && header.value.overAppliedAmount !== '0.0000');
-const title = computed(() => ({RECEIVABLE: '应收明细', PAYABLE: '应付明细', RECEIPT: '收款明细', PAYMENT: '付款明细'}[props.kind]));
+const title = computed(() => ({RECEIVABLE: '应收明细', PAYABLE: '应付明细', RECEIPT: '收款明细', PAYMENT: '付款明细'})[props.kind]);
 const header = computed(() => {
-    if (!detail.value) return {} as Record<string, string | null | undefined>;
-    if ('receivable' in detail.value) return detail.value.receivable as unknown as Record<string, string | null | undefined>;
-    if ('payable' in detail.value) return detail.value.payable as unknown as Record<string, string | null | undefined>;
-    if ('receipt' in detail.value) return detail.value.receipt as unknown as Record<string, string | null | undefined>;
-    return detail.value.payment as unknown as Record<string, string | null | undefined>;
+  if (!detail.value) return {} as Record<string, string | null | undefined>;
+  if ('receivable' in detail.value) return detail.value.receivable as unknown as Record<string, string | null | undefined>;
+  if ('payable' in detail.value) return detail.value.payable as unknown as Record<string, string | null | undefined>;
+  if ('receipt' in detail.value) return detail.value.receipt as unknown as Record<string, string | null | undefined>;
+  return detail.value.payment as unknown as Record<string, string | null | undefined>;
 });
 const headerNo = computed(() => header.value.receivableNo ?? header.value.payableNo ?? header.value.receiptNo ?? header.value.paymentNo ?? '—');
 const partyName = computed(() => header.value.customerName ?? header.value.supplierName ?? header.value.counterpartyName ?? '—');
 const linkedNo = computed(() => header.value.codOrderNo ?? header.value.orderNo ?? header.value.purchaseOrderNo ?? header.value.sourceType ?? '—');
-const receivableItems = computed(() => detail.value && 'items' in detail.value && 'receivable' in detail.value
-    ? detail.value.items as FinanceReceivableItem[] : []);
-const payableItems = computed(() => detail.value && 'items' in detail.value && 'payable' in detail.value
-    ? detail.value.items as FinancePayableItem[] : []);
-const redEntries = computed(() => detail.value && 'redEntries' in detail.value ? detail.value.redEntries : []);
+const receivableItems = computed(() =>
+  detail.value && 'items' in detail.value && 'receivable' in detail.value ? (detail.value.items as FinanceReceivableItem[]) : []
+);
+const payableItems = computed(() =>
+  detail.value && 'items' in detail.value && 'payable' in detail.value ? (detail.value.items as FinancePayableItem[]) : []
+);
+const redEntries = computed(() => (detail.value && 'redEntries' in detail.value ? detail.value.redEntries : []));
 const writeOffs = computed(() => detail.value?.writeOffs ?? []);
 const operationLogs = computed(() => detail.value?.operationLogs ?? []);
 const relationText = computed(() => {
-    if (!detail.value) return '';
-    if ('original' in detail.value && detail.value.original) {
-        const row = detail.value.original;
-        return `原单：${('receiptNo' in row ? row.receiptNo : row.paymentNo) ?? '—'}`;
-    }
-    if ('reversal' in detail.value && detail.value.reversal) {
-        const row = detail.value.reversal;
-        return `反向记录：${('receiptNo' in row ? row.receiptNo : row.paymentNo) ?? '—'}`;
-    }
-    return '';
+  if (!detail.value) return '';
+  if ('original' in detail.value && detail.value.original) {
+    const row = detail.value.original;
+    return `原单：${('receiptNo' in row ? row.receiptNo : row.paymentNo) ?? '—'}`;
+  }
+  if ('reversal' in detail.value && detail.value.reversal) {
+    const row = detail.value.reversal;
+    return `反向记录：${('receiptNo' in row ? row.receiptNo : row.paymentNo) ?? '—'}`;
+  }
+  return '';
 });
 
 const receivableColumns: TableColumnsType<FinanceReceivableItem> = [
-    {title: '出库来源', dataIndex: 'sourceId', width: 120}, {title: '商品', dataIndex: 'skuName', width: 200},
-    {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text)},
-    {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text)},
-    // 毛额 − 优惠 = 净额：三列一起看才能解释「这行为什么只记这么多应收」
-    {title: '毛额', dataIndex: 'grossAmount', width: 148, customRender: ({text}) => moneyText(text)},
-    {title: '订单优惠', dataIndex: 'discountAmount', width: 148, customRender: ({text}) => moneyText(text)},
-    {title: '净额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
+  {title: '出库来源', dataIndex: 'sourceId', width: 120},
+  {title: '商品', dataIndex: 'skuName', width: 200},
+  {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text)},
+  {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text)},
+  // 毛额 − 优惠 = 净额：三列一起看才能解释「这行为什么只记这么多应收」
+  {title: '毛额', dataIndex: 'grossAmount', width: 148, customRender: ({text}) => moneyText(text)},
+  {title: '订单优惠', dataIndex: 'discountAmount', width: 148, customRender: ({text}) => moneyText(text)},
+  {title: '净额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
 ];
 const payableColumns: TableColumnsType<FinancePayableItem> = [
-    {title: '收货来源', dataIndex: 'sourceId', width: 120}, {title: '商品', dataIndex: 'skuName', width: 200},
-    {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text)},
-    {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text)},
-    {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
+  {title: '收货来源', dataIndex: 'sourceId', width: 120},
+  {title: '商品', dataIndex: 'skuName', width: 200},
+  {title: '数量', dataIndex: 'quantity', width: 112, customRender: ({text}) => numberText(text)},
+  {title: '单价', dataIndex: 'unitPrice', width: 136, customRender: ({text}) => moneyText(text)},
+  {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
 ];
 const redColumns: TableColumnsType<FinanceReceivable | FinancePayable> = [
-    {title: '红字单号', dataIndex: 'receivableNo', customRender: ({record}) => ('receivableNo' in record ? record.receivableNo : record.payableNo)},
-    {title: '金额', dataIndex: 'amount', customRender: ({text}) => moneyText(text)},
-    {title: '原因', dataIndex: 'reason'}, {title: '业务时点', dataIndex: 'eventAt', customRender: ({text}) => dateTimeText(text)},
+  {
+    title: '红字单号',
+    dataIndex: 'receivableNo',
+    customRender: ({record}) => ('receivableNo' in record ? record.receivableNo : record.payableNo),
+  },
+  {title: '金额', dataIndex: 'amount', customRender: ({text}) => moneyText(text)},
+  {title: '原因', dataIndex: 'reason'},
+  {title: '业务时点', dataIndex: 'eventAt', customRender: ({text}) => dateTimeText(text)},
 ];
 
 function redEntryKey(row: FinanceReceivable | FinancePayable) {
-    return 'receivableId' in row ? row.receivableId : row.payableId;
+  return 'receivableId' in row ? row.receivableId : row.payableId;
 }
 const writeOffColumns: TableColumnsType<FinanceWriteOff> = [
-    {title: '核销单号', dataIndex: 'writeOffNo', width: 190}, {title: '资金单', dataIndex: 'sourceNo', width: 180},
-    {title: '目标单', dataIndex: 'targetNo', width: 180}, {title: '方向', dataIndex: 'entryType', width: 90, customRender: ({text}) => entryTypeText(text), align: 'center'},
-    {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
-    {title: '原因', dataIndex: 'reason', width: 240},
+  {title: '核销单号', dataIndex: 'writeOffNo', width: 190},
+  {title: '资金单', dataIndex: 'sourceNo', width: 180},
+  {title: '目标单', dataIndex: 'targetNo', width: 180},
+  {title: '方向', dataIndex: 'entryType', width: 90, customRender: ({text}) => entryTypeText(text), align: 'center'},
+  {title: '金额', dataIndex: 'amount', width: 148, customRender: ({text}) => moneyText(text)},
+  {title: '原因', dataIndex: 'reason', width: 240},
 ];
 const logColumns: TableColumnsType<FinanceOperationLog> = [
-    {title: '时间', dataIndex: 'createdAt', width: 180, customRender: ({text}) => dateTimeText(text)},
-    {title: '操作', dataIndex: 'operationType', align: 'center', width: 160, customRender: ({text}) => operationTypeText(text)},
-    {title: '操作人', dataIndex: 'operator', width: 130},
-    {title: '原因', dataIndex: 'reason', width: 200}, {title: '记录内容', dataIndex: 'snapshot', width: 150},
+  {title: '时间', dataIndex: 'createdAt', width: 180, customRender: ({text}) => dateTimeText(text)},
+  {title: '操作', dataIndex: 'operationType', align: 'center', width: 160, customRender: ({text}) => operationTypeText(text)},
+  {title: '操作人', dataIndex: 'operator', width: 130},
+  {title: '原因', dataIndex: 'reason', width: 200},
+  {title: '记录内容', dataIndex: 'snapshot', width: 150},
 ];
 
 // 审计快照弹窗：整张表只共用一个，靠 auditLog 指向当前点开的那一行。
@@ -220,12 +267,12 @@ const auditLog = ref<FinanceOperationLog | null>(null);
 const auditOpen = ref(false);
 
 function openAudit(record: FinanceOperationLog) {
-    auditLog.value = record;
-    auditOpen.value = true;
+  auditLog.value = record;
+  auditOpen.value = true;
 }
 
 function close() {
-    emit('update:open', false);
+  emit('update:open', false);
 }
 </script>
 

@@ -12,17 +12,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px"/>
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
       </a-form-item>
       <a-form-item label="商品规格编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <a-select
-            v-model:value="queryForm.status"
-            :options="statusOptions"
-            style="width: 150px"
-        />
+        <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 150px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -40,45 +36,29 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-    <a-alert
-        v-if="anchorThresholdId"
-        class="anchor"
-        type="info"
-        show-icon
-        :message="'已定位到相关的库存预警配置'"
-    />
+    <a-alert v-if="anchorThresholdId" class="anchor" type="info" show-icon :message="'已定位到相关的库存预警配置'" />
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button
-            v-privilege="'scm:inventory:warning:scan'"
-            :loading="scanning"
-            @click="scan"
-        >
-          检查并发送预警通知
-        </a-button>
+        <a-button v-privilege="'scm:inventory:warning:scan'" :loading="scanning" @click="scan"> 检查并发送预警通知 </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.WARNING"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="thresholdId"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '没有需要处理的库存预警' }"
-        :scroll="{ x: scrollX }"
+      :id="SCM_INVENTORY_TABLE_ID.WARNING"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="thresholdId"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '没有需要处理的库存预警'}"
+      :scroll="{x: scrollX}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
@@ -104,7 +84,7 @@
           <span class="scm-quantity">{{ quantityText(record.warnMax) }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status" />
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
       </template>
@@ -112,13 +92,13 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
@@ -136,10 +116,7 @@ import {inventoryWarningApi} from '/@/api/business/scm/inventory-warning-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {deepLinkId} from '/@/lib/query-deep-link';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {
-  SCM_INVENTORY_TABLE_ID,
-  SCM_INVENTORY_WARNING_STATUS_ENUM,
-} from '/@/constants/business/scm/inventory-const';
+import {SCM_INVENTORY_TABLE_ID, SCM_INVENTORY_WARNING_STATUS_ENUM} from '/@/constants/business/scm/inventory-const';
 import type {Id, InventoryWarning, InventoryWarningQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
@@ -297,13 +274,13 @@ async function enterPage() {
 }
 
 watch(
-    [() => route.name, () => route.query],
-    ([name]) => {
-      // 组件被缓存时，跳往其他页面不应触发本页查询；回到本页才重新套用来源链接。
-      if (name !== warningRouteName) return;
-      void enterPage();
-    },
-    {immediate: true}
+  [() => route.name, () => route.query],
+  ([name]) => {
+    // 组件被缓存时，跳往其他页面不应触发本页查询；回到本页才重新套用来源链接。
+    if (name !== warningRouteName) return;
+    void enterPage();
+  },
+  {immediate: true}
 );
 </script>
 

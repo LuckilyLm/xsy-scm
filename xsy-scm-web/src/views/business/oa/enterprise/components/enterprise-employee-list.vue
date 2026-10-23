@@ -7,39 +7,35 @@
     <div class="header">
       <div>
         关键字：
-        <a-input style="width: 250px" v-model:value="queryForm.keyword" placeholder="姓名/手机号/登录账号"/>
+        <a-input style="width: 250px" v-model:value="queryForm.keyword" placeholder="姓名/手机号/登录账号" />
         <a-button class="button-style" type="primary" @click="onSearch">搜索</a-button>
         <a-button class="button-style" type="default" @click="resetQueryEmployee">重置</a-button>
       </div>
       <div>
-        <a-button class="button-style" type="primary" @click="addEmployee" v-privilege="'oa:enterprise:addEmployee'">
-          添加员工
-        </a-button>
-        <a-button class="button-style" type="primary" danger @click="batchDelete"
-                  v-privilege="'oa:enterprise:deleteEmployee'"> 批量移除
-        </a-button>
+        <a-button class="button-style" type="primary" @click="addEmployee" v-privilege="'oa:enterprise:addEmployee'"> 添加员工 </a-button>
+        <a-button class="button-style" type="primary" danger @click="batchDelete" v-privilege="'oa:enterprise:deleteEmployee'"> 批量移除 </a-button>
       </div>
     </div>
     <a-card size="small" :bordered="false" :hoverable="false">
       <a-row justify="end">
         <TableOperator
-            class="smart-margin-bottom5"
-            v-model="columns"
-            :tableId="TABLE_ID_CONST.BUSINESS.OA.ENTERPRISE_EMPLOYEE"
-            :refresh="queryEmployee"
+          class="smart-margin-bottom5"
+          v-model="columns"
+          :tableId="TABLE_ID_CONST.BUSINESS.OA.ENTERPRISE_EMPLOYEE"
+          :refresh="queryEmployee"
         />
       </a-row>
       <a-table
-          :loading="tableLoading"
-          :dataSource="tableData"
-          :columns="columns"
-          :pagination="false"
-          rowKey="employeeId"
-          :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }"
-          size="small"
-          bordered
+        :loading="tableLoading"
+        :dataSource="tableData"
+        :columns="columns"
+        :pagination="false"
+        rowKey="employeeId"
+        :row-selection="{selectedRowKeys: selectedRowKeyList, onChange: onSelectChange}"
+        size="small"
+        bordered
       >
-        <template #bodyCell="{ text, record, column }">
+        <template #bodyCell="{text, record, column}">
           <template v-if="column.dataIndex === 'disabledFlag'">
             <a-tag :color="text ? 'error' : 'processing'">{{ text ? '禁用' : '启用' }}</a-tag>
           </template>
@@ -47,27 +43,25 @@
             <span>{{ $smartEnumPlugin.getDescByValue('GENDER_ENUM', text) }}</span>
           </template>
           <template v-if="column.dataIndex === 'operate'">
-            <a-button type="link" @click="deleteEmployee(record.employeeId)"
-                      v-privilege="'oa:enterprise:deleteEmployee'">移除
-            </a-button>
+            <a-button type="link" @click="deleteEmployee(record.employeeId)" v-privilege="'oa:enterprise:deleteEmployee'">移除 </a-button>
           </template>
         </template>
       </a-table>
       <div class="smart-query-table-page">
         <a-pagination
-            showSizeChanger
-            showQuickJumper
-            show-less-items
-            :pageSizeOptions="PAGE_SIZE_OPTIONS"
-            :defaultPageSize="queryForm.pageSize"
-            v-model:current="queryForm.pageNum"
-            v-model:pageSize="queryForm.pageSize"
-            :total="total"
-            @change="queryEmployee"
-            :show-total="showTableTotal"
+          showSizeChanger
+          showQuickJumper
+          show-less-items
+          :pageSizeOptions="PAGE_SIZE_OPTIONS"
+          :defaultPageSize="queryForm.pageSize"
+          v-model:current="queryForm.pageNum"
+          v-model:pageSize="queryForm.pageSize"
+          :total="total"
+          @change="queryEmployee"
+          :show-total="showTableTotal"
         />
       </div>
-      <EmployeeTableSelectModal ref="selectEmployeeModal" @selectData="selectData"/>
+      <EmployeeTableSelectModal ref="selectEmployeeModal" @selectData="selectData" />
     </a-card>
   </div>
 </template>
@@ -123,7 +117,8 @@ const columns = ref([
   },
   {
     title: '操作',
-    dataIndex: 'operate', align: 'center',
+    dataIndex: 'operate',
+    align: 'center',
     width: 90,
   },
 ]);
@@ -224,8 +219,7 @@ async function deleteEmployee(employeeId) {
       }
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 
@@ -266,19 +260,18 @@ function batchDelete() {
       }
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 
 watch(
-    () => props.enterpriseId,
-    (e) => {
-      if (e) {
-        queryEmployee();
-      }
-    },
-    {immediate: true}
+  () => props.enterpriseId,
+  (e) => {
+    if (e) {
+      queryEmployee();
+    }
+  },
+  {immediate: true}
 );
 </script>
 

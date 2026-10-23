@@ -7,18 +7,18 @@
   <a-form class="smart-query-form">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字查询" class="smart-query-form-item">
-        <a-input style="width: 200px" v-model:value="queryForm.keywords" placeholder="关键字查询"/>
+        <a-input style="width: 200px" v-model:value="queryForm.keywords" placeholder="关键字查询" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button type="primary" @click="queryData">
           <template #icon>
-            <SearchOutlined/>
+            <SearchOutlined />
           </template>
           查询
         </a-button>
         <a-button @click="resetQuery" class="smart-margin-left10">
           <template #icon>
-            <ReloadOutlined/>
+            <ReloadOutlined />
           </template>
           重置
         </a-button>
@@ -33,35 +33,35 @@
       <div class="smart-table-operate-block">
         <a-button @click="showForm" type="primary">
           <template #icon>
-            <PlusOutlined/>
+            <PlusOutlined />
           </template>
           新建
         </a-button>
         <a-button @click="confirmBatchDelete" type="primary" danger :disabled="selectedRowKeyList.length === 0">
           <template #icon>
-            <DeleteOutlined/>
+            <DeleteOutlined />
           </template>
           批量删除
         </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SYSTEM.EMPLOYEE" :refresh="queryData"/>
+        <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SYSTEM.EMPLOYEE" :refresh="queryData" />
       </div>
     </a-row>
     <!---------- 表格操作行 end ----------->
 
     <!---------- 表格 begin ----------->
     <a-table
-        size="small"
-        :dataSource="tableData"
-        :columns="columns"
-        rowKey="positionId"
-        bordered
-        :loading="tableLoading"
-        :pagination="false"
-        :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }"
+      size="small"
+      :dataSource="tableData"
+      :columns="columns"
+      rowKey="positionId"
+      bordered
+      :loading="tableLoading"
+      :pagination="false"
+      :row-selection="{selectedRowKeys: selectedRowKeyList, onChange: onSelectChange}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button @click="showForm(record)" type="link">编辑</a-button>
@@ -74,20 +74,20 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
 
-    <PositionForm ref="formRef" @reloadList="queryData"/>
+    <PositionForm ref="formRef" @reloadList="queryData" />
   </a-card>
 </template>
 <script setup lang="ts">
@@ -197,8 +197,7 @@ function onDelete(data) {
       requestDelete(data);
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 
@@ -240,8 +239,7 @@ function confirmBatchDelete() {
       requestBatchDelete();
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

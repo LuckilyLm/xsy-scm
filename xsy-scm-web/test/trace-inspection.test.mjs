@@ -27,7 +27,7 @@ test('inspection enum values and Chinese labels agree across Java, admin, mini p
     assert.deepEqual(web, Object.fromEntries(entries));
     assert.deepEqual(web, mini);
     const sql = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V176__scm_trace_inspection_report.sql');
-    const allowed = sql.match(new RegExp(column + " IN \\(([^)]+)\\)"))?.[1];
+    const allowed = sql.match(new RegExp(column + ' IN \\(([^)]+)\\)'))?.[1];
     assert.ok(allowed, column + ' missing CHECK');
     assert.deepEqual([...allowed.matchAll(/'([^']+)'/g)].map((item) => item[1]).sort(), Object.keys(web).sort());
   }

@@ -8,7 +8,7 @@
     <a-card v-if="!selected" size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
         <p class="scm-note scm-note--block">按公司查看可供货的商品；点卡片看明细。</p>
-        <a-input-search v-model:value="keyword" placeholder="搜索公司名称或编码" allow-clear style="width: 260px"/>
+        <a-input-search v-model:value="keyword" placeholder="搜索公司名称或编码" allow-clear style="width: 260px" />
       </a-row>
 
       <a-alert v-if="cardError" type="error" show-icon :message="cardError" class="smart-margin-bottom10">
@@ -19,24 +19,25 @@
 
       <a-spin :spinning="cardLoading">
         <div v-if="visibleCards.length" class="supplier-grid">
-          <button
-              v-for="item in visibleCards"
-              :key="item.supplierId"
-              type="button"
-              class="supplier-card"
-              @click="openSupplier(item)">
+          <button v-for="item in visibleCards" :key="item.supplierId" type="button" class="supplier-card" @click="openSupplier(item)">
             <span class="supplier-card__head">
               <span class="supplier-card__name" :title="item.supplierName">{{ item.supplierName }}</span>
-              <RightOutlined class="supplier-card__arrow"/>
+              <RightOutlined class="supplier-card__arrow" />
             </span>
             <span class="supplier-card__stats">
-              <span class="supplier-card__stat"><b>{{ item.productCount }}</b> 个商品</span>
-              <span class="supplier-card__stat"><b>{{ item.specCount }}</b> 个规格</span>
-              <span v-if="item.defaultCount" class="supplier-card__stat"><b>{{ item.defaultCount }}</b> 个优先</span>
+              <span class="supplier-card__stat"
+                ><b>{{ item.productCount }}</b> 个商品</span
+              >
+              <span class="supplier-card__stat"
+                ><b>{{ item.specCount }}</b> 个规格</span
+              >
+              <span v-if="item.defaultCount" class="supplier-card__stat"
+                ><b>{{ item.defaultCount }}</b> 个优先</span
+              >
             </span>
           </button>
         </div>
-        <a-empty v-else-if="!cardLoading" description="没有匹配的供应商"/>
+        <a-empty v-else-if="!cardLoading" description="没有匹配的供应商" />
       </a-spin>
     </a-card>
 
@@ -44,19 +45,19 @@
     <a-card v-else size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
         <a-button type="link" class="scm-detail-header__back" @click="backToCards">
-          <ArrowLeftOutlined/>
+          <ArrowLeftOutlined />
           返回公司列表
         </a-button>
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER_SKU" :refresh="load"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER_SKU" :refresh="load" />
       </a-row>
 
       <a-form class="smart-query-form" layout="inline">
         <a-row class="smart-query-form-row">
           <a-form-item label="商品规格" class="smart-query-form-item">
-            <SkuSelect v-model:value="filters.skuId" width="300px"/>
+            <SkuSelect v-model:value="filters.skuId" width="300px" />
           </a-form-item>
           <a-form-item label="状态" class="smart-query-form-item">
-            <SmartEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_SKU_STATUS_ENUM" width="130px"/>
+            <SmartEnumSelect v-model:value="filters.status" enum-name="SUPPLIER_SKU_STATUS_ENUM" width="130px" />
           </a-form-item>
           <a-form-item class="smart-query-form-item">
             <a-space>
@@ -75,20 +76,18 @@
       </a-alert>
 
       <a-table
-          :data-source="rows"
-          :columns="detailColumns"
-          row-key="id"
-          :loading="loading"
-          :pagination="false"
-          size="small"
-          bordered
-          :scroll="{ x: scmColumnsWidth(detailColumns) }"
+        :data-source="rows"
+        :columns="detailColumns"
+        row-key="id"
+        :loading="loading"
+        :pagination="false"
+        size="small"
+        bordered
+        :scroll="{x: scmColumnsWidth(detailColumns)}"
       >
-        <template #bodyCell="{ column, record }">
+        <template #bodyCell="{column, record}">
           <span v-if="column.dataIndex === 'spec'">{{ specText(record.specValuesSnapshot) }}</span>
-          <span v-else-if="column.dataIndex === 'referencePrice'" class="amount">{{
-              record.referencePrice ?? '—'
-            }}</span>
+          <span v-else-if="column.dataIndex === 'referencePrice'" class="amount">{{ record.referencePrice ?? '—' }}</span>
           <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
           <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
             {{ record.defaultFlag ? '优先采购' : '—' }}
@@ -100,23 +99,39 @@
       </a-table>
       <div class="smart-query-table-page">
         <a-pagination
-            v-model:current="filters.pageNum"
-            v-model:page-size="filters.pageSize"
-            :total="total"
-            show-size-changer
-            :show-total="(n: number) => `共 ${n} 条`"
-            @change="load"
+          v-model:current="filters.pageNum"
+          v-model:page-size="filters.pageSize"
+          :total="total"
+          show-size-changer
+          :show-total="(n: number) => `共 ${n} 条`"
+          @change="load"
         />
       </div>
     </a-card>
 
     <a-modal v-model:open="compareOpen" title="多供应商参考价对比" :footer="null" width="1000px">
-      <a-table :columns="compareColumns" :data-source="compareRows" row-key="supplierId" :loading="compareLoading"
-               size="small" bordered :pagination="false" :scroll="{ x: scmColumnsWidth(compareColumns) }">
+      <a-table
+        :columns="compareColumns"
+        :data-source="compareRows"
+        row-key="supplierId"
+        :loading="compareLoading"
+        size="small"
+        bordered
+        :pagination="false"
+        :scroll="{x: scmColumnsWidth(compareColumns)}"
+      >
         <template #bodyCell="{column, record}">
-          <span v-if="column.dataIndex === 'referencePrice' || column.dataIndex === 'lowestReferencePrice' || column.dataIndex === 'priceGapAmount'" class="amount">{{ record[column.dataIndex] ?? '—' }}</span>
-          <span v-else-if="column.dataIndex === 'priceGapPercent'" class="amount">{{ record.priceGapPercent == null ? '—' : `${record.priceGapPercent}%` }}</span>
-          <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">{{ record.defaultFlag ? '优先采购' : '—' }}</a-tag>
+          <span
+            v-if="column.dataIndex === 'referencePrice' || column.dataIndex === 'lowestReferencePrice' || column.dataIndex === 'priceGapAmount'"
+            class="amount"
+            >{{ record[column.dataIndex] ?? '—' }}</span
+          >
+          <span v-else-if="column.dataIndex === 'priceGapPercent'" class="amount">{{
+            record.priceGapPercent == null ? '—' : `${record.priceGapPercent}%`
+          }}</span>
+          <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">{{
+            record.defaultFlag ? '优先采购' : '—'
+          }}</a-tag>
         </template>
       </a-table>
       <p class="scm-note" style="margin-top: 8px">不足两家有效报价或最低参考价为 0 时不计算涨幅；缺少参考价不会视作零报价。</p>
@@ -135,7 +150,7 @@ import type {
   SupplierSkuQuery,
   SupplierSkuRow,
   SupplierSkuComparisonRow,
-  SupplierSkuSupplierSummary
+  SupplierSkuSupplierSummary,
 } from '/@/types/business/scm/supplier';
 import {SUPPLIER_SKU_STATUS_ENUM} from '/@/constants/business/scm/supplier-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
@@ -157,8 +172,7 @@ const selected = ref<SupplierSkuSupplierSummary | null>(null);
 const visibleCards = computed(() => {
   const text = keyword.value.trim().toLowerCase();
   if (!text) return cards.value;
-  return cards.value.filter((item) =>
-      `${item.supplierName} ${item.supplierCode}`.toLowerCase().includes(text));
+  return cards.value.filter((item) => `${item.supplierName} ${item.supplierCode}`.toLowerCase().includes(text));
 });
 
 async function loadCards() {
@@ -235,9 +249,12 @@ const columns = ref<TableColumnsType<SupplierSkuRow>>([
  * 明细页只显示这一家公司的商品，供应商两列每行都一样，占着 350px 没有信息量。
  * 列设置里仍然保留它们（供应商视角下可能想调顺序），这里只是渲染时过滤掉。
  */
-const detailColumns = computed<TableColumnsType<SupplierSkuRow>>(() =>
-    (columns.value as Array<{ dataIndex?: unknown }>).filter((column) => column.dataIndex !== 'supplierNameSnapshot'
-        && column.dataIndex !== 'supplierCodeSnapshot') as TableColumnsType<SupplierSkuRow>);
+const detailColumns = computed<TableColumnsType<SupplierSkuRow>>(
+  () =>
+    (columns.value as Array<{dataIndex?: unknown}>).filter(
+      (column) => column.dataIndex !== 'supplierNameSnapshot' && column.dataIndex !== 'supplierCodeSnapshot'
+    ) as TableColumnsType<SupplierSkuRow>
+);
 
 let requestId = 0;
 
@@ -313,7 +330,9 @@ onMounted(loadCards);
   background: #fff;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .supplier-card:hover,
@@ -367,5 +386,4 @@ onMounted(loadCards);
 :deep(.scm-detail-header__back.ant-btn) {
   margin-bottom: 0;
 }
-
 </style>

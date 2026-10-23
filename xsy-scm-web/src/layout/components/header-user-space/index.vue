@@ -6,11 +6,11 @@
   <a-space :size="10">
     <div class="setting">
       <!---消息通知--->
-      <HeaderMessage ref="headerMessage"/>
+      <HeaderMessage ref="headerMessage" />
       <!---数据大屏--->
       <a-button type="text" @click="openScreen" class="operate-icon" title="数据大屏">
         <template #icon>
-          <dashboard-outlined/>
+          <dashboard-outlined />
         </template>
       </a-button>
       <!---国际化--->
@@ -21,21 +21,21 @@
       <!---设置--->
       <a-button type="text" @click="showSetting" class="operate-icon">
         <template #icon>
-          <setting-outlined/>
+          <setting-outlined />
         </template>
       </a-button>
     </div>
     <!---头像信息--->
     <div class="user-space-item">
-      <HeaderAvatar/>
+      <HeaderAvatar />
     </div>
     <!---帮助文档--->
     <div class="user-space-item" @click="showHelpDoc" v-if="showHelpDocFlag">
       <span>帮助文档</span>
-      <DoubleLeftOutlined v-if="!helpDocExpandFlag"/>
+      <DoubleLeftOutlined v-if="!helpDocExpandFlag" />
     </div>
 
-    <HeaderSetting ref="headerSetting"/>
+    <HeaderSetting ref="headerSetting" />
   </a-space>
 </template>
 

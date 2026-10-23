@@ -6,12 +6,12 @@
   <a-form class="smart-query-form">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="开票抬头/银行账户/创建人"/>
+        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="开票抬头/银行账户/创建人" />
       </a-form-item>
 
       <a-form-item label="创建时间" class="smart-query-form-item">
         <a-space direction="vertical" :size="12">
-          <a-range-picker v-model:value="searchDate" :presets="defaultTimeRanges" @change="dateChange"/>
+          <a-range-picker v-model:value="searchDate" :presets="defaultTimeRanges" @change="dateChange" />
         </a-space>
       </a-form-item>
 
@@ -19,13 +19,13 @@
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -33,7 +33,7 @@
 
         <a-button @click="addOrUpdate()" type="primary" class="smart-margin-left20" v-if="$privilege('oa:invoice:add')">
           <template #icon>
-            <PlusOutlined/>
+            <PlusOutlined />
           </template>
           新建发票
         </a-button>
@@ -43,21 +43,17 @@
 
   <a-card size="small" :bordered="false" :hoverable="false">
     <a-row justify="end">
-      <TableOperator class="smart-margin-bottom5" v-model="columns"
-                     :tableId="TABLE_ID_CONST.BUSINESS.OA.ENTERPRISE_INVOICE" :refresh="ajaxQuery"/>
+      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.OA.ENTERPRISE_INVOICE" :refresh="ajaxQuery" />
     </a-row>
-    <a-table :scroll="{ x: 1300 }" size="small" :dataSource="tableData" :columns="columns" rowKey="invoiceId"
-             :pagination="false" bordered>
-      <template #bodyCell="{ record, column }">
+    <a-table :scroll="{x: 1300}" size="small" :dataSource="tableData" :columns="columns" rowKey="invoiceId" :pagination="false" bordered>
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'disabledFlag'">
           {{ record.disabledFlag ? '禁用' : '启用' }}
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button @click="addOrUpdate(record)" type="link" v-if="$privilege('oa:invoice:update')">编辑</a-button>
-            <a-button @click="confirmDelete(record.invoiceId)" type="link" danger
-                      v-if="$privilege('oa:invoice:delete')">删除
-            </a-button>
+            <a-button @click="confirmDelete(record.invoiceId)" type="link" danger v-if="$privilege('oa:invoice:delete')">删除 </a-button>
           </div>
         </template>
       </template>
@@ -65,20 +61,20 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="ajaxQuery"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="ajaxQuery"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
     <!--新建编辑modal-->
-    <InvoiceOperateModal ref="operateModal" :enterpriseId="enterpriseId" @reloadList="ajaxQuery"/>
+    <InvoiceOperateModal ref="operateModal" :enterpriseId="enterpriseId" @reloadList="ajaxQuery" />
   </a-card>
 </template>
 <script setup lang="ts">
@@ -215,8 +211,7 @@ function confirmDelete(invoiceId) {
       del(invoiceId);
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 
@@ -238,15 +233,15 @@ function addOrUpdate(rowData) {
 }
 
 watch(
-    () => props.enterpriseId,
-    (value) => {
-      if (value) {
-        queryForm.enterpriseId = value;
-        ajaxQuery();
-      }
-    },
-    {
-      immediate: true,
+  () => props.enterpriseId,
+  (value) => {
+    if (value) {
+      queryForm.enterpriseId = value;
+      ajaxQuery();
     }
+  },
+  {
+    immediate: true,
+  }
 );
 </script>

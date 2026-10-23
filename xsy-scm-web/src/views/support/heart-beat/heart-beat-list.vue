@@ -17,32 +17,32 @@
 1）在各个环境（无论开发、测试、生产）能统一看到所有启动的服务列表；
 2）检测Java应用是否存活；
 3）当某些业务只允许有一个服务启动的时候，用于排查是否别人也启动的服务；
-4） ※强烈推荐※</pre>
+4） ※强烈推荐※</pre
+        >
       </template>
     </a-alert>
 
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="关键字"/>
+          <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="关键字" />
         </a-form-item>
 
         <a-form-item label="心跳时间" class="smart-query-form-item">
-          <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange"
-                          style="width: 240px"/>
+          <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange" style="width: 240px" />
         </a-form-item>
 
         <a-form-item class="smart-query-form-item smart-margin-left10">
           <a-button-group>
             <a-button type="primary" @click="onSearch">
               <template #icon>
-                <SearchOutlined/>
+                <SearchOutlined />
               </template>
               查询
             </a-button>
             <a-button @click="resetQuery">
               <template #icon>
-                <ReloadOutlined/>
+                <ReloadOutlined />
               </template>
               重置
             </a-button>
@@ -51,31 +51,30 @@
       </a-row>
     </a-form>
     <a-row justify="end">
-      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.HEART_BEAT"
-                     :refresh="ajaxQuery"/>
+      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.HEART_BEAT" :refresh="ajaxQuery" />
     </a-row>
     <a-table
-        size="small"
-        bordered
-        :loading="tableLoading"
-        class="smart-margin-top10"
-        :dataSource="tableData"
-        :columns="columns"
-        rowKey="goodsId"
-        :pagination="false"
+      size="small"
+      bordered
+      :loading="tableLoading"
+      class="smart-margin-top10"
+      :dataSource="tableData"
+      :columns="columns"
+      rowKey="goodsId"
+      :pagination="false"
     />
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="ajaxQuery"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="ajaxQuery"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-card>

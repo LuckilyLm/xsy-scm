@@ -5,22 +5,17 @@
 -->
 <template>
   <a-select
-      v-model:value="selectValue"
-      :style="`width: ${width}`"
-      :placeholder="props.placeholder"
-      :show-search="true"
-      :allow-clear="true"
-      :size="props.size"
-      :disabled="props.disabled"
-      option-filter-prop="label"
-      @change="onChange"
+    v-model:value="selectValue"
+    :style="`width: ${width}`"
+    :placeholder="props.placeholder"
+    :show-search="true"
+    :allow-clear="true"
+    :size="props.size"
+    :disabled="props.disabled"
+    option-filter-prop="label"
+    @change="onChange"
   >
-    <a-select-option
-        v-for="item in list"
-        :key="item.id"
-        :value="item.id"
-        :label="`${item.name}（${item.warehouseCode}）`"
-    >
+    <a-select-option v-for="item in list" :key="item.id" :value="item.id" :label="`${item.name}（${item.warehouseCode}）`">
       {{ item.name }}
       <template v-if="item.warehouseCode"> （{{ item.warehouseCode }}）</template>
     </a-select-option>
@@ -34,16 +29,16 @@ import {smartSentry} from '/@/lib/smart-sentry';
 import type {Warehouse} from '/@/views/business/scm/purchase/purchase-types';
 
 const props = withDefaults(
-    defineProps<{
-      value?: string | number | null;
-      /** 由调用方提供的仓库列表；不传时组件自己拉取 `GET /scm/warehouse/list`。 */
-      options?: Warehouse[] | null;
-      placeholder?: string;
-      width?: string;
-      size?: string;
-      disabled?: boolean;
-    }>(),
-    {placeholder: '请选择仓库', width: '100%', size: 'default', disabled: false, options: null}
+  defineProps<{
+    value?: string | number | null;
+    /** 由调用方提供的仓库列表；不传时组件自己拉取 `GET /scm/warehouse/list`。 */
+    options?: Warehouse[] | null;
+    placeholder?: string;
+    width?: string;
+    size?: string;
+    disabled?: boolean;
+  }>(),
+  {placeholder: '请选择仓库', width: '100%', size: 'default', disabled: false, options: null}
 );
 
 const emit = defineEmits<{
@@ -72,10 +67,10 @@ onMounted(() => {
 
 const selectValue = ref<string | number | null | undefined>(props.value);
 watch(
-    () => props.value,
-    (newValue) => {
-      selectValue.value = newValue;
-    }
+  () => props.value,
+  (newValue) => {
+    selectValue.value = newValue;
+  }
 );
 
 function onChange(value: string | number | undefined) {

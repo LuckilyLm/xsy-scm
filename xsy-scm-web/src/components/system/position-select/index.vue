@@ -4,13 +4,13 @@
 -->
 <template>
   <a-select
-      v-model:value="selectValue"
-      :style="`width: ${width}`"
-      :placeholder="props.placeholder"
-      :showSearch="true"
-      :allowClear="true"
-      :size="size"
-      @change="onChange"
+    v-model:value="selectValue"
+    :style="`width: ${width}`"
+    :placeholder="props.placeholder"
+    :showSearch="true"
+    :allowClear="true"
+    :size="size"
+    @change="onChange"
   >
     <a-select-option v-for="item in positionList" :key="item.positionId" :value="item.positionId">
       {{ item.positionName }}
@@ -63,10 +63,10 @@ onMounted(query);
 
 const selectValue = ref(props.value);
 watch(
-    () => props.value,
-    (newValue) => {
-      selectValue.value = newValue;
-    }
+  () => props.value,
+  (newValue) => {
+    selectValue.value = newValue;
+  }
 );
 
 function onChange(value) {

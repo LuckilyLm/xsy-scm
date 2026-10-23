@@ -1,5 +1,5 @@
 <template>
-  <MasterList kind="vehicle"/>
+  <MasterList kind="vehicle" />
 </template>
 <script setup lang="ts">
 import MasterList from './components/master-list.vue';

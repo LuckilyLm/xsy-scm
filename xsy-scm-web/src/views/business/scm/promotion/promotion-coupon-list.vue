@@ -3,11 +3,10 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="关键词" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" placeholder="券编码 / 名称" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.keyword" placeholder="券编码 / 名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 140px"
-                  placeholder="全部" allow-clear/>
+        <a-select v-model:value="queryForm.status" :options="statusOptions" style="width: 140px" placeholder="全部" allow-clear />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -33,22 +32,22 @@
     <p class="hint">累计数据按发放、领取及实际使用记录统计。</p>
 
     <a-table
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'couponCode'">
           <span class="scm-mono">{{ record.couponCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'couponName'">{{ record.couponName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'discountType'">
-          <ScmStatusTag tone="processing" :label="discountTypeLabel(record.discountType)"/>
+          <ScmStatusTag tone="processing" :label="discountTypeLabel(record.discountType)" />
         </template>
         <template v-else-if="column.dataIndex === 'discountText'">{{ discountText(record) }}</template>
         <template v-else-if="column.dataIndex === 'minOrderAmount'">
@@ -59,11 +58,10 @@
         <template v-else-if="column.dataIndex === 'validFrom'">{{ datetime(record.validFrom) }}</template>
         <template v-else-if="column.dataIndex === 'validTo'">{{ datetime(record.validTo) }}</template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="statusLabelOf(record.status)"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="statusLabelOf(record.status)" />
         </template>
         <template v-else-if="column.dataIndex === 'claimable'">
-          <ScmStatusTag :tone="record.claimable ? 'success' : 'neutral'"
-                        :label="record.claimable ? '开放领取' : '仅后台发券'"/>
+          <ScmStatusTag :tone="record.claimable ? 'success' : 'neutral'" :label="record.claimable ? '开放领取' : '仅后台发券'" />
         </template>
         <template v-else-if="column.dataIndex === 'claimLimits'">
           {{ record.claimable ? `每人 ${record.perCustomerLimit ?? '不限'} / 总量 ${record.totalLimit ?? '不限'}` : '—' }}
@@ -85,33 +83,25 @@
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <a-button type="link" size="small" v-privilege="'scm:promotion:coupon:edit'"
-                      @click="openEdit(record)">编辑
+            <a-button type="link" size="small" v-privilege="'scm:promotion:coupon:edit'" @click="openEdit(record)">编辑 </a-button>
+            <a-button
+              v-if="record.status !== 'ACTIVE'"
+              type="link"
+              size="small"
+              v-privilege="'scm:promotion:coupon:status'"
+              @click="changeStatus(record, 'ACTIVE')"
+              >启用
+            </a-button>
+            <a-button v-else type="link" size="small" danger v-privilege="'scm:promotion:coupon:status'" @click="changeStatus(record, 'STOPPED')"
+              >停用
             </a-button>
             <a-button
-                v-if="record.status !== 'ACTIVE'"
-                type="link"
-                size="small"
-                v-privilege="'scm:promotion:coupon:status'"
-                @click="changeStatus(record, 'ACTIVE')"
-            >启用
-            </a-button>
-            <a-button
-                v-else
-                type="link"
-                size="small"
-                danger
-                v-privilege="'scm:promotion:coupon:status'"
-                @click="changeStatus(record, 'STOPPED')"
-            >停用
-            </a-button>
-            <a-button
-                type="link"
-                size="small"
-                v-privilege="'scm:promotion:coupon:issue'"
-                :disabled="record.status !== 'ACTIVE'"
-                @click="openIssue(record)"
-            >发券
+              type="link"
+              size="small"
+              v-privilege="'scm:promotion:coupon:issue'"
+              :disabled="record.status !== 'ACTIVE'"
+              @click="openIssue(record)"
+              >发券
             </a-button>
           </a-space>
         </template>
@@ -120,24 +110,24 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <a-modal
-      :open="editOpen"
-      :title="form.id ? '编辑优惠券' : '新建优惠券'"
-      width="700px"
-      :confirm-loading="saving"
-      @ok="submit"
-      @cancel="editOpen = false"
+    :open="editOpen"
+    :title="form.id ? '编辑优惠券' : '新建优惠券'"
+    width="700px"
+    :confirm-loading="saving"
+    @ok="submit"
+    @cancel="editOpen = false"
   >
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <section class="scm-form-section">
@@ -147,12 +137,12 @@
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="券编码" name="couponCode">
-              <a-input v-model:value="form.couponCode" :disabled="!!form.id"/>
+              <a-input v-model:value="form.couponCode" :disabled="!!form.id" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="券名称" name="couponName">
-              <a-input v-model:value="form.couponName"/>
+              <a-input v-model:value="form.couponName" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -165,45 +155,44 @@
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="优惠类型" name="discountType">
-              <a-select v-model:value="form.discountType" :options="discountTypeOptions"
-                        @change="onDiscountTypeChange"/>
+              <a-select v-model:value="form.discountType" :options="discountTypeOptions" @change="onDiscountTypeChange" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item :label="form.discountType === 'RATE' ? '折扣率' : '减免金额'" name="discountValueInput">
               <a-input-number
-                  v-if="form.discountType === 'RATE'"
-                  v-model:value="form.discountValueInput"
-                  :min="0.01"
-                  :max="100"
-                  :precision="2"
-                  :step="1"
-                  addon-after="%"
-                  placeholder="95 即 9.5 折"
-                  style="width: 100%"
+                v-if="form.discountType === 'RATE'"
+                v-model:value="form.discountValueInput"
+                :min="0.01"
+                :max="100"
+                :precision="2"
+                :step="1"
+                addon-after="%"
+                placeholder="95 即 9.5 折"
+                style="width: 100%"
               />
               <a-input-number
-                  v-else
-                  v-model:value="form.discountValueInput"
-                  :min="0"
-                  :precision="4"
-                  :step="1"
-                  addon-before="¥"
-                  placeholder="0.0000"
-                  style="width: 100%"
+                v-else
+                v-model:value="form.discountValueInput"
+                :min="0"
+                :precision="4"
+                :step="1"
+                addon-before="¥"
+                placeholder="0.0000"
+                style="width: 100%"
               />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="门槛金额">
               <a-input-number
-                  v-model:value="minOrderAmount"
-                  :min="0"
-                  :precision="4"
-                  :step="1"
-                  addon-before="¥"
-                  placeholder="0 表示无门槛"
-                  style="width: 100%"
+                v-model:value="minOrderAmount"
+                :min="0"
+                :precision="4"
+                :step="1"
+                addon-before="¥"
+                placeholder="0 表示无门槛"
+                style="width: 100%"
               />
             </a-form-item>
           </a-col>
@@ -217,14 +206,12 @@
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="生效时间" name="validFrom">
-              <a-date-picker v-model:value="form.validFrom" show-time value-format="YYYY-MM-DD HH:mm:ss"
-                             style="width: 100%"/>
+              <a-date-picker v-model:value="form.validFrom" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="失效时间" name="validTo">
-              <a-date-picker v-model:value="form.validTo" show-time value-format="YYYY-MM-DD HH:mm:ss"
-                             style="width: 100%"/>
+              <a-date-picker v-model:value="form.validTo" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -235,7 +222,7 @@
           <h3 class="scm-form-section__title">备注</h3>
         </div>
         <a-form-item label="备注">
-          <a-input v-model:value="form.remark"/>
+          <a-input v-model:value="form.remark" />
         </a-form-item>
       </section>
 
@@ -244,20 +231,18 @@
           <h3 class="scm-form-section__title">商城领取</h3>
         </div>
         <a-form-item label="允许客户自助领取">
-          <a-switch v-model:checked="form.claimable"/>
+          <a-switch v-model:checked="form.claimable" />
           <span class="scm-cell-hint">仅影响商城领取，后台发券不受限制</span>
         </a-form-item>
         <a-row v-if="form.claimable" :gutter="20">
           <a-col :span="12">
             <a-form-item label="每人限领张数">
-              <a-input-number v-model:value="form.perCustomerLimit" :min="1" :precision="0"
-                              placeholder="不填表示不限" style="width: 100%"/>
+              <a-input-number v-model:value="form.perCustomerLimit" :min="1" :precision="0" placeholder="不填表示不限" style="width: 100%" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="自助领取总量">
-              <a-input-number v-model:value="form.totalLimit" :min="1" :precision="0"
-                              placeholder="不填表示不限" style="width: 100%"/>
+              <a-input-number v-model:value="form.totalLimit" :min="1" :precision="0" placeholder="不填表示不限" style="width: 100%" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -266,13 +251,13 @@
   </a-modal>
 
   <a-modal v-model:open="issueOpen" title="发券" :confirm-loading="saving" @ok="submitIssue">
-    <a-alert v-if="issueError" :message="issueError" type="error" show-icon class="banner"/>
+    <a-alert v-if="issueError" :message="issueError" type="error" show-icon class="banner" />
     <a-form layout="vertical">
       <a-form-item label="客户" required>
-        <CustomerSelect v-model:value="issueForm.customerId" width="100%"/>
+        <CustomerSelect v-model:value="issueForm.customerId" width="100%" />
       </a-form-item>
       <a-form-item label="张数" required>
-        <a-input-number v-model:value="issueForm.quantity" :min="1" :max="200" :precision="0" style="width: 100%"/>
+        <a-input-number v-model:value="issueForm.quantity" :min="1" :max="200" :precision="0" style="width: 100%" />
       </a-form-item>
     </a-form>
   </a-modal>
@@ -386,12 +371,15 @@ const formRules = {
   couponCode: [{required: true, message: '请填写券编码', trigger: 'blur'}],
   couponName: [{required: true, message: '请填写券名称', trigger: 'blur'}],
   discountType: [{required: true, message: '请选择优惠类型', trigger: 'change'}],
-  discountValueInput: [{
-    validator: () => (form.discountValueInput == null
-        ? Promise.reject(new Error(form.discountType === 'RATE' ? '请填写折扣率' : '请填写减免金额'))
-        : Promise.resolve()),
-    trigger: 'blur',
-  }],
+  discountValueInput: [
+    {
+      validator: () =>
+        form.discountValueInput == null
+          ? Promise.reject(new Error(form.discountType === 'RATE' ? '请填写折扣率' : '请填写减免金额'))
+          : Promise.resolve(),
+      trigger: 'blur',
+    },
+  ],
   validFrom: [{required: true, message: '请选择生效时间', trigger: 'change'}],
   validTo: [{required: true, message: '请选择失效时间', trigger: 'change'}],
 };
@@ -399,7 +387,7 @@ const formRules = {
 /** 门槛金额同样用数字控件，提交时才收口回定点字符串。 */
 const minOrderAmount = ref<number | null>(0);
 
-const issueForm = reactive<{ couponId?: Id; customerId?: Id; quantity: number }>({quantity: 1});
+const issueForm = reactive<{couponId?: Id; customerId?: Id; quantity: number}>({quantity: 1});
 
 /** 门槛 0 是「无门槛」这个业务事实，不是缺值。 */
 function isNoThreshold(value?: string | null): boolean {
@@ -482,19 +470,18 @@ function openEdit(record: PromotionCoupon) {
     remark: record.remark ?? null,
     version: record.version,
   });
-  form.discountValueInput = record.discountValue == null || record.discountValue === ''
+  form.discountValueInput =
+    record.discountValue == null || record.discountValue === ''
       ? null
       : record.discountType === 'RATE'
-          ? rateToPercent(record.discountValue)
-          : Number(record.discountValue);
+      ? rateToPercent(record.discountValue)
+      : Number(record.discountValue);
   minOrderAmount.value = record.minOrderAmount == null ? null : Number(record.minOrderAmount);
   editOpen.value = true;
 }
 
 async function submit() {
-  form.discountValue = form.discountType === 'RATE'
-      ? percentToRate(form.discountValueInput) ?? ''
-      : fixed4(form.discountValueInput) ?? '';
+  form.discountValue = form.discountType === 'RATE' ? percentToRate(form.discountValueInput) ?? '' : fixed4(form.discountValueInput) ?? '';
   form.minOrderAmount = fixed4(minOrderAmount.value) ?? '0';
   // 必填项走表单校验：错误显示在对应输入框下方
   try {

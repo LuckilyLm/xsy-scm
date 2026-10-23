@@ -1,12 +1,11 @@
 <!--
   * 枚举 多选框
-  * 
+  *
   *
 -->
 <template>
   <a-checkbox-group :style="`width: ${width}`" v-model:value="selectValue" @change="handleChange" :disabled="disabled">
-    <a-checkbox v-for="item in valueDescList" :key="item.value" :value="item.value"
-                :disabled="disabledOption.includes(item.value)">
+    <a-checkbox v-for="item in valueDescList" :key="item.value" :value="item.value" :disabled="disabledOption.includes(item.value)">
       {{ item.desc }}
     </a-checkbox>
   </a-checkbox-group>
@@ -54,12 +53,12 @@ onMounted(() => {
 const selectValue = ref(props.value);
 
 watch(
-    () => props.value,
-    (newValue) => {
-      // 如果传入的值是被禁用或被隐藏的选项，则移除这些选项
-      selectValue.value = newValue.filter((item) => !props.hiddenOption.includes(item) && !props.disabledOption.includes(item));
-    },
-    {immediate: true}
+  () => props.value,
+  (newValue) => {
+    // 如果传入的值是被禁用或被隐藏的选项，则移除这些选项
+    selectValue.value = newValue.filter((item) => !props.hiddenOption.includes(item) && !props.disabledOption.includes(item));
+  },
+  {immediate: true}
 );
 
 const emit = defineEmits(['update:value', 'change']);

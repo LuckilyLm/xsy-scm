@@ -9,44 +9,42 @@
         </a-tag>
       </div>
       <p class="fulfillment-card__line">{{ stopOf(record.stopId)?.customerNameSnapshot || '—' }}</p>
-      <p class="fulfillment-card__line fulfillment-card__line--muted">
-        签收 {{ datetime(record.signedAt) }} · {{ record.signedBy || '—' }}
-      </p>
-      <p v-if="record.signReason" class="fulfillment-card__line fulfillment-card__line--muted">
-        原因 {{ record.signReason }}
-      </p>
+      <p class="fulfillment-card__line fulfillment-card__line--muted">签收 {{ datetime(record.signedAt) }} · {{ record.signedBy || '—' }}</p>
+      <p v-if="record.signReason" class="fulfillment-card__line fulfillment-card__line--muted">原因 {{ record.signReason }}</p>
       <a-space :size="0">
         <a-button
-            v-if="canSignOrder(record)"
-            type="link"
-            v-privilege="DELIVERY_PERM.ORDER_SIGN"
-            :disabled="busy"
-            @click="emit('sign', record, 'SIGNED')"
-        >签收</a-button>
+          v-if="canSignOrder(record)"
+          type="link"
+          v-privilege="DELIVERY_PERM.ORDER_SIGN"
+          :disabled="busy"
+          @click="emit('sign', record, 'SIGNED')"
+          >签收</a-button
+        >
         <a-button
-            v-if="canSignOrder(record)"
-            type="link"
-            danger
-            v-privilege="DELIVERY_PERM.ORDER_SIGN"
-            :disabled="busy"
-            @click="emit('sign', record, 'EXCEPTION')"
-        >异常签收</a-button>
+          v-if="canSignOrder(record)"
+          type="link"
+          danger
+          v-privilege="DELIVERY_PERM.ORDER_SIGN"
+          :disabled="busy"
+          @click="emit('sign', record, 'EXCEPTION')"
+          >异常签收</a-button
+        >
         <span v-if="!canSignOrder(record)" class="fulfillment-card__line--muted">{{ signHintOf(record) }}</span>
       </a-space>
     </div>
   </div>
   <a-table
-      v-else
-      id="scm-delivery-route-fulfillment"
-      size="small"
-      :columns="columns"
-      :data-source="orders"
-      row-key="id"
-      :loading="loading"
-      :pagination="false"
-      :locale="{emptyText}"
-      :scroll="{ x: scmColumnsWidth(columns) }"
-      bordered
+    v-else
+    id="scm-delivery-route-fulfillment"
+    size="small"
+    :columns="columns"
+    :data-source="orders"
+    row-key="id"
+    :loading="loading"
+    :pagination="false"
+    :locale="{emptyText}"
+    :scroll="{x: scmColumnsWidth(columns)}"
+    bordered
   >
     <template #bodyCell="{column, record}">
       <template v-if="column.dataIndex === 'customer'">
@@ -69,20 +67,22 @@
       <template v-else-if="column.dataIndex === 'action'">
         <a-space :size="0">
           <a-button
-              v-if="canSignOrder(record)"
-              type="link"
-              v-privilege="DELIVERY_PERM.ORDER_SIGN"
-              :disabled="busy"
-              @click="emit('sign', record, 'SIGNED')"
-          >签收</a-button>
+            v-if="canSignOrder(record)"
+            type="link"
+            v-privilege="DELIVERY_PERM.ORDER_SIGN"
+            :disabled="busy"
+            @click="emit('sign', record, 'SIGNED')"
+            >签收</a-button
+          >
           <a-button
-              v-if="canSignOrder(record)"
-              type="link"
-              danger
-              v-privilege="DELIVERY_PERM.ORDER_SIGN"
-              :disabled="busy"
-              @click="emit('sign', record, 'EXCEPTION')"
-          >异常签收</a-button>
+            v-if="canSignOrder(record)"
+            type="link"
+            danger
+            v-privilege="DELIVERY_PERM.ORDER_SIGN"
+            :disabled="busy"
+            @click="emit('sign', record, 'EXCEPTION')"
+            >异常签收</a-button
+          >
           <span v-if="!canSignOrder(record)">{{ signHintOf(record) }}</span>
         </a-space>
       </template>
@@ -121,9 +121,7 @@ const columns = computed<TableColumnsType<RouteOrder>>(() => [
   {title: '签收时间', dataIndex: 'signedAt', width: 170},
   {title: '签收人', dataIndex: 'signedBy', width: 140},
   {title: '原因', dataIndex: 'signReason', width: 240, ellipsis: true},
-  ...(props.canSign
-    ? [{title: '操作', dataIndex: 'action', width: 160, align: 'center' as const, fixed: 'right' as const}]
-    : []),
+  ...(props.canSign ? [{title: '操作', dataIndex: 'action', width: 160, align: 'center' as const, fixed: 'right' as const}] : []),
 ]);
 
 function stopOf(id: Id) {

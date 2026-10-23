@@ -1,8 +1,15 @@
 <template>
   <section v-if="order.inventoryFactsVisible" class="order-fact-section">
     <h3>库存预留</h3>
-    <a-table :data-source="order.inventoryReservations ?? []" :columns="reservationColumns"
-             row-key="reservationId" :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(reservationColumns) }">
+    <a-table
+      :data-source="order.inventoryReservations ?? []"
+      :columns="reservationColumns"
+      row-key="reservationId"
+      :pagination="false"
+      size="small"
+      bordered
+      :scroll="{x: scmColumnsWidth(reservationColumns)}"
+    >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'quantity'">{{ record.quantity }} {{ record.unit || '' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
@@ -15,9 +22,15 @@
 
   <section v-if="order.sortingFactsVisible" class="order-fact-section">
     <h3>分拣进度</h3>
-    <a-table :data-source="order.sortingProgress ?? []" :columns="sortingColumns"
-             :row-key="(record: OrderSorting) => `${record.taskId}-${record.orderItemId}`"
-             :pagination="false" size="small" bordered :scroll="{x: scmColumnsWidth(sortingColumns)}">
+    <a-table
+      :data-source="order.sortingProgress ?? []"
+      :columns="sortingColumns"
+      :row-key="(record: OrderSorting) => `${record.taskId}-${record.orderItemId}`"
+      :pagination="false"
+      size="small"
+      bordered
+      :scroll="{x: scmColumnsWidth(sortingColumns)}"
+    >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'taskStatus'">
           {{ SCM_SORTING_TASK_STATUS_ENUM[record.taskStatus]?.desc ?? record.taskStatus }}
@@ -25,9 +38,7 @@
         <template v-else-if="column.dataIndex === 'result'">
           {{ record.result ? SCM_SORTING_RESULT_ENUM[record.result]?.desc ?? record.result : '待录入' }}
         </template>
-        <template v-else-if="column.dataIndex === 'plannedQuantity'">
-          {{ record.plannedQuantity }} {{ record.unit || '' }}
-        </template>
+        <template v-else-if="column.dataIndex === 'plannedQuantity'"> {{ record.plannedQuantity }} {{ record.unit || '' }} </template>
         <template v-else-if="column.dataIndex === 'sortedQuantity'">
           {{ record.sortedQuantity == null ? '—' : `${record.sortedQuantity} ${record.unit || ''}` }}
         </template>
@@ -52,13 +63,20 @@
         {{ order.deliveryProgress.signReason }}
       </a-descriptions-item>
     </a-descriptions>
-    <a-empty v-else description="当前授权范围内暂无配送记录"/>
+    <a-empty v-else description="当前授权范围内暂无配送记录" />
   </section>
 
   <section v-if="order.returnFactsVisible" class="order-fact-section">
     <h3>退货与应收更正</h3>
-    <a-table :data-source="order.returns ?? []" :columns="returnColumns" row-key="returnId"
-             :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(returnColumns) }">
+    <a-table
+      :data-source="order.returns ?? []"
+      :columns="returnColumns"
+      row-key="returnId"
+      :pagination="false"
+      size="small"
+      bordered
+      :scroll="{x: scmColumnsWidth(returnColumns)}"
+    >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
           {{ SCM_ORDER_RETURN_STATUS_ENUM[record.status]?.desc ?? record.status }}
@@ -86,15 +104,21 @@
         {{ amount(order.funding.excessReceivedAmount) }}
       </a-descriptions-item>
     </a-descriptions>
-    <a-empty v-else description="订单确认后可查看应付和实收"/>
+    <a-empty v-else description="订单确认后可查看应付和实收" />
   </section>
 
   <section v-if="order.refundFactsVisible" class="order-fact-section">
     <h3>退款与资金返还</h3>
-    <a-alert message="退款单完成与资金到账分开记录；资金结果以原资金来源返还事实为准。"
-             type="info" show-icon class="order-fact-note"/>
-    <a-table :data-source="order.refunds ?? []" :columns="refundColumns" row-key="refundId"
-             :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(refundColumns) }">
+    <a-alert message="退款单完成与资金到账分开记录；资金结果以原资金来源返还事实为准。" type="info" show-icon class="order-fact-note" />
+    <a-table
+      :data-source="order.refunds ?? []"
+      :columns="refundColumns"
+      row-key="refundId"
+      :pagination="false"
+      size="small"
+      bordered
+      :scroll="{x: scmColumnsWidth(refundColumns)}"
+    >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
           {{ SCM_ORDER_REFUND_STATUS_ENUM[record.status]?.desc ?? record.status }}
@@ -167,7 +191,13 @@ function fundingLabel(status?: OrderRefundFact['fundingStatus']): string {
 </script>
 
 <style scoped>
-.order-fact-section { margin-top: 24px; }
-.order-fact-section h3 { margin-bottom: 12px; }
-.order-fact-note { margin-bottom: 12px; }
+.order-fact-section {
+  margin-top: 24px;
+}
+.order-fact-section h3 {
+  margin-bottom: 12px;
+}
+.order-fact-note {
+  margin-bottom: 12px;
+}
 </style>

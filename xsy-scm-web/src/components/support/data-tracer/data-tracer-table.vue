@@ -1,10 +1,10 @@
 <!--
   * 数据变更记录，以table形式显示
-  * 
+  *
 -->
 <template>
   <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="dataTracerId" :pagination="false" bordered>
-    <template #bodyCell="{ record, index, column }">
+    <template #bodyCell="{record, index, column}">
       <template v-if="column.dataIndex === 'dataTracerId'">
         <div>{{ index + 1 }}</div>
       </template>

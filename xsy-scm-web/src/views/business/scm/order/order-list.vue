@@ -2,17 +2,24 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="订单号 / 客户" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" @pressEnter="onSearch" placeholder="名称或订单号" allow-clear/>
+        <a-input v-model:value="queryForm.keyword" @pressEnter="onSearch" placeholder="名称或订单号" allow-clear />
       </a-form-item>
       <a-form-item label="订单来源" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_ORDER_SOURCE_ENUM" v-model:value="queryForm.orderSource" width="140px"/>
+        <SmartEnumSelect enum-name="SCM_ORDER_SOURCE_ENUM" v-model:value="queryForm.orderSource" width="140px" />
       </a-form-item>
       <a-form-item label="订单状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_ORDER_STATUS_ENUM" v-model:value="queryForm.status" width="140px"/>
+        <SmartEnumSelect enum-name="SCM_ORDER_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
       </a-form-item>
       <a-form-item label="订单标签" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.tagId" :options="tagOptions" allow-clear
-                  placeholder="全部标签" style="width: 150px" show-search option-filter-prop="label"/>
+        <a-select
+          v-model:value="queryForm.tagId"
+          :options="tagOptions"
+          allow-clear
+          placeholder="全部标签"
+          style="width: 150px"
+          show-search
+          option-filter-prop="label"
+        />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -32,17 +39,13 @@
       <div class="smart-table-operate-block">
         <a-button type="primary" v-privilege="'scm:order:add'" @click="drawer?.open()">新建订单</a-button>
         <a-button v-privilege="'scm:order:import'" @click="importModal?.open()">导入订单</a-button>
-        <a-button v-privilege="'scm:report:order:exception:query'"
-                  @click="router.push('/report/report-order-exceptions')">异常工作台</a-button>
-        <a-button v-if="canPriceCheck"
-                  :disabled="!selected.length || selected.length > 8 || !selectedAllDraft"
-                  @click="openBatchPriceCheck">批量核价（最多8单）</a-button>
-        <a-button v-if="canManageTags" :disabled="!selected.length || selected.length > 20"
-                  @click="openBatchTags">批量打标签</a-button>
-        <a-button v-if="canPrint" :disabled="!selected.length || selected.length > 10"
-                  @click="openBatchPrint">批量打印（最多10单）</a-button>
-        <a-button danger v-privilege="'scm:order:delete'"
-                  :disabled="!selected.length || !selectedAllDraft" @click="batchDelete">
+        <a-button v-privilege="'scm:report:order:exception:query'" @click="router.push('/report/report-order-exceptions')">异常工作台</a-button>
+        <a-button v-if="canPriceCheck" :disabled="!selected.length || selected.length > 8 || !selectedAllDraft" @click="openBatchPriceCheck"
+          >批量核价（最多8单）</a-button
+        >
+        <a-button v-if="canManageTags" :disabled="!selected.length || selected.length > 20" @click="openBatchTags">批量打标签</a-button>
+        <a-button v-if="canPrint" :disabled="!selected.length || selected.length > 10" @click="openBatchPrint">批量打印（最多10单）</a-button>
+        <a-button danger v-privilege="'scm:order:delete'" :disabled="!selected.length || !selectedAllDraft" @click="batchDelete">
           批量删除草稿
         </a-button>
         <!-- 批量操作按钮只按选中数置灰，看不出「选了几单」；这里补一句上下文，与商品档案同一位置同一口径。
@@ -52,75 +55,86 @@
         </span>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="602" :refresh="queryData"/>
+        <TableOperator v-model="columns" :table-id="602" :refresh="queryData" />
       </div>
     </a-row>
-    <a-table id="order-table" ref="tableRef" size="small" :data-source="tableData" :columns="displayColumns" row-key="orderId" bordered
-             :loading="loading" :pagination="false" :scroll="{x:scrollX}"
-             :row-selection="{columnWidth:SCM_COLUMN_WIDTH.selection,selectedRowKeys:selected,onChange:(keys:(string|number)[])=>selected=keys}">
-      <template #bodyCell="{record,column}">
-        <template v-if="column.dataIndex==='orderNo'"><a @click="openDetail(record.orderId)">{{ record.orderNo }}</a>
+    <a-table
+      id="order-table"
+      ref="tableRef"
+      size="small"
+      :data-source="tableData"
+      :columns="displayColumns"
+      row-key="orderId"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scrollX}"
+      :row-selection="{
+        columnWidth: SCM_COLUMN_WIDTH.selection,
+        selectedRowKeys: selected,
+        onChange: (keys: (string | number)[]) => (selected = keys),
+      }"
+    >
+      <template #bodyCell="{record, column}">
+        <template v-if="column.dataIndex === 'orderNo'"
+          ><a @click="openDetail(record.orderId)">{{ record.orderNo }}</a>
         </template>
-        <template v-else-if="column.dataIndex==='customerNameSnapshot'">{{ record.customerNameSnapshot || '—' }}</template>
-        <template v-else-if="column.dataIndex==='customerCodeSnapshot'">
+        <template v-else-if="column.dataIndex === 'customerNameSnapshot'">{{ record.customerNameSnapshot || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'customerCodeSnapshot'">
           <span class="scm-mono">{{ record.customerCodeSnapshot || '—' }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='tags'">
+        <template v-else-if="column.dataIndex === 'tags'">
           <a-space :size="4" wrap>
-            <a-tag v-for="tag in record.tags ?? []" :key="String(tag.tagId)"
-                   :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
+            <a-tag v-for="tag in record.tags ?? []" :key="String(tag.tagId)" :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
             <span v-if="!record.tags?.length">—</span>
           </a-space>
         </template>
-        <template v-else-if="column.dataIndex==='status'">
-          <ScmStatusTag :tone="orderStatusTone(record.status)"
-                        :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc"/>
+        <template v-else-if="column.dataIndex === 'status'">
+          <ScmStatusTag :tone="orderStatusTone(record.status)" :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc" />
         </template>
-        <template v-else-if="column.dataIndex==='orderSource'">{{ SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc }}
-        </template>
-        <template v-else-if="column.dataIndex==='orderedTotalAmount'">
+        <template v-else-if="column.dataIndex === 'orderSource'">{{ SCM_ORDER_SOURCE_ENUM[record.orderSource]?.desc }} </template>
+        <template v-else-if="column.dataIndex === 'orderedTotalAmount'">
           <span class="scm-money">{{ amount(record.orderedTotalAmount, true) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='settlementTotalAmount'">
+        <template v-else-if="column.dataIndex === 'settlementTotalAmount'">
           <span class="scm-money">{{ amount(record.settlementTotalAmount) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='action'">
+        <template v-else-if="column.dataIndex === 'action'">
           <!-- 行内只留当前状态最高频的动作，其余收进「更多」；动作集合与原行内按钮一一对应 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <template v-if="record.status==='DRAFT'">
-              <a-button type="link" size="small" v-privilege="'scm:order:update'"
-                        @click="drawer?.open(record.orderId)">编辑
-              </a-button>
-              <a-button type="link" size="small" v-privilege="'scm:order:submit'"
-                        @click="submit(record)">提交
-              </a-button>
+            <template v-if="record.status === 'DRAFT'">
+              <a-button type="link" size="small" v-privilege="'scm:order:update'" @click="drawer?.open(record.orderId)">编辑 </a-button>
+              <a-button type="link" size="small" v-privilege="'scm:order:submit'" @click="submit(record)">提交 </a-button>
             </template>
-            <template v-else-if="record.status==='CONFIRMED'">
+            <template v-else-if="record.status === 'CONFIRMED'">
               <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
-              <a-button type="link" size="small" v-privilege="'scm:order:reserve-stock'"
-                        @click="reserveStock(record)">预留库存
-              </a-button>
+              <a-button type="link" size="small" v-privilege="'scm:order:reserve-stock'" @click="reserveStock(record)">预留库存 </a-button>
             </template>
             <template v-else>
               <a-button type="link" size="small" @click="openDetail(record.orderId)">详情</a-button>
             </template>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination show-size-changer show-quick-jumper v-model:current="queryForm.pageNum"
-                    v-model:page-size="queryForm.pageSize" :total="total" @change="queryData"
-                    :show-total="(n:number)=>`共${n}条`"/>
+      <a-pagination
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
+      />
     </div>
   </a-card>
-  <OrderForm ref="drawer" @saved="queryData"/>
-  <OrderImportModal ref="importModal" @saved="queryData"/>
-  <OrderBatchPriceCheckModal ref="priceCheckModal" @saved="queryData"/>
-  <OrderTagModal ref="tagModal" @saved="onTagsSaved"/>
-  <PrintDocumentModal :open="printOpen" document-type="SALES_ORDER"
-                      :business-ids="printOrderIds" @close="printOpen = false"/>
+  <OrderForm ref="drawer" @saved="queryData" />
+  <OrderImportModal ref="importModal" @saved="queryData" />
+  <OrderBatchPriceCheckModal ref="priceCheckModal" @saved="queryData" />
+  <OrderTagModal ref="tagModal" @saved="onTagsSaved" />
+  <PrintDocumentModal :open="printOpen" document-type="SALES_ORDER" :business-ids="printOrderIds" @close="printOpen = false" />
 </template>
 <script setup lang="ts">
 import {SCM_COLUMN_WIDTH} from '/@/views/business/scm/common/scm-column';
@@ -149,15 +163,20 @@ import PrintDocumentModal from '../print/print-document-modal.vue';
 import {orderTagApi, tagColor} from '/@/api/business/scm/order-tag-api';
 import type {OrderTag} from '/@/api/business/scm/order-tag-api';
 
-const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<Order[]>([]), total = ref(0),
-    loading = ref(false), error = ref(''), selected = ref<(string | number)[]>([]);
-const drawer = ref<InstanceType<typeof OrderForm>>(), importModal = ref<InstanceType<typeof OrderImportModal>>();
+const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}),
+  tableData = ref<Order[]>([]),
+  total = ref(0),
+  loading = ref(false),
+  error = ref(''),
+  selected = ref<(string | number)[]>([]);
+const drawer = ref<InstanceType<typeof OrderForm>>(),
+  importModal = ref<InstanceType<typeof OrderImportModal>>();
 const priceCheckModal = ref<InstanceType<typeof OrderBatchPriceCheckModal>>();
 const tagModal = ref<InstanceType<typeof OrderTagModal>>();
 const printOpen = ref(false);
 const printOrderIds = ref<(string | number)[]>([]);
 const availableTags = ref<OrderTag[]>([]);
-const tagOptions = computed(() => availableTags.value.map(tag => ({label: tag.name, value: tag.tagId})));
+const tagOptions = computed(() => availableTags.value.map((tag) => ({label: tag.name, value: tag.tagId})));
 
 async function loadTags(): Promise<void> {
   try {
@@ -178,21 +197,28 @@ function openDetail(id?: string | number) {
   if (id != null) void router.push(`/order/detail/${id}`);
 }
 
-watch(() => route.path, (path) => {
-  if (path === '/order/order-list') void queryData();
-});
+watch(
+  () => route.path,
+  (path) => {
+    if (path === '/order/order-list') void queryData();
+  }
+);
 
 // 消费一次快捷入口动作，避免刷新或返回列表时再次打开新建表单。
-watch(() => route.query.action, async (action) => {
-  if (route.path !== '/order/order-list' || action !== 'create') return;
-  const query = {...route.query};
-  delete query.action;
-  await router.replace({path: route.path, query});
-  await nextTick();
-  if (hasPermission('scm:order:query') && hasPermission('scm:order:add')) {
-    drawer.value?.open();
-  }
-}, {immediate: true, flush: 'post'});
+watch(
+  () => route.query.action,
+  async (action) => {
+    if (route.path !== '/order/order-list' || action !== 'create') return;
+    const query = {...route.query};
+    delete query.action;
+    await router.replace({path: route.path, query});
+    await nextTick();
+    if (hasPermission('scm:order:query') && hasPermission('scm:order:add')) {
+      drawer.value?.open();
+    }
+  },
+  {immediate: true, flush: 'post'}
+);
 let requestId = 0;
 type OrderListColumn = TableColumnsType<Order>[number] & {showFlag?: boolean};
 const columns = ref<OrderListColumn[]>([
@@ -215,30 +241,30 @@ const canAdd = computed(() => hasPermission('scm:order:add'));
 const canDelete = computed(() => hasPermission('scm:order:delete'));
 const canManageTags = computed(() => hasPermission('scm:order:query') && hasPermission('scm:order:update'));
 const canPrint = computed(() => hasPermission('scm:order:query'));
-const selectedRows = computed(() => tableData.value.filter(row => row.orderId != null
-  && selected.value.some(id => String(id) === String(row.orderId))));
-const selectedAllDraft = computed(() => selectedRows.value.length === selected.value.length
-  && selectedRows.value.every(row => row.status === 'DRAFT'));
+const selectedRows = computed(() =>
+  tableData.value.filter((row) => row.orderId != null && selected.value.some((id) => String(id) === String(row.orderId)))
+);
+const selectedAllDraft = computed(
+  () => selectedRows.value.length === selected.value.length && selectedRows.value.every((row) => row.status === 'DRAFT')
+);
 function openBatchTags(): void {
   if (!canManageTags.value) return;
-  tagModal.value?.open(selectedRows.value.map(row => row.orderId!));
+  tagModal.value?.open(selectedRows.value.map((row) => row.orderId!));
 }
 function openBatchPrint(): void {
-  if (!canPrint.value || selectedRows.value.length !== selected.value.length
-      || selectedRows.value.length < 1 || selectedRows.value.length > 10) return;
-  openPrint(selectedRows.value.map(row => row.orderId!));
+  if (!canPrint.value || selectedRows.value.length !== selected.value.length || selectedRows.value.length < 1 || selectedRows.value.length > 10)
+    return;
+  openPrint(selectedRows.value.map((row) => row.orderId!));
 }
 function openPrint(ids: (string | number)[]): void {
   printOrderIds.value = ids;
   printOpen.value = true;
 }
-const canPriceCheck = computed(() => hasPermission('scm:order:query')
-  && hasPermission('scm:pricing:resolve:query'));
+const canPriceCheck = computed(() => hasPermission('scm:order:query') && hasPermission('scm:pricing:resolve:query'));
 
 function openBatchPriceCheck(): void {
   if (!canPriceCheck.value) return;
-  const rows = tableData.value.filter(row => row.orderId != null
-    && selected.value.some(id => String(id) === String(row.orderId)));
+  const rows = tableData.value.filter((row) => row.orderId != null && selected.value.some((id) => String(id) === String(row.orderId)));
   priceCheckModal.value?.open(rows);
 }
 
@@ -307,20 +333,23 @@ function resetQuery() {
 
 function submit(r: Order) {
   Modal.confirm({
-    title: '提交订单并锁定价格？', onOk: async () => {
+    title: '提交订单并锁定价格？',
+    onOk: async () => {
       // 失败由全局 toast 给出原因；拒绝以保持确认框打开
       await orderApi.submit({orderId: r.orderId, version: r.version});
       await queryData();
-    }
+    },
   });
 }
 
 function remove(r: Order) {
   Modal.confirm({
-    title: '删除这张草稿订单？', okType: 'danger', onOk: async () => {
+    title: '删除这张草稿订单？',
+    okType: 'danger',
+    onOk: async () => {
       await orderApi.delete({orderId: r.orderId, version: r.version});
       await queryData();
-    }
+    },
   });
 }
 
@@ -339,21 +368,30 @@ function reserveStock(r: Order) {
     onOk: async () => {
       await orderApi.reserveStock(r.orderId!);
       await queryData();
-    }
+    },
   });
 }
 
 function batchDelete() {
   Modal.confirm({
-    title: '删除所选草稿？', okType: 'danger', onOk: async () => {
-      await orderApi.batchDelete(tableData.value.filter(o => selected.value.includes(o.orderId!)).map(o => ({
-        orderId: o.orderId,
-        version: o.version
-      })));
+    title: '删除所选草稿？',
+    okType: 'danger',
+    onOk: async () => {
+      await orderApi.batchDelete(
+        tableData.value
+          .filter((o) => selected.value.includes(o.orderId!))
+          .map((o) => ({
+            orderId: o.orderId,
+            version: o.version,
+          }))
+      );
       await queryData();
-    }
+    },
   });
 }
 
-onMounted(() => {void queryData(); void loadTags();});
+onMounted(() => {
+  void queryData();
+  void loadTags();
+});
 </script>

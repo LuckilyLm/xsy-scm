@@ -9,14 +9,19 @@ import 'ant-design-vue/dist/reset.css';
 import '/@/theme/index.less';
 setActivePinia(store);
 const mode = new URLSearchParams(location.search).get('mode');
-const component = mode === 'return'
-  ? (await import('/@/views/business/scm/order/order-return-list.vue')).default
-  : (await import('/@/views/business/scm/order/order-detail.vue')).default;
-const app = createApp({setup() {
-  const target = ref();
-  onMounted(() => { if (mode !== 'return') target.value.open(1); });
-  return () => h(component, {ref: target});
-}});
+const component =
+  mode === 'return'
+    ? (await import('/@/views/business/scm/order/order-return-list.vue')).default
+    : (await import('/@/views/business/scm/order/order-detail.vue')).default;
+const app = createApp({
+  setup() {
+    const target = ref();
+    onMounted(() => {
+      if (mode !== 'return') target.value.open(1);
+    });
+    return () => h(component, {ref: target});
+  },
+});
 // 视图里 useRoute() 读 route.name（退货列表靠它守深链 returnId）；不装 router 时 useRoute() 返回 undefined，
 // 组件 setup 直接抛错、整页不渲染。这里补一个真实 router，让夹具的挂载环境和应用一致。
 const router = createRouter({

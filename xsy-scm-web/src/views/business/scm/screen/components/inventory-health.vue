@@ -15,22 +15,19 @@
       <div class="scm-health-list">
         <div v-for="row in rows" :key="row.key" class="scm-health-row">
           <div class="scm-health-line">
-            <span class="scm-health-dot" :style="{ background: row.color }"/>
+            <span class="scm-health-dot" :style="{background: row.color}" />
             <span class="scm-health-label">{{ row.label }}</span>
             <span class="scm-health-count">{{ formatInt(row.count) }}</span>
             <span class="scm-health-pct">{{ percent(row.count) }}</span>
           </div>
           <div class="scm-health-bar">
-            <span
-                class="scm-health-bar-fill"
-                :style="{ width: barWidth(row.count), background: row.color }"
-            />
+            <span class="scm-health-bar-fill" :style="{width: barWidth(row.count), background: row.color}" />
           </div>
         </div>
       </div>
 
       <div v-if="unconfigured > 0" class="scm-health-foot">
-        <span class="scm-health-foot-dot"/>
+        <span class="scm-health-foot-dot" />
         另有 {{ formatInt(unconfigured) }} 个未配置阈值，无法判定健康度
       </div>
     </template>
@@ -54,7 +51,7 @@ import type {InventoryHealth} from '../types';
  * 有未配置时四行占比之和小于 100% 是刻意的 ——「未配置」无法判定健康度。
  * 口径是 (仓库, SKU) 组合而不是 SKU：同一 SKU 在两个仓库可以一个正常一个缺货。
  */
-const props = defineProps<{ health: InventoryHealth | null }>();
+const props = defineProps<{health: InventoryHealth | null}>();
 
 const health = computed(() => props.health);
 const unconfigured = computed(() => toNumber(props.health?.unconfiguredCount));

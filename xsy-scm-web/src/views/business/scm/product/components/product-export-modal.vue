@@ -4,18 +4,11 @@
   *  点「导出」先在这里挑字段，默认全选；不再用常驻下拉占着工具栏。
 -->
 <template>
-  <a-modal
-      :open="visible"
-      title="选择导出字段"
-      :width="680"
-      :mask-closable="false"
-      :destroy-on-close="true"
-      @cancel="hide"
-  >
-    <FormNote :lines="['默认导出全部字段；取消勾选可缩小范围，至少保留一个字段。']"/>
+  <a-modal :open="visible" title="选择导出字段" :width="680" :mask-closable="false" :destroy-on-close="true" @cancel="hide">
+    <FormNote :lines="['默认导出全部字段；取消勾选可缩小范围，至少保留一个字段。']" />
     <div class="scm-export-grid">
       <label v-for="item in options" :key="item.value" class="scm-export-grid__cell">
-        <a-checkbox :checked="selectedKeys.includes(item.value)" @change="toggle(item.value)"/>
+        <a-checkbox :checked="selectedKeys.includes(item.value)" @change="toggle(item.value)" />
         <span class="scm-export-grid__label" :title="item.label">{{ item.label }}</span>
       </label>
     </div>

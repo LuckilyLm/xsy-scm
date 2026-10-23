@@ -1,27 +1,27 @@
 <!--
   * 生成
-  * 
+  *
 -->
 <template>
   <a-modal :open="visible" title="生成单号" ok-text="生成" cancel-text="关闭" @ok="onSubmit" @cancel="onClose">
-    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 5 }">
+    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{span: 5}">
       <a-form-item label="业务">
-        <a-input v-model:value="form.businessName" :disabled="true"/>
+        <a-input v-model:value="form.businessName" :disabled="true" />
       </a-form-item>
       <a-form-item label="格式">
-        <a-input v-model:value="form.format" :disabled="true"/>
+        <a-input v-model:value="form.format" :disabled="true" />
       </a-form-item>
       <a-form-item label="循环周期">
-        <a-input v-model:value="form.ruleType" :disabled="true"/>
+        <a-input v-model:value="form.ruleType" :disabled="true" />
       </a-form-item>
       <a-form-item label="上次产生单号">
-        <a-input v-model:value="form.lastNumber" :disabled="true"/>
+        <a-input v-model:value="form.lastNumber" :disabled="true" />
       </a-form-item>
       <a-form-item label="生成数量" name="count">
-        <a-input-number v-model:value="form.count"/>
+        <a-input-number v-model:value="form.count" />
       </a-form-item>
       <a-form-item label="生成结果">
-        <a-textarea v-model:value="generateResult" :rows="2"/>
+        <a-textarea v-model:value="generateResult" :rows="2" />
       </a-form-item>
     </a-form>
   </a-modal>
@@ -82,22 +82,22 @@ const form = reactive({
 
 function onSubmit() {
   formRef.value
-      .validate()
-      .then(async () => {
-        SmartLoading.show();
-        try {
-          let res = await serialNumberApi.generate(form);
-          message.success('生成成功');
-          generateResult.value = _.join(res.data, ', ');
-        } catch (error) {
-          smartSentry.captureError(error);
-        } finally {
-          SmartLoading.hide();
-        }
-      })
-      .catch((error) => {
-        console.log('error', error);
-        message.error('参数验证错误，请仔细填写表单数据!');
-      });
+    .validate()
+    .then(async () => {
+      SmartLoading.show();
+      try {
+        let res = await serialNumberApi.generate(form);
+        message.success('生成成功');
+        generateResult.value = _.join(res.data, ', ');
+      } catch (error) {
+        smartSentry.captureError(error);
+      } finally {
+        SmartLoading.hide();
+      }
+    })
+    .catch((error) => {
+      console.log('error', error);
+      message.error('参数验证错误，请仔细填写表单数据!');
+    });
 }
 </script>

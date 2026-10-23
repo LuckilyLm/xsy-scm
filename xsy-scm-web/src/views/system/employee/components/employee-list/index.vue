@@ -7,18 +7,16 @@
     <div class="header">
       <a-typography-title :level="5">部门人员</a-typography-title>
       <div class="query-operate">
-        <a-radio-group v-model:value="params.disabledFlag" style="margin: 8px; flex-shrink: 0"
-                       @change="queryEmployeeByKeyword(false)">
+        <a-radio-group v-model:value="params.disabledFlag" style="margin: 8px; flex-shrink: 0" @change="queryEmployeeByKeyword(false)">
           <a-radio-button :value="undefined">全部</a-radio-button>
           <a-radio-button :value="false">启用</a-radio-button>
           <a-radio-button :value="true">禁用</a-radio-button>
         </a-radio-group>
-        <a-input-search v-model:value.trim="params.keyword" placeholder="姓名/手机号/登录账号"
-                        @search="queryEmployeeByKeyword(true)">
+        <a-input-search v-model:value.trim="params.keyword" placeholder="姓名/手机号/登录账号" @search="queryEmployeeByKeyword(true)">
           <template #enterButton>
             <a-button type="primary">
               <template #icon>
-                <SearchOutlined/>
+                <SearchOutlined />
               </template>
               查询
             </a-button>
@@ -26,7 +24,7 @@
         </a-input-search>
         <a-button @click="reset" class="smart-margin-left10">
           <template #icon>
-            <ReloadOutlined/>
+            <ReloadOutlined />
           </template>
           重置
         </a-button>
@@ -34,28 +32,26 @@
     </div>
     <div class="btn-group">
       <a-button class="btn" type="primary" @click="showDrawer" v-privilege="'system:employee:add'">添加成员</a-button>
-      <a-button class="btn" @click="updateEmployeeDepartment" v-privilege="'system:employee:department:update'">
-        调整部门
-      </a-button>
+      <a-button class="btn" @click="updateEmployeeDepartment" v-privilege="'system:employee:department:update'"> 调整部门 </a-button>
       <a-button class="btn" @click="batchDelete" v-privilege="'system:employee:delete'">批量删除</a-button>
 
       <span class="smart-table-column-operate">
-        <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SYSTEM.EMPLOYEE" :refresh="queryEmployee"/>
+        <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SYSTEM.EMPLOYEE" :refresh="queryEmployee" />
       </span>
     </div>
 
     <a-table
-        :row-selection="{ columnWidth: 44, selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
-        size="small"
-        :columns="columns"
-        :data-source="tableData"
-        :pagination="false"
-        :loading="tableLoading"
-        :scroll="{ x: tableColumnsWidth(columns, 44) }"
-        row-key="employeeId"
-        bordered
+      :row-selection="{columnWidth: 44, selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
+      size="small"
+      :columns="columns"
+      :data-source="tableData"
+      :pagination="false"
+      :loading="tableLoading"
+      :scroll="{x: tableColumnsWidth(columns, 44)}"
+      row-key="employeeId"
+      bordered
     >
-      <template #bodyCell="{ text, record, column }">
+      <template #bodyCell="{text, record, column}">
         <template v-if="column.dataIndex === 'administratorFlag'">
           <a-tag color="error" v-if="text">超管</a-tag>
         </template>
@@ -67,19 +63,16 @@
         </template>
         <template v-else-if="column.dataIndex === 'operate'">
           <div class="smart-table-operate">
-            <a-button v-privilege="'system:employee:update'" type="link" size="small" @click="showDrawer(record)">编辑
-            </a-button>
+            <a-button v-privilege="'system:employee:update'" type="link" size="small" @click="showDrawer(record)">编辑 </a-button>
             <a-button
-                v-privilege="'system:employee:password:reset'"
-                type="link"
-                size="small"
-                @click="resetPassword(record.employeeId, record.loginName)"
-            >重置密码
+              v-privilege="'system:employee:password:reset'"
+              type="link"
+              size="small"
+              @click="resetPassword(record.employeeId, record.loginName)"
+              >重置密码
             </a-button>
-            <a-button v-privilege="'system:employee:disabled'" type="link"
-                      @click="updateDisabled(record.employeeId, record.disabledFlag)">{{
-                record.disabledFlag ? '启用' : '禁用'
-              }}
+            <a-button v-privilege="'system:employee:disabled'" type="link" @click="updateDisabled(record.employeeId, record.disabledFlag)"
+              >{{ record.disabledFlag ? '启用' : '禁用' }}
             </a-button>
           </div>
         </template>
@@ -87,21 +80,21 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="params.pageSize"
-          v-model:current="params.pageNum"
-          v-model:pageSize="params.pageSize"
-          :total="total"
-          @change="queryEmployee"
-          :show-total="showTableTotal"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="params.pageSize"
+        v-model:current="params.pageNum"
+        v-model:pageSize="params.pageSize"
+        :total="total"
+        @change="queryEmployee"
+        :show-total="showTableTotal"
       />
     </div>
-    <EmployeeFormModal ref="employeeFormModal" @refresh="queryEmployee" @show-account="showAccount"/>
-    <EmployeeDepartmentFormModal ref="employeeDepartmentFormModal" @refresh="queryEmployee"/>
-    <EmployeePasswordDialog ref="employeePasswordDialog"/>
+    <EmployeeFormModal ref="employeeFormModal" @refresh="queryEmployee" @show-account="showAccount" />
+    <EmployeeDepartmentFormModal ref="employeeDepartmentFormModal" @refresh="queryEmployee" />
+    <EmployeePasswordDialog ref="employeePasswordDialog" />
   </a-card>
 </template>
 <script setup lang="ts">
@@ -166,7 +159,8 @@ const columns = ref([
   },
   {
     title: '超管',
-    dataIndex: 'administratorFlag', align: 'center',
+    dataIndex: 'administratorFlag',
+    align: 'center',
     width: 60,
   },
   {
@@ -194,7 +188,8 @@ const columns = ref([
   },
   {
     title: '操作',
-    dataIndex: 'operate', align: 'center',
+    dataIndex: 'operate',
+    align: 'center',
     width: 140,
   },
 ]);
@@ -264,14 +259,14 @@ async function queryEmployeeByKeyword(allDepartment) {
 }
 
 watch(
-    () => props.departmentId,
-    () => {
-      if (props.departmentId !== params.departmentId) {
-        params.pageNum = 1;
-        queryEmployee();
-      }
-    },
-    {immediate: true}
+  () => props.departmentId,
+  () => {
+    if (props.departmentId !== params.departmentId) {
+      params.pageNum = 1;
+      queryEmployee();
+    }
+  },
+  {immediate: true}
 );
 
 // ----------------------- 多选操作 ---------------------
@@ -315,8 +310,7 @@ function batchDelete() {
       }
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 
@@ -370,8 +364,7 @@ function resetPassword(id, name) {
       }
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 
@@ -396,8 +389,7 @@ function updateDisabled(id, disabledFlag) {
       }
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 </script>

@@ -10,6 +10,6 @@ const ICON_REGISTRY = antIcons as unknown as Record<string, unknown>;
  * 空值或未知图标名使用通用文件图标，保证新增菜单仍能被识别。
  */
 export function resolveMenuIcon(icon?: string | null): Component {
-  const resolved = icon ? ICON_REGISTRY[icon] as Component | undefined : undefined;
+  const resolved = icon ? (ICON_REGISTRY[icon] as Component | undefined) : undefined;
   return resolved ?? antIcons.FileOutlined;
 }

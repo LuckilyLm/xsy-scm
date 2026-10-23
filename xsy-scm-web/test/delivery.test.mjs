@@ -7,7 +7,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync, readdirSync} from 'node:fs';
-import {SIGNABLE_FULFILLMENT, fulfillmentStatuses, routeStatuses, signResults, printStatuses} from '../src/views/business/scm/delivery/delivery-types.ts';
+import {
+  SIGNABLE_FULFILLMENT,
+  fulfillmentStatuses,
+  routeStatuses,
+  signResults,
+  printStatuses,
+} from '../src/views/business/scm/delivery/delivery-types.ts';
 
 // ---------------------------------------------------------------- 来源：delivery-l3-contract.test.mjs
 {
@@ -45,9 +51,9 @@ import {SIGNABLE_FULFILLMENT, fulfillmentStatuses, routeStatuses, signResults, p
   /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
   function code(relative) {
     return readFileSync(new URL(relative, import.meta.url), 'utf8')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/^\s*\/\/.*$/gm, '');
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   const api = code(API);
@@ -96,12 +102,11 @@ import {SIGNABLE_FULFILLMENT, fulfillmentStatuses, routeStatuses, signResults, p
     assert.match(api, /crypto\.randomUUID\(\)/);
     // 键的释放只在成功之后：失败保留同一 UUID，重试才会回放原结果而不是再生成一张出库单。
     assert.match(api, /idempotentKeys\.delete\(signature\)/);
-    assert.ok(api.indexOf('idempotentKeys.delete(signature)') > api.indexOf('const result = await request'),
-        '必须在请求返回之后才释放键');
+    assert.ok(api.indexOf('idempotentKeys.delete(signature)') > api.indexOf('const result = await request'), '必须在请求返回之后才释放键');
 
     assert.equal(
-        apiLine('dispatch'),
-        'dispatch: (id: Id, version: number) => idempotentCommand<DispatchResult>(`/routes/${id}/dispatch`, {version}),'
+      apiLine('dispatch'),
+      'dispatch: (id: Id, version: number) => idempotentCommand<DispatchResult>(`/routes/${id}/dispatch`, {version}),'
     );
     // 后端 `sign` / `complete` 的签名里没有 Idempotency-Key 参数：带上就是把乐观锁冲突回放成成功。
     for (const method of ['sign', 'complete']) {
@@ -151,16 +156,7 @@ import {SIGNABLE_FULFILLMENT, fulfillmentStatuses, routeStatuses, signResults, p
     assert.ok(printPane, '缺打印面板');
     assert.match(api, /print: \(id: Id[^)]*\) => call<RoutePrint>\('get', `\/routes\/\$\{id\}\/print`/);
     assert.match(printPane, /@click="emit\('recordPrint'\)"/);
-    for (const forbidden of [
-      'dispatch',
-      'complete',
-      'openSign',
-      'deliveryApi.sign',
-      '发车',
-      '签收',
-      '完成线路',
-      'inventory-outbound',
-    ]) {
+    for (const forbidden of ['dispatch', 'complete', 'openSign', 'deliveryApi.sign', '发车', '签收', '完成线路', 'inventory-outbound']) {
       assert.ok(!printPane.includes(forbidden), `打印面板出现了 L3 动作 ${forbidden}`);
     }
     // ADM-07 之后发货单版面交给打印中心渲染（`DELIVERY_NOTE` 模板 + 冻结版本/业务模型），
@@ -177,10 +173,12 @@ import {SIGNABLE_FULFILLMENT, fulfillmentStatuses, routeStatuses, signResults, p
   function deliveryViews() {
     const dir = new URL('../src/views/business/scm/delivery/', import.meta.url);
     const files = [
-      ...readdirSync(dir).filter((name) => name.endsWith('.vue')).map((name) => `../src/views/business/scm/delivery/${name}`),
+      ...readdirSync(dir)
+        .filter((name) => name.endsWith('.vue'))
+        .map((name) => `../src/views/business/scm/delivery/${name}`),
       ...readdirSync(new URL('components/', dir))
-          .filter((name) => name.endsWith('.vue'))
-          .map((name) => `../src/views/business/scm/delivery/components/${name}`),
+        .filter((name) => name.endsWith('.vue'))
+        .map((name) => `../src/views/business/scm/delivery/components/${name}`),
     ];
     return files.map((file) => [file, code(file)]);
   }
@@ -266,14 +264,14 @@ import {SIGNABLE_FULFILLMENT, fulfillmentStatuses, routeStatuses, signResults, p
 
   test('按钮出现条件与后端状态机一致，且每个写动作都有二次确认与 busy 闸门', () => {
     assert.deepEqual(Object.keys(routeStatuses), ['DRAFT', 'PLANNED', 'DISPATCHED', 'COMPLETED', 'CANCELLED']);
-    const tags = [...view.matchAll(/<a-button\b[\s\S]*?<\/a-button>/g)].map((m) => m[0]);
+    const tags = [...view.matchAll(/<a-button\b[\s\S]*?<\/a-button\s*>/g)].map((m) => m[0]);
     const tagWith = (needle) => tags.find((tag) => tag.includes(needle));
 
     const dispatchTag = tagWith('DELIVERY_PERM.ROUTE_DISPATCH');
     const completeTag = tagWith('DELIVERY_PERM.ROUTE_COMPLETE');
-    const signTag = [...fulfillmentPane.matchAll(/<a-button\b[\s\S]*?<\/a-button>/g)]
-        .map((match) => match[0])
-        .find((tag) => tag.includes('DELIVERY_PERM.ORDER_SIGN'));
+    const signTag = [...fulfillmentPane.matchAll(/<a-button\b[\s\S]*?<\/a-button\s*>/g)]
+      .map((match) => match[0])
+      .find((tag) => tag.includes('DELIVERY_PERM.ORDER_SIGN'));
     assert.ok(dispatchTag && completeTag && signTag, '缺发车 / 完成 / 签收按钮');
     // 发车限 PLANNED、完成限 DISPATCHED：两者条件不同不是漏写，签收则限 DISPATCHED 的行级 IN_TRANSIT。
     assert.match(dispatchTag, /v-if="detail\.route\.status === 'PLANNED'"/);
@@ -282,7 +280,10 @@ import {SIGNABLE_FULFILLMENT, fulfillmentStatuses, routeStatuses, signResults, p
     for (const tag of [dispatchTag, completeTag, signTag]) {
       assert.match(tag, /:disabled="busy"/, '写动作必须被在途请求挡住');
     }
-    assert.match(view, /function signable\(record: RouteOrder\)[\s\S]*?status === 'DISPATCHED'[\s\S]*?SIGNABLE_FULFILLMENT\.includes\(record\.fulfillmentStatus\)/);
+    assert.match(
+      view,
+      /function signable\(record: RouteOrder\)[\s\S]*?status === 'DISPATCHED'[\s\S]*?SIGNABLE_FULFILLMENT\.includes\(record\.fulfillmentStatus\)/
+    );
     // 发车与完成都会改库存 / 关闭线路，二者必须走 Modal.confirm；签收走弹窗本身就是确认。
     const dispatchFn = view.match(/function dispatch\(\)[\s\S]*?\n\}/)?.[0];
     const completeFn = view.match(/function complete\(\)[\s\S]*?\n\}/)?.[0];
@@ -297,7 +298,12 @@ import {SIGNABLE_FULFILLMENT, fulfillmentStatuses, routeStatuses, signResults, p
 
   test('数量与金额不做前端算术，null 渲染为 —（不是 0）', () => {
     for (const [name, source] of [
-      [API, api], [TYPES, code(TYPES)], [PERM, code(PERM)], [VIEW, view], [BASE_PANEL, basePanel], [PRINT_PANEL, printPane],
+      [API, api],
+      [TYPES, code(TYPES)],
+      [PERM, code(PERM)],
+      [VIEW, view],
+      [BASE_PANEL, basePanel],
+      [PRINT_PANEL, printPane],
       [FULFILLMENT_PANEL, fulfillmentPane],
     ]) {
       assert.ok(!/\bNumber\(/.test(source), `${name} 不该 Number() 后端定点数`);
@@ -420,13 +426,13 @@ import {SIGNABLE_FULFILLMENT, fulfillmentStatuses, routeStatuses, signResults, p
     assert.match(
       panel,
       /<template v-if="allLocated && routeStatus\.state === 'ready' && drivingResult">/,
-      '路程 / 预计必须挂在 allLocated 上，否则缺定位的线路会被读成整线统计',
+      '路程 / 预计必须挂在 allLocated 上，否则缺定位的线路会被读成整线统计'
     );
     assert.match(panel, /仅显示已定位路段，不作为整线里程/);
     assert.doesNotMatch(
       panel,
       /<template v-if="routeStatus\.state === 'ready' && drivingResult">/,
-      '不带 allLocated 的汇总块会让缺定位的线路也显示整线里程',
+      '不带 allLocated 的汇总块会让缺定位的线路也显示整线里程'
     );
   });
 
@@ -442,10 +448,7 @@ import {SIGNABLE_FULFILLMENT, fulfillmentStatuses, routeStatuses, signResults, p
 
   test('详情返回列表时把筛选与页码原样带回，不走浏览器历史回退', () => {
     const page = code(PAGE);
-    assert.match(
-      page,
-      /function backToList\(\) \{[\s\S]*?delete filters\.tab;[\s\S]*?path: '\/delivery\/routes', query: filters/,
-    );
+    assert.match(page, /function backToList\(\) \{[\s\S]*?delete filters\.tab;[\s\S]*?path: '\/delivery\/routes', query: filters/);
     assert.doesNotMatch(page, /router\.back\(\)/, '直接打开详情时上一页可能是站外，不能依赖浏览器历史');
 
     const list = code(LIST);

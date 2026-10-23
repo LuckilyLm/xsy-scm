@@ -29,11 +29,14 @@ import {
 } from '@ant-design/icons-vue';
 import type {Component} from 'vue';
 
-withDefaults(defineProps<{
-  name: string;
-  size?: number;
-  title?: string;
-}>(), {size: 24, title: ''});
+withDefaults(
+  defineProps<{
+    name: string;
+    size?: number;
+    title?: string;
+  }>(),
+  {size: 24, title: ''}
+);
 
 const icons: Record<string, Component> = {
   'kpi-sales-amount': DollarOutlined,

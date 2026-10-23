@@ -3,19 +3,19 @@
     <header class="scm-detail-header">
       <div class="scm-detail-header__main">
         <a-button type="link" class="scm-detail-header__back" @click="router.push('/order/order-list')">
-          <ArrowLeftOutlined/>
+          <ArrowLeftOutlined />
           返回订单列表
         </a-button>
         <div class="scm-detail-header__title-row">
           <h1 class="scm-detail-header__title">{{ order?.orderNo || '销售订单详情' }}</h1>
-          <ScmStatusTag v-if="order" :tone="orderStatusTone(order.status)"
-                        :label="SCM_ORDER_STATUS_ENUM[order.status ?? '']?.desc ?? order.status"/>
-          <a-tag v-for="tag in order?.tags ?? []" :key="String(tag.tagId)"
-                 :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
+          <ScmStatusTag v-if="order" :tone="orderStatusTone(order.status)" :label="SCM_ORDER_STATUS_ENUM[order.status ?? '']?.desc ?? order.status" />
+          <a-tag v-for="tag in order?.tags ?? []" :key="String(tag.tagId)" :color="tagColor(tag.color)">{{ tag.name }}</a-tag>
         </div>
         <p v-if="order" class="scm-detail-header__meta">
           <span>{{ order.customerNameSnapshot || '—' }}</span>
-          <template v-if="order.customerCodeSnapshot"> · <span class="scm-mono">{{ order.customerCodeSnapshot }}</span></template>
+          <template v-if="order.customerCodeSnapshot">
+            · <span class="scm-mono">{{ order.customerCodeSnapshot }}</span></template
+          >
           <template v-if="order.orderSource"> · {{ SCM_ORDER_SOURCE_ENUM[order.orderSource]?.desc ?? order.orderSource }}</template>
         </p>
       </div>
@@ -80,9 +80,7 @@
               <dl class="scm-field-list">
                 <div class="scm-field">
                   <dt class="scm-field__label">收货人</dt>
-                  <dd class="scm-field__value">
-                    {{ order.address?.receiverName || '—' }} / {{ order.address?.receiverPhone || '—' }}
-                  </dd>
+                  <dd class="scm-field__value">{{ order.address?.receiverName || '—' }} / {{ order.address?.receiverPhone || '—' }}</dd>
                 </div>
                 <div class="scm-field scm-field--wide">
                   <dt class="scm-field__label">收货地址</dt>
@@ -94,8 +92,15 @@
 
           <section class="scm-detail-card scm-detail-block">
             <h3 class="scm-detail-card__title">商品明细</h3>
-            <a-table :data-source="order.items ?? []" :columns="itemColumns" row-key="itemId"
-                     :pagination="false" size="small" bordered :scroll="{ x: scmColumnsWidth(itemColumns) }">
+            <a-table
+              :data-source="order.items ?? []"
+              :columns="itemColumns"
+              row-key="itemId"
+              :pagination="false"
+              size="small"
+              bordered
+              :scroll="{x: scmColumnsWidth(itemColumns)}"
+            >
               <template #bodyCell="{record, column}">
                 <template v-if="column.dataIndex === 'draftUnitPrice'">
                   {{ amount(record.draftUnitPrice, true) }}
@@ -138,15 +143,18 @@
             </div>
           </section>
 
-          <OrderFacts :order="order"/>
-          <OrderReceivedCorrections :order="order"/>
+          <OrderFacts :order="order" />
+          <OrderReceivedCorrections :order="order" />
         </div>
       </template>
     </a-spin>
-    <OrderDetail ref="operation" @saved="load"/>
-    <PrintDocumentModal :open="printOpen" document-type="SALES_ORDER"
-                        :business-ids="order?.orderId == null ? [] : [order.orderId]"
-                        @close="printOpen = false"/>
+    <OrderDetail ref="operation" @saved="load" />
+    <PrintDocumentModal
+      :open="printOpen"
+      document-type="SALES_ORDER"
+      :business-ids="order?.orderId == null ? [] : [order.orderId]"
+      @close="printOpen = false"
+    />
   </a-card>
 </template>
 
@@ -183,13 +191,15 @@ let requestId = 0;
 
 const canOperate = computed(() => {
   const status = order.value?.status;
-  if (status === 'PENDING' && (hasPermission('scm:order:confirm')
-      || hasPermission('scm:order:actual-quantity'))) return true;
+  if (status === 'PENDING' && (hasPermission('scm:order:confirm') || hasPermission('scm:order:actual-quantity'))) return true;
   if ((status === 'DRAFT' || status === 'PENDING') && hasPermission('scm:order:cancel')) return true;
-  if (status === 'CONFIRMED' && (hasPermission('scm:order:return:add')
-      || (order.value?.settlementMethod === 'COD' && hasPermission('scm:finance:receipt:add'))
-      || ((!order.value?.settlementMethod || order.value?.settlementMethod === 'WALLET')
-          && hasPermission('scm:payment:intent:create')))) return true;
+  if (
+    status === 'CONFIRMED' &&
+    (hasPermission('scm:order:return:add') ||
+      (order.value?.settlementMethod === 'COD' && hasPermission('scm:finance:receipt:add')) ||
+      ((!order.value?.settlementMethod || order.value?.settlementMethod === 'WALLET') && hasPermission('scm:payment:intent:create')))
+  )
+    return true;
   return hasPermission('scm:payment:transaction:query');
 });
 
@@ -236,10 +246,14 @@ async function load() {
   }
 }
 
-watch(() => route.params.orderId, () => {
-  printOpen.value = false;
-  void load();
-}, {immediate: true});
+watch(
+  () => route.params.orderId,
+  () => {
+    printOpen.value = false;
+    void load();
+  },
+  {immediate: true}
+);
 </script>
 
 <style scoped>

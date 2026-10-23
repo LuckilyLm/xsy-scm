@@ -1,12 +1,12 @@
 <template>
   <a-alert
-      class="route-map-warning"
-      v-if="!allLocated"
-      :message="`尚有 ${route.stopCount - route.locatedCount} 个停靠点未定位${
+    class="route-map-warning"
+    v-if="!allLocated"
+    :message="`尚有 ${route.stopCount - route.locatedCount} 个停靠点未定位${
       !isLocated(startPoint) ? '，仓库起点也未定位' : ''
     }。补齐后才能确认规划。`"
-      type="warning"
-      show-icon
+    type="warning"
+    show-icon
   />
   <div class="route-map-toolbar">
     <strong>计划路线</strong>
@@ -16,16 +16,10 @@
       <span class="scm-quantity">预计 {{ durationText }}</span>
       <span class="route-map-toolbar__provider">高德驾车规划</span>
     </template>
-    <span v-else-if="routeStatus.state === 'planning'" class="route-map-toolbar__legs">
-      <a-spin size="small"/> 正在规划道路路线...
-    </span>
-    <span v-else-if="routeStatus.state === 'fallback'" class="route-map-toolbar__legs">
-      道路路线暂时不可用，当前显示停靠点直线示意。
-    </span>
+    <span v-else-if="routeStatus.state === 'planning'" class="route-map-toolbar__legs"> <a-spin size="small" /> 正在规划道路路线... </span>
+    <span v-else-if="routeStatus.state === 'fallback'" class="route-map-toolbar__legs"> 道路路线暂时不可用，当前显示停靠点直线示意。 </span>
     <!-- 缺定位时算路只覆盖已定位的连续段，此时给出总里程会被读成整线里程 -->
-    <span v-else-if="!allLocated && routeStatus.state === 'ready'" class="route-map-toolbar__legs">
-      仅显示已定位路段，不作为整线里程。
-    </span>
+    <span v-else-if="!allLocated && routeStatus.state === 'ready'" class="route-map-toolbar__legs"> 仅显示已定位路段，不作为整线里程。 </span>
   </div>
   <div class="route-map-layout">
     <div class="route-stops">
@@ -37,16 +31,16 @@
         <p class="stop-card__line stop-card__line--muted">{{ route.warehouseAddressSnapshot || '暂无详细地址' }}</p>
       </div>
       <p v-if="canEdit" class="route-stops__hint">拖动调整配送顺序，调整后自动保存。</p>
-      <a-empty v-if="!stops.length" description="还没有停靠点，请先在线路订单中加入订单"/>
+      <a-empty v-if="!stops.length" description="还没有停靠点，请先在线路订单中加入订单" />
       <div
-          v-for="(stop, index) in stops"
-          :key="stop.id"
-          class="stop-card"
-          :draggable="canEdit && !busy"
-          @dragstart="dragFrom = index"
-          @dragend="dragFrom = undefined"
-          @dragover.prevent
-          @drop.prevent="drop(index)"
+        v-for="(stop, index) in stops"
+        :key="stop.id"
+        class="stop-card"
+        :draggable="canEdit && !busy"
+        @dragstart="dragFrom = index"
+        @dragend="dragFrom = undefined"
+        @dragover.prevent
+        @drop.prevent="drop(index)"
       >
         <div class="stop-card__head">
           <strong>{{ stop.stopSeq }}. {{ stop.customerNameSnapshot }}</strong>
@@ -56,33 +50,29 @@
           </a-tooltip>
         </div>
         <p class="stop-card__line">{{ stop.addressSnapshot }}</p>
-        <p class="stop-card__line stop-card__line--muted">
-          {{ stop.receiverNameSnapshot || '—' }} · {{ stop.receiverPhoneSnapshot || '—' }}
-        </p>
+        <p class="stop-card__line stop-card__line--muted">{{ stop.receiverNameSnapshot || '—' }} · {{ stop.receiverPhoneSnapshot || '—' }}</p>
         <p class="stop-card__line">
-          {{ stop.orderCount }} 张订单<span v-if="canViewAmount"> · <span class="scm-money">{{ money(stop.totalAmount) }}</span></span>
+          {{ stop.orderCount }} 张订单<span v-if="canViewAmount">
+            · <span class="scm-money">{{ money(stop.totalAmount) }}</span></span
+          >
         </p>
-        <p class="stop-card__line stop-card__line--muted">
-          预计到达 {{ stop.plannedArrivalTime ? datetime(stop.plannedArrivalTime) : '—' }}
-        </p>
+        <p class="stop-card__line stop-card__line--muted">预计到达 {{ stop.plannedArrivalTime ? datetime(stop.plannedArrivalTime) : '—' }}</p>
         <a-space v-if="canEdit" class="stop-card__actions" :size="4">
+          <a-button size="small" :disabled="index === 0 || busy" :aria-label="`上移${stop.customerNameSnapshot}`" @click="move(index, index - 1)"
+            ><ArrowUpOutlined
+          /></a-button>
           <a-button
-              size="small"
-              :disabled="index === 0 || busy"
-              :aria-label="`上移${stop.customerNameSnapshot}`"
-              @click="move(index, index - 1)"
-          ><ArrowUpOutlined/></a-button>
-          <a-button
-              size="small"
-              :disabled="index === stops.length - 1 || busy"
-              :aria-label="`下移${stop.customerNameSnapshot}`"
-              @click="move(index, index + 1)"
-          ><ArrowDownOutlined/></a-button>
+            size="small"
+            :disabled="index === stops.length - 1 || busy"
+            :aria-label="`下移${stop.customerNameSnapshot}`"
+            @click="move(index, index + 1)"
+            ><ArrowDownOutlined
+          /></a-button>
           <a-button size="small" :disabled="busy" @click="emit('editStop', stop)">编辑站点</a-button>
         </a-space>
       </div>
     </div>
-    <ScmMap :points="mapPoints" route @route-status="routeStatus = $event"/>
+    <ScmMap :points="mapPoints" route @route-status="routeStatus = $event" />
   </div>
 </template>
 

@@ -1,30 +1,83 @@
 <template>
- <a-form class="smart-query-form" layout="inline">
-  <a-row class="smart-query-form-row">
-   <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="query.keyword" placeholder="名称或编码" allow-clear /></a-form-item>
-   <a-form-item label="客户类型" class="smart-query-form-item"><CustomerTypeSelect v-model:value="query.customerTypeId" width="190px" /></a-form-item>
-   <a-form-item label="商品规格" class="smart-query-form-item"><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" /></a-form-item>
-   <a-form-item label="有效区间" class="smart-query-form-item"><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true,true]" /></a-form-item>
-   <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search" v-privilege="'scm:pricing:type-price:query'">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
-  </a-row>
- </a-form>
- <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error=''" />
- <a-card size="small" :bordered="false">
-  <a-row class="smart-table-btn-block"><div class="smart-table-operate-block"><a-button type="primary" v-privilege="'scm:pricing:type-price:add'" @click="drawer?.open()">新增客户类型价</a-button><a-button v-privilege="'scm:pricing:type-price:batch'" @click="router.push('/pricing/customer-type-price-batch')">批量调价</a-button></div><div class="smart-table-setting-block"><TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_TYPE_PRICE" :refresh="load" /></div></a-row>
-  <a-table :data-source="rows" :columns="columns" row-key="customerTypePriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
-   <template #bodyCell="{record,column}">
-    <template v-if="column.dataIndex==='customerTypeName'">{{record.customerTypeName || '—'}}</template>
-    <template v-else-if="column.dataIndex==='customerTypeCode'"><span class="scm-mono">{{record.customerTypeCode || '—'}}</span></template>
-    <template v-else-if="column.dataIndex==='skuCode'"><span class="scm-mono">{{record.skuCode || '—'}}</span></template>
-    <template v-else-if="column.dataIndex==='unitPrice'"><span class="scm-money">{{formatAmount(record.unitPrice)}}</span></template>
-    <template v-else-if="column.dataIndex==='effectiveRange'">{{effectiveRangeText(record.effectiveFrom, record.effectiveTo)}}<span v-if="!record.effectiveTo" class="scm-cell-hint">（长期有效）</span></template>
-    <ScmStatusTag v-else-if="column.dataIndex==='effectiveness'" v-bind="effectiveness(record)" />
-    <template v-else-if="column.dataIndex==='action'"><div class="smart-table-operate scm-table-actions"><a-button type="link" v-privilege="'scm:pricing:type-price:update'" @click="drawer?.open(record.customerTypePriceId)">编辑</a-button><a-button type="link" danger v-privilege="'scm:pricing:type-price:delete'" @click="remove(record)">删除</a-button></div></template>
-   </template>
-  </a-table>
-  <div class="smart-query-table-page"><a-pagination v-model:current="query.pageNum" v-model:page-size="query.pageSize" :total="total" show-size-changer show-quick-jumper @change="load" :show-total="(n:number)=>`共 ${n} 条`" /></div>
- </a-card>
- <PriceDrawer ref="drawer" @saved="load" />
+  <a-form class="smart-query-form" layout="inline">
+    <a-row class="smart-query-form-row">
+      <a-form-item label="关键字" class="smart-query-form-item"
+        ><a-input v-model:value="query.keyword" placeholder="名称或编码" allow-clear
+      /></a-form-item>
+      <a-form-item label="客户类型" class="smart-query-form-item"
+        ><CustomerTypeSelect v-model:value="query.customerTypeId" width="190px"
+      /></a-form-item>
+      <a-form-item label="商品规格" class="smart-query-form-item"
+        ><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]"
+      /></a-form-item>
+      <a-form-item label="有效区间" class="smart-query-form-item"
+        ><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]"
+      /></a-form-item>
+      <a-form-item class="smart-query-form-item"
+        ><a-space
+          ><a-button type="primary" @click="search" v-privilege="'scm:pricing:type-price:query'">查询</a-button
+          ><a-button @click="reset">重置</a-button></a-space
+        ></a-form-item
+      >
+    </a-row>
+  </a-form>
+  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error = ''" />
+  <a-card size="small" :bordered="false">
+    <a-row class="smart-table-btn-block"
+      ><div class="smart-table-operate-block">
+        <a-button type="primary" v-privilege="'scm:pricing:type-price:add'" @click="drawer?.open()">新增客户类型价</a-button
+        ><a-button v-privilege="'scm:pricing:type-price:batch'" @click="router.push('/pricing/customer-type-price-batch')">批量调价</a-button>
+      </div>
+      <div class="smart-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_TYPE_PRICE" :refresh="load" /></div
+    ></a-row>
+    <a-table
+      :data-source="rows"
+      :columns="columns"
+      row-key="customerTypePriceId"
+      size="small"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
+    >
+      <template #bodyCell="{record, column}">
+        <template v-if="column.dataIndex === 'customerTypeName'">{{ record.customerTypeName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'customerTypeCode'"
+          ><span class="scm-mono">{{ record.customerTypeCode || '—' }}</span></template
+        >
+        <template v-else-if="column.dataIndex === 'skuCode'"
+          ><span class="scm-mono">{{ record.skuCode || '—' }}</span></template
+        >
+        <template v-else-if="column.dataIndex === 'unitPrice'"
+          ><span class="scm-money">{{ formatAmount(record.unitPrice) }}</span></template
+        >
+        <template v-else-if="column.dataIndex === 'effectiveRange'"
+          >{{ effectiveRangeText(record.effectiveFrom, record.effectiveTo)
+          }}<span v-if="!record.effectiveTo" class="scm-cell-hint">（长期有效）</span></template
+        >
+        <ScmStatusTag v-else-if="column.dataIndex === 'effectiveness'" v-bind="effectiveness(record)" />
+        <template v-else-if="column.dataIndex === 'action'"
+          ><div class="smart-table-operate scm-table-actions">
+            <a-button type="link" v-privilege="'scm:pricing:type-price:update'" @click="drawer?.open(record.customerTypePriceId)">编辑</a-button
+            ><a-button type="link" danger v-privilege="'scm:pricing:type-price:delete'" @click="remove(record)">删除</a-button>
+          </div></template
+        >
+      </template>
+    </a-table>
+    <div class="smart-query-table-page">
+      <a-pagination
+        v-model:current="query.pageNum"
+        v-model:page-size="query.pageSize"
+        :total="total"
+        show-size-changer
+        show-quick-jumper
+        @change="load"
+        :show-total="(n: number) => `共 ${n} 条`"
+      />
+    </div>
+  </a-card>
+  <PriceDrawer ref="drawer" @saved="load" />
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -48,7 +101,10 @@ const router = useRouter();
 const api = pricingApi.typePrice;
 const query = reactive<PriceQuery>({pageNum: 1, pageSize: 20});
 const range = ref<[string, string] | undefined>();
-const rows = ref<PriceRow[]>([]), total = ref(0), loading = ref(false), error = ref('');
+const rows = ref<PriceRow[]>([]),
+  total = ref(0),
+  loading = ref(false),
+  error = ref('');
 const drawer = ref<InstanceType<typeof PriceDrawer>>();
 let requestId = 0;
 type CustomerTypePriceColumn = TableColumnsType<PriceRow>[number] & {showFlag?: boolean};
@@ -69,7 +125,6 @@ function effectiveness(row: PriceRow) {
   return PRICE_EFFECTIVENESS[priceEffectiveness(row.effectiveFrom, row.effectiveTo)];
 }
 
-
 async function load() {
   const id = ++requestId;
   loading.value = true;
@@ -78,7 +133,7 @@ async function load() {
     const r = await api.query({
       ...query,
       effectiveFrom: range.value?.[0] || null,
-      effectiveTo: range.value?.[1] || null
+      effectiveTo: range.value?.[1] || null,
     });
     if (id === requestId) {
       rows.value = r.data.list;
@@ -106,7 +161,9 @@ function reset() {
 
 function remove(row: PriceRow) {
   Modal.confirm({
-    title: '删除这条客户类型价？', content: '删除后保留价格变更记录。', onOk: async () => {
+    title: '删除这条客户类型价？',
+    content: '删除后保留价格变更记录。',
+    onOk: async () => {
       try {
         await api.delete(row);
         await load();
@@ -114,7 +171,7 @@ function remove(row: PriceRow) {
         error.value = pricingError(e);
         throw e;
       }
-    }
+    },
   });
 }
 

@@ -12,14 +12,14 @@
       </a>
     </template>
     <a-space>
-      <a-image-preview-group :preview="{ visible, onVisibleChange: setVisible, current: previewCurrent }">
+      <a-image-preview-group :preview="{visible, onVisibleChange: setVisible, current: previewCurrent}">
         <a-image
-            v-for="(item, index) in fileList"
-            :key="index"
-            :src="item.fileUrl"
-            :style="{ display: type === 'text' ? 'none' : '', padding: '2px', height: '100px' }"
-            :width="width"
-            @click="preview(item, index)"
+          v-for="(item, index) in fileList"
+          :key="index"
+          :src="item.fileUrl"
+          :style="{display: type === 'text' ? 'none' : '', padding: '2px', height: '100px'}"
+          :width="width"
+          @click="preview(item, index)"
         />
       </a-image-preview-group>
     </a-space>

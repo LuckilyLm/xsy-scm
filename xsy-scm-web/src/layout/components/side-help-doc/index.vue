@@ -8,33 +8,31 @@
     <div class="help-doc-header">
       <strong>帮助文档</strong>
       <strong class="help-doc-close" @click="hideHelpDoc">
-        <close-outlined/>
+        <close-outlined />
       </strong>
     </div>
 
     <!-----意见反馈---->
     <div class="feedback">
-      <div>反馈让您不满意的点，我们争取做到更好
-        <smile-outlined style="margin-left: 5px"/>
+      <div>
+        反馈让您不满意的点，我们争取做到更好
+        <smile-outlined style="margin-left: 5px" />
       </div>
       <div class="feedback-message-list">
-        <div v-for="item in feedbackMessageList" :key="item.feedbackId" class="feedback-message">{{
-            item.feedbackContent
-          }}
-        </div>
+        <div v-for="item in feedbackMessageList" :key="item.feedbackId" class="feedback-message">{{ item.feedbackContent }}</div>
       </div>
       <a @click="feedbackModal.show">我也要反馈</a>
     </div>
 
-    <a-divider/>
+    <a-divider />
 
     <!-----文档列表---->
     <div class="help-doc-list">
       <div class="help-doc-item-all">
-        <router-link target="_blank" :to="{ path: '/help-doc/detail' }">系统帮助文档 >></router-link>
+        <router-link target="_blank" :to="{path: '/help-doc/detail'}">系统帮助文档 >></router-link>
       </div>
       <div class="help-doc-item" v-for="item in helpDocList" :key="item.helpDocId">
-        <router-link target="_blank" :to="{ path: '/help-doc/detail', query: { helpDocId: item.helpDocId } }">
+        <router-link target="_blank" :to="{path: '/help-doc/detail', query: {helpDocId: item.helpDocId}}">
           {{ item.title }}
         </router-link>
       </div>
@@ -42,7 +40,7 @@
 
     <!-----联系客服---->
     <!----- 提交意见反馈 ---->
-    <FeedbackModal ref="feedbackModal"/>
+    <FeedbackModal ref="feedbackModal" />
   </div>
 </template>
 <script setup lang="ts">
@@ -126,26 +124,26 @@ async function queryHelpDocList(menuId) {
 }
 
 watch(
-    currentRoute,
-    () => {
-      //SmartAdmin中 router的name 就是 后端存储menu的id
-      let menuId = -1;
-      try {
-        if (currentRoute.name === HOME_PAGE_NAME) {
-          menuId = 0;
-        } else {
-          menuId = _.toNumber(currentRoute.name);
-        }
-      } catch (e) {
-        smartSentry.captureError(e);
+  currentRoute,
+  () => {
+    //SmartAdmin中 router的name 就是 后端存储menu的id
+    let menuId = -1;
+    try {
+      if (currentRoute.name === HOME_PAGE_NAME) {
+        menuId = 0;
+      } else {
+        menuId = _.toNumber(currentRoute.name);
       }
-      if (menuId > -1) {
-        queryHelpDocList(menuId);
-      }
-    },
-    {
-      immediate: true,
+    } catch (e) {
+      smartSentry.captureError(e);
     }
+    if (menuId > -1) {
+      queryHelpDocList(menuId);
+    }
+  },
+  {
+    immediate: true,
+  }
 );
 </script>
 

@@ -26,11 +26,10 @@
       </a-row>
       <a-row v-if="advanced" class="smart-query-form-row">
         <a-form-item label="结算方式" class="smart-query-form-item">
-          <SmartEnumSelect v-model:value="filters.settleMode" enum-name="SETTLE_MODE_ENUM" width="140px"/>
+          <SmartEnumSelect v-model:value="filters.settleMode" enum-name="SETTLE_MODE_ENUM" width="140px" />
         </a-form-item>
         <a-form-item label="上级集团" class="smart-query-form-item">
-          <CustomerSelect v-model:value="filters.parentCustomerId" type-code="GROUP" width="220px"
-                          placeholder="仅集团客户"/>
+          <CustomerSelect v-model:value="filters.parentCustomerId" type-code="GROUP" width="220px" placeholder="仅集团客户" />
         </a-form-item>
       </a-row>
     </a-form>
@@ -38,7 +37,7 @@
     <a-card size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
         <a-button v-privilege="'scm:customer:add'" type="primary" @click="drawer?.open()">新增客户</a-button>
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER" :refresh="load"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER" :refresh="load" />
       </a-row>
       <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
         <template #action>
@@ -46,20 +45,20 @@
         </template>
       </a-alert>
       <a-table
-          ref="tableRef"
-          class="customer-table"
-          :data-source="rows"
-          :columns="displayColumns"
-          row-key="customerId"
-          :loading="loading"
-          :pagination="false"
-          :locale="{ emptyText }"
-          size="small"
-          bordered
-          :scroll="{ x: scrollX }"
-          @change="sortChanged"
+        ref="tableRef"
+        class="customer-table"
+        :data-source="rows"
+        :columns="displayColumns"
+        row-key="customerId"
+        :loading="loading"
+        :pagination="false"
+        :locale="{emptyText}"
+        size="small"
+        bordered
+        :scroll="{x: scrollX}"
+        @change="sortChanged"
       >
-        <template #bodyCell="{ column, record }">
+        <template #bodyCell="{column, record}">
           <template v-if="column.dataIndex === 'name'">
             <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.customerId)">
               {{ record.name }}
@@ -72,62 +71,62 @@
           <span v-else-if="column.dataIndex === 'contactPhone'" class="scm-mono">{{ record.contactPhone || '—' }}</span>
           <span v-else-if="column.dataIndex === 'settleMode'">{{ settleModeText(record.settleMode) }}</span>
           <span v-else-if="column.dataIndex === 'creditLimit'" class="scm-money">{{ formatAmountOrDash(record.creditLimit) }}</span>
-          <ScmStatusTag v-else-if="column.dataIndex === 'status'" :color="statusColor(record.status)"
-                        :label="statusText(record.status)"/>
+          <ScmStatusTag v-else-if="column.dataIndex === 'status'" :color="statusColor(record.status)" :label="statusText(record.status)" />
           <a-space v-else-if="column.dataIndex === 'action'" :size="4" class="smart-table-operate scm-table-actions">
-            <a-button v-privilege="'scm:customer:update'" type="link" size="small"
-                      @click="drawer?.open(record.customerId)">编辑
-            </a-button>
+            <a-button v-privilege="'scm:customer:update'" type="link" size="small" @click="drawer?.open(record.customerId)">编辑 </a-button>
             <a-dropdown>
               <a-button v-privilege="'scm:customer:status'" type="link" size="small">状态</a-button>
               <template #overlay>
                 <a-menu>
                   <a-menu-item
-                      v-for="item in statusOptions"
-                      :key="item.value"
-                      :disabled="item.value === record.status"
-                      @click="changeStatus(record, item.value)"
+                    v-for="item in statusOptions"
+                    :key="item.value"
+                    :disabled="item.value === record.status"
+                    @click="changeStatus(record, item.value)"
                   >
                     {{ item.desc }}
                   </a-menu-item>
                 </a-menu>
               </template>
             </a-dropdown>
-            <ScmActionMore :actions="rowActions()" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions()" @select="onRowAction($event, record)" />
           </a-space>
         </template>
       </a-table>
       <div class="smart-query-table-page">
         <a-pagination
-            v-model:current="filters.pageNum"
-            v-model:page-size="filters.pageSize"
-            :total="total"
-            show-size-changer
-            :show-total="(n: number) => `共 ${n} 条`"
-            @change="load"
+          v-model:current="filters.pageNum"
+          v-model:page-size="filters.pageSize"
+          :total="total"
+          show-size-changer
+          :show-total="(n: number) => `共 ${n} 条`"
+          @change="load"
         />
       </div>
     </a-card>
 
-    <CustomerDrawer ref="drawer" @saved="load"/>
-    <CustomerPromotionModal ref="promotionModal"/>
+    <CustomerDrawer ref="drawer" @saved="load" />
+    <CustomerPromotionModal ref="promotionModal" />
 
     <a-modal
-        v-model:open="reassignVisible"
-        title="改派业务员"
-        :confirm-loading="reassignSaving"
-        :ok-button-props="{ disabled: reassignSaving }"
-        @ok="submitReassign"
+      v-model:open="reassignVisible"
+      title="改派业务员"
+      :confirm-loading="reassignSaving"
+      :ok-button-props="{disabled: reassignSaving}"
+      @ok="submitReassign"
     >
-      <p>客户：<strong>{{ reassignTarget?.name }}</strong>（{{ reassignTarget?.customerCode }}）</p>
+      <p>
+        客户：<strong>{{ reassignTarget?.name }}</strong
+        >（{{ reassignTarget?.customerCode }}）
+      </p>
       <p class="reassign-current">当前负责人：{{ reassignTarget?.sellerName || '未分配' }}</p>
       <a-form layout="vertical">
         <a-form-item>
           <template #label>
             新负责人
-            <ScmFieldHelp label="新负责人" text="留空则取消当前业务员的负责关系；只有有权分配客户的人员才能重新分配"/>
+            <ScmFieldHelp label="新负责人" text="留空则取消当前业务员的负责关系；只有有权分配客户的人员才能重新分配" />
           </template>
-          <EmployeeSelect v-model:value="reassignSeller" placeholder="留空即收回为未分配" width="100%"/>
+          <EmployeeSelect v-model:value="reassignSeller" placeholder="留空即收回为未分配" width="100%" />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -181,9 +180,7 @@ const reassignSeller = ref<number | undefined>(undefined);
 /** 无全量客户范围权限时，空表可能是「授权范围内确实没有」而非「系统没有数据」，文案要能区分。 */
 const canSeeAllCustomers = computed(() => hasPermission('scm:customer:scope:all:query'));
 const emptyText = computed(() =>
-  canSeeAllCustomers.value
-    ? '暂无数据'
-    : '当前仅显示您授权范围内的客户；若无数据，可能是尚未分配业务员或授权范围未配置，请联系管理员确认。'
+  canSeeAllCustomers.value ? '暂无数据' : '当前仅显示您授权范围内的客户；若无数据，可能是尚未分配业务员或授权范围未配置，请联系管理员确认。'
 );
 
 function openReassign(row: CustomerRow) {
@@ -308,7 +305,7 @@ async function changeStatus(row: CustomerRow, status: string) {
     await customerApi.updateStatus({
       customerId: row.customerId,
       version: row.version,
-      status: status as CustomerStatus
+      status: status as CustomerStatus,
     });
     message.success('客户状态已更新');
     await load();

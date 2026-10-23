@@ -1,6 +1,6 @@
 <!--
   * 403 无权限 页面
-  * 
+  *
 -->
 <template>
   <a-result status="403" title="对不起，您没有权限访问此内容">
@@ -10,7 +10,7 @@
   </a-result>
 </template>
 <script setup lang="ts">
-defineOptions({name: "SystemForbidden"});
+defineOptions({name: 'SystemForbidden'});
 import {useRouter} from 'vue-router';
 import {HOME_PAGE_NAME} from '/@/constants/system/home-const';
 

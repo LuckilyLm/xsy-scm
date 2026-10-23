@@ -4,48 +4,55 @@
 <template>
   <div>
     <!-- 编辑 -->
-    <a-modal :open="updateModalShow" :width="650" :title="isAdd ? '添加':'编辑'" ok-text="确认" cancel-text="取消"
-             @cancel="closeUpdateModal" @ok="confirmUpdateJob">
-      <a-form ref="updateFormRef" :model="updateForm" :rules="updateRules" :label-col="{ span: 4 }">
+    <a-modal
+      :open="updateModalShow"
+      :width="650"
+      :title="isAdd ? '添加' : '编辑'"
+      ok-text="确认"
+      cancel-text="取消"
+      @cancel="closeUpdateModal"
+      @ok="confirmUpdateJob"
+    >
+      <a-form ref="updateFormRef" :model="updateForm" :rules="updateRules" :label-col="{span: 4}">
         <a-form-item label="任务名称" name="jobName">
-          <a-input placeholder="请输入任务名称" v-model:value="updateForm.jobName" :maxlength="100" :showCount="true"/>
+          <a-input placeholder="请输入任务名称" v-model:value="updateForm.jobName" :maxlength="100" :showCount="true" />
         </a-form-item>
         <a-form-item label="任务描述" name="remark">
           <a-textarea
-              :auto-size="{ minRows: 2, maxRows: 4 }"
-              v-model:value="updateForm.remark"
-              placeholder="(可选)请输入任务备注描述"
-              :maxlength="250"
-              :showCount="true"
+            :auto-size="{minRows: 2, maxRows: 4}"
+            v-model:value="updateForm.remark"
+            placeholder="(可选)请输入任务备注描述"
+            :maxlength="250"
+            :showCount="true"
           />
         </a-form-item>
         <a-form-item label="排序" name="sort">
           <a-input-number
-              v-model:value="updateForm.sort"
-              :min="-99999999"
-              :max="99999999"
-              :precision="0"
-              style="width: 100%"
-              placeholder="值越小越靠前"
+            v-model:value="updateForm.sort"
+            :min="-99999999"
+            :max="99999999"
+            :precision="0"
+            style="width: 100%"
+            placeholder="值越小越靠前"
           >
           </a-input-number>
         </a-form-item>
         <a-form-item label="执行类" name="jobClass">
           <a-textarea
-              :auto-size="{ minRows: 2, maxRows: 4 }"
-              v-model:value="updateForm.jobClass"
-              placeholder="示例：net.lab1024.sa.base.module.support.job.sample.SmartJobSample1"
-              :maxlength="200"
-              :showCount="true"
+            :auto-size="{minRows: 2, maxRows: 4}"
+            v-model:value="updateForm.jobClass"
+            placeholder="示例：net.lab1024.sa.base.module.support.job.sample.SmartJobSample1"
+            :maxlength="200"
+            :showCount="true"
           />
         </a-form-item>
         <a-form-item label="任务参数" name="param">
           <a-textarea
-              :auto-size="{ minRows: 3, maxRows: 6 }"
-              v-model:value="updateForm.param"
-              placeholder="(可选)请输入任务执行参数"
-              :maxlength="1000"
-              :showCount="true"
+            :auto-size="{minRows: 3, maxRows: 6}"
+            v-model:value="updateForm.param"
+            placeholder="(可选)请输入任务执行参数"
+            :maxlength="1000"
+            :showCount="true"
           />
         </a-form-item>
         <a-form-item label="触发类型" name="triggerType">
@@ -56,56 +63,56 @@
         </a-form-item>
         <a-form-item label="触发时间" name="triggerTime">
           <a-input
-              v-if="updateForm.triggerType === TRIGGER_TYPE_ENUM.CRON.value"
-              placeholder="示例：10 15 0/1 * * *"
-              v-model:value="updateForm.cron"
-              :maxlength="100"
-              :showCount="true"
+            v-if="updateForm.triggerType === TRIGGER_TYPE_ENUM.CRON.value"
+            placeholder="示例：10 15 0/1 * * *"
+            v-model:value="updateForm.cron"
+            :maxlength="100"
+            :showCount="true"
           />
           <a-input-number
-              v-else-if="updateForm.triggerType === TRIGGER_TYPE_ENUM.FIXED_DELAY.value"
-              v-model:value="updateForm.fixedDelay"
-              :min="1"
-              :max="100000000"
-              :precision="0"
+            v-else-if="updateForm.triggerType === TRIGGER_TYPE_ENUM.FIXED_DELAY.value"
+            v-model:value="updateForm.fixedDelay"
+            :min="1"
+            :max="100000000"
+            :precision="0"
           >
             <template #addonBefore>每隔</template>
             <template #addonAfter>秒</template>
           </a-input-number>
         </a-form-item>
         <a-form-item label="是否开启" name="enabledFlag">
-          <a-switch v-model:checked="updateForm.enabledFlag"/>
+          <a-switch v-model:checked="updateForm.enabledFlag" />
         </a-form-item>
       </a-form>
     </a-modal>
 
     <!-- 立即执行 -->
     <a-modal
-        :open="executeModalShow"
-        :width="650"
-        title="执行任务"
-        ok-text="执行"
-        cancel-text="取消"
-        @cancel="closeExecuteModal"
-        @ok="confirmExecuteJob"
+      :open="executeModalShow"
+      :width="650"
+      title="执行任务"
+      ok-text="执行"
+      cancel-text="取消"
+      @cancel="closeExecuteModal"
+      @ok="confirmExecuteJob"
     >
-      <br/>
-      <FormNote :lines="['点击【执行】后会按照【任务参数】，无论任务是否开启，都会立即执行。']"/>
-      <br/>
-      <a-form :label-col="{ span: 4 }">
+      <br />
+      <FormNote :lines="['点击【执行】后会按照【任务参数】，无论任务是否开启，都会立即执行。']" />
+      <br />
+      <a-form :label-col="{span: 4}">
         <a-form-item label="任务名称" name="jobName">
-          <a-input v-model:value="executeForm.jobName" :disabled="true"/>
+          <a-input v-model:value="executeForm.jobName" :disabled="true" />
         </a-form-item>
         <a-form-item label="任务类名" name="jobClass">
-          <a-textarea :auto-size="{ minRows: 2, maxRows: 4 }" v-model:value="executeForm.jobClass" :disabled="true"/>
+          <a-textarea :auto-size="{minRows: 2, maxRows: 4}" v-model:value="executeForm.jobClass" :disabled="true" />
         </a-form-item>
         <a-form-item label="任务参数" name="param">
           <a-textarea
-              :auto-size="{ minRows: 3, maxRows: 6 }"
-              v-model:value="executeForm.param"
-              placeholder="(可选)请输入任务执行参数"
-              :maxlength="1000"
-              :showCount="true"
+            :auto-size="{minRows: 3, maxRows: 6}"
+            v-model:value="executeForm.param"
+            placeholder="(可选)请输入任务执行参数"
+            :maxlength="1000"
+            :showCount="true"
           />
         </a-form-item>
       </a-form>
@@ -174,42 +181,41 @@ function closeUpdateModal() {
 // 确认更新
 async function confirmUpdateJob() {
   updateFormRef.value
-      .validate()
-      .then(async () => {
+    .validate()
+    .then(async () => {
+      if (TRIGGER_TYPE_ENUM.CRON.value === updateForm.triggerType) {
+        updateForm.triggerValue = updateForm.cron;
+      }
+      if (TRIGGER_TYPE_ENUM.FIXED_DELAY.value === updateForm.triggerType) {
+        updateForm.triggerValue = updateForm.fixedDelay;
+      }
 
-        if (TRIGGER_TYPE_ENUM.CRON.value === updateForm.triggerType) {
-          updateForm.triggerValue = updateForm.cron;
-        }
-        if (TRIGGER_TYPE_ENUM.FIXED_DELAY.value === updateForm.triggerType) {
-          updateForm.triggerValue = updateForm.fixedDelay;
-        }
+      if (!updateForm.triggerValue) {
+        message.error('请填写 触发时间');
+        return;
+      }
 
-        if (!updateForm.triggerValue) {
-          message.error('请填写 触发时间');
-          return;
+      try {
+        SmartLoading.show();
+        if (isAdd.value) {
+          await jobApi.addJob(updateForm);
+          message.success('添加成功');
+        } else {
+          await jobApi.updateJob(updateForm);
+          message.success('更新成功');
         }
-
-        try {
-          SmartLoading.show();
-          if (isAdd.value) {
-            await jobApi.addJob(updateForm)
-            message.success('添加成功');
-          } else {
-            await jobApi.updateJob(updateForm);
-            message.success('更新成功');
-          }
-          closeUpdateModal();
-          emit('reloadList');
-        } catch (error) {
-          smartSentry.captureError(error);
-        } finally {
-          SmartLoading.hide();
-        }
-      })
-      .catch((error) => {
-        console.log('error', error);
-        message.error('参数验证错误，请检查表单数据');
-      });
+        closeUpdateModal();
+        emit('reloadList');
+      } catch (error) {
+        smartSentry.captureError(error);
+      } finally {
+        SmartLoading.hide();
+      }
+    })
+    .catch((error) => {
+      console.log('error', error);
+      message.error('参数验证错误，请检查表单数据');
+    });
 }
 
 // ------------------------------------ 执行任务 -------------------------------------

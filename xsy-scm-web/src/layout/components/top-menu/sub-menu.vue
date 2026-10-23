@@ -1,12 +1,12 @@
 <!--
   * 顶部菜单-递归菜单
-  * 
+  *
 -->
 <template>
   <a-sub-menu :key="menuInfo.menuId">
     <template #icon>
-      <component :is="resolveMenuIcon(menuInfo.icon)" v-if="resolveMenuIcon(menuInfo.icon)"/>
-      <span v-else class="smart-menu-icon-blank"/>
+      <component :is="resolveMenuIcon(menuInfo.icon)" v-if="resolveMenuIcon(menuInfo.icon)" />
+      <span v-else class="smart-menu-icon-blank" />
     </template>
     <template #title>{{ menuInfo.menuName }}</template>
     <template v-for="item in menuInfo.children" :key="item.menuId">
@@ -14,14 +14,14 @@
         <template v-if="!item.children">
           <a-menu-item :key="item.menuId" @click="turnToPage(item)">
             <template #icon>
-              <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)"/>
-              <span v-else class="smart-menu-icon-blank"/>
+              <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)" />
+              <span v-else class="smart-menu-icon-blank" />
             </template>
             {{ item.menuName }}
           </a-menu-item>
         </template>
         <template v-else>
-          <SubMenu :menu-info="item" :key="item.menuId" @turnToPage="turnToPage"/>
+          <SubMenu :menu-info="item" :key="item.menuId" @turnToPage="turnToPage" />
         </template>
       </template>
     </template>

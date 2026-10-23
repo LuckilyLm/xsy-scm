@@ -1,6 +1,5 @@
 <template>
-  <PrintDocumentModal :open="visible" document-type="DELIVERY_NOTE"
-                      :business-ids="routeId === undefined ? [] : [routeId]" @close="visible = false"/>
+  <PrintDocumentModal :open="visible" document-type="DELIVERY_NOTE" :business-ids="routeId === undefined ? [] : [routeId]" @close="visible = false" />
 </template>
 
 <script setup lang="ts">

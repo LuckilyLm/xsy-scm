@@ -6,22 +6,22 @@
   <a-form class="smart-query-form">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="编码/名称/备注"/>
+        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="编码/名称/备注" />
       </a-form-item>
       <a-form-item label="禁用" class="smart-query-form-item">
-        <BooleanSelect v-model:value="queryForm.disabledFlag" style="width: 150px"/>
+        <BooleanSelect v-model:value="queryForm.disabledFlag" style="width: 150px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item smart-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -35,45 +35,43 @@
       <div class="smart-table-operate-block">
         <a-button @click="addOrUpdateDict" v-privilege="'support:dict:add'" type="primary">
           <template #icon>
-            <PlusOutlined/>
+            <PlusOutlined />
           </template>
           新建
         </a-button>
 
-        <a-button @click="confirmBatchDelete" v-privilege="'support:dict:delete'" type="primary" danger
-                  :disabled="selectedRowKeyList.length === 0">
+        <a-button @click="confirmBatchDelete" v-privilege="'support:dict:delete'" type="primary" danger :disabled="selectedRowKeyList.length === 0">
           <template #icon>
-            <DeleteOutlined/>
+            <DeleteOutlined />
           </template>
           批量删除
         </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.DICT"
-                       :refresh="ajaxQuery"/>
+        <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.DICT" :refresh="ajaxQuery" />
       </div>
     </a-row>
 
     <a-table
-        size="small"
-        :dataSource="tableData"
-        :columns="columns"
-        :loading="tableLoading"
-        rowKey="dictId"
-        :pagination="false"
-        bordered
-        :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }"
+      size="small"
+      :dataSource="tableData"
+      :columns="columns"
+      :loading="tableLoading"
+      rowKey="dictId"
+      :pagination="false"
+      bordered
+      :row-selection="{selectedRowKeys: selectedRowKeyList, onChange: onSelectChange}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'dictCode'">
           <a @click="showDictData(record)">{{ record.dictCode }}</a>
         </template>
         <template v-if="column.dataIndex === 'disabledFlag'">
           <a-switch
-              @change="(checked) => handleChangeDisabled(checked, record)"
-              v-model:checked="record.enabled"
-              checked-children="启用中"
-              un-checked-children="已禁用"
+            @change="(checked) => handleChangeDisabled(checked, record)"
+            v-model:checked="record.enabled"
+            checked-children="启用中"
+            un-checked-children="已禁用"
           />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
@@ -86,22 +84,22 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="ajaxQuery"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="ajaxQuery"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
 
-    <DictFormModal ref="dictFormModalRef" @reloadList="ajaxQuery"/>
+    <DictFormModal ref="dictFormModalRef" @reloadList="ajaxQuery" />
     <!-- 值列表 -->
-    <DictDataModal ref="dictDataModalRef"/>
+    <DictDataModal ref="dictDataModalRef" />
   </a-card>
 </template>
 <script setup lang="ts">
@@ -234,8 +232,7 @@ function confirmBatchDelete() {
       batchDelete();
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

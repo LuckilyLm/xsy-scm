@@ -1,9 +1,9 @@
 <template>
   <default-home-card extra="更多" icon-name="section-notice" title="通知公告" @extraClick="onMore">
-    <region-error v-if="error" :message="error" :min-height="150" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="150" @retry="load" />
     <a-spin v-else :spinning="loading">
       <div class="home-notices">
-        <a-empty v-if="!loading && notices.length === 0" description="暂无通知公告"/>
+        <a-empty v-if="!loading && notices.length === 0" description="暂无通知公告" />
         <ul v-else class="home-notices__list">
           <li v-for="item in notices" :key="item.noticeId" class="home-notices__item">
             <router-link
@@ -12,7 +12,7 @@
               :to="{path: '/oa/notice/notice-employee-detail', query: {noticeId: item.noticeId}}"
               :title="noticeTitle(item)"
             >
-              <a-badge :status="item.viewFlag ? 'default' : 'error'"/>
+              <a-badge :status="item.viewFlag ? 'default' : 'error'" />
               {{ noticeTitle(item) }}
             </router-link>
             <span class="home-notices__time">{{ item.publishDate }}</span>
@@ -42,10 +42,10 @@ interface HomeNotice {
 const router = useRouter();
 // 不限定类型，仍由员工通知接口裁剪当前人的可见记录。
 const {data, loading, error, load} = useRegionData<{list: HomeNotice[]}>(
-  () => noticeApi.queryEmployeeNotice(
-    {pageNum: 1, pageSize: 6, searchCount: false},
-    {suppressGlobalErrorMessage: true}
-  ) as unknown as Promise<ScmResponse<{list: HomeNotice[]}>>,
+  () =>
+    noticeApi.queryEmployeeNotice({pageNum: 1, pageSize: 6, searchCount: false}, {suppressGlobalErrorMessage: true}) as unknown as Promise<
+      ScmResponse<{list: HomeNotice[]}>
+    >,
   '通知公告加载失败'
 );
 const notices = computed(() => data.value?.list ?? []);

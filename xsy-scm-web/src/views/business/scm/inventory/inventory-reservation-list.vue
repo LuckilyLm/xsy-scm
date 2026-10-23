@@ -13,22 +13,14 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px"/>
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <a-select
-            v-model:value="queryForm.status"
-            :options="statusOptions"
-            placeholder="全部"
-            allow-clear
-            style="width: 140px"
-        />
+        <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
-          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:reservation:query'">
-            查询
-          </a-button>
+          <a-button type="primary" @click="onSearch" v-privilege="'scm:inventory:reservation:query'"> 查询 </a-button>
           <a-button @click="resetQuery">重置</a-button>
         </a-button-group>
       </a-form-item>
@@ -44,30 +36,26 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-<p class="scm-note scm-note--block">预留占用「可用量」但不改变物理库存；可用量 = 现有量 − 预留量。</p>
+        <p class="scm-note scm-note--block">预留占用「可用量」但不改变物理库存；可用量 = 现有量 − 预留量。</p>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_RESERVATION"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_RESERVATION" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.RESERVATION"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '暂无预留记录' }"
-        :scroll="{ x: scrollX }"
+      :id="SCM_INVENTORY_TABLE_ID.RESERVATION"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无预留记录'}"
+      :scroll="{x: scrollX}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'sourceDocumentNo'">{{ record.sourceDocumentNo || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseCode'">
@@ -82,19 +70,19 @@
         </template>
         <template v-else-if="column.dataIndex === 'unitSnapshot'">{{ record.unitSnapshot || '—' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status" />
         </template>
         <template v-else-if="column.dataIndex === 'occurredAt'">{{ datetime(record.occurredAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <!-- 只有生效中的预留可以释放；其余状态留一个破折号占位，避免操作列时有时无 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button
-                v-if="record.status === 'ACTIVE'"
-                type="link"
-                size="small"
-                danger
-                @click="onRelease(record)"
-                v-privilege="'scm:inventory:reservation:release'"
+              v-if="record.status === 'ACTIVE'"
+              type="link"
+              size="small"
+              danger
+              @click="onRelease(record)"
+              v-privilege="'scm:inventory:reservation:release'"
             >
               释放
             </a-button>
@@ -107,13 +95,13 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
@@ -129,10 +117,7 @@ import type {ScmStatusTone} from '/@/theme/scm/scm-status';
 import {inventoryReservationApi} from '/@/api/business/scm/inventory-reservation-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {
-  SCM_INVENTORY_RESERVATION_STATUS_ENUM,
-  SCM_INVENTORY_TABLE_ID,
-} from '/@/constants/business/scm/inventory-const';
+import {SCM_INVENTORY_RESERVATION_STATUS_ENUM, SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
 import type {InventoryReservation, InventoryReservationQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';

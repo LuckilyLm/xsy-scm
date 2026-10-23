@@ -30,9 +30,9 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
   /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
   function code(relative) {
     return readFileSync(new URL(relative, import.meta.url), 'utf8')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/^\s*\/\/.*$/gm, '');
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   const activity = code('../src/views/business/scm/promotion/promotion-activity-list.vue');
@@ -152,7 +152,10 @@ import {rateToPercent, percentToRate} from '../src/views/business/scm/promotion/
   });
 
   test('营销两个页面都不再用未定义的 --ant-color-* 变量', () => {
-    for (const [name, source] of [['活动页', activity], ['优惠券页', coupon]]) {
+    for (const [name, source] of [
+      ['活动页', activity],
+      ['优惠券页', coupon],
+    ]) {
       assert.doesNotMatch(source, /var\(--ant-color-/, `${name} 使用了从未定义的 --ant-color-*`);
     }
   });

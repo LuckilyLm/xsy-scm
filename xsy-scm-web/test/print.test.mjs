@@ -25,9 +25,9 @@ import {readFileSync} from 'node:fs';
   /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
   function code(relative) {
     return readFileSync(new URL(relative, import.meta.url), 'utf8')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/^\s*\/\/.*$/gm, '');
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   const templateList = code('../src/views/business/scm/print/print-template-list.vue');
@@ -58,7 +58,10 @@ import {readFileSync} from 'node:fs';
   });
 
   test('两个页面的操作列统一居中固定，金额 / 状态不再各写色名', () => {
-    for (const [name, source] of [['模板页', templateList], ['记录页', recordList]]) {
+    for (const [name, source] of [
+      ['模板页', templateList],
+      ['记录页', recordList],
+    ]) {
       assert.match(source, /dataIndex: 'action', align: 'center', fixed: 'right'/, `${name} 的操作列未居中`);
       assert.doesNotMatch(source, /<a-tag :color=/, `${name} 仍有裸 a-tag 色名`);
     }
@@ -82,7 +85,7 @@ import {readFileSync} from 'node:fs';
 
 // ---------------------------------------------------------------- 来源：sales-order-print-contract.test.mjs
 {
-  const read = p => readFileSync(new URL(p, import.meta.url), 'utf8');
+  const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
   const type = read('../src/views/business/scm/print/print-types.ts');
   const list = read('../src/views/business/scm/order/order-list.vue');
   const detail = read('../src/views/business/scm/order/order-detail-page.vue');
@@ -122,7 +125,7 @@ import {readFileSync} from 'node:fs';
 
 // ---------------------------------------------------------------- 来源：trace-unit-print-qr.test.mjs
 {
-  const read = p => readFileSync(new URL(p, import.meta.url), 'utf8');
+  const read = (p) => readFileSync(new URL(p, import.meta.url), 'utf8');
   const render = read('../src/views/business/scm/print/print-render.ts');
   const type = read('../../xsy-scm-server/sa-admin/src/main/java/com/xsy/scm/print/constant/ScmPrintDocumentTypeEnum.java');
   const migration = read('../../xsy-scm-server/sa-admin/src/main/resources/db/migration/V177__scm_trace_unit_label_qr.sql');

@@ -1,36 +1,53 @@
 <template>
-  <a-drawer :title="form.customerTypePriceId?'编辑客户类型价':'新增客户类型价'" :open="visible" :width="scmDrawerWidth('s')"
-            @close="visible=false">
+  <a-drawer
+    :title="form.customerTypePriceId ? '编辑客户类型价' : '新增客户类型价'"
+    :open="visible"
+    :width="scmDrawerWidth('s')"
+    @close="visible = false"
+  >
     <a-spin :spinning="loading">
-      <a-alert v-if="error" :message="error" type="error" show-icon/>
+      <a-alert v-if="error" :message="error" type="error" show-icon />
       <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-form-item label="客户类型" name="customerTypeId">
-          <CustomerTypeSelect v-model:value="form.customerTypeId"/>
+          <CustomerTypeSelect v-model:value="form.customerTypeId" />
         </a-form-item>
         <a-form-item label="商品规格" name="skuId">
-          <SkuSelect v-model:value="form.skuId"/>
+          <SkuSelect v-model:value="form.skuId" />
         </a-form-item>
         <a-form-item name="unitPrice">
           <template #label>
             单价
-            <ScmFieldHelp label="单价" text="0 元也是有效价格；最多四位小数"/>
+            <ScmFieldHelp label="单价" text="0 元也是有效价格；最多四位小数" />
           </template>
-          <a-input-number v-model:value="form.unitPrice" string-mode :min="0" :max="'99999999999999.9999'"
-                          :precision="4" :step="'0.01'" addon-before="¥" style="width: 100%"/>
+          <a-input-number
+            v-model:value="form.unitPrice"
+            string-mode
+            :min="0"
+            :max="'99999999999999.9999'"
+            :precision="4"
+            :step="'0.01'"
+            addon-before="¥"
+            style="width: 100%"
+          />
         </a-form-item>
         <a-form-item name="effectiveRange">
           <template #label>
             有效区间
-            <ScmFieldHelp label="有效区间" text="开始时间包含，结束时间不包含；结束留空表示长期有效"/>
+            <ScmFieldHelp label="有效区间" text="开始时间包含，结束时间不包含；结束留空表示长期有效" />
           </template>
-          <a-range-picker v-model:value="form.effectiveRange" show-time value-format="YYYY-MM-DD HH:mm:ss"
-                          :allow-empty="[false,true]" style="width:100%"/>
+          <a-range-picker
+            v-model:value="form.effectiveRange"
+            show-time
+            value-format="YYYY-MM-DD HH:mm:ss"
+            :allow-empty="[false, true]"
+            style="width: 100%"
+          />
         </a-form-item>
       </a-form>
     </a-spin>
     <template #footer>
       <a-space>
-        <a-button @click="visible=false">取消</a-button>
+        <a-button @click="visible = false">取消</a-button>
         <a-button type="primary" :loading="saving" :disabled="loading" @click="submit">保存</a-button>
       </a-space>
     </template>
@@ -52,8 +69,11 @@ import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 /** 表单模型：有效期是本地字段，提交时才折进 PriceForm。 */
 type CustomerTypePriceModel = PriceForm & {effectiveRange?: [string, string]};
 
-const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), loading = ref(false), saving = ref(false), error = ref('');
+const emit = defineEmits<{saved: []}>();
+const visible = ref(false),
+  loading = ref(false),
+  saving = ref(false),
+  error = ref('');
 const form = reactive<CustomerTypePriceModel>({...emptyPrice(), effectiveRange: undefined});
 const formRef = ref();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
@@ -61,10 +81,12 @@ const formRules = {
   customerTypeId: [{required: true, message: '请选择客户类型', trigger: 'change'}],
   skuId: [{required: true, message: '请选择商品规格', trigger: 'change'}],
   unitPrice: [{required: true, message: '请填写单价（零价也是有效价格，填 0 即可）', trigger: 'blur'}],
-  effectiveRange: [{
-    validator: () => (form.effectiveRange?.[0] ? Promise.resolve() : Promise.reject(new Error('请选择生效时间'))),
-    trigger: 'change',
-  }],
+  effectiveRange: [
+    {
+      validator: () => (form.effectiveRange?.[0] ? Promise.resolve() : Promise.reject(new Error('请选择生效时间'))),
+      trigger: 'change',
+    },
+  ],
 };
 const api = pricingApi.typePrice;
 let requestId = 0;
@@ -109,7 +131,8 @@ async function submit() {
   saving.value = true;
   error.value = '';
   try {
-    if (form.customerTypePriceId) await api.update({...form}); else await api.add({...form});
+    if (form.customerTypePriceId) await api.update({...form});
+    else await api.add({...form});
     message.success('价格已保存');
     visible.value = false;
     emit('saved');

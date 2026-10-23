@@ -7,8 +7,40 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {SCM_DEMAND_SUMMARY_STATUS_COLOR, SCM_DEMAND_SUMMARY_STATUS_ENUM, SCM_PURCHASE_EXPORT_COLUMNS, SCM_DEMAND_STATUS_ENUM, SCM_WAREHOUSE_STATUS_ENUM, SCM_PURCHASE_TABLE_ID, SCM_RECEIPT_STATUS_ENUM, SCM_PUTAWAY_STATUS_ENUM, SCM_PURCHASE_STATUS_ENUM, SCM_RECEIPT_MODE_ENUM, SCM_PURCHASE_OPERATION_ENUM} from '../src/constants/business/scm/purchase-const.ts';
-import {quantity, validateOrder, unitMismatch, amount, allocatedOnItem, validateConfirm, hasAllocation, progress, fixed, allocationCapacity, newConfirmLines, newOrder, newAllocation, confirmPayload, beyondRemaining, payload, toleranceHint, newOrderItem, isNonStandard} from '../src/views/business/scm/purchase/purchase-form-model.ts';
+import {
+  SCM_DEMAND_SUMMARY_STATUS_COLOR,
+  SCM_DEMAND_SUMMARY_STATUS_ENUM,
+  SCM_PURCHASE_EXPORT_COLUMNS,
+  SCM_DEMAND_STATUS_ENUM,
+  SCM_WAREHOUSE_STATUS_ENUM,
+  SCM_PURCHASE_TABLE_ID,
+  SCM_RECEIPT_STATUS_ENUM,
+  SCM_PUTAWAY_STATUS_ENUM,
+  SCM_PURCHASE_STATUS_ENUM,
+  SCM_RECEIPT_MODE_ENUM,
+  SCM_PURCHASE_OPERATION_ENUM,
+} from '../src/constants/business/scm/purchase-const.ts';
+import {
+  quantity,
+  validateOrder,
+  unitMismatch,
+  amount,
+  allocatedOnItem,
+  validateConfirm,
+  hasAllocation,
+  progress,
+  fixed,
+  allocationCapacity,
+  newConfirmLines,
+  newOrder,
+  newAllocation,
+  confirmPayload,
+  beyondRemaining,
+  payload,
+  toleranceHint,
+  newOrderItem,
+  isNonStandard,
+} from '../src/views/business/scm/purchase/purchase-form-model.ts';
 import {purchaseError} from '../src/views/business/scm/purchase/purchase-errors.ts';
 import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-form-model.ts';
 
@@ -31,9 +63,9 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
   function code(relative) {
     return readFileSync(new URL(relative, import.meta.url), 'utf8')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/^\s*\/\/.*$/gm, '');
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   const BASE = '../src/views/business/scm/';
@@ -62,7 +94,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.match(demand, /const columns = ref<DemandListColumn\[\]>\(/);
     // scrollX 必须由列宽派生，不能写死数字；列宽与铺满统一由 useScmTableFill 计算。
     assert.match(demand, /useScmTableFill\(columns\)/);
-    assert.match(demand, /:scroll="\{ x: scrollX \}"/);
+    assert.match(demand, /:scroll="\{\s*x:\s*scrollX\s*\}"/);
     assert.match(demand, /dataIndex: 'requiredQuantity'[\s\S]{0,300}dataIndex: 'unallocatedQuantity'[\s\S]{0,300}dataIndex: 'status'/);
     assert.match(demand, /<TableOperator v-model="columns"/);
   });
@@ -109,7 +141,12 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   });
 
   test('四个采购页面的操作列全部居中', () => {
-    for (const [name, source] of [['采购需求', demand], ['采购收货', receipt], ['采购日志', purchaseLog], ['仓库', warehouse]]) {
+    for (const [name, source] of [
+      ['采购需求', demand],
+      ['采购收货', receipt],
+      ['采购日志', purchaseLog],
+      ['仓库', warehouse],
+    ]) {
       // 列声明有单行与多行两种写法，不能假设 align 紧跟在 dataIndex 后面
       assert.match(source, /dataIndex: 'action'[\s\S]{0,80}?align: 'center'/, `${name}的操作列未居中`);
     }
@@ -118,7 +155,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
 
 // ---------------------------------------------------------------- 来源：purchase-inquiry-contract.test.mjs
 {
-  const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
+  const read = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   const api = read('../src/api/business/scm/purchase-inquiry-api.ts');
   const page = read('../src/views/business/scm/purchase/purchase-inquiry-list.vue');
   const batchDrawer = read('../src/views/business/scm/purchase/components/purchase-demand-batch-detail-drawer.vue');
@@ -127,7 +164,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/create', data\)/);
     assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/quote', data\)/);
     assert.match(api, /purchaseCommand<PurchaseInquiryDetail>\(prefix \+ '\/accept', data\)/);
-    assert.match(page, /quoteId: quote\.id, version: current\.version/);
+    assert.match(page, /quoteId:\s*quote\.id,\s*version:\s*current\.version/);
     assert.match(page, /采购单仍需单独创建和提交/);
   });
 
@@ -171,13 +208,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   }
 
   test('summary calculation status enum matches the backend 5 states and every value has a color', () => {
-    assert.deepEqual(Object.keys(SCM_DEMAND_SUMMARY_STATUS_ENUM), [
-      'STOCK_ENOUGH',
-      'SHORTAGE',
-      'ZERO_STOCK',
-      'UNIT_MISMATCH',
-      'NO_BALANCE',
-    ]);
+    assert.deepEqual(Object.keys(SCM_DEMAND_SUMMARY_STATUS_ENUM), ['STOCK_ENOUGH', 'SHORTAGE', 'ZERO_STOCK', 'UNIT_MISMATCH', 'NO_BALANCE']);
     assert.deepEqual(
       Object.values(SCM_DEMAND_SUMMARY_STATUS_ENUM).map((e) => e.value),
       Object.keys(SCM_DEMAND_SUMMARY_STATUS_ENUM)
@@ -189,7 +220,10 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
 
   test('summary-preview is a read-only postRequest and does not touch generate', () => {
     const api = code('../src/api/business/scm/purchase-demand-api.ts');
-    assert.match(api, /summaryPreview:\s*\(data:\s*DemandSummaryPreviewQuery(,\s*options\?:\s*RequestOptions)?\)\s*=>\s*postRequest\('\/scm\/purchase\/demand\/summary-preview'/);
+    assert.match(
+      api,
+      /summaryPreview:\s*\(data:\s*DemandSummaryPreviewQuery(,\s*options\?:\s*RequestOptions)?\)\s*=>\s*postRequest\('\/scm\/purchase\/demand\/summary-preview'/
+    );
     // 只读：预览自身不得走带 Idempotency-Key 的命令式封装（只看 summaryPreview 到其 postRequest 之间）
     assert.doesNotMatch(api, /summaryPreview:[^\n]*purchaseCommand/);
     // generate 端点仍是原样（未被预览改写语义）
@@ -271,7 +305,10 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
 
   test('按商品收货工作台走只读 postRequest 的 item-workbench 端点', () => {
     const api = code('../src/api/business/scm/purchase-receipt-api.ts');
-    assert.match(api, /itemWorkbench:\s*\(data:\s*ReceiptItemWorkbenchQuery(,\s*options\?:\s*RequestOptions)?\)\s*=>\s*postRequest\('\/scm\/purchase\/receipt\/item-workbench\/query'/);
+    assert.match(
+      api,
+      /itemWorkbench:\s*\(data:\s*ReceiptItemWorkbenchQuery(,\s*options\?:\s*RequestOptions)?\)\s*=>\s*postRequest\('\/scm\/purchase\/receipt\/item-workbench\/query'/
+    );
     assert.doesNotMatch(api, /itemWorkbench:[^\n]*purchaseCommand/);
   });
 
@@ -305,23 +342,26 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   });
 
   test('导出列目录与后端 15 列逐字对齐且顺序敏感', () => {
-    assert.deepEqual(SCM_PURCHASE_EXPORT_COLUMNS.map((c) => c.key), [
-      'orderNo',
-      'supplierName',
-      'supplierCode',
-      'purchaserName',
-      'warehouseName',
-      'warehouseCode',
-      'plannedArrivalDate',
-      'status',
-      'totalAmount',
-      'receivedProgress',
-      'remark',
-      'cancelReason',
-      'shortCloseReason',
-      'submittedAt',
-      'createdAt',
-    ]);
+    assert.deepEqual(
+      SCM_PURCHASE_EXPORT_COLUMNS.map((c) => c.key),
+      [
+        'orderNo',
+        'supplierName',
+        'supplierCode',
+        'purchaserName',
+        'warehouseName',
+        'warehouseCode',
+        'plannedArrivalDate',
+        'status',
+        'totalAmount',
+        'receivedProgress',
+        'remark',
+        'cancelReason',
+        'shortCloseReason',
+        'submittedAt',
+        'createdAt',
+      ]
+    );
   });
 
   test('收货页把工作台作为「按商品」Tab 内联，无新增路由 / 菜单', () => {
@@ -746,14 +786,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
   });
 
   test('purchase enums expose exactly the states the backend state machine allows', () => {
-    assert.deepEqual(Object.keys(SCM_PURCHASE_STATUS_ENUM), [
-      'DRAFT',
-      'SUBMITTED',
-      'PARTIALLY_RECEIVED',
-      'RECEIVED',
-      'SHORT_CLOSED',
-      'CANCELLED',
-    ]);
+    assert.deepEqual(Object.keys(SCM_PURCHASE_STATUS_ENUM), ['DRAFT', 'SUBMITTED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'SHORT_CLOSED', 'CANCELLED']);
     assert.deepEqual(
       Object.values(SCM_PURCHASE_STATUS_ENUM).map((e) => e.value),
       Object.keys(SCM_PURCHASE_STATUS_ENUM)
@@ -787,13 +820,7 @@ import {toWarehousePayload} from '../src/views/business/scm/purchase/warehouse-f
     assert.doesNotMatch(constants, /RECEIVE_FLAG_ENUM|SUPPLIER_STATUS_ENUM|INQUIRY_STATUS_ENUM|PURCHASE_ITEM_STATUS_ENUM/);
     assert.doesNotMatch(constants, /resizable|resizeColumn/);
 
-    const pages = [
-      'purchase-order-list.vue',
-      'purchase-receipt-list.vue',
-      'purchase-demand-list.vue',
-      'purchase-log-list.vue',
-      'warehouse-list.vue',
-    ];
+    const pages = ['purchase-order-list.vue', 'purchase-receipt-list.vue', 'purchase-demand-list.vue', 'purchase-log-list.vue', 'warehouse-list.vue'];
     for (const page of pages) {
       const source = code('../src/views/business/scm/purchase/' + page);
       assert.doesNotMatch(source, /resizable|resizeColumn|handleResizeColumn/, page + ' 残留 resize 管线');

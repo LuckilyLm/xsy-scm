@@ -1,7 +1,15 @@
 <template>
-  <a-table :columns="columns" :data-source="rows" row-key="categoryId" :pagination="false" :loading="loading"
-           size="small" bordered :scroll="{ x: scmColumnsWidth(columns) }">
-    <template #bodyCell="{ column, record }">
+  <a-table
+    :columns="columns"
+    :data-source="rows"
+    row-key="categoryId"
+    :pagination="false"
+    :loading="loading"
+    size="small"
+    bordered
+    :scroll="{x: scmColumnsWidth(columns)}"
+  >
+    <template #bodyCell="{column, record}">
       <template v-if="column.dataIndex === 'level'">{{ record.level }} 级</template>
       <!-- 分类路径是「生鲜 / 果蔬 / 苹果」；父分类 = 去掉最后一段，一级分类没有父级 -->
       <template v-else-if="column.dataIndex === 'parentName'">{{ parentName(record) }}</template>
@@ -9,12 +17,16 @@
         {{ record.status === 'ENABLED' ? '启用' : '停用' }}
       </a-tag>
       <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
-        <a-button v-if="record.level < 3" v-privilege="'scm:product:category:add'" type="link" size="small"
-                  :disabled="record.status !== 'ENABLED'" @click="emit('add', record)">新增子分类
+        <a-button
+          v-if="record.level < 3"
+          v-privilege="'scm:product:category:add'"
+          type="link"
+          size="small"
+          :disabled="record.status !== 'ENABLED'"
+          @click="emit('add', record)"
+          >新增子分类
         </a-button>
-        <a-button v-privilege="'scm:product:category:update'" type="link" size="small" @click="emit('edit', record)">
-          编辑
-        </a-button>
+        <a-button v-privilege="'scm:product:category:update'" type="link" size="small" @click="emit('edit', record)"> 编辑 </a-button>
         <a-popconfirm title="确认删除此分类？" @confirm="emit('remove', record)">
           <a-button v-privilege="'scm:product:category:delete'" type="link" danger size="small">删除</a-button>
         </a-popconfirm>
@@ -26,11 +38,11 @@
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
 import type {ProductCategory} from '/@/types/business/scm/product';
 
-defineProps<{ rows: ProductCategory[]; loading: boolean }>();
+defineProps<{rows: ProductCategory[]; loading: boolean}>();
 const emit = defineEmits<{
   add: [row: ProductCategory];
   edit: [row: ProductCategory];
-  remove: [row: ProductCategory]
+  remove: [row: ProductCategory];
 }>();
 
 /**

@@ -12,48 +12,48 @@
       <a-alert type="error" class="smart-margin-bottom10">
         <template #message>
           1. 请在 src\constants\support\table-id-const.js 中配置 tableId 常量
-          <br/>
-          <br/>
+          <br />
+          <br />
           2. 在自己的业务表格页面组件中使用如下：
-          <br/>
+          <br />
           导入: import { TABLE_ID_CONST } from '/@/constants/support/table-id-const';
-          <br/>
-          使用: {{ '<TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.XXX" :refresh="queryData"/>' }}
-          <br/>
-          <br/>
+          <br />
+          使用: {{ '<TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.XXX" :refresh="queryData" />' }}
+          <br />
+          <br />
           3. 具体用法可参考员工管理
         </template>
       </a-alert>
     </div>
     <div v-else>
-      <FormNote :lines="['勾选需要显示的列；拖动左侧手柄可调整顺序。带图钉标记的固定列不可拖动或取消。']"/>
+      <FormNote :lines="['勾选需要显示的列；拖动左侧手柄可调整顺序。带图钉标记的固定列不可拖动或取消。']" />
       <!-- 网格勾选而不是表格：一屏能看完全部列，不必为了勾一项反复滚动。 -->
       <div ref="gridRef" class="scm-column-grid">
         <div
-            v-for="item in tableData"
-            :key="item.columnKey"
-            class="scm-column-grid__cell"
-            :class="{
-              'is-fixed': item.fixed,
-              'is-off': !isColumnShown(item) && !item.fixed,
-            }"
-            @click="toggleColumn(item)"
+          v-for="item in tableData"
+          :key="item.columnKey"
+          class="scm-column-grid__cell"
+          :class="{
+            'is-fixed': item.fixed,
+            'is-off': !isColumnShown(item) && !item.fixed,
+          }"
+          @click="toggleColumn(item)"
         >
           <span class="scm-column-grid__handle" :class="{'is-locked': item.fixed}">
-            <pushpin-outlined v-if="item.fixed"/>
+            <pushpin-outlined v-if="item.fixed" />
             <span v-else class="scm-column-grid__grip" aria-hidden="true"></span>
           </span>
           <span
-              class="scm-column-grid__check"
-              :class="{
-                'is-on': isColumnShown(item) && !item.fixed,
-                'is-off': !isColumnShown(item) && !item.fixed,
-                'is-locked': item.fixed,
-              }"
-              :aria-pressed="isColumnShown(item)"
-              role="checkbox"
+            class="scm-column-grid__check"
+            :class="{
+              'is-on': isColumnShown(item) && !item.fixed,
+              'is-off': !isColumnShown(item) && !item.fixed,
+              'is-locked': item.fixed,
+            }"
+            :aria-pressed="isColumnShown(item)"
+            role="checkbox"
           >
-            <check-outlined v-if="isColumnShown(item) && !item.fixed"/>
+            <check-outlined v-if="isColumnShown(item) && !item.fixed" />
           </span>
           <span class="scm-column-grid__label" :title="item.title">{{ item.title }}</span>
         </div>
@@ -63,8 +63,8 @@
     <template #footer>
       <!-- 破坏性操作放最左，确认类按钮靠右：避免「恢复默认」和「保存」挨着被误点 -->
       <div class="smart-table-column-footer">
-        <a-button v-if="tableId" key="reset" class="smart-table-column-footer__reset"
-                  :loading="submitLoading" @click="reset" danger>恢复默认
+        <a-button v-if="tableId" key="reset" class="smart-table-column-footer__reset" :loading="submitLoading" @click="reset" danger
+          >恢复默认
         </a-button>
         <a-button key="back" @click="hide">取消</a-button>
         <a-button v-if="tableId" key="submit" type="primary" :loading="submitLoading" @click="save">保存</a-button>
@@ -228,8 +228,7 @@ function reset() {
       })();
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

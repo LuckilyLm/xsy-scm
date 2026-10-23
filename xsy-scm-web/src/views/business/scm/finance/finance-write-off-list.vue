@@ -2,15 +2,27 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="核销日期">
-        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期"/>
+        <a-date-picker v-model:value="query.startDate" value-format="YYYY-MM-DD" placeholder="开始日期" />
         <span class="date-separator">至</span>
-        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期"/>
+        <a-date-picker v-model:value="query.endDate" value-format="YYYY-MM-DD" placeholder="结束日期" />
       </a-form-item>
-      <a-form-item label="资金类型"><a-select v-model:value="query.sourceType" allow-clear placeholder="全部" style="width:140px"
-        :options="[{label:'收款',value:'RECEIPT'},{label:'付款',value:'PAYMENT'},{label:'余额消费',value:'BALANCE_MOVEMENT'}]"/></a-form-item>
-      <a-form-item label="资金单号"><a-input v-model:value="query.sourceNo" allow-clear @press-enter="onSearch"/></a-form-item>
-      <a-form-item label="目标单号"><a-input v-model:value="query.targetNo" allow-clear @press-enter="onSearch"/></a-form-item>
-      <a-form-item label="方向"><a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width:120px"/></a-form-item>
+      <a-form-item label="资金类型"
+        ><a-select
+          v-model:value="query.sourceType"
+          allow-clear
+          placeholder="全部"
+          style="width: 140px"
+          :options="[
+            {label: '收款', value: 'RECEIPT'},
+            {label: '付款', value: 'PAYMENT'},
+            {label: '余额消费', value: 'BALANCE_MOVEMENT'},
+          ]"
+      /></a-form-item>
+      <a-form-item label="资金单号"><a-input v-model:value="query.sourceNo" allow-clear @press-enter="onSearch" /></a-form-item>
+      <a-form-item label="目标单号"><a-input v-model:value="query.targetNo" allow-clear @press-enter="onSearch" /></a-form-item>
+      <a-form-item label="方向"
+        ><a-select v-model:value="query.entryType" allow-clear :options="entryOptions" placeholder="全部" style="width: 120px"
+      /></a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
           <a-button type="primary" v-privilege="PERM.WRITE_OFF_QUERY" @click="onSearch">查询</a-button>
@@ -30,59 +42,87 @@
       <div class="smart-table-setting-block">
         <a-button v-privilege="PERM.WRITE_OFF_ADD" type="primary" @click="openAdd">登记核销</a-button>
         <a-button v-privilege="PERM.EXPORT" :loading="page.exporting.value" @click="exportData">导出</a-button>
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_WRITE_OFF" :refresh="queryData"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_FINANCE_WRITE_OFF" :refresh="queryData" />
       </div>
     </a-row>
-    <a-table id="scm-finance-write-off-table" class="finance-table" size="small" :data-source="page.tableData.value" :columns="columns"
-             row-key="writeOffId" :loading="page.loading.value" :pagination="false" bordered :scroll="{ x: scmColumnsWidth(columns) }">
-      <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='sourceName'">{{ record.sourceName || '—' }}</template>
-        <template v-else-if="column.dataIndex==='sourceType'">{{ sourceTypeText(record.sourceType) }}</template>
-        <template v-else-if="column.dataIndex==='sourceNo'">
+    <a-table
+      id="scm-finance-write-off-table"
+      class="finance-table"
+      size="small"
+      :data-source="page.tableData.value"
+      :columns="columns"
+      row-key="writeOffId"
+      :loading="page.loading.value"
+      :pagination="false"
+      bordered
+      :scroll="{x: scmColumnsWidth(columns)}"
+    >
+      <template #bodyCell="{record, column, text}">
+        <template v-if="column.dataIndex === 'sourceName'">{{ record.sourceName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'sourceType'">{{ sourceTypeText(record.sourceType) }}</template>
+        <template v-else-if="column.dataIndex === 'sourceNo'">
           <span v-if="record.sourceNo" class="scm-mono">{{ record.sourceNo }}</span>
           <span v-else>—</span>
-          <a v-if="record.sourceType==='BALANCE_MOVEMENT'" v-privilege="'scm:balance:movement:query'"
-             @click="movementDetail?.open({movementId: record.sourceId})">来源流水</a>
+          <a
+            v-if="record.sourceType === 'BALANCE_MOVEMENT'"
+            v-privilege="'scm:balance:movement:query'"
+            @click="movementDetail?.open({movementId: record.sourceId})"
+            >来源流水</a
+          >
         </template>
-        <template v-else-if="column.dataIndex==='targetName'">{{ record.targetName || '—' }}</template>
-        <template v-else-if="column.dataIndex==='targetType'">{{ targetTypeText(record.targetType) }}</template>
-        <template v-else-if="column.dataIndex==='targetNo'">
+        <template v-else-if="column.dataIndex === 'targetName'">{{ record.targetName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'targetType'">{{ targetTypeText(record.targetType) }}</template>
+        <template v-else-if="column.dataIndex === 'targetNo'">
           <span v-if="record.targetNo" class="scm-mono">{{ record.targetNo }}</span>
           <span v-else>—</span>
         </template>
-        <template v-else-if="column.dataIndex==='entryType'">
-          <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)"/>
+        <template v-else-if="column.dataIndex === 'entryType'">
+          <ScmStatusTag :color="SCM_FINANCE_ENTRY_COLOR[text]" :label="entryTypeText(text)" />
         </template>
-        <template v-else-if="column.dataIndex==='amount'">
+        <template v-else-if="column.dataIndex === 'amount'">
           <span class="scm-money">{{ moneyText(text) }}</span>
         </template>
-        <template v-else-if="column.dataIndex==='writtenOffAt'">{{ dateTimeText(text) }}</template>
-        <template v-else-if="column.dataIndex==='operator'">{{ record.operator || '—' }}</template>
-        <template v-else-if="column.dataIndex==='action'">
+        <template v-else-if="column.dataIndex === 'writtenOffAt'">{{ dateTimeText(text) }}</template>
+        <template v-else-if="column.dataIndex === 'operator'">{{ record.operator || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'action'">
           <!-- 撤销核销是追加反向事实，不是编辑：保持 danger 视觉 + 独立的二次确认弹窗 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <a-button v-if="record.entryType==='NORMAL'" type="link" size="small" danger v-privilege="PERM.WRITE_OFF_REVERSE"
-                      @click="openReverse(record)">撤销核销</a-button>
+            <a-button
+              v-if="record.entryType === 'NORMAL'"
+              type="link"
+              size="small"
+              danger
+              v-privilege="PERM.WRITE_OFF_REVERSE"
+              @click="openReverse(record)"
+              >撤销核销</a-button
+            >
             <span v-else class="scm-cell-hint">—</span>
           </a-space>
         </template>
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination show-size-changer show-quick-jumper v-model:current="query.pageNum" v-model:page-size="query.pageSize"
-                    :total="page.total.value" @change="queryData" :show-total="(count:number)=>`共${count}条`"/>
+      <a-pagination
+        show-size-changer
+        show-quick-jumper
+        v-model:current="query.pageNum"
+        v-model:page-size="query.pageSize"
+        :total="page.total.value"
+        @change="queryData"
+        :show-total="(count: number) => `共${count}条`"
+      />
     </div>
   </a-card>
 
   <a-drawer v-model:open="addOpen" title="登记多目标核销" :width="scmDrawerWidth('l')" :destroy-on-close="true">
-    <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError"/>
+    <a-alert v-if="addError" class="form-error" type="error" show-icon :message="addError" />
     <a-form ref="addFormRef" :model="{sourceType, source}" :rules="addRules" layout="vertical" class="app-drawer-form">
       <a-form-item name="sourceType">
         <template #label>
           资金类型
-          <ScmFieldHelp label="资金类型" text="收款核销应收，付款核销应付"/>
+          <ScmFieldHelp label="资金类型" text="收款核销应收，付款核销应付" />
         </template>
-        <a-select v-model:value="sourceType" :options="sourceOptions" placeholder="选择资金类型" @change="resetAllocation"/>
+        <a-select v-model:value="sourceType" :options="sourceOptions" placeholder="选择资金类型" @change="resetAllocation" />
       </a-form-item>
       <a-form-item label="资金单" name="source">
         <a-input :value="source?.documentNo || ''" readonly placeholder="选择可核销资金单">
@@ -99,30 +139,41 @@
       <h3>分配目标</h3>
       <a-button :disabled="!source" @click="openTargetPicker">添加目标单</a-button>
     </div>
-    <a-empty v-if="!targets.length" description="先选择一笔资金单，再添加一个或多个目标单"/>
-    <a-table v-else size="small" :data-source="targets" :columns="targetColumns" row-key="id" :pagination="false" :scroll="{ x: scmColumnsWidth(targetColumns) }">
-      <template #bodyCell="{record,column}">
-        <template v-if="column.dataIndex==='availableAmount'">{{ moneyText(record.availableAmount) }}</template>
-        <template v-else-if="column.dataIndex==='amount'">
-          <a-input-number v-model:value="record.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width:150px"/>
+    <a-empty v-if="!targets.length" description="先选择一笔资金单，再添加一个或多个目标单" />
+    <a-table
+      v-else
+      size="small"
+      :data-source="targets"
+      :columns="targetColumns"
+      row-key="id"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(targetColumns)}"
+    >
+      <template #bodyCell="{record, column}">
+        <template v-if="column.dataIndex === 'availableAmount'">{{ moneyText(record.availableAmount) }}</template>
+        <template v-else-if="column.dataIndex === 'amount'">
+          <a-input-number v-model:value="record.amount" string-mode :min="0" :precision="4" :max="99999999999999" style="width: 150px" />
         </template>
-        <template v-else-if="column.dataIndex==='action'"><a-button type="link" danger @click="removeTarget(record.id)">移除</a-button></template>
+        <template v-else-if="column.dataIndex === 'action'"><a-button type="link" danger @click="removeTarget(record.id)">移除</a-button></template>
       </template>
     </a-table>
     <div class="drawer-footer">
-      <a-button @click="addOpen=false">取消</a-button>
+      <a-button @click="addOpen = false">取消</a-button>
       <a-button type="primary" :loading="addSaving" :disabled="!source || !targets.length" @click="submitAdd">提交核销</a-button>
     </div>
   </a-drawer>
 
   <a-modal v-model:open="reverseOpen" title="撤销核销" :confirm-loading="reverseSaving" @ok="submitReverse">
-    <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一条反向核销，金额 ${moneyText(reverseRow.amount)}。`"/>
-    <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError"/>
-    <a-form ref="reverseFormRef" :model="{reverseReason}" :rules="reverseRules" layout="vertical"><a-form-item label="撤销原因" name="reverseReason"><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count/></a-form-item></a-form>
+    <a-alert v-if="reverseRow" type="warning" show-icon :message="`将追加一条反向核销，金额 ${moneyText(reverseRow.amount)}。`" />
+    <a-alert v-if="reverseError" class="form-error" type="error" show-icon :message="reverseError" />
+    <a-form ref="reverseFormRef" :model="{reverseReason}" :rules="reverseRules" layout="vertical"
+      ><a-form-item label="撤销原因" name="reverseReason"
+        ><a-textarea v-model:value="reverseReason" :maxlength="500" :rows="3" show-count /></a-form-item
+    ></a-form>
   </a-modal>
 
-  <BalanceMovementDetail ref="movementDetail"/>
-  <FinanceRecordPicker v-model:open="pickerOpen" :kind="pickerKind" @select="onCandidateSelected"/>
+  <BalanceMovementDetail ref="movementDetail" />
+  <FinanceRecordPicker v-model:open="pickerOpen" :kind="pickerKind" @select="onCandidateSelected" />
 </template>
 
 <script setup lang="ts">
@@ -131,7 +182,13 @@ import {onMounted, reactive, ref} from 'vue';
 import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {financeApi} from '/@/api/business/scm/finance-api';
-import {SCM_FINANCE_BUSINESS_TYPE_ENUM, SCM_FINANCE_ENTRY_COLOR, SCM_FINANCE_ENTRY_TYPE_ENUM, SCM_FINANCE_PERMISSION as PERM, SCM_FINANCE_SOURCE_TYPE_ENUM} from '/@/constants/business/scm/finance-const';
+import {
+  SCM_FINANCE_BUSINESS_TYPE_ENUM,
+  SCM_FINANCE_ENTRY_COLOR,
+  SCM_FINANCE_ENTRY_TYPE_ENUM,
+  SCM_FINANCE_PERMISSION as PERM,
+  SCM_FINANCE_SOURCE_TYPE_ENUM,
+} from '/@/constants/business/scm/finance-const';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import ScmStatusTag from '/@/components/business/scm/scm-status-tag/index.vue';
@@ -145,22 +202,36 @@ import type {FinanceCandidate, FinanceWriteOff, WriteOffQuery} from './finance-t
 import {useFinancePage} from './use-finance-page';
 import {useFinanceMobileActionColumn} from './use-finance-mobile-table';
 
-interface AllocationDraft extends FinanceCandidate { amount: string; }
+interface AllocationDraft extends FinanceCandidate {
+  amount: string;
+}
 const query = reactive<WriteOffQuery>({pageNum: 1, pageSize: 20, ...initialFinanceDateRange()});
 const page = useFinancePage<FinanceWriteOff, WriteOffQuery>(financeApi.writeOffQuery, financeApi.writeOffExport);
-const addOpen = ref(false), addSaving = ref(false), addError = ref(''), sourceType = ref<'RECEIPT'|'PAYMENT'>();
-const source = ref<FinanceCandidate | null>(null), targets = ref<AllocationDraft[]>([]);
-const pickerOpen = ref(false), pickerKind = ref<'RECEIPT'|'PAYMENT'|'RECEIVABLE'|'PAYABLE'>('RECEIPT'), picking = ref<'SOURCE'|'TARGET'>('SOURCE');
-const reverseOpen = ref(false), reverseSaving = ref(false), reverseError = ref(''), reverseReason = ref(''), reverseRow = ref<FinanceWriteOff | null>(null);
+const addOpen = ref(false),
+  addSaving = ref(false),
+  addError = ref(''),
+  sourceType = ref<'RECEIPT' | 'PAYMENT'>();
+const source = ref<FinanceCandidate | null>(null),
+  targets = ref<AllocationDraft[]>([]);
+const pickerOpen = ref(false),
+  pickerKind = ref<'RECEIPT' | 'PAYMENT' | 'RECEIVABLE' | 'PAYABLE'>('RECEIPT'),
+  picking = ref<'SOURCE' | 'TARGET'>('SOURCE');
+const reverseOpen = ref(false),
+  reverseSaving = ref(false),
+  reverseError = ref(''),
+  reverseReason = ref(''),
+  reverseRow = ref<FinanceWriteOff | null>(null);
 const addFormRef = ref();
 const reverseFormRef = ref();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const addRules = {
-    sourceType: [{required: true, message: '请选择资金类型', trigger: 'change'}],
-    source: [{
-        validator: () => (source.value ? Promise.resolve() : Promise.reject(new Error('请选择资金单'))),
-        trigger: 'change',
-    }],
+  sourceType: [{required: true, message: '请选择资金类型', trigger: 'change'}],
+  source: [
+    {
+      validator: () => (source.value ? Promise.resolve() : Promise.reject(new Error('请选择资金单'))),
+      trigger: 'change',
+    },
+  ],
 };
 const reverseRules = {reverseReason: [{required: true, message: '请填写撤销原因', trigger: 'blur'}]};
 const entryOptions = Object.values(SCM_FINANCE_ENTRY_TYPE_ENUM).map((item) => ({label: item.desc, value: item.value}));
@@ -174,138 +245,209 @@ const actionColumnFixed: 'right' | undefined = window.matchMedia('(max-width: 76
  * 而核销行还能来自余额消费（流水表），因此这里补上第三种，缺项回落原值。
  */
 const SOURCE_TYPE_TEXT: Record<string, string> = {
-    RECEIPT: '收款',
-    PAYMENT: '付款',
-    BALANCE_MOVEMENT: '余额消费',
+  RECEIPT: '收款',
+  PAYMENT: '付款',
+  BALANCE_MOVEMENT: '余额消费',
 };
 
 function sourceTypeText(value?: string | null): string {
-    return value ? SOURCE_TYPE_TEXT[value] ?? value : '—';
+  return value ? SOURCE_TYPE_TEXT[value] ?? value : '—';
 }
 
 /** 核销目标的类型只有应收 / 应付两值，直接复用财务业务类型枚举。 */
 function targetTypeText(value?: string | null): string {
-    return value ? SCM_FINANCE_BUSINESS_TYPE_ENUM[value]?.desc ?? value : '—';
+  return value ? SCM_FINANCE_BUSINESS_TYPE_ENUM[value]?.desc ?? value : '—';
 }
 
 // 列按「哪张核销单 / 钱从哪来 / 核到哪去 / 多少钱 / 什么方向 / 为什么 / 谁在什么时候做的」排列。
 // 资金与目标各带一组「类型 + 单号 + 往来方」，合并成来源 / 对象两格（13 列 → 8 列）；
 // 核销时点与操作人合成一格。
 const columns = ref<TableColumnsType<FinanceWriteOff>>([
-    {title: '核销单号', dataIndex: 'writeOffNo', width: 175},
-    {title: '资金方', dataIndex: 'sourceName', width: 190},
-    {title: '资金类型', dataIndex: 'sourceType', align: 'center', width: 90},
-    {title: '资金单号', dataIndex: 'sourceNo', width: 180},
-    {title: '核销目标', dataIndex: 'targetName', width: 190},
-    {title: '目标类型', dataIndex: 'targetType', align: 'center', width: 90},
-    {title: '目标单号', dataIndex: 'targetNo', width: 175},
-    {title: '核销金额', dataIndex: 'amount', width: 136},
-    {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
-    {title: '原因', dataIndex: 'reason', width: 180},
-    {title: '核销时点', dataIndex: 'writtenOffAt', width: 180},
-    {title: '操作人', dataIndex: 'operator', width: 110},
-    {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
+  {title: '核销单号', dataIndex: 'writeOffNo', width: 175},
+  {title: '资金方', dataIndex: 'sourceName', width: 190},
+  {title: '资金类型', dataIndex: 'sourceType', align: 'center', width: 90},
+  {title: '资金单号', dataIndex: 'sourceNo', width: 180},
+  {title: '核销目标', dataIndex: 'targetName', width: 190},
+  {title: '目标类型', dataIndex: 'targetType', align: 'center', width: 90},
+  {title: '目标单号', dataIndex: 'targetNo', width: 175},
+  {title: '核销金额', dataIndex: 'amount', width: 136},
+  {title: '方向', dataIndex: 'entryType', align: 'center', width: 80},
+  {title: '原因', dataIndex: 'reason', width: 180},
+  {title: '核销时点', dataIndex: 'writtenOffAt', width: 180},
+  {title: '操作人', dataIndex: 'operator', width: 110},
+  {title: '操作', dataIndex: 'action', fixed: actionColumnFixed, align: 'center', width: 110},
 ]);
 const targetColumns: TableColumnsType<AllocationDraft> = [
-    {title: '目标单号', dataIndex: 'documentNo', width: 210}, {title: '往来方', dataIndex: 'partyName', width: 170},
-    {title: '关联单号', dataIndex: 'linkedDocumentNo', width: 180}, {title: '可核销金额', dataIndex: 'availableAmount', width: 150},
-    {title: '本次金额', dataIndex: 'amount', width: 180}, {title: '操作', dataIndex: 'action', align: 'center', width: 90},
+  {title: '目标单号', dataIndex: 'documentNo', width: 210},
+  {title: '往来方', dataIndex: 'partyName', width: 170},
+  {title: '关联单号', dataIndex: 'linkedDocumentNo', width: 180},
+  {title: '可核销金额', dataIndex: 'availableAmount', width: 150},
+  {title: '本次金额', dataIndex: 'amount', width: 180},
+  {title: '操作', dataIndex: 'action', align: 'center', width: 90},
 ];
-useFinanceMobileActionColumn((compact) => {
+useFinanceMobileActionColumn(
+  (compact) => {
     const action = columns.value[columns.value.length - 1];
     if (action) action.fixed = compact ? undefined : 'right';
-}, () => columns.value.length);
+  },
+  () => columns.value.length
+);
 
-async function queryData() { await page.queryData(query); }
-function onSearch() { query.pageNum = 1; queryData(); }
-function resetQuery() {
-    Object.assign(query, {pageNum: 1, pageSize: 20, ...initialFinanceDateRange(), sourceNo: undefined,
-        targetNo: undefined, entryType: undefined, sourceType: undefined});
-    queryData();
+async function queryData() {
+  await page.queryData(query);
 }
-async function exportData() { await page.exportData(query); }
+function onSearch() {
+  query.pageNum = 1;
+  queryData();
+}
+function resetQuery() {
+  Object.assign(query, {
+    pageNum: 1,
+    pageSize: 20,
+    ...initialFinanceDateRange(),
+    sourceNo: undefined,
+    targetNo: undefined,
+    entryType: undefined,
+    sourceType: undefined,
+  });
+  queryData();
+}
+async function exportData() {
+  await page.exportData(query);
+}
 
-function openAdd() { addError.value = ''; sourceType.value = undefined; source.value = null; targets.value = []; addOpen.value = true; }
-function resetAllocation() { source.value = null; targets.value = []; }
+function openAdd() {
+  addError.value = '';
+  sourceType.value = undefined;
+  source.value = null;
+  targets.value = [];
+  addOpen.value = true;
+}
+function resetAllocation() {
+  source.value = null;
+  targets.value = [];
+}
 function openSourcePicker() {
-    if (!sourceType.value) return;
-    picking.value = 'SOURCE'; pickerKind.value = sourceType.value; pickerOpen.value = true;
+  if (!sourceType.value) return;
+  picking.value = 'SOURCE';
+  pickerKind.value = sourceType.value;
+  pickerOpen.value = true;
 }
 function openTargetPicker() {
-    if (!sourceType.value || !source.value) return;
-    picking.value = 'TARGET'; pickerKind.value = sourceType.value === 'RECEIPT' ? 'RECEIVABLE' : 'PAYABLE'; pickerOpen.value = true;
+  if (!sourceType.value || !source.value) return;
+  picking.value = 'TARGET';
+  pickerKind.value = sourceType.value === 'RECEIPT' ? 'RECEIVABLE' : 'PAYABLE';
+  pickerOpen.value = true;
 }
 function onCandidateSelected(candidate: FinanceCandidate) {
-    if (picking.value === 'SOURCE') {
-        source.value = candidate;
-        targets.value = [];
-        return;
-    }
-    if (targets.value.some((item) => String(item.id) === String(candidate.id))) {
-        addError.value = '同一目标单不能重复添加。';
-        return;
-    }
-    addError.value = '';
-    targets.value.push({...candidate, amount: ''});
+  if (picking.value === 'SOURCE') {
+    source.value = candidate;
+    targets.value = [];
+    return;
+  }
+  if (targets.value.some((item) => String(item.id) === String(candidate.id))) {
+    addError.value = '同一目标单不能重复添加。';
+    return;
+  }
+  addError.value = '';
+  targets.value.push({...candidate, amount: ''});
 }
-function removeTarget(id: FinanceCandidate['id']) { targets.value = targets.value.filter((item) => String(item.id) !== String(id)); }
+function removeTarget(id: FinanceCandidate['id']) {
+  targets.value = targets.value.filter((item) => String(item.id) !== String(id));
+}
 
 async function submitAdd() {
-    // 资金类型 / 资金单走字段校验；「至少一条目标有正数金额」是跨行的业务规则，用 toast
-    try {
-        await addFormRef.value?.validate();
-    } catch {
-        return;
-    }
-    const items = targets.value.filter((item) => isValidPositiveAmount(item.amount)).map((item) => ({targetId: item.id, amount: item.amount}));
-    if (!items.length) {
-        message.warning('请为至少一条目标填写正数金额（最多 4 位小数）');
-        return;
-    }
-    if (!source.value || !sourceType.value) {
-        addError.value = '请选择核销来源';
-        return;
-    }
-    addSaving.value = true; addError.value = '';
-    try {
-        await financeApi.writeOffAdd({sourceType: sourceType.value, sourceId: source.value.id, items});
-        message.success('核销已登记'); addOpen.value = false; await queryData();
-    } catch {
-        // 登记失败只走全局 toast；弹窗里的 addError 留给本地校验
-    }
-    finally { addSaving.value = false; }
+  // 资金类型 / 资金单走字段校验；「至少一条目标有正数金额」是跨行的业务规则，用 toast
+  try {
+    await addFormRef.value?.validate();
+  } catch {
+    return;
+  }
+  const items = targets.value.filter((item) => isValidPositiveAmount(item.amount)).map((item) => ({targetId: item.id, amount: item.amount}));
+  if (!items.length) {
+    message.warning('请为至少一条目标填写正数金额（最多 4 位小数）');
+    return;
+  }
+  if (!source.value || !sourceType.value) {
+    addError.value = '请选择核销来源';
+    return;
+  }
+  addSaving.value = true;
+  addError.value = '';
+  try {
+    await financeApi.writeOffAdd({sourceType: sourceType.value, sourceId: source.value.id, items});
+    message.success('核销已登记');
+    addOpen.value = false;
+    await queryData();
+  } catch {
+    // 登记失败只走全局 toast；弹窗里的 addError 留给本地校验
+  } finally {
+    addSaving.value = false;
+  }
 }
 
-function openReverse(row: FinanceWriteOff) { reverseRow.value = row; reverseReason.value = ''; reverseOpen.value = true; }
+function openReverse(row: FinanceWriteOff) {
+  reverseRow.value = row;
+  reverseReason.value = '';
+  reverseOpen.value = true;
+}
 async function submitReverse() {
-    if (!reverseRow.value) return;
-    // 必填项走表单校验：错误显示在输入框下方
-    try {
-        await reverseFormRef.value?.validate();
-    } catch {
-        return;
-    }
-    reverseSaving.value = true; reverseError.value = '';
-    try {
-        await financeApi.writeOffReverse({writeOffId: reverseRow.value.writeOffId, reason: reverseReason.value.trim()});
-        message.success('反向核销已追加'); reverseOpen.value = false; await queryData();
-    } catch {
-        // 反向失败只走全局 toast；弹窗里的 reverseError 留给表单校验
-    }
-    finally { reverseSaving.value = false; }
+  if (!reverseRow.value) return;
+  // 必填项走表单校验：错误显示在输入框下方
+  try {
+    await reverseFormRef.value?.validate();
+  } catch {
+    return;
+  }
+  reverseSaving.value = true;
+  reverseError.value = '';
+  try {
+    await financeApi.writeOffReverse({writeOffId: reverseRow.value.writeOffId, reason: reverseReason.value.trim()});
+    message.success('反向核销已追加');
+    reverseOpen.value = false;
+    await queryData();
+  } catch {
+    // 反向失败只走全局 toast；弹窗里的 reverseError 留给表单校验
+  } finally {
+    reverseSaving.value = false;
+  }
 }
 
 onMounted(queryData);
 </script>
 
 <style scoped>
-.date-separator { margin: 0 8px; color: #667085; }
-.page-error,.form-error { margin-bottom: 12px; }
-@media (max-width: 768px) {
-  .finance-table :deep(.ant-table-cell-fix-right) { position: static !important; right: auto !important; }
+.date-separator {
+  margin: 0 8px;
+  color: #667085;
 }
-.source-summary { margin-top: 12px; }
-.target-toolbar { display: flex; align-items: center; justify-content: space-between; margin: 20px 0 12px; }
-.target-toolbar h3 { margin: 0; font-weight: 600; }
-.drawer-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.page-error,
+.form-error {
+  margin-bottom: 12px;
+}
+@media (max-width: 768px) {
+  .finance-table :deep(.ant-table-cell-fix-right) {
+    position: static !important;
+    right: auto !important;
+  }
+}
+.source-summary {
+  margin-top: 12px;
+}
+.target-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20px 0 12px;
+}
+.target-toolbar h3 {
+  margin: 0;
+  font-weight: 600;
+}
+.drawer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
 </style>

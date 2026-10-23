@@ -6,7 +6,7 @@
 <template>
   <a-dropdown class="header-trigger" :get-popup-container="getPopupContainer">
     <div class="wrapper">
-      <img class="avatar-image" :src="avatar" v-if="avatar"/>
+      <img class="avatar-image" :src="avatar" v-if="avatar" />
       <a-avatar v-else style="margin: 0 5px" :size="20" id="smartAdminAvatar">
         {{ avatarName }}
       </a-avatar>
@@ -26,7 +26,7 @@
       </a-menu>
     </template>
   </a-dropdown>
-  <HeaderResetPassword ref="resetPasswordRef"/>
+  <HeaderResetPassword ref="resetPasswordRef" />
 </template>
 <script setup lang="ts">
 import {computed, ref, onMounted} from 'vue';
@@ -95,8 +95,8 @@ function updateAvatar() {
  */
 function hashcode(str) {
   let hash = 1,
-      i,
-      chr;
+    i,
+    chr;
   if (str.length === 0) return hash;
   for (i = 0; i < str.length; i++) {
     chr = str.charCodeAt(i);

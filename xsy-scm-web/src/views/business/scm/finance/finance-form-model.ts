@@ -7,102 +7,107 @@ import {SCM_FINANCE_OPERATION_TYPE_ENUM} from '/@/constants/business/scm/finance
 const LineAmountDecimal = Decimal.clone({precision: 40});
 
 export function initialFinanceDateRange() {
-    return {
-        startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
-        endDate: dayjs().format('YYYY-MM-DD'),
-    };
+  return {
+    startDate: dayjs().subtract(30, 'day').format('YYYY-MM-DD'),
+    endDate: dayjs().format('YYYY-MM-DD'),
+  };
 }
 
 export function moneyText(value: string | null | undefined): string {
-    if (value == null || value === '') return '—';
-    try {
-        const fixed = new Decimal(value).toFixed(4);
-        const [integer, fraction] = fixed.split('.');
-        return `¥ ${integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
-    } catch {
-        return '—';
-    }
+  if (value == null || value === '') return '—';
+  try {
+    const fixed = new Decimal(value).toFixed(4);
+    const [integer, fraction] = fixed.split('.');
+    return `¥ ${integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`;
+  } catch {
+    return '—';
+  }
 }
 
 export function numberText(value: string | null | undefined): string {
-    if (value == null || value === '') return '—';
-    try {
-        return new Decimal(value).toFixed(4);
-    } catch {
-        return '—';
-    }
+  if (value == null || value === '') return '—';
+  try {
+    return new Decimal(value).toFixed(4);
+  } catch {
+    return '—';
+  }
 }
 
 export function dateTimeText(value: string | null | undefined): string {
-    if (!value) return '—';
-    const date = dayjs(value);
-    return date.isValid() ? date.format('YYYY-MM-DD HH:mm:ss') : value;
+  if (!value) return '—';
+  const date = dayjs(value);
+  return date.isValid() ? date.format('YYYY-MM-DD HH:mm:ss') : value;
 }
 
 export function nowDateTimeValue(): string {
-    return dayjs().format('YYYY-MM-DD HH:mm:ss');
+  return dayjs().format('YYYY-MM-DD HH:mm:ss');
 }
 
 export function entryTypeText(value: string | null | undefined): string {
-    return value === 'RED' ? '红字' : value === 'REVERSE' ? '反向' : value === 'NORMAL' ? '正常' : value || '—';
+  return value === 'RED' ? '红字' : value === 'REVERSE' ? '反向' : value === 'NORMAL' ? '正常' : value || '—';
 }
 
 export function settleStateText(value: string | null | undefined): string {
-    return value === 'OPEN' ? '未结清' : value === 'PARTIAL' ? '部分结清' : value === 'SETTLED' ? '已结清' : value || '—';
+  return value === 'OPEN' ? '未结清' : value === 'PARTIAL' ? '部分结清' : value === 'SETTLED' ? '已结清' : value || '—';
 }
 
 /**
  * 把操作类型转为中文；不认识的类型保留原值，便于发现新增动作。
  */
 export function operationTypeText(value: string | null | undefined): string {
-    if (!value) return '—';
-    return SCM_FINANCE_OPERATION_TYPE_ENUM[value]?.desc || value;
+  if (!value) return '—';
+  return SCM_FINANCE_OPERATION_TYPE_ENUM[value]?.desc || value;
 }
 
 export function settleStateTone(value: string | null | undefined): ScmStatusTone {
-    return value === 'SETTLED' ? 'success' : value === 'PARTIAL' ? 'processing' : value === 'OPEN' ? 'warning' : 'neutral';
+  return value === 'SETTLED' ? 'success' : value === 'PARTIAL' ? 'processing' : value === 'OPEN' ? 'warning' : 'neutral';
 }
 
 /**
  * 金额样式：普通金额正常显示，零余额弱化，非零异常金额高亮。
  */
 export function moneyClass(value: string | null | undefined, mode: 'fact' | 'balance' | 'anomaly' = 'fact'): string {
-    if (value == null || value === '') return 'scm-money scm-money--muted';
-    try {
-        const amount = new Decimal(value);
-        if (amount.isNegative()) return 'scm-money scm-money--negative';
-        if (mode === 'anomaly') return amount.isZero() ? 'scm-money scm-money--muted' : 'scm-money scm-money--negative money-alert';
-        if (mode === 'balance' && amount.isZero()) return 'scm-money scm-money--muted';
-    } catch {
-        return 'scm-money';
-    }
+  if (value == null || value === '') return 'scm-money scm-money--muted';
+  try {
+    const amount = new Decimal(value);
+    if (amount.isNegative()) return 'scm-money scm-money--negative';
+    if (mode === 'anomaly') return amount.isZero() ? 'scm-money scm-money--muted' : 'scm-money scm-money--negative money-alert';
+    if (mode === 'balance' && amount.isZero()) return 'scm-money scm-money--muted';
+  } catch {
     return 'scm-money';
+  }
+  return 'scm-money';
 }
 
 /** 收款差额 = 金额 − 有效金额，即已被反向冲减的部分；红字/反向行本身没有差额语义 */
 export function receiptDifference(record: {entryType: string; amount: string; effectiveAmount: string}): string | null {
-    if (record.entryType !== 'NORMAL') return null;
-    try {
-        return new Decimal(record.amount).minus(record.effectiveAmount).toFixed(4);
-    } catch {
-        return null;
-    }
+  if (record.entryType !== 'NORMAL') return null;
+  try {
+    return new Decimal(record.amount).minus(record.effectiveAmount).toFixed(4);
+  } catch {
+    return null;
+  }
 }
 
 export function paymentMethodText(value: string | null | undefined): string {
-    return value === 'CASH' ? '现金'
-        : value === 'BANK_TRANSFER' ? '银行转账'
-            : value === 'ONLINE_PAYMENT' ? '在线支付'
-                : value === 'OTHER' ? '其他' : value || '—';
+  return value === 'CASH'
+    ? '现金'
+    : value === 'BANK_TRANSFER'
+    ? '银行转账'
+    : value === 'ONLINE_PAYMENT'
+    ? '在线支付'
+    : value === 'OTHER'
+    ? '其他'
+    : value || '—';
 }
 
 export function isValidPositiveAmount(value: string | null | undefined): boolean {
-    if (!value || !/^(?:0|[1-9]\d{0,13})(?:\.\d{1,4})?$/.test(value)) return false;
-    try {
-        return new Decimal(value).greaterThan(0);
-    } catch {
-        return false;
-    }
+  if (!value || !/^(?:0|[1-9]\d{0,13})(?:\.\d{1,4})?$/.test(value)) return false;
+  try {
+    return new Decimal(value).greaterThan(0);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -110,16 +115,16 @@ export function isValidPositiveAmount(value: string | null | undefined): boolean
  * 金额超出允许范围或输入无效时返回空字符串，避免提交错误金额。
  */
 export function lineAmount(quantity: string | null | undefined, unitPrice: string | null | undefined): string {
-    if (quantity == null || unitPrice == null || !isValidPositiveAmount(quantity) || !isValidPositiveAmount(unitPrice)) return '';
-    try {
-        const amount = new LineAmountDecimal(quantity).times(unitPrice).toFixed(4, Decimal.ROUND_HALF_UP);
-        return isValidPositiveAmount(amount) ? amount : '';
-    } catch {
-        return '';
-    }
+  if (quantity == null || unitPrice == null || !isValidPositiveAmount(quantity) || !isValidPositiveAmount(unitPrice)) return '';
+  try {
+    const amount = new LineAmountDecimal(quantity).times(unitPrice).toFixed(4, Decimal.ROUND_HALF_UP);
+    return isValidPositiveAmount(amount) ? amount : '';
+  } catch {
+    return '';
+  }
 }
 
 export function trimOptional(value: string | null | undefined): string | null {
-    const trimmed = value?.trim();
-    return trimmed ? trimmed : null;
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
 }

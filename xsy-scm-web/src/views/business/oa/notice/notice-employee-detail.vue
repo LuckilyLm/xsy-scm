@@ -1,6 +1,6 @@
 <!--
   * 通知  详情 （员工）
-  * 
+  *
 -->
 <template>
   <a-card size="small">
@@ -21,16 +21,16 @@
       <div class="content-html" v-html="noticeDetail.contentHtml"></div>
       <!--endprint-->
     </div>
-    <a-divider/>
+    <a-divider />
     <div>
       附件：
-      <file-preview v-if="!$lodash.isEmpty(noticeDetail.attachment)" :fileList="noticeDetail.attachment"/>
+      <file-preview v-if="!$lodash.isEmpty(noticeDetail.attachment)" :fileList="noticeDetail.attachment" />
       <span v-else>无</span>
     </div>
   </a-card>
 
   <a-card title="记录" size="small" class="smart-margin-top10">
-    <NoticeViewRecordList ref="noticeViewRecordList" :noticeId="route.query.noticeId"/>
+    <NoticeViewRecordList ref="noticeViewRecordList" :noticeId="route.query.noticeId" />
   </a-card>
 </template>
 

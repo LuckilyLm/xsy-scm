@@ -6,34 +6,34 @@
 <template>
   <div class="clearfix">
     <a-upload
-        :multiple="props.multiple"
-        :accept="props.accept"
-        :before-upload="beforeUpload"
-        :customRequest="customRequest"
-        :file-list="fileList"
-        :headers="{ Authorization: 'Bearer ' + useUserStore().getToken }"
-        :list-type="listType"
-        @change="handleChange"
-        @preview="handlePreview"
-        @remove="handleRemove"
+      :multiple="props.multiple"
+      :accept="props.accept"
+      :before-upload="beforeUpload"
+      :customRequest="customRequest"
+      :file-list="fileList"
+      :headers="{Authorization: 'Bearer ' + useUserStore().getToken}"
+      :list-type="listType"
+      @change="handleChange"
+      @preview="handlePreview"
+      @remove="handleRemove"
     >
       <div v-if="fileList.length < props.maxUploadSize">
         <template v-if="listType === 'picture-card'">
-          <PlusOutlined/>
+          <PlusOutlined />
           <div class="ant-upload-text">
             {{ buttonText }}
           </div>
         </template>
         <template v-if="listType === 'text'">
           <a-button>
-            <upload-outlined/>
+            <upload-outlined />
             {{ buttonText }}
           </a-button>
         </template>
       </div>
     </a-upload>
     <a-modal :footer="null" :open="previewVisible" @cancel="handleCancel">
-      <img :src="previewUrl" alt="example" style="width: 100%"/>
+      <img :src="previewUrl" alt="example" style="width: 100%" />
     </a-modal>
   </div>
 </template>
@@ -113,13 +113,13 @@ const fileList = ref([]);
 const previewUrl = ref('');
 
 watch(
-    files,
-    (value) => {
-      fileList.value = value;
-    },
-    {
-      immediate: true,
-    }
+  files,
+  (value) => {
+    fileList.value = value;
+  },
+  {
+    immediate: true,
+  }
 );
 
 const emit = defineEmits(['update:value', 'change']);

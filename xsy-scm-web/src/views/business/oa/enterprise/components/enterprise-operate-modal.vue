@@ -1,67 +1,65 @@
 <template>
   <a-modal
-      :open="visible"
-      :title="form.enterpriseId ? '编辑' : '添加'"
-      :width="700"
-      forceRender
-      ok-text="确认"
-      cancel-text="取消"
-      @ok="onSubmit"
-      @cancel="onClose"
+    :open="visible"
+    :title="form.enterpriseId ? '编辑' : '添加'"
+    :width="700"
+    forceRender
+    ok-text="确认"
+    cancel-text="取消"
+    @ok="onSubmit"
+    @cancel="onClose"
   >
-    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 18 }">
+    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{span: 5}" :wrapper-col="{span: 18}">
       <a-form-item label="企业名称" name="enterpriseName">
-        <a-input v-model:value="form.enterpriseName" placeholder="请输入企业名称"/>
+        <a-input v-model:value="form.enterpriseName" placeholder="请输入企业名称" />
       </a-form-item>
 
       <a-form-item label="企业logo" name="enterpriseLogo">
         <Upload
-            accept=".jpg,.jpeg,.png,.gif"
-            :maxUploadSize="1"
-            buttonText="点击上传企业logo"
-            :default-file-list="form.enterpriseLogo"
-            @change="enterpriseLogoChange"
+          accept=".jpg,.jpeg,.png,.gif"
+          :maxUploadSize="1"
+          buttonText="点击上传企业logo"
+          :default-file-list="form.enterpriseLogo"
+          @change="enterpriseLogoChange"
         />
       </a-form-item>
 
       <a-form-item label="统一社会信用代码" name="unifiedSocialCreditCode">
-        <a-input v-model:value="form.unifiedSocialCreditCode" placeholder="请输入统一社会信用代码"/>
+        <a-input v-model:value="form.unifiedSocialCreditCode" placeholder="请输入统一社会信用代码" />
       </a-form-item>
 
       <a-form-item label="类型" name="type">
-        <SmartEnumSelect width="100%" v-model:value="form.type" placeholder="请选择类型"
-                         enum-name="ENTERPRISE_TYPE_ENUM"/>
+        <SmartEnumSelect width="100%" v-model:value="form.type" placeholder="请选择类型" enum-name="ENTERPRISE_TYPE_ENUM" />
       </a-form-item>
 
       <a-form-item label="联系人" name="contact">
-        <a-input v-model:value="form.contact" placeholder="请输入联系人"/>
+        <a-input v-model:value="form.contact" placeholder="请输入联系人" />
       </a-form-item>
       <a-form-item label="联系人电话" name="contactPhone">
-        <a-input v-model:value="form.contactPhone" placeholder="请输入联系人电话"/>
+        <a-input v-model:value="form.contactPhone" placeholder="请输入联系人电话" />
       </a-form-item>
 
       <a-form-item label="所在城市" name="provinceCityDistrict">
-        <AreaCascader type="province_city_district" style="width: 100%" v-model:value="area"
-                      placeholder="请选择所在城市" @change="changeArea"/>
+        <AreaCascader type="province_city_district" style="width: 100%" v-model:value="area" placeholder="请选择所在城市" @change="changeArea" />
       </a-form-item>
       <a-form-item label="详细地址" name="address">
-        <a-input v-model:value="form.address" placeholder="请输入详细地址"/>
+        <a-input v-model:value="form.address" placeholder="请输入详细地址" />
       </a-form-item>
 
       <a-form-item label="邮箱" name="email">
-        <a-input v-model:value="form.email" placeholder="请输入邮箱"/>
+        <a-input v-model:value="form.email" placeholder="请输入邮箱" />
       </a-form-item>
       <a-form-item label="启用状态" name="disabledFlag">
-        <a-switch v-model:checked="enabledChecked" @change="enabledCheckedChange"/>
+        <a-switch v-model:checked="enabledChecked" @change="enabledCheckedChange" />
       </a-form-item>
 
       <a-form-item label="营业执照" name="businessLicense">
         <Upload
-            accept=".jpg,.jpeg,.png,.gif"
-            :maxUploadSize="1"
-            buttonText="点击上传营业执照"
-            :default-file-list="form.businessLicense"
-            @change="businessLicenseChange"
+          accept=".jpg,.jpeg,.png,.gif"
+          :maxUploadSize="1"
+          buttonText="点击上传营业执照"
+          :default-file-list="form.businessLicense"
+          @change="businessLicenseChange"
         />
       </a-form-item>
     </a-form>
@@ -186,28 +184,28 @@ const rules = {
 
 function onSubmit() {
   formRef.value
-      .validate()
-      .then(async () => {
-        SmartLoading.show();
-        try {
-          if (form.enterpriseId) {
-            await enterpriseApi.update(form);
-          } else {
-            await enterpriseApi.create(form);
-          }
-          message.success(`${form.enterpriseId ? '修改' : '添加'}成功`);
-          emit('refresh');
-          onClose();
-        } catch (error) {
-          smartSentry.captureError(error);
-        } finally {
-          SmartLoading.hide();
+    .validate()
+    .then(async () => {
+      SmartLoading.show();
+      try {
+        if (form.enterpriseId) {
+          await enterpriseApi.update(form);
+        } else {
+          await enterpriseApi.create(form);
         }
-      })
-      .catch((error) => {
-        console.log('error', error);
-        message.error('参数验证错误，请仔细填写表单数据!');
-      });
+        message.success(`${form.enterpriseId ? '修改' : '添加'}成功`);
+        emit('refresh');
+        onClose();
+      } catch (error) {
+        smartSentry.captureError(error);
+      } finally {
+        SmartLoading.hide();
+      }
+    })
+    .catch((error) => {
+      console.log('error', error);
+      message.error('参数验证错误，请仔细填写表单数据!');
+    });
 }
 
 // 状态

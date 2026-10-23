@@ -3,11 +3,9 @@
   *
 -->
 <template>
-  <a-modal :open="visible" width="620px" :footer="null" :bodyStyle="{ height: '420px' }" title="" :closable="false"
-           :maskClosable="true">
-    <a-alert style="width: 550px" message="根据《网络安全法》和《数据安全法》要求，需要定期修改密码保障数据安全！"
-             type="warning" show-icon/>
-    <Password @on-success="refresh"/>
+  <a-modal :open="visible" width="620px" :footer="null" :bodyStyle="{height: '420px'}" title="" :closable="false" :maskClosable="true">
+    <a-alert style="width: 550px" message="根据《网络安全法》和《数据安全法》要求，需要定期修改密码保障数据安全！" type="warning" show-icon />
+    <Password @on-success="refresh" />
   </a-modal>
 </template>
 <script setup lang="ts">

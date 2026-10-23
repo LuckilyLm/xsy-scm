@@ -15,28 +15,16 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="单据号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.lossGainNo" placeholder="单据号" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.lossGainNo" placeholder="单据号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px"/>
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
       </a-form-item>
       <a-form-item label="类型" class="smart-query-form-item">
-        <a-select
-            v-model:value="queryForm.adjustType"
-            :options="typeOptions"
-            placeholder="全部"
-            allow-clear
-            style="width: 120px"
-        />
+        <a-select v-model:value="queryForm.adjustType" :options="typeOptions" placeholder="全部" allow-clear style="width: 120px" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <a-select
-            v-model:value="queryForm.status"
-            :options="statusOptions"
-            placeholder="全部"
-            allow-clear
-            style="width: 130px"
-        />
+        <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 130px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -56,41 +44,35 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:loss-gain:add'">
-          新建报损报溢单
-        </a-button>
+        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:loss-gain:add'"> 新建报损报溢单 </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_LOSS_GAIN"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_LOSS_GAIN" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.LOSS_GAIN"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '暂无报损报溢单' }"
-        :scroll="{ x: scrollX }"
+      :id="SCM_INVENTORY_TABLE_ID.LOSS_GAIN"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无报损报溢单'}"
+      :scroll="{x: scrollX}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'adjustType'">
-          <ScmStatusTag :tone="typeTone(record.adjustType)" :label="record.adjustTypeDesc || record.adjustType"/>
+          <ScmStatusTag :tone="typeTone(record.adjustType)" :label="record.adjustTypeDesc || record.adjustType" />
         </template>
         <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status" />
         </template>
         <template v-else-if="column.dataIndex === 'auditedAt'">{{ datetime(record.auditedAt) }}</template>
         <template v-else-if="column.dataIndex === 'auditor'">{{ record.auditor || '—' }}</template>
@@ -99,15 +81,15 @@
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
-                v-if="record.status === 'PENDING'"
-                type="link"
-                size="small"
-                @click="openAudit(record, 'approve')"
-                v-privilege="'scm:inventory:loss-gain:approve'"
+              v-if="record.status === 'PENDING'"
+              type="link"
+              size="small"
+              @click="openAudit(record, 'approve')"
+              v-privilege="'scm:inventory:loss-gain:approve'"
             >
               审批
             </a-button>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -116,23 +98,23 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <!-- 新建 / 编辑待审核 -->
   <a-drawer
-      :open="drawerOpen"
-      :title="form.id ? `编辑报损报溢单 ${form.lossGainNo}` : '新建报损报溢单'"
-      :width="scmDrawerWidth('l')"
-      @close="closeDrawer"
+    :open="drawerOpen"
+    :title="form.id ? `编辑报损报溢单 ${form.lossGainNo}` : '新建报损报溢单'"
+    :width="scmDrawerWidth('l')"
+    @close="closeDrawer"
   >
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="调整类型" name="adjustType">
@@ -142,45 +124,30 @@
         </a-radio-group>
       </a-form-item>
       <a-form-item label="仓库" name="warehouseId">
-        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
+        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px" />
       </a-form-item>
       <a-form-item label="原因" name="reason">
-        <a-input v-model:value="form.reason" :maxlength="200" show-count
-                 placeholder="如：到货变质 / 运输破损 / 盘点外多出"/>
+        <a-input v-model:value="form.reason" :maxlength="200" show-count placeholder="如：到货变质 / 运输破损 / 盘点外多出" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count/>
+        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count />
       </a-form-item>
       <a-form-item label="明细" required>
-        <a-table
-            size="small"
-            :data-source="form.items"
-            :columns="itemColumns"
-            row-key="_key"
-            bordered
-            :pagination="false"
-        >
-          <template #bodyCell="{ record, column, index }">
+        <a-table size="small" :data-source="form.items" :columns="itemColumns" row-key="_key" bordered :pagination="false">
+          <template #bodyCell="{record, column, index}">
             <template v-if="column.dataIndex === 'skuId'">
               <SkuSelect
-                  :value="record.skuId"
-                  :disabled-statuses="[]"
-                  width="260px"
-                  @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
+                :value="record.skuId"
+                :disabled-statuses="[]"
+                width="260px"
+                @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
               />
             </template>
             <template v-else-if="column.dataIndex === 'quantity'">
-              <a-input-number
-                  v-model:value="record.quantity"
-                  :min="0.0001"
-                  :precision="4"
-                  :step="1"
-                  placeholder="0.0000"
-                  style="width: 140px"
-              />
+              <a-input-number v-model:value="record.quantity" :min="0.0001" :precision="4" :step="1" placeholder="0.0000" style="width: 140px" />
             </template>
             <template v-else-if="column.dataIndex === 'remark'">
-              <a-input v-model:value="record.remark" :maxlength="500"/>
+              <a-input v-model:value="record.remark" :maxlength="500" />
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <a-button type="link" size="small" danger @click="removeItem(index)">删除</a-button>
@@ -202,22 +169,24 @@
 
   <!-- 审批 / 驳回 -->
   <a-modal
-      :open="auditOpen"
-      :title="auditMode === 'approve' ? '审批通过' : '驳回'"
-      :confirm-loading="auditSaving"
-      :ok-text="auditMode === 'approve' ? '确认审批' : '确认驳回'"
-      :ok-type="auditMode === 'approve' ? 'primary' : 'danger'"
-      cancel-text="取消"
-      @ok="onAuditSubmit"
-      @cancel="auditOpen = false"
+    :open="auditOpen"
+    :title="auditMode === 'approve' ? '审批通过' : '驳回'"
+    :confirm-loading="auditSaving"
+    :ok-text="auditMode === 'approve' ? '确认审批' : '确认驳回'"
+    :ok-type="auditMode === 'approve' ? 'primary' : 'danger'"
+    cancel-text="取消"
+    @ok="onAuditSubmit"
+    @cancel="auditOpen = false"
   >
     <a-alert
-        :type="auditMode === 'approve' ? 'warning' : 'info'"
-        show-icon
-        style="margin-bottom: 12px"
-        :message="auditMode === 'approve'
-        ? '审批通过会立即按本单明细调整库存并生成不可删除的流水，此操作不可撤销。'
-        : '驳回不产生任何库存影响；单据将变为终态，不可再修改或删除。'"
+      :type="auditMode === 'approve' ? 'warning' : 'info'"
+      show-icon
+      style="margin-bottom: 12px"
+      :message="
+        auditMode === 'approve'
+          ? '审批通过会立即按本单明细调整库存并生成不可删除的流水，此操作不可撤销。'
+          : '驳回不产生任何库存影响；单据将变为终态，不可再修改或删除。'
+      "
     />
     <a-descriptions :column="1" bordered size="small" style="margin-bottom: 12px">
       <a-descriptions-item label="单据号">{{ auditRecord.lossGainNo }}</a-descriptions-item>
@@ -229,11 +198,11 @@
     <a-form layout="vertical">
       <a-form-item :label="auditMode === 'approve' ? '审核意见（可选）' : '审核意见（必填）'">
         <a-textarea
-            v-model:value="auditOpinion"
-            :rows="3"
-            :maxlength="500"
-            show-count
-            :placeholder="auditMode === 'approve' ? '可留空' : '请说明驳回原因，录单人据此修改'"
+          v-model:value="auditOpinion"
+          :rows="3"
+          :maxlength="500"
+          show-count
+          :placeholder="auditMode === 'approve' ? '可留空' : '请说明驳回原因，录单人据此修改'"
         />
       </a-form-item>
     </a-form>
@@ -262,12 +231,7 @@ import {
   SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM,
   SCM_INVENTORY_TABLE_ID,
 } from '/@/constants/business/scm/inventory-const';
-import type {
-  Id,
-  InventoryLossGain,
-  InventoryLossGainAdd,
-  InventoryLossGainQuery,
-} from './inventory-types';
+import type {Id, InventoryLossGain, InventoryLossGainAdd, InventoryLossGainQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {fixed4} from '../common/scm-fixed';
 import {singleWarehouseDefault} from './inventory-model';
@@ -669,12 +633,12 @@ async function enterPage() {
 }
 
 watch(
-    [() => route.name, () => route.query],
-    ([name]) => {
-      // 组件被缓存时，跳往其他页面不应触发本页查询；回到本页才重新套用来源链接。
-      if (name !== lossGainRouteName) return;
-      void enterPage();
-    },
-    {immediate: true}
+  [() => route.name, () => route.query],
+  ([name]) => {
+    // 组件被缓存时，跳往其他页面不应触发本页查询；回到本页才重新套用来源链接。
+    if (name !== lossGainRouteName) return;
+    void enterPage();
+  },
+  {immediate: true}
 );
 </script>

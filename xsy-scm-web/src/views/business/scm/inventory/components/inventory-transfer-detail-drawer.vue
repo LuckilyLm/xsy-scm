@@ -13,16 +13,8 @@
       <a-descriptions-item label="收货时间">{{ datetime(detail.receivedAt) }}</a-descriptions-item>
       <a-descriptions-item label="备注" :span="2">{{ detail.remark || '—' }}</a-descriptions-item>
     </a-descriptions>
-    <a-table
-        style="margin-top: 12px"
-        size="small"
-        :data-source="detail.items || []"
-        :columns="itemColumns"
-        row-key="id"
-        bordered
-        :pagination="false"
-    >
-      <template #bodyCell="{ record, column }">
+    <a-table style="margin-top: 12px" size="small" :data-source="detail.items || []" :columns="itemColumns" row-key="id" bordered :pagination="false">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ quantityText(record.quantity) }}</span>
         </template>

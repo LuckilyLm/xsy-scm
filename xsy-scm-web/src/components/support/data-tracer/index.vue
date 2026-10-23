@@ -7,20 +7,20 @@
   <a-form class="smart-query-form">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="变更内容"/>
+        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="变更内容" />
       </a-form-item>
 
       <a-form-item class="smart-query-form-item smart-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="onReload">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -34,19 +34,19 @@
     <!-- <DataTracerTable :tableData="tableData" @showDetail="showDetail" /> -->
 
     <!---以 timeline 时间轴形式 显示-->
-    <DataTracerTimeline :tableData="tableData" @showDetail="showDetail"/>
+    <DataTracerTimeline :tableData="tableData" @showDetail="showDetail" />
 
     <a-pagination
-        showSizeChanger
-        showQuickJumper
-        show-less-items
-        :pageSizeOptions="PAGE_SIZE_OPTIONS"
-        :defaultPageSize="queryForm.pageSize"
-        v-model:current="queryForm.pageNum"
-        v-model:pageSize="queryForm.pageSize"
-        :total="total"
-        @change="ajaxQuery"
-        :show-total="(total) => `共${total}条`"
+      showSizeChanger
+      showQuickJumper
+      show-less-items
+      :pageSizeOptions="PAGE_SIZE_OPTIONS"
+      :defaultPageSize="queryForm.pageSize"
+      v-model:current="queryForm.pageNum"
+      v-model:pageSize="queryForm.pageSize"
+      :total="total"
+      @change="ajaxQuery"
+      :show-total="(total) => `共${total}条`"
     />
     <a-modal v-model:open="visibleDiff" width="90%" title="数据比对" :footer="null">
       <div v-html="prettyHtml"></div>
@@ -101,10 +101,12 @@ function onSearch() {
 async function ajaxQuery() {
   try {
     tableLoading.value = true;
-    let responseModel = await dataTracerApi.queryList(Object.assign({}, queryForm, {
-      dataId: props.dataId,
-      type: props.type
-    }));
+    let responseModel = await dataTracerApi.queryList(
+      Object.assign({}, queryForm, {
+        dataId: props.dataId,
+        type: props.type,
+      })
+    );
     for (const e of responseModel.data.list) {
       if (!e.userAgent) {
         continue;
@@ -127,14 +129,14 @@ async function ajaxQuery() {
 
 // ========= 定义 watch 监听 ===============
 watch(
-    () => props.dataId,
-    (e) => {
-      if (e) {
-        queryForm.dataId = e;
-        onSearch();
-      }
-    },
-    {immediate: true}
+  () => props.dataId,
+  (e) => {
+    if (e) {
+      queryForm.dataId = e;
+      onSearch();
+    }
+  },
+  {immediate: true}
 );
 
 // --------------- diff 特效 ---------------
@@ -161,7 +163,7 @@ function showDetail(record) {
     let diffDiv = document.querySelectorAll('.d2h-file-side-diff');
     if (diffDiv.length > 0) {
       let left = diffDiv[0],
-          right = diffDiv[1];
+        right = diffDiv[1];
       left.addEventListener('scroll', function (e) {
         if (left.scrollLeft !== right.scrollLeft) {
           right.scrollLeft = left.scrollLeft;

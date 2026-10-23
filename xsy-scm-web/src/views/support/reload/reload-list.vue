@@ -20,38 +20,37 @@
 · 用于执行某些后门代码
 · 用于进行Java热加载（前提是类结构不发生变化）
 · 其他不能重启服务的应用
-</pre>
+</pre
+        >
       </template>
     </a-alert>
 
     <a-row justify="end">
-      <TableOperator class="smart-margin-bottom5 smart-margin-top5" v-model="columns"
-                     :tableId="TABLE_ID_CONST.SUPPORT.RELOAD" :refresh="ajaxQuery"/>
+      <TableOperator class="smart-margin-bottom5 smart-margin-top5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.RELOAD" :refresh="ajaxQuery" />
     </a-row>
 
     <a-table
-        size="small"
-        bordered
-        class="smart-margin-top10"
-        :dataSource="tableData"
-        :loading="tableLoading"
-        :columns="columns"
-        rowKey="tag"
-        :pagination="false"
+      size="small"
+      bordered
+      class="smart-margin-top10"
+      :dataSource="tableData"
+      :loading="tableLoading"
+      :columns="columns"
+      rowKey="tag"
+      :pagination="false"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
             <a-button @click="doReload(record.tag)" v-privilege="'support:reload:execute'" type="link">执行</a-button>
-            <a-button @click="showResultList(record.tag)" v-privilege="'support:reload:result'" type="link">查看结果
-            </a-button>
+            <a-button @click="showResultList(record.tag)" v-privilege="'support:reload:result'" type="link">查看结果 </a-button>
           </div>
         </template>
       </template>
     </a-table>
 
-    <DoReloadForm @refresh="ajaxQuery" ref="doReloadForm"/>
-    <ReloadResultList ref="reloadResultList"/>
+    <DoReloadForm @refresh="ajaxQuery" ref="doReloadForm" />
+    <ReloadResultList ref="reloadResultList" />
   </a-card>
 </template>
 <script setup lang="ts">

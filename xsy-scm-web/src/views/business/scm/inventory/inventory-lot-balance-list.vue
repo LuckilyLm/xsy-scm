@@ -8,26 +8,16 @@
   <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
     <div class="scm-filter-fields">
       <a-form-item label="仓库">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px"/>
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
       </a-form-item>
       <a-form-item label="批次号">
-        <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="来源生产批号">
-        <a-input
-            v-model:value="queryForm.sourceLotNo"
-            placeholder="来源生产批号"
-            allow-clear
-            @pressEnter="onSearch"
-        />
+        <a-input v-model:value="queryForm.sourceLotNo" placeholder="来源生产批号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="商品名称">
-        <a-input
-            v-model:value="queryForm.productName"
-            placeholder="商品名称"
-            allow-clear
-            @pressEnter="onSearch"
-        />
+        <a-input v-model:value="queryForm.productName" placeholder="商品名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
     </div>
     <div class="scm-filter-actions">
@@ -46,27 +36,23 @@
     <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block"></div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_LOT_BALANCE"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_LOT_BALANCE" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.LOT_BALANCE"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '暂无批次库存' }"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      :id="SCM_INVENTORY_TABLE_ID.LOT_BALANCE"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无批次库存'}"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
@@ -91,20 +77,20 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
   <a-drawer :open="!!inspectionLot" title="批次检测报告" :width="scmDrawerWidth('m')" @close="inspectionLot = undefined">
     <template v-if="inspectionLot">
       <p>{{ inspectionLot.productName }} · {{ inspectionLot.skuName }}</p>
-      <TraceInspectionPanel :lot-id="inspectionLot.lotId" :lot-no="inspectionLot.lotNo" :can-manage="canManageInspection"/>
+      <TraceInspectionPanel :lot-id="inspectionLot.lotId" :lot-no="inspectionLot.lotNo" :can-manage="canManageInspection" />
     </template>
   </a-drawer>
 </template>

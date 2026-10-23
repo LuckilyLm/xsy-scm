@@ -14,8 +14,10 @@
 原理：内部有三种实现方式： 1) 基于内存锁实现 （不支持分布式和集群）；  2) 基于redis锁实现 ；  3) 基于Mysql 锁for update 实现
 - 支持随机生成和查询生成记录
 - 支持动态配置
-</pre>
-        <div style="color:red">系统默认使用“内存锁”类型，若修改，请将后端代码 @Service
+</pre
+        >
+        <div style="color: red">
+          系统默认使用“内存锁”类型，若修改，请将后端代码 @Service
           注解加到对应的实现类上：SerialNumberInternService、SerialNumberMysqlService、SerialNumberRedisService
         </div>
       </template>
@@ -23,31 +25,28 @@
 
     <a-row justify="end">
       <TableOperator
-          class="smart-margin-bottom5 smart-margin-top5"
-          v-model="columns"
-          :tableId="TABLE_ID_CONST.SUPPORT.SERIAL_NUMBER"
-          :refresh="ajaxQuery"
+        class="smart-margin-bottom5 smart-margin-top5"
+        v-model="columns"
+        :tableId="TABLE_ID_CONST.SUPPORT.SERIAL_NUMBER"
+        :refresh="ajaxQuery"
       />
     </a-row>
 
     <a-table
-        size="small"
-        :loading="tableLoading"
-        bordered
-        class="smart-margin-top10"
-        :dataSource="tableData"
-        :columns="columns"
-        rowKey="tag"
-        :pagination="false"
+      size="small"
+      :loading="tableLoading"
+      bordered
+      class="smart-margin-top10"
+      :dataSource="tableData"
+      :columns="columns"
+      rowKey="tag"
+      :pagination="false"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
-            <a-button @click="generate(record)" v-privilege="'support:serialNumber:generate'" type="link">生成
-            </a-button>
-            <a-button @click="showRecord(record.serialNumberId)" v-privilege="'support:serialNumber:record'"
-                      type="link">查看记录
-            </a-button>
+            <a-button @click="generate(record)" v-privilege="'support:serialNumber:generate'" type="link">生成 </a-button>
+            <a-button @click="showRecord(record.serialNumberId)" v-privilege="'support:serialNumber:record'" type="link">查看记录 </a-button>
           </div>
         </template>
       </template>
@@ -55,9 +54,9 @@
   </a-card>
 
   <!---生成表单--->
-  <SerialNumberGenerateFormModal ref="generateForm" @refresh="ajaxQuery"/>
+  <SerialNumberGenerateFormModal ref="generateForm" @refresh="ajaxQuery" />
   <!---生成记录--->
-  <SerialNumberRecordList ref="recordList"/>
+  <SerialNumberRecordList ref="recordList" />
 </template>
 <script setup lang="ts">
 import {onMounted, ref} from 'vue';
@@ -85,7 +84,8 @@ const columns = ref([
   },
   {
     title: '循环周期',
-    dataIndex: 'ruleType', align: 'center',
+    dataIndex: 'ruleType',
+    align: 'center',
   },
   {
     title: '初始值',

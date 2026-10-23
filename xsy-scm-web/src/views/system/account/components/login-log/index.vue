@@ -6,21 +6,20 @@
   <a-form class="smart-query-form" ref="queryFormRef">
     <a-row class="smart-query-form-row">
       <a-form-item label="时间" class="smart-query-form-item">
-        <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange"
-                        style="width: 240px"/>
+        <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange" style="width: 240px" />
       </a-form-item>
 
       <a-form-item class="smart-query-form-item smart-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -29,9 +28,8 @@
     </a-row>
   </a-form>
 
-  <a-table size="small" :dataSource="tableData" :columns="columns" bordered rowKey="loginLogId" :pagination="false"
-           :loading="tableLoading">
-    <template #bodyCell="{ text, record, column }">
+  <a-table size="small" :dataSource="tableData" :columns="columns" bordered rowKey="loginLogId" :pagination="false" :loading="tableLoading">
+    <template #bodyCell="{text, record, column}">
       <template v-if="column.dataIndex === 'loginResult'">
         <template v-if="text === LOGIN_RESULT_ENUM.LOGIN_SUCCESS.value">
           <a-tag color="success">登录成功</a-tag>
@@ -51,16 +49,16 @@
 
   <div class="smart-query-table-page">
     <a-pagination
-        showSizeChanger
-        showQuickJumper
-        show-less-items
-        :pageSizeOptions="PAGE_SIZE_OPTIONS"
-        :defaultPageSize="queryForm.pageSize"
-        v-model:current="queryForm.pageNum"
-        v-model:pageSize="queryForm.pageSize"
-        :total="total"
-        @change="ajaxQuery"
-        :show-total="(total) => `共${total}条`"
+      showSizeChanger
+      showQuickJumper
+      show-less-items
+      :pageSizeOptions="PAGE_SIZE_OPTIONS"
+      :defaultPageSize="queryForm.pageSize"
+      v-model:current="queryForm.pageNum"
+      v-model:pageSize="queryForm.pageSize"
+      :total="total"
+      @change="ajaxQuery"
+      :show-total="(total) => `共${total}条`"
     />
   </div>
 </template>

@@ -58,9 +58,9 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
   /** 读源码并剥掉注释（先剥 HTML 注释再剥块注释，顺序不能反）。 */
   function code(relative) {
     return readFileSync(new URL(relative, import.meta.url), 'utf8')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/^\s*\/\/.*$/gm, '');
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
   }
 
   test('amount contract keeps zero distinct from missing price', () => {
@@ -74,21 +74,27 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
   test('pricing status includes formula-specific missing basis reasons and five unavailable reasons', async () => {
     const constants = await import('../src/constants/business/scm/pricing-const.ts');
     assert.deepEqual(Object.keys(constants.UNPRICED_REASON_ENUM), [
-      'NO_PRICE_SOURCE', 'AGREEMENT_COST_MISSING', 'AGREEMENT_MARKET_PRICE_MISSING',
+      'NO_PRICE_SOURCE',
+      'AGREEMENT_COST_MISSING',
+      'AGREEMENT_MARKET_PRICE_MISSING',
       'AGREEMENT_RESULT_INVALID',
     ]);
     assert.deepEqual(Object.keys(constants.UNAVAILABLE_REASON_ENUM).sort(), [
-      'CATEGORY_DISABLED', 'NOT_VISIBLE', 'SKU_NOT_FOUND', 'SKU_OFF_SHELF', 'SPU_OFF_SHELF',
+      'CATEGORY_DISABLED',
+      'NOT_VISIBLE',
+      'SKU_NOT_FOUND',
+      'SKU_OFF_SHELF',
+      'SPU_OFF_SHELF',
     ]);
   });
 
   test('pricing error mapping preserves overlap, conflict, idempotency and sellability codes', async () => {
-    const { pricingError } = await import('../src/views/business/scm/pricing/pricing-errors.ts');
-    assert.match(pricingError({ code: 40933 }), /重叠/);
-    assert.match(pricingError({ code: 40935 }), /重叠/);
-    assert.match(pricingError({ code: 40921 }), /修改/);
-    assert.match(pricingError({ code: 40948 }), /批次号/);
-    assert.match(pricingError({ code: 40949 }), /不可售/);
+    const {pricingError} = await import('../src/views/business/scm/pricing/pricing-errors.ts');
+    assert.match(pricingError({code: 40933}), /重叠/);
+    assert.match(pricingError({code: 40935}), /重叠/);
+    assert.match(pricingError({code: 40921}), /修改/);
+    assert.match(pricingError({code: 40948}), /批次号/);
+    assert.match(pricingError({code: 40949}), /不可售/);
   });
 
   // ------------------------------------------------------------------ 价格中心展示
@@ -100,7 +106,10 @@ import {formatAmount, formatAmountOrDash} from '../src/utils/scm-amount.ts';
     assert.match(drawer, /:precision="4"/);
     assert.match(drawer, /:min="0"/);
     // 提交前必须收口回 4 位定点字符串：后端拒绝 JSON 数字，也拒绝空串
-    assert.match(drawer, /form\.unitPrice = form\.formulaType === 'FIXED' \? fixed4\(form\.unitPriceInput\) as string : null/);
+    assert.match(
+      drawer,
+      /form\.unitPrice\s*=\s*form\.formulaType\s*===\s*'FIXED'\s*\?\s*\(?\s*fixed4\(form\.unitPriceInput\)\s*as string\s*\)?\s*:\s*null/
+    );
     // 模型必须是稳定对象：`:model="{...form, ...}"` 每次渲染新建对象，change 校验读到的是上一份快照，
     // 表现为「选了客户仍提示请选择客户」「填了单价仍提示请填写单价」
     assert.doesNotMatch(drawer, /:model="\{\.\.\./);

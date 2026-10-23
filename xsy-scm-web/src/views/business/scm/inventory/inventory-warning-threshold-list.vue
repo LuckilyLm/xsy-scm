@@ -12,10 +12,10 @@
   <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
     <div class="scm-filter-fields">
       <a-form-item label="仓库">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px"/>
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="200px" />
       </a-form-item>
       <a-form-item label="商品规格编码">
-        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
     </div>
     <div class="scm-filter-actions">
@@ -33,32 +33,26 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block">
-        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:threshold:add'">
-          新建阈值配置
-        </a-button>
+        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:threshold:add'"> 新建阈值配置 </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING_THRESHOLD"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_WARNING_THRESHOLD" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.WARNING_THRESHOLD"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '暂无阈值配置' }"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      :id="SCM_INVENTORY_TABLE_ID.WARNING_THRESHOLD"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无阈值配置'}"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
@@ -79,23 +73,8 @@
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <a-button
-                type="link"
-                size="small"
-                @click="openEdit(record)"
-                v-privilege="'scm:inventory:threshold:update'"
-            >
-              编辑
-            </a-button>
-            <a-button
-                type="link"
-                size="small"
-                danger
-                @click="onDelete(record)"
-                v-privilege="'scm:inventory:threshold:delete'"
-            >
-              删除
-            </a-button>
+            <a-button type="link" size="small" @click="openEdit(record)" v-privilege="'scm:inventory:threshold:update'"> 编辑 </a-button>
+            <a-button type="link" size="small" danger @click="onDelete(record)" v-privilege="'scm:inventory:threshold:delete'"> 删除 </a-button>
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -104,59 +83,35 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <!-- 新建 / 编辑 -->
-  <a-drawer
-      :open="drawerOpen"
-      :title="form.id ? '编辑阈值配置' : '新建阈值配置'"
-      :width="scmDrawerWidth('s')"
-      @close="closeDrawer"
-  >
+  <a-drawer :open="drawerOpen" :title="form.id ? '编辑阈值配置' : '新建阈值配置'" :width="scmDrawerWidth('s')" @close="closeDrawer">
     <p class="scm-note">预警按可用量（现有量 − 预留量）判定。</p>
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="仓库" name="warehouseId">
-        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
+        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px" />
       </a-form-item>
       <a-form-item label="商品规格" name="skuId">
-        <SkuSelect
-            :value="form.skuId"
-            :disabled-statuses="[]"
-            width="260px"
-            @update:value="(v) => (form.skuId = Array.isArray(v) ? v[0] : v)"
-        />
+        <SkuSelect :value="form.skuId" :disabled-statuses="[]" width="260px" @update:value="(v) => (form.skuId = Array.isArray(v) ? v[0] : v)" />
       </a-form-item>
       <a-form-item label="预警下限" name="warnMin">
-        <a-input-number
-            v-model:value="form.warnMin"
-            :min="0"
-            :precision="4"
-            :step="1"
-            placeholder="留空表示不设下限"
-            style="width: 200px"
-        />
+        <a-input-number v-model:value="form.warnMin" :min="0" :precision="4" :step="1" placeholder="留空表示不设下限" style="width: 200px" />
       </a-form-item>
       <a-form-item label="预警上限" name="warnMax">
-        <a-input-number
-            v-model:value="form.warnMax"
-            :min="0"
-            :precision="4"
-            :step="1"
-            placeholder="留空表示不设上限"
-            style="width: 200px"
-        />
+        <a-input-number v-model:value="form.warnMax" :min="0" :precision="4" :step="1" placeholder="留空表示不设上限" style="width: 200px" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count/>
+        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count />
       </a-form-item>
     </a-form>
     <template #footer>
@@ -180,11 +135,7 @@ import {inventoryWarningThresholdApi} from '/@/api/business/scm/inventory-warnin
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
-import type {
-  InventoryWarningThreshold,
-  InventoryWarningThresholdAdd,
-  InventoryWarningThresholdQuery,
-} from './inventory-types';
+import type {InventoryWarningThreshold, InventoryWarningThresholdAdd, InventoryWarningThresholdQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {fixed4} from '../common/scm-fixed';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';

@@ -47,59 +47,59 @@ import {dictApi} from '/@/api/support/dict-api';
  * 获取用户信息和用户权限对应的路由，构建动态路由
  */
 async function getLoginInfo() {
-    try {
-        //获取登录用户信息
-        const res = await loginApi.getLoginInfo();
-        const dictRes = await dictApi.getAllDictData();
-        //构建系统的路由
-        let menuRouterList = res.data.menuList.filter((e) => e.path || e.frameUrl);
-        buildRoutes(menuRouterList);
-        initVue();
-        // 初始化数据字典
-        useDictStore().initData(dictRes.data);
-        //更新用户信息到pinia
-        useUserStore().setUserLoginInfo(res.data);
-    } catch (e) {
-        message.error(e.data ? e.data.msg : e.message);
-        smartSentry.captureError(e);
-        initVue();
-    }
+  try {
+    //获取登录用户信息
+    const res = await loginApi.getLoginInfo();
+    const dictRes = await dictApi.getAllDictData();
+    //构建系统的路由
+    let menuRouterList = res.data.menuList.filter((e) => e.path || e.frameUrl);
+    buildRoutes(menuRouterList);
+    initVue();
+    // 初始化数据字典
+    useDictStore().initData(dictRes.data);
+    //更新用户信息到pinia
+    useUserStore().setUserLoginInfo(res.data);
+  } catch (e) {
+    message.error(e.data ? e.data.msg : e.message);
+    smartSentry.captureError(e);
+    initVue();
+  }
 }
 
 async function initVue() {
-    let vueApp = createApp(App);
-    let app = vueApp
-        .use(router)
-        .use(store)
-        .use(i18n)
-        .use(Antd)
-        .use(smartEnumPlugin, constantsInfo)
-        .use(privilegePlugin)
-        .use(dictPlugin)
-        .use(JsonViewer);
-    //注入权限
-    app.directive('privilege', {
-        mounted(el, binding) {
-            privilegeDirective(el, binding);
-        },
-    });
-    // 注册图标组件
-    Object.keys(antIcons).forEach((key) => {
-        app.component(key, antIcons[key]);
-    });
-    //全局
-    app.config.globalProperties.$antIcons = antIcons;
-    app.config.globalProperties.$lodash = lodash;
-    // 表格单元格被省略号截断时，悬浮给出全文提示（主题层让单元格默认不换行）
-    installTableCellTooltip();
-    //挂载
-    app.mount('#app');
+  let vueApp = createApp(App);
+  let app = vueApp
+    .use(router)
+    .use(store)
+    .use(i18n)
+    .use(Antd)
+    .use(smartEnumPlugin, constantsInfo)
+    .use(privilegePlugin)
+    .use(dictPlugin)
+    .use(JsonViewer);
+  //注入权限
+  app.directive('privilege', {
+    mounted(el, binding) {
+      privilegeDirective(el, binding);
+    },
+  });
+  // 注册图标组件
+  Object.keys(antIcons).forEach((key) => {
+    app.component(key, antIcons[key]);
+  });
+  //全局
+  app.config.globalProperties.$antIcons = antIcons;
+  app.config.globalProperties.$lodash = lodash;
+  // 表格单元格被省略号截断时，悬浮给出全文提示（主题层让单元格默认不换行）
+  installTableCellTooltip();
+  //挂载
+  app.mount('#app');
 }
 
 //不需要获取用户信息、用户菜单、用户菜单动态路由，直接初始化vue即可
 let token = localRead(LocalStorageKeyConst.USER_TOKEN);
 if (!token) {
-    await initVue();
+  await initVue();
 } else {
-    await getLoginInfo();
+  await getLoginInfo();
 }

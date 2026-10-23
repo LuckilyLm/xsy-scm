@@ -1,23 +1,27 @@
 <!-- 商品标签内部编码由后端生成，表单仅提交业务属性。 -->
 <template>
-  <a-modal v-model:open="visible" :title="form.tagId ? '编辑商品标签' : '新增商品标签'" :confirm-loading="saving"
-           @ok="submit" @cancel="visible = false">
+  <a-modal
+    v-model:open="visible"
+    :title="form.tagId ? '编辑商品标签' : '新增商品标签'"
+    :confirm-loading="saving"
+    @ok="submit"
+    @cancel="visible = false"
+  >
     <a-form ref="formRef" :model="form" layout="vertical">
       <a-row :gutter="16">
         <a-col :span="12">
-          <a-form-item label="标签名称" name="name"
-                       :rules="[{ required: true, whitespace: true, message: '请输入标签名称' }]">
-            <a-input v-model:value="form.name" :maxlength="64" placeholder="如 有机"/>
+          <a-form-item label="标签名称" name="name" :rules="[{required: true, whitespace: true, message: '请输入标签名称'}]">
+            <a-input v-model:value="form.name" :maxlength="64" placeholder="如 有机" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item label="排序" name="sortOrder">
-            <a-input-number v-model:value="form.sortOrder" :min="0" :precision="0" style="width: 100%"/>
+            <a-input-number v-model:value="form.sortOrder" :min="0" :precision="0" style="width: 100%" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item label="状态" name="status">
-            <a-select v-model:value="form.status" :options="ENABLE_STATUS_ENUM"/>
+            <a-select v-model:value="form.status" :options="ENABLE_STATUS_ENUM" />
           </a-form-item>
         </a-col>
       </a-row>
@@ -32,15 +36,17 @@ import {productTagApi} from '/@/api/business/scm/product-assistant-api';
 import type {AssistantStatus, ProductTag} from '/@/types/business/scm/product';
 import {ENABLE_STATUS_ENUM} from '/@/constants/business/scm/product-const';
 
-const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), saving = ref(false), formRef = ref<FormInstance>();
+const emit = defineEmits<{saved: []}>();
+const visible = ref(false),
+  saving = ref(false),
+  formRef = ref<FormInstance>();
 const form = reactive({
   tagId: undefined as ProductTag['tagId'] | undefined,
   version: 0,
   tagCode: '',
   name: '',
   status: 'ENABLED' as AssistantStatus,
-  sortOrder: 0
+  sortOrder: 0,
 });
 
 function open(row?: ProductTag) {
@@ -50,7 +56,7 @@ function open(row?: ProductTag) {
     tagCode: row?.tagCode ?? '',
     name: row?.name ?? '',
     status: row?.status ?? 'ENABLED',
-    sortOrder: row?.sortOrder ?? 0
+    sortOrder: row?.sortOrder ?? 0,
   });
   visible.value = true;
   void nextTick(() => formRef.value?.clearValidate());
@@ -60,18 +66,20 @@ async function save() {
   saving.value = true;
   try {
     // 新增不接受主键与版本，编辑必须带回乐观锁版本。
-    if (form.tagId) await productTagApi.update({
-      tagId: form.tagId,
-      version: form.version,
-      name: form.name,
-      status: form.status,
-      sortOrder: form.sortOrder
-    });
-    else await productTagApi.add({
-      name: form.name,
-      status: form.status,
-      sortOrder: form.sortOrder
-    });
+    if (form.tagId)
+      await productTagApi.update({
+        tagId: form.tagId,
+        version: form.version,
+        name: form.name,
+        status: form.status,
+        sortOrder: form.sortOrder,
+      });
+    else
+      await productTagApi.add({
+        name: form.name,
+        status: form.status,
+        sortOrder: form.sortOrder,
+      });
     message.success('标签已保存');
     visible.value = false;
     emit('saved');

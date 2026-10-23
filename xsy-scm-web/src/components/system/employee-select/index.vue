@@ -7,14 +7,14 @@
 -->
 <template>
   <a-select
-      v-model:value="selectValue"
-      :style="`width: ${width}`"
-      :placeholder="props.placeholder"
-      :showSearch="true"
-      option-filter-prop="label"
-      :allowClear="true"
-      :size="size"
-      @change="onChange"
+    v-model:value="selectValue"
+    :style="`width: ${width}`"
+    :placeholder="props.placeholder"
+    :showSearch="true"
+    option-filter-prop="label"
+    :allowClear="true"
+    :size="size"
+    @change="onChange"
   >
     <!-- label 是过滤键，展示仍带部门：只绑 actualName 才能让「按姓名搜」命中带后缀的渲染文本。 -->
     <a-select-option v-for="item in employeeList" :key="item.employeeId" :value="item.employeeId" :label="item.actualName">
@@ -87,10 +87,10 @@ onMounted(query);
 
 const selectValue = ref(props.value);
 watch(
-    () => props.value,
-    (newValue) => {
-      selectValue.value = newValue;
-    }
+  () => props.value,
+  (newValue) => {
+    selectValue.value = newValue;
+  }
 );
 
 function onChange(value) {

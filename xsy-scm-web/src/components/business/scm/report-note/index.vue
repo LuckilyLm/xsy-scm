@@ -15,13 +15,13 @@
       </ul>
     </template>
     <a-button v-if="variant === 'text'" type="link" size="small" class="report-note__trigger">{{ title }}</a-button>
-    <InfoCircleOutlined v-else class="report-note__icon" :aria-label="title"/>
+    <InfoCircleOutlined v-else class="report-note__icon" :aria-label="title" />
   </a-popover>
   <template v-else>
     <a-button v-if="variant === 'text'" type="link" size="small" class="report-note__trigger" @click="open = true">
       {{ title }}
     </a-button>
-    <InfoCircleOutlined v-else class="report-note__icon" :aria-label="title" @click="open = true"/>
+    <InfoCircleOutlined v-else class="report-note__icon" :aria-label="title" @click="open = true" />
     <a-drawer v-model:open="open" :title="title" :width="scmDrawerWidth('s')">
       <section v-for="section in sections" :key="section.label" class="report-note__section">
         <h4 class="report-note__section-title">{{ section.label }}</h4>
@@ -43,16 +43,19 @@ export interface ReportNoteSection {
   items: string[];
 }
 
-const props = withDefaults(defineProps<{
-  /** 触发文案，默认「口径说明」。 */
-  title?: string;
-  /** Popover 要点，最多 3 条、每条 ≤ 40 字。 */
-  points?: string[];
-  /** 需要分组的长口径；提供时自动改用 Drawer。 */
-  sections?: ReportNoteSection[];
-  /** text 渲染为文字按钮，icon 渲染为 ⓘ。 */
-  variant?: 'text' | 'icon';
-}>(), {title: '口径说明', variant: 'text'});
+const props = withDefaults(
+  defineProps<{
+    /** 触发文案，默认「口径说明」。 */
+    title?: string;
+    /** Popover 要点，最多 3 条、每条 ≤ 40 字。 */
+    points?: string[];
+    /** 需要分组的长口径；提供时自动改用 Drawer。 */
+    sections?: ReportNoteSection[];
+    /** text 渲染为文字按钮，icon 渲染为 ⓘ。 */
+    variant?: 'text' | 'icon';
+  }>(),
+  {title: '口径说明', variant: 'text'}
+);
 
 const mode = computed(() => (props.sections?.length ? 'drawer' : 'popover'));
 const open = ref(false);

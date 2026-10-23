@@ -8,9 +8,14 @@
         <a-button size="small" @click="load">重新加载</a-button>
       </template>
     </a-alert>
-    <CategoryTable :rows="rows" :loading="loading" @add="row => modal?.open(undefined, row.categoryId)"
-                   @edit="row => modal?.open(row)" @remove="remove"/>
-    <CategoryModal ref="modal" :categories="rows" @saved="load"/>
+    <CategoryTable
+      :rows="rows"
+      :loading="loading"
+      @add="(row) => modal?.open(undefined, row.categoryId)"
+      @edit="(row) => modal?.open(row)"
+      @remove="remove"
+    />
+    <CategoryModal ref="modal" :categories="rows" @saved="load" />
   </a-card>
 </template>
 <script setup lang="ts">
@@ -22,7 +27,9 @@ import CategoryTable from './components/category-tree-table.vue';
 import CategoryModal from './components/category-form-modal.vue';
 import {productError} from './product-errors';
 
-const rows = ref<ProductCategory[]>([]), loading = ref(false), error = ref('');
+const rows = ref<ProductCategory[]>([]),
+  loading = ref(false),
+  error = ref('');
 const modal = ref<InstanceType<typeof CategoryModal>>();
 
 async function load() {

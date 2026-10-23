@@ -7,28 +7,27 @@
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="参数Key" class="smart-query-form-item">
-          <a-input style="width: 300px" v-model:value="queryForm.configKey" placeholder="请输入key"/>
+          <a-input style="width: 300px" v-model:value="queryForm.configKey" placeholder="请输入key" />
         </a-form-item>
 
         <a-form-item class="smart-query-form-item smart-margin-left10">
           <a-button-group>
             <a-button type="primary" @click="onSearch" v-privilege="'support:config:query'">
               <template #icon>
-                <SearchOutlined/>
+                <SearchOutlined />
               </template>
               查询
             </a-button>
             <a-button @click="resetQuery" v-privilege="'support:config:query'">
               <template #icon>
-                <ReloadOutlined/>
+                <ReloadOutlined />
               </template>
               重置
             </a-button>
           </a-button-group>
-          <a-button @click="toEditOrAdd()" v-privilege="'support:config:add'" type="primary"
-                    class="smart-margin-left20">
+          <a-button @click="toEditOrAdd()" v-privilege="'support:config:add'" type="primary" class="smart-margin-left20">
             <template #icon>
-              <PlusOutlined/>
+              <PlusOutlined />
             </template>
             新建
           </a-button>
@@ -38,13 +37,11 @@
 
     <a-card size="small" :bordered="false" :hoverable="true">
       <a-row justify="end">
-        <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.CONFIG"
-                       :refresh="ajaxQuery"/>
+        <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.CONFIG" :refresh="ajaxQuery" />
       </a-row>
 
-      <a-table size="small" :loading="tableLoading" bordered :dataSource="tableData" :columns="columns"
-               rowKey="configId" :pagination="false">
-        <template #bodyCell="{ record, column }">
+      <a-table size="small" :loading="tableLoading" bordered :dataSource="tableData" :columns="columns" rowKey="configId" :pagination="false">
+        <template #bodyCell="{record, column}">
           <template v-if="column.dataIndex === 'action'">
             <div class="smart-table-operate">
               <a-button @click="toEditOrAdd(record)" v-privilege="'support:config:update'" type="link">编辑</a-button>
@@ -55,20 +52,20 @@
 
       <div class="smart-query-table-page">
         <a-pagination
-            showSizeChanger
-            showQuickJumper
-            show-less-items
-            :pageSizeOptions="PAGE_SIZE_OPTIONS"
-            :defaultPageSize="queryForm.pageSize"
-            v-model:current="queryForm.pageNum"
-            v-model:pageSize="queryForm.pageSize"
-            :total="total"
-            @change="ajaxQuery"
-            :show-total="(total) => `共${total}条`"
+          showSizeChanger
+          showQuickJumper
+          show-less-items
+          :pageSizeOptions="PAGE_SIZE_OPTIONS"
+          :defaultPageSize="queryForm.pageSize"
+          v-model:current="queryForm.pageNum"
+          v-model:pageSize="queryForm.pageSize"
+          :total="total"
+          @change="ajaxQuery"
+          :show-total="(total) => `共${total}条`"
         />
       </div>
     </a-card>
-    <ConfigFormModal ref="configFormModal" @reloadList="resetQuery"/>
+    <ConfigFormModal ref="configFormModal" @reloadList="resetQuery" />
   </div>
 </template>
 <script setup lang="ts">

@@ -4,15 +4,15 @@
 -->
 <template>
   <!--左侧菜单 模式-->
-  <SideLayout v-if="layout === LAYOUT_ENUM.SIDE.value"/>
+  <SideLayout v-if="layout === LAYOUT_ENUM.SIDE.value" />
   <!--左侧展开菜单 模式-->
-  <SideExpandLayout v-if="layout === LAYOUT_ENUM.SIDE_EXPAND.value"/>
+  <SideExpandLayout v-if="layout === LAYOUT_ENUM.SIDE_EXPAND.value" />
   <!--顶部菜单 模式-->
-  <TopLayout v-if="layout === LAYOUT_ENUM.TOP.value"/>
+  <TopLayout v-if="layout === LAYOUT_ENUM.TOP.value" />
   <!--定期修改密码-->
-  <RegularChangePasswordModal/>
+  <RegularChangePasswordModal />
   <!--顶部展开 模式-->
-  <TopExpandLayout v-if="layout === LAYOUT_ENUM.TOP_EXPAND.value"/>
+  <TopExpandLayout v-if="layout === LAYOUT_ENUM.TOP_EXPAND.value" />
 </template>
 <script setup lang="ts">
 import {computed} from 'vue';

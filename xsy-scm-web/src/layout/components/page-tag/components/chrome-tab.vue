@@ -7,14 +7,12 @@
   <a-row style="position: relative" v-show="pageTagFlag">
     <a-dropdown :trigger="['contextmenu']">
       <div class="smart-page-tag">
-        <a-tabs style="width: 100%" :tab-position="mode" v-model:activeKey="selectedKey" size="small"
-                @tabClick="selectTab">
+        <a-tabs style="width: 100%" :tab-position="mode" v-model:activeKey="selectedKey" size="small" @tabClick="selectTab">
           <a-tab-pane v-for="item in tagNav" :key="item.menuName">
             <template #tab>
               <span class="smart-page-tag-content">
-                <home-outlined style="font-size: 12px" v-if="item.menuName === HOME_PAGE_NAME"
-                               class="smart-page-tag-icon"/>
-                <component class="smart-page-tag-icon" v-else :is="$antIcons[item.menuIcon]"/>
+                <home-outlined style="font-size: 12px" v-if="item.menuName === HOME_PAGE_NAME" class="smart-page-tag-icon" />
+                <component class="smart-page-tag-icon" v-else :is="$antIcons[item.menuIcon]" />
                 <span class="smart-page-tag-title" :title="item.menuTitle">{{ item.menuTitle }}</span>
                 <button
                   v-if="item.menuName !== HOME_PAGE_NAME"
@@ -23,7 +21,7 @@
                   :aria-label="`关闭${item.menuTitle}`"
                   @click.stop="closeTag(item, false)"
                 >
-                  <close-outlined aria-hidden="true"/>
+                  <close-outlined aria-hidden="true" />
                 </button>
               </span>
             </template>
@@ -42,7 +40,7 @@
       <!--标签页操作区-->
       <div class="smart-page-tag-operate">
         <div class="smart-page-tag-operate-icon">
-          <AppstoreOutlined/>
+          <AppstoreOutlined />
         </div>
       </div>
       <template #overlay>
@@ -74,11 +72,11 @@ const tagNav = computed(() => useUserStore().getTagNav || []);
 const selectedKey = ref(route.name);
 
 watch(
-    () => route.name,
-    (newValue, oldValue) => {
-      selectedKey.value = newValue;
-    },
-    {immediate: true}
+  () => route.name,
+  (newValue, oldValue) => {
+    selectedKey.value = newValue;
+  },
+  {immediate: true}
 );
 
 //选择某个标签页

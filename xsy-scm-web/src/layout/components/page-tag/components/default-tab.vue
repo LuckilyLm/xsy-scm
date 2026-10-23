@@ -6,15 +6,13 @@
   <!-- 标签页，共两部分：1、标签 ；2、标签操作区 -->
   <a-row style="position: relative" v-show="pageTagFlag" class="smart-page-tag-row">
     <a-dropdown :trigger="['contextmenu']">
-      <div class="smart-page-tag" ref="tagRoot" :class="{ 'is-scrolled': tagScrolled }">
-        <a-tabs style="width: 100%" :tab-position="mode" v-model:activeKey="selectedKey" size="small"
-                @tabClick="selectTab">
+      <div class="smart-page-tag" ref="tagRoot" :class="{'is-scrolled': tagScrolled}">
+        <a-tabs style="width: 100%" :tab-position="mode" v-model:activeKey="selectedKey" size="small" @tabClick="selectTab">
           <a-tab-pane v-for="item in tagNav" :key="item.menuName">
             <template #tab>
               <span class="smart-page-tag-span">
-                <home-outlined v-if="item.menuName === HOME_PAGE_NAME"
-                               class="smart-page-tag-icon"/>
-                <component class="smart-page-tag-icon" v-else :is="$antIcons[item.menuIcon]"/>
+                <home-outlined v-if="item.menuName === HOME_PAGE_NAME" class="smart-page-tag-icon" />
+                <component class="smart-page-tag-icon" v-else :is="$antIcons[item.menuIcon]" />
                 <span class="smart-page-tag-title" :title="item.menuTitle">{{ item.menuTitle }}</span>
                 <button
                   v-if="item.menuName !== HOME_PAGE_NAME"
@@ -23,7 +21,7 @@
                   :aria-label="`关闭${item.menuTitle}`"
                   @click.stop="closeTag(item, false)"
                 >
-                  <close-outlined aria-hidden="true"/>
+                  <close-outlined aria-hidden="true" />
                 </button>
               </span>
             </template>
@@ -42,7 +40,7 @@
       <!--标签页操作区-->
       <div class="smart-page-tag-operate">
         <div class="smart-page-tag-operate-icon">
-          <AppstoreOutlined/>
+          <AppstoreOutlined />
         </div>
       </div>
       <template #overlay>
@@ -91,11 +89,11 @@ onMounted(async () => {
 onBeforeUnmount(() => tagNavWrap?.removeEventListener('scroll', syncTagScroll));
 
 watch(
-    () => route.name,
-    (newValue, oldValue) => {
-      selectedKey.value = newValue;
-    },
-    {immediate: true}
+  () => route.name,
+  (newValue, oldValue) => {
+    selectedKey.value = newValue;
+  },
+  {immediate: true}
 );
 
 // 页签多到溢出时，激活的页签可能被挤到可视区外（右侧只剩「...」）。

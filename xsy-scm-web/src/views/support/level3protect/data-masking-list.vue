@@ -17,7 +17,8 @@
 使用方式：
 1）脱敏注解 @DataMasking ，支持数据类型如：用户ID、手机号、密码、地址、银行卡、车牌号等；
 2）脱敏工具类： SmartDataMaskingUtil ；
-</pre>
+</pre
+        >
       </template>
     </a-alert>
 
@@ -27,7 +28,7 @@
           <a-button-group>
             <a-button type="primary" @click="onSearch">
               <template #icon>
-                <SearchOutlined/>
+                <SearchOutlined />
               </template>
               查询
             </a-button>
@@ -37,14 +38,14 @@
     </a-form>
 
     <a-table
-        size="small"
-        bordered
-        :scroll="{ x: tableColumnsWidth(columns) }"
-        :loading="tableLoading"
-        class="smart-margin-top10"
-        :dataSource="tableData"
-        :columns="columns"
-        :pagination="false"
+      size="small"
+      bordered
+      :scroll="{x: tableColumnsWidth(columns)}"
+      :loading="tableLoading"
+      class="smart-margin-top10"
+      :dataSource="tableData"
+      :columns="columns"
+      :pagination="false"
     />
   </a-card>
 </template>

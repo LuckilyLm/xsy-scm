@@ -1,12 +1,12 @@
 <template>
   <a-modal
-      :open="open"
-      :width="1100"
-      :confirm-loading="creating"
-      :ok-button-props="{disabled: !selectedIds.length || loading || rows.length === 0}"
-      :ok-text="`创建任务（${selectedIds.length} 行）`"
-      @cancel="emit('update:open', false)"
-      @ok="emit('create')"
+    :open="open"
+    :width="1100"
+    :confirm-loading="creating"
+    :ok-button-props="{disabled: !selectedIds.length || loading || rows.length === 0}"
+    :ok-text="`创建任务（${selectedIds.length} 行）`"
+    @cancel="emit('update:open', false)"
+    @ok="emit('create')"
   >
     <template #title>
       <div class="create-title">
@@ -14,40 +14,25 @@
         <p class="scm-note">候选行是已确认订单上未被占用的明细。</p>
       </div>
     </template>
-    <a-alert v-if="error" type="error" show-icon :message="error"/>
+    <a-alert v-if="error" type="error" show-icon :message="error" />
     <a-form layout="inline" class="create-form" @submit.prevent="emit('search')">
       <a-form-item label="仓库" required>
-        <WarehouseSelect
-            :value="warehouseId"
-            width="220px"
-            @update:value="emit('update:warehouseId', $event)"
-        />
+        <WarehouseSelect :value="warehouseId" width="220px" @update:value="emit('update:warehouseId', $event)" />
       </a-form-item>
       <a-form-item label="受指派人">
-        <EmployeeSelect
-            :value="assigneeEmployeeId"
-            placeholder="暂不指派"
-            width="200px"
-            @update:value="emit('update:assigneeEmployeeId', $event)"
-        />
+        <EmployeeSelect :value="assigneeEmployeeId" placeholder="暂不指派" width="200px" @update:value="emit('update:assigneeEmployeeId', $event)" />
       </a-form-item>
       <a-form-item label="备注">
-        <a-input
-            :value="remark"
-            :maxlength="500"
-            style="width: 220px"
-            placeholder="可选"
-            @update:value="emit('update:remark', $event)"
-        />
+        <a-input :value="remark" :maxlength="500" style="width: 220px" placeholder="可选" @update:value="emit('update:remark', $event)" />
       </a-form-item>
       <a-form-item label="订单 / 客户 / 商品">
         <a-input
-            :value="keyword"
-            placeholder="订单 / 客户 / 商品"
-            allow-clear
-            :maxlength="100"
-            @update:value="emit('update:keyword', $event)"
-            @pressEnter="emit('search')"
+          :value="keyword"
+          placeholder="订单 / 客户 / 商品"
+          allow-clear
+          :maxlength="100"
+          @update:value="emit('update:keyword', $event)"
+          @pressEnter="emit('search')"
         />
       </a-form-item>
       <a-form-item>
@@ -58,16 +43,16 @@
       </a-form-item>
     </a-form>
     <a-table
-        :id="SCM_SORTING_TABLE_ID.CANDIDATE_LINE"
-        size="small"
-        :data-source="rows"
-        :columns="columns"
-        row-key="salesOrderItemId"
-        :loading="loading"
-        :pagination="false"
-        :scroll="{x: scmColumnsWidth(columns, 44), y: 320}"
-        :row-selection="{columnWidth: 44, selectedRowKeys: selectedIds, onChange: onSelectionChange, preserveSelectedRowKeys: true}"
-        :locale="{emptyText: '暂无可分拣的订单行'}"
+      :id="SCM_SORTING_TABLE_ID.CANDIDATE_LINE"
+      size="small"
+      :data-source="rows"
+      :columns="columns"
+      row-key="salesOrderItemId"
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns, 44), y: 320}"
+      :row-selection="{columnWidth: 44, selectedRowKeys: selectedIds, onChange: onSelectionChange, preserveSelectedRowKeys: true}"
+      :locale="{emptyText: '暂无可分拣的订单行'}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'actualQuantity'">
@@ -84,12 +69,12 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          :current="pageNum"
-          :page-size="pageSize"
-          :total="total"
-          show-size-changer
-          :page-size-options="['10', '20', '50', '100']"
-          @change="onPageChange"
+        :current="pageNum"
+        :page-size="pageSize"
+        :total="total"
+        show-size-changer
+        :page-size-options="['10', '20', '50', '100']"
+        @change="onPageChange"
       />
     </div>
   </a-modal>

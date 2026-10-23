@@ -1,29 +1,24 @@
 <template>
-  <a-drawer
-      :title="form.id ? '编辑采购单' : '新建采购单'"
-      :open="visible"
-      :width="scmDrawerWidth('xl')"
-      @close="visible = false"
-  >
-    <a-alert v-if="error" :message="error" type="error" show-icon/>
+  <a-drawer :title="form.id ? '编辑采购单' : '新建采购单'" :open="visible" :width="scmDrawerWidth('xl')" @close="visible = false">
+    <a-alert v-if="error" :message="error" type="error" show-icon />
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="供应商" name="supplierId" required>
-              <SupplierSelect v-if="!form.id" v-model:value="form.supplierId"/>
-              <a-input v-else :value="form.supplierName" disabled/>
+              <SupplierSelect v-if="!form.id" v-model:value="form.supplierId" />
+              <a-input v-else :value="form.supplierName" disabled />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="收货仓库" name="warehouseId" required>
               <a-select
-                  v-model:value="form.warehouseId"
-                  :options="warehouseOptions"
-                  :loading="warehouseLoading"
-                  show-search
-                  option-filter-prop="label"
-                  placeholder="请选择收货仓库"
+                v-model:value="form.warehouseId"
+                :options="warehouseOptions"
+                :loading="warehouseLoading"
+                show-search
+                option-filter-prop="label"
+                placeholder="请选择收货仓库"
               />
             </a-form-item>
           </a-col>
@@ -31,30 +26,26 @@
             <a-form-item>
               <template #label>
                 采购员
-                <ScmFieldHelp label="采购员" :text="form.id ? '请在采购单列表中改派采购员' : '可留空，保存后暂不分配'"/>
+                <ScmFieldHelp label="采购员" :text="form.id ? '请在采购单列表中改派采购员' : '可留空，保存后暂不分配'" />
               </template>
               <span v-if="form.id" class="scm-form-readonly">{{ form.purchaserName || '未分配' }}</span>
-              <EmployeeSelect v-else v-model:value="purchaserValue" placeholder="请选择采购员"/>
+              <EmployeeSelect v-else v-model:value="purchaserValue" placeholder="请选择采购员" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="计划到货日期" name="plannedArrivalDate">
-              <a-date-picker
-                  v-model:value="form.plannedArrivalDate"
-                  value-format="YYYY-MM-DD"
-                  style="width: 100%"
-              />
+              <a-date-picker v-model:value="form.plannedArrivalDate" value-format="YYYY-MM-DD" style="width: 100%" />
             </a-form-item>
           </a-col>
           <a-col :span="24">
             <a-form-item label="备注" name="remark">
-              <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count/>
+              <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count />
             </a-form-item>
           </a-col>
         </a-row>
 
         <a-divider orientation="left">采购明细与需求分配</a-divider>
-        <ItemTable :items="form.items ?? []"/>
+        <ItemTable :items="form.items ?? []" />
       </a-form>
     </a-spin>
 
@@ -82,7 +73,7 @@ import ItemTable from './purchase-order-item-editable-table.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
-const emit = defineEmits<{ saved: [] }>();
+const emit = defineEmits<{saved: []}>();
 
 const form = ref<Order>(newOrder());
 const formRef = ref();
@@ -96,15 +87,15 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
 const warehouseLoading = ref(false);
-const warehouses = ref<{ id: Id; warehouseCode?: string; name?: string }[]>([]);
+const warehouses = ref<{id: Id; warehouseCode?: string; name?: string}[]>([]);
 /** 竞态保护：慢的旧详情不得覆盖新打开的单。 */
 let requestId = 0;
 
 const warehouseOptions = computed(() =>
-    warehouses.value.map((w) => ({
-      value: w.id,
-      label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）`,
-    }))
+  warehouses.value.map((w) => ({
+    value: w.id,
+    label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）`,
+  }))
 );
 
 /**

@@ -6,12 +6,12 @@
   <a-form class="smart-query-form" v-privilege="'oa:enterprise:query'">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="企业名称/联系人/联系电话"/>
+        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="企业名称/联系人/联系电话" />
       </a-form-item>
 
       <a-form-item label="创建时间" class="smart-query-form-item">
         <a-space direction="vertical" :size="12">
-          <a-range-picker v-model:value="searchDate" :presets="defaultTimeRanges" @change="dateChange"/>
+          <a-range-picker v-model:value="searchDate" :presets="defaultTimeRanges" @change="dateChange" />
         </a-space>
       </a-form-item>
 
@@ -19,13 +19,13 @@
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -39,33 +39,33 @@
       <div class="smart-table-operate-block">
         <a-button @click="add()" v-privilege="'oa:enterprise:add'" type="primary">
           <template #icon>
-            <PlusOutlined/>
+            <PlusOutlined />
           </template>
           新建企业
         </a-button>
         <a-button @click="exportExcel()" v-privilege="'oa:enterprise:exportExcel'" type="primary">
           <template #icon>
-            <FileExcelOutlined/>
+            <FileExcelOutlined />
           </template>
           导出数据（带水印）
         </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.OA.ENTERPRISE" :refresh="ajaxQuery"/>
+        <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.BUSINESS.OA.ENTERPRISE" :refresh="ajaxQuery" />
       </div>
     </a-row>
 
     <a-table
-        :scroll="{ x: 1300 }"
-        size="small"
-        :dataSource="tableData"
-        :columns="columns"
-        rowKey="enterpriseId"
-        :pagination="false"
-        :loading="tableLoading"
-        bordered
+      :scroll="{x: 1300}"
+      size="small"
+      :dataSource="tableData"
+      :columns="columns"
+      rowKey="enterpriseId"
+      :pagination="false"
+      :loading="tableLoading"
+      bordered
     >
-      <template #bodyCell="{ column, record, text }">
+      <template #bodyCell="{column, record, text}">
         <template v-if="column.dataIndex === 'disabledFlag'">
           {{ text ? '禁用' : '启用' }}
         </template>
@@ -79,11 +79,9 @@
         </template>
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
-            <a-button @click="update(record.enterpriseId)" size="small" v-privilege="'oa:enterprise:update'"
-                      type="link">编辑
-            </a-button>
-            <a-button @click="confirmDelete(record.enterpriseId)" size="small" danger
-                      v-privilege="'oa:enterprise:delete'" type="link">删除
+            <a-button @click="update(record.enterpriseId)" size="small" v-privilege="'oa:enterprise:update'" type="link">编辑 </a-button>
+            <a-button @click="confirmDelete(record.enterpriseId)" size="small" danger v-privilege="'oa:enterprise:delete'" type="link"
+              >删除
             </a-button>
           </div>
         </template>
@@ -92,19 +90,19 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="ajaxQuery"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="ajaxQuery"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
-    <EnterpriseOperate ref="operateRef" @refresh="ajaxQuery"/>
+    <EnterpriseOperate ref="operateRef" @refresh="ajaxQuery" />
   </a-card>
 </template>
 <script setup lang="ts">
@@ -249,8 +247,7 @@ function confirmDelete(enterpriseId) {
       del(enterpriseId);
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

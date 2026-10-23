@@ -3,51 +3,43 @@ import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {ScmPage, ScmResponse} from '/@/types/business/scm/customer';
 import {purchaseCommand} from '/@/api/business/scm/purchase-order-api';
 import type {
-    Id,
-    Receipt,
-    ReceiptConfirmPayload,
-    ReceiptCreatePayload,
-    ReceiptDeletePayload,
-    ReceiptItem,
-    ReceiptItemWorkbenchQuery,
-    ReceiptItemWorkbenchRow,
-    ReceiptPutawayPayload,
-    ReceiptQuery,
-    ReceiptUpdatePayload,
-    ReceiptVersionPayload,
+  Id,
+  Receipt,
+  ReceiptConfirmPayload,
+  ReceiptCreatePayload,
+  ReceiptDeletePayload,
+  ReceiptItem,
+  ReceiptItemWorkbenchQuery,
+  ReceiptItemWorkbenchRow,
+  ReceiptPutawayPayload,
+  ReceiptQuery,
+  ReceiptUpdatePayload,
+  ReceiptVersionPayload,
 } from '/@/views/business/scm/purchase/purchase-types';
 
 export const purchaseReceiptApi = {
-    query: (data: ReceiptQuery, options?: RequestOptions) =>
-        postRequest('/scm/purchase/receipt/query', data, options) as unknown as Promise<ScmResponse<ScmPage<Receipt>>>,
-    detail: (id: Id, options?: RequestOptions) =>
-        getRequest(`/scm/purchase/receipt/detail/${id}`, {}, options) as unknown as Promise<ScmResponse<Receipt>>,
-    items: (receiptId: Id, options?: RequestOptions) =>
-        getRequest(`/scm/purchase/receipt/item/${receiptId}`, {}, options) as unknown as Promise<
-            ScmResponse<ReceiptItem[]>
-        >,
-    /** 按商品收货工作台（只读）：跨可收货采购单按 SKU×采购单位 归并，不新增收货事实。 */
-    itemWorkbench: (data: ReceiptItemWorkbenchQuery, options?: RequestOptions) =>
-        postRequest('/scm/purchase/receipt/item-workbench/query', data, options) as unknown as Promise<
-            ScmResponse<ScmPage<ReceiptItemWorkbenchRow>>
-        >,
+  query: (data: ReceiptQuery, options?: RequestOptions) =>
+    postRequest('/scm/purchase/receipt/query', data, options) as unknown as Promise<ScmResponse<ScmPage<Receipt>>>,
+  detail: (id: Id, options?: RequestOptions) =>
+    getRequest(`/scm/purchase/receipt/detail/${id}`, {}, options) as unknown as Promise<ScmResponse<Receipt>>,
+  items: (receiptId: Id, options?: RequestOptions) =>
+    getRequest(`/scm/purchase/receipt/item/${receiptId}`, {}, options) as unknown as Promise<ScmResponse<ReceiptItem[]>>,
+  /** 按商品收货工作台（只读）：跨可收货采购单按 SKU×采购单位 归并，不新增收货事实。 */
+  itemWorkbench: (data: ReceiptItemWorkbenchQuery, options?: RequestOptions) =>
+    postRequest('/scm/purchase/receipt/item-workbench/query', data, options) as unknown as Promise<ScmResponse<ScmPage<ReceiptItemWorkbenchRow>>>,
 
-    /** 建草稿收货单：行由服务端按采购单全部活动行生成。 */
-    create: (data: ReceiptCreatePayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/create', data),
-    /** `update` 只允许改备注（数量只在 `confirm` 一次性落库）。 */
-    update: (data: ReceiptUpdatePayload) =>
-        postRequest('/scm/purchase/receipt/update', data) as unknown as Promise<ScmResponse<Receipt>>,
-    /** 确认收货：必须覆盖全部收货行（40998），非标品必须带实重（40083）。 */
-    confirm: (data: ReceiptConfirmPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/confirm', data),
-    /** 仓库确认入库：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
-    putaway: (data: ReceiptPutawayPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/putaway', data),
-    delete: (data: ReceiptDeletePayload) =>
-        postRequest('/scm/purchase/receipt/delete', data) as unknown as Promise<ScmResponse<string>>,
-    /** 批量删除草稿收货单：`PurchaseReceiptBatchDeleteForm` 的元素要求 `id` + `version`。 */
-    batchDelete: (receipts: ReceiptVersionPayload[]) =>
-        postRequest('/scm/purchase/receipt/batch-delete', {receipts}) as unknown as Promise<
-            ScmResponse<string>
-        >,
+  /** 建草稿收货单：行由服务端按采购单全部活动行生成。 */
+  create: (data: ReceiptCreatePayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/create', data),
+  /** `update` 只允许改备注（数量只在 `confirm` 一次性落库）。 */
+  update: (data: ReceiptUpdatePayload) => postRequest('/scm/purchase/receipt/update', data) as unknown as Promise<ScmResponse<Receipt>>,
+  /** 确认收货：必须覆盖全部收货行（40998），非标品必须带实重（40083）。 */
+  confirm: (data: ReceiptConfirmPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/confirm', data),
+  /** 仓库确认入库：仅 WAREHOUSE_CONFIRM 且 PENDING 的已确认收货单。 */
+  putaway: (data: ReceiptPutawayPayload) => purchaseCommand<Receipt>('/scm/purchase/receipt/putaway', data),
+  delete: (data: ReceiptDeletePayload) => postRequest('/scm/purchase/receipt/delete', data) as unknown as Promise<ScmResponse<string>>,
+  /** 批量删除草稿收货单：`PurchaseReceiptBatchDeleteForm` 的元素要求 `id` + `version`。 */
+  batchDelete: (receipts: ReceiptVersionPayload[]) =>
+    postRequest('/scm/purchase/receipt/batch-delete', {receipts}) as unknown as Promise<ScmResponse<string>>,
 };
 
 export default purchaseReceiptApi;

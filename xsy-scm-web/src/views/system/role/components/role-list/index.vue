@@ -22,7 +22,7 @@
       </a-menu-item>
     </a-menu>
   </a-card>
-  <RoleFormModal ref="roleFormModal" @refresh="queryAllRole"/>
+  <RoleFormModal ref="roleFormModal" @refresh="queryAllRole" />
 </template>
 <script setup lang="ts">
 import {message, Modal} from 'ant-design-vue';
@@ -85,8 +85,7 @@ function deleteRole(roleId) {
       }
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

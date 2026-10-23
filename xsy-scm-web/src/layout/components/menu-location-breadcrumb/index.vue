@@ -1,6 +1,6 @@
 <!--
   * 面包屑
-  * 
+  *
 -->
 <template>
   <a-breadcrumb separator=">" v-if="breadCrumbFlag" class="breadcrumb">

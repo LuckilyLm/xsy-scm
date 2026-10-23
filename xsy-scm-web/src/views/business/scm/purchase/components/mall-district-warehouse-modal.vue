@@ -3,8 +3,7 @@
     <a-alert type="info" show-icon message="客户未绑定配送仓时，按收货地址区县匹配。" />
     <a-form layout="vertical" class="district-form">
       <a-form-item label="配送区县" required>
-        <AreaCascader type="province_city_district" v-model:value="area" placeholder="选择省 / 市 / 区县"
-                      @change="onAreaChange" />
+        <AreaCascader type="province_city_district" v-model:value="area" placeholder="选择省 / 市 / 区县" @change="onAreaChange" />
       </a-form-item>
     </a-form>
     <div v-if="districtCode">
@@ -20,18 +19,23 @@
       <a-divider>新增或调整规则</a-divider>
       <a-row :gutter="12">
         <a-col :span="13">
-          <a-select v-model:value="selectedWarehouseId" show-search option-filter-prop="label"
-                    style="width:100%" placeholder="选择可用配送仓" :options="warehouseOptions" />
+          <a-select
+            v-model:value="selectedWarehouseId"
+            show-search
+            option-filter-prop="label"
+            style="width: 100%"
+            placeholder="选择可用配送仓"
+            :options="warehouseOptions"
+          />
         </a-col>
         <a-col :span="6">
-          <a-input-number v-model:value="priority" :min="0" :precision="0" style="width:100%"
-                          placeholder="优先级" />
+          <a-input-number v-model:value="priority" :min="0" :precision="0" style="width: 100%" placeholder="优先级" />
         </a-col>
         <a-col :span="5">
           <a-button type="primary" :loading="saving" v-privilege="'scm:warehouse:update'" @click="save">保存规则</a-button>
         </a-col>
       </a-row>
-      <a-alert type="warning" show-icon style="margin-top:12px" message="同一区县可配置多个仓库，但下单只选择一个配送仓，不合并其他仓库的库存。" />
+      <a-alert type="warning" show-icon style="margin-top: 12px" message="同一区县可配置多个仓库，但下单只选择一个配送仓，不合并其他仓库的库存。" />
     </div>
   </a-modal>
 </template>
@@ -55,9 +59,12 @@ const districtCode = computed(() => {
   const value = areaColumnsOf(area.value).districtCode;
   return value == null ? null : Number(value);
 });
-const warehouseOptions = computed(() => warehouses.value.map((row) => ({
-  value: row.warehouseId, label: row.warehouseName
-})));
+const warehouseOptions = computed(() =>
+  warehouses.value.map((row) => ({
+    value: row.warehouseId,
+    label: row.warehouseName,
+  }))
+);
 
 async function open() {
   visible.value = true;
@@ -92,7 +99,9 @@ async function save() {
   saving.value = true;
   try {
     await mallWarehouseAdminApi.saveDistrictRule({
-      districtCode: districtCode.value, warehouseId: selectedWarehouseId.value, priority: priority.value
+      districtCode: districtCode.value,
+      warehouseId: selectedWarehouseId.value,
+      priority: priority.value,
     });
     message.success('区县配送规则已保存');
     await load();
@@ -115,6 +124,14 @@ async function remove(warehouseId: string | number) {
 defineExpose({open});
 </script>
 <style scoped>
-.district-form { margin-top: 16px; }
-.rule-line { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+.district-form {
+  margin-top: 16px;
+}
+.rule-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
 </style>

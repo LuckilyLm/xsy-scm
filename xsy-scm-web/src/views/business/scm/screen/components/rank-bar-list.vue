@@ -14,7 +14,7 @@
           <span class="scm-rank-value">{{ item.text }}</span>
         </div>
         <div class="scm-rank-bar">
-          <span class="scm-rank-bar-fill" :style="{ width: barWidth(item.value) }"/>
+          <span class="scm-rank-bar-fill" :style="{width: barWidth(item.value)}" />
         </div>
       </div>
     </template>
@@ -35,14 +35,14 @@ export interface RankRow {
 
 /** 排行使用紧凑的名称、金额与独立进度条布局。前三名只高亮序号，不使用大面积装饰色。 */
 const props = withDefaults(
-    defineProps<{
-      items: RankRow[];
-      /** 最多显示几条 */
-      limit?: number;
-      /** 无数据时的文案 */
-      emptyText?: string;
-    }>(),
-    {limit: 6, emptyText: '今日暂无数据'}
+  defineProps<{
+    items: RankRow[];
+    /** 最多显示几条 */
+    limit?: number;
+    /** 无数据时的文案 */
+    emptyText?: string;
+  }>(),
+  {limit: 6, emptyText: '今日暂无数据'}
 );
 
 const visible = computed(() => props.items.slice(0, props.limit));

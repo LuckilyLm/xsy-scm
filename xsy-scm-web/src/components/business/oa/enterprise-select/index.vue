@@ -1,20 +1,20 @@
 <!--
-  * 企业列表 下拉选择框 
-  * 
+  * 企业列表 下拉选择框
+  *
   *
 -->
 <template>
   <a-select
-      v-model:value="selectValue"
-      :style="`width: ${width}`"
-      :placeholder="props.placeholder"
-      :showSearch="true"
-      :allowClear="true"
-      :size="size"
-      @change="handleChange"
-      :disabled="disabled"
-      :mode="multiple ? 'multiple' : ''"
-      optionFilterProp="label"
+    v-model:value="selectValue"
+    :style="`width: ${width}`"
+    :placeholder="props.placeholder"
+    :showSearch="true"
+    :allowClear="true"
+    :size="size"
+    @change="handleChange"
+    :disabled="disabled"
+    :mode="multiple ? 'multiple' : ''"
+    optionFilterProp="label"
   >
     <a-select-option v-for="item in dataList" :key="item.enterpriseId" :label="item.enterpriseName">
       {{ item.enterpriseName }}
@@ -59,10 +59,10 @@ const selectValue = ref(props.value);
 
 // 箭头value变化
 watch(
-    () => props.value,
-    (newValue) => {
-      selectValue.value = newValue;
-    }
+  () => props.value,
+  (newValue) => {
+    selectValue.value = newValue;
+  }
 );
 
 function handleChange(value) {

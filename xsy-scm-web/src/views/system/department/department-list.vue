@@ -2,28 +2,27 @@
   <a-form class="smart-query-form">
     <a-row class="smart-query-form-row">
       <a-form-item label="部门名称" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="keywords" placeholder="请输入部门名称"/>
+        <a-input style="width: 300px" v-model:value="keywords" placeholder="请输入部门名称" />
       </a-form-item>
 
       <a-form-item class="smart-query-form-item smart-margin-left10">
         <a-button-group>
           <a-button v-privilege="'support:department:query'" type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button v-privilege="'support:department:query'" @click="resetQuery">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
         </a-button-group>
-        <a-button v-privilege="'system:department:add'" type="primary" @click="addDepartment"
-                  class="smart-margin-left20">
+        <a-button v-privilege="'system:department:add'" type="primary" @click="addDepartment" class="smart-margin-left20">
           <template #icon>
-            <PlusOutlined/>
+            <PlusOutlined />
           </template>
           新建
         </a-button>
@@ -33,37 +32,35 @@
 
   <a-card size="small" :bordered="true">
     <a-table
-        size="small"
-        bordered
-        :loading="tableLoading"
-        rowKey="departmentId"
-        :columns="columns"
-        :data-source="departmentTreeData"
-        :defaultExpandAllRows="false"
-        :defaultExpandedRowKeys="defaultExpandedRowList"
-        :pagination="false"
+      size="small"
+      bordered
+      :loading="tableLoading"
+      rowKey="departmentId"
+      :columns="columns"
+      :data-source="departmentTreeData"
+      :defaultExpandAllRows="false"
+      :defaultExpandedRowKeys="defaultExpandedRowList"
+      :pagination="false"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
-            <a-button @click="addDepartment(record)" v-privilege="'system:department:add'" type="link">添加下级
-            </a-button>
-            <a-button @click="updateDepartment(record)" v-privilege="'system:department:update'" type="link">编辑
-            </a-button>
+            <a-button @click="addDepartment(record)" v-privilege="'system:department:add'" type="link">添加下级 </a-button>
+            <a-button @click="updateDepartment(record)" v-privilege="'system:department:update'" type="link">编辑 </a-button>
             <a-button
-                danger
-                v-if="record.departmentId !== topDepartmentId"
-                v-privilege="'system:department:delete'"
-                @click="deleteDepartment(record.departmentId)"
-                type="link"
-            >删除
+              danger
+              v-if="record.departmentId !== topDepartmentId"
+              v-privilege="'system:department:delete'"
+              @click="deleteDepartment(record.departmentId)"
+              type="link"
+              >删除
             </a-button>
           </div>
         </template>
       </template>
     </a-table>
     <!-- 添加编辑部门弹窗 -->
-    <DepartmentFormModal ref="departmentFormModal" @refresh="queryDepartmentTree"/>
+    <DepartmentFormModal ref="departmentFormModal" @refresh="queryDepartmentTree" />
   </a-card>
 </template>
 
@@ -256,8 +253,7 @@ function deleteDepartment(id) {
       }
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 </script>

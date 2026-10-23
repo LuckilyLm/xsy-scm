@@ -8,6 +8,6 @@ import type {WarehouseFormModel, WarehousePayload} from './purchase-types';
 
 /** 表单模型 → 写请求体：摘掉只读回显的编码，其余原样。 */
 export function toWarehousePayload(form: WarehouseFormModel): WarehousePayload {
-    const {warehouseCode, ...payload} = form;
-    return payload;
+  const {warehouseCode, ...payload} = form;
+  return payload;
 }

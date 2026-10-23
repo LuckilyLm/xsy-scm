@@ -5,17 +5,16 @@
 -->
 <template>
   <a-select
-      v-model:value="selectValue"
-      :style="`width: ${width}`"
-      :placeholder="props.placeholder"
-      :showSearch="true"
-      :allowClear="true"
-      :size="size"
-      @change="handleChange"
-      :disabled="disabled"
+    v-model:value="selectValue"
+    :style="`width: ${width}`"
+    :placeholder="props.placeholder"
+    :showSearch="true"
+    :allowClear="true"
+    :size="size"
+    @change="handleChange"
+    :disabled="disabled"
   >
-    <a-select-option v-for="item in valueDescList" :key="item.value" :value="item.value"
-                     :disabled="disabledOption.includes(item.value)">
+    <a-select-option v-for="item in valueDescList" :key="item.value" :value="item.value" :disabled="disabledOption.includes(item.value)">
       {{ item.desc }}
     </a-select-option>
   </a-select>
@@ -67,12 +66,12 @@ onMounted(() => {
 const selectValue = ref(props.value);
 
 watch(
-    () => props.value,
-    (newValue) => {
-      // 如果传入的值是被禁用或被隐藏的选项，则移除该选项
-      selectValue.value = props.disabledOption.includes(newValue) || props.hiddenOption.includes(newValue) ? undefined : newValue;
-    },
-    {immediate: true}
+  () => props.value,
+  (newValue) => {
+    // 如果传入的值是被禁用或被隐藏的选项，则移除该选项
+    selectValue.value = props.disabledOption.includes(newValue) || props.hiddenOption.includes(newValue) ? undefined : newValue;
+  },
+  {immediate: true}
 );
 
 const emit = defineEmits(['update:value', 'change']);

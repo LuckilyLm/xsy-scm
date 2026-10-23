@@ -5,38 +5,33 @@
  * - 表单里没有 `status`，状态由命令驱动；采购单选择器只列可收货状态。
 -->
 <template>
-  <a-drawer
-      :title="form.id ? '编辑收货单备注' : '新建收货单'"
-      :open="visible"
-      :width="scmDrawerWidth('s')"
-      @close="visible = false"
-  >
-    <a-alert v-if="error" :message="error" type="error" show-icon/>
+  <a-drawer :title="form.id ? '编辑收货单备注' : '新建收货单'" :open="visible" :width="scmDrawerWidth('s')" @close="visible = false">
+    <a-alert v-if="error" :message="error" type="error" show-icon />
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-form-item name="purchaseOrderId">
           <template #label>
             采购单
-            <ScmFieldHelp label="采购单" text="收货明细会按所选采购单自动带入"/>
+            <ScmFieldHelp label="采购单" text="收货明细会按所选采购单自动带入" />
           </template>
           <a-select
-              v-if="!form.id"
-              v-model:value="form.purchaseOrderId"
-              show-search
-              allow-clear
-              :filter-option="false"
-              :loading="orderLoading"
-              :options="orderOptions"
-              placeholder="输入采购单号搜索（只列已提交 / 部分收货的单）"
-              @search="loadOrders"
+            v-if="!form.id"
+            v-model:value="form.purchaseOrderId"
+            show-search
+            allow-clear
+            :filter-option="false"
+            :loading="orderLoading"
+            :options="orderOptions"
+            placeholder="输入采购单号搜索（只列已提交 / 部分收货的单）"
+            @search="loadOrders"
           />
-          <a-input v-else :value="form.purchaseOrderNo" disabled/>
+          <a-input v-else :value="form.purchaseOrderNo" disabled />
         </a-form-item>
 
         <a-form-item v-if="!form.id" name="receiptMode">
           <template #label>
             入库方式
-            <ScmFieldHelp label="入库方式" text="直接入库在确认收货后入账；仓库确认入库需再由仓库确认"/>
+            <ScmFieldHelp label="入库方式" text="直接入库在确认收货后入账；仓库确认入库需再由仓库确认" />
           </template>
           <a-radio-group v-model:value="form.receiptMode">
             <a-radio value="DIRECT">直接入库</a-radio>
@@ -45,7 +40,7 @@
         </a-form-item>
 
         <a-form-item label="备注" name="remark">
-          <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count/>
+          <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count />
         </a-form-item>
 
         <a-descriptions v-if="form.id" bordered size="small" :column="1">
@@ -80,17 +75,13 @@ import {ref} from 'vue';
 import {message} from 'ant-design-vue';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
 import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
-import {
-  SCM_PUTAWAY_STATUS_ENUM,
-  SCM_RECEIPT_MODE_ENUM,
-  SCM_RECEIPT_STATUS_ENUM,
-} from '/@/constants/business/scm/purchase-const';
+import {SCM_PUTAWAY_STATUS_ENUM, SCM_RECEIPT_MODE_ENUM, SCM_RECEIPT_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import type {Id, Receipt} from '../purchase-types';
 import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
-const emit = defineEmits<{ saved: [] }>();
+const emit = defineEmits<{saved: []}>();
 
 /** 只有这两种状态的采购单可以收货（其余一律 40991）。 */
 const RECEIVABLE = ['SUBMITTED', 'PARTIALLY_RECEIVED'];
@@ -107,17 +98,16 @@ const loading = ref(false);
 const saving = ref(false);
 const error = ref('');
 const orderLoading = ref(false);
-const orderOptions = ref<{ value: Id; label: string }[]>([]);
+const orderOptions = ref<{value: Id; label: string}[]>([]);
 let requestId = 0;
 
 async function loadOrders(keyword: string) {
   orderLoading.value = true;
   try {
-    const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 20, orderNo: keyword || undefined},
-        {suppressGlobalErrorMessage: true});
+    const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 20, orderNo: keyword || undefined}, {suppressGlobalErrorMessage: true});
     orderOptions.value = r.data.list
-        .filter((o) => RECEIVABLE.includes(o.status ?? ''))
-        .map((o) => ({value: o.id!, label: `${o.orderNo}（${o.supplierName ?? ''}）`}));
+      .filter((o) => RECEIVABLE.includes(o.status ?? ''))
+      .map((o) => ({value: o.id!, label: `${o.orderNo}（${o.supplierName ?? ''}）`}));
   } catch (e) {
     error.value = purchaseError(e);
   } finally {

@@ -1,16 +1,15 @@
 <!--
   * 通知  可见范围
-  * 
+  *
 -->
 <template>
-  <a-modal title="选择部门" v-model:open="visibleFlag" :maskClosable="false" :width="768" @ok="onSubmit"
-           @cancel="onClose">
+  <a-modal title="选择部门" v-model:open="visibleFlag" :maskClosable="false" :width="768" @ok="onSubmit" @cancel="onClose">
     <a-tabs v-model:activeKey="activeKey">
       <a-tab-pane :key="1" tab="选择员工">
-        <NoticeFormVisibleTransferEmployee :employeeList="employeeList" @onChange="onChangeEmployee"/>
+        <NoticeFormVisibleTransferEmployee :employeeList="employeeList" @onChange="onChangeEmployee" />
       </a-tab-pane>
       <a-tab-pane :key="2" tab="选择部门">
-        <NoticeFormVisibleTransferDepartment :departmentList="departmentList" @onChange="onChangeDepartment"/>
+        <NoticeFormVisibleTransferDepartment :departmentList="departmentList" @onChange="onChangeDepartment" />
       </a-tab-pane>
     </a-tabs>
   </a-modal>

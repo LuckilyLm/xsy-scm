@@ -8,25 +8,25 @@
   <span>
     <a-tooltip title="全屏" v-if="!fullScreenFlag">
       <a-button type="text" @click="onFullScreen" size="small">
-        <template #icon><fullscreen-outlined/></template>
+        <template #icon><fullscreen-outlined /></template>
       </a-button>
     </a-tooltip>
     <a-tooltip title="取消全屏" v-if="fullScreenFlag">
       <a-button type="text" @click="onFullScreen" size="small">
-        <template #icon><fullscreen-exit-outlined/></template>
+        <template #icon><fullscreen-exit-outlined /></template>
       </a-button>
     </a-tooltip>
     <a-tooltip title="刷新">
       <a-button type="text" @click="props.refresh" size="small">
-        <template #icon><redo-outlined/></template>
+        <template #icon><redo-outlined /></template>
       </a-button>
     </a-tooltip>
     <a-tooltip title="列设置">
       <a-button type="text" @click="showModal" size="small">
-        <template #icon><setting-outlined/></template>
+        <template #icon><setting-outlined /></template>
       </a-button>
     </a-tooltip>
-    <SmartTableColumnModal ref="smartTableColumnModal" @change="updateColumn"/>
+    <SmartTableColumnModal ref="smartTableColumnModal" @change="updateColumn" />
   </span>
 </template>
 
@@ -67,25 +67,24 @@ let newColumn = reactive(_.cloneDeep(props.modelValue));
 
 // 用于监听表格拖拽后新的列数据
 watch(
-    () => props.modelValue,
-    (value) => {
-      newColumn.forEach((item) => {
-        value.forEach((itemNewColumns) => {
-          if (item.dataIndex === itemNewColumns.dataIndex) {
-            Object.assign(item, itemNewColumns);
-          }
-        });
+  () => props.modelValue,
+  (value) => {
+    newColumn.forEach((item) => {
+      value.forEach((itemNewColumns) => {
+        if (item.dataIndex === itemNewColumns.dataIndex) {
+          Object.assign(item, itemNewColumns);
+        }
       });
-    },
-    {
-      deep: true,
-    }
+    });
+  },
+  {
+    deep: true,
+  }
 );
 onMounted(buildUserTableColumns);
 
 //构建用户的数据列
 async function buildUserTableColumns() {
-
   if (!props.tableId) {
     return;
   }
@@ -197,21 +196,21 @@ function updateColumn(changeColumnArray) {
     });
   });
   emit(
-      'update:modelValue',
-      newColumns.filter((e) => e.showFlag)
+    'update:modelValue',
+    newColumns.filter((e) => e.showFlag)
   );
 }
 
 // ========= 定义 watch 监听 ===============
 watch(
-    () => props.tableId,
-    (e) => {
-      if (e) {
-        originalColumn = _.cloneDeep(props.modelValue);
-        newColumn = _.cloneDeep(props.modelValue);
-        buildUserTableColumns();
-      }
-    },
-    {immediate: false}
+  () => props.tableId,
+  (e) => {
+    if (e) {
+      originalColumn = _.cloneDeep(props.modelValue);
+      newColumn = _.cloneDeep(props.modelValue);
+      buildUserTableColumns();
+    }
+  },
+  {immediate: false}
 );
 </script>

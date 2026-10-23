@@ -1,142 +1,128 @@
 <template>
   <a-tabs v-model:activeKey="activeTab">
     <a-tab-pane key="by-order" tab="按单据">
-  <a-form class="smart-query-form" layout="inline" @submit.prevent>
-    <a-row class="smart-query-form-row">
-      <a-form-item label="收货单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.receiptNo" placeholder="收货单号" allow-clear @pressEnter="onSearch"/>
-      </a-form-item>
-      <a-form-item label="采购单号" class="smart-query-form-item">
-        <a-input v-model:value="orderNoInput" placeholder="输入采购单号" allow-clear @pressEnter="onSearch"/>
-      </a-form-item>
-      <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_RECEIPT_STATUS_ENUM" v-model:value="queryForm.status" width="140px"/>
-      </a-form-item>
-      <a-form-item label="入库方式" class="smart-query-form-item">
-        <a-select
-            v-model:value="queryForm.receiptMode"
-            :options="receiptModeOptions"
-            placeholder="全部"
-            allow-clear
-            style="width: 160px"
-        />
-      </a-form-item>
-      <a-form-item label="入库状态" class="smart-query-form-item">
-        <a-select
-            v-model:value="queryForm.putawayStatus"
-            :options="putawayStatusOptions"
-            placeholder="全部"
-            allow-clear
-            style="width: 130px"
-        />
-      </a-form-item>
-      <a-form-item class="smart-query-form-item">
-        <a-button-group>
-          <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:receipt:query'">查询</a-button>
-          <a-button @click="resetQuery">重置</a-button>
-        </a-button-group>
-      </a-form-item>
-    </a-row>
-  </a-form>
+      <a-form class="smart-query-form" layout="inline" @submit.prevent>
+        <a-row class="smart-query-form-row">
+          <a-form-item label="收货单号" class="smart-query-form-item">
+            <a-input v-model:value="queryForm.receiptNo" placeholder="收货单号" allow-clear @pressEnter="onSearch" />
+          </a-form-item>
+          <a-form-item label="采购单号" class="smart-query-form-item">
+            <a-input v-model:value="orderNoInput" placeholder="输入采购单号" allow-clear @pressEnter="onSearch" />
+          </a-form-item>
+          <a-form-item label="状态" class="smart-query-form-item">
+            <SmartEnumSelect enum-name="SCM_RECEIPT_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
+          </a-form-item>
+          <a-form-item label="入库方式" class="smart-query-form-item">
+            <a-select v-model:value="queryForm.receiptMode" :options="receiptModeOptions" placeholder="全部" allow-clear style="width: 160px" />
+          </a-form-item>
+          <a-form-item label="入库状态" class="smart-query-form-item">
+            <a-select v-model:value="queryForm.putawayStatus" :options="putawayStatusOptions" placeholder="全部" allow-clear style="width: 130px" />
+          </a-form-item>
+          <a-form-item class="smart-query-form-item">
+            <a-button-group>
+              <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:receipt:query'">查询</a-button>
+              <a-button @click="resetQuery">重置</a-button>
+            </a-button-group>
+          </a-form-item>
+        </a-row>
+      </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
+      <a-alert v-if="error" :message="error" type="error" show-icon>
+        <template #action>
+          <a-button @click="queryData">重试</a-button>
+        </template>
+      </a-alert>
 
-  <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block">
-      <div class="smart-table-operate-block">
-        <a-button type="primary" v-privilege="'scm:purchase:receipt:add'" @click="form?.open()">新建收货单</a-button>
-        <a-button danger v-privilege="'scm:purchase:receipt:delete'" :disabled="!selected.length" @click="batchDelete">
-          批量删除草稿
-        </a-button>
-      </div>
-      <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_RECEIPT" :refresh="queryData"/>
-      </div>
-    </a-row>
+      <a-card size="small" :bordered="false">
+        <a-row class="smart-table-btn-block">
+          <div class="smart-table-operate-block">
+            <a-button type="primary" v-privilege="'scm:purchase:receipt:add'" @click="form?.open()">新建收货单</a-button>
+            <a-button danger v-privilege="'scm:purchase:receipt:delete'" :disabled="!selected.length" @click="batchDelete"> 批量删除草稿 </a-button>
+          </div>
+          <div class="smart-table-setting-block">
+            <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_RECEIPT" :refresh="queryData" />
+          </div>
+        </a-row>
 
-    <a-table
-        :id="SCM_PURCHASE_TABLE_ID.RECEIPT"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(columns, SCM_COLUMN_WIDTH.selection) }"
-        :row-selection="{
-        columnWidth: SCM_COLUMN_WIDTH.selection,
-        selectedRowKeys: selected,
-        onChange: (keys: (string | number)[]) => (selected = keys),
-        getCheckboxProps: (row: Receipt) => ({ disabled: row.status !== 'DRAFT' }),
-      }"
-    >
-      <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'status'">
-          <a-tag>{{ SCM_RECEIPT_STATUS_ENUM[record.status]?.desc }}</a-tag>
-        </template>
-        <template v-else-if="column.dataIndex === 'receiptMode'">
-          <a-tag>{{ SCM_RECEIPT_MODE_ENUM[record.receiptMode]?.desc || record.receiptMode }}</a-tag>
-        </template>
-        <template v-else-if="column.dataIndex === 'putawayStatus'">
-          <a-tag :color="record.putawayStatus === 'COMPLETED' ? 'green' : 'orange'">
-            {{ SCM_PUTAWAY_STATUS_ENUM[record.putawayStatus]?.desc || record.putawayStatus }}
-          </a-tag>
-        </template>
-        <template v-else-if="column.dataIndex === 'action'">
-          <!-- 行内只留当前状态唯一的推进动作（草稿=确认收货、待入库=确认入库）；
+        <a-table
+          :id="SCM_PURCHASE_TABLE_ID.RECEIPT"
+          size="small"
+          :data-source="tableData"
+          :columns="columns"
+          row-key="id"
+          bordered
+          :loading="loading"
+          :pagination="false"
+          :scroll="{x: scmColumnsWidth(columns, SCM_COLUMN_WIDTH.selection)}"
+          :row-selection="{
+            columnWidth: SCM_COLUMN_WIDTH.selection,
+            selectedRowKeys: selected,
+            onChange: (keys: (string | number)[]) => (selected = keys),
+            getCheckboxProps: (row: Receipt) => ({disabled: row.status !== 'DRAFT'}),
+          }"
+        >
+          <template #bodyCell="{record, column}">
+            <template v-if="column.dataIndex === 'status'">
+              <a-tag>{{ SCM_RECEIPT_STATUS_ENUM[record.status]?.desc }}</a-tag>
+            </template>
+            <template v-else-if="column.dataIndex === 'receiptMode'">
+              <a-tag>{{ SCM_RECEIPT_MODE_ENUM[record.receiptMode]?.desc || record.receiptMode }}</a-tag>
+            </template>
+            <template v-else-if="column.dataIndex === 'putawayStatus'">
+              <a-tag :color="record.putawayStatus === 'COMPLETED' ? 'green' : 'orange'">
+                {{ SCM_PUTAWAY_STATUS_ENUM[record.putawayStatus]?.desc || record.putawayStatus }}
+              </a-tag>
+            </template>
+            <template v-else-if="column.dataIndex === 'action'">
+              <!-- 行内只留当前状态唯一的推进动作（草稿=确认收货、待入库=确认入库）；
                编辑备注与删除是低频/危险动作，收进「更多」，
                否则 250px 的操作列里最显眼的永远是那排「编辑备注 删除」 -->
-          <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                size="small"
-                v-privilege="'scm:purchase:receipt:confirm'"
-                @click="confirmModal?.open(record.id)"
-            >
-              确认收货
-            </a-button>
-            <a-button
-                v-else-if="record.status === 'CONFIRMED' && record.receiptMode === 'WAREHOUSE_CONFIRM' && record.putawayStatus === 'PENDING'"
-                type="link"
-                size="small"
-                v-privilege="'scm:purchase:receipt:putaway'"
-                @click="putaway(record)"
-            >
-              确认入库
-            </a-button>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
+              <a-space :size="0" class="smart-table-operate scm-table-actions">
+                <a-button
+                  v-if="record.status === 'DRAFT'"
+                  type="link"
+                  size="small"
+                  v-privilege="'scm:purchase:receipt:confirm'"
+                  @click="confirmModal?.open(record.id)"
+                >
+                  确认收货
+                </a-button>
+                <a-button
+                  v-else-if="record.status === 'CONFIRMED' && record.receiptMode === 'WAREHOUSE_CONFIRM' && record.putawayStatus === 'PENDING'"
+                  type="link"
+                  size="small"
+                  v-privilege="'scm:purchase:receipt:putaway'"
+                  @click="putaway(record)"
+                >
+                  确认入库
+                </a-button>
+                <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
+              </a-space>
+            </template>
+          </template>
+        </a-table>
 
-    <div class="smart-query-table-page">
-      <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
-      />
-    </div>
-  </a-card>
+        <div class="smart-query-table-page">
+          <a-pagination
+            show-size-changer
+            show-quick-jumper
+            v-model:current="queryForm.pageNum"
+            v-model:page-size="queryForm.pageSize"
+            :total="total"
+            @change="queryData"
+            :show-total="(n: number) => `共${n}条`"
+          />
+        </div>
+      </a-card>
     </a-tab-pane>
 
     <a-tab-pane key="by-item" tab="按商品">
-      <PurchaseReceiptItemWorkbench/>
+      <PurchaseReceiptItemWorkbench />
     </a-tab-pane>
   </a-tabs>
 
-  <PurchaseReceiptForm ref="form" @saved="queryData"/>
-  <PurchaseReceiptConfirm ref="confirmModal" @saved="queryData"/>
+  <PurchaseReceiptForm ref="form" @saved="queryData" />
+  <PurchaseReceiptConfirm ref="confirmModal" @saved="queryData" />
 </template>
 
 <script setup lang="ts">
@@ -289,9 +275,7 @@ function batchDelete() {
     okType: 'danger',
     onOk: async () => {
       await purchaseReceiptApi.batchDelete(
-          tableData.value
-              .filter((r) => selected.value.includes(r.id!))
-              .map((r) => ({id: r.id!, version: r.version!}))
+        tableData.value.filter((r) => selected.value.includes(r.id!)).map((r) => ({id: r.id!, version: r.version!}))
       );
       await queryData();
     },
@@ -326,21 +310,21 @@ const RECEIPT_DEEP_LINK = {
 const route = useRoute();
 const receiptRouteName = route.name;
 watch(
-    [() => route.name, () => route.query],
-    ([name, incomingQuery]) => {
-      // SmartAdmin caches by route.name. Reapply the source link on reuse, but
-      // ignore navigation to other pages while this component stays cached.
-      if (name !== receiptRouteName) return;
-      const filters = deepLinkFilters(incomingQuery, RECEIPT_DEEP_LINK);
-      queryForm.receiptNo = filters.receiptNo;
-      queryForm.status = filters.status;
-      queryForm.receiptMode = filters.receiptMode;
-      queryForm.putawayStatus = filters.putawayStatus;
-      // 采购单号需要异步解析成 id，且不属于任何 deep-link 语义：进入页面即回落到未筛选。
-      queryForm.purchaseOrderId = undefined;
-      orderNoInput.value = undefined;
-      onSearch();
-    },
-    {immediate: true}
+  [() => route.name, () => route.query],
+  ([name, incomingQuery]) => {
+    // SmartAdmin caches by route.name. Reapply the source link on reuse, but
+    // ignore navigation to other pages while this component stays cached.
+    if (name !== receiptRouteName) return;
+    const filters = deepLinkFilters(incomingQuery, RECEIPT_DEEP_LINK);
+    queryForm.receiptNo = filters.receiptNo;
+    queryForm.status = filters.status;
+    queryForm.receiptMode = filters.receiptMode;
+    queryForm.putawayStatus = filters.putawayStatus;
+    // 采购单号需要异步解析成 id，且不属于任何 deep-link 语义：进入页面即回落到未筛选。
+    queryForm.purchaseOrderId = undefined;
+    orderNoInput.value = undefined;
+    onSearch();
+  },
+  {immediate: true}
 );
 </script>

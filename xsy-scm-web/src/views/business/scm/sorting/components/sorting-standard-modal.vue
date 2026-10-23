@@ -1,15 +1,32 @@
 <template>
-  <a-modal :open="open" title="标品一键分拣" :width="880" :style="{maxWidth: 'calc(100vw - 32px)'}" :mask-closable="false"
-           :closable="!saving" :keyboard="!saving" :confirm-loading="saving"
-           :ok-button-props="{disabled: loading || !selectedIds.length}"
-           :cancel-button-props="{disabled: saving}" ok-text="确认所选标品"
-           @cancel="close" @ok="submit">
+  <a-modal
+    :open="open"
+    title="标品一键分拣"
+    :width="880"
+    :style="{maxWidth: 'calc(100vw - 32px)'}"
+    :mask-closable="false"
+    :closable="!saving"
+    :keyboard="!saving"
+    :confirm-loading="saving"
+    :ok-button-props="{disabled: loading || !selectedIds.length}"
+    :cancel-button-props="{disabled: saving}"
+    ok-text="确认所选标品"
+    @cancel="close"
+    @ok="submit"
+  >
     <a-alert type="info" show-icon message="将所选标准品按下方计划数量确认为正常分拣。" />
     <a-alert v-if="error" type="error" show-icon :message="error" />
     <a-button :disabled="saving || loading" @click="load">刷新预览</a-button>
-    <a-table size="small" row-key="id" :loading="loading" :data-source="preview?.items || []"
-             :columns="columns" :pagination="false" :scroll="{x: scmColumnsWidth(columns) + 44, y: 400}"
-             :row-selection="rowSelection">
+    <a-table
+      size="small"
+      row-key="id"
+      :loading="loading"
+      :data-source="preview?.items || []"
+      :columns="columns"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns) + 44, y: 400}"
+      :row-selection="rowSelection"
+    >
       <template #bodyCell="{column, record}">
         <template v-if="column.dataIndex === 'quantity'">
           <span class="scm-quantity">{{ record.quantity ?? '—' }}</span>
@@ -49,17 +66,22 @@ const columns: TableColumnsType<SortingStandardItem> = [
 const rowSelection = computed(() => ({
   columnWidth: 44,
   selectedRowKeys: selectedIds.value,
-  onChange: (keys: (string | number)[]) => {selectedIds.value = keys;},
+  onChange: (keys: (string | number)[]) => {
+    selectedIds.value = keys;
+  },
   getCheckboxProps: (row: SortingStandardItem) => ({disabled: !row.eligible || saving.value || loading.value}),
 }));
 
-watch(() => [props.open, props.taskId], () => {
-  generation++;
-  selectedIds.value = [];
-  preview.value = undefined;
-  error.value = '';
-  if (props.open) void load();
-});
+watch(
+  () => [props.open, props.taskId],
+  () => {
+    generation++;
+    selectedIds.value = [];
+    preview.value = undefined;
+    error.value = '';
+    if (props.open) void load();
+  }
+);
 
 async function load() {
   if (props.taskId == null) return;
@@ -86,8 +108,7 @@ async function submit() {
   if (saving.value || loading.value || !preview.value || !selectedIds.value.length) return;
   const data = preview.value;
   const selected = new Set(selectedIds.value.map(String));
-  const items = data.items.filter(item => selected.has(String(item.id)))
-      .map(item => ({id: item.id, version: item.version}));
+  const items = data.items.filter((item) => selected.has(String(item.id))).map((item) => ({id: item.id, version: item.version}));
   saving.value = true;
   error.value = '';
   try {

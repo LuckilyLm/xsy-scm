@@ -6,12 +6,12 @@
   <div class="height100">
     <a-row :gutter="16" class="height100">
       <a-col :span="6">
-        <DepartmentTree ref="departmentTree"/>
+        <DepartmentTree ref="departmentTree" />
       </a-col>
 
       <a-col :span="18" class="height100">
         <div class="employee-box height100">
-          <EmployeeList style="flex-grow: 2.5" class="employee" :departmentId="selectedDepartmentId"/>
+          <EmployeeList style="flex-grow: 2.5" class="employee" :departmentId="selectedDepartmentId" />
         </div>
       </a-col>
     </a-row>

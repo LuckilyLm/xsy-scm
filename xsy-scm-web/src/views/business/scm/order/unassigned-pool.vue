@@ -2,10 +2,10 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="订单号 / 客户" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" placeholder="订单号或客户名称" allow-clear @pressEnter="search"/>
+        <a-input v-model:value="queryForm.keyword" placeholder="订单号或客户名称" allow-clear @pressEnter="search" />
       </a-form-item>
       <a-form-item label="订单状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_ORDER_STATUS_ENUM" v-model:value="queryForm.status" width="140px"/>
+        <SmartEnumSelect enum-name="SCM_ORDER_STATUS_ENUM" v-model:value="queryForm.status" width="140px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -25,20 +25,29 @@
         <span>未分配的商城订单</span>
       </div>
     </a-row>
-    <a-table size="small" :data-source="rows" :columns="columns" row-key="orderId" bordered
-             :loading="loading" :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
+    <a-table
+      size="small"
+      :data-source="rows"
+      :columns="columns"
+      row-key="orderId"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
+    >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'orderNo'">
           <span class="scm-mono">{{ record.orderNo }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)"
-                        :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc || record.status"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="SCM_ORDER_STATUS_ENUM[record.status]?.desc || record.status" />
         </template>
         <template v-else-if="column.dataIndex === 'orderedTotalAmount'">
           <span class="scm-money">{{ amount(record.orderedTotalAmount, true) }}</span>
         </template>
-        <template v-else-if="column.dataIndex === 'createdAt'">{{ record.createdAt ? dayjs(record.createdAt).format('YYYY-MM-DD HH:mm') : '—' }}</template>
+        <template v-else-if="column.dataIndex === 'createdAt'">{{
+          record.createdAt ? dayjs(record.createdAt).format('YYYY-MM-DD HH:mm') : '—'
+        }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button v-if="canClaim" type="link" size="small" @click="claim(record)">接单</a-button>
@@ -48,28 +57,31 @@
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination show-size-changer show-quick-jumper v-model:current="queryForm.pageNum"
-                    v-model:page-size="queryForm.pageSize" :total="total" @change="load"
-                    :show-total="(count: number) => `共${count}条`"/>
+      <a-pagination
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="load"
+        :show-total="(count: number) => `共${count}条`"
+      />
     </div>
   </a-card>
 
-  <a-modal v-model:open="assignmentOpen" title="指派订单业务员" :confirm-loading="assigning"
-           ok-text="确认指派" @ok="assignSelected">
+  <a-modal v-model:open="assignmentOpen" title="指派订单业务员" :confirm-loading="assigning" ok-text="确认指派" @ok="assignSelected">
     <p>订单 {{ selectedOrder?.orderNo }} · {{ selectedOrder?.customerNameSnapshot }}</p>
     <a-alert v-if="assigneeError" :message="assigneeError" type="error" show-icon>
       <template #action><a-button @click="loadAssignees">重试</a-button></template>
     </a-alert>
     <a-form-item label="业务员" required>
-      <a-select v-model:value="selectedSellerId" show-search option-filter-prop="label"
-                placeholder="选择可处理订单的在职员工" style="width: 100%">
-        <a-select-option v-for="employee in assignees" :key="employee.employeeId"
-                         :value="employee.employeeId" :label="employee.actualName">
+      <a-select v-model:value="selectedSellerId" show-search option-filter-prop="label" placeholder="选择可处理订单的在职员工" style="width: 100%">
+        <a-select-option v-for="employee in assignees" :key="employee.employeeId" :value="employee.employeeId" :label="employee.actualName">
           {{ employee.actualName }}
         </a-select-option>
       </a-select>
     </a-form-item>
-    <a-alert v-if="assignError" :message="assignError" type="error" show-icon/>
+    <a-alert v-if="assignError" :message="assignError" type="error" show-icon />
   </a-modal>
 </template>
 
@@ -102,8 +114,7 @@ const selectedSellerId = ref<number>();
 const assigning = ref(false);
 const assignError = ref('');
 const userStore = useUserStore();
-const canClaim = computed(() => assignees.value.some(employee =>
-  String(employee.employeeId) === String(userStore.employeeId)));
+const canClaim = computed(() => assignees.value.some((employee) => String(employee.employeeId) === String(userStore.employeeId)));
 let requestId = 0;
 
 const columns: TableColumnsType<OrderPoolRow> = [
@@ -167,7 +178,7 @@ function claim(order: OrderPoolRow) {
       await orderApi.claimPoolOrder({orderId: order.orderId, version: order.version});
       message.success('已接单');
       await load();
-    }
+    },
   });
 }
 
@@ -187,8 +198,11 @@ async function assignSelected() {
   assigning.value = true;
   assignError.value = '';
   try {
-    await orderApi.assignPoolOrder({orderId: selectedOrder.value.orderId, version: selectedOrder.value.version,
-      sellerId: selectedSellerId.value});
+    await orderApi.assignPoolOrder({
+      orderId: selectedOrder.value.orderId,
+      version: selectedOrder.value.version,
+      sellerId: selectedSellerId.value,
+    });
     assignmentOpen.value = false;
     message.success('已指派');
     await load();

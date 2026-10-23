@@ -3,11 +3,10 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="单据类型" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.documentType" :options="typeOptions" style="width: 180px"
-                  placeholder="全部类型"/>
+        <a-select v-model:value="queryForm.documentType" :options="typeOptions" style="width: 180px" placeholder="全部类型" />
       </a-form-item>
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" placeholder="模板编码 / 名称" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.keyword" placeholder="模板编码 / 名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -33,30 +32,29 @@
     </a-row>
 
     <a-table
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'defaultFlag'">
-          <ScmStatusTag v-if="record.defaultFlag" tone="processing" label="默认"/>
+          <ScmStatusTag v-if="record.defaultFlag" tone="processing" label="默认" />
           <span v-else class="scm-cell-hint">—</span>
         </template>
         <template v-else-if="column.dataIndex === 'enabledFlag'">
-          <ScmStatusTag :tone="record.enabledFlag ? 'success' : 'neutral'"
-                        :label="record.enabledFlag ? '启用' : '停用'"/>
+          <ScmStatusTag :tone="record.enabledFlag ? 'success' : 'neutral'" :label="record.enabledFlag ? '启用' : '停用'" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" v-privilege="'scm:print:template:update'" @click="openEdit(record)">编辑</a-button>
             <!-- 操作列超过 3 个动作就要收敛。「设为默认」与「删除」是低频且后者危险，
                  进「更多」；v-privilege 对菜单项不生效，权限在 `rowActions` 里用 hasPermission 裁剪。 -->
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
       </template>
@@ -64,58 +62,56 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <a-modal
-      :open="editOpen"
-      :title="form.id ? '编辑打印模板' : '新建打印模板'"
-      width="860px"
-      :confirm-loading="saving"
-      @ok="submit"
-      @cancel="editOpen = false"
+    :open="editOpen"
+    :title="form.id ? '编辑打印模板' : '新建打印模板'"
+    width="860px"
+    :confirm-loading="saving"
+    @ok="submit"
+    @cancel="editOpen = false"
   >
-    <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner"/>
+    <a-alert v-if="editError" :message="editError" type="error" show-icon class="banner" />
     <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical">
       <a-row :gutter="12">
         <a-col :span="12">
           <a-form-item label="单据类型" name="documentType">
-            <a-select v-model:value="form.documentType" :options="typeOptions" :disabled="!!form.id"
-                      @change="loadCatalog"/>
+            <a-select v-model:value="form.documentType" :options="typeOptions" :disabled="!!form.id" @change="loadCatalog" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item label="模板编码" name="templateCode">
-            <a-input v-model:value="form.templateCode" :disabled="!!form.id"
-                     placeholder="字母、数字、下划线或连字符"/>
+            <a-input v-model:value="form.templateCode" :disabled="!!form.id" placeholder="字母、数字、下划线或连字符" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item label="模板名称" name="templateName">
-            <a-input v-model:value="form.templateName"/>
+            <a-input v-model:value="form.templateName" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item label="备注">
-            <a-input v-model:value="form.remark"/>
+            <a-input v-model:value="form.remark" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item label="设为默认">
-            <a-switch v-model:checked="form.defaultFlag"/>
+            <a-switch v-model:checked="form.defaultFlag" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item label="启用">
-            <a-switch v-model:checked="form.enabledFlag"/>
+            <a-switch v-model:checked="form.enabledFlag" />
           </a-form-item>
         </a-col>
       </a-row>
@@ -124,38 +120,43 @@
       <a-row :gutter="12">
         <a-col :span="8">
           <a-form-item label="标题" name="title">
-            <a-input v-model:value="form.model.title" placeholder="纯文本，不能含尖括号"/>
+            <a-input v-model:value="form.model.title" placeholder="纯文本，不能含尖括号" />
           </a-form-item>
         </a-col>
         <a-col :span="8">
           <a-form-item label="纸张">
-            <a-select v-model:value="form.model.paper" :options="paperOptions" @change="onPaperChange"/>
+            <a-select v-model:value="form.model.paper" :options="paperOptions" @change="onPaperChange" />
           </a-form-item>
         </a-col>
         <a-col :span="8">
           <a-form-item label="方向">
-            <a-select v-model:value="form.model.orientation" :options="orientationOptions"/>
+            <a-select v-model:value="form.model.orientation" :options="orientationOptions" />
           </a-form-item>
         </a-col>
         <a-col :span="24">
           <a-form-item label="页脚备注">
-            <a-input v-model:value="form.model.footerNote" placeholder="纯文本，例如联次说明"/>
+            <a-input v-model:value="form.model.footerNote" placeholder="纯文本，例如联次说明" />
           </a-form-item>
         </a-col>
         <a-col :span="24">
           <a-form-item label="打印合计行">
-            <a-switch v-model:checked="form.model.showTotals"/>
+            <a-switch v-model:checked="form.model.showTotals" />
           </a-form-item>
         </a-col>
       </a-row>
 
       <a-divider orientation="left">表头字段</a-divider>
-      <a-alert v-if="catalog && !catalog.amountVisible && catalog.amountPermissionRequired" class="banner" type="warning"
-               show-icon message="你没有该单据类型的金额权限，金额字段即使勾选也不会打印出来"/>
-      <a-checkbox-group v-model:value="form.model.headerFields" :options="headerOptions"/>
+      <a-alert
+        v-if="catalog && !catalog.amountVisible && catalog.amountPermissionRequired"
+        class="banner"
+        type="warning"
+        show-icon
+        message="你没有该单据类型的金额权限，金额字段即使勾选也不会打印出来"
+      />
+      <a-checkbox-group v-model:value="form.model.headerFields" :options="headerOptions" />
 
       <a-divider orientation="left">明细列（至少一列）</a-divider>
-      <a-checkbox-group v-model:value="form.model.columns" :options="columnOptions"/>
+      <a-checkbox-group v-model:value="form.model.columns" :options="columnOptions" />
     </a-form>
   </a-modal>
 </template>
@@ -195,9 +196,7 @@ const saving = ref(false);
 const editError = ref('');
 let requestId = 0;
 
-const typeOptions = computed(() =>
-    documentTypes.value.map((item) => ({value: item.documentType, label: item.documentTypeLabel}))
-);
+const typeOptions = computed(() => documentTypes.value.map((item) => ({value: item.documentType, label: item.documentTypeLabel})));
 
 const paperOptions = [
   {value: 'A4', label: 'A4 纸'},
@@ -213,7 +212,7 @@ const orientationOptions = [
 const headerOptions = computed(() => toOptions(catalog.value?.headerFields));
 const columnOptions = computed(() => toOptions(catalog.value?.columns));
 
-function toOptions(fields?: { key: string; label: string; money: boolean }[]) {
+function toOptions(fields?: {key: string; label: string; money: boolean}[]) {
   return (fields ?? []).map((field) => ({
     value: field.key,
     label: field.money ? `${field.label}（金额）` : field.label,
@@ -231,7 +230,7 @@ const columns: TableColumnsType<PrintTemplate> = [
   {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 150},
 ];
 
-const form = reactive<PrintTemplateSave & { id?: Id }>({
+const form = reactive<PrintTemplateSave & {id?: Id}>({
   documentType: 'PURCHASE_ORDER',
   templateCode: '',
   templateName: '',

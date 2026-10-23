@@ -17,16 +17,16 @@
       <a-descriptions-item label="备注">{{ detail.remark || '—' }}</a-descriptions-item>
     </a-descriptions>
     <a-table
-        style="margin-top: 12px"
-        size="small"
-        :data-source="detail.items || []"
-        :columns="itemColumns"
-        row-key="id"
-        bordered
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(itemColumns) }"
+      style="margin-top: 12px"
+      size="small"
+      :data-source="detail.items || []"
+      :columns="itemColumns"
+      row-key="id"
+      bordered
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(itemColumns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'sourceQuantity'">
           <span class="scm-quantity">{{ quantityText(record.sourceQuantity) }}</span>
         </template>
@@ -37,8 +37,7 @@
       </template>
     </a-table>
     <a-typography-text v-if="detail.status === 'COMPLETED'" type="secondary" style="display: block; margin-top: 8px">
-      审批已生成两条流水：源商品规格「转换出」、目标商品规格「转换入」。若要冲销，请新建一张反向转换单
-      —— 流水不可修改、不可删除。
+      审批已生成两条流水：源商品规格「转换出」、目标商品规格「转换入」。若要冲销，请新建一张反向转换单 —— 流水不可修改、不可删除。
     </a-typography-text>
   </a-drawer>
 </template>

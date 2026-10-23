@@ -1,16 +1,16 @@
 <!--
   * 角色 管理
-  * 
+  *
   *
 -->
 <template>
   <div class="height100">
     <a-row :gutter="10" type="flex" class="height100">
       <a-col flex="200px">
-        <RoleList ref="roleList"/>
+        <RoleList ref="roleList" />
       </a-col>
       <a-col flex="1" class="role-setting">
-        <RoleSetting/>
+        <RoleSetting />
       </a-col>
     </a-row>
   </div>

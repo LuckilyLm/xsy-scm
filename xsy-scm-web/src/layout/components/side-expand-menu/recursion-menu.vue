@@ -1,6 +1,6 @@
 <!--
   * 递归菜单
-  * 
+  *
 -->
 <template>
   <div class="recursion-container" v-show="topMenu.children && topMenu.children.length > 0">
@@ -16,13 +16,13 @@
             <template v-if="$lodash.isEmpty(item.children)">
               <a-menu-item :key="item.menuId.toString()" @click="turnToPage(item)">
                 <template #icon v-if="item.icon">
-                  <component :is="$antIcons[item.icon]"/>
+                  <component :is="$antIcons[item.icon]" />
                 </template>
                 {{ item.menuName }}
               </a-menu-item>
             </template>
             <template v-else>
-              <SubMenu :menu-info="item" :key="item.menuId" @turnToPage="turnToPage"/>
+              <SubMenu :menu-info="item" :key="item.menuId" @turnToPage="turnToPage" />
             </template>
           </template>
         </template>
@@ -93,7 +93,7 @@ const {token} = useToken();
 }
 
 .recursion-container ::-webkit-scrollbar {
-  width: 0 !important
+  width: 0 !important;
 }
 
 .bottom-menu {

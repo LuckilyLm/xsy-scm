@@ -2,15 +2,14 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting"
-                  @click="emit('export')">导出</a-button>
+        <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')">导出</a-button>
       </div>
       <div class="smart-table-setting-block">
         <TableOperator
-            :model-value="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PURCHASE_PRODUCT"
-            :refresh="refresh"
-            @update:model-value="emit('update:columns', $event)"
+          :model-value="columns"
+          :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PURCHASE_PRODUCT"
+          :refresh="refresh"
+          @update:model-value="emit('update:columns', $event)"
         />
       </div>
     </a-row>
@@ -20,16 +19,16 @@
       </template>
     </a-alert>
     <a-table
-        :id="SCM_REPORT_TABLE_ID.PURCHASE_PRODUCT"
-        size="small"
-        :data-source="rows"
-        :columns="visibleColumns"
-        row-key="skuId"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{emptyText: '暂无商品采购数据'}"
-        :scroll="{ x: scmColumnsWidth(visibleColumns) }"
+      :id="SCM_REPORT_TABLE_ID.PURCHASE_PRODUCT"
+      size="small"
+      :data-source="rows"
+      :columns="visibleColumns"
+      row-key="skuId"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无商品采购数据'}"
+      :scroll="{x: scmColumnsWidth(visibleColumns)}"
     >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'orderCount'">
@@ -52,9 +51,11 @@
         </template>
         <template v-else-if="column.dataIndex === 'inboundCostAmount'">
           <span class="scm-money">{{ costText(record.inboundCostAmount, canViewCost) }}</span>
-          <a-tooltip v-if="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
-                     :title="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')">
-            <ExclamationCircleOutlined class="report-warn-icon" aria-hidden="true"/>
+          <a-tooltip
+            v-if="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
+            :title="incompleteCostHint(record.inboundCostMissingCount, '采购入库成本金额')"
+          >
+            <ExclamationCircleOutlined class="report-warn-icon" aria-hidden="true" />
           </a-tooltip>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -62,13 +63,13 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          :current="pageNum"
-          :page-size="pageSize"
-          :total="total"
-          @change="changePage"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        :current="pageNum"
+        :page-size="pageSize"
+        :total="total"
+        @change="changePage"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>

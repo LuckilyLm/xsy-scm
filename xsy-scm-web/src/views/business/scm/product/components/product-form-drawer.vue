@@ -1,6 +1,12 @@
 <template>
-  <a-drawer v-model:open="visible" :title="form.spuId ? '编辑商品' : '新增商品'" :width="scmDrawerWidth('m')"
-            :mask-closable="!saving" :closable="!saving" :destroy-on-close="true">
+  <a-drawer
+    v-model:open="visible"
+    :title="form.spuId ? '编辑商品' : '新增商品'"
+    :width="scmDrawerWidth('m')"
+    :mask-closable="!saving"
+    :closable="!saving"
+    :destroy-on-close="true"
+  >
     <a-spin :spinning="loading">
       <div class="drawer-body">
         <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
@@ -15,35 +21,33 @@
             </div>
             <div class="product-form-grid">
               <div class="product-form-field product-form-field--span2">
-                <a-form-item label="商品名称" name="name"
-                             :rules="[{ required: true, whitespace: true, message: '请输入商品名称' }]">
-                  <a-input v-model:value="form.name" :maxlength="150"/>
+                <a-form-item label="商品名称" name="name" :rules="[{required: true, whitespace: true, message: '请输入商品名称'}]">
+                  <a-input v-model:value="form.name" :maxlength="150" />
                 </a-form-item>
               </div>
               <div class="product-form-field">
-                <a-form-item label="商品分类" name="categoryId"
-                             :rules="[{ required: true, message: '请选择已启用的三级分类' }]">
-                  <CategorySelect v-model:value="form.categoryId" :categories="categories" mode="product"/>
+                <a-form-item label="商品分类" name="categoryId" :rules="[{required: true, message: '请选择已启用的三级分类'}]">
+                  <CategorySelect v-model:value="form.categoryId" :categories="categories" mode="product" />
                 </a-form-item>
               </div>
               <div class="product-form-field">
                 <a-form-item label="别名" name="alias">
-                  <a-input v-model:value="form.alias" :maxlength="150"/>
+                  <a-input v-model:value="form.alias" :maxlength="150" />
                 </a-form-item>
               </div>
               <div class="product-form-field">
                 <a-form-item label="商品状态" name="status" class="app-drawer-field--compact">
-                  <a-select v-model:value="form.status" :options="SHELF_STATUS_ENUM"/>
+                  <a-select v-model:value="form.status" :options="SHELF_STATUS_ENUM" />
                 </a-form-item>
               </div>
               <div class="product-form-field">
                 <a-form-item label="主档状态" name="masterStatus" class="app-drawer-field--compact">
-                  <a-select v-model:value="form.masterStatus" :options="MASTER_STATUS_ENUM"/>
+                  <a-select v-model:value="form.masterStatus" :options="MASTER_STATUS_ENUM" />
                 </a-form-item>
               </div>
               <div class="product-form-field product-form-field--wide">
                 <a-form-item label="商品简介" name="description">
-                  <a-textarea v-model:value="form.description" :maxlength="1000" :rows="2" show-count/>
+                  <a-textarea v-model:value="form.description" :maxlength="1000" :rows="2" show-count />
                 </a-form-item>
               </div>
             </div>
@@ -55,103 +59,95 @@
             </div>
             <div class="product-form-grid">
               <div class="product-form-field">
-                    <a-form-item label="助记码" name="mnemonicCode">
-                      <a-input v-model:value="form.mnemonicCode" :maxlength="64"/>
-                    </a-form-item>
-                  
+                <a-form-item label="助记码" name="mnemonicCode">
+                  <a-input v-model:value="form.mnemonicCode" :maxlength="64" />
+                </a-form-item>
               </div>
               <div class="product-form-field">
-                    <a-form-item label="品牌" name="brandName">
-                      <a-input v-model:value="form.brandName" :maxlength="100"/>
-                    </a-form-item>
-                  
+                <a-form-item label="品牌" name="brandName">
+                  <a-input v-model:value="form.brandName" :maxlength="100" />
+                </a-form-item>
               </div>
               <div class="product-form-field">
-                    <a-form-item label="产地" name="origin">
-                      <a-input v-model:value="form.origin" :maxlength="100"/>
-                    </a-form-item>
-                  
+                <a-form-item label="产地" name="origin">
+                  <a-input v-model:value="form.origin" :maxlength="100" />
+                </a-form-item>
               </div>
               <div class="product-form-field">
-                    <a-form-item label="储存方式" name="storageMethod" class="app-drawer-field--compact">
-                      <a-select v-model:value="form.storageMethod" :options="STORAGE_METHOD_ENUM" allow-clear
-                                placeholder="未维护"/>
-                    </a-form-item>
-                  
+                <a-form-item label="储存方式" name="storageMethod" class="app-drawer-field--compact">
+                  <a-select v-model:value="form.storageMethod" :options="STORAGE_METHOD_ENUM" allow-clear placeholder="未维护" />
+                </a-form-item>
               </div>
               <div class="product-form-field">
-                    <a-form-item label="保质期" name="shelfLifeDays" class="app-drawer-field--compact">
-                      <a-input-number v-model:value="form.shelfLifeDays" :min="0" :max="36500" :precision="0"
-                                      addon-after="天" placeholder="未维护"/>
-                    </a-form-item>
-                  
+                <a-form-item label="保质期" name="shelfLifeDays" class="app-drawer-field--compact">
+                  <a-input-number v-model:value="form.shelfLifeDays" :min="0" :max="36500" :precision="0" addon-after="天" placeholder="未维护" />
+                </a-form-item>
               </div>
               <div class="product-form-field">
-                    <a-form-item label="采购预警" name="purchaseWarningDays" class="app-drawer-field--compact">
-                      <a-input-number v-model:value="form.purchaseWarningDays" :min="0" :max="365" :precision="0"
-                                      addon-after="天" placeholder="未维护"/>
-                    </a-form-item>
-                  
+                <a-form-item label="采购预警" name="purchaseWarningDays" class="app-drawer-field--compact">
+                  <a-input-number v-model:value="form.purchaseWarningDays" :min="0" :max="365" :precision="0" addon-after="天" placeholder="未维护" />
+                </a-form-item>
               </div>
               <div class="product-form-field">
-                    <a-form-item label="损耗率" name="lossRate" class="app-drawer-field--compact">
-                      <a-input-number v-model:value="form.lossRate" :min="0" :max="100" :precision="4" :controls="false"
-                                      addon-after="%"/>
-                    </a-form-item>
-                  
+                <a-form-item label="损耗率" name="lossRate" class="app-drawer-field--compact">
+                  <a-input-number v-model:value="form.lossRate" :min="0" :max="100" :precision="4" :controls="false" addon-after="%" />
+                </a-form-item>
               </div>
               <div class="product-form-field">
-                    <a-form-item label="税率" name="taxRate" class="app-drawer-field--compact">
-                      <a-input-number v-model:value="form.taxRate" :min="0" :max="100" :precision="4" :controls="false"
-                                      addon-after="%"/>
-                    </a-form-item>
-                  
+                <a-form-item label="税率" name="taxRate" class="app-drawer-field--compact">
+                  <a-input-number v-model:value="form.taxRate" :min="0" :max="100" :precision="4" :controls="false" addon-after="%" />
+                </a-form-item>
               </div>
               <div class="product-form-field">
-                    <a-form-item label="开票品名" name="invoiceName">
-                      <a-input v-model:value="form.invoiceName" :maxlength="100"/>
-                    </a-form-item>
-                  
+                <a-form-item label="开票品名" name="invoiceName">
+                  <a-input v-model:value="form.invoiceName" :maxlength="100" />
+                </a-form-item>
               </div>
               <div class="product-form-field">
-                    <a-form-item label="税收分类编码" name="taxCategoryCode">
-                      <a-input v-model:value="form.taxCategoryCode" :maxlength="32"/>
-                    </a-form-item>
-                  
+                <a-form-item label="税收分类编码" name="taxCategoryCode">
+                  <a-input v-model:value="form.taxCategoryCode" :maxlength="32" />
+                </a-form-item>
               </div>
               <div class="product-form-field">
-                    <a-form-item label="是否免税" name="taxExempt">
-                      <a-switch v-model:checked="form.taxExempt" checked-children="是" un-checked-children="否"/>
-                    </a-form-item>
-                  
+                <a-form-item label="是否免税" name="taxExempt">
+                  <a-switch v-model:checked="form.taxExempt" checked-children="是" un-checked-children="否" />
+                </a-form-item>
               </div>
               <div class="product-form-field product-form-field--wide">
-                    <a-form-item label="商品标签" name="tagIds" class="app-drawer-field--multi">
-                      <div class="tag-picker">
-                        <a-tag v-for="tagId in form.tagIds" :key="tagId" closable class="tag-picker__tag"
-                               @close="removeTag(tagId)">{{ tagLabel(tagId) }}</a-tag>
-                        <a-popover v-model:open="tagPickerOpen" trigger="click" placement="bottomLeft"
-                                   :overlay-style="{width: '280px'}" @open-change="onTagPickerToggle">
-                          <template #content>
-                            <div class="tag-picker__panel">
-                              <a-input v-model:value="tagKeyword" size="small" allow-clear placeholder="搜索标签"/>
-                              <div class="tag-picker__list">
-                                <a-checkbox v-for="option in filteredTagOptions" :key="option.value"
-                                            :checked="form.tagIds.includes(option.value)"
-                                            @change="toggleTag(option.value)">{{ option.label }}
-                                </a-checkbox>
-                                <p v-if="!filteredTagOptions.length" class="tag-picker__empty">没有匹配的标签</p>
-                              </div>
-                            </div>
-                          </template>
-                          <a-button size="small" type="dashed" class="scm-btn-secondary">
-                            <PlusOutlined/>
-                            添加标签
-                          </a-button>
-                        </a-popover>
-                      </div>
-                    </a-form-item>
-                  
+                <a-form-item label="商品标签" name="tagIds" class="app-drawer-field--multi">
+                  <div class="tag-picker">
+                    <a-tag v-for="tagId in form.tagIds" :key="tagId" closable class="tag-picker__tag" @close="removeTag(tagId)">{{
+                      tagLabel(tagId)
+                    }}</a-tag>
+                    <a-popover
+                      v-model:open="tagPickerOpen"
+                      trigger="click"
+                      placement="bottomLeft"
+                      :overlay-style="{width: '280px'}"
+                      @open-change="onTagPickerToggle"
+                    >
+                      <template #content>
+                        <div class="tag-picker__panel">
+                          <a-input v-model:value="tagKeyword" size="small" allow-clear placeholder="搜索标签" />
+                          <div class="tag-picker__list">
+                            <a-checkbox
+                              v-for="option in filteredTagOptions"
+                              :key="option.value"
+                              :checked="form.tagIds.includes(option.value)"
+                              @change="toggleTag(option.value)"
+                              >{{ option.label }}
+                            </a-checkbox>
+                            <p v-if="!filteredTagOptions.length" class="tag-picker__empty">没有匹配的标签</p>
+                          </div>
+                        </div>
+                      </template>
+                      <a-button size="small" type="dashed" class="scm-btn-secondary">
+                        <PlusOutlined />
+                        添加标签
+                      </a-button>
+                    </a-popover>
+                  </div>
+                </a-form-item>
               </div>
             </div>
           </section>
@@ -160,7 +156,7 @@
             <ImageUpload v-model="form.images" :can-edit="canEditImages" @uploading="uploading = $event">
               <template #head>
                 <h3 class="scm-form-section__title">商品图片</h3>
-                <ScmFieldHelp label="商品图片" text="最多上传 20 张，可拖动排序"/>
+                <ScmFieldHelp label="商品图片" text="最多上传 20 张，可拖动排序" />
               </template>
             </ImageUpload>
           </section>
@@ -169,7 +165,7 @@
             <div class="scm-form-section__head">
               <h3 class="scm-form-section__title">商品规格</h3>
             </div>
-            <SkuEditor v-model="form.skuList" :units="units"/>
+            <SkuEditor v-model="form.skuList" :units="units" />
           </section>
         </a-form>
       </div>
@@ -177,9 +173,7 @@
     <template #footer>
       <a-space style="float: right">
         <a-button :disabled="saving" @click="visible = false">取消</a-button>
-        <a-button type="primary" :loading="saving" :disabled="loading || loadFailed || uploading" @click="submit">
-          保存商品
-        </a-button>
+        <a-button type="primary" :loading="saving" :disabled="loading || loadFailed || uploading" @click="submit"> 保存商品 </a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -194,14 +188,7 @@ import {productCategoryApi} from '/@/api/business/scm/product-category-api';
 import {productTagApi, productUomApi} from '/@/api/business/scm/product-assistant-api';
 import {useUserStore} from '/@/store/modules/system/user';
 import {MASTER_STATUS_ENUM, SHELF_STATUS_ENUM, STORAGE_METHOD_ENUM} from '/@/constants/business/scm/product-const';
-import type {
-  ProductCategory,
-  ProductForm,
-  ProductId,
-  ProductTag,
-  ProductTagRef,
-  ProductUom
-} from '/@/types/business/scm/product';
+import type {ProductCategory, ProductForm, ProductId, ProductTag, ProductTagRef, ProductUom} from '/@/types/business/scm/product';
 import CategorySelect from '/@/components/business/scm/product-category-tree-select/index.vue';
 import ImageUpload from './product-image-upload.vue';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
@@ -210,29 +197,43 @@ import {emptyProduct, productFormOf, validateProduct} from '../product-form-mode
 import {productError} from '../product-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
-const emit = defineEmits<{ saved: [] }>();
-const form = ref<ProductForm>(emptyProduct()), categories = ref<ProductCategory[]>([]), formRef = ref<FormInstance>();
-const units = ref<ProductUom[]>([]), tagChoices = ref<ProductTag[]>([]), boundTags = ref<ProductTagRef[]>([]);
-const visible = ref(false), loading = ref(false), saving = ref(false), uploading = ref(false), error = ref(''),
-    loadFailed = ref(false);
-const tagPickerOpen = ref(false), tagKeyword = ref('');
+const emit = defineEmits<{saved: []}>();
+const form = ref<ProductForm>(emptyProduct()),
+  categories = ref<ProductCategory[]>([]),
+  formRef = ref<FormInstance>();
+const units = ref<ProductUom[]>([]),
+  tagChoices = ref<ProductTag[]>([]),
+  boundTags = ref<ProductTagRef[]>([]);
+const visible = ref(false),
+  loading = ref(false),
+  saving = ref(false),
+  uploading = ref(false),
+  error = ref(''),
+  loadFailed = ref(false);
+const tagPickerOpen = ref(false),
+  tagKeyword = ref('');
 // 停用标签仍要出现在下拉里：编辑只校验新增绑定，摘不掉就等于历史标签永远清不掉。
 const tagOptions = computed(() => {
   const active = tagChoices.value.map((tag) => ({value: tag.tagId, label: tag.name}));
   const known = new Set(tagChoices.value.map((tag) => String(tag.tagId)));
-  return [...active, ...boundTags.value.filter((tag) => !known.has(String(tag.tagId))).map((tag) => ({
-    value: tag.tagId,
-    label: `${tag.name}（已停用）`
-  }))];
+  return [
+    ...active,
+    ...boundTags.value
+      .filter((tag) => !known.has(String(tag.tagId)))
+      .map((tag) => ({
+        value: tag.tagId,
+        label: `${tag.name}（已停用）`,
+      })),
+  ];
 });
 const filteredTagOptions = computed(() => {
   const keyword = tagKeyword.value.trim().toLowerCase();
   return keyword ? tagOptions.value.filter((option) => option.label.toLowerCase().includes(keyword)) : tagOptions.value;
 });
 const user = useUserStore();
-const canEditImages = computed(() => user.administratorFlag || user.getPointList?.some((point: {
-  webPerms: string
-}) => point.webPerms === 'scm:product:image'));
+const canEditImages = computed(
+  () => user.administratorFlag || user.getPointList?.some((point: {webPerms: string}) => point.webPerms === 'scm:product:image')
+);
 let session = 0;
 
 function tagLabel(tagId: ProductId) {
@@ -245,8 +246,8 @@ function removeTag(tagId: ProductId) {
 
 function toggleTag(tagId: ProductId) {
   form.value.tagIds = form.value.tagIds.includes(tagId)
-      ? form.value.tagIds.filter((id) => String(id) !== String(tagId))
-      : [...form.value.tagIds, tagId];
+    ? form.value.tagIds.filter((id) => String(id) !== String(tagId))
+    : [...form.value.tagIds, tagId];
 }
 
 function onTagPickerToggle(open: boolean) {
@@ -298,7 +299,9 @@ async function save() {
     const payload = JSON.parse(JSON.stringify(form.value)) as ProductForm;
     // 只提交业务属性；内部 SPU/SKU 编码由后端发号或原样保留。
     delete payload.spuCode;
-    payload.skuList.forEach(sku => { delete sku.skuCode; });
+    payload.skuList.forEach((sku) => {
+      delete sku.skuCode;
+    });
     await (payload.spuId ? productApi.update(payload) : productApi.add(payload));
     message.success('商品已保存');
     visible.value = false;

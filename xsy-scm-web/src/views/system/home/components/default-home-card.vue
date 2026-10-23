@@ -3,10 +3,12 @@
     <template #title>
       <div class="home-card__title">
         <span v-if="iconName" class="home-card__title-visual">
-          <scm-icon :name="iconName" :size="20"/>
+          <scm-icon :name="iconName" :size="20" />
         </span>
-        <component v-else-if="icon" :is="$antIcons[icon]" class="home-card__icon" aria-hidden="true"/>
-        <slot name="title"><span class="home-card__title-text">{{ title }}</span></slot>
+        <component v-else-if="icon" :is="$antIcons[icon]" class="home-card__icon" aria-hidden="true" />
+        <slot name="title"
+          ><span class="home-card__title-text">{{ title }}</span></slot
+        >
       </div>
     </template>
     <template v-if="extra || $slots.extra" #extra>
@@ -14,7 +16,7 @@
         <a-button type="link" size="small" @click="emit('extraClick')">{{ extra }}</a-button>
       </slot>
     </template>
-    <slot/>
+    <slot />
   </a-card>
 </template>
 

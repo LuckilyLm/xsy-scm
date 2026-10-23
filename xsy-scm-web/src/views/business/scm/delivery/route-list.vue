@@ -2,63 +2,55 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
     <a-row class="smart-query-form-row">
       <a-form-item label="配送日期">
-        <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD"/>
+        <a-date-picker v-model:value="query.deliveryDate" value-format="YYYY-MM-DD" />
       </a-form-item>
       <a-form-item label="线路">
-        <a-input v-model:value="query.keyword" placeholder="线路名称 / 编号" allow-clear @pressEnter="search"/>
+        <a-input v-model:value="query.keyword" placeholder="线路名称 / 编号" allow-clear @pressEnter="search" />
       </a-form-item>
       <a-form-item label="状态">
-        <a-select v-model:value="query.status" :options="statusOptions" allow-clear class="filter-select"/>
+        <a-select v-model:value="query.status" :options="statusOptions" allow-clear class="filter-select" />
       </a-form-item>
-      <a-form-item label="仓库"
-      >
+      <a-form-item label="仓库">
         <a-select
-            v-model:value="query.warehouseId"
-            :options="warehouses.map((w) => ({ value: w.id, label: w.name }))"
-            allow-clear
-            class="filter-select"
+          v-model:value="query.warehouseId"
+          :options="warehouses.map((w) => ({value: w.id, label: w.name}))"
+          allow-clear
+          class="filter-select"
         />
       </a-form-item>
-      <a-form-item label="司机"
-      >
+      <a-form-item label="司机">
         <a-select
-            v-model:value="query.driverId"
-            :options="drivers.map((d) => ({ value: d.id, label: d.driverName }))"
-            allow-clear
-            class="filter-select"
+          v-model:value="query.driverId"
+          :options="drivers.map((d) => ({value: d.id, label: d.driverName}))"
+          allow-clear
+          class="filter-select"
         />
       </a-form-item>
-      <a-form-item label="车辆"
-      >
+      <a-form-item label="车辆">
         <a-select
-            v-model:value="query.vehicleId"
-            :options="vehicles.map((v) => ({ value: v.id, label: v.vehicleNo }))"
-            allow-clear
-            class="filter-select"
+          v-model:value="query.vehicleId"
+          :options="vehicles.map((v) => ({value: v.id, label: v.vehicleNo}))"
+          allow-clear
+          class="filter-select"
         />
       </a-form-item>
       <a-form-item label="省市区">
-        <AreaCascader v-model:value="area" type="province_city_district" @change="changeArea"/>
+        <AreaCascader v-model:value="area" type="province_city_district" @change="changeArea" />
       </a-form-item>
-      <a-form-item class="smart-query-form-item"
-      >
-        <a-space
-        >
-          <a-button type="primary" @click="search" v-privilege="'scm:delivery:route:query'">查询
-          </a-button>
+      <a-form-item class="smart-query-form-item">
+        <a-space>
+          <a-button type="primary" @click="search" v-privilege="'scm:delivery:route:query'">查询 </a-button>
           <a-button @click="reset">重置</a-button>
         </a-space>
       </a-form-item>
     </a-row>
   </a-form>
-  <a-alert v-if="error" :message="error" type="error" show-icon
-  >
+  <a-alert v-if="error" :message="error" type="error" show-icon>
     <template #action>
       <a-button @click="load">重试</a-button>
     </template>
   </a-alert>
-  <a-alert v-if="optionsError" :message="optionsError" type="warning" show-icon
-  >
+  <a-alert v-if="optionsError" :message="optionsError" type="warning" show-icon>
     <template #action>
       <a-button @click="loadOptions">重载筛选项</a-button>
     </template>
@@ -68,64 +60,55 @@
       <a-button type="primary" v-privilege="'scm:delivery:route:add'" @click="formDrawer?.open()">新建线路</a-button>
     </div>
     <a-table
-        id="scm-delivery-route-table"
-        :columns="columns"
-        :data-source="rows"
-        row-key="id"
-        size="small"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText }"
-        :scroll="{ x: tableScrollX }"
+      id="scm-delivery-route-table"
+      :columns="columns"
+      :data-source="rows"
+      row-key="id"
+      size="small"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText}"
+      :scroll="{x: tableScrollX}"
     >
-      <template #bodyCell="{ column, record }">
+      <template #bodyCell="{column, record}">
         <template v-if="column.dataIndex === 'routeName'">{{ record.routeName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag
-              :tone="ROUTE_STATUS_TONE[record.status as RouteStatus]"
-              :label="routeStatuses[record.status as RouteStatus].label"
-          />
+          <ScmStatusTag :tone="ROUTE_STATUS_TONE[record.status as RouteStatus]" :label="routeStatuses[record.status as RouteStatus].label" />
         </template>
         <template v-else-if="column.dataIndex === 'coverage'">
           <!-- 定位覆盖率是质量信息：图标 + Tooltip 足够，不需要一列文字 -->
           <a-tooltip :title="coverageText(record)">
-            <CheckCircleOutlined v-if="coverageOk(record)" class="coverage coverage--ok"/>
-            <ExclamationCircleOutlined v-else class="coverage coverage--warn"/>
+            <CheckCircleOutlined v-if="coverageOk(record)" class="coverage coverage--ok" />
+            <ExclamationCircleOutlined v-else class="coverage coverage--warn" />
           </a-tooltip>
         </template>
         <template v-else-if="column.dataIndex === 'totalAmount'">{{ money(record.totalAmount) }}</template>
-        <template v-else-if="column.dataIndex === 'driverNameSnapshot'">{{
-            record.driverNameSnapshot || '未分配'
-          }}
-        </template>
-        <template v-else-if="column.dataIndex === 'vehicleNoSnapshot'">{{
-            record.vehicleNoSnapshot || '未分配'
-          }}
-        </template>
+        <template v-else-if="column.dataIndex === 'driverNameSnapshot'">{{ record.driverNameSnapshot || '未分配' }} </template>
+        <template v-else-if="column.dataIndex === 'vehicleNoSnapshot'">{{ record.vehicleNoSnapshot || '未分配' }} </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record.id, 'base')">详情</a-button>
             <a-button type="link" size="small" @click="openDetail(record.id, 'map')">路线</a-button>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
       </template>
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          v-model:current="query.pageNum"
-          v-model:page-size="query.pageSize"
-          :total="total"
-          show-size-changer
-          show-quick-jumper
-          :show-total="(n: number) => `共 ${n} 条线路`"
-          @change="applyQuery"
+        v-model:current="query.pageNum"
+        v-model:page-size="query.pageSize"
+        :total="total"
+        show-size-changer
+        show-quick-jumper
+        :show-total="(n: number) => `共 ${n} 条线路`"
+        @change="applyQuery"
       />
     </div>
   </a-card>
-  <RouteFormDrawer ref="formDrawer" @saved="created"/>
-  <RoutePrint ref="printer"/>
+  <RouteFormDrawer ref="formDrawer" @saved="created" />
+  <RoutePrint ref="printer" />
 </template>
 <script setup lang="ts">
 import {computed, onMounted, reactive, ref, watch} from 'vue';
@@ -142,16 +125,7 @@ import type {AreaNode} from '/@/types/business/scm/area';
 import {areaColumnsOf, areaNodesOf} from '../common/scm-area';
 import {deepLinkFilters} from '/@/lib/query-deep-link';
 import type {Warehouse} from '../purchase/purchase-types';
-import {
-  deliveryError,
-  routeStatuses,
-  type DeliveryRoute,
-  type Driver,
-  type Vehicle,
-  type Query,
-  type Id,
-  type RouteStatus,
-} from './delivery-types';
+import {deliveryError, routeStatuses, type DeliveryRoute, type Driver, type Vehicle, type Query, type Id, type RouteStatus} from './delivery-types';
 import {money} from './delivery-display';
 import {DELIVERY_PERM, useDeliveryPermission} from './use-delivery-permission';
 import RouteFormDrawer from './components/route-form-drawer.vue';
@@ -162,21 +136,19 @@ const {canViewAmount, hasPerm} = useDeliveryPermission();
 // 无全量配送范围权限（调度岗）时，普通司机看到空表可能是「线路没排到自己」而非「没有线路」，
 // 文案要提示是授权/绑定问题，而不是一句「暂无数据」把配置缺口盖掉。
 const emptyText = computed(() =>
-  hasPerm(DELIVERY_PERM.SCOPE_ALL_QUERY)
-    ? '暂无数据'
-    : '当前仅显示您负责的线路；若无数据，可能是司机未绑定员工或线路未排到您名下，请联系调度确认。'
+  hasPerm(DELIVERY_PERM.SCOPE_ALL_QUERY) ? '暂无数据' : '当前仅显示您负责的线路；若无数据，可能是司机未绑定员工或线路未排到您名下，请联系调度确认。'
 );
 const rows = ref<DeliveryRoute[]>([]),
-    total = ref(0),
-    loading = ref(false),
-    error = ref(''),
-    optionsError = ref('');
+  total = ref(0),
+  loading = ref(false),
+  error = ref(''),
+  optionsError = ref('');
 const warehouses = ref<Warehouse[]>([]),
-    drivers = ref<Driver[]>([]),
-    vehicles = ref<Vehicle[]>([]),
-    area = ref<AreaNode[]>([]);
+  drivers = ref<Driver[]>([]),
+  vehicles = ref<Vehicle[]>([]),
+  area = ref<AreaNode[]>([]);
 const formDrawer = ref<InstanceType<typeof RouteFormDrawer>>(),
-    printer = ref<InstanceType<typeof RoutePrint>>();
+  printer = ref<InstanceType<typeof RoutePrint>>();
 const statusOptions = Object.entries(routeStatuses).map(([value, state]) => ({value, label: state.label}));
 // 金额列按权限出现：服务端已把无权限的 totalAmount 抹成 null，这里决定要不要留这一格。
 // 线路名称与编号分列；金额列仍按权限出现。
@@ -190,9 +162,7 @@ const columns = computed<TableColumnsType>(() => [
   {title: '车辆', dataIndex: 'vehicleNoSnapshot', width: 120},
   {title: '停靠点', dataIndex: 'stopCount' as const, width: 80},
   {title: '订单数', dataIndex: 'orderCount' as const, width: 80},
-  ...(canViewAmount.value
-      ? [{title: '订单金额', dataIndex: 'totalAmount' as const, width: 140}]
-      : []),
+  ...(canViewAmount.value ? [{title: '订单金额', dataIndex: 'totalAmount' as const, width: 140}] : []),
   {title: '停靠点定位', dataIndex: 'coverage' as const, width: 90},
   {title: '状态', dataIndex: 'status', align: 'center' as const, width: 100},
   {title: '操作', dataIndex: 'action', fixed: 'right' as const, align: 'center' as const, width: 160},
@@ -218,8 +188,8 @@ function coverageText(record: DeliveryRoute): string {
     return '本条线路没有停靠点';
   }
   return coverageOk(record)
-      ? `全部 ${record.stopCount} 个停靠点已定位`
-      : `已定位 ${record.locatedCount} / ${record.stopCount} 个停靠点，未定位的订单无法参与路线规划`;
+    ? `全部 ${record.stopCount} 个停靠点已定位`
+    : `已定位 ${record.locatedCount} / ${record.stopCount} 个停靠点，未定位的订单无法参与路线规划`;
 }
 
 /**
@@ -397,37 +367,37 @@ const routesRouteName = route.name;
 const areaCode = (value?: string) => (value && /^\d+$/.test(value) ? Number(value) : null);
 
 watch(
-    [() => route.name, () => route.query],
-    ([name, incomingQuery]) => {
-      // 组件被 keep-alive 缓存时，跳往其他页面不能触发本页查询。
-      if (name !== routesRouteName) return;
-      const filters = deepLinkFilters(incomingQuery, ROUTE_DEEP_LINK);
-      clearQuery();
-      query.status = filters.status;
-      query.keyword = filters.keyword;
-      query.deliveryDate = filters.deliveryDate;
-      query.warehouseId = filters.warehouseId;
-      query.driverId = filters.driverId;
-      query.vehicleId = filters.vehicleId;
-      query.provinceCode = areaCode(filters.provinceCode);
-      query.provinceName = filters.provinceName || null;
-      query.cityCode = areaCode(filters.cityCode);
-      query.cityName = filters.cityName || null;
-      query.districtCode = areaCode(filters.districtCode);
-      query.districtName = filters.districtName || null;
-      const pageNum = Number(filters.pageNum);
-      const pageSize = Number(filters.pageSize);
-      if (Number.isInteger(pageNum) && pageNum > 0) query.pageNum = pageNum;
-      if (Number.isInteger(pageSize) && pageSize > 0) query.pageSize = pageSize;
-      // 级联控件只认连续路径，缺层的快照按未筛选处理，与 areaColumnsOf 同口径。
-      area.value = areaNodesOf(query);
-      load();
-      const id = incomingQuery.routeId;
-      if (typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) {
-        openDetail(id, 'orders');
-      }
-    },
-    {immediate: true}
+  [() => route.name, () => route.query],
+  ([name, incomingQuery]) => {
+    // 组件被 keep-alive 缓存时，跳往其他页面不能触发本页查询。
+    if (name !== routesRouteName) return;
+    const filters = deepLinkFilters(incomingQuery, ROUTE_DEEP_LINK);
+    clearQuery();
+    query.status = filters.status;
+    query.keyword = filters.keyword;
+    query.deliveryDate = filters.deliveryDate;
+    query.warehouseId = filters.warehouseId;
+    query.driverId = filters.driverId;
+    query.vehicleId = filters.vehicleId;
+    query.provinceCode = areaCode(filters.provinceCode);
+    query.provinceName = filters.provinceName || null;
+    query.cityCode = areaCode(filters.cityCode);
+    query.cityName = filters.cityName || null;
+    query.districtCode = areaCode(filters.districtCode);
+    query.districtName = filters.districtName || null;
+    const pageNum = Number(filters.pageNum);
+    const pageSize = Number(filters.pageSize);
+    if (Number.isInteger(pageNum) && pageNum > 0) query.pageNum = pageNum;
+    if (Number.isInteger(pageSize) && pageSize > 0) query.pageSize = pageSize;
+    // 级联控件只认连续路径，缺层的快照按未筛选处理，与 areaColumnsOf 同口径。
+    area.value = areaNodesOf(query);
+    load();
+    const id = incomingQuery.routeId;
+    if (typeof id === 'string' && /^[1-9]\d{0,18}$/.test(id)) {
+      openDetail(id, 'orders');
+    }
+  },
+  {immediate: true}
 );
 
 onMounted(loadOptions);

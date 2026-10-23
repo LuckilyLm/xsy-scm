@@ -1,6 +1,6 @@
 <template>
   <span class="xsy-brand-lockup">
-    <img :src="dark ? darkMark : mark" alt="鲜蔬园"/>
+    <img :src="dark ? darkMark : mark" alt="鲜蔬园" />
   </span>
 </template>
 

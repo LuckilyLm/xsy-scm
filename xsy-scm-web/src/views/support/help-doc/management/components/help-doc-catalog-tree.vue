@@ -5,49 +5,44 @@
 <template>
   <a-card class="tree-container" size="small">
     <a-row>
-      <a-input v-model:value.trim="keywords" placeholder="请输入目录名称"/>
+      <a-input v-model:value.trim="keywords" placeholder="请输入目录名称" />
     </a-row>
     <a-row class="sort-flag-row" v-if="props.showMenu">
       <span>
         排序
         <template v-if="showSortFlag"> （越小越靠前） </template>
-        ：<a-switch v-model:checked="showSortFlag"/>
+        ：<a-switch v-model:checked="showSortFlag" />
       </span>
-      <a-button type="primary" @click="addTop" size="small" v-privilege="'support:helpDocCatalog:addCategory'">新建
-      </a-button>
+      <a-button type="primary" @click="addTop" size="small" v-privilege="'support:helpDocCatalog:addCategory'">新建 </a-button>
     </a-row>
     <a-tree
-        v-if="!_.isEmpty(helpDocCatalogTreeData)"
-        v-model:selectedKeys="selectedKeys"
-        v-model:checkedKeys="checkedKeys"
-        class="tree"
-        :treeData="helpDocCatalogTreeData"
-        :fieldNames="{ title: 'name', key: 'helpDocCatalogId', value: 'helpDocCatalogId' }"
-        style="width: 100%; overflow-x: auto"
-        :style="[!height ? '' : { height: `${height}px`, overflowY: 'auto' }]"
-        :showLine="!props.checkable"
-        :checkable="props.checkable"
-        :checkStrictly="props.checkStrictly"
-        :selectable="!props.checkable"
-        :defaultExpandAll="true"
-        @select="treeSelectChange"
+      v-if="!_.isEmpty(helpDocCatalogTreeData)"
+      v-model:selectedKeys="selectedKeys"
+      v-model:checkedKeys="checkedKeys"
+      class="tree"
+      :treeData="helpDocCatalogTreeData"
+      :fieldNames="{title: 'name', key: 'helpDocCatalogId', value: 'helpDocCatalogId'}"
+      style="width: 100%; overflow-x: auto"
+      :style="[!height ? '' : {height: `${height}px`, overflowY: 'auto'}]"
+      :showLine="!props.checkable"
+      :checkable="props.checkable"
+      :checkStrictly="props.checkStrictly"
+      :selectable="!props.checkable"
+      :defaultExpandAll="true"
+      @select="treeSelectChange"
     >
       <template #title="item">
         <a-popover placement="right" v-if="props.showMenu">
           <template #content>
             <div style="display: flex; flex-direction: column">
-              <a-button type="text" @click="addHelpDocCatalog(item.dataRef)"
-                        v-privilege="'support:helpDocCatalog:addCategory'">添加下级
-              </a-button>
-              <a-button type="text" @click="updateHelpDocCatalog(item.dataRef)"
-                        v-privilege="'support:helpDocCatalog:edit'">修改
-              </a-button>
+              <a-button type="text" @click="addHelpDocCatalog(item.dataRef)" v-privilege="'support:helpDocCatalog:addCategory'">添加下级 </a-button>
+              <a-button type="text" @click="updateHelpDocCatalog(item.dataRef)" v-privilege="'support:helpDocCatalog:edit'">修改 </a-button>
               <a-button
-                  type="text"
-                  v-if="item.helpDocCatalogId !== topHelpDocCatalogId"
-                  @click="deleteHelpDocCatalog(item.helpDocCatalogId)"
-                  v-privilege="'support:helpDocCatalog:delete'"
-              >删除
+                type="text"
+                v-if="item.helpDocCatalogId !== topHelpDocCatalogId"
+                @click="deleteHelpDocCatalog(item.helpDocCatalogId)"
+                v-privilege="'support:helpDocCatalog:delete'"
+                >删除
               </a-button>
             </div>
           </template>
@@ -62,7 +57,7 @@
     </a-tree>
     <div class="no-data" v-else>暂无结果</div>
     <!-- 添加编辑目录弹窗 -->
-    <HelpDocCatalogFormModal ref="helpDocCatalogFormModal" @refresh="refresh"/>
+    <HelpDocCatalogFormModal ref="helpDocCatalogFormModal" @refresh="refresh" />
   </a-card>
 </template>
 <script setup lang="ts">
@@ -203,10 +198,10 @@ function treeSelectChange(idList) {
 // -----------------------  筛选 ---------------------
 const keywords = ref('');
 watch(
-    () => keywords.value,
-    () => {
-      onSearch();
-    }
+  () => keywords.value,
+  () => {
+    onSearch();
+  }
 );
 
 // 筛选
@@ -311,8 +306,7 @@ function deleteHelpDocCatalog(id) {
       }
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

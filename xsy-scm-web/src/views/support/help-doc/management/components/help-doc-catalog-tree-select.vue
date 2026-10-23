@@ -1,20 +1,20 @@
 <!--
   * 目录下拉框
-  * 
+  *
 -->
 <template>
   <a-tree-select
-      :value="props.value"
-      :treeData="treeData"
-      :fieldNames="{ label: 'name', key: 'helpDocCatalogId', value: 'helpDocCatalogId' }"
-      show-search
-      style="width: 100%"
-      :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
-      placeholder="请选择目录"
-      allow-clear
-      tree-default-expand-all
-      :multiple="props.multiple"
-      @change="treeSelectChange"
+    :value="props.value"
+    :treeData="treeData"
+    :fieldNames="{label: 'name', key: 'helpDocCatalogId', value: 'helpDocCatalogId'}"
+    show-search
+    style="width: 100%"
+    :dropdown-style="{maxHeight: '400px', overflow: 'auto'}"
+    placeholder="请选择目录"
+    allow-clear
+    tree-default-expand-all
+    :multiple="props.multiple"
+    @change="treeSelectChange"
   />
 </template>
 <script setup lang="ts">

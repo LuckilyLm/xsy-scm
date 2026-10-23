@@ -17,43 +17,20 @@
             {{ SCM_PURCHASE_STATUS_ENUM[order.status ?? '']?.desc }}
           </a-tag>
           <template v-if="order.status === 'DRAFT'">
-            <a-button
-                type="primary"
-                :loading="submitting"
-                v-privilege="'scm:purchase:submit'"
-                @click="submit"
-            >
-              提交
-            </a-button>
+            <a-button type="primary" :loading="submitting" v-privilege="'scm:purchase:submit'" @click="submit"> 提交 </a-button>
           </template>
           <template v-if="['DRAFT', 'SUBMITTED'].includes(order.status ?? '')">
-            <a-button
-                danger
-                v-privilege="'scm:purchase:cancel'"
-                @click="cancelOpen = true"
-            >
-              取消采购单
-            </a-button>
+            <a-button danger v-privilege="'scm:purchase:cancel'" @click="cancelOpen = true"> 取消采购单 </a-button>
           </template>
           <template v-if="order.status === 'PARTIALLY_RECEIVED'">
-            <a-button
-                danger
-                v-privilege="'scm:purchase:short-close'"
-                @click="shortCloseOpen = true"
-            >
-              少收关单
-            </a-button>
+            <a-button danger v-privilege="'scm:purchase:short-close'" @click="shortCloseOpen = true"> 少收关单 </a-button>
           </template>
         </div>
 
         <a-descriptions bordered size="small" :column="2">
-          <a-descriptions-item label="供应商">
-            {{ order.supplierName }}（{{ order.supplierCode }}）
-          </a-descriptions-item>
+          <a-descriptions-item label="供应商"> {{ order.supplierName }}（{{ order.supplierCode }}） </a-descriptions-item>
           <a-descriptions-item label="采购员">{{ order.purchaserName || '—' }}</a-descriptions-item>
-          <a-descriptions-item label="收货仓库">
-            {{ order.warehouseName }}（{{ order.warehouseCode }}）
-          </a-descriptions-item>
+          <a-descriptions-item label="收货仓库"> {{ order.warehouseName }}（{{ order.warehouseCode }}） </a-descriptions-item>
           <a-descriptions-item label="计划到货日期">{{ order.plannedArrivalDate || '—' }}</a-descriptions-item>
           <a-descriptions-item label="采购金额">
             <span class="scm-money">{{ amount(order.totalAmount) }}</span>
@@ -71,16 +48,16 @@
         </a-descriptions>
 
         <a-table
-            class="items"
-            :data-source="order.items ?? []"
-            :columns="itemColumns"
-            row-key="id"
-            :pagination="false"
-            :scroll="{ x: scmColumnsWidth(itemColumns) }"
-            size="small"
-            bordered
+          class="items"
+          :data-source="order.items ?? []"
+          :columns="itemColumns"
+          row-key="id"
+          :pagination="false"
+          :scroll="{x: scmColumnsWidth(itemColumns)}"
+          size="small"
+          bordered
         >
-          <template #bodyCell="{ record, column }">
+          <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'purchaseUnit'">{{ record.purchaseUnit || '—' }}</template>
             <template v-else-if="column.dataIndex === 'plannedQuantity'">
               <span class="scm-quantity">{{ quantity(record.plannedQuantity) }}</span>
@@ -107,15 +84,8 @@
         </a-table>
 
         <a-divider orientation="left">需求分配明细</a-divider>
-        <a-table
-            :data-source="order.allocations ?? []"
-            :columns="allocationColumns"
-            row-key="allocationId"
-            :pagination="false"
-            size="small"
-            bordered
-        >
-          <template #bodyCell="{ record, column }">
+        <a-table :data-source="order.allocations ?? []" :columns="allocationColumns" row-key="allocationId" :pagination="false" size="small" bordered>
+          <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'salesOrderNo'">{{ record.salesOrderNo || '—' }}</template>
             <template v-else-if="column.dataIndex === 'quantity'">
               <span class="scm-quantity">{{ quantity(record.quantity) }}</span>
@@ -128,15 +98,10 @@
         </a-table>
 
         <a-divider orientation="left">操作记录（最新在前）</a-divider>
-        <a-button
-            class="logs-trigger"
-            :loading="logsLoading"
-            v-privilege="'scm:purchase:log:query'"
-            @click="loadLogs"
-        >
+        <a-button class="logs-trigger" :loading="logsLoading" v-privilege="'scm:purchase:log:query'" @click="loadLogs">
           {{ logs.length ? '重新加载操作记录' : '查看操作记录' }}
         </a-button>
-        <a-empty v-if="!logs.length && logsLoaded" description="暂无操作记录"/>
+        <a-empty v-if="!logs.length && logsLoaded" description="暂无操作记录" />
         <a-timeline v-else class="logs">
           <a-timeline-item v-for="log in logs" :key="log.id" :color="logColor(log.operationType)">
             <div class="log-head">
@@ -153,7 +118,7 @@
             -->
             <a-collapse class="log-audit" ghost>
               <a-collapse-panel key="audit" header="变更前后">
-                <ScmDiffTable :before="log.beforeData" :after="log.afterData" :scope="log.operationType"/>
+                <ScmDiffTable :before="log.beforeData" :after="log.afterData" :scope="log.operationType" />
               </a-collapse-panel>
             </a-collapse>
           </a-timeline-item>
@@ -161,27 +126,15 @@
       </template>
     </a-spin>
 
-    <a-modal
-        :open="cancelOpen"
-        title="取消采购单"
-        :confirm-loading="saving"
-        @ok="cancel"
-        @cancel="cancelOpen = false"
-    >
+    <a-modal :open="cancelOpen" title="取消采购单" :confirm-loading="saving" @ok="cancel" @cancel="cancelOpen = false">
       <a-form-item label="取消原因" name="cancelReason" required>
-        <a-input v-model:value="cancelReason" maxlength="500"/>
+        <a-input v-model:value="cancelReason" maxlength="500" />
       </a-form-item>
     </a-modal>
 
-    <a-modal
-        :open="shortCloseOpen"
-        title="少收关单"
-        :confirm-loading="saving"
-        @ok="shortClose"
-        @cancel="shortCloseOpen = false"
-    >
+    <a-modal :open="shortCloseOpen" title="少收关单" :confirm-loading="saving" @ok="shortClose" @cancel="shortCloseOpen = false">
       <a-form-item label="少收关单原因" name="shortCloseReason" required>
-        <a-input v-model:value="shortCloseReason" maxlength="500"/>
+        <a-input v-model:value="shortCloseReason" maxlength="500" />
       </a-form-item>
     </a-modal>
   </a-drawer>
@@ -193,11 +146,7 @@ import {ref} from 'vue';
 import {Modal, message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {purchaseOrderApi} from '/@/api/business/scm/purchase-order-api';
-import {
-  SCM_DEMAND_STATUS_ENUM,
-  SCM_PURCHASE_OPERATION_ENUM,
-  SCM_PURCHASE_STATUS_ENUM,
-} from '/@/constants/business/scm/purchase-const';
+import {SCM_DEMAND_STATUS_ENUM, SCM_PURCHASE_OPERATION_ENUM, SCM_PURCHASE_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import ScmDiffTable from '/@/views/business/scm/common/scm-diff-table.vue';
 import type {Allocation, Id, LogRow, Order, OrderItem} from '../purchase-types';
 import {amount, progress, quantity} from '../purchase-form-model';
@@ -205,7 +154,7 @@ import {datetime} from '../../common/scm-display';
 import {purchaseError} from '../purchase-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
-const emit = defineEmits<{ saved: [] }>();
+const emit = defineEmits<{saved: []}>();
 
 /**
  * 状态标签配色（仅展示层关注）。

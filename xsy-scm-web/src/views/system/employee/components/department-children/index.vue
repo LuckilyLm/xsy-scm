@@ -11,11 +11,11 @@
     </a-breadcrumb>
 
     <a-list class="department-list" :data-source="props.selectedDepartmentChildren">
-      <template #renderItem="{ item }">
+      <template #renderItem="{item}">
         <a-list-item>
           <div class="department-item" @click="selectTree(item.departmentId)">
             {{ item.departmentName }}
-            <RightOutlined/>
+            <RightOutlined />
           </div>
         </a-list-item>
       </template>

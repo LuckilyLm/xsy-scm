@@ -18,42 +18,42 @@ type ColumnKey = keyof AreaColumns;
 type Draft = Record<ColumnKey, AreaColumns[ColumnKey]>;
 
 function draft(columns: AreaColumns): Draft {
-    return columns as Draft;
+  return columns as Draft;
 }
 
 function codeKey(level: (typeof LEVELS)[number]): ColumnKey {
-    return `${level}Code` as ColumnKey;
+  return `${level}Code` as ColumnKey;
 }
 
 function nameKey(level: (typeof LEVELS)[number]): ColumnKey {
-    return `${level}Name` as ColumnKey;
+  return `${level}Name` as ColumnKey;
 }
 
 function emptyAreaColumns(): AreaColumns {
-    const columns = {} as AreaColumns;
-    const target = draft(columns);
-    for (const level of LEVELS) {
-        target[codeKey(level)] = null;
-        target[nameKey(level)] = null;
-    }
-    return columns;
+  const columns = {} as AreaColumns;
+  const target = draft(columns);
+  for (const level of LEVELS) {
+    target[codeKey(level)] = null;
+    target[nameKey(level)] = null;
+  }
+  return columns;
 }
 
 /** 级联选中路径拆成 6 列；未选或清空时整组置空，不残留上一次的层级。 */
 export function areaColumnsOf(nodes?: readonly AreaNode[] | null): AreaColumns {
-    const columns = emptyAreaColumns();
-    if (!nodes?.length) {
-        return columns;
-    }
-    const target = draft(columns);
-    LEVELS.forEach((level, index) => {
-        const node = nodes[index];
-        if (node) {
-            target[codeKey(level)] = node.value;
-            target[nameKey(level)] = node.label;
-        }
-    });
+  const columns = emptyAreaColumns();
+  if (!nodes?.length) {
     return columns;
+  }
+  const target = draft(columns);
+  LEVELS.forEach((level, index) => {
+    const node = nodes[index];
+    if (node) {
+      target[codeKey(level)] = node.value;
+      target[nameKey(level)] = node.label;
+    }
+  });
+  return columns;
 }
 
 /**
@@ -63,17 +63,17 @@ export function areaColumnsOf(nodes?: readonly AreaNode[] | null): AreaColumns {
  * 拼成「省 + 空 + 区」会让组件显示异常。存量行只解析到省时返回单元素数组。
  */
 export function areaNodesOf(columns?: Partial<AreaColumns> | null): AreaNode[] {
-    const nodes: AreaNode[] = [];
-    if (!columns) {
-        return nodes;
-    }
-    for (const level of LEVELS) {
-        const code = columns[codeKey(level)];
-        const name = columns[nameKey(level)];
-        if (code == null || !name) {
-            break;
-        }
-        nodes.push({value: Number(code), label: String(name)});
-    }
+  const nodes: AreaNode[] = [];
+  if (!columns) {
     return nodes;
+  }
+  for (const level of LEVELS) {
+    const code = columns[codeKey(level)];
+    const name = columns[nameKey(level)];
+    if (code == null || !name) {
+      break;
+    }
+    nodes.push({value: Number(code), label: String(name)});
+  }
+  return nodes;
 }

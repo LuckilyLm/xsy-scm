@@ -1,11 +1,11 @@
 <!--
   * 单号 记录
-  * 
+  *
 -->
 <template>
   <a-modal :open="visible" title="每日生成结果记录" width="60%" :footer="null" @cancel="onClose">
     <a-table size="small" :dataSource="tableData" :columns="columns" bordered :pagination="false">
-      <template #bodyCell="{ text, record, column }">
+      <template #bodyCell="{text, record, column}">
         <template v-if="column.dataIndex === 'successFlag'">
           <a-tag :color="text ? 'success' : 'error'">{{ text ? '成功' : '失败' }}</a-tag>
         </template>
@@ -18,16 +18,16 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="ajaxQuery"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="ajaxQuery"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-modal>

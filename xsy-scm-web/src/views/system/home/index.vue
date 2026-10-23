@@ -1,37 +1,37 @@
 <!-- 首页根据权限分别加载数据卡片、趋势与待办；无权限的模块不显示，也不发送对应请求。 -->
 <template>
   <div class="home-workbench">
-    <home-header/>
+    <home-header />
 
-    <metric-cards v-if="canDashboard"/>
+    <metric-cards v-if="canDashboard" />
 
     <a-row v-if="showTrend || canTodo" :gutter="[16, 16]">
       <a-col v-if="showTrend" :xs="24" :xl="canTodo ? 16 : 24">
-        <business-trend :metrics="trendMetrics"/>
+        <business-trend :metrics="trendMetrics" />
       </a-col>
       <a-col v-if="canTodo" :xs="24" :xl="showTrend ? 8 : 24">
-        <HomeBusinessTodo/>
+        <HomeBusinessTodo />
       </a-col>
     </a-row>
 
     <a-row v-if="canRanking || canHealth" :gutter="[16, 16]">
       <a-col v-if="canRanking" :xs="24" :md="12" :xl="canHealth ? 8 : 12">
-        <ranking-card dimension="customer"/>
+        <ranking-card dimension="customer" />
       </a-col>
       <a-col v-if="canRanking" :xs="24" :md="12" :xl="canHealth ? 8 : 12">
-        <ranking-card dimension="product"/>
+        <ranking-card dimension="product" />
       </a-col>
       <a-col v-if="canHealth" :xs="24" :md="canRanking ? 12 : 24" :xl="canRanking ? 8 : 24">
-        <inventory-health/>
+        <inventory-health />
       </a-col>
     </a-row>
 
     <a-row :gutter="[16, 16]">
       <a-col :xs="24" :xl="12">
-        <HomeNotice/>
+        <HomeNotice />
       </a-col>
       <a-col :xs="24" :xl="12">
-        <ChangelogCard/>
+        <ChangelogCard />
       </a-col>
     </a-row>
   </div>

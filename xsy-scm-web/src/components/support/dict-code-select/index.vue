@@ -6,14 +6,14 @@
 <template>
   <div>
     <a-select
-        v-model:value="selectValue"
-        :style="`width: ${width}`"
-        :placeholder="props.placeholder"
-        :showSearch="true"
-        :allowClear="true"
-        :size="size"
-        @change="onChange"
-        :disabled="disabled"
+      v-model:value="selectValue"
+      :style="`width: ${width}`"
+      :placeholder="props.placeholder"
+      :showSearch="true"
+      :allowClear="true"
+      :size="size"
+      @change="onChange"
+      :disabled="disabled"
     >
       <a-select-option v-for="item in dictList" :key="item.dictCode" :value="item.dictCode">
         {{ item.dictName }}
@@ -55,10 +55,10 @@ const dictList = computed(() => useDictStore().dictList.filter((item) => !item.d
 const emit = defineEmits(['update:value', 'change']);
 const selectValue = ref(props.value);
 watch(
-    () => props.value,
-    (newValue) => {
-      selectValue.value = newValue;
-    }
+  () => props.value,
+  (newValue) => {
+    selectValue.value = newValue;
+  }
 );
 
 function onChange(value) {

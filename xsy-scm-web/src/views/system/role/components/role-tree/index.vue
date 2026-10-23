@@ -7,11 +7,10 @@
   <div>
     <div class="tree-header">
       <p>设置角色对应的功能操作、后台管理权限</p>
-      <a-button v-if="selectRoleId" type="primary" @click="saveChange" v-privilege="'system:role:menu:update'"> 保存
-      </a-button>
+      <a-button v-if="selectRoleId" type="primary" @click="saveChange" v-privilege="'system:role:menu:update'"> 保存 </a-button>
     </div>
     <!-- 功能权限勾选部分 -->
-    <RoleTreeCheckbox :tree="tree"/>
+    <RoleTreeCheckbox :tree="tree" />
   </div>
 </template>
 <script setup lang="ts">

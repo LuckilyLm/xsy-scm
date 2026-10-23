@@ -15,24 +15,25 @@
 - 前端请看：/lib/encrypt.js、/lib/axios.js  /api/support/api-encrypt/api-encrypt-api.js 等文件
 - 后端请看：@ApiEncrypt 和 @ApiDecrypt 注解，具体请看 sa-common项目中的 net.lab1024.sa.common.module.support.apiencrypt 包
 - demo请看：前端：/views/support/api-encrypt 目录，后端 请看：sa-admin项目的：net.lab1024.sa.admin.module.system.support.AdminApiEncryptController
-</pre>
+</pre
+      >
     </template>
   </a-alert>
-  <br/>
+  <br />
   <a-alert
-      message="当前加密算法为：SM4，若想改为 AES，前端请修改 'lib/encrypt.js'文件中的EncryptObject，后端请修改 ApiEncryptService 的实现类"
-      type="error"
+    message="当前加密算法为：SM4，若想改为 AES，前端请修改 'lib/encrypt.js'文件中的EncryptObject，后端请修改 ApiEncryptService 的实现类"
+    type="error"
   />
-  <br/>
+  <br />
   <!---------- 请求参数加密 begin ----------->
   <a-card title="一、请求加密 Demo">
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="姓名" class="smart-query-form-item">
-          <a-input v-model:value="requestEncryptForm.name" placeholder="姓名"/>
+          <a-input v-model:value="requestEncryptForm.name" placeholder="姓名" />
         </a-form-item>
         <a-form-item label="年龄" class="smart-query-form-item">
-          <a-input-number v-model:value="requestEncryptForm.age" placeholder="年龄"/>
+          <a-input-number v-model:value="requestEncryptForm.age" placeholder="年龄" />
         </a-form-item>
         <a-form-item class="smart-query-form-item">
           <a-button type="primary" @click="testRequestEncrypt"> 测试：请求加密</a-button>
@@ -50,16 +51,16 @@
     </a-form>
   </a-card>
   <!---------- 请求参数加密 end ----------->
-  <br/>
+  <br />
   <!---------- 返回结果解密 begin ----------->
   <a-card title="二、返回加密 Demo">
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="姓名" class="smart-query-form-item">
-          <a-input v-model:value="responseEncryptForm.name" placeholder="姓名"/>
+          <a-input v-model:value="responseEncryptForm.name" placeholder="姓名" />
         </a-form-item>
         <a-form-item label="年龄" class="smart-query-form-item">
-          <a-input-number v-model:value="responseEncryptForm.age" placeholder="年龄"/>
+          <a-input-number v-model:value="responseEncryptForm.age" placeholder="年龄" />
         </a-form-item>
         <a-form-item class="smart-query-form-item">
           <a-button type="primary" @click="testResponseEncrypt"> 测试：返回加密</a-button>
@@ -78,16 +79,16 @@
   </a-card>
   <!---------- 返回结果解密 end ----------->
 
-  <br/>
+  <br />
   <!---------- 请求和返回都加密 begin ----------->
   <a-card title="三、请求和返回都加密 Demo">
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="姓名" class="smart-query-form-item">
-          <a-input v-model:value="form.name" placeholder="姓名"/>
+          <a-input v-model:value="form.name" placeholder="姓名" />
         </a-form-item>
         <a-form-item label="年龄" class="smart-query-form-item">
-          <a-input-number v-model:value="form.age" placeholder="年龄"/>
+          <a-input-number v-model:value="form.age" placeholder="年龄" />
         </a-form-item>
         <a-form-item class="smart-query-form-item">
           <a-button type="primary" @click="testBoth"> 测试：请求和返回都加密</a-button>
@@ -109,7 +110,7 @@
   </a-card>
   <!---------- 返回结果解密 end ----------->
 
-  <br/>
+  <br />
   <!---------- 测试数组 begin ----------->
   <a-card title="四、测试数组 Demo">
     <a-form class="smart-query-form">

@@ -3,29 +3,27 @@
   <a-form class="smart-query-form">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键词" class="smart-query-form-item">
-        <a-input style="width: 150px" v-model:value="queryForm.searchWord" placeholder="关键词"/>
+        <a-input style="width: 150px" v-model:value="queryForm.searchWord" placeholder="关键词" />
       </a-form-item>
       <a-form-item label="类型" class="smart-query-form-item">
-        <smart-enum-select style="width: 150px" v-model:value="queryForm.messageType" placeholder="消息类型"
-                           enum-name="MESSAGE_TYPE_ENUM"/>
+        <smart-enum-select style="width: 150px" v-model:value="queryForm.messageType" placeholder="消息类型" enum-name="MESSAGE_TYPE_ENUM" />
       </a-form-item>
       <a-form-item label="是否已读" class="smart-query-form-item">
-        <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.readFlag"/>
+        <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.readFlag" />
       </a-form-item>
       <a-form-item label="创建时间" class="smart-query-form-item">
-        <a-range-picker v-model:value="queryForm.createTime" :presets="defaultTimeRanges" style="width: 200px"
-                        @change="onChangeCreateTime"/>
+        <a-range-picker v-model:value="queryForm.createTime" :presets="defaultTimeRanges" style="width: 200px" @change="onChangeCreateTime" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button type="primary" @click="searchQuery">
           <template #icon>
-            <SearchOutlined/>
+            <SearchOutlined />
           </template>
           查询
         </a-button>
         <a-button @click="resetQuery" class="smart-margin-left10">
           <template #icon>
-            <ReloadOutlined/>
+            <ReloadOutlined />
           </template>
           重置
         </a-button>
@@ -40,21 +38,20 @@
       <div class="smart-table-operate-block">
         <a-button @click="showForm" type="primary">
           <template #icon>
-            <PlusOutlined/>
+            <PlusOutlined />
           </template>
           发送消息
         </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.MAIL" :refresh="queryData"/>
+        <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.MAIL" :refresh="queryData" />
       </div>
     </a-row>
     <!---------- 表格操作行 end ----------->
 
     <!---------- 表格 begin ----------->
-    <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="telephoneId" bordered
-             :loading="tableLoading" :pagination="false">
-      <template #bodyCell="{ record, column, text }">
+    <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="telephoneId" bordered :loading="tableLoading" :pagination="false">
+      <template #bodyCell="{record, column, text}">
         <template v-if="column.dataIndex === 'readFlag'">
           {{ text ? '已读' : '未读' }}
         </template>
@@ -72,20 +69,20 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
 
-    <MessageSendForm ref="formRef" @reloadList="queryData"/>
+    <MessageSendForm ref="formRef" @reloadList="queryData" />
   </a-card>
 </template>
 <script setup lang="ts">
@@ -128,7 +125,8 @@ const columns = ref([
   },
   {
     title: '已读',
-    dataIndex: 'readFlag', align: 'center',
+    dataIndex: 'readFlag',
+    align: 'center',
     width: 50,
   },
   {
@@ -224,8 +222,7 @@ function onDelete(data) {
       requestDelete(data);
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 

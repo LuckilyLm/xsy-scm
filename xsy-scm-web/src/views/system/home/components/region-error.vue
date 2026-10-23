@@ -5,15 +5,9 @@
   * 不弹全局提示、不把整页变成错误页。
 -->
 <template>
-  <a-empty
-    class="home-region-error"
-    role="alert"
-    aria-live="polite"
-    :description="message"
-    :style="{minHeight: minHeight + 'px'}"
-  >
+  <a-empty class="home-region-error" role="alert" aria-live="polite" :description="message" :style="{minHeight: minHeight + 'px'}">
     <template #image>
-      <exclamation-circle-outlined class="home-region-error__icon" aria-hidden="true"/>
+      <exclamation-circle-outlined class="home-region-error__icon" aria-hidden="true" />
     </template>
     <a-button size="small" @click="emit('retry')">重试</a-button>
   </a-empty>

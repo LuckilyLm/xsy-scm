@@ -26,7 +26,7 @@
     <a-card size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
         <a-button v-privilege="'scm:supplier:add'" type="primary" @click="drawer?.open()">新增供应商</a-button>
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER" :refresh="load"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_SUPPLIER" :refresh="load" />
       </a-row>
       <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
         <template #action>
@@ -34,18 +34,18 @@
         </template>
       </a-alert>
       <a-table
-          ref="tableRef"
-          :data-source="rows"
-          :columns="displayColumns"
-          row-key="supplierId"
-          :loading="loading"
-          :pagination="false"
-          size="small"
-          bordered
-          :scroll="{ x: scrollX }"
-          @change="sortChanged"
+        ref="tableRef"
+        :data-source="rows"
+        :columns="displayColumns"
+        row-key="supplierId"
+        :loading="loading"
+        :pagination="false"
+        size="small"
+        bordered
+        :scroll="{x: scrollX}"
+        @change="sortChanged"
       >
-        <template #bodyCell="{ column, record }">
+        <template #bodyCell="{column, record}">
           <template v-if="column.dataIndex === 'name'">
             <a-button type="link" size="small" class="scm-cell-link" @click="detail(record.supplierId)">{{ record.name }}</a-button>
           </template>
@@ -59,42 +59,36 @@
             <span class="scm-mono">{{ record.contactPhone || '—' }}</span>
           </template>
           <a-button
-              v-else-if="column.dataIndex === 'skuCount'"
-              v-privilege="'scm:supplier:sku:query'"
-              type="link"
-              size="small"
-              @click="openSku(record)"
+            v-else-if="column.dataIndex === 'skuCount'"
+            v-privilege="'scm:supplier:sku:query'"
+            type="link"
+            size="small"
+            @click="openSku(record)"
           >
             {{ record.skuCount ?? 0 }}
           </a-button>
-          <ScmStatusTag v-else-if="column.dataIndex === 'status'" :tone="statusTone(record.status)"
-                        :label="statusText(record.status)"/>
-          <a-space v-else-if="column.dataIndex === 'action'" :size="0"
-                   class="smart-table-operate scm-table-actions">
-            <a-button v-privilege="'scm:supplier:update'" type="link" size="small"
-                      @click="drawer?.open(record.supplierId)">编辑
-            </a-button>
-            <a-button v-privilege="'scm:supplier:sku:update'" type="link" size="small" @click="openSku(record)">
-              关联商品
-            </a-button>
-            <ScmActionMore :actions="rowActions()" @select="onRowAction($event, record)"/>
+          <ScmStatusTag v-else-if="column.dataIndex === 'status'" :tone="statusTone(record.status)" :label="statusText(record.status)" />
+          <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
+            <a-button v-privilege="'scm:supplier:update'" type="link" size="small" @click="drawer?.open(record.supplierId)">编辑 </a-button>
+            <a-button v-privilege="'scm:supplier:sku:update'" type="link" size="small" @click="openSku(record)"> 关联商品 </a-button>
+            <ScmActionMore :actions="rowActions()" @select="onRowAction($event, record)" />
           </a-space>
         </template>
       </a-table>
       <div class="smart-query-table-page">
         <a-pagination
-            v-model:current="filters.pageNum"
-            v-model:page-size="filters.pageSize"
-            :total="total"
-            show-size-changer
-            :show-total="(n: number) => `共 ${n} 条`"
-            @change="load"
+          v-model:current="filters.pageNum"
+          v-model:page-size="filters.pageSize"
+          :total="total"
+          show-size-changer
+          :show-total="(n: number) => `共 ${n} 条`"
+          @change="load"
         />
       </div>
     </a-card>
 
-    <SupplierDrawer ref="drawer" @saved="load"/>
-    <SupplierSkuDrawer ref="skuDrawer" @saved="load"/>
+    <SupplierDrawer ref="drawer" @saved="load" />
+    <SupplierSkuDrawer ref="skuDrawer" @saved="load" />
   </section>
 </template>
 

@@ -5,14 +5,14 @@
 -->
 <template>
   <div style="border: 1px solid #ccc">
-    <Toolbar style="border-bottom: 1px solid #ccc" :editor="editorRef"/>
+    <Toolbar style="border-bottom: 1px solid #ccc" :editor="editorRef" />
     <Editor
-        style="overflow-y: hidden"
-        :style="{ height: `${height}px` }"
-        v-model="editorHtml"
-        :defaultConfig="editorConfig"
-        @onCreated="handleCreated"
-        @onChange="handleChange"
+      style="overflow-y: hidden"
+      :style="{height: `${height}px`}"
+      v-model="editorHtml"
+      :defaultConfig="editorConfig"
+      @onCreated="handleCreated"
+      @onChange="handleChange"
     />
   </div>
 </template>
@@ -54,14 +54,14 @@ let props = defineProps({
   },
 });
 watch(
-    () => props.modelValue,
-    (nVal) => {
-      editorHtml.value = nVal;
-    },
-    {
-      immediate: true,
-      deep: true,
-    }
+  () => props.modelValue,
+  (nVal) => {
+    editorHtml.value = nVal;
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
 );
 
 // 获取编辑器实例html

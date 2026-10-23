@@ -6,7 +6,7 @@ import type {Id} from './inventory-types.ts';
 
 /** 仓库的最小形状（只用到 id，避免把整个 `Warehouse` 类型拖进来）。 */
 export interface WarehouseLike {
-    id: Id;
+  id: Id;
 }
 
 /**
@@ -17,13 +17,11 @@ export interface WarehouseLike {
  *
  * @param warehouses `GET /scm/warehouse/list` 的返回（只含启用仓库）
  */
-export function singleWarehouseDefault(
-    warehouses: WarehouseLike[] | null | undefined
-): Id | undefined {
-    if (!warehouses || warehouses.length !== 1) {
-        return undefined;
-    }
-    return warehouses[0].id;
+export function singleWarehouseDefault(warehouses: WarehouseLike[] | null | undefined): Id | undefined {
+  if (!warehouses || warehouses.length !== 1) {
+    return undefined;
+  }
+  return warehouses[0].id;
 }
 
 /**
@@ -33,10 +31,10 @@ export function singleWarehouseDefault(
  * 前端不做二次格式化，否则会与后端口径分叉）。
  */
 export function quantityText(value: string | null | undefined): string {
-    if (value === null || value === undefined || value === '') {
-        return '—';
-    }
-    return value;
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+  return value;
 }
 
 /**
@@ -44,10 +42,10 @@ export function quantityText(value: string | null | undefined): string {
  * null 显示为“—”，数字 0 仍显示为 0。
  */
 export function moneyText(value: string | null | undefined): string {
-    if (value === null || value === undefined || value === '') {
-        return '—';
-    }
-    return value;
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+  return value;
 }
 
 /**
@@ -56,11 +54,11 @@ export function moneyText(value: string | null | undefined): string {
  * 无值或空对象 → `—`。刻意不抛错：规格是展示字段，坏形状不该让整页崩掉。
  */
 export function specText(specValues: Record<string, unknown> | null | undefined): string {
-    if (!specValues) {
-        return '—';
-    }
-    const pairs = Object.entries(specValues).map(([key, value]) => `${key}：${String(value)}`);
-    return pairs.length ? pairs.join('，') : '—';
+  if (!specValues) {
+    return '—';
+  }
+  const pairs = Object.entries(specValues).map(([key, value]) => `${key}：${String(value)}`);
+  return pairs.length ? pairs.join('，') : '—';
 }
 
 /**
@@ -71,19 +69,16 @@ export function specText(specValues: Record<string, unknown> | null | undefined)
  * 不要写成 `specText(specValues) || skuName`：specText 无值时返回的是 `'—'`，
  * 那是 truthy，回落分支永远不会执行，结果是无规格的商品在列表里只显示一个破折号。
  */
-export function skuMainText(
-    specValues: Record<string, unknown> | null | undefined,
-    skuName?: string | null
-): string {
-    const spec = specText(specValues);
-    if (spec !== '—') {
-        return spec;
-    }
-    return skuName || '—';
+export function skuMainText(specValues: Record<string, unknown> | null | undefined, skuName?: string | null): string {
+  const spec = specText(specValues);
+  if (spec !== '—') {
+    return spec;
+  }
+  return skuName || '—';
 }
 
 /** 枚举文案表的最小结构（`SmartEnum` 的每一项都满足它；刻意不 import 常量，见文件头注释）。 */
-export type EnumLabels = Record<string, { desc?: string } | undefined>;
+export type EnumLabels = Record<string, {desc?: string} | undefined>;
 /**
  * 流水类型的中文描述。
  *
@@ -92,14 +87,11 @@ export type EnumLabels = Record<string, { desc?: string } | undefined>;
  *
  * @param labels 枚举文案表（调用方传 `SCM_INVENTORY_MOVEMENT_TYPE_ENUM`）
  */
-export function movementTypeText(
-    value: string | null | undefined,
-    labels: EnumLabels
-): string {
-    if (!value) {
-        return '—';
-    }
-    return labels[value]?.desc || value;
+export function movementTypeText(value: string | null | undefined, labels: EnumLabels): string {
+  if (!value) {
+    return '—';
+  }
+  return labels[value]?.desc || value;
 }
 
 /**
@@ -110,46 +102,46 @@ export const BALANCE_QUERY_PAGE_SIZE = 100;
 
 /** 余额行里本函数关心的字段：只要编码与单位，账面量刻意不读（历史账面量不是本次实盘量）。 */
 export interface BalanceUnitRow {
-    skuId?: string | number | null;
-    unit?: string | null;
+  skuId?: string | number | null;
+  unit?: string | null;
 }
 
 export interface StocktakeCopyUnits {
-    /** 来源 SKU → 当前记账单位；未解析到的 SKU 不出现在这里。 */
-    unitBySku: Map<string, string>;
-    /** 翻完所有页仍找不到余额行的来源 SKU（按来源顺序去重）。 */
-    missingSkuIds: string[];
+  /** 来源 SKU → 当前记账单位；未解析到的 SKU 不出现在这里。 */
+  unitBySku: Map<string, string>;
+  /** 翻完所有页仍找不到余额行的来源 SKU（按来源顺序去重）。 */
+  missingSkuIds: string[];
 }
 
 export async function resolveStocktakeCopyUnits(
-    sourceSkuIds: Array<string | number | null | undefined>,
-    fetchPage: (pageNum: number, pageSize: number) => Promise<BalanceUnitRow[] | undefined>
+  sourceSkuIds: Array<string | number | null | undefined>,
+  fetchPage: (pageNum: number, pageSize: number) => Promise<BalanceUnitRow[] | undefined>
 ): Promise<StocktakeCopyUnits> {
-    const pending = new Set<string>();
-    for (const skuId of sourceSkuIds) {
-        // 空 skuId 不是「待解析」对象：它进不了 unitBySku，调用方逐行检查时会整单拒绝
-        if (skuId !== null && skuId !== undefined && skuId !== '') {
-            pending.add(String(skuId));
-        }
+  const pending = new Set<string>();
+  for (const skuId of sourceSkuIds) {
+    // 空 skuId 不是「待解析」对象：它进不了 unitBySku，调用方逐行检查时会整单拒绝
+    if (skuId !== null && skuId !== undefined && skuId !== '') {
+      pending.add(String(skuId));
     }
-    const unitBySku = new Map<string, string>();
-    let pageNum = 1;
-    for (;;) {
-        const rows = (await fetchPage(pageNum, BALANCE_QUERY_PAGE_SIZE)) ?? [];
-        for (const row of rows) {
-            if (row.skuId === null || row.skuId === undefined) {
-                continue;
-            }
-            const key = String(row.skuId);
-            if (pending.delete(key)) {
-                unitBySku.set(key, row.unit ?? '');
-            }
-        }
-        // 来源 SKU 全部命中，或已读到最后一页（不足一页）：都不必再翻页
-        if (pending.size === 0 || rows.length < BALANCE_QUERY_PAGE_SIZE) {
-            break;
-        }
-        pageNum += 1;
+  }
+  const unitBySku = new Map<string, string>();
+  let pageNum = 1;
+  for (;;) {
+    const rows = (await fetchPage(pageNum, BALANCE_QUERY_PAGE_SIZE)) ?? [];
+    for (const row of rows) {
+      if (row.skuId === null || row.skuId === undefined) {
+        continue;
+      }
+      const key = String(row.skuId);
+      if (pending.delete(key)) {
+        unitBySku.set(key, row.unit ?? '');
+      }
     }
-    return {unitBySku, missingSkuIds: [...pending]};
+    // 来源 SKU 全部命中，或已读到最后一页（不足一页）：都不必再翻页
+    if (pending.size === 0 || rows.length < BALANCE_QUERY_PAGE_SIZE) {
+      break;
+    }
+    pageNum += 1;
+  }
+  return {unitBySku, missingSkuIds: [...pending]};
 }

@@ -1,20 +1,18 @@
 <!--
   * 目录表单
-  * 
+  *
 -->
 <template>
-  <a-modal v-model:open="visible" :title="formState.helpDocCatalogId ? '编辑目录' : '添加目录'" @ok="handleOk"
-           destroyOnClose>
+  <a-modal v-model:open="visible" :title="formState.helpDocCatalogId ? '编辑目录' : '添加目录'" @ok="handleOk" destroyOnClose>
     <a-form ref="formRef" :model="formState" :rules="rules" layout="vertical">
       <a-form-item label="上级目录" name="parentId" v-if="formState.parentId !== 0">
-        <HelpDocCatalogTreeSelect ref="helpDocCatalogTreeSelect" v-model:value="formState.parentId"
-                                  :defaultValueFlag="false" width="100%"/>
+        <HelpDocCatalogTreeSelect ref="helpDocCatalogTreeSelect" v-model:value="formState.parentId" :defaultValueFlag="false" width="100%" />
       </a-form-item>
       <a-form-item label="目录名称" name="name">
-        <a-input v-model:value.trim="formState.name" placeholder="请输入目录名称"/>
+        <a-input v-model:value.trim="formState.name" placeholder="请输入目录名称" />
       </a-form-item>
       <a-form-item label="目录排序 （值越小越靠前！）" name="sort">
-        <a-input-number style="width: 100%" v-model:value="formState.sort" :min="0" placeholder="请输入目录名称"/>
+        <a-input-number style="width: 100%" v-model:value="formState.sort" :min="0" placeholder="请输入目录名称" />
       </a-form-item>
     </a-form>
   </a-modal>

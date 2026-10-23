@@ -5,21 +5,19 @@
       <div class="scm-brand">
         <span class="scm-brand-name">鲜蔬园智链</span>
       </div>
-      <span class="scm-brand-divider"/>
+      <span class="scm-brand-divider" />
       <!--
         运行状态跟着品牌走：它是「系统级」信号，右侧 400px 留给「日期时间 + 更新时间 + 两个按钮」
         已经刚好够用，再挤一个徽章就会把「2026-10-11 星期日」压成两行。
       -->
-      <span class="scm-status-item" :class="statusClass">
-        <i class="scm-dot"/>{{ statusText }}
-      </span>
+      <span class="scm-status-item" :class="statusClass"> <i class="scm-dot" />{{ statusText }} </span>
     </div>
 
     <!-- 中：中心标题（带左右引导线，不用龙纹/跑马灯） -->
     <div class="scm-header-center">
-      <span class="scm-header-line"/>
+      <span class="scm-header-line" />
       <h1 class="scm-header-title">供应链运营中心</h1>
-      <span class="scm-header-line"/>
+      <span class="scm-header-line" />
     </div>
 
     <!-- 右：日期时钟 + 更新时间 + 操作 -->
@@ -30,37 +28,36 @@
       </div>
       <div class="scm-status">
         <button class="scm-btn" type="button" title="立即刷新" aria-label="刷新运营数据" :disabled="refreshing" @click="emit('refresh')">
-          <svg class="scm-icon" viewBox="0 0 16 16" aria-hidden="true" :class="{ 'is-spin': refreshing }">
-            <path
-                d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.4"
-                stroke-linecap="round"
-            />
-            <path d="M13.8 1.6v3.2h-3.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          <svg class="scm-icon" viewBox="0 0 16 16" aria-hidden="true" :class="{'is-spin': refreshing}">
+            <path d="M13.6 8a5.6 5.6 0 1 1-1.64-3.96" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+            <path d="M13.8 1.6v3.2h-3.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
           </svg>
         </button>
-        <button class="scm-btn" type="button" :title="fullscreen ? '退出全屏' : '进入全屏'"
-                :aria-label="fullscreen ? '退出全屏' : '进入全屏'" @click="emit('fullscreen')">
+        <button
+          class="scm-btn"
+          type="button"
+          :title="fullscreen ? '退出全屏' : '进入全屏'"
+          :aria-label="fullscreen ? '退出全屏' : '进入全屏'"
+          @click="emit('fullscreen')"
+        >
           <svg v-if="!fullscreen" class="scm-icon" viewBox="0 0 16 16" aria-hidden="true">
             <path
-                d="M6 2H2v4M10 2h4v4M10 14h4v-4M6 14H2v-4"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+              d="M6 2H2v4M10 2h4v4M10 14h4v-4M6 14H2v-4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             />
           </svg>
           <svg v-else class="scm-icon" viewBox="0 0 16 16" aria-hidden="true">
             <path
-                d="M2 6h4V2M14 6h-4V2M14 10h-4v4M2 10h4v4"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+              d="M2 6h4V2M14 6h-4V2M14 10h-4v4M2 10h4v4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             />
           </svg>
         </button>
@@ -269,7 +266,10 @@ const statusClass = computed(() => (props.staleError ? 'is-warn' : 'is-ok'));
   border: 1px solid @panel-border;
   border-radius: 3px;
   cursor: pointer;
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
 
   &:hover {
     color: @tech-cyan;

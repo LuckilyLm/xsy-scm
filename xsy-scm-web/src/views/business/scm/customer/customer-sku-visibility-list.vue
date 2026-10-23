@@ -20,14 +20,10 @@
             <a-button @click="reset">重置</a-button>
           </a-space>
         </a-form-item>
-      <div class="scm-query-table-tools">
-        <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER_SKU_VISIBILITY"
-          :refresh="load"
-          />
-      </div>
-    </a-row>
+        <div class="scm-query-table-tools">
+          <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER_SKU_VISIBILITY" :refresh="load" />
+        </div>
+      </a-row>
     </a-form>
 
     <a-card size="small" :bordered="false">
@@ -44,7 +40,7 @@
         :loading="loading"
         :pagination="false"
         :locale="{emptyText: '当前授权范围内没有匹配的客户可见性配置'}"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+        :scroll="{x: scmColumnsWidth(columns)}"
         size="small"
       >
         <template #bodyCell="{column, record}">
@@ -62,22 +58,13 @@
           <template v-else-if="column.dataIndex === 'status'">
             <span v-if="record.skuId == null">适用于全部可售商品规格</span>
             <a-space v-else size="small">
-              <ScmStatusTag :tone="shelfStatusTone(record.spuStatus)"
-                            :label="`商品${shelfStatusLabel(record.spuStatus)}`"/>
-              <ScmStatusTag :tone="shelfStatusTone(record.skuStatus)"
-                            :label="`规格${shelfStatusLabel(record.skuStatus)}`"/>
+              <ScmStatusTag :tone="shelfStatusTone(record.spuStatus)" :label="`商品${shelfStatusLabel(record.spuStatus)}`" />
+              <ScmStatusTag :tone="shelfStatusTone(record.skuStatus)" :label="`规格${shelfStatusLabel(record.skuStatus)}`" />
             </a-space>
           </template>
           <template v-else-if="column.dataIndex === 'action'">
             <div class="scm-table-actions">
-              <a-button
-                v-privilege="'scm:customer:query'"
-                type="link"
-                size="small"
-                @click="openCustomer(record.customerId)"
-              >
-                客户详情
-              </a-button>
+              <a-button v-privilege="'scm:customer:query'" type="link" size="small" @click="openCustomer(record.customerId)"> 客户详情 </a-button>
             </div>
           </template>
         </template>
@@ -130,8 +117,7 @@ const loading = ref(false);
 const error = ref('');
 let requestId = 0;
 
-const shelfStatusTone = (value?: string | null): ScmStatusTone =>
-    value === 'ON_SHELF' ? 'success' : value === 'OFF_SHELF' ? 'neutral' : 'warning';
+const shelfStatusTone = (value?: string | null): ScmStatusTone => (value === 'ON_SHELF' ? 'success' : value === 'OFF_SHELF' ? 'neutral' : 'warning');
 
 // 编码列单独保留，但默认收起；列设置仍可打开这两项。
 type VisibilityListColumn = TableColumnsType<VisibilityRow>[number] & {showFlag?: boolean};

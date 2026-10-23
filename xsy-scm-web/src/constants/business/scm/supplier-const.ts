@@ -7,8 +7,8 @@ import {SmartEnum} from '/@/types/smart-enum';
  * - 管理列表返回全部状态，下拉只返回 `ENABLED`（S11）。
  */
 export const SUPPLIER_STATUS_ENUM: SmartEnum<string> = {
-    ENABLED: {value: 'ENABLED', desc: '启用'},
-    DISABLED: {value: 'DISABLED', desc: '停用'},
+  ENABLED: {value: 'ENABLED', desc: '启用'},
+  DISABLED: {value: 'DISABLED', desc: '停用'},
 };
 
 /**
@@ -17,11 +17,11 @@ export const SUPPLIER_STATUS_ENUM: SmartEnum<string> = {
  * 只有 `ENABLED` 的关联才参与「可采购来源」判定。
  */
 export const SUPPLIER_SKU_STATUS_ENUM: SmartEnum<string> = {
-    ENABLED: {value: 'ENABLED', desc: '启用'},
-    DISABLED: {value: 'DISABLED', desc: '停用'},
+  ENABLED: {value: 'ENABLED', desc: '启用'},
+  DISABLED: {value: 'DISABLED', desc: '停用'},
 };
 
 export default {
-    SUPPLIER_STATUS_ENUM,
-    SUPPLIER_SKU_STATUS_ENUM,
+  SUPPLIER_STATUS_ENUM,
+  SUPPLIER_SKU_STATUS_ENUM,
 };

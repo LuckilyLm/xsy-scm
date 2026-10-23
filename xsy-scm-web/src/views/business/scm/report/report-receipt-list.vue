@@ -3,13 +3,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="业务日期" class="smart-query-form-item">
-        <ReportDateRangePicker v-model:value="dateRange"/>
+        <ReportDateRangePicker v-model:value="dateRange" />
       </a-form-item>
       <a-form-item label="供应商" class="smart-query-form-item">
-        <SupplierSelect v-model:value="filters.supplierId" width="200px"/>
+        <SupplierSelect v-model:value="filters.supplierId" width="200px" />
       </a-form-item>
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="filters.warehouseId" width="180px"/>
+        <WarehouseSelect v-model:value="filters.warehouseId" width="180px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -23,13 +23,13 @@
     </a-row>
     <a-row v-if="advanced" class="smart-query-form-row">
       <a-form-item label="收货模式" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.receiptMode" enum-name="SCM_RECEIPT_MODE_ENUM" width="170px"/>
+        <SmartEnumSelect v-model:value="filters.receiptMode" enum-name="SCM_RECEIPT_MODE_ENUM" width="170px" />
       </a-form-item>
       <a-form-item label="入库状态" class="smart-query-form-item">
-        <SmartEnumSelect v-model:value="filters.putawayStatus" enum-name="SCM_PUTAWAY_STATUS_ENUM" width="140px"/>
+        <SmartEnumSelect v-model:value="filters.putawayStatus" enum-name="SCM_PUTAWAY_STATUS_ENUM" width="140px" />
       </a-form-item>
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input v-model:value="filters.keyword" placeholder="收货单号 / 采购单号 / 商品" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="filters.keyword" placeholder="收货单号 / 采购单号 / 商品" allow-clear @pressEnter="onSearch" />
       </a-form-item>
     </a-row>
   </a-form>
@@ -44,10 +44,18 @@
         <div v-else class="scm-report-summary">
           <span v-if="!receiptSummary">汇总查询中…</span>
           <template v-else>
-            <span>收货单 <strong>{{ countText(receiptSummary.receiptCount) }}</strong> 张</span>
-            <span>收货行 <strong>{{ countText(receiptSummary.itemCount) }}</strong> 条</span>
-            <span>收货数量 <strong>{{ unitQuantitiesText(receiptSummary.quantities) }}</strong></span>
-            <span>收货参考金额 <strong class="scm-money">{{ moneyText(receiptSummary.referenceAmount) }}</strong></span>
+            <span
+              >收货单 <strong>{{ countText(receiptSummary.receiptCount) }}</strong> 张</span
+            >
+            <span
+              >收货行 <strong>{{ countText(receiptSummary.itemCount) }}</strong> 条</span
+            >
+            <span
+              >收货数量 <strong>{{ unitQuantitiesText(receiptSummary.quantities) }}</strong></span
+            >
+            <span
+              >收货参考金额 <strong class="scm-money">{{ moneyText(receiptSummary.referenceAmount) }}</strong></span
+            >
           </template>
         </div>
         <a-row class="smart-table-btn-block">
@@ -55,11 +63,7 @@
             <a-button v-privilege="PERM.EXPORT" :loading="receiptExport.exporting" @click="exportReceipt">导出</a-button>
           </div>
           <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="receiptColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_RECEIPT"
-                :refresh="loadReceiptTab"
-            />
+            <TableOperator v-model="receiptColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_RECEIPT" :refresh="loadReceiptTab" />
           </div>
         </a-row>
         <a-alert v-if="receipt.error" :message="receipt.error" type="error" show-icon class="smart-margin-bottom10">
@@ -68,18 +72,18 @@
           </template>
         </a-alert>
         <a-table
-            :id="SCM_REPORT_TABLE_ID.RECEIPT"
-            size="small"
-            :data-source="receipt.rows"
-            :columns="receiptColumns"
-            row-key="receiptItemId"
-            bordered
-            :loading="receipt.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无收货明细'}"
-            :scroll="{x: scmColumnsWidth(receiptColumns)}"
+          :id="SCM_REPORT_TABLE_ID.RECEIPT"
+          size="small"
+          :data-source="receipt.rows"
+          :columns="receiptColumns"
+          row-key="receiptItemId"
+          bordered
+          :loading="receipt.loading"
+          :pagination="false"
+          :locale="{emptyText: '暂无收货明细'}"
+          :scroll="{x: scmColumnsWidth(receiptColumns)}"
         >
-          <template #bodyCell="{ record, column }">
+          <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'confirmedAt'">
               {{ datetime(record.confirmedAt) }}
             </template>
@@ -121,14 +125,14 @@
         </a-table>
         <div class="smart-query-table-page">
           <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="receipt.pageNum"
-              v-model:page-size="receipt.pageSize"
-              :total="receipt.total"
-              :exporting="receipt.exporting"
-              @change="loadReceiptTab"
-              :show-total="(n: number) => `共${n}条`"
+            show-size-changer
+            show-quick-jumper
+            v-model:current="receipt.pageNum"
+            v-model:page-size="receipt.pageSize"
+            :total="receipt.total"
+            :exporting="receipt.exporting"
+            @change="loadReceiptTab"
+            :show-total="(n: number) => `共${n}条`"
           />
         </div>
       </a-card>
@@ -143,10 +147,16 @@
         <div v-else class="scm-report-summary">
           <span v-if="!inboundSummary">汇总查询中…</span>
           <template v-else>
-            <span>入库流水 <strong>{{ countText(inboundSummary.movementCount) }}</strong> 条</span>
-            <span>入库数量 <strong>{{ unitQuantitiesText(inboundSummary.quantities) }}</strong></span>
+            <span
+              >入库流水 <strong>{{ countText(inboundSummary.movementCount) }}</strong> 条</span
+            >
+            <span
+              >入库数量 <strong>{{ unitQuantitiesText(inboundSummary.quantities) }}</strong></span
+            >
             <template v-if="canViewCost">
-              <span>已知入库成本小计 <strong class="scm-money">{{ moneyText(inboundSummary.knownCostAmount) }}</strong></span>
+              <span
+                >已知入库成本小计 <strong class="scm-money">{{ moneyText(inboundSummary.knownCostAmount) }}</strong></span
+              >
               <span v-if="inboundSummary.costMissingCount">{{ inboundSummary.costMissingCount }} 条流水缺少成本，金额不代表全部入库成本</span>
             </template>
           </template>
@@ -156,11 +166,7 @@
             <a-button v-privilege="PERM.EXPORT" :loading="inboundExport.exporting" @click="exportInbound">导出</a-button>
           </div>
           <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="inboundColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INBOUND"
-                :refresh="loadInboundTab"
-            />
+            <TableOperator v-model="inboundColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INBOUND" :refresh="loadInboundTab" />
           </div>
         </a-row>
         <a-alert v-if="inbound.error" :message="inbound.error" type="error" show-icon class="smart-margin-bottom10">
@@ -169,18 +175,18 @@
           </template>
         </a-alert>
         <a-table
-            :id="SCM_REPORT_TABLE_ID.INBOUND"
-            size="small"
-            :data-source="inbound.rows"
-            :columns="visibleInboundColumns"
-            row-key="movementId"
-            bordered
-            :loading="inbound.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无入库明细'}"
-            :scroll="{x: scmColumnsWidth(visibleInboundColumns)}"
+          :id="SCM_REPORT_TABLE_ID.INBOUND"
+          size="small"
+          :data-source="inbound.rows"
+          :columns="visibleInboundColumns"
+          row-key="movementId"
+          bordered
+          :loading="inbound.loading"
+          :pagination="false"
+          :locale="{emptyText: '暂无入库明细'}"
+          :scroll="{x: scmColumnsWidth(visibleInboundColumns)}"
         >
-          <template #bodyCell="{ record, column }">
+          <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'occurredAt'">
               {{ datetime(record.occurredAt) }}
             </template>
@@ -202,14 +208,14 @@
         </a-table>
         <div class="smart-query-table-page">
           <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="inbound.pageNum"
-              v-model:page-size="inbound.pageSize"
-              :total="inbound.total"
-              :exporting="inbound.exporting"
-              @change="loadInboundTab"
-              :show-total="(n: number) => `共${n}条`"
+            show-size-changer
+            show-quick-jumper
+            v-model:current="inbound.pageNum"
+            v-model:page-size="inbound.pageSize"
+            :total="inbound.total"
+            :exporting="inbound.exporting"
+            @change="loadInboundTab"
+            :show-total="(n: number) => `共${n}条`"
           />
         </div>
       </a-card>
@@ -224,20 +230,19 @@
         <div v-else class="scm-report-summary">
           <span v-if="!pendingSummary">汇总查询中…</span>
           <template v-else>
-            <span>当前待入库收货单 <strong>{{ countText(pendingSummary.receiptCount) }}</strong> 张</span>
-            <span>待入库数量 <strong>{{ unitQuantitiesText(pendingSummary.quantities) }}</strong></span>
+            <span
+              >当前待入库收货单 <strong>{{ countText(pendingSummary.receiptCount) }}</strong> 张</span
+            >
+            <span
+              >待入库数量 <strong>{{ unitQuantitiesText(pendingSummary.quantities) }}</strong></span
+            >
             <span>当前状态不受业务日期筛选影响</span>
           </template>
         </div>
         <a-row class="smart-table-btn-block">
-          <div class="smart-table-operate-block">
-          </div>
+          <div class="smart-table-operate-block"></div>
           <div class="smart-table-setting-block">
-            <TableOperator
-                v-model="pendingColumns"
-                :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PENDING_PUTAWAY"
-                :refresh="loadPendingTab"
-            />
+            <TableOperator v-model="pendingColumns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_PENDING_PUTAWAY" :refresh="loadPendingTab" />
           </div>
         </a-row>
         <a-alert v-if="pending.error" :message="pending.error" type="error" show-icon class="smart-margin-bottom10">
@@ -246,18 +251,18 @@
           </template>
         </a-alert>
         <a-table
-            :id="SCM_REPORT_TABLE_ID.PENDING_PUTAWAY"
-            size="small"
-            :data-source="pending.rows"
-            :columns="pendingColumns"
-            row-key="receiptId"
-            bordered
-            :loading="pending.loading"
-            :pagination="false"
-            :locale="{emptyText: '暂无待入库收货单'}"
-            :scroll="{x: scmColumnsWidth(pendingColumns)}"
+          :id="SCM_REPORT_TABLE_ID.PENDING_PUTAWAY"
+          size="small"
+          :data-source="pending.rows"
+          :columns="pendingColumns"
+          row-key="receiptId"
+          bordered
+          :loading="pending.loading"
+          :pagination="false"
+          :locale="{emptyText: '暂无待入库收货单'}"
+          :scroll="{x: scmColumnsWidth(pendingColumns)}"
         >
-          <template #bodyCell="{ record, column }">
+          <template #bodyCell="{record, column}">
             <template v-if="column.dataIndex === 'confirmedAt'">
               {{ datetime(record.confirmedAt) }}
             </template>
@@ -278,13 +283,13 @@
         </a-table>
         <div class="smart-query-table-page">
           <a-pagination
-              show-size-changer
-              show-quick-jumper
-              v-model:current="pending.pageNum"
-              v-model:page-size="pending.pageSize"
-              :total="pending.total"
-              @change="loadPendingTab"
-              :show-total="(n: number) => `共${n}条`"
+            show-size-changer
+            show-quick-jumper
+            v-model:current="pending.pageNum"
+            v-model:page-size="pending.pageSize"
+            :total="pending.total"
+            @change="loadPendingTab"
+            :show-total="(n: number) => `共${n}条`"
           />
         </div>
       </a-card>
@@ -308,26 +313,26 @@ import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import {SCM_PUTAWAY_STATUS_ENUM, SCM_RECEIPT_MODE_ENUM} from '/@/constants/business/scm/purchase-const';
 import type {
-    InboundRow,
-    InboundSummary,
-    PendingPutawayRow,
-    PendingPutawaySummary,
-    ReceiptQuery,
-    ReceiptRow,
-    ReceiptSummary,
-    ReceiptUnitQuantity,
+  InboundRow,
+  InboundSummary,
+  PendingPutawayRow,
+  PendingPutawaySummary,
+  ReceiptQuery,
+  ReceiptRow,
+  ReceiptSummary,
+  ReceiptUnitQuantity,
 } from './report-types';
 import {
-    buildReportQuery,
-    countText,
-    createTabView,
-    defaultDateRange,
-    enumDescText,
-    enterTab,
-    filterCostColumns,
-    rangeFromQuery,
-    rangeOverLimitError,
-    textOrDash,
+  buildReportQuery,
+  countText,
+  createTabView,
+  defaultDateRange,
+  enumDescText,
+  enterTab,
+  filterCostColumns,
+  rangeFromQuery,
+  rangeOverLimitError,
+  textOrDash,
 } from './report-model';
 import {moneyText, quantityText} from '../inventory/inventory-model';
 import {datetime} from '../common/scm-display';
@@ -360,50 +365,50 @@ const inboundExport = useScmExport(inbound);
 const receiptExport = useScmExport(receipt);
 
 const receiptColumns = ref<TableColumnsType<ReceiptRow>>([
-    {title: '收货确认时间', dataIndex: 'confirmedAt', width: 180},
-    {title: '收货确认人', dataIndex: 'confirmedBy', width: 130},
-    {title: '收货单号', dataIndex: 'receiptNo', width: 190},
-    {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 190},
-    {title: '供应商', dataIndex: 'supplierName', width: 180},
-    {title: '仓库', dataIndex: 'warehouseName', width: 150},
-    {title: '收货模式', dataIndex: 'receiptMode', align: 'center', width: 130},
-    {title: '入库状态', dataIndex: 'putawayStatus', align: 'center', width: 96},
-    {title: '商品', dataIndex: 'productName', width: 180},
-    {title: '商品规格', dataIndex: 'skuName', width: 140},
-    {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
-    {title: '本次收货数量', dataIndex: 'receivedQuantity', width: 140},
-    {title: '累计收货数量', dataIndex: 'cumulativeReceivedQuantity', width: 150},
-    {title: '剩余数量', dataIndex: 'remainingQuantity', width: 120},
-    {title: '超收数量', dataIndex: 'overReceiptQuantity', width: 120},
-    {title: '收货差异', dataIndex: 'receiptDifference', width: 120},
-    {title: '采购单价', dataIndex: 'purchasePrice', width: 130},
-    {title: '收货参考金额', dataIndex: 'receiptReferenceAmount', width: 150},
+  {title: '收货确认时间', dataIndex: 'confirmedAt', width: 180},
+  {title: '收货确认人', dataIndex: 'confirmedBy', width: 130},
+  {title: '收货单号', dataIndex: 'receiptNo', width: 190},
+  {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 190},
+  {title: '供应商', dataIndex: 'supplierName', width: 180},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '收货模式', dataIndex: 'receiptMode', align: 'center', width: 130},
+  {title: '入库状态', dataIndex: 'putawayStatus', align: 'center', width: 96},
+  {title: '商品', dataIndex: 'productName', width: 180},
+  {title: '商品规格', dataIndex: 'skuName', width: 140},
+  {title: '采购单位', dataIndex: 'purchaseUnit', width: 76},
+  {title: '本次收货数量', dataIndex: 'receivedQuantity', width: 140},
+  {title: '累计收货数量', dataIndex: 'cumulativeReceivedQuantity', width: 150},
+  {title: '剩余数量', dataIndex: 'remainingQuantity', width: 120},
+  {title: '超收数量', dataIndex: 'overReceiptQuantity', width: 120},
+  {title: '收货差异', dataIndex: 'receiptDifference', width: 120},
+  {title: '采购单价', dataIndex: 'purchasePrice', width: 130},
+  {title: '收货参考金额', dataIndex: 'receiptReferenceAmount', width: 150},
 ]);
 
 const inboundColumns = ref<TableColumnsType<InboundRow>>([
-    {title: '入库时间', dataIndex: 'occurredAt', width: 180},
-    {title: '仓库', dataIndex: 'warehouseName', width: 150},
-    {title: '收货单号', dataIndex: 'receiptNo', width: 190},
-    {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 190},
-    {title: '供应商', dataIndex: 'supplierName', width: 180},
-    {title: '商品', dataIndex: 'productName', width: 180},
-    {title: '商品规格', dataIndex: 'skuCode', width: 170},
-    {title: '单位', dataIndex: 'unit', width: 76},
-    {title: '入库数量', dataIndex: 'quantity', width: 130},
-    {title: '入库单位成本', dataIndex: 'unitCost', width: 150},
-    {title: '入库成本金额', dataIndex: 'costAmount', width: 150},
-    {title: '操作人', dataIndex: 'operator', width: 120},
+  {title: '入库时间', dataIndex: 'occurredAt', width: 180},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '收货单号', dataIndex: 'receiptNo', width: 190},
+  {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 190},
+  {title: '供应商', dataIndex: 'supplierName', width: 180},
+  {title: '商品', dataIndex: 'productName', width: 180},
+  {title: '商品规格', dataIndex: 'skuCode', width: 170},
+  {title: '单位', dataIndex: 'unit', width: 76},
+  {title: '入库数量', dataIndex: 'quantity', width: 130},
+  {title: '入库单位成本', dataIndex: 'unitCost', width: 150},
+  {title: '入库成本金额', dataIndex: 'costAmount', width: 150},
+  {title: '操作人', dataIndex: 'operator', width: 120},
 ]);
 
 const pendingColumns = ref<TableColumnsType<PendingPutawayRow>>([
-    {title: '收货单号', dataIndex: 'receiptNo', width: 190},
-    {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 190},
-    {title: '供应商', dataIndex: 'supplierName', width: 180},
-    {title: '仓库', dataIndex: 'warehouseName', width: 150},
-    {title: '确认时间', dataIndex: 'confirmedAt', width: 180},
-    {title: '商品种类', dataIndex: 'skuKindCount', width: 92},
-    {title: '收货数量', dataIndex: 'quantityText', width: 220},
-    {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 140},
+  {title: '收货单号', dataIndex: 'receiptNo', width: 190},
+  {title: '采购单号', dataIndex: 'purchaseOrderNo', width: 190},
+  {title: '供应商', dataIndex: 'supplierName', width: 180},
+  {title: '仓库', dataIndex: 'warehouseName', width: 150},
+  {title: '确认时间', dataIndex: 'confirmedAt', width: 180},
+  {title: '商品种类', dataIndex: 'skuKindCount', width: 92},
+  {title: '收货数量', dataIndex: 'quantityText', width: 220},
+  {title: '操作', dataIndex: 'action', align: 'center', fixed: 'right', width: 140},
 ]);
 
 /** 入库成本两列受成本权限控制。 */
@@ -411,52 +416,64 @@ const COST_INDEXES = ['unitCost', 'costAmount'];
 const visibleInboundColumns = computed(() => filterCostColumns(inboundColumns.value, COST_INDEXES, canViewCost.value));
 
 function receiptQuery(tab: {pageNum: number; pageSize: number}): ReceiptQuery {
-    return buildReportQuery<ReceiptQuery>(dateRange.value, {...filters}, tab);
+  return buildReportQuery<ReceiptQuery>(dateRange.value, {...filters}, tab);
 }
 
 function exportQuery(): Partial<ReceiptQuery> {
-    return buildReportQuery<Partial<ReceiptQuery>>(dateRange.value, {...filters});
+  return buildReportQuery<Partial<ReceiptQuery>>(dateRange.value, {...filters});
 }
 
 const loadReceipt = createTabLoader(receipt, () => receiptQuery(receipt), reportReceiptApi.query);
 const loadInbound = createTabLoader(inbound, () => receiptQuery(inbound), reportReceiptApi.inboundQuery);
 const loadPending = createTabLoader(pending, () => receiptQuery(pending), reportReceiptApi.pendingPutawayQuery);
 const loadReceiptSummary = createGuardedLoader(
-    (options) => reportReceiptApi.summary(receiptQuery(receipt), options),
-    (data) => { receiptSummary.value = data; }, receiptSummaryError);
+  (options) => reportReceiptApi.summary(receiptQuery(receipt), options),
+  (data) => {
+    receiptSummary.value = data;
+  },
+  receiptSummaryError
+);
 const loadInboundSummary = createGuardedLoader(
-    (options) => reportReceiptApi.inboundSummary(receiptQuery(inbound), options),
-    (data) => { inboundSummary.value = data; }, inboundSummaryError);
+  (options) => reportReceiptApi.inboundSummary(receiptQuery(inbound), options),
+  (data) => {
+    inboundSummary.value = data;
+  },
+  inboundSummaryError
+);
 const loadPendingSummary = createGuardedLoader(
-    (options) => reportReceiptApi.pendingPutawaySummary(receiptQuery(pending), options),
-    (data) => { pendingSummary.value = data; }, pendingSummaryError);
+  (options) => reportReceiptApi.pendingPutawaySummary(receiptQuery(pending), options),
+  (data) => {
+    pendingSummary.value = data;
+  },
+  pendingSummaryError
+);
 
 function loadReceiptTab() {
-    receiptSummary.value = null;
-    receiptSummaryError.value = '';
-    void loadReceipt();
-    void loadReceiptSummary();
+  receiptSummary.value = null;
+  receiptSummaryError.value = '';
+  void loadReceipt();
+  void loadReceiptSummary();
 }
 
 function loadInboundTab() {
-    inboundSummary.value = null;
-    inboundSummaryError.value = '';
-    void loadInbound();
-    void loadInboundSummary();
+  inboundSummary.value = null;
+  inboundSummaryError.value = '';
+  void loadInbound();
+  void loadInboundSummary();
 }
 
 function loadPendingTab() {
-    pendingSummary.value = null;
-    pendingSummaryError.value = '';
-    void loadPending();
-    void loadPendingSummary();
+  pendingSummary.value = null;
+  pendingSummaryError.value = '';
+  void loadPending();
+  void loadPendingSummary();
 }
 
 function unitQuantitiesText(quantities: ReceiptUnitQuantity[] | null | undefined): string {
-    if (!quantities?.length) {
-        return '—';
-    }
-    return quantities.map(({quantity, unit}) => `${quantityText(quantity)} ${unit || '未标明单位'}`).join(' / ');
+  if (!quantities?.length) {
+    return '—';
+  }
+  return quantities.map(({quantity, unit}) => `${quantityText(quantity)} ${unit || '未标明单位'}`).join(' / ');
 }
 
 /**
@@ -466,93 +483,93 @@ function unitQuantitiesText(quantities: ReceiptUnitQuantity[] | null | undefined
  * 把缺成本读成 0 会直接把成本核对带偏。
  */
 function costAmountText(value: string | null | undefined, costMissing: boolean | null | undefined): string {
-    if (costMissing || !canViewCost.value) {
-        return '—';
-    }
-    return moneyText(value);
+  if (costMissing || !canViewCost.value) {
+    return '—';
+  }
+  return moneyText(value);
 }
 
 function queryActiveTab() {
-    const overLimit = rangeOverLimitError(dateRange.value);
-    if (overLimit) {
-        receipt.error = overLimit;
-        inbound.error = overLimit;
-        pending.error = overLimit;
-        receiptSummaryError.value = overLimit;
-        inboundSummaryError.value = overLimit;
-        pendingSummaryError.value = overLimit;
-        return;
-    }
-    switch (activeTab.value) {
-        case 'receipt':
-            loadReceiptTab();
-            break;
-        case 'inbound':
-            loadInboundTab();
-            break;
-        case 'pending':
-            loadPendingTab();
-            break;
-        default:
-            break;
-    }
+  const overLimit = rangeOverLimitError(dateRange.value);
+  if (overLimit) {
+    receipt.error = overLimit;
+    inbound.error = overLimit;
+    pending.error = overLimit;
+    receiptSummaryError.value = overLimit;
+    inboundSummaryError.value = overLimit;
+    pendingSummaryError.value = overLimit;
+    return;
+  }
+  switch (activeTab.value) {
+    case 'receipt':
+      loadReceiptTab();
+      break;
+    case 'inbound':
+      loadInboundTab();
+      break;
+    case 'pending':
+      loadPendingTab();
+      break;
+    default:
+      break;
+  }
 }
 
 function onTabChange() {
-    if (activeTab.value === 'receipt') {
-        enterTab(receipt);
-    } else if (activeTab.value === 'inbound') {
-        enterTab(inbound);
-    } else {
-        enterTab(pending);
-    }
-    queryActiveTab();
+  if (activeTab.value === 'receipt') {
+    enterTab(receipt);
+  } else if (activeTab.value === 'inbound') {
+    enterTab(inbound);
+  } else {
+    enterTab(pending);
+  }
+  queryActiveTab();
 }
 
 function onSearch() {
-    if (activeTab.value === 'receipt') {
-        enterTab(receipt);
-    } else if (activeTab.value === 'inbound') {
-        enterTab(inbound);
-    } else {
-        enterTab(pending);
-    }
-    queryActiveTab();
+  if (activeTab.value === 'receipt') {
+    enterTab(receipt);
+  } else if (activeTab.value === 'inbound') {
+    enterTab(inbound);
+  } else {
+    enterTab(pending);
+  }
+  queryActiveTab();
 }
 
 function resetQuery() {
-    filters.supplierId = undefined;
-    filters.warehouseId = undefined;
-    filters.purchaseOrderId = undefined;
-    filters.keyword = undefined;
-    filters.receiptMode = undefined;
-    filters.putawayStatus = undefined;
-    dateRange.value = defaultDateRange();
-    enterTab(receipt);
-    enterTab(inbound);
-    enterTab(pending);
-    onSearch();
+  filters.supplierId = undefined;
+  filters.warehouseId = undefined;
+  filters.purchaseOrderId = undefined;
+  filters.keyword = undefined;
+  filters.receiptMode = undefined;
+  filters.putawayStatus = undefined;
+  dateRange.value = defaultDateRange();
+  enterTab(receipt);
+  enterTab(inbound);
+  enterTab(pending);
+  onSearch();
 }
 
 function exportReceipt() {
-    void receiptExport.run(() => reportReceiptApi.receiptExport(exportQuery()));
+  void receiptExport.run(() => reportReceiptApi.receiptExport(exportQuery()));
 }
 
 function exportInbound() {
-    void inboundExport.run(() => reportReceiptApi.inboundExport(exportQuery()));
+  void inboundExport.run(() => reportReceiptApi.inboundExport(exportQuery()));
 }
 
 /** 复用采购收货页作为「原收货单」视图：不在报表里再造一张收货单详情页。 */
 function openReceipt(receiptNo: string | null | undefined) {
-    if (!receiptNo) {
-        return;
-    }
-    void router.push({path: '/purchase/purchase-receipt-list', query: {receiptNo}});
+  if (!receiptNo) {
+    return;
+  }
+  void router.push({path: '/purchase/purchase-receipt-list', query: {receiptNo}});
 }
 
 onMounted(() => {
-    dateRange.value = rangeFromQuery(route.query) ?? defaultDateRange();
-    queryActiveTab();
+  dateRange.value = rangeFromQuery(route.query) ?? defaultDateRange();
+  queryActiveTab();
 });
 </script>
 

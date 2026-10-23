@@ -5,10 +5,9 @@
 <template>
   <a-layout class="admin-layout" style="min-height: 100%">
     <!-- 侧边菜单 side-menu -->
-    <a-layout-sider :id="LAYOUT_ELEMENT_IDS.menu" :theme="theme" class="side-menu" :collapsed="collapsed"
-                    :trigger="null" v-show="!fullScreenFlag">
+    <a-layout-sider :id="LAYOUT_ELEMENT_IDS.menu" :theme="theme" class="side-menu" :collapsed="collapsed" :trigger="null" v-show="!fullScreenFlag">
       <!-- 左侧菜单 -->
-      <SideExpandMenu :collapsed="collapsed"/>
+      <SideExpandMenu :collapsed="collapsed" />
     </a-layout-sider>
 
     <!--中间内容，一共三部分：1、顶部;2、中间内容区域;3、底部（一般是公司版权信息）;-->
@@ -17,80 +16,77 @@
       <a-layout-header class="smart-layout-header" :id="LAYOUT_ELEMENT_IDS.header" v-show="!fullScreenFlag">
         <a-row justify="space-between" class="smart-layout-header-user">
           <a-col
-              class="smart-layout-header-left"
-              :style="{
+            class="smart-layout-header-left"
+            :style="{
               'max-width': `calc(100% - ${rightWidth}px)`,
             }"
           >
-            <button
-              type="button"
-              class="collapsed-button"
-              :aria-label="collapsed ? '展开侧栏' : '收起侧栏'"
-              @click="collapsed = !collapsed"
-            >
-              <menu-unfold-outlined v-if="collapsed" class="trigger"/>
-              <menu-fold-outlined v-else class="trigger"/>
+            <button type="button" class="collapsed-button" :aria-label="collapsed ? '展开侧栏' : '收起侧栏'" @click="collapsed = !collapsed">
+              <menu-unfold-outlined v-if="collapsed" class="trigger" />
+              <menu-fold-outlined v-else class="trigger" />
             </button>
             <a-tooltip placement="bottom">
               <template #title>首页</template>
               <button class="home-button" type="button" aria-label="首页" @click="goHome">
-                <home-outlined class="trigger"/>
+                <home-outlined class="trigger" />
               </button>
             </a-tooltip>
             <span class="location-breadcrumb">
-              <PageTag v-if="pageTagLocation === 'top'"/>
-              <MenuLocationBreadcrumb v-if="pageTagLocation !== 'top'"/>
+              <PageTag v-if="pageTagLocation === 'top'" />
+              <MenuLocationBreadcrumb v-if="pageTagLocation !== 'top'" />
             </span>
           </a-col>
           <!---用戶操作区域-->
           <a-col class="smart-layout-header-right">
-            <HeaderUserSpace/>
+            <HeaderUserSpace />
           </a-col>
         </a-row>
-        <PageTag v-if="pageTagLocation === 'center'"/>
+        <PageTag v-if="pageTagLocation === 'center'" />
       </a-layout-header>
 
       <!--中间内容-->
       <a-layout-content class="admin-layout-content" :id="LAYOUT_ELEMENT_IDS.content">
         <!--不keepAlive的iframe使用单个iframe组件-->
-        <IframeIndex v-show="iframeNotKeepAlivePageFlag" :key="route.name" :name="route.name"
-                     :url="route.meta.frameUrl"/>
+        <IframeIndex v-show="iframeNotKeepAlivePageFlag" :key="route.name" :name="route.name" :url="route.meta.frameUrl" />
         <!--keepAlive的iframe 每个页面一个iframe组件-->
         <IframeIndex
-            v-for="item in keepAliveIframePages"
-            v-show="route.name === item.name"
-            :key="item.name"
-            :name="item.name"
-            :url="item.meta.frameUrl"
+          v-for="item in keepAliveIframePages"
+          v-show="route.name === item.name"
+          :key="item.name"
+          :name="item.name"
+          :url="item.meta.frameUrl"
         />
         <!--非iframe使用router-view-->
-        <div v-show="!iframeNotKeepAlivePageFlag && keepAliveIframePages.every((e) => route.name !== e.name)"
-             style="height: 100%;" class="admin-content">
-          <router-view v-slot="{ Component }">
+        <div
+          v-show="!iframeNotKeepAlivePageFlag && keepAliveIframePages.every((e) => route.name !== e.name)"
+          style="height: 100%"
+          class="admin-content"
+        >
+          <router-view v-slot="{Component}">
             <keep-alive :include="keepAliveIncludes">
-              <component :is="Component" :key="route.name"/>
+              <component :is="Component" :key="route.name" />
             </keep-alive>
           </router-view>
         </div>
       </a-layout-content>
       <!-- footer 版权公司信息 -->
       <a-layout-footer class="smart-layout-footer" v-show="footerFlag">
-        <SmartFooter/>
+        <SmartFooter />
       </a-layout-footer>
       <!---- 回到顶部 --->
-      <a-back-top :target="backTopTarget" :visibilityHeight="80"/>
+      <a-back-top :target="backTopTarget" :visibilityHeight="80" />
     </a-layout>
     <!-- 右侧帮助文档 help-doc -->
     <a-layout-sider
-        v-if="helpDocFlag"
-        v-show="helpDocExpandFlag"
-        theme="light"
-        :width="180"
-        class="help-doc-sider"
-        :trigger="null"
-        style="min-height: 100%"
+      v-if="helpDocFlag"
+      v-show="helpDocExpandFlag"
+      theme="light"
+      :width="180"
+      class="help-doc-sider"
+      :trigger="null"
+      style="min-height: 100%"
     >
-      <SideHelpDoc/>
+      <SideHelpDoc />
     </a-layout-sider>
   </a-layout>
 </template>
@@ -144,17 +140,17 @@ const dueHeight = computed(() => {
 });
 
 watch(
-    pageTagLocation,
-    (newVal) => {
-      if (newVal === 'top') {
-        nextTick(() => {
-          sizeComputed();
-        });
-      }
-    },
-    {
-      immediate: true,
+  pageTagLocation,
+  (newVal) => {
+    if (newVal === 'top') {
+      nextTick(() => {
+        sizeComputed();
+      });
     }
+  },
+  {
+    immediate: true,
+  }
 );
 const rightWidth = ref(0);
 
@@ -185,14 +181,14 @@ onMounted(() => {
 });
 
 watch(
-    () => watermarkFlag.value,
-    (newValue) => {
-      if (newValue) {
-        watermark.set(LAYOUT_ELEMENT_IDS.content, useUserStore().actualName);
-      } else {
-        watermark.clear();
-      }
+  () => watermarkFlag.value,
+  (newValue) => {
+    if (newValue) {
+      watermark.set(LAYOUT_ELEMENT_IDS.content, useUserStore().actualName);
+    } else {
+      watermark.clear();
     }
+  }
 );
 
 window.addEventListener('resize', function () {
@@ -341,7 +337,7 @@ const {token} = useToken();
     min-height: auto;
     position: relative;
     padding: 5px 10px 0px 10px;
-    height: calc(100% - v-bind(dueHeight)px);
+    height: calc(100% - v-bind(dueHeight) px);
     overflow-x: hidden;
   }
 }

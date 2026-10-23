@@ -13,14 +13,23 @@ import smCrypto from 'sm-crypto';
 
 // ---------------------------------------------------------------- 来源：e2e/adm02-04-ui-contract.spec.ts
 test.describe('adm02-04-ui-contract', () => {
-
   type Row = Record<string, unknown>;
 
   const root = 'http://127.0.0.1:18083/e2e/fixtures/adm-ui.html';
-  const order = {orderId: 1, orderNo: 'SO-授信验收', version: 3, status: 'PENDING', customerId: 2,
-    customerNameSnapshot: '验收客户', customerCodeSnapshot: 'ADM-C', settleModeSnapshot: 'INDEPENDENT',
-    orderedTotalAmount: '10.0000', settlementTotalAmount: null as string | null, items: [] as Row[],
-    address: {receiverName: '收货人', receiverPhone: '13800000000', address: '验收地址'}};
+  const order = {
+    orderId: 1,
+    orderNo: 'SO-授信验收',
+    version: 3,
+    status: 'PENDING',
+    customerId: 2,
+    customerNameSnapshot: '验收客户',
+    customerCodeSnapshot: 'ADM-C',
+    settleModeSnapshot: 'INDEPENDENT',
+    orderedTotalAmount: '10.0000',
+    settlementTotalAmount: null as string | null,
+    items: [] as Row[],
+    address: {receiverName: '收货人', receiverPhone: '13800000000', address: '验收地址'},
+  };
 
   async function mock(page: any, handler: (path: string, body: any, request: any) => unknown) {
     await page.route('**/*', async (route: any) => {
@@ -31,7 +40,11 @@ test.describe('adm02-04-ui-contract', () => {
       // 用例于是看到「元素 detached」而不是缺 mock。
       if (!url.pathname.startsWith('/scm/') && !url.pathname.includes('/tableColumn/')) return route.continue();
       let body;
-      try { body = req.postDataJSON(); } catch { body = undefined; }
+      try {
+        body = req.postDataJSON();
+      } catch {
+        body = undefined;
+      }
       const data = handler(url.pathname, body, req);
       await route.fulfill({contentType: 'application/json', body: JSON.stringify({code: 0, ok: true, data: data ?? [], msg: 'success'})});
     });
@@ -41,10 +54,21 @@ test.describe('adm02-04-ui-contract', () => {
     let confirmation: any;
     await mock(page, (path, body, req) => {
       if (path === '/scm/order/detail/1') return order;
-      if (path === '/scm/order/credit-check/order/1') return {allowed: false, overLimit: true, overdue: false,
-        creditLimit: '15.0000', projectedExposure: '20.0000', openReceivableAmount: '10.0000',
-        confirmedOrderAmount: '0.0000', requestedOrderAmount: '10.0000'};
-      if (path === '/scm/order/confirm') { confirmation = {body, key: req.headers()['idempotency-key']}; return {...order, status: 'CONFIRMED'}; }
+      if (path === '/scm/order/credit-check/order/1')
+        return {
+          allowed: false,
+          overLimit: true,
+          overdue: false,
+          creditLimit: '15.0000',
+          projectedExposure: '20.0000',
+          openReceivableAmount: '10.0000',
+          confirmedOrderAmount: '0.0000',
+          requestedOrderAmount: '10.0000',
+        };
+      if (path === '/scm/order/confirm') {
+        confirmation = {body, key: req.headers()['idempotency-key']};
+        return {...order, status: 'CONFIRMED'};
+      }
     });
     await page.goto(root + '?mode=credit');
     await page.getByRole('button', {name: '确认订单', exact: true}).click();
@@ -65,14 +89,34 @@ test.describe('adm02-04-ui-contract', () => {
 
   test('部分退货仅提交剩余数量且无需不可见的处理原因', async ({page}) => {
     let receipt: any;
-    const returned = {returnId: 11, returnNo: 'RT-实物验收', orderId: 1, version: 2, status: 'APPROVED',
-      approvedAmount: '50.0000', reason: '实物验收', items: [{returnItemId: 12, orderItemId: 13,
-        productName: '验收青菜', unit: 'kg', requestedQuantity: '5.0000', approvedQuantity: '5.0000', receivedQuantity: '3.0000'}]};
+    const returned = {
+      returnId: 11,
+      returnNo: 'RT-实物验收',
+      orderId: 1,
+      version: 2,
+      status: 'APPROVED',
+      approvedAmount: '50.0000',
+      reason: '实物验收',
+      items: [
+        {
+          returnItemId: 12,
+          orderItemId: 13,
+          productName: '验收青菜',
+          unit: 'kg',
+          requestedQuantity: '5.0000',
+          approvedQuantity: '5.0000',
+          receivedQuantity: '3.0000',
+        },
+      ],
+    };
     await mock(page, (path, body, req) => {
       if (path === '/scm/order/return/query') return {list: [returned], total: 1, pageNum: 1, pageSize: 20};
       if (path === '/scm/order/return/detail/11') return returned;
       if (path === '/scm/warehouse/list') return [{id: 9, name: '验收仓库', warehouseCode: 'WH-ADM'}];
-      if (path === '/scm/order/return/receive') { receipt = {body, key: req.headers()['idempotency-key']}; return {receiptId: 14}; }
+      if (path === '/scm/order/return/receive') {
+        receipt = {body, key: req.headers()['idempotency-key']};
+        return {receiptId: 14};
+      }
     });
     await page.goto(root + '?mode=return');
     await page.getByRole('button', {name: '实物接收', exact: true}).click();
@@ -87,11 +131,14 @@ test.describe('adm02-04-ui-contract', () => {
     await page.screenshot({path: '../.runtime/adm-return-mobile.png'});
     await modal.locator('.ant-modal-footer .ant-btn-primary').click();
     await expect(modal).toBeHidden();
-    expect(receipt.body).toEqual({returnId: 11, version: 2, warehouseId: 9,
-      items: [{returnItemId: 12, quantity: '2.0000', disposition: 'RETURN_TO_STOCK'}]});
+    expect(receipt.body).toEqual({
+      returnId: 11,
+      version: 2,
+      warehouseId: 9,
+      items: [{returnItemId: 12, quantity: '2.0000', disposition: 'RETURN_TO_STOCK'}],
+    });
     expect(receipt.key).toMatch(/^[0-9a-f-]{36}$/);
   });
-
 });
 
 // ---------------------------------------------------------------- 来源：e2e/f0-file-storage.spec.ts
@@ -110,7 +157,7 @@ test.describe('f0-file-storage', () => {
    * 所以这里的「另一个员工」用的是零角色账号：证明的正是归属与关系，而不是权限码。
    */
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a5XcAAAAASUVORK5CYII=', 'base64');
-  const created: { fileId: number; fileKey: string }[] = [];
+  const created: {fileId: number; fileKey: string}[] = [];
   let accounts: TempAccounts;
   let adminToken = '';
   let admin: APIRequestContext;
@@ -126,26 +173,26 @@ test.describe('f0-file-storage', () => {
       accounts = provisionTempAccounts('f0');
       adminToken = await login(accounts, accounts.admin);
       const employeeToken = await login(accounts, accounts.noRole);
-      admin = await request.newContext({ baseURL: apiUrl, extraHTTPHeaders: { Authorization: `Bearer ${adminToken}` } });
-      employee = await request.newContext({ baseURL: apiUrl, extraHTTPHeaders: { Authorization: `Bearer ${employeeToken}` } });
-      anonymous = await request.newContext({ baseURL: apiUrl });
+      admin = await request.newContext({baseURL: apiUrl, extraHTTPHeaders: {Authorization: `Bearer ${adminToken}`}});
+      employee = await request.newContext({baseURL: apiUrl, extraHTTPHeaders: {Authorization: `Bearer ${employeeToken}`}});
+      anonymous = await request.newContext({baseURL: apiUrl});
     });
 
     test.afterAll(async ({}, testInfo) => {
       // Native file API has no delete endpoint. Record exact fixture keys/IDs for scoped cleanup.
       // Never attach tokens, signed URLs or whole HTTP responses.
-      await testInfo.attach('f0-created-file-fixtures', { body: JSON.stringify(created, null, 2), contentType: 'application/json' });
+      await testInfo.attach('f0-created-file-fixtures', {body: JSON.stringify(created, null, 2), contentType: 'application/json'});
       await Promise.all([admin?.dispose(), employee?.dispose(), anonymous?.dispose()]);
       accounts.cleanup();
     });
 
     async function upload(client: APIRequestContext, folder = 1) {
       const response = await client.post(`/support/file/upload?folder=${folder}`, {
-        multipart: { file: { name: `f0-${Date.now()}.png`, mimeType: 'image/png', buffer: png } },
+        multipart: {file: {name: `f0-${Date.now()}.png`, mimeType: 'image/png', buffer: png}},
       });
       const result = await response.json();
       expect(result.code).toBe(0);
-      created.push({ fileId: result.data.fileId, fileKey: result.data.fileKey });
+      created.push({fileId: result.data.fileId, fileKey: result.data.fileKey});
       expect(new URL(result.data.fileUrl).searchParams.has('X-Amz-Signature')).toBe(true);
       return result.data;
     }
@@ -154,29 +201,32 @@ test.describe('f0-file-storage', () => {
       await authenticate(page, adminToken);
       await page.goto('/#/home');
       await page.waitForLoadState('networkidle');
-      const queried = page.waitForResponse(r => r.url().includes('/support/file/queryPage') && r.request().method() === 'POST');
+      const queried = page.waitForResponse((r) => r.url().includes('/support/file/queryPage') && r.request().method() === 'POST');
       await page.goto('/#/support/file/file-list');
       expect((await (await queried).json()).code).toBe(0);
     }
 
-    test('1 file page upload persists and appears in the list', async ({ page }) => {
+    test('1 file page upload persists and appears in the list', async ({page}) => {
       const errors: string[] = [];
-      page.on('pageerror', e => errors.push(e.message));
+      page.on('pageerror', (e) => errors.push(e.message));
       await openFiles(page);
       // Ant Design icons contribute their aria-label (e.g. "cloud-upload") to the
       // button accessible name, so exact text matching never resolves here.
-      await page.getByRole('button', { name: /上传文件/ }).click();
+      await page.getByRole('button', {name: /上传文件/}).click();
       const name = `f0-ui-${Date.now()}.png`;
-      const uploaded = page.waitForResponse(r => r.url().includes('/support/file/upload') && r.request().method() === 'POST');
-      await page.locator('input[type=file]').setInputFiles({ name, mimeType: 'image/png', buffer: png });
+      const uploaded = page.waitForResponse((r) => r.url().includes('/support/file/upload') && r.request().method() === 'POST');
+      await page.locator('input[type=file]').setInputFiles({name, mimeType: 'image/png', buffer: png});
       const result = await (await uploaded).json();
       expect(result.code).toBe(0);
       expect(new URL(result.data.fileUrl).searchParams.has('X-Amz-Signature')).toBe(true);
-      created.push({ fileId: result.data.fileId, fileKey: result.data.fileKey });
-      await page.locator('.ant-modal').getByRole('button', { name: /确.*定/ }).click();
-      await page.getByPlaceholder('文件名', { exact: true }).fill(name);
-      await page.getByRole('button', { name: /查\s*询/ }).click();
-      await expect(page.locator('.ant-table-tbody').getByText(name, { exact: true })).toBeVisible();
+      created.push({fileId: result.data.fileId, fileKey: result.data.fileKey});
+      await page
+        .locator('.ant-modal')
+        .getByRole('button', {name: /确.*定/})
+        .click();
+      await page.getByPlaceholder('文件名', {exact: true}).fill(name);
+      await page.getByRole('button', {name: /查\s*询/}).click();
+      await expect(page.locator('.ant-table-tbody').getByText(name, {exact: true})).toBeVisible();
       expect(errors).toEqual([]);
     });
 
@@ -185,24 +235,24 @@ test.describe('f0-file-storage', () => {
      * antd 的图片预览遮罩会拦截整页指针事件，而本应用没有稳定的关闭入口
      * （点遮罩只是多数情况下生效，Escape 无效）；把预览放在最后，就不需要为了收尾再赌一次点击。
      */
-    test('2 private image downloads through the guarded endpoint and previews via a presigned URL', async ({ page }) => {
+    test('2 private image downloads through the guarded endpoint and previews via a presigned URL', async ({page}) => {
       const file = await upload(admin);
       await openFiles(page);
-      await page.getByPlaceholder('文件Key', { exact: true }).fill(file.fileKey);
-      await page.getByRole('button', { name: /查\s*询/ }).click();
-      const row = page.locator('.ant-table-tbody tr').filter({ hasText: file.fileName });
-      const downloaded = page.waitForResponse(r => r.url().includes('/support/file/downLoad'));
-      await row.getByRole('button', { name: '下载', exact: true }).click();
+      await page.getByPlaceholder('文件Key', {exact: true}).fill(file.fileKey);
+      await page.getByRole('button', {name: /查\s*询/}).click();
+      const row = page.locator('.ant-table-tbody tr').filter({hasText: file.fileName});
+      const downloaded = page.waitForResponse((r) => r.url().includes('/support/file/downLoad'));
+      await row.getByRole('button', {name: '下载', exact: true}).click();
       expect(await (await downloaded).body()).toEqual(png);
 
-      await row.getByRole('button', { name: '查看', exact: true }).click();
+      await row.getByRole('button', {name: '查看', exact: true}).click();
       const image = page.locator('.ant-image-preview-img');
       await expect(image).toBeVisible();
       await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
     });
 
     async function signedFor(client: APIRequestContext, fileKey: string) {
-      const body = await (await client.get('/support/file/getFileUrl', { params: { fileKey } })).json();
+      const body = await (await client.get('/support/file/getFileUrl', {params: {fileKey}})).json();
       return body;
     }
 
@@ -226,25 +276,27 @@ test.describe('f0-file-storage', () => {
      */
     test('3 notice attachment follows the notice visibility, not the directory prefix', async () => {
       const file = await upload(admin, 2);
-      const params = { fileKey: file.fileKey };
+      const params = {fileKey: file.fileKey};
 
       const detached = await signedFor(employee, file.fileKey);
       expect(detached.code, '未绑定公告的私有附件不得因为目录前缀被放行').toBe(30005);
 
-      const add = await (await admin.post('/oa/notice/add', {
-        data: {
-          title: `f0-attachment-${Date.now()}`,
-          noticeTypeId: await noticeType(),
-          allVisibleFlag: true,
-          scheduledPublishFlag: false,
-          publishTime: new Date().toISOString().slice(0, 19).replace('T', ' '),
-          contentText: 'f0 e2e',
-          contentHtml: '<p>f0 e2e</p>',
-          attachment: file.fileKey,
-          author: 'f0',
-          source: 'f0',
-        },
-      })).json();
+      const add = await (
+        await admin.post('/oa/notice/add', {
+          data: {
+            title: `f0-attachment-${Date.now()}`,
+            noticeTypeId: await noticeType(),
+            allVisibleFlag: true,
+            scheduledPublishFlag: false,
+            publishTime: new Date().toISOString().slice(0, 19).replace('T', ' '),
+            contentText: 'f0 e2e',
+            contentHtml: '<p>f0 e2e</p>',
+            attachment: file.fileKey,
+            author: 'f0',
+            source: 'f0',
+          },
+        })
+      ).json();
       expect(add.code, '公告新建必须成功，否则后面的授权判据无从取证').toBe(0);
 
       const signed = await signedFor(employee, file.fileKey);
@@ -256,8 +308,7 @@ test.describe('f0-file-storage', () => {
       const fetched = await anonymous.get(signed.data);
       const fetchedBody = await fetched.body();
       if (!fetchedBody.equals(png)) {
-          console.log(`[diag] status=${fetched.status()} bytes=${fetchedBody.length} head=` +
-              fetchedBody.subarray(0, 240).toString('utf8'));
+        console.log(`[diag] status=${fetched.status()} bytes=${fetchedBody.length} head=` + fetchedBody.subarray(0, 240).toString('utf8'));
       }
       // 取字节必须用**没有 Authorization 头**的上下文：预签名地址本身就是授权，
       // 再带上应用的 Bearer 会被 S3 判成「同时用了两种鉴权」而直接 400，与权限无关。
@@ -266,26 +317,26 @@ test.describe('f0-file-storage', () => {
       expect((await anonymous.get(url.origin + url.pathname)).status()).toBe(403);
       expect((await signedFor(anonymous, file.fileKey)).code).not.toBe(0);
       expect((await signedFor(admin, file.fileKey)).code).toBe(0);
-      expect(await (await employee.get('/support/file/downLoad', { params })).body()).toEqual(png);
+      expect(await (await employee.get('/support/file/downLoad', {params})).body()).toEqual(png);
     });
 
     test('4 COMMON/feedback rejects other employees; owner and administrator remain allowed', async () => {
       for (const folder of [1, 4]) {
         const other = await upload(admin, folder);
         for (const endpoint of ['getFileUrl', 'downLoad']) {
-          const denied = await employee.get(`/support/file/${endpoint}`, { params: { fileKey: other.fileKey } });
+          const denied = await employee.get(`/support/file/${endpoint}`, {params: {fileKey: other.fileKey}});
           expect(denied.status()).toBe(403);
           expect((await denied.json()).code).toBe(30005);
         }
         const owned = await upload(employee, folder);
-        expect((await (await employee.get('/support/file/getFileUrl', { params: { fileKey: owned.fileKey } })).json()).code).toBe(0);
-        expect(await (await admin.get('/support/file/downLoad', { params: { fileKey: owned.fileKey } })).body()).toEqual(png);
+        expect((await (await employee.get('/support/file/getFileUrl', {params: {fileKey: owned.fileKey}})).json()).code).toBe(0);
+        expect(await (await admin.get('/support/file/downLoad', {params: {fileKey: owned.fileKey}})).body()).toEqual(png);
       }
     });
 
     test('5 malformed prefixes and mixed-key batches fail closed', async () => {
       for (const fileKey of ['publicity/a', 'PUBLIC/a', 'private/notice/../common/a', 'private/notice/a,private/common/other']) {
-        const denied = await employee.get('/support/file/getFileUrl', { params: { fileKey } });
+        const denied = await employee.get('/support/file/getFileUrl', {params: {fileKey}});
         expect(denied.status()).toBe(403);
         expect((await denied.json()).code).toBe(30005);
       }
@@ -293,7 +344,7 @@ test.describe('f0-file-storage', () => {
 
     test('6 upload over 20 MiB is rejected', async () => {
       const response = await admin.post('/support/file/upload?folder=1', {
-        multipart: { file: { name: 'f0-too-large.png', mimeType: 'image/png', buffer: Buffer.alloc(20 * 1024 * 1024 + 1) } },
+        multipart: {file: {name: 'f0-too-large.png', mimeType: 'image/png', buffer: Buffer.alloc(20 * 1024 * 1024 + 1)}},
       });
       const result = await response.json();
       expect(result.code).not.toBe(0);
@@ -302,7 +353,9 @@ test.describe('f0-file-storage', () => {
 
     test('7 Tika rejects HTML disguised as PNG', async () => {
       const response = await admin.post('/support/file/upload?folder=1', {
-        multipart: { file: { name: 'f0-fake.png', mimeType: 'image/png', buffer: Buffer.from('<!DOCTYPE html><html><script>alert(1)</script></html>') } },
+        multipart: {
+          file: {name: 'f0-fake.png', mimeType: 'image/png', buffer: Buffer.from('<!DOCTYPE html><html><script>alert(1)</script></html>')},
+        },
       });
       const result = await response.json();
       expect(result.code).not.toBe(0);
@@ -315,12 +368,12 @@ test.describe('f0-file-storage', () => {
      */
     test('8 public image folder yields a cacheable anonymous-readable URL', async () => {
       const response = await admin.post('/support/file/upload?folder=5', {
-        multipart: { file: { name: `f0-public-${Date.now()}.png`, mimeType: 'image/png', buffer: png } },
+        multipart: {file: {name: `f0-public-${Date.now()}.png`, mimeType: 'image/png', buffer: png}},
       });
       const result = await response.json();
       expect(result.code).toBe(0);
       const fileKey: string = result.data.fileKey;
-      created.push({ fileId: result.data.fileId, fileKey });
+      created.push({fileId: result.data.fileId, fileKey});
       expect(fileKey.startsWith('public/image/')).toBe(true);
       expect(new URL(result.data.fileUrl).searchParams.has('X-Amz-Signature')).toBe(false);
       const anonymousGet = await anonymous.get(result.data.fileUrl);
@@ -328,50 +381,50 @@ test.describe('f0-file-storage', () => {
       expect(await anonymousGet.body()).toEqual(png);
     });
   });
-
 });
 
 // ---------------------------------------------------------------- 来源：e2e/mall-theme.spec.ts
 test.describe('mall-theme', () => {
-
   // H5 浏览器契约使用受控主题响应；真实发布/回滚事实由 MallHomeLayoutPgIT 验证。
   const mallUrl = process.env.SCM_MALL_H5_URL;
   test('商城主题跨页、刷新、直达及发布版本切换', async ({page}) => {
-      test.skip(!mallUrl, '需要独立启动商城 H5 并设置 SCM_MALL_H5_URL');
-      let themeCode = 'WARM';
-      let releaseId = 1;
-      let offline = false;
-      await page.route('**/scm/mall/home/theme*', async route => {
-          if (offline) return route.abort();
-          await route.fulfill({json: {code: 0, ok: true, data: {themeCode, releaseId}}});
-      });
-      const currentColor = () => page.locator('[style*="--mall-primary:"]').first().evaluate(
-          node => getComputedStyle(node).getPropertyValue('--mall-primary').trim());
-      await page.goto(`${mallUrl}/#/pages/login/login`);
-      await expect.poll(currentColor).toBe('#f97316');
-      await page.goto(`${mallUrl}/#/pages/account/password`);
-      await expect.poll(currentColor).toBe('#f97316');
-      await page.goto(`${mallUrl}/#/pages-sub/mall/web`);
-      await expect.poll(currentColor).toBe('#f97316');
-      await page.reload();
-      await expect.poll(currentColor).toBe('#f97316');
-      themeCode = 'OCEAN';
-      releaseId = 2;
-      await page.goto(`${mallUrl}/#/pages/login/login`);
-      await page.reload();
-      await expect.poll(currentColor).toBe('#0284c7');
-      themeCode = 'WARM';
-      releaseId = 3;
-      await page.reload();
-      await expect.poll(currentColor).toBe('#f97316');
-      themeCode = 'UNKNOWN';
-      await page.reload();
-      await expect.poll(currentColor).toBe('#16a34a');
-      offline = true;
-      await page.reload();
-      await expect.poll(currentColor).toBe('#16a34a');
+    test.skip(!mallUrl, '需要独立启动商城 H5 并设置 SCM_MALL_H5_URL');
+    let themeCode = 'WARM';
+    let releaseId = 1;
+    let offline = false;
+    await page.route('**/scm/mall/home/theme*', async (route) => {
+      if (offline) return route.abort();
+      await route.fulfill({json: {code: 0, ok: true, data: {themeCode, releaseId}}});
+    });
+    const currentColor = () =>
+      page
+        .locator('[style*="--mall-primary:"]')
+        .first()
+        .evaluate((node) => getComputedStyle(node).getPropertyValue('--mall-primary').trim());
+    await page.goto(`${mallUrl}/#/pages/login/login`);
+    await expect.poll(currentColor).toBe('#f97316');
+    await page.goto(`${mallUrl}/#/pages/account/password`);
+    await expect.poll(currentColor).toBe('#f97316');
+    await page.goto(`${mallUrl}/#/pages-sub/mall/web`);
+    await expect.poll(currentColor).toBe('#f97316');
+    await page.reload();
+    await expect.poll(currentColor).toBe('#f97316');
+    themeCode = 'OCEAN';
+    releaseId = 2;
+    await page.goto(`${mallUrl}/#/pages/login/login`);
+    await page.reload();
+    await expect.poll(currentColor).toBe('#0284c7');
+    themeCode = 'WARM';
+    releaseId = 3;
+    await page.reload();
+    await expect.poll(currentColor).toBe('#f97316');
+    themeCode = 'UNKNOWN';
+    await page.reload();
+    await expect.poll(currentColor).toBe('#16a34a');
+    offline = true;
+    await page.reload();
+    await expect.poll(currentColor).toBe('#16a34a');
   });
-
 });
 
 // ---------------------------------------------------------------- 来源：e2e/smartadmin-native.spec.ts
@@ -403,7 +456,7 @@ test.describe('smartadmin-native', () => {
   const apiUrl = process.env.W5_E2E_API_BASE || 'http://127.0.0.1:18080';
   const name = process.env.W5_E2E_NAME || 'w5_e2e_native_' + Date.now().toString(36);
   const password = process.env.W5_E2E_PASSWORD || 'Native@' + randomBytes(8).toString('hex');
-  const env = { ...process.env, W5_E2E_NAME: name, W5_E2E_PASSWORD: password };
+  const env = {...process.env, W5_E2E_NAME: name, W5_E2E_PASSWORD: password};
 
   /**
    * 账号由谁来建：
@@ -416,13 +469,13 @@ test.describe('smartadmin-native', () => {
   function tryRunAccountsScript(action: 'setup' | 'cleanup') {
     const command = action === 'setup' ? 'account-setup' : 'account-cleanup';
     try {
-      execFileSync('python', ['../tools/e2e_fixtures.py', command, '--wave', 'w5'], { env, stdio: 'pipe' });
+      execFileSync('python', ['../tools/e2e_fixtures.py', command, '--wave', 'w5'], {env, stdio: 'pipe'});
     } catch (error) {
       throw new Error(
         `无法执行 tools/e2e_fixtures.py ${command}（账号 ${name}）。\n` +
           '若当前环境没有 python，请在宿主机先建号，然后带上：\n' +
           '  W5_E2E_NAME=<账号> W5_E2E_PASSWORD=<密码> W5_E2E_MANAGED_EXTERNALLY=1 npx playwright test\n' +
-          `原始错误：${(error as Error).message}`,
+          `原始错误：${(error as Error).message}`
       );
     }
   }
@@ -435,14 +488,12 @@ test.describe('smartadmin-native', () => {
 
   /** SmartAdmin 登录：captcha 明文回吐 + SM4 传输加密。 */
   async function login(account: string) {
-    const client = await request.newContext({ baseURL: apiUrl });
+    const client = await request.newContext({baseURL: apiUrl});
     const captcha = (await (await client.get('/login/getCaptcha')).json()).data;
     const source = readFileSync('src/lib/encrypt.ts', 'utf8');
     const key = /const SM4_KEY = '([^']+)'/.exec(source)?.[1];
     if (!key) throw new Error('SmartAdmin transport key not found');
-    const encrypted = Buffer.from(
-      smCrypto.sm4.encrypt(password, Buffer.from(key).toString('hex')),
-    ).toString('base64');
+    const encrypted = Buffer.from(smCrypto.sm4.encrypt(password, Buffer.from(key).toString('hex'))).toString('base64');
     const result = await (
       await client.post('/login', {
         data: {
@@ -466,7 +517,7 @@ test.describe('smartadmin-native', () => {
     token = await login(name);
     api = await request.newContext({
       baseURL: apiUrl,
-      extraHTTPHeaders: { Authorization: `Bearer ${token}` },
+      extraHTTPHeaders: {Authorization: `Bearer ${token}`},
     });
   });
 
@@ -481,10 +532,7 @@ test.describe('smartadmin-native', () => {
   });
 
   async function authenticate(page: Page) {
-    await page.addInitScript(
-      (v) => localStorage.setItem('smart_admin_user_token', v),
-      token,
-    );
+    await page.addInitScript((v) => localStorage.setItem('smart_admin_user_token', v), token);
   }
 
   /**
@@ -501,7 +549,7 @@ test.describe('smartadmin-native', () => {
       apiMethod?: 'GET' | 'POST';
       apiBody?: unknown;
       marker?: () => ReturnType<Page['locator']>;
-    },
+    }
   ) {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -515,11 +563,8 @@ test.describe('smartadmin-native', () => {
 
     // 动态路由就绪后再去目标页，此处才开始等待关键查询接口。
     const apiHit = page.waitForResponse(
-      (r) =>
-        r.url().startsWith(API_ORIGIN) &&
-        r.url().includes(opts.apiPath) &&
-        r.request().method() === (opts.apiMethod ?? 'POST'),
-      { timeout: 20000 },
+      (r) => r.url().startsWith(API_ORIGIN) && r.url().includes(opts.apiPath) && r.request().method() === (opts.apiMethod ?? 'POST'),
+      {timeout: 20000}
     );
 
     await page.goto('/#' + opts.path);
@@ -535,7 +580,7 @@ test.describe('smartadmin-native', () => {
     if (opts.marker) {
       // `.first()` 是必须的：这些选择器用逗号列出多个候选（表格体 / 空态 / 表单），
       // 命中多个元素时 Playwright 的 strict mode 会直接判失败。
-      await expect(opts.marker().first()).toBeVisible({ timeout: 15000 });
+      await expect(opts.marker().first()).toBeVisible({timeout: 15000});
     }
 
     expect(errors, `${opts.path} 不应有 JS 运行时错误`).toEqual([]);
@@ -545,7 +590,7 @@ test.describe('smartadmin-native', () => {
   // SmartAdmin 正式页面
   // =============================================================================
 
-  test('smartadmin native: 监控服务-心跳监控页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 监控服务-心跳监控页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/heart-beat/heart-beat-list',
       apiPath: '/support/heartBeat/query',
@@ -554,7 +599,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 定时任务页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 定时任务页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/job/list',
       apiPath: '/support/job/query',
@@ -563,7 +608,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 缓存管理页面加载并成功列举缓存名', async ({ page }) => {
+  test('smartadmin native: 缓存管理页面加载并成功列举缓存名', async ({page}) => {
     await openNative(page, {
       path: '/support/cache/cache-list',
       apiPath: '/support/cache/names',
@@ -572,7 +617,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 系统配置页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 系统配置页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/config/config-list',
       apiPath: '/support/config/query',
@@ -581,7 +626,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 数据字典页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 数据字典页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/setting/dict',
       apiPath: '/support/dict/queryPage',
@@ -590,7 +635,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 文件管理页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 文件管理页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/file/file-list',
       apiPath: '/support/file/queryPage',
@@ -599,7 +644,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 登录登出记录页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 登录登出记录页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/login-log/login-log-list',
       apiPath: '/support/loginLog/page/query',
@@ -608,7 +653,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 用户操作记录页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 用户操作记录页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/operate-log/operate-log-list',
       apiPath: '/support/operateLog/page/query',
@@ -617,7 +662,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 文档中心页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 文档中心页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/help-doc/help-doc-manage-list',
       apiPath: '/support/helpDoc/query',
@@ -626,7 +671,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 网络安全-三级等保设置页面加载并成功读取配置', async ({ page }) => {
+  test('smartadmin native: 网络安全-三级等保设置页面加载并成功读取配置', async ({page}) => {
     await openNative(page, {
       path: '/support/level3protect/level3-protect-config-index',
       apiPath: '/support/protect/level3protect/getConfig',
@@ -639,7 +684,7 @@ test.describe('smartadmin-native', () => {
   // 其余原生菜单（同一闭环口径，避免「菜单在但页打不开」漏网）
   // =============================================================================
 
-  test('smartadmin native: 单号管理页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 单号管理页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/serial-number/serial-number-list',
       apiPath: '/support/serialNumber/all',
@@ -648,7 +693,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 更新日志页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 更新日志页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/support/change-log/change-log-list',
       apiPath: '/support/changeLog/query',
@@ -657,7 +702,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 意见反馈页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 意见反馈页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/feedback/feedback-list',
       apiPath: '/support/feedback/query',
@@ -666,7 +711,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: Reload 页面加载并成功读取当前 tag', async ({ page }) => {
+  test('smartadmin native: Reload 页面加载并成功读取当前 tag', async ({page}) => {
     await openNative(page, {
       path: '/hook',
       apiPath: '/support/reload/query',
@@ -675,7 +720,7 @@ test.describe('smartadmin-native', () => {
     });
   });
 
-  test('smartadmin native: 敏感数据脱敏页面加载', async ({ page }) => {
+  test('smartadmin native: 敏感数据脱敏页面加载', async ({page}) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await authenticate(page);
@@ -685,12 +730,11 @@ test.describe('smartadmin-native', () => {
     await page.goto('/#/support/level3protect/data-masking-list');
     await expect(page).not.toHaveURL(/system\/404|system\/403|system\/forbidden/i);
     await expect(page.getByText('您访问的内容不存在')).toHaveCount(0);
-    await expect(page.locator('.ant-table-tbody, .ant-table-placeholder, form, .ant-form').first())
-      .toBeVisible({ timeout: 15000 });
+    await expect(page.locator('.ant-table-tbody, .ant-table-placeholder, form, .ant-form').first()).toBeVisible({timeout: 15000});
     expect(errors).toEqual([]);
   });
 
-  test('smartadmin native: 菜单管理页面加载并成功查询', async ({ page }) => {
+  test('smartadmin native: 菜单管理页面加载并成功查询', async ({page}) => {
     await openNative(page, {
       path: '/menu/list',
       apiPath: '/menu/query',
@@ -698,5 +742,4 @@ test.describe('smartadmin-native', () => {
       marker: () => page.locator('.ant-table-tbody, .ant-table-placeholder'),
     });
   });
-
 });

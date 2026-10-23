@@ -2,6 +2,13 @@
 
 最后更新：2026-10-23。当前实施与验证以本文顶部的最新基线为准；下方日期条目保留其发生当时的结果，不代表当前工作区全量验收。
 
+## 前端 Prettier 格式统一（2026-10-23，格式与静态检查通过）
+
+- `xsy-scm-web/.prettierrc.cjs` 固定 2 空格缩进、150 列、单引号、LF 换行，导入与对象花括号内不留空格，`<script>`/`<style>` 不额外缩进；移除已废弃的 `jsxBracketSameLine`。`package.json` 增加 `format` / `format:check`，覆盖 `src`、`e2e`、`e2e-chains`、`test` 及根级 TS/MJS 配置；`.gitattributes` 将前端文件固定为 LF 检出；补齐原本为空的 `xsy-scm-web/README.md`，并在 `AGENTS.md`、`CONTRIBUTING.md`、`tools/README.md` 记录格式入口。
+- 按上述配置对前端源码、E2E 与单测执行 Prettier 写入。`test/` 的源码契约用例只放宽空白匹配以适配换行和花括号；业务断言未删除或弱化。
+- 验证：`npm run format:check` PASS；`npm run lint` 通过（3 条未使用 disable 的既有 warning）；`npm run typecheck:e2e` PASS；`npm test` 共 484 项、481 通过、3 失败，失败项与未改动的 HEAD 一致（订单操作枚举、过程标记白名单、三个试点自选列）。`python tools/ts_baseline_ratchet.py check` 仍报告 `smart-table-column-modal.vue` 的 3 个新增、1 个修复诊断，已在不含本次改动的 HEAD 复现，属既有基线漂移，本次未修改基线。
+- 未运行 `vue-tsc` 全量类型检查、`npm run build`、浏览器 E2E、数据库迁移或服务。
+
 ## 后端 Java 格式统一（2026-10-23，Spotless 检查通过）
 
 - 采用 IDEA 格式化后的源码风格：4 空格缩进、120 列、续行缩进 4 空格、LF 换行，Javadoc 按列宽重排；恢复 `BalanceErrorCode` 中被 IDE 清理的错误码说明注释。

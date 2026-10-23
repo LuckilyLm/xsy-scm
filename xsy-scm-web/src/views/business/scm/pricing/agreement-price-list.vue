@@ -1,31 +1,83 @@
 <template>
- <a-form class="smart-query-form" layout="inline">
-  <a-row class="smart-query-form-row">
-   <a-form-item label="关键字" class="smart-query-form-item"><a-input v-model:value="query.keyword" placeholder="名称或编码" allow-clear /></a-form-item>
-   <a-form-item label="客户" class="smart-query-form-item"><CustomerSelect v-model:value="query.customerId" width="190px" /></a-form-item>
-   <a-form-item label="商品规格" class="smart-query-form-item"><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]" /></a-form-item>
-   <a-form-item label="有效区间" class="smart-query-form-item"><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true,true]" /></a-form-item>
-   <a-form-item class="smart-query-form-item"><a-space><a-button type="primary" @click="search" v-privilege="'scm:pricing:agreement:query'">查询</a-button><a-button @click="reset">重置</a-button></a-space></a-form-item>
-  </a-row>
- </a-form>
- <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error=''" />
- <a-card size="small" :bordered="false">
-  <a-row class="smart-table-btn-block"><div class="smart-table-operate-block"><a-button type="primary" v-privilege="'scm:pricing:agreement:add'" @click="drawer?.open()">新增客户协议价</a-button></div><div class="smart-table-setting-block"><TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_AGREEMENT" :refresh="load" /></div></a-row>
-  <a-table :data-source="rows" :columns="columns" row-key="agreementPriceId" size="small" bordered :loading="loading" :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
-   <template #bodyCell="{record,column}">
-    <template v-if="column.dataIndex==='customerName'">{{record.customerName || '—'}}</template>
-    <template v-else-if="column.dataIndex==='customerCode'"><span class="scm-mono">{{record.customerCode || '—'}}</span></template>
-    <template v-else-if="column.dataIndex==='skuCode'"><span class="scm-mono">{{record.skuCode || '—'}}</span></template>
-    <template v-else-if="column.dataIndex==='unitPrice'"><span class="scm-money">{{record.formulaType && record.formulaType !== 'FIXED' ? '按公式计算' : formatAmount(record.unitPrice)}}</span></template>
-    <template v-else-if="column.dataIndex==='formulaType'">{{formulaText(record)}}</template>
-    <template v-else-if="column.dataIndex==='effectiveRange'">{{effectiveRangeText(record.effectiveFrom, record.effectiveTo)}}<span v-if="!record.effectiveTo" class="scm-cell-hint">（长期有效）</span></template>
-    <ScmStatusTag v-else-if="column.dataIndex==='effectiveness'" v-bind="effectiveness(record)" />
-    <template v-else-if="column.dataIndex==='action'"><div class="smart-table-operate scm-table-actions"><a-button type="link" v-privilege="'scm:pricing:agreement:update'" @click="drawer?.open(record.agreementPriceId)">编辑</a-button><a-button type="link" danger v-privilege="'scm:pricing:agreement:delete'" @click="remove(record)">删除</a-button></div></template>
-   </template>
-  </a-table>
-  <div class="smart-query-table-page"><a-pagination v-model:current="query.pageNum" v-model:page-size="query.pageSize" :total="total" show-size-changer show-quick-jumper @change="load" :show-total="(n:number)=>`共 ${n} 条`" /></div>
- </a-card>
- <PriceDrawer ref="drawer" @saved="load" />
+  <a-form class="smart-query-form" layout="inline">
+    <a-row class="smart-query-form-row">
+      <a-form-item label="关键字" class="smart-query-form-item"
+        ><a-input v-model:value="query.keyword" placeholder="名称或编码" allow-clear
+      /></a-form-item>
+      <a-form-item label="客户" class="smart-query-form-item"><CustomerSelect v-model:value="query.customerId" width="190px" /></a-form-item>
+      <a-form-item label="商品规格" class="smart-query-form-item"
+        ><SkuSelect v-model:value="query.skuId" width="230px" :disabled-statuses="[]"
+      /></a-form-item>
+      <a-form-item label="有效区间" class="smart-query-form-item"
+        ><a-range-picker v-model:value="range" show-time value-format="YYYY-MM-DD HH:mm:ss" :allow-empty="[true, true]"
+      /></a-form-item>
+      <a-form-item class="smart-query-form-item"
+        ><a-space
+          ><a-button type="primary" @click="search" v-privilege="'scm:pricing:agreement:query'">查询</a-button
+          ><a-button @click="reset">重置</a-button></a-space
+        ></a-form-item
+      >
+    </a-row>
+  </a-form>
+  <a-alert v-if="error" :message="error" type="error" show-icon closable @close="error = ''" />
+  <a-card size="small" :bordered="false">
+    <a-row class="smart-table-btn-block"
+      ><div class="smart-table-operate-block">
+        <a-button type="primary" v-privilege="'scm:pricing:agreement:add'" @click="drawer?.open()">新增客户协议价</a-button>
+      </div>
+      <div class="smart-table-setting-block">
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PRICING_AGREEMENT" :refresh="load" /></div
+    ></a-row>
+    <a-table
+      :data-source="rows"
+      :columns="columns"
+      row-key="agreementPriceId"
+      size="small"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
+    >
+      <template #bodyCell="{record, column}">
+        <template v-if="column.dataIndex === 'customerName'">{{ record.customerName || '—' }}</template>
+        <template v-else-if="column.dataIndex === 'customerCode'"
+          ><span class="scm-mono">{{ record.customerCode || '—' }}</span></template
+        >
+        <template v-else-if="column.dataIndex === 'skuCode'"
+          ><span class="scm-mono">{{ record.skuCode || '—' }}</span></template
+        >
+        <template v-else-if="column.dataIndex === 'unitPrice'"
+          ><span class="scm-money">{{
+            record.formulaType && record.formulaType !== 'FIXED' ? '按公式计算' : formatAmount(record.unitPrice)
+          }}</span></template
+        >
+        <template v-else-if="column.dataIndex === 'formulaType'">{{ formulaText(record) }}</template>
+        <template v-else-if="column.dataIndex === 'effectiveRange'"
+          >{{ effectiveRangeText(record.effectiveFrom, record.effectiveTo)
+          }}<span v-if="!record.effectiveTo" class="scm-cell-hint">（长期有效）</span></template
+        >
+        <ScmStatusTag v-else-if="column.dataIndex === 'effectiveness'" v-bind="effectiveness(record)" />
+        <template v-else-if="column.dataIndex === 'action'"
+          ><div class="smart-table-operate scm-table-actions">
+            <a-button type="link" v-privilege="'scm:pricing:agreement:update'" @click="drawer?.open(record.agreementPriceId)">编辑</a-button
+            ><a-button type="link" danger v-privilege="'scm:pricing:agreement:delete'" @click="remove(record)">删除</a-button>
+          </div></template
+        >
+      </template>
+    </a-table>
+    <div class="smart-query-table-page">
+      <a-pagination
+        v-model:current="query.pageNum"
+        v-model:page-size="query.pageSize"
+        :total="total"
+        show-size-changer
+        show-quick-jumper
+        @change="load"
+        :show-total="(n: number) => `共 ${n} 条`"
+      />
+    </div>
+  </a-card>
+  <PriceDrawer ref="drawer" @saved="load" />
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -47,7 +99,10 @@ import PriceDrawer from './components/agreement-price-form-drawer.vue';
 const api = pricingApi.agreement;
 const query = reactive<PriceQuery>({pageNum: 1, pageSize: 20});
 const range = ref<[string, string] | undefined>();
-const rows = ref<PriceRow[]>([]), total = ref(0), loading = ref(false), error = ref('');
+const rows = ref<PriceRow[]>([]),
+  total = ref(0),
+  loading = ref(false),
+  error = ref('');
 const drawer = ref<InstanceType<typeof PriceDrawer>>();
 let requestId = 0;
 // 编码独立成列并默认收起；更新时间由「价格变更历史」的变更时间承担，不默认摊在列表上。
@@ -69,10 +124,14 @@ const columns = ref<AgreementPriceColumn[]>([
 function formulaText(row: PriceRow): string {
   const value = row.formulaParameter || '0.0000';
   switch (row.formulaType) {
-    case 'MARKET_PLUS_AMOUNT': return `市场价 + ${value}`;
-    case 'COST_MARKUP_RATE': return `配送仓成本 × (1 + ${value})`;
-    case 'MARKET_MARKUP_RATE': return `市场价 × (1 + ${value})`;
-    default: return '固定协议价';
+    case 'MARKET_PLUS_AMOUNT':
+      return `市场价 + ${value}`;
+    case 'COST_MARKUP_RATE':
+      return `配送仓成本 × (1 + ${value})`;
+    case 'MARKET_MARKUP_RATE':
+      return `市场价 × (1 + ${value})`;
+    default:
+      return '固定协议价';
   }
 }
 
@@ -87,11 +146,14 @@ async function load() {
   error.value = '';
   try {
     // 加载失败由页头 Alert 承担，不再让全局 toast 重复说一遍
-    const r = await api.query({
-      ...query,
-      effectiveFrom: range.value?.[0] || null,
-      effectiveTo: range.value?.[1] || null
-    }, {suppressGlobalErrorMessage: true});
+    const r = await api.query(
+      {
+        ...query,
+        effectiveFrom: range.value?.[0] || null,
+        effectiveTo: range.value?.[1] || null,
+      },
+      {suppressGlobalErrorMessage: true}
+    );
     if (id === requestId) {
       rows.value = r.data.list;
       total.value = r.data.total;
@@ -118,11 +180,13 @@ function reset() {
 
 function remove(row: PriceRow) {
   Modal.confirm({
-    title: '删除这条客户协议价？', content: '删除后保留价格变更记录。', onOk: async () => {
+    title: '删除这条客户协议价？',
+    content: '删除后保留价格变更记录。',
+    onOk: async () => {
       // 删除失败由全局 toast 给出原因；拒绝以保持确认框打开
       await api.delete(row);
       await load();
-    }
+    },
   });
 }
 

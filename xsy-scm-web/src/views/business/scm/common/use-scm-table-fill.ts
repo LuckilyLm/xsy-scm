@@ -18,12 +18,11 @@ import {fillDefaultColumnWidths, scmColumnsWidth} from './scm-column';
 export function useScmTableFill(columns: Ref<readonly any[]>, auxiliaryWidth: () => number = () => 0) {
   // 页面默认宽度在 setup 阶段抓取：此后 columns 会被「设置列」合并成用户值。
   // 优先拉伸可截断的文本列（ellipsis）；没有标记时退化为「非固定、非居中/右对齐」的列。
-  const candidates = columns.value.filter(
-      column => typeof column?.width === 'number' && !column?.fixed);
-  const ellipsisColumns = candidates.filter(column => column?.ellipsis);
+  const candidates = columns.value.filter((column) => typeof column?.width === 'number' && !column?.fixed);
+  const ellipsisColumns = candidates.filter((column) => column?.ellipsis);
   const fillableColumns = ellipsisColumns.length
-      ? ellipsisColumns
-      : candidates.filter(column => column?.align !== 'center' && column?.align !== 'right');
+    ? ellipsisColumns
+    : candidates.filter((column) => column?.align !== 'center' && column?.align !== 'right');
   const defaultWidths: Record<string, number> = {};
   for (const column of fillableColumns) {
     if (typeof column?.dataIndex === 'string') {
@@ -46,14 +45,16 @@ export function useScmTableFill(columns: Ref<readonly any[]>, auxiliaryWidth: ()
    * 用户手动调过的列不参与（与放大时同一口径），压缩后低于 `MIN_TEXT_WIDTH` 的列
    * 按下限收住，剩余的差额摊给还有余量的列；实在吃不掉就原样返回，保留横向滚动。
    */
-  function shrinkToFit<T extends { dataIndex?: unknown; width?: number | string }>(
-      columns: readonly T[], deficit: number): T[] {
+  function shrinkToFit<T extends {dataIndex?: unknown; width?: number | string}>(columns: readonly T[], deficit: number): T[] {
     const flexible = columns
-        .map((column, index) => ({column, index}))
-        .filter(({column}) => typeof column.dataIndex === 'string'
-            && defaultWidths[column.dataIndex] != null
-            && toPixel(column.width) === defaultWidths[column.dataIndex]
-            && toPixel(column.width) > MIN_TEXT_WIDTH);
+      .map((column, index) => ({column, index}))
+      .filter(
+        ({column}) =>
+          typeof column.dataIndex === 'string' &&
+          defaultWidths[column.dataIndex] != null &&
+          toPixel(column.width) === defaultWidths[column.dataIndex] &&
+          toPixel(column.width) > MIN_TEXT_WIDTH
+      );
     const capacity = flexible.reduce((sum, {column}) => sum + toPixel(column.width) - MIN_TEXT_WIDTH, 0);
     if (flexible.length === 0 || capacity < deficit) {
       return [...columns];
@@ -65,7 +66,7 @@ export function useScmTableFill(columns: Ref<readonly any[]>, auxiliaryWidth: ()
       const width = toPixel(column.width);
       const room = width - MIN_TEXT_WIDTH;
       const isLast = position === flexible.length - 1;
-      const take = isLast ? remaining : Math.min(room, Math.round(deficit * width / totalWidth));
+      const take = isLast ? remaining : Math.min(room, Math.round((deficit * width) / totalWidth));
       const applied = Math.min(room, take, remaining);
       remaining -= applied;
       result[index] = {...column, width: width - applied};
@@ -79,16 +80,14 @@ export function useScmTableFill(columns: Ref<readonly any[]>, auxiliaryWidth: ()
    * 只扣第一列且要求扣完仍不窄于 60px：几像素的差额集中在一列上，肉眼看不出来；
    * 摊到所有列会让每列都变成小数宽度。
    */
-  function absorbRounding<T extends { dataIndex?: unknown; width?: number | string }>(
-      columns: readonly T[], deficit: number): T[] {
-    const index = columns.findIndex(column =>
-        typeof column.dataIndex === 'string' && defaultWidths[column.dataIndex] != null
-        && toPixel(column.width) - deficit >= 60);
+  function absorbRounding<T extends {dataIndex?: unknown; width?: number | string}>(columns: readonly T[], deficit: number): T[] {
+    const index = columns.findIndex(
+      (column) => typeof column.dataIndex === 'string' && defaultWidths[column.dataIndex] != null && toPixel(column.width) - deficit >= 60
+    );
     if (index < 0) {
       return [...columns];
     }
-    return columns.map((column, position) =>
-        position === index ? {...column, width: toPixel(column.width) - deficit} : column);
+    return columns.map((column, position) => (position === index ? {...column, width: toPixel(column.width) - deficit} : column));
   }
 
   function toPixel(width?: number | string): number {

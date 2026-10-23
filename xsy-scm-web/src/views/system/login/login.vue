@@ -11,16 +11,15 @@
         <p class="desc">
           鲜蔬园智慧供应链管理平台，覆盖商品、客户、供应商、价格、销售订单、采购、收货、
           仓储等全链路业务，支持客户专属定价、实际重量收货与订单全流程追溯。
-          <br/>
-          <br/>
+          <br />
+          <br />
           <span class="setence">
             让生鲜供应链的每一环都清晰可见 ：
-            <br/>
-            &nbsp;&nbsp;&nbsp;&nbsp;从客户下单、订单聚合、采购需求到实际称重收货、分拣发运，
-            用一套统一的业务链路串联起采购、销售与交付。
-            <br/>
-            数据驱动决策，效率成就新鲜 !<br/>
-            鲜蔬园，让好食材更快抵达 !<br/>
+            <br />
+            &nbsp;&nbsp;&nbsp;&nbsp;从客户下单、订单聚合、采购需求到实际称重收货、分拣发运， 用一套统一的业务链路串联起采购、销售与交付。
+            <br />
+            数据驱动决策，效率成就新鲜 !<br />
+            鲜蔬园，让好食材更快抵达 !<br />
           </span>
         </p>
       </div>
@@ -29,12 +28,11 @@
       <div class="login-title">账号登录</div>
       <a-form ref="formRef" class="login-form" :model="loginForm" :rules="rules">
         <a-form-item name="loginName">
-          <a-input v-model:value.trim="loginForm.loginName" placeholder="请输入用户名"/>
+          <a-input v-model:value.trim="loginForm.loginName" placeholder="请输入用户名" />
         </a-form-item>
         <a-form-item name="emailCode" v-if="emailCodeShowFlag">
           <a-input-group compact>
-            <a-input style="width: calc(100% - 110px)" v-model:value="loginForm.emailCode" autocomplete="on"
-                     placeholder="请输入邮箱验证码"/>
+            <a-input style="width: calc(100% - 110px)" v-model:value="loginForm.emailCode" autocomplete="on" placeholder="请输入邮箱验证码" />
             <a-button @click="sendSmsCode" class="code-btn" type="primary" :disabled="emailCodeButtonDisabled">
               {{ emailCodeTips }}
             </a-button>
@@ -42,15 +40,15 @@
         </a-form-item>
         <a-form-item name="password">
           <a-input-password
-              v-model:value="loginForm.password"
-              autocomplete="on"
-              :type="showPassword ? 'text' : 'password'"
-              placeholder="请输入密码"
+            v-model:value="loginForm.password"
+            autocomplete="on"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="请输入密码"
           />
         </a-form-item>
         <a-form-item name="captchaCode">
-          <a-input class="captcha-input" v-model:value.trim="loginForm.captchaCode" placeholder="请输入验证码"/>
-          <img class="captcha-img" :src="captchaBase64Image" @click="getCaptcha"/>
+          <a-input class="captcha-input" v-model:value.trim="loginForm.captchaCode" placeholder="请输入验证码" />
+          <img class="captcha-img" :src="captchaBase64Image" @click="getCaptcha" />
         </a-form-item>
 
         <a-form-item>
@@ -61,7 +59,7 @@
   </div>
 </template>
 <script setup lang="ts">
-defineOptions({name: "SystemLogin"});
+defineOptions({name: 'SystemLogin'});
 import {message, notification} from 'ant-design-vue';
 import {onMounted, onUnmounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';
@@ -108,8 +106,7 @@ onMounted(() => {
     message: '温馨提示',
     description: '鲜蔬园智链 · 智慧供应链管理平台已就绪',
     duration: 8,
-    onClick: () => {
-    },
+    onClick: () => {},
   });
 });
 

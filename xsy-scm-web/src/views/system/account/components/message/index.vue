@@ -2,17 +2,16 @@
   <a-form class="smart-query-form">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value.trim="queryForm.searchWord" placeholder="标题/内容"/>
+        <a-input style="width: 300px" v-model:value.trim="queryForm.searchWord" placeholder="标题/内容" />
       </a-form-item>
 
       <a-form-item label="类型" class="smart-query-form-item">
-        <smart-enum-select style="width: 150px" v-model:value="queryForm.messageType" placeholder="消息类型"
-                           enum-name="MESSAGE_TYPE_ENUM"/>
+        <smart-enum-select style="width: 150px" v-model:value="queryForm.messageType" placeholder="消息类型" enum-name="MESSAGE_TYPE_ENUM" />
       </a-form-item>
 
       <a-form-item label="消息时间" class="smart-query-form-item">
         <a-space direction="vertical" :size="12">
-          <a-range-picker v-model:value="searchDate" @change="dateChange" style="width: 220px"/>
+          <a-range-picker v-model:value="searchDate" @change="dateChange" style="width: 220px" />
         </a-space>
       </a-form-item>
 
@@ -28,13 +27,13 @@
         <a-button-group>
           <a-button type="primary" @click="quickQuery">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -44,7 +43,7 @@
   </a-form>
 
   <a-table size="small" :dataSource="tableData" :columns="columns" rowKey="messageId" :pagination="false" bordered>
-    <template #bodyCell="{ text, record, column }">
+    <template #bodyCell="{text, record, column}">
       <template v-if="column.dataIndex === 'messageType'">
         <span>{{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', text) }}</span>
       </template>
@@ -55,12 +54,11 @@
       <template v-if="column.dataIndex === 'title'">
         <span v-show="record.readFlag">
           <a @click="toDetail(record)" style="color: #8c8c8c"
-          >【{{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', record.messageType) }}】{{ text }}</a>
+            >【{{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', record.messageType) }}】{{ text }}</a
+          >
         </span>
         <span v-show="!record.readFlag">
-          <a @click="toDetail(record)">【{{
-              $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', record.messageType)
-            }}】{{ text }} </a>
+          <a @click="toDetail(record)">【{{ $smartEnumPlugin.getDescByValue('MESSAGE_TYPE_ENUM', record.messageType) }}】{{ text }} </a>
         </span>
       </template>
     </template>
@@ -68,20 +66,20 @@
 
   <div class="smart-query-table-page">
     <a-pagination
-        showSizeChanger
-        showQuickJumper
-        show-less-items
-        :pageSizeOptions="PAGE_SIZE_OPTIONS"
-        :defaultPageSize="queryForm.pageSize"
-        v-model:current="queryForm.pageNum"
-        v-model:pageSize="queryForm.pageSize"
-        :total="total"
-        @change="ajaxQuery"
-        :show-total="(total) => `共${total}条`"
+      showSizeChanger
+      showQuickJumper
+      show-less-items
+      :pageSizeOptions="PAGE_SIZE_OPTIONS"
+      :defaultPageSize="queryForm.pageSize"
+      v-model:current="queryForm.pageNum"
+      v-model:pageSize="queryForm.pageSize"
+      :total="total"
+      @change="ajaxQuery"
+      :show-total="(total) => `共${total}条`"
     />
   </div>
 
-  <MessageDetail ref="messageDetailRef" @refresh="ajaxQuery"/>
+  <MessageDetail ref="messageDetailRef" @refresh="ajaxQuery" />
 </template>
 <script setup lang="ts">
 import {reactive, ref, onMounted} from 'vue';
@@ -99,7 +97,8 @@ const columns = reactive([
   {
     title: '已读',
     width: 80,
-    dataIndex: 'readFlag', align: 'center',
+    dataIndex: 'readFlag',
+    align: 'center',
   },
   {
     title: '时间',

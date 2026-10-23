@@ -9,36 +9,35 @@
         <a-col flex="350px">
           <a-form ref="formRef" :model="form" :rules="rules" layout="vertical">
             <a-form-item label="登录账号" name="loginName">
-              <a-input class="form-item" v-model:value.trim="form.loginName" placeholder="请输入登录账号" disabled/>
+              <a-input class="form-item" v-model:value.trim="form.loginName" placeholder="请输入登录账号" disabled />
             </a-form-item>
             <a-form-item label="部门" name="departmentId">
               <DepartmentTreeSelect
-                  class="form-item"
-                  ref="departmentTreeSelect"
-                  width="100%"
-                  :init="false"
-                  v-model:value="form.departmentId"
-                  disabled
+                class="form-item"
+                ref="departmentTreeSelect"
+                width="100%"
+                :init="false"
+                v-model:value="form.departmentId"
+                disabled
               />
             </a-form-item>
             <a-form-item label="员工名称" name="actualName">
-              <a-input class="form-item" v-model:value.trim="form.actualName" placeholder="请输入员工名称"/>
+              <a-input class="form-item" v-model:value.trim="form.actualName" placeholder="请输入员工名称" />
             </a-form-item>
             <a-form-item label="性别" name="gender">
-              <smart-enum-select class="form-item" v-model:value="form.gender" placeholder="请选择性别"
-                                 enum-name="GENDER_ENUM"/>
+              <smart-enum-select class="form-item" v-model:value="form.gender" placeholder="请选择性别" enum-name="GENDER_ENUM" />
             </a-form-item>
             <a-form-item label="手机号码" name="phone">
-              <a-input class="form-item" v-model:value.trim="form.phone" placeholder="请输入手机号码"/>
+              <a-input class="form-item" v-model:value.trim="form.phone" placeholder="请输入手机号码" />
             </a-form-item>
             <a-form-item label="邮箱" name="email">
-              <a-input v-model:value.trim="form.email" placeholder="请输入邮箱"/>
+              <a-input v-model:value.trim="form.email" placeholder="请输入邮箱" />
             </a-form-item>
             <a-form-item label="职务" name="positionId">
-              <PositionSelect v-model:value="form.positionId" placeholder="请选择职务"/>
+              <PositionSelect v-model:value="form.positionId" placeholder="请选择职务" />
             </a-form-item>
             <a-form-item label="备注" name="remark">
-              <a-textarea class="form-item" v-model:value="form.remark" placeholder="请输入备注" :rows="4"/>
+              <a-textarea class="form-item" v-model:value="form.remark" placeholder="请输入备注" :rows="4" />
             </a-form-item>
           </a-form>
           <a-button type="primary" @click="onSubmit">更新个人信息</a-button>
@@ -46,25 +45,25 @@
         <a-col flex="auto">
           <a-form style="padding-left: 80px" layout="vertical">
             <a-form-item label="头像" name="avatar">
-              <br/>
+              <br />
               <a-upload
-                  name="avatar"
-                  list-type="picture-card"
-                  class="avatar-uploader"
-                  :show-upload-list="false"
-                  :headers="{ Authorization: 'Bearer ' + useUserStore().getToken }"
-                  :customRequest="customRequest"
-                  :before-upload="beforeUpload"
+                name="avatar"
+                list-type="picture-card"
+                class="avatar-uploader"
+                :show-upload-list="false"
+                :headers="{Authorization: 'Bearer ' + useUserStore().getToken}"
+                :customRequest="customRequest"
+                :before-upload="beforeUpload"
               >
                 <div v-if="avatarUrl" class="avatar-container">
-                  <img :src="avatarUrl" class="avatar-image" alt="avatar"/>
+                  <img :src="avatarUrl" class="avatar-image" alt="avatar" />
                   <div class="overlay">
                     <span>更新头像</span>
                   </div>
                 </div>
                 <div v-else>
-                  <loading-outlined v-if="updateAvatarLoading"/>
-                  <plus-outlined v-else/>
+                  <loading-outlined v-if="updateAvatarLoading" />
+                  <plus-outlined v-else />
                   <div class="ant-upload-text">上传头像</div>
                 </div>
               </a-upload>
@@ -220,14 +219,14 @@ async function updateEmployee() {
 // 表单提交
 function onSubmit() {
   formRef.value
-      .validate()
-      .then(() => {
-        updateEmployee();
-      })
-      .catch((error) => {
-        console.log('error', error);
-        message.error('参数验证错误，请仔细填写表单数据!');
-      });
+    .validate()
+    .then(() => {
+      updateEmployee();
+    })
+    .catch((error) => {
+      console.log('error', error);
+      message.error('参数验证错误，请仔细填写表单数据!');
+    });
 }
 
 onMounted(() => {
@@ -250,7 +249,6 @@ onMounted(() => {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
-
 
     .avatar-container {
       position: relative;

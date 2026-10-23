@@ -4,16 +4,13 @@
     <div class="password-form-area">
       <a-form ref="formRef" :model="form" :rules="rules" layout="vertical">
         <a-form-item label="原密码" name="oldPassword">
-          <a-input-password class="form-item" v-model:value.trim="form.oldPassword" type="password"
-                            placeholder="请输入原密码" autocomplete="off"/>
+          <a-input-password class="form-item" v-model:value.trim="form.oldPassword" type="password" placeholder="请输入原密码" autocomplete="off" />
         </a-form-item>
         <a-form-item label="新密码" name="newPassword" :help="tips">
-          <a-input-password class="form-item" v-model:value.trim="form.newPassword" type="password"
-                            placeholder="请输入新密码" autocomplete="off"/>
+          <a-input-password class="form-item" v-model:value.trim="form.newPassword" type="password" placeholder="请输入新密码" autocomplete="off" />
         </a-form-item>
         <a-form-item label="确认密码" name="confirmPwd" :help="tips">
-          <a-input-password class="form-item" v-model:value.trim="form.confirmPwd" type="password"
-                            placeholder="请输入确认密码" autocomplete="off"/>
+          <a-input-password class="form-item" v-model:value.trim="form.confirmPwd" type="password" placeholder="请输入确认密码" autocomplete="off" />
         </a-form-item>
       </a-form>
       <a-button type="primary" style="margin: 20px 0 0 250px" @click="onSubmit">修改密码</a-button>
@@ -34,7 +31,7 @@ const passwordComplexityEnabledTips = '密码长度8-20位，必须包含字母�
 const passwordTips = '密码长度至少8位';
 const tips = ref(passwordTips);
 const reg =
-    /^(?![a-zA-Z]+$)(?![A-Z0-9]+$)(?![A-Z\W_!@#$%^&*`~()-+=]+$)(?![a-z0-9]+$)(?![a-z\W_!@#$%^&*`~()-+=]+$)(?![0-9\W_!@#$%^&*`~()-+=]+$)[a-zA-Z0-9\W_!@#$%^&*`~()-+=]{8,20}$/;
+  /^(?![a-zA-Z]+$)(?![A-Z0-9]+$)(?![A-Z\W_!@#$%^&*`~()-+=]+$)(?![a-z0-9]+$)(?![a-z\W_!@#$%^&*`~()-+=]+$)(?![0-9\W_!@#$%^&*`~()-+=]+$)[a-zA-Z0-9\W_!@#$%^&*`~()-+=]{8,20}$/;
 
 // 获取系统的密码复杂度
 const passwordComplexityEnabledFlag = ref(false);
@@ -85,32 +82,32 @@ let form = reactive({
 
 async function onSubmit() {
   formRef.value
-      .validate()
-      .then(async () => {
-        if (form.newPassword !== form.confirmPwd) {
-          message.error('新密码与确认密码不一致');
-          return;
-        }
-        SmartLoading.show();
-        try {
-          await employeeApi.updateEmployeePassword(form);
-          message.success('修改成功');
+    .validate()
+    .then(async () => {
+      if (form.newPassword !== form.confirmPwd) {
+        message.error('新密码与确认密码不一致');
+        return;
+      }
+      SmartLoading.show();
+      try {
+        await employeeApi.updateEmployeePassword(form);
+        message.success('修改成功');
 
-          form.oldPassword = '';
-          form.newPassword = '';
-          form.confirmPwd = '';
+        form.oldPassword = '';
+        form.newPassword = '';
+        form.confirmPwd = '';
 
-          emits('onSuccess');
-        } catch (error) {
-          smartSentry.captureError(error);
-        } finally {
-          SmartLoading.hide();
-        }
-      })
-      .catch((error) => {
-        console.log('error', error);
-        message.error('参数验证错误，请仔细填写表单数据!');
-      });
+        emits('onSuccess');
+      } catch (error) {
+        smartSentry.captureError(error);
+      } finally {
+        SmartLoading.hide();
+      }
+    })
+    .catch((error) => {
+      console.log('error', error);
+      message.error('参数验证错误，请仔细填写表单数据!');
+    });
 }
 </script>
 <style lang="less" scoped>

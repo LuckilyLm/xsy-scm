@@ -1,23 +1,22 @@
 <!--
   * reload 结果
-  * 
+  *
 -->
 <template>
   <a-modal :open="visible" title="reload结果列表" width="60%" :footer="null" @cancel="onClose">
     <a-button type="primary" @click="ajaxQuery" size="small">
       <template #icon>
-        <ReloadOutlined/>
+        <ReloadOutlined />
       </template>
       刷新
     </a-button>
-    <a-table :scroll="{ y: 350 }" size="small" bordered rowKey="id" class="smart-margin-top10" :dataSource="tableData"
-             :columns="columns">
-      <template #bodyCell="{ text, column }">
+    <a-table :scroll="{y: 350}" size="small" bordered rowKey="id" class="smart-margin-top10" :dataSource="tableData" :columns="columns">
+      <template #bodyCell="{text, column}">
         <template v-if="column.dataIndex === 'result'">
           <a-tag :color="text ? 'success' : 'error'">{{ text ? '成功' : '失败' }}</a-tag>
         </template>
       </template>
-      <template #expandedRowRender="{ record }">
+      <template #expandedRowRender="{record}">
         <pre style="margin: 0; font-size: 12px">
           {{ record.exception }}
         </pre>
@@ -82,7 +81,8 @@ const columns = reactive([
   },
   {
     title: '运行结果',
-    dataIndex: 'result', align: 'center',
+    dataIndex: 'result',
+    align: 'center',
   },
   {
     title: '异常',

@@ -28,5 +28,5 @@ export const FILE_FOLDER_TYPE_ENUM: SmartEnum<number> = {
   },
 };
 export default {
-    FILE_FOLDER_TYPE_ENUM,
+  FILE_FOLDER_TYPE_ENUM,
 };

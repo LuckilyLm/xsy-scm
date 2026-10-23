@@ -5,22 +5,22 @@
 <template>
   <a-card class="tree-container">
     <a-row class="smart-margin-bottom10">
-      <a-input v-model:value.trim="keywords" placeholder="请输入部门名称"/>
+      <a-input v-model:value.trim="keywords" placeholder="请输入部门名称" />
     </a-row>
     <a-tree
-        v-if="!_.isEmpty(departmentTreeData)"
-        v-model:selectedKeys="selectedKeys"
-        v-model:checkedKeys="checkedKeys"
-        class="tree"
-        :treeData="departmentTreeData"
-        :fieldNames="{ title: 'departmentName', key: 'departmentId', value: 'departmentId' }"
-        style="width: 100%; overflow-x: auto"
-        :style="[!height ? '' : { height: `${height}px`, overflowY: 'auto' }]"
-        :checkable="props.checkable"
-        :checkStrictly="props.checkStrictly"
-        :selectable="!props.checkable"
-        :defaultExpandAll="true"
-        @select="treeSelectChange"
+      v-if="!_.isEmpty(departmentTreeData)"
+      v-model:selectedKeys="selectedKeys"
+      v-model:checkedKeys="checkedKeys"
+      class="tree"
+      :treeData="departmentTreeData"
+      :fieldNames="{title: 'departmentName', key: 'departmentId', value: 'departmentId'}"
+      style="width: 100%; overflow-x: auto"
+      :style="[!height ? '' : {height: `${height}px`, overflowY: 'auto'}]"
+      :checkable="props.checkable"
+      :checkStrictly="props.checkStrictly"
+      :selectable="!props.checkable"
+      :defaultExpandAll="true"
+      @select="treeSelectChange"
     >
       <template #title="item">
         <div>{{ item.departmentName }}</div>
@@ -159,10 +159,10 @@ function treeSelectChange(idList) {
 // -----------------------  筛选 ---------------------
 const keywords = ref('');
 watch(
-    () => keywords.value,
-    () => {
-      onSearch();
-    }
+  () => keywords.value,
+  () => {
+    onSearch();
+  }
 );
 
 // 筛选

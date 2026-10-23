@@ -5,33 +5,30 @@
 
 <template>
   <a-drawer :title="$t('setting.title')" placement="right" :width="450" :open="visible" @close="close">
-    <a-form layout="horizontal" :label-col="{ span: 8 }">
+    <a-form layout="horizontal" :label-col="{span: 8}">
       <a-form-item label="语言/Language">
         <a-select v-model:value="formState.language" @change="changeLanguage" style="width: 120px">
-          <a-select-option v-for="item in i18nList" :key="item.value" :value="item.value">{{
-              item.text
-            }}
-          </a-select-option>
+          <a-select-option v-for="item in i18nList" :key="item.value" :value="item.value">{{ item.text }} </a-select-option>
         </a-select>
       </a-form-item>
       <a-form-item :label="$t('setting.color')">
         <div class="color-container">
           <template v-for="(item, index) in themeColors" :key="index">
             <div v-if="index === formState.colorIndex" class="color">
-              <CheckSquareFilled :style="{ color: item.primaryColor, fontSize: '22px' }"/>
+              <CheckSquareFilled :style="{color: item.primaryColor, fontSize: '22px'}" />
             </div>
             <div v-else @click="changeColor(index)" class="color">
               <svg
-                  class="icon"
-                  viewBox="0 0 1024 1024"
-                  version="1.1"
-                  :fill="item.primaryColor"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="26"
-                  height="26"
+                class="icon"
+                viewBox="0 0 1024 1024"
+                version="1.1"
+                :fill="item.primaryColor"
+                xmlns="http://www.w3.org/2000/svg"
+                width="26"
+                height="26"
               >
                 <path
-                    d="M128 160.01219c0-17.67619 14.336-32.01219 32.01219-32.01219h704c17.65181 0 31.98781 14.336 31.98781 32.01219v704c0 17.65181-14.336 31.98781-32.01219 31.98781H160.036571a31.98781 31.98781 0 0 1-32.01219-32.01219V160.036571z"
+                  d="M128 160.01219c0-17.67619 14.336-32.01219 32.01219-32.01219h704c17.65181 0 31.98781 14.336 31.98781 32.01219v704c0 17.65181-14.336 31.98781-32.01219 31.98781H160.036571a31.98781 31.98781 0 0 1-32.01219-32.01219V160.036571z"
                 />
               </svg>
             </div>
@@ -39,27 +36,20 @@
         </div>
       </a-form-item>
       <a-form-item :label="$t('setting.border.radius')">
-        <a-slider v-model:value="formState.borderRadius" :min="0" :max="6" @change="changeBorderRadius"/>
+        <a-slider v-model:value="formState.borderRadius" :min="0" :max="6" @change="changeBorderRadius" />
       </a-form-item>
       <a-form-item :label="$t('setting.menu.width')" v-if="formState.layout === LAYOUT_ENUM.SIDE.value">
         <!-- 收紧上下限：侧栏窄到几十像素会把布局压坏，宽过 240 会白吃掉内容区 -->
-        <a-input-number
-            @change="changeSideMenuWidth"
-            v-model:value="formState.sideMenuWidth"
-            :min="168"
-            :max="240"
-            :step="8"
-        />
+        <a-input-number @change="changeSideMenuWidth" v-model:value="formState.sideMenuWidth" :min="168" :max="240" :step="8" />
         像素（px）
       </a-form-item>
       <a-form-item :label="$t('setting.page.width')" v-if="formState.layout === LAYOUT_ENUM.TOP.value">
-        <a-input @change="changePageWidth" v-model:value="formState.pageWidth"/>
+        <a-input @change="changePageWidth" v-model:value="formState.pageWidth" />
         像素（px）或者 百分比
       </a-form-item>
       <a-form-item :label="$t('setting.menu.layout')">
         <a-radio-group @change="changeLayout" button-style="solid" v-model:value="formState.layout">
-          <a-radio-button v-for="item in $smartEnumPlugin.getValueDescList('LAYOUT_ENUM')" :key="item.value"
-                          :value="item.value">
+          <a-radio-button v-for="item in $smartEnumPlugin.getValueDescList('LAYOUT_ENUM')" :key="item.value" :value="item.value">
             {{ item.desc }}
           </a-radio-button>
         </a-radio-group>
@@ -90,47 +80,41 @@
         </a-radio-group>
       </a-form-item>
       <a-form-item :label="$t('setting.menu.expand')" v-if="formState.layout === LAYOUT_ENUM.SIDE.value">
-        <a-switch @change="changeMenuExpandFlag" v-model:checked="formState.menuSingleExpandFlag"
-                  checked-children="单个" un-checked-children="多个"/>
-      </a-form-item>
-      <a-form-item :label="$t('setting.pagetag')">
-        <a-switch @change="changePageTagFlag" v-model:checked="formState.pageTagFlag" checked-children="显示"
-                  un-checked-children="隐藏"/>
-      </a-form-item>
-      <a-form-item :label="$t('setting.bread')">
         <a-switch
-            @change="changeBreadCrumbFlag"
-            v-model:checked="formState.breadCrumbFlag"
-            checked-children="显示"
-            un-checked-children="隐藏"
+          @change="changeMenuExpandFlag"
+          v-model:checked="formState.menuSingleExpandFlag"
+          checked-children="单个"
+          un-checked-children="多个"
         />
       </a-form-item>
+      <a-form-item :label="$t('setting.pagetag')">
+        <a-switch @change="changePageTagFlag" v-model:checked="formState.pageTagFlag" checked-children="显示" un-checked-children="隐藏" />
+      </a-form-item>
+      <a-form-item :label="$t('setting.bread')">
+        <a-switch @change="changeBreadCrumbFlag" v-model:checked="formState.breadCrumbFlag" checked-children="显示" un-checked-children="隐藏" />
+      </a-form-item>
       <a-form-item :label="$t('setting.footer')">
-        <a-switch @change="changeFooterFlag" v-model:checked="formState.footerFlag" checked-children="显示"
-                  un-checked-children="隐藏"/>
+        <a-switch @change="changeFooterFlag" v-model:checked="formState.footerFlag" checked-children="显示" un-checked-children="隐藏" />
       </a-form-item>
       <a-form-item :label="$t('setting.watermark')">
-        <a-switch @change="changeWatermarkFlag" v-model:checked="formState.watermarkFlag" checked-children="显示"
-                  un-checked-children="隐藏"/>
+        <a-switch @change="changeWatermarkFlag" v-model:checked="formState.watermarkFlag" checked-children="显示" un-checked-children="隐藏" />
       </a-form-item>
       <a-form-item :label="$t('setting.helpdoc')">
-        <a-switch @change="changeHelpDocFlag" v-model:checked="formState.helpDocFlag" checked-children="显示"
-                  un-checked-children="隐藏"/>
+        <a-switch @change="changeHelpDocFlag" v-model:checked="formState.helpDocFlag" checked-children="显示" un-checked-children="隐藏" />
       </a-form-item>
       <a-form-item :label="$t('setting.helpdoc.expand')" v-if="formState.helpDocFlag">
         <a-switch
-            @change="changeHelpDocExpandFlag"
-            v-model:checked="formState.helpDocExpandFlag"
-            checked-children="默认展开"
-            un-checked-children="默认不展开"
+          @change="changeHelpDocExpandFlag"
+          v-model:checked="formState.helpDocExpandFlag"
+          checked-children="默认展开"
+          un-checked-children="默认不展开"
         />
       </a-form-item>
       <a-form-item :label="$t('setting.darkmode')">
-        <a-switch @change="changeDarkMode" v-model:checked="formState.darkModeFlag" checked-children="开启"
-                  un-checked-children="关闭"/>
+        <a-switch @change="changeDarkMode" v-model:checked="formState.darkModeFlag" checked-children="开启" un-checked-children="关闭" />
       </a-form-item>
-      <br/>
-      <br/>
+      <br />
+      <br />
     </a-form>
 
     <div class="footer">

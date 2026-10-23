@@ -4,20 +4,19 @@
 -->
 <template>
   <a-modal :open="visible" title="意见反馈" :closable="false" :maskClosable="true">
-    <a-form :labelCol="{ span: 6 }">
+    <a-form :labelCol="{span: 6}">
       <a-form-item label="我要吐槽/建议：">
-        <a-textarea v-model:value="form.feedbackContent" placeholder="请输入让您不满意的点，我们争取做到更好～"
-                    :rows="3"/>
+        <a-textarea v-model:value="form.feedbackContent" placeholder="请输入让您不满意的点，我们争取做到更好～" :rows="3" />
       </a-form-item>
       <a-form-item label="反馈图片：">
         <Upload
-            accept=".jpg,.jpeg,.png,.gif"
-            :maxUploadSize="3"
-            buttonText="点击上传反馈图片"
-            :default-file-list="form.feedbackAttachment || []"
-            listType="picture-card"
-            @change="changeAttachment"
-            :folder="FILE_FOLDER_TYPE_ENUM.FEEDBACK.value"
+          accept=".jpg,.jpeg,.png,.gif"
+          :maxUploadSize="3"
+          buttonText="点击上传反馈图片"
+          :default-file-list="form.feedbackAttachment || []"
+          listType="picture-card"
+          @change="changeAttachment"
+          :folder="FILE_FOLDER_TYPE_ENUM.FEEDBACK.value"
         />
       </a-form-item>
     </a-form>
@@ -44,7 +43,7 @@ const visible = ref(false);
 
 function show() {
   Object.assign(form, formDefault);
-  console.log(form)
+  console.log(form);
   visible.value = true;
 }
 
@@ -54,8 +53,8 @@ function hide() {
 
 const formDefault = {
   feedbackContent: '',
-  feedbackAttachment: ''
-}
+  feedbackAttachment: '',
+};
 const form = reactive({...formDefault});
 
 async function submit() {

@@ -12,16 +12,16 @@
       <a-descriptions-item label="备注" :span="2">{{ detail.remark || '—' }}</a-descriptions-item>
     </a-descriptions>
     <a-table
-        style="margin-top: 12px"
-        size="small"
-        :data-source="detail.items || []"
-        :columns="itemColumns"
-        row-key="id"
-        bordered
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(itemColumns) }"
+      style="margin-top: 12px"
+      size="small"
+      :data-source="detail.items || []"
+      :columns="itemColumns"
+      row-key="id"
+      bordered
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(itemColumns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'bookQuantity'">
           <span class="scm-quantity">{{ quantityText(record.bookQuantity) }}</span>
         </template>

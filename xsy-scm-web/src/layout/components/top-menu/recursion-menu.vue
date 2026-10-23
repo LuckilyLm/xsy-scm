@@ -1,28 +1,22 @@
 <!--
   * 顶部菜单-递归菜单
-  * 
+  *
 -->
 <template>
-  <a-menu
-      v-model:openKeys="openKeys"
-      v-model:selectedKeys="selectedKeys"
-      class="smart-menu"
-      mode="horizontal"
-      :theme="theme"
-  >
+  <a-menu v-model:openKeys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu" mode="horizontal" :theme="theme">
     <template v-for="item in menuTree" :key="item.menuId">
       <template v-if="item.visibleFlag && !item.disabledFlag">
         <template v-if="$lodash.isEmpty(item.children)">
           <a-menu-item :key="item.menuId" @click="turnToPage(item)">
             <template #icon>
-              <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)"/>
-              <span v-else class="smart-menu-icon-blank"/>
+              <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)" />
+              <span v-else class="smart-menu-icon-blank" />
             </template>
             {{ item.menuName }}
           </a-menu-item>
         </template>
         <template v-else>
-          <SubMenu :menu-info="item" :key="item.menuId" @turnToPage="turnToPage"/>
+          <SubMenu :menu-info="item" :key="item.menuId" @turnToPage="turnToPage" />
         </template>
       </template>
     </template>
@@ -64,13 +58,13 @@ function updateSelectKeys() {
 }
 
 watch(
-    currentRoute,
-    () => {
-      updateSelectKeys();
-    },
-    {
-      immediate: true,
-    }
+  currentRoute,
+  () => {
+    updateSelectKeys();
+  },
+  {
+    immediate: true,
+  }
 );
 
 defineExpose({

@@ -1,6 +1,5 @@
 <template>
-  <a-modal v-model:open="open" title="导入商品" :width="640" :mask-closable="false"
-           :footer="null" @cancel="reset">
+  <a-modal v-model:open="open" title="导入商品" :width="640" :mask-closable="false" :footer="null" @cancel="reset">
     <div class="import-step">
       <div class="import-step__head">
         <span class="import-step__index">1</span>
@@ -17,15 +16,15 @@
         <span class="import-step__desc">仅支持 .xlsx，单文件不超过 10 MiB</span>
       </div>
       <a-upload-dragger
-          class="import-drop"
-          :class="{'is-picked': !!file}"
-          :file-list="[]"
-          :before-upload="pickFile"
-          accept=".xlsx"
-          :show-upload-list="false"
+        class="import-drop"
+        :class="{'is-picked': !!file}"
+        :file-list="[]"
+        :before-upload="pickFile"
+        accept=".xlsx"
+        :show-upload-list="false"
       >
         <p class="import-drop__icon">
-          <inbox-outlined/>
+          <inbox-outlined />
         </p>
         <p class="import-drop__title">{{ file ? file.name : '点击或拖拽 Excel 文件到此处' }}</p>
         <p class="import-drop__hint">
@@ -39,22 +38,29 @@
       <a-button type="primary" :loading="importing" :disabled="!file" @click="doImport">开始导入</a-button>
     </div>
 
-    <a-result v-if="done && !hasErrors" status="success"
-              :title="doneTitle"
-              :sub-title="`共 ${result?.totalProducts ?? 0} 个商品、${result?.totalRows ?? 0} 行数据`"/>
+    <a-result
+      v-if="done && !hasErrors"
+      status="success"
+      :title="doneTitle"
+      :sub-title="`共 ${result?.totalProducts ?? 0} 个商品、${result?.totalRows ?? 0} 行数据`"
+    />
 
     <template v-if="result && hasErrors">
-      <a-alert type="error" show-icon class="hint"
-               :message="`校验未通过：${groups.length} 行 / ${result.totalErrors} 处错误，本次没有任何商品写入`"/>
+      <a-alert
+        type="error"
+        show-icon
+        class="hint"
+        :message="`校验未通过：${groups.length} 行 / ${result.totalErrors} 处错误，本次没有任何商品写入`"
+      />
       <div class="detail-actions">
         <a-button size="small" @click="downloadErrors">下载失败明细</a-button>
       </div>
-      <a-table :data-source="groups" :columns="errorColumns" row-key="rowNumber" size="small"
-               :pagination="false" :scroll="{ y: 320 }">
-        <template #bodyCell="{ column, record }">
+      <a-table :data-source="groups" :columns="errorColumns" row-key="rowNumber" size="small" :pagination="false" :scroll="{y: 320}">
+        <template #bodyCell="{column, record}">
           <template v-if="column.dataIndex === 'cells'">
             <div v-for="(cell, i) in record.cells" :key="i" class="cell-error">
-              <b>{{ cell.column }}</b>：{{ cell.message }}
+              <b>{{ cell.column }}</b
+              >：{{ cell.message }}
               <a-tag size="small">{{ cell.code }}</a-tag>
             </div>
           </template>
@@ -64,21 +70,25 @@
   </a-modal>
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { message } from 'ant-design-vue';
-import type { UploadProps } from 'ant-design-vue';
-import { productApi } from '/@/api/business/scm/product-api';
-import type { ProductImportResult } from '/@/types/business/scm/product';
-import { groupErrorsByRow, hasBlockingErrors } from '../product-import-model';
-import { productError } from '../product-errors';
+import {computed, ref} from 'vue';
+import {message} from 'ant-design-vue';
+import type {UploadProps} from 'ant-design-vue';
+import {productApi} from '/@/api/business/scm/product-api';
+import type {ProductImportResult} from '/@/types/business/scm/product';
+import {groupErrorsByRow, hasBlockingErrors} from '../product-import-model';
+import {productError} from '../product-errors';
 
-const emit = defineEmits<{ imported: [] }>();
-const open = ref(false), file = ref<File | null>(null), importing = ref(false), templateLoading = ref(false),
-    result = ref<ProductImportResult | null>(null), done = ref(false);
+const emit = defineEmits<{imported: []}>();
+const open = ref(false),
+  file = ref<File | null>(null),
+  importing = ref(false),
+  templateLoading = ref(false),
+  result = ref<ProductImportResult | null>(null),
+  done = ref(false);
 const errorColumns = [
-  { title: 'Excel 行', dataIndex: 'rowNumber', width: 90 },
-  { title: '导入分组', dataIndex: 'spuCode', width: 150 },
-  { title: '错误明细', dataIndex: 'cells' },
+  {title: 'Excel 行', dataIndex: 'rowNumber', width: 90},
+  {title: '导入分组', dataIndex: 'spuCode', width: 150},
+  {title: '错误明细', dataIndex: 'cells'},
 ];
 const groups = computed(() => (result.value ? groupErrorsByRow(result.value.errors) : []));
 const hasErrors = computed(() => !!result.value && hasBlockingErrors(result.value));
@@ -135,9 +145,10 @@ async function doImport() {
 function downloadErrors() {
   if (!result.value) return;
   const header = ['Excel行', '导入分组', '列', '原因码', '说明'];
-  const lines = result.value.errors.map(e => [e.rowNumber, e.spuCode ?? '', e.column, e.code, e.message]
-      .map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','));
-  const blob = new Blob(['﻿' + [header.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
+  const lines = result.value.errors.map((e) =>
+    [e.rowNumber, e.spuCode ?? '', e.column, e.code, e.message].map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+  );
+  const blob = new Blob(['﻿' + [header.join(','), ...lines].join('\n')], {type: 'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -146,7 +157,7 @@ function downloadErrors() {
   URL.revokeObjectURL(url);
 }
 
-defineExpose({ show });
+defineExpose({show});
 </script>
 <style scoped>
 .import-step {
@@ -187,7 +198,9 @@ defineExpose({ show });
 
 .import-drop :deep(.ant-upload-drag) {
   border-radius: 8px;
-  transition: border-color 0.2s, background-color 0.2s;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
 }
 
 /* 选好文件后整块变浅绿：一眼能看出「文件已就位」 */

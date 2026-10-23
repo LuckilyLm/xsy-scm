@@ -46,8 +46,11 @@ function toPixelWidth(width?: number | string): number {
  * @param extra         容器宽度减去各列宽度之和后的剩余像素，≤0 时不处理
  * @param defaultWidths 可伸缩列的页面默认宽度，键为 dataIndex
  */
-export function fillDefaultColumnWidths<T extends { dataIndex?: unknown; width?: number | string }>(
-    columns: readonly T[], extra: number, defaultWidths: Record<string, number>): T[] {
+export function fillDefaultColumnWidths<T extends {dataIndex?: unknown; width?: number | string}>(
+  columns: readonly T[],
+  extra: number,
+  defaultWidths: Record<string, number>
+): T[] {
   if (extra <= 0 || columns.length === 0) {
     return [...columns];
   }

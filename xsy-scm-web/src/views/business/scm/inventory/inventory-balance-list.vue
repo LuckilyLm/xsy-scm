@@ -6,13 +6,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px"/>
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
       </a-form-item>
       <a-form-item label="商品规格编码" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.skuCode" placeholder="商品规格编码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="商品名称" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.productName" placeholder="商品名称" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.productName" placeholder="商品名称" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -21,11 +21,7 @@
         </a-button-group>
       </a-form-item>
       <div class="scm-query-table-tools">
-        <TableOperator
-          v-model="columns"
-          :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_BALANCE"
-          :refresh="queryData"
-          />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_BALANCE" :refresh="queryData" />
       </div>
     </a-row>
   </a-form>
@@ -37,21 +33,20 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.BALANCE"
-        ref="tableRef"
-        size="small"
-        :data-source="tableData"
-        :columns="displayColumns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '暂无库存余额' }"
-        :scroll="{ x: scrollX }"
+      :id="SCM_INVENTORY_TABLE_ID.BALANCE"
+      ref="tableRef"
+      size="small"
+      :data-source="tableData"
+      :columns="displayColumns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无库存余额'}"
+      :scroll="{x: scrollX}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
@@ -82,13 +77,13 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>

@@ -18,7 +18,16 @@
   --drawer-date-width: 240px;
   --drawer-range-width: 440px;
 
-  .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-number, .ant-input-number-group-wrapper, .ant-picker) {
+  .ant-form-item-control-input-content
+    > :is(
+      .ant-input,
+      .ant-input-affix-wrapper,
+      .ant-input-group-wrapper,
+      .ant-select,
+      .ant-input-number,
+      .ant-input-number-group-wrapper,
+      .ant-picker
+    ) {
     width: 100%;
     max-width: min(100%, var(--drawer-field-max));
   }
@@ -27,11 +36,33 @@
     max-width: min(100%, 720px);
   }
 
-  .app-drawer-field--wide .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-number, .ant-input-number-group-wrapper, .ant-picker, .ant-input-textarea, textarea.ant-input) {
+  .app-drawer-field--wide
+    .ant-form-item-control-input-content
+    > :is(
+      .ant-input,
+      .ant-input-affix-wrapper,
+      .ant-input-group-wrapper,
+      .ant-select,
+      .ant-input-number,
+      .ant-input-number-group-wrapper,
+      .ant-picker,
+      .ant-input-textarea,
+      textarea.ant-input
+    ) {
     max-width: 100%;
   }
 
-  .app-drawer-field--compact .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-number, .ant-input-number-group-wrapper, .ant-picker) {
+  .app-drawer-field--compact
+    .ant-form-item-control-input-content
+    > :is(
+      .ant-input,
+      .ant-input-affix-wrapper,
+      .ant-input-group-wrapper,
+      .ant-select,
+      .ant-input-number,
+      .ant-input-number-group-wrapper,
+      .ant-picker
+    ) {
     max-width: min(100%, var(--drawer-compact-max));
   }
 
@@ -60,7 +91,18 @@
   }
 
   @media (max-width: 767px) {
-    .ant-form-item-control-input-content > :is(.ant-input, .ant-input-affix-wrapper, .ant-input-group-wrapper, .ant-select, .ant-input-number, .ant-input-number-group-wrapper, .ant-picker, .ant-input-textarea, textarea.ant-input) {
+    .ant-form-item-control-input-content
+      > :is(
+        .ant-input,
+        .ant-input-affix-wrapper,
+        .ant-input-group-wrapper,
+        .ant-select,
+        .ant-input-number,
+        .ant-input-number-group-wrapper,
+        .ant-picker,
+        .ant-input-textarea,
+        textarea.ant-input
+      ) {
       max-width: 100%;
     }
   }

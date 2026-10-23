@@ -12,19 +12,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="盘点单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.stocktakeNo" placeholder="盘点单号" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.stocktakeNo" placeholder="盘点单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px"/>
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <a-select
-            v-model:value="queryForm.status"
-            :options="statusOptions"
-            placeholder="全部"
-            allow-clear
-            style="width: 140px"
-        />
+        <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -44,54 +38,38 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:stocktake:add'">
-          新建盘点单
-        </a-button>
-        <a-button
-            style="margin-left: 8px"
-            :loading="templateLoading"
-            @click="onDownloadTemplate"
-            v-privilege="'scm:inventory:stocktake:import'"
-        >
+        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:stocktake:add'"> 新建盘点单 </a-button>
+        <a-button style="margin-left: 8px" :loading="templateLoading" @click="onDownloadTemplate" v-privilege="'scm:inventory:stocktake:import'">
           导出盘点模板
         </a-button>
-        <a-upload
-            :show-upload-list="false"
-            :custom-request="onUploadImport"
-            accept=".xlsx"
-            style="display: inline-block; margin-left: 8px"
-        >
+        <a-upload :show-upload-list="false" :custom-request="onUploadImport" accept=".xlsx" style="display: inline-block; margin-left: 8px">
           <a-button :loading="importing" v-privilege="'scm:inventory:stocktake:import'">导入盘点</a-button>
         </a-upload>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_STOCKTAKE"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_STOCKTAKE" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.STOCKTAKE"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '暂无盘点单' }"
-        :scroll="{ x: scrollX }"
+      :id="SCM_INVENTORY_TABLE_ID.STOCKTAKE"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无盘点单'}"
+      :scroll="{x: scrollX}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status" />
         </template>
         <template v-else-if="column.dataIndex === 'confirmedAt'">{{ datetime(record.confirmedAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
@@ -100,15 +78,15 @@
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                size="small"
-                @click="onConfirm(record)"
-                v-privilege="'scm:inventory:stocktake:confirm'"
+              v-if="record.status === 'DRAFT'"
+              type="link"
+              size="small"
+              @click="onConfirm(record)"
+              v-privilege="'scm:inventory:stocktake:confirm'"
             >
               确认盘点
             </a-button>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -117,64 +95,45 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <!-- 新建 / 编辑草稿 -->
-  <a-drawer
-      :open="drawerOpen"
-      :title="form.id ? `编辑盘点单 ${form.stocktakeNo}` : '新建盘点单'"
-      :width="scmDrawerWidth('l')"
-      @close="closeDrawer"
-  >
+  <a-drawer :open="drawerOpen" :title="form.id ? `编辑盘点单 ${form.stocktakeNo}` : '新建盘点单'" :width="scmDrawerWidth('l')" @close="closeDrawer">
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="盘点仓库" name="warehouseId">
-        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
+        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count/>
+        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count />
       </a-form-item>
       <a-form-item label="盘点明细" required>
-        <a-table
-            size="small"
-            :data-source="form.items"
-            :columns="itemColumns"
-            row-key="_key"
-            bordered
-            :pagination="false"
-        >
-          <template #bodyCell="{ record, column, index }">
+        <a-table size="small" :data-source="form.items" :columns="itemColumns" row-key="_key" bordered :pagination="false">
+          <template #bodyCell="{record, column, index}">
             <template v-if="column.dataIndex === 'skuId'">
               <SkuSelect
-                  :value="record.skuId"
-                  :disabled-statuses="[]"
-                  width="260px"
-                  @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
+                :value="record.skuId"
+                :disabled-statuses="[]"
+                width="260px"
+                @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
               />
             </template>
             <template v-else-if="column.dataIndex === 'unit'">
               <a-typography-text type="secondary">{{ record.unit || '—' }}</a-typography-text>
             </template>
             <template v-else-if="column.dataIndex === 'actualQuantity'">
-              <a-input-number
-                  v-model:value="record.actualQuantity"
-                  :min="0"
-                  :precision="4"
-                  :step="1"
-                  placeholder="0.0000"
-                  style="width: 140px"
-              />
+              <a-input-number v-model:value="record.actualQuantity" :min="0" :precision="4" :step="1" placeholder="0.0000" style="width: 140px" />
             </template>
             <template v-else-if="column.dataIndex === 'remark'">
-              <a-input v-model:value="record.remark" :maxlength="500"/>
+              <a-input v-model:value="record.remark" :maxlength="500" />
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <a-button type="link" size="small" danger @click="removeItem(index)">删除</a-button>
@@ -195,35 +154,29 @@
   <InventoryStocktakeDetailDrawer v-model:open="detailOpen" :detail="detail" />
 
   <!-- 导入结果：整批校验，任一错误行都不落库（后端返回 code=0 且 totalErrors>0，故按数据判定，不看信封码） -->
-  <a-modal
-      :open="importResultOpen"
-      title="盘点导入结果"
-      :closable="false"
-      width="720"
-      @cancel="importResultOpen = false"
-  >
+  <a-modal :open="importResultOpen" title="盘点导入结果" :closable="false" width="720" @cancel="importResultOpen = false">
     <a-alert
-        v-if="importResult && importResult.stocktakeId"
-        type="success"
-        show-icon
-        :message="`已创建草稿（${importResult.importedItems} 条明细）`"
+      v-if="importResult && importResult.stocktakeId"
+      type="success"
+      show-icon
+      :message="`已创建草稿（${importResult.importedItems} 条明细）`"
     />
     <a-alert
-        v-else-if="importResult"
-        type="error"
-        show-icon
-        :message="`整批未导入：${importResult.totalErrors} / ${importResult.totalRows} 行存在问题，未生成任何草稿`"
-        description="来源行按导出时的盘点清单锁定，不能增删或替换；实盘量不能为空；清单过期或账面已变动时请重新导出。"
+      v-else-if="importResult"
+      type="error"
+      show-icon
+      :message="`整批未导入：${importResult.totalErrors} / ${importResult.totalRows} 行存在问题，未生成任何草稿`"
+      description="来源行按导出时的盘点清单锁定，不能增删或替换；实盘量不能为空；清单过期或账面已变动时请重新导出。"
     />
     <a-table
-        v-if="importResult && importResult.errors.length"
-        style="margin-top: 12px"
-        size="small"
-        :data-source="importResult.errors"
-        :columns="importErrorColumns"
-        :row-key="(_r: unknown, i: number) => i"
-        :pagination="false"
-        :scroll="{ y: 320 }"
+      v-if="importResult && importResult.errors.length"
+      style="margin-top: 12px"
+      size="small"
+      :data-source="importResult.errors"
+      :columns="importErrorColumns"
+      :row-key="(_r: unknown, i: number) => i"
+      :pagination="false"
+      :scroll="{y: 320}"
     />
     <template #footer>
       <a-button type="primary" @click="importResultOpen = false">知道了</a-button>
@@ -247,16 +200,8 @@ import {inventoryStocktakeApi} from '/@/api/business/scm/inventory-stocktake-api
 import {inventoryBalanceApi} from '/@/api/business/scm/inventory-balance-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {
-  SCM_INVENTORY_STOCKTAKE_STATUS_ENUM,
-  SCM_INVENTORY_TABLE_ID,
-} from '/@/constants/business/scm/inventory-const';
-import type {
-  InventoryStocktake,
-  InventoryStocktakeAdd,
-  InventoryStocktakeQuery,
-  StocktakeImportResult,
-} from './inventory-types';
+import {SCM_INVENTORY_STOCKTAKE_STATUS_ENUM, SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
+import type {InventoryStocktake, InventoryStocktakeAdd, InventoryStocktakeQuery, StocktakeImportResult} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {fixed4} from '../common/scm-fixed';
 import {resolveStocktakeCopyUnits, singleWarehouseDefault} from './inventory-model';
@@ -484,10 +429,13 @@ async function openCopy(record: InventoryStocktake) {
     // 读当前余额：只为取「当前记账单位」并校验 SKU 仍存在；账面量绝不作为实盘量填入。
     // 分页口径在 inventory-model 的 resolveStocktakeCopyUnits 里（后端 @Max(100) 会拒掉更大的
     // pageSize），因此这里不放宽通用查询上限来喂本页面。
-    const {unitBySku} = await resolveStocktakeCopyUnits(sourceItems.map((i) => i.skuId), async (pageNum, pageSize) => {
-      const bal = await inventoryBalanceApi.query({warehouseId: whId, pageNum, pageSize});
-      return bal.data.list;
-    });
+    const {unitBySku} = await resolveStocktakeCopyUnits(
+      sourceItems.map((i) => i.skuId),
+      async (pageNum, pageSize) => {
+        const bal = await inventoryBalanceApi.query({warehouseId: whId, pageNum, pageSize});
+        return bal.data.list;
+      }
+    );
     const items: EditableItem[] = [];
     for (const i of sourceItems) {
       const key = String(i.skuId);

@@ -6,25 +6,24 @@
   <a-form class="smart-query-form" v-privilege="'support:helpDoc:query'">
     <a-row class="smart-query-form-row">
       <a-form-item label="关键字" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="标题、作者"/>
+        <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="标题、作者" />
       </a-form-item>
 
       <a-form-item label="创建时间" class="smart-query-form-item">
-        <a-range-picker :presets="defaultTimeRanges" v-model:value="createDate" @change="createDateChange"
-                        style="width: 220px"/>
+        <a-range-picker :presets="defaultTimeRanges" v-model:value="createDate" @change="createDateChange" style="width: 220px" />
       </a-form-item>
 
       <a-form-item class="smart-query-form-item smart-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="onReload">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -38,40 +37,34 @@
       <div class="smart-table-operate-block">
         <a-button type="primary" @click="addOrUpdate()" v-privilege="'support:helpDoc:add'">
           <template #icon>
-            <PlusOutlined/>
+            <PlusOutlined />
           </template>
           新建
         </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator v-model="tableColumns" :tableId="TABLE_ID_CONST.SUPPORT.HELP_DOC" :refresh="queryHelpDocList"/>
+        <TableOperator v-model="tableColumns" :tableId="TABLE_ID_CONST.SUPPORT.HELP_DOC" :refresh="queryHelpDocList" />
       </div>
     </a-row>
 
     <a-table
-        rowKey="helpDocId"
-        :columns="tableColumns"
-        :scroll="{ x: tableColumnsWidth(tableColumns) }"
-        :dataSource="tableData"
-        :pagination="false"
-        :loading="tableLoading"
-        size="small"
-        bordered
+      rowKey="helpDocId"
+      :columns="tableColumns"
+      :scroll="{x: tableColumnsWidth(tableColumns)}"
+      :dataSource="tableData"
+      :pagination="false"
+      :loading="tableLoading"
+      size="small"
+      bordered
     >
-      <template #bodyCell="{ column, record }">
+      <template #bodyCell="{column, record}">
         <template v-if="column.dataIndex === 'title'">
-          <router-link target="_blank" :to="{ path: '/help-doc/detail', query: { helpDocId: record.helpDocId } }">{{
-              record.title
-            }}
-          </router-link>
+          <router-link target="_blank" :to="{path: '/help-doc/detail', query: {helpDocId: record.helpDocId}}">{{ record.title }} </router-link>
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate">
-            <a-button type="link" @click="addOrUpdate(record.helpDocId)" v-privilege="'support:helpDoc:update'">编辑
-            </a-button>
-            <a-button type="link" danger @click="onDelete(record.helpDocId)" v-privilege="'support:helpDoc:delete'">
-              删除
-            </a-button>
+            <a-button type="link" @click="addOrUpdate(record.helpDocId)" v-privilege="'support:helpDoc:update'">编辑 </a-button>
+            <a-button type="link" danger @click="onDelete(record.helpDocId)" v-privilege="'support:helpDoc:delete'"> 删除 </a-button>
           </div>
         </template>
       </template>
@@ -79,21 +72,21 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="queryHelpDocList"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="queryHelpDocList"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-card>
 
-  <HelpDocFormDrawer ref="helpDocFormDrawerRef" @reloadList="queryHelpDocList"/>
+  <HelpDocFormDrawer ref="helpDocFormDrawerRef" @reloadList="queryHelpDocList" />
 </template>
 
 <script setup lang="ts">
@@ -262,12 +255,12 @@ async function deleteHelpDoc(helpDocId) {
 }
 
 watch(
-    () => props.helpDocCatalogId,
-    () => {
-      queryForm.helpDocCatalogId = props.helpDocCatalogId;
-      onSearch();
-    },
-    {immediate: true}
+  () => props.helpDocCatalogId,
+  () => {
+    queryForm.helpDocCatalogId = props.helpDocCatalogId;
+    onSearch();
+  },
+  {immediate: true}
 );
 </script>
 

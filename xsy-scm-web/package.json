@@ -17,6 +17,8 @@
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint src && npm run lint:e2e",
     "lint:e2e": "eslint \"e2e/**/*.ts\" playwright.config.ts",
+    "format": "prettier --write \"src/**/*.{ts,tsx,vue,js,less,scss,json}\" \"e2e/**/*.ts\" \"e2e-chains/**/*.ts\" \"test/**/*.mjs\" \"*.ts\" \"*.mjs\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,vue,js,less,scss,json}\" \"e2e/**/*.ts\" \"e2e-chains/**/*.ts\" \"test/**/*.mjs\" \"*.ts\" \"*.mjs\"",
     "typecheck:e2e": "tsc --noEmit --project tsconfig.e2e.json",
     "test": "node --experimental-strip-types --test test/*.test.mjs",
     "build": "vite build --mode production --outDir dist-verify --emptyOutDir"

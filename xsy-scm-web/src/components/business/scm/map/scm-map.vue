@@ -1,9 +1,8 @@
 <template>
   <div class="scm-map-frame">
-    <div ref="container" class="scm-map-canvas" role="region"
-         :aria-label="route ? '配送计划路线地图' : '地址选点地图'"/>
+    <div ref="container" class="scm-map-canvas" role="region" :aria-label="route ? '配送计划路线地图' : '地址选点地图'" />
     <div v-if="error || loading" class="scm-map-state">
-      <a-spin v-if="loading" tip="地图加载中"/>
+      <a-spin v-if="loading" tip="地图加载中" />
       <a-result v-else status="info" :title="error">
         <template #extra>
           <a-button v-if="mapConfigured()" @click="initialize">重新加载</a-button>
@@ -17,8 +16,8 @@ import {onBeforeUnmount, onMounted, ref, watch} from 'vue';
 import {createMap, mapConfigured} from './map-provider';
 import type {MapPoint, RouteMapStatus, ScmLocation} from './types';
 
-const props = defineProps<{ points: MapPoint[]; route?: boolean; pickable?: boolean }>();
-const emit = defineEmits<{ pick: [ScmLocation]; 'route-status': [RouteMapStatus] }>();
+const props = defineProps<{points: MapPoint[]; route?: boolean; pickable?: boolean}>();
+const emit = defineEmits<{pick: [ScmLocation]; 'route-status': [RouteMapStatus]}>();
 const container = ref<HTMLElement>();
 const loading = ref(false);
 const error = ref('');
@@ -44,10 +43,8 @@ async function initialize() {
   error.value = '';
   loading.value = true;
   try {
-    const result = await createMap(
-        container.value!,
-        props.pickable ? (point) => emit('pick', point) : undefined,
-        (status) => emit('route-status', status)
+    const result = await createMap(container.value!, props.pickable ? (point) => emit('pick', point) : undefined, (status) =>
+      emit('route-status', status)
     );
     if (disposed || current !== generation) {
       result.destroy();

@@ -6,29 +6,28 @@
   <a-form class="smart-query-form" v-privilege="'support:loginLog:query'" ref="queryFormRef">
     <a-row class="smart-query-form-row">
       <a-form-item label="用户名称" class="smart-query-form-item">
-        <a-input style="width: 300px" v-model:value="queryForm.userName" placeholder="用户名称"/>
+        <a-input style="width: 300px" v-model:value="queryForm.userName" placeholder="用户名称" />
       </a-form-item>
 
       <a-form-item label="用户IP" class="smart-query-form-item">
-        <a-input style="width: 120px" v-model:value="queryForm.ip" placeholder="IP"/>
+        <a-input style="width: 120px" v-model:value="queryForm.ip" placeholder="IP" />
       </a-form-item>
 
       <a-form-item label="时间" class="smart-query-form-item">
-        <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange"
-                        style="width: 240px"/>
+        <a-range-picker @change="changeCreateDate" v-model:value="createDateRange" :presets="defaultChooseTimeRange" style="width: 240px" />
       </a-form-item>
 
       <a-form-item class="smart-query-form-item smart-margin-left10">
         <a-button-group>
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="resetQuery">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -39,20 +38,19 @@
 
   <a-card size="small" :bordered="false" :hoverable="true">
     <a-row justify="end" ref="tableOperatorRef">
-      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.LOGIN_LOG"
-                     :refresh="ajaxQuery"/>
+      <TableOperator class="smart-margin-bottom5" v-model="columns" :tableId="TABLE_ID_CONST.SUPPORT.LOGIN_LOG" :refresh="ajaxQuery" />
     </a-row>
     <a-table
-        size="small"
-        :dataSource="tableData"
-        :columns="columns"
-        bordered
-        rowKey="loginLogId"
-        :pagination="false"
-        :loading="tableLoading"
-        :scroll="{ y: scrollY }"
+      size="small"
+      :dataSource="tableData"
+      :columns="columns"
+      bordered
+      rowKey="loginLogId"
+      :pagination="false"
+      :loading="tableLoading"
+      :scroll="{y: scrollY}"
     >
-      <template #bodyCell="{ text, record, column }">
+      <template #bodyCell="{text, record, column}">
         <template v-if="column.dataIndex === 'loginResult'">
           <template v-if="text === LOGIN_RESULT_ENUM.LOGIN_SUCCESS.value">
             <a-tag color="success">登录成功</a-tag>
@@ -77,16 +75,16 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="ajaxQuery"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="ajaxQuery"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-card>

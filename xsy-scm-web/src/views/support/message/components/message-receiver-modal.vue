@@ -1,16 +1,14 @@
 <template>
-  <a-modal v-model:open="visible" title="推送人" width="1100px" ok-text="确定" cancel-text="取消" @ok="onSubmit"
-           @cancel="onClose" :zIndex="9999">
+  <a-modal v-model:open="visible" title="推送人" width="1100px" ok-text="确定" cancel-text="取消" @ok="onSubmit" @cancel="onClose" :zIndex="9999">
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键词搜索" class="smart-query-form-item">
-          <a-input v-model:value="queryParam.searchWord" :style="{ width: '250px' }" placeholder="请输入姓名"
-                   @change="selectSearchWord"/>
+          <a-input v-model:value="queryParam.searchWord" :style="{width: '250px'}" placeholder="请输入姓名" @change="selectSearchWord" />
         </a-form-item>
         <a-form-item class="smart-query-form-item">
           <a-button type="primary" @click="searchQuery">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
@@ -18,7 +16,7 @@
         <a-form-item class="smart-query-form-item">
           <a-button @click="searchReset">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -26,13 +24,13 @@
       </a-row>
     </a-form>
     <a-table
-        rowKey="employeeId"
-        :loading="tableLoading"
-        :columns="columns"
-        :data-source="tableData"
-        bordered
-        :pagination="false"
-        :row-selection="{
+      rowKey="employeeId"
+      :loading="tableLoading"
+      :columns="columns"
+      :data-source="tableData"
+      bordered
+      :pagination="false"
+      :row-selection="{
         selectedRowKeys: selectedRowKeyList,
         onChange: onSelectChange,
       }"
@@ -40,16 +38,16 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryParam.pageSize"
-          v-model:current="queryParam.pageNum"
-          v-model:pageSize="queryParam.pageSize"
-          :total="total"
-          @change="queryList"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryParam.pageSize"
+        v-model:current="queryParam.pageNum"
+        v-model:pageSize="queryParam.pageSize"
+        :total="total"
+        @change="queryList"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-modal>

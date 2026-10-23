@@ -13,16 +13,16 @@
 <script setup lang="ts">
 /** 报表指标卡只显示调用方格式化的金额和数量，不重新处理定点数。当前时点的指标须标注时间，避免与区间合计混淆。 */
 defineProps<{
-    label: string;
-    value: string;
-    /** 第二行说明文本，如「截至 2026-09-23 18:20:31」。 */
-    sub?: string;
-    /** 数据不完整的提示，如「已跳过 3 行无成本流水」。 */
-    warning?: string;
-    /** 时点值标记。 */
-    currentPoint?: boolean;
-    /** 数值语义色：danger 用于逾期合计这类必须第一眼看到的坏消息；颜色之外标签仍说明含义。 */
-    tone?: 'danger';
+  label: string;
+  value: string;
+  /** 第二行说明文本，如「截至 2026-09-23 18:20:31」。 */
+  sub?: string;
+  /** 数据不完整的提示，如「已跳过 3 行无成本流水」。 */
+  warning?: string;
+  /** 时点值标记。 */
+  currentPoint?: boolean;
+  /** 数值语义色：danger 用于逾期合计这类必须第一眼看到的坏消息；颜色之外标签仍说明含义。 */
+  tone?: 'danger';
 }>();
 </script>
 

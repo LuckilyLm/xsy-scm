@@ -21,7 +21,7 @@
     <a-card size="small" :bordered="false">
       <a-row class="smart-table-btn-block" justify="space-between" align="middle">
         <a-button v-privilege="'scm:customer:type:add'" type="primary" @click="modal?.open()">新增客户类型</a-button>
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER_TYPE" :refresh="load"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_CUSTOMER_TYPE" :refresh="load" />
       </a-row>
       <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
         <template #action>
@@ -29,24 +29,22 @@
         </template>
       </a-alert>
       <a-table
-          :data-source="rows"
-          :columns="columns"
-          row-key="typeId"
-          :loading="loading"
-          :pagination="false"
-          size="small"
-          bordered
-          :scroll="{ x: scmColumnsWidth(columns) }"
-          @change="sortChanged"
+        :data-source="rows"
+        :columns="columns"
+        row-key="typeId"
+        :loading="loading"
+        :pagination="false"
+        size="small"
+        bordered
+        :scroll="{x: scmColumnsWidth(columns)}"
+        @change="sortChanged"
       >
-        <template #bodyCell="{ column, record }">
+        <template #bodyCell="{column, record}">
           <a-tag v-if="column.dataIndex === 'status'" :color="record.status === 'ENABLED' ? 'green' : 'default'">
             {{ statusText(record.status) }}
           </a-tag>
           <a-space v-else-if="column.dataIndex === 'action'" :size="0" class="smart-table-operate scm-table-actions">
-            <a-button v-privilege="'scm:customer:type:update'" type="link" size="small" @click="modal?.open(record)">
-              编辑
-            </a-button>
+            <a-button v-privilege="'scm:customer:type:update'" type="link" size="small" @click="modal?.open(record)"> 编辑 </a-button>
             <a-popconfirm title="确认删除此客户类型？" @confirm="remove(record)">
               <a-button v-privilege="'scm:customer:type:delete'" type="link" danger size="small">删除</a-button>
             </a-popconfirm>
@@ -55,17 +53,17 @@
       </a-table>
       <div class="smart-query-table-page">
         <a-pagination
-            v-model:current="filters.pageNum"
-            v-model:page-size="filters.pageSize"
-            :total="total"
-            show-size-changer
-            :show-total="(n: number) => `共 ${n} 条`"
-            @change="load"
+          v-model:current="filters.pageNum"
+          v-model:page-size="filters.pageSize"
+          :total="total"
+          show-size-changer
+          :show-total="(n: number) => `共 ${n} 条`"
+          @change="load"
         />
       </div>
     </a-card>
 
-    <CustomerTypeModal ref="modal" @saved="load"/>
+    <CustomerTypeModal ref="modal" @saved="load" />
   </section>
 </template>
 

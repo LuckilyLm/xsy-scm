@@ -8,41 +8,39 @@
     <div class="header">
       <div>
         关键字：
-        <a-input style="width: 250px" v-model:value="queryForm.keywords" placeholder="姓名/手机号/登录账号"/>
+        <a-input style="width: 250px" v-model:value="queryForm.keywords" placeholder="姓名/手机号/登录账号" />
         <a-button class="button-style" v-if="selectRoleId" type="primary" @click="onSearch">搜索</a-button>
-        <a-button class="button-style" v-if="selectRoleId" type="default" @click="resetQueryRoleEmployee">重置
-        </a-button>
+        <a-button class="button-style" v-if="selectRoleId" type="default" @click="resetQueryRoleEmployee">重置 </a-button>
       </div>
 
       <div>
-        <a-button class="button-style" v-if="selectRoleId" type="primary" @click="addRoleEmployee"
-                  v-privilege="'system:role:employee:add'"
-        >添加员工
+        <a-button class="button-style" v-if="selectRoleId" type="primary" @click="addRoleEmployee" v-privilege="'system:role:employee:add'"
+          >添加员工
         </a-button>
         <a-button
-            class="button-style"
-            v-if="selectRoleId"
-            type="primary"
-            danger
-            @click="batchDelete"
-            v-privilege="'system:role:employee:batch:delete'"
-        >批量移除
+          class="button-style"
+          v-if="selectRoleId"
+          type="primary"
+          danger
+          @click="batchDelete"
+          v-privilege="'system:role:employee:batch:delete'"
+          >批量移除
         </a-button>
       </div>
     </div>
 
     <a-table
-        :loading="tableLoading"
-        :dataSource="tableData"
-        :columns="columns"
-        :pagination="false"
-        :scroll="{ y: 400 }"
-        rowKey="employeeId"
-        :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange }"
-        size="small"
-        bordered
+      :loading="tableLoading"
+      :dataSource="tableData"
+      :columns="columns"
+      :pagination="false"
+      :scroll="{y: 400}"
+      rowKey="employeeId"
+      :row-selection="{selectedRowKeys: selectedRowKeyList, onChange: onSelectChange}"
+      size="small"
+      bordered
     >
-      <template #bodyCell="{ text, record, column }">
+      <template #bodyCell="{text, record, column}">
         <template v-if="column.dataIndex === 'disabledFlag'">
           <a-tag :color="text ? 'error' : 'processing'">{{ text ? '禁用' : '启用' }}</a-tag>
         </template>
@@ -56,19 +54,19 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="queryForm.pageSize"
-          v-model:current="queryForm.pageNum"
-          v-model:pageSize="queryForm.pageSize"
-          :total="total"
-          @change="queryRoleEmployee"
-          :show-total="showTableTotal"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="queryForm.pageSize"
+        v-model:current="queryForm.pageNum"
+        v-model:pageSize="queryForm.pageSize"
+        :total="total"
+        @change="queryRoleEmployee"
+        :show-total="showTableTotal"
       />
     </div>
-    <EmployeeTableSelectModal ref="selectEmployeeModal" @selectData="selectData"/>
+    <EmployeeTableSelectModal ref="selectEmployeeModal" @selectData="selectData" />
   </div>
 </template>
 <script setup lang="ts">
@@ -86,8 +84,8 @@ let selectRoleId = inject('selectRoleId');
 
 // ----------------------- 员工列表：显示和搜索 ------------------------
 watch(
-    () => selectRoleId.value,
-    () => queryRoleEmployee()
+  () => selectRoleId.value,
+  () => queryRoleEmployee()
 );
 
 onMounted(queryRoleEmployee);
@@ -155,7 +153,8 @@ const columns = reactive([
   },
   {
     title: '操作',
-    dataIndex: 'operate', align: 'center',
+    dataIndex: 'operate',
+    align: 'center',
     width: 60,
   },
 ]);
@@ -211,8 +210,7 @@ async function deleteEmployeeRole(employeeId) {
       }
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 
@@ -254,8 +252,7 @@ function batchDelete() {
       }
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 }
 </script>

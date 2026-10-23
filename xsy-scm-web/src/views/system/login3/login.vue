@@ -4,14 +4,16 @@
   *
 -->
 <template>
-  <main class="xsy-login" :style="{
-    '--login-background-image': `url('${harvestMorning}')`,
-    '--login-mobile-background-image': `url('${harvestLandscape}')`,
-  }">
-
+  <main
+    class="xsy-login"
+    :style="{
+      '--login-background-image': `url('${harvestMorning}')`,
+      '--login-mobile-background-image': `url('${harvestLandscape}')`,
+    }"
+  >
     <section class="xsy-login__shell">
       <aside class="xsy-login__brand">
-        <img class="xsy-login__logo" :src="logoImg" alt="鲜蔬园智链"/>
+        <img class="xsy-login__logo" :src="logoImg" alt="鲜蔬园智链" />
 
         <div class="xsy-login__brand-copy">
           <h1 class="xsy-login__headline">鲜蔬园智链</h1>
@@ -21,26 +23,26 @@
         <ul class="xsy-login__features">
           <li class="xsy-login__feature">
             <span class="xsy-login__feature-badge">
-              <EnvironmentOutlined class="xsy-login__feature-icon"/>
+              <EnvironmentOutlined class="xsy-login__feature-icon" />
             </span>
             <span>新鲜高效</span>
           </li>
           <li class="xsy-login__feature">
-            <span class="xsy-login__feature-badge"><LinkOutlined class="xsy-login__feature-icon"/></span>
+            <span class="xsy-login__feature-badge"><LinkOutlined class="xsy-login__feature-icon" /></span>
             <span>全链协同</span>
           </li>
           <li class="xsy-login__feature">
-            <span class="xsy-login__feature-badge"><BarChartOutlined class="xsy-login__feature-icon"/></span>
+            <span class="xsy-login__feature-badge"><BarChartOutlined class="xsy-login__feature-icon" /></span>
             <span>数据驱动</span>
           </li>
           <li class="xsy-login__feature">
-            <span class="xsy-login__feature-badge"><SafetyCertificateOutlined class="xsy-login__feature-icon"/></span>
+            <span class="xsy-login__feature-badge"><SafetyCertificateOutlined class="xsy-login__feature-icon" /></span>
             <span>降本增效</span>
           </li>
         </ul>
 
         <div class="xsy-login__visual">
-          <img class="xsy-login__scene" :src="supplyChainScene" alt="商品、供应商、仓库、分拣、配送、客户、财务全链路"/>
+          <img class="xsy-login__scene" :src="supplyChainScene" alt="商品、供应商、仓库、分拣、配送、客户、财务全链路" />
         </div>
       </aside>
 
@@ -52,20 +54,15 @@
 
         <a-form ref="formRef" class="xsy-login__form" layout="vertical" :model="loginForm" :rules="rules">
           <a-form-item name="loginName" label="用户名">
-            <a-input
-                v-model:value.trim="loginForm.loginName"
-                placeholder="请输入用户名"
-                autocomplete="username"
-            >
+            <a-input v-model:value.trim="loginForm.loginName" placeholder="请输入用户名" autocomplete="username">
               <template #prefix>
-                <UserOutlined class="xsy-login__field-icon"/>
+                <UserOutlined class="xsy-login__field-icon" />
               </template>
             </a-input>
           </a-form-item>
           <a-form-item name="emailCode" label="邮箱验证码" v-if="emailCodeShowFlag">
             <a-input-group compact>
-              <a-input style="width: calc(100% - 120px)" v-model:value="loginForm.emailCode" autocomplete="on"
-                       placeholder="请输入邮箱验证码"/>
+              <a-input style="width: calc(100% - 120px)" v-model:value="loginForm.emailCode" autocomplete="on" placeholder="请输入邮箱验证码" />
               <a-button @click="sendSmsCode" class="xsy-login__code-btn" type="primary" :disabled="emailCodeButtonDisabled">
                 {{ emailCodeTips }}
               </a-button>
@@ -73,30 +70,25 @@
           </a-form-item>
           <a-form-item name="password" label="密码">
             <a-input-password
-                v-model:value="loginForm.password"
-                autocomplete="current-password"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="请输入密码"
+              v-model:value="loginForm.password"
+              autocomplete="current-password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="请输入密码"
             >
               <template #prefix>
-                <LockOutlined class="xsy-login__field-icon"/>
+                <LockOutlined class="xsy-login__field-icon" />
               </template>
             </a-input-password>
           </a-form-item>
           <a-form-item name="captchaCode" label="验证码">
             <div class="xsy-login__captcha">
-              <a-input
-                  class="xsy-login__captcha-input"
-                  v-model:value.trim="loginForm.captchaCode"
-                  placeholder="请输入验证码"
-                  autocomplete="off"
-              >
+              <a-input class="xsy-login__captcha-input" v-model:value.trim="loginForm.captchaCode" placeholder="请输入验证码" autocomplete="off">
                 <template #prefix>
-                  <SafetyCertificateOutlined class="xsy-login__field-icon"/>
+                  <SafetyCertificateOutlined class="xsy-login__field-icon" />
                 </template>
               </a-input>
               <a-tooltip title="点击刷新验证码">
-                <img class="xsy-login__captcha-img" :src="captchaBase64Image" alt="登录验证码" @click="getCaptcha"/>
+                <img class="xsy-login__captcha-img" :src="captchaBase64Image" alt="登录验证码" @click="getCaptcha" />
               </a-tooltip>
             </div>
           </a-form-item>
@@ -114,15 +106,8 @@
   </main>
 </template>
 <script setup lang="ts">
-defineOptions({name: "SystemLoginThree"});
-import {
-  BarChartOutlined,
-  EnvironmentOutlined,
-  LinkOutlined,
-  LockOutlined,
-  SafetyCertificateOutlined,
-  UserOutlined,
-} from '@ant-design/icons-vue';
+defineOptions({name: 'SystemLoginThree'});
+import {BarChartOutlined, EnvironmentOutlined, LinkOutlined, LockOutlined, SafetyCertificateOutlined, UserOutlined} from '@ant-design/icons-vue';
 import {message} from 'ant-design-vue';
 import {onMounted, onUnmounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';

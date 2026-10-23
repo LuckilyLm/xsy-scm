@@ -1,9 +1,6 @@
 <!-- 首页欢迎区只保留当前用户、日期和品牌内容；常用业务操作通过侧栏进入，减少首屏重复入口。 -->
 <template>
-  <a-card
-    class="home-welcome"
-    :bordered="false"
-    :style="{backgroundImage: `url('${homeAsset('banner/home-hero-harvest.webp')}')`}">
+  <a-card class="home-welcome" :bordered="false" :style="{backgroundImage: `url('${homeAsset('banner/home-hero-harvest.webp')}')`}">
     <div class="home-welcome__row">
       <div class="home-welcome__text">
         <div class="home-welcome__copy">
@@ -71,12 +68,14 @@ const dayInfo = computed(() => {
   &::before {
     position: absolute;
     inset: 0;
-    background: linear-gradient(94deg,
+    background: linear-gradient(
+      94deg,
       rgba(244, 255, 250, 0.98) 0%,
       rgba(244, 255, 250, 0.95) 34%,
       rgba(244, 255, 250, 0.72) 52%,
       rgba(244, 255, 250, 0.18) 74%,
-      rgba(244, 255, 250, 0) 100%);
+      rgba(244, 255, 250, 0) 100%
+    );
     content: '';
     pointer-events: none;
   }
@@ -128,10 +127,7 @@ const dayInfo = computed(() => {
     background-position: 68% center;
 
     &::before {
-      background: linear-gradient(180deg,
-        rgba(244, 255, 250, 0.98) 0%,
-        rgba(244, 255, 250, 0.94) 56%,
-        rgba(244, 255, 250, 0.6) 100%);
+      background: linear-gradient(180deg, rgba(244, 255, 250, 0.98) 0%, rgba(244, 255, 250, 0.94) 56%, rgba(244, 255, 250, 0.6) 100%);
     }
 
     :deep(.ant-card-body) {

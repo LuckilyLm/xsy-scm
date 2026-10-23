@@ -1,25 +1,24 @@
 <!--
   * 通知  可见范围 选择员工
-  * 
+  *
 -->
 <template>
   <div class="wrapper">
     <div class="sider-left">
-      <a-tree :tree-data="treeData" :fieldNames="{ title: 'name' }" :selectable="false"
-              v-model:expandedKeys="expandedKeys">
-        <template #switcherIcon="{ switcherCls }">
-          <caret-down-outlined :class="switcherCls"/>
+      <a-tree :tree-data="treeData" :fieldNames="{title: 'name'}" :selectable="false" v-model:expandedKeys="expandedKeys">
+        <template #switcherIcon="{switcherCls}">
+          <caret-down-outlined :class="switcherCls" />
         </template>
-        <template #title="{ name, id, dataType }">
-          <div class="list-item" :class="{ active: checkExists(id) }">
+        <template #title="{name, id, dataType}">
+          <div class="list-item" :class="{active: checkExists(id)}">
             <div class="list-item-title">
-              <user-outlined v-if="dataType === NOTICE_VISIBLE_RANGE_DATA_TYPE_ENUM.EMPLOYEE.value"/>
+              <user-outlined v-if="dataType === NOTICE_VISIBLE_RANGE_DATA_TYPE_ENUM.EMPLOYEE.value" />
               {{ name }}
             </div>
             <check-circle-filled
-                v-if="dataType === NOTICE_VISIBLE_RANGE_DATA_TYPE_ENUM.EMPLOYEE.value"
-                class="check-icon-style"
-                @click="onSelectAdd(name, id, dataType)"
+              v-if="dataType === NOTICE_VISIBLE_RANGE_DATA_TYPE_ENUM.EMPLOYEE.value"
+              class="check-icon-style"
+              @click="onSelectAdd(name, id, dataType)"
             />
           </div>
         </template>
@@ -29,7 +28,7 @@
       <div class="selected-list">
         <div class="list-item" v-for="(item, index) in selectedList" :key="item.id">
           <div class="list-item-title">{{ item.dataName }}</div>
-          <close-circle-two-tone @click="onRemove(index)"/>
+          <close-circle-two-tone @click="onRemove(index)" />
         </div>
       </div>
     </div>
@@ -88,18 +87,18 @@ function buildDepartmentEmployeeTree(departmentTree, employeeList) {
     department.key = 'department_' + department.departmentId;
     department.dataType = NOTICE_VISIBLE_RANGE_DATA_TYPE_ENUM.DEPARTMENT.value;
     let employeeChildren = employeeList
-        .filter((e) => e.departmentId === department.departmentId)
-        .map((e) =>
-            Object.assign(
-                {},
-                {
-                  id: e.employeeId,
-                  key: 'employee_' + e.employeeId,
-                  name: e.actualName,
-                  dataType: NOTICE_VISIBLE_RANGE_DATA_TYPE_ENUM.EMPLOYEE.value,
-                }
-            )
-        );
+      .filter((e) => e.departmentId === department.departmentId)
+      .map((e) =>
+        Object.assign(
+          {},
+          {
+            id: e.employeeId,
+            key: 'employee_' + e.employeeId,
+            name: e.actualName,
+            dataType: NOTICE_VISIBLE_RANGE_DATA_TYPE_ENUM.EMPLOYEE.value,
+          }
+        )
+      );
     if (!department.children) {
       department.children = [];
     }
@@ -124,11 +123,11 @@ const selectedIds = computed(() => {
 });
 
 watch(
-    () => props.employeeList,
-    (newVal) => {
-      selectedList.value = newVal;
-    },
-    {immediate: true}
+  () => props.employeeList,
+  (newVal) => {
+    selectedList.value = newVal;
+  },
+  {immediate: true}
 );
 
 // 检查是否已选

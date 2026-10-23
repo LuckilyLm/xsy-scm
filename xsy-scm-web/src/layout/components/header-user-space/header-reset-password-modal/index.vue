@@ -4,15 +4,15 @@
 -->
 <template>
   <a-modal :open="visible" title="修改密码" ok-text="确认" cancel-text="取消" @ok="updatePwd" @cancel="cancelModal">
-    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 5 }">
+    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{span: 5}">
       <a-form-item label="原密码" name="oldPassword">
-        <a-input v-model:value.trim="form.oldPassword" type="password" placeholder="请输入原密码"/>
+        <a-input v-model:value.trim="form.oldPassword" type="password" placeholder="请输入原密码" />
       </a-form-item>
       <a-form-item label="新密码" name="newPassword" :help="tips">
-        <a-input v-model:value.trim="form.newPassword" type="password" placeholder="请输入新密码"/>
+        <a-input v-model:value.trim="form.newPassword" type="password" placeholder="请输入新密码" />
       </a-form-item>
       <a-form-item label="确认密码" name="confirmPwd" :help="tips">
-        <a-input v-model:value.trim="form.confirmPwd" type="password" placeholder="请输入确认密码"/>
+        <a-input v-model:value.trim="form.confirmPwd" type="password" placeholder="请输入确认密码" />
       </a-form-item>
     </a-form>
   </a-modal>
@@ -45,27 +45,27 @@ let form = reactive({
 
 async function updatePwd() {
   formRef.value
-      .validate()
-      .then(async () => {
-        if (form.newPassword != form.confirmPwd) {
-          message.error('新密码与确认密码不一致');
-          return;
-        }
-        SmartLoading.show();
-        try {
-          await employeeApi.updateEmployeePassword(form);
-          message.success('修改成功');
-          visible.value = false;
-        } catch (error) {
-          smartSentry.captureError(error);
-        } finally {
-          SmartLoading.hide();
-        }
-      })
-      .catch((error) => {
-        console.log('error', error);
-        message.error('参数验证错误，请仔细填写表单数据!');
-      });
+    .validate()
+    .then(async () => {
+      if (form.newPassword != form.confirmPwd) {
+        message.error('新密码与确认密码不一致');
+        return;
+      }
+      SmartLoading.show();
+      try {
+        await employeeApi.updateEmployeePassword(form);
+        message.success('修改成功');
+        visible.value = false;
+      } catch (error) {
+        smartSentry.captureError(error);
+      } finally {
+        SmartLoading.hide();
+      }
+    })
+    .catch((error) => {
+      console.log('error', error);
+      message.error('参数验证错误，请仔细填写表单数据!');
+    });
 }
 
 function showModal() {

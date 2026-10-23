@@ -4,7 +4,7 @@
       <a-popover>
         <template #content>
           {{ text }}
-          <SmartCopyIcon :value="text"/>
+          <SmartCopyIcon :value="text" />
         </template>
         <div>
           <slot>

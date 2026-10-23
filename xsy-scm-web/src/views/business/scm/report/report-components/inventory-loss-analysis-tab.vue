@@ -1,39 +1,31 @@
 <template>
-  <a-alert v-if="canViewCost && (summary?.costMissingCount ?? 0) > 0" type="warning" show-icon style="margin-bottom: 12px"
-           :message="`有 ${summary?.costMissingCount} 条损耗流水缺失成本；相关金额和趋势点显示为 —，不以 0 或已知部分代替完整金额`"/>
+  <a-alert
+    v-if="canViewCost && (summary?.costMissingCount ?? 0) > 0"
+    type="warning"
+    show-icon
+    style="margin-bottom: 12px"
+    :message="`有 ${summary?.costMissingCount} 条损耗流水缺失成本；相关金额和趋势点显示为 —，不以 0 或已知部分代替完整金额`"
+  />
   <a-row :gutter="[12, 12]">
     <a-col v-for="card in lossCards" :key="card.label" :xs="24" :sm="12" :md="8" :lg="6" :xl="4">
-      <ReportKpiCard :label="card.label" :value="card.value" :warning="card.warning"/>
+      <ReportKpiCard :label="card.label" :value="card.value" :warning="card.warning" />
     </a-col>
   </a-row>
   <a-row :gutter="[12, 12]" class="smart-margin-top10">
     <a-col :xs="24" :lg="12">
-      <ReportPieChart
-          title="损耗类型金额占比"
-          :slices="lossPieSlices"
-      />
+      <ReportPieChart title="损耗类型金额占比" :slices="lossPieSlices" />
     </a-col>
     <a-col :xs="24" :lg="12">
-      <ReportLineChart
-          title="已知损耗成本按日趋势（缺失值断线）"
-          :x-axis="lossTrendAxis"
-          :series="lossTrendSeries"
-          empty-text="暂无按日损耗趋势"
-      />
+      <ReportLineChart title="已知损耗成本按日趋势（缺失值断线）" :x-axis="lossTrendAxis" :series="lossTrendSeries" empty-text="暂无按日损耗趋势" />
     </a-col>
   </a-row>
   <a-card size="small" :bordered="false" class="smart-margin-top10">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting"
-                  @click="emit('export')">导出</a-button>
+        <a-button v-privilege="SCM_REPORT_PERMISSION.EXPORT" :loading="exporting" @click="emit('export')">导出</a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_LOSS"
-            :refresh="refresh"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_REPORT_INVENTORY_LOSS" :refresh="refresh" />
       </div>
     </a-row>
     <a-alert v-if="error" :message="error" type="error" show-icon class="smart-margin-bottom10">
@@ -42,18 +34,18 @@
       </template>
     </a-alert>
     <a-table
-        :id="SCM_REPORT_TABLE_ID.INVENTORY_LOSS"
-        size="small"
-        :data-source="rows"
-        :columns="visibleColumns"
-        row-key="movementId"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{emptyText: '暂无损耗明细'}"
-        :scroll="{ x: scmColumnsWidth(visibleColumns) }"
+      :id="SCM_REPORT_TABLE_ID.INVENTORY_LOSS"
+      size="small"
+      :data-source="rows"
+      :columns="visibleColumns"
+      row-key="movementId"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无损耗明细'}"
+      :scroll="{x: scmColumnsWidth(visibleColumns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'lossType'">
           {{ enumDescText(record.lossType, SCM_REPORT_LOSS_TYPE_ENUM) }}
         </template>
@@ -74,13 +66,13 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          :current="pageNum"
-          :page-size="pageSize"
-          :total="total"
-          @change="changePage"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        :current="pageNum"
+        :page-size="pageSize"
+        :total="total"
+        @change="changePage"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
@@ -92,11 +84,7 @@ import {computed, ref} from 'vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import TableOperator from '/@/components/support/table-operator/index.vue';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {
-  SCM_REPORT_LOSS_TYPE_ENUM,
-  SCM_REPORT_PERMISSION,
-  SCM_REPORT_TABLE_ID,
-} from '/@/constants/business/scm/report-const';
+import {SCM_REPORT_LOSS_TYPE_ENUM, SCM_REPORT_PERMISSION, SCM_REPORT_TABLE_ID} from '/@/constants/business/scm/report-const';
 import ReportKpiCard from './report-kpi-card.vue';
 import ReportPieChart from './report-pie-chart.vue';
 import ReportLineChart from './report-line-chart.vue';
@@ -182,11 +170,13 @@ const lossTrendPoints = computed(() => props.summary?.dailyTrend ?? []);
 const lossTrendAxis = computed(() => lossTrendPoints.value.map((point) => point.bizDate ?? ''));
 const lossTrendSeries = computed<ReportChartLine[]>(() => {
   if (!props.canViewCost) return [];
-  return [{
-    name: '损耗金额',
-    data: lossTrendPoints.value.map((point) => chartValue(point.totalLossCostAmount)),
-    texts: lossTrendPoints.value.map((point) => moneyText(point.totalLossCostAmount)),
-  }];
+  return [
+    {
+      name: '损耗金额',
+      data: lossTrendPoints.value.map((point) => chartValue(point.totalLossCostAmount)),
+      texts: lossTrendPoints.value.map((point) => moneyText(point.totalLossCostAmount)),
+    },
+  ];
 });
 
 function refresh() {

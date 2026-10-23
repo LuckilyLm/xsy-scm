@@ -8,13 +8,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="关键词" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" placeholder="活动名称 / 编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.keyword" placeholder="活动名称 / 编码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="类型" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.activityType" :options="typeOptions" allow-clear style="width: 140px"/>
+        <a-select v-model:value="queryForm.activityType" :options="typeOptions" allow-clear style="width: 140px" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.status" :options="statusOptions" allow-clear style="width: 140px"/>
+        <a-select v-model:value="queryForm.status" :options="statusOptions" allow-clear style="width: 140px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -37,51 +37,43 @@
     </a-row>
 
     <a-table
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'activityCode'">
           <span class="scm-mono">{{ record.activityCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'activityName'">{{ record.activityName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'activityType'">
-          <ScmStatusTag :color="typeColorOf(record.activityType)" :label="typeLabelOf(record.activityType)"/>
+          <ScmStatusTag :color="typeColorOf(record.activityType)" :label="typeLabelOf(record.activityType)" />
         </template>
         <template v-else-if="column.dataIndex === 'ruleText'">{{ ruleText(record.rule) }}</template>
         <template v-else-if="column.dataIndex === 'validFrom'">{{ datetime(record.validFrom) }}</template>
         <template v-else-if="column.dataIndex === 'validTo'">{{ datetime(record.validTo) }}</template>
         <template v-else-if="column.dataIndex === 'exclusiveGroup'">{{ record.exclusiveGroup || '—' }}</template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="statusLabelOf(record.status)"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="statusLabelOf(record.status)" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
-            <a-button type="link" size="small" v-privilege="'scm:promotion:activity:edit'"
-                      @click="openEdit(record)">编辑
-            </a-button>
+            <a-button type="link" size="small" v-privilege="'scm:promotion:activity:edit'" @click="openEdit(record)">编辑 </a-button>
             <a-button
-                v-if="record.status !== 'ACTIVE'"
-                type="link"
-                size="small"
-                v-privilege="'scm:promotion:activity:status'"
-                @click="changeStatus(record, 'ACTIVE')"
-            >上线
+              v-if="record.status !== 'ACTIVE'"
+              type="link"
+              size="small"
+              v-privilege="'scm:promotion:activity:status'"
+              @click="changeStatus(record, 'ACTIVE')"
+              >上线
             </a-button>
-            <a-button
-                v-else
-                type="link"
-                size="small"
-                danger
-                v-privilege="'scm:promotion:activity:status'"
-                @click="changeStatus(record, 'STOPPED')"
-            >停用
+            <a-button v-else type="link" size="small" danger v-privilege="'scm:promotion:activity:status'" @click="changeStatus(record, 'STOPPED')"
+              >停用
             </a-button>
           </a-space>
         </template>
@@ -90,24 +82,24 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <a-modal
-      :open="editOpen"
-      :title="form.id ? '编辑活动' : '新建活动'"
-      width="760px"
-      :confirm-loading="saving"
-      @ok="submit"
-      @cancel="editOpen = false"
+    :open="editOpen"
+    :title="form.id ? '编辑活动' : '新建活动'"
+    width="760px"
+    :confirm-loading="saving"
+    @ok="submit"
+    @cancel="editOpen = false"
   >
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical">
       <section class="scm-form-section">
@@ -117,18 +109,17 @@
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="活动编码" name="activityCode">
-              <a-input v-model:value="form.activityCode" :disabled="!!form.id"
-                       placeholder="字母、数字、下划线或连字符"/>
+              <a-input v-model:value="form.activityCode" :disabled="!!form.id" placeholder="字母、数字、下划线或连字符" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="活动名称" name="activityName">
-              <a-input v-model:value="form.activityName"/>
+              <a-input v-model:value="form.activityName" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="活动类型" name="activityType">
-              <a-select v-model:value="form.activityType" :options="typeOptions" @change="onTypeChange"/>
+              <a-select v-model:value="form.activityType" :options="typeOptions" @change="onTypeChange" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -143,14 +134,14 @@
             <a-col :span="12">
               <a-form-item label="折扣率" name="discountPercent">
                 <a-input-number
-                    v-model:value="rule.discountPercent"
-                    :min="0.01"
-                    :max="100"
-                    :precision="2"
-                    :step="1"
-                    addon-after="%"
-                    placeholder="95 即 9.5 折"
-                    style="width: 100%"
+                  v-model:value="rule.discountPercent"
+                  :min="0.01"
+                  :max="100"
+                  :precision="2"
+                  :step="1"
+                  addon-after="%"
+                  placeholder="95 即 9.5 折"
+                  style="width: 100%"
                 />
               </a-form-item>
             </a-col>
@@ -158,23 +149,19 @@
           <template v-else-if="form.activityType === 'SPECIAL_PRICE'">
             <a-col :span="12">
               <a-form-item label="特价商品规格" name="skuId">
-                <SkuSelect
-                    :value="rule.skuId ?? null"
-                    width="100%"
-                    @update:value="onSpecialSkuChange"
-                />
+                <SkuSelect :value="rule.skuId ?? null" width="100%" @update:value="onSpecialSkuChange" />
               </a-form-item>
             </a-col>
             <a-col :span="12">
               <a-form-item label="特价单价" name="specialPrice">
                 <a-input-number
-                    v-model:value="rule.specialPrice"
-                    :min="0"
-                    :precision="4"
-                    :step="0.1"
-                    addon-before="¥"
-                    placeholder="0.0000"
-                    style="width: 100%"
+                  v-model:value="rule.specialPrice"
+                  :min="0"
+                  :precision="4"
+                  :step="0.1"
+                  addon-before="¥"
+                  placeholder="0.0000"
+                  style="width: 100%"
                 />
               </a-form-item>
             </a-col>
@@ -183,49 +170,38 @@
             <a-col :span="12">
               <a-form-item label="门槛金额" name="thresholdAmount">
                 <a-input-number
-                    v-model:value="rule.thresholdAmount"
-                    :min="0"
-                    :precision="4"
-                    :step="1"
-                    addon-before="¥"
-                    placeholder="0.0000"
-                    style="width: 100%"
+                  v-model:value="rule.thresholdAmount"
+                  :min="0"
+                  :precision="4"
+                  :step="1"
+                  addon-before="¥"
+                  placeholder="0.0000"
+                  style="width: 100%"
                 />
               </a-form-item>
             </a-col>
             <a-col v-if="form.activityType === 'FULL_REDUCE'" :span="12">
               <a-form-item label="减免金额" name="reduceAmount">
                 <a-input-number
-                    v-model:value="rule.reduceAmount"
-                    :min="0"
-                    :precision="4"
-                    :step="1"
-                    addon-before="¥"
-                    placeholder="0.0000"
-                    style="width: 100%"
+                  v-model:value="rule.reduceAmount"
+                  :min="0"
+                  :precision="4"
+                  :step="1"
+                  addon-before="¥"
+                  placeholder="0.0000"
+                  style="width: 100%"
                 />
               </a-form-item>
             </a-col>
             <template v-if="form.activityType === 'FULL_GIFT'">
               <a-col :span="12">
                 <a-form-item label="赠送商品规格" name="giftSkuId">
-                  <SkuSelect
-                      :value="rule.giftSkuId ?? null"
-                      width="100%"
-                      @update:value="onGiftSkuChange"
-                  />
+                  <SkuSelect :value="rule.giftSkuId ?? null" width="100%" @update:value="onGiftSkuChange" />
                 </a-form-item>
               </a-col>
               <a-col :span="12">
                 <a-form-item label="赠品数量" name="giftQuantity">
-                  <a-input-number
-                      v-model:value="rule.giftQuantity"
-                      :min="0"
-                      :precision="4"
-                      :step="1"
-                      placeholder="0.0000"
-                      style="width: 100%"
-                  />
+                  <a-input-number v-model:value="rule.giftQuantity" :min="0" :precision="4" :step="1" placeholder="0.0000" style="width: 100%" />
                 </a-form-item>
               </a-col>
             </template>
@@ -240,14 +216,12 @@
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="生效时间" name="validFrom">
-              <a-date-picker v-model:value="form.validFrom" show-time value-format="YYYY-MM-DD HH:mm:ss"
-                             style="width: 100%"/>
+              <a-date-picker v-model:value="form.validFrom" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="失效时间" name="validTo">
-              <a-date-picker v-model:value="form.validTo" show-time value-format="YYYY-MM-DD HH:mm:ss"
-                             style="width: 100%"/>
+              <a-date-picker v-model:value="form.validTo" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -262,14 +236,14 @@
             <a-form-item>
               <template #label>
                 互斥组
-                <ScmFieldHelp label="互斥组" text="同一互斥组内的活动不能叠加"/>
+                <ScmFieldHelp label="互斥组" text="同一互斥组内的活动不能叠加" />
               </template>
-              <a-input v-model:value="form.exclusiveGroup" placeholder="例如 SUMMER"/>
+              <a-input v-model:value="form.exclusiveGroup" placeholder="例如 SUMMER" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="优先级">
-              <a-input-number v-model:value="form.priority" :min="0" :precision="0" style="width: 100%"/>
+              <a-input-number v-model:value="form.priority" :min="0" :precision="0" style="width: 100%" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -280,7 +254,7 @@
           <h3 class="scm-form-section__title">备注</h3>
         </div>
         <a-form-item label="备注">
-          <a-input v-model:value="form.remark"/>
+          <a-input v-model:value="form.remark" />
         </a-form-item>
       </section>
     </a-form>

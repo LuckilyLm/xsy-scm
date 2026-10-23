@@ -1,21 +1,19 @@
 <!--
   * 枚举 radio
-  * 
+  *
   *
 -->
 <template>
   <template v-if="isButton">
     <a-radio-group v-model:value="selectValue" @change="handleChange" button-style="solid" :disabled="disabled">
-      <a-radio-button v-for="item in valueDescList" :key="item.value" :value="item.value"
-                      :disabled="disabledOption.includes(item.value)">
+      <a-radio-button v-for="item in valueDescList" :key="item.value" :value="item.value" :disabled="disabledOption.includes(item.value)">
         {{ item.desc }}
       </a-radio-button>
     </a-radio-group>
   </template>
   <template v-else>
     <a-radio-group v-model:value="selectValue" @change="handleChange" :disabled="disabled">
-      <a-radio v-for="item in valueDescList" :key="item.value" :value="item.value"
-               :disabled="disabledOption.includes(item.value)">
+      <a-radio v-for="item in valueDescList" :key="item.value" :value="item.value" :disabled="disabledOption.includes(item.value)">
         {{ item.desc }}
       </a-radio>
     </a-radio-group>
@@ -68,12 +66,12 @@ onMounted(() => {
 const selectValue = ref(props.value);
 
 watch(
-    () => props.value,
-    (newValue) => {
-      // 如果传入的值是被禁用或被隐藏的选项，则移除该选项
-      selectValue.value = props.disabledOption.includes(newValue) || props.hiddenOption.includes(newValue) ? undefined : newValue;
-    },
-    {immediate: true}
+  () => props.value,
+  (newValue) => {
+    // 如果传入的值是被禁用或被隐藏的选项，则移除该选项
+    selectValue.value = props.disabledOption.includes(newValue) || props.hiddenOption.includes(newValue) ? undefined : newValue;
+  },
+  {immediate: true}
 );
 
 const emit = defineEmits(['update:value', 'change']);

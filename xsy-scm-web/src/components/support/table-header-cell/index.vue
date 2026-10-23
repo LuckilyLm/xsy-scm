@@ -10,32 +10,32 @@
         <template v-if="column.filterOptions">
           <template v-if="column.filterOptions.type === 'input'">
             <a-input-search
-                @change="change('no-search')"
-                v-model:value="modelValue"
-                allowClear
-                :placeholder="column.placeholder || column.title"
-                @search="change"
+              @change="change('no-search')"
+              v-model:value="modelValue"
+              allowClear
+              :placeholder="column.placeholder || column.title"
+              @search="change"
             />
           </template>
           <template v-else-if="column.filterOptions.type === 'date-range'">
             <a-range-picker
-                v-model:value="createDateRange"
-                :ranges="column.filterOptions.ranges ? defaultTimeRanges : []"
-                style="width: 100%"
-                @change="changeCreateDate"
+              v-model:value="createDateRange"
+              :ranges="column.filterOptions.ranges ? defaultTimeRanges : []"
+              style="width: 100%"
+              @change="changeCreateDate"
             />
           </template>
           <template v-else-if="column.filterOptions.type === 'datetime-range'">
             <a-range-picker
-                show-time
-                v-model:value="createDateRange"
-                :ranges="column.filterOptions.ranges ? defaultTimeRanges : []"
-                style="width: 100%"
-                @change="changeCreateDate"
+              show-time
+              v-model:value="createDateRange"
+              :ranges="column.filterOptions.ranges ? defaultTimeRanges : []"
+              style="width: 100%"
+              @change="changeCreateDate"
             />
           </template>
           <template v-else-if="column.filterOptions.type === 'month'">
-            <a-range-picker v-model:value="createDateRange" picker="month" @change="changeCreateDate"/>
+            <a-range-picker v-model:value="createDateRange" picker="month" @change="changeCreateDate" />
           </template>
           <template v-else-if="column.filterOptions.type === 'submit'">
             <div class="smart-table-operate">
@@ -44,18 +44,18 @@
           </template>
           <template v-else>
             <component
-                v-if="componentsKey.includes(column.filterOptions.type)"
-                :is="getComponent(column.filterOptions.type)"
-                width="100%"
-                v-model:value="modelValue"
-                :multiple="column.filterOptions.multiple"
-                :dictCode="column.filterOptions.dictCode"
-                :enumName="column.filterOptions.enumName"
-                :systemConfigKey="column.filterOptions.systemConfigKey"
-                :placeholder="column.placeholder"
-                :leaveFlag="column.filterOptions.leaveFlag"
-                :categoryType="column.filterOptions.categoryType"
-                @change="change"
+              v-if="componentsKey.includes(column.filterOptions.type)"
+              :is="getComponent(column.filterOptions.type)"
+              width="100%"
+              v-model:value="modelValue"
+              :multiple="column.filterOptions.multiple"
+              :dictCode="column.filterOptions.dictCode"
+              :enumName="column.filterOptions.enumName"
+              :systemConfigKey="column.filterOptions.systemConfigKey"
+              :placeholder="column.placeholder"
+              :leaveFlag="column.filterOptions.leaveFlag"
+              :categoryType="column.filterOptions.categoryType"
+              @change="change"
             />
             <div v-else class="error-component">未定义的组件类型</div>
           </template>
@@ -76,8 +76,7 @@ const props = defineProps({
   },
   column: {
     type: Object,
-    default: () => {
-    },
+    default: () => {},
   },
 });
 
@@ -96,18 +95,18 @@ function getComponent(key) {
 }
 
 watch(
-    () => props.value,
-    () => {
-      if (props.column.filterOptions && (props.column.filterOptions.type === 'date-range' || props.column.filterOptions.type === 'datetime-range')) {
-        if (!_.isEmpty(props.value) && props.value.length === 2 && !_.isEmpty(props.value[0]) && !_.isEmpty(props.value[1])) {
-          createDateRange.value = [dayjs(props.value[0]), dayjs(props.value[1])];
-        } else {
-          createDateRange.value = [];
-        }
+  () => props.value,
+  () => {
+    if (props.column.filterOptions && (props.column.filterOptions.type === 'date-range' || props.column.filterOptions.type === 'datetime-range')) {
+      if (!_.isEmpty(props.value) && props.value.length === 2 && !_.isEmpty(props.value[0]) && !_.isEmpty(props.value[1])) {
+        createDateRange.value = [dayjs(props.value[0]), dayjs(props.value[1])];
       } else {
-        modelValue.value = props.value;
+        createDateRange.value = [];
       }
+    } else {
+      modelValue.value = props.value;
     }
+  }
 );
 
 const slots = useSlots();

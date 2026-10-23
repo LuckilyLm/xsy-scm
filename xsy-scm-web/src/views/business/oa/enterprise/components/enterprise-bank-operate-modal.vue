@@ -1,28 +1,27 @@
 <!--
   * 企业 银行 表单
-  * 
+  *
 -->
 <template>
-  <a-modal :open="visible" :title="form.bankId ? '编辑' : '添加'" :width="700" ok-text="确认" cancel-text="取消"
-           @ok="onSubmit" @cancel="onClose">
-    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 19 }">
+  <a-modal :open="visible" :title="form.bankId ? '编辑' : '添加'" :width="700" ok-text="确认" cancel-text="取消" @ok="onSubmit" @cancel="onClose">
+    <a-form ref="formRef" :model="form" :rules="rules" :label-col="{span: 4}" :wrapper-col="{span: 19}">
       <a-form-item label="开户银行" name="bankName">
-        <a-input v-model:value="form.bankName" placeholder="请输入开户银行"/>
+        <a-input v-model:value="form.bankName" placeholder="请输入开户银行" />
       </a-form-item>
       <a-form-item label="账户名称" name="accountName">
-        <a-input v-model:value="form.accountName" placeholder="请输入账户名称"/>
+        <a-input v-model:value="form.accountName" placeholder="请输入账户名称" />
       </a-form-item>
       <a-form-item label="账号" name="accountNumber">
-        <a-input v-model:value="form.accountNumber" placeholder="请输入账号"/>
+        <a-input v-model:value="form.accountNumber" placeholder="请输入账号" />
       </a-form-item>
       <a-form-item label="是否对公" name="businessFlag">
-        <a-switch v-model:checked="businessFlagChecked" @change="businessFlagCheckedChange"/>
+        <a-switch v-model:checked="businessFlagChecked" @change="businessFlagCheckedChange" />
       </a-form-item>
       <a-form-item label="启用状态" name="disabledFlag">
-        <a-switch v-model:checked="enabledChecked" @change="enabledCheckedChange"/>
+        <a-switch v-model:checked="enabledChecked" @change="enabledCheckedChange" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-textarea v-model:value="form.remark" :rows="2"/>
+        <a-textarea v-model:value="form.remark" :rows="2" />
       </a-form-item>
     </a-form>
   </a-modal>
@@ -99,28 +98,28 @@ function enabledCheckedChange(checked) {
 
 function onSubmit() {
   formRef.value
-      .validate()
-      .then(async () => {
-        SmartLoading.show();
-        try {
-          if (form.bankId) {
-            await bankApi.update(form);
-          } else {
-            await bankApi.create(form);
-          }
-          message.success(`${form.bankId ? '修改' : '添加'}成功`);
-          emit('reloadList');
-          onClose();
-        } catch (error) {
-          smartSentry.captureError(error);
-        } finally {
-          SmartLoading.hide();
+    .validate()
+    .then(async () => {
+      SmartLoading.show();
+      try {
+        if (form.bankId) {
+          await bankApi.update(form);
+        } else {
+          await bankApi.create(form);
         }
-      })
-      .catch((error) => {
-        console.log('error', error);
-        message.error('参数验证错误，请仔细填写表单数据!');
-      });
+        message.success(`${form.bankId ? '修改' : '添加'}成功`);
+        emit('reloadList');
+        onClose();
+      } catch (error) {
+        smartSentry.captureError(error);
+      } finally {
+        SmartLoading.hide();
+      }
+    })
+    .catch((error) => {
+      console.log('error', error);
+      message.error('参数验证错误，请仔细填写表单数据!');
+    });
 }
 
 defineExpose({

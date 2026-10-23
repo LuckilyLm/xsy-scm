@@ -2,8 +2,8 @@
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('xl')" @close="close">
     <a-spin :spinning="loading">
-      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
-      <SupplierSkuEditableTable v-model="drafts"/>
+      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
+      <SupplierSkuEditableTable v-model="drafts" />
     </a-spin>
     <template #footer>
       <a-space>
@@ -25,7 +25,7 @@ import type {SkuDraft} from '../supplier-form-model';
 import {supplierError} from '../supplier-errors';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
-const emit = defineEmits<{ saved: [] }>();
+const emit = defineEmits<{saved: []}>();
 
 const visible = ref(false);
 const loading = ref(false);
@@ -79,7 +79,7 @@ async function submit() {
         title: '确认清空关联商品',
         content: `保存后将删除该供应商现有的全部 ${loadedCount.value} 条商品关联。`,
         okText: '确认清空并保存',
-        cancelText: '取消'
+        cancelText: '取消',
       });
     } catch {
       return;

@@ -9,19 +9,13 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="出库单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.outboundNo" placeholder="出库单号" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.outboundNo" placeholder="出库单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px"/>
+        <WarehouseSelect v-model:value="queryForm.warehouseId" :options="warehouses" width="220px" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <a-select
-            v-model:value="queryForm.status"
-            :options="statusOptions"
-            placeholder="全部"
-            allow-clear
-            style="width: 140px"
-        />
+        <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 140px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -41,38 +35,32 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:outbound:add'">
-          新建出库单
-        </a-button>
+        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:outbound:add'"> 新建出库单 </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_OUTBOUND"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_OUTBOUND" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.OUTBOUND"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '暂无出库单' }"
-        :scroll="{ x: scrollX }"
+      :id="SCM_INVENTORY_TABLE_ID.OUTBOUND"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无出库单'}"
+      :scroll="{x: scrollX}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'warehouseCode'">
           <span class="scm-mono">{{ record.warehouseCode || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status" />
         </template>
         <template v-else-if="column.dataIndex === 'confirmedAt'">{{ datetime(record.confirmedAt) }}</template>
         <template v-else-if="column.dataIndex === 'action'">
@@ -81,15 +69,15 @@
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
             <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                size="small"
-                @click="onConfirm(record)"
-                v-privilege="'scm:inventory:outbound:confirm'"
+              v-if="record.status === 'DRAFT'"
+              type="link"
+              size="small"
+              @click="onConfirm(record)"
+              v-privilege="'scm:inventory:outbound:confirm'"
             >
               确认出库
             </a-button>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -98,61 +86,42 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <!-- 新建 / 编辑草稿 -->
-  <a-drawer
-      :open="drawerOpen"
-      :title="form.id ? `编辑出库单 ${form.outboundNo}` : '新建出库单'"
-      :width="scmDrawerWidth('l')"
-      @close="closeDrawer"
-  >
+  <a-drawer :open="drawerOpen" :title="form.id ? `编辑出库单 ${form.outboundNo}` : '新建出库单'" :width="scmDrawerWidth('l')" @close="closeDrawer">
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="出库仓库" name="warehouseId">
-        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px"/>
+        <WarehouseSelect v-model:value="form.warehouseId" :options="warehouses" width="260px" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count/>
+        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count />
       </a-form-item>
       <a-form-item label="出库明细" required>
-        <a-table
-            size="small"
-            :data-source="form.items"
-            :columns="itemColumns"
-            row-key="_key"
-            bordered
-            :pagination="false"
-        >
-          <template #bodyCell="{ record, column, index }">
+        <a-table size="small" :data-source="form.items" :columns="itemColumns" row-key="_key" bordered :pagination="false">
+          <template #bodyCell="{record, column, index}">
             <template v-if="column.dataIndex === 'skuId'">
               <SkuSelect
-                  :value="record.skuId"
-                  :disabled-statuses="[]"
-                  width="260px"
-                  @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
+                :value="record.skuId"
+                :disabled-statuses="[]"
+                width="260px"
+                @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
               />
             </template>
             <template v-else-if="column.dataIndex === 'quantity'">
-              <a-input-number
-                  v-model:value="record.quantity"
-                  :min="0.0001"
-                  :precision="4"
-                  :step="1"
-                  placeholder="0.0000"
-                  style="width: 140px"
-              />
+              <a-input-number v-model:value="record.quantity" :min="0.0001" :precision="4" :step="1" placeholder="0.0000" style="width: 140px" />
             </template>
             <template v-else-if="column.dataIndex === 'remark'">
-              <a-input v-model:value="record.remark" :maxlength="500"/>
+              <a-input v-model:value="record.remark" :maxlength="500" />
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <a-button type="link" size="small" danger @click="removeItem(index)">删除</a-button>
@@ -175,7 +144,7 @@
     <a-descriptions :column="2" bordered size="small">
       <a-descriptions-item label="出库单号">{{ detail.outboundNo }}</a-descriptions-item>
       <a-descriptions-item label="状态">
-        <ScmStatusTag :tone="statusTone(detail.status)" :label="detail.statusDesc || detail.status"/>
+        <ScmStatusTag :tone="statusTone(detail.status)" :label="detail.statusDesc || detail.status" />
       </a-descriptions-item>
       <a-descriptions-item label="仓库">{{ detail.warehouseName || '—' }}</a-descriptions-item>
       <a-descriptions-item label="确认人">{{ detail.operator || '—' }}</a-descriptions-item>
@@ -184,15 +153,15 @@
       <a-descriptions-item label="备注" :span="2">{{ detail.remark || '—' }}</a-descriptions-item>
     </a-descriptions>
     <a-table
-        style="margin-top: 12px"
-        size="small"
-        :data-source="detail.items || []"
-        :columns="detailItemColumns"
-        row-key="id"
-        bordered
-        :pagination="false"
+      style="margin-top: 12px"
+      size="small"
+      :data-source="detail.items || []"
+      :columns="detailItemColumns"
+      row-key="id"
+      bordered
+      :pagination="false"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'sku'">{{ skuMainText(record.specValues, record.skuName) }}</template>
         <template v-else-if="column.dataIndex === 'skuCode'">
           <span class="scm-mono">{{ record.skuCode || '—' }}</span>
@@ -225,15 +194,8 @@ import {inventoryOutboundApi} from '/@/api/business/scm/inventory-outbound-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
 import {deepLinkFilters, type DeepLinkQuery} from '/@/lib/query-deep-link';
-import {
-  SCM_INVENTORY_OUTBOUND_STATUS_ENUM,
-  SCM_INVENTORY_TABLE_ID,
-} from '/@/constants/business/scm/inventory-const';
-import type {
-  InventoryOutbound,
-  InventoryOutboundAdd,
-  InventoryOutboundQuery,
-} from './inventory-types';
+import {SCM_INVENTORY_OUTBOUND_STATUS_ENUM, SCM_INVENTORY_TABLE_ID} from '/@/constants/business/scm/inventory-const';
+import type {InventoryOutbound, InventoryOutboundAdd, InventoryOutboundQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {fixed4} from '../common/scm-fixed';
 import {quantityText, singleWarehouseDefault, skuMainText} from './inventory-model';
@@ -385,13 +347,13 @@ function applyDeepLink(incomingQuery: DeepLinkQuery) {
 }
 
 watch(
-    () => route.query,
-    (incomingQuery) => {
-      // 组件被 keep-alive 缓存时，跳往其他页面不能把别人的 URL 当成本页条件。
-      if (route.name !== outboundRouteName) return;
-      applyDeepLink(incomingQuery);
-      onSearch();
-    }
+  () => route.query,
+  (incomingQuery) => {
+    // 组件被 keep-alive 缓存时，跳往其他页面不能把别人的 URL 当成本页条件。
+    if (route.name !== outboundRouteName) return;
+    applyDeepLink(incomingQuery);
+    onSearch();
+  }
 );
 
 // ------------------------------------------------------------------ 表单

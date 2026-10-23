@@ -2,10 +2,10 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.keyword" @pressEnter="onSearch" allow-clear/>
+        <a-input v-model:value="queryForm.keyword" @pressEnter="onSearch" allow-clear />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_ORDER_REFUND_STATUS_ENUM" v-model:value="queryForm.status" width="160px"/>
+        <SmartEnumSelect enum-name="SCM_ORDER_REFUND_STATUS_ENUM" v-model:value="queryForm.status" width="160px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -14,7 +14,7 @@
         </a-button-group>
       </a-form-item>
       <div class="scm-query-table-tools">
-        <TableOperator v-model="columns" :table-id="604" :refresh="queryData"/>
+        <TableOperator v-model="columns" :table-id="604" :refresh="queryData" />
       </div>
     </a-row>
   </a-form>
@@ -24,48 +24,86 @@
     </template>
   </a-alert>
   <a-card size="small" :bordered="false">
-
-    <a-table id="order-refund-table" size="small" :data-source="tableData" :columns="columns" row-key="refundId"
-             :loading="loading" bordered :pagination="false" :scroll="{ x: scmColumnsWidth(columns) }">
-      <template #bodyCell="{record,column,text}">
-        <template v-if="column.dataIndex==='status'">{{ SCM_ORDER_REFUND_STATUS_ENUM[text]?.desc }}</template>
-        <template v-else-if="['approvedAmount','refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
-        <template v-else-if="column.dataIndex==='balanceReturnedAmount'">
+    <a-table
+      id="order-refund-table"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="refundId"
+      :loading="loading"
+      bordered
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
+    >
+      <template #bodyCell="{record, column, text}">
+        <template v-if="column.dataIndex === 'status'">{{ SCM_ORDER_REFUND_STATUS_ENUM[text]?.desc }}</template>
+        <template v-else-if="['approvedAmount', 'refundAmount'].includes(column.dataIndex)">{{ amount(text) }}</template>
+        <template v-else-if="column.dataIndex === 'balanceReturnedAmount'">
           <template v-if="record.balanceMovementId">
             {{ amount(record.balanceReturnedAmount) }}
-            <a-button type="link" v-privilege="'scm:balance:movement:query'"
-                      @click="movementDetail?.open({movementId: record.balanceMovementId})">流水</a-button>
+            <a-button type="link" v-privilege="'scm:balance:movement:query'" @click="movementDetail?.open({movementId: record.balanceMovementId})"
+              >流水</a-button
+            >
           </template>
           <span v-else>无余额返还记录</span>
         </template>
-        <template v-else-if="column.dataIndex==='action'">
+        <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate scm-table-actions">
-            <a-button type="link" size="small" v-privilege="'scm:order:refund:complete'" v-if="record.status==='PENDING'"
-                      @click="edit(record)">登记退款完成
+            <a-button type="link" size="small" v-privilege="'scm:order:refund:complete'" v-if="record.status === 'PENDING'" @click="edit(record)"
+              >登记退款完成
             </a-button>
-            <a-button v-if="record.status==='COMPLETED' && !record.balanceMovementId" type="link" size="small"
-                      v-privilege="'scm:balance:refund'" @click="openBalanceRefund(record)">返还余额</a-button>
+            <a-button
+              v-if="record.status === 'COMPLETED' && !record.balanceMovementId"
+              type="link"
+              size="small"
+              v-privilege="'scm:balance:refund'"
+              @click="openBalanceRefund(record)"
+              >返还余额</a-button
+            >
           </div>
         </template>
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination show-size-changer show-quick-jumper v-model:current="queryForm.pageNum"
-                    v-model:page-size="queryForm.pageSize" :total="total" @change="queryData"
-                    :show-total="(n:number)=>`共${n}条`"/>
+      <a-pagination
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
+      />
     </div>
   </a-card>
-  <a-modal :open="visible" title="登记退款完成" :confirm-loading="saving" :closable="!saving" :mask-closable="!saving" :keyboard="!saving" @ok="save" @cancel="visible=false">
+  <a-modal
+    :open="visible"
+    title="登记退款完成"
+    :confirm-loading="saving"
+    :closable="!saving"
+    :mask-closable="!saving"
+    :keyboard="!saving"
+    @ok="save"
+    @cancel="visible = false"
+  >
     <p>登记售后退款业务完成。纯余额订单将同时返还原钱包；其他支付方式仍需单独处理资金退款。</p>
     <a-form-item label="外部凭证（可选）">
-      <a-input v-model:value="externalReference" maxlength="128"/>
+      <a-input v-model:value="externalReference" maxlength="128" />
     </a-form-item>
   </a-modal>
-  <a-modal v-model:open="balanceRefundOpen" title="返还原订单余额" :confirm-loading="returning" :closable="!returning" :mask-closable="!returning" :keyboard="!returning" @ok="returnBalance">
+  <a-modal
+    v-model:open="balanceRefundOpen"
+    title="返还原订单余额"
+    :confirm-loading="returning"
+    :closable="!returning"
+    :mask-closable="!returning"
+    :keyboard="!returning"
+    @ok="returnBalance"
+  >
     <p>将退款单 {{ active?.refundNo }} 的 {{ amount(active?.refundAmount) }} 返还至原消费钱包。</p>
     <p>仅支持纯余额订单。已存在渠道或人工退款、混合支付或超过可退本金时，系统会拒绝返还。</p>
   </a-modal>
-  <BalanceMovementDetail ref="movementDetail"/>
+  <BalanceMovementDetail ref="movementDetail" />
 </template>
 <script setup lang="ts">
 import {scmColumnsWidth} from '/@/views/business/scm/common/scm-column';
@@ -81,40 +119,58 @@ import {amount} from './order-form-model';
 import {orderError} from './order-errors';
 import BalanceMovementDetail from '../finance/balance-movement-detail.vue';
 
-const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}), tableData = ref<RefundRow[]>([]), total = ref(0),
-    loading = ref(false), error = ref(''), visible = ref(false), saving = ref(false), active = ref<RefundRow>();
-const balanceRefundOpen = ref(false), returning = ref(false);
+const queryForm = reactive<Query>({pageNum: 1, pageSize: 20}),
+  tableData = ref<RefundRow[]>([]),
+  total = ref(0),
+  loading = ref(false),
+  error = ref(''),
+  visible = ref(false),
+  saving = ref(false),
+  active = ref<RefundRow>();
+const balanceRefundOpen = ref(false),
+  returning = ref(false);
 const movementDetail = ref<InstanceType<typeof BalanceMovementDetail>>();
 let requestId = 0;
 const route = useRoute();
-watch(() => route.query.keyword, (keyword) => {
-  if (typeof keyword === 'string' && keyword.length <= 120) {
-    queryForm.keyword = keyword;
-    queryForm.pageNum = 1;
-    void queryData();
-  }
-}, {immediate: true});
+watch(
+  () => route.query.keyword,
+  (keyword) => {
+    if (typeof keyword === 'string' && keyword.length <= 120) {
+      queryForm.keyword = keyword;
+      queryForm.pageNum = 1;
+      void queryData();
+    }
+  },
+  {immediate: true}
+);
 /** 外部退款凭证可能很长，表格固定宽度并用悬浮提示展示全文；钱包退款的流水入口保留独立操作按钮。 */
-const columns = ref<TableColumnsType<RefundRow>>([{
-  title: '退款单号',
-  dataIndex: 'refundNo',
-  width: 220
-}, {title: '状态', dataIndex: 'status', width: 96, align: 'center'}, {
-  title: '退款金额',
-  dataIndex: 'refundAmount',
-  width: 140
-}, {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200}, {
-  title: '外部凭证',
-  dataIndex: 'externalReference',
-  width: 200,
-  ellipsis: true
-}, {
-  title: '操作',
-  dataIndex: 'action',
-  align: 'center',
-  fixed: 'right',
-  width: 150
-}]);
+const columns = ref<TableColumnsType<RefundRow>>([
+  {
+    title: '退款单号',
+    dataIndex: 'refundNo',
+    width: 220,
+  },
+  {title: '状态', dataIndex: 'status', width: 96, align: 'center'},
+  {
+    title: '退款金额',
+    dataIndex: 'refundAmount',
+    width: 140,
+  },
+  {title: '已返还钱包', dataIndex: 'balanceReturnedAmount', width: 200},
+  {
+    title: '外部凭证',
+    dataIndex: 'externalReference',
+    width: 200,
+    ellipsis: true,
+  },
+  {
+    title: '操作',
+    dataIndex: 'action',
+    align: 'center',
+    fixed: 'right',
+    width: 150,
+  },
+]);
 
 async function queryData() {
   const id = ++requestId;
@@ -163,7 +219,7 @@ async function save() {
     await api.complete({
       refundId: active.value!.refundId,
       version: active.value!.version,
-      externalReference: externalReference.value || null
+      externalReference: externalReference.value || null,
     });
     visible.value = false;
     await queryData();
@@ -176,7 +232,8 @@ async function save() {
 
 function openBalanceRefund(row: RefundRow) {
   if (saving.value || returning.value) return;
-  active.value = row; balanceRefundOpen.value = true;
+  active.value = row;
+  balanceRefundOpen.value = true;
 }
 async function returnBalance() {
   if (returning.value || !active.value) return;
@@ -187,15 +244,18 @@ async function returnBalance() {
     await queryData();
   } catch {
     // 余额退回失败只走全局 toast
+  } finally {
+    returning.value = false;
   }
-  finally { returning.value = false; }
 }
 
 onMounted(() => {
   if (typeof route.query.keyword !== 'string' || route.query.keyword.length > 120) void queryData();
 });
 </script>
-<style scoped>pre {
+<style scoped>
+pre {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}</style>
+}
+</style>

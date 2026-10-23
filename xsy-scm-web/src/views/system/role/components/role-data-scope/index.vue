@@ -6,30 +6,23 @@
 <template>
   <div>
     <div class="btn-group">
-      <a-button class="button-style" type="primary" @click="updateDataScope"
-                v-privilege="'system:role:dataScope:update'"> 保存
-      </a-button>
+      <a-button class="button-style" type="primary" @click="updateDataScope" v-privilege="'system:role:dataScope:update'"> 保存 </a-button>
       <a-button class="button-style" @click="getDataScope"> 刷新</a-button>
     </div>
     <a-row class="header">
       <a-col class="tab-margin" :span="4">业务单据</a-col>
       <a-col class="tab-data" :span="8">查看数据范围</a-col>
-      <a-col class="tab-margin" :span="12"/>
+      <a-col class="tab-margin" :span="12" />
     </a-row>
     <div class="data-container">
-      <a-row class="data" align="middle" justify="center" v-for="(item, index) in dataScopeList"
-             :key="item.dataScopeType">
+      <a-row class="data" align="middle" justify="center" v-for="(item, index) in dataScopeList" :key="item.dataScopeType">
         <a-col class="tab-margin" :span="4">
           {{ item.dataScopeTypeName }}
         </a-col>
         <a-col class="tab-data" :span="8">
           <a-radio-group v-model:value="selectedDataScopeList[index].viewType">
-            <a-radio
-                v-for="scope in item.viewTypeList"
-                :key="`${item.dataScopeType}-${scope.viewType}`"
-                class="radio-style"
-                :value="scope.viewType"
-            >{{ scope.viewTypeName }}
+            <a-radio v-for="scope in item.viewTypeList" :key="`${item.dataScopeType}-${scope.viewType}`" class="radio-style" :value="scope.viewType"
+              >{{ scope.viewTypeName }}
             </a-radio>
           </a-radio-group>
         </a-col>
@@ -60,8 +53,8 @@ let dataScopeList = ref([]);
 let selectedDataScopeList = ref([]);
 
 watch(
-    () => selectRoleId.value,
-    () => getRoleDataScope()
+  () => selectRoleId.value,
+  () => getRoleDataScope()
 );
 
 onMounted(getDataScope);

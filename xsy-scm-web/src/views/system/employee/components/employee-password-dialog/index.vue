@@ -1,6 +1,6 @@
 <!--
   *  员工 修改密码的 显示密码弹窗
-  * 
+  *
 -->
 <template>
   <a-modal v-model:open="visible" :zIndex="9999" :width="500" title="提示" :closable="false" :maskClosable="false">
@@ -11,13 +11,13 @@
     </ul>
     <template #footer>
       <a-button
-          type="primary"
-          class="account-copy"
-          :data-clipboard-text="`登录名：${showLoginName}
+        type="primary"
+        class="account-copy"
+        :data-clipboard-text="`登录名：${showLoginName}
 密码：${showLoginPassword}`"
-          size="middle"
-          @click="copy"
-      >复制密码并关闭
+        size="middle"
+        @click="copy"
+        >复制密码并关闭
       </a-button>
     </template>
   </a-modal>

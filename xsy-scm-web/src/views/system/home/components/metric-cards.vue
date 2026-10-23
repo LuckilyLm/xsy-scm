@@ -1,16 +1,20 @@
 <!-- 首页卡片由后端权限决定显示数量，前端根据容器宽度自适应布局，不假定固定卡片数。 -->
 <template>
   <section class="home-metrics">
-    <region-error v-if="error" :message="error" :min-height="100" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="100" @retry="load" />
     <a-spin v-else :spinning="loading">
-      <a-empty v-if="!loading && rows.length === 0" description="当前账号暂无可查看的指标"/>
-      <a-skeleton v-else-if="loading && rows.length === 0" active :paragraph="{rows: 2}"/>
-      <div v-else class="home-metrics__grid" :class="{'is-single': rows.length === 1}"
-           :style="{
-             '--kpi-columns': Math.min(rows.length || 1, 5),
-             '--kpi-compact-columns': Math.min(rows.length || 1, 3),
-             '--kpi-tablet-columns': Math.min(rows.length || 1, 2),
-           }">
+      <a-empty v-if="!loading && rows.length === 0" description="当前账号暂无可查看的指标" />
+      <a-skeleton v-else-if="loading && rows.length === 0" active :paragraph="{rows: 2}" />
+      <div
+        v-else
+        class="home-metrics__grid"
+        :class="{'is-single': rows.length === 1}"
+        :style="{
+          '--kpi-columns': Math.min(rows.length || 1, 5),
+          '--kpi-compact-columns': Math.min(rows.length || 1, 3),
+          '--kpi-tablet-columns': Math.min(rows.length || 1, 2),
+        }"
+      >
         <a-card
           v-for="row in rows"
           :key="row.key"
@@ -25,7 +29,7 @@
           @click="goto(row.route)"
           @keydown.enter="goto(row.route)"
         >
-          <span class="home-kpi__accent" aria-hidden="true"/>
+          <span class="home-kpi__accent" aria-hidden="true" />
           <!--
             图标移到右侧：五列时单卡有 268px，而「图标 + 标签」只占 110px，
             原来把图标放在标签左边会让右侧 150px 全是空白。
@@ -40,7 +44,7 @@
               </div>
             </div>
             <span class="home-kpi__visual">
-              <scm-icon :name="row.iconName" :size="32"/>
+              <scm-icon :name="row.iconName" :size="32" />
             </span>
           </div>
         </a-card>
@@ -61,32 +65,29 @@ import {useRegionData} from './use-region-data';
 
 const router = useRouter();
 
-const {data, loading, error, load} = useRegionData<ScmDashboardCard[]>(
-    scmDashboardApi.overview,
-    '指标加载失败'
-);
+const {data, loading, error, load} = useRegionData<ScmDashboardCard[]>(scmDashboardApi.overview, '指标加载失败');
 
 /** 后端只给标识与数字，中文名 / 图标 / 语义色 / 展示文本都在这里补齐。 */
 const rows = computed(() =>
-    (data.value ?? []).map((card) => {
-        const meta = kpiMetaOf(card.key);
-        const money = card.unit === 'CNY';
-        return {
-            key: card.key,
-            route: card.route,
-            label: meta.label,
-            iconName: meta.iconName,
-            accent: meta.accent,
-            accentSoft: meta.accentSoft,
-            tone: kpiTone(card.key, toNumber(card.value)),
-            money,
-            text: money ? formatAmount(card.value) : formatInt(card.value),
-        };
-    })
+  (data.value ?? []).map((card) => {
+    const meta = kpiMetaOf(card.key);
+    const money = card.unit === 'CNY';
+    return {
+      key: card.key,
+      route: card.route,
+      label: meta.label,
+      iconName: meta.iconName,
+      accent: meta.accent,
+      accentSoft: meta.accentSoft,
+      tone: kpiTone(card.key, toNumber(card.value)),
+      money,
+      text: money ? formatAmount(card.value) : formatInt(card.value),
+    };
+  })
 );
 
 function goto(route: string) {
-    void router.push(route);
+  void router.push(route);
 }
 
 onMounted(load);
@@ -96,143 +97,147 @@ defineExpose({load});
 
 <style lang="less" scoped>
 .home-metrics__grid {
-    display: grid;
-    gap: 16px;
-    grid-template-columns: repeat(var(--kpi-columns), minmax(0, 1fr));
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(var(--kpi-columns), minmax(0, 1fr));
 
-    &.is-single {
-        grid-template-columns: minmax(0, 320px);
-    }
+  &.is-single {
+    grid-template-columns: minmax(0, 320px);
+  }
 
-    /*
+  /*
      * 断点按「单卡最小可用宽度」定，不按「屏幕档位」定：
      * 5 列在 1280px 以上就能排下（内容区约 1000px，每卡 ~185px），
      * 更早收窄会让标准 1440 桌面白白折成 3+2。
      */
-    @media (max-width: 1279px) {
-        grid-template-columns: repeat(var(--kpi-compact-columns), minmax(0, 1fr));
+  @media (max-width: 1279px) {
+    grid-template-columns: repeat(var(--kpi-compact-columns), minmax(0, 1fr));
 
-        &.is-single {
-            grid-template-columns: minmax(0, 320px);
-        }
+    &.is-single {
+      grid-template-columns: minmax(0, 320px);
     }
+  }
 
-    @media (max-width: 991px) {
-        grid-template-columns: repeat(var(--kpi-tablet-columns), minmax(0, 1fr));
+  @media (max-width: 991px) {
+    grid-template-columns: repeat(var(--kpi-tablet-columns), minmax(0, 1fr));
 
-        &.is-single {
-            grid-template-columns: minmax(0, 320px);
-        }
+    &.is-single {
+      grid-template-columns: minmax(0, 320px);
     }
+  }
 
-    @media (max-width: 575px) {
-        &, &.is-single {
-            grid-template-columns: minmax(0, 1fr);
-        }
+  @media (max-width: 575px) {
+    &,
+    &.is-single {
+      grid-template-columns: minmax(0, 1fr);
     }
+  }
 }
 
 .home-kpi {
+  position: relative;
+  min-width: 0;
+  border: 1px solid var(--scm-border);
+  border-radius: 14px;
+  cursor: pointer;
+  background: var(--scm-bg-container);
+  overflow: hidden;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+
+  &:hover {
+    border-color: var(--kpi-accent);
+    box-shadow: 0 8px 20px rgba(15, 44, 32, 0.09);
+    transform: translateY(-2px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--scm-primary);
+    outline-offset: 2px;
+  }
+
+  :deep(.ant-card-body) {
     position: relative;
-    min-width: 0;
-    border: 1px solid var(--scm-border);
-    border-radius: 14px;
-    cursor: pointer;
-    background: var(--scm-bg-container);
-    overflow: hidden;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-
-    &:hover {
-        border-color: var(--kpi-accent);
-        box-shadow: 0 8px 20px rgba(15, 44, 32, 0.09);
-        transform: translateY(-2px);
-    }
-
-    &:focus-visible {
-        outline: 2px solid var(--scm-primary);
-        outline-offset: 2px;
-    }
-
-    :deep(.ant-card-body) {
-        position: relative;
-        display: flex;
-        align-items: center;
-        /* 左边多留 4px 给色条让位 */
-        padding: 16px 18px 16px 22px;
-    }
+    display: flex;
+    align-items: center;
+    /* 左边多留 4px 给色条让位 */
+    padding: 16px 18px 16px 22px;
+  }
 }
 
 /* 左侧色条：一眼区分五张卡，同时保持卡片本身仍是白底 */
 .home-kpi__accent {
-    position: absolute;
-    inset: 0 auto 0 0;
-    width: 4px;
-    border-radius: 0 3px 3px 0;
-    background: var(--kpi-accent);
-    opacity: 0.85;
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 0 3px 3px 0;
+  background: var(--kpi-accent);
+  opacity: 0.85;
 }
 
 /* 左文字块 + 右图标块：两端对齐，卡片宽度被真正用满 */
 .home-kpi .home-kpi__body {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-width: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
 }
 
 .home-kpi .home-kpi__text {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
 .home-kpi .home-kpi__visual {
-    display: inline-flex;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 60px;
-    height: 60px;
-    border-radius: 18px;
-    background: var(--kpi-accent-soft);
-    color: var(--kpi-accent);
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: var(--kpi-accent-soft);
+  color: var(--kpi-accent);
 }
 
 .home-kpi .home-kpi__label {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--scm-text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--scm-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .home-kpi .home-kpi__value {
-    display: flex;
-    align-items: baseline;
-    gap: 3px;
-    font-weight: 700;
-    line-height: 1.1;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-weight: 700;
+  line-height: 1.1;
+  flex-wrap: wrap;
 }
 
 .home-kpi .home-kpi__prefix {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--kpi-accent);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--kpi-accent);
 }
 
 .home-kpi .home-kpi__number {
-    min-width: 0;
-    overflow-wrap: anywhere;
-    /* 5 列时单卡只有 ~185px，用 clamp 让长金额自己缩，不靠换行撑高卡片 */
-    font-size: clamp(24px, 2vw, 38px);
-    letter-spacing: -0.5px;
-    font-variant-numeric: tabular-nums;
-    color: var(--scm-text);
+  min-width: 0;
+  overflow-wrap: anywhere;
+  /* 5 列时单卡只有 ~185px，用 clamp 让长金额自己缩，不靠换行撑高卡片 */
+  font-size: clamp(24px, 2vw, 38px);
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--scm-text);
 }
 
 /* 数值统一取卡片的主题色；库存预警的 tone 只影响左侧色条 */
@@ -240,6 +245,6 @@ defineExpose({load});
 .home-kpi.tone-ok .home-kpi__number,
 .home-kpi.tone-warn .home-kpi__number,
 .home-kpi.tone-danger .home-kpi__number {
-    color: var(--kpi-accent);
+  color: var(--kpi-accent);
 }
 </style>

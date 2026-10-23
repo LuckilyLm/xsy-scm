@@ -1,53 +1,53 @@
 import type {SmartEnum} from '/@/types/smart-enum';
 
 export const SCM_ORDER_STATUS_ENUM: SmartEnum<string> = {
-    DRAFT: {value: 'DRAFT', desc: '草稿'},
-    PENDING: {value: 'PENDING', desc: '待确认'},
-    CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
-    CANCELLED: {value: 'CANCELLED', desc: '已取消'}
+  DRAFT: {value: 'DRAFT', desc: '草稿'},
+  PENDING: {value: 'PENDING', desc: '待确认'},
+  CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
+  CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };
 export const SCM_ORDER_SOURCE_ENUM: SmartEnum<string> = {
-    ADMIN: {value: 'ADMIN', desc: '后台录单'},
-    MALL: {value: 'MALL', desc: '商城'},
-    SUPPLEMENT: {value: 'SUPPLEMENT', desc: '补单'},
-    IMPORT: {value: 'IMPORT', desc: 'Excel导入'}
+  ADMIN: {value: 'ADMIN', desc: '后台录单'},
+  MALL: {value: 'MALL', desc: '商城'},
+  SUPPLEMENT: {value: 'SUPPLEMENT', desc: '补单'},
+  IMPORT: {value: 'IMPORT', desc: 'Excel导入'},
 };
 export const SCM_ORDER_PRICE_SOURCE_ENUM: SmartEnum<string> = {
-    AGREEMENT: {value: 'AGREEMENT', desc: '客户协议价'},
-    CUSTOMER_TYPE: {value: 'CUSTOMER_TYPE', desc: '客户类型价'},
-    TIME_PRICE: {value: 'TIME_PRICE', desc: '时价'},
-    MARKET: {value: 'MARKET', desc: '市场价'},
-    OVERRIDE: {value: 'OVERRIDE', desc: '人工改价'}
+  AGREEMENT: {value: 'AGREEMENT', desc: '客户协议价'},
+  CUSTOMER_TYPE: {value: 'CUSTOMER_TYPE', desc: '客户类型价'},
+  TIME_PRICE: {value: 'TIME_PRICE', desc: '时价'},
+  MARKET: {value: 'MARKET', desc: '市场价'},
+  OVERRIDE: {value: 'OVERRIDE', desc: '人工改价'},
 };
 export const SCM_ORDER_RETURN_STATUS_ENUM: SmartEnum<string> = {
-    PENDING: {value: 'PENDING', desc: '待审核'},
-    APPROVED: {value: 'APPROVED', desc: '已批准'},
-    REJECTED: {value: 'REJECTED', desc: '已驳回'},
-    CANCELLED: {value: 'CANCELLED', desc: '已取消'}
+  PENDING: {value: 'PENDING', desc: '待审核'},
+  APPROVED: {value: 'APPROVED', desc: '已批准'},
+  REJECTED: {value: 'REJECTED', desc: '已驳回'},
+  CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };
 export const SCM_ORDER_REFUND_STATUS_ENUM: SmartEnum<string> = {
-    PENDING: {value: 'PENDING', desc: '待退款'},
-    COMPLETED: {value: 'COMPLETED', desc: '已完成'}
+  PENDING: {value: 'PENDING', desc: '待退款'},
+  COMPLETED: {value: 'COMPLETED', desc: '已完成'},
 };
 export const SCM_ORDER_OPERATION_ENUM: SmartEnum<string> = {
-    CREATE: {value: 'CREATE', desc: '创建'},
-    UPDATE: {value: 'UPDATE', desc: '修改'},
-    SUBMIT: {value: 'SUBMIT', desc: '提交'},
-    ACTUAL_QUANTITY: {value: 'ACTUAL_QUANTITY', desc: '实重录入'},
-    CREDIT_OVERRIDE: {value: 'CREDIT_OVERRIDE', desc: '授信例外放行'},
-    REPRICE: {value: 'REPRICE', desc: '手动价格重算'},
-    CONFIRM: {value: 'CONFIRM', desc: '确认'},
-    CANCEL: {value: 'CANCEL', desc: '取消'},
-    RESERVE_STOCK: {value: 'RESERVE_STOCK', desc: '预留库存'},
-    RETURN: {value: 'RETURN', desc: '退货'},
-    REFUND: {value: 'REFUND', desc: '退款'},
-    ASSIGN: {value: 'ASSIGN', desc: '指派业务员'}
+  CREATE: {value: 'CREATE', desc: '创建'},
+  UPDATE: {value: 'UPDATE', desc: '修改'},
+  SUBMIT: {value: 'SUBMIT', desc: '提交'},
+  ACTUAL_QUANTITY: {value: 'ACTUAL_QUANTITY', desc: '实重录入'},
+  CREDIT_OVERRIDE: {value: 'CREDIT_OVERRIDE', desc: '授信例外放行'},
+  REPRICE: {value: 'REPRICE', desc: '手动价格重算'},
+  CONFIRM: {value: 'CONFIRM', desc: '确认'},
+  CANCEL: {value: 'CANCEL', desc: '取消'},
+  RESERVE_STOCK: {value: 'RESERVE_STOCK', desc: '预留库存'},
+  RETURN: {value: 'RETURN', desc: '退货'},
+  REFUND: {value: 'REFUND', desc: '退款'},
+  ASSIGN: {value: 'ASSIGN', desc: '指派业务员'},
 };
 export default {
-    SCM_ORDER_STATUS_ENUM,
-    SCM_ORDER_SOURCE_ENUM,
-    SCM_ORDER_PRICE_SOURCE_ENUM,
-    SCM_ORDER_RETURN_STATUS_ENUM,
-    SCM_ORDER_REFUND_STATUS_ENUM,
-    SCM_ORDER_OPERATION_ENUM
+  SCM_ORDER_STATUS_ENUM,
+  SCM_ORDER_SOURCE_ENUM,
+  SCM_ORDER_PRICE_SOURCE_ENUM,
+  SCM_ORDER_RETURN_STATUS_ENUM,
+  SCM_ORDER_REFUND_STATUS_ENUM,
+  SCM_ORDER_OPERATION_ENUM,
 };

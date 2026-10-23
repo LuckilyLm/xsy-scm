@@ -7,38 +7,36 @@
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input style="width: 300px" v-model:value="queryForm.keywords"
-                   placeholder="菜单名称/路由地址/组件路径/权限字符串"/>
+          <a-input style="width: 300px" v-model:value="queryForm.keywords" placeholder="菜单名称/路由地址/组件路径/权限字符串" />
         </a-form-item>
 
         <a-form-item label="类型" class="smart-query-form-item">
-          <SmartEnumSelect width="120px" v-model:value="queryForm.menuType" placeholder="请选择类型"
-                           enum-name="MENU_TYPE_ENUM"/>
+          <SmartEnumSelect width="120px" v-model:value="queryForm.menuType" placeholder="请选择类型" enum-name="MENU_TYPE_ENUM" />
         </a-form-item>
 
         <a-form-item label="禁用" class="smart-query-form-item">
-          <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.disabledFlag"/>
+          <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.disabledFlag" />
         </a-form-item>
 
         <a-form-item class="smart-query-form-item smart-margin-left10">
           <a-button-group>
             <a-button type="primary" @click="query">
               <template #icon>
-                <SearchOutlined/>
+                <SearchOutlined />
               </template>
               查询
             </a-button>
 
             <a-button @click="resetQuery">
               <template #icon>
-                <ReloadOutlined/>
+                <ReloadOutlined />
               </template>
               重置
             </a-button>
           </a-button-group>
           <a-button class="smart-margin-left20" @click="moreQueryConditionFlag = !moreQueryConditionFlag">
             <template #icon>
-              <MoreOutlined/>
+              <MoreOutlined />
             </template>
             {{ moreQueryConditionFlag ? '收起' : '展开' }}
           </a-button>
@@ -47,15 +45,15 @@
 
       <a-row class="smart-query-form-row" v-show="moreQueryConditionFlag">
         <a-form-item label="外链" class="smart-query-form-item">
-          <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.frameFlag"/>
+          <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.frameFlag" />
         </a-form-item>
 
         <a-form-item label="缓存" class="smart-query-form-item">
-          <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.cacheFlag"/>
+          <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.cacheFlag" />
         </a-form-item>
 
         <a-form-item label="显示" class="smart-query-form-item">
-          <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.visibleFlag"/>
+          <SmartEnumSelect width="120px" enum-name="FLAG_NUMBER_ENUM" v-model:value="queryForm.visibleFlag" />
         </a-form-item>
       </a-row>
     </a-form>
@@ -65,42 +63,38 @@
         <div class="smart-table-operate-block">
           <a-button v-privilege="'system:menu:add'" type="primary" @click="showDrawer">
             <template #icon>
-              <PlusOutlined/>
+              <PlusOutlined />
             </template>
             添加菜单
           </a-button>
 
-          <a-button v-privilege="'system:menu:batchDelete'" type="primary" danger @click="batchDelete"
-                    :disabled="!hasSelected">
+          <a-button v-privilege="'system:menu:batchDelete'" type="primary" danger @click="batchDelete" :disabled="!hasSelected">
             <template #icon>
-              <DeleteOutlined/>
+              <DeleteOutlined />
             </template>
             批量删除
           </a-button>
         </div>
         <div class="smart-table-setting-block">
-          <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SYSTEM.MENU" :refresh="query"/>
+          <TableOperator v-model="columns" :tableId="TABLE_ID_CONST.SYSTEM.MENU" :refresh="query" />
         </div>
       </a-row>
 
       <a-table
-          :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
-          size="small"
-          :scroll="{ y: 800 }"
-          :defaultExpandAllRows="true"
-          :dataSource="tableData"
-          bordered
-          :columns="columns"
-          :loading="tableLoading"
-          rowKey="menuId"
-          :pagination="false"
+        :row-selection="{selectedRowKeys: selectedRowKeys, onChange: onSelectChange}"
+        size="small"
+        :scroll="{y: 800}"
+        :defaultExpandAllRows="true"
+        :dataSource="tableData"
+        bordered
+        :columns="columns"
+        :loading="tableLoading"
+        rowKey="menuId"
+        :pagination="false"
       >
-        <template #bodyCell="{ text, record, column }">
+        <template #bodyCell="{text, record, column}">
           <template v-if="column.dataIndex === 'menuType'">
-            <a-tag :color="menuTypeColorArray[text]">{{
-                $smartEnumPlugin.getDescByValue('MENU_TYPE_ENUM', text)
-              }}
-            </a-tag>
+            <a-tag :color="menuTypeColorArray[text]">{{ $smartEnumPlugin.getDescByValue('MENU_TYPE_ENUM', text) }} </a-tag>
           </template>
 
           <template v-if="column.dataIndex === 'component'">
@@ -128,31 +122,29 @@
           </template>
 
           <template v-if="column.dataIndex === 'icon'">
-            <component :is="$antIcons[text]"/>
+            <component :is="$antIcons[text]" />
           </template>
 
           <template v-if="column.dataIndex === 'operate'">
             <div class="smart-table-operate">
               <a-button
-                  v-if="record.menuType !== MENU_TYPE_ENUM.POINTS.value"
-                  v-privilege="'system:menu:update'"
-                  type="link"
-                  size="small"
-                  @click="showAddSub(record)"
+                v-if="record.menuType !== MENU_TYPE_ENUM.POINTS.value"
+                v-privilege="'system:menu:update'"
+                type="link"
+                size="small"
+                @click="showAddSub(record)"
               >
                 添加下级
               </a-button>
-              <a-button v-privilege="'system:menu:update'" type="link" size="small" @click="showDrawer(record)">编辑
-              </a-button>
-              <a-button v-privilege="'system:menu:batchDelete'" danger type="link" @click="singleDelete(record)">删除
-              </a-button>
+              <a-button v-privilege="'system:menu:update'" type="link" size="small" @click="showDrawer(record)">编辑 </a-button>
+              <a-button v-privilege="'system:menu:batchDelete'" danger type="link" @click="singleDelete(record)">删除 </a-button>
             </div>
           </template>
         </template>
       </a-table>
     </a-card>
 
-    <MenuOperateModal ref="menuOperateModal" @reloadList="query"/>
+    <MenuOperateModal ref="menuOperateModal" @reloadList="query" />
   </div>
 </template>
 <script setup lang="ts">
@@ -247,8 +239,7 @@ function confirmBatchDelete(menuArray) {
       selectedRows = [];
     },
     cancelText: '取消',
-    onCancel() {
-    },
+    onCancel() {},
   });
 
   async function requestBatchDelete(menuIdList) {

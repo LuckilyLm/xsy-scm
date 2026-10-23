@@ -4,73 +4,65 @@
     <div class="sku-scroll">
       <table>
         <thead>
-        <tr>
-          <th>商品规格 *</th>
-          <th>供应商货号</th>
-          <th>采购单位 *</th>
-          <th>参考价</th>
-          <th>优先采购</th>
-          <th>采购员</th>
-          <th>状态</th>
-          <th>操作</th>
-        </tr>
+          <tr>
+            <th>商品规格 *</th>
+            <th>供应商货号</th>
+            <th>采购单位 *</th>
+            <th>参考价</th>
+            <th>优先采购</th>
+            <th>采购员</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
         </thead>
         <tbody>
-        <tr v-for="(draft, index) in modelValue" :key="draft.id ?? `new-${index}`">
-          <td>
-            <SkuSelect
+          <tr v-for="(draft, index) in modelValue" :key="draft.id ?? `new-${index}`">
+            <td>
+              <SkuSelect
                 :value="draft.skuId"
                 :aria-label="`第 ${index + 1} 行商品规格`"
                 @update:value="(value) => (draft.skuId = Array.isArray(value) ? value[0] : value)"
-            />
-          </td>
-          <td>
-            <a-input v-model:value="draft.supplierItemCode" :maxlength="100" :aria-label="`第 ${index + 1} 行供应商货号`"/>
-          </td>
-          <td>
-            <a-input v-model:value="draft.purchaseUnit" :maxlength="32" :aria-label="`第 ${index + 1} 行采购单位`"/>
-          </td>
-          <td>
-            <a-input
-                v-model:value="draft.referencePrice"
-                placeholder="例如 3.5000"
-                :aria-label="`第 ${index + 1} 行参考价`"
-            />
-          </td>
-          <td class="center">
-            <a-checkbox
-                v-model:checked="draft.defaultFlag"
-                :aria-label="`第 ${index + 1} 行设为优先采购`"
-            />
-          </td>
-          <td>
-            <EmployeeSelect
+              />
+            </td>
+            <td>
+              <a-input v-model:value="draft.supplierItemCode" :maxlength="100" :aria-label="`第 ${index + 1} 行供应商货号`" />
+            </td>
+            <td>
+              <a-input v-model:value="draft.purchaseUnit" :maxlength="32" :aria-label="`第 ${index + 1} 行采购单位`" />
+            </td>
+            <td>
+              <a-input v-model:value="draft.referencePrice" placeholder="例如 3.5000" :aria-label="`第 ${index + 1} 行参考价`" />
+            </td>
+            <td class="center">
+              <a-checkbox v-model:checked="draft.defaultFlag" :aria-label="`第 ${index + 1} 行设为优先采购`" />
+            </td>
+            <td>
+              <EmployeeSelect
                 :value="draft.purchaserId ?? undefined"
                 width="100%"
                 placeholder="请选择"
                 :aria-label="`第 ${index + 1} 行采购员`"
                 @update:value="(value: number | undefined) => (draft.purchaserId = value ?? null)"
-            />
-          </td>
-          <td>
-            <SmartEnumSelect
+              />
+            </td>
+            <td>
+              <SmartEnumSelect
                 :value="draft.status ?? 'ENABLED'"
                 enum-name="SUPPLIER_SKU_STATUS_ENUM"
                 width="100%"
                 :aria-label="`第 ${index + 1} 行状态`"
                 @update:value="(value: string) => (draft.status = value as EnableStatus)"
-            />
-          </td>
-          <td class="center">
-            <a-popconfirm title="确认移除该关联？"
-                          @confirm="emit('update:modelValue', removeSkuDraft(modelValue, index))">
-              <a-button type="link" danger size="small" :aria-label="`移除第 ${index + 1} 行`">移除</a-button>
-            </a-popconfirm>
-          </td>
-        </tr>
-        <tr v-if="modelValue.length === 0">
-          <td colspan="8" class="empty">尚未关联任何商品；保存后将清空该供应商的全部关联</td>
-        </tr>
+              />
+            </td>
+            <td class="center">
+              <a-popconfirm title="确认移除该关联？" @confirm="emit('update:modelValue', removeSkuDraft(modelValue, index))">
+                <a-button type="link" danger size="small" :aria-label="`移除第 ${index + 1} 行`">移除</a-button>
+              </a-popconfirm>
+            </td>
+          </tr>
+          <tr v-if="modelValue.length === 0">
+            <td colspan="8" class="empty">尚未关联任何商品；保存后将清空该供应商的全部关联</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -86,8 +78,8 @@ import type {EnableStatus} from '/@/types/business/scm/supplier';
 import {emptySkuDraft, removeSkuDraft} from '../supplier-form-model';
 import type {SkuDraft} from '../supplier-form-model';
 
-const props = defineProps<{ modelValue: SkuDraft[] }>();
-const emit = defineEmits<{ 'update:modelValue': [rows: SkuDraft[]] }>();
+const props = defineProps<{modelValue: SkuDraft[]}>();
+const emit = defineEmits<{'update:modelValue': [rows: SkuDraft[]]}>();
 
 // 模板里 `modelValue` 直接引用 props（与 product-sku-editable-table 同写法）；
 // 这里显式引用一次，避免 `noUnusedLocals` 把 props 变量判为未使用。
@@ -156,4 +148,3 @@ td:nth-child(6) {
   margin-top: 12px;
 }
 </style>
-

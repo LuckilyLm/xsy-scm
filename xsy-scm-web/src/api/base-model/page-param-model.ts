@@ -1,7 +1,7 @@
 /*
  * @Description: 分页查询你参数
  * @LastEditTime: 2021-08-14
- * @LastEditors: 
+ * @LastEditors:
  */
 import {SortItemModel} from './sort-item-model';
 
@@ -11,23 +11,23 @@ import {SortItemModel} from './sort-item-model';
  * @interface PageResultDto
  */
 export interface PageParamModel {
-    /**
-     * 页码(不能为空)
-     * @type {number}
-     * @memberof ClueUserQueryForm
-     */
-    pageNum: number;
-    /**
-     * 每页数量(不能为空)
-     * @type {number}
-     * @memberof ClueUserQueryForm
-     */
-    pageSize: number;
+  /**
+   * 页码(不能为空)
+   * @type {number}
+   * @memberof ClueUserQueryForm
+   */
+  pageNum: number;
+  /**
+   * 每页数量(不能为空)
+   * @type {number}
+   * @memberof ClueUserQueryForm
+   */
+  pageSize: number;
 
-    /**
-     * 排序字段集合
-     * @type {Array<SortItemDto>}
-     * @memberof ClueUserQueryForm
-     */
-    sortItemList?: Array<SortItemModel>;
+  /**
+   * 排序字段集合
+   * @type {Array<SortItemDto>}
+   * @memberof ClueUserQueryForm
+   */
+  sortItemList?: Array<SortItemModel>;
 }

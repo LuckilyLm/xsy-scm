@@ -13,7 +13,7 @@
 
     <div v-else class="scm-map">
       <div class="scm-map-main">
-        <div ref="mapEl" class="scm-map-canvas"/>
+        <div ref="mapEl" class="scm-map-canvas" />
         <div v-if="!cities.length" class="scm-map-empty">暂无已归属到市的客户 / 供应商 / 仓库</div>
       </div>
 
@@ -119,32 +119,32 @@ let baseMap: Promise<void> | null = null;
 const boundaryNameByAdcode = new Map<number, string>();
 
 interface GeoFeature {
-  properties?: { adcode?: number | string; name?: string };
+  properties?: {adcode?: number | string; name?: string};
 }
 
 function loadBaseMap(): Promise<void> {
   if (!baseMap) {
     baseMap = fetch(`${import.meta.env.BASE_URL}screen/china-province.json`)
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error(`底图加载失败（HTTP ${res.status}）`);
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`底图加载失败（HTTP ${res.status}）`);
+        }
+        return res.json();
+      })
+      .then((geoJson) => {
+        for (const feature of (geoJson as {features?: GeoFeature[]}).features ?? []) {
+          const adcode = Number(feature.properties?.adcode);
+          const name = feature.properties?.name;
+          if (name && Number.isFinite(adcode)) {
+            boundaryNameByAdcode.set(adcode, name);
           }
-          return res.json();
-        })
-        .then((geoJson) => {
-          for (const feature of (geoJson as { features?: GeoFeature[] }).features ?? []) {
-            const adcode = Number(feature.properties?.adcode);
-            const name = feature.properties?.name;
-            if (name && Number.isFinite(adcode)) {
-              boundaryNameByAdcode.set(adcode, name);
-            }
-          }
-          echarts.registerMap(MAP_NAME, geoJson as Parameters<typeof echarts.registerMap>[1]);
-        })
-        .catch((e) => {
-          baseMap = null;
-          throw e;
-        });
+        }
+        echarts.registerMap(MAP_NAME, geoJson as Parameters<typeof echarts.registerMap>[1]);
+      })
+      .catch((e) => {
+        baseMap = null;
+        throw e;
+      });
   }
   return baseMap;
 }
@@ -176,11 +176,7 @@ function tooltip(params: unknown): string {
   if (!data) {
     return '';
   }
-  const rows = [
-    `客户 ${formatInt(data.customerCount)}`,
-    `供应商 ${formatInt(data.supplierCount)}`,
-    `启用仓库 ${formatInt(data.warehouseCount)}`,
-  ];
+  const rows = [`客户 ${formatInt(data.customerCount)}`, `供应商 ${formatInt(data.supplierCount)}`, `启用仓库 ${formatInt(data.warehouseCount)}`];
   if (data.cityCount !== undefined) {
     rows.push(`覆盖市 ${formatInt(data.cityCount)}`);
   }
@@ -190,10 +186,7 @@ function tooltip(params: unknown): string {
 function render() {
   const list = cities.value;
   const maxTotal = list.reduce((acc, city) => Math.max(acc, totalOf(city)), 0);
-  const provinceMax = (props.geo.provinces ?? []).reduce(
-      (acc, p) => Math.max(acc, p.customerCount),
-      0
-  );
+  const provinceMax = (props.geo.provinces ?? []).reduce((acc, p) => Math.max(acc, p.customerCount), 0);
 
   chart.setOption({
     tooltip: {
@@ -252,8 +245,7 @@ function render() {
         coordinateSystem: 'geo',
         // 只有真拿到归属数据的市才会成为气泡，图上不会出现空转的涟漪
         rippleEffect: {brushType: 'stroke', scale: 3},
-        symbolSize: (_value: unknown, params: { data?: { total: number } }) =>
-            bubbleSize(params.data?.total ?? 0, maxTotal),
+        symbolSize: (_value: unknown, params: {data?: {total: number}}) => bubbleSize(params.data?.total ?? 0, maxTotal),
         tooltip: {formatter: tooltip},
         data: list.map((city) => ({
           name: city.cityName,

@@ -1,19 +1,21 @@
 <template>
   <a-form class="smart-query-form" layout="inline" @submit.prevent="search">
     <a-row class="smart-query-form-row">
-      <a-form-item label="分析日期"><ReportDateRangePicker v-model:value="dateRange"/></a-form-item>
+      <a-form-item label="分析日期"><ReportDateRangePicker v-model:value="dateRange" /></a-form-item>
       <a-form-item label="分析维度">
-        <a-select v-model:value="filters.dimension" :options="dimensionOptions" style="width: 130px"/>
+        <a-select v-model:value="filters.dimension" :options="dimensionOptions" style="width: 130px" />
       </a-form-item>
-      <a-form-item label="客户"><CustomerSelect v-model:value="filters.customerId" width="190px"/></a-form-item>
-      <a-form-item label="销售员"><EmployeeSelect v-model:value="filters.sellerId" width="150px"/></a-form-item>
-      <a-form-item label="仓库"><WarehouseSelect v-model:value="filters.warehouseId" width="170px"/></a-form-item>
+      <a-form-item label="客户"><CustomerSelect v-model:value="filters.customerId" width="190px" /></a-form-item>
+      <a-form-item label="销售员"><EmployeeSelect v-model:value="filters.sellerId" width="150px" /></a-form-item>
+      <a-form-item label="仓库"><WarehouseSelect v-model:value="filters.warehouseId" width="170px" /></a-form-item>
     </a-row>
     <a-row class="smart-query-form-row">
       <a-form-item label="商品分类">
-        <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px"/>
+        <CategorySelect v-model:value="filters.categoryId" :categories="categories" style="width: 220px" />
       </a-form-item>
-      <a-form-item label="商品 / 单号"><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称、商品规格编码或订单号" @pressEnter="search"/></a-form-item>
+      <a-form-item label="商品 / 单号"
+        ><a-input v-model:value="filters.keyword" allow-clear placeholder="商品名称、商品规格编码或订单号" @pressEnter="search"
+      /></a-form-item>
       <!-- 操作项跟在本表单最后一项之后：放在第一行中间时，窄屏换行会把它夹在字段中间 -->
       <a-form-item>
         <a-space>
@@ -27,27 +29,68 @@
   <a-alert v-if="error" :message="error" type="error" show-icon class="profit-alert">
     <template #action><a-button @click="load">重试</a-button></template>
   </a-alert>
-  <a-alert v-if="(summary?.costMissingCount ?? 0) > 0" type="warning" show-icon class="profit-alert"
-           :message="`有 ${summary?.costMissingCount} 行历史销售成本缺失，毛利和毛利率暂不完整`"
-           description="销售成本金额仅显示已知部分；毛利相关指标显示为 —，请先核对对应出库流水的成本事实。"/>
+  <a-alert
+    v-if="(summary?.costMissingCount ?? 0) > 0"
+    type="warning"
+    show-icon
+    class="profit-alert"
+    :message="`有 ${summary?.costMissingCount} 行历史销售成本缺失，毛利和毛利率暂不完整`"
+    description="销售成本金额仅显示已知部分；毛利相关指标显示为 —，请先核对对应出库流水的成本事实。"
+  />
 
   <a-row :gutter="12" class="profit-kpis">
-    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">销售收入</div><div class="kpi-value">{{ moneyText(summary?.revenueAmount) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">商品销售成本（净额）</div><div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">促销赠品成本</div><div class="kpi-value">{{ moneyText(summary?.giftCostAmount) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">销售毛利</div><div class="kpi-value">{{ moneyText(summary?.grossProfit) }}</div></a-card></a-col>
-    <a-col :xs="24" :sm="12" :lg="8"><a-card size="small"><div class="kpi-label">毛利率</div><div class="kpi-value">{{ rateText(summary?.grossMarginRate) }}</div></a-card></a-col>
+    <a-col :xs="24" :sm="12" :lg="8"
+      ><a-card size="small"
+        ><div class="kpi-label">销售收入</div>
+        <div class="kpi-value">{{ moneyText(summary?.revenueAmount) }}</div></a-card
+      ></a-col
+    >
+    <a-col :xs="24" :sm="12" :lg="8"
+      ><a-card size="small"
+        ><div class="kpi-label">商品销售成本（净额）</div>
+        <div class="kpi-value">{{ moneyText(summary?.salesCostAmount) }}</div></a-card
+      ></a-col
+    >
+    <a-col :xs="24" :sm="12" :lg="8"
+      ><a-card size="small"
+        ><div class="kpi-label">促销赠品成本</div>
+        <div class="kpi-value">{{ moneyText(summary?.giftCostAmount) }}</div></a-card
+      ></a-col
+    >
+    <a-col :xs="24" :sm="12" :lg="8"
+      ><a-card size="small"
+        ><div class="kpi-label">销售毛利</div>
+        <div class="kpi-value">{{ moneyText(summary?.grossProfit) }}</div></a-card
+      ></a-col
+    >
+    <a-col :xs="24" :sm="12" :lg="8"
+      ><a-card size="small"
+        ><div class="kpi-label">毛利率</div>
+        <div class="kpi-value">{{ rateText(summary?.grossMarginRate) }}</div></a-card
+      ></a-col
+    >
   </a-row>
 
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button v-privilege="PERM.EXPORT" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows">导出当前结果</a-button>
+        <a-button v-privilege="PERM.EXPORT" :disabled="!applied || loading || !!error" :loading="exporting" @click="exportRows"
+          >导出当前结果</a-button
+        >
       </div>
     </a-row>
-    <a-table id="scm-report-finance-profit-table" size="small" :data-source="rows" :columns="columns"
-             :row-key="rowKey" bordered :pagination="false" :loading="loading" :scroll="{ x: scmColumnsWidth(columns) }"
-             :locale="{emptyText: '当前筛选范围没有销售毛利事实'}">
+    <a-table
+      id="scm-report-finance-profit-table"
+      size="small"
+      :data-source="rows"
+      :columns="columns"
+      :row-key="rowKey"
+      bordered
+      :pagination="false"
+      :loading="loading"
+      :scroll="{x: scmColumnsWidth(columns)}"
+      :locale="{emptyText: '当前筛选范围没有销售毛利事实'}"
+    >
       <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'bizDate'">{{ record.bizDate || '—' }}</template>
         <template v-else-if="column.dataIndex === 'revenueAmount'">{{ moneyText(record.revenueAmount) }}</template>
@@ -59,8 +102,15 @@
       </template>
     </a-table>
     <div class="smart-query-table-page">
-      <a-pagination v-model:current="pageNum" v-model:page-size="pageSize" :total="total"
-                    show-size-changer show-quick-jumper :show-total="(n:number) => `共 ${n} 条`" @change="load"/>
+      <a-pagination
+        v-model:current="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        show-size-changer
+        show-quick-jumper
+        :show-total="(n: number) => `共 ${n} 条`"
+        @change="load"
+      />
     </div>
   </a-card>
 </template>
@@ -85,15 +135,24 @@ import {moneyText} from '../inventory/inventory-model';
 import {reportError} from './report-errors';
 
 const dimensionOptions: Array<{value: FinanceProfitDimension; label: string}> = [
-  {value: 'DAY', label: '按日期'}, {value: 'CUSTOMER', label: '按客户'}, {value: 'PRODUCT', label: '按商品'},
-  {value: 'CATEGORY', label: '按分类'}, {value: 'SELLER', label: '按销售员'}, {value: 'WAREHOUSE', label: '按仓库'},
+  {value: 'DAY', label: '按日期'},
+  {value: 'CUSTOMER', label: '按客户'},
+  {value: 'PRODUCT', label: '按商品'},
+  {value: 'CATEGORY', label: '按分类'},
+  {value: 'SELLER', label: '按销售员'},
+  {value: 'WAREHOUSE', label: '按仓库'},
 ];
 const dateRange = ref<DateRange>();
 const filters = reactive<Omit<FinanceProfitQuery, 'startDate' | 'endDate' | 'pageNum' | 'pageSize'>>({dimension: 'PRODUCT'});
-const pageNum = ref(1), pageSize = ref(20), total = ref(0);
-const rows = ref<FinanceProfitRow[]>([]), summary = ref<FinanceProfitSummary>();
+const pageNum = ref(1),
+  pageSize = ref(20),
+  total = ref(0);
+const rows = ref<FinanceProfitRow[]>([]),
+  summary = ref<FinanceProfitSummary>();
 const categories = ref<ProductCategory[]>([]);
-const loading = ref(false), exporting = ref(false), error = ref('');
+const loading = ref(false),
+  exporting = ref(false),
+  error = ref('');
 const applied = ref<FinanceProfitQuery>();
 let requestId = 0;
 
@@ -123,8 +182,16 @@ function rateText(value?: string | null): string {
 
 async function load() {
   const overLimit = rangeOverLimitError(dateRange.value);
-  if (overLimit) { message.warning(overLimit); rows.value = []; summary.value = undefined; return; }
-  if (!dateRange.value?.[0] || !dateRange.value?.[1]) { message.warning('请选择完整日期范围'); return; }
+  if (overLimit) {
+    message.warning(overLimit);
+    rows.value = [];
+    summary.value = undefined;
+    return;
+  }
+  if (!dateRange.value?.[0] || !dateRange.value?.[1]) {
+    message.warning('请选择完整日期范围');
+    return;
+  }
   const id = ++requestId;
   const payload = queryPayload();
   loading.value = true;
@@ -154,8 +221,15 @@ function search() {
 }
 
 function reset() {
-  Object.assign(filters, {dimension: 'PRODUCT', customerId: undefined, sellerId: undefined, skuId: undefined,
-    categoryId: undefined, warehouseId: undefined, keyword: undefined});
+  Object.assign(filters, {
+    dimension: 'PRODUCT',
+    customerId: undefined,
+    sellerId: undefined,
+    skuId: undefined,
+    categoryId: undefined,
+    warehouseId: undefined,
+    keyword: undefined,
+  });
   dateRange.value = defaultDateRange();
   pageNum.value = 1;
   pageSize.value = 20;
@@ -165,11 +239,13 @@ function reset() {
 async function exportRows() {
   if (!applied.value || exporting.value) return;
   exporting.value = true;
-  try { await financeProfitApi.export(applied.value); }
-  catch {
+  try {
+    await financeProfitApi.export(applied.value);
+  } catch {
     // 导出失败只走全局 toast
+  } finally {
+    exporting.value = false;
   }
-  finally { exporting.value = false; }
 }
 
 onMounted(async () => {
@@ -177,15 +253,28 @@ onMounted(async () => {
   try {
     // 分类下拉是可选增强：拉不到就静默降级
     categories.value = (await productCategoryApi.tree({suppressGlobalErrorMessage: true})).data ?? [];
+  } catch {
+    categories.value = [];
   }
-  catch { categories.value = []; }
   void load();
 });
 </script>
 
 <style scoped>
-.profit-alert { margin-bottom: 14px; }
-.profit-kpis { margin-bottom: 14px; }
-.kpi-label { color: rgba(0, 0, 0, .65); font-size: 13px; }
-.kpi-value { font-size: 22px; font-weight: 600; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.profit-alert {
+  margin-bottom: 14px;
+}
+.profit-kpis {
+  margin-bottom: 14px;
+}
+.kpi-label {
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 13px;
+}
+.kpi-value {
+  font-size: 22px;
+  font-weight: 600;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
 </style>

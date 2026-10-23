@@ -5,45 +5,40 @@
 -->
 <template>
   <a-table
-      id="purchase-order-item-table"
-      size="small"
-      bordered
-      :data-source="items"
-      :columns="columns"
-      :pagination="false"
-      :scroll="{ x: scmColumnsWidth(columns, 36) }"
-      :expand-column-width="36"
-      :row-key="(_row: OrderItem, index?: number) => index ?? 0"
-      :expanded-row-keys="items.map((_row, index) => index)"
+    id="purchase-order-item-table"
+    size="small"
+    bordered
+    :data-source="items"
+    :columns="columns"
+    :pagination="false"
+    :scroll="{x: scmColumnsWidth(columns, 36)}"
+    :expand-column-width="36"
+    :row-key="(_row: OrderItem, index?: number) => index ?? 0"
+    :expanded-row-keys="items.map((_row, index) => index)"
   >
-    <template #bodyCell="{ record, column, index }">
+    <template #bodyCell="{record, column, index}">
       <template v-if="column.dataIndex === 'skuId'">
-        <SkuSelect
-            :value="record.skuId"
-            width="270px"
-            :disabled-statuses="[]"
-            @update:value="(v: Id | Id[] | undefined) => onSkuChange(record, v)"
-        />
+        <SkuSelect :value="record.skuId" width="270px" :disabled-statuses="[]" @update:value="(v: Id | Id[] | undefined) => onSkuChange(record, v)" />
       </template>
       <template v-else-if="column.dataIndex === 'plannedQuantity'">
         <a-input-number
-            string-mode
-            :precision="4"
-            :min="'0.0001'"
-            v-model:value="record.plannedQuantity"
-            :aria-label="'采购数量 ' + (index + 1)"
-            @blur="normalizeNumber(record, 'plannedQuantity')"
+          string-mode
+          :precision="4"
+          :min="'0.0001'"
+          v-model:value="record.plannedQuantity"
+          :aria-label="'采购数量 ' + (index + 1)"
+          @blur="normalizeNumber(record, 'plannedQuantity')"
         />
       </template>
       <template v-else-if="column.dataIndex === 'purchasePrice'">
         <a-input-number
-            string-mode
-            :precision="4"
-            :min="'0'"
-            :allow-clear="true"
-            v-model:value="record.purchasePrice"
-            :aria-label="'采购单价 ' + (index + 1)"
-            @blur="normalizeNumber(record, 'purchasePrice')"
+          string-mode
+          :precision="4"
+          :min="'0'"
+          :allow-clear="true"
+          v-model:value="record.purchasePrice"
+          :aria-label="'采购单价 ' + (index + 1)"
+          @blur="normalizeNumber(record, 'purchasePrice')"
         />
       </template>
       <template v-else-if="column.dataIndex === 'allocated'">
@@ -61,23 +56,23 @@
     <template #expandedRowRender="slot">
       <div class="alloc-block">
         <a-table
-            size="small"
-            :data-source="asItem(slot.record).allocations ?? []"
-            :columns="allocationColumns"
-            :pagination="false"
-            :row-key="(row: Allocation) => String(row.demandId)"
+          size="small"
+          :data-source="asItem(slot.record).allocations ?? []"
+          :columns="allocationColumns"
+          :pagination="false"
+          :row-key="(row: Allocation) => String(row.demandId)"
         >
-          <template #bodyCell="{ record: alloc, column, index: allocIndex }">
+          <template #bodyCell="{record: alloc, column, index: allocIndex}">
             <template v-if="column.dataIndex === 'salesOrderNo'">{{ alloc.salesOrderNo || '—' }}</template>
             <template v-else-if="column.dataIndex === 'demandUnit'">{{ alloc.demandUnit || '—' }}</template>
             <template v-else-if="column.dataIndex === 'quantity'">
               <a-input-number
-                  string-mode
-                  :precision="4"
-                  :min="'0.0001'"
-                  v-model:value="alloc.quantity"
-                  aria-label="分配数量"
-                  @blur="normalizeNumber(alloc, 'quantity')"
+                string-mode
+                :precision="4"
+                :min="'0.0001'"
+                v-model:value="alloc.quantity"
+                aria-label="分配数量"
+                @blur="normalizeNumber(alloc, 'quantity')"
               />
             </template>
             <template v-else-if="column.dataIndex === 'demandStatus'">
@@ -90,14 +85,9 @@
         </a-table>
 
         <a-space class="alloc-actions">
-          <a-button size="small" v-privilege="'scm:purchase:demand:allocate'"
-                    @click="openDemandPicker(asItem(slot.record))">
-            添加需求分配
-          </a-button>
+          <a-button size="small" v-privilege="'scm:purchase:demand:allocate'" @click="openDemandPicker(asItem(slot.record))"> 添加需求分配 </a-button>
           <span v-if="!asItem(slot.record).skuId" class="hint">请先选择采购商品</span>
-          <span v-else-if="!(asItem(slot.record).allocations ?? []).length" class="hint">
-            无需求来源，按采购量下单（采购量 ≠ 需求量）
-          </span>
+          <span v-else-if="!(asItem(slot.record).allocations ?? []).length" class="hint"> 无需求来源，按采购量下单（采购量 ≠ 需求量） </span>
         </a-space>
       </div>
     </template>
@@ -107,10 +97,10 @@
 
   <!-- 需求选择：只列同一 SKU且仍有可分配余量的需求（跨 SKU → 40995） -->
   <a-modal :open="picker.open" title="选择采购需求" width="900px" :footer="null" @cancel="picker.open = false">
-    <a-alert v-if="picker.error" :message="picker.error" type="error" show-icon/>
+    <a-alert v-if="picker.error" :message="picker.error" type="error" show-icon />
     <a-spin :spinning="picker.loading">
       <a-table size="small" :data-source="picker.rows" :columns="pickerColumns" :pagination="false" row-key="id">
-        <template #bodyCell="{ record: demand, column }">
+        <template #bodyCell="{record: demand, column}">
           <template v-if="column.dataIndex === 'unallocatedQuantity'">
             <span class="scm-quantity">{{ quantity(demand.unallocatedQuantity) }}</span>
           </template>
@@ -133,18 +123,10 @@ import SkuSelect from '/@/components/business/scm/sku-select/index.vue';
 import {purchaseDemandApi} from '/@/api/business/scm/purchase-demand-api';
 import {SCM_DEMAND_STATUS_ENUM} from '/@/constants/business/scm/purchase-const';
 import type {Allocation, Demand, Id, OrderItem} from '../purchase-types';
-import {
-  allocatedOnItem,
-  hasAllocation,
-  newAllocation,
-  newOrderItem,
-  normalizeTyped,
-  quantity,
-  unitMismatch,
-} from '../purchase-form-model';
+import {allocatedOnItem, hasAllocation, newAllocation, newOrderItem, normalizeTyped, quantity, unitMismatch} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 
-defineProps<{ items: OrderItem[] }>();
+defineProps<{items: OrderItem[]}>();
 
 const columns: TableColumnsType<OrderItem> = [
   {title: '商品 / 商品规格', dataIndex: 'skuId', width: 300},

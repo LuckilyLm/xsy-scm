@@ -8,13 +8,13 @@
   <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
     <div class="scm-filter-fields">
       <a-form-item label="状态">
-        <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px"/>
+        <a-select v-model:value="queryForm.status" :options="STATUS_OPTIONS" allow-clear placeholder="全部" style="width: 140px" />
       </a-form-item>
       <a-form-item label="包装码">
-        <a-input v-model:value="queryForm.unitCode" placeholder="包装码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.unitCode" placeholder="包装码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="批次号">
-        <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.lotNo" placeholder="批次号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
     </div>
     <div class="scm-filter-actions">
@@ -33,27 +33,23 @@
     <a-row class="smart-table-btn-block scm-table-toolbar">
       <div class="smart-table-operate-block"></div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRACE_CORRECTION"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRACE_CORRECTION" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.TRACE_CORRECTION"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '暂无更正申请' }"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      :id="SCM_INVENTORY_TABLE_ID.TRACE_CORRECTION"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无更正申请'}"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'unitCode'">
           <span class="scm-mono">{{ record.unitCode }}</span>
         </template>
@@ -61,15 +57,17 @@
           <span class="scm-mono">{{ record.lotNo || '—' }}</span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="STATUS_TONE[record.status] || 'neutral'" :label="STATUS_LABEL[record.status] || record.status"/>
+          <ScmStatusTag :tone="STATUS_TONE[record.status] || 'neutral'" :label="STATUS_LABEL[record.status] || record.status" />
         </template>
         <template v-else-if="column.dataIndex === 'action'">
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <template v-if="record.status === 'PENDING'">
-              <a-button type="link" size="small" @click="openDecision(record, 'approve')"
-                        v-privilege="'scm:inventory:unit:correct:approve'">批准</a-button>
-              <a-button type="link" size="small" danger @click="openDecision(record, 'reject')"
-                        v-privilege="'scm:inventory:unit:correct:approve'">驳回</a-button>
+              <a-button type="link" size="small" @click="openDecision(record, 'approve')" v-privilege="'scm:inventory:unit:correct:approve'"
+                >批准</a-button
+              >
+              <a-button type="link" size="small" danger @click="openDecision(record, 'reject')" v-privilege="'scm:inventory:unit:correct:approve'"
+                >驳回</a-button
+              >
             </template>
             <span v-else>—</span>
           </a-space>
@@ -80,19 +78,19 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <a-modal v-model:open="decisionOpen" :title="decisionTitle" :confirm-loading="deciding" @ok="submitDecision">
-    <a-alert v-if="decisionError" class="form-error" type="error" show-icon :message="decisionError"/>
+    <a-alert v-if="decisionError" class="form-error" type="error" show-icon :message="decisionError" />
     <a-descriptions bordered size="small" :column="1">
       <a-descriptions-item label="包装码">{{ current?.unitCode }}</a-descriptions-item>
       <a-descriptions-item label="客户">{{ current?.customerName || '—' }}</a-descriptions-item>
@@ -101,7 +99,7 @@
     </a-descriptions>
     <a-form layout="vertical">
       <a-form-item label="审批意见">
-        <a-textarea v-model:value="decisionReason" :maxlength="200" :rows="2" aria-label="审批意见"/>
+        <a-textarea v-model:value="decisionReason" :maxlength="200" :rows="2" aria-label="审批意见" />
       </a-form-item>
     </a-form>
   </a-modal>

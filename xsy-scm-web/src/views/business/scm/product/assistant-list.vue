@@ -4,10 +4,10 @@
     <a-card size="small" :bordered="false">
       <a-tabs v-model:activeKey="tab" destroy-inactive-tab-pane>
         <a-tab-pane key="UOM" tab="计量单位">
-          <UomTable/>
+          <UomTable />
         </a-tab-pane>
         <a-tab-pane key="TAG" tab="商品标签">
-          <TagTable/>
+          <TagTable />
         </a-tab-pane>
       </a-tabs>
     </a-card>

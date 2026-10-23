@@ -13,22 +13,16 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="调拨单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.transferNo" placeholder="调拨单号" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.transferNo" placeholder="调拨单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="源仓" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.fromWarehouseId" :options="warehouses" width="190px"/>
+        <WarehouseSelect v-model:value="queryForm.fromWarehouseId" :options="warehouses" width="190px" />
       </a-form-item>
       <a-form-item label="目标仓" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="queryForm.toWarehouseId" :options="warehouses" width="190px"/>
+        <WarehouseSelect v-model:value="queryForm.toWarehouseId" :options="warehouses" width="190px" />
       </a-form-item>
       <a-form-item label="状态" class="smart-query-form-item">
-        <a-select
-            v-model:value="queryForm.status"
-            :options="statusOptions"
-            placeholder="全部"
-            allow-clear
-            style="width: 130px"
-        />
+        <a-select v-model:value="queryForm.status" :options="statusOptions" placeholder="全部" allow-clear style="width: 130px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -48,35 +42,27 @@
   <a-card size="small" :bordered="false">
     <a-row class="smart-table-btn-block">
       <div class="smart-table-operate-block">
-        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:transfer:add'">
-          新建调拨单
-        </a-button>
-        <a-button style="margin-left: 8px" @click="openInTransit" v-privilege="'scm:inventory:transfer:query'">
-          在途库存
-        </a-button>
+        <a-button type="primary" @click="openCreate" v-privilege="'scm:inventory:transfer:add'"> 新建调拨单 </a-button>
+        <a-button style="margin-left: 8px" @click="openInTransit" v-privilege="'scm:inventory:transfer:query'"> 在途库存 </a-button>
       </div>
       <div class="smart-table-setting-block">
-        <TableOperator
-            v-model="columns"
-            :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRANSFER"
-            :refresh="queryData"
-        />
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_INVENTORY_TRANSFER" :refresh="queryData" />
       </div>
     </a-row>
 
     <a-table
-        :id="SCM_INVENTORY_TABLE_ID.TRANSFER"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '暂无调拨单' }"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      :id="SCM_INVENTORY_TABLE_ID.TRANSFER"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '暂无调拨单'}"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'direction'">
           <span class="transfer-direction">
             <span>{{ record.fromWarehouseName || '—' }}</span>
@@ -85,7 +71,7 @@
           </span>
         </template>
         <template v-else-if="column.dataIndex === 'status'">
-          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status"/>
+          <ScmStatusTag :tone="statusTone(record.status)" :label="record.statusDesc || record.status" />
         </template>
         <template v-else-if="column.dataIndex === 'shippedAt'">{{ datetime(record.shippedAt) }}</template>
         <template v-else-if="column.dataIndex === 'shippedBy'">{{ record.shippedBy || '—' }}</template>
@@ -95,25 +81,19 @@
           <!-- 行内常驻「详情」与本状态唯一的推进动作（草稿→发出，在途→收货），其余收进「更多」 -->
           <a-space :size="0" class="smart-table-operate scm-table-actions">
             <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-            <a-button
-                v-if="record.status === 'DRAFT'"
-                type="link"
-                size="small"
-                @click="onShip(record)"
-                v-privilege="'scm:inventory:transfer:ship'"
-            >
+            <a-button v-if="record.status === 'DRAFT'" type="link" size="small" @click="onShip(record)" v-privilege="'scm:inventory:transfer:ship'">
               发出
             </a-button>
             <a-button
-                v-else-if="record.status === 'SHIPPED'"
-                type="link"
-                size="small"
-                @click="onReceive(record)"
-                v-privilege="'scm:inventory:transfer:receive'"
+              v-else-if="record.status === 'SHIPPED'"
+              type="link"
+              size="small"
+              @click="onReceive(record)"
+              v-privilege="'scm:inventory:transfer:receive'"
             >
               收货
             </a-button>
-            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)"/>
+            <ScmActionMore :actions="rowActions(record)" @select="onRowAction($event, record)" />
           </a-space>
         </template>
         <template v-else>{{ record[column.dataIndex] ?? '—' }}</template>
@@ -122,64 +102,45 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
 
   <!-- 新建 / 编辑草稿 -->
-  <a-drawer
-      :open="drawerOpen"
-      :title="form.id ? `编辑调拨单 ${form.transferNo}` : '新建调拨单'"
-      :width="scmDrawerWidth('l')"
-      @close="closeDrawer"
-  >
+  <a-drawer :open="drawerOpen" :title="form.id ? `编辑调拨单 ${form.transferNo}` : '新建调拨单'" :width="scmDrawerWidth('l')" @close="closeDrawer">
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="app-drawer-form">
       <a-form-item label="源仓库（转出）" name="fromWarehouseId">
-        <WarehouseSelect v-model:value="form.fromWarehouseId" :options="warehouses" width="260px"/>
+        <WarehouseSelect v-model:value="form.fromWarehouseId" :options="warehouses" width="260px" />
       </a-form-item>
       <a-form-item label="目标仓库（转入）" name="toWarehouseId">
-        <WarehouseSelect v-model:value="form.toWarehouseId" :options="warehouses" width="260px"/>
+        <WarehouseSelect v-model:value="form.toWarehouseId" :options="warehouses" width="260px" />
       </a-form-item>
       <a-form-item label="备注" name="remark">
-        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count/>
+        <a-textarea v-model:value="form.remark" :rows="2" :maxlength="500" show-count />
       </a-form-item>
       <a-form-item label="调拨明细" required>
-        <a-table
-            size="small"
-            :data-source="form.items"
-            :columns="itemColumns"
-            row-key="_key"
-            bordered
-            :pagination="false"
-        >
-          <template #bodyCell="{ record, column, index }">
+        <a-table size="small" :data-source="form.items" :columns="itemColumns" row-key="_key" bordered :pagination="false">
+          <template #bodyCell="{record, column, index}">
             <template v-if="column.dataIndex === 'skuId'">
               <SkuSelect
-                  :value="record.skuId"
-                  :disabled-statuses="[]"
-                  width="260px"
-                  @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
+                :value="record.skuId"
+                :disabled-statuses="[]"
+                width="260px"
+                @update:value="(v) => (record.skuId = Array.isArray(v) ? v[0] : v)"
               />
             </template>
             <template v-else-if="column.dataIndex === 'quantity'">
-              <a-input-number
-                  v-model:value="record.quantity"
-                  :min="0.0001"
-                  :precision="4"
-                  :step="1"
-                  placeholder="0.0000"
-                  style="width: 140px"
-              />
+              <a-input-number v-model:value="record.quantity" :min="0.0001" :precision="4" :step="1" placeholder="0.0000" style="width: 140px" />
             </template>
             <template v-else-if="column.dataIndex === 'remark'">
-              <a-input v-model:value="record.remark" :maxlength="500"/>
+              <a-input v-model:value="record.remark" :maxlength="500" />
             </template>
             <template v-else-if="column.dataIndex === 'action'">
               <a-button type="link" size="small" danger @click="removeItem(index)">删除</a-button>
@@ -199,26 +160,20 @@
 
   <InventoryTransferDetailDrawer v-model:open="detailOpen" :detail="detail" />
   <!-- 在途库存报表（只读聚合，不进 inventory_balance） -->
-  <a-modal
-      :open="inTransitOpen"
-      title="在途库存"
-      width="1000"
-      :footer="null"
-      @cancel="inTransitOpen = false"
-  >
+  <a-modal :open="inTransitOpen" title="在途库存" width="1000" :footer="null" @cancel="inTransitOpen = false">
     <p class="scm-note scm-note--block">在途量不在任何仓库的余额里，对账时需单独计入。</p>
     <a-table
-        size="small"
-        :data-source="inTransitRows"
-        :columns="inTransitColumns"
-        row-key="rowKey"
-        bordered
-        :loading="inTransitLoading"
-        :pagination="false"
-        :locale="{ emptyText: '当前没有在途调拨' }"
-        :scroll="{ x: scmColumnsWidth(inTransitColumns) }"
+      size="small"
+      :data-source="inTransitRows"
+      :columns="inTransitColumns"
+      row-key="rowKey"
+      bordered
+      :loading="inTransitLoading"
+      :pagination="false"
+      :locale="{emptyText: '当前没有在途调拨'}"
+      :scroll="{x: scmColumnsWidth(inTransitColumns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'direction'">
           <span class="transfer-direction">
             <span>{{ record.fromWarehouseName || '—' }}</span>
@@ -255,16 +210,8 @@ import InventoryTransferDetailDrawer from './components/inventory-transfer-detai
 import {inventoryTransferApi} from '/@/api/business/scm/inventory-transfer-api';
 import {warehouseApi} from '/@/api/business/scm/warehouse-api';
 import {TABLE_ID_CONST} from '/@/constants/support/table-id-const';
-import {
-  SCM_INVENTORY_TABLE_ID,
-  SCM_INVENTORY_TRANSFER_STATUS_ENUM,
-} from '/@/constants/business/scm/inventory-const';
-import type {
-  InventoryInTransit,
-  InventoryTransfer,
-  InventoryTransferAdd,
-  InventoryTransferQuery,
-} from './inventory-types';
+import {SCM_INVENTORY_TABLE_ID, SCM_INVENTORY_TRANSFER_STATUS_ENUM} from '/@/constants/business/scm/inventory-const';
+import type {InventoryInTransit, InventoryTransfer, InventoryTransferAdd, InventoryTransferQuery} from './inventory-types';
 import type {Warehouse} from '../purchase/purchase-types';
 import {fixed4} from '../common/scm-fixed';
 import {quantityText, singleWarehouseDefault} from './inventory-model';
@@ -549,7 +496,9 @@ async function openDetail(record: InventoryTransfer) {
 function onShip(record: InventoryTransfer) {
   Modal.confirm({
     title: '发出调拨',
-    content: `确认从「${record.fromWarehouseName || '源仓'}」发出「${record.transferNo}」的明细数量？发出后源仓库存立即扣减，单据进入在途，等待目标仓收货。在途期间不可取消。`,
+    content: `确认从「${record.fromWarehouseName || '源仓'}」发出「${
+      record.transferNo
+    }」的明细数量？发出后源仓库存立即扣减，单据进入在途，等待目标仓收货。在途期间不可取消。`,
     okText: '确认发出',
     okType: 'danger',
     cancelText: '取消',
@@ -569,7 +518,9 @@ function onShip(record: InventoryTransfer) {
 function onReceive(record: InventoryTransfer) {
   Modal.confirm({
     title: '收货入库',
-    content: `确认「${record.toWarehouseName || '目标仓'}」已收到「${record.transferNo}」的明细数量？收货后目标仓库存增加，单据完成。目标仓的记账单位必须与调拨单位一致。`,
+    content: `确认「${record.toWarehouseName || '目标仓'}」已收到「${
+      record.transferNo
+    }」的明细数量？收货后目标仓库存增加，单据完成。目标仓的记账单位必须与调拨单位一致。`,
     okText: '确认收货',
     cancelText: '取消',
     onOk: async () => {
@@ -627,7 +578,7 @@ function onDelete(record: InventoryTransfer) {
 const inTransitOpen = ref(false);
 const inTransitLoading = ref(false);
 /** 加一个稳定的 rowKey：同一调拨单的同一 SKU 可能出现在多行（多张单），单靠单号+SKU 会撞。 */
-const inTransitRows = ref<Array<InventoryInTransit & { rowKey: string }>>([]);
+const inTransitRows = ref<Array<InventoryInTransit & {rowKey: string}>>([]);
 
 const inTransitColumns: TableColumnsType = [
   {title: '调拨单号', dataIndex: 'transferNo', width: 190},

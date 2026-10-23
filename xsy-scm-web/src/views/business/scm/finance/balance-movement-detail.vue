@@ -1,8 +1,8 @@
 <template>
   <a-drawer v-model:open="visible" title="余额来源流水" :width="scmDrawerWidth('s')">
-    <a-alert v-if="error" type="error" show-icon :message="error"/>
+    <a-alert v-if="error" type="error" show-icon :message="error" />
     <a-spin :spinning="loading">
-      <a-empty v-if="!loading && !error && !rows.length" description="没有可查看的来源流水"/>
+      <a-empty v-if="!loading && !error && !rows.length" description="没有可查看的来源流水" />
       <a-descriptions v-for="row in rows" :key="row.id" bordered size="small" :column="1">
         <a-descriptions-item label="流水号">{{ row.movementNo }}</a-descriptions-item>
         <a-descriptions-item label="业务客户">{{ row.customerName || '—' }}</a-descriptions-item>
@@ -21,18 +21,26 @@ import type {Id} from '../order/order-types';
 import {financeError} from './finance-errors';
 import {moneyText, dateTimeText} from './finance-form-model';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
-const visible = ref(false), loading = ref(false), error = ref('');
+const visible = ref(false),
+  loading = ref(false),
+  error = ref('');
 const rows = ref<BalanceMovement[]>([]);
 let generation = 0;
 async function open(filter: {movementId?: Id; sourceType?: string; sourceId?: Id}) {
   const current = ++generation;
-  visible.value = true; loading.value = true; error.value = ''; rows.value = [];
+  visible.value = true;
+  loading.value = true;
+  error.value = '';
+  rows.value = [];
   try {
     // 加载失败由弹窗内 Alert 承担，不再让全局 toast 重复说一遍
     const response = await paymentApi.movements(filter, {suppressGlobalErrorMessage: true});
     if (current === generation) rows.value = response.data.list;
-  } catch (cause) { if (current === generation) error.value = financeError(cause); }
-  finally { if (current === generation) loading.value = false; }
+  } catch (cause) {
+    if (current === generation) error.value = financeError(cause);
+  } finally {
+    if (current === generation) loading.value = false;
+  }
 }
 defineExpose({open});
 </script>

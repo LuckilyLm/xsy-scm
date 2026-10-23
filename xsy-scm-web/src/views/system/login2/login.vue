@@ -15,12 +15,11 @@
       <div class="login-title">账号登录</div>
       <a-form ref="formRef" class="login-form" :model="loginForm" :rules="rules">
         <a-form-item name="loginName">
-          <a-input v-model:value.trim="loginForm.loginName" placeholder="请输入用户名"/>
+          <a-input v-model:value.trim="loginForm.loginName" placeholder="请输入用户名" />
         </a-form-item>
         <a-form-item name="emailCode" v-if="emailCodeShowFlag">
           <a-input-group compact>
-            <a-input style="width: calc(100% - 110px)" v-model:value="loginForm.emailCode" autocomplete="on"
-                     placeholder="请输入邮箱验证码"/>
+            <a-input style="width: calc(100% - 110px)" v-model:value="loginForm.emailCode" autocomplete="on" placeholder="请输入邮箱验证码" />
             <a-button @click="sendSmsCode" class="code-btn" type="primary" :disabled="emailCodeButtonDisabled">
               {{ emailCodeTips }}
             </a-button>
@@ -28,15 +27,15 @@
         </a-form-item>
         <a-form-item name="password">
           <a-input-password
-              v-model:value="loginForm.password"
-              autocomplete="on"
-              :type="showPassword ? 'text' : 'password'"
-              placeholder="请输入密码"
+            v-model:value="loginForm.password"
+            autocomplete="on"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="请输入密码"
           />
         </a-form-item>
         <a-form-item name="captchaCode">
-          <a-input class="captcha-input" v-model:value.trim="loginForm.captchaCode" placeholder="请输入验证码"/>
-          <img class="captcha-img" :src="captchaBase64Image" @click="getCaptcha"/>
+          <a-input class="captcha-input" v-model:value.trim="loginForm.captchaCode" placeholder="请输入验证码" />
+          <img class="captcha-img" :src="captchaBase64Image" @click="getCaptcha" />
         </a-form-item>
         <a-form-item>
           <a-checkbox v-model:checked="rememberPwd">记住密码</a-checkbox>
@@ -49,7 +48,7 @@
   </div>
 </template>
 <script setup lang="ts">
-defineOptions({name: "SystemLoginTwo"});
+defineOptions({name: 'SystemLoginTwo'});
 import {message} from 'ant-design-vue';
 import {onMounted, onUnmounted, reactive, ref} from 'vue';
 import {useRouter} from 'vue-router';

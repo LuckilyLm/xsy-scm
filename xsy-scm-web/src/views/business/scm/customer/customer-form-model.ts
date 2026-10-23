@@ -15,40 +15,40 @@ const DECIMAL = /^\d{1,14}(\.\d{1,4})?$/;
 const PHONE = /^(1[3-9]\d{9}|0\d{2,3}-?\d{7,8})$/;
 
 export function emptyCustomer(): CustomerFormModel {
-    return {
-        // 区划六列（`AreaColumns`）只能显式列出：本模块要能被 `node --test` 直接加载，
-        // 不能有相对值导入。少一个键就会让上一条记录的区划串进新建的客户。
-        longitude: null,
-        latitude: null,
-        geomCrs: null,
-        provinceCode: null,
-        provinceName: null,
-        cityCode: null,
-        cityName: null,
-        districtCode: null,
-        districtName: null,
-        customerCode: '',
-        name: '',
-        customerTypeId: undefined,
-        parentCustomerId: undefined,
-        mallDeliveryWarehouseId: null,
-        clearMallDeliveryWarehouse: false,
-        sellerId: undefined,
-        supplierId: undefined,
-        contactName: '',
-        contactPhone: '',
-        address: '',
-        settleMode: 'INDEPENDENT',
-        codAllowed: false,
-        sharedSettlementEnabled: false,
-        creditLimit: '0.0000',
-        creditPeriodType: undefined,
-        creditAmountThreshold: undefined,
-        creditPeriodValue: undefined,
-        creditPeriodUnit: undefined,
-        settleDay: undefined,
-        remark: '',
-    };
+  return {
+    // 区划六列（`AreaColumns`）只能显式列出：本模块要能被 `node --test` 直接加载，
+    // 不能有相对值导入。少一个键就会让上一条记录的区划串进新建的客户。
+    longitude: null,
+    latitude: null,
+    geomCrs: null,
+    provinceCode: null,
+    provinceName: null,
+    cityCode: null,
+    cityName: null,
+    districtCode: null,
+    districtName: null,
+    customerCode: '',
+    name: '',
+    customerTypeId: undefined,
+    parentCustomerId: undefined,
+    mallDeliveryWarehouseId: null,
+    clearMallDeliveryWarehouse: false,
+    sellerId: undefined,
+    supplierId: undefined,
+    contactName: '',
+    contactPhone: '',
+    address: '',
+    settleMode: 'INDEPENDENT',
+    codAllowed: false,
+    sharedSettlementEnabled: false,
+    creditLimit: '0.0000',
+    creditPeriodType: undefined,
+    creditAmountThreshold: undefined,
+    creditPeriodValue: undefined,
+    creditPeriodUnit: undefined,
+    settleDay: undefined,
+    remark: '',
+  };
 }
 
 /**
@@ -57,95 +57,95 @@ export function emptyCustomer(): CustomerFormModel {
  * 不做清理的话，「按金额」的行会残留上一次「按时间」的账期值，后端会直接判为非法组合（40000）。
  */
 export function applyCreditPeriodType(form: CustomerFormModel, type?: CreditPeriodType | null): CustomerFormModel {
-    const next: CustomerFormModel = {...form, creditPeriodType: type ?? undefined};
-    if (type !== 'BY_AMOUNT') {
-        next.creditAmountThreshold = undefined;
-    }
-    if (type !== 'BY_TIME') {
-        next.creditPeriodValue = undefined;
-        next.creditPeriodUnit = undefined;
-        next.settleDay = undefined;
-    } else {
-        next.creditPeriodUnit = next.creditPeriodUnit ?? 'DAY';
-    }
-    if (next.creditPeriodUnit !== 'MONTH') {
-        next.settleDay = undefined;
-    }
-    return next;
+  const next: CustomerFormModel = {...form, creditPeriodType: type ?? undefined};
+  if (type !== 'BY_AMOUNT') {
+    next.creditAmountThreshold = undefined;
+  }
+  if (type !== 'BY_TIME') {
+    next.creditPeriodValue = undefined;
+    next.creditPeriodUnit = undefined;
+    next.settleDay = undefined;
+  } else {
+    next.creditPeriodUnit = next.creditPeriodUnit ?? 'DAY';
+  }
+  if (next.creditPeriodUnit !== 'MONTH') {
+    next.settleDay = undefined;
+  }
+  return next;
 }
 
 /** 单位切到「天」时清掉结算日（按天账期没有结算日概念）。 */
 export function applyCreditPeriodUnit(form: CustomerFormModel, unit?: 'DAY' | 'MONTH' | null): CustomerFormModel {
-    const next: CustomerFormModel = {...form, creditPeriodUnit: unit ?? undefined};
-    if (unit !== 'MONTH') {
-        next.settleDay = undefined;
-    }
-    return next;
+  const next: CustomerFormModel = {...form, creditPeriodUnit: unit ?? undefined};
+  if (unit !== 'MONTH') {
+    next.settleDay = undefined;
+  }
+  return next;
 }
 
 export function validateCustomer(form: CustomerFormModel): string | undefined {
-    if (!form.name?.trim()) {
-        return '请输入客户名称';
+  if (!form.name?.trim()) {
+    return '请输入客户名称';
+  }
+  if (!form.customerTypeId) {
+    return '请选择客户类型';
+  }
+  const phone = form.contactPhone?.trim();
+  if (phone && !PHONE.test(phone)) {
+    return '联系电话格式不正确';
+  }
+  const creditLimit = form.creditLimit?.trim();
+  if (creditLimit && !DECIMAL.test(creditLimit)) {
+    return '授信额度须为非负数，最多四位小数';
+  }
+  if (form.creditPeriodType === 'BY_AMOUNT') {
+    const threshold = form.creditAmountThreshold?.trim();
+    if (!threshold) {
+      return '按金额账期必须填写金额阈值';
     }
-    if (!form.customerTypeId) {
-        return '请选择客户类型';
+    if (!DECIMAL.test(threshold)) {
+      return '金额阈值须为非负数，最多四位小数';
     }
-    const phone = form.contactPhone?.trim();
-    if (phone && !PHONE.test(phone)) {
-        return '联系电话格式不正确';
+  }
+  if (form.creditPeriodType === 'BY_TIME') {
+    if (!form.creditPeriodValue || form.creditPeriodValue <= 0) {
+      return '按时间账期必须填写大于 0 的账期值';
     }
-    const creditLimit = form.creditLimit?.trim();
-    if (creditLimit && !DECIMAL.test(creditLimit)) {
-        return '授信额度须为非负数，最多四位小数';
+    if (!form.creditPeriodUnit) {
+      return '请选择账期单位';
     }
-    if (form.creditPeriodType === 'BY_AMOUNT') {
-        const threshold = form.creditAmountThreshold?.trim();
-        if (!threshold) {
-            return '按金额账期必须填写金额阈值';
-        }
-        if (!DECIMAL.test(threshold)) {
-            return '金额阈值须为非负数，最多四位小数';
-        }
+    if (form.creditPeriodUnit === 'MONTH' && form.settleDay != null && (form.settleDay < 1 || form.settleDay > 28)) {
+      return '固定结算日必须在 1 到 28 之间';
     }
-    if (form.creditPeriodType === 'BY_TIME') {
-        if (!form.creditPeriodValue || form.creditPeriodValue <= 0) {
-            return '按时间账期必须填写大于 0 的账期值';
-        }
-        if (!form.creditPeriodUnit) {
-            return '请选择账期单位';
-        }
-        if (form.creditPeriodUnit === 'MONTH' && form.settleDay != null && (form.settleDay < 1 || form.settleDay > 28)) {
-            return '固定结算日必须在 1 到 28 之间';
-        }
-    }
-    return undefined;
+  }
+  return undefined;
 }
 
 /** 提交客户表单时将空字符串转为 null，允许清空可选字段。客户编码由服务端生成，不放入提交参数。 */
 export function toCustomerPayload(form: CustomerFormModel): CustomerPayload {
-    const blankToNull = (value?: string | null): string | null => {
-        const text = value == null ? '' : String(value).trim();
-        return text === '' ? null : text;
-    };
-    const {customerCode, ...rest} = form;
-    return {
-        ...rest,
-        name: (form.name ?? '').trim(),
-        parentCustomerId: form.parentCustomerId ?? null,
-        sellerId: form.sellerId ?? null,
-        supplierId: form.supplierId ?? null,
-        contactName: blankToNull(form.contactName),
-        contactPhone: blankToNull(form.contactPhone),
-        address: blankToNull(form.address),
-        remark: blankToNull(form.remark),
-        creditLimit: blankToNull(form.creditLimit),
-        codAllowed: form.codAllowed === true,
-        // 非 GROUP 结算时后端会强制置假，这里也一并收口，避免提交一个语义为空的开关
-        sharedSettlementEnabled: form.settleMode === 'GROUP' && form.sharedSettlementEnabled === true,
-        creditPeriodType: form.creditPeriodType ?? null,
-        creditAmountThreshold: blankToNull(form.creditAmountThreshold),
-        creditPeriodValue: form.creditPeriodValue ?? null,
-        creditPeriodUnit: form.creditPeriodUnit ?? null,
-        settleDay: form.settleDay ?? null,
-    };
+  const blankToNull = (value?: string | null): string | null => {
+    const text = value == null ? '' : String(value).trim();
+    return text === '' ? null : text;
+  };
+  const {customerCode, ...rest} = form;
+  return {
+    ...rest,
+    name: (form.name ?? '').trim(),
+    parentCustomerId: form.parentCustomerId ?? null,
+    sellerId: form.sellerId ?? null,
+    supplierId: form.supplierId ?? null,
+    contactName: blankToNull(form.contactName),
+    contactPhone: blankToNull(form.contactPhone),
+    address: blankToNull(form.address),
+    remark: blankToNull(form.remark),
+    creditLimit: blankToNull(form.creditLimit),
+    codAllowed: form.codAllowed === true,
+    // 非 GROUP 结算时后端会强制置假，这里也一并收口，避免提交一个语义为空的开关
+    sharedSettlementEnabled: form.settleMode === 'GROUP' && form.sharedSettlementEnabled === true,
+    creditPeriodType: form.creditPeriodType ?? null,
+    creditAmountThreshold: blankToNull(form.creditAmountThreshold),
+    creditPeriodValue: form.creditPeriodValue ?? null,
+    creditPeriodUnit: form.creditPeriodUnit ?? null,
+    settleDay: form.settleDay ?? null,
+  };
 }

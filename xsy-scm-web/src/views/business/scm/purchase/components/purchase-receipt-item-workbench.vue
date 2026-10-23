@@ -8,16 +8,16 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="供应商" class="smart-query-form-item">
-        <SupplierSelect v-model:value="supplierId" width="200px"/>
+        <SupplierSelect v-model:value="supplierId" width="200px" />
       </a-form-item>
       <a-form-item label="收货仓库" class="smart-query-form-item">
-        <WarehouseSelect v-model:value="warehouseId" width="200px" placeholder="请选择仓库"/>
+        <WarehouseSelect v-model:value="warehouseId" width="200px" placeholder="请选择仓库" />
       </a-form-item>
       <a-form-item label="采购单号" class="smart-query-form-item">
-        <a-input v-model:value="orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="商品关键字" class="smart-query-form-item">
-        <a-input v-model:value="keyword" placeholder="商品编码 / 名称 / 商品规格编码" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="keyword" placeholder="商品编码 / 名称 / 商品规格编码" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -36,17 +36,17 @@
 
   <a-card size="small" :bordered="false">
     <a-table
-        id="scm-purchase-receipt-item-workbench-table"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        :row-key="rowKey"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      id="scm-purchase-receipt-item-workbench-table"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      :row-key="rowKey"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="numericColumns.includes(column.dataIndex)">
           <span class="scm-quantity">{{ quantity(record[column.dataIndex]) }}</span>
         </template>
@@ -61,13 +61,13 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="pageNum"
-          v-model:page-size="pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
@@ -124,14 +124,17 @@ async function queryData() {
   error.value = '';
   try {
     // 加载失败由页内 Alert 承担，不再让全局 toast 重复说一遍
-    const r = await purchaseReceiptApi.itemWorkbench({
-      supplierId: supplierId.value,
-      warehouseId: warehouseId.value,
-      orderNo: orderNo.value || undefined,
-      keyword: keyword.value || undefined,
-      pageNum: pageNum.value,
-      pageSize: pageSize.value,
-    }, {suppressGlobalErrorMessage: true});
+    const r = await purchaseReceiptApi.itemWorkbench(
+      {
+        supplierId: supplierId.value,
+        warehouseId: warehouseId.value,
+        orderNo: orderNo.value || undefined,
+        keyword: keyword.value || undefined,
+        pageNum: pageNum.value,
+        pageSize: pageSize.value,
+      },
+      {suppressGlobalErrorMessage: true}
+    );
     if (id === requestId) {
       tableData.value = r.data.list;
       total.value = r.data.total;

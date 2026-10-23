@@ -1,69 +1,86 @@
 <template>
-  <a-drawer :title="exchangeReturnId ? '创建关联换货订单' : form.orderId ? '编辑销售订单' : '新建销售订单'" :open="visible" :width="scmDrawerWidth('xl')"
-            @close="closeDrawer">
-    <a-alert v-if="error" :message="error" type="error" show-icon/>
+  <a-drawer
+    :title="exchangeReturnId ? '创建关联换货订单' : form.orderId ? '编辑销售订单' : '新建销售订单'"
+    :open="visible"
+    :width="scmDrawerWidth('xl')"
+    @close="closeDrawer"
+  >
+    <a-alert v-if="error" :message="error" type="error" show-icon />
     <p v-if="exchangeReturnId" class="scm-note">原货已接收。替换订单重新定价并从草稿开始；后续提交、预留和配送按正常订单办理，不自动抵扣退款。</p>
     <a-spin :spinning="loading">
       <a-form ref="formRef" :model="flatModel" :rules="formRules" layout="vertical" class="app-drawer-form">
         <a-row :gutter="20">
           <a-col :span="12">
             <a-form-item label="客户" name="customerId" required>
-              <CustomerSelect v-if="!form.orderId" v-model:value="form.customerId" :disabled="!!exchangeReturnId" @change="customerChanged"/>
-              <a-input v-else :value="form.customerNameSnapshot" disabled/>
+              <CustomerSelect v-if="!form.orderId" v-model:value="form.customerId" :disabled="!!exchangeReturnId" @change="customerChanged" />
+              <a-input v-else :value="form.customerNameSnapshot" disabled />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="订单来源" name="orderSource">
-              <a-select v-model:value="form.orderSource" :disabled="!!exchangeReturnId"
-                        :options="[{value:'ADMIN',label:'后台录单'},{value:'SUPPLEMENT',label:'补单'}]"
-                        style="width:100%"/>
+              <a-select
+                v-model:value="form.orderSource"
+                :disabled="!!exchangeReturnId"
+                :options="[
+                  {value: 'ADMIN', label: '后台录单'},
+                  {value: 'SUPPLEMENT', label: '补单'},
+                ]"
+                style="width: 100%"
+              />
             </a-form-item>
           </a-col>
-          <a-col :span="12" v-if="form.orderSource==='SUPPLEMENT'">
+          <a-col :span="12" v-if="form.orderSource === 'SUPPLEMENT'">
             <a-form-item label="关联原订单" name="originalOrderId">
-              <a-select v-model:value="form.originalOrderId" show-search allow-clear :filter-option="false" :disabled="!!exchangeReturnId"
-                        :options="originals" @search="loadOriginals" placeholder="搜索已确认订单号"/>
+              <a-select
+                v-model:value="form.originalOrderId"
+                show-search
+                allow-clear
+                :filter-option="false"
+                :disabled="!!exchangeReturnId"
+                :options="originals"
+                @search="loadOriginals"
+                placeholder="搜索已确认订单号"
+              />
             </a-form-item>
           </a-col>
-          <a-col :span="12" v-if="form.orderSource==='SUPPLEMENT'">
-              <a-form-item label="补单原因" name="supplementReason" required>
-                <a-textarea v-model:value="form.supplementReason" :maxlength="500" :rows="2" show-count/>
+          <a-col :span="12" v-if="form.orderSource === 'SUPPLEMENT'">
+            <a-form-item label="补单原因" name="supplementReason" required>
+              <a-textarea v-model:value="form.supplementReason" :maxlength="500" :rows="2" show-count />
             </a-form-item>
           </a-col>
           <a-col :span="12" v-if="!form.orderId">
             <a-form-item label="配送仓库" name="deliveryWarehouseId">
-              <WarehouseSelect v-model:value="warehouseValue" placeholder="组合商品 / 成本公式须明确选仓" width="100%"/>
+              <WarehouseSelect v-model:value="warehouseValue" placeholder="组合商品 / 成本公式须明确选仓" width="100%" />
               <p class="scm-note">仅用于本次订单，选仓后重新计算该仓的成本公式价格。</p>
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="期望配送时间" name="expectDeliveryTime">
-              <a-date-picker v-model:value="form.expectDeliveryTime" show-time value-format="YYYY-MM-DD HH:mm:ss"
-                             style="width:100%"/>
+              <a-date-picker v-model:value="form.expectDeliveryTime" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" />
             </a-form-item>
           </a-col>
           <a-col :span="24">
             <a-form-item label="备注" name="remark">
-              <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count/>
+              <a-textarea v-model:value="form.remark" :maxlength="500" :rows="2" show-count />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="收货人" name="receiverName" required>
-              <a-input v-model:value="form.address.receiverName" :disabled="!!form.orderId" maxlength="100"/>
+              <a-input v-model:value="form.address.receiverName" :disabled="!!form.orderId" maxlength="100" />
             </a-form-item>
           </a-col>
           <a-col :span="12">
             <a-form-item label="联系电话" name="receiverPhone" required class="app-drawer-field--compact">
-              <a-input v-model:value="form.address.receiverPhone" :disabled="!!form.orderId" maxlength="32"/>
+              <a-input v-model:value="form.address.receiverPhone" :disabled="!!form.orderId" maxlength="32" />
             </a-form-item>
           </a-col>
           <a-col :span="24">
             <a-form-item label="收货地址" name="address" required class="app-drawer-field--wide">
-              <a-input v-model:value="form.address.address" :disabled="!!form.orderId" maxlength="500"/>
+              <a-input v-model:value="form.address.address" :disabled="!!form.orderId" maxlength="500" />
             </a-form-item>
           </a-col>
         </a-row>
-        <ItemTable ref="itemTableRef" :items="form.items" :customer-id="form.customerId" @price="preview"/>
+        <ItemTable ref="itemTableRef" :items="form.items" :customer-id="form.customerId" @price="preview" />
         <div class="item-actions">
           <a-button @click="preview" :loading="pricing">重新解析价格</a-button>
         </div>
@@ -91,7 +108,18 @@ import CustomerSelect from '/@/components/business/scm/customer-select/index.vue
 import WarehouseSelect from '/@/components/business/scm/warehouse-select/index.vue';
 import {customerApi} from '/@/api/business/scm/customer-api';
 import {orderApi} from '/@/api/business/scm/order-api';
-import {newOrder, nextOrderForCustomer, payload, validateOrder, fixed, draftKey, serializeDraft, applyDraft, fromHistory, type Draft} from '../order-form-model';
+import {
+  newOrder,
+  nextOrderForCustomer,
+  payload,
+  validateOrder,
+  fixed,
+  draftKey,
+  serializeDraft,
+  applyDraft,
+  fromHistory,
+  type Draft,
+} from '../order-form-model';
 import {localSave, localRead, localRemove} from '/@/utils/local-util';
 import {useUserStore} from '/@/store/modules/system/user';
 import {orderError} from '../order-errors';
@@ -99,16 +127,23 @@ import type {Order, Id} from '../order-types';
 import ItemTable from './order-item-editable-table.vue';
 import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 
-const emit = defineEmits<{ saved: [] }>();
-const form = ref<Order>(newOrder()), visible = ref(false), loading = ref(false), saving = ref(false),
-    pricing = ref(false), error = ref(''), originals = ref<{ value: Id; label: string }[]>([]);
+const emit = defineEmits<{saved: []}>();
+const form = ref<Order>(newOrder()),
+  visible = ref(false),
+  loading = ref(false),
+  saving = ref(false),
+  pricing = ref(false),
+  error = ref(''),
+  originals = ref<{value: Id; label: string}[]>([]);
 const exchangeReturnId = ref<Id>();
 const formRef = ref();
 /** 收货信息在 `form.address.*` 里，展平一份给表单校验用（顶层 `address` 就是详细地址）。 */
 const flatModel = computed(() => ({...form.value, ...form.value.address}));
 const warehouseValue = computed<Id | undefined>({
   get: () => form.value.deliveryWarehouseId ?? undefined,
-  set: value => { form.value.deliveryWarehouseId = value ?? null; },
+  set: (value) => {
+    form.value.deliveryWarehouseId = value ?? null;
+  },
 });
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
@@ -116,12 +151,15 @@ const formRules = {
   receiverName: [{required: true, message: '请填写收货人', trigger: 'blur'}],
   receiverPhone: [{required: true, message: '请填写联系电话', trigger: 'blur'}],
   address: [{required: true, message: '请填写收货地址', trigger: 'blur'}],
-  supplementReason: [{
-    validator: () => (form.value.orderSource !== 'SUPPLEMENT' || form.value.supplementReason?.trim()
-        ? Promise.resolve()
-        : Promise.reject(new Error('请填写补单原因'))),
-    trigger: 'blur',
-  }],
+  supplementReason: [
+    {
+      validator: () =>
+        form.value.orderSource !== 'SUPPLEMENT' || form.value.supplementReason?.trim()
+          ? Promise.resolve()
+          : Promise.reject(new Error('请填写补单原因')),
+      trigger: 'blur',
+    },
+  ],
 };
 const userStore = useUserStore();
 let requestId = 0;
@@ -134,7 +172,7 @@ function draftStorageKey() {
 function readDraft(): Draft | null {
   try {
     const raw = localRead(draftStorageKey());
-    return raw ? JSON.parse(raw) as Draft : null;
+    return raw ? (JSON.parse(raw) as Draft) : null;
   } catch {
     return null;
   }
@@ -158,7 +196,7 @@ async function open(id?: Id) {
     loading.value = true;
     try {
       form.value = (await orderApi.detail(id, {suppressGlobalErrorMessage: true})).data;
-      form.value.items.forEach(i => {
+      form.value.items.forEach((i) => {
         i.unitPrice = i.manualPriceOverride ? i.draftUnitPrice : null;
         i.overrideReason = i.manualPriceReason;
       });
@@ -202,22 +240,25 @@ async function promptRestoreDraft() {
         await preview();
       }
     },
-    onCancel: () => clearDraft()
+    onCancel: () => clearDraft(),
   });
 }
 
 /** 明细表暴露的收起价签入口；只用到这一个契约，不依赖组件实例的具体类型。 */
-const itemTableRef = ref<{ closeRecentPopover: () => void } | null>(null);
+const itemTableRef = ref<{closeRecentPopover: () => void} | null>(null);
 
 // 关闭路径不止一条（关闭按钮、Esc、创建成功自动关），所以在 visible 落 false 时统一收起，
 // 而不是在各处分别补调用。
-watch(() => form.value.deliveryWarehouseId, () => {
-  if (visible.value && !form.value.orderId && form.value.customerId && form.value.items.length) {
-    void preview();
+watch(
+  () => form.value.deliveryWarehouseId,
+  () => {
+    if (visible.value && !form.value.orderId && form.value.customerId && form.value.items.length) {
+      void preview();
+    }
   }
-});
+);
 
-watch(visible, opened => {
+watch(visible, (opened) => {
   if (opened) window.addEventListener('beforeunload', persistUnsavedDraft);
   else {
     window.removeEventListener('beforeunload', persistUnsavedDraft);
@@ -269,8 +310,12 @@ async function openFromHistory(id: Id) {
   }
 }
 
-async function openForExchange(returnId: Id, returnNo: string, originalOrderId: Id,
-    returnedLines: Array<{orderItemId: Id; receivedQuantity: string}>): Promise<void> {
+async function openForExchange(
+  returnId: Id,
+  returnNo: string,
+  originalOrderId: Id,
+  returnedLines: Array<{orderItemId: Id; receivedQuantity: string}>
+): Promise<void> {
   const current = ++requestId;
   exchangeReturnId.value = returnId;
   error.value = '';
@@ -280,7 +325,7 @@ async function openForExchange(returnId: Id, returnNo: string, originalOrderId: 
     const original = (await orderApi.detail(originalOrderId, {suppressGlobalErrorMessage: true})).data;
     if (current !== requestId || !visible.value || exchangeReturnId.value !== returnId) return;
     const next = fromHistory(original);
-    const receivedByItem = new Map(returnedLines.map(line => [String(line.orderItemId), line.receivedQuantity]));
+    const receivedByItem = new Map(returnedLines.map((line) => [String(line.orderItemId), line.receivedQuantity]));
     next.items = original.items.flatMap((source, index) => {
       const quantity = receivedByItem.get(String(source.itemId));
       return quantity ? [{...next.items[index], orderedQuantity: quantity}] : [];
@@ -307,7 +352,7 @@ async function customerChanged(id?: Id) {
     form.value.address = {
       receiverName: c.contactName ?? '',
       receiverPhone: c.contactPhone ?? '',
-      address: c.address ?? ''
+      address: c.address ?? '',
     };
     form.value.originalOrderId = null;
     await preview();
@@ -319,14 +364,13 @@ async function customerChanged(id?: Id) {
 
 async function preview() {
   const customerId = form.value.customerId;
-  const skuIds = form.value.items.flatMap(i => i.skuId ? [i.skuId] : []);
+  const skuIds = form.value.items.flatMap((i) => (i.skuId ? [i.skuId] : []));
   if (!customerId || !skuIds.length) return;
   pricing.value = true;
   try {
-    const r = await orderApi.preview({customerId, skuIds, warehouseId: form.value.deliveryWarehouseId ?? null},
-      {suppressGlobalErrorMessage: true});
+    const r = await orderApi.preview({customerId, skuIds, warehouseId: form.value.deliveryWarehouseId ?? null}, {suppressGlobalErrorMessage: true});
     for (const i of form.value.items) {
-      const p = r.data.items.find(p => String(p.skuId) === String(i.skuId));
+      const p = r.data.items.find((p) => String(p.skuId) === String(i.skuId));
       i.draftUnitPrice = p?.unitPrice ?? null;
       i.draftPriceSource = p?.priceSource ?? null;
     }
@@ -339,14 +383,17 @@ async function preview() {
 
 async function loadOriginals(keyword: string) {
   try {
-    const r = await orderApi.query({
-      pageNum: 1,
-      pageSize: 20,
-      status: 'CONFIRMED',
-      customerId: form.value.customerId,
-      keyword
-    }, {suppressGlobalErrorMessage: true});
-    originals.value = r.data.list.map(o => ({value: o.orderId!, label: o.orderNo!}));
+    const r = await orderApi.query(
+      {
+        pageNum: 1,
+        pageSize: 20,
+        status: 'CONFIRMED',
+        customerId: form.value.customerId,
+        keyword,
+      },
+      {suppressGlobalErrorMessage: true}
+    );
+    originals.value = r.data.list.map((o) => ({value: o.orderId!, label: o.orderNo!}));
   } catch (e) {
     error.value = orderError(e);
   }
@@ -363,14 +410,16 @@ async function continueWithNextOrder(previous: Order): Promise<void> {
   if (!form.value.customerId) return;
   loading.value = true;
   try {
-    const c = (await customerApi.detail(form.value.customerId, {
-      suppressGlobalErrorMessage: true
-    })).data;
+    const c = (
+      await customerApi.detail(form.value.customerId, {
+        suppressGlobalErrorMessage: true,
+      })
+    ).data;
     if (token !== requestId || !visible.value) return;
     form.value.address = {
       receiverName: c.contactName ?? '',
       receiverPhone: c.contactPhone ?? '',
-      address: c.address ?? ''
+      address: c.address ?? '',
     };
   } catch {
     if (token === requestId && visible.value) {
@@ -387,7 +436,7 @@ async function save(draft = false, continueCreating = false) {
   saving.value = true;
   error.value = '';
   try {
-    form.value.items.forEach(i => {
+    form.value.items.forEach((i) => {
       i.orderedQuantity = fixed(i.orderedQuantity);
       if (i.unitPrice != null) i.unitPrice = fixed(i.unitPrice);
     });

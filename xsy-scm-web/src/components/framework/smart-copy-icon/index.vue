@@ -1,10 +1,10 @@
 <template>
   <CopyOutlined
-      @click="copy"
-      :style="{
+    @click="copy"
+    :style="{
       color: `${color}`,
     }"
-      class="icon"
+    class="icon"
   />
 </template>
 

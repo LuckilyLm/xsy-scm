@@ -3,23 +3,19 @@
   *
 -->
 <template>
-  <a-modal v-model:open="visible" :title="formState.departmentId ? '编辑部门' : '添加部门'" @ok="handleOk"
-           destroyOnClose>
+  <a-modal v-model:open="visible" :title="formState.departmentId ? '编辑部门' : '添加部门'" @ok="handleOk" destroyOnClose>
     <a-form ref="formRef" :model="formState" :rules="rules" layout="vertical">
       <a-form-item label="上级部门" name="parentId" v-if="formState.parentId != 0">
-        <DepartmentTreeSelect ref="departmentTreeSelect" v-model:value="formState.parentId" :defaultValueFlag="false"
-                              width="100%"/>
+        <DepartmentTreeSelect ref="departmentTreeSelect" v-model:value="formState.parentId" :defaultValueFlag="false" width="100%" />
       </a-form-item>
       <a-form-item label="部门名称" name="departmentName">
-        <a-input v-model:value.trim="formState.departmentName" placeholder="请输入部门名称"/>
+        <a-input v-model:value.trim="formState.departmentName" placeholder="请输入部门名称" />
       </a-form-item>
       <a-form-item label="部门负责人" name="managerId">
-        <EmployeeSelect ref="employeeSelect" placeholder="请选择部门负责人" width="100%"
-                        v-model:value="formState.managerId"
-                        :leaveFlag="false"/>
+        <EmployeeSelect ref="employeeSelect" placeholder="请选择部门负责人" width="100%" v-model:value="formState.managerId" :leaveFlag="false" />
       </a-form-item>
       <a-form-item label="部门排序 （值越大越靠前！）" name="sort">
-        <a-input-number style="width: 100%" v-model:value="formState.sort" :min="0" placeholder="请输入部门排序"/>
+        <a-input-number style="width: 100%" v-model:value="formState.sort" :min="0" placeholder="请输入部门排序" />
       </a-form-item>
     </a-form>
   </a-modal>

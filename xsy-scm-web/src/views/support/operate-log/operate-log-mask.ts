@@ -7,8 +7,7 @@
 
 const MASKED_VALUE = '******';
 
-const SECRET_KEY_PATTERN =
-  /(password|passwd|pwd|token|secret|credential|authorization|accessToken|refreshToken|sessionToken|apiKey|api_key)/i;
+const SECRET_KEY_PATTERN = /(password|passwd|pwd|token|secret|credential|authorization|accessToken|refreshToken|sessionToken|apiKey|api_key)/i;
 
 export function maskSensitive<T>(input: T): T {
   if (Array.isArray(input)) {

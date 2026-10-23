@@ -7,10 +7,10 @@
     <a-form class="smart-query-form">
       <a-row class="smart-query-form-row">
         <a-form-item label="关键字" class="smart-query-form-item">
-          <a-input style="width: 150px" v-model:value="params.keyword" placeholder="关键字"/>
+          <a-input style="width: 150px" v-model:value="params.keyword" placeholder="关键字" />
         </a-form-item>
         <a-form-item label="部门" class="smart-query-form-item">
-          <DepartmentTreeSelect style="width: 200px" ref="departmentTreeSelect" v-model:value="params.departmentId"/>
+          <DepartmentTreeSelect style="width: 200px" ref="departmentTreeSelect" v-model:value="params.departmentId" />
         </a-form-item>
         <a-form-item label="状态" class="smart-query-form-item">
           <a-select style="width: 120px" v-model:value="params.disabledFlag" placeholder="请选择状态" allowClear>
@@ -21,13 +21,13 @@
         <a-form-item class="smart-query-form-item smart-margin-left10">
           <a-button type="primary" @click="onSearch">
             <template #icon>
-              <SearchOutlined/>
+              <SearchOutlined />
             </template>
             查询
           </a-button>
           <a-button @click="reset" class="smart-margin-left10">
             <template #icon>
-              <ReloadOutlined/>
+              <ReloadOutlined />
             </template>
             重置
           </a-button>
@@ -35,17 +35,17 @@
       </a-row>
     </a-form>
     <a-table
-        :row-selection="{ selectedRowKeys: selectedRowKeyList, onChange: onSelectChange, getCheckboxProps: getCheckboxProps }"
-        :loading="tableLoading"
-        size="small"
-        :columns="columns"
-        :data-source="tableData"
-        :pagination="false"
-        bordered
-        rowKey="employeeId"
-        :scroll="{ y: 300 }"
+      :row-selection="{selectedRowKeys: selectedRowKeyList, onChange: onSelectChange, getCheckboxProps: getCheckboxProps}"
+      :loading="tableLoading"
+      size="small"
+      :columns="columns"
+      :data-source="tableData"
+      :pagination="false"
+      bordered
+      rowKey="employeeId"
+      :scroll="{y: 300}"
     >
-      <template #bodyCell="{ text, column }">
+      <template #bodyCell="{text, column}">
         <template v-if="column.dataIndex === 'disabledFlag'">
           <a-tag :color="text ? 'error' : 'processing'">{{ text ? '禁用' : '启用' }}</a-tag>
         </template>
@@ -57,16 +57,16 @@
     </a-table>
     <div class="smart-query-table-page">
       <a-pagination
-          showSizeChanger
-          showQuickJumper
-          show-less-items
-          :pageSizeOptions="PAGE_SIZE_OPTIONS"
-          :defaultPageSize="params.pageSize"
-          v-model:current="params.pageNum"
-          v-model:pageSize="params.pageSize"
-          :total="total"
-          @change="queryEmployee"
-          :show-total="(total) => `共${total}条`"
+        showSizeChanger
+        showQuickJumper
+        show-less-items
+        :pageSizeOptions="PAGE_SIZE_OPTIONS"
+        :defaultPageSize="params.pageSize"
+        v-model:current="params.pageNum"
+        v-model:pageSize="params.pageSize"
+        :total="total"
+        @change="queryEmployee"
+        :show-total="(total) => `共${total}条`"
       />
     </div>
   </a-modal>

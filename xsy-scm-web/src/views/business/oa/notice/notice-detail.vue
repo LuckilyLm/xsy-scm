@@ -1,6 +1,6 @@
 <!--
   * 通知  详情
-  * 
+  *
 -->
 <template>
   <a-card style="margin-bottom: 15px" size="small">
@@ -9,10 +9,7 @@
         <a-button type="primary" size="small" @click="onEdit">编辑</a-button>
       </template>
       <a-descriptions-item label="分类">{{ noticeDetail.noticeTypeName }}</a-descriptions-item>
-      <a-descriptions-item label="文号">{{
-          noticeDetail.documentNumber ? noticeDetail.documentNumber : '无'
-        }}
-      </a-descriptions-item>
+      <a-descriptions-item label="文号">{{ noticeDetail.documentNumber ? noticeDetail.documentNumber : '无' }} </a-descriptions-item>
       <a-descriptions-item label="来源">{{ noticeDetail.source }}</a-descriptions-item>
       <a-descriptions-item label="作者">{{ noticeDetail.author }}</a-descriptions-item>
       <a-descriptions-item label="页面浏览量">{{ noticeDetail.pageViewCount }}</a-descriptions-item>
@@ -23,8 +20,7 @@
       <a-descriptions-item label="删除状态">{{ noticeDetail.deletedFlag ? '已删除' : '未删除' }}</a-descriptions-item>
       <a-descriptions-item v-if="!$lodash.isEmpty(noticeDetail.attachment)" label="附件">
         <div class="file-list">
-          <a class="file-item" v-for="item in noticeDetail.attachment" :key="item.fileId"
-             @click="onPrevFile(item)">{{ item.fileName }}</a>
+          <a class="file-item" v-for="item in noticeDetail.attachment" :key="item.fileId" @click="onPrevFile(item)">{{ item.fileName }}</a>
         </div>
       </a-descriptions-item>
       <a-descriptions-item label="可见范围">
@@ -44,17 +40,17 @@
         <div class="content-html" v-html="noticeDetail.contentHtml"></div>
       </a-tab-pane>
       <a-tab-pane :key="2" tab="查看记录" force-render>
-        <NoticeViewRecordList ref="noticeViewRecordList" :noticeId="route.query.noticeId"/>
+        <NoticeViewRecordList ref="noticeViewRecordList" :noticeId="route.query.noticeId" />
       </a-tab-pane>
-      <a-tab-pane :key="3" tab="操作记录"/>
+      <a-tab-pane :key="3" tab="操作记录" />
     </a-tabs>
   </a-card>
 
   <!-- 编辑 -->
-  <NoticeFormDrawer ref="noticeFormDrawerRef" @reloadList="queryNoticeDetail"/>
+  <NoticeFormDrawer ref="noticeFormDrawerRef" @reloadList="queryNoticeDetail" />
 
   <!-- 预览附件 -->
-  <FilePreviewModal ref="filePreviewRef"/>
+  <FilePreviewModal ref="filePreviewRef" />
 </template>
 
 <script setup lang="ts">

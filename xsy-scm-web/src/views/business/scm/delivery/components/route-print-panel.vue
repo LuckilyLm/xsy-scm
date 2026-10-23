@@ -1,55 +1,48 @@
 <template>
   <div class="smart-table-btn-block">
     <a-segmented
-        :value="printMode"
-        :options="[
-          {label: '按订单', value: 'orders'},
-          {label: '按客户', value: 'customers'},
-        ]"
-        @change="emit('update:printMode', $event as 'orders' | 'customers')"
+      :value="printMode"
+      :options="[
+        {label: '按订单', value: 'orders'},
+        {label: '按客户', value: 'customers'},
+      ]"
+      @change="emit('update:printMode', $event as 'orders' | 'customers')"
     />
     <a-select
-        v-if="printMode === 'customers'"
-        :value="customerStatusFilter"
-        style="width: 150px"
-        :options="[
-          {label: '全部客户', value: 'ALL'},
-          {label: '未打印客户', value: 'UNPRINTED'},
-          {label: '部分打印客户', value: 'PARTIAL'},
-          {label: '已打印客户', value: 'PRINTED'},
-        ]"
-        @change="emit('update:customerStatusFilter', $event as CustomerStatusFilter)"
+      v-if="printMode === 'customers'"
+      :value="customerStatusFilter"
+      style="width: 150px"
+      :options="[
+        {label: '全部客户', value: 'ALL'},
+        {label: '未打印客户', value: 'UNPRINTED'},
+        {label: '部分打印客户', value: 'PARTIAL'},
+        {label: '已打印客户', value: 'PRINTED'},
+      ]"
+      @change="emit('update:customerStatusFilter', $event as CustomerStatusFilter)"
     />
     <a-select
-        v-if="printMode === 'customers'"
-        :value="customerFilter"
-        style="width: 160px"
-        :options="[
-          {label: '全部订单', value: 'ALL'},
-          {label: '仅未打印订单', value: 'UNPRINTED'},
-          {label: '仅已打印订单', value: 'PRINTED'},
-        ]"
-        @change="emit('update:customerFilter', $event as CustomerOrderFilter)"
+      v-if="printMode === 'customers'"
+      :value="customerFilter"
+      style="width: 160px"
+      :options="[
+        {label: '全部订单', value: 'ALL'},
+        {label: '仅未打印订单', value: 'UNPRINTED'},
+        {label: '仅已打印订单', value: 'PRINTED'},
+      ]"
+      @change="emit('update:customerFilter', $event as CustomerOrderFilter)"
     />
     <span class="print-counts">
       <span v-for="item in activeCounts" :key="item.key">{{ item.label }} {{ item.count }}</span>
     </span>
-    <a-button
-        v-if="canPrint"
-        type="primary"
-        v-privilege="'scm:delivery:route:print'"
-        :disabled="busy || !canRecordPrint"
-        @click="emit('recordPrint')"
-    >生成打印 · 登记 {{ targetCount }}</a-button>
+    <a-button v-if="canPrint" type="primary" v-privilege="'scm:delivery:route:print'" :disabled="busy || !canRecordPrint" @click="emit('recordPrint')"
+      >生成打印 · 登记 {{ targetCount }}</a-button
+    >
   </div>
   <template v-if="printMode === 'orders'">
     <!-- 1~3 行用轻量列表：一两条数据铺一张宽表格，下面会空出一大片 -->
     <div v-if="orders.length && orders.length <= 3" class="print-cards">
       <label v-for="record in orders" :key="record.orderId" class="print-card">
-        <a-checkbox
-            :checked="orderSelection.includes(record.orderId)"
-            @change="toggleOrder(record.orderId, $event)"
-        />
+        <a-checkbox :checked="orderSelection.includes(record.orderId)" @change="toggleOrder(record.orderId, $event)" />
         <div class="print-card__main">
           <div class="print-card__head">
             <strong class="scm-mono">{{ record.orderNo }}</strong>
@@ -65,18 +58,18 @@
         </a-tag>
       </label>
     </div>
-    <a-empty v-else-if="!orders.length && !loading" description="没有可打印的订单"/>
+    <a-empty v-else-if="!orders.length && !loading" description="没有可打印的订单" />
     <a-table
-        v-else
-        size="small"
-        :columns="orderViewColumns"
-        :data-source="orders"
-        row-key="orderId"
-        :loading="loading"
-        :pagination="false"
-        :scroll="{x: scmColumnsWidth(orderViewColumns, 44)}"
-        :row-selection="orderRowSelection"
-        bordered
+      v-else
+      size="small"
+      :columns="orderViewColumns"
+      :data-source="orders"
+      row-key="orderId"
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(orderViewColumns, 44)}"
+      :row-selection="orderRowSelection"
+      bordered
     >
       <template #bodyCell="{column, record}">
         <template v-if="column.dataIndex === 'orderAmount'">{{ money(record.orderAmount) }}</template>
@@ -94,10 +87,7 @@
   <template v-else>
     <div v-if="customers.length && customers.length <= 3" class="print-cards">
       <label v-for="record in customers" :key="record.customerId" class="print-card">
-        <a-checkbox
-            :checked="customerSelection.includes(record.customerId)"
-            @change="toggleCustomer(record.customerId, $event)"
-        />
+        <a-checkbox :checked="customerSelection.includes(record.customerId)" @change="toggleCustomer(record.customerId, $event)" />
         <div class="print-card__main">
           <div class="print-card__head">
             <strong>{{ record.customerName }}</strong>
@@ -110,18 +100,18 @@
         </a-tag>
       </label>
     </div>
-    <a-empty v-else-if="!customers.length && !loading" description="没有可打印的客户"/>
+    <a-empty v-else-if="!customers.length && !loading" description="没有可打印的客户" />
     <a-table
-        v-else
-        size="small"
-        :columns="customerViewColumns"
-        :data-source="customers"
-        row-key="customerId"
-        :loading="loading"
-        :pagination="false"
-        :scroll="{x: scmColumnsWidth(customerViewColumns, 44)}"
-        :row-selection="customerRowSelection"
-        bordered
+      v-else
+      size="small"
+      :columns="customerViewColumns"
+      :data-source="customers"
+      row-key="customerId"
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(customerViewColumns, 44)}"
+      :row-selection="customerRowSelection"
+      bordered
     >
       <template #bodyCell="{column, record}">
         <template v-if="column.dataIndex === 'totalAmount'">{{ money(record.totalAmount) }}</template>
@@ -218,17 +208,13 @@ const activeCounts = computed(() => {
 
 function toggleOrder(id: Id, event: Event) {
   const checked = (event.target as {checked?: boolean} | null)?.checked === true;
-  const next = checked
-      ? [...props.orderSelection, id]
-      : props.orderSelection.filter((item) => String(item) !== String(id));
+  const next = checked ? [...props.orderSelection, id] : props.orderSelection.filter((item) => String(item) !== String(id));
   emit('update:orderSelection', next);
 }
 
 function toggleCustomer(id: Id, event: Event) {
   const checked = (event.target as {checked?: boolean} | null)?.checked === true;
-  const next = checked
-      ? [...props.customerSelection, id]
-      : props.customerSelection.filter((item) => String(item) !== String(id));
+  const next = checked ? [...props.customerSelection, id] : props.customerSelection.filter((item) => String(item) !== String(id));
   emit('update:customerSelection', next);
 }
 </script>

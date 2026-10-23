@@ -5,13 +5,44 @@ const BOOKKEEPING_KEYS = ['version', 'deleted', 'sortOrder', 'createdBy', 'updat
 
 /** 技术引用：数据库主键、外键、行政区划编码、坐标与坐标系。 */
 const REFERENCE_KEYS = [
-    'id', 'itemId', 'orderId', 'customerId', 'sellerId', 'warehouseId', 'supplierId', 'purchaserId',
-    'counterpartyId', 'targetId', 'sourceId', 'spuId', 'skuId', 'receiptId', 'receiptItemId',
-    'purchaseOrderId', 'purchaseOrderItemId', 'purchaseReceiptId', 'originalOrderId',
-    'originalReceivableId', 'customerTypeId', 'draftPriceSourceId', 'lockedPriceSourceId',
-    'demandId', 'demandIds', 'sourceReturnId', 'returnId', 'allocationId', 'receivableId',
-    'payableId', 'refundId', 'exceptionId',
-    'provinceCode', 'cityCode', 'districtCode', 'latitude', 'longitude', 'geomCrs',
+  'id',
+  'itemId',
+  'orderId',
+  'customerId',
+  'sellerId',
+  'warehouseId',
+  'supplierId',
+  'purchaserId',
+  'counterpartyId',
+  'targetId',
+  'sourceId',
+  'spuId',
+  'skuId',
+  'receiptId',
+  'receiptItemId',
+  'purchaseOrderId',
+  'purchaseOrderItemId',
+  'purchaseReceiptId',
+  'originalOrderId',
+  'originalReceivableId',
+  'customerTypeId',
+  'draftPriceSourceId',
+  'lockedPriceSourceId',
+  'demandId',
+  'demandIds',
+  'sourceReturnId',
+  'returnId',
+  'allocationId',
+  'receivableId',
+  'payableId',
+  'refundId',
+  'exceptionId',
+  'provinceCode',
+  'cityCode',
+  'districtCode',
+  'latitude',
+  'longitude',
+  'geomCrs',
 ];
 
 const HIDDEN_AUDIT_KEYS = new Set([...BOOKKEEPING_KEYS, ...REFERENCE_KEYS]);
@@ -26,12 +57,12 @@ const CHILD_HIDDEN_AUDIT_KEYS = new Set([...HIDDEN_AUDIT_KEYS, 'createdAt', 'upd
 
 /** 该键是否属于「不展示给用户」的技术字段。 */
 export function isHiddenAuditKey(key: string): boolean {
-    return HIDDEN_AUDIT_KEYS.has(key);
+  return HIDDEN_AUDIT_KEYS.has(key);
 }
 
 /** 该键在子记录（嵌套对象 / 明细行）里是否不展示。 */
 export function isHiddenChildAuditKey(key: string): boolean {
-    return CHILD_HIDDEN_AUDIT_KEYS.has(key);
+  return CHILD_HIDDEN_AUDIT_KEYS.has(key);
 }
 
 export default HIDDEN_AUDIT_KEYS;

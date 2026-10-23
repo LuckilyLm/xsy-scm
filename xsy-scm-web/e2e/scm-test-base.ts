@@ -11,17 +11,17 @@
 import {expect, test as base, type Page} from '@playwright/test';
 
 export const test = base.extend<{page: Page}>({
-    page: async ({page}, use) => {
-        const errors: string[] = [];
-        page.on('pageerror', (e) => errors.push(e.message));
-        await page.addInitScript(() => {
-            window.addEventListener('unhandledrejection', (event) => {
-                throw event.reason instanceof Error ? event.reason : new Error(`unhandled promise rejection: ${String(event.reason)}`);
-            });
-        });
-        await use(page);
-        expect(errors, `浏览器未捕获异常：${errors.join(' | ')}`).toEqual([]);
-    },
+  page: async ({page}, use) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.addInitScript(() => {
+      window.addEventListener('unhandledrejection', (event) => {
+        throw event.reason instanceof Error ? event.reason : new Error(`unhandled promise rejection: ${String(event.reason)}`);
+      });
+    });
+    await use(page);
+    expect(errors, `浏览器未捕获异常：${errors.join(' | ')}`).toEqual([]);
+  },
 });
 
 export {expect};

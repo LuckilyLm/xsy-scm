@@ -24,24 +24,24 @@ export type EnableStatus = 'ENABLED' | 'DISABLED';
 
 /** SmartAdmin 统一响应信封（拦截器已解包，此处仅用于类型标注）。 */
 export interface ScmResponse<T> {
-    code: number;
-    ok: boolean;
-    msg: string;
-    data: T;
+  code: number;
+  ok: boolean;
+  msg: string;
+  data: T;
 }
 
 export interface ScmPage<T> {
-    pageNum: number;
-    pageSize: number;
-    total: number;
-    pages: number;
-    list: T[];
-    emptyFlag: boolean;
+  pageNum: number;
+  pageSize: number;
+  total: number;
+  pages: number;
+  list: T[];
+  emptyFlag: boolean;
 }
 
 export interface ScmSortItem {
-    column: string;
-    isAsc: boolean;
+  column: string;
+  isAsc: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -49,29 +49,29 @@ export interface ScmSortItem {
 // ---------------------------------------------------------------------------
 
 export interface CustomerType {
-    typeId: ScmId;
-    version: number;
-    typeCode: string;
-    name: string;
-    status: EnableStatus;
-    createdAt?: string;
+  typeId: ScmId;
+  version: number;
+  typeCode: string;
+  name: string;
+  status: EnableStatus;
+  createdAt?: string;
 }
 
 export interface CustomerTypeForm {
-    typeId?: ScmId;
-    version?: number;
-    typeCode: string;
-    name: string;
-    status: EnableStatus;
+  typeId?: ScmId;
+  version?: number;
+  typeCode: string;
+  name: string;
+  status: EnableStatus;
 }
 
 export interface CustomerTypeQuery {
-    pageNum: number;
-    pageSize: number;
-    searchCount?: boolean;
-    keyword?: string;
-    status?: EnableStatus;
-    sortItemList?: ScmSortItem[];
+  pageNum: number;
+  pageSize: number;
+  searchCount?: boolean;
+  keyword?: string;
+  status?: EnableStatus;
+  sortItemList?: ScmSortItem[];
 }
 
 // ---------------------------------------------------------------------------
@@ -80,40 +80,40 @@ export interface CustomerTypeQuery {
 
 /** 新建 / 编辑表单模型（UI 侧）：比写请求体多一个只读的编码回显。 */
 export interface CustomerFormModel extends Partial<AreaColumns>, ScmLocation {
-    customerId?: ScmId;
-    version?: number;
-    /** 只读回显：编码由服务端生成，不进入写请求（见 `CustomerPayload`）。 */
-    customerCode: string;
-    name: string;
-    customerTypeId?: ScmId;
-    parentCustomerId?: ScmId | null;
-    settlementCustomerId?: ScmId | null;
-    mallDeliveryWarehouseId?: ScmId | null;
-    clearMallDeliveryWarehouse?: boolean;
-    /**
-     * 业务员（员工）ID。
-     *
-     * 刻意不用 `ScmId` 而是 `number | null`：原生 `employee-select` 的 `value` prop 声明为
-     * `[Number, Array]`，传 `string | number | null` 会在 vue-tsc 下报 TS2322。
-     * 后端是 Java `Long`，JSON 里本来就是 number，所以收窄成 number 也更贴近事实。
-     */
-    sellerId?: number | null;
-    supplierId?: ScmId | null;
-    contactName?: string | null;
-    contactPhone?: string | null;
-    address?: string | null;
-    settleMode: SettleMode;
-    /** 商城货到付款由后台显式开通，默认关闭。 */
-    codAllowed?: boolean;
-    /** 集团主体是否允许子客户使用集团钱包结算；仅 GROUP 结算模式可置真。 */
-    sharedSettlementEnabled?: boolean;
-    creditLimit?: string | null;
-    creditPeriodType?: CreditPeriodType | null;
-    creditAmountThreshold?: string | null;
-    creditPeriodValue?: number | null;
-    creditPeriodUnit?: CreditPeriodUnit | null;
-    settleDay?: number | null;
-    remark?: string | null;
+  customerId?: ScmId;
+  version?: number;
+  /** 只读回显：编码由服务端生成，不进入写请求（见 `CustomerPayload`）。 */
+  customerCode: string;
+  name: string;
+  customerTypeId?: ScmId;
+  parentCustomerId?: ScmId | null;
+  settlementCustomerId?: ScmId | null;
+  mallDeliveryWarehouseId?: ScmId | null;
+  clearMallDeliveryWarehouse?: boolean;
+  /**
+   * 业务员（员工）ID。
+   *
+   * 刻意不用 `ScmId` 而是 `number | null`：原生 `employee-select` 的 `value` prop 声明为
+   * `[Number, Array]`，传 `string | number | null` 会在 vue-tsc 下报 TS2322。
+   * 后端是 Java `Long`，JSON 里本来就是 number，所以收窄成 number 也更贴近事实。
+   */
+  sellerId?: number | null;
+  supplierId?: ScmId | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  address?: string | null;
+  settleMode: SettleMode;
+  /** 商城货到付款由后台显式开通，默认关闭。 */
+  codAllowed?: boolean;
+  /** 集团主体是否允许子客户使用集团钱包结算；仅 GROUP 结算模式可置真。 */
+  sharedSettlementEnabled?: boolean;
+  creditLimit?: string | null;
+  creditPeriodType?: CreditPeriodType | null;
+  creditAmountThreshold?: string | null;
+  creditPeriodValue?: number | null;
+  creditPeriodUnit?: CreditPeriodUnit | null;
+  settleDay?: number | null;
+  remark?: string | null;
 }
 
 /**
@@ -126,54 +126,54 @@ export type CustomerPayload = Omit<CustomerFormModel, 'customerCode'>;
 
 /** 列表行（对应 CustomerVO）。 */
 export interface CustomerRow extends CustomerFormModel {
-    customerId: ScmId;
-    version: number;
-    status: CustomerStatus;
-    customerTypeName?: string;
-    parentCustomerName?: string;
-    sellerName?: string;
-    updatedAt: string;
+  customerId: ScmId;
+  version: number;
+  status: CustomerStatus;
+  customerTypeName?: string;
+  parentCustomerName?: string;
+  sellerName?: string;
+  updatedAt: string;
 }
 
 /** 详情（对应 CustomerDetailVO，比列表行多出绑定供应商名与创建时间）。 */
 export interface CustomerDetail extends CustomerRow {
-    supplierName?: string;
-    settlementCustomerName?: string;
-    createdAt?: string;
+  supplierName?: string;
+  settlementCustomerName?: string;
+  createdAt?: string;
 }
 
 /** 下拉选项（对应 CustomerOptionVO）。 */
 export interface CustomerOption {
-    customerId: ScmId;
-    customerCode: string;
-    name: string;
-    status: CustomerStatus;
-    customerTypeId?: ScmId | null;
-    /** 客户类型编码（例如 `GROUP`），用于「上级集团客户」这类按类型收窄的选择器。 */
-    customerTypeCode?: string | null;
+  customerId: ScmId;
+  customerCode: string;
+  name: string;
+  status: CustomerStatus;
+  customerTypeId?: ScmId | null;
+  /** 客户类型编码（例如 `GROUP`），用于「上级集团客户」这类按类型收窄的选择器。 */
+  customerTypeCode?: string | null;
 }
 
 export interface CustomerQuery {
-    pageNum: number;
-    pageSize: number;
-    searchCount?: boolean;
-    keyword?: string;
-    customerTypeId?: ScmId;
-    status?: CustomerStatus;
-    settleMode?: SettleMode;
-    parentCustomerId?: ScmId;
-    sortItemList?: ScmSortItem[];
+  pageNum: number;
+  pageSize: number;
+  searchCount?: boolean;
+  keyword?: string;
+  customerTypeId?: ScmId;
+  status?: CustomerStatus;
+  settleMode?: SettleMode;
+  parentCustomerId?: ScmId;
+  sortItemList?: ScmSortItem[];
 }
 
 export interface CustomerStatusPayload {
-    customerId: ScmId;
-    version: number;
-    status: CustomerStatus;
+  customerId: ScmId;
+  version: number;
+  status: CustomerStatus;
 }
 
 export interface CustomerDeletePayload {
-    customerId: ScmId;
-    version: number;
+  customerId: ScmId;
+  version: number;
 }
 
 /**
@@ -183,10 +183,10 @@ export interface CustomerDeletePayload {
  * 且必须携带读到的 CustomerRow.version 做乐观锁，`sellerId` 为 `null` 即收回为未分配。
  */
 export interface CustomerSellerReassignPayload {
-    customerId: ScmId;
-    /** 新负责人（员工 id）；`null` 表示收回为未分配（未分配客户仅授权 / 全量范围者可见）。 */
-    sellerId: number | null;
-    version: number;
+  customerId: ScmId;
+  /** 新负责人（员工 id）；`null` 表示收回为未分配（未分配客户仅授权 / 全量范围者可见）。 */
+  sellerId: number | null;
+  version: number;
 }
 
 /**
@@ -197,13 +197,13 @@ export interface CustomerSellerReassignPayload {
  * 锁定单价缺失时为 null（前端不兜底为草稿价 / 当前价）。
  */
 export interface CustomerFrequentSku {
-    skuId: ScmId;
-    skuCode: string | null;
-    productName: string | null;
-    specName: string | null;
-    unit: string;
-    orderCount: number;
-    orderedQuantity: string;
-    lastConfirmedAt: string;
-    recentUnitPrice: string | null;
+  skuId: ScmId;
+  skuCode: string | null;
+  productName: string | null;
+  specName: string | null;
+  unit: string;
+  orderCount: number;
+  orderedQuantity: string;
+  lastConfirmedAt: string;
+  recentUnitPrice: string | null;
 }

@@ -1,15 +1,22 @@
 <!--
   * 传统菜单-递归菜单
-  * 
+  *
 -->
 <template>
-  <a-menu :open-keys="openKeys" v-model:selectedKeys="selectedKeys" class="smart-menu"
-          :class="{ 'smart-menu--collapsed': collapsed }" mode="inline" :inline-indent="14" :theme="theme"
-          @openChange="onOpenChange">
+  <a-menu
+    :open-keys="openKeys"
+    v-model:selectedKeys="selectedKeys"
+    class="smart-menu"
+    :class="{'smart-menu--collapsed': collapsed}"
+    mode="inline"
+    :inline-indent="14"
+    :theme="theme"
+    @openChange="onOpenChange"
+  >
     <!-- 使用组件库的实心三角形：展开向下，收起向右。 -->
-    <template #expandIcon="{ isOpen }">
+    <template #expandIcon="{isOpen}">
       <span class="smart-menu-caret-frame">
-        <CaretDownFilled class="smart-menu-caret" :class="{ 'smart-menu-caret-collapsed': !isOpen }"/>
+        <CaretDownFilled class="smart-menu-caret" :class="{'smart-menu-caret-collapsed': !isOpen}" />
       </span>
     </template>
     <template v-for="item in menuTree" :key="item.menuId">
@@ -17,14 +24,14 @@
         <template v-if="$lodash.isEmpty(item.children)">
           <a-menu-item :key="item.menuId" @click="turnToPage(item)">
             <template #icon>
-              <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)"/>
-              <span v-else class="smart-menu-icon-blank"/>
+              <component :is="resolveMenuIcon(item.icon)" v-if="resolveMenuIcon(item.icon)" />
+              <span v-else class="smart-menu-icon-blank" />
             </template>
             <span class="smart-menu-label" :title="item.menuName">{{ item.menuName }}</span>
           </a-menu-item>
         </template>
         <template v-else>
-          <SubMenu :menu-info="item" :key="item.menuId" @turnToPage="turnToPage"/>
+          <SubMenu :menu-info="item" :key="item.menuId" @turnToPage="turnToPage" />
         </template>
       </template>
     </template>
@@ -78,7 +85,7 @@ function updateOpenKeysAndSelectKeys() {
   /**
    * 更新展开（1、获取新展开的menu key集合；2、保留原有的openkeys，然后把新展开的与之合并）
    */
-      //获取需要展开的menu key集合
+  //获取需要展开的menu key集合
   let menuParentIdListMap = useUserStore().getMenuParentIdListMap;
   let parentList = menuParentIdListMap.get(currentRoute.name) || [];
 
@@ -97,13 +104,13 @@ function updateOpenKeysAndSelectKeys() {
 }
 
 watch(
-    currentRoute,
-    () => {
-      updateOpenKeysAndSelectKeys();
-    },
-    {
-      immediate: true,
-    }
+  currentRoute,
+  () => {
+    updateOpenKeysAndSelectKeys();
+  },
+  {
+    immediate: true,
+  }
 );
 
 function onOpenChange(openKeysParams) {
@@ -140,7 +147,9 @@ defineExpose({
     margin: 2px 0;
     border-radius: 8px;
     font-size: 14px;
-    transition: background-color 0.18s, color 0.18s;
+    transition:
+      background-color 0.18s,
+      color 0.18s;
   }
 
   // expandIcon 自定义插槽直接插入标题中，必须定位插槽根元素。

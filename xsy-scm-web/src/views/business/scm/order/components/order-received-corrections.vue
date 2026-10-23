@@ -5,35 +5,56 @@
     <a-alert v-if="error" type="error" show-icon :message="error">
       <template #action><a-button size="small" @click="load">重试</a-button></template>
     </a-alert>
-    <a-button v-if="canCorrect" v-privilege="'scm:order:update'" :disabled="loading" @click="open">
-      记录实收更正
-    </a-button>
-    <a-table :data-source="rows" :columns="columns" row-key="id" size="small" bordered :loading="loading"
-             :pagination="false" :scroll="{x: scmColumnsWidth(columns)}" class="correction-table">
+    <a-button v-if="canCorrect" v-privilege="'scm:order:update'" :disabled="loading" @click="open"> 记录实收更正 </a-button>
+    <a-table
+      :data-source="rows"
+      :columns="columns"
+      row-key="id"
+      size="small"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
+      class="correction-table"
+    >
       <template #bodyCell="{column, record, text}">
         <span v-if="quantityKeys.has(String(column.dataIndex))" class="scm-quantity">{{ text }} {{ record.saleUnitSnapshot }}</span>
         <span v-else>{{ text ?? '—' }}</span>
       </template>
     </a-table>
-    <a-modal :open="visible" title="记录客户实收更正" :confirm-loading="saving" :ok-button-props="{disabled: !candidate || !reason.trim()}"
-             @ok="save" @cancel="visible = false">
+    <a-modal
+      :open="visible"
+      title="记录客户实收更正"
+      :confirm-loading="saving"
+      :ok-button-props="{disabled: !candidate || !reason.trim()}"
+      @ok="save"
+      @cancel="visible = false"
+    >
       <a-form layout="vertical">
         <a-form-item label="商品规格" required>
-          <a-select v-model:value="itemId" :options="itemOptions" placeholder="选择订单明细"
-                    @change="loadCandidate"/>
+          <a-select v-model:value="itemId" :options="itemOptions" placeholder="选择订单明细" @change="loadCandidate" />
         </a-form-item>
-        <a-alert v-if="candidateError" type="error" show-icon :message="candidateError"/>
+        <a-alert v-if="candidateError" type="error" show-icon :message="candidateError" />
         <a-spin :spinning="candidateLoading">
           <template v-if="candidate">
-            <p>已出库：{{ candidate.shippedQuantity }} {{ candidate.saleUnit }}；当前客户实收记录：{{ candidate.currentReceivedQuantity }} {{ candidate.saleUnit }}</p>
+            <p>
+              已出库：{{ candidate.shippedQuantity }} {{ candidate.saleUnit }}；当前客户实收记录：{{ candidate.currentReceivedQuantity }}
+              {{ candidate.saleUnit }}
+            </p>
             <a-form-item label="更正后的客户实收数量" required>
-              <a-input-number v-model:value="receivedQuantity" string-mode :precision="4" :min="'0'"
-                              :max="candidate.shippedQuantity" style="width: 100%"/>
+              <a-input-number
+                v-model:value="receivedQuantity"
+                string-mode
+                :precision="4"
+                :min="'0'"
+                :max="candidate.shippedQuantity"
+                style="width: 100%"
+              />
             </a-form-item>
           </template>
         </a-spin>
         <a-form-item label="更正原因" required>
-          <a-textarea v-model:value="reason" :maxlength="500" :rows="3" show-count/>
+          <a-textarea v-model:value="reason" :maxlength="500" :rows="3" show-count />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -51,13 +72,26 @@ import type {Id, Order} from '../order-types';
 import {orderError} from '../order-errors';
 
 const props = defineProps<{order: Order}>();
-const rows = ref<ReceivedCorrection[]>([]), loading = ref(false), error = ref('');
-const visible = ref(false), saving = ref(false), candidateLoading = ref(false), candidateError = ref('');
-const candidate = ref<ReceivedCorrectionCandidate>(), itemId = ref<Id>(), receivedQuantity = ref(''), reason = ref('');
+const rows = ref<ReceivedCorrection[]>([]),
+  loading = ref(false),
+  error = ref('');
+const visible = ref(false),
+  saving = ref(false),
+  candidateLoading = ref(false),
+  candidateError = ref('');
+const candidate = ref<ReceivedCorrectionCandidate>(),
+  itemId = ref<Id>(),
+  receivedQuantity = ref(''),
+  reason = ref('');
 const canCorrect = computed(() => props.order.status === 'CONFIRMED' && hasPermission('scm:order:update'));
-const itemOptions = computed(() => props.order.items.filter(item => item.itemId != null).map(item => ({
-  value: item.itemId!, label: `${item.productNameSnapshot ?? '商品'} · ${item.specNameSnapshot ?? '商品规格'}`
-})));
+const itemOptions = computed(() =>
+  props.order.items
+    .filter((item) => item.itemId != null)
+    .map((item) => ({
+      value: item.itemId!,
+      label: `${item.productNameSnapshot ?? '商品'} · ${item.specNameSnapshot ?? '商品规格'}`,
+    }))
+);
 const quantityKeys = new Set(['shippedQuantity', 'previousReceivedQuantity', 'receivedQuantity']);
 const columns: TableColumnsType<ReceivedCorrection> = [
   {title: '记录时间', dataIndex: 'createdAt', width: 180, customRender: ({text}) => datetime(text)},
@@ -100,8 +134,7 @@ async function loadCandidate(): Promise<void> {
   candidateError.value = '';
   candidate.value = undefined;
   try {
-    const result = await orderApi.receivedCorrectionCandidate(props.order.orderId, itemId.value,
-        {suppressGlobalErrorMessage: true});
+    const result = await orderApi.receivedCorrectionCandidate(props.order.orderId, itemId.value, {suppressGlobalErrorMessage: true});
     if (current === candidateRequestId) {
       candidate.value = result.data;
       receivedQuantity.value = result.data.currentReceivedQuantity;
@@ -113,13 +146,16 @@ async function loadCandidate(): Promise<void> {
   }
 }
 async function save(): Promise<void> {
-  if (saving.value || props.order.orderId == null || itemId.value == null || !candidate.value || !reason.value.trim())
-    return;
+  if (saving.value || props.order.orderId == null || itemId.value == null || !candidate.value || !reason.value.trim()) return;
   saving.value = true;
   try {
-    await orderApi.recordReceivedCorrection({orderId: props.order.orderId, orderItemId: itemId.value,
+    await orderApi.recordReceivedCorrection({
+      orderId: props.order.orderId,
+      orderItemId: itemId.value,
       expectedLastCorrectionId: candidate.value.lastCorrectionId,
-      receivedQuantity: String(receivedQuantity.value), reason: reason.value.trim()});
+      receivedQuantity: String(receivedQuantity.value),
+      reason: reason.value.trim(),
+    });
     visible.value = false;
     message.success('客户实收更正已记录');
     await load();
@@ -129,10 +165,20 @@ async function save(): Promise<void> {
     saving.value = false;
   }
 }
-watch(() => props.order.orderId, () => { void load(); }, {immediate: true});
+watch(
+  () => props.order.orderId,
+  () => {
+    void load();
+  },
+  {immediate: true}
+);
 </script>
 
 <style scoped>
-.order-section-title { margin: 24px 0 12px; }
-.correction-table { margin-top: 10px; }
+.order-section-title {
+  margin: 24px 0 12px;
+}
+.correction-table {
+  margin-top: 10px;
+}
 </style>

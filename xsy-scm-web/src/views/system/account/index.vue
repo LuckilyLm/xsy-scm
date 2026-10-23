@@ -6,7 +6,7 @@
         <a-menu-item v-for="item in menuList" :key="item.menuId">
           <span v-if="item.menuId === 'message'">
             {{ item.menuName }}
-            <a-badge :count="unreadMessageCount" style="margin-left: 10px"/>
+            <a-badge :count="unreadMessageCount" style="margin-left: 10px" />
           </span>
           <span v-if="item.menuId !== 'message'">{{ item.menuName }} </span>
         </a-menu-item>
@@ -14,7 +14,7 @@
     </div>
     <!--内容区域-->
     <div class="account-content">
-      <component :is="selectedMenu.components"/>
+      <component :is="selectedMenu.components" />
     </div>
   </div>
 </template>
@@ -34,10 +34,10 @@ let menuList = computed(() => {
 let selectedMenu = ref({menuId: 0});
 let selectedKeys = ref([]);
 watch(
-    () => selectedMenu.value,
-    (newQuery, oldQuery) => {
-      selectedKeys.value = _.isEmpty(selectedMenu.value) ? [] : [selectedMenu.value.menuId];
-    }
+  () => selectedMenu.value,
+  (newQuery, oldQuery) => {
+    selectedKeys.value = _.isEmpty(selectedMenu.value) ? [] : [selectedMenu.value.menuId];
+  }
 );
 
 function selectMenu(menuId) {
@@ -66,17 +66,17 @@ onMounted(() => {
 });
 
 watch(
-    () => route.query,
-    (newQuery, oldQuery) => {
-      let menuId;
-      if (route.query.menuId) {
-        menuId = route.query.menuId;
-      } else {
-        let firstMenu = menuList.value[0];
-        menuId = firstMenu.menuId;
-      }
-      selectMenu(menuId);
+  () => route.query,
+  (newQuery, oldQuery) => {
+    let menuId;
+    if (route.query.menuId) {
+      menuId = route.query.menuId;
+    } else {
+      let firstMenu = menuList.value[0];
+      menuId = firstMenu.menuId;
     }
+    selectMenu(menuId);
+  }
 );
 const {useToken} = antDesignTheme;
 const {token} = useToken();

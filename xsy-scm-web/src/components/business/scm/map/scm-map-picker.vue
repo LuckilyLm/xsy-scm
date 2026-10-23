@@ -3,45 +3,43 @@
     <div class="location-field__status">
       <a-tag :color="isLocated(value) ? 'green' : 'default'">{{ isLocated(value) ? '已定位' : '未定位' }}</a-tag>
       <a-button @click="openPicker">地图定位</a-button>
-      <a-button v-if="value.longitude != null || value.latitude != null" @click="emit('change', emptyLocation())">
-        清空定位
-      </a-button>
+      <a-button v-if="value.longitude != null || value.latitude != null" @click="emit('change', emptyLocation())"> 清空定位 </a-button>
     </div>
     <div class="location-field__inputs">
       <label class="location-input">
         <span class="location-input__label">经度</span>
         <a-input-number
-            :value="value.longitude"
-            :min="-180"
-            :max="180"
-            :precision="8"
-            string-mode
-            aria-label="经度"
-            placeholder="例如 121.47370100"
-            @update:value="update('longitude', $event)"
+          :value="value.longitude"
+          :min="-180"
+          :max="180"
+          :precision="8"
+          string-mode
+          aria-label="经度"
+          placeholder="例如 121.47370100"
+          @update:value="update('longitude', $event)"
         />
       </label>
       <label class="location-input">
         <span class="location-input__label">纬度</span>
         <a-input-number
-            :value="value.latitude"
-            :min="-90"
-            :max="90"
-            :precision="8"
-            string-mode
-            aria-label="纬度"
-            placeholder="例如 31.23041600"
-            @update:value="update('latitude', $event)"
+          :value="value.latitude"
+          :min="-90"
+          :max="90"
+          :precision="8"
+          string-mode
+          aria-label="纬度"
+          placeholder="例如 31.23041600"
+          @update:value="update('latitude', $event)"
         />
       </label>
       <label class="location-input location-input--wide">
         <span class="location-input__label">坐标系</span>
         <a-select
-            :value="value.geomCrs ?? undefined"
-            placeholder="选择经纬度所属坐标系"
-            aria-label="坐标系"
-            :options="crsOptions"
-            @update:value="update('geomCrs', $event)"
+          :value="value.geomCrs ?? undefined"
+          placeholder="选择经纬度所属坐标系"
+          aria-label="坐标系"
+          :options="crsOptions"
+          @update:value="update('geomCrs', $event)"
         />
       </label>
     </div>
@@ -49,13 +47,10 @@
   </div>
   <a-modal v-model:open="visible" title="确认地址定位" :width="800" :destroy-on-close="true" @ok="confirm">
     <a-space direction="vertical" class="picker-content">
-      <a-input-search v-model:value="searchAddress" placeholder="省市、街道及门牌号" enter-button="查找地址"
-                      :loading="searching" @search="search"/>
-      <a-alert v-if="error" type="warning" :message="error" show-icon/>
-      <ScmMap v-if="visible" :points="[{ ...draft, label: '配送地址' }]" pickable @pick="draft = $event"/>
-      <p>点击地图或拖动标记修正位置，确认后保存。{{
-          isLocated(draft) ? `${draft.longitude}, ${draft.latitude} · ${draft.geomCrs}` : '尚未选点'
-        }}</p>
+      <a-input-search v-model:value="searchAddress" placeholder="省市、街道及门牌号" enter-button="查找地址" :loading="searching" @search="search" />
+      <a-alert v-if="error" type="warning" :message="error" show-icon />
+      <ScmMap v-if="visible" :points="[{...draft, label: '配送地址'}]" pickable @pick="draft = $event" />
+      <p>点击地图或拖动标记修正位置，确认后保存。{{ isLocated(draft) ? `${draft.longitude}, ${draft.latitude} · ${draft.geomCrs}` : '尚未选点' }}</p>
     </a-space>
   </a-modal>
 </template>
@@ -65,11 +60,11 @@ import ScmMap from './scm-map.vue';
 import {geocode} from './map-provider';
 import {emptyLocation, isLocated, type ScmLocation} from './types';
 
-const props = defineProps<{ value: ScmLocation; address?: string | null }>();
-const emit = defineEmits<{ change: [ScmLocation] }>();
+const props = defineProps<{value: ScmLocation; address?: string | null}>();
+const emit = defineEmits<{change: [ScmLocation]}>();
 const visible = ref(false),
-    searching = ref(false),
-    error = ref('');
+  searching = ref(false),
+  error = ref('');
 const draft = ref<ScmLocation>(emptyLocation());
 const searchAddress = ref('');
 const crsOptions = [

@@ -6,7 +6,16 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {removeSkuDraft, emptySupplier, validateSkuDrafts, toReplaceItems, toSupplierPayload, validateSupplier, fromRows, emptySkuDraft} from '../src/views/business/scm/supplier/supplier-form-model.ts';
+import {
+  removeSkuDraft,
+  emptySupplier,
+  validateSkuDrafts,
+  toReplaceItems,
+  toSupplierPayload,
+  validateSupplier,
+  fromRows,
+  emptySkuDraft,
+} from '../src/views/business/scm/supplier/supplier-form-model.ts';
 
 // ---------------------------------------------------------------- 来源：supplier-form-model.test.mjs
 {
@@ -66,33 +75,30 @@ import {removeSkuDraft, emptySupplier, validateSkuDrafts, toReplaceItems, toSupp
   test('校验供应商必填项与电话格式', () => {
     // 编码由服务端生成：不带编码的合法表单必须直接通过校验。
     assert.match(validateSupplier(emptySupplier()), /供应商名称/);
-    assert.equal(validateSupplier({ ...emptySupplier(), name: '供应商甲' }), undefined);
-    assert.match(validateSupplier({ ...emptySupplier(), name: '甲', contactPhone: 'abc' }), /联系电话/);
+    assert.equal(validateSupplier({...emptySupplier(), name: '供应商甲'}), undefined);
+    assert.match(validateSupplier({...emptySupplier(), name: '甲', contactPhone: 'abc'}), /联系电话/);
   });
 
   test('校验关联行：规格必选、不得重复、单位必填、参考价最多四位小数', () => {
     assert.equal(validateSkuDrafts([]), undefined);
 
-    assert.match(validateSkuDrafts([{ purchaseUnit: 'kg', defaultFlag: false }]), /请选择商品规格/);
+    assert.match(validateSkuDrafts([{purchaseUnit: 'kg', defaultFlag: false}]), /请选择商品规格/);
     assert.match(
       validateSkuDrafts([
-        { skuId: 1, purchaseUnit: 'kg', defaultFlag: false },
-        { skuId: 1, purchaseUnit: '箱', defaultFlag: false },
+        {skuId: 1, purchaseUnit: 'kg', defaultFlag: false},
+        {skuId: 1, purchaseUnit: '箱', defaultFlag: false},
       ]),
       /不能重复添加/
     );
-    assert.match(validateSkuDrafts([{ skuId: 1, purchaseUnit: '   ', defaultFlag: false }]), /采购单位/);
-    assert.match(
-      validateSkuDrafts([{ skuId: 1, purchaseUnit: 'kg', referencePrice: '1.23456', defaultFlag: false }]),
-      /四位小数/
-    );
-    assert.equal(validateSkuDrafts([{ skuId: 1, purchaseUnit: 'kg', referencePrice: '3.5000', defaultFlag: false }]), undefined);
+    assert.match(validateSkuDrafts([{skuId: 1, purchaseUnit: '   ', defaultFlag: false}]), /采购单位/);
+    assert.match(validateSkuDrafts([{skuId: 1, purchaseUnit: 'kg', referencePrice: '1.23456', defaultFlag: false}]), /四位小数/);
+    assert.equal(validateSkuDrafts([{skuId: 1, purchaseUnit: 'kg', referencePrice: '3.5000', defaultFlag: false}]), undefined);
   });
 
   test('多条默认来源必须被接受，前端不做单选限制', () => {
     const items = toReplaceItems([
-      { id: 1, version: 2, skuId: 10, purchaseUnit: 'kg', referencePrice: '3.5000', purchaserId: null, defaultFlag: true },
-      { skuId: 11, purchaseUnit: '箱', referencePrice: '', purchaserId: 3, defaultFlag: true },
+      {id: 1, version: 2, skuId: 10, purchaseUnit: 'kg', referencePrice: '3.5000', purchaserId: null, defaultFlag: true},
+      {skuId: 11, purchaseUnit: '箱', referencePrice: '', purchaserId: 3, defaultFlag: true},
     ]);
 
     assert.equal(items.length, 2);
@@ -101,8 +107,8 @@ import {removeSkuDraft, emptySupplier, validateSkuDrafts, toReplaceItems, toSupp
     // 校验函数也必须放行这个组合。
     assert.equal(
       validateSkuDrafts([
-        { skuId: 10, purchaseUnit: 'kg', defaultFlag: true },
-        { skuId: 11, purchaseUnit: '箱', defaultFlag: true },
+        {skuId: 10, purchaseUnit: 'kg', defaultFlag: true},
+        {skuId: 11, purchaseUnit: '箱', defaultFlag: true},
       ]),
       undefined
     );
@@ -110,8 +116,8 @@ import {removeSkuDraft, emptySupplier, validateSkuDrafts, toReplaceItems, toSupp
 
   test('整表替换请求：已有行带 id+version，新增行不带，空白参考价转 null', () => {
     const items = toReplaceItems([
-      { id: 1, version: 2, skuId: 10, purchaseUnit: ' kg ', referencePrice: null, purchaserId: null, defaultFlag: false },
-      { skuId: 11, purchaseUnit: '箱', referencePrice: '   ', purchaserId: 3, defaultFlag: false },
+      {id: 1, version: 2, skuId: 10, purchaseUnit: ' kg ', referencePrice: null, purchaserId: null, defaultFlag: false},
+      {skuId: 11, purchaseUnit: '箱', referencePrice: '   ', purchaserId: 3, defaultFlag: false},
     ]);
 
     assert.equal(items[0].id, 1);
@@ -127,8 +133,8 @@ import {removeSkuDraft, emptySupplier, validateSkuDrafts, toReplaceItems, toSupp
 
   test('移除行是纯函数，不改动入参数组', () => {
     const drafts = [
-      { purchaseUnit: 'a', defaultFlag: false },
-      { purchaseUnit: 'b', defaultFlag: false },
+      {purchaseUnit: 'a', defaultFlag: false},
+      {purchaseUnit: 'b', defaultFlag: false},
     ];
     const left = removeSkuDraft(drafts, 0);
     assert.equal(left.length, 1);
@@ -137,14 +143,14 @@ import {removeSkuDraft, emptySupplier, validateSkuDrafts, toReplaceItems, toSupp
   });
 
   test('提交前归一化：空白串转 null', () => {
-    const payload = toSupplierPayload({ ...emptySupplier(), name: ' 供应商甲 ', address: '  ', remark: ' 备注 ' });
+    const payload = toSupplierPayload({...emptySupplier(), name: ' 供应商甲 ', address: '  ', remark: ' 备注 '});
     assert.equal(payload.name, '供应商甲');
     assert.equal(payload.address, null);
     assert.equal(payload.remark, '备注');
   });
 
   test('写请求体不含供应商编码：编码由服务端生成', () => {
-    const payload = toSupplierPayload({ ...emptySupplier(), supplierCode: 'SUP000001', name: '供应商甲' });
+    const payload = toSupplierPayload({...emptySupplier(), supplierCode: 'SUP000001', name: '供应商甲'});
     // 编码只在 UI 表单模型（SupplierFormModel）上做只读回显，写请求体（SupplierPayload）没有这个键。
     assert.equal('supplierCode' in payload, false);
     assert.equal(payload.name, '供应商甲');
@@ -159,16 +165,11 @@ import {removeSkuDraft, emptySupplier, validateSkuDrafts, toReplaceItems, toSupp
     const items = toReplaceItems(input);
     assert.equal(items[0].supplierItemCode, 'Ab-00007');
     assert.equal(items[1].supplierItemCode, null);
-    assert.equal(validateSkuDrafts([
-      input[0],
-      {skuId: 11, purchaseUnit: 'kg', supplierItemCode: 'Ab-00007', defaultFlag: false},
-    ]).includes('供应商货号'), true);
-    assert.equal(validateSkuDrafts([
-      input[0],
-      {skuId: 11, purchaseUnit: 'kg', supplierItemCode: 'ab-00007', defaultFlag: false},
-    ]), undefined);
-    assert.match(validateSkuDrafts([
-      {skuId: 10, purchaseUnit: 'kg', supplierItemCode: 'a'.repeat(101), defaultFlag: false},
-    ]), /100/);
+    assert.equal(
+      validateSkuDrafts([input[0], {skuId: 11, purchaseUnit: 'kg', supplierItemCode: 'Ab-00007', defaultFlag: false}]).includes('供应商货号'),
+      true
+    );
+    assert.equal(validateSkuDrafts([input[0], {skuId: 11, purchaseUnit: 'kg', supplierItemCode: 'ab-00007', defaultFlag: false}]), undefined);
+    assert.match(validateSkuDrafts([{skuId: 10, purchaseUnit: 'kg', supplierItemCode: 'a'.repeat(101), defaultFlag: false}]), /100/);
   });
 }

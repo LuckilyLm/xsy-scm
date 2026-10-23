@@ -9,11 +9,11 @@ export type DatePresetKey = 'YESTERDAY' | 'THIS_WEEK' | 'LAST_WEEK' | 'THIS_MONT
 
 /** 预设的中文名，同时作为 `a-range-picker` presets 的标签来源，避免两处各写一份。 */
 export const DATE_PRESET_LABELS: Record<DatePresetKey, string> = {
-    YESTERDAY: '昨日',
-    THIS_WEEK: '本周',
-    LAST_WEEK: '上周',
-    THIS_MONTH: '本月',
-    LAST_MONTH: '上月',
+  YESTERDAY: '昨日',
+  THIS_WEEK: '本周',
+  LAST_WEEK: '上周',
+  THIS_MONTH: '本月',
+  LAST_MONTH: '上月',
 };
 
 /** 报表中心的默认区间（选定「本月」）。 */
@@ -25,7 +25,7 @@ export const MAX_REPORT_RANGE_DAYS = 366;
 const DATE_PATTERN = 'YYYY-MM-DD';
 
 function day(value?: Date | string): dayjs.Dayjs {
-    return value === undefined ? dayjs() : dayjs(value);
+  return value === undefined ? dayjs() : dayjs(value);
 }
 
 /**
@@ -37,47 +37,47 @@ function day(value?: Date | string): dayjs.Dayjs {
  * @param today 基准日，默认取当前时间；单测传定值以获得确定性结果
  */
 export function presetRange(preset: DatePresetKey, today?: Date | string): DateRange {
-    const base = day(today);
-    switch (preset) {
-        case 'YESTERDAY': {
-            const y = base.subtract(1, 'day');
-            return [y.format(DATE_PATTERN), y.format(DATE_PATTERN)];
-        }
-        case 'THIS_WEEK': {
-            // dayjs 的 day()：0=周日 … 6=周六；换算成「距本周周一的天数」
-            const weekday = base.day();
-            const sinceMonday = weekday === 0 ? 6 : weekday - 1;
-            const monday = base.subtract(sinceMonday, 'day');
-            return [monday.format(DATE_PATTERN), base.format(DATE_PATTERN)];
-        }
-        case 'LAST_WEEK': {
-            const weekday = base.day();
-            const sinceMonday = weekday === 0 ? 6 : weekday - 1;
-            const lastMonday = base.subtract(sinceMonday + 7, 'day');
-            return [lastMonday.format(DATE_PATTERN), lastMonday.add(6, 'day').format(DATE_PATTERN)];
-        }
-        case 'THIS_MONTH':
-            return [base.startOf('month').format(DATE_PATTERN), base.format(DATE_PATTERN)];
-        case 'LAST_MONTH': {
-            const lastMonth = base.subtract(1, 'month');
-            return [lastMonth.startOf('month').format(DATE_PATTERN), lastMonth.endOf('month').format(DATE_PATTERN)];
-        }
-        default:
-            return defaultDateRange(today);
+  const base = day(today);
+  switch (preset) {
+    case 'YESTERDAY': {
+      const y = base.subtract(1, 'day');
+      return [y.format(DATE_PATTERN), y.format(DATE_PATTERN)];
     }
+    case 'THIS_WEEK': {
+      // dayjs 的 day()：0=周日 … 6=周六；换算成「距本周周一的天数」
+      const weekday = base.day();
+      const sinceMonday = weekday === 0 ? 6 : weekday - 1;
+      const monday = base.subtract(sinceMonday, 'day');
+      return [monday.format(DATE_PATTERN), base.format(DATE_PATTERN)];
+    }
+    case 'LAST_WEEK': {
+      const weekday = base.day();
+      const sinceMonday = weekday === 0 ? 6 : weekday - 1;
+      const lastMonday = base.subtract(sinceMonday + 7, 'day');
+      return [lastMonday.format(DATE_PATTERN), lastMonday.add(6, 'day').format(DATE_PATTERN)];
+    }
+    case 'THIS_MONTH':
+      return [base.startOf('month').format(DATE_PATTERN), base.format(DATE_PATTERN)];
+    case 'LAST_MONTH': {
+      const lastMonth = base.subtract(1, 'month');
+      return [lastMonth.startOf('month').format(DATE_PATTERN), lastMonth.endOf('month').format(DATE_PATTERN)];
+    }
+    default:
+      return defaultDateRange(today);
+  }
 }
 
 /** 页面初始区间：本月 1 日 ~ 今天。 */
 export function defaultDateRange(today?: Date | string): DateRange {
-    return presetRange(DEFAULT_DATE_PRESET, today);
+  return presetRange(DEFAULT_DATE_PRESET, today);
 }
 
 /** 生成日期选择器的快捷选项，标签和值成对；日期范围始终使用 YYYY-MM-DD 字符串。 */
 export function datePresets(today?: Date | string): Array<{label: string; value: DateRange}> {
-    return (Object.keys(DATE_PRESET_LABELS) as DatePresetKey[]).map((key) => ({
-        label: DATE_PRESET_LABELS[key],
-        value: presetRange(key, today),
-    }));
+  return (Object.keys(DATE_PRESET_LABELS) as DatePresetKey[]).map((key) => ({
+    label: DATE_PRESET_LABELS[key],
+    value: presetRange(key, today),
+  }));
 }
 
 /**
@@ -87,19 +87,19 @@ export function datePresets(today?: Date | string): Array<{label: string; value:
  * 区间不完整时返回 `''`（交给后端日期校验，前端不猜）。
  */
 export function rangeOverLimitError(range: DateRange | undefined | null, maxDays = MAX_REPORT_RANGE_DAYS): string {
-    if (!range || !range[0] || !range[1]) {
-        return '';
-    }
-    const days = day(range[1]).diff(day(range[0]), 'day') + 1;
-    return days > maxDays ? `查询跨度最多 ${maxDays} 天，当前 ${days} 天，请缩小日期区间` : '';
+  if (!range || !range[0] || !range[1]) {
+    return '';
+  }
+  const days = day(range[1]).diff(day(range[0]), 'day') + 1;
+  return days > maxDays ? `查询跨度最多 ${maxDays} 天，当前 ${days} 天，请缩小日期区间` : '';
 }
 
 /** 单元格文本：`null` / `undefined` / 空串 → `—`，其余原样返回（定点数字符串不做二次格式化）。 */
 export function textOrDash(value: string | null | undefined): string {
-    if (value === null || value === undefined || value === '') {
-        return '—';
-    }
-    return value;
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+  return value;
 }
 
 /**
@@ -110,10 +110,10 @@ export function textOrDash(value: string | null | undefined): string {
  * 这里统一按三态处理，不把 undefined 显示成 0。
  */
 export function countText(value: number | null | undefined): string {
-    if (value === null || value === undefined) {
-        return '—';
-    }
-    return String(value);
+  if (value === null || value === undefined) {
+    return '—';
+  }
+  return String(value);
 }
 
 /**
@@ -124,11 +124,11 @@ export function countText(value: number | null | undefined): string {
  * 非法串（脏数据）返回 `null` 而不是 0：把坏数据画成零值柱子，比画不出柱子更难查。
  */
 export function chartValue(value: string | number | null | undefined): number | null {
-    if (value === null || value === undefined || value === '') {
-        return null;
-    }
-    const num = typeof value === 'number' ? value : Number(value);
-    return Number.isFinite(num) ? num : null;
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  const num = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(num) ? num : null;
 }
 
 /**
@@ -139,10 +139,10 @@ export function chartValue(value: string | number | null | undefined): number | 
  * 前端也不该把别人的成本金额显示给没有成本权限的人。
  */
 export function costText(value: string | null | undefined, canSeeCost: boolean): string {
-    if (!canSeeCost) {
-        return '—';
-    }
-    return textOrDash(value);
+  if (!canSeeCost) {
+    return '—';
+  }
+  return textOrDash(value);
 }
 
 /**
@@ -152,26 +152,26 @@ export function costText(value: string | null | undefined, canSeeCost: boolean):
  * 返回 `''` 表示无需提示。
  */
 export function incompleteCostHint(missingCount: number | null | undefined, label: string): string {
-    if (!missingCount || missingCount <= 0) {
-        return '';
-    }
-    return `${label}已跳过 ${missingCount} 行无成本流水，不是全部${label}`;
+  if (!missingCount || missingCount <= 0) {
+    return '';
+  }
+  return `${label}已跳过 ${missingCount} 行无成本流水，不是全部${label}`;
 }
 
 /** 没有成本查询权限时移除成本列，而不是显示空列；后端也会独立隐藏敏感字段。 */
 export function filterCostColumns<T extends object>(
-    columns: T[],
-    costIndexes: readonly string[],
-    canSeeCost: boolean,
-    dataIndexOf: (column: T) => unknown = (column) => (column as {dataIndex?: unknown}).dataIndex
+  columns: T[],
+  costIndexes: readonly string[],
+  canSeeCost: boolean,
+  dataIndexOf: (column: T) => unknown = (column) => (column as {dataIndex?: unknown}).dataIndex
 ): T[] {
-    if (canSeeCost) {
-        return columns;
-    }
-    return columns.filter((column) => {
-        const index = dataIndexOf(column);
-        return !(typeof index === 'string' && costIndexes.includes(index));
-    });
+  if (canSeeCost) {
+    return columns;
+  }
+  return columns.filter((column) => {
+    const index = dataIndexOf(column);
+    return !(typeof index === 'string' && costIndexes.includes(index));
+  });
 }
 
 /**
@@ -182,25 +182,25 @@ export function filterCostColumns<T extends object>(
  *                     报表侧不再自己判 IN / OUT 字符串）
  */
 export function movementDirection(movementType: string | null | undefined, inboundTypes: readonly string[]): 'IN' | 'OUT' | null {
-    if (!movementType) {
-        return null;
-    }
-    return inboundTypes.includes(movementType) ? 'IN' : 'OUT';
+  if (!movementType) {
+    return null;
+  }
+  return inboundTypes.includes(movementType) ? 'IN' : 'OUT';
 }
 
 /** 方向的中文文案；未知类型返回 `—`（与 movementDirection 的 null 分支一致）。 */
 export function directionText(direction: 'IN' | 'OUT' | null): string {
-    if (direction === 'IN') {
-        return '入';
-    }
-    if (direction === 'OUT') {
-        return '出';
-    }
-    return '—';
+  if (direction === 'IN') {
+    return '入';
+  }
+  if (direction === 'OUT') {
+    return '出';
+  }
+  return '—';
 }
 
 /** 枚举文案表的最小结构（`SmartEnum` 的每一项都满足它；刻意不 import 常量，理由同 `inventory-model.ts`）。 */
-export type EnumLabels = Record<string, { desc?: string } | undefined>;
+export type EnumLabels = Record<string, {desc?: string} | undefined>;
 
 /**
  * 枚举的中文描述；命不中时回落原值。
@@ -210,46 +210,43 @@ export type EnumLabels = Record<string, { desc?: string } | undefined>;
  * 这里给报表侧用，因为报表页要展示的枚举横跨订单来源、采购状态、流水类型三类。
  */
 export function enumDescText(value: string | null | undefined, labels: EnumLabels): string {
-    if (!value) {
-        return '—';
-    }
-    return labels[value]?.desc || value;
+  if (!value) {
+    return '—';
+  }
+  return labels[value]?.desc || value;
 }
 
 /** 扁平选项表（`product-const` 那类 `{value, label}[]`）的文案；命不中回落原值。 */
-export function optionLabel(
-    options: ReadonlyArray<{value: string; label: string}>,
-    value: string | null | undefined
-): string {
-    if (!value) {
-        return '—';
-    }
-    return options.find((option) => option.value === value)?.label ?? value;
+export function optionLabel(options: ReadonlyArray<{value: string; label: string}>, value: string | null | undefined): string {
+  if (!value) {
+    return '—';
+  }
+  return options.find((option) => option.value === value)?.label ?? value;
 }
 
 /** 布尔事实的文案：`null` / `undefined` 是「不知道」，与 `false` 的「否」必须可辨。 */
 export function yesNoText(value: boolean | null | undefined): string {
-    if (value === null || value === undefined) {
-        return '—';
-    }
-    return value ? '是' : '否';
+  if (value === null || value === undefined) {
+    return '—';
+  }
+  return value ? '是' : '否';
 }
 
 /** 每个报表标签页分别保存分页、数据、加载状态和错误提示，切换标签时不串页码；通用筛选仍由页面共享。 */
 export interface TabView<T> {
-    pageNum: number;
-    pageSize: number;
-    rows: T[];
-    total: number;
-    loading: boolean;
-    error: string;
-    /** 该 Tab 的导出按钮是否在 loading；每个 Tab 各一份，避免一个 Tab 在导出让整排按钮都转 */
-    exporting: boolean;
+  pageNum: number;
+  pageSize: number;
+  rows: T[];
+  total: number;
+  loading: boolean;
+  error: string;
+  /** 该 Tab 的导出按钮是否在 loading；每个 Tab 各一份，避免一个 Tab 在导出让整排按钮都转 */
+  exporting: boolean;
 }
 
 /** 新建一个 Tab 的视图状态；初始 `rows` 为空数组而不是 `undefined`，模板因此不必到处判空。 */
 export function createTabView<T>(pageSize = 20): TabView<T> {
-    return {pageNum: 1, pageSize, rows: [], total: 0, loading: false, error: '', exporting: false};
+  return {pageNum: 1, pageSize, rows: [], total: 0, loading: false, error: '', exporting: false};
 }
 
 /**
@@ -258,49 +255,49 @@ export function createTabView<T>(pageSize = 20): TabView<T> {
  * 刻意不动 `pageSize`（每页条数是用户的偏好，不是查询条件），也不动其它 Tab。
  */
 export function enterTab<T>(view: TabView<T>): TabView<T> {
-    view.pageNum = 1;
-    return view;
+  view.pageNum = 1;
+  return view;
 }
 
 /** 查询体里 `undefined` / `null` / `''` 的字段都被省略。 */
 type LooseFilters = Record<string, unknown>;
 
 function omitEmpty(source: LooseFilters): LooseFilters {
-    const result: LooseFilters = {};
-    for (const [key, value] of Object.entries(source)) {
-        if (value === undefined || value === null || value === '') {
-            continue;
-        }
-        result[key] = value;
+  const result: LooseFilters = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (value === undefined || value === null || value === '') {
+      continue;
     }
-    return result;
+    result[key] = value;
+  }
+  return result;
 }
 
 /** 报表查询由日期与共享筛选组成，空筛选值省略不发送。导出请求不带分页参数，由服务端按导出上限处理。 */
 export function buildReportQuery<T extends object>(
-    range: DateRange | undefined | null,
-    shared: LooseFilters,
-    tab?: {pageNum: number; pageSize: number}
+  range: DateRange | undefined | null,
+  shared: LooseFilters,
+  tab?: {pageNum: number; pageSize: number}
 ): T {
-    // 日期区间最后写入：共享筛选里若混进同名字段（页面类型上不该出现），也不许盖掉区间
-    const payload: LooseFilters = {...omitEmpty(shared)};
-    if (range?.[0] && range?.[1]) {
-        payload.startDate = range[0];
-        payload.endDate = range[1];
-    }
-    if (tab) {
-        payload.pageNum = tab.pageNum;
-        payload.pageSize = tab.pageSize;
-    }
-    return payload as unknown as T;
+  // 日期区间最后写入：共享筛选里若混进同名字段（页面类型上不该出现），也不许盖掉区间
+  const payload: LooseFilters = {...omitEmpty(shared)};
+  if (range?.[0] && range?.[1]) {
+    payload.startDate = range[0];
+    payload.endDate = range[1];
+  }
+  if (tab) {
+    payload.pageNum = tab.pageNum;
+    payload.pageSize = tab.pageSize;
+  }
+  return payload as unknown as T;
 }
 
 /** 路由 query 的形状（`vue-router` 的 `LocationQuery` 的子集；同 buildReportQuery 刻意只用结构类型）。 */
 export type RouteQuery = Record<string, string | (string | null)[] | null | undefined>;
 
 function firstQueryValue(raw: RouteQuery[string]): string {
-    const value = Array.isArray(raw) ? raw.find((item) => item !== null) : raw;
-    return typeof value === 'string' ? value.trim() : '';
+  const value = Array.isArray(raw) ? raw.find((item) => item !== null) : raw;
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 /**
@@ -311,10 +308,10 @@ function firstQueryValue(raw: RouteQuery[string]): string {
  * 不能把脏值透传给后端。
  */
 export function rangeFromQuery(query: RouteQuery | undefined | null): DateRange | undefined {
-    const startDate = firstQueryValue(query?.startDate);
-    const endDate = firstQueryValue(query?.endDate);
-    const valid = /^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate);
-    return valid ? [startDate, endDate] : undefined;
+  const startDate = firstQueryValue(query?.startDate);
+  const endDate = firstQueryValue(query?.endDate);
+  const valid = /^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate);
+  return valid ? [startDate, endDate] : undefined;
 }
 
 /**
@@ -324,6 +321,6 @@ export function rangeFromQuery(query: RouteQuery | undefined | null): DateRange 
  * 那样目标页会因 rangeFromQuery 校验不过而回落成本月，看起来像「跳转丢了参数」。
  */
 export function dayRange(bizDate: string): DateRange {
-    const normalized = /^\d{4}-\d{2}-\d{2}$/.test(bizDate) ? bizDate : defaultDateRange()[0];
-    return [normalized, normalized];
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(bizDate) ? bizDate : defaultDateRange()[0];
+  return [normalized, normalized];
 }

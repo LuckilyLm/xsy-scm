@@ -2,31 +2,31 @@
 import type {SmartEnum} from '/@/types/smart-enum';
 
 export const SCM_FINANCE_PERMISSION = {
-    RECEIVABLE_QUERY: 'scm:finance:receivable:query',
-    PAYABLE_QUERY: 'scm:finance:payable:query',
-    RECEIPT_QUERY: 'scm:finance:receipt:query',
-    PAYMENT_QUERY: 'scm:finance:payment:query',
-    WRITE_OFF_QUERY: 'scm:finance:write-off:query',
-    RECEIPT_ADD: 'scm:finance:receipt:add',
-    PAYMENT_ADD: 'scm:finance:payment:add',
-    WRITE_OFF_ADD: 'scm:finance:write-off:add',
-    PAYABLE_RED: 'scm:finance:payable:red',
-    WRITE_OFF_REVERSE: 'scm:finance:write-off:reverse',
-    RECEIPT_REVERSE: 'scm:finance:receipt:reverse',
-    PAYMENT_REVERSE: 'scm:finance:payment:reverse',
-    EXPORT: 'scm:finance:export',
+  RECEIVABLE_QUERY: 'scm:finance:receivable:query',
+  PAYABLE_QUERY: 'scm:finance:payable:query',
+  RECEIPT_QUERY: 'scm:finance:receipt:query',
+  PAYMENT_QUERY: 'scm:finance:payment:query',
+  WRITE_OFF_QUERY: 'scm:finance:write-off:query',
+  RECEIPT_ADD: 'scm:finance:receipt:add',
+  PAYMENT_ADD: 'scm:finance:payment:add',
+  WRITE_OFF_ADD: 'scm:finance:write-off:add',
+  PAYABLE_RED: 'scm:finance:payable:red',
+  WRITE_OFF_REVERSE: 'scm:finance:write-off:reverse',
+  RECEIPT_REVERSE: 'scm:finance:receipt:reverse',
+  PAYMENT_REVERSE: 'scm:finance:payment:reverse',
+  EXPORT: 'scm:finance:export',
 } as const;
 
 export const SCM_FINANCE_ENTRY_TYPE_ENUM: SmartEnum<string> = {
-    NORMAL: {value: 'NORMAL', desc: '正常'},
-    RED: {value: 'RED', desc: '红字'},
-    REVERSE: {value: 'REVERSE', desc: '反向'},
+  NORMAL: {value: 'NORMAL', desc: '正常'},
+  RED: {value: 'RED', desc: '红字'},
+  REVERSE: {value: 'REVERSE', desc: '反向'},
 };
 
 export const SCM_FINANCE_SETTLE_STATE_ENUM: SmartEnum<string> = {
-    OPEN: {value: 'OPEN', desc: '未结清'},
-    PARTIAL: {value: 'PARTIAL', desc: '部分结清'},
-    SETTLED: {value: 'SETTLED', desc: '已结清'},
+  OPEN: {value: 'OPEN', desc: '未结清'},
+  PARTIAL: {value: 'PARTIAL', desc: '部分结清'},
+  SETTLED: {value: 'SETTLED', desc: '已结清'},
 };
 
 /**
@@ -36,21 +36,21 @@ export const SCM_FINANCE_SETTLE_STATE_ENUM: SmartEnum<string> = {
  * 展示层不许再直接把 `operationType` 原样印到表格里（曾出现 GENERATE / RED_GENERATE 直出）。
  */
 export const SCM_FINANCE_OPERATION_TYPE_ENUM: SmartEnum<string> = {
-    GENERATE: {value: 'GENERATE', desc: '生成'},
-    RED_GENERATE: {value: 'RED_GENERATE', desc: '红字生成'},
-    RECEIVE: {value: 'RECEIVE', desc: '收款登记'},
-    PAY: {value: 'PAY', desc: '付款登记'},
-    WRITE_OFF: {value: 'WRITE_OFF', desc: '核销'},
-    WRITE_OFF_REVERSE: {value: 'WRITE_OFF_REVERSE', desc: '核销撤销'},
-    RECEIPT_REVERSE: {value: 'RECEIPT_REVERSE', desc: '收款反向'},
-    PAYMENT_REVERSE: {value: 'PAYMENT_REVERSE', desc: '付款反向'},
+  GENERATE: {value: 'GENERATE', desc: '生成'},
+  RED_GENERATE: {value: 'RED_GENERATE', desc: '红字生成'},
+  RECEIVE: {value: 'RECEIVE', desc: '收款登记'},
+  PAY: {value: 'PAY', desc: '付款登记'},
+  WRITE_OFF: {value: 'WRITE_OFF', desc: '核销'},
+  WRITE_OFF_REVERSE: {value: 'WRITE_OFF_REVERSE', desc: '核销撤销'},
+  RECEIPT_REVERSE: {value: 'RECEIPT_REVERSE', desc: '收款反向'},
+  PAYMENT_REVERSE: {value: 'PAYMENT_REVERSE', desc: '付款反向'},
 };
 
 /** 付款方式（与后端 `ScmFinancePaymentMethodEnum` 逐字对应）。 */
 export const SCM_FINANCE_PAYMENT_METHOD_ENUM: SmartEnum<string> = {
-    CASH: {value: 'CASH', desc: '现金'},
-    BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
-    OTHER: {value: 'OTHER', desc: '其他'},
+  CASH: {value: 'CASH', desc: '现金'},
+  BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
+  OTHER: {value: 'OTHER', desc: '其他'},
 };
 
 /**
@@ -61,10 +61,10 @@ export const SCM_FINANCE_PAYMENT_METHOD_ENUM: SmartEnum<string> = {
  * 也没有 BALANCE —— 余额消费不是实际资金进入，不产生收款事实（ADM-12）。
  */
 export const SCM_FINANCE_RECEIPT_METHOD_ENUM: SmartEnum<string> = {
-    CASH: {value: 'CASH', desc: '现金'},
-    BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
-    ONLINE_PAYMENT: {value: 'ONLINE_PAYMENT', desc: '在线支付'},
-    OTHER: {value: 'OTHER', desc: '其他'},
+  CASH: {value: 'CASH', desc: '现金'},
+  BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
+  ONLINE_PAYMENT: {value: 'ONLINE_PAYMENT', desc: '在线支付'},
+  OTHER: {value: 'OTHER', desc: '其他'},
 };
 
 /**
@@ -74,53 +74,53 @@ export const SCM_FINANCE_RECEIPT_METHOD_ENUM: SmartEnum<string> = {
  * 放进供应商付款的选项里会造出「前端能选、后端必然失败」。
  */
 export const SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM: SmartEnum<string> = {
-    CASH: {value: 'CASH', desc: '现金'},
-    BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
-    ONLINE_PAYMENT: {value: 'ONLINE_PAYMENT', desc: '在线支付'},
-    OTHER: {value: 'OTHER', desc: '其他'},
+  CASH: {value: 'CASH', desc: '现金'},
+  BANK_TRANSFER: {value: 'BANK_TRANSFER', desc: '银行转账'},
+  ONLINE_PAYMENT: {value: 'ONLINE_PAYMENT', desc: '在线支付'},
+  OTHER: {value: 'OTHER', desc: '其他'},
 };
 
 export const SCM_FINANCE_COUNTERPARTY_TYPE_ENUM: SmartEnum<string> = {
-    CUSTOMER: {value: 'CUSTOMER', desc: '客户'},
-    SUPPLIER: {value: 'SUPPLIER', desc: '供应商'},
+  CUSTOMER: {value: 'CUSTOMER', desc: '客户'},
+  SUPPLIER: {value: 'SUPPLIER', desc: '供应商'},
 };
 
 export const SCM_FINANCE_SOURCE_TYPE_ENUM: SmartEnum<string> = {
-    RECEIPT: {value: 'RECEIPT', desc: '收款'},
-    PAYMENT: {value: 'PAYMENT', desc: '付款'},
+  RECEIPT: {value: 'RECEIPT', desc: '收款'},
+  PAYMENT: {value: 'PAYMENT', desc: '付款'},
 };
 
 export const SCM_FINANCE_BUSINESS_TYPE_ENUM: SmartEnum<string> = {
-    RECEIVABLE: {value: 'RECEIVABLE', desc: '应收'},
-    PAYABLE: {value: 'PAYABLE', desc: '应付'},
-    RECEIPT: {value: 'RECEIPT', desc: '收款'},
-    PAYMENT: {value: 'PAYMENT', desc: '付款'},
-    WRITE_OFF: {value: 'WRITE_OFF', desc: '核销'},
+  RECEIVABLE: {value: 'RECEIVABLE', desc: '应收'},
+  PAYABLE: {value: 'PAYABLE', desc: '应付'},
+  RECEIPT: {value: 'RECEIPT', desc: '收款'},
+  PAYMENT: {value: 'PAYMENT', desc: '付款'},
+  WRITE_OFF: {value: 'WRITE_OFF', desc: '核销'},
 };
 
 /** Stable DOM ids for browser checks; column settings use the numeric ids below. */
 export const SCM_FINANCE_DOM_TABLE_ID = {
-    RECEIVABLE: 'scm-finance-receivable-table',
-    PAYABLE: 'scm-finance-payable-table',
-    RECEIPT: 'scm-finance-receipt-table',
-    PAYMENT: 'scm-finance-payment-table',
-    WRITE_OFF: 'scm-finance-write-off-table',
+  RECEIVABLE: 'scm-finance-receivable-table',
+  PAYABLE: 'scm-finance-payable-table',
+  RECEIPT: 'scm-finance-receipt-table',
+  PAYMENT: 'scm-finance-payment-table',
+  WRITE_OFF: 'scm-finance-write-off-table',
 } as const;
 
 export const SCM_FINANCE_ENTRY_COLOR: Record<string, string> = {
-    NORMAL: 'blue',
-    RED: 'red',
-    REVERSE: 'orange',
+  NORMAL: 'blue',
+  RED: 'red',
+  REVERSE: 'orange',
 };
 
 export default {
-    SCM_FINANCE_ENTRY_TYPE_ENUM,
-    SCM_FINANCE_SETTLE_STATE_ENUM,
-    SCM_FINANCE_OPERATION_TYPE_ENUM,
-    SCM_FINANCE_PAYMENT_METHOD_ENUM,
-    SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM,
-    SCM_FINANCE_RECEIPT_METHOD_ENUM,
-    SCM_FINANCE_COUNTERPARTY_TYPE_ENUM,
-    SCM_FINANCE_SOURCE_TYPE_ENUM,
-    SCM_FINANCE_BUSINESS_TYPE_ENUM,
+  SCM_FINANCE_ENTRY_TYPE_ENUM,
+  SCM_FINANCE_SETTLE_STATE_ENUM,
+  SCM_FINANCE_OPERATION_TYPE_ENUM,
+  SCM_FINANCE_PAYMENT_METHOD_ENUM,
+  SCM_FINANCE_CUSTOMER_REFUND_METHOD_ENUM,
+  SCM_FINANCE_RECEIPT_METHOD_ENUM,
+  SCM_FINANCE_COUNTERPARTY_TYPE_ENUM,
+  SCM_FINANCE_SOURCE_TYPE_ENUM,
+  SCM_FINANCE_BUSINESS_TYPE_ENUM,
 };

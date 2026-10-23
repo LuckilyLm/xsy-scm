@@ -8,7 +8,7 @@
 <template>
   <a-drawer v-model:open="visible" :title="title" :width="scmDrawerWidth('s')" @close="close">
     <a-spin :spinning="loading">
-      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10"/>
+      <a-alert v-if="error" type="error" :message="error" show-icon class="smart-margin-bottom10" />
       <a-form ref="formRef" :model="form" layout="vertical" class="app-drawer-form">
         <section class="scm-form-section">
           <div class="scm-form-section__head">
@@ -16,19 +16,18 @@
           </div>
           <a-row :gutter="20">
             <a-col :xs="24" :sm="12">
-              <a-form-item label="供应商名称" name="name"
-                           :rules="[{ required: true, whitespace: true, message: '请输入供应商名称' }]">
-                <a-input v-model:value="form.name" :maxlength="150"/>
+              <a-form-item label="供应商名称" name="name" :rules="[{required: true, whitespace: true, message: '请输入供应商名称'}]">
+                <a-input v-model:value="form.name" :maxlength="150" />
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
               <a-form-item label="联系人" name="contactName">
-                <a-input v-model:value="form.contactName" :maxlength="100"/>
+                <a-input v-model:value="form.contactName" :maxlength="100" />
               </a-form-item>
             </a-col>
             <a-col :xs="24" :sm="12">
               <a-form-item label="联系电话" name="contactPhone" class="app-drawer-field--compact">
-                <a-input v-model:value="form.contactPhone" :maxlength="32"/>
+                <a-input v-model:value="form.contactPhone" :maxlength="32" />
               </a-form-item>
             </a-col>
           </a-row>
@@ -39,19 +38,13 @@
             <h3 class="scm-form-section__title">位置与配送</h3>
           </div>
           <a-form-item label="所在地区">
-            <AreaCascader
-                type="province_city_district"
-                v-model:value="area"
-                style="width: 100%"
-                placeholder="省 / 市 / 区"
-                @change="onAreaChange"
-            />
+            <AreaCascader type="province_city_district" v-model:value="area" style="width: 100%" placeholder="省 / 市 / 区" @change="onAreaChange" />
           </a-form-item>
           <a-form-item label="地址" name="address" class="app-drawer-field--wide">
-            <a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())"/>
+            <a-input v-model:value="form.address" :maxlength="255" @change="Object.assign(form, emptyLocation())" />
           </a-form-item>
           <a-form-item label="地图定位">
-            <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)"/>
+            <ScmMapPicker :value="form" :address="form.address" @change="Object.assign(form, $event)" />
           </a-form-item>
         </section>
 
@@ -64,10 +57,9 @@
               <a-form-item name="paymentPeriodDays">
                 <template #label>
                   付款账期
-                  <ScmFieldHelp label="付款账期" text="0 表示当日到期；修改只影响新产生的应付款"/>
+                  <ScmFieldHelp label="付款账期" text="0 表示当日到期；修改只影响新产生的应付款" />
                 </template>
-                <a-input-number v-model:value="form.paymentPeriodDays" :min="0" :max="3650" :precision="0"
-                                addon-after="天" style="width: 100%"/>
+                <a-input-number v-model:value="form.paymentPeriodDays" :min="0" :max="3650" :precision="0" addon-after="天" style="width: 100%" />
               </a-form-item>
             </a-col>
           </a-row>
@@ -78,7 +70,7 @@
             <h3 class="scm-form-section__title">其他</h3>
           </div>
           <a-form-item label="备注" name="remark">
-            <a-textarea v-model:value="form.remark" :maxlength="500" :rows="3" show-count/>
+            <a-textarea v-model:value="form.remark" :maxlength="500" :rows="3" show-count />
           </a-form-item>
         </section>
       </a-form>
@@ -108,7 +100,7 @@ import {scmDrawerWidth} from '/@/theme/scm/scm-drawer';
 import {supplierError} from '../supplier-errors';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
-const emit = defineEmits<{ saved: [] }>();
+const emit = defineEmits<{saved: []}>();
 
 const visible = ref(false);
 const loading = ref(false);

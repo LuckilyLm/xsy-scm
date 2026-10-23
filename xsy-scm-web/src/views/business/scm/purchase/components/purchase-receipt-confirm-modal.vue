@@ -6,13 +6,13 @@
 -->
 <template>
   <a-modal
-      :open="visible"
-      :title="receipt?.receiptNo ? `确认收货 ${receipt.receiptNo}` : '确认收货'"
-      width="min(1180px, 96vw)"
-      :confirm-loading="saving"
-      ok-text="确认收货"
-      @ok="confirm"
-      @cancel="visible = false"
+    :open="visible"
+    :title="receipt?.receiptNo ? `确认收货 ${receipt.receiptNo}` : '确认收货'"
+    width="min(1180px, 96vw)"
+    :confirm-loading="saving"
+    ok-text="确认收货"
+    @ok="confirm"
+    @cancel="visible = false"
   >
     <a-alert v-if="error" :message="error" type="error" show-icon>
       <template #action>
@@ -28,16 +28,16 @@
       </a-descriptions>
 
       <a-table
-          class="lines"
-          :data-source="receipt?.items ?? []"
-          :columns="columns"
-          row-key="id"
-          :pagination="false"
-          size="small"
-          bordered
-          :scroll="{ x: scmColumnsWidth(columns) }"
+        class="lines"
+        :data-source="receipt?.items ?? []"
+        :columns="columns"
+        row-key="id"
+        :pagination="false"
+        size="small"
+        bordered
+        :scroll="{x: scmColumnsWidth(columns)}"
       >
-        <template #bodyCell="{ record, column }">
+        <template #bodyCell="{record, column}">
           <template v-if="column.dataIndex === 'plannedQuantity'">
             <span class="scm-quantity">{{ quantity(record.plannedQuantity) }}</span>
           </template>
@@ -54,23 +54,17 @@
             <span class="scm-quantity">{{ quantity(record.receiptDifference) }}</span>
           </template>
           <template v-else-if="column.dataIndex === 'receivedQuantity'">
-            <a-input-number
-                string-mode
-                :precision="4"
-                :min="'0'"
-                v-model:value="lineOf(record.id).receivedQuantity"
-                aria-label="本次声明数量"
-            />
+            <a-input-number string-mode :precision="4" :min="'0'" v-model:value="lineOf(record.id).receivedQuantity" aria-label="本次声明数量" />
           </template>
           <template v-else-if="column.dataIndex === 'actualWeight'">
             <!-- 非标品的有效数量取实重，必须录入 -->
             <a-input-number
-                v-if="isNonStandard(record)"
-                string-mode
-                :precision="4"
-                :min="'0'"
-                v-model:value="lineOf(record.id).actualWeight"
-                aria-label="实重"
+              v-if="isNonStandard(record)"
+              string-mode
+              :precision="4"
+              :min="'0'"
+              v-model:value="lineOf(record.id).actualWeight"
+              aria-label="实重"
             />
             <span v-else class="hint">标品按声明数量结算</span>
           </template>
@@ -84,18 +78,20 @@
           </template>
           <template v-else-if="column.dataIndex === 'correctionReason'">
             <a-input
-                v-if="isNonStandard(record)"
-                v-model:value="lineOf(record.id).correctionReason"
-                placeholder="实重修正原因（可选）"
-                maxlength="500"
-                aria-label="实重修正原因"
+              v-if="isNonStandard(record)"
+              v-model:value="lineOf(record.id).correctionReason"
+              placeholder="实重修正原因（可选）"
+              maxlength="500"
+              aria-label="实重修正原因"
             />
           </template>
         </template>
       </a-table>
 
-      <FormNote title="超收容差"
-                     :lines="['超出剩余可收量的比例由「采购超收容差」配置决定；本次可收上限超出容差时整笔确认会被拒绝，不会部分入库。']"/>
+      <FormNote
+        title="超收容差"
+        :lines="['超出剩余可收量的比例由「采购超收容差」配置决定；本次可收上限超出容差时整笔确认会被拒绝，不会部分入库。']"
+      />
     </a-spin>
   </a-modal>
 
@@ -103,15 +99,8 @@
     <p class="scm-note">数量之和必须等于本次收货量；来源生产批号可以不填。</p>
     <div class="lot-rows">
       <div v-for="(lot, index) in lotDraft" :key="index" class="lot-row">
-        <a-input v-model:value="lot.sourceLotNo" placeholder="来源生产批号" allow-clear style="width: 220px"/>
-        <a-input-number
-            v-model:value="lot.quantity"
-            string-mode
-            :precision="4"
-            :min="'0'"
-            aria-label="批次数量"
-            style="width: 150px"
-        />
+        <a-input v-model:value="lot.sourceLotNo" placeholder="来源生产批号" allow-clear style="width: 220px" />
+        <a-input-number v-model:value="lot.quantity" string-mode :precision="4" :min="'0'" aria-label="批次数量" style="width: 150px" />
         <a-button type="link" danger size="small" @click="removeLot(index)">删除</a-button>
       </div>
     </div>
@@ -126,18 +115,11 @@ import {message} from 'ant-design-vue';
 import type {TableColumnsType} from 'ant-design-vue';
 import {purchaseReceiptApi} from '/@/api/business/scm/purchase-receipt-api';
 import type {Id, Receipt, ReceiptConfirmItemPayload, ReceiptConfirmLot, ReceiptItem} from '../purchase-types';
-import {
-  confirmPayload,
-  fixed,
-  isNonStandard,
-  newConfirmLines,
-  quantity,
-  validateConfirm,
-} from '../purchase-form-model';
+import {confirmPayload, fixed, isNonStandard, newConfirmLines, quantity, validateConfirm} from '../purchase-form-model';
 import {purchaseError} from '../purchase-errors';
 import FormNote from '/@/components/framework/form-note/index.vue';
 
-const emit = defineEmits<{ saved: [] }>();
+const emit = defineEmits<{saved: []}>();
 
 const visible = ref(false);
 const loading = ref(false);

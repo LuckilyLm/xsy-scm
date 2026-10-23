@@ -8,10 +8,30 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync, existsSync, readdirSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
-import {movementTypeText, singleWarehouseDefault, specText, skuMainText, quantityText, moneyText, resolveStocktakeCopyUnits, BALANCE_QUERY_PAGE_SIZE} from '../src/views/business/scm/inventory/inventory-model.ts';
+import {
+  movementTypeText,
+  singleWarehouseDefault,
+  specText,
+  skuMainText,
+  quantityText,
+  moneyText,
+  resolveStocktakeCopyUnits,
+  BALANCE_QUERY_PAGE_SIZE,
+} from '../src/views/business/scm/inventory/inventory-model.ts';
 import {fixed4} from '../src/views/business/scm/common/scm-fixed.ts';
 import {inventoryError} from '../src/views/business/scm/inventory/inventory-errors.ts';
-import {SCM_INVENTORY_TRANSFER_STATUS_ENUM, SCM_INVENTORY_WARNING_STATUS_ENUM, SCM_INVENTORY_MOVEMENT_INBOUND_TYPES, SCM_INVENTORY_TABLE_ID, SCM_INVENTORY_CONVERSION_STATUS_ENUM, SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM, SCM_INVENTORY_SOURCE_TYPE_ENUM, SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM, SCM_INVENTORY_MOVEMENT_TYPE_ENUM, SCM_INVENTORY_CONVERSION_TYPE_ENUM} from '../src/constants/business/scm/inventory-const.ts';
+import {
+  SCM_INVENTORY_TRANSFER_STATUS_ENUM,
+  SCM_INVENTORY_WARNING_STATUS_ENUM,
+  SCM_INVENTORY_MOVEMENT_INBOUND_TYPES,
+  SCM_INVENTORY_TABLE_ID,
+  SCM_INVENTORY_CONVERSION_STATUS_ENUM,
+  SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM,
+  SCM_INVENTORY_SOURCE_TYPE_ENUM,
+  SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM,
+  SCM_INVENTORY_MOVEMENT_TYPE_ENUM,
+  SCM_INVENTORY_CONVERSION_TYPE_ENUM,
+} from '../src/constants/business/scm/inventory-const.ts';
 import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
 // ---------------------------------------------------------------- 来源：backend-gap-inventory-contract.test.mjs
@@ -41,84 +61,81 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
   /** 后端生产源码里的全部类名（不含 `.java`），用于验证文档引用的证据锚点没有漂移。 */
   function backendClassNames() {
-      const names = new Set();
-      (function walk(dir) {
-          for (const entry of readdirSync(dir, {withFileTypes: true})) {
-              if (entry.isDirectory()) walk(`${dir}/${entry.name}`);
-              else if (entry.name.endsWith('.java')) names.add(entry.name.replace(/\.java$/, ''));
-          }
-      })(backendJavaRoot);
-      return names;
+    const names = new Set();
+    (function walk(dir) {
+      for (const entry of readdirSync(dir, {withFileTypes: true})) {
+        if (entry.isDirectory()) walk(`${dir}/${entry.name}`);
+        else if (entry.name.endsWith('.java')) names.add(entry.name.replace(/\.java$/, ''));
+      }
+    })(backendJavaRoot);
+    return names;
   }
 
   /** 文档里声明的所有缺口编号（表格首列的 | B12 | 形式）。 */
   function declaredIds() {
-      return [...doc.matchAll(/^\|\s*(B\d+)\s*\|/gm)].map((m) => m[1]);
+    return [...doc.matchAll(/^\|\s*(B\d+)\s*\|/gm)].map((m) => m[1]);
   }
 
   test('项目状态存在且声明了当前 B 系列缺口编号', () => {
-      assert.ok(existsSync(docPath), '缺少 docs/status.md');
-      const ids = declaredIds();
-      assert.deepEqual(ids, ['B1', 'B4', 'B5', 'B7'], '缺口清单必须与当前未实现项一致');
+    assert.ok(existsSync(docPath), '缺少 docs/status.md');
+    const ids = declaredIds();
+    assert.deepEqual(ids, ['B1', 'B4', 'B5', 'B7'], '缺口清单必须与当前未实现项一致');
   });
 
   test('缺口编号不重复', () => {
-      const ids = declaredIds();
-      const seen = new Set();
-      for (const id of ids) {
-          assert.ok(!seen.has(id), `编号 ${id} 在盘点文档中出现多次`);
-          seen.add(id);
-      }
+    const ids = declaredIds();
+    const seen = new Set();
+    for (const id of ids) {
+      assert.ok(!seen.has(id), `编号 ${id} 在盘点文档中出现多次`);
+      seen.add(id);
+    }
   });
 
   test('代码注释引用的 B 编号必须在盘点文档中存在', () => {
-      const registered = [
-          ['src/views/business/scm/promotion/promotion-coupon-list.vue', 'B7'],
-      ];
-      for (const [file, id] of registered) {
-          const source = readFileSync(`${webRoot}/${file}`, 'utf8');
-          // 源码注释和状态表共用 B 编号，保持双向引用。
-          const cited = new RegExp(`(docs/status\\.md|项目状态)[\\s\\S]{0,80}${id}`).test(source)
-              || new RegExp(`${id}[\\s\\S]{0,80}(docs/status\\.md|项目状态)`).test(source);
-          assert.ok(cited, `${file} 未指向项目状态中的 ${id}`);
-          assert.ok(declaredIds().includes(id), `项目状态缺少被 ${file} 引用的 ${id}`);
-      }
+    const registered = [['src/views/business/scm/promotion/promotion-coupon-list.vue', 'B7']];
+    for (const [file, id] of registered) {
+      const source = readFileSync(`${webRoot}/${file}`, 'utf8');
+      // 源码注释和状态表共用 B 编号，保持双向引用。
+      const cited =
+        new RegExp(`(docs/status\\.md|项目状态)[\\s\\S]{0,80}${id}`).test(source) ||
+        new RegExp(`${id}[\\s\\S]{0,80}(docs/status\\.md|项目状态)`).test(source);
+      assert.ok(cited, `${file} 未指向项目状态中的 ${id}`);
+      assert.ok(declaredIds().includes(id), `项目状态缺少被 ${file} 引用的 ${id}`);
+    }
   });
 
   test('登记过的缺口文件不得退化为无指向的模糊说法', () => {
-      for (const file of [
-          'src/views/business/scm/promotion/promotion-coupon-list.vue',
-      ]) {
-          const source = readFileSync(`${webRoot}/${file}`, 'utf8');
-          assert.match(source, /docs\/status\.md/, `${file} 丢失了项目状态溯源`);
-      }
+    for (const file of ['src/views/business/scm/promotion/promotion-coupon-list.vue']) {
+      const source = readFileSync(`${webRoot}/${file}`, 'utf8');
+      assert.match(source, /docs\/status\.md/, `${file} 丢失了项目状态溯源`);
+    }
   });
 
   test('项目状态引用的后端证据锚点真实存在', () => {
-      // 从文档里抽 `` `XxxVO` `` / `` `XxxService` `` / `` `XxxEntity` `` 形式的类名，逐个到后端源码里找。
-      // 不写死锚点清单：文档只保留「当前仍成立」的条目，条目一关就会被删，
-      // 写死的清单会把「条目已关闭」误报成「证据漂移」。反过来，只要文档还引用着某个类名，
-      // 它就必须真实存在 —— 这才是要钉的不变量。
-      const named = [...new Set([...doc.matchAll(/`([A-Z][A-Za-z]*(?:VO|Service|Entity))`/g)].map((m) => m[1]))];
-      assert.ok(named.length >= 1, '项目状态没有引用任何后端类名，证据链已断（缺口的「当前缺口」列必须指向具体 VO/Service）');
+    // 从文档里抽 `` `XxxVO` `` / `` `XxxService` `` / `` `XxxEntity` `` 形式的类名，逐个到后端源码里找。
+    // 不写死锚点清单：文档只保留「当前仍成立」的条目，条目一关就会被删，
+    // 写死的清单会把「条目已关闭」误报成「证据漂移」。反过来，只要文档还引用着某个类名，
+    // 它就必须真实存在 —— 这才是要钉的不变量。
+    const named = [...new Set([...doc.matchAll(/`([A-Z][A-Za-z]*(?:VO|Service|Entity))`/g)].map((m) => m[1]))];
+    assert.ok(named.length >= 1, '项目状态没有引用任何后端类名，证据链已断（缺口的「当前缺口」列必须指向具体 VO/Service）');
 
-      const existing = backendClassNames();
-      for (const name of named) {
-          assert.ok(existing.has(name), `盘点文档引用了后端不存在的类 ${name}（证据漂移）`);
-      }
+    const existing = backendClassNames();
+    for (const name of named) {
+      assert.ok(existing.has(name), `盘点文档引用了后端不存在的类 ${name}（证据漂移）`);
+    }
   });
 
   test('项目状态不得把「已具备的字段」误列为缺口', () => {
-      // 流水行本身带 operator/createdAt，文档必须显式澄清，防止后续被误开单
-      assert.match(doc, /operator[\s\S]{0,80}createdAt/);
-      assert.match(doc, /不是缺口/);
+    // 流水行本身带 operator/createdAt，文档必须显式澄清，防止后续被误开单
+    assert.match(doc, /operator[\s\S]{0,80}createdAt/);
+    assert.match(doc, /不是缺口/);
   });
 
   test('已关闭的旧 UI 口径项仍被记录，防止被机械清理', () => {
-      // 前端口径分歧随 `.num` 收口一并关闭，仍应留在项目状态中防止重复登记。
-      assert.match(doc, /已关闭的旧 UI 口径项/);
-      assert.match(doc, /\.num/);
-      assert.match(doc, /不再是后端缺口/);
+    // 前端口径分歧随 `.num` 收口一并关闭，仍应留在项目状态中防止重复登记。
+    assert.match(doc, /已关闭的旧 UI 口径项/);
+    assert.match(doc, /\.num/);
+    assert.match(doc, /不再是后端缺口/);
   });
 }
 
@@ -184,16 +201,10 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     // 默认仓库必须在第一屏查询之前落定，否则首屏会先显示「全部仓库」再跳成「默认仓库」
     assert.match(page, /applySingleWarehouseDefault/);
     assert.match(page, /singleWarehouseDefault/);
-    assert.ok(
-      page.indexOf('await applySingleWarehouseDefault()') < page.indexOf('await queryData()'),
-      '默认仓库必须在首次查询之前应用'
-    );
+    assert.ok(page.indexOf('await applySingleWarehouseDefault()') < page.indexOf('await queryData()'), '默认仓库必须在首次查询之前应用');
 
     // 重置的语义是「回到无筛选」，不得重新套用默认值
-    const reset = page.slice(
-      page.indexOf('function resetQuery'),
-      page.indexOf('onMounted(async')
-    );
+    const reset = page.slice(page.indexOf('function resetQuery'), page.indexOf('onMounted(async'));
     assert.ok(reset.length > 0, '未能定位 resetQuery');
     assert.match(reset, /warehouseId = undefined/);
 
@@ -251,9 +262,20 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     // 方向集合必须来自常量（与后端 `ScmInventoryMovementTypeEnum.getInbound()` 同源）。
     // 本页自己写一份 IN / OUT 名单的话，后端加类型时方向会判反，而数字看起来完全正常。
     assert.match(page, /SCM_INVENTORY_MOVEMENT_INBOUND_TYPES\.includes\(/);
-    for (const literal of ['PURCHASE_IN', 'SALES_OUT', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS', 'LOSS_REPORT',
-      'GAIN_REPORT', 'TRANSFER_IN', 'TRANSFER_OUT', 'CONVERT_IN', 'CONVERT_OUT', 'SALES_RETURN_IN',
-      'PROMOTION_GIFT_OUT']) {
+    for (const literal of [
+      'PURCHASE_IN',
+      'SALES_OUT',
+      'STOCKTAKE_GAIN',
+      'STOCKTAKE_LOSS',
+      'LOSS_REPORT',
+      'GAIN_REPORT',
+      'TRANSFER_IN',
+      'TRANSFER_OUT',
+      'CONVERT_IN',
+      'CONVERT_OUT',
+      'SALES_RETURN_IN',
+      'PROMOTION_GIFT_OUT',
+    ]) {
       assert.doesNotMatch(page, new RegExp(`'${literal}'`), `流水页硬编码了 ${literal} 来判方向`);
     }
 
@@ -261,8 +283,14 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     assert.match(page, /v-if="directionOf\(record\)"/);
 
     // 集合与枚举互补：12 个类型里恰好 6 个入、6 个出，没有既不进集合也不在枚举里的值
-    assert.deepEqual([...SCM_INVENTORY_MOVEMENT_INBOUND_TYPES].sort(),
-        ['CONVERT_IN', 'GAIN_REPORT', 'PURCHASE_IN', 'SALES_RETURN_IN', 'STOCKTAKE_GAIN', 'TRANSFER_IN']);
+    assert.deepEqual([...SCM_INVENTORY_MOVEMENT_INBOUND_TYPES].sort(), [
+      'CONVERT_IN',
+      'GAIN_REPORT',
+      'PURCHASE_IN',
+      'SALES_RETURN_IN',
+      'STOCKTAKE_GAIN',
+      'TRANSFER_IN',
+    ]);
     for (const type of SCM_INVENTORY_MOVEMENT_INBOUND_TYPES) {
       assert.ok(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM).includes(type), type + ' 不在流水类型枚举里');
     }
@@ -338,13 +366,33 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   // ------------------------------------------------------------------
 
   test('inventory enums expose exactly the values the backend CHECK whitelist allows', () => {
-    assert.deepEqual(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM),
-        ['PURCHASE_IN', 'SALES_OUT', 'SALES_RETURN_IN', 'STOCKTAKE_GAIN', 'STOCKTAKE_LOSS', 'LOSS_REPORT',
-          'GAIN_REPORT', 'TRANSFER_OUT', 'TRANSFER_IN', 'CONVERT_OUT', 'CONVERT_IN', 'PROMOTION_GIFT_OUT']);
-    assert.deepEqual(Object.keys(SCM_INVENTORY_SOURCE_TYPE_ENUM),
-        ['PURCHASE_RECEIPT_ITEM', 'SALES_OUTBOUND_ITEM', 'SALES_RETURN_RECEIPT_ITEM', 'SALES_ORDER_ITEM',
-          'STOCKTAKE_ITEM', 'LOSS_GAIN_ITEM', 'TRANSFER_OUT_ITEM', 'TRANSFER_IN_ITEM', 'CONVERT_OUT_ITEM',
-          'CONVERT_IN_ITEM', 'ORDER_PROMOTION_GIFT']);
+    assert.deepEqual(Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM), [
+      'PURCHASE_IN',
+      'SALES_OUT',
+      'SALES_RETURN_IN',
+      'STOCKTAKE_GAIN',
+      'STOCKTAKE_LOSS',
+      'LOSS_REPORT',
+      'GAIN_REPORT',
+      'TRANSFER_OUT',
+      'TRANSFER_IN',
+      'CONVERT_OUT',
+      'CONVERT_IN',
+      'PROMOTION_GIFT_OUT',
+    ]);
+    assert.deepEqual(Object.keys(SCM_INVENTORY_SOURCE_TYPE_ENUM), [
+      'PURCHASE_RECEIPT_ITEM',
+      'SALES_OUTBOUND_ITEM',
+      'SALES_RETURN_RECEIPT_ITEM',
+      'SALES_ORDER_ITEM',
+      'STOCKTAKE_ITEM',
+      'LOSS_GAIN_ITEM',
+      'TRANSFER_OUT_ITEM',
+      'TRANSFER_IN_ITEM',
+      'CONVERT_OUT_ITEM',
+      'CONVERT_IN_ITEM',
+      'ORDER_PROMOTION_GIFT',
+    ]);
 
     // 值与键逐字一致（后端 `ScmInventoryMovementTypeEnum.name()` 就是持久化值）
     for (const [key, item] of Object.entries(SCM_INVENTORY_MOVEMENT_TYPE_ENUM)) {
@@ -363,10 +411,8 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     // 全部类型必须恰好分成两个方向组（入 6 / 出 6）——
     // 这是 `ck_inventory_movement_snap`「按方向分组」写法的前提。
     const inbound = ['PURCHASE_IN', 'SALES_RETURN_IN', 'STOCKTAKE_GAIN', 'GAIN_REPORT', 'TRANSFER_IN', 'CONVERT_IN'];
-    const outbound = ['SALES_OUT', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'TRANSFER_OUT', 'CONVERT_OUT',
-        'PROMOTION_GIFT_OUT'];
-    assert.deepEqual([...inbound, ...outbound].sort(),
-        Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM).sort());
+    const outbound = ['SALES_OUT', 'STOCKTAKE_LOSS', 'LOSS_REPORT', 'TRANSFER_OUT', 'CONVERT_OUT', 'PROMOTION_GIFT_OUT'];
+    assert.deepEqual([...inbound, ...outbound].sort(), Object.keys(SCM_INVENTORY_MOVEMENT_TYPE_ENUM).sort());
 
     // 页面方向判定用的是导出的 `SCM_INVENTORY_MOVEMENT_INBOUND_TYPES`，
     // 因此它必须与上面的入方向组逐字一致，否则报表会把退货回库显示成「出」。
@@ -380,8 +426,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     // 方向是单据级属性：一张单要么全报损、要么全报溢
     assert.deepEqual(Object.keys(SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM), ['LOSS', 'OVERFLOW']);
     // 没有 DRAFT：报损报溢创建即提交待审核（录单与审批应当由不同的人完成）
-    assert.deepEqual(Object.keys(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM),
-        ['PENDING', 'COMPLETED', 'REJECTED']);
+    assert.deepEqual(Object.keys(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM), ['PENDING', 'COMPLETED', 'REJECTED']);
     assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_LOSS_GAIN_STATUS_ENUM), /DRAFT/);
 
     for (const [key, item] of Object.entries(SCM_INVENTORY_LOSS_GAIN_TYPE_ENUM)) {
@@ -395,9 +440,21 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   });
 
   test('inventory table DOM ids are distinct, non-empty and registered with numeric table ids', () => {
-    assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID),
-        ['BALANCE', 'MOVEMENT', 'OUTBOUND', 'RESERVATION', 'STOCKTAKE', 'LOSS_GAIN', 'TRANSFER',
-          'WARNING', 'WARNING_THRESHOLD', 'CONVERSION', 'LOT_BALANCE', 'TRACE_UNIT', 'TRACE_CORRECTION']);
+    assert.deepEqual(Object.keys(SCM_INVENTORY_TABLE_ID), [
+      'BALANCE',
+      'MOVEMENT',
+      'OUTBOUND',
+      'RESERVATION',
+      'STOCKTAKE',
+      'LOSS_GAIN',
+      'TRANSFER',
+      'WARNING',
+      'WARNING_THRESHOLD',
+      'CONVERSION',
+      'LOT_BALANCE',
+      'TRACE_UNIT',
+      'TRACE_CORRECTION',
+    ]);
     assert.equal(SCM_INVENTORY_TABLE_ID.BALANCE, 'scm-inventory-balance-table');
     assert.equal(SCM_INVENTORY_TABLE_ID.MOVEMENT, 'scm-inventory-movement-table');
     assert.equal(SCM_INVENTORY_TABLE_ID.STOCKTAKE, 'scm-inventory-stocktake-table');
@@ -550,7 +607,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     // 页面上必须写明，否则用户会把正确行为当成 bug。
     const detail = code('../src/views/business/scm/inventory/components/inventory-stocktake-detail-drawer.vue');
     assert.match(detail, /差异按确认时的账面量计算/);
-  assert.doesNotMatch(detail, /快照/, '账面量的存储方式不写进界面');
+    assert.doesNotMatch(detail, /快照/, '账面量的存储方式不写进界面');
 
     // 明细里的账面量由服务端快照，前端不得提交它（否则盘点能凭空制造差异）
     const api = code('../src/api/business/scm/inventory-stocktake-api.ts');
@@ -650,8 +707,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
   test('the transfer status machine is two-step and in-transit is not cancellable', () => {
     // 两步式：DRAFT → SHIPPED（在途）→ RECEIVED，草稿可 CANCELLED
-    assert.deepEqual(Object.keys(SCM_INVENTORY_TRANSFER_STATUS_ENUM),
-        ['DRAFT', 'SHIPPED', 'RECEIVED', 'CANCELLED']);
+    assert.deepEqual(Object.keys(SCM_INVENTORY_TRANSFER_STATUS_ENUM), ['DRAFT', 'SHIPPED', 'RECEIVED', 'CANCELLED']);
     for (const [key, item] of Object.entries(SCM_INVENTORY_TRANSFER_STATUS_ENUM)) {
       assert.equal(item.value, key);
       assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
@@ -747,8 +803,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
       assert.ok(item.desc && item.desc.length > 0, key + ' 缺少中文描述');
     }
     // 状态是派生值，不落库：不得出现任何「已读 / 已忽略」这类需要持久化的状态
-    assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_WARNING_STATUS_ENUM),
-        /READ|ACK|IGNORED|DISMISSED/);
+    assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_WARNING_STATUS_ENUM), /READ|ACK|IGNORED|DISMISSED/);
   });
 
   test('the warning list page is read-only and defaults to abnormal-only', () => {
@@ -867,8 +922,11 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
     // 操作列收窄到三个槽位（详情 / 确认出库 / 更多），不可撤销的确认出库留在行内
     assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 150/);
-    assert.match(page, /v-if="record\.status === 'DRAFT'"[\s\S]{0,200}scm:inventory:outbound:confirm/,
-        '确认出库是当前状态唯一的推进动作，必须留在行内');
+    assert.match(
+      page,
+      /v-if="record\.status === 'DRAFT'"[\s\S]{0,200}scm:inventory:outbound:confirm/,
+      '确认出库是当前状态唯一的推进动作，必须留在行内'
+    );
     assert.match(page, /ScmActionMore/);
     assert.match(page, /key: 'edit', label: '编辑'/);
     assert.match(page, /key: 'cancel', label: '取消单据'/);
@@ -900,8 +958,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
   test('the conversion enums match the backend whitelist and stay cross-SKU', () => {
     assert.deepEqual(Object.keys(SCM_INVENTORY_CONVERSION_TYPE_ENUM), ['SPLIT', 'COMBINE']);
     // 状态机与报损报溢同构（没有 DRAFT：创建即提交待审核）
-    assert.deepEqual(Object.keys(SCM_INVENTORY_CONVERSION_STATUS_ENUM),
-        ['PENDING', 'COMPLETED', 'REJECTED']);
+    assert.deepEqual(Object.keys(SCM_INVENTORY_CONVERSION_STATUS_ENUM), ['PENDING', 'COMPLETED', 'REJECTED']);
     assert.doesNotMatch(JSON.stringify(SCM_INVENTORY_CONVERSION_STATUS_ENUM), /DRAFT/);
     for (const [key, item] of Object.entries(SCM_INVENTORY_CONVERSION_TYPE_ENUM)) {
       assert.equal(item.value, key);
@@ -952,11 +1009,7 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
   test('the three inventory document pages hide the technical timestamp and centre the action column', () => {
     // 三张单据的业务时刻都是「审核 / 确认」时间，创建时间是技术字段
-    for (const page of [
-      'inventory-stocktake-list.vue',
-      'inventory-loss-gain-list.vue',
-      'inventory-conversion-list.vue',
-    ]) {
+    for (const page of ['inventory-stocktake-list.vue', 'inventory-loss-gain-list.vue', 'inventory-conversion-list.vue']) {
       const source = code('../src/views/business/scm/inventory/' + page);
       assert.doesNotMatch(source, /title: '创建时间'/, page + ' 仍在列表展示创建时间');
       assert.doesNotMatch(source, /'orange'|'green'|'red'/, page + ' 状态色应由 tone 档位给出');
@@ -973,8 +1026,11 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     assert.match(page, /CONFIRMED: 'success'/);
     assert.match(page, /CANCELLED: 'neutral'/);
     assert.match(page, /dataIndex: 'action', align: 'center', fixed: 'right', width: 150/);
-    assert.match(page, /v-if="record\.status === 'DRAFT'"[\s\S]{0,200}scm:inventory:stocktake:confirm/,
-        '确认盘点是当前状态唯一的推进动作，必须留在行内');
+    assert.match(
+      page,
+      /v-if="record\.status === 'DRAFT'"[\s\S]{0,200}scm:inventory:stocktake:confirm/,
+      '确认盘点是当前状态唯一的推进动作，必须留在行内'
+    );
     assert.match(page, /key: 'copy', label: '复制到新建'/);
     assert.match(page, /key: 'delete', label: '删除', danger: true/);
     // 实盘量用 InputNumber（:min=0 允许「一件不剩」），提交走 fixed4
@@ -1056,18 +1112,11 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
     for (const module of modules) {
       const source = code(module);
       // 先剥掉 type-only 的 import/export（含多行形状），剩下的相对路径 from 就是值导入
-      const withoutTypeOnly = source.replace(
-        /(import|export)\s+type\s[\s\S]*?from\s+'[^']+';?/g,
-        ''
-      );
+      const withoutTypeOnly = source.replace(/(import|export)\s+type\s[\s\S]*?from\s+'[^']+';?/g, '');
       const valueImports = [...withoutTypeOnly.matchAll(/from\s+'([^']+)'/g)]
         .map((match) => match[1])
         .filter((specifier) => specifier.startsWith('.'));
-      assert.deepEqual(
-        valueImports,
-        [],
-        `${module} 出现了相对路径的值导入：node 直接加载 .ts 时无法解析，补 .ts 又会触发 TS5097`
-      );
+      assert.deepEqual(valueImports, [], `${module} 出现了相对路径的值导入：node 直接加载 .ts 时无法解析，补 .ts 又会触发 TS5097`);
     }
   });
 }
@@ -1085,12 +1134,12 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
   /** 把命中行补到整页（填充 SKU 不在来源里，只负责让这一页「读得完但还没找齐」）。 */
   function fullPage(ids, seed) {
-      const rows = ids.map((skuId) => ({skuId, unit: 'kg'}));
-      let n = 0;
-      while (rows.length < BALANCE_QUERY_PAGE_SIZE) {
-          rows.push({skuId: `filler-${seed}-${n++}`, unit: 'kg'});
-      }
-      return rows;
+    const rows = ids.map((skuId) => ({skuId, unit: 'kg'}));
+    let n = 0;
+    while (rows.length < BALANCE_QUERY_PAGE_SIZE) {
+      rows.push({skuId: `filler-${seed}-${n++}`, unit: 'kg'});
+    }
+    return rows;
   }
 
   /** 最后一页（不足整页）：读到它即收尾。 */
@@ -1098,71 +1147,81 @@ import {TABLE_ID_CONST} from '../src/constants/support/table-id-const.ts';
 
   /** 记录每次请求页参数的假查询：断言「不许越过 pageSize 上限」「不该再翻页」只能靠看到的入参。 */
   function fakeBalance(pages) {
-      const requested = [];
-      return {
-          requested,
-          fetchPage: async (pageNum, pageSize) => {
-              requested.push({pageNum, pageSize});
-              return pages[pageNum - 1] ?? [];
-          },
-      };
+    const requested = [];
+    return {
+      requested,
+      fetchPage: async (pageNum, pageSize) => {
+        requested.push({pageNum, pageSize});
+        return pages[pageNum - 1] ?? [];
+      },
+    };
   }
 
   test('pageSize 恒等于后端上限 100，页码从 1 连续递增', async () => {
-      const page = fakeBalance([fullPage([1], 1), fullPage([2], 2), lastPage([3])]);
-      await resolveStocktakeCopyUnits([2, 3], page.fetchPage);
-      assert.equal(BALANCE_QUERY_PAGE_SIZE, 100);
-      assert.deepEqual(page.requested.map((r) => r.pageNum), [1, 2, 3]);
-      for (const r of page.requested) {
-          assert.equal(r.pageSize, 100, '复制盘点用了后端会拒掉的 pageSize');
-      }
+    const page = fakeBalance([fullPage([1], 1), fullPage([2], 2), lastPage([3])]);
+    await resolveStocktakeCopyUnits([2, 3], page.fetchPage);
+    assert.equal(BALANCE_QUERY_PAGE_SIZE, 100);
+    assert.deepEqual(
+      page.requested.map((r) => r.pageNum),
+      [1, 2, 3]
+    );
+    for (const r of page.requested) {
+      assert.equal(r.pageSize, 100, '复制盘点用了后端会拒掉的 pageSize');
+    }
   });
 
   test('来源 SKU 提前找齐即停止翻页，不多打一次余额查询', async () => {
-      const page = fakeBalance([fullPage([1, 2], 1), fullPage([3, 4], 2), lastPage([5])]);
-      const {unitBySku, missingSkuIds} = await resolveStocktakeCopyUnits([1, 3], page.fetchPage);
-      assert.deepEqual(page.requested.map((r) => r.pageNum), [1, 2], '找齐后仍在继续翻页');
-      assert.deepEqual([...unitBySku.keys()].sort(), ['1', '3']);
-      assert.deepEqual(missingSkuIds, []);
+    const page = fakeBalance([fullPage([1, 2], 1), fullPage([3, 4], 2), lastPage([5])]);
+    const {unitBySku, missingSkuIds} = await resolveStocktakeCopyUnits([1, 3], page.fetchPage);
+    assert.deepEqual(
+      page.requested.map((r) => r.pageNum),
+      [1, 2],
+      '找齐后仍在继续翻页'
+    );
+    assert.deepEqual([...unitBySku.keys()].sort(), ['1', '3']);
+    assert.deepEqual(missingSkuIds, []);
   });
 
   test('来源 SKU 分散在多页时逐个解析到单位，重复来源只解析一次', async () => {
-      const page = fakeBalance([fullPage([1, 2], 1), lastPage([3])]);
-      const {unitBySku, missingSkuIds} = await resolveStocktakeCopyUnits([3, 1, 3, 1], page.fetchPage);
-      assert.deepEqual(missingSkuIds, []);
-      assert.equal(unitBySku.get('1'), 'kg');
-      assert.equal(unitBySku.get('3'), 'kg');
-      assert.equal(page.requested.length, 2, '重复 SKU 造成额外的余额请求');
+    const page = fakeBalance([fullPage([1, 2], 1), lastPage([3])]);
+    const {unitBySku, missingSkuIds} = await resolveStocktakeCopyUnits([3, 1, 3, 1], page.fetchPage);
+    assert.deepEqual(missingSkuIds, []);
+    assert.equal(unitBySku.get('1'), 'kg');
+    assert.equal(unitBySku.get('3'), 'kg');
+    assert.equal(page.requested.length, 2, '重复 SKU 造成额外的余额请求');
   });
 
   test('整页刚好 100 行时继续翻页，读到不足一页才收尾（不漏最后一页）', async () => {
-      const page = fakeBalance([fullPage([5], 1), lastPage([900])]);
-      const {unitBySku, missingSkuIds} = await resolveStocktakeCopyUnits([5, 900], page.fetchPage);
-      assert.deepEqual(page.requested.map((r) => r.pageNum), [1, 2]);
-      assert.equal(unitBySku.get('900'), 'kg');
-      assert.deepEqual(missingSkuIds, []);
+    const page = fakeBalance([fullPage([5], 1), lastPage([900])]);
+    const {unitBySku, missingSkuIds} = await resolveStocktakeCopyUnits([5, 900], page.fetchPage);
+    assert.deepEqual(
+      page.requested.map((r) => r.pageNum),
+      [1, 2]
+    );
+    assert.equal(unitBySku.get('900'), 'kg');
+    assert.deepEqual(missingSkuIds, []);
   });
 
   test('翻到最后一页仍缺的 SKU 显性返回，不静默丢行', async () => {
-      const page = fakeBalance([lastPage([1, 2])]);
-      const {unitBySku, missingSkuIds} = await resolveStocktakeCopyUnits([1, 2, 404, 405], page.fetchPage);
-      assert.deepEqual(missingSkuIds, ['404', '405']);
-      assert.equal(unitBySku.has('404'), false, '缺失 SKU 被填了兜底单位');
+    const page = fakeBalance([lastPage([1, 2])]);
+    const {unitBySku, missingSkuIds} = await resolveStocktakeCopyUnits([1, 2, 404, 405], page.fetchPage);
+    assert.deepEqual(missingSkuIds, ['404', '405']);
+    assert.equal(unitBySku.has('404'), false, '缺失 SKU 被填了兜底单位');
   });
 
   test('余额行缺 unit 时回落空串而不是编造单位', async () => {
-      const page = fakeBalance([[{skuId: 7}]]);
-      const {unitBySku} = await resolveStocktakeCopyUnits([7], page.fetchPage);
-      assert.equal(unitBySku.get('7'), '');
+    const page = fakeBalance([[{skuId: 7}]]);
+    const {unitBySku} = await resolveStocktakeCopyUnits([7], page.fetchPage);
+    assert.equal(unitBySku.get('7'), '');
   });
 
   test('来源行为空 skuId 时不参与解析，交由调用方整单拒绝', async () => {
-      const page = fakeBalance([lastPage([1])]);
-      const {unitBySku, missingSkuIds} = await resolveStocktakeCopyUnits([null, undefined, '', 1], page.fetchPage);
-      assert.deepEqual(missingSkuIds, []);
-      assert.equal(unitBySku.has('null'), false);
-      assert.equal(unitBySku.has(''), false);
-      assert.equal(unitBySku.get('1'), 'kg');
+    const page = fakeBalance([lastPage([1])]);
+    const {unitBySku, missingSkuIds} = await resolveStocktakeCopyUnits([null, undefined, '', 1], page.fetchPage);
+    assert.deepEqual(missingSkuIds, []);
+    assert.equal(unitBySku.has('null'), false);
+    assert.equal(unitBySku.has(''), false);
+    assert.equal(unitBySku.get('1'), 'kg');
   });
 }
 

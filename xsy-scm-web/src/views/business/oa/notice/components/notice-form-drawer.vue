@@ -1,19 +1,19 @@
 <!--
   * 通知  表单
-  * 
+  *
 -->
 <template>
   <a-drawer
-      :title="formData.noticeId ? '编辑' : '新建'"
-      :open="visibleFlag"
-      width="min(840px, 96vw)"
-      :footerStyle="{ textAlign: 'right' }"
-      @close="onClose"
-      :destroyOnClose="true"
+    :title="formData.noticeId ? '编辑' : '新建'"
+    :open="visibleFlag"
+    width="min(840px, 96vw)"
+    :footerStyle="{textAlign: 'right'}"
+    @close="onClose"
+    :destroyOnClose="true"
   >
-    <a-form ref="formRef" :model="formData" :rules="formRules" :label-col="{ span: 3 }" :wrapper-col="{ span: 20 }" class="app-drawer-form">
+    <a-form ref="formRef" :model="formData" :rules="formRules" :label-col="{span: 3}" :wrapper-col="{span: 20}" class="app-drawer-form">
       <a-form-item label="公告标题" name="title" class="app-drawer-field--wide">
-        <a-input v-model:value="formData.title" :maxlength="200" show-count placeholder="请输入公告标题"/>
+        <a-input v-model:value="formData.title" :maxlength="200" show-count placeholder="请输入公告标题" />
       </a-form-item>
       <a-form-item label="分类" name="noticeTypeId">
         <a-select v-model:value="formData.noticeTypeId" style="width: 100%" :showSearch="true" :allowClear="true">
@@ -23,13 +23,13 @@
         </a-select>
       </a-form-item>
       <a-form-item label="文号" name="documentNumber">
-        <a-input v-model:value="formData.documentNumber" :maxlength="1000" placeholder="文号，如：鲜蔬园〔2026〕字第36号"/>
+        <a-input v-model:value="formData.documentNumber" :maxlength="1000" placeholder="文号，如：鲜蔬园〔2026〕字第36号" />
       </a-form-item>
       <a-form-item label="作者" name="author">
-        <a-input v-model:value="formData.author" :maxlength="1000" placeholder="请输入作者"/>
+        <a-input v-model:value="formData.author" :maxlength="1000" placeholder="请输入作者" />
       </a-form-item>
       <a-form-item label="来源" name="source">
-        <a-input v-model:value="formData.source" :maxlength="1000" placeholder="请输入来源"/>
+        <a-input v-model:value="formData.source" :maxlength="1000" placeholder="请输入来源" />
       </a-form-item>
       <a-form-item label="可见范围" name="allVisibleFlag">
         <a-select v-model:value="formData.allVisibleFlag" placeholder="请选择可见范围">
@@ -43,42 +43,42 @@
           <div class="visible-item" v-for="(item, index) in formData.visibleRangeList" :key="item.dataId">
             <a-tag>
               <span>{{ item.dataName }}</span>
-              <close-outlined @click="removeVisibleItem(index)"/>
+              <close-outlined @click="removeVisibleItem(index)" />
             </a-tag>
           </div>
         </div>
       </a-form-item>
       <a-form-item label="定时发布">
         <a-switch
-            v-model:checked="formData.scheduledPublishFlag"
-            checked-children="开"
-            un-checked-children="关"
-            @change="changesSheduledPublishFlag"
+          v-model:checked="formData.scheduledPublishFlag"
+          checked-children="开"
+          un-checked-children="关"
+          @change="changesSheduledPublishFlag"
         />
       </a-form-item>
       <a-form-item v-show="formData.scheduledPublishFlag" label="发布时间">
         <a-date-picker
-            v-model:value="releaseTime"
-            :format="timeFormat"
-            showTime
-            :allowClear="false"
-            placeholder="请选择发布时间"
-            style="width: 200px"
-            @change="changeTime"
+          v-model:value="releaseTime"
+          :format="timeFormat"
+          showTime
+          :allowClear="false"
+          placeholder="请选择发布时间"
+          style="width: 200px"
+          @change="changeTime"
         />
       </a-form-item>
       <a-form-item label="公告内容" name="contentHtml">
-        <SmartWangeditor ref="contentRef" :modelValue="formData.contentHtml" :height="300"/>
+        <SmartWangeditor ref="contentRef" :modelValue="formData.contentHtml" :height="300" />
       </a-form-item>
       <a-form-item label="附件">
         <Upload
-            :defaultFileList="defaultFileList"
-            :maxUploadSize="10"
-            :folder="FILE_FOLDER_TYPE_ENUM.NOTICE.value"
-            buttonText="上传附件"
-            listType="text"
-            extraMsg="最多上传10个附件"
-            @change="changeAttachment"
+          :defaultFileList="defaultFileList"
+          :maxUploadSize="10"
+          :folder="FILE_FOLDER_TYPE_ENUM.NOTICE.value"
+          buttonText="上传附件"
+          listType="text"
+          extraMsg="最多上传10个附件"
+          @change="changeAttachment"
         />
       </a-form-item>
     </a-form>
@@ -92,7 +92,7 @@
   </a-drawer>
 
   <!-- 选择可见范围弹窗 -->
-  <NoticeFormVisibleModal ref="noticeFormVisibleModal" @selectedFinish="finishCanSelectedVisibleRange"/>
+  <NoticeFormVisibleModal ref="noticeFormVisibleModal" @selectedFinish="finishCanSelectedVisibleRange" />
 </template>
 
 <script setup lang="ts">
@@ -160,11 +160,20 @@ const defaultFormData = {
 const formData = reactive({...defaultFormData});
 
 const formRules = {
-  title: [{required: true, message: '请输入公告标题'}, {max: 200, message: '公告标题最多 200 字'}],
+  title: [
+    {required: true, message: '请输入公告标题'},
+    {max: 200, message: '公告标题最多 200 字'},
+  ],
   noticeTypeId: [{required: true, message: '请选择分类'}],
   allVisibleFlag: [{required: true, message: '请选择可见范围'}],
-  source: [{required: true, message: '请输入来源'}, {max: 1000, message: '来源最多 1000 字'}],
-  author: [{required: true, message: '请输入作者'}, {max: 1000, message: '作者最多 1000 字'}],
+  source: [
+    {required: true, message: '请输入来源'},
+    {max: 1000, message: '来源最多 1000 字'},
+  ],
+  author: [
+    {required: true, message: '请输入作者'},
+    {max: 1000, message: '作者最多 1000 字'},
+  ],
   documentNumber: [{max: 1000, message: '文号最多 1000 字'}],
   contentHtml: [{required: true, message: '请输入内容'}],
 };

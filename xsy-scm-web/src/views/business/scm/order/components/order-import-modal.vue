@@ -1,37 +1,56 @@
 <template>
-  <a-modal v-model:open="visible" title="导入销售订单" width="860px" :confirm-loading="loading"
-           :ok-button-props="{disabled: loading || imported}" :cancel-button-props="{disabled: loading}"
-           :closable="!loading" :mask-closable="!loading" :keyboard="!loading" ok-text="开始导入" @ok="submit"
-           @cancel="reset">
-    <FormNote title="导入规则" :lines="IMPORT_RULES"/>
+  <a-modal
+    v-model:open="visible"
+    title="导入销售订单"
+    width="860px"
+    :confirm-loading="loading"
+    :ok-button-props="{disabled: loading || imported}"
+    :cancel-button-props="{disabled: loading}"
+    :closable="!loading"
+    :mask-closable="!loading"
+    :keyboard="!loading"
+    ok-text="开始导入"
+    @ok="submit"
+    @cancel="reset"
+  >
+    <FormNote title="导入规则" :lines="IMPORT_RULES" />
 
     <!-- 模板下载：按钮与说明同一水平线居中，说明不再做成绿色胶囊（和上面的信息色打架） -->
     <div class="import-template">
       <a-button :loading="downloading" :disabled="loading" @click="downloadTemplate">
         <template #icon>
-          <DownloadOutlined/>
+          <DownloadOutlined />
         </template>
         下载 Excel 模板
       </a-button>
       <span class="import-template__note">仅支持 .xlsx，最大 5 MiB · 任一错误均不会创建订单</span>
     </div>
 
-    <a-upload-dragger :file-list="fileList" :before-upload="beforeUpload" :disabled="loading" :max-count="1"
-                      accept=".xlsx" @remove="removeFile">
+    <a-upload-dragger :file-list="fileList" :before-upload="beforeUpload" :disabled="loading" :max-count="1" accept=".xlsx" @remove="removeFile">
       <p class="ant-upload-drag-icon">
-        <InboxOutlined/>
+        <InboxOutlined />
       </p>
       <p class="ant-upload-text">点击或拖拽订单 Excel 到此处</p>
       <p class="ant-upload-hint">请使用最新模板，按客户编码与商品规格编码填写</p>
     </a-upload-dragger>
 
-    <a-result v-if="result && !result.totalErrors" status="success" title="订单导入完成"
-              :sub-title="`共 ${result.totalOrders} 张：已确认 ${result.confirmedOrders} 张，待称重 ${result.pendingOrders} 张`"/>
+    <a-result
+      v-if="result && !result.totalErrors"
+      status="success"
+      title="订单导入完成"
+      :sub-title="`共 ${result.totalOrders} 张：已确认 ${result.confirmedOrders} 张，待称重 ${result.pendingOrders} 张`"
+    />
     <div v-else-if="result?.totalErrors" class="import-errors">
-      <a-alert type="error" show-icon :message="`发现 ${result.totalErrors} 个问题，订单未写入`"
-               class="error-summary"/>
-      <a-table size="small" bordered :pagination="false" :data-source="result.errors" :columns="columns"
-               :scroll="{y:300}" :row-key="(row:ImportError)=>`${row.rowNumber}-${row.column}-${row.code}`"/>
+      <a-alert type="error" show-icon :message="`发现 ${result.totalErrors} 个问题，订单未写入`" class="error-summary" />
+      <a-table
+        size="small"
+        bordered
+        :pagination="false"
+        :data-source="result.errors"
+        :columns="columns"
+        :scroll="{y: 300}"
+        :row-key="(row: ImportError) => `${row.rowNumber}-${row.column}-${row.code}`"
+      />
     </div>
   </a-modal>
 </template>
@@ -50,16 +69,24 @@ const IMPORT_RULES = [
   '纯标品自动确认；含非标品时整单待确认，等待电子秤回写实重。',
 ];
 
-const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), loading = ref(false), downloading = ref(false),
-    result = ref<ImportResult>(), fileList = ref<UploadFile[]>([]);
+const emit = defineEmits<{saved: []}>();
+const visible = ref(false),
+  loading = ref(false),
+  downloading = ref(false),
+  result = ref<ImportResult>(),
+  fileList = ref<UploadFile[]>([]);
 const selectedFile = ref<File>();
 const imported = computed(() => !!result.value && result.value.totalErrors === 0);
-const columns: TableColumnsType<ImportError> = [{title: '行号', dataIndex: 'rowNumber', width: 72}, {
-  title: '订单标识',
-  dataIndex: 'orderKey',
-  width: 130
-}, {title: '字段', dataIndex: 'column', width: 120}, {title: '问题', dataIndex: 'message'}];
+const columns: TableColumnsType<ImportError> = [
+  {title: '行号', dataIndex: 'rowNumber', width: 72},
+  {
+    title: '订单标识',
+    dataIndex: 'orderKey',
+    width: 130,
+  },
+  {title: '字段', dataIndex: 'column', width: 120},
+  {title: '问题', dataIndex: 'message'},
+];
 
 function open() {
   reset();

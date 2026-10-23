@@ -28,6 +28,12 @@
 - 提交前运行 `mvn -B -pl sa-admin spotless:check`；不要手工制造与 Spotless 冲突的空白或换行。
 - `.editorconfig` 已同步 IDEA 的缩进、续行和注释换行设置。Spotless 只覆盖 `src/main/java/com/xsy/scm/**`，测试源码保持现状。
 
+#### 前端格式
+
+- 唯一格式化入口是 `xsy-scm-web/` 下的 `npm run format`，配置为 `.prettierrc.cjs`：2 空格缩进、150 列、单引号、LF 换行、导入与对象花括号内不留空格、`<script>`/`<style>` 不额外缩进。
+- 提交前运行 `npm run format:check`；不要手工制造与 Prettier 冲突的空白或换行。前端源码、E2E、单测和配置文件由 `.gitattributes` 固定按 LF 检出。
+- `test/` 的源码契约用例对空白容错；修改格式后若正则失配，应放宽空白匹配，不能删除或弱化业务断言。
+
 #### SCM 界面规范
 
 - 页面优先展示业务名称、状态、核心数量/金额与当前可执行动作。桌面端可独立比较的名称、编码、联系人等信息分列；长文本依列宽截断并支持查看全文，不按字符数硬截。

@@ -60,12 +60,7 @@ let provisionSeq = 0;
  * `secondAdmin` 再建一个管理员账号：报损报溢 / 规格转换禁止「录单人自己审批」，
  * 同一账号既录单又审批会被 41065 挡下，审批链用例必须有第二个人。
  */
-export function provisionTempAccounts(
-    wave: WavePrefix,
-    deny?: string[],
-    roles?: string[],
-    secondAdmin?: boolean,
-): TempAccounts {
+export function provisionTempAccounts(wave: WavePrefix, deny?: string[], roles?: string[], secondAdmin?: boolean): TempAccounts {
   const envKey = wave.toUpperCase() + '_E2E';
   const name = `${wave}_e2e_` + Date.now().toString(36) + (++provisionSeq).toString(36);
   const password = `${wave.toUpperCase()}@` + randomBytes(6).toString('hex');
@@ -118,9 +113,11 @@ export async function login(accounts: TempAccounts, loginName: string): Promise<
     const key = /const SM4_KEY = '([^']+)'/.exec(readFileSync('src/lib/encrypt.ts', 'utf8'))?.[1];
     if (!key) throw new Error('SmartAdmin transport key not found');
     const encrypted = Buffer.from(smCrypto.sm4.encrypt(accounts.password, Buffer.from(key).toString('hex'))).toString('base64');
-    const result = await (await client.post('/login', {
-      data: {loginName, password: encrypted, captchaUuid: captcha.captchaUuid, captchaCode: captcha.captchaText, loginDevice: 1},
-    })).json();
+    const result = await (
+      await client.post('/login', {
+        data: {loginName, password: encrypted, captchaUuid: captcha.captchaUuid, captchaCode: captcha.captchaText, loginDevice: 1},
+      })
+    ).json();
     expect(result.code, `登录 ${loginName} 应成功：${result.msg}`).toBe(0);
     return result.data.token as string;
   } finally {

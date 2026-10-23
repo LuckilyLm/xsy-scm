@@ -1,28 +1,25 @@
 <template>
-  <a-modal v-model:open="visible" :title="form.categoryId ? '编辑分类' : '新增分类'" :confirm-loading="saving"
-           @ok="submit" @cancel="visible = false">
+  <a-modal v-model:open="visible" :title="form.categoryId ? '编辑分类' : '新增分类'" :confirm-loading="saving" @ok="submit" @cancel="visible = false">
     <a-form ref="formRef" :model="form" layout="vertical">
       <a-form-item name="parentId">
         <template #label>
           上级分类
-          <ScmFieldHelp label="上级分类" text="不选上级时创建一级分类"/>
+          <ScmFieldHelp label="上级分类" text="不选上级时创建一级分类" />
         </template>
-        <CategorySelect v-model:value="form.parentId" :categories="categories" mode="parent"
-                        :exclude-id="form.categoryId"/>
+        <CategorySelect v-model:value="form.parentId" :categories="categories" mode="parent" :exclude-id="form.categoryId" />
       </a-form-item>
-      <a-form-item label="分类名称" name="name"
-                   :rules="[{ required: true, whitespace: true, message: '请输入分类名称' }]">
-        <a-input v-model:value="form.name" :maxlength="100"/>
+      <a-form-item label="分类名称" name="name" :rules="[{required: true, whitespace: true, message: '请输入分类名称'}]">
+        <a-input v-model:value="form.name" :maxlength="100" />
       </a-form-item>
       <a-row :gutter="16">
         <a-col :span="12">
           <a-form-item label="排序" name="sortOrder">
-            <a-input-number v-model:value="form.sortOrder" :min="0" :precision="0"/>
+            <a-input-number v-model:value="form.sortOrder" :min="0" :precision="0" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item label="状态" name="status">
-            <a-select v-model:value="form.status" :options="ENABLE_STATUS_ENUM"/>
+            <a-select v-model:value="form.status" :options="ENABLE_STATUS_ENUM" />
           </a-form-item>
         </a-col>
       </a-row>
@@ -39,9 +36,10 @@ import {ENABLE_STATUS_ENUM} from '/@/constants/business/scm/product-const';
 import type {ProductCategory, ProductCategoryForm, ProductId} from '/@/types/business/scm/product';
 import ScmFieldHelp from '/@/components/business/scm/scm-field-help.vue';
 
-defineProps<{ categories: ProductCategory[] }>();
-const emit = defineEmits<{ saved: [] }>();
-const visible = ref(false), saving = ref(false);
+defineProps<{categories: ProductCategory[]}>();
+const emit = defineEmits<{saved: []}>();
+const visible = ref(false),
+  saving = ref(false);
 const formRef = ref<FormInstance>();
 const defaults = (): ProductCategoryForm => ({
   categoryCode: '',
@@ -50,7 +48,7 @@ const defaults = (): ProductCategoryForm => ({
   status: 'ENABLED',
   parentId: undefined,
   categoryId: undefined,
-  version: undefined
+  version: undefined,
 });
 const form = reactive<ProductCategoryForm>(defaults());
 

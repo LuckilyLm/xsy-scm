@@ -4,13 +4,12 @@
     <header class="scm-detail-header">
       <div class="scm-detail-header__main">
         <a-button type="link" class="scm-detail-header__back" @click="router.push('/supplier/supplier-list')">
-          <ArrowLeftOutlined/>
+          <ArrowLeftOutlined />
           返回供应商列表
         </a-button>
         <div class="scm-detail-header__title-row">
           <h1 class="scm-detail-header__title">{{ supplier?.name || '供应商详情' }}</h1>
-          <ScmStatusTag v-if="supplier" :tone="supplier.status === 'ENABLED' ? 'success' : 'neutral'"
-                        :label="statusText(supplier.status)"/>
+          <ScmStatusTag v-if="supplier" :tone="supplier.status === 'ENABLED' ? 'success' : 'neutral'" :label="statusText(supplier.status)" />
         </div>
         <p v-if="supplier" class="scm-detail-header__meta">
           <span class="scm-mono">{{ supplier.supplierCode }}</span>
@@ -71,20 +70,18 @@
         <section class="scm-detail-card scm-detail-block">
           <h3 class="scm-detail-card__title">已关联商品</h3>
           <a-table
-              :data-source="relations"
-              :columns="relationColumns"
-              row-key="id"
-              size="small"
-              bordered
-              :pagination="false"
-              :scroll="{ x: scmColumnsWidth(relationColumns) }"
+            :data-source="relations"
+            :columns="relationColumns"
+            row-key="id"
+            size="small"
+            bordered
+            :pagination="false"
+            :scroll="{x: scmColumnsWidth(relationColumns)}"
           >
-            <template #bodyCell="{ column, record }">
+            <template #bodyCell="{column, record}">
               <span v-if="column.dataIndex === 'skuNameSnapshot'">{{ record.skuNameSnapshot }}</span>
               <span v-else-if="column.dataIndex === 'spec'">{{ specText(record.specValuesSnapshot) }}</span>
-              <span v-else-if="column.dataIndex === 'referencePrice'" class="scm-money">{{
-                  record.referencePrice ?? '—'
-                }}</span>
+              <span v-else-if="column.dataIndex === 'referencePrice'" class="scm-money">{{ record.referencePrice ?? '—' }}</span>
               <span v-else-if="column.dataIndex === 'purchaserName'">{{ record.purchaserName || '—' }}</span>
               <a-tag v-else-if="column.dataIndex === 'defaultFlag'" :color="record.defaultFlag ? 'blue' : 'default'">
                 {{ record.defaultFlag ? '优先采购' : '—' }}
@@ -94,7 +91,7 @@
               </a-tag>
             </template>
           </a-table>
-          <a-empty v-if="!loading && relations.length === 0" description="尚未关联任何商品"/>
+          <a-empty v-if="!loading && relations.length === 0" description="尚未关联任何商品" />
         </section>
 
         <!-- 系统信息：弱化卡片，编码与时间不占核心区域 -->

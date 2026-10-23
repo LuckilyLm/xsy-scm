@@ -7,43 +7,43 @@ import {MENU_TYPE_ENUM} from '/@/constants/system/menu-const';
 import SmartLayout from '/@/layout/index.vue';
 
 export const homeRouters: Array<RouteRecordRaw> = [
-    {
-        path: '/',
-        name: '_home',
-        redirect: {name: HOME_PAGE_NAME},
-        component: SmartLayout,
-        meta: {
-            title: '首页',
-            menuType: MENU_TYPE_ENUM.CATALOG.value,
-            icon: 'HomeOutlined',
-        },
-        children: [
-            {
-                path: '/home',
-                name: HOME_PAGE_NAME,
-                meta: {
-                    title: '首页',
-                    menuType: MENU_TYPE_ENUM.MENU.value,
-                    icon: 'HomeOutlined',
-                    parentMenuList: [{name: '_home', title: '首页'}],
-                },
-                component: () => import('/@/views/system/home/index.vue'),
-            },
-            {
-                path: '/account',
-                name: 'Account',
-                component: () => import('/@/views/system/account/index.vue'),
-                meta: {
-                    title: '个人中心',
-                    hideInMenu: false,
-                },
-            },
-            {
-                path: '/order/detail/:orderId',
-                name: 'ScmOrderDetail',
-                component: () => import('/@/views/business/scm/order/order-detail-page.vue'),
-                meta: {title: '销售订单详情', hideInMenu: true},
-            },
-        ],
+  {
+    path: '/',
+    name: '_home',
+    redirect: {name: HOME_PAGE_NAME},
+    component: SmartLayout,
+    meta: {
+      title: '首页',
+      menuType: MENU_TYPE_ENUM.CATALOG.value,
+      icon: 'HomeOutlined',
     },
+    children: [
+      {
+        path: '/home',
+        name: HOME_PAGE_NAME,
+        meta: {
+          title: '首页',
+          menuType: MENU_TYPE_ENUM.MENU.value,
+          icon: 'HomeOutlined',
+          parentMenuList: [{name: '_home', title: '首页'}],
+        },
+        component: () => import('/@/views/system/home/index.vue'),
+      },
+      {
+        path: '/account',
+        name: 'Account',
+        component: () => import('/@/views/system/account/index.vue'),
+        meta: {
+          title: '个人中心',
+          hideInMenu: false,
+        },
+      },
+      {
+        path: '/order/detail/:orderId',
+        name: 'ScmOrderDetail',
+        component: () => import('/@/views/business/scm/order/order-detail-page.vue'),
+        meta: {title: '销售订单详情', hideInMenu: true},
+      },
+    ],
+  },
 ];

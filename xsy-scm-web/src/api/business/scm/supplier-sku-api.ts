@@ -4,31 +4,33 @@
  */
 import {getRequest, postRequest, type RequestOptions} from '/@/lib/axios';
 import type {
-    ScmId,
-    ScmPage,
-    ScmResponse,
-    SupplierSkuQuery,
-    SupplierSkuComparisonRow,
-    SupplierSkuReplacePayload,
-    SupplierSkuRow,
-    SupplierSkuSupplierSummary,
+  ScmId,
+  ScmPage,
+  ScmResponse,
+  SupplierSkuQuery,
+  SupplierSkuComparisonRow,
+  SupplierSkuReplacePayload,
+  SupplierSkuRow,
+  SupplierSkuSupplierSummary,
 } from '/@/types/business/scm/supplier';
 
 export const supplierSkuApi = {
-    /** 按供应商列出活动关联行，供「关联商品」抽屉回填。 */
-    listBySupplierId: (supplierId: ScmId, options?: RequestOptions) =>
-        getRequest(`/scm/supplier/sku/list/${supplierId}`, {}, options) as unknown as Promise<ScmResponse<SupplierSkuRow[]>>,
-    /** 只读反查分页（按 SKU 找供应商）。 */
-    query: (form: SupplierSkuQuery, options?: RequestOptions) =>
-        postRequest('/scm/supplier/sku/query', form, options) as unknown as Promise<ScmResponse<ScmPage<SupplierSkuRow>>>,
-    /** 按供应商汇总可供货情况，列表页的公司卡片使用。 */
-    summarize: (status?: string, options?: RequestOptions) =>
-        getRequest('/scm/supplier/sku/supplier-summary', status ? {status} : {}, options) as unknown as Promise<
-            ScmResponse<SupplierSkuSupplierSummary[]>
-        >,
-    /** 同 SKU 的有效供货商参考价比较，采购单位不同不比较差价。 */
-    compareReferencePrices: (skuId: ScmId, options?: RequestOptions) =>
-        getRequest(`/scm/supplier/sku/compare/${encodeURIComponent(String(skuId))}`, {}, options) as unknown as Promise<ScmResponse<SupplierSkuComparisonRow[]>>,
-    /** 整表替换；`items: []` 即清空。 */
-    replace: (payload: SupplierSkuReplacePayload) => postRequest('/scm/supplier/sku/replace', payload),
+  /** 按供应商列出活动关联行，供「关联商品」抽屉回填。 */
+  listBySupplierId: (supplierId: ScmId, options?: RequestOptions) =>
+    getRequest(`/scm/supplier/sku/list/${supplierId}`, {}, options) as unknown as Promise<ScmResponse<SupplierSkuRow[]>>,
+  /** 只读反查分页（按 SKU 找供应商）。 */
+  query: (form: SupplierSkuQuery, options?: RequestOptions) =>
+    postRequest('/scm/supplier/sku/query', form, options) as unknown as Promise<ScmResponse<ScmPage<SupplierSkuRow>>>,
+  /** 按供应商汇总可供货情况，列表页的公司卡片使用。 */
+  summarize: (status?: string, options?: RequestOptions) =>
+    getRequest('/scm/supplier/sku/supplier-summary', status ? {status} : {}, options) as unknown as Promise<
+      ScmResponse<SupplierSkuSupplierSummary[]>
+    >,
+  /** 同 SKU 的有效供货商参考价比较，采购单位不同不比较差价。 */
+  compareReferencePrices: (skuId: ScmId, options?: RequestOptions) =>
+    getRequest(`/scm/supplier/sku/compare/${encodeURIComponent(String(skuId))}`, {}, options) as unknown as Promise<
+      ScmResponse<SupplierSkuComparisonRow[]>
+    >,
+  /** 整表替换；`items: []` 即清空。 */
+  replace: (payload: SupplierSkuReplacePayload) => postRequest('/scm/supplier/sku/replace', payload),
 };

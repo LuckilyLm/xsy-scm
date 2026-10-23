@@ -9,7 +9,7 @@
       </template>
     </a-alert>
     <template v-else-if="product">
-      <a-descriptions :title="product.name" bordered :column="{ xs: 1, sm: 2, lg: 3 }">
+      <a-descriptions :title="product.name" bordered :column="{xs: 1, sm: 2, lg: 3}">
         <a-descriptions-item label="商品编码">{{ product.spuCode }}</a-descriptions-item>
         <a-descriptions-item label="分类">{{ product.categoryPath }}</a-descriptions-item>
         <a-descriptions-item label="在售状态">
@@ -23,73 +23,54 @@
           </a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="别名">{{ product.alias || '—' }}</a-descriptions-item>
-        <a-descriptions-item label="市场价">{{
-            priceRange(product.minMarketPrice, product.maxMarketPrice)
-          }}
-        </a-descriptions-item>
+        <a-descriptions-item label="市场价">{{ priceRange(product.minMarketPrice, product.maxMarketPrice) }} </a-descriptions-item>
         <a-descriptions-item label="商品标签" :span="3">
           <a-space v-if="product.tags.length" wrap>
             <a-tag v-for="tag in product.tags" :key="tag.tagId" :color="tag.status === 'ENABLED' ? 'blue' : 'default'">
               {{ tag.name }}
             </a-tag>
           </a-space>
-          <span v-else>—</span></a-descriptions-item>
+          <span v-else>—</span></a-descriptions-item
+        >
         <a-descriptions-item label="更新时间">{{ datetime(product.updatedAt) }}</a-descriptions-item>
         <a-descriptions-item label="创建时间">{{ datetime(product.createdAt) }}</a-descriptions-item>
         <a-descriptions-item label="商品简介" :span="3">{{ product.description || '—' }}</a-descriptions-item>
       </a-descriptions>
-      <TraceAttachmentPanel
-          scope="PRODUCT"
-          :target-id="spuId"
-          title="商品资质"
-          :can-manage="canManageAttachment"
-          empty-text="还没有上传资质文件"/>
+      <TraceAttachmentPanel scope="PRODUCT" :target-id="spuId" title="商品资质" :can-manage="canManageAttachment" empty-text="还没有上传资质文件" />
       <a-divider orientation="left">主档扩展信息</a-divider>
-      <a-descriptions bordered size="small" :column="{ xs: 1, sm: 2, lg: 4 }">
+      <a-descriptions bordered size="small" :column="{xs: 1, sm: 2, lg: 4}">
         <a-descriptions-item label="助记码">{{ product.mnemonicCode || '—' }}</a-descriptions-item>
         <a-descriptions-item label="品牌">{{ product.brandName || '—' }}</a-descriptions-item>
         <a-descriptions-item label="产地">{{ product.origin || '—' }}</a-descriptions-item>
         <a-descriptions-item label="储存方式">
           {{ product.storageMethod ? enumLabel(STORAGE_METHOD_ENUM, product.storageMethod) : '—' }}
         </a-descriptions-item>
-        <a-descriptions-item label="保质期">{{
-            product.shelfLifeDays == null ? '—' : `${product.shelfLifeDays} 天`
-          }}
-        </a-descriptions-item>
-        <a-descriptions-item label="损耗率">{{
-            product.lossRate == null ? '—' : `${product.lossRate}%`
-          }}
-        </a-descriptions-item>
+        <a-descriptions-item label="保质期">{{ product.shelfLifeDays == null ? '—' : `${product.shelfLifeDays} 天` }} </a-descriptions-item>
+        <a-descriptions-item label="损耗率">{{ product.lossRate == null ? '—' : `${product.lossRate}%` }} </a-descriptions-item>
         <a-descriptions-item label="采购预警">
           {{ product.purchaseWarningDays == null ? '—' : `${product.purchaseWarningDays} 天` }}
         </a-descriptions-item>
         <a-descriptions-item label="开票品名">{{ product.invoiceName || '—' }}</a-descriptions-item>
         <a-descriptions-item label="税收编码">{{ product.taxCategoryCode || '—' }}</a-descriptions-item>
-        <a-descriptions-item label="免税">{{
-            product.taxExempt == null ? '—' : product.taxExempt ? '免税' : '否'
-          }}
-        </a-descriptions-item>
-        <a-descriptions-item label="税率">{{
-            product.taxRate == null ? '—' : `${product.taxRate}%`
-          }}
-        </a-descriptions-item>
+        <a-descriptions-item label="免税">{{ product.taxExempt == null ? '—' : product.taxExempt ? '免税' : '否' }} </a-descriptions-item>
+        <a-descriptions-item label="税率">{{ product.taxRate == null ? '—' : `${product.taxRate}%` }} </a-descriptions-item>
       </a-descriptions>
       <a-divider orientation="left">商品图集</a-divider>
       <a-image-preview-group v-if="product.images?.length">
         <a-space wrap>
           <figure v-for="image in product.images ?? []" :key="image.fileKey">
-            <a-image :src="image.fileUrl" :width="120" :height="120" :alt="image.fileName || product.name"/>
+            <a-image :src="image.fileUrl" :width="120" :height="120" :alt="image.fileName || product.name" />
             <figcaption>{{ image.primaryFlag ? '主图' : image.fileName }}</figcaption>
           </figure>
         </a-space>
       </a-image-preview-group>
-      <a-empty v-else description="暂无商品图片" :image="Empty.PRESENTED_IMAGE_SIMPLE"/>
+      <a-empty v-else description="暂无商品图片" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
       <a-divider orientation="left">商品规格</a-divider>
-      <SkuTable :rows="product.skuList"/>
+      <SkuTable :rows="product.skuList" />
       <a-divider orientation="left">商城库存单位换算</a-divider>
-      <StockConversionEditor v-for="sku in product.skuList" :key="sku.skuId" :sku="sku"/>
+      <StockConversionEditor v-for="sku in product.skuList" :key="sku.skuId" :sku="sku" />
       <a-divider orientation="left">组合商品组成</a-divider>
-      <BundleEditor v-for="sku in product.skuList" :key="`bundle-${sku.skuId}`" :sku="sku" @saved="load"/>
+      <BundleEditor v-for="sku in product.skuList" :key="`bundle-${sku.skuId}`" :sku="sku" @saved="load" />
     </template>
   </a-card>
 </template>
@@ -105,7 +86,7 @@ import {
   MASTER_STATUS_ENUM,
   priceRange,
   shelfStatusColor,
-  STORAGE_METHOD_ENUM
+  STORAGE_METHOD_ENUM,
 } from '/@/constants/business/scm/product-const';
 import SkuTable from './components/product-sku-table.vue';
 import StockConversionEditor from './components/product-stock-conversion-editor.vue';
@@ -117,8 +98,11 @@ import {datetime} from '../common/scm-display';
 
 const canManageAttachment = hasPermission('scm:trace:file:manage');
 
-const route = useRoute(), router = useRouter();
-const product = ref<ProductRow>(), loading = ref(false), error = ref('');
+const route = useRoute(),
+  router = useRouter();
+const product = ref<ProductRow>(),
+  loading = ref(false),
+  error = ref('');
 let requestId = 0;
 
 /** 深链 spuId 是详情页唯一的上下文来源；非纯数字视为无效。 */
@@ -151,7 +135,8 @@ async function load() {
 
 watch(() => route.query.spuId, load, {immediate: true});
 </script>
-<style scoped>figure {
+<style scoped>
+figure {
   margin: 0;
 }
 
@@ -160,4 +145,5 @@ figcaption {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}</style>
+}
+</style>

@@ -1,6 +1,6 @@
 <!--
   * 404 不存在 页面
-  * 
+  *
 -->
 <template>
   <a-result status="404" title="对不起，您访问的内容不存在！">
@@ -10,7 +10,7 @@
   </a-result>
 </template>
 <script setup lang="ts">
-defineOptions({name: "SystemNotFound"});
+defineOptions({name: 'SystemNotFound'});
 import {useRouter} from 'vue-router';
 import {HOME_PAGE_NAME} from '/@/constants/system/home-const';
 

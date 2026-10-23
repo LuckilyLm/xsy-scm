@@ -2,43 +2,43 @@ import type {SmartEnum} from '/@/types/smart-enum';
 
 /** 采购单状态依次为草稿、已提交、部分收货及收货完成等。部分收货不能直接取消；已收货、少收关单和已取消均为终态。 */
 export const SCM_PURCHASE_STATUS_ENUM: SmartEnum<string> = {
-    DRAFT: {value: 'DRAFT', desc: '草稿'},
-    SUBMITTED: {value: 'SUBMITTED', desc: '已提交'},
-    PARTIALLY_RECEIVED: {value: 'PARTIALLY_RECEIVED', desc: '部分收货'},
-    RECEIVED: {value: 'RECEIVED', desc: '已收货'},
-    SHORT_CLOSED: {value: 'SHORT_CLOSED', desc: '少收关单'},
-    CANCELLED: {value: 'CANCELLED', desc: '已取消'},
+  DRAFT: {value: 'DRAFT', desc: '草稿'},
+  SUBMITTED: {value: 'SUBMITTED', desc: '已提交'},
+  PARTIALLY_RECEIVED: {value: 'PARTIALLY_RECEIVED', desc: '部分收货'},
+  RECEIVED: {value: 'RECEIVED', desc: '已收货'},
+  SHORT_CLOSED: {value: 'SHORT_CLOSED', desc: '少收关单'},
+  CANCELLED: {value: 'CANCELLED', desc: '已取消'},
 };
 
 /** 收货单状态（2 值：草稿 → 已确认，确认后不可改不可删）。 */
 export const SCM_RECEIPT_STATUS_ENUM: SmartEnum<string> = {
-    DRAFT: {value: 'DRAFT', desc: '草稿'},
-    CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
+  DRAFT: {value: 'DRAFT', desc: '草稿'},
+  CONFIRMED: {value: 'CONFIRMED', desc: '已确认'},
 };
 
 /** 采购需求状态（由 `allocated_quantity` 与 `required_quantity` 派生，必须能回落）。 */
 export const SCM_DEMAND_STATUS_ENUM: SmartEnum<string> = {
-    PENDING: {value: 'PENDING', desc: '待分配'},
-    PARTIALLY_ALLOCATED: {value: 'PARTIALLY_ALLOCATED', desc: '部分分配'},
-    ALLOCATED: {value: 'ALLOCATED', desc: '已分配'},
+  PENDING: {value: 'PENDING', desc: '待分配'},
+  PARTIALLY_ALLOCATED: {value: 'PARTIALLY_ALLOCATED', desc: '部分分配'},
+  ALLOCATED: {value: 'ALLOCATED', desc: '已分配'},
 };
 
 /** 仓库状态。 */
 export const SCM_WAREHOUSE_STATUS_ENUM: SmartEnum<string> = {
-    ENABLED: {value: 'ENABLED', desc: '启用'},
-    DISABLED: {value: 'DISABLED', desc: '停用'},
+  ENABLED: {value: 'ENABLED', desc: '启用'},
+  DISABLED: {value: 'DISABLED', desc: '停用'},
 };
 
 /** 收货入库方式：确认即入库 / 确认后仓库二次入库。 */
 export const SCM_RECEIPT_MODE_ENUM: SmartEnum<string> = {
-    DIRECT: {value: 'DIRECT', desc: '直接入库'},
-    WAREHOUSE_CONFIRM: {value: 'WAREHOUSE_CONFIRM', desc: '仓库确认入库'},
+  DIRECT: {value: 'DIRECT', desc: '直接入库'},
+  WAREHOUSE_CONFIRM: {value: 'WAREHOUSE_CONFIRM', desc: '仓库确认入库'},
 };
 
 /** 入库状态：待入库 / 已入库，与收货单 status 解耦。 */
 export const SCM_PUTAWAY_STATUS_ENUM: SmartEnum<string> = {
-    PENDING: {value: 'PENDING', desc: '待入库'},
-    COMPLETED: {value: 'COMPLETED', desc: '已入库'},
+  PENDING: {value: 'PENDING', desc: '待入库'},
+  COMPLETED: {value: 'COMPLETED', desc: '已入库'},
 };
 
 /**
@@ -48,20 +48,20 @@ export const SCM_PUTAWAY_STATUS_ENUM: SmartEnum<string> = {
  * `NO_BALANCE` 表示该仓库下该 SKU 无余额行。
  */
 export const SCM_DEMAND_SUMMARY_STATUS_ENUM: SmartEnum<string> = {
-    STOCK_ENOUGH: {value: 'STOCK_ENOUGH', desc: '库存充足'},
-    SHORTAGE: {value: 'SHORTAGE', desc: '存在缺口'},
-    ZERO_STOCK: {value: 'ZERO_STOCK', desc: '零库存'},
-    UNIT_MISMATCH: {value: 'UNIT_MISMATCH', desc: '单位不一致'},
-    NO_BALANCE: {value: 'NO_BALANCE', desc: '无库存记录'},
+  STOCK_ENOUGH: {value: 'STOCK_ENOUGH', desc: '库存充足'},
+  SHORTAGE: {value: 'SHORTAGE', desc: '存在缺口'},
+  ZERO_STOCK: {value: 'ZERO_STOCK', desc: '零库存'},
+  UNIT_MISMATCH: {value: 'UNIT_MISMATCH', desc: '单位不一致'},
+  NO_BALANCE: {value: 'NO_BALANCE', desc: '无库存记录'},
 };
 
 /** 计算状态对应的 `a-tag` 颜色（缺口的严重度用色区分，纯展示）。 */
 export const SCM_DEMAND_SUMMARY_STATUS_COLOR: Record<string, string> = {
-    STOCK_ENOUGH: 'green',
-    SHORTAGE: 'orange',
-    ZERO_STOCK: 'red',
-    UNIT_MISMATCH: 'purple',
-    NO_BALANCE: 'default',
+  STOCK_ENOUGH: 'green',
+  SHORTAGE: 'orange',
+  ZERO_STOCK: 'red',
+  UNIT_MISMATCH: 'purple',
+  NO_BALANCE: 'default',
 };
 
 /**
@@ -71,19 +71,19 @@ export const SCM_DEMAND_SUMMARY_STATUS_COLOR: Record<string, string> = {
  * 收货类同时挂采购单与收货单。
  */
 export const SCM_PURCHASE_OPERATION_ENUM: SmartEnum<string> = {
-    DEMAND_GENERATE: {value: 'DEMAND_GENERATE', desc: '生成需求'},
-    DEMAND_ALLOCATE: {value: 'DEMAND_ALLOCATE', desc: '分配需求'},
-    CREATE: {value: 'CREATE', desc: '创建采购单'},
-    UPDATE: {value: 'UPDATE', desc: '修改采购单'},
-    SUBMIT: {value: 'SUBMIT', desc: '提交采购单'},
-    CANCEL: {value: 'CANCEL', desc: '取消采购单'},
-    SHORT_CLOSE: {value: 'SHORT_CLOSE', desc: '少收关单'},
-    DELETE: {value: 'DELETE', desc: '删除采购单'},
-    RECEIPT_CREATE: {value: 'RECEIPT_CREATE', desc: '创建收货单'},
-    RECEIPT_UPDATE: {value: 'RECEIPT_UPDATE', desc: '修改收货单'},
-    RECEIPT_CONFIRM: {value: 'RECEIPT_CONFIRM', desc: '确认收货'},
-    RECEIPT_DELETE: {value: 'RECEIPT_DELETE', desc: '删除收货单'},
-    RECEIPT_PUTAWAY: {value: 'RECEIPT_PUTAWAY', desc: '确认入库'},
+  DEMAND_GENERATE: {value: 'DEMAND_GENERATE', desc: '生成需求'},
+  DEMAND_ALLOCATE: {value: 'DEMAND_ALLOCATE', desc: '分配需求'},
+  CREATE: {value: 'CREATE', desc: '创建采购单'},
+  UPDATE: {value: 'UPDATE', desc: '修改采购单'},
+  SUBMIT: {value: 'SUBMIT', desc: '提交采购单'},
+  CANCEL: {value: 'CANCEL', desc: '取消采购单'},
+  SHORT_CLOSE: {value: 'SHORT_CLOSE', desc: '少收关单'},
+  DELETE: {value: 'DELETE', desc: '删除采购单'},
+  RECEIPT_CREATE: {value: 'RECEIPT_CREATE', desc: '创建收货单'},
+  RECEIPT_UPDATE: {value: 'RECEIPT_UPDATE', desc: '修改收货单'},
+  RECEIPT_CONFIRM: {value: 'RECEIPT_CONFIRM', desc: '确认收货'},
+  RECEIPT_DELETE: {value: 'RECEIPT_DELETE', desc: '删除收货单'},
+  RECEIPT_PUTAWAY: {value: 'RECEIPT_PUTAWAY', desc: '确认入库'},
 };
 
 /**
@@ -117,21 +117,21 @@ export const SCM_PURCHASE_EXPORT_COLUMNS: {key: string; title: string}[] = [
  * `TABLE_ID_CONST.BUSINESS` 里以既有的扁平 `SCM_*` 命名注册数字 id。
  */
 export const SCM_PURCHASE_TABLE_ID = {
-    ORDER: 'scm-purchase-order-table',
-    RECEIPT: 'scm-purchase-receipt-table',
-    DEMAND: 'scm-purchase-demand-table',
-    LOG: 'scm-purchase-log-table',
-    WAREHOUSE: 'scm-warehouse-table',
+  ORDER: 'scm-purchase-order-table',
+  RECEIPT: 'scm-purchase-receipt-table',
+  DEMAND: 'scm-purchase-demand-table',
+  LOG: 'scm-purchase-log-table',
+  WAREHOUSE: 'scm-warehouse-table',
 } as const;
 
 export default {
-    SCM_PURCHASE_STATUS_ENUM,
-    SCM_RECEIPT_STATUS_ENUM,
-    SCM_DEMAND_STATUS_ENUM,
-    SCM_WAREHOUSE_STATUS_ENUM,
-    SCM_RECEIPT_MODE_ENUM,
-    SCM_PUTAWAY_STATUS_ENUM,
-    SCM_DEMAND_SUMMARY_STATUS_ENUM,
-    SCM_PURCHASE_OPERATION_ENUM,
-    SCM_PURCHASE_EXPORT_COLUMNS,
+  SCM_PURCHASE_STATUS_ENUM,
+  SCM_RECEIPT_STATUS_ENUM,
+  SCM_DEMAND_STATUS_ENUM,
+  SCM_WAREHOUSE_STATUS_ENUM,
+  SCM_RECEIPT_MODE_ENUM,
+  SCM_PUTAWAY_STATUS_ENUM,
+  SCM_DEMAND_SUMMARY_STATUS_ENUM,
+  SCM_PURCHASE_OPERATION_ENUM,
+  SCM_PURCHASE_EXPORT_COLUMNS,
 };

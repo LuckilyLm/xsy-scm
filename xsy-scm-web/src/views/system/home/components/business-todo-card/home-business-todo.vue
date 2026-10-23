@@ -1,16 +1,16 @@
 <template>
   <default-home-card icon-name="section-business-todo" title="业务待办">
-    <region-error v-if="error" :message="error" :min-height="332" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="332" @retry="load" />
     <a-spin v-else :spinning="loading">
       <div class="home-todos">
-        <a-empty v-if="!loading && todos.length === 0" description="暂无待办事项"/>
+        <a-empty v-if="!loading && todos.length === 0" description="暂无待办事项" />
         <router-link v-for="todo in todos" :key="todo.key" class="todo-row" :to="todo.route">
           <span class="todo-row__visual" :class="`tone-${todoTone(todo.key)}`">
-            <scm-icon :name="todoIcon(todo.key)" :size="22"/>
+            <scm-icon :name="todoIcon(todo.key)" :size="22" />
           </span>
           <span class="todo-row__copy">
-          <span class="todo-row__label">{{ todo.label }}</span>
-          <span class="todo-row__hint">{{ todoHint(todo.key) }}</span>
+            <span class="todo-row__label">{{ todo.label }}</span>
+            <span class="todo-row__hint">{{ todoHint(todo.key) }}</span>
           </span>
           <span class="todo-row__count" :class="{'has-tasks': todo.count > 0}">
             {{ formatInt(todo.count) }}
@@ -38,16 +38,24 @@ interface TodoMeta {
 
 const TODO_META: Record<string, TodoMeta> = {
   'inventory-warning': {
-    iconName: 'todo-inventory-error', tone: 'danger', hint: '库存不足、超配或临界预警',
+    iconName: 'todo-inventory-error',
+    tone: 'danger',
+    hint: '库存不足、超配或临界预警',
   },
   'receipt-putaway': {
-    iconName: 'todo-pending-receipt', tone: 'warn', hint: '采购到货待确认入库',
+    iconName: 'todo-pending-receipt',
+    tone: 'warn',
+    hint: '采购到货待确认入库',
   },
   'loss-gain-audit': {
-    iconName: 'todo-pending-approval', tone: 'primary', hint: '待审批的报损报溢单据',
+    iconName: 'todo-pending-approval',
+    tone: 'primary',
+    hint: '待审批的报损报溢单据',
   },
   'delivery-route-draft': {
-    iconName: 'todo-draft-delivery', tone: 'ok', hint: '待完善的配送线路',
+    iconName: 'todo-draft-delivery',
+    tone: 'ok',
+    hint: '待完善的配送线路',
   },
 };
 
@@ -122,10 +130,22 @@ defineExpose({load});
   justify-content: center;
   border-radius: 50%;
 
-  &.tone-ok { background: #e7f8ef; color: #0f9e63; }
-  &.tone-warn { background: #fff5df; color: #b66b08; }
-  &.tone-danger { background: #ffeded; color: #d94b4b; }
-  &.tone-primary { background: #eaf4ff; color: #2b7fe0; }
+  &.tone-ok {
+    background: #e7f8ef;
+    color: #0f9e63;
+  }
+  &.tone-warn {
+    background: #fff5df;
+    color: #b66b08;
+  }
+  &.tone-danger {
+    background: #ffeded;
+    color: #d94b4b;
+  }
+  &.tone-primary {
+    background: #eaf4ff;
+    color: #2b7fe0;
+  }
 }
 
 .todo-row__copy {

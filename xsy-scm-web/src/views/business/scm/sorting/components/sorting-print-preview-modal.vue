@@ -1,19 +1,20 @@
 <template>
   <a-modal :open="open" title="分拣单打印预览" :width="1000" :footer="null" @cancel="close">
-    <a-alert v-if="printError" type="error" show-icon :message="printError"/>
+    <a-alert v-if="printError" type="error" show-icon :message="printError" />
     <div class="print-toolbar">
       <p class="scm-note scm-note--block">请在实际打印成功后点击“登记打印”；仅查看预览不会增加打印次数。</p>
       <a-space>
-        <a-button :disabled="printLoading || !print" @click="emit('open-ticket', printTaskId)"
-                  v-privilege="'scm:sorting:task:query'">选择模板并打印小票</a-button>
+        <a-button :disabled="printLoading || !print" @click="emit('open-ticket', printTaskId)" v-privilege="'scm:sorting:task:query'"
+          >选择模板并打印小票</a-button
+        >
         <a-button :disabled="printLoading || !print" @click="emit('reload')">重新预览</a-button>
         <a-button
-            type="primary"
-            v-privilege="'scm:sorting:task:print'"
-            :disabled="!print || printing || printVersion == null"
-            :loading="printing"
-            @click="emit('record')"
-        >登记打印
+          type="primary"
+          v-privilege="'scm:sorting:task:print'"
+          :disabled="!print || printing || printVersion == null"
+          :loading="printing"
+          @click="emit('record')"
+          >登记打印
         </a-button>
       </a-space>
     </div>
@@ -27,29 +28,29 @@
           <p>生成时间：{{ datetime(print.generatedAt) }}</p>
           <table>
             <thead>
-            <tr>
-              <th>订单号</th>
-              <th>客户</th>
-              <th>商品 / 规格</th>
-              <th>单位</th>
-              <th class="numeric">计划量</th>
-              <th class="numeric">分拣量</th>
-              <th>结果</th>
-            </tr>
+              <tr>
+                <th>订单号</th>
+                <th>客户</th>
+                <th>商品 / 规格</th>
+                <th>单位</th>
+                <th class="numeric">计划量</th>
+                <th class="numeric">分拣量</th>
+                <th>结果</th>
+              </tr>
             </thead>
             <tbody>
-            <tr v-for="item in print.items" :key="item.id">
-              <td>{{ item.orderNoSnapshot }}</td>
-              <td>{{ item.customerNameSnapshot }}</td>
-              <td>
-                {{ item.productNameSnapshot }} {{ item.specNameSnapshot }}
-                <a-tag v-if="isGiftRow(item)" color="purple">赠品</a-tag>
-              </td>
-              <td>{{ item.saleUnitSnapshot }}</td>
-              <td class="numeric">{{ quantityText(item.plannedQuantitySnapshot) }}</td>
-              <td class="numeric">{{ quantityText(item.sortedQuantity) }}</td>
-              <td>{{ isGiftRow(item) ? '—' : resultDesc(item.result) }}</td>
-            </tr>
+              <tr v-for="item in print.items" :key="item.id">
+                <td>{{ item.orderNoSnapshot }}</td>
+                <td>{{ item.customerNameSnapshot }}</td>
+                <td>
+                  {{ item.productNameSnapshot }} {{ item.specNameSnapshot }}
+                  <a-tag v-if="isGiftRow(item)" color="purple">赠品</a-tag>
+                </td>
+                <td>{{ item.saleUnitSnapshot }}</td>
+                <td class="numeric">{{ quantityText(item.plannedQuantitySnapshot) }}</td>
+                <td class="numeric">{{ quantityText(item.sortedQuantity) }}</td>
+                <td>{{ isGiftRow(item) ? '—' : resultDesc(item.result) }}</td>
+              </tr>
             </tbody>
           </table>
           <p class="print-note">本单用于核对分拣结果；尚未登记的分拣数量显示“—”。</p>
@@ -62,9 +63,7 @@
               <a-tag v-if="isGiftRow(item)" color="purple">赠品</a-tag>
             </strong>
             <p>{{ item.specNameSnapshot || '—' }} / {{ item.saleUnitSnapshot }}</p>
-            <p class="label-qty">
-              计划 {{ quantityText(item.plannedQuantitySnapshot) }}　实分 {{ quantityText(item.sortedQuantity) }}
-            </p>
+            <p class="label-qty">计划 {{ quantityText(item.plannedQuantitySnapshot) }}　实分 {{ quantityText(item.sortedQuantity) }}</p>
             <p>{{ item.customerNameSnapshot }}</p>
             <p class="label-no">{{ item.orderNoSnapshot }} · {{ print.taskNo }}</p>
           </div>

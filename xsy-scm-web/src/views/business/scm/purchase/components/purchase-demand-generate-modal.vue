@@ -6,41 +6,28 @@
  *   从同一批次生成需求 —— 重复生成不会重复建需求。
 -->
 <template>
-  <a-modal
-      :open="open"
-      title="汇总生成采购需求"
-      width="720px"
-      :confirm-loading="saving"
-      ok-text="生成需求"
-      @ok="generate"
-      @cancel="close"
-  >
-    <a-alert v-if="error" :message="error" type="error" show-icon/>
-    <FormNote title="含开始日，不含结束日" :lines="['只汇总区间内「已确认」的销售订单行']"/>
+  <a-modal :open="open" title="汇总生成采购需求" width="720px" :confirm-loading="saving" ok-text="生成需求" @ok="generate" @cancel="close">
+    <a-alert v-if="error" :message="error" type="error" show-icon />
+    <FormNote title="含开始日，不含结束日" :lines="['只汇总区间内「已确认」的销售订单行']" />
     <a-form ref="formRef" :model="form" :rules="formRules" layout="vertical" class="form">
       <a-form-item label="统计时间段" name="range" required>
-        <a-range-picker
-            v-model:value="form.range"
-            show-time
-            value-format="YYYY-MM-DD HH:mm:ss"
-            style="width: 100%"
-        />
+        <a-range-picker v-model:value="form.range" show-time value-format="YYYY-MM-DD HH:mm:ss" style="width: 100%" />
       </a-form-item>
       <a-form-item label="收货仓库" name="warehouseId" required>
         <a-select
-            v-model:value="form.warehouseId"
-            :options="warehouseOptions"
-            :loading="warehouseLoading"
-            show-search
-            option-filter-prop="label"
-            placeholder="请选择收货仓库"
+          v-model:value="form.warehouseId"
+          :options="warehouseOptions"
+          :loading="warehouseLoading"
+          show-search
+          option-filter-prop="label"
+          placeholder="请选择收货仓库"
         />
       </a-form-item>
       <a-form-item label="供应商（可选）" name="supplierId">
-        <SupplierSelect v-model:value="form.supplierId"/>
+        <SupplierSelect v-model:value="form.supplierId" />
       </a-form-item>
       <a-form-item label="采购员（可选）" name="purchaserId">
-        <EmployeeSelect v-model:value="purchaserValue"/>
+        <EmployeeSelect v-model:value="purchaserValue" />
       </a-form-item>
     </a-form>
 
@@ -51,9 +38,7 @@
       <a-descriptions-item label="冻结解释行">{{ batch.summary?.length ?? 0 }} 个商品规格</a-descriptions-item>
     </a-descriptions>
     <div v-if="batch" class="batch-actions">
-      <a-button v-privilege="'scm:purchase:demand:batch:query'" @click="viewBatch">
-        查看冻结批次明细
-      </a-button>
+      <a-button v-privilege="'scm:purchase:demand:batch:query'" @click="viewBatch"> 查看冻结批次明细 </a-button>
     </div>
     <a-descriptions v-if="result" bordered size="small" :column="2">
       <a-descriptions-item label="区间内来源行">{{ result.sourceLineCount }}</a-descriptions-item>
@@ -75,8 +60,8 @@ import type {DemandCalculationBatch, GenerateResult, Id} from '../purchase-types
 import {purchaseError} from '../purchase-errors';
 import FormNote from '/@/components/framework/form-note/index.vue';
 
-const props = defineProps<{ open: boolean }>();
-const emit = defineEmits<{ close: []; generated: []; viewBatch: [batchId: Id] }>();
+const props = defineProps<{open: boolean}>();
+const emit = defineEmits<{close: []; generated: []; viewBatch: [batchId: Id]}>();
 
 /**
  * 表单模型必须是稳定对象：原来写 `:model="{...form, range}"`，每次渲染都会新建对象，
@@ -91,12 +76,12 @@ const form = reactive<{
 const formRef = ref();
 /** 必填项逐项校验：错误显示在对应输入框下方，不再用顶部一条汇总红条。 */
 const formRules = {
-  range: [{
-    validator: () => (form.range?.[0] && form.range?.[1]
-        ? Promise.resolve()
-        : Promise.reject(new Error('请选择统计时间段'))),
-    trigger: 'change',
-  }],
+  range: [
+    {
+      validator: () => (form.range?.[0] && form.range?.[1] ? Promise.resolve() : Promise.reject(new Error('请选择统计时间段'))),
+      trigger: 'change',
+    },
+  ],
   warehouseId: [{required: true, message: '请选择收货仓库', trigger: 'change'}],
 };
 const saving = ref(false);
@@ -104,11 +89,9 @@ const error = ref('');
 const result = ref<GenerateResult>();
 const batch = ref<DemandCalculationBatch>();
 const warehouseLoading = ref(false);
-const warehouses = ref<{ id: Id; warehouseCode?: string; name?: string }[]>([]);
+const warehouses = ref<{id: Id; warehouseCode?: string; name?: string}[]>([]);
 
-const warehouseOptions = computed(() =>
-    warehouses.value.map((w) => ({value: w.id, label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）`}))
-);
+const warehouseOptions = computed(() => warehouses.value.map((w) => ({value: w.id, label: `${w.name ?? ''}（${w.warehouseCode ?? ''}）`})));
 
 /**
  * 采购员下拉的桥接。
@@ -143,16 +126,16 @@ void loadWarehouses();
 
 // 弹窗每次打开都清掉上一次的区间与结果，避免「以为重新生成了其实没有」
 watch(
-    () => props.open,
-    (open) => {
-      if (open) {
-        form.range = undefined;
-        result.value = undefined;
-        batch.value = undefined;
-        error.value = '';
-        void loadWarehouses();
-      }
+  () => props.open,
+  (open) => {
+    if (open) {
+      form.range = undefined;
+      result.value = undefined;
+      batch.value = undefined;
+      error.value = '';
+      void loadWarehouses();
     }
+  }
 );
 
 async function generate() {

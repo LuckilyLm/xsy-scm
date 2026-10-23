@@ -4,7 +4,7 @@
 -->
 <template>
   <a-modal v-model:open="visible" title="调整部门" :footer="null" destroyOnClose>
-    <DepartmentTree ref="departmentTree" :height="400" :showMenu="false"/>
+    <DepartmentTree ref="departmentTree" :height="400" :showMenu="false" />
     <div class="footer">
       <a-button style="margin-right: 8px" @click="closeModal">取消</a-button>
       <a-button type="primary" @click="handleOk">提交</a-button>

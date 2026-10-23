@@ -6,13 +6,13 @@
 <template>
   <div class="container">
     <a-image
-        class="img-prev"
-        :style="{ display: 'none' }"
-        :preview="{
+      class="img-prev"
+      :style="{display: 'none'}"
+      :preview="{
         visible,
         onVisibleChange: setVisible,
       }"
-        :src="previewUrl"
+      :src="previewUrl"
     />
   </div>
 </template>

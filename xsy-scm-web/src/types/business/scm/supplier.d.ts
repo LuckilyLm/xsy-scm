@@ -16,24 +16,24 @@ export type EnableStatus = 'ENABLED' | 'DISABLED';
 
 /** SmartAdmin 统一响应信封（拦截器已解包，此处仅用于类型标注）。 */
 export interface ScmResponse<T> {
-    code: number;
-    ok: boolean;
-    msg: string;
-    data: T;
+  code: number;
+  ok: boolean;
+  msg: string;
+  data: T;
 }
 
 export interface ScmPage<T> {
-    pageNum: number;
-    pageSize: number;
-    total: number;
-    pages: number;
-    list: T[];
-    emptyFlag: boolean;
+  pageNum: number;
+  pageSize: number;
+  total: number;
+  pages: number;
+  list: T[];
+  emptyFlag: boolean;
 }
 
 export interface ScmSortItem {
-    column: string;
-    isAsc: boolean;
+  column: string;
+  isAsc: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -42,16 +42,16 @@ export interface ScmSortItem {
 
 /** 新建 / 编辑表单模型（UI 侧，不含 status）：比写请求体多一个只读的编码回显。 */
 export interface SupplierFormModel extends Partial<AreaColumns>, ScmLocation {
-    supplierId?: ScmId;
-    version?: number;
-    /** 只读回显：编码由服务端生成，不进入写请求（见 `SupplierPayload`）。 */
-    supplierCode: string;
-    name: string;
-    contactName?: string | null;
-    contactPhone?: string | null;
-    paymentPeriodDays?: number;
-    address?: string | null;
-    remark?: string | null;
+  supplierId?: ScmId;
+  version?: number;
+  /** 只读回显：编码由服务端生成，不进入写请求（见 `SupplierPayload`）。 */
+  supplierCode: string;
+  name: string;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  paymentPeriodDays?: number;
+  address?: string | null;
+  remark?: string | null;
 }
 
 /**
@@ -64,43 +64,43 @@ export type SupplierPayload = Omit<SupplierFormModel, 'supplierCode'>;
 
 /** 列表行（对应 SupplierVO）。 */
 export interface SupplierRow extends SupplierFormModel {
-    supplierId: ScmId;
-    version: number;
-    status: EnableStatus;
-    skuCount: number;
-    updatedAt: string;
+  supplierId: ScmId;
+  version: number;
+  status: EnableStatus;
+  skuCount: number;
+  updatedAt: string;
 }
 
 /** 详情（对应 SupplierDetailVO）。 */
 export interface SupplierDetail extends SupplierRow {
-    createdAt?: string;
+  createdAt?: string;
 }
 
 /** 下拉选项（对应 SupplierOptionVO）。 */
 export interface SupplierOption {
-    supplierId: ScmId;
-    supplierCode: string;
-    name: string;
+  supplierId: ScmId;
+  supplierCode: string;
+  name: string;
 }
 
 export interface SupplierQuery {
-    pageNum: number;
-    pageSize: number;
-    searchCount?: boolean;
-    keyword?: string;
-    status?: EnableStatus;
-    sortItemList?: ScmSortItem[];
+  pageNum: number;
+  pageSize: number;
+  searchCount?: boolean;
+  keyword?: string;
+  status?: EnableStatus;
+  sortItemList?: ScmSortItem[];
 }
 
 export interface SupplierStatusPayload {
-    supplierId: ScmId;
-    version: number;
-    status: EnableStatus;
+  supplierId: ScmId;
+  version: number;
+  status: EnableStatus;
 }
 
 export interface SupplierDeletePayload {
-    supplierId: ScmId;
-    version: number;
+  supplierId: ScmId;
+  version: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,60 +110,60 @@ export interface SupplierDeletePayload {
 /** 关系行（对应 SupplierSkuVO），含冻结快照列。 */
 /** 一家供应商的可供货汇总，列表页的公司卡片使用。 */
 export interface SupplierSkuSupplierSummary {
-    supplierId: ScmId;
-    supplierName: string;
-    supplierCode: string;
-    /** 可供商品数（按 SPU 去重）。 */
-    productCount: number;
-    /** 商品规格数：一行一个规格。 */
-    specCount: number;
-    /** 标记为优先采购的规格数。 */
-    defaultCount: number;
-    minReferencePrice?: string | null;
-    maxReferencePrice?: string | null;
+  supplierId: ScmId;
+  supplierName: string;
+  supplierCode: string;
+  /** 可供商品数（按 SPU 去重）。 */
+  productCount: number;
+  /** 商品规格数：一行一个规格。 */
+  specCount: number;
+  /** 标记为优先采购的规格数。 */
+  defaultCount: number;
+  minReferencePrice?: string | null;
+  maxReferencePrice?: string | null;
 }
 
 export interface SupplierSkuRow {
-    id: ScmId;
-    version: number;
-    supplierId: ScmId;
-    skuId: ScmId;
-    /** 供应商自己的商品货号（可能为空），不是系统 SKU，也不是批次号。 */
-    supplierItemCode?: string | null;
-    supplierCodeSnapshot: string;
-    supplierNameSnapshot: string;
-    skuCodeSnapshot: string;
-    skuNameSnapshot: string;
-    specValuesSnapshot: Record<string, string>;
-    purchaseUnit: string;
-    referencePrice: string | null;
-    /**
-     * 采购员（员工）ID。
-     *
-     * 刻意用 `number | null` 而非 `ScmId`：原生 `employee-select` 的 `value` prop 是
-     * `[Number, Array]`，传 `string | number | null` 会触发 TS2322。后端是 Java `Long`，
-     * JSON 里本来就是 number。
-     */
-    purchaserId?: number | null;
-    purchaserName?: string | null;
-    defaultFlag: boolean;
-    status: EnableStatus;
-    updatedAt: string;
+  id: ScmId;
+  version: number;
+  supplierId: ScmId;
+  skuId: ScmId;
+  /** 供应商自己的商品货号（可能为空），不是系统 SKU，也不是批次号。 */
+  supplierItemCode?: string | null;
+  supplierCodeSnapshot: string;
+  supplierNameSnapshot: string;
+  skuCodeSnapshot: string;
+  skuNameSnapshot: string;
+  specValuesSnapshot: Record<string, string>;
+  purchaseUnit: string;
+  referencePrice: string | null;
+  /**
+   * 采购员（员工）ID。
+   *
+   * 刻意用 `number | null` 而非 `ScmId`：原生 `employee-select` 的 `value` prop 是
+   * `[Number, Array]`，传 `string | number | null` 会触发 TS2322。后端是 Java `Long`，
+   * JSON 里本来就是 number。
+   */
+  purchaserId?: number | null;
+  purchaserName?: string | null;
+  defaultFlag: boolean;
+  status: EnableStatus;
+  updatedAt: string;
 }
 
 /** 同 SKU、同采购单位的参考价比较，不代表合同成交价或库存成本。 */
 export interface SupplierSkuComparisonRow {
-    supplierId: ScmId;
-    supplierCode: string;
-    supplierName: string;
-    skuId: ScmId;
-    purchaseUnit: string;
-    defaultFlag: boolean;
-    referencePrice: string | null;
-    lowestReferencePrice: string | null;
-    priceGapAmount: string | null;
-    priceGapPercent: string | null;
-    pricedSupplierCount: number;
+  supplierId: ScmId;
+  supplierCode: string;
+  supplierName: string;
+  skuId: ScmId;
+  purchaseUnit: string;
+  defaultFlag: boolean;
+  referencePrice: string | null;
+  lowestReferencePrice: string | null;
+  priceGapAmount: string | null;
+  priceGapPercent: string | null;
+  pricedSupplierCount: number;
 }
 
 /**
@@ -173,39 +173,39 @@ export interface SupplierSkuComparisonRow {
  * - 新增行不带 `id`；若该 `(supplierId, skuId)` 已存在则按复用处理。
  */
 export interface SupplierSkuItem {
-    id?: ScmId;
-    version?: number;
-    skuId: ScmId;
-    supplierItemCode?: string | null;
-    purchaseUnit: string;
-    referencePrice?: string | null;
-    /** 采购员（员工）ID；`number | null` 的原因同 `SupplierSkuRow.purchaserId`。 */
-    purchaserId?: number | null;
-    /** 可多行同时为 true —— 同一供应商允许多条默认来源，前端不得做单选限制。 */
-    defaultFlag: boolean;
-    status?: EnableStatus;
+  id?: ScmId;
+  version?: number;
+  skuId: ScmId;
+  supplierItemCode?: string | null;
+  purchaseUnit: string;
+  referencePrice?: string | null;
+  /** 采购员（员工）ID；`number | null` 的原因同 `SupplierSkuRow.purchaserId`。 */
+  purchaserId?: number | null;
+  /** 可多行同时为 true —— 同一供应商允许多条默认来源，前端不得做单选限制。 */
+  defaultFlag: boolean;
+  status?: EnableStatus;
 }
 
 export interface SupplierSkuReplacePayload {
-    supplierId: ScmId;
-    /** 空数组表示清空该供应商的全部关联，不是「无操作」。 */
-    items: SupplierSkuItem[];
+  supplierId: ScmId;
+  /** 空数组表示清空该供应商的全部关联，不是「无操作」。 */
+  items: SupplierSkuItem[];
 }
 
 export interface SupplierSkuQuery {
-    pageNum: number;
-    pageSize: number;
-    searchCount?: boolean;
-    supplierId?: ScmId;
-    skuId?: ScmId;
-    status?: EnableStatus;
-    sortItemList?: ScmSortItem[];
+  pageNum: number;
+  pageSize: number;
+  searchCount?: boolean;
+  supplierId?: ScmId;
+  skuId?: ScmId;
+  status?: EnableStatus;
+  sortItemList?: ScmSortItem[];
 }
 
 /** 可下单 SKU 选项（对应 OrderableSkuVO，SPU 与 SKU 必须同时上架）。 */
 export interface OrderableSku {
-    skuId: ScmId;
-    skuCode: string;
-    productName: string;
-    specValues: Record<string, string>;
+  skuId: ScmId;
+  skuCode: string;
+  productName: string;
+  specValues: Record<string, string>;
 }

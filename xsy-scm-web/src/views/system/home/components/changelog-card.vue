@@ -1,9 +1,9 @@
 <template>
   <default-home-card extra="更多" icon-name="section-changelog" title="更新日志" @extraClick="onMore">
-    <region-error v-if="error" :message="error" :min-height="150" @retry="load"/>
+    <region-error v-if="error" :message="error" :min-height="150" @retry="load" />
     <a-spin v-else :spinning="loading">
       <div class="home-changelog">
-        <a-empty v-if="!loading && entries.length === 0" description="暂无更新日志"/>
+        <a-empty v-if="!loading && entries.length === 0" description="暂无更新日志" />
         <ul v-else class="home-changelog__list">
           <li v-for="item in entries" :key="item.changeLogId" class="home-changelog__item">
             <button type="button" class="home-changelog__link" @click="goDetail(item)">
@@ -15,7 +15,7 @@
       </div>
     </a-spin>
   </default-home-card>
-  <ChangeLogForm ref="modalRef"/>
+  <ChangeLogForm ref="modalRef" />
 </template>
 
 <script setup lang="ts">
@@ -39,10 +39,10 @@ interface ChangeLog {
 
 const router = useRouter();
 const {data, loading, error, load} = useRegionData<{list: ChangeLog[]}>(
-  () => changeLogApi.queryPage(
-    {pageNum: 1, pageSize: 8, searchCount: false},
-    {suppressGlobalErrorMessage: true}
-  ) as unknown as Promise<ScmResponse<{list: ChangeLog[]}>>,
+  () =>
+    changeLogApi.queryPage({pageNum: 1, pageSize: 8, searchCount: false}, {suppressGlobalErrorMessage: true}) as unknown as Promise<
+      ScmResponse<{list: ChangeLog[]}>
+    >,
   '更新日志加载失败'
 );
 const entries = computed(() => data.value?.list ?? []);
@@ -90,7 +90,9 @@ defineExpose({load});
   overflow-wrap: anywhere;
   cursor: pointer;
 
-  &:hover { color: var(--scm-primary); }
+  &:hover {
+    color: var(--scm-primary);
+  }
   &:focus-visible {
     outline: 2px solid var(--scm-primary);
     outline-offset: 2px;

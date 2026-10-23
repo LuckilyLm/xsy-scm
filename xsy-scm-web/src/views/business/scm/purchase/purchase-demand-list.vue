@@ -6,179 +6,163 @@
 <template>
   <a-tabs v-model:activeKey="activeTab">
     <a-tab-pane key="list" tab="采购需求">
-  <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
-    <div class="scm-filter-fields">
-      <a-form-item label="来源销售单号">
-        <a-input v-model:value="queryForm.salesOrderNo" placeholder="销售单号" allow-clear @pressEnter="onSearch"/>
-      </a-form-item>
-      <a-form-item label="商品">
-        <SkuSelect v-model:value="queryForm.skuId" width="240px"/>
-      </a-form-item>
-      <a-form-item label="需求状态">
-        <SmartEnumSelect enum-name="SCM_DEMAND_STATUS_ENUM" v-model:value="queryForm.status" width="150px"/>
-      </a-form-item>
-      <a-form-item label="需求日期">
-        <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD"/>
-      </a-form-item>
-    </div>
-    <div class="scm-filter-actions">
-      <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询</a-button>
-      <a-button @click="resetQuery">重置</a-button>
-    </div>
-  </a-form>
+      <a-form class="scm-filter-bar" layout="inline" @submit.prevent="onSearch">
+        <div class="scm-filter-fields">
+          <a-form-item label="来源销售单号">
+            <a-input v-model:value="queryForm.salesOrderNo" placeholder="销售单号" allow-clear @pressEnter="onSearch" />
+          </a-form-item>
+          <a-form-item label="商品">
+            <SkuSelect v-model:value="queryForm.skuId" width="240px" />
+          </a-form-item>
+          <a-form-item label="需求状态">
+            <SmartEnumSelect enum-name="SCM_DEMAND_STATUS_ENUM" v-model:value="queryForm.status" width="150px" />
+          </a-form-item>
+          <a-form-item label="需求日期">
+            <a-range-picker v-model:value="dateRange" value-format="YYYY-MM-DD" />
+          </a-form-item>
+        </div>
+        <div class="scm-filter-actions">
+          <a-button type="primary" @click="onSearch" v-privilege="'scm:purchase:demand:query'">查询</a-button>
+          <a-button @click="resetQuery">重置</a-button>
+        </div>
+      </a-form>
 
-  <a-alert v-if="error" :message="error" type="error" show-icon>
-    <template #action>
-      <a-button @click="queryData">重试</a-button>
-    </template>
-  </a-alert>
+      <a-alert v-if="error" :message="error" type="error" show-icon>
+        <template #action>
+          <a-button @click="queryData">重试</a-button>
+        </template>
+      </a-alert>
 
-  <a-card size="small" :bordered="false">
-    <a-row class="smart-table-btn-block scm-table-toolbar">
-      <div class="smart-table-operate-block">
-        <a-button type="primary" v-privilege="'scm:purchase:demand:batch:create'" @click="generateOpen = true">
-          冻结批次生成需求
-        </a-button>
-      </div>
-      <div class="smart-table-setting-block">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_DEMAND" :refresh="queryData"/>
-      </div>
-    </a-row>
-
-    <a-table
-        :id="SCM_PURCHASE_TABLE_ID.DEMAND"
-        ref="tableRef"
-        size="small"
-        :data-source="tableData"
-        :columns="displayColumns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :scroll="{ x: scrollX }"
-    >
-      <template #bodyCell="{ record, column }">
-        <template v-if="column.dataIndex === 'salesOrderNoSnapshot'">
-          {{ record.salesOrderNoSnapshot || '—' }}
-        </template>
-        <template v-else-if="column.dataIndex === 'productName'">
-          {{ record.productName || '—' }}
-        </template>
-        <template v-else-if="column.dataIndex === 'skuCode'">
-          <span class="scm-mono">{{ record.skuCode || '—' }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'calculationBatchId'">
-          <a-button
-              v-if="record.calculationBatchId"
-              type="link"
-              size="small"
-              class="batch-link"
-              v-privilege="'scm:purchase:demand:batch:query'"
-              @click="openBatch(record.calculationBatchId)"
-          >
-            批次 {{ record.calculationBatchId }}
-          </a-button>
-          <span v-else>手工毛需求</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'status'">
-          <a-tag>{{ SCM_DEMAND_STATUS_ENUM[record.status]?.desc }}</a-tag>
-        </template>
-        <template v-else-if="column.dataIndex === 'requiredQuantity'">
-          <span class="scm-quantity">{{ quantity(record.requiredQuantity) }}</span>
-          <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'allocatedQuantity'">
-          <span class="scm-quantity">{{ quantity(record.allocatedQuantity) }}</span>
-          <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'unallocatedQuantity'">
-          <span class="scm-quantity">{{ quantity(record.unallocatedQuantity) }}</span>
-          <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
-        </template>
-        <template v-else-if="column.dataIndex === 'supplierName'">{{ record.supplierName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
-        <template v-else-if="column.dataIndex === 'action'">
-          <div class="smart-table-operate scm-table-actions">
-            <a-button
-                v-if="Number(record.unallocatedQuantity ?? '0') > 0"
-                type="link"
-                v-privilege="'scm:purchase:demand:allocate'"
-                @click="openAllocate(record)"
-            >
-              分配到采购行
-            </a-button>
-            <span v-else class="hint">已分配完</span>
+      <a-card size="small" :bordered="false">
+        <a-row class="smart-table-btn-block scm-table-toolbar">
+          <div class="smart-table-operate-block">
+            <a-button type="primary" v-privilege="'scm:purchase:demand:batch:create'" @click="generateOpen = true"> 冻结批次生成需求 </a-button>
           </div>
-        </template>
-      </template>
-    </a-table>
+          <div class="smart-table-setting-block">
+            <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_DEMAND" :refresh="queryData" />
+          </div>
+        </a-row>
 
-    <div class="smart-query-table-page">
-      <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
-      />
-    </div>
-  </a-card>
+        <a-table
+          :id="SCM_PURCHASE_TABLE_ID.DEMAND"
+          ref="tableRef"
+          size="small"
+          :data-source="tableData"
+          :columns="displayColumns"
+          row-key="id"
+          bordered
+          :loading="loading"
+          :pagination="false"
+          :scroll="{x: scrollX}"
+        >
+          <template #bodyCell="{record, column}">
+            <template v-if="column.dataIndex === 'salesOrderNoSnapshot'">
+              {{ record.salesOrderNoSnapshot || '—' }}
+            </template>
+            <template v-else-if="column.dataIndex === 'productName'">
+              {{ record.productName || '—' }}
+            </template>
+            <template v-else-if="column.dataIndex === 'skuCode'">
+              <span class="scm-mono">{{ record.skuCode || '—' }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'calculationBatchId'">
+              <a-button
+                v-if="record.calculationBatchId"
+                type="link"
+                size="small"
+                class="batch-link"
+                v-privilege="'scm:purchase:demand:batch:query'"
+                @click="openBatch(record.calculationBatchId)"
+              >
+                批次 {{ record.calculationBatchId }}
+              </a-button>
+              <span v-else>手工毛需求</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'status'">
+              <a-tag>{{ SCM_DEMAND_STATUS_ENUM[record.status]?.desc }}</a-tag>
+            </template>
+            <template v-else-if="column.dataIndex === 'requiredQuantity'">
+              <span class="scm-quantity">{{ quantity(record.requiredQuantity) }}</span>
+              <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'allocatedQuantity'">
+              <span class="scm-quantity">{{ quantity(record.allocatedQuantity) }}</span>
+              <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'unallocatedQuantity'">
+              <span class="scm-quantity">{{ quantity(record.unallocatedQuantity) }}</span>
+              <span v-if="record.demandUnit" class="unit">{{ record.demandUnit }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'supplierName'">{{ record.supplierName || '—' }}</template>
+            <template v-else-if="column.dataIndex === 'warehouseName'">{{ record.warehouseName || '—' }}</template>
+            <template v-else-if="column.dataIndex === 'action'">
+              <div class="smart-table-operate scm-table-actions">
+                <a-button
+                  v-if="Number(record.unallocatedQuantity ?? '0') > 0"
+                  type="link"
+                  v-privilege="'scm:purchase:demand:allocate'"
+                  @click="openAllocate(record)"
+                >
+                  分配到采购行
+                </a-button>
+                <span v-else class="hint">已分配完</span>
+              </div>
+            </template>
+          </template>
+        </a-table>
+
+        <div class="smart-query-table-page">
+          <a-pagination
+            show-size-changer
+            show-quick-jumper
+            v-model:current="queryForm.pageNum"
+            v-model:page-size="queryForm.pageSize"
+            :total="total"
+            @change="queryData"
+            :show-total="(n: number) => `共${n}条`"
+          />
+        </div>
+      </a-card>
     </a-tab-pane>
 
     <a-tab-pane key="preview" tab="订单汇总 / 缺口预览">
-      <PurchaseDemandSummaryPreview/>
+      <PurchaseDemandSummaryPreview />
     </a-tab-pane>
   </a-tabs>
 
-  <DemandGenerateModal
-      :open="generateOpen"
-      @close="generateOpen = false"
-      @generated="queryData"
-      @viewBatch="openBatch"
-  />
+  <DemandGenerateModal :open="generateOpen" @close="generateOpen = false" @generated="queryData" @viewBatch="openBatch" />
 
-  <PurchaseDemandBatchDetailDrawer
-      :open="batchDrawer.open"
-      :batch-id="batchDrawer.batchId"
-      @close="batchDrawer.open = false"
-  />
+  <PurchaseDemandBatchDetailDrawer :open="batchDrawer.open" :batch-id="batchDrawer.batchId" @close="batchDrawer.open = false" />
 
   <!-- 分配到采购行：`allocate` 的入参是 `purchaseOrderItemId`，因此要先选单再选行 -->
   <a-modal
-      :open="alloc.open"
-      :title="`分配需求到采购行${alloc.demand?.salesOrderNoSnapshot ? '（' + alloc.demand.salesOrderNoSnapshot + '）' : ''}`"
-      width="760px"
-      :confirm-loading="alloc.saving"
-      @ok="submitAllocate"
-      @cancel="alloc.open = false"
+    :open="alloc.open"
+    :title="`分配需求到采购行${alloc.demand?.salesOrderNoSnapshot ? '（' + alloc.demand.salesOrderNoSnapshot + '）' : ''}`"
+    width="760px"
+    :confirm-loading="alloc.saving"
+    @ok="submitAllocate"
+    @cancel="alloc.open = false"
   >
-    <a-alert v-if="alloc.error" :message="alloc.error" type="error" show-icon/>
+    <a-alert v-if="alloc.error" :message="alloc.error" type="error" show-icon />
     <a-form layout="vertical">
       <a-form-item label="采购单（仅已提交 / 部分收货）" name="orderId" required>
         <a-select
-            v-model:value="alloc.orderId"
-            show-search
-            allow-clear
-            :filter-option="false"
-            :loading="alloc.orderLoading"
-            :options="alloc.orderOptions"
-            placeholder="输入采购单号搜索"
-            @search="loadOrders"
-            @change="orderChanged"
+          v-model:value="alloc.orderId"
+          show-search
+          allow-clear
+          :filter-option="false"
+          :loading="alloc.orderLoading"
+          :options="alloc.orderOptions"
+          placeholder="输入采购单号搜索"
+          @search="loadOrders"
+          @change="orderChanged"
         />
       </a-form-item>
       <a-form-item label="采购行（同一商品规格）" name="purchaseOrderItemId" required>
-        <a-select
-            v-model:value="alloc.purchaseOrderItemId"
-            :options="alloc.itemOptions"
-            :loading="alloc.itemLoading"
-            placeholder="请选择采购行"
-        />
+        <a-select v-model:value="alloc.purchaseOrderItemId" :options="alloc.itemOptions" :loading="alloc.itemLoading" placeholder="请选择采购行" />
       </a-form-item>
       <a-form-item label="分配数量" name="quantity" required>
-        <a-input-number string-mode :precision="4" :min="'0.0001'" v-model:value="alloc.quantity" style="width: 100%"/>
+        <a-input-number string-mode :precision="4" :min="'0.0001'" v-model:value="alloc.quantity" style="width: 100%" />
         <span class="hint">该需求剩余可分配 {{ quantity(alloc.demand?.unallocatedQuantity) }}</span>
       </a-form-item>
     </a-form>
@@ -236,8 +220,8 @@ const alloc = reactive({
   demand: undefined as Demand | undefined,
   orderLoading: false,
   itemLoading: false,
-  orderOptions: [] as { value: Id; label: string }[],
-  itemOptions: [] as { value: Id; label: string }[],
+  orderOptions: [] as {value: Id; label: string}[],
+  itemOptions: [] as {value: Id; label: string}[],
   orderId: undefined as Id | undefined,
   purchaseOrderItemId: undefined as Id | undefined,
   quantity: '0.0000',
@@ -324,11 +308,10 @@ async function openAllocate(demand: Demand) {
 async function loadOrders(keyword: string) {
   alloc.orderLoading = true;
   try {
-    const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 20, orderNo: keyword || undefined},
-        {suppressGlobalErrorMessage: true});
+    const r = await purchaseOrderApi.query({pageNum: 1, pageSize: 20, orderNo: keyword || undefined}, {suppressGlobalErrorMessage: true});
     alloc.orderOptions = r.data.list
-        .filter((o) => RECEIVABLE.includes(o.status ?? ''))
-        .map((o) => ({value: o.id!, label: `${o.orderNo}（${o.supplierName ?? ''}）`}));
+      .filter((o) => RECEIVABLE.includes(o.status ?? ''))
+      .map((o) => ({value: o.id!, label: `${o.orderNo}（${o.supplierName ?? ''}）`}));
   } catch (e) {
     alloc.error = purchaseError(e);
   } finally {
@@ -349,11 +332,11 @@ async function orderChanged(orderId: Id | undefined) {
     alloc.supplierId = detail.supplierId;
     alloc.warehouseId = detail.warehouseId;
     alloc.itemOptions = (detail.items ?? [])
-        .filter((item) => String(item.skuId) === String(alloc.demand?.skuId))
-        .map((item) => ({
-          value: item.id!,
-          label: `第 ${(item.sortOrder ?? 0) + 1} 行 · 采购量 ${item.plannedQuantity} ${item.purchaseUnit ?? ''}`,
-        }));
+      .filter((item) => String(item.skuId) === String(alloc.demand?.skuId))
+      .map((item) => ({
+        value: item.id!,
+        label: `第 ${(item.sortOrder ?? 0) + 1} 行 · 采购量 ${item.plannedQuantity} ${item.purchaseUnit ?? ''}`,
+      }));
     if (!alloc.itemOptions.length) {
       alloc.error = '该采购单没有此商品规格的采购行，请换一张单或先在采购单里补行';
     }

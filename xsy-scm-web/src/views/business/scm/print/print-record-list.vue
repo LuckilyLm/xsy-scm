@@ -3,11 +3,10 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="单据类型" class="smart-query-form-item">
-        <a-select v-model:value="queryForm.documentType" :options="typeOptions" style="width: 180px"
-                  placeholder="全部类型"/>
+        <a-select v-model:value="queryForm.documentType" :options="typeOptions" style="width: 180px" placeholder="全部类型" />
       </a-form-item>
       <a-form-item label="业务单号" class="smart-query-form-item">
-        <a-input v-model:value="queryForm.businessNo" placeholder="采购单号等" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="queryForm.businessNo" placeholder="采购单号等" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -26,17 +25,17 @@
 
   <a-card size="small" :bordered="false">
     <a-table
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :locale="{ emptyText: '还没有正式打印记录' }"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :locale="{emptyText: '还没有正式打印记录'}"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'templateName'">{{ record.templateName || '—' }}</template>
         <template v-else-if="column.dataIndex === 'templateCode'">
           <span class="scm-mono">{{ record.templateCode || '—' }}</span>
@@ -54,13 +53,13 @@
 
     <div class="smart-query-table-page">
       <a-pagination
-          show-size-changer
-          show-quick-jumper
-          v-model:current="queryForm.pageNum"
-          v-model:page-size="queryForm.pageSize"
-          :total="total"
-          @change="queryData"
-          :show-total="(n: number) => `共${n}条`"
+        show-size-changer
+        show-quick-jumper
+        v-model:current="queryForm.pageNum"
+        v-model:page-size="queryForm.pageSize"
+        :total="total"
+        @change="queryData"
+        :show-total="(n: number) => `共${n}条`"
       />
     </div>
   </a-card>
@@ -85,9 +84,7 @@ const reprinting = ref<Id | undefined>(undefined);
 const documentTypes = ref<PrintDocumentTypeOption[]>([]);
 let requestId = 0;
 
-const typeOptions = computed(() =>
-    documentTypes.value.map((item) => ({value: item.documentType, label: item.documentTypeLabel}))
-);
+const typeOptions = computed(() => documentTypes.value.map((item) => ({value: item.documentType, label: item.documentTypeLabel})));
 
 const columns: TableColumnsType<PrintRecord> = [
   {title: '单据类型', dataIndex: 'documentTypeLabel', width: 130, align: 'center'},

@@ -13,26 +13,25 @@
     <!-- 顶部头部信息 -->
     <a-layout-header class="layout-header">
       <a-row class="layout-header-title">
-        <img class="logo-img" :src="logoImg" alt=""/>
+        <img class="logo-img" :src="logoImg" alt="" />
         <div class="title">{{ websiteName }}</div>
         <div class="title">帮助文档</div>
         <a-col class="avatar">
-          <HeaderAvatar/>
+          <HeaderAvatar />
         </a-col>
       </a-row>
     </a-layout-header>
     <a-layout :style="`height: ${windowHeight}px`">
       <!-- 侧边目录 side-menu -->
-      <a-layout-sider class="side-menu" :style="`height: ${windowHeight}px`" :collapsed="false" theme="light"
-                      :width="300">
+      <a-layout-sider class="side-menu" :style="`height: ${windowHeight}px`" :collapsed="false" theme="light" :width="300">
         <div class="help-doc-tree">
           <!-- 目录内容 -->
           <div>
             <a-directory-tree
-                v-model:expandedKeys="expandedKeys"
-                v-model:selectedKeys="selectedKeys"
-                :tree-data="helpDocTreeData"
-                @select="selectHelpDoc"
+              v-model:expandedKeys="expandedKeys"
+              v-model:selectedKeys="selectedKeys"
+              :tree-data="helpDocTreeData"
+              @select="selectHelpDoc"
             />
           </div>
         </div>
@@ -40,19 +39,19 @@
 
       <!--中间内容-->
       <a-layout-content id="smartAdminLayoutContent" class="help-doc-layout-content">
-        <router-view v-slot="{ Component }">
+        <router-view v-slot="{Component}">
           <div :key="route.fullPath">
-            <component :is="Component"/>
+            <component :is="Component" />
           </div>
         </router-view>
         <!-- footer 版权公司信息 -->
         <a-layout-footer class="layout-footer">
-          <SmartFooter/>
+          <SmartFooter />
         </a-layout-footer>
       </a-layout-content>
     </a-layout>
 
-    <a-back-top :target="backTopTarget" :visibilityHeight="80"/>
+    <a-back-top :target="backTopTarget" :visibilityHeight="80" />
   </a-layout>
 </template>
 

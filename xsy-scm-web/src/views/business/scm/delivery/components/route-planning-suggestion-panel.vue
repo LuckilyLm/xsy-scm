@@ -2,17 +2,17 @@
   <p class="scm-note scm-note--block">建议仅覆盖当前线路停靠点；应用前请核对。</p>
   <a-space class="plan-actions">
     <a-button
-        type="primary"
-        v-privilege="DELIVERY_PERM.PLAN_PROPOSE"
-        :loading="busy"
-        :disabled="!canEdit || loading || busy"
-        @click="emit('propose')"
+      type="primary"
+      v-privilege="DELIVERY_PERM.PLAN_PROPOSE"
+      :loading="busy"
+      :disabled="!canEdit || loading || busy"
+      @click="emit('propose')"
     >
       生成排线建议
     </a-button>
     <span class="plan-note" v-if="disabledReason">{{ disabledReason }}</span>
   </a-space>
-  <a-alert v-if="error" type="error" :message="error" show-icon/>
+  <a-alert v-if="error" type="error" :message="error" show-icon />
 
   <template v-if="proposal">
     <a-descriptions bordered size="small" :column="3" class="plan-meta">
@@ -33,14 +33,13 @@
     </a-descriptions>
 
     <a-alert
-        v-if="sourceVersionStale"
-        type="warning" show-icon style="margin-bottom: 12px"
-        message="此建议由历史线路版本生成，可能已失效。仅供比较；请刷新线路并重新生成建议后应用。"
+      v-if="sourceVersionStale"
+      type="warning"
+      show-icon
+      style="margin-bottom: 12px"
+      message="此建议由历史线路版本生成，可能已失效。仅供比较；请刷新线路并重新生成建议后应用。"
     />
-    <a-alert
-        type="info" show-icon style="margin-bottom: 12px"
-        :message="`建议未考虑：${ignoredFactorText}。请核对车辆和送达要求。`"
-    />
+    <a-alert type="info" show-icon style="margin-bottom: 12px" :message="`建议未考虑：${ignoredFactorText}。请核对车辆和送达要求。`" />
     <a-space style="margin-bottom: 12px">
       <a-radio-group v-model:value="viewMode" button-style="solid">
         <a-radio-button value="list">顺序对比</a-radio-button>
@@ -49,16 +48,16 @@
       <span class="plan-note">生成时线路版本：{{ proposal.sourceRouteVersion ?? '未知' }}，当前版本：{{ route.version }}</span>
     </a-space>
     <a-table
-        v-if="viewMode === 'list'"
-        size="small"
-        :data-source="proposal.legs ?? []"
-        :columns="planColumns"
-        row-key="stopId"
-        bordered
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(planColumns) }"
+      v-if="viewMode === 'list'"
+      size="small"
+      :data-source="proposal.legs ?? []"
+      :columns="planColumns"
+      row-key="stopId"
+      bordered
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(planColumns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'change'">
           <a-tag v-if="record.originalSeq == null">历史建议无原顺序</a-tag>
           <a-tag v-else :color="record.originalSeq === record.seq ? 'default' : 'orange'">
@@ -78,34 +77,31 @@
       </a-radio-group>
       <p class="plan-note">地图显示当前道路，仅供位置参考；建议距离以生成时为准。</p>
       <ScmMap v-if="mapReady" :points="previewMapPoints" route />
-      <a-alert v-else message="该视角缺少完整、同坐标系的起点或停靠点；历史顺序表仍可查看。" show-icon type="warning"/>
+      <a-alert v-else message="该视角缺少完整、同坐标系的起点或停靠点；历史顺序表仍可查看。" show-icon type="warning" />
     </div>
 
     <a-space class="plan-actions">
       <a-button
-          type="primary"
-          v-privilege="DELIVERY_PERM.PLAN_APPLY"
-          :loading="busy"
-          :disabled="!canApplyProposal || loading || busy"
-          @click="emit('apply')"
+        type="primary"
+        v-privilege="DELIVERY_PERM.PLAN_APPLY"
+        :loading="busy"
+        :disabled="!canApplyProposal || loading || busy"
+        @click="emit('apply')"
       >
         应用建议
       </a-button>
       <a-button
-          v-privilege="DELIVERY_PERM.PLAN_APPLY"
-          :loading="busy"
-          :disabled="proposal.status !== 'PROPOSED' || !canEdit || loading || busy"
-          @click="emit('discard')"
+        v-privilege="DELIVERY_PERM.PLAN_APPLY"
+        :loading="busy"
+        :disabled="proposal.status !== 'PROPOSED' || !canEdit || loading || busy"
+        @click="emit('discard')"
       >
         放弃建议
       </a-button>
     </a-space>
   </template>
-  <a-spin v-else-if="loading"/>
-  <a-empty
-      v-else-if="!busy"
-      description="暂无排线建议"
-  >
+  <a-spin v-else-if="loading" />
+  <a-empty v-else-if="!busy" description="暂无排线建议">
     <template #description>
       <p>暂无排线建议。</p>
       <p v-if="disabledReason" class="plan-note">{{ disabledReason }}</p>
@@ -114,15 +110,8 @@
 
   <template v-if="history.length > 1">
     <a-divider orientation="left">历史建议</a-divider>
-    <a-table
-        size="small"
-        :data-source="history"
-        :columns="planHistoryColumns"
-        row-key="id"
-        bordered
-        :pagination="false"
-    >
-      <template #bodyCell="{ record, column }">
+    <a-table size="small" :data-source="history" :columns="planHistoryColumns" row-key="id" bordered :pagination="false">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'status'">
           <a-tag :color="planProposalStatuses[record.status]?.color || 'default'">
             {{ planProposalStatuses[record.status]?.label || record.status }}
@@ -168,65 +157,60 @@ const emit = defineEmits<{
 
 const viewMode = ref<'list' | 'map'>('list');
 const mapVariant = ref<'current' | 'suggested'>('suggested');
-const distanceBasis = (plan: DeliveryPlanProposal) => plan.estimated ? '直线距离估算' : '道路距离';
+const distanceBasis = (plan: DeliveryPlanProposal) => (plan.estimated ? '直线距离估算' : '道路距离');
 
-const sourceVersionStale = computed(() =>
-    props.proposal?.sourceRouteVersion == null ||
-    props.proposal.sourceRouteVersion !== props.route.version
-);
-const canApplyProposal = computed(() =>
-    props.canEdit && props.route.status === 'DRAFT' &&
-    props.proposal?.status === 'PROPOSED' && !sourceVersionStale.value
+const sourceVersionStale = computed(() => props.proposal?.sourceRouteVersion == null || props.proposal.sourceRouteVersion !== props.route.version);
+const canApplyProposal = computed(
+  () => props.canEdit && props.route.status === 'DRAFT' && props.proposal?.status === 'PROPOSED' && !sourceVersionStale.value
 );
 const factorLabels: Record<string, string> = {
-    TIME_WINDOW: '客户时间窗',
-    VEHICLE_CAPACITY: '车辆载重/容积',
-    TRAFFIC: '实时路况',
+  TIME_WINDOW: '客户时间窗',
+  VEHICLE_CAPACITY: '车辆载重/容积',
+  TRAFFIC: '实时路况',
 };
 const ignoredFactorText = computed(() =>
-    (props.proposal?.ignoredFactors ?? []).length
-        ? (props.proposal?.ignoredFactors ?? []).map((item) => factorLabels[item] ?? item).join('、')
-        : '未提供限制说明（历史建议）'
+  (props.proposal?.ignoredFactors ?? []).length
+    ? (props.proposal?.ignoredFactors ?? []).map((item) => factorLabels[item] ?? item).join('、')
+    : '未提供限制说明（历史建议）'
 );
 
 const currentMapPoints = computed<MapPoint[]>(() => [
-    {
-        longitude: props.route.startLongitude,
-        latitude: props.route.startLatitude,
-        geomCrs: props.route.startGeomCrs,
-        label: `起点 · ${props.route.warehouseNameSnapshot}`,
-    },
-    ...props.stops.map((stop, index) => ({
-        longitude: stop.longitude,
-        latitude: stop.latitude,
-        geomCrs: stop.geomCrs,
-        label: `${index + 1} · ${stop.customerNameSnapshot}`,
-        description: stop.addressSnapshot,
-    })),
+  {
+    longitude: props.route.startLongitude,
+    latitude: props.route.startLatitude,
+    geomCrs: props.route.startGeomCrs,
+    label: `起点 · ${props.route.warehouseNameSnapshot}`,
+  },
+  ...props.stops.map((stop, index) => ({
+    longitude: stop.longitude,
+    latitude: stop.latitude,
+    geomCrs: stop.geomCrs,
+    label: `${index + 1} · ${stop.customerNameSnapshot}`,
+    description: stop.addressSnapshot,
+  })),
 ]);
 const suggestedMapPoints = computed<MapPoint[]>(() => {
-    const plan = props.proposal;
-    if (!plan) return [];
-    return [
-        {
-            longitude: plan.sourceLongitude,
-            latitude: plan.sourceLatitude,
-            geomCrs: plan.sourceGeomCrs,
-            label: '建议生成时起点',
-        },
-        ...(plan.legs ?? []).map((leg) => ({
-            longitude: leg.longitude,
-            latitude: leg.latitude,
-            geomCrs: plan.sourceGeomCrs,
-            label: `${leg.seq} · ${leg.customerNameSnapshot ?? '停靠点'}`,
-            description: leg.addressSnapshot,
-        })),
-    ];
+  const plan = props.proposal;
+  if (!plan) return [];
+  return [
+    {
+      longitude: plan.sourceLongitude,
+      latitude: plan.sourceLatitude,
+      geomCrs: plan.sourceGeomCrs,
+      label: '建议生成时起点',
+    },
+    ...(plan.legs ?? []).map((leg) => ({
+      longitude: leg.longitude,
+      latitude: leg.latitude,
+      geomCrs: plan.sourceGeomCrs,
+      label: `${leg.seq} · ${leg.customerNameSnapshot ?? '停靠点'}`,
+      description: leg.addressSnapshot,
+    })),
+  ];
 });
-const previewMapPoints = computed<MapPoint[]>(() =>
-    mapVariant.value === 'current' ? currentMapPoints.value : suggestedMapPoints.value
-);
-const mapReady = computed(() =>
+const previewMapPoints = computed<MapPoint[]>(() => (mapVariant.value === 'current' ? currentMapPoints.value : suggestedMapPoints.value));
+const mapReady = computed(
+  () =>
     previewMapPoints.value.length >= 2 &&
     previewMapPoints.value.every(isLocated) &&
     previewMapPoints.value.every((point) => point.geomCrs === previewMapPoints.value[0].geomCrs)

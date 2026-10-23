@@ -4,45 +4,21 @@
       <!-- 全屏最大数字：今日销售额 -->
       <div class="scm-core-hero">
         <metric-card
-            label="今日销售额"
-            prefix="¥"
-            :value="formatAmount(business?.todaySettlementAmount)"
-            :delta="salesDelta"
-            size="hero"
-            tone="primary"
+          label="今日销售额"
+          prefix="¥"
+          :value="formatAmount(business?.todaySettlementAmount)"
+          :delta="salesDelta"
+          size="hero"
+          tone="primary"
         />
       </div>
 
       <!-- 次级指标：层级明显低于 hero -->
       <div class="scm-core-sub">
-        <metric-card
-            label="今日订单"
-            :value="formatInt(business?.todayOrderCount)"
-            unit="张"
-            :delta="orderDelta"
-            size="sm"
-        />
-        <metric-card
-            label="今日客户"
-            :value="formatInt(business?.todayCustomerCount)"
-            unit="家"
-            :delta="null"
-            size="sm"
-        />
-        <metric-card
-            label="今日出库"
-            :value="formatInt(inventory?.todayOutboundCount)"
-            unit="次"
-            :delta="null"
-            size="sm"
-        />
-        <metric-card
-            label="今日采购"
-            :value="formatInt(purchase?.todayPurchaseOrderCount)"
-            unit="张"
-            :delta="purchaseDelta"
-            size="sm"
-        />
+        <metric-card label="今日订单" :value="formatInt(business?.todayOrderCount)" unit="张" :delta="orderDelta" size="sm" />
+        <metric-card label="今日客户" :value="formatInt(business?.todayCustomerCount)" unit="家" :delta="null" size="sm" />
+        <metric-card label="今日出库" :value="formatInt(inventory?.todayOutboundCount)" unit="次" :delta="null" size="sm" />
+        <metric-card label="今日采购" :value="formatInt(purchase?.todayPurchaseOrderCount)" unit="张" :delta="purchaseDelta" size="sm" />
       </div>
     </div>
   </screen-panel>
@@ -79,15 +55,11 @@ function deltaOf(current: string | number | null | undefined, series: Array<stri
   return formatDelta(toNumber(current), prev);
 }
 
-const salesDelta = computed(() =>
-    deltaOf(props.business?.todaySettlementAmount, props.trend.sales)
-);
+const salesDelta = computed(() => deltaOf(props.business?.todaySettlementAmount, props.trend.sales));
 
 const orderDelta = computed(() => deltaOf(props.business?.todayOrderCount, props.trend.orders));
 
-const purchaseDelta = computed(() =>
-    deltaOf(props.purchase?.todayPurchaseOrderCount, props.trend.purchaseOrders)
-);
+const purchaseDelta = computed(() => deltaOf(props.purchase?.todayPurchaseOrderCount, props.trend.purchaseOrders));
 </script>
 
 <style lang="less" scoped>

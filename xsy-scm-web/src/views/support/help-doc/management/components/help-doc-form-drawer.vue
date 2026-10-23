@@ -1,28 +1,28 @@
 <!--
   * 帮助文档表单
-  * 
+  *
 -->
 <template>
   <a-drawer
-      :title="formData.helpDocId ? '编辑系统手册' : '新建系统手册'"
-      :open="visibleFlag"
-      width="min(840px, 96vw)"
-      :footerStyle="{ textAlign: 'right' }"
-      @close="onClose"
-      :destroyOnClose="true"
+    :title="formData.helpDocId ? '编辑系统手册' : '新建系统手册'"
+    :open="visibleFlag"
+    width="min(840px, 96vw)"
+    :footerStyle="{textAlign: 'right'}"
+    @close="onClose"
+    :destroyOnClose="true"
   >
-    <a-form ref="formRef" :model="formData" :rules="formRules" :label-col="{ span: 3 }" :wrapper-col="{ span: 20 }" class="app-drawer-form">
+    <a-form ref="formRef" :model="formData" :rules="formRules" :label-col="{span: 3}" :wrapper-col="{span: 20}" class="app-drawer-form">
       <a-form-item label="标题" name="title" class="app-drawer-field--wide">
-        <a-input v-model:value="formData.title" :maxlength="200" show-count placeholder="请输入标题"/>
+        <a-input v-model:value="formData.title" :maxlength="200" show-count placeholder="请输入标题" />
       </a-form-item>
       <a-form-item label="目录" name="helpDocCatalogId">
-        <HelpDocCatalogTreeSelect v-model:value="formData.helpDocCatalogId" style="width: 100%"/>
+        <HelpDocCatalogTreeSelect v-model:value="formData.helpDocCatalogId" style="width: 100%" />
       </a-form-item>
       <a-form-item label="作者" name="author">
-        <a-input v-model:value="formData.author" :maxlength="1000" placeholder="请输入作者"/>
+        <a-input v-model:value="formData.author" :maxlength="1000" placeholder="请输入作者" />
       </a-form-item>
       <a-form-item label="排序" name="sort">
-        <a-input-number v-model:value="formData.sort" :precision="0" placeholder="值越小越靠前"/>
+        <a-input-number v-model:value="formData.sort" :precision="0" placeholder="值越小越靠前" />
         （值越小越靠前）
       </a-form-item>
       <a-form-item label="是否首页显示">
@@ -32,20 +32,20 @@
         </a-radio-group>
       </a-form-item>
       <a-form-item label="关联菜单" v-if="!relateHomeFlag" class="app-drawer-field--multi">
-        <MenuTreeSelect v-model:value="formData.relationIdList" ref="menuTreeSelect"/>
+        <MenuTreeSelect v-model:value="formData.relationIdList" ref="menuTreeSelect" />
       </a-form-item>
       <a-form-item label="公告内容" name="contentHtml">
-        <Wangeditor ref="contentRef" :modelValue="formData.contentHtml" :height="300"/>
+        <Wangeditor ref="contentRef" :modelValue="formData.contentHtml" :height="300" />
       </a-form-item>
       <a-form-item label="附件">
         <Upload
-            :defaultFileList="defaultFileList"
-            :maxUploadSize="10"
-            :folder="FILE_FOLDER_TYPE_ENUM.HELP_DOC.value"
-            buttonText="上传附件"
-            listType="text"
-            extraMsg="最多上传10个附件"
-            @change="changeAttachment"
+          :defaultFileList="defaultFileList"
+          :maxUploadSize="10"
+          :folder="FILE_FOLDER_TYPE_ENUM.HELP_DOC.value"
+          buttonText="上传附件"
+          listType="text"
+          extraMsg="最多上传10个附件"
+          @change="changeAttachment"
         />
       </a-form-item>
     </a-form>
@@ -117,9 +117,15 @@ const defaultFormData = {
 const formData = reactive({...defaultFormData});
 
 const formRules = {
-  title: [{required: true, message: '请输入标题'}, {max: 200, message: '标题最多 200 字'}],
+  title: [
+    {required: true, message: '请输入标题'},
+    {max: 200, message: '标题最多 200 字'},
+  ],
   helpDocCatalogId: [{required: true, message: '请选择目录'}],
-  author: [{required: true, message: '请输入作者'}, {max: 1000, message: '作者最多 1000 字'}],
+  author: [
+    {required: true, message: '请输入作者'},
+    {max: 1000, message: '作者最多 1000 字'},
+  ],
   sort: [{required: true, message: '请输入排序'}],
   contentHtml: [{required: true, message: '请输入内容'}],
 };

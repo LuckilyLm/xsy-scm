@@ -5,12 +5,12 @@
       <span class="scm-trend-title">趋势分析</span>
       <div class="scm-trend-toggle">
         <button
-            v-for="item in RANGES"
-            :key="item.value"
-            type="button"
-            class="scm-trend-tab"
-            :class="{ 'is-active': range === item.value }"
-            @click="emit('update:range', item.value)"
+          v-for="item in RANGES"
+          :key="item.value"
+          type="button"
+          class="scm-trend-tab"
+          :class="{'is-active': range === item.value}"
+          @click="emit('update:range', item.value)"
         >
           {{ item.label }}
         </button>
@@ -24,7 +24,7 @@
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-else ref="salesEl" class="scm-chart"/>
+        <div v-else ref="salesEl" class="scm-chart" />
       </screen-panel>
 
       <screen-panel title="采购趋势" flex flush>
@@ -33,7 +33,7 @@
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-else ref="purchaseEl" class="scm-chart"/>
+        <div v-else ref="purchaseEl" class="scm-chart" />
       </screen-panel>
 
       <screen-panel title="库存趋势" flex flush>
@@ -42,7 +42,7 @@
           <span class="scm-state-icon">—</span>
           <span>暂无趋势数据</span>
         </div>
-        <div v-else ref="inventoryEl" class="scm-chart"/>
+        <div v-else ref="inventoryEl" class="scm-chart" />
       </screen-panel>
     </div>
   </div>
@@ -65,7 +65,7 @@ const emit = defineEmits<{
   (e: 'update:range', value: ScreenRange): void;
 }>();
 
-const RANGES: Array<{ label: string; value: ScreenRange }> = [
+const RANGES: Array<{label: string; value: ScreenRange}> = [
   {label: '近 7 天', value: '7d'},
   {label: '近 30 天', value: '30d'},
 ];
@@ -259,16 +259,16 @@ function renderInventory() {
 
 /** 空↔有数据来回切换时用 notMerge=true，避免残留上一次的 series。 */
 watch(
-    () => props.trend,
-    () => {
-      if (empty.value) {
-        return;
-      }
-      renderSales();
-      renderPurchase();
-      renderInventory();
-    },
-    {immediate: true, deep: false}
+  () => props.trend,
+  () => {
+    if (empty.value) {
+      return;
+    }
+    renderSales();
+    renderPurchase();
+    renderInventory();
+  },
+  {immediate: true, deep: false}
 );
 </script>
 
@@ -324,7 +324,9 @@ watch(
   background: rgba(47, 128, 237, 0.08);
   border: 0;
   cursor: pointer;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
 
   & + & {
     border-left: 1px solid @panel-border;

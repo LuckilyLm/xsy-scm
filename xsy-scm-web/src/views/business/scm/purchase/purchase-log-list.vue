@@ -8,10 +8,10 @@
   <a-form class="smart-query-form" layout="inline" @submit.prevent>
     <a-row class="smart-query-form-row">
       <a-form-item label="采购单号" class="smart-query-form-item">
-        <a-input v-model:value="orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch"/>
+        <a-input v-model:value="orderNo" placeholder="采购单号" allow-clear @pressEnter="onSearch" />
       </a-form-item>
       <a-form-item label="操作类型" class="smart-query-form-item">
-        <SmartEnumSelect enum-name="SCM_PURCHASE_OPERATION_ENUM" v-model:value="operationType" width="170px"/>
+        <SmartEnumSelect enum-name="SCM_PURCHASE_OPERATION_ENUM" v-model:value="operationType" width="170px" />
       </a-form-item>
       <a-form-item class="smart-query-form-item">
         <a-button-group>
@@ -21,7 +21,7 @@
       </a-form-item>
       <span v-if="orderNo" class="scm-query-table-context">当前采购单：{{ orderNo }}</span>
       <div class="scm-query-table-tools">
-        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_LOG" :refresh="queryData"/>
+        <TableOperator v-model="columns" :table-id="TABLE_ID_CONST.BUSINESS.SCM_PURCHASE_LOG" :refresh="queryData" />
       </div>
     </a-row>
   </a-form>
@@ -33,19 +33,18 @@
   </a-alert>
 
   <a-card size="small" :bordered="false">
-
     <a-table
-        :id="SCM_PURCHASE_TABLE_ID.LOG"
-        size="small"
-        :data-source="tableData"
-        :columns="columns"
-        row-key="id"
-        bordered
-        :loading="loading"
-        :pagination="false"
-        :scroll="{ x: scmColumnsWidth(columns) }"
+      :id="SCM_PURCHASE_TABLE_ID.LOG"
+      size="small"
+      :data-source="tableData"
+      :columns="columns"
+      row-key="id"
+      bordered
+      :loading="loading"
+      :pagination="false"
+      :scroll="{x: scmColumnsWidth(columns)}"
     >
-      <template #bodyCell="{ record, column }">
+      <template #bodyCell="{record, column}">
         <template v-if="column.dataIndex === 'operationType'">
           {{ SCM_PURCHASE_OPERATION_ENUM[record.operationType]?.desc || record.operationType }}
         </template>
@@ -55,17 +54,24 @@
         <template v-else-if="column.dataIndex === 'reason'">{{ record.reason || '—' }}</template>
         <template v-else-if="column.dataIndex === 'action'">
           <div class="smart-table-operate scm-table-actions">
-            <a-button type="link" @click="active = record; visible = true">变更前后</a-button>
+            <a-button
+              type="link"
+              @click="
+                active = record;
+                visible = true;
+              "
+              >变更前后</a-button
+            >
           </div>
         </template>
       </template>
     </a-table>
 
-    <a-empty v-if="!loading && !tableData.length" description="请先输入采购单号查询操作日志"/>
+    <a-empty v-if="!loading && !tableData.length" description="请先输入采购单号查询操作日志" />
   </a-card>
 
   <a-modal :open="visible" title="变更前后" width="900px" :footer="null" @cancel="visible = false">
-    <ScmDiffTable :before="active?.beforeData" :after="active?.afterData" :scope="active?.operationType"/>
+    <ScmDiffTable :before="active?.beforeData" :after="active?.afterData" :scope="active?.operationType" />
   </a-modal>
 </template>
 
@@ -112,8 +118,7 @@ async function queryData() {
       return;
     }
     // 查询失败由页头 Alert 承担（含「采购单不存在」这类本地判定），不再让全局 toast 重复说一遍
-    const found = await purchaseOrderApi.query({pageNum: 1, pageSize: 1, orderNo: orderNo.value.trim()},
-        {suppressGlobalErrorMessage: true});
+    const found = await purchaseOrderApi.query({pageNum: 1, pageSize: 1, orderNo: orderNo.value.trim()}, {suppressGlobalErrorMessage: true});
     const order = found.data.list[0];
     if (!order) {
       throw new Error(`采购单 ${orderNo.value} 不存在`);
@@ -121,9 +126,7 @@ async function queryData() {
     const r = await purchaseOrderApi.logs(order.id!, {suppressGlobalErrorMessage: true});
     if (id === requestId) {
       // 操作类型是客户端过滤：后端只按采购单维度提供日志，没有按类型过滤的入参。
-      tableData.value = operationType.value
-          ? r.data.filter((row) => row.operationType === operationType.value)
-          : r.data;
+      tableData.value = operationType.value ? r.data.filter((row) => row.operationType === operationType.value) : r.data;
     }
   } catch (e) {
     if (id === requestId) {

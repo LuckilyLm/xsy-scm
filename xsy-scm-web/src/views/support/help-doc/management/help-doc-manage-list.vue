@@ -1,17 +1,17 @@
 <!--
   * 帮助文档 管理
-  * 
+  *
 -->
 <template>
   <div class="height100">
     <a-row :gutter="16" class="height100">
       <a-col :span="6">
-        <HelpDocCatalogTree ref="helpDocCatalogTreeRef"/>
+        <HelpDocCatalogTree ref="helpDocCatalogTreeRef" />
       </a-col>
 
       <a-col :span="18" class="height100">
         <div class="help-doc-box height100">
-          <HelpDocList :helpDocCatalogId="selectedHelpDocCatalogId"/>
+          <HelpDocList :helpDocCatalogId="selectedHelpDocCatalogId" />
         </div>
       </a-col>
     </a-row>

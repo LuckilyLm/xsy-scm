@@ -5,17 +5,14 @@
 -->
 <template>
   <li v-for="module in props.tree" :key="module.menuId">
-    <div class="menu" :style="{ marginLeft: `${props.index * 4}%` }">
-      <a-checkbox @change="selectCheckbox(module)" class="checked-box-label" :value="module.menuId">{{
-          module.menuName
-        }}
-      </a-checkbox>
+    <div class="menu" :style="{marginLeft: `${props.index * 4}%`}">
+      <a-checkbox @change="selectCheckbox(module)" class="checked-box-label" :value="module.menuId">{{ module.menuName }} </a-checkbox>
       <div v-if="module.children && module.children.some((e) => e.menuType === MENU_TYPE_ENUM.POINTS.value)">
-        <RoleTreePoint :tree="module.children" @selectCheckbox="selectCheckbox"/>
+        <RoleTreePoint :tree="module.children" @selectCheckbox="selectCheckbox" />
       </div>
     </div>
     <template v-if="module.children && !module.children.some((e) => e.menuType === MENU_TYPE_ENUM.POINTS.value)">
-      <RoleTreeMenu :tree="module.children" :index="props.index + 1"/>
+      <RoleTreeMenu :tree="module.children" :index="props.index + 1" />
     </template>
   </li>
 </template>

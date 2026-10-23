@@ -17,50 +17,49 @@ export const HOME_PAGE_PATH = '/home';
 export const PAGE_PATH_404 = '/404';
 
 export const showTableTotal = function (total: number | string) {
-    return `共${total}条`;
+  return `共${total}条`;
 };
 
 export const FLAG_NUMBER_ENUM: SmartEnum<number> = {
-    TRUE: {
-        value: 1,
-        desc: '是',
-    },
-    FALSE: {
-        value: 0,
-        desc: '否',
-    },
+  TRUE: {
+    value: 1,
+    desc: '是',
+  },
+  FALSE: {
+    value: 0,
+    desc: '否',
+  },
 };
 
 export const GENDER_ENUM: SmartEnum<number> = {
-    UNKNOWN: {
-        value: 0,
-        desc: '未知',
-    },
-    MAN: {
-        value: 1,
-        desc: '男',
-    },
-    WOMAN: {
-        value: 2,
-        desc: '女',
-    },
+  UNKNOWN: {
+    value: 0,
+    desc: '未知',
+  },
+  MAN: {
+    value: 1,
+    desc: '男',
+  },
+  WOMAN: {
+    value: 2,
+    desc: '女',
+  },
 };
 
 export const USER_TYPE_ENUM: SmartEnum<number> = {
-    ADMIN_EMPLOYEE: {
-        value: 1,
-        desc: '员工',
-    },
+  ADMIN_EMPLOYEE: {
+    value: 1,
+    desc: '员工',
+  },
 };
 
 export const DATA_TYPE_ENUM = {
-    NORMAL: {
-        value: 1,
-        desc: '普通',
-    },
-    ENCRYPT: {
-        value: 10,
-        desc: '加密',
-    },
-
+  NORMAL: {
+    value: 1,
+    desc: '普通',
+  },
+  ENCRYPT: {
+    value: 10,
+    desc: '加密',
+  },
 };

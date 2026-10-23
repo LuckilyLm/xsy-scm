@@ -14,15 +14,14 @@
           </a-radio-group>
         </a-form-item>
         <a-form-item>
-          <a-input-search v-model:value="searchValue" placeholder="输入英文关键词进行搜索"
-                          @change="updateSelectIconArray"/>
+          <a-input-search v-model:value="searchValue" placeholder="输入英文关键词进行搜索" @change="updateSelectIconArray" />
         </a-form-item>
       </template>
 
       <template #content>
         <div class="icon-box">
           <div v-for="item in iconLoopArray" :key="item" @click="handleClick(item)" class="icon-content">
-            <component :is="$antIcons[item]"/>
+            <component :is="$antIcons[item]" />
           </div>
           <div v-show="showMoreIndex > 0">
             <a-button type="link" @click="showMore">点击展开更多图标（因图标较多，可能会卡一小会）</a-button>
